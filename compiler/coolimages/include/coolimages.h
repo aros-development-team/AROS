@@ -35,7 +35,14 @@
 
 #define COOLBT_Dummy	    (TAG_USER + 1234)
 
-#define COOLBT_CoolImage    (COOLBT_Dummy + 1)
+#define COOLBT_CoolImage    (COOLBT_Dummy + 1) /* I: struct CoolImage * */
+
+/* Tags for coolimageclass */
+
+#define COOLIM_Dummy	    (TAG_USER + 1334)
+
+#define COOLIM_CoolImage    (COOLIM_Dummy + 1) /* I: struct CoolImage * */
+#define COOLIM_BgColor	    (COOLIM_Dummy + 2) /* I: ULONG  	    	*/
 
 /****************************************************************************************/
 
@@ -45,7 +52,7 @@ struct CoolImage
     const UBYTE	*pal;
     WORD 	width;
     WORD	height;
-    WORD	depth;
+    WORD	numcolors;
 };
 
 /****************************************************************************************/
@@ -63,13 +70,20 @@ extern const struct CoolImage cool_monitorimage;
 extern const struct CoolImage cool_infoimage;
 extern const struct CoolImage cool_askimage;
 extern const struct CoolImage cool_keyimage;
+extern const struct CoolImage cool_clockimage;
+extern const struct CoolImage cool_flagimage;
+extern const struct CoolImage cool_headimage;
 
 extern struct IClass * cool_buttonclass;
+extern struct IClass * cool_imageclass;
 
 /****************************************************************************************/
 
 BOOL InitCoolButtonClass(struct Library *CyberGfxBase);
+BOOL InitCoolImageClass(struct Library *CyberGfxBase);
+
 void CleanupCoolButtonClass(void);
+void CleanupCoolImageClass(void);
 
 /****************************************************************************************/
 

@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define CANCELIMAGE_WIDTH 14
-#define CANCELIMAGE_HEIGHT 16
-#define CANCELIMAGE_DEPTH 4
+#define CANCELIMAGE_WIDTH   14
+#define CANCELIMAGE_HEIGHT  16
+#define CANCELIMAGE_COLORS  3
 
 static const UBYTE cancelimage_data[] =
 {
@@ -35,7 +35,7 @@ static const UBYTE cancelimage_data[] =
 static const UBYTE cancelimage_pal[] =
 {
 	0xb3,0xb3,0xb3,0x00,0x00,0x00,
-	0xdb,0x20,0x26,0xff,0xff,0xff
+	0xdb,0x20,0x26
 };
 
 const struct CoolImage cool_cancelimage =
@@ -44,5 +44,5 @@ const struct CoolImage cool_cancelimage =
 	cancelimage_pal,
 	CANCELIMAGE_WIDTH,
 	CANCELIMAGE_HEIGHT,
-	CANCELIMAGE_DEPTH
+	CANCELIMAGE_COLORS
 };

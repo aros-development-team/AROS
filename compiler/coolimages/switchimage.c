@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define SWITCHIMAGE_WIDTH 18
-#define SWITCHIMAGE_HEIGHT 16
-#define SWITCHIMAGE_DEPTH 4
+#define SWITCHIMAGE_WIDTH   18
+#define SWITCHIMAGE_HEIGHT  16
+#define SWITCHIMAGE_COLORS  4
 
 static const UBYTE switchimage_data[] =
 {
@@ -44,5 +44,5 @@ const struct CoolImage cool_switchimage =
 	switchimage_pal,
 	SWITCHIMAGE_WIDTH,
 	SWITCHIMAGE_HEIGHT,
-	SWITCHIMAGE_DEPTH
+	SWITCHIMAGE_COLORS
 };

@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define KEYIMAGE_WIDTH 17
+#define KEYIMAGE_WIDTH  17
 #define KEYIMAGE_HEIGHT 14
-#define KEYIMAGE_DEPTH 8
+#define KEYIMAGE_COLORS 5
 
 static const UBYTE keyimage_data[] =
 {
@@ -34,8 +34,7 @@ static const UBYTE keyimage_pal[] =
 {
 	0xb3,0xb3,0xb3,0x38,0x38,0x38,
 	0xcc,0xcc,0xcc,0xbb,0xbb,0xbb,
-	0x4d,0x4d,0x4d,0x55,0xdd,0x55,
-	0xee,0x99,0x00,0x00,0x44,0xdd
+	0x4d,0x4d,0x4d
 };
 
 const struct CoolImage cool_keyimage =
@@ -44,5 +43,5 @@ const struct CoolImage cool_keyimage =
 	keyimage_pal,
 	KEYIMAGE_WIDTH,
 	KEYIMAGE_HEIGHT,
-	KEYIMAGE_DEPTH
+	KEYIMAGE_COLORS
 };

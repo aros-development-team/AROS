@@ -20,7 +20,11 @@ FILES := saveimage \
 	 infoimage \
 	 askimage \
 	 keyimage \
-	 buttonclass
+	 clockimage \
+	 flagimage \
+	 headimage \
+	 buttonclass \
+	 imageclass
 
 USER_CFLAGS := -Iinclude
 

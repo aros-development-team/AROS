@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define USEIMAGE_WIDTH 13
+#define USEIMAGE_WIDTH  13
 #define USEIMAGE_HEIGHT 16
-#define USEIMAGE_DEPTH 4
+#define USEIMAGE_COLORS 3
 
 static const UBYTE useimage_data[] =
 {
@@ -35,7 +35,7 @@ static const UBYTE useimage_data[] =
 static const UBYTE useimage_pal[] =
 {
 	0xb3,0xb3,0xb3,0x00,0x00,0x00,
-	0x00,0x76,0x00,0xff,0xff,0xff
+	0x00,0x76,0x00
 };
 
 const struct CoolImage cool_useimage =
@@ -44,5 +44,5 @@ const struct CoolImage cool_useimage =
 	useimage_pal,
 	USEIMAGE_WIDTH,
 	USEIMAGE_HEIGHT,
-	USEIMAGE_DEPTH
+	USEIMAGE_COLORS
 };

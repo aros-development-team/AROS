@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define ASKIMAGE_WIDTH 16
+#define ASKIMAGE_WIDTH  16
 #define ASKIMAGE_HEIGHT 16
-#define ASKIMAGE_DEPTH 4
+#define ASKIMAGE_COLORS 4
 
 static const UBYTE askimage_data[] =
 {
@@ -44,5 +44,5 @@ const struct CoolImage cool_askimage =
 	askimage_pal,
 	ASKIMAGE_WIDTH,
 	ASKIMAGE_HEIGHT,
-	ASKIMAGE_DEPTH
+	ASKIMAGE_COLORS
 };

@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define LOADIMAGE_WIDTH 23
-#define LOADIMAGE_HEIGHT 16
-#define LOADIMAGE_DEPTH 8
+#define LOADIMAGE_WIDTH     23
+#define LOADIMAGE_HEIGHT    16
+#define LOADIMAGE_COLORS    5
 
 static const UBYTE loadimage_data[] =
 {
@@ -36,8 +36,7 @@ static const UBYTE loadimage_pal[] =
 {
 	0xb3,0xb3,0xb3,0x00,0x00,0x00,
 	0xe0,0xe0,0xe0,0x00,0x76,0x00,
-	0x65,0x4b,0xbf,0xff,0xff,0xff,
-	0xff,0xff,0xff,0xff,0xff,0xff
+	0x65,0x4b,0xbf
 };
 
 const struct CoolImage cool_loadimage =
@@ -46,5 +45,5 @@ const struct CoolImage cool_loadimage =
 	loadimage_pal,
 	LOADIMAGE_WIDTH,
 	LOADIMAGE_HEIGHT,
-	LOADIMAGE_DEPTH
+	LOADIMAGE_COLORS
 };

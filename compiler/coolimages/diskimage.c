@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define DISKIMAGE_WIDTH 16
-#define DISKIMAGE_HEIGHT 16
-#define DISKIMAGE_DEPTH 4
+#define DISKIMAGE_WIDTH     16
+#define DISKIMAGE_HEIGHT    16
+#define DISKIMAGE_COLORS    4
 
 static const UBYTE diskimage_data[] =
 {
@@ -44,5 +44,5 @@ const struct CoolImage cool_diskimage =
 	diskimage_pal,
 	DISKIMAGE_WIDTH,
 	DISKIMAGE_HEIGHT,
-	DISKIMAGE_DEPTH
+	DISKIMAGE_COLORS
 };
