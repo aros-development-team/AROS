@@ -35,8 +35,6 @@ extern void init_gui();
 int main( int, char ** );
 
 
-struct IconBase *IconBase = NULL;
-
 char *filename = NULL;
 BPTR inputfile;
 char buffer[MAXARGSIZE];
@@ -60,7 +58,7 @@ ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
   if ( argc != 0 )
-  { /* Invoked form Shell */
+  { /* Invoked from Shell */
     preferences.fromcli = TRUE;
     /* evaluate args with RDArgs(); */
     rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
@@ -73,12 +71,6 @@ int nextarg, endoffile, count;
   else
   { /* Invoked from Workbench */
     preferences.fromcli = FALSE;
-    IconBase = (struct IconBase *)OpenLibrary( "icon.library", 0 );
-    if (!IconBase)
-    {
-      fprintf( stderr, "Could not open icon.library!\n" );
-      exit(-1);
-    }
     tooltypes = ArgArrayInit( argc, (UBYTE **)argv );
   }
 
@@ -108,7 +100,6 @@ int nextarg, endoffile, count;
       fprintf( stderr, "No SCRIPT ToolType in Icon!\n" );
 #endif /* DEBUG */
       ArgArrayDone();
-      CloseLibrary( (struct Library *)IconBase);
       exit(-1);
     }
     filename = StrDup( ttemp );

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,6 @@
 extern ScriptArg script;
 extern InstallerPrefs preferences;
 extern int error;
-extern struct IconBase *IconBase;
 
 /* External function prototypes */
 extern void free_varlist();
@@ -46,7 +45,6 @@ void cleanup( )
   free_script( script.cmd );
   free_varlist();
   deinit_gui();
-  CloseLibrary( (struct Library*)IconBase );
 }
 
 void end_malloc( )

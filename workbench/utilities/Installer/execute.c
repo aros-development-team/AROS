@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1701,6 +1701,40 @@ void *params;
 			  }
 			  break;
 
+      case _GETENV	: /* Get Variable from ENV: */
+			  if ( current->next != NULL )
+			  {
+			    current = current->next;
+			    ExecuteCommand();
+
+			    if ( current->arg != NULL )
+			    {
+			      char buffer[1024] = {0};
+			      string = strip_quotes( current->arg );
+
+#warning: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
+			      i = GetVar( string, buffer, 1023, NULL );
+
+			      FreeVec( string );
+
+			      if( i != -1 )
+			      {
+				current->parent->arg = StrDup( buffer );
+			      }
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires a string as argument!\n", current->parent->cmd->arg );
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a string as argument!\n", current->arg );
+			  }
+			  break;
+
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
@@ -1708,7 +1742,6 @@ void *params;
       case _FOREACH	:
       case _GETASSIGN	:
       case _GETDEVICE	:
-      case _GETENV	:
       case _GETSIZE	:
       case _GETSUM	:
       case _GETVERSION	:

@@ -335,3 +335,8 @@
   implemented ReAllocVec() as a replacement for realloc() in
   AROS/compiler/alib
 
+0054
+- implemented (getenv)
+- Updated Copyright string to 2003
+- IconBase is now opened automatically
+
