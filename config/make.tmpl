@@ -185,7 +185,7 @@ clean ::
 # Include these files but only if the current target is neither
 # setup nor clean.
 ifeq (,$(filter clean% setup% includes% %(nodepstargets),$(TARGET)))
-include %(deps)
+-include %(deps)
 endif
 %end
 
