@@ -67,6 +67,12 @@ struct Rect32
 #define BMB_MINPLANES        4
 #define BMF_MINPLANES   (1L<<4)
 
+#define BMB_AROS_OLDWINDOW        6
+#define BMF_AROS_OLDWINDOW (1L << 6)
+
+#define BMB_AROS_DISPLAYED        7
+#define BMF_AROS_DISPLAYED (1L << 7)
+
 #define BMA_HEIGHT 0
 #define BMA_DEPTH  4
 #define BMA_WIDTH  8
