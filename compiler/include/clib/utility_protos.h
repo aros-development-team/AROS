@@ -100,6 +100,18 @@ AROS_LP0(ULONG, GetUniqueID,
     AROS_LC0(ULONG, GetUniqueID, \
     struct UtilityBase *, UtilityBase, 45, Utility)
 
+AROS_LP3(void, MapTags,
+    AROS_LPA(struct TagItem *, tagList, A0),
+    AROS_LPA(struct TagItem *, mapList, A1),
+    AROS_LPA(ULONG           , mapType, D0),
+    struct Library *, UtilityBase, 10, Utility)
+#define MapTags(tagList, mapList, mapType) \
+    AROS_LC3(void, MapTags, \
+    AROS_LCA(struct TagItem *, tagList, A0), \
+    AROS_LCA(struct TagItem *, mapList, A1), \
+    AROS_LCA(ULONG           , mapType, D0), \
+    struct Library *, UtilityBase, 10, Utility)
+
 AROS_LP1(struct TagItem *, NextTagItem,
     AROS_LPA(struct TagItem **, tagListPtr, A0),
     struct Library *, UtilityBase, 8, Utility)
