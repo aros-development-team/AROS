@@ -57,6 +57,7 @@
 
     fh = (BPTR)(stream->fh);
 
+    Flush (fh);
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)

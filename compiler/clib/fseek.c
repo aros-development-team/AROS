@@ -78,6 +78,8 @@
 
     fh = (BPTR)(stream->fh);
 
+    /* This is buffered IO, flush the buffer before any Seek */
+    Flush (fh);
     cnt = Seek (fh, offset, whence);
 
     if (cnt == -1)
