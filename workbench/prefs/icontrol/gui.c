@@ -533,6 +533,7 @@ BOOPSI_DISPATCHER(IPTR, IPWindow_Dispatcher, CLASS, self, message)
     
     return NULL;
 }
+BOOPSI_DISPATCHER_END
 
 /*********************************************************************************************/
 
