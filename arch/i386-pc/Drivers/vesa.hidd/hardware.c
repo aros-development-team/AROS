@@ -24,10 +24,10 @@ BOOL initVesaGfxHW(struct HWData *data)
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
 
-    if (BootLoaderBase = OpenResource("bootloader.resource"))
+    if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {
 	D(bug("[Vesa] Init: Bootloader.resource opened\n"));
-	if (vi = (struct VesaInfo *)GetBootInfo(BL_Video))
+	if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)))
 	{
 	    D(bug("[Vesa] Init: Got Vesa structure from resource\n"));
 	    data->width = vi->XSize; data->height = vi->YSize;

@@ -413,7 +413,7 @@ STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate
 
  tl=msg->opu_AttrList;
 
- while(ti=NextTagItem(&tl))
+ while((ti=NextTagItem(&tl)))
  {
   for(i=0; i<NumAttribs; i++)
   {
