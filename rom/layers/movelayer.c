@@ -77,8 +77,6 @@
     return FALSE; 
   
 
-  /* Lock all other layers while I am moving this layer */
-  LockLayers(LI);
 
   /* 
      Here's how I do it:
@@ -92,13 +90,17 @@
    */
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = (struct ClipRect *)AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+  CR = _AllocClipRect(LI);
   RP = (struct RastPort *)AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   if (NULL != l_tmp && NULL != CR && NULL != RP)
   {
     struct CR_tmp;
     struct Layer * l_behind; 
+
+    /* Lock all other layers while I am moving this layer */
+    LockLayers(LI);
+
     /* link the temporary layer behind the layer to move */
     l_tmp -> front = l;
     l_tmp -> back  = l->back;
@@ -195,12 +197,12 @@
     /* That's it folks! */
 
     /* Now everybody else may play with the layers again */
-    UnlockLayers(l->LayerInfo);
+    UnlockLayers(LI);
     return TRUE;
   } 
   else /* not enough memory */
   {
-    if (NULL != CR   ) FreeMem(CR, sizeof(struct ClipRect));
+    if (NULL != CR   ) _FreeClipRect(CR, l_tmp->LayerInfo);
     if (NULL != RP   ) FreeMem(RP, sizeof(struct RastPort));
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
   }

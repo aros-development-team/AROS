@@ -63,7 +63,7 @@
     InitLayers(li);
 
     /* get memory for LayerInfo_extra structure */
-    if(!_AllocExtLayerInfo(li, LayersBase))
+    if(!_AllocExtLayerInfo(li))
     {
       FreeMem(li, sizeof(struct Layer_Info));
       return NULL;

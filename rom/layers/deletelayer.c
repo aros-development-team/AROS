@@ -13,7 +13,7 @@
 #include <graphics/layers.h>
 #include <graphics/regions.h>
 #include "layers_intern.h"
-
+#include "basicfuncs.h"
 
 /*****************************************************************************
 
@@ -189,7 +189,7 @@
 	);           
       }
     }
-    FreeMem(CR, sizeof(struct ClipRect));      
+    _FreeClipRect(CR, LI);      
     CR = _CR;
   }
   /* 

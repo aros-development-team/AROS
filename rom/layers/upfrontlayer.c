@@ -112,8 +112,7 @@
   LI->top_layer = L;
       
   /* get a new cliprect structure */
-  L->ClipRect = (struct ClipRect *)
-                  AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+  L->ClipRect = _AllocClipRect(LI);
 
   /* and initilize it with the layer's bounds */
   L->ClipRect->bounds = L->bounds;
@@ -186,7 +185,7 @@
         L->Flags |= LAYERREFRESH;
       }
     }
-    FreeMem(CR_old, sizeof(struct ClipRect));
+    _FreeClipRect(CR_old, LI);
     CR_old = _CR_old;
   } /* while () */    
 

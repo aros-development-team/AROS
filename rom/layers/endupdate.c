@@ -76,7 +76,7 @@
   while (NULL != CR)
   {
     FirstCR = CR->Next;
-    FreeMem(CR, sizeof(struct ClipRect));
+    _FreeClipRect(CR, l->LayerInfo);
     CR = FirstCR;
   }
   

@@ -54,7 +54,14 @@
 
     D(bug("DisposeLayerInfo(li @ $%lx)\n", li));
 
-    _FreeExtLayerInfo(li, LayersBase);
+    _FreeExtLayerInfo(li);
+
+    /* Free the list of allocated ClipRects */
+    while (FALSE == IsListEmpty(li->FreeClipRects))
+    {
+      FreeMem((void *)RemHead((struct List *)&li->FreeClipRects),
+              sizeof(struct ClipRect));
+    }
 
     FreeMem(li, sizeof(struct Layer_Info));
 

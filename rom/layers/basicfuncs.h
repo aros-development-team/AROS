@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#include <aros/asmcall.h>
+#include "layers_intern.h"
 
 /*
  *  Sections:
@@ -25,65 +25,47 @@
 /*                                 BLITTER                                 */
 /***************************************************************************/
 
-AROS_UFP4(void, BltRPtoCR,
-    AROS_UFPA(struct RastPort *,   rp,         A0),
-    AROS_UFPA(struct ClipRect *,   cr,         A1),
-    AROS_UFPA(ULONG,               Mode,       D0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void BltRPtoCR(struct RastPort *    rp,
+               struct ClipRect *    cr,
+               ULONG                Mode);
 
-AROS_UFP4(void, BltCRtoRP,
-    AROS_UFPA(struct RastPort *,   rp,         A0),
-    AROS_UFPA(struct ClipRect *,   cr,         A1),
-    AROS_UFPA(ULONG,               Mode,       D0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void BltCRtoRP(struct RastPort *    rp,
+               struct ClipRect *    cr,
+               ULONG                Mode);
 
 /***************************************************************************/
 /*                                  HOOK                                   */
 /***************************************************************************/
 
-AROS_UFP8(void, CallLayerHook,
-    AROS_UFPA(struct Hook *,       h,          A2),
-    AROS_UFPA(struct Layer *,      l,          D0),
-    AROS_UFPA(struct RastPort *,   rp,         A0),
-    AROS_UFPA(struct Rectangle *,  r1,         A1),
-    AROS_UFPA(struct Rectangle *,  r2,         A3),
-    AROS_UFPA(WORD,                BaseX,      D1),
-    AROS_UFPA(WORD,                BaseY,      D2),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
 /***************************************************************************/
 /*                                 LAYER                                   */
 /***************************************************************************/
 
 void SetLayerPriorities(struct Layer_Info * li);
+struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y);
 
 /***************************************************************************/
 /*                               LAYERINFO                                 */
 /***************************************************************************/
 
-AROS_UFP2(BOOL, _AllocExtLayerInfo,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+BOOL _AllocExtLayerInfo
+    (struct Layer_Info * li);
 
-AROS_UFP2(void, _FreeExtLayerInfo,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void _FreeExtLayerInfo
+    (struct Layer_Info * li);
 
-AROS_UFP2(ULONG, _InitLIExtra,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+ULONG _InitLIExtra
+    (struct Layer_Info * li, struct LayersBase * LayersBase);
 
-AROS_UFP2(void, _ExitLIExtra,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void _ExitLIExtra
+    (struct Layer_Info * li, struct LayersBase * LayersBase);
 
-AROS_UFP2(BOOL, SafeAllocExtLI,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+BOOL SafeAllocExtLI
+    (struct Layer_Info * li, struct LayersBase * LayersBase);
 
-AROS_UFP2(void, SafeFreeExtLI,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void SafeFreeExtLI
+    (struct Layer_Info * li, struct LayersBase * LayersBase);
 
 /***************************************************************************/
 /*                                RECTANGLE                                */
@@ -91,75 +73,30 @@ AROS_UFP2(void, SafeFreeExtLI,
 
 struct ClipRect * internal_WhichClipRect(struct Layer * L, WORD x, WORD y);
 
-AROS_UFP3(void, ClearRect,
-    AROS_UFPA(struct RastPort *,   rp,         A0),
-    AROS_UFPA(struct Rectangle *,  r,          A1),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
-
-AROS_UFP3(void, IntersectRects,
-    AROS_UFPA(struct Rectangle *, r1,          A0),
-    AROS_UFPA(struct Rectangle *, r2,          A1),
-    AROS_UFPA(struct Rectangle *, Result,      A2));
-
-AROS_UFP2(BOOL, Overlap,
-    AROS_UFPA(struct Rectangle *, r1, A0),
-    AROS_UFPA(struct Rectangle *, r2, A1));
-
-AROS_UFP2(BOOL, ContainsRect,
-    AROS_UFPA(struct Rectangle *, Bound,     A0),
-    AROS_UFPA(struct Rectangle *, InnerRect, A1));
-
-AROS_UFP3(void, AddClipRect,
-    AROS_UFPA(struct Layer *,      l,          A0),
-    AROS_UFPA(struct ClipRect *,   cr,         A1),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
-
-AROS_UFP3(void, CopyCR,
-    AROS_UFPA(struct ClipRect *,   source,     A0),
-    AROS_UFPA(struct ClipRect *,   dest,       A1),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
 /***************************************************************************/
 /*                            RESOURCE HANDLING                            */
 /***************************************************************************/
 
-AROS_UFP4(BOOL, AddLayersResource,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(void *,              ptr,        A1),
-    AROS_UFPA(ULONG,               Size,       D0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+BOOL AddLayersResource(struct Layer_Info * li,
+                       void *              ptr,
+                       ULONG               Size);
 
-AROS_UFP2(struct ResourceNode *, AddLayersResourceNode,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li);
 
-AROS_UFP3(BOOL, AllocCRBitMap,
-    AROS_UFPA(struct Layer *,      l,          A0),
-    AROS_UFPA(struct ClipRect *,   cr,         A1),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+struct ClipRect * _AllocClipRect(struct Layer_Info * li);
+void _FreeClipRect(struct ClipRect * CR, struct Layer_Info * li);
 
-AROS_UFP2(struct ClipRect *, AllocClipRect,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
-AROS_UFP2(void, DisposeClipRect,
-    AROS_UFPA(struct ClipRect *,   cr,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void FreeCRBitMap(struct ClipRect *   cr);
 
-AROS_UFP2(void, FreeCRBitMap,
-    AROS_UFPA(struct ClipRect *,   cr,         A0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void * AllocLayerStruct(ULONG                Size,
+                        ULONG                Flags,
+                        struct Layer_Info *  li,
+                        struct LayersBase *  LayersBase);
 
-AROS_UFP4(void *, AllocLayerStruct,
-    AROS_UFPA(ULONG,               Size,       D0),
-    AROS_UFPA(ULONG,               Flags,      D1),
-    AROS_UFPA(struct Layer_Info *, li,         D2),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
-
-AROS_UFP3(void, FreeLayerResources,
-    AROS_UFPA(struct Layer_Info *, li,         A0),
-    AROS_UFPA(BOOL,                flag,       D0),
-    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+void FreeLayerResources(struct Layer_Info *  li,
+                        BOOL                 flag);
 
 /***************************************************************************/
 /*                              MISCELLANEOUS                              */

@@ -37,8 +37,7 @@ ULIBNAME := Layers
 OSMODULE  := layers.library
 FILES	  := cliprectfunctions \
 	createcliprects \
-	basicfuncs \
-	helpfunctions
+	basicfuncs 
 	
 FUNCTIONS := \
 	beginupdate			\

@@ -11,11 +11,12 @@
 #include <layers_intern.h>
 #include <aros/libcall.h>
 #include <proto/graphics.h>
+#include "basicfuncs.h"
 
 /*****************************************************************************
 
     NAME */
-
+#include <proto/layers.h>
 	AROS_LH2(LONG, BehindLayer,
 
 /*  SYNOPSIS */

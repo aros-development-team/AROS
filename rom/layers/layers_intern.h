@@ -73,25 +73,6 @@ struct ResourceNode
     struct ResData  rn_Data[48];
 };
 
-struct InternalClipRect
-{
-    struct ClipRect  *Next;
-    struct ClipRect  *prev;
-    struct Layer     *lobs;		/* TRUE if the ClipRect has a BitMap */
-    struct BitMap    *BitMap;
-    struct Rectangle  bounds;
-    union cr_u
-    {
-	struct Rectangle r;		/* copy of Bounds */
-	struct cr_s
-	{
-	    struct ClipRect *NextCR;
-	    struct Layer    *_p2;
-	};
-    };
-    LONG	      reserved;
-    LONG	      Flags;
-};
 
 /* digulla again... Needed for close() */
 #define expunge() \
@@ -126,9 +107,6 @@ void CreateClipRectsSelf(struct Layer * L, BOOL notdisplayed);
 void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed);
 void CreateClipRectsOther(struct Layer * L);
 void LayerSplitsLayer(struct Layer * L_active, struct Layer * L_passive, BOOL notdisplayed);
-
-
-struct Layer * internal_WhichLayer(struct Layer * L, WORD x, WORD y);
 
 
 #endif /* _LAYERS_INTERN_H */

@@ -11,7 +11,7 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 #include "layers_intern.h"
-
+#include "basicfuncs.h"
 
 
 /*****************************************************************************
@@ -68,7 +68,7 @@
   /* don't forget to add UnlockLayers(li) before any return-statement! */
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+  CR = _AllocClipRect(li);
   RP = (struct RastPort *) AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   /* is everything there that I need?  */
@@ -245,7 +245,7 @@
   {
     if (NULL != L ) FreeMem(L , sizeof(struct Layer));
     if (NULL != RP) FreeMem(RP, sizeof(struct RastPort));
-    if (NULL != CR) FreeMem(CR, sizeof(struct ClipRect));
+    if (NULL != CR) _FreeClipRect(CR, li);
     L = NULL;
   }
 

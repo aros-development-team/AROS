@@ -25,9 +25,7 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-#undef kprintf
+extern struct ExecBase * SysBase;
 
 /*
  *  Sections:
@@ -57,11 +55,9 @@
  * that use stack passing, can use these versions.
  */
 
-AROS_UFH4(void, BltRPtoCR,
-    AROS_UFHA(struct RastPort *,   rp,         A0),
-    AROS_UFHA(struct ClipRect *,   cr,         A1),
-    AROS_UFHA(ULONG,               Mode,       D0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void BltRPtoCR(struct RastPort *    rp,
+               struct ClipRect *    cr,
+               ULONG                Mode)
 {
     BltBitMap(rp->BitMap, cr->bounds.MinX, cr->bounds.MinY,
 	      cr->BitMap, cr->bounds.MinX & 0xf, 0,
@@ -70,11 +66,9 @@ AROS_UFH4(void, BltRPtoCR,
 	      Mode, ~0, NULL);
 }
 
-AROS_UFH4(void, BltCRtoRP,
-    AROS_UFHA(struct RastPort *,   rp,         A0),
-    AROS_UFHA(struct ClipRect *,   cr,         A1),
-    AROS_UFHA(ULONG,               Mode,       D0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void BltCRtoRP(struct RastPort *   rp,
+               struct ClipRect *   cr,
+               ULONG               Mode)
 {
     BltBitMap(cr->BitMap, cr->bounds.MinX & 0xf, 0,
 	      rp->BitMap, cr->bounds.MinX, cr->bounds.MinY,
@@ -97,54 +91,14 @@ struct LayerHookMsg
     LONG OffsetX, OffsetY;
 };
 
-AROS_UFH8(void, CallLayerHook,
-    AROS_UFHA(struct Hook *,       h,          A2),
-    AROS_UFHA(struct Layer *,      l,          D0),
-    AROS_UFHA(struct RastPort *,   rp,         A0),
-    AROS_UFHA(struct Rectangle *,  r1,         A1),
-    AROS_UFHA(struct Rectangle *,  r2,         A3),
-    AROS_UFHA(WORD,                BaseX,      D1),
-    AROS_UFHA(WORD,                BaseY,      D2),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    DB2(bug("CallLayerHook(h@$%lx l@$%lx rp@$%lx r1@$%lx r2@$%lx BaseX=%d BaseY=%d\n",
-	h, l, rp, r1, r2, BaseX, BaseY));
-
-    if(h == LAYERS_BACKFILL)
-    {
-	DB2(bug("ClearRect(F %d-%d T %d-%d)\n", r1->MinX, r1->MinY, r1->MaxX, r1->MaxY));
-
-	ClearRect(rp, r1, LayersBase);
-    }
-
-    else if(h != LAYERS_NOBACKFILL)
-    {
-	struct LayerHookMsg lhm =
-	{
-	    l,
-	    r1->MinX,
-	    r1->MinY,
-	    r1->MaxX,
-	    r1->MaxY,
-	    r2->MinX - BaseX,
-	    r2->MinY - BaseY,
-	};
-
-	DB2(bug("Hook(F %d-%d T %d-%d O %d-%d) entry $%lx sub $%lx\n", r1->MinX, r1->MinY, r1->MaxX, r1->MaxY,
-	    r2->MinX - BaseX, r2->MinY - BaseY, h->h_Entry, h->h_SubEntry));
-
-	AROS_UFC3(void, h->h_Entry,
-	    AROS_UFCA(struct Hook *,         h,    A0),
-	    AROS_UFCA(struct RastPort *,     rp,   A2),
-	    AROS_UFCA(struct LayerHookMsg *, &lhm, A1)
-	);
-    }
-}
-
 /***************************************************************************/
 /*                                 LAYER                                   */
 /***************************************************************************/
 
+/* Set the priorities of the layer. The farther in the front it is the
+   higher its priority will be.
+ */
+ 
 void SetLayerPriorities(struct Layer_Info * li)
 {
   struct Layer * L = li -> top_layer;
@@ -156,6 +110,20 @@ void SetLayerPriorities(struct Layer_Info * li)
     L = L->back;
   }
 }
+
+struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y)
+{
+  while(l != NULL)
+  {
+    if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
+       y >= l->bounds.MinY && y <= l->bounds.MaxY)
+	     return l;
+    l = l->back;
+  }
+
+  return NULL;
+}
+
 
 /***************************************************************************/
 /*                               LAYERINFO                                 */
@@ -169,9 +137,7 @@ void SetLayerPriorities(struct Layer_Info * li)
  * node structure. See AddLayersResource for more information on the basic
  * operation.
  */
-AROS_UFH2(BOOL, _AllocExtLayerInfo,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+BOOL _AllocExtLayerInfo(struct Layer_Info * li)
 {
     if(++li->fatten_count != 0)
 	return TRUE;
@@ -187,9 +153,7 @@ AROS_UFH2(BOOL, _AllocExtLayerInfo,
 /*
  * Free LayerInfo_extra.
  */
-AROS_UFH2(void, _FreeExtLayerInfo,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void _FreeExtLayerInfo(struct Layer_Info * li)
 {
     if(--li->fatten_count >= 0)
 	return;
@@ -205,9 +169,8 @@ AROS_UFH2(void, _FreeExtLayerInfo,
 /*
  * Initialize LayerInfo_extra and save the current environment.
  */
-AROS_UFH2(ULONG, _InitLIExtra,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+ULONG _InitLIExtra(struct Layer_Info * li,
+                   struct LayersBase * LayersBase)
 {
     struct LayerInfo_extra *lie = li->LayerInfo_extra;
 
@@ -228,29 +191,24 @@ AROS_UFH2(ULONG, _InitLIExtra,
     return 0;
 }
 
-AROS_UFH2(void, ExitLIExtra,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void ExitLIExtra(struct Layer_Info * li,
+                 struct LayersBase * LayersBase)
 {
     struct LayerInfo_extra *lie = li->LayerInfo_extra;
 
-    DB2(bug("ExitLIEExtra($%lx)\n", li));
-
     /* Free all resources associated with the layers. */
-    FreeLayerResources(li, TRUE, LayersBase);
+    FreeLayerResources(li, TRUE);
 
     UnlockLayerInfo(li);
 
-    DB2(bug("ExitLIEExtra: longjmp ahead\n"));
     longjmp(lie->lie_JumpBuf, 1);
 }
 
 /*
  * Dynamically allocate LayerInfo_extra if it isn't already there.
  */
-AROS_UFH2(BOOL, SafeAllocExtLI,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+BOOL SafeAllocExtLI(struct Layer_Info * li,
+                    struct LayersBase * LayersBase)
 {
     LockLayerInfo(li);
 
@@ -258,7 +216,7 @@ AROS_UFH2(BOOL, SafeAllocExtLI,
     if(li->Flags & NEWLAYERINFO_CALLED)
 	return TRUE;
 
-    if(_AllocExtLayerInfo(li, LayersBase))
+    if(_AllocExtLayerInfo(li))
 	return TRUE;
 
     UnlockLayerInfo(li);
@@ -269,12 +227,11 @@ AROS_UFH2(BOOL, SafeAllocExtLI,
 /*
  * Free LayerInfo_extra if it was dynamically allocated, and unlock the LI.
  */
-AROS_UFH2(void, SafeFreeExtLI,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void SafeFreeExtLI(struct Layer_Info * li,
+                   struct LayersBase * LayersBase)
 {
     if(!(li->Flags & NEWLAYERINFO_CALLED))
-	_FreeExtLayerInfo(li, LayersBase);
+	_FreeExtLayerInfo(li);
 
     UnlockLayerInfo(li);
 }
@@ -302,114 +259,10 @@ struct ClipRect * internal_WhichClipRect(struct Layer * L, WORD x, WORD y)
   return NULL;
 }
 
-/*
- * Clear a Rectangle
- */
-AROS_UFH3(void, ClearRect,
-    AROS_UFHA(struct RastPort *,   rp,         A0),
-    AROS_UFHA(struct Rectangle *,  r,          A1),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    BltBitMap(rp->BitMap, r->MinX, r->MinY,
-	      rp->BitMap, r->MinX, r->MinY,
-	      r->MaxX - r->MinX + 1,
-	      r->MaxY - r->MinY + 1,
-	      0, ~0, NULL);
-}
-
 #define MAX(a,b)    ((a) > (b) ? (a) : (b))
 #define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
-/*
- * Fill the Result Rectangle with the coordinates of the area that the two
- * input Rectangles have in common, i.e. calculate a cross-section.
- */
-AROS_UFH3(void, IntersectRects,
-    AROS_UFHA(struct Rectangle *, r1,          A0),
-    AROS_UFHA(struct Rectangle *, r2,          A1),
-    AROS_UFHA(struct Rectangle *, Result,      A2))
-{
-    Result->MinX = MAX(r1->MinX,r2->MinX);
-    Result->MinY = MAX(r1->MinY,r2->MinY);
-    Result->MaxX = MIN(r1->MaxX,r2->MaxX);
-    Result->MaxY = MIN(r1->MaxY,r2->MaxY);
-}
 
-/*
- * Test if some area of one Rectangle is within the other.
- */
-AROS_UFH2(BOOL, Overlap,
-    AROS_UFHA(struct Rectangle *, r1, A0),
-    AROS_UFHA(struct Rectangle *, r2, A1))
-{
-    if(r1->MaxX < r2->MinX ||
-       r1->MinX > r2->MaxX ||
-       r1->MaxY < r2->MinY ||
-       r1->MinY > r2->MaxY)
-	return FALSE;
-    else
-	return TRUE;
-}
-
-/*
- * Test if one ClipRect is completely inside another.
- */
-AROS_UFH2(BOOL, ContainsRect,
-    AROS_UFHA(struct Rectangle *, Bound,     A0),
-    AROS_UFHA(struct Rectangle *, InnerRect, A1))
-{
-    if(Bound->MinX <= InnerRect->MinX &&
-       Bound->MinY <= InnerRect->MinY &&
-       Bound->MaxX >= InnerRect->MaxX &&
-       Bound->MaxY >= InnerRect->MaxY)
-	return TRUE;
-   else
-	return FALSE;
-}
-
-/*
- * Add a ClipRect to the Layer's ClipRect list.
- */
-AROS_UFH3(void, AddClipRect,
-    AROS_UFHA(struct Layer *,      l,          A0),
-    AROS_UFHA(struct ClipRect *,   cr,         A1),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    cr->Next = l->ClipRect;
-
-    l->ClipRect = cr;
-}
-
-/*
- * Copy an area from one ClipRect to another. Only copy the area that both
- * ClipRects have in common.
- */
-AROS_UFH3(void, CopyCR,
-    AROS_UFHA(struct ClipRect *,   source,     A0),
-    AROS_UFHA(struct ClipRect *,   dest,       A1),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    struct Rectangle r;
-
-    DB2(bug("CopyCR($%lx, $%lx)\n", source, dest));
-
-    if(!source->BitMap || !dest->BitMap)
-	return;
-
-    if(!Overlap(&source->bounds, &dest->bounds))
-	return;
-
-    IntersectRects(&source->bounds, &dest->bounds, &r);
-
-    BltBitMap(source->BitMap, r.MinX - (source->bounds.MinX & 0xfff0),
-                              r.MinY -  source->bounds.MinY,
-              dest->BitMap,   r.MinX - (dest->bounds.MinX & 0xfff0),
-                              r.MinY -  dest->bounds.MinY,
-                              r.MaxX - r.MinX + 1, r.MaxY - r.MinY + 1,
-              0xCA, ~0, NULL);
-
-    DB2(bug("CopyCR: done\n"));
-}
 
 /***************************************************************************/
 /*                            RESOURCE HANDLING                            */
@@ -419,11 +272,9 @@ AROS_UFH3(void, CopyCR,
  * Add a resource to the LayerInfo resource list, dynamically allocating
  * extra storage space if needed.
  */
-AROS_UFH4(BOOL, AddLayersResource,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(void *,              ptr,        A1),
-    AROS_UFHA(ULONG,               Size,       D0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+BOOL AddLayersResource(struct Layer_Info * li,
+                       void *              ptr,
+                       ULONG               Size)
 {
     struct ResourceNode *rn;
     struct ResData      *rd;
@@ -432,7 +283,7 @@ AROS_UFH4(BOOL, AddLayersResource,
 	return TRUE;
 
     if(IsListEmpty(&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList))
-	if(!(rn = AddLayersResourceNode(li, LayersBase)))
+	if(!(rn = AddLayersResourceNode(li)))
 	    return FALSE;
 
     /* Check to see if there are some entries left */
@@ -442,7 +293,7 @@ AROS_UFH4(BOOL, AddLayersResource,
 	rn->rn_FreeCnt = 0;
 
 	/* So we add some more space for resources... */
-	if(!(rn = AddLayersResourceNode(li, LayersBase)))
+	if(!(rn = AddLayersResourceNode(li)))
 	    return FALSE;
 
 	/* ...and decrement it for the following operations. */
@@ -460,9 +311,7 @@ AROS_UFH4(BOOL, AddLayersResource,
 /*
  * Add a new node to the LayerInfo resource list.
  */
-AROS_UFH2(struct ResourceNode *, AddLayersResourceNode,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li)
 {
     struct ResourceNode *rn;
 
@@ -488,95 +337,64 @@ AROS_UFH2(struct ResourceNode *, AddLayersResourceNode,
 /*
  * Allocate memory for a ClipRect.
  */
-/*
-AROS_UFH2(struct ClipRect *, AllocClipRect,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+
+struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
 {
-  return AllocLayerStruct(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR, li, LayersBase);
-}
+  struct ClipRect * CR = NULL;
+
+  /* I want to access the list of free ClipRects alone */
+  ObtainSemaphore(&LI->Lock);
+
+/*
+  if (!IsListEmpty(&LI->FreeClipRects))
+  {
+    CR = (struct ClipRect *)RemHead((struct List *)&LI->FreeClipRects);  
+    ReleaseSemaphore(&LI->Lock);
+    CR->lobs = NULL;
+    CR->BitMap = NULL;
+    CR->bounds.MinX = 0;
+    CR->bounds.MinY = 0;
+    CR->bounds.MaxX = 0;
+    CR->bounds.MaxY = 0;
+    CR->Flags = 0;
+    return CR;
+  }
 */
+  /* I am done, anybody else may get a ClipRect now */
+  ReleaseSemaphore(&LI->Lock);
 
-/*
- * Dispose of a ClipRect, free its BitMap if it has one.
- */
-AROS_UFH2(void, DisposeClipRect,
-    AROS_UFHA(struct ClipRect *,   cr,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    if(cr->lobs && cr->BitMap)
-	FreeBitMap(cr->BitMap);
+  CR =  AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
 
-    FreeMem(cr, sizeof(struct ClipRect));
+  return CR;  
 }
 
 /*
- * Free the BitMap of a ClipRect.
+ * Return memory of a ClipRect for later use.
  */
-AROS_UFH2(void, FreeCRBitMap,
-    AROS_UFHA(struct ClipRect *,   cr,         A0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+
+void _FreeClipRect(struct ClipRect   * CR,
+                   struct Layer_Info * LI)
 {
-    struct BitMap *bm;
+  /* I want to access the list of ClipRects alone */
+  ObtainSemaphore(&LI->Lock);
+  
+  /* Add the ClipRect to the list */
+  AddHead((struct List *)&LI->FreeClipRects, (struct Node *)CR);
 
-    DB2(bug("FreeCRBitMap($%lx)\n", cr));
-
-    if((bm = cr->BitMap) == NULL)
-	return;
-
-    cr->BitMap = NULL;
-
-    FreeBitMap(bm);
-
-    DB2(bug("FreeCRBitMap: done\n"));
-}
-
-/*
- * Allocate memory for a BitMap to be added to a ClipRect.
- */
-AROS_UFH3(BOOL, AllocCRBitMap,
-    AROS_UFHA(struct Layer *,      l,          A0),
-    AROS_UFHA(struct ClipRect *,   cr,         A1),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
-{
-    struct BitMap *bm;
-
-    if( (bm = AllocBitMap((cr->bounds.MaxX & ~0xf) - (cr->bounds.MinX & ~0xf) + 16,
-			   cr->bounds.MaxY - cr->bounds.MinY + 1,
-			   l->rp->BitMap->Depth, BMF_MINPLANES, l->rp->BitMap)) )
-    {
-	/* If we succeeded, add the bitmap to the layers resource list. */
-	if(!AddLayersResource(l->LayerInfo, bm, -2, LayersBase))
-	{
-	    FreeBitMap(bm);
-	    bm = NULL;
-	}
-    }
-
-    /* Drop back to previous environment if there was a failure. */
-    if(!bm)
-	ExitLIExtra(l->LayerInfo, LayersBase);
-
-    /* Return error code depending on success or failure. */
-    if( (cr->BitMap = bm) )
-	return TRUE;
-    else
-	return FALSE;
+  /* I am done, anybody else may get a ClipRect now */
+  ReleaseSemaphore(&LI->Lock);
 }
 
 /*
  * Allocate memory of a given size and enter it into the LayerInfo's
  * resource list.
  */
-AROS_UFH4(void *, AllocLayerStruct,
-    AROS_UFHA(ULONG,               Size,       D0),
-    AROS_UFHA(ULONG,               Flags,      D1),
-    AROS_UFHA(struct Layer_Info *, li,         D2),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void * AllocLayerStruct(ULONG               Size,
+                        ULONG               Flags,
+                        struct Layer_Info * li,
+                        struct LayersBase * LayersBase)
 {
     void *mem;
-
-    DB2(bug("AllocLayerStruct($%lx, $%lx, $%lx)\n", Size, Flags, li));
 
     mem = AllocMem(Size, Flags);
 
@@ -589,7 +407,7 @@ AROS_UFH4(void *, AllocLayerStruct,
 	    ExitLIExtra(li, LayersBase);
 
 	/* If not, enter the memory into the layers resource list. */
-	if(!AddLayersResource(li, mem, Size, LayersBase))
+	if(!AddLayersResource(li, mem, Size))
 	{
 	    FreeMem(mem, Size);
 
@@ -598,7 +416,6 @@ AROS_UFH4(void *, AllocLayerStruct,
 	}
     }
 
-    DB2(bug("AllocLayerStruct: done\n"));
     return mem;
 }
 
@@ -606,16 +423,12 @@ AROS_UFH4(void *, AllocLayerStruct,
  * Traverse the ResourceList associated with the LayerInfo, and free all
  * allocated resources.
  */
-AROS_UFH3(void, FreeLayerResources,
-    AROS_UFHA(struct Layer_Info *, li,         A0),
-    AROS_UFHA(BOOL,                flag,       D0),
-    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+void FreeLayerResources(struct Layer_Info * li,
+                        BOOL                flag)
 {
     struct ResourceNode *rn;
     struct ResData      *rd;
     ULONG                count;
-
-    DB2(bug("FreeLayerResources($%lx, %ld)...", li, flag));
 
     while( (rn = (struct ResourceNode *)
 	RemHead((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList)) )
@@ -638,7 +451,6 @@ AROS_UFH3(void, FreeLayerResources,
 	}
     }
 
-    DB2(bug("done\n"));
 }
 
 /***************************************************************************/
