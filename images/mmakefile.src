@@ -7,4 +7,4 @@ include $(TOP)/config/make.cfg
 #MM workbench-images : setup
 
 workbench-images : files-copy
-%copy_files_q files="$(wildcard *.png)" dst=$(AROS_IMAGES)
+%copy_files_q files="$(wildcard *.png) $(wildcard *.jpg)" dst=$(AROS_IMAGES)
