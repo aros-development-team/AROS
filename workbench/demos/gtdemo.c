@@ -1,5 +1,5 @@
 /*
-   (C) 1997 AROS - The Amiga Replacement OS
+   (C) 1997-98 AROS - The Amiga Replacement OS
    $Id$
 
    Desc: Demo for gadtools.library
@@ -45,6 +45,7 @@ struct Gadget *button;
 #define ID_BUTTON 1
 #define ID_CHECKBOX 2
 #define ID_MX 3
+#define ID_CYCLE 4
 
 struct NewGadget buttongad =
 {
@@ -60,6 +61,13 @@ struct NewGadget checkbox =
     ID_CHECKBOX, PLACETEXT_RIGHT, NULL, NULL
 };
 
+struct NewGadget cyclegad =
+{
+    210, 140, 100, 20,
+    NULL, NULL,
+    ID_CYCLE, 0, NULL, NULL
+};
+
 struct NewGadget mxgad =
 {
     210, 60, MX_WIDTH, 20,
@@ -68,6 +76,14 @@ struct NewGadget mxgad =
 };
 
 STRPTR mxlabels[] =
+{
+    "Label 1",
+    "Label 2",
+    "Label 3",
+    NULL
+};
+
+STRPTR cyclelabels[] =
 {
     "Label 1",
     "Label 2",
@@ -129,7 +145,8 @@ BOOL openwin()
 			 WA_IDCMP,
 			     BUTTONIDCMP |
 			     CHECKBOXIDCMP |
-			     MXIDCMP |
+                             CYCLEIDCMP |
+                             MXIDCMP |
                              IDCMP_GADGETUP |
 			     IDCMP_VANILLAKEY |
 			     IDCMP_CLOSEWINDOW |
@@ -151,6 +168,7 @@ struct Gadget *makegadgets(struct Gadget *gad)
 {
     buttongad.ng_VisualInfo = vi;
     checkbox.ng_VisualInfo = vi;
+    cyclegad.ng_VisualInfo = vi;
     mxgad.ng_VisualInfo = vi;
 
     gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
@@ -160,6 +178,9 @@ struct Gadget *makegadgets(struct Gadget *gad)
     gad = CreateGadget(CHECKBOX_KIND, gad, &checkbox,
                        GTCB_Checked, FALSE,
                        GTCB_Scaled, TRUE,
+                       TAG_DONE);
+    gad = CreateGadget(CYCLE_KIND, gad, &cyclegad,
+                       GTCY_Labels, &cyclelabels,
                        TAG_DONE);
     gad = CreateGadget(MX_KIND, gad, &mxgad,
 		       GTMX_Labels, &mxlabels,
