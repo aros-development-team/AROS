@@ -1,6 +1,8 @@
 #!/bin/zsh
-
 START_TIME=$(date -u +"%H:%M") 
+STOP_TIME="N/A"
+UPLOAD_START_TIME="N/A"
+UPLOAD_STOP_TIME="N/A"
 
 export SP=$(dirname $0)
 export CFG_NAME=$1
@@ -82,7 +84,7 @@ if [ ! -z $failed ]; then
     mail_write "The following packages FAILED to build completely:"
     for package in $failed; do
         mail_write $package
-	bzcat $LOG_BASE/$package.log | tail -100 - >/tmp/_aros_build_log_$package
+	bzcat $LOG_BASE/$package.log.bz2 | tail -100 - >/tmp/_aros_build_log_$package
 	ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
     done
     mail_write ""
