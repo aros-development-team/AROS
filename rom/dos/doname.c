@@ -1,24 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/10/08 00:44:07  srittau
-    Set secondary error
-
-    Revision 1.5  1997/01/27 00:36:17  ldp
-    Polish
-
-    Revision 1.4  1996/10/24 15:32:56  aros
-    Added missing include
-
-    Revision 1.3  1996/09/21 14:14:23  digulla
-    Hand DOSBase to DoName()
-
-    Revision 1.2  1996/09/13 17:50:06  digulla
-    Use IPTR
-
-    Revision 1.1  1996/09/11 12:54:45  digulla
-    A couple of new DOS functions from M. Fleischer
 
     Desc:
     Lang: english
@@ -48,6 +30,11 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
 	cur=me->pr_HomeDir;
 	volname=NULL;
 	pathname=name+8;
+    }else if(*name == ':')
+    {
+	cur=me->pr_CurrentDir;
+	volname=NULL;
+	pathname=name+1;
     }else
     {
 	/* Copy volume name */
