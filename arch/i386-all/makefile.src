@@ -65,7 +65,7 @@ test : $(TESTS)
 % : %.c
 	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
 
-coretest : core.c
+coretest : core.c sigcore.h
 	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
 
 runprocess : runprocess.c stackswap.c
