@@ -76,6 +76,9 @@
 
  */
 
+#define  DEBUG  0
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
@@ -1028,6 +1031,8 @@ BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
     if(!foundPrim)
     {
 	/* Back input stream to include the preceding ` in the command name */
+
+	D(bug("Found end of embedded command\n"));
 	fromCs->CS_CurChr--;
 	return FALSE;
     }
@@ -1035,6 +1040,15 @@ BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
     /* Initialize stream data structure for embedded command */
     cl->position = 0;
     cl->size = position - fromCs->CS_CurChr;
+
+    D(bug("Embedded command size = %i\n", cl->size));
+
+    /* Just `` ? */
+    if (cl->size == 0)
+    {
+	return FALSE;
+    }
+
     cl->line = &fromCs->CS_Buffer[fromCs->CS_CurChr];
 
     /* End string */
