@@ -27,7 +27,7 @@ make-dirs :
 	@if $(TEST) ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
 
 copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk \
-	$(SCRIPTDIR)/moveifchanged $(SCRIPTDIR)/genshared \
+	$(SCRIPTDIR)/moveifchanged \
 	$(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk \
 	$(SCRIPTDIR)/genfd.awk $(SCRIPTDIR)/geninline.awk
 
