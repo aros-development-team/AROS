@@ -280,7 +280,8 @@ $(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
 	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
 	    --assign lib="$(ULIBNAME)"
 
-$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+$(OBJDIR)/$(LIBNAME)_init.d : libdefs.h
+$(OBJDIR)/$(LIBNAME)_endtag.d : libdefs.h
 
 libdefs.h : lib.conf $(GENLIBDEF_SCRIPT)
 	@$(ECHO) "Generating $@..."
