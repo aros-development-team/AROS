@@ -11,6 +11,7 @@ FILES := amigademo \
 	exceptiontest \
 	fileseek \
 	filetest \
+	gfx \
 	matchtest \
 	messagetest \
 	scantest \
