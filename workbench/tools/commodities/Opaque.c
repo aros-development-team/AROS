@@ -151,7 +151,7 @@ static void Cleanup(char *msg)
     {
 	CloseCatalog(catalogPtr);
 	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
-	kprintf("Closed locale.library!\n");
+	D(bug("Closed locale.library!\n"));
     }
     
     while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
@@ -159,7 +159,7 @@ static void Cleanup(char *msg)
 	if((*(struct Library **)tmpLibTable->lT_Library))
 	{
 	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	    D(bug("Closed %s!\n", tmpLibTable->lT_Name));
 	}
 
 	tmpLibTable++;
@@ -204,7 +204,7 @@ static void OpenLibs(void)
         );
     }
     else
-	kprintf("Warning: Can't open locale.library V40!\n");
+	D(bug("Warning: Can't open locale.library V40!\n"));
 
     while(tmpLibTable->lT_Library)
     {
@@ -214,7 +214,7 @@ static void OpenLibs(void)
 	    Cleanup(tmpString);
         }
 	else
-	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
+	    D(bug("Library %s opened!\n", tmpLibTable->lT_Name));
 
 	tmpLibTable++;
     }
