@@ -55,12 +55,10 @@
     {
 	Object *obj = NewObjectA(cl, NULL, tags);
 
-	if (!obj)
-	{
-            bug("*** Could not create object of %s\n", classname);
-        }
+	if (obj) return obj;
 
-	return obj;
+        bug("*** Could not create object of %s\n", classname);
+	MUI_FreeClass(classname);
     }
 
     bug("*** Couldn't find %s\n", classname);
