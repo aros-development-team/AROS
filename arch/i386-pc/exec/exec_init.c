@@ -796,45 +796,54 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     ExecBase->DebugAROSBase = PrepareAROSSupportBase();
 
-	for (i=0; i<16; i++)
-		if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
-		{
-			struct Interrupt *is;
-			struct SoftIntList *sil;
-			is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList),
-				MEMF_CLEAR|MEMF_PUBLIC);
-			if( is == NULL )
-			{
-				rkprintf("ERROR: Cannot install Interrupt Servers!\n");
-			}
-			sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+    for (i=0; i<16; i++)
+    {
+        if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+        {
+            struct Interrupt *is;
+            struct SoftIntList *sil;
+            is = AllocMem
+            (
+                sizeof(struct Interrupt) + sizeof(struct SoftIntList),
+                MEMF_CLEAR | MEMF_PUBLIC
+            );
+            if( is == NULL )
+            {
+                rkprintf("ERROR: Cannot install Interrupt Servers!\n");
+            }
+            sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
-			is->is_Code = &IntServer;
-			is->is_Data = sil;
-			NEWLIST((struct List *)sil);
-			SetIntVector(i,is);
-    	}
-		else
-		{
-			struct Interrupt *is;
-			switch (i)
-			{
-				case INTB_SOFTINT :
-					is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR | MEMF_PUBLIC);
-					if (is == NULL)
-					{
-						rkprintf("Error: Cannot install Interrupt Servers!\n");
-//						Alert(AT_DeadEnd | AN_IntrMem);
-					}
-					is->is_Node.ln_Type = NT_SOFTINT;	//INTERRUPT;
-					is->is_Node.ln_Pri = 0;
-					is->is_Node.ln_Name = "SW Interrupt Dispatcher";
-					is->is_Data = NULL;
-					is->is_Code = (void *)SoftIntDispatch;
-					SetIntVector(i,is);
-					break;
-			}
-		}
+            is->is_Code = &IntServer;
+            is->is_Data = sil;
+            NEWLIST((struct List *)sil);
+            SetIntVector(i,is);
+        }
+        else
+        {
+            struct Interrupt *is;
+            switch (i)
+            {
+                case INTB_SOFTINT :
+                    is = AllocMem
+                    (
+                        sizeof(struct Interrupt), 
+                        MEMF_CLEAR | MEMF_PUBLIC
+                    );
+                    if (is == NULL)
+                    {
+                        rkprintf("Error: Cannot install Interrupt Servers!\n");
+                        // Alert(AT_DeadEnd | AN_IntrMem);
+                    }
+                    is->is_Node.ln_Type = NT_SOFTINT;   //INTERRUPT;
+                    is->is_Node.ln_Pri = 0;
+                    is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+                    is->is_Data = NULL;
+                    is->is_Code = (void *)SoftIntDispatch;
+                    SetIntVector(i,is);
+                    break;
+            }
+        }
+    }
 
 #warning TODO: Write CPU detailed detection scheme. Patch proper functions
 
@@ -971,12 +980,12 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     rkprintf("Done\n");
 
-	ExecBase->TDNestCnt++;
-	Permit();
+    ExecBase->TDNestCnt++;
+    Permit();
 #if (AROS_SERIAL_DEBUG >0)
-	SetFunction(&ExecBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
-	SetFunction(&ExecBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
-	RawIOInit();
+    SetFunction(&ExecBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+    SetFunction(&ExecBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
+    RawIOInit();
 #endif
 
 #if ASSUME_FPU
@@ -1238,8 +1247,8 @@ ULONG **exec_RomTagScanner()
                  * higher then present one - this avoids strange locks when 
                  * not all modules have Resident structure in .text section */
                 ptr = ((ULONG)res->rt_EndSkip > (ULONG)ptr) ? (UWORD *)res->rt_EndSkip : ptr + 2;
-		if ((ULONG)ptr & 0x01)
-		   ptr = (UWORD *)((ULONG)ptr+1);
+                if ((ULONG)ptr & 0x01)
+                   ptr = (UWORD *)((ULONG)ptr+1);
                 continue;
             }
         }
@@ -1341,7 +1350,7 @@ struct Library * PrepareAROSSupportBase(void)
     AROSSupportBase->rkprintf = (void *)rkprintf;
     AROSSupportBase->vkprintf = (void *)vkprintf;
 #warning FIXME Add code to read in the debug options
-	
+
     return (struct Library *)AROSSupportBase;
 }
 
