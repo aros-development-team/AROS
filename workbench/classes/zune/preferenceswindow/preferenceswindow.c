@@ -7,16 +7,23 @@
 
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
+#include <dos/dos.h>
 
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
+#include <proto/dos.h>
+
+#include <string.h>
 
 #include "preferenceswindow.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
 
@@ -24,15 +31,95 @@ STRPTR __MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
 #define MSG(id) __MSG(catalog,id)
+
+/*** Utility functions ******************************************************/
+static int get_control_char(const char *label)
+{
+    /* find the control char */
+    int control_char = 0;
+
+    if (label)
+    {
+        const unsigned char *p = (const unsigned char *)label;
+        unsigned char c;
+
+        while ((c = *p++))
+        {
+            if (c == '_')
+            {
+                control_char = ToLower(*p);
+                break;
+            }
+        }
+
+    }
+    return control_char;
+}
+
+#define BUFFERSIZE 512
+
+Object *ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
+{
+    BPTR lock = NULL;
+
+    lock = Lock(imagePath, ACCESS_READ);
+    if (lock != NULL)
+    {
+        
+        TEXT imageSpec[BUFFERSIZE]; 
+        TEXT controlChar = get_control_char(label);
+        
+        imageSpec[0] = '\0';
+        strlcat(imageSpec, "3:", BUFFERSIZE);
+        strlcat(imageSpec, imagePath, BUFFERSIZE);
+        
+        UnLock(lock);
+    
+        return HGroup,
+            ButtonFrame,
+            MUIA_VertWeight,         0,
+            MUIA_Background,         MUII_ButtonBack,
+            MUIA_InputMode,          MUIV_InputMode_RelVerify,
+            MUIA_Group_Spacing,      0,
+            MUIA_Group_SameHeight,   TRUE,
+            controlChar      ? 
+            MUIA_ControlChar : 
+            TAG_IGNORE,              controlChar,
+            
+            Child, VGroup,
+                MUIA_Group_VertSpacing, 0,
+                Child, ImageObject,
+                    MUIA_Image_Spec, (IPTR) imageSpec,
+                End,
+            End,
+            Child, HSpace(4),
+            Child, VGroup,
+                MUIA_Group_VertSpacing, 0,
+                Child, TextObject,
+                    MUIA_Font,                  MUIV_Font_Button,
+                    MUIA_Text_HiCharIdx, (IPTR) '_',
+                    MUIA_Text_Contents,  (IPTR) label,
+                    MUIA_Text_PreParse,  (IPTR) "\33c",
+                End,
+            End,
+        End;    
+        
+    }
+    else
+    {
+        return SimpleButton(label);
+    }
+}
+#undef BUFFERSIZE
 
 /*** Instance data **********************************************************/
 
@@ -62,10 +149,10 @@ IPTR PreferencesWindow$OM_NEW
         { TAG_MORE,                (IPTR) message->ops_AttrList }
     };
     
-    catalog = OpenCatalogA( NULL, "SYS/Zune/PreferencesWindow.catalog", NULL );
+    catalog = OpenCatalogA(NULL, "SYS/Zune/PreferencesWindow.catalog", NULL);
     
-    tag = FindTagItem( WindowContents, message->ops_AttrList );
-    if( tag != NULL )
+    tag = FindTagItem(WindowContents, message->ops_AttrList);
+    if (tag != NULL)
     {
         tag->ti_Tag = TAG_IGNORE;
         contents    = (Object *) tag->ti_Data;
@@ -82,8 +169,8 @@ IPTR PreferencesWindow$OM_NEW
                 MUIA_Group_SameWidth, TRUE,
                 MUIA_Weight,             0,
                 
-                Child, testButton   = SimpleButton( MSG(MSG_TEST) ),
-                Child, revertButton = SimpleButton( MSG(MSG_REVERT) ),
+                Child, testButton   = ImageButton(MSG(MSG_TEST), "THEME:Images/Gadgets/Preferences/Test.png"),
+                Child, revertButton = ImageButton(MSG(MSG_REVERT), "THEME:Images/Gadgets/Preferences/Revert.png"),
             End,
             Child, RectangleObject,
                 MUIA_Weight, 50,
@@ -92,20 +179,26 @@ IPTR PreferencesWindow$OM_NEW
                 MUIA_Group_SameWidth, TRUE,
                 MUIA_Weight,             0,
                 
-                Child, saveButton   = SimpleButton( MSG(MSG_SAVE) ),
-                Child, useButton    = SimpleButton( MSG(MSG_USE) ),
-                Child, cancelButton = SimpleButton( MSG(MSG_CANCEL) ),
+                Child, saveButton   = ImageButton(MSG(MSG_SAVE), "THEME:Images/Gadgets/Preferences/Save.png"),
+                Child, useButton    = ImageButton(MSG(MSG_USE), "THEME:Images/Gadgets/Preferences/Use.png"),
+                Child, cancelButton = ImageButton(MSG(MSG_CANCEL), "THEME:Images/Gadgets/Preferences/Cancel.png"),
             End,
         End,
     End;
     
     message->ops_AttrList = tags;
           
-    self = (Object *) DoSuperMethodA( CLASS, self, (Msg) message );
-    if( self == NULL ) goto error;
+    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+    if (self == NULL) goto error;
     
-    data = INST_DATA( CLASS, self );
+    data = INST_DATA(CLASS, self);
     data->pwd_Catalog = catalog;
+
+    DoMethod
+    ( 
+        self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+        (IPTR) self, 1, MUIM_PreferencesWindow_Cancel 
+    );
     
     DoMethod
     ( 
@@ -136,9 +229,9 @@ IPTR PreferencesWindow$OM_NEW
     return self;
     
 error:
+    if (catalog != NULL) CloseCatalog(catalog);
+    
     return NULL;
-
-    if( catalog != NULL ) CloseCatalog( catalog );
 }
 
 IPTR PreferencesWindow$OM_DISPOSE
@@ -146,9 +239,9 @@ IPTR PreferencesWindow$OM_DISPOSE
     struct IClass *CLASS, Object *self, Msg message 
 )
 {
-    struct PreferencesWindow_DATA *data = INST_DATA( CLASS, self );
+    struct PreferencesWindow_DATA *data = INST_DATA(CLASS, self);
 
-    if( data->pwd_Catalog != NULL ) CloseCatalog( data->pwd_Catalog );
+    if (data->pwd_Catalog != NULL) CloseCatalog(data->pwd_Catalog);
     
-    return DoSuperMethodA( CLASS, self, message );
+    return DoSuperMethodA(CLASS, self, message);
 }
