@@ -86,11 +86,13 @@ struct MUIP_Show                    {ULONG MethodID;};
 #define MUIM_DragQueryExtended      (MUIB_Area | 0x00000002) /* PRIV - returns a object or NULL */
 #define MUIM_Timer                  (MUIB_Area | 0x00000003) /* PRIV */
 #define MUIM_UpdateInnerSizes       (MUIB_Area | 0x00000004) /* PRIV for now */
+#define MUIM_FindAreaObject         (MUIB_Area | 0x00000005) /* PRIV */
 struct  MUIP_Layout                 {ULONG MethodID;};
 struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct  MUIP_DragQueryExtended      {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
 struct  MUIP_Timer                  {ULONG MethodID; }; /* PRIV */
 struct  MUIP_UpdateInnerSizes       {ULONG MethodID; }; /* PRIV */
+struct  MUIP_FindAreaObject         {ULONG MethodID; Object *obj;}; /* PRIV */
 
 struct MUI_DragImage
 {
@@ -159,7 +161,7 @@ struct MUI_ImageSpec_intern;
 struct MUI_AreaData
 {
     struct MUI_RenderInfo *mad_RenderInfo; /* RenderInfo for this object */
-    LONG               mad_FontPreset;     /* MUI font wanted - private */
+    struct MUI_ImageSpec_intern *mad_Background;  /* bg setting - *private* ! */
     struct TextFont   *mad_Font;           /* Font which is used to draw */
     struct MUI_MinMax  mad_MinMax;         /* min/max/default dimensions */
     struct IBox        mad_Box;            /* coordinates and dim of this object after layouted */
@@ -168,33 +170,47 @@ struct MUI_AreaData
     BYTE               mad_subwidth;       /* additional width (frame & innerspacing) */
     BYTE               mad_subheight;      /* additional height (frame & innerspacing) */
     ULONG              mad_Flags;          /* some flags; see below */
+// 40 bytes up to here
 
     /* The following data is private */
     /* START PRIV */
-    WORD               mad_InputMode;      /* how to react to events */
-    WORD               mad_Frame;          /* frame setting -- private */
+// offset 40
+    UWORD              mad_HorizWeight;    /* weight values for layout. default 100 */
+    UWORD              mad_VertWeight;
+// offset 48
+    ULONG              mad_IDCMP;          /* IDCMP flags this listens to (for HandleInput) */
+// offset 52
+    CONST_STRPTR       mad_BackgroundSpec;
+// offset 56
+    LONG               mad_FontPreset;     /* MUIV_Font_xxx */
+// offset 76
     CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
+// Inner values at offset 88 in MUI:
+    BYTE               mad_HardILeft;      /* hardcoded inner values */
+    BYTE               mad_HardITop;
+    BYTE               mad_HardIRight;
+    BYTE               mad_HardIBottom;
+// offset 94
+    BYTE               mad_Frame;          /* frame setting -- private */
+// offset 95
+    BYTE               mad_InputMode;      /* how to react to events */
+// offset 96
+    TEXT               mad_ControlChar;   /* key shortcut */
+
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
     CONST_STRPTR       mad_HardWidthTxt;
     CONST_STRPTR       mad_HardHeightTxt;
-    struct MUI_ImageSpec_intern *mad_Background;  /* bg setting */
+// TODO: move SelBack in RenderInfo as it's common for all objects
     struct MUI_ImageSpec_intern *mad_SelBack;     /* selected state background */
-    CONST_STRPTR       mad_BackgroundSpec;
-    WORD               mad_HardILeft;      /* hardcoded inner values */
-    WORD               mad_HardIRight;
-    WORD               mad_HardITop;
-    WORD               mad_HardIBottom;
-    UWORD              mad_HorizWeight;    /* weight values for layout */
-    UWORD              mad_VertWeight;
     CONST_STRPTR       mad_ShortHelp;      /* bubble help */
+// there's an event handler at 114
     struct MUI_EventHandlerNode mad_ehn;
     struct MUI_InputHandlerNode mad_Timer; /* MUIA_Timer */
     ULONG              mad_Timeval;       /* just to trigger notifications */
     struct MUI_EventHandlerNode mad_ccn;  /* gross hack for control char */
     Object            *mad_ContextMenu;   /* menu strip */
     struct ZText      *mad_TitleText;     /* frame title */
-    TEXT               mad_ControlChar;   /* key shortcut */
     LONG               mad_ClickX;        /* x position of the initial SELECTDOWN click */
     LONG               mad_ClickY;        /* y position of the intiial SELECTDOWN click */
     struct ZMenu      *mad_ContextZMenu;
@@ -202,8 +218,8 @@ struct MUI_AreaData
 
     LONG               mad_DisableCount; /* counts number of disables */
     /* END PRIV */
+// only 148 bytes for the struct in MUI !
 };
-
 
 /* Flags during MUIM_Draw */
 #define MADF_DRAWOBJECT        (1<< 0) /* draw object completely */
@@ -225,7 +241,7 @@ struct MUI_AreaData
 #define MADF_DRAWFRAME         (1<< 11) /* PRIV - nearly mui verified */
 #define MADF_DRAW_XXX_2        (1<< 12) /* PRIV - mui verified, what use ? */
 #define MADF_DROPABLE          (1<< 13) /* PRIV - mui verified */
-#define MADF_CANDRAW           (1<< 14) /* PRIV - zune-specific */
+#define MADF_CANDRAW           (1<< 14) /* PRIV - roughly mui equivalent */
 #define MADF_DISABLED          (1<< 15) /* PRIV - mui verified */
 #define MADF_SHOWSELSTATE      (1<< 16) /* PRIV - mui verified */
 #define MADF_PRESSED           (1<< 17) /* PRIV - nearly mui verified */
@@ -248,6 +264,7 @@ struct MUI_AreaData
     | MADF_DRAWFRAME | MADF_DRAW_XXX_2)
 
 
+// offset 94 (byte) (frame << 1) (lsb is SETUP_DONE flag)
 enum {
     MUIV_Frame_None = 0,
     MUIV_Frame_Button,
@@ -267,12 +284,15 @@ enum {
     MUIV_Frame_Count,
 };
 
+// offset 95
 enum {
-    MUIV_InputMode_None = 0,
-    MUIV_InputMode_RelVerify,
-    MUIV_InputMode_Immediate,
-    MUIV_InputMode_Toggle,
+    MUIV_InputMode_None = 0,  // 0x00
+    MUIV_InputMode_RelVerify, // 0x40 (1<<6)
+    MUIV_InputMode_Immediate, // 0x80 (1<<7)
+    MUIV_InputMode_Toggle,    // 0xc0 (1<<7 | 1<<6)
 };
+
+
 
 enum {
     MUIV_DragQuery_Refuse = 0,
