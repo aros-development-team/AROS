@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,7 +18,7 @@
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PopobjectData
+struct Popobject_DATA
 {
     int light;
     int vol;
@@ -39,7 +37,7 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
-    struct MUI_PopobjectData *data = (struct MUI_PopobjectData *)hook->h_Data;
+    struct Popobject_DATA *data = (struct Popobject_DATA *)hook->h_Data;
     Object *string = (Object*)msg[0];
 
     if (!data->wnd)
@@ -82,7 +80,7 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
-    struct MUI_PopobjectData *data= (struct MUI_PopobjectData *)hook->h_Data;
+    struct Popobject_DATA *data= (struct Popobject_DATA *)hook->h_Data;
     Object *string = (Object*)msg[0];
     LONG suc = (LONG)msg[1];
 
@@ -95,13 +93,9 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
     return 0;
 }
 
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PopobjectData   *data;
+    struct Popobject_DATA   *data;
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -162,24 +156,18 @@ static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Popobject_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Popobject__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PopobjectData *data = INST_DATA(cl, obj);
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
 
     if (!data->wnd && data->object)
 	MUI_DisposeObject(data->object);
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Popobject_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PopobjectData *data = INST_DATA(cl, obj);
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
     /* parse initial taglist */
@@ -212,20 +200,14 @@ static IPTR Popobject_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static IPTR Popobject_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
     if (!rc) return 0;
     return rc;
 }
 
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static IPTR Popobject_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -235,22 +217,20 @@ BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Popobject_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Popobject_Dispose(cl, obj, msg);
-	case OM_SET: return Popobject_Set(cl, obj, (struct opSet *)msg);
-	case MUIM_Show: return Popobject_Show(cl, obj, (struct MUIP_Show*)msg);
-	case MUIM_Hide: return Popobject_Hide(cl, obj, (struct MUIP_Hide*)msg);
+	case OM_NEW:     return Popobject__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Popobject__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:     return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
+	case MUIM_Show:  return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+	case MUIM_Hide:  return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide*)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Popobject_desc = { 
+const struct __MUIBuiltinClass _MUI_Popobject_desc =
+{ 
     MUIC_Popobject, 
     MUIC_Popstring, 
-    sizeof(struct MUI_PopobjectData), 
+    sizeof(struct Popobject_DATA), 
     (void*)Popobject_Dispatcher 
 };
