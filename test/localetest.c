@@ -9,8 +9,8 @@
 
 
 
-struct Library * LocaleBase;
-struct Library * UtilityBase;
+struct LocaleBase * LocaleBase;
+struct UtilityBase * UtilityBase;
 
 void printchar(struct Hook * myhook,
                char c,
@@ -162,8 +162,8 @@ void getstringtest(struct Locale * locale)
 
 int main(void)
 {
-  LocaleBase = OpenLibrary("locale.library",0);
-  UtilityBase = OpenLibrary("utility.library",0);  
+  LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",0);
+  UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library",0);  
   
   if (LocaleBase)
   {
@@ -180,7 +180,7 @@ int main(void)
     printf("A library could not be opened!\n");
   }
 
-  if (LocaleBase) CloseLibrary(LocaleBase);
-  if (UtilityBase) CloseLibrary(UtilityBase);
+  if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
+  if (UtilityBase) CloseLibrary((struct Library *)UtilityBase);
   return 0;
 }
