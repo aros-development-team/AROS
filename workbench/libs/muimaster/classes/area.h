@@ -85,10 +85,12 @@ struct MUIP_Show                    {ULONG MethodID;};
 #define MUIM_DrawParentBackground   (MUIB_Area | 0x00000001)
 #define MUIM_DragQueryExtended      (MUIB_Area | 0x00000002) /* PRIV - returns a object or NULL */
 #define MUIM_Timer                  (MUIB_Area | 0x00000003) /* PRIV */
+#define MUIM_UpdateInnerSizes       (MUIB_Area | 0x00000004) /* PRIV for now */
 struct  MUIP_Layout                 {ULONG MethodID;};
 struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct  MUIP_DragQueryExtended      {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
 struct  MUIP_Timer                  {ULONG MethodID; }; /* PRIV */
+struct  MUIP_UodateInnerSizes       {ULONG MethidID; }; /* PRIV */
 
 struct MUI_DragImage
 {
