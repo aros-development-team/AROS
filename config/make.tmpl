@@ -32,10 +32,10 @@
 # Assemble the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
 %define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Assembling %(path)%(from)..."
+	@$(ECHO) "Assembling %(path)$(notdir %(from))..."
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(ECHO) "%(path)$(notdir %(from)): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
@@ -51,7 +51,7 @@
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
 %define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Compiling %(path)%(from)..."
+	@$(ECHO) "Compiling %(path)$(notdir %(from))..."
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
@@ -67,7 +67,7 @@
 %end
 
 #------------------------------------------------------------------------------
-%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
+%define link_q cmd=$(CC) opt=$(LDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
 	@$(ECHO) "Linking %(to)..."
 	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -268,6 +268,7 @@ $(ENDFUNC) : $(END_FILE).c libdefs.h
 # Common rules for all makefiles
 %define common
 # Delete generated makefiles
+#MM
 clean ::
 	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
@@ -303,8 +304,8 @@ asm : $(foreach f,%(opt),$(f).s) all
 # generate asm files from c files (for debugging purposes)
 %define ctoasm_q
 %.s : %.c
-	@$(ECHO) "Generating $(CURDIR)/$@..."
-	@$(CC) -S $(CFLAGS) $< -c -o $@
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(TARGET_CC) -S $(CFLAGS) $< -c -o $@
 %end
 
 #------------------------------------------------------------------------------
@@ -1073,43 +1074,14 @@ endif
 %end
 
 #------------------------------------------------------------------------------
-# Set up for compiling machine dependant files. This requires that $(CPU),
-# and $(ARCHDIRS) are set correctly before calling this macro. This should
-# be done in make.cfg anyway.
-#
-# BTW There is no need to specify $(TOP)/$(CURDIR) for %.s or %.S.
-# Note you must run %make_vpath setup before you do this.
-
-%define make_vpath
-_ARCH := $(foreach d,$(ARCHDIRS),arch/$(d))
-_DIRS := $(foreach d,$(_ARCH) cpu/$(CPU),$(TOP)/$(d)/$(CURDIR))
-vpath %.c
-vpath %.s
-vpath %.S
-
-vpath %.c $(_DIRS) $(TOP)/$(CURDIR)
-vpath %.s $(_DIRS) $(TOP)/$(CURDIR)
-vpath %.S $(_DIRS) $(TOP)/$(CURDIR)
--include $(foreach d,$(_DIRS),$(d)/makefile.inc)
-
-$(TOP)/%/makefile.inc : $(TOP)/%/makefile.src
-	@$(GENMF) $(TOP)/config/make.tmpl < $< > $@
-
-%end
-
-#------------------------------------------------------------------------------
 # Do some setup common to all compiling directories.
 #
 #
 %define make_common_setup
 %safe_define var=OBJDIR value="$(GENDIR)/$(CURDIR)"
-
-%end
-#------------------------------------------------------------------------------
-# Setup things for running vpath style directories.
-#
-#
-%define make_vpath_setup
+%safe_define var=CFLAGS value="$(USER_CFLAGS) $(TARGET_CFLAGS) $(INCLUDES) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS"
+%safe_define var=AFLAGS value="$(USER_AFLAGS) $(TARGET_AFLAGS) $(INCLUDES) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS"
+%safe_define var=LDFLAGS value="$(USER_LDFLAGS) $(TARGET_LDFLAGS)"
 
 %end
 
@@ -1182,7 +1154,6 @@ $(GENINCDIR)/%(path)/%.h : %.h
 %(mmake)-clean : clean
 
 %make_common_setup
-%make_vpath_setup
 
 %end
 
@@ -1193,9 +1164,6 @@ $(GENINCDIR)/%(path)/%.h : %.h
 %define make_linklib dflags=$(CFLAGS)
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
-CFLAGS  := $(USER_CFLAGS) $(TARGET_CFLAGS) -I$(AROS_INCLUDES)
-LDFLAGS := $(USER_LDFLAGS) $(TARGET_CFLAGS)
 
 linklibs-$(LIB): setup $(LIBDIR)/lib$(LIB).a
 	@$(NOP)
@@ -1247,9 +1215,6 @@ clean ::
 # Common code for building programs
 #
 %define make_prog_common dflags=$(CFLAGS) dir=/A
-CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
-LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
-
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
@@ -1279,8 +1244,11 @@ clean ::
 #MM
 %(mmake)-quick : %(mmake)
 
+# This will prevent the make_common_setup defines from taking effect
+CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
+LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
+
 %make_common_setup
-%make_vpath_setup
 %make_use_linklibs
 
 %end
@@ -1346,13 +1314,339 @@ ifdef USE_MLIB
 %(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
 endif
 
-#this MUST be always linked
+# These must always be linked
 %(libs) := $(%(libs)) -lautoinit
 %(deps) := $(%(deps)) $(LIBDIR)/libautoinit.a
 
-%(libs) := $(%(libs)) %(postlibs)
+%(libs) := $(%(deps)) %(postlibs)
 %end
 
+#------------------------------------------------------------------------------
+#   Create a shared object (ie library, device, gadget, hidd, ...)
+#
+%define make_module_setup mmake=/A
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-object-quick %(mmake)-linklib-quick
+#MM
+%(mmake)-clean : clean
+
+%make_common_setup
+%safe_define var=MODULE value="$(MODNAME).$(MODTYPE)"
+
+# Depending upon the value of MODTYPE, much changes...
+MOD_DIR := bollocks
+ifeq ($(MODTYPE),library)
+MOD_DIR := $(AROS_LIBS)
+endif
+ifeq ($(MODTYPE),device)
+MOD_DIR := $(AROS_DEVS)
+endif
+ifeq ($(MODTYPE),resource)
+MOD_DIR := $(AROS_MODULES)
+endif
+ifeq ($(MODTYPE),gadget)
+MOD_DIR := $(AROS_GADGETS)
+endif
+ifeq ($(MODTYPE),class)
+MOD_DIR := $(AROS_CLASSES)
+endif
+ifeq ($(MODTYPE),datatype)
+MOD_DIR := $(AROS_DATATYPES)
+endif
+ifeq ($(MODTYPE),handler)
+MOD_DIR := $(AROS_FS)
+endif
+ifeq ($(MODTYPE),language)
+MOD_DIR := $(AROS_LOCALE)/Languages
+endif
+ifeq ($(MODTYPE),module)
+MOD_DIR := $(AROS_MODULES)
+endif
+ifeq ($(MOD_DIR),bollocks)
+$(error You have to set MODTYPE to something other than $(MODTYPE))
+endif
+
+# Save these because they may be changed later.
+FILES_ALL := $(foreach f,$(FILES),$(f).c)
+FUNCS_ALL := $(foreach f,$(FUNCS),$(f).c)
+
+%end
+
+%define make_module_common dflags=$(CFLAGS)
+# You need to put the $(OBJDIR) rules first, because they are more specific.
+# and that affects the way that GNU Make binds its dependencies.
+#
+# Note that if you wish to use a $(OBJDIR)/%.c rather than $(ARCH)/blah/%.c
+# or $(CPU)/blah/%.c then you will have to specify that manually. Shouldn't
+# happen though.
+$(OBJDIR)/%.o : $(OBJDIR)/%.c
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
+
+$(OBJDIR)/%.so : $(OBJDIR)/%.c
+	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+$(OBJDIR)/%.d : $(OBJDIR)/%.c
+	%mkdepend_q flags=%(dflags)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
+
+$(OBJDIR)/%.so : %.c
+	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=%(dflags)
+
+ifeq ($(USE_LIBDEFS),yes)
+libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
+	@$(ECHO) "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+endif
+
+#MM
+setup ::
+	%mkdirs_q  $(OBJDIR) $(LIBDIR) $(MOD_DIR)
+
+clean ::
+	-@$(RM) $(OBJDIR)
+
+%end
+
+#-------------------------------------------------------------------------
+# Link a module based upon a number of arguments and the standard $(LIBS)
+# and $(DEPLIBS) make variables.
+#
+%define link_module_q err="$(notdir $@).err" objs=/A
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS) \
+	    $(GENMAP) $(OBJDIR)/$(MODULE).map \
+	    %(objs) $(LIBS) \
+	    -o $@ 2>&1 | tee $(OBJDIR)/%(err)
+	@if $(TEST) ! -s $(OBJDIR)/%(err) ; then $(RM) $(OBJDIR)/%(err) ; fi
+	@$(STRIP) $@
+%end
+
+#-------------------------------------------------------------------------------
+#   Generate a module like a normal shared library/device/etc that consists
+#   of multiple files, with an init file, function table, and an endtag at the
+#   end.
+#
+%define make_module dflags=$(CFLAGS) mmake=/A
+%safe_define var=INIT_FILE value="$(MODNAME)_init"
+%safe_define var=END_FILE value="endtag"
+%safe_define var=USE_CPAK value="$(USE_CPAK_DEFAULT)"
+%safe_define var=USE_FUNCTABLE value="yes"
+%safe_define var=USE_ENDTAG value="yes"
+%safe_define var=USE_LIBDEFS value="yes"
+
+#MM
+%(mmake)-module-quick : %(mmake)-module
+#MM
+%(mmake)-linklib-quick : %(mmake)-linklib
+
+#MM %(mmake)-module : %(mmake)
+%(mmake)-module : $(MOD_DIR)/$(MODULE)
+
+#MM %(mmake)-linklib : %(mmake)
+ifeq ($(MAKE_SHLIB),yes)
+%(mmake)-linklib : $(AROSDIR)/lib/lib$(MODNAME).so
+else
+%(mmake)-linklib : $(AROSDIR)/lib/lib$(MODNAME).a
+endif
+
+# Munge the linklibs into something that is useful for linking. Don't put
+# this before the inclusion of the config/ stuff. This is so that they
+# can change the linklibs if necessary.
+%make_use_linklibs
+
+# The values of $(OBJS)/$(DEPS) depending upon whether I
+# am using cpak or not. This will probably need to change at a later date
+# if we have any processors that are different from cpak.
+#
+# Also, there is the bizarre case of a library with no functions. The
+# gadgets are often known for doing this. So I check for that as well.
+
+ifneq ($(FUNCS),)
+  ifeq ($(USE_CPAK),yes)
+    F_NAME := functions
+  else
+    F_NAME := $(FUNCS)
+  endif
+else
+   USE_FUNCTABLE := no
+   F_NAME := 
+endif
+
+ifeq ($(USE_LIBDEFS),no)
+USE_FUNCTABLE := no
+USE_ENDTAG := no
+endif
+
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(F_NAME), $(OBJDIR)/$(f).d)
+OBJS := $(foreach f,$(FILES) $(F_NAME), $(OBJDIR)/$(f).o)
+SOBJS := $(foreach f,$(FILES) $(F_NAME), $(OBJDIR)/$(f).so)
+
+INIT_OBJ := $(OBJDIR)/$(INIT_FILE).o
+INIT_SOBJ := $(OBJDIR)/$(INIT_FILE).so
+
+ifeq ($(USE_FUNCTABLE),yes)
+FUNC_OBJ := $(OBJDIR)/functable.o
+FUNC_SOBJ := $(OBJDIR)/functable.so
+endif
+ifeq ($(USE_ENDTAG),yes)
+END_OBJ := $(OBJDIR)/endtag.o
+END_SOBJ := $(OBJDIR)/endtag.so
+endif
+
+# Generate the module from the object files.
+ifeq ($(NO_MODULE),yes)
+$(MOD_DIR)/$(MODULE) :
+	$(error You cannot make $(MODULE) into a module)
+else
+$(MOD_DIR)/$(MODULE) : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ) $(DEPLIBS)
+	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ)"
+endif
+
+# Make a library. Not sure about the RHS yet.
+$(AROSDIR)/lib/lib$(MODNAME).a : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ)
+	%mklib_q from=$^
+
+$(AROSDIR)/lib/lib$(MODNAME).so : $(INIT_SOBJ) $(FUNC_SOBJ) $(SOBJS) $(END_SOBJ)
+	@$(ECHO) "Linking $(notdir $@)..."
+	@$(SHARED_LD) $(SHARED_LDFLAGS) -o $@ $^
+
+# Make a function table
+ifeq ($(USE_FUNCTABLE),yes)
+$(OBJDIR)/functable.c : $(FUNCS_ALL) $(BINDIR)/scripts/genfunctable.awk libdefs.h
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCS_ALL) > $@
+endif
+
+# Make the end tag
+ifeq ($(USE_ENDTAG),yes)
+$(OBJDIR)/endtag.c : libdefs.h
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+endif
+
+$(OBJDIR)/functions.c : $(foreach f,$(FUNCS),$(f).c)
+	%mkdir_q $(OBJDIR)
+	@$(CPAK) $(patsubst %.c,%,$^)
+	@$(MV) functions.c functions.h $(OBJDIR)
+
+%asm_rule "$(INIT_FILE) $(FILES) $(FUNCS)"
+%ctoasm_q
+
+clean ::
+	-@$(RM) $(AROS_MODULES)/$(MODULE) \
+	    $(AROSDIR)/lib/lib$(MODNAME).a $(AROSDIR)/lib/lib$(MODNAME).so
+
+%make_module_common dflags=%(dflags)
+%end
+
+#--------------------------------------------------------------------------
+#   Compile the files $(MODULES) based on single files. It will take a file
+#   %.c -> %.o -> %.$(MODTYPE) without generating any of the other regular
+#   cruft associated with modules. It also can perform the rule:
+#   %.c -> %.o -> %, for those people who don't want an extension.
+#
+%define make_module_single mmake=/A dflags=$(CFLAGS)
+# Munge the linklibs into something that is useful for linking. Don't put
+# this before the inclusion of the config/ stuff. This is so that they
+# can change the linklibs if necessary.
+%make_use_linklibs
+
+$(MOD_DIR)/%.$(MODTYPE) : $(OBJDIR)/%.o $(DEPLIBS)
+	%link_module_q objs=$(OBJDIR)/$*.o
+
+$(MOD_DIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
+	%link_module_q objs=$(OBJDIR)/$*.o
+
+DEPS := $(OBJDIR)/$(MODNAME).d
+
+%ctoasm_q
+
+# Use the common rules to generate the rest of the files.
+%make_module_common dflags=%(dflags)
+%end
+
+%define make_lib_includes name=$(MODNAME) hasrt=
+#MM includes-generate : setup-includes
+includes-generate : setup \
+	    $(INCDIR)/clib/%(name)_protos.h \
+	    $(INCDIR)/defines/%(name).h \
+	    $(INCDIR)/inline/%(name).h \
+	    $(INCDIR)/proto/%(name).h \
+	    $(GENINCDIR)/clib/%(name)_protos.h \
+	    $(GENINCDIR)/defines/%(name).h \
+	    $(GENINCDIR)/inline/%(name).h \
+	    $(GENINCDIR)/proto/%(name).h
+	@$(NOP)
+
+clean ::
+	@$(RM) \
+	    $(INCDIR)/clib/%(name)_protos.h \
+	    $(INCDIR)/defines/%(name).h \
+	    $(INCDIR)/inline/%(name).h \
+	    $(INCDIR)/proto/%(name).h \
+	    $(GENINCDIR)/clib/%(name)_protos.h \
+	    $(GENINCDIR)/defines/%(name).h \
+	    $(GENINCDIR)/inline/%(name).h \
+	    $(GENINCDIR)/proto/%(name).h
+
+_HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h \
+	    $(FUNCS_ALL) \
+	    $(SCRIPTDIR)/genshared $(SCRIPTDIR)/genclib.awk \
+	    $(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/geninline.awk
+
+$(GENINCDIR)/clib/%(name)_protos.h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -clib %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
+
+$(GENINCDIR)/defines/%(name).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -defines %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
+
+$(GENINCDIR)/inline/%(name).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -inline %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
+
+$(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -proto %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
+
+$(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
+	$(CP) $< $@
+
+$(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
+	$(CP) $< $@
+
+$(INCDIR)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
+	$(CP) $< $@
+
+$(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
+	$(CP) $< $@
+%end
+
+%define make_hidd_stubs cflags=$(CFLAGS) dflags=$(CFLAGS)
+STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
+STUBS_OBJ := $(foreach f,$(STUBS),$(OBJDIR)/$(f).o)
+STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
+HIDD_LIB := $(AROS_LIBDIR)/libhidd.a 
+
+$(HIDD_LIB) : $(STUBS_OBJ)
+	%mklib_q
+
+$(STUBS_OBJ) : $(STUBS_SRC)
+	%compile_q cmd=$(TARGET_CC) opt=%(cflags)
+
+$(STUBS_DEP) : $(STUBS_SRC)
+	%mkdepend_q flags=%(dflags)
+
+setup ::
+	%mkdirs_q $(OBJDIR) $(LIBDIR)
+
+clean ::
+	-@$(RM) $(HIDD_LIB) $(OBJDIR)
+
+DEPS := $(DEPS) $(STUBS_DEP)
+
+%end
 #------------------------------------------------------------------------------
 #   Hey! iaint says don't add things here, add them before my other message.
 #   The reason is that I'm trying to work out which of macros are still
