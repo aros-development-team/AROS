@@ -95,5 +95,5 @@ for file in $LOG_BASE/*.log; do
 done
 
 # Prune old nightly builds
-find Archive -maxdepth 1 -ctime +4 | xargs rm -rf
+find Archive -maxdepth 1 -ctime +2 | xargs rm -rf
 
