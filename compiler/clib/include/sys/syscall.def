@@ -172,3 +172,5 @@ SYSTEM_CALL (__arosc_nixmain)
 SYSTEM_CALL (spawnv)
 SYSTEM_CALL (chown)
 SYSTEM_CALL (spawnvp)
+SYSTEM_CALL (readlink)
+

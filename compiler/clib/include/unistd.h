@@ -51,6 +51,8 @@ int execvp(const char *file, char *const argv[]);
 uid_t getuid(void);
 uid_t geteuid(void);
 
+int readlink(const char *path, char *buf, int bufsiz);
+
 __END_DECLS
 
 /* Standard file descriptors */
