@@ -114,7 +114,7 @@ int ReadILBM (struct IFFHandle * iff,
 	    return FALSE;
 	}
 
-	printf ("row %d, %08lx\n", row, *(ULONG*)planes[0]);
+	/* printf ("row %d, %08lx\n", row, *(ULONG*)planes[0]); */
 
 	for (x=0; x<Width; x++)
 	{
