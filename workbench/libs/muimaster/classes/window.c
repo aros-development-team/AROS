@@ -1882,7 +1882,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	{
 	    //D(bug("HandleRawkey: (others) invoking on %p (ehn=%p) event=%p muikey=%p\n",
 	    //ehn->ehn_Object, ehn, event, muikey));
-	    res = InvokeEventHandler(ehn, event, muikey);
+	    res = InvokeEventHandler(ehn, event, MUIKEY_NONE);
 	    //D(bug("HandleRawkey: (others) got res=%d\n", res));
 	    if (res & MUI_EventHandlerRC_Eat)
 		return;
