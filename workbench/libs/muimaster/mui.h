@@ -432,6 +432,9 @@ struct MUI_PenSpec {
 #include "classes/popasl.h"
 #endif
 
+#ifndef _MUI_CLASSES_SETTINGSGROUP_H
+#include "classes/settingsgroup.h"
+#endif
 
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
