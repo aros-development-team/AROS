@@ -1,4 +1,5 @@
 #include <exec/types.h>
+#include <dos/dos.h>
 
 //#include <libraries/mui.h>
 #include <proto/exec.h>
