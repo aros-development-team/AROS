@@ -789,15 +789,16 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	    error=open_(emulbase,
 			(struct filehandle **)&iofs->IOFS.io_Unit,
-			(char *)iofs->io_Args[0],iofs->io_Args[1]);
+			iofs->io_Union.io_OPEN.io_Filename,
+                        iofs->io_Union.io_OPEN.io_FileMode);
 	    break;
 
 	case FSA_OPEN_FILE:
 	    error=open_file(emulbase,
 			    (struct filehandle **)&iofs->IOFS.io_Unit,
-			    (char *)iofs->io_Args[0],
-			    iofs->io_Args[1],
-			    iofs->io_Args[2]);
+			    iofs->io_Union.io_OPEN_FILE.io_Filename,
+			    iofs->io_Union.io_OPEN_FILE.io_FileMode,
+			    iofs->io_Union.io_OPEN_FILE.io_Protection);
 	    break;
 
 	case FSA_CLOSE:
@@ -808,9 +809,9 @@ AROS_LH1(void, beginio,
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
-		iofs->io_Args[0]=isatty(fh->fd);
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=isatty(fh->fd);
 	    else
-		iofs->io_Args[0]=0;
+		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive=0;
 	    break;
 	}
 
@@ -827,9 +828,9 @@ AROS_LH1(void, beginio,
 		    HIDDM_WaitForIO, fh->fd, HIDDV_UnixIO_Read);
 
 		if (error == 0) {
-		    iofs->io_Args[1] = read (fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
+		    iofs->io_Union.io_READ.io_Length = read (fh->fd,iofs->io_Union.io_READ.io_Buffer,iofs->io_Union.io_READ.io_Length);
 
-		    if (iofs->io_Args[1]<0)
+		    if (iofs->io_Union.io_READ.io_Length<0)
 			error=err_u2a();
 		}
 		else
@@ -850,8 +851,8 @@ AROS_LH1(void, beginio,
 	    {
 		if(fh->fd==STDIN_FILENO)
 		    fh->fd=STDOUT_FILENO;
-		iofs->io_Args[1]=write(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
-		if(iofs->io_Args[1]<0)
+		iofs->io_Union.io_WRITE.io_Length=write(fh->fd,iofs->io_Union.io_WRITE.io_Buffer,iofs->io_Union.io_WRITE.io_Length);
+		if(iofs->io_Union.io_WRITE.io_Length<0)
 		    error=err_u2a();
 	    }else
 		error=ERROR_OBJECT_WRONG_TYPE;
@@ -861,7 +862,7 @@ AROS_LH1(void, beginio,
 	case FSA_SEEK:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
-	    LONG mode=iofs->io_Args[2];
+	    LONG mode=iofs->io_Union.io_SEEK.io_SeekMode;
 	    LONG oldpos;
 	    if(fh->type==FHD_FILE)
 	    {
@@ -874,10 +875,10 @@ AROS_LH1(void, beginio,
 		else
 		    mode = SEEK_END;
 
-		if(lseek(fh->fd,iofs->io_Args[1],mode)<0)
+		if(lseek(fh->fd,iofs->io_Union.io_SEEK.io_Offset,mode)<0)
 		    error=err_u2a();
-		iofs->io_Args[0]=0;
-		iofs->io_Args[1]=oldpos;
+		iofs->io_Union.io_SEEK.io_Negative=0;
+		iofs->io_Union.io_SEEK.io_Offset  =oldpos;
 	    }else
 		error=ERROR_OBJECT_WRONG_TYPE;
 	    break;
@@ -885,14 +886,16 @@ AROS_LH1(void, beginio,
 
 	case FSA_EXAMINE:
 	    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
-			  (struct ExAllData *)iofs->io_Args[0],
-			  iofs->io_Args[1],iofs->io_Args[2]);
+			  iofs->io_Union.io_EXAMINE.io_ead,
+			  iofs->io_Union.io_EXAMINE.io_Size,
+                          iofs->io_Union.io_EXAMINE.io_Mode);
 	    break;
 
 	case FSA_EXAMINE_ALL:
 	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
-			      (struct ExAllData *)iofs->io_Args[0],
-			      iofs->io_Args[1],iofs->io_Args[2]);
+			      iofs->io_Union.io_EXAMINE_ALL.io_ead,
+			      iofs->io_Union.io_EXAMINE_ALL.io_Size,
+                              iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	    break;
 
 	case FSA_SAME_LOCK: {
