@@ -781,12 +781,19 @@ STATIC IPTR DT_LayoutMethod(struct IClass *cl, struct Gadget *g, struct gpLayout
 
  D(bug("ppm.datatype/%s: MethodID 0x%lx\n", MethodName, msg->MethodID));
 
+if(msg->gpl_GInfo)
+{
  D(bug("ppm.datatype/%s: GagdetInfo->Screen 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Screen));
  D(bug("ppm.datatype/%s: GagdetInfo->Window 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Window));
  D(bug("ppm.datatype/%s: GagdetInfo->Requester 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Requester));
  D(bug("ppm.datatype/%s: GagdetInfo->RastPort 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_RastPort));
  D(bug("ppm.datatype/%s: GagdetInfo->Layer 0x%lx\n", MethodName, (unsigned int) msg->gpl_GInfo->gi_Layer));
  D(bug("ppm.datatype/%s: GagdetInfo->Domain %ld %ld %ld %ld\n", MethodName, (int) msg->gpl_GInfo->gi_Domain.Left, (int) msg->gpl_GInfo->gi_Domain.Top, (int) msg->gpl_GInfo->gi_Domain.Width, (int) msg->gpl_GInfo->gi_Domain.Height));
+}
+else
+{
+ D(bug("ppm.datatype/%s: GadgetInfo is NULL\n", MethodName));
+}
 
  D(bug("ppm.datatype/%s: gpl_Initial 0x%lx\n", MethodName, msg->gpl_Initial));
 #endif /* MYDEBUG */
