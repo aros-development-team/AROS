@@ -7,9 +7,14 @@
 #include <proto/graphics.h>
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
-/*
-  #include <proto/layers.h>
-*/
+#include <proto/layers.h>
+#include <proto/mathffp.h>
+#include <proto/mathtrans.h>
+#include <proto/mathieeesingbas.h>
+#include <proto/mathieeesingtrans.h>
+#include <proto/mathieeedoubbas.h>
+#include <proto/mathieeedoubtrans.h>
+
 #include <intuition/iobsolete.h>
 
 #ifndef TOPAZ_EIGHTY
