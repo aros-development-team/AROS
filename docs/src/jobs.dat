@@ -1191,7 +1191,7 @@ intuition00058;0;digulla;Write MakeScreen
 intuition00059;0;digulla;Write RemakeDisplay
 intuition00060;0;digulla;Write RethinkDisplay
 intuition00061;2;digulla;Write AllocRemember
-intuition00062;0;digulla;Write AlohaWorkbench
+intuition00062;2;hkiel;Write AlohaWorkbench
 intuition00063;2;digulla;Write FreeRemember
 intuition00064;2;digulla;Write LockIBase
 intuition00065;2;digulla;Write UnlockIBase
