@@ -43,3 +43,6 @@ VAR UBYTE			objnamebuffer[300];
 VAR UBYTE			s[300];
 VAR UBYTE			dto_supports_copy;
 VAR UBYTE 			dto_supports_clearselected;
+VAR UBYTE			dto_supports_activate_field;
+VAR UBYTE			dto_supports_next_field;
+VAR UBYTE			dto_supports_prev_field;

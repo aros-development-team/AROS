@@ -181,7 +181,6 @@ void About(void)
         if (dt)
 	{
 	    gid_string = GetDTString(dt->dtn_Header->dth_GroupID);
-kprintf("gid_string = \"%s\" groupid = %d\n", gid_string, dt->dtn_Header->dth_GroupID);
 	    name_string = dt->dtn_Header->dth_Name;
 	}
     }
@@ -215,6 +214,20 @@ kprintf("gid_string = \"%s\" groupid = %d\n", gid_string, dt->dtn_Header->dth_Gr
 				name_string,
 				gid_string);
 
+}
+
+/*********************************************************************************************/
+
+void DoTrigger(ULONG what)
+{
+    struct dtTrigger m;
+
+    m.MethodID 		= DTM_TRIGGER;
+    m.dtt_GInfo 	= NULL;
+    m.dtt_Function 	= what;
+    m.dtt_Data 		= NULL;
+
+    DoDTMethodA(dto, win, NULL, (Msg)&m);				
 }
 
 /*********************************************************************************************/

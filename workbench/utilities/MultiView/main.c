@@ -491,6 +491,13 @@ static void OpenDTO(void)
         if (FindMethod(methods, DTM_COPY)) dto_supports_copy = TRUE;
 	if (FindMethod(methods, DTM_CLEARSELECTED)) dto_supports_clearselected = TRUE;
     }
+
+    if ((methods = GetDTTriggerMethods(dto)))
+    {
+        if (FindMethod(methods, STM_ACTIVATE_FIELD)) dto_supports_activate_field = TRUE;
+        if (FindMethod(methods, STM_NEXT_FIELD)) dto_supports_next_field = TRUE;
+        if (FindMethod(methods, STM_PREV_FIELD)) dto_supports_prev_field = TRUE;
+   }
         
     if (old_dto)
     {
@@ -666,12 +673,21 @@ static void HandleAll(void)
 		case IDCMP_VANILLAKEY:
 		    switch(msg->Code)
 		    {
-		        case 27:
+		        case 27: /* ESC */
 			    quitme = TRUE;
 			    break;
-		    }
+			    
+			case 13: /* RETURN */
+			    DoTrigger(STM_ACTIVATE_FIELD);
+			    break;
+			    
+			case 9: /* TAB */
+			    DoTrigger(STM_NEXT_FIELD);
+			    break;
+			    
+		    } /* switch(msg->Code) */
 		    break;
-		
+
 		case IDCMP_RAWKEY:
 		    switch(msg->Code)
 		    {
@@ -696,6 +712,13 @@ static void HandleAll(void)
 			    
 			case 0x49: /* PAGE DOWN */
 			    ScrollTo(CURSORDOWN, IEQUALIFIER_LSHIFT);
+			    break;
+			    
+			case 0x42: /* SHIFT TAB? */
+			    if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+			    {
+			        DoTrigger(STM_PREV_FIELD);
+			    }
 			    break;
 			    
 		    } /* switch(msg->Code) */

@@ -203,6 +203,8 @@ void SetMenuFlags(void);
 STRPTR GetFile(void);
 void About(void);
 
+void DoTrigger(ULONG what);
+
 /*********************************************************************************************/
 
 /* locale.c */
