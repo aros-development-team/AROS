@@ -69,6 +69,14 @@ AROS_UFP2(void, FreeExtLayerInfo,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
+AROS_UFP2(ULONG, InitLIExtra,
+    AROS_UFPA(struct Layer_Info *, li,         A0),
+    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+
+AROS_UFP2(void, _ExitLIExtra,
+    AROS_UFPA(struct Layer_Info *, li,         A0),
+    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+
 AROS_UFP2(BOOL, SafeAllocExtLI,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
@@ -123,6 +131,11 @@ AROS_UFP2(struct ResourceNode *, AddLayersResourceNode,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
+AROS_UFP3(BOOL, AllocCRBitMap,
+    AROS_UFPA(struct Layer *,      l,          A0),
+    AROS_UFPA(struct ClipRect *,   cr,         A1),
+    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+
 AROS_UFP2(struct ClipRect *, AllocClipRect,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
@@ -133,6 +146,12 @@ AROS_UFP2(void, DisposeClipRect,
 
 AROS_UFP2(void, FreeCRBitMap,
     AROS_UFPA(struct ClipRect *,   cr,         A0),
+    AROS_UFPA(struct LayersBase *, LayersBase, A6));
+
+AROS_UFP4(void *, AllocLayerStruct,
+    AROS_UFPA(ULONG,               Size,       D0),
+    AROS_UFPA(ULONG,               Flags,      D1),
+    AROS_UFPA(struct Layer_Info *, li,         D2),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
 AROS_UFP3(void, FreeLayerResources,

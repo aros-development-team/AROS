@@ -191,6 +191,48 @@ AROS_UFH2(void, FreeExtLayerInfo,
 }
 
 /*
+ * Initialize LayerInfo_extra and save the current environment.
+ */
+AROS_UFH2(ULONG, InitLIExtra,
+    AROS_UFHA(struct Layer_Info *, li,         A0),
+    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+{
+    struct LayerInfo_extra *lie = li->LayerInfo_extra;
+
+    LockLayerInfo(li);
+
+    /*
+     * Initialize the ResourceList contained in the LayerInfo_extra.
+     * This list is used to keep track of Layers' resource (memory/
+     * bitmaps/etc.) allocations.
+     */
+    NewList((struct List *)&lie->lie_ResourceList);
+
+    /*
+     * Save the current environment, so we can drop back in case of
+     * an error.
+     */
+    return setjmp(lie->lie_JumpBuf);
+}
+
+AROS_UFH2(void, ExitLIExtra,
+    AROS_UFHA(struct Layer_Info *, li,         A0),
+    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+{
+    struct LayerInfo_extra *lie = li->LayerInfo_extra;
+
+    DB2(bug("ExitLIEExtra($%lx)\n", li));
+
+    /* Free all resources associated with the layers. */
+    FreeLayerResources(li, TRUE, LayersBase);
+
+    UnlockLayerInfo(li);
+
+    DB2(bug("ExitLIEExtra: longjmp ahead\n"));
+    longjmp(lie->lie_JumpBuf, 1);
+}
+
+/*
  * Dynamically allocate LayerInfo_extra if it isn't already there.
  */
 AROS_UFH2(BOOL, SafeAllocExtLI,
@@ -199,6 +241,7 @@ AROS_UFH2(BOOL, SafeAllocExtLI,
 {
     LockLayerInfo(li);
 
+    /* Check to see if we can ignore the rest of this call. :-) */
     if(li->Flags & NEWLAYERINFO_CALLED)
 	return TRUE;
 
@@ -211,7 +254,7 @@ AROS_UFH2(BOOL, SafeAllocExtLI,
 }
 
 /*
- * Free LayerInfo_extra if it was dynamically allocated, and unlock the li.
+ * Free LayerInfo_extra if it was dynamically allocated, and unlock the LI.
  */
 AROS_UFH2(void, SafeFreeExtLI,
     AROS_UFHA(struct Layer_Info *, li,         A0),
@@ -394,8 +437,16 @@ AROS_UFH2(struct ResourceNode *, AddLayersResourceNode,
     if(!(rn = (struct ResourceNode *)AllocMem(sizeof(struct ResourceNode), MEMF_ANY)))
 	return NULL;
 
-    rn->rn_FirstFree = &rn->rn_Data[0];
+    /*
+     * We keep 48 entries in this list. Could change depending on resource
+     * allocation going on in Layers. For every n*48 allocations, a new node
+     * must be allocated. This can (slightly) slow down operations if this
+     * happens a lot.
+     */
     rn->rn_FreeCnt   = 48;
+
+    /* Point the cached pointer to the first free vector. */
+    rn->rn_FirstFree = &rn->rn_Data[0];
 
     AddHead((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList, &rn->rn_Link);
 
@@ -446,6 +497,77 @@ AROS_UFH2(void, FreeCRBitMap,
     FreeBitMap(bm);
 
     DB2(bug("FreeCRBitMap: done\n"));
+}
+
+/*
+ * Allocate memory for a BitMap to be added to a ClipRect.
+ */
+AROS_UFH3(BOOL, AllocCRBitMap,
+    AROS_UFHA(struct Layer *,      l,          A0),
+    AROS_UFHA(struct ClipRect *,   cr,         A1),
+    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+{
+    struct BitMap *bm;
+
+    if( (bm = AllocBitMap((cr->bounds.MaxX & ~0xf) - (cr->bounds.MinX & ~0xf) + 16,
+			   cr->bounds.MaxY - cr->bounds.MinY + 1,
+			   l->rp->BitMap->Depth, BMF_MINPLANES, l->rp->BitMap)) )
+    {
+	/* If we succeeded, add the bitmap to the layers resource list. */
+	if(!AddLayersResource(l->LayerInfo, bm, -2, LayersBase))
+	{
+	    FreeBitMap(bm);
+	    bm = NULL;
+	}
+    }
+
+    /* Drop back to previous environment if there was a failure. */
+    if(!bm)
+	ExitLIExtra(l->LayerInfo, LayersBase);
+
+    /* Return error code depending on success or failure. */
+    if( (cr->BitMap = bm) )
+	return TRUE;
+    else
+	return FALSE;
+}
+
+/*
+ * Allocate memory of a given size and enter it into the LayerInfo's
+ * resource list.
+ */
+AROS_UFH4(void *, AllocLayerStruct,
+    AROS_UFHA(ULONG,               Size,       D0),
+    AROS_UFHA(ULONG,               Flags,      D1),
+    AROS_UFHA(struct Layer_Info *, li,         D2),
+    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+{
+    void *mem;
+
+    DB2(bug("AllocLayerStruct($%lx, $%lx, $%lx)\n", Size, Flags, li));
+
+    mem = AllocMem(Size, Flags);
+
+    /* If there is no LayerInfo, this is just a straight AllocMem(). */
+    if(li)
+    {
+	/* But if there is a LI, and there was an error, drop back to the
+	   previous environment. */
+	if(!mem)
+	    ExitLIExtra(li, LayersBase);
+
+	/* If not, enter the memory into the layers resource list. */
+	if(!AddLayersResource(li, mem, Size, LayersBase))
+	{
+	    FreeMem(mem, Size);
+
+	    /* Again, drop back in case of an error. */
+	    ExitLIExtra(li, LayersBase);
+	}
+    }
+
+    DB2(bug("AllocLayerStruct: done\n"));
+    return mem;
 }
 
 /*
