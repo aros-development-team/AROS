@@ -49,7 +49,7 @@ void closedevices(void)
   }  
 }
 
-void opendevice(void)
+void open_device(void)
 {
   int unitnum;
   char sevenwire, shared;
@@ -97,6 +97,136 @@ void opendevice(void)
       
 }
 
+
+void close_device(void)
+{
+  int index;
+  printf("Close a serial device.\n");
+  printf("Referencenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    printf("Closing device!\n");
+    CloseDevice((struct IORequest *)IORequests[index]);
+    DeleteExtIO((struct IORequest *)IORequests[index]);
+    IORequests[index]=NULL;
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+void write_to_device(void)
+{
+  int index;
+  printf("Write to serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    char buffer[100];
+    memset(buffer,0,100);
+    IORequests[index]->IOSer.io_Command = CMD_WRITE;
+    IORequests[index]->IOSer.io_Flags = 0;
+    IORequests[index]->IOSer.io_Length = -1;
+    IORequests[index]->IOSer.io_Data = buffer;
+
+    printf("Enter string to transmit!\n");
+    scanf("%s",buffer);
+    DoIO((struct IORequest *)IORequests[index]);
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+void read_from_device(void)
+{
+  int index;
+  printf("Read from serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    int len;
+    char buffer[100];
+    memset(buffer,0,100);
+    printf("Read how many bytes [1-99]: ");
+    scanf("%d",&len);
+    if (len <= 0) len = 1;
+    if (len > 99) len = 99;
+    printf("Reading %d bytes from device!\n",len);    
+    IORequests[index]->IOSer.io_Command = CMD_READ;
+    IORequests[index]->IOSer.io_Flags = IOF_QUICK;
+    IORequests[index]->IOSer.io_Length = len;
+    IORequests[index]->IOSer.io_Data = buffer;
+
+    DoIO((struct IORequest *)IORequests[index]);
+    printf("Received the following string: %s\n",buffer);
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+
+void query(void)
+{
+  int index;
+  printf("Query a serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    IORequests[index]->IOSer.io_Command = SDCMD_QUERY;
+
+    DoIO((struct IORequest *)IORequests[index]);
+    printf("Status bits: 0x%x\n",IORequests[index]->io_Status);
+    printf("Number of bytes in buffer: %d\n",(int)IORequests[index]->IOSer.io_Actual);
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+
+void set_parameters(void)
+{
+  int index;
+  printf("Set parameters on a serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    int baudrate;
+    IORequests[index]->IOSer.io_Command = SDCMD_SETPARAMS;
+
+    printf("New baudrate: ");
+    scanf("%d",&baudrate);
+    IORequests[index]->io_Baud = baudrate;
+
+    DoIO((struct IORequest *)IORequests[index]);
+    if (((struct IORequest *)IORequests[index])->io_Error != 0)
+    {
+      printf("An error occured while setting the parameters!\n");
+    }
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+
 void doall(void)
 {
   char buf[80];
@@ -114,12 +244,32 @@ void doall(void)
     }
     else if (!strcmp(buf, "help"))
     {
-      printf("quit help opendevice [od] \n");
+      printf("quit help open_device [od] close_device [cd] write_to_device [wd]\n");
+      printf("read_from_device [rd] query [q] set_parameters [sp]\n");
     }
-    else if (!strcmp(buf, "opendevice") || !strcmp(buf, "od"))
+    else if (!strcmp(buf, "open_device") || !strcmp(buf, "od"))
     {
-      opendevice(); 
+      open_device(); 
+    }
+    else if (!strcmp(buf, "close_device") || !strcmp(buf, "cd"))
+    {
+      close_device(); 
+    }
+    else if (!strcmp(buf, "write_to_device") || !strcmp(buf, "wd"))
+    {
+      write_to_device();
+    }
+    else if (!strcmp(buf, "read_from_device") || !strcmp(buf, "rd"))
+    {
+      read_from_device();
+    }
+    else if (!strcmp(buf, "query") || !strcmp(buf, "q"))
+    {
+      query();
+    }
+    else if (!strcmp(buf, "set_parameters") || !strcmp(buf, "sp"))
+    {
+      set_parameters();
     }
   }
-
 }
