@@ -2,10 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/01 15:50:58  digulla
+    Don't do Amiga specific things in the X11 driver
+    Don't expunge the library if it's in ROM (the user cannot open if again if
+    	this happens).
+    Fixed some bugs in expunge() which made "avail flush" crash.
+
     Revision 1.3  1996/09/11 16:54:24  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.2  1996/08/13 14:00:53  digulla
     Added calls to driver
@@ -27,6 +33,8 @@
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include <graphics/gfxbase.h>
+#include <graphics/text.h>
+#include <clib/graphics_protos.h>
 #include "graphics_intern.h"
 
 static const char name[];
@@ -73,6 +81,12 @@ static const APTR inittabl[4]=
     &__AROS_SLIB_ENTRY(init,Graphics)
 };
 
+#ifndef SYSFONTNAME
+#   define SYSFONTNAME	"topaz.font"
+#endif
+
+static struct TextAttr sysTA;
+
 __AROS_LH2(struct GfxBase *, init,
  __AROS_LHA(struct GfxBase *, GfxBase, D0),
  __AROS_LHA(BPTR,               segList,   A0),
@@ -95,9 +109,26 @@ __AROS_LH1(struct GfxBase *, open,
 	   struct GfxBase *, GfxBase, 1, Graphics)
 {
     __AROS_FUNC_INIT
+    struct TextFont * def;
 
     /* Keep compiler happy */
     version=0;
+
+    if (!GfxBase->DefaultFont)
+    {
+	sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
+	sysTA.ta_YSize = 8;
+	sysTA.ta_Style = FS_NORMAL;
+	sysTA.ta_Flags = 0;
+
+	def = OpenFont (&sysTA);
+
+	if (!def)
+	    return NULL;
+
+	GfxBase->DefaultFont = def;
+	sysTA.ta_YSize = def->tf_YSize;
+    }
 
     if (!driver_open (GfxBase))
 	return NULL;
@@ -134,18 +165,33 @@ __AROS_LH0(BPTR, expunge,
 	   struct GfxBase *, GfxBase, 3, Graphics)
 {
     __AROS_FUNC_INIT
+#ifndef DISK_BASED
+    if (!(GfxBase->LibNode.lib_OpenCnt) )
+    {
+	if (GfxBase->DefaultFont)
+	{
+	    CloseFont (GfxBase->DefaultFont);
 
+	    GfxBase->DefaultFont = NULL;
+	}
+
+	/* Allow the driver to release uneccessary memory */
+	driver_expunge (GfxBase);
+    }
+
+    /* Don't delete this library. It's in ROM and therefore cannot be
+       deleted */
+    return 0L;
+#else
     BPTR ret;
 
     /* Test for openers. */
-    if(GfxBase->LibNode.lib_OpenCnt)
+    if (GfxBase->LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
 	GfxBase->LibNode.lib_Flags|=LIBF_DELEXP;
 	return 0;
     }
-
-    driver_expunge (GfxBase);
 
     /* Get rid of the library. Remove it from the list. */
     Remove(&GfxBase->LibNode.lib_Node);
@@ -158,6 +204,7 @@ __AROS_LH0(BPTR, expunge,
 	    GfxBase->LibNode.lib_NegSize+GfxBase->LibNode.lib_PosSize);
 
     return ret;
+#endif
     __AROS_FUNC_EXIT
 }
 
