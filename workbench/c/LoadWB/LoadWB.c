@@ -43,19 +43,20 @@
 #define   DEBUG  0
 #include  <aros/debug.h>
 
-#include  <dos/dos.h>
-#include  <dos/notify.h>
-#include  <dos/dostags.h>
-#include  <dos/filesystem.h>
-#include  <intuition/intuitionbase.h>
-#include  <intuition/intuition.h>
-#include  <libraries/gadtools.h>
+#include <dos/dos.h>
+#include <dos/notify.h>
+#include <dos/dostags.h>
+#include <dos/filesystem.h>
+#include <intuition/intuitionbase.h>
+#include <intuition/intuition.h>
+#include <libraries/gadtools.h>
 
-#include  <proto/intuition.h>
-#include  <proto/workbench.h>
-#include  <proto/gadtools.h>
-#include  <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/workbench.h>
+#include <proto/gadtools.h>
+#include <proto/dos.h>
 
+#include <stdlib.h>
 
 static const char version[] = "$VER: LoadWB 0.1 (06.04.2002)\n";
 
@@ -79,7 +80,7 @@ static struct NewMenu nm[] =
 
 
 /*********************************************************************************************/
-void Cleanup();
+void Cleanup(STRPTR msg);
 void ExecuteCommand();
 /*********************************************************************************************/
 
@@ -144,12 +145,21 @@ int InitWB()
 
 /*********************************************************************************************/
 
-void Cleanup()
+void Cleanup(STRPTR msg)
 {
-kprintf("LoadWB.Cleanup\n");
+    kprintf("LoadWB.Cleanup\n");
+
+    if (msg)
+    {
+        FPuts(Error(), msg);
+    }
 
     CloseWindow(wbwindow);
     UnregisterWorkbench(notifyport);
+
+    DoDetach();
+
+    exit(msg ? RETURN_FAIL : RETURN_OK);
 }
 
 /*********************************************************************************************/
@@ -184,37 +194,42 @@ kprintf("LoadWB.HandleNotify\n");
 				ExecuteCommand();
 				break;
 			    case 2: /* Shell */
-				{
+			    {
 				BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", FMF_READ);
-				SystemTags("",
-				    SYS_Asynch, 	TRUE,
-				    SYS_Background,	FALSE,
-				    SYS_Input,		win,
-				    SYS_Output,		(IPTR)NULL,
-				    SYS_Error,		(IPTR)NULL,
-				    SYS_UserShell,	TRUE,
+				SystemTags
+                                (
+                                    "",
+				    SYS_Asynch,     TRUE,
+				    SYS_Background, FALSE,
+				    SYS_Input,	    (IPTR)win,
+				    SYS_Output,	    (IPTR)NULL,
+				    SYS_Error,	    (IPTR)NULL,
+				    SYS_UserShell,  TRUE,
 				    TAG_DONE
-				    );
-				}
-				break;
-			    case 3: /* About... */
-				{
+				);
+
+                                break;
+ 			    }
+ 			    case 3: /* About... */
+			    {
 				struct EasyStruct es;
-				es.es_StructSize = sizeof(es);
-				es.es_Flags = 0;
-				es.es_Title = "About AROS Workbench...";
-				es.es_TextFormat = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.";
+
+                                es.es_StructSize   = sizeof(es);
+				es.es_Flags        = 0;
+				es.es_Title        = "About AROS Workbench...";
+				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.";
 				es.es_GadgetFormat = "Ok";
 				EasyRequest ( wbwindow, &es, NULL, NULL, NULL );
-				}
-				break;
+
+                                break;
+		            }
 			    case 4: /* Quit... */
-				Cleanup();
-				exit(RETURN_OK);
+				Cleanup(NULL);
 				break;
 			}
 		}
-		if ( (item = ItemAddress ( menus, code ) ) != NULL )
+
+                if ( (item = ItemAddress ( menus, code ) ) != NULL )
 		{
 		    code = item->NextSelect;
 		}
@@ -266,11 +281,10 @@ int main(void)
 	return RETURN_FAIL;
 
     DoDetach();
-
     HandleAll();
 
-    Cleanup();
-    
+    Cleanup(NULL);
+
     return RETURN_OK;
 }
 
