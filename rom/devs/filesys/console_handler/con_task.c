@@ -172,6 +172,10 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
     EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, iofs->io_Union.io_WRITE.io_Buffer));
 
+#if 0
+
+    /* stegerg: this seems to be wrong */
+    
     /* Change the task to which CTRL/C/D/E/F signals are sent to
        the task which sent this write request */
     
@@ -183,6 +187,7 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
     {
     	fh->breaktask = iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask;
     }
+#endif
     
 #if !BETTER_WRITE_HANDLING    
     if ((fh->inputsize - fh->inputstart) == 0)
@@ -320,9 +325,9 @@ VOID conTaskEntry(struct conTaskParams *param)
     {
     	D(bug("contask: fh allocated\n"));
 
-	fh->usecount = 1;
+	fh->usecount  = 1;
 
-        fh->contask = FindTask(NULL);	
+        fh->contask   = FindTask(NULL);	
 	fh->breaktask = param->parentTask;
 	
 	NEWLIST(&fh->pendingReads);
@@ -470,6 +475,11 @@ VOID conTaskEntry(struct conTaskParams *param)
 			con_write(conbase, iofs);
 			break;
 
+    	    	    case FSA_CHANGE_SIGNAL:
+		    	fh->breaktask = iofs->io_Union.io_CHANGE_SIGNAL.io_Task;
+    	    	    	ReplyMsg(&iofs->IOFS.io_Message);			
+			break;
+			
     	    	    case FSA_CONSOLE_MODE:
 		    	if (fh->window)
 			{

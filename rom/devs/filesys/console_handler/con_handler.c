@@ -341,6 +341,7 @@ AROS_LH1(void, beginio,
         case FSA_READ:
 	case FSA_WRITE:
 	case FSA_CONSOLE_MODE:
+	case FSA_CHANGE_SIGNAL:
 	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
 	    request_queued = TRUE;
 	    
