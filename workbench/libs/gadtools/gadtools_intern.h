@@ -46,6 +46,9 @@
 #   include <proto/boopsi.h>
 #endif
 
+/* Needed for aros_print_not_implemented macro */
+#include <aros/debug.h>
+
 struct VisualInfo;
 
 /* Some external stuff (gadtools_init.c) */
