@@ -67,7 +67,7 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM test :
+#MM test : test-clib
 
 %make_prog_setup mmake=test
 
