@@ -97,8 +97,6 @@ ULONG InsertItems(APTR 		    *itemarray,
     register struct ListEntry *le;
     register ULONG numinserted = 0;
     
-    D(bug("aroslist:InsertItems(itemarray=%p, pointerarray = %p, pos=%d, data=%p)\n",
-    		itemarray, pointerarray, pos, data));
     		
     leptr = &pointerarray[pos];
     
@@ -108,22 +106,27 @@ ULONG InsertItems(APTR 		    *itemarray,
     {
 
     	le = data->ld_UnusedEntries;
-
-	le->le_Item = (APTR)CallHookPkt(data->ld_ConstructHook, 
+	
+	if (data->ld_ConstructHook)
+	{
+	    le->le_Item = (APTR)CallHookPkt(data->ld_ConstructHook, 
 					data->ld_Pool, 
-					*itemarray ++);
+					*itemarray);
+	}
+	else
+	{
+	    le->le_Item = *itemarray;
+	} 
+	itemarray ++;
+						
 	if (le->le_Item)
 	{
 	    /* If constructhook succeeded, remove entry 
 	     * from list of unused entries.
 	     */
-
-	    D(bug("InsertItems: Got item %p\n",le->le_Item));
-	    
     	    RemLEHead(data->ld_UnusedEntries);
     	    le->le_Flags = 0;
     	
-    	    D(bug("leptr: %p, listentry: %p\n", leptr, le));
     	    /* Point to new ListEntry in the pointerarray */
     	    *leptr ++ = le;
     	    

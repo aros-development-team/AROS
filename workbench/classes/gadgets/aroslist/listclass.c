@@ -41,9 +41,26 @@
     else				\
     	flagvar &= ~flag;
 
+
+
 /******************
 **  List::Set()  **
 ******************/
+
+STATIC VOID SetActive(LONG pos, struct ListData *data)
+{
+    if (data->ld_Active != AROSV_List_Active_None)
+    {
+    	data->ld_PointerArray[data->ld_Active]->le_Flags &= ~LEFLG_SELECTED;
+    }
+
+    if (pos != AROSV_List_Active_None)
+    {
+    	data->ld_PointerArray[pos]->le_Flags |= LEFLG_SELECTED;
+    }
+    data->ld_Active = pos;
+    return;
+}
 STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = 0UL;
@@ -69,14 +86,10 @@ STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
     	    	break;
     	    
     	    	
-/*    	    case AROSA_List_ActiveItem:
-    	    {
-    	    	register LONG pos;
-    	    	pos = (LONG)tag->ti_Data;
-    	    	if (pos < 0)
-    	    	    data->ld_ActiveItem = data->ld_NumEntries;
+    	    case AROSA_List_Active:
+    	    	SetActive((LONG)tag->ti_Data, data);
+    	    	break;
     	    	
-*/
 	    default:
 	    	break;
 	    	
@@ -159,11 +172,14 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 	    DisposeObject(o);
 	    return (NULL);
 	}
+	
+	/* As default there is no active entry */
+	data->ld_Active = AROSV_List_Active_None;
 
     	/* Handle our special tags - overrides defaults. This must be done 
     	before the AROSM_List_Insert call, because we must get the ConstructHook and 
     	DestructHook tags */
-    	
+    	    	
    	list_set(cl, o, msg);
     	
 	if (srcarray)
@@ -190,7 +206,10 @@ STATIC VOID list_dispose(Class *cl, Object *o, Msg msg)
     struct ListEntry *entry, *next;
 	    
     data = INST_DATA(cl, o);
-	    
+
+    D(bug("Inside OM_DISPOSE\n"));
+    DoMethod(o, AROSM_List_Clear);
+    
     entry = data->ld_EntryTables;
     while (entry)
     {
@@ -223,6 +242,10 @@ STATIC IPTR list_get(Class *cl, Object *o, struct opGet *msg)
     {
     	case AROSA_List_Entries:
     	    *(msg->opg_Storage) = (IPTR)data->ld_NumEntries;
+    	    break;
+
+    	case AROSA_List_Active:
+    	    *(msg->opg_Storage) = (IPTR)data->ld_Active;
     	    break;
     	
     	default:
@@ -368,8 +391,17 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
     
     } /* if (Enough entries left for insertion) */
     
+
+
+    /* "Refresh" pos of the active entry */
+    if (pos <= data->ld_Active && data->ld_Active != AROSV_List_Active_None)
+    {
+   	SetActive(data->ld_Active + numinserted, data);
+    }
+
     data->ld_NumEntries += numinserted;
-    
+
+        
     return (numinserted);
 }
 
@@ -406,7 +438,6 @@ STATIC VOID list_remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
     
     data = INST_DATA(cl, o);
     
-    
     pos = msg->Position;
     lastpos = data->ld_NumEntries - 1;
     
@@ -433,16 +464,29 @@ STATIC VOID list_remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
     	/* Cannot remove a non-existing entry */
     	return;
     }
+
     
     /* Call destructhook for entry */
-    CallHookPkt(data->ld_DestructHook,
+    if (data->ld_DestructHook)
+    {
+    	CallHookPkt(data->ld_DestructHook,
     		data->ld_Pool,
     		data->ld_PointerArray[pos]->le_Item);
-    		
+    }		
     /* Add item to freelist */
     AddLEHead(data->ld_UnusedEntries, data->ld_PointerArray[pos]);
     data->ld_NumEntries --;
-        
+
+    /* "Refresh" pos of the active entry */
+    if (    pos <= data->ld_Active 
+    	&&  data->ld_Active != AROSV_List_Active_None
+    	&&  data->ld_Active != 0)
+    {
+    	SetActive( ((data->ld_NumEntries) 
+    			? data->ld_Active - 1 : AROSV_List_Active_None),
+    		    data);
+    }
+   
     /* Skip the specialcase where we remove the last entry */
     if (pos < lastpos)
     {
@@ -462,6 +506,38 @@ STATIC VOID list_remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
     return;
 }
 
+/********************
+**  List::Clear()  **
+********************/
+STATIC VOID list_clear(Class *cl, Object *o, Msg msg)
+{
+    register LONG pos;
+    struct ListData *data = INST_DATA(cl, o);
+    
+D(bug("List::Clear()\n"));
+    
+    for (pos = 0; pos < data->ld_NumEntries; pos ++)
+    {
+D(bug("\tClearing entry at pos %d\n", pos));
+	
+	if (data->ld_DestructHook)
+	{
+    	    CallHookPkt(data->ld_DestructHook,
+    		data->ld_Pool,
+    		data->ld_PointerArray[pos]->le_Item);
+    	}
+
+D(bug("Addidng to freeentrylist\n"));    		
+    	/* Add item to freelist */
+    	AddLEHead(data->ld_UnusedEntries, data->ld_PointerArray[pos]);
+
+    }
+    data->ld_NumEntries = 0;
+    /* "Refresh" pos of the active entry */
+    SetActive(AROSV_List_Active_None, data);
+    
+    return;
+}
 
 /* listclass boopsi dispatcher
  */
@@ -506,7 +582,108 @@ AROS_UFH3(STATIC IPTR, dispatch_listclass,
 	case AROSM_List_Remove:
 	    list_remove(cl, o, (struct AROSP_List_Remove *)msg);
 	    break;
+	
+	case AROSM_List_Clear:
+	    list_clear(cl, o, msg);
+	    break;
+
+	case AROSM_List_Select:
+	{
+	    /* We _could_ put the Select_All stuff together
+	       with the singlemode but that would slow down singlemode a little */
+	    #undef S
+	    #define S(msg) ((struct AROSP_List_Select *)msg)
+	    struct ListData *data = INST_DATA(cl, o);
 	    
+	    
+	    if (S(msg)->Position != AROSV_List_Select_All)
+	    {
+	    	struct ListEntry *le; 
+	    	
+	    	le = data->ld_PointerArray[S(msg)->Position];
+	    	
+	    	switch (S(msg)->SelType)
+	    	{
+	    	    case AROSV_List_Select_On:
+	    	    	le->le_Flags |= LEFLG_SELECTED;
+	    	    	break;
+	    	    	
+	    	    case AROSV_List_Select_Off:
+	    	    	le->le_Flags &= ~LEFLG_SELECTED;
+	    	    	break;
+
+	    	    case AROSV_List_Select_Toggle:
+	    	    	le->le_Flags ^= LEFLG_SELECTED;
+	    	    	break;
+	    	    	
+	    	    case AROSV_List_Select_Ask:
+	    	    	*(S(msg)->State) = ((le->le_Flags & LEFLG_SELECTED) != 0);
+	    	    	break;
+	    	}
+	    }
+	    else
+	    {
+	    	register LONG pos;
+	    	register struct ListEntry *le;
+	    	
+	    	*(S(msg)->State) = 0;
+	    	
+	    	for (pos = 0; pos < data->ld_NumEntries; pos ++)
+	    	{
+	    	    le = data->ld_PointerArray[S(msg)->Position];
+		    switch (S(msg)->SelType)
+	    	    {
+	    	    	case AROSV_List_Select_On:
+	    	    	    le->le_Flags |= LEFLG_SELECTED;
+	    	    	    break;
+	    	    	
+	    	    	case AROSV_List_Select_Off:
+	    	    	    le->le_Flags &= ~LEFLG_SELECTED;
+	    	    	    break;
+
+	    	    	case AROSV_List_Select_Toggle:
+	    	    	    le->le_Flags ^= LEFLG_SELECTED;
+	    	    	    break;
+	    	    	
+	    	    	case AROSV_List_Select_Ask:
+	    	    	    if (le->le_Flags & LEFLG_SELECTED)
+	    	    	    {
+	    	    	    	*(S(msg)->State) += 1;
+	    	    	    }
+	    	    	    break;
+	    		
+	    	    }	    	
+	    	}
+	    }
+
+	} break;
+	    
+	case AROSM_List_NextSelected:
+	{
+	    #undef NS
+	    #define NS(msg) ((struct AROSP_List_NextSelected *)msg)
+	    
+	    struct ListData *data = INST_DATA(cl, o);
+	    register LONG pos;
+	    
+	    pos = *(NS(msg)->Position);
+	    
+	    if (pos == AROSV_List_NextSelected_Start)
+	    	pos = 0;
+	    	
+	    for (; pos < data->ld_NumEntries; pos ++)
+	    {
+	    	if (data->ld_PointerArray[pos]->le_Flags & LEFLG_SELECTED)
+	    	{
+	    	    *(NS(msg)->Position) = pos;
+	    	    return(retval);
+	    	}
+	    }
+	    
+	    *(NS(msg)->Position) = AROSV_List_NextSelected_End;
+	    
+	} break;
+	
 	case AROSM_List_GetEntry:
 	{
 	    #undef GE
@@ -526,8 +703,6 @@ AROS_UFH3(STATIC IPTR, dispatch_listclass,
        	    }
 
 	} break;
-	
-	    
 	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);

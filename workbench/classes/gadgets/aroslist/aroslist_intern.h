@@ -34,8 +34,6 @@ struct ListEntry
 
 /* Flag bits for le_Flags */
 #define LEFLG_SELECTED (1 << 0)
-/* This is a flag to set if this entry has been refreshed by a listview */
-#define LEFLG_UPDATED  (1 << 1)
 
 
 struct ListData
@@ -49,6 +47,7 @@ struct ListData
     struct Hook		*ld_ConstructHook;
     struct Hook		*ld_DestructHook;
     APTR		ld_Pool;
+    LONG		ld_Active;
 };
 
 
