@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 # define  DEBUG 1
 # include <aros/debug.h>
@@ -138,7 +135,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     D(bug("Entering CreatePlayerA()\n"));
 
-    error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
+    error = (LONG *) GetTagData(PLAYER_ErrorCode, (IPTR) NULL, tl);
 
     if (player == NULL)
     {
