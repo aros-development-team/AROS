@@ -3,7 +3,7 @@ assign DEVS: devs
 assign LIBS: libs
 assign S: s
 mount RAM:
-;mount NIL:
+mount NIL:
 makedir ram:T
 assign T: ram:t
 ;
