@@ -71,9 +71,6 @@ struct Screen * openscreen(void)
 
 void closescreen(struct Screen * screen)
 {
-#if 0
-  CloseWindow(window);
-#endif
   CloseScreen(screen);
 }
 
@@ -255,6 +252,49 @@ void movelayerinfrontof(void)
   else 
   {
     printf("No layer with id %d or id %d\n",i1,i2);
+  }
+}
+
+void movelayer(void)
+{
+  int i,dx,dy;
+  printf("Move layer with id: ");
+  scanf("%d",&i);
+  printf("delta x: ");
+  scanf("%d",&dx);
+  printf("delta y: ");
+  scanf("%d",&dy);
+  if (layers[i])
+  {
+    MoveLayer(0, layers[i], dx, dy);
+    printf("Moved layer with id %d to new position.\n",i);
+  }
+  else
+  {
+    printf("No layer with id %d\n",i);
+  }
+}
+
+void motion(void)
+{
+  int i,dx,dy,iter;
+  printf("Move layer with id: ");
+  scanf("%d",&i);
+  printf("delta x: ");
+  scanf("%d",&dx);
+  printf("delta y: ");
+  scanf("%d",&dy);
+  printf("iterations: ");
+  scanf("%d",&iter);
+  if (layers[i])
+  {
+    while (iter > 0 && (TRUE == MoveLayer(0, layers[i],dx,dy)))
+      iter--;
+    printf("Moved layer with id %d to new position.\n",i);
+  }
+  else
+  {
+    printf("No layer with id %d\n",i);
   }
 }
 
@@ -760,6 +800,54 @@ void DemoB(void)
 
 }
 
+void DemoC()
+{
+  int i;
+  printf("Generating a few layers\n");
+  GenerateLayers2();
+  if (layers[1])
+  {
+    printf("Moving layer 1...\n");
+    Delay(30);
+    i = 50;
+    while (i>0 && (TRUE == MoveLayer(0, layers[1], 1,1)))
+        i--;
+  }
+  if (layers[2])
+  {
+    printf("Moving layer 2...\n");
+    Delay(30);
+    i = 50;
+    while (i>0 && (TRUE == MoveLayer(0, layers[2], 2, -1)))
+      i--;
+  }  
+  if (layers[3])
+  {
+    printf("Moving layer 3...\n");
+    Delay(30);
+    i = 50;
+    while (i>0 && TRUE == MoveLayer(0, layers[3], 1, 3))
+      i--;
+  }
+  if (layers[0])
+  {
+    printf("Moving layer 0...\n");
+    Delay(30);
+    i = 150;
+    while (i>0 && TRUE == MoveLayer(0, layers[0], 0 ,1))
+      i--;
+  }
+  printf("Deleting all visible layers!\n");
+  i = 0;
+  while (i < 10)
+  {
+    if (layers[i])
+      DeleteLayer(0, layers[i]);
+    layers[i] = NULL;
+    i++;
+  }    
+}
+
 void doall(void)
 {
   char buf[80];
@@ -782,7 +870,8 @@ void doall(void)
     {
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
-        printf("Frame [F]  DemoA DemoB\n");
+        printf("movelayer [ml]  motion [mot] \n");
+        printf("Frame [F]  DemoA DemoB DemoC\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
     {
@@ -807,7 +896,15 @@ void doall(void)
     else if (!strcmp(buf, "movelayerinfrontof") || !strcmp(buf, "mlio")) 
     {
       movelayerinfrontof();
-    } 
+    }
+    else if (!strcmp(buf, "movelayer") || !strcmp(buf, "ml")) 
+    {
+      movelayer();
+    }     
+    else if (!strcmp(buf, "motion") || !strcmp(buf, "mot")) 
+    {
+      motion();
+    }     
     else if (!strcmp(buf, "Frame")  || !strcmp(buf, "F")) 
     {
       Frame();
@@ -819,6 +916,10 @@ void doall(void)
     else if (!strcmp(buf, "DemoB")) 
     {
       DemoB();
+    } 
+    else if (!strcmp(buf, "DemoC")) 
+    {
+      DemoC();
     } 
     else if (!strcmp(buf, "gl1")) 
     {
