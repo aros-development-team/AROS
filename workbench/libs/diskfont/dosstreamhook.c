@@ -26,6 +26,8 @@ AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(ULONG       *, msg,  A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     LONG rc = 0;
 
     switch (*msg)
@@ -54,7 +56,7 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
     }
 
     return rc;
-    
+    AROS_USERFUNC_EXIT
 } /* dosstreamhook */
 
 /****************************************************************************************/

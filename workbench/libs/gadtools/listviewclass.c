@@ -123,6 +123,8 @@ AROS_UFH3(IPTR, RenderHook,
     AROS_UFHA(struct LVDrawMsg *,	msg,	        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
     
     EnterFunc(bug("RenderHook: hook=%p, node=%sm msg=%p)\n",
@@ -170,7 +172,7 @@ AROS_UFH3(IPTR, RenderHook,
     	    	/* Render text */
     	    	Move(rp, min_x, min_y + rp->Font->tf_Baseline);
     	    	Text(rp, node->ln_Name, numfit);
-	    	
+
      	    	
      	    } break;
      	    	
@@ -188,13 +190,15 @@ AROS_UFH3(IPTR, RenderHook,
      }
      	
      ReturnInt ("RenderHook", IPTR, retval);
+
+     AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/
 
 #undef GadToolsBase
 
-STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg, 
+STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg,
 			  WORD entryoffset, UWORD numentries, struct GadToolsBase_intern *GadToolsBase)
 {
 
@@ -1115,6 +1119,8 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     switch(msg->MethodID)
@@ -1166,6 +1172,8 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
     } /* switch */
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_Gtlvclass */
 
 /**********************************************************************************************/

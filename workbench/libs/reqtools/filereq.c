@@ -571,13 +571,15 @@ AROS_UFH3(void, IntuiMsgFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(APTR, req, A2),
     AROS_UFHA(struct IntuiMessage *, imsg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 void ASM SAVEDS IntuiMsgFunc (
     REGPARAM(a0, struct Hook *, hook),
     REGPARAM(a2, APTR, req),
     REGPARAM(a1, struct IntuiMessage *,imsg))
-#endif
 {
+#endif
     GlobData *glob = (GlobData *)hook->h_Data;
 
     if (imsg->IDCMPWindow == glob->reqwin)
@@ -590,6 +592,9 @@ void ASM SAVEDS IntuiMsgFunc (
 	CallHookPkt (glob->imsghook, glob->req, imsg);
 	ResetDrawerAndFileFields (glob);
     }
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/

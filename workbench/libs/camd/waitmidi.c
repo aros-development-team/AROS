@@ -61,7 +61,10 @@
 	Wait(1L<<midinode->mi_ReceiveSigBit);
 
 #ifdef _AROS
-	Camd_GetMidi(midinode,msg,CamdBase);
+        AROS_LC2(BOOL, GetMidi,
+	         AROS_LCA(struct MidiNode *, midinode, A0),
+	         AROS_LCA(MidiMsg *, msg, A1),
+	         struct CamdBase *, CamdBase, 24, Camd);
 #else
 	GetMidi(midinode,msg,CamdBase);
 #endif

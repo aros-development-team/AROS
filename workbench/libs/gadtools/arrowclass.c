@@ -199,6 +199,8 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
 )
 {
 
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     switch (msg->MethodID)
@@ -221,6 +223,8 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
     }
 
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/

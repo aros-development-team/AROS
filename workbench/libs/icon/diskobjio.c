@@ -199,6 +199,8 @@ AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(ULONG       *, msg,  A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     LONG rc = 0;
 
     switch (*msg)
@@ -227,6 +229,8 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
     }
 
     return rc;
+
+    AROS_USERFUNC_EXIT
 } /* dosstreamhook */
 
 
@@ -245,6 +249,7 @@ AROS_UFH3S(ULONG, ProcessDrawerData,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
 #if 0
 kprintf ("ProcessDrawerData\n");
 #endif
@@ -276,6 +281,8 @@ kprintf ("ProcessDrawerData\n");
     }
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessDrawerData */
 
 static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
@@ -380,6 +387,8 @@ AROS_UFH3S(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct Image * image;
 
 #if 0
@@ -412,6 +421,8 @@ kprintf ("ProcessGadgetRender\n");
     }
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessGadgetRender */
 
 AROS_UFH3S(ULONG, ProcessSelectRender,
@@ -420,6 +431,8 @@ AROS_UFH3S(ULONG, ProcessSelectRender,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct Image * image;
 
 #if 0
@@ -455,6 +468,8 @@ kprintf ("ProcessSelectRender\n");
     }
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessSelectRender */
 
 AROS_UFH3S(ULONG, ProcessFlagPtr,
@@ -463,6 +478,8 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     LONG ptr;
 
     switch (data->sdd_Mode)
@@ -496,6 +513,8 @@ kprintf ("ProcessFlagPtr: %08lx\n", ptr);
 
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessFlagPtr */
 
 static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
@@ -542,6 +561,8 @@ AROS_UFH3S(ULONG, ProcessDefaultTool,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     STRPTR str;
 
 #if 0
@@ -579,6 +600,8 @@ kprintf ("ProcessDefaultTool\n");
     }
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessDefaultTool */
 
 AROS_UFH3S(ULONG, ProcessToolTypes,
@@ -587,6 +610,8 @@ AROS_UFH3S(ULONG, ProcessToolTypes,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
 #if 0
 kprintf ("ProcessToolTypes\n");
 #endif
@@ -692,6 +717,8 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
 
     return TRUE;
+
+    AROS_USERFUNC_EXIT
 } /* ProcessToolTypes */
 
 

@@ -306,12 +306,12 @@ AROS_UFH2 (void, puttostr,
     AROS_UFHA(STRPTR *,strPtrPtr,A3)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     D(bug("Putting character %c into buffer at adress %p\n",
     	chr, *strPtrPtr));
     *(*strPtrPtr)= chr;
     (*strPtrPtr) ++;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/
@@ -431,6 +431,8 @@ AROS_UFH3S(IPTR, dispatch_textclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     switch (msg->MethodID)
@@ -486,6 +488,8 @@ AROS_UFH3S(IPTR, dispatch_textclass,
     }
 
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/

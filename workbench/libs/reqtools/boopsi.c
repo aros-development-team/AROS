@@ -134,12 +134,14 @@ AROS_UFH3(IPTR, myBoopsiDispatch,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(struct Image *, im, A2),
 	  AROS_UFHA(Msg, msg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
     	    	      REGPARAM(a2, struct Image *, im),
 		      REGPARAM(a1, Msg, msg))
-#endif
 {
+#endif
     struct LocalObjData *data;
     struct TextFont	*font, *oldfont;
     struct RastPort	*rp;
@@ -241,7 +243,7 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 		xpos = rp->cp_x;
 		
 		Text(rp, data->lod_IData.idata_Label + data->lod_UnderOff + 1, data->lod_RestLen);
-		
+
 		/* Draw underscore */
 		
 		Move(rp, xpos, ypos + data->lod_UnderY);
@@ -280,7 +282,9 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
     } /* switch(msg->MethodID) */
     
     return retval;
-    
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif    
 }
 
 /****************************************************************************************/

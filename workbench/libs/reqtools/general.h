@@ -26,6 +26,8 @@
 
 #else
 
+#include <aros/asmcall.h>
+
 /* AROS */
 
 #undef USE_ASM_FUNCS
@@ -59,7 +61,7 @@
 #define REGPARAM(reg,type,name)     	type name
 #define OPT_REGPARAM(reg,type,name) 	type name
 #define ASM_REGPARAM(reg,type,name) 	type name
- 
+
 #endif
 
 struct BackFillMsg;
@@ -86,8 +88,17 @@ extern struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *,
 extern void REGARGS Reply_GT_Msg (struct IntuiMessage *);
 extern void REGARGS DoCloseWindow (struct Window *, int);
 extern void REGARGS mySetWriteMask (struct RastPort *, ULONG);
+
+#ifdef _AROS
+AROS_UFP3(void, WinBackFill,
+    AROS_UFPA(struct Hook *, hook, A0),
+    AROS_UFPA(struct RastPort *, the_rp, A2),
+    AROS_UFPA(struct BackFillMsg *, msg, A1));
+#else
 void SAVEDS ASM WinBackFill (REGPARAM(a0, struct Hook *,),
 	REGPARAM(a2, struct RastPort *,), REGPARAM(a1, struct BackFillMsg *,));
+#endif
+
 struct Window *REGARGS OpenWindowBF (struct NewWindow *,
 				struct Hook *, UWORD *, ULONG *, WORD *, BOOL);
 int CheckReqPos (int, int, struct NewWindow *);

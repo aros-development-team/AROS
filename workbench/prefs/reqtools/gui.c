@@ -71,18 +71,23 @@ AROS_UFH3(void, IntuiMsgFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(APTR, req, A2),
     AROS_UFHA(struct IntuiMessage *, imsg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 void __asm __saveds IntuiMsgFunc( register __a0 struct Hook *hook,
 				  register __a2 APTR req,
 				  register __a1 struct IntuiMessage *imsg)
-#endif
 {
+#endif
     if (imsg->Class == IDCMP_REFRESHWINDOW)
     {
 	GT_BeginRefresh( WindowPtr );
 	RenderPrefsWindow();
 	GT_EndRefresh ( WindowPtr, TRUE);
     }
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif    
 }
 
 

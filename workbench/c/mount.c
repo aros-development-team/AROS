@@ -56,7 +56,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 
 			    return 0;
 			}
-			
+
 			sub = Read(ml, buf, rest);
 
 			if (sub == -1)
@@ -67,7 +67,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 			rest -= sub;
 			buf += sub;
 		    }
-		    
+
 		    FreeVec(*mem);
 		}
 		else
@@ -76,10 +76,10 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 		}
 	    }
 	}
-	
+
 	Close(ml);
     }
-    
+
     return IoErr();
 }
 
@@ -130,10 +130,10 @@ static void preparefile(STRPTR buf, LONG size)
 		    buf++;
 		}
 	    }
-	    
+
 	    continue;
 	}
-	
+
 	/* Convert '\n' and ';' to spaces */
 	if (*buf == '\n' || *buf == ';')
 	{
@@ -196,7 +196,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
     IPTR *args[18]=
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-    
+
     IPTR            *params;	     /* MakeDosNode() paramPacket */
     struct DosEnvec *vec;
 
@@ -214,7 +214,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
     {
 	return ERROR_NO_FREE_STORE;
     }
-    
+
     vec = (struct DosEnvec *)&params[4];
 
     rda.RDA_Source.CS_Buffer = buf;
@@ -265,7 +265,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	    {
 		return IoErr();
 	    }
-	    
+
 	    vec->de_TableSize      = (IPTR)19;
 	    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
 	    vec->de_SegOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
@@ -290,7 +290,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	    params[2] = (IPTR)args[2] ? *args[2] : 0;
 	    params[3] = 0;
 
-	    /* NOTE: The 'params' may not be freed! */ 
+	    /* NOTE: The 'params' may not be freed! */
 
 	    {
 		struct DeviceNode *dn = MakeDosNode(params);
@@ -302,7 +302,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 		    if (dn->dn_OldName != NULL)
 		    {
 			dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
-			
+
 			if (AddDosNode(vec->de_BootPri, ADNF_STARTPROC, dn))
 			{
 			    error = 0;
@@ -354,7 +354,6 @@ int main(void)
     LONG    error = 0;
 
     struct RDArgs    *rda;
-    struct Process   *me = (struct Process *)FindTask(NULL);
 
     rda = ReadArgs("DEVICE/M,FROM/K", (ULONG *)args, NULL);
 

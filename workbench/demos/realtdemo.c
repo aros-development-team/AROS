@@ -81,6 +81,8 @@ AROS_UFH3(ULONG, myFunc,
 	  AROS_UFHA(struct pmTime *, message, A1),
 	  AROS_UFHA(struct Player *, player , A2))
 {
+    AROS_USERFUNC_INIT
+
     switch (message->pmt_Method)
     {
     case PM_TICK:
@@ -105,4 +107,6 @@ AROS_UFH3(ULONG, myFunc,
     }
 
     return 0;
+
+    AROS_USERFUNC_EXIT
 }

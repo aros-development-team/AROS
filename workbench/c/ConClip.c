@@ -134,6 +134,8 @@ AROS_UFH3(ULONG, conclipeditfunc,
     AROS_UFHA(ULONG *, 			command,	A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct MsgPort 	 *port, replyport;
     struct MyEditHookMsg msg;
     BOOL		 calloldhook = TRUE;
@@ -208,10 +210,12 @@ AROS_UFH3(ULONG, conclipeditfunc,
     	    break;    
 	    
     } /* switch (*command) */
-    
+
     if (calloldhook) retcode = CallHookPkt(oldedithook, sgw, command);
-    
+
     return retcode;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/

@@ -54,10 +54,10 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 
 AROS_UFH2(struct InputEvent *, CxTree,
     AROS_UFHA(struct InputEvent *     , events , A0),
-    AROS_UFHA(struct CommoditiesBase *, CxBase , A6)
-	 )
-
+    AROS_UFHA(struct CommoditiesBase *, CxBase , A6))
 {
+    AROS_USERFUNC_INIT
+
     CxObj *co;
     CxMsg *tempMsg, *msg;
     struct Node *node, *succ;
@@ -82,7 +82,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
     CxBase->cx_IEvents = NULL;
     CxBase->cx_EventExtra = NULL;
     NEWLIST(&CxBase->cx_GeneratedInputEvents);
-    
+
     /* Free all the replied messages */
     while((tempMsg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
 	FreeCxStructure(tempMsg, CX_MESSAGE, (struct Library *)CxBase);
@@ -180,7 +180,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 		{
 		    if(co->co_Node.ln_Type == CX_BROKER)
 			kprintf("Broker: %s\n", co->co_Ext.co_BExt->bext_Name);
-		    
+
 		    if(co->co_Node.ln_Succ != NULL &&
 		       co->co_Node.ln_Succ->ln_Type == CX_BROKER)
 			kprintf("Routing to next broker %s (this broker=%s) %p\n",
@@ -269,13 +269,15 @@ AROS_UFH2(struct InputEvent *, CxTree,
     ReleaseSemaphore(&CxBase->cx_SignalSemaphore);
 
     return CxBase->cx_IEvents;
+
+    AROS_USERFUNC_EXIT
 }
 
-    
+
 static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 {
     struct GeneratedInputEvent *temp;
-  
+
     if((temp = (struct GeneratedInputEvent *)AllocCxStructure(CX_INPUTEVENT, 0,
 	       (struct Library *)CxBase)) != NULL)
     {
@@ -425,8 +427,13 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 
 AROS_UFH2(struct InputEvent *, cxIHandler,
 	  AROS_UFHA(struct InputEvent *     , events, A0),
-	  AROS_UFHA(struct CommoditiesBase *, CxBase, A1)
-	  )
+	  AROS_UFHA(struct CommoditiesBase *, CxBase, A1))
 {
-    return CxTree(events, CxBase);
+    AROS_USERFUNC_INIT
+
+    return AROS_UFC2(struct InputEvent *, CxTree,
+	  	     AROS_UFCA(struct InputEvent *     , events , A0),
+		     AROS_UFCA(struct CommoditiesBase *, CxBase , A6));
+
+    AROS_USERFUNC_EXIT
 }

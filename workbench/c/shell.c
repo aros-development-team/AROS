@@ -592,6 +592,7 @@ int main(void)
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
 
+    P(kprintf("USERDATA 1 = %p\n", FindTask(0)->tc_UserData));
     P(kprintf("Executing shell\n"));
 
     cli = Cli();
@@ -641,6 +642,7 @@ int main(void)
     }
 
     P(kprintf("Exiting shell\n"));
+    P(kprintf("USERDATA 2 = %p\n", FindTask(0)->tc_UserData));
 
     return error;
 }
@@ -686,7 +688,7 @@ LONG interact(STRPTR script)
 
 	    moreLeft = readLine(&cl, Input());	    
 	    error = checkLine(&rd, &cl);
-	    
+
 	    Redirection_release(&rd);
 	    FreeVec(cl.line);
 	}
@@ -707,10 +709,10 @@ void releaseFiles(struct Redirection *rd)
     {
     	SelectInput(rd->oldIn);
 	if (rd->newIn) Close(rd->newIn);
-	
+
 	rd->oldIn = rd->newIn = NULL;
     }
-    
+
     if (rd->oldOut)
     {
     	SelectOutput(rd->oldOut);
@@ -830,7 +832,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    {
 	       goto exit;
 	    }
-	    
+
 #if 1 /* stegerg */
     	    SelectInput(rd->newIn);
 #else
@@ -1163,7 +1165,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 	struct CSource aliasCs = { avBuffer, sizeof(avBuffer), 0 };
 	
 	result = ReadItem(rd->commandStr, COMMANDSTR_LEN, &aliasCs);
-	
+
 	P(kprintf("Found alias! value = %s\n", avBuffer));
 	    
 	if(result == ITEM_ERROR || result == ITEM_NOTHING)
@@ -1454,7 +1456,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	    if(commandSeg != NULL)
 	    {
 	        BPTR lock = DupLock(paths[1]);
-		
+
 		if (lock)
 		{
 		    ss->oldHomeDir = SetProgramDir(lock);
@@ -1571,11 +1573,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     
     if(error != 0)
     {
-	IPTR pArgs[] = { (IPTR)cli->cli_CommandName };
 	cli->cli_Result2 = error;
 	PrintFault(error, cli->cli_CommandName);
     }
-    
+
     //    Flush(Output());
 
     // P(Delay(1*8));

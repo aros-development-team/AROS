@@ -77,7 +77,7 @@ int ASM SAVEDS GetVScreenSize (
     getvpetags[0] = VTAG_VIEWPORTEXTRA_GET;
     getvpetags[1] = (ULONG)&vpe;
     getvpetags[2] = TAG_END;
-    
+
     Forbid();
 #ifndef _AROS
 #warning No VideoControl in AROS, yet
@@ -95,19 +95,19 @@ int ASM SAVEDS GetVScreenSize (
     }
 #endif
     Permit();
-    
+
     *width = clip->MaxX - clip->MinX + 1;
     *height = ht = clip->MaxY - clip->MinY + 1;
-    
+
     if (scr->Width < *width) *width = scr->Width;
     if (scr->Height < *height) *height = scr->Height;
-    
+
     return ((ht >= 400) ? 4 : 2);
 }
 
 /****************************************************************************************/
 
-#undef ThisProcess()
+#undef ThisProcess
 #define ThisProcess()		( ( APTR ) FindTask( NULL ) )
 
 /****************************************************************************************/
@@ -286,7 +286,7 @@ struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
 	if (ft) CloseFont (ft);
 	if (deffont) ft = deffont;
 	else ft = GfxBase->DefaultFont;
-	
+
 	attr->ta_Name = ft->tf_Message.mn_Node.ln_Name;
 	attr->ta_YSize = ft->tf_YSize;
 	attr->ta_Style = ft->tf_Style;
@@ -334,7 +334,7 @@ struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *win,
 	if (hook) CallHookPkt (hook, req, imsg);
 	ReplyMsg ((struct Message *)imsg);
     }
-    
+
     return (NULL);
 }
 
@@ -388,14 +388,16 @@ struct BackFillMsg
 AROS_UFH3(void, WinBackFill,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct RastPort *, the_rp, A2),
-    AROS_UFHA(struct BackFillMsg, *msg, A1))
+    AROS_UFHA(struct BackFillMsg *, msg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 void SAVEDS ASM WinBackFill (
 	REGPARAM(a0, struct Hook *, hook),
 	REGPARAM(a2, struct RastPort *, the_rp),
 	REGPARAM(a1, struct BackFillMsg *, msg))
-#endif
 {
+#endif
     struct RastPort rp;
 
     memcpy( &rp, the_rp, sizeof( rp ) );
@@ -404,6 +406,9 @@ void SAVEDS ASM WinBackFill (
     mySetWriteMask (&rp, ~0);
     RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
 		   msg->bounds.MaxX, msg->bounds.MaxY);
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/
@@ -413,26 +418,30 @@ void SAVEDS ASM WinBackFill (
 AROS_UFH3(void, PatternWinBackFill,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct RastPort *, the_rp, A2),
-    AROS_UFHA(struct BackFillMsg, *msg, A1))
+    AROS_UFHA(struct BackFillMsg *, msg, A1))
 {
+    AROS_USERFUNC_INIT
+
     struct RastPort rp;
     UWORD pattern[] = {0xAAAA,0x5555};
-    
+
     memcpy( &rp, the_rp, sizeof( rp ) );
     rp.Layer = NULL;
 
     SetAPen (&rp, ((UWORD *)hook->h_Data)[BACKGROUNDPEN]);
     SetBPen (&rp, ((UWORD *)hook->h_Data)[SHINEPEN]);
     SetDrMd (&rp, JAM2);
-    
+
     mySetWriteMask (&rp, ~0);
-    
+
     SetAfPt(&rp, pattern, 1);
-    
+
     RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
 		   msg->bounds.MaxX, msg->bounds.MaxY);
-		   
+
     SetAfPt(&rp, NULL, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
 #endif

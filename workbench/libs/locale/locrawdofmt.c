@@ -24,12 +24,14 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Locale *, locale, A2),
     AROS_UFHA(char, fill, A1))
 {
+    AROS_USERFUNC_INIT
+
 #ifdef __mc68000__
     register APTR pdata __asm(A3) = hook->h_Data;
 #else
     APTR pdata = hook->h_Data;
 #endif
-    
+
     AROS_UFC3(void, hook->h_SubEntry,
     	AROS_UFCA(char, fill, D0),
 	AROS_UFCA(APTR, pdata, A3),
@@ -38,7 +40,8 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #ifdef __mc68000__
     hook->h_Data = pdata;
 #endif
-	
+
+    AROS_USERFUNC_EXIT
 }
 
 #undef LocaleBase

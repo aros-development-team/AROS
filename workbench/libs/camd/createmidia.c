@@ -2,7 +2,7 @@
     (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: 
+    Desc:
     Lang: English
 */
 
@@ -74,7 +74,10 @@
 	InitSemaphore(&midinode->sysexsemaphore2);
 
 #ifdef _AROS
-	if(Camd_SetMidiAttrsA(&midinode->midinode,tags,CamdBase)==NULL)
+	AROS_LC2(BOOL, SetMidiAttrsA,
+	         AROS_LCA(struct MidiNode *, &midinode->midinode, A0),
+	         AROS_LCA(struct TagItem *, tags, A1),
+	 	 struct CamdBase *, CamdBase, 9, Camd);
 #else
 	if(SetMidiAttrsA(&midinode->midinode,tags,CamdBase)==NULL)
 #endif

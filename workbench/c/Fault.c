@@ -45,7 +45,7 @@
 #include <string.h>
 #include <utility/tagitem.h>
 
-#define ARG_TEMPLATE	"/N/M"
+#define ARG_TEMPLATE	"NUM/A/N/M"
 #define ARG_CODE	0
 #define TOTAL_ARGS	1
 #define DEBUG 1
@@ -81,6 +81,7 @@ int main(void)
 	    CopyMem(buffer, "Fault ", 6);
 
 	    D(bug("theNum = %p\n", theNum));
+	    if (theNum)
 	    while( *theNum != NULL )
 	    {
 		D(bug("*theNum = %p", *theNum));
@@ -88,7 +89,7 @@ int main(void)
 
 		n = sprintf(&buffer[6], "%ld: ", **theNum);
 		Fault(**theNum, NULL, &buffer[7+n], 128 - 7 - n);
-		
+
 		FPuts(outStream, buffer);
 		theNum++;
 	    }
@@ -109,5 +110,8 @@ int main(void)
 	return RETURN_FAIL;
     }
     SetIoErr(0);
+    kprintf("exit\n");
     return 0;
+
+
 }

@@ -8,7 +8,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 DEVS := $(DEVSDIR)/ram.handler    \
 	$(DEVSDIR)/nil.handler    \
 	$(DEVSDIR)/ffs.handler    \
- 	$(DEVSDIR)/rootfs.handler \
+## 	$(DEVSDIR)/rootfs.handler \
 	$(DEVSDIR)/fdsk.device    \
 	$(DEVSDIR)/ramdrive.device
 
