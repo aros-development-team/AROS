@@ -10,12 +10,15 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item Bugfixes (as usual)
 \item Some new functions
 \item We have the first game for AROS: Moria3D runs after minor changes
-\item All neccessary includes to compile AROS
+\item All necessary includes to compile AROS
 \item Added conditional build (see make.defaults)
 \item Much faster linking on Unix
 \item Makefiles are generated from templates
 \item AROS has Resource Tracking now :-)
-\item GadTools
+\item AROS uses almost no assembler code anymore
+\item Added a small mini kernel to ease porting
+\item New libs: math*, diskfont, gadtools
+\item New logo by Mike Williams
 \end{itemize}
 
 Things we currently work on:

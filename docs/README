@@ -15,10 +15,10 @@ New this time:
 - Much faster linking on Unix
 - Makefiles are generated from templates
 - AROS has Resource Tracking now :-)
-- GadTools
 - AROS uses almost no assembler code anymore
 - Added a small mini kernel to ease porting
-- Added mathffp.library
+- New libs: math*, diskfont, gadtools
+- New logo by Mike Williams
 
 HOW TO USE THIS
 ---------------
