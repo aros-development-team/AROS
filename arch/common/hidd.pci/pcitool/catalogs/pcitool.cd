@@ -1,0 +1,115 @@
+;
+MSG_TITLE (//)
+PCI Tool
+;
+MSG_WINTITLE (//)
+PCI Tool
+;
+MSG_DESCRIPTION (//)
+PCI querying and managment
+;
+MSG_ERROR_LOCALE (//)
+Can't open locale
+;
+MSG_ERROR_OK (//)
+Ok
+;
+MSG_ERROR_HEADER (//)
+ERROR
+;
+MSG_DRIVER_INFO (//)
+Driver info:
+;
+MSG_DRIVER_NAME (//)
+Driver name:
+;
+MSG_DIRECT_BUS (//)
+Direct bus:
+;
+MSG_HARDWARE_INFO (//)
+Hardware info:
+;
+MSG_PCI_DEVICE_INFO (//)
+PCI device info:
+;
+MSG_DEVICE_DESCRIPTION (//)
+Description:
+;
+MSG_VENDORNAME (//)
+Vendor Name:
+;
+MSG_PRODUCTNAME (//)
+Product Name:
+;
+MSG_VENDORID (//)
+VendorID:
+;
+MSG_PRODUCTID (//)
+ProductID:
+;
+MSG_REVISIONID (//)
+RevisionID:
+;
+MSG_INTERFACE (//)
+Interface:
+;
+MSG_CLASS (//)
+Class:
+;
+MSG_SUBCLASS (//)
+Subclass:
+;
+MSG_IRQ (//)
+IRQ:
+;
+MSG_ROM_BASE (//)
+ROM Base:
+;
+MSG_ROM_SIZE (//)
+ROM Size:
+;
+MSG_BRIDGE (//)
+Bridge handles bus %d (ISA %senabled, VGA %senabled)
+;
+MSG_MEMORY_RANGE (//)
+Memory ranges from %08x to %08x
+;
+MSG_PREFETCHABLE_MEMORY (//)
+Prefetchable ranges memory from %08x to %08x
+;
+MSG_IO_RANGE (//)
+IO ranges from %04x to %04x
+;
+MSG_IO_MSG (//)
+IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;
+MSG_IO (//)
+I/O
+;
+MSG_MEMORY (//)
+Memory
+;
+MSG_PREFETCHABLE (//)
+Prefetchable Memory
+;
+MSG_YES (//)
+yes
+;
+MSG_NO (//)
+no
+;
+MSG_NA (//)
+N/A
+;
+MSG_NOT (//)
+not
+;
+MSG_SIZE4 (//)
+%s at 0x%04x (size 0x%04x)
+;
+MSG_SIZE8 (//)
+%s at 0x%08x (size 0x%08x)
+;
+MSG_UNUSED (//)
+--unused--
+;
