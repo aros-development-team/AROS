@@ -46,7 +46,13 @@ extern struct ReqToolsBase * ReqToolsBase;
 
 *****************************************************************************/
 {
-#warning FIXME: should use vararg macros!!!!
-    return rtEZRequestA(bodyfmt, gadfmt, reqinfo, &taglist + 1, taglist);
+    va_list args;
+    ULONG   rc;
+
+    va_start(args, taglist);
+    rc = rtEZRequestA(bodyfmt, gadfmt, reqinfo, args, taglist);
+    va_end(args);
+    
+    return rc;
     
 } /* rtEZRequest */
