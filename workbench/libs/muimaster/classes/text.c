@@ -153,6 +153,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->contents = g_strdup((STRPTR)tag->ti_Data);
 		if (_flags(obj) & MADF_SETUP)
 		    setup_text(data, obj);
+		MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
 		break;
 	    case MUIA_Text_PreParse:
 		if (data->ztext)
@@ -162,6 +163,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->preparse = g_strdup((STRPTR)tag->ti_Data);
 		if (_flags(obj) & MADF_SETUP)
 		    setup_text(data, obj);
+		MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
 		break;
 	}
     }
@@ -208,20 +210,14 @@ static void setup_text (struct MUI_TextData *data, Object *obj)
 				    ZTEXT_ARG_HICHAR, data->hichar);
     else if (data->mtd_Flags & MTDF_HICHARIDX)
     {
-//	STRPTR s;
 	data->ztext = zune_text_new(data->preparse, data->contents,
 				    ZTEXT_ARG_HICHARIDX, data->hichar);
-//	s = strchr(data->preparse, data->hichar);
-//	if (s == NULL)
-//	    s = strchr(data->contents, data->hichar);
-//	if (s && s[1])
-//	{
-//	    set(obj, MUIA_ControlChar, s[1]);
-//	}
     }
     else
 	data->ztext = zune_text_new(data->preparse, data->contents,
 				    ZTEXT_ARG_NONE, 0);
+
+    zune_text_get_bounds(data->ztext, obj);
 
     D(bug("muimaster.library/text.c: ZText of 0x%lx at 0x%lx\n",obj,data->ztext));
 }
@@ -286,7 +282,8 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
 /*      g_print("%d %d\n", _font(obj)->ascent, _font(obj)->descent); */
 
-    zune_text_get_bounds(data->ztext, obj);
+//    zune_text_get_bounds(data->ztext, obj); /* now done in MUIM_Setup */
+
 
     msg->MinMaxInfo->MinWidth += data->ztext->width;
     msg->MinMaxInfo->DefWidth += data->ztext->width;
