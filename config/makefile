@@ -1,10 +1,12 @@
+# $Id$
+
 TOP=..
 
 include $(TOP)/config/make.cfg
 
 SUBDIRS=$(KERNEL) $(ARCH)
 
-all: $(TOP)/apps/compiler/include/aros/config.h
+all: setup $(TOP)/compiler/include/aros/config.h
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
@@ -13,7 +15,7 @@ all: $(TOP)/apps/compiler/include/aros/config.h
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
-config: $(TOP)/apps/compiler/include/aros/config.h
+config: setup $(TOP)/compiler/include/aros/config.h
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Configuring in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
@@ -22,20 +24,29 @@ config: $(TOP)/apps/compiler/include/aros/config.h
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
-$(TOP)/apps/compiler/include/aros/config.h: $(TOP)/configure
-	sh $(TOP)/configure -h $(TOP)/apps/compiler/include/aros/config.h
+setup:
+	@for dir in $(SUBDIRS) ; do \
+	    echo "Setting up in $(CURDIR)/$$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+		setup ) ; \
+	    then echo -n ; else exit 1 ; fi ; \
+	done
+
+$(TOP)/compiler/include/aros/config.h: $(TOP)/configure
+	sh $(TOP)/configure -h $(TOP)/compiler/include/aros/config.h
 
 clean:
-	$(RM) ./machine
+	-$(RM) ./machine
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    echo "Cleaning in $(CURDIR)/$$dir..." ; \
+	    cd $$dir ; \
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		clean ) ; \
+		TARGET=clean clean ; \
 	done
 	$(RM) host.cfg config.h
 
 machine:
-	$(CC) -I../apps/compiler/include -o machine machine.c
+	$(CC) -I$(TOP)/compiler/include -o machine machine.c
 	./machine
-
 
