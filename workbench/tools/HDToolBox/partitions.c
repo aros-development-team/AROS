@@ -271,6 +271,13 @@ struct TableTypeNode *ttn;
 		);
 		if (partition->ph)
 		{
+			/* we did not set GEOMETRY so partitionlib did it */
+			GetPartitionAttrsA
+			(
+				partition->ph,
+				PT_GEOMETRY, &partition->dg,
+				TAG_DONE
+			);
 			return partition;
 		}
 		freePartitionNode(partition);
