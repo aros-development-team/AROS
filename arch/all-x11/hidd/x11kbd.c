@@ -76,10 +76,16 @@ keytable[] =
     {XK_F8,		0x57 },
     {XK_F9,		0x58 },
     {XK_F10,		0x59 },
-    {XK_F11,		0x5f },		/* HELP */
-    {XK_F12,		0x5f },		/* HELP */
-    {XK_Home,		0x5f },		/* HELP */
 
+    {XK_F11,		0x4B },	
+    {XK_F12,		0x5f },	/* HELP, F12 would be 0x6F */
+    {XK_Home,		0x70 },	
+    {XK_End,		0x71 },
+    {XK_Insert,		0x47 },
+    {XK_Prior,		0x48 }, /* PageUP */
+    {XK_Next,		0x49 }, /* PageDown */
+    {XK_Pause,		0x6e },
+    
     {XK_KP_Enter,	0x43 },
     {XK_KP_Subtract,	0x4a },
     {XK_KP_Decimal,	0x3c },
