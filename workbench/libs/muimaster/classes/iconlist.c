@@ -278,9 +278,9 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
 				/*show byte size for small files*/
 				if( i > 9999 )
-					sprintf( buf , "%dkb" , i/1000 );
+					sprintf( buf , "%ldkb" , (LONG)(i/1000) );
 				else
-					sprintf( buf , "%db" , i );
+					sprintf( buf , "%ldb" , (LONG)i );
 			}
 			else
 			if( !(data->sort_bits & ICONLIST_SORT_BY_SIZE) && (data->sort_bits & ICONLIST_SORT_BY_DATE) )
