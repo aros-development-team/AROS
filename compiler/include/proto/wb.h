@@ -1,3 +1,7 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+*/
 #ifndef PROTO_WB_H
 #define PROTO_WB_H
 

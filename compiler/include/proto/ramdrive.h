@@ -1,3 +1,7 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+*/
 #ifndef PROTO_RAMDRIVE_H
 #define PROTO_RAMDRIVE_H
 

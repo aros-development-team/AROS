@@ -1,3 +1,7 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+*/
 #ifndef PROTO_POTGO_H
 #define PROTO_POTGO_H
 
