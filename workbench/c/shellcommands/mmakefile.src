@@ -45,7 +45,7 @@ USER_CFLAGS := -I$(TOP)/rom/dos
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m" \
+    uselibs="arossupport amiga rom m" \
     usestartup=no
 
 %common
