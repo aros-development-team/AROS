@@ -2,19 +2,7 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-all: setup $(LIBDIR)/libexec.a
-
-setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
-
-clean:
-	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libexec.a
-
-$(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
-
-$(LIBDIR)/libexec.a: $(OSGENDIR)/execfunctions.o \
+all: setup $(OSGENDIR)/execfunctions.o \
 	    $(OSGENDIR)/allocmem.o $(OSGENDIR)/freemem.o $(OSGENDIR)/addhead.o \
 	    $(OSGENDIR)/addtask.o $(OSGENDIR)/remtask.o $(OSGENDIR)/wait.o \
 	    $(OSGENDIR)/signal.o $(OSGENDIR)/allocsignal.o $(OSGENDIR)/freesignal.o \
@@ -52,5 +40,13 @@ $(LIBDIR)/libexec.a: $(OSGENDIR)/execfunctions.o \
 	    $(OSGENDIR)/checkio.o $(OSGENDIR)/abortio.o $(OSGENDIR)/waitio.o \
 	    $(OSGENDIR)/initresident.o
 
-#	 $(AR) $@ $^
+setup :
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+
+clean:
+	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libexec.a
+
+$(OSGENDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	if test ! -s $*.err; then rm $*.err; fi
 

@@ -2,7 +2,15 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-all: setup $(LIBDIR)/libkernel.a
+all: setup $(OSGENDIR)/init.o $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
+	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
+	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
+	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
+	    $(OSGENDIR)/cachecleare.o $(OSGENDIR)/cacheclearu.o \
+	    $(OSGENDIR)/cachecontrol.o $(OSGENDIR)/cachepostdma.o \
+	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
+	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o \
+	    $(OSGENDIR)/runprocess.o
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -18,14 +26,3 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(LIBDIR)/libkernel.a: $(OSGENDIR)/init.o $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
-	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
-	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
-	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
-	    $(OSGENDIR)/cachecleare.o $(OSGENDIR)/cacheclearu.o \
-	    $(OSGENDIR)/cachecontrol.o $(OSGENDIR)/cachepostdma.o \
-	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
-	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o \
-	    $(OSGENDIR)/runprocess.o
-
-#	 $(AR) $@ $^
