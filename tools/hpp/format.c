@@ -48,6 +48,7 @@ emit_html_char (int c, FILE * out)
     case '&': fputs ("&amp;", out); break;
     case '<': fputs ("&lt;", out); break;
     case '>': fputs ("&gt;", out); break;
+    case '$': fputs ("&#36;", out); break;
     default: fputc (c, out); break;
     }
 }
@@ -259,6 +260,10 @@ rem_again:
 			    putchar ('/');
 			    goto rem_again;
 			}
+		    }
+		    else if (c == '$')
+		    {
+			fputs ("&#36;", stdout);
 		    }
 		    else
 			putchar (c);
