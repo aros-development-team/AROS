@@ -960,7 +960,16 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     /* Use safe OpenFont.. - Piru
      */
-    w->IFont = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
+     
+    if (GetPrivScreen(w->WScreen)->SpecialFlags & SF_SysFont)
+    {
+    	w->IFont = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
+    }
+    else
+    {
+    	w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri_Font));
+    }
+    
     if (w->IFont == NULL)
         goto failexit;
 
