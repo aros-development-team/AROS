@@ -16,6 +16,7 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 The following components are distributed under the terms of version 2 of the
 GNU General Public License, as specified in the file "LICENSE.GPL":
 
++ Prefs/Wanderer [workbench/prefs/wanderer]
 + Tools/Edit [workbench/tools/Edit]
 + [workbench/prefs/Editor]
 + [tools/fd2inline]

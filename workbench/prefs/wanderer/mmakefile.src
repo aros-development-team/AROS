@@ -1,0 +1,16 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES 	    := main locale wpeditor
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-wanderer
+#MM workbench-prefs-wanderer : includes linklibs workbench-prefs-wanderer-catalogs 
+
+%build_prog mmake=workbench-prefs-wanderer \
+    progname=Wanderer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%common
