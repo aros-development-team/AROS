@@ -485,7 +485,7 @@ prtchr:		push	ax
 		
 ! Even aligment
 		.byte	0
-
+		.align	16
 !
 ! Descriptor tables
 !
