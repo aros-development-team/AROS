@@ -77,10 +77,22 @@ TESTS = $(TESTDIR)/tasktest \
 #
 # END_DESC{target}
 ifeq ($(FLAVOUR),native)
-all: setup subdirs
+all: setup subdirs checkerr
 else
-all : setup subdirs AmigaOS $(BINDIR)/arosshell
+all : setup subdirs AmigaOS $(BINDIR)/arosshell checkerr
 endif
+
+# BEGIN_DESC{internaltarget}
+# \item{checkerr} Checks if any error has been occurred during compile
+#
+# END_DESC{internaltarget}
+checkerr :
+	@if test -e $(TOP)/errors ; then \
+	    $(RM) $(TOP)/errors ; \
+	    $(ECHO) "There have been errors" ; \
+	else \
+	    true ; \
+	fi
 
 # BEGIN_DESC{target}
 # \item{crypt} Create the file crypt to create a password for CVS access
@@ -148,6 +160,7 @@ dist-src : .FORCE
 #
 # END_DESC{internaltarget}
 setup :
+	@$(RM) $(TOP)/errors
 	@if [ ! -d amiga/include ]; then \
 	    echo "Missing AmigaOS includes. Please get a copy and put" ; \
 	    echo "them into amiga/include." ; \

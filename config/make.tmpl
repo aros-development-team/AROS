@@ -23,7 +23,7 @@
 %define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ err=$*.err
 	@$(ECHO) "Assembling $(CURDIR)/%(from)..."
 	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@if test ! -s %(err); then rm %(err) ; else true ; fi
+	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
@@ -31,13 +31,13 @@
 %define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ err=$*.err
 	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
 	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@if test ! -s %(err); then rm %(err) ; else true ; fi
+	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 %define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS)
 	@$(ECHO) "Linking %(to)..."
 	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
-	@if test ! -s %(err); then rm %(err) ; else true ; fi
+	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 # Create the library
