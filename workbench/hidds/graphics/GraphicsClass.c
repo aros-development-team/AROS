@@ -1580,6 +1580,7 @@ static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o,
 		newnode->refcount = 1;
 		
 		/* Initialize the pixfmt object the "ugly" way */
+		cmp_pf.stdpixfmt = vHidd_StdPixFmt_Unknown;
 		memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
 		
 		#define PF(x) ((HIDDT_PixelFormat *)x)    
