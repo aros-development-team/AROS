@@ -18,7 +18,8 @@ CLASSES   := application \
 	     slider \
 	     string \
 	     text \
-	     window
+	     window \
+             rectangle
 	
 CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
      
