@@ -1,5 +1,5 @@
-arospalette_functable.c
-arospalette_endtag.c
+functable.c
+arospalette_end.c
 libdefs.h
 mmakefile
 *.err
