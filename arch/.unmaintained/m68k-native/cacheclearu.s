@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.5  1996/11/16 01:31:03  aros
+#    Fixed hex from $ to 0x
+#
 #    Revision 1.4  1996/11/01 02:05:23  aros
 #    Motorola syntax (no more MIT)
 #
@@ -64,7 +67,7 @@ _Exec_CacheClearU_30:
 cacheclearusup:
 	# Set CD and CI bit in cacr
 	movec	cacr,d0
-	or.w	#$0808,d0
+	or.w	#0x0808,d0
 	movec	d0,cacr
 	rte
 

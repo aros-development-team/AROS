@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/11/16 01:31:04  aros
+#    Fixed hex from $ to 0x
+#
 #    Revision 1.5  1996/11/01 02:05:24  aros
 #    Motorola syntax (no more MIT)
 #
@@ -69,7 +72,7 @@ _Exec_Permit:
 	bpl	end
 
 	# Unset delayed switch bit and do the delayed switch
-	bclr	#7,$12b(a6)
+	bclr	#7,0x12b(a6)
 	jsr    Switch(a6)
 
 	# all done.
