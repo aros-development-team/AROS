@@ -45,6 +45,8 @@
 #endif
 #include <rexx/storage.h>
 
+__BEGIN_DECLS
+
 struct MsgPort;
 struct IORequest;
 struct Task;
@@ -168,5 +170,7 @@ AROS_UFP3(IPTR, HookEntry,
 BOOL CheckRexxMsg(struct RexxMsg *);
 LONG SetRexxVar(struct RexxMsg *, char *, char *, ULONG length);
 LONG GetRexxVar(struct RexxMsg *, char *, char **value);
+
+__END_DECLS
 
 #endif /* CLIB_ALIB_PROTOS_H */
