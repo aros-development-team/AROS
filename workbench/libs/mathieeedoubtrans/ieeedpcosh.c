@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 13, Mathieeedoubtrans)
+      struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 11, MathIeeeDoubTrans)
 
 /*  FUNCTION
 

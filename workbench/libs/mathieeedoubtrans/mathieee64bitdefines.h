@@ -149,7 +149,7 @@
    Dest64 = ((QUAD)Src32) << (Shift);
 #else
 #define SHL32(Dest64, Src32, Shift) \
-         if( Shift < 32) \
+   if( Shift < 32) \
    { \
      Set_High32of64(Dest64, (Src32 >> (32-(Shift)) ) ); \
      Set_Low32of64 (Dest64, (Src32 << (Shift)      ) ); \
@@ -171,7 +171,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define SHRU64(Dest64, Src64, Shift) \
-   Dest64 = (UQUAD)Src64 << (Shift);
+   Dest64 = (UQUAD)Src64 >> (Shift);
 #else
 #define SHRU64(Dest64, Src64, Shift) \
    if( (Shift) < 32) \
@@ -224,7 +224,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define SHRS64(Dest64, Src64, n) \
-   Dest64 = (UQUAD)Src64 << n;
+   Dest64 = (QUAD)Src64 >> n;
 #else
 #define SHRS64(Dest64, Src64, n) \
    if( n < 32) \

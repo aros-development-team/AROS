@@ -24,7 +24,7 @@
       AROS_LHAQUAD(LONG, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, Mathieeedoubtrans)
+      struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, MathIeeeDoubTrans)
 
 /*  FUNCTION
         Convert IEEE single to IEEE double precision

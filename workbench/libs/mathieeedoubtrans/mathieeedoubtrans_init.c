@@ -10,7 +10,7 @@
 #include "mathieeedoubtrans_intern.h"
 #include "libdefs.h"
 
-#define LC_NO_CLOSELIB
+#define LC_NO_OPENLIB
 #define LC_NO_EXPUNGELIB
 #define LC_RESIDENTPRI	    -120
 
