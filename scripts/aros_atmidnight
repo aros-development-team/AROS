@@ -58,7 +58,8 @@ echo "$today $size" >> "$CONTRIB_SIZE"
 # Create nightly builds
 cd $AROSDIR/dist
 rel=`date '+%Y%m%d'` ; export rel
-dstdir=~ftp/pub/aros/snapshots ; export dstdir
+#dstdir=~ftp/pub/aros/snapshots ; export dstdir
+dstdir=~/snapshots ; export dstdir
 find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
 subject="Nightly builds OK"
 nice ./makedist >& $LOG
