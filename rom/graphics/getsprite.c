@@ -67,63 +67,51 @@
 
   UBYTE SearchMask;
 
-  if (pick > 7 && pick != -1)
-  {
-    /* the programmer doesn't play with the rules */
-    sprite->num = -1;
-    return -1;
+  if (pick > 7 && pick != -1) {
+    pick = -1;
+  } else {
+    /*  let nobody else interrupt us while we're looking for a free
+     *  sprite
+     */
+    Disable();
+
+    if (-1 == pick) {
+      LONG Count = 0;
+      /* user just wants the next available sprite */
+      SearchMask = 0x01;
+
+      /* look for the first not allocated sprite */
+      while (0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
+        SearchMask <<= 1;
+        Count++;
+      }
+
+      if (8 != Count) {
+        /* we were able to allocated a free sprite */
+        /* mark the sprite as reserved for the user */
+        GfxBase->SpriteReserved |= SearchMask;
+        pick = Count;
+      } else {
+        /* no sprite was available for the user */
+        pick = -1;
+      }
+
+    } else {
+      /* user wants one specific sprite */
+      SearchMask = 0x01 << pick;
+
+      /* is that sprite still available? */
+      if (0 == (GfxBase->SpriteReserved & SearchMask) ) {
+        /* yes -> mark it as reserved for the user */
+        GfxBase->SpriteReserved |= SearchMask;
+      } else {
+        /* no, it's not available any more */
+        pick = -1;
+      }
+    }
+    Enable();
   }
-
-  /*  let nobody else interrupt us while we're looking for a free
-   *  sprite
-   */
-  Disable();
-
-  if (-1 == pick)
-  {
-    LONG Count = 0;
-    /* user just wants the next available sprite */
-    SearchMask = 0x01;
-
-    /* look for the first not allocated sprite */
-    while (0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8)
-    {
-      SearchMask <<= 1;
-      Count++;
-    }
-
-    if (8 != Count)
-    {
-      /* we were able to allocated a free sprite */
-      /* mark the sprite as reserved for the user */
-      GfxBase->SpriteReserved |= SearchMask;
-      pick = Count;
-    }
-    else
-    {
-      /* no sprite was available for the user */
-      pick = -1;
-    }
-
-  }
-  else
-  {
-    /* user wants one specific sprite */
-    SearchMask = 0x01 << pick;
-
-    /* is that sprite still available? */
-    if (0 == (GfxBase->SpriteReserved & SearchMask) )
-    {
-      /* yes -> mark it as reserved for the user */
-      GfxBase->SpriteReserved |= SearchMask;
-    }
-    else
-      /* no, it's not available any more */
-      pick = -1;
-  }
-
-  Enable();
-
+  
   sprite->num = pick;
 
   return pick;

@@ -91,7 +91,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
     
     RELEASE_DRIVERDATA(rp, GfxBase);
     
-    if (-1 == ret || -1 == prlrd.pen)
+    if (-1 == ret || -1 == (LONG)prlrd.pen)
     {
         D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
     	return (ULONG)-1;
