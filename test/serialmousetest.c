@@ -38,11 +38,11 @@ static ULONG bufptr;
 
 
 struct protocol {
-	char * signature;
+	const char * signature;
 	ULONG signature_length;
 	ULONG packet_length;
 	void (* handler)(char *, ULONG);
-	char * name;
+	const char * name;
 };
 
 const char ms_mouse[] = 
@@ -183,7 +183,7 @@ static void read_input(struct IOExtSer * IORequest,
 
 static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struct MsgPort * notifport)
 {
-	struct protocol * p = NULL;
+	const struct protocol * p = NULL;
 	ULONG n;
 	Delay(50);
 	printf("Supposed to probe for protocol!\n");
@@ -201,7 +201,7 @@ static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struc
 			DoIO((struct IORequest *)IORequest);
 			
 			while (protocols[i].signature) {
-				printf("Possible: %s, sign_length=%d\n",
+				printf("Possible: %s, sign_length=%ld\n",
 				      protocols[i].name,
 				      protocols[i].signature_length);
 				
@@ -228,16 +228,12 @@ static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struc
 	return p;
 }
 
-static void mouse_driver(IPTR * unit, BOOL probe_proto,struct MsgPort * notifport)
+static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport)
 {
 	struct MsgPort * SerPort;
-        ULONG unitnum = 0;
-        
-        if (NULL != unit)
-        	unitnum = *unit;
-        	
-        	
-printf("unit %d\n",unitnum);
+        ULONG unitnum = unit;
+                	
+        printf("unit %ld\n",unitnum);
 	SerPort = CreatePort(NULL,0);
 	if (NULL != SerPort)  {
 		struct IOExtSer * IORequest;
@@ -262,7 +258,7 @@ printf("unit %d\n",unitnum);
 				if (0 == ((struct IORequest *)IORequest)->io_Error) {
 					void (*handler) (char*,ULONG) = NULL;
 					if (TRUE == probe_proto) {
-						struct protocol * p;
+						const struct protocol * p;
 						p = probe_protocol(IORequest, notifport);
 						if (p) {
 							handler = p->handler;
