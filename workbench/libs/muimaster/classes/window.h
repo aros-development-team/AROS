@@ -12,6 +12,12 @@ struct ObjNode
     Object *obj;
 };
 
+struct IDNode  /* For the gadget ids */
+{
+    struct MinNode node;
+    LONG id;
+};
+
 struct MUI_WindowData
 {
     struct MUI_RenderInfo wd_RenderInfo;
@@ -22,6 +28,7 @@ struct MUI_WindowData
     struct MinList wd_CycleChain;   /* objects activated with tab */
     struct MinList wd_EHList;       /* event handlers */
     struct MinList wd_CCList;       /* control chars */
+    struct MinList wd_IDList;       /* gadget ids */
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
     struct ObjNode *wd_ActiveObject; /* the active object embeded in the cyclechain */
@@ -211,6 +218,8 @@ struct  MUIP_Window_ToFront                 { ULONG MethodID; };
 #define MUIM_Window_AddControlCharHandler 0x8042c34d
 #define MUIM_Window_RemControlCharHandler 0x8042c34e
 #define MUIM_Window_DragObject            0x8042c34f /* ZV1 */
+#define MUIM_Window_AllocGadgetID         0x8042c350 /* ZV1 Allocated a GadgetID for BOOPSI gadgets */
+#define MUIM_Window_FreeGadgetID          0x8042c351 /* ZV1 Allocated a GadgetID for BOOPSI gadgets */
 
 struct  MUIP_Window_Cleanup       { ULONG MethodID; }; /* Custom Class */
 struct  MUIP_Window_Setup         { ULONG MethodID; }; /* Custom Class */
@@ -218,6 +227,8 @@ struct  MUIP_Window_Setup         { ULONG MethodID; }; /* Custom Class */
 struct  MUIP_Window_AddControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; }; /* Custom Class */
 struct  MUIP_Window_RemControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; }; /* Custom Class */
 struct  MUIP_Window_DragObject { ULONG MethodID; Object *obj; LONG touchx; LONG touchy; ULONG flags; };
+struct  MUIP_Window_AllocGadgetID { ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
+struct  MUIP_Window_FreeGadgetID { ULONG MethodID; LONG gadgetid; }; /* Custom Class */
 
 /* Attributes */
 
