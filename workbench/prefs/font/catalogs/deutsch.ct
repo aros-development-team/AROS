@@ -1,0 +1,140 @@
+## version $VER: fontprefs.catalog 1.0 (27.9.2001)
+## language deutsch
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kann %s V%ld nicht öffnen!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kann public Screen nicht locken!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Kann DrawInfo nicht ermitteln!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Kann VisualInfo nicht ermitteln!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Kann Gadgets nicht erzeugen!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Kann Menus nicht erzeugen!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Kann Fenster nicht erzeugen!
+; Can't create window!
+;
+MSG_CANT_CREATE_REQ
+Kann Datei Requester nicht erzeugen!
+; Can't open create filerequester!
+;
+MSG_CANT_OPEN_STREAM
+Kann IFF Stream nicht öffnen!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Fehler beim Schreiben der Voreinstellungen!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Fehler beim Lesen der Voreinstellungen!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Kann IFF Handle nicht allozieren!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Kann Anwendungs-Speicher nicht allozieren!
+; Can't allocate application memory!
+;
+MSG_WINTITLE
+Zeichensatz-Voreinsteller (Font)
+; Font Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Öffnen ...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Speichern als ...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Beenden
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Vorgaben
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Auf Vorgaben zurücksetzen
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Auf zuletzt gespeichertes
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Auf vorherigen Stand
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Einstellungen
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Piktogramme erzeugen?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Lade Font-Vorgaben
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Speichere Font-Vorgaben
+; Save Font Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_MX_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_MX_SYSTEM
+System
+; System
+;
+MSG_MX_SCREEN
+Schirm
+; Screen
+;
+MSG_GAD_GET
+Holen...
+; Get...
+;
+MSG_GAD_SAVE
+Speichern
+; Save
+;
+MSG_GAD_USE
+Benutzen
+; Use
+;
+MSG_GAD_CANCEL
+Abbrechen
+; Cancel
