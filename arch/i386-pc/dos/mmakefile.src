@@ -24,7 +24,7 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2) -Dmain=submain
+	%compile_q opt="$(CFLAGS2) -Dmain=submain"
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
