@@ -88,11 +88,11 @@ cia00003;0;digulla;Write SetICR
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
-c00003;1;;Write C:Assign
+c00003;2;SDuvan;Write C:Assign
 c00004;2;matthias;Write C:Avail
 c00005;2;iaint;Write C:Break
 c00006;2;matthias;Write C:Cd
-c00007;2;hkiel;Write C:Copy
+c00007;1;hkiel;Write C:Copy
 c00008;1;laguest;Write C:CPU
 c00009;2;srittau;Write C:Date
 c00010;1;laguest;Write C:Delete
@@ -114,7 +114,7 @@ c00025;2;SDuvan;Write C:Lab
 c00026;1;matthias;librarytest
 c00027;1;matthias,bergers;Write C:List
 c00028;2;SDuvan;Write C:MakeLink
-c00029;2;matthias;Write C:MakeDir
+c00029;2;matthias,SDuvan;Write C:MakeDir
 c00030;2;matthias;Write C:Mount
 c00031;1;matthias;Write C:NewShell
 c00032;2;matthias;Write C:Path
@@ -377,7 +377,7 @@ dos00015;2;matthias;Write CreateDir
 dos00016;2;matthias;Write CurrentDir
 dos00017;2;matthias;Write IoErr
 dos00018;2;iaint;Write CreateProc
-dos00019;1;SDuvan;Write Exit
+dos00019;2;SDuvan;Write Exit
 dos00020;2;matthias;Write LoadSeg
 dos00021;2;matthias;Write UnLoadSeg
 dos00022;2;iaint;Write DeviceProc
@@ -502,8 +502,8 @@ dos00140;2;bergers;Write SetVar
 dos00141;2;bergers;Write GetVar
 dos00142;2;bergers;Write DeleteVar
 dos00143;2;bergers;Write FindVar
-dos00144;1;SDuvan;Write CliInitNewcli
-dos00145;1;SDuvan;Write CliInitRun
+dos00144;2;SDuvan;Write CliInitNewcli
+dos00145;2;SDuvan;Write CliInitRun
 dos00146;2;turrican;Write WriteChars
 dos00147;2;matthias;Write PutStr
 dos00148;2;matthias;Write VPrintf
@@ -946,7 +946,7 @@ intuition00018;2;SDuvan;Write InitRequester
 intuition00019;2;hkiel;Write ItemAddress
 intuition00020;2;digulla;Write ModifyIDCMP
 intuition00021;2;digulla;Write ModifyProp
-intuition00022;0;digulla;Write MoveScreen
+intuition00022;2;SDuvan;Write MoveScreen
 intuition00023;2;digulla;Write MoveWindow
 intuition00024;2;digulla;Write OffGadget
 intuition00025;2;hkiel;Write OffMenu
