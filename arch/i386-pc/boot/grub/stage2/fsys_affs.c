@@ -2,12 +2,104 @@
 #include "shared.h"
 #include "filesys.h"
 
+/******************************** RDB definitions */
+#define RDB_LOCATION_LIMIT 16
+#define IDNAME_RIGIDDISK   0x5244534B  /* 'RDSK' */
+
+struct RigidDiskBlock
+{
+    unsigned long   rdb_ID;
+    unsigned long   rdb_SummedLongs;
+    long            rdb_ChkSum;
+    unsigned long   rdb_HostID;
+    unsigned long   rdb_BlockBytes;
+    unsigned long   rdb_Flags;
+    unsigned long   rdb_BadBlockList;
+    unsigned long   rdb_PartitionList;
+    unsigned long   rdb_FileSysHeaderList;
+    unsigned long   rdb_DriveInit;
+    unsigned long   rdb_Reserved1[6];
+    unsigned long   rdb_Cylinders;
+    unsigned long   rdb_Sectors;
+    unsigned long   rdb_Heads;
+    unsigned long   rdb_Interleave;
+    unsigned long   rdb_Park;
+    unsigned long   rdb_Reserved2[3];
+    unsigned long   rdb_WritePreComp;
+    unsigned long   rdb_ReducedWrite;
+    unsigned long   rdb_StepRate;
+    unsigned long   rdb_Reserved3[5];
+    unsigned long   rdb_RDBBlocksLo;
+    unsigned long   rdb_RDBBlocksHi;
+    unsigned long   rdb_LoCylinder;
+    unsigned long   rdb_HiCylinder;
+    unsigned long   rdb_CylBlocks;
+    unsigned long   rdb_AutoParkSeconds;
+    unsigned long   rdb_HighRDSKBlock;
+    unsigned long   rdb_Reserved4;
+    char    rdb_DiskVendor[8];
+    char    rdb_DiskProduct[16];
+    char    rdb_DiskRevision[4];
+    char    rdb_ControllerVendor[8];
+    char    rdb_ControllerProduct[16];
+    char    rdb_ControllerRevision[4];
+    char    rdb_DriveInitName[40];
+};
+
+struct PartitionBlock
+{
+    unsigned long   pb_ID;
+    unsigned long   pb_SummedLongs;
+    long            pb_ChkSum;
+    unsigned long   pb_HostID;
+    unsigned long   pb_Next;
+    unsigned long   pb_Flags;
+    unsigned long   pb_Reserved1[2];
+    unsigned long   pb_DevFlags;
+    unsigned char   pb_DriveName[32];
+    unsigned long   pb_Reserved2[15];
+    unsigned long   pb_Environment[20];
+    unsigned long   pb_EReserved[12];
+};
+
+#define DE_TABLESIZE    0
+#define DE_SIZEBLOCK    1
+#define DE_BLOCKSIZE    2
+#define DE_NUMHEADS     3
+#define DE_SECSPERBLOCK 4
+#define DE_BLKSPERTRACK 5
+#define DE_RESERVEDBLKS 6
+#define DE_PREFAC       7
+#define DE_INTERLEAVE   8
+#define DE_LOWCYL       9
+#define DE_HIGHCYL      10
+#define DE_UPPERCYL     DE_HIGHCYL
+#define DE_NUMBUFFERS   11
+#define DE_BUFMEMTYPE   12
+#define DE_MEMBUFTYPE   DE_BUFMEMTYPE
+#define DE_MAXTRANSFER  13
+#define DE_MASK         14
+#define DE_BOOTPRI      15
+#define DE_DOSTYPE      16
+#define DE_BAUD         17
+#define DE_CONTROL      18
+#define DE_BOOTBLOCKS   19
+
+
+/******************************** AFFS definitions */
 #define T_SHORT		2
 #define T_LIST			16
 
 #define ST_FILE		-3
 #define ST_ROOT		1
 #define ST_USERDIR	2	
+
+struct BootBlock{
+	int id;
+	int chksum;
+	int rootblock;
+	int data[127];
+};
 
 struct RootBlock{
 	int p_type;					//0
@@ -124,6 +216,8 @@ struct CacheBlock {
 	unsigned short access_count;
 	unsigned int blockbuffer[128];
 };
+#define LockBuffer(x) (((struct CacheBlock *)(x))->flags |= 0x0001)
+#define UnLockBuffer(x) (((struct CacheBlock *)(x))->flags &= ~0x0001)
 
 #define MAX_CACHE_BLOCKS 10
 
@@ -132,12 +226,19 @@ struct FSysBuffer {
 	struct CacheBlock blocks[MAX_CACHE_BLOCKS];
 };
 
+#define bootBlock(x) ((struct BootBlock *)(x)->blockbuffer)
 #define rootBlock(x) ((struct RootBlock *)(x)->blockbuffer)
 #define dirHeader(x) ((struct DirHeader *)(x)->blockbuffer)
 #define fileHeader(x) ((struct FileHeader *)(x)->blockbuffer)
 #define extensionBlock(x) ((struct FileKeyExtension *)(x)->blockbuffer)
 
+#define rdsk(x) ((struct RigidDiskBlock *)(x)->blockbuffer)
+#define part(x) ((struct PartitionBlock *)(x)->blockbuffer)
+
 struct FSysBuffer *fsysb;
+int blockoffset; /* offset if there is an embedded RDB partition */
+int rootb;       /* block number of root block */
+int rdbb;        /* block number of rdb block */
 
 void initCache() {
 int i;
@@ -154,7 +255,13 @@ struct CacheBlock *getBlock(unsigned int block) {
 struct CacheBlock *freeblock;
 int i;
 
-	freeblock = &fsysb->blocks[0];
+	/* get first unlocked block */
+	i = 0;
+	do
+	{
+		freeblock = &fsysb->blocks[i++];
+	} while (freeblock->flags & 0x0001);
+	/* search through list if block is already loaded in */
 	for (i=0;i<MAX_CACHE_BLOCKS;i++)
 	{
 		if (fsysb->blocks[i].blocknum == block)
@@ -162,11 +269,12 @@ int i;
 			fsysb->blocks[i].access_count++;
 			return &fsysb->blocks[i];
 		}
-		if (freeblock->access_count>fsysb->blocks[i].access_count)
-			freeblock = &fsysb->blocks[i];
+		if (!(fsysb->blocks[i].flags & 0x0001))
+			if (freeblock->access_count>fsysb->blocks[i].access_count)
+				freeblock = &fsysb->blocks[i];
 	}
 	freeblock->blocknum = block;
-	devread(block, 0, 512, (char *)freeblock->blockbuffer);
+	devread(block+blockoffset, 0, 512, (char *)freeblock->blockbuffer);
 	return freeblock;
 }
 
@@ -180,32 +288,47 @@ unsigned int sum=0,count=0;
 
 int affs_mount(void) {
 struct CacheBlock *cblock;
+int i;
 
 	if ((current_drive & 0x80) && (current_slice != 0x30))
 		return 0;
 	fsysb = (struct FSysBuffer *)FSYS_BUF;
+	blockoffset = 0;
 	initCache();
-	cblock = getBlock(0);
-	if (!(
-			((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFFFFFF00)==0x444F5300) &&
-			((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFF)>0)
-		))
+	/* check for rdb partitiontable */
+	for (i=0;i<RDB_LOCATION_LIMIT;i++)
 	{
-		cblock = getBlock(1);
-		if (!(
-				((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFFFFFF00)==0x444F5300) &&
-				((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFF)>0)
-			))
-		{
-			return 0;
-		}
+		cblock = getBlock(i);
+		if (
+				(
+					((AROS_BE2LONG(bootBlock(cblock)->id) & 0xFFFFFF00)==0x444F5300) &&
+					((AROS_BE2LONG(bootBlock(cblock)->id) & 0xFF)>0)
+				) ||
+				(AROS_BE2LONG(cblock->blockbuffer[0]) == IDNAME_RIGIDDISK)
+			)
+			break;
 	}
-	cblock = getBlock((part_length-1+2)/2);
-	if (
-			(AROS_BE2LONG(rootBlock(cblock)->p_type) != T_SHORT) ||
-			(AROS_BE2LONG(rootBlock(cblock)->s_type) != ST_ROOT) ||
-			calcChkSum(128, cblock->blockbuffer)
-		)
+	if (i == RDB_LOCATION_LIMIT)
+		return 0;
+	if (AROS_BE2LONG(cblock->blockbuffer[0]) == IDNAME_RIGIDDISK)
+	{
+		/* we have an RDB partition table within a MBR-Partition */
+		rdbb = i;
+	}
+	else if (i<2)
+	{
+		/* partition type is 0x30 = AROS and AFFS formatted */
+		rdbb = RDB_LOCATION_LIMIT;
+		rootb = (part_length-1+2)/2;
+		cblock = getBlock(rootb);
+		if (
+				(AROS_BE2LONG(rootBlock(cblock)->p_type) != T_SHORT) ||
+				(AROS_BE2LONG(rootBlock(cblock)->s_type) != ST_ROOT) ||
+				calcChkSum(128, cblock->blockbuffer)
+			)
+			return 0;
+	}
+	else
 		return 0;
 	return 1;
 }
@@ -252,7 +375,6 @@ unsigned int readbytes = 0;
 		len=fsysb->file.filesize-fsysb->file.current.offset;
 	disk_read_func = disk_read_hook;
 	cblock = getBlock(fsysb->file.current.block);
-//	devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
 	disk_read_func = 0;
 	while (len)
 	{
@@ -264,7 +386,6 @@ unsigned int readbytes = 0;
 			if (fsysb->file.current.block)
 			{
 				cblock = getBlock(fsysb->file.current.block);
-//				devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
 			}
 #warning "else shouldn't occour"
 		}
@@ -276,10 +397,10 @@ unsigned int readbytes = 0;
 			devread
 				(
 					AROS_BE2LONG
-						(
-							extensionBlock(cblock)->filekey_table
-								[fsysb->file.current.filekey]
-						),
+					(
+						extensionBlock(cblock)->filekey_table
+							[fsysb->file.current.filekey]
+					)+blockoffset,
 					fsysb->file.current.byte, size, (char *)((int)buf+readbytes)
 				);
 			fsysb->file.current.byte += size;
@@ -289,10 +410,10 @@ unsigned int readbytes = 0;
 			devread
 				(
 					AROS_BE2LONG
-						(
-							extensionBlock(cblock)->filekey_table
-								[fsysb->file.current.filekey]
-						),
+					(
+						extensionBlock(cblock)->filekey_table
+							[fsysb->file.current.filekey]
+					)+blockoffset,
 					fsysb->file.current.byte, size, (char *)((int)buf+readbytes)
 				);
 			fsysb->file.current.byte = 0;
@@ -347,9 +468,11 @@ int key;
 	if (!dirHeader(*dirh)->hashtable[key])
 		return ERR_FILE_NOT_FOUND;
 	*dirh = getBlock(AROS_BE2LONG(dirHeader(*dirh)->hashtable[key]));
-//	devread(AROS_BE2LONG(dirh->hashtable[key]), 0, 512, (char *)dirh);
 	if (calcChkSum(128, (*dirh)->blockbuffer))
+	{
+printf("ghb: %d\n", (*dirh)->blocknum);
 		return ERR_FSYS_CORRUPT;
+	}
 	if (AROS_BE2LONG(dirHeader(*dirh)->p_type) != T_SHORT)
 		return ERR_BAD_FILETYPE;
 	while (noCaseStrCmp(name,dirHeader(*dirh)->name,1) != 0)
@@ -357,22 +480,72 @@ int key;
 		if (!dirHeader(*dirh)->hashchain)
 			return ERR_FILE_NOT_FOUND;
 		*dirh = getBlock(AROS_BE2LONG(dirHeader(*dirh)->hashchain));
-//		devread(AROS_BE2LONG(dirh->hashchain), 0, 512, (char *)dirh);
 		if (calcChkSum(128, (*dirh)->blockbuffer))
+		{
+printf("ghb2: %d\n", (*dirh)->blocknum);
 			return ERR_FSYS_CORRUPT;
+		}
 		if (AROS_BE2LONG(dirHeader(*dirh)->p_type) != T_SHORT)
 			return ERR_BAD_FILETYPE;
 	}
 	return 0;
 }
 
+char *copyPart(char *src, char *dst) {
+
+	while ((*src != '/') && (*src))
+		*dst++ = *src++;
+	if (*src == '/')
+		src++;
+	*dst-- = 0;
+	/* cut off spaces at the end */
+	while (*dst == ' ')
+		*dst-- = 0;
+	return src;
+}
+
 grub_error_t findBlock(char *name, struct CacheBlock **dirh) {
 char dname[32];
-char *nbuf;
+int block;
 
-	*dirh = getBlock((part_length-1+2)/2);
-//	devread((part_length-1+2)/2, 0, 512, (char *)dirh);
-	name++;
+	name++;	/* skip "/" */
+	/* partition table part */
+	if (rdbb < RDB_LOCATION_LIMIT)
+	{
+	int bpc;
+
+		blockoffset = 0;
+		*dirh = getBlock(rdbb);
+		if (*name==0)
+			return 0;
+		name = copyPart(name, dname);
+		bpc = AROS_BE2LONG(rdsk(*dirh)->rdb_Sectors)*AROS_BE2LONG(rdsk(*dirh)->rdb_Heads);
+		block = AROS_BE2LONG(rdsk(*dirh)->rdb_PartitionList);
+		while (block != -1)
+		{
+			*dirh = getBlock(block);
+			if (noCaseStrCmp(dname, part(*dirh)->pb_DriveName, 1) == 0)
+				break;
+			block = AROS_BE2LONG(part(*dirh)->pb_Next);
+		}
+		if (block == -1)
+			return ERR_FILE_NOT_FOUND;
+		if	(
+				((AROS_BE2LONG(part(*dirh)->pb_Environment[DE_DOSTYPE]) & 0xFFFFFF00)!=0x444F5300) ||
+				((AROS_BE2LONG(part(*dirh)->pb_Environment[DE_DOSTYPE]) & 0xFF)==0)
+			)
+			return ERR_BAD_FILETYPE;
+		blockoffset = AROS_BE2LONG(part(*dirh)->pb_Environment[DE_LOWCYL]);
+		rootb = AROS_BE2LONG(part(*dirh)->pb_Environment[DE_HIGHCYL]);
+		rootb = rootb-blockoffset+1; /* highcyl-lowcyl+1 */
+		rootb *= bpc;
+		rootb = rootb-1+AROS_BE2LONG(part(*dirh)->pb_Environment[DE_RESERVEDBLKS]);
+		rootb /= 2;
+		blockoffset *= bpc;
+	}
+
+	/* filesystem part */
+	*dirh = getBlock(rootb);
 	while (*name)
 	{
 		if (
@@ -380,12 +553,7 @@ char *nbuf;
 				(AROS_BE2LONG(dirHeader(*dirh)->s_type) != ST_USERDIR)
 			)
 			return ERR_BAD_FILETYPE;
-		nbuf = dname;
-		while ((*name != '/') && (*name))
-			*nbuf++ = *name++;
-		if (*name == '/')
-			name++;
-		*nbuf = 0;
+		name = copyPart(name, dname);
 		errnum = getHeaderBlock(dname, dirh);
 		if (errnum)
 			return errnum;
@@ -393,12 +561,24 @@ char *nbuf;
 	return 0;
 }
 
+void checkPossibility(char *filename, char *bstr) {
+char cstr[32];
+
+	if (noCaseStrCmp(filename, bstr, 1)<=0)
+	{
+		if (print_possibilities>0)
+			print_possibilities = -print_possibilities;
+		memcpy(cstr, bstr+1, bstr[0]);
+		cstr[bstr[0]]=0;
+		print_a_completion(cstr);
+	}
+}
+
 int affs_dir(char *dirname) {
 struct CacheBlock *buffer1;
 struct CacheBlock *buffer2;
 char *current = dirname;
 char filename[128];
-char cstr[32];
 char *fname = filename;
 int i,block;
 
@@ -415,36 +595,54 @@ int i,block;
 			*current++ = 0;
 		}
 		*fname=0;
-#warning "Buffers may be overwritten!!!!"
 		errnum = findBlock(dirname, &buffer1);
 		if (errnum)
 			return 0;
-		for (i=0;i<72;i++)
+		if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == IDNAME_RIGIDDISK)
 		{
-			block = dirHeader(buffer1)->hashtable[i];
-			while (block)
+			block = AROS_BE2LONG(rdsk(buffer1)->rdb_PartitionList);
+			while (block != -1)
 			{
-				buffer2 = getBlock(AROS_BE2LONG(block));
-				if (calcChkSum(128, buffer2->blockbuffer))
-				{
-					errnum = ERR_FSYS_CORRUPT;
-					return 0;
-				}
-				if (AROS_BE2LONG(dirHeader(buffer2)->p_type) != T_SHORT)
-				{
-					errnum = ERR_BAD_FILETYPE;
-					return 0;
-				}
-				if (noCaseStrCmp(filename, dirHeader(buffer2)->name, 1)<=0)
-				{
-					if (print_possibilities>0)
-						print_possibilities = -print_possibilities;
-					memcpy(cstr,dirHeader(buffer2)->name+1,dirHeader(buffer2)->name[0]);
-					cstr[dirHeader(buffer2)->name[0]]=0;
-					print_a_completion(cstr);
-				}
-				block = dirHeader(buffer2)->hashchain;
+				buffer1 = getBlock(block);
+				checkPossibility(filename, part(buffer1)->pb_DriveName);
+				block = AROS_BE2LONG(part(buffer1)->pb_Next);
 			}
+			if (*filename == 0)
+				if (print_possibilities>0)
+					print_possibilities = -print_possibilities;
+		}
+		else if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == T_SHORT)
+		{
+			LockBuffer(buffer1);
+			for (i=0;i<72;i++)
+			{
+				block = dirHeader(buffer1)->hashtable[i];
+				while (block)
+				{
+					buffer2 = getBlock(AROS_BE2LONG(block));
+					if (calcChkSum(128, buffer2->blockbuffer))
+					{
+						errnum = ERR_FSYS_CORRUPT;
+						return 0;
+					}
+					if (AROS_BE2LONG(dirHeader(buffer2)->p_type) != T_SHORT)
+					{
+						errnum = ERR_BAD_FILETYPE;
+						return 0;
+					}
+					checkPossibility(filename, dirHeader(buffer2)->name);
+					block = dirHeader(buffer2)->hashchain;
+				}
+			}
+			UnLockBuffer(buffer1);
+			if (*filename == 0)
+				if (print_possibilities>0)
+					print_possibilities = -print_possibilities;
+		}	
+		else
+		{
+			errnum = ERR_BAD_FILETYPE;
+			return 0;
 		}
 		while (*current != '/')
 			current--;
