@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function setjmp()
@@ -59,9 +59,9 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	_ALIGNMENT
 	.globl	AROS_CDEFNAME(setjmp)
-	.type	AROS_CDEFNAME(setjmp),@function
+	_FUNCTION(AROS_CDEFNAME(ssetjmp))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg

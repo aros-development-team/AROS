@@ -21,6 +21,14 @@ int main (void)
 	"#define AROS_CDEFNAME(n)       n\n"
 	"#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n\n"
 #endif
+#ifndef __CYGWIN32__
+	"#define _FUNCTION(n)           .type   n,@function\n"
+	"#define _ALIGNMENT             .balign 16\n"
+
+#else
+	"#define _FUNCTION(n)           .def    n; .scl 2; .type 32; .endef\n"
+	"#define _ALIGNMENT             .align 4\n"
+#endif
 	    "\n");
 
     printf ("# For sigprocmask\n");

@@ -46,7 +46,7 @@
 
 	.text
 	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)
-	.type	AROS_SLIB_ENTRY(StackSwap,Exec),@function
+	_FUNCTION(AROS_SLIB_ENTRY(StackSwap,Exec))
 AROS_SLIB_ENTRY(StackSwap,Exec):
 	/* Preserve returnaddress and fix sp */
 	popl	%edx

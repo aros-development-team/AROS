@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Stubs to call C functions while preserving all registers
@@ -20,15 +20,6 @@
 		    which gets two arguments
 */
 
-#ifndef __CYGWIN32__
-#define _FUNCTION(name)				\
-	.globl	AROS_CDEFNAME(name)		; \
-	.type	AROS_CDEFNAME(name),@function
-#else
-#define _FUNCTION(name)				\
-	.globl	AROS_CDEFNAME(name)		; \
-	.def	AROS_CDEFNAME(name); .scl 2; .type 32; .endef
-#endif
 
 #define NUM_REGS    7
 #define FIRST_ARG   ((NUM_REGS+2)*4)
@@ -90,23 +81,25 @@
 /* To save typing work */
 #define STUB0(cname,name)             \
 	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG0(name)
 
 #define STUB1(cname,name)             \
-	_FUNCTION(cname)	    ; \
-cname:				    ; \
+	.globl	AROS_CDEFNAME(name)	    ; \
+	_FUNCTION(AROS_CDEFNAME(cname))     ; \
+cname:					    ; \
 	STUB_ARG1(name)
 
 
 #define STUB2(cname,name)             \
-	_FUNCTION(cname)	    ; \
-cname:				    ; \
+	.globl	AROS_CDEFNAME(name)	    ; \
+	_FUNCTION(AROS_CDEFNAME(cname))     ; \
+cname:					    ; \
 	STUB_ARG2(name)
 
 	.text
-	.balign 4
+	_ALIGNMENT
 
 	/* Call functions and preserve registers */
 #ifdef  UseExecstubs

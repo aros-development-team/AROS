@@ -1,7 +1,8 @@
+#include <machine.i>
 
 			.text
 			.globl	SetVGAMode
-			.type	SetVGAMode,@function
+			_FUNCTION(SetVGAMode)
 
 SetVGAMode:
 			pushl	%ebp
@@ -126,7 +127,7 @@ l4:
 			ret
 
 			.globl	SetVGAPal
-			.type	SetVGAPal,@function
+			_FUNCTION(SetVGAPal)
 
 SetVGAPal:		pushl	%ebp
 			movl	%esp,%ebp
@@ -160,7 +161,7 @@ __svp_l:		movb	(%esi),%al
 			ret
 
 			.globl	InitGfxAROS
-			.type	InitGfxAROS,@function
+			_FUNCTION(InitGfxAROS)
 			
 InitGfxAROS:		pushl	%ebp
 			movl	%esp,%ebp
@@ -266,7 +267,7 @@ __iga_2:		movb	(%esi),%al
 __ret1:			ret
 
 			.globl	putc
-			.type	putc,@function
+			_FUNCTION(putc)
 
 c_x:	.long	0
 c_y:	.long	0
@@ -372,7 +373,7 @@ __pc_1:			popl	%ebx
 			ret
 
 			.globl	xputc
-			.type	xputc,@function
+			_FUNCTION(xputc)
 
 xc_x:	.long	0
 

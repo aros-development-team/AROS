@@ -1,3 +1,4 @@
+#include <machine.i>
 #include "ide.i"
 
 /*
@@ -12,9 +13,9 @@
 
 			.text
 		        .globl	TestDevice
-			.type	TestDevice,@function
+			_FUNCTION(TestDevice)
 
-			.align	16
+			_ALIGNMENT
 
 TestDevice:		pushl	%ebp
 			movl	%esp,%ebp
@@ -185,8 +186,8 @@ TestDevice:		pushl	%ebp
 			
 /* Tests, whether drive can use LBA mode. Esi points to io_base, Edi is dev_id */
 
-			.type	TestLBA,@function
-			.align	16
+			_FUNCTION(TestLBA)
+			_ALIGNMENT
 
 TestLBA:		leal	ata_DevHead(%esi),%edx
 			orl	$0x40,%edi		// Select LBA mode
@@ -249,9 +250,8 @@ TestLBA:		leal	ata_DevHead(%esi),%edx
 */
 
 		        .globl	TestMirror
-			.type	TestMirror,@function
-
-			.align	16
+			_FUNCTION(TestMirror)
+			_ALIGNMENT
 
 TestMirror:		pushl	%ebp
 			movl	%esp,%ebp

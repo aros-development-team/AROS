@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Stubs to call C functions while preserving all registers
@@ -80,25 +80,25 @@
 /* To save typing work */
 #define STUB0(cname,name)             \
 	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG0(name)
 
 #define STUB1(cname,name)             \
 	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG1(name)
 
 
 #define STUB2(cname,name)             \
 	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG2(name)
 
 	.text
-	.balign 4
+	_ALIGNMENT
 
 	/* Call functions and preserve registers */
 #ifdef  UseExecstubs

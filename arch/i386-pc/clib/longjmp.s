@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function longjmp()
@@ -62,9 +62,9 @@
 	#include "machine.i"
 
 	.text
-	.balign 16
+	_ALIGNMENT
 	.globl	AROS_CDEFNAME(longjmp)
-	.type	AROS_CDEFNAME(longjmp),@function
+	_FUNCTION(AROS_CDEFNAME(longjmp))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg

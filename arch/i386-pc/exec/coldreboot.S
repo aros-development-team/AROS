@@ -1,5 +1,5 @@
 /*
-    (C) 1995-1997 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -49,7 +49,7 @@
 
 	    .text
 	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec)
-	    .type	AROS_SLIB_ENTRY(ColdReboot,Exec),@function
+	    _FUNCTION(AROS_SLIB_ENTRY(ColdReboot,Exec))
 AROS_SLIB_ENTRY(ColdReboot,Exec):
 		movl	$1,%eax
 		int		$0x80

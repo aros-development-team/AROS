@@ -7,7 +7,7 @@ DEVS    := $(DEVSDIR)/ide.device
 FILES	:= ide ide_asm
 OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libide.a
-AFLAGS2 := $(AFLAGS) -I.. -I$(GENINCDIR)
+AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
 
 %define_libs
 
