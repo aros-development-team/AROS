@@ -1,6 +1,7 @@
 # [B] (DO NOT REMOVE THIS LINE!)
 
 timeout 5 
+default 2
 
 title AROS VBE  640x480 16bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
