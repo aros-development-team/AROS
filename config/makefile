@@ -33,6 +33,7 @@ clean:
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
 		clean ) ; \
 	done
+	$(RM) host.cfg config.h
 
 machine:
 	$(CC) -I../include -o machine machine.c
