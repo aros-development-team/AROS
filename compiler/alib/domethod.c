@@ -54,6 +54,10 @@
 
 ******************************************************************************/
 {
+#ifdef CREATE_ROM
+    struct ExecBase * SysBase = *(struct ExecBase **)0x4;
+#endif
+
     ASSERT_VALID_PTR(obj);
     ASSERT_VALID_PTR(OCLASS(obj));
     ASSERT_VALID_PTR(message);
@@ -64,6 +68,9 @@
 
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
+#ifdef CREATE_ROM
+    struct ExecBase * SysBase = *(struct ExecBase **)0x4;
+#endif
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
     ASSERT_VALID_PTR(obj);
     ASSERT_VALID_PTR(OCLASS(obj));
