@@ -8,6 +8,7 @@ Type:	  misc/emu
 
 New this time:
 - Bugfixes
+- The first game for AROS: Moria3D
 
 HOW TO USE THIS
 ---------------
@@ -53,6 +54,18 @@ If you have FTP, you can also get the most recent version as tar.gz files
 (quite smaller than lha) from
 
     ftp://aros.fh-konstanz.de/pub/aros/
+
+HOW DO I REPORT BUGS ?
+----------------------
+
+There are these EMail addresses where you can send bug reports to:
+
+    aros-bugs@aros.fh-konstanz.de
+    aros-linux-bugs@aros.fh-konstanz.de
+    aros-amiga-bugs@aros.fh-konstanz.de
+
+MISC
+----
 
 This software is subject to the "Standard Amiga FD-Software Copyright Note".
 It is MAILWARE as defined in paragraph 4s.
