@@ -14,7 +14,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#else /* __AROS__ */
+#else /* not __AROS__ */
 
 #define bug kprintf
 
@@ -26,6 +26,6 @@ void kprintf(char *string, ...);
 
 #endif /* MYDEBUG */
 
-#endif /*__AROS__ */
+#endif /* not __AROS__ */
 
 #endif /* __DEBUG_H */
