@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-DTDIR 		:= $(DEVSDIR)/DataTypes
+DTDIR 		:= $(AROS_DEVS)/DataTypes
 FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG ELF ELF_EXE
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 

@@ -1,9 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := debugdriver
-
-EXEDIR := $(DEVSDIR)/Midi
+FILES  := debugdriver
+EXEDIR := $(AROS_DEVS)/Midi
 
 #MM- workbench-devs-complete : workbench-devs-midi
 #MM workbench-devs-midi : includes linklibs 
