@@ -4,6 +4,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/21 20:55:01  aros
+    Changed BIG_ENDIAN to AROS_BIG_ENDIAN
+    Added ALLOCVEC_TOTAL
+
     Revision 1.3  1996/10/20 02:51:49  aros
     More parallelisation with i386-emul
 
@@ -31,8 +35,8 @@
 #define STACK_GROWS_DOWNWARDS 1
 
 /* Define this to 0 for big endian and 1 for little endian (2 for others?) */
-#ifndef BIG_ENDIAN
-#define BIG_ENDIAN 1
+#ifndef AROS_BIG_ENDIAN
+#define AROS_BIG_ENDIAN 1
 #endif
 
 /* Number of bytes in a ULONG (i.e. result of sizeof(ULONG)) */
@@ -141,5 +145,11 @@ __AROS_LH0(LONG,__entry,struct ExecBase *,sysbase,,)	\
     return entry(sysbase);				\
     __AROS_FUNC_EXIT					\
 }
+
+/* This is the extra memory needed by AllocVec() or any other function
+   which wants to store an ULONG in the first part of an memory allocation
+   and calculate the offset for the first byte to return. */
+#define ALLOCVEC_TOTAL \
+(DOUBLEALIGN>sizeof(ULONG)?DOUBLEALIGN:sizeof(ULONG))
 
 #endif /* _MACHINE_H_ */
