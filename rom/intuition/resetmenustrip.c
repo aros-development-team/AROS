@@ -57,9 +57,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-   window->MenuStrip = menu;
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+    window->MenuStrip = menu;
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
-return TRUE;
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ResetMenuStrip */

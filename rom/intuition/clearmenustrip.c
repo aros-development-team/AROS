@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/02/04 21:57:32  stegerg
+    protect with MenuLock semaphore.
+
     Revision 1.8  1999/01/14 15:30:24  hkiel
     Added functions + preliminary code
 
@@ -70,10 +73,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* if menu is activated Wait(); until user left menu */
-#warning: TODO: if menu is activated Wait() for user to leave menu
-
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
     window->MenuStrip = NULL;
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
     return;
 
