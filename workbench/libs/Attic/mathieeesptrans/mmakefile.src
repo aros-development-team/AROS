@@ -28,17 +28,22 @@ FILES := \
 	intern_ieeespld
 
 FUNCTIONS := \
-	ieeespsqrt \
-	ieeespexp \
-	ieeespsinh \
+	ieeespacos \
+	ieeespasin \
+	ieeespcos \
 	ieeespcosh \
-	ieeesptanh \
+	ieeespexp \
+	ieeespfieee \
 	ieeesplog \
 	ieeesplog10 \
 	ieeesppow \
 	ieeespsin \
-	ieeespcos \
-	ieeesptan
+	ieeespsincos \
+	ieeespsinh \
+	ieeespsqrt \
+	ieeesptanh \
+	ieeesptan \
+	ieeesptieee 
 
 %define_libs postlibs="-lamiga -lmathieeesingtrans"
 
