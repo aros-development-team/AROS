@@ -1,9 +1,8 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AllocVec-based string duplication
-    Lang: english
+    AllocVec-based string duplication.
 */
 
 #include "alib_intern.h"
@@ -29,7 +28,7 @@
 	str - the string to duplicate
 
     RESULT
-	A nul-terminated string copy of the original string (possibly
+	A NULL-terminated string copy of the original string (possibly
 	of zero length), or NULL if passed a NULL pointer.
 
     NOTES
@@ -45,18 +44,17 @@
 
     INTERNALS
 
-    HISTORY
-	09-12-02    dlc added this commonly used function
-
 *****************************************************************************/
 {
     STRPTR dup;
-    ULONG len;
+    ULONG  len;
 
-    if (!str) return NULL;
+    if (str = NULL) return NULL;
+    
     len = strlen(str);
-    dup = AllocVec(len + 1, MEMF_PUBLIC | MEMF_CLEAR);
-    if (dup) CopyMem(str, dup, len + 1);
+    dup = AllocVec(len + 1, MEMF_PUBLIC);
+    if (dup != NULL) CopyMem(str, dup, len + 1);
+    
     return dup;
 
 } /* StrDup */
