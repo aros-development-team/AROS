@@ -4,14 +4,21 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := HDToolBox
-ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/Tools/$(f).info)
+ICONS     := HDToolBox WiMP
+ICONDIR   := $(AROSDIR)/Tools
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchicons
+#MM- masonicons : masonworkbenchtoolicons
 
 #MM
-masonworkbenchicons : $(ICONFILES)
+masonworkbenchtoolicons : setup $(ICONFILES)
 	@$(NOP)
 	
-$(AROSDIR)/Tools/%.info : %.info.src %_N.png %_S.png
+$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
 	%makeicon2
+
+setup :
+	%mkdirs_q $(ICONDIR)
+
+
+

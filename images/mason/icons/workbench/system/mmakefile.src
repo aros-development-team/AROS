@@ -4,14 +4,14 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Multiview Clock More Installer
-ICONDIR   := $(AROSDIR)/Utilities
+ICONS     := FixFonts
+ICONDIR   := $(AROSDIR)/System
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchutilityicons
+#MM- masonicons : masonworkbenchsystemicons
 
 #MM
-masonworkbenchutilityicons : setup $(ICONFILES)
+masonworkbenchsystemicons : setup $(ICONFILES)
 	@$(NOP)
 	
 $(ICONDIR)/%.info : %.info.src %_N.png %_S.png
