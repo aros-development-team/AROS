@@ -41,9 +41,6 @@
 #include "con_handler_intern.h"
 #include "support.h"
 
-#include <string.h>
-#include <stdio.h>
-
 /****************************************************************************************/
 
 static const char name[];
