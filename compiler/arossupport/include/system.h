@@ -123,7 +123,7 @@
 #endif
 
 /* 4. Macros for debugging and development */
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+#if defined(__GNUC__) || defined(__INTEL_COMPILER) || (defined(__STDC__) && __STDC_VERSION__ >= 199901L)
 #   define AROS_64BIT_TYPE long long
 #   define AROS_HAVE_LONG_LONG
 #endif
@@ -133,10 +133,6 @@
 #       undef inline
 #   endif
 #   define inline
-#endif
-
-#if defined __STDC__ && __STDC_VERSION__ >= 199901L
-#   define AROS_HAVE_LONG_LONG
 #endif
 
 #if __GNUC__ <= 2
