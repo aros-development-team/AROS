@@ -7,13 +7,17 @@ there are plans to port one. This however will probably take some time,
 so don't hold your breath. ;-)</p>
 
 <p>The languages that <b>are</b> available natively are 
-<a href="http://www.python.org/">Python</a> and 
+<a href="http://www.python.org/">Python</a>, <a
+href="http://regina-rexx.sourceforge.net/">Regina</a> and 
 <a href="http://wouter.fov120.com/false/">False</a>. False can be 
 classified as an <i>exotic</i> language, so it will most likely not
 be used for serious development, although it can be lots of fun. :-)
 Python is a scripting language which has become quite popular, because
 of it's nice design and features (object-oriented programming, module
-system, many useful modules included, clean syntax, ...). The current
-version of Python for AROS is 2.1.1.</p>
+system, many useful modules included, clean syntax, ...). A seperate
+sourceforge project has been started for the AROS port and can found at <a
+href="http://pyaros.sourceforge.net/">this homepage</a>.
+Regina is a portable ANSI compliant REXX interpreter. The goal for the AROS
+port is to be compatible with the ARexx interpreter for the classic AmigaOS.
 
 </section>
