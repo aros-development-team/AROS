@@ -41,6 +41,10 @@ for file in "$pubclib" "$privclib" "$pubdef" "$privdef" ; do
 	rm "$file".new
     else
 	$mic "$file".new "$file"
+
+	if [ -e "$file".new ]; then
+	    rm "$file".new
+	fi
     fi
 done
 
