@@ -22,6 +22,10 @@
 #   include <utility/tagitem.h>
 #endif
 
+
+/* Name of the gadtools.library as constant. This is an AROS extension. */
+#define GADTOOLSNAME "gadtools.library"
+
                                /* Gadgets */
 
 /* Kinds for CreateGadgetA() */
