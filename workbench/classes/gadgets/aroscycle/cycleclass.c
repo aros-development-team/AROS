@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS specific cycle class implementation.
@@ -38,16 +38,11 @@
 #define IM(o) ((struct Image *)(o))
 #define EG(o) ((struct Gadget *)(o))
 
-
-#undef AROSCycleBase
-#define AROSCycleBase ((struct CycleBase_intern *)(cl->cl_UserData))
-
-
 #include <clib/boopsistubs.h>
 
 /***********************************************************************************/
 
-Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
+Object *AROSCycle__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct CycleData 	*data;
     struct TextAttr 	*tattr;
@@ -99,7 +94,7 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
 
 /***********************************************************************************/
 
-VOID cycle_dispose(Class *cl, Object *o, Msg msg)
+VOID AROSCycle__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct CycleData *data = INST_DATA(cl, o);
     
@@ -113,7 +108,7 @@ VOID cycle_dispose(Class *cl, Object *o, Msg msg)
 
 /***********************************************************************************/
 
-IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
+IPTR AROSCycle__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct CycleData *data = INST_DATA(cl, o);
     IPTR    	     retval = 1;
@@ -138,7 +133,7 @@ IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 
 /***********************************************************************************/
 
-IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
+IPTR AROSCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct CycleData 	 *data = INST_DATA(cl, o);
     const struct TagItem *tag, *taglist = msg->ops_AttrList;
@@ -214,7 +209,7 @@ IPTR cycle_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***********************************************************************************/
 
-VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
+VOID AROSCycle__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct CycleData *data = INST_DATA(cl, o);
 
@@ -230,13 +225,12 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
 	SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
 
     if (data->labels)
-        renderlabel(AROSCycleBase, EG(o),
-                    data->labels[data->active],
+        renderlabel(EG(o), data->labels[data->active],
                     msg->gpr_RPort, msg->gpr_GInfo);
 		    
     /* Draw disabled pattern */
     if (G(o)->Flags & GFLG_DISABLED)
-        drawdisabledpattern(AROSCycleBase, msg->gpr_RPort,
+        drawdisabledpattern(msg->gpr_RPort,
                             msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
                             G(o)->LeftEdge, G(o)->TopEdge,
                             G(o)->Width, G(o)->Height);
@@ -245,7 +239,7 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
 
 /***********************************************************************************/
 
-IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSCycle__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {	
     struct CycleData 	*data;    
     struct RastPort 	*rport;
@@ -271,7 +265,7 @@ IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSCycle__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct RastPort 	*rport;
     struct CycleData 	*data;
@@ -353,7 +347,7 @@ IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-IPTR cycle_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR AROSCycle__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct RastPort *rport;
 
@@ -370,87 +364,3 @@ IPTR cycle_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     
     return 0;
 }
-
-/***********************************************************************************/
-    
-AROS_UFH3S(IPTR, dispatch_cycleclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID) 
-    {
-	case OM_NEW:
-	    retval = (IPTR)cycle_new(cl, (Class *)o, (struct opSet *)msg);
-	    break;
-
-	case OM_DISPOSE:
-            cycle_dispose(cl, o, msg);
-            break;
-
-	case OM_SET:
-            retval = cycle_set(cl, o, (struct opSet *)msg);
-            break;
-
-	case OM_GET:
-	    retval = cycle_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	case GM_RENDER:
-            cycle_render(cl, o, (struct gpRender *)msg);
-            break;
-
-	case GM_HITTEST:
-	    retval = cycle_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = cycle_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case GM_HANDLEINPUT:
-            retval = cycle_handleinput(cl, o, (struct gpInput *)msg);
-            break;
-
-	case GM_GOINACTIVE:
-	    retval = cycle_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AROSCycleBase
-
-/***********************************************************************************/
-
-struct IClass *InitCycleClass (struct CycleBase_intern * AROSCycleBase)
-{
-    Class *cl = NULL;
-
-    cl = MakeClass(AROSCYCLECLASS, GADGETCLASS, NULL, sizeof(struct CycleData), 0);
-    if (cl) {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_cycleclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSCycleBase;
-
-	AddClass (cl);
-    }
-
-    return (cl);
-}
-
-/***********************************************************************************/

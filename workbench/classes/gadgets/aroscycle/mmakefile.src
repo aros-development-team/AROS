@@ -5,8 +5,7 @@ FILES := cycleclass support
 
 #MM workbench-gadgets-aroscycle : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-aroscycle \
-  modname=aroscycle modtype=gadget files=$(FILES) \
-  conffile=lib.conf uselibs=rom
+%build_module mmake=workbench-gadgets-aroscycle \
+  modname=aroscycle modtype=gadget \
+  files=$(FILES) uselibs=rom
 
-%common

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for AROSCycleClass.
@@ -28,9 +28,9 @@
 UWORD disabledpattern[2] = {0x4444, 0x1111};
 
 /* draws a disabled pattern */
-void drawdisabledpattern(struct CycleBase_intern *AROSCycleBase,
-			 struct RastPort *rport, UWORD pen,
-			 WORD left, WORD top, UWORD width, UWORD height)
+void drawdisabledpattern(struct RastPort *rport, UWORD pen,
+			 WORD left, WORD top, UWORD width, UWORD height
+)
 {
     SetABPenDrMd(rport, pen, 0, JAM1);
     rport->AreaPtrn = disabledpattern;
@@ -41,11 +41,11 @@ void drawdisabledpattern(struct CycleBase_intern *AROSCycleBase,
 
 /***********************************************************************************/
 
-void renderlabel(struct CycleBase_intern *AROSCycleBase,
-                 struct Gadget *gad,
+void renderlabel(struct Gadget *gad,
                  STRPTR string,
                  struct RastPort *rport,
-                 struct GadgetInfo *ginfo)
+                 struct GadgetInfo *ginfo
+)
 {
     UWORD   *pens = ginfo->gi_DrInfo->dri_Pens;
     WORD    x,y,h;
