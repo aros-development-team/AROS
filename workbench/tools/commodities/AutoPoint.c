@@ -175,7 +175,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
     if (LocaleBase != NULL)
     {
 	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog",
-				 OC_BuiltInLanguage, "english", TAG_DONE);
+				 OC_BuiltInLanguage, (IPTR)"english", TAG_DONE);
 	D(bug("Library locale.library opened!\n"));
     }
     else
@@ -202,42 +202,6 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	
 	tmpLibTable++;
     }
-    
-    nb.nb_Name = getCatalog(catalogPtr, MSG_AUTOPOINT_CXNAME);
-    nb.nb_Title = getCatalog(catalogPtr, MSG_AUTOPOINT_CXTITLE);
-    nb.nb_Descr = getCatalog(catalogPtr, MSG_AUTOPOINT_CXDESCR);
-
-    as->as_msgPort = CreateMsgPort();
-
-    if (as->as_msgPort == NULL)
-    {
-	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
-
-	return FALSE;
-    }
-    
-    nb.nb_Port = as->as_msgPort;
-    
-    as->as_broker = CxBroker(&nb, 0);
-
-    if (as->as_broker == NULL)
-    {
-	return FALSE;
-    }
-    
-    customObj = CxCustom(autoActivate, 0);
-
-    if (customObj == NULL)
-    {
-	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
-
-	return FALSE;
-    }
-
-    AttachCxObj(as->as_broker, customObj);
-    ActivateCxObj(as->as_broker, TRUE);
-    
-    apInfo.ai_thisWindow = IntuitionBase->ActiveWindow;
 
     if (Cli() != NULL)
     {
@@ -275,6 +239,42 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
 	CloseLibrary(IconBase);
     }
+    
+    nb.nb_Name = getCatalog(catalogPtr, MSG_AUTOPOINT_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_AUTOPOINT_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_AUTOPOINT_CXDESCR);
+
+    as->as_msgPort = CreateMsgPort();
+
+    if (as->as_msgPort == NULL)
+    {
+	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+
+	return FALSE;
+    }
+    
+    nb.nb_Port = as->as_msgPort;
+    
+    as->as_broker = CxBroker(&nb, 0);
+
+    if (as->as_broker == NULL)
+    {
+	return FALSE;
+    }
+    
+    customObj = CxCustom(autoActivate, 0);
+
+    if (customObj == NULL)
+    {
+	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
+
+	return FALSE;
+    }
+
+    AttachCxObj(as->as_broker, customObj);
+    ActivateCxObj(as->as_broker, TRUE);
+    
+    apInfo.ai_thisWindow = IntuitionBase->ActiveWindow;
     
     return TRUE;
 }
