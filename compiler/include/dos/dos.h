@@ -58,6 +58,10 @@ struct DateStamp
    this value, as it may change in future versions. */
 #define MAXFILENAMELENGTH 108
 
+/* The maximum length of comments in AmigaOS. You should not depend on
+   this value, as it may change in future versions. */
+#define MAXCOMMENTLENGTH 80
+
 /* Structure used to describe a directory entry. Note that not all fields
    are supported by all filesystems. This structure should be allocated
    with AllocDosObject(). */
@@ -74,7 +78,7 @@ struct FileInfoBlock
     LONG	     fib_Size;         /* The size of the file. */
     LONG	     fib_NumBlocks;    /* Number of blocks used for file. */
     struct DateStamp fib_Date;         /* Date of last change to file. */
-    UBYTE	     fib_Comment[80];  /* The filecomment (null-terminated). */
+    UBYTE	     fib_Comment[MAXCOMMENTLENGTH];  /* The filecomment (null-terminated). */
     UWORD	     fib_OwnerUID;     /* UserID of fileowner. */
     UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
     UBYTE	     fib_Reserved[32]; /* PRIVATE */
