@@ -1,0 +1,30 @@
+<contents>
+<item>
+    <file>README.txt</file>
+    How to build the docs
+
+</item>
+
+<item>
+    <file>developer.sgml</file>
+    Demo of an SGML-Version of the AROS docs
+
+</item>
+
+<item>
+    <dir>developer</dir>
+    HTML docs generated from developer.sgml
+
+</item>
+
+<item>
+    <dir>src</dir>
+    The sources for the docs
+
+</item>
+
+<item>
+    <dir>other</dir>
+    Other material (eg. articles sent to magazines and NEWS groups)
+</item>
+</contents>
