@@ -266,7 +266,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
     if (fh == NULL && IoErr() == ERROR_OBJECT_NOT_FOUND)
     {
         /* Attempt to create missing directories */
-        STRPTR tmp = StrDup(message->filename);
+        /* MakeDirs() will modify the string in-place */
+        STRPTR tmp = StrDup(message->filename); 
         if (tmp != NULL)
         {
             MakeDirs(tmp);
