@@ -19,19 +19,20 @@ void writeincdefines(struct config *cfg, struct functions *functions)
 
     snprintf(line, 255, "%s/defines/%s.h", cfg->genincdir, cfg->modulename);
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could not write %s\n", line);
-	exit(20);
+        perror(line);
+        exit(20);
     }
+
     fprintf(out,
 	    "#ifndef DEFINES_%s_PROTOS_H\n"
 	    "#define DEFINES_%s_PROTOS_H\n"
 	    "\n"
-	    "/*\n"
-	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
+        "%s"
 	    "\n"
+        "/*\n"
 	    "    Desc: Defines for %s\n"
 	    "*/\n"
 	    "\n"
@@ -39,7 +40,7 @@ void writeincdefines(struct config *cfg, struct functions *functions)
 	    "#include <exec/types.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, cfg->modulename
+	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg), cfg->modulename
     );
     if (cfg->command!=DUMMY)
     {

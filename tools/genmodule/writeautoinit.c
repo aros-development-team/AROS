@@ -13,23 +13,24 @@ void writeautoinit(struct config *cfg)
     
     snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
+
     if (out==NULL)
     {
-	fprintf(stderr, "Could not write %s\n", line);
-	exit(20);
+        perror(line);
+    	exit(20);
     }
+
     fprintf(out,
-	    "/*\n"
-	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
-	    "*/\n"
+        "%s"
+	    "\n"
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
 	    "ADD2LIBS(\"%s.library\",%u, %s, %s);\n",
-	    cfg->modulename,
+	    getBanner(cfg), cfg->modulename,
 	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
     );
+
     if (cfg->forcelist!=NULL)
     {
 	struct stringlist * forcelistit;

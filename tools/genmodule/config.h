@@ -92,4 +92,6 @@ struct config
 
 struct config *initconfig(int, char **, int);
 
+const char* getBanner(struct config* config);
+
 #endif //_CONFIG_H

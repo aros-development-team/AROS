@@ -15,23 +15,22 @@ void writestubs(struct config *cfg, struct functions *functions)
 
     snprintf(line, 255, "%s/%s_stubs.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
-    if (out==NULL)
+
+    if (out == NULL)
     {
-	fprintf(stderr, "Could not write %s\n", line);
-	exit(20);
+        perror(line);
+    	exit(20);
     }
+
     fprintf
     (
         out,
-        "/*\n"
-        "    *** Automatically generated file. Do not edit ***\n"
-        "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
-        "*/\n"
+        "%s"
         "#define NOLIBDEFINES\n"
         "/* Be sure that the libbases are included in the stubs file */\n"
         "#undef __NOLIBBASE__\n"
         "#undef __%s_NOLIBBASE__\n",
-        cfg->modulenameupper
+        getBanner(cfg), cfg->modulenameupper
     );
     
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
