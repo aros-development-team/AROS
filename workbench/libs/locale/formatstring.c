@@ -359,6 +359,7 @@ char HEXarray [] = "0123456789ABCDEF";
               if (FALSE == scanning)
               {
                 UBYTE groupsize;
+                ULONG group_index = 0;
                 
                 if (FALSE == length_found)
                 {
@@ -378,11 +379,13 @@ char HEXarray [] = "0123456789ABCDEF";
                 }
                 
                 buffer = &buf[BUFFERSIZE];
-                
+
                 if (NULL != locale)
-                  groupsize = *locale->loc_Grouping;
+                {
+                  groupsize = locale->loc_Grouping[group_index];
+                }
                 else
-                  groupsize = 3;
+                  groupsize = 255;
                 
                 do
                 {
@@ -394,16 +397,26 @@ char HEXarray [] = "0123456789ABCDEF";
 
                   if (0 == groupsize && 0 != tmp)
                   {
-                    if (NULL != locale)
-                    {
-                      groupsize = *locale->loc_Grouping;
-                      *--buffer = locale->loc_GroupSeparator[0];
+                    /*
+                    ** Write the separator
+                    */
+                    
+                    *--buffer = locale->loc_GroupSeparator[group_index];
+                  
+                    groupsize = locale->loc_Grouping[group_index+1];
+                  
+                    if (0 == groupsize)
+                    { 
+                      /*
+                      ** Supposed to use the previous element
+                      */
+                      groupsize = locale->loc_Grouping[group_index];
                     }
                     else
                     {
-                      *--buffer=',';
-                      groupsize = 3;
+                      group_index++;
                     }
+                        
                     width++;
                   }
                 }
@@ -570,7 +583,7 @@ char HEXarray [] = "0123456789ABCDEF";
 
 error_exit:
 
-  return &stream[max_argpos+1];
+  return (APTR)(stream+indices[max_argpos]);
 
   AROS_LIBFUNC_EXIT
 } /* FormatString */
