@@ -24,28 +24,33 @@
 
 #include <X11/Xlib.h>
 
-
+/****************************************************************************************/
 
 ULONG map_x11_to_hidd(long *penarray, ULONG x11pixel);
 XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBYTE height);
 VOID free_ximage(XImage *image);
 
+/****************************************************************************************/
 
 #define USE_X11_DRAWFUNCS  	1
 #define X11SOFTMOUSE		0
 #define ADJUST_XWIN_SIZE	1	/* Resize the xwindow to the size of the actual visible screen */
 
+/****************************************************************************************/
+
 /* Private Attrs and methods for the X11Gfx Hidd */
 
 #define CLID_Hidd_X11Gfx	"hidd.gfx.x11"
 
-#define IID_Hidd_X11Gfx "hidd.gfx.x11gfx"
+#define IID_Hidd_X11Gfx     	"hidd.gfx.x11gfx"
 
 
-#define HiddX11GfxAB  __abHidd_X11Gfx
+#define HiddX11GfxAB  	    	__abHidd_X11Gfx
+
 extern OOP_AttrBase HiddX11GfxAB;
 
-enum {
+enum
+{
     aoHidd_X11Gfx_SysDisplay,
     aoHidd_X11Gfx_SysScreen,
     aoHidd_X11Gfx_Hidd2X11CMap,
@@ -71,6 +76,6 @@ enum {
 
 
 #define expunge() \
-AROS_LC0(BPTR, expunge, struct x11gfxbase *, LIBBASE, 3, X11Gfx)
+    AROS_LC0(BPTR, expunge, struct x11gfxbase *, LIBBASE, 3, X11Gfx)
 
 #endif /* X11GFX_INTERN_H */

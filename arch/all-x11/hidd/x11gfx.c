@@ -40,18 +40,20 @@
 #include <aros/debug.h>
 
 
+/****************************************************************************************/
+
 #define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11Gfx_Attrs)
 
 
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static OOP_AttrBase HiddBitMapAttrBase	= 0;  
-static OOP_AttrBase HiddX11GfxAB	= 0;
-static OOP_AttrBase HiddX11BitMapAB	= 0;
-static OOP_AttrBase HiddSyncAttrBase	= 0;
-static OOP_AttrBase HiddPixFmtAttrBase	= 0;
-static OOP_AttrBase HiddGfxAttrBase	= 0;
+static OOP_AttrBase HiddBitMapAttrBase;  
+static OOP_AttrBase HiddX11GfxAB;
+static OOP_AttrBase HiddX11BitMapAB;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
@@ -69,24 +71,20 @@ static struct OOP_ABDescr attrbases[] =
 struct gfx_data
 {
     Display	*display;
-    int		screen;
-    int		depth;
-    Colormap	colmap;
-    Cursor	cursor;
-    Window	fbwin; /* Frame buffer window */
+    int		 screen;
+    int		 depth;
+    Colormap	 colmap;
+    Cursor	 cursor;
+    Window	 fbwin; /* Frame buffer window */
 #if ADJUST_XWIN_SIZE
-    Window	masterwin;
+    Window	 masterwin;
 #endif
 };
-
 
 static VOID cleanupx11stuff(struct x11_staticdata *xsd);
 static BOOL initx11stuff(struct x11_staticdata *xsd);
 
-/*********************
-**  GfxHidd::New()  **
-*********************/
-
+/****************************************************************************************/
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -288,10 +286,10 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
     {
-	XColor bg, fg;
+	XColor      	 bg, fg;
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
 	
-    LX11
+    	LOCK_X11
 	data->display	= XSD(cl)->display;
 	data->screen	= DefaultScreen( data->display );
 	data->depth	= DisplayPlanes( data->display, data->screen );
@@ -307,7 +305,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	bg.flags = (DoRed | DoGreen | DoBlue);
 
 	XRecolorCursor(data->display, data->cursor, &fg, &bg);
-    UX11
+    	UNLOCK_X11
 	
 	D(bug("X11Gfx::New(): Got object from super\n"));
 
@@ -323,17 +321,18 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct gfx_data *data;
     
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
-    data = OOP_INST_DATA(cl, o);
     
+    data = OOP_INST_DATA(cl, o);    
     cleanupx11stuff(XSD(cl));
-    D(bug("X11Gfx::Dispose: calling super\n"));
-    
+
+    D(bug("X11Gfx::Dispose: calling super\n"));    
     OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("X11Gfx::Dispose");
 }
 
-/********** GfxHidd::NewBitMap()  ****************************/
+/****************************************************************************************/
+
 static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL    	    	    	 displayable, framebuffer;    
@@ -463,7 +462,8 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
 
-/******* X11Gfx::Set()  ********************************************/
+/****************************************************************************************/
+
 static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
@@ -515,6 +515,7 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;
 }
 
+/****************************************************************************************/
 
 static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
@@ -575,11 +576,12 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	
     #endif
     }
+    
     return fb;
 }
 
+/****************************************************************************************/
 
-/*********  Gfx::CopyBox()  *************************************/
 static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG   	     	 mode;
@@ -600,10 +602,11 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 	    Let the superclass do the copying in a more general way
 	*/
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	
 	return;
     }
 
-LX11
+    LOCK_X11
 
     /* This may seem ugly, but we know nobody has subclassed
        the x11 class, since it's private
@@ -625,10 +628,12 @@ LX11
     );
 	
     XFlush(data->display);
-UX11
     
-    return;
+    UNLOCK_X11
+    
 }
+
+/****************************************************************************************/
 
 static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
@@ -636,12 +641,15 @@ static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return TRUE;
 }
 
+/****************************************************************************************/
+
 static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return TRUE;
 }
 
+/****************************************************************************************/
 
 static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
@@ -649,14 +657,15 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return;
 }
 
+/****************************************************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
 
-/********************  init_gfxclass()  *********************************/
-
 #define NUM_ROOT_METHODS 3
 #define NUM_GFXHIDD_METHODS 6
+
+/****************************************************************************************/
 
 OOP_Class *init_gfxclass (struct x11_staticdata *xsd)
 {
@@ -727,13 +736,12 @@ OOP_Class *init_gfxclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
     }
+    
     ReturnPtr("init_gfxclass", Class *, cl);
 }
 
+/****************************************************************************************/
 
-
-
-/*************** free_gfxclass()  **********************************/
 VOID free_gfxclass(struct x11_staticdata *xsd)
 {
     EnterFunc(bug("free_gfxclass(xsd=%p)\n", xsd));
@@ -753,7 +761,7 @@ VOID free_gfxclass(struct x11_staticdata *xsd)
     ReturnVoid("free_gfxclass");
 }
 
-
+/****************************************************************************************/
 
 static ULONG mask_to_shift(ULONG mask)
 {
@@ -772,6 +780,8 @@ static ULONG mask_to_shift(ULONG mask)
     return i;
 }
 
+/****************************************************************************************/
+
 /*
    Inits sysdisplay, sysscreen, colormap, etc.. */
 static BOOL initx11stuff(struct x11_staticdata *xsd)
@@ -788,7 +798,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     EnterFunc(bug("initx11stuff()\n"));
 
 
-LX11	
+    LOCK_X11	
 
     /* Get some info on the display */
     template.visualid = XVisualIDFromVisual(DefaultVisual(xsd->display, DefaultScreen(xsd->display)));
@@ -869,11 +879,9 @@ LX11
  	}
 
 	/* Create a dummy X image to get bits per pixel */
-	testimage = XGetImage(xsd->display
-		, RootWindow(xsd->display, DefaultScreen(xsd->display))
-		, 0, 0, 1, 1
-		, AllPlanes, ZPixmap
-	);
+	testimage = XGetImage(xsd->display, RootWindow(xsd->display,
+	    	    	      DefaultScreen(xsd->display)), 0, 0, 1, 1,
+			      AllPlanes, ZPixmap);
 	
 	if (NULL != testimage)
 	{
@@ -895,16 +903,12 @@ LX11
 
     /* Create a dummy window for pixmaps */
 
-    xsd->dummy_window_for_creating_pixmaps = XCreateSimpleWindow(
-   	     xsd->display
-   	   , DefaultRootWindow(xsd->display)
-   	   , 0, 0
-   	   , 100, 100
-   	   , 0
-   	   , BlackPixel(xsd->display, DefaultScreen(xsd->display))
-   	   , BlackPixel(xsd->display, DefaultScreen(xsd->display))
-    );
-
+    xsd->dummy_window_for_creating_pixmaps = XCreateSimpleWindow(xsd->display,
+    	    	    	    	    	    	    	    	 DefaultRootWindow(xsd->display),
+								 0, 0, 100, 100,
+								 0,
+								 BlackPixel(xsd->display, DefaultScreen(xsd->display)),
+   	    	    	    	    	    	    	    	 BlackPixel(xsd->display, DefaultScreen(xsd->display)));
     if (0 == xsd->dummy_window_for_creating_pixmaps)
     {
 	ok = FALSE;
@@ -915,6 +919,7 @@ LX11
     {
 	/* Do we have Xshm support ? */
 	xsd->xshm_info = init_shared_mem(xsd->display);
+	
 	if (NULL == xsd->xshm_info)
 	{
     	    /* ok = FALSE; */
@@ -930,15 +935,17 @@ LX11
 #endif
 
 
-UX11
+    UNLOCK_X11
     
     ReturnBool("initx11stuff", ok);
 
 }
 
+/****************************************************************************************/
+
 static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 {
-LX11
+    LOCK_X11
 
     /* Do nothing for now */
     if (0 != xsd->dummy_window_for_creating_pixmaps)
@@ -950,8 +957,9 @@ LX11
     cleanup_shared_mem(xsd->display, xsd->xshm_info);
 #endif 
    
-UX11
+    UNLOCK_X11
 
-    return;
 }
+
+/****************************************************************************************/
 

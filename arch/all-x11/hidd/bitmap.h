@@ -14,9 +14,11 @@
 #define IID_Hidd_X11BitMap "hidd.bitmap.x11bitmap"
 
 #define HiddX11BitMapAB __abHidd_X11BitMap
+
 extern OOP_AttrBase HiddX11BitMapAB;
 
-enum {
+enum
+{
     aoHidd_X11BitMap_Drawable,
     aoHidd_X11BitMap_MasterWindow,
     num_Hidd_X11BitMap_Attrs
@@ -28,12 +30,12 @@ enum {
 
 /* This structure is used for both onscreen and offscreen X11 bitmaps !! */
 
-#define GetSysDisplay() (data->display)
-#define GetSysScreen()  (data->screen)
-#define GetSysCursor()  (data->cursor)
+#define GetSysDisplay()     	    (data->display)
+#define GetSysScreen()      	    (data->screen)
+#define GetSysCursor()      	    (data->cursor)
 
-#define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
-#define IS_X11BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11BitMapAB) < num_Hidd_X11BitMap_Attrs)
+#define IS_BM_ATTR(attr, idx) 	    ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
+#define IS_X11BM_ATTR(attr, idx)    ( ( (idx) = (attr) - HiddX11BitMapAB) < num_Hidd_X11BitMap_Attrs)
 
 
 /* This structure is used as instance data for both the
@@ -42,21 +44,19 @@ enum {
 
 struct bitmap_data
 {
-    union {
+    union
+    {
     	Window 	xwindow;
 	Pixmap  pixmap;
-    } drawable;
-    Window	masterxwindow;
-    
-    Cursor	cursor;
-//    long 	maxpen;
-    unsigned long sysplanemask;
-    Colormap	colmap;
-    GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
-    Display	*display;
-    int		screen;
-    int		flags;
-    
+    } 	    	    drawable;
+    Window	    masterxwindow;    
+    Cursor	    cursor;
+    unsigned long   sysplanemask;
+    Colormap	    colmap;
+    GC 		    gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
+    Display	    *display;
+    int		    screen;
+    int		    flags;    
 };
 
 #define BMDF_COLORMAP_ALLOCED 1

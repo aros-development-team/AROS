@@ -33,9 +33,10 @@
 
 #include "x11.h"
 
+/****************************************************************************************/
 
 static UBYTE keycode2rawkey[256];
-static BOOL havetable;
+static BOOL  havetable;
 
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
@@ -45,13 +46,15 @@ struct x11kbd_data
     APTR callbackdata;
 };
 
-static OOP_AttrBase HiddKbdAB = 0;
+static OOP_AttrBase HiddKbdAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_Kbd, &HiddKbdAB },
-    { NULL, NULL }
+    { IID_Hidd_Kbd  , &HiddKbdAB    },
+    { NULL  	    , NULL  	    }
 };
+
+/****************************************************************************************/
 
 static struct _keytable
 {
@@ -184,6 +187,8 @@ keytable[] =
     {0, - 1 }
 };
 
+/****************************************************************************************/
+
 /* English keyboard */
 static struct _keytable english_keytable[] =
 {    
@@ -245,6 +250,8 @@ static struct _keytable english_keytable[] =
         
     {0, -1 }
 };
+
+/****************************************************************************************/
                         
 /* German keyboard */
 static struct _keytable german_keytable[] =
@@ -379,6 +386,8 @@ static struct _keytable italian_keytable[] =
     {0, -1 }
 };
 
+/****************************************************************************************/
+
 #if 0
 
 /* Use this template to create a keytable for your language:
@@ -463,14 +472,15 @@ static struct _keytable template_keytable[] =
 };
 
 #endif
+
+/****************************************************************************************/
                         
-/***** X11Kbd::New()  ***************************************/
 static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL has_kbd_hidd = FALSE;
+    BOOL    	    has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
-    APTR callback = NULL;
-    APTR callbackdata = NULL;
+    APTR    	    callback = NULL;
+    APTR    	    callbackdata = NULL;
     
     EnterFunc(bug("X11Kbd::New()\n"));
  
@@ -486,6 +496,7 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
+    
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
 	ULONG idx;
@@ -510,6 +521,7 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	}
 	    
     } /* while (tags to process) */
+    
     if (NULL == callback)
     	ReturnPtr("X11Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
@@ -517,6 +529,7 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     if (o)
     {
 	struct x11kbd_data *data = OOP_INST_DATA(cl, o);
+	
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
@@ -524,49 +537,47 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	XSD(cl)->kbdhidd = o;
 	ReleaseSemaphore( &XSD(cl)->sema);
     }
+    
     ReturnPtr("X11Kbd::New", OOP_Object *, o);
 }
 
-/***** X11Kbd::HandleEvent()  ***************************************/
+/****************************************************************************************/
 
 static VOID x11kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
 {
-    struct x11kbd_data * data;
-    
-    XKeyEvent *xk;
+    struct x11kbd_data  *data;    
+    XKeyEvent 	    	*xk;
 
     EnterFunc(bug("x11kbd_handleevent()\n"));
+    
     xk = &(msg->event->xkey);
     data = OOP_INST_DATA(cl, o);
     if (msg->event->type == KeyPress)
     {
-	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, XSD(cl)));
+	data->kbd_callback(data->callbackdata, (UWORD)xkey2hidd(xk, XSD(cl)));
 		
     }
     else if (msg->event->type == KeyRelease)
     {
-	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, XSD(cl)) | IECODE_UP_PREFIX);
+	data->kbd_callback(data->callbackdata, (UWORD)xkey2hidd(xk, XSD(cl)) | IECODE_UP_PREFIX);
     }
-
     
     ReturnVoid("X11Kbd::HandleEvent");
 }
 
-
+/****************************************************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
 
-
+/****************************************************************************************/
 
 WORD lookup_keytable(KeySym *ks, struct _keytable *keytable)
 {
     short t;
-    WORD result = -1;
+    WORD  result = -1;
     
-    for (t=0; keytable[t].hiddcode != -1; t++)
+    for (t = 0; keytable[t].hiddcode != -1; t++)
     {
 	if (*ks == keytable[t].keysym)
 	{
@@ -579,15 +590,15 @@ WORD lookup_keytable(KeySym *ks, struct _keytable *keytable)
     return result;
 }
 
+/****************************************************************************************/
+
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
-    char buffer[10];
-    KeySym ks;
-    int count;
-    long result;
+    char    buffer[10];
+    KeySym  ks;
+    int     count;
+    long    result;
 
-
- 
     D(bug("xkey2hidd\n"));
    
     if (havetable)
@@ -598,12 +609,15 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 	    result = keycode2rawkey[xk->keycode];
 	    if (result == 255) result = -1;
 	}
+	
 	return result;
     }
-LX11
+    
+    LOCK_X11
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
-UX11
+    UNLOCK_X11
+    
     D(bug("xk2h: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n",xk->keycode, xk->keycode, count,ks,ks));
     
     result = lookup_keytable(&ks, keytable);
@@ -619,81 +633,95 @@ UX11
     result = xk->keycode & 0xffff;
 
     ReturnInt ("xk2h", long, result);
+    
 } /* XKeyToAmigaCode */
+
+/****************************************************************************************/
 
 #if X11_LOAD_KEYMAPTABLE
 
-/****************  LoadKeyCode2RawKeyTable()  ***************************/
+/****************************************************************************************/
 
 #ifdef DOSBase
 #undef DOSBase
 #endif
 #define DOSBase ((struct DosLibrary *)(xsd->dosbase))
 
+/****************************************************************************************/
+
 static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 {
-	char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
-	BPTR fh;
+    char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
+    BPTR  fh;
 
-	if ((fh =Open(filename, MODE_OLDFILE)))
+    if ((fh = Open(filename, MODE_OLDFILE)))
+    {
+	if ((256 == Read(fh, keycode2rawkey, 256)))
 	{
-		if ((256 == Read(fh, keycode2rawkey, 256)))
-		{
-			bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
-			havetable = TRUE;
-		} else {
-			bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
-		}
-		Close(fh);
-	} else {
-		bug("\nLoadKeyCode2RawKeyTable: Loading \"%s\" failed!\n"
-		"\n"
-		"This means that many/most/all keys on your keyboard won't work as you\n"
-		"would expect in AROS. Therefore you should create this table by either\n"
-		"using the default table:\n"
-		"\n"
-		"    mmake .default-x11keymaptable\n"
-		"\n"
-		"or generating your own one:\n"
-		"\n"
-		"    mmake .change-x11keymaptable\n"
-		"\n"
-		"The default keymaptable probably works with most PCs having a 105 key\n"
-		"keyboard if you are using XFree86 as X Server (might also work with\n"
-		"others). So try that one first!\n"
-		"\n"
-		"Since the keymap table will be deleted when you do a \"make clean\" you\n"
-		"might want to make a backup of it. Then you will be able to restor it later:\n"
-		"\n"
-		"    mmake .backup-x11keymaptable\n"
-		"    mmake .restore-x11keymaptable\n"
-		"\n"
-		"The keymap table will be backuped in your HOME directory.\n"
-		"\n"
-		"Note that the keymaptable only makes sure that your keyboard looks as\n"
-		"much as possible like an Amiga keyboard to AROS. So with the keymaptable\n"
-		"alone the keyboard will behave like an Amiga keyboard with American layout\n."
-		"For other layouts you must activate the correct keymap file (which are in\n"
-		"\"DEVS:Keymaps\") just like in AmigaOS. Actually AROS has only German,\n"
-		"Italian and Swedish keymap files. You can activate them inside AROS by typing\n"
-		"this in a AROS Shell or adding it to the AROS Startup-Sequence:\n"
-		"\n"
-		"    Setmap pc105_d\n"
-		"    Setmap pc105_i\n"
-		"    Setmap pc105_s\n"
-		"\n", filename);
+		bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
+		havetable = TRUE;
 	}
+	else
+	{
+		bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
+	}
+	Close(fh);
+    }
+    else
+    {
+	bug("\nLoadKeyCode2RawKeyTable: Loading \"%s\" failed!\n"
+	    "\n"
+	    "This means that many/most/all keys on your keyboard won't work as you\n"
+	    "would expect in AROS. Therefore you should create this table by either\n"
+	    "using the default table:\n"
+	    "\n"
+	    "    mmake .default-x11keymaptable\n"
+	    "\n"
+	    "or generating your own one:\n"
+	    "\n"
+	    "    mmake .change-x11keymaptable\n"
+	    "\n"
+	    "The default keymaptable probably works with most PCs having a 105 key\n"
+	    "keyboard if you are using XFree86 as X Server (might also work with\n"
+	    "others). So try that one first!\n"
+	    "\n"
+	    "Since the keymap table will be deleted when you do a \"make clean\" you\n"
+	    "might want to make a backup of it. Then you will be able to restor it later:\n"
+	    "\n"
+	    "    mmake .backup-x11keymaptable\n"
+	    "    mmake .restore-x11keymaptable\n"
+	    "\n"
+	    "The keymap table will be backuped in your HOME directory.\n"
+	    "\n"
+	    "Note that the keymaptable only makes sure that your keyboard looks as\n"
+	    "much as possible like an Amiga keyboard to AROS. So with the keymaptable\n"
+	    "alone the keyboard will behave like an Amiga keyboard with American layout\n."
+	    "For other layouts you must activate the correct keymap file (which are in\n"
+	    "\"DEVS:Keymaps\") just like in AmigaOS. Actually AROS has only German,\n"
+	    "Italian and Swedish keymap files. You can activate them inside AROS by typing\n"
+	    "this in a AROS Shell or adding it to the AROS Startup-Sequence:\n"
+	    "\n"
+	    "    Setmap pc105_d\n"
+	    "    Setmap pc105_i\n"
+	    "    Setmap pc105_s\n"
+	    "\n", filename);
+    }
 }
+
+/****************************************************************************************/
 
 #undef DOSBase
 
+/****************************************************************************************/
+
 #endif
 
-/********************  init_kbdclass()  *********************************/
-
+/****************************************************************************************/
 
 #define NUM_ROOT_METHODS 1
 #define NUM_X11KBD_METHODS 1
+
+/****************************************************************************************/
 
 OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
 {
@@ -701,32 +729,32 @@ OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
 
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{OOP_METHODDEF(x11kbd_new),		moRoot_New},
-	{NULL, 0UL}
+    	{OOP_METHODDEF(x11kbd_new)  , moRoot_New},
+	{NULL	    	    	    , 0UL   	}
     };
     
     struct OOP_MethodDescr kbdhidd_descr[NUM_X11KBD_METHODS + 1] = 
     {
-    	{OOP_METHODDEF(x11kbd_handleevent),	moHidd_X11Kbd_HandleEvent},
-	{NULL, 0UL}
+    	{OOP_METHODDEF(x11kbd_handleevent)  , moHidd_X11Kbd_HandleEvent },
+	{NULL	    	    	    	    , 0UL   	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
-    	{kbdhidd_descr, IID_Hidd_X11Kbd, 	NUM_X11KBD_METHODS},
-	{NULL, NULL, 0}
+    	{root_descr 	, IID_Root  	    , NUM_ROOT_METHODS	    },
+    	{kbdhidd_descr	, IID_Hidd_X11Kbd   , NUM_X11KBD_METHODS    },
+	{NULL	    	, NULL	    	    , 0     	    	    }
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct x11kbd_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_X11Kbd },
-	{TAG_DONE, 0UL}
+	{ aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	    },
+	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
+	{ aMeta_InstSize    	, (IPTR)sizeof (struct x11kbd_data) },
+	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_X11Kbd    	    },
+	{ TAG_DONE  	    	, 0UL	    	    	    	    }
     };
 
     EnterFunc(bug("KbdHiddClass init\n"));
@@ -758,18 +786,18 @@ OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
     }
+    
     ReturnPtr("init_kbdclass", OOP_Class *, cl);
 }
 
+/****************************************************************************************/
 
-/*************** free_kbdclass()  **********************************/
 VOID free_kbdclass(struct x11_staticdata *xsd)
 {
     EnterFunc(bug("free_kbdclass(xsd=%p)\n", xsd));
 
     if(xsd)
     {
-
         OOP_RemoveClass(xsd->kbdclass);
 	
         if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
@@ -781,3 +809,6 @@ VOID free_kbdclass(struct x11_staticdata *xsd)
 
     ReturnVoid("free_kbdclass");
 }
+
+/****************************************************************************************/
+
