@@ -9,6 +9,8 @@
 #define DEBUG_FreeMem 1
 #define AROS_ALMOST_COMPATIBLE 1
 
+#define X11_LOCK
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -42,6 +44,9 @@ extern Display * sysDisplay;
 extern long sysCMap[];
 extern unsigned long sysPlaneMask;
 extern Cursor sysCursor;
+#if defined (X11_LOCK)
+extern struct SignalSemaphore * X11lock;
+#endif
 
 extern struct Task * inputDevice;
 #define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
@@ -137,13 +142,21 @@ keytable[] =
 #define CTRL	IEQUALIFIER_CONTROL
 #define CAPS	IEQUALIFIER_CAPSLOCK
 
+#if defined (X11_LOCK)
+#define LX11 LockX11();
+#define UX11 UnlockX11();
+#else
+#define LX11
+#define UX11
+#endif
 
 static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 {
     char buffer[256];
 
+LX11
     XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
-
+UX11
     fprintf (stderr
 	, "XError %d (Major=%d, Minor=%d)\n%s\n"
 	, errevent->error_code
@@ -229,10 +242,10 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 	text = win->Title;
     else if (!text)
 	text = "";
-
+LX11
     XSetStandardProperties (sysDisplay, w->iw_XWindow, text, screen,
 	    None, NULL, 0, &hints);
-
+UX11
     SIGID ();
 }
 
@@ -299,7 +312,7 @@ int intui_OpenWindow (struct Window * w,
     winattr.cursor = sysCursor;
     winattr.save_under = True;
     winattr.background_pixel = sysCMap[0];
-
+LX11
     IW(w)->iw_XWindow = XCreateWindow (GetSysDisplay ()
 	, DefaultRootWindow (GetSysDisplay ())
 	, IW(w)->iw_Window.LeftEdge
@@ -321,15 +334,18 @@ int intui_OpenWindow (struct Window * w,
     SetXWindow (IW(w)->iw_Window.RPort, IW(w)->iw_XWindow);
 
     IW(w)->iw_Region = XCreateRegion ();
+UX11
 
     if (!IW(w)->iw_Region)
     {
+LX11
 	XDestroyWindow (sysDisplay, IW(w)->iw_XWindow);
+UX11
 	return FALSE;
     }
-
+LX11
     XMapRaised (sysDisplay, IW(w)->iw_XWindow);
-
+UX11
     /* Show window *now* */
     /* XFlush (sysDisplay); */
     SIGID ();
@@ -343,42 +359,46 @@ void intui_CloseWindow (struct Window * w,
 	    struct IntuitionBase * IntuitionBase)
 {
     Dicw(bug("Closing Window %p (X=%ld)\n", w, IW(w)->iw_XWindow));
-
+LX11
     XDestroyWindow (sysDisplay, IW(w)->iw_XWindow);
 
     XDestroyRegion (IW(w)->iw_Region);
 
     XSync (sysDisplay, FALSE);
-
+UX11
     SIGID ();
 }
 
 void intui_WindowToFront (struct Window * window)
 {
+LX11
     XRaiseWindow (sysDisplay, IW(window)->iw_XWindow);
-
+UX11
     SIGID ();
 }
 
 void intui_WindowToBack (struct Window * window)
 {
+LX11
     XLowerWindow (sysDisplay, IW(window)->iw_XWindow);
-
+UX11
     SIGID ();
 }
 
 void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
 {
+LX11
     XMoveWindow (sysDisplay, IW(window)->iw_XWindow, dx, dy);
-
+UX11
     SIGID ();
 }
 
 void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
+LX11
     XMoveResizeWindow (sysDisplay, IW(window)->iw_XWindow, x, y, width, height);
-
+UX11
     SIGID ();
 }
 
@@ -427,10 +447,10 @@ long XKeyToAmigaCode (XKeyEvent * xk)
     short t;
 
     result = StateToQualifier (xk->state) << 16L;
-
+LX11
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
-
+UX11
     for (t=0; keytable[t].amiga != -1; t++)
     {
 	if (ks == keytable[t].keycode)
@@ -447,19 +467,21 @@ long XKeyToAmigaCode (XKeyEvent * xk)
 
 void intui_SizeWindow (struct Window * win, long dx, long dy)
 {
+LX11
     XResizeWindow (sysDisplay
 	, ((struct IntWindow *)win)->iw_XWindow
 	, win->Width + dx
 	, win->Height + dy
     );
-
+UX11
     SIGID ();
 }
 
 void intui_ActivateWindow (struct Window * win)
 {
+LX11
     XSetInputFocus (sysDisplay, IW(win)->iw_XWindow, RevertToNone, XCurrentTime);
-
+UX11
     SIGID ();
 }
 
@@ -521,9 +543,9 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 
     if (ie->ie_Qualifier & IEQUALIFIER_RBUTTON)
 	xk.state |= Button3Mask;
-
+LX11
     t = XLookupString (&xk, buf, size, NULL, NULL);
-
+UX11
     if (!*buf && t == 1) t = 0;
     if (!t) *buf = 0;
 
@@ -541,7 +563,9 @@ void intui_BeginRefresh (struct Window * win,
 	struct IntuitionBase * IntuitionBase)
 {
     /* Restrict rendering to a region */
+LX11
     XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), IW(win)->iw_Region);
+UX11
     SIGID ();
 } /* intui_BeginRefresh */
 
@@ -551,11 +575,11 @@ void intui_EndRefresh (struct Window * win, BOOL free,
     Region region;
     XRectangle rect;
 
+LX11
     /* Zuerst alte Region freigeben (Speicher sparen) */
     if (free)
     {
 	XDestroyRegion (IW(win)->iw_Region);
-
 	IW(win)->iw_Region = XCreateRegion ();
     }
 
@@ -572,6 +596,7 @@ void intui_EndRefresh (struct Window * win, BOOL free,
 
     /* und setzen */
     XSetRegion (sysDisplay, GetGC(IW(win)->iw_Window.RPort), region);
+UX11
     SIGID ();
 } /* intui_EndRefresh */
 
@@ -698,13 +723,16 @@ VOID intui_WaitEvent(struct InputEvent          *ie,
 
 	while (XPending (sysDisplay))
 	{
+LX11
 	    XNextEvent (sysDisplay, &event);
-
+UX11
 	    Dipxe(bug("Got Event for X=%d\n", event.xany.window));
 
 	    if (event.type == MappingNotify)
 	    {
+LX11
 		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+UX11
 		continue;
 	    }
 
@@ -775,9 +803,9 @@ VOID intui_WaitEvent(struct InputEvent          *ie,
 		    rect.height = event.xgraphicsexpose.height;
 		    count	= event.xgraphicsexpose.count;
 		}
-
+LX11
 		XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
-
+UX11
 		if (count == 0)
 		{
 		    ie->ie_Class = IECLASS_REFRESHWINDOW;

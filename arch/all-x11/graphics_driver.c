@@ -5,10 +5,15 @@
 
 #define DEBUG_FreeMem 1
 
+#define X11_LOCK
+#define no_X11_LOCK_DEBUG
+#define no_X11_LOCK_SEMAPHORE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <exec/memory.h>
+#include <exec/semaphores.h>
 
 #include <clib/exec_protos.h>
 #include <graphics/rastport.h>
@@ -26,8 +31,8 @@
 static Display	       * sysDisplay;
 static int		 sysScreen;
 static Cursor		 sysCursor;
-#if 0
-static SignalSemaphore * X11lock;
+#if defined (X11_LOCK_SEMAPHORE)
+static struct SignalSemaphore * X11lock;
 #endif
 
 extern struct Task * inputDevice;
@@ -87,16 +92,44 @@ struct ETextFont
 
 #define ETF(tf)         ((struct ETextFont *)tf)
 
-#if 0
-void LockX11 (void)
+#if defined (X11_LOCK)
+static struct GfxBase *lock_GfxBase;
+
+void LockX11 ()
 {
+    struct GfxBase *GfxBase = lock_GfxBase;
+#if defined (X11_LOCK_DEBUG)
+    fprintf (stderr, "LockX11()\n");
+    fflush (stderr);
+#endif
+#if defined (X11_LOCK_SEMAPHORE)
     ObtainSemaphore (X11lock);
+#else
+    Disable ();
+#endif
+#if defined (X11_LOCK_DEBUG)
+    fprintf (stderr, "  got X11 lock\n");
+#endif
 }
 
-void UnlockX11 (void)
+void UnlockX11 ()
 {
+    struct GfxBase *GfxBase = lock_GfxBase;
+#if defined (X11_LOCK_DEBUG)
+    fprintf (stderr, "UnlockX11()\n");
+    fflush (stderr);
+#endif
+#if defined (X11_LOCK_SEMAPHORE)
     ReleaseSemaphore (X11lock);
+#else
+    Enable ();
+#endif
 }
+#define LX11 LockX11();
+#define UX11 UnlockX11();
+#else
+#define LX11
+#define UX11
 #endif
 
 int driver_init (struct GfxBase * GfxBase)
@@ -107,6 +140,10 @@ int driver_init (struct GfxBase * GfxBase)
     XColor fg, bg;
     short t;
     short depth;
+
+#if defined (X11_LOCK)
+    lock_GfxBase = GfxBase;
+#endif
 
     if (!XInitThreads ())
     {
@@ -122,7 +159,7 @@ int driver_init (struct GfxBase * GfxBase)
 	return False;
     }
 
-#if 0
+#if defined (X11_LOCK) && defined (X11_LOCK_SEMAPHORE)
     X11lock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
     if (!X11lock)
@@ -130,7 +167,6 @@ int driver_init (struct GfxBase * GfxBase)
 	fprintf (stderr, "Can't create X11lock\n");
 	return False;
     }
-
     InitSemaphore (X11lock);
 #endif
 
@@ -187,7 +223,6 @@ int driver_init (struct GfxBase * GfxBase)
 
     sysCursor = XCreateFontCursor (sysDisplay, XC_top_left_arrow);
     XRecolorCursor (sysDisplay, sysCursor, &fg, &bg);
-
     return True;
 }
 
@@ -228,11 +263,13 @@ void SetXWindow (struct RastPort * rp, int win)
 	int width, height, depth, dummy;
 	Window dummywin;
 
+LX11
 	XGetGeometry (sysDisplay, win, &dummywin, &dummy, &dummy
 	    , &width, &height
 	    , &dummy
 	    , &depth
 	);
+UX11
 
 	rp->BitMap->BytesPerRow = ((width+15) >> 4)*2;
 	rp->BitMap->Rows = height;
@@ -273,35 +310,44 @@ void UpdateAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 	    pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
 	    pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
 	}
-
+LX11
         XSetFillStyle (sysDisplay
             , GetGC(rp)
             , FillStippled
         );
+
         stipple = XCreateBitmapFromData (sysDisplay
             , GetXWindow (rp)
             , pattern
             , width
             , height
         );
+
 	FreeMem (pattern, 2*height*sizeof(char));
+
         XSetStipple( sysDisplay, GetGC (rp), stipple);
+UX11
     }
-    else
+    else {
+LX11
         XSetFillStyle (sysDisplay
             , GetGC (rp)
             , FillSolid
         );
+UX11
+    }
 }
 
 void UpdateLinePtrn (struct RastPort * rp)
 {
     XGCValues gcval;
 
+LX11
     XSetFillStyle (sysDisplay
         , GetGC(rp)
         , FillSolid
     );
+UX11
 
     if (!(rp->Flags & 0x10) )
 	return;
@@ -330,7 +376,7 @@ void UpdateLinePtrn (struct RastPort * rp)
 	}
 
 	gcval.line_style = LineOnOffDash;
-
+LX11
 	XChangeGC (sysDisplay
 	    , GetGC(rp)
 	    , GCLineStyle
@@ -343,17 +389,19 @@ void UpdateLinePtrn (struct RastPort * rp)
 	    , dash_list
 	    , n+1
 	);
+UX11
+
     }
     else
     {
 	gcval.line_style = LineSolid;
-
+LX11
 	XChangeGC (sysDisplay
 	    , GetGC(rp)
 	    , GCLineStyle
 	    , &gcval
 	);
-
+UX11
     }
 
     rp->Flags &= ~0x10;
@@ -364,7 +412,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 {
     apen &= PEN_MASK;
     bpen &= PEN_MASK;
-
+LX11
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[apen]);
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[bpen]);
 
@@ -372,22 +420,25 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	XSetFunction (sysDisplay, GetGC(rp), GXxor);
     else
 	XSetFunction (sysDisplay, GetGC(rp), GXcopy);
+UX11
 }
 
 void driver_SetAPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
     pen &= PEN_MASK;
-
+LX11
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
+UX11
 }
 
 void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
     pen &= PEN_MASK;
-
+LX11
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
+UX11
 }
 
 void driver_SetOutlinePen (struct RastPort * rp, ULONG pen,
@@ -398,18 +449,22 @@ void driver_SetOutlinePen (struct RastPort * rp, ULONG pen,
 void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 		    struct GfxBase * GfxBase)
 {
+LX11
     if (mode & COMPLEMENT)
 	XSetFunction (sysDisplay, GetGC(rp), GXxor);
     else
 	XSetFunction (sysDisplay, GetGC(rp), GXcopy);
+UX11
 }
 
 void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
+LX11
     XClearArea (sysDisplay, GetXWindow (rp),
 		x1, y1, x2-x1+1, y2-y1+1, False);
 
+UX11
     SIGID ();
 }
 
@@ -417,7 +472,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
     UpdateAreaPtrn (rp, GfxBase);
-
+LX11
     if (rp->DrawMode & COMPLEMENT)
     {
 	ULONG pen;
@@ -434,7 +489,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     else
 	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
 		x1, y1, x2-x1+1, y2-y1+1);
-
+UX11
     SIGID ();
 }
 
@@ -465,7 +520,7 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     h = y2 - y3 +1;
 
     SetAPen (rp, rp->BgPen);
-
+LX11
     if (dx <= 0) {
 	if (dy <= 0) {
 	    XCopyArea (sysDisplay,GetXWindow(rp),GetXWindow(rp),GetGC(rp),
@@ -510,7 +565,7 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     }
 
     SetAPen (rp, apen);
-
+UX11
     SIGID ();
 }
 
@@ -518,17 +573,18 @@ void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
     UpdateLinePtrn (rp);
-
+LX11
     XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x-rx, y-ry, rx*2, ry*2,
 	    0, 360*64);
-
+UX11
     SIGID ();
 }
 
 void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		struct GfxBase * GfxBase)
 {
+LX11
     if (rp->DrawMode & JAM2)
 	XDrawImageString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
 	    rp->cp_y, string, len);
@@ -537,7 +593,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    rp->cp_y, string, len);
 
     rp->cp_x += TextLength (rp, string, len);
-
+UX11
     SIGID ();
 }
 
@@ -545,9 +601,9 @@ WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
 		    struct GfxBase * GfxBase)
 {
     struct ETextFont * etf;
-
+LX11
     etf = (struct ETextFont *)rp->Font;
-
+UX11
     return XTextWidth (&etf->etf_XFS, string, len);
 }
 
@@ -561,11 +617,11 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
     UpdateLinePtrn (rp);
-
+LX11
     XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    rp->cp_x, rp->cp_y,
 	    x, y);
-
+UX11
     SIGID ();
 }
 
@@ -575,7 +631,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     XImage * image;
     unsigned long pixel;
     ULONG t;
-
+LX11
     XSync (sysDisplay, False);
     SIGID ();
 
@@ -586,14 +642,14 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 	, AllPlanes
 	, ZPixmap
     );
-
+UX11
     if (!image)
 	return ((ULONG)-1L);
-
+LX11
     pixel = XGetPixel (image, 0, 0);
 
     XDestroyImage (image);
-
+UX11
     for (t=0; t<NUM_COLORS; t++)
 	if (pixel == sysCMap[t])
 	    return t;
@@ -604,9 +660,10 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
+LX11
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
-
+UX11
     /* SIGID (); */
 
     return 0;
@@ -616,31 +673,34 @@ void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
     UpdateLinePtrn (rp);
-
+LX11
     XDrawLines (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    (XPoint *)coords, count,
 	    CoordModeOrigin
     );
-
+UX11
     SIGID ();
 }
 
 void driver_SetRast (struct RastPort * rp, ULONG color,
 		    struct GfxBase * GfxBase)
 {
+LX11
     XClearArea (sysDisplay, GetXWindow(rp),
 	    0, 0,
 	    1000, 1000,
 	    FALSE);
-
+UX11
     SIGID ();
 }
 
 void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 		    struct GfxBase * GfxBase)
 {
+LX11
     if (GetGC(rp))
 	XSetFont (sysDisplay, GetGC(rp), ETF(font)->etf_XFS.fid);
+UX11
 }
 
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
@@ -658,7 +718,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	return (NULL);
 
     xfs = NULL;
-
+LX11
     for (t=0; t<sizeof(AROSFontTable)/sizeof(AROSFontTable[0]); t++)
     {
 	if (AROSFontTable[t].ta.ta_YSize == ta->ta_YSize
@@ -669,7 +729,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	    break;
 	}
     }
-
+UX11
     if (!xfs)
     {
 	FreeMem (tf, sizeof (struct ETextFont));
@@ -701,11 +761,12 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
     if (!tf->etf_Font.tf_XSize || !tf->etf_Font.tf_YSize)
     {
+LX11
 	XUnloadFont (sysDisplay, tf->etf_XFS.fid);
+UX11
 	FreeMem (tf, sizeof (struct ETextFont));
 	return (NULL);
     }
-
     tf->etf_Font.tf_Accessors ++;
 
     return (struct TextFont *)tf;
@@ -713,6 +774,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
 void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 {
+LX11
     if (!ETF(tf)->etf_Font.tf_Accessors)
     {
 	XUnloadFont (sysDisplay, ETF(tf)->etf_XFS.fid);
@@ -721,6 +783,7 @@ void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
     }
     else
 	ETF(tf)->etf_Font.tf_Accessors --;
+UX11
 }
 
 int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
@@ -730,14 +793,14 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 
     gcval.plane_mask = sysPlaneMask;
     gcval.graphics_exposures = True;
-
+LX11
     gc = XCreateGC (sysDisplay
 	, DefaultRootWindow (sysDisplay)
 	, GCPlaneMask
 	    | GCGraphicsExposures
 	, &gcval
     );
-
+UX11
     if (!gc)
 	return FALSE;
 
@@ -747,8 +810,9 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 
 	if (!rp->BitMap)
 	{
+LX11
 	    XFreeGC (sysDisplay, gc);
-
+UX11
 	    return FALSE;
 	}
     }
@@ -764,27 +828,28 @@ int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
 			struct GfxBase * GfxBase)
 {
     GC gc;
-
+LX11
     gc = XCreateGC (sysDisplay
 	, GetXWindow (oldRP)
 	, 0L
 	, NULL
     );
-
+UX11
     if (!gc)
 	return FALSE;
-
+LX11
     XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
     SetGC (newRP, gc);
-
+UX11
     if (oldRP->BitMap)
     {
 	newRP->BitMap = AllocMem (sizeof (struct BitMap), MEMF_CLEAR|MEMF_ANY);
 
 	if (!newRP->BitMap)
 	{
+LX11
 	    XFreeGC (sysDisplay, gc);
-
+UX11
 	    return FALSE;
 	}
 
@@ -800,8 +865,9 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 
     if ((gc = GetGC (rp)))
     {
+LX11
 	XFreeGC (sysDisplay, gc);
-
+UX11
 	SetGC (rp, NULL);
     }
 
@@ -820,13 +886,13 @@ ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
     if ((gc = GetGC (rp)))
     {
 	gcval.plane_mask = sysPlaneMask;
-
+LX11
 	XChangeGC (sysDisplay
 	    , gc
 	    , GCPlaneMask
 	    , &gcval
 	);
-
+UX11
 	return TRUE;
     }
 
@@ -848,11 +914,11 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
     cm = DefaultColormap (sysDisplay, sysScreen);
 
     t = (count < maxPen) ? count : maxPen;
-
+LX11
     /* Return colors */
     if (t)
 	XFreeColors (sysDisplay, cm, sysCMap, t, 0L);
-
+UX11
     /* Allocate new colors */
     for (t=0; t<count; t++)
     {
@@ -863,8 +929,9 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 	    , GfxBase
 	);
     }
-
+LX11
     XSync (sysDisplay, False);
+UX11
     SIGID ();
 
     if (count > maxPen)
@@ -895,11 +962,11 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
 	table ++;
 
 	t = (count+first < maxPen) ? count : maxPen-first;
-
+LX11
 	/* Return colors */
 	if (t > 0)
 	    XFreeColors (sysDisplay, cm, &sysCMap[first], t, 0L);
-
+UX11
 	/* Allocate new colors */
 	for (t=0; t<count; t++)
 	{
@@ -916,8 +983,9 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
 	if (count > maxPen)
 	    maxPen = count;
     }
-
+LX11
     XSync (sysDisplay, False);
+UX11
     SIGID();
 
 /* printf ("maxPen = %d\n", maxPen); */
@@ -1010,10 +1078,10 @@ void copyBitMapToImage (struct BitMap * srcBitMap, LONG xSrc, LONG ySrc,
 	|| xDest >= xImage->width || yDest >= xImage->height
     )
 	return;
-
+LX11
     sColor = getBitMapPixel (srcBitMap, xSrc, ySrc);
     dColor = XGetPixel (xImage, xDest, yDest);
-
+UX11
     switch (minterm)
     {
     case 0x00C0:
@@ -1091,6 +1159,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 
 void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
 {
+LX11
     switch (bm->Pad)
     {
     case BMT_XIMAGE:
@@ -1098,6 +1167,7 @@ void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
 	break;
 
     }
+UX11
 }
 
 void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
@@ -1112,17 +1182,17 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 	return;
 
     cm = DefaultColormap (sysDisplay, sysScreen);
-
+LX11
     /* Return color */
     if (color < maxPen)
 	XFreeColors (sysDisplay, cm, &sysCMap[color], 1, 0L);
-
+UX11
     /* Allocate new color */
     xc.flags = DoRed | DoGreen | DoBlue;
     xc.red   = red   >> 16;
     xc.green = green >> 16;
     xc.blue  = blue  >> 16;
-
+LX11
     if (!XAllocColor (sysDisplay, cm, &xc))
     {
 	fprintf (stderr, "Couldn't allocate color %s\n",
@@ -1136,6 +1206,7 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 	sysCMap[color] = xc.pixel;
 
     XSync (sysDisplay, False);
+UX11
     SIGID ();
 
     if (color > maxPen)
@@ -1186,7 +1257,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	int	      height, border;
 
 	height = ystop - ystart + 1;
-
+LX11
 	xim = XCreateImage (GetSysDisplay ()
 	    , theVisual
 	    , DefaultDepth (GetSysDisplay (), GetSysScreen ())
@@ -1198,7 +1269,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	    , 32
 	    , 0
 	);
-
+UX11
 	if (!xim)
 	    return 0;
 
@@ -1232,7 +1303,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	    }
 	    break;
 	}
-
+LX11
 	XPutImage (sysDisplay
 	    , win
 	    , gc
@@ -1246,14 +1317,17 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	);
 
 	XDestroyImage (xim);
+UX11
     }
 #else
     for (y=ystart; y<=ystop; y++)
     {
 	for (x=xstart; x<=xstop; x++)
 	{
+LX11
 	    XSetForeground (sysDisplay, gc, sysCMap[array[y*width+x]]);
 	    XDrawPoint (sysDisplay, win, gc, x, y);
+UX11
 	}
     }
 #endif
@@ -1262,3 +1336,4 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 
     return width*(ystop - ystart + 1);
 } /* driver_WritePixelArray8 */
+
