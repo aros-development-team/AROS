@@ -80,37 +80,50 @@
 	if (req)
 	{
 	    CopyMem(reqinfo->DefaultReq, intreq, reqinfo->IntReqSize);
-			
-	    if (tagList) /* If no taglist is supplied, we use default values */
+	
+	    if (intreq->ir_MemPoolPuddle)
 	    {
-		struct ParseTagArgs pta;
-		
-		ParseCommonTags(intreq, tagList, ASLB(AslBase));
-		
-		/* Parse tags specific for this type of requester */
-		pta.pta_IntReq	= intreq;
-		pta.pta_Req	= req;
-		pta.pta_Tags	= tagList;
-				
-		CallHookPkt(&(reqinfo->ParseTagsHook), &pta, ASLB(AslBase));
-				
-				
-	    } /* if (tagList) */
-		
-	    /* Add requester to internal list */
-	    reqnode = AllocMem(sizeof (struct ReqNode), MEMF_ANY);
-	    if (reqnode)
-	    {
-		reqnode->rn_Req		= req;
-		reqnode->rn_IntReq	= intreq;
-				
-		ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
-		AddTail( (struct List*)&(ASLB(AslBase)->ReqList), (struct Node*)reqnode);
-		ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
-				
-		return (req);
-				
+	    	intreq->ir_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
+						intreq->ir_MemPoolPuddle,
+						intreq->ir_MemPoolThresh);
 	    }
+	    	
+	    if (!intreq->ir_MemPoolPuddle || intreq->ir_MemPool)
+	    {	
+		if (tagList) /* If no taglist is supplied, we use default values */
+		{
+		    struct ParseTagArgs pta;
+
+		    ParseCommonTags(intreq, tagList, ASLB(AslBase));
+
+		    /* Parse tags specific for this type of requester */
+		    pta.pta_IntReq	= intreq;
+		    pta.pta_Req		= req;
+		    pta.pta_Tags	= tagList;
+
+		    CallHookPkt(&(reqinfo->ParseTagsHook), &pta, ASLB(AslBase));
+
+
+		} /* if (tagList) */
+
+		/* Add requester to internal list */
+		reqnode = AllocMem(sizeof (struct ReqNode), MEMF_ANY);
+		if (reqnode)
+		{
+		    reqnode->rn_Req	= req;
+		    reqnode->rn_IntReq	= intreq;
+
+		    ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
+		    AddTail( (struct List*)&(ASLB(AslBase)->ReqList), (struct Node*)reqnode);
+		    ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
+
+		    return (req);
+
+		}
+
+		if (intreq->ir_MemPool) DeletePool(intreq->ir_MemPool);
+
+	    } /* if no mempool needed or mempool creation ok */
 	    FreeVec(req);
 	    
 	} /* if (Alloc public request structure) */
