@@ -53,10 +53,9 @@
 
     if(o != NULL)
     {
-	struct DTSpecialInfo *dtsi = ((struct Gadget *)o)->SpecialInfo;
-	struct Library *DTClassBase = NULL;
-	
-	GetAttr(DTA_Data, o, (IPTR *)&DTClassBase);
+	struct DTSpecialInfo 	*dtsi = ((struct Gadget *)o)->SpecialInfo;
+	struct IClass 		*cl = OCLASS(o);
+	struct Library 		*DTClassBase = (struct Library *)cl->cl_UserData;
 	
 	while(dtsi->si_Flags & (DTSIF_PRINTING | DTSIF_LAYOUTPROC))
 	{
