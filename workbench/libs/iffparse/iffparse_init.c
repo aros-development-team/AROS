@@ -15,8 +15,14 @@
 #include "iffparse_intern.h"
 #include <aros/debug.h>
 #include "libdefs.h"
+#include <aros/asmcall.h>
+#include <clib/alib_protos.h>
 
 #define INIT	AROS_SLIB_ENTRY(init,IFFParse)
+
+#ifdef __MORPHOS__
+unsigned long __amigappc__ = 1;
+#endif
 
 struct inittable;
 extern const char name[];
@@ -37,12 +43,34 @@ int entry(void)
     return -1;
 }
 
+#ifdef __MORPHOS__
+
+ULONG HookEntry(void)
+{
+	struct Hook *h=(struct Hook *)REG_A0;
+    Msg msg=(Msg) REG_A1;
+    Object *obj=(Object*) REG_A2;
+    
+    return h->h_SubEntry(h,obj,msg);
+}
+
+static struct EmulLibEntry    HookEntry_Gate=
+{
+	TRAP_LIB, 0, (void (*)(void))HookEntry
+};
+
+#endif
+
 const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
+#ifdef __MORPHOS__
+    RTF_PPC | RTF_AUTOINIT,
+#else
     RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     0,
@@ -59,10 +87,15 @@ const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IFFParseBase_intern),
     (APTR)LIBFUNCTABLE,
+#ifdef __MORPHOS__
+    NULL,
+#else
     (APTR)&datatable,
+#endif
     &INIT
 };
 
+#ifndef __MORPHOS__
 struct inittable
 {
     S_CPYO(1,1,B);
@@ -87,20 +120,34 @@ const struct inittable datatable=
   I_END ()
 };
 
+#undef O
+
+#endif /* ! __MORPHOS__ */
+
+#ifdef __MORPHOS__
+#define EasyHook(hook, func)  \
+    IFFParseBase->hook.h_Entry = (IPTR (*)())&HookEntry_Gate;\
+    IFFParseBase->hook.h_SubEntry = (IPTR(*)())func;\
+    IFFParseBase->hook.h_Data = IFFParseBase
+#else
 #define EasyHook(hook, func)  \
     IFFParseBase->hook.h_Entry = HookEntry; \
     IFFParseBase->hook.h_SubEntry = (IPTR(*)())func; \
     IFFParseBase->hook.h_Data = IFFParseBase
+#endif
 
-#undef O
 #undef SysBase
 
+#ifdef __MORPHOS__
+struct IFFParseBase_intern *LIB_init(struct IFFParseBase_intern *LIBBASE, BPTR segList, struct ExecBase *SysBase)
+#else
 AROS_LH2(struct IFFParseBase_intern *, init,
  AROS_LHA(struct IFFParseBase_intern *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
      struct ExecBase *, SysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
+#endif
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -119,7 +166,10 @@ AROS_LH2(struct IFFParseBase_intern *, init,
 
     /* You would return NULL here if the init failed. */
     return LIBBASE;
+    
+#ifndef __MORPHOS__
     AROS_LIBFUNC_EXIT
+#endif
 }
 
 /* Use This from now on */
@@ -180,8 +230,14 @@ AROS_LH0(BPTR, close, struct IFFParseBase_intern *, LIBBASE, 2, BASENAME)
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
+    	{
 	    /* Then expunge the library */
+    	#ifdef __MORPHOS__
+    	    return LIB_expunge();
+    	#else
 	    return expunge();
+    	#endif
+    	}
     }
     return 0;
     AROS_LIBFUNC_EXIT

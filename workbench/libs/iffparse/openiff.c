@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -59,7 +61,11 @@
 
     /* Check that a valid StreamHandler Hook has been supplied */
     if (!( GetIntIH(iff)->iff_StreamHandler) )
+    {
+	D(bug("openiff error: IFFERR_NOHOOK"));
 	return (IFFERR_NOHOOK);
+    }
+     
     /* Tell the custom stream to initialize itself */
 
     cmd.sc_Command = IFFCMD_INIT;
@@ -70,6 +76,7 @@
 	/* If we are opend in read mode we should test if we have a valid IFF-File */
 	if (rwMode == IFFF_READ)
 	{
+	    D(bug("testing if it's a valid IFF file\n"));
 	    /* Get header of iff-stream */
 	    err = GetChunkHeader(iff, IPB(IFFParseBase));
 
@@ -77,6 +84,7 @@
 	    if (!err)
 	    {
 		/* We have now entried the chunk */
+		D(bug("entered the chunk\n"));
 		GetIntIH(iff)->iff_CurrentState = IFFSTATE_COMPOSITE;
 
 		cn = TopChunk(iff);
@@ -84,6 +92,7 @@
 		/* We must see if we have a IFF header ("FORM", "CAT" or "LIST") */
 		if (GetIntCN(cn)->cn_Composite)
 		{
+		    D(bug("an iff header\n"));
 		    /* Everything went OK */
 		    /* Set the acess mode, and mark the stream as opened */
 		    iff->iff_Flags &= ~IFFF_RWBITS;
@@ -94,6 +103,7 @@
 		else
 		{
 		    err = IFFERR_NOTIFF;
+            	    D(bug("OpenIFF: not an IFF header, pop the context node\n"));
 
 		    /* Pop the contextnode */
 		    PopContextNode(iff, IPB(IFFParseBase));
@@ -102,8 +112,11 @@
 	    else
 	    {
 		if (err  == IFFERR_MANGLED)
+		{
 		    err = IFFERR_NOTIFF;
-
+    	    	    D(bug("IFFERR_MANGLED\n"));
+		}
+		
 		/* Fail. We should send CLEANUP to the stream */
 		cmd.sc_Command = IFFCMD_CLEANUP;
 		err = CallHookPkt

@@ -73,7 +73,7 @@ ULONG ClipStreamHandler
 
     req = &( ((struct ClipboardHandle*)iff->iff_Stream)->cbh_Req);
 
-    DEBUG_STREAM(dprintf("ClipStream: iff %p cmd %d buf %p bytes %d\n",
+    DEBUG_STREAM(bug("ClipStream: iff %p cmd %d buf %p bytes %d\n",
 			 iff, cmd->sc_Command, cmd->sc_Buf, cmd->sc_NBytes));
 
     switch (cmd->sc_Command)
@@ -137,7 +137,7 @@ ULONG ClipStreamHandler
 
     }
 
-    DEBUG_STREAM(dprintf("ClipStream: error %ld\n", error));
+    DEBUG_STREAM(bug("ClipStream: error %ld\n", error));
 
     return (error);
 }

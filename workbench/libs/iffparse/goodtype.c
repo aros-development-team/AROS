@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 #define DEBUG_GOODTYPE(x)	;
@@ -59,7 +61,7 @@
    /* How can it be a valid type if its not a valid ID */
     if(!GoodID(type))
     {
-	DEBUG_GOODTYPE(dprintf("badtype 1\n"));
+	DEBUG_GOODTYPE(bug("badtype 1\n"));
 	return (FALSE);
     }
 
@@ -73,7 +75,7 @@
 	/* Greater than Z, not a type */
 	if(theId[i] > 'Z')
 	{
-	    DEBUG_GOODTYPE(dprintf("badtype 2\n"));
+	    DEBUG_GOODTYPE(bug("badtype 2\n"));
             return (FALSE);
 	}
 
@@ -84,14 +86,14 @@
 	    && (theId[i] != ' ')
 	  )
 	{
-	    DEBUG_GOODTYPE(dprintf("badtype 3\n"));
+	    DEBUG_GOODTYPE(bug("badtype 3\n"));
             return (FALSE);
 	}
 
 	/* Must be valid, try the next one */
     }
 
-    DEBUG_GOODTYPE(dprintf("goodtype\n"));
+    DEBUG_GOODTYPE(bug("goodtype\n"));
     return (TRUE);
 
     AROS_LIBFUNC_EXIT
