@@ -388,7 +388,10 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
     struct MUI_ImageSpec_intern *spec;
 
     if (!mri)
+    {
+	D(bug("zune_imspec_setup: param error: mri=%p\n", mri));
 	return NULL;
+    }
 
     spec = zune_image_spec_to_structure(s);
 
@@ -443,7 +446,7 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    zune_imspec_free(spec);
 	    spec = NULL;
 
-	    if (spec_desc[0] == '6')
+	    if (spec_desc && (spec_desc[0] == '6'))
 	    {
 		D(bug("*** zune_imspec_setup (%s recursive config)\n",
 		      zune_imspec_to_string(spec)));
