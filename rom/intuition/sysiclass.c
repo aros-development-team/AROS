@@ -100,6 +100,7 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     switch (data->type)
     {
     case CHECKIMAGE:
+    case MXIMAGE:
     {
         struct TagItem tags[] = {
           {IA_FrameType, FRAME_BUTTON},
@@ -116,9 +117,6 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         }
         break;
     }
-
-    case MXIMAGE:
-        break;
 
     default:
         CoerceMethod(cl, obj, OM_DISPOSE);
@@ -152,6 +150,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     WORD top = IM(obj)->TopEdge + msg->imp_Offset.Y;
     UWORD width = IM(obj)->Width;
     UWORD height = IM(obj)->Height;
+
+    EraseRect(rport, left, top, left + width - 1, top + height - 1);
 
     switch(data->type)
     {
@@ -187,13 +187,24 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     }
     case MXIMAGE:
     {
-      /* !!! */
+        struct TagItem tags[] = {
+          { IA_Recessed, FALSE },
+          { TAG_DONE, 0UL }
+        };
+
+        /* Draw frame */
         if (msg->imp_State == IDS_SELECTED)
-            SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
-        else
-            SetAPen(rport, data->dri->dri_Pens[SHINEPEN]);
-        SetDrMd(rport, JAM1);
-        RectFill(rport, left, top, left + width - 1, top + height - 1);
+            tags[0].ti_Data = TRUE;
+        SetAttrsA(data->frame, tags);
+        DrawImageState(rport, data->frame,
+                       msg->imp_Offset.X, msg->imp_Offset.Y,
+                       IDS_NORMAL, data->dri);
+
+        if (msg->imp_State == IDS_SELECTED)
+        {
+            SetABPenDrMd(rport, data->dri->dri_Pens[FILLPEN], 0, JAM1);
+            RectFill(rport, left + 4, top + 2, left + width - 5, top + height - 3);
+        }
         break;
     }
     }
