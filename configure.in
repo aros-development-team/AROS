@@ -350,6 +350,9 @@ aros_serial_debug="0"
 # Palm native flavour stuff
 aros_palm_debug_hack="0"
 
+# Unix flavour stuff
+aros_nesting_supervisor="0"
+
 # Debug stuff
 aros_mungwall_debug="1"
 aros_stack_debug="1"
@@ -794,6 +797,16 @@ if test "$palm_debug_hack" = "yes" ; then
 fi
 AC_MSG_RESULT("$palm_debug_hack")
 
+
+dnl See if the user wants nesting supervisor activated for unix flavour
+AC_MSG_CHECKING([if nesting supervisor support is enabled])
+AC_ARG_ENABLE(nesting_supervisor,[  --enable-nesting-supervisor   Enable nesting supervisor support in unix [default=no]],nesting_supervisor="yes",nesting_supervisor="no")
+if test "$nesting_supervisor" = "yes" ; then
+    aros_nesting_supervisor="1"
+fi
+AC_MSG_RESULT("$nesting_supervisor")
+
+
 dnl See if the user wants the mungwall debug to be enabled
 AC_MSG_CHECKING([if mungwall debug is enabled])
 AC_ARG_ENABLE(mungwall_debug,[  --enable-mungwall-debug Enable mungwall debug [default=yes]],mungwall_debug="$enableval",mungwall_debug="yes")
@@ -921,6 +934,9 @@ AC_SUBST(aros_serial_debug)
 
 # Palm native version related
 AC_SUBST(aros_palm_debug_hack)
+
+# Unix/Hosted version related
+AC_SUBST(aros_nesting_supervisor)
 
 # Debug related
 AC_SUBST(aros_debug)
