@@ -59,6 +59,8 @@
     OOP_Object      	*gc;
     struct Layer    	*L = rp->Layer;
     struct BitMap   	*bm = rp->BitMap;
+    struct Rectangle 	 rp_clip_rectangle;
+    BOOL    	    	 have_rp_cliprectangle;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
@@ -108,10 +110,15 @@
 	xrel = L->bounds.MinX;
 	yrel = L->bounds.MinY;
 	
-	torender.MinX = rr.MinX + xrel;
-	torender.MinY = rr.MinY + yrel;
-	torender.MaxX = rr.MaxX + xrel;
-	torender.MaxY = rr.MaxY + yrel;
+	xCenter -= L->Scroll_X;
+	yCenter -= L->Scroll_Y;
+
+	have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
+	
+	torender.MinX = rr.MinX + xrel - L->Scroll_X;
+	torender.MinY = rr.MinY + yrel - L->Scroll_Y;
+	torender.MaxX = rr.MaxX + xrel - L->Scroll_X;
+	torender.MaxY = rr.MaxY + yrel - L->Scroll_Y;
 		
 	for (;NULL != CR; CR = CR->Next)
 	{
@@ -122,93 +129,88 @@
 	    /* Does this cliprect intersect with area to rectfill ? */
 	    if (_AndRectRect(&CR->bounds, &torender, &intersect))
 	    {
-	    	LONG xoffset, yoffset;
-		LONG layer_rel_x, layer_rel_y;
-		
-		xoffset = intersect.MinX - torender.MinX;
-		yoffset = intersect.MinY - torender.MinY;
-		
-		layer_rel_x = intersect.MinX - L->bounds.MinX;
-		layer_rel_y = intersect.MinY - L->bounds.MinY;
-
-	        if (NULL == CR->lobs)
+	    	if (!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect))
 		{
-		
-		    /* Set clip rectangle */
-    	    	    /* bug("Setting cliprect: %d %d %d %d : layerrel: %d %d %d %d\n"
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-			
-		    	, intersect.MinX - xrel
-			, intersect.MinY - yrel
-			, intersect.MaxX - xrel
-			, intersect.MaxY - yrel
-		    );
-    	    	    */		    
-		    HIDD_GC_SetClipRect(gc
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-		    );
-		    
-		    HIDD_BM_DrawEllipse(HIDD_BM_OBJ(bm)
-		    	, gc
-			, xCenter + xrel
-			, yCenter + yrel
-			, a
-			, b
-		    );
-		    
-		    HIDD_GC_UnsetClipRect(gc);
-		
-		
-		}
-		else
-		{
-		    /* Render into offscreen cliprect bitmap */
-		    if (L->Flags & LAYERSIMPLE)
-		    	continue;
-		    else if (L->Flags & LAYERSUPER)
+	            if (NULL == CR->lobs)
 		    {
-		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+
+			/* Set clip rectangle */
+    	    		/* bug("Setting cliprect: %d %d %d %d : layerrel: %d %d %d %d\n"
+		    	    , intersect.MinX
+			    , intersect.MinY
+			    , intersect.MaxX
+			    , intersect.MaxY
+
+		    	    , intersect.MinX - xrel
+			    , intersect.MinY - yrel
+			    , intersect.MaxX - xrel
+			    , intersect.MaxY - yrel
+			);
+    	    		*/		    
+			HIDD_GC_SetClipRect(gc
+		    	    , intersect.MinX
+			    , intersect.MinY
+			    , intersect.MaxX
+			    , intersect.MaxY
+			);
+
+			HIDD_BM_DrawEllipse(HIDD_BM_OBJ(bm)
+		    	    , gc
+			    , xCenter + xrel
+			    , yCenter + yrel
+			    , a
+			    , b
+			);
+
+			HIDD_GC_UnsetClipRect(gc);
+
+
 		    }
 		    else
 		    {
-		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
-			LONG layer_rel_x, layer_rel_y;
-			
-			layer_rel_x = intersect.MinX - xrel;
-			layer_rel_y = intersect.MinY - yrel;
-			
-			bm_rel_minx = intersect.MinX - CR->bounds.MinX;
-			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
-			bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
-			bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
-			
-		    	HIDD_GC_SetClipRect(gc
-		    		, bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
-				, bm_rel_miny
-				, bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
-				, bm_rel_maxy
-			);
-			
-			HIDD_BM_DrawEllipse(HIDD_BM_OBJ(CR->BitMap)
-				, gc
-				, bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX)
-				, bm_rel_miny - (layer_rel_y - yCenter)
-				, a
-				, b
-			);
-				
-				
-			HIDD_GC_UnsetClipRect(gc);
-		    }
-		    
-		} /* if (CR->lobs == NULL) */
+			/* Render into offscreen cliprect bitmap */
+			if (L->Flags & LAYERSIMPLE)
+		    	    continue;
+			else if (L->Flags & LAYERSUPER)
+			{
+		    	    D(bug("do_render_func(): Superbitmap not handled yet\n"));
+			}
+			else
+			{
+		    	    LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
+			    LONG layer_rel_x, layer_rel_y;
+
+			    layer_rel_x = intersect.MinX - xrel;
+			    layer_rel_y = intersect.MinY - yrel;
+
+			    bm_rel_minx = intersect.MinX - CR->bounds.MinX;
+			    bm_rel_miny = intersect.MinY - CR->bounds.MinY;
+			    bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
+			    bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
+
+		    	    HIDD_GC_SetClipRect(gc
+		    		    , bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
+				    , bm_rel_miny
+				    , bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
+				    , bm_rel_maxy
+			    );
+
+			    HIDD_BM_DrawEllipse(HIDD_BM_OBJ(CR->BitMap)
+				    , gc
+				    , bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX)
+				    , bm_rel_miny - (layer_rel_y - yCenter)
+				    , a
+				    , b
+			    );
+
+
+			    HIDD_GC_UnsetClipRect(gc);
+			}
+
+		    } /* if (CR->lobs == NULL) */
 		
+		} /* if it also intersects with possible rastport clip rectangle */
+
 	    } /* if (cliprect intersects with area to render into) */
 	    
 	} /* for (each cliprect in the layer) */
