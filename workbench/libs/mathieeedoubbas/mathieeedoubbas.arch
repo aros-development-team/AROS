@@ -310,6 +310,7 @@
 	Compares two IEEE double precision numbers
 
     RESULT
+       <code>
        +1 : y > z
 	0 : y = z
        -1 : y < z
@@ -318,6 +319,7 @@
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
+       </code>
 
     NOTES
 
@@ -386,6 +388,7 @@
 	Divides two IEEE double precision numbers
 
     RESULT
+       <code>
        +1 : y > z
 	0 : y = z
        -1 : y < z
@@ -394,6 +397,7 @@
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
+       </code>
 
     NOTES
 
@@ -510,6 +514,7 @@ QUAD * Qy = (QUAD *)&y;
 	Calculates the floor-value of a IEEE double precision number
 
     RESULT
+       <code>
        +1 : y > z
 	0 : y = z
        -1 : y < z
@@ -518,6 +523,7 @@ QUAD * Qy = (QUAD *)&y;
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
+       </code>
 
     NOTES
 
@@ -685,6 +691,7 @@ QUAD * Qy = (QUAD *)&y;
 	Multiplies two IEEE double precision numbers
 
     RESULT
+	<code>
        +1 : y > z
 	0 : y = z
        -1 : y < z
@@ -693,6 +700,7 @@ QUAD * Qy = (QUAD *)&y;
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
+	</code>
 
     NOTES
 
@@ -788,6 +796,7 @@ QUAD * Qy = (QUAD *)&y;
         Subtracts two IEEE double precision numbers
 
     RESULT
+       <code>
        +1 : y > z
         0 : y = z
        -1 : y < z
@@ -796,6 +805,7 @@ QUAD * Qy = (QUAD *)&y;
           zero     : y = z
           negative : y < z
           overflow : 0
+       </code>
 
     NOTES
 
@@ -830,7 +840,7 @@ QUAD * Qy = (QUAD *)&y;
 	Compare a IEEE double precision floting point number against zero.
 
     RESULT
-
+       <code>
 	+1 : y > 0.0
 	 0 : y = 0.0
 	-1 : y < 0.0
@@ -839,6 +849,7 @@ QUAD * Qy = (QUAD *)&y;
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
+       </code>
 
     NOTES
 

@@ -34,7 +34,7 @@
       flags:
       zero     : result is zero
       negative : 0 (not possible)
-      overflow : y < -1  or  y > 1
+      overflow : y &lt; -1  or  y &gt; 1
 
     NOTES
 
@@ -162,7 +162,7 @@
       flags:
         zero     : result is zero
         negative : result is negative
-        overflow : fnum < -1  or  fnum > 1
+        overflow : fnum &lt; -1  or  fnum &gt; 1
 
     NOTES
 
@@ -382,8 +382,9 @@
     SEE ALSO
 
     INTERNALS
-      Algorithm for Calculation of cos(y):
-         z    = floor ( |y| / pi );
+	Algorithm for Calculation of cos(y):
+	<code>
+	 z    = floor ( |y| / pi );
          y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
          if (y_1 > pi/2 ) then y_1 = pi - y_1;
@@ -398,6 +399,7 @@
 
          if (y_1 was greater than pi/2 in the test above)
            Res = -Res;
+      </code>
 
 
     HISTORY
@@ -484,9 +486,11 @@
     SEE ALSO
 
     INTERNALS
+      <code>
       cosh(x) = (1/2)*( e^x + e^(-x) )
 
       cosh( |x| >= 9  ) = (1/2) * (e^x);
+      </code>
 
     HISTORY
 
@@ -553,8 +557,10 @@ LONG Res;
     SEE ALSO
 
     INTERNALS
+      <code>
       e^(>= 89): return 0x7f800000;
       e^(2^(<=-24)): return one;
+      </code>
 
     HISTORY
 
@@ -711,6 +717,7 @@ char Exponent;
       (ln is the logarithm with base e)
       y = M * 2^E
 
+      <code>
       ln y = ln ( M * 2^E ) =
 
            = ln M + ln 2^E =
@@ -724,6 +731,7 @@ char Exponent;
              ld M + E
            = --------
              ld e
+      </code>
 
       ld e can be precalculated, of course.
       For calculating ld M see file intern_ieeespld.c
@@ -822,6 +830,7 @@ char Exponent;
       (ln is the logarithm with base e)
       y = M * 2^E
 
+      <code>
       ln y = ln ( M * 2^E ) =
 
            = ln M + ln 2^E =
@@ -835,6 +844,7 @@ char Exponent;
              ld M + E
            = --------
              ld 10
+      </code>
 
       ld 10 can be precalculated, of course.
       For calculating ld M see file intern_ieeespld.c
@@ -997,6 +1007,7 @@ char Exponent;
 
     INTERNALS
       Algorithm for Calculation of sin(y):
+      <code>
          z    = floor ( |y| / pi );
          y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
@@ -1012,6 +1023,7 @@ char Exponent;
 
          if (z was an odd number)
            Res = -Res;
+      </code>
 
     HISTORY
 
@@ -1135,9 +1147,11 @@ LONG z,Res,ysquared,yabs,tmp;
     SEE ALSO
 
     INTERNALS
+      <code>
       sinh(x) = (1/2)*( e^x- e^(-x) )
 
       sinh( |x| >=  9 ) = (1/2) * (e^x);
+      </code>
     HISTORY
 
 #/AutoDoc
@@ -1216,6 +1230,7 @@ LONG tmp;
 
     INTERNALS
       ALGORITHM:
+      <code>
         First check for a zero and a negative argument and take
         appropriate action.
         y = M * 2^E
@@ -1252,6 +1267,7 @@ LONG tmp;
           Exponent --;
         }
         until you`re happy with the accuracy
+      </code>
 
     HISTORY
 
@@ -1448,11 +1464,13 @@ LONG tmp;
 
     INTERNALS
 
+      <code>
                 ( e^x - e^(-x) )
      tanh(x) =  ----------------
                 ( e^x + e^(-x) )
 
      tanh( |x| >= 9 ) = 1
+      </code>
 
     HISTORY
 

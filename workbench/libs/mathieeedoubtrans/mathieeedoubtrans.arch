@@ -807,8 +807,10 @@ QUAD Res;
     SEE ALSO
 
     INTERNALS
+      <code>
       e^(>= ): return 0x7f800000;
       e^(2^(<=-24)): return one;
+      </code>
 
     HISTORY
 
@@ -1410,6 +1412,7 @@ LONG Exponent;
 
     INTERNALS
       Algorithm for Calculation of sin(y):
+      <code>
          z    = floor ( |y| / pi );
          y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
@@ -1425,6 +1428,7 @@ LONG Exponent;
 
          if (z was an odd number)
            Res = -Res;
+      </code>
 
     HISTORY
 
@@ -1568,9 +1572,11 @@ LONG Exponent;
     SEE ALSO
 
     INTERNALS
+      <code>
       sinh(x) = (1/2)*( e^x- e^(-x) )
 
       sinh( |x| >=  18 ) = (1/2) * (e^x);
+      </code>
 
     HISTORY
 
@@ -1661,11 +1667,14 @@ QUAD y2;
 
     INTERNALS
       ALGORITHM:
-	First check for a zero and a negative argument and take
-	appropriate action.
-	fnum = M * 2^E
+	<p>First check for a zero and a negative argument and take
+	appropriate action.</p>
+	
+	<code>fnum = M * 2^E</code>
 
-	Exponent is an odd number:
+	<p>Exponent is an odd number:</p>
+	
+	<code>
 	fnum = ( M*2 ) * 2^ (E-1)
 	Now E' = E-1 is an even number and
 	   -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
@@ -1675,19 +1684,22 @@ QUAD y2;
 										     = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
 			 = sqrt(M/2)             * 2^(1+(E'/2))
 
-
-	Exponent is an even number:
-	-> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
+	</code>
+	
+	<p>Exponent is an even number:</p>
+	
+	<code>-> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
 		      = sqrt(M) * 2^(E/2)
-
-	Now calculate the square root of the mantisse.
+	</code>
+	
+	<p>Now calculate the square root of the mantisse.
 	The following algorithm calculates the square of a number + delta
 	and compares it to the mantisse. If the square of that	number +
 	delta is less than the mantisse then keep that number + delta.
 	Otherwise calculate a lower offset and try again.
-	Start out with number = 0;
+	Start out with number = 0;</p>
 
-
+	<code>
 	Exponent = -1;
 	Root = 0;
 	repeat
@@ -1696,6 +1708,8 @@ QUAD y2;
 	  Root += 2^Exponent
 	  Exponent --;
 	}
+	</code>
+
 	until you`re happy with the accuracy
 
     HISTORY

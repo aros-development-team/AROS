@@ -188,6 +188,7 @@
         Compares two ieeesp numbers
 
     RESULT
+       <code>
        +1 : y > z
         0 : y = z
        -1 : y < z
@@ -197,6 +198,7 @@
           zero     : y = z
           negative : y < z
           overflow : 0
+       </code>
 
     NOTES
 
@@ -257,7 +259,7 @@
         Compare a ieeesp-number against zero.
 
     RESULT
-
+	<code>
         +1 : y > 0.0
          0 : y = 0.0
         -1 : y < 0.0
@@ -266,6 +268,7 @@
           zero     : result is zero
           negative : result is negative
           overflow : 0
+	</code>
 
     NOTES
 
@@ -278,9 +281,11 @@
 
     INTERNALS
       ALGORITHM:
+	<code>
         Sign is negative: return -1
         y == 0          : return 0
         Otherwise       : return 1
+	</code>
 
     HISTORY
 
@@ -699,10 +704,10 @@
 
 
     INTERNALS
-      ALGORITHM:
-        Check if fnum2 == 0: result = 0;
-        Check if fnum1 == 0: result = overflow;
-        The further algorithm comes down to a pen & paper division.
+      ALGORITHM:<br/>
+        Check if fnum2 == 0: result = 0;<br/>
+        Check if fnum1 == 0: result = overflow;<br/>
+        The further algorithm comes down to a pen &amp; paper division.
     HISTORY
 
 #/AutoDoc

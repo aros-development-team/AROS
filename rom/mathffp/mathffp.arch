@@ -79,11 +79,11 @@
         sum of fnum1 and fnum2.
 
         Flags:
-	<TABLE>
-	<TR><TD>zero</TD><TD>result is zero</TD></TR>
-        <TR><TD>negative</TD><TD>result is negative</TD></TR>
-        <TR><TD>overflow</TD><TD>result is too large or too small for ffp format</TD></TR>
-	</TABLE>
+	<description>
+	<li><item>zero</item>result is zero</li>
+        <li><item>negative</item>result is negative</li>
+        <li><item>overflow</item>result is too large or too small for ffp format</li>
+	</description>
 
     NOTES
 
@@ -95,36 +95,36 @@
 
 
     INTERNALS
-        Adapt the exponent of the ffp-number with the smaller
+        <p>Adapt the exponent of the ffp-number with the smaller
         exponent to the ffp-number with the larger exponent.
         Therefore rotate the mantisse of the ffp-number with the
         smaller exponents by n bits, where n is the absolute value
-        of the difference of the exponents.
+        of the difference of the exponents.</p>
 
-        The exponent of the target ffp-number is set to the larger
-        exponent plus 1.
+        <p>The exponent of the target ffp-number is set to the larger
+        exponent plus 1.</p>
 
-        Additionally rotate both numbers by one bit to the right so
-        you can catch a result &gt; 1 in the MSB.
+        <p>Additionally rotate both numbers by one bit to the right so
+        you can catch a result &gt; 1 in the MSB.</p>
 
-        If the signs of the two numbers are equal then simply add
+        <p>If the signs of the two numbers are equal then simply add
         the two mantisses. The result of the mantisses will be
         [0.5 .. 2[. Check the MSB. If zero, then the result is &lt; 1
         and therefore subtract 1 from the exponent. Normalize the
         mantisse of the result by rotating it one bit to the left.
-        Check the mantisse for 0.
+        Check the mantisse for 0.</p>
 
-        If the signs of the two numbers are different then subtract
+        <p>If the signs of the two numbers are different then subtract
         the ffp-number with the neagtive sign from the other one.
         The result of the mantisse will be [-1..1[. If the MSB of
         the result is set, then the result is below zero and therefore
         you have to calculate the absolute value of the mantisse.
         Check the mantisse for zero. Normalize the mantisse by
         rotating it to the left and decreasing the exponent for every
-        rotation.
+        rotation.</p>
 
-        Test the exponent of the result for an overflow.
-        That`s it!
+        <p>Test the exponent of the result for an overflow.
+        That`s it!</p>
 
     HISTORY
 
@@ -287,6 +287,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
         Compares two ffp numbers
 
     RESULT
+	<code>
        +1 : fnum1 > fnum2
         0 : fnum1 = fnum2
        -1 : fnum1 < fnum2
@@ -296,6 +297,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
           zero     : fnum2 = fnum1
           negative : fnum2 < fnum1
           overflow : 0
+	</code>
 
     NOTES
 
@@ -308,6 +310,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
 
     INTERNALS
       ALGORITHM:
+	<code>
         1st case:
           fnum1 is negative and fnum2 is positive
             or
@@ -331,6 +334,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
 
         final case:
           fnum1 > fnum2
+	</code>
     HISTORY
 
 #/AutoDoc
@@ -413,7 +417,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
       ALGORITHM:
         Check if fnum2 == 0: result = 0;
         Check if fnum1 == 0: result = overflow;
-        The further algorithm comes down to a pen & paper division
+        The further algorithm comes down to a pen &amp; paper division
 
     HISTORY
 
@@ -606,17 +610,17 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
 
     INTERNALS
       ALGORITHM:
-        The integer part of a ffp number are the left "exponent"-bits
+        <p>The integer part of a ffp number are the left "exponent"-bits
         of the mantisse!
         Therefore:
-        Test the exponent for <= 0. This has to be done separately!
-        If the sign is negative then return -1 otherwise return 0.
+        Test the exponent for <code><= 0</code>. This has to be done separately!
+        If the sign is negative then return -1 otherwise return 0.</p>
 
-        Generate a mask of exponent(y) (where y is the given ffp-number)
+        <p>Generate a mask of exponent(y) (where y is the given ffp-number)
         bits starting with bit 31.
-        If y < 0 then test whether it is already an integer. If not
+        If <code>y < 0</code> then test whether it is already an integer. If not
         then y = y - 1 and generate that mask again. Use the
-        mask on the mantisse.
+        mask on the mantisse.</p>
 
     HISTORY
 
@@ -686,16 +690,16 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
     SEE ALSO
 
     INTERNALS
-        Return zero for x == 0.
-        If x < 0 set the sign-bit and calculate the absolute value
-        of x.
+        Return zero for x == 0.<br/>
+        If <code>x < 0</code> set the sign-bit and calculate the absolute value
+        of x.<br/>
         Find out which bit is the highest-set bit. If the number
-        of that bit > 24 then the result has the highest bit
+        of that bit <code>> 24</code> then the result has the highest bit
         of the mantisse set to one and the exponent equals the
         number of the bit + 2. This is due to the fact that we only
         have 24 bits for the mantisse.
         Otherwise rotate the given integer by
-        (32 - (number of highes set bit + 1)) bits to the left and
+        <code>(32 - (number of highes set bit + 1))</code> bits to the left and
         calculate the result from that.
 
     HISTORY
@@ -947,6 +951,7 @@ kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
         Compare a ffp-number against zero.
 
     RESULT
+	<code>
         +1 : fnum > 0.0
          0 : fnum = 0.0
         -1 : fnum < 0.0
@@ -955,6 +960,7 @@ kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
           zero     : result is zero
           negative : result is negative
           overflow : 0
+	</code>
 
     NOTES
 
