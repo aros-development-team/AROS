@@ -106,14 +106,8 @@ AROS_UFH3(LONG, __startup_entry,
     set_call_funcs(SETNAME(EXIT), -1);
     set_close_libraries();
 
-    /* Reply startup message to Workbench.
-     * We Forbid() to avoid being UnLoadSeg()ed before we're really finished.
-     */
-    if (WBenchMsg)
-    {
-	Forbid();
-	ReplyMsg((struct Message *)WBenchMsg);
-    }
+    /* Reply startup message to Workbench */
+    if (WBenchMsg) ReplyMsg((struct Message *) WBenchMsg);
 
     CloseLibrary((struct Library *)DOSBase);
 
