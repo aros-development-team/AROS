@@ -634,6 +634,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
 		}
 		
+		SetPointerPos(ie->ie_X, ie->ie_Y);
+		
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
 
