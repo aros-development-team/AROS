@@ -13,11 +13,11 @@ clean:
 	$(RM) $(LIBDIR)/libkernel.a
 
 $(OBJDIR)/%.o: %.s
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 libkernel.a: $(OBJDIR)/init.o $(OBJDIR)/supervisor.o $(OBJDIR)/switch.o \
