@@ -1,66 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.15  1996/10/10 13:23:23  digulla
-    Enable timer (50Hz)
-    Allow AROS to run without X11
-
-    Revision 1.14  1996/10/04 17:10:04  digulla
-    Create SysBase with version
-
-    Revision 1.13  1996/10/02 16:39:59	digulla
-    Linux needs even more stack
-
-    Revision 1.12  1996/10/01 15:49:19	digulla
-    The memory is now of type CHIP instead of FAST because most software can live
-	without FAST, but some cannot live without CHIP.
-
-    Revision 1.11  1996/09/17 18:41:18	digulla
-    This file now contains a DOSBase for internal use in the OS only (and
-	if you can, don't use it but open the dos.library on your own). I'll try
-	to remove again, later.
-
-    Revision 1.10  1996/09/17 16:17:02	digulla
-    Moved CreateNewProc() in front of start of timer, because of crashes if
-	the timer is enabled. But that's not enough yet :(
-
-    Revision 1.9  1996/09/13 17:57:08  digulla
-    Use IPTR
-
-    Revision 1.8  1996/08/30 17:00:59  digulla
-    Tried a timer with higher resolution to have 50 task switches per second,
-    but it crashes. If someone wants to debug it, define ENABLE_TIMER and compile
-    init.c anew.
-
-    Revision 1.7  1996/08/28 17:57:37  digulla
-    Doesn't call intui_ProcessXEvents() andmore but signals the input.device.
-    This will change in the future but as long as we don't have real multitasking,
-    there is no other way to do it.
-
-    Revision 1.6  1996/08/23 17:12:28  digulla
-    Added several new aros specific includes
-    We have now a console.device
-    The memory is allocated now and not part of the BSS so illegal accesses show
-	up earlier now.
-    New global variable: AROSBase. Can be accesses from anywhere via
-	SysBase->DebugData for now. Will be used for RT and Purify.
-    AROSBase.StdOut is a FILE*-handle for use in kprintf() but that doesn't
-	seem to work in all cases
-
-    Revision 1.5  1996/08/15 13:21:06  digulla
-    A couple of comments
-
-    Revision 1.4  1996/08/13 14:04:33  digulla
-    Added intui_ProcessXEvents() to Idle-Task
-    Added graphics and intuition.library to system libraries
-    Renamed stdin, stdout and stderr to allow to use stdio.h
-
-    Revision 1.3  1996/08/03 20:20:55  digulla
-    Tried to add multitasking but that doesn't work right now
-
-    Revision 1.2  1996/08/01 17:41:25  digulla
-    Added standard header for all files
 
     Desc: startup code for AROS (main())
     Lang: english
@@ -85,7 +25,7 @@
 #include <aros/rt.h>
 #include <aros/arosbase.h>
 #include "memory.h"
-#include "machine.h"
+#include <aros/machine.h>
 #undef kprintf
 
 #define NEWLIST(l)                          \
@@ -111,16 +51,12 @@ UBYTE * memory;
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
-#define STACKSIZE 4096
+#define STACKSIZE 20000
 
 static int returncode=20;
 static struct AROSBase AROSBase;
 
 extern struct Task * inputDevice;
-
-#ifndef ENABLE_TIMER
-#   define ENABLE_TIMER     0
-#endif
 
 static void idleTask (void)
 {
@@ -147,12 +83,13 @@ static void boot(void)
 static void timer (int dummy)
 {
     signal (SIGALRM, timer);
-    if(SysBase->TDNestCnt>=0&&
-    	SysBase->ThisTask->tc_Node.ln_Pri<=
-    	((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+
+    if (SysBase->TDNestCnt >= 0
+	&& SysBase->ThisTask->tc_Node.ln_Pri <=
+	    ((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
 	Switch ();
     else
-	SysBase->AttnResched|=0x80;
+	SysBase->AttnResched |= 0x80;
 }
 
 static APTR allocmem(ULONG size)
@@ -310,16 +247,16 @@ int main(int argc,char *argv[])
 	struct Library * lib;
 
 	lib = (struct Library *)InitResident((struct Resident *)&Utility_resident,0);
-    	if (lib) AddLibrary(lib);
+	if (lib) AddLibrary(lib);
 
-    	DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
+	DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
-    	if (DOSBase) AddLibrary((struct Library *)DOSBase);
+	if (DOSBase) AddLibrary((struct Library *)DOSBase);
 
 	lib = (struct Library *)InitResident((struct Resident *)&Graphics_resident,0);
-    	if (lib) AddLibrary(lib);
+	if (lib) AddLibrary(lib);
 	lib = (struct Library *)InitResident((struct Resident *)&Intuition_resident,0);
-    	if (lib) AddLibrary(lib);
+	if (lib) AddLibrary(lib);
     }
 
     {
@@ -390,15 +327,14 @@ int main(int argc,char *argv[])
 
 	{
 	    struct itimerval interval;
-	    int rc;
 
-	    /* Start Multitasking (not yet) */
+	    /* Start Multitasking */
 	    signal (SIGALRM, timer);
 
 	    interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
 	    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
 
-	    rc = setitimer (ITIMER_REAL, &interval, NULL);
+	    setitimer (ITIMER_REAL, &interval, NULL);
 	}
     }
 
