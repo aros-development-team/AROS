@@ -9,6 +9,7 @@
 #MM         workbench-libs-asl \
 #MM         workbench-libs-commodities \
 #MM         workbench-libs-bsdsocket \
+#MM         workbench-libs-camd \
 #MM         workbench-libs-datatypes \
 #MM         workbench-libs-diskfont \
 #MM         workbench-libs-gadtools \
