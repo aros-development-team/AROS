@@ -8,7 +8,7 @@ FILES	:=	serial_init functable SerialClass SerialUnitClass endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 LIBS	:=	-L$(LIBDIR) -lhiddserialstubs
 
-#MM- Drivers-native: Serial-palm-m68k
+#MM- Drivers-native-palm: Serial-palm-m68k
 
 #MM Serial-palm-m68k : workbench-hidd-serial-stubs
 Serial-palm-m68k : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
