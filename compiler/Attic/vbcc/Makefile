@@ -6,9 +6,9 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES = -I. -I./machines/$(KERNEL) -I$(TOP)/compiler/clib/include
 
 OBJDIR = $(GENDIR)/compiler/vbcc
-LIBS = -L$(LIBDIR) -larosc -lamiga -laros  #-lm
+LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport  #-lm
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 BASIC_FILES = main vars declaration parse_expr type_expr ic machine \
 	    statements preproc

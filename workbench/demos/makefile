@@ -9,8 +9,8 @@ include $(TOP)/config/make.cfg
 EXEDIR=$(BINDIR)/Demos
 
 OBJDIR = $(GENDIR)/workbench/demos
-LIBS = -L$(LIBDIR) -lamiga -laros -larosc
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
+LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
 
 FILES = helloworld \
@@ -47,16 +47,20 @@ $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
 $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) -L../libs $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	$(CC) $(ILDFLAGS) -L../libs $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee librarytest-x.err
+	@if test ! -s librarytest-x.err; then rm librarytest-x.err ; else true ; fi
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
-	$(CC) $(APPCFLAGS) -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee librarytest.err
+	@if test ! -s librarytest.err; then rm librarytest.err ; else true ; fi
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*-x.err
+	@if test ! -s $*-x.err; then rm $*-x.err ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(APPCFLAGS) -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi

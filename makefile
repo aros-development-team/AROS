@@ -40,13 +40,13 @@ endif
 DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
     $(LIBDIR)/libamiga.a \
-    $(LIBDIR)/libaros.a \
+    $(LIBDIR)/libarossupport.a
     $(SHELL_DEPLIB_DOS)
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
-	-lintuition -lgraphics -ldos -lexec -ldos -lutility \
-	-lamiga -laros
+	-lintuition -lgraphics -ldos -lexec -lutility \
+	-lamiga -larossupport
 
 # BEGIN_DESC{localmakevar}
 # \item{SUBDIRS} Contains the names of directories in which Make will recurse

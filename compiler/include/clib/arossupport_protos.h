@@ -13,7 +13,7 @@
 #   include <exec/types.h>
 #endif
 #ifndef AROS_AROSBASE_H
-#   include <aros/arosbase.h>
+#   include <aros/arossupportbase.h>
 #endif
 #ifndef EXEC_EXECBASE_H
 #   include <exec/execbase.h>
@@ -66,6 +66,6 @@ BOOL WriteStruct (struct Hook *, APTR   data, void * stream, const IPTR * desc);
 void FreeStruct  (APTR s,  const IPTR * desc);
 
 
-#define kprintf     (((struct AROSBase *)(SysBase->DebugData))->kprintf)
+#define kprintf     (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
 #endif /* CLIB_AROS_PROTOS_H */

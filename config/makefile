@@ -40,7 +40,7 @@ clean:
 	$(RM) host.cfg $(CONFIG_H) $(INCDIR)/aros
 
 machine:
-	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/aros/include -o machine machine.c
+	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
 
 ifeq ("$(TARGET)","clean")

@@ -4,7 +4,7 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 OBJDIR = $(GENDIR)/devs
-LIBS = -L$(LIBDIR) -larosc -lamiga -laros
+LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
 
 DEVS = $(DEVSDIR)/ram.handler \
 	$(DEVSDIR)/nil.handler \

@@ -8,9 +8,9 @@ include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/alib
 EXEDIR=$(BINDIR)/test
-LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
+LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = alib_util \
 	allocnamedobject \

@@ -2,8 +2,8 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 */
-#ifndef PROTO_AROS_H
-#define PROTO_AROS_H
+#ifndef PROTO_AROSSUPPORT_H
+#define PROTO_AROSSUPPORT_H
 
 #ifndef AROS_SYSTEM_H
 #include <aros/system.h>
@@ -11,12 +11,10 @@
 
 #include <clib/aros_protos.h>
 
-#if 0
 #if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/aros.h>
+/*#include <inline/arossupport.h>*/
 #else
-#include <defines/aros.h>
+#include <defines/arossupport.h>
 #endif
-#endif /* if 0 */
 
-#endif /* PROTO_AROS_H */
+#endif /* PROTO_AROSSUPPORT_H */

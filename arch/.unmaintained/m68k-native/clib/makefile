@@ -15,11 +15,13 @@ all: setup \
 
 setup :
 	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
+	@echo "AFLAGS=$(AFLAGS)"
 
 clean:
 	@true
 
 $(CLIBDIR)/%.o: %.s ../machine.i
-	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@echo "Assembling $<..."
+	@$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 

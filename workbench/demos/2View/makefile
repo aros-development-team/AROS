@@ -7,8 +7,8 @@ include $(TOP)/config/make.cfg
 EXEDIR=$(BINDIR)/Demos
 
 OBJDIR = $(GENDIR)/demos/2view
-LIBS = -L$(LIBDIR) -lamiga -laros -larosc
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
+LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
 
 FILES = 2View Misc read

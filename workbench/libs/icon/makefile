@@ -6,8 +6,8 @@ USER_INCLUDES = -I..
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/workbench/libs/icon
-DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libaros.a
-LIBS=-L$(LIBDIR) -laros -lamiga -larosc
+DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libarossupport.a
+LIBS=-L$(LIBDIR) -larossupport -lamiga -larosc
 
 FILES = icon_init icon_functable basicfuncs diskobjio
 FUNCTIONS = \
