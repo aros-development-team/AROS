@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main imagesequence support
+FILES 	    := main imagesequence
 EXEDIR      := $(AROSDIR)/Utilities
 EXE 	    := $(EXEDIR)/Presenter
 

@@ -4,12 +4,10 @@
 #include <utility/tagitem.h>
 
 /*** Variables **************************************************************/
-
 extern struct MUI_CustomClass *ImageSequence_CLASS;
 
 /*** Macros *****************************************************************/
-
-#define ImageSequenceObject NewObject( ImageSequence_CLASS->mcc_Class, NULL 
+#define ImageSequenceObject BOOPSIOBJMACRO_START(ImageSequence_CLASS->mcc_Class)
 
 /*** Functions **************************************************************/
 void ImageSequence_Create();
