@@ -17,9 +17,6 @@
 
 /*** Global variables ********************************************************/
 
-Object *application;
-Object *window;
-
 /*** Functions ***************************************************************/
 
 AROS_UFH3
@@ -31,14 +28,14 @@ AROS_UFH3
 )
 {
     struct FileInfo *info = allocFileInfo( pool );
-    
+
     if( !info ) goto error;
-     
-        info->fi_NameLength = strlen( &fib->fib_FileName );
+
+        info->fi_NameLength = strlen( fib->fib_FileName );
         info->fi_Name = AllocPooled( pool, info->fi_NameLength + 1 );
-        
+
         if( !info->fi_Name ) goto error;
-    
+
             strncpy( info->fi_Name, fib->fib_FileName, info->fi_NameLength + 1 );
             
             info->fi_Size = fib->fib_Size;
@@ -79,7 +76,7 @@ AROS_UFH3
         formatSize( sizebuffer, BUFFERLENGTH, entry->fi_Size );
         strings[0] = entry->fi_Name;
         strings[1] = sizebuffer;
-    } 
+    }
     else
     {
         strings[0] = "Name";
@@ -89,27 +86,29 @@ AROS_UFH3
 #undef BUFFERLENGTH
 }
 
-void scanDirectory( CONST_STRPTR dirname, Object *list )
+void scanDirectory(STRPTR dirname, Object *list )
 {
     struct FileInfoBlock fib;
     BPTR   lock = Lock( dirname, SHARED_LOCK );
-    
+
     Examine( lock, &fib );
-    
+
     while( ExNext( lock, &fib ) )
     {
         DoMethod( list, MUIM_List_InsertSingle, &fib, MUIV_List_Insert_Bottom );
     }
-    
+
     UnLock( lock );
 }
 
-int main() 
+int main()
 {
+    Object *application;
+    Object *window;
     Object *list;
-    
+
     struct Hook listConstructHook, listDestructHook, listDisplayHook;
-    
+
     listConstructHook.h_Entry = (HOOKFUNC) listConstructFunction;
     listDestructHook.h_Entry  = (HOOKFUNC) listDestructFunction;
     listDisplayHook.h_Entry   = (HOOKFUNC) listDisplayFunction;

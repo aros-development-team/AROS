@@ -7,9 +7,9 @@
 
 struct FileInfo
 {
-    STRPTR *fi_Name;
-    UWORD   fi_NameLength;
-    LONG    fi_Size;
+    STRPTR fi_Name;
+    UWORD  fi_NameLength;
+    LONG   fi_Size;
 };
 
 /*** Prototypes **************************************************************/
