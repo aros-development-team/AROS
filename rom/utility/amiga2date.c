@@ -77,10 +77,14 @@ const ULONG Utility_DayTable[]=
 {
     AROS_LIBFUNC_INIT
 
+#if 0
     static const ULONG dim[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+#endif
     LONG days;
-    LONG leap, temp, year, month;
-
+    LONG leap, year, month;
+#if 0
+    LONG temp;
+#endif
     days = seconds / 86400;
     result->wday = days % 7;
 
