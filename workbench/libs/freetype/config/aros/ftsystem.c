@@ -1,214 +1,358 @@
-/**************************************************************************
- *
- *  ftsystem.h                                                        1.0
- *
- *    ANSI-specific FreeType low-level system interface
- *
- *    This file contains the definition of interface used by FreeType
- *    to access low-level, i.e. memory management, i/o access as well
- *    as thread synchronisation.              
- *
- *
- *  Copyright 1996-1999 by                                                   
- *  David Turner, Robert Wilhelm, and Werner Lemberg                         
- *                                                                           
- *  This file is part of the FreeType project, and may only be used          
- *  modified and distributed under the terms of the FreeType project         
- *  license, LICENSE.TXT.  By continuing to use, modify, or distribute       
- *  this file you indicate that you have read the license and                 
- *  understand and accept it fully.                                          
- *                                                                           
- **************************************************************************/
+/***************************************************************************/
+/*                                                                         */
+/*  ftsystem.c                                                             */
+/*                                                                         */
+/*    ANSI-specific FreeType low-level system interface (body).            */
+/*                                                                         */
+/*  Copyright 1996-2001, 2002 by                                           */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
-#include <ftsystem.h>
-#include <fterrors.h>
+  /*************************************************************************/
+  /*                                                                       */
+  /* This file contains the default interface used by FreeType to access   */
+  /* low-level, i.e. memory management, i/o access as well as thread       */
+  /* synchronisation.  It can be replaced by user-specific routines if     */
+  /* necessary.                                                            */
+  /*                                                                       */
+  /*************************************************************************/
+
+
+#include <ft2build.h>
+#include FT_CONFIG_CONFIG_H
+#include FT_INTERNAL_DEBUG_H
+#include FT_SYSTEM_H
+#include FT_ERRORS_H
+#include FT_TYPES_H
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-  /*********************************************************************/
-  /*                                                                   */
-  /*                       MEMORY MANAGEMENT INTERFACE                 */
-  /*                                                                   */
+#include <exec/types.h>
+#include <exec/memory.h>
+#include <dos/dos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
-/************************************************************************
- *
- * <FuncType>
- *    FT_Alloc_Func
- *
- * <Description>
- *    The memory allocator function type
- *
- * <Input>
- *    system    :: pointer to the system object
- *    size      :: requested size in bytes
- *
- * <Output>
- *    block     :: address of newly allocated block
- *
- * <Return>  
- *    Error code. 0 means success.
- *
- * <Note>
- *    If your allocation routine ALWAYS zeroes the new block, you
- *    should set the flag FT_SYSTEM_FLAG_ALLOC_ZEROES in your system
- *    object 'flags' field.
- *
- *    If you have set the flag FT_SYSTEM_FLAG_REPORT_CURRENT_ALLOC in
- *    your system's "system_flags" field, this function should update
- *    the "current_alloc" field of the system object.
- *
- ************************************************************************/
+//#define DEBUG 1
+#include <aros/debug.h>
 
-  static
-  void*  ft_alloc( FT_Memory  memory,
-                   long       size )
+
+  /*************************************************************************/
+  /*                                                                       */
+  /*                       MEMORY MANAGEMENT INTERFACE                     */
+  /*                                                                       */
+  /*************************************************************************/
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* It is not necessary to do any error checking for the                  */
+  /* allocation-related functions.  This will be done by the higher level  */
+  /* routines like FT_Alloc() or FT_Realloc().                             */
+  /*                                                                       */
+  /*************************************************************************/
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    ft_alloc                                                           */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    The memory allocation function.                                    */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    memory :: A pointer to the memory object.                          */
+  /*                                                                       */
+  /*    size   :: The requested size in bytes.                             */
+  /*                                                                       */
+  /* <Return>                                                              */
+  /*    The address of newly allocated block.                              */
+  /*                                                                       */
+  FT_CALLBACK_DEF( void* )
+  ft_alloc( FT_Memory  memory,
+            long       size )
   {
-    (void)memory;
-    return malloc(size);
-  }
+    ULONG memsize = size + sizeof(ULONG);
+    void* retval;
+    APTR MemPool = (APTR)memory->user;
 
-
-/************************************************************************
- *
- * <FuncType>
- *    FT_Realloc_Func
- *
- * <Description>
- *    The memory reallocator function type
- *
- * <Input>
- *    system   :: pointer to the system object
- *    new_size :: new requested size in bytes
- *
- * <InOut>
- *    block    :: address of block in memory
- *
- * <Return>
- *    Error code. 0 means success.
- *
- * <Note>
- *    This function is _never_ called when the system flag 
- *    FT_SYSTEM_FLAG_NO_REALLOC is set. Instead, the engine will emulate
- *    realloc through "alloc" and "free".
- *
- *    Note that this is possible due to the fact that FreeType's
- *    "FT_Realloc" always requests the _current_ size of the reallocated
- *    block as a parameter, thus avoiding memory leaks.
- *
- *    If you have set the flag FT_SYSTEM_FLAG_REPORT_CURRENT_ALLOC in
- *    your system's "system_flags" field, this function should update
- *    the "current_alloc" field of the system object.
- *
- ************************************************************************/
-
-  static
-  void*  ft_realloc( FT_Memory  memory,
-                     long       cur_size,
-                     long       new_size,
-                     void*      block )
-  {
-    (void)memory;
-    (void)cur_size;
-
-    return realloc( block, new_size );
-  }
-
-
-/************************************************************************
- *
- * <FuncType>
- *    FT_Free_Func
- *
- * <Description>
- *    The memory release function type
- *
- * <Input>
- *    system  :: pointer to the system object
- *    block   :: address of block in memory
- *
- * <Note>
- *    If you have set the flag FT_SYSTEM_FLAG_REPORT_CURRENT_ALLOC in
- *    your system's "system_flags" field, this function should update
- *    the "current_alloc" field of the system object.
- *
- ************************************************************************/
-
-  static
-  void  ft_free( FT_Memory  memory,
-                 void*      block )
-  {
-    (void)memory;
-    free( block );
-  }
-
-  /*********************************************************************/
-  /*                                                                   */
-  /*                     RESOURCE MANAGEMENT INTERFACE                 */
-  /*                                                                   */
-
-
-#define STREAM_FILE(stream)  ((FILE*)stream->descriptor.pointer)
-
-  static
-  void  ft_close_stream( FT_Stream  stream )
-  {
-    fclose( STREAM_FILE(stream) );
-  }
-
-  static
-  unsigned long  ft_io_stream( FT_Stream      stream,
-                               unsigned long  offset,
-                               char*          buffer,
-                               unsigned long  count )
-  {
-    FILE*  file;
+    D(bug("Entering ft_alloc(memory=%x,size=%ld)\n", memory, size));
     
-    file = STREAM_FILE(stream);
+    retval = AllocPooled(MemPool, memsize);
 
-    fseek( file, offset, SEEK_SET );    
-    return (unsigned long)fread( buffer, 1, count, file );
+    D(bug("Allocated retval=%x\n", (void*)retval));
+
+    *((ULONG *)retval) = memsize;
+    
+    D(bug("Leaving ft_alloc retval=%x\n", (void*)((ULONG*)retval + 1)));
+
+    return (void*)((ULONG*)retval + 1);
   }
 
 
-  extern
-  int  FT_New_Stream( const char*  filepathname,
-                      FT_Stream    stream )
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    ft_free                                                            */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    The memory release function.                                       */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    memory  :: A pointer to the memory object.                         */
+  /*                                                                       */
+  /*    block   :: The address of block in memory to be freed.             */
+  /*                                                                       */
+  FT_CALLBACK_DEF( void )
+  ft_free( FT_Memory  memory,
+           void*      block )
   {
-    FILE*  file;
-    
-    file = fopen( filepathname, "rb" );
-    if (!file)
-      return FT_Err_Cannot_Open_Resource;
+    APTR mem = (APTR)((char*)block - sizeof(ULONG));
+    APTR MemPool = (APTR)memory->user;
+
+    D(bug("Entering ft_free(memory=%x, block=%x)\n", memory, block));
       
-    fseek( file, 0, SEEK_END );
-    stream->size = ftell(file);
-    fseek( file, 0, SEEK_SET );
-    
-    stream->descriptor.pointer = file;
-    stream->pos                = 0;
-    
-    stream->read  = ft_io_stream;
-    stream->close = ft_close_stream;
+    FreePooled( MemPool, mem, *((ULONG*)mem) );
 
-    return 0;
+    D(bug("Leaving ft_free\n"));
   }
 
 
-  extern
-  FT_Memory  FT_New_Memory( void )
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    ft_realloc                                                         */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    The memory reallocation function.                                  */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    memory   :: A pointer to the memory object.                        */
+  /*                                                                       */
+  /*    cur_size :: The current size of the allocated memory block.        */
+  /*                                                                       */
+  /*    new_size :: The newly requested size in bytes.                     */
+  /*                                                                       */
+  /*    block    :: The current address of the block in memory.            */
+  /*                                                                       */
+  /* <Return>                                                              */
+  /*    The address of the reallocated memory block.                       */
+  /*                                                                       */
+  FT_CALLBACK_DEF( void* )
+  ft_realloc( FT_Memory  memory,
+              long       cur_size,
+              long       new_size,
+              void*      block )
+  {
+    void* retval;
+
+    D(bug("Entering ft_free(memory=%x, cur_size=%ld, new_size=%ld, block=%x)\n",
+	  memory, cur_size, new_size, block));
+
+    retval = ft_alloc( memory, new_size );
+    CopyMem( block, retval, cur_size );
+    ft_free( memory, block );
+
+
+    D(bug("Leaving ft_free retval=%x\n", retval));
+
+    return retval;
+  }
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /*                     RESOURCE MANAGEMENT INTERFACE                     */
+  /*                                                                       */
+  /*************************************************************************/
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
+#undef  FT_COMPONENT
+#define FT_COMPONENT  trace_io
+
+  /* We use the macro STREAM_FILE for convenience to extract the       */
+  /* system-specific stream handle from a given FreeType stream object */
+#define STREAM_FILE( stream )  ( (BPTR*)stream->descriptor.pointer )
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    ft_ansi_stream_close                                               */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    The function to close a stream.                                    */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    stream :: A pointer to the stream object.                          */
+  /*                                                                       */
+  FT_CALLBACK_DEF( void )
+  ft_ansi_stream_close( FT_Stream  stream )
+  {
+    D(bug("Entering ft_ansi_stream_close(stream=%x)\n", stream));
+    
+    Close( STREAM_FILE( stream ) );
+
+    stream->descriptor.pointer = NULL;
+    stream->size               = 0;
+    stream->base               = 0;
+
+    D(bug("Entering ft_ansi_stream_close\n"));
+  }
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    ft_ansi_stream_io                                                  */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    The function to open a stream.                                     */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    stream :: A pointer to the stream object.                          */
+  /*                                                                       */
+  /*    offset :: The position in the data stream to start reading.        */
+  /*                                                                       */
+  /*    buffer :: The address of buffer to store the read data.            */
+  /*                                                                       */
+  /*    count  :: The number of bytes to read from the stream.             */
+  /*                                                                       */
+  /* <Return>                                                              */
+  /*    The number of bytes actually read.                                 */
+  /*                                                                       */
+  FT_CALLBACK_DEF( unsigned long )
+  ft_ansi_stream_io( FT_Stream       stream,
+                     unsigned long   offset,
+                     unsigned char*  buffer,
+                     unsigned long   count )
+  {
+    BPTR*  file;
+    unsigned long actcount;
+    
+    D(bug("Entering ft_ansi_stream_io(stream=%x,offset=%ld,buffer=%x,count=%ld)\n",
+	  stream, offset, buffer, count));
+    file = STREAM_FILE( stream );
+
+    Seek( file, offset, OFFSET_BEGINNING );
+    if (count>0)
+      actcount = (unsigned long)Read( file, buffer, count );
+    else
+      actcount = 0;
+    
+    D(bug("Leaving ft_ansi_stream_io actcount=%ld",actcount));
+    
+    return actcount;
+  }
+
+
+  /* documentation is in ftobjs.h */
+
+  FT_EXPORT_DEF( FT_Error )
+  FT_Stream_Open( FT_Stream    stream,
+                  const char*  filepathname )
+  {
+    BPTR*  file;
+
+    if ( !stream )
+      return FT_Err_Invalid_Stream_Handle;
+
+    file = Open( filepathname, MODE_OLDFILE );
+    if ( !file )
+    {
+      FT_ERROR(( "FT_Stream_Open:" ));
+      FT_ERROR(( " could not open `%s'\n", filepathname ));
+
+      return FT_Err_Cannot_Open_Resource;
+    }
+
+    Seek( file, 0, OFFSET_END );
+    stream->size = Seek( file, 0, OFFSET_BEGINNING );
+
+    stream->descriptor.pointer = file;
+    stream->pathname.pointer   = (char*)filepathname;
+    stream->pos                = 0;
+
+    stream->read  = ft_ansi_stream_io;
+    stream->close = ft_ansi_stream_close;
+
+    FT_TRACE1(( "FT_Stream_Open:" ));
+    FT_TRACE1(( " opened `%s' (%d bytes) successfully\n",
+                filepathname, stream->size ));
+
+    return FT_Err_Ok;
+  }
+
+
+#ifdef FT_DEBUG_MEMORY
+
+  extern FT_Int
+  ft_mem_debug_init( FT_Memory  memory );
+
+  extern void
+  ft_mem_debug_done( FT_Memory  memory );
+
+#endif
+
+
+  /* documentation is in ftobjs.h */
+
+  FT_EXPORT_DEF( FT_Memory )
+  FT_New_Memory( void )
   {
     FT_Memory  memory;
-    
-    memory = (FT_Memory)malloc( sizeof(*memory) );
-    if (memory)
+    APTR MemPool;
+
+    D(bug("Entering FT_New_Memory\n"));
+      
+    MemPool = CreatePool(MEMF_ANY, 2048, 256);
+    if (MemPool)
     {
-      memory->user    = 0;
-      memory->alloc   = ft_alloc;
-      memory->realloc = ft_realloc;
-      memory->free    = ft_free;
+      memory = (FT_Memory)AllocPooled( MemPool, sizeof ( *memory ) );
+      if ( memory )
+      {
+        memory->user    = (void*)MemPool;
+        memory->alloc   = ft_alloc;
+        memory->realloc = ft_realloc;
+        memory->free    = ft_free;
+#ifdef FT_DEBUG_MEMORY
+        ft_mem_debug_init( memory );
+#endif
+      }
     }
+    else
+      memory=NULL;
+
+    D(bug("Leaving FT_New_Memory memory=%x\n", memory));
+
     return memory;
   }
 
+
+  /* documentation is in ftobjs.h */
+
+  FT_EXPORT_DEF( void )
+  FT_Done_Memory( FT_Memory  memory )
+  {
+#ifdef FT_DEBUG_MEMORY
+    ft_mem_debug_done( memory );
+#endif
+    DeletePool((APTR)memory->user);
+  }
+
+
+/* END */
