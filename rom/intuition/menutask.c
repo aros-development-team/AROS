@@ -262,9 +262,10 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
     params.Caller	 = FindTask(NULL);
     params.success 	 = FALSE;
     
+    SetSignal(0, SIGF_INTUITION);
+
     if ((task = CreateMenuHandlerTask(&params, IntuitionBase)))
     {
-        SetSignal(0, SIGF_INTUITION);
 	Wait(SIGF_INTUITION);
 	
 	if (params.success)
