@@ -99,7 +99,7 @@ $(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
-asm: all $(foreach f,$(FUNCTIONS),$(f).s)
+asm: $(foreach f,$(FUNCTIONS),$(f).s) all
 
 %.s: %.c
 	$(CC) -S $(CFLAGS) $< -c -o $@

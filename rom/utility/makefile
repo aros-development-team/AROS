@@ -69,7 +69,7 @@ OBJDIR=$(OSGENDIR)
 
 all: setup $(OSMODDIR)/utility.library
 
-asm: all $(foreach f,$(FUNCTIONS),$(f).s)
+asm: $(foreach f,$(FUNCTIONS),$(f).s) all
 
 $(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 			     $(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
