@@ -1,7 +1,16 @@
-	| The following functions are guaranteed to preserve
-	| all registers. But I don't want to write them completely
-	| in assembly - C is generally more readable.
-	| So I use those stubs to preserve the registers.
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:36  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
+	# The following functions are guaranteed to preserve
+	# all registers. But I don't want to write them completely
+	# in assembly - C is generally more readable.
+	# So I use those stubs to preserve the registers.
 
 	.globl	_Exec__ObtainSemaphore
 _Exec__ObtainSemaphore:

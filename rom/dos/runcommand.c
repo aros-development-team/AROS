@@ -1,11 +1,9 @@
 /*
+    (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.2  1996/08/01 13:18:31  digulla
-    Ignore RELO_EXEC flag
-
-    Revision 1.1.1.1  1996/07/28 16:37:23  digulla
-    First CVS version of AROS
+    Revision 1.3  1996/08/01 17:40:57  digulla
+    Added standard header for all files
 
     Desc:
     Lang: english

@@ -1,11 +1,9 @@
 /*
+    (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.2  1996/07/29 15:16:42  digulla
-    A small hack to make it work until we have timer.device
-
-    Revision 1.1.1.1  1996/07/28 16:37:22  digulla
-    First CVS version of AROS
+    Revision 1.3  1996/08/01 17:40:49  digulla
+    Added standard header for all files
 
     Desc:
     Lang: english

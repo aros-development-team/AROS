@@ -1,41 +1,50 @@
-|*****************************************************************************
-|
-|   NAME
-|
-|	__AROS_LH1(ULONG, Supervisor,
-|
-|   SYNOPSIS
-|	__AROS_LA(ULONG_FUNC, userFunction, A5),
-|
-|   LOCATION
-|	struct ExecBase *, SysBase, 5, Exec)
-|
-|   FUNCTION
-|	Call a routine in supervisor mode. This routine runs on the
-|	supervisor stack and must end with a 'rte'. No registers are spilled,
-|	i.e. Supervisor() effectively works like a function call.
-|
-|   INPUTS
-|	userFunction - address of the function to be called.
-|
-|   RESULT
-|	whatever the function left in the registers
-|
-|   NOTES
-|	This function is CPU dependant.
-|
-|   EXAMPLE
-|
-|   BUGS
-|	Context switches that happen during the duration of this call are lost.
-|
-|   SEE ALSO
-|
-|   INTERNALS
-|
-|   HISTORY
-|
-|******************************************************************************
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:37  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
+#*****************************************************************************
+#
+#   NAME
+#
+#	__AROS_LH1(ULONG, Supervisor,
+#
+#   SYNOPSIS
+#	__AROS_LA(ULONG_FUNC, userFunction, A5),
+#
+#   LOCATION
+#	struct ExecBase *, SysBase, 5, Exec)
+#
+#   FUNCTION
+#	Call a routine in supervisor mode. This routine runs on the
+#	supervisor stack and must end with a 'rte'. No registers are spilled,
+#	i.e. Supervisor() effectively works like a function call.
+#
+#   INPUTS
+#	userFunction - address of the function to be called.
+#
+#   RESULT
+#	whatever the function left in the registers
+#
+#   NOTES
+#	This function is CPU dependant.
+#
+#   EXAMPLE
+#
+#   BUGS
+#	Context switches that happen during the duration of this call are lost.
+#
+#   SEE ALSO
+#
+#   INTERNALS
+#
+#   HISTORY
+#
+#******************************************************************************
 
 	ThisTask    =	0x114
 	tc_TrapCode =	0x32

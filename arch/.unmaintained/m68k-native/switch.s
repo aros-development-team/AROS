@@ -1,41 +1,50 @@
-|*****************************************************************************
-|
-|   NAME
-|
-|	__AROS_LH0(void, Switch,
-|
-|   LOCATION
-|	struct ExecBase *, SysBase, 6, Exec)
-|
-|   FUNCTION
-|	Tries to switch to the first task in the ready list. This
-|	function works almost like Dispatch() with the slight difference
-|	that it may be called at any time and as often as you want and
-|	that it doesn't lose the current task if it is of type TS_RUN.
-|
-|   INPUTS
-|
-|   RESULT
-|
-|   NOTES
-|	This function is CPU dependant.
-|
-|	This function is for internal use by exec only.
-|
-|	This function preserves all registers.
-|
-|   EXAMPLE
-|
-|   BUGS
-|
-|   SEE ALSO
-|	Dispatch()
-|
-|   INTERNALS
-|
-|   HISTORY
-|
-|******************************************************************************
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:37  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
+#*****************************************************************************
+#
+#   NAME
+#
+#	__AROS_LH0(void, Switch,
+#
+#   LOCATION
+#	struct ExecBase *, SysBase, 6, Exec)
+#
+#   FUNCTION
+#	Tries to switch to the first task in the ready list. This
+#	function works almost like Dispatch() with the slight difference
+#	that it may be called at any time and as often as you want and
+#	that it doesn't lose the current task if it is of type TS_RUN.
+#
+#   INPUTS
+#
+#   RESULT
+#
+#   NOTES
+#	This function is CPU dependant.
+#
+#	This function is for internal use by exec only.
+#
+#	This function preserves all registers.
+#
+#   EXAMPLE
+#
+#   BUGS
+#
+#   SEE ALSO
+#	Dispatch()
+#
+#   INTERNALS
+#
+#   HISTORY
+#
+#******************************************************************************
 
 	Supervisor  =	-0x1e
 	Dispatch    =	-0x2a

@@ -1,3 +1,12 @@
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:25  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
 	Exception   =	-40
 	Disable     =	-100
 	Enable	    =	-105
@@ -12,7 +21,7 @@
 	tc_Launch   =	72
 	TF_EXCEPT   =	32
 	TF_SWITCH   =	64
-	TS_RUN      =	2
+	TS_RUN	    =	2
 
 	.text
 	.align	16
@@ -42,7 +51,7 @@ Exec_Dispatch:
 	call	*%eax
 
 	/* Store IDNestCnt */
-noswch:	movb	IDNestCnt(%ecx),%al
+noswch: movb	IDNestCnt(%ecx),%al
 	movb	%al,tc_IDNestCnt(%edx)
 	movb	$-1,IDNestCnt(%ecx)
 
@@ -67,7 +76,7 @@ noswch:	movb	IDNestCnt(%ecx),%al
 	call	*%eax
 
 	/* Get new sp */
-nolnch:	movl	tc_SPReg(%edx),%esp
+nolnch: movl	tc_SPReg(%edx),%esp
 
 	/* Except bit set? */
 	testb	$TF_EXCEPT,tc_Flags(%edx)
@@ -85,7 +94,7 @@ nolnch:	movl	tc_SPReg(%edx),%esp
 	addl	$4,%esp
 
 	/* Restore registers and return */
-noexpt:	popl	%ebp
+noexpt: popl	%ebp
 	popl	%esi
 	popl	%edi
 	popl	%edx

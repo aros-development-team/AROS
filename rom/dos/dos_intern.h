@@ -1,3 +1,13 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+    $Log$
+    Revision 1.2  1996/08/01 17:40:49  digulla
+    Added standard header for all files
+
+    Desc:
+    Lang:
+*/
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H
 

@@ -1,7 +1,16 @@
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:25  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
 	IDNestCnt   =	302
 	AttnResched =	306
 	TDNestCnt   =	303
-	Switch      =	-30
+	Switch	    =	-30
 
 	.text
 	.align	16
@@ -33,6 +42,6 @@ Exec_Enable:
 	addl	$4,%esp
 
 	/* Restore registers and return */
-noswch:	popl	%eax
+noswch: popl	%eax
 	popl	%edx
 	ret

@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.3  1996/08/01 17:27:09  digulla
-    Added copyright notics and made headers conform
+    Revision 1.4  1996/08/01 17:41:10  digulla
+    Added standard header for all files
 
     Desc:
     Lang: english

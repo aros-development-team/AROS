@@ -1,38 +1,47 @@
-|*****************************************************************************
-|
-|   NAME
-|
-|	__AROS_LH1(void, StackSwap,
-|
-|   SYNOPSIS
-|	__AROS_LA(struct StackSwapStruct *, newStack, A0),
-|
-|   LOCATION
-|	struct ExecBase *, SysBase, 122, Exec)
-|
-|   FUNCTION
-|	This function switches to the new stack given by the parameters in the
-|	stackswapstruct structure. The old stack parameters are returned in
-|	the same structure so that the stack can be restored later
-|
-|   INPUTS
-|	newStack - parameters for the new stack
-|
-|   RESULT
-|
-|   NOTES
-|
-|   EXAMPLE
-|
-|   BUGS
-|
-|   SEE ALSO
-|
-|   INTERNALS
-|
-|   HISTORY
-|
-|******************************************************************************
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:37  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
+#*****************************************************************************
+#
+#   NAME
+#
+#	__AROS_LH1(void, StackSwap,
+#
+#   SYNOPSIS
+#	__AROS_LA(struct StackSwapStruct *, newStack, A0),
+#
+#   LOCATION
+#	struct ExecBase *, SysBase, 122, Exec)
+#
+#   FUNCTION
+#	This function switches to the new stack given by the parameters in the
+#	stackswapstruct structure. The old stack parameters are returned in
+#	the same structure so that the stack can be restored later
+#
+#   INPUTS
+#	newStack - parameters for the new stack
+#
+#   RESULT
+#
+#   NOTES
+#
+#   EXAMPLE
+#
+#   BUGS
+#
+#   SEE ALSO
+#
+#   INTERNALS
+#
+#   HISTORY
+#
+#******************************************************************************
 
 	Disable     =	-0x78
 	Enable	    =	-0x7e

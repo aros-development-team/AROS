@@ -1,37 +1,46 @@
-|*****************************************************************************
-|
-|   NAME
-|
-|	__AROS_LH1(void, UserState,
-|
-|   SYNOPSIS
-|	__AROS_LA(APTR, sysStack, D0),
-|
-|   LOCATION
-|	struct ExecBase *, SysBase, 26, Exec)
-|
-|   FUNCTION
-|	Return to user mode after a call to SuperState().
-|
-|   INPUTS
-|	sysStack - The returncode from SuperState().
-|
-|   RESULT
-|
-|   NOTES
-|
-|   EXAMPLE
-|
-|   BUGS
-|
-|   SEE ALSO
-|	SuperState(), Supervisor()
-|
-|   INTERNALS
-|
-|   HISTORY
-|
-|******************************************************************************
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:38  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
+#*****************************************************************************
+#
+#   NAME
+#
+#	__AROS_LH1(void, UserState,
+#
+#   SYNOPSIS
+#	__AROS_LA(APTR, sysStack, D0),
+#
+#   LOCATION
+#	struct ExecBase *, SysBase, 26, Exec)
+#
+#   FUNCTION
+#	Return to user mode after a call to SuperState().
+#
+#   INPUTS
+#	sysStack - The returncode from SuperState().
+#
+#   RESULT
+#
+#   NOTES
+#
+#   EXAMPLE
+#
+#   BUGS
+#
+#   SEE ALSO
+#	SuperState(), Supervisor()
+#
+#   INTERNALS
+#
+#   HISTORY
+#
+#******************************************************************************
 
 	.globl	_Exec_UserState
 _Exec_UserState:

@@ -1,2 +1,0 @@
-ramdev.c:721: warning: `set_file_size' defined but not used
-ramdev.c:1034: warning: `delete_object' defined but not used

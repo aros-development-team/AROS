@@ -1,5 +1,14 @@
+#    (C) 1995-96 AROS - The Amiga Replacement OS
+#    $Id$
+#    $Log$
+#    Revision 1.2  1996/08/01 17:41:10  digulla
+#    Added standard header for all files
+#
+#    Desc:
+#    Lang:
+
 	Disable     =	-100
-	Enable      =	-105
+	Enable	    =	-105
 	ThisTask    =	284
 	IDNestCnt   =	302
 	tc_Flags    =	16
@@ -25,7 +34,7 @@ Exec_Exception:
 	/* Set it to a defined value */
 	movb	$0,IDNestCnt(%ebp)
 
-exloop:	/* Get mask of signals causing the exception */
+exloop: /* Get mask of signals causing the exception */
 	movl	tc_SigExcept(%edi),%ecx
 	andl	tc_SigRecvd(%edi),%ecx
 	je	excend
@@ -53,6 +62,6 @@ exloop:	/* Get mask of signals causing the exception */
 	orl	%eax,tc_SigExcept(%edi)
 	jmp	exloop
 
-excend:	/* Restore IDNestCnt and return */
+excend: /* Restore IDNestCnt and return */
 	movb	%ebx,IDNestCnt(%ebp)
 	ret
