@@ -7,6 +7,9 @@ fallback 0
 title AROS VGA
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vga lib=vga.hidd
 
+title AROS VMWare
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd
+
 title AROS VBE 640x480 16
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 640 480 16
