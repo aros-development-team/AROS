@@ -8,6 +8,9 @@
 
 #include <aros/asmcall.h>
 
+#include <clib/alib_protos.h>
+#include <proto/muimaster.h>
+
 struct WorkingMessageNode* findWorkedMessage(struct MinList *list, ULONG id);
 BOOL handlerSubUser(void);
 BOOL handlerAddUser(void);
@@ -21,16 +24,6 @@ void doExclude(struct DesktopOperationItem *doi, struct NewMenu *menuDat, LONG n
 LONG getItemPosition(struct NewMenu *menuDat, LONG i);
 BOOL findOperationItem(LONG menuNumber, struct DesktopOperationItem *doi, struct NewMenu *menuDat, LONG *i);
 
-
-void NewList(struct List *list);
-ULONG DoMethod (Object *obj, ULONG MethodID, ...);
-ULONG DoSuperMethod(Class *cl, Object *obj, ULONG MethodID, ...);
-
-Object * MUI_NewObject(char * classname, Tag tag1, ...);
-
-VOID  __sprintf(UBYTE *buffer, UBYTE *format, ...);
-
-Object * MUI_MakeObject (LONG type, ...);
 
 AROS_UFP3(IPTR, iconContainerDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
