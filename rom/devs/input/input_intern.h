@@ -1,36 +1,12 @@
+/*
+ *  Copyright (C) 1997-2001 AROS - The Amiga Research OS
+ *  $Id$
+ *
+ *  Internal Definitions for the input.device
+ */
+
 #ifndef INPUT_INTERN_H
 #define INPUT_INTERN_H
-/*
-    (C) 1995-96 AROS - The Amiga Research OS
-    $Id$
-    $Log$
-    Revision 1.7  2000/05/28 21:33:52  stegerg
-    handle IND_SETTHRESH and IND_SETPERIOD.
-    implemented key repeat. Actually still treats
-    all keys (except qualifier keys) as repeatable.
-
-    Revision 1.6  2000/02/26 13:20:15  iaint
-    Changed the stacksize to be at least AROS_STACKSIZE. This is very important - some of these were allocating stacks that were probably less than the amount required to perform signal processing in emulated systems.
-
-    Revision 1.5  2000/01/22 20:29:31  stegerg
-    added ActQualifier to inputbase struct.
-
-    Revision 1.4  1999/10/20 19:36:24  stegerg
-    When testing the Workbench background pattern once
-    a deadend alert showed up saying something about
-    stack overflow on input.device task so I increaed
-    the input.device stack from 20000 to 25000 Bytes.
-
-    Revision 1.3  1998/10/20 16:44:24  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1998/04/11 19:34:52  nlorentz
-    Added IND_WRITEEVENT and fixed bugs
-
-
-    Desc: Private definitions for Input device.
-    Lang:
-*/
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
@@ -66,7 +42,7 @@
 
 /* Predeclaration */
 struct inputbase;
-
+#if 0
 /* Structure passed to the input.device task when it's initialized */
 struct IDTaskParams
 {
@@ -75,9 +51,10 @@ struct IDTaskParams
     ULONG		Signal; /* Using this sigs, that the ID task */
     				/* has been initialized and is ready to handle IO requests */
 };
+#endif
 
 /* Prototypes */
-VOID ProcessEvents(struct IDTaskParams *taskparams);
+VOID ProcessEvents(struct inputbase *InputDevice);
 struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
 VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
 struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
@@ -94,7 +71,7 @@ struct inputbase
     ** input device is never removed, once it's initialized.
     */
     struct Task 	*InputTask;
-    struct MsgPort 	*CommandPort;
+    struct MsgPort 	CommandPort;
     struct MinList 	HandlerList;
     struct InputEvent 	*EventQueueHead;
     struct InputEvent 	*EventQueueTail;

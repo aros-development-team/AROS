@@ -77,9 +77,8 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 /***********************************
 ** Input device task entry point  **
 ***********************************/
-void ProcessEvents (struct IDTaskParams *taskparams)
+void ProcessEvents (struct inputbase *InputDevice)
 {
-    struct inputbase *InputDevice = taskparams->InputDevice;
     ULONG commandsig, kbdsig, wakeupsigs, gpdsig, timersig, keytimersig;
     struct MsgPort *timermp, *keytimermp;
     struct timerequest *timerio, *keytimerio;
@@ -101,15 +100,6 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 
     BYTE controllerType = GPCT_MOUSE;
     BYTE keyrepeat_state = 0;
-    
-    /* Initializing command msgport */
-    InputDevice->CommandPort->mp_Flags	 = PA_SIGNAL;
-    InputDevice->CommandPort->mp_SigTask = FindTask(NULL);
-    
-    /* This will always succeed, as this task just has been created */
-    InputDevice->CommandPort->mp_SigBit = AllocSignal(-1L);
-    NEWLIST( &(InputDevice->CommandPort->mp_MsgList) );
-
     
     /************** Open timer.device *******************/
     
@@ -188,15 +178,17 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     /* .. and to the timer device */
     SEND_TIMER_REQUEST(timerio);
     
-    commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
+    commandsig = 1 << InputDevice->CommandPort.mp_SigBit;
     
     kbdsig      = 1 << kbdmp->mp_SigBit;
     gpdsig      = 1 << gpdmp->mp_SigBit;
     timersig    = 1 << timermp->mp_SigBit;
     keytimersig = 1 << keytimermp->mp_SigBit;
     
+#if 0
     /* Tell the task that created us, that we are finished initializing */
     Signal(taskparams->Caller, taskparams->Signal);
+#endif
     for (;;)
     {
 
@@ -233,7 +225,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    struct IOStdReq *ioreq;
 
 	    /* Get all commands from the port */
-	    while ((ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)))
+	    while ((ioreq = (struct IOStdReq *)GetMsg(&InputDevice->CommandPort)))
 	    {
 	    	
 		switch (ioreq->io_Command)

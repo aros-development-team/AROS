@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Input device
@@ -16,7 +16,6 @@
 #include <devices/input.h>
 #include <devices/newstyle.h>
 #include <proto/exec.h>
-#include <proto/dos.h>
 #include <proto/input.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
@@ -25,7 +24,7 @@
 #    include "input_intern.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -77,7 +76,7 @@ const struct Resident Input_resident=
 
 static const char name[]="input.device";
 
-static const char version[]="$VER: input 41.0 (3.4.1997)\r\n";
+static const char version[]="$VER: input 41.1 (17.3.2001)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -125,21 +124,66 @@ AROS_LH2(struct inputbase *, init,
 {
     AROS_LIBFUNC_INIT
 
-
     /* Store arguments */
     InputDevice->sysBase = sysBase;
     InputDevice->seglist = segList;
     
     NEWLIST( &(InputDevice->HandlerList) );
     
+#warning Assuming that VBlankFrequency is 50 is bad!
     InputDevice->KeyRepeatThreshold.tv_secs  = DEFAULT_KEY_REPEAT_THRESHOLD / 50;
     InputDevice->KeyRepeatThreshold.tv_micro = (DEFAULT_KEY_REPEAT_THRESHOLD % 50) * 1000000L / 50;
     InputDevice->KeyRepeatInterval.tv_secs   = DEFAULT_KEY_REPEAT_INTERVAL / 50;
     InputDevice->KeyRepeatInterval.tv_micro  = (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000L / 50;
     
-    InputDevice->device.dd_Library.lib_OpenCnt=1;
+    /* Initialise the input.device task. */
+    InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    if(InputDevice->InputTask != NULL)
+    {
+	struct Task *task = InputDevice->InputTask;
+	APTR stack;
 
-    return (InputDevice);
+	NEWLIST(&task->tc_MemEntry);
+	task->tc_Node.ln_Type = NT_TASK;
+	task->tc_Node.ln_Name = "input.device";
+	task->tc_Node.ln_Pri = IDTASK_PRIORITY;
+
+	/* Initialise CommandPort now we have the task */
+	InputDevice->CommandPort.mp_SigTask = task;
+	InputDevice->CommandPort.mp_Flags = PA_SIGNAL;
+	NEWLIST(&InputDevice->CommandPort.mp_MsgList);
+	
+	/*
+	 *  This is always safe, nobody else knows about our task yet.
+	 *  Both the AROS and AmigaOS AddTask() initialise zeroed fields,
+	 *  otherwise we have to do it ourselves.
+	 */
+	InputDevice->CommandPort.mp_SigBit = 16;
+	task->tc_SigAlloc = 1L<<16 | SysBase->TaskSigAlloc;
+
+	stack = AllocMem(IDTASK_STACKSIZE, MEMF_CLEAR|MEMF_PUBLIC);
+	if(stack != NULL)
+	{
+	    task->tc_SPLower = stack;
+	    task->tc_SPUpper = (UBYTE *)stack + IDTASK_STACKSIZE;
+
+#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+	    ((APTR *)task->tc_SPUpper)[-1] = InputDevice;
+#else
+	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
+	    ((APTR *)task->tc_SPLower)[0] = InputDevice;
+#endif
+
+	    if(AddTask(task, ProcessEvents, NULL) != NULL)
+	    {
+		return InputDevice;
+	    }
+	}
+    }
+
+    Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
+    return NULL;
     AROS_LIBFUNC_EXIT
 }
 
@@ -152,8 +196,6 @@ AROS_LH3(void, open,
 	   struct inputbase *, InputDevice, 1, Input)
 {
     AROS_LIBFUNC_INIT
-
-    struct Task *idleT;
 
     D(bug("id: open()\n"));
 
@@ -169,76 +211,9 @@ AROS_LH3(void, open,
     flags=0;
     
     ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    
-    if (!InputDevice->CommandPort)
-    {
-    	D(bug("id_open: Fist time opened\n"));
-    	InputDevice->CommandPort = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC);
-    	if (InputDevice->CommandPort)
-    	{
-    	    /* Since the input device task will use this before this function
-    	    ** has exited, we can put it on the stack
-    	    */
-    	    struct IDTaskParams idtask_params;
-    	    idtask_params.InputDevice = InputDevice;
-    	    idtask_params.Caller = FindTask(NULL);
-    	    
-    	    /* We don't use a OS signal (like SIGBREAKF_CTRL_D), because
-    	    ** we might receive it from elsewere.
-    	    */
-    	    idtask_params.Signal = 1 << ioreq->io_Message.mn_ReplyPort->mp_SigBit;
-    	
-    	    D(bug("id_open: Creating input task\n"));
-    	    
-    	    InputDevice->InputTask = CreateInputTask(&idtask_params, InputDevice);
-    	    
-    	    D(bug("id_open: input task created: %p\n", InputDevice->InputTask));
-    	
-    	    if (InputDevice->InputTask)
-    	    {
-    	    	/* Here we wait for the input.device to initialize it's
-    	    	** command msgport etc. (see processevents.c). This
-    	    	** is to prevent race conditions.
-    	    	** Say that we exited succesfully now and did
-    	    	** an asynchronous IO request to the device, while
-    	    	** the input.device yet not had created it's command port.
-    	    	** It would most certainly crash the machine
-    	    	*/
-    	    	D(bug("id_open(): Waiting for idtask to initialize itself\n"));
-    	    	Wait (idtask_params.Signal);
-    	    	D(bug("id_open(): Got signal from idtask\n"));
-    	    	
-    	    	ioreq->io_Error = NULL;
 
-   	 	/* I have one more opener. */
-    		InputDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-    		InputDevice->device.dd_Library.lib_OpenCnt ++;
-
-    
-		/* !!! May be obsolete !!!
-		** It was there in the old code that I mode to the input.device,
-		** so I include it for now.
-		*/    	
-		idleT = FindTask("Idle Task");
-    		if( idleT )
-	       	    Signal(idleT, SIGBREAKF_CTRL_F);
-    	    	
-    	    	return;
-    	    	
-    	    } /* if (input task created) */
-    	    FreeMem(InputDevice->CommandPort, sizeof (struct MsgPort));
-    	} /* if (command msgport created) */
-
-    	ioreq->io_Error = IOERR_OPENFAIL;
-    	    
-    } /* if (first time opened) */
-
-    if (!ioreq->io_Error != IOERR_OPENFAIL)
-    {
-    	InputDevice->device.dd_Library.lib_OpenCnt ++;
-    	InputDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-
-    }
+    InputDevice->device.dd_Library.lib_OpenCnt ++;
+    InputDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
     
     return;    
 
@@ -340,7 +315,7 @@ AROS_LH1(void, beginio,
         /* Mark IO request to be done non-quick */
     	ioreq->io_Flags &= ~IOF_QUICK;
     	/* Send to input device task */
-    	PutMsg(InputDevice->CommandPort, (struct Message *)ioreq);
+    	PutMsg(&InputDevice->CommandPort, (struct Message *)ioreq);
     }
     else
     {
