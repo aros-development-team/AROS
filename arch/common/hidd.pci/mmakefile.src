@@ -1,0 +1,27 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__
+
+LIBNAME := pci
+
+FILES	:= pcidriverclass pcideviceclass pciclass pciutil
+
+FUNCS := pci_libfunc
+
+#MM
+includes-copy :
+	$(CP) include/pci_hidd.h $(INCDIR)/hidd/pci.h
+	$(CP) include/pci_hidd.h $(GENINCDIR)/hidd/pci.h
+	$(CP) include/pci_lib.h  $(INCDIR)/libraries/pci.h
+	$(CP) include/pci_lib.h  $(GENINCDIR)/libraries/pci.h
+
+%build_module_macro mmake=workbench-libs-pci \
+    modname=pci modtype=library \
+    files="$(FILES) $(FUNCS)" \
+    conffile=lib.conf genfunctable=yes \
+    uselibs="rom amiga"
+
+%common
