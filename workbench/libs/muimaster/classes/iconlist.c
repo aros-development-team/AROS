@@ -513,7 +513,7 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     {
 	if (!node->dob)
 	{
-	    static struct TagItem geticon_tags[] = {
+	    struct TagItem geticon_tags[] = {
 		{ICONGETA_FailIfUnavailable, FALSE},
 		{TAG_DONE,0}
 	    };
@@ -866,7 +866,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
-    static struct TagItem geticon_tags[] = {
+    struct TagItem geticon_tags[] = {
 	{ICONGETA_FailIfUnavailable, FALSE},
 	{TAG_DONE,0}
     };
