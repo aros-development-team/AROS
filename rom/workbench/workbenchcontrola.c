@@ -58,7 +58,8 @@
     struct TagItem *tagState = tags;
     struct TagItem *tag;
 
-    while( (tag = NextTagItem( (const struct TagItem **) &tagState )) ) {
+    while ((tag = NextTagItem(&tagState)) != NULL)
+    {
         switch( tag->ti_Tag ) {
             case WBCTRLA_IsOpen:
                 /* TODO: Do something... */
