@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w                                      -- # -*- perl -*-
+#!/usr/bin/perl -w
 #
 #     sfdc - Compile SFD files into someting useful
 #     Copyright (C) 2003-2004 Martin Blom <martin@blom.org>
