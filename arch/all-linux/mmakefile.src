@@ -3,8 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES		:= exec/init
 DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+OS_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
-		    -I/usr/include $(CFLAGS)
+		   $(CFLAGS)
 
 #MM AROS-linux : setup setup-linux includes compiler kernel workbench demos shell
 AROS-linux:
@@ -20,7 +21,7 @@ kernel-linux :
 	@$(NOP)
 
 # Setup the CLIB metatargets...
-#MM setup-clib-linux : setup-clib-linux-i386
+#MM setup-clib-linux : setup-clib-linux-$(CPU)
 setup-clib-linux :
 	@$(NOP)
 
@@ -36,12 +37,20 @@ setup-linux :
 # These are the targets to get mmake to do what I want...
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11
 
-#MM setup-exec-linux : setup-exec-unix setup-exec-i386
+#MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
 setup-exec-linux :
 	%add_objects rom/exec/init
 
-#MM kernel-exec-linux-i386 : exec-linux exec-i386 exec-unix kernel-exec-linklib
-kernel-exec-linux-i386 :
+#MM setup-exec-m68k : setup-exec-linux-m68k
+setup-exec-m68k :
+	@$(NOP)
+
+#MM kernel-exec-linux-$(CPU) : exec-linux exec-$(CPU) exec-unix kernel-exec-linklib
+kernel-exec-linux-$(CPU) :
+	@$(NOP)
+
+#MM exec-m68k : exec-linux-m68k
+exec-m68k :
 	@$(NOP)
 
 #MM
@@ -51,28 +60,28 @@ exec-linux : $(OSGENDIR)/exec/init.o
 setup-dos-linux :
 	@$(NOP)
 
-#MM kernel-dos-linux-i386 : dos-unix kernel-dos-linklib
-kernel-dos-linux-i386 :
+#MM kernel-dos-linux-$(CPU) : dos-unix kernel-dos-linklib
+kernel-dos-linux-$(CPU) :
 	@$(NOP)
 
 #MM setup-battclock-linux : setup-battclock-unix
 setup-battclock-linux :
 	@$(NOP)
 
-#MM kernel-graphics-linux-i386 : graphics-x11 kernel-graphics-linklib
-kernel-graphics-linux-i386 :
+#MM kernel-graphics-linux-$(CPU) : graphics-x11 kernel-graphics-linklib
+kernel-graphics-linux-$(CPU) :
 	@$(NOP)
 
-#MM kernel-intuition-linux-i386 : intuition-x11 kernel-intuition-linklib
-kernel-intuition-linux-i386 :
+#MM kernel-intuition-linux-$(CPU) : intuition-x11 kernel-intuition-linklib
+kernel-intuition-linux-$(CPU) :
 	@$(NOP)
 
-#MM kernel-hidd-linux-i386 : kernel-hidd-linklib
-kernel-hidd-linux-i386 :
+#MM kernel-hidd-linux-$(CPU) : kernel-hidd-linklib
+kernel-hidd-linux-$(CPU) :
 	@$(NOP)
 
-#MM kernel-boot-linux-i386 : kernel-boot-linklib
-kernel-boot-linux-i386 :
+#MM kernel-boot-linux-$(CPU) : kernel-boot-linklib
+kernel-boot-linux-$(CPU) :
 	@$(NOP)
 
 #MM check : check-exec-unix
