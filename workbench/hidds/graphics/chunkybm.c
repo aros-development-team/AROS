@@ -67,6 +67,8 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     /* Get some dimensions of the bitmap */
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
     
+    width = (width + 15) & ~15;
+    
     data->bytesperpixel = bytesperpixel;
     data->bytesperrow	= data->bytesperpixel * width;
 
