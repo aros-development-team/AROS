@@ -111,8 +111,13 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->aroscbbase = NULL;
     LIBBASE->aroscybase = NULL;
     LIBBASE->arosmxbase = NULL;
+    LIBBASE->arospabase = NULL;
 
     LIBBASE->buttonclass = NULL;
+    LIBBASE->textclass	 = NULL;
+    LIBBASE->sliderclass = NULL;
+    LIBBASE->scrollerclass = NULL;
+    LIBBASE->stringclass = NULL;
 
     InitSemaphore(&LIBBASE->bevelsema);
     LIBBASE->bevel = NULL;
@@ -211,12 +216,27 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
 
+	if (LIBBASE->textclass)
+	    FreeClass(LIBBASE->textclass);
+
+	if (LIBBASE->sliderclass)
+	    FreeClass(LIBBASE->sliderclass);
+	    
+	if (LIBBASE->scrollerclass)
+	    FreeClass(LIBBASE->scrollerclass);
+
+	if (LIBBASE->stringclass)
+	    FreeClass(LIBBASE->stringclass);
+
+	    
 	if (LIBBASE->arosmxbase)
 	    CloseLibrary(LIBBASE->arosmxbase);
 	if (LIBBASE->aroscybase)
 	    CloseLibrary(LIBBASE->aroscybase);
 	if (LIBBASE->aroscbbase)
 	    CloseLibrary(LIBBASE->aroscbbase);
+	if (LIBBASE->arospabase)
+	    CloseLibrary(LIBBASE->arospabase);
 
 	if (BOOPSIBase)
 	    CloseLibrary(BOOPSIBase);

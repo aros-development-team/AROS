@@ -50,6 +50,9 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
 	       struct IntuiText *itext);
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
+Class *maketextclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makesliderclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
@@ -68,6 +71,47 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct VisualInfo *vi,
 		      struct TagItem *taglist);
 
+struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
+		      struct TagItem stdgadtags[],
+		      struct VisualInfo *vi,
+		      struct TagItem *taglist);
+
+struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
+		      struct TagItem stdgadtags[],
+		      struct VisualInfo *vi,
+		      struct TagItem *taglist);
+
+struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
+		      	struct TagItem stdgadtags[],
+		      	struct VisualInfo *vi,
+		      	struct TextAttr *tattr,
+		      	struct TagItem *taglist);
+
+struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
+		      	  struct TagItem *taglist);
+
+
+struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
+		      	  struct TagItem *taglist);
+
+struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
+		      	  struct TagItem *taglist);
+
+/* Tags for the private gadtool classes */
+#define GT_Dummy (TAG_USER)
+
+#define GTA_Text_DispFunc	(GT_Dummy + 1)
+#define GTA_Text_Format		(GT_Dummy + 2)
+
 struct GadToolsBase_intern
 {
     struct Library    library;
@@ -83,8 +127,13 @@ struct GadToolsBase_intern
     struct Library	 * aroscbbase;
     struct Library       * aroscybase;
     struct Library	 * arosmxbase;
+    struct Library	 * arospabase;
 
     Class * buttonclass;
+    Class * textclass;
+    Class * sliderclass;
+    Class * scrollerclass;
+    Class * stringclass;
 
     /* Semaphore to protect the bevel object. */
     struct SignalSemaphore   bevelsema;

@@ -93,3 +93,4 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 
     return it;
 }
+
