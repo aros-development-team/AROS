@@ -102,6 +102,7 @@ List;
 #define new(type)           (type *)xmalloc(sizeof(type))
 #define ALIGN(x,y)          ((x + (y-1)) & (-(y)))
 #define hexval(c)           (((c) > '9') ? (c) - 'a' + 10 : (c) - '0')
+#define xcalloc(cnt,size)   _xcalloc(cnt,size,__FILE__,__LINE__)
 
 /* Prototypes */
 extern int execute PARAMS ((const char * cmd, const char * args,
@@ -110,6 +111,7 @@ extern char * _xstrdup PARAMS ((const char * str, const char * file, int line));
 extern void * _xmalloc PARAMS ((size_t size, const char * file, int line));
 extern void * _xrealloc PARAMS ((void * ptr, size_t size, const char * file, int line));
 extern void _xfree PARAMS ((void * ptr, const char * file, int line));
+extern void * _xcalloc PARAMS ((size_t cnt, size_t size, const char * file, int line));
 extern Node * FindNode PARAMS ((const List * l, const char * name));
 extern Node * FindNodeNC PARAMS ((const List * l, const char * name));
 extern void printlist PARAMS ((const List * l));

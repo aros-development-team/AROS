@@ -1,6 +1,13 @@
+/*
+    Copyright (C) 1998-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Various utility functions for tool writers.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <assert.h>
 #include <toollib/toollib.h>
 
@@ -64,6 +71,22 @@ _xfree (void * ptr, const char * file, int line)
 	free (ptr);
     else
 	fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
+}
+
+void *
+_xcalloc (size_t number, size_t size, const char * file, int line)
+{
+    void * ptr;
+
+    ptr = calloc (number, size);
+
+    if (size && !ptr)
+    {
+	fprintf (stderr, "Out of memory in %s:%d", file, line);
+	exit (20);
+    }
+
+    return ptr;
 }
 
 Node *

@@ -224,3 +224,14 @@ strupper (char * str)
 
     return str;
 }
+
+char *
+strlower (char * str)
+{
+    char *ptr;
+
+    for (ptr=str; *ptr; ptr++)
+	*ptr = tolower (*ptr);
+
+    return str;
+}

@@ -1,14 +1,26 @@
+#   Copyright (C) 2000 AROS - The Amiga Research OS
+#   $Id$
+#
+#   Desc: Makefile to create the (soon to be obsolete) cpak
+#
 
-all   : real-all
+USER_CFLAGS := -Wall -Wunused -O2
+-include $(TOP)/config/make.cfg
 
-include $(TOP)/config/make.cfg
+HOST_CC	    ?= $(CC)
+HOST_STRIP  ?= strip
+MECHO	    ?= echo
+CPAK	    ?= cpak
+HOST_CFLAGS ?= $(USER_CFLAGS)
 
-real-all: $(CPAK)
+all : $(CPAK)
 
 $(CPAK) : cpak.c
-	gcc -Wall -Wunused -O2 cpak.c -o $(CPAK)
-	strip $(CPAK)
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+	@$(HOST_STRIP) $(CPAK)
 
 clean :
-	rm -f $(CPAK)
+	@$(RM) $(CPAK)
 
+.PHONY : all clean

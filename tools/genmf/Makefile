@@ -1,14 +1,28 @@
-all : real-all
+#   Copyright (C) 2000 AROS - The Amiga Replacement OS
+#   $Id$
+#
+#   Desc: Makefile for genmf
+#
 
-include $(TOP)/config/make.cfg
+# Things of interest.
+SRC	:=  genmf.c
 
-real-all: $(GENMF)
+-include $(TOP)/config/make.cfg
+
+HOST_CC	    ?= $(CC)
+HOST_STRIP  ?= strip
+HOST_MKDIR  ?= mkdir
+GENMF	    ?= genmf
+HOST_CFLAGS ?= -Wall -g -O
+
+all : $(GENMF)
 
 $(GENMF) : genmf.c
-	gcc -Wall -g -O genmf.c -o $(GENMF)
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $(GENMF)
 
 clean :
-	rm -f $(GENMF)
+	@$(RM) $(GENMF)
 
 check :
 	$(GENMF) tmpl.test < in.test

@@ -1,17 +1,24 @@
-all: real-all
+#   Copyright (C) 2000 AROS - The Amiga Research OS
+#   $Id$
+#
+#   Desc: Makefile for archtool
+#
 
-include $(TOP)/config/make.cfg
+-include $(TOP)/config/make.cfg
 
-CFLAGS := -Wall -Wunused -O2
+USER_CFLAGS := -Wall -Wunused -O2
 
-real-all: $(ARCHTOOL)
+HOST_CC	    ?= $(CC)
+HOST_STRIP  ?= strip
+ARCHTOOL    ?= archtool
+MECHO	    ?= echo
+
+all : $(ARCHTOOL)
 
 $(ARCHTOOL) : archtool.c
-	@$(ECHO) "Compiling $@..."
-	@$(CC) $(CFLAGS) $< -o $@
-	@$(STRIP) $@
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+	@$(HOST_STRIP) $@
 
 clean:
-	@$(ECHO) "Cleaning sources..."
 	@$(RM) -f $(ARCHTOOL)
-

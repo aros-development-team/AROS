@@ -27,5 +27,6 @@ extern char * stripquotes PARAMS((const char * str));
 extern char * stripws	  PARAMS((const char * str));
 extern char * stripwsq	  PARAMS((const char * str));
 extern char * strupper	  PARAMS((char * str));
+extern char * strlower	  PARAMS((char * str));
 
 #endif /* TOOLLIB_VSTRING_H */
