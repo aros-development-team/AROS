@@ -33,6 +33,21 @@
 #   define AROS_BSTR_TYPE   STRPTR
 #endif
 
+/* Macros to transparently handle BSTRs */
+#ifdef AROS_FAST_BPTR
+#   define AROS_BSTR_ADDR(s)        ((STRPTR)(s))
+#   define AROS_BSTR_strlen(s)      (strlen (s))
+#   define AROS_BSTR_setstrlen(s,l) (s[l] = 0)
+#   define AROS_BSTR_getchar(s,l)   (s[l])
+#   define AROS_BSTR_putchar(s,l,c) (s[l] = c)
+#else
+#   define AROS_BSTR_ADDR(s)        ((STRPTR)BADDR(s))
+#   define AROS_BSTR_strlen(s)      (AROS_BSTR_ADDR(s)[0])
+#   define AROS_BSTR_setstrlen(s,l) (AROS_BSTR_ADDR(s)[0] = l)
+#   define AROS_BSTR_getchar(s,l)   (AROS_BSTR_ADDR(s)[l])
+#   define AROS_BSTR_putchar(s,l,c) (AROS_BSTR_ADDR(s)[l] = c)
+#endif
+
 #ifndef __typedef_BPTR
 #   define __typedef_BPTR
     typedef AROS_BPTR_TYPE BPTR;
