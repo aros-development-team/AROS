@@ -98,5 +98,7 @@ extern char MUIC_Popasl[];
 #define MUIA_Popasl_StopHook                0x8042d8d2 /* V7  isg struct Hook *     */
 #define MUIA_Popasl_Type                    0x8042df3d /* V7  i.g ULONG             */
 
+extern const struct __MUIBuiltinClass _MUI_Popstring_desc;
+extern const struct __MUIBuiltinClass _MUI_Popasl_desc;
 
 #endif
