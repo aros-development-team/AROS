@@ -34,7 +34,7 @@
 #include "keyboard_gcc.h"
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -357,7 +357,8 @@ AROS_LH1(void, beginio,
 	
     case KBD_READMATRIX:
 	ioStd(ioreq)->io_Actual = min(KB_MATRIXSIZE, ioStd(ioreq)->io_Length);
-	CopyMem(KBBase->kb_Matrix, ioStd(ioreq)->io_Data, ioStd(ioreq)->io_Actual);
+	CopyMem(KBBase->kb_Matrix, ioStd(ioreq)->io_Data,
+		ioStd(ioreq)->io_Actual);
 	break;
 	
     case KBD_READEVENT:
@@ -381,7 +382,8 @@ AROS_LH1(void, beginio,
 
 	    Disable();
 	    kbUn->kbu_flags |= KBUF_PENDING;
-	    AddTail((struct List *)&KBBase->kb_PendingQueue, (struct Node *)ioreq);
+	    AddTail((struct List *)&KBBase->kb_PendingQueue,
+		    (struct Node *)ioreq);
 	    Enable();
 
 	    break;
@@ -437,12 +439,12 @@ AROS_LH1(void, beginio,
 
 static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 {
-    int    nEvents;                  /* Number of struct InputEvent that there is
-					room for in memory pointed to by io_Data */
-    struct InputEvent *event;        /* Temporary variable */
-    UWORD  code;                     /* Value of current keycode */
-    UWORD  trueCode;                 /* Code without possible keypress addition */
-    int    i;			     /* Loop variable */
+    int    nEvents;             /* Number of struct InputEvent:s that there is
+				   room for in memory pointed to by io_Data */
+    UWORD  code;                /* Value of current keycode */
+    UWORD  trueCode;            /* Code without possible keypress addition */
+    int    i;			/* Loop variable */
+    struct InputEvent *event;   /* Temporary variable */
 
 
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
@@ -613,40 +615,16 @@ D(bug("Wrote to matrix\n"));
     {
 D(bug("doing software irq\n"));
     
-/*	Cause(&KBBase->kb_Interrupt); */
- 
-        /* Temporary hack */
-        AROS_UFC3(void, sendQueuedEvents,
-		  AROS_UFCA(struct KeyboardBase *, KBBase, A1),
-		  AROS_UFCA(APTR, sendQueuedEvents, A5),
-		  AROS_UFCA(struct ExecBase *, SysBase, A6));
-
+	Cause(&KBBase->kb_Interrupt);
     }
 }
-
-
 
 #undef  BVBITSET
 #undef  BVBITCLEAR
 #undef  CORRECT
 
-VOID keyBroadCast(struct List *pendingList)
-{
-    struct KeyboardBase *KBBase;	/* Temporary until solution is decided */
+/* Software interrupt to be called when keys are received */
 
-    struct IORequest *ioreq;
-
-    ObtainSemaphore(&KBBase->kb_QueueLock);
-    ForeachNode(pendingList, ioreq)
-    {
- 	ReplyMsg((struct Message *)&ioreq->io_Message);
-	kbUn->kbu_flags &= ~KBUF_PENDING;
-    }
-    ReleaseSemaphore(&KBBase->kb_QueueLock);
-}
-
-/* nlorentz: Software interrupt to be called when keys are received
-   Copied and pasted from the function above */
 #undef SysBase
 AROS_UFH3(VOID, sendQueuedEvents,
     AROS_UFHA(struct KeyboardBase *, KBBase, A1),
@@ -661,7 +639,8 @@ AROS_UFH3(VOID, sendQueuedEvents,
 
     ForeachNode(pendingList, ioreq)
     {
-        D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos, KBBase->kb_writePos));
+        D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos,
+	      KBBase->kb_writePos));
 	writeEvents(ioreq, KBBase);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
 	Remove((struct Node *)ioreq);
