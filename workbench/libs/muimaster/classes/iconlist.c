@@ -59,6 +59,7 @@ struct IconEntry
     char *filename;
     char *label;
     void *udata;
+    LONG type;
 
     struct DiskObject *dob; /* The icons disk objects */
 
@@ -483,6 +484,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     entry->dob = dob;
     entry->udata = msg->udata;
+    entry->type = msg->type;
 
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
@@ -621,6 +623,7 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 	{
 	    node->entry.filename = node->filename;
 	    node->entry.label = node->label;
+	    node->entry.type = node->type;
 	    node->entry.udata = node->udata;
 	    *msg->entry = &node->entry;
 	}
@@ -856,7 +859,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 		strcpy(buf,data->drawer);
 		AddPart(buf,filename,sizeof(buf));
 
-		if (!(DoMethod(obj,MUIM_IconList_Add,buf,filename,NULL /* udata */)))
+		if (!(DoMethod(obj,MUIM_IconList_Add,buf,filename,entry->ed_Type,NULL /* udata */)))
 		{
 		}
 	    }
@@ -1156,7 +1159,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
 		strcpy(buf,nd->name);
 		strcat(buf,":Disk");
 
-		if (!(DoMethod(obj,MUIM_IconList_Add,buf,nd->name,NULL/* udata */)))
+		if (!(DoMethod(obj,MUIM_IconList_Add,buf,nd->name,ST_USERDIR, NULL/* udata */)))
 		{
 		}
 
