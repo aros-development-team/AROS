@@ -75,6 +75,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
 
+/*
 BOOL writeFullPath(struct AnchorPath * AP);
 LONG followpattern(struct AnchorPath * AP, 
                    struct AChain * AC,
@@ -82,7 +83,15 @@ LONG followpattern(struct AnchorPath * AP,
 LONG createresult(struct AnchorPath * AP,
                   struct AChain * AC,
                   struct DosLibrary * DOSBase);
+*/
 
+/* match_misc.c */
+
+struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBase);
+void Match_FreeAChain(struct AChain *ac, struct DosLibrary *DOSBase);
+LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
+			   struct AChain **retac, struct DosLibrary *DOSBase);
+LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase);
 
 
 void addprocesstoroot(struct Process * , struct DosLibrary *);
@@ -137,21 +146,26 @@ struct markerarray
     (s)=macur->marker[macnt].str;       \
 }
 
-#define MP_ESCAPE	0x81 /* Before characters in [0x81;0x8a] */
-#define MP_MULT 	0x82 /* _#(_a) */
-#define MP_MULT_END	0x83 /* #(a_)_ */
-#define MP_NOT		0x84 /* _~(_a) */
-#define MP_NOT_END	0x85 /* ~(a_)_ */
-#define MP_OR		0x86 /* _(_a|b) */
-#define MP_OR_NEXT	0x87 /* (a_|_b) */
-#define MP_OR_END	0x88 /* (a|b_)_ */
-#define MP_SINGLE	0x89 /* ? */
-#define MP_ALL		0x8a /* #? or * */
-#define MP_SET		0x8b /* _[_ad-g] */
-#define MP_NOT_SET	0x8c /* _[~_ad-g] */
-#define MP_DASH 	0x8d /* [ad_-g_] */
-#define MP_SET_END	0x8e /* [ad-g_]_ */
+#define MP_ESCAPE		0x81 /* Before characters in [0x81;0x8a] */
+#define MP_MULT 		0x82 /* _#(_a) */
+#define MP_MULT_END		0x83 /* #(a_)_ */
+#define MP_NOT			0x84 /* _~(_a) */
+#define MP_NOT_END		0x85 /* ~(a_)_ */
+#define MP_OR			0x86 /* _(_a|b) */
+#define MP_OR_NEXT		0x87 /* (a_|_b) */
+#define MP_OR_END		0x88 /* (a|b_)_ */
+#define MP_SINGLE		0x89 /* ? */
+#define MP_ALL			0x8a /* #? or * */
+#define MP_SET			0x8b /* _[_ad-g] */
+#define MP_NOT_SET		0x8c /* _[~_ad-g] */
+#define MP_DASH 		0x8d /* [ad_-g_] */
+#define MP_SET_END		0x8e /* [ad-g_]_ */
 
+/* Whether MatchFirst/MatchNext/MatchEnd in case of the base
+   AChain should just take the currentdir lock pointer, or
+   make a real duplicate with DupLock() */
+
+#define MATCHFUNCS_NO_DUPLOCK 	0
 
 /* DosGetString additional codes (printf style parametrized) */
 

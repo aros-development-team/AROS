@@ -50,37 +50,49 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  /* Free the AChain and unlock all locks that are still there */
-  struct AChain * AC = AP->ap_Current;
-  struct AChain * AC_tmp;
+    struct AChain *ac = AP->ap_Base, *acnext;
 
-  /* Unlock everything */
-  if (NULL == AC)
-    return;
+    if (ac)
+    {
+#if MATCHFUNCS_NO_DUPLOCK
+        /*
+	** CurrentDir to a valid lock, ie. one that will not be
+	** killed further below
+	*/
+	
+        CurrentDir(ac->an_Lock);
+#endif
+	
+	while(ac)
+	{
+	    acnext = ac->an_Child;
 
-  while (NULL != AC->an_Parent)
-  {
-    UnLock(AC->an_Lock);
-    AC = AC->an_Parent;
-  }
- 
-  CurrentDir(AC->an_Lock);
-  
-  /* AC points to the very first AChain obj. in the list */
-  /* Free the AChain List */
-  while (NULL != AC)
-  {
-    AC_tmp = AC->an_Child;
-    FreeVec(AC);
-    AC = AC_tmp;
-  }
+	    /*
+	    ** Dont unlock lock in first AChain because it is the same
+	    ** as the current directory when MatchFirst was called. And
+	    ** this lock was not DupLock()ed (except MATCHFUNCS_NO_DUPLOCK == 0)!!!
+	    */
+	    
+	    if (ac->an_Lock
+#if MATCHFUNCS_NO_DUPLOCK
+	        && (ac != AP->ap_Base)
+#endif
+	       )
+	    {
+	        UnLock(ac->an_Lock);
+	    }
+	    Match_FreeAChain(ac, DOSBase);
 
-  /* Cleanup AP */
-  AP->ap_Base = NULL;
-  AP->ap_Current = NULL;
-
-  AROS_LIBFUNC_EXIT
+	    ac = acnext;
+	}
+    }
+    
+    AP->ap_Current = NULL;
+    AP->ap_Base = NULL;
+    
+    AROS_LIBFUNC_EXIT
+    
 } /* MatchEnd */
