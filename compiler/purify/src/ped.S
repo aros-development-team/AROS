@@ -23,3 +23,9 @@ Purify_Endstaticdata:
 	.int _Purify_Endstaticdata
 
 	.comm Purify_Endbss,4,4
+
+	.text
+.globl Purify_Endcode
+.type Purify_Endcode,@function
+Purify_Endcode:
+	ret

@@ -1,9 +1,13 @@
 #include <stdio.h>
-#include "malloc.h"
+#include "memory.h"
 #include "hash.h"
+
+#define Purify_Begincode _start
 
 void Purify_Init (void)
 {
+    extern void Purify_Begincode (void);
+    extern void Purify_Endcode (void);
     extern int Purify_Beginrodata;
     extern int Purify_Endrodata;
     extern int Purify_Beginbss;
@@ -80,6 +84,21 @@ void Purify_Init (void)
 
 	node->data = "static data";
     }
+
+    size = (long)Purify_Endcode - (long)Purify_Begincode;
+
+    if (size > 0)
+    {
+	node = Purify_AddMemory (Purify_Begincode
+	    , size
+	    , PURIFY_MemFlag_Readable
+	    , PURIFY_MemType_Code
+	);
+
+	node->data = "code";
+    }
+
+    Purify_PrintMemory ();
 }
 
 void Purify_Exit (void)
