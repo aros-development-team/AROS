@@ -13,7 +13,7 @@ BOOT_FILES := \
 	Prefs/Env-Archive/Sys/font.prefs \
 	Prefs/Env-Archive/Sys/nv_location \
 	contrib/aminet/untgz \
-	boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
+	boot/grub/stage1 boot/grub/stage2
 
 BOOT_TAR_FILES := \
 	C \
@@ -77,8 +77,7 @@ $(BINDIR)/boot/aros-pc-i386 : $(OBJS)
 	@strip --strip-unneeded -R .note -R .comment $@
 
 #MM workbench-boot-pc-i386
-workbench-boot-pc-i386: \
-	$(BINDIR)/boot/grub/menu.lst
+workbench-boot-pc-i386:
 	@$(NOP)
 
 $(BINDIR)/boot/grub/% : %
