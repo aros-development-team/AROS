@@ -438,8 +438,8 @@ static void MakeGadgets(void)
 
     for(i = 0;i < NUM_IMAGES;i++)
     {
-	img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo	, dri, 
-				         SYSIA_Which	, (Tag)img2which[i], 
+	img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo	, (Tag) dri, 
+				         SYSIA_Which	, (Tag) img2which[i], 
 				         TAG_DONE);
 
 	if (!img[i]) Cleanup(MSG(MSG_CANT_CREATE_SYSIMAGE));
