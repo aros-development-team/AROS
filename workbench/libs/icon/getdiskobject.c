@@ -3,16 +3,17 @@
     $Id$
 */
 
-#include <workbench/icon.h>
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <proto/arossupport.h>
 #include <proto/dos.h>
+#include <workbench/icon.h>
 #include <dos/dos.h>
-#include "icon_intern.h"
 
 #include <string.h>
 
-#define DEBUG 1
-#include <aros/debug.h>
+#include "icon_intern.h"
 
 extern const IPTR IconDesc[];
 
@@ -28,7 +29,7 @@ extern const IPTR IconDesc[];
 	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 13, Icon)
+	struct IconBase *, IconBase, 13, Icon)
 
 /*  FUNCTION
 
@@ -49,66 +50,24 @@ extern const IPTR IconDesc[];
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
+    AROS_LIBBASE_EXT_DECL(struct IconBase *, IconBase)
     
-    ULONG              nameLength = strlen(name);
-    struct DiskObject *dobj       = NULL, 
-                      *dup_dobj   = NULL;
-    BPTR               icon       = NULL;
-
-    if (name[nameLength - 1] == ':')
-    {
-        ULONG  length = nameLength + 9 /* strlen("Disk.info") */ + 1;
-        STRPTR volume = AllocVec(length, MEMF_ANY);
-        
-        if(volume != NULL)
-        {
-            strlcpy(volume, name, length);
-            strlcat(volume, "Disk.info", length);
-            
-            icon = Open(volume, MODE_OLDFILE);
-            
-            FreeVec(volume);
-        }
-        else
-        {
-            SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
-        }
-    }
-    else
-    {
-        ULONG  length = nameLength + 5 /* strlen(".info") */ + 1;
-        STRPTR file   = AllocVec(length, MEMF_ANY);
-        
-        if(file != NULL)
-        {
-            strlcpy(file, name, length);
-            strlcat(file, ".info", length);
-            
-            icon = Open(file, MODE_OLDFILE);
-            
-            FreeVec(file);
-        }
-        else
-        {
-            SetIoErr (ERROR_NO_FREE_STORE);
-            return NULL;
-        }
-    }
-
-    if (icon == NULL)
+    struct DiskObject *temp  = NULL,
+                      *final = NULL;
+    BPTR               file  = OpenIcon(name, MODE_OLDFILE);
+    
+    if (file == NULL)
     {
         D(bug("icon.library: '%s' not found\n"));
         return NULL;
     }
     
     /* Read the file in */
-    if (!ReadStruct (&LB(IconBase)->dsh, (APTR *)&dobj, icon, IconDesc))
-        dobj = NULL;
+    if (!ReadStruct (&LB(IconBase)->dsh, (APTR *)&temp, file, IconDesc))
+        temp = NULL;
 
     /* Make the icon "native" so it can be free'd with FreeDiskObject() */
-    if (dobj != NULL)
+    if (temp != NULL)
     {
         struct TagItem dup_tags[] =
         {
@@ -116,18 +75,18 @@ extern const IPTR IconDesc[];
             {TAG_DONE                         }
         };
 
-        dup_dobj = DupDiskObjectA(dobj, dup_tags);
+        final = DupDiskObjectA(temp, dup_tags);
     }
     else
     {
-        dup_dobj = NULL;
+        final = NULL;
     }
     
-    FreeStruct((APTR) dobj, IconDesc);
+    FreeStruct((APTR) temp, IconDesc);
 
-    Close(icon);
+    CloseIcon(file);
 
-    return dup_dobj;
+    return final;
     
     AROS_LIBFUNC_EXIT
 } /* GetDiskObject */

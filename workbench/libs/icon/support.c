@@ -5,9 +5,60 @@
     Miscellaneous support functions.
 */
 
-#include "icon_intern.h"
+#include <proto/dos.h>
 
-/****************************************************************************************/
+#include "icon_intern.h"
+#include "support.h"
+
+
+BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
+{
+    BPTR  file       = NULL;
+    ULONG nameLength = strlen(name);
+    
+    if (name[nameLength - 1] == ':')
+    {
+        BPTR lock = Lock(name, ACCESS_READ);
+        
+        if (lock != NULL)
+        {
+            BPTR cd = CurrentDir(lock);
+            
+            file = Open("Disk.info", mode);
+            
+            CurrentDir(cd);
+            UnLock(lock);
+        }
+    }
+    else
+    {
+        ULONG  length = nameLength + 5 /* strlen(".info") */ + 1 /* '\0' */;
+        STRPTR path   = AllocVec(length, MEMF_ANY);
+        
+        if(file != NULL)
+        {
+            strlcpy(path, name, length);
+            strlcat(path, ".info", length);
+            
+            file = Open(file, mode);
+            
+            FreeVec(path);
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+    }
+    
+    return file;
+}
+
+BOOL __CloseIcon_WB(BPTR file, struct IconBase *IconBase)
+{
+    return Close(file);
+}
+
 
 /****************************************/
 /* Copy the deficon name of type	*/
@@ -35,8 +86,6 @@ VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
     strcat (deficonname, extname);
 } /* GetDefIconName */
 
-/****************************************************************************************/
-
 LONG CalcIconHash(struct DiskObject *dobj)
 {
     LONG l1, l2, l3, l4, hash;
@@ -53,8 +102,6 @@ LONG CalcIconHash(struct DiskObject *dobj)
     return hash;
 }
 
-/****************************************************************************************/
-
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     LONG hash;
@@ -66,16 +113,12 @@ VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase)
     ReleaseSemaphore(&IconBase->iconlistlock);
 }
 
-/****************************************************************************************/
-
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     ObtainSemaphore(&IconBase->iconlistlock);
     Remove((struct Node *)&icon->node);
     ReleaseSemaphore(&IconBase->iconlistlock);   
 }
-
-/****************************************************************************************/
 
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase)
 {
@@ -97,5 +140,3 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     
     return reticon;
 }
-
-/****************************************************************************************/
