@@ -79,7 +79,8 @@ AC_EXEEXT
 AC_OBJEXT
 
 # Check for gawk and mmake.
-AROS_PROG(AWK,gawk)
+AC_CHECK_PROGS(AWK,[gawk nawk])
+AC_SUBST(AWK)
 AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
 
