@@ -90,11 +90,4 @@ void bzero (void * src, int n);
 
 __END_DECLS
 
-/* Amiga native libraries need inline versions of string functions
- * because they arn't linked with libc.
- */
-#ifdef _AMIGA
-#include <inline/strsup.h>
-#endif
-
 #endif /* _STRING_H_ */
