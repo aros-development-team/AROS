@@ -62,10 +62,17 @@ extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 #define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
 #define WIDTH_TO_WORDS(width) ((( (width) - 1) >> 4) + 1)
 
+#define XCOORD_TO_BYTEIDX( x ) (( x ) >> 3)
+#define XCOORD_TO_WORDIDX( x ) (( x ) >> 4)
+
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-	( ((y) * (bytes_per_row)) + ((x) >> 3) )
+	( ((y) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
 
 #define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
+
+/* This one is used for determining optimal offset for blitting into
+cliprects */
+#define ALIGN_OFFSET(x) ((x) & 0x0F)
 
 /* Defines */
 #define BMT_STANDARD	0x0000	/* Standard bitmap */
