@@ -39,7 +39,7 @@
 #endif
 #endif
 
-#define FIXED_MATH		1
+#define FIXED_MATH		0
 
 #if FIXED_MATH
 #include "fixmath.h"
