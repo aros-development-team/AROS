@@ -464,7 +464,7 @@ BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 
-BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -I$(TOP)/$(CURDIR) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 #Add extra flag if shared AROS C library is used
 ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
 BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
