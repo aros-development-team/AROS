@@ -33,7 +33,7 @@ VAR struct Menu                 *menus;
 VAR APTR                        vi;
 VAR struct Catalog              *catalog;
 VAR WORD    	    	    	pages_left, pages_top, pages_width, pages_height;
-VAR WORD    	    	    	winwidth, winheight;
+VAR WORD    	    	    	winwidth, winheight, buttonwidth, buttonheight;
 VAR UBYTE   	    	    	s[256];
 
 VAR LONG    	    	    	prog_exitcode;

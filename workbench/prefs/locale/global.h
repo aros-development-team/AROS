@@ -183,6 +183,11 @@
 #define SPACE_X     4
 #define SPACE_Y     4
 
+#define BUTTON_EXTRAWIDTH   	16
+#define BUTTON_EXTRAHEIGHT  	6
+#define IMBUTTON_EXTRAWIDTH  	4
+#define IMBUTTON_EXTRAHEIGHT 	4
+
 /*********************************************************************************************/
 
 /* main.c */
