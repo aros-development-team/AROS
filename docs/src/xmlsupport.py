@@ -37,7 +37,12 @@ class Tag (Token):
 	if len (words) > 1:
 	    rest = words[1]
 	    while rest:
-		attr, rest = string.split (rest, '=', 1)
+		try:
+		    attr, rest = string.split (rest, '=', 1)
+		except:
+		    print `text`
+		    print `rest`
+		    raise
 		pos = string.find (rest, '"', 1)
 		value = rest[1:pos]
 		self.attr[attr] = value
@@ -91,6 +96,16 @@ class Reader:
 	self.tokenContext = ''
 	self.filename = ''
 
+    def readUntil (self, end):
+	if self.pos >= len (self.string):
+	    return EOF
+
+	pos = string.find (self.string, end, self.pos)
+	assert pos != -1
+	text = self.string[self.pos:pos]
+	self.pos = pos + len (end)
+	return Text (text)
+	
     def read (self):
 	if self.pos >= len (self.string):
 	    return EOF
@@ -228,6 +243,16 @@ class XmlFile:
 	    elif isinstance (token, Tag):
 		#print 'Reading contents for',token.name
 		context = self.reader.tokenContext
+
+		# Special handling for <code> elements: Read until
+		# </code>. This way, we don't need to escape all those
+		# special symbols like <, >, &, etc.
+		if token.name == 'code':
+		    subtoken = self.reader.readUntil ('</code>')
+		    assert subtoken != EOF
+		    token.setContents ((subtoken,))
+		    continue
+
 		subtree = self.parse (level+1)
 		if not isinstance (subtree[-1], Endtag):
 		    print context
