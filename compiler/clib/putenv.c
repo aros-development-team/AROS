@@ -28,7 +28,7 @@
 
     INPUTS
 	string - Is of the form "name=value", where name is the variable's
-	         name and value is its value. In case the strinis of the form
+	         name and value is its value. In case the string is of the form
 		 "name" then the variable is removed from the environment.
     RESULT
 	The putenv() function returns zero on success, or -1 if an
@@ -72,7 +72,7 @@
 
     /* No value means we have to delete the variable */
     if (*ptr == '\0')
-	res = unsetenv(name);
+	res = 0, unsetenv(name);
 
     /* we might have a value to get */
     else
