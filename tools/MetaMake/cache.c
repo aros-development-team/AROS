@@ -40,6 +40,7 @@ Boston, MA 02111-1307, USA.  */
 
 #include "cache.h"
 #include "mem.h"
+#include "io.h"
 #include "var.h"
 #include "dep.h"
 #include "mmake.h"
