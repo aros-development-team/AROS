@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/08/30 17:00:59  digulla
+    Tried a timer with higher resolution to have 50 task switches per second,
+    but it crashes. If someone wants to debug it, define ENABLE_TIMER and compile
+    init.c anew.
+
     Revision 1.7  1996/08/28 17:57:37  digulla
     Doesn't call intui_ProcessXEvents() andmore but signals the input.device.
     This will change in the future but as long as we don't have real multitasking,
@@ -34,7 +39,13 @@
     Desc:
     Lang:
 */
-
+#include <stdlib.h>
+#include <signal.h>
+#define timeval     linux_timeval
+#include <sys/time.h>
+#undef timeval
+#include <unistd.h>
+#include <stdio.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/devices.h>
@@ -49,10 +60,6 @@
 #include <aros/arosbase.h>
 #include "memory.h"
 #include "machine.h"
-#include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdio.h>
 #undef kprintf
 
 #define NEWLIST(l)                          \
@@ -83,18 +90,21 @@ struct DosBase * DOSBase;
 static int returncode=20;
 static struct AROSBase AROSBase;
 
-void intui_ProcessXEvents (void);
+extern struct Task * inputDevice;
+
+#ifndef ENABLE_TIMER
+#   define ENABLE_TIMER     0
+#endif
 
 static void idleTask (void)
 {
-    extern struct Task * inputDevice;
-
     /* If the idle task ever gets CPU time the emulation is finished */
 /* exit(returncode); */
     while (1)
     {
-	/* Let input.device live */
+#if !ENABLE_TIMER
 	Signal (inputDevice, SIGBREAKF_CTRL_F);
+#endif
 
 	Switch (); /* Rescedule */
     }
@@ -111,12 +121,15 @@ static void boot(void)
     RemTask(NULL);
 }
 
+#if ENABLE_TIMER
 static void timer (int dummy)
 {
+    /* Let input.device live */
+    Signal (inputDevice, SIGBREAKF_CTRL_F);
+
     signal (SIGALRM, timer);
-    alarm (1);
-    Switch ();
 }
+#endif
 
 static APTR allocmem(ULONG size)
 {
@@ -335,9 +348,20 @@ int main(int argc,char *argv[])
 	/* AROSBase.StdOut = MKBADDR(fh_stdout); */
 	AROSBase.StdOut = stderr;
 
-	/* Start Multitasking (not yet) * /
-	signal (SIGALRM, timer);
-	alarm (1); */
+#if ENABLE_TIMER
+	{
+	    struct itimerval interval;
+	    int rc;
+
+	    /* Start Multitasking (not yet) */
+	    signal (SIGALRM, timer);
+
+	    interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
+	    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
+
+	    rc = setitimer (ITIMER_REAL, &interval, NULL);
+	}
+#endif
 
 	CreateNewProc(bootprocess);
     }
