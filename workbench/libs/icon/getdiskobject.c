@@ -7,6 +7,7 @@
 */
 #include <proto/arossupport.h>
 #include <proto/dos.h>
+#include <dos/dos.h>
 #include "icon_intern.h"
 
 extern const IPTR IconDesc[];
@@ -15,6 +16,7 @@ extern const IPTR IconDesc[];
 
     NAME */
 #include <clib/icon_protos.h>
+#include <exec/types.h>
 
 	AROS_LH1(struct DiskObject *, GetDiskObject,
 
@@ -55,7 +57,10 @@ extern const IPTR IconDesc[];
     {
 	/* Create the final filename */
 	if (!(iconname = AllocVec (strlen (name) + 5 + 1, MEMF_ANY)) )
+	{
+	    SetIoErr (ERROR_NO_FREE_STORE);
 	    return NULL;
+	}
 
 	strcpy (iconname, name);
 	strcat (iconname, ".info");
