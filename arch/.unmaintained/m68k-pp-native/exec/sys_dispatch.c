@@ -48,7 +48,7 @@ void SaveRegs(struct Task *task, struct pt_regs *regs)
 		i++;
 	}
 #endif
-	task->tc_SPReg = regs->usp;
+	task->tc_SPReg = (APTR)regs->usp;
 }
 
 void RestoreRegs(struct Task *task, struct pt_regs *regs)
@@ -86,7 +86,7 @@ void RestoreRegs(struct Task *task, struct pt_regs *regs)
 	}
 #endif
 
-	task->tc_SPReg = regs->usp;
+	task->tc_SPReg = (APTR)regs->usp;
 }
 
 #define SC_ENABLE(regs)	 (regs->sr &= 0xf8ff)
@@ -94,19 +94,12 @@ void RestoreRegs(struct Task *task, struct pt_regs *regs)
 
 void sys_Dispatch(struct pt_regs * regs)
 {
-	struct IntVector *iv;
-
 	struct ExecBase * SysBase = (struct ExecBase *)*(ULONG *)0x04;
 
 	/* Hmm, interrupts are nesting, not a good idea... */
 	if(!user_mode(regs)) {
 		return;
 	}
-#if 0
-#warning Enabling Multitasking here. Remove this!The Boot Task seems to run under Forbid().
-if (SysBase->TDNestCnt >= 0)
-	SysBase->TDNestCnt = -1;
-#endif
 
 	/* Check if a task switch is necessary */
 	/* 1. There has to be another task in the ready-list */

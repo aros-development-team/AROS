@@ -204,7 +204,6 @@ extern void sys_Dispatch(struct pt_regs * regs);
 	BOOL treated = FALSE;
 	struct irqDescriptor * irq_desc = PLATFORMDATA(SysBase)->irq_desc;
 	ULONG isr = RREG_L(ISR);
-	UWORD ilcr = RREG_W(ILCR);
 	/*
 	 * Now the problem with this processor is that it multiplexes multiple
 	 * interrupt sources over one IRQ. So I demultiplex them here by
