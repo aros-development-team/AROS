@@ -7,7 +7,6 @@
 */
 #include <exec/execbase.h>
 #include <aros/libcall.h>
-#include <dos/dos.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
