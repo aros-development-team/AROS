@@ -259,16 +259,8 @@ VOID color_set(struct ColorMap * cm,
 
 
 
-typedef struct {
-    int just_for_type_checking;
-} ObjectCache;
               
        
-ObjectCache *create_object_cache(Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase);
-VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase);
-Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase);
-VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBase *GfxBase);
-
 #endif /* GRAPHICS_INTERN_H */
 
 
