@@ -4,15 +4,12 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=$(ARCH) $(KERNEL)
+SUBDIRS=$(KERNEL) $(ARCH)
 
 CONFIG_H = $(INCDIR)/aros/config.h
 
 all: setup
 	make subdirs TARGET=all
-
-config: setup
-	make subdirs TARGET=config
 
 setup : make-dirs $(CONFIG_H)
 	make subdirs TARGET=setup
@@ -29,7 +26,7 @@ subdirs :
 	    then true ; else exit 1 ; fi ; \
 	done
 
-$(CONFIG_H): setup $(TOP)/configure
+$(CONFIG_H): make-dirs $(TOP)/configure
 	sh $(TOP)/configure -h $@
 
 clean:
