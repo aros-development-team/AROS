@@ -1,0 +1,18 @@
+include $(TOP)/config/make.cfg
+
+FILES := ilbmtoicon
+EXES := $(AROSDIR)/Build/Tools/ilbmtoicon
+
+USE_CLIB_SHARED := yes
+
+#MM- build-tools : build-tools-ilbmtoicon
+
+%make_prog_setup mmake=build-tools-ilbmtoicon
+
+#MM
+build-tools-ilbmtoicon : setup $(EXES)
+
+%make_prog_single dir=$(AROSDIR)/Build/Tools
+
+%common
+%include_deps
