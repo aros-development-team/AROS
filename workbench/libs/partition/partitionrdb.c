@@ -149,8 +149,9 @@ struct PartitionHandle *ph;
 					CopyBEDosEnvec(pblock->pb_Environment, (ULONG *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
 					ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
 					ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-					ph->dg.dg_Heads = ph->de.de_BlocksPerTrack;
-					ph->dg.dg_TrackSectors = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+					ph->dg.dg_Heads = ph->de.de_Surfaces;
+					ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+					ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
 					ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 					return ph;
 				}
@@ -305,7 +306,6 @@ UBYTE i;
 			while (block != (ULONG)-1)
 			{
 			struct PartitionHandle *ph;
-kprintf("pblock=%ld\n", block);
 				if (readBlock(PartitionBase, root, block, buffer)==0)
 				{
 					ph = PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
@@ -771,11 +771,15 @@ struct PartitionHandle *PartitionRDBAddPartition
 					}
 					else
 						AddTail(&root->table->list, &ph->ln);
-					ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-					ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-					ph->dg.dg_Heads = ph->de.de_BlocksPerTrack;
-					ph->dg.dg_TrackSectors = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-					ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+					if (findTagItem(PT_DOSENVEC, taglist) == NULL)
+					{
+						ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+						ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
+						ph->dg.dg_Heads = ph->de.de_Surfaces;
+						ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+						ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+						ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+					}
 					return ph;
 				}
 				FreeVec(ph->ln.ln_Name);
