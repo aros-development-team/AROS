@@ -65,6 +65,11 @@ extern void idleTask(struct ExecBase *);
 
 static struct AROSSupportBase AROSSupportBase;
 
+/**************** GLOBAL SYSBASE ***************/
+#ifndef CREATE_ROM
+struct ExecBase * SysBase = NULL;
+#endif
+
 /*
     We temporarily redefine kprintf() so we use the real version in case
     we have one of these two fn's called before AROSSupportBase is ready.
@@ -185,15 +190,23 @@ AROS_UFH1(void, idleCount,
 
 extern ULONG SoftIntDispatch();
 
+#ifdef CREATE_ROM
+#	define sysBase SysBase
+#endif
+
 AROS_LH2(LIBBASETYPEPTR, init,
     AROS_LHA(ULONG, dummy, D0),
     AROS_LHA(BPTR, segList, A0),
-    struct ExecBase *, SysBase, 0, BASENAME)
+    struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
+#ifndef CREATE_ROM
+    SysBase = sysBase;
+#endif
+
 #warning FIXME: hack to avoid crash in timer_init.c:118
-SysBase->VBlankFrequency = 50;
+sysBase->VBlankFrequency = 50;
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
@@ -261,7 +274,7 @@ SysBase->VBlankFrequency = 50;
 	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 
-	SysBase->ThisTask = t;
+	sysBase->ThisTask = t;
     }
 
     {
@@ -295,7 +308,7 @@ SysBase->VBlankFrequency = 50;
 
 	/* Pass SysBase in on the stack */
 	t->tc_SPReg = &(((struct ExecBase *)(s + AROS_STACKSIZE))[-1]);
-	*((struct ExecBase **)t->tc_SPReg) = SysBase;
+	*((struct ExecBase **)t->tc_SPReg) = sysBase;
 
 	t->tc_Node.ln_Name = "Idle Task";
 	t->tc_Node.ln_Pri = -128;
@@ -380,6 +393,10 @@ SysBase->VBlankFrequency = 50;
     return NULL;
     AROS_LIBFUNC_EXIT
 }
+
+#ifdef sysBase
+#undef sysBase
+#endif
 
 AROS_LH1(struct ExecBase *, open,
     AROS_LHA(ULONG, version, D0),
