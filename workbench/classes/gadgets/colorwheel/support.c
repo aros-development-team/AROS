@@ -37,6 +37,7 @@
 #define CW_PI 			3.14159265358979
 
 #define USE_WRITEPIXELARRAY 	1
+#define USE_SYMMETRIC_SPEEDUP   1
 
 #define MAKE_RGB_BE(r,g,b)	( (((r) >>  8) & 0x00FF0000) | \
 				  (((g) >> 16) & 0x0000FF00) | \
@@ -58,8 +59,8 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
 {
     DOUBLE d, r, rx, ry, l, h, s;
 
-#if 0
-    /* Should also work with not perfect (cy == cy) circle */
+#if 1
+    /* Should also work with not perfect (cx == cy) circle */
     
     rx = (DOUBLE) cx - x;
     ry = ((DOUBLE) y - cy) * cx / cy;
@@ -169,7 +170,11 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 			  
 	for(y = 0; y < height; y++)
 	{
+	#if USE_SYMMETRIC_SPEEDUP
+            for(x = 0; x < width / 2; x++)
+	#else
             for(x = 0; x < width; x++)
+	#endif
 	    {
 		if (CalcWheelColor(x, y, cx, cy, &hsb.cw_Hue, &hsb.cw_Saturation))
 		{
@@ -178,8 +183,15 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 		    col = MAKE_RGB(rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
 		    
 		    data->rgblinebuffer[x] = col;
+		#if USE_SYMMETRIC_SPEEDUP
+		    col = MAKE_RGB(rgb.cw_Red, rgb.cw_Blue, rgb.cw_Green);
+		    data->rgblinebuffer[width - 1 - x] = col;
+		#endif
 		} else {
 		    data->rgblinebuffer[x] = backcol;
+		#if USE_SYMMETRIC_SPEEDUP
+		    data->rgblinebuffer[width - 1 - x] = backcol;
+		#endif
 		}
 		
 	    } /* for(x = 0; x < width; x++) */
@@ -202,7 +214,11 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     {
     	for(y = 0; y < height; y++)
 	{
+	#if USE_SYMMETRIC_SPEEDUP
+	    for(x = 0; x < width / 2; x++)
+	#else
             for(x = 0; x < width; x++)
+	#endif
 	    {
 		if (CalcWheelColor(x, y, cx, cy, &hsb.cw_Hue, &hsb.cw_Saturation))
 		{
@@ -211,6 +227,12 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 		    col = MAKE_RGB_BE(rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
 		    
 		    WriteRGBPixel(rp, left + x, top + y, col);
+		    
+		#if USE_SYMMETRIC_SPEEDUP
+		    col = MAKE_RGB_BE(rgb.cw_Red, rgb.cw_Blue, rgb.cw_Green);
+		    
+		    WriteRGBPixel(rp, left + width - 1 - x, top + y , col);
+		#endif
 		}
 		
 	    } /* for(x = 0; x < width; x++) */
