@@ -12,6 +12,8 @@ FILES	:= \
 
 ARCHIVE	:= mathieeedoubtrans.arch
 
+USE_CLIB_STATIC := yes
+
 #MM- workbench-libs-mathieeedoubtrans : setup includes \
 #MM	workbench-libs-mathieeedoubtrans-module
 %make_module_setup mmake=workbench-libs-mathieeedoubtrans

@@ -10,6 +10,8 @@ FILES	:= intern_spisodd intern_spld
 
 ARCHIVE	:= mathtrans.arch
 
+USE_CLIB_STATIC := yes
+
 #MM- workbench-libs-mathtrans : setup includes workbench-libs-mathtrans-module
 %make_module_setup mmake=workbench-libs-mathtrans
 %make_module_archtool
