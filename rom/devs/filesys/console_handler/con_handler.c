@@ -201,6 +201,11 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
     fh->usecount--;
     if (fh->usecount > 0)
     {
+	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->breaktask)
+	{
+	    fh->breaktask = 0;
+	}
+	
         iofs->io_DosError = 0;
 	ReplyMsg(&iofs->IOFS.io_Message);
 	return;
@@ -557,6 +562,7 @@ VOID conTaskEntry(struct conTaskParams *param)
     	D(bug("contask: fh allocated\n"));
 
         fh->contask = FindTask(NULL);	
+	fh->breaktask = param->parentTask;
 	
 	NEWLIST(&fh->pendingReads);
 	NEWLIST(&fh->pendingWrites);
@@ -919,6 +925,16 @@ VOID conTaskEntry(struct conTaskParams *param)
 			    fh->inputbuffer[fh->inputsize++] = c;
 			    fh->inputstart = fh->inputsize;
 			    fh->inputpos = fh->inputsize;
+			}
+		    	break;
+		
+		    case INP_CTRL_C:
+		    case INP_CTRL_D:
+		    case INP_CTRL_E:
+		    case INP_CTRL_F:
+		        if (fh->breaktask)
+			{
+			    Signal(fh->breaktask, 1L << (12 + inp - INP_CTRL_C));
 			}
 		    	break;
 			
