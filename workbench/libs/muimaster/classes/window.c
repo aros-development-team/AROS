@@ -2640,6 +2640,7 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			
 		    data->wd_Flags |= MUIWF_HIDDEN;
 		}
+		break;
 	    
 	    case MUIA_Window_RootObject:
 		ChangeRootObject(data, obj, (Object *)tag->ti_Data);
