@@ -1846,7 +1846,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #    - extraoptions = same meaning as the one for the %build_with_configure macro.
 
 %define fetch_and_build_gnu mmake=/A package=/A version=/A suffixes="tar.bz2 tar.gz" \
-    destination=$(PORTSDIR) package_repo=. patch=no patch_repo=. prefix=$(GNUDIR) \
+    destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= 
 
 #MM %(mmake)-quick : %(mmake)-fetch
@@ -1859,11 +1859,13 @@ else
     %(mmake)-patches_specs := ::
 endif
 
+GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
+
 #MM
 %(mmake)-fetch :
 	%fetch archive=$(%(mmake)-archbase) suffixes="%(suffixes)" destination=%(destination)/%(package) \
-	    archive_origins="%(package_repo)" patches_specs="$(%(mmake)-patches_specs)" \
-	    patches_origins="%(patch_repo)"
+	    archive_origins=". %(package_repo) $(GNU_REPOSITORY)/%(package)" \
+	    patches_specs="$(%(mmake)-patches_specs)" patches_origins=". %(patch_repo)"
 
 %build_with_configure mmake=%(mmake) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
      nix=yes prefix=%(prefix) aros_prefix=%(aros_prefix) extraoptions="%(extraoptions)"
@@ -1883,7 +1885,7 @@ endif
 #     #MM- development-%(package)
 
 %define fetch_and_build_gnu_development package=/A version=/A suffixes="tar.bz2 tar.gz" \
-    destination=$(PORTSDIR) package_repo=. patch=no patch_repo=. prefix=$(AROS_DEVELOPMENT) \
+    destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
     aros_prefix=/Development extraoptions= 
 
 #MM- development : development-%(package)
