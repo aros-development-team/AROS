@@ -99,6 +99,9 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
     AROS_UFH1(int, funcname, \
 	      AROS_UFHA(libbasetype *, libbase, A6) \
 	     )
+#define AROS_SET_LIBFUNC_INIT AROS_USERFUNC_INIT
+#define AROS_SET_LIBFUNC_EXIT AROS_USERFUNC_EXIT
+
 #define ADD2INITLIB(symbol, pri)    ADD2SET(symbol, initlib, pri)
 #define ADD2EXPUNGELIB(symbol, pri) ADD2SET(symbol, expungelib, pri)
 #define ADD2OPENLIB(symbol, pri)    ADD2SET(symbol, openlib, pri)
