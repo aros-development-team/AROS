@@ -1,0 +1,30 @@
+Summary: Misc
+-------------
+
+Miscellaneous topics from the aros-dev mailinglist.
+
+
+Webspace, Download, CVS
+==========================
+
+ Sebastian Heutling <sheutlin@mail.cs.uni-magdeburg.de>
+
+
+ savannah.gnu.org
+ --------------------------
+ If we don't get into sourceforge we could try savannah:
+ http://savannah.gnu.org/
+ 
+ 
+
+Datatypes
+===========================
+
+  netpbm.datatype
+  -------------------------
+  I have laying around a netpbm.datatype here.
+
+  It uses NetPBM to load any picture, so we just need to port
+  NetPBM (very portable) to AROS to have access to
+  every human known pictureformat on the planet.
+      (Joerg Dietrich, Dietrich_Joerg@t-online.de)
