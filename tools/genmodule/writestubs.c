@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
-    Function to write module_autoinit.c. Part of genmodule.
+    Function to write module_stubs.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writestubs(void)
+void writestubs(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -14,7 +14,7 @@ void writestubs(void)
     struct functionarg *arglistit;
     struct functionalias *aliasesit;
 
-    snprintf(line, 255, "%s/%s_stubs.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_stubs.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -26,18 +26,18 @@ void writestubs(void)
         out,
         "/*\n"
         "    *** Automatically generated file. Do not edit ***\n"
-        "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+        "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
         "*/\n"
         "#define NOLIBDEFINES\n"
         "/* Be sure that the libbases are included in the stubs file */\n"
         "#undef __NOLIBBASE__\n"
         "#undef __%s_NOLIBBASE__\n",
-        modulenameupper
+        cfg->modulenameupper
     );
     
-    if (modtype != MCC && modtype != MUI && modtype != MCP)
+    if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
     {
-        fprintf(out, "#include <proto/%s.h>\n", modulename);
+        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
     }
     
     fprintf
@@ -50,7 +50,7 @@ void writestubs(void)
     
     for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-        if (funclistit->lvo >= firstlvo)
+        if (funclistit->lvo >= cfg->firstlvo)
 	{
 	    fprintf(out,
 		    "\n"
@@ -81,7 +81,7 @@ void writestubs(void)
 		);
 	    
 	    fprintf(out, "                    %s *, %s, %u, %s);\n}\n",
-		    libbasetypeextern, libbase, funclistit->lvo, basename
+		    cfg->libbasetypeextern, cfg->libbase, funclistit->lvo, cfg->basename
 	    );
 	}
     }

@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write modulename_start.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writestart(void)
+void writestart(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -16,7 +16,7 @@ void writestart(void)
     unsigned int lvo;
     int i;
     
-    snprintf(line, 255, "%s/%s_start.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -29,7 +29,7 @@ void writestart(void)
 	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
     );
-    if (modtype == DEVICE)
+    if (cfg->modtype == DEVICE)
     {
 	fprintf(out,
 		"#include <exec/io.h>\n"
@@ -48,9 +48,9 @@ void writestart(void)
 	    "\n"
 	    "#include \"%s_libdefs.h\"\n"
 	    "\n",
-	    modulename
+	    cfg->modulename
     );
-    if (!(options & OPTION_NORESIDENT))
+    if (!(cfg->options & OPTION_NORESIDENT))
     {
 	/* Print the library magic and init code. Partly based on code in CLib37x.lha
 	 * from Andreas R. Kleinert
@@ -81,7 +81,7 @@ void writestart(void)
 		"    struct ExecBase *, sysBase, 3, %s\n"
 		");\n"
 		"\n",
-		basename
+		cfg->basename
 	);
 	fprintf(out,
 		"struct Resident const GM_UNIQUENAME(ROMTag) =\n"
@@ -92,7 +92,7 @@ void writestart(void)
 		"    RESIDENTFLAGS,\n"
 		"    VERSION_NUMBER,\n"
 	);
-	if (modtype == DEVICE)
+	if (cfg->modtype == DEVICE)
 	    fprintf(out, "    NT_DEVICE,\n");
 	else
 	    fprintf(out, "    NT_LIBRARY,\n");
@@ -173,10 +173,10 @@ void writestart(void)
 		"\n"
 		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
 	);
-	if (!(options & OPTION_NOEXPUNGE))
+	if (!(cfg->options & OPTION_NOEXPUNGE))
 	    fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
 	fprintf(out, "    if ( set_call_libfuncs(SETNAME(SYSINIT), 1, sysBase) ");
-	if (!(options & OPTION_NOAUTOLIB))
+	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "&& set_open_libraries() ");
 	fprintf(out, "&& set_call_funcs(SETNAME(INIT), 1, 1) )\n"
 		"    {\n"
@@ -193,7 +193,7 @@ void writestart(void)
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 		"        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
 	);
-	if (!(options & OPTION_NOAUTOLIB))
+	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,
 		"\n"
@@ -215,14 +215,14 @@ void writestart(void)
 		"\n"
 	);
 
-	if (modtype != DEVICE)
+	if (cfg->modtype != DEVICE)
 	{
 	    fprintf(out,
 		    "AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
 		    "    AROS_LHA (ULONG, version, D0),\n"
 		    "    LIBBASETYPEPTR, lh, 1, %s\n"
 		    ")\n",
-		    basename
+		    cfg->basename
 	    );
 	    fprintf(out,
 		    "{\n"
@@ -252,7 +252,7 @@ void writestart(void)
 		    "    AROS_LHA(ULONG, flags, D1),\n"
 		    "    LIBBASETYPEPTR, lh, 1, %s\n"
 		    ")\n",
-		    basename
+		    cfg->basename
 	    );
 	    fprintf(out,
 		    "{\n"
@@ -281,12 +281,12 @@ void writestart(void)
 	    );
 	}
 
-	if (modtype != DEVICE)
+	if (cfg->modtype != DEVICE)
 	    fprintf(out,
 		    "AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
 		    "    LIBBASETYPEPTR, lh, 2, %s\n"
 		    ")\n",
-		    basename
+		    cfg->basename
 	    );
 	else
 	    fprintf(out,
@@ -294,7 +294,7 @@ void writestart(void)
 		    "    AROS_LHA(struct IORequest *, ioreq, A1),\n"
 		    "    LIBBASETYPEPTR, lh, 2, %s\n"
 		    ")\n",
-		    basename
+		    cfg->basename
 	    );
 	
 	fprintf(out,
@@ -304,11 +304,11 @@ void writestart(void)
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
 	);
-	if (modtype == DEVICE)
+	if (cfg->modtype == DEVICE)
 	    fprintf(out,
 		    "    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
 	    );
-	if (!(options & OPTION_NOEXPUNGE))
+	if (!(cfg->options & OPTION_NOEXPUNGE))
 	    fprintf(out,
 		    "    if\n"
 		    "    (\n"
@@ -321,7 +321,7 @@ void writestart(void)
 		    "                   struct ExecBase *, SysBase, 3, %s\n"
 		    "        );\n"
 		    "    }\n",
-		    basename
+		    cfg->basename
 	    );
 	fprintf(out,
 		"\n"
@@ -337,14 +337,14 @@ void writestart(void)
 		"    AROS_LHA(LIBBASETYPEPTR, lh, D0),\n"
 		"    struct ExecBase *, sysBase, 3, %s\n"
 		")\n",
-		basename
+		cfg->basename
 	);
 	fprintf(out,
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
 		"\n"
 	);
-	if (!(options & OPTION_NOEXPUNGE))
+	if (!(cfg->options & OPTION_NOEXPUNGE))
 	{
 	    fprintf(out,
 		    "\n"
@@ -362,7 +362,7 @@ void writestart(void)
 		    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 		    "        set_call_funcs(SETNAME(EXIT),-1,0);\n"
 	    );
-	    if (!(options & OPTION_NOAUTOLIB))
+	    if (!(cfg->options & OPTION_NOAUTOLIB))
 		fprintf(out, "        set_close_libraries();\n");
 	    fprintf(out,
 		    "\n"
@@ -396,7 +396,7 @@ void writestart(void)
 		"    AROS_LIBFUNC_EXIT\n"
 		"}\n"
 		"\n",
-		basename
+		cfg->basename
 	);
 	
 	fprintf(out,
@@ -415,15 +415,15 @@ void writestart(void)
 	);
     }
 
-    if (libcall == REGISTER)
+    if (cfg->libcall == REGISTER)
     {
-	for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
+	for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	    fprintf(out, "%s\n", linelistit->line);
     }
     
     for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
-	switch (libcall)
+	switch (cfg->libcall)
 	{
 	case STACK:
 	    fprintf(out, "int %s();\n", funclistit->name);
@@ -453,7 +453,9 @@ void writestart(void)
 		    "{\n"
 		    "    AROS_LIBFUNC_INIT\n\n"
 		    "    return %s(",
-		    libbasetypeextern, libbase, funclistit->lvo, basename, funclistit->name);
+		    cfg->libbasetypeextern, cfg->libbase, funclistit->lvo, cfg->basename,
+		    funclistit->name
+	    );
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
 		 arglistit = arglistit->next)
@@ -479,7 +481,7 @@ void writestart(void)
 	}
     }
 
-    if (!(options & OPTION_NORESIDENT))
+    if (!(cfg->options & OPTION_NORESIDENT))
     {
 	fprintf(out,
 		"\n"
@@ -489,7 +491,7 @@ void writestart(void)
 		"    &AROS_SLIB_ENTRY(GM_UNIQUENAME(CloseLib),%s),\n"
 		"    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExpungeLib),%s),\n"
 		"    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExtFuncLib),%s),\n",
-		basename, basename, basename, basename
+		cfg->basename, cfg->basename, cfg->basename, cfg->basename
 	);
 	funclistit = funclist;
     }
@@ -536,7 +538,7 @@ void writestart(void)
 		    "    return 0;\n"
 		    "    AROS_USERFUNC_EXIT\n"
 		    "}\n",
-		    modulename
+		    cfg->modulename
 	    );
 	
 	funclistit = funclist;
@@ -547,26 +549,26 @@ void writestart(void)
 		"{\n"
 		"    &AROS_SLIB_ENTRY(%s,%s),\n"
 		"    &AROS_SLIB_ENTRY(%s,%s),\n",
-		funclistit->name, basename,
-		funclistit2->name, basename
+		funclistit->name, cfg->basename,
+		funclistit2->name, cfg->basename
 	);
 	funclistit = funclistit2->next;
 
 	if (funclistit->lvo == 3)
 	{
-	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, cfg->basename);
 	    funclistit = funclistit->next;
 	}
 	else
-	    fprintf(out, "    &%s_null,\n", modulename);
+	    fprintf(out, "    &%s_null,\n", cfg->modulename);
 	
 	if (funclistit->lvo == 4)
 	{
-	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, cfg->basename);
 	    funclistit = funclistit->next;
 	}
 	else
-	    fprintf(out, "    &%s_null,\n", modulename);
+	    fprintf(out, "    &%s_null,\n", cfg->modulename);
     }
     
     lvo = 4;
@@ -576,7 +578,7 @@ void writestart(void)
 	    fprintf(out, "    NULL,\n");
 	lvo = funclistit->lvo;
 	
-	switch (libcall)
+	switch (cfg->libcall)
 	{
 	case STACK:
 	    fprintf(out, "    &%s,\n", funclistit->name);
@@ -584,7 +586,7 @@ void writestart(void)
 	    
 	case REGISTER:
 	case REGISTERMACRO:
-	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, cfg->basename);
 	    break;
 	    
 	default:

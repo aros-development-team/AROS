@@ -1,17 +1,17 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write module_autoinit.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writeautoinit(void)
+void writeautoinit(struct config *cfg)
 {
     FILE *out;
     char line[256];
     
-    snprintf(line, 255, "%s/%s_autoinit.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -21,27 +21,29 @@ void writeautoinit(void)
     fprintf(out,
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
 	    "ADD2LIBS(\"%s.library\",%u, %s*, %s);\n",
-	    modulename, modulename, majorversion, libbasetypeextern, libbase);
-    if (forcelist!=NULL)
+	    cfg->modulename,
+	    cfg->modulename, cfg->majorversion, cfg->libbasetypeextern, cfg->libbase
+    );
+    if (cfg->forcelist!=NULL)
     {
 	struct forcelist * forcelistit;
 	
 	fprintf(out, "\n");
-	for (forcelistit = forcelist;
+	for (forcelistit = cfg->forcelist;
 	     forcelistit!=NULL;
 	     forcelistit = forcelistit->next
 	    )
 	{
 	    fprintf(out, "extern struct Library *%s;\n", forcelistit->basename);
 	}
-	fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", modulename);
-	for (forcelistit = forcelist;
+	fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", cfg->modulename);
+	for (forcelistit = cfg->forcelist;
 	     forcelistit!=NULL;
 	     forcelistit = forcelistit->next
 	    )

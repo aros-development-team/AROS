@@ -1,17 +1,17 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename.h. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writeincproto(int dummy)
+void writeincproto(struct config *cfg)
 {
     FILE *out;
     char line[256];
     struct linelist *linelistit;
     
-    snprintf(line, 255, "%s/proto/%s.h", genincdir, modulename);
+    snprintf(line, 255, "%s/proto/%s.h", cfg->genincdir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -24,7 +24,7 @@ void writeincproto(int dummy)
 	    "\n"
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "\n"
 	    "#include <aros/system.h>\n"
@@ -35,11 +35,11 @@ void writeincproto(int dummy)
 	    "extern %s *%s;\n"
 	    "#endif\n"
 	    "\n",
-	    modulenameupper, modulenameupper,
-	    modulename,
-	    libbase, modulenameupper,
-	    libbasetypeextern, libbase);
-    for (linelistit = protolines; linelistit!=NULL; linelistit = linelistit->next)
+	    cfg->modulenameupper, cfg->modulenameupper,
+	    cfg->modulename,
+	    cfg->libbase, cfg->modulenameupper,
+	    cfg->libbasetypeextern, cfg->libbase);
+    for (linelistit = cfg->protolines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
     
     fprintf(out,
@@ -48,6 +48,6 @@ void writeincproto(int dummy)
 	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    modulenameupper, modulename, modulenameupper);
+	    cfg->modulenameupper, cfg->modulename, cfg->modulenameupper);
     fclose(out);
 }

@@ -1,23 +1,23 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write defines/modulename.h. Part of genmodule.
 */
 #include "genmodule.h"
 
-static void writedefineregister(FILE *, struct functionhead *);
-static void writedefinevararg(FILE *, struct functionhead *);
-static void writedefinestack(FILE *, struct functionhead *);
-static void writealiases(FILE *, struct functionhead *);
+static void writedefineregister(FILE *, struct functionhead *, struct config *);
+static void writedefinevararg(FILE *, struct functionhead *, struct config *);
+static void writedefinestack(FILE *, struct functionhead *, struct config *);
+static void writealiases(FILE *, struct functionhead *, struct config *);
 
-void writeincdefines(int dummy)
+void writeincdefines(struct config *cfg)
 {
     FILE *out;
     char line[256];
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/defines/%s.h", genincdir, modulename);
+    snprintf(line, 255, "%s/defines/%s.h", cfg->genincdir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -30,7 +30,7 @@ void writeincdefines(int dummy)
 	    "\n"
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "\n"
 	    "    Desc: Defines for %s\n"
 	    "*/\n"
@@ -38,45 +38,45 @@ void writeincdefines(int dummy)
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "\n",
-	    modulenameupper, modulenameupper, modulename);
-    if (!dummy)
+	    cfg->modulenameupper, cfg->modulenameupper, cfg->modulename);
+    if (cfg->command!=DUMMY)
     {
 	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
-	    if (funclistit->lvo >= firstlvo)
+	    if (funclistit->lvo >= cfg->firstlvo)
 	    {
-		if (libcall != STACK)
+		if (cfg->libcall != STACK)
 		{
-		    writedefineregister(out, funclistit);
+		    writedefineregister(out, funclistit, cfg);
 		    if (!funclistit->novararg)
-			writedefinevararg(out, funclistit);
+			writedefinevararg(out, funclistit, cfg);
 		}
 		else /* libcall == STACK */
 		{
-		    writedefinestack(out, funclistit);
+		    writedefinestack(out, funclistit, cfg);
 		}
 		
-		writealiases(out, funclistit);
+		writealiases(out, funclistit, cfg);
 	    }
 	}
     }
     fprintf(out,
 	    "\n"
 	    "#endif /* DEFINES_%s_PROTOS_H*/\n",
-	    modulenameupper);
+	    cfg->modulenameupper);
     fclose(out);
 }
 
 
 void
-writedefineregister(FILE *out, struct functionhead *funclistit)
+writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
     
     fprintf(out,
 	    "\n"
 	    "#define __%s_WB(__%s",
-	    funclistit->name, libbase
+	    funclistit->name, cfg->libbase
     );
     for (arglistit = funclistit->arguments;
 	 arglistit!=NULL;
@@ -102,7 +102,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit)
     }
     fprintf(out,
 	    "        %s *, (__%s), %u, %s)\n\n",
-	    libbasetypeextern, libbase,	funclistit->lvo, basename
+	    cfg->libbasetypeextern, cfg->libbase,	funclistit->lvo, cfg->basename
     );
 
     fprintf(out, "#define %s(", funclistit->name);
@@ -115,7 +115,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit)
 	    fprintf(out, ", ");
 	fprintf(out, "%s", arglistit->name);
     }
-    fprintf(out, ") \\\n    __%s_WB(%s", funclistit->name, libbase);
+    fprintf(out, ") \\\n    __%s_WB(%s", funclistit->name, cfg->libbase);
     for (arglistit = funclistit->arguments;
 	 arglistit != NULL;
 	 arglistit = arglistit->next
@@ -125,7 +125,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit)
 }
 
 void
-writedefinevararg(FILE *out, struct functionhead *funclistit)
+writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit = funclistit->arguments;
     char isvararg = 0, *varargname;
@@ -186,7 +186,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit)
 	fprintf(out,
 		"\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
 		"#define %s(",
-		modulenameupper, varargname);
+		cfg->modulenameupper, varargname);
 	for (arglistit = funclistit->arguments;
 	     arglistit != NULL && arglistit->next != NULL;
 	     arglistit = arglistit->next
@@ -225,7 +225,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit)
 }
 
 void
-writedefinestack(FILE *out, struct functionhead *funclistit)
+writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
     
@@ -239,11 +239,11 @@ writedefinestack(FILE *out, struct functionhead *funclistit)
 	if (arglistit->next != NULL)
 	    fprintf(out, ", ");
     }
-    fprintf(out, "))__AROS_GETVECADDR(%s,%d))\n", libbase, funclistit->lvo);
+    fprintf(out, "))__AROS_GETVECADDR(%s,%d))\n", cfg->libbase, funclistit->lvo);
 }
 
 void
-writealiases(FILE *out, struct functionhead *funclistit)
+writealiases(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionalias *aliasesit;
     
