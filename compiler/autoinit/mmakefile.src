@@ -8,10 +8,16 @@ LIB	:= autoinit
 
 FILES	:= \
 	arosc \
+	cybergraphics \
+	diskfont \
 	dos \
 	functions \
+	graphics \
+	iffparse \
 	intuition \
+	layers \
 	libraries \
+	locale \
 	utility
 
 #MM- linklibs: linklibs-autoinit
