@@ -252,11 +252,40 @@ void __zune_prefs_init (struct ZunePrefs *prefs)
     prefs_init_frames(prefs);
     prefs_init_images(prefs);
 
-/* pens */
-#warning FIXME: muipens
-//    prefs->muipens = __mpens;
+    /* pens */
+    prefs->muipens[MPEN_SHINE].red = 0xffffffff;
+    prefs->muipens[MPEN_SHINE].green = 0xffffffff;
+    prefs->muipens[MPEN_SHINE].blue = 0xffffffff;
 
-/* fonts */
+    prefs->muipens[MPEN_HALFSHINE].red = 0xd0000000;
+    prefs->muipens[MPEN_HALFSHINE].green = 0xd0000000;
+    prefs->muipens[MPEN_HALFSHINE].blue = 0xd0000000;
+
+    prefs->muipens[MPEN_BACKGROUND].red = 0xa0000000;
+    prefs->muipens[MPEN_BACKGROUND].green = 0xa0000000;
+    prefs->muipens[MPEN_BACKGROUND].blue = 0xa0000000;
+
+    prefs->muipens[MPEN_HALFSHADOW].red = 0x50000000;
+    prefs->muipens[MPEN_HALFSHADOW].green = 0x50000000;
+    prefs->muipens[MPEN_HALFSHADOW].blue = 0x50000000;
+
+    prefs->muipens[MPEN_SHADOW].red = 0x00000000;
+    prefs->muipens[MPEN_SHADOW].green = 0x00000000;
+    prefs->muipens[MPEN_SHADOW].blue = 0x00000000;
+
+    prefs->muipens[MPEN_TEXT].red = 0x00000000;
+    prefs->muipens[MPEN_TEXT].green = 0x00000000;
+    prefs->muipens[MPEN_TEXT].blue = 0x00000000;
+
+    prefs->muipens[MPEN_FILL].red = 0x05000000;
+    prefs->muipens[MPEN_FILL].green = 0x84000000;
+    prefs->muipens[MPEN_FILL].blue = 0xc4000000;
+
+    prefs->muipens[MPEN_MARK].red = 0xf4000000;
+    prefs->muipens[MPEN_MARK].green = 0xb5000000;
+    prefs->muipens[MPEN_MARK].blue = 0x8b000000;
+
+    /* fonts */
     prefs->textbutton_font = g_strdup(""); /* default to window_font_normal */
     prefs->group_title_font = g_strdup("fixed");
     prefs->list_font_normal = g_strdup("fixed");

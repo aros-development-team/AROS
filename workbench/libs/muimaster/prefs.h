@@ -66,7 +66,7 @@ struct ZunePrefs {
     /* Images */
     struct MUI_ImageSpec *images[MUII_Count];
     /* Pens */
-//    GdkColor *muipens;
+    struct { int red; int green; int blue; } muipens[MPEN_COUNT];
     /* Fonts */
     struct TextFont *fonts[-MUIV_Font_NegCount];
     /* Buttons */
