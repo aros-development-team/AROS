@@ -161,7 +161,8 @@ Exec_ExitIntr:      cmpl    $KERNEL_DS,R_ds(%esp)
 
 Exec_Schedule:      pushl   $0
                     SAVE_REGS
-Exec_Schedule_x:    movl    4,%edx
+Exec_Schedule_x:    cli     	    	    	    	    /* stegerg: added -> CHECKME */
+    	    	    movl    4,%edx
                     andw    $0xff7f,AttnResched(%edx)
                     movl    ThisTask(%edx),%eax
                     testb   $TF_EXCEPT,tc_Flags(%eax)
@@ -183,13 +184,13 @@ Exec_Schedule_x:    movl    4,%edx
 
 1:                  pushl   %edx
                     pushl   %eax
+                    movb    $TS_READY,tc_State(%eax)
                     lea     TaskReady(%edx),%ecx
                     pushl   %ecx
                     call    *Enqueue(%edx)
                     popl    %eax
                     popl    %eax
                     popl    %edx
-                    movb    $TS_READY,tc_State(%eax)
 
                     movl    Switch(%edx),%eax
                     movl    %eax,R_param(%esp)
@@ -206,7 +207,7 @@ Exec_Schedule_x:    movl    4,%edx
                     .balign 32,0x90
                     .globl  Exec_Switch
                     .type   Exec_Switch,@function
-Exec_Switch:        cli                         /* Enable all interrupts */
+Exec_Switch:        cli                         /* Disable all interrupts */
 		    cld
                     SAVE_ALL                    /* Save context */
 
@@ -226,7 +227,7 @@ Exec_Switch_Common: movl    4,%ebp
                     movw    IDNestCnt(%ebp),%ax
                     movw    $-1,IDNestCnt(%ebp)
 
-                    sti
+    	    	    cli     	    	    	/* stegerg: was "sti" -> CHECKME */
 
                     movl    ThisTask(%ebp),%ebx
                     movw    %ax,tc_IDNestCnt(%ebx)
