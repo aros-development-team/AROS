@@ -16,9 +16,11 @@
 
 #define OOPBase ((struct IntOOPBase *)(OOP_OCLASS(OOP_OCLASS(o)))->UserData )
 
+#define STATIC_MID static OOP_MethodID mid
+
 BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr)
 {
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     struct P_meta_allocdisptabs p;
     
     if (!mid)
@@ -33,7 +35,7 @@ BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDes
 
 VOID meta_freedisptabs(OOP_Object *o)
 {
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     struct P_meta_freedisptabs p;
     
     if (!mid)
@@ -50,7 +52,7 @@ VOID meta_freedisptabs(OOP_Object *o)
 
 struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
 {
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     struct P_meta_iterateifs p;
     
     if (!mid)
@@ -67,7 +69,7 @@ struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, STRPTR *inter
 
 struct IFMethod *meta_getifinfo(OOP_Object *o, STRPTR interface_id, ULONG *num_methods_ptr)
 {
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     struct P_meta_getifinfo p;
     
     if (!mid)
@@ -85,7 +87,7 @@ struct IFMethod *meta_getifinfo(OOP_Object *o, STRPTR interface_id, ULONG *num_m
 
 struct IFMethod *meta_findmethod(OOP_Object *o, OOP_MethodID method_to_find, struct Library *OOPBase)
 {
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     struct P_meta_findmethod p;
     
     if (!mid)
