@@ -344,7 +344,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Columns:
 		data->columns = MAX((ULONG)tag->ti_Data, 1);
 		data->rows = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
+		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 		break;
 	    case MUIA_Group_ActivePage:
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
@@ -358,7 +358,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Rows:
 		data->rows = MAX((ULONG)tag->ti_Data, 1);
 		data->columns = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
+		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 		break;
 	    case MUIA_Group_Spacing:
 		data->horiz_spacing = tag->ti_Data;
@@ -626,7 +626,7 @@ Group_ExitChange(struct IClass *cl, Object *obj,
 /* FIXME: this needs optimization !!! */
 	/* as a last resort only */
 	if ((_flags(obj) & MADF_SETUP) && _win(obj))
-	    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
+	    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
     }
 
     return TRUE;
