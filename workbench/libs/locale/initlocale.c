@@ -21,8 +21,8 @@
 #include <string.h>
 
 extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
-    AROS_UFPA(STRPTR, string1, A0),
-    AROS_UFPA(STRPTR, string2, A1),
+    AROS_UFPA(STRPTR, string1, A1),
+    AROS_UFPA(STRPTR, string2, A2),
     AROS_UFPA(ULONG, length, D0),
     AROS_UFPA(ULONG, how, D1)
 );
@@ -59,15 +59,15 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
     if( NULL != lName &&
     	    AROS_UFC4(ULONG, &LIB_strcompare_Gate,
-		AROS_UFCA(STRPTR, "english", A0),
-		AROS_UFCA(STRPTR, lName, A1),
+		AROS_UFCA(STRPTR, "english", A1),
+		AROS_UFCA(STRPTR, lName, A2),
 		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
     #else
     if( NULL != lName &&
     	    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
-		AROS_UFCA(STRPTR, "english", A0),
-		AROS_UFCA(STRPTR, lName, A1),
+		AROS_UFCA(STRPTR, "english", A1),
+		AROS_UFCA(STRPTR, lName, A2),
 		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
     #endif
