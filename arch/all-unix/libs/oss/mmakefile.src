@@ -4,11 +4,7 @@ include $(TOP)/config/make.cfg
 
 FILES := funcs
 
-##MM- workbench-libs : workbench-libs-freetype-module
-##MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
-##MM workbench-libs-freetype-module : workbench-libs-freetype-includes
-
-%build_module mmake=unix-libs-oss-module modname=oss \
+%build_module mmake=workbench-libs-oss-unix modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
     uselibs="amiga rom m hiddstubs"
 
