@@ -3,7 +3,7 @@ Example for a class which supports plain methods and interfaces.
 The class is used as a building block in a filesystem like
 database:
 
-    - Objects are sorted hierarchical (ie. there is a path to an
+    - Objects are sorted hierarchial (ie. there is a path to an
       object like a/b/object)
     - Objects have similar attributes as files (ie. a name, a
       size, a creation date and access flags).
@@ -122,10 +122,10 @@ Class FileClass =
 
 // Base ID of an interface
 ULONG listItemInterfaceID = GetInterfaceID (LISTITEMINTERFACE)
-ULONG fileInterfaceID     = GetInterfaceID (LISTITEMINTERFACE)
+ULONG fileInterfaceID     = GetInterfaceID (FILEINTERFACE)
 
 Hashtable_Add (FileClass->interfaces, listItemInterfaceID, listItemMethodTable);
-Hashtable_Add (FileClass->interfaces, fileInterfaceID, fileMethodTable);
+Hashtable_Add (FileClass->interfaces, fileInterfaceID, 	   fileMethodTable);
 
 
 // DoMethod stub:
@@ -197,6 +197,7 @@ typedef
     
 } Interface;
 
+/* Functio for creating an interface object */
 Interface *GetInterface(Object *o, ULONG interfaceID)
 {
     Interface *if_obj;
@@ -243,32 +244,36 @@ int main()
 	{
 	    // Get interface object for File interface
 	    Interface *file_if = GetInterface(file, I_File);
+	    if (file_if)
+	    {
 	    
-	    ...
+	    	...
 	    
 	    
-	    // Now you can use this interface object to call all
-	    // methods of that interface.
+	    	// Now you can use this interface object to call all
+	    	// methods of that interface.
 
-    	    struct FMsg_Read read_msg =
-    	    {
-		M_File_Read,
-		buffer,
-		count
-    	    };
+    	    	struct FMsg_Read read_msg =
+    	    	{
+		    M_File_Read,
+		    buffer,
+		    count
+    	    	};
 	    
-	    file_if->CallIF(file_if, &read_msg);
+	    	file_if->CallIF(file_if, &read_msg);
 	    
-	    ...
+	    	...
 	    
 
-    	    struct FMsg_Write write_msg =
-    	    {
-		M_File_Write,
-		buffer,
-		count
-	    };
-	    file_if->CallIF(file_if, &write_msg);
+    	    	struct FMsg_Write write_msg =
+    	    	{
+		    M_File_Write,
+		    buffer,
+		    count
+	    	};
+	    	file_if->CallIF(file_if, &write_msg);
+		
+	    }
     
 	}
 	
@@ -287,7 +292,10 @@ Con: - 	Relatively slow normal method invocation, because of
      -	Needs to initialize global vars. Could be somewhat
         automated by reading linker output, parsing
 	it and generate a source file that does the job.
-	Could possibly use a classbase approach instead.
+	Could use a classbase approach instead,
+	but then one get into other problems, like
+	specifying a methodID from within the app.
+	
 	Note that in a typical app you wouldn't use that
-	many different interfaces, and it would be limited
-	how many global vars you need to initialize.
+	many different interfaces, and not that
+	many global vars you need to initialize.
