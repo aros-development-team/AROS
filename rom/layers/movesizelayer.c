@@ -18,8 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH5(LONG, MoveSizeLayer,
 
@@ -51,6 +49,7 @@
     EXAMPLE
 
     BUGS
+      No support for superbitmap / simple layers.
 
     SEE ALSO
 
@@ -75,7 +74,7 @@
   if (l->bounds.MinX+dx < 0 ||
       l->bounds.MinY+dy < 0 ||
       l->bounds.MaxX - l->bounds.MinX + 1 + dw <= 0 ||
-      l->bounds.MaxY - l->bounds.MinY + 1 + dy <= 0 ||
+      l->bounds.MaxY - l->bounds.MinY + 1 + dh <= 0 ||
       l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
       l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
     return FALSE; 
@@ -183,17 +182,15 @@
        one, so I have to find out about the width and height that I
        am allowed to copy 
      */
-    if (l    ->bounds.MaxX - l    ->bounds.MinX <
-        l_tmp->bounds.MaxX - l_tmp->bounds.MinX)
+    if (dw <= 0)
       width = l    ->bounds.MaxX - l    ->bounds.MinX + 1;
     else
       width = l_tmp->bounds.MaxX - l_tmp->bounds.MinX + 1;
     
-    if (l    ->bounds.MaxY - l    ->bounds.MinY >
-        l_tmp->bounds.MaxY - l_tmp->bounds.MinY)
-      width = l    ->bounds.MaxY - l    ->bounds.MinY + 1;
+    if (dh <= 0)
+      height = l    ->bounds.MaxY - l    ->bounds.MinY + 1;
     else
-      width = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
+      height = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
 
     
     ClipBlit(l_tmp->rp,
@@ -211,6 +208,72 @@
       and also at its old position. I delete it now from its old position.
     */
     DeleteLayer(0, l_tmp);
+    /*
+       The new layer might be larger than the previously shown layer,
+       so I clear those areas of the new layer that are outside the
+       area that ClipBlit reached into.
+    */
+    /* only do this if the size increased */
+    if (dw > 0 || dh > 0)
+    {
+      struct BitMap * bm = l->rp->BitMap;
+      CR = l->ClipRect;
+      while (CR != NULL)
+      {
+        if (NULL == CR->lobs)
+        {
+          LONG DestX, DestY;
+
+          if (dw > 0 && (CR->bounds.MaxX - l->bounds.MinX) > width)
+	  {
+            if ((CR->bounds.MinX - l->bounds.MinX) > width)
+              DestX = CR->bounds.MinX;
+            else
+              DestX = l->bounds.MinX + width;
+
+            BltBitMap(
+              bm /* Source Bitmap - we don't need one for clearing, but this
+                   one will also do :-) */,
+              0,
+              0,
+              bm /* Destination Bitmap - */,
+              DestX,
+              CR->bounds.MinY,
+              CR->bounds.MaxX-DestX+1,
+              CR->bounds.MaxY-CR->bounds.MinY+1,
+              0x000 /* supposed to clear the destination */,
+              0xff,
+              NULL
+            );
+	  }
+
+          if (dh > 0 && (CR->bounds.MaxY - l->bounds.MinY) > height)
+	  {
+            if ((CR->bounds.MinY - l->bounds.MinY) > height)
+              DestY = CR->bounds.MinY;
+            else
+              DestY = l->bounds.MinY + height;
+
+            BltBitMap(
+              bm /* Source Bitmap - we don't need one for clearing, but this
+                   one will also do :-) */,
+              0,
+              0,
+              bm /* Destination Bitmap - */,
+              CR->bounds.MinX,
+              DestY,
+              CR->bounds.MaxX-CR->bounds.MinX+1,
+              CR->bounds.MaxY-DestY+1,
+              0x000 /* supposed to clear the destination */,
+              0xff,
+              NULL
+            );
+	  }
+        }
+      CR = CR->Next;
+      }
+    }
+   
 
     /* That's it folks! */
 
