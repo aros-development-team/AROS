@@ -458,7 +458,7 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
 	    rport = ObtainGIRPort(GPI(msg)->gpi_GInfo);
 	    if (rport)
 	    {
-		if (!(data->flags & CF_Checked))
+		if (data->flags & CF_Checked)
 		    x = IDS_NORMAL;
 		else
 		    x = IDS_SELECTED;
@@ -478,10 +478,10 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
 	rport = ObtainGIRPort(GPGI(msg)->gpgi_GInfo);
 	if (rport)
 	{
-	    if (!(data->flags & CF_Checked))
-		x = IDS_NORMAL;
-	    else
+	    if (data->flags & CF_Checked)
 		x = IDS_SELECTED;
+	    else
+		x = IDS_NORMAL;
 	    DrawImageState(rport, data->image,
 			   G(obj)->LeftEdge, G(obj)->TopEdge,
 			   x, data->dri);
