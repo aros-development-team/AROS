@@ -1,0 +1,500 @@
+
+
+TABLE OF CONTENTS
+
+amigaguide.datatype/--arexx--
+amigaguide.datatype/--attributes--
+amigaguide.datatype/--commands--
+amigaguide.datatype/DTM_GOTO
+amigaguide.datatype/DTM_TRIGGER
+amigaguide.datatype/GM_HANDLEINPUT
+amigaguide.datatype/OM_DISPOSE
+amigaguide.datatype/OM_GET
+amigaguide.datatype/OM_NEW
+amigaguide.datatype/OM_SET
+
+
+amigaguide.datatype/--arexx--                    amigaguide.datatype/--arexx--
+
+    NAME
+        ARexx interface -- amigaguide.datatype ARexx commands
+
+    FUNCTION
+        The amigaguide.datatype provides an own ARexx port for each object.
+        It's name is the port name passed via DTA_ARexxPortName plus a
+        suffix of '.1' or if this port exists '.2' and so on. If no
+        DTA_ARexxPortName is passed "AMIGAGUIDE" is used. For example if you
+        start MultiView with an amigaguide object, MultiView passes
+        "MULTIVIEW.1" for DTA_ARexxPortName to the amigaguide object. The
+        amigaguide.datatype tries to open a port named "MULTIVIEW.1.1".
+
+    AREXX COMMANDS
+
+        BEEP -- DisplayBeep().
+
+        CLOSE -- Close the current database.
+
+        CONTENTS -- Go to the contents node in the database. Same as pressing
+            the "Contents" button.
+
+        GETNODECOUNT -- Returns the number of nodes in the database using the
+            RESULT variable.
+
+        HELP -- Go to the help node in the database. Same as pressing the
+            "Help" button.
+
+        INDEX -- Go to the index node in the database. Same as pressing the
+            "Index" button.
+
+        LINK <node name> -- Go to the named node.
+
+        NEXT -- Go to the next physical node in the database. Same as pressing
+            the "Browse >" button.
+
+        PREVIOUS -- Go to the previous physical node in the database. Same as
+          pressing the "Browse <" button.  New for V40.
+
+        PRINT -- Print the current node. Doesn't return until complete.
+
+        QUIT -- Close the current database.
+
+        RETRACE -- Go to the previous viewed node in the database. Same as
+            pressing the "Retrace" button.
+
+        RX <script> -- Launch the specified ARexx script.
+
+    SEE ALSO
+
+amigaguide.datatype/--attributes--          amigaguide.datatype/--attributes--
+
+    NAME
+        AmigaGuide attributes
+
+    DESCRIPTION
+        The following attributes can be applied to the text of each AmigaGuide
+        node.
+
+        @{AMIGAGUIDE} -- displays the word AmigaGuide® in bold font.
+
+        @{APEN <pen num>} -- sets the foreground color to a specific pen
+            number.
+
+        @{B} -- turns bold font style on.
+
+        @{BG <color>} -- change the background text color. One of the
+            following aliases can be used:
+                Text
+                Shine
+                Shadow
+                Fill
+                FillText
+                Background
+                Highlight
+
+        @{BODY} -- indicate that the following text is the body of the
+            document. Word and/or smart wrap will be turned back on if it's
+            the default.
+
+        @{BPEN <pen num>} -- sets the background color to a specific pen
+            number.
+
+        @{CLEARTABS} -- clears any custom tab stops previously set with
+            @{SETTABS ...}.
+
+        @{CODE} -- indicate that the following text should not be word- and/or
+            smart-wrapped.
+
+        @{FG <color>} -- change the foreground text color. One of the
+            following aliases can be used:
+                Text
+                Shine
+                Shadow
+                Fill
+                FillText
+                Background
+                Highlight
+
+        @{I} -- turns italic font style on.
+
+        @{JCENTER} -- turns centering of text on.
+
+        @{JLEFT} -- turns left justification on.
+
+        @{JRIGHT} -- turns right justification on.
+
+        @{LINDENT <num spaces>} -- sets the number of spaces to indent the
+            body of paragraph.
+
+        @{LINE} -- force a line feed without starting a new paragraph.
+
+        @{PAR} -- terminates a paragraph. Same as two sequential line feeds
+            in the node text.
+
+        @{PARD} -- restore the default settings for a paragraph:
+            Text pen to 1, background pen to 0, normal font, and no
+            indentation.
+
+        @{PARI <num spaces>} -- set the number of spaces to indent the first
+            line of a paragraph relative to the normal paragraph indentation.
+            The value may be a negative number.
+
+        @{PLAIN} -- resets font style to normal style.
+            Same as "@{UB}@{UI}@{UU}"
+
+        @{SETTABS <tab1> ... <tabN>} -- defines custom tab stops. Currently
+            the maximum number of supported tab stops is 20.
+
+        @{TAB} -- same as the ASCII character 9 in the source node text.
+
+        @{U} -- turn underlining font style on.
+
+        @{UB} -- turn bold font style off.
+
+        @{UI} -- turn italic font style off.
+
+        @{UU} -- tund underlining font style off.
+
+    SEE ALSO
+        --commands--
+
+amigaguide.datatype/--commands--              amigaguide.datatype/--commands--
+
+    NAME
+        AmigaGuide commands
+
+    DESCRIPTION
+        The following commands can be used within the global section of an
+        AmigaGuide database.
+
+    GLOBAL COMMANDS
+
+        @$VER: <string> -- AmigaOS version string
+
+        @(C) <string> -- Copyright notice for the AmigaGuide database
+
+        @AMIGAGUIDE <file> -- file name of this AmigaGuide database.
+
+        @AUTHOR <string> -- string describing the author of this AmigaGuide
+            database.
+        @DATABASE <file> -- file name of this AmigaGuide database.
+
+        @DNODE -- obsolete
+
+        @FONT <name> <size> -- specifies the font to be used for the whole
+            AmigaGuide database.
+
+        @HEIGHT <lines> -- specifies the nominal height of the document. This
+            height is used to open an appropriate sized window.
+
+        @HELP <file/node> -- specifies the help file or node for this
+            AmigaGuide database.
+
+        @INDEX <file/node> -- specifies the index file or node for this
+            AmigaGuide database.
+
+        @MACRO <name> <macro> -- defines a macro for this AmigaGuide database.
+            This macro can be used as a normal AmigaGuide attribute. It
+            supports arguments which can be accessed through "$1", "$2", etc.
+            Maximal number of supported arguments are 10.
+
+        @MASTER <file> -- specifies the name of the source for the AmigaGuide
+            database.
+
+        @NODE <name> [<title>] -- defines a new node named <name> within the
+            AmigaGuide database. The title is optional.
+
+        @ONCLOSE <file>-- specifies an ARexx script which is executed when the
+            AmigaGuide database is closed.
+
+        @ONOPEN <file> -- specifies an ARexx script which is executed when the
+            AmigaGuide database is opened. If the script returns an error
+            code the database will not be opened.
+
+        @REM <string> -- remark line completely ignored.
+
+        @REMARK <string> -- remark line completely ignored.
+
+        @SMARTWRAP -- turns smart-wrapping for all nodes in the database on.
+
+        @TAB <num> -- specifies the number of space to use for a regular tab
+            stop
+
+        @TOC <file/node> -- specifies the contents file or node for this
+            AmigaGuide database.
+
+        @WIDTH <chars> -- specifies the nominal width of the document. This
+            width is used to open an appropriate sized window.
+
+        @WORDWRAP -- turns word-wrapping for all nodes in the database on.
+
+        @WORDDELIM -- specified word delimiter charaters for this database.
+            Default is "\t *-,<>()[]{};.\"". New for V50.
+
+    NODE COMMANDS
+
+        @ENDNODE -- indicates the end of a node.
+
+        @FONT <name> <size> -- specifies the font to be used for this node.
+
+        @HELP <file/node> -- specifies the help file or node for this node.
+
+        @INDEX <file/node> -- specifies the index file or node for this node.
+
+        @KEYWORDS <keywords> -- whitespace or comma separated list of keywords
+            which are used to find this node during a DTM_GOTO method.
+
+        @NEXT <file/node> -- specifies the next logical file or node for this
+            node.
+
+        @ONCLOSE <file>-- specifies an ARexx script which is executed when
+            this node is closed.
+
+        @ONOPEN <file> -- specifies an ARexx script which is executed when the
+            node is opened. If the script returns an error code the node
+            will not be opened.
+
+        @PREV <file/node> -- specifies the previous logical file or node for
+            this node.
+
+        @REM <string> -- remark line completely ignored.
+
+        @REMARK <string> -- remark line completely ignored.
+
+        @SMARTWRAP -- turns smart-wrapping for this node on.
+
+        @TAB <num> -- specifies the number of space to use for a regular tab
+            stop.
+
+        @TITLE <title> -- specifies the title for this node.
+
+        @TOC <file/node> -- specifies the contents file or node for this node.
+
+        @WORDWRAP -- turns word-wrapping for all nodes in the database on.
+
+    SEE ALSO
+        --attribites--
+
+amigaguide.datatype/DTM_GOTO                      amigaguide.datatype/DTM_GOTO
+
+    NAME
+        DTM_GOTO -- goto the given node/object.
+
+    INPUT
+        struct dtGoto
+        {
+                ULONG                MethodID;
+                struct GadgetInfo   *dtg_GInfo;
+                STRPTR               dtg_NodeName;
+                struct TagItem      *dtg_AttrList;
+        };
+
+    FUNCTION
+        This method tries to load and view the node or object specified in the
+        dtg_NodeName field. This field can also contain a file name for a file
+        to be viewed within the AmigaGuide object. And this also may have an
+        additionally added node name. For example if you want to open an
+        external AmigaGuide file called index.guide and you want to open the
+        node named "B" for index entries starting with the letter "B" you can
+        just pass index.guide/B to the method via the dtg_NodeName field. Also
+        the tags listed in the TAGS section are passed to the newly created
+        datatype object.
+
+    TAGS
+        DTA_TopVert -- vertical (line) position to go to.
+
+    RETURN
+        1 -- if object could be loaded
+        0 -- if object could not be found
+        -1 -- if some error occured during loading
+
+    SEE ALSO
+        DTM_TRIGGER
+
+amigaguide.datatype/DTM_TRIGGER                amigaguide.datatype/DTM_TRIGGER
+
+    NAME
+        DTM_TRIGGER -- triggers some functions on the AmigaGuide object.
+
+    INPUT
+        struct dtTrigger
+        {
+                ULONG                MethodID;
+                struct GadgetInfo   *dtt_GInfo;
+                ULONG                dtt_Function;
+                APTR                 dtt_Data;
+        };
+
+    FUNCTION
+        This method triggers the following functions specified via the
+        dtt_Function field of the message. NOTE that you have to mask out
+        the real STM_#? function from the field by applying the function
+        mask (dtt_Function & STMG_METHOD_MASK):
+
+        STM_RETRACE -- Go to the previous viewed node. Same as pressing the
+            "Retrace" button
+
+        STM_HELP -- Go to the help node. Same as pressing the "Help" button
+
+        STM_INDEX -- Go to the index node. Same as pressing the "Index" button
+
+        STM_CONTENTS -- Go to the contents/main node. Same as pressing the
+            "Contents" button
+
+        STM_BROWSE_PREV -- Go to the previous logical node in the database.
+            Same as pressing the "< Browse" button
+
+        STM_BROWSE_NEXT -- Go to the next logical node in the database. Same
+            as pressing the "> Browse" button
+
+        STM_COMMAND -- Execute the command found in the dtt_Data field.
+            Currently only null-terminated strings are supported. To make this
+            function save it only operates on data found in dtt_Data if
+            (dtt_Function & STMF_DATA_MASK) == STMD_STRPTR. The following
+            commands are supported:
+
+            link <nodename> -- Goto to the named node.
+            system <command> -- Execute the given command.
+            rxs <arexx-string> -- Executes the given ARexx string.
+            rx <arexx-script> -- Executes the given ARexx macro script.
+
+        STM_PREV_FIELD -- if the current node has links select previous link.
+
+        STM_NEXT_FIELD -- if the current node has links select next link.
+
+        STM_ACTIVATE_FIELD -- if a link is selected activate it, by sending
+            a STM_COMMAND trigger method.
+
+    SEE ALSO
+        DTM_GOTO
+
+amigaguide.datatype/GM_HANDLEINPUT          amigaguide.datatype/GM_HANDLEINPUT
+
+    NAME
+        GM_HANDLEINPUT -- handles input events
+
+    INPUT
+        struct gpInput
+        {
+                ULONG              MethodID;
+                struct GadgetInfo *gpi_GInfo;
+                struct InputEvent *gpi_IEvent;
+                LONG              *gpi_Termination;
+                struct
+                {
+                        WORD X;
+                        WORD Y;
+                }                  gpi_Mouse;
+                struct TabletData *gpi_TabletData;
+        };
+
+    FUNCTION
+        This method handles incoming input events. Checks if the event resides
+        in the navigation bar and executes any action if so. Otherwise it
+        forwards the incoming events to its viewed node or datatype object.
+        In case of an AmigaGuide node it handles any mouse event to enable
+        link activation through the mouse.
+
+    SEE ALSO
+
+amigaguide.datatype/OM_DISPOSE                  amigaguide.datatype/OM_DISPOSE
+
+    NAME
+        OM_DISPOSE -- dispose an amigaguide datatype object
+
+    INPUT
+        none
+
+    FUNCTION
+        This method disposes an amigaguide datatype object. It deallocates
+        any resource obtained by the amigaguide object.
+
+    SEE ALSO
+        datatypes.library/DisposeDTObject(), OM_NEW
+
+amigaguide.datatype/OM_GET                          amigaguide.datatype/OM_GET
+
+    NAME
+        OM_GET -- gets an amigaguide datatype object attribute
+
+    INPUT
+        struct opGet
+        {
+                ULONG  MethodID;
+                ULONG  opg_AttrID;
+                ULONG *opg_Storage;
+        };
+
+    FUNCTION
+        This method gets an amigaguide datatype object attribute. See the
+        following TAGS section for directly supported (overwritten) attributes
+        by the datatype. All attributes of super classes are supported as
+        well.
+
+    TAGS
+        DTA_Title -- (STRPTR) name of the amigaguide document.
+
+        DTA_NominalHoriz -- (ULONG) nominal width of the document in pixel.
+            See @width AmigaGuide command.
+
+        DTA_NominalVert -- (ULONG) nominal height of the document in pixel.
+            See @height AmigaGuide command.
+
+        DTA_Methods -- (ULONG *) array of supported datatype methods.
+
+    SEE ALSO
+        datatypes.library/GetDTAttrsA(), OM_SET
+
+amigaguide.datatype/OM_NEW                          amigaguide.datatype/OM_NEW
+
+    NAME
+        OM_NEW -- create an amigaguide datatype object
+
+    INPUT
+        struct opSet
+        {
+                ULONG              MethodID;
+                struct TagItem    *ops_AttrList;
+                struct GadgetInfo *ops_GInfo;
+        };
+
+    FUNCTION
+        This method creates and initializes an amigaguide datatype object.
+        Currently only DTST_FILE source type is supported. All tags for
+        OM_SET method can be passed to the method. Additionally the following
+        tags are only used during initialization.
+
+    TAGS
+        DTA_NodeName -- (STRPTR) name of the node to load initially.
+
+        DTA_ARexxPortName -- (STRPTR) base name for the ARexx port.
+
+    SEE ALSO
+        datatypes.library/NewDTObjectA(), OM_DISPOSE, OM_SET, --arexx--
+
+amigaguide.datatype/OM_SET                          amigaguide.datatype/OM_SET
+
+    NAME
+        OM_SET -- sets an amigaguide datatype object attribute
+
+    INPUT
+        struct opSet
+        {
+                ULONG              MethodID;
+                struct TagItem    *ops_AttrList;
+                struct GadgetInfo *ops_GInfo;
+        };
+
+    FUNCTION
+        This method sets the passed amigaguide datatype object attributes. See
+        the following TAGS section for directly supported (overwritten)
+        attributes by the datatype. All attributes of super classes are
+        supported as well.
+
+    TAGS
+        AGA_Secure, AGDTA_Secure -- (BOOL) if TRUE no program or ARexx script
+            will be launched by the amigaguide datatype. Defaults to FALSE.
+
+    SEE ALSO
+        datatypes.library/SetDTAttrsA(), OM_GET
+
+

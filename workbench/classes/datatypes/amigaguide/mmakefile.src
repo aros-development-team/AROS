@@ -1,0 +1,14 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := amigaguideclass nodeclass file util process navigator
+
+#MM workbench-datatypes-amigaguide : includes linklibs
+
+USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION -Iinclude
+
+%build_module_macro mmake=workbench-datatypes-amigaguide modname=amigaguide \
+  modtype=datatype initfile=classbase_aros files=$(FILES) \
+  uselibs="amiga rom"
+
+%common

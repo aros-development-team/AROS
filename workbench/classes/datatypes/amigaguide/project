@@ -1,0 +1,4 @@
+PROJECT   = amigaguide.datatype
+VERSION = 50
+REVISION = 1
+BUMPREV   = CHEADER
