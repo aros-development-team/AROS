@@ -1,0 +1,9 @@
+
+all:
+%template1
+%template1 1
+%template1 1 2
+%template2
+%template2 A
+%template2 A B
+

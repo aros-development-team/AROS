@@ -4,3 +4,6 @@ genmf : genmf.c
 
 clean :
 	rm -f genmf
+
+check :
+	genmf tmpl.test < in.test

@@ -502,6 +502,33 @@ void read_templates (const char * fn)
     fclose (fh);
 }
 
+Arg * findArg (Template * tmpl, char ** argstr)
+{
+    char argname[64];
+    char * ptr = *argstr;
+    int len;
+    Arg * arg;
+
+    ptr += 2;
+    len = 0;
+
+    while (*ptr && *ptr != ')')
+	argname[len++] = *ptr++;
+
+    argname[len] = 0;
+    if (*ptr) ptr++;
+
+    arg = (Arg *)FindNode (&tmpl->args, argname);
+
+    if (!arg)
+	error ("Unknown argument %s of template %s",
+	    argname, tmpl->node.name);
+
+    *argstr = ptr;
+
+    return arg;
+}
+
 void replace_template (const char * string)
 {
     char ** argv;
@@ -509,8 +536,6 @@ void replace_template (const char * string)
     Template * tmpl;
     Arg * arg;
     char * argnptr, * value, * ptr;
-    int len;
-    char argname[64];
 
     argv = getargs (string, &argc);
 
@@ -579,24 +604,40 @@ void replace_template (const char * string)
 
 	for (ptr=tmpl->body->value; *ptr; )
 	{
-	    if (*ptr == '%' && ptr[1] == '(')
+	    if (*ptr == '%' && ptr[1] == '(' /*)*/)
 	    {
-		ptr += 2;
-		len = 0;
-
-		while (*ptr && *ptr != ')')
-		    argname[len++] = *ptr++;
-
-		argname[len] = 0;
-		if (*ptr) ptr++;
-
-		arg = (Arg *)FindNode (&tmpl->args, argname);
-
-		if (!arg)
-		    error ("Unknown argument %s of template %s",
-			argname, tmpl->node.name);
-		else
+		arg = findArg (tmpl, &ptr);
+		if (arg)
 		    fputs (arg->value, stdout);
+	    }
+	    else if (*ptr == '%' && (ptr == tmpl->body->value || ptr[-1] == '\n'))
+	    {
+		/* nested template */
+		String * str = new_string ("");
+		char app[2];
+		app[1] = 0;
+
+		while (*ptr != '\n' && *ptr)
+		{
+		    if (*ptr == '%' && ptr[1] == '(' /*)*/)
+		    {
+			arg = findArg (tmpl, &ptr);
+			if (arg)
+			    append_string (str, arg->value);
+		    }
+		    else
+		    {
+			app[0] = *ptr++;
+			append_string (str, app);
+		    }
+		}
+
+		if (*ptr)
+		    ptr ++;
+
+		/* be careful ! This has side effects ! */
+		replace_template (str->value);
+		free_string (str);
 	    }
 	    else
 	    {
