@@ -1,7 +1,7 @@
-Short:    AROS 1.11b - Amiga native binaries
-Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
-Uploader: Lennard voor den Dag (ldp@worldonline.nl)
-Version:  1.11b
+Short:    AROS 1.12b - Amiga Research OS / Amiga native binaries
+Author:   Aaron "Optimizer" Digulla (digulla@hepe.com) and many others
+Uploader: Lennard voor den Dag (ldp@xs4all.nl)
+Version:  1.12b
 Type:     misc/emu
 Requires: OS 2.04 or better, 68020 or better
 Replaces: misc/emu/AROS-m68k-native.lha
@@ -9,15 +9,17 @@ Replaces: misc/emu/AROS-m68k-native.lha
 
 !! THIS IS A BETA !!
 
-This is AROS for Amiga V1.11b Amiga Native binaries distribution. It contains
+This is AROS for Amiga V1.12b Amiga Native binaries distribution. It contains
 precompiled binaries ready to run on an Amiga with a 68020 or better processor.
 
 
 For more info look at these pages on WorldWideWait:
 
+    http://www.aros.org/ (Alias for Main site, preferred)
+    http://aros.fh-konstanz.de/aros/ (Main site)
+    http://home.pages.de/~aros/ (Alias for Main site)
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
-    http://aros.fh-konstanz.de/~digulla/ (German Mirror)
-    http://home.worldonline.nl/~ldp/aros/ (AROS for Amiga)
+    http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
 (quite smaller than lha) from
@@ -31,8 +33,10 @@ You can use these EMail addresses to send bug reports:
     aros-amiga-bugs@aros.fh-konstanz.de
 
 
-This software is subject to the "Standard Amiga FD-Software Copyright Note".
-It is MAILWARE as defined in paragraph 4b.
+This software is subject to the "AROS PUBLIC LICENSE" which can be found
+in this archive as license.html. The license is derived from the Mozilla
+Public License. The biggest difference is that the word "Mozilla" has
+been replaced by "AROS" everywhere in the text.
 
 If you like it and use it regularly please send a message to the
 following address:
@@ -42,6 +46,5 @@ following address:
     78467 Konstanz
     Germany
 
-    EMail: digulla@aros.fh-konstanz.de
+    EMail: digulla@hepe.com
 
-For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
