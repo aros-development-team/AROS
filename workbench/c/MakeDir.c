@@ -88,7 +88,7 @@ int main(void)
 
 	if(*name == NULL)
 	{
-	    printf("No name given\n");
+	    PutStr("No name given\n");
 	    error = RETURN_FAIL;
 	}
 	else
@@ -96,11 +96,11 @@ int main(void)
 	    for(i = 0; name[i] != NULL; i++)
 	    {
 		lock = CreateDir(name[i]);
-		
+
 		/* The AmigaDOS semantics are quite strange here. When it is
 		   impossible to create a certain directory, MakeDir goes on
 		   to try to create the rest of the specified directories and
-		   returns the LAST return value for the operation. */ 
+		   returns the LAST return value for the operation. */
 		if(lock != NULL)
 		{
 		    UnLock(lock);
@@ -108,11 +108,13 @@ int main(void)
 		}
 		else
 		{
-		    printf("Cannot create directory %s\n", name[i]);
+		    PutStr("Cannot create directory ");
+		    PutStr(name[i]);
+		    PutStr("\n");
 		    error = RETURN_ERROR;
 		}
 	    }
-	}	
+	}
 
 	FreeArgs(rda);
     }
