@@ -49,7 +49,7 @@ CLASSESOBJS= \
   objs/classes/window.o \
   objs/classes/text.o
 
-all: dirs all.gst $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) test
+all: dirs all.gst muimaster.lib test
 
 dirs:
   execute  <<
@@ -199,6 +199,10 @@ objs/classes/rectangle.o: classes/rectangle.c
 
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
+
+muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  -delete muimaster.lib
+  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 
 test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
