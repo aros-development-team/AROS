@@ -286,7 +286,7 @@ struct ExtGadget
 #define GFLG_SELECTED	    (1<<7)
 #define GFLG_DISABLED	    (1<<8)
 #define GFLG_TABCYCLE	    (1<<9)
-#define GFLG_STRINGEXTENDED (1<<10)
+#define GFLG_STRINGEXTEND   (1<<10)
 #define GFLG_IMAGEDISABLE   (1<<11)
 #define GFLG_LABELITEXT     0x0000
 #define GFLG_LABELSTRING    (1<<12)
