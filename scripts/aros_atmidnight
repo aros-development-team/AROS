@@ -56,16 +56,16 @@ echo "$today $size" >> "$CONTRIB_SIZE"
 #fi
 
 # Create nightly builds
-#cd $AROSDIR/dist
-#rel=`date '+%Y%m%d'` ; export rel
-#dstdir=~ftp/pub/aros/snapshots ; export dstdir
-#find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
-#subject="Nightly builds OK"
-#nice ./makedist >& $LOG
-#if [ $? -ne 0 ]; then
-#    subject="Nightly builds FAILED"
-#fi
-#mailx -s "$subject" aros-dev < $LOG
+cd $AROSDIR/dist
+rel=`date '+%Y%m%d'` ; export rel
+dstdir=~ftp/pub/aros/snapshots ; export dstdir
+find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
+subject="Nightly builds OK"
+nice ./makedist >& $LOG
+if [ $? -ne 0 ]; then
+    subject="Nightly builds FAILED"
+fi
+mailx -s "$subject" aros-dev < $LOG
 
 # Mirror disk images
 #cd ~ftp/pub/aros/DiskImages
