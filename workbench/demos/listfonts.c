@@ -24,8 +24,8 @@ int main(int argc, char ** argv)
 
 	struct AvailFontsHeader *afh;
 	struct AvailFonts	*afptr;
-	
-	/* Try to guess how many butes are needed */	
+
+	/* Try to guess how many butes are needed */
 	ULONG	afsize	= 10000;
 
 	if (!(DiskfontBase = OpenLibrary("diskfont.library", 0L)))
@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "Couldn't open diskfont.library\n");
 		return (0);
 	}
-		 
+
 	do
 	{
 		afh = (struct AvailFontsHeader *)AllocMem(afsize, MEMF_ANY);
@@ -45,22 +45,22 @@ int main(int argc, char ** argv)
 				FreeMem(afh, afsize);
 				afsize += afshortage;
 				afh = (struct AvailFontsHeader*)(-1L);
-			}	
+			}
 		}
 	}
 	while (afshortage && afh);
 
 	if (afh)
 	{
-	
+
 		/* Print some info about the fonts */
 		UWORD count;
-		
-		printf("\nNumber of fonts found: %d", afh->afh_NumEntries);
-		
+
+		printf("Number of fonts found: %d\n", afh->afh_NumEntries);
+
 		/* Get pointer to the first AvailFonts item */
 		afptr = (struct AvailFonts*)&afh[1];
-		
+
 		for (count = afh->afh_NumEntries; count --;)
 		{
 			printf
@@ -69,11 +69,11 @@ int main(int argc, char ** argv)
 				afptr->af_Attr.ta_Name,
 				afptr->af_Attr.ta_YSize
 			);
-			
-			afptr ++;	
+
+			afptr ++;
 		}
 	}
-	
+
 	CloseLibrary(DiskfontBase);
 	return (0);
 }
