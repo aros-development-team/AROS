@@ -21,26 +21,18 @@
 */
 
 
-#define NUM_REGS    7
+#define NUM_REGS    3
 #define FIRST_ARG   ((NUM_REGS+2)*4)
 #define SECOND_ARG  (FIRST_ARG+4)
 
 #define PUSH			      \
 	pushl %eax		    ; \
-	pushl %ebx		    ; \
 	pushl %ecx		    ; \
 	pushl %edx		    ; \
-	pushl %esi		    ; \
-	pushl %edi		    ; \
-	pushl %ebp
 
 #define POP			      \
-	popl  %ebp		    ; \
-	popl  %edi		    ; \
-	popl  %esi		    ; \
 	popl  %edx		    ; \
 	popl  %ecx		    ; \
-	popl  %ebx		    ; \
 	popl  %eax
 
 #define STUB_ARG0(name)               \
