@@ -175,7 +175,7 @@ int main(int argc, char **argv)
                                 HIDD_GC_DrawPolygon(gc, 4, coords2);
 
                                 printf("Press enter to continue");
-                                scanf("%c", &ch);
+                                scanf("%c", &wait);
 
                                 HIDD_GC_Clear(gc);
                                 SetAttrsTags(gc, aHidd_GC_LinePattern, 0x5252, TAG_END);
