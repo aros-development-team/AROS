@@ -76,7 +76,8 @@
       Result->xln_Type = NT_GRAPHICS;
       Result->xln_Subsystem = SS_GRAPHICS;
       Result->xln_Subtype = (BYTE)node_type;
-      //Result->xln_Library = (APTR)GfxBase;
+      /* Result->xln_Library = (APTR)GfxBase; */
+
       /* the following pointer has to point to some unknown routine */
       /* Result->xln_Init = ???; */
 

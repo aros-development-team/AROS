@@ -11,7 +11,7 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, ScalerDiv,
+	AROS_LH3(UWORD, ScalerDiv,
 
 /*  SYNOPSIS */
 	AROS_LHA(UWORD, factor, D0),
