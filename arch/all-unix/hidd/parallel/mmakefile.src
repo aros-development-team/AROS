@@ -4,6 +4,7 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
+CC := $(HOST_CC)
 
 USER_CFLAGS := -DAROS_USE_OOP
 
