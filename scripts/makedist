@@ -1,67 +1,72 @@
-#!/bin/sh
+# Create a source archive plus binaries.
 #
-# $0 <which>
+# Install:
+# > mkdir .../dist
+# > cvs -d ... checkout AROS
+# > mv AROS AROS.source
+#
+# Usage:
+# - Update AROS.source if necessary:
+#   > cd .../dist/AROS.source ; cvs -z3 upd -dP
+# > cd .../dist
+# > ./makedist
+# - Copy the files to some public place
 #
 
-# Check parameters
-if [ "x$1" = "x" -o "x$2" = "x" ]; then
-    echo "Usage: $0 <which> <archive>"
-    echo "For example: $0 src AROS-1.10"
-    exit 1
+rel=${rel-`date '+%Y%m%d'`}
+
+if [ ! -f AROS-source-$rel.tgz ]; then
+    # Create source dist
+    rm -rf AROS
+    cp -a AROS.source AROS
+    find AROS -name CVS -prune -print0 | xargs -0 rm -r
+    tar czf AROS-source-$rel.tgz AROS
 fi
 
-# Find the name of the directory I'm in
-cdn=`pwd | sed 's:/.*/::'`
+if [ ! -f AROS-lx86-bin-$rel.tgz ]; then
+    # Build Linux/i386
+    rm -rf AROS
+    cp -a AROS.source AROS
+    (
+	cd AROS && \
+	autoconf && \
+	./configure --enable-gfxhidd && \
+	make
+    ) >& AROS-lx86-bin-$rel.log
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building Linux/i386 failed:"
+	    echo "..."
+	    tail -50 AROS-lx86-bin-$rel.log
+	) 1>&2
+    else
+	tar czf AROS-lx86-bin-$rel.tgz AROS/bin/linux-i386/AROS
+    fi
+fi
 
-# Basename of the archive
-archive="$cdn/dist/$2"
+if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
+    # Build Native/i386
+    rm -rf AROS
+    cp -a AROS.source AROS
+    (
+	#sed 's/ = yes/ = no/' make.defaults > make.opts 
 
-# Move up one level
-cd ..
-
-# Find the names of the files which contain the names of the files
-# to distribute
-distfiles=`find $cdn -name dist.$1 -print`
-
-# Name of the file with the resulting list of all files to distribute
-filenames=/tmp/fn.$$
-
-# Empty list
-rm -f $filenames
-find $cdn -name contents -print > $filenames
-
-# For each file with a list of files...
-for dist in $distfiles ; do
-    # Get the base directory
-    dir=`dirname $dist`
-
-    # Show where we are
-    echo "$dir"
-
-    # Now read the list of files one by one
-    cat $dist | while read line ; do
-	# Replace patterns
-	if [ "x$line" != "x" ]; then
-	    ls $dir/$line >> $filenames
-	    if [ "x$3" != "x" ]; then
-		ls $dir/$line
-	    fi
-	fi
-    done
-done
-
-# Sort the names
-sort $filenames | uniq > $filenames.srt
-
-if [ "x$3" = "x" ]; then
-    # Create compressed tar archive
-    rm -f $archive.tgz
-    tar -cvvz --files-from=$filenames.srt -f "$archive.tgz"
-
-    # Create LhA archive
-    rm -f $archive.lha
-    lha a "$archive.lha" `cat $filenames.srt`
-
-    # Remove list of filenames
-    rm -f $filenames $filenames.srt
+	cd AROS && \
+	autoconf && \
+	./configure --enable-gfxhidd --target=native-i386 && \
+	make || make
+    ) >& AROS-ibmpc-bin-$rel.log
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building Native/i386 failed:"
+	    echo "..."
+	    tail -50 AROS-ibmpc-bin-$rel.log
+	) 1>&2
+    else
+	rm -rf AROS/bin/native-i386/AROS
+	mkdir -p AROS/bin/native-i386/AROS
+	cp AROS/bin/native-i386/gen/rom/boot/aros.bin AROS/bin/native-i386/AROS/Image
+	cp README.native-i386 AROS/bin/native-i386/AROS/
+		tar czf AROS-ibmpc-bin-$rel.tgz AROS/bin/native-i386/AROS
+    fi
 fi
