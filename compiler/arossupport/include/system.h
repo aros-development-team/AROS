@@ -73,14 +73,31 @@
 #define	    restrict
 #endif
 
-/* 3. Makros for debugging and development */
+/* 3. Macros for making things more efficient */
+#if __GNUC__ < 2 || __GNUC__ == 2 && __GNUC_MINOR__ < 5
+#define __unused
+#define __noreturn
+#define __noeffect
+#endif
+#if __GNUC__ == 2 && __GNUC_MINOR__ >= 5 && __GNUC_MINOR__ < 7
+#define __unused
+#define __noreturn  __attribute__((__noreturn__))
+#define __noeffect  __attribute__((__const__))
+#endif
+#if __GNUC__ == 2 && __GNUC_MINOR__ >= 7
+#define __unused    __attribute__((__unused__))
+#define __noreturn  __attribute__((__noreturn__))
+#define __noeffect  __attribute__((__const__))
+#endif
+
+/* 4. Makros for debugging and development */
 #if defined(TEST) || defined(DEBUG)
 #   include <assert.h>
 #else
 #   define assert(x)        /* empty */
 #endif
 
-/* 3. Sytem-specific files */
+/* 5. Sytem-specific files */
 #ifdef _AMIGA
 #   include <aros/amiga.h>
 #endif
