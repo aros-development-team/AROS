@@ -25,7 +25,8 @@ then the arguments are read, then missing arguments are assigned their
 default values and then "text" is evaluated. All tags in "text" are
 processed and you can access the values of the arguments by "$opt".
 
-You can't define a macro with the same name as a block.
+You can't define a macro with the same name as a block. If a macro has
+the same name as an environment, then the environment ist used.
 
 Example:
 
@@ -47,7 +48,8 @@ results in
 This is similar to a macro but it takes one very long argument which is
 stored in $@body.
 
-You can't define a block with the same name as a macro.
+You can't define a block with the same name as a macro. If a block has
+the same name as an environment, then the environment ist used.
 
 Example:
 
@@ -62,12 +64,11 @@ This will be passed to exampleblock in body.
 </exampleblock>
 
 ------------------------------------------------------------------------------
-<EDEF NAME=name [BEGIN=text] [END=text]>
+<EDEF NAME=name [OPTION=string] [BEGIN=text] [END=text]>
 
 This defines an environment. If you define an environment with the same
-name as a block or a macro, then the environment will be used if no
-arguments appear in the tag (ie. if you give <name> instead of <name
-arg=val>).
+name as a block or a macro, then the environment will be used if <name...>
+appears in the text.
 
 <EDEF NAME=BTT BEGIN="<B><TT>" END="</TT></B>">
 
