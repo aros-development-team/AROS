@@ -20,17 +20,29 @@ void writestubs(void)
 	fprintf(stderr, "Could not write %s\n", line);
 	exit(20);
     }
-    fprintf(out,
-	    "/*\n"
-	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
-	    "*/\n"
-	    "#define NOLIBDEFINES\n"
-	    "#include <proto/%s.h>\n"
-	    "#include <exec/types.h>\n"
-	    "#include <aros/libcall.h>\n"
-	    "\n",
-	    modulename);
+    fprintf
+    (
+        out,
+        "/*\n"
+        "    *** Automatically generated file. Do not edit ***\n"
+        "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+        "*/\n"
+        "#define NOLIBDEFINES\n"
+    );
+    
+    if (modtype != MCC && modtype != MUI && modtype != MCP)
+    {
+        fprintf(out, "#include <proto/%s.h>\n", modulename);
+    }
+    
+    fprintf
+    (
+        out,
+        "#include <exec/types.h>\n"
+        "#include <aros/libcall.h>\n"
+        "\n"
+    );
+    
     for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
 	fprintf(out,
