@@ -105,15 +105,19 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
     	}
     }
+    if (data->divide != 0)
+	data->current /= data->divide;
+    if (data->current > data->max)
+	data->current = data->max;
     if (data->dupinfo)
 	data->info = StrDup(data->info);
 
     if (data->info)
     {
 #ifdef _AROS
-	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
+	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
 #else
-	sprintf(data->buf, data->info, data->current/data->divide);
+	sprintf(data->buf, data->info, data->current);
 #endif
     } else data->buf[0] = 0;
 
@@ -150,8 +154,6 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Gauge_Current:
 		    data->current = tag->ti_Data;
-		    if ((ULONG)tag->ti_Data > data->max)
-		        data->current = data->max;
 		    info_changed = 1;
 		    need_redraw = 1;
 		    break;
@@ -178,14 +180,19 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
+    if (data->divide != 0)
+	data->current /= data->divide;
+    if (data->current > data->max)
+	data->current = data->max;
+
     if (info_changed)
     {
 	if (data->info)
 	{
 #ifdef _AROS
-	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
+	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
 #else
-	sprintf(data->buf, data->info, data->current/data->divide);
+	sprintf(data->buf, data->info, data->current);
 #endif
 	} else data->buf[0] = 0;
     }
@@ -304,13 +311,10 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     DoSuperMethodA(cl,obj,(Msg)msg);
     D(bug("muimaster.library/gauge.c: Draw Gauge Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
-    val = data->current / data->divide;
-    if (val > data->max) val = data->max;
-
     if (data->horiz)
     {
 	ULONG w;
-        w = _mwidth(obj) * val / data->max; /* NOTE: should be 64 bit */
+        w = _mwidth(obj) * data->current / data->max; /* NOTE: should be 64 bit */
 
     	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
     	RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mleft(obj) + w - 1, _mbottom(obj));
@@ -329,7 +333,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     else
     {
 	ULONG h;
-        h = _mheight(obj) * val / data->max; /* NOTE: should be 64 bit */
+        h = _mheight(obj) * data->current / data->max; /* NOTE: should be 64 bit */
 
     	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
     	RectFill(_rp(obj),_mleft(obj),_mbottom(obj) - h + 1, _mright(obj),_mbottom(obj));
