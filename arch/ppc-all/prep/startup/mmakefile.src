@@ -1,0 +1,42 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+FILES := startup of1275 c_start
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+LD := ppc-linux-ld
+STRIP := ppc-linux-strip
+
+#MM kernel-bootstrap-prep-ppc :
+kernel-bootstrap-prep-ppc: $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
+	$(LD) -r -d $(foreach f, $(FILES), $(OBJDIR)/$(f).o) \
+	    -o $(OSGENDIR)/boot/bootstrap.o
+	$(OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/bootstrap.o
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err
+
+#MM setup-prep-ppc:
+setup-prep-ppc:
+	%mkdirs_q $(OBJDIR)
+	%mkdirs_q $(OSGENDIR)/boot
+
+$(OBJDIR)/%.o : %.S
+	%compile_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+test.s: test.c
+	%ctoasm_q
+
+	%ctoasm_q
+
+%common
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
