@@ -33,7 +33,7 @@ struct Volume {
 
 struct Volume *initVolume(struct Device *, STRPTR, ULONG, struct DosEnvec *);
 void uninitVolume(struct Volume *);
-void newMedium(struct Volume *);
+LONG newMedium(struct Volume *);
 LONG addDosVolume(struct Volume *);
 void remDosVolume(struct Volume *);
 LONG initDeviceList(struct Volume *,struct BlockCache *);

@@ -16,6 +16,8 @@
 #include "error.h"
 #include "afsblocks.h"
 
+extern LONG error;
+
 /*******************************************
  Name  : initDeviceList
  Descr.: initializes a devicelist structure
@@ -118,34 +120,36 @@ char string[32];
 	}
 }
 
-void newMedium(struct Volume *volume) {
+LONG newMedium(struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 
-	if ((blockbuffer=getBlock(volume,0))==0) return;
+	if ((blockbuffer=getBlock(volume,0))==0)
+		return ERROR_UNKNOWN;
 	volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 	if (volume->dostype!=0x444F5300) {
-		showError(ERR_DOSTYPE);
-		return;
+		return ERROR_NOT_A_DOS_DISK;
 	}
-	if ((blockbuffer=getBlock(volume,volume->rootblock))==0) return;
+	if ((blockbuffer=getBlock(volume,volume->rootblock))==0)
+		return ERROR_UNKNOWN;
 	for (i=0;i<=24;i++)
 		volume->bitmapblockpointers[i]=AROS_BE2LONG(blockbuffer->buffer[BLK_BITMAP_POINTERS_START(volume)+i]);
 	volume->bitmapextensionblock=AROS_BE2LONG(blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]);
 	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]) {
+		volume->usedblockscount=0;
 		showError(ERR_DISKNOTVALID);
-		return;
 	}
+	else
+		volume->usedblockscount=countUsedBlocks(volume);
 	if (initDeviceList(volume,blockbuffer)==0) {
-		showError(ERR_MEMORY);
-		return;
+		return ERROR_NO_FREE_STORE;
 	}
 	if (!(addDosVolume(volume))) {
 		showError(ERR_DOSENTRY);
-		return;
+		return ERROR_UNKNOWN;
 	}
-	volume->usedblockscount=countUsedBlocks(volume);
+	return 0;
 }
 
 struct Volume *initVolume(struct Device *device, STRPTR blockdevice, ULONG unit, struct DosEnvec *devicedef) {
@@ -153,7 +157,7 @@ struct Volume *volume;
 
 	D(bug("afs.handler: initVolume\n"));
 	if (!(volume=AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR))) {
-		showError(ERR_MEMORY);
+		error=ERROR_NO_FREE_STORE;
 		return 0;
 	}
 	volume->device=device;
@@ -165,7 +169,7 @@ struct Volume *volume;
 	else
 		volume->bootblocks=devicedef->de_Reserved;
 	if (!(volume->blockcache=initCache(volume, devicedef->de_NumBuffers))) {
-		showError(ERR_MEMORY);
+		error=ERROR_NO_FREE_STORE;
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -175,7 +179,7 @@ struct Volume *volume;
 		return 0;
 	}
 	if (!(volume->iorequest=(struct IOExtTD *)CreateIORequest(volume->ioport,sizeof(struct IOExtTD)))) {
-		showError(ERR_MEMORY);
+		error=ERROR_NO_FREE_STORE;
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -198,23 +202,34 @@ struct Volume *volume;
 			devicedef->de_LowCyl*
 			devicedef->de_Surfaces*
 			devicedef->de_BlocksPerTrack;
-	newMedium(volume);
-	D(bug("afs.handler: initVolume: BootBlocks=%ld\n",volume->bootblocks));
-	D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
-	volume->ah.header_block=volume->rootblock;
-	volume->ah.volume=volume;
+	error=newMedium(volume);
+	if (error)
+	{
+		uninitVolume(volume);
+		volume=0;
+	}
+	else
+	{
+		D(bug("afs.handler: initVolume: BootBlocks=%ld\n",volume->bootblocks));
+		D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
+		volume->ah.header_block=volume->rootblock;
+		volume->ah.volume=volume;
+	}
 	return volume;
 }
 
 void uninitVolume(struct Volume *volume) {
 
 	remDosVolume(volume);
-	freeCache(volume->blockcache);
-	if (volume->devicelist.dl_OldName) FreeVec(BADDR(volume->devicelist.dl_OldName));
+	if (volume->blockcache)
+		freeCache(volume->blockcache);
+	if (volume->devicelist.dl_OldName)
+		FreeVec(BADDR(volume->devicelist.dl_OldName));
 	if (volume->iorequest) {
 		if (volume->iorequest->iotd_Req.io_Device) CloseDevice((struct IORequest *)&volume->iorequest->iotd_Req);
 		DeleteIORequest((APTR)volume->iorequest);
 	}
-	if (volume->ioport) DeleteMsgPort(volume->ioport);
+	if (volume->ioport)
+		DeleteMsgPort(volume->ioport);
 	FreeMem(volume,sizeof(struct Volume));
 }
