@@ -4,12 +4,12 @@ DESTDIR := $(BINDIR)/Locale/Catalogs
 
 CATALOGS 	:= deutsch français svenska
 CATDESC 	:= clock
-CATSUBDIR	:= Sys/
+CATSUBDIR	:= System/Utilities
 CATNAME 	:= Clock
-INCLUDE 	:= ../clock_strings
+INCLUDE 	:= ../strings
 
 SRCS    := $(foreach f, $(CATALOGS), $(f).ct)
-OBJS    := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR)$(CATNAME).catalog)
+OBJS    := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR)/$(CATNAME).catalog)
 CATDIRS := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR))
 
 .PHONY : all clean create_catalogs create_include create_dirs
@@ -20,9 +20,9 @@ setup-clock-catalogs : create_dirs create_catalogs create_include
 create_catalogs: $(OBJS)
 	@$(NOP)
 	
-$(DESTDIR)/%/$(CATSUBDIR)$(CATNAME).catalog : %.ct $(CATDESC).cd
+$(DESTDIR)/%/$(CATSUBDIR)/$(CATNAME).catalog : %.ct $(CATDESC).cd
 	@$(ECHO) "Creating $(CATNAME) catalog for language $*."
-	@$(IF) $(FLEXCAT) $(CATDESC).cd $*.ct CATALOG=$(DESTDIR)/$*/$(CATSUBDIR)$(CATNAME).catalog ; then $(NOP) ; else $(NOP) ; fi ;
+	@$(IF) $(FLEXCAT) $(CATDESC).cd $*.ct CATALOG=$(DESTDIR)/$*/$(CATSUBDIR)/$(CATNAME).catalog ; then $(NOP) ; else $(NOP) ; fi ;
 	
 create_include : $(INCLUDE).h
 	@$(NOP)

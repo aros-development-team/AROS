@@ -58,9 +58,9 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
     return 0; //EasyRequestArgs(win, &es, NULL, NULL);  
 }
 
-void Cleanup( STRPTR message )
+void Cleanup(STRPTR message)
 {
-    if( message != NULL )
+    if(message != NULL)
     {
 	if
         ( 
@@ -68,20 +68,20 @@ void Cleanup( STRPTR message )
             && ((struct Process *) FindTask(NULL))->pr_CLI == NULL
         )
 	{
-	    ShowMessage( "Clock", message, MSG(MSG_OK) );     
+	    ShowMessage("Clock", message, MSG(MSG_OK));     
 	}
 	else
 	{
-	    Printf( "Clock: %s\n", message );
+	    Printf("Clock: %s\n", message);
 	}
     }
     
-    CleanupLocale();
+    Locale_Deinitialize();
     
-    if( message != NULL )
-        exit( 20 );
+    if (message != NULL)
+        exit(20);
     else
-        exit( 0 );
+        exit(0);
 }
 
 static void GetArguments(void)
@@ -91,7 +91,7 @@ static void GetArguments(void)
     struct RDArgs *rdargs = NULL;
     IPTR           args[NUM_ARGS];
     
-    memset(args, 0, sizeof( args ));
+    memset(args, 0, sizeof(args));
     rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
     if (rdargs == NULL)
     {
@@ -112,7 +112,7 @@ int main(void)
 {
     Object *application, *window;
     
-    InitLocale("Sys/clock.catalog", 1);
+    if (!Locale_Initialize()) exit(20);
     GetArguments();
     
     application = ApplicationObject,

@@ -7,29 +7,20 @@
 #include <proto/locale.h>
 
 #define CATCOMP_ARRAY
-#include "clock_strings.h"
+#include "strings.h"
 
+#define CATALOG_NAME    "System/Utilities/Clock.catalog"
+#define CATALOG_VERSION 1
+
+/*** Variables **************************************************************/
 struct Catalog *catalog;
 
-void InitLocale(STRPTR catalogName, ULONG version)
-{
-    if(LocaleBase != NULL)
-    {
-	catalog = OpenCatalog
-        (
-            NULL, catalogName, OC_Version, version, TAG_DONE
-        );
-    }
-}
 
-void CleanupLocale(void)
+/*** Functions **************************************************************/
+/* Main *********************************************************************/
+STRPTR MSG(ULONG id)
 {
-    if(catalog != NULL) CloseCatalog(catalog);
-}
-
-STRPTR MSG( ULONG id )
-{
-    if(catalog != NULL)
+    if(LocaleBase != NULL && catalog != NULL)
     {
 	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
@@ -38,3 +29,24 @@ STRPTR MSG( ULONG id )
 	return CatCompArray[id].cca_Str;
     }
 }
+
+/* Setup ********************************************************************/
+BOOL Locale_Initialize(void)
+{
+    if(LocaleBase != NULL)
+    {
+	catalog = OpenCatalog
+        (
+            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
+        );
+    }
+
+    return TRUE;
+}
+
+void Locale_Deinitialize(void)
+{
+    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}
+
+

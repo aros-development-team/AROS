@@ -9,11 +9,14 @@
 #include <exec/types.h>
 
 #define CATCOMP_NUMBERS
-#include "clock_strings.h"
+#include "strings.h"
 
 /*** Prototypes *************************************************************/
-void InitLocale( STRPTR catname, ULONG version );
-void CleanupLocale( void );
-STRPTR MSG( ULONG id );
+/* Main *********************************************************************/
+STRPTR MSG(ULONG id);
+
+/* Setup ********************************************************************/
+BOOL Locale_Initialize(void);
+void Locale_Deinitialize(void);
 
 #endif /* _LOCALE_H */
