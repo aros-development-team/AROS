@@ -26,7 +26,7 @@
 #include "irq.h"
 #include <aros/core.h>
 
-# define  DEBUG  0
+# define  DEBUG  1
 # include <aros/debug.h>
 
 
@@ -36,15 +36,12 @@
 
 void global_server(int cpl, void *isd, struct pt_regs *);
 
-struct irqServer timer_int    = { global_server, "timer"     , NULL};
-struct irqServer kbd_int      = { global_server, "keyboard"  , NULL};
-struct irqServer com1_int     = { global_server, "serial 1"  , NULL};
-struct irqServer com2_int     = { global_server, "serial 2"  , NULL};
-//struct irqServer floppy_int = { global_server, "floppy"    , NULL};
-struct irqServer rtc_int      = { global_server, "rtc"       , NULL};
-//struct irqServer mouse_int  = { global_server, "ps/2 mouse", NULL};
-//struct irqServer ide0_int   = { global_server, "ide0"      , NULL};
-//struct irqServer ide1_int   = { global_server, "ide1"      , NULL};
+struct irqServer irq1_int     = { global_server, "irq1: "  , NULL};
+struct irqServer irq2_int     = { global_server, "irq2: "  , NULL};
+struct irqServer irq3_int     = { global_server, "irq3: "  , NULL};
+struct irqServer irq4_int     = { global_server, "irq4: serial 1, rtc, keyboard, etc."  , NULL};
+struct irqServer irq5_int     = { global_server, "irq5: "  , NULL};
+struct irqServer irq6_int     = { global_server, "irq6: "  , NULL};
 
 void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
@@ -55,13 +52,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
 void no_action(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd) { }
 
-//static struct irqServer irq13 = { math_error_irq, "fpu", NULL};
-
-/*
- * IRQ2 is cascade interrupt to second interrupt controller
- */
-
-//static struct irqServer irq2  = { no_action, "cascade", NULL};
 
 #define SysBase (isd->sysbase)
 
@@ -69,17 +59,12 @@ void init_Servers(struct irq_staticdata *isd)
 {
 	HIDDT_IRQ_Handler	*timer;
 	
-	irqSet(0,  &timer_int , (void *)isd, SysBase);
-//	irqSet(1,  &kbd_int   , (void *)isd, SysBase);
-//	irqSet(2,  &irq2      , (void *)isd, SysBase);
-	irqSet(3,  &com2_int  , (void *)isd, SysBase);
-	irqSet(4,  &com1_int  , (void *)isd, SysBase);
-//	irqSet(6,  &floppy_int, (void *)isd, SysBase);
-	irqSet(8,  &rtc_int   , (void *)isd, SysBase);
-//	irqSet(12, &mouse_int , (void *)isd, SysBase);
-//	irqSet(13, &irq13     , (void *)isd, SysBase);
-//	irqSet(14, &ide0_int  , (void *)isd, SysBase);
-//	irqSet(15, &ide1_int  , (void *)isd, SysBase);
+	irqSet(1,  &irq1_int  , (void *)isd, SysBase);
+	irqSet(2,  &irq2_int  , (void *)isd, SysBase);
+	irqSet(3,  &irq3_int  , (void *)isd, SysBase);
+	irqSet(4,  &irq4_int  , (void *)isd, SysBase);
+	irqSet(5,  &irq5_int  , (void *)isd, SysBase);
+	irqSet(6,  &irq6_int  , (void *)isd, SysBase);
 
 	/* Install timer interrupt */
 	timer = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
