@@ -27,6 +27,7 @@
 #include "imspec.h"
 #include "textengine.h"
 #include "listimage.h"
+#include "prefs.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -35,9 +36,10 @@ extern struct Library *MUIMasterBase;
 struct ListEntry
 {
     APTR data;
-    LONG *widths; /* The widths of the column */
-    LONG height; /* line height */
-    WORD flags; /* see below */
+    LONG *widths; /* Widths of the columns */
+    LONG width;   /* Line width */
+    LONG height;  /* Line height */
+    WORD flags;   /* see below */
     WORD parents; /* number of entries parent's, used for the list tree stuff */
 };
 
@@ -56,7 +58,7 @@ struct ColumnInfo
     int weight;
     int delta; /* ignored for the first and last column, defaults to 4 */
     int bar;
-    char *prepare;
+    STRPTR prepare;
 
     int entries_width; /* width of the entries (the maximum of the widths of all entries) */
 };
@@ -65,6 +67,9 @@ struct MUI_ImageSpec_intern;
 
 struct MUI_ListData
 {
+    /* bool attrs */
+    ULONG  flags;
+
     APTR intern_pool; /* The internal pool which the class has allocated */
     LONG intern_puddle_size;
     LONG intern_tresh_size;
@@ -86,6 +91,10 @@ struct MUI_ListData
     LONG insert_position; /* pos of the last insertion */
 
     LONG entry_maxheight; /* Maximum height of an entry */
+    ULONG entry_minheight; /* from MUIA_List_MinLineHeight */
+
+    LONG entries_totalheight;
+    LONG entries_maxwidth;
 
     LONG vertprop_entries;
     LONG vertprop_visible;
@@ -98,12 +107,12 @@ struct MUI_ListData
     /* Column managment, is allocated by ParseListFormat() and freed by CleanListFormat() */
     LONG columns; /* Number of columns the list has */
     struct ColumnInfo *ci;
-    char **preparses;
-    char **strings; /* the strings for the display function, one more as needed (for the entry position) */
+    STRPTR *preparses;
+    STRPTR *strings; /* the strings for the display function, one more as needed (for the entry position) */
 
     /* Titlestuff */
     int title_height; /* The complete height of the title */
-    char *title; /* On single comlums this is the title, otherwise 1 */
+    STRPTR title; /* On single comlums this is the title, otherwise 1 */
 
     struct MUI_EventHandlerNode ehn;
     int mouse_click; /* see below if mouse is hold down */
@@ -132,13 +141,28 @@ struct MUI_ListData
 
     /* list images */
     struct MinList images;
+
+    /* user prefs */
+    ListviewMulti   prefs_multi;
+    ListviewRefresh prefs_refresh;
+    UWORD           prefs_linespacing;
+    BOOL            prefs_smoothed;
+    UWORD           prefs_smoothval;
 };
+
+#define LIST_ADJUSTWIDTH   (1<<0)
+#define LIST_ADJUSTHEIGHT  (1<<1)
+#define LIST_AUTOVISIBLE   (1<<2)
+#define LIST_DRAGSORTABLE  (1<<3)
+#define LIST_SHOWDROPMARKS (1<<4)
+#define LIST_QUIET         (1<<5)
+
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
 #define MOUSE_CLICK_TITLE 2 /* on title clicked */
 
 /**************************************************************************
- Alloccate a single list entry, does not initialize it (except the pointer)
+ Allocate a single list entry, does not initialize it (except the pointer)
 **************************************************************************/
 static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 {
@@ -156,7 +180,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 }
 
 /**************************************************************************
- Dealloccate a single list entry, does not deinitialize it
+ Deallocate a single list entry, does not deinitialize it
 **************************************************************************/
 static void FreeListEntry(struct MUI_ListData *data, struct ListEntry *entry)
 {
@@ -253,10 +277,10 @@ static void FreeListFormat(struct MUI_ListData *data)
  Parses the given format string (also frees a previouly parsed format).
  Return 0 on failure.
 **************************************************************************/
-static int ParseListFormat(struct MUI_ListData *data, char *format)
+static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
 {
     int new_columns,i;
-    char *ptr;
+    STRPTR ptr;
     char c;
 
     if (!format) format = "";
@@ -269,12 +293,13 @@ static int ParseListFormat(struct MUI_ListData *data, char *format)
 
     /* Count the number of columns first */
     while ((c = *ptr++))
-	if (c == ',') new_columns++;
+	if (c == ',')
+	    new_columns++;
 
-    if (!(data->preparses = (char**)AllocVec((new_columns+10)*sizeof(char*),0)))
+    if (!(data->preparses = (STRPTR *)AllocVec((new_columns+10)*sizeof(STRPTR),0)))
 	return 0;
 
-    if (!(data->strings = (char**)AllocVec((new_columns+1+10)*sizeof(char*),0))) /* hold enough space also for the entry pos, used by orginal MUI and also some security space */
+    if (!(data->strings = (STRPTR *)AllocVec((new_columns+1+10)*sizeof(STRPTR),0))) /* hold enough space also for the entry pos, used by orginal MUI and also some security space */
 	return 0;
 
     if (!(data->ci = (struct ColumnInfo *)AllocVec(new_columns*sizeof(struct ColumnInfo),MEMF_CLEAR)))
@@ -305,21 +330,24 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
     int col;
 
     /* Preparses are not required to be set, so we clear them first */
-    for (col=0;col<data->columns;col++) data->preparses[col] = NULL;
+    for (col = 0; col < data->columns; col++)
+	data->preparses[col] = NULL;
 
     if (entry_pos == ENTRY_TITLE)
     {
-    	if (data->columns == 1 && (data->title != (char*)1))
+    	if ((data->columns == 1) && (data->title != (STRPTR)1))
     	{
 	    *data->strings = data->title;
 	    return;
     	}
     	entry_data = NULL; /* it's a title request */
     }
-    else entry_data = data->entries[entry_pos]->data;
+    else
+	entry_data = data->entries[entry_pos]->data;
 
     /* Get the display formation */
-    DoMethod(obj, MUIM_List_Display, (IPTR)entry_data, entry_pos, (IPTR)data->strings, (IPTR)data->preparses);
+    DoMethod(obj, MUIM_List_Display, (IPTR)entry_data, entry_pos,
+	     (IPTR)data->strings, (IPTR)data->preparses);
 }
 
 /**************************************************************************
@@ -332,34 +360,40 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
     struct ListEntry *entry = data->entries[pos];
     int j;
 
-    if (!entry) return;
+    if (!entry)
+	return;
 
-    DisplayEntry(cl,obj,pos);
+    DisplayEntry(cl, obj, pos);
 
     /* Clear the height */
-    data->entries[pos]->height = 0;
+    data->entries[pos]->height = data->entry_minheight;
 
-    for (j=0;j<data->columns;j++)
+    for (j = 0; j < data->columns; j++)
     {
-	ZText *text = zune_text_new(data->strings[j],data->preparses[j], ZTEXT_ARG_NONE, NULL);
-	if (text)
+	ZText *text = zune_text_new(data->strings[j], data->preparses[j], ZTEXT_ARG_NONE, NULL);
+	if (text != NULL)
 	{
-	    zune_text_get_bounds(text,obj);
-	    if (text->height > data->entries[pos]->height) data->entries[pos]->height = text->height;
+	    zune_text_get_bounds(text, obj);
+	    if (text->height > data->entries[pos]->height)
+		data->entries[pos]->height = text->height;
 	    data->entries[pos]->widths[j] = text->width;
 
-	    if (j == data->treecolumn) data->entries[pos]->widths[j] += data->entries[pos]->parents * data->parent_space;
+	    if (j == data->treecolumn)
+		data->entries[pos]->widths[j] += data->entries[pos]->parents * data->parent_space;
 
 	    if (text->width > data->ci[j].entries_width)
 	    {
-	        /* This columns width is bigger than the other in the same columns, so we store this value */
+	        /* This columns width is bigger than the other in the same
+		 * columns, so we store this value
+		 */
 	        data->ci[j].entries_width = text->width;
 	    }
 
 	    zune_text_destroy(text);
 	}
     }
-    if (data->entries[pos]->height > data->entry_maxheight) data->entry_maxheight = data->entries[pos]->height;
+    if (data->entries[pos]->height > data->entry_maxheight)
+	data->entry_maxheight = data->entries[pos]->height;
 }
 
 /**************************************************************************
@@ -370,18 +404,27 @@ static void CalcWidths(struct IClass *cl, Object *obj)
     int i,j;
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    if (!(_flags(obj) & MADF_SETUP)) return;
+    if (!(_flags(obj) & MADF_SETUP))
+	return;
 
-    for (j=0;j<data->columns;j++)
+    for (j = 0; j < data->columns; j++)
 	data->ci[j].entries_width = 0;
 
     data->entry_maxheight = 0;
+    data->entries_totalheight = 0;
+    data->entries_maxwidth = 0;
 
-    for (i=(data->title?ENTRY_TITLE:0);i<data->entries_num;i++)
+    for (i= (data->title ? ENTRY_TITLE : 0) ; i < data->entries_num; i++)
     {
 	CalcDimsOfEntry(cl,obj,i);
+	data->entries_totalheight += data->entries[i]->height;
     }
-    if (!data->entry_maxheight) data->entry_maxheight = 1;
+
+    for (j = 0; j < data->columns; j++)
+	data->entries_maxwidth += data->ci[j].entries_width;
+
+    if (!data->entry_maxheight)
+	data->entry_maxheight = 1;
 }
 
 /**************************************************************************
@@ -394,8 +437,12 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
     int old_entries_visible = data->entries_visible;
     int old_entries_top_pixel = data->entries_top_pixel;
 
-    data->entries_visible = (_mheight(obj) - data->title_height)/data->entry_maxheight;
-    data->entries_top_pixel = _mtop(obj) + data->title_height + (_mheight(obj) - data->title_height - data->entries_visible * data->entry_maxheight)/2;
+    data->entries_visible = (_mheight(obj) - data->title_height)
+	/ (data->entry_maxheight /* + data->prefs_linespacing */);
+
+    data->entries_top_pixel = _mtop(obj) + data->title_height
+	+ (_mheight(obj) - data->title_height
+	   - data->entries_visible * (data->entry_maxheight /* + data->prefs_linespacing */)) / 2;
 
     return (old_entries_visible != data->entries_visible) || (old_entries_top_pixel != data->entries_top_pixel);
 }
@@ -409,16 +456,12 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ListData   *data;
     struct TagItem  	    *tag, *tags;
     APTR *array = NULL;
-    char *format = NULL;
+    STRPTR format = NULL;
     
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-/*  	MUIA_InnerLeft,0, */
-/*  	MUIA_InnerRight,0, */
-/*  	MUIA_InnerTop,0, */
-/*  	MUIA_InnerBottom,0, */
 	MUIA_Font, MUIV_Font_List,
 	MUIA_Background, MUII_ListBack,
-    	TAG_MORE, msg->ops_AttrList);
+    	TAG_MORE, (IPTR)msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -428,10 +471,6 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->intern_puddle_size = 2008;
     data->intern_tresh_size = 1024;
     data->input = 1;
-
-/*      SetAttrs(obj, */
-/*    	MUIA_FillArea,FALSE, */
-/*  	TAG_DONE); */
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -471,18 +510,31 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_List_Format:
-		    format = (char*)tag->ti_Data;
+		    format = (STRPTR)tag->ti_Data;
 		    break;
 
 	    case    MUIA_List_Title:
-		    data->title = (char*)tag->ti_Data;
+		    data->title = (STRPTR)tag->ti_Data;
 		    break;
+
+	    case    MUIA_List_MinLineHeight:
+		    data->entry_minheight = tag->ti_Data;
+		    break;
+
+	    case MUIA_List_AdjustHeight:
+		_handle_bool_tag(data->flags, tag->ti_Data, LIST_ADJUSTHEIGHT);
+		break;
+
+	    case MUIA_List_AdjustWidth:
+		_handle_bool_tag(data->flags, tag->ti_Data, LIST_ADJUSTWIDTH);
+		break;
+
     	}
     }
 
     if (!data->pool)
     {
-    	/* No memory pool given, so we create out own */
+    	/* No memory pool given, so we create our own */
 	data->pool = data->intern_pool = CreatePool(0,data->intern_puddle_size,data->intern_tresh_size);
 	if (!data->pool)
 	{
@@ -491,7 +543,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    /* parese the list format */
+    /* parse the list format */
     if (!(ParseListFormat(data,format)))
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
@@ -747,6 +799,12 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl, obj, (Msg) msg))
 	return 0;
 
+    data->prefs_multi       = muiGlobalInfo(obj)->mgi_Prefs->list_multi;
+    data->prefs_refresh     = muiGlobalInfo(obj)->mgi_Prefs->list_refresh;
+    data->prefs_linespacing = muiGlobalInfo(obj)->mgi_Prefs->list_linespacing;
+    data->prefs_smoothed    = muiGlobalInfo(obj)->mgi_Prefs->list_smoothed;
+    data->prefs_smoothval   = muiGlobalInfo(obj)->mgi_Prefs->list_smoothval;
+
     CalcWidths(cl,obj);
 
     if (data->title)
@@ -793,7 +851,6 @@ static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 
 /**************************************************************************
  MUIM_AskMinMax
- using List_AdjustXYZ will prevent maxXYZ = MUI_MAXMAX
 **************************************************************************/
 static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax *msg)
 {
@@ -801,13 +858,33 @@ static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    msg->MinMaxInfo->MinHeight += 3 * _font(obj)->tf_YSize;
-    msg->MinMaxInfo->DefHeight += 8 * _font(obj)->tf_YSize;
-    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    if (data->flags & LIST_ADJUSTHEIGHT)
+    {
+	msg->MinMaxInfo->MinHeight += data->entries_totalheight;
+	msg->MinMaxInfo->DefHeight += data->entries_totalheight;
+	msg->MinMaxInfo->MaxHeight += data->entries_totalheight;
+    }
+    else
+    {
+	ULONG h = data->entry_maxheight + data->prefs_linespacing;
+	msg->MinMaxInfo->MinHeight += 3 * h + data->prefs_linespacing;
+	msg->MinMaxInfo->DefHeight += 8 * h + data->prefs_linespacing;
+	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    }
+    D(bug("List minheigh=%d, line maxh=%d\n", msg->MinMaxInfo->MinHeight, data->entry_maxheight));
 
-    msg->MinMaxInfo->MinWidth += 44;
-    msg->MinMaxInfo->DefWidth += 104;
-    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    if (data->flags & LIST_ADJUSTWIDTH)
+    {
+	msg->MinMaxInfo->MinWidth += data->entries_maxwidth;
+	msg->MinMaxInfo->DefWidth += data->entries_maxwidth;
+	msg->MinMaxInfo->MaxWidth += data->entries_maxwidth;
+    }
+    else
+    {
+	msg->MinMaxInfo->MinWidth += 44;
+	msg->MinMaxInfo->DefWidth += 104;
+	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    }
     return TRUE;
 }
 
@@ -905,19 +982,26 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (msg->flags & MADF_DRAWUPDATE)
     {
     	if (data->update == 1)
-	    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
+	    DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
+		     _mwidth(obj), _mheight(obj),
+		     0, data->entries_first * data->entry_maxheight, 0);
     }
     else
     {
-	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
+	DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
+		 _mwidth(obj), _mheight(obj),
+		 0, data->entries_first * data->entry_maxheight, 0);
     }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
 			   _mwidth(obj), _mheight(obj));
 
-    if (!(msg->flags & MADF_DRAWUPDATE) || ((msg->flags & MADF_DRAWUPDATE) && data->update == 1))
+    if (!(msg->flags & MADF_DRAWUPDATE)
+	|| ((msg->flags & MADF_DRAWUPDATE) && data->update == 1))
     {
 	y = _mtop(obj);
+	/* Draw Title
+	*/
 	if (data->title_height && data->title)
 	{
 	    List_DrawEntry(cl,obj,ENTRY_TITLE,y);
@@ -945,9 +1029,12 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	{
 	    scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
 	    
-	    ScrollRaster(_rp(obj),0,diffy * data->entry_maxheight,_mleft(obj),y,_mright(obj),y + data->entry_maxheight * data->entries_visible);
+	    ScrollRaster(_rp(obj), 0, diffy * data->entry_maxheight,
+			 _mleft(obj), y,
+			 _mright(obj), y + data->entry_maxheight * data->entries_visible);
 
-    	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+    	    scroll_caused_damage =
+		scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH);
 	    
 	    if (diffy > 0)
 	    {
@@ -960,8 +1047,10 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	top = y;
 	bottom = y + (end - start) * data->entry_maxheight;
 
-	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),top,_mwidth(obj),bottom - top + 1,0,top - _mtop(obj) + data->entries_first * data->entry_maxheight,0);
-    }
+	DoMethod(obj, MUIM_DrawBackground, _mleft(obj), top,
+		 _mwidth(obj), bottom - top + 1,
+		 0, top - _mtop(obj) + data->entries_first * data->entry_maxheight, 0);
+    } /* if ((msg->flags & MADF_DRAWUPDATE) && data->update == 3) */
 
     for (entry_pos = start; entry_pos < end && entry_pos < data->entries_num; entry_pos++)
     {
@@ -987,7 +1076,7 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    List_DrawEntry(cl,obj,entry_pos,y);
 	}
     	y += data->entry_maxheight;
-    }
+    } /* for */
 
     MUI_RemoveClipping(muiRenderInfo(obj),clip);
 
@@ -1541,18 +1630,24 @@ STATIC ULONG List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetE
 STATIC ULONG List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Construct *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!data->construct_hook) return (ULONG)msg->entry;
+
+    if (NULL == data->construct_hook)
+	return (ULONG)msg->entry;
     if ((ULONG)data->construct_hook == MUIV_List_ConstructHook_String)
     {
-    	int len = msg->entry?strlen((char*)msg->entry):0;
-    	ULONG *mem = AllocPooled(msg->pool,len+5);
-    	if (!mem) return 0;
-    	mem[0] = len+5;
-    	if (msg->entry) strcpy((char*)(mem+1),(char*)msg->entry);
-    	else *(char*)(mem+1) = 0;
+    	int len = msg->entry ? strlen((STRPTR)msg->entry) : 0;
+    	ULONG *mem = AllocPooled(msg->pool, len+5);
+
+    	if (NULL == mem)
+	    return 0;
+    	mem[0] = len + 5;
+    	if (msg->entry != NULL)
+	    strcpy((STRPTR)(mem+1), (STRPTR)msg->entry);
+    	else
+	    *(STRPTR)(mem+1) = 0;
     	return (ULONG)(mem+1);
     }
-    return CallHookPkt(data->construct_hook,msg->pool,msg->entry);
+    return CallHookPkt(data->construct_hook, msg->pool, msg->entry);
 }
 
 /**************************************************************************
@@ -1561,14 +1656,18 @@ STATIC ULONG List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Con
 STATIC ULONG List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destruct *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!data->destruct_hook) return 0;
+
+    if (NULL == data->destruct_hook)
+	return 0;
+
     if ((ULONG)data->destruct_hook == MUIV_List_DestructHook_String)
     {
-    	ULONG *mem = ((ULONG*)msg->entry)-1;
-	FreePooled(msg->pool,mem,mem[0]);
-    } else
+    	ULONG *mem = ((ULONG*)msg->entry) - 1;
+	FreePooled(msg->pool, mem, mem[0]);
+    }
+    else
     {
-	CallHookPkt(data->destruct_hook,msg->pool,msg->entry);
+	CallHookPkt(data->destruct_hook, msg->pool, msg->entry);
     }
     return 0;
 }
@@ -1588,20 +1687,18 @@ STATIC ULONG List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compa
 STATIC ULONG List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!data->display_hook)
+
+    if (NULL == data->display_hook)
     {
     	if (msg->entry)
-    	{
 	    *msg->strings = msg->entry;
-	} else
-	{
+	else
 	    *msg->strings = 0;
-	}
     	return 1;
     }
 
-    *((ULONG*)(msg->strings-1)) = msg->entry_pos;
-    return CallHookPkt(data->display_hook,msg->strings,msg->entry);
+    *((ULONG*)(msg->strings - 1)) = msg->entry_pos;
+    return CallHookPkt(data->display_hook, msg->strings, msg->entry);
 }
 
 /**************************************************************************
