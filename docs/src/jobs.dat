@@ -1,10 +1,10 @@
-alib_commodities00000;1;SDuvan;Write ArgArrayDone
-alib_commodities00001;1;SDuvan;Write ArgArrayInit
-alib_commodities00002;1;SDuvan;Write ArgInt
-alib_commodities00003;1;SDuvan;Write ArgString
-alib_commodities00004;1;SDuvan;Write HotKey
-alib_commodities00005;1;SDuvan;Write InvertString
-alib_commodities00006;1;SDuvan;Write FreeIEvents
+alib_commodities00000;2;SDuvan;Write ArgArrayDone
+alib_commodities00001;2;SDuvan;Write ArgArrayInit
+alib_commodities00002;2;SDuvan;Write ArgInt
+alib_commodities00003;2;SDuvan;Write ArgString
+alib_commodities00004;2;SDuvan;Write HotKey
+alib_commodities00005;2;SDuvan;Write InvertString
+alib_commodities00006;2;SDuvan;Write FreeIEvents
 alib_stdio00000;1;digulla;Write fclose
 alib_stdio00001;1;digulla;Write fgetc
 alib_stdio00002;1;digulla;Write fputc
@@ -100,11 +100,11 @@ arp00067;2;bergers;Write ArpLock
 arp00068;2;bergers;Write ArpDupLock
 arp00069;0;bergers;Write GetDataSegment
 arp00070;0;bergers;Write GetTracker
-asl00000;0;digulla;Write AllocFileRequest
-asl00001;1;nlorentz;Write FreeFileRequest
-asl00002;1;nlorentz;Write RequestFile
-asl00003;1;nlorentz;Write AllocAslRequest
-asl00004;1;nlorentz;Write FreeAslRequest
+asl00000;2;nlorentz;Write AllocFileRequest
+asl00001;2;nlorentz;Write FreeFileRequest
+asl00002;2;nlorentz;Write RequestFile
+asl00003;2;nlorentz;Write AllocAslRequest
+asl00004;2;nlorentz;Write FreeAslRequest
 asl00005;1;nlorentz;Write AslRequest
 battclock00000;2;iaint;Write ResetBattClock
 battclock00001;2;iaint;Write ReadBattClock
@@ -127,7 +127,6 @@ bullet00001;0;digulla;Write CloseEngine
 bullet00002;0;digulla;Write SetInfoA
 bullet00003;0;digulla;Write ObtainInfoA
 bullet00004;0;digulla;Write ReleaseInfoA
-c/alias;1;laguest;Write C:Alias
 cardres00000;0;digulla;Write OwnCard
 cardres00001;0;digulla;Write ReleaseCard
 cardres00002;0;digulla;Write GetCardMap
@@ -145,30 +144,58 @@ cardres00013;0;digulla;Write IfAmigaXIP
 cardres00014;0;digulla;Write CardForceChange
 cardres00015;0;digulla;Write CardChangeCount
 cardres00016;0;digulla;Write CardInterface
+cia00000;0;digulla;Write AddICRVector
+cia00001;0;digulla;Write RemICRVector
+cia00002;0;digulla;Write AbleICR
+cia00003;0;digulla;Write SetICR
+c/alias;2;laguest;Write C:Alias
 c/avail;2;matthias;Write C:Avail
-c/break;1;laguest;Write C:Break
+c/break;2;iaint;Write C:Break
 c/cd;2;matthias;Write C:Cd
 c/copy;0;digulla;Write Copy
 c/cpu;1;laguest;Write C:CPU
 c/date;1;srittau;Write Date
 c/dir;0;digulla;Write C:Dir
 c/echo;2;matthias;Write C:Echo
+c/else;2;SDuvan;Write Else
+c/endif;2;SDuvan;Write Endif
 c/eval;1;validus@kamper.digimag.net;Write Eval
 c/execute;1;matthias;Write C:Execute
-c/fault;1;laguest;Write C:Fault
+c/fault;2;iaint;Write C:Fault
 c/filenote;1;laguest;Write Filenote
-c/get;1;laguest;Write C:Get
-c/getenv;1;laguest;Write C:GetEnv
-cia00000;0;digulla;Write AddICRVector
-cia00001;0;digulla;Write RemICRVector
-cia00002;0;digulla;Write AbleICR
-cia00003;0;digulla;Write SetICR
+c/get;2;laguest;Write C:Get
+c/getenv;2;laguest;Write C:GetEnv
+c/if;2;SDuvan;Write If
 c/info;0;digulla;Write Info
-c/join;1;laguest;Write Join
+c/join;1;chodorowski;Write Join
 c/librarytest;1;matthias;librarytest
 c/list;1;matthias;Write C:List
 c/makelink;0;srittau;Write C:MakeLink
 c/newshell;1;matthias;Write C:NewShell
+c/path;1;matthias;Write C:Path
+c/prompt;2;SDuvan;Write C:Prompt
+c/protect;1;laguest;Write Protect
+c/relabel;0;digulla;Write Relabel
+c/rename;1;laguest;Write Rename
+c/requestchoice;2;laguest;Write C:RequestChoice
+c/requestfile;2;laguest;Write C:RequestFile
+c/run;1;matthias;Write C:Run
+c/search;0;digulla;Write Search
+c/set;2;laguest;Write C:Set
+c/setclock;1;srittau;Write SetClock
+c/setdate;2;SDuvan;Write C:SetDate
+c/setenv;2;laguest;Write C:SetEnv
+c/shell;1;SDuvan;Write C:Shell
+c/sort;0;digulla;Write Sort
+c/stack;2;SDuvan;Write C:Stack
+c/status;1;laguest;Write C:Status
+c/type;1;matthias;Write C:Type
+c/unalias;2;laguest;Write C:UnAlias
+c/unset;2;laguest;Write C:UnSet
+c/unsetenv;2;laguest;Write C:UnSetEnv
+c/version;1;srittau;Write Version
+c/wait;1;digulla;Write C:Wait
+c/which;1;SDuvan;Write Which
 colorwheel00000;0;digulla;Write ConvertHSBToRGB
 colorwheel00001;0;digulla;Write ConvertRGBToHSB
 commodities00000;2;SDuvan;Write CreateCxObj
@@ -202,45 +229,36 @@ commodities00027;2;SDuvan;FreeBrokerList
 commodities00028;2;SDuvan;CxNotify
 console00000;0;digulla;Write CDInputHandler
 console00001;2;digulla;Write RawKeyConvert
-c/path;1;matthias;Write C:Path
-c/prompt;1;laguest;Write C:Prompt
-c/protect;1;laguest;Write Protect
-c/relabel;0;digulla;Write Relabel
-c/rename;1;laguest;Write Rename
-c/requestchoice;1;laguest;Write C:RequestChoice
-c/requestfile;1;laguest;Write C:RequestFile
-c/run;1;matthias;Write C:Run
-c/search;0;digulla;Write Search
-c/set;1;laguest;Write C:Set
-c/setclock;1;srittau;Write SetClock
-c/setdate;1;laguest;Write C:SetDate
-c/setenv;1;laguest;Write C:SetEnv
-c/shell;1;matthias;Write C:Shell
-c/sort;0;digulla;Write Sort
-c/stack;1;laguest;Write C:Stack
-c/status;1;laguest;Write C:Status
-c/type;1;matthias;Write C:Type
-c/unalias;1;laguest;Write C:UnAlias
-c/unset;1;laguest;Write C:UnSet
-c/unsetenv;1;laguest;Write C:UnSetEnv
-c/version;1;srittau;Write Version
-c/wait;1;digulla;Write C:Wait
-c/which;1;SDuvan;Write Which
-datatypes00000;1;ruppert;Write ObtainDataTypeA
-datatypes00001;1;ruppert;Write ReleaseDataType
-datatypes00002;1;ruppert;Write NewDTObjectA
-datatypes00003;1;ruppert;Write DisposeDTObject
-datatypes00004;1;ruppert;Write SetDTAttrsA
-datatypes00005;1;ruppert;Write GetDTAttrsA
-datatypes00006;1;ruppert;Write AddDTObject
-datatypes00007;1;ruppert;Write RefreshDTObjectA
-datatypes00008;1;ruppert;Write DoAsyncLayout
-datatypes00009;1;ruppert;Write DoDTMethodA
-datatypes00010;1;ruppert;Write RemoveDTObject
-datatypes00011;1;ruppert;Write GetDTMethods
-datatypes00012;1;ruppert;Write GetDTTriggerMethods
-datatypes00013;1;ruppert;Write PrintDTObjectA
-datatypes00014;1;ruppert;Write GetDTString
+datatypes00000;2;SDuvan;Write ObtainDataTypeA
+datatypes00001;2;SDuvan;Write ReleaseDataType
+datatypes00002;2;SDuvan;Write NewDTObjectA
+datatypes00003;2;SDuvan;Write DisposeDTObject
+datatypes00004;2;SDuvan;Write SetDTAttrsA
+datatypes00005;2;SDuvan;Write GetDTAttrsA
+datatypes00006;2;SDuvan;Write AddDTObject
+datatypes00007;2;SDuvan;Write RefreshDTObjectA
+datatypes00008;2;SDuvan;Write DoAsyncLayout
+datatypes00009;2;SDuvan;Write DoDTMethodA
+datatypes00010;2;SDuvan;Write RemoveDTObject
+datatypes00011;2;SDuvan;Write GetDTMethods
+datatypes00012;2;SDuvan;Write GetDTTriggerMethods
+datatypes00013;2;SDuvan;Write PrintDTObjectA
+datatypes00014;2;SDuvan;Write GetDTString
+datatypes00015;2;SDuvan;CopyDTMethods
+datatypes00016;2;SDuvan;CopyDTTriggerMethods
+datatypes00017;2;SDuvan;DoDTDomainA
+datatypes00018;2;SDuvan;DrawDTObject
+datatypes00019;2;SDuvan;FindMethod
+datatypes00020;2;SDuvan;FindToolNodeA
+datatypes00021;2;SDuvan;FindTriggerMethod
+datatypes00022;2;SDuvan;FreeDTMethods
+datatypes00023;2;SDuvan;GetDTTriggerMethodDataFlags
+datatypes00024;2;SDuvan;LockDataType
+datatypes00025;2;SDuvan;ObtainDTDrawInfoA
+datatypes00026;2;SDuvan;ReleaseDTDrawInfo
+datatypes00027;2;SDuvan;SaveDTObjectA
+datatypes00028;2;SDuvan;StartDragSelect
+datatypes00029;1;SDuvan;LaunchToolA
 DevCMD00001;0;;Write ADCMD_ALLOCATE
 DevCMD00002;0;;Write ADCMD_FINISH
 DevCMD00003;0;;Write ADCMD_FREE
@@ -309,11 +327,11 @@ DevCMD00072;0;;Write IND_SETPERIOD
 DevCMD00073;0;;Write IND_SETTHRESH
 DevCMD00074;2;nlorentz;Write IND_WRITEEVENT
 DevCMD00075;2;SDuvan;Write KBD - CMD_CLEAR
-DevCMD00076;1;SDuvan;Write KBD_ADDRESETHANDLER
+DevCMD00076;2;SDuvan;Write KBD_ADDRESETHANDLER
 DevCMD00077;2;SDuvan;Write KBD_READEVENT
-DevCMD00078;1;SDuvan;Write KBD_READMATRIX
-DevCMD00079;1;SDuvan;Write KBD_REMRESETHANDLER
-DevCMD00080;1;SDuvan;Write KBD_RESETHANDLERDONE
+DevCMD00078;2;SDuvan;Write KBD_READMATRIX
+DevCMD00079;2;SDuvan;Write KBD_REMRESETHANDLER
+DevCMD00080;2;SDuvan;Write KBD_RESETHANDLERDONE
 DevCMD00083;0;;Write NA - CMD_FLUSH
 DevCMD00084;0;;Write NA - CMD_READ
 DevCMD00085;0;;Write NA - CMD_RESET
@@ -370,24 +388,6 @@ DevCMD00143;0;;Write TD_RAWREAD
 DevCMD00144;0;;Write TD_RAWWRITE
 DevCMD00145;0;;Write TD_REMCHANGEINT
 DevCMD00146;0;;Write TD_SEEK
-DevFCT00000;0;;Write AD - AbortIO
-DevFCT00008;0;;Write AD - BeginIO
-DevFCT00009;0;;Write AD - CloseDevice
-DevFCT00018;0;;Write AD - Expunge
-DevFCT00019;0;;Write AD - OpenDevice
-DevFCT00045;0;;Write CD - CloseDevice
-DevFCT00046;0;;Write CD - OpenDevice
-DevFCT00061;0;;Write CSD - OpenDevice
-DevFCT00081;0;;Write NA - AbortIO
-DevFCT00082;0;;Write NA - OpenDevice
-DevFCT00089;0;;Write NA - CloseDevice
-DevFCT00097;1;bergers;Write PD - OpenDevice
-DevFCT00110;0;;Write PRD - PWrite
-DevFCT00111;1;bergers;Write SD - AbortIO
-DevFCT00112;1;bergers;Write SD - BeginIO
-DevFCT00113;1;bergers;Write SD - CloseDevice
-DevFCT00121;1;bergers;Write SD - OpenDevice
-DevFCT00125;0;;Write TR - AbortIO
 disk00000;0;digulla;Write AllocUnit
 disk00001;0;digulla;Write FreeUnit
 disk00002;0;digulla;Write GetUnit
@@ -418,11 +418,11 @@ dos00014;0;digulla;Write Info
 dos00015;2;matthias;Write CreateDir
 dos00016;2;matthias;Write CurrentDir
 dos00017;2;matthias;Write IoErr
-dos00018;0;digulla;Write CreateProc
+dos00018;2;iaint;Write CreateProc
 dos00019;0;digulla;Write Exit
 dos00020;2;matthias;Write LoadSeg
 dos00021;2;matthias;Write UnLoadSeg
-dos00022;0;digulla;Write DeviceProc
+dos00022;2;iaint;Write DeviceProc
 dos00023;2;matthias;Write SetComment
 dos00024;2;matthias;Write SetProtection
 dos00025;2;digulla;Write DateStamp
@@ -430,7 +430,7 @@ dos00026;2;matthias;Write Delay
 dos00027;2;srittau;Write WaitForChar
 dos00028;2;srittau;Write ParentDir
 dos00029;2;matthias;Write IsInteractive
-dos00030;1;turrican;Write Execute
+dos00030;2;SDuvan;Write Execute
 dos00031;2;matthias;Write AllocDosObject
 dos00032;2;matthias;Write FreeDosObject
 dos00033;1;turrican;Write DoPkt
@@ -451,7 +451,7 @@ dos00047;2;digulla;Write FRead
 dos00048;2;digulla;Write FWrite
 dos00049;2;digulla;Write FGets
 dos00050;2;matthias;Write FPuts
-dos00051;1;turrican;Write VFWritef
+dos00051;2;SDuvan;Write VFWritef
 dos00052;2;matthias;Write VFPrintf
 dos00053;2;matthias;Write Flush
 dos00054;0;;Write SetVBuf
@@ -466,14 +466,14 @@ dos00062;2;digulla;Write SplitName
 dos00063;1;srittau;Write SameLock
 dos00064;0;digulla;Write SetMode
 dos00065;2;matthias;Write ExAll
-dos00066;0;iaint;Write ReadLink
-dos00067;0;iaint;Write MakeLink
+dos00066;2;srittau;Write ReadLink
+dos00067;2;srittau;Write MakeLink
 dos00068;2;matthias;Write ChangeMode
 dos00069;2;matthias;Write SetFileSize
 dos00070;2;matthias;Write SetIoErr
 dos00071;2;iaint;Write Fault
 dos00072;2;matthias;Write PrintFault
-dos00073;0;digulla;Write ErrorReport
+dos00073;2;SDuvan;Write ErrorReport
 dos00074;2;matthias;Write Cli
 dos00075;2;matthias;Write CreateNewProc
 dos00076;2;matthias;Write RunCommand
@@ -493,7 +493,7 @@ dos00089;2;turrican;Write SetPrompt
 dos00090;2;turrican;Write GetPrompt
 dos00091;2;iaint;Write SetProgramDir
 dos00092;2;iaint;Write GetProgramDir
-dos00093;1;turrican;Write SystemTagList
+dos00093;2;SDuvan;Write SystemTagList
 dos00094;2;matthias;Write AssignLock
 dos00095;2;turrican;Write AssignLate
 dos00096;2;turrican;Write AssignPath
@@ -554,7 +554,7 @@ dos00150;2;matthias;Write MatchPatternNoCase
 dos00151;0;digulla;Write SameDevice
 dos00152;2;matthias;Write ExAllEnd
 dos00153;1;srittau;Write SetOwner
-dtclass00000;0;digulla;Write ObtainEngine
+dtclass00000;2;SDuvan;Write ObtainEngine
 exec00000;2;matthias;Write Supervisor
 exec00001;2;ldp;Write InitCode
 exec00002;2;matthias;Write InitStruct
@@ -701,13 +701,13 @@ gadtools00003;2;bergers;Write CreateMenusA
 gadtools00004;2;bergers;Write FreeMenus
 gadtools00005;1;bergers;Write LayoutMenuItemsA
 gadtools00006;1;bergers;Write LayoutMenusA
-gadtools00007;1;srittau;Write GT_GetIMsg
+gadtools00007;2;stegerg;Write GT_GetIMsg
 gadtools00008;2;srittau;Write GT_ReplyIMsg
 gadtools00009;1;srittau;Write GT_RefreshWindow
 gadtools00010;2;srittau;Write GT_BeginRefresh
 gadtools00011;2;srittau;Write GT_EndRefresh
-gadtools00012;1;srittau;Write GT_FilterIMsg
-gadtools00013;1;srittau;Write GT_PostFilterIMsg
+gadtools00012;2;stegerg;Write GT_FilterIMsg
+gadtools00013;2;stegerg;Write GT_PostFilterIMsg
 gadtools00014;2;srittau;Write CreateContext
 gadtools00015;2;srittau;Write DrawBevelBoxA
 gadtools00016;2;srittau;Write GetVisualInfoA
@@ -1019,7 +1019,7 @@ intuition00049;1;bergers;Write SetPrefs
 intuition00050;2;digulla;Write IntuiTextLength
 intuition00051;2;hkiel;Write WBenchToBack
 intuition00052;2;hkiel;Write WBenchToFront
-intuition00053;0;digulla;Write AutoRequest
+intuition00053;2;stegerg;Write AutoRequest
 intuition00054;2;bergers;Write BeginRefresh
 intuition00055;2;srittau;Write BuildSysRequest
 intuition00056;2;bergers;Write EndRefresh
@@ -1038,7 +1038,7 @@ intuition00068;2;digulla;Write AddGList
 intuition00069;2;digulla;Write RemoveGList
 intuition00070;2;digulla;Write ActivateWindow
 intuition00071;2;nlorentz;Write RefreshWindowFrame
-intuition00072;1;nlorentz;Write ActivateGadget
+intuition00072;2;nlorentz;Write ActivateGadget
 intuition00073;2;digulla;Write NewModifyProp
 intuition00074;0;digulla;Write QueryOverscan
 intuition00075;2;bergers;Write MoveWindowInFrontOf
@@ -1075,12 +1075,12 @@ intuition00105;2;nlorentz;Write NextObject
 intuition00106;2;digulla;Write MakeClass
 intuition00107;2;digulla;Write AddClass
 intuition00108;2;nlorentz;Write GetScreenDrawInfo
-intuition00109;1;nlorentz;Write FreeScreenDrawInfo
+intuition00109;2;nlorentz;Write FreeScreenDrawInfo
 intuition00110;1;SDuvan;Write ResetMenuStrip
 intuition00111;2;digulla;Write RemoveClass
 intuition00112;2;digulla;Write FreeClass
-intuition00113;0;SDuvan;Write AllocScreenBuffer
-intuition00114;0;SDuvan;Write FreeScreenBuffer
+intuition00113;0;;Write AllocScreenBuffer
+intuition00114;0;;Write FreeScreenBuffer
 intuition00115;0;digulla;Write ChangeScreenBuffer
 intuition00116;2;hkiel;Write ScreenDepth
 intuition00117;0;digulla;Write ScreenPosition
@@ -1297,13 +1297,13 @@ reqtools00011;0;digulla;Write rtReqHandlerA
 reqtools00012;1;SDuvan;Write rtSetWaitPointer
 reqtools00013;0;digulla;Write rtGetVScreenSize
 reqtools00014;1;SDuvan;Write rtSetReqPosition
-reqtools00015;1;SDuvan;Write rtSpread
-reqtools00016;1;SDuvan;Write rtScreenToFrontSafely
-reqtools00017;1;SDuvan;rtLockPrefs
-reqtools00018;1;SDuvan;rtUnlockPrefs
-reqtools00019;1;SDuvan;rtCloseWindowSafely
-reqtools00020;1;SDuvan;rtLockWindow
-reqtools00021;1;SDuvan;rtUnlockWindow
+reqtools00015;2;SDuvan;Write rtSpread
+reqtools00016;2;SDuvan;Write rtScreenToFrontSafely
+reqtools00017;2;SDuvan;rtLockPrefs
+reqtools00018;2;SDuvan;rtUnlockPrefs
+reqtools00019;2;SDuvan;rtCloseWindowSafely
+reqtools00020;2;SDuvan;rtLockWindow
+reqtools00021;2;SDuvan;rtUnlockWindow
 rexxsyslib00000;0;digulla;Write CreateArgstring
 rexxsyslib00001;0;digulla;Write DeleteArgstring
 rexxsyslib00002;0;digulla;Write LengthArgstring
