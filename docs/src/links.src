@@ -71,6 +71,7 @@ but they should be implemented in AmigaOS/AROS, too.
 \section{Less Related}
 
 \begin{itemize}
+\item \link{Open Source Amiga Projects}{http://www.crosswinds.net/~osap/}
 \item \link{AmigaDOS Online Reference Manual}
 {http://www.mentasm.com/~mramiga/dos1.shtml}
 \smallpic{pics/ados1.gif}
