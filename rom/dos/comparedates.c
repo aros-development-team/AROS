@@ -22,12 +22,17 @@
 	struct DosLibrary *, DOSBase, 123, Dos)
 
 /*  FUNCTION
+	Compares two dates.
 
     INPUTS
+	date1, date2 - The two dates to compare.
 
     RESULT
+	<0 if date1 is later than date2, ==0 if they are equal or >0 if date2
+	is later than date1.
 
     NOTES
+	This is NOT the same ordering as strcmp() !
 
     EXAMPLE
 
@@ -38,17 +43,23 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+    LONG diff;
 
-    aros_print_not_implemented ("CompareDates");
+    diff = date2->ds_Days - date1->ds_Days;
 
-    return 0;
+    if (!diff)
+    {
+	diff = date2->ds_Minute - date1->ds_Minute;
+
+	if (!diff)
+	    diff = date2->ds_Tick - date1->ds_Tick;
+    }
+
+    return diff;
     AROS_LIBFUNC_EXIT
 } /* CompareDates */
