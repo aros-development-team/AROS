@@ -1,13 +1,13 @@
 PURIFY	= /home/digulla/AROS/compiler/purify/purify
 CC	 = gcc
 #CC	  = $(PURIFY) gcc
-CFLAGS	 = -g -Wall -O -I..
+CFLAGS	 = -g -Wall -O -I.. -DHAVE_VSNPRINT
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
 OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o
 
-FOBJS	 = format.o db.o var.o
+FOBJS	 = format.o db.o var.o expr.o
 
 all : hpp format
 
