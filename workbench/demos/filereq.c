@@ -58,36 +58,117 @@ struct Library *AslBase = NULL;
 
 struct TagItem frtags[] =
 {
-    { ASL_Hail,	      (ULONG)"The RKM file requester" },
-    { ASL_Height,     MYHEIGHT },
-    { ASL_Width,      MYWIDTH },
-    { ASL_LeftEdge,   MYLEFTEDGE },
-    { ASL_TopEdge,    MYTOPEDGE },
-    { ASL_OKText,     (ULONG)"OKAY" },
-    { ASL_CancelText, (ULONG)"Not OK" },
-    { ASL_File,	      (ULONG)"asl.library" },
-    { ASL_Dir,	      (ULONG)"libs:" },
-    { TAG_DONE,       NULL }
+    { ASLFR_TitleText,	        (IPTR)"Custom Positive and Negative text" },
+    { ASLFR_PositiveText,       (IPTR)"Load File" },
+    { ASLFR_NegativeText,       (IPTR)"Forget it" },
+    { TAG_DONE,       	        NULL }
 };
 
-int main(int argc, char **argv)
+struct TagItem frtags2[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"Save mode" },
+    { ASLFR_DoSaveMode,         TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+struct TagItem frtags3[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"DoPatterns" },
+    { ASLFR_DoSaveMode,         TRUE},
+    { ASLFR_DoPatterns,		TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+struct TagItem frtags4[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"Drawers Only" },
+    { ASLFR_DrawersOnly,	TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+struct TagItem frtags5[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"Drawers Only + DoPatterns (pattern hasn't any effect like on AmigaoS)" },
+    { ASLFR_DrawersOnly,	TRUE},
+    { ASLFR_DoPatterns,		TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+struct TagItem frtags6[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"Multiselection (use SHIFT)" },
+    { ASLFR_DoMultiSelect,	TRUE},
+    { ASLFR_InitialDrawer,      (IPTR)"Libs:"},
+    { ASLFR_InitialFile,	(IPTR)"Initial file"},
+    { ASLFR_DoPatterns,		TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+
+struct TagItem frtags_[] =
+{
+    { ASLFR_TitleText,	        (IPTR)"The RKM file requester" },
+    { ASLFR_InitialHeight,      MYHEIGHT },
+    { ASLFR_InitialWidth,       MYWIDTH },
+    { ASLFR_InitialLeftEdge,    MYLEFTEDGE },
+    { ASLFR_InitialTopEdge,     MYTOPEDGE },
+    { ASLFR_PositiveText,       (IPTR)"OKAY" },
+    { ASLFR_NegativeText,       (IPTR)"Not OK" },
+    { ASLFR_InitialFile,        (IPTR)"asl.library" },
+    { ASLFR_InitialDrawer,      (IPTR)"libs:" },
+    { ASLFR_DoSaveMode,         TRUE},
+    { ASLFR_DoPatterns,		TRUE},
+    { ASLFR_DoMultiSelect,      TRUE},
+    { TAG_DONE,       	        NULL }
+};
+
+static void showrequester(char *msg, struct TagItem *tags)
 {
     struct FileRequester *fr;
 
+    printf("\n%s:\n",msg ? msg : "");
+    
+    if ((fr = (struct FileRequester *)AllocAslRequest(ASL_FileRequest, tags)))
+    {
+	if (AslRequest(fr, NULL))
+	{
+	    printf("\n-------------------------------------------------------\n\n");
+	    printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File ? fr->rf_File : "<NOFILE>");
+	    printf("To combine the path and filename, copy the path\n");
+	    printf("to a buffer, add the filename with Dos AddPart().\n\n");
+
+	    if(fr->fr_NumArgs > 0)
+	    {
+		struct WBArg *wbarg = fr->fr_ArgList;
+		WORD i;
+
+		printf("MULTI SELECTION:\n"
+		       "----------------\n");
+
+		for(i = 1; i <= fr->fr_NumArgs; i++)
+		{
+		    printf("%3ld: %s\n", i, wbarg->wa_Name);
+		    wbarg++;
+		}
+	    }
+	} else printf("Requester was aborted\n");
+	FreeAslRequest(fr);
+    }
+    else printf("Could not alloc FileRequester\n");
+}
+
+int main(int argc, char **argv)
+{
     if ((AslBase = OpenLibrary("asl.library", 37L)))
     {
-	if ((fr = (struct FileRequester *)
-	    AllocAslRequest(ASL_FileRequest, frtags)))
-	{
-	    if (AslRequest(fr, NULL))
-	    {
-		printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File);
-		printf("To combine the path and filename, copy the path\n");
-		printf("to a buffer, add the filename with Dos AddPart().\n");
-	    }
-	    FreeAslRequest(fr);
-	}
-	else printf("User Cancelled\n");
+	showrequester("Default requester with no tags", NULL);
+	showrequester(NULL, frtags);
+	showrequester(NULL, frtags2);
+	showrequester(NULL, frtags3);
+	showrequester(NULL, frtags4);
+	showrequester(NULL, frtags5);
+	showrequester(NULL, frtags6);
+	showrequester(NULL, frtags_);
 
 	CloseLibrary(AslBase);
     }
