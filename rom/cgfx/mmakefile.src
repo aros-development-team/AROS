@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 FUNCS := \
 	alloccmodelisttaglist	\
 	bestcmodeidtaglist	\
+	blttemplatealpha    	\
 	cvideoctrltaglist	\
 	extractcolor		\
 	fillpixelarray		\
