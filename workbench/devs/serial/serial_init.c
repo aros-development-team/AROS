@@ -358,8 +358,6 @@ AROS_LH1(void, beginio,
             /* it could be satisfied completely */
             ioreq->IOSer.io_Flags |= IOF_QUICK;
 
-            //??? Do I have to reply the message?
-            
             break;
 	  }
         }
@@ -370,8 +368,6 @@ AROS_LH1(void, beginio,
 	  {
             /* it could be satisfied completely */
             ioreq->IOSer.io_Flags |= IOF_QUICK;
-            
-            //??? Do I have to reply the message?
             
             break;
 	  } 
@@ -456,8 +452,6 @@ AROS_LH1(void, beginio,
           D(bug("completely sended the stream!\n"));
           ioreq->IOSer.io_Flags |= IOF_QUICK;
 
-          // ??? Do I have to reply to this message if it was done quick?
-          ReplyMsg(&ioreq->IOSer.io_Message);
         }
         else
         {
@@ -476,6 +470,11 @@ AROS_LH1(void, beginio,
         */
         PutMsg(&SU->su_QWriteCommandPort,
                (struct Message *)ioreq);
+        /* 
+        ** As I am returning immediately I will tell that this
+        ** could not be done QUICK   
+        */
+        ioreq->IOSer.io_Flags &= ~IOF_QUICK;
       }
     break;
 
@@ -485,12 +484,13 @@ AROS_LH1(void, beginio,
       SU->su_InputFirst = 0;
       SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
       ioreq->IOSer.io_Error = 0;      
+      ioreq->IOSer.io_Flags |= IOF_QUICK;
     break;
 
     /*******************************************************************/
 
     case CMD_RESET:
-      /* All IOrequests, including the active ones, are aborted */
+      /* All IORequests, including the active ones, are aborted */
 
       /* Abort the active IORequests */
       SU->su_Status &= ~(STATUS_READS_PENDING|STATUS_WRITES_PENDING);
@@ -563,6 +563,8 @@ AROS_LH1(void, beginio,
       ioreq->IOSer.io_Error = 0;
 
       Enable();
+
+      ioreq->IOSer.io_Flags |= IOF_QUICK;
     break;
 
     /*******************************************************************/
@@ -696,9 +698,9 @@ AROS_LH1(void, beginio,
         SU->su_StopBits = ioreq->io_StopBits;
       }
       
-      ioreq->IOSer.io_Flags |= IOF_QUICK;
-      
       SU->su_CtlChar  = ioreq->io_CtlChar;
+
+      ioreq->IOSer.io_Flags |= IOF_QUICK;
     break;
 
     /*******************************************************************/
