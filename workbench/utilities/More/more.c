@@ -32,12 +32,11 @@
 
 #define MAX_TEXTLINELEN 4096
 
-#define ARG_TEMPLATE "FILE/A,NORISKNOFUN=NRNF/S"
+#define ARG_TEMPLATE "FILE/A"
 
 enum
 {
     ARG_FILE,
-    ARG_NRNF,
     NUM_ARGS
 };
 
@@ -178,12 +177,6 @@ static void GetArguments(void)
 	DosError();
     }
 
-    if (!(Args[ARG_NRNF]))
-    {
-    	printf("\n************ Warning: Bug factor #1!!! Will delete the file you view!!!!!!! ***********\n");
-	printf("\nStart More with NRNF argument to ignore this! Use at your own risk!!\n\n");
-	Cleanup("Safety abort"); 
-    }
     filename = (char *)Args[ARG_FILE];
 }
 
@@ -206,9 +199,8 @@ static void OpenFile(void)
     
     filelen = strlen(text);
     filebuffer = text;
-    return;
 
-    if (!(fh = Open(filename,MODE_OLDFILE)))
+    if (!(fh = Open(filename, MODE_OLDFILE)))
     {
 	DosError();
     }
@@ -566,7 +558,7 @@ static void MakeWin(void)
     BPTR lock;
 
     strcpy(s, filename);
-    if ((lock = Lock(filename,MODE_OLDFILE)))
+    if ((lock = Lock(filename, SHARED_LOCK)))
     {
 	NameFromLock(lock,s,255);
 	UnLock(lock);
