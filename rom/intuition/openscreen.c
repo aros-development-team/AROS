@@ -485,6 +485,9 @@ static const ULONG coltab[] = {
 	   public screen list */
 	if(screen->pubScrNode != NULL)
 	{
+	    /* Set the pointer to ourselves */
+	    GetPrivScreen(screen)->pubScrNode->psn_Screen = screen;
+	    
 	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
 		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
 	}
