@@ -44,18 +44,18 @@ struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb)
 BOOL DestroyClasses(struct Library *MUIMasterBase)
 {
     int i;
+    struct MUIMasterBase_intern *mb = MUIMB(MUIMasterBase);
 
     /* NOTE: not the other way round, otherwise you will
      * try to free superclasses before subclasses... */
     /* TODO: when we'll have a hash table, we'll need to loop thru it
      * until either we don't have any more classes or we can't free any
      * (think of it like the last pass of a bubble sort). */
-    for (i = MUIMB(MUIMasterBase)->ClassCount-1; i >= 0; i--)
+    for (i = mb->ClassCount-1; i >= 0; i--)
     {
-      if (MUIMB(MUIMasterBase)->Classes[i])
+      if (mb->Classes[i])
       {
-        if (FreeClass(MUIMB(MUIMasterBase)->Classes[i]))
-          MUIMB(MUIMasterBase)->Classes[i] = NULL;
+        if (FreeClass(mb->Classes[i])) mb->Classes[i] = NULL;
         else
         {
 #if 0
@@ -70,10 +70,10 @@ BOOL DestroyClasses(struct Library *MUIMasterBase)
       }
     }
 
-    FreeVec(MUIMB(MUIMasterBase)->Classes);
-    MUIMB(MUIMasterBase)->Classes = NULL;
-    MUIMB(MUIMasterBase)->ClassCount = 0;
-    MUIMB(MUIMasterBase)->ClassSpace = 0;
+    FreeVec(mb->Classes);
+    mb->Classes = NULL;
+    mb->ClassCount = 0;
+    mb->ClassSpace = 0;
     return TRUE;
 }
 
