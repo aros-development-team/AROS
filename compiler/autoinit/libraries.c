@@ -6,62 +6,18 @@
     Lang: english
 */
 
-#include <intuition/intuition.h>
-#include <dos/dosextens.h>
-#include <dos/dos.h>
-#include <proto/intuition.h>
 #include <proto/exec.h>
-#include <proto/dos.h>
+#include <dos/dos.h>
 #include <aros/symbolsets.h>
-#include <stdarg.h>
 
-/*
-  Redefine this variable in your program and set
-  its value to a value different than 0 to force
-  the use of a requester in case of error
-*/
-int __forceerrorrequester __attribute__((weak)) = 0;
+static void __showerror_fake(int code, char *title, char *format, ...) {};
+void (*__showerrorptr)(int code, char *title, char *format, ...) __attribute__((weak)) = &__showerror_fake;
 
-static void showerror(char *title, char *format, ...)
+DEFINESET(LIBS);
+
+int set_open_libraries(void)
 {
-    struct Process *me = (struct Process *)FindTask(0);
-
-    va_list args;
-    va_start(args, format);
-
-
-    if (me->pr_CLI && !__forceerrorrequester)
-    {
-    	if (DOSBase)
-	{
-	    PutStr(title);
-	    PutStr(": ");
-	    VPrintf(format, args);
-	    PutStr("\n");
-	}
-    }
-    else
-    {
-        if (IntuitionBase)
-	{
-    	    struct EasyStruct es =
-    	    {
-		sizeof(struct EasyStruct),
-		0,
-		title,
-		format,
-		"Exit"
-	    };
-
-	    EasyRequestArgs(NULL, &es, NULL, (APTR)args);
-	}
-    }
-
-    va_end(args);
-}
-
-int set_open_libraries(struct libraryset *set[])
-{
+    struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int n = 1;
     struct Process *me = (struct Process *)FindTask(0);
 
@@ -70,10 +26,10 @@ int set_open_libraries(struct libraryset *set[])
 	*(set[n]->baseptr) = OpenLibrary(set[n]->name, *set[n]->versionptr);
 	if (!*(set[n]->baseptr))
 	{
-	    showerror("Library error",
-	              "Couldn't open version %ld of library \"%s\".",
-		       *set[n]->versionptr, set[n]->name);
-            SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
+	    __showerrorptr(ERROR_INVALID_RESIDENT_LIBRARY,
+	                "Library error",
+	                "Couldn't open version %ld of library \"%s\".",
+		        *set[n]->versionptr, set[n]->name);
 	    return 20;
 	}
 
@@ -82,10 +38,10 @@ int set_open_libraries(struct libraryset *set[])
 	    int ret = set[n]->postopenfunc();
 	    if (ret)
 	    {
-	    	showerror("Library error",
-	                  "Couldn't initialize library \"%s\".",
-		           set[n]->name);
-                if (!IoErr()) SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
+	    	__showerrorptr(ERROR_INVALID_RESIDENT_LIBRARY,
+		            "Library error",
+	                    "Couldn't initialize library \"%s\".",
+		            set[n]->name);
 	        return ret;
 	    }
         }
@@ -95,8 +51,9 @@ int set_open_libraries(struct libraryset *set[])
     return 0;
 }
 
-void set_close_libraries(struct libraryset *set[])
+void set_close_libraries(void)
 {
+    struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int	n = ((int *)set)[0];
 
     while (n)
