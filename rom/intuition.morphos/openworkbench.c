@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,6 +8,7 @@
 
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
  
@@ -44,8 +45,6 @@ AROS_LH0(IPTR, OpenWorkBench,
  
     INTERNALS
  
-    HISTORY
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -81,14 +80,46 @@ AROS_LH0(IPTR, OpenWorkBench,
     {
         /* Open the Workbench screen if we don't have one. */
         struct TagItem screenTags[] =
-        {
-            { SA_LikeWorkbench, TRUE                	},
-            { SA_Type         , WBENCHSCREEN        	},
-            { SA_Title        , (IPTR)"Workbench Screen"},
-            { SA_PubName      , (IPTR)"Workbench"   	},
-            { SA_SharePens    , TRUE                	},
-            { TAG_END         , 0           	    	}
+        {   
+            { SA_Width,                AROS_DEFAULT_WBWIDTH  	},
+            { SA_Height,               AROS_DEFAULT_WBHEIGHT 	},
+            { SA_Depth,                AROS_DEFAULT_WBDEPTH  	},
+            { SA_LikeWorkbench,        TRUE                	},
+            { SA_Type,                 WBENCHSCREEN        	},
+            { SA_Title,         (IPTR) "Workbench Screen"       },
+            { SA_PubName,       (IPTR) "Workbench"   	        },
+            { SA_SharePens,            TRUE                	},
+            { TAG_END,                 0           	    	}
         };
+    	struct TagItem modetags[] =
+	{
+	    { BIDTAG_DesiredWidth   , AROS_DEFAULT_WBWIDTH  },
+	    { BIDTAG_DesiredHeight  , AROS_DEFAULT_WBHEIGHT },
+	    { BIDTAG_Depth   	    , AROS_DEFAULT_WBDEPTH  },
+	    { TAG_DONE	    	    	    	    	    }
+	};	
+    	ULONG modeid;
+	
+        modeid = BestModeIDA(modetags);
+    	if (modeid != INVALID_ID)
+	{
+	    APTR  disphandle;
+	    
+	    if ((disphandle = FindDisplayInfo(modeid)))
+	    {
+	    	struct DimensionInfo dim;
+	    	
+		if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, modeid))
+		{
+		    screenTags[0].ti_Data = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+		    screenTags[1].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
+		    if (dim.MaxDepth > AROS_DEFAULT_WBDEPTH)
+		    {
+		    	screenTags[2].ti_Data = dim.MaxDepth;
+		    }
+		}
+	    }
+	}
 
         DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 
