@@ -373,6 +373,10 @@ VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg);
 VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox16 *msg);
 VOID bitmap_copylutmembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox32 *msg);
+VOID bitmap_putmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image8 *msg);
+VOID bitmap_putmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image16 *msg);
+VOID bitmap_getmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image8 *msg);
+VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image16 *msg);
 
 OOP_Class *init_planarbmclass(struct class_static_data *csd);
 void   free_planarbmclass(struct class_static_data *csd);
