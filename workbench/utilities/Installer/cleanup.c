@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* cleanup.c -- here are all functions used before exiting program */
 
 #include "Installer.h"

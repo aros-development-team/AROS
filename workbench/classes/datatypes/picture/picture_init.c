@@ -1,9 +1,6 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Text.datatype initialization code.
-    Lang: English.
 */
 
 #define AROS_ALMOST_COMPATIBLE
