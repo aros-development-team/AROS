@@ -26,7 +26,7 @@
 	AROS_LHA(ULONG            , minterm, D6),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 121, Graphics)
+	struct GfxBase *, GfxBase, 101, Graphics)
 	    
 /*  FUNCTION
 
