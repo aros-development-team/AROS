@@ -58,10 +58,15 @@ void appenditem(struct Menu * curmenu,
 void appendsubitem(struct MenuItem * curitem,
                    struct MenuItem * cursubitem)
 {
-  while (NULL != curitem->SubItem) 
-    curitem = curitem->SubItem;
-  
-  curitem->SubItem = cursubitem;
+  struct MenuItem * si = curitem->SubItem;
+  if (NULL == si)
+    curitem->SubItem = cursubitem;
+  else
+  {
+    while (NULL != si->NextItem)
+      si = si->NextItem;
+    si->NextItem = cursubitem;
+  }
 }
 
 
@@ -149,12 +154,13 @@ void freeitems(struct Menu * m)
   {
     struct MenuItem * _mi = mi->NextItem;
     
-    if (NULL != mi->SubItem)
-      freesubitems(mi);
     
     if (mi->Flags & ITEMTEXT)
       FreeMem(mi->ItemFill, sizeof(struct IntuiText));
-    
+
+    if (NULL != mi->SubItem)
+      freesubitems(mi);
+
     FreeMem(mi, sizeof(struct MenuItem) + sizeof(APTR));
     mi = _mi;
   }
@@ -171,14 +177,8 @@ void freesubitems(struct MenuItem * mi)
   {
     struct MenuItem * _si = si->NextItem;
     
-    /*
-    ** If this sub item has sub items then also free those.
-    */
-    if (NULL != si->SubItem)
-      freesubitems(si);
-
     if (si->Flags & ITEMTEXT)
-      FreeMem(mi->ItemFill, sizeof(struct IntuiText));
+      FreeMem(si->ItemFill, sizeof(struct IntuiText));
     
     FreeMem(si, sizeof(struct MenuItem) + sizeof(APTR));
     si = _si;
