@@ -116,7 +116,6 @@ LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
 			   struct AChain **retac, struct DosLibrary *DOSBase);
 LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase);
 
-
 void addprocesstoroot(struct Process * , struct DosLibrary *);
 void removefromrootnode(struct Process *, struct DosLibrary *);
 
@@ -203,5 +202,11 @@ struct markerarray
 #define  STRING_REQUESTTITLE    -5002
 
 #include <dos_commanderrors.h>
+
+/* Force attempts to use DosLibrary->dl_Errors to fail. This is used by
+   locale.library's replacement function for DosGetString() to peek
+   the pointer of the catalog to use */
+   
+#define dl_Errors   	    	do_not_use_is_reserved_for_locale_dosgetstring_replacement
 
 #endif /* DOS_INTERN_H */
