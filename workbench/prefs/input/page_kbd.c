@@ -9,6 +9,7 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include <devices/keymap.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <stdio.h>
@@ -37,17 +38,74 @@
 /*********************************************************************************************/
 
 static struct Gadget 	*gadlist, *gad, *lvgad, *rategad, *delaygad, *showrategad, *showdelaygad;
+static struct Gadget	*testgad;
+static struct KeyMap	*testkeymap;
+static BPTR 	    	testkeymap_seg;
 static WORD 	    	minwidth, minheight;
 static WORD 	    	domleft, domtop, domwidth, domheight;
 static WORD 	    	lvwidth, lvheight, lvgroupwidth, lvgroupheight, lvgroupx1, lvgroupy1;
 static WORD 	    	ratewidth, rateheight, rategroupwidth, rategroupheight, rategroupx1, rategroupy1;
 static WORD 	    	delaywidth, delayheight, delaygroupwidth, delaygroupheight, delaygroupx1, delaygroupy1;
+static WORD 	     	testwidth, testheight, testgroupwidth, testgroupheight, testgroupx1, testgroupy1;
 static WORD 	    	showtimewidth;
 
 static BOOL 	    	init_done;
 
-static BOOL 	    	page_active;
+static BOOL 	    	page_active, inputdev_changed;
 static UBYTE	    	showratebuf[30], showdelaybuf[30];
+
+/*********************************************************************************************/
+
+static void try_setting_test_keymap(void)
+{
+    struct KeyMapResource *KeyMapResource;
+    struct KeyMapNode	  *kmn = NULL;
+    struct Node     	  *node;
+    BPTR    	    	   lock, seg, olddir;
+    
+    if ((KeyMapResource = OpenResource("keymap.resource")))
+    {
+    	Forbid();
+	
+    	ForeachNode(&KeyMapResource->kr_List, node)
+	{
+	    if (!stricmp(inputprefs.ip_Keymap, node->ln_Name))
+	    {
+	    	kmn = (struct KeyMapNode *)node;
+		break;
+	    }
+	}
+	
+	Permit();
+    }
+    
+    if (!kmn)
+    {
+	lock = Lock("DEVS:Keymaps", SHARED_LOCK);
+
+	if (lock)
+    	{
+	    olddir = CurrentDir(lock);
+	    
+	    
+	    if ((seg = LoadSeg(inputprefs.ip_Keymap)))
+	    {
+	    	kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
+		if (testkeymap_seg) UnLoadSeg(testkeymap_seg);
+		testkeymap_seg = seg;
+	    }
+	    
+	    CurrentDir(olddir);
+	    UnLock(lock);
+	}
+    }
+    
+    if (kmn)
+    {
+    	SetGadgetAttrs(testgad, win, NULL, STRINGA_AltKeyMap, (IPTR)&kmn->kn_KeyMap,
+	    	    	    	    	   TAG_DONE);
+    }
+}
 
 /*********************************************************************************************/
 
@@ -81,6 +139,13 @@ static void DrawFrames(void)
 		       delaygroupx1 + delaygroupwidth - 1,
 		       delaygroupy1 + delaygroupheight - 1,
 		       MSG(MSG_GAD_KEY_REPEAT_DELAY));
+
+    DrawFrameWithTitle(win->RPort,
+    	    	       testgroupx1,
+		       testgroupy1,
+		       testgroupx1 + testgroupwidth - 1,
+		       testgroupy1 + testgroupheight - 1,
+		       MSG(MSG_GAD_KEY_TEST));
 }
 
 /*********************************************************************************************/
@@ -253,15 +318,42 @@ static LONG kbd_layout(void)
     	delaygroupwidth = rategroupwidth;
     }
     
+    /* Test gadget */
+    
+    testgroupwidth  = delaygroupwidth;
+    testheight = dri->dri_Font->tf_YSize + STRING_EXTRAHEIGHT;
+    testgroupheight = testheight + FRAME_FRAMEHEIGHT;
+    
     minwidth = lvgroupwidth + SPACE_X + delaygroupwidth;
    
-    h = delaygroupheight + SPACE_Y + rategroupheight;
+    h = delaygroupheight + SPACE_Y + rategroupheight + SPACE_Y + testgroupheight;
     
     minheight = (lvgroupheight > h) ? lvgroupheight : h;
 
     DeinitRastPort(&temprp);
     
     return TRUE;
+}
+
+/*********************************************************************************************/
+
+static void update_inputdev(void)
+{
+    if (InputIO)
+    {
+    	if (InputIO->tr_node.io_Device)
+	{
+    	    InputIO->tr_node.io_Command = IND_SETPERIOD;
+	    InputIO->tr_time = inputprefs.ip_KeyRptSpeed;
+	    DoIO(&InputIO->tr_node);
+
+    	    InputIO->tr_node.io_Command = IND_SETTHRESH;
+	    InputIO->tr_time = inputprefs.ip_KeyRptDelay;
+	    DoIO(&InputIO->tr_node);	
+	    
+	    inputdev_changed = TRUE;
+ 	}
+    }
 }
 
 /*********************************************************************************************/
@@ -311,6 +403,7 @@ static void update_showrate_gad(void)
     snprintf(showratebuf, sizeof(showratebuf), MSG(MSG_TIME_FORMAT), secs, micro);
     
     GT_SetGadgetAttrsA(showrategad, win, NULL, settags);
+    
 }
 
 /*********************************************************************************************/
@@ -421,8 +514,13 @@ static LONG kbd_input(struct IntuiMessage *msg)
 		    else
 		    {
 		    	strncpy(inputprefs.ip_Keymap, keymapnode->realname, sizeof(inputprefs.ip_Keymap));
+			try_setting_test_keymap();
 		    }
 		}
+
+	    	SetGadgetAttrs(testgad, win, NULL, GTST_String, (IPTR)"", TAG_DONE);
+		ActivateGadget(testgad, win, NULL);
+
 		retval = TRUE;
 	    	break;
 		
@@ -452,7 +550,14 @@ static LONG kbd_input(struct IntuiMessage *msg)
 		    inputprefs.ip_KeyRptSpeed.tv_secs = top / 50;
 		    inputprefs.ip_KeyRptSpeed.tv_micro = (top % 50) * (1000000 / 50);
 		    update_showrate_gad();
+		    update_inputdev();
 		    
+		    if (msg->Class == IDCMP_GADGETUP)
+		    {
+		    	SetGadgetAttrs(testgad, win, NULL, GTST_String, (IPTR)"", TAG_DONE);
+		    	ActivateGadget(testgad, win, NULL);
+    	    	    }
+
 		    retval = TRUE;
 		}
 		else if (gad == delaygad)
@@ -462,6 +567,13 @@ static LONG kbd_input(struct IntuiMessage *msg)
 		    inputprefs.ip_KeyRptDelay.tv_secs = top / 50;
 		    inputprefs.ip_KeyRptDelay.tv_micro = (top % 50) * (1000000 / 50);
 		    update_showdelay_gad();
+		    update_inputdev();
+		    
+		    if (msg->Class == IDCMP_GADGETUP)
+		    {
+		    	SetGadgetAttrs(testgad, win, NULL, GTST_String, (IPTR)"", TAG_DONE);
+		    	ActivateGadget(testgad, win, NULL);
+    	    	    }
 		    
 		    retval = TRUE;
 		}
@@ -480,6 +592,22 @@ static void kbd_cleanup(void)
 {
     if (gadlist) FreeGadgets(gadlist);
     gadlist = NULL;
+    
+    if (inputdev_changed)
+    {
+    	InputIO->tr_node.io_Command = IND_SETPERIOD;
+	InputIO->tr_time = restore_prefs.ip_KeyRptSpeed;
+	DoIO(&InputIO->tr_node);
+	
+    	InputIO->tr_node.io_Command = IND_SETTHRESH;
+	InputIO->tr_time = restore_prefs.ip_KeyRptDelay;
+	DoIO(&InputIO->tr_node);	
+    }
+    
+    if (testkeymap_seg)
+    {
+    	UnLoadSeg(testkeymap_seg);
+    }
 }
 
 /*********************************************************************************************/
@@ -556,7 +684,16 @@ static LONG kbd_makegadgets(void)
     gad = showdelaygad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Text, (IPTR)showdelaybuf,
     	    	    	    	    	    	    	   GTTX_Justification, GTJ_RIGHT,
 							   TAG_DONE);
-	   						  
+
+    ng.ng_LeftEdge  = testgroupx1 + FRAME_OFFX;
+    ng.ng_TopEdge   = testgroupy1 + FRAME_OFFY + (testgroupheight - FRAME_FRAMEHEIGHT - testheight) / 2;
+    ng.ng_Width     = testgroupwidth - FRAME_FRAMEWIDTH;
+    ng.ng_Height    = testheight;
+    ng.ng_GadgetID  = 0;
+    
+    gad = testgad = CreateGadget(STRING_KIND, gad, &ng, GTST_MaxChars, 255,
+    	    	    	    	    	    	    	TAG_DONE);
+							  
     return gad ? TRUE : FALSE;
 }
 
@@ -569,7 +706,11 @@ static void kbd_prefs_changed(void)
     	update_keymap_gad();
     	update_rate_gad();
     	update_delay_gad();
+
+	try_setting_test_keymap();
     }
+    
+    update_inputdev();
 }
 
 /*********************************************************************************************/
@@ -599,26 +740,28 @@ LONG page_kbd_handler(LONG cmd, IPTR param)
 	case PAGECMD_SETDOMLEFT:
 	    domleft = param;
 	    lvgroupx1 = domleft;
-	    delaygroupx1 = rategroupx1 = domleft + lvgroupwidth + SPACE_X;
+	    delaygroupx1 = rategroupx1 = testgroupx1 = domleft + lvgroupwidth + SPACE_X;
 	    break;
 	    
 	case PAGECMD_SETDOMTOP:
 	    domtop = param;
 	    lvgroupy1 = rategroupy1 = param;
 	    delaygroupy1 = rategroupy1 + rategroupheight + SPACE_Y;
+	    testgroupy1 = delaygroupy1 + delaygroupheight + SPACE_Y;
 	    break;
 	    
 	case PAGECMD_SETDOMWIDTH:
 	    domwidth = param;
 	    rategroupwidth  = domleft + domwidth - rategroupx1;
 	    delaygroupwidth = domleft + domwidth - delaygroupx1;
+	    testgroupwidth  = domleft + domwidth - testgroupx1;
 	    break;
 	    
 	case PAGECMD_SETDOMHEIGHT:
+	    domheight = param;
 	    lvheight += (param - lvgroupheight);
 	    lvgroupheight = param;
-	    
-	    domheight = param;
+	    testgroupheight = domtop + domheight - testgroupy1;
 	    break;
 	    
 	case PAGECMD_MAKEGADGETS:
