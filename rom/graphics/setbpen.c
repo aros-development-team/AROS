@@ -49,9 +49,10 @@ extern void driver_SetBPen (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    rp->BgPen = pen;
-
     driver_SetBPen (rp, pen);
+
+    /* Do it after the driver to allow it to inspect the previous value */
+    rp->BgPen = pen;
 
     __AROS_FUNC_EXIT
 } /* SetBPen */

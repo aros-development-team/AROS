@@ -2,6 +2,10 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/23 17:09:44  digulla
+    Moved the modification of the rastport behind the call of the driver to
+    allow the driver to examine the old value
+
     Revision 1.2  1996/08/13 13:59:02  digulla
     Added call to driver
     Replaced __AROS_LA by __AROS_LHA
@@ -58,9 +62,9 @@ extern void driver_SetAPen (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    rp->FgPen = pen;
-
     driver_SetAPen (rp, pen);
+
+    rp->FgPen = pen;
 
     __AROS_FUNC_EXIT
 } /* SetAPen */

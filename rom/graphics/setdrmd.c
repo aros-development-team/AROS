@@ -49,9 +49,9 @@ void driver_SetDrMd (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    rp->DrawMode = drawMode;
-
     driver_SetDrMd (rp, drawMode);
+
+    rp->DrawMode = drawMode;
 
     __AROS_FUNC_EXIT
 } /* SetDrMd */
