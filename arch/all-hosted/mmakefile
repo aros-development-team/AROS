@@ -20,12 +20,6 @@ shell : $(BINDIR)/aros
 #
 # END_DESC{localmakevar}
 
-ifeq ("$(SHARED_AR)","")
-DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.a
-else
-DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.so
-endif
-
 ifeq ("$(SHARED_EXEC)","yes")
 DEPLIB_EXEC=$(LIBDIR)/libexec.so
 LIBEXEC=-lexec
@@ -150,7 +144,6 @@ DEP_LIBS = \
 	$(LIBDIR)/libcon_handler.a \
 	$(LIBDIR)/libamiga.a \
 	$(LIBDIR)/libarossupport.a \
-	$(DEPLIB_AMIGAOS) \
 	$(DEPLIB_DOS) \
 	$(DEPLIB_EXEC) \
 	$(DEPLIB_UTILITY) \
@@ -189,27 +182,3 @@ $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS)
 
 $(GENDIR)/aros.o : aros.c
 	$(CC) $(CFLAGS) -Dmain=submain $< -c -o $@
-
-
-# BEGIN_DESC{internaltarget}
-# \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
-#	has been recompiled.
-#
-# END_DESC{internaltarget}
-
-ifneq ("$(SHARED_AR)","")
-LIBLIBS_AMIGAOS = $(DEPLIB_EXEC) $(DEPLIB_DOS) $(DEPLIB_UTILITY) \
-	$(DEPLIB_GRAPHICS) $(DEPLIB_INTUITION) $(DEPLIB_AROS)
-LIBOBJS = $(wildcard $(OSGENDIR)/*.o)
-endif
-
-$(DEPLIB_AMIGAOS) : $(LIBOBJS) $(LIBDEPS_AMIGAOS) $(LIBDIR)/libamiga.a
-	@echo "Recreating library"
-ifeq ("$(SHARED_AR)","")
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-else
-	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
-		$(LIBEXEC) $(LIBDOS) $(LIBUTILITY) $(LIBGRAPHICS) $(LIBINTUITION) \
-		$(LIBAROS) -lamiga
-endif
