@@ -65,6 +65,10 @@ struct exception
 #undef HUGE_VAL
 #endif
 
+#ifdef copysign
+#  undef copysign
+#endif
+
 extern double __kernel_standard (double, double, int);
 extern int    matherr		(struct exception *);
 extern double scalbn		(double, int);
