@@ -24,6 +24,9 @@
 #include "zunestuff.h"
 #include <string.h>
 
+/*  #define DEBUG 1 */
+#include <aros/debug.h>
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_GroupsPData
@@ -41,6 +44,7 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 #define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 #define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
 #define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
+#define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 
 static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -72,9 +76,17 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_GroupsPData *data = INST_DATA(cl, obj);
-    set(data->background_framed_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Framed));
-    set(data->background_register_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Register));
-    set(data->background_page_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Page));
+    char *spec = FindConfig(MUICFG_Background_Framed);
+    D(bug("GroupsP_ConfigToGadgets : spec = %p\n", spec));
+    D(bug("GroupsP_ConfigToGadgets : spec = %s\n", spec));
+    set(data->background_framed_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_GroupBack);
+    spec = FindConfig(MUICFG_Background_Register);
+    set(data->background_register_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_RegisterBack);
+    spec = FindConfig(MUICFG_Background_Page);
+    set(data->background_page_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec  : MUII_PageBack);
     return 1;    
 }
 
@@ -85,13 +97,13 @@ static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     char *str;
 
     str = (char*)xget(data->background_framed_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Framed);
+    AddConfigImgStr(str,MUICFG_Background_Framed);
 
     str = (char*)xget(data->background_register_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Register);
+    AddConfigImgStr(str,MUICFG_Background_Register);
 
     str = (char*)xget(data->background_page_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Page);
+    AddConfigImgStr(str,MUICFG_Background_Page);
     return TRUE;
 }
 

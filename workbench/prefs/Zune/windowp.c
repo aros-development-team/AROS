@@ -43,6 +43,7 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 #define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 #define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
 #define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
+#define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -96,11 +97,17 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
+    char *spec;
+
     setstring(data->font_normal_string,FindConfig(MUICFG_Font_Normal));
     setstring(data->font_tiny_string,FindConfig(MUICFG_Font_Tiny));
     setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
-    set(data->background_window_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Window));
-    set(data->background_requester_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Requester));
+    spec = FindConfig(MUICFG_Background_Window);
+    set(data->background_window_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_WindowBack);
+    spec = FindConfig(MUICFG_Background_Requester);
+    set(data->background_requester_popimage,MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_RequesterBack);
     return 1;    
 }
 
@@ -118,10 +125,10 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     AddConfigStr(str,MUICFG_Font_Big);
 
     str = (char*)xget(data->background_window_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Window);
+    AddConfigImgStr(str,MUICFG_Background_Window);
 
     str = (char*)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Background_Requester);
+    AddConfigImgStr(str,MUICFG_Background_Requester);
 
     return TRUE;
 }
