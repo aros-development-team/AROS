@@ -65,8 +65,9 @@ CLASSESOBJS= \
   objs/classes/scrollbar.o \
   objs/classes/scrollbutton.o \
   objs/classes/scrollgroup.o \
-  objs/classes/string.o \
+  objs/classes/settingsgroup.o \
   objs/classes/slider.o \
+  objs/classes/string.o \
   objs/classes/text.o \
   objs/classes/virtgroup.o \
   objs/classes/window.o
@@ -285,6 +286,9 @@ objs/classes/scrollbutton.o: classes/scrollbutton.c
 
 objs/classes/scrollgroup.o: classes/scrollgroup.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/scrollgroup.c objname=$@
+
+objs/classes/settingsgroup.o: classes/settingsgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/settingsgroup.c objname=$@
 
 objs/classes/string.o: classes/string.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/string.c objname=$@
