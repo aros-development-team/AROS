@@ -7,9 +7,9 @@
 #	define D1 d1
 /* lib macros */
 #	define AROS_LH1(r, n, arg1, bt, bn, bo, bnb) \
-		r ASM SAVEDS n(arg1, AROS_LHA(bt, bn, a6))
+		r ASM SAVEDS bnb##_##n(arg1, AROS_LHA(bt, bn, a6))
 #	define AROS_LH2(r, n, arg1, arg2, bt, bn, bo, bnb) \
-		r ASM SAVEDS n(arg1, arg2, AROS_LHA(bt, bn, a6))
+		r ASM SAVEDS bnb##_##n(arg1, arg2, AROS_LHA(bt, bn, a6))
 #	define AROS_LHA(t,n,r) REGPARAM(r,t,n)
 #	define AROS_LIBFUNC_INIT
 #	define AROS_LIBFUNC_EXIT
