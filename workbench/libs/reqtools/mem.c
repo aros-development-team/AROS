@@ -1,9 +1,6 @@
-/****************************************************************************************/
-
 #include "filereq.h"
 
-/****************************************************************************************/
-
+#ifndef __AROS__
 APTR REGARGS AllocVecPooled (APTR pool, ULONG memsize)
 {
     if (pool)
@@ -25,8 +22,6 @@ APTR REGARGS AllocVecPooled (APTR pool, ULONG memsize)
     }
 }
 
-/****************************************************************************************/
-
 void REGARGS FreeVecPooled (APTR pool, APTR mem)
 {
     if (mem)
@@ -44,6 +39,4 @@ void REGARGS FreeVecPooled (APTR pool, APTR mem)
 	}
     }
 }
-
-/****************************************************************************************/
-
+#endif

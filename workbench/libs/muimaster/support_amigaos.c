@@ -7,6 +7,35 @@
 #include <proto/exec.h>
 
 #include "support_amigaos.h"
+    
+APTR AllocVecPooled(APTR pool, ULONG size)
+{
+    IPTR *memory;
+    
+    bug("exec/AllocVecPooled: %p, %d\n", pool, size);
+    if (pool == NULL) return NULL;
+    
+    size   += sizeof(IPTR);
+    memory  = AllocPooled(pool, size);
+    
+    if (memory != NULL)
+    {
+        *memory++ = size;
+    }
+
+    return memory;
+}
+
+VOID FreeVecPooled(APTR pool, APTR memory)
+{   
+    if (memory != NULL)
+    {
+        IPTR *real = (IPTR *) memory;
+        IPTR size  = *--real;
+
+        FreePooled(pool, real, size);
+    }
+}
 
 char *StrDup(const char *x)
 {

@@ -49,6 +49,9 @@ int strlcat(char *buf, char *src, int len);
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
 Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
 
+/*** AROS Exec extensions ***************************************************/
+APTR AllocVecPooled(APTR pool, ULONG size);
+VOID FreeVecPooled(APTR pool, APTR memory);
 
 /*** AROS Intuition extensions **********************************************/
 #define DeinitRastPort(rp)      
