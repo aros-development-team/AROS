@@ -7472,7 +7472,7 @@ fi
           ac_config_commands="$ac_config_commands genshared_executable"
 
 
-                                                                                                              ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py"
+                                                                                                    ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in"
 
 
 cat >confcache <<\_ACEOF
@@ -8023,7 +8023,6 @@ do
   "${aros_targetcfg_dir}/specs" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
   "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in" ;;
   "${aros_target_scripts_dir}/genshared" ) CONFIG_FILES="$CONFIG_FILES ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in" ;;
-  "${aros_tools_dir}/genmf.py" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
   "compiler_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS compiler_executable" ;;
   "genshared_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS genshared_executable" ;;
   "${aros_geninc_dir}/host-conf.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in" ;;

@@ -1131,7 +1131,6 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in
     ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
-    ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
 )
 
 AC_OUTPUT
