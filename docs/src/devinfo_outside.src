@@ -9,6 +9,56 @@ already, if you use Amiga, install the ADE development environment
 
 \section{Compiling}
 
+To get known to the compiling process, without worrying about the AROS
+API, dig up your helloworld.c somewhere, or else use this one:
+
+\begin{code}
+#include<stdio.h>
+int main () {printf("Hello, World!\n"); return 0;}
+\end{code}
+
+\subsection{Compiling on Amiga}
+
+If you run AROS on an Amiga machine, you can use your favorite Amiga compiler
+to compile your program directly into Amiga binaries.
+
+\subsection{Compiling on Linux}
+
+On Linux, you compile your code to (specially linked) Linux binaries. This
+means that you should keep in mind what libraries, headers and startup code
+you must use.
+
+First we compile the code to object files In the following examples, be sure
+to replace $AROSDIR with your AROS directory:
+
+\begin{example}
+gcc -c helloworld.c -I$AROSDIR/bin/linux-i386/AROS/include
+\end{example}
+
+If all goes well we will have an object file named helloworld.o . Now we
+must link it with the necessary Linux AROS libraries. The following little
+command seems to suffice for a good compilation:
+
+\begin{example}
+gcc -nostartfiles -nostdlib -Xlinker -i $AROSDIR/bin/linux-i386/AROS/lib/startup.o helloworld.o -o helloworld -L$AROSDIR/bin/linux-i386/AROS/lib -larossupport -lamiga -larosc -larosm
+\end{example}
+
+Now if all goes well we will have an AROS executable. Copy it to somewhere
+were AROS can find it, and try to run it from inside AROS. My experience is,
+that if you receive an error "Object is of wrong type" you should review
+your source code.
+
+\subsection{Make and MetaMake}
+
+If you would develop more serious code, you wouldn't want to rewrite the
+above every time you have to compile it. The most common answer to this
+problem is "make", a tool you should be known with. AROS uses its own tool
+called MetaMake, that extends make functionality.
+
+If you build AROS from the source code, it would be easy to make your own
+programs compile together with it. There is an empty directory called
+"local" in the source code, where you can insert your coding experiments.
+
 \section{AROS extensions}
 
 AROS makes a few extensions to the original AmigaOS. Some of them are
@@ -127,7 +177,7 @@ Contains the name of the Intuition library. You should use this in
 
 \end{description}
 
-\subsection{Resource Tracking (RT) *Updated*}
+\subsection{Resource Tracking (RT)}
 
 Everyone talks about RT but what's it anyway ? RT means three things:
 
