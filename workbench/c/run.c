@@ -87,11 +87,11 @@ int main(int argc, char **argv)
 
 	struct TagItem tags[] =
 	{
-	    { SYS_Input   , Open("CONSOLE:", MODE_OLDFILE) },
-	    { SYS_Output  , Open("CONSOLE:", MODE_NEWFILE) },
-	    { SYS_Asynch  , TRUE },
-	    { NP_StackSize, Cli()->cli_DefaultStack },
-	    { TAG_DONE    , 0 }
+	    { SYS_Input   , Open("CONSOLE:", MODE_OLDFILE)  	    	    },
+	    { SYS_Output  , Open("CONSOLE:", MODE_NEWFILE)  	    	    },
+	    { SYS_Asynch  , TRUE    	    	    	    	    	    },
+	    { NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
+	    { TAG_DONE    , 0 	    	    	    	    	    	    }
 	};
 	
 	res = SystemTagList((STRPTR)args[ARG_COMMAND], tags);

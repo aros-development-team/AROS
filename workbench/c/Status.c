@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Status CLI command
@@ -232,7 +232,7 @@ void printProcess(BOOL full, BOOL tcb, struct Process *process)
 
     if(tcb || full)
     {
-	printf("stk %lu, pri %lu ", (ULONG)cli->cli_DefaultStack,
+	printf("stk %lu, pri %lu ", (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
