@@ -60,13 +60,13 @@
 
 	.text
 	.balign 4
-	.globl	AROS_CDEFNAME(setjmp)
+	.globl	setjmp
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
 	.set	retaddr, 0
 
-AROS_CDEFNAME(setjmp):
+setjmp:
 #if OLDJMP
 	move.l	env(%sp),%a0		/* save area pointer */
 	move.l	retaddr(%sp),(%a0)+	/* save old PC (return address) */

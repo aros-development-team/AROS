@@ -63,13 +63,13 @@
 
 	.text
 	.balign 4
-	.globl	AROS_CDEFNAME(longjmp)
+	.globl	longjmp
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
 	.set	val, env+4
 	.set	retaddr, 0
-AROS_CDEFNAME(longjmp):
+longjmp:
 #ifdef OLDJMP
 	move.l	env(%sp),%a0		/* save area pointer */
 	move.l	val(%sp),%d0
