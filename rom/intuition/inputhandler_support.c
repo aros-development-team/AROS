@@ -251,7 +251,7 @@ void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad)
 **  HandleCustomGadgetRetVal  **
 *******************************/
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, struct Gadget *gadget,
-					ULONG *termination,
+					ULONG termination,
 					BOOL *reuse_event,struct IntuitionBase *IntuitionBase)
 {					       
     if (retval != GMR_MEACTIVE)
@@ -266,7 +266,7 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	{
 	    fire_intuimessage(gi->gi_Window,
 	    		      IDCMP_GADGETUP,
-			      (*termination) & 0x0000FFFF,
+			      termination & 0x0000FFFF,
 			      gadget,
 			      IntuitionBase);
 	}
@@ -278,7 +278,25 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 
 	gadget->Activation &= ~GACT_ACTIVEGADGET;
-	gadget = NULL;
+	
+	if ((gadget->Flags & GFLG_TABCYCLE) && (retval & GMR_NEXTACTIVE))
+	{
+	    gadget = FindCycleGadget(gi->gi_Window, gadget, GMR_NEXTACTIVE);
+	}
+	else if ((gadget->Flags & GFLG_TABCYCLE) && (retval & GMR_PREVACTIVE))
+	{
+	    gadget = FindCycleGadget(gi->gi_Window, gadget, GMR_PREVACTIVE);
+	}
+	else
+	{
+	    gadget = NULL;
+	}
+	
+	if (gadget)
+	{
+	    gadget = DoActivateGadget(gi->gi_Window, gadget, IntuitionBase);
+	} /* if (gadget) */
+	
     } /* if (retval != GMR_MEACTIVE) */
     else
     {
@@ -365,6 +383,143 @@ BOOL InsideGadget(struct Window *win, struct Gadget *gad,
 }
 
 
+/***********************
+**  DoActivateGadget  **
+***********************/
+struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct IntuitionBase *IntuitionBase)
+{
+    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct GadgetInfo *gi = &iihd->GadgetInfo;
+    struct Gadget *result = NULL;
+
+    if (gad->Activation & GACT_IMMEDIATE)
+    {
+	fire_intuimessage(win,
+			  IDCMP_GADGETDOWN,
+			  0,
+			  gad,
+			  IntuitionBase);
+    }
+
+    PrepareGadgetInfo(gi, win);
+    SetGadgetInfoGadget(gi, gad);
+    
+    switch(gad->GadgetType & GTYP_GTYPEMASK)
+    {
+        case GTYP_STRGADGET:
+	    gad->Activation |= GACT_ACTIVEGADGET;
+	    UpdateStrGadget(gad, win, IntuitionBase);
+	    result = gad;
+	    break;
+	    
+	case GTYP_CUSTOMGADGET: {
+	    struct gpInput gpi;
+	    ULONG termination;
+	    IPTR retval;
+	    BOOL reuse_event;
+
+	    gpi.MethodID = GM_GOACTIVE;
+	    gpi.gpi_GInfo	= gi;
+	    gpi.gpi_IEvent	= NULL;
+	    gpi.gpi_Termination = &termination;
+	    gpi.gpi_Mouse.X = win->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gad, win, NULL);
+	    gpi.gpi_Mouse.Y = win->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gad, win, NULL);
+	    gpi.gpi_TabletData	= NULL;
+
+	    retval = Locked_DoMethodA ((Object *)gad, (Msg)&gpi, IntuitionBase);
+	    gad = HandleCustomGadgetRetVal(retval, gi, gad,termination,
+					   &reuse_event, IntuitionBase);
+
+	    if (gad)
+	    {
+		gad->Activation |= GACT_ACTIVEGADGET;
+	        result = gad;
+	    }
+	    break; }
+	    
+    } /* switch(gad->GadgetType & GTYP_GTYPEMASK) */
+    
+    if (result) iihd->ActiveGadget = result;
+ 
+    return result;
+}
+
+
+/**********************
+**  FindCycleGadget  **
+**********************/
+struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD direction)
+{
+    struct Gadget *g, *gg, *prev;
+    
+    D(bug("FindCycleGadget: win = %x  gad = %x  direction = %d\n", win, gad, direction));
+    
+    switch(direction)
+    {
+        case GMR_NEXTACTIVE:
+	    g = gad->NextGadget;
+	    if (!g) g = win->FirstGadget;
+	    
+	    while(g)
+	    {
+	        if ((g == gad) && (!(gad->Flags & GFLG_TABCYCLE)))
+		{
+		    /* should never happen */
+		    g = NULL;break;
+		}
+		if (g->Flags & GFLG_TABCYCLE) break;
+		
+		g = g->NextGadget;
+		if (!g) g = win->FirstGadget;
+	    }
+	    break;
+	    
+	case GMR_PREVACTIVE:
+	    prev = 0;g = 0;
+	    gg = win->FirstGadget;
+	    while (gg)
+	    {
+	        if (gg == gad)
+		{
+		    if (prev) g = prev;
+		    break;
+		}
+		if (gg->Flags & GFLG_TABCYCLE) prev = gg;
+		gg = gg->NextGadget;
+	    }
+	    
+	    if (gg && !g)
+	    {
+	        gg = gg->NextGadget;
+		if (!gg)
+		{
+		    if (gad->Flags & GFLG_TABCYCLE) g = gad;
+		    break;
+		}
+		prev = 0;
+		
+		while(gg)
+		{
+		    if (gg->Flags & GFLG_TABCYCLE) prev = gg;
+		    gg = gg->NextGadget;
+		}
+		
+		if (prev)
+		{
+		    g = prev;
+		} else {
+		    if (gad->Flags & GFLG_TABCYCLE) g = gad;
+		}
+	    }    
+		    
+		
+	    break;
+
+    } /* switch(direction) */
+    
+    return g;
+}
+
 /*********************************************************************/
 
 void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WORD *height)
@@ -389,8 +544,6 @@ void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WOR
     }
 }
 
-/*********************************************************************/
-/*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
