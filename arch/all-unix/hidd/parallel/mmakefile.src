@@ -7,13 +7,13 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DAROS_USE_OOP
 
-ILDFLAGS    := -nostartfiles -Xlinker -i -g
+ILDFLAGS    := -nostartfiles -Xlinker -i -g -d
 
 ifeq ($(ARCH),netbsd)
-ILDFLAGS    := -nostartfiles -Xlinker -r
+ILDFLAGS    := -nostartfiles -Xlinker -r -d
 endif
 ifeq ($(ARCH),openbsd)
-ILDFLAGS    := -nostartfiles -Xlinker -r
+ILDFLAGS    := -nostartfiles -Xlinker -r -d
 endif
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
