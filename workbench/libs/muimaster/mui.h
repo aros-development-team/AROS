@@ -14,9 +14,6 @@
 #endif
 
 #ifdef __AROS__
-#   ifndef PROTO_MUIMASTER_H
-#       include <proto/muimaster.h>
-#   endif
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
