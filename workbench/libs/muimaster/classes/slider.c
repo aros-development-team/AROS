@@ -249,7 +249,7 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	        {
 	            if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
 	            {
-		        data->knob_click = (data->flags & SLIDER_HORIZ) ? msg->imsg->MouseX : msg->imsg->MouseY;
+		        data->knob_click = (data->flags & SLIDER_HORIZ) ? msg->imsg->MouseX - data->knob_left + _mleft(obj) : msg->imsg->MouseY - data->knob_top + _mtop(obj);
 
 		        if
 			(
