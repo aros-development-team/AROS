@@ -10,16 +10,16 @@ LIBNAME := pci
 FILES	:= pcidriverclass pcideviceclass pciclass pciutil
 
 #MM
-includes-copy : $(INCDIR)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(INCDIR)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
+includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(AROS_INCLUDES)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
 
-$(INCDIR)/hidd/pci.h: include/pci_hidd.h
-	$(CP) include/pci_hidd.h $(INCDIR)/hidd/pci.h
+$(AROS_INCLUDES)/hidd/pci.h: include/pci_hidd.h
+	$(CP) include/pci_hidd.h $(AROS_INCLUDES)/hidd/pci.h
 
 $(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) include/pci_hidd.h $(GENINCDIR)/hidd/pci.h
 
-$(INCDIR)/libraries/pci.h: include/pci_lib.h
-	$(CP) include/pci_lib.h  $(INCDIR)/libraries/pci.h
+$(AROS_INCLUDES)/libraries/pci.h: include/pci_lib.h
+	$(CP) include/pci_lib.h  $(AROS_INCLUDES)/libraries/pci.h
 
 $(GENINCDIR)/libraries/pci.h: include/pci_lib.h
 	$(CP) include/pci_lib.h  $(GENINCDIR)/libraries/pci.h

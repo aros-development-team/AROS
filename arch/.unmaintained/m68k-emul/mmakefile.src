@@ -12,7 +12,7 @@ AFLAGS2 = $(AFLAGS) -I..
 
 SUBDIRS = exec clib utility
 
-MACHINE_H = $(INCDIR)/aros/machine.h
+MACHINE_H = $(AROS_INCLUDES)/aros/machine.h
 
 
 CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))

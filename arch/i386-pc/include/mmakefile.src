@@ -7,10 +7,10 @@ _INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))             \
             $(foreach f,$(shell ls asm/*.[hi]), $(f))      \
             $(foreach f,$(shell ls exec/*.[hi]), $(f))
 
-INCFILES := $(foreach f,$(_INCLUDES), $(INCDIR)/$(f) $(GENINCDIR)/$(f))
+INCFILES := $(foreach f,$(_INCLUDES), $(AROS_INCLUDES)/$(f) $(GENINCDIR)/$(f))
 
-DIRS :=	$(INCDIR) $(GENINCDIR) \
-	$(foreach d, aros asm exec libcore, $(INCDIR)/$(d) $(GENINCDIR)/$(d))
+DIRS :=	$(AROS_INCLUDES) $(GENINCDIR) \
+	$(foreach d, aros asm exec libcore, $(AROS_INCLUDES)/$(d) $(GENINCDIR)/$(d))
 
 MACHINE_H := $(GENINCDIR)/aros/machine.h
 
@@ -31,7 +31,7 @@ setup-includes :
 clean ::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
-$(INCDIR)/% : %
+$(AROS_INCLUDES)/% : %
 	$(CP) $< $@
 
 $(GENINCDIR)/% : %

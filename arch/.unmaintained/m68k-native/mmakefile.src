@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 GENINC		:= $(TOOLDIR)/geninc-m68k-native$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H       := $(GENINCDIR)/aros/machine.h
-DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
+DISTMACHINE_H	:= $(AROS_INCLUDES)/aros/machine.h
 SPECIAL_CFLAGS  := -I $(TOP)/exec
 
 #MM
@@ -22,7 +22,7 @@ $(MACHINE_H): machine.h
 	$(CP) $< $@
 
 $(DISTMACHINE_H) : machine.h
-	%mkdirs_q $(INCDIR)
+	%mkdirs_q $(AROS_INCLUDES)
 	$(CP) $< $@
 
 machine.i: $(GENINC) $(MACHINE_H)

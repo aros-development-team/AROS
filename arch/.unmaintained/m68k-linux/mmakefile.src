@@ -5,7 +5,7 @@ GENINC		:= $(TOOLDIR)/geninc-m68k-linux$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 USER_INCLUDES	:= -I$(TOP)/rom/exec
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
-		   $(INCDIR)/aros/machine.h \
+		   $(AROS_INCLUDES)/aros/machine.h \
 		   $(GENINCDIR)/jmpdefs.h
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 
@@ -17,8 +17,8 @@ includes-linux-m68k : $(INCFILES) machine.i
 clean::
 	$(RM) $(INCFILES) $(TESTS) machine.i $(GENINC)
 
-$(INCDIR)/aros/%.h : %.h
-	%mkdirs_q $(INCDIR)/aros
+$(AROS_INCLUDES)/aros/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/aros
 	$(CP) $< $@
 
 $(GENINCDIR)/aros/%.h : %.h

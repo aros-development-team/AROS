@@ -23,8 +23,8 @@ clean::
 
 #MM- kernel-i386 :
 
-$(INCDIR)/aros/%.h : %.h
-	%mkdirs_q $(INCDIR)/aros
+$(AROS_INCLUDES)/aros/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/aros
 	$(CP) $< $@
 
 $(GENINCDIR)/aros/%.h : %.h

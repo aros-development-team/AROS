@@ -5,7 +5,7 @@ GENINC		:= $(TOOLDIR)/geninc-ppc$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
-		   $(INCDIR)/aros/machine.h \
+		   $(AROS_INCLUDES)/aros/machine.h \
 		   $(GENINCDIR)/jmpdefs.h
 
 
@@ -23,8 +23,8 @@ includes-linux-ppc : $(INCFILES) machine.i
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
-$(INCDIR)/aros/%.h : %.h
-	%mkdirs_q $(INCDIR)/aros
+$(AROS_INCLUDES)/aros/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/aros
 	$(CP) $< $@
 
 $(GENINCDIR)/aros/%.h : %.h
