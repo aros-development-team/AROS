@@ -8,7 +8,7 @@ original AmigaOS and how they are handled in order to be compatible.
 \section{Pointer/Integer conversions}
 
 If you need a variable which can store a pointers as an integer, don't use
-|ULONG| but |IPTR|. AROS gurantees that |LONG| is 32bit on all systems, while
+|ULONG| but |IPTR|. AROS guarantees that |LONG| is 32bit on all systems, while
 |IPTR| is always large enough to contain a pointer. Most notable things
 which are affected by this: |TagItem|s (the |ti_Data| field is now an |IPTR|
 instead of |ULONG|), BOOPSI classes (eg. the return value of |DoMethod()|),
@@ -17,14 +17,14 @@ instead of |ULONG|), BOOPSI classes (eg. the return value of |DoMethod()|),
 \section{64bit variables}
 
 The type of 64bit variables is |QUAD| (unsigned: |UQUAD|). This is for example
-returned by the function |SMult64()| of Utility.library. To access the
+returned by the function |SMult64()| of utility.library. To access the
 high- and loworder 32bit values of the 64bit variable, use |LOW32OF64()|
 and |HIGH32OF64()| which are defined in \filename{AROS/include/aros/64bit.h}.
 
 \section{Cloning RastPorts}
 
 AROS uses an external driver to access the graphics hardware. Since the
-nature of this driver is unknown to AROS, it is no more valid to clone
+nature of this driver is unknown to AROS, it is no longer valid to clone
 a RastPort by simply copying it. To be compatible, there are two new
 functions (in AROS) or macros (on Amiga): |CreateRastPort()|,
 |CloneRastPort()| and |FreeRastPort()|. You must call |CloneRastPort()| to
@@ -33,7 +33,7 @@ create a copy or |CreateRastPort()| for an empty RastPort and
 
 This approach produces equivalent code on the Amiga but on AROS it can slow
 things down a bit. If you must preserve the original state of the RastPort,
-it's more safe to create a clone, work on it and then dispose it again. It
+it's more safe to create a clone, work on it and then dispose of it again. It
 can also be faster if you would have to make a lot of changes to the RastPort
 to create two clones and set them to the two states you need. But your code
 should not depend on certain gains or losses of speed due to cloned RastPorts
@@ -46,7 +46,7 @@ The original AmigaOS doesn't use the tags below |USER_TAG| (have a look at
 tags at or near |USER_TAG| because then they might interfere with the OS's
 own tags. To solve this, AROS *does* use the tags *below* |USER_TAG| and the
 various implementators need not fear that their tags may overlap with the
-one from the system. The file \filename{AROS/include/utility/tagitem.h} now contains the
+ones from the system. The file \filename{AROS/include/utility/tagitem.h} now contains the
 basic offsets for the various parts of the OS. In the future, it might be
 possible for users to allocate ranges of tags for specific uses.
 
@@ -188,8 +188,8 @@ shell to find out). If you don't know what kind of shell you have,
 just try \shell{echo $SHELL} or \shell{echo $shell}. This should
 print the name of your shell.
 
-If you don't have set this variable, you must add \shell{-d ...}
-right after the cvs in the following examples.
+If you haven't set this variable, you must add \shell{-d ...}
+right after cvs in the following examples.
 
 Now you can use any CVS command to get a copy of all AROS sources, update
 your sources or commit the changes you made.
@@ -227,7 +227,7 @@ You should do this before any commit in case this happens. So before
 you commit, do an update, call \filename{make} if any changes were
 made, fix the problems and then commit.
 
-\subsection{Commiting changes}
+\subsection{Committing changes}
 
 If you have changed a file, then you of course want to share your
 work with the other guys. To do this, use the CVS commit command:
@@ -294,7 +294,7 @@ lines in an email that it doesn't understand and stops reading at the first
 \shell{end} or \shell{--} on a line of its own. jobserv will answer your EMails telling
 you what it did, what commands it did understand, which it did execute and
 which not and if not, why not. jobserv will also remember your EMail so
-other can see who added/requested/did which job - So don't worry you won't
+others can see who added/requested/did which job - So don't worry you won't
 be credited for your work.
 
 \subsection{Some commands the jobserver understands}
@@ -320,7 +320,7 @@ add exec00001 Write AddHead
 \item{done <id>} After you requested the job and finished it, you must tell
 	    jobserv that you're through.
 
-\item{show [free] [work] [done] [byme]} The most important command. It tell
+\item{show [free] [work] [done] [byme]} The most important command. It tells
 	    jobserv that you want to know what jobs are available and the
 	    like. All parameters are optional. "byme" is a flag which
 	    restricts the answer to jobs which match your EMail. The other
@@ -378,7 +378,7 @@ Support-Mailbox: ++49-(0)2 08-20 25 09
 \end{example}
 
 for DM 25.- (about $15) plus P&P. The CD contains all includes you need
-and furthermore you can find there valuable information like: The autodocs,
+and furthermore you can find valuable information on it like: The autodocs,
 the examples for the various developer disk sets and the Rom Kernel Reference
 Manuals (RKRMs), several tools to help to develop code and more. At the
 price, it's a bargain.
@@ -390,7 +390,7 @@ won't do it).
 one (use "make --version" to find out which you have).
 
 \item GCC 2.7.0 or better (2.7.2 is recommended because of the magnitude
-of bugs fixed) (use "gcc --verion" to find out which you have).
+of bugs fixed) (use "gcc --version" to find out which you have).
 
 \item GAS/as from binutils 2.7 or better.
 
@@ -413,8 +413,8 @@ a short overview of what they are and what you can do with them.
 	docs.
 
 \item{arosshell.c} The main code for the shell which allows you to execute AROS
-	commands as you are used to it on you beloved Amiga. Also a very
-	small demo of how it works and also probably the most small demo
+	commands as you are used to it on your beloved Amiga. Also a very
+	small demo of how it works and also probably the smallest demo
 	that does something useful.
 
 \item{crypt.c} This is a small program which allows you to create a password if
@@ -424,7 +424,7 @@ a short overview of what they are and what you can do with them.
 \item{tpl.c} Template file for AROS system library functions. Each function
 	gets it's own file.
 
-\item{makefile} This is the magic file which holds the whole crap together.
+\item{makefile} This is the magic file which holds the whole thing together.
 	It has the following rules:
 
 	\begin{description}
@@ -444,7 +444,7 @@ a short overview of what they are and what you can do with them.
 	\end{description}
 
 \item{config/host.cfg} This is read by the Makefile to get the name of your
-	C compiler, options that I should use and more. If this file is
+	C compiler, options that should be used and more. If this file is
 	missing, make will generate it for you.
 
 \item{config/i386-emul/} Linux version of the kernel. It consists mainly of
@@ -453,9 +453,9 @@ a short overview of what they are and what you can do with them.
 	that this is the only directory which may contain assembler files
 	and which is different for every architecture. If you begin your
 	work on some new architecture, make such a directory for your
-	hardware and put all hardware dependend files in there. It is a
+	hardware and put all hardware dependent files in there. It is a
 	rule that you can do anything inside this directory as long as it
-	has no influence on the other files and diretories. The directory
+	has no influence on the other files and directories. The directory
 	must support the standard rules \shell{all} and \shell{clean} and
 	read \filename{AROS/config/make.cfg}. All files generated by the
 	makefile should go into \filename{$(OSGENDIR)}.
@@ -491,7 +491,7 @@ a short overview of what they are and what you can do with them.
 	Untested means: They might work but I haven't tried. They should be
 	a good basis for beginning the work to make AROS run on an Amiga
 	but you should first have a look at \filename{AROS/config/i386-emul/}
-	which is the most upto-date version.
+	which is the most up-to-date version.
 
 \item{configure} This is a small script which examines your system and
 	creates a file named \filename{AROS/config/host.cfg} which is used by
@@ -512,7 +512,7 @@ purify cc ...
 	\shell{$(BINDIR)} where the files should be put which the end user
 	should see and \shell{$(GENDIR)} where you can create a directory
 	to put all files one part of AROS needs (eg. \filename{libs/} or
-	\filename{os/}). The diretory \shell{$(OSGENDIR)} is below
+	\filename{os/}). The directory \shell{$(OSGENDIR)} is below
 	\shell{$(GENDIR)} and all \filename{*.o} files in this directory
 	are collected to the \filename{AmigaOS.lib}.
 
@@ -546,7 +546,7 @@ purify cc ...
 	libraries. Here is a list of interesting files:
 
 	\begin{description}
-	\item{dos_functable.c} An array which all functions of the library.
+	\item{dos_functable.c} An array with all functions of the library.
 		It is generated by a script from the headers of all
 		\filename{*.c}-files in this directory.
 
@@ -578,7 +578,7 @@ purify cc ...
 
 \item{filesys/} A starting filesystem which uses the Linux ext2fs to emulate
 	a DOS device, the basics for a \filename{NULL:} device and the
-	beginning of a RAM Disk.
+	beginnings of a RAM Disk.
 
 \item{graphics/} Sourcecode for the \filename{graphics.library}. See
 	\lref{dos/}{dos} for more information.
