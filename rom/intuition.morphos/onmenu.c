@@ -60,6 +60,7 @@ AROS_LH2(void, OnMenu,
     IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
     thismenu = window->MenuStrip;
+
     if (MENUNUM(menunumber) != NOMENU)
     {
         for (i = 0; i < MENUNUM(menunumber) && thismenu; i++)
@@ -76,28 +77,34 @@ AROS_LH2(void, OnMenu,
             else
             {
                 thisitem = thismenu->FirstItem;
+		
                 for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
                 {
                     thisitem = thisitem->NextItem;
                 }
+		
                 if (thisitem)
                 {
                     if (SUBNUM(menunumber) != NOSUB)
                     {
                         thisitem = thisitem->SubItem;
+			
                         for (i = 0; i < SUBNUM(menunumber) && thisitem; i++)
                         {
                             thisitem = thisitem->NextItem;
                         }
                     }
                 }
+		
                 if (thisitem)
                 {
                     thisitem->Flags |= ITEMENABLED;
                 }
             }
-        }
-    }
+	    
+        } /* if (thismenu) */
+	
+    } /* if (MENUNUM(menunumber) != NOMENU) */
 
     AROS_LIBFUNC_EXIT
 } /* OnMenu */

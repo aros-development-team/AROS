@@ -75,8 +75,8 @@ AROS_LH9(void, NewModifyProp,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct PropInfo *pi;
-    struct BBox     old, new;
-    BOOL        knobok1, knobok2;
+    struct BBox      old, new;
+    BOOL             knobok1, knobok2;
 
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
         || !gadget->SpecialInfo || !window)
@@ -107,20 +107,22 @@ AROS_LH9(void, NewModifyProp,
     /* We don't want the inputhandler to redraw the knob with values
      * partially changed, so use some protection.
      */
-    pi->Flags = flags;
-    pi->HorizPot = horizPot;
-    pi->VertPot = vertPot;
-    pi->HorizBody = horizBody;
-    pi->VertBody = vertBody;
+    pi->Flags 	    = flags;
+    pi->HorizPot    = horizPot;
+    pi->VertPot     = vertPot;
+    pi->HorizBody   = horizBody;
+    pi->VertBody    = vertBody;
 
 #ifdef PROPHACK
     Forbid();
     if ((gadget == ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->ActiveGadget) && (FindTask(0) == ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->InputDeviceTask) && ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask)
     {
         Signal(((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask,PSIG_REFRESHALL);
-    } else {
+    }
+    else
+    {
 
-    Permit();
+    	// Permit(); stegerg: CHECKME, commented out!
 #endif
         knobok2 = CalcKnobSize (gadget, &new);
 

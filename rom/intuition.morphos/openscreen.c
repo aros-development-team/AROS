@@ -44,14 +44,14 @@
 
 struct OpenScreenActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct IntScreen *Screen;
-    struct NewScreen *NewScreen;
-    struct List *List;
+    struct IntuiActionMsg    msg;
+    struct IntScreen 	    *Screen;
+    struct NewScreen 	    *NewScreen;
+    struct List     	    *List;
 };
 
 static VOID int_openscreen(struct OpenScreenActionMsg *msg,
-                            struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 
 #ifdef __MORPHOS__
 extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
@@ -295,31 +295,32 @@ LONG MyObtainPen(struct ColorMap *cm,
 /* Default colors for the new screen */
 
 const ULONG coltab[] =
-    {
-        (16L << 16) + 0,    /* 16 colors, loaded at index 0 */
+{
+    (16L << 16) + 0,    /* 16 colors, loaded at index 0 */
 
-        /* X11 color names  */
-        0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70   */
-        0x00000000, 0x00000000, 0x00000000, /* Black    */
-        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White    */
-        0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
+    /* X11 color names  */
+    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70   */
+    0x00000000, 0x00000000, 0x00000000, /* Black    */
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White    */
+    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
 
-        0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue     */
-        0x00000000, 0xFFFFFFFF, 0x00000000, /* Green    */
-        0xFFFFFFFF, 0x00000000, 0x00000000, /* Red      */
-        0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan     */
+    0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue     */
+    0x00000000, 0xFFFFFFFF, 0x00000000, /* Green    */
+    0xFFFFFFFF, 0x00000000, 0x00000000, /* Red      */
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan     */
 
-        0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, /* Magenta  */
-        0xEEEEEEEE, 0x82828282, 0xEEEEEEEE, /* Violet   */
-        0xA5A5A5A5, 0x2A2A2A2A, 0x2A2A2A2A, /* Brown    */
-        0xFFFFFFFF, 0xE4E4E4E4, 0xC4C4C4C4, /* Bisque   */
+    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, /* Magenta  */
+    0xEEEEEEEE, 0x82828282, 0xEEEEEEEE, /* Violet   */
+    0xA5A5A5A5, 0x2A2A2A2A, 0x2A2A2A2A, /* Brown    */
+    0xFFFFFFFF, 0xE4E4E4E4, 0xC4C4C4C4, /* Bisque   */
 
-        0xE6E6E6E6, 0xE6E6E6E6, 0xFAFAFAFA, /* Lavender */
-        0x00000000, 0x00000000, 0x80808080, /* Navy     */
-        0xF0F0F0F0, 0xE6E6E6E6, 0x8C8C8C8C, /* Khaki    */
-        0xA0A0A0A0, 0x52525252, 0x2D2D2D2D, /* Sienna   */
-        0L      /* Termination */
-    };
+    0xE6E6E6E6, 0xE6E6E6E6, 0xFAFAFAFA, /* Lavender */
+    0x00000000, 0x00000000, 0x80808080, /* Navy     */
+    0xF0F0F0F0, 0xE6E6E6E6, 0x8C8C8C8C, /* Khaki    */
+    0xA0A0A0A0, 0x52525252, 0x2D2D2D2D, /* Sienna   */
+    0L      /* Termination */
+};
+
 /*****************************************************************************
  
     NAME */
@@ -357,45 +358,42 @@ AROS_LH1(struct Screen *, OpenScreen,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-
-    struct NewScreen  ns;
-    struct TagItem   *tag, *tagList;
-    struct IntScreen *screen;
-    int               success;
-    struct Hook      *layer_info_hook = NULL;
-    struct ColorSpec *colors = NULL;
-    ULONG            *errorPtr;   /* Store error at user specified location */
-    UWORD        *customdripens = NULL;
-    ULONG        *colors32 = NULL;
-    WORD          sysfont = -1;
-    BOOL          ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
+    struct NewScreen 	     ns;
+    struct TagItem   	    *tag, *tagList;
+    struct IntScreen 	    *screen;
+    int              	     success;
+    struct Hook      	    *layer_info_hook = NULL;
+    struct ColorSpec 	    *colors = NULL;
+    ULONG            	    *errorPtr;   /* Store error at user specified location */
+    UWORD           	    *customdripens = NULL;
+    ULONG           	    *colors32 = NULL;
+    WORD            	     sysfont = -1;
+    BOOL            	     ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
 #ifdef USEWINDOWLOCK
-    BOOL         windowlock = FALSE;
+    BOOL            	     windowlock = FALSE;
 #endif
-    struct Rectangle      *dclip = NULL;
-    LONG                   overscan = OSCAN_TEXT;
-    DisplayInfoHandle      displayinfo;
-    struct DimensionInfo   dimensions;
-    struct MonitorInfo     monitor;
+    struct Rectangle        *dclip = NULL;
+    LONG                     overscan = OSCAN_TEXT;
+    DisplayInfoHandle        displayinfo;
+    struct DimensionInfo     dimensions;
+    struct MonitorInfo       monitor;
 #ifdef __MORPHOS__
-    ULONG                  allocbitmapflags = BMF_DISPLAYABLE;
+    ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
 #else
-    BOOL          frontbm_set = FALSE;
-    struct BitMap    *old_front_bm = NULL;
+    BOOL            	     frontbm_set = FALSE;
+    struct BitMap    	    *old_front_bm = NULL;
 #endif
     //ULONG                  lock;
-    WORD                   numcolors;
-    BOOL                   workbench = FALSE;
-
-    struct TagItem   modetags[] =
-        {
-            { BIDTAG_Depth        , 0UL   },
-            { BIDTAG_DesiredWidth   , 0UL   },
-            { BIDTAG_DesiredHeight  , 0UL   },
-            { TAG_DONE          }
-        };
-
-    ULONG modeid = INVALID_ID;
+    WORD                     numcolors;
+    BOOL                     workbench = FALSE;
+    struct TagItem   	     modetags[] =
+    {
+        { BIDTAG_Depth        	, 0UL   },
+        { BIDTAG_DesiredWidth   , 0UL   },
+        { BIDTAG_DesiredHeight  , 0UL   },
+        { TAG_DONE          	    	}
+    };
+    ULONG   	    	     modeid = INVALID_ID;
 
     ASSERT_VALID_PTR_ROMOK(newScreen);
 
@@ -467,10 +465,12 @@ AROS_LH1(struct Screen *, OpenScreen,
         {
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_LikeWorkbench\n"));
+
             ns.Width = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
             ns.Height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
             ns.Depth = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
             modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
+
             if (GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control & SMF_AUTOSCROLL)
             {
                 /* need to mark autoscroll */
@@ -492,30 +492,37 @@ AROS_LH1(struct Screen *, OpenScreen,
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));
                 ns.LeftEdge  = tag->ti_Data;
                 break;
+
             case SA_Top:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Top %ld\n",tag->ti_Data));
                 ns.TopEdge   = tag->ti_Data;
                 break;
+
             case SA_Width:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Width %ld\n",tag->ti_Data));
                 ns.Width     = tag->ti_Data;
                 break;
+
             case SA_Height:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Height %ld\n",tag->ti_Data));
                 ns.Height    = tag->ti_Data;
                 break;
+
             case SA_Depth:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Depth %ld\n",tag->ti_Data));
                 ns.Depth     = tag->ti_Data;
                 break;
+
             case SA_DetailPen:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_DetailPen %ld\n",tag->ti_Data));
                 ns.DetailPen = tag->ti_Data;
                 break;
+
             case SA_BlockPen:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_BlockPen %ld\n",tag->ti_Data));
                 ns.BlockPen  = tag->ti_Data;
                 break;
+
             case SA_Type:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Type 0x%lx\n",tag->ti_Data));
                 ns.Type &= ~SCREENTYPE;
@@ -593,6 +600,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                             UnlockPubScreen(NULL, old);
                             SetError(OSERR_PUBNOTUNIQUE);
                             UnlockPubScreenList();
+
                             return NULL;
                         }
                     }
@@ -607,6 +615,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                 if (screen->pubScrNode == NULL)
                 {
                     SetError(OSERR_NOMEM);
+
                     return NULL;
                 }
 
@@ -623,6 +632,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                 {
                     SetError(OSERR_NOMEM);
                     FreeMem(screen->pubScrNode, sizeof(struct PubScreenNode));
+
                     return NULL;
                 }
 
@@ -701,7 +711,9 @@ AROS_LH1(struct Screen *, OpenScreen,
                 if (tag->ti_Data)
                 {
                     ns.Type |= PENSHARED;
-                } else {
+                }
+		else
+		{
                     ns.Type &= ~PENSHARED;
                 }
                 break;
@@ -757,30 +769,39 @@ AROS_LH1(struct Screen *, OpenScreen,
             case SA_FullPalette:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_FullPalette 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_ColorMapEntries:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ColorMapEntries 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_Parent:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Parent 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_Draggable:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Draggable 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_Exclusive:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Exclusive 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_VideoControl:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_VideoControl 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_FrontChild:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_FrontChild 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_BackChild:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_BackChild 0x%lx\n",tag->ti_Data));
                 break;
+
             case SA_MinimizeISG:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_MinimizeISG 0x%lx\n",tag->ti_Data));
                 break;
+
 #warning TODO: Missing SA_ Tags
             default:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: unknown tag 0x%lx data 0x%lx\n",
@@ -817,12 +838,12 @@ AROS_LH1(struct Screen *, OpenScreen,
             case HIRESLACE_KEY:
                 {
                     struct TagItem   bestmodetags[] =
-                        {
-                            { CYBRBIDTG_Depth     , 0UL},
-                            { CYBRBIDTG_NominalWidth        , 0UL   },
-                            { CYBRBIDTG_NominalHeight   , 0UL   },
-                            { TAG_DONE  }
-                        };
+                    {
+                        { CYBRBIDTG_Depth     	    , 0UL   },
+                        { CYBRBIDTG_NominalWidth    , 0UL   },
+                        { CYBRBIDTG_NominalHeight   , 0UL   },
+                        { TAG_DONE  	    	    	    }
+                    };
 
                     bestmodetags[0].ti_Data = 8;
                     bestmodetags[1].ti_Data = ns.Width;
@@ -838,6 +859,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                     DEBUG_OPENSCREEN(dprintf("BestCModeIDTagList returned %ld\n",modeid);)
                 }
                 break;
+		
             default:
                 break;
             }
@@ -906,38 +928,38 @@ AROS_LH1(struct Screen *, OpenScreen,
 
         if (ns.Type & CUSTOMBITMAP)
         {
-                        struct BitMap *custombm;
+            struct BitMap *custombm;
 
-                        custombm = ns.CustomBitMap;
+            custombm = ns.CustomBitMap;
 
             if (IsCyberModeID(modeid) && custombm)
             {
                 int pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
                                                                
-                                if(GetCyberMapAttr(custombm,CYBRMATTR_PIXFMT) != pixfmt)
-                                {
-                                        // incompatible formats !
-                                        custombm = NULL;
-                                }
-                        }
-
-                        if(custombm != NULL)
-                        {
-                    screen->Screen.RastPort.BitMap = custombm;
-                    ns.Depth    =   GetBitMapAttr(ns.CustomBitMap,BMA_DEPTH);
-                    DEBUG_OPENSCREEN(dprintf("OpenScreen: CustomBitmap Depth %ld\n",
-                                             ns.Depth));
-                        }
-                        else
-                        {
-                                ns.CustomBitMap = NULL;
-                                ns.Type &= ~CUSTOMBITMAP;
-                        }
-        }
-                else
+                if(GetCyberMapAttr(custombm,CYBRMATTR_PIXFMT) != pixfmt)
                 {
-            screen->Screen.RastPort.BitMap = NULL;                        
+                        // incompatible formats !
+                        custombm = NULL;
                 }
+            }
+
+            if(custombm != NULL)
+            {
+                screen->Screen.RastPort.BitMap = custombm;
+                ns.Depth    =   GetBitMapAttr(ns.CustomBitMap,BMA_DEPTH);
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: CustomBitmap Depth %ld\n",
+                                         ns.Depth));
+            }
+            else
+            {
+                ns.CustomBitMap = NULL;
+              	ns.Type &= ~CUSTOMBITMAP;
+            }
+        }
+        else
+        {
+            screen->Screen.RastPort.BitMap = NULL;                        
+        }
 
 
         if(screen->Screen.RastPort.BitMap == NULL)
@@ -1093,7 +1115,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                                     &screen->Screen.ViewPort))
             {
 #if 0
-                int i=0;
+                int 	i = 0;
                 char    *alloclist;
                 UWORD   *refcnt;
 
@@ -1220,8 +1242,8 @@ AROS_LH1(struct Screen *, OpenScreen,
     if (ok)
     {
         struct Color32 *p;
-        int k;
-        UWORD *q;
+        int 	    	k;
+        UWORD 	       *q;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Load Colors\n"));
 
@@ -1246,23 +1268,24 @@ AROS_LH1(struct Screen *, OpenScreen,
         if (ns.Depth >= 3)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set last 4 colors\n"));
-#warning Isn`t that only set for FullPalette ?
+
+    	    #warning Isn`t that only set for FullPalette ?
             for (k = 0; k < 4; ++k)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%lx Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
                                          screen->Screen.ViewPort,
                                          numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue));
 
-#if 1
+    	    #if 1
                 ObtainPen(screen->Screen.ViewPort.ColorMap,
                           numcolors - 4 + k,
                           p[k+4].red,
                           p[k+4].green,
                           p[k+4].blue,
                           PEN_EXCLUSIVE);
-#else
+    	    #else
                 SetRGB32(&screen->Screen.ViewPort, numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue);
-#endif
+    	    #endif
             }
         }
 #endif
@@ -1379,11 +1402,11 @@ AROS_LH1(struct Screen *, OpenScreen,
 #ifdef CreateLayerTagList
         {
             struct TagItem tags[4] =
-                {
-                    {LA_Visible, FALSE},
-                    {LA_Priority, ROOTPRIORITY},
-                    {TAG_DONE, -1}
-                };
+            {
+                {LA_Visible , FALSE 	    },
+                {LA_Priority, ROOTPRIORITY  },
+                {TAG_DONE   	    	    }
+            };
 
             screen->rootLayer =
                 CreateLayerTagList(&screen->Screen.LayerInfo,
@@ -1429,19 +1452,19 @@ AROS_LH1(struct Screen *, OpenScreen,
         }
         else if (sysfont == 1)
         {
-#if 1
+    	#if 1
             /* Use safe OpenFont here - Piru
              */
             screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
-#else
+    	#else
 
-#warning: Really hacky way of re-opening ScreenFont
+    	    #warning: Really hacky way of re-opening ScreenFont
 
             Forbid();
             screen->DInfo.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
             screen->DInfo.dri_Font->tf_Accessors++;
             Permit();
-#endif
+    	#endif
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set ScreenFont\n"));
 
         }
@@ -1456,19 +1479,19 @@ AROS_LH1(struct Screen *, OpenScreen,
             /* GfxBase->DefaultFont is *not* always topaz 8. It
                can be set with the Font prefs program!! */
 
-#if 1
+    	#if 1
             /* Use safe OpenFont.. - Piru
              */
             screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
-#else
+    	#else
 
-#warning: Really hacky way of re-opening system default font
+    	    #warning: Really hacky way of re-opening system default font
 
             Forbid();
             screen->DInfo.dri_Font = GfxBase->DefaultFont;
             screen->DInfo.dri_Font->tf_Accessors++;
             Permit();
-#endif
+    	#endif
         }
 
         if (!screen->DInfo.dri_Font) ok = FALSE;
@@ -1479,6 +1502,7 @@ AROS_LH1(struct Screen *, OpenScreen,
     {
         /* set default values for pens */
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set Default Pens\n"));
+
         CopyMem(ns.Depth == 1 ? GetPrivIBase(IntuitionBase)->DriPens2
                 : ns.Depth == 4 ? GetPrivIBase(IntuitionBase)->DriPens4
                 : GetPrivIBase(IntuitionBase)->DriPens8,
@@ -1497,8 +1521,10 @@ AROS_LH1(struct Screen *, OpenScreen,
             WORD i;
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set Custom Pens\n"));
+
             screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
             screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
+
             for(i = 0; (i < NUMDRIPENS) && (customdripens[i] != (UWORD)~0); i++)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: Pen[%ld] %ld\n",i,screen->Pens[i]));
@@ -1520,12 +1546,13 @@ AROS_LH1(struct Screen *, OpenScreen,
                 screen->Screen.BlockPen = 1;
             }
             else
-                if (screen->Screen.BlockPen == 0)
-                {
-                    DEBUG_OPENSCREEN(dprintf("OpenScreen: BlockPen==0..correct\n"));
-                    screen->Screen.BlockPen = screen->Screen.DetailPen;
-                    screen->Screen.DetailPen = 0;
-                }
+            if (screen->Screen.BlockPen == 0)
+            {
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: BlockPen==0..correct\n"));
+                screen->Screen.BlockPen = screen->Screen.DetailPen;
+                screen->Screen.DetailPen = 0;
+            }
+
             screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
             screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
         }
@@ -1551,9 +1578,11 @@ AROS_LH1(struct Screen *, OpenScreen,
             /* The Pens in the DrawInfo must be allocated as shared */
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: ObtainPen DrawInfo Pens as shared\n"));
+
             for(i = 0; i < NUMDRIPENS; i++)
             {
                 int pen = screen->Pens[i];
+
                 if (!color_alloced[pen])
                 {
                     DEBUG_OPENSCREEN(dprintf("OpenScreen: ObtainPen ColorMap 0x%lx Pen %ld\n",
@@ -1577,6 +1606,7 @@ AROS_LH1(struct Screen *, OpenScreen,
             if (!sharepens)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: ObtainPen the remaining Pens as exclusive\n"));
+
                 for(i = 0; i < numcolors; i++)
                 {
                     if (!color_alloced[i])
@@ -1655,6 +1685,7 @@ AROS_LH1(struct Screen *, OpenScreen,
     if (ok)
     {
         struct windowclassprefs *wcprefs;
+
         wcprefs = (struct windowclassprefs *)int_GetCustomPrefs(TYPE_WINDOWCLASS,&screen->DInfo,IntuitionBase);
         if (wcprefs->flags & WINDOWCLASS_PREFS_1TO1FRAMES)
         {
@@ -1663,7 +1694,7 @@ AROS_LH1(struct Screen *, OpenScreen,
             screen->Screen.WBorBottom = screen->Screen.WBorTop;
         }
 #ifdef TITLEHACK
-            screen->Screen.WBorTop   += wcprefs->titlebarincrement;
+        screen->Screen.WBorTop   += wcprefs->titlebarincrement;
 #endif 
         int_FreeCustomPrefs(TYPE_WINDOWCLASS,&screen->DInfo,IntuitionBase);
     }
@@ -1673,11 +1704,11 @@ AROS_LH1(struct Screen *, OpenScreen,
     if (ok)
     {
         struct TagItem sysi_tags[] =
-            {
-                {SYSIA_Which,    MENUCHECK   },
-                {SYSIA_DrawInfo,    (IPTR)&screen->DInfo    },
-                {TAG_DONE                   }
-            };
+        {
+            {SYSIA_Which    , MENUCHECK     	    },
+            {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
+            {TAG_DONE                       	    }
+        };
 
         screen->DInfo.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
@@ -1731,41 +1762,41 @@ AROS_LH1(struct Screen *, OpenScreen,
 #endif
 
         {
-#define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
-#ifdef IA_Screen
-#undef IA_Screen
-#endif
-#define IA_Screen   (IA_Dummy + 0x1f) /* OS v44 includes!*/
+    	    #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
+    	    #ifdef IA_Screen
+    	    #undef IA_Screen
+    	    #endif
+    	    #define IA_Screen   (IA_Dummy + 0x1f) /* OS v44 includes!*/
 
             struct TagItem sdepth_tags[] =
-                {
-                    {GA_Image,   0},
-                    {GA_Top,    0           },
-		#if SQUARE_WIN_GADGETS
-		    {GA_Width, SDEPTH_HEIGHT 	    },
-		#endif
-                    {GA_Height, SDEPTH_HEIGHT       },
-                    {GA_SysGadget,  TRUE            },
-                    {GA_SysGType,   GTYP_SDEPTH     },
-                    {GA_RelVerify,  TRUE            },
-                    {TAG_DONE,  0UL         }
-                };
+            {
+                {GA_Image	, 0     	},
+                {GA_Top 	, 0             },
+	    #if SQUARE_WIN_GADGETS
+		{GA_Width	, SDEPTH_HEIGHT },
+	    #endif
+                {GA_Height	, SDEPTH_HEIGHT },
+                {GA_SysGadget   , TRUE          },
+                {GA_SysGType    , GTYP_SDEPTH   },
+                {GA_RelVerify   , TRUE          },
+                {TAG_DONE	             	}
+            };
 
             struct TagItem image_tags[] =
-                {
-                #if SQUARE_WIN_GADGETS
-		    {IA_Left , -1},
-                    {IA_Width , SDEPTH_HEIGHT + 1  },
-		#else
-		    {IA_Left , 0},
-		#endif
-                    {IA_Height   , SDEPTH_HEIGHT},
-                    {SYSIA_Which    , SDEPTHIMAGE       },
-                    {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
-                    {SYSIA_Size , screen->Screen.Flags & SCREENHIRES ?
-                     SYSISIZE_MEDRES : SYSISIZE_LOWRES},
-                    {TAG_DONE               }
-                };
+            {
+            #if SQUARE_WIN_GADGETS
+		{IA_Left    	, -1	    	    	    	    	},
+                {IA_Width   	, SDEPTH_HEIGHT + 1  	    	    	},
+	    #else
+		{IA_Left    	, 0 	    	    	    	    	},
+	    #endif
+                {IA_Height   	, SDEPTH_HEIGHT     	    	    	},
+                {SYSIA_Which    , SDEPTHIMAGE       	    	    	},
+                {SYSIA_DrawInfo , (IPTR)&screen->DInfo      	    	},
+                {SYSIA_Size 	, screen->Screen.Flags & SCREENHIRES ?
+                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES 	},
+                {TAG_DONE                   	    	    	    	}
+            };
 
             struct Object *im = 0;
 
@@ -1811,7 +1842,8 @@ AROS_LH1(struct Screen *, OpenScreen,
 #if 1
         {
             int i;
-            for (i=0;i<=screen->DInfo.dri_NumPens;i++)
+	    
+            for (i = 0;i <= screen->DInfo.dri_NumPens; i++)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri_Pens[i]));
             }
@@ -1858,8 +1890,8 @@ AROS_LH1(struct Screen *, OpenScreen,
         */
         if (ok)
         {
-            struct OpenScreenActionMsg msg;
-            struct List *list = LockPubScreenList();
+            struct OpenScreenActionMsg   msg;
+            struct List     	     	*list = LockPubScreenList();
 
             msg.Screen = screen;
             msg.NewScreen = &ns;
@@ -1925,9 +1957,9 @@ AROS_LH1(struct Screen *, OpenScreen,
 #ifdef __MORPHOS__
             struct TagItem tags[2];
 
-            tags[0].ti_Tag = VTAG_ATTACH_CM_GET;
+            tags[0].ti_Tag  = VTAG_ATTACH_CM_GET;
             tags[0].ti_Data = 0;
-            tags[1].ti_Tag = VTAG_END_CM;
+            tags[1].ti_Tag  = VTAG_END_CM;
 
             if (VideoControl(screen->Screen.ViewPort.ColorMap, tags) == 0 &&
                     tags[0].ti_Data)
@@ -2004,10 +2036,10 @@ AROS_LH1(struct Screen *, OpenScreen,
 static VOID int_openscreen(struct OpenScreenActionMsg *msg,
                             struct IntuitionBase *IntuitionBase)
 {
-    ULONG lock;
-    struct IntScreen *screen = msg->Screen;
-    struct NewScreen *ns = msg->NewScreen;
-    struct List *list = msg->List;
+    ULONG   	    	 lock;
+    struct IntScreen 	*screen = msg->Screen;
+    struct NewScreen 	*ns = msg->NewScreen;
+    struct List     	*list = msg->List;
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: Checking for pubScrNode (0x%lx)\n",screen->pubScrNode));
 

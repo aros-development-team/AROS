@@ -89,7 +89,9 @@ AROS_LH4(void, RefreshGList,
         return;
 
     if ((gadgets->GadgetType & GTYP_REQGADGET) == 0)
+    {
         requester = NULL;
+    }
     else if (numGad == -2)
     {
         gadgets = requester->ReqGadget;
@@ -247,40 +249,42 @@ void rendergadget(struct Gadget *gadgets,struct Window *window, struct Requester
 {
     switch (gadgets->GadgetType & GTYP_GTYPEMASK)
     {
-    case GTYP_BOOLGADGET:
-        RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
-        break;
+	case GTYP_BOOLGADGET:
+            RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
+            break;
 
-    case GTYP_GADGET0002:
-        break;
+	case GTYP_GADGET0002:
+            break;
 
-    case GTYP_PROPGADGET:
-        RefreshPropGadget (gadgets, window, requester, IntuitionBase);
-        break;
+	case GTYP_PROPGADGET:
+            RefreshPropGadget (gadgets, window, requester, IntuitionBase);
+            break;
 
-    case GTYP_STRGADGET:
-        RefreshStrGadget (gadgets, window, requester, IntuitionBase);
-        break;
+	case GTYP_STRGADGET:
+            RefreshStrGadget (gadgets, window, requester, IntuitionBase);
+            break;
 
-    case GTYP_CUSTOMGADGET:
-        RefreshBoopsiGadget (gadgets, window, requester, IntuitionBase);
-        break;
+	case GTYP_CUSTOMGADGET:
+            RefreshBoopsiGadget (gadgets, window, requester, IntuitionBase);
+            break;
 
-    default:
-        RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
-        break;
+	default:
+            RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
+            break;
 
     } /* switch GadgetType */
 }
 
 struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget *prevgad = 0,*gad;
+    struct Gadget *prevgad = 0, *gad;
+    
     for (gad = window->FirstGadget; gad; gad = gad->NextGadget)
     {
         if (gad == gadget) return prevgad;
         prevgad = gad;
     }
+    
     return 0;
 }
 

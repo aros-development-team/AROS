@@ -51,10 +51,10 @@ void PropRefreshTask(struct IntuitionBase *IntuitionBase,struct Gadget *gadget,s
             RefreshPropGadget (gadget, window, requester, IntuitionBase);
         }
 
-        //no need to refresh the knob when whole gadget was refreshed already
-//        if ((signals & PSIG_REFRESHKNOB) && (!(signals & PSIG_REFRESHALL)))
-//        {
-//        }
+      //no need to refresh the knob when whole gadget was refreshed already
+      //if ((signals & PSIG_REFRESHKNOB) && (!(signals & PSIG_REFRESHALL)))
+      //{
+      //}
 
     }
 }
@@ -103,8 +103,8 @@ AROS propgclass at the moment does not copy this behaviour!!!!
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
-#define EG(o)       ((struct ExtGadget *)o)
-#define G(o)        ((struct Gadget *)o)
+#define EG(o)       	((struct ExtGadget *)o)
+#define G(o)        	((struct Gadget *)o)
 
 /****************************************************************************************/
 
@@ -113,46 +113,38 @@ struct PropGData
     /* We use a propinfo structure, because we use the same routines
     for intuition propgadtets and in propgclass */
 
-    struct PropInfo propinfo;
+    struct PropInfo  propinfo;
 
     /* A little kludge: since the HandleMouseMove function
     wants dx/dy and not absolute mouse coords, we
     have to remember the last ones */
 
-    UWORD       last_x;
-    UWORD       last_y;
+    UWORD            last_x;
+    UWORD            last_y;
 
     /* One only have to store total or visble, and use some other
     formulas than those in the RKRM:L, but for
     code simplicity I store them all.  */
-    UWORD       top, visible, total;
+    UWORD            top, visible, total;
 
-    UWORD           flags;
-    struct BBox *old_knobbox;
+    UWORD            flags;
+    struct BBox     *old_knobbox;
 };
 
 /****************************************************************************************/
 
-#define PGD(x) ((struct PropGData *)x)
+#define PGD(x)      	    	    ((struct PropGData *)x)
 
-#define SetGadgetType(gad, type) \
-EG(gad)->GadgetType &= ~GTYP_GTYPEMASK; \
-EG(gad)->GadgetType |= type;
+#define SetGadgetType(gad, type)    EG(gad)->GadgetType &= ~GTYP_GTYPEMASK; \
+    	    	    	    	    EG(gad)->GadgetType |= type;
 
-#define PRIVFLAG_NICERENDER 1
-#define PRIVFLAG_NICENOTIFY 2
+#define PRIVFLAG_NICERENDER 	    1
+#define PRIVFLAG_NICENOTIFY 	    2
 
 /****************************************************************************************/
 
-static VOID FindScrollerValues
-(
-    UWORD   total,
-    UWORD   visible,
-    UWORD   top,
-    WORD    overlap,
-    UWORD   *body,
-    UWORD   *pot
-)
+static VOID FindScrollerValues(UWORD total, UWORD visible, UWORD top,
+    	    	    	       WORD overlap, UWORD *body, UWORD *pot)
 {
     UWORD hidden;
 
@@ -194,9 +186,8 @@ static UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
 static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
 {
     struct PropGData *data = INST_DATA(cl, o);
-
-    struct opUpdate notifymsg;
-    struct TagItem  notifyattrs[3];
+    struct opUpdate   notifymsg;
+    struct TagItem    notifyattrs[3];
 
     D(bug("PropGClass: NotifyTop(top=%d, final=%d)\n",
           data->top, final));
@@ -225,8 +216,8 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     ** Also triggers notifcation if PGA_Top has changed.
     */
 
-    struct PropGData    *data = (struct PropGData *)INST_DATA(cl, o);
-    UWORD       top, pot;
+    struct PropGData	*data = (struct PropGData *)INST_DATA(cl, o);
+    UWORD           	 top, pot;
 
     D(bug("PropGClass: UpdateTop()\n"));
 
@@ -246,31 +237,32 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
 
         NotifyTop(cl, o, gi, final);
     }
+    
     return;
 }
 
 /****************************************************************************************/
 
 #define SETFLAG(flagvar, boolvar, flag) \
-if (boolvar)            \
-flagvar |= flag;        \
-else                \
-flagvar &= ~flag;
+    if (boolvar)            \
+    	flagvar |= flag;    \
+    else                    \
+    	flagvar &= ~flag;
 
 /****************************************************************************************/
 
 static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem  *tag, *tstate;
+    struct TagItem  	*tag, *tstate;
     struct PropGData    *data;
-    struct BBox     old_knobbox;
-    struct opSet    method;
-    UWORD       newtop;
-    BOOL        set_flag = FALSE;
-    BOOL        was_disabled = FALSE;
-    BOOL        full_redraw = FALSE;
-    BOOL        old_knobbox_ok = FALSE;
-    IPTR        retval;
+    struct BBox     	 old_knobbox;
+    struct opSet    	 method;
+    UWORD     	    	 newtop;
+    BOOL            	 set_flag = FALSE;
+    BOOL            	 was_disabled = FALSE;
+    BOOL            	 full_redraw = FALSE;
+    BOOL            	 old_knobbox_ok = FALSE;
+    IPTR            	 retval;
 
     data = INST_DATA(cl, o);
     tstate = msg->ops_AttrList;
@@ -446,10 +438,11 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 
             data->old_knobbox = old_knobbox_ok ? &old_knobbox : 0;
 
-            method.MethodID = GM_RENDER;
-            method.gpr_GInfo = msg->ops_GInfo;
-            method.gpr_RPort = rp;
+            method.MethodID   = GM_RENDER;
+            method.gpr_GInfo  = msg->ops_GInfo;
+            method.gpr_RPort  = rp;
             method.gpr_Redraw = full_redraw ? GREDRAW_REDRAW : GREDRAW_UPDATE;
+	    
             DoMethodA(o, (Msg)&method);
 
             ReleaseGIRPort(rp);
@@ -475,8 +468,7 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
 
     if (o)
     {
-        struct PropGData *data;
-        data = INST_DATA(cl, o);
+        struct PropGData *data = INST_DATA(cl, o);
 
         /* A hack to make the functions in propgadgets.c work
         with this class */
@@ -520,8 +512,8 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
 
 static IPTR get_propgclass(Class *cl, Object *o,struct opGet *msg)
 {
-    struct PropGData    *data;
-    IPTR        retval = 1UL;
+    struct PropGData *data;
+    IPTR              retval = 1UL;
 
     data = INST_DATA(cl, o);
 
@@ -575,8 +567,7 @@ static IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
     /* Was GOACTIVE caused by an input event ? */
     if (msg->gpi_IEvent)
     {
-        struct PropGData *data;
-        data = INST_DATA(cl, o);
+        struct PropGData *data = INST_DATA(cl, o);
 
         /* Fake a standard intuition prop gadget.
         Of course this is a hack. */
@@ -616,7 +607,7 @@ static IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
             /* enable buffering to speed up refresh */
             ((struct IntWindow *)(msg->gpi_GInfo->gi_Window))->specialflags |= SPFLAG_WANTBUFFER;
 
-#ifdef PROPHACK
+    	#ifdef PROPHACK
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask =
                 NewCreateTask(TASKTAG_CODETYPE, CODETYPE_PPC, TASKTAG_PC, (ULONG)PropRefreshTask,
                                 TASKTAG_PRI,0,
@@ -625,7 +616,7 @@ static IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
                                 TASKTAG_PPC_ARG3,(ULONG)msg->gpi_GInfo->gi_Window,
                                 TASKTAG_PPC_ARG4,(ULONG)msg->gpi_GInfo->gi_Requester,
                                 TAG_DONE);
-#endif
+    	#endif
         
         } /* if not knob was hit */
 
@@ -680,12 +671,12 @@ static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
         case SELECTUP:
             /* User has released the knob. Refresh knob */
 
-#ifdef PROPHACK
+    #ifdef PROPHACK
         if (((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask)
         {
-            ULONG oldSignals = SetSignal(0,SIGF_INTUITION);
+            ULONG   	 oldSignals = SetSignal(0,SIGF_INTUITION);
             struct Task *task = ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask;
-            ULONG signals = 0;
+            ULONG   	 signals = 0;
 
             Forbid();
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask = 0;
@@ -700,7 +691,7 @@ static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
 
             SetSignal(oldSignals | (signals & ~SIGF_INTUITION),0xFFFFFFFF);
         }
-#endif
+    #endif
 
             SetGadgetType(o, GTYP_PROPGADGET);
 
@@ -763,14 +754,14 @@ static IPTR render_propgclass(Class *cl, Object *o, struct gpRender *msg)
 
         if (CalcKnobSize(G(o), &new_knobbox))
         {
-#if PROP_RENDER_OPTIMIZATION
+    	#if PROP_RENDER_OPTIMIZATION
             RefreshPropGadgetKnob (G(o), data->old_knobbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-#else
+    	#else
             struct BBox gbox;
 
             CalcBBox (msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, G(o), &gbox);
             RefreshPropGadgetKnob (G(o), &gbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-#endif
+    	#endif
         }
 
         data->old_knobbox = 0;
@@ -802,12 +793,12 @@ static IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg
     if (msg->gpgi_Abort == 1)
     {
 
-#ifdef PROPHACK
+    #ifdef PROPHACK
         if (((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask)
         {
-            ULONG oldSignals = SetSignal(0,SIGF_INTUITION);
+            ULONG   	 oldSignals = SetSignal(0,SIGF_INTUITION);
             struct Task *task = ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask;
-            ULONG signals = 0;
+            ULONG   	 signals = 0;
 
             Forbid();
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask = 0;
@@ -822,7 +813,7 @@ static IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg
 
             SetSignal(oldSignals | (signals & ~SIGF_INTUITION),0xFFFFFFFF);
         }
-#endif
+    #endif
 
         SetGadgetType(o, GTYP_PROPGADGET);
 
@@ -860,43 +851,44 @@ AROS_UFH3S(IPTR, dispatch_propgclass,
 
     switch(msg->MethodID)
     {
-    case GM_RENDER:
-        retval = render_propgclass(cl, o, (struct gpRender *)msg);
-        break;
+	case GM_RENDER:
+            retval = render_propgclass(cl, o, (struct gpRender *)msg);
+            break;
 
-    case GM_GOACTIVE:
-        retval = goactive_propgclass(cl, o, (struct gpInput *)msg);
-        break;
+	case GM_GOACTIVE:
+            retval = goactive_propgclass(cl, o, (struct gpInput *)msg);
+            break;
 
-    case GM_HANDLEINPUT:
-        retval = handleinput_propgclass(cl, o, (struct gpInput *)msg);
-        break;
+	case GM_HANDLEINPUT:
+            retval = handleinput_propgclass(cl, o, (struct gpInput *)msg);
+            break;
 
-    case GM_GOINACTIVE:
-        retval = goinactive_propgclass(cl, o, (struct gpGoInactive *)msg);
-        break;
+	case GM_GOINACTIVE:
+            retval = goinactive_propgclass(cl, o, (struct gpGoInactive *)msg);
+            break;
 
-    case OM_NEW:
-        retval = new_propgclass(cl, o, (struct opSet *)msg);
-        break;
+	case OM_NEW:
+            retval = new_propgclass(cl, o, (struct opSet *)msg);
+            break;
 
-    case OM_SET:
-    case OM_UPDATE:
-        retval = (IPTR)set_propgclass(cl, o, (struct opSet *)msg);
-        break;
+	case OM_SET:
+	case OM_UPDATE:
+            retval = (IPTR)set_propgclass(cl, o, (struct opSet *)msg);
+            break;
 
 
-    case OM_GET:
-        retval = (IPTR)get_propgclass(cl, o, (struct opGet *)msg);
-        break;
+	case OM_GET:
+            retval = (IPTR)get_propgclass(cl, o, (struct opGet *)msg);
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
     } /* switch */
 
     DEBUG_PROP(dprintf("dispatch_propgclass: retval 0x%lx\n",retval));
+
     return (retval);
 
     AROS_USERFUNC_EXIT
@@ -920,7 +912,7 @@ struct IClass *InitPropGClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_propgclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

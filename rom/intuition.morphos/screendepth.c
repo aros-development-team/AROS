@@ -13,9 +13,9 @@
 
 struct ScreenDepthActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Screen *screen;
-    ULONG flags;
+    struct IntuiActionMsg    msg;
+    struct Screen   	    *screen;
+    ULONG   	    	     flags;
 };
 
 static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
@@ -79,7 +79,7 @@ AROS_LH3(void, ScreenDepth,
     SANITY_CHECK(screen)
 
     msg.screen = screen;
-    msg.flags = flags;
+    msg.flags  = flags;
     DoASyncAction((APTR)int_screendepth, &msg.msg, sizeof(msg), IntuitionBase);
 
     AROS_LIBFUNC_EXIT
@@ -91,17 +91,17 @@ AROS_LH3(void, ScreenDepth,
 static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                             struct IntuitionBase *IntuitionBase)
 {
-    struct Screen *screen = msg->screen;
-    ULONG flags = msg->flags;
-    ULONG         ilock = LockIBase(0); /* before access to FirstScreen */
-    struct Screen *family = NULL,
-                  *current = IntuitionBase->FirstScreen,
+    struct Screen   *screen = msg->screen;
+    ULONG   	     flags = msg->flags;
+    ULONG            ilock = LockIBase(0); /* before access to FirstScreen */
+    struct Screen   *family = NULL,
+                    *current = IntuitionBase->FirstScreen,
 #ifndef __MORPHOS__
-                  *oldfront = current,
+                    *oldfront = current,
 #endif
-                  *previous = NULL,
-                  *prefamily = NULL;
-    struct Window *win;
+                    *previous = NULL,
+                    *prefamily = NULL;
+    struct Window   *win;
 
     /* Find the screen in the list and check for family */
     while ( current && current!=screen )

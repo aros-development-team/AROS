@@ -80,8 +80,8 @@ VOID int_RefreshWindowFrame(struct Window *window,
     struct Region   *gadgetclipregion;
 #endif
 
-    WORD        old_scroll_x, old_scroll_y;
-    int left = 0, right = window->Width - 1;
+    WORD             old_scroll_x, old_scroll_y;
+    int     	     left = 0, right = window->Width - 1;
 
     if (!(window->Flags & WFLG_BORDERLESS))
     {
@@ -90,7 +90,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
         {
             LOCK_REFRESH(window->WScreen);
             LOCKGADGET
-#if 1
+    	#if 1
             if ((rp->Layer==NULL) ||
                     ((!(window->Flags & WFLG_GIMMEZEROZERO)) && (rp->Layer != window->RPort->Layer)))
             {
@@ -100,7 +100,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
                 dprintf("RefreshWindowFrame: RPort's layer 0x%lx BorderRPort's layer 0x%lx\n",window->RPort,window->RPort->Layer,window->BorderRPort,window->BorderRPort->Layer);
             }
 
-#endif
+    	#endif
 
             LockLayer(NULL,rp->Layer);
 
@@ -110,7 +110,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
             rp->Layer->Scroll_X = 0;
             rp->Layer->Scroll_Y = 0;
 
-#ifdef GADGETCLIPPING
+    	#ifdef GADGETCLIPPING
             gadgetclipregion = NewRegion();
             if (gadgetclipregion)
             {
@@ -129,9 +129,9 @@ VOID int_RefreshWindowFrame(struct Window *window,
             }
 
             old_clipregion = InstallClipRegion(rp->Layer, gadgetclipregion);
-#else
-old_clipregion = InstallClipRegion(rp->Layer, NULL);
-#endif
+    	#else
+    	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
+    	#endif
 
             SetAPen(rp, dri->dri_Pens[SHINEPEN]);
             if (window->BorderTop > 0)  CheckRectFill(rp,
@@ -259,8 +259,8 @@ old_clipregion = InstallClipRegion(rp->Layer, NULL);
 
                 if (right - left > 6)
                 {
-                    ULONG textlen, titlelen;
-                    struct TextExtent te;
+                    ULONG   	    	textlen, titlelen;
+                    struct TextExtent 	te;
 
                     SetFont(rp, dri->dri_Font);
 
@@ -278,23 +278,23 @@ old_clipregion = InstallClipRegion(rp->Layer, NULL);
                     SetRPAttrs(rp, RPTAG_DrMd,JAM1,
                                RPTAG_APen,dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN],
                                TAG_DONE);
-#ifdef __MORPHOS__
+    	    	#ifdef __MORPHOS__
                     Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
-#else
+    	    	#else
 		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 2);
-#endif
+    	    	#endif
                     Text(rp, window->Title, textlen);
                 }
             }
 
-#ifdef GADGETCLIPPING
+    	#ifdef GADGETCLIPPING
             InstallClipRegion(rp->Layer,NULL);
-#endif
+    	#endif
 
             /* Emm: RefreshWindowFrame() is documented to refresh *all* the gadgets,
              * but when a window is activated/deactivated, only border gadgets
              * are refreshed. */
-#if 1
+    	#if 1
             /* Refresh rel gadgets first, since wizard.library (burn in hell!) seems
              * to rely on that. */
             int_refreshglist(window->FirstGadget,
@@ -311,21 +311,21 @@ old_clipregion = InstallClipRegion(rp->Layer, NULL);
                              mustbe,
                              mustnotbe | REFRESHGAD_REL,
                              IntuitionBase);
-#else
-int_refreshglist(window->FirstGadget,
-            window,
-            NULL,
-            -1,
-            mustbe,
-            mustnotbe,
-            IntuitionBase);
-#endif
+    	#else
+	    int_refreshglist(window->FirstGadget,
+        		     window,
+        		     NULL,
+        		     -1,
+        		     mustbe,
+        		     mustnotbe,
+        		     IntuitionBase);
+    	#endif
 
             InstallClipRegion(rp->Layer,old_clipregion);
 
-#ifdef GADGETCLIPPING
+    	#ifdef GADGETCLIPPING
             if (gadgetclipregion) DisposeRegion(gadgetclipregion);
-#endif
+    	#endif
 
             rp->Layer->Scroll_X = old_scroll_x;
             rp->Layer->Scroll_Y = old_scroll_y;
@@ -336,8 +336,6 @@ int_refreshglist(window->FirstGadget,
             UNLOCK_REFRESH(window->WScreen);
 
             FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
-
-
 
         } /* if (dri) */
 
@@ -355,7 +353,7 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
         WORD left,top,right,bottom;
 
         top = gad->TopEdge;
-    2    left = gad->LeftEdge;
+    2   left = gad->LeftEdge;
 
         if (gad->Flags & GFLG_RELBOTTOM) top = w->Height - 1 + gad->TopEdge;
         if (gad->Flags & GFLG_RELRIGHT) left = w->Width - 1 + gad->LeftEdge;
@@ -394,6 +392,7 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
         if (qualified)
         {
             struct Rectangle rect;
+	    
             rect.MinX = left;
             rect.MinY = top;
             rect.MaxX = right;

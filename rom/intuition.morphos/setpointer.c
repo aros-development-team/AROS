@@ -70,12 +70,10 @@ AROS_LH6(void, SetPointer,
         if (ptrobj)
         {
             struct TagItem pointertags[] =
-                {
-                    {
-                        WA_Pointer, (IPTR)ptrobj
-                    },
-                    {TAG_DONE                }
-                };
+            {
+                {WA_Pointer, (IPTR)ptrobj},
+                {TAG_DONE                }
+            };
 
             window->Pointer = pointer;
             window->PtrWidth = width;

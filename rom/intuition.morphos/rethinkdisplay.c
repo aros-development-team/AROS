@@ -49,12 +49,12 @@ AROS_LH0(LONG, RethinkDisplay,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #ifdef __MORPHOS__
-    struct Screen *screen;
-    struct ViewPort *viewport;
+    struct Screen    *screen;
+    struct ViewPort  *viewport;
     struct ViewPort **viewportptr;
-    UWORD modes;
-    LONG failure = 0;
-    ULONG ilock = LockIBase(0);
+    UWORD   	      modes;
+    LONG    	      failure = 0;
+    ULONG   	      ilock = LockIBase(0);
 
     DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay:\n"));
 
@@ -74,7 +74,7 @@ AROS_LH0(LONG, RethinkDisplay,
     }
     else
     {
-#warning FIXME: only the first screen is made visible
+    	#warning FIXME: only the first screen is made visible
 
         /* Find visible screens */
 
@@ -139,8 +139,10 @@ AROS_LH0(LONG, RethinkDisplay,
             if ((viewport->Modes ^ modes) & LACE)
             {
                 LONG error;
+		
                 viewport->Modes = (viewport->Modes & ~LACE) | (modes & LACE);
                 error = MakeVPort(&IntuitionBase->ViewLord, viewport);
+		
                 if (error)
                     failure = error;
             }
@@ -167,7 +169,7 @@ AROS_LH0(LONG, RethinkDisplay,
                         GetPrivScreen(IntuitionBase->FirstScreen)->Pointer->sprite)
                 {
                     struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-                    WORD xpos,ypos;
+                    WORD    	    xpos,ypos;
 
                     xpos = iihd->LastMouseX; ypos = iihd->LastMouseY;
                     GetPrivIBase(IntuitionBase)->SpriteNum = GetExtSpriteA(GetPrivScreen(IntuitionBase->FirstScreen)->Pointer->sprite, NULL);

@@ -71,7 +71,7 @@ AROS_LH4(IPTR, SetGadgetAttrsA,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct opSet ops;
-    IPTR result;
+    IPTR    	 result;
 
     DEBUG_SETGADGETATTRS(dprintf("SetGadgetAttrs[%x]: Gadget 0x%lx Window 0x%lx Requester 0x%lx Tags 0x%lx\n",
                                  &ops, gadget, window, requester, tagList));
@@ -82,7 +82,7 @@ AROS_LH4(IPTR, SetGadgetAttrsA,
 #if 0
     if (tagList)
     {
-        APTR state = tagList;
+        struct TagItem *state = tagList;
         struct TagItem *tag;
 
         while (tag = NextTagItem(&state))

@@ -12,12 +12,12 @@
 
 struct RemoveGListActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct Gadget *gadget;
-    LONG numGad;
-    UWORD count;
-    BOOL success;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct Gadget   	    *gadget;
+    LONG    	    	     numGad;
+    UWORD   	    	     count;
+    BOOL    	    	     success;
 };
 
 static VOID int_removeglist(struct RemoveGListActionMsg *msg,
@@ -65,9 +65,9 @@ AROS_LH3(UWORD, RemoveGList,
     struct Gadget   *pred;
     struct Gadget   *last;
     struct IIHData  *iihdata;
-    LONG        numGad2;
-    UWORD       count;
-    BOOL        done = TRUE;
+    LONG             numGad2;
+    UWORD            count;
+    BOOL             done = TRUE;
 
     EXTENDWORD(numGad);
 
@@ -119,9 +119,9 @@ AROS_LH3(UWORD, RemoveGList,
             /* stegerg: don't do this. DOpus for example relies on gadget->NextGadget
                not being touched */
             /* Emm: but the autodocs say it is done for V36 ??? */
-#if 0
+    	#if 0
             last->NextGadget = NULL;
-#endif
+    	#endif
         }
 
 
@@ -169,14 +169,14 @@ AROS_LH3(UWORD, RemoveGList,
 static VOID int_removeglist(struct RemoveGListActionMsg *msg,
                             struct IntuitionBase *IntuitionBase)
 {
-    struct Window *remPtr = msg->window;
-    struct Gadget *gadget = msg->gadget;
-    LONG numGad = msg->numGad;
+    struct Window   *remPtr = msg->window;
+    struct Gadget   *gadget = msg->gadget;
+    LONG    	     numGad = msg->numGad;
     struct Gadget   *pred;
     struct Gadget   *last;
     struct IIHData  *iihdata;
-    LONG        numGad2;
-    UWORD       count;
+    LONG             numGad2;
+    UWORD            count;
 
     DEBUG_REMOVEGLIST(dprintf("IntRemoveGList: Window 0x%lx Gadgets 0x%lx Num %ld\n",
                               remPtr, gadget, numGad));
@@ -221,11 +221,11 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
             {
                 switch(last->GadgetType & GTYP_GTYPEMASK)
                 {
-                case GTYP_CUSTOMGADGET:
+                    case GTYP_CUSTOMGADGET:
                     {
                         struct gpGoInactive gpgi;
 
-                        gpgi.MethodID = GM_GOINACTIVE;
+                        gpgi.MethodID   = GM_GOINACTIVE;
                         gpgi.gpgi_GInfo = NULL;
                         gpgi.gpgi_Abort = 1;
 
@@ -273,6 +273,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
 #endif
 
     DEBUG_REMOVEGLIST(dprintf("IntRemoveGList: done\n"));
+    
     msg->count = count;
     msg->success = TRUE;
 }

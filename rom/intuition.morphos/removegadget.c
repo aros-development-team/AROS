@@ -52,5 +52,6 @@ AROS_LH2(UWORD, RemoveGadget,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     return RemoveGList (window, gadget, 1);
+    
     AROS_LIBFUNC_EXIT
 } /* RemoveGadget */

@@ -16,10 +16,10 @@
 
 struct SetWindowTitlesActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    CONST_STRPTR windowTitle;
-    CONST_STRPTR screenTitle;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    CONST_STRPTR    	     windowTitle;
+    CONST_STRPTR    	     screenTitle;
 };
 
 static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
@@ -79,7 +79,7 @@ AROS_LH3(void, SetWindowTitles,
 
     SANITY_CHECK(window)
 
-    msg.window = window;
+    msg.window      = window;
     msg.windowTitle = windowTitle;
     msg.screenTitle = screenTitle;
 
@@ -91,17 +91,19 @@ AROS_LH3(void, SetWindowTitles,
 static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    CONST_STRPTR windowTitle = msg->windowTitle;
-    CONST_STRPTR screenTitle = msg->screenTitle;
-    BOOL change = TRUE;
+    struct Window   *window = msg->window;
+    CONST_STRPTR     windowTitle = msg->windowTitle;
+    CONST_STRPTR     screenTitle = msg->screenTitle;
+    BOOL    	     change = TRUE;
 
     LOCKWINDOWLAYERS(window);
 
     if (windowTitle == (CONST_STRPTR)~0L)
     {
          change = FALSE;
-    } else {
+    }
+    else
+    {
         window->Title = windowTitle;
         if (windowTitle)
         if (strncmp(windowTitle,IW(window)->titlebuffer,TITLEBUFFERLEN) == 0) change = FALSE;
@@ -109,9 +111,9 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 
     if (change)
     {
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
         if (window == GetPrivScreen(window->WScreen)->TitlebarBufferWin) GetPrivScreen(window->WScreen)->TitlebarBufferWin = 0;
-#endif
+    #endif
         int_RefreshWindowFrame(window, REFRESHGAD_TOPBORDER, 0, DOUBLEBUFFER, IntuitionBase);
     }
 

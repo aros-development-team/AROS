@@ -19,8 +19,8 @@
 
 struct ScrollWindowRasterMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
@@ -87,7 +87,9 @@ AROS_LH7(void, ScrollWindowRaster,
 
     SANITY_CHECK(win)
 
+#ifdef __MORPHOS__
     LockLayers(&win->WScreen->LayerInfo);
+#endif
 
     ScrollRasterBF(win->RPort,
                dx,
@@ -108,15 +110,21 @@ AROS_LH7(void, ScrollWindowRaster,
         struct ScrollWindowRasterMsg msg;
         msg.window = win;
 
-#ifdef __MORPHOS__
-    //FIXME: AROS ??
-        RecordDamage(win->WScreen,IntuitionBase);
-#endif
-        UnlockLayers(&win->WScreen->LayerInfo);
+    #ifdef DAMAGECACHE
+         RecordDamage(win->WScreen,IntuitionBase);
+    #endif
 
-        DoASyncAction((APTR)int_scrollwindowraster, &msg.msg, sizeof(msg), IntuitionBase);
-    } else {
+    #ifdef __MORPHOS
         UnlockLayers(&win->WScreen->LayerInfo);
+    #endif
+    
+        DoASyncAction((APTR)int_scrollwindowraster, &msg.msg, sizeof(msg), IntuitionBase);
+    }
+    else
+    {
+    #ifdef __MORPHOS__
+        UnlockLayers(&win->WScreen->LayerInfo);
+    #endif
     }
 
     AROS_LIBFUNC_EXIT
@@ -145,7 +153,9 @@ AROS_LH7(void, ScrollWindowRasterNoFill,
 
     SANITY_CHECK(win)
 
+#ifdef __MORPHOS__
     LockLayers(&win->WScreen->LayerInfo);
+#endif
 
     {
         WORD adx = abs(dx);
@@ -213,15 +223,20 @@ AROS_LH7(void, ScrollWindowRasterNoFill,
         struct ScrollWindowRasterMsg msg;
         msg.window = win;
 
-        #ifdef DAMAGECACHE
+    #ifdef DAMAGECACHE
         RecordDamage(win->WScreen,IntuitionBase);
-        #endif
+    #endif
 
+    #ifdef __MORPHOS__
         UnlockLayers(&win->WScreen->LayerInfo);
-
+    #endif
         DoASyncAction((APTR)int_scrollwindowraster, &msg.msg, sizeof(msg), IntuitionBase);
-    } else {
+    }
+    else
+    {
+    #ifdef __MORPHOS__
         UnlockLayers(&win->WScreen->LayerInfo);
+    #endif
     }
 
     AROS_LIBFUNC_EXIT

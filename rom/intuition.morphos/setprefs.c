@@ -63,7 +63,7 @@ AROS_LH3(struct Preferences *, SetPrefs,
     if (size > 0 && NULL != prefbuffer)
     {
         ULONG lock = LockIBase(0);
-        BOOL changepointer = FALSE;
+        BOOL  changepointer = FALSE;
 
         if (size > offsetof(struct Preferences, PointerMatrix))
         {
@@ -91,18 +91,18 @@ AROS_LH3(struct Preferences *, SetPrefs,
 
             if (size > offsetof(struct Preferences, KeyRptDelay))
             {
-#ifdef __MORPHOS__
+    	    #ifdef __MORPHOS__
                 /* No need to setup a reply port, this command is guaranteed to support
                  * quick I/O.
                  */
-#else
+    	    #else
                 struct MsgPort *port = CreateMsgPort();
 
                 if (port)
                 {
                     req.tr_node.io_Message.mn_ReplyPort = port;
 
-#endif
+    	    #endif
                     DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptDelay %ld secs micros %ld\n",
                                            GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_secs,
                                            GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_micro));
@@ -112,25 +112,25 @@ AROS_LH3(struct Preferences *, SetPrefs,
                     req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay;
                     DoIO(&req.tr_node);
 
-#ifndef __MORPHOS__
+    	    #ifndef __MORPHOS__
                     DeleteMsgPort(port);
                 }
-#endif
+    	    #endif
             }
     
             if (size > offsetof(struct Preferences, KeyRptSpeed))
             {
-#ifdef __MORPHOS__
+    	    #ifdef __MORPHOS__
                 /* No need to setup a reply port, this command is guaranteed to support
                  * quick I/O.
                  */
-#else
+    	    #else
                 struct MsgPort *port = CreateMsgPort();
     
                 if (port)
                 {
                     req.tr_node.io_Message.mn_ReplyPort = port;
-#endif
+    	    #endif
 
                 DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptSpeed secs %ld micros %ld\n",
                                        GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_secs,
@@ -142,10 +142,10 @@ AROS_LH3(struct Preferences *, SetPrefs,
                 req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed;
                 DoIO(&req.tr_node);
     
-#ifndef __MORPHOS__
+    	    #ifndef __MORPHOS__
                 DeleteMsgPort(port);
                 }
-#endif
+    	    #endif
             }
         } 
         else 
@@ -182,21 +182,21 @@ AROS_LH3(struct Preferences *, SetPrefs,
             if (port)
             {
                 struct InputEvent ie;
-                struct IOStdReq req;
+                struct IOStdReq   req;
     
-                ie.ie_NextEvent = NULL;
-                ie.ie_Class = IECLASS_NEWPREFS;
-                ie.ie_SubClass = 0;
-                ie.ie_Code = 0;
-                ie.ie_Qualifier = 0;
-                ie.ie_EventAddress = NULL;
+                ie.ie_NextEvent     = NULL;
+                ie.ie_Class 	    = IECLASS_NEWPREFS;
+                ie.ie_SubClass      = 0;
+                ie.ie_Code  	    = 0;
+                ie.ie_Qualifier     = 0;
+                ie.ie_EventAddress  = NULL;
     
-                req.io_Message.mn_ReplyPort = port;
-                req.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-                req.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-                req.io_Command = IND_WRITEEVENT;
-                req.io_Length = sizeof(ie);
-                req.io_Data = &ie;
+                req.io_Message.mn_ReplyPort 	= port;
+                req.io_Device 	    	    	= GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+                req.io_Unit 	    	    	= GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+                req.io_Command      	    	= IND_WRITEEVENT;
+                req.io_Length 	    	    	= sizeof(ie);
+                req.io_Data 	    	    	= &ie;
     
                 DoIO((struct IORequest *)&req);
     

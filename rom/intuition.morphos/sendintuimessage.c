@@ -85,6 +85,7 @@ AROS_LH2(void, SendIntuiMessage,
     if (window->UserPort)
     {
         struct Task *apptask = window->UserPort->mp_SigTask;
+	
         if (apptask && (!apptask->tc_SigWait) && (apptask->tc_State == TS_WAIT))
         {
             //task is DEAD!
@@ -92,6 +93,7 @@ AROS_LH2(void, SendIntuiMessage,
             imsg->Code = 0;
             imsg->Qualifier = 0;
             ReplyMsg(&imsg->ExecMessage);
+	    
             if (IW(window)->messagecache)
             {
                 IW(window)->messagecache->IDCMPWindow = 0;
@@ -108,7 +110,9 @@ AROS_LH2(void, SendIntuiMessage,
             int_refreshwindowframe(window,REFRESHGAD_TOPBORDER,0,IntuitionBase);
 
             return;
-        } else {
+        }
+	else
+	{
             IW(window)->specialflags &= ~SPFLAG_IAMDEAD;
         }
     }

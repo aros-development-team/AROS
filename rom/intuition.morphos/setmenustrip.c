@@ -122,37 +122,6 @@ AROS_LH2(BOOL, SetMenuStrip,
 
     return TRUE;
 
-    /* TODO:
-       The following things should be done in SetMenuStrip:
-       
-       * Calculate the menu box coords for each menu (that is the box that
-         is shown when this menu is active. Save the values in JazzX,JazzY,
-         BeatX and BeatY. This cannot be done for sub-menus as there are
-    no Musical variables and subitem->SubItem cannot be used either
-    as it could hold just two WORDs but we need 4 WORDs. JazzX = box_x1
-    , JazzY = box_y1, BeatX = box_x2, BeatY = box_y2, everything relative
-    to the menu coords (or menuitem coords, in case of a subitem box).
-
-         stegerg: DONE
-
-
-       * Construct the Amiga-key symbol in a size appropriate for the
-         font that is in use (or is this up to the application program?).
-    !!! Should be done in OpenWindow() !!!
-
-         stegerg: DONE 
-
-
-       * The equivalent of the above for the checkmark.
-
-         stegerg: DONE
-
-
-       * Consistency checks(?). If ItemFill is NULL something must be wrong
-         for example if this is a selectable menu item.
-
-       */
-
     AROS_LIBFUNC_EXIT
 } /* SetMenuStrip */
 

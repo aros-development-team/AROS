@@ -56,7 +56,7 @@ AROS_LH2(ULONG, SetAttrsA,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct opSet ops;
-    ULONG result;
+    ULONG   	 result;
 
     DEBUG_SETATTRS(dprintf("SetAttrs[%x]: Object 0x%lx Tags 0x%lx\n",
                            &ops, object, tagList));
@@ -67,7 +67,7 @@ AROS_LH2(ULONG, SetAttrsA,
 #if 0
     if (tagList)
     {
-        APTR state = tagList;
+        struct TagItem *state = tagList;
         struct TagItem *tag;
 
         while (tag = NextTagItem(&state))

@@ -10,10 +10,10 @@
 
 struct RequestActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Requester *requester;
-    struct Window *window;
-    BOOL success;
+    struct IntuiActionMsg    msg;
+    struct Requester 	    *requester;
+    struct Window   	    *window;
+    BOOL    	    	     success;
 };
 
 static VOID int_request(struct RequestActionMsg *msg,
@@ -68,7 +68,7 @@ AROS_LH2(BOOL, Request,
     SANITY_CHECKR(window,FALSE)
     SANITY_CHECKR(requester,FALSE)
 
-    msg.window = window;
+    msg.window    = window;
     msg.requester = requester;
 
     DoSyncAction((APTR)int_request, &msg.msg, IntuitionBase);
@@ -84,16 +84,16 @@ AROS_LH2(BOOL, Request,
 static VOID int_request(struct RequestActionMsg *msg,
                         struct IntuitionBase *IntuitionBase)
 {
-    struct Requester *requester = msg->requester;
-    struct Window *window = msg->window;
-    //    ULONG layerflags = 0;
-    int left, top, right, bottom;
-    //    LONG lock;
-    struct Gadget *gadgets;
-    int wleft = window->LeftEdge + window->BorderLeft;
-    int wtop = window->TopEdge + window->BorderTop;
-    int wright = window->LeftEdge + window->Width - window->BorderRight- 1;
-    int wbottom = window->TopEdge + window->Height - window->BorderBottom- 1;
+    struct Requester 	    *requester = msg->requester;
+    struct Window   	    *window = msg->window;
+  //ULONG   	    	     layerflags = 0;
+    int     	    	     left, top, right, bottom;
+  //LONG    	    	     lock;
+    struct Gadget   	    *gadgets;
+    int     	    	     wleft = window->LeftEdge + window->BorderLeft;
+    int     	    	     wtop = window->TopEdge + window->BorderTop;
+    int     	    	     wright = window->LeftEdge + window->Width - window->BorderRight- 1;
+    int     	    	     wbottom = window->TopEdge + window->Height - window->BorderBottom- 1;
 
     if (requester->Flags & POINTREL)
     {
@@ -140,15 +140,15 @@ static VOID int_request(struct RequestActionMsg *msg,
         bottom = wbottom;
 
     requester->ReqLayer = CreateUpfrontHookLayer(
-                  &window->WScreen->LayerInfo
-                  , window->WScreen->RastPort.BitMap
-                  , left
-                  , top
-                  , right
-                  , bottom
-                  , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
-                  , LAYERS_NOBACKFILL
-                  , NULL);
+                	  &window->WScreen->LayerInfo
+                	  , window->WScreen->RastPort.BitMap
+                	  , left
+                	  , top
+                	  , right
+                	  , bottom
+                	  , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
+                	  , LAYERS_NOBACKFILL
+                	  , NULL);
 
     if (requester->ReqLayer)
     {

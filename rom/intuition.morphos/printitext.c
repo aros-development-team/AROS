@@ -58,13 +58,14 @@ AROS_LH4(void, PrintIText,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    ULONG  apen;
-    ULONG  bpen;
-    ULONG  drmd;
-    ULONG  penmode;
-    UBYTE  style;
-    struct TextFont * font;
-    struct TextFont * newfont = NULL;
+
+    IPTR   	     apen;
+    IPTR   	     bpen;
+    IPTR   	     drmd;
+    IPTR   	     penmode;
+    UBYTE   	     style;
+    struct TextFont *font;
+    struct TextFont *newfont = NULL;
 
     EXTENDWORD(leftOffset);
     EXTENDWORD(topOffset);
@@ -74,18 +75,18 @@ AROS_LH4(void, PrintIText,
 
     /* Store important variables of the RastPort */
 #ifdef __MORPHOS__
-    GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,RPTAG_APen,(ULONG)&apen,
-           RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+    GetRPAttrs(rp,RPTAG_PenMode,(IPTR)&penmode,RPTAG_APen,(IPTR)&apen,
+               RPTAG_BPen,(IPTR)&bpen,RPTAG_DrMd,(IPTR)&drmd,TAG_DONE);
 #else
-    GetRPAttrs(rp,RPTAG_APen,(ULONG)&apen,
-           RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+    GetRPAttrs(rp,RPTAG_APen,(IPTR)&apen,
+               RPTAG_BPen,(IPTR)&bpen,RPTAG_DrMd,(IPTR)&drmd,TAG_DONE);
 #endif
 
     font  = rp->Font;
     style = rp->AlgoStyle;
 
     /* For all borders... */
-    for ( ; iText; iText=iText->NextText)
+    for ( ; iText; iText = iText->NextText)
     {
         /* Change RastPort to the colors/mode specified */
         SetABPenDrMd (rp, iText->FrontPen, iText->BackPen, iText->DrawMode);
