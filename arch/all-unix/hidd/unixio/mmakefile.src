@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(GENDIR)/$(CURDIR)
 LIB		:= $(LIBDIR)/libunixiocl.a
-OS_INCLUDES	:= -I$(GENINCDIR)
+OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
 
 MY_INCLS := $(wildcard include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
