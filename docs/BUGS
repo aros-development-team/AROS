@@ -443,7 +443,7 @@ segfaults after some time). Must be a bug in mlib, because it used to work
 with my own sin/cos routines (taylor series with arg folded to [0,Pi/2]),
 before the Sun routines have been added.
 
-BUG000064
+BUG000064 fixed
 bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
 crashes.
