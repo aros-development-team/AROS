@@ -91,6 +91,7 @@ static ULONG Prop_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags,*tag;
     struct MUI_PropData *data = INST_DATA(cl, obj);
     int refresh = 0;
+    int only_trigger = 0;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -113,20 +114,24 @@ static ULONG Prop_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->visible = tag->ti_Data;
 		    refresh = 1;
 		    break;
+
+	    case    MUIA_Prop_OnlyTrigger:
+		    only_trigger = tag->ti_Data;
+		    break;
 	}
     }
 
-    if (data->prop_object && refresh)
+    if (data->prop_object && refresh && !only_trigger)
     {
 	/* Rendering will happen here!! This could make problems with virtual groups, forward this to MUIM_Draw??? */
-//	if (no_notify) SetAttrs(data->prop_object, ICA_TARGET, NULL, TAG_DONE);
+	SetAttrs(data->prop_object, ICA_TARGET, NULL, TAG_DONE);
 	if (SetGadgetAttrs((struct Gadget*)data->prop_object,_window(obj),NULL,
 		PGA_Top,data->first,
 		PGA_Visible,data->visible,
 		PGA_Total,data->entries,
 		TAG_DONE))
 	    RefreshGList((struct Gadget*)data->prop_object, _window(obj), NULL, 1);
-//	if (no_notify) SetAttrs(data->prop_object, ICA_TARGET, ICTARGET_IDCMP, TAG_DONE);
+	SetAttrs(data->prop_object, ICA_TARGET, ICTARGET_IDCMP, TAG_DONE);
     }
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
@@ -142,6 +147,9 @@ static ULONG Prop_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     struct MUI_PropData *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
+    	case    MUIA_Prop_First: STORE = data->first; return 1;
+    	case    MUIA_Prop_Entries: STORE = data->entries; return 1;
+    	case    MUIA_Prop_Visible: STORE = data->visible; return 1;
     	default:
     	        return DoSuperMethodA(cl,obj,(Msg)msg);
     }
@@ -291,7 +299,8 @@ static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    tag = FindTagItem(PGA_Top,(struct TagItem*)msg->imsg->IAddress);
 	    if (!tag) return 0;
 	    if (tag->ti_Data == data->first) return 0;
-	    set(obj, MUIA_Prop_First, tag->ti_Data);
+	    data->first = tag->ti_Data;
+	    SetAttrs(obj, MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE, TAG_DONE);
 	}
     }
 
@@ -304,7 +313,9 @@ static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 static ULONG Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Increase *msg)
 {
     struct MUI_PropData *data = INST_DATA(cl, obj);
-    set(obj,MUIA_Prop_First,data->first + msg->amount);
+    LONG newfirst = data->first + msg->amount;
+    if (newfirst + data->visible > data->entries) newfirst = data->entries - data->visible;
+    if (newfirst != data->first) set(obj,MUIA_Prop_First,data->first + msg->amount);
     return 1;
 }
 
@@ -318,7 +329,7 @@ static ULONG Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decr
     /* We cannot decrease if if are on the top */
     if (!data->first) return 1;
 
-    if (data->first < msg->amount) set(obj,MUIA_Prop_First,0);
+    if (data->first < msg->amount && data->first != 0) set(obj,MUIA_Prop_First,0);
     else set(obj,MUIA_Prop_First,data->first - msg->amount);
     return 1;
 }
