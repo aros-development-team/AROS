@@ -1063,39 +1063,42 @@ endif
 %end
 
 #------------------------------------------------------------------------------
+#   Copy include files into the includes directories. There are currently
+#   two include directories. One for building AROS $(AROS_INCLUDES) and one
+#   for building tools that need to run on the host system $(GENINCDIR). The
+#   $(GENINCDIR) path must not contain any references to the C runtime
+#   library header files.
 #
-#
-#
-%define copy_includes namespace=amiga path=. dir=include
+%define copy_includes path=. dir=include
 
-INCL_FILES_1 := $(subst %(dir),$(INCDIR)/%(path),$(INCLUDE_FILES))
+INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(INCLUDE_FILES))
 INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),$(INCLUDE_FILES))
 
 includes-copy : setup $(INCL_FILES_1) $(INCL_FILES_2)
 
-$(INCDIR)/%(path)/%.h : %(dir)/%.h
+$(AROS_INCLUDES)/%(path)/%.h : %(dir)/%.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/%(path)/%.h : %(dir)/%.h
 	@$(CP) $< $@
 
 setup ::
-	%mkdirs_q $(INCDIR)/%(path) $(GENINCDIR)/%(path)
+	%mkdirs_q $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
 
 %end
 
 # This is an unholy hack, and shall be removed...
-%define copy_includes_half namespace=amiga path=. dir=include
+%define copy_includes_half path=. dir=include
 
-INCL_FILES_1 := $(subst %(dir),$(INCDIR)/%(path),$(INCLUDE_FILES))
+INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(INCLUDE_FILES))
 
 includes-copy : setup $(INCL_FILES_1)
 
-$(INCDIR)/%(path)/%.h : %(dir)/%.h
+$(AROS_INCLUDES)/%(path)/%.h : %(dir)/%.h
 	@$(CP) $< $@
 
 setup ::
-	%mkdirs_q $(INCDIR)/%(path)
+	%mkdirs_q $(AROS_INCLUDES)/%(path)
 
 %end
 
@@ -1105,12 +1108,12 @@ setup ::
 #
 %define copy_includes_cwd namespace=amiga path=/A
 
-INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(INCDIR)/%(path)/$(f))
+INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(AROS_INCLUDES)/%(path)/$(f))
 INCL_FILES_2 := $(foreach f,$(INCLUDE_FILES),$(GENINCDIR)/%(path)/$(f))
 
 includes-copy : $(INCL_FILES_1) $(INCL_FILES_2)
 
-$(INCDIR)/%(path)/%.h : %.h
+$(AROS_INCLUDES)/%(path)/%.h : %.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/%(path)/%.h : %.h
@@ -1264,8 +1267,12 @@ ifdef USE_REQTOOLSLIB
 %(libs) := $(%(libs)) -lreqtoolsstubs
 %(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
 endif
-ifdef USE_CLIB
+ifdef USE_HIDDSTUBS
+%(libs) := $(%(libs)) -lhiddstubs
+%(deps) := $(%(deps)) $(LIBDIR)/libhiddstubs.a
+endif
 
+ifdef USE_CLIB
 # uncomment this if you want to compile by default
 # against the shared version of the clib
 %(libs) := $(%(libs)) -larosc_shared
@@ -1273,27 +1280,41 @@ ifdef USE_CLIB
 
 # uncomment this if you want to compile by default
 # against the static version of the clib
-# %(libs) := $(%(libs)) -larosc
-# %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+#%(libs) := $(%(libs)) -larosc
+#%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 else
     ifdef USE_CLIB_SHARED
 	%(libs) := $(%(libs)) -larosc_shared
 	%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
     else
 	ifdef USE_CLIB_STATIC
-		%(libs) := $(%(libs)) -larosc
-		%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+	    %(libs) := $(%(libs)) -larosc
+	    %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 	endif
     endif
 endif
+
+# USE_ROMLIB is a special one to say that this is a shared module, and it
+# should use the restricted c.lib, this currently the same as the normal
+# static c.lib - it may in the future have different functions from
+# amiga.lib, c.lib, m.lib and arossuport.lib
+ifdef USE_ROMLIB
+%(libs) := $(%(libs)) -larosc
+%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+endif
+
+# m.lib MUST come after c.lib in it's various incarnations.
 ifdef USE_MLIB
 %(libs) := $(%(libs)) -larosm
 %(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
 endif
 
-# These must always be linked
+# These must always be linked if we are NOT building a module,
+# otherwise strange things might happen.
+ifndef MODULE
 %(libs) := $(%(libs)) -lautoinit
 %(deps) := $(%(deps)) $(LIBDIR)/libautoinit.a
+endif
 
 %(libs) := $(%(libs)) %(postlibs)
 %end
@@ -1308,6 +1329,8 @@ endif
 
 %make_common_setup
 %safe_define var=MODULE value="$(MODNAME).$(MODTYPE)"
+%safe_define var=USE_FUNCTABLE value="yes"
+%safe_define var=USE_CPAK value="$(USE_CPAK_DEFAULT)"
 
 # Depending upon the value of MODTYPE, much changes...
 MOD_DIR := bollocks
@@ -1390,14 +1413,109 @@ clean ::
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q err="$(notdir $@).err" objs=/A
+%define link_module_q err="$(notdir $@).err" objs=/A endtag=
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS) \
 	    $(GENMAP) $(OBJDIR)/$(MODULE).map \
-	    %(objs) $(LIBS) \
+	    %(objs) $(LIBS) %(endtag) \
 	    -o $@ 2>&1 | tee $(OBJDIR)/%(err)
 	@if $(TEST) ! -s $(OBJDIR)/%(err) ; then $(RM) $(OBJDIR)/%(err) ; fi
 	@$(STRIP) $@
+%end
+
+
+#-------------------------------------------------------------------------
+# Use cpak to generate the files functions.[ch]. This requires a small
+# check to make sure that $(FUNCS) != "".
+#
+%define make_module_cpak
+# Don't even bother generating the file if $(FUNCS) is zero.
+ifneq ($(FUNCS),)
+ifneq ($(USE_CPAK),no)
+F_NAME := functions
+
+$(OBJDIR)/functions.c : $(foreach f,$(FUNCS),$(f).c)
+	%mkdir_q $(OBJDIR)
+	@$(CPAK) $(patsubst %.c,%,$^)
+	@$(MV) functions.c functions.h $(OBJDIR)
+
+endif
+endif
+%end
+
+#-------------------------------------------------------------------------
+# Use the old archtool to generate the files functions.[ch].
+#
+%define make_module_archtool
+ifneq ($(USE_CPAK),no)
+F_NAME := functions
+
+$(OBJDIR)/functions.c : $(ARCHIVE)
+	@$(ARCHTOOL) -s $@ $(ARCHIVE)
+
+endif
+
+# This version of $(OBJDIR)/functable.c will override the one later.
+# Especially with $(FUNCS) == ""...
+$(OBJDIR)/functable.c : $(ARCHIVE)
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -t $(ARCHIVE)
+	$(MV) functable.c $@
+
+# Because $(FUNCS) is "", then USE_FUNCTABLE is set to no, so I have to do
+# myself. Similarly, USE_LIBDEFS = no breaks the END_OBJ
+FUNC_OBJ := $(OBJDIR)/functable.o
+FUNC_SOBJ := $(OBJDIR)/functable.so
+
+%end
+
+#-------------------------------------------------------------------------
+# I want to get rid of this. Either use the new archtool, or the scripts
+#
+%define make_lib_incl_arch name=$(MODNAME) hasrt=
+#MM includes-generate : setup-includes
+includes-generate : setup \
+	    $(INCDIR)/clib/%(name)_protos.h \
+	    $(INCDIR)/defines/%(name).h \
+	    $(INCDIR)/inline/%(name).h \
+	    $(INCDIR)/proto/%(name).h \
+	    $(GENINCDIR)/clib/%(name)_protos.h \
+	    $(GENINCDIR)/defines/%(name).h \
+	    $(GENINCDIR)/inline/%(name).h \
+	    $(GENINCDIR)/proto/%(name).h
+	@$(NOP)
+
+clean ::
+	@$(RM) \
+	    $(AROS_INCLUDES)/clib/%(name)_protos.h \
+	    $(AROS_INCLUDES)/defines/%(name).h \
+	    $(AROS_INCLUDES)/inline/%(name).h \
+	    $(AROS_INCLUDES)/proto/%(name).h \
+	    $(GENINCDIR)/clib/%(name)_protos.h \
+	    $(GENINCDIR)/defines/%(name).h \
+	    $(GENINCDIR)/inline/%(name).h \
+	    $(GENINCDIR)/proto/%(name).h
+
+_HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h
+
+$(GENINCDIR)/pragmas/%(name)_pragmas.h \
+    $(GENINCDIR)/clib/%(name)_protos.h \
+    $(GENINCDIR)/defines/%(name).h \
+    $(GENINCDIR)/inline/%(name).h \
+    $(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
+	@$(ARCHTOOL) -I $(GENINCDIR) $(ARCHIVE)
+
+$(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
+	$(CP) $< $@
+
+$(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
+	$(CP) $< $@
+
+$(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
+	$(CP) $< $@
+
+$(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
+	$(CP) $< $@
 %end
 
 #-------------------------------------------------------------------------------
@@ -1408,8 +1526,6 @@ clean ::
 %define make_module dflags=$(CFLAGS) mmake=/A
 %safe_define var=INIT_FILE value="$(MODNAME)_init"
 %safe_define var=END_FILE value="endtag"
-%safe_define var=USE_CPAK value="$(USE_CPAK_DEFAULT)"
-%safe_define var=USE_FUNCTABLE value="yes"
 %safe_define var=USE_ENDTAG value="yes"
 %safe_define var=USE_LIBDEFS value="yes"
 
@@ -1433,27 +1549,20 @@ endif
 # can change the linklibs if necessary.
 %make_use_linklibs
 
-# The values of $(OBJS)/$(DEPS) depending upon whether I
-# am using cpak or not. This will probably need to change at a later date
-# if we have any processors that are different from cpak.
-#
-# Also, there is the bizarre case of a library with no functions. The
-# gadgets are often known for doing this. So I check for that as well.
-
-ifneq ($(FUNCS),)
-  ifeq ($(USE_CPAK),yes)
-    F_NAME := functions
-  else
-    F_NAME := $(FUNCS)
-  endif
-else
-   USE_FUNCTABLE := no
-   F_NAME := 
-endif
-
 ifeq ($(USE_LIBDEFS),no)
 USE_FUNCTABLE := no
 USE_ENDTAG := no
+endif
+
+# Don't generate a functable if there is nothing there to do.
+ifeq ($(FUNCS),)
+   USE_FUNCTABLE := no
+endif
+
+# F_NAME might be set by make_module_cpak/make_module_archtool
+# It should be set to $(FUNCS) otherwise
+ifndef F_NAME
+  F_NAME := $(FUNCS)
 endif
 
 DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(F_NAME), $(OBJDIR)/$(f).d)
@@ -1478,7 +1587,7 @@ $(MOD_DIR)/$(MODULE) :
 	$(error You cannot make $(MODULE) into a module)
 else
 $(MOD_DIR)/$(MODULE) : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ) $(DEPLIBS)
-	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ)"
+	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS)" endtag="$(END_OBJ)"
 endif
 
 # Make a library. Not sure about the RHS yet.
@@ -1496,17 +1605,10 @@ $(OBJDIR)/functable.c : $(FUNCS_ALL) $(BINDIR)/scripts/genfunctable.awk libdefs.
 	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCS_ALL) > $@
 endif
 
-# Make the end tag
-ifeq ($(USE_ENDTAG),yes)
+# Make the end tag if it is needed.
 $(OBJDIR)/endtag.c : libdefs.h
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
-endif
-
-$(OBJDIR)/functions.c : $(foreach f,$(FUNCS),$(f).c)
-	%mkdir_q $(OBJDIR)
-	@$(CPAK) $(patsubst %.c,%,$^)
-	@$(MV) functions.c functions.h $(OBJDIR)
 
 %asm_rule "$(INIT_FILE) $(FILES) $(FUNCS)"
 %ctoasm_q
@@ -1559,10 +1661,10 @@ includes-generate : setup \
 
 clean ::
 	@$(RM) \
-	    $(INCDIR)/clib/%(name)_protos.h \
-	    $(INCDIR)/defines/%(name).h \
-	    $(INCDIR)/inline/%(name).h \
-	    $(INCDIR)/proto/%(name).h \
+	    $(AROS_INCLUDES)/clib/%(name)_protos.h \
+	    $(AROS_INCLUDES)/defines/%(name).h \
+	    $(AROS_INCLUDES)/inline/%(name).h \
+	    $(AROS_INCLUDES)/proto/%(name).h \
 	    $(GENINCDIR)/clib/%(name)_protos.h \
 	    $(GENINCDIR)/defines/%(name).h \
 	    $(GENINCDIR)/inline/%(name).h \
@@ -1585,27 +1687,32 @@ $(GENINCDIR)/inline/%(name).h : $(_HEADER_DEPS)
 $(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
 	@$(SCRIPTDIR)/genshared -proto %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
 
-$(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
+$(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
 	$(CP) $< $@
 
-$(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
+$(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 	$(CP) $< $@
 
-$(INCDIR)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
+$(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
 	$(CP) $< $@
 
-$(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
+$(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 	$(CP) $< $@
 %end
 
-%define make_hidd_stubs cflags=$(CFLAGS) dflags=$(CFLAGS)
+%define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS)
 STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
 STUBS_OBJ := $(foreach f,$(STUBS),$(OBJDIR)/$(f).o)
+STUBS_MEM := $(foreach f,$(STUBS),$(f).o)
 STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
-HIDD_LIB := $(AROS_LIBDIR)/libhidd.a 
+HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
-$(HIDD_LIB) : $(STUBS_OBJ)
-	%mklib_q
+#MM- linklibs: hidd-%(hidd)-stubs
+#MM
+hidd-%(hidd)-stubs : $(HIDD_LIB)($(STUBS_MEM))
+
+$(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
+	%mklib_q from=$^
 
 $(STUBS_OBJ) : $(STUBS_SRC)
 	%compile_q cmd=$(TARGET_CC) opt=%(cflags)
@@ -1613,9 +1720,11 @@ $(STUBS_OBJ) : $(STUBS_SRC)
 $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
 
+#MM
 setup ::
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 
+#MM
 clean ::
 	-@$(RM) $(HIDD_LIB) $(OBJDIR)
 
