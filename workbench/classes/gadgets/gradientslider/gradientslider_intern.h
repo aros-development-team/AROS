@@ -25,13 +25,25 @@
 #   include <intuition/classes.h>
 #endif
 
+#ifdef _AROS
 #ifndef AROS_DEBUG_H
 #include <aros/debug.h>
+#endif
 #endif
 
 #include "libdefs.h"
 
 /***************************************************************************************************/
+
+#ifndef _AROS
+#define DeinitRastPort(x)
+#define EnterFunc(x)
+#define bug
+#define D(x)
+#define ReturnPtr(a,b,c) return c
+#define ReturnInt(a,b,c) return c
+#define ReturnVoid(a) return
+#endif
 
 #define SysBase (((struct LibHeader *) GradientSliderBase)->lh_SysBase)
 
@@ -60,6 +72,7 @@ struct GradientSliderData
     WORD			savefromy;
     WORD			savebmwidth;
     WORD			savebmheight;
+    BOOL			edgesOnly;
 };
 
 

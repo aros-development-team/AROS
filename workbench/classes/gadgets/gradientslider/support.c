@@ -133,7 +133,7 @@ STATIC VOID DitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
     
-    LONG x, y, t, v, pixel;
+    LONG x, y, t, v, pixel, lastpixel = -1;
 
     if (height <= 2)
     {
@@ -168,7 +168,12 @@ STATIC VOID DitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
             else
                 pixel = pen2;
 
-            SetAPen(rp, pixel);
+	    if (pixel != lastpixel)
+	    {
+	        SetAPen(rp, pixel);
+		lastpixel = pixel;
+	    }
+	    
             WritePixel(rp, x1 + x, y1 + y);
         }
     }
@@ -182,7 +187,7 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
     
-    LONG x, y, t, v, pixel;
+    LONG x, y, t, v, pixel, lastpixel = -1;
 
     if (width <= 2)
     {
@@ -217,7 +222,12 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
             else
                 pixel = pen2;
 
-            SetAPen(rp, pixel);
+	    if (pixel != lastpixel)
+	    {
+                SetAPen(rp, pixel);
+		lastpixel = pixel;
+	    }
+	    
             WritePixel(rp, x1 + x, y1 + y);
         }
     }
@@ -348,7 +358,7 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		pen2 = *pen++;
 		pos += step;
 		y = y1 + (pos / 65536);
-		endy = y - 1;
+		endy = y; if (endy != y2) endy--;
 		if (endy >= oldy)
 		{
 		    if (truecolor)
@@ -372,7 +382,7 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		pen2 = *pen++;
 		pos += step;
 		x = x1 + (pos / 65536);
-		endx = x - 1;
+		endx = x; if (endx != x2) endx--;
 		if (endx >= oldx)
 		{
 		    if (truecolor)
@@ -452,11 +462,11 @@ VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawI
 {
     if ((box->Width > 2) && (box->Height > 2))
     {
-	SetDrMd(rp, JAM1);
-
+	
 	/* black frame around box */
-
-        SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+#ifdef _AROS
+	SetDrMd(rp, JAM1);
+    	SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
 		
 	RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top);
 	RectFill(rp, box->Left + box->Width - 1, box->Top + 1, box->Left + box->Width - 1, box->Top + box->Height - 1);
@@ -468,6 +478,19 @@ VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawI
 	SetAPen(rp, dri->dri_Pens[SHINEPEN]);
 	
 	RectFill(rp, box->Left + 1, box->Top + 1, box->Left + box->Width - 2, box->Top + box->Height - 2);
+#else
+	struct TagItem tags[] =
+	{
+	    {RPTAG_APen		, dri->dri_Pens[SHINEPEN]	},
+	    {RPTAG_OutlinePen	, dri->dri_Pens[SHADOWPEN]	},
+	    {RPTAG_DrMd		, JAM1				},
+	    {TAG_DONE 						}
+	};	
+
+	SetRPAttrsA(rp, tags);
+	RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
+	rp->Flags &= ~AREAOUTLINE;
+#endif
     }
 }
 
