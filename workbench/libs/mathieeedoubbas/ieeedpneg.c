@@ -25,7 +25,7 @@
       struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, Mathieeedoubbas)
 
 /*  FUNCTION
-        Switch the sign of the given IEEE double precision floating point 
+        Switch the sign of the given IEEE double precision floating point
         number
 
     INPUTS
@@ -57,13 +57,14 @@
 
 ******************************************************************************/
 {
+AROS_LIBFUNC_INIT
   /* change the sign-bit */
-  XOR64C(y, y, IEEEDPSign_Mask_Hi, 
-               IEEEDPSign_Mask_Lo,
-               IEEEDPSign_Mask_64);
+  XOR64QC(y, IEEEDPSign_Mask_Hi,
+             IEEEDPSign_Mask_Lo,
+             IEEEDPSign_Mask_64);
 
-  if (is_eqC(y, 0, 0, 0) ||
-      is_eqC(y, IEEEDPSign_Mask_Hi, 
+  if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
+      is_eqC(y, IEEEDPSign_Mask_Hi,
                 IEEEDPSign_Mask_Lo,
                 IEEEDPSign_Mask_64) )
   {
@@ -80,5 +81,6 @@
     SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
   return y;
+AROS_LIBFUNC_EXIT
 } /* IEEEDPNeg */
 
