@@ -133,7 +133,7 @@ extern void _aros_not_implemented (char *X);
 
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
+#define __AROS_LP_BASE(basetype,basename)   basetype
 #define __AROS_LC_BASE(basetype,basename)   basename
 #define __AROS_LD_BASE(basetype,basename)   basetype
 
@@ -168,18 +168,20 @@ extern void _aros_not_implemented (char *X);
 
 #define AROS_SLIB_ENTRY_S(n,s) #s "_" #n
 
+#define AROS_SLIB_ENTRY_U(n,s) _ ## s ## _ ## n
+
 #define __ASM_PREFIX(name,system) \
-    __asm__(".text\n\t.balign 16\n\t"\
+    __asm__(".text\n\t.align 2\n\t"\
 	".globl "## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
-	".type "## AROS_SLIB_ENTRY_S(name,system) ##",@function\n"\
+	".type\t"## AROS_SLIB_ENTRY_S(name,system) ##",@function\n"\
 	AROS_SLIB_ENTRY_S(name,system) ##":\n\t"\
 	"move.l %a6,-(%sp)\n\t"
 
 
 #define __ASM_PREFIXI(name,system) \
-    __asm__(".text\n\t.balign 16\n\t"\
+    __asm__(".text\n\t.align 2\n\t"\
 	".globl "## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
-	".type "## AROS_SLIB_ENTRY_S(name,system) ##",@function\n"\
+	".type\t"## AROS_SLIB_ENTRY_S(name,system) ##",@function\n"\
 	AROS_SLIB_ENTRY_S(name,system) ##":\n\t"
 
 
@@ -198,7 +200,7 @@ extern void _aros_not_implemented (char *X);
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
-    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+    __AROS_LH_PREFIX static type AROS_SLIB_ENTRY(name,_##system)(
 #else
 #define __ASM_POSTFIX(type,name,system,argc) \
 	"jbsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
@@ -206,7 +208,7 @@ extern void _aros_not_implemented (char *X);
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
-    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+    __AROS_LH_PREFIX static type AROS_SLIB_ENTRY(name,_##system)(
 #endif
 
 #ifdef __PIC__
@@ -216,7 +218,7 @@ extern void _aros_not_implemented (char *X);
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
-    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+    __AROS_LH_PREFIX static type AROS_SLIB_ENTRY(name,_##system)(
 #else
 #define __ASM_POSTFIXI(type,name,system,argc) \
 	"jbsr _"## AROS_SLIB_ENTRY_S(name,system) ##"\n\t"\
@@ -224,10 +226,13 @@ extern void _aros_not_implemented (char *X);
 	"rts\n\t"\
 	".size "## AROS_SLIB_ENTRY_S(name,system) ##",.-"\
 	## AROS_SLIB_ENTRY_S(name,system) );\
-    __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
+    __AROS_LH_PREFIX static type AROS_SLIB_ENTRY(name,_##system)(
 #endif
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPAQUAD(a1),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARGQUAD1(a1)\
     __ASM_ARGQUAD2(a1)\
@@ -236,6 +241,10 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPAQUAD(a1),\
+    __AROS_LPAQUAD(a2),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARGQUAD1(a2)\
     __ASM_ARGQUAD2(a2)\
@@ -247,11 +256,16 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_POSTFIX(t,n,s,0)\
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH1(t,n,a1,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a1)\
     __ASM_POSTFIX(t,n,s,1)\
@@ -259,6 +273,10 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH2(t,n,a1,a2,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a2)\
     __ASM_ARG(a1)\
@@ -268,6 +286,11 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH3(t,n,a1,a2,a3,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a3)\
     __ASM_ARG(a2)\
@@ -279,6 +302,12 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a4)\
     __ASM_ARG(a3)\
@@ -292,6 +321,13 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a5)\
     __ASM_ARG(a4)\
@@ -307,6 +343,14 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a6)\
     __ASM_ARG(a5)\
@@ -324,6 +368,15 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a7)\
     __ASM_ARG(a6)\
@@ -343,6 +396,16 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a8)\
     __ASM_ARG(a7)\
@@ -364,6 +427,17 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARG(a9)\
     __ASM_ARG(a8)\
@@ -387,7 +461,30 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,10)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -399,8 +496,34 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a9),\
     __AROS_LHA(a10),\
     __AROS_LH_BASE(bt,bn))
+
 #define AROS_LH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ASM_ARG(a11)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,11)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -413,8 +536,36 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a10),\
     __AROS_LHA(a11),\
     __AROS_LH_BASE(bt,bn))
+
 #define AROS_LH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ASM_ARG(a12)\
+    __ASM_ARG(a11)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,12)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -428,8 +579,38 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a11),\
     __AROS_LHA(a12),\
     __AROS_LH_BASE(bt,bn))
+
 #define AROS_LH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ASM_ARG(a13)\
+    __ASM_ARG(a12)\
+    __ASM_ARG(a11)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,13)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -444,8 +625,40 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a12),\
     __AROS_LHA(a13),\
     __AROS_LH_BASE(bt,bn))
+
 #define AROS_LH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13),\
+    __AROS_LPA(a14),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ASM_ARG(a14)\
+    __ASM_ARG(a13)\
+    __ASM_ARG(a12)\
+    __ASM_ARG(a11)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,14)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -461,8 +674,42 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a13),\
     __AROS_LHA(a14),\
     __AROS_LH_BASE(bt,bn))
+
 #define AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13),\
+    __AROS_LPA(a14),\
+    __AROS_LPA(a15),\
+    __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
+    __ASM_PREFIX(n,s)\
+    __ARM_ARG(a15)\
+    __ASM_ARG(a14)\
+    __ASM_ARG(a13)\
+    __ASM_ARG(a12)\
+    __ASM_ARG(a11)\
+    __ASM_ARG(a10)\
+    __ASM_ARG(a9)\
+    __ASM_ARG(a8)\
+    __ASM_ARG(a7)\
+    __ASM_ARG(a6)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX(t,n,s,15)\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -480,18 +727,22 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a15),\
     __AROS_LH_BASE(bt,bn))
 
-
 /* Library functions which don't need the libbase */
 #define AROS_LH0I(t,n,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(void)
 
 #define AROS_LH1I(t,n,a1,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a1)\
     __ASM_POSTFIXI(t,n,s,1)\
     __AROS_LHA(a1))
 
 #define AROS_LH2I(t,n,a1,a2,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a2)\
     __ASM_ARG(a1)\
@@ -500,6 +751,10 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a2))
 
 #define AROS_LH3I(t,n,a1,a2,a3,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a3)\
     __ASM_ARG(a2)\
@@ -510,6 +765,11 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a3))
 
 #define AROS_LH4I(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a4)\
     __ASM_ARG(a3)\
@@ -522,6 +782,12 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a4))
 
 #define AROS_LH5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a5)\
     __ASM_ARG(a4)\
@@ -536,6 +802,13 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a5))
 
 #define AROS_LH6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a6)\
     __ASM_ARG(a5)\
@@ -552,6 +825,14 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a6))
 
 #define AROS_LH7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a7)\
     __ASM_ARG(a6)\
@@ -570,6 +851,15 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a7))
 
 #define AROS_LH8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a8)\
     __ASM_ARG(a7)\
@@ -590,6 +880,16 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a8))
 
 #define AROS_LH9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a9)\
     __ASM_ARG(a8)\
@@ -612,6 +912,17 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a9))
 
 #define AROS_LH10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a10)\
     __ASM_ARG(a9)\
@@ -636,6 +947,18 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a10))
 
 #define AROS_LH11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a11)\
     __ASM_ARG(a10)\
@@ -662,6 +985,19 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a11))
 
 #define AROS_LH12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a12)\
     __ASM_ARG(a11)\
@@ -690,6 +1026,20 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a12))
 
 #define AROS_LH13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a13)\
     __ASM_ARG(a12)\
@@ -720,6 +1070,21 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a13))
 
 #define AROS_LH14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13),\
+    __AROS_LPA(a14)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a14)\
     __ASM_ARG(a13)\
@@ -752,6 +1117,22 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a14))
 
 #define AROS_LH15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
+    __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LPA(a12),\
+    __AROS_LPA(a13),\
+    __AROS_LPA(a14),\
+    __AROS_LPA(a15)) __attribute__((unused));\
     __ASM_PREFIXI(n,s)\
     __ASM_ARG(a15)\
     __ASM_ARG(a14)\
@@ -1296,19 +1677,19 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 /*****************************************************************/
 
-
-
 /* Macros for user functions */
 
+#define AROS_UF_ENTRY_U(n) _ ## n
+
 #define __ASM_PREFIX_U(name) \
-    __asm__(".text\n\t.balign 16\n"\
+    __asm__(".text\n\t.align 2\n"\
 	".globl " #name "\n\t"\
-	".type " #name ",@function\n"\
+	".type\t" #name ",@function\n"\
 	#name ":\n\t"\
 
 #define __ASM_PREFIX_US(name) \
-    __asm__(".text\n\t.balign 16\n\t"\
-	".type " #name ",@function\n"\
+    __asm__(".text\n\t.align 2\n\t"\
+	".type\t" #name ",@function\n"\
 	#name ":\n\t"\
 
 #ifdef __PIC__
@@ -1317,14 +1698,14 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 	"add.w #4*" #argc ",%sp\n\t"\
 	"rts\n\t"\
 	".size " #name ",.-" #name);\
-    __AROS_UFH_PREFIX type _##name (
+    __AROS_UFH_PREFIX static type _##name (
 #else
 #define __ASM_POSTFIX_U(type,name,argc) \
 	"jbsr _" #name "\n\t"\
 	"add.w #4*" #argc ",%sp\n\t"\
 	"rts\n\t"\
 	".size " #name ",.-" #name);\
-    __AROS_UFH_PREFIX type _##name (
+    __AROS_UFH_PREFIX static type _##name (
 #endif
 
 /* Function headers for user functions */
@@ -1334,6 +1715,8 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH1(t,n,a1) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a1)\
     __ASM_POSTFIX_U(t,n,1)\
@@ -1341,6 +1724,9 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH2(t,n,a1,a2) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a2)\
     __ASM_ARG(a1)\
@@ -1350,6 +1736,10 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH3(t,n,a1,a2,a3) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a3)\
     __ASM_ARG(a2)\
@@ -1361,6 +1751,10 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH3S(t,n,a1,a2,a3) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3)) __attribute__((unused));\
     __ASM_PREFIX_US(n)\
     __ASM_ARG(a3)\
     __ASM_ARG(a2)\
@@ -1372,6 +1766,11 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH4(t,n,a1,a2,a3,a4) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a4)\
     __ASM_ARG(a3)\
@@ -1385,6 +1784,12 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH5(t,n,a1,a2,a3,a4,a5) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a5)\
     __ASM_ARG(a4)\
@@ -1400,6 +1805,12 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH5S(t,n,a1,a2,a3,a4,a5) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5)) __attribute__((unused));\
     __ASM_PREFIX_US(n)\
     __ASM_ARG(a5)\
     __ASM_ARG(a4)\
@@ -1415,6 +1826,13 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH6(t,n,a1,a2,a3,a4,a5,a6) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a6)\
     __ASM_ARG(a5)\
@@ -1432,6 +1850,14 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH7(t,n,a1,a2,a3,a4,a5,a6,a7) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a7)\
     __ASM_ARG(a6)\
@@ -1451,6 +1877,15 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a8)\
     __ASM_ARG(a7)\
@@ -1472,6 +1907,16 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a9)\
     __ASM_ARG(a8)\
@@ -1495,6 +1940,17 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a10)\
     __ASM_ARG(a9)\
@@ -1520,6 +1976,18 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10),\
+    __AROS_UFPA(a11)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a11)\
     __ASM_ARG(a10)\
@@ -1547,6 +2015,19 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10),\
+    __AROS_UFPA(a11),\
+    __AROS_UFPA(a12)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a12)\
     __ASM_ARG(a11)\
@@ -1576,6 +2057,20 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10),\
+    __AROS_UFPA(a11),\
+    __AROS_UFPA(a12),\
+    __AROS_UFPA(a13)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_(a13)\
     __ASM_ARG(a12)\
@@ -1607,6 +2102,21 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10),\
+    __AROS_UFPA(a11),\
+    __AROS_UFPA(a12),\
+    __AROS_UFPA(a13),\
+    __AROS_UFPA(a14)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a14)\
     __ASM_ARG(a13)\
@@ -1640,6 +2150,22 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #define AROS_UFH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15) \
     t n ();\
+    __AROS_UFP_PREFIX static t AROS_UF_ENTRY_U(n)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3),\
+    __AROS_UFPA(a4),\
+    __AROS_UFPA(a5),\
+    __AROS_UFPA(a6),\
+    __AROS_UFPA(a7),\
+    __AROS_UFPA(a8),\
+    __AROS_UFPA(a9),\
+    __AROS_UFPA(a10),\
+    __AROS_UFPA(a11),\
+    __AROS_UFPA(a12),\
+    __AROS_UFPA(a13),\
+    __AROS_UFPA(a14),\
+    __AROS_UFPA(a15)) __attribute__((unused));\
     __ASM_PREFIX_U(n)\
     __ASM_ARG(a15)\
     __ASM_ARG(a14)\
