@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/debug.h>
 #include <aros/build.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -415,18 +416,7 @@ IPTR AboutAROS__MUIM_Application_Execute
     
     SetAttrs(data->aad_Window, MUIA_Window_Open, TRUE, TAG_DONE);
     
-    while
-    ( 
-           DoMethod(self, MUIM_Application_NewInput, (IPTR) &signals) 
-        != MUIV_Application_ReturnID_Quit
-    )
-    {
-        if (signals)
-        {
-            signals = Wait(signals | SIGBREAKF_CTRL_C);
-            if (signals & SIGBREAKF_CTRL_C) break;
-        }
-    }
+    DoSuperMethodA(CLASS, self, message);
     
     SetAttrs(data->aad_Window, MUIA_Window_Open, FALSE, TAG_DONE);
 
