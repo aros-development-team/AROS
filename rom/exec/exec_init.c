@@ -117,9 +117,14 @@ AROS_UFH4(int, Dispatcher,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     /* Check if a task switch is necessary */
-    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL
-	&& SysBase->ThisTask->tc_Node.ln_Pri <=
-	   ((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+    /* 1. There has to be another task in the ready-list */
+    /* 2. The first task in the ready list hast to have the
+          same or higher priority than the currently active task */ 
+
+    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL  /* &&  
+        ((BYTE)SysBase->ThisTask->tc_Node.ln_Pri <=
+	   (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+	  */ )
     {
 	/* Check if task switch is possible */
 	if( SysBase->TDNestCnt < 0 )
@@ -136,6 +141,24 @@ AROS_UFH4(int, Dispatcher,
 	else
 	    SysBase->AttnResched |= 0x80;
     }
+/*
+    else
+    {
+      kprintf("Dispatcher: no taskswitch necessary\n");
+      kprintf("%s remains active\n",SysBase->ThisTask->tc_Node.ln_Name);
+      kprintf("current task pri: %i\n",SysBase->ThisTask->tc_Node.ln_Pri);
+      if (SysBase->TaskReady.lh_Head->ln_Succ != NULL)
+      {
+        kprintf("There's another task ready!\n");
+        kprintf("Other task's (%s) pri: %i\n",SysBase->TaskReady.lh_Head->ln_Name,((struct Node *)SysBase->TaskReady.lh_Head)->ln_Pri);
+      }
+      else
+      {
+        kprintf("There's no other task ready!!\n"); 
+      }
+    }
+*/
+
     /* This make the int handler continue with the rest of the ints. */
     return 0;
 } /* Dispatcher */
@@ -160,7 +183,6 @@ void idleTask(struct ExecBase *SysBase)
 	    if( SetSignal(0,0) & SIGBREAKF_CTRL_F )
 		inputDevice = FindTask("input.device");
 	}
-
 	/* Test if there are any other tasks in the ready queue */
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{

@@ -55,6 +55,15 @@
 	If the state is not TS_RUN then the task is already in a list
     */
 
+    /*
+       This task (= the task that's running in the moment) is
+       moved to the task ready list with Reschedule(), if necessary.
+       After that a new task is taken from the task-ready list
+       and is launched by doing the context switch. This happens
+       in Dispatch(). 
+    */
+return;
+
     if( (this->tc_State == TS_RUN)
 	&& !(this->tc_Flags & TF_EXCEPT) )
     {

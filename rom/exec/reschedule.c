@@ -84,6 +84,9 @@
     switch(task->tc_State)
     {
 	case TS_READY:
+            AddTail(&SysBase->TaskReady, (struct Node *)task);
+            break;
+
 	case TS_ADDED:
 	    Enqueue(&SysBase->TaskReady, (struct Node *)task);
 	    break;
@@ -101,6 +104,7 @@
 	case TS_INVALID:
 	case TS_EXCEPT:
 	case TS_RUN:
+
 	    /* We should never be called with this state. */
 	    break;
     }
