@@ -52,11 +52,10 @@ AROS_LH1(void, FreeSysRequest,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct Screen *scr;
-    struct Gadget *gadgets;
-    STRPTR *gadgetlabels;
-
-    struct IntRequestUserData *requserdata;
+    struct Screen   	    	*scr;
+    struct Gadget   	    	*gadgets;
+    STRPTR  	    	     	*gadgetlabels;
+    struct IntRequestUserData 	*requserdata;
 
     DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: window 0x%lx\n", (ULONG) window));
 

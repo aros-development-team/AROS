@@ -18,22 +18,19 @@
 #define DEBUG 0
 #   include <aros/debug.h>
 
-VOID DoGMLayout(struct Gadget       *glist,
-                struct Window       *win,
-                struct Requester    *req,
-                UWORD           numgad,
-                BOOL            initial,
-                struct IntuitionBase    *IntuitionBase)
+VOID DoGMLayout(struct Gadget *glist, struct Window *win, struct Requester *req,
+                UWORD numgad, BOOL initial, struct IntuitionBase *IntuitionBase)
 {
     while (glist && numgad)
     {
         /* Is this a BOOPSI gad with special relativity ? */
         if (((glist->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) &&
                 (/*initial ||*/
-                    (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
-                                     GFLG_RELWIDTH | GFLG_RELHEIGHT))))
+                 (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
+                                  GFLG_RELWIDTH | GFLG_RELHEIGHT))))
         {
             struct gpLayout lmsg;
+	    
             lmsg.MethodID    = GM_LAYOUT;
             lmsg.gpl_GInfo   = NULL;
             lmsg.gpl_Initial = initial;
@@ -46,9 +43,9 @@ VOID DoGMLayout(struct Gadget       *glist,
 #endif
         if (win && !req)
         {
-            WORD left = glist->LeftEdge;
-            WORD top = glist->TopEdge;
-            WORD width = glist->Width;
+            WORD left   = glist->LeftEdge;
+            WORD top    = glist->TopEdge;
+            WORD width  = glist->Width;
             WORD height = glist->Height;
 
             if (glist->Flags & GFLG_RELRIGHT)
@@ -61,11 +58,11 @@ VOID DoGMLayout(struct Gadget       *glist,
                 height += win->Height;
 
             if ((left >= win->Width - win->BorderRight ||
-                    top >= win->Height - win->BorderBottom ||
-                    left +  width - 1 <= win->BorderLeft ||
-                    top + height - 1 <= win->BorderTop) &&
-                    (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
-                                     GFLG_RELWIDTH | GFLG_RELHEIGHT)))
+                 top >= win->Height - win->BorderBottom ||
+                 left +  width - 1 <= win->BorderLeft ||
+                 top + height - 1 <= win->BorderTop) &&
+                 (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
+                                  GFLG_RELWIDTH | GFLG_RELHEIGHT)))
             {
                 glist->Activation |= GACT_BORDERSNIFF;
             }

@@ -10,9 +10,9 @@
 
 struct MoveWindowInFrontOfActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
-    struct Window *behindwindow;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    struct Window   	    *behindwindow;
 };
 
 static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
@@ -78,13 +78,13 @@ AROS_LH2(void, MoveWindowInFrontOf,
 static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
                                     struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    struct Window *behindwindow = msg->behindwindow;
-    struct Screen *screen = window->WScreen;
-    struct Requester *req;
-    struct Layer *layer = WLAYER(window);
-    struct Layer *lay;
-    BOOL movetoback = TRUE;
+    struct Window   	*window = msg->window;
+    struct Window   	*behindwindow = msg->behindwindow;
+    struct Screen   	*screen = window->WScreen;
+    struct Requester 	*req;
+    struct Layer    	*layer = WLAYER(window);
+    struct Layer    	*lay;
+    BOOL    	    	 movetoback = TRUE;
     
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     if (!ResourceExisting(behindwindow, RESOURCE_WINDOW, IntuitionBase)) return;
@@ -119,9 +119,9 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
         }
     }
 
-    UNLOCK_REFRESH(screen);
-
     CheckLayers(screen, IntuitionBase);
+
+    UNLOCK_REFRESH(screen);
 
     NotifyDepthArrangement(window, IntuitionBase);
 }

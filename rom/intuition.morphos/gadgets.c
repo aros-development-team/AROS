@@ -44,9 +44,9 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
                       struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *rp = msg->gpr_RPort;
-    struct IBox     container;
-    UWORD       *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-    ULONG       len, x, y;
+    struct IBox      container;
+    UWORD           *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+    ULONG            len, x, y;
 
     if (!(EG(o)->GadgetText)) return;
 
@@ -57,49 +57,49 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
 
     switch (EG(o)->Flags & GFLG_LABELMASK)
     {
-    case GFLG_LABELITEXT:
-        /* ITexts must not to be centered! */
+	case GFLG_LABELITEXT:
+            /* ITexts must not to be centered! */
 
-        PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top);
-        break;
+            PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top);
+            break;
 
-    case GFLG_LABELSTRING:
-        len = strlen ((STRPTR) EG(o)->GadgetText);
+	case GFLG_LABELSTRING:
+            len = strlen ((STRPTR) EG(o)->GadgetText);
 
-        if (len > 0UL)
-        {
-            ULONG x;
-            ULONG y;
+            if (len > 0UL)
+            {
+        	ULONG x;
+        	ULONG y;
 
-            x = container.Left + (container.Width / 2);
-            x -= LabelWidth (rp,
-                             (STRPTR)EG(o)->GadgetText, len, IntuitionBase) / 2;
-            y = container.Top + (container.Height / 2) +
-                rp->Font->tf_Baseline;
-            y -= rp->Font->tf_YSize / 2;
-            SetAPen (rp, pens[TEXTPEN]);
-            Move (rp, x, y);
-            RenderLabel (rp,
-                         (STRPTR) EG(o)->GadgetText, len,
-                         IntuitionBase);
-        }
-        break;
+        	x = container.Left + (container.Width / 2);
+        	x -= LabelWidth (rp,
+                        	 (STRPTR)EG(o)->GadgetText, len, IntuitionBase) / 2;
+        	y = container.Top + (container.Height / 2) +
+                    rp->Font->tf_Baseline;
+        	y -= rp->Font->tf_YSize / 2;
+        	SetAPen (rp, pens[TEXTPEN]);
+        	Move (rp, x, y);
+        	RenderLabel (rp,
+                             (STRPTR) EG(o)->GadgetText, len,
+                             IntuitionBase);
+            }
+            break;
 
-    case GFLG_LABELIMAGE:
-        /* center image position */
+	case GFLG_LABELIMAGE:
+            /* center image position */
 
-        x = container.Left + ((container.Width / 2) -
-                              (IM(EG(o)->GadgetText)->Width / 2)) - IM(EG(o)->GadgetText)->LeftEdge;
+            x = container.Left + ((container.Width / 2) -
+                        	  (IM(EG(o)->GadgetText)->Width / 2)) - IM(EG(o)->GadgetText)->LeftEdge;
 
-        y = container.Top + ((container.Height / 2) -
-                             (IM(EG(o)->GadgetText)->Height / 2)) - IM(EG(o)->GadgetText)->TopEdge;
-        //dprintf("printgadgetlabel: o %p w %d h %d x %d y %d l %d t %d\n", o,IM(EG(o)->GadgetText)->Width,IM(EG(o)->GadgetText)->Height,x,y,IM(EG(o)->GadgetText)->LeftEdge,IM(EG(o)->GadgetText)->TopEdge);
+            y = container.Top + ((container.Height / 2) -
+                        	 (IM(EG(o)->GadgetText)->Height / 2)) - IM(EG(o)->GadgetText)->TopEdge;
+            //dprintf("printgadgetlabel: o %p w %d h %d x %d y %d l %d t %d\n", o,IM(EG(o)->GadgetText)->Width,IM(EG(o)->GadgetText)->Height,x,y,IM(EG(o)->GadgetText)->LeftEdge,IM(EG(o)->GadgetText)->TopEdge);
 
-        DrawImageState(rp, IM(EG(o)->GadgetText),
-                       x, y,
-                       ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-                       msg->gpr_GInfo->gi_DrInfo);
-        break;
+            DrawImageState(rp, IM(EG(o)->GadgetText),
+                	   x, y,
+                	   ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+                	   msg->gpr_GInfo->gi_DrInfo);
+            break;
 
     } /* switch (EG(o)->Flags & GFLG_LABELMASK) */
 
@@ -233,57 +233,57 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 {
     switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
     {
-    case GTYP_SCRGADGET:
-        box->Left   = 0;
-        box->Top    = 0;
-        box->Width  = scr->Width;
-        box->Height = scr->Height;
+	case GTYP_SCRGADGET:
+            box->Left   = 0;
+            box->Top    = 0;
+            box->Width  = scr->Width;
+            box->Height = scr->Height;
 
-        break;
+            break;
 
-    case GTYP_GZZGADGET:
-        /* stegerg: this means gadget is in window border! */
+	case GTYP_GZZGADGET:
+            /* stegerg: this means gadget is in window border! */
 
-        box->Left   = 0;
-        box->Top    = 0;
-        box->Width  = win->Width;
-        box->Height = win->Height;
-
-        break;
-
-    case GTYP_REQGADGET:
-        box->Left   = req->LeftEdge + win->BorderLeft;
-        box->Top    = req->TopEdge + win->BorderTop;
-        box->Width  = req->Width;
-        box->Height = req->Height;
-
-        break;
-
-    default:
-        if (win->Flags & WFLG_GIMMEZEROZERO)
-        {
-            /* stegerg: domain.left and domain.top must not be added
-               to gadget position when it is rendered, because gadgets
-               in the innerlayer of a gzz gadget are already shifted
-               thanks to the innerlayer. */
-
-            box->Left   = win->BorderLeft;
-            box->Top    = win->BorderTop;
-
-            box->Width  = win->Width - win->BorderLeft - win->BorderRight;
-            box->Height = win->Height - win->BorderTop - win->BorderBottom;
-
-        }
-        else
-        {
             box->Left   = 0;
             box->Top    = 0;
             box->Width  = win->Width;
             box->Height = win->Height;
 
-        }
+            break;
 
-        break;
+	case GTYP_REQGADGET:
+            box->Left   = req->LeftEdge + win->BorderLeft;
+            box->Top    = req->TopEdge + win->BorderTop;
+            box->Width  = req->Width;
+            box->Height = req->Height;
+
+            break;
+
+	default:
+            if (win->Flags & WFLG_GIMMEZEROZERO)
+            {
+        	/* stegerg: domain.left and domain.top must not be added
+        	   to gadget position when it is rendered, because gadgets
+        	   in the innerlayer of a gzz gadget are already shifted
+        	   thanks to the innerlayer. */
+
+        	box->Left   = win->BorderLeft;
+        	box->Top    = win->BorderTop;
+
+        	box->Width  = win->Width - win->BorderLeft - win->BorderRight;
+        	box->Height = win->Height - win->BorderTop - win->BorderBottom;
+
+            }
+            else
+            {
+        	box->Left   = 0;
+        	box->Top    = 0;
+        	box->Width  = win->Width;
+        	box->Height = win->Height;
+
+            }
+
+            break;
 
     } /* switch (gadgettype) */
 }
@@ -468,8 +468,8 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
     struct Region   *old_clipregion = NULL; /* shut up the compiler */
     struct RastPort *rp, *rp2;
     struct Layer    *lay;
-    struct IBox     box;
-    WORD        old_scroll_x = 0, old_scroll_y = 0, i, num_loops;
+    struct IBox      box;
+    WORD             old_scroll_x = 0, old_scroll_y = 0, i, num_loops;
 
     DEBUG_ERASERELGADGETAREA(dprintf("EraseRelGadgetArea: win 0x%lx onlydamage %d\n",
                                      win, onlydamagelist));
@@ -480,7 +480,9 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
     if (rp->Layer == rp2->Layer)
     {
         num_loops = 1;
-    } else {
+    }
+    else
+    {
         num_loops = 2;
     }
 
@@ -575,8 +577,8 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
 void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, WORD y1,
                            WORD x2, WORD y2, struct IntuitionBase *IntuitionBase)
 {
-    UWORD       pen;
-    UWORD       pattern[] = { 0x8888, 0x2222 };
+    UWORD pen;
+    UWORD pattern[] = { 0x8888, 0x2222 };
 
     DEBUG_RENDERDISABLEPATTERN(dprintf("RenderDisabledPattern: rp 0x%lx dri 0x%lx x1 %ld y1 %ld x2 %ld y2 %ld\n",
                                        rp,dri,x1,y1,x2,y2));
@@ -612,16 +614,24 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
         if (gadget->Flags & GFLG_DISABLED)
         {
             if (gadget->Flags & GFLG_SELECTED)
+	    {
                 state = IDS_INACTIVEDISABLED; /* Hmm ... there's no INACTIVEDISABLEDSELECTED */
+	    }
             else
+	    {
                 state = IDS_INACTIVEDISABLED;
+	    }
         }
         else
         {
             if (gadget->Flags & GFLG_SELECTED)
+	    {
                 state = IDS_INACTIVESELECTED;
+	    }
             else
+	    {
                 state = IDS_INACTIVENORMAL;
+	    }
         }
     }
     else
@@ -629,16 +639,24 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
         if (gadget->Flags & GFLG_DISABLED)
         {
             if (gadget->Flags & GFLG_SELECTED)
+	    {
                 state = IDS_SELECTEDDISABLED;
+	    }
             else
+	    {
                 state = IDS_DISABLED;
+	    }
         }
         else
         {
             if (gadget->Flags & GFLG_SELECTED)
+	    {
                 state = IDS_SELECTED;
+	    }
             else
+	    {
                 state = IDS_NORMAL;
+	    }
         }
     }
 

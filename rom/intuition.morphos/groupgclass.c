@@ -50,8 +50,8 @@
 
 struct GroupGData
 {
-    struct MinList  memberlist;
-    Object      *activeobj;
+    struct MinList   memberlist;
+    Object          *activeobj;
 };
 
 /****************************************************************************************/
@@ -59,8 +59,8 @@ struct GroupGData
 static void recalcgroupsize(Class *cl, Object *obj)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    Object      *member, *memberstate;
-    WORD        w, h, width = 0/*G(obj)->Width*/, height = 0/*G(obj)->Height*/;
+    Object          	*member, *memberstate;
+    WORD            	 w, h, width = 0/*G(obj)->Width*/, height = 0/*G(obj)->Height*/;
 
     memberstate = (Object *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))
@@ -87,8 +87,8 @@ static void recalcgroupsize(Class *cl, Object *obj)
 Object *next_tabcycleobject(Class *cl, Object *obj)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    Object      *member, *memberstate, *actobj;
-    Object      *rc = NULL;
+    Object          	*member, *memberstate, *actobj;
+    Object          	*rc = NULL;
 
     actobj = data->activeobj;
 
@@ -135,8 +135,8 @@ Object *next_tabcycleobject(Class *cl, Object *obj)
 Object *prev_tabcycleobject(Class *cl, Object *obj)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    Object      *member, *memberstate, *actobj;
-    Object      *prevmember = NULL, *rc = NULL;
+    Object          	*member, *memberstate, *actobj;
+    Object          	*prevmember = NULL, *rc = NULL;
 
     actobj = data->activeobj;
 
@@ -205,10 +205,10 @@ static IPTR groupg_new(Class *cl, Object *obj, struct opSet *msg)
 static IPTR groupg_set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    Object      *member, *memberstate;
-    IPTR        rc;
-    WORD        dx, new_groupleft, old_groupleft = G(obj)->LeftEdge;
-    WORD        dy, new_grouptop , old_grouptop  = G(obj)->TopEdge;
+    Object          	*member, *memberstate;
+    WORD            	 dx, new_groupleft, old_groupleft = G(obj)->LeftEdge;
+    WORD            	 dy, new_grouptop , old_grouptop  = G(obj)->TopEdge;
+    IPTR            	 rc;
 
     rc = DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -220,12 +220,12 @@ static IPTR groupg_set(Class *cl, Object *obj, struct opSet *msg)
 
     if (dx || dy)
     {
-        struct opSet m;
+        struct opSet   m;
         struct TagItem tags[3];
 
-        m.MethodID = OM_SET;
+        m.MethodID     = OM_SET;
         m.ops_AttrList = tags;
-        m.ops_GInfo = msg->ops_GInfo;
+        m.ops_GInfo    = msg->ops_GInfo;
 
         tags[0].ti_Tag = GA_Left;
         tags[1].ti_Tag = GA_Top;
@@ -277,10 +277,10 @@ static IPTR groupg_dispose(Class *cl, Object *obj, Msg msg)
 static IPTR groupg_addmember(Class *cl, Object *obj, struct opMember *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    struct opAddTail    m;
-    struct opSet    m2;
-    struct TagItem  tags[3];
-    IPTR        rc;
+    struct opAddTail     m;
+    struct opSet         m2;
+    struct TagItem  	 tags[3];
+    IPTR            	 rc;
 
     m.MethodID  = OM_ADDTAIL;
     m.opat_List = (struct List *)&data->memberlist;
@@ -294,11 +294,11 @@ static IPTR groupg_addmember(Class *cl, Object *obj, struct opMember *msg)
     m2.ops_AttrList = tags;
     m2.ops_GInfo = NULL;
 
-    tags[0].ti_Tag = GA_Left;
+    tags[0].ti_Tag  = GA_Left;
     tags[0].ti_Data = G(msg->opam_Object)->LeftEdge + G(obj)->LeftEdge;
-    tags[1].ti_Tag = GA_Top;
+    tags[1].ti_Tag  = GA_Top;
     tags[1].ti_Data = G(msg->opam_Object)->TopEdge + G(obj)->TopEdge;
-    tags[2].ti_Tag = TAG_DONE;
+    tags[2].ti_Tag  = TAG_DONE;
 
     DoMethodA(msg->opam_Object, (Msg)&m2);
 
@@ -313,23 +313,23 @@ static IPTR groupg_remmember(Class *cl, Object *obj, struct opMember *msg)
 {
     struct opSet    m2;
     struct TagItem  tags[3];
-    IPTR rc;
-    ULONG method = OM_REMOVE;
+    IPTR    	    rc;
+    STACKULONG      method = OM_REMOVE;
 
     rc = DoMethodA(msg->opam_Object, (Msg)&method);
 
     /* Member gadget had its coords absolute here.
        Convert the coords back to relative coords. */
 
-    m2.MethodID = OM_SET;
+    m2.MethodID     = OM_SET;
     m2.ops_AttrList = tags;
-    m2.ops_GInfo = NULL;
+    m2.ops_GInfo    = NULL;
 
-    tags[0].ti_Tag = GA_Left;
+    tags[0].ti_Tag  = GA_Left;
     tags[0].ti_Data = G(msg->opam_Object)->LeftEdge - G(obj)->LeftEdge;
-    tags[1].ti_Tag = GA_Top;
+    tags[1].ti_Tag  = GA_Top;
     tags[1].ti_Data = G(msg->opam_Object)->TopEdge - G(obj)->TopEdge;
-    tags[2].ti_Tag = TAG_DONE;
+    tags[2].ti_Tag  = TAG_DONE;
 
     DoMethodA(msg->opam_Object, (Msg)&m2);
 
@@ -343,10 +343,10 @@ static IPTR groupg_remmember(Class *cl, Object *obj, struct opMember *msg)
 static IPTR groupg_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    struct gpHitTest    m;
-    Object      *member, *memberstate;
-    WORD        x, y;
-    IPTR        rc = 0;
+    struct gpHitTest     m;
+    Object          	*member, *memberstate;
+    WORD            	 x, y;
+    IPTR            	 rc = 0;
 
     m = *msg;
 
@@ -391,8 +391,8 @@ static IPTR groupg_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    struct gpInput  m;
-    IPTR        rc;
+    struct gpInput  	 m;
+    IPTR            	 rc;
 
     /* If someone activates us with ActivateGadget(), activeobj will be NULL.
      * In that case, activate the first object.
@@ -400,6 +400,7 @@ static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
     if (!data->activeobj)
     {
         Object *memberstate = (Object *)data->memberlist.mlh_Head;
+	
         data->activeobj = NextObject(&memberstate);
     }
 
@@ -455,7 +456,7 @@ static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
 static IPTR groupg_goinactive(Class *cl, Object *obj, struct gpGoInactive *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, obj);
-    IPTR        rc;
+    IPTR            	 rc;
 
     ASSERT_VALID_PTR(data->activeobj);
 
@@ -495,47 +496,47 @@ AROS_UFH3S(IPTR, dispatch_groupgclass,
 
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        retval = groupg_new(cl, obj, (struct opSet *)msg);
-        break;
+	case OM_NEW:
+            retval = groupg_new(cl, obj, (struct opSet *)msg);
+            break;
 
-    case OM_SET:
-    case OM_UPDATE:
-        retval = groupg_set(cl, obj, (struct opSet *)msg);
-        break;
+	case OM_SET:
+	case OM_UPDATE:
+            retval = groupg_set(cl, obj, (struct opSet *)msg);
+            break;
 
-    case OM_DISPOSE:
-        retval = groupg_dispose(cl, obj, msg);
-        break;
+	case OM_DISPOSE:
+            retval = groupg_dispose(cl, obj, msg);
+            break;
 
-    case OM_ADDMEMBER:
-        retval = groupg_addmember(cl, obj, (struct opMember *)msg);
-        break;
+	case OM_ADDMEMBER:
+            retval = groupg_addmember(cl, obj, (struct opMember *)msg);
+            break;
 
-    case OM_REMMEMBER:
-        retval = groupg_remmember(cl, obj, (struct opMember *)msg);
-        break;
+	case OM_REMMEMBER:
+            retval = groupg_remmember(cl, obj, (struct opMember *)msg);
+            break;
 
-    case GM_HITTEST:
-        retval = groupg_hittest(cl, obj, (struct gpHitTest *)msg);
-        break;
+	case GM_HITTEST:
+            retval = groupg_hittest(cl, obj, (struct gpHitTest *)msg);
+            break;
 
-    case GM_GOACTIVE:
-    case GM_HANDLEINPUT:
-        retval = groupg_input(cl, obj, (struct gpInput *)msg);
-        break;
+	case GM_GOACTIVE:
+	case GM_HANDLEINPUT:
+            retval = groupg_input(cl, obj, (struct gpInput *)msg);
+            break;
 
-    case GM_GOINACTIVE:
-        retval = groupg_goinactive(cl, obj, (struct gpGoInactive *)msg);
-        break;
+	case GM_GOINACTIVE:
+            retval = groupg_goinactive(cl, obj, (struct gpGoInactive *)msg);
+            break;
 
-    case GM_RENDER:
-        retval = groupg_render(cl, obj, (struct gpRender *)msg);
-        break;
+	case GM_RENDER:
+            retval = groupg_render(cl, obj, (struct gpRender *)msg);
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
     } /* switch (msg->MethodID) */
 
@@ -558,7 +559,7 @@ struct IClass *InitGroupGClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_groupgclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

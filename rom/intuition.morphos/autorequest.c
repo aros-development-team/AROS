@@ -53,8 +53,8 @@ AROS_LH8(BOOL, AutoRequest,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct Window *req;
-    ULONG idcmp;
-    LONG result;
+    ULONG   	   idcmp;
+    LONG    	   result;
 
     EXTENDWORD(width);EXTENDWORD(height);
 
@@ -68,7 +68,8 @@ AROS_LH8(BOOL, AutoRequest,
 
     /* req = 0/1 is handled by SysReqHandler */
     while ((result = SysReqHandler(req, &idcmp, TRUE)) == -2)
-    {}
+    {
+    }
 
 
     if (result == -1)

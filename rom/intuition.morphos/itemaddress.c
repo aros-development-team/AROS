@@ -63,9 +63,9 @@ AROS_LH2(struct MenuItem *, ItemAddress,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    int i;
-    struct Menu * thismenu;
-    struct MenuItem * thisitem = NULL;
+    struct Menu     *thismenu;
+    struct MenuItem *thisitem = NULL;
+    int     	     i;
 
     DEBUG_ITEMADDRESS(dprintf("ItemAddress: Strip %p Number 0x%lx (%d/%d/%d)\n",
                               menustrip, menunumber, MENUNUM(menunumber),
@@ -79,24 +79,29 @@ AROS_LH2(struct MenuItem *, ItemAddress,
     {
         thismenu = menustrip;
         DEBUG_ITEMADDRESS2(dprintf("ItemAddress: Menu %p\n", thismenu));
+
         for ( i = 0 ; thismenu && i < MENUNUM ( menunumber ) ; i++ )
         {
             thismenu = thismenu->NextMenu;
             DEBUG_ITEMADDRESS2(dprintf("ItemAddress: Menu %p\n", thismenu));
         }
+
         if (thismenu)
         {
             thisitem = thismenu->FirstItem;
             DEBUG_ITEMADDRESS2(dprintf("ItemAddress: Item %p\n", thisitem));
+
             for ( i = 0 ; thisitem && i < ITEMNUM ( menunumber ) ; i++ )
             {
                 thisitem = thisitem->NextItem;
                 DEBUG_ITEMADDRESS2(dprintf("ItemAddress: Item %p\n", thisitem));
             }
+
             if (thisitem && ( SUBNUM ( menunumber ) != NOSUB ) && thisitem->SubItem )
             {
                 thisitem = thisitem->SubItem;
                 DEBUG_ITEMADDRESS2(dprintf("ItemAddress: SubItem %p\n", thisitem));
+
                 for ( i = 0 ; thisitem && i < SUBNUM ( menunumber ) ; i++ )
                 {
                     DEBUG_ITEMADDRESS2(dprintf("ItemAddress: SubItem %p\n", thisitem));

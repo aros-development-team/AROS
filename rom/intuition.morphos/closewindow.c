@@ -27,12 +27,12 @@
 /******************************************************************************/
 
 #define MUST_UNLOCK_SCREEN(window,screen) (((GetPrivScreen(screen)->pubScrNode != NULL) && \
-(window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
+    	    	    	    	    	   (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
 
 struct CloseWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 VOID int_closewindow(struct CloseWindowActionMsg *msg,
@@ -83,14 +83,12 @@ AROS_LH1(void, CloseWindow,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct CloseWindowActionMsg msg;
-
-    struct IIHData      *iihd;
-
-    struct MsgPort      *userport;
-    struct IntuiMessage *messagecache;
-    struct Screen       *screen;
-    BOOL            do_unlockscreen;
+    struct CloseWindowActionMsg  msg;
+    struct IIHData          	*iihd;
+    struct MsgPort          	*userport;
+    struct IntuiMessage     	*messagecache;
+    struct Screen           	*screen;
+    BOOL            	    	 do_unlockscreen;
 
     DEBUG_CLOSEWINDOW(dprintf("CloseWindow: Window 0x%lx\n", window));
 
@@ -122,6 +120,7 @@ AROS_LH1(void, CloseWindow,
         while (cw)
         {
             struct Window * _cw;
+	    
             _cw = cw->nextchild;
             CloseWindow(cw);
             cw = _cw;
@@ -217,13 +216,12 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
                      struct IntuitionBase *IntuitionBase)
 {
     /* Free everything except the applications messageport */
-    ULONG       lock;
-
     struct Window   *window, *win2;
     struct Screen   *screen;
     struct MsgPort  *userport;
     struct IIHData  *iihd;
-    BOOL        do_unlockscreen;
+    ULONG            lock;
+    BOOL             do_unlockscreen;
 
     D(bug("CloseWindow (%p)\n", window));
 
@@ -243,33 +241,33 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
         switch(gadget->GadgetType & GTYP_GTYPEMASK)
         {
-        case GTYP_CUSTOMGADGET:
-            {
-                struct gpGoInactive gpgi;
+            case GTYP_CUSTOMGADGET:
+        	{
+                    struct gpGoInactive gpgi;
 
-                gpgi.MethodID = GM_GOINACTIVE;
-                gpgi.gpgi_GInfo = &iihd->GadgetInfo;
-                gpgi.gpgi_Abort = 1;
+                    gpgi.MethodID   = GM_GOINACTIVE;
+                    gpgi.gpgi_GInfo = &iihd->GadgetInfo;
+                    gpgi.gpgi_Abort = 1;
 
-                Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
+                    Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
 
-                if (iihd->ActiveSysGadget)
-                {
-                    gadget = iihd->ActiveSysGadget;
-                    iihd->ActiveSysGadget = NULL;
-
-                    if (IS_BOOPSI_GADGET(gadget))
+                    if (iihd->ActiveSysGadget)
                     {
-                        Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
-                    }
-                }
-            }
-            break;
+                	gadget = iihd->ActiveSysGadget;
+                	iihd->ActiveSysGadget = NULL;
 
-        case GTYP_STRGADGET:
-        case GTYP_BOOLGADGET:
-            gadget->Flags &= ~GFLG_SELECTED;
-            break;
+                	if (IS_BOOPSI_GADGET(gadget))
+                	{
+                            Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
+                	}
+                    }
+        	}
+        	break;
+
+            case GTYP_STRGADGET:
+            case GTYP_BOOLGADGET:
+        	gadget->Flags &= ~GFLG_SELECTED;
+        	break;
         }
 
         gadget->Activation &= ~GACT_ACTIVEGADGET;
@@ -314,8 +312,6 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     **
     */
 
-//#ifndef TIMEVALWINDOWACTIVATION
-
     if (window->Descendant)
     {
         window->Descendant->Parent = window->Parent;
@@ -327,7 +323,6 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         if (!IntuitionBase->ActiveWindow && window->Parent)
             ActivateWindow (window->Parent);
     }
-//#endif
 
     /* Make sure the Screen's window list is still valid */
 
@@ -389,6 +384,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     if (window->FirstRequest)
     {
         struct Requester *r = window->FirstRequest;
+	
         while (r)
         {
             if (r->ReqLayer) DeleteLayer(0,r->ReqLayer);

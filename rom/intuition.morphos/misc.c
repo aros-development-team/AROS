@@ -16,10 +16,12 @@
 struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
+    
     if (newrp)
     {
         InitRastPort(newrp);
     }
+    
     return newrp;
 }
 
@@ -96,6 +98,7 @@ LONG IsLayerVisible(struct Layer *layer)
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 {
     struct Window *win = layer->Window;
+    
     /* skip requesters attached to the same window. */
     while (layer->front && layer->front->Window == win)
     {
@@ -108,9 +111,11 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
     if (layer->front)
     {
         struct Layer *lay;
+	
         for (lay = layer->front; lay; lay = lay->front)
         {
             struct Window *lwin = lay->Window;
+	    
             if (lwin && win)
             {
                 if (lwin->LeftEdge > win->LeftEdge + win->Width - 1) continue;
@@ -121,6 +126,7 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
             }
         }
         return NULL;
+	
     } else return NULL;
 }
 
@@ -128,7 +134,8 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 long atol(const char *str)
 {
     long value = 0;
-    int neg = 0;
+    int  neg = 0;
+    
     while (*str == ' ' || *str == '\t')
         ++str;
     if (*str == '-')
@@ -189,15 +196,14 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
 Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
                             UWORD *source, int xOffset, int yOffset, int width, int height)
 {
-    struct BitMap bitmap;
-    Object *retval;
-    UWORD plane0[64], plane1[64];
-    UWORD *p = plane0;
-    UWORD *q = plane1;
-    UWORD *s = source;
-    UWORD mask = ~((1 << (16 - width)) - 1);
-    int k;
-
+    struct BitMap    bitmap;
+    Object  	    *retval;
+    UWORD   	     plane0[64], plane1[64];
+    UWORD   	    *p = plane0;
+    UWORD   	    *q = plane1;
+    UWORD   	    *s = source;
+    UWORD   	     mask = ~((1 << (16 - width)) - 1);
+    int     	     k;
 
     if (height > 64)
         height = 64;
@@ -214,14 +220,12 @@ Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
 
     {
         struct TagItem pointertags[] =
-            {
-                {
-                    POINTERA_BitMap , (IPTR)&bitmap
-                },
-                {POINTERA_XOffset   , xOffset       },
-                {POINTERA_YOffset   , yOffset       },
-                {TAG_DONE                           }
-            };
+        {
+            {POINTERA_BitMap 	, (IPTR)&bitmap },
+            {POINTERA_XOffset   , xOffset       },
+            {POINTERA_YOffset   , yOffset       },
+            {TAG_DONE                           }
+        };
 
         retval = NewObjectA(GetPrivIBase(IntuitionBase)->pointerclass, NULL, pointertags);
     }
@@ -232,16 +236,18 @@ Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
 Object *MakePointerFromPrefs(struct IntuitionBase *IntuitionBase, struct Preferences *prefs)
 {
     SetPointerColors(IntuitionBase);
+    
     return MakePointerFromData(IntuitionBase,
                                prefs->PointerMatrix + 2, prefs->XOffset, prefs->YOffset, 16, 16);
 }
 
 void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *pointer)
 {
-    struct IntScreen *scr;
-    struct Window *win;
+    struct IntScreen 	*scr;
+    struct Window   	*win;
     struct SharedPointer *oldpointer;
     struct SharedPointer *newpointer;
+    
     ULONG lock = LockIBase(0);
 
     GetAttr(POINTERA_SharedPointer, *old, (IPTR *)&oldpointer);
@@ -284,10 +290,10 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *p
 
 void SetPointerColors(struct IntuitionBase *IntuitionBase)
 {
-    UWORD *p;
-    int k;
-    ULONG lock = LockIBase(0);
-    //    struct Screen *scr;
+    UWORD   	  *p;
+    int     	   k;
+    ULONG   	   lock = LockIBase(0);
+  //struct Screen *scr;
 
     DEBUG_POINTER(dprintf("SetPointerColors()\n");)
 

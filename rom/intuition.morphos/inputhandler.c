@@ -82,16 +82,16 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                 {
                     const struct TagItem dragtags[] =
                     {
-                        {GA_SysGadget    , TRUE         },
+                        {GA_SysGadget   , TRUE          },
                         {GA_SysGType    , GTYP_WDRAGGING},
-                        {TAG_DONE           }
+                        {TAG_DONE           	    	}
                     };
 
                     const struct TagItem sizetags[] =
                     {
-                        {GA_SysGadget    , TRUE         },
+                        {GA_SysGadget   , TRUE          },
                         {GA_SysGType    , GTYP_SIZING   },
-                        {TAG_DONE           }
+                        {TAG_DONE           	    	}
                     };
 
                     iihdata->MasterDragGadget = (struct Gadget *)NewObjectA(GetPrivIBase(IntuitionBase)->dragbarclass,
@@ -207,27 +207,27 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 
             switch(im->Class)
             {
-            case IDCMP_MOUSEMOVE:
-                IW(im->IDCMPWindow)->num_mouseevents--;
-                break;
+        	case IDCMP_MOUSEMOVE:
+                    IW(im->IDCMPWindow)->num_mouseevents--;
+                    break;
 
-            case IDCMP_INTUITICKS:
-                AROS_ATOMIC_AND(im->IDCMPWindow->Flags, ~WFLG_WINDOWTICKED);
-                break;
+        	case IDCMP_INTUITICKS:
+                    AROS_ATOMIC_AND(im->IDCMPWindow->Flags, ~WFLG_WINDOWTICKED);
+                    break;
 
-            case IDCMP_IDCMPUPDATE:
-                IW(im->IDCMPWindow)->num_idcmpupdate--;
+        	case IDCMP_IDCMPUPDATE:
+                    IW(im->IDCMPWindow)->num_idcmpupdate--;
 
-                if (!(IW(im->IDCMPWindow)->num_idcmpupdate) && IW(im->IDCMPWindow)->messagecache)
+                    if (!(IW(im->IDCMPWindow)->num_idcmpupdate) && IW(im->IDCMPWindow)->messagecache)
+                    {
+                	SendIntuiMessage(im->IDCMPWindow,IW(im->IDCMPWindow)->messagecache);
+                	IW(im->IDCMPWindow)->messagecache = 0;
+                    }
+                    break;
+
+        	case IDCMP_MENUVERIFY:
                 {
-                    SendIntuiMessage(im->IDCMPWindow,IW(im->IDCMPWindow)->messagecache);
-                    IW(im->IDCMPWindow)->messagecache = 0;
-                }
-                break;
-
-            case IDCMP_MENUVERIFY:
-                {
-                    struct Window *w = im->IDCMPWindow;
+                    struct Window    *w = im->IDCMPWindow;
                     struct IntScreen *scr = 0;
 
                     scr = GetPrivScreen(w->WScreen);
@@ -245,7 +245,7 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                         if (w == scr->MenuVerifyActiveWindow &&
                             im->Code == MENUCANCEL)
                         {
-                            ULONG lock = LockIBase(0);
+                            ULONG   	   lock = LockIBase(0);
                             struct Window *w1;
 
                             for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
@@ -296,41 +296,45 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                             GetPrivIBase(IntuitionBase)->MenuVerifyScreen = NULL;
                         }
                     }
+                    break;
                 }
-                break;
 
-            case IDCMP_SIZEVERIFY:
+        	case IDCMP_SIZEVERIFY:
                 {
-                    struct GadgetInfo *gi = &iihdata->GadgetInfo;
-                    struct Window *w = im->IDCMPWindow;
-                    struct Gadget *gadget = im->IAddress;
-                    struct InputEvent ie;
-                    BOOL reuse_event;
+                    struct GadgetInfo 	*gi = &iihdata->GadgetInfo;
+                    struct Window   	*w = im->IDCMPWindow;
+                    struct Gadget   	*gadget = im->IAddress;
+                    struct InputEvent 	 ie;
+                    BOOL    	    	 reuse_event;
 
                     PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w, NULL);
                     SetGadgetInfoGadget(gi, gadget, IntuitionBase);
+		    
                     if (IS_BOOPSI_GADGET(gadget))
                     {
                         ie.ie_NextEvent = NULL;
-                        ie.ie_Class = IECLASS_RAWMOUSE;
-                        ie.ie_SubClass = 0;
-                        ie.ie_Code = IECODE_LBUTTON;
+                        ie.ie_Class 	= IECLASS_RAWMOUSE;
+                        ie.ie_SubClass  = 0;
+                        ie.ie_Code  	= IECODE_LBUTTON;
                         ie.ie_Qualifier = im->Qualifier;
-                        ie.ie_X = im->MouseX;
-                        ie.ie_Y = im->MouseY;
-                        ie.ie_TimeStamp.tv_secs = IntuitionBase->Seconds;
+                        ie.ie_X     	= im->MouseX;
+                        ie.ie_Y     	= im->MouseY;
+                        ie.ie_TimeStamp.tv_secs  = IntuitionBase->Seconds;
                         ie.ie_TimeStamp.tv_micro = IntuitionBase->Micros;
+			
                         DoGPInput(gi,
                               gadget,
                               &ie,
                               GM_GOACTIVE,
                               &reuse_event,
                               IntuitionBase);
+			      
                         /* For compatibility, send a GM_HANDLEINPUT too */
                         ie.ie_Class = IECLASS_RAWMOUSE;
-                        ie.ie_Code = IECODE_NOBUTTON;
-                        ie.ie_X = 0;
-                        ie.ie_Y = 0;
+                        ie.ie_Code  = IECODE_NOBUTTON;
+                        ie.ie_X     = 0;
+                        ie.ie_Y     = 0;
+			
                         gadget = DoGPInput(gi,
                                    gadget,
                                    &ie,
@@ -346,36 +350,37 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                     iihdata->ActiveGadget = gadget;
 
                     ie.ie_Class = IECLASS_RAWMOUSE;
-                    ie.ie_Code = IECODE_LBUTTON;
-                    ie.ie_X = im->MouseX;
-                    ie.ie_Y = im->MouseY;
+                    ie.ie_Code  = IECODE_LBUTTON;
+                    ie.ie_X 	= im->MouseX;
+                    ie.ie_Y 	= im->MouseY;
+		    
                     DoGPInput(gi,
                           gadget,
                           &ie,
                           GM_GOACTIVE,
                           &reuse_event,
                           IntuitionBase);
+                    break;
                 }
-                break;
 
-            case IDCMP_REQVERIFY:
+        	case IDCMP_REQVERIFY:
                 {
                     struct Window *w = im->IDCMPWindow;
 
                     EndRequest(w->DMRequest, w);
 
                     ih_fire_intuimessage(w,
-                                 IDCMP_REQSET,
-                                 0,
-                                 w,
-                                 IntuitionBase);
+                                	 IDCMP_REQSET,
+                                	 0,
+                                	 w,
+                                	 IntuitionBase);
                 }
                 break;
 
-            case IDCMP_WBENCHMESSAGE:
-                DEBUG_WORKBENCH(dprintf("HandleIntuiReplyPort: code 0x%lx\n",
-                            im->Code));
-                break;
+        	case IDCMP_WBENCHMESSAGE:
+                    DEBUG_WORKBENCH(dprintf("HandleIntuiReplyPort: code 0x%lx\n",
+                        	im->Code));
+                    break;
 
             } /* switch(im->Class) */
 
@@ -407,15 +412,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct InputEvent     *ie, *orig_ie, *next_ie, stackie;
     struct Gadget         *gadget;
     struct IntuitionBase  *IntuitionBase = iihdata->IntuitionBase;
-    //ULONG                 lock;
+    //ULONG                lock;
     struct GadgetInfo     *gi = &iihdata->GadgetInfo;
-    BOOL                  reuse_event, ie_used;
+    BOOL                   reuse_event, ie_used;
     struct Window         *w;
     struct Requester      *req;
-    ULONG                 stitlebarhit = 0;
+    ULONG                  stitlebarhit = 0;
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-    WORD    	    	    pointerposx, pointerposy;
-    BOOL    	    	    call_setpointerpos = FALSE;
+    WORD    	    	   pointerposx, pointerposy;
+    BOOL    	    	   call_setpointerpos = FALSE;
 #endif
 
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
@@ -455,8 +460,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     {
 
         struct Window   *old_w;
-        BOOL        keep_event = TRUE;
-        BOOL        new_active_window = FALSE;
+        BOOL        	 keep_event = TRUE;
+        BOOL        	 new_active_window = FALSE;
 
         /* new event, we need to reset this */
 
@@ -521,60 +526,61 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     switch (gadget->GadgetType & GTYP_GTYPEMASK)
                     {
 
-                    case GTYP_CUSTOMGADGET:
+                	case GTYP_CUSTOMGADGET:
                         {
                             struct gpGoInactive gpgi;
 
-                            gpgi.MethodID = GM_GOINACTIVE;
+                            gpgi.MethodID   = GM_GOINACTIVE;
                             gpgi.gpgi_GInfo = gi;
                             gpgi.gpgi_Abort = 1;
 
                             Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpgi, IntuitionBase);
+                            break;
                         }
-                        break;
 
-                    case GTYP_STRGADGET:
-                        gadget->Flags &= ~GFLG_SELECTED;
-                        RefreshStrGadget(gadget, gi->gi_Window, gi->gi_Requester, IntuitionBase);
-                        break;
+                	case GTYP_STRGADGET:
+                            gadget->Flags &= ~GFLG_SELECTED;
+                            RefreshStrGadget(gadget, gi->gi_Window, gi->gi_Requester, IntuitionBase);
+                            break;
 
-                    case GTYP_BOOLGADGET:
-                        /* That a bool gadget is active here can only happen
-                           if user used LMB to activate gadget and LAMIGA + LALT
-                           to activate other window, or viceversa */
-                        /* The gadget must be a RELVERIFY one */
-                        if (!(gadget->Activation & GACT_TOGGLESELECT))
-                        {
-                            BOOL inside;
-
-                            inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                          gi->gi_Requester, gadget,
-                                          gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
-
-                            if (inside)
+                	case GTYP_BOOLGADGET:
+                            /* That a bool gadget is active here can only happen
+                               if user used LMB to activate gadget and LAMIGA + LALT
+                               to activate other window, or viceversa */
+                            /* The gadget must be a RELVERIFY one */
+                            if (!(gadget->Activation & GACT_TOGGLESELECT))
                             {
-                                gadget->Flags &= ~GFLG_SELECTED;
-                                RefreshBoolGadgetState(gadget, gi->gi_Window,
-                                               gi->gi_Requester, IntuitionBase);
+                        	BOOL inside;
+
+                        	inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
+                                              gi->gi_Requester, gadget,
+                                              gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+
+                        	if (inside)
+                        	{
+                                    gadget->Flags &= ~GFLG_SELECTED;
+                                    RefreshBoolGadgetState(gadget, gi->gi_Window,
+                                        	    	   gi->gi_Requester, IntuitionBase);
+                        	}
                             }
-                        }
-                        break;
+                            break;
 
-                    case GTYP_PROPGADGET:
-                        /* That a prop gadget is active here can only happen
-                           if user used LMB to activate gadget and LAMIGA + LALT
-                           to activate other window, or viceversa */
+                	case GTYP_PROPGADGET:
+                            /* That a prop gadget is active here can only happen
+                               if user used LMB to activate gadget and LAMIGA + LALT
+                               to activate other window, or viceversa */
 
-                        HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
-                        if (gadget->Activation & GACT_RELVERIFY)
-                        {
-                            ih_fire_intuimessage(gi->gi_Window,
-                                         IDCMP_GADGETUP,
-                                         0,
-                                         gadget,
-                                         IntuitionBase);
-                        }
-                        break;
+                            HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
+                            if (gadget->Activation & GACT_RELVERIFY)
+                            {
+                        	ih_fire_intuimessage(gi->gi_Window,
+                                        	     IDCMP_GADGETUP,
+                                        	     0,
+                                        	     gadget,
+                                        	     IntuitionBase);
+                            }
+                            break;
+			    
                     } /* switch (gadget->GadgetType & GTYP_GTYPEMASK) */
 
                     gadget->Activation &= ~GACT_ACTIVEGADGET;
@@ -590,10 +596,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 if (w == iihdata->NewActWindow)
                 {
                     ActivateWindow(w);
-                } else {
+                }
+		else
+		{
                     w = IntuitionBase->ActiveWindow;
                     new_active_window = FALSE;
-                    ie->ie_Class = IECLASS_NULL; //lose the even, otherwise the gadget will get activated again ;)
+                    ie->ie_Class = IECLASS_NULL; //lose the event, otherwise the gadget will get activated again ;)
                 }
 
                 iihdata->NewActWindow = 0;
@@ -626,6 +634,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             case IESUBCLASS_PIXEL:
                 {
                     struct IEPointerPixel *pp = ie->ie_EventAddress;
+		    
                     ie->ie_X = pp->iepp_Position.X + pp->iepp_Screen->LeftEdge;
                     ie->ie_Y = pp->iepp_Position.Y + pp->iepp_Screen->TopEdge;
                 }
@@ -737,6 +746,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     if (!gadget && stitlebarhit)
                     {
                         struct Window *ww = 0;
+			
                         if ((ww = FindDesktopWindow(IntuitionBase->FirstScreen,IntuitionBase)))
                         {
                             ActivateWindow(ww);
@@ -751,11 +761,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         {
                             GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                             GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-                        } else
+                        }
+			else
                         {
                             GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
                         }
-                    } else {
+                    }
+		    else
+		    {
                         GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
                         GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                     }
@@ -768,6 +781,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     if (!stitlebarhit)
                     {
                         ULONG result;
+			
                         if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
                         if ((result = RunHotkeys(ie,IntuitionBase)))
                         {
@@ -775,7 +789,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (result == RUNHOTREUSE)
                             {
                                 reuse_event = TRUE;
-                            } else {
+                            }
+			    else
+			    {
                                 keep_event = FALSE;
                             }
                         }
@@ -788,10 +804,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                                  (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/))
                         {
                             ih_fire_intuimessage(w,
-                                         IDCMP_SIZEVERIFY,
-                                         0,
-                                         gadget,
-                                         IntuitionBase);
+                                        	 IDCMP_SIZEVERIFY,
+                                        	 0,
+                                        	 gadget,
+                                        	 IntuitionBase);
                             gadget = NULL;
                             sizeverify = TRUE;
                         }
@@ -819,10 +835,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (gadget->Activation & GACT_IMMEDIATE)
                             {
                                 ih_fire_intuimessage(w,
-                                             IDCMP_GADGETDOWN,
-                                             0,
-                                             gadget,
-                                             IntuitionBase);
+                                        	     IDCMP_GADGETDOWN,
+                                        	     0,
+                                        	     gadget,
+                                        	     IntuitionBase);
                             }
                             #endif
 
@@ -831,11 +847,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 if (IS_BOOPSI_GADGET(gadget))
                                 {
                                     DoGPInput(gi,
-                                          gadget,
-                                          ie,
-                                          GM_GOACTIVE,
-                                          &reuse_event,
-                                          IntuitionBase);
+                                              gadget,
+                                              ie,
+                                              GM_GOACTIVE,
+                                              &reuse_event,
+                                              IntuitionBase);
 
                                     /* Ignoring retval of dispatcher above is what
                                        AmigaOS does too for boopsi drag/resize
@@ -847,7 +863,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 if ((w->MoreFlags & WMFLG_IAMMUI) && (w->Flags & WFLG_BORDERLESS))
                                 {
                                     iihdata->ActiveSysGadget = is_draggad ? gadget : 0;
-                                } else {
+                                }
+				else
+				{
                                     iihdata->ActiveSysGadget = gadget;
                                 }
                                 gadget = is_draggad ? iihdata->MasterDragGadget : iihdata->MasterSizeGadget;
@@ -902,8 +920,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             */
 
                             if (InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                     gi->gi_Requester, gadget,
-                                     gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
+                                	     gi->gi_Requester, gadget,
+                                	     gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
                             {
                                 UWORD imsgcode;
 
@@ -934,16 +952,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             {
                                 /* For compatibility, send a GM_HANDLEINPUT too */
                                 struct InputEvent newie;
-                                BOOL reuse_event;
-                                newie.ie_NextEvent = NULL;
-                                newie.ie_Class = IECLASS_RAWMOUSE;
-                                newie.ie_SubClass = 0;
-                                newie.ie_Code = IECODE_NOBUTTON;
-                                newie.ie_Qualifier = ie->ie_Qualifier;
-                                newie.ie_X = 0;
-                                newie.ie_Y = 0;
-                                newie.ie_TimeStamp.tv_secs = IntuitionBase->Seconds;
+                                BOOL 	    	  reuse_event;
+				
+                                newie.ie_NextEvent  = NULL;
+                                newie.ie_Class      = IECLASS_RAWMOUSE;
+                                newie.ie_SubClass   = 0;
+                                newie.ie_Code 	    = IECODE_NOBUTTON;
+                                newie.ie_Qualifier  = ie->ie_Qualifier;
+                                newie.ie_X  	    = 0;
+                                newie.ie_Y  	    = 0;
+                                newie.ie_TimeStamp.tv_secs  = IntuitionBase->Seconds;
                                 newie.ie_TimeStamp.tv_micro = IntuitionBase->Micros;
+				
                                 gadget = DoGPInput(gi,
                                            gadget,
                                            &newie,
@@ -958,8 +978,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (IS_SYS_GADGET(gadget))
                             {
                                 HandleSysGadgetVerify(gi, gadget, IntuitionBase);
-                            } else {
-
+                            }
+			    else
+			    {
                                 if (gadget->Activation & GACT_RELVERIFY)
                                 {
                                     gadget->Activation |= GACT_ACTIVEGADGET;
@@ -969,13 +990,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                         gadget->Flags ^= GFLG_SELECTED;
                                         RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
                                     }
-                                } else {
+                                }
+				else
+				{
                                     /* jDc: this is what original intuition does, before crashing after a while ;)*/
                                     ih_fire_intuimessage(w,
-                                                 IDCMP_MOUSEBUTTONS,
-                                                 SELECTDOWN,
-                                                 w,
-                                                 IntuitionBase);
+                                                	 IDCMP_MOUSEBUTTONS,
+                                                	 SELECTDOWN,
+                                                	 w,
+                                                	 IntuitionBase);
                                 }
                             }
                             break;
@@ -1011,8 +1034,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 if (gadget)
                 {
                     BOOL inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                   gi->gi_Requester, gadget,
-                                   gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+                                	       gi->gi_Requester, gadget,
+                                	       gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
 
                     /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
 
@@ -1043,20 +1066,20 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 }
 
                                 ih_fire_intuimessage(w,
-                                             IDCMP_GADGETUP,
-                                             0,
-                                             gadget,
-                                             IntuitionBase);
+                                        	    IDCMP_GADGETUP,
+                                        	    0,
+                                        	    gadget,
+                                        	    IntuitionBase);
                             }
                         }
                         else
                         {
                             /* RKRM say so */
                             ih_fire_intuimessage(w,
-                                             IDCMP_MOUSEBUTTONS,
-                                             SELECTUP,
-                                             w,
-                                             IntuitionBase);
+                                        	 IDCMP_MOUSEBUTTONS,
+                                        	 SELECTUP,
+                                        	 w,
+                                        	 IntuitionBase);
                         }
 
                         gadget->Activation &= ~GACT_ACTIVEGADGET;
@@ -1068,10 +1091,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         if (gadget->Activation & GACT_RELVERIFY)
                         {
                             ih_fire_intuimessage(w,
-                                         IDCMP_GADGETUP,
-                                         0,
-                                         gadget,
-                                         IntuitionBase);
+                                        	 IDCMP_GADGETUP,
+                                        	 0,
+                                        	 gadget,
+                                        	 IntuitionBase);
                         }
 
                         gadget = NULL;
@@ -1103,10 +1126,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (inside)
                             {
                                 ih_fire_intuimessage(w,
-                                                 IDCMP_GADGETUP,
-                                                 0,
-                                                 gadget,
-                                                 IntuitionBase);
+                                                     IDCMP_GADGETUP,
+                                                     0,
+                                                     gadget,
+                                                     IntuitionBase);
                             }
                         } else {
                             ih_fire_intuimessage(w,
@@ -1124,10 +1147,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 else if (w && (!req || req->Flags & NOISYREQ))
                 {
                     ih_fire_intuimessage(w,
-                                     IDCMP_MOUSEBUTTONS,
-                                     SELECTUP,
-                                     w,
-                                     IntuitionBase);
+                                	 IDCMP_MOUSEBUTTONS,
+                                	 SELECTUP,
+                                	 w,
+                                	 IntuitionBase);
                 }
 
                 break; /* case SELECTUP */
@@ -1152,11 +1175,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     {
                         GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                         GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
-                    } else
+                    }
+		    else
                     {
                         GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
                     }
-                } else {
+                }
+		else
+		{
                     GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
                     GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                 }
@@ -1168,12 +1194,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #ifdef SKINS
                 {
                     ULONG result;
+		    
                     if ((result = RunHotkeys(ie,IntuitionBase)))
                     {
                         if (result == RUNHOTREUSE)
                         {
                             reuse_event = TRUE;
-                        } else {
+                        }
+			else
+			{
                             keep_event = FALSE;
                         }
                         break;
@@ -1185,10 +1214,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #ifdef SKINS
                 if ((!MENUS_ACTIVE) && (!gadget) && (!(iihdata->ActQualifier & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_MIDBUTTON))))
                 {
-                    struct Gadget *gad;
-                    struct GadgetInfo ginf;
-                    ULONG  hit;
-                    struct Window *wind = FindActiveWindow(0,&hit,IntuitionBase);
+                    struct Gadget   	*gad;
+                    struct GadgetInfo 	 ginf;
+                    ULONG   	    	 hit;
+                    struct Window   	*wind = FindActiveWindow(0,&hit,IntuitionBase);
 
                     if (wind)
                     {
@@ -1204,6 +1233,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             keep_event = FALSE;
                             break;
                         }
+			
                         if (gad && ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH))
                         {
                             CreateSmallMenuTask(0,SMALLMENU_TYPE_SCREENDEPTH,IntuitionBase);
@@ -1225,25 +1255,26 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         if (w->IDCMPFlags & IDCMP_REQVERIFY)
                         {
                             ih_fire_intuimessage(w,
-                                         IDCMP_REQVERIFY,
-                                         MENUHOT,
-                                         NULL,
-                                         IntuitionBase);
+                                        	 IDCMP_REQVERIFY,
+                                        	 MENUHOT,
+                                        	 NULL,
+                                        	 IntuitionBase);
                         }
                         else if (Request(w->DMRequest, w))
                         {
                             req = w->DMRequest;
+			    
                             ih_fire_intuimessage(w,
-                                         IDCMP_REQSET,
-                                         0,
-                                         w,
-                                         IntuitionBase);
+                                        	 IDCMP_REQSET,
+                                        	 0,
+                                        	 w,
+                                        	 IntuitionBase);
                         }
                         keep_event = FALSE;
                         break;
                     }
 
-                    GetPrivIBase(IntuitionBase)->DMStartSecs = ie->ie_TimeStamp.tv_secs;
+                    GetPrivIBase(IntuitionBase)->DMStartSecs  = ie->ie_TimeStamp.tv_secs;
                     GetPrivIBase(IntuitionBase)->DMStartMicro = ie->ie_TimeStamp.tv_micro;
                 }
 
@@ -1252,9 +1283,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     if (!(w->Flags & WFLG_RMBTRAP) && !req)
                     {
                         struct IntScreen *scr = GetPrivScreen(w->WScreen);
-                        struct Window *w1;
-                        ULONG lock;
-                        BOOL mouseon = TRUE;
+                        struct Window 	 *w1;
+                        ULONG 	    	  lock;
+                        BOOL	    	  mouseon = TRUE;
 
                         scr->MenuVerifyMsgCount = 0;
 
@@ -1264,10 +1295,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         if (w->IDCMPFlags & IDCMP_MENUVERIFY && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
                         {
                             ih_fire_intuimessage(w,
-                                         IDCMP_MENUVERIFY,
-                                         mouseon ? MENUHOT : MENUWAITING,
-                                         w,
-                                         IntuitionBase);
+                                        	 IDCMP_MENUVERIFY,
+                                        	 mouseon ? MENUHOT : MENUWAITING,
+                                        	 w,
+                                        	 IntuitionBase);
                             scr->MenuVerifyMsgCount++;
                         }
 
@@ -1278,10 +1309,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if ((w1->IDCMPFlags & IDCMP_MENUVERIFY) && (w1 != w) && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
                             {
                                 ih_fire_intuimessage(w1,
-                                             IDCMP_MENUVERIFY,
-                                             MENUWAITING,
-                                             w1,
-                                             IntuitionBase);
+                                        	     IDCMP_MENUVERIFY,
+                                        	     MENUWAITING,
+                                        	     w1,
+                                        	     IntuitionBase);
                                 ++scr->MenuVerifyMsgCount;
                             }
                         }
@@ -1300,7 +1331,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             scr->MenuVerifyActiveWindow = w;
                             scr->MenuVerifyTimeOut = 2;
                             scr->MenuVerifySeconds = IntuitionBase->Seconds;
-                            scr->MenuVerifyMicros = IntuitionBase->Micros;
+                            scr->MenuVerifyMicros  = IntuitionBase->Micros;
                         }
                         else if (FireMenuMessage(MMCODE_START, w, NULL/*ie*/, IntuitionBase))
                         {
@@ -1326,19 +1357,19 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
                     if (GetPrivIBase(IntuitionBase)->MenuVerifyScreen)
                     {
-                        struct Window *w1;
+                        struct Window 	 *w1;
                         struct IntScreen *scr = GetPrivIBase(IntuitionBase)->MenuVerifyScreen;
-                        ULONG lock = LockIBase(0);
+                        ULONG 	    	  lock = LockIBase(0);
 
                         for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
                         {
                             if (w1->IDCMPFlags & IDCMP_MENUVERIFY && w1->IDCMPFlags & IDCMP_MOUSEBUTTONS)
                             {
                                 ih_fire_intuimessage(w1,
-                                             IDCMP_MOUSEBUTTONS,
-                                             MENUUP,
-                                             w1,
-                                             IntuitionBase);
+                                        	     IDCMP_MOUSEBUTTONS,
+                                        	     MENUUP,
+                                        	     w1,
+                                        	     IntuitionBase);
                             }
                         }
 
@@ -1365,11 +1396,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         {
                             GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                             GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-                        } else
+                        }
+			else
                         {
                             GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
                         }
-                    } else {
+                    }
+		    else
+		    {
                         GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
                         GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
                     }
@@ -1397,12 +1431,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 if (ie->ie_Code == MIDDLEDOWN)
                 {
                     ULONG result;
+		    
                     if ((result = RunHotkeys(ie,IntuitionBase)))
                     {
                         if (result == RUNHOTREUSE)
                         {
                             reuse_event = TRUE;
-                        } else {
+                        }
+			else
+			{
                             keep_event = FALSE;
                         }
                         break;
@@ -1554,13 +1591,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     if (gadget == iihdata->MasterDragGadget)
                     {
                         struct gpInput gpi;
-                        ULONG retval;
+                        ULONG 	       retval;
 
-                        gpi.MethodID = GM_MOVETEST;
-                        gpi.gpi_GInfo = gi;
+                        gpi.MethodID 	= GM_MOVETEST;
+                        gpi.gpi_GInfo 	= gi;
                         gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
                         gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
-                        gpi.gpi_IEvent = ie;
+                        gpi.gpi_IEvent  = ie;
 
                         retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
                         if (retval == MOVETEST_ADJUSTPOS)
@@ -1604,7 +1641,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
                                 UNLOCK_REFRESH(IntuitionBase->FirstScreen);
                             }
-                        } else {
+                        }
+			else
+			{
                             if (IntuitionBase->FirstScreen->MouseY == 0 && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
                             {
                                 if (!(iihdata->TitlebarAppearTime))
@@ -1612,7 +1651,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                     iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
                                     iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
                                 }
-                            } else {
+                            }
+			    else
+			    {
                                 iihdata->TitlebarAppearTime = 0;
                             }
                         }
@@ -1639,11 +1680,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 BOOL inside;
 
                                 inside = InsideGadget(gi->gi_Screen,
-                                              gi->gi_Window,
-                                              gi->gi_Requester,
-                                              gadget,
-                                              gi->gi_Screen->MouseX,
-                                              gi->gi_Screen->MouseY);
+                                        	      gi->gi_Window,
+                                        	      gi->gi_Requester,
+                                        	      gadget,
+                                        	      gi->gi_Screen->MouseX,
+                                        	      gi->gi_Screen->MouseY);
 
                                 if  (inside != iihdata->MouseWasInsideBoolGadget)
                                 {
@@ -1656,12 +1697,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             break;
 
                         case GTYP_PROPGADGET:
-                            HandlePropMouseMove(gadget
-                                        ,w
-                                        ,req
-                                        ,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL)
-                                        ,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL)
-                                        ,IntuitionBase);
+                            HandlePropMouseMove(gadget,
+                                        	w,
+                                        	req,
+                                        	w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+                                        	w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+                                        	IntuitionBase);
 
                             break;
 
@@ -1693,10 +1734,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             if (iihdata->LastHelpWindow)
                             {
                                 fire_intuimessage(w,
-                                          IDCMP_GADGETHELP,
-                                          0,
-                                          NULL,
-                                          IntuitionBase);
+                                        	  IDCMP_GADGETHELP,
+                                        	  0,
+                                        	  NULL,
+                                        	  IntuitionBase);
 
                                 iihdata->LastHelpGadget = NULL;
                                 iihdata->LastHelpWindow = NULL;
@@ -1706,16 +1747,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         else
                         {
                             g = FindHelpGadget (hw,
-                                        IntuitionBase->ActiveScreen->MouseX,
-                                        IntuitionBase->ActiveScreen->MouseY,
-                                        IntuitionBase);
+                                        	IntuitionBase->ActiveScreen->MouseX,
+                                        	IntuitionBase->ActiveScreen->MouseY,
+                                        	IntuitionBase);
                             if (g && g != iihdata->LastHelpGadget)
                             {
                                 if (!iihdata->LastHelpGadget)
                                 {
                                     iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
                                     iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-                                } else {
+                                }
+				else
+				{
                                     if (hw == iihdata->LastHelpWindow)
                                     {
                                         iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
@@ -1728,10 +1771,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                  hw != iihdata->LastHelpWindow)
                             {
                                 fire_intuimessage(hw,
-                                          IDCMP_GADGETHELP,
-                                          0, /* Don't know what it should be */
-                                          hw,
-                                          IntuitionBase);
+                                        	  IDCMP_GADGETHELP,
+                                        	  0, /* Don't know what it should be */
+                                        	  hw,
+                                        	  IntuitionBase);
                             }
 
                             iihdata->LastHelpGadget = g;
@@ -1756,7 +1799,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     {
                         if (!gadget) break;
                         if (!(gadget->Activation & GACT_FOLLOWMOUSE)) break;
-                    } else {
+                    }
+		    else
+		    {
                         if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING))) break;
                     }
 
@@ -1828,10 +1873,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                        and handles it in HandleIntuiReplyPort() */
 
                     if (ih_fire_intuimessage(w,
-                                     IDCMP_MOUSEMOVE,
-                                     IECODE_NOBUTTON,
-                                     w,
-                                     IntuitionBase))
+                                	     IDCMP_MOUSEMOVE,
+                                	     IECODE_NOBUTTON,
+                                	     w,
+                                	     IntuitionBase))
                     {
                         IW(w)->num_mouseevents++;
                     }
@@ -1957,13 +2002,16 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 #ifdef SKINS
             {
                 ULONG result;
+		
                 if (!(ie->ie_Code & IECODE_UP_PREFIX))
                 if ((result = RunHotkeys(ie,IntuitionBase)))
                 {
                     if (result == RUNHOTREUSE)
                     {
                         reuse_event = TRUE;
-                    } else {
+                    }
+		    else
+		    {
                         keep_event = FALSE;
                     }
                     break;
@@ -2007,10 +2055,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                                 {
                                     DEBUG_KEY(dprintf("Handler: GACT_RELVERIFY\n"));
                                     ih_fire_intuimessage(w,
-                                                 IDCMP_GADGETUP,
-                                                 imsgcode,
-                                                 gadget,
-                                                 IntuitionBase);
+                                                	 IDCMP_GADGETUP,
+                                                	 imsgcode,
+                                                	 gadget,
+                                                	 IntuitionBase);
 
                                     if (req && gadget->Activation & GACT_ENDGADGET)
                                     {
@@ -2051,11 +2099,11 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                         DEBUG_KEY(dprintf("Handler: GTYP_CUSTOMGADGET\n"));
                         DEBUG_KEY(dprintf("Handler: send GM_HANDLEINPUT\n"));
                         gadget = DoGPInput(gi,
-                                   gadget,
-                                   ie,
-                                   GM_HANDLEINPUT,
-                                   &reuse_event,
-                                   IntuitionBase);
+                                	   gadget,
+                                	   ie,
+                                	   GM_HANDLEINPUT,
+                                	   &reuse_event,
+                                	   IntuitionBase);
                         DEBUG_KEY(dprintf("Handler: reuse %ld\n",reuse_event));
                         break;
 
@@ -2068,6 +2116,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
                     DEBUG_KEY(dprintf("Handler: No Gadget active\n"));
                     DEBUG_KEY(dprintf("Handler: Qualifier 0x%lx WinFlags 0x%lx IDCMP 0x%lx\n",ie->ie_Qualifier,w->Flags,w->IDCMPFlags));
+
                     if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
                         (!(w->Flags & WFLG_RMBTRAP)) &&
                         (w->IDCMPFlags & IDCMP_MENUPICK))
@@ -2125,7 +2174,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                         if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
                             (!(w->IDCMPFlags & IDCMP_MENUPICK)))
                         {
-                            struct Menu *strip = 0;
+                            struct Menu   *strip = 0;
                             struct Window *window = w;
 
                             /* not sure here about RMBTRAP */
@@ -2158,10 +2207,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                                     {
                                         DEBUG_KEY(dprintf("Handler: build menuevent\n"));
                                         ih_fire_intuimessage(window,
-                                                     IDCMP_MENUPICK,
-                                                     menucode,
-                                                     ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
-                                                     IntuitionBase);
+                                                	     IDCMP_MENUPICK,
+                                                	     menucode,
+                                                	     ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
+                                                	     IntuitionBase);
                                         keep_event = FALSE;
                                         menushortcut = TRUE;
                                     }
@@ -2199,6 +2248,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
                         DEBUG_KEY(dprintf("Handler: VANILLAKEY\n"));
                         //              DEBUG_KEY(dprintf("Handler: MapRawKey ie 0x%lx KeyMapBase 0x%lx IntutionBase 0x%lx\n",ie,KeymapBase,IntuitionBase));
+
                         if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
                         {
                             DEBUG_KEY(dprintf("Handler: send VANILLAKEY msg\n"));
@@ -2242,10 +2292,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
                 if (--GetPrivIBase(IntuitionBase)->PointerDelay == 0)
                 {
-                    struct SharedPointer *shared_pointer;
-                    struct Window *window = IntuitionBase->ActiveWindow;
-                    struct IntScreen *scr;
-                    Object *pointer = ((struct IntWindow *)window)->pointer;
+                    struct SharedPointer    *shared_pointer;
+                    struct Window   	    *window = IntuitionBase->ActiveWindow;
+                    struct IntScreen 	    *scr;
+                    Object  	    	    *pointer = ((struct IntWindow *)window)->pointer;
 
                     DEBUG_POINTER(dprintf("InputHandler: PointerDelay\n"));
                     DEBUG_POINTER(dprintf("InputHandler:  Pointer 0x%lx\n",
@@ -2264,6 +2314,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                             {
                                 pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
                             }
+
                             if (((struct IntWindow *)window)->busy)
                             {
                                 pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
@@ -2310,6 +2361,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
             if (GetPrivIBase(IntuitionBase)->MenuVerifyScreen)
             {
                 struct IntScreen *scr = GetPrivIBase(IntuitionBase)->MenuVerifyScreen;
+		
                 if ((--scr->MenuVerifyTimeOut) <= 0)
                 {
                     struct InputEvent ie;
@@ -2370,10 +2422,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 if (iihdata->HelpGadgetFindTime && (currenttime >= iihdata->HelpGadgetFindTime + SECONDS(1)))
                 {
                     fire_intuimessage(iihdata->LastHelpWindow,
-                                        IDCMP_GADGETHELP,
-                                        iihdata->LastHelpGadget->GadgetID, /* Don't know what it should be */
-                                        iihdata->LastHelpGadget,
-                                        IntuitionBase);
+                                      IDCMP_GADGETHELP,
+                                      iihdata->LastHelpGadget->GadgetID, /* Don't know what it should be */
+                                      iihdata->LastHelpGadget,
+                                      IntuitionBase);
                     iihdata->HelpGadgetFindTime = 0;
                 }
             }
@@ -2480,10 +2532,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 }
 
                 ih_fire_intuimessage((struct Window *)eventwin,
-                             IDCMP_MENUPICK,
-                             ie->ie_Code,
-                             (struct Window *)ie->ie_EventAddress,
-                             IntuitionBase);
+                        	     IDCMP_MENUPICK,
+                        	     ie->ie_Code,
+                        	     (struct Window *)ie->ie_EventAddress,
+                        	     IntuitionBase);
 
             }
             break;
@@ -2493,17 +2545,19 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
         case IECLASS_NEWPREFS:
             {
                 struct Screen *scr;
-                ULONG idcmp;
-                LONG lock;
+                ULONG 	       idcmp;
+                LONG 	       lock;
 
                 switch (ie->ie_Class)
                 {
                 case IECLASS_DISKINSERTED:
                     idcmp = IDCMP_DISKINSERTED;
                     break;
+		    
                 case IECLASS_DISKREMOVED:
                     idcmp = IDCMP_DISKREMOVED;
                     break;
+		    
                 default:
                     idcmp = IDCMP_NEWPREFS;
                     /*
@@ -2518,8 +2572,14 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
                 {
                     struct Window *win;
+		    
                     for (win = scr->FirstWindow; win; win = win->NextWindow)
                     {
+		    	/* stegerg:
+			   CHECKME, really use fire_intuimessage() here,
+			   instead of ih_fireintuimessage? Same for
+			   IDCMP_GADGETHELP above, BTW. */
+			   
                         fire_intuimessage(win,
                                   idcmp,
                                   0,
@@ -2545,10 +2605,10 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
             if (w->IDCMPFlags & IDCMP_RAWKEY && NEWMOUSEIDCMP)
             {
                 ih_fire_intuimessage(w,
-                             IDCMP_RAWKEY,
-                             ie->ie_Code,
-                             ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machine!? */
-                             IntuitionBase);
+                        	     IDCMP_RAWKEY,
+                        	     ie->ie_Code,
+                        	     ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machine!? */
+                        	     IntuitionBase);
                 keep_event = FALSE;
             }
             break;

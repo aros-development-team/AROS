@@ -50,112 +50,116 @@ AROS_UFH3S(IPTR, dispatch_modelclass,
 {
     AROS_USERFUNC_INIT
 
-    struct ModelData    *data = NULL;   /* shut up the compiler */
-    IPTR        retval = 0UL;
+    struct ModelData *data = NULL;   /* shut up the compiler */
+    IPTR              retval = 0UL;
 
     if (msg->MethodID != OM_NEW) data = INST_DATA(cl, o);
 
     switch(msg->MethodID)
     {
-    case OM_NEW:
-        if ((o = (Object *)DoSuperMethodA(cl, o, msg)))
-        {
-            data = INST_DATA(cl, o);
+	case OM_NEW:
+            if ((o = (Object *)DoSuperMethodA(cl, o, msg)))
+            {
+        	data = INST_DATA(cl, o);
 
-            NEWLIST(&data->memberlist);
+        	NEWLIST(&data->memberlist);
 
-            retval = (IPTR)o;
-        };
-        break;
+        	retval = (IPTR)o;
+            };
+            break;
 
-    case OM_DISPOSE:
-        for(;;)
-        {
-            /* free all member objects */
+	case OM_DISPOSE:
+            for(;;)
+            {
+        	/* free all member objects */
 
-            Object *member, *objstate;
-            ULONG method;
+        	Object *member, *objstate;
+        	ULONG method;
 
-            objstate = (Object *)data->memberlist.mlh_Head;
-            member = NextObject(&objstate);
-            if (!member) break;
+        	objstate = (Object *)data->memberlist.mlh_Head;
+        	member = NextObject(&objstate);
+        	if (!member) break;
 
-            method = OM_REMOVE;
-            DoMethodA(member, (Msg)&method);
+        	method = OM_REMOVE;
+        	DoMethodA(member, (Msg)&method);
 
-            DisposeObject(member);
+        	DisposeObject(member);
 
-        }
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+            }
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
-    case OM_ADDMEMBER:
+	case OM_ADDMEMBER:
         {
             struct opAddTail method;
-            method.MethodID = OM_ADDTAIL;
+
+            method.MethodID  = OM_ADDTAIL;
             method.opat_List = (struct List *)&data->memberlist;
+
             DoMethodA( ((struct opMember *)msg)->opam_Object, (Msg)&method);
+            break;
         }
-        break;
 
-    case OM_REMMEMBER:
+	case OM_REMMEMBER:
         {
-            ULONG method = OM_REMOVE;
+            STACKULONG method = OM_REMOVE;
+
             DoMethodA( ((struct opMember *)msg)->opam_Object, (Msg)&method);
+            break;
         }
-        break;
 
-    case OM_UPDATE:
-    case OM_NOTIFY:
-        /* send OM_UPDATE to all members without mapping the tags! */
+	case OM_UPDATE:
+	case OM_NOTIFY:
+            /* send OM_UPDATE to all members without mapping the tags! */
 
-        if (!IsListEmpty((struct List *)&data->memberlist))
-        {
-            ULONG method = ICM_CHECKLOOP;
-            if (DoMethodA(o, (Msg)&method) == 0) /* avoid loops */
+            if (!IsListEmpty((struct List *)&data->memberlist))
             {
-                struct TagItem *clonetags;
+        	STACKULONG method = ICM_CHECKLOOP;
 
-                if ((clonetags = CloneTagItems(((struct opUpdate *)msg)->opu_AttrList)))
-                {
-                    struct opUpdate opu = *(struct opUpdate *)msg;
-                    Object      *member, *objstate;
+        	if (DoMethodA(o, (Msg)&method) == 0) /* avoid loops */
+        	{
+                    struct TagItem *clonetags;
 
-                    opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
-                    opu.opu_AttrList = clonetags;
-
-                    method = ICM_SETLOOP;
-                    DoMethodA(o, (Msg)&method);
-
-                    objstate = (Object *)data->memberlist.mlh_Head;
-                    while((member = NextObject(&objstate)))
+                    if ((clonetags = CloneTagItems(((struct opUpdate *)msg)->opu_AttrList)))
                     {
-                        DoMethodA(member, (Msg)&opu);
+                	struct opUpdate  opu = *(struct opUpdate *)msg;
+                	Object          *member, *objstate;
 
-                        /* in case the member object poked around in the taglist: */
-                        RefreshTagItemClones(clonetags, ((struct opUpdate *)msg)->opu_AttrList);
+                	opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
+                	opu.opu_AttrList = clonetags;
+
+                	method = ICM_SETLOOP;
+                	DoMethodA(o, (Msg)&method);
+
+                	objstate = (Object *)data->memberlist.mlh_Head;
+                	while((member = NextObject(&objstate)))
+                	{
+                            DoMethodA(member, (Msg)&opu);
+
+                            /* in case the member object poked around in the taglist: */
+                            RefreshTagItemClones(clonetags, ((struct opUpdate *)msg)->opu_AttrList);
+                	}
+
+                	method = ICM_CLEARLOOP;
+                	DoMethodA(o, (Msg)&method);
+
+                	FreeTagItems(clonetags);
                     }
 
-                    method = ICM_CLEARLOOP;
-                    DoMethodA(o, (Msg)&method);
+        	} /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
 
-                    FreeTagItems(clonetags);
-                }
+            } /* if (!IsListEmpty(&data->memberlist)) */
 
-            } /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
+            /* modelclass is a superclass of icclass so not only the members are targets,
+               but possibly also the modelclass object itself could have an ICA_Target.
+               This is handled by the superclass */
 
-        } /* if (!IsListEmpty(&data->memberlist)) */
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
-        /* modelclass is a superclass of icclass so not only the members are targets,
-           but possibly also the modelclass object itself could have an ICA_Target.
-           This is handled by the superclass */
-
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
-
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
     } /* switch(msg->MethodID) */
 
@@ -178,7 +182,7 @@ struct IClass *InitModelClass (struct IntuitionBase *IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_modelclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

@@ -53,9 +53,10 @@ AROS_LH1(LONG, IntuiTextLength,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct RastPort rp;
+
+    struct RastPort  rp;
     struct TextFont *newfont = NULL;
-    LONG width;
+    LONG    	     width;
 
     DEBUG_INTUITEXTLENGTH(dprintf("IntuiTextLength(itext 0x%lx)\n",iText));
 

@@ -74,12 +74,8 @@ struct FrameIData
 /* This is utility function used by frameiclass to draw a simple
  * bevel.
  */
-static void DrawFrame(
-    Class * cl,
-    struct RastPort *rport,
-    UWORD shine, UWORD shadow,
-    WORD left, WORD top, WORD width, WORD height,
-    BOOL thicken)
+static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD shadow,
+    	    	      WORD left, WORD top, WORD width, WORD height, BOOL thicken)
 {
     /*
     Here we attempt to render a bevel as quickly as possible using
@@ -147,7 +143,9 @@ static void DrawFrame(
             /* Thicken Top Side */
             Draw(rport, left + width - 2, top + 1);
         }
+	
     } /* if */
+    
 } /* DrawFrame */
 
 /****************************************************************************/
@@ -162,31 +160,32 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
     all the boopsi objects, unless someone as a better idea...
     */
     UWORD default_pens[] =
-        {
-            1, /* detailPen      */
-            0, /* blockPen       */
-            1, /* textPen        */
-            2, /* shinePen       */
-            1, /* shadowPen      */
-            3, /* hiFillPen      */
-            1, /* hifilltextPen  */
-            0, /* backgroundPen  */
-            2  /* hilighttextPen */
-        };
+    {
+        1, /* detailPen      */
+        0, /* blockPen       */
+        1, /* textPen        */
+        2, /* shinePen       */
+        1, /* shadowPen      */
+        3, /* hiFillPen      */
+        1, /* hifilltextPen  */
+        0, /* backgroundPen  */
+        2  /* hilighttextPen */
+    };
     ULONG retval;
 
     DEBUG_IFRAME(dprintf("draw_frameiclass: width %ld height %ld\n",width,height));
-    /* we will check the rastport present */
+
+    /* we will check the rastport present */    
     if(msg->imp_RPort)
     {
-        UWORD *pens = default_pens;
-        UWORD left, top;
-        UWORD shine, shadow;
-        BOOL  selected;
+        UWORD 	    	*pens = default_pens;
+        UWORD 	    	 left, top;
+        UWORD 	    	 shine, shadow;
+        BOOL 	    	 selected;
         struct RastPort *rp = msg->imp_RPort;
-        BYTE oldapen = rp->FgPen;
-        BYTE oldbpen = rp->BgPen;
-        BYTE olddrmd = rp->DrawMode;
+        BYTE	    	 oldapen = rp->FgPen;
+        BYTE	    	 oldbpen = rp->BgPen;
+        BYTE	    	 olddrmd = rp->DrawMode;
 
         /* set up our rendering pens */
         if (msg->imp_DrInfo)
@@ -210,18 +209,18 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
             shine  = pens[SHINEPEN];
         } /* if */
 
-        shadow  = pens[SHADOWPEN];
+        shadow = pens[SHADOWPEN];
 
         switch(msg->imp_State)
         {
-        case IDS_SELECTED:
-        case IDS_INACTIVESELECTED:
-            selected = TRUE;
-            break;
+            case IDS_SELECTED:
+            case IDS_INACTIVESELECTED:
+        	selected = TRUE;
+        	break;
 
-        default:
-            selected = FALSE;
-            break;
+            default:
+        	selected = FALSE;
+        	break;
         } /* switch */
 
         /*
@@ -250,6 +249,7 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
         {
             /* swap pens */
             UWORD tmp;
+	    
             tmp = shine;
             shine = shadow;
             shadow = tmp;
@@ -259,76 +259,39 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
         top  = IM(o)->TopEdge  + msg->imp_Offset.Y;
 
         DEBUG_IFRAME(dprintf("draw_frameiclass: type %ld height %ld\n",fid->fid_FrameType));
+
         switch(fid->fid_FrameType)
         {
-        case FRAME_DEFAULT:
-            DrawFrame(
-                cl,
-                rp,
-                shine, shadow,
-                left, top,
-                width, height,
-                FALSE
-            );
-            break;
+            case FRAME_DEFAULT:
+        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, FALSE);
+        	break;
 
-        case FRAME_BUTTON:
-            DrawFrame(
-                cl,
-                rp,
-                shine, shadow,
-                left, top,
-                width, height,
-                TRUE
-            );
-            break;
+            case FRAME_BUTTON:
+        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
+        	break;
 
-        case FRAME_RIDGE:
-            /* render outer pen-inverted thick bevel */
-            DrawFrame(
-                cl,
-                rp,
-                shine, shadow,
-                left, top,
-                width, height,
-                TRUE
-            );
+            case FRAME_RIDGE:
+        	/* render outer pen-inverted thick bevel */
+        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
 
-            /* render inner thick bevel */
-            DrawFrame(
-                cl,
-                rp,
-                shadow, shine,
-                left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
-                width - fid->fid_HOffset, height - fid->fid_VOffset,
-                TRUE
-            );
-            break;
+        	/* render inner thick bevel */
+        	DrawFrame(cl, rp, shadow, shine,
+                    	  left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
+                    	  width - fid->fid_HOffset, height - fid->fid_VOffset,
+                    	  TRUE);
+        	break;
 
-        case FRAME_ICONDROPBOX:
+            case FRAME_ICONDROPBOX:
             {
                 WORD hoffset = fid->fid_HOffset * 2 / 3;
                 WORD voffset = fid->fid_VOffset * 2 / 3;
 
                 /* render outer pen-inverted thick bevel */
-                DrawFrame(
-                    cl,
-                    rp,
-                    shine, shadow,
-                    left, top,
-                    width, height,
-                    TRUE
-                );
+                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
 
                 /* render inner thick bevel */
-                DrawFrame(
-                    cl,
-                    rp,
-                    shadow, shine,
-                    left + hoffset, top + voffset,
-                    width - hoffset * 2, height - voffset * 2,
-                    TRUE
-                );
+                DrawFrame(cl, rp, shadow, shine, left + hoffset, top + voffset,
+                    	 width - hoffset * 2, height - voffset * 2, TRUE);
                 break;
             }
 
@@ -355,17 +318,17 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
 
         switch(msg->imp_State)
         {
-        case IDS_DISABLED:
-        case IDS_INACTIVEDISABLED:
-        case IDS_SELECTEDDISABLED:
-            RenderDisabledPattern(rp,
-                                  msg->imp_DrInfo,
-                                  left,
-                                  top,
-                                  left + width - 1,
-                                  top + height - 1,
-                                  IntuitionBase);
-            break;
+            case IDS_DISABLED:
+            case IDS_INACTIVEDISABLED:
+            case IDS_SELECTEDDISABLED:
+        	RenderDisabledPattern(rp,
+                                      msg->imp_DrInfo,
+                                      left,
+                                      top,
+                                      left + width - 1,
+                                      top + height - 1,
+                                      IntuitionBase);
+        	break;
         }
 
         SetABPenDrMd(rp, oldapen, oldbpen, olddrmd);
@@ -389,72 +352,74 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 {
     struct FrameIData   *fid = INST_DATA(cl, o);
 
-    struct TagItem  *tstate = msg->ops_AttrList;
-    struct TagItem  *tag;
-    ULONG       retval = 0UL;
+    struct TagItem  	*tstate = msg->ops_AttrList;
+    struct TagItem  	*tag;
+    ULONG            	 retval = 0UL;
 
     while ((tag = NextTagItem(&tstate)))
     {
         switch(tag->ti_Tag)
         {
-        case IA_Recessed:
-            fid->fid_Recessed   = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
-            break;
+            case IA_Recessed:
+        	fid->fid_Recessed   = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	break;
 
-        case IA_EdgesOnly:
-            fid->fid_EdgesOnly  = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
-            break;
+            case IA_EdgesOnly:
+        	fid->fid_EdgesOnly  = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	break;
 
-        case IA_FrameType:
-            /*
-            Data values for IA_FrameType (recognized by FrameIClass)
+            case IA_FrameType:
+        	/*
+        	Data values for IA_FrameType (recognized by FrameIClass)
 
-            FRAME_DEFAULT:  The standard V37-type frame, which has
-            thin edges.
-            FRAME_BUTTON:  Standard button gadget frames, having thicker
-            sides and edged corners.
-            FRAME_RIDGE:  A ridge such as used by standard string gadgets.
-            You can recess the ridge to get a groove image.
-            FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
-            for areas in AppWindows where icons may be dropped.
-            */
-            fid->fid_FrameType = (WORD)tag->ti_Data;
+        	FRAME_DEFAULT:  The standard V37-type frame, which has
+        	thin edges.
+        	FRAME_BUTTON:  Standard button gadget frames, having thicker
+        	sides and edged corners.
+        	FRAME_RIDGE:  A ridge such as used by standard string gadgets.
+        	You can recess the ridge to get a groove image.
+        	FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
+        	for areas in AppWindows where icons may be dropped.
+        	*/
+        	fid->fid_FrameType = (WORD)tag->ti_Data;
 
-            switch(fid->fid_FrameType)
-            {
-            case FRAME_DEFAULT:
-                fid->fid_HOffset = fid->fid_VOffset = 1;
-                break;
+        	switch(fid->fid_FrameType)
+        	{
+        	    case FRAME_DEFAULT:
+                	fid->fid_HOffset = fid->fid_VOffset = 1;
+                	break;
 
-            case FRAME_BUTTON:
-                DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
-                fid->fid_HOffset = 1;
-                fid->fid_VOffset = 1;
-                break;
+        	    case FRAME_BUTTON:
+                	DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
+                	fid->fid_HOffset = 1;
+                	fid->fid_VOffset = 1;
+                	break;
 
-            case FRAME_RIDGE:
-                fid->fid_HOffset = 2;
-                fid->fid_VOffset = 2;
-                break;
+        	    case FRAME_RIDGE:
+                	fid->fid_HOffset = 2;
+                	fid->fid_VOffset = 2;
+                	break;
 
-            case FRAME_ICONDROPBOX:
-                fid->fid_HOffset = 3;
-                fid->fid_VOffset = 3;
-                break;
+        	    case FRAME_ICONDROPBOX:
+                	fid->fid_HOffset = 3;
+                	fid->fid_VOffset = 3;
+                	break;
 
-            } /* switch(fid->fid_FrameType) */
+        	} /* switch(fid->fid_FrameType) */
 
-            if (FRAME_SIZE > 0)
-            {
-                fid->fid_HOffset *= 2;
-            }
-            if (FRAME_SIZE == 2)
-            {
-                fid->fid_VOffset *= 2;
-            }
-            break;
+        	if (FRAME_SIZE > 0)
+        	{
+                    fid->fid_HOffset *= 2;
+        	}
+		
+        	if (FRAME_SIZE == 2)
+        	{
+                    fid->fid_VOffset *= 2;
+        	}
+        	break;
 
         } /* switch */
+	
     } /* while */
 
     return(retval);
@@ -521,58 +486,58 @@ AROS_UFH3S(IPTR, dispatch_frameiclass,
     DEBUG_IFRAME(dprintf("dispatch_frameiclass: Class 0x%lx Object 0x%lx Msg 0x%lx\n",cl,o,msg));
     switch(msg->MethodID)
     {
-    case IM_FRAMEBOX:
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox content Width %ld Height %ld\n",
-                             ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
-                             ((struct impFrameBox *)msg)->imp_ContentsBox->Height));
-        retval = framebox_frameiclass(cl, o, (struct impFrameBox *)msg);
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox =content Width %ld Height %ld framebox Width %ld Height %ld\n",
-                             ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
-                             ((struct impFrameBox *)msg)->imp_ContentsBox->Height,
-                             ((struct impFrameBox *)msg)->imp_FrameBox->Width,
-                             ((struct impFrameBox *)msg)->imp_FrameBox->Height));
-        break;
+	case IM_FRAMEBOX:
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox content Width %ld Height %ld\n",
+                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
+                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Height));
+            retval = framebox_frameiclass(cl, o, (struct impFrameBox *)msg);
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox =content Width %ld Height %ld framebox Width %ld Height %ld\n",
+                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
+                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Height,
+                        	 ((struct impFrameBox *)msg)->imp_FrameBox->Width,
+                        	 ((struct impFrameBox *)msg)->imp_FrameBox->Height));
+            break;
 
-    case IM_DRAWFRAME:
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: drawframe Width %ld Height %ld\n",((struct impDraw *)msg)->imp_Dimensions.Width,((struct impDraw *)msg)->imp_Dimensions.Height));
-        retval = draw_frameiclass(cl, o, (struct impDraw *)msg,
-                                  ((struct impDraw *)msg)->imp_Dimensions.Width,
-                                  ((struct impDraw *)msg)->imp_Dimensions.Height);
-        break;
+	case IM_DRAWFRAME:
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: drawframe Width %ld Height %ld\n",((struct impDraw *)msg)->imp_Dimensions.Width,((struct impDraw *)msg)->imp_Dimensions.Height));
+            retval = draw_frameiclass(cl, o, (struct impDraw *)msg,
+                                      ((struct impDraw *)msg)->imp_Dimensions.Width,
+                                      ((struct impDraw *)msg)->imp_Dimensions.Height);
+            break;
 
-    case IM_DRAW:
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: draw Width %ld Height %ld\n",IM(o)->Width, IM(o)->Height));
-        retval = draw_frameiclass(cl, o, (struct impDraw *)msg, IM(o)->Width, IM(o)->Height);
-        break;
+	case IM_DRAW:
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: draw Width %ld Height %ld\n",IM(o)->Width, IM(o)->Height));
+            retval = draw_frameiclass(cl, o, (struct impDraw *)msg, IM(o)->Width, IM(o)->Height);
+            break;
 
-    case OM_SET:
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: set\n"));
-        retval = DoSuperMethodA(cl, o, msg);
-        retval += (IPTR)set_frameiclass(cl, o, (struct opSet *)msg);
-        break;
+	case OM_SET:
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: set\n"));
+            retval = DoSuperMethodA(cl, o, msg);
+            retval += (IPTR)set_frameiclass(cl, o, (struct opSet *)msg);
+            break;
 
-    case OM_NEW:
-        DEBUG_IFRAME(dprintf("dispatch_frameiclass: new\n"));
-        retval = DoSuperMethodA(cl, o, msg);
-        if (retval)
-        {
-            struct FrameIData *fid = INST_DATA(cl, retval);
+	case OM_NEW:
+            DEBUG_IFRAME(dprintf("dispatch_frameiclass: new\n"));
+            retval = DoSuperMethodA(cl, o, msg);
+            if (retval)
+            {
+        	struct FrameIData *fid = INST_DATA(cl, retval);
 
-            /* set some defaults */
-            fid->fid_EdgesOnly = FALSE;
-            fid->fid_Recessed  = FALSE;
-            fid->fid_FrameType = FRAME_DEFAULT;
-            fid->fid_HOffset = 1;
-            fid->fid_VOffset = 1;
+        	/* set some defaults */
+        	fid->fid_EdgesOnly = FALSE;
+        	fid->fid_Recessed  = FALSE;
+        	fid->fid_FrameType = FRAME_DEFAULT;
+        	fid->fid_HOffset   = 1;
+        	fid->fid_VOffset   = 1;
 
-            /* Handle our special tags - overrides defaults */
-            set_frameiclass(cl, (Object*)retval, (struct opSet *)msg);
-        }
-        break;
+        	/* Handle our special tags - overrides defaults */
+        	set_frameiclass(cl, (Object*)retval, (struct opSet *)msg);
+            }
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
     } /* switch */
 
     return retval;
@@ -595,7 +560,7 @@ struct IClass *InitFrameIClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_frameiclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

@@ -114,39 +114,39 @@ int Intuition_entry(void)
 }
 
 const struct Resident Intuition_resident=
-    {
-        RTC_MATCHWORD,
-        (struct Resident *)&Intuition_resident,
+{
+    RTC_MATCHWORD,
+    (struct Resident *)&Intuition_resident,
 #ifdef __MORPHOS__
-        (APTR) (&Intuition_resident + 2),
-        RTF_AUTOINIT|RTF_COLDSTART|RTF_PPC|RTF_EXTENDED,
+    (APTR) (&Intuition_resident + 2),
+    RTF_AUTOINIT|RTF_COLDSTART|RTF_PPC|RTF_EXTENDED,
 #else
-        (APTR)&LIBEND,
-        RTF_AUTOINIT|RTF_COLDSTART,
+    (APTR)&LIBEND,
+    RTF_AUTOINIT|RTF_COLDSTART,
 #endif
-        VERSION_NUMBER,
-        NT_LIBRARY,
-        10,
-        (char *)name,
-        (char *)&version[6],
-        (ULONG *)inittabl
+    VERSION_NUMBER,
+    NT_LIBRARY,
+    10,
+    (char *)name,
+    (char *)&version[6],
+    (ULONG *)inittabl
 #ifdef __MORPHOS__
-        ,REVISION_NUMBER,
-        NULL   /* tags */
+    ,REVISION_NUMBER,
+    NULL   /* tags */
 #endif
-    };
+};
 
 static const char name[]=INTUITIONNAME;
 
 static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4]=
-    {
-        (APTR)sizeof(struct IntIntuitionBase),
-        (APTR)LIBFUNCTABLE,
-        NULL,
-        &INIT
-    };
+{
+    (APTR)sizeof(struct IntIntuitionBase),
+    (APTR)LIBFUNCTABLE,
+    NULL,
+    &INIT
+};
 
 #ifdef __MORPHOS__
 const int __abox__ = 1;
@@ -228,8 +228,8 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
          * even before IPrefs is loaded.
          */
         {
-            ULONG i;
             struct Color32 *p;
+            ULONG   	    i;
 
             p = GetPrivIBase(LIBBASE)->Colors;
 
@@ -317,20 +317,20 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         GetPrivIBase(LIBBASE)->IPrefsLoaded = FALSE;
         #endif
 
-#ifdef SKINS
+    #ifdef SKINS
         if (!GetPrivIBase(LIBBASE)->SmallMenuPool)
         {
             if (!(GetPrivIBase(LIBBASE)->SmallMenuPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct SmallMenuEntry))*20,(sizeof (struct SmallMenuEntry))*20))) return NULL;
         }
-#endif
+    #endif
 
         if (!(GetPrivIBase(LIBBASE)->IDCMPPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct IntIntuiMessage)) * 100,sizeof (struct IntIntuiMessage)))) return NULL;
 
         LIBBASE->LibNode.lib_Revision = REVISION_NUMBER;
 
-#ifdef SKINS
+    #ifdef SKINS
         strcpy(GetPrivIBase(IntuitionBase)->IControlExtensions.ice_ClockFormat,"%X");
-#endif
+    #endif
         
         GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
 
@@ -455,6 +455,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 #if 0 /* CHECKME: stegerg: backport, disabled */
             {
                 struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
+		
                 if (!(GetPrivIBase(LIBBASE)->TopazFont))
                 GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
             }
@@ -527,7 +528,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
                 return NULL;
         }
 
-#if 0
+    #if 0
         if (!DOSBase)
         {
             DOSBase = OpenLibrary("dos.library", 0);
@@ -541,20 +542,20 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
                 SetFunction(DOSBase, -81*LIB_VECTSIZE,
                             AROS_SLIB_ENTRY(DisplayError, Intuition));
         }
-#else
+    #else
         if (!DOSBase)
         {
             //DOSBase = OpenLibrary("dos.library", 50); /* CHECKME: stegerg: backport, disabled */
 
-#ifdef SKINS
+    	#ifdef SKINS
             if (DOSBase)
             {
                 InitSkinManager(IntuitionBase);
             }
-#endif
+    	#endif
 
         }
-#endif
+    #endif
 
         /* FIXME: no cleanup routines for MenuHandler task */
         if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
@@ -563,7 +564,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
                 return NULL;
         }
 
-#ifdef INTUITION_NOTIFY_SUPPORT
+    #ifdef INTUITION_NOTIFY_SUPPORT
         /* Add screennotify.library base if not there yet - Piru
          */
         if (!GetPrivIBase(LIBBASE)->ScreenNotifyBase)
@@ -571,15 +572,15 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
             GetPrivIBase(LIBBASE)->ScreenNotifyBase = sn_Init(IntuitionBase);
         }
 
-#if 0 /* not finished yet - Piru */
+    #if 0 /* not finished yet - Piru */
         /* Add notifyintuition.library base if not there yet - Piru
          */
         if (!GetPrivIBase(LIBBASE)->NotifyIntuitionBase)
         {
             GetPrivIBase(LIBBASE)->NotifyIntuitionBase = ni_Init(IntuitionBase);
         }
-#endif
-#endif
+    #endif
+    #endif
 
         /* I have one more opener. */
         LIBBASE->LibNode.lib_OpenCnt++;
@@ -600,17 +601,12 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         /* I have one fewer opener. */
         if (!--LIBBASE->LibNode.lib_OpenCnt)
         {
-
-#if 0 /* intuition_driver stuff is dead */
-            intui_close(LIBBASE);
-#endif
-
-#if 0
+    	#if 0
             /* Delayed expunge pending? */
             if (LIBBASE->LibNode.lib_Flags & LIBF_DELEXP)
                 /* Then expunge the library */
                 return expunge();
-#endif
+    	#endif
         }
         return 0;
         AROS_LIBFUNC_EXIT
@@ -622,9 +618,9 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
              LIBBASETYPEPTR, LIBBASE, 3, Intuition)
     {
         AROS_LIBFUNC_INIT
-#if 1
+    #if 1
         LIBBASE = LIBBASE;      /* shut up the compiler */
-#else
+    #else
         /* Test for openers. */
         if (LIBBASE->LibNode.lib_OpenCnt)
         {
@@ -655,9 +651,9 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 
         if (GfxBase)
         {
-#ifdef __MORPHOS__
+    	#ifdef __MORPHOS__
             GfxFree(GetPrivIBase(LIBBASE)->ViewLordExtra);
-#endif
+    	#endif
             CloseLibrary ((struct Library *)GfxBase);
         }
 
@@ -685,13 +681,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         if (GetPrivIBase(LIBBASE)->InputMP)
             DeleteMsgPort(GetPrivIBase(LIBBASE)->InputMP);
 
-
-#if 0 /* intuition_driver stuff is dead */
-        /* Let the driver do the same */
-        intui_expunge (LIBBASE);
-#endif
-
-#ifdef DISK_BASED /* Don't remove a ROM library */
+    #ifdef DISK_BASED /* Don't remove a ROM library */
         FreeImageClass ();
 
         /* Get rid of the library. Remove it from the list. */
@@ -700,8 +690,9 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         /* Free the memory. */
         FreeMem((char *)LIBBASE-LIBBASE->LibNode.lib_NegSize,
                 LIBBASE->LibNode.lib_NegSize+LIBBASE->LibNode.lib_PosSize);
-#endif
-#endif
+    #endif
+    
+    #endif
         return 0L;
         AROS_LIBFUNC_EXIT
     }

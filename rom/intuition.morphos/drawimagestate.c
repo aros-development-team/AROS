@@ -116,7 +116,7 @@ AROS_LH6(void, DrawImageState,
             UWORD   shift;
             ULONG   planeonoff, planepick;
 
-#if !USE_BLTBITMAPRASTPORT
+    	#if !USE_BLTBITMAPRASTPORT
 
             ULONG   lastPen = 0;
             ULONG   pen = 0;
@@ -125,12 +125,12 @@ AROS_LH6(void, DrawImageState,
             UWORD * bits[8];
             WORD    xoff, yoff, plane;
 
-#define START_BITMASK   0x8000L
+    	#define START_BITMASK   0x8000L
 
             /* Change RastPort to the mode I need */
             SetDrMd (rp, JAM1);
 
-#endif
+    	#endif
 
             /*  kprintf("*** Drawing Image %x. Next Image = %x\n widht = %d  height = %d  depth = %d  planepick = %d  planeonoff = %d\n",
             image,image->NextImage,
@@ -140,7 +140,7 @@ AROS_LH6(void, DrawImageState,
             planepick  = image->PlanePick;
             planeonoff = image->PlaneOnOff & ~planepick;
 
-#if USE_FASTPLANEPICK0
+    	#if USE_FASTPLANEPICK0
 
             if (planepick == 0)
             {
@@ -154,7 +154,7 @@ AROS_LH6(void, DrawImageState,
                 continue;
             }
 
-#endif
+    	#endif
 
             /* Use x to store size of one image plane */
             x = ((image->Width + 15) >> 4) * image->Height;
@@ -162,19 +162,19 @@ AROS_LH6(void, DrawImageState,
 
             shift = 1;
 
-#if USE_BLTBITMAPRASTPORT
+    	#if USE_BLTBITMAPRASTPORT
             {
                 struct BitMap bitmap;
                 int depth;
 
-#if 0
+    	    #if 0
                 /* The "8" (instead of image->Depth) seems to be correct,
                    as for example DOpus uses prop gadget knob images with
                    a depth of 0 (planepick 0, planeonoff color) */
 
                 depth = 8;
-#else
-/* That makes far more sense than just a 8
+    	    #else
+    	    	/* That makes far more sense than just a 8
                 * R.Schmidt...still doesn`t resolve some weird icon problem i have
                 */
                 //depth = rp->BitMap->Depth;
@@ -185,7 +185,7 @@ AROS_LH6(void, DrawImageState,
                 depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
                 if (depth > 8)
                     depth = 8;
-#endif
+    	    #endif
                 InitBitMap(&bitmap, depth, image->Width, image->Height);
 
                 for(d = 0; d < depth; d++)
@@ -209,7 +209,7 @@ AROS_LH6(void, DrawImageState,
                                   0xC0);
             }
 
-#else
+    	#else
 
 
             for(d = 0; d < image->Depth;d++)
@@ -284,7 +284,7 @@ AROS_LH6(void, DrawImageState,
 
             } /* for (y=0; y < image->Height; y++, yoff++) */
 
-#endif
+    	#endif
         }
 
         image = image->NextImage;

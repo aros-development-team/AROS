@@ -60,8 +60,7 @@ AROS_LH1(void, AddClass,
     SANITY_CHECK(classPtr)
 
     ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
-    AddTail (   (struct List *)&GetPrivIBase(IntuitionBase)->ClassList,
-              (struct Node *)classPtr );
+    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->ClassList, (struct Node *)classPtr);
     classPtr->cl_Flags |= CLF_INLIST;
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 

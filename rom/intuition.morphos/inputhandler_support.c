@@ -68,8 +68,8 @@ void notify_mousemove_screensandwindows(WORD x,
                                         WORD y,
                                         struct IntuitionBase * IntuitionBase)
 {
-    LONG lock = LockIBase(0);
-    struct Screen * scr = IntuitionBase->FirstScreen;
+    LONG    	   lock = LockIBase(0);
+    struct Screen *scr = IntuitionBase->FirstScreen;
 
     while (NULL != scr)
     {
@@ -151,7 +151,7 @@ BOOL fire_intuimessage(struct Window *w,
                        struct IntuitionBase *IntuitionBase)
 {
     struct IntuiMessage *imsg;
-    BOOL        result = FALSE;
+    BOOL            	 result = FALSE;
 
     if ((w->IDCMPFlags & Class) && (w->UserPort))
     {
@@ -159,8 +159,8 @@ BOOL fire_intuimessage(struct Window *w,
         {
             struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
-            imsg->Class = Class;
-            imsg->Code = Code;
+            imsg->Class =    Class;
+            imsg->Code      = Code;
             imsg->Qualifier = iihd->ActQualifier;
             if (Class == IDCMP_RAWKEY)
             {
@@ -192,7 +192,7 @@ BOOL fire_intuimessage(struct Window *w,
 BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struct IntuitionBase *IntuitionBase)
 {
     struct ExtIntuiMessage *imsg;
-    BOOL        result = FALSE;
+    BOOL            	    result = FALSE;
 
     if ((w->IDCMPFlags & Class) && (w->UserPort))
     {
@@ -200,8 +200,8 @@ BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struc
         {
             struct IIHData *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
-            imsg->eim_IntuiMessage.Class = Class;
-            imsg->eim_IntuiMessage.Code = Code;
+            imsg->eim_IntuiMessage.Class     = Class;
+            imsg->eim_IntuiMessage.Code      = Code;
             imsg->eim_IntuiMessage.Qualifier = iihdata->ActQualifier;
             if (Class == IDCMP_RAWKEY)
             {
@@ -271,10 +271,10 @@ BOOL ih_fire_intuimessage(struct Window * w,
     BOOL result;
 
     DEBUG_FIREINTUIMSG(dprintf("ih_fire_intuimessage: win 0x%lx class 0x%lx code 0x%lx IAddress 0x%lx\n",
-                    w,
-                    Class,
-                    Code,
-                    IAddress));
+                	       w,
+                	       Class,
+                	       Code,
+                	       IAddress));
 
     result = fire_message(w, Class, Code, IAddress, IntuitionBase);
 
@@ -297,9 +297,9 @@ BOOL ih_fire_intuimessage(struct Window * w,
 
         //iihd->ActInputEventUsed = TRUE;
 
-        ie->ie_SubClass = 0;
-        ie->ie_Code = Code;
-        //ie->ie_Qualifier = iihd->ActQualifier;
+        ie->ie_SubClass     = 0;
+        ie->ie_Code 	    = Code;
+      //ie->ie_Qualifier    = iihd->ActQualifier;
         ie->ie_EventAddress = IAddress;
 
         switch(Class)
@@ -406,7 +406,7 @@ BOOL ih_fire_intuimessage(struct Window * w,
 
             } /* switch(Class) */
 
-            ie->ie_Code     = Code;
+            ie->ie_Code     	= Code;
             ie->ie_Qualifier    = iihd->ActQualifier;
             ie->ie_EventAddress = IAddress;
             CurrentTime(&ie->ie_TimeStamp.tv_secs, &ie->ie_TimeStamp.tv_micro);
@@ -441,10 +441,9 @@ IPTR Locked_DoMethodA (struct Window *w, struct Gadget *g, Msg message, struct I
     {
         LOCK_REFRESH(w->WScreen);
     }
-    LOCKGADGET
-    rc = Custom_DoMethodA(g, message);
-
     
+    LOCKGADGET
+    rc = Custom_DoMethodA(g, message);   
     UNLOCKGADGET
 
     if (lock)
@@ -479,10 +478,10 @@ void NotifyDepthArrangement(struct Window *w, struct IntuitionBase *IntuitionBas
     if(w->MoreFlags & WMFLG_NOTIFYDEPTH)
     {
         ih_fire_intuimessage(w,
-                     IDCMP_CHANGEWINDOW,
-                     CWCODE_DEPTH,
-                     0,
-                     IntuitionBase);
+                	     IDCMP_CHANGEWINDOW,
+                	     CWCODE_DEPTH,
+                	     0,
+                	     IntuitionBase);
     }
 }
 
@@ -492,13 +491,13 @@ void NotifyDepthArrangement(struct Window *w, struct IntuitionBase *IntuitionBas
 void PrepareGadgetInfo(struct GadgetInfo *gi, struct Screen *scr, struct Window *win,
                        struct Requester *req)
 {
-    gi->gi_Screen     = scr;
-    gi->gi_Window     = win;
-    gi->gi_Requester      = req;
-    gi->gi_RastPort   = 0;
-    gi->gi_Pens.DetailPen = scr->DetailPen;
-    gi->gi_Pens.BlockPen  = scr->BlockPen;
-    gi->gi_DrInfo     = (APTR)&(((struct IntScreen *)gi->gi_Screen)->DInfo);
+    gi->gi_Screen     	    = scr;
+    gi->gi_Window     	    = win;
+    gi->gi_Requester        = req;
+    gi->gi_RastPort   	    = 0;
+    gi->gi_Pens.DetailPen   = scr->DetailPen;
+    gi->gi_Pens.BlockPen    = scr->BlockPen;
+    gi->gi_DrInfo     	    = (APTR)&(((struct IntScreen *)gi->gi_Screen)->DInfo);
 }
 
 /****************************************************************************************/
@@ -507,13 +506,18 @@ void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad,
                          struct IntuitionBase *IntuitionBase)
 {
     struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+
     SET_GI_RPORT(gi, gi->gi_Window, gi->gi_Requester, gad);
     InitRastPort(&iihd->GadgetInfoRastPort);
+
     iihd->GadgetInfoRastPort.Layer = gi->gi_RastPort->Layer;
     iihd->GadgetInfoRastPort.BitMap = gi->gi_RastPort->BitMap;
+
     SetFont(&iihd->GadgetInfoRastPort, gi->gi_DrInfo->dri_Font);
+
     gi->gi_Layer = gi->gi_RastPort->Layer;
     gi->gi_RastPort = &iihd->GadgetInfoRastPort;
+
     GetGadgetDomain(gad, gi->gi_Screen, gi->gi_Window, gi->gi_Requester, &gi->gi_Domain);
 }
 
@@ -552,7 +556,9 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
         if (((struct IntWindow *)(gi->gi_Window))->specialflags & SPFLAG_IAMDEAD)
         {
             CrashedDispose(gi->gi_Window,IntuitionBase);
-        } else {
+        }
+	else
+	{
 #endif
             ih_fire_intuimessage(gi->gi_Window,
                          IDCMP_CLOSEWINDOW,
@@ -654,7 +660,7 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 
         DEBUG_HANDLECUSTOMRETVAL(dprintf("HandleCustomGadgetRetVal: Send GM_GOINACTIVE\n"));
 
-        gpgi.MethodID = GM_GOINACTIVE;
+        gpgi.MethodID   = GM_GOINACTIVE;
         gpgi.gpgi_GInfo = gi;
         gpgi.gpgi_Abort = 0;
 
@@ -698,8 +704,8 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
         gadget->Activation &= ~GACT_ACTIVEGADGET;
 
         DEBUG_HANDLECUSTOMRETVAL(dprintf("HandleCustomGadgetRetVal: TabCycle 0x%lx retval 0x%lx\n",
-                         (gadget->Flags & GFLG_TABCYCLE),
-                         retval));
+                        		 (gadget->Flags & GFLG_TABCYCLE),
+                        		 retval));
 
         if ((gadget->Flags & GFLG_TABCYCLE) && (retval & GMR_NEXTACTIVE))
         {
@@ -744,15 +750,15 @@ struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
                          BOOL *reuse_event, struct IntuitionBase *IntuitionBase)
 {
     struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct gpInput  gpi;
-    IPTR        retval;
-    ULONG       termination;
+    struct gpInput   gpi;
+    IPTR             retval;
+    ULONG            termination;
 
     ie->ie_Qualifier = iihdata->ActQualifier;
 
-    gpi.MethodID    = methodid;
-    gpi.gpi_GInfo   = gi;
-    gpi.gpi_IEvent  = ie;
+    gpi.MethodID    	= methodid;
+    gpi.gpi_GInfo   	= gi;
+    gpi.gpi_IEvent  	= ie;
     gpi.gpi_Termination = &termination;
     gpi.gpi_TabletData  = NULL;
 
@@ -775,11 +781,11 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
                             struct GadgetInfo * gi,BOOL sysonly,
                             struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget   *gadget, *firstgadget, *draggadget = 0;
-    struct gpHitTest    gpht;
-    struct IBox     ibox;
-    WORD        xrel, yrel;
-    BOOL        sys_only = sysonly;
+    struct Gadget   	*gadget, *firstgadget, *draggadget = 0;
+    struct gpHitTest     gpht;
+    struct IBox     	 ibox;
+    WORD            	 xrel, yrel;
+    BOOL            	 sys_only = sysonly;
 
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
@@ -877,9 +883,9 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
         }
         else if (window)
         {
-#ifdef SKINS
+    	#ifdef SKINS
             draggadget = findbordergadget(window,draggadget,IntuitionBase);
-#endif
+    	#endif
             window = NULL;
         }
         else
@@ -896,7 +902,7 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
 struct Gadget * FindHelpGadget (struct Window * window,
                             int x, int y, struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget   *gadget, *firstgadget;
+    struct Gadget   	*gadget, *firstgadget;
     struct Requester    *req = window->FirstRequest;
 
     while (req || window)
@@ -940,7 +946,7 @@ BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Requester *req,
                   struct Gadget *gad, WORD x, WORD y)
 {
     struct IBox box;
-    BOOL    rc = FALSE;
+    BOOL    	rc = FALSE;
 
     GetScrGadgetIBox(gad, scr, win, req, &box);
 
@@ -958,28 +964,28 @@ BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Requester *req,
 /****************************************************************************************/
 
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struct Gadget *gad,
-                            struct IntuitionBase *IntuitionBase)
+                            	struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct IIHData  	*iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     struct GadgetInfo   *gi = &iihd->GadgetInfo;
-    struct Gadget   *result = NULL;
+    struct Gadget   	*result = NULL;
 
     DEBUG_ACTIVATEGADGET(dprintf("DoActivateGadget: Window 0x%lx Req 0x%lx Gadget 0x%lx\n",
-                    win,
-                    req,
-                    gad));
+                		 win,
+                		 req,
+                		 gad));
 
     DEBUG_ACTIVATEGADGET(dprintf("DoActivateGadget: Activation 0x%lx\n",
-                    gad->Activation));
+                    	    	 gad->Activation));
 
     if (gad->Activation & GACT_IMMEDIATE)
     {
         DEBUG_ACTIVATEGADGET(dprintf("DoActivateGadget: Send GADGETDOWN msg\n"));
         ih_fire_intuimessage(win,
-                     IDCMP_GADGETDOWN,
-                     0,
-                     gad,
-                     IntuitionBase);
+                	     IDCMP_GADGETDOWN,
+                	     0,
+                	     gad,
+                	     IntuitionBase);
     }
 
     PrepareGadgetInfo(gi, win->WScreen, win, req);
@@ -1000,17 +1006,18 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struc
         case GTYP_CUSTOMGADGET:
         {
             struct gpInput  gpi;
-            ULONG       termination;
-            IPTR        retval;
-            BOOL        reuse_event;
+            ULONG           termination;
+            IPTR            retval;
+            BOOL            reuse_event;
 
             DEBUG_ACTIVATEGADGET(dprintf("DoActivateGadget: GTYP_CUSTOMGADGET\n"));
-            gpi.MethodID    = GM_GOACTIVE;
-            gpi.gpi_GInfo   = gi;
-            gpi.gpi_IEvent  = NULL;
+	    
+            gpi.MethodID    	= GM_GOACTIVE;
+            gpi.gpi_GInfo   	= gi;
+            gpi.gpi_IEvent  	= NULL;
             gpi.gpi_Termination = &termination;
-            gpi.gpi_Mouse.X = win->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, NULL);
-            gpi.gpi_Mouse.Y = win->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gad, gi->gi_Screen, gi->gi_Window, NULL);
+            gpi.gpi_Mouse.X 	= win->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, NULL);
+            gpi.gpi_Mouse.Y 	= win->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gad, gi->gi_Screen, gi->gi_Window, NULL);
             gpi.gpi_TabletData  = NULL;
 
             retval = Locked_DoMethodA (win, gad, (Msg)&gpi, IntuitionBase);
@@ -1216,7 +1223,9 @@ void WindowNeedsRefresh(struct Window * w,
                 if (w->Flags & WFLG_BORDERLESS)
                 {
                     int_refreshglist(w->FirstGadget, w, NULL, -1, 0, 0, IntuitionBase);
-                } else {
+                }
+		else
+		{
                     int_refreshwindowframe(w,0,0,IntuitionBase);
                 }
             }
@@ -1233,7 +1242,7 @@ void WindowNeedsRefresh(struct Window * w,
         Gad_EndUpdate(WLAYER(w), IS_NOCAREREFRESH(w) ? TRUE : FALSE, IntuitionBase);
 
     } else {
-#ifdef DAMAGECACHE
+    #ifdef DAMAGECACHE
         struct Rectangle rect;
         BOOL doclear = (w->Flags & WFLG_BORDERLESS) ? FALSE : TRUE;
 
@@ -1241,32 +1250,36 @@ void WindowNeedsRefresh(struct Window * w,
         rect.MinY = w->BorderTop;
         rect.MaxX = w->Width - w->BorderRight - 1;
         rect.MaxY = w->Height - w->BorderBottom - 1;
-#endif
+    #endif
 
-#ifndef BEGINUPDATEGADGETREFRESH
+    #ifndef BEGINUPDATEGADGETREFRESH
         Gad_BeginUpdate(WLAYER(w), IntuitionBase);
-#else
-#ifdef DAMAGECACHE
+    #else
+    #ifdef DAMAGECACHE
         LockLayer(0,WLAYER(w));
-#endif
-#endif
-
-#ifndef BEGINUPDATEGADGETREFRESH
+    #endif
+    #endif
+    
+    #ifndef BEGINUPDATEGADGETREFRESH
         if (!IS_GZZWINDOW(w))
         {
             if (w->Flags & WFLG_BORDERLESS)
             {
                 int_refreshglist(w->FirstGadget, w, NULL, -1, 0, 0, IntuitionBase);
-            } else {
+            }
+	    else
+	    {
                 int_refreshwindowframe(w,0,0,IntuitionBase);
             }
-        } else {
+        }
+	else
+	{
             /* refresh all gadgets except border and gadtools gadgets */
             int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER , IntuitionBase);
         }
-#endif
+    #endif
 
-#ifdef DAMAGECACHE
+    #ifdef DAMAGECACHE
         //add rects to trashregion here
         OrRegionRegion(WLAYER(w)->DamageList,IW(w)->trashregion);
 
@@ -1277,19 +1290,19 @@ void WindowNeedsRefresh(struct Window * w,
         }
 
         IW(w)->specialflags |= SPFLAG_LAYERREFRESH;
-#else
-#ifdef BEGINUPDATEGADGETREFRESH
+    #else
+    #ifdef BEGINUPDATEGADGETREFRESH
         IW(w)->specialflags |= SPFLAG_LAYERREFRESH;
-#endif
-#endif
+    #endif
+    #endif
 
-#ifndef BEGINUPDATEGADGETREFRESH
+    #ifndef BEGINUPDATEGADGETREFRESH
         Gad_EndUpdate(WLAYER(w), FALSE, IntuitionBase);
-#else
-#ifdef DAMAGECACHE
+    #else
+    #ifdef DAMAGECACHE
         UnlockLayer(WLAYER(w));
-#endif
-#endif
+    #endif
+    #endif
 
     }
 
@@ -1298,7 +1311,7 @@ void WindowNeedsRefresh(struct Window * w,
         if (w->UserPort && (w->IDCMPFlags & IDCMP_REFRESHWINDOW))
         {
             struct IntuiMessage *IM;
-            BOOL found = FALSE;
+            BOOL    	    	 found = FALSE;
 
             /* Can use Forbid() for this */
             Forbid();
@@ -1323,7 +1336,7 @@ void WindowNeedsRefresh(struct Window * w,
             if (!found)
             {
                 struct InputEvent *new_ie;
-                struct IIHData *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+                struct IIHData    *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
                 D(bug("Sending a refresh message to window %s  %d %d %d %d!!\n",
                       w->Title ? w->Title : (STRPTR)"<NONAME>",
@@ -1336,17 +1349,17 @@ void WindowNeedsRefresh(struct Window * w,
 
                 if ((new_ie = AllocInputEvent(iihdata)))
                 {
-                    new_ie->ie_Class = IECLASS_EVENT;
-                    new_ie->ie_Code = IECODE_REFRESH;
+                    new_ie->ie_Class 	    = IECLASS_EVENT;
+                    new_ie->ie_Code 	    = IECODE_REFRESH;
                     new_ie->ie_EventAddress = w;
                     CurrentTime(&new_ie->ie_TimeStamp.tv_secs, &new_ie->ie_TimeStamp.tv_micro);
                 }
 
                 fire_intuimessage(w,
-                          IDCMP_REFRESHWINDOW,
-                          0,
-                          w,
-                          IntuitionBase);
+                        	  IDCMP_REFRESHWINDOW,
+                        	  0,
+                        	  w,
+                        	  IntuitionBase);
             } /* if (!found) */
 
         } /* if (w->UserPort && (w->IDCMPFlags & IDCMP_REFRESHWINDOW)) */
@@ -1390,7 +1403,7 @@ struct Window *FindActiveWindow(struct InputEvent *ie,ULONG *stitlebarhit,
     struct Screen   *scr;
     struct Layer    *l;
     struct Window   *new_w;
-    ULONG       lock;
+    ULONG            lock;
 
     lock = LockIBase(0UL);
 
@@ -1464,9 +1477,9 @@ struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *Int
 
 struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
 {
-    struct IntuitionBase    *IntuitionBase = iihdata->IntuitionBase;
+    struct IntuitionBase    	*IntuitionBase = iihdata->IntuitionBase;
     struct GeneratedInputEvent  *gie;
-    struct InputEvent       *ie;
+    struct InputEvent       	*ie;
 
     /* There might be an inputevent from someone else that our handler discarded.
      * We may as well use it. This can only happen inside our main loop.
@@ -1505,7 +1518,7 @@ struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
 void FreeGeneratedInputEvents(struct IIHData *iihdata)
 {
     struct IntuitionBase    *IntuitionBase = iihdata->IntuitionBase;
-    struct Node         *node, *succ;
+    struct Node             *node, *succ;
 
     /* Free the list of allocated events that have already been propagated. */
     ForeachNodeSafe(&iihdata->AllocatedInputEventList, node, succ)
@@ -1527,14 +1540,13 @@ BOOL FireMenuMessage(WORD code, struct Window *win,
                      struct InputEvent *ie, struct IntuitionBase *IntuitionBase)
 {
     struct MenuMessage *msg;
-    BOOL           result = FALSE;
+    BOOL              	result = FALSE;
 
     if ((msg = AllocMenuMessage(IntuitionBase)))
     {
         msg->code = code;
         msg->win  = win;
-        if (ie)
-            msg->ie = *ie;
+        if (ie) msg->ie = *ie;
         SendMenuMessage(msg, IntuitionBase);
 
         result = TRUE;

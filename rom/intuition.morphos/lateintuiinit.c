@@ -78,16 +78,16 @@ AROS_LH1(BOOL , LateIntuiInit,
     return TRUE;
 
 #else
-struct Screen *screen;
+    struct Screen *screen;
 
     /* Let LockPubScreen() open the Workbench screen for us. */
     screen = LockPubScreen( NULL );
 
     if( screen )
     {
-#if !NO_PATTERN
+    #if !NO_PATTERN
         MakeWBPattern( screen, IntuitionBase );
-#endif
+    #endif
         UnlockPubScreen( NULL, screen );
 
         return TRUE;
@@ -483,10 +483,10 @@ static const ULONG patterncoltab[] =
 
 struct LayerHookMsg
 {
-    struct Layer *lay;      /* not valid for layerinfo backfill hook!!! */
-    struct Rectangle bounds;
-    LONG offsetx;
-    LONG offsety;
+    struct Layer     *lay;      /* not valid for layerinfo backfill hook!!! */
+    struct Rectangle  bounds;
+    LONG    	      offsetx;
+    LONG    	      offsety;
 };
 
 static struct Hook backfillhook;
@@ -497,8 +497,8 @@ extern ULONG HookEntry();
 static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp, struct LayerHookMsg *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
-    struct RastPort myrp;
-    WORD x1,y1,x2,y2,px,py,pw,ph;
+    struct RastPort 	  myrp;
+    WORD    	    	  x1,y1,x2,y2,px,py,pw,ph;
 
     myrp = *rp;
 
@@ -569,22 +569,18 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 
     struct Window *tempwin;
     struct TagItem wintags[] =
-        {
-            {
-                WA_PubScreen    ,(IPTR)scr
-            },
-            {WA_Left    ,0              },
-            {WA_Top     ,0              },
-            {WA_Width   ,scr->Width         },
-            {WA_Height  ,scr->Height            },
-            {WA_Borderless  ,TRUE               },
-            {WA_Backdrop    ,TRUE               },
-            {WA_BackFill    ,(IPTR)LAYERS_NOBACKFILL    },
-            {TAG_DONE                   }
-        };
+    {
+        {WA_PubScreen   ,(IPTR)scr	    	},
+        {WA_Left        ,0              	},
+        {WA_Top         ,0              	},
+        {WA_Width       ,scr->Width             },
+        {WA_Height      ,scr->Height            },
+        {WA_Borderless  ,TRUE                   },
+        {WA_Backdrop    ,TRUE                   },
+        {WA_BackFill    ,(IPTR)LAYERS_NOBACKFILL},
+        {TAG_DONE                       	}
+    };
     WORD i;
-
-
 
     InitBitMap(&bm, PATTERN_DEPTH, PATTERN_WIDTH, PATTERN_HEIGHT);
     for(i = 0; i < PATTERN_DEPTH; i++)
@@ -599,25 +595,15 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
        way the HIDD knows how to blit from this bitmap onto the screen.
 
     */
-    patternbm = AllocBitMap(PATTERN_WIDTH
-                            , PATTERN_HEIGHT
-                            , PATTERN_DEPTH
-                            , 0
-                            , scr->RastPort.BitMap
-                           );
+    patternbm = AllocBitMap(PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH,
+    	    	    	    0, scr->RastPort.BitMap);
 
     if (NULL != patternbm)
     {
         /* Blit the pattern into the allocated bitmap */
-        BltBitMap(&bm
-                  , 0, 0
-                  , patternbm
-                  , 0, 0
-                  , PATTERN_WIDTH, PATTERN_HEIGHT
-                  , 0xC0
-                  , 0xFF
-                  , NULL
-                 );
+        BltBitMap(&bm , 0, 0, patternbm,
+                  0, 0, PATTERN_WIDTH, PATTERN_HEIGHT,
+                  0xC0, 0xFF, NULL);
 
 
         InitBackfillHook(IntuitionBase);

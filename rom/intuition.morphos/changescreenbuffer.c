@@ -64,7 +64,7 @@ AROS_LH2(ULONG, ChangeScreenBuffer,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct IIHData   *iihdata;
-    ULONG lock;
+    ULONG   	      lock;
 
     if (!screen) return NULL;
     if (!screenbuffer) return NULL;
@@ -81,6 +81,7 @@ AROS_LH2(ULONG, ChangeScreenBuffer,
     screen->RastPort.BitMap = screenbuffer->sb_BitMap;
 
     UnlockIBase(lock);
+    
     return TRUE;
 
     AROS_LIBFUNC_EXIT

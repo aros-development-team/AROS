@@ -57,16 +57,16 @@ VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
 {
     struct opUpdate method;
 
-    struct TagItem ntags[] =
+    struct TagItem  ntags[] =
     {
-        {GA_ID,  0UL},
-        {TAG_DONE,}
+        { GA_ID	    , 0UL   },
+        { TAG_DONE   	    }
     };
 
-    method.MethodID = OM_NOTIFY;
+    method.MethodID 	= OM_NOTIFY;
     method.opu_AttrList = ntags;
-    method.opu_GInfo = ginfo;
-    method.opu_Flags = flags;
+    method.opu_GInfo 	= ginfo;
+    method.opu_Flags 	= flags;
 
     ntags[0].ti_Data = ((EG(o)->Flags & GFLG_SELECTED) ? EG(o)->GadgetID : - EG(o)->GadgetID);
 
@@ -152,9 +152,9 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
     /* We will let the AROS gadgetclass test if it is safe to render */
     if ( DoSuperMethodA(cl, o, (Msg)msg) != 0 && msg->gpr_GInfo)
     {
-        UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+        UWORD 	    	*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
         struct RastPort *rp = msg->gpr_RPort;
-        struct IBox container;
+        struct IBox 	 container;
 
         SANITY_CHECK(msg->gpr_RPort)
 
@@ -276,10 +276,10 @@ IPTR buttong_hittest(Class *cl, Object * o, struct gpHitTest * msg)
 
             retval = DoMethodA(image, (Msg)&imph) ? GMR_GADGETHIT : 0;
         }
-                else
-                {
-                        DEBUG_BUTTON(dprintf("buttong_hittest without customimage called\n");)
-                }
+        else
+        {
+                DEBUG_BUTTON(dprintf("buttong_hittest without customimage called\n");)
+        }
     }
 
     return retval;
@@ -290,7 +290,7 @@ IPTR buttong_hittest(Class *cl, Object * o, struct gpHitTest * msg)
 IPTR buttong_goactive(Class * cl, Object * o, struct gpInput * msg)
 {
     struct GadgetInfo *gi = msg->gpi_GInfo;
-    IPTR retval = GMR_NOREUSE;
+    IPTR    	       retval = GMR_NOREUSE;
 
 
     if (gi)
@@ -302,9 +302,9 @@ IPTR buttong_goactive(Class * cl, Object * o, struct gpInput * msg)
 
             EG(o)->Flags ^= GFLG_SELECTED;
 
-            method.MethodID = GM_RENDER;
-            method.gpr_GInfo = gi;
-            method.gpr_RPort = rp;
+            method.MethodID   = GM_RENDER;
+            method.gpr_GInfo  = gi;
+            method.gpr_RPort  = rp;
             method.gpr_Redraw = GREDRAW_REDRAW;
 
 
@@ -336,8 +336,8 @@ IPTR buttong_goactive(Class * cl, Object * o, struct gpInput * msg)
 
 IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 {
-    IPTR retval = GMR_MEACTIVE;
-    struct GadgetInfo *gi = msg->gpi_GInfo;
+    struct GadgetInfo  *gi = msg->gpi_GInfo;
+    IPTR    	    	retval = GMR_MEACTIVE;
 
     if (gi)
     {
@@ -345,116 +345,130 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 
         switch( ie->ie_Class )
         {
-        case IECLASS_RAWMOUSE:
-            switch( ie->ie_Code )
-            {
-            case SELECTUP:
-                if( EG(o)->Flags & GFLG_SELECTED )
-                {
-                    struct RastPort *rp;
-
-                    /* mouse is over gadget */
-                    EG(o)->Flags &= ~GFLG_SELECTED;
-
-                    if ((rp = ObtainGIRPort(gi)))
+            case IECLASS_RAWMOUSE:
+        	switch( ie->ie_Code )
+        	{
+        	case SELECTUP:
+                    if( EG(o)->Flags & GFLG_SELECTED )
                     {
-                        struct gpRender method;
-                        method.MethodID = GM_RENDER;
-                        method.gpr_GInfo = gi;
-                        method.gpr_RPort = rp;
-                        method.gpr_Redraw = GREDRAW_UPDATE;
-                        DoMethodA(o, (Msg)&method);
-                        ReleaseGIRPort(rp);
-                    }
-                    retval = GMR_NOREUSE | GMR_VERIFY;
-                    /* This doesn't really make sense, as Termination will
-                     * be sent in msg->Code. The original intuition puts
-                     * junk here.
-                     */
-                    *msg->gpi_Termination = IDCMP_GADGETUP;
-                }
-                else
-                    retval = GMR_NOREUSE;
+                	struct RastPort *rp;
 
-                notifypressed(cl, o, gi, 0);
-                break;
+                	/* mouse is over gadget */
+                	EG(o)->Flags &= ~GFLG_SELECTED;
 
-            case IECODE_NOBUTTON:
-                {
-                    struct gpHitTest gpht;
-
-                    gpht.MethodID     = GM_HITTEST;
-                    gpht.gpht_GInfo   = gi;
-                    gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
-                    gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
-
-                    /*
-                       This case handles selection state toggling when the
-                       left button is depressed and the mouse is moved
-                       around on/off the gadget bounds.
-                    */
-                    if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
-                    {
-                        if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
-                        {
-                            struct RastPort *rp;
-
-                            /* mouse is over gadget */
-                            EG(o)->Flags |= GFLG_SELECTED;
-
-                            if ((rp = ObtainGIRPort(gi)))
-                            {
-                                struct gpRender method;
-                                method.MethodID = GM_RENDER;
-                                method.gpr_GInfo = gi;
-                                method.gpr_RPort = rp;
-                                method.gpr_Redraw = GREDRAW_UPDATE;
-                                DoMethodA(o, (Msg)&method);
-                                ReleaseGIRPort(rp);
-                            }
-                        }
+                	if ((rp = ObtainGIRPort(gi)))
+                	{
+                            struct gpRender method;
+			    
+                            method.MethodID   = GM_RENDER;
+                            method.gpr_GInfo  = gi;
+                            method.gpr_RPort  = rp;
+                            method.gpr_Redraw = GREDRAW_UPDATE;
+			    
+                            DoMethodA(o, (Msg)&method);
+			    
+                            ReleaseGIRPort(rp);
+                	}
+			
+                	retval = GMR_NOREUSE | GMR_VERIFY;
+                	/* This doesn't really make sense, as Termination will
+                	 * be sent in msg->Code. The original intuition puts
+                	 * junk here.
+                	 */
+                	*msg->gpi_Termination = IDCMP_GADGETUP;
                     }
                     else
-                    {
-                        if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
-                        {
-                            struct RastPort *rp;
+                	retval = GMR_NOREUSE;
 
-                            /* mouse is not over gadget */
-                            EG(o)->Flags &= ~GFLG_SELECTED;
-
-                            if ((rp = ObtainGIRPort(gi)))
-                            {
-                                struct gpRender method;
-                                method.MethodID = GM_RENDER;
-                                method.gpr_GInfo = gi;
-                                method.gpr_RPort = rp;
-                                method.gpr_Redraw = GREDRAW_UPDATE;
-                                DoMethodA(o, (Msg)&method);
-                                ReleaseGIRPort(rp);
-                            }
-                        }
-                    }
+                    notifypressed(cl, o, gi, 0);
                     break;
-                }
 
-            default:
-                retval = GMR_REUSE;
-                *((struct gpInput *)msg)->gpi_Termination = 0UL;
-                break;
-            }
-            break;
+        	case IECODE_NOBUTTON:
+                    {
+                	struct gpHitTest gpht;
 
-        case IECLASS_TIMER:
-            notifypressed(cl, o, msg->gpi_GInfo, OPUF_INTERIM);
-            break;
+                	gpht.MethodID     = GM_HITTEST;
+                	gpht.gpht_GInfo   = gi;
+                	gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
+                	gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
+
+                	/*
+                	   This case handles selection state toggling when the
+                	   left button is depressed and the mouse is moved
+                	   around on/off the gadget bounds.
+                	*/
+                	if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
+                	{
+                            if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
+                            {
+                        	struct RastPort *rp;
+
+                        	/* mouse is over gadget */
+                        	EG(o)->Flags |= GFLG_SELECTED;
+
+                        	if ((rp = ObtainGIRPort(gi)))
+                        	{
+                                    struct gpRender method;
+				    
+                                    method.MethodID   = GM_RENDER;
+                                    method.gpr_GInfo  = gi;
+                                    method.gpr_RPort  = rp;
+                                    method.gpr_Redraw = GREDRAW_UPDATE;
+				    
+                                    DoMethodA(o, (Msg)&method);
+				    
+                                    ReleaseGIRPort(rp);
+                        	}
+                            }
+                	}
+                	else
+                	{
+                            if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
+                            {
+                        	struct RastPort *rp;
+
+                        	/* mouse is not over gadget */
+                        	EG(o)->Flags &= ~GFLG_SELECTED;
+
+                        	if ((rp = ObtainGIRPort(gi)))
+                        	{
+                                    struct gpRender method;
+				    
+                                    method.MethodID   = GM_RENDER;
+                                    method.gpr_GInfo  = gi;
+                                    method.gpr_RPort  = rp;
+                                    method.gpr_Redraw = GREDRAW_UPDATE;
+				    
+                                    DoMethodA(o, (Msg)&method);
+				    
+                                    ReleaseGIRPort(rp);
+                        	}
+                            }
+                	}
+                	break;
+			
+                    } /**/
+
+        	default:
+                    retval = GMR_REUSE;
+                    *((struct gpInput *)msg)->gpi_Termination = 0UL;
+                    break;
+		    
+        	} /* switch( ie->ie_Code ) */
+        	break;
+
+            case IECLASS_TIMER:
+        	notifypressed(cl, o, msg->gpi_GInfo, OPUF_INTERIM);
+        	break;
 
         } /* switch( ie->ie_Class ) */
 
     } /* if (gi) */
     else
+    {
         retval = GMR_NOREUSE;
-
+    }
+    
     return retval;
 }
 
@@ -477,18 +491,20 @@ IPTR buttong_goinactive(Class * cl, Object * o, struct gpGoInactive * msg)
                 struct gpRender method;
                 struct opUpdate method2;
 
-                method.MethodID = GM_RENDER;
-                method.gpr_GInfo = gi;
-                method.gpr_RPort = rp;
+                method.MethodID   = GM_RENDER;
+                method.gpr_GInfo  = gi;
+                method.gpr_RPort  = rp;
                 method.gpr_Redraw = GREDRAW_REDRAW;
+		
                 DoMethodA(o, (Msg)&method);
 
                 ReleaseGIRPort(rp);
 
-                method2.MethodID = OM_NOTIFY;
+                method2.MethodID     = OM_NOTIFY;
                 method2.opu_AttrList = NULL;
-                method2.opu_GInfo = gi;
-                method2.opu_Flags = 0;
+                method2.opu_GInfo    = gi;
+                method2.opu_Flags    = 0;
+		
                 DoMethodA(o, (Msg)&method2);
             }
         }
@@ -514,40 +530,41 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
     IPTR retval = 0UL;
 
     DEBUG_BUTTON(dprintf("dispatch_buttongclass: Cl 0x%lx o 0x%lx msg 0x%lx MethodID 0x%lx\n",cl,o,msg,msg->MethodID));
+
     switch(msg->MethodID)
     {
-    case OM_NEW:
-        retval = buttong_new(cl, o, (struct opSet *)msg);
-        break;
-        
-    case OM_SET:
-    case OM_UPDATE:
-        retval = buttong_set(cl, o, (struct opSet *)msg);
-        break;
+	case OM_NEW:
+            retval = buttong_new(cl, o, (struct opSet *)msg);
+            break;
 
-    case GM_RENDER:
-        buttong_render(cl, o, (struct gpRender *)msg);
-        break;
+	case OM_SET:
+	case OM_UPDATE:
+            retval = buttong_set(cl, o, (struct opSet *)msg);
+            break;
 
-    case GM_HITTEST:
-        retval = buttong_hittest(cl, o, (struct gpHitTest *)msg);
-        break;
+	case GM_RENDER:
+            buttong_render(cl, o, (struct gpRender *)msg);
+            break;
 
-    case GM_GOACTIVE:
-        retval = buttong_goactive(cl, o, (struct gpInput *)msg);
-        break;
+	case GM_HITTEST:
+            retval = buttong_hittest(cl, o, (struct gpHitTest *)msg);
+            break;
 
-    case GM_HANDLEINPUT:
-        retval = buttong_handleinput(cl, o, (struct gpInput *)msg);
-        break;
+	case GM_GOACTIVE:
+            retval = buttong_goactive(cl, o, (struct gpInput *)msg);
+            break;
 
-    case GM_GOINACTIVE:
-        retval = buttong_goinactive(cl, o, (struct gpGoInactive *)msg);
-        break;
+	case GM_HANDLEINPUT:
+            retval = buttong_handleinput(cl, o, (struct gpInput *)msg);
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, o, msg);
-        break;
+	case GM_GOINACTIVE:
+            retval = buttong_goinactive(cl, o, (struct gpGoInactive *)msg);
+            break;
+
+	default:
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
 
     } /* switch */
 
@@ -574,7 +591,7 @@ struct IClass *InitButtonGClass (struct IntuitionBase * IntuitionBase)
     {
         cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_buttongclass);
         cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData          = (IPTR)IntuitionBase;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
         AddClass (cl);
     }

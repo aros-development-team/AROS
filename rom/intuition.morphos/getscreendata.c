@@ -75,14 +75,19 @@ AROS_LH4(LONG, GetScreenData,
     EXTENDUWORD(type);
 
     if (type == WBENCHSCREEN)
+    {
         screen = GetPrivIBase(IntuitionBase)->WorkBench;
+    }
     else if (type != CUSTOMSCREEN)
+    {
 #warning TODO:
         screen = NULL;
-
+    }
+    
     if (screen)
         CopyMem (screen, buffer, size);
 
     return (screen != NULL);
+    
     AROS_LIBFUNC_EXIT
 } /* GetScreenData */

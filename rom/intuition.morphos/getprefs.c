@@ -55,9 +55,11 @@ AROS_LH2(struct Preferences *, GetPrefs,
     if (prefbuffer != NULL && size != 0)
     {
         ULONG lock = LockIBase(0);
+	
         CopyMem(GetPrivIBase(IntuitionBase)->ActivePreferences,
                 prefbuffer,
                 size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+		
         UnlockIBase(lock);
     }
 

@@ -68,12 +68,15 @@ AROS_LH8(void, ModifyProp,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
     struct PropInfo * pi;
 
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
         || !gadget->SpecialInfo || !window)
+    {
         return;
-
+    }
+    
     EXTENDUWORD(horizPot);
     EXTENDUWORD(vertPot);
     EXTENDUWORD(horizBody);

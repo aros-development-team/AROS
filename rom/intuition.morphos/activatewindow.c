@@ -21,8 +21,8 @@
 
 struct ActivateWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
@@ -91,23 +91,24 @@ AROS_LH1(void, ActivateWindow,
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct IIHData  	*iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     /* On the Amiga ActivateWindow is delayed if there
        is an active gadget (altough this does not seem
        to be true for string gadgets). We just ignore
        ActivateWindow in such a case. */
 
-    struct Window *window = msg->window;
-    ULONG lock;
-    struct Window *oldactive;
-    Object *pointer = NULL;
-    struct IntScreen *scr = NULL;
-    struct InputEvent *ie;
+    struct Window   	*window = msg->window;
+    ULONG   	     	 lock;
+    struct Window   	*oldactive;
+    Object  	    	*pointer = NULL;
+    struct IntScreen 	*scr = NULL;
+    struct InputEvent 	*ie;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
 
-    if ((!iihdata->ActiveGadget) || (iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
+    if ((!iihdata->ActiveGadget) ||
+    	(iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
     {
 
         lock = LockIBase(0UL);
@@ -129,6 +130,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                              0,
                              oldactive,
                              IntuitionBase);
+			     
                 scr = GetPrivScreen(oldactive->WScreen);
                 scr->Screen.Title = scr->Screen.DefaultTitle;
             }
@@ -183,7 +185,6 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
             if (scr)
             {
                 struct SharedPointer *shared_pointer;
-                //ULONG tmp;
 
                 if (!pointer)
                     pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
@@ -216,7 +217,6 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
         }
 
         UnlockIBase(lock);
-
 
         if (oldactive && oldactive != window)
         {
@@ -257,7 +257,9 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                          window,
                          IntuitionBase);
         }
-    } else {
+    }
+    else
+    {
         int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
     }
 
@@ -266,15 +268,19 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     if (window && window->UserPort)
     {
         struct Task *apptask = window->UserPort->mp_SigTask;
+	
         if (apptask && (!apptask->tc_SigWait) && (apptask->tc_State == TS_WAIT))
         {
             //task is DEAD!
             //give some visual feedback to the user
+	    
             IW(window)->specialflags |= SPFLAG_IAMDEAD;
 
             int_refreshwindowframe(window,REFRESHGAD_TOPBORDER,0,IntuitionBase);
 
-        } else {
+        }
+	else
+	{
             IW(window)->specialflags &= ~SPFLAG_IAMDEAD;
         }
     }

@@ -53,7 +53,7 @@ static void move_family(struct Window *, int , int);
 static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen,
                               struct IntuitionBase *IntuitionBase)
 {
-    //    if (lay->Flags & LAYERREFRESH)
+  //if (lay->Flags & LAYERREFRESH)
     {
         struct Window *win = (struct Window *)lay->Window;
 
@@ -132,10 +132,10 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
     {
         struct RastPort     *rp = targetwindow->BorderRPort;
         struct Layer        *L = (BLAYER(targetwindow)) ? BLAYER(targetwindow) : WLAYER(targetwindow);
-        struct Rectangle    rect;
+        struct Rectangle     rect;
         struct Region       *oldclipregion;
-        WORD            ScrollX;
-        WORD            ScrollY;
+        WORD                 ScrollX;
+        WORD                 ScrollY;
 
         /*
         ** In case a clip region is installed then I have to
@@ -211,7 +211,7 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
                                  BOOL is_sizewindow, struct IntuitionBase *IntuitionBase)
 {
     struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct Layer *lay;
+    struct Layer    *lay;
 
     D(bug("********* WindowSizeHasChanged ********\n"));
 
@@ -223,10 +223,10 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
     if ((iihdata->ActiveGadget) && (targetwindow == iihdata->GadgetInfo.gi_Window))
     {
         GetGadgetDomain(iihdata->ActiveGadget,
-                iihdata->GadgetInfo.gi_Screen,
-                iihdata->GadgetInfo.gi_Window,
-                NULL,
-                &iihdata->GadgetInfo.gi_Domain);
+                	iihdata->GadgetInfo.gi_Screen,
+                	iihdata->GadgetInfo.gi_Window,
+                	NULL,
+                	&iihdata->GadgetInfo.gi_Domain);
     }
 
     /* Relayout GFLG_REL??? gadgets */
@@ -367,16 +367,16 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTopEdge,
                       LONG NewWidth, LONG NewHeight, BOOL send_newsize, struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    //struct IntWindow  *w       = (struct IntWindow *)targetwindow;
-    struct Layer    *targetlayer = WLAYER(targetwindow)/*, *L*/;
+    struct IIHData  	*iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+  //struct IntWindow  	*w       = (struct IntWindow *)targetwindow;
+    struct Layer    	*targetlayer = WLAYER(targetwindow)/*, *L*/;
     struct Requester    *req;
     struct InputEvent   *ie;
-    LONG        OldLeftEdge  = targetwindow->LeftEdge;
-    LONG        OldTopEdge   = targetwindow->TopEdge;
-    LONG        OldWidth     = targetwindow->Width;
-    LONG        OldHeight    = targetwindow->Height;
-    LONG        pos_dx, pos_dy, size_dx, size_dy;
+    LONG            	 OldLeftEdge  = targetwindow->LeftEdge;
+    LONG            	 OldTopEdge   = targetwindow->TopEdge;
+    LONG            	 OldWidth     = targetwindow->Width;
+    LONG            	 OldHeight    = targetwindow->Height;
+    LONG            	 pos_dx, pos_dy, size_dx, size_dy;
 
     /* correct new window coords if necessary */
 
@@ -523,7 +523,7 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
                   struct IntuitionBase *IntuitionBase)
 {
     struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct Task *me = FindTask(NULL);
+    struct Task    *me = FindTask(NULL);
 
     if (me == iihd->InputDeviceTask)
     {
@@ -532,42 +532,42 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
     else
     {
     #ifdef __MORPHOS__
-        struct IOStdReq req;
-        struct MsgPort port;
+        struct IOStdReq   req;
+        struct MsgPort    port;
         struct InputEvent ie;
     #endif
 
         msg->handler = func;
-        msg->task = me;
-        msg->done = FALSE;
+        msg->task    = me;
+        msg->done    = FALSE;
     
         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
         AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
     #ifdef __MORPHOS__
-        port.mp_Flags = PA_SIGNAL;
+        port.mp_Flags 	= PA_SIGNAL;
         port.mp_SigTask = me;
-        port.mp_SigBit = SIGB_INTUITION;
+        port.mp_SigBit  = SIGB_INTUITION;
         NEWLIST(&port.mp_MsgList);
 
         req.io_Message.mn_ReplyPort = &port;
-        req.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-        req.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-        req.io_Command = IND_WRITEEVENT;
-        req.io_Length = sizeof(ie);
-        req.io_Data = &ie;
+        req.io_Device 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+        req.io_Unit 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+        req.io_Command      	    = IND_WRITEEVENT;
+        req.io_Length 	    	    = sizeof(ie);
+        req.io_Data 	    	    = &ie;
 
         ie.ie_Class = IECLASS_NULL;
     #endif
     
         if (!msg->done)
         {
-    #ifdef __MORPHOS__
+    	#ifdef __MORPHOS__
             DoIO((APTR)&req);
-    #else
+    	#else
     	    AddNullEvent();
-    #endif
+    	#endif
             while (!msg->done)
             {
                 Wait(SIGF_INTUITION);
@@ -582,9 +582,9 @@ BOOL DoASyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *)
                    struct IntuiActionMsg *msg, ULONG size,
                    struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct Task *me = FindTask(NULL);
-    struct IntuiActionMsg *new_msg;
+    struct IIHData  	    *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct Task     	    *me = FindTask(NULL);
+    struct IntuiActionMsg   *new_msg;
 
     if (me == iihd->InputDeviceTask)
     {

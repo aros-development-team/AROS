@@ -51,8 +51,9 @@ AROS_LH3(APTR, AllocRemember,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct Remember * newKey;
-    APTR ptr = NULL;
+
+    struct Remember *newKey;
+    APTR    	     ptr = NULL;
 
     DEBUG_REMEMBER(dprintf("AllocRemember: Key 0x%lx Size 0x%lx Flags 0x%08lx\n",
                            rememberKey, size, flags));
@@ -66,8 +67,9 @@ AROS_LH3(APTR, AllocRemember,
         if (ptr)
         {
             newKey->NextRemember = *rememberKey;
-            newKey->Memory = ptr;
+            newKey->Memory  	 = ptr;
             newKey->RememberSize = size;
+	    
             *rememberKey = newKey;
         }
         else

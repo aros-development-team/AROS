@@ -125,24 +125,24 @@ struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *Intuit
             task->tc_SPLower=stack;
             task->tc_SPUpper=(BYTE *)stack + MENUTASK_STACKSIZE;
 
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
             task->tc_SPReg = task->tc_SPUpper;
 
             {
                 struct TaskInitExtension taskext;
-                struct TagItem tags[4];
+                struct TagItem      	 tags[4];
 
-                taskext.Trap = TRAP_PPCTASK;
+                taskext.Trap 	  = TRAP_PPCTASK;
                 taskext.Extension = 0;
-                taskext.Tags = tags;
+                taskext.Tags 	  = tags;
 
-                tags[0].ti_Tag = TASKTAG_CODETYPE;
+                tags[0].ti_Tag  = TASKTAG_CODETYPE;
                 tags[0].ti_Data = CODETYPE_PPC;
-                tags[1].ti_Tag = TASKTAG_PC;
+                tags[1].ti_Tag  = TASKTAG_PC;
                 tags[1].ti_Data = (ULONG)DefaultMenuHandler;
-                tags[2].ti_Tag = TASKTAG_PPC_ARG1;
+                tags[2].ti_Tag  = TASKTAG_PPC_ARG1;
                 tags[2].ti_Data = (ULONG)taskparams;
-                tags[3].ti_Tag = TAG_END;
+                tags[3].ti_Tag  = TAG_END;
 
                 if(AddTask(task, (APTR)&taskext, NULL) != NULL)
                 {
@@ -150,22 +150,22 @@ struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *Intuit
                     return (task);
                 }
             }
-#else
+    #else
 
-#if AROS_STACK_GROWS_DOWNWARDS
-task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
+    	#if AROS_STACK_GROWS_DOWNWARDS
+    	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
             ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-#else
+    	#else
             task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
             *(APTR *)task->tc_SPLower = taskparams;
-#endif
+    	#endif
 
             if(AddTask(task, DefaultMenuHandler, NULL) != NULL)
             {
                 /* Everything went OK */
                 return (task);
             }
-#endif
+    #endif
             FreeMem(stack, MENUTASK_STACKSIZE);
 
         } /* if(stack != NULL) */
@@ -187,12 +187,10 @@ task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
 void DefaultMenuHandler(struct MenuTaskParams *taskparams)
 {
     struct IntuitionBase    *IntuitionBase = taskparams->intuitionBase;
-
     struct MenuHandlerData  *mhd = NULL;
-    UBYTE           *mem;
-    struct MsgPort      *port = NULL;
-
-    BOOL            success = FALSE;
+    UBYTE           	    *mem;
+    struct MsgPort          *port = NULL;
+    BOOL            	     success = FALSE;
 
     if ((mem = AllocMem(sizeof(struct MsgPort) +
                         sizeof(struct MenuHandlerData), MEMF_PUBLIC | MEMF_CLEAR)))
@@ -200,9 +198,9 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
         port = (struct MsgPort *)mem;
 
         port->mp_Node.ln_Type   = NT_MSGPORT;
-        port->mp_Flags      = PA_SIGNAL;
-        port->mp_SigBit     = AllocSignal(-1);
-        port->mp_SigTask    = FindTask(0);
+        port->mp_Flags      	= PA_SIGNAL;
+        port->mp_SigBit     	= AllocSignal(-1);
+        port->mp_SigTask    	= FindTask(0);
         NEWLIST(&port->mp_MsgList);
 
         mhd = (struct MenuHandlerData *)(mem + sizeof(struct MsgPort));
@@ -237,17 +235,17 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
             switch(msg->code)
             {
             case MMCODE_START:
-                mhd->win            = msg->win;
-                mhd->scr            = mhd->win->WScreen;
-                mhd->dri            = GetScreenDrawInfo(mhd->scr);
-                mhd->menu           = msg->win->MenuStrip;
+                mhd->win            	= msg->win;
+                mhd->scr            	= mhd->win->WScreen;
+                mhd->dri            	= GetScreenDrawInfo(mhd->scr);
+                mhd->menu           	= msg->win->MenuStrip;
                 mhd->activemenunum      = -1;
                 mhd->activeitemnum      = -1;
                 mhd->activesubitemnum   = -1;
-                mhd->checkmark      = ((struct IntWindow *)mhd->win)->Checkmark;
-                mhd->amigakey       = ((struct IntWindow *)mhd->win)->AmigaKey;
-                mhd->scrmousex      = mhd->scr->MouseX;
-                mhd->scrmousey      = mhd->scr->MouseY;
+                mhd->checkmark      	= ((struct IntWindow *)mhd->win)->Checkmark;
+                mhd->amigakey       	= ((struct IntWindow *)mhd->win)->AmigaKey;
+                mhd->scrmousex      	= mhd->scr->MouseX;
+                mhd->scrmousey      	= mhd->scr->MouseY;
                 mhd->firstmenupick      = MENUNULL;
 
                 /* close windows in the back first because
@@ -301,8 +299,8 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
 BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
 {
     struct MenuTaskParams   params;
-    struct Task         *task;
-    BOOL            result = FALSE;
+    struct Task            *task;
+    BOOL            	    result = FALSE;
 
     params.intuitionBase = IntuitionBase;
     params.Caller    = FindTask(NULL);
@@ -338,10 +336,9 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
     struct Window   *win = NULL;
     struct Menu     *menu;
     struct MenuItem *item;
-
-    WORD        new_activemenunum = mhd->activemenunum;
-    WORD        new_activeitemnum = mhd->activeitemnum;
-    WORD        new_activesubitemnum = mhd->activesubitemnum;
+    WORD             new_activemenunum = mhd->activemenunum;
+    WORD             new_activeitemnum = mhd->activeitemnum;
+    WORD             new_activesubitemnum = mhd->activesubitemnum;
 
     mhd->scrmousex = mhd->scr->MouseX;
     mhd->scrmousey = mhd->scr->MouseY;
@@ -471,7 +468,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 
             if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey)))
             {
-                struct Window *win = (struct Window *)lay->Window;
+                struct Window   *win = (struct Window *)lay->Window;
                 struct MenuItem *item = NULL;
                 
                 win = (struct Window *)lay->Window;
@@ -596,6 +593,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         {
             WORD i;
             struct Menu *m = mhd->menu;
+	    
             x1 = mhd->scr->MenuHBorder;
             x2 = x1 + mhd->menubaritemwidth - 1;
             
@@ -652,7 +650,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct Menu *menu;
-    WORD    mouse_x, mouse_y, i;
+    WORD    	 mouse_x, mouse_y, i;
 
     mouse_x = mhd->scrmousex - mhd->menubarwin->LeftEdge;
     mouse_y = mhd->scrmousey - mhd->menubarwin->TopEdge;
@@ -709,7 +707,7 @@ static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct Intu
 static struct MenuItem *FindItem(WORD *var, struct MenuHandlerData *mhd)
 {
     struct MenuItem *item = NULL;
-    WORD        mouse_x, mouse_y, i;
+    WORD             mouse_x, mouse_y, i;
 
     if (mhd->menuwin)
     {
@@ -739,7 +737,7 @@ static struct MenuItem *FindItem(WORD *var, struct MenuHandlerData *mhd)
 static struct MenuItem *FindSubItem(WORD *var, struct MenuHandlerData *mhd)
 {
     struct MenuItem *item = NULL;
-    WORD        mouse_x, mouse_y, i;
+    WORD             mouse_x, mouse_y, i;
 
     if (mhd->submenuwin)
     {
@@ -770,25 +768,23 @@ static struct MenuItem *FindSubItem(WORD *var, struct MenuHandlerData *mhd)
 static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct TagItem win_tags[] =
-        {
-            {
-                WA_Left , 0
-            },
-            {WA_Top     , 0             },
-            {WA_Width   , mhd->scr->Width       },
-            {WA_Height  , mhd->scr->BarHeight + 1   },
-            {WA_AutoAdjust  , TRUE              },
-            {WA_Borderless  , TRUE              },
-            {WA_CustomScreen, (ULONG)mhd->scr       },
-            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
-            {TAG_DONE                   }
-        };
+    {
+        {WA_Left    	, 0 	    	    	    },
+        {WA_Top     	, 0                 	    },
+        {WA_Width   	, mhd->scr->Width           },
+        {WA_Height  	, mhd->scr->BarHeight + 1   },
+        {WA_AutoAdjust  , TRUE              	    },
+        {WA_Borderless  , TRUE              	    },
+        {WA_CustomScreen, (ULONG)mhd->scr           },
+        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
+        {TAG_DONE                   	    	    }
+    };
     struct Menu     *menu;
 
     if (MENUS_UNDERMOUSE)
     {
         struct RastPort *temprp;
-        WORD        w, maxw = 0;
+        WORD        	 w, maxw = 0;
     
         if (!(temprp = CloneRastPort(&mhd->scr->RastPort))) return;
     
@@ -846,9 +842,9 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 {
     if (mhd->menubarwin)
     {
-        struct Menu *menu = mhd->menu;
+        struct Menu 	*menu = mhd->menu;
         struct RastPort *rp = mhd->menubarwin->RPort;
-        struct Layer *oldlayerhook;
+        struct Layer 	*oldlayerhook;
 
         SetFont(rp, mhd->dri->dri_Font);
 
@@ -895,8 +891,8 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
                             struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *rp = mhd->menubarwin->RPort;
-    WORD        len = strlen(menu->MenuName);
-    WORD x, y;
+    WORD             len = strlen(menu->MenuName);
+    WORD    	     x, y;
     
     if (MENUS_UNDERMOUSE)
     {
@@ -991,19 +987,17 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 
     {
         struct TagItem win_tags[] =
-            {
-                {
-                    WA_Left , xpos
-                },
-                {WA_Top     , ypos              },
-                {WA_Width   , width             },
-                {WA_Height  , height            },
-                {WA_AutoAdjust  , TRUE              },
-                {WA_Borderless  , TRUE              },
-                {WA_CustomScreen, (ULONG)mhd->scr       },
-                {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
-                {TAG_DONE                   }
-            };
+        {
+            {WA_Left 	    , xpos  	    	    	},
+            {WA_Top         , ypos                  	},
+            {WA_Width       , width                 	},
+            {WA_Height      , height                	},
+            {WA_AutoAdjust  , TRUE                  	},
+            {WA_Borderless  , TRUE                  	},
+            {WA_CustomScreen, (ULONG)mhd->scr       	},
+            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
+            {TAG_DONE                       	    	}
+        };
 
         if (MENUS_UNDERMOUSE)
         {
@@ -1085,19 +1079,17 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
     struct MenuItem *item = mhd->activeitem->SubItem;
 
     struct TagItem  win_tags[] =
-        {
-            {
-                WA_Left , 0
-            },
-            {WA_Top     , 0             },
-            {WA_Width   , 0             },
-            {WA_Height  , 0             },
-            {WA_AutoAdjust  , TRUE              },
-            {WA_Borderless  , TRUE              },
-            {WA_CustomScreen, (ULONG)mhd->scr       },
-            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
-            {TAG_DONE                   }
-        };
+    {
+        {WA_Left    	, 0 	    	    	    },
+        {WA_Top     	, 0                 	    },
+        {WA_Width   	, 0                 	    },
+        {WA_Height  	, 0                 	    },
+        {WA_AutoAdjust  , TRUE              	    },
+        {WA_Borderless  , TRUE              	    },
+        {WA_CustomScreen, (ULONG)mhd->scr           },
+        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
+        {TAG_DONE                   	    	    }
+    };
 
     GetMenuBox(mhd->menubarwin, item, &mhd->submenubox.MinX,
                &mhd->submenubox.MinY,
@@ -1170,12 +1162,12 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 {
     struct Window   *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort *rp = win->RPort;
-    WORD        offx = -box->MinX;
-    WORD        offy = -box->MinY;
-    BOOL        enabled = ((item->Flags & ITEMENABLED) &&
-                        (mhd->activemenu->Flags & MENUENABLED) &&
-                        ((itemtype == ITEM_ITEM) || (mhd->activeitem->Flags & ITEMENABLED)));
-    BOOL        item_supports_disable = FALSE;
+    WORD             offx = -box->MinX;
+    WORD             offy = -box->MinY;
+    BOOL             enabled = ((item->Flags & ITEMENABLED) &&
+                               (mhd->activemenu->Flags & MENUENABLED) &&
+                               ((itemtype == ITEM_ITEM) || (mhd->activeitem->Flags & ITEMENABLED)));
+    BOOL             item_supports_disable = FALSE;
 
     SetDrMd(rp, JAM1);
 
@@ -1200,7 +1192,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
         else
         {
             struct Image *im = (struct Image *)item->ItemFill;
-            LONG     state = IDS_NORMAL;
+            LONG     	  state = IDS_NORMAL;
 
             if (!enabled && (im->Depth == CUSTOMIMAGEDEPTH))
             {
@@ -1240,7 +1232,7 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
                          struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *rp = win->RPort;
-    WORD borderx, bordery;
+    WORD    	     borderx, bordery;
     
     if (MENUS_AMIGALOOK)
     {
@@ -1290,13 +1282,13 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
 static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                             struct IntuitionBase *IntuitionBase)
 {
-    struct Window   *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
-    struct RastPort *rp = win->RPort;
+    struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
+    struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
-    WORD        offx = -box->MinX;
-    WORD        offy = -box->MinY;
-    WORD        state = ((item->Flags & HIGHITEM) &&
-                   ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
+    WORD            	 offx = -box->MinX;
+    WORD            	 offy = -box->MinY;
+    WORD            	 state = ((item->Flags & HIGHITEM) &&
+                    	         ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
 
     if (item->Flags & CHECKIT)
     {
@@ -1335,14 +1327,14 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
 static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                            struct IntuitionBase *IntuitionBase)
 {
-    struct Window   *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
-    struct RastPort *rp = win->RPort;
+    struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
+    struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
-    WORD        commkeywidth = ((itemtype == ITEM_ITEM) ? mhd->maxcommkeywidth_menu : mhd->maxcommkeywidth_submenu);
-    WORD        offx = -box->MinX;
-    WORD        offy = -box->MinY;
-    WORD        state = ((item->Flags & HIGHITEM) &&
-                   ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
+    WORD            	 commkeywidth = ((itemtype == ITEM_ITEM) ? mhd->maxcommkeywidth_menu : mhd->maxcommkeywidth_submenu);
+    WORD            	 offx = -box->MinX;
+    WORD            	 offy = -box->MinY;
+    WORD            	 state = ((item->Flags & HIGHITEM) &&
+                    	    	 ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
 
     if (item->Flags & COMMSEQ)
     {
@@ -1407,8 +1399,14 @@ static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2
 
     SetDrMd(rp, JAM1);
     
-    if (MENUS_AMIGALOOK) SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
-    else                 SetAPen(rp, mhd->dri->dri_Pens[BACKGROUNDPEN]);
+    if (MENUS_AMIGALOOK)
+    {
+    	SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
+    }
+    else
+    {
+        SetAPen(rp, mhd->dri->dri_Pens[BACKGROUNDPEN]);
+    }
 
     SetAfPt(rp, pattern, 1);
 
@@ -1437,14 +1435,14 @@ static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                           struct IntuitionBase *IntuitionBase)
 {
-    struct Window   *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
-    struct RastPort *rp = win->RPort;
+    struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
+    struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
-    APTR        fill;
-    WORD        offx = -box->MinX;
-    WORD        offy = -box->MinY;
-    WORD        x1, y1, x2, y2;
-    BOOL        enabled;
+    APTR            	 fill;
+    WORD            	 offx = -box->MinX;
+    WORD            	 offy = -box->MinY;
+    WORD            	 x1, y1, x2, y2;
+    BOOL            	 enabled;
 
     enabled = (item->Flags & ITEMENABLED) ? TRUE : FALSE;
     if (!(mhd->activemenu->Flags & MENUENABLED)) enabled = FALSE;
@@ -1539,8 +1537,6 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 
 }
 
-
-
 /**************************************************************************************************/
 
 static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
@@ -1596,7 +1592,7 @@ static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *In
             (mhd->activeitemnum != -1) && (mhd->activeitem->Flags & ITEMENABLED))
     {
         struct MenuItem *item = NULL;
-        UWORD men = FULLMENUNUM(mhd->activemenunum, mhd->activeitemnum, mhd->activesubitemnum);
+        UWORD 	    	 men = FULLMENUNUM(mhd->activemenunum, mhd->activeitemnum, mhd->activesubitemnum);
 
         if (mhd->activesubitemnum != -1)
         {
@@ -1618,7 +1614,7 @@ static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *In
             else if (men != mhd->lastmenupick)
             {
                 struct MenuItem *checkitem, *prevcheckitem = NULL;
-                UWORD checkmen = mhd->firstmenupick;
+                UWORD 	    	 checkmen = mhd->firstmenupick;
 
                 /* Remove men from pick queue, if it was already in there
                    and then add it at the end of the pick queue */

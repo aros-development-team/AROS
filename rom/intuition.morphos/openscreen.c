@@ -1741,6 +1741,9 @@ AROS_LH1(struct Screen *, OpenScreen,
                 {
                     {GA_Image,   0},
                     {GA_Top,    0           },
+		#if SQUARE_WIN_GADGETS
+		    {GA_Width, SDEPTH_HEIGHT 	    },
+		#endif
                     {GA_Height, SDEPTH_HEIGHT       },
                     {GA_SysGadget,  TRUE            },
                     {GA_SysGType,   GTYP_SDEPTH     },
@@ -1750,8 +1753,12 @@ AROS_LH1(struct Screen *, OpenScreen,
 
             struct TagItem image_tags[] =
                 {
-                    {IA_Left , 0},
-                    //{IA_Width , SDEPTH_WIDTH + 1  },
+                #if SQUARE_WIN_GADGETS
+		    {IA_Left , -1},
+                    {IA_Width , SDEPTH_HEIGHT + 1  },
+		#else
+		    {IA_Left , 0},
+		#endif
                     {IA_Height   , SDEPTH_HEIGHT},
                     {SYSIA_Which    , SDEPTHIMAGE       },
                     {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
@@ -1778,14 +1785,17 @@ AROS_LH1(struct Screen *, OpenScreen,
             if (screen->Screen.FirstGadget)
             {
                 struct TagItem gadtags[] =
-                    {
-                        {GA_RelRight, 0},
-                        {TAG_DONE  }
-                    };
-                int width;
+                {
+                    {GA_RelRight, 0 },
+                    {TAG_DONE       }
+                };
+                IPTR width;
 
-                GetAttr(GA_Width, screen->depthgadget, (IPTR *)&width);
-
+                GetAttr(GA_Width, screen->depthgadget, &width);
+    	    #if SQUARE_WIN_GADGETS
+		width--;
+	    #endif
+ 	     
                 gadtags[0].ti_Data = -width + 1;
                 SetAttrsA(screen->depthgadget, gadtags);
                 screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
