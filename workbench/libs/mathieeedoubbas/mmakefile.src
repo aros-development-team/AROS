@@ -1,0 +1,47 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I.
+
+LIBNAME  := mathieeedoubbas
+ULIBNAME := Mathieeedoubbas
+
+# BEGIN_DESC{makefile}
+# This is the makefile for mathieeedoubbas.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+FILES :=
+
+FUNCTIONS := \
+	ieeedpabs \
+	ieeedpcmp \
+	ieeedpfix \
+	ieeedpflt \
+	ieeedpneg \
+	ieeedptst
+
+%define_libs postlibs="-lamiga -lmathieeedoubbas"
+
+%genlib
+
+# MM workbench-libs-mathieeedoubbas : setup includes linklibs
+workbench-libs-mathieeedoubbas : show-flags $(SLIB)
+
+#MM setup
+#MM clean
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
