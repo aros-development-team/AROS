@@ -12,6 +12,8 @@
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
 #include <aros/atomic.h>
+#include <aros/debug.h>
+#include <aros/config.h>
 #include <hardware/intbits.h>
 
 #include <sigcore.h>
@@ -38,7 +40,8 @@ static struct Task * lastTask;
 /* Try and emulate the Amiga hardware interrupts */
 static int sig2tab[NSIG];
 sigset_t sig_int_mask;	/* Mask of signals that Disable() block */
-int supervisor, intrap;
+int intrap;
+LONG supervisor;
 
 /*
     These tables are used to map signals to interrupts
@@ -83,6 +86,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	exit(0);
     }
 
+#if !AROS_NESTING_SUPERVISOR
     /* Hmm, interrupts are nesting, not a good idea... */
     if(supervisor)
     {
@@ -93,8 +97,9 @@ static void sighandler(int sig, sigcontext_t * sc)
 
 	return;
     }
+#endif
 
-    supervisor++;
+    AROS_ATOMIC_INCL(supervisor);
 
     /* Map the Unix signal to an Amiga signal. */
     iv = &SysBase->IntVects[sig2tab[sig]];
@@ -127,8 +132,15 @@ static void sighandler(int sig, sigcontext_t * sc)
     }
 
     /* Has an interrupt told us to dispatch when leaving */
+    
+#if AROS_NESTING_SUPERVISOR
+    if (supervisor == 1)
+#endif    
     if (SysBase->AttnResched & 0x8000)
     {
+    #if AROS_NESTING_SUPERVISOR
+    	Disable();
+    #endif
     	AROS_ATOMIC_ANDW(SysBase->AttnResched, ~0x8000);
 
 	/* Save registers for this task (if there is one...) */
@@ -167,10 +179,16 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    lastTask = SysBase->ThisTask;
 	}
 #endif
+
+    #if AROS_NESTING_SUPERVISOR
+    	Enable();
+    #endif	
     }
 
     /* Leave the interrupt. */
-    supervisor--;
+
+    AROS_ATOMIC_DECL(supervisor);
+
 } /* sighandler */
 
 #if 0
