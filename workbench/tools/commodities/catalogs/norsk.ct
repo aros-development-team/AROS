@@ -84,7 +84,7 @@ Informasjon
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
-Vise
+Vis
 ; Show
 ;
 MSG_EXCHANGE_GAD_HIDE
@@ -112,7 +112,7 @@ Systemets skjermsparer
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Blanker skjermen ved inaktivitet
+Gjør skjermen blank ved inaktivitet
 ; Blanks screen when system inactive
 ;
 MSG_CLICK2FNT_CXNAME
@@ -124,7 +124,7 @@ Klikk til Front-verktøy
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Løfter vinduer til front
+Løfter vinduer til forgrunnen
 ; Click windows to front
 ;
 MSG_OPAQUE_CXNAME
@@ -160,5 +160,5 @@ Systemets programstarter
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Startar program fra meny
+Starter program fra meny
 ; Program launch commodity

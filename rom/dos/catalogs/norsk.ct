@@ -1,4 +1,4 @@
-## version $VER: dos.catalog 1.0 (13.03.2001)
+## version $VER: dos.catalog 1.0 (12.12.2001)
 ## language norsk
 ## codeset 0
 ;
@@ -39,7 +39,7 @@ argumentlinjen er ugyldig eller for lang
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-filen kan ikke kjøres
+filen er ikke kjørbar
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
@@ -75,7 +75,7 @@ objektet er for stort
 ; object too large
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
-ukjent filsystemaksjonstype
+ukjent aksjonstype for filsystemet
 ; filesystem action type unknown
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
@@ -87,7 +87,7 @@ ugyldig objektlås
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
-objektet er ikke av nødvendig type
+objektet er ikke av riktig type
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
@@ -191,7 +191,7 @@ MSG_ERROR_BREAK
 ; ***Break
 ;
 MSG_ERROR_NOT_EXECUTABLE
-filen kan ikke kjøres
+filen er ikke kjørbar
 ; file not executable
 ;
 MSG_STRING_INSERT_VOLUME
@@ -219,7 +219,7 @@ i enhet %s
 ; in drive %s
 ;
 MSG_STRING_RETRY
-Forsøk igjen
+Prøv igjen
 ; Retry
 ;
 MSG_STRING_CANCEL
