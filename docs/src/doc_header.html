@@ -22,6 +22,100 @@ since 12. October 1999.
 <H2>NEWS</H2>
 <TABLE>
 
+<TR><TD VALIGN=TOP>15.01.2001</TD><TD>
+Georg Steger fixed a bug (moving&sizing a window at the same time)
+in the new layers.library and improved font copying by the build
+process. Johan Alfredsson improved C:Run. Henning Kiel fixed a
+couple of bugs in his games. 
+</TD></TR>
+
+<TR><TD VALIGN=TOP>12.01.2001</TD><TD>
+Adam Chodorowski made C:Ping compile (it would work if there
+were a TCP/IP stack :-). Also, the About window of LoadWB shows
+the AROS license now. Georg Steger improved the Graphics.HIDD,
+font handling, DOpus and DataTypes. He and Johan Alfredsson fixed the
+RAW: bug in console.device.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>09.01.2001</TD><TD>
+Aaron Digulla fixed a bug which broke the nightly builds and Michael
+Schulz began to commit the new AROS i386/Native core. AROS uses now
+GRUB to boot. Georg Steger began to implement the ASL Font requester.
+He and Johan Alfredsson also fixed a few compiler warnings.
+To test the new font requester, Georg committed some PD TrueType
+fonts.
+Peter Hans van den Muijzenberg improved the ideas for a MMU.HIDD.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>06.01.2001</TD><TD>
+Johan Alfredsson improved C:Info and FPutC() and fixed a bug
+in DOS. Flavio Stanchina improved INSTALL.amiga and 
+Adam Chodorowski worked a bit in the new socket.library.
+He committed the network includes from OpenBSD 2.7, so we
+at least have an interface definition for a 100% compatible
+TCP/IP stack. Only the stack itself is still missing :-)
+Iain Templeton made AROS compile on FreeBSD again, 
+Johan Alfredsson completed C:NewShell, Georg Steger fixed
+a bug in MultiView, the text.datatype and Intuition.
+Lars Bischoff added support for hi- and true-color screens
+in DisplayBeep().<P>
+
+Adam Chodorowski committed some tools from the GPL:ed AmiTCP-3.0b
+sources as found on AmiNET and used these to fix bugs in the
+new network includes. bsdsocket.library compiles now without
+errors but still doesn't do anything useful. Georg Steger made
+the new layers.library a bit more compatible with the AmigaOS
+and Henning Kiel fixed a bug with DisplayBeep().
+</TD></TR>
+
+<TR><TD VALIGN=TOP>03.01.2001</TD><TD>
+Adam Chodorowski ported the new V44+ prefs header files to AROS.
+Georg Steger and Flavio Stanchina fixed a couple of bugs.
+Johan Alfredsson committed C:Eval and Henning Kiel added the
+neccessary code to compile it. They also fixed some more bugs
+in the docs and DOS.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>01.01.2001</TD><TD>
+Happy New Year, everyone ! :-)<P>
+
+Adam Chodorowski began to hunt a bug in RAW: and committed a skeleton
+for a skeleton for bsdsocket.library. The includes are there but
+all functions are empty. Then, he improved his LoadWB command. Henning Kiel
+helped him and then fixed all the lint in the docs (email addresses, etc).
+Georg Steger began to improve the RAW mode of the console. Johan Alfredsson
+fixed a bug in the c.lib and C:Dir.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>28.12.2000</TD><TD>
+Georg Steger worked a bit more in the backport of reqtools to AmigaOS.
+Johan Alfredsson implemented DisplayError() and Stefan Berger improved
+his layers.library. DisplayBeep() works now and Henning Kiel committed
+a small utility (C:Beep) to use it from the shell. Adam Chodorowski
+continued his work on the workbench.library.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>26.12.2000</TD><TD>
+Johan Alfredsson rewrote C:List (everything except the ALL option works
+now). WiMP can now show some info about windows and screens, thanks
+to Henning Kiel. Flavio Stanchina continues in his quest to squish
+bugs in header and the build process and Stefan Berger applied some
+refactoring to his layers.library. Georg Steger did the same with
+the serial, parallel and UnixIO HIDDs. Stefan Berger supported this
+by adding a couple of skeletons for the hardware interfaces of the
+HIDDs.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>24.12.2000</TD><TD>
+Flavio Stanchina fixed bugs in the build process and some header files.
+Johan Alfredsson finished the C:Info command. Georg Steger improved
+the shape window demo (you can now switch the shape on and off) and
+fixed a bug in AmigaTerm. Stefan Berger found a couple of patents
+which seem to apply on child windows so he removed the child window
+code again. If someone knows that this is free technology, we
+would be grateful for the information !
+</TD></TR>
+
 <TR><TD VALIGN=TOP>22.12.2000</TD><TD>
 Since I'll go to holidays now, I'd like to thank everyone for
 their open and also not-so-open support which makes all this
@@ -29,69 +123,6 @@ possible. :-) Thanks a lot, Merry Christmas and a Happy New
 Year !<P>
 
 Aaron "Optimizer" Digulla
-</TD></TR>
-
-<TR><TD VALIGN=TOP>20.12.2000</TD><TD>
-A lot of bug in the new layers library, child window handling, etc.
-have been fixed by Georg Steger and Stefan Berger. Since OpenOffice
-uses child windows, we hope that
-we won't get sued for using the same technology :-)<P>
-
-Henning Kiel has extended the WiMP tool to support child windows.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>17.12.2000</TD><TD>
-Thanks to another enhancement by Stefan Berger, layers and windows can now be
-set invisible (hidden). Also, layers can now be grouped by priority which
-allows to create a layer behind all other layers (for example,
-for a background logo and menus which should be before everything
-else). We're currently trying to find out how many and which
-patents we infringe with this :-(<P>
-
-Johan Alfredsson has ported <TT>SortCopy</TT> from AmiNET.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>14.12.2000</TD><TD>
-AROS has now support for
-non-rectangular windows and child windows (a window with a dragbar,
-etc. inside another window). Kudos go to Stefan Berger for the
-code and Georg Steger for input and bugfixes.<P>
-
-Johan Alfredsson improved DOpus a bit and Adam Chodorowski
-improved AROS' workbench.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>12.12.2000</TD><TD>
-Henning Kiel WiMP, a Window Manipulation Program which allows to
-rescure those windows which got lost yesterday :-) It will become
-kind of a system monitor in the future.
-Stefan Berger and Georg Steger fixed a couple of bugs in the
-new layers.library<P>
-
-Georg Steger added a lot of functions to handle regions which
-are missing in the original AmigaOS but which should have been
-there. These make handling of clip rects <STRONG>much</STRONG>
-more simple.<P>
-
-Fabio Alemagna committed a Dhrystone benchmark. According to
-it, AROS is about 5% slower than native Linux when run as an
-emulation. As soon as we have a native AROS which can load
-apps, we'll check how fast a PC really can be ;-)<P>
-</TD></TR>
-
-<TR><TD VALIGN=TOP>11.12.2000</TD><TD>
-Stefan Berger has commited a completely rewritten layers.library which
-is much faster and much more simple then the one we had. It's now
-based on OO techniques, much easier to extend (we're currently thinking
-about child layers and layer groups which will keep their stacking
-order). Also, the new layers.library allows to move windows outside
-the screen (the first windows have already been lost out there ;-)<P>
-
-Georg Steger committed additional files for ReqTools which should
-make it compile on Amiga.<P>
-
-Adam Chodorowski began the work on workbench.library and the
-workbench process.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
