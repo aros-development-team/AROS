@@ -584,7 +584,7 @@ end:
     /* deallocate the symbol tables */
     for (i = 0; i < eh.shnum; i++)
     {
-        if (sh[i].type == SHT_SYMTAB)
+        if ((sh[i].type == SHT_SYMTAB) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
     }
 
