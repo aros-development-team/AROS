@@ -17,8 +17,7 @@
 /*****************************************************************************
 
     NAME */
-
-        #include <proto/workbench.h>
+    #include <proto/workbench.h>
 
         AROS_LH4(struct AppWindowDropZone *, AddAppWindowDropZoneA,
 

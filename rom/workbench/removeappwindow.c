@@ -48,7 +48,7 @@
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
     if( appWindow ) {
-        struct AppWindowDropZone *current;
+        struct Node *current;
 
         while( (current = RemHead( &(appWindow->aw_DropZones) )) ) {
             FreeVec( current );
