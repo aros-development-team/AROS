@@ -1176,6 +1176,8 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 
 /***********************************************************************************/
 
+#if 0
+
 static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval;
@@ -1212,6 +1214,10 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    break;
 		}
 	    #endif
+
+	    #if 0
+	    	/* Intuition now handles this itself in inputhandler_support.c:
+		   HandleCustomGadgetRetVal() */
 	        
 		case GTYP_WDEPTH:
 		{
@@ -1229,11 +1235,22 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    }		    
 		    break;
 		}
-		
+    	    #endif
+	    
+	    #if 0
+	    	/* Intuition now handles this itself in inputhandler_support.c:
+		   HandleCustomGadgetRetVal() */
+	        
 		case GTYP_WZOOM:
 		    ZipWindow(msg->gpi_GInfo->gi_Window);
 		    break;
-		    
+    	    #endif		    
+
+
+	    #if 0
+	    	/* Intuition now handles this itself in inputhandler_support.c:
+		   HandleCustomGadgetRetVal() */
+	        
 		case GTYP_SDEPTH:
 		    if (msg->gpi_GInfo->gi_Screen == IntuitionBase->FirstScreen)
 		    {
@@ -1244,7 +1261,8 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		        ScreenToFront(msg->gpi_GInfo->gi_Screen);
 		    }
 		    break;
-		    
+	    #endif
+	       
 	    } /* switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK) */
 	    	    
 	} /* if (verified button press) */
@@ -1254,6 +1272,8 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
     return retval;
     
 }
+
+#endif
 
 /***********************************************************************************/
 
@@ -1284,11 +1304,11 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
 	case GM_RENDER:
 	    tbb_render(cl, o, (struct gpRender *)msg);
 	    break;
-	    
+#if 0	    
 	case GM_HANDLEINPUT:
 	    retval = tbb_handleinput(cl, o , (struct gpInput *)msg);
 	    break;
-	    	    
+#endif	    	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;

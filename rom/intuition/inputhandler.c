@@ -225,9 +225,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     while(orig_ie)
     {
     
-	struct Window *old_w;
-	BOOL swallow_event = FALSE;
-	BOOL new_active_window = FALSE;
+	struct Window 	*old_w;
+	BOOL 	    	swallow_event = FALSE;
+	BOOL 	    	new_active_window = FALSE;
     
     	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
@@ -251,7 +251,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    if ( w != old_w )
 	    {
-
 		if (w)
 		{
 	            D(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
@@ -277,54 +276,59 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    	    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 
-		    case GTYP_CUSTOMGADGET:
-			{
-		    	    struct gpGoInactive gpgi;
-
-			    gpgi.MethodID = GM_GOINACTIVE;
-			    gpgi.gpgi_GInfo = gi;
-			    gpgi.gpgi_Abort = 1; 
-
-			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
-			}
-			break;
-
-		    case GTYP_STRGADGET:
-			gadget->Flags &= ~GFLG_SELECTED;
-			RefreshStrGadget(gadget, gi->gi_Window, IntuitionBase);
-			break;
-
-		    case GTYP_BOOLGADGET:
-			/* That a bool gadget is active here can only happen
-			   if user used LMB to activate gadget and LAMIGA + LALT
-			   to activate other window, or viceversa */
-
-    	    	    	if (!(gadget->Activation & GACT_TOGGLESELECT))
-			{
-			    if (gadget->Flags & GFLG_SELECTED)
+			case GTYP_CUSTOMGADGET:
 			    {
-			    	gadget->Flags &= ~GFLG_SELECTED;
-			    	RefreshBoolGadgetState(gadget, gi->gi_Window, IntuitionBase);
+		    		struct gpGoInactive gpgi;
+
+				gpgi.MethodID = GM_GOINACTIVE;
+				gpgi.gpgi_GInfo = gi;
+				gpgi.gpgi_Abort = 1; 
+
+				Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			    }
-			}
-			break;
+			    break;
 
-	            case GTYP_PROPGADGET:
-			/* That a prop gadget is active here can only happen
-			   if user used LMB to activate gadget and LAMIGA + LALT
-			   to activate other window, or viceversa */
+			case GTYP_STRGADGET:
+			    gadget->Flags &= ~GFLG_SELECTED;
+			    RefreshStrGadget(gadget, gi->gi_Window, IntuitionBase);
+			    break;
 
-			HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
-			if (gadget->Activation & GACT_RELVERIFY)
-			{
-			    ih_fire_intuimessage(gi->gi_Window,
-			    			 IDCMP_GADGETUP,
-						 0,
-						 gadget,
-						 IntuitionBase);
-			}
+			case GTYP_BOOLGADGET:
+			    /* That a bool gadget is active here can only happen
+			       if user used LMB to activate gadget and LAMIGA + LALT
+			       to activate other window, or viceversa */
 
-		    }
+    	    	    	    if (!(gadget->Activation & GACT_TOGGLESELECT))
+			    {
+    	    	    	    	BOOL inside;
+				
+				inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+				
+				if (inside)
+				{
+				    gadget->Flags ^= GFLG_SELECTED;
+			    	    RefreshBoolGadgetState(gadget, gi->gi_Window, IntuitionBase);
+				}
+			    }
+			    break;
+
+	        	case GTYP_PROPGADGET:
+			    /* That a prop gadget is active here can only happen
+			       if user used LMB to activate gadget and LAMIGA + LALT
+			       to activate other window, or viceversa */
+
+			    HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
+			    if (gadget->Activation & GACT_RELVERIFY)
+			    {
+				ih_fire_intuimessage(gi->gi_Window,
+			    			     IDCMP_GADGETUP,
+						     0,
+						     gadget,
+						     IntuitionBase);
+			    }
+			    break;
+
+		    } /* switch (gadget->GadgetType & GTYP_GTYPEMASK) */
 
 		    gadget->Activation &= ~GACT_ACTIVEGADGET;
 		    iihdata->ActiveGadget = NULL;
@@ -359,710 +363,740 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	} /* if (!MENUS_ACTIVE) */
 	
 	if (!swallow_event) switch (ie->ie_Class)
-	{
-	    
-	case IECLASS_RAWMOUSE:
-	    switch (ie->ie_Code)
-	    {
-	    case SELECTDOWN: {
-		BOOL new_gadget = FALSE;
-
-		iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
-		
-		if (MENUS_ACTIVE)
+	{	    
+	    case IECLASS_RAWMOUSE:
+		switch (ie->ie_Code)
 		{
-		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    break;
-		}
-		
-		if (!gadget)
-		{
-  		    gadget = FindGadget (IntuitionBase->ActiveScreen,
-		    			 w,
-					 IntuitionBase->ActiveScreen->MouseX,
-					 IntuitionBase->ActiveScreen->MouseY, gi, IntuitionBase);
-		    if (gadget)
+		    case SELECTDOWN:
 		    {
-		        /* Whenever the active gadget changes the gi must be updated
-			   because it is cached in iidata->GadgetInfo!!!! Don't
-			   forget to do this if somewhere else the active
-			   gadget is changed, for example in ActivateGadget!!! */
-			   
-		        PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w);
-		    	SetGadgetInfoGadget(gi, gadget);
-			
-			if (gadget->Activation & GACT_IMMEDIATE)
+			BOOL new_gadget = FALSE;
+
+			iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
+
+			if (MENUS_ACTIVE)
 			{
-			    ih_fire_intuimessage(w,
-					      	 IDCMP_GADGETDOWN,
-					      	 0,
-					      	 gadget,
-					      	 IntuitionBase);
+			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+			    orig_ie->ie_Class = IECLASS_NULL;
+			    break;
 			}
 
-			new_gadget = TRUE;
-		    }
-		}
-
-		if (gadget)
-
-		{
-		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-		    {
-		    case GTYP_BOOLGADGET:
-			if (gadget->Activation & GACT_TOGGLESELECT)
+			if (!gadget)
 			{
-			    gadget->Flags ^= GFLG_SELECTED;
-			    RefreshBoolGadgetState(gadget, w, IntuitionBase);
-			}
-			else if (!(gadget->Flags & GFLG_SELECTED))
-			{
-			    gadget->Flags |= GFLG_SELECTED;
-			    RefreshBoolGadgetState(gadget, w, IntuitionBase);			    
-			}
-			break;
-
-		    case GTYP_PROPGADGET:
-			HandlePropSelectDown(gadget,
-					     w,
-					     NULL,
-					     w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-					     w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-					     IntuitionBase);
-
-
-			break;
-
-		    case GTYP_STRGADGET:
-			/* If the click was inside the active strgad,
-			** then let it update cursor pos,
-			** else deactivate stringadget and reuse event.
-			*/
-
-			if (InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
-			{
-			    UWORD imsgcode;
-
-			    HandleStrInput(gadget, gi, ie, &imsgcode,
-					   IntuitionBase);
-			}
-			else
-			{
-			    gadget->Flags &= ~GFLG_SELECTED;
-
-			    RefreshStrGadget(gadget, w, IntuitionBase);
-			    /* Gadget not active anymore */
-			    gadget = NULL;
-			    reuse_event = TRUE;
-			}
-			break;
-
-		    case GTYP_CUSTOMGADGET: {
-			gadget = DoGPInput(gi,
-					   gadget,
-					   ie,
-					   (new_gadget ? GM_GOACTIVE : GM_HANDLEINPUT),
-					   &reuse_event,
-					   IntuitionBase);
-					   
-			break; }
-
-
-		    } /* switch (GadgetType) */
-
-		} /* if (a gadget is active) */
-		else if (w)
-		{
-		    ih_fire_intuimessage(w,
-		    		      	 IDCMP_MOUSEBUTTONS,
-				      	 SELECTDOWN,
-				      	 w,
-				      	 IntuitionBase);
-		}
-		
-		}break; /* case SELECTDOWN */
-
-	    case SELECTUP:
-		iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
-
-		if (MENUS_ACTIVE)
-		{
-		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    break;
-		}
-
-		if (gadget)
-		{
-		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
-		    
-		    /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
-
-
-		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-		    {
-		    case GTYP_BOOLGADGET:
-			if (!(gadget->Activation & GACT_TOGGLESELECT) )
-			{
-			    if (gadget->Flags & GFLG_SELECTED)
+  			    gadget = FindGadget (IntuitionBase->ActiveScreen,
+		    				 w,
+						 IntuitionBase->ActiveScreen->MouseX,
+						 IntuitionBase->ActiveScreen->MouseY, gi, IntuitionBase);
+			    if (gadget)
 			    {
-			    	gadget->Flags &= ~GFLG_SELECTED;
-				RefreshBoolGadgetState(gadget, w, IntuitionBase);
-			    }
-    	    	    	}
-			else
-			{
-			    inside = TRUE;
-			}
-			
-			if (inside && (gadget->Activation & GACT_RELVERIFY))
-			{
-			    ih_fire_intuimessage(w,
-			    		      	 IDCMP_GADGETUP,
-					      	 0,
-					      	 gadget,
-					      	 IntuitionBase);
-			} else {
-			    /* RKRM say so */
-			    ih_fire_intuimessage(w,
-			    		      	 IDCMP_MOUSEBUTTONS,
-					      	 SELECTUP,
-					      	 w,
-					      	 IntuitionBase);
-			}
+		        	/* Whenever the active gadget changes the gi must be updated
+				   because it is cached in iidata->GadgetInfo!!!! Don't
+				   forget to do this if somewhere else the active
+				   gadget is changed, for example in ActivateGadget!!! */
 
-			gadget = NULL;
-			break;
+		        	PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w);
+		    		SetGadgetInfoGadget(gi, gadget);
 
-		    case GTYP_PROPGADGET:
-			HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
-			if (gadget->Activation & GACT_RELVERIFY)
-			{
-			    ih_fire_intuimessage(w,
-			    		      	 IDCMP_GADGETUP,
-					      	 0,
-					      	 gadget,
-					      	 IntuitionBase);
-			}
-			
-
-			gadget = NULL;
-			break;
-
-		    /* Intuition string gadgets don't care about SELECTUP */
-
-		    case GTYP_CUSTOMGADGET: {
-			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-			break; }
-
-		    } /* switch GadgetType */
-
-		} /* if (a gadget is currently active) */
-		else if (w)
-		{
-		    ih_fire_intuimessage(w,
-		    		      	 IDCMP_MOUSEBUTTONS,
-				      	 SELECTUP,
-				      	 w,
-				      	 IntuitionBase);
-		}
-
-		break; /* case SELECTUP */
-
-	    case MENUDOWN:
-	        iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
-
-		if (MENUS_ACTIVE)
-		{
-		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    break;
-		}
-
-	        if (w && !gadget)
-		{
-		    if (!(w->Flags & WFLG_RMBTRAP))
-		    {
-			if (FireMenuMessage(MMCODE_START, w, ie, IntuitionBase))
-			{
-			    /* This lock will be released only when the user is
-			       done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
-			       event arrives (generated by MenuHandler task) */
-			       
-			    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
-			    iihdata->MenuWindow = w;
-			    MENUS_ACTIVE = TRUE;
-			}			
-		    }
-		}
-		/* fall through */
-		
-	    case MENUUP:
-	    case MIDDLEDOWN:
-	    case MIDDLEUP:
-	    	switch(ie->ie_Code)
-		{
-		    case MENUUP:
-		    	iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
-			break;
-		
-		    case MIDDLEDOWN:
-		    	iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
-			break;
-			
-		    case MIDDLEUP:
-		    	iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
-			break;
-		}
-		
-		if (MENUS_ACTIVE)
-		{
-		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    break;
-		}
-
-		if (gadget)
-		{
-		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
-		    {
-			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-		    } /* if (active gadget is a BOOPSI gad) */
-
-		} /* if (there is an active gadget) */
-		else if (w)
-		{
-		    ih_fire_intuimessage(w,
-		    		      	 IDCMP_MOUSEBUTTONS,
-				      	 ie->ie_Code,
-				      	 w,
-				      	 IntuitionBase);
-		}
-
-		break; /* case MENUDOWN */
-
-	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
-	    	if (MouseCoordsRelative())
-		{
-		    struct Screen *scr;
-		    
-		    iihdata->DeltaMouseX = ie->ie_X;
-		    iihdata->DeltaMouseY = ie->ie_Y;
-		    
-		    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
-		    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
-		    
-		    if (ie->ie_X < 0) ie->ie_X = 0;
-		    if (ie->ie_Y < 0) ie->ie_Y = 0;
-		    
-		    lock = LockIBase(0);
-		    scr = IntuitionBase->ActiveScreen;
-
-		    if (scr)
-		    {
-		    	if (ie->ie_X >= scr->Width)  ie->ie_X = scr->Width - 1;
-			if (ie->ie_Y >= scr->Height) ie->ie_Y = scr->Height - 1;
-		    }
-		    else
-		    {
-		    	if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
-			if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
-		    }
-   		    UnlockIBase(lock);
-
-		}
-		else
-		{
-		    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-		    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
-		}
-		
-		SetPointerPos(ie->ie_X, ie->ie_Y);
-		
-		iihdata->LastMouseX = ie->ie_X;
-		iihdata->LastMouseY = ie->ie_Y;
-
-		notify_mousemove_screensandwindows(ie->ie_X, 
-		                                   ie->ie_Y, 
-		                                   IntuitionBase);
-
-		if (MENUS_ACTIVE)
-		{
-		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    break;
-		}
-
-		if (gadget)
-		{
-		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
-		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
-		    
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    
-		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-		    {
-		    case GTYP_BOOLGADGET:
-		    	if (!(gadget->Activation & GACT_TOGGLESELECT))
-			{
-			    if  (inside != selected)
-			    {
-				gadget->Flags ^= GFLG_SELECTED;
-				RefreshBoolGadgetState(gadget, w, IntuitionBase);
-			    }
-			}
-			break;
-
-		    case GTYP_PROPGADGET:
-			HandlePropMouseMove(gadget
-				,w
-				,NULL
-				,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL)
-				,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL)
-				,IntuitionBase);
-
-			break;
-
-		    case GTYP_CUSTOMGADGET: {
-			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-			break; }
-
-		    } /* switch GadgetType */
-	    	
-		} /* if (a gadget is currently active) */
-
-		orig_ie->ie_Class = IECLASS_NULL;
-		
-		if (!w) break;
-
-		if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE)) break;
-			
-		/* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
-		   and/or active gadget has GACT_FOLLOWMOUSE set */
-		   
-		if (!(w->Flags & WFLG_REPORTMOUSE))
-		{
-		    if (!gadget) break;
-		    if (!(gadget->Activation & GACT_FOLLOWMOUSE)) break;
-		}
-		
-		orig_ie->ie_Class = IECLASS_RAWMOUSE;
-		
-		/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
-		   note that this comes after handling gadgets, because gadgets should get all events.
-		*/
-
-		if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
-		{
-		    BOOL old_msg_found = FALSE;
-		    
-		    /* Mouse Queue is full, so try looking for a not
-		       yet GetMsg()ed IntuiMessage in w->UserPort
-		       trying to modify that. */
-		    
-		    Forbid();   
-		    if (w->UserPort)
-		    {
-		        struct IntuiMessage *im;
-
-			for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
-			     im->ExecMessage.mn_Node.ln_Pred;
-			     im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)			
-			{
-			    if ((im->Class == IDCMP_MOUSEMOVE) &&
-			        (im->IDCMPWindow == w))
-			    {
-			        im->Qualifier = iihdata->ActQualifier;
-				
-			        if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+				if (gadget->Activation & GACT_IMMEDIATE)
 				{
-				    im->MouseX = iihdata->DeltaMouseX;
-				    im->MouseY = iihdata->DeltaMouseY;
-				} else {
-				    im->MouseX = w->MouseX;
-				    im->MouseY = w->MouseY;
-				}   
-			        CurrentTime(&im->Seconds, &im->Micros);
+				    ih_fire_intuimessage(w,
+					      		 IDCMP_GADGETDOWN,
+					      		 0,
+					      		 gadget,
+					      		 IntuitionBase);
+				}
 
-			        old_msg_found = TRUE;
-				break;
-			    }
-			}
-		    } /* if (w->UserPort) */
-		    Permit();
-		    
-		    /* no need to send a new message if we modified
-		       an existing one ... */
-		       
-		    if (old_msg_found) break;
-		    
-		    /* ... otherwise we are in a strange situation. The mouse
-		       queue is full, but we did not find an existing MOUSEMOVE
-		       imsg in w->UserPort. So the app probably has removed
-		       an imsg from the UserPort with GetMsg but we did not get
-		       the ReplyMsg, yet. In this case we do send a new message */
-		       
-		    HandleIntuiReplyPort(iihdata, IntuitionBase);
-		    
-		}
-		
-		/* MouseQueue is not full, so we can send a message. We increase
-		   IntWindow->num_mouseevents which will later be decreased after
-		   the Intuition InputHandler gets the ReplyMessage from the app
-		   and handles it in HandleIntuiReplyPort() */
-				
-		if (ih_fire_intuimessage(w,
-				      	 IDCMP_MOUSEMOVE,
-				      	 IECODE_NOBUTTON,
-				      	 w,
-				      	 IntuitionBase))
-		{
-		    IW(w)->num_mouseevents++;
-		}
-				  
-	        break; } /* case IECODE_NOBUTTON */
-
-	    } /* switch (im->im_Code)  (what button was pressed ?) */
-	    break;
-
-#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
-			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
-			IEQUALIFIER_LALT       | IEQUALIFIER_RALT     | \
-			IEQUALIFIER_LCOMMAND   | IEQUALIFIER_RCOMMAND | \
-			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
-			
-	case IECLASS_RAWKEY:
-	    /* release events go only to gadgets and windows who
-	       have not set IDCMP_VANILLAKEY */
-	    
-	    iihdata->ActQualifier &= ~KEY_QUALIFIERS;
-	    iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
-
-	    if (MENUS_ACTIVE)
-	    {
-		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		orig_ie->ie_Class = IECLASS_NULL;
-		break;
-	    }
-				      
-	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
-	         gadget ||
-	         (w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
-	    {
-
-		if (gadget)
-		{
-		    orig_ie->ie_Class = IECLASS_NULL;
-		    
-		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-		    {
-		    case GTYP_STRGADGET: {
-			UWORD imsgcode;
-			ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode,
-						   IntuitionBase);
-
-			if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE))
-			{
-			    if (gadget->Activation & GACT_RELVERIFY)
-			    {
-			        ih_fire_intuimessage(w,
-						     IDCMP_GADGETUP,
-						     imsgcode,
-						     gadget,
-						     IntuitionBase);
-				
+				new_gadget = TRUE;
 			    }
 			    
-			    if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_NEXTACTIVE))
+			} /* if (!gadget) */
+
+			if (gadget)
+			{
+			    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 			    {
-				gadget = FindCycleGadget(w, gadget, GMR_NEXTACTIVE);
+				case GTYP_BOOLGADGET:
+				    //if (gadget->Activation & GACT_TOGGLESELECT)
+				    //{
+					gadget->Flags ^= GFLG_SELECTED;
+					RefreshBoolGadgetState(gadget, w, IntuitionBase);
+				    //}
+				    //else if (!(gadget->Flags & GFLG_SELECTED))
+				    //{
+				    //	gadget->Flags |= GFLG_SELECTED;
+				    //	RefreshBoolGadgetState(gadget, w, IntuitionBase);			    
+				    //}
+				    break;
+
+				case GTYP_PROPGADGET:
+				    HandlePropSelectDown(gadget,
+							 w,
+							 NULL,
+							 w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+							 w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+							 IntuitionBase);
+
+
+				    break;
+
+				case GTYP_STRGADGET:
+				    /* If the click was inside the active strgad,
+				    ** then let it update cursor pos,
+				    ** else deactivate stringadget and reuse event.
+				    */
+
+				    if (InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
+				    {
+					UWORD imsgcode;
+
+					HandleStrInput(gadget, gi, ie, &imsgcode,
+						       IntuitionBase);
+				    }
+				    else
+				    {
+					gadget->Flags &= ~GFLG_SELECTED;
+
+					RefreshStrGadget(gadget, w, IntuitionBase);
+					/* Gadget not active anymore */
+					gadget = NULL;
+					reuse_event = TRUE;
+				    }
+				    break;
+
+				case GTYP_CUSTOMGADGET:
+				    gadget = DoGPInput(gi,
+						       gadget,
+						       ie,
+						       (new_gadget ? GM_GOACTIVE : GM_HANDLEINPUT),
+						       &reuse_event,
+						       IntuitionBase);
+
+				    break;
+
+
+			    } /* switch (GadgetType) */
+
+			} /* if (a gadget is active) */
+			else if (w)
+			{
+			    ih_fire_intuimessage(w,
+		    		      		 IDCMP_MOUSEBUTTONS,
+				      		 SELECTDOWN,
+				      		 w,
+				      		 IntuitionBase);
+			}
+
+			break;
+
+		    } /* case SELECTDOWN */
+
+		    case SELECTUP:
+			iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
+
+			if (MENUS_ACTIVE)
+			{
+			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+			    orig_ie->ie_Class = IECLASS_NULL;
+			    break;
+			}
+
+			if (gadget)
+			{
+			    BOOL inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+
+			    /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
+
+
+			    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+			    {
+				case GTYP_BOOLGADGET:
+				    if (!(gadget->Activation & GACT_TOGGLESELECT))
+				    {
+				    	if (inside)
+					{
+			    		    gadget->Flags ^= GFLG_SELECTED;
+					    RefreshBoolGadgetState(gadget, w, IntuitionBase);
+					}
+   	    	    		    }
+				    else
+				    {
+					inside = TRUE;
+				    }
+
+				    if (inside && (gadget->Activation & GACT_RELVERIFY))
+				    {
+			    		if (IS_SYS_GADGET(gadget))
+					{
+					    HandleSysGadgetVerify(gi, gadget, IntuitionBase);
+					}
+					else
+					{
+					    ih_fire_intuimessage(w,
+			    		      			 IDCMP_GADGETUP,
+					      			 0,
+					      			 gadget,
+					      			 IntuitionBase);
+					}
+				    }
+				    else
+				    {
+					/* RKRM say so */
+					ih_fire_intuimessage(w,
+			    		      		     IDCMP_MOUSEBUTTONS,
+					      		     SELECTUP,
+					      		     w,
+					      		     IntuitionBase);
+				    }
+
+				    gadget = NULL;
+				    break;
+
+				case GTYP_PROPGADGET:
+				    HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
+				    if (gadget->Activation & GACT_RELVERIFY)
+				    {
+					ih_fire_intuimessage(w,
+			    		      		     IDCMP_GADGETUP,
+					      		     0,
+					      		     gadget,
+					      		     IntuitionBase);
+				    }
+
+
+				    gadget = NULL;
+				    break;
+
+				/* Intuition string gadgets don't care about SELECTUP */
+
+				case GTYP_CUSTOMGADGET:
+				    gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
+				    break;
+
+			    } /* switch GadgetType */
+
+			} /* if (a gadget is currently active) */
+			else if (w)
+			{
+			    ih_fire_intuimessage(w,
+		    		      		 IDCMP_MOUSEBUTTONS,
+				      		 SELECTUP,
+				      		 w,
+				      		 IntuitionBase);
+			}
+
+			break; /* case SELECTUP */
+
+		    case MENUDOWN:
+	        	iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
+
+			if (MENUS_ACTIVE)
+			{
+			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+			    orig_ie->ie_Class = IECLASS_NULL;
+			    break;
+			}
+
+	        	if (w && !gadget)
+			{
+			    if (!(w->Flags & WFLG_RMBTRAP))
+			    {
+				if (FireMenuMessage(MMCODE_START, w, ie, IntuitionBase))
+				{
+				    /* This lock will be released only when the user is
+				       done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
+				       event arrives (generated by MenuHandler task) */
+
+				    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+				    iihdata->MenuWindow = w;
+				    MENUS_ACTIVE = TRUE;
+				}			
 			    }
-			    else if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_PREVACTIVE))
+			}
+			/* fall through */
+
+		    case MENUUP:
+		    case MIDDLEDOWN:
+		    case MIDDLEUP:
+	    		switch(ie->ie_Code)
+			{
+			    case MENUUP:
+		    		iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
+				break;
+
+			    case MIDDLEDOWN:
+		    		iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
+				break;
+
+			    case MIDDLEUP:
+		    		iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
+				break;
+			}
+
+			if (MENUS_ACTIVE)
+			{
+			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+			    orig_ie->ie_Class = IECLASS_NULL;
+			    break;
+			}
+
+			if (gadget)
+			{
+			    if (IS_BOOPSI_GADGET(gadget))
 			    {
-				gadget = FindCycleGadget(w, gadget, GMR_PREVACTIVE);
+				gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
+			    }
+
+			} /* if (there is an active gadget) */
+			else if (w)
+			{
+			    ih_fire_intuimessage(w,
+		    		      		 IDCMP_MOUSEBUTTONS,
+				      		 ie->ie_Code,
+				      		 w,
+				      		 IntuitionBase);
+			}
+
+			break; /* case MENUDOWN */
+
+		    case IECODE_NOBUTTON: /* MOUSEMOVE */
+		    {
+	    		if (MouseCoordsRelative())
+			{
+			    struct Screen *scr;
+
+			    iihdata->DeltaMouseX = ie->ie_X;
+			    iihdata->DeltaMouseY = ie->ie_Y;
+
+			    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
+			    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+
+			    if (ie->ie_X < 0) ie->ie_X = 0;
+			    if (ie->ie_Y < 0) ie->ie_Y = 0;
+
+			    lock = LockIBase(0);
+			    scr = IntuitionBase->ActiveScreen;
+
+			    if (scr)
+			    {
+		    		if (ie->ie_X >= scr->Width)  ie->ie_X = scr->Width - 1;
+				if (ie->ie_Y >= scr->Height) ie->ie_Y = scr->Height - 1;
 			    }
 			    else
 			    {
-				gadget = NULL;
+		    		if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
+				if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
 			    }
+   			    UnlockIBase(lock);
 
-			    if (gadget)
-			    {
-				gadget = DoActivateGadget(w, gadget, IntuitionBase);
-			    }
-			    
-			} /* if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE)) */
-
-			break; }
-
-		    case GTYP_CUSTOMGADGET: {
-			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-			break;}  /* case BOOPSI custom gadget type */
-
-		    } /* switch (gadget type) */
-
-		} /* if (a gadget is currently active) */
-		else if (w)
-		{
-		    BOOL menushortcut = FALSE;
-		    
-		    if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
-		        (!(w->Flags & WFLG_RMBTRAP)) &&
-			(w->IDCMPFlags & IDCMP_MENUPICK))
-		    {
-			ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
-
-			if (w->MenuStrip)
+			}
+			else
 			{
-			    UBYTE key;
-			    
-		            if (MapRawKey(ie, &key, 1, NULL) == 1)
+			    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
+			    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+			}
+
+			SetPointerPos(ie->ie_X, ie->ie_Y);
+
+			iihdata->LastMouseX = ie->ie_X;
+			iihdata->LastMouseY = ie->ie_Y;
+
+			notify_mousemove_screensandwindows(ie->ie_X, 
+		                                	   ie->ie_Y, 
+		                                	   IntuitionBase);
+
+			if (MENUS_ACTIVE)
+			{
+			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+			    orig_ie->ie_Class = IECLASS_NULL;
+			    break;
+			}
+
+			if (gadget)
+			{			    
+			    orig_ie->ie_Class = IECLASS_NULL;
+
+			    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 			    {
-				UWORD menucode;
+				case GTYP_BOOLGADGET:
+		    		    if (!(gadget->Activation & GACT_TOGGLESELECT))
+				    {
+					BOOL inside, oldinside;
 
-				menucode = FindMenuShortCut(w->MenuStrip, key, TRUE, IntuitionBase);
-				if (menucode != MENUNULL)
+					inside = InsideGadget(gi->gi_Screen,
+			    	    	    		      gi->gi_Window,
+							      gadget,
+							      gi->gi_Screen->MouseX,
+							      gi->gi_Screen->MouseY);
+
+					oldinside = InsideGadget(gi->gi_Screen,
+			    	    	    			 gi->gi_Window,
+								 gadget,
+								 gi->gi_Screen->MouseX - iihdata->DeltaMouseX,
+								 gi->gi_Screen->MouseY - iihdata->DeltaMouseY);
+								 
+					if  (inside != oldinside)
+					{
+					    gadget->Flags ^= GFLG_SELECTED;
+					    RefreshBoolGadgetState(gadget, w, IntuitionBase);
+					}
+				    }
+				    break;
+ 				
+				case GTYP_PROPGADGET:
+				    HandlePropMouseMove(gadget
+					    ,w
+					    ,NULL
+					    ,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL)
+					    ,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL)
+					    ,IntuitionBase);
+
+				    break;
+
+				case GTYP_CUSTOMGADGET:
+				    gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
+				    break;
+
+			    } /* switch GadgetType */
+
+			} /* if (a gadget is currently active) */
+
+			orig_ie->ie_Class = IECLASS_NULL;
+
+			if (!w) break;
+
+			if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE)) break;
+
+			/* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
+			   and/or active gadget has GACT_FOLLOWMOUSE set */
+
+			if (!(w->Flags & WFLG_REPORTMOUSE))
+			{
+			    if (!gadget) break;
+			    if (!(gadget->Activation & GACT_FOLLOWMOUSE)) break;
+			}
+
+			orig_ie->ie_Class = IECLASS_RAWMOUSE;
+
+			/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
+			   note that this comes after handling gadgets, because gadgets should get all events.
+			*/
+
+			if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
+			{
+			    BOOL old_msg_found = FALSE;
+
+			    /* Mouse Queue is full, so try looking for a not
+			       yet GetMsg()ed IntuiMessage in w->UserPort
+			       trying to modify that. */
+
+			    Forbid();   
+			    if (w->UserPort)
+			    {
+		        	struct IntuiMessage *im;
+
+				for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
+				     im->ExecMessage.mn_Node.ln_Pred;
+				     im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)			
 				{
-				    ie->ie_Class        = IECLASS_MENU;
-				    ie->ie_SubClass     = IESUBCLASS_MENUSTOP;
-				    ie->ie_EventAddress = w;
-				    ie->ie_Code         = menucode;
-				    
-				    reuse_event = TRUE;
-				    menushortcut = TRUE;
+				    if ((im->Class == IDCMP_MOUSEMOVE) &&
+			        	(im->IDCMPWindow == w))
+				    {
+			        	im->Qualifier = iihdata->ActQualifier;
 
-				    MENUS_ACTIVE = TRUE;
-    	    	    	    	    iihdata->MenuWindow = w;
+			        	if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+					{
+					    im->MouseX = iihdata->DeltaMouseX;
+					    im->MouseY = iihdata->DeltaMouseY;
+					}
+					else
+					{
+					    im->MouseX = w->MouseX;
+					    im->MouseY = w->MouseY;
+					}   
+			        	CurrentTime(&im->Seconds, &im->Micros);
+
+			        	old_msg_found = TRUE;
+					break;
+				    }
+				}
+			    } /* if (w->UserPort) */
+			    Permit();
+
+			    /* no need to send a new message if we modified
+			       an existing one ... */
+
+			    if (old_msg_found) break;
+
+			    /* ... otherwise we are in a strange situation. The mouse
+			       queue is full, but we did not find an existing MOUSEMOVE
+			       imsg in w->UserPort. So the app probably has removed
+			       an imsg from the UserPort with GetMsg but we did not get
+			       the ReplyMsg, yet. In this case we do send a new message */
+
+			    HandleIntuiReplyPort(iihdata, IntuitionBase);
+
+			}
+
+			/* MouseQueue is not full, so we can send a message. We increase
+			   IntWindow->num_mouseevents which will later be decreased after
+			   the Intuition InputHandler gets the ReplyMessage from the app
+			   and handles it in HandleIntuiReplyPort() */
+
+			if (ih_fire_intuimessage(w,
+				      		 IDCMP_MOUSEMOVE,
+				      		 IECODE_NOBUTTON,
+				      		 w,
+				      		 IntuitionBase))
+			{
+			    IW(w)->num_mouseevents++;
+			}
+
+	        	break;
+			
+		    } /* case IECODE_NOBUTTON */
+
+		} /* switch (ie->ie_Code)  (what button was pressed ?) */
+		break;
+
+    #define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+			    IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+			    IEQUALIFIER_LALT       | IEQUALIFIER_RALT     | \
+			    IEQUALIFIER_LCOMMAND   | IEQUALIFIER_RCOMMAND | \
+			    IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
+
+	    case IECLASS_RAWKEY:
+		/* release events go only to gadgets and windows who
+		   have not set IDCMP_VANILLAKEY */
+
+		iihdata->ActQualifier &= ~KEY_QUALIFIERS;
+		iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
+
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
+
+		if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
+	             gadget ||
+	             (w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
+		{
+
+		    if (gadget)
+		    {
+			orig_ie->ie_Class = IECLASS_NULL;
+
+			switch (gadget->GadgetType & GTYP_GTYPEMASK)
+			{
+			    case GTYP_STRGADGET:
+			    {
+				UWORD imsgcode;
+				ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode,
+							   IntuitionBase);
+
+				if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE))
+				{
+				    if (gadget->Activation & GACT_RELVERIFY)
+				    {
+			        	ih_fire_intuimessage(w,
+							     IDCMP_GADGETUP,
+							     imsgcode,
+							     gadget,
+							     IntuitionBase);
+
+				    }
+
+				    if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_NEXTACTIVE))
+				    {
+					gadget = FindCycleGadget(w, gadget, GMR_NEXTACTIVE);
+				    }
+				    else if ((gadget->Flags & GFLG_TABCYCLE) && (ret & SGA_PREVACTIVE))
+				    {
+					gadget = FindCycleGadget(w, gadget, GMR_PREVACTIVE);
+				    }
+				    else
+				    {
+					gadget = NULL;
+				    }
+
+				    if (gadget)
+				    {
+					gadget = DoActivateGadget(w, gadget, IntuitionBase);
+				    }
+
+				} /* if (ret & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE)) */
+
+				break;
+			    }
+
+			    case GTYP_CUSTOMGADGET:
+				gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
+				break;
+
+			} /* switch (gadget type) */
+
+		    } /* if (a gadget is currently active) */
+		    else if (w)
+		    {
+			BOOL menushortcut = FALSE;
+
+			if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
+		            (!(w->Flags & WFLG_RMBTRAP)) &&
+			    (w->IDCMPFlags & IDCMP_MENUPICK))
+			{
+			    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+			    if (w->MenuStrip)
+			    {
+				UBYTE key;
+
+		        	if (MapRawKey(ie, &key, 1, NULL) == 1)
+				{
+				    UWORD menucode;
+
+				    menucode = FindMenuShortCut(w->MenuStrip, key, TRUE, IntuitionBase);
+				    if (menucode != MENUNULL)
+				    {
+					ie->ie_Class        = IECLASS_MENU;
+					ie->ie_SubClass     = IESUBCLASS_MENUSTOP;
+					ie->ie_EventAddress = w;
+					ie->ie_Code         = menucode;
+
+					reuse_event = TRUE;
+					menushortcut = TRUE;
+
+					MENUS_ACTIVE = TRUE;
+    	    	    	    		iihdata->MenuWindow = w;
+				    }
 				}
 			    }
+			    if (!menushortcut) /* !! */
+				ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+			} /* if could be a menu short cut */
+
+			if (menushortcut) break;
+
+			/* This is a regular RAWKEY event (no gadget taking care
+			   of it...). */
+
+			if (iihdata->ActQualifier & IEQUALIFIER_REPEAT)
+			{			
+		            /* don't send repeat key events if repeatqueue is full */			
+		    	    if (IW(w)->num_repeatevents >= IW(w)->repeatqueue) break;
 			}
-			if (!menushortcut) /* !! */
-			    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
-		    } /* if could be a menu short cut */
-		    
-		    if (menushortcut) break;
-		    
-		    /* This is a regular RAWKEY event (no gadget taking care
-		       of it...). */
-
-		    if (iihdata->ActQualifier & IEQUALIFIER_REPEAT)
-		    {			
-		        /* don't send repeat key events if repeatqueue is full */			
-		    	if (IW(w)->num_repeatevents >= IW(w)->repeatqueue) break;
-		    }
-		    
-		    if (w->IDCMPFlags & IDCMP_VANILLAKEY)
-		    {
-			UBYTE keyBuffer;
-
-			if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
+			if (w->IDCMPFlags & IDCMP_VANILLAKEY)
 			{
-			    ih_fire_intuimessage(w,
-			    		      	 IDCMP_VANILLAKEY,
-					      	 keyBuffer,
-					      	 ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
-					      	 IntuitionBase);
-			    break;
-			} 
+			    UBYTE keyBuffer;
 
-			/* If the event mapped to more than one byte, it is not
-			   a legal VANILLAKEY, so we send it as the original
-			   RAWKEY event. */
-			       			    
-		    }
-		    
-		    ih_fire_intuimessage(w,
-		    		      	 IDCMP_RAWKEY,
-				      	 ie->ie_Code,
-				      	 ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machine!? */
-				      	 IntuitionBase);
-				      
-		} /* regular RAWKEY */
-	    }
-	    break; /* case IECLASS_RAWKEY */
-	    
-	case IECLASS_TIMER:	    	    
-	    if (MENUS_ACTIVE)
-	    {
-		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-		orig_ie->ie_Class = IECLASS_NULL;
-		break;
-	    }
+			    if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
+			    {
+				ih_fire_intuimessage(w,
+			    		      	     IDCMP_VANILLAKEY,
+					      	     keyBuffer,
+					      	     ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
+					      	     IntuitionBase);
+				break;
+			    } 
 
-	    if (gadget)
-	    {
-	        if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+			    /* If the event mapped to more than one byte, it is not
+			       a legal VANILLAKEY, so we send it as the original
+			       RAWKEY event. */
+
+			}
+
+			ih_fire_intuimessage(w,
+		    		      	     IDCMP_RAWKEY,
+				      	     ie->ie_Code,
+				      	     ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machine!? */
+				      	     IntuitionBase);
+
+		    } /* regular RAWKEY */
+		}
+		break; /* case IECLASS_RAWKEY */
+
+	    case IECLASS_TIMER:	    	    
+		if (MENUS_ACTIVE)
 		{
-		    gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-		} /* if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) */
-		
-	    } /* if (gadget) */
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
 
-	    /* stegerg: on the Amiga, Intuition's InputHandler seems to always
-	       swallow IECLASS_TIMER InputEvents. They never reach InputHandlers with
-	       lower priorities. So we mark the event as eaten by Intuition */	       
-	    orig_ie->ie_Class = IECLASS_NULL;
-	    
-	    if (!w) break;
-	    
-	    /* Send INTUITICK msg only if app already replied the last INTUITICK msg */
-	    if (w->Flags & WFLG_WINDOWTICKED) break;
-	    
-	    /* Set the WINDOWTICKED flag, it will be cleared again when the app
-	       replies back the msg and the InputHandler handles the replymsg
-	       in HandleIntuiReplyPort() */
-	       
-	    ih_fire_intuimessage(w,
-	    		      	 IDCMP_INTUITICKS,
-			      	 0,
-			      	 w,
-			      	 IntuitionBase);
-			      
-	    Forbid();
-	    w->Flags |= WFLG_WINDOWTICKED;
-	    Permit();
-	    
-	    break; /* case IECLASS_TIMER */
+		if (gadget)
+		{
+	            if (IS_BOOPSI_GADGET(gadget))
+		    {
+			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
+		    }
 
-	case IECLASS_MENU:
-	    if (MENUS_ACTIVE && (ie->ie_SubClass == IESUBCLASS_MENUSTOP))
-	    {
-	    	iihdata->MenuWindow = NULL;
-	        MENUS_ACTIVE = FALSE;
-		
-		/* semaphore was locked when menu action started, see
-		   above where MMCODE_START MenuMessage is sent.
-		   
-		   It could have also have been looked if the user
-		   activated one of the menu key shortcuts, see
-		   "case IECLASS_RAWKEY" */
-		   	
-    		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+		} /* if (gadget) */
 
-	        orig_ie->ie_Class = IECLASS_NULL;
-
-		ih_fire_intuimessage((struct Window *)ie->ie_EventAddress,
-		    		     IDCMP_MENUPICK,
-				     ie->ie_Code,
-				     (struct Window *)ie->ie_EventAddress,
-				     IntuitionBase);
-
-	    }
-	    break;
-	    
-	default:
-	    if (MENUS_ACTIVE)
-	    {
-		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		/* stegerg: on the Amiga, Intuition's InputHandler seems to always
+		   swallow IECLASS_TIMER InputEvents. They never reach InputHandlers with
+		   lower priorities. So we mark the event as eaten by Intuition */	       
 		orig_ie->ie_Class = IECLASS_NULL;
-		break;
-	    }
 
-            kprintf("\x07" "\n\n======== Unknown IEClass: addr = %x  class = %d (origclass = %d)! =============\n\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
-	    break;
-	} /* switch (im->Class) */
+		if (!w) break;
+
+		/* Send INTUITICK msg only if app already replied the last INTUITICK msg */
+		if (w->Flags & WFLG_WINDOWTICKED) break;
+
+		/* Set the WINDOWTICKED flag, it will be cleared again when the app
+		   replies back the msg and the InputHandler handles the replymsg
+		   in HandleIntuiReplyPort() */
+
+		ih_fire_intuimessage(w,
+	    		      	     IDCMP_INTUITICKS,
+			      	     0,
+			      	     w,
+			      	     IntuitionBase);
+
+		Forbid();
+		w->Flags |= WFLG_WINDOWTICKED;
+		Permit();
+
+		break; /* case IECLASS_TIMER */
+
+	    case IECLASS_MENU:
+		if (MENUS_ACTIVE && (ie->ie_SubClass == IESUBCLASS_MENUSTOP))
+		{
+	    	    iihdata->MenuWindow = NULL;
+	            MENUS_ACTIVE = FALSE;
+
+		    /* semaphore was locked when menu action started, see
+		       above where MMCODE_START MenuMessage is sent.
+
+		       It could have also have been looked if the user
+		       activated one of the menu key shortcuts, see
+		       "case IECLASS_RAWKEY" */
+
+    		    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+	            orig_ie->ie_Class = IECLASS_NULL;
+
+		    ih_fire_intuimessage((struct Window *)ie->ie_EventAddress,
+		    			 IDCMP_MENUPICK,
+					 ie->ie_Code,
+					 (struct Window *)ie->ie_EventAddress,
+					 IntuitionBase);
+
+		}
+		break;
+
+	    default:
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
+
+        	bug("\x07" "\n\n======== Unknown IEClass: addr = %x  class = %d (origclass = %d)! =============\n\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
+		break;
+	    
+	} /* switch (ie->ie_Class) */
 
 	if (!reuse_event)
 	{
@@ -1092,7 +1126,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		if (last_ie)
 		{
 	            last_ie->ie_NextEvent = ie;
-		} else {
+		}
+		else
+		{
 	            iihdata->ReturnInputEvent = ie;
 		}
 		last_ie = ie;
@@ -1106,7 +1142,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	if (last_ie)
 	{
 	    last_ie->ie_NextEvent = iihdata->GeneratedInputEvents;
-	} else {
+	}
+	else
+	{
 	    iihdata->ReturnInputEvent = iihdata->GeneratedInputEvents;
 	}
     }
