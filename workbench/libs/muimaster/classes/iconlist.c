@@ -737,7 +737,8 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
     } else
     {
-	DoMethod(obj, MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+	DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
+		 _mleft(obj), _mtop(obj), 0);
     }
 
 
