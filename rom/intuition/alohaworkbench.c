@@ -12,41 +12,45 @@
     NAME */
 #include <proto/intuition.h>
 
-	AROS_LH1(void, AlohaWorkbench,
+        AROS_LH1(void, AlohaWorkbench,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, wbmsgport, A0),
+        AROS_LHA(struct MsgPort *, wbmsgport, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 67, Intuition)
+        struct IntuitionBase *, IntuitionBase, 67, Intuition)
 
 /*  FUNCTION
-	The WorkBench program wants to call this function to signal
-	Intuition that it is active or shutting down.
-	Intuition then uses the MsgPort to tell the WorkBench to open or
-	close its windows if the user called OpenWorkbench() or
-	CloseWorkbench().
+        The WorkBench program wants to call this function to signal
+        Intuition that it is active or shutting down.
+        Intuition then uses the MsgPort to tell the WorkBench to open or
+        close its windows if the user called OpenWorkbench() or
+        CloseWorkbench().
 
-	When the MsgPort is non-NULL Intuition will send IntuiMessages to
-	it with the Class field set to WBENCHMESSAGE and Code field set to
-	either WBENCHOPEN or WBENCHCLOSE. Intuition assumes that when the
-	WorkBench task replies this messages, it already has opened/closed
-	its windows.
+        When the MsgPort is non-NULL Intuition will send IntuiMessages to
+        it with the Class field set to WBENCHMESSAGE and Code field set to
+        either WBENCHOPEN or WBENCHCLOSE. Intuition assumes that when the
+        WorkBench task replies this messages, it already has opened/closed
+        its windows.
 
     INPUTS
-	wbmsgport - The MsgPort of the (initialized) WorkBench task or
-		NULL if the task is shutting down.
+        wbmsgport - The MsgPort of the (initialized) WorkBench task or
+                    NULL if the task is shutting down.
 
     RESULT
-	None.
+        None.
 
     NOTES
+        This function is obsolete and should not be used directly by the
+        Workbench Application. Use workbench.library/RegisterWorkbench()
+        instead!
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        workbench.library/RegisterWorkbench()
 
     INTERNALS
 
