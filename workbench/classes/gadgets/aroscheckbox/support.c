@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Support functions for AROSCheckboxClass.
@@ -27,7 +27,7 @@ void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
     rport->AreaPtrn = disabledpattern;
     rport->AreaPtSz = 1;
     RectFill(rport, left, top, left+width-1, top+height-1);
-    /*    for (y=0; y<(height-1); y++)
+    /*FIXME    for (y=0; y<(height-1); y++)
     {
         for (x=0; x<(width-1); x++)
 	{
@@ -65,7 +65,7 @@ struct TextFont *preparefont(struct CBBase_intern *AROSCheckboxBase,
 	if (font)
 	{
 	    SetFont(rport, font);
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) !!! */
+	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;
     } else
