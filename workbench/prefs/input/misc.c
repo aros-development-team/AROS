@@ -42,7 +42,7 @@ void InitMenus(void)
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
 	    ULONG  id = (ULONG)actnm->nm_Label;
-	    STRPTR str = MSG(id);
+	    CONST_STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
 	    {
@@ -96,7 +96,7 @@ void SetMenuFlags(void)
 
 /*********************************************************************************************/
 
-STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode)
+STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode)
 {
     static UBYTE         filebuffer[300];
     struct FileRequester *req;
@@ -166,7 +166,7 @@ void SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
-void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, STRPTR title)
+void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, CONST_STRPTR title)
 {
     UWORD pen1, pen2, slen, tlen, i;
    
