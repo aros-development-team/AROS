@@ -1388,24 +1388,6 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
   return TRUE;
 }
 
-
-int ClearRegionRegion(struct Region * rd, struct Region * r)
-{
-  struct RegionRectangle * rr = rd->RegionRectangle;
-  while (rr) 
-  {
-    struct Rectangle rect;
-    rect.MinX = rd->bounds.MinX + rr->bounds.MinX;   
-    rect.MinY = rd->bounds.MinY + rr->bounds.MinY;   
-    rect.MaxX = rd->bounds.MinX + rr->bounds.MaxX;   
-    rect.MaxY = rd->bounds.MinY + rr->bounds.MaxY;   
-    ClearRectRegion(r, &rect);
-    rr = rr->Next;
-  }
-  
-  return TRUE;
-}
-
 /*
  * It is assumed that the region r is not needed anymore.
  */

@@ -148,8 +148,6 @@ int _ShowPartsOfLayer(struct Layer * l,
 
 int _ShowLayer(struct Layer * l);
 
-int ClearRegionRegion(struct Region * rd, struct Region * r);
-
 struct Layer * _FindFirstFamilyMember(struct Layer * l);
 
 void _BackFillRegion(struct Layer * l, 
