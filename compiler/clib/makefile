@@ -11,6 +11,7 @@ DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = \
+	__assert \
 	__stdio \
 	__vcformat \
 	abs \

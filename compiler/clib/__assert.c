@@ -1,0 +1,55 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: assert()
+    Lang: english
+*/
+#include <assert.h>
+#include <stdio.h>
+
+/*****************************************************************************
+
+    NAME
+#include <assert.h>
+
+	void assert (
+
+    SYNOPSIS
+	expr)
+
+    FUNCTION
+	Evaluates the expression expr and if it's FALSE or NULL, then
+	printf a message and stops the program. The message will
+	contain the expression, the name of the file with the assert
+	in it and the line in the file.
+
+    INPUTS
+	expr - The expression to evaluate. The type of the expression does
+		not matter, only if its zero/NULL or not.
+
+    RESULT
+	The function doesn't return.
+
+    NOTES
+
+    EXAMPLE
+	// Make sure that x equals 1
+	assert (x==1);
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	13.12.1996 digulla created
+
+******************************************************************************/
+void __assert (const char * expr, const char * file, unsigned int line)
+{
+    fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
+    /* TODO exit (10); */
+} /* assert */
+
