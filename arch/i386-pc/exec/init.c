@@ -104,7 +104,11 @@ extern const struct Resident
     TrackDisk_resident,
     ide_resident,
     Workbench_resident,
-    Mathffp_resident;
+    Mathffp_resident,
+    Dos_resident,
+    LDDemon_resident,
+    con_handler_resident,
+	AFS_resident;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -151,9 +155,10 @@ static const struct Resident *romtagList[] =
 	anything between the two will be skipped.
     */
 //    &boot_resident,			    /* ColdStart,  -50	 */
-//    &Dos_resident,			    /* None,	   -120  */
-//    &LDDemon_resident,		    /* AfterDOS,   -125  */
-//    &con_handler_resident,		    /* AfterDOS,   -126  */
+    &Dos_resident,			    /* None,	   -120  */
+    &LDDemon_resident,		    /* AfterDOS,   -125  */
+    &con_handler_resident,		    /* AfterDOS,   -126  */
+	&AFS_resident,
 
 
     NULL
@@ -270,46 +275,16 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
-    kprintf("Open mouse.hidd = %08.8lx\n", OpenLibrary("mouse.hidd", 0));
-
     kprintf("Starting SAD\n");
 
 	Debug(0);
 
-    #define ioStd(x) ((struct IOStdReq *)x)
-
-    /* Small kbdhidd test */
-    {
-	struct IORequest *io;
-	struct MsgPort *mp;
-
-	kprintf("Opening kbd.hidd\n");
-	kprintf("Got: %08.8lx\n",OpenLibrary("kbd.hidd",0));
-	mp=CreateMsgPort();
-	io=CreateIORequest(mp,sizeof(struct IOStdReq));
-	kprintf("Result of opening device %d\n",
-	    OpenDevice("keyboard.device",0,io,0));
-	kprintf("Doing CMD_HIDDINIT...\n");
-	{
-	    UBYTE *data;
-	    data = AllocMem(100, MEMF_PUBLIC);
-	    strcpy(data, "hidd.kbd.hw");
-	    ioStd(io)->io_Command=32000;
-	    ioStd(io)->io_Data=data;
-	    ioStd(io)->io_Length=strlen(data);
-	    DoIO(io);
-	    kprintf("Got io_ERROR=%d\n",ioStd(io)->io_Error);
-	    kprintf("Doing kbd reads...\n");
-	}
-    }
-    
-    hidd_demo();
-
+	InitResident(&Dos_resident,0);	// should be placed into boot_resident later
     /*
 	All done. In normal cases CPU should never reach this instructions
     */
 
 	kprintf(text2);
-
+	ColdReboot();
 	do {} while(1);
 }
