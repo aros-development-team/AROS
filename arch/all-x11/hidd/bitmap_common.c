@@ -4,6 +4,7 @@
 */
 
 #include <exec/alerts.h>
+#include <aros/macros.h>
 
 #undef DEBUG
 #define DEBUG 0
@@ -12,6 +13,75 @@
 /* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
 #define NO_MALLOC 1
 
+#define DO_ENDIAN_FIX 1 /* fix if X11 server running on remote server with different endianess */
+
+#if DO_ENDIAN_FIX
+
+#if AROS_BIG_ENDIAN
+#define NEEDS_ENDIAN_FIX(image) (((image)->bits_per_pixel >= 15) && ((image)->byte_order != MSBFirst))
+#define SWAP16(x) AROS_WORD2LE(x)
+#define SWAP32(x) AROS_LONG2LE(x)
+#define AROS_BYTEORDER MSBFirst
+#else
+#define NEEDS_ENDIAN_FIX(image) (((image)->bits_per_pixel >= 15) && ((image)->byte_order != LSBFirst))
+#define SWAP16(x) AROS_WORD2BE(x)
+#define SWAP32(x) AROS_LONG2BE(x)
+#define AROS_BYTEORDER LSBFirst
+#endif
+
+#if 0 /* steger: to test above stuff*/
+#define NEEDS_ENDIAN_FIX(image) ((image)->bits_per_pixel >= 15)
+#define AROS_BYTEORDER MSBFirst
+#define SWAP16(x) AROS_WORD2BE(x)
+#define SWAP32(x) AROS_LONG2BE(x)
+#endif
+
+static void SwapImageEndianess(XImage *image)
+{
+    LONG x, y, height, width, bpp;    
+    UBYTE *imdata = (UBYTE *)image->data;
+
+    width = image->width;
+    height = image->height;
+    bpp = (image->bits_per_pixel + 7) / 8;
+    
+    for (y = 0; y < height; y ++)
+    {
+    	switch(bpp)
+	{
+	    case 2:
+    		for (x = 0; x < width; x ++)
+    		{
+    		    UWORD pix = *(UWORD *)imdata;
+		    
+		    pix = SWAP16(pix);
+		    
+		    *((UWORD *)imdata)++ = pix;
+    		}
+	    	imdata += (image->bytes_per_line - width * 2);
+		break;
+
+	    case 4:
+    		for (x = 0; x < width; x ++)
+    		{
+    		    ULONG pix = *(ULONG *)imdata;
+		    
+		    pix = SWAP32(pix);
+		    
+		    *((ULONG *)imdata)++ = pix;
+    		}
+	    	imdata += (image->bytes_per_line - width * 4);
+		break;
+		
+	} /* switch(bpp) */
+	
+    } /* for (y = 0; y < height; y ++) */
+    
+    image->byte_order = AROS_BYTEORDER;
+    
+}
+
+#endif /* DO_ENDIAN_FIX */
 
 static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -219,6 +289,26 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 			    *p++ = *imdata++;
 			}
 			((UBYTE *)imdata) += (image->bytes_per_line - width * 2);
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
+		case 32:
+		{
+		    LONG x, y;
+
+		    ULONG *imdata = (ULONG *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+
+			for (x = 0; x < width; x ++)
+			{
+			    *p++ = *imdata++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width * 4);
 			((UBYTE *)buf) += msg->modulo;
 		    }
 		    break;
@@ -501,7 +591,16 @@ UX11
     if (!image)
     	return;
 	
-	
+#if DO_ENDIAN_FIX
+    if (NEEDS_ENDIAN_FIX(image))
+    {
+    	SwapImageEndianess(image);
+LX11
+        XInitImage(image);
+UX11
+    }    
+#endif
+ 	
     fromimage_func(cl, o, pixarray, image
     	, width, height
 	, depth, fromimage_data);
@@ -605,7 +704,6 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 	case vHidd_StdPixFmt_Native32:
     	    switch (image->bits_per_pixel)
 	    {
-
 		case 16:
 		{
 		    LONG x, y;
@@ -656,6 +754,25 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
     	    		#endif
 			}
 			((UBYTE *)imdata) += (image->bytes_per_line - width * 3);		
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
+		case 32:
+		{
+		    LONG x, y;
+
+		    ULONG *imdata = (UWORD *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+			for (x = 0; x < width; x ++)
+			{
+			    *imdata ++ = (ULONG)*p ++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width * 4); 
 			((UBYTE *)buf) += msg->modulo;
 		    }
 		    break;
@@ -732,40 +849,66 @@ static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm
 {
     HIDDT_Pixel *lut = msg->pixlut->pixels;
     
-    if (image->bits_per_pixel == 16)
+    switch(image->bits_per_pixel)
     {
-    	LONG x, y;
-	UWORD *imdata = (UWORD *)image->data;
-	
-	for (y = 0; y < height; y ++)
+	case 16:
 	{
-	    UBYTE *buf = pixarray;
-	    for (x = 0; x < width; x ++)
+    	    LONG x, y;
+	    UWORD *imdata = (UWORD *)image->data;
+
+	    for (y = 0; y < height; y ++)
 	    {
-		*imdata ++ = (UWORD)lut[*buf ++];
-		
+		UBYTE *buf = pixarray;
+		for (x = 0; x < width; x ++)
+		{
+		    *imdata ++ = (UWORD)lut[*buf ++];
+
+		}
+		pixarray += msg->modulo;
+		imdata += ((image->bytes_per_line / 2) - width); /*sg*/
 	    }
-	    pixarray += msg->modulo;
-	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
-	}
-    }
-    else
-    {
-    	LONG x, y;
-	
-	for (y = 0; y < height; y ++)
+	    break;
+    	}
+
+	case 32:
 	{
-	    UBYTE *buf = pixarray;
-	    for (x = 0; x < width; x ++)
+    	    LONG x, y;
+	    ULONG *imdata = (ULONG *)image->data;
+
+	    for (y = 0; y < height; y ++)
 	    {
-		XPutPixel(image, x, y, lut[*buf ++]);
+		UBYTE *buf = pixarray;
+		for (x = 0; x < width; x ++)
+		{
+		    *imdata ++ = (ULONG)lut[*buf ++];
+
+		}
+		pixarray += msg->modulo;
+		imdata += ((image->bytes_per_line / 4) - width); /*sg*/
 	    }
-	    
-	    pixarray += msg->modulo;
+	    break;
+    	}
+	
+	default:
+	{
+    	    LONG x, y;
+
+	    for (y = 0; y < height; y ++)
+	    {
+		UBYTE *buf = pixarray;
+		for (x = 0; x < width; x ++)
+		{
+		    XPutPixel(image, x, y, lut[*buf ++]);
+		}
+
+		pixarray += msg->modulo;
+
+	    }
+    	    break;
 	    
 	}
-    
-    }
+	
+    } /* switch(image->bits_per_pixel) */
     
     return pixarray;
 }
@@ -908,6 +1051,16 @@ LX11
 UX11	
     if (!image)
     	ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
+
+#if DO_ENDIAN_FIX
+    if (NEEDS_ENDIAN_FIX(image))
+    {
+    	image->byte_order = AROS_BYTEORDER;
+LX11
+	XInitImage(image);
+UX11
+    }
+#endif
 	    
     bperline	= image->bytes_per_line;
 
