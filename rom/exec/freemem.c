@@ -135,7 +135,9 @@
 	    (header->mwh_node.mln_Succ != (struct MinNode *)0xCCBBAA99))
 	{
 	    /* Reason for above checks: see allocmem.c */
+	    Forbid();
     	    Remove((struct Node *)&header->mwh_node);
+	    Permit();
     	}
 	
 	/* Fill block with weird stuff to esploit bugs in applications
