@@ -17,6 +17,17 @@
 
 #define IntuitionBase   (GetPrivIBase(cl->cl_UserData))
 
+#define ENABLE_MEM_POOL 1
+
+#if ENABLE_MEM_POOL
+#    define alloc(a, b)   AllocMem(b, MEMF_PUBLIC|MEMF_CLEAR)
+#    define free(a, b, c) FreeMem(b, c)
+#else
+#    define alloc(a, b)   AllocPooled(a, b)
+#    define free(a, b, c) FreePooled(a, b, c)
+#endif
+
+
 /*****i************************************************************************
  
     NAME */
@@ -70,7 +81,7 @@ AROS_UFH3(IPTR, rootDispatcher,
                 needed. NOTE: The object argument is actually the class!
             */
             
-            o = (Object *) AllocPooled
+            o = (Object *) alloc
             (
                 iclass->cl_MemoryPool, iclass->cl_ObjectSize
             );
@@ -92,7 +103,7 @@ AROS_UFH3(IPTR, rootDispatcher,
             */
             iclass = OCLASS(o);
 
-            FreePooled
+            free
             (
         	iclass->cl_MemoryPool, _OBJECT(o), iclass->cl_ObjectSize
             );
