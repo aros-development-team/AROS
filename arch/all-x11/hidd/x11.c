@@ -31,6 +31,7 @@
 
 #include <aros/asmcall.h>
 
+#include <sys/types.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
