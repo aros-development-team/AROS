@@ -12,7 +12,9 @@
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <aros/symbolsets.h>
+#include <aros/debug.h>
 #undef timeval
+
 
 #include "__time.h"
 
@@ -123,6 +125,9 @@ long __gmtoffset;
 
 static int __init_timerbase(void)
 {
+    kprintf("---- %p\n", &__timeport);
+    kprintf("--!! %p\n", &__timereq);
+    
     __timeport.mp_Node.ln_Type   = NT_MSGPORT;
     __timeport.mp_Node.ln_Pri    = 0;
     __timeport.mp_Node.ln_Name   = NULL;

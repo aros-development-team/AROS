@@ -69,8 +69,8 @@ struct arosc_privdata
     struct Device      *acpd_TimerBase;
 
     /* __arosc_usedata  */
-    void (*acpd_oldexitcode)();
-    IPTR acpd_oldexitdata;
+    APTR acpd_process_returnaddr;
+    ULONG acpd_usercount;
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())

@@ -25,6 +25,7 @@
 
 #include "etask.h"
 #include "__arosc_privdata.h"
+#include "arosc_init.h"
 
 extern const char name[];
 extern const char version[];
@@ -120,7 +121,10 @@ AROS_LH1(struct aroscbase *, open,
 
     /* I have one more opener. */
     aroscbase->library.lib_OpenCnt++;
-    aroscbase->library.lib_Flags&=~LIBF_DELEXP;
+    aroscbase->library.lib_Flags &= ~LIBF_DELEXP;
+
+    if (arosc_internalinit())
+        aroscbase = NULL;
 
     /* You would return NULL if the open failed. */
     return aroscbase;
@@ -144,6 +148,9 @@ AROS_LH0(BPTR, close, struct aroscbase *, aroscbase, 2, arosc)
 	    /* Then expunge the library */
 	    return expunge();
     }
+
+    arosc_internalexit();
+
     return 0;
     AROS_LIBFUNC_EXIT
 }
@@ -188,45 +195,55 @@ AROS_LH0I(int, null, struct aroscbase *, aroscbase, 4, arosc)
     AROS_LIBFUNC_EXIT
 }
 
-int arosc_internalinit(struct arosc_privdata **privdata_ptr)
+int arosc_internalinit(void)
 {
-    struct arosc_privdata *privdata;
+    struct arosc_privdata *oldprivdata, *privdata;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    int err = 0;
 
-    D(bug("internalinit %p\n", privdata_ptr));
+    privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
-    privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
-    if (!privdata)
+    if (!oldprivdata || (oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr))
     {
-        SetIoErr(ERROR_NO_FREE_STORE);
-        return RETURN_FAIL;
+        privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
+
+        if (!privdata)
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return RETURN_FAIL;
+        }
+
+        privdata->acpd_oldprivdata = oldprivdata;
+	privdata->acpd_process_returnaddr = me->pr_ReturnAddr;
+
+	GetIntETask(me)->iet_acpd = privdata;
+
+        kprintf("INIT - ALLOC\n");
+
+        err = set_call_funcs(SETNAME(INIT), 1);
     }
 
-    /*save the old value of tc_UserData */
-    privdata->acpd_oldprivdata = GetIntETask(FindTask(NULL))->iet_acpd;
+    kprintf("INIT\n");
+    privdata->acpd_usercount++;
 
-    /*store the new one */
-    GetIntETask(FindTask(NULL))->iet_acpd = privdata;
-
-    if (privdata->acpd_oldprivdata)
-        privdata->acpd_umask = privdata->acpd_oldprivdata->acpd_umask;
-    else
-        privdata->acpd_umask = S_IWGRP|S_IWOTH;
-
-    if (privdata_ptr) *privdata_ptr = privdata;
-
-    return set_call_funcs(SETNAME(INIT), 1);
+    return err;
 }
 
 int arosc_internalexit(void)
 {
     struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
-    set_call_funcs(SETNAME(EXIT), -1);
+    kprintf("DEALLOC\n");
+    if (--privdata->acpd_usercount == 0)
+    {
+        set_call_funcs(SETNAME(EXIT), -1);
 
-    /*restore the old value */
-    GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
+        /*restore the old value */
+        GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
 
-    FreeMem(privdata, sizeof(*privdata));
+        kprintf("EXIT - DEALLOC\n");
+        FreeMem(privdata, sizeof(*privdata));
+    }
 
     return 0;
 }
