@@ -151,16 +151,17 @@ the argument to the \shell{-d} option in the environment
 variable \shell{CVSROOT}. Use
 
 \begin{example}
-setenv CVSROOT :pserver:usercvs.aros.org:/home/cvs/aros
+setenv CVSROOT :pserver:user@cvs.aros.org:/home/cvs/aros
 \end{example}
 
 on Amiga or if you have a C shell (csh) and
 
 \begin{example}
-export CVSROOT=:pserver:usercvs.aros.org:/home/cvs/aros
+export CVSROOT=:pserver:user@cvs.aros.org:/home/cvs/aros
 \end{example}
 
-for Bourne/Korn shells (bash, ksh).
+for Bourne/Korn shells (bash, ksh). \bold{Don't forget to replace}
+\italics{user} \bold{by your login}.
 
 On Amiga, you can make this
 permanent by \shell{copy env:CVSROOT envarc:}, on Unix, you must add
