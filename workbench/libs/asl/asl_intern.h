@@ -13,6 +13,9 @@
 #    include <exec/libraries.h>
 #endif
 
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 
 #ifndef LIBRARIES_ASL_H
 #    include <libraries/asl.h>
@@ -30,6 +33,8 @@
 #   include <aros/asmcall.h>
 #endif
 
+/*****************************************************************************************/
+
 // #define TURN_OFF_DEBUG
 
 /* Predeclaration */
@@ -38,6 +43,7 @@ struct AslBase_intern;
 #define GLOBAL_INTUIBASE
 #define GLOBAL_SYSBASE
 #define GLOBAL_DOSBASE
+
 /* Internal requester structure */
 struct IntReq
 {
@@ -48,13 +54,16 @@ struct IntReq
     struct Hook 	*ir_IntuiMsgFunc;
     struct TextAttr	*ir_TextAttr;
     struct Locale	*ir_Locale;
+    APTR		ir_MemPool;
+    ULONG		ir_MemPoolPuddle;  /* if 0, no pool is created */
+    ULONG		ir_MemPoolThresh;
     STRPTR		ir_TitleText;
     STRPTR		ir_PositiveText;
     STRPTR		ir_NegativeText;
-    UWORD		ir_LeftEdge;
-    UWORD		ir_TopEdge;
-    UWORD		ir_Width;
-    UWORD		ir_Height;
+    WORD		ir_LeftEdge;
+    WORD		ir_TopEdge;
+    WORD		ir_Width;
+    WORD		ir_Height;
     UBYTE		ir_Flags;
 
 };
@@ -67,6 +76,7 @@ struct ReqNode
     struct	IntReq	*rn_IntReq;
 };
 
+/*****************************************************************************************/
 
 /* Internal filerequester struct */
 struct IntFileReq
@@ -76,15 +86,47 @@ struct IntFileReq
     STRPTR	ifr_File;
     STRPTR	ifr_Drawer;
     STRPTR	ifr_Pattern;
+    STRPTR	ifr_AcceptPattern;
+    STRPTR	ifr_RejectPattern;
     UBYTE	ifr_Flags1;
     UBYTE	ifr_Flags2;
     struct Hook *ifr_FilterFunc;
-    struct Hook *ifr_HookFunc; /* Combined callback function */
+    ULONG 	(*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
+    		/* ASLFR_HookFunc = Combined callback function */
 
     /* Some gadgettext specific for the file requester */
     STRPTR	ifr_VolumesText;
     STRPTR	ifr_ParentText;
+    STRPTR	ifr_PatternText;
+    STRPTR	ifr_DrawerText;
+    STRPTR	ifr_FileText;
+    STRPTR	ifr_LVDrawerText;
+    STRPTR	ifr_LVAssignText;
+    STRPTR	ifr_Menu_Control;
+    STRPTR	ifr_Item_Control_LastName;
+    STRPTR	ifr_Item_Control_NextName;
+    STRPTR	ifr_Item_Control_Restore;
+    STRPTR	ifr_Item_Control_Parent;
+    STRPTR	ifr_Item_Control_Volumes;
+    STRPTR	ifr_Item_Control_Update;
+    STRPTR	ifr_Item_Control_Delete;
+    STRPTR	ifr_Item_Control_CreateNewDrawer;
+    STRPTR	ifr_Item_Control_Rename;
+    STRPTR	ifr_Item_Control_Select;
+    STRPTR	ifr_Item_Control_OK;
+    STRPTR	ifr_Item_Control_Cancel;
+    STRPTR	ifr_Menu_FileList;
+    STRPTR	ifr_Item_FileList_SortByName;
+    STRPTR	ifr_Item_FileList_SortByDate;
+    STRPTR	ifr_Item_FileList_SortBySize;
+    STRPTR	ifr_Item_FileList_AscendingOrder;
+    STRPTR	ifr_Item_FileList_DescendingOrder;
+    STRPTR	ifr_Item_FileList_ShowDrawersFirst;
+    STRPTR	ifr_Item_FileList_ShowDrawerWithFiles;
+    STRPTR	ifr_Item_FileList_ShowDrawersLast;
 };
+
+/*****************************************************************************************/
 
 struct IntFontReq
 {
@@ -108,11 +150,14 @@ struct IntFontReq
 
 };
 
+/*****************************************************************************************/
+
 struct IntModeReq
 {
     struct IntReq	ism_IntReq;
 };
 
+/*****************************************************************************************/
 
 /* structure for passing arguments to tag parsing hooks */
 struct ParseTagArgs
@@ -133,21 +178,91 @@ struct AslReqInfo
     struct Hook GadgetryHook;
 };
 
-
+/*****************************************************************************************/
 
 /* Flags */
 
-#define IF_PRIVATEIDCMP (1 << 0)
-#define IF_SLEEPWINDOW	(1 << 1)
+#define IF_PRIVATEIDCMP  (1 << 0)
+#define IF_SLEEPWINDOW	 (1 << 1)
+#define IF_USER_POSTEXT  (1 << 2)
+#define IF_USER_NEGTEXT  (1 << 3)
 
 #define GetIR(ir) ((struct IntReq *)ir)
 
+struct AslBase_intern
+{
+    struct Library	library;
+    struct ExecBase	*sysbase;
+    BPTR		seglist;
+
+#ifndef GLOBAL_DOSBASE
+    struct Library	*dosbase;
+#endif
+#ifndef GLOBAL_INTUIBASE
+    struct IntuitionBase *intuitionbase;
+#endif
+
+    struct GfxBase	*gfxbase;
+    struct Library	*cybergfxbase;
+    struct Library	*boopsibase;
+    struct Library	*utilitybase;
+    struct Library	*gadtoolsbase;
+    struct Library	*aroslistviewbase;
+    struct Library	*aroslistbase;
+
+    struct MinList		ReqList;
+    struct SignalSemaphore	ReqListSem;
+    struct AslReqInfo		ReqInfo[3];
+    Class 		*aslpropclass;
+    Class		*aslarrowclass;
+    Class		*asllistviewclass;
+    Class		*aslbuttonclass;
+    Class		*aslstringclass;
+};
+
+/*****************************************************************************************/
+
 /* Prototypes */
+
+/* basicfuncs.c */
 
 struct ReqNode *FindReqNode(APTR, struct AslBase_intern *);
 VOID ParseCommonTags(struct IntReq *, struct TagItem *, struct AslBase_intern *);
 UWORD BiggestTextLength(STRPTR *, UWORD, struct RastPort *, struct AslBase_intern *);
 VOID StripRequester(APTR, UWORD, struct AslBase_intern *AslBase);
+
+WORD CountNodes(struct List *list, WORD flag);
+struct Node *FindListNode(struct List *list, WORD which);
+void SortInNode(struct List *list, struct Node *node, WORD (*getpri)(APTR));
+
+APTR AllocVecPooled(APTR pool, IPTR size);
+void FreeVecPooled(APTR mem);
+char *PooledCloneString(const char *name1, const char *name2, APTR pool,
+			struct AslBase_intern *AslBase);
+char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase);
+char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
+			   struct AslBase_intern *AslBase);
+char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
+
+/* classes.c */
+
+Class *makeaslpropclass(struct AslBase_intern *AslBase);
+Class *makeaslarrowclass(struct AslBase_intern *AslBase);
+Class *makeasllistviewclass(struct AslBase_intern *AslBase);
+Class *makeaslbuttonclass(struct AslBase_intern *AslBase);
+Class *makeaslstringclass(struct AslBase_intern *AslBase);
+
+/* gadgets.c */
+
+BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *ld, 
+			struct TagItem *tags, struct AslBase_intern *AslBase);
+void killscrollergadget(struct ScrollerGadget *scrollergad, struct AslBase_intern *AslBase);
+void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
+void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
+				struct AslBase_intern *AslBase);
+
+/*****************************************************************************************/
+
 
 AROS_UFP3(VOID, FRTagHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
@@ -173,6 +288,8 @@ AROS_UFP3(ULONG, FOGadgetryHook,
     AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
 );
 
+/*****************************************************************************************/
+
 /* Return values for the gadgetry hooks */
 #define GHRET_FINISHED_OK   2
 #define GHRET_OK	    1
@@ -186,29 +303,7 @@ AROS_UFP3(ULONG, FOGadgetryHook,
 	flagvar &= ~flag;
 
 
-struct AslBase_intern
-{
-    struct Library	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-
-#ifndef GLOBAL_DOSBASE
-    struct Library	*dosbase;
-#endif
-#ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
-#endif
-
-    struct GfxBase	*gfxbase;
-    struct Library	*boopsibase;
-    struct Library	*utilitybase;
-    struct Library	*aroslistviewbase;
-    struct Library	*aroslistbase;
-
-    struct MinList		ReqList;
-    struct SignalSemaphore	ReqListSem;
-    struct AslReqInfo		ReqInfo[3];
-};
+/*****************************************************************************************/
 
 /* The following typedefs are necessary, because the names of the global
    variables storing the library base pointers	and the corresponding
@@ -221,6 +316,10 @@ typedef struct IntuitionBase IntuiBase;
 #define ASLB(b) ((struct AslBase_intern *)b)
 #undef UtilityBase
 #define UtilityBase	ASLB(AslBase)->utilitybase
+
+#define GadToolsBase	ASLB(AslBase)->gadtoolsbase
+
+#define CyberGfxBase	ASLB(AslBase)->cybergfxbase
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
