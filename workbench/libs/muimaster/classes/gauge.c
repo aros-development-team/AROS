@@ -78,8 +78,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->info = NULL;
 
     /* parse initial taglist */
-
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -142,7 +141,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -315,7 +314,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (data->info)
 	{
-	    ZText *ztext = zune_text_new("\33c\0338",data->buf,NULL,0);
+	    ZText *ztext = zune_text_new("\33c\0338",data->buf,ZTEXT_ARG_NONE,0);
 	    if (ztext)
 	    {
 	    	zune_text_get_bounds(ztext, obj);
@@ -334,7 +333,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (data->info)
 	{
-	    ZText *ztext = zune_text_new("\33c\0338",data->buf,NULL,0);
+	    ZText *ztext = zune_text_new("\33c\0338",data->buf,ZTEXT_ARG_NONE,0);
 	    if (ztext)
 	    {
 	    	zune_text_get_bounds(ztext, obj);
