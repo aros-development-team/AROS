@@ -130,4 +130,6 @@ LONG /* error */ PKG_ExtractEverything( APTR pkg )
     {
         result = PKG_ExtractFile( pkg );
     }
+    
+    return result;
 }
