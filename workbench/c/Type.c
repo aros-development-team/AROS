@@ -11,6 +11,8 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
+#include <string.h>
+
 static const char version[] = "$VER: Type 41.1 (14.3.1997)\n";
 
 #define BUFSIZE 8192
@@ -225,7 +227,6 @@ void hexdumpfile(struct file *in, struct file *out)
 
 void putlinenumber(struct file * out, unsigned short line)
 {
-  int i;
   int x = 10000;
   BOOL s = FALSE;
 
