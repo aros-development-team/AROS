@@ -7,3 +7,6 @@ target (still considering all deps).
 (ie. mmake will not try to run make on the makefile which contains this
 metatarget) to avoid "Nothing known about <metatarget>".
 
+- MetaMake should convert the source makefiles into makefiles while
+searching for metatargets. This would allow to modify the metatargets
+on the fly !
