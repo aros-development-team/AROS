@@ -1530,6 +1530,8 @@ static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o,
     struct pfnode   	    *pfnode;
     
     OOP_Object      	    *retpf = NULL;
+
+    memset(&cmp_pf, 0, sizeof(cmp_pf));
     
     data = OOP_INST_DATA(cl, o);
     if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl)))
@@ -1537,7 +1539,7 @@ static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o,
     	D(bug("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n"));
 	return FALSE;
     }
-    
+
     ObtainSemaphoreShared(&data->pfsema);
     pfnode = find_pixfmt(&data->pflist, &cmp_pf, CSD(cl));
     ReleaseSemaphore(&data->pfsema);
@@ -1903,11 +1905,64 @@ const HIDDT_PixelFormat stdpfs[] =
 	, vHidd_StdPixFmt_RGB24
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
+	  24, 24, 3
+    #if AROS_BIG_ENDIAN	  
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
+	, 24, 16, 8, 0
+    #else
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
+	, 8, 16, 24, 0
+    #endif	
+	, 0, 0
+	, vHidd_StdPixFmt_BGR24
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
 	  16, 16, 2
-	, 0x0000F800, 0x000007E0, 0x0000001E, 0x00000000
+    #if AROS_BIG_ENDIAN
+	, 0x0000F800, 0x000007E0, 0x0000001F, 0x00000000
 	, 16, 21, 27, 0
+    #else
+	, 0x0000001F, 0x000007E0, 0x0000F800, 0x00000000
+	, 27, 21, 16, 0
+    #endif
 	, 0, 0
 	, vHidd_StdPixFmt_RGB16
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  16, 16, 2
+    #if AROS_BIG_ENDIAN
+	, 0x0000001F, 0x000007E0, 0x0000F800, 0x00000000
+	, 27, 21, 16, 0
+    #else
+	, 0x0000F800, 0x000007E0, 0x0000001F, 0x00000000
+	, 16, 21, 27, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_BGR16
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  15, 16, 2
+    #if AROS_BIG_ENDIAN
+	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
+	, 17, 22, 27, 0
+    #else
+	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
+	, 27, 22, 17, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_RGB15
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  15, 16, 2
+    #if AROS_BIG_ENDIAN
+	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
+	, 27, 22, 17, 0
+    #else
+	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
+	, 17, 22, 27, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_BGR15
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  32, 32, 4
@@ -1918,7 +1973,20 @@ const HIDDT_PixelFormat stdpfs[] =
 	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
 	, 16, 8, 0, 24
     #endif
+	, 0, 0
 	, vHidd_StdPixFmt_ARGB32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  32, 32, 4
+    #if AROS_BIG_ENDIAN
+	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
+	, 16, 8, 0, 24
+    #else	
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+	, 8, 16, 24, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_BGRA32
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  32, 32, 4
@@ -1931,6 +1999,42 @@ const HIDDT_PixelFormat stdpfs[] =
     #endif	
 	, 0, 0
 	, vHidd_StdPixFmt_RGBA32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  24, 24, 4
+    #if AROS_BIG_ENDIAN
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
+	, 8, 16, 24, 0
+    #else	
+	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x00000000
+	, 16, 8, 0, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_0RGB32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  24, 24, 4
+    #if AROS_BIG_ENDIAN
+	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x00000000
+	, 16, 8, 0, 0
+    #else	
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
+	, 8, 16, 24, 0
+    #endif
+	, 0, 0
+	, vHidd_StdPixFmt_BGR032
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+	  24, 24, 4
+    #if AROS_BIG_ENDIAN	  
+	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x00000000
+	, 0, 8, 16, 0
+    #else
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
+	, 24, 16, 8, 0
+    #endif	
+	, 0, 0
+	, vHidd_StdPixFmt_RGB032
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  8, 8, 1
@@ -2031,12 +2135,18 @@ static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
     {
     	/* The pixfmts are very alike, check all attrs */
 	     
+    	HIDDT_PixelFormat *old;
+	
+	old = (HIDDT_PixelFormat *)tmppf->stdpixfmt;
+	
 	tmppf->stdpixfmt = ((HIDDT_PixelFormat *)dbpf)->stdpixfmt;
 	     
 	if (0 == memcmp(tmppf, dbpf, sizeof (HIDDT_PixelFormat)))
 	{
 	    return TRUE;
 	}
+	
+	tmppf->stdpixfmt = old;
     }
     
     return FALSE;
@@ -2065,10 +2175,11 @@ static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind,
 	if (cmp_pfs(tofind, (HIDDT_PixelFormat *)stdpf))
 	{
 	    retpf =  stdpf;
+	    break;
 	}
 	
     }
-    
+   
     return retpf;
 }
 
