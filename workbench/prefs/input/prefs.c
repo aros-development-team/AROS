@@ -71,6 +71,7 @@ struct nameexp
 struct nameexp model_expansion_table[] =
 {
     {"pc105", "PC 105"},
+    {"pc104", "PC 104/101"},
     {NULL   ,  NULL   }
 };
 
@@ -78,7 +79,8 @@ struct nameexp model_expansion_table[] =
 
 struct nameexp layout_expansion_table[] =
 {
-    {"usa1" , "American"    	    },    
+    {"usa1" , "American"    	    },
+    {"us"   , "American (PC)"	    },
     {"d"    , "Deutsch"     	    },
     {"gb"   , "British"     	    },
     {"cdn"  , "Canadien Français"   },
