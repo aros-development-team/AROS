@@ -8,11 +8,11 @@
 #define _VARIABLES_H
 
 /* Internal function prototypes */
-extern void *get_variable( char * );
-extern char *get_var_arg( char * );
-extern long int get_var_int( char * );
-extern void set_variable( char *, char *, long int );
-extern void set_preset_variables( int );
+extern void *get_variable(char *);
+extern char *get_var_arg(char *);
+extern long int get_var_int(char *);
+extern void set_variable(char *, char *, long int);
+extern void set_preset_variables(int);
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */

@@ -7,18 +7,18 @@
 #define _EXECUTE_H
 
 /* Function prototypes */
-extern char *strip_quotes( char * );
-extern int database_keyword( char * );
-extern struct ParameterList *get_parameters( ScriptArg *, int );
-extern void collect_stringargs( ScriptArg *, int, struct ParameterList * );
-extern void modify_userstartup( char *, struct ParameterList * );
-extern void free_parameterlist( struct ParameterList * );
-extern void free_parameter( struct ParameterList );
-extern int eval_cmd( char * );
-extern char *collect_strings( ScriptArg *, char, int );
-extern long int getint( ScriptArg * );
-extern void traperr( char *, char * );
-extern void execute_script( ScriptArg *, int );
+extern char *strip_quotes(char *);
+extern int database_keyword(char *);
+extern struct ParameterList *get_parameters(ScriptArg *, int);
+extern void collect_stringargs(ScriptArg *, int, struct ParameterList *);
+extern void modify_userstartup(char *, struct ParameterList *);
+extern void free_parameterlist(struct ParameterList *);
+extern void free_parameter(struct ParameterList);
+extern int eval_cmd(char *);
+extern char *collect_strings(ScriptArg *, char, int);
+extern long int getint(ScriptArg *);
+extern void traperr(char *, char *);
+extern void execute_script(ScriptArg *, int);
 
 /* Command symbols */
 struct CommandList
@@ -162,7 +162,7 @@ struct CommandList
 #define _MAXCOMMAND	(NUMPARAMS+NUMCMDS)	/* Total number of keywords */
 
 
-#define GetPL( x, y )	x[ y - _PARAMETER -1 ]
+#define GetPL(x, y)	x[y - _PARAMETER -1]
 
 
 /* _DATABASE keywords */

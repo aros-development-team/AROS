@@ -46,13 +46,14 @@ extern struct ExecBase *SysBase;
 
 typedef struct ScriptArg
 {
-  struct  ScriptArg *next;	/* Next argument				*/
-  struct  ScriptArg *parent;	/* Parent argument				*/
-  char	* arg;			/* Either string or				*/
-  struct  ScriptArg *cmd;	/* ptr to list of arguments			*/
-				/* set one of them to NULL			*/
-  long int intval;		/* If argument is an integer *arg will get NULL	*/
-  int	  ignore;		/* Parameters set this to 1 to disappear	*/
+    struct ScriptArg *next;   /* Next argument				*/
+    struct ScriptArg *parent; /* Parent argument			*/
+    char             *arg;    /* Either string or			*/
+    struct ScriptArg *cmd;    /* ptr to list of arguments		*/
+                              /* set one of them to NULL		*/
+    long int         intval;  /* If argument is an integer *arg will
+				 get NULL				*/
+    int	             ignore;  /* Parameters set this to 1 to disappear	*/
 
 } ScriptArg;
 
@@ -68,15 +69,15 @@ typedef struct ScriptArg
 
 typedef struct InstallerPrefs
 {
-  char * transcriptfile;
-  BPTR transcriptstream;
-  int debug, pretend, nopretend, novicelog, noprint;
-  int welcome;
-  int copyfail, copyflags;
-  ScriptArg onerror, *onerrorparent;
-  ScriptArg trap[NUMERRORS], *trapparent[NUMERRORS];
-  int minusrlevel, defusrlevel;
-  int fromcli;
+    char * transcriptfile;
+    BPTR transcriptstream;
+    int debug, pretend, nopretend, novicelog, noprint;
+    int welcome;
+    int copyfail, copyflags;
+    ScriptArg onerror, *onerrorparent;
+    ScriptArg trap[NUMERRORS], *trapparent[NUMERRORS];
+    int minusrlevel, defusrlevel;
+    int fromcli;
 } InstallerPrefs;
 
 #define COPY_FAIL	1
@@ -87,24 +88,24 @@ typedef struct InstallerPrefs
 
 struct VariableList
 {
-  char * varsymbol;
-  char * vartext;
-  long int varinteger;
+    char * varsymbol;
+    char * vartext;
+    long int varinteger;
 };
 
 struct ProcedureList
 {
-  char * procname;
-  ScriptArg * procbody;
-  char ** arglist;
-  int argnum;
+    char * procname;
+    ScriptArg * procbody;
+    char ** arglist;
+    int argnum;
 };
 
 struct ParameterList
 {
-  char ** arg;
-  long int intval, intval2;
-  int used;
+    char ** arg;
+    long int intval, intval2;
+    int used;
 };
 
 

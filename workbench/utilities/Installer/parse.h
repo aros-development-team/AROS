@@ -8,7 +8,9 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
-extern void parse_file( ScriptArg * );
+extern void parse_file(ScriptArg *);
+
+extern int line;
 
 #endif /* _PARSE_H */
 
