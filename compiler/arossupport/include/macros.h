@@ -10,7 +10,7 @@
 */
 
 #ifndef AROS_MACHINE_H
-#   include <aros/machine.h>
+#   include <aros/system.h>
 #endif
 
 /* Convert a word or long to big endian on the current hardware */
@@ -112,6 +112,11 @@
 		(l) = ((((l) >>  8) & 0x00ff00ffUL) | (((l) <<  8) & 0xff00ff00UL)), \
 		(l) = ((((l) >> 16) & 0x0000ffffUL) | (((l) << 16) & 0xffff0000UL))) \
 	)
+#endif
+
+#if defined(__GNUC__) && !defined(__cplusplus)
+#   define AROS_MAKE_ALIAS(old, new) \
+        typeof(old) new __attribute__((alias(AROS_ASMSYMNAME(#old))))
 #endif
 
 #endif /* AROS_MACROS_H */
