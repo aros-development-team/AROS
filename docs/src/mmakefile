@@ -32,19 +32,13 @@ setup-docs : make-dirs
 
 make-dirs :
 	@mkdir -p $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
-		$(DOCGENDIR) $(AROSDIR)/Help
+		$(DOCGENDIR)
 
 copy-files : $(HTMLDIR)/rtdemo.log $(HTMLDIR)/pubkey.asc $(HTMLDIR)/license.html \
-	$(HTMLDIR)/oldnews.html $(AROSDIR)/Help/Credits $(AROSDIR)/Help/License
+	$(HTMLDIR)/oldnews.html
 
 $(HTMLDIR)/% : %
 	cp $< $@
-
-$(AROSDIR)/Help/Credits : credits ;\
-    cp $< $@
-
-$(AROSDIR)/Help/License : $(TOP)/LICENSE ;\
-    cp $< $@
 
 # convert pics/% to HTMLDIR/pics/% without CVS dir.
 PICS := $(addprefix $(HTMLDIR)/pics/, \
