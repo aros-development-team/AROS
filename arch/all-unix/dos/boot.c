@@ -59,7 +59,7 @@ AROS_UFH3(void, boot,
     struct emulbase *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
     struct FileHandle *fh_stdin, *fh_stdout;
-
+    
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if( DOSBase == NULL )
     {
@@ -108,7 +108,20 @@ AROS_UFH3(void, boot,
  
     submain(0, NULL);
 
-    RemTask(NULL);
-
-    /* NOT REACHED */
+    /* submain() returns, when the Boot Shell Window is left with EndShell/EndCli */
+    
+    /* To avoid that the input/output/error handles of emul.handler
+       are closed when the Boot Process dies, we set the in/out/err
+       handles of this process to 0.
+    */
+       
+    SelectInput(0);
+    SelectOutput(0);
+    ((struct Process *)FindTask(NULL))->pr_CES = 0; 
+    
+    /* No RemTask() here, otherwise the process cleanup routines
+       are not called. And that would for example mean, that the
+       Boot Process (having a CLI) is not removed from the rootnode.
+       --> Dead stuff in there -> Crash
+    */
 }
