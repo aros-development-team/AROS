@@ -624,10 +624,10 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_SIZING 	},
 		    {GA_BottomBorder,	TRUE		},
+		    {GA_RightBorder,	TRUE		},
 		    {GA_GZZGadget,	is_gzz		},
 		    {TAG_DONE,		0UL }
 	    };
-kprintf("Creating Size Gadget!\n");		
 	    SYSGAD(w, SIZEGAD) = NewObjectA(
 			GetPrivIBase(IntuitionBase)->sizebuttonclass
 			, NULL
