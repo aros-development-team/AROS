@@ -5,8 +5,8 @@ FILES	:=	vga vga-modes font_acorn_8x8 aros-logo
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 AFLAGS2	:=	$(AFLAGS) -I../..
 
-#MM Drivers-native :
-Drivers-native : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+#MM Drivers-native-i386 :
+Drivers-native-i386 : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/vga_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/vga_driver.o

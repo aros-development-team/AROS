@@ -8,8 +8,8 @@ OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-#MM Drivers-native : 
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
+#MM Drivers-native-i386 : 
+Drivers-native-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/pci_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/pci_driver.o

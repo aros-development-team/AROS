@@ -8,8 +8,8 @@ END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC	:=	$(END_FILE).o
 FILES	:=	kbd_init functable kbdclass kbd_common
 
-#MM Drivers-native-kbd :
-Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s $(ENDFUNC)
+#MM Drivers-native-i386-kbd :
+Drivers-native-i386-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s $(ENDFUNC)
 	%add_objects rom/boot/kbd_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o

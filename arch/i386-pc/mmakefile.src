@@ -55,9 +55,9 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-cgfx-native-i386			\
 #MM	kernel-workbench-native			\
 #MM	kernel-filesys-native-i386		\
-#MM	Drivers-native-irq			\
-#MM	Drivers-native-kbd			\
-#MM	Drivers-native
+#MM	Drivers-native-i386-irq			\
+#MM	Drivers-native-i386-kbd			\
+#MM	Drivers-native-i386
 
 #
 # Setup
