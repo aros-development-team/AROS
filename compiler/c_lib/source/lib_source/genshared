@@ -80,7 +80,7 @@ if [ ! -f "$confdir/lib.conf" ]; then
     exit 10
 fi
 
-libname=`grep name "$confdir/lib.conf" | sed 's/^name[^a-zA-Z_]*//'`
+libname=`grep '^name' "$confdir/lib.conf" | sed 's/^name[^a-zA-Z_]*//'`
 LIBNAME=`awk 'BEGIN { print toupper("'$libname'"); }'`
 
 case $mode in
