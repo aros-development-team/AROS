@@ -38,10 +38,6 @@ AROS_LH2(void, EndRefresh,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -56,7 +52,7 @@ AROS_LH2(void, EndRefresh,
         EndUpdate(WLAYER(window), complete);
 
     /* reset all bits indicating a necessary or ongoing refresh */
-    window->Flags &= ~WFLG_WINDOWREFRESH;
+    AROS_ANDL(window->Flags, ~WFLG_WINDOWREFRESH);
 
     /* I reset this one only if Complete is TRUE!?! */
     if (TRUE == complete)
