@@ -9,6 +9,10 @@
     Lang: English
 */
 
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+
 struct RexxMsg
 {
 	struct Message	rm_Node;	/* EXEC message structure */
