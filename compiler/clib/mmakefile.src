@@ -124,6 +124,7 @@ SHARED	:= \
 	drand48 \
 	dup \
 	dup2 \
+	endgrent \
 	endpwent \
 	erand48 \
         execvp \
@@ -166,6 +167,8 @@ SHARED	:= \
         getegid \
         getgrgid \
 	getgroups \
+	getgrnam \
+	getgrent \
         getpwent \
         getpwnam \
         getpwuid \
@@ -213,6 +216,7 @@ SHARED	:= \
 	seekdir \
 	setbuf \
 	setenv \
+	setgrent \
 	setlinebuf \
         setlocale \
         setpwent \
