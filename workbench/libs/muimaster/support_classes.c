@@ -85,6 +85,7 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_POPLIST_DESC
     ZUNE_CRAWLING_DESC
     ZUNE_POPSCREEN_DESC
+    ZUNE_LEVELMETER_DESC
 };
 
 Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)

@@ -589,6 +589,10 @@ struct MUI_RGBcolor
 #include "classes/crawling.h"
 #endif
 
+#ifndef _MUI_CLASSES_LEVELMETER_H
+#include "classes/levelmeter.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/

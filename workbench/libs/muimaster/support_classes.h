@@ -188,6 +188,12 @@
 #   define ZUNE_CRAWLING_DESC
 #endif
 
+#if ZUNE_BUILTIN_LEVELMETER
+#   define ZUNE_LEVELMETER_DESC (&_MUI_Levelmeter_desc),
+#else
+#   define ZUNE_LEVELMETER_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
