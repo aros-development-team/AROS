@@ -12,6 +12,8 @@
 #include "intern.h"
 #include "libdefs.h"
 
+/**********************************************************************************************/
+
 #ifdef SysBase
 #   undef SysBase
 #endif
@@ -32,13 +34,12 @@
 
 #include <libcore/libheader.c>
 
-extern Class rootclass;
-extern struct IClass *InitICClass(struct Library *base);
-extern struct IClass *InitModelClass(struct Library *base);
+/**********************************************************************************************/
 
 #define SysBase (GetBBase(BOOPSIBase)->bb_SysBase)
 
-#if 0
+/**********************************************************************************************/
+
 static void FreeAllClasses(struct Library *BOOPSIBase)
 {
     Class *cl;
@@ -50,7 +51,8 @@ static void FreeAllClasses(struct Library *BOOPSIBase)
 	    FreeClass(cl);
     }
 }
-#endif
+
+/**********************************************************************************************/
 
 static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 {
@@ -74,14 +76,14 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-#if 0
     if((cl = InitModelClass(LIBBASE)) == 0)
     {
 	FreeAllClasses(LIBBASE);
 	CloseLibrary (UtilityBase);
 	return FALSE;
     }
-#endif
 
     return TRUE;
 }
+
+/**********************************************************************************************/
