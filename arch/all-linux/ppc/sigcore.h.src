@@ -4,6 +4,9 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: Macros to handle unix signals
+    Lang: english
 */
 
 #include <signal.h>
@@ -23,14 +26,18 @@ typedef @sighandler@ SignalHandler;
  
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
-#define SIGHANDLER_T  SignalHandler
+#define SIGHANDLER_T	SignalHandler
 
+// browsing the memory
+// sc pattern was found at offset 24 + 64
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc);    \
 								\
 	static void SIGHANDLER (int sig)			\
 	{							\
-	    sighandler (sig, (sigcontext_t *)(&sig+1));		\
+	    sigcontext_t *sc =					\
+		(sigcontext_t *) ((BYTE *) &sig + 24 + 64);	\
+	    sighandler(sig, sc);				\
 	}
 
 /* Type of the values which can be stored on the stack. A variable
@@ -49,8 +56,8 @@ typedef @sighandler@ SignalHandler;
 
 struct AROS_cpu_context
 {
-    sigcontext_t sc;	/* Signal context struct */
-	 struct pt_regs regs;
+//    sigcontext_t sc;	/* Signal context struct */
+    struct pt_regs regs;
     ULONG fpregs[4*32];	/* FP regs not in sigcontext_t */
 };
 
@@ -64,7 +71,7 @@ struct AROS_cpu_context
    PC is the current address in the program code. */
 
 #define SP(sc)	(sc->regs->gpr[1])
-#define PC(sc)	(sc->regs->link)
+#define PC(sc)	(sc->regs->nip)
 
 /* Macros to enable or disable all signals after the signal handler
    has returned and the normal execution commences. */
@@ -76,17 +83,64 @@ struct AROS_cpu_context
    doesn't contain enough registers. Some assembler is needed for the signal
    handler instead. */
 
-#define SAVE_CPU(task,sc) /**/
+#define SAVE_CPU(task,sc)\
+{								\
+    long i;							\
+    for (i = 0; i < 32; i++)					\
+	GetCpuContext(task)->regs.gpr[i] = sc->regs->gpr[i];	\
+    GetCpuContext(task)->regs.nip 	= sc->regs->nip;	\
+    GetCpuContext(task)->regs.msr	= sc->regs->msr;	\
+    GetCpuContext(task)->regs.orig_gpr3	= sc->regs->orig_gpr3;	\
+    GetCpuContext(task)->regs.ctr	= sc->regs->ctr;	\
+    GetCpuContext(task)->regs.link	= sc->regs->link;	\
+    GetCpuContext(task)->regs.xer	= sc->regs->xer;	\
+    GetCpuContext(task)->regs.ccr	= sc->regs->ccr;	\
+    GetCpuContext(task)->regs.trap	= sc->regs->trap;	\
+    GetCpuContext(task)->regs.dar	= sc->regs->dar;	\
+    GetCpuContext(task)->regs.dsisr	= sc->regs->dsisr;	\
+    GetCpuContext(task)->regs.result	= sc->regs->result;	\
+}
 
-#define RESTORE_CPU(task,sc) /**/
+// ppc abi says do r2 is reserved
+#define RESTORE_CPU(task,sc)\
+{								\
+    long i;							\
+    sc->regs->gpr[0] = GetCpuContext(task)->regs.gpr[0];	\
+    sc->regs->gpr[1] = GetCpuContext(task)->regs.gpr[1];	\
+    for (i = 3; i < 32; i++)					\
+	sc->regs->gpr[i] = GetCpuContext(task)->regs.gpr[i];	\
+    sc->regs->nip	= GetCpuContext(task)->regs.nip; 	\
+    sc->regs->msr	= GetCpuContext(task)->regs.msr;	\
+    sc->regs->orig_gpr3 = GetCpuContext(task)->regs.orig_gpr3;	\
+    sc->regs->ctr	= GetCpuContext(task)->regs.ctr;	\
+    sc->regs->link	= GetCpuContext(task)->regs.link;	\
+    sc->regs->xer	= GetCpuContext(task)->regs.xer;	\
+    sc->regs->ccr	= GetCpuContext(task)->regs.ccr;	\
+    sc->regs->trap	= GetCpuContext(task)->regs.trap;	\
+    sc->regs->dar	= GetCpuContext(task)->regs.dar;	\
+    sc->regs->dsisr	= GetCpuContext(task)->regs.dsisr;	\
+    sc->regs->result	= GetCpuContext(task)->regs.result;	\
+}
 
-#define PREPARE_INITIAL_FRAME(sp,pc)	/**/
+#define PREPARE_RETURN_ADDRESS(task, addr)\
+    _PUSH(GetSP(task), addr);\
+    GetCpuContext(task)->regs.link = addr;
+
+#define PREPARE_INITIAL_ARGS(task, args, numargs)\
+{\
+    long i;\
+    for (i = 0; i < numargs; i++)\
+	GetCpuContext(task)->regs.gpr[3+i] = args[i];\
+}
+
+#define PREPARE_INITIAL_FRAME(sp,pc)\
+    GetCpuContext(task)->regs.gpr[1] = sp;\
+    GetCpuContext(task)->regs.nip    = pc;
 
 /* Prepare the cpu context */
 
 #define PREPARE_INITIAL_CONTEXT(task,pc) \
-	 	GetCpuContext(task)->sc.regs=&GetCpuContext(task)->regs; \
-		GetCpuContext(task)->sc.regs->link = (LONG)pc;
+    /*GetCpuContext(task)->sc.regs->link = (LONG)pc;*/
 
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
    all general purpose registers. Use this macro when you want to
@@ -96,15 +150,17 @@ struct AROS_cpu_context
    must store the value of "sp" after the macro and hand it to
    RESTOREREGS() below to restore this context. */
 
-#define SAVEREGS(task,sc)	/**/
+#define SAVEREGS(task,sc)\
+	SAVE_CPU(task,sc)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
    tasks' context. Both "sp" and "sc" must be initialized.
    The macro will save the new SP into the sigcontext "sc". */
 
-#define RESTOREREGS(task,sc)	/**/
-
+#define RESTOREREGS(task,sc)\
+	RESTORE_CPU(task,sc)
+	
 /* This macro prints the current signals' context */
 
 #define PRINT_SC(sc) \
