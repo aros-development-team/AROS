@@ -56,7 +56,7 @@ extern void Exec_FreeMem();
 
 
   if (seglist)
-    return InternalUnLoadSeg(seglist, (void *)&Exec_FreeMem);
+    return InternalUnLoadSeg(seglist, __AROS_GETVECADDR(SysBase, 35));
 
   return FALSE;
 
