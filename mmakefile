@@ -63,6 +63,11 @@ DEPLIB_UTILITY=$(LIBDIR)/libutility.so
 else
 DEPLIB_UTILITY=$(LIBDIR)/libutility.a
 endif
+ifeq ("$(SHARED_LAYERS)","yes")
+DEPLIB_LAYERS=$(LIBDIR)/liblayers.so
+else
+DEPLIB_LAYERS=$(LIBDIR)/liblayers.a
+endif
 ifeq ("$(SHARED_MATHFFP)","yes")
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
 else
@@ -127,6 +132,7 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_EXEC) \
     $(DEPLIB_UTILITY) \
     $(DEPLIB_INTUITION) \
+    $(DEPLIB_LAYERS) \
     $(DEPLIB_GRAPHICS) \
     $(DEPLIB_MATHFFP) \
     $(DEPLIB_BOOPSI) \
