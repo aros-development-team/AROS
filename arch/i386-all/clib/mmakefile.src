@@ -19,6 +19,11 @@ setup-clib-linux-i386 :
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 
 #MM
+setup-clib-freebsd-i386 :
+	%mkdirs_q $(CLIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+
+#MM
 clean ::
 	-$(RM) $(TESTS)
 
