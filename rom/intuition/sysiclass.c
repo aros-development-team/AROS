@@ -35,8 +35,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define DEFSIZE_WIDTH  16
-#define DEFSIZE_HEIGHT 16
+#define DEFSIZE_WIDTH  14
+#define DEFSIZE_HEIGHT 14
 
 #if 0 /* stegerg: ???? */
 
