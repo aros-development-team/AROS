@@ -433,7 +433,7 @@ endif
 %define build_module mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
   linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
-  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
+  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref \
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
 
