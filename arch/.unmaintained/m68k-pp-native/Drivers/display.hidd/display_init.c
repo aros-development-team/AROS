@@ -74,15 +74,11 @@ static BOOL initclasses(struct display_staticdata *xsd)
 {
 
     /* Get some attrbases */
-// *(ULONG *)0xc0de8765=0;
-
     __IHidd_PixFmt = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
 
-#if 0
 #ifndef AROS_CREATE_ROM_BUG
     if (!OOP_ObtainAttrBases(abd))
     	goto failure;
-#endif
 #endif
 
     xsd->displayclass = init_displayclass(xsd);
@@ -100,7 +96,6 @@ static BOOL initclasses(struct display_staticdata *xsd)
     return TRUE;
         
 failure:
-*(ULONG *)0xbad00001 = 0;
     freeclasses(xsd);
 
     return FALSE;
@@ -131,7 +126,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     struct display_staticdata *xsd;
     struct displayModeEntry *entry;
     int i;
-// *(ULONG *)0xc0de9999 = 0;
+
     xsd = AllocMem( sizeof (struct display_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
     if (xsd)
     {
