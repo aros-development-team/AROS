@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES := -I$(INCDIR)
+OS_INCLUDES := -I$(GENINCDIR)
 ifeq ("$(SHARED_DOS)","yes")
 SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 endif
