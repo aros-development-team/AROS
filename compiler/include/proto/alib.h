@@ -1,19 +1,19 @@
-#ifndef PROTO_BATTMEM_H
-#define PROTO_BATTMEM_H
+#ifndef PROTO_ALIB_H
+#define PROTO_ALIB_H
 
 #ifndef AROS_SYSTEM_H
 #include <aros/system.h>
 #endif
 
-#include <clib/battmem_protos.h>
+#include <clib/alib_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
 #ifndef NO_INLINE_STDARG
 #define NO_INLINE_STDARG
 #endif
-#include <inline/battmem.h>
+#include <inline/alib.h>
 #else
-#include <defines/battmem.h>
+#include <defines/alib.h>
 #endif
 
-#endif /* PROTO_BATTMEM_H */
+#endif /* PROTO_ALIB_H */
