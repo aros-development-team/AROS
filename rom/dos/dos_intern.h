@@ -233,5 +233,14 @@ struct InternalExAllControl
        ExAll emulation is being performed.  */
     struct FileInfoBlock *fib;
 };    
+
+
+typedef struct FileHandle* FileHandlePtr;
+
+void vbuf_free(FileHandlePtr fh);
+
+IPTR vbuf_alloc(FileHandlePtr fh, ULONG size);
+
+LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length);
     
 #endif /* DOS_INTERN_H */
