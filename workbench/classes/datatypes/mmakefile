@@ -6,6 +6,7 @@
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
 #MM- workbench-classes-datatypes-complete : \
-#MM	    workbench-classes-datatypes-text
+#MM	    workbench-classes-datatypes-text \
+#MM	    workbench-classes-datatypes-ascii
 
 #MM- workbench-complete : workbench-classes-complete
