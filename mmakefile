@@ -8,7 +8,7 @@
 include $(TOP)/config/make.cfg
 
 # MetaMake rules
-#MM AROS : AROS-$(ARCH)
+#MM AROS : clean-errors AROS-$(ARCH)
 AROS : checkerr
 	@$(NOP)
 
@@ -29,17 +29,18 @@ $(FLEXCAT):
 
 
 # BEGIN_DESC{internaltarget}
+# \item{clean-errors} Delete the global error file
+#
+# END_DESC{internaltarget}
+clean-errors :
+	@$(RM) -f $(GENDIR)/errors
+	
+# BEGIN_DESC{internaltarget}
 # \item{checkerr} Checks if any error has been occurred during compile
 #
 # END_DESC{internaltarget}
 checkerr :
-	@if $(TEST) -f $(TOP)/errors ; then \
-	    $(RM) $(TOP)/errors ; \
-	    $(ECHO) "There have been errors" ; \
-	    find . -name "*.err" -print ; \
-	else \
-	    true ; \
-	fi
+	-wc -l $(GENDIR)/errors
 
 # BEGIN_DESC{target}
 # \item{crypt} Create the file crypt to create a password for CVS access
