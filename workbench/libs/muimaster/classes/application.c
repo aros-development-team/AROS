@@ -419,7 +419,32 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
     if (data->app_WindowFamily)
+    {
+	struct MinList *children;
+	Object *cstate;
+	Object *child;
+
+	/* special loop because the next object may have been removed/freed by
+	 *  the previous. so restart from listhead each time.
+	 */
+	while (1)
+	{
+	    get(data->app_WindowFamily, MUIA_Family_List, &children);
+	    cstate = (Object *)children->mlh_Head;
+	    if ((child = NextObject(&cstate)))
+	    {
+		D(bug("Application_Dispose(%p) : OM_REMMEMBER(%p)\n", obj, child));
+		DoMethod(obj, OM_REMMEMBER, child);
+		D(bug("Application_Dispose(%p) : MUI_DisposeObject(%p)\n", obj, child));
+		MUI_DisposeObject(child);
+	    }
+	    else
+	    {
+		break;
+	    }
+	}
 	MUI_DisposeObject(data->app_WindowFamily);
+    }
 
     if (data->app_Menustrip)
 	MUI_DisposeObject(data->app_Menustrip);
@@ -578,7 +603,8 @@ static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Application_Version:
 	STORE = (IPTR)data->app_Version;
 	return(TRUE);
-    case    MUIA_Application_WindowList: return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
+    case MUIA_Application_WindowList:
+	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
     case MUIA_Application_Menustrip:
 	STORE = (IPTR)data->app_Menustrip;
 	return 1;
@@ -617,7 +643,7 @@ static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMemb
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/application.c: Adding 0x%lx to window member list\n",msg->opam_Object));
+    D(bug("Application_AddMember: Adding 0x%lx to window member list\n",msg->opam_Object));
 
     DoMethodA(data->app_WindowFamily, (Msg)msg);
     /* Application knows its GlobalInfo, so we can inform window */
@@ -633,7 +659,7 @@ static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMemb
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/application.c: Removing 0x%lx to window member list\n",msg->opam_Object));
+    D(bug("Application_RemMember: Removing 0x%lx from window member list\n",msg->opam_Object));
 
     DoMethod(msg->opam_Object, MUIM_DisconnectParent);
     DoMethodA(data->app_WindowFamily, (Msg)msg);
