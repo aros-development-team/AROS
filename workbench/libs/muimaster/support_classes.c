@@ -199,8 +199,6 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
     struct Library *mb = NULL;
 
 
-    bug ("[Zune] Trying to make builtin class `%s'\n", classid);
-
     for (i = 0; i < sizeof(builtins)/sizeof(builtins[0]); i++)
     {
 	if (!strcmp(builtins[i]->name, classid))
