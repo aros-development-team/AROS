@@ -50,7 +50,7 @@ setup :
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
-	@$(SNOP)
+	@$(NOP)
 
 #MM change-x11keymaptable
 change-x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable
