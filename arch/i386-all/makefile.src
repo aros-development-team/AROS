@@ -15,6 +15,7 @@ FILES = \
 	dispatch \
 	enable \
 	exception \
+	execstubs \
 	forbid \
 	getcc \
 	initcore \
@@ -27,8 +28,7 @@ FILES = \
 	superstate \
 	supervisor \
 	switch \
-	userstate \
-	stubs
+	userstate
 
 CLIBFILES = \
 	longjmp \
