@@ -34,7 +34,7 @@ static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg);
 static AttrBase HiddGCAttrBase = 0;
 static AttrBase HiddBitMapAttrBase = 0;
 
-struct ABDescr attrbases[] = {
+static struct ABDescr attrbases[] = {
     { IID_Hidd_GC,	&HiddGCAttrBase		},
     { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
     { NULL, NULL }
