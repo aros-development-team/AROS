@@ -266,6 +266,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	    if(!ok)
 	    {
 		MatchEnd(ap);
+		FreeVec(ap);
 		PrintFault(IoErr(), "Rename");
 		
 		return RETURN_FAIL;
@@ -274,6 +275,8 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	
 	MatchEnd(ap);
     }
+    
+    FreeVec(ap);
     
     return RETURN_OK;
 }
