@@ -130,7 +130,7 @@ case "$host_os" in
 esac
 
 # See if we can compile SHM support
-HAVE_SHM_SUPPORT=0
+HAVE_XSHM_SUPPORT=0
 if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
   AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
   LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
@@ -149,9 +149,9 @@ XShmAttach(display, &shminfo);
 XSync(display,0);
 shmctl(shminfo.shmid, IPC_RMID, 0);
 ],
-HAVE_SHM_SUPPORT=1
+HAVE_XSHM_SUPPORT=1
 AC_MSG_RESULT(yes),
-HAVE_SHM_SUPPORT=0
+HAVE_XSHM_SUPPORT=0
 AC_MSG_RESULT(no))
 fi
 
@@ -361,7 +361,7 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
-AC_SUBST(HAVE_SHM_SUPPORT)
+AC_SUBST(HAVE_XSHM_SUPPORT)
 
 # Host related
 AC_SUBST(aros_host_arch)
@@ -421,7 +421,7 @@ if test -z "$aros_gui_basedir" ; then
     else
 	aros_gui_ldflags="-L $x_libraries"
     fi
-    if test "$HAVE_SHM_SUPPORT" = "1" ; then
+    if test "$HAVE_XSHM_SUPPORT" = "1" ; then
       aros_gui_libflags="-lX11 -lXext"
     else
       aros_gui_libflags="-lX11"
