@@ -92,6 +92,11 @@
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 87, Graphics)
 
+#define ClearRegion(region) \
+    AROS_LC1(void, ClearRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    struct GfxBase *, GfxBase, 88, Graphics)
+
 #define CloneRastPort(rp) \
     AROS_LC1(struct RastPort *, CloneRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
@@ -373,5 +378,10 @@
     AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 54, Graphics)
 
+#define XorRectRegion(region, rectangle) \
+    AROS_LC2(BOOL, XorRectRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Rectangle *, rectangle, A1), \
+    struct GfxBase *, GfxBase, 93, Graphics)
 
 #endif /* DEFINES_GRAPHICS_H */

@@ -87,6 +87,10 @@ AROS_LP2(BOOL, ClearRectRegion,
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 87, Graphics)
 
+AROS_LP1(void, ClearRegion,
+    AROS_LPA(struct Region *, region, A0),
+    struct GfxBase *, GfxBase, 88, Graphics)
+
 AROS_LP1(struct RastPort *, CloneRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
     struct GfxBase *, GfxBase, 178, Graphics)
@@ -324,5 +328,9 @@ AROS_LP3(LONG, WritePixel,
     AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 54, Graphics)
 
+AROS_LP2(BOOL, XorRectRegion,
+    AROS_LPA(struct Region *, region, A0),
+    AROS_LPA(struct Rectangle *, rectangle, A1),
+    struct GfxBase *, GfxBase, 93, Graphics)
 
 #endif /* CLIB_GRAPHICS_PROTOS_H */
