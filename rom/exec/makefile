@@ -75,11 +75,9 @@ FUNCTIONS = \
 endif
 
 ifeq ($(FLAVOUR),native)
-LIBS = -L$(LIBDIR) -larosc
+LIBS = -L$(LIBDIR) -laros -larosc
 
 all: setup $(OSMODDIR)/exec.strap
-
-asm: all $(foreach f,$(FUNCTIONS),$(f).s)
 
 $(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 			$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
@@ -94,6 +92,8 @@ $(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
+asm: all $(foreach f,$(FUNCTIONS),$(f).s)
+
 %.s: %.c
 	$(CC) -S $(CFLAGS) $< -c -o $@
 else
