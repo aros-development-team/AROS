@@ -469,6 +469,7 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	    D(bug("tbb: image=%p\n", data->image));
 	    if (data->image)
 	    {
+	    	((struct Gadget *)o)->GadgetType |= GTYP_SYSGADGET;
 	   	return o;
 	    }
 	} /* if (dri) */
