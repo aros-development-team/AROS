@@ -1431,6 +1431,33 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     struct wpa_render_data wpard;
     struct Rectangle rr;
 
+    if (RECTFMT_GREY8 == srcformat)
+    {
+    	static ULONG greytab[256];
+	
+	/* Ignore possible race conditions during
+	   initialization. Have no bad effect. Just
+	   double initializations. */
+	   
+	/* FIXME/KILLME: evil static array which goes into BSS section
+	   which x86 native AROS regards as evil! */
+	   
+	if (greytab[255] == 0)
+	{
+	    WORD i;
+	    
+	    for(i = 0; i < 256; i++)
+	    {
+	    	greytab[i] = i * 0x010101;
+	    }
+	}
+	
+	return driver_WriteLUTPixelArray(src, srcx, srcy, srcmod,
+	    	    	    	    	 rp, greytab, destx, desty,
+					 width, height, CTABFMT_XRGB8,
+					 CyberGfxBase);
+    }
+
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
@@ -1467,14 +1494,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	
 	return pixwritten;
     }
-    
-    if (RECTFMT_GREY8 == srcformat)
-    {
-    	RELEASE_DRIVERDATA(rp, GfxBase);
-    	D(bug("!!! RECTFMT_GREY8 not yet handled in driver_WritePixelArray\n"));
-	return 0;
-    }
-    
+        
     switch (srcformat)
     {
 	case RECTFMT_RGB  : srcfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
