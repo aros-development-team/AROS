@@ -6,6 +6,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/icon.h>
 #include <proto/intuition.h>
 
 #include "worker.h"
@@ -15,14 +16,13 @@
 #include "desktop_intern_protos.h"
 
 #include <stdarg.h>
+#include <string.h>
 
 /*
 FUTURE WORK:
 1.  The worker should work inbetween messages from a requester.
     This will give faster results.
-2.  ExAll() seems to to return eac->eac_Entries as 1 more than
-    the actual amount in the buffer
-3.  The WorkerMessage structure is a bit bloated, perhaps have
+2.  The WorkerMessage structure is a bit bloated, perhaps have
     a seperate message for starts?
 */
 
@@ -31,6 +31,7 @@ void scan(struct ScannerWorkerContext *swc)
 	struct ExAllData *ead;
 	struct SingleResult *sr=NULL;
 	int i=0;
+	UBYTE *fullPath;
 
 	swc->swc_More=ExAll(swc->swc_DirLock, (struct ExAllData*)swc->swc_Buffer, SCAN_BUFFER, ED_OWNER, swc->swc_EAC);
 
@@ -42,6 +43,15 @@ void scan(struct ScannerWorkerContext *swc)
 		while(ead)
 		{
 			sr[i].sr_Name=ead->ed_Name;
+
+			fullPath=AllocVec(strlen(swc->swc_DirName)+strlen("/")+strlen(ead->ed_Name)+1, MEMF_ANY);
+			strcpy(fullPath, swc->swc_DirName);
+			strcat(fullPath, "/");
+			strcat(fullPath, ead->ed_Name);
+
+kprintf("worker: %s\n", ead->ed_Name);
+
+			sr[i].sr_DiskObject=GetDiskObjectNew(fullPath);
 			ead=ead->ed_Next;
 			i++;
 		}
@@ -56,16 +66,38 @@ void scan(struct ScannerWorkerContext *swc)
 
 void startScan(struct ScannerWorkerContext *swc)
 {
+	UBYTE *dirName;
+	UWORD bufferSize=100;
+	BOOL success;
+
 	swc->swc_Buffer=(STRPTR)AllocVec(SCAN_BUFFER, MEMF_ANY);
 	swc->swc_DirLock=((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_DirLock;
 	swc->swc_EAC=(struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL, NULL);
 	swc->swc_EAC->eac_LastKey=0;
+
+	dirName=(UBYTE*)AllocVec(bufferSize, MEMF_ANY);
+	success=NameFromLock(swc->swc_DirLock, dirName, bufferSize);
+	if(!success)
+	{
+		while(IoErr()==ERROR_LINE_TOO_LONG)
+		{
+			FreeVec(bufferSize);
+			bufferSize+=50;
+			dirName=(UBYTE*)AllocVec(bufferSize, MEMF_ANY);
+			success=NameFromLock(swc->swc_DirLock, dirName, bufferSize);
+			if(success)
+				break;
+		}
+	}
+
+	swc->swc_DirName=dirName;
 
 	scan(swc);
 }
 
 void resumeScan(struct ScannerWorkerContext *swc)
 {
+	swc->swc_Buffer=(STRPTR)AllocVec(SCAN_BUFFER, MEMF_ANY);
 	scan(swc);
 }
 
@@ -93,6 +125,7 @@ ULONG workerEntry(void)
 			{
 				case WM_START:
 				{
+					kprintf("worker:starting\n");
 					swc=(struct ScannerWorkerContext*)AllocVec(sizeof(struct ScannerWorkerContext), MEMF_ANY);
 					swc->swc_Context.workerAction=msg->w_Command;
 					swc->swc_Context.start=(APTR)startScan;
@@ -110,6 +143,7 @@ ULONG workerEntry(void)
 					break;
 				}
 				case WM_RESUME:
+					kprintf("worker:resuming\n");
 					swc->swc_CurrentRequest=msg;
 					swc->swc_Context.resume(swc);
 					if(!swc->swc_More)

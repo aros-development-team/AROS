@@ -22,6 +22,7 @@ struct ScannerWorkerContext
 	struct WorkerContext swc_Context;
 	struct ExAllControl *swc_EAC;
 	BPTR swc_DirLock;
+	UBYTE *swc_DirName;
 	BOOL swc_More;
 	STRPTR swc_Buffer;
 	struct WorkerMessage *swc_CurrentRequest;
@@ -38,6 +39,7 @@ struct WorkerMessage
 struct SingleResult
 {
 	UBYTE *sr_Name;
+	struct DiskObject *sr_DiskObject;
 };
 
 struct WorkerScanRequest
