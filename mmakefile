@@ -151,6 +151,7 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(LIBDIR)/libkeymap.a \
     $(LIBDIR)/libx11cl.a \
     $(LIBDIR)/libkeyboard.a \
+    $(LIBDIR)/libgameport.a \
     $(DEPLIB_AROS)
 
 LIBS=-L$(LIBDIR) \
@@ -160,7 +161,7 @@ LIBS=-L$(LIBDIR) \
 	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard
+	-lhiddgraphicsstubs -lkeyboard -lgameport
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
