@@ -1,0 +1,5 @@
+*.bin 
+bin.res 
+*.grc 
+*.prc
+exec

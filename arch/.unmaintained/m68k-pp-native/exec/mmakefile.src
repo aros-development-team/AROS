@@ -1,0 +1,95 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		:= $(OSGENDIR)/exec
+OS_INCLUDES	:= -I$(GENINCDIR)
+CFLAGS2 	:= $(CFLAGS) -g -I.. -I$(TOP)/rom/exec
+CFLAGS3 	:= $(OS_INCLUDES) -fomit-frame-pointer -O6
+AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/exec -I$(GENINCDIR)
+TESTS		:=
+
+INCFILES	:= \
+		   $(GENINCDIR)/asm/ptrace.h \
+		   $(INCDIR)/asm/ptrace.h
+
+
+FILES := coldreboot \
+	addhead \
+	addtail \
+	addintserver \
+	addtask \
+	rawputchar \
+	preparecontext \
+	prepareexecbase \
+	disable \
+	cause \
+	enable \
+	switch \
+	sys_dispatch \
+	idletask \
+	stackswap \
+	supervisor \
+	userstate \
+	superstate \
+	ints \
+	switchtouser \
+	inithw \
+	offsets \
+	setsr \
+	sys_trap1_handler
+
+COREFILES	:= init \
+	execstubs
+
+
+#MM
+exec-pp-native-m68000 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
+	@$(NOP)
+
+#MM
+setup-exec-pp-native-m68000 : $(GENINCDIR)/sigcore.h
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
+	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
+	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
+
+
+#MM
+includes-pp-native-m68000 : $(INCFILES)
+	@$(NOP)
+
+#MM
+$(GENINCDIR)/sigcore.h : ../sigcore.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(GENINCDIR)/asm/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/asm
+	$(CP) $< $@
+
+$(INCDIR)/asm/%.h : %.h
+	%mkdirs_q $(INCDIR)/asm
+	$(CP) $< $@
+
+$(OBJDIR)/offsets.o : offsets.c
+	%compile_q opt=$(CFLAGS3)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS2)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+cpu.s: cpu.c
+	%ctoasm_q
+
+
+%common

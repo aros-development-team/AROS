@@ -1,0 +1,197 @@
+Resources
+---------
+
+To cross-compile AROS for Palm devices you need an m68k-palmos-coff cross
+compiler and some additional tools. Luckily you do not have to create them
+yourself but can download a complete package from the following site:
+
+ftp://ryeham.ee.ryerson.ca/pub/PalmOS/m68k-palmos-coff.tools-990108-linux-x86-glibc.tar.gz
+
+The size is ~4.9MB and *should* contain everything you need to develop
+PalmOS applications (if you really want to). You should extract it into '/'.
+This should get you going for the beginning but this compiler has a couple
+of disadvantages and sooner or later we will have to switch to a regular
+m68k-linux elf (cross) compiler that allows us to build all of AROS. You 
+can get that one precompiled from 
+
+ftp://ftp.fu-berlin.de/unix/linux/mirrors/tsx-11.mit.edu/680x0/tools/i486
+
+The size of that one is ~7.4MB and *should* also contains all the tools 
+you will ever need for cross compilation. If you cannot access this ftp 
+server for some reason then search for "cross-m68k-linux-*" on dogpile.com
+as an ftp search.
+You should extract this file into '/'.
+
+
+Also since you probably want to extend AROS for Palm a little you might
+want to download the dragonball documentation from the Motorola website.
+The documentation tells you (almost) everything you need to know about the
+Palm HW and its additional memory mapped registers.
+
+http://www.motorola.com
+
+Search for "dragonball" and then go to "documentation". Sigh, the size of
+that thing is also >5MB.
+
+
+
+Compilation (only the m68k-palmos-coff...) package from above is currently needed.
+-----------
+
+Cross compiling AROS is not supported by the configuration, yet, and
+therefore compiling AROS for Palm is little messy, but it works anyway.
+Here is what you should do. Start with a clean tree by typing the following
+in the AROS/ directory
+	mmake .clean ; rm -rf bin
+
+After that you need to create the main Makefile like you would do to compile
+AROS for Linux i386:
+	./configure
+
+Also you need to build the tools first before doing anything else:
+	make tools
+
+Now go into config/palm-native
+	cd config/palm-native
+
+and start compiling the source tree with the given script 'compile'. This
+will compile all linklibs, exec and maybe a couple of other libraries:
+	./compile.coff
+
+To upload it onto a palm device do the following:
+	cd boot ; make clean ; make send
+
+You can also upload it to xcopilot by using the target 'emu' instead fo
+'send' in the command line above.
+
+
+Current Status
+--------------
+
+The current status is that only exec multitasking works. One task draws a 
+vertical and a horizontal line onto the screen and moves them downwards
+and rightwards respectively. The idle task (!) scrolls the visible area
+pixel by pixel. To do so its priority is raised from -128 to 0 and
+task switching is 'manually' enabled in the dispatcher. 
+Tasks are currently preempted at a rate of 1Hz.
+
+
+Roadmap
+-------
+Here is my suggestion of a roadmap on how we could get AROS running on 
+Palm devices as fast as possible:
+
+- Replace the m68k-palmos-coff-gcc compiler with a m68k-linux elf compiler.
+  This will allow us to build larger executables than 32kb but downloading
+  AROS onto the Palm device (or emulator) will not be as easy anymore since
+  the Palm does not like the elf format.
+
+- Write one program for PalmOS that checks the memory layout and sends its
+  findings to an AROS or Linux program. The program on AROS then loads 
+  the m68k elf executable and relocates (!) it and then sends the chunks 
+  to the Palm device. (Watch out where the supervisor stack pointer is 
+  located such that that program does not overwrite the stack) 
+  [I think the memory layout can be found out by reading some of the 
+   systen registers 0xfffff???]
+
+- Until now no changes should have been made to the source tree, unless
+  it could have been tested with the native Palm OS version of exec as
+  we have it right now.
+
+- Introduce an irq hidd. The task switching handler should use the irq
+  hidd.
+
+- Try to write the serial hidd for debugging output over serial line.
+
+- add all necessary libraries to the executable. This should not be
+  very difficult but will increase the upload time considerably.
+
+- Write a graphics hidd. Should be real simple to do!! Check the dragon ball 
+  documentation for what the LCD registers offer.
+
+
+Knowledge (more or less)
+---------
+
+- You will (currently) need a m68k cross compiler for palmos. You should
+  be able to find it on the aros ftp server. Unfortunately this compiler
+  will only allow to generate code sizes of up to 32kb and that only
+  allows exec to fit in and not much of anything else.
+
+- The next step will be to generate aros with a m68k elf cross compiler
+  and write a loader program for PalmOS that will load AROS for Palm onto
+  the Palm device. The relocation of the executable should then be done
+  on the host (AROS or Linux) before uploading it to the Palm device.
+
+- Debugging has become quite difficult since I switched
+  execution to user mode. Can only debug once in supervisor mode
+  (interrupts, traps)
+
+- Something bad happens when string.h is included. All memset are 
+  mapped to MemSet which takes a different order of parameters and
+  thus causes crashes. Therefore __string_h was defined to prevent
+  including that PalmOS include file which does the remapping. 
+  (see config file for Palm)
+
+- Do not try to build geninc. It will not create the right offsets for the 
+  crosscompilation but for i386 instead! I wrote a c file instead with
+  minimal functions.
+
+- Fix Supervisor, Stackswap, ColdReboot (missing offsets in machine.i)
+
+- Currently all interrupts are disabled in the dispatcher (my_dispatcher)
+  and only RTC is enabled at the end. 
+
+- For some reason jmp <label> seems to generate wrong code. It does not
+  jump to the address I want it to. Used 'bra' instead and that seems
+  to do the trick. Absolute addresses expressed through labels seem to be
+  a general problem with that compiler. Best is to use only relative
+  addresses with the coff type of compiler.
+ 
+- Had to replace the addintserver file in rom/exec with a file that
+  has no references to custom chip hw. Otherwise this caused crashes due
+  to access to addresses that do not exist. It seems the #defines are
+  defined in the Palm case.
+
+- The speed of the task switches depends on which flag is set in the RTC
+  register RTCISR (0xfffffb0e). Change it accordingly in exec/ints.S
+  and inithw.c, disable.c & enable.c .
+  (For nothing in the world I could get better task switching than @ 1Hz.)
+
+- Try to get rid of all 'int's. They are 2 bytes long with the native
+  palm compiler. Once we move to the real m68k elf compiler this
+  will not be a problem anymore. So we might not want to do it.
+
+- GCC optimization option -O3 seems to generate a little larger executable 
+  than -O2.
+
+- Hardware: How do you get the coordinates from the touch screen?
+  How do you get notifications about pressed buttons?
+
+- Defined __DONT_USE_DEBUGMEM__ to make exec run on Palm
+  device. It is defined in the config file for Palm copyied to 
+  AROS/config/.
+
+- Memory allocated by PlamOS before entering AROS needs to be aligned!
+  See boot/exec.c code!
+
+- The memory allocation function currently in use does not even allow 
+  allocation of 0x10000 bytes. It simply returns NULL then.
+
+
+
+Uploading elf code to the Palm
+------------------------------
+
+- There must not be any symobols defines as common ('C') when the executable 
+  is examined with 'nm'. Use '-dp' when linking to allocate space for such
+  kind of symbols in the .bss section. 
+
+- You MUST pass -Wa,-mc68000 as argument to gcc or -mc68000 to as
+  (assembler) because otherwise you might get 68020 instructions like
+  bsr.l <label> which do not exist on an mc68000.
+
+
+
+--
+Palm is a registered trademark of Palm Inc.

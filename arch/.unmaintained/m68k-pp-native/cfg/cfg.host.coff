@@ -1,0 +1,119 @@
+#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+#   $Id$
+#
+#   Desc: host.cfg - an autoconf output file for make variables.
+#
+
+# -------------------------------------------------------------------------- 
+# HOST SECTION
+# --------------------------------------------------------------------------
+CROSSCOMPILE	:= m68k-palmos-coff-
+#CROSSCOMPILE	:= m68k-linux-
+
+HOST_ARCH	:= linux
+HOST_CPU	:= i386
+
+HOST_CC		:= gcc -pipe
+HOST_LD		:= gcc
+HOST_MAKE	:= make
+HOST_CFLAGS	:= 
+HOST_LDFLAGS	:= 
+HOST_DEBUG	:= -g -O3
+HOST_MKDEP	:= $(TOP)/scripts/mkdep
+MKARGS		:= --no-print-directory
+
+HOST_AR		:= ar cru
+HOST_RANLIB	:= ranlib
+HOST_EXE_SUFFIX	:= 
+HOST_LIB_SUFFIX := 
+
+MMAKE		:= mmake
+AWK		:= gawk
+RM		:= rm -rf
+CP		:= cp
+MV		:= mv
+ECHO		:= echo
+MKDIR		:= mkdir -p
+TOUCH		:= touch
+PYTHON		:= python
+GNUPLOT		:= gnuplot
+NOP		:= true
+FOR		:= for
+IF		:= if
+TEST		:= test
+CAT		:= cat
+BISON		:= bison
+
+# -------------------------------------------------------------------------- 
+# TARGET SECTION
+# -------------------------------------------------------------------------- 
+TARGET_ARCH	:= pp
+TARGET_CPU	:= m68000
+FLAVOUR		:= ppnative
+SHARED_MOD	:= yes
+SYS_INCLUDES	:= /usr/include
+
+TARGET_CC	:= $(CROSSCOMPILE)gcc -pipe
+TARGET_AS	:= $(CROSSCOMPILE)gcc -pipe
+STATIC_LD	:= $(CROSSCOMPILE)gcc
+SHARED_LD	:= $(CROSSCOMPILE)gcc
+KERNEL_LD	:= $(CROSSCOMPILE)gcc
+GENMAP		:= -Wl,-Map -Xlinker
+
+TARGET_CFLAGS	:= -Wall -O3 -DADEBUG=1 -D__string_h -DMDEBUG=1 -D__DONT_UNDERSTAND__ASM__ -D__DONT_USE_DEBUGMEM__
+TARGET_AFLAGS	:= -Wall -x assembler-with-cpp
+TARGET_LDFLAGS	:= -nostartfiles -nostdlib -Wl,-r
+STATIC_CFLAGS	:= 
+STATIC_AFLAGS	:= 
+STATIC_LDFLAGS	:= 
+SHARED_CFLAGS	:= -fPIC
+SHARED_AFLAGS	:= 
+SHARED_LDFLAGS	:= -Wl,-rpath,./lib -shared
+KERNEL_LDFLAGS	:= -Wl,-rpath,./lib
+DEBUG_CFLAGS	:= -g -O3 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__
+DEBUG_AFLAGS	:= 
+DEBUG_LDFLAGS	:= -g
+
+GUI_LIBDIR	:= /usr/X11R6/lib
+GUI_LDFLAGS	:= -L /usr/X11R6/lib
+GUI_LIBFLAGS	:= -lX11 -lXext
+GUI_INCDIR	:= /usr/X11R6/include
+GUI_CFLAGS	:= -I /usr/X11R6/include
+
+AR		:= $(CROSSCOMPILE)ar cr
+RANLIB		:= $(CROSSCOMPILE)ranlib 
+NM		:= $(CROSSCOMPILE)nm -ul
+STRIP		:= /bin/true 
+OBJCOPY		:= $(CROSSCOMPILE)objcopy
+OBJDUMP		:= $(CROSSCOMPILE)objdump
+
+# -------------------------------------------------------------------------- 
+# COMPATABILITY SECTION - WILL BE REMOVED IN THE FUTURE
+# --------------------------------------------------------------------------
+
+SORT		:= sort
+UNIQ		:= uniq
+LITE		:= 
+
+ARCH		:= $(TARGET_ARCH)
+CPU		:= $(TARGET_CPU)
+GFXSYSTEM	:= gfxhidd
+CC		:= $(TARGET_CC)
+AS		:= $(TARGET_AS)
+SYS_CC		:= $(TARGET_CC)
+SYS_AS		:= $(TARGET_AS)
+COMMON_CFLAGS	:= $(TARGET_CFLAGS)
+COMMON_AFLAGS	:= $(TARGET_AFLAGS)
+APP_CFLAGS	:=
+ILDFLAGS	:= $(TARGET_LDFLAGS)
+SHELL_LDFLAGS	:= $(KERNEL_LDFLAGS)
+CHECKUDS	:= $(NM)
+
+# These should never have been in this file in the first place,
+# they belong in config/make.cfg
+ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
+MKDEPEND	:= $(TOP)/scripts/mkdep
+TOOLDIR		:= $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
+GENMF		:= $(TOOLDIR)/genmf
+SHARED_CFLAGS := -fPIC
+SHARED_AR := gcc -Wl,-rpath,./lib -shared -o
