@@ -1,13 +1,10 @@
+/*
+    (C) 1999 AROS - The Amiga Research OS
+    $Id$
 
-/******************************************************************************
- *                                                                            *
- *                    Flowerpower's datatypes.library V41                     *
- *                                                                            *
- *              freeware project, see documentation for details               *
- *                                                                            *
- ******************************************************************************
- * AddDatatypes.c
- */
+    Desc: 
+    Lang: English
+*/
 
 #include <exec/types.h>
 #include <exec/memory.h>
