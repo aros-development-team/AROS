@@ -55,11 +55,11 @@ case "$type" in
 	ARCH="linux"
 	# Which CPU ?
 	if [ "$proc" = "m68k" ]; then
-	    KERNEL="m68k-emul"
+	    CPU="m68k-emul"
 	    # How to generate dependency files
 	    MKDEPEND="makedepend -D__GNUC__ -D__mc68000__"
 	else
-	    KERNEL="i386"
+	    CPU="i386"
 	    MKDEPEND="makedepend -D__GNUC__ -Di386"
 	fi
 	# Search this directory for GUI libs
@@ -77,15 +77,15 @@ case "$type" in
 	COMMON_CFLAGS="-Aa -g"
 	RANLIB="true"
 	ARCH="hppa"
-	KERNEL="hppa-emul"
+	CPU="hppa-emul"
 	;;
 "OSF1" )
 	ARCH="decunix"
-	KERNEL="axp-emul"
+	CPU="axp-emul"
 	;;
 "FreeBSD" )
 	ARCH="freebsd"
-	KERNEL="i386"
+	CPU="i386"
 	COMMON_CFLAGS="-Wall -O2"
 	ILDFLAGS="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
 	GUI_BASEDIR="/usr/X11R6"
@@ -99,7 +99,7 @@ case "$type" in
 	CC="gcc"
 	COMMON_CFLAGS="-Wall -Wno-uninitialized -O2 -m68020 -fomit-frame-pointer"
 	ARCH="amiga"
-	KERNEL="m68k-native"
+	CPU="m68k-native"
 	MKDEPEND="makedepend -D__GNUC__ -D_AMIGA -DAMIGA"
 # Sometimes, a .asm file contains versions of a certain routine for
 # different processors. Use -m68060 as a highest common denominator.
@@ -141,7 +141,8 @@ case "$1" in
     echo "ILDFLAGS = \$(CFLAGS) $ILDFLAGS" >> $2
     echo "RANLIB = $RANLIB" >> $2
     echo "ARCH = $ARCH" >> $2
-    echo "KERNEL = $KERNEL" >> $2
+    echo "CPU = $CPU" >> $2
+    echo "CONFIG_MODS = $CONFIG_MODS" >> $2
     echo "FLAVOUR = $FLAVOUR" >> $2
 
     if [ -z "$AS" ]; then
