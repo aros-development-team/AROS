@@ -327,7 +327,7 @@ STRPTR name;
 	name=(STRPTR)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
 	StrCpyFromBstr(name,buffer);
 	key=getHashKey(buffer,volume->SizeBlock-56,volume->flags)+BLK_TABLE_START;
-	// sort in ascending order
+	/* sort in ascending order */
 	if (
 			(dir->buffer[key]) &&
 			(AROS_BE2LONG(dir->buffer[key])<file->blocknum))
@@ -634,12 +634,11 @@ ULONG i;
 		);
 	for (i=BLK_FILENAME_END(volume)+1;i<BLK_HASHCHAIN(volume);i++)
 		newblock->buffer[i]=0;
-	dirblock->flags &= ~BCF_USED;
 	newblock->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dirblock->blocknum);
 	newblock->buffer[BLK_EXTENSION(volume)]=0;
 	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(entrytype);
-	dirblock->flags |= BCF_USED;
 	newblock->buffer[BLK_OWN_KEY]=AROS_LONG2BE(newblock->blocknum);
+	dirblock->flags &= ~BCF_USED;
 	dirblock=linkNewBlock(afsbase, volume,dirblock,newblock);
 	if (!dirblock)
 	{
@@ -647,7 +646,6 @@ ULONG i;
 		newblock->flags &= ~BCF_USED;
 		newblock->acc_count=0;
 		newblock->volume=0;
-		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
 		return 0;
 	}
@@ -658,7 +656,6 @@ ULONG i;
 	writeBlock(afsbase, volume, newblock);
 	/* consistent after this */
 	writeBlock(afsbase, volume, dirblock);
-	dirblock->flags &= ~BCF_USED;
 	validBitmap(afsbase, volume);
 	newblock->flags &= ~BCF_USED;
 	return newblock;
