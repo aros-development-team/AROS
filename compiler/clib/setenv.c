@@ -54,6 +54,6 @@
     if (!overwrite && FindVar(name, LV_VAR))
     	return 0;
 
-    return !SetVar(name, value, -1, LV_VAR );
+    return -!SetVar(name, value, -1, LV_VAR );
 } /* setenv */
 
