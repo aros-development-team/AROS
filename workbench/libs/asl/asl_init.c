@@ -318,6 +318,13 @@ AROS_UFH3(struct AslBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
 
     LIBBASE->seglist=segList;
 
+    /* Asl specific initialization stuff */
+    NEWLIST( &(ASLB(AslBase)->ReqList));
+
+    InitSemaphore( &(ASLB(AslBase)->ReqListSem));
+
+    InitReqInfo(ASLB(AslBase));
+
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     AROS_USERFUNC_EXIT
@@ -431,15 +438,6 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!LIBBASE->aslcolorpickerclass)
         return (NULL);
 	
-    /* ------------------------- */
-
-    /* Asl specific initialization stuff */
-    NEWLIST( &(ASLB(AslBase)->ReqList));
-
-    InitSemaphore( &(ASLB(AslBase)->ReqListSem));
-
-    InitReqInfo(ASLB(AslBase));
-
     /* ------------------------- */
 
 
