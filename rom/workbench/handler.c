@@ -339,7 +339,7 @@ static void __HandleIntuition_WB
 {
     struct WBHandlerMessage *handlermsg;
     
-    if (message->Class = IDCMP_WBENCHMESSAGE)
+    if (message->Class == IDCMP_WBENCHMESSAGE)
     {
         if      (message->Code == WBENCHOPEN)  handlermsg = CreateWBHM(WBHM_TYPE_SHOW);
         else if (message->Code == WBENCHCLOSE) handlermsg = CreateWBHM(WBHM_TYPE_HIDE);
