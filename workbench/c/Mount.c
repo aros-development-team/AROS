@@ -22,7 +22,7 @@
 # define   DEBUG 1
 # include  <aros/debug.h>
 
-static const char version[] = "$VER: mount 41.1 (19.2.1997)\n";
+static const char version[] = "$VER: Mount 41.1 (19.2.1997)\n";
 
 extern struct Library     *ExpansionBase;
 

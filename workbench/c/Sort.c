@@ -1,19 +1,19 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Sorts the contents of a file
-    Lang: english
+    Lang: English
 */
 /*****************************************************************************
 
     NAME
 
-        sort
+        Sort
 
     FORMAT
 
-        sort
+        Sort
 		
     TEMPLATE
 
@@ -362,7 +362,7 @@ int main (void)
     error=RETURN_FAIL;
     
   if (error)
-    PrintFault(IoErr(), "sort");
+    PrintFault(IoErr(), "Sort");
   
   return error; 
 }

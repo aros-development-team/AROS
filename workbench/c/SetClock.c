@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: SetClock - set/save the date from/to the BBU clock.
-    Lang: english
+    Lang: English
 */
 
 /*************************************************************************

@@ -2,7 +2,7 @@
     (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Addbuffers CLI command
+    Desc: AddBuffers CLI command
     Lang: English
 */
 
@@ -58,7 +58,7 @@
 #include <dos/dos.h>
 
 
-static const char version[] = "$VER: addbuffers 41.1 (18.2.1997)\n";
+static const char version[] = "$VER: AddBuffers 41.1 (18.2.1997)\n";
 
 #define ARG_TEMPLATE "DRIVE/A,BUFFERS/N"
 

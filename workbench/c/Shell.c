@@ -40,7 +40,7 @@
 
     EXAMPLE
 
-        shell FROM S:Startup-Sequence
+        Shell FROM S:Startup-Sequence
 
         Starts a shell and executes the startup script.
 
@@ -77,7 +77,7 @@
 
 /* This is 1, because it is at the moment handled here in the Shell itself.
    Should it turn out that the correct place to do the CHANGE_SIGNAL is
-   newshell.c instead, change this define to 0 and in newshell.c set the
+   NewShell.c instead, change this define to 0 and in NewShell.c set the
    same define to 1. */
  
 #define DO_CHANGE_SIGNAL 1
@@ -107,7 +107,7 @@
 
 extern struct UtilityBase *UtilityBase;
 
-static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
+static const char version[] = "$VER: Shell 41.5 (9.1.2000)\n";
 
 #define SET_HOMEDIR 1
 

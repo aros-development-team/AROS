@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Dir CLI command
@@ -89,7 +89,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: dir 41.12 (27.11.2000)\n";
+static const char version[] = "$VER: Dir 41.12 (27.11.2000)\n";
 
 struct table
 {
