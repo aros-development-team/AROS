@@ -5,6 +5,7 @@
     Desc: Graphics function ClearRegion()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <proto/exec.h>
 #include <graphics/regions.h>

@@ -5,6 +5,7 @@
     Desc: Graphics function CalcIVG()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 
 /*****************************************************************************

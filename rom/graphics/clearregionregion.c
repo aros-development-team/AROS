@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include <proto/graphics.h>
 #include <graphics/regions.h>
 #include "intregions.h"
 

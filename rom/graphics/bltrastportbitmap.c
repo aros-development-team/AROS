@@ -5,7 +5,9 @@
     Desc: Blit the content of a rastport into a bitmap
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
+#include <proto/graphics.h>
 
 /*****************************************************************************
 

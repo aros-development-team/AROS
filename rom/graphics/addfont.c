@@ -5,6 +5,7 @@
     Desc: Make a font public available
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <proto/exec.h>
 

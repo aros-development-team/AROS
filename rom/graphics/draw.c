@@ -6,9 +6,13 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
+#include <proto/oop.h>
 #include "gfxfuncsupport.h"
+#include "graphics_intern.h"
+#include "intregions.h"
 
 /*****************************************************************************
 

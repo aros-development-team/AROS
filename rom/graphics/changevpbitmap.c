@@ -5,6 +5,7 @@
     Desc: Graphics function ChangeVPBitMap()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 

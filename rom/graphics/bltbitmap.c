@@ -5,6 +5,7 @@
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.
     Lang: english
 */
+#include <aros/debug.h>
 #include <string.h>
 #include <exec/memory.h>
 #include <graphics/gfx.h>

@@ -5,9 +5,11 @@
     Desc: Create a new BitMap
     Lang: english
 */
+#include <aros/debug.h>
 #include <string.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <cybergraphx/cybergraphics.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"

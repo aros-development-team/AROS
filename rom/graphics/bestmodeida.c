@@ -5,9 +5,14 @@
     Desc: Graphics function BestModeIDA()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/modeid.h>
 #include <hidd/graphics.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/oop.h>
 #include "dispinfo.h"
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
