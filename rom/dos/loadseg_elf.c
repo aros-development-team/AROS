@@ -18,15 +18,19 @@ extern struct DosLibrary * DOSBase;
 #define SHT_PROGBITS	1
 #define SHT_SYMTAB	2
 #define SHT_STRTAB	3
+#define SHT_RELA	4
 #define SHT_NOBITS	8
 #define SHT_REL 	9
 
 #define ET_REL		1
 
 #define EM_386		3
+#define EM_68K		4
 
-#define RELO_32 	1
-#define RELO_PC32	2
+#define R_386_32 	1
+#define R_386_PC32	2
+#define R_68K_32	1
+#define R_68K_PC32	4
 
 #define STT_OBJECT	1
 #define STT_FUNC	2
@@ -79,6 +83,9 @@ struct relo
 {
     ULONG addr;     /* Address of the relocation (relative to the last loaded hunk) */
     ULONG info;     /* Type of the relocation */
+#ifdef __mc68000__
+    LONG  addend;   /* Constant addend used to compute value */
+#endif
 };
 
 struct hunk
@@ -154,7 +161,7 @@ BPTR LoadSeg_ELF (BPTR file)
 	ERROR (ERROR_NOT_EXECUTABLE);
 
     /* Check file type and the CPU the file is for */
-    if (eh.type != ET_REL || eh.machine != EM_386)
+    if (eh.type != ET_REL || (eh.machine != EM_386 && eh.machine != EM_68K))
 	ERROR (ERROR_OBJECT_WRONG_TYPE);
 
     /* Get memory for section headers */
@@ -361,6 +368,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 	    break;
 
+	case SHT_RELA:
 	case SHT_REL: /* Relocation table */
 	    if (loaded == NULL)
 		ERROR (ERROR_OBJECT_WRONG_TYPE);
@@ -384,7 +392,8 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 		switch (reltab[i].info & 0xFF)
 		{
-		case RELO_32: /* 32bit absolute */
+#ifdef __i386__
+		case R_386_32: /* 32bit absolute */
 		    /* The address of a symbol is the base address of the
 			hunk in which the symbol is plus the offset of the
 			symbol to the beginning of this hunk. */
@@ -392,13 +401,26 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 			(ULONG)hunks[symbol->shindex].memory + symbol->value;
 		    break;
 
-		case RELO_PC32: /* 32bit PC relative */
-		    /* Similar to RELO_PC32 but relative to the address where
+		case R_386_PC32: /* 32bit PC relative */
+		    /* Similar to R_386_32 but relative to the address where
 			the relocation is in memory. */
 		    *(ULONG *)&loaded[reltab[i].addr] +=
 			(ULONG)hunks[symbol->shindex].memory +
 			symbol->value - (ULONG)&loaded[reltab[i].addr];
 		    break;
+#endif
+#ifdef __mc68000__
+		case R_68K_32:
+		    *(ULONG *)&loaded[reltab[i].addr] =
+			(ULONG)hunks[symbol->shindex].memory + symbol->value +
+			reltab[i].addend;
+		    break;
+		case R_68K_PC32:
+		    *(ULONG *)&loaded[reltab[i].addr] =
+			((ULONG)hunks[symbol->shindex].memory+ symbol->value +
+			reltab[i].addend - (ULONG)&loaded[reltab[i].addr]);
+		    break;
+#endif
 
 		default:
 		    ERROR (ERROR_BAD_HUNK);
@@ -414,11 +436,13 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 	} /* switch */
     }
 
-    /* Link hunks */
+    /* Link hunks (and flush caches) */
     for (t=mint; t<0; t++)
     {
 	if (hunks[t].size)
 	{
+	    CacheClearE(hunks[t].memory, hunks[t].size,
+		CACRF_ClearI|CACRF_ClearD);
 	    ((BPTR *)hunks[t].memory)[-1] = last;
 	    last = MKBADDR((BPTR *)hunks[t].memory - 1);
 	}
@@ -428,6 +452,8 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     {
 	if (hunks[t].size)
 	{
+	    CacheClearE(hunks[t].memory, hunks[t].size,
+		CACRF_ClearI|CACRF_ClearD);
 	    ((BPTR *)hunks[t].memory)[-1] = last;
 	    last = MKBADDR((BPTR *)hunks[t].memory-1);
 	}
