@@ -16,6 +16,9 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#ifndef EXEC_TASKS_H
+#   include <exec/tasks.h>
+#endif
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
@@ -350,6 +353,8 @@ struct DeferedActionMessage
     UWORD           Code; 
     struct Window * Window;
     struct Window * BehindWindow; /* only used by MoveWindowInFrontOf */
+    struct Gadget * Gadget;
+    struct Task   * Task;
     WORD            dx;           /* used by MoveLayer, SizeLayer */
     WORD            dy;           /* used by MoveLayer, SizeLayer */
     LONG	    left;
@@ -374,7 +379,8 @@ enum
 	AMCODE_MOVEWINDOWINFRONTOF,
 	AMCODE_ZIPWINDOW,
 	AMCODE_CHANGEWINDOWBOX,
-	AMCODE_NEWPREFS
+	AMCODE_NEWPREFS,
+	AMCODE_ACTIVATEGADGET,
 };
 
 
