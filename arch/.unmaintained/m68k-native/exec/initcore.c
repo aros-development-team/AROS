@@ -1,9 +1,6 @@
 /*
-     (C) 1995-96 AROS - The Amiga Research OS
-     $Id$
-
-     Desc:
-     Lang:
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <hardware/intbits.h>
