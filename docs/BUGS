@@ -462,3 +462,9 @@ BUG000067
 digulla@hepe.com
 (Reported by Dirk Weber) The fillpattern for the workbench screen
 is distorted.
+
+BUG000068
+digulla@hepe.com
+When you change headers.tmpl and someone else does an update, the
+headers are not regenerated.
+
