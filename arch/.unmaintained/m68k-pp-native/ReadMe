@@ -1,3 +1,58 @@
+You need to download a m68k (elf) cross compiler for linux on i386. You 
+can get that one precompiled from 
+
+ftp://ftp.fu-berlin.de/unix/linux/mirrors/tsx-11.mit.edu/680x0/tools/i486
+
+The size of that one is ~7.4MB and *should* also contains all the tools 
+you will ever need for cross compilation. If you cannot access this ftp 
+server for some reason then search for "cross-m68k-linux-*" on dogpile.com
+as an ftp search.
+You should extract this file into '/'.
+
+Compilation
+-----------
+Compile the kernel as follows starting in AROS/
+
+make clean
+autoconf
+./configure --target=pp-m68k
+make
+cd config/m68k-pp-native/build-rom
+make clean all
+
+TO START AROS FOR PALM ON XCOPILOT:
+xcopilot -romfile aros.rom
+
+Some Knowledge
+--------------
+
+- POSE seems to have a problem with 32 bits access to some of the registers.
+  USE 16 BITS ACCESS INSTEAD!!!
+
+- Hardware: How do you get the coordinates from the touch screen?
+  How do you get notifications about pressed buttons?
+
+Uploading elf code to the Palm
+------------------------------
+
+- You MUST pass -Wa,-mc68000 as argument to gcc or -mc68000 to as
+  (assembler) because otherwise you might get 68020 instructions like
+  bsr.l <label> which do not exist on an mc68000.
+
+
+
+
+
+
+
+
+
+
+
+
+========================= OLD OLD OLD OLD OLD ================================
+
+
 Resources
 ---------
 
