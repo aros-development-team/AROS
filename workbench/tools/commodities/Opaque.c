@@ -266,8 +266,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			       GZZ innerlayer or boopsi gadgets with special GM_HITTEST
 			       method correctly! */
 			       
-			    if ((!(gad->Flags & GFLG_DISABLED)) &&
-			        ((SYSGADTYPE(gad) == GTYP_WDRAGGING) || (SYSGADTYPE(gad) == GTYP_SIZING)))
+			    if (!(gad->Flags & GFLG_DISABLED))
 			    {
 				WORD x = gad->LeftEdge;
 				WORD y = gad->TopEdge;
@@ -284,10 +283,13 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 				    (win->MouseX < x + w) &&
 				    (win->MouseY < y + h))
 				{
-				    /* found dragging or resize gadget */
-				    newwin = win;
-				    actiontype = (SYSGADTYPE(gad) == GTYP_WDRAGGING) ? ACTIONTYPE_DRAGGING :
-				    	    	    	    	    	    	       ACTIONTYPE_RESIZING;
+				    if ((SYSGADTYPE(gad) == GTYP_WDRAGGING) || (SYSGADTYPE(gad) == GTYP_SIZING))
+    	    	    	    	    {
+				    	/* found dragging or resize gadget */
+				    	newwin = win;
+				    	actiontype = (SYSGADTYPE(gad) == GTYP_WDRAGGING) ? ACTIONTYPE_DRAGGING :
+				    	    	    	    	    	    	           ACTIONTYPE_RESIZING;
+				    }
 				    break;
 				}
 			    }
