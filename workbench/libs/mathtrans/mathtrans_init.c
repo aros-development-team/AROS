@@ -18,7 +18,7 @@
 #define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
 
-#define LC_NO_EXPUNGELIB
+#define LC_NO_CLOSELIB
 #define LC_NO_OPENLIB
 #define LC_RESIDENTPRI	    0
 
@@ -43,10 +43,10 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     return TRUE;
 } /* L_InitLib */
 
-void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
+void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (MathBase)
 	CloseLibrary ((struct Library *)MathBase);
 
-} /* L_CloseLib */
+} /* L_ExpungeLib */
 
