@@ -2,11 +2,10 @@
 #define DOS_NOTIFY_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Notification handling.
-    Lang: English
+    Notification handling.
 */
 
 #ifndef EXEC_PORTS_H
@@ -19,13 +18,14 @@
 #   include <exec/types.h>
 #endif
 
-/**********************************************************************
- **************************** NotifyRequest ***************************
- **********************************************************************/
+/*** NotifyRequest **********************************************************/
 
-/* General notification structure as passed to StartNotify() and EndNotify().
-   After passing it to StartNotify() the first time, this structure becomes
-   READ-ONLY! */
+/* 
+    General notification structure as passed to StartNotify() and EndNotify().
+    After passing it to StartNotify() the first time, this structure becomes
+    READ-ONLY! 
+*/
+
 struct NotifyRequest
 {
     STRPTR  nr_Name;     /* Name of the watched file. */
@@ -34,9 +34,11 @@ struct NotifyRequest
     IPTR    nr_UserData; /* Fill in with your own data. */
     ULONG   nr_Flags;    /* see below */
 
-    /* The following union specified the way to notify the application, if
-       the watched file changes. IF NRF_SEND_MESSAGE is set, nr_Msg is
-       used, when NRF_SEND_SIGNAL is set, nr_Signal is used. */
+    /*
+        The following union specified the way to notify the application, if
+        the watched file changes. IF NRF_SEND_MESSAGE is set, nr_Msg is used,
+        when NRF_SEND_SIGNAL is set, nr_Signal is used. 
+    */
     union
     {
         struct
