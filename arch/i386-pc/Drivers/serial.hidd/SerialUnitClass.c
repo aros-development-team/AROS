@@ -192,7 +192,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     /* initilize the UART */
     serial_outp(data, UART_LCR, get_lcr(data));
      
-    serial_outp(data, UART_MCR, 8);
+    serial_outp(data, UART_MCR, UART_MCR_OUT2 | UART_MCR_DTR);
     serial_outp(data, UART_IER, UART_IER_RDI | UART_IER_THRI | UART_IER_RLSI | UART_IER_MSI);
      
     /* clear the interrupt registers again ... */
@@ -428,6 +428,28 @@ VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * 
   }
 }
 
+/****** SerialUnit::GetStatus ********************************/
+UWORD serialunit_getstatus(OOP_Class * cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
+{
+	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+	UWORD status = 0;
+	UBYTE msr = serial_inp(data, UART_MSR);
+	UBYTE mcr = serial_inp(data, UART_MCR);
+
+	if (msr & UART_MSR_DCD) 
+		status |= (1<<5);
+	if (msr & UART_MSR_DSR)
+		status |= (1<<3);
+	if (msr & UART_MSR_CTS)
+		status |= (1<<4);
+
+	if (mcr & UART_MCR_DTR)
+		status |= (1<<7);
+	if (mcr & UART_MCR_RTS)
+		status |= (1<<6);  /* old RKMs say 'ready to send' */
+	return status;
+}
+
 /************* The software interrupt handler that gets data from UART *****/
 
 
@@ -524,6 +546,7 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
         {(IPTR (*)())serialunit_start,		moHidd_SerialUnit_Start},
         {(IPTR (*)())serialunit_stop,		moHidd_SerialUnit_Stop},
         {(IPTR (*)())serialunit_getcapabilities,moHidd_SerialUnit_GetCapabilities},
+        {(IPTR (*)())serialunit_getstatus      ,moHidd_SerialUnit_GetStatus},
         {NULL, 0UL}
     };
     

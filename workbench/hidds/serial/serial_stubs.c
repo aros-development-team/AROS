@@ -188,3 +188,17 @@ VOID HIDD_SerialUnit_Stop(OOP_Object *obj)
 
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
+
+/***************************************************************/
+
+UWORD HIDD_SerialUnit_GetStatus(OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_SerialUnit_GetStatus p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetStatus);
+
+    p.mID         = mid;
+
+    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) &p));
+}
