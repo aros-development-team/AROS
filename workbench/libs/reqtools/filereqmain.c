@@ -951,6 +951,12 @@ dogadgetup:
 				{
 				    AddPart (fdir, str, 256);
 				    NewDir (glob);
+				    
+				    /* CHECKME: added hoping to fix MuForce hit. See below. */
+				    
+				    entry = NULL;
+				    
+				    /* END CHECKME */
 				    break;
 				}
 			    }
@@ -979,6 +985,13 @@ dogadgetup:
 				    if (!glob->volumerequest)
 				    {
 					NewDir (glob);
+
+					/* CHECKME: added hoping to fix MuForce hit. See below. */
+
+					entry = NULL;
+
+					/* END CHECKME */
+
 					break;
 				    }
 				   
@@ -1024,7 +1037,16 @@ rememberclicked:
 				    }
 				    goto checkdoubleclick;
 			    }
+			    
+			    #warning check following line. causes MuForces hits on Amiga when clicking
+			    #warning on volume or assign entry. Both with old Amiga reqtools.library and
+			    #warning in new reqtools.library compiled from AROS sources.
+			    
+			#if 0
 			    entry->re_Flags &= ~ENTRYF_HIGHLIGHTED;
+			#else			    
+			    if (entry) entry->re_Flags &= ~ENTRYF_HIGHLIGHTED;			    
+			#endif
 			    break;
 				
 			case FONTSIZE:
