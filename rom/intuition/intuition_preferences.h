@@ -53,7 +53,7 @@ struct Preferences IntuitionDefaultPreferences =
     0x0b00, // color17
     0x0d00, // color18
     0x0f00, // color19
-    0,      // PointerTicks
+    1,      // PointerTicks
 
     0x0999, // color0-4
     0x0000,
@@ -65,7 +65,7 @@ struct Preferences IntuitionDefaultPreferences =
     0,      // ViewInitX
     0,      // ViewINitY
 
-    0,      // EnableCLI
+    MOUSE_ACCEL,      // EnableCLI
 
     0,      // PointerType
     {
