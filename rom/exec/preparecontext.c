@@ -65,7 +65,9 @@
 	Dispatch()) but of a context that has not been run yet.
     */
 
+#ifndef __CXREF__
 #error The PrepareContext() function was not implemented in the kernel.
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* PrepareContext() */

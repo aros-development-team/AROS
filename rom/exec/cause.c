@@ -104,7 +104,9 @@
 	Enable();
 
 	/* We now cause a software interrupt. Pretty hard here... */
-#error The $(KERNEL) interrupt implementation has not been completed.
+#ifndef __CXREF__
+#error The '$(KERNEL)' interrupt implementation has not been completed.
+#endif
     }
 
     AROS_LIBFUNC_EXIT
@@ -131,6 +133,8 @@ AROS_UFH5(ULONG, SoftIntDispatch,
     AROS_UFHA(ULONG_FUNC, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     struct Interrupt *intr;
     UBYTE i;
     ULONG res;
@@ -165,5 +169,6 @@ AROS_UFH5(ULONG, SoftIntDispatch,
     }
 
     /* We now re-enable software interrupts. But we can't do it here. */
+    AROS_USERFUNC_EXIT
 }
 

@@ -1,9 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-exec-linklib : includes kernel-exec-$(ARCH)-$(CPU)
-#MM kernel-exec-module : includes kernel-exec-$(ARCH)-$(CPU)
-#MM kernel-exec-kobj : includes kernel-exec-$(ARCH)-$(CPU)
+#MM kernel-exec-includes : compiler-includes kernel-exec-includes-$(ARCH)-$(CPU)
 
 ALL_FUNCTIONS	:= \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
@@ -32,7 +30,7 @@ ALL_FUNCTIONS	:= \
 
 
 INIT_FILE   := exec_init
-SYS_FILES   := execfunctions prepareexecbase
+SYS_FILES   := prepareexecbase
 FILES	    := traphandler exec_util idletask
 
 ifeq ($(FLAVOUR),palmnative)
@@ -46,22 +44,15 @@ else
 DEPLIBS :=
 endif
 
-#MM- kernel-exec-module : kernel-exec
-
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
 # have to be first in the list
 USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
 
 # As a hack the SYS_FILES are added as the initfile.
-%build_module_macro mmake=kernel-exec \
+%build_module mmake=kernel-exec \
   modname=exec modtype=library \
-  initfile="$(SYS_FILES) $(INIT_FILE)" funcs=$(ALL_FUNCTIONS) \
-  files=$(FILES) \
-  conffile=lib.conf \
-  uselibs=$(DEPLIBS) \
-  genfunctable=no
-  
-%common
+  files="$(SYS_FILES) $(INIT_FILE) $(ALL_FUNCTIONS) $(FILES)" \
+  uselibs=$(DEPLIBS)
 
 # ***** Native ***************
 # Uncommented because unsupported at the moment

@@ -71,6 +71,8 @@
        as the stack will be quite incorrect.
     */
 
+#ifndef __CXREF__
 #error The function StackSwap() has not been implemented in the kernel.
+#endif
 
 } /* StackSwap() */
