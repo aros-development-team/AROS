@@ -71,16 +71,65 @@ void close_muimaster(void)
 
 int open_muimaster(void)
 {
-    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0)))
+	return 1;
     return 0;
 }
 
 void close_muimaster(void)
 {
-    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+    if (MUIMasterBase)
+	CloseLibrary(MUIMasterBase);
 }
 
 #endif
+
+
+/****************************************************************
+ ImageClipboard class (MUIC_Popimage)
+*****************************************************************/
+struct ImageClipboardData
+{
+    LONG dummy;
+};
+
+static ULONG ImageClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    IPTR dummy;
+
+/*      D(bug("ImageClipboard_DragQuery\n")); */
+    if (msg->obj == obj)
+	return MUIV_DragQuery_Refuse;
+/*      D(bug("ImageClipboard_DragQuery 2\n")); */
+    if (!get(msg->obj, MUIA_Imagedisplay_Spec, &dummy))
+	return MUIV_DragQuery_Refuse;
+/*      D(bug("ImageClipboard_DragQuery accepted\n")); */
+    return MUIV_DragQuery_Accept;
+}
+
+static ULONG ImageClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    IPTR spec;
+
+/*      D(bug("ImageClipboard_DragDrop\n")); */
+    get(msg->obj, MUIA_Imagedisplay_Spec, &spec);
+    set(obj, MUIA_Imagedisplay_Spec, spec);
+    return 0;
+}
+
+BOOPSI_DISPATCHER(IPTR, ImageClipboard_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+	case MUIM_DragQuery:
+	    return ImageClipboard_DragQuery(cl, obj, (APTR)msg);
+	case MUIM_DragDrop:
+	    return ImageClipboard_DragDrop(cl, obj, (APTR)msg);
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+
 
 /****************************************************************
  Open needed libraries
@@ -88,10 +137,8 @@ void close_muimaster(void)
 int open_libs(void)
 {
     if (open_muimaster())
-    {
 	return 1;
-    }
-    
+
     return 0;
 }
 
@@ -118,6 +165,26 @@ static Object *main_page_group; /* contains the selelected group */
 static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
 
+static struct MUI_CustomClass *CL_ImageClipboard = NULL;
+
+int open_classes(void)
+{
+     CL_ImageClipboard = MUI_CreateCustomClass(NULL, MUIC_Popimage, NULL,
+					      sizeof(struct ImageClipboardData),
+					      ImageClipboard_Dispatcher);
+     if (CL_ImageClipboard)
+	 return 1;
+     return 0;
+}
+
+void close_classes(void)
+{
+    if (CL_ImageClipboard)
+    {
+	MUI_DeleteCustomClass(CL_ImageClipboard);
+    }
+}
+
 
 struct page_entry
 {
@@ -134,9 +201,8 @@ struct page_entry main_page_entries[] =
     {"Windows",NULL,NULL,&_MUIP_Windows_desc},
     {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
     {"Groups",NULL,NULL,&_MUIP_Groups_desc},
+    {NULL,NULL,NULL,NULL},
 };
-
-#define MAIN_PAGE_ENTRIES_LEN sizeof(main_page_entries)/sizeof(main_page_entries[0])
 
 struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
 {
@@ -146,14 +212,7 @@ struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
 /****************************************************************
  Our standard hook function, for easy call backs
 *****************************************************************/
-#ifndef __AROS__
-__saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
-#else
-AROS_UFH3( void, hook_func_standard,
-    AROS_UFHA( struct Hook *, h,       A0 ),
-    AROS_UFHA( Object *, obj, A2),
-    AROS_UFHA( ULONG *,       funcptr, A1 ))
-#endif
+static void hook_func_standard(struct Hook *h, void *dummy, ULONG * funcptr)
 {
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
     if (func) func(funcptr + 1);
@@ -162,14 +221,7 @@ AROS_UFH3( void, hook_func_standard,
 /****************************************************************
  The display function for the page listview
 *****************************************************************/
-#ifndef __AROS__
-__saveds __asm void main_page_list_display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct page_entry *entry)
-#else
-AROS_UFH3( void, main_page_list_display,
-    AROS_UFHA( struct Hook *,       h,       A0 ),
-    AROS_UFHA( char **,             strings, A2 ),
-    AROS_UFHA( struct page_entry *, entry,   A1 )) 
-#endif
+static void main_page_list_display(struct Hook *h, char **strings, struct page_entry *entry)
 {
     if (entry)
     {
@@ -232,8 +284,10 @@ int init_gui(void)
 
     static struct Hook page_display_hook;
 
-    hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
-    page_display_hook.h_Entry = (HOOKFUNC)main_page_list_display;
+    hook_standard.h_Entry = HookEntry;
+    hook_standard.h_SubEntry = (APTR)hook_func_standard;
+    page_display_hook.h_Entry = HookEntry;
+    page_display_hook.h_SubEntry = (APTR)main_page_list_display;
 
     app = ApplicationObject,
 	MUIA_Application_Menustrip, MenuitemObject,
@@ -263,11 +317,14 @@ int init_gui(void)
 			End,
 		    Child, HGroup,
 			Child, MUI_NewObject(MUIC_Popimage,
+					     MUIA_Draggable, TRUE,
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
 					     TAG_DONE), /* Popframe really */
-	                Child, MUI_NewObject(MUIC_Popimage,
+      	               Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
+					     MUIA_Draggable, TRUE,
+					     MUIA_Dropable, TRUE,
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
@@ -303,7 +360,7 @@ int init_gui(void)
 //	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
 	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
+	for (i=0;main_page_entries[i].name;i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->desc)
@@ -348,7 +405,7 @@ void load_prefs(char *filename)
 	DoMethod(configdata, MUIM_Configdata_Load, (IPTR)filename);
 
         /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
-	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
+	for (i=0;main_page_entries[i].name;i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->group)
@@ -374,7 +431,7 @@ void save_prefs(BOOL envarc)
 /*  	D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
         /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
-	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
+	for (i=0;main_page_entries[i].name;i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->group)
@@ -419,17 +476,21 @@ int main(void)
 {
     if (open_libs())
     {
-    	if (init_gui())
-    	{
-    	    load_prefs("env:zune/global.prefs");
-    	    set(main_wnd, MUIA_Window_Open, TRUE);
-    	    if (xget(main_wnd,MUIA_Window_Open))
+	if (open_classes())
+	{
+	    if (init_gui())
 	    {
-		loop();
-	    }
+		load_prefs("env:zune/global.prefs");
+		set(main_wnd, MUIA_Window_Open, TRUE);
+		if (xget(main_wnd,MUIA_Window_Open))
+		{
+		    loop();
+		}
 
-	    deinit_gui();
-    	}
+		deinit_gui();
+	    }
+	    close_classes();
+	}
 	close_libs();
     }
     return 0;
