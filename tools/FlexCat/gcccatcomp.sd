@@ -1,0 +1,17 @@
+##rem $Id$
+##stringtype C
+##shortstrings
+
+/****************************************************************
+   This file was created automatically by `%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+****************************************************************/
+#include <aros/system.h>
+
+#define make_abs(sym, value) asm(".globl " AROS_ASMSYMNAME(#sym), "\\n.set " AROS_ASMSYMNAME(#sym) ", " #value)
+
+make_abs(%i_ID, %e);
+
+const char %i_STR[] = %s;
