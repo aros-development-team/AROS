@@ -94,6 +94,7 @@ SHARED	:= \
 	__rand48 \
 	__stat \
 	__stdio \
+	__upath \
 	__vcformat \
 	__vcscan \
 	abort \
@@ -385,7 +386,7 @@ $(OBJDIR)/static/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
 $(OBJDIR)/shared/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
+	%mkdepend_q flags="$(CFLAGS) -include __arosc_privdata.h"
 
 $(OBJDIR)/rom/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
