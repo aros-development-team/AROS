@@ -131,9 +131,7 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
     
     if (!icon)
     {
-kprintf("readiconwb: trying png 1\n");
     	if (!PNGBase) PNGBase = OpenLibrary("datatypes/png.datatype", 0);
-kprintf("readiconwb: trying png 2 %x\n", PNGBase);
 	
     	if (PNGBase && ReadIconPNG(&temp, file, IconBase))
 	{
