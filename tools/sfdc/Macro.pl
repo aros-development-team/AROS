@@ -103,7 +103,7 @@ BEGIN {
 
 	if ($$prototype{'type'} eq 'varargs') {
 	    my $argnames_size = scalar(@{$argnames_ref}); 
-	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref}[0..($argnames_size-2)], "__VA_ARGS__");
+	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref}[0..($argnames_size-2)], "## __VA_ARGS__");
 	}
 	else {
 	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref});;
@@ -126,7 +126,7 @@ BEGIN {
 		my $first_stdargnum = $$prototype{'numargs'} - 2;
 		my $first_stdarg = $$prototype{'___argnames'}[$first_stdargnum];
 	    
-		printf "	({APTR _%s[] = { $first_stdarg, __VA_ARGS__ }; ",
+		printf "	({ULONG _%s[] = { (ULONG) $first_stdarg, ## __VA_ARGS__ }; ",
 		$prototype->{subtype} eq 'tagcall' ? "tags" : "message";
 		print "__$$prototype{'real_funcname'}_WB((___base), ";
 	    }
@@ -221,7 +221,7 @@ BEGIN {
 	}
 	elsif ($prototype->{type} eq 'cfunction') {
 	    if ($argname eq '...' ) {
-		print ($argnum != 0 ? ", __VA_ARGS__" : "__VA_ARGS__");
+		print ($argnum != 0 ? ", ## __VA_ARGS__" : "__VA_ARGS__");
 	    }
 	    else {
 		print ($argnum != 0 ? ", ($argname)" : "($argname)");
