@@ -213,12 +213,15 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
 	return;
     }
     
-    /* Abort all pending requests */
-    if (!CheckIO( ioReq(fh->conreadio) ))
-    	AbortIO( ioReq(fh->conreadio) );
-	
-    /* Wait for abort */
-    WaitIO( ioReq(fh->conreadio) );
+    if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+    {
+	/* Abort all pending requests */
+	if (!CheckIO( ioReq(fh->conreadio) ))
+    	    AbortIO( ioReq(fh->conreadio) );
+
+	/* Wait for abort */
+	WaitIO( ioReq(fh->conreadio) );
+    }
     
     /* Clean up */
     CloseDevice((struct IORequest *)fh->conreadio);
@@ -477,6 +480,7 @@ AROS_LH1(void, beginio,
 	case FSA_CLOSE:	
         case FSA_READ:
 	case FSA_WRITE:
+	case FSA_CONSOLE_MODE:
 	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
 	    request_queued = TRUE;
 	    
@@ -705,14 +709,19 @@ VOID conTaskEntry(struct conTaskParams *param)
     
     /* Main Loop */
     
-    /* Send first read request to console.device */
+    if (!(fh->flags & FHFLG_RAW))
+    {
+	/* Send first read request to console.device */
+
+	fh->conreadio->io_Command = CMD_READ;
+	fh->conreadio->io_Data    = fh->consolebuffer;
+	fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+
+	SendIO(ioReq(fh->conreadio));
+	
+	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
+    }
     
-    fh->conreadio->io_Command = CMD_READ;
-    fh->conreadio->io_Data    = fh->consolebuffer;
-    fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
-
-    SendIO(ioReq(fh->conreadio));
-
     for(;;)
     {
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
@@ -754,6 +763,61 @@ VOID conTaskEntry(struct conTaskParams *param)
 			con_write(conbase, iofs);
 			break;
 
+    	    	    case FSA_CONSOLE_MODE:
+		    	{
+			    UWORD newmode = iofs->io_Union.io_CONSOLE_MODE.io_ConsoleMode ? 1 : 0;
+			    UWORD oldmode = (fh->flags & FHFLG_RAW) ? 1 : 0;
+			    
+			    if (newmode != oldmode)
+			    {
+			    	if (newmode)
+				{
+				    /* Switching from CON: mode to RAW: mode */
+				    
+				    fh->flags |= FHFLG_RAW;
+				    
+				    /* abort async console.device read request */
+				    
+				    if (sigs & conreadmask)
+				    {
+				    	/* Hmm ... The async CMD_READ from console.device
+					   was just completed. Just swallow it? */
+				    	GetMsg(fh->conreadmp);
+					sigs &= ~conreadmask;
+				    }
+				    else
+				    {
+				    	/* Abort async CMD_READ from console.device */
+					
+					if (!CheckIO(ioReq(fh->conreadio))) AbortIO( oReq(fh->conreadio));
+	    	    	    	    	WaitIO(ioReq(fh->conreadio));					
+				    }
+				    
+				    fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;			    
+				}
+				else
+				{
+				    /* Switching from RAW: mode to CON: mode */
+				    
+				    fh->flags &= ~FHFLG_RAW;
+
+    	    	    	    	    /* Start async CMD_READ from console.device */
+				    
+				    fh->conreadio->io_Command = CMD_READ;
+				    fh->conreadio->io_Data    = fh->consolebuffer;
+				    fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+
+				    SendIO(ioReq(fh->conreadio));
+
+				    fh->flags |= FHFLG_ASYNCCONSOLEREAD;				    				    
+				}				
+				
+			    } /*  if (newmode != oldmode) */
+			    
+			}
+    	    	    	ReplyMsg(&iofs->IOFS.io_Message);			
+		    	break;
+			
 		} /* switch(iofs->IOFS.io_Command) */
 
 	    } /* while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp))) */
@@ -1011,11 +1075,14 @@ VOID conTaskEntry(struct conTaskParams *param)
 
 	    /* wait for next input from console.device */
 
-	    fh->conreadio->io_Command = CMD_READ;
-	    fh->conreadio->io_Data    = fh->consolebuffer;
-	    fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+    	    if (!(fh->flags & FHFLG_RAW))
+	    {
+		fh->conreadio->io_Command = CMD_READ;
+		fh->conreadio->io_Data    = fh->consolebuffer;
+		fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
 
-	    SendIO(ioReq(fh->conreadio));
+		SendIO(ioReq(fh->conreadio));
+	    }
 	    
 	} /* if (sigs & conmask) */
 
