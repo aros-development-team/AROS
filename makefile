@@ -66,6 +66,7 @@ setup :
 	@if [ ! -d $(SDIR) ]; then $(MKDIR) $(SDIR) ; fi
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; fi
 	@if [ ! -d $(LIBDIR) ]; then $(MKDIR) $(LIBDIR) ; fi
+	@if [ ! -d $(DEVSDIR) ]; then $(MKDIR) $(DEVSDIR) ; fi
 	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
 	@if [ ! -d $(TESTDIR) ]; then $(MKDIR) $(TESTDIR) ; fi
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; fi
@@ -85,7 +86,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) /usr/lib/X11/libX11.a -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) /usr/lib/X11R6/lib/libX11.a -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
