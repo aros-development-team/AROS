@@ -197,6 +197,8 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	errno = IoErr2errno (IoErr ());
 	goto err;
     }
+    
+    if (flags & O_APPEND) Seek( fh, 0, OFFSET_END );
 
     if (lock) UnLock(lock);
 
