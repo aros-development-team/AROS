@@ -6,11 +6,10 @@
     Lang: English
 */
 
-#include <stddef.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <dos/dosextens.h>
-#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -19,28 +18,13 @@
 #include "rexxsupport_intern.h"
 #include LC_LIBDEFS_FILE
 
-#undef SysBase
-
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-
-#define LC_LIBHEADERTYPEPTR        LIBBASETYPEPTR
-#define LC_LIB_FIELD(libBase)      (libBase)->library.lh_LibNode
-#define LC_SYSBASE_FIELD(libBase)  (libBase)->library.lh_SysBase
-#define LC_SEGLIST_FIELD(libBase)  (libBase)->library.lh_SegList
-#define LC_LIBBASESIZE             (sizeof(LIBBASETYPE))
-
-#include <libcore/libheader.c>
-
-#define SysBase LC_SYSBASE_FIELD(lh)
-
 struct RxsLib *RexxSysBase;
 struct DosLibrary *DOSBase;
 int errno;
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    NewList(&RSBI(lh)->openports);
+    NewList(&RSBI(LIBBASE)->openports);
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
     if (DOSBase == NULL)
 	return FALSE;
@@ -54,7 +38,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
         return TRUE;
 }
 
-void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
     CloseLibrary((struct Library *) RexxSysBase);
 }
+
+ADD2INITLIB(Init, 0);
+ADD2EXPUNGELIB(Expunge, 0);
