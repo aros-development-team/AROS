@@ -30,6 +30,11 @@ BOOL initVesaGfxHW(struct HWData *data)
 	if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)))
 	{
 	    D(bug("[Vesa] Init: Got Vesa structure from resource\n"));
+	    if (vi->ModeNumber == 3)
+	    {
+		D(bug("[Vesa] Init: Textmode was specified. Aborting\n"));
+		return FALSE;
+	    }
 	    data->width = vi->XSize; data->height = vi->YSize;
 	    data->bitsperpixel = data->depth = vi->BitsPerPixel;
 	    data->bytesperline = vi->BytesPerLine;

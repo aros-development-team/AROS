@@ -25,7 +25,7 @@
 
 #include "mouse.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -398,7 +398,7 @@ int mouse_ps2reset(struct mouse_data *data)
      
     kbd_read_data();
 
-    D(bug("Initialized PS/2 mouse!\n"));
+    D(bug("[Mouse] Found and initialized PS/2 mouse!\n"));
 
     return 1;
 }

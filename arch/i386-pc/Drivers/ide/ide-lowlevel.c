@@ -33,7 +33,7 @@
 
 #include "ide_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef kprintf
@@ -364,13 +364,13 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    unit->au_SectorsC  = id->idev_Sectors * id->idev_Heads;
    unit->au_Blocks    = id->idev_Cylinders * unit->au_SectorsC;
 
-   D(bug("-Drive says PCHS capacity is %d (%d MB)\n",unit->au_Blocks,unit->au_Blocks/2048));
+   D(bug("[IDE] Unit: -Drive says PCHS capacity is %d (%d MB)\n",unit->au_Blocks,unit->au_Blocks/2048));
 
    /* If we are capable of LBA, get LBA size */
    if (unit->au_Flags & AF_LBAMode)
    {
       LBACapacity = id->ideva_LBASectors;
-      D(bug("-Drive says  LBA capacity is %d (%d MB)\n",LBACapacity,LBACapacity/2048));
+      D(bug("[IDE] Unit: -Drive says  LBA capacity is %d (%d MB)\n",LBACapacity,LBACapacity/2048));
    }
    else
       LBACapacity = 0;
@@ -379,7 +379,7 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    if (id->idev_NextAvail & ATAF_AVAIL_TCHS)
    {
       CHSCapacity = ((id->ideva_Capacity1)+(id->ideva_Capacity2 << 16));
-      D(bug("-Drive says LCHS capacity is %d (%d MB)\n",CHSCapacity,CHSCapacity/2048));
+      D(bug("[IDE] Unit: -Drive says LCHS capacity is %d (%d MB)\n",CHSCapacity,CHSCapacity/2048));
    }
    else
       CHSCapacity = 0;
@@ -406,11 +406,11 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    }
 
    /* Whew, finally done here */
-   D(bug("-Using L-CHS %d/%d/%d with the size %d blocks (%d MB)\n",
+   bug("[IDE] Unit: -Using L-CHS %d/%d/%d with the size %d blocks (%d MB)\n",
          unit->au_Cylinders,
          unit->au_Heads,
          unit->au_SectorsT,
-         unit->au_Blocks,unit->au_Blocks/2048));
+         unit->au_Blocks,unit->au_Blocks/2048);
 }   
 
 void UnitInfo(struct ide_Unit *unit)
@@ -435,8 +435,8 @@ void UnitInfo(struct ide_Unit *unit)
             unit->au_DevMask |= ATAF_LBA;
         }
         
-        D(bug("IDE Unit: %s, using %s mode\n",&unit->au_ModelID[0],
-                    ((unit->au_Flags & AF_LBAMode) ? "LBA":"CHS")));
+        bug("[IDE] Unit: %s, using %s mode\n",&unit->au_ModelID[0],
+                    ((unit->au_Flags & AF_LBAMode) ? "LBA":"CHS"));
         
         /* is drive removable? */
         if (id.idev_DInfo & 0x80)
@@ -470,13 +470,13 @@ void UnitInfo(struct ide_Unit *unit)
                 unit->au_Flags |= AF_DiskPresent;
                 CalculateGeometry(unit,&id);
                 if (unit->au_DevType == DG_DIRECT_ACCESS)
-                    AddVolume(0, unit->au_Cylinders, unit);
+                    AddVolume(0, (unit->au_Cylinders - 1), unit);
                 break;
             case DG_CDROM:
                 AddVolume(0,0,unit);
                 break;
             default:
-                D(bug("IDE: Unknown/unhandled unit\n"));
+                bug("[IDE] Unit: Unknown/unhandled unit\n");
                 break;
         }
         return;

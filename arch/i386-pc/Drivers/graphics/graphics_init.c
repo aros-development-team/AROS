@@ -34,7 +34,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
