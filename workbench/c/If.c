@@ -82,6 +82,9 @@
 
 ******************************************************************************/
 
+#define  DEBUG  0
+#include <aros/debug.h>
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
@@ -109,22 +112,25 @@ int main(int argc, char **argv)
     struct RDArgs *rda;
     struct UtilityBase *UtilityBase;
 
+    struct CommandLineInterface *cli = Cli();
 
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 41);
 
     if(UtilityBase == NULL)
 	return RETURN_FAIL;
-    
-    rda = ReadArgs("NOT/S,WARN/S,ERROR/S,FAIL/S,,EQ/K,GT/K,GE/K,VAL/S,EXISTS/K",
-		   (IPTR *)&args, NULL);
-    
-    
-    if(rda != NULL)
+
+
+    if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	struct CommandLineInterface *cli = Cli();
+	D(bug("Current input = %p, Standard input = %p\n", 
+	      cli->cli_CurrentInput, cli->cli_StandardInput));
+	  
+	rda = ReadArgs("NOT/S,WARN/S,ERROR/S,FAIL/S,,EQ/K,GT/K,GE/K,VAL/S,EXISTS/K",
+		       args, NULL);
 	
-	if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
+	if(rda != NULL)
 	{
+	    
 	    STRPTR *argArray  = (STRPTR *)args[4];
 	    STRPTR *argArray2 = argArray;
 	    
@@ -139,6 +145,7 @@ int main(int argc, char **argv)
 		{
 		    FreeArgs(rda);
 		    PrintFault(ERROR_NUMBER_OF_ARGUMENTS, "If");
+
 		    return RETURN_ERROR;
 		}
 	    }
@@ -147,15 +154,18 @@ int main(int argc, char **argv)
 	    {
 		if(cli->cli_ReturnCode >= RETURN_WARN)
 		    result = TRUE;
-	    } else if(args[2])	/* ERROR */
+	    } 
+	    else if(args[2])	/* ERROR */
 	    {
 		if(cli->cli_ReturnCode >= RETURN_ERROR)
 		    result = TRUE;
-	    } else if(args[3])	/* FAIL */
+	    }
+	    else if(args[3])	/* FAIL */
 	    {
 		if(cli->cli_ReturnCode >= RETURN_FAIL)
 		    result = TRUE;
-	    } else if(args[5] || args[6] || args[7])	/* EQ, GT, GE */
+	    }
+	    else if(args[5] || args[6] || args[7])	/* EQ, GT, GE */
 	    {
 		if(args[8])
 		{
@@ -185,7 +195,7 @@ int main(int argc, char **argv)
 	    else if(args[9])		/* EXISTS */
 	    {
 		BPTR lock = Lock((STRPTR)args[9], SHARED_LOCK);
-
+		
 		if(lock != NULL)
 		    result = TRUE;
 		
@@ -237,30 +247,31 @@ int main(int argc, char **argv)
 			
 		    case 2:
 			level--;
-
+			
 			if(level == 0)
 			    found = TRUE;
 			break;
 		    }
-
+		    
 		    /* Take care of long lines */
-		    do {
+		    do
+		    {
 			a = FGetC(Input());
 		    } while (a != '\n' && a != ENDSTREAMCH);
 		}
-
+		
 		if(!found)
 		    PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
 	    }
-	}
-	else
-	{
-	    Flush(Output());
-	    PrintFault(ERROR_SCRIPT_ONLY, "If");
+
+	    FreeArgs(rda);
 	}
     }
-
-    FreeArgs(rda);
+    else
+    {
+	Flush(Output());
+	PrintFault(ERROR_SCRIPT_ONLY, "If");
+    }
 
     CloseLibrary((struct Library *)UtilityBase);
 
