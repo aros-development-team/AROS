@@ -28,7 +28,7 @@
 #include <string.h> /* memset() */
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"
