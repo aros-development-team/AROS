@@ -27,9 +27,9 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: version 41.2 (4.7.1997)\n";
+static const char version[] = "$VER: version 41.3 (01.08.1997)\n";
 
-#define ERROR_HEADER "Version"
+static const char ERROR_HEADER[] = "Version";
 
 #define ARGSTRING "NAME,VERSION/N,REVISION/N,FILE/S,FULL/S,RES/S"
 struct
@@ -64,7 +64,7 @@ int power(int base, int pow)
 }
 
 /* make a string from an unsigned number - returns length of string */
-int number2string(int number, STRPTR string)
+int number2string(unsigned int number, STRPTR string)
 {
     int length = 0;
     int len;
@@ -165,10 +165,9 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 
 /*************************** parsing functions *************************/
 
-/* The following function is not tested! */
 int makedatefromstring(char *buffer)
 {
-    /* !!! */
+    /* !!! not implemented, yet !!! */
     return(RETURN_OK);
 }
 
@@ -198,17 +197,26 @@ int makeversionfromstring(char *buffer)
     buffer = &buffer[pos+1];
     for (pos = 0;; pos++)
     {
-	if ((pos == 5) && ((buffer[pos] != ' ') || (buffer[pos] != '\0')))
+	if ((pos == 5) && (buffer[pos] != ' ') && (buffer[pos] != '\t') && (buffer[pos] != '\0'))
+	{
+	    parsedver.version = 0;
 	    return(-1);
+	}
 	if ((buffer[pos] == ' ') || (buffer[pos] == '\0'))
 	{
 	    if (pos == 0)
+	    {
+		parsedver.version = 0;
 		return(-1);
+	    }
 	    numberbuffer[pos] = '\0';
 	    break;
 	}
 	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
+	{
+	    parsedver.version = 0;
 	    return(-1);
+	}
 	numberbuffer[pos] = buffer[pos];
     }
     parsedver.revision = strtoul(numberbuffer, NULL, 10);
