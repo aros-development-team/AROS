@@ -55,9 +55,30 @@
 
 
 /* Storage for bitmap object */
-#define BM_OBJ(bitmap)	  ((Object *)(bitmap)->Planes[0])
 
-#define BM_PIXTAB(bitmap) ((HIDDT_Pixel *)(bitmap)->Planes[2])
+#define OBTAIN_HIDD_BM(bitmap)	\
+	( ( IS_HIDD_BM(bitmap))	\
+		? HIDD_BM_OBJ(bitmap)		\
+		: get_planarbm_object((bitmap), GfxBase) ) 
+		
+#define RELEASE_HIDD_BM(bm_obj, bitmap)	\
+	( ( IS_HIDD_BM(bitmap))	\
+		? 0				\
+		: release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase) ) 
+	
+					
+#define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
+
+
+#define BM_PIXEL(bitmap, pen) (IS_HIDD_BM(bitmap) ? HIDD_BM_PIXTAB(bitmap)[(pen)] : (pen))
+
+/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
+   THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
+   HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
+   if it is a HIDD bitmap
+*/
+#define HIDD_BM_PIXTAB(bitmap) ((HIDDT_Pixel *)(bitmap)->Planes[2])
+#define HIDD_BM_OBJ(bitmap)	  ((Object *)(bitmap)->Planes[0])
 
 
 /* Rastport flag that tells whether or not the driver has been inited */
@@ -75,17 +96,21 @@ static LONG fillrect_pendrmd(struct RastPort *tp
 	, HIDDT_Pixel pix
 	, ULONG drmd
 	, struct GfxBase *GfxBase);
+	
+static inline Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
 
 static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddGCAttrBase		= 0;
 static AttrBase HiddGfxModeAttrBase	= 0;
 static AttrBase HiddPixFmtAttrBase	= 0; 
+static AttrBase HiddPlanarBMAttrBase	= 0; 
 
 static struct ABDescr attrbases[] = {
-    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
-    { IID_Hidd_GC,	&HiddGCAttrBase		},
-    { IID_Hidd_GfxMode,	&HiddGfxModeAttrBase	},
-    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,		&HiddGCAttrBase		},
+    { IID_Hidd_GfxMode,		&HiddGfxModeAttrBase	},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+    { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
     { NULL, 0UL }
 };
 
@@ -136,7 +161,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     {
         D(bug("Got bitmap\n"));
         /* Displayable ? (== rastport of a screen) */
-	if (rp->BitMap->Flags & BMF_AROS_HIDD)
+	if (IS_HIDD_BM(rp->BitMap))
 	{
             D(bug("Has HIDD bitmap (displayable)\n"));
 
@@ -146,16 +171,12 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     	    {
 	        struct shared_driverdata *sdd;
 		struct TagItem gc_tags[] = {
-		    { aHidd_GC_BitMap, 	0UL},
 		    { TAG_DONE, 	0UL} 
 		};
 		
 		
 		D(bug("Got driverdata\n"));
 		sdd = SDD(GfxBase);
-		
-		/* Create a GC for it */
-		gc_tags[0].ti_Data = (IPTR)BM_OBJ(rp->BitMap);
 		
 		dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
 		if (dd->dd_GC)
@@ -363,8 +384,10 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 	SDD(GfxBase)->gc_cache = create_object_cache(NULL, IID_Hidd_GC, gc_create_tags, GfxBase);
 	if (NULL != SDD(GfxBase)->gc_cache) {
 
-#warning Update tags and class ID when we have the AmiBM class finished	
-	    struct TagItem bm_create_tags[] = { { TAG_DONE, 0UL } };
+	    struct TagItem bm_create_tags[] = {
+	    	{ aHidd_PlanarBM_AllocPlanes, FALSE },
+	    	{ TAG_DONE, 0UL }
+	    };
 	    
 	    SDD(GfxBase)->planarbm_cache
 	    	= create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
@@ -420,10 +443,9 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
 		{ TAG_DONE,	0}
     	};
-#warning Handle offscreen bitmaps
 
-	gc_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[apen & PEN_MASK];
-	gc_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[bpen & PEN_MASK];
+	gc_tags[0].ti_Data = BM_PIXEL(rp->BitMap, apen & PEN_MASK);
+	gc_tags[1].ti_Data = BM_PIXEL(rp->BitMap, bpen & PEN_MASK);
 	
 	if (drmd & JAM2)
 	{
@@ -463,8 +485,7 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 		{ TAG_DONE,	0UL}
 	};
 	
-#warning Handle offscreen bitmaps
-	col_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[pen & PEN_MASK];
+	col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
 
 	SetAttrs( dd->dd_GC, col_tags );
 	
@@ -487,8 +508,7 @@ void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		{ TAG_DONE,	0UL}
 	};
 
-#warning Handle offscreen bitmaps
-	col_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[pen & PEN_MASK];
+	col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
 	
 	dd = GetDriverData(rp);
 	if (dd)
@@ -842,16 +862,20 @@ static LONG fillrect_pendrmd(struct RastPort *rp
     
     if (NULL == L)
     {
-        /* No layer, probably a screen */
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	Object *bm_obj;
 	
-	/* Just put the pixelarray directly onto the HIDD */
-
-	
-	HIDD_BM_FillRect(BM_OBJ(bm)
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return 0;
+	    
+	HIDD_BM_FillRect(bm_obj
 		, gc
 		, x1, y1
 		, x2, y2
 	);
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
 		
 
 	pixwritten = width * height;
@@ -888,7 +912,7 @@ static LONG fillrect_pendrmd(struct RastPort *rp
 /* Single thread the attribute setting  */
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
-		    HIDD_BM_FillRect(BM_OBJ(bm)
+		    HIDD_BM_FillRect(HIDD_BM_OBJ(bm)
 		    	, gc
 		    	, intersect.MinX
 			, intersect.MinY
@@ -907,7 +931,7 @@ static LONG fillrect_pendrmd(struct RastPort *rp
 		    {
 		    
 		    	/* Cliprect not obscured, so we may render directly into the display */
-		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
+		    	HIDD_BM_FillRect(HIDD_BM_OBJ(CR->BitMap)
 				, gc
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
@@ -951,7 +975,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     
     /* Get rectfill pixel */
     
-    pix = BM_PIXTAB(bm)[pen];
+    pix = BM_PIXEL(bm, pen);
     
     
     if (rp_drmd & JAM2)
@@ -1671,6 +1695,7 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     
+    
     Object *gc;
     
     
@@ -1687,14 +1712,22 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
     
     if (NULL == L)
     {
-        /* No layer, probably a screen */
-	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+        /* No layer, probably a screen, but may be a user inited planar bitmap */
+	Object *bm_obj;
+	
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return;
+	
+	HIDD_BM_BlitColorExpansion( bm_obj
 		, gc
 		, fontbm
 		, xsrc, 0
 		, destx, desty
 		, width, height
 	);
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
 		
 	
 	
@@ -1734,7 +1767,7 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
 	        if (NULL == CR->lobs)
 		{
 		
-		    HIDD_BM_BlitColorExpansion(BM_OBJ(bm)
+		    HIDD_BM_BlitColorExpansion(HIDD_BM_OBJ(bm)
 		    	, gc
 		    	, fontbm
 			, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
@@ -1755,7 +1788,7 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
 		    {
 
 
-			HIDD_BM_BlitColorExpansion(BM_OBJ(CR->BitMap)
+			HIDD_BM_BlitColorExpansion(HIDD_BM_OBJ(CR->BitMap)
 				, gc
 				, fontbm
 				, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
@@ -1791,7 +1824,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		struct GfxBase * GfxBase)
 {
 
-#warning Does not handle color textfonts nor drawingmodes
+#warning Does not handle color textfonts
     WORD  render_y;
     struct TextFont *tf;
     WORD current_x;
@@ -1859,8 +1892,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    idx = *string - tf->tf_LoChar;
 	}
 	
-	
-		
 	charloc = ((ULONG *)tf->tf_CharLoc)[idx];
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
@@ -1950,9 +1981,9 @@ void driver_Move (struct RastPort * rp, LONG x, LONG y,
 static inline LONG get_pen_from_hidd(struct BitMap *bm, LONG x, LONG y)
 {
     UBYTE pen;
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, BM_PIXTAB(bm) };
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(bm) };
 
-    HIDD_BM_GetImageLUT(BM_OBJ(bm), &pen, 1, x, y, 1, 1, &pixlut);
+    HIDD_BM_GetImageLUT(HIDD_BM_OBJ(bm), &pen, 1, x, y, 1, 1, &pixlut);
 
     return (LONG)pen;
 }
@@ -2045,7 +2076,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 
           i = COORD_TO_BYTEIDX(x + XRel, y + YRel, Width);
           Mask = XCOORD_TO_MASK(x + XRel);
-	  if (bm->Flags & BMF_AROS_HIDD)
+	  if (IS_HIDD_BM(bm))
 	  {
 	    penno = get_pen_from_hidd(bm, x + XRel, y + YRel);
 	    goto exit;
@@ -2113,7 +2144,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   else /* NULL == L */
   { /* this is probably a screen, it doesn't have layer!!! */
 
-    if (bm->Flags & BMF_AROS_HIDD)
+    if (IS_HIDD_BM(bm))
     {
     	ULONG val;
         /* no need to unlock the layer!!!! */
@@ -2260,9 +2291,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
           /* and let the driver set the pixel to the X-Window also,
              but this Pixel has a relative position!! */
-          if (bm->Flags & BMF_AROS_HIDD)
+          if (IS_HIDD_BM(bm))
 	  {
-            HIDD_BM_DrawPixel ( BM_OBJ(bm), gc, x+XRel, y+YRel);
+            HIDD_BM_DrawPixel ( HIDD_BM_OBJ(bm), gc, x+XRel, y+YRel);
 	   } 
         } 
         else
@@ -2291,7 +2322,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
             Offset = ALIGN_OFFSET(CR->bounds.MinX);
 	    
-	    HIDD_BM_DrawPixel ( BM_OBJ(bm)
+	    HIDD_BM_DrawPixel ( HIDD_BM_OBJ(bm)
 	    	, gc
 	    	, x - (CR->bounds.MinX - XRel) + Offset
 		, y - (CR->bounds.MinY - YRel)
@@ -2333,9 +2364,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     Mask = XCOORD_TO_MASK( x );
 
     /* and let the driver set the pixel to the X-Window also */
-    if (bm->Flags & BMF_AROS_HIDD)
+    if (IS_HIDD_BM(bm))
     {
-      HIDD_BM_DrawPixel( BM_OBJ(bm), gc, x, y);
+      HIDD_BM_DrawPixel( HIDD_BM_OBJ(bm), gc, x, y);
     }
 
   }
@@ -2457,10 +2488,10 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		    
 		    
 		    /* Write to the HIDD */
-		    gc_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
+		    gc_tags[1].ti_Data = HIDD_BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
 
 		    SetAttrs(gc, gc_tags);
-		    HIDD_BM_FillRect(BM_OBJ(bm)
+		    HIDD_BM_FillRect(HIDD_BM_OBJ(bm)
 		    	, gc
 		    	, intersect.MinX, intersect.MinY
 			, intersect.MaxX, intersect.MaxY
@@ -2475,10 +2506,10 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		    	kprintf("driver_SetRast(): Superbitmap not handled yet\n");
 		    else
 		    {
-			gc_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
+			gc_tags[1].ti_Data = HIDD_BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
 			
 		    	SetAttrs(gc, gc_tags);
-		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
+		    	HIDD_BM_FillRect(HIDD_BM_OBJ(CR->BitMap)
 				, gc
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
@@ -2501,14 +2532,21 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
     else
     {
     	ULONG width, height;
+	Object *bm_obj;
+	/* This may be a user inited bitmap */
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return;
 	
-	GetAttr(BM_OBJ(bm), aHidd_BitMap_Width,  &width);
-	GetAttr(BM_OBJ(bm), aHidd_BitMap_Height, &height);
-	HIDD_BM_FillRect(BM_OBJ(bm)
+	GetAttr(bm_obj, aHidd_BitMap_Width,  &width);
+	GetAttr(bm_obj, aHidd_BitMap_Height, &height);
+	HIDD_BM_FillRect(bm_obj
 		, gc
 		, 0, 0
 		, width - 1, height - 1
 	);
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
 
     }
     
@@ -2839,8 +2877,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    
 	    if (NULL != friend)
 	    {
-		if (friend->Flags & BMF_AROS_HIDD)
-		    bm_tags[4].ti_Data = (IPTR)BM_OBJ(friend);
+		if (IS_HIDD_BM(friend))
+		    bm_tags[4].ti_Data = (IPTR)HIDD_BM_OBJ(friend);
 	    }
 
 	
@@ -2875,7 +2913,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
 	    	    
 		    /* Store it in plane array */
-		    BM_OBJ(nbm) = bm_obj;
+		    HIDD_BM_OBJ(nbm) = bm_obj;
 		    nbm->Rows   = sizey;
 		    nbm->BytesPerRow = WIDTH_TO_BYTES(sizex);
 		    nbm->Depth  = depth;
@@ -2884,8 +2922,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    /* If this is a displayable bitmap, create a color table for it */
 
 		    if (flags & BMF_DISPLAYABLE) {
-		    	BM_PIXTAB(nbm) = AllocMem(AROS_PALETTE_MEMSIZE, MEMF_ANY);
-			if (NULL != BM_PIXTAB(nbm)) {
+		    	HIDD_BM_PIXTAB(nbm) = AllocMem(AROS_PALETTE_MEMSIZE, MEMF_ANY);
+			if (NULL != HIDD_BM_PIXTAB(nbm)) {
 			
 			    /* Set this palette to all black by default */
 			    
@@ -2908,8 +2946,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 				    
 				/* Set palette to all black */
 			    	for (i = 0; i < numcolors; i ++) {
-				    HIDD_BM_SetColors(BM_OBJ(nbm), &col, i, 1);
-				    BM_PIXTAB(nbm)[i] = col.pixval;
+				    HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
+				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
 				   
 				}
 				
@@ -2917,10 +2955,10 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			    
 				/* Get index for first blackpixel */
 			    
-			    	black_pixel = HIDD_BM_MapColor(BM_OBJ(nbm), &col);
+			    	black_pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(nbm), &col);
 			    
 			    	for (i = 0; i < AROS_PALETTE_SIZE; i ++) {
-			            BM_PIXTAB(nbm)[i] = black_pixel;
+			            HIDD_BM_PIXTAB(nbm)[i] = black_pixel;
 			    	}
 			    }
 				
@@ -2939,7 +2977,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			       will no longer be valid
 			    */
 
-			    BM_PIXTAB(nbm) = BM_PIXTAB(friend);
+			    HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend);
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			}
@@ -2987,11 +3025,12 @@ static VOID bitmap_to_buf(APTR src_info
 	, LONG x_dest, LONG y_dest
 	, LONG width, LONG height
 	, ULONG *bufptr
-	, struct BitMap *dest_bm) /* destination HIDD bitmap */
+	, Object *dest_bm
+	, HIDDT_Pixel *coltab
+) /* destination HIDD bitmap */
 {
 
     LONG y;
-    HIDDT_Pixel *coltab = BM_PIXTAB(dest_bm);
     
     /* Fill buffer with pixels from bitmap */
     for (y = 0; y < height; y ++)
@@ -3010,7 +3049,7 @@ static VOID bitmap_to_buf(APTR src_info
 		
 		
 		
-	    *bufptr ++ = coltab[pen];
+	    *bufptr ++ = (coltab != NULL) ? coltab[pen] : pen;
 //	    kprintf("(%d, %d) pen=%d buf=%d\n", x, y, pen, coltab[pen]);
 			
 
@@ -3026,7 +3065,8 @@ static VOID buf_to_bitmap(APTR dest_info
 	, LONG x_dest, LONG y_dest
 	, ULONG width, ULONG height
 	, UBYTE *bufptr
-	, struct BitMap *src_bm
+	, Object *src_bm
+	, HIDDT_Pixel *coltab
 )
 {
 	
@@ -3115,10 +3155,17 @@ static VOID amiga2hidd_fast(APTR src_info
     LONG pixels_left_to_process = xsize * ysize;
 	  
     LONG current_x, current_y, next_x, next_y;
+    Object *bm_obj;
 
     
     next_x = 0;
     next_y = 0;
+    
+    
+    bm_obj = OBTAIN_HIDD_BM(hidd_bm);
+    if (NULL == bm_obj)
+    	return;
+    
 
 LOCK_PIXBUF    
     while (pixels_left_to_process)
@@ -3169,13 +3216,14 @@ LOCK_PIXBUF
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
 		, pixel_buf
-		, hidd_bm
+		, bm_obj
+		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 	);
 	
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
 
-	HIDD_BM_PutImage(BM_OBJ(hidd_bm)
+	HIDD_BM_PutImage(bm_obj
 		, hidd_gc
 		, (UBYTE*)pixel_buf
 		, tocopy_w * sizeof (HIDDT_Pixel)
@@ -3193,6 +3241,8 @@ LOCK_PIXBUF
     } /* while (pixels left to copy) */
     
 ULOCK_PIXBUF    
+
+    RELEASE_HIDD_BM(bm_obj, hidd_bm);
     
     return;
     
@@ -3213,11 +3263,18 @@ static VOID hidd2amiga_fast(struct BitMap *hidd_bm
     LONG pixels_left_to_process = xsize * ysize;
     ULONG current_x, current_y, next_x, next_y;
     
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, BM_PIXTAB(hidd_bm) };
+#warning Src bitmap migh be user initialized so we should not use HIDD_BM_PIXTAB() below
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(hidd_bm) };
+    
+    Object *bm_obj;
     
     next_x = 0;
     next_y = 0;
     
+    bm_obj = OBTAIN_HIDD_BM(hidd_bm);
+    if (NULL == bm_obj)
+    	return;
+	
 LOCK_PIXBUF    
 
     while (pixels_left_to_process)
@@ -3258,7 +3315,7 @@ LOCK_PIXBUF
 	
 	
 	/* Get some more pixels from the HIDD */
-	HIDD_BM_GetImageLUT(BM_OBJ(hidd_bm)
+	HIDD_BM_GetImageLUT(bm_obj
 		, (UBYTE *)pixel_buf
 		, tocopy_w
 		, x_src + current_x
@@ -3275,7 +3332,8 @@ LOCK_PIXBUF
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
 		, (UBYTE *)pixel_buf
-		, hidd_bm
+		, bm_obj
+		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 	);
 	
 	pixels_left_to_process -= (tocopy_w * tocopy_h);
@@ -3283,6 +3341,8 @@ LOCK_PIXBUF
     }
     
 ULOCK_PIXBUF
+
+    RELEASE_HIDD_BM(bm_obj, hidd_bm);
     
     return;
     
@@ -3388,13 +3448,13 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
     */
     	
     
-    if (srcBitMap->Flags & BMF_AROS_HIDD)
+    if (IS_HIDD_BM(srcBitMap))
     {
-        Object *src_bm = (Object *)BM_OBJ(srcBitMap);
+        Object *src_bm = (Object *)HIDD_BM_OBJ(srcBitMap);
 	
-    	if (destBitMap->Flags & BMF_AROS_HIDD)
+    	if (IS_HIDD_BM(destBitMap))
 	{
-	    Object *dst_bm = (Object *)BM_OBJ(destBitMap);
+	    Object *dst_bm = (Object *)HIDD_BM_OBJ(destBitMap);
 	    
 	    /* Case 1. */
 	    switch (minterm)
@@ -3407,7 +3467,7 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 			{TAG_DONE, 0UL}
 		    };
 
-		    tags[0].ti_Data = BM_PIXTAB(destBitMap)[0];
+		    tags[0].ti_Data = BM_PIXEL(destBitMap, 0);
 
 		    SetAttrs(tmp_gc, tags);
 		    HIDD_BM_FillRect(dst_bm
@@ -3498,7 +3558,7 @@ kprintf("Locking BM\n");
     }
     else
     {
-	Object *dst_bm = (Object *)BM_OBJ(destBitMap);
+	Object *dst_bm = (Object *)HIDD_BM_OBJ(destBitMap);
         
 	/* Case 3. */
 	switch (minterm)
@@ -3513,8 +3573,7 @@ kprintf("Locking BM\n");
 			{TAG_DONE, 0UL}
 		    };
 
-#warning Handle offscreen bitmaps
-		    tags[0].ti_Data = BM_PIXTAB(destBitMap)[0];
+		    tags[0].ti_Data = BM_PIXEL(destBitMap, 0);
 
 		    SetAttrs(tmp_gc, tags);
 
@@ -3577,11 +3636,11 @@ void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
 {
     Object *gfxhidd = SDD(GfxBase)->gfxhidd;
     
-    HIDD_Gfx_DisposeBitMap(gfxhidd, (Object *)BM_OBJ(bm));
+    HIDD_Gfx_DisposeBitMap(gfxhidd, (Object *)HIDD_BM_OBJ(bm));
     
     if (bm->Flags & BMF_DISPLAYABLE)
     {
-    	FreeMem(BM_PIXTAB(bm), AROS_PALETTE_MEMSIZE);
+    	FreeMem(HIDD_BM_PIXTAB(bm), AROS_PALETTE_MEMSIZE);
     }
     FreeMem(bm, sizeof (struct BitMap));
 }
@@ -3598,9 +3657,20 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    
    EnterFunc(bug("driver_SetRGB32(vp=%p, color=%d, r=%x, g=%x, b=%x)\n",
    		vp, color, red, green, blue));
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
 		
    /* Get bitmap object */
    bm = vp->RasInfo->BitMap;
+
+   if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!!!! Trying to use SetRGB32() call on non-hidd bitmap!!!\n");
+    	return;
+   }
+   if (NULL == HIDD_BM_PIXTAB(bm)) {
+    	kprintf("!!!!! Trying to use SetRGB32() call on bitmap with no CLUT !!!\n");
+	return;
+   }
    
    D(bug("Bitmap obj: %p\n", bm_obj));
    
@@ -3609,17 +3679,17 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    hidd_col.green = green >> 16 ;
    hidd_col.blue  = blue  >> 16;
    
-   pf = HIDD_BM_GetPixelFormat(BM_OBJ(bm), vHidd_PixFmt_Native);
+   pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(bm), vHidd_PixFmt_Native);
    
    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
    
    
    if (vHidd_GT_Palette == graphtype) {
-   	HIDD_BM_SetColors(BM_OBJ(bm), &hidd_col, color, 1);
-	BM_PIXTAB(bm)[color] = hidd_col.pixval;
+   	HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, color, 1);
+	HIDD_BM_PIXTAB(bm)[color] = hidd_col.pixval;
 	
    } else if (vHidd_GT_TrueColor == graphtype) {
-   	BM_PIXTAB(bm)[color] = HIDD_BM_MapColor(BM_OBJ(bm), &hidd_col);
+   	HIDD_BM_PIXTAB(bm)[color] = HIDD_BM_MapColor(HIDD_BM_OBJ(bm), &hidd_col);
    }
    
    ReturnVoid("driver_SetRGB32");
@@ -3679,12 +3749,15 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
     
     if (NULL == L)
     {
-        /* No layer, probably a screen */
+    	Object *bm_obj;
 	
-	/* Just put the pixelarray directly onto the HIDD */
-
+        /* No layer, probably a screen, but could be a user inited bitmap  */
 	
-	HIDD_BM_PutImageLUT(BM_OBJ(bm)
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return 0;
+	
+	HIDD_BM_PutImageLUT(bm_obj
 		, gc
 		, array
 		, array_width
@@ -3692,6 +3765,8 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
 		, array_width, array_height
 		, pixlut
 	);
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
 
 	pixwritten += array_width * array_height;
 	
@@ -3735,7 +3810,7 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
 		    
 		    /* Write to the HIDD */
 		    
-		    HIDD_BM_PutImageLUT(BM_OBJ(bm)
+		    HIDD_BM_PutImageLUT(HIDD_BM_OBJ(bm)
 		    	, gc
 		    	, array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			, array_width
@@ -3760,7 +3835,7 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
 		    
 
 
-			HIDD_BM_PutImageLUT(BM_OBJ(CR->BitMap)
+			HIDD_BM_PutImageLUT(HIDD_BM_OBJ(CR->BitMap)
 			    , gc
 			    , array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			    , array_width
@@ -3798,8 +3873,9 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 {
 
     LONG pixwritten;
-    
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, BM_PIXTAB(rp->BitMap) };
+
+#warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
     
     EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
@@ -3825,7 +3901,9 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
     struct BitMap *bm = rp->BitMap;
     struct Layer *L = rp->Layer;
     ULONG array_width, array_height;
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, BM_PIXTAB(rp->BitMap) };
+
+#warning Do not use HIDD_BM_PIXTAB() for non-hidd bitmaps
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
     
     LONG pixread = 0;
     
@@ -3837,21 +3915,29 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 	
     dd = GetDriverData(rp);
     
+    
     array_width  = xstop - xstart + 1;
     array_height = ystop - ystart + 1;
 
     if (NULL == L)
     {
-        /* No layer, probably a screen */
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	Object *bm_obj;
+	
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return 0;
 	
 	/* Just get the pixelarray directly from the HIDD */
-	HIDD_BM_GetImageLUT(BM_OBJ(bm)
+	HIDD_BM_GetImageLUT(bm_obj
 		, array
 		, array_width
 		, xstart, ystart
 		, array_width, array_height
 		, &pixlut
 	);
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
 	
 	pixread += array_width * array_height;
 	
@@ -3895,7 +3981,7 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		    
 		    /* Read from the HIDD */
 
-		    HIDD_BM_GetImageLUT(BM_OBJ(bm)
+		    HIDD_BM_GetImageLUT(HIDD_BM_OBJ(bm)
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			, array_width
 			, intersect.MinX, intersect.MinY
@@ -3918,7 +4004,7 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		    	LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
 
 
-			HIDD_BM_GetImageLUT(BM_OBJ(CR->BitMap)
+			HIDD_BM_GetImageLUT(HIDD_BM_OBJ(CR->BitMap)
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			    , array_width
 			    , cr_rel_x, cr_rel_y
@@ -4055,7 +4141,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
-    BM_PIXTAB(&template_bm)	= NULL;
+    HIDD_BM_PIXTAB(&template_bm)	= NULL;
     template_bm.Rows		= height;
     template_bm.BytesPerRow	= WIDTH_TO_BYTES(width);
     template_bm.Depth		= 1;
@@ -4063,8 +4149,8 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     
     
     /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
-    BM_OBJ(&template_bm) = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
-    if (!BM_OBJ(&template_bm))
+    HIDD_BM_OBJ(&template_bm) = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
+    if (!HIDD_BM_OBJ(&template_bm))
     	ReturnVoid("driver_BltTemplate");
 	
     /* Copy contents from Amiga bitmap to the offscreen HIDD bitmap */
@@ -4096,16 +4182,23 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 
     if (NULL == L)
     {
-        /* No layer, probably a screen */
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	Object *bm_obj;
 	
 	/* Blit with color expansion */
-	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    goto exit;
+	
+	
+	HIDD_BM_BlitColorExpansion( bm_obj
 		, gc
-		, BM_OBJ(&template_bm)
+		, HIDD_BM_OBJ(&template_bm)
 		, 0, 0
 		, xDest, yDest
 		, xSize, ySize);
 	
+	RELEASE_HIDD_BM(bm_obj, bm);
     }
     else
     {
@@ -4136,18 +4229,15 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 	    /* Does this cliprect intersect with area to blit ? */
 	    if (andrectrect(&CR->bounds, &toblit, &intersect))
 	    {
-		    
-		
 	        if (NULL == CR->lobs)
 		{
 		    LONG  clipped_xsrc, clipped_ysrc;
 		    clipped_xsrc = /* xsrc = 0 + */ intersect.MinX - toblit.MinX;
 		    clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
 		    
-		    
-		    HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+		    HIDD_BM_BlitColorExpansion( HIDD_BM_OBJ(bm)
 		    	, gc
-			, BM_OBJ(&template_bm)
+			, HIDD_BM_OBJ(&template_bm)
 			, clipped_xsrc, clipped_ysrc
 			, intersect.MinX
 			, intersect.MinY
@@ -4172,9 +4262,9 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 			clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
 			
 			
-		    	HIDD_BM_BlitColorExpansion( BM_OBJ(CR->BitMap)
+		    	HIDD_BM_BlitColorExpansion( HIDD_BM_OBJ(CR->BitMap)
 				, gc
-				, BM_OBJ(&template_bm)
+				, HIDD_BM_OBJ(&template_bm)
 				, clipped_xsrc, clipped_ysrc
 				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
@@ -4194,8 +4284,8 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 	
     } /* if (not screen rastport) */
     
-    
-    HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, BM_OBJ(&template_bm));
+exit:    
+    HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(&template_bm));
 	
     ReturnVoid("driver_BltTemplate");
 }
@@ -4222,7 +4312,9 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
 	, ULONG *buf
-	, struct BitMap *dest_bm)
+	, Object *dest_bm
+	, HIDDT_Pixel *coltab
+)
 {
 
     /* x_src, y_src is the coordinates into the layer. */
@@ -4231,7 +4323,6 @@ static VOID pattern_to_buf(struct pattern_info *pi
     ULONG apen = GetAPen(rp);
     ULONG bpen = GetBPen(rp);
     UBYTE *apt = (UBYTE *)rp->AreaPtrn;
-    HIDDT_Pixel *coltab = BM_PIXTAB(dest_bm);
     
     LONG mask_x, mask_y;
     
@@ -4246,7 +4337,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
     			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
 			
 
-    HIDD_BM_GetImage(BM_OBJ(dest_bm)
+    HIDD_BM_GetImage(dest_bm
     	, (UBYTE *)buf
 	, xsize * sizeof (HIDDT_Pixel)
 	, x_dest, y_dest
@@ -4291,7 +4382,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
 		   if (set_pixel)
 		   {
 		   	D(bug(" s"));
-		    	*buf = coltab[pixval];
+		    	*buf = (coltab != NULL) ? coltab[pixval] : pixval;
 		   }
 		    
 		}
@@ -4555,10 +4646,11 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 
     if(h == LAYERS_BACKFILL)
     {
-
-        /* Use default backfill */
-	if (bm->Flags & BMF_AROS_HIDD)
-	{
+	Object *bm_obj;
+	
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL != bm_obj) {
+	
 	     HIDDT_DrawMode old_drmd;
 	     HIDDT_Pixel old_fg;
 	     
@@ -4571,17 +4663,13 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	     
 	     GetAttr(gc, aHidd_GC_DrawMode,   &old_drmd);
 	     GetAttr(gc, aHidd_GC_Foreground, &old_fg);
-	     
 
-
-	     gc_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[0];
+	     gc_tags[0].ti_Data = BM_PIXEL(rp->BitMap, 0);
 
 	     SetAttrs(gc, gc_tags);
 		    
 	     /* Cliprect not obscured, so we may render directly into the display */
-
-
-	     HIDD_BM_FillRect(BM_OBJ(bm)
+	     HIDD_BM_FillRect(bm_obj
 	     	, gc
 		, msg->MinX, msg->MinY
 		, msg->MaxX, msg->MaxY
@@ -4592,15 +4680,8 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	     
 	     SetAttrs(gc, gc_tags);
 	     
-	}
-	else
-	{
-	    setbitmapfast(rp->BitMap
-	    	, msg->MinX, msg->MinY
-		, msg->MaxX - msg->MinX + 1
-		, msg->MaxY - msg->MinY + 1
-		, 0
-	    );
+	     RELEASE_HIDD_BM(bm_obj, bm);
+	     
 	}
     }
 
@@ -4765,12 +4846,13 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
 	, ULONG *buf
-	, struct BitMap *dest_bm)
+	, Object *dest_bm
+	, HIDDT_Pixel *coltab
+)
 {	
     /* x_src, y_src is the coordinates int the layer. */
     LONG y;
     UBYTE src_depth;
-    HIDDT_Pixel *coltab = BM_PIXTAB(dest_bm);
 
     EnterFunc(bug("bltmask_to_buf(%p, %d, %d, %d, %d, %p)\n"
     			, bmi, x_src, y_src, xsize, ysize, buf ));
@@ -4778,7 +4860,7 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
     src_depth = GetBitMapAttr(bmi->srcbm, BMA_DEPTH);
     
     /* We must get the data from the destination bitmap */
-    HIDD_BM_GetImage(BM_OBJ(dest_bm)
+    HIDD_BM_GetImage(dest_bm
     	, (UBYTE *)buf
 	, xsize * sizeof (HIDDT_Pixel)
 	, x_dest, y_dest
@@ -4812,7 +4894,7 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 			, 0xFF
 		   );
 		   
-		  *buf = coltab[pen];
+		  *buf = (coltab != NULL) ? coltab[pen] : pen;
 	    }
 	    
 	    buf ++;
@@ -5021,8 +5103,8 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	    { TAG_DONE, 0UL }
 	};
 	
-	BM_OBJ(&bm)	= bm_obj;
-	BM_PIXTAB(&bm)	= NULL;
+	HIDD_BM_OBJ(&bm)	= bm_obj;
+	HIDD_BM_PIXTAB(&bm)	= NULL;
 	bm.Rows		= height;
 	bm.BytesPerRow	= WIDTH_TO_BYTES(width);
 	bm.Depth	= 1;
@@ -5052,6 +5134,18 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
     return bm_obj;
 }
 
+
+static inline Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
+{
+    Object *pbm_obj;
+    
+    pbm_obj = obtain_cache_object(SDD(GfxBase)->planarbm_cache, GfxBase);
+    if (NULL != pbm_obj) {
+    	HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap);
+    }
+    
+    return pbm_obj;
+}
 
 
 /***********************************************/
@@ -5084,6 +5178,11 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
     LONG pixwritten = 0;
     UBYTE *buf;
     
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteLUTPixelArray()!!!\n");
+    	return 0;
+    }
     
     pixlut.entries	= 256;
     pixlut.pixels	= pixtab;
@@ -5114,7 +5213,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
 	col.green	= (HIDDT_ColComp)(rgb & 0x0000FF00);
 	col.blue	= (HIDDT_ColComp)((rgb & 0x000000FF) << 8);
 	
-	pixtab[i] = HIDD_BM_MapColor(BM_OBJ(rp->BitMap), &col);
+	pixtab[i] = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
     }
     
     buf = (UBYTE *)srcrect;
@@ -5153,6 +5252,13 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     LONG pixwritten = 0;
     Object *gc;
 
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n");
+    	return 0;
+    }
+    
     
     start_offset = COORD_TO_BYTEIDX(srcx, srcy, srcmod);
     array += start_offset;
@@ -5165,7 +5271,12 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	
     if (RECTFMT_LUT8 == srcformat)
     {
-	HIDDT_PixelLUT pixlut = { 256, BM_PIXTAB(rp->BitMap) };
+    
+	HIDDT_PixelLUT pixlut = { 256, HIDD_BM_PIXTAB(rp->BitMap) };
+	
+	if (rp->BitMap->Flags & BMF_SPECIALFMT) {
+	    kprintf("!!! No CLUT in driver_WritePixelArray\n");
+	}
 	
     	pixwritten = write_pixels_8(rp
 		, array, srcmod
@@ -5205,7 +5316,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	
 	/* Just put the pixelarray directly onto the HIDD */
 	
-	HIDD_BM_PutImage(BM_OBJ(bm)
+	HIDD_BM_PutImage(HIDD_BM_OBJ(bm)
 		, gc
 		, array
 		, srcmod
@@ -5252,7 +5363,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 		    
 		    /* Write to the HIDD */
 		    
-		    HIDD_BM_PutImage(BM_OBJ(bm)
+		    HIDD_BM_PutImage(HIDD_BM_OBJ(bm)
 		    	, gc
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, srcmod)
 			, srcmod
@@ -5276,7 +5387,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
 	
 
-			HIDD_BM_PutImage(BM_OBJ(CR->BitMap)
+			HIDD_BM_PutImage(HIDD_BM_OBJ(CR->BitMap)
 			    , gc
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, srcmod)
 			    , srcmod
@@ -5327,6 +5438,11 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 	{ TAG_DONE, 0}
     };
     
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadPixelArray() !!!\n");
+    	return 0;
+    }
     
     start_offset = COORD_TO_BYTEIDX(destx, desty, dstmod);
     array += start_offset;
@@ -5365,7 +5481,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
         /* No layer, probably a screen */
 	
 	
-	HIDD_BM_GetImage(BM_OBJ(bm)
+	HIDD_BM_GetImage(HIDD_BM_OBJ(bm)
 		, array
 		, dstmod
 		, srcx, srcy
@@ -5411,7 +5527,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 		    
 		    /* Write to the HIDD */
 		    
-		    HIDD_BM_GetImage(BM_OBJ(bm)
+		    HIDD_BM_GetImage(HIDD_BM_OBJ(bm)
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, dstmod)
 			, dstmod
 			, intersect.MinX, intersect.MinY
@@ -5433,7 +5549,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
 
-			HIDD_BM_GetImage(BM_OBJ(CR->BitMap)
+			HIDD_BM_GetImage(HIDD_BM_OBJ(CR->BitMap)
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, dstmod)
 			    , dstmod
 			    , cr_rel_x, cr_rel_y
@@ -5469,6 +5585,12 @@ LONG driver_InvertPixelArray(struct RastPort *rp
 	, struct Library *CyberGfxBase)
 {
 
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap InvertPixelArray() !!!\n");
+    	return 0;
+    }
+
    return (LONG)fillrect_pendrmd(rp
    	, destx, desty
 	, destx + width  - 1
@@ -5490,7 +5612,7 @@ LONG driver_FillPixelArray(struct RastPort *rp
     col.green	= (HIDDT_ColComp)((pixel >> 8) & 0x000000FF);
     col.blue	= (HIDDT_ColComp)(pixel & 0x000000FF);
     
-    pix = HIDD_BM_MapColor(BM_OBJ(rp->BitMap), &col);
+    pix = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
 
     return (LONG)fillrect_pendrmd(rp
 	, destx, desty
@@ -5525,17 +5647,22 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     HIDDT_Color col;
     HIDDT_Pixel pix;
     
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteRGBPixel() !!!\n");
+    	return 0;
+    }
     col.alpha	= (HIDDT_ColComp)(pixel >> 24);
     col.red	= (HIDDT_ColComp)((pixel >> 16) & 0x000000FF);
     col.green	= (HIDDT_ColComp)((pixel >> 8) & 0x000000FF);
     col.blue	= (HIDDT_ColComp)(pixel & 0x000000FF);
     
-    pix = HIDD_BM_MapColor(BM_OBJ(rp->BitMap), &col);
+    pix = HIDD_BM_MapColor(HIDD_BM_OBJ(bm), &col);
    
     if (NULL == L)
     {
     	/* This is a screen */
-	HIDD_BM_PutPixel(BM_OBJ(bm), x, y, pix);
+	HIDD_BM_PutPixel(HIDD_BM_OBJ(bm), x, y, pix);
 	error = 0;
     }
     else
@@ -5561,12 +5688,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 		
 	        if (NULL == CR->lobs)
 		{
-		    
-		    /* Write to the HIDD */
-		    HIDD_BM_PutPixel(BM_OBJ(bm), absx, absy, pix);
-			
-		    
-
+		    HIDD_BM_PutPixel(HIDD_BM_OBJ(bm), absx, absy, pix);
 		}
 		else
 		{
@@ -5578,7 +5700,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 		    else
 		    {
 
-			HIDD_BM_PutPixel(BM_OBJ(CR->BitMap)
+			HIDD_BM_PutPixel(HIDD_BM_OBJ(CR->BitMap)
 				, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, absy - CR->bounds.MinY
 				, pix
@@ -5616,11 +5738,17 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     HIDDT_Color col;
     HIDDT_Pixel pix;
     
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadRGBPixel()!!!\n");
+    	return 0;
+    }
+    
    
     if (NULL == L)
     {
     	/* This is a screen */
-	pix = HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
+	pix = HIDD_BM_GetPixel(HIDD_BM_OBJ(bm), x, y);
     }
     else
     {
@@ -5647,7 +5775,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 		{
 		    
 		    /* Write to the HIDD */
-		    pix = HIDD_BM_GetPixel(BM_OBJ(bm), absx, absy);
+		    pix = HIDD_BM_GetPixel(HIDD_BM_OBJ(bm), absx, absy);
 			
 		}
 		else
@@ -5660,7 +5788,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 		    else
 		    {
 
-			pix = HIDD_BM_GetPixel(BM_OBJ(CR->BitMap)
+			pix = HIDD_BM_GetPixel(HIDD_BM_OBJ(CR->BitMap)
 				, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, absy - CR->bounds.MinY
 			); 
@@ -5681,7 +5809,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     }
     
-    HIDD_BM_UnmapPixel(BM_OBJ(bm), pix, &col);
+    HIDD_BM_UnmapPixel(HIDD_BM_OBJ(bm), pix, &col);
     
     retval = 	  (col.alpha << 24)
     		| (col.red   << 16)
@@ -5718,8 +5846,6 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct Library *Cyber
 	{ TAG_DONE, 0UL }
     };
     
-
-
     UWORD *cmodelarray = NULL;
     
     gfxhidd = SDD(GfxBase)->gfxhidd;
@@ -5873,11 +5999,13 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
     
     IPTR retval;
     
-    /* We only get info about HIDD bitmaps */
-    if (!(bitMap->Flags & BMF_AROS_HIDD))
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(bitMap)) {
+    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in GetCyberMapAttr() !!!\n");
     	return 0;
+    }
 	
-    bm_obj = BM_OBJ(bitMap);
+    bm_obj = HIDD_BM_OBJ(bitMap);
     
     pf = HIDD_BM_GetPixelFormat(bm_obj, vHidd_PixFmt_Native);
     
