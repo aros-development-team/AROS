@@ -35,4 +35,7 @@ TARGET_CFLAGS	+= -DAROS -DNO_ERRNO_H
 
 %build_linklib mmake=linklibs-png libname=png files=$(FILES)
 
+TARGET_CFLAGS   += -DPNG_NO_STDIO
+%build_linklib mmake=linklibs-png libname=png_nostdio files=$(FILES) objdir=$(OBJDIR)/no_stdio
+
 %common
