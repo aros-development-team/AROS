@@ -189,7 +189,7 @@ c/shell;1;SDuvan;Write C:Shell
 c/sort;0;digulla;Write Sort
 c/stack;2;SDuvan;Write C:Stack
 c/status;1;laguest;Write C:Status
-c/type;1;matthias;Write C:Type
+c/type;2;matthias;Write C:Type
 c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
 c/unsetenv;2;laguest;Write C:UnSetEnv
