@@ -40,10 +40,12 @@
 
 /* Global libbase vars */
 #undef IntuitionBase
+#undef DOSBase
 
-struct ExecBase *SysBase;
-struct Library *MUIMasterBase;
+struct ExecBase      *SysBase;
+struct Library       *MUIMasterBase;
 struct IntuitionBase *IntuitionBase;
+struct DosLibrary    *DOSBase;
 
 struct ExecBase **SysBasePtr = &SysBase;
 struct Library  **MUIMasterBasePtr = &MUIMasterBase;
