@@ -138,21 +138,23 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 		MEMF_CLEAR, MEMF_REVERSE and MEMF_NO_EXPUNGE are treated
 		as if they were always set in the memheader.
 	    */
-	    if(!(requirements & ~(MEMF_CLEAR|MEMF_REVERSE|
-				  MEMF_NO_EXPUNGE|mh->mh_Attributes))
-	       && mh->mh_Free >= byteSize)
-	    {
-                if (mh->mh_Attributes & MEMF_MANAGED)
-                {
-		    struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-                    if (mhe->mhe_Alloc)
-                        res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
-                }
-                else
-                {  
-                    res = stdAlloc(mh, byteSize, requirements);
-                }                
+	    if((requirements & ~(MEMF_CLEAR|MEMF_REVERSE|
+		  	         MEMF_NO_EXPUNGE|mh->mh_Attributes))
+	       || mh->mh_Free < byteSize)
+	       continue;
+	       
+            if (mh->mh_Attributes & MEMF_MANAGED)
+            {
+  	        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+                if (mhe->mhe_Alloc)
+                    res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
             }
+            else
+            {  
+                res = stdAlloc(mh, byteSize, requirements);
+            }                
+	    if (res)
+	        break;
         }
     } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
 
