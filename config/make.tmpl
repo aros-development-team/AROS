@@ -910,7 +910,6 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 ifeq ($(BD_MODTYPE$(BDID)),library)
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
 endif
@@ -1161,14 +1160,12 @@ BD_HEADER_DEPS$(BDID) := $(wildcard headers.tmpl) $(BD_LIBDEFSINC$(BDID)) \
 	    $(BD_FUNCSRCS$(BDID)) \
 	    $(SCRIPTDIR)/genshared \
 	    $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/genpclib.awk \
-	    $(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/genpdefines.awk \
-	    $(SCRIPTDIR)/geninline.awk
+	    $(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/genpdefines.awk
 
 # Regenerate the includes when some of the dependencies are changed
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp : $(BD_HEADER_DEPS$(BDID))
 	@$(SCRIPTDIR)/genshared -clib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -defines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
-	@$(SCRIPTDIR)/genshared -inline -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -proto -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -pclib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -pdefines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
@@ -1179,10 +1176,8 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp : $(BD_HEADER_DEPS$(BDID
 $(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_private_protos.h \
 $(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h \
 $(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h \
-$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h \
 $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h :
 	@$(SCRIPTDIR)/genshared -clib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
-	@$(SCRIPTDIR)/genshared -inline -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -proto -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -pclib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -pdefines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
@@ -1192,14 +1187,13 @@ $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h :
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h
 #%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
 
 MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
-  $(GENINCDIR)/proto $(GENINCDIR)/defines $(GENINCDIR)/inline \
+  $(GENINCDIR)/proto $(GENINCDIR)/defines \
   $(GENINCDIR)/pragmas $(INCDIR) $(INCDIR)/clib $(INCDIR)/proto \
-  $(INCDIR)/defines $(INCDIR)/inline $(INCDIR)/pragmas \
+  $(INCDIR)/defines $(INCDIR)/pragmas \
   $(BD_MODDIR$(BDID)) $(KOBJSDIR)
 
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
