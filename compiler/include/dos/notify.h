@@ -5,74 +5,103 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Notification handling
+    Desc: Notification handling.
     Lang: english
 */
-
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
-
 #ifndef EXEC_TASKS_H
 #   include <exec/tasks.h>
 #endif
-
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
 
-struct NotifyMessage
-{
-    struct Message nm_ExecMessage;
+/**********************************************************************
+ **************************** NotifyRequest ***************************
+ **********************************************************************/
 
-    ULONG                  nm_Class; /* see below */
-    UWORD                  nm_Code;  /* see below */
-    struct NotifyRequest * nm_NReq;
-
-    ULONG                  nm_DoNotTouch;
-    ULONG                  nm_DoNotTouch2;
-};
-
+/* General notification structure as passed to StartNotify() and EndNotify().
+   After passing it to StartNotify() the first time, this structure becomes
+   READ-ONLY! */
 struct NotifyRequest
 {
-    UBYTE * nr_Name;
-    UBYTE * nr_FullName;
-    ULONG   nr_UserData;
-    ULONG   nr_Flags;
+    UBYTE * nr_Name;     /* Name of the watched file. */
+    UBYTE * nr_FullName; /* Fully qualified name of the watched file. This is
+                            READ-ONLY! */
+    ULONG   nr_UserData; /* Fill in with your own data. */
+    ULONG   nr_Flags;    /* see below */
 
+    /* The following union specified the way to notify the application, if
+       the watched file changes. IF NRF_SEND_MESSAGE is set, nr_Msg is
+       used, when NRF_SEND_SIGNAL is set, nr_Signal is used. */
     union
     {
         struct
         {
-            struct MsgPort * nr_Port;
+            struct MsgPort * nr_Port; /* Port to send message to. */
         } nr_Msg;
         struct
         {
-            struct Task * nr_Task;
-            UBYTE         nr_SignalNum;
-            UBYTE         nr_pad[3];
+            struct Task * nr_Task;      /* Task to notify. */
+            UBYTE         nr_SignalNum; /* Signal number to set. */
+            UBYTE         nr_pad[3];    /* PRIVATE */
         } nr_Signal;
     } nr_stuff;
 
-    ULONG            nr_Reserved[4];
-    ULONG            nr_MsgCount;
+    ULONG            nr_Reserved[4]; /* PRIVATE! Set to 0 for now. */
+
+    /* The following fields are for PRIVATE use by handlers. */
+    ULONG            nr_MsgCount; /* Number of unreplied messages. */
     struct MsgPort * nr_Handler;
 };
 
-#define NOTIFY_CLASS 0x40000000
-#define NOTIFY_CODE  0x1234
+/* nr_Flags */
+/* The two following flags specify by which means the watching task is to be
+   notified. */
+#define NRB_SEND_MESSAGE  0 /* Send a message to the specified message port. */
+#define NRB_SEND_SIGNAL   1 /* Set a signal of the specified task. */
+#define NRB_WAIT_REPLY    3 /* Wait for a reply by the application before
+                               going on with watching? */
+#define NRB_NOTIFY_INTIAL 4
 
-#define NRB_SEND_MESSAGE        0
-#define NRF_SEND_MESSAGE   (1L<<0)
-#define NRB_SEND_SIGNAL         1
-#define NRF_SEND_SIGNAL    (1L<<1)
-#define NRB_WAIT_REPLY          3
-#define NRF_WAIT_REPLY     (1L<<3)
-#define NRB_NOTIFY_INTIAL       4
-#define NRF_NOTIFY_INITIAL (1L<<4)
-/* the following definitions are for use by handlers only! */
+#define NRF_SEND_MESSAGE   (1L<<NRB_SEND_MESSAGE)
+#define NRF_SEND_SIGNAL    (1L<<NRB_SEND_SIGNAL)
+#define NRF_WAIT_REPLY     (1L<<NRB_WAIT_REPLY)
+#define NRF_NOTIFY_INITIAL (1L<<NRB_NOTIFY_INITIAL)
+
+/* The following flags are for use by handlers only! */
 #define NR_HANDLER_FLAGS 0xffff0000
 #define NRB_MAGIC               31
 #define NRF_MAGIC          (1L<<31)
+
+/**********************************************************************
+ **************************** NotifyMessage ***************************
+ **********************************************************************/
+
+/* The NotifyMessage if send to the message port specified in
+   NotifyRequest->nr_Msg->nr_Port, if NRF_SEND_MESSAGE was set in
+   NotifyRequest->nr_Flags and the watched file changes. */
+struct NotifyMessage
+{
+    struct Message nm_ExecMessage;
+      /* Embedded message structure as defined in <exec/ports.h>. */
+
+    ULONG                  nm_Class; /* see below */
+    UWORD                  nm_Code;  /* see below */
+    struct NotifyRequest * nm_NReq;
+      /* The notify structure that was passed to StartNotify(). */
+
+    /* The following two fields are for PRIVATE use by handlers. */
+    IPTR nm_DoNotTouch;
+    IPTR nm_DoNotTouch2;
+};
+
+/* nm_Class. Do not use, yet. */
+#define NOTIFY_CLASS 0x40000000
+
+/* nm_Code. Do not use, yet. */
+#define NOTIFY_CODE  0x1234
 
 #endif /* DOS_NOTIFY_H */

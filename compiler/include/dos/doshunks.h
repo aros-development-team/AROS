@@ -5,10 +5,11 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: File hunks.
+    Desc: Definition of hunks, used in executable files.
     Lang: english
 */
 
+/* Hunk types */
 #define HUNK_UNIT          999
 #define HUNK_NAME         1000
 #define HUNK_CODE         1001
@@ -36,31 +37,32 @@
 #define HUNK_RELRELOC32   1021
 #define HUNK_ABSRELOC16   1022
 
-#define EXT_SYMB      0
-#define EXT_DEF       1
-#define EXT_ABS       2
-#define EXT_RES       3
-#define EXT_REF32     129
+/* Hunk sub-types */
+#define EXT_SYMB      0   /* symbol table */
+#define EXT_DEF       1   /* definition for relocatable hunks */
+#define EXT_ABS       2   /* definition for absolute hunks */
+#define EXT_REF32     129 /* 32bit absolute reference to symbol*/
 #define EXT_ABSREF32  129
-#define EXT_COMMON    130
+#define EXT_COMMON    130 /* 32bit absolute reference to common block */
 #define EXT_ABSCOMMON 130
-#define EXT_REF16     131
+#define EXT_REF16     131 /* 16bit relative reference to symbol */
 #define EXT_RELREF16  131
-#define EXT_REF8      132
+#define EXT_REF8      132 /* 8bit relative reference to symbol */
 #define EXT_RELREF8   132
-#define EXT_DEXT32    133
-#define EXT_DEXT16    134
-#define EXT_DEXT8     135
-#define EXT_RELREF32  136
-#define EXT_RELCOMMON 137
+#define EXT_DEXT32    133 /* 32bit relative data */
+#define EXT_DEXT16    134 /* 16bit relative data */
+#define EXT_DEXT8     135 /* 8bit relative data */
+#define EXT_RELREF32  136 /* 32bit relative reference to symbol */
+#define EXT_RELCOMMON 137 /* 32bit relative reference to common block */
 #define EXT_ABSREF16  138
 #define EXT_ABSREF8   139
 
-#define HUNKB_ADVISORY      29
-#define HUNKF_ADVISORY (1L<<29)
-#define HUNKB_CHIP          30
-#define HUNKF_CHIP     (1L<<30)
-#define HUNKB_FAST          31
-#define HUNKF_FAST     (1L<<31)
+/* Hunk flags */
+#define HUNKB_ADVISORY 29 /* Hunk is ignored, if unknown to loader. */
+#define HUNKB_CHIP     30
+#define HUNKB_FAST     31
+#define HUNKF_ADVISORY (1L<<HUNKB_ADVISORY)
+#define HUNKF_CHIP     (1L<<HUNKB_CHIP)
+#define HUNKF_FAST     (1L<<HUNKB_FAST)
 
 #endif /* DOS_DOSHUNKS_H */

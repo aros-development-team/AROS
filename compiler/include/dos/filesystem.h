@@ -5,7 +5,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Structures and constants for filesystems
+    Desc: AROS specific structures and constants for filesystems.
     Lang: english
 */
 #ifndef EXEC_IO_H
@@ -15,17 +15,18 @@
 #   include <dos/filehandler.h>
 #endif
 
+
+/* This structure is an extended IORequest. It is used for messages to
+   filesystem handlers. */
 struct IOFileSys
 {
-    struct IORequest IOFS;	   /* Standard I/O request */
-    LONG	     io_DosError;  /* Dos error code */
-    IPTR	     io_Args[4];   /* Array of Arguments (Ints and Pointers) */
+    struct IORequest IOFS;	   /* Standard I/O request. */
+    LONG	     io_DosError;  /* Dos error code. */
+    IPTR	     io_Args[4];   /* Array of arguments. */
 };
 
-/*
-    Filesystem actions. Look into one of the filesystem sources for more
-    information on required parameters.
-*/
+/* Filesystem actions. Look into one of the filesystem sources for more
+   information on required parameters. */
 #define FSA_OPEN		1
 #define FSA_CLOSE		2
 #define FSA_READ		3
@@ -68,21 +69,22 @@ struct IOFileSys
 #define FSA_UNLOCK_RECORD	39
 #endif
 
-/* Modes for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE */
-#define FMF_LOCK	1 /* Lock exclusively */
-#define FMF_EXECUTE	2 /* open for executing */
-#define FMF_WRITE	4 /* open for writing */
-#define FMF_READ	8 /* open for reading */
-#define FMF_CREATE	16 /* create file if it doesn't exist */
-#define FMF_CLEAR	32 /* clear file on open */
-#define FMF_RAW 	64 /* switch cooked to raw and vice versa */
+/* Modes for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. */
+#define FMF_LOCK    (1L<<0) /* Lock exclusively. */
+#define FMF_EXECUTE (1L<<1) /* Open for executing. */
+#define FMF_WRITE   (1L<<2) /* Open for writing. */
+#define FMF_READ    (1L<<3) /* Open for reading. */
+#define FMF_CREATE  (1L<<4) /* Create file if it doesn't exist. */
+#define FMF_CLEAR   (1L<<5) /* Clear file on open. */
+#define FMF_RAW     (1L<<6) /* Switch cooked to raw and vice versa. */
 
-/* Mount modes */
-#define MMF_READ	1 /* Mounted for reading */
-#define MMF_WRITE	2 /* Mounted for writing */
-#define MMF_READ_CACHE	4 /* Read cache enabled */
-#define MMF_WRITE_CACHE 8 /* Write cache enabled */
-#define MMF_OFFLINE	16 /* Filesystem doesn't use the device currently */
-#define MMF_LOCKED	32 /* Mount mode is password protected */
+/* Mount modes. */
+#define MMF_READ	(1L<<0) /* Mounted for reading. */
+#define MMF_WRITE	(1L<<1) /* Mounted for writing. */
+#define MMF_READ_CACHE	(1L<<2) /* Read cache enabled. */
+#define MMF_WRITE_CACHE (1L<<3) /* Write cache enabled. */
+#define MMF_OFFLINE	(1L<<4) /* Filesystem doesn't use the device
+                                   currently. */
+#define MMF_LOCKED	(1L<<5) /* Mount mode is password protected. */
 
 #endif /* DOS_FILESYSTEM_H */

@@ -21,9 +21,11 @@
 #   include <libraries/iffparse.h>
 #endif
 
-/* The name of the dos.library. Use this constant instead of a string. */
+/* The name of the dos.library. Use this constant instead of the string. */
 #define DOSNAME "dos.library"
 
+/* These constants may be used, but preferably, you should only test for
+   (un-)equality against DOSFALSE (i.e. 0). */
 #define DOSTRUE  (-1L)
 #define DOSFALSE ( 0L)
 
@@ -31,6 +33,10 @@
  ******************************* Dates ********************************
  **********************************************************************/
 
+/* Other structures and defines for handling dates and time can be found in
+   <dos/datetime.h>. */
+
+/* Number of so-called "ticks" in a second. */
 #define TICKS_PER_SECOND 50
 
 /* DateStamp structure as used in different library-functions. This
@@ -58,12 +64,11 @@ struct DateStamp
 struct FileInfoBlock
 {
     LONG	     fib_DiskKey;
-    LONG	     fib_DirEntryType; /* Type of entry. If the uppermost
-                                          bit is set, this is a file, if
-                                          not, it is a directory */
+    LONG	     fib_DirEntryType;
+      /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
+         the file described is a directory, otherwise it is a plain file. */
     UBYTE	     fib_FileName[MAXFILENAMELENGTH];
-                                       /* The name of the entry
-                                          (null-terminated) */
+      /* The filename (null-terminated). */
     LONG	     fib_Protection;   /* The protection bits (see below) */
     LONG	     fib_EntryType;
     LONG	     fib_Size;         /* The size of the file */
@@ -75,7 +80,7 @@ struct FileInfoBlock
     UBYTE	     fib_Reserved[32]; /* PRIVATE */
 };
 
-/* Protection bits for files */
+/* Protection bits for files (fib_Protection) */
 /* Flags for owner (they a low-active, i.e. not set means the action is
    allowed!) */
 #define FIBB_DELETE      0  /* File is deleteable */
@@ -84,14 +89,17 @@ struct FileInfoBlock
 #define FIBB_READ        3  /* File is readable */
 /* General flags, not owner-dependant */
 #define FIBB_ARCHIVE     4  /* File was archived (not used by OS) */
-#define FIBB_PURE        5
+#define FIBB_PURE        5  /* Make program resident on execution */
 #define FIBB_SCRIPT      6  /* File is a script (DOS or ARexx) */
-/* Flags for group (meaning see above, high-active!) */
+/* Flag number 7 is not defined. It used to describe different conditions
+   in different revisions of AmigaOS and was also misused as hidden flag.
+   Because of this confusion, this flag should not be used! */
+/* Flags for group (meaning see above, these are high-active!) */
 #define FIBB_GRP_DELETE  8
 #define FIBB_GRP_EXECUTE 9
 #define FIBB_GRP_WRITE   10
 #define FIBB_GRP_READ    11
-/* Flags for other/world (meaning see above, high-active!) */
+/* Flags for other/world (meaning see above, these are high-active!) */
 #define FIBB_OTR_DELETE  12
 #define FIBB_OTR_EXECUTE 13
 #define FIBB_OTR_WRITE   14
@@ -128,17 +136,16 @@ struct InfoData
     LONG id_BytesPerBlock; /* Bytes per block */
     LONG id_DiskType;      /* Type of disk (see below) */
     BPTR id_VolumeNode;
-    LONG id_InUse;         /* Set if device is in use */
+    LONG id_InUse;         /* Set, if device is in use */
 };
 
 /* id_DiskState */
 #define ID_WRITE_PROTECTED 80 /* Device is write-protected */
-#define ID_VALIDATING      81 /* Device is validating */
-#define ID_VALIDATED       82 /* Device is read-write */
+#define ID_VALIDATING      81 /* Device is currently validating */
+#define ID_VALIDATED       82 /* Device is ready to be read and written */
 
-/* id_DiskType, filesystem types (multi-character constants of identifier
-   strings)
-*/
+/* Filesystem types as used for id_DiskType. These are multi-character
+   constants of identifier strings. They are self-descriptive. */
 #define ID_NO_DISK_PRESENT  (-1L)
 #define ID_UNREADABLE_DISK  MAKE_ID('B','A','D',0)
 #define ID_DOS_DISK         MAKE_ID('D','O','S',0)
@@ -155,21 +162,22 @@ struct InfoData
  **************** Program Execution and Error Handling ****************
  **********************************************************************/
 
-/* Return values for programs */
-#define RETURN_OK    0  /* Program succeeded */
-#define RETURN_WARN  5  /* Program succeeded, but there was something not
-                           quite right. This value may also be used to
-                           express a boolean state (RETURN_WARN meaning
-                           TRUE, RETURN_OK meaning FALSE). */
-#define RETURN_ERROR 10 /* Program succeeded partly. This may be returned,
-                           if the user aborts a program or some external
-                           data were wrong. */
-#define RETURN_FAIL  20 /* Program execution failed, because it couldn't
-                           allocate system resources. */
+/* Return conditions for programs */
+#define RETURN_OK    0
+  /* Program succeeded. */
+#define RETURN_WARN  5
+  /* Program succeeded, but there was something not quite right. This value
+     may also be used to express a boolean state (RETURN_WARN meaning TRUE,
+     RETURN_OK meaning FALSE). */
+#define RETURN_ERROR 10
+  /* Program succeeded partly. This may be returned, if the user aborts a
+     program or some external data were wrong. */
+#define RETURN_FAIL  20
+  /* Program execution failed. Normally used, if some system resources could
+     not be allocated. */
 
-/* Secondary errors values as used for IoErr(), SetIoErr() and in
-   Process->pr_Result2.
-*/
+/* Secondary errors codes as used for IoErr(), SetIoErr() and in
+   Process->pr_Result2. */
 /* General system errors */
 #define ERROR_NO_FREE_STORE		103 /* Out of memory */
 #define ERROR_TASK_TABLE_FULL		105 /* Too many tasks running */
@@ -177,19 +185,20 @@ struct InfoData
 #define ERROR_BAD_TEMPLATE		114 /* Supplied template is broken */
 #define ERROR_BAD_NUMBER		115 /* Numeric arg is not numeric */
 #define ERROR_REQUIRED_ARG_MISSING	116
-#define ERROR_KEY_NEEDS_ARG		117
+#define ERROR_KEY_NEEDS_ARG		117 /* Key name was specified, but no
+                                               value for it */
 #define ERROR_TOO_MANY_ARGS		118
 #define ERROR_UNMATCHED_QUOTES		119 /* Odd number of quotation marks */
-#define ERROR_LINE_TOO_LONG		120 /* Hardcoded line length limit
-                                               passed */
+#define ERROR_LINE_TOO_LONG		120 /* Command line longer than
+                                               hardcoded line length limit */
 /* File errors */
 #define ERROR_FILE_NOT_OBJECT		121
-#define ERROR_INVALID_RESIDENT_LIBRARY	122
+#define ERROR_INVALID_RESIDENT_LIBRARY	122 /* Opened file is not a library */
 #define ERROR_NO_DEFAULT_DIR		201
 #define ERROR_OBJECT_IN_USE		202 /* Object already in use */
 #define ERROR_OBJECT_EXISTS		203 /* Object does already exist */
 #define ERROR_DIR_NOT_FOUND		204
-#define ERROR_OBJECT_NOT_FOUND		205
+#define ERROR_OBJECT_NOT_FOUND		205 /* File does not exist */
 /* Miscellaneous errors */
 #define ERROR_BAD_STREAM_NAME		206
 #define ERROR_OBJECT_TOO_LARGE		207
@@ -222,14 +231,12 @@ struct InfoData
 #define ERROR_UNLOCK_ERROR		243
 
 /* Maximum length of strings got from Fault(). Note that they should be
-   shorter than 60 characters.
-*/
+   shorter than 60 characters. */
 #define FAULT_MAX		82
 
 /* Signals that are set, if the user presses the corresponding keys on
    the controlling terminal. They may also be sent by using Singal().
-   For more information see <exec/tasks.h>.
-*/
+   For more information see <exec/tasks.h>. */
 #define SIGBREAKB_CTRL_C 12 /* CTRL-c, usually meaning program abortion */
 #define SIGBREAKB_CTRL_D 13 /* CTRL-d */
 #define SIGBREAKB_CTRL_E 14 /* CTRL-e */
@@ -243,21 +250,26 @@ struct InfoData
  ********************** Constants for Functions ***********************
  **********************************************************************/
 
-/* Modes as used in Open() */
-#define MODE_OLDFILE   1005 /* An old file is opened. If it doesn't exist,
-                               Open() returns an error. */
-#define MODE_NEWFILE   1006 /* A new file is created, even if a file with
-                               the supplied name does already exist. */
-#define MODE_READWRITE 1004 /* An old file is opened, if it doesn't exist,
-                               a new one is created. */
+/* Modes for Open(). */
+#define MODE_OLDFILE   1005
+  /* Try to open old file. If it does not exist, Open() returns an error. */
+#define MODE_NEWFILE   1006
+  /* A new file is created, even if a file with the supplied name does
+     already exist. */
+#define MODE_READWRITE 1004
+  /* An old file is opened. If it does not exist, a new one is created. */
 
 /* Locking mechanism as used in Lock() */
+/* Non-exclusive lock, other tasks may lock this file as well. This is used
+   for read-only operations. */
 #define SHARED_LOCK    -2
 #define ACCESS_READ    SHARED_LOCK
+/* Exclusive lock, other tasks may not lock this file. This is used for write
+   operations. */
 #define EXCLUSIVE_LOCK -1
 #define ACCESS_WRITE   EXCLUSIVE_LOCK
 
-/* Returned by SameLock() */
+/* Returned by SameLock(). See autodocs for description. */
 #define LOCK_DIFFERENT   -1
 #define LOCK_SAME         0
 #define LOCK_SAME_VOLUME  1
@@ -283,8 +295,7 @@ struct InfoData
 #define ITEM_QUOTED    2
 
 /* The types for AllocDosObject() and FreeDosObject(). They specifiy which
-   kind of structure is to be allocated.
-*/
+   kind of structure is to be allocated. */
 #define DOS_FILEHANDLE   0 /* struct FileHandle <dos/dosextens.h> */
 #define DOS_EXALLCONTROL 1 /* struct ExAllControl <dos/exall.h> */
 #define DOS_FIB          2 /* struct FileInfoBlock (see above) */

@@ -5,108 +5,134 @@
     Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Constants for filehandlers
+    Desc: Constants for filehandlers.
     Lang: english
 */
-
+#ifndef EXEC_PORTS_H
+#   include <exec/ports.h>
+#endif
 #ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#   include <exec/types.h>
 #endif
 #ifndef DOS_BPTR_H
-#include <dos/bptr.h>
+#   include <dos/bptr.h>
+#endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
 #endif
 
-#define DE_TABLESIZE    0       /* Must be at least 11 */
-#define DE_SIZEBLOCK    1       /* LONGs per block. */
-#define DE_BLOCKSIZE    2       /* Bytes per block. */
-#define DE_NUMHEADS     3       /* Number of heads per cylinder */
-#define DE_SECSPERBLOCK 4       /* not used, must be 1 */
-#define DE_BLKSPERTRACK 5       /* Number of blocks per track */
-#define DE_RESERVEDBLKS 6       /* unavail. blocks at start (usually 2) */
-#define DE_PREFAC       7       /* not used; must be 0 */
-#define DE_INTERLEAVE   8       /* usually 0 */
-#define DE_LOWCYL       9       /* First cylinder of partition. */
-#define DE_HIGHCYL      10      /* Last cylinder of partition. */
-#define DE_UPPERCYL     10      /* Alias. */
-#define DE_NUMBUFFERS   11      /* Initial Number of disk buffers */
-#define DE_BUFMEMTYPE   12      /* Type of memory for device - */
-#define DE_MEMBUFTYPE   12      /* - 1 is public, 3 is chip, 5 is fast */
-#define DE_MAXTRANSFER  13      /* Max no. of bytes to transfer at a time */
-#define DE_MASK         14      /* Address mask for DMA devices */
-#define DE_BOOTPRI      15      /* Boot Priority */
-#define DE_DOSTYPE      16      /* ASCII (HEX) string of filesystem type */
-#define DE_BAUD         17      /* baud rate for serial handler */
-#define DE_CONTROL      18      /* control word for handler */
-#define DE_BOOTBLOCKS   19      /* number of blocks for boot block */
 
-/* A structure for the above */
+/* Disk environment array. The size of this structure is variable.
+   de_TableSize contains the size of the structure. This structure may
+   look different for different handlers. */
 struct DosEnvec
 {
-    ULONG   de_TableSize;
-    ULONG   de_SizeBlock;
-    ULONG   de_SegOrg;
-    ULONG   de_Surfaces;
-    ULONG   de_SectorPerBlock;
-    ULONG   de_BlocksPerTrack;
-    ULONG   de_Reserved;
-    ULONG   de_PreAlloc;
+    ULONG   de_TableSize;      /* Size of this structure. Must be at least
+                                  11 (DE_NUMBUFFERS). */
+    ULONG   de_SizeBlock;      /* Size in longwords of a block on the disk. */
+    ULONG   de_SegOrg;         /* Unused. Must be 0 for now. */
+    ULONG   de_Surfaces;       /* Number of heads/surfaces in drive. */
+    ULONG   de_SectorPerBlock; /* Unused. Must be 1 for now. */
+    ULONG   de_BlocksPerTrack; /* Number of blocks on a track. */
+    ULONG   de_Reserved;       /* Number of reserved blocks at beginning of
+                                  volume. */
+    ULONG   de_PreAlloc;       /* Number of reserved blocks at end of volume.
+                               */
     ULONG   de_Interleave;
-    ULONG   de_LowCyl;
-    ULONG   de_HighCyl;
-    ULONG   de_NumBuffers;
-    ULONG   de_BufMemTypes;
-    ULONG   de_MaxTransfer;
-    ULONG   de_Mask;
-    LONG    de_BootPri;
-    ULONG   de_DosType;
-    ULONG   de_Baud;
-    ULONG   de_Control;
-    ULONG   de_BootBlocks;
+    ULONG   de_LowCyl;         /* First cylinder. */
+    ULONG   de_HighCyl;        /* Last cylinder. */
+    ULONG   de_NumBuffers;     /* Number of buffers for drive. */
+    ULONG   de_BufMemTypes;    /* Type of memory for buffers. See
+                                  <exec/memory.h>. */
+    ULONG   de_MaxTransfer;    /* How many bytes may be transferred together?
+                               */
+    ULONG   de_Mask;           /* Memory address mask for DMA devices. */
+    LONG    de_BootPri;        /* Priority of Autoboot. */
+    ULONG   de_DosType;        /* Type of disk. See <dos/dos.h> for
+                                  definitions. */
+    ULONG   de_Baud;           /* Baud rate to use. */
+    ULONG   de_Control;        /* Control word. */
+    ULONG   de_BootBlocks;     /* Size of bootblock. */
 };
+
+/* The following constants are longword offsets, which point into a filehandler
+   structure (like the one above). For more information about the meaning
+   of these constants see the structure above. */
+#define DE_TABLESIZE    0
+#define DE_SIZEBLOCK    1
+#define DE_BLOCKSIZE    2
+#define DE_NUMHEADS     3
+#define DE_SECSPERBLOCK 4
+#define DE_BLKSPERTRACK 5
+#define DE_RESERVEDBLKS 6
+#define DE_PREFAC       7
+#define DE_INTERLEAVE   8
+#define DE_LOWCYL       9
+#define DE_HIGHCYL      10
+#define DE_UPPERCYL     DE_HIGHCYL
+#define DE_NUMBUFFERS   11
+#define DE_BUFMEMTYPE   12
+#define DE_MEMBUFTYPE   DE_BUFMEMTYPE
+#define DE_MAXTRANSFER  13
+#define DE_MASK         14
+#define DE_BOOTPRI      15
+#define DE_DOSTYPE      16
+#define DE_BAUD         17
+#define DE_CONTROL      18
+#define DE_BOOTBLOCKS   19
+
 
 /* This is the message that is passed to a file handler during startup
-   in the DosList->dl_Startup field. It is not used in AROS DOS handlers
+   in the DeviceNode->dn_Startup field. It is not used in AROS DOS handlers
    as they are now Device based, and the information is passed in during
    OpenDevice(), however this needs to be stored for late opening
-   handlers.
-*/
-
+   handlers. */
 struct FileSysStartupMsg
 {
-    ULONG   fssm_Unit;      /* exec unit number for this device */
-    BSTR    fssm_Device;    /* null term. BSTR to device name */
-    BPTR    fssm_Environ;   /* Pointer to DosEnvec table */
-    ULONG   fssm_Flags;     /* flags for OpenDevice() */
+    ULONG fssm_Unit;    /* Unit number of device used. */
+    BSTR  fssm_Device;  /* Device name. */
+    BPTR  fssm_Environ; /* Pointer to disk environment array, like the one
+                           above. */
+    ULONG fssm_Flags;   /* Flags to be passed to OpenDevice(). */
 };
 
-/*  This is an unwound version of the DosList structure defined in the
-    dos/dosextens.h include file. This is the version for a DOS "device"
-    DLT_DEVICE.
+
+/*  This is an unwound version of the DosList structure defined in
+    <dos/dosextens.h>. This is the version for a DOS "device" DLT_DEVICE.
+    It is essentially the same structure as DevInfo, defined in
+    <dos/dosextens.h>.
 
     For AROS this is notable different, as filehandlers are no longer
     DOS tasks (ie Processes), some of the fields here have no purpose
     and are ignored. The only fields retained are the dn_Next, dn_Type,
-    dn_Startup and dn_Handler fields.
-
-    Note that the string pointed to by the dn_Handler MUST be NULL
-    terminated.
-*/
-
+    dn_Startup and dn_Handler fields. */
 struct DeviceNode
 {
-    BPTR        dn_Next;        /* singly linked list */
-    ULONG       dn_Type;        /* always DLT_DEVICE */
-    ULONG       dn_pad1[2];
-    BSTR        dn_Handler;     /* BSTR to device name for handler */
-    ULONG       dn_pad2[2];
-    BPTR        dn_Startup;     /* BPTR to FileSysStartupMsg */
-    ULONG       dn_pad3[2];
+    struct DosList * dn_Next;
+      /* PRIVATE pointer to next entry. In AmigaOS this used to be a BPTR. */
+    ULONG dn_Type;
+      /* Type of this node. Has to be DLT_DEVICE. */
 
-    BPTR        dn_OldName;     /* BPTR to name of device */
-    STRPTR      dn_NewName;     /* STRPTR to same string above */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* The next two fields are not used by AROS. Their original name was:
+       dn_Task and dn_Lock */
+    struct MsgPort * dn_NoAROS1;
+    BPTR             dn_NoAROS2;
+#endif
+
+    BSTR  dn_Handler;    /* Null-terminated device name for handler. */
+    LONG  dn_NoAROS3[2]; /* PRIVATE */
+    BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
+    BPTR  dn_NoAROS4[2]; /* PRIVATE */
+
+    /* For the following two fields, see comments in <dos/dosextens.h>.
+       Both fields specify the name of the handler. */
+    BPTR   dn_OldName;
+    STRPTR dn_NewName;
 
     struct Device *dn_Device;
     struct Unit   *dn_Unit;
 };
+/* #define dn_Name dn_OldName */
 
 #endif /* DOS_FILEHANDLER_H */

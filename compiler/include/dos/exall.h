@@ -5,10 +5,9 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ExAll() handling
+    Desc: ExAll() handling.
     Lang: english
 */
-
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -16,36 +15,61 @@
 #   include <utility/hooks.h>
 #endif
 
+/* Structure (as used in ExAll()), containing information about a file. This
+   structure is only as long as it need to be. If is for example ED_SIZE was
+   specified, when calling ExAll(), this structure only consists of the fields
+   ed_Name through ed_Size. You should never allocate this structure by
+   yourself. */
 struct ExAllData
 {
     struct ExAllData * ed_Next;
 
-    UBYTE * ed_Name;
-    LONG    ed_Type;     /* see below */
-    ULONG   ed_Size;
-    ULONG   ed_Prot;
-    ULONG   ed_Days;
-    ULONG   ed_Mins;
-    ULONG   ed_Ticks;
-    UBYTE * ed_Comment;
-    UWORD   ed_OwnerUID;
-    UWORD   ed_OwnerGID;
+    UBYTE * ed_Name;     /* Name of the file. */
+    LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
+    ULONG   ed_Size;     /* Size of file. */
+    ULONG   ed_Prot;     /* Protection bits. */
+
+    /* The following three fields are de facto an embedded datestamp
+       structure (see <dos/dos.h>), which describes the last modification
+       date. */
+    ULONG ed_Days;
+    ULONG ed_Mins;
+    ULONG ed_Ticks;
+
+    UBYTE * ed_Comment;  /* The file comment. */
+
+    UWORD ed_OwnerUID; /* The owner ID. */
+    UWORD ed_OwnerGID; /* The group-owner ID. */
 };
 
-#define ED_NAME       1
-#define ED_TYPE       2
-#define ED_SIZE       3
-#define ED_PROTECTION 4
-#define ED_DATE       5
-#define ED_COMMENT    6
-#define ED_OWNER      7
+/* Type argument for ExAll(). Each number includes the information of all
+   lower numbers, too. If you specify for example ED_SIZE, you will get
+   information about name, type and the size of a file. */
+#define ED_NAME       1 /* Filename. */
+#define ED_TYPE       2 /* Type of file. See <dos/dosextens.h>. */
+#define ED_SIZE       3 /* Size of file. */
+#define ED_PROTECTION 4 /* Protection bits. */
+#define ED_DATE       5 /* Last modification date. */
+#define ED_COMMENT    6 /* Addtional file comment. */
+#define ED_OWNER      7 /* Owner information. */
 
+
+/* Structure as used for controlling ExAll(). Allocate this structure by using
+   AllocDosObject(DOS_EXALLCONTROL,...) only. All fields must be initialized
+   to 0, before using this structure. (AllocDosObject() does that for you.)
+   After calling ExAll() the first time, this structure is READ-ONLY. */
 struct ExAllControl
 {
     ULONG         eac_Entries;
-    ULONG         eac_LastKey;
+      /* The number of entries that were returned in the buffer. */
+    ULONG         eac_LastKey;     /* PRIVATE */
     UBYTE       * eac_MatchString;
+      /* Parsed pattern string, as created by ParsePattern(). This may be NULL.
+      */
     struct Hook * eac_MatchFunc;
+      /* You may supply a hook, which is called for each entry. This hook
+         should return TRUE, if the current entry is to be included in
+         the file list and FALSE, if it should be ignored. */
 };
 
 #endif /* DOS_EXALL_H */

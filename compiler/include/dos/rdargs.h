@@ -5,10 +5,9 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ReadArgs() definitions
+    Desc: Definitions for the dos function ReadArgs().
     Lang: english
 */
-
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif
@@ -16,31 +15,66 @@
 #   include <exec/types.h>
 #endif
 
+/**********************************************************************
+ ******************************* CSource ******************************
+ **********************************************************************/
+
+/* This structure emulates an input stream by using a buffer. */
 struct CSource
 {
     UBYTE * CS_Buffer;
-    LONG    CS_Length;
-    LONG    CS_CurChr;
+      /* The buffer, which contains the stream. In most cases this may be NULL,
+         in which case the current input stream is used. */
+    LONG    CS_Length; /* The length of the buffer. */
+    LONG    CS_CurChr; /* The current position in the buffer. */
 };
 
+/**********************************************************************
+ ***************************** ReadArgs() *****************************
+ **********************************************************************/
+
+/* The main structure used for ReadArgs(). It contains everything needed for
+   ReadArgs() handling. */
 struct RDArgs
 {
     struct CSource RDA_Source;
-    LONG           RDA_DAList;
-    UBYTE        * RDA_Buffer;
-    LONG           RDA_BufSiz;
-    UBYTE        * RDA_ExtHelp;
-    LONG           RDA_Flags;
+      /* Embedded CSource structure (see below). If CS_Buffer of this structure
+         is != NULL, use this structure as source for parsing, otherwise use
+         Input() as source. */
+
+    LONG RDA_DAList; /* PRIVATE. Must be initialized to 0. */
+
+    /* The next two fields allow an application to supply a buffer to
+       ReadArgs() so that ReadArgs() does not have to allocate a buffer itself.
+       If either of these fields is 0, ReadArgs() allocates this buffer itself.
+    */
+    UBYTE * RDA_Buffer; /* Pointer to buffer. May be NULL. */
+    LONG    RDA_BufSiz; /* Size of the supplied buffer. May be 0. */
+
+    UBYTE * RDA_ExtHelp;
+      /* Additional help, if user requests it, by supplying '?' as argument. */
+    LONG    RDA_Flags; /* see below */
 };
 
-#define RDAB_STDIN         0
-#define RDAF_STDIN    (1L<<0)
-#define RDAB_NOALLOC       1
-#define RDAF_NOALLOC  (1L<<1)
-#define RDAB_NOPROMPT      2
-#define RDAF_NOPROMPT (1L<<2)
+/* RDA_Flags */
+#define RDAB_STDIN    0 /* Use Input() instead of the supplied command line. */
+#define RDAB_NOALLOC  1 /* Do not allocate more space. */
+#define RDAB_NOPROMPT 2 /* Do not prompt for input. */
 
+#define RDAF_STDIN    (1L<<RDAB_STDIN)
+#define RDAF_NOALLOC  (1L<<RDAB_NOALLOC)
+#define RDAF_NOPROMPT (1L<<RDAB_NOPROMPT)
+
+/**********************************************************************
+ **************************** Miscellaneous ***************************
+ **********************************************************************/
+
+/* Maximum number of items in a template. This may change in future versions.
+*/
 #define MAX_TEMPLATE_ITEMS 100
+
+/* The maximum number of arguments in an item, which allows to specify multiple
+   arguments (flag "/M"). This may change in future versions.*/
 #define MAX_MULTIARGS      128
 
 #endif /* DOS_RDARGS_H */

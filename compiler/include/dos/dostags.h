@@ -12,85 +12,136 @@
 #   include <utility/tagitem.h>
 #endif
 
-/* System() */
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#   define SYS_Dummy	   (DOS_TAGBASE)
-#else
-#   define SYS_Dummy	   (TAG_USER + 32)
-#endif
-#define SYS_Input	(SYS_Dummy + 1) /* input filehandle  */
-#define SYS_Output	(SYS_Dummy + 2) /* output filehandle */
-#define SYS_Asynch	(SYS_Dummy + 3) /* run asynchronous, close I/O on exit */
-#define SYS_UserShell	(SYS_Dummy + 4) /* send to user shell instead of boot shell */
-#define SYS_CustomShell (SYS_Dummy + 5) /* send to a specific shell (data is name) */
+/**********************************************************************
+ ****************************** Processes *****************************
+ **********************************************************************/
 
-/* CreateNewProc() */
-/* One of NP_Seglist or NP_Entry MUST be given. Everything else is optional.
-   Defaults are in parenthese. */
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+/* Tags for CreateNewProc(). All tags, where no default is stated, the default
+   is inherited from the parent process. Additionally you may use tags for
+   AllocDosObject(DOS_CLI, ...). */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#   define NP_Dummy        (TAG_USER + 1000)
+#else
 #   define NP_Dummy	   (DOS_TAGBASE + 1000)
-#else
-#   define NP_Dummy	   (TAG_USER + 1000)
 #endif
-#define NP_Seglist	(NP_Dummy + 1) /* seglist of code */
-#define NP_FreeSeglist	(NP_Dummy + 2) /* free seglist on exit (TRUE) */
-#define NP_Entry	(NP_Dummy + 3) /* entry point to run - mutually exclusive
-					  with NP_Seglist! */
-#define NP_Input	(NP_Dummy + 4) /* filehandle (NIL:) */
-#define NP_Output	(NP_Dummy + 5) /* filehandle (NIL:) */
-#define NP_CloseInput	(NP_Dummy + 6) /* close input filehandle on exit (TRUE) */
-#define NP_CloseOutput	(NP_Dummy + 7) /* close output filehandle on exit (TRUE) */
-#define NP_Error	(NP_Dummy + 8) /* filehandle (NIL:) */
-#define NP_CloseError	(NP_Dummy + 9) /* close error filehandle on exit (TRUE) */
-#define NP_CurrentDir	(NP_Dummy + 10) /* lock (current dir)  */
-#define NP_StackSize	(NP_Dummy + 11) /* stacksize for process (>= 4000) */
-#define NP_Name 	(NP_Dummy + 12) /* name for process ("New Process") */
-#define NP_Priority	(NP_Dummy + 13) /* priority (same as parent) */
-#define NP_ConsoleTask	(NP_Dummy + 14) /* consoletask (same as parent) */
-#define NP_WindowPtr	(NP_Dummy + 15) /* window ptr (same as parent) */
-#define NP_HomeDir	(NP_Dummy + 16) /* home directory  (curr dir) */
-#define NP_CopyVars	(NP_Dummy + 17) /* boolean to copy local vars (TRUE) */
-#define NP_Cli		(NP_Dummy + 18) /* create cli structure (FALSE) */
-#define NP_Path 	(NP_Dummy + 19) /* path (copy of parents path) */
-					/* only valid for cli process! */
-#define NP_CommandName	(NP_Dummy + 20) /* commandname, valid only for CLI */
+/* Exactly one of NP_Seglist or NP_Entry must be specified. */
+#define NP_Seglist	(NP_Dummy + 1)
+  /* (BPTR) Seglist of code for process. */
+#define NP_FreeSeglist	(NP_Dummy + 2)
+  /* (BOOL) Free seglist on exit? (Default: TRUE) */
+#define NP_Entry	(NP_Dummy + 3)
+  /* (APTR) Entry point for process code. */
+
+#define NP_Input	(NP_Dummy + 4)
+  /* (BPTR/struct FileHandle *) Input filehandle. (Default: NIL:) */
+#define NP_Output	(NP_Dummy + 5)
+  /* (BPTR/struct FileHandle *) Output filehandle. (Default: NIL:) */
+#define NP_CloseInput	(NP_Dummy + 6)
+  /* (BOOL) Close input filehandle on exit? (Default: TRUE) */
+#define NP_CloseOutput	(NP_Dummy + 7)
+  /* (BOOL) Close output filehandle in exit? (Default: TRUE) */
+#define NP_Error	(NP_Dummy + 8)
+  /* (BPTR/struct FileHandle *) Error filehandle. (Default: NIL:) */
+#define NP_CloseError	(NP_Dummy + 9)
+  /* (BOOL) Close error filehandle on exit? (Default: TRUE) */
+
+#define NP_CurrentDir	(NP_Dummy + 10)
+  /* (BPTR/struct FileLock *) Current directory for new task. */
+#define NP_StackSize	(NP_Dummy + 11)
+  /* (ULONG) Stacksize to use for the new process. Default is variable. */
+#define NP_Name 	(NP_Dummy + 12)
+  /* (STRPTR) Name for the new process. (Default: "New Process") */
+#define NP_Priority	(NP_Dummy + 13)
+  /* (LONG) Priority of the new process. */
+
+#define NP_ConsoleTask	(NP_Dummy + 14)
+  /* (APTR) Pointer to the console task. */
+#define NP_WindowPtr	(NP_Dummy + 15)
+  /* (struct Window *) The processes default window. */
+#define NP_HomeDir	(NP_Dummy + 16)
+  /* (BPTR/struct FileLock *) The home directory of the new process. This
+     defaults to the parents current directory. */
+#define NP_CopyVars	(NP_Dummy + 17)
+  /* (BOOL) Copy local environment variables? (Default: TRUE) */
+#define NP_Cli		(NP_Dummy + 18)
+  /* (BOOL) Create a CLI structure? (Default: FALSE) */
+
+/* The following two tags are only valid for CLI processes. */
+#define NP_Path 	(NP_Dummy + 19)
+  /* (APTR) Path for the new process. */
+#define NP_CommandName	(NP_Dummy + 20)
+  /* (STRPTR) Name of the called program. */
 #define NP_Arguments	(NP_Dummy + 21)
-	    /* cstring of arguments - passed with str in A0, length in D0.  */
-	    /* (copied and freed on exit.)  Default is 0-length NULL ptr.   */
-	    /* If you use NP_Arguments, NP_Input must be non-NULL.     */
+  /* If this tag is used, NP_Input must not be NULL. */
 
-#define NP_NotifyOnDeath (NP_Dummy + 22) /* TODO notify parent on death (FALSE) */
-#define NP_Synchronous	(NP_Dummy + 23) /* TODO don't return until process finishes (FALSE) */
-#define NP_ExitCode	(NP_Dummy + 24) /* code to be called on process exit */
-#define NP_ExitData	(NP_Dummy + 25) /* optional argument for NP_EndCode rtn (NULL) */
+/* The following two tags do not work, yet. */
+#define NP_NotifyOnDeath (NP_Dummy + 22)
+  /* (BOOL) Notify parent, when process exits? (Default: FALSE) */
+#define NP_Synchronous	(NP_Dummy + 23)
+  /* (BOOL) Wait until called process returns. (Default: FALSE) */
 
-/* AROS Extensions */
-#define NP_UserData	(NP_Dummy + 26) /* IPTR to put into tc_UserData (NULL) */
+#define NP_ExitCode	(NP_Dummy + 24)
+  /* (APTR) Code that is to be called, when process exits. (Default: NULL) */
+#define NP_ExitData	(NP_Dummy + 25)
+  /* (APTR) Optional data for NP_ExitCode. (Default: NULL) */
 
-/* AllocDosObject() */
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#   define ADO_Dummy	   (DOS_TAGBASE + 2000)
+/* The following tags are AROS specific. */
+#define NP_UserData	(NP_Dummy + 26)
+/* (IPTR) User dependant data. Do with it, what you want to. (Default: NULL) */
+
+
+/* Tags for SystemTagList(). Additionally you may use all the tags for
+   CreateNewProc(). */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#   define SYS_Dummy       (TAG_USER + 32)
 #else
-#   define ADO_Dummy	   (TAG_USER + 2000)
+#   define SYS_Dummy	   (DOS_TAGBASE)
 #endif
-    /* DOS_FILEHANDLE */
-#define ADO_FH_Mode	(ADO_Dummy + 1) /* sets up FH to the specified mode. */
+/* The supplied filehandles are automatically closed, when the new process
+   exits, if SYS_Asynch is TRUE. If it is false, they remain opened. */
+/* (BPTR/struct FileHandle *) Input filehandle. This must be a different
+   filehandle from that supplied to SYS_Output. Default is Input() of the
+   current process. */
+#define SYS_Input	(SYS_Dummy + 1)
+/* (BPTR/struct FileHandle *) Output filehandle. This must be a different
+   filehandle from than supllied to SYS_Input. Default is Output() of the
+   current process. */
+#define SYS_Output	(SYS_Dummy + 2)
+/* (BOOL) If FALSE, the execution of calling process is stopped, until the
+   new process has finished. */
+#define SYS_Asynch	(SYS_Dummy + 3)
+/* If neither of the following two tags is specified, the boot-shell is used.
+   SYS_UserShell takes a pointer to a shell, while CustomShell expects a
+   string, which names a new shell. */
+#define SYS_UserShell	(SYS_Dummy + 4) /* (BPTR) */
+#define SYS_CustomShell (SYS_Dummy + 5) /* (STRPTR) */
 
-	/* If you do not specify these, dos will use it's preferred values */
-	/* which may change from release to release.  The BPTRs to these   */
-	/* will be set up correctly for you.  Everything will be zero,	   */
-	/* except cli_FailLevel (10) and cli_Background (DOSTRUE).         */
-	/* NOTE: you may also use these 4 tags with CreateNewProc.	   */
+/**********************************************************************
+ **************************** Miscellaneous ***************************
+ **********************************************************************/
 
-    /* DOS_CLI (May be used in CreateNewProc, too) */
-    /* If you don't specify these, the DOS defaults will be used which can
-       change from release to release. */
-#define ADO_DirLen	(ADO_Dummy + 2) /* size in bytes for current dir buffer */
-#define ADO_CommNameLen (ADO_Dummy + 3) /* size in bytes for command name buffer */
-#define ADO_CommFileLen (ADO_Dummy + 4) /* size in bytes for command file buffer */
-#define ADO_PromptLen	(ADO_Dummy + 5) /* size in bytes for the prompt buffer */
+/* Tags for AllocDosObject(). */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#   define ADO_Dummy	   (TAG_USER + 2000)
+#else
+#   define ADO_Dummy	   (DOS_TAGBASE + 2000)
+#endif
 
-/* NewLoadSeg() */
-    /* none yet */
+/* Tags for DOS_FILEHANDLE only. */
+#define ADO_FH_Mode	(ADO_Dummy + 1) /* Sets up FH to the specified mode. */
+  /* Sets up the filehandle for the specified mode. Definitions are in
+     <dos/dos.h> */
+
+/* Tags for DOS_CLI. If you do not specify these, dos will use reasonable
+   default values. All these tags specify the buffer length for certain
+   strings. */
+#define ADO_DirLen	(ADO_Dummy + 2)
+  /* Length of current directory buffer. */
+#define ADO_CommNameLen (ADO_Dummy + 3)
+  /* Length of command name buffer. */
+#define ADO_CommFileLen (ADO_Dummy + 4)
+  /* Length of command file buffer. */
+#define ADO_PromptLen	(ADO_Dummy + 5)
+  /* Length of buffer for CLI prompt. */
 
 #endif /* DOS_DOSTAGS_H */
