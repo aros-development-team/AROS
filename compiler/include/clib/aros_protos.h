@@ -19,7 +19,7 @@
 /*
     Prototypes
 */
-AROS_LP1(ULONG, ArosInquire,
+AROS_LP1(ULONG, ArosInquireA,
     AROS_LPA(struct TagItem *, taglist, A0),
     struct ArosBase *, ArosBase, 5, Aros)
 
