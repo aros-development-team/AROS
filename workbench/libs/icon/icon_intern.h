@@ -93,6 +93,7 @@ struct Icon35
 struct IconPNG
 {
     APTR   handle;
+    APTR   handle2;
     UBYTE *filebuffer;
     ULONG  filebuffersize;
     UBYTE *img1;

@@ -463,6 +463,56 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	
     } /**/
     
+    /* Look for a possible 2nd PNG image attached onto the first one */
+    {
+    	UBYTE *filepos = icon->iconPNG.filebuffer + 8;
+    	BOOL done = FALSE;
+	
+	while(!done)
+	{
+    	    ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
+	    	    	      (filepos[2] << 8) | filepos[3];
+    	    ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
+	    	    	      (filepos[6] << 8) | filepos[7];
+
+	    chunksize += 12;
+
+	    if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
+	    {
+		done = TRUE;
+	    }
+
+	    filepos += chunksize;
+	}
+	
+	if (filepos + 8 < icon->iconPNG.filebuffer + icon->iconPNG.filebuffersize)
+	{
+	    ULONG offset = filepos - icon->iconPNG.filebuffer;
+	    
+	    icon->iconPNG.handle2 = PNG_LoadImageMEM(filepos, filesize - offset, 0, 0, TRUE);
+	    
+	    if (icon->iconPNG.handle2)
+	    {
+    	    	LONG width, height;
+	
+	    	PNG_GetImageInfo(icon->iconPNG.handle2, &width, &height, NULL, NULL);
+		
+		if ((width == icon->iconPNG.width) &&
+		    (height == icon->iconPNG.height))
+		{
+		    PNG_GetImageData(icon->iconPNG.handle2, (APTR *)&icon->iconPNG.img2, NULL);
+		}
+		else
+		{
+		    PNG_FreeImage(icon->iconPNG.handle2);
+		    icon->iconPNG.handle2 = NULL;
+		}
+	    	
+	    }
+	}
+    	
+    } /**/
+    
     *ret = &icon->dobj;
     
     return TRUE;
@@ -725,7 +775,16 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 	mempos += chunksize;
 	
     }
-    
+
+    if (mempos < iconpng->filebuffer + iconpng->filebuffersize)
+    {
+    	ULONG size = iconpng->filebuffer + iconpng->filebuffersize - mempos;
+	
+    	/* 2nd PNG Image attached */
+	
+	if (Write(file, mempos, size) != size) return FALSE;
+    }
+        
     return TRUE;
 }
 
@@ -740,6 +799,11 @@ VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase)
     	if (nativeicon->iconPNG.handle)
 	{
 	    PNG_FreeImage(nativeicon->iconPNG.handle);
+	}
+
+    	if (nativeicon->iconPNG.handle2)
+	{
+	    PNG_FreeImage(nativeicon->iconPNG.handle2);
 	}
 	
 	if (nativeicon->pool) DeletePool(nativeicon->pool);
