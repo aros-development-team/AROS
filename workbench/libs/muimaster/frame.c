@@ -445,90 +445,76 @@ static void frame_semiround_bevel_down_draw (struct MUI_RenderInfo *mri,
  hold builtin frames.
 **************************************************************************/
 static struct ZuneFrameGfx __builtinFrameGfx[] = {
-    { /* type 0 : FST_NONE */
-	{frame_none_draw,
-	frame_none_draw},
-	0, 0
-    },
+    /* type 0 : FST_NONE */
+    {frame_none_draw, 0, 0, 0, 0},
+    {frame_none_draw, 0, 0, 0, 0},
+    
     /* monochrome border */
-    { /* 1 : FST_RECT */
-	{frame_white_rect_draw,
-	frame_black_rect_draw},
-	1, 1
-    },
+    /* 1 : FST_RECT */
+    {frame_white_rect_draw, 1, 1, 1, 1},
+    {frame_black_rect_draw, 1, 1, 1, 1},
+    
     /* clean 3D look */
-    { /* 2 : FST_BEVEL */
-	{frame_bevelled_draw,
-	frame_recessed_draw},
-	1, 1
-    },
+    /* 2 : FST_BEVEL */
+    {frame_bevelled_draw, 1, 1, 1, 1},
+    {frame_recessed_draw, 1, 1, 1, 1},
+    
     /* thin relief border */
-    { /* 3 : FST_THIN_BORDER */
-	{frame_thin_border_up_draw,
-	frame_thin_border_down_draw},
-	2, 2
-    },
+    /* 3 : FST_THIN_BORDER */
+    {frame_thin_border_up_draw, 2, 2, 2, 2},
+    {frame_thin_border_down_draw, 2, 2, 2, 2},
+    
     /* thick relief border */
-    { /* 4 : FST_THICK_BORDER */
-	{frame_thick_border_up_draw,
-	frame_thick_border_down_draw},
-	3, 3
-    },
+    /* 4 : FST_THICK_BORDER */
+    {frame_thick_border_up_draw, 3, 3, 3, 3},
+    {frame_thick_border_down_draw, 3, 3, 3, 3},
+    
     /* rounded bevel */
-    { /* 5 : FST_ROUND_BEVEL */
-	{frame_round_bevel_up_draw,
-	frame_round_bevel_down_draw},
-	4, 1
-    },
-    /* zin31 ugly look */
-    { /* 6 : FST_WIN_BEVEL */
-	{frame_border_button_up_draw,
-	frame_border_button_down_draw},
-	3, 3
-    },
+    /* 5 : FST_ROUND_BEVEL */
+    {frame_round_bevel_up_draw, 4, 4, 1, 1},
+    {frame_round_bevel_down_draw, 4, 4, 1, 1},
+    
+    /* zin31/xen look */
+    /* 6 : FST_WIN_BEVEL */
+    {frame_border_button_up_draw, 2, 2, 2, 2},
+    {frame_border_button_down_draw, 3, 1, 3, 1},
+    
     /* rounded thick border */
-    { /* 7 : FST_ROUND_THICK_BORDER */
-	{frame_round_thick_border_up_draw,
-	frame_round_thick_border_down_draw},
-	4, 4
-    },
+    /* 7 : FST_ROUND_THICK_BORDER */
+    {frame_round_thick_border_up_draw, 4, 4, 4, 4},
+    {frame_round_thick_border_down_draw, 4, 4, 4, 4},
+    
     /* rounded thin border */
-    { /* 8 : FST_ROUND_THIN_BORDER */
-	{frame_round_thin_border_up_draw,
-	frame_round_thin_border_down_draw},
-	4, 4
-    },
+    /* 8 : FST_ROUND_THIN_BORDER */
+    {frame_round_thin_border_up_draw, 4, 4, 4, 4},
+    {frame_round_thin_border_down_draw, 4, 4, 4, 4},
+    
     /* strange gray border */
-    { /* 9 : FST_GRAY_BORDER */
-	{frame_gray_border_up_draw,
-	frame_gray_border_down_draw},
-	3, 3
-    },
+    /* 9 : FST_GRAY_BORDER */
+    {frame_gray_border_up_draw, 2, 2, 2, 2},
+    {frame_gray_border_down_draw, 2, 2, 2, 2},
+    
     /* semi rounded bevel */
-    { /* A : FST_SEMIROUND_BEVEL */
-	{frame_semiround_bevel_up_draw,
-	frame_semiround_bevel_down_draw},
-	2, 2
-    },
+    /* A : FST_SEMIROUND_BEVEL */
+    {frame_semiround_bevel_up_draw, 2, 2, 2, 2},
+    {frame_semiround_bevel_down_draw, 2, 2, 2, 2},
 };
 
-
-/**************************************************************************
- Get a frame given its index
-**************************************************************************/
-struct ZuneFrameGfx *zune_zframe_get_index (int i)
-{
-    if (i >= FST_COUNT) return &__builtinFrameGfx[FST_RECT];
-    return &__builtinFrameGfx[i];
-}
 
 /**************************************************************************
 
 **************************************************************************/
 struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec_intern *frameSpec)
 {
-    if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[FST_RECT];
-    return &__builtinFrameGfx[frameSpec->type];
+    if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[2 * FST_RECT];
+    return &__builtinFrameGfx[2 * frameSpec->type + frameSpec->state];
+}
+
+struct ZuneFrameGfx *zune_zframe_get_with_state (struct MUI_FrameSpec_intern *frameSpec,
+						 UWORD state)
+{
+    if (frameSpec->type >= FST_COUNT) return &__builtinFrameGfx[2 * FST_RECT];
+    return &__builtinFrameGfx[2 * frameSpec->type + state];
 }
 
 /*------------------------------------------------------------------------*/

@@ -141,12 +141,12 @@ static IPTR Framedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *m
     zframe = zune_zframe_get(&data->fs_intern);
     if (!zframe)
 	return 0;
-    zframe->draw[data->fs_intern.state](muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-					 _mwidth(obj), _mheight(obj));
-    ileft = _mleft(obj) + zframe->xthickness + data->fs_intern.innerLeft;
-    itop = _mtop(obj) + zframe->ythickness + data->fs_intern.innerTop;
-    iright = _mright(obj) - zframe->xthickness - data->fs_intern.innerRight;
-    ibottom = _mbottom(obj) - zframe->ythickness - data->fs_intern.innerBottom;
+    zframe->draw(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+		 _mwidth(obj), _mheight(obj));
+    ileft = _mleft(obj) + zframe->ileft + data->fs_intern.innerLeft;
+    itop = _mtop(obj) + zframe->itop + data->fs_intern.innerTop;
+    iright = _mright(obj) - zframe->iright - data->fs_intern.innerRight;
+    ibottom = _mbottom(obj) - zframe->ibottom - data->fs_intern.innerBottom;
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 
