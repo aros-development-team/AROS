@@ -161,7 +161,12 @@
       _CR = l->ClipRect;
       
       /* Throw away the damage list an rebuild it here */
-      ClearRegion(l->DamageList);
+      //ClearRegion(l->DamageList);
+      l->DamageList->bounds.MinX += l->bounds.MinX;
+      l->DamageList->bounds.MinY += l->bounds.MinY;
+      l->DamageList->bounds.MaxX += l->bounds.MinX;
+      l->DamageList->bounds.MaxY += l->bounds.MinY;
+      
       
       while (NULL != _CR)
       {
@@ -239,7 +244,11 @@
       _CR = l->ClipRect;
       
       /* Throw away the damage list an rebuild it here */
-      ClearRegion(l->DamageList);
+      //ClearRegion(l->DamageList);
+      l->DamageList->bounds.MinX += l->bounds.MinX;
+      l->DamageList->bounds.MinY += l->bounds.MinY;
+      l->DamageList->bounds.MaxX += l->bounds.MinX;
+      l->DamageList->bounds.MaxY += l->bounds.MinY;
       
       while (NULL != _CR)
       {
@@ -651,7 +660,7 @@
           LONG DestX, DestY;
           struct Rectangle bounds;
 
-          if (dw > 0 && (CR->bounds.MaxX - l->bounds.MinX) > width)
+          if (dw > 0 && (CR->bounds.MaxX - l->bounds.MinX) >= width)
 	  {
             if ((CR->bounds.MinX - l->bounds.MinX) > width)
               DestX = CR->bounds.MinX;
@@ -696,7 +705,7 @@
 	    }
 	  }
 
-          if (dh > 0 && (CR->bounds.MaxY - l->bounds.MinY) > height)
+          if (dh > 0 && (CR->bounds.MaxY - l->bounds.MinY) >= height)
 	  {
             if ((CR->bounds.MinY - l->bounds.MinY) > height)
               DestY = CR->bounds.MinY;
