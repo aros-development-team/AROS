@@ -537,6 +537,8 @@ static const ULONG coltab[] = {
 	    screen->Pens[BARDETAILPEN] = 1;
 	    screen->Pens[BARBLOCKPEN] = 2;
 	    screen->Pens[BARTRIMPEN] = 1;
+
+	    screen->DInfo.dri_Flags |= DRIF_NEWLOOK;
         }
 
 	if (customdripens)
