@@ -1,21 +1,19 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.1  1996/11/01 02:03:41  aros
-#    Run a process (invoked by dos/RunCommand)
-#
-#
-#    Desc: Run a process ( invoked by dos/Runcommand() )
-#    Lang:
-#
-# LONG RunProcess ( struct Process         * proc,
-#		    struct StackSwapStruct * sss,
-#		    STRPTR		     argptr,
-#		    ULONG		     argsize,
-#		    LONG_FUNC		     entry,
-#		    struct DosLibrary	   * DOSBase
+/*
+     (C) 1995-96 AROS - The Amiga Replacement OS
+     $Id$
+ 
+     Desc: Run a process ( invoked by dos/Runcommand() )
+     Lang:
+ 
+  LONG RunProcess ( struct Process         * proc,
+ 		    struct StackSwapStruct * sss,
+ 		    STRPTR		     argptr,
+ 		    ULONG		     argsize,
+ 		    LONG_FUNC		     entry,
+ 		    struct DosLibrary	   * DOSBase
+*/
 
-	.include "machine.i"
+	#include "machine.i"
 
 	# Stackframe
 	FirstArg	= 4+(2*4)	/* Return-address + registers */
@@ -28,9 +26,9 @@
 
 	.text
 	.balign 16
-	.globl	_Dos_RunProcess
-	.type	_Dos_RunProcess,@function
-_Dos_RunProcess:
+	.globl	AROS_SLIB_ENTRY(RunProcess,Dos)
+	.type	AROS_SLIB_ENTRY(RunProcess,Dos),@function
+AROS_SLIB_ENTRY(RunProcess,Dos):
 	movem.l	a5-a6,-(sp)		/* Save some registers */
 
 	move.l	sss(sp),a0		/* Fetch the arguments off the stack */

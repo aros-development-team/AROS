@@ -28,11 +28,12 @@
 #define SP_OFFSET 0
 
 /*
-    Replace BPTRs by simple APTRs.
+    BCPL datatypes
 */
-#define AROS_BPTR_TYPE	APTR
-#define MKBADDR(a)	((APTR)(a))
-#define BADDR(a)	(a)
+#define AROS_BPTR_TYPE	long
+#define AROS_BSTR_TYPE  long
+#define MKBADDR(a)	(((long)(a))>>2)
+#define BADDR(a)	(((long)(a))<<2)
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the

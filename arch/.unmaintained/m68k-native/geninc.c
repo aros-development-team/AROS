@@ -10,6 +10,11 @@
 
 int main (void)
 {
+    printf ("# Macros\n"
+	"#define AROS_SLIB_ENTRY(n,s)   _ ## s ## _ ## n\n"
+	"#define AROS_CSYMNAME(n)       _ ## n\n"
+	"\n");
+
     printf ("# ExecBase\n");
     printf ("\tAttnResched   = %d\n", (int)offsetof (struct ExecBase, AttnResched));
     printf ("\tIDNestCnt     = %d\n", (int)offsetof (struct ExecBase, IDNestCnt));
@@ -30,6 +35,7 @@ int main (void)
     printf ("\ttc_SPLower    = %d\n", (int)offsetof (struct Task, tc_SPLower));
     printf ("\ttc_SPUpper    = %d\n", (int)offsetof (struct Task, tc_SPUpper));
     printf ("\ttc_IDNestCnt  = %d\n", (int)offsetof (struct Task, tc_IDNestCnt));
+    printf ("\ttc_TrapCode   = %d\n", (int)offsetof (struct Task, tc_TrapCode));
 
     printf ("\n# struct DosBase\n");
     printf ("\tdl_SysBase    = %d\n", (int)offsetof (struct DosLibrary, dl_SysBase));
