@@ -7,7 +7,7 @@ OBJDIR=$(GENDIR)/aros
 FILES = calcchecksum strcmp \
 	    strlen strcpy qsort \
 	    kprintf nastyfreemem \
-	    rt purify \
+	    rt purify strdup \
 	    stricmp
 
 all: setup $(LIBDIR)/libaros.a
