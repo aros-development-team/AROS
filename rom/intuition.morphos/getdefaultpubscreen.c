@@ -4,6 +4,7 @@
     $Id$
 */
 
+#include <string.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
@@ -42,10 +43,6 @@ AROS_LH1(struct Screen *, GetDefaultPubScreen,
     SetDefaultPubScreen(), OpenWindow()
  
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
