@@ -10,12 +10,57 @@ struct inclist {
 };
 
 int fd,fdo;
+char rbuf[1025];
+int rbufc;
+int pos=0;
+
+void _myseek(int fh,int cnt)
+{
+    if(pos >= cnt)
+	pos-=cnt;
+    else
+    {
+	lseek(fh,(pos-cnt),SEEK_CUR);
+	rbufc=read(fh,rbuf,1024);
+	pos=0;
+    }
+}
+
+int _read(int fh,char *buff,int cnt)
+{
+int curr=0;
+
+    if( rbufc==0 || pos>(rbufc-1) )
+    {
+	pos=0;
+	rbufc=read(fh,rbuf,1024);
+    }
+    if(rbufc!=0)
+    {
+	while( ( (pos+cnt-curr) > rbufc ) && (rbufc != 0) )
+	{
+	    strncpy(&buff[curr],&rbuf[pos],rbufc-pos);
+	    curr+=rbufc-pos;
+	    rbufc=read(fh,rbuf,1024);
+	    pos=0;
+	}
+	if(rbufc != 0)
+	{
+	    strncpy(&buff[curr],&rbuf[pos],(cnt-curr));
+	    pos+=(cnt-curr);
+	    curr=cnt;
+	}
+	return(curr);
+    }
+    else
+	return(0);
+}
 
 int main(int argc,char **argv)
 {
 int count;
-char fbuf[33];
 int i,filecount;
+char fbuf[50];
 
 char ft[]="zyx";
 struct inclist first = { NULL, ft}, *current = &first, *search;
@@ -29,28 +74,29 @@ char filename[50];
         printf("Could not open functions.c out-file!\n"),exit(-1);
     write(fdo,"#include \"functions.h\"\n",23);
 
+    printf("Collecting functions...");
     for(filecount=1;filecount<argc;filecount++)
     {
-        printf("Opening %s\n",argv[filecount]);
+/*	printf("Opening %s\n",argv[filecount]);*/
 	strcpy(filename,argv[filecount]);
 	strcat(filename,".c");
         fd=open(filename,O_RDONLY);
         if(fd==-1)
-            printf("No such file !\n"),exit(-1);
+            printf("\n%s - No such file !\n",argv[filecount]),exit(-1);
 
-        count=1;
+	rbufc=0;
+        count=_read(fd,fbuf,1);
         while(count==1)
         {
-            count=read(fd,fbuf,1);
-            if(fbuf[0]=='#' && count==1)
+            if(fbuf[0]=='#')
             {
-                count=read(fd,&fbuf[1],8);
+                count=_read(fd,&fbuf[1],8);
                 fbuf[count+1]=0;
                 if(strcmp(fbuf,"#include ")==0)
                 {
                     current=malloc(sizeof(struct inclist));
                     current->next=NULL;
-                    read(fd,incname,1);
+                    _read(fd,incname,1);
                     if(incname[0]=='<'||incname[0]==0x22)
                     {
                         if(incname[0]=='<')
@@ -60,7 +106,7 @@ char filename[50];
                         i=0;
                         do {
                             i++;
-                            read(fd,&incname[i],1);
+                            _read(fd,&incname[i],1);
                         } while(incname[i]!=bracket);
                         incname[i+1]=0;
                         current->text=malloc(sizeof(char)*(i+2));
@@ -80,12 +126,16 @@ char filename[50];
                         write(fdo,&incname[0],1);
                 }
                 else
-                    write(fdo,fbuf,count+1);
+		{
+		    _myseek(fd,count);
+                    write(fdo,fbuf,1);
+		}
                 if(count>0)
 		    count=1;
             }
             else
                 write(fdo,fbuf,1);
+            count=_read(fd,fbuf,1);
         }
         close(fd);
     }
@@ -113,5 +163,6 @@ char filename[50];
     free(search);
     close(fdo);
 
+    printf("Done!\n");
 return(0);
 }
