@@ -94,6 +94,7 @@ static IPTR                 	args[NUM_ARGS];
 /*********************************************************************************************/
 
 static void CloseLibs(void);
+static void CloseInputDev(void);
 static void FreeArguments(void);
 static void FreeVisual(void);
 static void KillPages(void);
@@ -138,6 +139,7 @@ void Cleanup(STRPTR msg)
     FreeVisual();
     CleanupPrefs();
     FreeArguments();
+    CloseInputDev();
     CloseLibs();
     CleanupLocale();
     
@@ -174,6 +176,35 @@ static void CloseLibs(void)
     for(li = libtable; li->var; li++)
     {
 	if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
+    }
+}
+
+/*********************************************************************************************/
+
+static void OpenInputDev(void)
+{
+    if ((InputMP = CreateMsgPort()))
+    {
+    	if ((InputIO = (struct IOStdReq *)CreateIORequest(InputMP, sizeof(struct IOStdReq))))
+	{
+	    OpenDevice("input.device", 0, (struct IORequest *)InputIO, 0);
+	}
+    }
+}
+
+/*********************************************************************************************/
+
+static void CloseInputDev(void)
+{
+    if (InputIO)
+    {
+    	CloseDevice((struct IORequest *)InputIO);
+	DeleteIORequest((struct IORequest *)InputIO);
+    }
+    
+    if (InputMP)
+    {
+    	DeleteMsgPort(InputMP);
     }
 }
 
@@ -687,6 +718,7 @@ int main(void)
     InitLocale("Sys/inputprefs.catalog", 1);
     InitMenus();
     OpenLibs();
+    OpenInputDev();
     GetArguments();
     InitPrefs((STRPTR)args[ARG_FROM], (args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
     GetVisual();

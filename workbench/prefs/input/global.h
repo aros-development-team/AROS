@@ -64,6 +64,14 @@
 #include <graphics/layers.h>
 #endif
 
+#ifndef DEVICES_TIMER_H
+#include <devices/timer.h>
+#endif
+
+#ifndef DEVICES_INPUT_H
+#include <devices/input.h>
+#endif
+
 #ifndef DEVICES_INPUTEVENT_H
 #include <devices/inputevent.h>
 #endif
@@ -207,6 +215,8 @@
 #define BUTTON_EXTRAHEIGHT  	6
 #define IMBUTTON_EXTRAWIDTH  	4
 #define IMBUTTON_EXTRAHEIGHT 	4
+
+#define STRING_EXTRAHEIGHT  	6
 
 /*********************************************************************************************/
 
