@@ -101,7 +101,7 @@ Class rootclass =
 	o = (Object *) AllocVec (objcl->cl_InstOffset
 		+ objcl->cl_InstSize
 		+ sizeof (struct _Object)
-	    , MEMF_ANY
+	    , MEMF_ANY|MEMF_CLEAR
 	    );
 
 	((struct _Object *)o)->o_Class = objcl;
