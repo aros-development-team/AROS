@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 CONFIG_H := $(INCDIR)/aros/config.h
 GENCONFIG_H := $(GENINCDIR)/aros/config.h
 
-#MM setup : setup-$(ARCH)
+#MM setup : setup-$(ARCH)-$(CPU)
 setup : make-dirs $(GENCONFIG_H)
 	@$(ECHO) "Creating mf.inc files..."
 	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
