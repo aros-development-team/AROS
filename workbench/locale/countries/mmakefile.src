@@ -13,7 +13,7 @@ MAKECOUNTRY=$(OBJDIR)/makecountry
 COUNTRIES := australia belgie belgique canada canada_français \
     	     danmark deutschland españa france great_britain \
 	     italia nederland norge österreich polska portugal \
-	     schweiz suisse sverige svizzera united_kingdom \
+	     schweiz suisse suomi sverige svizzera united_kingdom \
 	     united_states
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
@@ -34,9 +34,9 @@ setup :
 clean ::
 	$(RM)   $(OBJDIR) *.err
 
-$(COUNTIFF) : $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
-	@echo Making $(notdir $@)...
-	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $(foreach f, $@, $(notdir $(basename $(f))))
+$(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
+	@echo "Making $(notdir $@)..."
+	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $(notdir $(basename $@))
 
 $(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
 	$(CC) $(CFLAGS) $^ -o $@
