@@ -85,9 +85,7 @@ static const struct newMemList MemTemplate =
     stacksize = AROS_ALIGN(stacksize);
     nml.nml_ME[1].me_Length = stacksize;
 
-    ml = AllocEntry ((struct MemList *)&nml);
-
-    if (!((IPTR)ml & (0x80ul<<(sizeof(APTR)-1)*8)) )
+    if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
     {
 	newtask = ml->ml_ME[0].me_Addr;
 
