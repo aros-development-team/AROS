@@ -41,6 +41,7 @@
 
 static OOP_AttrBase HiddBitMapAttrBase;  
 static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddVGAAB;
 static OOP_AttrBase HiddVGABitMapAB;
@@ -52,6 +53,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_VGAgfx,		&HiddVGAAB		},
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { IID_Hidd_Sync,		&HiddSyncAttrBase	},
+    { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
     { NULL, NULL }
 };
 
