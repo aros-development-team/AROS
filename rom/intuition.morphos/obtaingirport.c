@@ -1,10 +1,8 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition Function ObtainGIRPort()
-    Lang: english
 */
+
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/exec.h>

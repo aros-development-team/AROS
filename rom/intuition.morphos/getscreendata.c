@@ -1,10 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Get infos about a screen *OBSOLETE*
-    Lang: english
+    Get infos about a screen. *OBSOLETE*
 */
+
 #include "intuition_intern.h"
 #include <string.h>
 #include <proto/exec.h>

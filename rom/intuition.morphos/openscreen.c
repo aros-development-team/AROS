@@ -1,10 +1,10 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Open a new screen
-    Lang: english
+    Open a new screen.
 */
+
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <intuition/screens.h>

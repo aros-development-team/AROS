@@ -1,10 +1,8 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function OffGadget()
-    Lang: english
 */
+
 #include "intuition_intern.h"
 #include <intuition/gadgetclass.h>
 

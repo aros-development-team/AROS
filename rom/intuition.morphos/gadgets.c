@@ -1,9 +1,8 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Common routines for Gadgets
-    Lang: english
+    Common routines for Gadgets.
 */
 
 /**********************************************************************************************/

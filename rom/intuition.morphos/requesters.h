@@ -1,5 +1,10 @@
 #ifndef _REQUESTERS_H_
 #define _REQUESTERS_H_
+    
+/*
+    Copyright © 2002-2003 The MorphOS Development Team, All Rights Reserved.
+    $Id$
+*/
 
 #include <exec/types.h>
 #include <aros/asmcall.h>
@@ -106,4 +111,4 @@ AROS_UFP2(void, RequesterPutChar,
 #define BUTTONBORDER_Y      4
 #define LOGOTEXTSPACING_X   8
 
-#endif
+#endif /* _REQUESTERS_H_ */

@@ -1,9 +1,6 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function SysReqHandler()
-    Lang: english
 */
 
 #include <proto/exec.h>

@@ -1,10 +1,10 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Change order of screens.
-    Lang: English
+    Change order of screens.
 */
+
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 

@@ -1,10 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc:
-    Lang: english
 */
+
 #include "intuition_intern.h"
 #include <intuition/classusr.h>
 #include <proto/alib.h>

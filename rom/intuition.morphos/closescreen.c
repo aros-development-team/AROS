@@ -1,10 +1,10 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Close a screen opened via OpenScreen and the like
-    Lang: english
+    Close a screen.
 */
+
 #include <graphics/videocontrol.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>

@@ -1,11 +1,8 @@
 /*
-    (C) 1996-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS buttongclass implementation
-    Lang: english
-
-    Original version 10/26/96 by caldi@usa.nai.net
+    AROS buttongclass implementation.
 */
 
 #include <exec/types.h>

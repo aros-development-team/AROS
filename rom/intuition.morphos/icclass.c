@@ -1,14 +1,7 @@
 /*
-    Copyright (C) 1996-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: icclass implementation.
-    Lang: english
 */
-
-/* AROS icclass implementation
- * 10/25/96 caldi@usa.nai.net
- */
 
 #include <exec/types.h>
 

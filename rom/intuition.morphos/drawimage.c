@@ -1,10 +1,10 @@
 /*
-    (C) Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Render an image.
-    Lang: english
+    Render an image.
 */
+
 #include <intuition/imageclass.h>
 #include "intuition_intern.h"
 

@@ -1,10 +1,8 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc:
-    Lang: english
 */
+
 #include <proto/timer.h>
 #include "intuition_intern.h"
 #include "icclass.h"

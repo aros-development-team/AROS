@@ -1,9 +1,8 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Create a new BOOPSI object
-    Lang: english
+    Create a new BOOPSI object.
 */
 
 #include <exec/lists.h>

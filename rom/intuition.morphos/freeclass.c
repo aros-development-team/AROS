@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Free a BOOPSI Class (obs)
-    Lang: english
+    Free a BOOPSI Class.
 */
+
 #include <proto/exec.h>
 #include "intuition_intern.h"
 

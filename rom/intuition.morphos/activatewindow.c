@@ -1,10 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <proto/graphics.h>
 #include <proto/timer.h>
 #include <intuition/gadgetclass.h>

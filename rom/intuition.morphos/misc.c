@@ -1,3 +1,8 @@
+/*
+    Copyright © 2002-2003 The MorphOS Development Team, All Rights Reserved.
+    $Id$
+*/
+
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>

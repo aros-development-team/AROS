@@ -1,11 +1,11 @@
 #ifndef _INTUITION_PDEFS_H
 #define _INTUITION_PDEFS_H
+
 /*
-    Copyright (C) 1997-2001 AROS - The Amiga Research OS
-    $Id
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
  
-    Desc: Private function definitions for Intuition
-    Lang: english
+    Private function definitions for Intuition.
 */
 
 #ifndef EXEC_TYPES_H

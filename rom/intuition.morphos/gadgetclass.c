@@ -1,11 +1,6 @@
 /*
-   (C) 1996-2001 AROS - The Amiga Research OS
-   $Id$
- 
-Desc: AROS gadgetclass implementation.
-Lang: english
- 
-Original version 10/25/96 by caldi@usa.nai.net
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <exec/types.h>

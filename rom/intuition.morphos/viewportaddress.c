@@ -1,10 +1,8 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function ViewPortAddress()
-    Lang: english
 */
+
 #include <graphics/view.h>
 #include <intuition/intuition.h>
 #include <aros/libcall.h>

@@ -1,6 +1,11 @@
 #ifndef INPUTHANDLER_ACTIONS_H
 #define INPUTHANDLER_ACTIONS_H
 
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 struct IIHData;
 
 #define LOCK_REFRESH(x)     LockLayerInfo(&(x)->LayerInfo)

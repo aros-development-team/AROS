@@ -1,9 +1,6 @@
 /*
-    (C) Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Routines for BOOL Gadgets
-    Lang: english
 */
 
 #include <intuition/intuition.h>

@@ -1,10 +1,10 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Initialize a BOOPSI class
-    Lang: english
+    Initialize a BOOPSI class.
 */
+
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

@@ -1,10 +1,10 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Move a screen in front of all other screens.
-    Lang: english
+    Move a screen in front of all other screens.
 */
+
 #include "intuition_intern.h"
 
 /*****************************************************************************

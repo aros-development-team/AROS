@@ -1,10 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Move a window around on the screen
-    Lang: english
+    Move a window around on the screen.
 */
+
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 

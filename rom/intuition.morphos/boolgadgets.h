@@ -1,12 +1,11 @@
 #ifndef _BOOLGADGETS_H_
 #define _BOOLGADGETS_H_
+
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Routines for BOOL Gadgets
-    Lang: english
 */
+
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif

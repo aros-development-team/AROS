@@ -1,10 +1,8 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Code for PROP Gadgets
-    Lang: english
 */
+
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>

@@ -1,10 +1,8 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Implementation of DoGadgetMethodA
-    Lang: english
 */
+
 #include <exec/memory.h>
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
