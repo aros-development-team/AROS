@@ -279,7 +279,9 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     int ok = TRUE;
 
     LC_SYSBASE_FIELD(lh) = sysBase;
+#ifndef NOEXPUNGE
     LC_SEGLIST_FIELD(lh) = segList;
+#endif
 
 #ifdef AROS_LC_SETFUNCS
     ok = set_call_libfuncs(SETNAME(SYSINIT), 1, sysBase);
