@@ -690,8 +690,8 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     IPTR retval = 0UL;
     struct TagItem *tag, *tstate, *dosuper_tags, tags[] =
     {
-    	{PGA_Top,	0},
     	{PGA_Total,	0},
+    	{PGA_Top,	0},
     	{TAG_MORE,	(IPTR)NULL}
     };
     struct SliderData *data = INST_DATA(cl, o);
@@ -733,10 +733,11 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     
     if (val_set)
     {
-    	tags[0].ti_Data = data->min - data->level;
-    	tags[1].ti_Data = data->max - data->min + 1;
+    	tags[0].ti_Data = data->max - data->min + 1;
+    	tags[1].ti_Data = data->level - data->min;
     	tags[2].ti_Data = (IPTR)msg->ops_AttrList;
     	
+	/* kprintf("min = %d   man = %d   level = %d\n",data->min,data->max,data->level); */
     	dosuper_tags = tags;
     	
     	retval = 1UL;
@@ -1315,6 +1316,7 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
 {
     struct ScrollerData *data = INST_DATA(cl, o);
+    struct opGet cloned_msg = *msg;
     IPTR retval = 1UL;
 
     switch (msg->opg_AttrID)
@@ -1328,21 +1330,18 @@ IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
 	    break;
 	
 	case GTSC_Top:
-	    msg->opg_AttrID = PGA_Top;
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    msg->opg_AttrID = GTSC_Top;
+	    cloned_msg.opg_AttrID = PGA_Top;
+	    retval = DoSuperMethodA(cl, o, (Msg)&cloned_msg);
 	    break;
 	    
 	case GTSC_Total:
-	    msg->opg_AttrID = PGA_Total;
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    msg->opg_AttrID = GTSC_Total;
+	    cloned_msg.opg_AttrID = PGA_Total;
+	    retval = DoSuperMethodA(cl, o, (Msg)&cloned_msg);
 	    break;
 	    
 	case GTSC_Visible:
-	    msg->opg_AttrID = PGA_Visible;
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    msg->opg_AttrID = GTSC_Visible;
+	    cloned_msg.opg_AttrID = PGA_Visible;
+	    retval = DoSuperMethodA(cl, o, (Msg)&cloned_msg);
 	    break;
 	    
 	default:
@@ -1750,9 +1749,9 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
     case OM_GET:
     {
     	struct StringData *data = INST_DATA(cl, o);
-	Tag old_AttrID = OPG(msg)->opg_AttrID;
+	struct opGet cloned_msg = *(struct opGet *)msg;
 	
-    	switch(old_AttrID)
+   	switch(cloned_msg.opg_AttrID)
 	{
 	    case GTA_GadgetKind:
 	    case GTA_ChildGadgetKind:
@@ -1761,14 +1760,22 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
 		break;
 	    
 	    case GTST_String:
-	    	OPG(msg)->opg_AttrID = STRINGA_TextVal;
-		/* fall through */
+	    	cloned_msg.opg_AttrID = STRINGA_TextVal;
+		break;
+	
+	    case GTIN_Number:
+	    	cloned_msg.opg_AttrID = STRINGA_LongVal;
+		break;
 		
 	    default:
-	    	retval = DoSuperMethodA(cl, o, msg);
 		break;
 	}
-	OPG(msg)->opg_AttrID = old_AttrID;
+	
+    	if (!retval) retval = DoSuperMethodA(cl, o, (Msg)&cloned_msg);
+	if (cloned_msg.opg_AttrID == STRINGA_LongVal)
+	{
+	    /* kprintf("********** GT_Get STRINGA_LongVal: --> %d\n",*cloned_msg.opg_Storage); */
+	}
     }
     break;
     
