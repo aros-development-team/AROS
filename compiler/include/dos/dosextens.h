@@ -47,11 +47,12 @@ struct DosLibrary
     /* A normal library-base as defined in <exec/libraries.h>. */
     struct Library dl_lib;
 
+    struct RootNode * dl_Root;
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* The following fields are not used by AROS and are just there to
        guarantee binary compatibility. DO NOT USE THESE FIELDS IN ANY WAY.
-       Original names were: dl_Root, dl_GV, dl_A2, dl_A5 and dl_A6 */
-    struct RootNode * NoAROS1;
+       Original names were: dl_GV, dl_A2, dl_A5 and dl_A6 */
     APTR              NoAROS2;
     LONG              NoAROS3[3];
 #endif
@@ -77,7 +78,9 @@ struct DosLibrary
     struct Process	 * dl_LDDemonTask;
     ULONG		   dl_LDReturn;
 
+#if 0
     ULONG		   dl_ProcCnt;
+#endif
       /* The flags are the same, as they were in RootNode->rn_Flags. See below
          for definitions. */
     ULONG		   dl_Flags;
@@ -91,10 +94,8 @@ struct DosLibrary
 #define RNF_WILDSTAR (1L<<RNB_WILDSTAR)
 
 
-/* The following structures in this sections are not used by AROS and may
-   be removed in the future. So BEWARE, if you use them. */
 
-#if 0
+
 struct RootNode
 {
       /* (IPTR *) Pointer to an array containing pointers to CLI processes.
@@ -123,6 +124,10 @@ struct RootNode
     LONG             rn_Flags;
 };
 
+/* The following structures in this sections are not used by AROS and may
+   be removed in the future. So BEWARE, if you use them. */
+
+#if 0
 
 /* This is a CLI node as pointed to by rn_CliList (see above). This structure
    is READ-ONLY. */
