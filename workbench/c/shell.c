@@ -690,6 +690,8 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
     struct CSource cs = { cl->line, strlen(cl->line), 0 };
 
+    BOOL           result = FALSE;
+
     P(kprintf("Calling convertLine(), line = %s\n", cl->line));
 
     if(convertLine(&filtered, &cs, rd))
@@ -703,13 +705,16 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	if(rd->haveOutRD && rd->haveAppRD)
 	{
 	    PutStr("Cannot combine > with >>\n");
-	    return FALSE;
+	    goto exit;
 	}
 
 	/* Only a comment? */
 	if(!rd->haveCommand)
-	    return TRUE;
-
+	{
+	    result = TRUE;
+	    goto exit;
+	}
+	
 	if(rd->haveOutRD)
 	{
 	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
@@ -717,8 +722,9 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE);
 
 	    if(BADDR(rd->newOut) == NULL)
-		return FALSE;
-
+	    {
+		goto exit;
+	    }
 	    cli->cli_CurrentOutput = rd->newOut;
 	    rd->oldOut = SelectOutput(rd->newOut);
 	}
@@ -728,7 +734,9 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    rd->newOut = Open(rd->outFileName, MODE_OLDFILE);
 
 	    if(BADDR(rd->newOut) == NULL)
-		return FALSE;
+	    {
+	        goto exit;
+	    }
 	    
 	    Seek(rd->newOut, 0, OFFSET_END);
 	    cli->cli_CurrentOutput = rd->newOut;
@@ -740,7 +748,9 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    rd->newIn = Open(rd->inFileName, MODE_OLDFILE);
 
 	    if(BADDR(rd->newIn) == NULL)
-		return FALSE;
+	    {
+	       goto exit;
+	    }
 	    
 	    cli->cli_CurrentInput = rd->newIn;
 	    rd->oldIn = SelectInput(rd->newIn);
@@ -750,15 +760,18 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
+	
+	result = TRUE;
     }
     else
     {
 	PutStr("Erroneous command line.\n");
     }
 
+exit:
     FreeVec(filtered.CS_Buffer);
 
-    return FALSE;
+    return result;
 }
 
 
