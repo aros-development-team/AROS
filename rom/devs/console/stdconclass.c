@@ -83,10 +83,10 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 {
 
-    struct Window   *w  = CU(o)->cu_Window;
-    struct RastPort *rp = w->RPort;
-    UBYTE *params = msg->Params;
-    struct stdcondata *data = INST_DATA(cl, o);
+    struct Window   	*w  = CU(o)->cu_Window;
+    struct RastPort 	*rp = w->RPort;
+    UBYTE 		*params = msg->Params;
+    struct stdcondata 	*data = INST_DATA(cl, o);
     
     EnterFunc(bug("StdCon::DoCommand(o=%p, cmd=%d, params=%p)\n",
     	o, msg->Command, params));
@@ -157,11 +157,28 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	break;
 	
     case C_HTAB:
+        {
+	    WORD x = XCCP, i = 0;
+	    
+	    while( (CU(o)->cu_TabStops[i] != (UWORD)-1) &&
+	    	   (CU(o)->cu_TabStops[i] <= x) )
+	    {
+	        i++;
+	    }
+	    if (CU(o)->cu_TabStops[i] != (UWORD)-1)
+	    {
+    		Console_RenderCursor(o);
+		Console_Right(o, CU(o)->cu_TabStops[i] - x);
+		Console_RenderCursor(o);
+	    }
+	}
     	break;
 	
     case C_LINEFEED:
     	D(bug("Got linefeed command\n"));
-	Console_ClearCell(o, XCCP, YCCP);
+	/*Console_ClearCell(o, XCCP, YCCP);*/
+	Console_RenderCursor(o);
+	
     	Console_Down(o, 1);
 	
 	/* Check for linefeed mode (LF or LF+CR) */
@@ -284,6 +301,24 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	
 	break; }
 
+    case C_SCROLL_DOWN: {
+        UBYTE oldpen = rp->FgPen;
+	
+    	D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
+		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), - rp->Font->tf_YSize));
+		
+	SetAPen( rp, CU(o)->cu_BgPen );
+#warning LockLayers problem here ?    
+    	ScrollRaster(rp
+		, 0
+		, -rp->Font->tf_YSize
+		, GFX_XMIN(o)
+		, GFX_YMIN(o)
+		, GFX_XMAX(o)
+		, GFX_YMAX(o) );
+	SetAPen(rp, oldpen);
+
+    	break; }
 /*    case C_:
     	break;
 

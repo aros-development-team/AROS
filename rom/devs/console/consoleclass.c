@@ -55,10 +55,10 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	struct ConUnit *unit;
-	struct consoledata *data;
-
-    	struct RastPort *rp = win->RPort;
+    	struct ConUnit 		*unit;
+	struct consoledata 	*data;
+    	struct RastPort 	*rp = win->RPort;
+	WORD			i;
     	    	
 	data = INST_DATA(cl, o);
 	
@@ -87,14 +87,20 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	D(bug("cu_XROrigin: %d, cu_YROrigin: %d\n",
     	unit->cu_XROrigin, unit->cu_YROrigin));
     	    	
-    	unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * unit->cu_XMax);
-    	unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * unit->cu_YMax);
+    	unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * (unit->cu_XMax + 1) - 1);
+    	unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
 	
 	unit->cu_XCP = DEF_CHAR_XMIN;
 	unit->cu_YCP = DEF_CHAR_YMIN;
 
 	unit->cu_XCCP = DEF_CHAR_XMIN;
 	unit->cu_YCCP = DEF_CHAR_YMIN;
+	
+	for(i = 0; i < MAXTABS - 1; i++)
+	{
+	    unit->cu_TabStops[i] = i * 8;
+	}
+	unit->cu_TabStops[i] = (UWORD)-1;
 	
 	ICU(o)->conFlags = 0UL;
 	ICU(o)->numStoredChars = 0;
@@ -112,15 +118,23 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 **********************/
 static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 {
-    XCP -= msg->Num;
-    XCCP -= msg->Num;
-    if (XCCP < 0)
+    WORD newx;
+    
+    EnterFunc(bug("Console::Left()\n"));
+
+    newx = XCCP - msg->Num;
+    
+    while(newx < 0)
     {
-    	XCCP = 0;
+        Console_Up(o, 1);
+        newx += (CHAR_XMAX(o) + 1);
     }
-    XCP = XCCP; /* ?? */
- 
-    return;
+
+    XCP = XCCP = newx; /* XCP always same as XCCP?? */
+
+    D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
+       
+    ReturnVoid("Console::Left");
 }
 
 /***********************
@@ -128,22 +142,22 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 ***********************/
 static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 {
-
+    WORD newx;
+    
     EnterFunc(bug("Console::Right()\n"));
 
-    XCP  += msg->Num;
-    XCCP += msg->Num;
+    newx = XCCP + msg->Num;
     
-    D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
-    
-    if (XCCP > CHAR_XMAX(o))
+    while(newx > CHAR_XMAX(o))
     {
-    	/* Destroy the old cursor */
-    	XCCP = CHAR_XMIN(o);
-    	Console_Down(o, 1);
+        Console_Down(o, 1);
+        newx -= (CHAR_XMAX(o) + 1);
     }
-    XCP = XCCP; /* ?? */
-    
+
+    XCP = XCCP = newx; /* XCP always same as XCCP?? */
+
+    D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
+       
     ReturnVoid("Console::Right");
 }
 
@@ -152,17 +166,27 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 ********************/
 static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 {
+    EnterFunc(bug("Console::Up(num=%d)\n", msg->Num));
 
-    YCP  -= msg->Num;
     YCCP -= msg->Num;
-
-    if (YCCP < CHAR_YMIN(o))
+    
+    if (YCCP < 0)
     {
-    	YCCP = CHAR_YMIN(o);
-    }
-    YCP = YCCP; /* ?? */
+        WORD scrollcount = -YCCP;
+	
+	while(scrollcount--)
+	{
+    	    UBYTE scroll_param = 1;
 
-    return;
+	    Console_DoCommand(o, C_SCROLL_DOWN, &scroll_param);
+	}
+	YCCP = CHAR_YMAX(o);
+    }
+    YCP = YCCP; /* YCP always same as YCCP ?? */
+    
+    D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
+    	XCCP, YCCP, CP_X(o), CP_Y(o) ));
+    ReturnVoid("Console::Up");
 }
 
 
@@ -173,17 +197,22 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 {
     EnterFunc(bug("Console::Down(num=%d)\n", msg->Num));
-    YCP += msg->Num;
+
     YCCP += msg->Num;
     
     if (YCCP > CHAR_YMAX(o))
     {
-    	UBYTE scroll_param = 1;
+        WORD scrollcount = YCCP - CHAR_YMAX(o);
+	
+	while(scrollcount--)
+	{
+    	    UBYTE scroll_param = 1;
 
-	Console_DoCommand(o, C_SCROLL_UP, &scroll_param);
+	    Console_DoCommand(o, C_SCROLL_UP, &scroll_param);
+	}
 	YCCP = CHAR_YMAX(o);
     }
-    YCP = YCCP; /* ?? */
+    YCP = YCCP; /* YCP always same as YCCP ?? */
     
     D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
     	XCCP, YCCP, CP_X(o), CP_Y(o) ));
@@ -274,8 +303,8 @@ static VOID console_newwindowsize(Class *cl, Object *o, struct P_Console_NewWind
     unit->cu_XMax     = (win->Width  - (win->BorderLeft + win->BorderRight )) / unit->cu_XRSize - 1;
     unit->cu_YMax     = (win->Height - (win->BorderTop  + win->BorderBottom)) / unit->cu_YRSize - 1;
 
-    unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * unit->cu_XMax);
-    unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * unit->cu_YMax);
+    unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * (unit->cu_XMax + 1) - 1);
+    unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
 
     if (unit->cu_XCCP > unit->cu_XMax) unit->cu_XCCP = unit->cu_XMax;
     if (unit->cu_YCCP > unit->cu_YMax) unit->cu_YCCP = unit->cu_YMax;
