@@ -54,11 +54,6 @@ struct SerialUnit * findUnit(struct serialbase * SerialDevice,
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
 ULONG WBE_InterruptHandler(ULONG unitum, APTR userdata);
 
-extern struct ExecBase * SysBase;
-
-
-
-
 #define MINBUFSIZE 512
 
 struct serialbase
