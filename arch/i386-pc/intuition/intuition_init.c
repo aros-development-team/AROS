@@ -111,8 +111,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     
     SysBase = sysBase;
 
+    /*  This should not be necessary anymore
+
     if (!intui_init (LIBBASE))
 	return NULL;
+    */
 
     /*  We have to open this here, but it doesn't do any allocations,
 	so it shouldn't fail...
