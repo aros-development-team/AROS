@@ -9,7 +9,7 @@ ENDFUNC	:=	$(END_FILE).o
 FILES	:=	kbd_init functable kbdclass kbd_common
 
 #MM Drivers-native-kbd :
-Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s
+Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s $(ENDFUNC)
 	%add_objects rom/boot/kbd_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o
@@ -37,10 +37,8 @@ kbdclass.s : kbdclass.c
 
 kbd_common.s : kbd_common.c
         %ctoasm_q
-	
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+
+%libdefs_rule
 	
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
