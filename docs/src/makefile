@@ -83,8 +83,7 @@ $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-$(DEST)background.html: background.src stathtml.gawk $(HOME)/Mail/jobs \
-	    src2html.gawk
+$(DEST)background.html: background.src stathtml.gawk src2html.gawk
 	touch background.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@

@@ -1,44 +1,57 @@
 BEGIN {
-    file=ENVIRON["HOME"] "/Mail/jobs";
+    file="jobserv-query.lite 'select jobid,status from jobs'";
 
-    while ((getline < file) > 0)
+    file | getline cnt;
+    pos = 0;
+
+    while ((file | getline) > 0)
     {
-	if (match($0,/^[a-zA-Z_/.]+[0-9]+ (WORK|DONE|FREE)/))
+	if ($0 == "")
 	{
-	    match($0,/^[a-zA-Z_/.]+/);
-	    name=substr($0,RSTART,RLENGTH);
-	    job[name]++;
-	    jobs ++;
-	    if ($2 == "WORK")
+	    pos = 0;
+	    status = int(entry[1]);
+
+	    if (match(entry[0],/^[a-zA-Z_]+[0-9]+$/))
 	    {
-		jobw[name]++;
-		work ++;
-	    }
-	    else if ($2 == "DONE")
-	    {
-		jobd[name]++;
-		done ++;
+		match(entry[0],/^[a-zA-Z_]+/);
+		name=substr(entry[0],RSTART,RLENGTH);
+		job[name]++;
+		jobs ++;
+		if (status==1)
+		{
+		    jobw[name]++;
+		    work ++;
+		}
+		else if (status==2)
+		{
+		    jobd[name]++;
+		    done ++;
+		}
+		else
+		{
+		    jobf[name]++;
+		    free ++;
+		}
 	    }
 	    else
 	    {
-		jobf[name]++;
-		free ++;
+		ojobs ++;
+		if (status==1) owork ++;
+		else if (status==2) odone ++;
+		else ofree ++;
 	    }
 	}
-	if (match($0,/^[a-zA-Z_/.]+ (WORK|DONE|FREE)/))
+	else
 	{
-	    ojobs ++;
-	    if ($2 == "WORK") owork ++;
-	    else if ($2 == "DONE") odone ++;
-	    else ofree ++;
+	    entry[pos++] = substr($0,2);
 	}
     }
 
     close (file);
 
-    print "There is a total of " jobs " functions.\n"
-    printf ("%4d (%.2f%%) are still todo.\n",        free, free*100.0/jobs);
-    printf ("%4d (%.2f%%) are currently in work.\n", work, work*100.0/jobs);
+    print "There is a total of " jobs " functions.<BR>\n"
+    printf ("%4d (%.2f%%) are still todo.<BR>\n",        free, free*100.0/jobs);
+    printf ("%4d (%.2f%%) are currently in work.<BR>\n", work, work*100.0/jobs);
     printf ("%4d (%.2f%%) are completed.<P>\n",         done, done*100.0/jobs);
 
     print "<TABLE BORDER=OFF><TR><TH>Job</TH><TH>Count</TH><TH>Todo</TH><TH>In work</TH><TH>Completed</TH></TR>"
@@ -53,9 +66,9 @@ BEGIN {
 		jobd[name]*100.0/job[name]);
     }
     print "</TABLE><P>"
-    print "There is a total of " ojobs " other things."
-    printf ("%4d (%.2f%%) are still todo.\n",        ofree, ofree*100.0/ojobs);
-    printf ("%4d (%.2f%%) are currently in work.\n", owork, owork*100.0/ojobs);
+    print "There is a total of " ojobs " other things.<BR>\n"
+    printf ("%4d (%.2f%%) are still todo.<BR>\n",        ofree, ofree*100.0/ojobs);
+    printf ("%4d (%.2f%%) are currently in work.<BR>\n", owork, owork*100.0/ojobs);
     printf ("%4d (%.2f%%) are completed.<P>\n",         odone, odone*100.0/ojobs);
 }
 
