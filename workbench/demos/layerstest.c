@@ -83,9 +83,9 @@ void freelayers(void)
   {
     if (NULL != layers[i])
     {
+      DeleteLayer(0, layers[i]);
       if (layers[i]->SuperBitMap)
         FreeBitMap(layers[i]->SuperBitMap);
-      DeleteLayer(0, layers[i]);
     }
   }
 }
@@ -1106,7 +1106,7 @@ void doall(void)
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
         printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] scrollayer [scl]\n");
         printf("motion [mot] \n");
-        printf("Frame [F]  DemoA DemoB DemoC\n");
+        printf("Frame [F]  DemoA DemoB DemoC DemoD\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
     {
