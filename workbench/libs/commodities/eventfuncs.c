@@ -65,7 +65,7 @@ VOID FreeCxStructure(APTR obj, int type, struct Library *CxBase)
 	    ((struct InputEvent *)obj)->ie_SubClass == IESUBCLASS_PIXEL))
 	    FreeVec(((struct InputEvent *)obj)->ie_EventAddress);
 
-	FreeMem(obj, sizeof(struct InputEvent));
+	FreeMem(obj, sizeof(struct GeneratedInputEvent));
 	break;
     }
 }
@@ -142,7 +142,7 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 	
     case CX_INPUTEVENT:
 	
-	temp = AllocMem(sizeof(struct InputEvent), MEMF_CLEAR | MEMF_PUBLIC);
+	temp = AllocMem(sizeof(struct GeneratedInputEvent), MEMF_CLEAR | MEMF_PUBLIC);
 	break;
     }
     return temp;
