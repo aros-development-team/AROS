@@ -167,7 +167,9 @@ enum
     MUIO_MenustripNM,  /* struct NewMenu *nm, ULONG flags */
     MUIO_Menuitem,     /* STRPTR label, STRPTR shortcut, ULONG flags, ULONG data  */
     MUIO_BarTitle,     /* STRPTR label */
-    MUIO_NumericButton /* STRPTR label, LONG min, LONG max, STRPTR format */
+    MUIO_NumericButton,/* STRPTR label, LONG min, LONG max, STRPTR format */
+    
+    MUIO_CoolButton = 111, /* STRPTR label, APTR CoolImage, ULONG flags */
 };
 
 /* flag for MUIO_Menuitem */
@@ -182,6 +184,9 @@ enum
 
 /* flag for MUIO_MenustripNM */
 #define MUIO_MenustripNM_CommandKeyCheck (1<<0) /* check for "localized" menu items such as "O\0Open" */
+
+/* flag for MUI_CoolButton  */
+#define MUIO_CoolButton_CoolImageID (1<<0)
 
 struct MUI_MinMax
 {
@@ -401,6 +406,10 @@ struct MUI_PenSpec {
 
 #ifndef _MUI_CLASSES_BODYCHUNK_H
 #include "classes/bodychunk.h"
+#endif
+
+#ifndef _MUI_CLASSES_CHUNKYIMAGE_H
+#include "classes/chunkyimage.h"
 #endif
 
 #ifndef _MUI_CLASSES_LISTVIEW_H
