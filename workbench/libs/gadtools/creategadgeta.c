@@ -101,7 +101,12 @@
 
     if (ng->ng_GadgetText)
     {
+        ULONG old_ng_flags = ng->ng_Flags;
+	
+	if (kind == BUTTON_KIND) ng->ng_Flags &= ~NG_HIGHLABEL;	
     	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng, taglist);
+	if (kind == BUTTON_KIND) ng->ng_Flags = old_ng_flags;
+	
     	if (!stdgadtags[TAG_IText].ti_Data)
             return (NULL);
     } else {
