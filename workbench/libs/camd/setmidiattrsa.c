@@ -104,7 +104,7 @@
 
 	struct TagItem *tag;
 	const struct TagItem *tstate=tags;
-	struct MyMidiMessage *temp;
+	MidiMsg *temp;
 	UBYTE *temp2;
 	BOOL ret=TRUE;
 
@@ -135,7 +135,7 @@
 				midinode->mi_ParticipantSigBit=(BYTE)tag->ti_Data;
 				break;
 			case MIDI_MsgQueue:
-				temp=AllocVec(sizeof(struct MyMidiMessage)*(tag->ti_Data+1),MEMF_ANY | MEMF_PUBLIC);
+				temp=AllocVec(sizeof(MidiMsg)*(tag->ti_Data+1),MEMF_ANY | MEMF_PUBLIC);
 				if(temp==NULL){
 					if(ErrorCode!=NULL){
 						*ErrorCode=CME_NoMem;

@@ -96,11 +96,6 @@
 	while(length>0){
 		data=*buffer;
 
-		if(data&0x100){
-			Receiver_SetError(driverdata,CMEF_RecvOverflow);
-		}
-		data&=0xff;
-
 		if(data==0xf0){
 			if(TOdriverdata==NULL){
 				if(midilink->ml_Location!=NULL){

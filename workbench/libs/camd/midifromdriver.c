@@ -13,10 +13,6 @@
 #include "camd_intern.h"
 
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-
-#include "camd_intern.h"
 
 #undef SysBase
 #undef DOSBase
@@ -100,7 +96,7 @@ void Receiver_SuperTreat2(
 				if(midilink->ml_Node.ln_Type==NT_USER-MLTYPE_NTypes){	// Only happens if called from ParseMidi
 					if(driverdata->lastsysex==NULL){		// If a realtime-message are inside of a sysexmessage.
 						msg=(msg2->status<<24)|(msg2->data1<<16)|(msg2->data2<<8);
-						while(Midi2Driver((struct DriverData *)midilink,msg,10000)==FALSE){
+						while(Midi2Driver_internal((struct DriverData *)midilink,msg,10000)==FALSE){
 							CamdWait();
 						}
 					}
@@ -190,6 +186,7 @@ void Receiver_NewStatus_first(
 	UBYTE status
 ){
 	if(status<0x80){
+		D(bug("Error, Receiver_NewStatus_first, status: %ld\n",status));
 		Receiver_SetError(driverdata,CMEF_MsgErr);
 	}else{
 		Receiver_NewStatus(driverdata,status);
@@ -210,6 +207,7 @@ void Receiver_SysEx(
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 		}else{
 			Receiver_SysExSuperTreat(driverdata,0xff);
+			D(bug("Error, Receiver_SysEx, data: %ld\n",data));
 			Receiver_ErrorAndNewStatus(driverdata,data);
 		}
 	}else{
@@ -237,6 +235,7 @@ void Receiver_SysCom3_2(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_SysCom3_2, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data2=data;
@@ -250,6 +249,7 @@ void Receiver_SysCom3_1(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_SysCom3_1, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -262,6 +262,7 @@ void Receiver_SysCom2(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_SysCom2, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -291,11 +292,13 @@ void Receiver_NewSysCom(
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 			break;
 		case 0xf7:
+			D(bug("Error, Receiver_NewSysCom, status: 0xf7\n"));
 			Receiver_SetError(driverdata,CMEF_MsgErr);
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 			break;
 		default:
 			// Undefined SysCom. Topic: should the error not be set?
+			D(bug("Error, Receiver_NewSysCom, status: %ld\n",status));
 			Receiver_SetError(driverdata,CMEF_MsgErr);
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 			break;
@@ -316,6 +319,7 @@ void Receiver_General3_2(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_General3_2, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data2=data;
@@ -341,6 +345,7 @@ void Receiver_General3_first(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_General3_first, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -371,6 +376,7 @@ void Receiver_General2_first(
 	UBYTE data
 ){
 	if(data>=0x80){
+		D(bug("Error, Receiver_General2_first, data: %ld\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -427,7 +433,8 @@ void Receiver_first(
 		driverdata->re_read=driverdata->re_start;
 	}
 
-	if(input&0x100){
+	if(input&0x8000){
+		D(bug("Error, Receiver_first. Overflow: %lx\n",input));
 		Receiver_SetError(driverdata,CMEF_RecvOverflow);
 	}
 

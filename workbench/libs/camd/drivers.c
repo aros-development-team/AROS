@@ -14,7 +14,7 @@
 
 #  undef DEBUG
 #  define DEBUG 1
-#  include <aros/debug.h>
+#  include AROS_DEBUG_H_FILE
 
 BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *CamdBase){
 	if(
@@ -213,18 +213,19 @@ void LoadDriver(char *name,
 	D(bug("camd.library: drivers.c/LoadDriver - trying to open %s..\n",name));
 
 	mididevicedata=OpenMidiDevice(name);
-
 	D(bug("camd.library: drivers.c/LoadDriver - It was%s a success..\n",mididevicedata==NULL?" not":""));
 
 	if(mididevicedata==NULL) return;
 
-#ifdef _AROS
 	if((mididevicedata->Flags&1)==0){
+#ifdef _AROS
 		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));
 		CloseMidiDevice(mididevicedata);
 		return;
-	}
+#else
+		D(bug("%s: old camd driver format. (Supported)\n",name));
 #endif
+	}
 
 	if((*mididevicedata->Init)(SysBase)==FALSE){
 		CloseMidiDevice(mididevicedata);

@@ -7,6 +7,8 @@
 */
 
 #include <proto/dos.h>
+#include <proto/camd.h>
+#undef PutMidi
 
 #include "camd_intern.h"
 
@@ -69,10 +71,10 @@
 
 	struct DriverData *driverdata;
 
-	driverdata=GoodPutMidi(link,msg,OUTBUFFERSIZE-1,CamdBase);
+	driverdata=GoodPutMidi(link,msg,OUTBUFFERSIZE-1);
 
 	if(driverdata!=NULL){
-		while(Midi2Driver(driverdata,msg,OUTBUFFERSIZE-1)==NULL) CamdWait();
+		while(Midi2Driver_internal(driverdata,msg,OUTBUFFERSIZE-1)==FALSE) CamdWait();
 	}
 
    AROS_LIBFUNC_EXIT
