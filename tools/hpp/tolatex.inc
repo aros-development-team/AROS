@@ -24,7 +24,8 @@
 <EDEF NAME="ckeyword" BEGIN="<FONT COLOR="red"><TT>" END="</TT></FONT>">
 <EDEF NAME="cppkeyword" BEGIN="<FONT COLOR="green"><TT>" END="</TT></FONT>">
 <EDEF NAME="cppmacro" BEGIN="<TT>" END="</TT>">
-<EDEF NAME="ccomment" BEGIN="<FONT COLOR="green"><I>" END="</I></FONT>">
+<EDEF NAME="ccomment" BEGIN="<FONT COLOR="green"><I>/* " END=" */</I></FONT>">
+<EDEF NAME="htmlcomment" BEGIN="<FONT COLOR="green">/* " END=" */</FONT>">
 <EDEF NAME="cidentifier" BEGIN="<I>" END="</I>">
 <EDEF NAME="cusertype" BEGIN="<B><I>" END="</I></B>">
 <EDEF NAME="cpunctuation" BEGIN="<FONT COLOR="orange"><B><TT>" END="</TT></B></FONT>">
@@ -110,6 +111,13 @@
 </DEF>
 <DEF NAME=shell OPTION=text>\verb§$text§</DEF>
 <DEF NAME=li>\item</DEF>
+<DEF NAME=img OPTION=src OPTION=width DEFAULT=0 OPTION=height DEFAULT=0>
+    \begin{figure}[ht]
+    \begin{center}
+    \includegraphics[scale=.5]{$src.eps}
+    \end{center}
+    \end{figure}
+</DEF>
 
 <REM --- Blocks ------------------------------------------------------------->
 <BDEF NAME="code" OPTION="type"><
