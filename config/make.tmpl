@@ -1560,16 +1560,16 @@ $(GENINCDIR)/pragmas/%(name)_pragmas.h \
 	@$(ARCHTOOL) -I $(GENINCDIR) $(ARCHIVE)
 
 $(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 %end
 
 #-------------------------------------------------------------------------------
@@ -1742,16 +1742,16 @@ $(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
 	@$(SCRIPTDIR)/genshared -proto %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL)
 
 $(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
 %end
 
 %define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS)
