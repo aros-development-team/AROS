@@ -517,15 +517,6 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
             TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
 
             SetPrefs(GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
-            GetPrivIBase(LIBBASE)->DefaultPointer = MakePointerFromPrefs(LIBBASE, GetPrivIBase(LIBBASE)->ActivePreferences);
-            GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromPrefs(LIBBASE, GetPrivIBase(LIBBASE)->ActivePreferences);
-
-            DEBUG_OPEN(dprintf("LIB_Open: Pointers %p %p\n",
-                               GetPrivIBase(LIBBASE)->DefaultPointer,
-                               GetPrivIBase(LIBBASE)->BusyPointer));
-
-            if (!GetPrivIBase(LIBBASE)->DefaultPointer || !GetPrivIBase(LIBBASE)->BusyPointer)
-                return NULL;
         }
 
     #if 0
