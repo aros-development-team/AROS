@@ -4,3 +4,4 @@
 *.cgi
 *.doc
 makefile
+getfiledate
