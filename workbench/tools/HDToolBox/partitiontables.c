@@ -14,6 +14,7 @@
 #include <proto/partition.h>
 
 #include <devices/bootblock.h>
+#include <devices/scsidisk.h>
 #include <devices/trackdisk.h>
 #include <dos/dosextens.h>
 #include <exec/memory.h>
@@ -36,6 +37,38 @@ extern struct TagItem hdtags[], cdttags[], mbbltags[], llftags[],
 
 extern struct creategadget maingadgets[];
 
+void w2strcpy(STRPTR name, UWORD *wstr, ULONG len) {
+
+	while (len)
+	{
+		*((UWORD *)name)++ = AROS_BE2WORD(*wstr);
+		len -= 2;
+		wstr++;
+	}
+	name -= 2;
+	while ((*name==0) || (*name==' '))
+		*name-- = 0;
+}
+
+BOOL identify(struct PartitionHandle *ph, STRPTR name) {
+struct SCSICmd scsicmd;
+UWORD data[256];
+UBYTE cmd=0xEC; /* identify */
+struct IOExtTD *ioreq = ph->bd->ioreq;
+
+	scsicmd.scsi_Data = data;
+	scsicmd.scsi_Length = 512;
+	scsicmd.scsi_Command = &cmd;
+	scsicmd.scsi_CmdLength = 1;
+	ioreq->iotd_Req.io_Command = HD_SCSICMD;
+	ioreq->iotd_Req.io_Data = &scsicmd;
+	ioreq->iotd_Req.io_Length = sizeof(struct SCSICmd);
+	if (DoIO(&ioreq->iotd_Req))
+		return FALSE;
+	w2strcpy(name, &data[27], 40);
+	return TRUE;
+}
+
 void findHDs(char *device, ULONG maxUnits) {
 struct HDUnitNode *node;
 int i,count;
@@ -48,14 +81,16 @@ int i,count;
 				(sizeof(struct HDUnitNode),	MEMF_PUBLIC | MEMF_CLEAR);
 		if (node)
 		{
-			node->ln.ln_Name = AllocVec(count+1, MEMF_PUBLIC | MEMF_CLEAR);
+			node->ln.ln_Name = AllocVec(100, MEMF_PUBLIC | MEMF_CLEAR);
 			if (node->ln.ln_Name)
 			{
-				sprintf(node->ln.ln_Name, "%.*s", count, device);
-				node->unit = i;
 				node->root = OpenRootPartition(device, i);
 				if (node->root)
 				{
+					strcpy(node->devname, device);
+					node->unit = i;
+					if (!identify(node->root, node->ln.ln_Name))
+						sprintf(node->ln.ln_Name, "%.*s", count, device);
 					AddTail(&hd_list, &node->ln);
 					continue;
 				}
@@ -424,6 +459,19 @@ ULONG args[40];
 	}
 }
 
+ULONG getOffset(struct PartitionHandle *ph) {
+struct DosEnvec de;
+ULONG offset=0;
+
+	while (ph->root)
+	{
+		GetPartitionAttrsA(ph, PT_DOSENVEC, de, TAG_DONE);
+		offset += de.de_LowCyl;
+		ph = ph->root;
+	}
+	return offset;
+}
+
 /* 
  Output: 0 - no mount (no partition change)
          1 - mount that device
@@ -442,6 +490,7 @@ WORD checkMount
 WORD retval = 1;
 struct DosList *dl;
 struct DeviceNode *entry;
+ULONG i;
 
 	dl = LockDosList(LDF_READ | LDF_DEVICES);
 	if (dl)
@@ -457,14 +506,7 @@ struct DeviceNode *entry;
 			devname = AROS_BSTR_ADDR(fssm->fssm_Device);
 			if (
 					(fssm->fssm_Unit != table->hd->unit) ||
-					(
-						strncmp
-						(
-							devname,
-							table->hd->ln.ln_Name,
-							strlen(table->hd->ln.ln_Name)
-						)
-					)
+					(strcmp(devname, table->hd->devname))
 				)
 			{
 				retval = 3; /* better do a reboot */
@@ -472,12 +514,13 @@ struct DeviceNode *entry;
 			else
 			{	
 				d_de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+				i = getOffset(table);
 				if (
 						(d_de->de_SizeBlock != de->de_SizeBlock) ||
 						(d_de->de_Reserved  != de->de_Reserved) ||
 						(d_de->de_PreAlloc  != de->de_PreAlloc) ||
-						(d_de->de_LowCyl    != de->de_LowCyl) ||
-						(d_de->de_HighCyl   != de->de_HighCyl) ||
+						(d_de->de_LowCyl    != (de->de_LowCyl+i)) ||
+						(d_de->de_HighCyl   != (de->de_HighCyl+i)) ||
 						(d_de->de_DosType   != de->de_DosType) ||
 						(
 							(
@@ -521,6 +564,7 @@ struct DeviceNode *entry;
 	return retval;
 }
 
+
 void mount
 	(
 		struct PartitionTableNode *table,
@@ -533,7 +577,6 @@ struct ExpansionBase *ExpansionBase;
 struct DeviceNode *dn;
 struct DosEnvec *nde;
 IPTR *params;
-UBYTE str[32];
 ULONG i;
 
 #warning "TODO: get filesystem"
@@ -548,10 +591,12 @@ ULONG i;
 				nde = (struct DosEnvec *)&params[4];
 				CopyMem(de, nde, sizeof(struct DosEnvec));
 				params[0] = (IPTR)"afs.handler";
-				sprintf(str, "%s.device", table->hd->ln.ln_Name);
-				params[1] = (IPTR)str;
+				params[1] = (IPTR)table->hd->devname;
 				params[2] = (IPTR)table->hd->unit;
 				params[3] = 0;
+				i = getOffset(ph->table);
+				nde->de_LowCyl += i;
+				nde->de_HighCyl += i;
 				dn = MakeDosNode(params);
 				if (dn)
 				{

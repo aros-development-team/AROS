@@ -15,6 +15,7 @@ struct PartitionNode;
 
 struct HDUnitNode {
 	struct Node ln;
+	UBYTE devname[64];
 	ULONG unit;
 	struct PartitionHandle *root;
 };
