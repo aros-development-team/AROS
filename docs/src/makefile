@@ -67,9 +67,12 @@ $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-autodocs: $(DEST)adoc_index.html
+autodocs: $(DEST)adoc_index.html gen/htmlpages
+
+gen/htmlpages: $(AUTODOC_SRCS)
 	@echo "Regenerating the HTML AutoDocs"
 	@makeadocs $(AUTODOC_SRCS)
+	@touch gen/htmlpages
 
 $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 	    adoc_footer.html
