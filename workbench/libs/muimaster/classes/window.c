@@ -205,21 +205,27 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN], 1, rgbtable+3);
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1, rgbtable+6);
 
-    mri->mri_PensStorage[MPEN_HALFSHINE] = 
-	ObtainBestPenA(mri->mri_Colormap,
-		       DoHalfshineGun(rgbtable[0], rgbtable[3]),
-		       DoHalfshineGun(rgbtable[1], rgbtable[4]),
-		       DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL);
+    mri->mri_PensStorage[MPEN_HALFSHINE] = ObtainBestPenA
+    (
+        mri->mri_Colormap,
+        DoHalfshineGun(rgbtable[0], rgbtable[3]),
+        DoHalfshineGun(rgbtable[1], rgbtable[4]),
+        DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL
+    );
 
-    mri->mri_PensStorage[MPEN_HALFSHADOW] = 
-	ObtainBestPenA(mri->mri_Colormap,
-		       DoHalfshadowGun(rgbtable[6], rgbtable[3]),
-		       DoHalfshadowGun(rgbtable[7], rgbtable[4]),
-		       DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL);
+    mri->mri_PensStorage[MPEN_HALFSHADOW] = ObtainBestPenA
+    (
+        mri->mri_Colormap,
+        DoHalfshadowGun(rgbtable[6], rgbtable[3]),
+        DoHalfshadowGun(rgbtable[7], rgbtable[4]),
+        DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL
+    );
 
 /* I'm really not sure that MUI does this for MPEN_MARK, but it seems mostly acceptable -dlc */
-    mri->mri_PensStorage[MPEN_MARK] =
-	ObtainBestPenA(mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL);
+    mri->mri_PensStorage[MPEN_MARK] = ObtainBestPenA
+    (
+        mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL
+    );
 
     mri->mri_Pens = mri->mri_PensStorage;
 
@@ -247,10 +253,13 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     {
 	mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
 	mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
-	temp_obj = NewObject(NULL,"sysiclass",
+	temp_obj = NewObject
+        (
+            NULL, "sysiclass",
     	    SYSIA_DrawInfo, mri->mri_DrawInfo,
-    	    SYSIA_Which, SIZEIMAGE,
-    	    TAG_DONE);
+    	    SYSIA_Which,    SIZEIMAGE,
+    	    TAG_DONE
+        );
 	if (temp_obj)
 	{
 	    GetAttr(IA_Height,temp_obj,&val);
@@ -363,8 +372,11 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
         flags |= WFLG_ACTIVATE;
 
-    if (data->wd_MinMax.MinHeight == data->wd_MinMax.MaxHeight
-	&& data->wd_MinMax.MinWidth == data->wd_MinMax.MaxWidth)
+    if 
+    (
+           data->wd_MinMax.MinHeight == data->wd_MinMax.MaxHeight
+	&& data->wd_MinMax.MinWidth  == data->wd_MinMax.MaxWidth
+    )
 	flags &= ~WFLG_SIZEGADGET;
 
     if (!(flags & WFLG_SIZEBRIGHT))
@@ -467,43 +479,61 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	voffset = IM(mri->mri_DownImage)->Width / 4;
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	firstgad = prevgad = data->wd_VertProp = NewObject(NULL,"propgclass",
-							   GA_RelRight, 1 - (IM(mri->mri_UpImage)->Width - voffset),
-							   GA_Top, mri->mri_BorderTop + 2,
-							   GA_Width, IM(mri->mri_UpImage)->Width - voffset * 2,
-							   GA_RelHeight, - (mri->mri_BorderTop + 2) - IM(mri->mri_UpImage)->Height - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height - 2,
-							   GA_RightBorder, TRUE,
-							   GA_ID, id,
-							   PGA_Borderless, TRUE,
-							   PGA_NewLook, TRUE,
-							   PGA_Freedom, FREEVERT,
-							   PGA_Top, 0,
-							   PGA_Total, 2,
-							   PGA_Visible, 1,
-							   ICA_TARGET, ICTARGET_IDCMP,
-							   TAG_DONE);
+	firstgad = prevgad = data->wd_VertProp = NewObject
+        (
+            NULL, "propgclass",
+            
+            GA_RelRight,    1 - (IM(mri->mri_UpImage)->Width - voffset),
+            GA_Top,         mri->mri_BorderTop + 2,
+            GA_Width,       IM(mri->mri_UpImage)->Width - voffset * 2,
+            GA_RelHeight,   - (mri->mri_BorderTop + 2) 
+                            - IM(mri->mri_UpImage)->Height 
+                            - IM(mri->mri_DownImage)->Height 
+                            - IM(mri->mri_SizeImage)->Height - 2,
+            GA_RightBorder, TRUE,
+            GA_ID,          id,
+            PGA_Borderless, TRUE,
+            PGA_NewLook,    TRUE,
+            PGA_Freedom,    FREEVERT,
+            PGA_Top,        0,
+            PGA_Total,      2,
+            PGA_Visible,    1,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_UpButton = NewObject(NULL,"buttongclass",
-						GA_Image, mri->mri_UpImage,
-						GA_RelRight, 1 - IM(mri->mri_UpImage)->Width,
-						GA_RelBottom, 1 - IM(mri->mri_UpImage)->Height - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height,
-						GA_RightBorder, TRUE,
-						GA_Previous, prevgad,
-						GA_ID, id,
-						ICA_TARGET, ICTARGET_IDCMP,
-						TAG_DONE);
+	prevgad = data->wd_UpButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,       mri->mri_UpImage,
+            GA_RelRight,    1 - IM(mri->mri_UpImage)->Width,
+            GA_RelBottom,   1 - IM(mri->mri_UpImage)->Height 
+                              - IM(mri->mri_DownImage)->Height 
+                              - IM(mri->mri_SizeImage)->Height,
+            GA_RightBorder, TRUE,
+            GA_Previous,    prevgad,
+            GA_ID,          id,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_DownButton = NewObject(NULL,"buttongclass",
-						  GA_Image, mri->mri_DownImage,
-						  GA_RelRight, 1 - IM(mri->mri_DownImage)->Width,
-						  GA_RelBottom, 1 - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height,
-						  GA_RightBorder, TRUE,
-						  GA_Previous, prevgad,
-						  GA_ID, id,
-						  ICA_TARGET, ICTARGET_IDCMP,
-						  TAG_DONE);
+	prevgad = data->wd_DownButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image, mri->mri_DownImage,
+            GA_RelRight,    1 - IM(mri->mri_DownImage)->Width,
+            GA_RelBottom,   1 - IM(mri->mri_DownImage)->Height 
+                              - IM(mri->mri_SizeImage)->Height,
+            GA_RightBorder, TRUE,
+            GA_Previous,    prevgad,
+            GA_ID,          id,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
     }
 
     /* Create the bottom border scrollers now if requested */
@@ -514,46 +544,65 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	hoffset = IM(mri->mri_RightImage)->Height / 4;
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_HorizProp = NewObject(NULL,"propgclass",
-						 GA_RelBottom, 1 - (IM(mri->mri_LeftImage)->Height - hoffset),
-						 GA_Left, mri->mri_BorderLeft,
-						 GA_Height, IM(mri->mri_LeftImage)->Height - hoffset * 2,
-						 GA_RelWidth, - (mri->mri_BorderLeft) - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width - 2,
-						 GA_BottomBorder, TRUE,
-						 GA_ID, id,
-						 prevgad?GA_Previous:TAG_IGNORE, prevgad,
-						 PGA_Borderless, TRUE,
-						 PGA_NewLook, TRUE,
-						 PGA_Freedom, FREEHORIZ,
-						 PGA_Top, 0,
-						 PGA_Total, 2,
-						 PGA_Visible, 1,
-						 ICA_TARGET, ICTARGET_IDCMP,
-						 TAG_DONE);
+	prevgad = data->wd_HorizProp = NewObject
+        (
+            NULL, "propgclass",
+            
+            GA_RelBottom,                       1 - (IM(mri->mri_LeftImage)->Height - hoffset),
+            GA_Left,                            mri->mri_BorderLeft,
+            GA_Height,                          IM(mri->mri_LeftImage)->Height 
+                                                - hoffset * 2,
+            GA_RelWidth,                        - (mri->mri_BorderLeft) 
+                                                - IM(mri->mri_LeftImage)->Width 
+                                                - IM(mri->mri_RightImage)->Width 
+                                                - IM(mri->mri_SizeImage)->Width 
+                                                - 2,
+            GA_BottomBorder,                    TRUE,
+            GA_ID,                              id,
+            prevgad ? GA_Previous : TAG_IGNORE, prevgad,
+            PGA_Borderless,                     TRUE,
+            PGA_NewLook,                        TRUE,
+            PGA_Freedom,                        FREEHORIZ,
+            PGA_Top,                            0,
+            PGA_Total,                          2,
+            PGA_Visible,                        1,
+            ICA_TARGET,                         ICTARGET_IDCMP,
+            TAG_DONE
+        );
 
 	if (!firstgad) firstgad = prevgad;
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_LeftButton = NewObject(NULL,"buttongclass",
-						  GA_Image, mri->mri_LeftImage,
-						  GA_RelRight, 1 - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
-						  GA_RelBottom, 1 - IM(mri->mri_LeftImage)->Height,
-						  GA_BottomBorder, TRUE,
-						  GA_Previous, prevgad,
-						  GA_ID, id,
-						  ICA_TARGET, ICTARGET_IDCMP,
-						  TAG_DONE);
-
+	prevgad = data->wd_LeftButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,        mri->mri_LeftImage,
+            GA_RelRight,     1 - IM(mri->mri_LeftImage)->Width 
+                               - IM(mri->mri_RightImage)->Width 
+                               - IM(mri->mri_SizeImage)->Width,
+            GA_RelBottom,    1 - IM(mri->mri_LeftImage)->Height,
+            GA_BottomBorder, TRUE,
+            GA_Previous,     prevgad,
+            GA_ID,           id,
+            ICA_TARGET,      ICTARGET_IDCMP,
+            TAG_DONE
+        );
+        
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_RightButton = NewObject(NULL,"buttongclass",
-						   GA_Image, mri->mri_RightImage,
-						   GA_RelRight, 1 - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
-						   GA_RelBottom, 1 - IM(mri->mri_RightImage)->Height,
-						   GA_BottomBorder, TRUE,
-						   GA_Previous, prevgad,
-						   GA_ID, id,
-						   ICA_TARGET, ICTARGET_IDCMP,
-						   TAG_DONE);
+	prevgad = data->wd_RightButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,        mri->mri_RightImage,
+            GA_RelRight,     1 - IM(mri->mri_RightImage)->Width 
+                               - IM(mri->mri_SizeImage)->Width,
+            GA_RelBottom,    1 - IM(mri->mri_RightImage)->Height,
+            GA_BottomBorder, TRUE,
+            GA_Previous,     prevgad,
+            GA_ID,           id,
+            ICA_TARGET,      ICTARGET_IDCMP,
+            TAG_DONE);
     }
 
 /* Calculate alternate (zoomed) dimensions.
@@ -572,56 +621,98 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     else if (data->wd_AltDim.Left == MUIV_Window_AltLeftEdge_Moused)
 	/* ? */ data->wd_AltDim.Left = ~0;
 
-    if (_between(MUIV_Window_AltWidth_MinMax(100),
-		 data->wd_AltDim.Width,
-		 MUIV_Window_AltWidth_MinMax(0)))
+    if 
+    (
+        _between
+        (
+            MUIV_Window_AltWidth_MinMax(100),
+            data->wd_AltDim.Width,
+            MUIV_Window_AltWidth_MinMax(0)
+        )
+    )
     {
 	data->wd_AltDim.Width = data->wd_MinMax.MinWidth
 	    - data->wd_AltDim.Width
 	    * (data->wd_MinMax.MaxWidth - data->wd_MinMax.MinWidth);
     }
-    else if (_between(MUIV_Window_AltWidth_Screen(100),
-		      data->wd_AltDim.Width,
-		      MUIV_Window_AltWidth_Screen(0)))
+    else if
+    (
+        _between
+        (
+            MUIV_Window_AltWidth_Screen(100),
+            data->wd_AltDim.Width,
+            MUIV_Window_AltWidth_Screen(0)
+        )
+    )
     {
 	data->wd_AltDim.Width = data->wd_RenderInfo.mri_ScreenWidth
 	    * (- (data->wd_AltDim.Width + 200)) / 100;
     }
-    else if (_between(MUIV_Window_AltWidth_Visible(100),
-		      data->wd_AltDim.Width,
-		      MUIV_Window_AltWidth_Visible(0)))
+    else if
+    (
+        _between
+        (
+            MUIV_Window_AltWidth_Visible(100),
+            data->wd_AltDim.Width,
+            MUIV_Window_AltWidth_Visible(0)
+        )
+    )
     {
 	data->wd_AltDim.Width = data->wd_RenderInfo.mri_ScreenWidth
 	    * (- (data->wd_AltDim.Width + 100)) / 100;
     }
 
-    if (_between(MUIV_Window_AltHeight_MinMax(100),
-		 data->wd_AltDim.Height,
-		 MUIV_Window_AltHeight_MinMax(0)))
+    if
+    (
+        _between
+        (
+            MUIV_Window_AltHeight_MinMax(100),
+            data->wd_AltDim.Height,
+            MUIV_Window_AltHeight_MinMax(0)
+        )
+    )
     {
 	data->wd_AltDim.Height = data->wd_MinMax.MinHeight
 	    - data->wd_AltDim.Height
 	    * (data->wd_MinMax.MaxHeight - data->wd_MinMax.MinHeight);
     }
-    else if (_between(MUIV_Window_AltHeight_Screen(100),
-		      data->wd_AltDim.Height,
-		      MUIV_Window_AltHeight_Screen(0)))
+    else if
+    (
+        _between
+        (
+            MUIV_Window_AltHeight_Screen(100),
+            data->wd_AltDim.Height,
+            MUIV_Window_AltHeight_Screen(0)
+        )
+    )
     {
 	data->wd_AltDim.Height = data->wd_RenderInfo.mri_ScreenHeight
 	    * (- (data->wd_AltDim.Height + 200)) / 100;
     }
-    else if (_between(MUIV_Window_AltHeight_Visible(100),
-		      data->wd_AltDim.Height,
-		      MUIV_Window_AltHeight_Visible(0)))
+    else if
+    (
+        _between
+        (
+            MUIV_Window_AltHeight_Visible(100),
+            data->wd_AltDim.Height,
+            MUIV_Window_AltHeight_Visible(0)
+        )
+    )
     {
 	data->wd_AltDim.Height = data->wd_RenderInfo.mri_ScreenHeight
 	    * (- (data->wd_AltDim.Height + 100)) / 100;
     }
 
-    data->wd_AltDim.Width = CLAMP(data->wd_AltDim.Width, data->wd_MinMax.MinWidth,
-			   data->wd_MinMax.MaxWidth);
-    data->wd_AltDim.Height = CLAMP(data->wd_AltDim.Height, data->wd_MinMax.MinHeight,
-			    data->wd_MinMax.MaxHeight);
+    data->wd_AltDim.Width = CLAMP
+    (
+        data->wd_AltDim.Width, data->wd_MinMax.MinWidth, 
+        data->wd_MinMax.MaxWidth
+    );
+    data->wd_AltDim.Height = CLAMP
+    (
+        data->wd_AltDim.Height, data->wd_MinMax.MinHeight,
+        data->wd_MinMax.MaxHeight
+    );
 
     altdims = data->wd_AltDim;
     /* hack to account for border size, as we only know the innersize and must give
@@ -630,22 +721,34 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     altdims.Width += data->wd_RenderInfo.mri_Screen->WBorLeft + data->wd_RenderInfo.mri_Screen->WBorRight;
     altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 11;
     
-    win = OpenWindowTags(NULL,
-			 WA_Left,         (IPTR)data->wd_X,
-			 WA_Top,          (IPTR)data->wd_Y,
-			 WA_Flags,        (IPTR)flags,
-			 data->wd_Title?WA_Title:TAG_IGNORE,(IPTR)data->wd_Title,
-			 data->wd_ScreenTitle?WA_ScreenTitle:TAG_IGNORE, (IPTR)data->wd_ScreenTitle,
-			 WA_CustomScreen, (IPTR)data->wd_RenderInfo.mri_Screen,
-			 WA_InnerWidth,   (IPTR)data->wd_Width,
-			 WA_InnerHeight,  (IPTR)data->wd_Height,
-			 WA_AutoAdjust,   (IPTR)TRUE,
-			 WA_NewLookMenus, (IPTR)TRUE,
-			 data->wd_NoMenus ? WA_RMBTrap : TAG_IGNORE, (IPTR) TRUE,
-                         WA_Gadgets, data->wd_VertProp,
-			 WA_Zoom,         (IPTR)&altdims,
-			 REDUCE_FLICKER_TEST ? WA_BackFill : TAG_IGNORE, LAYERS_NOBACKFILL,
-			 TAG_DONE);
+    win = OpenWindowTags
+    (
+        NULL,
+        
+        WA_Left,                (IPTR) data->wd_X,
+        WA_Top,                 (IPTR) data->wd_Y,
+        WA_Flags,               (IPTR) flags,
+        data->wd_Title ?
+            WA_Title   : 
+            TAG_IGNORE,         (IPTR) data->wd_Title,
+        data->wd_ScreenTitle ? 
+            WA_ScreenTitle   : 
+            TAG_IGNORE,         (IPTR) data->wd_ScreenTitle,
+        WA_CustomScreen,        (IPTR) data->wd_RenderInfo.mri_Screen,
+        WA_InnerWidth,          (IPTR) data->wd_Width,
+        WA_InnerHeight,         (IPTR) data->wd_Height,
+        WA_AutoAdjust,          (IPTR) TRUE,
+        WA_NewLookMenus,        (IPTR) TRUE,
+        data->wd_NoMenus ? 
+            WA_RMBTrap   : 
+            TAG_IGNORE,         (IPTR) TRUE,
+        WA_Gadgets,                    data->wd_VertProp,
+        WA_Zoom,                (IPTR) &altdims,
+        REDUCE_FLICKER_TEST ? 
+        WA_BackFill         : 
+        TAG_IGNORE,                    LAYERS_NOBACKFILL,
+        TAG_DONE
+    );
 
     if (win)
     {
@@ -657,10 +760,13 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_Height = win->GZZHeight;
 
         /* set window limits according to window contents */
-        WindowLimits(win, data->wd_MinMax.MinWidth  + hborders,
-		     data->wd_MinMax.MinHeight + vborders,
-		     data->wd_MinMax.MaxWidth  + hborders,
-		     data->wd_MinMax.MaxHeight + vborders);
+        WindowLimits
+        (
+            win, data->wd_MinMax.MinWidth  + hborders,
+            data->wd_MinMax.MinHeight + vborders,
+            data->wd_MinMax.MaxWidth  + hborders,
+            data->wd_MinMax.MaxHeight + vborders
+        );
         
         win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
         win->UserPort = data->wd_UserPort; /* Same port for all windows */
@@ -712,9 +818,12 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 
             /* remove all messages pending for this window */
             Forbid();
-            for (msg  = (struct IntuiMessage *)win->UserPort->mp_MsgList.lh_Head;
-                 (succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ);
-                 msg  = succ)
+            for
+            (
+                msg  = (struct IntuiMessage *)win->UserPort->mp_MsgList.lh_Head;
+                (succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ);
+                msg  = succ
+            )
             {
                 if (msg->IDCMPWindow == win)
                 {
@@ -761,10 +870,13 @@ _zune_window_resize (struct MUI_WindowData *data)
     SizeWindow(win, dx, dy);
 
     /* The following WindowLimits() call doesn't really work because SizeWindow() is async */
-    WindowLimits(win, data->wd_MinMax.MinWidth + hborders,
-                      data->wd_MinMax.MinHeight + vborders,
-                      data->wd_MinMax.MaxWidth + hborders,
-                      data->wd_MinMax.MaxHeight + vborders);
+    WindowLimits
+    (
+        win, data->wd_MinMax.MinWidth + hborders,
+        data->wd_MinMax.MinHeight + vborders,
+        data->wd_MinMax.MaxWidth + hborders,
+        data->wd_MinMax.MaxHeight + vborders
+    );
 
     return (dx || dy);
 }
@@ -788,7 +900,12 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
     if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return FALSE;
     if (!(muiAreaData(obj)->mad_ContextMenu)) return FALSE;
-    if (x >= _left(obj) && x <= _right(obj) && y >= _top(obj) && y <= _bottom(obj)) return TRUE;
+    if
+    (
+           x >= _left(obj) && x <= _right(obj) 
+        && y >= _top(obj)  && y <= _bottom(obj)
+    ) 
+        return TRUE;
 
     return FALSE;
 }
@@ -825,9 +942,14 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		struct Window *wnd;
 
 		wnd = _window(data->wd_DropObject);
-		if (imsg->MouseX < _left(data->wd_DropObject) || imsg->MouseX > _right(data->wd_DropObject) ||
-		    imsg->MouseY < _top(data->wd_DropObject) || imsg->MouseY > _bottom(data->wd_DropObject) ||
-		    layer != wnd->WLayer)
+		if
+                (
+                       imsg->MouseX < _left(data->wd_DropObject) 
+                    || imsg->MouseX > _right(data->wd_DropObject) 
+                    || imsg->MouseY < _top(data->wd_DropObject) 
+                    || imsg->MouseY > _bottom(data->wd_DropObject) 
+                    || layer != wnd->WLayer
+                )
 		{
 		    /* We have left the object */
 		    UndrawDragNDrop(data->wd_dnd);
@@ -871,9 +993,18 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 		    if (root)
 		    {
-			if ((data->wd_DropObject = (Object*)DoMethod(root,MUIM_DragQueryExtended,(IPTR)data->wd_DragObject,
-								     imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-								     imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge)))
+			if
+                        (
+                            (
+                                data->wd_DropObject = (Object*) DoMethod
+                                (
+                                    root, MUIM_DragQueryExtended, 
+                                    (IPTR) data->wd_DragObject,
+                                    imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                                    imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
+                                )
+                            )
+                        )
 		    	{
 			    UndrawDragNDrop(data->wd_dnd);
 			    DoMethod(data->wd_DropObject, MUIM_DragBegin,(IPTR)data->wd_DragObject);
@@ -888,9 +1019,13 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	LONG i;
 	    	for (i=0;i<2;i++)
 	    	{
-		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,(IPTR)data->wd_DragObject,
-					imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-					imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
+		    LONG res = DoMethod
+                    (
+                        data->wd_DropObject, MUIM_DragReport, 
+                        (IPTR) data->wd_DragObject,
+                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update
+                    );
 		    switch (res)
 		    {
 			case MUIV_DragReport_Abort:
@@ -920,9 +1055,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	{
 		    UndrawDragNDrop(data->wd_dnd);
 		    DoMethod(data->wd_DropObject, MUIM_DragFinish, (IPTR)data->wd_DragObject);
-		    DoMethod(data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
-			     imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-			     imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge);
+		    DoMethod
+                    (
+                        data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
+                        imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+                        imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge
+                    );
 		    data->wd_DropObject = NULL;
 	    	}
 		finish_drag = 1;
@@ -988,11 +1126,14 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
 
 	    /* set window limits according to window contents */
-	    WindowLimits(iWin,
-			 data->wd_MinMax.MinWidth  + hborders,
-			 data->wd_MinMax.MinHeight + vborders,
-			 data->wd_MinMax.MaxWidth  + hborders,
-			 data->wd_MinMax.MaxHeight + vborders);
+	    WindowLimits
+            (
+                iWin,
+                data->wd_MinMax.MinWidth  + hborders,
+                data->wd_MinMax.MinHeight + vborders,
+                data->wd_MinMax.MaxWidth  + hborders,
+                data->wd_MinMax.MaxHeight + vborders
+            );
 	}
 
 	if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
@@ -1189,9 +1330,16 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 
     if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW)) return 0;
 
-    if (event->Class == IDCMP_MOUSEBUTTONS && event->Code == SELECTDOWN && (_flags(ehn->ehn_Object) & MADF_INVIRTUALGROUP))
+    if
+    (
+           event->Class == IDCMP_MOUSEBUTTONS && event->Code == SELECTDOWN 
+        && (_flags(ehn->ehn_Object) & MADF_INVIRTUALGROUP)
+    )
     {
-	/* Here we filter out SELECTDOWN messages if objects is in a virtual group but the click went out of the virtual group */
+	/* 
+            Here we filter out SELECTDOWN messages if objects is in a virtual 
+            group but the click went out of the virtual group 
+        */
     	Object *obj = ehn->ehn_Object;
     	Object *parent = obj;
     	Object *wnd = _win(obj);
@@ -1202,7 +1350,13 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 	    if (wnd == parent) break;
 	    if (_flags(parent) & MADF_ISVIRTUALGROUP)
 	    {
-		if (event->MouseX < _mleft(parent) || event->MouseX > _mright(parent) || event->MouseY < _mtop(parent) || event->MouseY > _mbottom(parent))
+		if
+                (
+                       event->MouseX < _mleft(parent) 
+                    || event->MouseX > _mright(parent) 
+                    || event->MouseY < _mtop(parent) 
+                    || event->MouseY > _mbottom(parent)
+                )
 		{
 		    return 0;
 		}
@@ -1219,16 +1373,17 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     else
     {
 	if (ehn->ehn_Class)
-	    res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+	    res = CoerceMethod
+            (
+                ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
+                (IPTR)event, muikey
+            );
 	else
 	    res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
     }
     return res;
 }
 
-/**************************************************************************
- ...
-**************************************************************************/
 static void handle_event(Object *win, struct IntuiMessage *event)
 {
     struct MUI_WindowData *data = muiWindowData(win);
@@ -1251,7 +1406,15 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 	for (muikey=MUIKEY_COUNT-1;muikey >= 0;muikey--) /* 0 == MUIKEY_PRESS */
 	{
-	    if (muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well && MatchIX(&ievent,&muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix))
+	    if
+            (
+                   muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well 
+                && MatchIX
+                   (
+                       &ievent, 
+                       &muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix
+                   )
+            )
 		break;
 	}
 	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX)) muikey = MUIKEY_RELEASE;
@@ -1280,7 +1443,16 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if (ehn->ehn_Object == active_object && (ehn->ehn_Events & mask || (muikey != MUIKEY_NONE && (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)))) /* the last condition ??? */
+	    if
+            (
+                ehn->ehn_Object == active_object && 
+                (
+                    ehn->ehn_Events & mask || 
+                    (
+                        muikey != MUIKEY_NONE && (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)
+                    )
+                )
+            ) /* the last condition ??? */
 	    {
 		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
@@ -1306,8 +1478,11 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if ((ehn->ehn_Object == data->wd_DefaultObject) &&
-		(ehn->ehn_Events & mask))
+	    if
+            (
+                   (ehn->ehn_Object == data->wd_DefaultObject) 
+                && (ehn->ehn_Events & mask)
+            )
 	    {
 		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
@@ -1344,7 +1519,11 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 		    if (muikey != MUIKEY_NONE && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
 		    {
-			res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+			res = CoerceMethod
+                        (
+                            ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
+                            (IPTR)event, muikey
+                        );
 			if (res & MUI_EventHandlerRC_Eat) return;
 		    }
 		}
@@ -1643,8 +1822,9 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     NewList((struct List*)&(data->wd_CycleChain));
     NewList((struct List*)&(data->wd_IDList));
 
-    data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET
-                      | WFLG_SIMPLE_REFRESH | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
+    data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET 
+                      | WFLG_CLOSEGADGET | WFLG_SIMPLE_REFRESH 
+                      | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
 
     data->wd_Events = _zune_window_get_default_events();
     data->wd_ActiveObject = NULL;
@@ -2029,7 +2209,7 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return(TRUE);
     }
 
-    return(DoSuperMethodA(cl, obj, (Msg) msg));
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
 }
 
