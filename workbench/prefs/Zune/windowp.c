@@ -70,7 +70,7 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
     return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
-#define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
+#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
 static Object*MakeSpacingSlider (void)
 {
@@ -133,13 +133,17 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 		   Child, d.background_window_popimage =
 			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Draggable, TRUE, End,
+					 MUIA_Draggable, TRUE,
+					 MUIA_Window_Title, "Adjust Background",
+					 End,
 		   Child, MUI_MakeObject(MUIO_Label, "Window", MUIO_Label_Centered),
 			       End,
 			       Child, VGroup,
 		   Child, d.background_requester_popimage =
 					 NewObject(CL_ImageClipboard->mcc_Class, NULL,
-						   MUIA_Draggable, TRUE, End,
+						   MUIA_Draggable, TRUE,
+						   MUIA_Window_Title, "Adjust Background",
+						   End,
 		   Child, MUI_MakeObject(MUIO_Label, "Requester", MUIO_Label_Centered),
 			       End,
 		   End,
@@ -170,20 +174,21 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
-    char *spec;
+    STRPTR spec;
 
 /* Fonts */
-    setstring(data->font_normal_string, FindConfig(MUICFG_Font_Normal));
-    setstring(data->font_tiny_string, FindConfig(MUICFG_Font_Tiny));
-    setstring(data->font_big_string, FindConfig(MUICFG_Font_Big));
+    setstring(data->font_normal_string, FindFont(MUICFG_Font_Normal));
+    setstring(data->font_tiny_string, FindFont(MUICFG_Font_Tiny));
+    setstring(data->font_big_string, FindFont(MUICFG_Font_Big));
 
 /* Backgrounds */
-    spec = FindConfig(MUICFG_Background_Window);
-    set(data->background_window_popimage,MUIA_Imagedisplay_Spec,
-	spec ? (IPTR)spec : MUII_WindowBack);
-    spec = FindConfig(MUICFG_Background_Requester);
-    set(data->background_requester_popimage,MUIA_Imagedisplay_Spec,
-	spec ? (IPTR)spec : MUII_RequesterBack);
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_Window);
+    set(data->background_window_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_Requester);
+    set(data->background_requester_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
 /* Spacing */
     setslider(data->spacing_left_slider,
@@ -205,8 +210,7 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
 static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
-    char *buf;
-    char *str;
+    STRPTR str;
 
 /* Fonts */
     str = getstring(data->font_normal_string);
@@ -219,11 +223,11 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Big, (IPTR)str);
 
 /* Backgrounds */
-    str = (char*)xget(data->background_window_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)xget(data->background_window_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Window,
 	     (IPTR)str);
 
-    str = (char*)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Requester,
 	     (IPTR)str);
 

@@ -130,6 +130,51 @@ BOOPSI_DISPATCHER(IPTR, ImageClipboard_Dispatcher, cl, obj, msg)
 }
 
 
+/****************************************************************
+ FrameClipboard class (MUIC_Popframe)
+*****************************************************************/
+struct FrameClipboardData
+{
+    LONG dummy;
+};
+
+static ULONG FrameClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    struct MUI_FrameSpec *dummy;
+
+/*      D(bug("ImageClipboard_DragQuery\n")); */
+    if (msg->obj == obj)
+	return MUIV_DragQuery_Refuse;
+/*      D(bug("ImageClipboard_DragQuery 2\n")); */
+    if (!get(msg->obj, MUIA_Framedisplay_Spec, &dummy))
+	return MUIV_DragQuery_Refuse;
+/*      D(bug("ImageClipboard_DragQuery accepted\n")); */
+    return MUIV_DragQuery_Accept;
+}
+
+static ULONG FrameClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    struct MUI_FrameSpec *spec;
+
+/*      D(bug("ImageClipboard_DragDrop\n")); */
+    get(msg->obj, MUIA_Framedisplay_Spec, &spec);
+    set(obj, MUIA_Framedisplay_Spec, spec);
+    return 0;
+}
+
+BOOPSI_DISPATCHER(IPTR, FrameClipboard_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+	case MUIM_DragQuery:
+	    return FrameClipboard_DragQuery(cl, obj, (APTR)msg);
+	case MUIM_DragDrop:
+	    return FrameClipboard_DragDrop(cl, obj, (APTR)msg);
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+
 
 /****************************************************************
  Open needed libraries
@@ -166,16 +211,7 @@ static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
 
 struct MUI_CustomClass *CL_ImageClipboard = NULL;
-
-int open_classes(void)
-{
-     CL_ImageClipboard = MUI_CreateCustomClass(NULL, MUIC_Popimage, NULL,
-					      sizeof(struct ImageClipboardData),
-					      ImageClipboard_Dispatcher);
-     if (CL_ImageClipboard)
-	 return 1;
-     return 0;
-}
+struct MUI_CustomClass *CL_FrameClipboard = NULL;
 
 void close_classes(void)
 {
@@ -183,6 +219,29 @@ void close_classes(void)
     {
 	MUI_DeleteCustomClass(CL_ImageClipboard);
     }
+    if (CL_FrameClipboard)
+    {
+	MUI_DeleteCustomClass(CL_FrameClipboard);
+    }
+}
+
+int open_classes(void)
+{
+     CL_ImageClipboard = MUI_CreateCustomClass(NULL, MUIC_Popimage, NULL,
+					      sizeof(struct ImageClipboardData),
+					      ImageClipboard_Dispatcher);
+     CL_FrameClipboard = MUI_CreateCustomClass(NULL, MUIC_Popframe, NULL,
+					      sizeof(struct ImageClipboardData),
+					      FrameClipboard_Dispatcher);
+     if (CL_ImageClipboard && CL_FrameClipboard)
+     {
+	 return 1;
+     }
+     else
+     {
+	 close_classes();
+	 return 0;
+     }
 }
 
 
@@ -317,12 +376,11 @@ int init_gui(void)
 			    End,
 			End,
 		    Child, HGroup,
-			Child, MUI_NewObject(MUIC_Popimage,
-					     MUIA_Disabled, TRUE,
+			Child, NewObject(CL_FrameClipboard->mcc_Class, NULL,
 					     MUIA_Draggable, TRUE,
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
-					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+					     MUIA_Window_Title, "Frame Clipboard",
 					     TAG_DONE), /* Popframe really */
       	               Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
 					     MUIA_Draggable, TRUE,
@@ -330,6 +388,7 @@ int init_gui(void)
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+					     MUIA_Window_Title, "Image Clipboard",
 					     TAG_DONE),
 		        End, /* HGroup */
 	            End,
@@ -344,8 +403,11 @@ int init_gui(void)
 		    End,
 		Child, HGroup,
 		    Child, save_button = MakeButton("Save"),
+	            Child, HVSpace,
 		    Child, use_button = MakeButton("Use"),
+	            Child, HVSpace,
 		    Child, test_button = MakeButton("Test"),
+	            Child, HVSpace,
 		    Child, cancel_button = MakeButton("Cancel"),
 		    End,
 		End,

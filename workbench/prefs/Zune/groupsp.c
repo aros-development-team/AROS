@@ -64,7 +64,7 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
     return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
-#define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
+#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
 static Object*MakeSpacingSlider (void)
 {
@@ -98,11 +98,17 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    Child, HGroup,
 		GroupFrameT("Frame"),
 		Child, VGroup,
-		   Child, d.normal_popframe = PopimageObject, MUIA_Disabled, TRUE, MUIA_Draggable, TRUE, End,
+		   Child, d.normal_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+			       MUIA_Draggable, TRUE,
+			       MUIA_Window_Title, "Adjust Frame",
+			       End,
 		   Child, MUI_MakeObject(MUIO_Label, "Normal", MUIO_Label_Centered),
 	           End,
        	       Child, VGroup,
-		   Child, d.virtual_popframe = PopimageObject, MUIA_Disabled, TRUE, MUIA_Draggable, TRUE, End,
+		   Child, d.virtual_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+			       MUIA_Draggable, TRUE,
+			       MUIA_Window_Title, "Adjust Frame",
+			       End,
 		   Child, MUI_MakeObject(MUIO_Label, "Virtual", MUIO_Label_Centered),
 	           End,
 		End,
@@ -121,13 +127,19 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		GroupFrameT("Background"),
 		Child, d.background_framed_popimage =
 		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE, End,
+			      MUIA_Draggable, TRUE,
+			      MUIA_Window_Title, "Adjust Background",
+			      End,
 		Child, d.background_page_popimage =
 		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE, End,
+			      MUIA_Draggable, TRUE,
+			      MUIA_Window_Title, "Adjust Background",
+			      End,
 		Child, d.background_register_popimage =
 		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE, End,
+			      MUIA_Draggable, TRUE,
+			      MUIA_Window_Title, "Adjust Background",
+			      End,
 		Child, MakeLabel("Framed"),
 		Child, MakeLabel("Page"),
 		Child, MakeLabel("Register"),
@@ -146,23 +158,32 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_GroupsPData *data = INST_DATA(cl, obj);
-    char *spec;
+    STRPTR spec;
 
 /* Fonts */
-    setstring(data->font_title_string, FindConfig(MUICFG_Font_Title));
+    setstring(data->font_title_string, FindFont(MUICFG_Font_Title));
 
 /* Backgrounds */
-    spec = FindConfig(MUICFG_Background_Framed);
-    set(data->background_framed_popimage,MUIA_Imagedisplay_Spec,
-	spec ? (IPTR)spec : MUII_GroupBack);
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_Framed);
+    set(data->background_framed_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
-    spec = FindConfig(MUICFG_Background_Register);
-    set(data->background_register_popimage,MUIA_Imagedisplay_Spec,
-	spec ? (IPTR)spec : MUII_RegisterBack);
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_Register);
+    set(data->background_register_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
-    spec = FindConfig(MUICFG_Background_Page);
-    set(data->background_page_popimage,MUIA_Imagedisplay_Spec,
-	spec ? (IPTR)spec  : MUII_PageBack);
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_Page);
+    set(data->background_page_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+/* Frames */
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Frame_Group);
+    set(data->normal_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Frame_Virtual);
+    set(data->virtual_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
 /* Spacing */
     setslider(data->spacing_horiz_slider,
@@ -184,26 +205,33 @@ static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
 static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_GroupsPData *data = INST_DATA(cl, obj);
-    char *buf;
-    char *str;
+    STRPTR str;
 
 /* Fonts */
     str = getstring(data->font_title_string);
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Title, (IPTR)str);
 
 /* Backgrounds */
-    str = (char*)xget(data->background_framed_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)xget(data->background_framed_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Framed,
 	     (IPTR)str);
 
-    str = (char*)xget(data->background_register_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)xget(data->background_register_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Register,
 	     (IPTR)str);
 
-    str = (char*)xget(data->background_page_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)xget(data->background_page_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Page,
-
 	     (IPTR)str);
+
+/* Frames */
+    str = (STRPTR)xget(data->normal_popframe, MUIA_Framedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Group,
+	     (IPTR)str);
+    str = (STRPTR)xget(data->virtual_popframe, MUIA_Framedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Virtual,
+	     (IPTR)str);
+
 /* Spacing */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Group_HSpacing,
 	     xget(data->spacing_horiz_slider, MUIA_Numeric_Value));

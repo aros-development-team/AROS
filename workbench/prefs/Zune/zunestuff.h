@@ -16,6 +16,7 @@ LONG xget(Object * obj, ULONG attr);
 #define getstring(obj) (char*)xget(obj,MUIA_String_Contents)
 
 extern struct MUI_CustomClass *CL_ImageClipboard;
+extern struct MUI_CustomClass *CL_FrameClipboard;
 
 
 #endif
