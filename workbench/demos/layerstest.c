@@ -347,6 +347,31 @@ void sizelayer(void)
   }
 }
 
+void scrolllayer(void)
+{
+  int i,dx,dy;
+  printf("Scroll layer with id: ");
+  scanf("%d",&i);
+  if (NULL == layers[i])
+  {
+    printf("No layer with id %d\n",i);
+  }
+
+  printf("delta x: ");
+  scanf("%d",&dx);
+  printf("delta x: ");
+  scanf("%d",&dy);
+
+  if (0 == (layers[i]->Flags & LAYERSUPER))
+    printf("This is a non-superbitmapped layer.\n");
+  else
+    printf("This is a superbitmapped layer.\n");
+ 
+  ScrollLayer(0, layers[i], dx, dy);
+  printf("Scrolled layer with id %d.\n",i);
+
+}
+
 void motion(void)
 {
   int i,dx,dy,iter;
@@ -942,7 +967,8 @@ void doall(void)
     {
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
-        printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] motion [mot] \n");
+        printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] scrollayer [scl]\n");
+        printf("motion [mot] \n");
         printf("Frame [F]  DemoA DemoB DemoC\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
@@ -980,6 +1006,10 @@ void doall(void)
     else if (!strcmp(buf, "sizelayer") || !strcmp(buf, "sl")) 
     {
       sizelayer();
+    }     
+    else if (!strcmp(buf, "scrolllayer") || !strcmp(buf, "scl")) 
+    {
+      scrolllayer();
     }     
     else if (!strcmp(buf, "motion") || !strcmp(buf, "mot")) 
     {
