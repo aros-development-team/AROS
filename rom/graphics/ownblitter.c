@@ -87,7 +87,7 @@
     {
       /* force this task to sleep */
     
-      me->tc_TDNestCnt = SysBase->TDNestCnt;
+      BYTE old_TDNestCnt = SysBase->TDNestCnt;
       SysBase->TDNestCnt=-1;
 
       /* 
@@ -116,7 +116,7 @@
       */
     
       /* Restore TDNestCnt. */
-      SysBase->TDNestCnt=me->tc_TDNestCnt;
+      SysBase->TDNestCnt=old_TDNestCnt;
     } /* while () */
     /* I am the owner now !! */
     Disable();

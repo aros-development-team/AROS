@@ -66,6 +66,8 @@
     /* If at least one of the signals is already set do not wait. */
     while(!(me->tc_SigRecvd&signalSet))
     {
+        BYTE old_TDNestCnt;
+	
 	/* Set the wait signal mask */
 	me->tc_SigWait=signalSet;
 
@@ -75,7 +77,7 @@
 	    This could as well be stored in a local variable which makes
 	    the tc_TDNestCnt field somehow redundant.
 	*/
-	me->tc_TDNestCnt=SysBase->TDNestCnt;
+	old_TDNestCnt=SysBase->TDNestCnt;
 	SysBase->TDNestCnt=-1;
 
 	/* Move current task to the waiting list. */
@@ -91,7 +93,7 @@
 	*/
 
 	/* Restore TDNestCnt. */
-	SysBase->TDNestCnt=me->tc_TDNestCnt;
+	SysBase->TDNestCnt=old_TDNestCnt;
     }
     /* Get active signals. */
     rcvd=me->tc_SigRecvd&signalSet;
