@@ -1,5 +1,5 @@
 This is a pre-alpha version of something which might become the compiler
-for AROS. It contains untested, rudimentary support for i368 CPUs and
+for AROS. It contains untested, rudimentary support for i386 CPUs and
 no Amiga specific constructs like #pragma and __asm.
 
 The Copyright (C) is held by Volker Barthelmann, the author of VBCC and
