@@ -61,9 +61,7 @@
 	/* case sensetive compare */
 	if (!strncmp (*toolTypeArray, typeName, typenamelen) )
 	{
-	    /* Only a toolTypeArray if next char is '=' */
-	    if ((*toolTypeArray)[typenamelen] == '=')
-		return (*toolTypeArray+typenamelen+1);
+            return (*toolTypeArray+typenamelen+1);
 	}
 
 	toolTypeArray ++;
