@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/12 14:53:20  digulla
+    The loader code should use symbolic names
+
     Revision 1.4  1996/09/11 13:00:16  digulla
     Use correct alignment (M. Fleischer)
 
@@ -64,8 +67,8 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     BPTR seg=seglist;
     while(seg)
     {
-        STRPTR addr=(STRPTR)BADDR(seg)-ALLOCVEC_TOTAL;
-        ULONG size=*(ULONG *)addr;
+	STRPTR addr=(STRPTR)BADDR(seg)-ALLOCVEC_TOTAL;
+	ULONG size=*(ULONG *)addr;
 	for(;size>=sizeof(struct Resident);size-=PTRALIGN,addr+=PTRALIGN)
 	{
 	    struct Resident *res=(struct Resident *)addr;
@@ -77,7 +80,7 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 		return lib;
 	    }
 	}
-        seg=*(BPTR *)BADDR(seg);
+	seg=*(BPTR *)BADDR(seg);
     }
     UnLoadSeg(seglist);
     return NULL;
@@ -110,7 +113,7 @@ struct ExecBase *,sysbase,0,Dos)
 	ObtainSemaphore(&DOSBase->dl_LDSigSem);
 	DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
 	DOSBase->dl_LDName  =libName;
-	DOSBase->dl_LDPtr   ="Libs";
+	DOSBase->dl_LDPtr   ="libs:";
 	Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
 	Wait(SIGF_DOS);
 	library=(struct Library *)DOSBase->dl_LDPtr;
@@ -146,7 +149,7 @@ struct ExecBase *,sysbase,0,Dos)
 	ObtainSemaphore(&DOSBase->dl_LDSigSem);
 	DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
 	DOSBase->dl_LDName  =devName;
-	DOSBase->dl_LDPtr   ="Devs";
+	DOSBase->dl_LDPtr   ="devs:";
 	Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
 	Wait(SIGF_DOS);
 	device=(struct Device *)DOSBase->dl_LDPtr;
