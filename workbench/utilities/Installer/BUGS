@@ -1,0 +1,3 @@
+BUG00001
+fseek() has a bug check in future
+

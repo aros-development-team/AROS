@@ -1,0 +1,25 @@
+0001
+- parse fixed file and sort strings into tree structure
+- printf() the structure as "simulation" of execution
+
+0002
+- free malloc'ed memory after successfully executing string
+
+0003
+- split one sourcefile into multiple included into main file
+- removed debug information on parsing
+
+0004
+- always check for (malloc()!=NULL) else exit(-1)
+- use "#warning FIXME: blah" to mark bugs/missing sections/hacks
+- introduced files BUGS and ChangeLog
+
+0005
+- now the sources compile into modules
+- start interpreting commands
+
+0006
+- fixed problem that startup.o has to be the first objectfile
+- added int *intval; to struct ScriptArg
+- support for integers in script (bin,dec,hex)
+
