@@ -5,15 +5,17 @@
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM- workbench-libs-complete : workbench-libs-asl \
+#MM- workbench-libs-complete : workbench-libs-arp \
+#MM         workbench-libs-asl \
+#MM         workbench-libs-commodities \
+#MM	    workbench-libs-datatypes \
 #MM	    workbench-libs-diskfont \
 #MM	    workbench-libs-gadtools \
 #MM	    workbench-libs-icon \
 #MM	    workbench-libs-iffparse \
+#MM	    workbench-libs-locale \
 #MM	    workbench-libs-mathieeesingtrans \
 #MM	    workbench-libs-mathtrans \
 #MM	    workbench-libs-mathieeedoubbas \
-#MM	    workbench-libs-mathieeedoubtrans \
-#MM	    workbench-libs-arp \
-#MM         workbench-libs-commodities \
-#MM	    workbench-libs-locale
+#MM	    workbench-libs-mathieeedoubtrans
+
