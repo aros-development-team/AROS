@@ -10,10 +10,6 @@
 #include <proto/exec.h>
 #include "exec_private.h"
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#define SysBase 	*(void **)4
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -49,9 +45,8 @@
 
 ******************************************************************************/
 {
-#ifdef CREATE_ROM
-    struct ExecBase * SysBase = *(struct ExecBase **)0x04;
-#endif
+    AROS_GET_SYSBASE
+
     while (*str && len --)
 	RawPutChar (*str ++);
 } /* RawPutChars */
