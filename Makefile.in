@@ -20,3 +20,7 @@ mmake:
 
 genmf:
 	make -C tools/genmf
+
+clean:
+	$(MMAKE) AROS.clean
+
