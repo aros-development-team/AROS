@@ -82,18 +82,18 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 # Do something in all subdirs
 # This macro uses a trick: %(target) is evaluated *after* %(text), so one
 # can use %(target) in %(text).
-%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile
+%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile top=$(TOP)
 	@for dir in %(dirs) ; do \
 	    echo "%(text) in %(curdir)/$$dir..." ; \
 	    if test ! -e $$dir/%(submf) ; then \
 		echo "Generating %(submf)..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
-		--assign TOP="$(TOP)" \
+		--assign TOP="%(top)" \
 		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir ; \
 		$(MAKE) %(mflags) -f %(submf) \
-		    TOP="$(TOP)/.." CURDIR="%(curdir)/$$dir" \
+		    TOP="%(top)/.." CURDIR="%(curdir)/$$dir" \
 		    TARGET=%(target) %(target) ) ; \
 	    then true ; else exit 1 ; fi ; \
 	done
@@ -174,4 +174,50 @@ asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 %.s: %.c
 	@echo "Generating $(CURDIR)/$@..."
 	@$(CC) -S $(CFLAGS) $< -c -o $@
+%end
+
+# Used to help with the function replacement mechanism. Use like
+#
+#       %prepare_replace module=os/exec
+#
+# This will include the file contain information written out by the
+# $(TOP)/config makefiles which is used to filter out files that are
+# being replaced by machine dependant versions in the $(TOP)/config 
+# subtree.
+#
+# You can also determine which group of files you wish to filter against
+# with the filter command. You pass it the variable to modify as var
+#
+# Eg:
+#       %prepare_replace module=os/foobar
+#       %filter_replace $(FUNCTIONS)
+#
+# The variable $(ADDITIONAL_OBJS) will be available for you to link in
+# extra files.
+#
+# You should save the values of the variables which you filter in case
+# you need them at a later date.
+#
+%define prepare_replace module=
+-include $(GENDIR)/%(module)/mf.inc
+%end
+
+%define filter_replace var=
+%(var) := $(filter-out $(SUPPRESS_FILES),%(var))
+%end
+
+# You can use this to prevent objects which weren't compiled correctly by
+# config/$(...) directories to not be compiled by the local makefile.
+%define additional_objs_rule
+$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o):
+	@echo Error: One of the precompiled object files did not exist.
+	@exit 1
+%end
+
+%define add_objects files=/M
+	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files add $(f)))
+%end
+
+%define supp_files files=/M
+	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files not $(f)))
 %end
