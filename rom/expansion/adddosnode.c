@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a DOS device to the system.
-    Lang: english
+    Lang: English
 */
 #include "expansion_intern.h"
 #include <exec/io.h>
@@ -77,22 +77,25 @@
     BOOL ok = FALSE;
 
     /* Have we been asked to start a filesystem, and there is none already */
-    if( (flags & ADNF_STARTPROC) && (deviceNode->dn_Device == NULL))
+    if ((flags & ADNF_STARTPROC) && (deviceNode->dn_Device == NULL))
     {
 	/* yes, better do so */
 	struct MsgPort *mp;
 	struct IOFileSys *iofs;
-
+	
 	mp = CreateMsgPort();
-	if( mp != NULL )
+	
+	if (mp != NULL)
 	{
-	    iofs = (struct IOFileSys *)CreateIORequest(mp, sizeof(struct IOFileSys));
-	    if(iofs != NULL)
+	    iofs = (struct IOFileSys *)CreateIORequest(mp,
+						       sizeof(struct IOFileSys));
+
+	    if (iofs != NULL)
 	    {
 		STRPTR handler;
 		struct FileSysStartupMsg *fssm;
-
-		if( deviceNode->dn_Handler == NULL )
+		
+		if (deviceNode->dn_Handler == NULL)
 		{
 		    handler = "ffs.handler";
 		}
@@ -100,51 +103,55 @@
 		{
 		    handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 		}
-
+		
 		fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
 		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
-		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
-
-		if(!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
+		iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
+		iofs->io_Union.io_OpenDevice.io_Environ = (IPTR *)BADDR(fssm->fssm_Environ);
+		
+		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
 		{
 		    /*
-			Ok, this means that the handler was able to open,
-			the old mount command just left the device hanging?
-
-			I suppose that is one one of preventing it from
-			dieing
+		      Ok, this means that the handler was able to open,
+		      the old mount command just left the device hanging?
+		      
+		      I suppose that is one one of preventing it from
+		      dieing
 		    */
 		    deviceNode->dn_Device = iofs->IOFS.io_Device;
 		    deviceNode->dn_Unit = iofs->IOFS.io_Unit;
 		    ok = TRUE;
 		}
-
+		
 		DeleteIORequest(&iofs->IOFS);
 	    }
+
 	    DeleteMsgPort(mp);
 	}
     }
     else
+    {
 	ok = TRUE;
-
+    }
+    
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-
+    
     /* Aha, DOS is up and running... */
-    if( DOSBase != NULL )
+    if (DOSBase != NULL)
     {
 	/* We should add the filesystem to the DOS device list. It will
 	   usable from this point onwards.
-
-	    The DeviceNode structure that was passed to us can be added
-	    to the DOS list as it is, and we will let DOS start the
-	    filesystem task if it is necessary to do so.
+	   
+	   The DeviceNode structure that was passed to us can be added
+	   to the DOS list as it is, and we will let DOS start the
+	   filesystem task if it is necessary to do so.
 	*/
+
 	AddDosEntry((struct DosList *)deviceNode);
 	CloseLibrary((struct Library *)DOSBase);
     }
-
+    
     return ok;
-
+    
     AROS_LIBFUNC_EXIT
 } /* AddDosNode */
