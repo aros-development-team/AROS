@@ -216,6 +216,7 @@ SHARED	:= \
 	sigsuspend \
 	sleep \
 	snprintf \
+	spawnv \
 	sprintf \
 	srand48 \
 	sscanf \
