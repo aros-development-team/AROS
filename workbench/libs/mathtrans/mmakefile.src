@@ -27,6 +27,6 @@ FUNCS := \
 
 %build_module_macro mmake=workbench-libs-mathtrans \
  modname=mathtrans modtype=library files=$(FILES) funcs=$(FUNCS) \
- conffile=lib.conf uselibs=arosc
+ conffile=lib.conf uselibs=rom
 
 %common

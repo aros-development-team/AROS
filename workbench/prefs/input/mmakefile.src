@@ -14,7 +14,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-input \
     progname=Input targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
 
 
 IMAGES      := computermouse

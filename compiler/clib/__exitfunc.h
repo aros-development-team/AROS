@@ -1,3 +1,6 @@
+#ifndef ___EXITFUNC_H
+#define ___EXITFUNC_H
+
 /*
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
@@ -20,8 +23,6 @@ struct AtExitNode
 #define AEN_VOID 0
 #define AEN_PTR 1
 
-#ifndef _CLIB_KERNEL_
-extern struct MinList __atexit_list;
-#endif
-
 int __addexitfunc(struct AtExitNode *aen);
+
+#endif

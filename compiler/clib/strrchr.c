@@ -5,6 +5,7 @@
     ANSI C function strrchr().
 */
 
+#include <aros/macros.h>
 #include <stdio.h>
 
 /*****************************************************************************

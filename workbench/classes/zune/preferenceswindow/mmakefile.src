@@ -10,7 +10,7 @@ INCLUDE_FILES := preferenceswindow.h
     mmake=workbench-classes-zune-preferenceswindow \
     modname=PreferencesWindow modtype=mcc \
     conffile=preferenceswindow.conf \
-    uselibs="amiga arosc"
+    uselibs="amiga rom"
     
 %copy_includes path=zune dir=
     

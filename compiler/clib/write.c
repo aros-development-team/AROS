@@ -10,7 +10,6 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <aros/debug.h>
 #include "__stdio.h"
 #include "__errno.h"
 #include "__open.h"
@@ -55,7 +54,6 @@
     ssize_t cnt;
 
     fdesc *fdesc = __getfdesc(fd);
-    kprintf( "clib/write: entering\n");
     if (!fdesc)
     {
 	errno = EBADF;
@@ -67,7 +65,6 @@
     if (cnt == -1)
 	errno = IoErr2errno (IoErr ());
 
-    kprintf("clib/write: exiting\n" );
     return cnt;
 } /* write */
 

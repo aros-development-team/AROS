@@ -45,8 +45,6 @@
 ******************************************************************************/
 void __assert (const char * expr, const char * file, unsigned int line)
 {
-    GETUSER;
-
     fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
     exit (10);
 } /* assert */

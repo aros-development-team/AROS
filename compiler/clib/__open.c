@@ -23,30 +23,22 @@
 #include <aros/debug.h>
 #include "__errno.h"
 #include "__open.h"
-
-#ifndef _CLIB_KERNEL_
-int __numslots;
-fdesc **__fd_array;
-void *__stdfiles[3];
-#endif
+int c;
 
 fdesc *__getfdesc(register int fd)
 {
-    GETUSER;
 
-    return ((__numslots>=fd) && (fd>=0))?__fd_array[fd]:NULL;
+    return ((__numslots>fd) && (fd>=0))?__fd_array[fd]:NULL;
 }
 
 void __setfdesc(register int fd, fdesc *desc)
 {
-    GETUSER;
     /* FIXME: Check if fd is in valid range... */
     __fd_array[fd] = desc;
 }
 
 int __getfirstfd(register int startfd)
 {
-    GETUSER;
     /* FIXME: Check if fd is in valid range... */
     for (
 	;
@@ -59,7 +51,6 @@ int __getfirstfd(register int startfd)
 
 int __getfdslot(int wanted_fd)
 {
-    GETUSER;
     AROS_GET_SYSBASE_OK
 
     if (wanted_fd>=__numslots)
@@ -234,8 +225,6 @@ err:
 #warning perhaps this has to be handled in a different way...
 int __init_stdfiles(void)
 {
-    GETUSER;
-
     struct Process *me;
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
     int res = __getfdslot(2);
@@ -244,7 +233,7 @@ int __init_stdfiles(void)
 
     if
     (
-        res == -1                          ||
+        res == -1                           ||
 	!(indesc  = malloc(sizeof(fdesc))) ||
 	!(outdesc = malloc(sizeof(fdesc))) ||
 	!(errdesc = malloc(sizeof(fdesc)))
@@ -275,8 +264,6 @@ int __init_stdfiles(void)
 
 void __exit_stdfiles(void)
 {
-    GETUSER;
-
     int i = __numslots;
     while (i)
     {
@@ -288,7 +275,6 @@ void __exit_stdfiles(void)
 
 void __updatestdio(void)
 {
-    GETUSER;
     struct Process *me;
     AROS_GET_SYSBASE_OK
     AROS_GET_DOSBASE

@@ -24,7 +24,7 @@ FUNCS := \
 USER_LDFLAGS:=--verbose
 
 %build_module_macro mmake=workbench-libs-mathieeedoubbas \
-  modname=mathieeedoubbas modtype=library uselibs=arosc \
+  modname=mathieeedoubbas modtype=library uselibs=rom \
   conffile=lib.conf files=$(FILES) funcs=$(FUNCS)
 
 %common

@@ -12,6 +12,6 @@ EXEDIR      := $(AROS_PREFS)
 
 %build_prog mmake=workbench-prefs-font \
     progname=Font targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
 %common

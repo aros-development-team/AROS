@@ -15,7 +15,7 @@ USER_CFLAGS     := -DDATE="\"$(shell date -I)\""
 
 %build_prog mmake=workbench-system-aboutaros \
     progname=About targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="arossupport amiga arosc m"
 
 
 GENERATED   := authors.h sponsors.h acknowledgements.h

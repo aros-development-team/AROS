@@ -17,6 +17,6 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
   modname=expansion modtype=library \
   funcs=$(FUNCS) \
   conffile=lib.conf \
-  uselibs=arosc_shared
+  uselibs=arosc
 
 %common

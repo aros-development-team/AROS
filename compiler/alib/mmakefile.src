@@ -126,8 +126,12 @@ FILES	:= \
 
 linklibs-startup : $(LIBDIR)/startup.o $(LIBDIR)/detach.o
 
+%copy_includes includes=startup.h path=aros dir=
+
+USER_CFLAGS := -I $(TOP)/rom/exec
+
 $(LIBDIR)/startup.o : startup.c
-	%compile_q
+	%compile_q 
 
 $(LIBDIR)/detach.o : detach.c
 	%compile_q

@@ -10,7 +10,7 @@ INCLUDE_FILES := aboutwindow.h
     mmake=workbench-classes-zune-aboutwindow \
     modname=AboutWindow modtype=mcc \
     conffile=aboutwindow.conf \
-    uselibs="amiga arosc"
+    uselibs="amiga rom"
     
 %copy_includes path=zune dir=
     

@@ -10,7 +10,7 @@ EXEDIR := $(AROS_C)
 
 %build_prog mmake=workbench-c \
     progname=LoadWB targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared" \
+    files=$(FILES) uselibs="mui arossupport amiga rom m" \
     detach=yes
 
 %common

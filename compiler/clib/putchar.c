@@ -9,7 +9,5 @@
 
 int putchar(int c)
 {
-    GETUSER;
-
     return putc(c, stdout);
 }

@@ -18,15 +18,9 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
+#include <aros/debug.h>
 #include "__open.h"
 #include "__stdio.h"
-
-#ifndef _CLIB_KERNEL_
-
-FILE *stdin, *stdout, *stderr;
-struct MinList __stdio_files;
-
-#endif
 
 int __smode2oflags(const char *mode)
 {
@@ -109,7 +103,6 @@ int __oflags2sflags(int omode)
 
 int __init_stdio(void)
 {
-    GETUSER;
     AROS_GET_SYSBASE_OK
     AROS_GET_DOSBASE
 
@@ -125,7 +118,7 @@ int __init_stdio(void)
     	SetIoErr(ERROR_NO_FREE_STORE);
     	return 20;
     }
-      
+
     return 0;
 }
 

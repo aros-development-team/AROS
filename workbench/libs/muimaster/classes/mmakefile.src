@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I..
-USER_LIBS   := amiga arosc m mui
+USER_LIBS   := amiga rom m mui
 
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \

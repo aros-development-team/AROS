@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := ilbmtoicon
 EXES := $(AROSDIR)/Build/Tools/ilbmtoicon
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-ilbmtoicon
 

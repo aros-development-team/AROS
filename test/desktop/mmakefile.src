@@ -7,7 +7,7 @@ FILES	:= loaddesktop
 EXEDIR := $(AROSDIR)/test/desktop
 EXE := $(EXEDIR)/loaddesktop
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes

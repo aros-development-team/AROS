@@ -14,7 +14,7 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 
 %build_prog mmake=workbench-system-wanderer-tools-executecommand \
     progname=ExecuteCommand targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
 
 ICONS       := ExecuteCommand

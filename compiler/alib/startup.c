@@ -15,14 +15,16 @@
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <aros/startup.h>
+
+#include "etask.h"
+
 
 /* Don't define symbols before the entry point. */
 extern struct ExecBase  *SysBase;
 extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
 
-extern jmp_buf __startup_jmp_buf;
-extern LONG    __startup_error;
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
@@ -43,6 +45,8 @@ extern char **__argv;
 extern int  __argc;
 extern struct DosLibrary *DOSBase;
 
+extern struct aros_startup __aros_startup;
+
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
 AROS_UFH3(LONG, __startup_entry,
@@ -56,7 +60,7 @@ AROS_UFH3(LONG, __startup_entry,
     struct Process *myproc;
 
     SysBase = sysbase;
-    
+
     /*
         No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
@@ -69,6 +73,8 @@ AROS_UFH3(LONG, __startup_entry,
 
     myproc = (struct Process *)FindTask(NULL);
 
+    GetIntETask(myproc)->iet_startup = &__aros_startup;
+
     /* Do we have a CLI structure? */
     if (!myproc->pr_CLI)
     {
@@ -80,18 +86,18 @@ AROS_UFH3(LONG, __startup_entry,
         __argc = 0;
     }
 
-    if (!setjmp(__startup_jmp_buf))
+    if (!setjmp(__aros_startup.as_startup_jmp_buf))
     {
         if
         (
-            !(__startup_error = set_open_libraries()) &&
-            !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
+            !(__aros_startup.as_startup_error = set_open_libraries()) &&
+            !(__aros_startup.as_startup_error = set_call_funcs(SETNAME(INIT), 1))
         )
         {
             /* ctors get called in inverse order than init funcs */
             set_call_funcs(SETNAME(CTORS), -1);
 
-	    __startup_error = main (__argc, __argv);
+	    __aros_startup.as_startup_error = main (__argc, __argv);
         }
 
     }
@@ -107,15 +113,15 @@ AROS_UFH3(LONG, __startup_entry,
     set_close_libraries();
 
     /* Reply startup message to Workbench */
-    if (WBenchMsg) 
+    if (WBenchMsg)
     {
         Forbid(); /* make sure we're not UnLoadseg()ed before we're really done */
         ReplyMsg((struct Message *) WBenchMsg);
     }
-    
+
     CloseLibrary((struct Library *)DOSBase);
 
-    return __startup_error;
+    return __aros_startup.as_startup_error;
 
     AROS_USERFUNC_EXIT
 } /* entry */
@@ -138,8 +144,9 @@ int  __argc;
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
-jmp_buf __startup_jmp_buf;
-LONG __startup_error;
+static struct aros_startup __aros_startup;
+
+int do_arosc_internals = 1;
 
 DEFINESET(CTORS);
 DEFINESET(DTORS);

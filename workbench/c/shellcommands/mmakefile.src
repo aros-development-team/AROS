@@ -43,11 +43,11 @@ EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
 
 USER_CFLAGS := -I$(TOP)/rom/dos
 
-USE_CLIB_STATIC := yes
+USE_ROMLIB   := yes
 USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_AROSLIB := yes
-NO_AUTOINIT := yes
+USE_MLIB     := yes
+USE_AROSLIB  := yes
+NO_AUTOINIT  := yes
 
 #MM- workbench : workbench-c
 #MM workbench-c : includes linklibs

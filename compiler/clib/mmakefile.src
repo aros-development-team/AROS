@@ -2,25 +2,20 @@
 include $(TOP)/config/make.cfg
 
 #
-#   This is a rather special include file. It builds both a shared library
+#   This is a rather special makefile. It builds both a shared library
 #   and a link library from the same source, with only a small amount of
 #   overlap.
 #
 USER_CFLAGS :=	-Iinclude -I$(TOP)/rom/exec
 
 # We are trying to build:
-#   $(AROS_LIBS)/arosc.library	    from $(SHARED)
-#   $(AROS_LIB)/libarosc.a	    from $(COMMON) and $(STATIC)
-#   $(AROS_LIB)/libarosc_shared.a   from $(COMMON) and $(STUBS)
-#
-#   Note that $(SHARED) and $(STATIC) are the same group of files, but
-#   compiled slightly differently.
+#   $(AROS_LIBS)/arosc.library	  from $(SHARED)
+#   $(AROS_LIB)/libarosc.a        from $(COMMON) and $(STUBS)
 #
 #   It turns out that some of $(SHARED) refer to things in $(COMMON), so
 #   I've put that into the arosc.library as well.
 MODULE	    :=	arosc.library
-STATIC_LIB  :=	$(AROS_LIB)/libarosc.a
-SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
+SHARED_LIB  :=	$(AROS_LIB)/libarosc.a
 
 # New: Also trying to build
 #   $(AROS_LIB)/librom.a	    from $(COMMON) and $(ROMONLY)
@@ -33,7 +28,7 @@ SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
 ROM_LIB	    :=	$(AROS_LIB)/librom.a
 
 # All of the above
-LIB	    := $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
+LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 # Lists of files
 #   - Common always exist in the link library.
@@ -89,6 +84,7 @@ COMMON_ARCH := \
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
+	__arosc_userdata \
 	__assert \
 	__env \
 	__exitfunc \
@@ -123,7 +119,6 @@ SHARED	:= \
 	dup \
 	dup2 \
 	erand48 \
-	errno \
         execvp \
 	exit \
         _exit \
@@ -282,6 +277,8 @@ ROM_COMMON := \
 	strcpy \
 	strcspn \
 	strlen \
+	strlcat \
+	strlcpy \
 	strncasecmp \
 	strncat \
 	strncmp \
@@ -300,38 +297,39 @@ ROM_COMMON_ARCH := \
 
 # Objects for rom.lib, from the static build.
 ROM_STATIC := \
+        __arosc_userdata \
 	__isinf \
 	__vcformat \
+	__vcscan \
 	abs \
 	atoi \
 	atol \
 	bsearch \
 	ctype \
-	errno \
 	isinf \
 	labs \
 	qsort \
+	rand \
 	snprintf \
 	sprintf \
+	sscanf \
 	strtol \
 	strtoll \
 	strtoul \
 	strtoull \
 	vsnprintf \
-	vsprintf
+	vsprintf \
+	vsscanf
 
 #   - The stubs are generated, and are in the shared link library.
 STUBS   := $(wildcard $(OBJDIR)/stubs/*.o)
 
 # Dependancies
 DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
-	$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).d) \
 	$(foreach f,$(SHARED),$(OBJDIR)/shared/$(f).d) \
-	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d $(OBJDIR)/shared/arosc_endtag.d
+	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d \
+	$(OBJDIR)/shared/arosc_endtag.d
 
-STATIC_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
-	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
-		$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).o)
 SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
 	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
 		$(STUBS)
@@ -354,10 +352,7 @@ DEP_LIBS := arosm autoinit
 #MM
 linklibs-clib-quick : linklibs-clib
 
-linklibs-clib : setup-clib $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
-
-$(STATIC_LIB) : $(STATIC_OBJ)
-	%mklib_q from=$^
+linklibs-clib : setup-clib $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 $(SHARED_LIB) : $(SHARED_OBJ)
 	%mklib_q from=$^
@@ -369,16 +364,16 @@ $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ)
 	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o"
 
 $(OBJDIR)/static/%.o : %.c
-	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
+	%compile_q opt="$(CFLAGS)"
 
 $(OBJDIR)/shared/%.o : %.c
-	%compile_q opt="$(CFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h"
+	%compile_q opt="$(CFLAGS) -include __arosc_privdata.h"
 
 $(OBJDIR)/rom/%.o : %.c
-	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
+	%compile_q opt="$(CFLAGS)"
 
 $(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
+	%compile_q opt="$(CFLAGS)"
 
 # Need to copy these files in from the machine dependant build.
 $(OBJDIR)/shared/%jmp.o : $(OBJDIR)/%jmp.o

@@ -10,6 +10,6 @@ EXEDIR := $(AROS_C)/Wanderer
 
 %build_prog mmake=workbench-c-wanderer-browse \
     progname=Browse targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared"
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
 
 %common

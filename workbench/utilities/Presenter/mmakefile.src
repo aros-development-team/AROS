@@ -11,6 +11,6 @@ EXEDIR      := $(AROSDIR)/Utilities
 
 %build_prog mmake=workbench-utilities-presenter \
     progname=Presenter targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
 %common

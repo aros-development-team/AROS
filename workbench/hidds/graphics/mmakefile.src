@@ -14,7 +14,7 @@ USER_CFLAGS      := -DAROS_USE_OOP
   modname=graphics modtype=hidd \
   files=$(FILES) \
   conffile=lib.conf \
-  uselibs="hiddgraphicsstubs arosc" \
+  uselibs="hiddgraphicsstubs rom" \
   genfunctable=yes
 
 LIBNAME     := graphics

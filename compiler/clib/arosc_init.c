@@ -15,11 +15,15 @@
 #   include "arosc_gcc.h"
 #endif
 
-#include <libraries/arosc.h>
-
 #include <stddef.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <setjmp.h>
+
+#include <aros/debug.h>
+
+#include "etask.h"
+#include "__arosc_privdata.h"
 
 extern const char name[];
 extern const char version[];
@@ -177,42 +181,48 @@ AROS_LH0I(int, null, struct aroscbase *, aroscbase, 4, arosc)
     AROS_LIBFUNC_EXIT
 }
 
-int arosc_internalinit(struct AroscUserData *userdata)
+int arosc_internalinit(struct arosc_privdata **privdata_ptr)
 {
+    struct arosc_privdata *privdata;
+
+    kprintf("internalinit %p\n", privdata_ptr);
+
+    privdata = AllocVec(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
+    if (!privdata)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return RETURN_FAIL;
+    }
+
     /*save the old value of tc_UserData */
-    userdata->olduserdata = AROSC_USERDATA(0);
+    privdata->acpd_oldprivdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
     /*store the new one */
-    AROSC_USERDATA(0) = userdata;
+    GetIntETask(FindTask(NULL))->iet_acpd = privdata;
 
-    /* passes these value to the program */
-    userdata->ctype_b       = __ctype_b;
-    userdata->ctype_toupper = __ctype_toupper;
-    userdata->ctype_tolower = __ctype_tolower;
-
-    if (userdata->olduserdata)
-        userdata->umask = userdata->olduserdata->umask;
+    if (privdata->acpd_oldprivdata)
+        privdata->acpd_umask = privdata->acpd_oldprivdata->acpd_umask;
     else
-        userdata->umask = S_IWGRP|S_IWOTH;
+        privdata->acpd_umask = S_IWGRP|S_IWOTH;
+
+    if (privdata_ptr) *privdata_ptr = privdata;
 
     return set_call_funcs(SETNAME(INIT), 1);
 }
 
 int arosc_internalexit(void)
 {
-    struct AroscUserData *userdata = AROSC_USERDATA(0);
+    struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
     set_call_funcs(SETNAME(EXIT), -1);
 
     /*restore the old value */
-    AROSC_USERDATA(0) = userdata->olduserdata;
+    GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
 
-    /* Free the memory the program has allocated for us */
-    FreeVec(userdata);
+    FreeVec(privdata);
 
     return 0;
 }
-
 
 DEFINESET(INIT);
 DEFINESET(EXIT);

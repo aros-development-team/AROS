@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := flexcat
 EXES := $(AROSDIR)/Build/Tools/flexcat
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-flexcat
 

@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := archtool
 EXES := $(AROSDIR)/Build/Tools/archtool
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-archtool
 

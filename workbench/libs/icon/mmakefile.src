@@ -42,7 +42,7 @@ FUNCS := \
 #MM- workbench-libs-icon : includes linklibs
 
 %build_module_macro mmake=workbench-libs-icon modname=icon modtype=library \
-  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m arosc" \
+  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m" \
   conffile=lib.conf
 
 %common

@@ -11,7 +11,7 @@ EXEDIR  := $(AROS_TOOLS)
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
 %common
 
