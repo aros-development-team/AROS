@@ -24,6 +24,7 @@ FILES	:= \
 	Install \
 	install-i386-pc \
 	Join \
+	LeakWatch \
 	LibList \
 	List \
 	Lock \
