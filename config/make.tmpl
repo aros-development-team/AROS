@@ -583,7 +583,7 @@ BD_LIBDIR$(BDID)     := %(libdir)
 BD_FILES$(BDID)      := %(files)
 BD_ASMFILES$(BDID)   := %(asmfiles)
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID) $(BD_ASMFILES)))))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID)))))
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)))
 
 BD_CFLAGS$(BDID)     := %(cflags)
