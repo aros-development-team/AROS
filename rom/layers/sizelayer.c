@@ -401,14 +401,6 @@
     DeleteLayer(0, l_tmp);
 
 
-//#if 0
-    if (0 != (l->Flags & LAYERSIMPLE))
-    {
-      OrRectRegion(l->DamageList, &l->bounds);
-      l->Flags |= LAYERREFRESH;
-    }
-//#endif
-
     /*
     ** If the layer was a simple layer then there might be bitmap
     ** data backed up in the SimpleBakupBM and we need to write that

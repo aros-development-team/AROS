@@ -206,8 +206,12 @@
         }
         
         if (NULL != _CR->lobs)
+        {
+          /*
+          ** Adjust the coordinates of that damagelist later.
+          */
           OrRectRegion(l->DamageList, &_CR->bounds);
-
+        }
         _CR = _CR->Next;
       }
     } /* if (overlapping) */
@@ -394,21 +398,26 @@
         }
         _CR = _CR->Next;
       }
-      /* Determine the *valid* parts with a logical and connection */
+      /* Determine the *valid* parts with a logical AND connection */
 
       /* both regions are relative to the screen */      
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
 
       /*
+      ** Adjust Damagelist to layer coordinates
+      */      
+      l->DamageList->bounds.MinX -= l->bounds.MinX;
+      l->DamageList->bounds.MinY -= l->bounds.MinY;
+      l->DamageList->bounds.MaxX -= l->bounds.MinX;
+      l->DamageList->bounds.MaxY -= l->bounds.MinY;
+
+      /*
       ** See whether there's something in the final region and then
       ** set the REFRESH flag.
       */
       if (NULL != l->DamageList->RegionRectangle)
-{
-  kprintf("Setting REFRESH flag.\n");
         l->Flags |= LAYERREFRESH;
-}
     }
 
     /* 
@@ -417,10 +426,38 @@
     */
     DeleteLayer(0, l_tmp);
 
-    /* One more thing to do: Walk through all layers behind the layer and
-       check for simple refresh layers and clear that region of this layer 
-       out of their damage list
-     */
+    /*
+    ** If it's a simple layer then call for all those parts that are in the 
+    ** damage list the layer hook.
+    */
+
+    
+    if ((LAYERSIMPLE|LAYERREFRESH) == (l->Flags & (LAYERSIMPLE|LAYERREFRESH)))
+    {
+      struct Region * R = l->DamageList;
+      struct RegionRectangle * RR = R->RegionRectangle;
+      while (NULL != RR)
+      {
+        struct Rectangle bounds;
+        bounds.MinX = R->bounds.MinX + RR->bounds.MinX + l->bounds.MinX;
+        bounds.MinY = R->bounds.MinY + RR->bounds.MinY + l->bounds.MinY;
+        bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX + l->bounds.MinX;
+        bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY + l->bounds.MinY;
+        _CallLayerHook(l->BackFill,
+                       l->rp,
+                       l,
+                       &bounds,
+                       bounds.MinX,
+                       bounds.MinY);
+        RR = RR->Next;
+      }
+    }
+
+    /* 
+    ** One more thing to do: Walk through all layers behind the layer and
+    ** check for simple refresh layers and clear that region of this layer 
+    ** out of their damage list
+    */
 
     l_behind = l->back;
     while (NULL != l_behind)
@@ -445,12 +482,6 @@
       }      
       l_behind = l_behind ->back;
     } /* while */
-
-    /* Make DamageList relative to the layer l */
-    l->DamageList->bounds.MinX -= l->bounds.MinX;
-    l->DamageList->bounds.MinY -= l->bounds.MinY;
-    l->DamageList->bounds.MaxX -= l->bounds.MinX;
-    l->DamageList->bounds.MaxY -= l->bounds.MinY;
 
     /* That's it folks! */
     CleanupLayers(LI);
