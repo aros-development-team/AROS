@@ -21,7 +21,7 @@ FUNCS := createplayera \
 
 USE_AMIGALIB := yes
 
-#MM- workbench-libs-realtime : setup includes linklibs
+#MM- workbench-libs-realtime : setup includes linklibs workbench-libs-realtime-module
 %make_module_setup mmake=workbench-libs-realtime
 %make_module_cpak
 %make_module mmake=workbench-libs-realtime
