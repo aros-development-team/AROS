@@ -2216,6 +2216,19 @@ static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Wi
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Window_ToFront
+**************************************************************************/
+static IPTR Window_ToFront(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
+	return 0;
+
+    WindowToFront(data->wd_RenderInfo.mri_Window);
+    return 1;
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -2254,6 +2267,7 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_GetMenuState: return Window_GetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_SetMenuState: return Window_SetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_DrawBackground: return Window_DrawBackground(cl, obj, (APTR)msg);
+	case MUIM_Window_ToFront: return Window_ToFront(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
