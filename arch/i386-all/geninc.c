@@ -18,7 +18,7 @@
 
 int main (void)
 {
-    printf ("# Macros\n"
+    printf ("/* Macros */\n"
 #if (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)
 	"#define AROS_CSYMNAME(n)       _ ## n\n"
 	"#define AROS_CDEFNAME(n)       _ ## n\n"
@@ -38,18 +38,18 @@ int main (void)
 #endif
 	    "\n");
 
-    printf ("# For sigprocmask\n");
+    printf ("/* For sigprocmask */\n");
     printf ("#define SIG_BLOCK     %d\n", SIG_BLOCK);
     printf ("#define SIG_UNBLOCK   %d\n\n", SIG_UNBLOCK);
 
-    printf ("# ExecBase\n");
+    printf ("/* ExecBase */\n");
     printf ("#define AttnResched   %d\n", offsetof (struct ExecBase, AttnResched));
     printf ("#define IDNestCnt     %d\n", offsetof (struct ExecBase, IDNestCnt));
     printf ("#define TDNestCnt     %d\n", offsetof (struct ExecBase, TDNestCnt));
     printf ("#define TaskReady     %d\n", offsetof (struct ExecBase, TaskReady));
     printf ("#define ThisTask      %d\n", offsetof (struct ExecBase, ThisTask));
 
-    printf ("\n# struct Task\n");
+    printf ("\n/* struct Task */\n");
     printf ("#define tc_State      %d\n", offsetof (struct Task, tc_State));
     printf ("#define tc_Flags      %d\n", offsetof (struct Task, tc_Flags));
     printf ("#define tc_ExceptCode %d\n", offsetof (struct Task, tc_ExceptCode));
@@ -63,21 +63,21 @@ int main (void)
     printf ("#define tc_SPUpper    %d\n", offsetof (struct Task, tc_SPUpper));
     printf ("#define tc_IDNestCnt  %d\n", offsetof (struct Task, tc_IDNestCnt));
 
-    printf ("\n# struct DosBase\n");
+    printf ("\n/* struct DosBase */\n");
     printf ("#define dl_SysBase    %d\n", offsetof (struct DosLibrary, dl_SysBase));
 
-    printf ("\n# struct StackSwapStruct\n");
+    printf ("\n/* struct StackSwapStruct */\n");
     printf ("#define stk_Lower     %d\n", offsetof (struct StackSwapStruct, stk_Lower));
     printf ("#define stk_Upper     %d\n", offsetof (struct StackSwapStruct, stk_Upper));
     printf ("#define stk_Pointer   %d\n", offsetof (struct StackSwapStruct, stk_Pointer));
 
-    printf ("\n# Task Flags\n");
+    printf ("\n/* Task Flags */\n");
     printf ("#define TS_RUN        %d\n", TS_RUN);
     printf ("#define TS_READY      %d\n", TS_READY);
     printf ("#define TF_EXCEPT     0x%04lX\n", TF_EXCEPT);
     printf ("#define TF_SWITCH     0x%04lX\n", TF_SWITCH);
 
-    printf ("\n# Exec functions\n");
+    printf ("\n/* Exec functions */\n");
     printf ("#define Switch        %d\n", FuncOffset (9));
     printf ("#define Dispatch      %d\n", FuncOffset (10));
     printf ("#define Exception     %d\n", FuncOffset (11));
@@ -88,7 +88,7 @@ int main (void)
     printf ("#define FindTask	   %d\n", FuncOffset (49));
     printf ("#define StackSwap     %d\n", FuncOffset (122));
 
-    printf ("\n# Constants\n");
+    printf ("\n/* Constants */\n");
     printf ("#define AT_DeadEnd    0x%08X\n", AT_DeadEnd);
     printf ("#define AN_StackProbe 0x%08X\n", AN_StackProbe);
 
