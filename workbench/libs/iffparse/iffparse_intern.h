@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef IFFPARSE_INTERN_H
 #define IFFPARSE_INTERN_H
 

@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define USE_BOOPSI_STUBS
 #include <aros/macros.h>

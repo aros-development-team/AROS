@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LocStrnicmp - locale.library's private replacement
