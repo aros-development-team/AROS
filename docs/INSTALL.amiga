@@ -26,7 +26,7 @@ on the Amiga. Please address any comments and questions to
       Consider some additional space (~15MB) for the GeekGadget
       tools if you don't have them already.
 
-   c) At least 8MB of feee memory: gcc, make, sh and friends
+   c) At least 8MB of free memory: gcc, make, sh and friends
       are hogs.
 
 
@@ -179,10 +179,6 @@ on the Amiga. Please address any comments and questions to
 
 5. Build all the tools used in the compilation process
    ---------------------------------------------------
-
-
-   Make sure that the GeekGadgets
-
 
    a) The MetaMake utility (mmake)
 
