@@ -16,17 +16,12 @@
 #include <graphics/clip.h>
 #include <graphics/layers.h>
 #include <setjmp.h>
+#include <dos/dos.h>   /* BPTR below */
 
 #include "libdefs.h"
 
-/* Can these be safely removed ... */
-#include <aros/libcall.h>
-#include <dos/dos.h>
-#include <graphics/gfxbase.h>
 
 #include "../graphics/intregions.h"
-
-/* ... ??? */
 
 LIBBASETYPE
 {
@@ -82,37 +77,9 @@ struct ResourceNode
 #define expunge() \
  AROS_LC0(BPTR, expunge, LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
 
-/*
 #define SysBase         LIBBASE->lb_SysBase
-*/
-
 #define GfxBase		LIBBASE->lb_GfxBase
 #define UtilityBase	LIBBASE->lb_UtilityBase
-
-/* Function prototypes from all files... */
-struct ClipRect * Case_0(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_1(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_2(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_3(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_4(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_5(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_6(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_7(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_8(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_9(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_10(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_11(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_12(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_13(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_14(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-struct ClipRect * Case_15(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
-void CreateClipRects(struct Layer_Info * li, struct Layer * L);
-void CreateClipRectsAll(struct Layer_Info * li, struct Layer * L);
-void CreateClipRectsSelf(struct Layer * L, BOOL notdisplayed);
-void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed);
-void CreateClipRectsOther(struct Layer * L);
-void LayerSplitsLayer(struct Layer * L_active, struct Layer * L_passive, BOOL notdisplayed);
-
 
 /*
 ** The smart refresh flag is set for super bitmap as well as smart refresh
