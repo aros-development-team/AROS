@@ -29,8 +29,42 @@
 /*  FUNCTION
 
     INPUTS
-		tags - Pointer to an array of tags. Description of the
-		       tags are not available yet.
+    tagList  --  pointer to an array of tags describing the player's
+                 attributes or NULL.
+
+    TAGS
+    MIDI_Name (STRPTR) -- The name of the midinode; default is NULL or a pointer to a string.
+
+    MIDI_SignalTask (struct Task *) -- Task to signal whenever a midimessage is arriving to the node;
+                                       default is the task of the caller of this function. (FindTask(NULL))
+       
+    MIDI_RecvHook (struct Hook *)   -- Function to call whenever a midimessage is arriving to the node.
+                                       You should get the midimessage as the first argument in the function,
+				       however, that has not yet been implemented. Default is NULL.
+
+    MIDI_PartHook (struct Hook *)   -- Don't really know what this one is for. Have to check amigos-autodocs.
+                                       It does not currently do anything.
+
+    MIDI_RecvSignal (BYTE)          -- Signal bit to use when signalling a task whenever a midimessage is
+                                       arriving at the node, or -1 to disable signalling. Default is -1.
+
+    MIDI_PartSignal (BYTE)          -- Signal bit to use when signalling a task when..... Default is -1.
+
+    MIDI_MsgQueue (ULONG)           -- Number of messages the messagequeue is able to hold.
+
+    MIDI_TimeStamp (ULONG *)        -- Pointer to an ULONG value which value is copied directly into the timestamp
+                                       attribute in midimessages whenever a new message is received at the node.
+
+
+     MIDI_ErrFilter (UBYTE)         -- Filters out the errors you don't want to see.
+
+
+     MIDI_ClientType (UWORD)        -- What sort of application you that owns this node.
+
+     MIDI_Image (struct Image *)    -- Pointer to an image representing this node.
+
+     MIDI_ErrorCode (ULONG *)       -- Pointer to an ULONG which will be set if something went wrong.
+
 
     RESULT
 		TRUE if everything went okey, FALSE if not. Errorcode
@@ -49,9 +83,6 @@
 		  same probram and you are absolutely shure you know what
 		  you are doing), there is no problem.
 
-		- Warning! If another task have locked Camd and is waiting
-		  for you to finish, there will be a deadlock if you try
-		  to change priority or change/set cluster.
 
     EXAMPLE
 
