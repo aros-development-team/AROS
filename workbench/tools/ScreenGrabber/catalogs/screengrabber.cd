@@ -1,0 +1,40 @@
+;
+MSG_WINDOW_TITLE (//)
+ScreenGrabber
+;
+MSG_REFRESH (//)
+Refresh list
+;
+MSG_SCREEN_INFO (//)
+Screen info
+;
+MSG_SIZE (//)
+Size
+;
+MSG_TITLE (//)
+Title
+;
+MSG_DEFAULT_TITLE (//)
+Default title
+;
+MSG_GRABBING_OPTIONS (//)
+Grabbing options
+;
+MSG_DELAY (//)
+Delay (s)
+;
+MSG_HIDE (//)
+Hide the grabber window
+;
+MSG_SAVE_OPTIONS (//)
+Save options
+;
+MSG_SAVE_FILE (//)
+Save file
+;
+MSG_SCREENSHOT (//)
+Screenshot
+;
+MSG_SCREEN_PARM (//)
+%d x %d, depth=%d
+;
