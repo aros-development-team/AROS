@@ -1,0 +1,70 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(CONTRIBDIR)/Gfx/Jpeg
+
+COMMON := cdjpeg \
+	 rdbmp \
+	 rdcolmap \
+	 rdgif \
+	 rdppm \
+	 rdswitch \
+	 rdtarga \
+	 wrbmp \
+	 wrgif \
+	 wrppm \
+	 wrtarga
+
+FILES1 := cjpeg $(COMMON)
+EXE1 := $(EXEDIR)/cjpeg
+
+FILES2 := djpeg $(COMMON)
+EXE2 := $(EXEDIR)/djpeg
+
+FILES3 := jpegtran transupp cdjpeg rdswitch
+EXE3 := $(EXEDIR)/jpegtran
+
+FILES4 := rdjpgcom
+EXE4 := $(EXEDIR)/rdjpgcom
+
+FILES5 := wrjpgcom
+EXE5 := $(EXEDIR)/wrjpgcom
+
+USER_INCLUDES := -I. -I../main
+
+USE_CLIB := yes
+
+#MM- test: test-jpeg
+#MM test-jpeg : includes linklibs
+
+%make_prog_setup mmake=test-jpeg
+
+test-jpeg : setup $(EXE1) $(EXE2) $(EXE3) $(EXE4) $(EXE5) $(EXEDIR)/README
+
+$(EXEDIR)/README : README
+	@$(CP) $< $@
+
+LIBS := -ljpeg $(LIBS)
+
+FILES := $(FILES1)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE1)
+
+FILES := $(FILES2)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE2)
+
+FILES := $(FILES3)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE3)
+
+FILES := $(FILES4)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE4)
+
+FILES := $(FILES5)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE5)
+
+#MM setup
+setup ::
+	%mkdir_q $(EXEDIR)
+	
+%common
+%include_deps
