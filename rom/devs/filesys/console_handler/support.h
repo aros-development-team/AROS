@@ -58,6 +58,10 @@
 #define INP_SHIFT_PAGEDOWN	52
 #define INP_SHIFT_HOME		53
 #define INP_SHIFT_END		54
+#define INP_CTRL_C		55
+#define INP_CTRL_D		56
+#define INP_CTRL_E		57
+#define INP_CTRL_F		58
 
 #define INP_UNKNOWN		99
 #define	INP_STRING		100
