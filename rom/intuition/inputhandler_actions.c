@@ -683,25 +683,27 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
 		if (!iihdata->ActiveGadget)
 		{
-		    struct Window *w = IntuitionBase->ActiveWindow;
-		    
-	    	    if(w)
+		    if (IntuitionBase->ActiveWindow != targetwindow)
 		    {
-		    	ih_fire_intuimessage(w,
-					     IDCMP_INACTIVEWINDOW,
+			struct Window *w = IntuitionBase->ActiveWindow;
+			
+			if(w)
+			{
+			    ih_fire_intuimessage(w,
+						 IDCMP_INACTIVEWINDOW,
+						 0,
+						 w,
+						 IntuitionBase);
+			}
+			
+			int_activatewindow(targetwindow, IntuitionBase);
+			
+			ih_fire_intuimessage(targetwindow,
+					     IDCMP_ACTIVEWINDOW,
 					     0,
-					     w,
+					     targetwindow,
 					     IntuitionBase);
-		    }
-
-		    int_activatewindow(targetwindow, IntuitionBase);
-		    
-		    ih_fire_intuimessage(targetwindow,
-					 IDCMP_ACTIVEWINDOW,
-					 0,
-					 targetwindow,
-					 IntuitionBase);
-		    
+		    } /* if (IntuitionBase->ActiveWindow != targetwindow) */
 		} /* if (!iihdata->ActiveGadget) */
 		
 	    break; }
