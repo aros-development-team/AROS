@@ -4,7 +4,7 @@ CURDIR=apps
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=
+SUBDIRS=Games Moria3D
 
 all:
 	%subdirs_q target=all
