@@ -1,0 +1,140 @@
+## version $VER: fontprefs.catalog 1.0 (26.9.2001)
+## language norsk
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kan ikke åpne %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kan ikke låse offentlig skjerm!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Kan ikke hente DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Kan ikke hente VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Kan ikke lage knapper!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Kan ikke lage menyer!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Kan ikke åpne vindu!
+; Can't create window!
+;
+MSG_CANT_CREATE_REQ
+Kan ikke åpne fildialog!
+; Can't open create filerequester!
+;
+MSG_CANT_OPEN_STREAM
+Kan ikke åpne IFF-strøm!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Kan ikke skrive innstillingene!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Kan ikke lese instillingene!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Kan ikke allokere IFF-peker!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Kan ikke allokere programminne!
+; Can't allocate application memory!
+;
+MSG_WINTITLE
+Fontinstillinger
+; Font Preferences
+;
+MSG_MEN_PROJECT
+Prosjekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Åpne...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Lagre som...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Avslutt
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Rediger
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Standardinstillinger
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Sist Lagret
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Gjenopprett
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Instillinger
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Lage Ikoner?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Hente Fontinstillinger
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Lagre Fontinstillinger
+; Save Font Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MX_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_MX_SYSTEM
+System
+; System
+;
+MSG_MX_SCREEN
+Skjerm
+; Screen
+;
+MSG_GAD_GET
+Hent...
+; Get...
+;
+MSG_GAD_SAVE
+Lagre
+; Save
+;
+MSG_GAD_USE
+Bruk
+; Use
+;
+MSG_GAD_CANCEL
+Avbryt
+; Cancel
