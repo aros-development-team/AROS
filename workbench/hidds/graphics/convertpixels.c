@@ -41,7 +41,7 @@
 		case 4: GETPIX32(s, pix); break;	\
 		case 3: GETPIX24(s, pix); break;	\
 		case 2: GETPIX16(s, pix); break;	\
-		default: kprintf("RUBBISH BYTES PER PIXEL IN GET_TRUE_PIX()\n"); break;	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN GET_TRUE_PIX()\n")); break;	\
 	}	
 
 
@@ -51,7 +51,7 @@
 		case 3: GETPIX24(s, pix); break;	\
 		case 2: GETPIX16(s, pix); break;	\
 		case 1: GETPIX8 (s, pix); break;	\
-		default: kprintf("RUBBISH BYTES PER PIXEL IN GET_PAL_PIX()\n"); break;	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN GET_PAL_PIX()\n")); break;	\
 	}	\
 	pix = lut[pix];
 
@@ -82,7 +82,7 @@
 		case 4: PUTPIX32(d, pix); break;	\
 		case 3: PUTPIX24(d, pix); break;	\
 		case 2: PUTPIX16(d, pix); break;	\
-		default: kprintf("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX()\n"); break;	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX()\n")); break;	\
 	}	
 
 
@@ -115,16 +115,16 @@ static VOID true_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conve
 
 
 #if 0
-kprintf("true_to_true()\n: src = %x  dest = %x srcfmt = %d %d %d %d [%d] destfmt = %d %d %d %d [%d]\n",
+bug("true_to_true()\n: src = %x  dest = %x srcfmt = %d %d %d %d [%d] destfmt = %d %d %d %d [%d]\n",
 	src, dst, srcfmt->alpha_shift, srcfmt->red_shift, srcfmt->green_shift, srcfmt->blue_shift, srcfmt->bytes_per_pixel,
 		  dstfmt->alpha_shift, dstfmt->red_shift, dstfmt->green_shift, dstfmt->blue_shift, dstfmt->bytes_per_pixel);
 
-kprintf("srcmasks = %p %p %p %p\n",
+bug("srcmasks = %p %p %p %p\n",
 	srcfmt->alpha_mask,
 	srcfmt->red_mask,
 	srcfmt->green_mask,
 	srcfmt->blue_mask);
-kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
+bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 	dstfmt->alpha_mask,
 	dstfmt->red_mask,
 	dstfmt->green_mask,
@@ -152,7 +152,7 @@ kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 	    		| (SHIFT_PIX(srcpix & srcfmt->blue_mask , blue_diff)  & dstfmt->blue_mask);
 
 #if 0
-	kprintf("[ %p, %p, %p, %p ] "
+	bug("[ %p, %p, %p, %p ] "
 		, srcpix
 		, srcpix & srcfmt->blue_mask
 		, SHIFT_PIX(srcpix & srcfmt->blue_mask, blue_diff)
@@ -160,7 +160,7 @@ kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 		
 #endif	    
 
-// kprintf("[ %p => %p ] \n", srcpix, dstpix);
+// bug("[ %p => %p ] \n", srcpix, dstpix);
 	    /* Write the pixel to the destination buffer */
 	    PUT_TRUE_PIX(d, dstpix, dstfmt);
 	    
@@ -176,7 +176,7 @@ kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 
 static VOID true_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
-kprintf("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n");
+D(bug("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n"));
 }
 
 static VOID pal_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
@@ -241,8 +241,8 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     
     LONG x, y;
     
-kprintf("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, srcmod: %d, dstmod: %d, depth: %d\n"
-	, msg->height, msg->width, dstfmt->bytes_per_pixel, msg->srcMod, msg->dstMod, dstfmt->depth);
+D(bug("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, srcmod: %d, dstmod: %d, depth: %d\n"
+	, msg->height, msg->width, dstfmt->bytes_per_pixel, msg->srcMod, msg->dstMod, dstfmt->depth));
 
     for ( y = 0; y < msg->height; y ++) {
 	APTR d = dst;
@@ -349,13 +349,13 @@ VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Conv
     /* For now we assume truecolor */
     HIDDT_PixelFormat *srcfmt, *dstfmt;
     
-//    kprintf("bitmap_convertpixels()\n");
+//    bug("bitmap_convertpixels()\n");
 
     srcfmt = msg->srcPixFmt;
     dstfmt = msg->dstPixFmt;
     
 
-/* kprintf("ConvertPixels: src=%d, dst=%d\n"
+/* bug("ConvertPixels: src=%d, dst=%d\n"
 	, srcfmt->stdpixfmt, dstfmt->stdpixfmt);
 */    
     /* Check if source and dest are the same format */

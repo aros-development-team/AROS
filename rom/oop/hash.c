@@ -1,5 +1,5 @@
 /*
-   (C) 1997-2000 AROS - The Amiga Research OS
+   (C) 1997-2001 AROS - The Amiga Research OS
    $Id$
 
    Desc: Common code for handling hashing.
@@ -296,16 +296,17 @@ VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase)
     for (idx = 0; idx < HashSize(ht); idx ++)
     {
     	struct Bucket *b;
-	kprintf("idx %ld: ", idx);
+	D(bug("idx %ld: ", idx));
 	for (b = ht->Table[idx]; b; b = b->Next)
 	{
+#if DEBUG
 	    if (ht->Type == HT_INTEGER)
-	    	kprintf("%ld ", b->ID);
+	    	bug("%ld ", b->ID);
 	    else
-	    	kprintf("%s (%ld)", (STRPTR)b->ID, ((struct iid_bucket *)b)->refcount);
-	    
+	    	bug("%s (%ld)", (STRPTR)b->ID, ((struct iid_bucket *)b)->refcount);
+#endif	    
 	}
-	kprintf("\n");
+	D(bug("\n"));
 	
     }
     return;

@@ -106,10 +106,10 @@
 		if (offset >= numattrs)
 		    continue;
 		   
-// kprintf("---PARSERATTRS: OFFSET %d\n", offset);
+// bug("---PARSERATTRS: OFFSET %d\n", offset);
 	    	storage[offset] = tags->ti_Data;
 		/* Mark it as found */
-// kprintf("--- ADDING %p TO ATTRCHECK\n", 1L << offset);
+// bug("--- ADDING %p TO ATTRCHECK\n", 1L << offset);
 		*attrcheck |= 1L << offset;
 	    }
 	} else {

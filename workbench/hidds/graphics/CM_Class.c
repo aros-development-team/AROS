@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2001 AROS - The Amiga Research OS
+    (C) Copyright 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics colormap class implementation.
@@ -22,7 +22,7 @@
 
 #include "graphics_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 struct colormap_data {
@@ -56,7 +56,7 @@ static OOP_Object *colormap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    	case aoHidd_ColorMap_NumEntries:
 		    numentries = tag->ti_Data;
 		    if (numentries > 256 || numentries < 0) {
-		     	kprintf("!!! ILLEGAL value for NumEntries in ColorMap::New()\n");
+		     	D(bug("!!! ILLEGAL value for NumEntries in ColorMap::New()\n"));
 		    }
 		    break;
 		   
@@ -121,7 +121,7 @@ static VOID colormap_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 	    
 	    default:
-	    	kprintf("!!! Unknow colormap attr in ColorMap::Get()\n");
+	    	D(bug("!!! Unknow colormap attr in ColorMap::Get()\n"));
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
@@ -176,7 +176,7 @@ static BOOL colormap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorM
 	} else {
 	    msg->colors[i].pixval = col->pixval = (HIDDT_Pixel)col_idx;
 	}
-/*	kprintf("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
+/*	bug("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
 		, col_idx
 		, col->red, col->green, col->blue, col->alpha
 		, msg->colors[i].pixval);
@@ -211,9 +211,9 @@ static HIDDT_Pixel colormap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_
     data = OOP_INST_DATA(cl, o);
      
     if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries) {
-	kprintf("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+	D(bug("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->pixelNo,
-		data->clut.entries);
+		data->clut.entries));
 	
 //	*((ULONG *)0) = 0;
 	return (HIDDT_Pixel)-1L;
@@ -229,9 +229,9 @@ static BOOL colormap_getcolor(OOP_Class *cl, OOP_Object *o, struct pHidd_ColorMa
     
     data = OOP_INST_DATA(cl, o);
     if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries) {
-	kprintf("!!! Unvalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+	D(bug("!!! Unvalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->colorNo,
-		data->clut.entries);
+		data->clut.entries));
 	return FALSE;
     }
     *msg->colorReturn = data->clut.colors[msg->colorNo];

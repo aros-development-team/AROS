@@ -367,8 +367,8 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	    
 	
 	default:
-	    kprintf("Error: basemeta_dosupermethod got method call to unknown interface %d\n",
-	    	msg->MID >> NUM_METHOD_BITS);
+	    D(bug("Error: basemeta_dosupermethod got method call to unknown interface %d\n",
+	    	msg->MID >> NUM_METHOD_BITS));
 	    ifm = NULL;
 	    break;
     	}
@@ -404,8 +404,8 @@ static IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	    
 	
 	default:
-	    kprintf("Error: basemeta_coercemethod got method call to unknown interface %d\n",
-	    	msg->MID >> NUM_METHOD_BITS);
+	    D(bug("Error: basemeta_coercemethod got method call to unknown interface %d\n",
+	    	msg->MID >> NUM_METHOD_BITS));
 	    ifm = NULL;
 	    break;
     }
@@ -541,7 +541,7 @@ static VOID root_dispose(OOP_Class *root_cl, OOP_Object *o, OOP_Msg msg)
 static VOID root_get(OOP_Class *root_cl, OOP_Object *p, struct pRoot_Get *msg)
 {
     *msg->storage = 0UL;
-    kprintf("!!! Get() METHOD REACHED ROOTCLASS !!!\n");
+    D(bug("!!! Get() METHOD REACHED ROOTCLASS !!!\n"));
     return;
 }
 

@@ -253,12 +253,12 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
     
     if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
     	, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
-	kprintf("!!! FAILED TO PARSE ATTRS IN Gfx::NewBitMap !!!\n");
+	D(bug("!!! FAILED TO PARSE ATTRS IN Gfx::NewBitMap !!!\n"));
 	return NULL;
     }
     
     if (GOT_BM_ATTR(PixFmt)) {
-	kprintf("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n");
+	D(bug("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
 	return NULL;
     }
     
@@ -285,7 +285,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
 	modeid = attrs[BMAO(ModeID)];
 	/* Check that it is a valid mode */
 	if (!HIDD_Gfx_GetMode(o, modeid, &sync, &pf)) {
-	    kprintf("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n");
+	    D(bug("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n"));
 	}
     }
 
@@ -297,12 +297,12 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
     if (displayable || framebuffer) {
 	/* The user has to supply a modeid */
 	if (!GOT_BM_ATTR(ModeID)) {
-	    kprintf("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n");
+	    D(bug("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n"));
 	    return NULL;
 	}
 	
 	if (!gotclass) {
-	    kprintf("!!! Gfx::NewBitMap: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n");
+	    D(bug("!!! Gfx::NewBitMap: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n"));
 	    return NULL;
 	}
 	
@@ -331,7 +331,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
 	    
 	    /* Check that we have width && height */
 	    if (BM_DIMS_AF != (BM_DIMS_AF & ATTRCHECK(bitmap))) {
-		kprintf("!!! Gfx::NewBitMap() MISSING WIDTH/HEIGHT TAGS !!!\n");
+		D(bug("!!! Gfx::NewBitMap() MISSING WIDTH/HEIGHT TAGS !!!\n"));
 		return NULL;
 	    }
 	    width  = attrs[BMAO(Width)];
@@ -342,7 +342,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 		pf = HIDD_Gfx_GetPixFmt(o, (HIDDT_StdPixFmt)attrs[BMAO(StdPixFmt)]);
 		if (NULL == pf) {
-		    kprintf("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n");
+		    D(bug("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n"));
 		    return NULL;
 		}
 	    } else {
@@ -350,7 +350,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
 		if (GOT_BM_ATTR(Friend)) {
 		    OOP_GetAttr((OOP_Object *)attrs[BMAO(Friend)], aHidd_BitMap_PixFmt, (IPTR *)&pf);
 		} else {
-		    kprintf("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n");
+		    D(bug("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
 		    return NULL;
 		}
 	    }
@@ -366,7 +366,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd
 	        case vHidd_BitMapType_Chunky: classptr = CSD(cl)->chunkybmclass; break;
 	        case vHidd_BitMapType_Planar: classptr = CSD(cl)->planarbmclass; break;
 	        default:
-	    	    kprintf("!!! Gfx::NewBitMap: UNKNOWN BITMAPTYPE %d !!!\n", bmtype);
+	    	    D(bug("!!! Gfx::NewBitMap: UNKNOWN BITMAPTYPE %d !!!\n", bmtype));
 		    return NULL;
 	    }
 	} /* if (!gotclass) */
@@ -587,7 +587,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     }
     
     if (0 == numpfs || 0 == numsyncs) {
-	kprintf("!!! WE MUST AT LEAST HAVE ONE PIXFMT AND ONE SYNC IN Gfx::RegisterModes() !!!\n");
+	D(bug("!!! WE MUST AT LEAST HAVE ONE PIXFMT AND ONE SYNC IN Gfx::RegisterModes() !!!\n"));
     }
 
     ObtainSemaphore(&mdb->sema);
@@ -607,7 +607,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 		    def_pixfmt_tags[num_Hidd_PixFmt_Attrs].ti_Data = tag->ti_Data;
 		    mdb->pixfmts[pfidx] = HIDD_Gfx_RegisterPixFmt(o, def_pixfmt_tags);
 		    if (NULL == mdb->pixfmts[pfidx]) {
-			kprintf("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n");
+			D(bug("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n"));
 			goto failure;
 		    }
 		    pfidx ++;
@@ -619,7 +619,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 			    , &sync_data
 			    , ATTRCHECK(sync)
 			    , CSD(cl) )) {
-			kprintf("!!! ERROR PARSING SYNC TAGS IN Gfx::RegisterModes() !!!\n");
+			D(bug("!!! ERROR PARSING SYNC TAGS IN Gfx::RegisterModes() !!!\n"));
 			goto failure;
 		    } else {
 			mdb->syncs[syncidx] = create_and_init_object(CSD(cl)->syncclass
@@ -627,7 +627,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 			    , sizeof (sync_data)
 			    , CSD(cl) );
 			if (NULL == mdb->syncs[syncidx]) {
-			    kprintf("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n");
+			    D(bug("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n"));
 			    goto failure;
 			}
 			syncidx ++;
@@ -636,14 +636,14 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 	    }
 	} else if (IS_SYNC_ATTR(tag->ti_Tag, idx)) {
 	    if (idx >= num_Hidd_Sync_Attrs) {
-		kprintf("!!! UNKNOWN SYNC ATTR IN Gfx::New(): %d !!!\n", idx);
+		D(bug("!!! UNKNOWN SYNC ATTR IN Gfx::New(): %d !!!\n", idx));
 	    } else {
 		def_sync_tags[idx].ti_Tag  = tag->ti_Tag;
 		def_sync_tags[idx].ti_Data = tag->ti_Data;
 	    }
 	} else if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
 	    if (idx >= num_Hidd_PixFmt_Attrs) {
-		kprintf("!!! UNKNOWN PIXFMT ATTR IN Gfx::New(): %d !!!\n", idx);
+		D(bug("!!! UNKNOWN PIXFMT ATTR IN Gfx::New(): %d !!!\n", idx));
 	    } else {
 		def_pixfmt_tags[idx].ti_Tag  = tag->ti_Tag;
 		def_pixfmt_tags[idx].ti_Data = tag->ti_Data;
@@ -1140,20 +1140,20 @@ static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     /* Get the source pixel format */
     srcpf = (HIDDT_PixelFormat *)HBM(src)->prot.pixfmt;
     
-/* kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OOP_OCLASS: %s\n", srcpf, obj
+/* bug("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OOP_OCLASS: %s\n", srcpf, obj
 	, cl->ClassNode.ln_Name, OOP_OCLASS(obj)->ClassNode.ln_Name);
 */
 #if 0
 {
 ULONG sw, sh, dw, dh;
-kprintf("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
-    , obj, msg->dest, msg->width, msg->height);
+D(bug("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
+    , obj, msg->dest, msg->width, msg->height));
     
 OOP_GetAttr(obj, aHidd_BitMap_Width, &sw);
 OOP_GetAttr(obj, aHidd_BitMap_Height, &sh);
 OOP_GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
 OOP_GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
-kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
+D(bug("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh));
 }
 #endif
 
@@ -1184,7 +1184,7 @@ kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
 
     if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
     	if (IS_TRUECOLOR(srcpf)) {
-// kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
+// bug("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 	    for(y = 0; y < msg->height; y++) {
 		HIDDT_Color col;
 		
@@ -1192,7 +1192,7 @@ kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
 		destX = memDestX;
 
 /* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
-    kprintf("[%d,%d] ", memSrcX, memDestX);
+    bug("[%d,%d] ", memSrcX, memDestX);
 */    
 		for(x = 0; x < msg->width; x++) {
 		    HIDDT_Pixel pix;
@@ -1230,7 +1230,7 @@ kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
 // #endif
 		}
 /*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
-    kprintf("[%d,%d] ", srcY, destY);
+    bug("[%d,%d] ", srcY, destY);
 */            	srcY++; destY++;
 	    }
 	    
@@ -1239,7 +1239,7 @@ kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
 	        For this case we do NOT convert through RGB,
 		but copy the pixel indexes directly
 	     */
-// kprintf("COPY FROM PALETTE TO PALETTE\n");
+// bug("COPY FROM PALETTE TO PALETTE\n");
 #warning This might not work very well with two StaticPalette bitmaps
 	    for(y = 0; y < msg->height; y++) {
 		srcX  = memSrcX;
@@ -1260,11 +1260,11 @@ kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
     	/* Two unlike bitmaps */
 	if (IS_TRUECOLOR(srcpf)) {
 #warning Implement this
-	     kprintf("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n");
+	     D(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
 	} else if (IS_TRUECOLOR(dstpf)) {
 	    /* Get the colortab */
 	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
-// kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
+// bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
 
 	    
 	    for(y = 0; y < msg->height; y++) {
@@ -1306,7 +1306,7 @@ static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o, struct p
     
     data = OOP_INST_DATA(cl, o);
     if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl))) {
-    	kprintf("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n");
+    	D(bug("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n"));
 	return FALSE;
     }
     
@@ -1343,7 +1343,7 @@ static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o, struct p
 		
 #define PF(x) ((HIDDT_PixelFormat *)x)    
 /*
-kprintf("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
+bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	, PF(&cmp_pf)->red_shift
 	, PF(&cmp_pf)->green_shift
 	, PF(&cmp_pf)->blue_shift
@@ -1382,7 +1382,7 @@ static VOID hiddgfx_releasepixfmt(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     
     struct objectnode *n, *safe;
 
-/*    kprintf("release_pixfmt\n");
+/*    bug("release_pixfmt\n");
 */    
     data = OOP_INST_DATA(cl, o);
     
@@ -1435,7 +1435,7 @@ static OOP_Object *hiddgfx_getpixfmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
     OOP_Object *fmt;
     
     if (!IS_REAL_STDPIXFMT(msg->stdPixFmt)) {
-    	kprintf("!!! Illegal pixel format passed to Gfx::GetPixFmt(): %d\n", msg->stdPixFmt);
+    	D(bug("!!! Illegal pixel format passed to Gfx::GetPixFmt(): %d\n", msg->stdPixFmt));
 	return NULL;
     }  else  {
     	fmt = CSD(cl)->std_pixfmts[REAL_STDPIXFMT_IDX(msg->stdPixFmt)];
@@ -1689,7 +1689,7 @@ static BOOL create_std_pixfmts(struct class_static_data *csd)
     	csd->std_pixfmts[i] = create_and_init_object(csd->pixfmtclass
 		    , (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);
 	if (NULL == csd->std_pixfmts[i]) {
-	    kprintf("FAILED TO CREATE PIXEL FORMAT %d\n", i);
+	    D(bug("FAILED TO CREATE PIXEL FORMAT %d\n", i));
 	    delete_std_pixfmts(csd);
 	    ReturnBool("create_stdpixfmts", FALSE);
 	}
@@ -1794,7 +1794,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
     IPTR attrs[num_Hidd_Sync_Attrs];
     
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), HiddSyncAttrBase)) {
-	kprintf("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n");
+	D(bug("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n"));
 	return FALSE;
     }
 
@@ -1815,21 +1815,21 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	data->pixtime = 0x12345678;
 #endif	
     } else {
-	kprintf("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n");
+	D(bug("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n"));
 	return FALSE;
     }
     
     /* Check that we have HDisp and VDisp */
     if (SYNC_DISP_AF != (SYNC_DISP_AF & ATTRCHECK(sync))) {
-	    kprintf("!!! MISSING HDISP OR VDISP ATTR !!!\n");
+	    D(bug("!!! MISSING HDISP OR VDISP ATTR !!!\n"));
     } else {
 	data->hdisp = attrs[SYAO(HDisp)];
 	data->vdisp = attrs[SYAO(VDisp)];
 
 	/* Test that the user has not supplied both X11 style and fbdev style attrs */
 	if ( (LINUXFB_SYNC_AF & ATTRCHECK(sync)) != 0 && (X11_SYNC_AF & ATTRCHECK(sync)) != 0 ) {
-	    kprintf("!!! BOTH LINUXFB-STYLE AND X11-STYLE ATTRS WERE SUPPLIED !!!\n");
-	    kprintf("!!! YOU MAY ONLY SUPPLY ONE OF THEM !!!\n");
+	    D(bug("!!! BOTH LINUXFB-STYLE AND X11-STYLE ATTRS WERE SUPPLIED !!!\n"));
+	    D(bug("!!! YOU MAY ONLY SUPPLY ONE OF THEM !!!\n"));
 	} else {
 	    
 	    /* Test that we have all attrs of either the X11 style or the Linux FB style */
@@ -1865,7 +1865,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 		data->vsync_length = vsync_end   - vsync_start;
 		ok = TRUE;
 	    } else {
-		kprintf("!!! UNSUFFICIENT ATTRS PASSED TO parse_sync_tags: %x !!!\n", ATTRCHECK(sync));
+		D(bug("!!! UNSUFFICIENT ATTRS PASSED TO parse_sync_tags: %x !!!\n", ATTRCHECK(sync)));
 	    }
 	}
     }
@@ -1898,12 +1898,12 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG ATTRCH
     
     
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_PixFmt_Attrs, &ATTRCHECK(pixfmt), HiddPixFmtAttrBase)) {
-	kprintf("!!! parse_pixfmt_tags: ERROR PARSING TAGS THROUGH OOP_ParseAttrs !!!\n");
+	D(bug("!!! parse_pixfmt_tags: ERROR PARSING TAGS THROUGH OOP_ParseAttrs !!!\n"));
 	return FALSE;
     }
 
     if (PF_COMMON_AF != (PF_COMMON_AF & ATTRCHECK(pixfmt))) {
-	kprintf("!!! parse_pixfmt_tags: Missing PixFmt attributes passed to parse_pixfmt_tags(): %x !!!\n", ATTRCHECK(pixfmt));
+	D(bug("!!! parse_pixfmt_tags: Missing PixFmt attributes passed to parse_pixfmt_tags(): %x !!!\n", ATTRCHECK(pixfmt)));
 	return FALSE;
     }
     
@@ -1920,7 +1920,7 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG ATTRCH
     	case vHidd_ColorModel_TrueColor:
 	    /* Check that we got all the truecolor describing stuff */
 	    if (PF_TRUECOLOR_AF != (PF_TRUECOLOR_AF & ATTRCHECK(pixfmt))) {
-		 kprintf("!!! Unsufficient true color format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n");
+		 D(bug("!!! Unsufficient true color format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
 		 return FALSE;
 	    }
 	    
@@ -1939,7 +1939,7 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG ATTRCH
 	case vHidd_ColorModel_Palette:
 	case vHidd_ColorModel_StaticPalette:
 	    if ( PF_PALETTE_AF != (PF_PALETTE_AF & ATTRCHECK(pixfmt))) {
-		 kprintf("!!! Unsufficient palette format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n");
+		 D(bug("!!! Unsufficient palette format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
 		 return FALSE;
 	    }
 	    
@@ -1967,7 +1967,7 @@ static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG data
 			
     o = OOP_NewObject(cl, NULL, NULL);
     if (NULL == o) {
-	kprintf("!!! UNABLE TO CREATE OBJECT IN create_and_init_object() !!!\n");
+	D(bug("!!! UNABLE TO CREATE OBJECT IN create_and_init_object() !!!\n"));
 	return NULL;
     }
 	    
