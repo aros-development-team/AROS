@@ -77,6 +77,7 @@ static Object*MakeSpacingSlider (void)
     return MUI_MakeObject(MUIO_Slider, "", 0, 9);
 }
 
+
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
@@ -106,21 +107,24 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		   Child, MakeLabel("Normal"),
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_normal_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_String, d.font_normal_string = StringObject,
+			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
    
    		   Child, MakeLabel("Tiny"),
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_tiny_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_String, d.font_tiny_string = StringObject,
+			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
    
    		   Child, MakeLabel("Big"),
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_big_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_String, d.font_big_string = StringObject,
+			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
 	           Child, HVSpace,
@@ -137,16 +141,18 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 					 MUIA_Draggable, TRUE,
 					 MUIA_Window_Title, "Adjust Background",
 					 End,
-		      Child, MUI_MakeObject(MUIO_Label, "Window", MUIO_Label_Centered),
+		      Child, MUI_MakeObject(MUIO_Label, "Window",
+					    MUIO_Label_Centered),
 		      End,
 		   Child, VGroup,
 		      MUIA_Group_VertSpacing, 1,
 		      Child, d.background_requester_popimage =
-					 NewObject(CL_ImageClipboard->mcc_Class, NULL,
-						   MUIA_Draggable, TRUE,
-						   MUIA_Window_Title, "Adjust Background",
-						   End,
-		      Child, MUI_MakeObject(MUIO_Label, "Requester", MUIO_Label_Centered),
+			     NewObject(CL_ImageClipboard->mcc_Class, NULL,
+				       MUIA_Draggable, TRUE,
+				       MUIA_Window_Title, "Adjust Background",
+				       End,
+		      Child, MUI_MakeObject(MUIO_Label, "Requester",
+					    MUIO_Label_Centered),
 	              End,
 		   End,
 	        Child, ColGroup(4),
@@ -173,7 +179,9 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+
+static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj,
+				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
     STRPTR spec;
@@ -209,7 +217,9 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     return 1;    
 }
 
-static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+
+static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj,
+				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -246,14 +256,7 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     return TRUE;
 }
 
-#ifndef __AROS__
-__asm IPTR WindowP_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,WindowP_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, WindowP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -270,7 +273,7 @@ AROS_UFH3S(IPTR,WindowP_Dispatcher,
  */
 const struct __MUIBuiltinClass _MUIP_Windows_desc = { 
     "Windows",
-    MUIC_Settingsgroup, 
+    MUIC_Group, 
     sizeof(struct MUI_WindowPData),
     (void*)WindowP_Dispatcher 
 };
