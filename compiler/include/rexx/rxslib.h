@@ -17,10 +17,56 @@
 #define RXSDIR	 "REXX"
 #define RXSTNAME "ARexx"
 
-/* Information in Rxslib should not be used in client programs
- * Therefor don't provide any information to these client programs
+/* RxsLib is only here to provide backwards compatibility with Amiga
+ * programs. This structure should be considered read-only as a whole.
+ * Only use the functions of rexxsyslib.library or send the appropriate
+ * command to the REXX port if you want to change something in
+ * this structure.
  */
-struct Rxslib;
+struct RxsLib
+{
+	struct Library     rl_Node;
+	UBYTE              rl_Flags;
+	UBYTE              rl_Shadow;
+	struct Library *   rl_SysBase;
+	struct DOSBase *   rl_DOSBase;
+	struct Library *   rl_Unused1; /* rl_IeeeCDBase */
+	BPTR               rl_SegList;
+	struct FileHandle *rl_Unused2; /* rl_NIL */
+	LONG               rl_Unused3; /* rl_Chunk */
+	LONG               rl_Unused4; /* rl_MaxNest */
+	APTR               rl_Unused5; /* rl_NULL */
+	APTR               rl_Unused6; /* rl_FALSE */
+	APTR               rl_Unused7; /* rl_TRUE */
+	APTR               rl_Unused8; /* rl_REXX */
+	APTR               rl_Unused9; /* rl_COMMAND */
+	APTR               rl_Unused10; /* rl_STDIN */
+	APTR               rl_Unused11; /* rl_STDOUT */
+	APTR               rl_Unused12; /* rl_STDERR */
+	STRPTR             rl_Version;
+	STRPTR             rl_Unused13; /* rl_TaskName */
+	LONG               rl_Unused14; /* rl_TaskPri */
+	LONG               rl_Unused15; /* rl_TaskSeg */
+	LONG               rl_Unused16; /* rl_StackSize */
+	STRPTR             rl_Unused17; /* rl_RexxDir */
+	STRPTR             rl_Unused18; /* rl_CTABLE */
+	STRPTR             rl_Notice; /* The copyright notice */
+	struct MsgPort     rl_Unused19; /* rl_REXX public port */
+	UWORD              rl_Unused20; /* rl_ReadLock */
+	LONG               rl_Unused21; /* rl_TraceFH */
+	struct List        rl_Unused22; /* rl_TaskList */
+	WORD               rl_Unused23; /* rl_NumTask */
+	struct List        rl_LibList; /* Library list header */
+	WORD               rl_NumList; /* Nodes count in library list */
+	struct List        rl_ClipList; /* Clip list header */
+	WORD               rl_NumClip; /* Nodes count in clip list */
+	struct List        rl_Unused24; /* rl_MsgList */
+	WORD               rl_Unused25; /* rl_NumMsg */
+	struct List        rl_Unused26; /* rl_PgmList */
+	WORD               rl_Unused27; /* rl_NumPgm */
+	UWORD              rl_Unused28; /* rl_TraceCnt */
+	WORD               rl_Unused29; /* rl_Avail */
+};
 
 /* These are not necessary for client program either I think
 #define RLFB_TRACE  RTFB_TRACE
