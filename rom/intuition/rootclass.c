@@ -20,11 +20,11 @@
 #define ENABLE_MEM_POOL 1
 
 #if ENABLE_MEM_POOL
-#    define alloc(a, b)   AllocMem(b, MEMF_PUBLIC|MEMF_CLEAR)
-#    define free(a, b, c) FreeMem(b, c)
-#else
 #    define alloc(a, b)   AllocPooled(a, b)
 #    define free(a, b, c) FreePooled(a, b, c)
+#else
+#    define alloc(a, b)   AllocMem(b, MEMF_PUBLIC|MEMF_CLEAR)
+#    define free(a, b, c) FreeMem(b, c)
 #endif
 
 
