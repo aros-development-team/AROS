@@ -32,6 +32,8 @@
 #define REPEAT_RATE_TICS_MAX 12
 #define REPEAT_RATE_TICS_RANGE (REPEAT_RATE_TICS_MAX - REPEAT_RATE_TICS_MIN + 1)
 
+#define REVERSE_RATE_SCROLLER 1
+
 /*********************************************************************************************/
 
 static struct Gadget 	*gadlist, *gad, *lvgad, *rategad, *delaygad, *showrategad, *showdelaygad;
@@ -334,7 +336,12 @@ static void update_rate_gad(void)
     	rate = REPEAT_RATE_TICS_MAX;
     }
     
-    scsettags[0].ti_Data = rate - REPEAT_RATE_TICS_MIN;
+    rate -= REPEAT_RATE_TICS_MIN;
+    
+#if REVERSE_RATE_SCROLLER
+    rate = REPEAT_RATE_TICS_RANGE - 1 - rate;
+#endif
+    scsettags[0].ti_Data = rate;
     
     GT_SetGadgetAttrsA(rategad, win, NULL, scsettags);
     
@@ -436,7 +443,11 @@ static LONG kbd_input(struct IntuiMessage *msg)
 	    case IDCMP_MOUSEMOVE:
 	    	if (gad == rategad)
 		{
-		    top = msg->Code + REPEAT_RATE_TICS_MIN;
+		    top = msg->Code;
+		 #if REVERSE_RATE_SCROLLER
+    	    	    top = REPEAT_RATE_TICS_RANGE - 1 - top;
+		 #endif
+		    top += REPEAT_RATE_TICS_MIN;
 		    
 		    inputprefs.ip_KeyRptSpeed.tv_secs = top / 50;
 		    inputprefs.ip_KeyRptSpeed.tv_micro = (top % 50) * (1000000 / 50);
@@ -522,7 +533,8 @@ static LONG kbd_makegadgets(void)
     ng.ng_Height   = delayheight;
     ng.ng_GadgetID = MSG_GAD_KEY_REPEAT_DELAY;
     
-    gad = delaygad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, REPEAT_DELAY_TICS_RANGE + 1,
+    gad = delaygad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, REPEAT_DELAY_TICS_RANGE + 9,
+    	    	    	    	    	    	    	   GTSC_Visible, 10, 
 							   TAG_DONE);
 
     ng.ng_LeftEdge   = rategroupx1 + FRAME_OFFX;
