@@ -11,6 +11,7 @@
 #include <aros/libcall.h>
 #include <aros/atomic.h>
 #include <aros/debug.h>
+#include <asm/segments.h>
 #include <proto/exec.h>
 
 void Exec_Permit_Supervisor();
@@ -84,7 +85,7 @@ void Exec_Permit_Supervisor();
 	    Clear the Switch() pending flag.
 	*/
 
-	Supervisor(Exec_Permit_Supervisor);
+	if (IN_USER_MODE) Supervisor(Exec_Permit_Supervisor);
     }
     
     AROS_LIBFUNC_EXIT

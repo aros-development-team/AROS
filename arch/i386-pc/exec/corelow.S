@@ -149,7 +149,16 @@ Exec_ExitIntr:      cmpw    $KERNEL_DS,R_ds(%esp)
                     je      restore_all
                     incb    (0xb8002)
                     movb    $0x1f,(0xb8003)
+		    cli
                     movl    4,%eax
+		    testw   $0x20,SysFlags(%eax)	/* SFF_SoftInt set? */
+		    je	    Exec_ExitIntr_NoSoftInts
+
+		    pushl   %eax
+		    call    sys_Cause
+		    popl    %eax
+		    		    
+Exec_ExitIntr_NoSoftInts:
                     cmpb    $0,TDNestCnt(%eax)
                     jge     restore_all
                     incb    (0xb8004)
@@ -326,6 +335,13 @@ Exec_Dispatch_x:    cli
                     orw     $0x80,AttnResched(%ebp)
                     sti
                     hlt
+		    
+		    cli
+		    testw   $0x20,SysFlags(%ebp) /* SFF_SoftInt set? */
+		    je	    Exec_Dispatch_x
+		    
+		    call    sys_Cause
+		    
                     jmp     Exec_Dispatch_x
 
 1:                  movl    %edx,lh_Head(%eax)
@@ -338,7 +354,7 @@ Exec_Dispatch_x:    cli
 		    movw    Quantum(%ebp),%ax
 		    movw    %ax,Elapsed(%ebp)
 
-                    andl    $~0x2000,SysFlags(%ebp)
+                    andl    $~0x2000,SysFlags(%ebp) /* stegerg: fixme, should be andw!! */
                     movb    $TS_RUN,tc_State(%ecx)
                     movb    tc_IDNestCnt(%ecx),%al
                     movb    %al,IDNestCnt(%ebp)

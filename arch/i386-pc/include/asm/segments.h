@@ -17,4 +17,9 @@
 #define USER_CS   0x1b
 #define USER_DS   0x23
 
+#define IN_USER_MODE \
+	({  short __value; \
+	__asm__ __volatile__ ("mov %%cs,%%ax":"=a"(__value)); \
+	(__value & 0x03);	})
+
 #endif /* _ASM_SEGMENTS_H */
