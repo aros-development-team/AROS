@@ -10,7 +10,7 @@ class Token:
 	print self.__class__.__name__
 
     def __repr__ (self):
-	return self.__class__.__name__
+	return self.__class__.__name__ + '(' + `self.text` + ')'
 
 class Entity (Token):
     def dump (self, level):
@@ -30,7 +30,7 @@ class Tag (Token):
     def __init__ (self, text):
 	# Split tag into name and a dictionary of attribute=value.
 	words = string.split (text, None, 1)
-	self.name = words[0]
+	self.text = self.name = words[0]
 	self.attr = {}
 	self.content = []
 
@@ -81,7 +81,7 @@ class Emptytag (Tag):
 
 class Endtag (Token):
     def __init__ (self, text):
-	self.name = text
+	self.text = self.name = text
 
     def dump (self, level):
 	sys.stdout.write ('    '*level)
@@ -184,14 +184,7 @@ class Reader:
 	self.tokenContext = '%s:%d: %s' % (self.filename, self.lineno, self.string[self.pos:pos])
 
 class XmlFile:
-    def __init__ (self, filename):
-	self.filename = filename
-	fh = open (self.filename)
-	data = fh.read ()
-	fh.close ()
-
-	self.reader = Reader (data)
-	self.reader.filename = self.filename
+    def __init__ (self):
 	self.entities = {
 	    'lt': '&lt;',
 	    'gt': '&gt;',
@@ -216,13 +209,28 @@ class XmlFile:
 	
 	reader = self.reader
 	self.reader = Reader (replacement)
-	entityTree = self.parse (level+1)
+	entityTree = self.parseRecursive (level+1)
 	tree = tree + entityTree
 	#print entityTree
 	self.reader = reader
 	return
 	
-    def parse (self, level=0):
+    def parse (self, filename):
+	fh = open (filename, 'r')
+	data = fh.read ()
+	fh.close ()
+
+	self.reader = Reader (data)
+	self.reader.filename = filename
+
+	self.tree = self.parseRecursive (0)
+
+    def parseString (self, s):
+	self.reader = Reader (s)
+	self.reader.filename = '<string>'
+	self.tree = self.parseRecursive (0)
+
+    def parseRecursive (self, level):
 	tree = []
 	
 	while 1:
@@ -253,7 +261,7 @@ class XmlFile:
 		    token.setContents ((subtoken,))
 		    continue
 
-		subtree = self.parse (level+1)
+		subtree = self.parseRecursive (level+1)
 		if not isinstance (subtree[-1], Endtag):
 		    print context
 		    if isinstance (subtree[-1], Text):
@@ -271,8 +279,7 @@ class XmlFile:
 		break
 
 	#print '    '*level,tree
-	if level == 0:
-	    self.tree = tree
+	
 	return tree
 
     def dump (self):
@@ -294,8 +301,8 @@ class XmlFile:
 		    raise
 
 class Processor:
-    def __init__ (self):
-	self.processors = {}
+    def __init__ (self, **kw):
+	self.processors = kw
     
     def default (self, *args):
 	pass
@@ -311,7 +318,7 @@ class Processor:
 	apply (func, (self,)+args)
 
 if __name__ == '__main__':
-    xmlfile = XmlFile (sys.argv[1])
-    xmlfile.parse ()
+    xmlfile = XmlFile ()
+    xmlfile.parse (sys.argv[1])
     xmlfile.dump ()
 
