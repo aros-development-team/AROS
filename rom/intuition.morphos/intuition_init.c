@@ -457,11 +457,13 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 #endif
             GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
 
+#if 0 /* CHECKME: stegerg: backport, disabled */
             {
                 struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
                 if (!(GetPrivIBase(LIBBASE)->TopazFont))
                 GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
             }
+#endif
         }
 
         if (!LayersBase)
@@ -519,7 +521,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
             TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
 
             SetPrefs(GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
-            //GetPrivIBase(LIBBASE)->DefaultPointer = MakePointerFromPrefs(LIBBASE, GetPrivIBase(LIBBASE)->ActivePreferences);
+            GetPrivIBase(LIBBASE)->DefaultPointer = MakePointerFromPrefs(LIBBASE, GetPrivIBase(LIBBASE)->ActivePreferences);
             GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromPrefs(LIBBASE, GetPrivIBase(LIBBASE)->ActivePreferences);
 
             DEBUG_OPEN(dprintf("LIB_Open: Pointers %p %p\n",
@@ -547,7 +549,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 #else
         if (!DOSBase)
         {
-            DOSBase = OpenLibrary("dos.library", 50);
+            //DOSBase = OpenLibrary("dos.library", 50); /* CHECKME: stegerg: backport, disabled */
 
 #ifdef SKINS
             if (DOSBase)
