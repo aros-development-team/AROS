@@ -65,8 +65,7 @@ BOOT_TAR_FILES := \
     S/Shell-Startup S/Startup-Sequence \
     System/About System/FixFonts System/FixFonts.info System/Themes \
     System/Wanderer System.info \
-    Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
-    Tools/Commodities Tools/Commodities.info Tools.info \
+    Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info 
 
 ifneq ($(AROS_TARGET_VARIANT),tiny)
