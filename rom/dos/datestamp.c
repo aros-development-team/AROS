@@ -44,8 +44,7 @@
 	the date is unset.
 
     NOTES
-	The original function could DateStamp() only returns even multiples
-	of 50 ticks.
+	The original function could only return even multiples of 50 ticks.
 
     EXAMPLE
 

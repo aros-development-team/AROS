@@ -18,7 +18,7 @@
 	AROS_LH2(BOOL, AssignLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(BPTR,   lock, D2),
 
 /*  LOCATION */

@@ -15,10 +15,11 @@
 #include <string.h>
 #include "dos_intern.h"
 
-LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary *DOSBase)
+LONG DevName(CONST_STRPTR name, struct Device **devptr, struct DosLibrary *DOSBase)
 {
     LONG error = 0L;
-    STRPTR volname, s1 = NULL;
+    STRPTR volname;
+    CONST_STRPTR s1 = NULL;
     struct DosList *dl;
     struct FileHandle *fh;
     struct Process *me = (struct Process *)FindTask(NULL);

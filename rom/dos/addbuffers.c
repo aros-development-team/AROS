@@ -18,8 +18,8 @@
 	AROS_LH2(BOOL, AddBuffers,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, devicename, D1),
-	AROS_LHA(LONG,   numbuffers, D2),
+	AROS_LHA(CONST_STRPTR, devicename, D1),
+	AROS_LHA(LONG,         numbuffers, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 122, Dos)

@@ -15,9 +15,10 @@
 #include <string.h>
 #include "dos_intern.h"
 
-LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary *DOSBase)
+LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
-    STRPTR volname, pathname, s1 = NULL;
+    STRPTR volname;
+    CONST_STRPTR pathname, s1 = NULL;
     BPTR cur, lock = (BPTR)0;
     struct DosList *dl;
     struct Device *device;
@@ -126,7 +127,7 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary *DOSBase)
 
     iofs->IOFS.io_Device = device;
     iofs->IOFS.io_Unit = unit;
-    iofs->io_Union.io_NamedFile.io_Filename = pathname;
+    iofs->io_Union.io_NamedFile.io_Filename = (STRPTR)pathname;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);

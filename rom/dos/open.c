@@ -23,8 +23,8 @@
 	AROS_LH2(BPTR, Open,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name,       D1),
-	AROS_LHA(LONG,   accessMode, D2),
+	AROS_LHA(CONST_STRPTR, name,       D1),
+	AROS_LHA(LONG,         accessMode, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 5, Dos)

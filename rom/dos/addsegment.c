@@ -16,7 +16,7 @@
 	AROS_LH3(BOOL, AddSegment,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(BPTR  , seg, D2),
 	AROS_LHA(LONG  , type, D3),
 

@@ -66,8 +66,8 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
-LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase);
-LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
+LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary * DOSBase);
+LONG DevName(CONST_STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
 
 BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 		 BPTR output, struct TagItem *tl, struct DosLibrary *DOSBase);

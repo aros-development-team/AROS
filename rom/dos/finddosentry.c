@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/03/24 17:54:38  bernie
+    add const qualifier to function paramenters where appropriate
+
     Revision 1.10  1998/10/20 16:44:36  hkiel
     Amiga Research OS
 
@@ -48,7 +51,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DosList *, dlist, D1),
-	AROS_LHA(STRPTR,           name,  D2),
+	AROS_LHA(CONST_STRPTR,     name,  D2),
 	AROS_LHA(ULONG,            flags, D3),
 
 /*  LOCATION */
@@ -93,7 +96,7 @@
     { 0, LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
 
     /* Determine the size of the name (-1 if the last character is a ':') */
-    STRPTR end=name;
+    CONST_STRPTR end=name;
     ULONG size;
     while(*end++)
 	;

@@ -17,8 +17,8 @@
 	AROS_LH3(LONG, Strnicmp,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string1, A0),
-	AROS_LHA(STRPTR, string2, A1),
+	AROS_LHA(CONST_STRPTR, string1, A0),
+	AROS_LHA(CONST_STRPTR, string2, A1),
 	AROS_LHA(LONG,   length,  D0),
 
 /*  LOCATION */

@@ -16,7 +16,7 @@
 	AROS_LH4(struct MsgPort *, CreateProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(LONG  , pri, D2),
 	AROS_LHA(BPTR  , segList, D3),
 	AROS_LHA(LONG  , stackSize, D4),

@@ -18,10 +18,10 @@
 	AROS_LH4I(APTR,RawDoFmt,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR,    FormatString, A0),
-	AROS_LHA(APTR,      DataStream,   A1),
-	AROS_LHA(VOID_FUNC, PutChProc,    A2),
-	AROS_LHA(APTR,      PutChData,    A3),
+	AROS_LHA(CONST_STRPTR, FormatString, A0),
+	AROS_LHA(APTR,         DataStream,   A1),
+	AROS_LHA(VOID_FUNC,    PutChProc,    A2),
+	AROS_LHA(APTR,         PutChData,    A3),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 87, Exec)
@@ -241,17 +241,19 @@
 			}
 
 			/* Convert to ASCII */
-			buf=&cbuf[CBUFSIZE];
-			do
 			{
-			    /*
-				divide 'n' by 10 and get quotient 'n'
-				and remainder 'r'
-			    */
-			    *--buf=(n%10)+'0';
-			    n/=10;
-			    width++;
-			}while(n);
+			    buf=&cbuf[CBUFSIZE];
+			    do
+			    {
+				/*
+				 * divide 'n' by 10 and get quotient 'n'
+				 * and remainder 'r'
+				 */
+				*--buf=(n%10)+'0';
+				n/=10;
+				width++;
+			    }while(n);
+			}
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    /* 
@@ -285,17 +287,19 @@
 			}
 
 			/* Convert to ASCII */
-			buf=&cbuf[CBUFSIZE];
-			do
 			{
-			    /*
-				Uppercase characters for lowercase 'x'?
-				Stupid exec original!
-			    */
-			    *--buf="0123456789ABCDEF"[n&15];
-			    n>>=4;
-			    width++;
-			}while(n);
+			    buf=&cbuf[CBUFSIZE];
+			    do
+			    {
+				/*
+				 * Uppercase characters for lowercase 'x'?
+				 * Stupid exec original!
+				 */
+				*--buf="0123456789ABCDEF"[n&15];
+				n>>=4;
+				width++;
+			    }while(n);
+			}
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    if (maxwidth != ~0)
@@ -330,8 +334,9 @@
 
 		/* single character */
 		case 'c':
+		{
 		    /* Some space for the result */
-		    buf=cbuf;
+		    UBYTE *b=cbuf;
 		    width=1;
 
 		    /* Get value */
@@ -340,11 +345,11 @@
 			/* Align datastream */
 			if(AROS_LONGALIGN>AROS_WORDALIGN)
 			    stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
-			*buf=*(ULONG *)stream;
+			*b=*(ULONG *)stream;
 			stream+=sizeof(ULONG);
 		    }else
 		    {
-			*buf=*(UWORD *)stream;
+			*b=*(UWORD *)stream;
 			stream+=sizeof(UWORD);
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
@@ -354,7 +359,7 @@
 		    }
 #endif
 		    break;
-
+		}
 		/* '%' before '\0'? */
 		case '\0':
 		    /*
@@ -368,7 +373,7 @@
 
 		/* Convert '%unknown' to 'unknown'. This includes '%%' to '%'. */
 		default:
-		    buf=FormatString;
+		    buf=(UBYTE *)FormatString;
 		    width=1;
 		    break;
 	    }
@@ -423,7 +428,7 @@
 	    for(i=0;i<width;i++)
 	    {
 		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(UBYTE, *buf      , D0),
+		   AROS_UFCA(UBYTE, *buf  , D0),
 		   AROS_UFCA(APTR , pdata , A3)
 		);
 

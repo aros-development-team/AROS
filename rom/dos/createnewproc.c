@@ -324,7 +324,7 @@ void internal_ChildFree(APTR tid);
 	if(defaults[19].ti_Data)
 	{
 	    P(kprintf("Calling ChildWait()\n"));
-	    internal_ChildWait(process);
+	    internal_ChildWait((struct Task *)process);
 	}
 
 	return process;

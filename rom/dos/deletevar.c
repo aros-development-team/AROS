@@ -17,7 +17,7 @@
         AROS_LH2(LONG, DeleteVar,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
         AROS_LHA(ULONG , flags, D2),
 
 /*  LOCATION */

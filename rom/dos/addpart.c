@@ -15,9 +15,9 @@
 	AROS_LH3(BOOL, AddPart,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, dirname, D1),
-	AROS_LHA(STRPTR, filename, D2),
-	AROS_LHA(ULONG , size, D3),
+	AROS_LHA(STRPTR,       dirname, D1),
+	AROS_LHA(CONST_STRPTR, filename, D2),
+	AROS_LHA(ULONG,        size, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 147, Dos)

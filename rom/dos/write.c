@@ -17,9 +17,9 @@
 	AROS_LH3(LONG, Write,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,   D1),
-	AROS_LHA(APTR, buffer, D2),
-	AROS_LHA(LONG, length, D3),
+	AROS_LHA(BPTR,       file,   D1),
+	AROS_LHA(CONST_APTR, buffer, D2),
+	AROS_LHA(LONG,       length, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 8, Dos)
@@ -82,7 +82,7 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_WRITE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_WRITE.io_Buffer=buffer;
+    iofs->io_Union.io_WRITE.io_Buffer=(APTR)buffer;
     iofs->io_Union.io_WRITE.io_Length=length;
 
     /* Send the request. */

@@ -15,9 +15,9 @@
 	AROS_LH3(void, FilterTagChanges,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, changeList, A0),
-	AROS_LHA(struct TagItem *, originalList, A1),
-	AROS_LHA(BOOL            , apply, D0),
+	AROS_LHA(struct TagItem *      , changeList, A0),
+	AROS_LHA(const struct TagItem *, originalList, A1),
+	AROS_LHA(BOOL                  , apply, D0),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 9, Utility)

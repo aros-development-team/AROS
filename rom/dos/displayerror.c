@@ -15,9 +15,9 @@
 	AROS_LH3(LONG, DisplayError,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, formatStr, A0),
-	AROS_LHA(ULONG , flags    , D0),
-	AROS_LHA(APTR  , args     , A1),
+	AROS_LHA(CONST_STRPTR, formatStr, A0),
+	AROS_LHA(ULONG       , flags    , D0),
+	AROS_LHA(APTR        , args     , A1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 81, Dos)

@@ -15,7 +15,7 @@
 	AROS_LH1(struct Device *, DeviceProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 29, Dos)

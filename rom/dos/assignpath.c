@@ -19,8 +19,8 @@
 	AROS_LH2(BOOL, AssignPath,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
-	AROS_LHA(STRPTR, path, D2),
+	AROS_LHA(CONST_STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, path, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 104, Dos)
@@ -62,7 +62,8 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     BOOL result = DOSTRUE;
     struct DosList *dl, *newdl;
-    STRPTR s2, pathcopy;
+    CONST_STRPTR s2;
+    STRPTR pathcopy;
     ULONG namelen;
 
     newdl = MakeDosEntry(name, DLT_NONBINDING);

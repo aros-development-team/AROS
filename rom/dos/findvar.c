@@ -19,8 +19,8 @@
         AROS_LH2(struct LocalVar *, FindVar,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR, name, D1),
-        AROS_LHA(ULONG , type, D2),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(ULONG       , type, D2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 153, Dos)

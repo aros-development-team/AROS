@@ -16,7 +16,7 @@
 	AROS_LH1(struct TagItem *, CloneTagItems,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(const struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 12, Utility)
@@ -81,6 +81,7 @@
     */
     if (tagList)
     {
+	const struct TagItem *tmp;
 	/*
 	    We start the counter at 1 since this count will not include the
 	    TAG_DONE TagItem
@@ -89,8 +90,8 @@
 	    anything to the value of newList afterwards, since AllocateTagitems()
 	    will take care of setting it to NULL if the allocation fails.
 	*/
-	newList = tagList;
-	while (NextTagItem (&newList) != NULL)
+	tmp = tagList;
+	while (NextTagItem (&tmp) != NULL)
 	    numTags++;
     }
 
@@ -106,7 +107,7 @@
     */
 
     if ((newList = AllocateTagItems(numTags)))
-	RefreshTagItemClones (newList, tagList);
+	RefreshTagItemClones(newList, tagList);
 
     /* newList == 0 when allocation failed - AllocateTagItems handles this*/
     return newList;

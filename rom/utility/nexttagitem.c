@@ -16,7 +16,7 @@
 	AROS_LH1(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem **, tagListPtr, A0),
+	AROS_LHA(const struct TagItem **, tagListPtr, A0),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 8, Utility)
@@ -88,7 +88,7 @@
 
 	case TAG_END:
 	    (*tagListPtr) = NULL;
-	    return (NULL);
+	    return NULL;
 
 	case TAG_SKIP:
 	    (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
@@ -97,7 +97,7 @@
 	default:
 	    /* Use post-increment (return will return the current value and
 		then tagListPtr will be incremented) */
-	    return (*tagListPtr) ++;
+	    return (struct TagItem *)(*tagListPtr)++;
 	}
 
 	(*tagListPtr) ++;

@@ -18,8 +18,8 @@
 	AROS_LH2(struct TagItem *, FindTagItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(Tag,              tagValue, D0),
-	AROS_LHA(struct TagItem *, tagList,  A0),
+	AROS_LHA(Tag,                    tagValue, D0),
+	AROS_LHA(const struct TagItem *, tagList,  A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 5, Utility)
@@ -46,9 +46,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tagptr, *tag;
-
-    tagptr = tagList;
+    struct TagItem *tag;
+    const struct TagItem *tagptr = tagList;
 
     while( (tag = NextTagItem(&tagptr)) )
     {

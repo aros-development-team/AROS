@@ -17,8 +17,8 @@
 	AROS_LH2(struct DosList *, MakeDosEntry,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
-	AROS_LHA(LONG,   type, D2),
+	AROS_LHA(CONST_STRPTR, name, D1),
+	AROS_LHA(LONG,         type, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 116, Dos)
@@ -52,7 +52,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    STRPTR s2, s3;
+    CONST_STRPTR s2;
+    STRPTR s3;
     struct DosList *dl;
 
     dl=(struct DosList *)AllocMem(sizeof(struct DosList),MEMF_PUBLIC|MEMF_CLEAR);

@@ -25,10 +25,10 @@
         AROS_LH4(BOOL, SetVar,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR, name, D1),
-        AROS_LHA(STRPTR, buffer, D2),
-        AROS_LHA(LONG  , size, D3),
-        AROS_LHA(LONG  , flags, D4),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, buffer, D2),
+        AROS_LHA(LONG        , size, D3),
+        AROS_LHA(LONG        , flags, D4),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 150, Dos)

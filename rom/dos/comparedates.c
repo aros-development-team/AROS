@@ -15,8 +15,8 @@
 	AROS_LH2(LONG, CompareDates,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DateStamp *, date1, D1),
-	AROS_LHA(struct DateStamp *, date2, D2),
+	AROS_LHA(const struct DateStamp *, date1, D1),
+	AROS_LHA(const struct DateStamp *, date2, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 123, Dos)

@@ -17,8 +17,8 @@
 	AROS_LH2(LONG, Stricmp,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string1, A0),
-	AROS_LHA(STRPTR, string2, A1),
+	AROS_LHA(CONST_STRPTR, string1, A0),
+	AROS_LHA(CONST_STRPTR, string2, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 27, Utility)
