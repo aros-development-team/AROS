@@ -1431,7 +1431,7 @@ AROS_LH2(struct emulbase *, init,
         DeletePool(emulbase->mempool);
 	return NULL;
     }
-    emulbase->unixio = NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+    emulbase->unixio = OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
@@ -1443,7 +1443,7 @@ AROS_LH2(struct emulbase *, init,
     if(!startup(emulbase))
 	return emulbase;
 
-    DisposeObject (emulbase->unixio);
+    OOP_DisposeObject (emulbase->unixio);
     CloseLibrary (OOPBase);
     DeletePool(emulbase->mempool);
 

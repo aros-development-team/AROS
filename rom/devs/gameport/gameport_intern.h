@@ -40,7 +40,7 @@ struct GameportBase
 
     ULONG   			gp_nTicks;          	/* Bookkeeping of frames */
     
-    Object	   		*gp_Hidd;		/* Hidd object to use */
+    OOP_Object	   		*gp_Hidd;		/* Hidd object to use */
     struct Library 		*gp_OOPBase;
     
     UBYTE   			gp_cTypes[GP_NUNITS];

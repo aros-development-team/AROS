@@ -54,16 +54,16 @@ char * unitname[] =
 
 /*************************** Classes *****************************/
 
-static AttrBase HiddParallelUnitAB;
+static OOP_AttrBase HiddParallelUnitAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
     { NULL,	NULL }
 };
 
 /******* ParallelUnit::New() ***********************************/
-static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
+static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
   struct HIDDParallelUnitData * data;
   static const struct TagItem tags[] = {{ TAG_END, 0}};
@@ -91,11 +91,11 @@ static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
     
   D(bug("!!!!Request for unit number %d\n",unitnum));
 
-  obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
+  obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
   if (obj)
   {
-    data = INST_DATA(cl, obj);
+    data = OOP_INST_DATA(cl, obj);
     
     data->unitnum = unitnum;
 
@@ -142,8 +142,8 @@ static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
             data->replyport_write->mp_Flags = PA_SOFTINT;
             data->replyport_write->mp_SoftInt = data->softint_write;
 
-            data->unixio_read  = NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
-            data->unixio_write = NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+            data->unixio_read  = OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+            data->unixio_write = OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 
             if (NULL != data->unixio_read && NULL != data->unixio_write)
             {
@@ -159,10 +159,10 @@ static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
             }
 
             if (NULL != data->unixio_read)
-              DisposeObject(data->unixio_read);
+              OOP_DisposeObject(data->unixio_read);
 
             if (NULL != data->unixio_write)
-              DisposeObject(data->unixio_write);
+              OOP_DisposeObject(data->unixio_write);
           }
           
           if (data->softint_read) 
@@ -181,23 +181,23 @@ static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
       close(data->filedescriptor);  
     }
 
-    DisposeObject(obj);
+    OOP_DisposeObject(obj);
     obj = NULL;
   } /* if (obj) */
 
   D(bug("%s - an error occurred!\n",__FUNCTION__));
 
 exit:
-  ReturnPtr("ParallelUnit::New()", Object *, obj);
+  ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
 }
 
 /******* ParallelUnit::Dispose() ***********************************/
-static Object *parallelunit_dispose(Class *cl, Object *obj, Msg msg)
+static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
   struct HIDDParallelUnitData * data;
   EnterFunc(bug("ParallelUnit::Dispose()\n"));
 
-  data = INST_DATA(cl, obj);
+  data = OOP_INST_DATA(cl, obj);
   D(bug("Freeing filedescriptor (%d)!\n",data->filedescriptor));
 
   if (-1 != data->filedescriptor)
@@ -215,19 +215,19 @@ static Object *parallelunit_dispose(Class *cl, Object *obj, Msg msg)
     FreeMem(data->softint_read , sizeof(struct Interrupt));
     FreeMem(data->softint_write, sizeof(struct Interrupt));
 
-    DisposeObject(data->unixio_read);
-    DisposeObject(data->unixio_write);
+    OOP_DisposeObject(data->unixio_read);
+    OOP_DisposeObject(data->unixio_write);
   }
-  DoSuperMethod(cl, obj, (Msg)msg);
-  ReturnPtr("ParallelUnit::Dispose()", Object *, obj);
+  OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+  ReturnPtr("ParallelUnit::Dispose()", OOP_Object *, obj);
 }
 
 
 
 /******* ParallelUnit::Init() **********************************/
-BOOL parallelunit_init(Class *cl, Object *o, struct pHidd_ParallelUnit_Init *msg)
+BOOL parallelunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Init *msg)
 {
-  struct HIDDParallelUnitData * data = INST_DATA(cl, o);
+  struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
   
   EnterFunc(bug("ParallelUnit::Init()\n"));
   data->DataReceivedCallBack = msg->DataReceived;
@@ -239,9 +239,9 @@ BOOL parallelunit_init(Class *cl, Object *o, struct pHidd_ParallelUnit_Init *msg
 }
 
 /******* ParallelUnit::Write() **********************************/
-ULONG parallelunit_write(Class *cl, Object *o, struct pHidd_ParallelUnit_Write *msg)
+ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Write *msg)
 {
-  struct HIDDParallelUnitData * data = INST_DATA(cl, o);
+  struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
   ULONG len = 0;
   ULONG error;
   
@@ -352,11 +352,11 @@ AROS_UFH3(void, parallelunit_write_more_data,
 #define NUM_ROOT_METHODS 2
 #define NUM_PARALLELUNIT_METHODS 2
 
-Class *init_parallelunitclass (struct class_static_data *csd)
+OOP_Class *init_parallelunitclass (struct class_static_data *csd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     
-    struct MethodDescr parallelunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr parallelunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
     {
         {(IPTR (*)())parallelunit_new,		moRoot_New},
         {(IPTR (*)())parallelunit_dispose,	moRoot_Dispose},
@@ -367,21 +367,21 @@ Class *init_parallelunitclass (struct class_static_data *csd)
         {NULL, 0UL}
     };
     
-    struct MethodDescr parallelunithidd_descr[NUM_PARALLELUNIT_METHODS + 1] =
+    struct OOP_MethodDescr parallelunithidd_descr[NUM_PARALLELUNIT_METHODS + 1] =
     {
         {(IPTR (*)())parallelunit_init,		moHidd_ParallelUnit_Init},
         {(IPTR (*)())parallelunit_write,	moHidd_ParallelUnit_Write},
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {parallelunithiddroot_descr	, IID_Root		, NUM_ROOT_METHODS},
         {parallelunithidd_descr		, IID_Hidd_ParallelUnit	, NUM_PARALLELUNIT_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -395,23 +395,23 @@ Class *init_parallelunitclass (struct class_static_data *csd)
 
     EnterFunc(bug("    init_parallelunitclass(csd=%p)\n", csd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-	if (ObtainAttrBases(attrbases))
+	if (OOP_ObtainAttrBases(attrbases))
 	{
             D(bug("ParallelUnit Class ok\n"));
             cl->UserData = (APTR)csd;
 
-            AddClass(cl);
+            OOP_AddClass(cl);
 	} else {
 	    free_parallelunitclass(csd);
 	    cl = NULL;
 	}
     }
 
-    ReturnPtr("init_parallelunitclass", Class *, cl);
+    ReturnPtr("init_parallelunitclass", OOP_Class *, cl);
 }
 
 
@@ -421,9 +421,9 @@ void free_parallelunitclass(struct class_static_data *csd)
 
     if(csd)
     {
-        RemoveClass(csd->parallelhiddclass);
+        OOP_RemoveClass(csd->parallelhiddclass);
 	
-        if(csd->parallelhiddclass) DisposeObject((Object *) csd->parallelhiddclass);
+        if(csd->parallelhiddclass) OOP_DisposeObject((OOP_Object *) csd->parallelhiddclass);
         csd->parallelhiddclass = NULL;
     }
 

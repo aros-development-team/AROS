@@ -86,60 +86,60 @@ ULONG ght_GetAttr(Object *obj, ULONG attrID)
 }
 /***************************************************************/
 
-Object * NewGC(Object *hiddGfx, ULONG gcType, struct TagItem *tagList)
+OOP_Object * NewGC(OOP_Object *hiddGfx, ULONG gcType, struct TagItem *tagList)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Gfx_NewGC p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
         
     p.mID      = mid;
 /*    p.gcType   = gcType;*/
     p.attrList = tagList;
 
-    return((Object *) DoMethod(hiddGfx, (Msg) &p));
+    return((OOP_Object *) OOP_DoMethod(hiddGfx, (OOP_Msg) &p));
 }
 /***************************************************************/
 
-void DisposeGC(Object *hiddGfx, Object *gc)
+void DisposeGC(OOP_Object *hiddGfx, OOP_Object *gc)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Gfx_DisposeGC p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
         
     p.mID    = mid;
     p.gc     = gc;
 
-    DoMethod(hiddGfx, (Msg) &p);
+    OOP_DoMethod(hiddGfx, (OOP_Msg) &p);
 }
 /***************************************************************/
 
-Object * NewBitMap(Object *hiddGfx, struct TagItem *tagList)
+OOP_Object * NewBitMap(OOP_Object *hiddGfx, struct TagItem *tagList)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Gfx_NewBitMap p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
         
     p.mID      = mid;
     p.attrList = tagList;
 
-    return((Object *) DoMethod(hiddGfx, (Msg) &p));
+    return((OOP_Object *) OOP_DoMethod(hiddGfx, (OOP_Msg) &p));
 }
 /***************************************************************/
 
-void DisposeBitMap(Object *hiddGfx, Object *bitMap)
+void DisposeBitMap(OOP_Object *hiddGfx, OOP_Object *bitMap)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Gfx_DisposeBitMap p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
         
     p.mID    = mid;
     p.bitMap = bitMap;
 
-    DoMethod(hiddGfx, (Msg) &p);
+    OOP_DoMethod(hiddGfx, (OOP_Msg) &p);
 }
 /***************************************************************/
 

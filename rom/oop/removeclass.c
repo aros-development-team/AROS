@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -12,10 +12,10 @@
 
     NAME */
 
-	AROS_LH1(void, RemoveClass,
+	AROS_LH1(void, OOP_RemoveClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(Class *, classPtr, A0),
+	AROS_LHA(OOP_Class *, classPtr, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 11, OOP)
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-    	AddClass()
+    	OOP_AddClass()
 
     INTERNALS
 
@@ -61,4 +61,4 @@
     return;
 
     AROS_LIBFUNC_EXIT
-} /* RemoveClass */
+} /* OOP_RemoveClass */

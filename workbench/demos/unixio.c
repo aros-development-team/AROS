@@ -38,7 +38,7 @@ int main (int argc, char ** argv)
     }
 
 
-    hidd = NewObject (NULL, CLID_Hidd_UnixIO, tags);
+    hidd = OOP_NewObject (NULL, CLID_Hidd_UnixIO, tags);
 
     if (!hidd)
     {
@@ -51,15 +51,15 @@ int main (int argc, char ** argv)
     }
 
     fd = 0;
-    uio_msg.um_MethodID = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
+    uio_msg.um_MethodID = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
     uio_msg.um_Filedesc = fd;
     uio_msg.um_Mode	= vHidd_UnixIO_Read;
-    ret = DoMethod(hidd, (Msg)&uio_msg);
+    ret = OOP_DoMethod(hidd, (OOP_Msg)&uio_msg);
 
     vpa[0] = ret;
     VPrintf ("return code = %ld\n", vpa);
 
-    DisposeObject (hidd);
+    OOP_DisposeObject (hidd);
 
     CloseLibrary ((struct Library *)DOSBase);
     CloseLibrary (OOPBase);

@@ -77,7 +77,7 @@ struct x11_data
     
 };
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { NULL, NULL }
 };
@@ -86,9 +86,9 @@ static struct ABDescr attrbases[] =
 #define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 
-static Object *x11_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *x11_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
     }
@@ -97,15 +97,15 @@ static Object *x11_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 #define IS_X11_ATTR(attr, idx) (( (idx) = (attr) - HiddX11AB) < num_Hidd_X11_Attrs)
 
-static VOID x11_dispose(Class *cl, Object *o, Msg msg)
+static VOID x11_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    DoSuperMethod(cl, o, (Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     return;
 }
 
-static VOID x11_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID x11_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    DoSuperMethod(cl, o, (Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 
@@ -118,31 +118,31 @@ static VOID x11_get(Class *cl, Object *o, struct pRoot_Get *msg)
 #define NUM_ROOT_METHODS 3
 #define NUM_X11_METHODS 0
 
-Class *init_x11class (struct x11_staticdata *xsd)
+OOP_Class *init_x11class (struct x11_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{METHODDEF(x11_new),		moRoot_New},
-    	{METHODDEF(x11_dispose),	moRoot_Dispose},
-    	{METHODDEF(x11_get),		moRoot_Get},
+    	{OOP_METHODDEF(x11_new),		moRoot_New},
+    	{OOP_METHODDEF(x11_dispose),	moRoot_Dispose},
+    	{OOP_METHODDEF(x11_get),		moRoot_Get},
 	{NULL, 0UL}
     };
     
-    struct MethodDescr x11hidd_descr[NUM_X11_METHODS + 1] = 
+    struct OOP_MethodDescr x11hidd_descr[NUM_X11_METHODS + 1] = 
     {
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 	NUM_ROOT_METHODS},
     	{x11hidd_descr, IID_Hidd_X11, 	NUM_X11_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -156,17 +156,17 @@ Class *init_x11class (struct x11_staticdata *xsd)
     
     if (MetaAttrBase)
     {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->x11class = cl;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("X11HiddClass ok\n"));
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -175,7 +175,7 @@ Class *init_x11class (struct x11_staticdata *xsd)
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
     return cl;
 }
@@ -191,12 +191,12 @@ VOID free_x11class(struct x11_staticdata *xsd)
     if(xsd)
     {
 
-        RemoveClass(xsd->x11class);
+        OOP_RemoveClass(xsd->x11class);
 	
-        if(xsd->x11class) DisposeObject((Object *) xsd->x11class);
+        if(xsd->x11class) OOP_DisposeObject((OOP_Object *) xsd->x11class);
         xsd->x11class = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 
     }
 
@@ -676,7 +676,7 @@ failexit:
     	DeleteMsgPort(unixio_port);
 	
     if (NULL != unixio)
-    	DisposeObject(unixio);
+    	OOP_DisposeObject(unixio);
 #endif
      Signal(xtp.parent, xtp.fail_signal);
     

@@ -18,7 +18,7 @@
 #define CACHE_INCREMENT 4
 
 struct cacheitem {
-    Object *obj;
+    OOP_Object *obj;
     BOOL used;
 };
 
@@ -29,11 +29,11 @@ struct objcache {
     ULONG cachesize;
     ULONG num_objects;
     STRPTR class_id;
-    Class *class_ptr;
+    OOP_Class *class_ptr;
 };
 
 
-ObjectCache *create_object_cache(Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase)
+ObjectCache *create_object_cache(OOP_Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase)
 {
     struct objcache *oc;
     
@@ -112,7 +112,7 @@ VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase)
     
     for (i = 0; i < oc->num_objects; i ++) {
     	if (NULL != oc->cache[i].obj)
-	    DisposeObject(oc->cache[i].obj);
+	    OOP_DisposeObject(oc->cache[i].obj);
 	else
 	    break;
     }
@@ -133,11 +133,11 @@ VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase)
 }
 
 
-Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
+OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 {
     struct objcache *oc;
     ULONG i;
-    Object *obj = NULL;
+    OOP_Object *obj = NULL;
     
     oc = (struct objcache *)objectCache;
 
@@ -195,9 +195,9 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 */	ci = &oc->cache[oc->num_objects];
 	
 	if (oc->class_id)
-	    ci->obj = NewObject(NULL, oc->class_id, oc->create_tags);
+	    ci->obj = OOP_NewObject(NULL, oc->class_id, oc->create_tags);
 	else
-	    ci->obj = NewObject(oc->class_ptr, NULL, oc->create_tags);
+	    ci->obj = OOP_NewObject(oc->class_ptr, NULL, oc->create_tags);
 	
 	if (NULL == ci->obj)
 	    goto exit;
@@ -217,7 +217,7 @@ exit:
     
 }
 
-VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBase *GfxBase)
+VOID release_cache_object(ObjectCache *objectCache, OOP_Object *object, struct GfxBase *GfxBase)
 {
     struct objcache *oc;
     ULONG i;

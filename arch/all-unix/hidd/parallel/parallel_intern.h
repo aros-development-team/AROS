@@ -20,9 +20,9 @@
 
 struct HIDDParallelData
 {
-    Class *ParallelHIDDClass;
+    OOP_Class *ParallelHIDDClass;
 
-    Object		*ParallelUnits[PAR_MAX_UNITS];
+    OOP_Object		*ParallelUnits[PAR_MAX_UNITS];
     UBYTE		usedunits;
 };
 
@@ -38,8 +38,8 @@ struct class_static_data
     struct Library       * utilitybase;
     struct Library       * oopbase;
 
-    Class		 *parallelhiddclass;
-    Class		 *parallelunitclass;
+    OOP_Class		 *parallelhiddclass;
+    OOP_Class		 *parallelunitclass;
 };
 
 struct HIDDParallelUnitData
@@ -90,10 +90,10 @@ struct IntHIDDParallelBase
 
 /* pre declarations */
 
-Class *init_parallelhiddclass(struct class_static_data *csd);
+OOP_Class *init_parallelhiddclass(struct class_static_data *csd);
 void   free_parallelhiddclass(struct class_static_data *csd);
 
-Class *init_parallelunitclass(struct class_static_data *csd);
+OOP_Class *init_parallelunitclass(struct class_static_data *csd);
 void   free_parallelunitclass(struct class_static_data *csd);
 
 

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: OOP function GetMethodID
+    Desc: OOP function OOP_GetMethodID
     Lang: english
 */
 #include "intern.h"
@@ -17,7 +17,7 @@
 #include <aros/debug.h>
 #include "hash.h"
 
-	AROS_LH2(MethodID, GetMethodID,
+	AROS_LH2(OOP_MethodID, OOP_GetMethodID,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, interfaceID, A0),
@@ -61,7 +61,7 @@
     struct iid_bucket *idb;
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
     
-    EnterFunc(bug("GetMethodID(interfaceID=%s, methodOffset=%ld)\n",
+    EnterFunc(bug("OOP_GetMethodID(interfaceID=%s, methodOffset=%ld)\n",
     	interfaceID, methodOffset));
     
 /* #warning doesn't handle failures. (Should throw exception of some kind)
@@ -73,15 +73,15 @@
         /* Should throw eception here if metodbase == -1UL */
         mid = idb->methodbase + methodOffset;
 
-    	ReturnInt ("GetMethodID", ULONG, mid);
+    	ReturnInt ("OOP_GetMethodID", ULONG, mid);
     }
     
     /* Should throw exception here */
     
     /* The ID must be left-shifted to make place for method offsets */
-    ReturnInt ("GetMethodID", ULONG, -1UL);
+    ReturnInt ("OOP_GetMethodID", ULONG, -1UL);
     
     AROS_LIBFUNC_EXIT
 
-} /* GetMethodID  */
+} /* OOP_GetMethodID  */
 

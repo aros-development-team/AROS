@@ -19,14 +19,14 @@
 #include "graphics_intern.h"
 
 
-static AttrBase HiddSyncAttrBase = 0;
+static OOP_AttrBase HiddSyncAttrBase = 0;
 
-static struct ABDescr attrbases[] = {
+static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_Sync,	&HiddSyncAttrBase	},
     { NULL, 0UL }
 };
 
-Object *sync_new(Class *cl, Object *o, struct pRoot_New *msg)
+OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct sync_data * data;
     BOOL ok = FALSE;
@@ -36,7 +36,7 @@ Object *sync_new(Class *cl, Object *o, struct pRoot_New *msg)
     EnterFunc(bug("Sync::New()\n"));
     
     /* Get object from superclass */
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
 	return NULL;
 
@@ -44,7 +44,7 @@ Object *sync_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (NULL == msg->attrList)
 	return o;
 
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     if (!parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl) )) {
 	kprintf("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n");
@@ -53,22 +53,22 @@ Object *sync_new(Class *cl, Object *o, struct pRoot_New *msg)
     }
     
     if (!ok) {
-	MethodID dispose_mid;
+	OOP_MethodID dispose_mid;
 	
-	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-	CoerceMethod(cl, o, (Msg)&dispose_mid);
+	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	o = NULL;
     }
     return o;
 }
 
-static VOID sync_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct sync_data *data;
     
     ULONG idx;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     if (IS_SYNC_ATTR(msg->attrID, idx)) {
     	switch (idx) {
@@ -145,13 +145,13 @@ static VOID sync_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		
 	     default:
 	     	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n");
-    		DoSuperMethod(cl, o, (Msg)msg);
+    		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 
 	}
     
     } else {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     return;
@@ -169,27 +169,27 @@ static VOID sync_get(Class *cl, Object *o, struct pRoot_Get *msg)
 
 #define NUM_ROOT_METHODS 3
 #define NUM_SYNC_METHODS 0
-Class *init_syncclass(struct class_static_data *csd)
+OOP_Class *init_syncclass(struct class_static_data *csd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())sync_new, 	moRoot_New	},
         {(IPTR (*)())sync_get,	moRoot_Get	},
 	{ NULL, 0UL }
     };
     
-    struct MethodDescr sync_descr[NUM_SYNC_METHODS + 1] = {
+    struct OOP_MethodDescr sync_descr[NUM_SYNC_METHODS + 1] = {
 	{ NULL, 0UL }
     };
         
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       	, NUM_ROOT_METHODS},
         {sync_descr,  	IID_Hidd_Sync	, NUM_SYNC_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -199,14 +199,14 @@ Class *init_syncclass(struct class_static_data *csd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_syncclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-	if (ObtainAttrBases(attrbases)) {
+	if (OOP_ObtainAttrBases(attrbases)) {
 
-    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
         	D(bug("Sync class ok\n"));
         	csd->syncclass = cl;
@@ -218,7 +218,7 @@ Class *init_syncclass(struct class_static_data *csd)
     if (NULL == cl)
 	free_syncclass(csd);
 
-    ReturnPtr("init_syncclass", Class *,  cl);
+    ReturnPtr("init_syncclass", OOP_Class *,  cl);
 }
 
 
@@ -230,11 +230,11 @@ void free_syncclass(struct class_static_data *csd)
 
     if(NULL != csd) {
 	if (NULL != csd->syncclass) {
-	    DisposeObject((Object *) csd->syncclass);
+	    OOP_DisposeObject((OOP_Object *) csd->syncclass);
             csd->syncclass = NULL;
 	}
     }
-    ReleaseAttrBases(attrbases);
+    OOP_ReleaseAttrBases(attrbases);
 
     ReturnVoid("free_syncclass");
 }

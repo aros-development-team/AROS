@@ -1,8 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: OOP function ObtainAttrBases
+    Desc: OOP function OOP_ObtainAttrBases
     Lang: english
 */
 
@@ -17,10 +17,10 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(BOOL, ObtainAttrBases,
+	AROS_LH1(BOOL, OOP_ObtainAttrBases,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ABDescr *, abd, A0),
+	AROS_LHA(struct OOP_ABDescr *, abd, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 18, OOP)
@@ -48,11 +48,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
 
-    struct ABDescr *d;
+    struct OOP_ABDescr *d;
     
     for (d = abd; d->interfaceID; d ++)
     {
-        *d->attrBase = ObtainAttrBase(d->interfaceID);
+        *d->attrBase = OOP_ObtainAttrBase(d->interfaceID);
 	
 	if ( *d->attrBase == 0 )
 	{
@@ -61,7 +61,7 @@
 	    while (d->interfaceID) {
 	    	*d->attrBase = 0;
 	    }
-	    ReleaseAttrBases(abd);
+	    OOP_ReleaseAttrBases(abd);
 	    return FALSE;
 	}   
     }
@@ -69,5 +69,5 @@
     
     AROS_LIBFUNC_EXIT
 
-} /* GetID  */
+} /* OOP_ObtainAttrBases  */
 

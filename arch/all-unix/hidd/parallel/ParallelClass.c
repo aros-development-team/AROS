@@ -26,9 +26,9 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
-static AttrBase HiddParallelUnitAB;
+static OOP_AttrBase HiddParallelUnitAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
     { NULL,	NULL }
@@ -37,10 +37,10 @@ static struct ABDescr attrbases[] =
 /*** HIDDParallel::NewUnit() *********************************************************/
 
 
-static Object *hiddparallel_newunit(Class *cl, Object *obj, struct pHidd_Parallel_NewUnit *msg)
+static OOP_Object *hiddparallel_newunit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Parallel_NewUnit *msg)
 {
-  Object *su = NULL;
-  struct HIDDParallelData * data = INST_DATA(cl, obj);
+  OOP_Object *su = NULL;
+  struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
   ULONG unitnum = -1;
 
   EnterFunc(bug("HIDDParallel::NewParallel()\n"));
@@ -79,7 +79,7 @@ static Object *hiddparallel_newunit(Class *cl, Object *obj, struct pHidd_Paralle
         {aHidd_ParallelUnit_Unit, unitnum},
 	{TAG_DONE		       }
     };
-    su = NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
+    su = OOP_NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
     data->ParallelUnits[unitnum] = su;
     /*
     ** Mark it as used
@@ -87,16 +87,16 @@ static Object *hiddparallel_newunit(Class *cl, Object *obj, struct pHidd_Paralle
     data->usedunits |= (1 << unitnum); 
   }
 
-  ReturnPtr("HIDDParallel::NewParallel", Object *, su);
+  ReturnPtr("HIDDParallel::NewParallel", OOP_Object *, su);
 }
 
 
 /*** HIDDParallel::DisposeUnit() ****************************************************/
 
-static VOID hiddparallel_disposeunit(Class *cl, Object *obj, struct pHidd_Parallel_DisposeUnit *msg)
+static VOID hiddparallel_disposeunit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Parallel_DisposeUnit *msg)
 {
-  Object * pu = msg->unit;
-  struct HIDDParallelData * data = INST_DATA(cl, obj);
+  OOP_Object * pu = msg->unit;
+  struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
   EnterFunc(bug("HIDDParallel::DisposeUnit()\n"));
 
   if(pu)
@@ -107,7 +107,7 @@ static VOID hiddparallel_disposeunit(Class *cl, Object *obj, struct pHidd_Parall
       if (data->ParallelUnits[unitnum] == pu)
       {
         D(bug("Disposing ParallelUnit!\n"));
-        DisposeObject(pu);
+        OOP_DisposeObject(pu);
         data->ParallelUnits[unitnum] = NULL;
         data->usedunits &= ~(1 << unitnum);
         break;
@@ -133,12 +133,12 @@ static VOID hiddparallel_disposeunit(Class *cl, Object *obj, struct pHidd_Parall
 
 #define NUM_PARALLELHIDD_METHODS 2
 
-Class *init_parallelhiddclass (struct class_static_data *csd)
+OOP_Class *init_parallelhiddclass (struct class_static_data *csd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     BOOL  ok  = FALSE;
     
-    struct MethodDescr parallelhidd_descr[NUM_PARALLELHIDD_METHODS + 1] = 
+    struct OOP_MethodDescr parallelhidd_descr[NUM_PARALLELHIDD_METHODS + 1] = 
     {
         {(IPTR (*)())hiddparallel_newunit,         moHidd_Parallel_NewUnit},
         {(IPTR (*)())hiddparallel_disposeunit,     moHidd_Parallel_DisposeUnit},
@@ -146,13 +146,13 @@ Class *init_parallelhiddclass (struct class_static_data *csd)
     };
     
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {parallelhidd_descr, IID_Hidd_Parallel, NUM_PARALLELHIDD_METHODS},
         {NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -167,7 +167,7 @@ Class *init_parallelhiddclass (struct class_static_data *csd)
 
     EnterFunc(bug("    init_parallelhiddclass(csd=%p)\n", csd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
     if(cl)
     {
@@ -179,7 +179,7 @@ Class *init_parallelhiddclass (struct class_static_data *csd)
 
         if(csd->parallelunitclass)
         {
- 	    if (ObtainAttrBases(attrbases))
+ 	    if (OOP_ObtainAttrBases(attrbases))
 	    {
         	D(bug("ParallelUnitClass ok\n"));
 
@@ -195,10 +195,10 @@ Class *init_parallelhiddclass (struct class_static_data *csd)
     }
     else
     {
-        AddClass(cl);
+        OOP_AddClass(cl);
     }
 
-    ReturnPtr("init_parallelhiddclass", Class *, cl);
+    ReturnPtr("init_parallelhiddclass", OOP_Class *, cl);
 }
 
 
@@ -208,11 +208,11 @@ void free_parallelhiddclass(struct class_static_data *csd)
 
     if(csd)
     {
-        RemoveClass(csd->parallelhiddclass);
+        OOP_RemoveClass(csd->parallelhiddclass);
 	
 	free_parallelunitclass(csd);
 
-        if(csd->parallelhiddclass) DisposeObject((Object *) csd->parallelhiddclass);
+        if(csd->parallelhiddclass) OOP_DisposeObject((OOP_Object *) csd->parallelhiddclass);
         csd->parallelhiddclass = NULL;
     }
 

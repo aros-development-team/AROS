@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new OOP object
@@ -16,10 +16,10 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH3(APTR, NewObject,
+	AROS_LH3(APTR, OOP_NewObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IClass  *, classPtr, A0),
+	AROS_LHA(struct OOP_IClass  *, classPtr, A0),
 	AROS_LHA(UBYTE          *, classID, A1),
 	AROS_LHA(struct TagItem *, tagList, A2),
 
@@ -52,7 +52,7 @@
     BUGS
 
     SEE ALSO
-	DisposeObject()
+	OOP_DisposeObject()
 
     INTERNALS
 
@@ -66,10 +66,10 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     struct pRoot_New p;
-    Object *o;
+    OOP_Object *o;
 
-// kprintf("NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
-    EnterFunc(bug("NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
+// kprintf("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
+    EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
     		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
 		
     /* Class list is public, so we must avoid race conditions */
@@ -80,7 +80,7 @@
 	/* If a public ID was given, find pointer to class */
 	if (classID) {
 	    
-	    classPtr = (Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
+	    classPtr = (OOP_Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
 	    if (classPtr)
 		MD(classPtr)->objectcount ++; /* We don't want the class to be freed while we work on it */
 	}
@@ -90,13 +90,13 @@
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
 
     if (!classPtr)
-	ReturnPtr ("NewObject[No classPtr]", Object *, NULL);
+	ReturnPtr ("OOP_NewObject[No classPtr]", OOP_Object *, NULL);
 
     /* Create a new instance */
     
     D(bug("Creating new instance\n"));
 
-    p.mID = GetMethodID(IID_Root, moRoot_New);
+    p.mID = OOP_GetMethodID(IID_Root, moRoot_New);
     p.attrList = tagList;
     
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
@@ -105,16 +105,16 @@
 
     /* Call the New() method of the specified class */
     
-    D(bug("Coercemethod: %p\n", classPtr->CoerceMethod));
-    o = (Object *)CoerceMethod(classPtr, (Object *)classPtr, (Msg)&p);
+    D(bug("OOP_Coercemethod: %p\n", classPtr->CoerceMethod));
+    o = (OOP_Object *)OOP_CoerceMethod(classPtr, (OOP_Object *)classPtr, (OOP_Msg)&p);
     if (!o)
     {
 	MD(classPtr)->objectcount --; /* Object creation failed, release lock */
     }
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
 */    
-    ReturnPtr ("NewObject", Object *, o);
+    ReturnPtr ("OOP_NewObject", OOP_Object *, o);
     
     
     AROS_LIBFUNC_EXIT
-} /* NewObject */
+} /* OOP_NewObject */

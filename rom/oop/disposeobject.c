@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new OOP object
@@ -16,10 +16,10 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, DisposeObject,
+	AROS_LH1(VOID, OOP_DisposeObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object  *, obj, A0),
+	AROS_LHA(OOP_Object  *, obj, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 10, OOP)
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-    	NewObjectA()
+    	OOP_NewObjectA()
 
     INTERNALS
 
@@ -53,22 +53,22 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    ULONG mid = GetMethodID(IID_Root, moRoot_Dispose);
+    ULONG mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
     
-    EnterFunc(bug("DisposeObject(classID=%s)\n",
+    EnterFunc(bug("OOP_DisposeObject(classID=%s)\n",
     		OCLASS(obj)->ClassNode.ln_Name));
 		
     if (obj == NULL) return;
 
 
 
-    MD(OCLASS(obj))->objectcount --;
+    MD(OOP_OCLASS(obj))->objectcount --;
 		
 
-    DoMethod(obj, (Msg)&mid);
+    OOP_DoMethod(obj, (OOP_Msg)&mid);
 
         
-    ReturnVoid("DisposeObject");
+    ReturnVoid("OOP_DisposeObject");
     
     AROS_LIBFUNC_EXIT
-} /* DisposeObject */
+} /* OOP_DisposeObject */

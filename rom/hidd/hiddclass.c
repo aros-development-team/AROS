@@ -31,28 +31,28 @@
 #include <aros/debug.h>
 
 static const char unknown[]  = "--unknown device--";
-static AttrBase HiddAttrBase = 0;
+static OOP_AttrBase HiddAttrBase = 0;
 
 #define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
 /* Implementation of root HIDD class methods. */
-static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg);
+static VOID hidd_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
 
 
 /*** HIDD::New() **************************************************************/
 
-static Object *hidd_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *hidd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if(o)
     {
         struct HIDDData *hd;
         struct TagItem *list = msg->attrList;
         struct pRoot_Set set_msg;
         
-        hd = INST_DATA(cl, o);
+        hd = OOP_INST_DATA(cl, o);
 
         /*  Initialise the HIDD class. These fields are publicly described
             as not being settable at Init time, however it is the only way to
@@ -85,18 +85,18 @@ static Object *hidd_new(Class *cl, Object *o, struct pRoot_New *msg)
         hidd_set(cl, o, &set_msg);
     }
     
-    ReturnPtr("HIDD::New", Object *, o);
+    ReturnPtr("HIDD::New", OOP_Object *, o);
 }
 
 
 /*** HIDD::Set() **************************************************************/
 
-static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg)
+static VOID hidd_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
 
     struct TagItem  *tstate = msg->attrList;
     struct TagItem  *tag;
-    struct HIDDData *hd = INST_DATA(cl, o);
+    struct HIDDData *hd = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("HIDD::Set(cl=%s)\n", cl->ClassNode.ln_Name));
 
@@ -122,9 +122,9 @@ static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg)
 
 /*** HIDD::Get() **************************************************************/
 
-static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID hidd_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct HIDDData *hd = INST_DATA(cl, o);
+    struct HIDDData *hd = OOP_INST_DATA(cl, o);
     ULONG idx;
     
     EnterFunc(bug("HIDD::Get(cl=%s)\n", cl->ClassNode.ln_Name));
@@ -142,10 +142,10 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
             case aoHidd_Status      : *msg->storage = hd->hd_Status;       break;
             case aoHidd_ErrorCode   : *msg->storage = hd->hd_ErrorCode;    break;
             case aoHidd_Locking     : *msg->storage = hd->hd_Locking;      break;
-	    default		    : DoSuperMethod(cl, o, (Msg) msg);	   break;
+	    default		    : OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);	   break;
         }
     } else {
-        DoSuperMethod(cl, o, (Msg) msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     }
     
     
@@ -164,11 +164,11 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 /*    switch(msg->MethodID)
     {
     case OM_NEW:
-        retval = DoSuperMethodA(cl, o, msg);
+        retval = OOP_DoSuperMethodA(cl, o, msg);
         if(!retval)
             break;
 
-        hd = INST_DATA(cl, retval);
+        hd = OOP_INST_DATA(cl, retval);
 
         if( hd != NULL)
         {
@@ -312,7 +312,7 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
     case OM_DISPOSE:
 
     default:
-        retval = DoSuperMethodA(cl, o, msg);
+        retval = OOP_DoSuperMethod(cl, o, msg);
     }
 
     return retval;
@@ -336,12 +336,12 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 
 ULONG init_hiddclass(struct IntHIDDClassBase *lh)
 {
-    Class  *cl = NULL;
+    OOP_Class  *cl = NULL;
     struct  class_static_data *csd;
     ULONG   alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
     ULONG   ok    = 0;
 
-    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
         { (IPTR (*)())hidd_new,         moRoot_New              },
         { (IPTR (*)())hidd_set,         moRoot_Set              },
@@ -350,12 +350,12 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
     };
 
     
-    struct MethodDescr hidd_mdescr[NUM_HIDD_METHODS + 1] =
+    struct OOP_MethodDescr hidd_mdescr[NUM_HIDD_METHODS + 1] =
     {
         { NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_mdescr, IID_Root, NUM_ROOT_METHODS},
         {hidd_mdescr, IID_Hidd, NUM_HIDD_METHODS},
@@ -395,7 +395,7 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
             {
                 /* Create the class structure for the "hiddclass" */
 
-                AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+                OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
                 struct TagItem tags[] =
                 {
@@ -409,17 +409,17 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
 	    	D(bug("Got UtilityBase\n"));
 
                 alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
-                cl = csd->hiddclass = NewObject(NULL, CLID_HiddMeta, tags);
+                cl = csd->hiddclass = OOP_NewObject(NULL, CLID_HiddMeta, tags);
                 if(cl)
                 {
 		    D(bug("Class created\n"));
                     cl->UserData = csd;
 
-                    HiddAttrBase = ObtainAttrBase(IID_Hidd);
+                    HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
                     if(HiddAttrBase)
                     {
 		    	D(bug("Got HiddAttrBase\n"));
-                        AddClass(cl);
+                        OOP_AddClass(cl);
                         ok = 1;
                     } /* if(HiddAttrBase) */
 
@@ -455,14 +455,14 @@ VOID free_hiddclass(struct IntHIDDClassBase *lh)
     {
         if(csd->hiddclass)
         {
-            RemoveClass(csd->hiddclass);
+            OOP_RemoveClass(csd->hiddclass);
             if(HiddAttrBase)
             {
-                ReleaseAttrBase(IID_Hidd);
+                OOP_ReleaseAttrBase(IID_Hidd);
                 HiddAttrBase = 0;
             }
 
-            DisposeObject((Object *) csd->hiddclass);
+            OOP_DisposeObject((OOP_Object *) csd->hiddclass);
         }
 
 

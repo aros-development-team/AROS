@@ -18,7 +18,7 @@ struct tfe_hashnode
     struct TextFontExtension	*ext;
     
     /* A bitmap describing the font */
-    Object *font_bitmap;
+    OOP_Object *font_bitmap;
 };
 
 extern struct tfe_hashnode *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase);

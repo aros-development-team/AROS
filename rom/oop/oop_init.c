@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP Library
@@ -55,12 +55,12 @@ BOOL InitUtilityClasses(struct IntOOPBase *OOPBase);
 #if 0
 static void FreeAllClasses(struct Library *BOOPIBase)
 {
-    Class *cl;
+    OOP_Class *cl;
 
-    while((cl = (Class *)RemHead((struct List *)&GetOBase(OOPBase)->bb_ClassList)))
+    while((cl = (OOP_Class *)RemHead((struct List *)&GetOBase(OOPBase)->bb_ClassList)))
     {
 	if(cl != &rootclass)
-	    FreeClass(cl);
+	    OOP_FreeClass(cl);
     }
 }
 #endif

@@ -31,7 +31,7 @@
 
 /**** Graphics definitions ****************************************************/
 
-extern AttrBase HiddParallelUnitAB;
+extern OOP_AttrBase HiddParallelUnitAB;
 
 enum {
     aoHidd_ParallelUnit_Unit,
@@ -56,14 +56,14 @@ enum
 
 struct pHidd_Parallel_NewUnit
 {
-    MethodID	mID;
-    ULONG	unitnum;
+    OOP_MethodID	mID;
+    ULONG		unitnum;
 };
 
 struct pHidd_Parallel_DisposeUnit
 {
-    MethodID    mID;
-    Object      *unit;
+    OOP_MethodID    	mID;
+    OOP_Object         	*unit;
 };
 
 
@@ -84,27 +84,27 @@ enum
 
 struct pHidd_ParallelUnit_Init
 {
-    MethodID	mID;
-    VOID	*DataReceived;
-    VOID	*DataReceivedUserData;
-    VOID	*WriteData;
-    VOID	*WriteDataUserData;
+    OOP_MethodID	mID;
+    VOID		*DataReceived;
+    VOID		*DataReceivedUserData;
+    VOID		*WriteData;
+    VOID		*WriteDataUserData;
 };
 
 struct pHidd_ParallelUnit_Write
 {
-    MethodID	mID;
-    ULONG	Length;
-    UBYTE	*Outbuffer;
+    OOP_MethodID	mID;
+    ULONG		Length;
+    UBYTE		*Outbuffer;
 };
 
 /* Predeclarations of stubs in libhiddparallelstubs.h */
 
-Object * HIDD_Parallel_NewUnit		(Object *obj, ULONG unitnum);
-VOID     HIDD_Parallel_DisposeUnit	(Object *obj, Object *unit);
+OOP_Object * HIDD_Parallel_NewUnit	(OOP_Object *obj, ULONG unitnum);
+VOID     HIDD_Parallel_DisposeUnit	(OOP_Object *obj, OOP_Object *unit);
 
-BOOL     HIDD_ParallelUnit_Init		(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
-ULONG    HIDD_ParallelUnit_Write	(Object *obj, UBYTE * data, ULONG length);
+BOOL     HIDD_ParallelUnit_Init		(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
+ULONG    HIDD_ParallelUnit_Write	(OOP_Object *obj, UBYTE * data, ULONG length);
 
 
 #endif /* HIDD_PARALLEL_H */

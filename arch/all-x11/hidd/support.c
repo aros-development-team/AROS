@@ -136,37 +136,37 @@ UX11
 #undef OOPBase
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(o))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(o))->UserData)
 
 
-VOID Hidd_X11Mouse_HandleEvent(Object *o, XEvent *event)
+VOID Hidd_X11Mouse_HandleEvent(OOP_Object *o, XEvent *event)
 {
     struct pHidd_X11Mouse_HandleEvent msg;
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     
     if (!mid)
-    	mid = GetMethodID(IID_Hidd_X11Mouse, moHidd_X11Mouse_HandleEvent);
+    	mid = OOP_GetMethodID(IID_Hidd_X11Mouse, moHidd_X11Mouse_HandleEvent);
 	
     msg.mID = mid;
     msg.event = event;
     
-    DoMethod(o, (Msg) &msg);
+    OOP_DoMethod(o, (OOP_Msg) &msg);
 }
 
 
-VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event)
+VOID Hidd_X11Kbd_HandleEvent(OOP_Object *o, XEvent *event)
 {
     struct pHidd_X11Kbd_HandleEvent msg;
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     
     
     if (!mid)
-    	mid = GetMethodID(IID_Hidd_X11Kbd, moHidd_X11Kbd_HandleEvent);
+    	mid = OOP_GetMethodID(IID_Hidd_X11Kbd, moHidd_X11Kbd_HandleEvent);
 
     msg.mID = mid;
     msg.event = event;
     
-    DoMethod(o, (Msg) &msg);
+    OOP_DoMethod(o, (OOP_Msg) &msg);
 }
 
 

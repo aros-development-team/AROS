@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a class to the list of puvlic classes
@@ -17,7 +17,7 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(Object *, FindServer,
+	AROS_LH1(OOP_Object *, OOP_FindServer,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR , serverID, A0),
@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-    	AddServer(), RemoveServer()
+    	OOP_AddServer(), OOP_RemoveServer()
 
     INTERNALS
 
@@ -59,9 +59,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    Object *server = NULL;
+    OOP_Object *server = NULL;
     
-    EnterFunc(bug("FindServer(serverID=%s)\n", serverID));
+    EnterFunc(bug("OOP_FindServer(serverID=%s)\n", serverID));
     
     if (serverID)
     {
@@ -89,7 +89,7 @@
     	ReleaseSemaphore( &GetOBase(OOPBase)->ob_ServerListLock );
     }
     
-    ReturnPtr ("FindServer", Object *, server);
+    ReturnPtr ("OOP_FindServer", Object *, server);
     
     AROS_LIBFUNC_EXIT
-} /* NewObjectA */
+} /* OOP_FindServer */

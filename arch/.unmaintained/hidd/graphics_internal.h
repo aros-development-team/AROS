@@ -3,7 +3,7 @@
 
 
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: GfxHIDD specific Internal Information Management
@@ -23,7 +23,7 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
 UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
 #if 0
-VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated);
+VOID activatebm_callback(APTR data, OOP_Object *bmobj, BOOL activated);
 BOOL init_activescreen_stuff(struct GfxBase *GfxBase);
 VOID cleanup_activescreen_stuff(struct GfxBase *GfxBase);
 #endif
@@ -40,7 +40,7 @@ struct gfx_driverdata {
     UWORD	* dd_AreaPtrn;		/* Amiga current AreaPtrn	*/
     BYTE	  dd_AreaPtSz;		/* Amiga AreaPtSz		*/
     UWORD	  dd_LinePtrn;		/* Amiga current LinePtrn	*/
-    Object	* dd_GC;
+    OOP_Object	* dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
     
 };
@@ -56,26 +56,26 @@ typedef struct {
     int just_for_type_checking;
 } ObjectCache;
 
-ObjectCache *create_object_cache(Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase);
+ObjectCache *create_object_cache(OOP_Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase);
 VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase);
-Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase);
-VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBase *GfxBase);
+OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase);
+VOID release_cache_object(ObjectCache *objectCache, OOP_Object *object, struct GfxBase *GfxBase);
 
 
 struct shared_driverdata
 {
-    Object *gfxhidd;
-    Object *gfxhidd_orig;
-    Object *gfxhidd_fake;
+    OOP_Object *gfxhidd;
+    OOP_Object *gfxhidd_orig;
+    OOP_Object *gfxhidd_fake;
     
     struct Library *oopbase;
     ObjectCache *gc_cache;
     ObjectCache *planarbm_cache;
     
-    Object	*framebuffer;
+    OOP_Object	*framebuffer;
     
-    Object	*bm_bak;
-    Object	*colmap_bak;
+    OOP_Object	*bm_bak;
+    OOP_Object	*colmap_bak;
     HIDDT_ColorModel colmod_bak;
     
     
@@ -86,7 +86,7 @@ struct shared_driverdata
     BOOL has_hw_cursor;
 
     /* This is used if the gfx hidd does not support hardware mouse pointers */
-    Object  *pointerbm;
+    OOP_Object  *pointerbm;
     LONG pointer_x;
     LONG pointer_y;
     

@@ -2,7 +2,7 @@
 #define OOP_IFMETA_H
 
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Include file for interface meta class

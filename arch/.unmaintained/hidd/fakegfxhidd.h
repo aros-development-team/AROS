@@ -6,11 +6,11 @@ struct class_static_data {
     struct Library *utilitybase;
     struct ExecBase *sysbase;
     
-    Class *fakegfxclass;
-    Class *fakefbclass;
-    Class *fakedbmclass;
+    OOP_Class *fakegfxclass;
+    OOP_Class *fakefbclass;
+    OOP_Class *fakedbmclass;
     
-    Object *fakegfxobj;
+    OOP_Object *fakegfxobj;
 };
 
 #define CLID_Hidd_FakeGfxHidd	"hidd.gfx.fake"
@@ -43,7 +43,7 @@ enum {
 #define aHidd_FakeFB_FakeGfxHidd	(HiddFakeFBAttrBase + aoHidd_FakeFB_FakeGfxHidd	)
 #define aHidd_FakeFB_	(HiddFakeFBAttrBase + aoHidd_FakeFB_)
 
-Object *init_fakegfxhidd(Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase);
+OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase);
 VOID cleanup_fakegfxhidd(struct class_static_data *csd, struct GfxBase *GfxBase);
 
 #endif /* FAKEGFXHIDD_H */

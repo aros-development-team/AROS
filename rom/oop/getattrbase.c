@@ -1,8 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: OOP function GetAttrBase
+    Desc: OOP function OOP_GetAttrBase
     Lang: english
 */
 
@@ -17,7 +17,7 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(AttrBase, GetAttrBase,
+	AROS_LH1(OOP_AttrBase, OOP_GetAttrBase,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, interfaceID, A0),
@@ -64,7 +64,7 @@
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
     ULONG base = -1UL;
     
-    EnterFunc(bug("GetAttrBase(interfaceID=%s)\n", interfaceID));
+    EnterFunc(bug("OOP_GetAttrBase(interfaceID=%s)\n", interfaceID));
     
     ObtainSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
@@ -109,9 +109,9 @@
     }
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
-    ReturnInt ("GetAttrBase", ULONG, base);
+    ReturnInt ("OOP_GetAttrBase", ULONG, base);
     
     AROS_LIBFUNC_EXIT
 
-} /* GetID  */
+} /* OOP_GetAttrBase  */
 

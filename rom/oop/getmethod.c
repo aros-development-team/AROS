@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Get a pointer to a method for an object
@@ -16,11 +16,11 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH2(VOID *, GetMethod,
+	AROS_LH2(VOID *, OOP_GetMethod,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object  *, obj, 	A0),
-	AROS_LHA(MethodID,  mid,	D0),
+	AROS_LHA(OOP_Object  *, obj, 	A0),
+	AROS_LHA(OOP_MethodID,  mid,	D0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 21, OOP)
@@ -50,7 +50,7 @@
 	IPTR (*)(Class *, Object *, Msg)
 
     SEE ALSO
-    	GetMethodID()
+    	OOP_GetMethodID()
 
     INTERNALS
 
@@ -67,7 +67,7 @@
     
     /* First get mid */
     /* Get the method from the object's class */
-    ifm = meta_findmethod((Object *)OCLASS(obj), mid, (struct Library *)OOPBase);
+    ifm = meta_findmethod((OOP_Object *)OOP_OCLASS(obj), mid, (struct Library *)OOPBase);
     if (NULL == ifm)
 	return NULL;
 
@@ -80,4 +80,4 @@
     return (VOID *)ifm->MethodFunc;
 
     AROS_LIBFUNC_EXIT
-} /* DisposeObject */
+} /* OOP_GetMethod */

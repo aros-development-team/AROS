@@ -126,7 +126,7 @@ static void *const functable[] =
 };
 
 
-static AttrBase HiddKbdAB = 0;
+static OOP_AttrBase HiddKbdAB = 0;
 
 /****************************************************************************************/
 
@@ -241,7 +241,7 @@ AROS_LH3(void, open,
     
     if (!HiddKbdAB)
     {
-        HiddKbdAB = ObtainAttrBase(IID_Hidd_Kbd);
+        HiddKbdAB = OOP_ObtainAttrBase(IID_Hidd_Kbd);
 	if (!HiddKbdAB)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
@@ -483,7 +483,7 @@ AROS_LH1(void, beginio,
 	    D(bug("keyboard.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n"
 		    , (STRPTR)ioStd(ioreq)->io_Data ));
 
-	    KBBase->kb_Hidd = NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
+	    KBBase->kb_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
 	    if (!KBBase->kb_Hidd)
 	    {
 		D(bug("keyboard.device: Failed to open hidd.\n"));

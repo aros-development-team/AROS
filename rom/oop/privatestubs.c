@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Stubs for private methods.
@@ -14,86 +14,86 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase ((struct IntOOPBase *)(OCLASS(OCLASS(o)))->UserData )
+#define OOPBase ((struct IntOOPBase *)(OOP_OCLASS(OOP_OCLASS(o)))->UserData )
 
-BOOL meta_allocdisptabs(Object *o, Class *super, struct InterfaceDescr *ifdescr)
+BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr)
 {
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     struct P_meta_allocdisptabs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MO_meta_allocdisptabs);
+    	mid = OOP_GetMethodID(IID_Meta, MO_meta_allocdisptabs);
     
     p.mid = mid;
     p.superclass = super;
     p.ifdescr = ifdescr;
     
-    return ( DoMethod(o, (Msg)&p) );
+    return ( OOP_DoMethod(o, (OOP_Msg)&p) );
 }
 
-VOID meta_freedisptabs(Object *o)
+VOID meta_freedisptabs(OOP_Object *o)
 {
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     struct P_meta_freedisptabs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MO_meta_freedisptabs);
+    	mid = OOP_GetMethodID(IID_Meta, MO_meta_freedisptabs);
 	
     p.mid = mid;
     
-    DoMethod(o, (Msg)&p);
+    OOP_DoMethod(o, (OOP_Msg)&p);
     
     return;
     
 }
 
 
-struct IFMethod *meta_iterateifs(Object *o, IPTR *iterval_ptr, STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
+struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
 {
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     struct P_meta_iterateifs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MO_meta_iterateifs);
+    	mid = OOP_GetMethodID(IID_Meta, MO_meta_iterateifs);
 	
     p.mid		= mid;
     p.iterval_ptr	= iterval_ptr;
     p.interface_id_ptr	= interface_id_ptr;
     p.num_methods_ptr	= num_methods_ptr;
     
-    return (struct IFMethod *)DoMethod(o, (Msg)&p);
+    return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
 	
 }
 
-struct IFMethod *meta_getifinfo(Object *o, STRPTR interface_id, ULONG *num_methods_ptr)
+struct IFMethod *meta_getifinfo(OOP_Object *o, STRPTR interface_id, ULONG *num_methods_ptr)
 {
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     struct P_meta_getifinfo p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MO_meta_getifinfo);
+    	mid = OOP_GetMethodID(IID_Meta, MO_meta_getifinfo);
 	
     p.mid		= mid;
     p.interface_id	= interface_id;
     p.num_methods_ptr	= num_methods_ptr;
     
-    return (struct IFMethod *)DoMethod(o, (Msg)&p);
+    return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
 }
 
 
 #undef OOPBase
 
-struct IFMethod *meta_findmethod(Object *o, MethodID method_to_find, struct Library *OOPBase)
+struct IFMethod *meta_findmethod(OOP_Object *o, OOP_MethodID method_to_find, struct Library *OOPBase)
 {
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     struct P_meta_findmethod p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MO_meta_findmethod);
+    	mid = OOP_GetMethodID(IID_Meta, MO_meta_findmethod);
 	
     p.mid		= mid;
     p.method_to_find	= method_to_find;
     
-    return (struct IFMethod *)DoMethod(o, (Msg)&p);
+    return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
 }
 

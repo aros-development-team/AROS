@@ -2,7 +2,7 @@
 #define OOP_SERVER_H
 
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Include for server class.
@@ -36,7 +36,7 @@ enum {
 struct P_Server_AddObject
 {
     ULONG  MethodID;
-    Object *Object;
+    OOP_Object *Object;
     STRPTR ObjectID;
 };
 
@@ -55,32 +55,32 @@ struct P_Server_FindObject
 #define Server_AddObject(o, object, id)	\
 ({		\
     struct P_Server_AddObject msg;	\
-    msg.MethodID = GetMethodID(IID_Server, moServer_AddObject);	\
+    msg.MethodID = OOP_GetMethodID(IID_Server, moServer_AddObject);	\
     msg.Object = object;		\
     msg.ObjectID = id;			\
-    ((BOOL)DoMethod(o, (Msg)&msg));		\
+    ((BOOL)OOP_DoMethod(o, (OOP_Msg)&msg));		\
 })
 
 #define Server_RemoveObject(o, id)	\
 ({		\
     struct P_Server_RemoveObject msg;		\
-    msg.MethodID = GetMethodID(IID_Server, moServer_RemoveObject);	\
+    msg.MethodID = OOP_GetMethodID(IID_Server, moServer_RemoveObject);	\
     msg.ObjectID = id;				\
-    DoMethod(o, (Msg)&msg);			\
+    OOP_DoMethod(o, (OOP_Msg)&msg);			\
 })
 
 #define Server_FindObject(o, id)	\
 ({					\
     struct P_Server_FindObject msg;	\
-    msg.MethodID = GetMethodID(IID_Server, moServer_FindObject);	\
+    msg.MethodID = OOP_GetMethodID(IID_Server, moServer_FindObject);	\
     msg.ObjectID = id;			\
-    ((Object *)DoMethod(o, (Msg)&msg));		\
+    ((OOP_Object *)OOP_DoMethod(o, (OOP_Msg)&msg));		\
 })
 
 #define Server_Run(o)			\
 ({					\
-    ULONG mid = GetMethodID(IID_Server, moServer_Run);		\
-    DoMethod(o, (Msg)&mid);		\
+    ULONG mid = OOP_GetMethodID(IID_Server, moServer_Run);		\
+    OOP_DoMethod(o, (OOP_Msg)&mid);		\
 })
 
 #endif /* OOP_SERVER_H */

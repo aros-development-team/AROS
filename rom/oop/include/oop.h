@@ -1,7 +1,7 @@
 #ifndef OOP_OOP_H
 #define OOP_OOP_H
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -21,14 +21,14 @@
 #endif
 
 #define AROSOOP_NAME "oop.library"
-typedef ULONG Object;
+typedef ULONG OOP_Object;
 
-typedef ULONG MethodID;
-typedef ULONG AttrID;
+typedef ULONG OOP_MethodID;
+typedef ULONG OOP_AttrID;
 
-typedef ULONG AttrBase;
+typedef ULONG OOP_AttrBase;
 
-typedef ULONG AttrCheck;
+typedef ULONG OOP_AttrCheck;
 
 #define GOT_ATTR(code, pre_tag, pre_ac)	\
     ((pre_ac ## _attrcheck & (1L << pre_tag ## _ ## code)) == (1L << pre_tag ## _ ## code))
@@ -37,7 +37,7 @@ typedef ULONG AttrCheck;
     pre_ac ## _attrcheck |= (1L << pre_tag ## _ ## code)
 
 #define DECLARE_ATTRCHECK(pre_tag)	\
-    AttrCheck pre_tag ## _attrcheck = 0UL
+    OOP_AttrCheck pre_tag ## _attrcheck = 0UL
     
 #define ATTRCHECK(pre_tag)	\
     pre_tag ## _attrcheck
@@ -48,19 +48,19 @@ enum {
 
 typedef struct
 {
-    MethodID MID;
-} *Msg;
+    OOP_MethodID MID;
+} *OOP_Msg;
 
 
-struct ABDescr
+struct OOP_ABDescr
 {
     STRPTR interfaceID;
-    AttrBase *attrBase;
+    OOP_AttrBase *attrBase;
 };
 
-typedef struct IClass Class;
+typedef struct OOP_IClass OOP_Class;
 
-struct IClass
+struct OOP_IClass
 {
 
     /* Array of pointers to methodtables for this class */
@@ -69,17 +69,17 @@ struct IClass
     
     ULONG InstOffset;
     APTR UserData;
-    IPTR (*DoMethod)(Object *, Msg);
-    IPTR (*CoerceMethod)(Class *, Object *, Msg);
-    IPTR (*DoSuperMethod)(Class *, Object *, Msg);
+    IPTR (*DoMethod)(OOP_Object *, OOP_Msg);
+    IPTR (*CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
+    IPTR (*DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
 
 };
 
 
 
-struct _Object
+struct _OOP_Object
 {
-    Class *o_Class;
+    OOP_Class *o_Class;
 };
 
 
@@ -87,34 +87,34 @@ struct _Object
 /* Macros */
 
 
-#define BASEOBJECT(obj) ((Object *)(_OBJ(obj) + 1))
-#define _OBJECT(obj) (_OBJ(obj) - 1)
-#define _OBJ(obj) ((struct _Object *)(obj))
+#define OOP_BASEOBJECT(obj) ((OOP_Object *)(_OOP_OBJ(obj) + 1))
+#define _OOP_OBJECT(obj) (_OOP_OBJ(obj) - 1)
+#define _OOP_OBJ(obj) ((struct _OOP_Object *)(obj))
 
-#define INST_DATA(cl, obj) \
+#define OOP_INST_DATA(cl, obj) \
 	(((VOID *)(obj)) + (cl)->InstOffset)
 
-#define OCLASS(obj) \
-	(_OBJECT(obj)->o_Class)
+#define OOP_OCLASS(obj) \
+	(_OOP_OBJECT(obj)->o_Class)
 
 
-#define DoMethod(o, msg) ( (OCLASS(o))->DoMethod((o), (msg)) )
-#define DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
-#define CoerceMethod(cl, o, msg) ((cl)->CoerceMethod(cl, o, msg))
+#define OOP_DoMethod(o, msg) ( (OOP_OCLASS(o))->DoMethod((o), (msg)) )
+#define OOP_DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
+#define OOP_CoerceMethod(cl, o, msg) ((cl)->CoerceMethod(cl, o, msg))
 
-#define METHODDEF(x) (IPTR (*)())x
+#define OOP_METHODDEF(x) (IPTR (*)())x
 
 
 #define IS_IF_ATTR(attr, idx, attrbase, numifattrs) ( ((idx) = (attr) - (attrbase)) < (numifattrs) )
 
-struct InterfaceDescr
+struct OOP_InterfaceDescr
 {
-    struct MethodDescr *MethodTable;
+    struct OOP_MethodDescr *MethodTable;
     STRPTR InterfaceID;
     ULONG NumMethods; /* Number of methods in the methodtable */
 };
 
-struct MethodDescr
+struct OOP_MethodDescr
 {
     IPTR (*MethodFunc)();
     ULONG MethodIdx;
@@ -144,19 +144,19 @@ enum
 
 struct pRoot_New
 {
-    MethodID mID;
+    OOP_MethodID mID;
     struct TagItem *attrList;
 };
 
 struct pRoot_Set
 {
-    MethodID mID;
+    OOP_MethodID mID;
     struct TagItem *attrList;
 };
 
 struct pRoot_Get
 {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG attrID;
     IPTR *storage;
 };
@@ -209,7 +209,7 @@ extern ULONG __IMethod;
 
 #define MethodAttrBase (__IMethod)
 
-#define CallMethod(m) ( (m)->methodFunc((m)->methodClass, (m)->targetObject, (m)->message) )
+#define OOP_CallMethod(m) ( (m)->methodFunc((m)->methodClass, (m)->targetObject, (m)->message) )
 
 enum {
     aoMethod_TargetObject= 0,
@@ -225,11 +225,11 @@ enum {
 
 typedef struct
 {
-    Object	*targetObject;
-    Msg		message;
-    Class	*methodClass;
-    IPTR	(*methodFunc)(Class *, Object *, Msg);
-} Method;
+    OOP_Object	*targetObject;
+    OOP_Msg	message;
+    OOP_Class	*methodClass;
+    IPTR	(*methodFunc)(OOP_Class *, OOP_Object *, OOP_Msg);
+} OOP_Method;
 
 
 /**************************
@@ -256,12 +256,12 @@ enum {
 #define aInterface_InterfaceID		(InterfaceAttrBase + aoInterface_InterfaceID)
 
 
-typedef struct InterfaceStruct
+typedef struct OOP_InterfaceStruct
 {
-    IPTR (*callMethod)(struct InterfaceStruct *, Msg);
-    Object	*targetObject;
+    IPTR (*callMethod)(struct OOP_InterfaceStruct *, OOP_Msg);
+    OOP_Object	*targetObject;
     
-} Interface;
+} OOP_Interface;
 
 
 /***********************

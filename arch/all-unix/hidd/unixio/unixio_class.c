@@ -320,18 +320,18 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 /********************
 **  UnixIO::New()  **
 ********************/
-static Object *unixio_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *unixio_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
-    o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if (o)
     {
 	struct UnixIOData *id;
 	ULONG dispose_mid;
 	
-	id = INST_DATA(cl, o);
+	id = OOP_INST_DATA(cl, o);
 	D(bug("inst: %p, o: %p\n", id, o));
 	
 	id->uio_ReplyPort = CreatePort (NULL, 0);
@@ -345,32 +345,32 @@ kprintf("\tUnixIO::New(): Task %s (%x) Replyport: %x\n",FindTask(NULL)->tc_Node.
     	}
 
 
-	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-	CoerceMethod(cl, o, (Msg)&dispose_mid);
+	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
     }
-    ReturnPtr("UnixIO::New", Object *, NULL);
+    ReturnPtr("UnixIO::New", OOP_Object *, NULL);
 }
 
 /***********************
 **  UnixIO::Dispose()  **
 ***********************/
-static IPTR unixio_dispose(Class *cl, Object *o, Msg msg)
+static IPTR unixio_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct UnixIOData *id = INST_DATA(cl, o);
+    struct UnixIOData *id = OOP_INST_DATA(cl, o);
     
     if (id -> uio_ReplyPort)
 	DeletePort (id->uio_ReplyPort);
 	
-    return DoSuperMethod(cl, o, msg);
+    return OOP_DoSuperMethod(cl, o, msg);
 }
 
 /*********************
 **  UnixIO::Wait()  **
 *********************/
-static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
+static IPTR unixio_wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 {
     IPTR retval = 0UL;
-    struct UnixIOData *id = INST_DATA(cl, o);
+    struct UnixIOData *id = OOP_INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = CreatePort(NULL, 0);
     struct uio_data *ud = (struct uio_data *)cl->UserData;
@@ -412,7 +412,7 @@ kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_
 /************************
 **  UnixIO::AsyncIO()  **
 ************************/
-static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
+static IPTR unixio_asyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *msg)
 {
     IPTR retval = 0UL;
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
@@ -455,7 +455,7 @@ static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 /*****************************
 **  UnixIO::AbortAsyncIO()  **
 *****************************/
-static VOID unixio_abortasyncio(Class *cl, Object *o, struct uioMsgAbortAsyncIO *msg)
+static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbortAsyncIO *msg)
 {
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct uio_data *ud = (struct uio_data *)cl->UserData;
@@ -498,7 +498,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 )
 {
     struct Library  * OOPBase;
-    struct IClass   * cl;
+    struct OOP_IClass * cl;
     struct uio_data * ud;
     struct Task     * newtask,
 		    * task2 = NULL; /* keep compiler happy */
@@ -506,14 +506,14 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     struct MemList  * ml;
     struct Interrupt * is;
     
-    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
     	{ (IPTR (*)())unixio_new,	moRoot_New	},
     	{ (IPTR (*)())unixio_dispose,	moRoot_Dispose	},
     	{ NULL, 0UL }
     };
 
-    struct MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
+    struct OOP_MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
     {
     	{ (IPTR (*)())unixio_wait,	moHidd_UnixIO_Wait		},
     	{ (IPTR (*)())unixio_asyncio,	moHidd_UnixIO_AsyncIO		},
@@ -521,7 +521,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     	{ NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
 	{unixio_mdescr, IID_Hidd_UnixIO, NUM_UNIXIO_METHODS},
@@ -635,7 +635,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     /* Create the class structure for the "unixioclass" */
     
     {
-        AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+        OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 	
         struct TagItem tags[] =
     	{
@@ -646,13 +646,13 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 	    {TAG_DONE, 0UL}
     	};
 
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     
     	if(cl)
     	{
 	    cl->UserData = (APTR)ud;
 
-	    AddClass(cl);
+	    OOP_AddClass(cl);
         }
     }
     return NULL;
@@ -664,15 +664,15 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 **  Stubs  **
 ************/
 
-#define OOPBase ( ((struct uio_data *)OCLASS(o)->UserData)->ud_OOPBase )
+#define OOPBase ( ((struct uio_data *)OOP_OCLASS(o)->UserData)->ud_OOPBase )
 
 IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata)
 {
-     static MethodID mid = 0UL;
+     static OOP_MethodID mid = 0UL;
      struct uioMsg p;
      
      if (!mid)
-     	mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
+     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      p.um_Mode	   = mode;
@@ -680,34 +680,34 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      p.um_CallBackData = callbackdata;
      
      
-     return DoMethod((Object *)o, (Msg)&p);
+     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
 IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, struct MsgPort * port, ULONG mode)
 {
-     static MethodID mid = 0UL;
+     static OOP_MethodID mid = 0UL;
      struct uioMsgAsyncIO p;
      
      if (!mid)
-     	mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
+     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      p.um_ReplyPort= port;
      p.um_Mode	   = mode;
      
-     return DoMethod((Object *)o, (Msg)&p);
+     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
 VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd)
 {
-     static MethodID mid = 0UL;
+     static OOP_MethodID mid = 0UL;
      struct uioMsgAbortAsyncIO p;
      
-     if (!mid) mid = GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
+     if (!mid) mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      
-     DoMethod((Object *)o, (Msg)&p);
+     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
 }
 
 
@@ -722,5 +722,5 @@ VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd)
 HIDD *New_UnixIO(struct Library *OOPBase)
 {
    struct TagItem tags[] = {{ TAG_END, 0 }};
-   return (HIDD)NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+   return (HIDD)OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 }

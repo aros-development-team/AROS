@@ -40,7 +40,7 @@
 
 #define IID_Hidd_X11 "hidd.misc.x11"
 
-extern AttrBase HiddX11AB;
+extern OOP_AttrBase HiddX11AB;
 
 enum {
    aoHidd_X11_SysDisplay,
@@ -65,11 +65,11 @@ enum
 
 struct pHidd_X11Mouse_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     XEvent *event;
 };
 
-VOID Hidd_X11Mouse_HandleEvent(Object *o, XEvent *event);
+VOID Hidd_X11Mouse_HandleEvent(OOP_Object *o, XEvent *event);
 
 /***** X11Kbd HIDD *******************/
 
@@ -85,11 +85,11 @@ enum
 
 struct pHidd_X11Kbd_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     XEvent *event;
 };
 
-VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event);
+VOID Hidd_X11Kbd_HandleEvent(OOP_Object *o, XEvent *event);
 /* misc */
 
 
@@ -108,7 +108,7 @@ struct xwinnode
 {
     struct MinNode node;
     Window	xwindow;
-    Object	*bmobj;
+    OOP_Object	*bmobj;
     
     BOOL window_mapped;
 };
@@ -131,7 +131,7 @@ struct notify_msg {
      ULONG notify_type; /* NOTY_xxxx */
      Display *xdisplay;     
      Window xwindow;
-     Object *bmobj;
+     OOP_Object *bmobj;
      
      /* Only for NOTY_RESIZEWINDOW */
      ULONG width;
@@ -158,16 +158,16 @@ struct x11_staticdata
     
     ULONG refcount;
 
-    Class *x11class;    
-    Class *gfxclass;
-    Class *onbmclass;
-    Class *offbmclass;
-    Class *mouseclass;
-    Class *kbdclass;
+    OOP_Class *x11class;    
+    OOP_Class *gfxclass;
+    OOP_Class *onbmclass;
+    OOP_Class *offbmclass;
+    OOP_Class *mouseclass;
+    OOP_Class *kbdclass;
     
-    Object *gfxhidd;
-    Object *mousehidd;
-    Object *kbdhidd;
+    OOP_Object *gfxhidd;
+    OOP_Object *mousehidd;
+    OOP_Object *kbdhidd;
 
 #if USE_XSHM
     struct SignalSemaphore shm_sema;	/* singlethread access to shared mem */
@@ -194,7 +194,7 @@ struct x11_staticdata
     Atom delete_win_atom;
 
 #if 0
-    VOID	(*activecallback)(APTR, Object *, BOOL);
+    VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	callbackdata;
 #endif    
 };
@@ -212,12 +212,12 @@ BOOL set_pixelformat(struct TagItem *pftags
 );
 
 
-Class *init_gfxclass	( struct x11_staticdata * );
-Class *init_onbmclass	( struct x11_staticdata * );
-Class *init_offbmclass	( struct x11_staticdata * );
-Class *init_kbdclass  	( struct x11_staticdata * );
-Class *init_mouseclass	( struct x11_staticdata * );
-Class *init_x11class	( struct x11_staticdata * );
+OOP_Class *init_gfxclass	( struct x11_staticdata * );
+OOP_Class *init_onbmclass	( struct x11_staticdata * );
+OOP_Class *init_offbmclass	( struct x11_staticdata * );
+OOP_Class *init_kbdclass  	( struct x11_staticdata * );
+OOP_Class *init_mouseclass	( struct x11_staticdata * );
+OOP_Class *init_x11class	( struct x11_staticdata * );
 
 VOID free_gfxclass	( struct x11_staticdata * );
 VOID free_onbmclass	( struct x11_staticdata * );

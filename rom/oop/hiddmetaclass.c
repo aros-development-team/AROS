@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP HIDD metaclass
@@ -33,16 +33,16 @@
 }
 
 
-static VOID get_info_on_ifs(Class *super
-			,struct InterfaceDescr *ifdescr
+static VOID get_info_on_ifs(OOP_Class *super
+			,struct OOP_InterfaceDescr *ifdescr
 			,ULONG 	*total_num_methods_ptr
 			,ULONG 	*total_num_ifs_ptr
 			,struct IntOOPBase *OOPBase);
 
-static IPTR HIDD_DoMethod(Object *o, Msg msg);
-static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg);
-static IPTR HIDD_DoSuperMethod(Class *cl, Object *o, Msg msg);
-static inline ULONG get_max_midx(struct MethodDescr *md);
+static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg);
+static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
+static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
+static inline ULONG get_max_midx(struct OOP_MethodDescr *md);
 
 /*
    The metaclass is used to create class. That means,
@@ -69,17 +69,17 @@ struct hiddmeta_inst
     } data;
 };
 
-#define OOPBase	(GetOBase(((Class *)cl)->UserData))
+#define OOPBase	(GetOBase(((OOP_Class *)cl)->UserData))
    
 /**********************
 **  HIDDMeta::New()  **
 **********************/
-static Object *hiddmeta_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
 
-    IPTR (*domethod)(Object *, Msg) 			= NULL;
-    IPTR (*coercemethod)(Class *, Object *, Msg) 	= NULL;
-    IPTR (*dosupermethod)(Class *, Object *, Msg) 	= NULL;
+    IPTR (*domethod)(OOP_Object *, OOP_Msg) 			= NULL;
+    IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
+    IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
 
     
     EnterFunc(bug("HIDDMeta::New(cl=%s, msg = %p)\n",
@@ -95,7 +95,7 @@ static Object *hiddmeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 
     
     /* We are sure we have enough args, and can let rootclass alloc the instance data */
-    o = (Object *)DoSuperMethod((Class *)cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod((OOP_Class *)cl, o, (OOP_Msg)msg);
     if (o)
     {
 
@@ -116,15 +116,15 @@ static Object *hiddmeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    /* Use superclass' DoSupermethod call if superclass isn't
 	       an instance of the HIDDMetaClass
 	    */
-	    if (OCLASS(MD(o)->superclass) != (Class *)cl)
+	    if (OOP_OCLASS(MD(o)->superclass) != (OOP_Class *)cl)
 	    	dosupermethod = MD(o)->superclass->DoSuperMethod;
 	    else
 	    	dosupermethod = HIDD_DoSuperMethod;
 	}
 	
-	((Class *)o)->DoMethod		= domethod;
-	((Class *)o)->CoerceMethod	= coercemethod;
-	((Class *)o)->DoSuperMethod	= dosupermethod;
+	((OOP_Class *)o)->DoMethod	= domethod;
+	((OOP_Class *)o)->CoerceMethod	= coercemethod;
+	((OOP_Class *)o)->DoSuperMethod	= dosupermethod;
 		  
     }
     
@@ -134,11 +134,11 @@ static Object *hiddmeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 /********************************
 **  HIDDMeta::allocdisptabs()  **
 ********************************/
-static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisptabs *msg)
+static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_allocdisptabs *msg)
 {
     ULONG disptab_size, total_num_methods = 0UL, total_num_ifs = 0UL;
     
-    struct hiddmeta_data *data = INST_DATA(cl, o);
+    struct hiddmeta_data *data = OOP_INST_DATA(cl, o);
     struct IFMethod *mtab = NULL;
     
     EnterFunc(bug("HIDDMeta::allocdisptabs(cl=%p, ifDescr=%p)\n", cl, msg->ifdescr));
@@ -180,14 +180,14 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 	    IPTR iterval = 0UL;
 	    struct IFMethod *ifm;
 	    ULONG mtab_offset = 0;
-	    struct InterfaceDescr *ifdescr = msg->ifdescr;
+	    struct OOP_InterfaceDescr *ifdescr = msg->ifdescr;
 
 	    ifinfo = data->ifinfo;
 	    
-	    while ((ifm = meta_iterateifs((Object *)msg->superclass, &iterval, &interface_id, &num_methods)))
+	    while ((ifm = meta_iterateifs((OOP_Object *)msg->superclass, &iterval, &interface_id, &num_methods)))
 	    {
 	        ULONG copy_size;
-		struct InterfaceDescr *ifd;
+		struct OOP_InterfaceDescr *ifd;
 		
 	    	/* Copy interface into dispatch tables */
     		copy_size = UB(&mtab[num_methods]) - UB(&mtab[0]);
@@ -261,10 +261,10 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 	    D(bug("Find new interface\n"));
 	    for (; ifdescr->MethodTable != NULL; ifdescr ++)
 	    {
-	        struct MethodDescr *mdescr;
+	        struct OOP_MethodDescr *mdescr;
 	    	ULONG current_idx;
 		
-	    	ifm = meta_getifinfo((Object *)msg->superclass, ifdescr->InterfaceID, &num_methods);
+	    	ifm = meta_getifinfo((OOP_Object *)msg->superclass, ifdescr->InterfaceID, &num_methods);
 		if (!ifm)
 		{
 		    ULONG mbase = 0UL;
@@ -320,7 +320,7 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 		    D(bug("Initing of if %s methods at %ld\n", ifdescr->InterfaceID, mtab_idx));
 		    
 		    data->methodtable[mtab_idx].MethodFunc = mdescr->MethodFunc;
-		    data->methodtable[mtab_idx].mClass = (Class *)o;
+		    data->methodtable[mtab_idx].mClass = (OOP_Class *)o;
 		
 	    	} /* for (each method in current interface) */
 	    
@@ -343,7 +343,7 @@ init_err:
 /*******************************
 **  HIDDMeta::freedisptabs()  **
 ********************************/
-static VOID hiddmeta_freedisptabs(Class *cl, Object *o, Msg msg)
+static VOID hiddmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
     
@@ -357,7 +357,7 @@ static VOID hiddmeta_freedisptabs(Class *cl, Object *o, Msg msg)
 /*****************************
 **  HIDDMeta::iterateifs()  **
 *****************************/
-static struct IFMethod *hiddmeta_iterateifs(Class *cl, Object *o, struct P_meta_iterateifs *msg)
+static struct IFMethod *hiddmeta_iterateifs(OOP_Class *cl, OOP_Object *o, struct P_meta_iterateifs *msg)
 {
     struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
     ULONG idx = *msg->iterval_ptr;
@@ -387,7 +387,7 @@ static struct IFMethod *hiddmeta_iterateifs(Class *cl, Object *o, struct P_meta_
 /****************************
 **  HIDDMeta::getifinfo()  **
 ****************************/
-static struct IFMethod *hiddmeta_getifinfo(Class *cl, Object *o, struct P_meta_getifinfo *msg)
+static struct IFMethod *hiddmeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_meta_getifinfo *msg)
 {
 
     struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
@@ -418,7 +418,7 @@ static struct IFMethod *hiddmeta_getifinfo(Class *cl, Object *o, struct P_meta_g
 /*****************************
 **  HIDDMeta::findmethod()  **
 *****************************/
-struct IFMethod *hiddmeta_findmethod(Class *cl, Object *o, struct P_meta_findmethod *msg)
+struct IFMethod *hiddmeta_findmethod(OOP_Class *cl, OOP_Object *o, struct P_meta_findmethod *msg)
 {
     struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
     struct IFMethod *m;
@@ -441,15 +441,15 @@ struct IFMethod *hiddmeta_findmethod(Class *cl, Object *o, struct P_meta_findmet
 /************************
 **  Support functions  **
 ************************/
-Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
+OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 {
-    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
     	{ (IPTR (*)())hiddmeta_new,		moRoot_New		},
 	{  NULL, 0UL }
     };
     
-    struct MethodDescr meta_mdescr[NUM_META_METHODS + 1] =
+    struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1] =
     {
     	{ (IPTR (*)())hiddmeta_allocdisptabs,	MO_meta_allocdisptabs	},
     	{ (IPTR (*)())hiddmeta_freedisptabs,	MO_meta_freedisptabs	},
@@ -460,7 +460,7 @@ Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
     };
     
 
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
 	{meta_mdescr, IID_Meta, NUM_META_METHODS},
@@ -476,22 +476,22 @@ Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 	{TAG_DONE, 0UL}
     };
     
-    Class *cl;
+    OOP_Class *cl;
     EnterFunc(bug("init_hiddmetaclass()\n"));
 
-    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
-    	AddClass(cl);
+    	OOP_AddClass(cl);
     }
     D(bug("HIDD_CoerceMethod=%p\n", HIDD_CoerceMethod));
     
-    ReturnPtr ("init_hiddmetaclass()", Class *, cl);
+    ReturnPtr ("init_hiddmetaclass()", OOP_Class *, cl);
 
 }
 
-static inline ULONG get_max_midx(struct MethodDescr *md)
+static inline ULONG get_max_midx(struct OOP_MethodDescr *md)
 {
 
     ULONG max_midx = 0;
@@ -510,8 +510,8 @@ static inline ULONG get_max_midx(struct MethodDescr *md)
 /************************
 **  get_info_on_ifs()  **
 ************************/
-static VOID get_info_on_ifs(Class *super
-			,struct InterfaceDescr *ifdescr
+static VOID get_info_on_ifs(OOP_Class *super
+			,struct OOP_InterfaceDescr *ifdescr
 			,ULONG *total_num_methods_ptr
 			,ULONG *total_num_ifs_ptr
 			,struct IntOOPBase *OOPBase)
@@ -526,9 +526,9 @@ static VOID get_info_on_ifs(Class *super
     *total_num_ifs_ptr = 0UL;
     
     /* Iterate all parent interfaces, counting methods and interfaces */
-    while (meta_iterateifs((Object *)super, &iterval, &interface_id, &num_methods))
+    while (meta_iterateifs((OOP_Object *)super, &iterval, &interface_id, &num_methods))
     {
-	struct InterfaceDescr *ifd;
+	struct OOP_InterfaceDescr *ifd;
     	D(bug("if %s has %ld methods\n", interface_id, num_methods));
 	/* Check whether current class also supplies methods for this interface */
 	
@@ -553,7 +553,7 @@ static VOID get_info_on_ifs(Class *super
     /* Go through all interface descrs for this class, and find evt. new ones */   
     for (; ifdescr->MethodTable != NULL; ifdescr ++)
     {
-        if (!meta_getifinfo((Object *)super, ifdescr->InterfaceID, &num_methods))
+        if (!meta_getifinfo((OOP_Object *)super, ifdescr->InterfaceID, &num_methods))
 	{
 	    /* The interface is new for this class.
 	       For HIDDMeta class max. one interface can be new for a class
@@ -571,14 +571,14 @@ static VOID get_info_on_ifs(Class *super
     ReturnVoid("get_info_on_ifs");
 }
 
-#define OOPBase ((struct IntOOPBase *)OCLASS(OCLASS(cl))->UserData)
+#define OOPBase ((struct IntOOPBase *)OOP_OCLASS(OOP_OCLASS(cl))->UserData)
 
 /**********************
 **  HIDD_DoMethod()  **
 **********************/
-static IPTR HIDD_DoMethod(Object *o, Msg msg)
+static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg)
 {
-    register struct hiddmeta_inst *cl = (struct hiddmeta_inst *)OCLASS(o);
+    register struct hiddmeta_inst *cl = (struct hiddmeta_inst *)OOP_OCLASS(o);
     D(bug("HIDD_DoMethod(o=%p. msg=%p)\n", o, msg));
     
     IntCallMethod(cl, o, msg);
@@ -588,7 +588,7 @@ static IPTR HIDD_DoMethod(Object *o, Msg msg)
 /************************
 **  HIDD_CoerceMethod  **
 ************************/
-static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg)
+static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     register struct IFMethod *ifm;
     D(bug("HIDD_CoerceMethod()\n"));
@@ -599,7 +599,7 @@ static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg)
 /************************
 **  HIDD_DoSuperMethod  **
 ************************/
-static IPTR HIDD_DoSuperMethod(Class *cl, Object *o, Msg msg)
+static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     D(bug("HIDD_DoSuperMethod()\n"));
     cl = MD(cl)->superclass;

@@ -27,13 +27,13 @@
 #define HBM(x) ((struct HIDDBitMapData *)x)
 
 #define PUTPIXEL(o, msg)	\
-    HBM(o)->putpixel(OCLASS(o), o, msg)
+    HBM(o)->putpixel(OOP_OCLASS(o), o, msg)
 
 #define GETPIXEL(o, msg)	\
-    HBM(o)->getpixel(OCLASS(o), o, msg)
+    HBM(o)->getpixel(OOP_OCLASS(o), o, msg)
 
 #define DRAWPIXEL(o, msg)	\
-    HBM(o)->drawpixel(OCLASS(o), o, msg)
+    HBM(o)->drawpixel(OOP_OCLASS(o), o, msg)
     
 #define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
 #define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
@@ -69,14 +69,14 @@ struct sync_data {
 
 struct pfnode {
     struct MinNode node;
-    Object *pixfmt;
+    OOP_Object *pixfmt;
     ULONG   refcount;
 };
 
 /* This is used as an alias for both pfnode and ModeNode */
 struct objectnode {
    struct MinNode node;
-   Object *object;
+   OOP_Object *object;
    ULONG refcount;
 };
 
@@ -90,12 +90,12 @@ struct mode_db {
        gfxmodes
      */
     struct SignalSemaphore sema;
-    Object **pixfmts;
+    OOP_Object **pixfmts;
     /* Number of pixfmts in the above array */
     ULONG num_pixfmts;
     
     /* All the sync times that are part of any gfxmode */
-    Object **syncs;
+    OOP_Object **syncs;
     /* Number of syncs in the above array */
     ULONG num_syncs;
     
@@ -130,18 +130,18 @@ struct HIDDGraphicsData
 
 #if 0	
 	/* Software cursor stuff */
-	Object *curs_bm;
+	OOP_Object *curs_bm;
 	BOOL curs_on;
 	ULONG curs_x;
 	ULONG curs_y;
-	Object *curs_backup;
+	OOP_Object *curs_backup;
 #endif	
-	Object *framebuffer;
+	OOP_Object *framebuffer;
 	
-	Object *shownbm;
+	OOP_Object *shownbm;
 	
 	/* gc used for stuff like rendering cursor */
-	Object *gc;
+	OOP_Object *gc;
 	
 	/* The mode currently used */
 	HIDDT_ModeID curmode;
@@ -154,19 +154,19 @@ enum {
 };
 
 struct pHidd_Gfx_RegisterPixFmt {
-    MethodID mID;
+    OOP_MethodID mID;
     struct TagItem *pixFmtTags;
     
 };
 
 struct pHidd_Gfx_ReleasePixFmt {
-    MethodID mID;
-    Object *pixFmt;
+    OOP_MethodID mID;
+    OOP_Object *pixFmt;
 };
 
 
-Object *HIDD_Gfx_RegisterPixFmt(Object *o, struct TagItem *pixFmtTags);
-VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt);
+OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags);
+VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt);
 
 /* Private bitmap methods */
 enum {
@@ -174,11 +174,11 @@ enum {
 };
 
 struct pHidd_BitMap_SetBitMapTags {
-    MethodID mID;
+    OOP_MethodID mID;
     struct TagItem *bitMapTags;
 };
 
-BOOL HIDD_BitMap_SetBitMapTags(Object *o, struct TagItem *bitMapTags);
+BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags);
 
 
 struct HIDDBitMapData
@@ -195,29 +195,29 @@ struct HIDDBitMapData
     ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
-    Object *bitMap;
+    OOP_Object *bitMap;
 #endif
     /* WARNING: structure could be extented in the future                */
     
-    Object *friend;	/* Friend bitmap */
+    OOP_Object *friend;	/* Friend bitmap */
     
-    Object *gfxhidd;
+    OOP_Object *gfxhidd;
     
-    Object *colmap;
+    OOP_Object *colmap;
     
     HIDDT_ModeID modeid;
     
 
     /* Optimize these two method calls */
 #if USE_FAST_PUTPIXEL    
-    IPTR (*putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg);
+    IPTR (*putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg);
 #endif
 #if USE_FAST_GETPIXEL    
-    IPTR (*getpixel)(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg);
+    IPTR (*getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg);
 #endif
 
 #if USE_FAST_DRAWPIXEL    
-    IPTR (*drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg);
+    IPTR (*drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg);
 #endif
 
 
@@ -262,30 +262,30 @@ struct class_static_data
     struct ExecBase      * sysbase;
     struct Library       * utilitybase;
     struct Library       * oopbase;
-
-    Class                *gfxhiddclass; /* graphics hidd class    */
-    Class                *bitmapclass;  /* bitmap class           */
-    Class                *gcclass;      /* graphics context class */
-    Class		 *colormapclass; /* colormap class	  */
+ 
+    OOP_Class            *gfxhiddclass; /* graphics hidd class    */
+    OOP_Class            *bitmapclass;  /* bitmap class           */
+    OOP_Class            *gcclass;      /* graphics context class */
+    OOP_Class		 *colormapclass; /* colormap class	  */
     
-    Class		 *pixfmtclass;	/* descring bitmap pixel formats */
-    Class		 *syncclass;	/* describing gfxmode sync times */
+    OOP_Class		 *pixfmtclass;	/* descring bitmap pixel formats */
+    OOP_Class		 *syncclass;	/* describing gfxmode sync times */
     
     
-    Class		 *planarbmclass;
-    Class		 *chunkybmclass;
+    OOP_Class		 *planarbmclass;
+    OOP_Class		 *chunkybmclass;
     
-    Object		*std_pixfmts[num_Hidd_StdPixFmt];
+    OOP_Object		 *std_pixfmts[num_Hidd_StdPixFmt];
     
     /* Thes calls are optimized by calling the method functions directly	*/
 #if USE_FAST_PUTPIXEL
-    MethodID		putpixel_mid;
+    OOP_MethodID	 putpixel_mid;
 #endif
 #if USE_FAST_GETPIXEL
-    MethodID		getpixel_mid;
+    OOP_MethodID	 getpixel_mid;
 #endif
 #if USE_FAST_DRAWPIXEL
-    MethodID		drawpixel_mid;
+    OOP_MethodID	 drawpixel_mid;
 #endif
     
 };
@@ -318,37 +318,37 @@ struct IntHIDDGraphicsBase
 
 /* pre declarations */
 
-Class *init_gfxhiddclass(struct class_static_data *csd);
+OOP_Class *init_gfxhiddclass(struct class_static_data *csd);
 void   free_gfxhiddclass(struct class_static_data *csd);
 
-Class *init_bitmapclass(struct class_static_data *csd);
+OOP_Class *init_bitmapclass(struct class_static_data *csd);
 void   free_bitmapclass(struct class_static_data *csd);
 
-Class *init_gcclass(struct class_static_data *csd);
+OOP_Class *init_gcclass(struct class_static_data *csd);
 void   free_gcclass(struct class_static_data *csd);
 
-Class *init_gfxmodeclass(struct class_static_data *csd);
+OOP_Class *init_gfxmodeclass(struct class_static_data *csd);
 void   free_gfxmodeclass(struct class_static_data *csd);
 
-Class *init_pixfmtclass(struct class_static_data *csd);
+OOP_Class *init_pixfmtclass(struct class_static_data *csd);
 void   free_pixfmtclass(struct class_static_data *csd);
 
-Class *init_syncclass(struct class_static_data *csd);
+OOP_Class *init_syncclass(struct class_static_data *csd);
 void   free_syncclass(struct class_static_data *csd);
 
-Class *init_colormapclass(struct class_static_data *csd);
+OOP_Class *init_colormapclass(struct class_static_data *csd);
 void free_colormapclass(struct class_static_data *csd);
 
 
-VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
-ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg);
-VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg);
+VOID  bitmap_putpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
+ULONG bitmap_getpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_GetPixel *msg);
+VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg);
 
 
-Class *init_planarbmclass(struct class_static_data *csd);
+OOP_Class *init_planarbmclass(struct class_static_data *csd);
 void   free_planarbmclass(struct class_static_data *csd);
 
-Class *init_chunkybmclass(struct class_static_data *csd);
+OOP_Class *init_chunkybmclass(struct class_static_data *csd);
 void   free_chunkybmclass(struct class_static_data *csd);
 
 inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);

@@ -118,7 +118,7 @@ static void *const functable[] =
 };
 
 
-static AttrBase HiddMouseAB = 0;
+static OOP_AttrBase HiddMouseAB = 0;
 
 /****************************************************************************************/
 
@@ -259,7 +259,7 @@ AROS_LH3(void, open,
     
     if(!HiddMouseAB)
     {
-        HiddMouseAB = ObtainAttrBase(IID_Hidd_Mouse);
+        HiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
 	if(!HiddMouseAB)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
@@ -489,7 +489,7 @@ AROS_LH1(void, beginio,
 	    D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
 		  (STRPTR)ioStd(ioreq)->io_Data ));
 
-	    GPBase->gp_Hidd = NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
+	    GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
 	    if(!GPBase->gp_Hidd)
 	    {
 		D(bug("gameport.device: Failed to open hidd\n"));

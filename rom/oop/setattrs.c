@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Set attributes of an object.
@@ -15,10 +15,10 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH2(IPTR, SetAttrs,
+	AROS_LH2(IPTR, OOP_SetAttrs,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object		*, object, A0),
+	AROS_LHA(OOP_Object	*, object, A0),
 	AROS_LHA(struct TagItem	*, attrList, A1),
 
 /*  LOCATION */
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	DisposeObject()
+	OOP_DisposeObject()
 
     INTERNALS
 
@@ -59,20 +59,20 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     struct pRoot_Set p;
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     
-    EnterFunc(bug("SetAttrs())\n"));
+    EnterFunc(bug("OOP_SetAttrs())\n"));
     ASSERT_VALID_PTR(object);
     ASSERT_VALID_PTR(attrList);
     
     if (!mid)
-    	mid = GetMethodID(IID_Root, moRoot_Set);
+    	mid = OOP_GetMethodID(IID_Root, moRoot_Set);
 
     p.mID	= mid;
     p.attrList	= attrList;
 
     /* Call the Get() method on the object */ 
-    ReturnPtr ("SetAttrs", IPTR, DoMethod(object, (Msg)&p));
+    ReturnPtr ("OOP_SetAttrs", IPTR, OOP_DoMethod(object, (OOP_Msg)&p));
     
     AROS_LIBFUNC_EXIT
-} /* NewObject */
+} /* OOP_SetAttrs */

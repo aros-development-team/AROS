@@ -9,21 +9,21 @@
 #include "graphics_internal.h"
 #include "fakegfxhidd.h"
 
-static Class *init_fakefbclass(struct class_static_data *csd);
-static VOID free_fakefbclass(Class *cl, struct class_static_data *csd);
+static OOP_Class *init_fakefbclass(struct class_static_data *csd);
+static VOID free_fakefbclass(OOP_Class *cl, struct class_static_data *csd);
 
-static Class *init_fakegfxhiddclass (struct class_static_data *csd);
-static VOID free_fakegfxhiddclass(Class *cl, struct class_static_data *csd);
+static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd);
+static VOID free_fakegfxhiddclass(OOP_Class *cl, struct class_static_data *csd);
 
 
 struct gfx_data {
-    Object *gfxhidd;
-    Object *framebuffer;
-    Object *fakefb;
-    Object *gc;
+    OOP_Object *gfxhidd;
+    OOP_Object *framebuffer;
+    OOP_Object *fakefb;
+    OOP_Object *gc;
     
-    Object *curs_bm;
-    Object *curs_backup;
+    OOP_Object *curs_bm;
+    OOP_Object *curs_backup;
     BOOL curs_on;
     LONG curs_x;
     LONG curs_y;
@@ -37,7 +37,7 @@ struct gfx_data {
 };
 
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_data *csd);
-static Object *create_fake_fb(Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
+static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
 
 
 #define LFB(data)	ObtainSemaphore(&(data)->fbsema)
@@ -53,28 +53,28 @@ static Object *create_fake_fb(Object *framebuffer, struct gfx_data *data, struct
 #undef SysBase
 #define SysBase ((struct ExecBase *)CSD(cl)->sysbase)
 
-static AttrBase HiddFakeGfxHiddAttrBase	= 0;
-static AttrBase HiddFakeFBAttrBase	= 0;
+static OOP_AttrBase HiddFakeGfxHiddAttrBase	= 0;
+static OOP_AttrBase HiddFakeFBAttrBase	= 0;
 
-static struct ABDescr attrbases[] = {
+static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_FakeGfxHidd,	&HiddFakeGfxHiddAttrBase	},
     { IID_Hidd_FakeFB,	&HiddFakeFBAttrBase		},
     { NULL, 0UL }
 };
 
-static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     /* Create a new gfxhid object */
-    Object *realgfxhidd;
+    OOP_Object *realgfxhidd;
     BOOL ok = FALSE;
     struct gfx_data *data;
     
-    realgfxhidd = (Object *)GetTagData(aHidd_FakeGfxHidd_RealGfxHidd, (IPTR)NULL, msg->attrList);
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    realgfxhidd = (OOP_Object *)GetTagData(aHidd_FakeGfxHidd_RealGfxHidd, (IPTR)NULL, msg->attrList);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
     	return NULL;
 
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
     InitSemaphore(&data->fbsema);
     
@@ -89,54 +89,54 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	}
     }
     if (!ok) {
-       	MethodID mid;
+       	OOP_MethodID mid;
 	
-	mid = GetMethodID(IID_Root, moRoot_Dispose);
-	CoerceMethod(cl, o, (Msg)&mid);
+	mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&mid);
     }
     
     return o;
 }
 
-static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
+static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     if (NULL != data->curs_backup) {
-    	DisposeObject(data->curs_backup);
+    	OOP_DisposeObject(data->curs_backup);
 	data->curs_backup = NULL;
     }
     
     if (NULL != data->gc) {
-    	DisposeObject(data->gc);
+    	OOP_DisposeObject(data->gc);
 	data->gc = NULL;
     }
     
 #if 0    
     if (NULL != data->gfxhidd) {
-    	DisposeObject(data->gfxhidd);
+    	OOP_DisposeObject(data->gfxhidd);
 	data->gfxhidd = NULL;
     }
 #endif    
 }
 
-static Object *gfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     /* Is the user about to create a framebuffer ? */
     BOOL create_fb;
     struct gfx_data *data;
-    Object *realfb;
-    Object *ret = NULL;
+    OOP_Object *realfb;
+    OOP_Object *ret = NULL;
     BOOL ok = TRUE;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     create_fb = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
     
     realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
     
     if (NULL != realfb && create_fb) {
-    	Object *fakefb;
+    	OOP_Object *fakefb;
     	fakefb = create_fake_fb(realfb, data, CSD(cl));
 	if (NULL != fakefb) {
 	    ret = fakefb;
@@ -149,20 +149,20 @@ static Object *gfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *m
     }
     
     if (!ok) {
-    	DisposeObject(realfb);
+    	OOP_DisposeObject(realfb);
 	ret = NULL;
     }
     
     return ret;
 }
 
-static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct gfx_data *data;
     
-    Object *shape;
+    OOP_Object *shape;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     shape = msg->shape;
     
     /* Bitmap changed */
@@ -176,7 +176,7 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
 	data->curs_width = data->curs_height	= 0;
 	
 	if (NULL != data->curs_backup) {
-	    DisposeObject(data->curs_backup);
+	    OOP_DisposeObject(data->curs_backup);
 	    data->curs_backup = NULL;
 	}
 	    
@@ -184,9 +184,9 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
     
 	IPTR curs_width, curs_height, curs_depth;
 	IPTR mode_width, mode_height, mode_depth;
-	Object *curs_pf, *mode_sync,* mode_pf;
+	OOP_Object *curs_pf, *mode_sync,* mode_pf;
 	IPTR fbmode;
-	Object *new_backup;
+	OOP_Object *new_backup;
 	
 	struct TagItem bmtags[] = {
 	    { aHidd_BitMap_Displayable,	FALSE	},
@@ -196,18 +196,18 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
 	    { TAG_DONE, 0UL }
 	};
 	    
-	GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
-	GetAttr(shape, aHidd_BitMap_Height, &curs_height);
+	OOP_GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
+	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 	
-	GetAttr(shape, aHidd_BitMap_PixFmt, (IPTR *)&curs_pf);
+	OOP_GetAttr(shape, aHidd_BitMap_PixFmt, (IPTR *)&curs_pf);
 	    
-	GetAttr(curs_pf, aHidd_PixFmt_Depth, &curs_depth);
-	GetAttr(data->framebuffer, aHidd_BitMap_ModeID, &fbmode);
+	OOP_GetAttr(curs_pf, aHidd_PixFmt_Depth, &curs_depth);
+	OOP_GetAttr(data->framebuffer, aHidd_BitMap_ModeID, &fbmode);
 	HIDD_Gfx_GetMode(o, (HIDDT_ModeID)fbmode, &mode_sync, &mode_pf);
 	    
-	GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
-	GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
-	GetAttr(mode_pf, aHidd_PixFmt_Depth, &mode_depth);
+	OOP_GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
+	OOP_GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
+	OOP_GetAttr(mode_pf, aHidd_PixFmt_Depth, &mode_depth);
 
 	/* Disallow very large cursors, and cursors with higher
 	    depth than the framebuffer bitmap */
@@ -242,7 +242,7 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
 	    */
 	    
 	    if (NULL != data->curs_backup)
-	    	DisposeObject(data->curs_backup);
+	    	OOP_DisposeObject(data->curs_backup);
 
 	    data->curs_width	= curs_width;
 	    data->curs_height	= curs_height;
@@ -256,7 +256,7 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
 	} else {
 
 	    if (NULL != data->curs_backup)
-	    	DisposeObject(data->curs_backup);
+	    	OOP_DisposeObject(data->curs_backup);
 
 	    data->curs_width	= curs_width;
 	    data->curs_height	= curs_height;
@@ -270,11 +270,11 @@ static BOOL gfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorS
     return TRUE;
 }
 
-static BOOL gfx_setcursorpos(Class *cl, Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct gfx_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 LFB(data);    
     /* erase the old cursor */
     if (data->curs_on)
@@ -291,11 +291,11 @@ UFB(data);
     return TRUE;
 }
 
-static VOID gfx_setcursorvisible(Class *cl, Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+static VOID gfx_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     struct gfx_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 LFB(data);    
     
     if (msg->visible) {
@@ -328,7 +328,7 @@ UFB(data);
 #define WRECT_INSIDE(fgh, x1, y1, width, height)	\
 	RECT_INSIDE(fgh, x1, y1, (x1) + (width) - 1, (y1) + (height) - 1)
 
-static IPTR gfx_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
+static IPTR gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     struct gfx_data *data;
     BOOL inside = FALSE;
@@ -336,7 +336,7 @@ static IPTR gfx_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
     
     struct pHidd_Gfx_CopyBox p;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 LFB(data);    
     p = *msg;
     
@@ -359,7 +359,7 @@ LFB(data);
     }
     msg = &p;
     
-    retval = DoMethod(data->gfxhidd, (Msg)msg);
+    retval = OOP_DoMethod(data->gfxhidd, (OOP_Msg)msg);
     
     if (inside)
     	draw_cursor(data, TRUE, CSD(cl));
@@ -368,16 +368,16 @@ UFB(data);
     return retval;
 }
 
-static Object *gfx_show(Class *cl, Object *o, Msg msg)
+static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    Object *ret;
+    OOP_Object *ret;
     struct gfx_data *data;
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 
 LFB(data);   
     draw_cursor(data, FALSE, CSD(cl));
     
-    ret = (Object *)DoMethod(data->gfxhidd, msg);
+    ret = (OOP_Object *)OOP_DoMethod(data->gfxhidd, msg);
     if (NULL != ret) {
     	data->framebuffer = ret;
     	ret = data->fakefb;
@@ -388,16 +388,16 @@ UFB(data);
     
     return ret;
 }
-static IPTR gfx_fwd(Class *cl, Object *o, Msg msg)
+static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
-    data = INST_DATA(cl, o);
-    return DoMethod(data->gfxhidd, msg);
+    data = OOP_INST_DATA(cl, o);
+    return OOP_DoMethod(data->gfxhidd, msg);
 }
 
 struct fakefb_data {
-    Object *framebuffer;
-    Object *fakegfxhidd;
+    OOP_Object *framebuffer;
+    OOP_Object *fakegfxhidd;
 };
 
 #define FGH(data) ((struct gfx_data *)data->fakegfxhidd)
@@ -413,12 +413,12 @@ struct fakefb_data {
     BOOL inside = FALSE;	\
     IPTR retval;		\
     struct gfx_data *fgh;	\
-    data = INST_DATA(cl, o);	\
+    data = OOP_INST_DATA(cl, o);	\
     fgh = FGH(data);		\
 LFB(fgh);
     
 #define FORWARD_METHOD			\
-    retval = DoMethod(data->framebuffer, (Msg)msg);
+    retval = OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
 
 #define BITMAP_METHOD_EXIT	\
     if (inside) {		\
@@ -427,38 +427,38 @@ LFB(fgh);
 UFB(fgh);			\
     return retval;
 	
-static Object *fakefb_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *fakefb_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    Object *framebuffer;
-    Object *fakegfxhidd;
-    framebuffer = (Object *)GetTagData(aHidd_FakeFB_RealBitMap,	NULL, msg->attrList);
-    fakegfxhidd = (Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,	NULL, msg->attrList);
+    OOP_Object *framebuffer;
+    OOP_Object *fakegfxhidd;
+    framebuffer = (OOP_Object *)GetTagData(aHidd_FakeFB_RealBitMap,	NULL, msg->attrList);
+    fakegfxhidd = (OOP_Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,	NULL, msg->attrList);
     if (NULL == framebuffer || NULL == fakegfxhidd) {
     	kprintf("!!! FakeBM::New(): MISSING FRAMEBUFFER OR FAKE GFX HIDD !!!\n");
     	return NULL;
     }
 	
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL != o) {
 	struct fakefb_data *data;
-	data = INST_DATA(cl, o);
+	data = OOP_INST_DATA(cl, o);
 	data->framebuffer = framebuffer;
 	data->fakegfxhidd = fakegfxhidd;
     }
     return o;
 }
 
-static VOID fakefb_dispose(Class *cl, Object *o, Msg msg)
+static VOID fakefb_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct fakefb_data *data;
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     if (NULL != data->framebuffer) {
-    	DisposeObject(data->framebuffer);
+    	OOP_DisposeObject(data->framebuffer);
     	data->framebuffer = NULL;
     }
 }
 
-static IPTR fakefb_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+static IPTR fakefb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -472,7 +472,7 @@ static IPTR fakefb_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static IPTR fakefb_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -486,7 +486,7 @@ static IPTR fakefb_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawpixel(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
+static IPTR fakefb_drawpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -500,7 +500,7 @@ static IPTR fakefb_drawpixel(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawline(Class *cl, Object *o, struct pHidd_BitMap_DrawLine *msg)
+static IPTR fakefb_drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
 {
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
@@ -528,7 +528,7 @@ static IPTR fakefb_drawline(Class *cl, Object *o, struct pHidd_BitMap_DrawLine *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
+static IPTR fakefb_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -542,7 +542,7 @@ static IPTR fakefb_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
+static IPTR fakefb_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -557,7 +557,7 @@ static IPTR fakefb_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 }
 
 
-static IPTR fakefb_getimagelut(Class *cl, Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+static IPTR fakefb_getimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -571,7 +571,7 @@ static IPTR fakefb_getimagelut(Class *cl, Object *o, struct pHidd_BitMap_GetImag
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_putimagelut(Class *cl, Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+static IPTR fakefb_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -585,7 +585,7 @@ static IPTR fakefb_putimagelut(Class *cl, Object *o, struct pHidd_BitMap_PutImag
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+static IPTR fakefb_drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     BITMAP_METHOD_INIT
 
@@ -600,7 +600,7 @@ static IPTR fakefb_drawrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+static IPTR fakefb_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     BITMAP_METHOD_INIT
 
@@ -622,7 +622,7 @@ static IPTR fakefb_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawellipse(Class *cl, Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+static IPTR fakefb_drawellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
 {
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
@@ -643,7 +643,7 @@ static IPTR fakefb_drawellipse(Class *cl, Object *o, struct pHidd_BitMap_DrawEll
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_fillellipse(Class *cl, Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+static IPTR fakefb_fillellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
 {
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
@@ -663,7 +663,7 @@ static IPTR fakefb_fillellipse(Class *cl, Object *o, struct pHidd_BitMap_DrawEll
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawpolygon(Class *cl, Object *o, struct pHidd_BitMap_DrawPolygon *msg)
+static IPTR fakefb_drawpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
 {
     BITMAP_METHOD_INIT
 #warning Maybe do checking here, but it probably is not worth it    
@@ -675,7 +675,7 @@ static IPTR fakefb_drawpolygon(Class *cl, Object *o, struct pHidd_BitMap_DrawPol
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_fillpolygon(Class *cl, Object *o, struct pHidd_BitMap_DrawPolygon *msg)
+static IPTR fakefb_fillpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
 {
     BITMAP_METHOD_INIT
 #warning Maybe do checking here, but it probably is not worth it    
@@ -688,7 +688,7 @@ static IPTR fakefb_fillpolygon(Class *cl, Object *o, struct pHidd_BitMap_DrawPol
 }
 
 
-static IPTR fakefb_drawtext(Class *cl, Object *o, struct pHidd_BitMap_DrawText *msg)
+static IPTR fakefb_drawtext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawText *msg)
 {
     BITMAP_METHOD_INIT
 
@@ -700,7 +700,7 @@ static IPTR fakefb_drawtext(Class *cl, Object *o, struct pHidd_BitMap_DrawText *
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_drawfilltext(Class *cl, Object *o, struct pHidd_BitMap_DrawText *msg)
+static IPTR fakefb_drawfilltext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawText *msg)
 {
     BITMAP_METHOD_INIT
 
@@ -712,7 +712,7 @@ static IPTR fakefb_drawfilltext(Class *cl, Object *o, struct pHidd_BitMap_DrawTe
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+static IPTR fakefb_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -726,7 +726,7 @@ static IPTR fakefb_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
     BITMAP_METHOD_EXIT
 }
 
-static IPTR fakefb_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
+static IPTR fakefb_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     BITMAP_METHOD_INIT
     
@@ -738,7 +738,7 @@ static IPTR fakefb_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 }
 
 
-static IPTR fakefb_fillspan(Class *cl, Object *o, Msg msg)
+static IPTR fakefb_fillspan(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     BITMAP_METHOD_INIT
     
@@ -752,13 +752,13 @@ static IPTR fakefb_fillspan(Class *cl, Object *o, Msg msg)
 
 
 
-static IPTR fakefb_fwd(Class *cl, Object *o, Msg msg)
+static IPTR fakefb_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct fakefb_data *data;
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 // kill(getpid(), 19);
 // kprintf("BITMAP_FWD\n");    
-    return DoMethod(data->framebuffer, msg);
+    return OOP_DoMethod(data->framebuffer, msg);
 }
 
 
@@ -767,11 +767,11 @@ static IPTR fakefb_fwd(Class *cl, Object *o, Msg msg)
 #define CSD(cl) csd
 
 
-static Class *init_fakegfxhiddclass (struct class_static_data *csd)
+static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     
-    struct MethodDescr root_descr[num_Root_Methods + 1] = {
+    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] = {
         {(IPTR (*)())gfx_new,    	     	moRoot_New	},
         {(IPTR (*)())gfx_dispose,         	moRoot_Dispose	},
         {(IPTR (*)())gfx_fwd,      		moRoot_Get	},
@@ -779,7 +779,7 @@ static Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{ NULL, 0UL }
     };
     
-    struct MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
+    struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
     {
         {(IPTR (*)())gfx_fwd,         	moHidd_Gfx_NewGC		},
         {(IPTR (*)())gfx_fwd,     	moHidd_Gfx_DisposeGC		},
@@ -806,14 +806,14 @@ static Class *init_fakegfxhiddclass (struct class_static_data *csd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root, 	num_Root_Methods	},
         {gfxhidd_descr, IID_Hidd_Gfx,	num_Hidd_Gfx_Methods	},
         {NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -828,12 +828,12 @@ static Class *init_fakegfxhiddclass (struct class_static_data *csd)
     
     
 kprintf("INIT FAKEGFXCLASS\n");
-    if (ObtainAttrBases(attrbases)) {
-	 cl = NewObject(NULL, CLID_HiddMeta, tags);
+    if (OOP_ObtainAttrBases(attrbases)) {
+	 cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	 if(NULL != cl) {
 kprintf("FAKE GFX CLASS INITED\n");	    
 	     cl->UserData = csd;
-	     AddClass(cl);
+	     OOP_AddClass(cl);
 	     
 	     return cl;
 	 }
@@ -843,18 +843,18 @@ kprintf("FAKE GFX CLASS INITED\n");
     return cl;
 }
 
-static void free_fakegfxhiddclass(Class *cl, struct class_static_data *csd)
+static void free_fakegfxhiddclass(OOP_Class *cl, struct class_static_data *csd)
 {
     if (NULL != cl) {
-	RemoveClass(cl);
-	DisposeObject((Object *) cl);
+	OOP_RemoveClass(cl);
+	OOP_DisposeObject((OOP_Object *) cl);
     }
-    ReleaseAttrBases(attrbases);
+    OOP_ReleaseAttrBases(attrbases);
 }
 
-static Class *init_fakefbclass(struct class_static_data *csd)
+static OOP_Class *init_fakefbclass(struct class_static_data *csd)
 {
-    struct MethodDescr root_descr[num_Root_Methods + 1] =
+    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
     {
         {(IPTR (*)())fakefb_new    , moRoot_New    },
         {(IPTR (*)())fakefb_dispose, moRoot_Dispose},
@@ -863,7 +863,7 @@ static Class *init_fakefbclass(struct class_static_data *csd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
+    struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
     {
         {(IPTR (*)())fakefb_fwd	  		, moHidd_BitMap_SetColors	},
         {(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	},
@@ -901,14 +901,14 @@ static Class *init_fakefbclass(struct class_static_data *csd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , num_Root_Methods		},
         {bitmap_descr,  IID_Hidd_BitMap, num_Hidd_BitMap_Methods	},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -919,13 +919,13 @@ static Class *init_fakefbclass(struct class_static_data *csd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     if(MetaAttrBase)   {
-	if (ObtainAttrBases(attrbases)) {
-    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+	if (OOP_ObtainAttrBases(attrbases)) {
+    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
         	cl->UserData     = csd;
-		AddClass(cl);
+		OOP_AddClass(cl);
             }
         }
     } /* if(MetaAttrBase) */
@@ -936,16 +936,16 @@ static Class *init_fakefbclass(struct class_static_data *csd)
     return cl;
 }
 
-static void free_fakefbclass(Class *cl, struct class_static_data *csd)
+static void free_fakefbclass(OOP_Class *cl, struct class_static_data *csd)
 {
 
     if (NULL != cl) {
 	
-	RemoveClass(cl);
-    	DisposeObject((Object *) cl);
+	OOP_RemoveClass(cl);
+    	OOP_DisposeObject((OOP_Object *) cl);
 	
     }
-    ReleaseAttrBases(attrbases);
+    OOP_ReleaseAttrBases(attrbases);
 
 }
 
@@ -973,11 +973,11 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
     	return;
     }
     
-    GetAttr(data->curs_bm, aHidd_BitMap_Width,  &width);
-    GetAttr(data->curs_bm, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_Height, &height);
     
-    GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
-    GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
     
     /* Do some clipping */
     x = data->curs_x;
@@ -995,7 +995,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
     if (h2end < height)
 	height -= (height - h2end);
     
-    SetAttrs(data->gc, gctags);
+    OOP_SetAttrs(data->gc, gctags);
     
     if (draw) {
 	/* Backup under the new cursor image */
@@ -1040,16 +1040,16 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
     return;
 }
 
-static Object *create_fake_fb(Object *framebuffer, struct gfx_data *data, struct class_static_data *csd)
+static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd)
 {
-    Object *fakebm;
+    OOP_Object *fakebm;
     struct TagItem fakebmtags[] = {
     	{ aHidd_FakeFB_RealBitMap,      (IPTR)framebuffer    },
     	{ aHidd_FakeFB_FakeGfxHidd,     (IPTR)data		 },
 	{ TAG_DONE, 0UL }
     };
 
-    fakebm = NewObject(NULL, CLID_Hidd_FakeFB, fakebmtags);
+    fakebm = OOP_NewObject(NULL, CLID_Hidd_FakeFB, fakebmtags);
     if (NULL != fakebm) {
 	data->framebuffer = framebuffer;
 	data->fakefb = fakebm;
@@ -1063,9 +1063,9 @@ static Object *create_fake_fb(Object *framebuffer, struct gfx_data *data, struct
 #undef SysBase
 #undef UtilityBase
 #define OOPBase SDD(GfxBase)->oopbase
-Object *init_fakegfxhidd(Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase)
+OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase)
 {
-    Object *fgo = NULL;
+    OOP_Object *fgo = NULL;
        
     csd->oopbase	= SDD(GfxBase)->oopbase;
     csd->sysbase	= (struct ExecBase *)GfxBase->ExecBase;
@@ -1080,7 +1080,7 @@ Object *init_fakegfxhidd(Object *gfxhidd, struct class_static_data *csd, struct 
 	    { TAG_DONE, 0UL }
 	};
 
-	fgo = NewObject(NULL, CLID_Hidd_FakeGfxHidd, fgh_tags);
+	fgo = OOP_NewObject(NULL, CLID_Hidd_FakeGfxHidd, fgh_tags);
 	if (NULL != fgo) {
 	    csd->fakegfxobj = fgo;
 	}
@@ -1094,7 +1094,7 @@ Object *init_fakegfxhidd(Object *gfxhidd, struct class_static_data *csd, struct 
 VOID cleanup_fakegfxhidd(struct class_static_data *csd, struct GfxBase *GfxBase)
 {
     if (NULL != csd->fakegfxobj) {
-    	DisposeObject(csd->fakegfxobj);
+    	OOP_DisposeObject(csd->fakegfxobj);
 	csd->fakegfxobj = NULL;
     }
     

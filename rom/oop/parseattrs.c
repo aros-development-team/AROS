@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Parse a set of attributes in a single interface
@@ -15,14 +15,14 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH5(LONG, ParseAttrs,
+	AROS_LH5(LONG, OOP_ParseAttrs,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct TagItem *, tags, A0),
 	AROS_LHA(IPTR *, storage, A1),
 	AROS_LHA(ULONG , numattrs, D0),
-	AROS_LHA(AttrCheck *, attrcheck, A2),
-	AROS_LHA(AttrBase  , attrbase, D1),
+	AROS_LHA(OOP_AttrCheck *, attrcheck, A2),
+	AROS_LHA(OOP_AttrBase  , attrbase, D1),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 20, OOP)
@@ -138,4 +138,4 @@
     return err;
     
     AROS_LIBFUNC_EXIT
-} /* ParseAttrs */
+} /* OOP_ParseAttrs */

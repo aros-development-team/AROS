@@ -16,7 +16,7 @@
 
 #define HiddMouseAB __abHidd_Mouse
 
-extern AttrBase HiddMouseAB;
+extern OOP_AttrBase HiddMouseAB;
 
 /* Attrs */
 

@@ -8,9 +8,9 @@
 #define NO_MALLOC 1
 
 
-static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
+static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat *pf;
     
     ULONG xc_i, col_i;
@@ -23,12 +23,12 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	 
 	 /* Superclass takes care of this case */
 	 
-	 return DoSuperMethod(cl, o, (Msg)msg);
+	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
     /* Ve have a vHidd_GT_Palette bitmap */    
 	
-    if (!DoSuperMethod(cl, o, (Msg)msg)) return FALSE;
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) return FALSE;
     
     if (data->flags & BMDF_COLORMAP_ALLOCED)
     {
@@ -58,9 +58,9 @@ UX11
 }
 /*********  BitMap::PutPixel()  ***************************/
 
-static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
-     struct bitmap_data *data = INST_DATA(cl, o);
+     struct bitmap_data *data = OOP_INST_DATA(cl, o);
      
 LX11
      
@@ -73,10 +73,10 @@ UX11
 }
 
 /*********  BitMap::GetPixel()  *********************************/
-static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel pixel;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
     XImage *image;
 
@@ -106,10 +106,10 @@ UX11
 }
 
 /*********  BitMap::DrawPixel() ************************************/
-static ULONG MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
+static ULONG MNAME(drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
 
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues gcval;
     
     gcval.function = GC_DRMD(msg->gc);
@@ -133,9 +133,9 @@ UX11
 
 
 /*********  BitMap::FillRect()  *************************************/
-static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues gcval;
     
     
@@ -174,7 +174,7 @@ UX11
 
 /*********  BitMap::GetImage()  *************************************/
 
-static ULONG *ximage_to_buf(Class *cl, Object *bm
+static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 	, HIDDT_Pixel *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, APTR dummy)
@@ -255,7 +255,7 @@ static inline UBYTE pix_to_lut(HIDDT_Pixel pixel, HIDDT_PixelLUT *plut, HIDDT_Pi
 }
 
 
-static UBYTE *ximage_to_buf_lut(Class *cl, Object *bm
+static UBYTE *ximage_to_buf_lut(OOP_Class *cl, OOP_Object *bm
 	, UBYTE *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_GetImageLUT *msg)
@@ -317,7 +317,7 @@ UX11
 
 #if USE_XSHM
 
-static void getimage_xshm(Class *cl, Object *o
+static void getimage_xshm(OOP_Class *cl, OOP_Object *o
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixarray
@@ -335,12 +335,12 @@ static void getimage_xshm(Class *cl, Object *o
     LONG ysize;
     LONG current_y;
     LONG maxlines;
-    Object *pf;
+    OOP_Object *pf;
 	
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
-    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
+    OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -406,7 +406,7 @@ UX11
 }
 
 #else
-static void getimage_xlib(Class *cl, Object *o
+static void getimage_xlib(OOP_Class *cl, OOP_Object *o
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixels
@@ -417,12 +417,12 @@ static void getimage_xlib(Class *cl, Object *o
     struct bitmap_data *data;
     XImage *image;
     ULONG depth;
-    Object *pf; 
+    OOP_Object *pf; 
  
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 
-    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
+    OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
 LX11
     image = XGetImage(data->display
@@ -449,7 +449,7 @@ UX11
 
 #endif
 
-static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
+static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
 
     #if USE_XSHM
@@ -480,7 +480,7 @@ static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
 }
 
 
-static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
 
 #if USE_XSHM
@@ -517,7 +517,7 @@ static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImag
 /*********  BitMap::PutImage()  *************************************/
 
 
-static ULONG *buf_to_ximage(Class *cl, Object *bm
+static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 	, HIDDT_Pixel *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_PutImage *msg
@@ -636,15 +636,15 @@ UX11
 	
      default: {
      
-	Object *srcpf, *dstpf, *gfxhidd;
+	OOP_Object *srcpf, *dstpf, *gfxhidd;
 	APTR srcPixels = buf, dstBuf = image->data;
 		
 	//kprintf("DEFAULT PIXEL CONVERSION\n");
 	
-	GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 	
-	GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
+	OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
 	
 	//kprintf("CALLING ConvertPixels()\n");
 	
@@ -671,7 +671,7 @@ UX11
 
 
 
-static UBYTE *buf_to_ximage_lut(Class *cl, Object *bm
+static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm
 	, UBYTE *pixarray, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_PutImageLUT *msg
@@ -719,7 +719,7 @@ static UBYTE *buf_to_ximage_lut(Class *cl, Object *bm
 
 
 #if USE_XSHM
-static void putimage_xshm(Class *cl, Object *o, Object *gc
+static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixarray
@@ -736,12 +736,12 @@ static void putimage_xshm(Class *cl, Object *o, Object *gc
     LONG ysize;
     LONG current_y;
     LONG maxlines;
-    Object *pf;
+    OOP_Object *pf;
 
 	
-    data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+    data = OOP_INST_DATA(cl, o);
+    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -819,7 +819,7 @@ UX11
 }
 
 #else
-static void putimage_xlib(Class *cl, Object *o, Object *gc
+static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixarray
@@ -831,11 +831,11 @@ static void putimage_xlib(Class *cl, Object *o, Object *gc
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
-    Object *pf;
+    OOP_Object *pf;
 	
-    data = INST_DATA(cl, o);
-    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
+    data = OOP_INST_DATA(cl, o);
+    OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
 
 
@@ -899,7 +899,7 @@ UX11
 
 #endif
 
-static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
+static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -931,7 +931,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 /*********  BitMap::PutImageLUT()  *************************************/
 
 
-static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -966,11 +966,11 @@ static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImag
 #include <aros/debug.h>
 
 /*** BitMap::BlitColorExpansion() **********************************************/
-static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     ULONG cemd;
     XImage *dest_im;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel fg, bg;
     LONG x, y;
     
@@ -980,12 +980,12 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     
     
-    GetAttr(msg->srcBitMap, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+    OOP_GetAttr(msg->srcBitMap, aHidd_X11BitMap_Drawable, (IPTR *)&d);
     
     if (0 == d)
     {
     	/* We know nothing about the source bitmap. Let the superclass handle this */
-	DoSuperMethod(cl, o, (Msg)msg);
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
     }
     
@@ -1110,9 +1110,9 @@ UX11
 
 /*** BitMap::Get() *******************************************/
 
-static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
     if (IS_X11BM_ATTR(msg->attrID, idx))
     {
@@ -1123,13 +1123,13 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 
 	    default:
-	    	DoSuperMethod(cl, o, (Msg)msg);
+	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     }
     else
     {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     
@@ -1139,10 +1139,10 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 
 
 /*** BitMap:: DrawLine() ***************************/
-VOID MNAME(drawline)(Class *cl, Object *o, struct pHidd_BitMap_DrawLine *msg)
+VOID MNAME(drawline)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
 {
-    Object *gc = msg->gc;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    OOP_Object *gc = msg->gc;
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
 LX11
     if (GC_DOCLIP(gc)) {
@@ -1181,10 +1181,10 @@ UX11
 
 /********** BitMap::DrawEllipse ******************************/
 
-VOID MNAME(drawellipse)(Class *cl, Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+VOID MNAME(drawellipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
 {
-    Object *gc = msg->gc;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    OOP_Object *gc = msg->gc;
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
 LX11
     if (GC_DOCLIP(gc)) {

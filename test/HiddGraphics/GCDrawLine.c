@@ -96,13 +96,13 @@ int main(int argc, char **argv)
 {
     ULONG ret = RETURN_FAIL;
 
-    AttrBase HiddGCAttrBase;
-    AttrBase HiddGfxAttrBase;
-    AttrBase HiddBitMapAttrBase;
+    OOP_AttrBase HiddGCAttrBase;
+    OOP_AttrBase HiddGfxAttrBase;
+    OOP_AttrBase HiddBitMapAttrBase;
 
-    Object   *gfxHidd;
-    Object   *bitMap;
-    Object   *gc;
+    OOP_Object   *gfxHidd;
+    OOP_Object   *bitMap;
+    OOP_Object   *gc;
 
     STRPTR hiddName = "graphics.hidd";
     ULONG  width    = 320;
@@ -139,13 +139,13 @@ int main(int argc, char **argv)
             {
                 ret = RETURN_ERROR;
 
-                HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
-                HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GC);
+                HiddGfxAttrBase    = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+                HiddBitMapAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+                HiddGCAttrBase     = OOP_ObtainAttrBase(IID_Hidd_GC);
         
                 if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase)
                 {
-                    gfxHidd = NewObject(NULL, args.hiddName, NULL);
+                    gfxHidd = OOP_NewObject(NULL, args.hiddName, NULL);
                     if(gfxHidd)
                     {
                         struct TagItem bm_tags[] =
@@ -170,20 +170,20 @@ int main(int argc, char **argv)
                             gc = HIDD_Gfx_NewGC(gfxHidd, gc_tags);
                             if(gc)
                             {
-                                SetAttrsTags(gc, aHidd_GC_Foreground, ~0, TAG_END);
+                                OOP_SetAttrsTags(gc, aHidd_GC_Foreground, ~0, TAG_END);
 
                                 HIDD_BM_DrawLine(gc, 160, 100, 160,  20);
                                 HIDD_BM_DrawLine(gc, 160, 100, 260, 100);
                                 HIDD_BM_DrawLine(gc, 160, 100, 160, 180);
                                 HIDD_BM_DrawLine(gc, 160, 100,  60, 100);
 
-                                SetAttrsTags(gc, aHidd_GC_LinePattern, 0xF0F0, TAG_END);
-                                GetAttr(gc, aHidd_GC_LinePattern, &linePat);
+                                OOP_SetAttrsTags(gc, aHidd_GC_LinePattern, 0xF0F0, TAG_END);
+                                OOP_GetAttr(gc, aHidd_GC_LinePattern, &linePat);
                                 printf("Line pattern: %lx\n", linePat);
                                 HIDD_BM_DrawLine(gc,   0,  10, 30,  10);
 
-                                SetAttrsTags(gc, aHidd_GC_LinePattern, 0x5252, TAG_END);
-                                GetAttr(gc, aHidd_GC_LinePattern, &linePat);
+                                OOP_SetAttrsTags(gc, aHidd_GC_LinePattern, 0x5252, TAG_END);
+                                OOP_GetAttr(gc, aHidd_GC_LinePattern, &linePat);
                                 printf("Line pattern: %lx\n", linePat);
                                 HIDD_BM_DrawLine(gc,   0,  14, 30,  14);
 
@@ -196,13 +196,13 @@ int main(int argc, char **argv)
                             HIDD_Gfx_DisposeBitMap(gfxHidd, bitMap);
                         }
     
-                        if(gfxHidd) DisposeObject(gfxHidd);
+                        if(gfxHidd) OOP_DisposeObject(gfxHidd);
                     }
                 }  /* if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase) */
     
-                if(HiddGfxAttrBase)    ReleaseAttrBase(IID_Hidd_Gfx);
-                if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GC);
+                if(HiddGfxAttrBase)    OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+                if(HiddBitMapAttrBase) OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+                if(HiddGCAttrBase)     OOP_ReleaseAttrBase(IID_Hidd_GC);
 
                 CloseLibrary(HIDDGraphicsBase);
             } /* if(HIDDGraphicsBase) */

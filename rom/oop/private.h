@@ -1,7 +1,7 @@
 #ifndef PRIVATE_H
 #define PRIVATE_H 
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Private methods and attrs
@@ -35,24 +35,24 @@ enum
 
 struct P_meta_allocdisptabs
 {
-    MethodID mid;
+    OOP_MethodID mid;
     /* The superclass of the created class */
-    Class *superclass;		    
+    OOP_Class *superclass;		    
     
     /* interface descruption table */
-    struct InterfaceDescr *ifdescr;
+    struct OOP_InterfaceDescr *ifdescr;
     
 };
 
 struct P_meta_freedisptabs
 {
-    MethodID mid;
+    OOP_MethodID mid;
 };
 
 
 struct P_meta_iterateifs
 {
-    MethodID mid;
+    OOP_MethodID mid;
     IPTR *iterval_ptr;
     STRPTR *interface_id_ptr;
     ULONG *num_methods_ptr;
@@ -60,31 +60,31 @@ struct P_meta_iterateifs
 
 struct P_meta_findmethod
 {
-    MethodID mid;
-    MethodID method_to_find;
+    OOP_MethodID mid;
+    OOP_MethodID method_to_find;
 };
 
 
 struct P_meta_getifinfo
 {
-    MethodID  mid;
+    OOP_MethodID  mid;
     STRPTR interface_id;
     ULONG  *num_methods_ptr;
     
 };
 
 
-BOOL meta_allocdisptabs(Object *o, Class *super, struct InterfaceDescr *ifdescr);
-VOID meta_freedisptabs(Object *o);
+BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr);
+VOID meta_freedisptabs(OOP_Object *o);
 struct IFMethod *meta_iterateifs(
-		 Object *o
+		 OOP_Object *o
 		,IPTR *iterval_ptr
 		,STRPTR *interface_id_ptr
 		,ULONG *num_methods_ptr);
 
-struct IFMethod *meta_findmethod(Object *o, MethodID method_to_find, struct Library *OOPBase);		
+struct IFMethod *meta_findmethod(OOP_Object *o, OOP_MethodID method_to_find, struct Library *OOPBase);		
 
-struct IFMethod * meta_getifinfo(Object *o, STRPTR interface_id, ULONG *num_methods_ptr);
+struct IFMethod * meta_getifinfo(OOP_Object *o, STRPTR interface_id, ULONG *num_methods_ptr);
 
 
 /********************

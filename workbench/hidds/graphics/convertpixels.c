@@ -98,7 +98,7 @@
 	HIDDT_PixelFormat *dstfmt = msg->dstPixFmt;
 
 
-static VOID true_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID true_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     LONG alpha_diff, red_diff, green_diff, blue_diff;
 
@@ -174,12 +174,12 @@ kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
     
 }
 
-static VOID true_to_pal(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID true_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
 kprintf("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n");
 }
 
-static VOID pal_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID pal_to_true(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     HIDDT_Pixel *lut;
 
@@ -211,7 +211,7 @@ static VOID pal_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels 
     *msg->dstBuf    = dst;
 }
 
-static VOID pal_to_pal(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID pal_to_pal(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     HIDDT_PixelFormat *spf, *dpf;
      
@@ -234,7 +234,7 @@ static VOID pal_to_pal(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *
     return;
 }
 
-static void native32_to_native(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static void native32_to_native(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     INIT_VARS()
     HIDDT_PixelFormat *dstfmt = msg->dstPixFmt;
@@ -302,7 +302,7 @@ kprintf("SRC: Native32, DST: Native, height=%d, width=%d, bytes per pixel: %d, s
     *msg->dstBuf    = dst;
 }
 
-static VOID quick_copy(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+static VOID quick_copy(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     	/* Just do a simple memcpy() of the pixels */
     INIT_VARS()
@@ -344,7 +344,7 @@ static VOID quick_copy(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *
   to do the conversion and save two method calls.
 */  
 
-VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
+VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
     /* For now we assume truecolor */
     HIDDT_PixelFormat *srcfmt, *dstfmt;

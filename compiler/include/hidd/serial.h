@@ -35,7 +35,7 @@
 
 /**** serial definitions ****************************************************/
 
-extern AttrBase HiddSerialUnitAB;
+extern OOP_AttrBase HiddSerialUnitAB;
 
 enum {
     aoHidd_SerialUnit_Unit,
@@ -68,14 +68,14 @@ enum
 
 struct pHidd_Serial_NewUnit
 {
-    MethodID	mID;
-    ULONG	unitnum;
+    OOP_MethodID	mID;
+    ULONG		unitnum;
 };
 
 struct pHidd_Serial_DisposeUnit
 {
-    MethodID    mID;
-    Object      *unit;
+    OOP_MethodID    	mID;
+    OOP_Object      	*unit;
 };
 
 
@@ -100,42 +100,42 @@ enum
 
 struct pHidd_SerialUnit_Init
 {
-    MethodID	mID;
-    VOID	*DataReceived;
-    VOID	*DataReceivedUserData;
-    VOID	*WriteData;
-    VOID	*WriteDataUserData;
+    OOP_MethodID	mID;
+    VOID		*DataReceived;
+    VOID		*DataReceivedUserData;
+    VOID		*WriteData;
+    VOID		*WriteDataUserData;
 };
 
 struct pHidd_SerialUnit_Write
 {
-    MethodID	mID;
-    ULONG	Length;
-    UBYTE	*Outbuffer;
+    OOP_MethodID	mID;
+    ULONG		Length;
+    UBYTE		*Outbuffer;
 };
 
 struct pHidd_SerialUnit_SetBaudrate
 {
-    MethodID	mID;
-    ULONG	baudrate;
+    OOP_MethodID	mID;
+    ULONG		baudrate;
 };
 
 struct pHidd_SerialUnit_SetParameters
 {
-    MethodID		mID;
+    OOP_MethodID	mID;
     struct TagItem     *tags;
 };
 
 struct pHidd_SerialUnit_SendBreak
 {
-    MethodID	mID;
-    int		duration;
+    OOP_MethodID	mID;
+    int			duration;
 };
 
 struct pHidd_SerialUnit_GetCapabilities
 {
-    MethodID         mID;
-    struct TagItem * taglist;
+    OOP_MethodID        mID;
+    struct TagItem 	* taglist;
 };
 
 /* some tags for HIDD_SerialUnit_SetParameters() */
@@ -162,14 +162,14 @@ struct pHidd_SerialUnit_GetCapabilities
 
 /* Predeclarations of stubs in libhiddserialstubs */
 
-Object * HIDD_Serial_NewUnit		(Object *obj, ULONG unitnum);
-VOID     HIDD_Serial_DisposeUnit	(Object *obj, Object *unit);
+OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum);
+VOID     HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit);
 
-BOOL     HIDD_SerialUnit_Init	(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
-ULONG    HIDD_SerialUnit_Write	(Object *obj, UBYTE * data, ULONG length);
-BOOL     HIDD_SerialUnit_SetBaudrate(Object *obj, ULONG baudrate);
-BOOL     HIDD_SerialUnit_SetParameters(Object *obj, struct TagItem *tags);
-BYTE     HIDD_SerialUnit_SendBreak(Object *obj, int duration);
-VOID     HIDD_SerialUnit_GetCapabilities(Object *obj, struct TagItem *tags);
+BOOL     HIDD_SerialUnit_Init	(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
+ULONG    HIDD_SerialUnit_Write	(OOP_Object *obj, UBYTE * data, ULONG length);
+BOOL     HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate);
+BOOL     HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem *tags);
+BYTE     HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration);
+VOID     HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem *tags);
 
 #endif /* HIDD_SERIAL_H */

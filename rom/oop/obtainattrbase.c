@@ -1,8 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: OOP function ObtainAttrBase
+    Desc: OOP function OOP_ObtainAttrBase
     Lang: english
 */
 
@@ -17,7 +17,7 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(AttrBase, ObtainAttrBase,
+	AROS_LH1(OOP_AttrBase, OOP_ObtainAttrBase,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, interfaceID, A0),
@@ -48,7 +48,7 @@
 	#define aTimer_CurrentTime    (__AB_Timer + aoTime_CurrentTime)
 	
 	..
-	__AB_Timer = ObtainAttrBase(IID_Timer);
+	__AB_Timer = OOP_ObtainAttrBase(IID_Timer);
 	
 	SetAttrs(timer, aTimer_CurrentTime, "10:37:00");
 	
@@ -71,7 +71,7 @@
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
     ULONG base = -1UL;
     
-    EnterFunc(bug("ObtainAttrBase(interfaceID=%s)\n", interfaceID));
+    EnterFunc(bug("OOP_ObtainAttrBase(interfaceID=%s)\n", interfaceID));
     
     ObtainSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
@@ -141,9 +141,9 @@
 
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
-    ReturnInt ("ObtainAttrBase", AttrBase, base);
+    ReturnInt ("OOP_ObtainAttrBase", AttrBase, base);
     
     AROS_LIBFUNC_EXIT
 
-} /* GetID  */
+} /* OOP_ObtainAttrBase  */
 

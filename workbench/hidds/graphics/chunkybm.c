@@ -21,11 +21,11 @@ struct chunkybm_data {
     ULONG bytesperpixel;
 };
 
-static AttrBase HiddBitMapAttrBase	= 0;
-static AttrBase HiddGCAttrBase 		= 0;
-static AttrBase HiddPixFmtAttrBase	= 0;
+static OOP_AttrBase HiddBitMapAttrBase	= 0;
+static OOP_AttrBase HiddGCAttrBase 	= 0;
+static OOP_AttrBase HiddPixFmtAttrBase	= 0;
 
-static struct ABDescr attrbases[] = {
+static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
     { IID_Hidd_GC,	&HiddGCAttrBase		},
     { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
@@ -33,7 +33,7 @@ static struct ABDescr attrbases[] = {
 };
 
 
-static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct chunkybm_data *data;
     
@@ -43,22 +43,22 @@ static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
     UBYTE aligndiv	= 2;
     
     BOOL ok = TRUE;
-    Object *pf;
+    OOP_Object *pf;
     ULONG bytesperpixel;
     
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
     	return NULL;
 	
     /* Initialize the instance data to 0 */
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
 
-    GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    GetAttr(o, aHidd_BitMap_Width,	&width);
-    GetAttr(o, aHidd_BitMap_Height,	&height);
+    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
+    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     /* Get some dimensions of the bitmap */
-    GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
+    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
     
     data->bytesperpixel = bytesperpixel;
     data->bytesperrow	= data->bytesperpixel * width;
@@ -71,8 +71,8 @@ static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     if(ok == FALSE)
     {
-        MethodID dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-        if(o) CoerceMethod(cl, o, (Msg)&dispose_mid);
+        OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        if(o) OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
         o = NULL;
     }
 
@@ -82,28 +82,28 @@ static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
 }
 
 
-static void chunkybm_dispose(Class *cl, Object *o, Msg msg)
+static void chunkybm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct chunkybm_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     if (NULL != data->buffer)
     	FreeVec(data->buffer);
 	
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     return;
 }
 
 
-static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE *dest;
     
     struct chunkybm_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 
     /* bitmap in chunky-mode */
     dest = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
@@ -137,13 +137,13 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 }
 
 
-static ULONG chunkybm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel retval;
     UBYTE *src;
     struct chunkybm_data *data;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
         
     src = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
@@ -173,30 +173,30 @@ static ULONG chunkybm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 #define NUM_ROOT_METHODS   2
 #define NUM_BITMAP_METHODS 2
 
-Class *init_chunkybmclass(struct class_static_data *csd)
+OOP_Class *init_chunkybmclass(struct class_static_data *csd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())chunkybm_new    , moRoot_New    },
         {(IPTR (*)())chunkybm_dispose, moRoot_Dispose},
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
+    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())chunkybm_putpixel		, moHidd_BitMap_PutPixel	},
         {(IPTR (*)())chunkybm_getpixel		, moHidd_BitMap_GetPixel	},
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
         {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -207,19 +207,19 @@ Class *init_chunkybmclass(struct class_static_data *csd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_chunkybmclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-	if (ObtainAttrBases(attrbases)) {
-    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+	if (OOP_ObtainAttrBases(attrbases)) {
+    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
         	D(bug("Chunky BitMap class ok\n"));
 		
         	csd->chunkybmclass = cl;
         	cl->UserData     = (APTR) csd;
-		AddClass(cl);
+		OOP_AddClass(cl);
 		
             }
         }
@@ -228,7 +228,7 @@ Class *init_chunkybmclass(struct class_static_data *csd)
     if (NULL == cl)
 	free_chunkybmclass(csd);
 
-    ReturnPtr("init_chunkybmclass", Class *, cl);
+    ReturnPtr("init_chunkybmclass", OOP_Class *, cl);
 }
 
 
@@ -241,12 +241,12 @@ void free_chunkybmclass(struct class_static_data *csd)
     if(NULL != csd) {
     
 	if (NULL != csd->chunkybmclass) {
-    	    RemoveClass(csd->chunkybmclass);
-	    DisposeObject((Object *)csd->chunkybmclass);
+    	    OOP_RemoveClass(csd->chunkybmclass);
+	    OOP_DisposeObject((OOP_Object *)csd->chunkybmclass);
     	    csd->chunkybmclass = NULL;
 	}
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
     }
 
     ReturnVoid("free_chunkybmclass");

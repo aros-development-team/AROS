@@ -115,7 +115,7 @@ APTR build_dispinfo_db(struct GfxBase *GfxBase)
     	InitSemaphore(&db->sema);
     
     	/* Get the number of possible modes in the gfxhidd */
-	GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NumSyncs, &numsyncs);
+	OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NumSyncs, &numsyncs);
 	
 	db->num_mspecs = numsyncs;
 	
@@ -132,7 +132,7 @@ APTR build_dispinfo_db(struct GfxBase *GfxBase)
 
 ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase)
 {
-    Object *sync, *pixfmt;
+    OOP_Object *sync, *pixfmt;
     
     HIDDT_ModeID hiddmode;
     ULONG id;
@@ -153,7 +153,7 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
 {
     DisplayInfoHandle ret = NULL;
     HIDDT_ModeID hiddmode;
-    Object *sync, *pixfmt;
+    OOP_Object *sync, *pixfmt;
     
     kprintf("FindDisplayInfo(id=%x)\n", id);
     
@@ -241,7 +241,7 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 {
     struct QueryHeader *qh;
     ULONG structsize;
-    Object *sync, *pf;
+    OOP_Object *sync, *pf;
     HIDDT_ModeID hiddmode;
     ULONG modeid;
 
@@ -305,9 +305,9 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    di->PaletteRange = 4096;
 
 	    /* Compute red green and blue bits */
-	    GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
-	    GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
-	    GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
+	    OOP_GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
+	    OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
+	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
 	    
 	    di->RedBits	  = compute_numbits(redmask);
 	    di->GreenBits = compute_numbits(greenmask);
@@ -328,9 +328,9 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    struct DimensionInfo *di;
 	    ULONG depth, width, height;
 	    
-	    GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
-	    GetAttr(sync, aHidd_Sync_HDisp,   &width);
-	    GetAttr(sync, aHidd_Sync_VDisp,   &height);
+	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp,   &height);
 	    
 	    di = (struct DimensionInfo *)buf;
 	    di->MaxDepth = depth;
@@ -436,9 +436,9 @@ ReleaseSemaphore(&db->sema);
 	    struct NameInfo *ni;
 	    ULONG depth, width, height;
 	    
-	    GetAttr(pf,   aHidd_PixFmt_Depth,	&depth);
-	    GetAttr(sync, aHidd_Sync_HDisp, 	&width);
-	    GetAttr(sync, aHidd_Sync_VDisp,	&height);
+	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth,	&depth);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, 	&width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
 	    
 	    ni = (struct NameInfo *)buf;
 	    
@@ -535,7 +535,7 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
     
     hiddmode = vHidd_ModeID_Invalid;
     for (;;) {
-	Object *sync, *pf;
+	OOP_Object *sync, *pf;
 	
 	ULONG redmask, greenmask, bluemask;
 	ULONG gm_depth, gm_width, gm_height;
@@ -543,13 +543,13 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
 	if (vHidd_ModeID_Invalid == hiddmode)
 	    break;
 
-	GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
-	GetAttr(pf, aHidd_PixFmt_GreenMask,	&greenmask);
-	GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
+	OOP_GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
+	OOP_GetAttr(pf, aHidd_PixFmt_GreenMask,	&greenmask);
+	OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
 	
-	GetAttr(pf, aHidd_PixFmt_Depth,		&gm_depth);
-	GetAttr(sync, aHidd_Sync_HDisp,		&gm_width);
-	GetAttr(sync, aHidd_Sync_VDisp,		&gm_height);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&gm_depth);
+	OOP_GetAttr(sync, aHidd_Sync_HDisp,		&gm_width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp,		&gm_height);
 	
 	if ( /*   compute_numbits(redmask)   >= redbits
 	     && compute_numbits(greenmask) >= greenbits
@@ -600,7 +600,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
     
     struct List *cybermlist = NULL;
     
-    Object *gfxhidd;
+    OOP_Object *gfxhidd;
     
     UWORD *cmodelarray = NULL;
     HIDDT_ModeID *hiddmodes = NULL, *hmptr;
@@ -663,7 +663,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	struct CyberModeNode *cmnode;
 	UWORD *cyberpixfmts;
 	ULONG width, height, depth;
-	Object *sync, *pf;
+	OOP_Object *sync, *pf;
 	
 	if (!HIDD_Gfx_GetMode(gfxhidd, *hmptr, &sync, &pf)) {
 	    /* This should never happen because HIDD_GfxWueryModeIDs() should
@@ -674,8 +674,8 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    goto failexit;
 	}
 
-	GetAttr(sync, aHidd_Sync_HDisp,  &width);
-	GetAttr(sync, aHidd_Sync_VDisp, &height);
+	OOP_GetAttr(sync, aHidd_Sync_HDisp,  &width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 	
 	if (	width < minwidth
 	     || width > maxwidth
@@ -686,7 +686,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	}
 	    
 	/* Get the pxifmt info */
-	GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	    
 	if (depth < mindepth || depth > maxdepth)
 	    continue;
@@ -698,7 +698,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    BOOL found = FALSE;
 	    
 	    /* Get the gfxmode pixelf format */
-	    GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 		
 	    cyberpf = hidd2cyber_pixfmt(stdpf, GfxBase);
 	    if (cyberpf == (UWORD)-1)
@@ -828,7 +828,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 {
     /* First lookup the pixfmt for the ID */
     ULONG retval;
-    Object *sync, *pf;
+    OOP_Object *sync, *pf;
     HIDDT_ModeID hiddmode;
     
     hiddmode = AMIGA_TO_HIDD_MODEID(id);
@@ -837,7 +837,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
     
     if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
         ULONG depth;
-	GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
     
 	if (depth < 8) {
     	    kprintf("!!! TRYING TO GET ATTR FROM NON-CGFX MODE IN GetCyberIDAttr() !!!\n");
@@ -848,7 +848,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 		case CYBRIDATTR_PIXFMT: {
 	    	    HIDDT_StdPixFmt stdpf;
 		
-		    GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+		    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 		
 		    retval = hidd2cyber_pixfmt(stdpf, GfxBase);
 		    if (-1 == retval) {
@@ -861,15 +861,15 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 		    break;
 	
 		case CYBRIDATTR_WIDTH:
-	    	    GetAttr(sync, aHidd_Sync_HDisp, &retval);
+	    	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &retval);
 		    break;
 		
 		case CYBRIDATTR_HEIGHT:
-	    	    GetAttr(sync, aHidd_Sync_VDisp, &retval);
+	    	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &retval);
 		    break;
 		
 		case CYBRIDATTR_BPPIX:
-	    	    GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
 		    break;
 		
 		default:
@@ -890,14 +890,14 @@ BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
 {
     BOOL iscyber = FALSE;
     HIDDT_ModeID hiddmode;
-    Object *sync, *pf;
+    OOP_Object *sync, *pf;
     
     hiddmode = AMIGA_TO_HIDD_MODEID(hiddmode);
     
     if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
 	HIDDT_StdPixFmt stdpf;
 	    
-	GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 	if (((ULONG)-1) != hidd2cyber_pixfmt(stdpf, GfxBase)) {
 	    	iscyber = TRUE;
 	}
@@ -909,7 +909,7 @@ BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
 HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
 {
     HIDDT_ModeID ret = vHidd_ModeID_Invalid;
-    Object *gfxhidd;
+    OOP_Object *gfxhidd;
     HIDDT_ModeID *modes, *m;
     struct TagItem querytags[] = { { TAG_DONE, 0UL } };
     
@@ -922,17 +922,17 @@ HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
 	ULONG best_depth = 0;
 	
 	for (m = modes; vHidd_ModeID_Invalid != *m; m ++) {
-    	    Object *sync, *pf;
+    	    OOP_Object *sync, *pf;
 	    IPTR depth;
 	    HIDD_Gfx_GetMode(gfxhidd, *m, &sync, &pf);
 	    
-	    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	    if (depth >= best_depth) {
 	    	IPTR width, height;
 		ULONG res;
 		
-		GetAttr(sync, aHidd_Sync_HDisp, &width);
-		GetAttr(sync, aHidd_Sync_VDisp, &height);
+		OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+		OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 		
 		res = width * height;
 		if (res > best_resolution) {

@@ -17,7 +17,7 @@
 
 #include "graphics_intern.h"
 
-static AttrBase HiddPixFmtAttrBase = 0;
+static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
 struct pixfmt_data {
      HIDDT_PixelFormat pf;
@@ -25,7 +25,7 @@ struct pixfmt_data {
 };
 
 
-Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
+OOP_Object *pixfmt_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     DECLARE_ATTRCHECK(pixfmt);
     
@@ -35,12 +35,12 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     /* If no attrs are supplied, just create an empty pixfmt object */
     
     EnterFunc(bug("PixFmt::New()\n"));
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
-	ReturnPtr("PixFmt::New(Failed from superclass", Object *, NULL);
+	ReturnPtr("PixFmt::New(Failed from superclass", OOP_Object *, NULL);
     
     if (NULL == msg->attrList)
-    	ReturnPtr("PixFmt::New(empty)", Object *, o);
+    	ReturnPtr("PixFmt::New(empty)", OOP_Object *, o);
 	
     if (!parse_pixfmt_tags(msg->attrList, &pf, ATTRCHECK(pixfmt), CSD(cl) )) {
     	kprintf("!!! ERROR PARSINF ATTRS IN PixFmt::New() !!!\n");
@@ -49,23 +49,23 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     }
     
     if (!ok) {
-	MethodID dispose_mid;
-	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-	CoerceMethod(cl, o, (Msg)&dispose_mid);
+	OOP_MethodID dispose_mid;
+	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	o = NULL;
     }
     
-    ReturnPtr("PixFmt::New(Success)", Object *, o);
+    ReturnPtr("PixFmt::New(Success)", OOP_Object *, o);
      
 }     
 
-static VOID pixfmt_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID pixfmt_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     HIDDT_PixelFormat *pf;
     struct pixfmt_data *data;
     ULONG idx;
 
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     pf = &data->pf;
     
     if (IS_PIXFMT_ATTR(msg->attrID, idx)) {
@@ -136,12 +136,12 @@ static VOID pixfmt_get(Class *cl, Object *o, struct pRoot_Get *msg)
 	    
 	    default:
 	    	kprintf("TRYING TO GET UNKNOWN PIXFMT ATTR\n");
-    		DoSuperMethod(cl, o, (Msg)msg);
+    		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     
     } else {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     return;    
@@ -159,27 +159,27 @@ static VOID pixfmt_get(Class *cl, Object *o, struct pRoot_Get *msg)
 #define NUM_ROOT_METHODS   2
 #define NUM_PIXFMT_METHODS 0
 
-Class *init_pixfmtclass(struct class_static_data *csd)
+OOP_Class *init_pixfmtclass(struct class_static_data *csd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())pixfmt_new    , moRoot_New	},
         {(IPTR (*)())pixfmt_get    , moRoot_Get	},
 	{ NULL, 0UL }
     };
     
-    struct MethodDescr pixfmt_descr[NUM_PIXFMT_METHODS + 1] = {
+    struct OOP_MethodDescr pixfmt_descr[NUM_PIXFMT_METHODS + 1] = {
 	{ NULL, 0UL }
     };
         
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
         {pixfmt_descr,  IID_Hidd_PixFmt, NUM_PIXFMT_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -189,21 +189,21 @@ Class *init_pixfmtclass(struct class_static_data *csd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_pixfmtclass(csd=%p)\n", csd));
 
     if(MetaAttrBase)  {
         /* Get attrbase for the PixFmt interface */
-        HiddPixFmtAttrBase = ObtainAttrBase(IID_Hidd_PixFmt);
+        HiddPixFmtAttrBase = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
 	if (HiddPixFmtAttrBase) {
-    	    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl)  {
         	D(bug("PixFmt class ok\n"));
         	csd->pixfmtclass = cl;
 kprintf("init_pixfmtclass: csd=%p\n", csd);
         	cl->UserData     = (APTR) csd;
-		AddClass(cl);
+		OOP_AddClass(cl);
             
             }
         }
@@ -212,7 +212,7 @@ kprintf("init_pixfmtclass: csd=%p\n", csd);
     if (NULL == cl)
 	free_pixfmtclass(csd);
 
-    ReturnPtr("init_pixfmtclass", Class *,  cl);
+    ReturnPtr("init_pixfmtclass", OOP_Class *,  cl);
 }
 
 
@@ -224,13 +224,13 @@ void free_pixfmtclass(struct class_static_data *csd)
 
     if(NULL != csd)    {
         if (NULL !=csd->pixfmtclass) {
-    	    RemoveClass(csd->pixfmtclass);
-	    DisposeObject((Object *) csd->pixfmtclass);
+    	    OOP_RemoveClass(csd->pixfmtclass);
+	    OOP_DisposeObject((OOP_Object *) csd->pixfmtclass);
             csd->pixfmtclass = NULL;
 	}
 	
         if(HiddPixFmtAttrBase)
-	    ReleaseAttrBase(IID_Hidd_PixFmt);
+	    OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     }
 
     ReturnVoid("free_pixfmtclass");

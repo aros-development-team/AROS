@@ -29,18 +29,18 @@
 #include <aros/debug.h>
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(obj)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
 
 /* A small utility function for using varargs when setting attrs */
 
-#warning SetAttrsTags is defined in inline/oop.h
+#warning OOP_SetAttrsTags is defined in inline/oop.h
 
-#ifndef SetAttrsTags
-IPTR SetAttrsTags(Object *obj, IPTR tag1, ...)
+#ifndef OOP_SetAttrsTags
+IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = OOP_SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 
 }
@@ -48,31 +48,31 @@ IPTR SetAttrsTags(Object *obj, IPTR tag1, ...)
 
 /***************************************************************/
 
-Object * HIDD_Parallel_NewUnit(Object *obj, ULONG unitnum)
+OOP_Object * HIDD_Parallel_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Parallel_NewUnit p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_NewUnit);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_NewUnit);
         
     p.mID      = mid;
     p.unitnum  = unitnum;
 
-    return((Object *) DoMethod(obj, (Msg) &p));
+    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
 /***************************************************************/
 
-VOID HIDD_Parallel_DisposeUnit(Object *obj, Object *unit)
+VOID HIDD_Parallel_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_Parallel_DisposeUnit p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_DisposeUnit);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_DisposeUnit);
         
     p.mID    = mid;
     p.unit   = unit;
 
-    DoMethod(obj, (Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
 
@@ -80,12 +80,12 @@ VOID HIDD_Parallel_DisposeUnit(Object *obj, Object *unit)
 
 /********************** Stubs for parallel unit **********************/
 
-BOOL HIDD_ParallelUnit_Init(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
+BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_ParallelUnit_Init p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
         
     p.mID      		   = mid;
     p.DataReceived 	   = DataReceived;
@@ -93,20 +93,20 @@ BOOL HIDD_ParallelUnit_Init(Object *obj, VOID * DataReceived, VOID * DataReceive
     p.WriteData    	   = WriteData;
     p.WriteDataUserData	   = WriteDataUserData;
 
-    return((BOOL) DoMethod(obj, (Msg) &p));
+    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
 /***************************************************************/
 
-ULONG HIDD_ParallelUnit_Write (Object *obj, UBYTE * data, ULONG length)
+ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_ParallelUnit_Write p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Write);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Write);
         
     p.mID	= mid;
     p.Length	= length;
     p.Outbuffer	= data; 
 
-    return ((ULONG) DoMethod(obj, (Msg) &p));
+    return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) &p));
 }

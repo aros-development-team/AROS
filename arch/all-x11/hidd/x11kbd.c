@@ -41,9 +41,9 @@ struct x11kbd_data
     APTR callbackdata;
 };
 
-static AttrBase HiddKbdAB = 0;
+static OOP_AttrBase HiddKbdAB = 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_Kbd, &HiddKbdAB },
     { NULL, NULL }
@@ -461,7 +461,7 @@ static struct _keytable template_keytable[] =
 #endif
                         
 /***** X11Kbd::New()  ***************************************/
-static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
@@ -478,7 +478,7 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     ReleaseSemaphore( &XSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
-    	ReturnPtr("X11Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("X11Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
@@ -507,12 +507,12 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    
     } /* while (tags to process) */
     if (NULL == callback)
-    	ReturnPtr("X11Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("X11Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-	struct x11kbd_data *data = INST_DATA(cl, o);
+	struct x11kbd_data *data = OOP_INST_DATA(cl, o);
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
@@ -520,12 +520,12 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	XSD(cl)->kbdhidd = o;
 	ReleaseSemaphore( &XSD(cl)->sema);
     }
-    ReturnPtr("X11Kbd::New", Object *, o);
+    ReturnPtr("X11Kbd::New", OOP_Object *, o);
 }
 
 /***** X11Kbd::HandleEvent()  ***************************************/
 
-static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
+static VOID x11kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
 {
     struct x11kbd_data * data;
     
@@ -533,7 +533,7 @@ static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleE
 
     EnterFunc(bug("x11kbd_handleevent()\n"));
     xk = &(msg->event->xkey);
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     if (msg->event->type == KeyPress)
     {
 	data->kbd_callback(data->callbackdata
@@ -680,30 +680,30 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 #define NUM_ROOT_METHODS 1
 #define NUM_X11KBD_METHODS 1
 
-Class *init_kbdclass (struct x11_staticdata *xsd)
+OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{METHODDEF(x11kbd_new),		moRoot_New},
+    	{OOP_METHODDEF(x11kbd_new),		moRoot_New},
 	{NULL, 0UL}
     };
     
-    struct MethodDescr kbdhidd_descr[NUM_X11KBD_METHODS + 1] = 
+    struct OOP_MethodDescr kbdhidd_descr[NUM_X11KBD_METHODS + 1] = 
     {
-    	{METHODDEF(x11kbd_handleevent),	moHidd_X11Kbd_HandleEvent},
+    	{OOP_METHODDEF(x11kbd_handleevent),	moHidd_X11Kbd_HandleEvent},
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
     	{kbdhidd_descr, IID_Hidd_X11Kbd, 	NUM_X11KBD_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -720,17 +720,17 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
     
     if (MetaAttrBase)
     {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->kbdclass = cl;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("KbdHiddClass ok\n"));
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -739,9 +739,9 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
-    ReturnPtr("init_kbdclass", Class *, cl);
+    ReturnPtr("init_kbdclass", OOP_Class *, cl);
 }
 
 
@@ -753,12 +753,12 @@ VOID free_kbdclass(struct x11_staticdata *xsd)
     if(xsd)
     {
 
-        RemoveClass(xsd->kbdclass);
+        OOP_RemoveClass(xsd->kbdclass);
 	
-        if(xsd->kbdclass) DisposeObject((Object *) xsd->kbdclass);
+        if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
         xsd->kbdclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 
     }
 

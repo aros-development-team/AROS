@@ -35,7 +35,7 @@ struct KeyboardBase
     BOOL    kb_ResetPhase;	        /* True if reset has begun */
     UBYTE  *kb_Matrix;
     
-    Object	   *kb_Hidd;	        /* Hidd object to use */
+    OOP_Object	   *kb_Hidd;	        /* Hidd object to use */
     struct Library *kb_OOPBase;
 };
 

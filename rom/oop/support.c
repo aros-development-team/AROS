@@ -1,5 +1,5 @@
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
+   (C) 1997-2000 AROS - The Amiga Research OS
    $Id$
 
    Desc: 
@@ -42,7 +42,7 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 {
     while (idDescr->ID)
     {
-    	*(idDescr->Storage) = ObtainAttrBase(idDescr->ID);
+    	*(idDescr->Storage) = OOP_ObtainAttrBase(idDescr->ID);
 	if (0UL == *(idDescr->Storage))
 	    return (FALSE);
 	    
@@ -55,20 +55,20 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 **  hasinterface()  **
 *********************/
 
-BOOL hasinterface(Class *cl, STRPTR interface_id)
+BOOL hasinterface(OOP_Class *cl, STRPTR interface_id)
 {
     ULONG num_methods = 0UL;
-    return  (meta_getifinfo((Object *)cl, interface_id, &num_methods) != NULL) ? TRUE : FALSE;
+    return  (meta_getifinfo((OOP_Object *)cl, interface_id, &num_methods) != NULL) ? TRUE : FALSE;
 }
 
 /**********************
 **  findinterface()  **
 **********************/
-struct IFMethod *findinterface(Class *cl, STRPTR interface_id)
+struct IFMethod *findinterface(OOP_Class *cl, STRPTR interface_id)
 {
     ULONG num_methods = 0UL;
     
-    return meta_getifinfo((Object *)cl, interface_id, &num_methods);
+    return meta_getifinfo((OOP_Object *)cl, interface_id, &num_methods);
 }
 
 /***************************

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Get an attribute of an object.
@@ -15,11 +15,11 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH3(IPTR, GetAttr,
+	AROS_LH3(IPTR, OOP_GetAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object		*, object, A0),
-	AROS_LHA(AttrID         , attrID, A1),
+	AROS_LHA(OOP_Object		*, object, A0),
+	AROS_LHA(OOP_AttrID         , attrID, A1),
 	AROS_LHA(IPTR		*, storage, A2),
 
 /*  LOCATION */
@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-	SetAttrs().
+	OOP_SetAttrs().
 
     INTERNALS
 
@@ -63,12 +63,12 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     struct pRoot_Get p;
-    static MethodID mid = 0UL;
+    static OOP_MethodID mid = 0UL;
     
-    EnterFunc(bug("GetAttr())\n"));
+    EnterFunc(bug("OOP_GetAttr())\n"));
     
     if (!mid)
-    	mid = GetMethodID(IID_Root, moRoot_Get);
+    	mid = OOP_GetMethodID(IID_Root, moRoot_Get);
 	
 	
     p.mID	= mid;
@@ -77,7 +77,7 @@
     
     /* Call the Get() method on the object */
     
-    ReturnPtr ("GetAttr", IPTR, DoMethod(object, (Msg)&p));
+    ReturnPtr ("OOP_GetAttr", IPTR, OOP_DoMethod(object, (OOP_Msg)&p));
     
     AROS_LIBFUNC_EXIT
-} /* NewObject */
+} /* OOP_GetAttr */

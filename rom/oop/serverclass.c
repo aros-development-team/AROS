@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Class for server objects.
@@ -49,19 +49,19 @@ struct ServerData
 struct  ServerObjectNode
 {
     struct Node so_Node;
-    Object *so_Object;
+    OOP_Object *so_Object;
     
 };
 
 #define OOPBase ((struct Library *)cl->UserData)
 
-static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *_Root_New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("Server::New(cl=%s, o=%p, msg=%p)\n",
     		cl->ClassNode.ln_Name, o, msg));
     
     D(bug("DoSuperMethod: %p\n", cl->DoSuperMethod));
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     D(bug("got obj\n"));
 
     if (o)
@@ -70,10 +70,10 @@ static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
 	ULONG disp_mid;
     	D(bug("getting instdata\n"));
 	
-	data = INST_DATA(cl, o);
+	data = OOP_INST_DATA(cl, o);
     	D(bug("got instdata\n"));
 
-	disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
     	D(bug("got dispmid\n"));
 	/* Clear so we can test what resources are allocated in Dispose() */
 	D(bug("Object created, o=%p, data=%p\n", o, data));
@@ -90,18 +90,18 @@ static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
 	if (data->ReceivePort)
 	{
 	
-	    ReturnPtr("Server::New", Object *, o);
+	    ReturnPtr("Server::New", OOP_Object *, o);
 	}
-	CoerceMethod(cl, o, (Msg)&disp_mid);
+	CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
 	
     }
-    ReturnPtr ("Server::New", Object *, NULL);
+    ReturnPtr ("Server::New", OOP_Object *, NULL);
 }
 
-static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
+static VOID _Root_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct Node *node, *nextnode;
-    struct ServerData *data = INST_DATA(cl, o);
+    struct ServerData *data = OOP_INST_DATA(cl, o);
     
     EnterFunc(bug("Server::Dispose()\n"));
     
@@ -131,9 +131,9 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
 
 /* Add an object to the list of public objects. */
 
-static BOOL _Server_AddObject(Class *cl, Object *o, struct P_Server_AddObject *msg)
+static BOOL _Server_AddObject(OOP_Class *cl, OOP_Object *o, struct P_Server_AddObject *msg)
 {
-    struct ServerData *data = INST_DATA(cl, o);
+    struct ServerData *data = OOP_INST_DATA(cl, o);
      
     struct ServerObjectNode *so;
     
@@ -163,9 +163,9 @@ static BOOL _Server_AddObject(Class *cl, Object *o, struct P_Server_AddObject *m
 }
 
 /* Remove a previosly added object */
-static VOID _Server_RemoveObject(Class *cl, Object *o, struct P_Server_RemoveObject *msg)
+static VOID _Server_RemoveObject(OOP_Class *cl, OOP_Object *o, struct P_Server_RemoveObject *msg)
 {
-    struct ServerData *data = INST_DATA(cl, o);
+    struct ServerData *data = OOP_INST_DATA(cl, o);
    
     struct ServerObjectNode *so;
    
@@ -188,10 +188,10 @@ static VOID _Server_RemoveObject(Class *cl, Object *o, struct P_Server_RemoveObj
 }
 
 /* Find a public object */
-static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObject *msg)
+static OOP_Object * _Server_FindObject(OOP_Class *cl, OOP_Object *o, struct P_Server_FindObject *msg)
 {
     struct ServerObjectNode *so;
-    struct ServerData *data = INST_DATA(cl, o);
+    struct ServerData *data = OOP_INST_DATA(cl, o);
     
     EnterFunc(bug("Server::FindObject(objid=%s)\n", msg->ObjectID));
     
@@ -211,23 +211,23 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
 	    {TAG_DONE,	0UL}
 	};
 	
-	Object *proxy;
+	OOP_Object *proxy;
 	
-	proxy = NewObject(NULL, CLID_Proxy, proxy_tags);
+	proxy = OOP_NewObject(NULL, CLID_Proxy, proxy_tags);
 	if (proxy)
 	{
-	    ReturnPtr("Server::FindObject", Object *, proxy);
+	    ReturnPtr("Server::FindObject", OOP_Object *, proxy);
 	}
     }
     
-    ReturnPtr("Server::FindObject", Object *, NULL);
+    ReturnPtr("Server::FindObject", OOP_Object *, NULL);
 }
 /* Let the server wait forevere, executing and replying
    answering to all incoming method invocation requests
 */   
-static VOID _Server_Run(Class *cl, Object *o, Msg msg)
+static VOID _Server_Run(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-     struct ServerData *data = INST_DATA(cl, o);
+     struct ServerData *data = OOP_INST_DATA(cl, o);
      
      for (;;)
      {
@@ -251,17 +251,17 @@ static VOID _Server_Run(Class *cl, Object *o, Msg msg)
 
 #undef OOPBase
 
-Class *init_serverclass(struct Library *OOPBase)
+OOP_Class *init_serverclass(struct Library *OOPBase)
 {
 
-    struct MethodDescr root_methods[] =
+    struct OOP_MethodDescr root_methods[] =
     {
 	{(IPTR (*)())_Root_New,			moRoot_New},
 	{(IPTR (*)())_Root_Dispose,		moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
-    struct MethodDescr server_methods[] =
+    struct OOP_MethodDescr server_methods[] =
     {
 	{(IPTR (*)())_Server_AddObject,		moServer_AddObject},
 	{(IPTR (*)())_Server_RemoveObject,	moServer_RemoveObject},
@@ -270,7 +270,7 @@ Class *init_serverclass(struct Library *OOPBase)
 	{ NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{ root_methods,		IID_Root, 2},
     	{ server_methods,	IID_Server, 4},
@@ -287,16 +287,16 @@ Class *init_serverclass(struct Library *OOPBase)
     };
 
     
-    Class *cl;
+    OOP_Class *cl;
     
     EnterFunc(bug("InitServerClass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
-    	AddClass(cl);
+    	OOP_AddClass(cl);
     }
     
-    ReturnPtr ("InitServerClass", Class *, cl);
+    ReturnPtr ("InitServerClass", OOP_Class *, cl);
 }

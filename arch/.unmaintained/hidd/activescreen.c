@@ -21,7 +21,7 @@ VOID activescreen_taskentry();
 
 struct activescreen_msg {
     struct Message message;
-    Object *bmobj;
+    OOP_Object *bmobj;
 };
 
 
@@ -52,7 +52,7 @@ static BOOL send_activescreen_msg( Object *bmobj, struct ExecBase *SysBase)
 }
 
 
-VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated)
+VOID activatebm_callback(APTR data, OOP_Object *bmobj, BOOL activated)
 {
     
     struct GfxBase *GfxBase;

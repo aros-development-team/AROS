@@ -46,14 +46,14 @@
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static AttrBase HiddBitMapAttrBase	= 0;  
-static AttrBase HiddX11GfxAB		= 0;
-static AttrBase HiddX11BitMapAB		= 0;
-static AttrBase HiddSyncAttrBase	= 0;
-static AttrBase HiddPixFmtAttrBase	= 0;
-static AttrBase HiddGfxAttrBase		= 0;
+static OOP_AttrBase HiddBitMapAttrBase	= 0;  
+static OOP_AttrBase HiddX11GfxAB		= 0;
+static OOP_AttrBase HiddX11BitMapAB		= 0;
+static OOP_AttrBase HiddSyncAttrBase	= 0;
+static OOP_AttrBase HiddPixFmtAttrBase	= 0;
+static OOP_AttrBase HiddGfxAttrBase		= 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,  	&HiddBitMapAttrBase	},
     { IID_Hidd_X11Gfx,  	&HiddX11GfxAB		},
@@ -88,7 +88,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd);
 *********************/
 
 
-static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
 
 
@@ -178,7 +178,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Do GfxHidd initalization here */
     if (!initx11stuff(XSD(cl))) {
 	kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
-	ReturnPtr("X11Gfx::New()", Object *, NULL);
+	ReturnPtr("X11Gfx::New()", OOP_Object *, NULL);
     }
 	
     /* Register gfxmodes */
@@ -201,7 +201,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     } else {
 	kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 	cleanupx11stuff(xsd);
-	ReturnPtr("X11Gfx::New", Object *, NULL);
+	ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
     }
 	    
     pftags[9].ti_Data = XSD(cl)->size;
@@ -213,10 +213,10 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     /* We assume chunky */
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
     
-    o = (Object *)DoSuperMethod(cl, o, (Msg)&mymsg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o) {
 	XColor bg, fg;
-	struct gfx_data *data = INST_DATA(cl, o);
+	struct gfx_data *data = OOP_INST_DATA(cl, o);
 LX11
 	data->display	= XSD(cl)->display;
 	data->screen	= DefaultScreen( data->display );
@@ -248,32 +248,32 @@ ReleaseSemaphore(&XSD(cl)->sema);
 	data->display = XSD(cl)->display;
 	
     }
-    ReturnPtr("X11Gfx::New", Object *, o);
+    ReturnPtr("X11Gfx::New", OOP_Object *, o);
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
+static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     cleanupx11stuff(XSD(cl));
     D(bug("X11Gfx::Dispose: calling super\n"));
     
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("X11Gfx::Dispose");
 }
 
 /********** GfxHidd::NewBitMap()  ****************************/
-static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
     BOOL displayable, framebuffer;
     
     struct pHidd_Gfx_NewBitMap p;
-    Object *newbm;
+    OOP_Object *newbm;
     IPTR drawable;
     
     struct gfx_data *data;
@@ -290,7 +290,7 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     tags[0].ti_Data = (IPTR)data->display;
     tags[1].ti_Data = data->screen;
@@ -315,17 +315,17 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	      and there is no standard pixfmt supplied
 	    - If the user supplied a modeid.
 	*/
-	Object *friend;
+	OOP_Object *friend;
 	BOOL usex11 = FALSE;
     	HIDDT_StdPixFmt stdpf;
 
-	friend = (Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+	friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 	stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 	if (NULL != friend) {
 	    if (vHidd_StdPixFmt_Unknown == stdpf) {
 	    	Drawable d;
 	    	/* Is the friend ann X11 bitmap ? */
-	    	d = (Drawable)GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+	    	d = (Drawable)OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
 	    	if (0 != d) {
 	    	    usex11 = TRUE;
 		}
@@ -361,18 +361,18 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     p.mID = msg->mID;
     p.attrList = tags;
     
-    newbm = (Object *)DoSuperMethod(cl, o, (Msg)&p);
+    newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     if (NULL != newbm && framebuffer) {
-    	GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
+    	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
 	data->fbwin = (Window)drawable;
     }
-    ReturnPtr("X11Gfx::NewBitMap", Object *, newbm);
+    ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
 
 /******* X11Gfx::Set()  ********************************************/
-static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct gfx_data *data = INST_DATA(cl, o);
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
     if (IS_X11GFX_ATTR(msg->attrID, idx))
     {
@@ -387,7 +387,7 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 	    
 	    default:
-	    	DoSuperMethod(cl, o, (Msg)msg);
+	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     } else if (IS_GFX_ATTR(msg->attrID, idx)) {
@@ -405,32 +405,32 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 		
 	    default:
-	    	DoSuperMethod(cl, o, (Msg)msg);
+	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     } else {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     return;
 }
 
 
-static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
+static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    Object *fb = 0;
+    OOP_Object *fb = 0;
     IPTR width, height, modeid;
-    Object *pf, *sync;
+    OOP_Object *pf, *sync;
     struct gfx_data *data;
 	
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 	
-    GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
+    OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
     if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf)) {
     	struct MsgPort *port;
 	
-    	GetAttr(sync, aHidd_Sync_HDisp, &width);
-	GetAttr(sync, aHidd_Sync_VDisp, &height);
+    	OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 #if 0	
 	
 	/* Send resize message to the x11 task */
@@ -453,7 +453,7 @@ static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 		FreeMem(nmsg, sizeof (*nmsg));
 #endif		
 		
-		fb = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+		fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #if 0		
 	    }
 	    DeleteMsgPort(port);
@@ -466,26 +466,26 @@ static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 
 
 /*********  Gfx::CopyBox()  *************************************/
-static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
+static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG mode;
     Drawable src = 0, dest = 0;
     struct gfx_data *data;
     struct bitmap_data *bmdata;
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     mode = GC_DRMD(msg->gc);
     
-    GetAttr(msg->src,  aHidd_X11BitMap_Drawable, (IPTR *)&src);
-    GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
+    OOP_GetAttr(msg->src,  aHidd_X11BitMap_Drawable, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
 	
     if (0 == dest || 0 == src)
     {
 	/* The destination object is no X11 bitmap, onscreen nor offscreen.
 	    Let the superclass do the copying in a more general way
 	*/
-	DoSuperMethod(cl, o, (Msg)msg);
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
     }
 
@@ -494,7 +494,7 @@ LX11
     /* This may seem ugly, but we know nobody has subclassed
        the x11 class, since it's private
     */
-    bmdata = INST_DATA(XSD(cl)->onbmclass, msg->src);
+    bmdata = OOP_INST_DATA(XSD(cl)->onbmclass, msg->src);
 
     XSetFunction(data->display, bmdata->gc, mode);
     
@@ -516,20 +516,20 @@ UX11
     return;
 }
 
-static BOOL gfxhidd_setcursorshape(Class *cl, Object *o, Msg msg)
+static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return TRUE;
 }
 
-static BOOL gfxhidd_setcursorpos(Class *cl, Object *o, Msg msg)
+static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return TRUE;
 }
 
 
-static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, Msg msg)
+static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return;
@@ -544,11 +544,11 @@ static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, Msg msg)
 #define NUM_ROOT_METHODS 3
 #define NUM_GFXHIDD_METHODS 6
 
-Class *init_gfxclass (struct x11_staticdata *xsd)
+OOP_Class *init_gfxclass (struct x11_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
     	{(IPTR (*)())gfx_new,		moRoot_New},
     	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
@@ -556,7 +556,7 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
 	{NULL, 0UL}
     };
     
-    struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
+    struct OOP_MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap		},
     	{(IPTR (*)())gfxhidd_show,		moHidd_Gfx_Show			},
@@ -568,14 +568,14 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
     };
     
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 	NUM_ROOT_METHODS},
     	{gfxhidd_descr, IID_Hidd_Gfx, 	NUM_GFXHIDD_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -591,17 +591,17 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
     if (MetaAttrBase)
     {
 
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->gfxclass = cl;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("GfxHiddClass ok\n"));
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -611,7 +611,7 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
 	}
 	
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
     ReturnPtr("init_gfxclass", Class *, cl);
 }
@@ -627,12 +627,12 @@ VOID free_gfxclass(struct x11_staticdata *xsd)
     if(xsd)
     {
 
-        RemoveClass(xsd->gfxclass);
+        OOP_RemoveClass(xsd->gfxclass);
 	
-        if(xsd->gfxclass) DisposeObject((Object *) xsd->gfxclass);
+        if(xsd->gfxclass) OOP_DisposeObject((OOP_Object *) xsd->gfxclass);
         xsd->gfxclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 
     }
 

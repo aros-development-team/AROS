@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Class for interface objects.
@@ -24,14 +24,14 @@
 
 #define OOPBase ((struct Library *)cl->UserData)
 
-static IPTR StdCallIF(Interface *iface, Msg msg);
+static IPTR StdCallIF(OOP_Interface *iface, OOP_Msg msg);
 
 struct interface_data
 {
     /* First part of the interface object's instance data is
        public, and may be accesesd directly.
     */
-    Interface public;
+    OOP_Interface public;
     
     /* The pointer to the interface's methods should indeed not
        be public.
@@ -43,7 +43,7 @@ struct interface_data
 struct interface_object
 {
     /* All objects has a pointer to their class at ((VOID **)o)[-1] */
-    Class *oclass;
+    OOP_Class *oclass;
     
     /* When getting a interface ojject, you will get a pointer to
        &(intifobject->Inst.PublicPart)
@@ -55,19 +55,19 @@ struct interface_object
 /***********************
 **  Interface::New()  **
 ***********************/
-static Object *interface_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *interface_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
      
     
     STRPTR if_id = NULL;
     struct IFMethod *if_mtab;
-    Object *if_obj;
+    OOP_Object *if_obj;
     struct interface_object *ifo;
     
     /* Parse parameters */
     
     /* What target object does the user want an interface object for ? */
-    if_obj = (Object *)GetTagData(aInterface_TargetObject, NULL, msg->attrList);
+    if_obj = (OOP_Object *)GetTagData(aInterface_TargetObject, NULL, msg->attrList);
     
     /* What interface does he want from the object ? */
     if_id  = (STRPTR)GetTagData(aInterface_InterfaceID,  NULL,  msg->attrList);
@@ -83,11 +83,11 @@ static Object *interface_new(Class *cl, Object *o, struct pRoot_New *msg)
     D(bug("Trying to find interface: %s\n", if_id));
 
     /* Try to find interface in the target object's class*/
-    if_mtab = findinterface(OCLASS(if_obj), if_id);
+    if_mtab = findinterface(OOP_OCLASS(if_obj), if_id);
     
     if (!if_mtab) 
     	/* Not supported. Failed. */
-    	ReturnPtr("Interface::New", Object *, NULL);
+    	ReturnPtr("Interface::New", OOP_Object *, NULL);
 	
     D(bug("mtab found: %p\n", if_mtab));
     
@@ -119,21 +119,21 @@ static Object *interface_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Initialize OCLASS(interfaceobject) */
 	ifo->oclass	= cl;
 	
-	ReturnPtr ("Interface::New", Object *, (Object *)&(ifo->data.public));
+	ReturnPtr ("Interface::New", OOP_Object *, (OOP_Object *)&(ifo->data.public));
     }
-    ReturnPtr ("Interface::New", Object *, NULL);
+    ReturnPtr ("Interface::New", OOP_Object *, NULL);
     
 }
 
 /****************
 **  Dispose()  **
 ****************/
-static VOID interface_dispose(Class *cl, Interface  *ifobj, Msg msg )
+static VOID interface_dispose(OOP_Class *cl, OOP_Interface  *ifobj, OOP_Msg msg )
 {
     EnterFunc(bug("Interface::Dispose()\n"));
     
     /* Just free the thing */
-    FreeMem(_OBJECT(ifobj), sizeof (struct interface_object));
+    FreeMem(_OOP_OBJECT(ifobj), sizeof (struct interface_object));
     
     ReturnVoid("Interface::Dispose");
 }
@@ -147,7 +147,7 @@ static VOID interface_dispose(Class *cl, Interface  *ifobj, Msg msg )
 /* Default way to call a interface objects' method.
    (Inserted into the Interface struct's CallIF() field
 */
-static IPTR StdCallIF(Interface *iface, Msg msg)
+static IPTR StdCallIF(OOP_Interface *iface, OOP_Msg msg)
 {
     /* Mask off the method offset */
     register ULONG midx = msg->MID & METHOD_MASK;
@@ -165,17 +165,17 @@ static IPTR StdCallIF(Interface *iface, Msg msg)
 #undef OOPBase
 
 /* Well, initalize the interface class. Self explainatory */
-Class *init_interfaceclass(struct Library *OOPBase)
+OOP_Class *init_interfaceclass(struct Library *OOPBase)
 {
 
-    struct MethodDescr methods[] =
+    struct OOP_MethodDescr methods[] =
     {
 	{(IPTR (*)())interface_new,		moRoot_New},
 	{(IPTR (*)())interface_dispose,		moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{ methods, IID_Root, 2},
 	{ NULL, 0UL, 0UL}
@@ -191,16 +191,16 @@ Class *init_interfaceclass(struct Library *OOPBase)
     };
 
     
-    Class *cl;
+    OOP_Class *cl;
     
     EnterFunc(bug("init_interfaceclass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
-    	AddClass(cl);
+    	OOP_AddClass(cl);
     }
     
-    ReturnPtr ("init_interfaceclass", Class *, cl);
+    ReturnPtr ("init_interfaceclass", OOP_Class *, cl);
 }

@@ -37,8 +37,8 @@
 #define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
 
 
-typedef struct Object *HIDDT_BitMap;
-typedef struct Object *HIDDT_GC;
+typedef struct OOP_Object *HIDDT_BitMap;
+typedef struct OOP_Object *HIDDT_GC;
 
 
 /* Attrbases */
@@ -48,12 +48,12 @@ typedef struct Object *HIDDT_GC;
 
 #define HiddPixFmtAttrBase	__IHidd_PixFmt
 
-extern AttrBase HiddGCAttrBase;
-extern AttrBase HiddGfxAttrBase;
-extern AttrBase HiddBitMapAttrBase;
+extern OOP_AttrBase HiddGCAttrBase;
+extern OOP_AttrBase HiddGfxAttrBase;
+extern OOP_AttrBase HiddBitMapAttrBase;
 
 
-extern AttrBase HiddPixFmtAttrBase;
+extern OOP_AttrBase HiddPixFmtAttrBase;
 
 
 /**** Graphics definitions ****************************************************/
@@ -159,27 +159,27 @@ typedef ULONG HIDDT_ModeID;
 
 struct pHidd_Gfx_NewGC
 {
-    MethodID       mID;
+    OOP_MethodID       mID;
     struct TagItem *attrList;
 };
 
 struct pHidd_Gfx_DisposeGC
 {
-    MethodID    mID;
-    Object      *gc;
+    OOP_MethodID    mID;
+    OOP_Object      *gc;
 };
 
 struct pHidd_Gfx_NewBitMap
 {
-    MethodID       mID;
+    OOP_MethodID       mID;
     
     struct TagItem *attrList;
 };
 
 struct pHidd_Gfx_DisposeBitMap
 {
-    MethodID    mID;
-    Object      *bitMap;
+    OOP_MethodID    mID;
+    OOP_Object      *bitMap;
 };
 
 
@@ -191,28 +191,28 @@ struct pHidd_Gfx_DisposeBitMap
      
 
 struct pHidd_Gfx_QueryModeIDs {
-    MethodID mID;
+    OOP_MethodID mID;
     struct TagItem *queryTags;
 };
 
 struct pHidd_Gfx_ReleaseModeIDs {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_ModeID *modeIDs;
 };
 
 
 struct pHidd_Gfx_GetMode {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_ModeID modeID;
-    Object **syncPtr;
-    Object **pixFmtPtr;
+    OOP_Object **syncPtr;
+    OOP_Object **pixFmtPtr;
 };
 
 struct pHidd_Gfx_NextModeID {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_ModeID modeID;
-    Object **syncPtr;
-    Object **pixFmtPtr;
+    OOP_Object **syncPtr;
+    OOP_Object **pixFmtPtr;
 };
 
 /*
@@ -220,46 +220,46 @@ struct pHidd_Gfx_NextModeID {
     these from outsode the HIDD
 */
 struct pHidd_Gfx_CheckMode {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_ModeID modeID;
-    Object *sync;
-    Object *pixFmt;
+    OOP_Object *sync;
+    OOP_Object *pixFmt;
 };
 
 struct pHidd_Gfx_GetPixFmt {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_StdPixFmt stdPixFmt;
 };
 
 struct pHidd_Gfx_SetCursorShape {
-    MethodID mID;
-    Object *shape;
+    OOP_MethodID mID;
+    OOP_Object *shape;
 };
 
 struct pHidd_Gfx_SetCursorPos {
-    MethodID mID;
+    OOP_MethodID mID;
     LONG	x;
     LONG	y;
 };
 
 struct pHidd_Gfx_SetCursorVisible {
-    MethodID mID;
+    OOP_MethodID mID;
     BOOL	visible;
 };
 
 struct pHidd_Gfx_Show {
-    MethodID mID;
-    Object *bitMap;
+    OOP_MethodID mID;
+    OOP_Object *bitMap;
     ULONG flags;
 };
 
 struct pHidd_Gfx_CopyBox
 {
-    MethodID    mID;
-    Object	*src;
-    Object	*gc;
+    OOP_MethodID    mID;
+    OOP_Object	*src;
+    OOP_Object	*gc;
     WORD        srcX, srcY;
-    Object      *dest;
+    OOP_Object      *dest;
     WORD        destX, destY;
     UWORD       width, height;
 };
@@ -275,13 +275,13 @@ struct pHidd_Gfx_CopyBox
 
 
 struct pHidd_Gfx_SetMode {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_ModeID modeID;
 };
 
 
 enum {
-    tHidd_Cursor_BitMap,	/* Object *, cursor shape bitmap */
+    tHidd_Cursor_BitMap,	/* OOP_Object *, cursor shape bitmap */
     tHidd_Cursor_XPos,		/* ULONG, cursor x position	*/
     tHidd_Cursor_YPos,		/* ULONG, cursor Y position */
     tHidd_Cursor_On		/* BOOL, cursor on, TRUE, FALSE. */
@@ -466,7 +466,7 @@ enum {
     aoHidd_BitMap_GfxHidd,	/* 9 [..G] Pointer to the gfxhidd object this bitmap was created with */
     aoHidd_BitMap_StdPixFmt,	/* 10 [I..] (HIDDT_StdPixFmt) What stdpixel format the bitmap should have.
 				             This is a shortcut to create a bitmap with a std pixelformat */
-    aoHidd_BitMap_PixFmt,	/* 11 [..G] (Object *) This is complete pixmft of a bitmap */
+    aoHidd_BitMap_PixFmt,	/* 11 [..G] (OOP_Object *) This is complete pixmft of a bitmap */
     aoHidd_BitMap_ModeID,	/* 12 [I.G] (HIDDT_ModeID) may be passed on initialization of
 				            aHidd_BitMap_Displayable=TRUE bitmaps. May also be
 				            used with non-displayable bitmaps */
@@ -525,13 +525,13 @@ enum {
 
 struct pHidd_BitMap_PrivateSet
 {
-    MethodID       mID;
+    OOP_MethodID       mID;
     struct TagItem *attrList;
 };
 
 struct pHidd_BitMap_SetColors
 {
-    MethodID	mID;
+    OOP_MethodID	mID;
     HIDDT_Color	*colors;
     ULONG	firstColor;
     ULONG	numColors;
@@ -541,35 +541,35 @@ struct pHidd_BitMap_SetColors
 
 struct pHidd_BitMap_PutPixel
 {
-    MethodID  mID;
+    OOP_MethodID  mID;
     WORD x, y;
     HIDDT_Pixel pixel;
 };
 
 struct pHidd_BitMap_GetPixel
 {
-    MethodID  mID;
+    OOP_MethodID  mID;
     WORD x, y;
 };
 
 struct pHidd_BitMap_DrawPixel
 {
-    MethodID  mID;
-    Object	*gc;
+    OOP_MethodID  mID;
+    OOP_Object	*gc;
     WORD x, y;
 };
 
 struct pHidd_BitMap_DrawLine
 {
-    MethodID    mID;
-    Object	*gc;
+    OOP_MethodID    mID;
+    OOP_Object	*gc;
     WORD        x1 ,y1, x2, y2;
 };
 
 
 struct pHidd_BitMap_GetImage
 {
-    MethodID mID;
+    OOP_MethodID mID;
     UBYTE	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -579,8 +579,8 @@ struct pHidd_BitMap_GetImage
 
 struct pHidd_BitMap_PutImage
 {
-    MethodID mID;
-    Object	*gc;
+    OOP_MethodID mID;
+    OOP_Object	*gc;
     UBYTE 	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -591,31 +591,31 @@ struct pHidd_BitMap_PutImage
 
 struct pHidd_BitMap_DrawRect
 {
-    MethodID    mID;
-    Object *gc;
+    OOP_MethodID    mID;
+    OOP_Object *gc;
     WORD        minX, minY, maxX, maxY;
 };
 
 struct pHidd_BitMap_DrawEllipse
 {
-    MethodID    mID;
-    Object *gc;
+    OOP_MethodID    mID;
+    OOP_Object *gc;
     WORD        x, y;
     UWORD       rx, ry;
 };
 
 struct pHidd_BitMap_DrawPolygon
 {
-    MethodID    mID;
-    Object	*gc;
+    OOP_MethodID    mID;
+    OOP_Object	*gc;
     WORD        n;         /* number of coordinates */
     WORD        *coords;   /* size 2*n              */
 };
 
 struct pHidd_BitMap_DrawText
 {
-    MethodID    mID;
-    Object	*gc;
+    OOP_MethodID    mID;
+    OOP_Object	*gc;
     WORD        x, y;      /* Start position, see autodocs */
     STRPTR      text;      /* Latin 1 string               */
     UWORD       length;    /* Number of characters to draw */
@@ -623,15 +623,15 @@ struct pHidd_BitMap_DrawText
 
 struct pHidd_BitMap_Clear
 {
-    MethodID    mID;
-    Object	*gc;
+    OOP_MethodID    mID;
+    OOP_Object	*gc;
 };
 
 struct pHidd_BitMap_BlitColorExpansion
 {
-    MethodID mID;
-    Object	*gc;
-    Object	*srcBitMap;
+    OOP_MethodID mID;
+    OOP_Object	*gc;
+    OOP_Object	*srcBitMap;
     WORD	srcX;
     WORD	srcY;
     WORD	destX;
@@ -642,21 +642,21 @@ struct pHidd_BitMap_BlitColorExpansion
 
 struct pHidd_BitMap_MapColor
 {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_Color *color;
 };
 
 struct pHidd_BitMap_UnmapPixel
 {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_Pixel pixel;
     HIDDT_Color *color;
 };
 
 struct pHidd_BitMap_PutImageLUT
 {
-    MethodID mID;
-    Object	*gc;
+    OOP_MethodID mID;
+    OOP_Object	*gc;
     UBYTE 	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -666,7 +666,7 @@ struct pHidd_BitMap_PutImageLUT
 
 struct pHidd_BitMap_GetImageLUT
 {
-    MethodID mID;
+    OOP_MethodID mID;
     UBYTE	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -678,7 +678,7 @@ struct pHidd_BitMap_GetImageLUT
 
 struct pHidd_BitMap_BytesPerLine
 {
-    MethodID mID;
+    OOP_MethodID mID;
     HIDDT_StdPixFmt pixFmt;
     ULONG width;
 };
@@ -686,7 +686,7 @@ struct pHidd_BitMap_BytesPerLine
 
 struct pHidd_BitMap_ConvertPixels
 {
-    MethodID mID;
+    OOP_MethodID mID;
     APTR *srcPixels;
     HIDDT_PixelFormat *srcPixFmt;
     
@@ -706,12 +706,12 @@ struct pHidd_BitMap_ConvertPixels
 
 
 struct pHidd_BitMap_SetColorMap {
-    MethodID mID;
-    Object *colorMap;
+    OOP_MethodID mID;
+    OOP_Object *colorMap;
 };
 
 struct pHidd_BitMap_ObtainDirectAccess {
-    MethodID mID;
+    OOP_MethodID mID;
     UBYTE **addressReturn;
     ULONG *widthReturn;
     ULONG *heightReturn;
@@ -720,7 +720,7 @@ struct pHidd_BitMap_ObtainDirectAccess {
 };
 
 struct pHidd_BitMap_ReleaseDirectAccess {
-    MethodID mID;
+    OOP_MethodID mID;
 };
 
 /**** Graphics context definitions ********************************************/
@@ -733,7 +733,7 @@ enum {
 };
 
 struct pHidd_GC_SetClipRect {
-    MethodID mID;
+    OOP_MethodID mID;
     LONG x1;
     LONG y1;
     LONG x2;
@@ -742,7 +742,7 @@ struct pHidd_GC_SetClipRect {
 
 
 struct pHidd_GC_UnsetClipRect {
-    MethodID mID;
+    OOP_MethodID mID;
 };
 
 enum
@@ -791,64 +791,64 @@ enum
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
-Object * HIDD_Gfx_NewGC        (Object *hiddGfx, struct TagItem *tagList);
-VOID     HIDD_Gfx_DisposeGC    (Object *hiddGfx, Object *gc);
-Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
-VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
+OOP_Object * HIDD_Gfx_NewGC        (OOP_Object *hiddGfx, struct TagItem *tagList);
+VOID         HIDD_Gfx_DisposeGC    (OOP_Object *hiddGfx, OOP_Object *gc);
+OOP_Object * HIDD_Gfx_NewBitMap    (OOP_Object *hiddGfx, struct TagItem *tagList);
+VOID         HIDD_Gfx_DisposeBitMap(OOP_Object *hiddGfx, OOP_Object *bitMap);
 
-HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(Object *hiddGfx, struct TagItem *queryTags);
-VOID HIDD_Gfx_ReleaseModeIDs(Object *hiddGfx, HIDDT_ModeID *modeIDs);
-Object *HIDD_Gfx_GetPixFmt(Object *obj, HIDDT_StdPixFmt pixFmt);
-BOOL HIDD_Gfx_CheckMode(Object *obj, HIDDT_ModeID modeID, Object *sync, Object *pixFmt);
-BOOL HIDD_Gfx_GetMode(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
-HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
+HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *hiddGfx, struct TagItem *queryTags);
+VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *hiddGfx, HIDDT_ModeID *modeIDs);
+OOP_Object *HIDD_Gfx_GetPixFmt(OOP_Object *obj, HIDDT_StdPixFmt pixFmt);
+BOOL HIDD_Gfx_CheckMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object *sync, OOP_Object *pixFmt);
+BOOL HIDD_Gfx_GetMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
+HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
-BOOL HIDD_Gfx_SetCursorShape(Object *obj, Object *shape);
-BOOL HIDD_Gfx_SetCursorPos(Object *obj, LONG x, LONG y);
-VOID HIDD_Gfx_SetCursorVisible(Object *obj, BOOL visible);
+BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape);
+BOOL HIDD_Gfx_SetCursorPos(OOP_Object *obj, LONG x, LONG y);
+VOID HIDD_Gfx_SetCursorVisible(OOP_Object *obj, BOOL visible);
 
-Object *HIDD_Gfx_Show(Object *obj, Object *bitMap, ULONG flags);
-BOOL HIDD_Gfx_SetMode(Object *obj, HIDDT_ModeID modeID);
-VOID  HIDD_Gfx_CopyBox(Object *obj, Object *src, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, Object *gc);
+OOP_Object *HIDD_Gfx_Show(OOP_Object *obj, OOP_Object *bitMap, ULONG flags);
+BOOL HIDD_Gfx_SetMode(OOP_Object *obj, HIDDT_ModeID modeID);
+VOID  HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
 
-VOID HIDD_GC_SetClipRect(Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
-VOID HIDD_GC_UnsetClipRect(Object *gc);
+VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
+VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);
 
-VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
-BOOL     HIDD_BM_Show        (Object obj);
-VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
-BOOL     HIDD_BM_DepthArrange(Object obj, Object bm);
-BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG numcolors);
+VOID     HIDD_BM_BltBitMap   (OOP_Object *obj, OOP_Object *dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
+BOOL     HIDD_BM_Show        (OOP_Object *obj);
+VOID     HIDD_BM_Move        (OOP_Object *obj, WORD x, WORD y);
+BOOL     HIDD_BM_DepthArrange(OOP_Object *obj, OOP_Object *bm);
+BOOL	 HIDD_BM_SetColors	(OOP_Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG numcolors);
 
-ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
-HIDDT_Pixel    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
-ULONG    HIDD_BM_DrawPixel       (Object *obj, Object *gc, WORD x, WORD y);
-VOID     HIDD_BM_GetImage	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
-VOID	 HIDD_BM_PutImage 	 (Object *obj, Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
-VOID     HIDD_BM_DrawLine        (Object *obj, Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);
-VOID     HIDD_BM_DrawRect        (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_BM_FillRect        (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_BM_DrawEllipse     (Object *obj, Object *gc, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_BM_FillEllipse     (Object *obj, Object *gc, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_BM_DrawArc         (Object *obj, Object *gc);
-VOID     HIDD_BM_FillArc         (Object *obj, Object *gc);
-VOID     HIDD_BM_DrawPolygon     (Object *obj, Object *gc, UWORD n, WORD *coords);
-VOID     HIDD_BM_FillPolygon     (Object *obj, Object *gc, UWORD n, WORD *coords);
-VOID     HIDD_BM_DrawText        (Object *obj, Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
-VOID     HIDD_BM_FillText        (Object *obj, Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
-VOID     HIDD_BM_FillSpan        (Object *obj);
-VOID     HIDD_BM_Clear           (Object *obj, Object *gc);
-VOID	 HIDD_BM_BlitColorExpansion	 (Object *destObj, Object *gc, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
+ULONG    HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
+HIDDT_Pixel    HIDD_BM_GetPixel       (OOP_Object *obj, WORD x, WORD y);
+ULONG    HIDD_BM_DrawPixel       (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
+VOID     HIDD_BM_GetImage	 (OOP_Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+VOID	 HIDD_BM_PutImage 	 (OOP_Object *obj, OOP_Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+VOID     HIDD_BM_DrawLine        (OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);
+VOID     HIDD_BM_DrawRect        (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_FillRect        (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_DrawEllipse     (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_FillEllipse     (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_DrawArc         (OOP_Object *obj, OOP_Object *gc);
+VOID     HIDD_BM_FillArc         (OOP_Object *obj, OOP_Object *gc);
+VOID     HIDD_BM_DrawPolygon     (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
+VOID     HIDD_BM_FillPolygon     (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
+VOID     HIDD_BM_DrawText        (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_BM_FillText        (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_BM_FillSpan        (OOP_Object *obj);
+VOID     HIDD_BM_Clear           (OOP_Object *obj, OOP_Object *gc);
+VOID	 HIDD_BM_BlitColorExpansion	 (OOP_Object *destObj, OOP_Object *gc, OOP_Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
 
-HIDDT_Pixel HIDD_BM_MapColor (Object *destObj, HIDDT_Color *color);
-VOID	 HIDD_BM_UnmapPixel(Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color);
+HIDDT_Pixel HIDD_BM_MapColor (OOP_Object *destObj, HIDDT_Color *color);
+VOID	 HIDD_BM_UnmapPixel(OOP_Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color);
 
-VOID	 HIDD_BM_PutImageLUT 	 (Object *obj, Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
-VOID	 HIDD_BM_GetImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+VOID	 HIDD_BM_PutImageLUT 	 (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+VOID	 HIDD_BM_GetImageLUT 	 (OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
-ULONG HIDD_BM_BytesPerLine(Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
+ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
 
-VOID     HIDD_BM_ConvertPixels  (Object *obj
+VOID     HIDD_BM_ConvertPixels  (OOP_Object *obj
 	, APTR *srcPixels
 	, HIDDT_PixelFormat *srcPixFmt
 	, ULONG srcMod
@@ -859,9 +859,9 @@ VOID     HIDD_BM_ConvertPixels  (Object *obj
 	, HIDDT_PixelLUT *pixlut
 );
 
-Object * HIDD_BM_SetColorMap(Object *o, Object *colorMap);
+OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
-BOOL HIDD_BM_ObtainDirectAccess(Object *o
+BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *o
 	, UBYTE **addressReturn
 	, ULONG *widthReturn
 	, ULONG *heightReturn
@@ -869,7 +869,7 @@ BOOL HIDD_BM_ObtainDirectAccess(Object *o
 	, ULONG *memSizeReturn
 );
 
-VOID HIDD_BM_ReleaseDirectAccess(Object *obj);
+VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
 
 
 /*******************************************************/
@@ -883,7 +883,7 @@ VOID HIDD_BM_ReleaseDirectAccess(Object *obj);
 
 struct _hidd_bitmap_protected
 {
-	Object *pixfmt;
+	OOP_Object *pixfmt;
 };
 
 
@@ -1048,7 +1048,7 @@ enum {
 
 #define HiddPlanarBMAttrBase __IHIDD_PlanarBM
 
-extern AttrBase HiddPlanarBMAttrBase;
+extern OOP_AttrBase HiddPlanarBMAttrBase;
 
 enum {
 
@@ -1057,11 +1057,11 @@ enum {
 
 struct pHidd_PlanarBM_SetBitMap
 {
-    MethodID mID;
+    OOP_MethodID mID;
     struct BitMap *bitMap;
 };
 
-BOOL HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap);
+BOOL HIDD_PlanarBM_SetBitMap(OOP_Object *obj, struct BitMap *bitMap);
 
 enum {
     aoHidd_PlanarBM_AllocPlanes,	/* [I..] BOOL */
@@ -1086,7 +1086,7 @@ enum {
 
 #define HiddColorMapAttrBase __IHIDD_ColorMap
 
-extern AttrBase HiddColorMapAttrBase;
+extern OOP_AttrBase HiddColorMapAttrBase;
 
 /* Methods */
 enum {
@@ -1096,27 +1096,27 @@ enum {
 };
 
 struct pHidd_ColorMap_SetColors {
-    MethodID	mID;
+    OOP_MethodID	mID;
     HIDDT_Color	*colors;
     ULONG	firstColor;
     ULONG	numColors;
-    Object	*pixFmt;
+    OOP_Object	*pixFmt;
 };
 
 struct pHidd_ColorMap_GetPixel {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG pixelNo;
 };
 
 struct pHidd_ColorMap_GetColor {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG colorNo;
     HIDDT_Color *colorReturn;
 };
 
-BOOL HIDD_CM_SetColors(Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, Object *pixFmt);
-HIDDT_Pixel HIDD_CM_GetPixel(Object *obj, ULONG pixelNo);
-BOOL HIDD_CM_GetColor(Object *obj, ULONG colorNo, HIDDT_Color *colorReturn);
+BOOL HIDD_CM_SetColors(OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, OOP_Object *pixFmt);
+HIDDT_Pixel HIDD_CM_GetPixel(OOP_Object *obj, ULONG pixelNo);
+BOOL HIDD_CM_GetColor(OOP_Object *obj, ULONG colorNo, HIDDT_Color *colorReturn);
 
 /* Attrs */
 enum {
@@ -1140,7 +1140,7 @@ enum {
 
 #define HiddSyncAttrBase __IHidd_Sync
 #define IID_Hidd_Sync "hidd.gfx.sync"
-extern AttrBase HiddSyncAttrBase;
+extern OOP_AttrBase HiddSyncAttrBase;
 
 enum  {
     

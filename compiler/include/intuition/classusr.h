@@ -20,19 +20,19 @@
 #    include <oop/oop.h>
 #endif
 
-#ifndef AROS_USE_OOP
+/*#ifndef AROS_USE_OOP*/
 #    ifndef __typedef_Object
 #       define __typedef_Object
          typedef ULONG  Object;
 #    endif
-#endif
+/*#endif*/
 
 #ifndef __typedef_ClassID
 #   define __typedef_ClassID
     typedef UBYTE *ClassID;
 #endif
 
-#ifndef AROS_USE_OOP
+/*#ifndef AROS_USE_OOP*/
 #    ifndef __typedef_Msg
 #        define __typedef_Msg
          typedef struct
@@ -40,7 +40,7 @@
              STACKULONG MethodID;
          } *Msg;
 #    endif
-#endif
+/*#endif*/
 
 #define ROOTCLASS     "rootclass"
 #define IMAGECLASS    "imageclass"

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP rootclass
@@ -22,7 +22,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase GetOBase(((Class *)cl)->UserData)
+#define OOPBase GetOBase(((OOP_Class *)cl)->UserData)
 
 /* This class creates method objects. Method objects are objects
    you can obtain for a single method of some object,
@@ -37,27 +37,27 @@ struct intmethod
 {
     /* Every object has its class at ((VOID **)obj)[-1] */
     
-    Class *oclass;
+    OOP_Class *oclass;
     
     /* The app gets a pointer to &(intmethod->PublicPart).
        The public part is a readonly public struct.
      */
-    Method public;
+    OOP_Method public;
 };
 
 struct method_data
 {
-    Method public;
+    OOP_Method public;
 };
 
 #define IS_METHOD_ATTR(attr, idx) ((idx = attr - MethodAttrBase) < num_Method_Attrs)
 /********************
 **  Method::New()  **
 ********************/
-static Object *method_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *method_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    Msg m_msg     = NULL;
-    Object *m_obj = NULL;
+    OOP_Msg m_msg     = NULL;
+    OOP_Object *m_obj = NULL;
      
     struct TagItem *tag, *tstate;
     
@@ -81,13 +81,13 @@ static Object *method_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    {
 	    	case aoMethod_TargetObject:
 		    /* The object from which we get the method */
-		    m_obj = (Object *)tag->ti_Data;
+		    m_obj = (OOP_Object *)tag->ti_Data;
 		    break;
 		
 		
 		case aoMethod_Message:
 		     /* The message to pass with the method */
-		     m_msg = (Msg)tag->ti_Data;
+		     m_msg = (OOP_Msg)tag->ti_Data;
 		     break;
 		
 		case aoMethod_MethodID:
@@ -103,18 +103,18 @@ static Object *method_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     /* User MUST supply methodID, message and target object to get a method object */
     if ( !(mid && m_msg && m_obj) )
-    	ReturnPtr("Method::New", Object *, NULL);
+    	ReturnPtr("Method::New", OOP_Object *, NULL);
 	
     /* Try to find methodfunc */
     D(bug("trying to find method, oclass=%p, oclass(oclass)=%p\n",
-    	OCLASS(m_obj), OCLASS(OCLASS(m_obj)) ));
-    D(bug("oclass(oclass)=%s\n", OCLASS(OCLASS(m_obj))->ClassNode.ln_Name));
+    	OOP_OCLASS(m_obj), OOP_OCLASS(OOP_OCLASS(m_obj)) ));
+    D(bug("oclass(oclass)=%s\n", OOP_OCLASS(OOP_OCLASS(m_obj))->ClassNode.ln_Name));
     
-    ifm = meta_findmethod((Object *)OCLASS(m_obj), mid, (struct Library *)OOPBase);
+    ifm = meta_findmethod((OOP_Object *)OOP_OCLASS(m_obj), mid, (struct Library *)OOPBase);
     D(bug("found method: %p\n", ifm));
     if (!ifm)
     	/* If method isn't supported by target object, exit gracefully */
-    	ReturnPtr("Method::New", Object *, NULL);
+    	ReturnPtr("Method::New", OOP_Object *, NULL);
     
     /* Allocate mem for the method object */
     m = AllocMem( sizeof (struct intmethod), MEMF_ANY );
@@ -141,21 +141,21 @@ static Object *method_new(Class *cl, Object *o, struct pRoot_New *msg)
 	m->oclass	= cl;
 	
 	/* Return pointer to the public part */
-	ReturnPtr ("Method::New", Object *, (Object *)&(m->public));
+	ReturnPtr ("Method::New", OOP_Object *, (OOP_Object *)&(m->public));
     }
-    ReturnPtr ("Method::New", Object *, NULL);
+    ReturnPtr ("Method::New", OOP_Object *, NULL);
     
 }
 
 /************************
 **  Method::Dispose()  **
 ************************/
-static VOID method_dispose(Class *cl, Method  *m, Msg msg )
+static VOID method_dispose(OOP_Class *cl, OOP_Method  *m, OOP_Msg msg )
 {
     EnterFunc(bug("Method::Dispose()\n"));
     
     /* Well, free the method object */
-    FreeMem(_OBJECT(m), sizeof (struct intmethod));
+    FreeMem(_OOP_OBJECT(m), sizeof (struct intmethod));
     
     ReturnVoid("Method::Dispose");
 }
@@ -167,17 +167,17 @@ static VOID method_dispose(Class *cl, Method  *m, Msg msg )
 #undef OOPBase
 
 /* Self-explainatory */
-Class *init_methodclass(struct IntOOPBase *OOPBase)
+OOP_Class *init_methodclass(struct IntOOPBase *OOPBase)
 {
 
-    struct MethodDescr methods[] =
+    struct OOP_MethodDescr methods[] =
     {
 	{(IPTR (*)())method_new,	moRoot_New},
 	{(IPTR (*)())method_dispose,	moRoot_Dispose},
 	{ NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{ methods, IID_Root, 2},
 	{ NULL, 0UL, 0UL}
@@ -193,17 +193,17 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
     };
 
     
-    Class *cl;
+    OOP_Class *cl;
     
     EnterFunc(bug("init_methodclass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
     	D(bug("Method class successfully created\n"));
         cl->UserData = OOPBase;
-    	AddClass(cl);
+    	OOP_AddClass(cl);
     }
     
-    ReturnPtr ("init_methodclass", Class *, cl);
+    ReturnPtr ("init_methodclass", OOP_Class *, cl);
 }

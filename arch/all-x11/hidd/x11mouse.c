@@ -26,9 +26,9 @@ struct x11mouse_data
     APTR callbackdata;
 };
 
-static AttrBase HiddMouseAB;
+static OOP_AttrBase HiddMouseAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_Mouse, &HiddMouseAB },
     { NULL,	NULL }
@@ -57,7 +57,7 @@ static ULONG xbutton2hidd(XButtonEvent *xb)
     
 }
 
-static Object * x11mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object * x11mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
     ObtainSemaphoreShared( &XSD(cl)->sema);
@@ -70,10 +70,10 @@ static Object * x11mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (has_mouse_hidd) /* Cannot open twice */
     	return NULL; /* Should have some error code here */
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-	struct x11mouse_data *data = INST_DATA(cl, o);
+	struct x11mouse_data *data = OOP_INST_DATA(cl, o);
 	struct TagItem *tag, *tstate;
 	
 	tstate = msg->attrList;
@@ -107,10 +107,10 @@ static Object * x11mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
     return o;
 }
 
-static VOID x11mouse_handleevent(Class *cl, Object *o, struct pHidd_X11Mouse_HandleEvent *msg)
+static VOID x11mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Mouse_HandleEvent *msg)
 {
 
-    struct x11mouse_data *data = INST_DATA(cl, o);
+    struct x11mouse_data *data = OOP_INST_DATA(cl, o);
     
     struct pHidd_Mouse_Event e;
 
@@ -156,30 +156,30 @@ static VOID x11mouse_handleevent(Class *cl, Object *o, struct pHidd_X11Mouse_Han
 #define NUM_ROOT_METHODS 1
 #define NUM_X11MOUSE_METHODS 1
 
-Class *init_mouseclass (struct x11_staticdata *xsd)
+OOP_Class *init_mouseclass (struct x11_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{METHODDEF(x11mouse_new),		moRoot_New},
+    	{OOP_METHODDEF(x11mouse_new),		moRoot_New},
 	{NULL, 0UL}
     };
     
-    struct MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 
+    struct OOP_MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 
     {
-    	{METHODDEF(x11mouse_handleevent),	moHidd_X11Mouse_HandleEvent},
+    	{OOP_METHODDEF(x11mouse_handleevent),	moHidd_X11Mouse_HandleEvent},
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
     	{mousehidd_descr, IID_Hidd_X11Mouse, 	NUM_X11MOUSE_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -193,17 +193,17 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
     EnterFunc(bug("init_mouseclass(xsd=%p)\n", xsd));
     if (MetaAttrBase)
     {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->mouseclass = cl;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("MouseHiddClass ok\n"));
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -212,9 +212,9 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
-    ReturnPtr("init_mouseclass", Class *, cl);
+    ReturnPtr("init_mouseclass", OOP_Class *, cl);
 }
 
 
@@ -228,12 +228,12 @@ VOID free_mouseclass(struct x11_staticdata *xsd)
     if(xsd)
     {
 
-        RemoveClass(xsd->mouseclass);
+        OOP_RemoveClass(xsd->mouseclass);
 	
-        if(xsd->mouseclass) DisposeObject((Object *) xsd->mouseclass);
+        if(xsd->mouseclass) OOP_DisposeObject((OOP_Object *) xsd->mouseclass);
         xsd->mouseclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 
     }
 

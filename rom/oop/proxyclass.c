@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Class for proxy objects.
@@ -24,7 +24,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase (GetOBase(((Class *)cl)->UserData))
+#define OOPBase (GetOBase(((OOP_Class *)cl)->UserData))
 
 /* This proxyclass is used to create a proxy object for
    another object owned by another process. You can then call
@@ -39,7 +39,7 @@
 struct ProxyData
 {
     /* The object this is a proxy for */
-    Object *RealObject;
+    OOP_Object *RealObject;
 
     /* Server's Msgport to which we send requests */
     struct MsgPort *ServerPort;
@@ -55,10 +55,10 @@ struct ProxyData
 /************
 **  New()  **
 ************/
-static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *_Root_New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     /* Get the attributes */
-    Object *realobject;
+    OOP_Object *realobject;
     struct MsgPort *serverport;
     
     EnterFunc(bug("Proxy::New()\n"));
@@ -66,7 +66,7 @@ static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
     /* Pares params */
 
     /* Object from other process which we create a proxy for */
-    realobject = (Object *)GetTagData(aProxy_RealObject,	NULL, msg->attrList);
+    realobject = (OOP_Object *)GetTagData(aProxy_RealObject,	NULL, msg->attrList);
     
     /* MsgPort to pass method invocation throgh.
        Note that one could very well use a socket or a pipe to pass
@@ -79,13 +79,13 @@ static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
     if ( !(realobject && serverport) )
     	return (NULL);
     
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         struct ProxyData *data;
-	ULONG disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	ULONG disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	    
-	data = (struct ProxyData *)INST_DATA(cl, o);
+	data = (struct ProxyData *)OOP_INST_DATA(cl, o);
 	
 	/* Clear the instance data */
 	memset(data, 0, sizeof (struct ProxyData));
@@ -109,25 +109,25 @@ static Object *_Root_New(Class *cl, Object *o, struct pRoot_New *msg)
     		pm->pm_Message.mn_ReplyPort = data->ReplyPort;
     		pm->pm_Object = realobject;
 
-	    	ReturnPtr("Proxy::New", Object *, o);
+	    	ReturnPtr("Proxy::New", OOP_Object *, o);
 
 	    }
 	    DeleteMsgPort(data->ReplyPort);
 	    
 	}
 	
-	CoerceMethod(cl, o, (Msg)&disp_mid);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
 	
     }
-    ReturnPtr("Proxy::New", Object *, NULL);
+    ReturnPtr("Proxy::New", OOP_Object *, NULL);
 }
 
 /****************
 **  Dispose()  **
 ****************/
-static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
+static VOID _Root_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ProxyData *data = INST_DATA(cl, o);
+    struct ProxyData *data = OOP_INST_DATA(cl, o);
     
     /* Delete the replyport.. */
     if (data->ReplyPort)
@@ -138,13 +138,13 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
     	FreeMem(data->Message, sizeof (struct ProxyMsg));
 
     /* .. and the object itself. */
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("Proxy::Dispose");
 }
 
 #undef OOPBase
-#define OOPBase ((struct Library *)(OCLASS(o)->UserData))
+#define OOPBase ((struct Library *)(OOP_OCLASS(o)->UserData))
 
 /*****************
 **  DoMethod()  **
@@ -153,9 +153,9 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
    handles passing the method on to the server's MsgPort.
 */   
 
-static IPTR _Proxy_DoMethod(Object *o, Msg msg)
+static IPTR _Proxy_DoMethod(OOP_Object *o, OOP_Msg msg)
 {
-    struct ProxyData *data = INST_DATA(OCLASS(o), o);
+    struct ProxyData *data = OOP_INST_DATA(OOP_OCLASS(o), o);
     
     EnterFunc(bug("Proxy_DoMethod()\n"));
     
@@ -182,10 +182,10 @@ static IPTR _Proxy_DoMethod(Object *o, Msg msg)
 
 #undef OOPBase
 
-Class *init_proxyclass(struct Library *OOPBase)
+OOP_Class *init_proxyclass(struct Library *OOPBase)
 {
 
-    struct MethodDescr root_methods[] =
+    struct OOP_MethodDescr root_methods[] =
     {
 	{(IPTR (*)())_Root_New,			moRoot_New},
 	{(IPTR (*)())_Root_Dispose,		moRoot_Dispose},
@@ -193,7 +193,7 @@ Class *init_proxyclass(struct Library *OOPBase)
     };
     
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{ root_methods,		IID_Root, 2},
 	{ NULL, 0UL, 0UL}
@@ -210,16 +210,16 @@ Class *init_proxyclass(struct Library *OOPBase)
     };
 
     
-    Class *cl;
+    OOP_Class *cl;
     
     EnterFunc(bug("InitProxyClass()\n"));
     
-    cl = (Class *)NewObject(NULL, CLID_MIMeta, tags);
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
-    	AddClass(cl);
+    	OOP_AddClass(cl);
     }
     
-    ReturnPtr ("InitProxyClass", Class *, cl);
+    ReturnPtr ("InitProxyClass", OOP_Class *, cl);
 }

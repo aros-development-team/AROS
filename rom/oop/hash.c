@@ -1,5 +1,5 @@
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
+   (C) 1997-2000 AROS - The Amiga Research OS
    $Id$
 
    Desc: Common code for handling hashing.

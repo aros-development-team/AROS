@@ -35,11 +35,11 @@
 
 #include "bitmap.h"
 
-static AttrBase HiddBitMapAttrBase = 0;
-static AttrBase HiddX11GfxAB = 0;
-static AttrBase HiddX11BitMapAB = 0;
+static OOP_AttrBase HiddBitMapAttrBase = 0;
+static OOP_AttrBase HiddX11GfxAB = 0;
+static OOP_AttrBase HiddX11BitMapAB = 0;
 
-static struct ABDescr attrbases[] = 
+static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -69,13 +69,13 @@ static void init_empty_cursor(Window w
 
 /*********** BitMap::New() *************************************/
 
-static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL ok = TRUE;
     
     EnterFunc(bug("X11Gfx.OnBitMap::New()\n"));
     
-    o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
     	struct bitmap_data *data;
@@ -86,7 +86,7 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	int visualclass;
 	unsigned long valuemask;
 	
-        data = INST_DATA(cl, o);
+        data = OOP_INST_DATA(cl, o);
 	
 	/* clear all data  */
         memset(data, 0, sizeof(struct bitmap_data));
@@ -120,8 +120,8 @@ UX11
 	/* end stegerg */
 	
 	/* Get attr values */
-	GetAttr(o, aHidd_BitMap_Width,		&width);
-	GetAttr(o, aHidd_BitMap_Height, 	&height);
+	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
 
 
 	/* Open an X window to be used for viewing */
@@ -310,8 +310,8 @@ UX11
     	if (!ok)
     	{
     
-            MethodID disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
-    	    CoerceMethod(cl, o, (Msg) &disp_mid);
+            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
 	
 	    o = NULL;
     	}
@@ -319,15 +319,15 @@ UX11
 
     } /* if (object allocated by superclass) */
 
-    ReturnPtr("X11Gfx.OnBitMap::New()", Object *, o);
+    ReturnPtr("X11Gfx.OnBitMap::New()", OOP_Object *, o);
 }
 
 
 /**********  Bitmap::Dispose()  ***********************************/
 
-static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
+static VOID onbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
     
     /* Someone is trying to dispose the framefuffer. This should really
@@ -384,24 +384,24 @@ LX11
 UX11
     }
     
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("X11Gfx.BitMap::Dispose");
 }
 
 /*********  BitMap::Clear()  *************************************/
-static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
+static VOID onbitmap_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     ULONG width, height;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
     XSetWindowAttributes winattr;
     
     
     /* Get width & height from bitmap */
   
-    GetAttr(o, aHidd_BitMap_Width,  &width);
-    GetAttr(o, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     
     winattr.background_pixel = GC_BG(msg->gc);
 LX11    
@@ -438,9 +438,9 @@ UX11
 #endif
 
 
-Class *init_onbmclass(struct x11_staticdata *xsd)
+OOP_Class *init_onbmclass(struct x11_staticdata *xsd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())MNAME(new)    , moRoot_New    },
         {(IPTR (*)())MNAME(dispose), moRoot_Dispose},
@@ -452,7 +452,7 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
+    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
@@ -474,14 +474,14 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
         {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -491,7 +491,7 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
     
@@ -504,7 +504,7 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
        D(bug("Got attrbase\n"));
        
 /*    for (;;) {cl = cl; } */
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
+        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
         if(cl)
         {
             D(bug("BitMap class ok\n"));
@@ -512,10 +512,10 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
             {
 	    
-                AddClass(cl);
+                OOP_AddClass(cl);
             }
             else
             {
@@ -526,10 +526,10 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
         }
 	
 	/* We don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
 
-    ReturnPtr("init_onbmclass", Class *,  cl);
+    ReturnPtr("init_onbmclass", OOP_Class *,  cl);
 }
 
 
@@ -542,12 +542,12 @@ void free_onbmclass(struct x11_staticdata *xsd)
     if(xsd)
     {
     
-        RemoveClass(xsd->onbmclass);
-        if(xsd->onbmclass) DisposeObject((Object *) xsd->onbmclass);
+        OOP_RemoveClass(xsd->onbmclass);
+        if(xsd->onbmclass) OOP_DisposeObject((OOP_Object *) xsd->onbmclass);
 	
         xsd->onbmclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 	
     }
 

@@ -18,7 +18,7 @@
 #define HiddKbdAB __abHidd_Kbd
 
 
-extern AttrBase HiddKbdAB;
+extern OOP_AttrBase HiddKbdAB;
 
 
 enum {

@@ -17,12 +17,12 @@ struct ght_OpenLibs
 
 BOOL ght_OpenLibs(struct ght_OpenLibs *libsArray);
 void  ght_CloseLibs(struct ght_OpenLibs *libsArray);
-ULONG ght_GetAttr(Object *obj, ULONG attrID);
+ULONG ght_GetAttr(OOP_Object *obj, ULONG attrID);
 STRPTR ght_GetCLID(STRPTR hiddName);
 
-Object * NewGC(Object *hiddGfx, ULONG gcType, struct TagItem *tagList);
-void DisposeGC(Object *hiddGfx, Object *gc);
-Object * NewBitMap(Object *hiddGfx, struct TagItem *tagList);
-void DisposeBitMap(Object *hiddGfx, Object *bitMap);
+OOP_Object * NewGC(OOP_Object *hiddGfx, ULONG gcType, struct TagItem *tagList);
+void DisposeGC(OOP_Object *hiddGfx, OOP_Object *gc);
+OOP_Object * NewBitMap(OOP_Object *hiddGfx, struct TagItem *tagList);
+void DisposeBitMap(OOP_Object *hiddGfx, OOP_Object *bitMap);
 
 #endif /* GFX_HIDD_TOOL_H */

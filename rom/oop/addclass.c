@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a class to the list of puvlic classes
@@ -15,10 +15,10 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, AddClass,
+	AROS_LH1(VOID, OOP_AddClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(Class  *, classPtr, A0),
+	AROS_LHA(OOP_Class  *, classPtr, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 8, OOP)
@@ -42,7 +42,7 @@
     	Would be faster to use a hashtable to look up class IDs
 
     SEE ALSO
-    	RemoveClass()
+    	OOP_RemoveClass()
 
     INTERNALS
 
@@ -68,4 +68,4 @@
     
     return;
     AROS_LIBFUNC_EXIT
-} /* NewObjectA */
+} /* OOP_AddClass */

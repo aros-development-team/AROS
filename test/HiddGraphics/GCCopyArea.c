@@ -96,13 +96,13 @@ int main(int argc, char **argv)
 {
     ULONG ret = RETURN_FAIL;
 
-    AttrBase HiddGCAttrBase;
-    AttrBase HiddGfxAttrBase;
-    AttrBase HiddBitMapAttrBase;
+    OOP_AttrBase HiddGCAttrBase;
+    OOP_AttrBase HiddGfxAttrBase;
+    OOP_AttrBase HiddBitMapAttrBase;
 
-    Object   *gfxHidd;
-    Object   *bitMap;
-    Object   *gc;
+    OOP_Object   *gfxHidd;
+    OOP_Object   *bitMap;
+    OOP_Object   *gc;
 
     STRPTR hiddName = "graphics.hidd";
     ULONG  width    = 320;
@@ -138,13 +138,13 @@ int main(int argc, char **argv)
             {
                 ret = RETURN_ERROR;
 
-                HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
-                HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-                HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GC);
+                HiddGfxAttrBase    = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+                HiddBitMapAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+                HiddGCAttrBase     = OOP_ObtainAttrBase(IID_Hidd_GC);
         
                 if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase)
                 {
-                    gfxHidd = NewObject(NULL, args.hiddName, NULL);
+                    gfxHidd = OOP_NewObject(NULL, args.hiddName, NULL);
                     if(gfxHidd)
                     {
                         struct TagItem bm_tags[] =
@@ -180,13 +180,13 @@ int main(int argc, char **argv)
                             HIDD_Gfx_DisposeBitMap(gfxHidd, bitMap);
                         }
     
-                        if(gfxHidd) DisposeObject(gfxHidd);
+                        if(gfxHidd) OOP_DisposeObject(gfxHidd);
                     }
                 }  /* if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase) */
     
-                if(HiddGfxAttrBase)    ReleaseAttrBase(IID_Hidd_Gfx);
-                if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-                if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GC);
+                if(HiddGfxAttrBase)    OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+                if(HiddBitMapAttrBase) OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+                if(HiddGCAttrBase)     OOP_ReleaseAttrBase(IID_Hidd_GC);
 
                 CloseLibrary(HIDDGraphicsBase);
             } /* if(HIDDGraphicsBase) */

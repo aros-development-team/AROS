@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a server to the list of public servers
@@ -16,10 +16,10 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH2(BOOL, AddServer,
+	AROS_LH2(BOOL, OOP_AddServer,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object  *, serverPtr,	A0),
+	AROS_LHA(OOP_Object  *, serverPtr,	A0),
 	AROS_LHA(STRPTR	  , serverID, 	A1),
 
 /*  LOCATION */
@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-    	FindServer(), RemoveServer()
+    	OOP_FindServer(), OOP_RemoveServer()
 
     INTERNALS
 
@@ -61,7 +61,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    EnterFunc(bug("AddServer(server=%p, serverID=%s)\n",
+    EnterFunc(bug("OOP_AddServer(server=%p, serverID=%s)\n",
     	serverPtr, serverID));
     
     if (serverPtr && serverID)
@@ -88,7 +88,7 @@
     			,(struct Node *)sn);
     		ReleaseSemaphore( & GetOBase(OOPBase)->ob_ServerListLock );
 		
-		ReturnBool ("AddServer", TRUE);
+		ReturnBool ("OOP_AddServer", TRUE);
 
 	    }
 	    FreeMem(sn, sizeof (struct ServerNode));
@@ -96,7 +96,7 @@
 	
     } /* if (valid parameters) */
     
-    ReturnBool ("AddServer", FALSE);
+    ReturnBool ("OOP_AddServer", FALSE);
     
     AROS_LIBFUNC_EXIT
-} /* NewObjectA */
+} /* OOP_AddServer */

@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright 1995-1997 AROS - The Amiga Research OS
+    Copyright 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -104,24 +104,24 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase);
 BOOL init_ifmetaclass(struct IntOOPBase *OOPBase);
 
 /* methodclass.c */
-Class *init_methodclass(struct IntOOPBase *OOPBase);
+OOP_Class *init_methodclass(struct IntOOPBase *OOPBase);
 
 /* serverclass.c */
-Class *init_serverclass(struct Library *OOPBase);
+OOP_Class *init_serverclass(struct Library *OOPBase);
 
 /* proxyclass.c */
-Class *init_proxyclass(struct Library *OOPBase);
+OOP_Class *init_proxyclass(struct Library *OOPBase);
 
 /* interfaceclass.c */
-Class *init_interfaceclass(struct Library *OOPBase);
+OOP_Class *init_interfaceclass(struct Library *OOPBase);
 
 
-Class *init_hiddmetaclass(struct IntOOPBase *OOPBase);
+OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase);
 
 /* support.c */
-BOOL hasinterface(Class *cl, STRPTR interface_id);
-struct IFMethod *findinterface(Class *cl, STRPTR interface_id);
-struct IFMethod *findmethod(Class *cl, STRPTR interface_id, ULONG method_offset);
+BOOL hasinterface(OOP_Class *cl, STRPTR interface_id);
+struct IFMethod *findinterface(OOP_Class *cl, STRPTR interface_id);
+struct IFMethod *findmethod(OOP_Class *cl, STRPTR interface_id, ULONG method_offset);
 BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
@@ -170,7 +170,7 @@ struct IFBucket
 struct IFMethod
 {
     IPTR (*MethodFunc)();
-    Class *mClass;
+    OOP_Class *mClass;
 };
 
 
@@ -179,17 +179,17 @@ struct IFMethod
 */
 struct ProxyMsg
 {
-    struct Message pm_Message;
-    Msg		pm_ObjMsg;
-    IPTR	pm_RetVal;
-    Object	*pm_Object;
+    struct Message 	pm_Message;
+    OOP_Msg		pm_ObjMsg;
+    IPTR		pm_RetVal;
+    OOP_Object		*pm_Object;
 };
 
 /* Listnode that helps keeping track of servers. */
 struct ServerNode
 {
     struct Node sn_Node;
-    Object	*sn_Server;
+    OOP_Object	*sn_Server;
 };
 
 
@@ -197,8 +197,8 @@ struct ServerNode
 
 struct metadata
 {
-    Class public; /* public part of class objects */
-    Class *superclass;
+    OOP_Class public; /* public part of class objects */
+    OOP_Class *superclass;
     ULONG subclasscount;
     ULONG objectcount;
     ULONG instsize;
@@ -210,7 +210,7 @@ struct metadata
 #define NUM_BASEMETA_IFS 2
 struct basemetaobject /* Real instance data of the base meta class */
 {
-    Class  *oclass; /* The meta object's class */
+    OOP_Class  *oclass; /* The meta object's class */
     struct basemeta_inst
     {
     	struct metadata data;
@@ -224,7 +224,7 @@ struct basemetaobject /* Real instance data of the base meta class */
 
 struct rootclassobject
 {
-    Class *oclass; /* The rootclass object's class */
+    OOP_Class *oclass; /* The rootclass object's class */
     struct rootinst
     {
     	struct metadata data;
@@ -257,7 +257,7 @@ struct ifmeta_data
 
 struct ifmetaobject
 {
-    Class *oclass; /* The interface metaclass' class (itself) */
+    OOP_Class *oclass; /* The interface metaclass' class (itself) */
     struct ifmeta_inst
     {
     	struct metadata base;
@@ -294,13 +294,13 @@ struct IntOOPBase
     struct ifmetaobject		 ob_IFMetaObject;
     
     /* HIDD metaclass */				
-    Class 			 *ob_HIDDMetaClass;
+    OOP_Class 			 *ob_HIDDMetaClass;
 
     /* Store pointers to some usefull classes here */				 
-    Class			 *ob_MethodClass;
-    Class			 *ob_ServerClass;
-    Class			 *ob_ProxyClass;
-    Class			 *ob_InterfaceClass;
+    OOP_Class			 *ob_MethodClass;
+    OOP_Class			 *ob_ServerClass;
+    OOP_Class			 *ob_ProxyClass;
+    OOP_Class			 *ob_InterfaceClass;
     
     /* Hashtable containing string interface ID => Numeric interface
     ** ID mappings. Used by GetMethodID() and GetAttrBase()
