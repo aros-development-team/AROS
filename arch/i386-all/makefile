@@ -33,5 +33,3 @@ $(OSGENDIR)/%.d: %.c
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
-
-include $(OSGENDIR)/init.d
