@@ -748,6 +748,8 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	    error = 0;
 	}
 
+    	if (error) break;
+	
     	dirnode = (struct DirNode *)RemHead(&DirList);
 
 	if (dirnode != NULL)
