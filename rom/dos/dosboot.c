@@ -85,21 +85,21 @@ AROS_UFH3(void, intBoot,
 	else
 		Alert( AT_DeadEnd | AG_BadParm | AN_DOSLib );
 
-	lock = Lock("SYS:c", SHARED_LOCK);
+	lock = Lock("SYS:C", SHARED_LOCK);
 	if( lock )
 		AssignLock("C", lock);
 
-	lock = Lock("SYS:s", SHARED_LOCK);
+	lock = Lock("SYS:S", SHARED_LOCK);
 	if( lock )
 		AssignLock("S", lock);
 
-	lock = Lock("SYS:libs", SHARED_LOCK);
+	lock = Lock("SYS:Libs", SHARED_LOCK);
 	if( lock )
-		AssignLock("Libs", lock);
+		AssignLock("LIBS", lock);
 
-	lock = Lock("SYS:devs", SHARED_LOCK);
+	lock = Lock("SYS:Devs", SHARED_LOCK);
 	if( lock )
-		AssignLock("Devs", lock);
+		AssignLock("DEVS", lock);
 	
 	/* Late binding ENVARC: assign, only if used */
 	AssignLate("ENVARC", "SYS:Prefs/env-archive");

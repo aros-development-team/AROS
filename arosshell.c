@@ -15,7 +15,7 @@ extern struct DosLibrary *DOSBase;
 struct IntuitionBase * IntuitionBase;
 
 #define CANNOT_OPEN_INTUITION	"Cannot open intuition.library\n"
-#define CANNOT_LOAD_SHELL	"Unable to load c/shell\n"
+#define CANNOT_LOAD_SHELL	"Unable to load C:shell\n"
 
 int main(void)
 {
@@ -28,7 +28,7 @@ int main(void)
     }
 
     /* Load the boot shell */
-    segs = LoadSeg ("c/shell");
+    segs = LoadSeg ("C:shell");
 
     if (segs)
     {

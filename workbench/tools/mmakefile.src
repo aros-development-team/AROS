@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 SPECIAL_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
 
 #CC := $(PURIFY) $(SYS_CC)
-EXEDIR := $(BINDIR)/tools
+EXEDIR := $(BINDIR)/Tools
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs

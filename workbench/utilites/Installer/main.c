@@ -73,7 +73,7 @@ int nextarg, endoffile, count;
   else
   {
     printf( "Using default script.\n" );
-    filename = strdup( "test.script" );
+    filename = strdup( "SYS:Utilities/test.script" );
   }
 #else /* DEBUG */
   filename = strdup( (STRPTR)args[ARG_SCRIPT] );

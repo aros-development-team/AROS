@@ -19,7 +19,7 @@ STRIP = strip
 
 # Directories where the resulting files will end up
 BOOTGENDIR = $(GENDIR)/boot
-TOOLDIR = $(BINDIR)/tools
+TOOLDIR = $(BINDIR)/Tools
 TOOLGENDIR = $(GENDIR)/tools
 
 # Flags to use for the module loader
