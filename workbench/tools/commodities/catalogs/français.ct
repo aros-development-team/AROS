@@ -168,87 +168,87 @@ FKey
 ; FKey
 ;
 MSG_FKEY_CXTITLE
-Function To Keys:
+Fonctions et touches:
 ; Function To Keys:
 ;
 MSG_FKEY_CXDESCR
-Attach Special Functions To Keys
+Attache des fonctions spéciales aux touches
 ; Attach Special Functions To Keys
 ;
 MSG_FKEY_WINTITLE
-FKey: Hot Key = <%s>
+FKey: Touche = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
-Defined Keys
+Touches définies
 ; Defined Keys
 ;
 MSG_FKEY_NEW_KEY
-_New Key
+_Nouvelle touche
 ; _New Key
 ;
 MSG_FKEY_DELETE_KEY
-_Delete Key
+_Effacer la touche
 ; _Delete Key
 ;
 MSG_FKEY_COMMAND
-Command
+Commande
 ; Command
 ;
 MSG_FKEY_COMMAND_PARAMS
-Command Parameters
+Paramètres de la commande
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Cycle Windows
+Cycler les fenêtres
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Cycle Screens
+Cycler les écrans
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
-Enlarge Window
+Aggrandir la fenêtre
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
-Shrink Window
+Rétrécir la fenêtre
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Toggle Window Size
+Alterner la taille de fenêtre
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_INSERT_TEXT
-Insert Text
+Insérer un texte
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
-Run Program
+Lancer un programme
 ; Run Program
 ;
 MSG_FKEY_CMD_RUN_AREXX
-Run Arexx Script
+Lancer un script Arexx
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT
-Project
+Projet
 ; Project
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Save Defined Keys
+S\0Sauver les touches définies
 ; S\0Save Defined Keys
 ;
 MSG_FKEY_MEN_PROJECT_HIDE
-H\0Hide
+C\0Cacher
 ; H\0Hide
 ;
 MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Iconify
+I\0Icônifier
 ; I\0Iconify
 ;
 MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Quit
+Q\0Quitter
 ; Q\0Quit
 ;
 MSG_NOCAPSLOCK_CXNAME
@@ -256,10 +256,10 @@ NoCapsLock
 ; NoCapsLock
 ;
 MSG_NOCAPSLOCK_CXTITLE
-NoCapsLock:
+Pas de Verrouillage Majuscule:
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
-Renders the CAPS LOCK key ineffective
+Rend la touche Verrouillage Majuscule inopérante
 ; Renders the CAPS LOCK key ineffective
 ;
