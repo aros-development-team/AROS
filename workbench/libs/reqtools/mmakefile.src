@@ -44,7 +44,7 @@ FUNCS := \
 #MM      workbench-libs-diskfont-includes \
 #MM      workbench-libs-gadtools-includes \
 #MM      workbench-libs-locale-includes \
-#MM      workbench-gadget-colorwheel-includes \
+#MM      workbench-gadgets-colorwheel-includes \
 #MM      includes-copy
 #MM- workbench-libs-reqtools : linklibs workbench-libs-reqtools-catalogs
 
