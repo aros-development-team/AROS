@@ -9,7 +9,7 @@ LIBNAME := libfreetypelinklib
 setup : 
 	%mkdirs_q $(OBJDIR)
 
-#MM contrib-freetype-linklib : setup
+#MM contrib-freetype-linklib : setup includes linklibs
 contrib-freetype-linklib : makeconfigmk
 	$(MAKE) TOP=.
 

@@ -18,7 +18,7 @@ FILES := \
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM contrib-freetype-graph : setup
+#MM contrib-freetype-graph : setup includes linklibs
 contrib-freetype-graph : $(LIB)
 	@$(NOP)
 

@@ -18,7 +18,7 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 contrib-freetype-demos-quick : contrib-freetype-demos
 	@$(NOP)
 	
-#MM contrib-freetype-demos : setup contrib-freetype-linklib contrib-freetype-graph contrib-freetype-fonts
+#MM contrib-freetype-demos : setup includes linklibs contrib-freetype-linklib contrib-freetype-graph contrib-freetype-fonts
 contrib-freetype-demos : $(EXES)
 	@$(NOP)
 
