@@ -3,7 +3,7 @@
 
 #define DUMMY_OPEN_BUG 1
 #define INIT_DEBUG_BUG 0
-#define REMOVE_DUMMY 0
+#define REMOVE_DUMMY 1
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -50,8 +50,9 @@ AROS_UFH3(struct DummyBase *,LIB_init,
 
 /********/
 
-AROS_UFH1(struct DummyBase *, LIB_open,
-	 AROS_LHA(struct DummyBase *, DummyBase, A6))
+AROS_LH1(struct DummyBase *, LIB_open,
+    AROS_LHA(ULONG, version, D0),
+    struct DummyBase *, DummyBase, 1, Dummy)
 {
     DummyBase->library.lib_OpenCnt++;
     DummyBase->library.lib_Flags &= ~LIBF_DELEXP;
@@ -95,7 +96,7 @@ static struct Library *dummylib;
 
 static void *function_array[] =
 {
-  LIB_open,
+  Dummy_LIB_open,
   LIB_close,
   LIB_expunge,
   LIB_reserved,
