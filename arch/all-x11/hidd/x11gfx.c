@@ -436,7 +436,7 @@ LX11
     {
 
     	    kprintf("GOT MORE THAN ONE VISUAL FROM X\n");
-    	    kill(getpid(), SIGSTOP);
+//    	    kill(getpid(), SIGSTOP);
     }
 
     if (NULL == visinfo)

@@ -148,7 +148,7 @@ LX11
 UX11
     } else {
 	kprintf("!!! set_pixelformat(): could not get bits per pixel\n");
-	kill(getpid(), 19);
+//	kill(getpid(), 19);
     }
 	
     *bppix = (*sz + 7) >> 3;

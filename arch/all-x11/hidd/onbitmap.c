@@ -299,7 +299,7 @@ UX11
 	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
 	if (NULL == port || NULL == msg) {
 	    kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n");
-	    kill(getpid(), 19);
+//	    kill(getpid(), 19);
 	}
 	
 	msg->notify_type = NOTY_WINDISPOSE;
@@ -369,10 +369,10 @@ UX11
 
 #define NUM_ROOT_METHODS   4
 
-#if USE_X11_DRAWLINE
-#   define NUM_BITMAP_METHODS 15
-#else
+#if USE_X11_DRAWFUNCS
 #   define NUM_BITMAP_METHODS 14
+#else
+#   define NUM_BITMAP_METHODS 12
 #endif
 
 
@@ -402,13 +402,14 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
-    	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
-    	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
     	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
     	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
-#if USE_X11_DRAWLINE
+#if USE_X11_DRAWFUNCS
     	{(IPTR (*)())MNAME(drawline),		moHidd_BitMap_DrawLine},
+    	{(IPTR (*)())MNAME(drawellipse),	moHidd_BitMap_DrawEllipse},
 #endif
+
+
         {NULL, 0UL}
     };
     

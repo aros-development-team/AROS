@@ -52,65 +52,6 @@ UX11
 
 #endif
 
-static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_MapColor *msg)
-{
-
-    HIDDT_PixelFormat *pf = BM_PIXFMT(o);
-    
-    HIDDT_Pixel red	= msg->color->red;
-    HIDDT_Pixel green	= msg->color->green;
-    HIDDT_Pixel blue	= msg->color->blue;
-    
-    
-    /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
-       which should be true for most (all ?) systems. (I have never heard
-       of any system with for example 3 byte types.
-    */
-    
-#if 0    
-    red   = ((HIDDT_Pixel)red  ) << (( sizeof (HIDDT_Pixel) - sizeof (col->red  ) ) * 8);
-    green = ((HIDDT_Pixel)green) << (( sizeof (HIDDT_Pixel) - sizeof (col->green) ) * 8);
-    blue  = ((HIDDT_Pixel)blue ) << (( sizeof (HIDDT_Pixel) - sizeof (col->blue ) ) * 8);
-    
-    pixel  = (red   >> XSD(cl)->red_shift   ) & XSD(cl)->vi.red_mask;
-    pixel |= (green >> XSD(cl)->green_shift ) & XSD(cl)->vi.green_mask;
-    pixel |= (blue  >> XSD(cl)->blue_shift  ) & XSD(cl)->vi.blue_mask;
-#endif    
-
-#warning This should be handled by the superclass
-    msg->color->pixval = MAP_RGB(red, green, blue, pf);
-
-    return msg->color->pixval;
-}
-
-static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPixel *msg)
-{
-
-    HIDDT_PixelFormat *pf = BM_PIXFMT(pf);
-
-#if 0
-    HIDDT_Pixel red;
-    HIDDT_Pixel green;
-    HIDDT_Pixel blue;
-    
-
-    red   = (msg->pixel & XSD(cl)->vi.red_mask  ) << XSD(cl)->red_shift;
-    green = (msg->pixel & XSD(cl)->vi.green_mask) << XSD(cl)->green_shift;
-    blue  = (msg->pixel & XSD(cl)->vi.blue_mask ) << XSD(cl)->blue_shift;
-
-    msg->color->red   = red   >> ((sizeof (HIDDT_Pixel) - sizeof (msg->color->red) * 8);
-    msg->color->green = green >> ((sizeof (HIDDT_Pixel) - sizeof (msg->color->red) * 8);
-    msg->color->blue  = blue  >> ((sizeof (HIDDT_Pixel) - sizeof (msg->color->red) * 8);
-#endif
-
-#warning This should be handled by the superclass
-    msg->color->red	= RED_COMP( msg->pixel, pf);
-    msg->color->green	= GREEN_COMP( msg->pixel, pf);
-    msg->color->blue	= BLUE_COMP( msg->pixel, pf);
-    
-    /* Unnecesart, but ... */
-    msg->color->pixval	= msg->pixel;
-}
 
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -124,21 +65,14 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     
     XColor xc;
     
-    /* We assume TruColor display */
     pf = BM_PIXFMT(o);
-    
-    
-    /* Setting the palette makes no sense for StaticPalette and TrueColor */
     
     if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
     	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf) ) {
-
-#warning This could possibly be handled by the superclass instead
-	 for (xc_i = msg->firstColor, col_i = 0;
-	 	col_i < msg->numColors; xc_i ++, col_i ++) {
-		msg->colors[col_i].pixval = HIDD_BM_MapColor(o, &msg->colors[col_i]);
-	 }
-	 return TRUE;
+	 
+	 /* Superclass takes care of this case */
+	 
+	 return DoSuperMethod(cl, o, (Msg)msg);
     }
 	
     
@@ -162,7 +96,7 @@ UX11
 	    return FALSE;
 	
 	msg->colors[col_i].pixval = xc.pixel;
-
+#warning Also set pixval in internal baseclass colormap in some way
     }
 
     return TRUE;
@@ -1345,3 +1279,51 @@ LX11
 UX11
 }
 
+
+/********** BitMap::DrawEllipse ******************************/
+
+VOID MNAME(drawellipse)(Class *cl, Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+{
+    Object *gc = msg->gc;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    
+LX11
+    if (GC_DOCLIP(gc)) {
+    	XRectangle cr;
+	
+/* kprintf("X11::Drawllipse: clip %d %d %d %d\n"
+	, GC_CLIPX1(gc), GC_CLIPY1(gc), GC_CLIPX2(gc), GC_CLIPY2(gc));
+*/	
+	cr.x = GC_CLIPX1(gc);
+	cr.y = GC_CLIPY1(gc);
+	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
+	cr.height = GC_CLIPY2(gc) - cr.y + 1;
+    
+    	XSetClipRectangles(data->display
+		, data->gc
+		, 0, 0
+		, &cr
+		, 1
+		, Unsorted
+	);
+    }
+    
+    XSetForeground(data->display, data->gc, GC_FG(gc));
+    
+/* kprintf("X11::Drawllipse: coord %d %d %d %d\n"
+	, msg->x, msg->y, msg->rx, msg->ry);
+   
+*/	
+    XDrawArc(data->display, DRAWABLE(data), data->gc
+	, msg->x - msg->rx, msg->y - msg->ry 
+	, msg->rx * 2, msg->ry * 2
+	, 0, 360 * 64
+    );
+	
+    if (GC_DOCLIP(gc)) {
+    	XSetClipMask(data->display, data->gc, None);
+    }	
+    
+    
+UX11
+}

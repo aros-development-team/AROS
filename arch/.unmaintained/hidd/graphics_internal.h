@@ -46,9 +46,11 @@ struct shared_driverdata
     ObjectCache *gc_cache;
     ObjectCache *planarbm_cache;
     
-    
+    /* Has the code to handle active screens been activated ? */
     BOOL activescreen_inited;
-
+    APTR dispinfo_db; /* Display info database */
+    struct List *queried_modes; /* gfxmodes gotten from the hidd */
+    
 
 };
 
@@ -57,7 +59,8 @@ struct shared_driverdata
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
    if it is a HIDD bitmap
 */
-#define HIDD_BM_PIXTAB(bitmap) ((HIDDT_Pixel *)(bitmap)->Planes[2])
-#define HIDD_BM_OBJ(bitmap)	  ((Object *)(bitmap)->Planes[0])
-
+#define HIDD_BM_OBJ(bitmap)	  	((Object *)(bitmap)->Planes[0])
+#define HIDD_BM_COLMAP(bitmap)		((Object *)(bitmap)->Planes[2])
+#define HIDD_BM_GRAPHTYPE(bitmap)	   ((ULONG)(bitmap)->Planes[3])
+#define HIDD_BM_PIXTAB(bitmap)		((HIDDT_Pixel *)(bitmap)->Planes[4])
 #endif /* GRAPHICS_INTERNAL_H */

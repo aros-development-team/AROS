@@ -141,9 +141,9 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
     
     oc = (struct objcache *)objectCache;
 
-    kprintf("obtain_cache_object(classID=%s, classPtr=%p)\n"
+/*    kprintf("obtain_cache_object(classID=%s, classPtr=%p)\n"
     	, oc->class_id, oc->class_ptr);
-    
+*/    
     ObtainSemaphore(&oc->lock);
     
     
