@@ -396,6 +396,16 @@ BEGIN {
 
 		yytext="<A HREF=\""file"\">"title"</A>";
 	    }
+	    else if (yytext=="smallpic")
+	    {
+		getarg();
+		file=yytext;
+
+		if (showpar)
+		    printf ("\n<P>");
+
+		yytext="<IMG SRC=\""file"\">";
+	    }
 	    else if (yytext=="bold")
 	    {
 		getarg();
