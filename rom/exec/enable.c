@@ -91,4 +91,4 @@ void _Exec_Enable(struct ExecBase * SysBase)
     }
 
     AROS_LIBFUNC_EXIT
-} /* Disable() */
+} /* Enable() */
