@@ -10,6 +10,7 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <graphics/gfxmacros.h>
+#include <intuition/gadgetclass.h>
 #include <gadgets/colorwheel.h>
 #include <gadgets/gradientslider.h>
 #include <intuition/icclass.h>
@@ -70,10 +71,14 @@ static void NotifyGun(Object *obj, struct MUI_ColoradjustData *data, LONG gun)
     
     struct TagItem tags[] =
     {
-    	{guntotag[gun]      	, data->rgb[gun]    },
-	{MUIA_Coloradjust_RGB   , (IPTR)data->rgb   },
+    	{0                   , 0},
+	{MUIA_Coloradjust_RGB, 0},
 	{TAG_DONE   	    	    	    	    }
     };
+
+    tags[0].ti_Tag = guntotag[gun];
+    tags[0].ti_Data = data->rgb[gun];
+    tags[1].ti_Data = (IPTR)data->rgb;
     
     CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR)tags, NULL);
 }
@@ -84,13 +89,16 @@ static void NotifyAll(Object *obj, struct MUI_ColoradjustData *data)
     
     struct TagItem tags[] =
     {
-    	{MUIA_Coloradjust_Red  , data->rgb[0]	},
-	{MUIA_Coloradjust_Green, data->rgb[1]	},
-	{MUIA_Coloradjust_Blue , data->rgb[2]	},
-	{MUIA_Coloradjust_RGB  , (IPTR)data->rgb},
-	{TAG_DONE   	    	    	    	}
+    	{MUIA_Coloradjust_Red  , 0 },
+	{MUIA_Coloradjust_Green, 0 },
+	{MUIA_Coloradjust_Blue , 0 },
+	{MUIA_Coloradjust_RGB  , 0 },
+	{TAG_DONE   	    	   }
     };
-    
+    tags[0].ti_Data = data->rgb[0];
+    tags[1].ti_Data = data->rgb[1];
+    tags[2].ti_Data = data->rgb[2];
+    tags[3].ti_Data = (IPTR)data->rgb;
     CoerceMethod(cl, obj, OM_SET, (IPTR)tags, NULL);
 }
 

@@ -16,6 +16,8 @@
 #include "mui.h"
 #include "support.h"
 
+extern struct Library *MUIMasterBase;
+
 /* From ASCII to internal representation */
 BOOL zune_pen_spec_to_intern (const struct MUI_PenSpec *spec,
 			      struct MUI_PenSpec_intern *intern)

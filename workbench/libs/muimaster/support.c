@@ -358,3 +358,21 @@ void *List_First(APTR list)
     return ((struct MinList*)list)->mlh_Head;
 }
 
+/**************************************************************************
+ A temporary snprintf wrapper for SAS.
+**************************************************************************/
+#ifndef __AROS__
+
+#include <stdarg.h>
+#include <stdio.h>
+
+int snprintf(char *buf, int size, const char *fmt, ...)
+{
+	int ret;
+	va_list argptr;
+	va_start(argptr,fmt);
+	ret = vsprintf(buf,fmt,argptr);
+	va_end(argptr);
+	return ret;
+}
+#endif

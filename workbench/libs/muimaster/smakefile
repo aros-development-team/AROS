@@ -6,7 +6,9 @@ SUPPORTOBJS = \
   objs/dragndrop.o \
   objs/frame.o \
   objs/imspec.o \
+  objs/imspec_vector.o \
   objs/menu.o \
+  objs/penspec.o \
   objs/support.o \
   objs/textengine.o
 
@@ -47,6 +49,8 @@ CLASSESOBJS= \
   objs/classes/boopsi.o \
   objs/classes/chunkyimage.o \
   objs/classes/configdata.o \
+	objs/classes/coloradjust.o \
+	objs/classes/colorfield.o \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
   objs/classes/family.o \
@@ -56,11 +60,16 @@ CLASSESOBJS= \
   objs/classes/iconlistview.o \
   objs/classes/image.o \
   objs/classes/imageadjust.o \
+	objs/classes/imagedisplay.o \
   objs/classes/list.o \
   objs/classes/listview.o \
+  objs/classes/mccprefs.o \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/penadjust.o \
+  objs/classes/pendisplay.o \
+  objs/classes/poppen.o \
   objs/classes/popasl.o \
   objs/classes/popimage.o \
   objs/classes/popobject.o \
@@ -135,6 +144,9 @@ objs/frame.o: frame.c
 objs/imspec.o: imspec.c
   sc $(CFLAGS) imspec.c objname=$@
 
+objs/imspec_vector.o: imspec_vector.c
+  sc $(CFLAGS) imspec_vector.c objname=$@
+
 objs/menu.o: menu.c
   sc $(CFLAGS) menu.c objname=$@
 
@@ -143,6 +155,9 @@ objs/support.o: support.c
 
 objs/textengine.o: textengine.c
   sc $(CFLAGS) textengine.c objname=$@
+
+objs/penspec.o: penspec.c
+  sc $(CFLAGS) penspec.c objname=$@
 
 objs/prefs.o: prefs.c
   sc $(CFLAGS) prefs.c objname=$@
@@ -248,6 +263,12 @@ objs/classes/boopsi.o: classes/boopsi.c
 objs/classes/chunkyimage.o: classes/chunkyimage.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/chunkyimage.c objname=$@
 
+objs/classes/coloradjust.o: classes/coloradjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/coloradjust.c objname=$@
+
+objs/classes/colorfield.o: classes/colorfield.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/colorfield.c objname=$@
+
 objs/classes/configdata.o: classes/configdata.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/configdata.c objname=$@
 
@@ -278,6 +299,9 @@ objs/classes/image.o: classes/image.c
 objs/classes/imageadjust.o: classes/imageadjust.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/imageadjust.c objname=$@
 
+objs/classes/imagedisplay.o: classes/imagedisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/imagedisplay.c objname=$@
+
 objs/classes/list.o: classes/list.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@
 
@@ -287,20 +311,32 @@ objs/classes/listview.o: classes/listview.c
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
 
+objs/classes/mccprefs.o: classes/mccprefs.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/mccprefs.c objname=$@
+
 objs/classes/menuitem.o: classes/menuitem.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/menuitem.c objname=$@
 
 objs/classes/numeric.o: classes/numeric.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
 
+objs/classes/penadjust.o: classes/penadjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/penadjust.c objname=$@
+
+objs/classes/pendisplay.o: classes/pendisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/pendisplay.c objname=$@
+
 objs/classes/popasl.o: classes/popasl.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popasl.c objname=$@ nostackcheck
 
 objs/classes/popimage.o: classes/popimage.c
-  sc $(CFLAGS) $(CLASSESDIRS) classes/popimage.c objname=$@ nostackcheck
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popimage.c objname=$@
 
 objs/classes/popobject.o: classes/popobject.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popobject.c objname=$@
+
+objs/classes/poppen.o: classes/poppen.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/poppen.c objname=$@
 
 objs/classes/popstring.o: classes/popstring.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
