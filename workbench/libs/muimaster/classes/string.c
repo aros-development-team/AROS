@@ -704,7 +704,7 @@ static ULONG String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
  Returns wether object needs redrawing
 **************************************************************************/
 int String_HandleVanillakey(struct IClass *cl, Object * obj,
-			    unsigned char code)
+			    unsigned char code, UWORD qual)
 {
     struct MUI_StringData *data = (struct MUI_StringData*)INST_DATA(cl, obj);
 
@@ -715,26 +715,56 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
     {
 	if (data->BufferPos > 0)
 	{
-	    strcpy(&data->Buffer[data->BufferPos-1],
-		   &data->Buffer[data->BufferPos]);
-	    data->BufferPos--;
-	    data->NumChars--;
-	}
+	    LONG shift;
 
-	data->msd_RedrawReason = DO_BACKSPACE;
-	return 1;
+	    if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
+	    {
+		shift = data->BufferPos;
+		data->msd_RedrawReason = NEW_CONTENTS;
+	    }
+	    else
+	    {
+		shift = 1;
+		data->msd_RedrawReason = DO_BACKSPACE;
+	    }
+
+	    strcpy(&data->Buffer[data->BufferPos - shift],
+		   &data->Buffer[data->BufferPos]);
+	    data->BufferPos -= shift;
+	    data->NumChars -= shift;
+	    return 1;
+	}
+	return 0;
     }
 
     if (code == 127) /* del */
     {
-	if (data->BufferPos < data->NumChars)
+	if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
 	{
-	    strcpy(&data->Buffer[data->BufferPos],
-		   &data->Buffer[data->BufferPos+1]);
-	    data->NumChars--;
+	    data->Buffer[data->BufferPos] = 0;
+	    data->NumChars = data->BufferPos;
+	    data->msd_RedrawReason = NEW_CONTENTS;
 	}
+	else
+	{
+	    if (data->BufferPos < data->NumChars)
+	    {
+		strcpy(&data->Buffer[data->BufferPos],
+		       &data->Buffer[data->BufferPos+1]);
+		data->NumChars--;
+	    }
 
-	data->msd_RedrawReason = DO_DELETE;
+	    data->msd_RedrawReason = DO_DELETE;
+	}
+	return 1;
+    }
+
+    if (code == 24) /* ctrl x == ascii cancel */
+    {
+	data->Buffer[0] = 0;
+	data->BufferPos = 0;
+	data->NumChars = 0;
+	data->msd_RedrawReason = NEW_CONTENTS;
 	return 1;
     }
 
@@ -867,6 +897,13 @@ static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
 		set(obj, MUIA_String_Acknowledge, buf);
 	    } break;
 
+	    case MUIKEY_WINDOW_CLOSE:
+		data->is_active = FALSE;
+		set(obj, MUIA_Background,
+		    (IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+		retval = 0;
+		break;
+
 	    default:
 		retval = 0;
 	} // switch(muikey)
@@ -961,7 +998,7 @@ static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
 		code = ConvertKey(msg->imsg);
 		if (code)
 		{
-		    update = String_HandleVanillakey(cl, obj, code);
+		    update = String_HandleVanillakey(cl, obj, code, msg->imsg->Qualifier);
 		    if (update)
 			retval = MUI_EventHandlerRC_Eat;
 		}
