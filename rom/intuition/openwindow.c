@@ -186,13 +186,15 @@
 
     w->Parent = NULL;
     w->NextWindow = w->Descendant = w->WScreen->FirstWindow;
+    if (w->Descendant)
+    {
+    	w->Descendant->Parent = w;
+    }
     w->WScreen->FirstWindow = w;
     
     w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
 
-    if (newWindow->Flags & WFLG_ACTIVATE)
-	IntuitionBase->ActiveWindow = w;
 
     UnlockIBase (lock);
 
@@ -205,7 +207,22 @@
     /* !!! This does double refreshing as the system gadgets also are refreshed
        in the above RfreshGadgets() call */
 
-    RefreshWindowFrame(w);
+    if (newWindow->Flags & WFLG_ACTIVATE)
+    {
+    	/* RefreshWindowFrame() will be called from within ActivateWindow().
+	No point in doing double refreshing.
+	
+	!!! NOTE !!! If OpenWindow() is sometime in the future moved
+	to input.device's context, one should call int_activatewindow
+	instead. */
+	
+	ActivateWindow(w);
+    }
+    else
+    {
+
+	RefreshWindowFrame(w);
+    }
     goto exit;
 
 failexit:
