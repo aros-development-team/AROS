@@ -6,8 +6,13 @@
 #ifndef ASM_PTRACE_H
 #define ASM_PTRACE_H
 
-/* this struct defines the way the registers are stored on the 
-   stack during a system call. */
+/* 
+   This struct defines the way the registers are stored on the 
+   stack during a system call.
+   Now you might think that the order is arbitrary, but in reality it
+   is not! The highest ones, sr & pc, are from the exception frame and
+   should also remain like that! 
+*/
 
 struct pt_regs {
 	long            usp;
@@ -28,7 +33,7 @@ struct pt_regs {
 	long            a6;
 	unsigned short  sr;
 	long            pc;
-};
+} __attribute__((packed));
 
 #define user_mode(regs) (0 == ((1 << 13) & (regs)->sr))
 
