@@ -27,6 +27,7 @@ struct BootLoaderBase
     ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;
+    struct List		 DriveInfo;
     struct VesaInfo	 Vesa;
 };
 
