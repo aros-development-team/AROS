@@ -1706,6 +1706,9 @@ endif
 ifeq ($(MODTYPE),module)
 MOD_DIR%(id) := $(AROS_MODULES)
 endif
+ifeq ($(MODTYPE),mui)
+MOD_DIR%(id) := $(AROS_CLASSES)/Zune
+endif
 ifeq ($(MODTYPE),mcc)
 MOD_DIR%(id) := $(AROS_CLASSES)/Zune
 endif
