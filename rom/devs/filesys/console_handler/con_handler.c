@@ -483,8 +483,6 @@ AROS_LH1(void, beginio,
 	    break;
     }
 
-    Enable();
-
     /* Set error code */
     iofs->io_DosError=error;
 
