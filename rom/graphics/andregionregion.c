@@ -74,17 +74,24 @@
   
   while (NULL != RR)
   {
+    struct Rectangle CurRectangle;
     /* make a copy of region2 */
     ClearRegion(&Backup);
     if (NULL == (Backup.RegionRectangle = copyrrects(region2->RegionRectangle)))
     {
+      ClearRegion(&Backup);
       ClearRegion(&Work);
       return FALSE;
     } 
     Backup.bounds = region2->bounds;
+    
+    CurRectangle.MinX = region1->bounds.MinX + RR->bounds.MinX;
+    CurRectangle.MaxX = region1->bounds.MinX + RR->bounds.MaxX;
+    CurRectangle.MinY = region1->bounds.MinY + RR->bounds.MinY;
+    CurRectangle.MaxY = region1->bounds.MinY + RR->bounds.MaxY;
 
     /* AND the Rectangle with the copy of region2 */
-    AndRectRegion(&Backup, &RR->bounds); /* cannot fail! */
+    AndRectRegion(&Backup, &CurRectangle); /* cannot fail! */
     
     /* add the result in Backup to the final result */
 
