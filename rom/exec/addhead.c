@@ -1,16 +1,81 @@
-#include <aros/libcall.h>
-#include <exec/lists.h>
-#include <exec/nodes.h>
+/*
+    (C) 1995 AROS - The Amiga Replacement OS
+    $Id$
+    $Log$
+    Revision 1.2  1996/08/01 16:37:01  digulla
+    Replaced hacks with commented versions
 
-__AROS_LH2I(void, AddHead,
-  __AROS_LA(struct List *,list,A0),
-  __AROS_LA(struct Node *,node,A1),
-  struct ExecBase *,SysBase,40,Exec)
+ * Revision 1.1  1995/11/05  22:49:09  digulla
+ * Initial revision
+ *
+    Desc:
+    Lang: english
+*/
+#include "exec_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+	#include <exec/lists.h>
+	#include <clib/exec_protos.h>
+
+	__AROS_LH2I(void, AddHead,
+
+/*  SYNOPSIS */
+	__AROS_LA(struct List *, list, A0),
+	__AROS_LA(struct Node *, node, A1),
+
+/*  LOCATION */
+	struct SysBase *, SysBase, 40, Exec)
+
+/*  FUNCTION
+	Insert Node node as the first node of the list.
+
+    INPUTS
+	list - The list to insert the node into
+	node - This node is to be inserted
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+	struct List * list;
+	struct Node * pred;
+
+	// Insert Node at top
+	AddHead (list, node);
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	26-08-95    digulla created after EXEC-Routine
+	26-10-95    digulla adjusted to new calling scheme
+
+******************************************************************************/
 {
-  __AROS_FUNC_INIT
-  node->ln_Succ=list->lh_Head;
-  node->ln_Pred=(struct Node *)list;
-  list->lh_Head=node;
-  node->ln_Succ->ln_Pred=node;
-  __AROS_FUNC_EXIT
-}
+    __AROS_FUNC_INIT
+    assert (node);
+    assert (list);
+
+    /*
+	Make the node point to the old first node in the list and to the
+	head of the list.
+    */
+    node->ln_Succ	   = list->lh_Head;
+    node->ln_Pred	   = (struct Node *)&list->lh_Head;
+
+    /*
+	New we come before the old first node which must now point to us
+	and the same applies to the pointer to-the-first-node in the
+	head of the list.
+    */
+    list->lh_Head->ln_Pred = node;
+    list->lh_Head	   = node;
+    __AROS_FUNC_EXIT
+} /* AddHead */
+
