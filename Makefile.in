@@ -22,11 +22,6 @@ makedirs:
 	    $(CP) $(TOP)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
 
-# This file contains user's options.
-# Make shouldn't try to generate it if it doesn't exist.
-$(TOP)/make.opts:
-	@$(NOP)
-
 # Create the tools that are used to build AROS.
 tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT)
 
@@ -98,4 +93,11 @@ install : makedirs tools mmake
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean \
 	install $(TOP)/make.opts test workbench rom compiler contrib
+
+# Map MetaTargets to make targets : Call mmake with AROS.target
+# This does not allow to check for dependancies, so it is not suitable for
+# Calling standard main targets, but is usable as a shortcut for MetaMake
+# if it was not installed globally
+.DEFAULT :
+	@$(MMAKE) AROS.$@
 
