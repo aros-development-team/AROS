@@ -335,20 +335,16 @@ void __zune_prefs_init (struct ZunePrefs *prefs)
 
 /* string */
     pen = &prefs->string_bg_active;
-    pen->ps_penType = PST_MUI;
-    pen->ps_mui = MPEN_HALFSHINE;
-  
+    strcpy(pen->ps_buf, "m1"); /* MPEN_HALFSHINE */
+   
     pen = &prefs->string_bg_inactive;
-    pen->ps_penType = PST_MUI;
-    pen->ps_mui = MPEN_BACKGROUND;
+    strcpy(pen->ps_buf, "m2"); /* MPEN_BACKGROUND */
 
     pen = &prefs->string_text_active;
-    pen->ps_penType = PST_MUI;
-    pen->ps_mui = MPEN_TEXT;
+    strcpy(pen->ps_buf, "m5"); /* MPEN_TEXT */
 
     pen = &prefs->string_text_inactive;
-    pen->ps_penType = PST_MUI;
-    pen->ps_mui = MPEN_TEXT;
+    strcpy(pen->ps_buf, "m5"); /* MPEN_TEXT */
 
 /* list */
     prefs->list_linespacing = 2;
@@ -369,8 +365,7 @@ void __zune_prefs_init (struct ZunePrefs *prefs)
     /* keys */
     prefs->active_object_look = ACTIVE_OBJECT_LOOK_CORNER;
     pen = &prefs->active_object_color;
-    pen->ps_penType = PST_MUI;
-    pen->ps_mui = MPEN_SHINE;
+    strcpy(pen->ps_buf, "m0"); /* MPEN_SHINE */
 
     prefs_init_keys(prefs);
 
