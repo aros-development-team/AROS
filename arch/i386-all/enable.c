@@ -62,10 +62,10 @@ void _os_enable (void)
 {
     sigset_t set;
 
-    if (supervisor)
+    /* if (supervisor)
     {
 	fprintf (stderr, "Enable() called in supervisor mode\n");
-    }
+    } */
 
     sigfillset (&set);
 
