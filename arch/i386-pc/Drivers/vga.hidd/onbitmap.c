@@ -48,8 +48,6 @@ void vgaLoadPalette(struct vgaHWRec *, unsigned char *);
 
 void free_onbmclass(struct vga_staticdata *);
 
-extern unsigned long __draw_enable;
-
 #define MNAME(x) onbitmap_ ## x
 
 #define SDEBUG 0
@@ -58,6 +56,22 @@ extern unsigned long __draw_enable;
 
 #define OnBitmap 1
 #include "bitmap_common.c"
+
+#if 0
+
+void clr();
+void scr_RawPutChars(char *, int);
+
+char tab[127];
+
+#define rkprintf(x...)  scr_RawPutChars(tab, sprintf(tab, x))
+
+#else
+
+#define clr() /* eps */
+#define rkprintf(x...) /* eps */
+
+#endif
 
 /*********** BitMap::New() *************************************/
 
@@ -70,117 +84,111 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     {
     	struct bitmap_data *data;
 	
-	OOP_Object *pf;
+		OOP_Object *pf;
 
-#if 0
-	
-	struct TagItem depth_tags[] = {
-	    { aHidd_BitMap_Depth, 0 },
-	    { TAG_DONE, 0 }
-	};
-#endif	
         IPTR width, height, depth;
 	
         data = OOP_INST_DATA(cl, o);
 
-	/* clear all data  */
+		/* clear all data  */
         memset(data, 0, sizeof(struct bitmap_data));
 	
-	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
-	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
-#if 0
-/* nlorentz: The aHidd_BitMap_Depth attribute no loner exist,, so we must
-	get the depth in two steps: First get pixel format, then get depth */
-	OOP_GetAttr(o, aHidd_BitMap_Depth,		&depth);
-#else
-	OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
-#endif
+		/* Get attr values */
+		OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
+		OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
+		OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
+		OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
 	
+		assert (width != 0 && height != 0 && depth != 0);
 	
-	assert (width != 0 && height != 0 && depth != 0);
-	
-	/* 
-	   We must only create depths that are supported by the friend drawable
-	   Currently we only support the default depth
-	*/
-/* nlorentz: This test is really not necessary with the new
-    design because the user can only create modes that you supplied
-    in Gfx::New() in vgaclass.c. */
-	if (depth != 4)
-	{
-	    depth = 4;
-	}
+		/* 
+		   We must only create depths that are supported by the friend drawable
+	  	 Currently we only support the default depth
+		*/
 
-	/* Update the depth to the one we use */
-#if 0
-    /* nlorentz: No longer necessary nor possible */
-	depth_tags[0].ti_Data = depth;
-	OOP_SetAttrs(o, depth_tags);
-#endif
+		data->width = width;
+		data->height = height;
+		data->bpp = depth;
+		data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
+		data->disp = -1;
+		width=(width+15) & ~15;
 
-	data->width = width;
-	data->height = height;
-	data->bpp = depth;
-	data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
-	data->disp = -1;
-	width=(width+15) & ~15;
+		/*
+			Here there is brand new method of getting pixelclock data.
+			It was introduced here to make the code more portable. Besides
+			it may now be used as a base for creating other low level
+			video drivers
+		*/
 
-	if (data->Regs)
-	{
-	    data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
-	    if (data->VideoData)
-	    {
-		struct vgaModeEntry *mode,*sel = NULL;
-		/* Find out the best video mode */
-		ForeachNode(&XSD(cl)->modelist,mode)
+		if (data->Regs)
 		{
-		    if ((mode->Desc->Width == data->width) &&
-			(mode->Desc->Height == data->height) &&
-			(mode->Desc->Depth == data->bpp))
-			sel = mode;
-		}
-
-		if (sel)
-		{
-		    struct Box box = {0, 0, width-1, height-1};
-		    ObtainSemaphore(&XSD(cl)->HW_acc);
-
-		    /* Now, when the best display mode is chosen, we can build it */
-		    vgaInitMode(sel->Desc, data->Regs);
-		    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
-
-		    /* Lock the lowlevel vga driver so it cannot mess anything */
-		    __draw_enable = 0;
-
-		    /*
-		       Because of not defined BitMap_Show method show 
-		       bitmap immediately
-		    */
-		
-		    vgaRestore(data->Regs, FALSE);
-		    vgaRefreshArea(data, 1, &box);
-
-		    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-
-		    XSD(cl)->visible = data;	/* Set created object as visible */
-
-		    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
-		}
-		
-	    } /* if got data->VideoData */
-	    
-	    FreeMem(data->Regs,sizeof(struct vgaHWRec));
-	} /* if got data->Regs */
-
-	{
-	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-	}
+		    data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
+		    if (data->VideoData)
+		    {
+				struct vgaModeDesc mode;
+				HIDDT_ModeID modeid;
+				OOP_Object *sync;
+				OOP_Object *pf;
+				ULONG pixelc;
+				
+				/* We should be able to get modeID from the bitmap */
+				OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
+				
+				if (modeid != vHidd_ModeID_Invalid)
+				{
+					struct Box box = {0, 0, width-1, height-1};
 	
-	o = NULL;
+					/* Get Sync and PixelFormat properties */
+					HIDD_Gfx_GetMode(XSD(cl)->vgahidd, modeid, &sync, &pf);
+
+					mode.Width 	= width;
+					mode.Height = height;
+					mode.Depth 	= depth;
+					OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelc);
+
+					mode.clock	= (pixelc > 26000000) ? 1 : 0;
+					mode.Flags	= 0;
+					mode.HSkew	= 0;
+					OOP_GetAttr(sync, aHidd_Sync_HDisp, 		&mode.HDisplay);
+					OOP_GetAttr(sync, aHidd_Sync_VDisp, 		&mode.VDisplay);
+					OOP_GetAttr(sync, aHidd_Sync_HSyncStart, 	&mode.HSyncStart);
+					OOP_GetAttr(sync, aHidd_Sync_VSyncStart, 	&mode.VSyncStart);
+					OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,		&mode.HSyncEnd);
+					OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,		&mode.VSyncEnd);
+					OOP_GetAttr(sync, aHidd_Sync_HTotal,		&mode.HTotal);
+					OOP_GetAttr(sync, aHidd_Sync_VTotal,		&mode.VTotal);
+				    
+				    ObtainSemaphore(&XSD(cl)->HW_acc);
+
+				    /* Now, when the best display mode is chosen, we can build it */
+				    vgaInitMode(&mode, data->Regs);
+				    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
+
+				    /*
+				       Because of not defined BitMap_Show method show 
+				       bitmap immediately
+				    */
+		
+				    vgaRestore(data->Regs, FALSE);
+				    vgaRefreshArea(data, 1, &box);
+
+				    ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+				    XSD(cl)->visible = data;	/* Set created object as visible */
+
+				    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+				}
+		
+		    } /* if got data->VideoData */
+		    FreeMem(data->Regs,sizeof(struct vgaHWRec));
+		} /* if got data->Regs */
+
+		{
+		    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+		}
+	
+		o = NULL;
     } /* if created object */
 
     ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);

@@ -121,10 +121,8 @@ UBYTE shape[] =
 
 VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md)
 {
-#warning There does not sem to be a clock value set in vgaDefMode
-#warning Note that PixelClock is frequency in Hz. PixelTime is time to draw a pixel in picoseconds
-#warning I do not know which of these vgaModeDesc->clock is.
-    SET_SYNC_TAG(tags, 0, PixelClock, 	md->clock	);
+    ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
+	SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
     SET_SYNC_TAG(tags, 1, HDisp, 	md->HDisplay	);
     SET_SYNC_TAG(tags, 2, VDisp, 	md->VDisplay	);
     SET_SYNC_TAG(tags, 3, HSyncStart, 	md->HSyncStart	);
