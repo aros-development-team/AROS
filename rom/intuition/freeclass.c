@@ -92,20 +92,27 @@
 
 #if INTERNAL_BOOPSI
 
+    BOOL retval = FALSE;
+    
+    ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+
     /* Make sure no one creates another object from this class. For private
 	classes, this call does nothing. */
+ 
     RemoveClass (classPtr);
 
     if (!classPtr->cl_SubclassCount && !classPtr->cl_ObjectCount)
     {
 	classPtr->cl_Super->cl_SubclassCount --;
-
+	
 	FreeMem (classPtr, sizeof (Class));
 
-	return TRUE;
+	retval = TRUE;
     }
 
-    return FALSE;
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    
+    return retval;
 #else
 
     /* call boopsi.library function */
