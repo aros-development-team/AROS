@@ -1,0 +1,34 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP (//)
+Can't create application object!
+;
+MSG_WINTITLE (//)
+Time Preferences
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_EDIT (//)
+Edit
+;
+MSG_MEN_EDIT_RESTORE (//)
+R\0Restore
+;
+MSG_OK (//)
+Ok
+;
+MSG_GAD_SAVE (//)
+Save
+;
+MSG_GAD_USE (//)
+Use
+;
+MSG_GAD_CANCEL (//)
+Cancel
+;
