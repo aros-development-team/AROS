@@ -16,22 +16,23 @@
 
 extern sigset_t sig_int_mask;	/* mask of sig_t that are ints not traps */
 
-#ifndef UseExecstubs
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
+
 AROS_LH0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
 {
+
+#undef Exec
+
     AROS_LIBFUNC_INIT
-#else
-void _Exec_Enable(struct ExecBase * SysBase)
-{
-#endif
 
     if(--SysBase->IDNestCnt < 0)
     {
 	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
     }
 
-#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
-#endif
 }

@@ -14,7 +14,10 @@
 #define CHECK_TASK	0 /* it seems to be legal to call ObtainSemaphore in one task and ReleaseSemaphore in another */
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*    NAME  */
 	#include <proto/exec.h>
@@ -56,13 +59,11 @@
 
 *****************************************************************************/
 {
+#undef Exec
+
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
-#else
-void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
-			struct ExecBase * SysBase)
-{
-#endif
+
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
@@ -200,7 +201,6 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 
     /* All done. */
     Permit();
-#ifndef UseExecstubs
+
     AROS_LIBFUNC_EXIT
-#endif
 } /* ReleaseSemaphore */

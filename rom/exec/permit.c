@@ -12,7 +12,10 @@
 #include <proto/exec.h>
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*  NAME */
 
@@ -57,11 +60,9 @@
 
 ******************************************************************************/
 {
+#undef Exec
+
     AROS_LIBFUNC_INIT
-#else
-void _Exec_Permit(struct ExecBase * SysBase)
-{
-#endif
 
     /*
 	Task switches are allowed again, if a switch is pending, we
@@ -69,7 +70,7 @@ void _Exec_Permit(struct ExecBase * SysBase)
     */
 #if 1
     --SysBase->TDNestCnt;
-    
+
 #else
     if(    ( --SysBase->TDNestCnt < 0 )
 	&& ( SysBase->IDNestCnt < 0 )
@@ -87,7 +88,5 @@ void _Exec_Permit(struct ExecBase * SysBase)
     }
 #endif
 
-#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
-#endif
 } /* Permit() */

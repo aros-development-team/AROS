@@ -11,7 +11,10 @@
 #include <aros/libcall.h>
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*  NAME */
 #include <proto/exec.h>
@@ -66,14 +69,11 @@
 
 ******************************************************************************/
 {
+#undef Exec
+
     AROS_LIBFUNC_INIT
-#else
-void _Exec_Forbid(struct ExecBase * SysBase)
-{
-#endif
+
     SysBase->TDNestCnt++;
 
-#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
-#endif
 } /* Forbid() */
