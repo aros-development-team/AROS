@@ -45,11 +45,11 @@ void parse_MP_Processor (struct mpc_config_processor *mc, struct SMP_Definition 
     if (mc->mpc_featureflag&(1<<29))	kprintf(DEBUG_NAME_STR ":     *Thermal Monitor present.\n");
     /* 30, 31 Reserved */
 
-    if (SMP_Group->SMP_CPUCount >= MAX_CPU) 
+    /*if (SMP_Group->SMP_CPUCount >= MAX_CPU) 
     {
 	    kprintf(DEBUG_NAME_STR ": WARNING - Reached MAX_CPU count [%i]. CPU(apicid 0x%x) not booted.\n", MAX_CPU, mc->mpc_apicid);
 	    return;
-    }
+    }*/
 
     if (MAX_APICS - mc->mpc_apicid <= 0)
     {
