@@ -87,8 +87,7 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl
 */   
    
    
-#define OOPBase	(GetOBase(((OOP_Class *)cl)->UserData))
-   
+#define OOPBase (GetOBase(cl->OOPBasePtr))
 
 /********************
 **  IFMeta::New()  **
@@ -156,7 +155,9 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	    }
 	        
 	}
-		
+	
+	inst->base.public.OOPBasePtr	= OOPBase;
+	
 	inst->base.public.DoMethod	= domethod;
 	inst->base.public.CoerceMethod	= coercemethod;
 	inst->base.public.DoSuperMethod	= dosupermethod;
@@ -515,7 +516,8 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
     D(bug("Got ifmeta classptr\n"));
        
     imo->inst.base.superclass = BASEMETAPTR;
-
+    imo->inst.base.public.OOPBasePtr = OOPBase;
+    
     D(bug("Initialized ifmeta superclass\n"));
     
     adt_msg.superclass = imo->inst.base.superclass;
@@ -749,7 +751,9 @@ struct Bucket *copyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OO
 /*****************
 **  DoMethod()  **
 *****************/
-#define OOPBase ((struct IntOOPBase *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(object)))->UserData)
+
+#define OOPBase ((struct IntOOPBase *)OOP_OOPBASE(object))
+
 static IPTR Meta_DoMethod(OOP_Object *object, OOP_Msg msg)
 {
     struct metadata *cl = (struct metadata *)OOP_OCLASS(object);
