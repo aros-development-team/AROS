@@ -202,11 +202,6 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     if (!UtilityBase)
 	return NULL;
 
-    if (!BOOPSIBase)
-	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
-    if (!BOOPSIBase)
-	return NULL;
-
     if (!LIBBASE->bevel)
 	LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
     if (!LIBBASE->bevel)
@@ -300,10 +295,6 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	    CloseLibrary(LIBBASE->arospabase);
         LIBBASE->arospabase = NULL;
 	    
-	if (BOOPSIBase)
-	    CloseLibrary(BOOPSIBase);
-        BOOPSIBase = NULL;
-
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
         UtilityBase = NULL;

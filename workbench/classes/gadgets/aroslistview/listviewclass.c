@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS specific listview class implementation.
@@ -12,7 +12,6 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-/* #include <proto/boopsi.h> */
 #include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <intuition/classes.h>

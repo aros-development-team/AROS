@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
 #include <dos/dos.h>
 #include <utility/utility.h>
 #include <graphics/gfxbase.h>
@@ -66,11 +65,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!GfxBase)
 	return(NULL);
 
-    if (!BOOPSIBase)
-	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
-    if (!BOOPSIBase)
-	return(NULL);
-
     if (!UtilityBase)
 	UtilityBase = OpenLibrary(UTILITYNAME, 37);
     if (!UtilityBase)
@@ -114,9 +108,6 @@ VOID SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 
     CloseLibrary(UtilityBase);
     UtilityBase = NULL;
-
-    CloseLibrary(BOOPSIBase);
-    BOOPSIBase = NULL;
 
     CloseLibrary((struct Library *)GfxBase);
     GfxBase = NULL;

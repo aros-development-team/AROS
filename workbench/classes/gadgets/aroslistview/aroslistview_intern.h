@@ -170,7 +170,6 @@ struct LVBase_intern
     #endif
     struct GfxBase	*gfxbase;
     struct Library	*utilitybase;
-    struct Library	*boopsibase;
 
     struct IClass	*classptr;
 
@@ -187,8 +186,6 @@ typedef struct IntuitionBase IntuiBase;
 #define LVB(b) ((struct LVBase_intern *)b)
 #undef UtilityBase
 #define UtilityBase	LVB(AROSListviewBase)->utilitybase
-#undef BOOPSIBase
-#define BOOPSIBase     LVB(AROSListviewBase)->boopsibase
 
 
 #ifndef GLOBAL_INTUIBASE

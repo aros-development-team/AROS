@@ -42,9 +42,6 @@
 #ifndef LIBRARIES_GADTOOLS_H
 #   include <libraries/gadtools.h>
 #endif
-#ifndef PROTO_BOOPSI_H
-#   include <proto/boopsi.h>
-#endif
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
@@ -241,7 +238,6 @@ struct GadToolsBase_intern
     struct GfxBase	 	* gfxbase;
     struct Library		* layersbase;
     struct Library	 	* utilitybase;
-    struct Library	 	* boopsibase;
 
     struct Library		* aroscbbase;
     struct Library      	* aroscybase;
@@ -374,8 +370,6 @@ extern struct ExecBase * SysBase;
 #define LayersBase 		(GTB(GadToolsBase)->layersbase)
 #undef UtilityBase
 #define UtilityBase 		(GTB(GadToolsBase)->utilitybase)
-#undef BOOPSIBase
-#define BOOPSIBase 		(GTB(GadToolsBase)->boopsibase)
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
