@@ -14,11 +14,12 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_MUILIB := yes
 
-#MM workbench-prefs : includes linklibs setup-timeprefs-catalogs
+#MM- workbench-prefs : workbench-prefs-time
+#MM workbench-prefs-time : includes linklibs setup-timeprefs-catalogs
 
-%make_prog_setup mmake=workbench-prefs
+%make_prog_setup mmake=workbench-prefs-time
 
-workbench-prefs : setup $(C_IMAGES) $(EXE)
+workbench-prefs-time : setup $(C_IMAGES) $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 

@@ -11,7 +11,7 @@ SETTINGS_ZUNE = global.prefs WANDERER.prefs
 SETTINGFILES  = $(foreach f, $(SETTINGS_SYS), $(PREFSDIR)/Env-Archive/SYS/$(f)) \
                 $(foreach f, $(SETTINGS_ZUNE), $(PREFSDIR)/Env-Archive/Zune/$(f))
 
-#MM workbench-prefs : setup copyfiles workbench-prefs-zune
+#MM workbench-prefs : setup copyfiles
 workbench-prefs:
 	@$(NOP)
 
