@@ -119,16 +119,16 @@ static AP apInfo =
 /* Libraries to open */
 struct LibTable
 {
- APTR   lT_Library;
- STRPTR lT_Name;
- ULONG  lT_Version;
+    APTR   lT_Library;
+    STRPTR lT_Name;
+    ULONG  lT_Version;
 }
 libTable[] =
 {
- { &IntuitionBase,      "intuition.library",	39L},
- { &LayersBase,         "layers.library",	39L},
- { &CxBase,             "commodities.library",	39L},
- { NULL }
+    { &IntuitionBase,      "intuition.library",	  39L},
+    { &LayersBase,         "layers.library",	  39L},
+    { &CxBase,             "commodities.library", 39L},
+    { NULL,                NULL,                   0 }
 };
 
 
@@ -149,12 +149,16 @@ STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 {
     STRPTR string;
 
-    if(catalogPtr)
+    if (catalogPtr != NULL)
+    {
         string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    }
     else
+    {
         string = CatCompArray[id].cca_Str;
+    }
 
-    return(string);
+    return string;
 }
 
 
@@ -162,75 +166,92 @@ static BOOL initiate(int argc, char **argv, APState *as)
 {
     CxObj *customObj;
     struct LibTable *tmpLibTable = libTable;
-    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
-
+    UBYTE tmpString[256];
+    
     memset(as, 0, sizeof(APState));
 
-    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
+    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
+
+    if (LocaleBase != NULL)
     {
-	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
-	kprintf("Library locale.library opened!\n");
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog",
+				 OC_BuiltInLanguage, "english", TAG_DONE);
+	D(bug("Library locale.library opened!\n"));
     }
     else
-	kprintf("Warning: Can't open locale.library V40!\n");
-
-    while(tmpLibTable->lT_Library)
     {
-	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	D(bug("Warning: Can't open locale.library V40!\n"));
+    }
+
+    while (tmpLibTable->lT_Library != NULL)
+    {
+	*(struct Library **)tmpLibTable->lT_Library =
+	    OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+
+	if (*(struct Library **)tmpLibTable->lT_Library == NULL)
 	{
-	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-	    printf("%s", tmpString);
+	    printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB),
+		   tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+
 	    return FALSE;
 	}
         else
-	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
-
+	{
+	    D(bug("Library %s opened!\n", tmpLibTable->lT_Name));
+	}
+	
 	tmpLibTable++;
     }
-
+    
     nb.nb_Name = getCatalog(catalogPtr, MSG_AUTOPOINT_CXNAME);
     nb.nb_Title = getCatalog(catalogPtr, MSG_AUTOPOINT_CXTITLE);
     nb.nb_Descr = getCatalog(catalogPtr, MSG_AUTOPOINT_CXDESCR);
 
     as->as_msgPort = CreateMsgPort();
-    if(as->as_msgPort == NULL)
+
+    if (as->as_msgPort == NULL)
     {
-	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+
 	return FALSE;
     }
     
     nb.nb_Port = as->as_msgPort;
     
     as->as_broker = CxBroker(&nb, 0);
-    if(as->as_broker == NULL)
+
+    if (as->as_broker == NULL)
     {
-	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
 	return FALSE;
     }
     
     customObj = CxCustom(autoActivate, 0);
-    if(customObj == NULL)
+
+    if (customObj == NULL)
     {
-	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
+	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
+
 	return FALSE;
     }
 
     AttachCxObj(as->as_broker, customObj);
     ActivateCxObj(as->as_broker, TRUE);
-
+    
     apInfo.ai_thisWindow = IntuitionBase->ActiveWindow;
 
-    if(Cli() != NULL)
+    if (Cli() != NULL)
     {
 	struct RDArgs *rda;
 	IPTR          *args[] = { NULL };
-
+	
 	rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-
-	if(rda != NULL)
+	
+	if (rda != NULL)
 	{
-	    if(args[ARG_PRI] != NULL)
+	    if (args[ARG_PRI] != NULL)
+	    {
 		nb.nb_Pri = *args[ARG_PRI];
+	    }
 	}
 
 	FreeArgs(rda);
@@ -239,59 +260,65 @@ static BOOL initiate(int argc, char **argv, APState *as)
     {
 	IconBase = OpenLibrary("icon.library", 39);
 
-	if(IconBase != NULL)
+	if (IconBase != NULL)
 	{
 	    UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
-
+	    
 	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
 	    ArgArrayDone();
 	}
 	else
 	{
-	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), "icon.library", 39L);
-	    printf("%s", tmpString);
+	    printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB),
+		   "icon.library", 39);
 	}
 
 	CloseLibrary(IconBase);
     }
-
+    
     return TRUE;
 }
 
 
 static void freeResources(APState *as)
 {
-    struct Message *cxm;
+    struct Message  *cxm;
     struct LibTable *tmpLibTable = libTable;
 
-    if(CxBase)
-	if(as->as_broker != NULL)
-	    DeleteCxObjAll(as->as_broker);
-
-    if(as->as_msgPort != NULL)
+    if (CxBase != NULL)
     {
-        while((cxm = GetMsg(as->as_msgPort)))
+	if (as->as_broker != NULL)
+	{
+	    DeleteCxObjAll(as->as_broker);
+	}
+    }
+
+    if (as->as_msgPort != NULL)
+    {
+        while ((cxm = GetMsg(as->as_msgPort)))
+	{
 	    ReplyMsg(cxm);
+	}
 
         DeleteMsgPort(as->as_msgPort);
     }
 
-    if(LocaleBase)
+    if (LocaleBase != NULL)
     {
 	CloseCatalog(catalogPtr);
 	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
-	kprintf("Closed locale.library!\n");
+	D(bug("Closed locale.library!\n"));
     }
 
     
-    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    while (tmpLibTable->lT_Name != NULL) /* Check for name rather than pointer */
     {
-	if((*(struct Library **)tmpLibTable->lT_Library))
+	if (*(struct Library **)tmpLibTable->lT_Library != NULL)
 	{
 	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	    D(bug("Closed %s!\n", tmpLibTable->lT_Name));
 	}
-
+	
 	tmpLibTable++;
     }
 }
@@ -303,50 +330,63 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 {
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
 
-    if(ie->ie_Class == IECLASS_TIMER)
+    if (ie->ie_Class == IECLASS_TIMER)
     {
 	struct Screen *screen;
 	struct Layer  *layer;
 
-	if(IntuitionBase->ActiveWindow != NULL)
+	if (IntuitionBase->ActiveWindow != NULL)
+	{
 	    screen = IntuitionBase->ActiveWindow->WScreen;
+	}
 	else
+	{
 	    screen = IntuitionBase->ActiveScreen;
+	}
 	
 	layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
 	
 	apInfo.ai_thisWindow = (layer != NULL) ?
 	    (struct Window *)layer->Window : NULL;
 
-	if(apInfo.ai_mouseHasMoved ||
-	   IntuitionBase->ActiveWindow == apInfo.ai_thisWindow)
+	if (apInfo.ai_mouseHasMoved ||
+	    IntuitionBase->ActiveWindow == apInfo.ai_thisWindow)
 	{
 	    apInfo.ai_mouseHasMoved = FALSE;
+
 	    return;
 	}
-
+	
 	/* Two timer events and mouse hasn't moved in between. */
-
+	
 	apInfo.ai_mouseHasMoved = FALSE;
 
 	/* Should be possible to use ActivateWindow(NULL)? Else, we must
 	   hack... */
-	if(apInfo.ai_thisWindow != NULL)
+	if (apInfo.ai_thisWindow != NULL)
+	{
 	    ActivateWindow(apInfo.ai_thisWindow);
+	}
 
-	if(apInfo.ai_thisWindow != NULL)
+	if (apInfo.ai_thisWindow != NULL)
+	{
 	    D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
+	}
 	else
+	{
 	    D(bug("No window active. %s\n",
 		  IntuitionBase->ActiveWindow->Title));
+	}
 	
 	return;
     }
 
-    if(ie->ie_Class == IECLASS_RAWMOUSE)
+    if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	if(ie->ie_Code == IECODE_NOBUTTON)
+	if (ie->ie_Code == IECODE_NOBUTTON)
+	{
 	    apInfo.ai_mouseHasMoved = TRUE;
+	}
     }
 }
 
@@ -358,18 +398,18 @@ static void handleCx(APState *as)
     BOOL   quit = FALSE;
     LONG   signals;
         
-    while(!quit)
+    while (!quit)
     {
 	signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
 	
-	if(signals & (1 << nb.nb_Port->mp_SigBit))
+	if (signals & (1 << nb.nb_Port->mp_SigBit))
 	{
-	    while((msg = (CxMsg *)GetMsg(as->as_msgPort)))
+	    while ((msg = (CxMsg *)GetMsg(as->as_msgPort)))
 	    {
-		switch(CxMsgType(msg))
+		switch (CxMsgType(msg))
 		{
 		case CXM_COMMAND:
-		    switch(CxMsgID(msg))
+		    switch (CxMsgID(msg))
 		    {
 		    case CXCMD_DISABLE:
 			ActivateCxObj(as->as_broker, FALSE);
@@ -388,6 +428,7 @@ static void handleCx(APState *as)
 			break;
 			
 		    } /* switch(CxMsgID(msg)) */
+
 		    break;
 		} /* switch (CxMsgType(msg))*/
 		
@@ -396,10 +437,12 @@ static void handleCx(APState *as)
 	    } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
 	}	    
 	
-	if(signals & SIGBREAKF_CTRL_C)
+	if (signals & SIGBREAKF_CTRL_C)
+	{
 	    quit = TRUE;
+	}
 	
-    } /* while(!quit) */
+    } /* while (!quit) */
 }
 
 
@@ -408,12 +451,14 @@ int main(int argc, char **argv)
     APState aState;
     int     error = RETURN_OK;
 
-    if(initiate(argc, argv, &aState))
+    if (initiate(argc, argv, &aState))
     {
 	handleCx(&aState);
     }
     else
+    {
 	error = RETURN_FAIL;
+    }
     
     freeResources(&aState);
 
