@@ -3,9 +3,9 @@ TOP=..
 
 SPECIAL_CFLAGS=-I/usr/include
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
-FILES = graphics_init graphics_functable driver_x11
+FILES = graphics_init graphics_functable graphics_driver
 FUNCTIONS = \
 	closefont \
 	draw \
@@ -22,6 +22,7 @@ FUNCTIONS = \
 	readpixel \
 	rectfill \
 	scrollraster \
+	setabpendrmd \
 	setapen \
 	setbpen \
 	setdrmd \
