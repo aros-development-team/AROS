@@ -1,0 +1,91 @@
+\chapter{FAQ - Frequently Asked Questions}
+
+Ok, AROS is a rewrite of AmigaOS 3.1 (Kickstart 40.68 and up).
+
+These are the main goals:
+
+\begin{itemize}
+\item Be binary compatible on Amiga (so it can plug&play replace the
+original OS)
+
+\item Be source compatible on any other hardware (so Amiga software can be
+ported to other hardwares with no effort)
+
+\item Provide every hardware with Amiga apps with native look and feel or,
+as the user chooses, forign hardware with Amiga look and feel.
+
+\item AROS will come in three falvours: 1) A standalone OS like Linux, Win,
+etc. 2) An Amiga Emulation (ie. a window in which you have a Workbench.
+Every new screen will open a new window) 3) A link-library with which you
+can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
+2) will have a mixture and 3) will have native l&f.
+
+\end{itemize}
+
+\section{Why do you implement the current OS ?}
+
+There has been some talks about writing something which is something like
+an advanced OS with the features of the AmigaOS. This has been dropped
+and for good reason. First, everyone agrees that the current AmigaOS
+should be enhances but no one knows how to do that or even agrees on what
+has to be enhanced or what is important. Some want memory protection but
+don't want to pay the price (major rewrite of the available software and
+speed cut-offs).
+
+In the end, the discussions ended in either flame wars or "do it this
+way ! - Won't work because !". So we just said: First we do something we
+know to handle. Then we have the experience to decide what is possible
+and how. And then we decide.
+
+\section{Please implement this feature !}
+
+No. a) If it was that important, it would be in the OS already :-) b) Why
+don't you do it yourself and send it to us ?
+
+See, there are plenty of people around who think that their feature is the
+most important and that "the AmigaOS has no future if this feature is no
+built in right now". We say: The AmigaOS' demise has nothing to do with
+missing features. The AmigaOS can do everything a modern OS should do. We
+see that there are possibilities to enhance the AmigaOS but if we do it,
+who would write the rest of the OS ? In the end, we would have lots of
+nice improvements to the original AmigaOS which would break most of the
+available software and worth nothing, because the OS itself would be
+missing. So we decided to block every attempt to implement major new
+features in the OS until it's more or less done.
+
+\section{What is the legal status of AROS ?}
+
+AROS is Mailware as defined in the AFD-COPYRIGHT. This means that you
+have to write a postcard or email to us if you use AROS. The use of AROS
+is free.
+
+If you want to use AROS' code in your project, you have to pay for this
+code if you earn money with the result. For PD developers, the code is
+still free.
+
+\section{How compatible is AROS ?}
+
+Most compatible. We expect that AROS will run existing software on the
+Amiga without problems. On other hardware (like PCs), the existing
+software must be recompiled. We will offer a preprocessor which you can
+use on your code which will change any code that might break with AROS
+and/or warn you about such code.
+
+\section{For what kinds of hardware is AROS available ?}
+
+Currently AROS is only available for Intel PCs with Linux (Linux/i386).
+We are working on versions for Linux/m68k (ie. Amiga, Mac and Atari with
+Linux) and of course on the Amiga version.
+
+\section{How about UAE ?}
+
+UAE is an A500 emulator. It's goals differ somewhat from that of AROS: UAE
+wants to be able to be binary compatible even for games and hardware
+banging code while AROS wants to have native applications. Therefore AROS
+is much fast than UAE but UAE has more software.
+
+We are in loose contact with the author of UAE and there is a good chance
+that code for UAE will appear in AROS and vice versa. For example, UAE is
+interested in the source for the OS because it could run some apps much
+faster if it could replace the OS calls by native code. On the other hand,
+AROS needs hardware drivers (eg. audio.device).
