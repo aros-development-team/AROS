@@ -1,0 +1,23 @@
+#!/bin/sh
+
+file="./$1"
+shift
+args="$*"
+
+echo -n "Test $file "
+
+if [ -e "$file.sh" ]; then
+    sh $file.sh 2>&1 | cat > $file.tmp
+else
+    $file 2>&1 | cat > $file.tmp
+fi
+
+if cmp -s $file.out $file.tmp ; then
+    echo "OK"
+    rm $file.tmp
+else
+    echo "FAIL"
+    diff -C 3 $file.out $file.tmp
+fi
+
+exit 0
