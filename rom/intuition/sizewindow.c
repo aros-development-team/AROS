@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/10/12 21:05:59  stegerg
+    noop if dx and dy = 0
+
     Revision 1.8  1999/03/25 04:26:23  bergers
     Update for deffered treatment of windows.
 
@@ -83,20 +86,22 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct shortIntuiMessage * msg;
-    
-    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
  
-    if (NULL != msg)
-    {
-      msg->Class       = IDCMP_WBENCHMESSAGE;
-      msg->Code        = IMCODE_SIZEWINDOW;
-      msg->Window      = window;
-      msg->dx          = dx;
-      msg->dy          = dy;
-      
-      PutMsg(window->WindowPort, (struct Message *)msg); 
-    }   
-    
+    if (dx || dy)
+    {   
+	msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+
+	if (NULL != msg)
+	{
+	  msg->Class       = IDCMP_WBENCHMESSAGE;
+	  msg->Code        = IMCODE_SIZEWINDOW;
+	  msg->Window      = window;
+	  msg->dx          = dx;
+	  msg->dy          = dy;
+
+	  PutMsg(window->WindowPort, (struct Message *)msg); 
+	}   
+    }
 
     AROS_LIBFUNC_EXIT
 } /* SizeWindow */
