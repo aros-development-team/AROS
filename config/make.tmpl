@@ -595,7 +595,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(RM) config.cache; \
 	    $(%(mmake)-PATH); \
 	    AR=$(AR2) RANLIB=$(RANLIB2) OBJCOPY="$(OBJCOPY)" \
-	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $(%(mmake)-nix)" \
+	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(%(mmake)-nix)" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
 	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions) \

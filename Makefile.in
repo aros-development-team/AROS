@@ -5,10 +5,11 @@
 
 default: all
 
-AROS_HOST_CPU    ?= @aros_host_cpu@
-AROS_HOST_ARCH   ?= @aros_host_arch@
-AROS_TARGET_CPU  ?= @aros_target_cpu@
-AROS_TARGET_ARCH ?= @aros_target_arch@
+AROS_HOST_CPU       ?= @aros_host_cpu@
+AROS_HOST_ARCH      ?= @aros_host_arch@
+AROS_TARGET_CPU     ?= @aros_target_cpu@
+AROS_TARGET_ARCH    ?= @aros_target_arch@
+AROS_TARGET_VARIANT ?= @aros_target_variant@
 
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
@@ -151,13 +152,13 @@ sdk : makedirs tools mmake
 install : makedirs tools mmake
 	@$(CALL) $(MMAKE) AROS.install
 
-# Don't try to generate $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/make.opts
-$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/make.opts:
+# Don't try to generate $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts
+$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts:
 	@$(NOP)
 
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean install \
-	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/make.opts test \
+	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts test \
 	kernel workbench rom compiler contrib sdk
 
 # Map MetaTargets to make targets : Call mmake with AROS.target
