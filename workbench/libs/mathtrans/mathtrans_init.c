@@ -15,7 +15,7 @@
 #include "mathtrans_intern.h"
 #include "libdefs.h"
 
-#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+#define INIT	AROS_SLIB_ENTRY(init,Mathtrans)
 
 struct inittable;
 extern const char name[];
