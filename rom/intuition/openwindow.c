@@ -280,6 +280,8 @@
 		break;
 
             case WA_Parent:
+                parentwin = ((struct Window *)tag->ti_Data);
+                parentl   = parentwin->WLayer;
                 break;
 
             case WA_Visible:
@@ -969,7 +971,3 @@ int intui_OpenWindow (struct Window * w,
     
     ReturnBool("intui_OpenWindow(General failure)", FALSE);
 }
-
-
-
-
