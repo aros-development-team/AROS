@@ -7,9 +7,13 @@
 */
 #include <setjmp.h>
 #include <dos/dos.h>
+#include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
+#if 1
+#   include <aros/debug.h>
+#endif
 
 /* Don't define symbols before the entry point. */
 extern struct ExecBase * SysBase;
@@ -19,33 +23,143 @@ extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
 /*
-    TODO: This won't work for normal AmigaOS for two reasons:
-    1. You can't expect SysBase to be in A6. The correct way
-       is to use *(struct ExecBase **)4.
-    2. Amiga gcc puts strings into the code section - and since
-       all gccs emit strings for a certain function _before_ the
-       code the program will crash immediately.
+    This won't work for normal AmigaOS because you can't expect SysBase to
+    be in A6. The correct way is to use *(struct ExecBase **)4 and because
+    gcc emits strings for a certain function _before_ the code the program
+    will crash immediately because the first element in the code won't be
+    valid assembler code.
 */
-AROS_UFH1(LONG, entry,
+AROS_UFH3(LONG, entry,
+    AROS_UFHA(char *,argstr,A0),
+    AROS_UFHA(ULONG,argsize,D0),
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
+    char * args,
+	** argv,
+	 * ptr;
+    int    argc,
+	   argmax;
     __startup_error = RETURN_FAIL;
 
     SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary(DOSNAME,39);
 
-    if(DOSBase!=NULL)
+    /* Copy args into buffer */
+    if (!(args = AllocMem (argsize+1, MEMF_ANY)) )
     {
-	char * argv[2];
+	argv = NULL;
+	goto error;
+    }
 
-	argv[0] = "dummy";
-	argv[1] = NULL;
+    ptr = args;
 
+    while ((*ptr++ = *argstr++));
+
+    /* Find out how many arguments we have */
+    for (argmax=1,ptr=args; *ptr; )
+    {
+	if (*ptr == ' ' || *ptr == '\t')
+	{
+	    /* Skip whitespace */
+	    while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		ptr ++;
+	}
+
+	if (*ptr == '"')
+	{
+	    /* "..." argument ? */
+	    argmax ++;
+
+	    ptr ++;
+
+	    /* Skip until next " */
+	    while (*ptr && *ptr != '"')
+		ptr ++;
+
+	    if (*ptr)
+		ptr ++;
+	}
+	else if (*ptr)
+	{
+	    argmax ++;
+
+	    while (*ptr && *ptr != ' ' && *ptr != '\t')
+		ptr ++;
+	}
+    }
+
+    if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_ANY)) )
+    {
+	goto error;
+    }
+
+    /* Find out how many arguments we have */
+    for (argc=1,ptr=args; *ptr; )
+    {
+	if (*ptr == ' ' || *ptr == '\t')
+	{
+	    /* Skip whitespace */
+	    while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		ptr ++;
+	}
+
+	if (*ptr == '"')
+	{
+	    /* "..." argument ? */
+	    ptr ++;
+	    argv[argc++] = ptr;
+
+	    /* Skip until next " */
+	    while (*ptr && *ptr != '"')
+		ptr ++;
+
+	    /* Terminate argument */
+	    if (*ptr)
+		*ptr ++ = 0;
+	}
+	else if (*ptr)
+	{
+	    argv[argc++] = ptr;
+
+	    while (*ptr && *ptr != ' ' && *ptr != '\t')
+		ptr ++;
+
+	    /* Not at end of string ? Terminate arg */
+	    if (*ptr)
+		*ptr ++ = 0;
+	}
+    }
+
+    DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
+
+    /* Get name of program * /
+    argv[0] = GetProgrammName (); */
+    argv[0] = "dummy";
+
+#if 0
+kprintf ("arg(%d)=\"%s\", argmax=%d, argc=%d\n", argsize, argstr, argmax, argc);
+{
+int t;
+for (t=0; t<argc; t++)
+    kprintf ("argv[%d] = \"%s\"\n", t, argv[t]);
+}
+#endif
+
+    if (DOSBase != NULL)
+    {
 	if (!setjmp (__startup_jmp_buf))
-	    __startup_error = main (1, argv);
+	    __startup_error = main (argc, argv);
 
 	CloseLibrary((struct Library *)DOSBase);
+    }
+
+error:
+    if (args)
+    {
+	if (argv)
+	    FreeMem (argv, sizeof (char *) * argmax);
+
+	FreeMem (args, argsize+1);
     }
 
     if (__startup_mempool)
