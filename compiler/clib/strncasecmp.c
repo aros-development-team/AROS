@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strncasecmp()
-    Lang: english
+    ANSI C function strncasecmp().
 */
 
 #include <ctype.h>
@@ -43,9 +42,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function gcvt()
-    Lang: english
+    ANSI C function gcvt().
 */
 
 #include <stdio.h>
@@ -44,8 +43,6 @@
 	ecvt(), fcvt(), sprintf()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

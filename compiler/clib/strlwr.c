@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function strlwr()
-    Lang: english
+    C function strlwr().
 */
 
 /*****************************************************************************
@@ -36,9 +35,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	11.12.1996 digulla created
 
 ******************************************************************************/
 {

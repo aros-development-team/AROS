@@ -2,7 +2,7 @@
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ISO C function div
+    ISO C function div().
 */
 
 /*****************************************************************************

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function realloc()
-    Lang: english
+    ANSI C function realloc().
 */
 
 #include <aros/machine.h>
@@ -52,9 +51,6 @@
 	free(), malloc(), calloc()
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

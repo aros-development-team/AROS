@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: SAS C function stcl_h()
-    Lang: english
+    SAS C function stcl_h().
 */
 
 #include <stdio.h>
@@ -40,12 +39,7 @@
 
     INTERNALS
 
-    HISTORY
-	15.12.2000 stegerg created.
-
 ******************************************************************************/
 {
- 
     return sprintf(out, "%lx", lvalue);
-    
 } /* stcl_h */

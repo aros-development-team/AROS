@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function creat()
-    Lang: english
+    ANSI C function creat().
 */
 
 /*****************************************************************************
@@ -45,9 +44,6 @@
 	open(), close(), write(), fopen()
 
     INTERNALS
-
-    HISTORY
-	15.01.97 digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function qsort()
-    Lang: english
+    ANSI C function qsort().
 */
 /* Original source from NetBSD */
 #include <exec/types.h>
@@ -115,9 +114,6 @@ med3(const char *a, const char *b, const char *c, int (*cmp)(const void *, const
 	strcmp(), strncmp(), memcmp(), strcasecmp(), strncasecmp()
 
     INTERNALS
-
-    HISTORY
-	29.07.1996 digulla copied from NetBSD
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Get the position in a stream
-    Lang: english
+    Get the position in a stream.
 */
 
 #define fgetpos fgetpos
@@ -45,8 +44,6 @@
 	fsetpos()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strcat()
-    Lang: english
+    ANSI C function strcat().
 */
 
 /*****************************************************************************
@@ -44,8 +43,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

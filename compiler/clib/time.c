@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Return the current time in seconds
-    Lang: english
+    Return the current time in seconds.
 */
 
 #include <dos/dos.h>
@@ -51,9 +50,6 @@ long __gmtoffset;
 	ctime(), asctime(), localtime()
 
     INTERNALS
-
-    HISTORY
-	29.01.1997 digulla created
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Function to scan a string like scanf().
-    Lang: english
+    Function to scan a string like scanf().
 */
 
 #define __vcscan __vcscan
@@ -88,9 +87,6 @@ static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values, IEEE
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla copied from libnix
 
 ******************************************************************************/
 {

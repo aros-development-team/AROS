@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function read()
-    Lang: english
+    ANSI C function read().
 */
 
 #include <errno.h>
@@ -49,9 +48,6 @@
 	open(), read(), fread()
 
     INTERNALS
-
-    HISTORY
-	15.12.1996 digulla created
 
 ******************************************************************************/
 {

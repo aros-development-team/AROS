@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function setlinebuf()
-    Lang: english
+    ANSI C function setlinebuf().
 */
 
 #define setlinebuf setlinebuf
@@ -35,12 +34,8 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
-
     setvbuf(stream, (char *)NULL, _IOLBF, 0);
-
 } /* setlinebuf */
 

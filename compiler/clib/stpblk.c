@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Supplemental C function stpblk()
-    Lang: english
+    Supplemental C function stpblk().
 */
 
 #include <ctype.h>
@@ -56,8 +55,6 @@
 	isspace()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

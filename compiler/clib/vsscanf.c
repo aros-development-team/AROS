@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function vsscanf()
-    Lang: english
+    C function vsscanf().
 */
 /* Original source from libnix */
 #include <stdio.h>
@@ -59,9 +58,6 @@ static int _vsscanf_unget (int c, char ** str)
 	vsnscanf()
 
     INTERNALS
-
-    HISTORY
-	28.01.1997 digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function close()
-    Lang: english
+    ANSI C function close().
 */
 
 #include <unistd.h>
@@ -47,9 +46,6 @@
 	open(), read(), write(), fopen()
 
     INTERNALS
-
-    HISTORY
-	15.01.97 digulla created
 
 ******************************************************************************/
 {

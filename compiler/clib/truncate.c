@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function truncate()
-    Lang: english
+    ANSI C function truncate().
 */
 
 #include <unistd.h>
@@ -48,9 +47,6 @@
 	open()
 
     INTERNALS
-
-    HISTORY
-	4.5.2001 falemagn created
 
 ******************************************************************************/
 {

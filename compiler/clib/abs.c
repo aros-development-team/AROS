@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function abs()
-    Lang: english
+    ANSI C function abs().
 */
 
 /*****************************************************************************
@@ -41,11 +40,7 @@
 
     INTERNALS
 
-    HISTORY
-	12.12.1996 digulla created
-
 ******************************************************************************/
 {
     return (j < 0) ? -j : j;
 } /* abs */
-

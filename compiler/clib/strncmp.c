@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strncmp()
-    Lang: english
+    C function strncmp().
 */
 
 /*****************************************************************************
@@ -40,9 +39,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

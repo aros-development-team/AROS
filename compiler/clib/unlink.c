@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Delete a file.
-    Lang: english
+    Delete a file.
 */
 
 #include <proto/dos.h>
@@ -40,8 +39,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

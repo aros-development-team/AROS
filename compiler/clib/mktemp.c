@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: function mktemp()
-    Lang: english
 */
 
 #include <string.h>
@@ -41,9 +38,6 @@
 
     INTERNALS
     	Based on libnix mktemp
-
-    HISTORY
-	04.05.2001 stegerg created
 
 ******************************************************************************/
 { 

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function open()
-    Lang: english
+    ANSI C function open().
 */
 
 #include "__open.h"
@@ -77,9 +76,6 @@
 	close(), read(), write(), fopen()
 
     INTERNALS
-
-    HISTORY
-	10.01.97 digulla created
 
 ******************************************************************************/
 {

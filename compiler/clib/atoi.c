@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function atoi()
-    Lang: english
+    ANSI C function atoi().
 */
 
 /*****************************************************************************
@@ -45,9 +44,6 @@
         atof(), atol(), strtod(), strtol(), strtoul()
 
     INTERNALS
-
-    HISTORY
-	12.12.1996 digulla created
 
 ******************************************************************************/
 {

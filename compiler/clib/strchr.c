@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strchr()
-    Lang: english
+    ANSI C function strchr().
 */
 
 #include <stdio.h>
@@ -49,8 +48,6 @@
 	strrchr()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

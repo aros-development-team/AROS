@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Internal functions for environment variables handling
-    Lang: English
+    Internal functions for environment variables handling.
 */
 
 #include <stdlib.h>

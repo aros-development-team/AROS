@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: SAS C function stcd_l()
-    Lang: english
+    SAS C function stcd_l().
 */
 
 #include <stdio.h>
@@ -39,9 +38,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	15.12.2000 stegerg created.
 
 ******************************************************************************/
 {

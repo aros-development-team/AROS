@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function chdir()
-    Lang: English
+    ANSI C function chdir().
 */
 
 #include <exec/types.h>
@@ -55,8 +54,6 @@ static BPTR __startup_cd_lock;
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

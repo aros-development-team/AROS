@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function opendir()
-    Lang: english
+    POSIX function opendir().
 */
 
 #include <dos/dos.h>
@@ -48,8 +47,6 @@
 
     INTERNALS
 
-    HISTORY
-	09.06.2001 falemagn created
 ******************************************************************************/
 {
     DIR *dir;

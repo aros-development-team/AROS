@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function mkdir()
-    Lang: english
+    POSIX function mkdir().
 */
 
 #include <proto/dos.h>
@@ -42,9 +41,6 @@
 	chmod(),  stat(),  umask()
 
     INTERNALS
-
-    HISTORY
-	4.5.2001 falemagn created
 
 ******************************************************************************/
 

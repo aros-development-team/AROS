@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fclose()
-    Lang: english
+    ANSI C function fclose().
 */
 
 #include <proto/exec.h>
@@ -48,9 +47,6 @@
 	fopen(), open(), close()
 
     INTERNALS
-
-    HISTORY
-	17.01.97 digulla created
 
 ******************************************************************************/
 {

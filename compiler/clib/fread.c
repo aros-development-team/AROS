@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fread()
-    Lang: english
+    ANSI C function fread().
 */
 
 #include <errno.h>
@@ -52,9 +51,6 @@
 	fopen(), fwrite()
 
     INTERNALS
-
-    HISTORY
-	15.12.1996 digulla created
 
 ******************************************************************************/
 {

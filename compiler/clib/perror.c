@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function perror()
-    Lang: english
+    ANSI C function perror().
 */
 
 #include "errno.h"
@@ -38,8 +37,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

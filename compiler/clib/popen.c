@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fopen()
-    Lang: english
+    ANSI C function fopen().
 */
 
 #include <utility/tagitem.h>
@@ -62,9 +61,6 @@
 	fclose(), fread(), fwrite(), pipe(), pclose()
 
     INTERNALS
-
-    HISTORY
-	30.07.2002 falemagn created
 
 ******************************************************************************/
 {

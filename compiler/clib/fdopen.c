@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function fdopen()
-    Lang: english
+    POSIX function fdopen().
 */
 
 #include <stdlib.h>
@@ -60,9 +59,6 @@
 	 open(), fclose(), fileno()
 
     INTERNALS
-
-    HISTORY
-	27.04.2001 falemagn created
 
 ******************************************************************************/
 {

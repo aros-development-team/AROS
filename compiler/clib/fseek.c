@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Change the position in a stream
-    Lang: english
+    Change the position in a stream.
 */
 
 #include <errno.h>
@@ -53,9 +52,6 @@
 	fopen(), fwrite()
 
     INTERNALS
-
-    HISTORY
-	15.12.1996 digulla created
 
 ******************************************************************************/
 {
