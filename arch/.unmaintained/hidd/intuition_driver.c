@@ -58,9 +58,9 @@ enum {
 };
     
 	
-struct IntWindow
+struct HiddIntWindow
 {
-    struct Window window;
+    struct IntWindow window;
     
     /* Some direct-pointers to the window system gadgets 
        (They are put in windows glist too)
@@ -69,8 +69,8 @@ struct IntWindow
 
 };
 
-#define IW(x) ((struct IntWindow *)x)
-#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
+#define HIW(x) ((struct HiddIntWindow *)x)
+#define SYSGAD(w, idx) (HIW(w)->sysgads[idx])
 
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
@@ -130,7 +130,7 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 
 int intui_GetWindowSize (void)
 {
-    return sizeof (struct IntWindow);
+    return sizeof (struct HiddIntWindow);
 }
 
 
@@ -166,13 +166,15 @@ int intui_OpenWindow (struct Window * w,
     if (0 != (w->Flags & WFLG_BACKDROP))   
       layerflags |= LAYERBACKDROP;
 
+    D(bug("Window dims: (%d, %d, %d, %d)\n",
+    	w->LeftEdge, w->TopEdge, w->Width, w->Height));
     w->WLayer = CreateUpfrontHookLayer( 
                 &w->WScreen->LayerInfo
 		, w->WScreen->RastPort.BitMap
 		, w->LeftEdge
 		, w->TopEdge
-		, w->LeftEdge + w->Width
-		, w->TopEdge  + w->Height
+		, w->LeftEdge + w->Width - 1
+		, w->TopEdge  + w->Height - 1
 		, layerflags
 		, LAYERS_BACKFILL
 		, SuperBitMap);
@@ -185,14 +187,12 @@ int intui_OpenWindow (struct Window * w,
         w->WLayer->Window = (APTR)w;
 	/* Window needs a rastport */
 	w->RPort = w->WLayer->rp;
-	
 	if (createsysgads(w, IntuitionBase))
 	{
 
-
     	    ReturnBool("intui_OpenWindow", TRUE);
+
 	}
-	
 	intui_CloseWindow(w, IntuitionBase);
 	
     } /* if (layer created) */
