@@ -298,7 +298,7 @@ BOOL areafillpolygon(struct RastPort  * rp,
   UWORD ymin;
   UWORD LastEdge = last_idx - first_idx + 1; // needed later on. Don't change!!
   struct AreaInfo * areainfo = rp->AreaInfo;
-  UWORD * StartVctTbl = areainfo->VctrTbl;
+  UWORD * StartVctTbl = &areainfo->VctrTbl[first_idx * 2];
   UWORD scan;
   struct BoundLine tmpAreaBound;
   struct BoundLine * AreaBound = 
@@ -688,7 +688,7 @@ void LineInTmpRas(struct RastPort  * rp,
   xright -= bounds->MinX; 
   y      -= bounds->MinY;
 
-//kprintf("line from %d to %d\n",xleft,xright);
+  //kprintf("line from %d to %d y = %d\n",xleft,xright,y);
 
   if (xleft > xright) return;
   /* 
@@ -757,3 +757,32 @@ fillright:
   }
 
 }
+
+
+void areaclosepolygon(struct AreaInfo *areainfo)
+{
+    /* Note: the caller must make sure, that this
+       function is only called if areainfo->Count > 0
+       and that there is place for one vector
+       (areainfo->Count < areainfo->MaxCount) */
+       
+    if ( areainfo->FlagPtr[-1] == AREAINFOFLAG_DRAW )
+    {
+	if ((areainfo->VctrPtr[-1] != areainfo->FirstY) ||
+            (areainfo->VctrPtr[-2] != areainfo->FirstX))
+	{
+	    areainfo->Count++;
+	    areainfo->VctrPtr[0] = areainfo->FirstX;
+	    areainfo->VctrPtr[1] = areainfo->FirstY;
+    	    areainfo->FlagPtr[0] = AREAINFOFLAG_CLOSEDRAW;
+
+	    areainfo->VctrPtr = &areainfo->VctrPtr[2];
+	    areainfo->FlagPtr++;
+	}
+	else
+	{
+	    areainfo->FlagPtr[-1] = AREAINFOFLAG_CLOSEDRAW;
+	}
+    }
+}
+

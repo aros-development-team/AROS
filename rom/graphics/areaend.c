@@ -53,233 +53,235 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct AreaInfo * areainfo = rp->AreaInfo;
+    struct AreaInfo * areainfo = rp->AreaInfo;
 
-  /* is there anything in the matrix at all ? */
-  if (0 != (areainfo -> Count))
-  {
-     WORD first_idx = 0;
-     WORD last_idx  = -1;
-    UWORD BytesPerRow;
-    UWORD * CurVctr  = areainfo -> VctrTbl;
-    BYTE  * CurFlag  = areainfo -> FlagTbl;
-    UWORD Count;
-    UWORD Rem_APen   = GetAPen(rp);
-    /* I don't know whether this function may corrupt the 
-       cursor position of the rastport. So I save it for later.*/
-
-    UWORD Rem_cp_x   = rp->cp_x;
-    UWORD Rem_cp_y   = rp->cp_y;
-    /* This rectangle serves as a "frame" for the tmpras for filling */
-    struct Rectangle bounds;
-
- 
-#if 0
-    if (0 != (rp->Flags & AREAOUTLINE))
-       SetAPen(rp, GetOutlinePen(rp));
-#endif
-
-    /* if the last polygon is not closed, then I should do so */
-    if ( areainfo->FlagPtr[-1] == 0x03 &&
-       (areainfo->VctrPtr[-1] != areainfo->FirstY ||
-         areainfo->VctrPtr[-2] != areainfo->FirstX   ) )
+    /* is there anything in the matrix at all ? And do we have a TmpRas in the rastport? */
+    if (areainfo->Count && rp->TmpRas)
     {
-       if (-1 == AreaDraw(rp, areainfo->FirstX, areainfo->FirstY))
-            return -1;
-    }
+	WORD first_idx = 0;
+	WORD last_idx  = -1;
+	ULONG BytesPerRow;
+	UWORD * CurVctr  = areainfo -> VctrTbl;
+	BYTE  * CurFlag  = areainfo -> FlagTbl;
+	UWORD Count;
+	UWORD Rem_APen   = GetAPen(rp);
+	/* I don't know whether this function may corrupt the 
+	   cursor position of the rastport. So I save it for later.*/
 
-    /* mark the previous polygon as closed */
-    areainfo->FlagPtr[-1] = 2;
+	UWORD Rem_cp_x   = rp->cp_x;
+	UWORD Rem_cp_y   = rp->cp_y;
+	/* This rectangle serves as a "frame" for the tmpras for filling */
+	struct Rectangle bounds;
+
+
+	areaclosepolygon(areainfo);
+
+	Count = areainfo->Count;  
+
+    	//kprintf("%d coord to process\n",Count);
     
-    Count = areainfo->Count;  
+	/* process the list of vectors */
+	while (Count > 0)
+	{
+    	    //kprintf("\n******** Flags:%d Coord: (%d,%d)\n",CurFlag[0], CurVctr[0],CurVctr[1]);
 
-//kprintf("%d coord to process\n",Count);
-    /* process the list of vectors */
-    while (Count > 0)
-    {
-//kprintf("Flags:%d Coord: (%d,%d)\n",CurFlag[0], CurVctr[0],CurVctr[1]);
-      last_idx ++;
-      switch((unsigned char)CurFlag[0])
-      {
-        case 0x00:
-	  /* set the graphical cursor to a starting position */
-            Move(rp, CurVctr[0], CurVctr[1]);
-
-            bounds.MinX = CurVctr[0];
-            bounds.MaxX = CurVctr[0];
-            bounds.MinY = CurVctr[1];
-            bounds.MaxY = CurVctr[1];
-
-            CurVctr = &CurVctr[2];
-            CurFlag = &CurFlag[1];
-          break;
-
-        case 0x02:
-          /* 2 indicates that this Polygon is closed with this coordinate */
-            Draw(rp, CurVctr[0], CurVctr[1]);
-            CurVctr = &CurVctr[2];
-            CurFlag = &CurFlag[1];
-            /* 
-               no need to set the bundaries here like in case 0x00 as
-               this coord closes the polygon and therefore is the same
-               one as the first coordinate of the polygon. 
-            */
-            /* check whether there's anything to fill at all. I cannot
-               fill a line (=3 coordinates) */
-            if (first_idx+2 <= last_idx)
+	    last_idx ++;
+	    switch((unsigned char)CurFlag[0])
 	    {
-              /* BytesPerRow must be a multiple of 2 bytes */
+        	case AREAINFOFLAG_MOVE:
+		    /* set the graphical cursor to a starting position */
+        	    Move(rp, CurVctr[0], CurVctr[1]);
 
-              BytesPerRow = bounds.MaxX - bounds.MinX + 1;
-              if (0 != (BytesPerRow & 0x0f ))
-                BytesPerRow =((BytesPerRow >> 3) & 0xfffe )+ 2;
-              else
-                BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
-/*              
-              kprintf("first: %d, last: %d\n",first_idx,last_idx);
-              kprintf("(%d,%d)-(%d,%d)\n",bounds.MinX,bounds.MinY,
-                                          bounds.MaxX,bounds.MaxY);
-              kprintf("width: %d, bytesperrow: %d\n",bounds.MaxX-bounds.MinX+1,
-                                                     BytesPerRow);
-*/
-              if (TRUE == areafillpolygon(rp,
-                                          &bounds, 
-                                          first_idx, 
-                                          last_idx,
-                                          BytesPerRow,
-                                          GfxBase))
-	      {
-                /* 
-                 Blit the area fill pattern through the mask provided
-                 by rp->TmpRas.
-                */
-		
-                BltPattern(
-                   rp,
-                   rp->TmpRas->RasPtr,
-                   bounds.MinX,
-                   bounds.MinY,
-                   bounds.MaxX,
-                   bounds.MaxY,
-                   BytesPerRow
-                );
-		
-		if  (rp->Flags & AREAOUTLINE)
-		{
-		    SetAPen(rp, GetOutlinePen(rp));
-		    PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx]);
-		    SetAPen(rp, Rem_APen);		    
-		}
-		
-	      }
-	    }
-            /* set first_idx for a possible next polygon to draw */
-            first_idx = last_idx+1;
-          break;
+        	    bounds.MinX = CurVctr[0];
+        	    bounds.MaxX = CurVctr[0];
+        	    bounds.MinY = CurVctr[1];
+        	    bounds.MaxY = CurVctr[1];
 
-        case 0x03:
-          /* Draw a line to new position */
-            Draw(rp, CurVctr[0], CurVctr[1]);
-            if (bounds.MinX > CurVctr[0])
-              bounds.MinX = CurVctr[0];
-            if (bounds.MaxX < CurVctr[0])
-              bounds.MaxX = CurVctr[0];
-            if (bounds.MinY > CurVctr[1])
-              bounds.MinY = CurVctr[1];
-            if (bounds.MaxY < CurVctr[1])
-              bounds.MaxY = CurVctr[1];
-            CurVctr = &CurVctr[2];
-            CurFlag = &CurFlag[1];
-          break;
+        	    CurVctr = &CurVctr[2];
+        	    CurFlag = &CurFlag[1];
+        	    break;
 
-        case 0x83:
-          /* Draw an Ellipse and fill it */
-          /* see how the data are stored by the second entry */
-            /* I get cx,cy,cx+a,cy+b*/
+        	case AREAINFOFLAG_CLOSEDRAW:
+        	    /* 2 indicates that this Polygon is closed with this coordinate */
+        	    Draw(rp, CurVctr[0], CurVctr[1]);
+        	    CurVctr = &CurVctr[2];
+        	    CurFlag = &CurFlag[1];
+        	    /* 
+        	       no need to set the bundaries here like in case 0x00 as
+        	       this coord closes the polygon and therefore is the same
+        	       one as the first coordinate of the polygon. 
+        	    */
+        	    /* check whether there's anything to fill at all. I cannot
+        	       fill a line (=3 coordinates) */
+        	    if (first_idx+2 <= last_idx)
+		    {
+        		/* BytesPerRow must be a multiple of 2 bytes */
 
-            DrawEllipse(rp,CurVctr[0], 
-                           CurVctr[1],
-                           CurVctr[2],
-                           CurVctr[3]);
+        		BytesPerRow = bounds.MaxX - bounds.MinX + 1;
+        		if (0 != (BytesPerRow & 0x0f ))
+                	    BytesPerRow =((BytesPerRow >> 3) & 0xfffe )+ 2;
+        		else
+                	    BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
 
-            /* area-fill the ellipse with the pattern given
-               in rp->AreaPtrn , AreaPtSz */
-            
-            bounds.MinX = CurVctr[0] - CurVctr[2];
-            bounds.MaxX = CurVctr[0] + CurVctr[2];
-            bounds.MinY = CurVctr[1] - CurVctr[3];
-            bounds.MaxY = CurVctr[1] + CurVctr[3];
-            BytesPerRow = bounds.MaxX - bounds.MinX + 1;
-            
-            if (0 != (BytesPerRow & 0x0f ))
-              BytesPerRow =((BytesPerRow >> 3) & 0xfffe )+ 2;
-            else
-              BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
-              
-            areafillellipse(rp,
-	    		    &bounds,
-                            CurVctr,
-                            BytesPerRow,
-                            GfxBase);
-              /* 
-                Blit the area fill pattern through the mask provided
-                by rp->TmpRas.
-              */
-            BltPattern(
-                   rp,
-                   rp->TmpRas->RasPtr,
-                   bounds.MinX,
-                   bounds.MinY,
-                   bounds.MaxX,
-                   bounds.MaxY,
-                   BytesPerRow
-                );
- 
-    	    if (rp->Flags & AREAOUTLINE)
-	    {
-	    	SetAPen(rp, GetOutlinePen(rp));
-		
-        	DrawEllipse(rp,CurVctr[0], 
-                               CurVctr[1],
-                               CurVctr[2],
-                               CurVctr[3]);
+    	    	    	if (rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
+		    	    return -1;
 
-    	    	SetAPen(rp, Rem_APen);
-	    }
-	    
-            CurVctr = &CurVctr[4];
-            CurFlag = &CurFlag[2];
-            Count--;
-            last_idx++; /* there were two coords here! */
-          break;
+	  /*              
+        		kprintf("first: %d, last: %d\n",first_idx,last_idx);
+        		kprintf("(%d,%d)-(%d,%d)\n",bounds.MinX,bounds.MinY,
+                                        	    bounds.MaxX,bounds.MaxY);
+        		kprintf("width: %d, bytesperrow: %d\n",bounds.MaxX-bounds.MinX+1,
+                                                	       BytesPerRow);
+	  */
+        		if (TRUE == areafillpolygon(rp,
+                                        	    &bounds, 
+                                        	    first_idx, 
+                                        	    last_idx,
+                                        	    BytesPerRow,
+                                        	    GfxBase))
+			{
+                	    /* 
+                	     Blit the area fill pattern through the mask provided
+                	     by rp->TmpRas.
+                	    */
 
-	default:
-            /* this is an error */
-            SetAPen(rp, Rem_APen);
-            /* also restore old graphics cursor position */
-            rp->cp_x = Rem_cp_x;
-            rp->cp_y = Rem_cp_y;
-          return -1;
-      }
-      Count--;
+                	    BltPattern(
+                	       rp,
+                	       rp->TmpRas->RasPtr,
+                	       bounds.MinX,
+                	       bounds.MinY,
+                	       bounds.MaxX,
+                	       bounds.MaxY,
+                	       BytesPerRow
+                	    );
+
+			    if  (rp->Flags & AREAOUTLINE)
+			    {
+				SetAPen(rp, GetOutlinePen(rp));
+				PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx]);
+				SetAPen(rp, Rem_APen);		    
+			    }
+
+			}
+		    }
+        	    /* set first_idx for a possible next polygon to draw */
+        	    first_idx = last_idx + 1;
+        	    break;
+
+        	case AREAINFOFLAG_DRAW:
+        	    /* Draw a line to new position */
+        	    Draw(rp, CurVctr[0], CurVctr[1]);
+        	    if (bounds.MinX > CurVctr[0])
+        	        bounds.MinX = CurVctr[0];
+        	    if (bounds.MaxX < CurVctr[0])
+        	        bounds.MaxX = CurVctr[0];
+        	    if (bounds.MinY > CurVctr[1])
+        	        bounds.MinY = CurVctr[1];
+        	    if (bounds.MaxY < CurVctr[1])
+        	        bounds.MaxY = CurVctr[1];
+        	    CurVctr = &CurVctr[2];
+        	    CurFlag = &CurFlag[1];
+        	    break;
+
+        	case AREAINFOFLAG_ELLIPSE:
+        	    bounds.MinX = CurVctr[0] - CurVctr[2];
+        	    bounds.MaxX = CurVctr[0] + CurVctr[2];
+        	    bounds.MinY = CurVctr[1] - CurVctr[3];
+        	    bounds.MaxY = CurVctr[1] + CurVctr[3];
+        	    BytesPerRow = bounds.MaxX - bounds.MinX + 1;
+
+        	    if (0 != (BytesPerRow & 0x0f ))
+        	        BytesPerRow =((BytesPerRow >> 3) & 0xfffe )+ 2;
+        	    else
+        	        BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
+
+    	    	    if (rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
+		    	return -1;
+			
+        	    /* Draw an Ellipse and fill it */
+        	    /* see how the data are stored by the second entry */
+        	    /* I get cx,cy,cx+a,cy+b*/
+
+        	    DrawEllipse(rp,CurVctr[0], 
+                        	   CurVctr[1],
+                        	   CurVctr[2],
+                        	   CurVctr[3]);
+
+        	    /* area-fill the ellipse with the pattern given
+        	       in rp->AreaPtrn , AreaPtSz */
+
+        	    areafillellipse(rp,
+	    			    &bounds,
+                        	    CurVctr,
+                        	    BytesPerRow,
+                        	    GfxBase);
+        	      /* 
+                	Blit the area fill pattern through the mask provided
+                	by rp->TmpRas.
+        	      */
+
+        	    BltPattern(
+                	   rp,
+                	   rp->TmpRas->RasPtr,
+                	   bounds.MinX,
+                	   bounds.MinY,
+                	   bounds.MaxX,
+                	   bounds.MaxY,
+                	   BytesPerRow
+                	);
+
+    		    if (rp->Flags & AREAOUTLINE)
+		    {
+	    		SetAPen(rp, GetOutlinePen(rp));
+
+        		DrawEllipse(rp,CurVctr[0], 
+                        	       CurVctr[1],
+                        	       CurVctr[2],
+                        	       CurVctr[3]);
+
+    	    		SetAPen(rp, Rem_APen);
+		    }
+
+        	    CurVctr = &CurVctr[4];
+        	    CurFlag = &CurFlag[2];
+        	    Count--;
+        	    last_idx++; /* there were two coords here! */
+        	    
+		    /* set first_idx for a possible next polygon to draw */
+        	    first_idx = last_idx + 1;
+        	    break;
+
+		default:
+        	    /* this is an error */
+        	    SetAPen(rp, Rem_APen);
+        	    /* also restore old graphics cursor position */
+        	    rp->cp_x = Rem_cp_x;
+        	    rp->cp_y = Rem_cp_y;
+        	    return -1;
+		    
+	    } /* switch((unsigned char)CurFlag[0]) */
+	    Count--;
+
+	} /* while (Count > 0) */
+	
+	/* restore areainfo structure for a new beginning */
+	areainfo->VctrPtr = areainfo->VctrTbl;
+	areainfo->FlagPtr = areainfo->FlagTbl;
+	areainfo->Count   = 0;
+
+	/* restore old APen */
+	SetAPen(rp, Rem_APen);    
+	/* also restore old graphics cursor position */
+	rp->cp_x = Rem_cp_x;
+	rp->cp_y = Rem_cp_y;
       
-    }
-    /* restore areainfo structure for a new beginning */
-    areainfo->VctrPtr = areainfo->VctrTbl;
-    areainfo->FlagPtr = areainfo->FlagTbl;
-    areainfo->Count   = 0;
+    } /* if vectorlist is not empty and rastport has a tmpras */
 
-    /* restore old APen */
-    SetAPen(rp, Rem_APen);    
-    /* also restore old graphics cursor position */
-    rp->cp_x = Rem_cp_x;
-    rp->cp_y = Rem_cp_y;
-  } /* if vectorlist is not empty */
+    return 0;
 
-  return 0;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* AreaEnd */

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function AreaEllipse()
@@ -57,81 +57,82 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct AreaInfo * areainfo = rp->AreaInfo;
+    struct AreaInfo * areainfo = rp->AreaInfo;
 
-  /*  Is there still enough storage area in the areainfo-buffer?
-   *  We need at least a storage area for two vectors
-   */
-  if (areainfo->Count + 1 < areainfo->MaxCount)
-  {
-    /* is this the very first entry in the vector collection matrix */
-    if (0 == areainfo->Count)
+    /*  Is there still enough storage area in the areainfo-buffer?
+     *  We need at least a storage area for two vectors
+     */
+    if (areainfo->Count + 2 <= areainfo->MaxCount)
     {
-      areainfo->VctrPtr[0] = cx;
-      areainfo->VctrPtr[1] = cy;
-      areainfo->FlagPtr[0] = 0x83;
+	/* is this the very first entry in the vector collection matrix */
+	if (0 == areainfo->Count)
+	{
+	    areainfo->VctrPtr[0] = cx;
+	    areainfo->VctrPtr[1] = cy;
+	    areainfo->FlagPtr[0] = AREAINFOFLAG_ELLIPSE;
 
-      areainfo->VctrPtr[2] = a;
-      areainfo->VctrPtr[3] = b;
-      areainfo->FlagPtr[1] = 0x0;
+	    areainfo->VctrPtr[2] = a;
+	    areainfo->VctrPtr[3] = b;
+	    areainfo->FlagPtr[1] = AREAINFOFLAG_ELLIPSE; //stegerg: was AREAINFOFLAG_MOVE;
 
-      areainfo->VctrPtr    = &areainfo->VctrPtr[4];
-      areainfo->FlagPtr    = &areainfo->FlagPtr[2];
+	    areainfo->VctrPtr    = &areainfo->VctrPtr[4];
+	    areainfo->FlagPtr    = &areainfo->FlagPtr[2];
 
-      areainfo->Count += 2;
-    }
-    else
-    {
-      /* close the previous polygon if necessary */
-      if (0x03 == areainfo->FlagPtr[-1] &&
-          (areainfo->VctrPtr[-1] != areainfo->FirstY ||
-           areainfo->VctrPtr[-2] != areainfo->FirstX   ) )
-      {
-        /* there will be enough storage area for this AreaDraw() call:
-         * no need to check for errors
-         */
-        AreaDraw(rp, areainfo->FirstX, areainfo->FirstY);
-      }
+	    areainfo->Count += 2;
+	}
+	else
+	{
+	    areaclosepolygon(areainfo);
 
-      /*  If the previous command in the vector collection matrix was a move then
-       *  erase that one
-       */
+ 	    /* Need to check again, if there is enough room, because
+	       areaclosepolygon might have eaten one vector!! */
 
-      if (0x00 == areainfo->FlagPtr[-1])
-      {
-        areainfo->VctrPtr = &areainfo->VctrPtr[-2];
-        areainfo->FlagPtr--;
-        areainfo->Count--;
-      }
+	    if (areainfo->Count + 2 > areainfo->MaxCount)
+    	    	return -1;
+	    
+	    /*  If the previous command in the vector collection matrix was a move then
+	     *  erase that one
+	     */
 
-      /* still enough storage area?? */
-      if (areainfo->Count + 1 < areainfo->MaxCount)
-      {
-        areainfo->VctrPtr[0] = cx;
-        areainfo->VctrPtr[1] = cy;
-        areainfo->FlagPtr[0] = 0x83;
+	    if (AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1])
+	    {
+        	areainfo->VctrPtr = &areainfo->VctrPtr[-2];
+        	areainfo->FlagPtr--;
+        	areainfo->Count--;
+	    }
 
-        areainfo->VctrPtr[2] = a;
-        areainfo->VctrPtr[3] = b;
-        areainfo->FlagPtr[1] = 0x00;
+	    /* still enough storage area?? */
+	    if (areainfo->Count + 2 <= areainfo->MaxCount)
+	    {
+        	areainfo->VctrPtr[0] = cx;
+        	areainfo->VctrPtr[1] = cy;
+        	areainfo->FlagPtr[0] = AREAINFOFLAG_ELLIPSE;
 
-        areainfo->VctrPtr    = &areainfo->VctrPtr[4];
-        areainfo->FlagPtr    = &areainfo->FlagPtr[2];
+        	areainfo->VctrPtr[2] = a;
+        	areainfo->VctrPtr[3] = b;
+        	areainfo->FlagPtr[1] = AREAINFOFLAG_ELLIPSE;
 
-        areainfo->Count += 2;
+        	areainfo->VctrPtr    = &areainfo->VctrPtr[4];
+        	areainfo->FlagPtr    = &areainfo->FlagPtr[2];
 
-        return 0;
-      }
-      else
-        return -1;
-    } /* else branch of if (0 == areainfo->Count) */
+        	areainfo->Count += 2;
 
-    /* will never get to this point! */
-  }
+        	return 0;
+	    }
+	    else
+        	return -1;
+	    
+	} /* else branch of if (0 == areainfo->Count) */
+
+	/* will never get to this point! */
+
+    } /* if (areainfo->Count + 2 < areainfo->MaxCount) */
+
+    return -1;  
+
+    AROS_LIBFUNC_EXIT
   
-  return -1;  
-  AROS_LIBFUNC_EXIT
 } /* AreaEllipse */

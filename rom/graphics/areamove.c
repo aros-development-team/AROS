@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function AreaMove()
@@ -55,80 +55,81 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct AreaInfo * areainfo = rp->AreaInfo;
+    struct AreaInfo * areainfo = rp->AreaInfo;
 
-  /* Is there still enough storage area in the areainfo-buffer?
-   * We just need room for one entry.
-   */
+    /* Is there still enough storage area in the areainfo-buffer?
+     * We just need room for one entry.
+     */
 
-  if (areainfo->Count < areainfo->MaxCount)
-  {
-    /* is this the very first entry in the vector collection matrix */
-    if (0 == areainfo->Count)
+    if (areainfo->Count + 1 <= areainfo->MaxCount)
     {
-      areainfo->FirstX = x;
-      areainfo->FirstY = y;
-
-      /* Insert the new point into the matrix */
-      areainfo->VctrPtr[0] = x;
-      areainfo->VctrPtr[1] = y;
-      areainfo->VctrPtr    = &areainfo->VctrPtr[2];
-
-      areainfo->FlagPtr[0] = 0x0;
-      areainfo->FlagPtr++;
-
-      areainfo->Count++;
-    }
-    else
-    {
-      /* if the previous command was also an AreaMove() then we will replace
-       * that one ...
-       */
-      if ( 0x0 == areainfo->FlagPtr[-1])
-      {
-        areainfo->FirstX = x;
-        areainfo->FirstY = y;
-
-        /* replace the previous point */
-        areainfo->VctrPtr[-2] = x;
-        areainfo->VctrPtr[-1] = y;
-      }
-      else /* it's not the first command and the previous command wasn't AreaMove() */
-      {
-        /* ... otherwise close the polygon if necessary */
-        if ( areainfo->FlagPtr[-1] != 0x02 &&
-            (areainfo->VctrPtr[-1] != areainfo->FirstY ||
-             areainfo->VctrPtr[-2] != areainfo->FirstX   ))
+	/* is this the very first entry in the vector collection matrix */
+	if (0 == areainfo->Count)
 	{
-          if (-1 == AreaDraw(rp, areainfo->FirstX, areainfo->FirstY))
-            return -1;
-        }
-        /* mark the previous polygon as closed */
-        areainfo->FlagPtr[-1] = 2;
+	    areainfo->FirstX = x;
+	    areainfo->FirstY = y;
 
-        areainfo->FirstX = x;
-        areainfo->FirstY = y;
+	    /* Insert the new point into the matrix */
+	    areainfo->VctrPtr[0] = x;
+	    areainfo->VctrPtr[1] = y;
+	    areainfo->VctrPtr    = &areainfo->VctrPtr[2];
 
-        /* Insert the new point into the matrix */
-        areainfo->VctrPtr[0] = x;
-        areainfo->VctrPtr[1] = y;
-        areainfo->VctrPtr    = &areainfo->VctrPtr[2];
+	    areainfo->FlagPtr[0] = AREAINFOFLAG_MOVE;
+	    areainfo->FlagPtr++;
 
-        areainfo->FlagPtr[0] = 0x0;
-        areainfo->FlagPtr++;
+	    areainfo->Count++;
+	}
+	else
+	{
+	    /* if the previous command was also an AreaMove() then we will replace
+	     * that one ...
+	     */
+	    if ( AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1])
+	    {
+        	areainfo->FirstX = x;
+        	areainfo->FirstY = y;
 
-        areainfo->Count++;
-      }
-    } /* if (0 == areainfo->Count) */
+        	/* replace the previous point */
+        	areainfo->VctrPtr[-2] = x;
+        	areainfo->VctrPtr[-1] = y;
+	    }
+	    else /* it's not the first command and the previous command wasn't AreaMove() */
+	    {
+        	/* ... otherwise close the polygon if necessary */
+		
+		areaclosepolygon(areainfo);
+		
+ 		/* Need to check again, if there is enough room, because
+		   areaclosepolygon might have eaten one vector!! */
+		   
+		if (areainfo->Count + 1 > areainfo->MaxCount)
+    	    	    return -1;
+		    
+        	areainfo->FirstX = x;
+        	areainfo->FirstY = y;
 
-  }
-  else
-    return -1;
+        	/* Insert the new point into the matrix */
+        	areainfo->VctrPtr[0] = x;
+        	areainfo->VctrPtr[1] = y;
+        	areainfo->VctrPtr    = &areainfo->VctrPtr[2];
 
-  return 0;
+        	areainfo->FlagPtr[0] = AREAINFOFLAG_MOVE;
+        	areainfo->FlagPtr++;
 
-  AROS_LIBFUNC_EXIT
+        	areainfo->Count++;
+	    }
+	    
+	} /* if (0 == areainfo->Count) */
+
+    } /* if (areainfo->Count + 1 <= areainfo->MaxCount) */
+    else
+	return -1;
+
+    return 0;
+
+    AROS_LIBFUNC_EXIT
+    
 } /* AreaMove */

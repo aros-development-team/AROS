@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function InitArea()
@@ -56,12 +56,12 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  areainfo->VctrTbl=buffer;
-  areainfo->VctrPtr=buffer;
-  areainfo->FlagTbl=(BYTE *)((ULONG)buffer+(2*sizeof(WORD)*maxvectors));
-  areainfo->FlagPtr=(BYTE *)((ULONG)buffer+(2*sizeof(WORD)*maxvectors));
-  areainfo->Count=0;
-  areainfo->MaxCount=maxvectors;
+  areainfo->VctrTbl  = buffer;
+  areainfo->VctrPtr  = buffer;
+  areainfo->FlagTbl  = (BYTE *)(((IPTR)buffer)+(2*sizeof(WORD)*maxvectors));
+  areainfo->FlagPtr  = (BYTE *)(((IPTR)buffer)+(2*sizeof(WORD)*maxvectors));
+  areainfo->Count    = 0;
+  areainfo->MaxCount = maxvectors;
 
   AROS_LIBFUNC_EXIT
 } /* InitArea */
