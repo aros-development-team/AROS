@@ -163,7 +163,7 @@ void remChangeInt(struct afsbase *afsbase, struct Volume *volume) {
 		)
 	{
 		volume->iochangeint->iotd_Req.io_Command = TD_REMCHANGEINT;
-		SendIO((struct IORequest *)&volume->iochangeint->iotd_Req);
+		DoIO((struct IORequest *)&volume->iochangeint->iotd_Req);
 	}
 }
 
