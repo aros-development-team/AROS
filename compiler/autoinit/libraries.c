@@ -40,21 +40,6 @@ int set_open_libraries(void)
 	    return 20;
 	}
 
-        if (set[n]->postopenfunc)
-	{
-	    int ret = set[n]->postopenfunc();
-	    if (ret)
-	    {
-	    	__showerror
-                (
-	            "Couldn't initialize library \"%s\".",
-		    set[n]->name
-		);
-
-	        return ret;
-	    }
-        }
-
         n++;
     }
 
@@ -70,10 +55,7 @@ void set_close_libraries(void)
     while (n)
     {
 	if (*(set[n]->baseptr))
-	{
-	    if (set[n]->preclosefunc) set[n]->preclosefunc();
 	    CloseLibrary(*(set[n]->baseptr));
-        }
 
 	n--;
     }

@@ -5,4 +5,4 @@
 
 #include <aros/symbolsets.h>
 
-ADD2LIBS("muimaster.library", 41, 102, struct Library *, MUIMasterBase, NULL, NULL);
+ADD2LIBS("muimaster.library", 41, struct Library *, MUIMasterBase);
