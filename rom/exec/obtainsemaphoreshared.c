@@ -73,6 +73,7 @@ void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
     {
         kprintf("\n\nObtainSemaphoreShared called on a not intialized semaphore!!! "
 	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
+	Alert(AN_SemCorrupt);
     }
 #endif
 
