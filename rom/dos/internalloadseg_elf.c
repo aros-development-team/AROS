@@ -437,15 +437,16 @@ BPTR InternalLoadSeg_ELF
         return 0;
     }
 
-    /*
-        Load Symbol Table(s) and fix common symbols.
-
-        NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
-                that only one symbol table per file is allowed. However, it
-                also states that this may change in future... we already handle it.
-    */
+    /* Iterate over the section headers in order to do some stuff... */
     for (i = 0; i < eh.shnum; i++)
     {
+        /*
+           Load the symbol table(s) and fix common symbols
+
+           NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
+                   that only one symbol table per file is allowed. However, it
+                   also states that this may change in future... we already handle it.
+        */
         if (sh[i].type == SHT_SYMTAB)
         {
             struct symbol *sym ;
@@ -471,16 +472,14 @@ BPTR InternalLoadSeg_ELF
                 }
             }
         }
-    }
-
-    /* Load all loadable sections and make hunks out of them */
-    for (i = 0; i < eh.shnum; i++)
-    {
+        else
+        /* Load the section in memory if needed, and make an hunk out of it */
         if (sh[i].flags & SHF_ALLOC)
         {
             if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, DOSBase))
                 goto error;
         }
+
     }
 
     /* Create a hunk for the COMMON symbols, if necessary */
@@ -509,6 +508,7 @@ BPTR InternalLoadSeg_ELF
             #    error Your architecture is not supported
             #endif
 
+            /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
             sh[sh[i].info].addr
         )
         {
