@@ -1,5 +1,12 @@
 #ifndef GADTOOLS_INTERN_H
 #define GADTOOLS_INTERN_H
+/*
+    (C) 1997-98 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Internal definitions for gadtools.library.
+    Lang: english
+*/
 
 /* Include files */
 #ifndef EXEC_LIBRARIES_H
@@ -127,7 +134,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TextAttr *tattr,
 		      	  struct TagItem *taglist);
 		      	  
-/* Tags for the private gadtool classes */
+/* Tags for the private gadtools classes */
 #define GT_Dummy (TAG_USER)
 
 #define GTA_Text_DispFunc	(GT_Dummy + 1)
@@ -210,6 +217,7 @@ struct VisualInfo
     struct Screen   * vi_screen;
     struct DrawInfo * vi_dri;
 };
+#define VI(x) ((struct VisualInfo *)x)
 
 #define TAG_Left	0
 #define TAG_Top 	1
