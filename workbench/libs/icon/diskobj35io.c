@@ -133,9 +133,9 @@ static char *Decode35(unsigned char *buffer, unsigned char *outbuffer, long numb
 
 STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     	    	    	struct FileImageChunk *ic, UBYTE **imgdataptr,
-			UBYTE **imgpalptr, struct IconBase *IconBase)
+			UBYTE **imgpalptr, UBYTE **imgmaskptr, struct IconBase *IconBase)
 {
-    UBYTE *src, *mem, *imgdata, *imgpal = NULL;
+    UBYTE *src, *mem, *imgdata, *imgpal = NULL, *imgmask = NULL;
     LONG size, imgsize, palsize, imagew, imageh, numcols;
 
     imagew = fc->Width + 1;
@@ -232,8 +232,52 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 
     } /* if (ic->Flags & IMAGE35F_HASPALETTE) */
 
+    if (ic->Flags & IMAGE35F_HASTRANSPARENTCOLOR)
+    {
+    	UBYTE *dst, transpcolor;
+    	WORD x, y, bpr, mask;
+
+    	imgmask = imgdata + imagew * imageh;
+	if (ic->Flags & IMAGE35F_HASPALETTE)
+	{
+	    imgmask += numcols * sizeof(ULONG);
+	}
+	
+	memset(imgmask, 0xFF, RASSIZE(imagew, imageh));
+	
+	bpr = ((imagew + 15) & ~15) / 8;
+	src = imgdata;
+	dst = imgmask;
+	
+	transpcolor = ic->TransparentColor;
+	
+	for(y = 0; y < imageh; y++)
+	{
+	    UBYTE *dstx = dst;
+	    
+	    mask = 0x80;
+	    
+	    for(x = 0; x < imagew; x++)
+	    {
+	    	if (*src++ == transpcolor)
+		{
+		    *dstx &= ~mask;
+		}
+		
+	    	mask >>= 1;
+		if (!mask)
+		{
+		    mask = 0x80;
+		    dstx++;
+		}
+	    }
+	    dst += bpr;
+	}
+    }
+    
     *imgdataptr = imgdata;
-    *imgpalptr = imgpal;
+    *imgpalptr  = imgpal;
+    *imgmaskptr = imgmask;
     
     FreeVec(mem);
     
@@ -255,7 +299,9 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     struct Hook     	     iffhook;
     struct FileFaceChunk     fc;
     struct FileImageChunk    ic1, ic2;
-    UBYTE   	    	    *img1data = NULL, *img2data = NULL, *img1pal = NULL, *img2pal = NULL;
+    UBYTE   	    	    *img1data = NULL, *img2data = NULL,
+    	    	    	    *img1pal = NULL, *img2pal = NULL,
+			    *img1mask = NULL, *img2mask = NULL;
     BOOL  have_face = FALSE, have_imag1 = FALSE, have_imag2 = FALSE;
     
     D(bug("ReadIcon35\n"));
@@ -303,14 +349,14 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 			{
 			    if (have_imag1)
 			    {
-			    	if (ReadImage35(iff, &fc, &ic2, &img2data, &img2pal, IconBase))
+			    	if (ReadImage35(iff, &fc, &ic2, &img2data, &img2pal, &img2mask, IconBase))
 				{
 			    	    have_imag2 = TRUE;
 				}
 			    }
 			    else
 			    {
-			    	if (ReadImage35(iff, &fc, &ic1, &img1data, &img1pal, IconBase))
+			    	if (ReadImage35(iff, &fc, &ic1, &img1data, &img1pal, &img1mask, IconBase))
 				{
 			    	    have_imag1 = TRUE;
 				}
@@ -322,9 +368,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 		    
 		    
 		} /* while(!ParseIFF(iff, IFFPARSE_SCAN)) */
-		
-		kprintf("parseiff error %d\n", error);
-		
+				
 	    } /* if (!StopChunks(iff, stopchunks, 2)) */
 	    
  	} /* if (!OpenIFF(iff, IFFF_READ)) */
@@ -340,6 +384,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	
 	icon->icon35.img1.imagedata 	    = img1data;
 	icon->icon35.img1.palette  	    = img1pal;
+	icon->icon35.img1.mask	    	    = img1mask;
 	icon->icon35.img1.numcolors 	    = ic1.NumColors + 1;
 	icon->icon35.img1.depth     	    = ic1.Depth;
 	icon->icon35.img1.flags     	    = ic1.Flags;
@@ -348,6 +393,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	if (have_imag2)
 	{
 	    icon->icon35.img2.imagedata     	= img2data;
+	    icon->icon35.img2.mask  	    	= img2mask;
 	    icon->icon35.img2.depth 	    	= ic2.Depth;
 	    icon->icon35.img2.flags 	    	= ic2.Flags;
 	    icon->icon35.img2.transparentcolor	= ic2.TransparentColor;
@@ -360,7 +406,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	    else
 	    {
 	    	icon->icon35.img2.palette   = icon->icon35.img1.palette;
-		icon->icon35.img2.numcolors = icon->icon35.img1.palette;
+		icon->icon35.img2.numcolors = icon->icon35.img1.numcolors;
 	    }
 	}
     }
