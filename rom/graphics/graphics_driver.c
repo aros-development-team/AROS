@@ -459,6 +459,9 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 	IPTR hwcursor;
 	BOOL ok = TRUE;
 
+    	/* Get method id here, to avoid any possible semaphore involment when calling the method */ 
+    	SDD(GfxBase)->hiddGfxShowImminentReset_MethodID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowImminentReset);
+
 	OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
 	SDD(GfxBase)->has_hw_cursor = (BOOL)hwcursor;
 	if (!hwcursor) {
