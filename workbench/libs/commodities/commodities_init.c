@@ -34,7 +34,7 @@
 #include <exec/alerts.h>
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define INIT	AROS_SLIB_ENTRY(init, Commodities)
 

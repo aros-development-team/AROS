@@ -1,12 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.. -I.
-
-MODNAME := nonvolatile
-MODTYPE := library
-
-FILES := 
 FUNCS := deletenv \
 	 freenvdata \
 	 getcopynv \
@@ -15,13 +9,9 @@ FUNCS := deletenv \
 	 setnvprotection \
 	 storenv	     
 
-USE_ROMLIB := yes
+#MM- workbench-libs-nonvolatile : setup includes linklibs
 
-#MM- workbench-libs-nonvolatile : setup includes linklibs workbench-libs-nonvolatile-module
-%make_module_setup mmake=workbench-libs-nonvolatile
-%make_module_cpak
-%make_module mmake=workbench-libs-nonvolatile
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-nonvolatile modname=nonvolatile \
+  modtype=library funcs=$(FUNCS) uselibs=rom conffile=lib.conf
 
 %common
-%include_deps

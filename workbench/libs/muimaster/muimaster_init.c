@@ -14,7 +14,7 @@
 
 #include "muimaster_intern.h"
 #include "mui.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 

@@ -19,7 +19,7 @@
 #include "initstruct.h"
 #endif
 #include "gadtools_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #ifndef INTUITIONNAME
 #define INTUITIONNAME "intuition.library"

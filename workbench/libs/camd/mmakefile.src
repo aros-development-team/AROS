@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-
-MODNAME   := camd
-MODTYPE	  := library
-
 FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
 	    unlinkmidilink getmidilinkfromownernode
@@ -48,13 +43,9 @@ FUNCS := \
     goodputmidi \
     midi2driver
 
-USE_AMIGALIB := yes
+#MM- workbench-libs-camd : setup includes linklibs
 
-#MM- workbench-libs-camd : setup includes linklibs workbench-libs-camd-module
-%make_module_setup mmake=workbench-libs-camd
-%make_module_cpak
-%make_module mmake=workbench-libs-camd
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-camd modname=camd modtype=library \
+  funcs=$(FUNCS) files=$(FILES) uselibs=amiga conffile=lib.conf
 
 %common
-%include_deps

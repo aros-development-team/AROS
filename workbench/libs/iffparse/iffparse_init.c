@@ -21,7 +21,8 @@
 #include "initstruct.h"
 #include "iffparse_intern.h"
 #include <aros/debug.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
+//#include "libdefs.h"
 #include <aros/asmcall.h>
 #include <clib/alib_protos.h>
 

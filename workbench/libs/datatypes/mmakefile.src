@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.. -I.
-
-MODNAME 	:= datatypes
-MODTYPE		:= library
-
 FILES := helpfuncs class classfuncs
 FUNCS := adddtobject \
 	 copydtmethods \
@@ -43,14 +38,13 @@ INCLUDE_FILES := $(wildcard include/*.h)
 USE_ROMLIB := yes
 USE_AMIGALIB := yes
 
-#MM- workbench-libs-datatypes : setup includes linklibs workbench-libs-datatypes-module
-%make_module_setup mmake=workbench-libs-datatypes
-%make_module_cpak
-%make_module mmake=workbench-libs-datatypes
-%make_lib_includes
+#MM- workbench-libs-datatypes : setup includes linklibs
+
+%build_module_macro mmake=workbench-libs-datatypes modname=datatypes \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \
+  conffile=lib.conf
 
 #MM copy-includes
 %copy_lib_includes path=datatypes
 
 %common
-%include_deps

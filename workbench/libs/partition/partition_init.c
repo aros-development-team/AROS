@@ -12,7 +12,7 @@
 
 #include "partition_intern.h"
 #include "partition_support.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #undef SysBase
 

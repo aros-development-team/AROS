@@ -15,7 +15,7 @@
 #include <proto/muimaster.h>
 
 #include "desktop_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "initstruct.h"
 #include "support.h"
 

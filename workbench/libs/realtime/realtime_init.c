@@ -29,7 +29,7 @@
 #include <exec/libraries.h>
 
 #include "realtime_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #undef DEBUG
 #define DEBUG 1

@@ -19,7 +19,7 @@
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define INIT AROS_SLIB_ENTRY(init, DataTypes)
 static const char name[];

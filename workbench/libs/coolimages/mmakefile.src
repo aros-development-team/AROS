@@ -2,27 +2,10 @@
 
 include $(TOP)/config/make.cfg
 
-MODNAME := coolimages
-MODTYPE := library
+#MM- workbench-libs-coolimages : setup includes linklibs
 
-FILES := 
-    	    
-FUNCS := cool_obtainimagea
-
-USE_AMIGALIB        := yes
-USE_CLIB_STATIC     := yes
-USE_COOLIMAGESLIB   := yes
-
-USER_INCLUDES := -I.
-
-#MM- workbench-libs-coolimages : setup includes linklibs \
-#MM	workbench-libs-coolimages-module
-
-%make_module_setup mmake=workbench-libs-coolimages
-
-%make_module_cpak
-%make_module mmake=workbench-libs-coolimages
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-coolimages modname=coolimages \
+  modtype=library funcs=cool_obtainimagea \
+  uselibs="coolimagesstatic amiga arosc" conffile=lib.conf
 
 %common
-%include_deps

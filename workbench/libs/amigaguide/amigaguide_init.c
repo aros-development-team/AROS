@@ -15,7 +15,7 @@
 #include <proto/exec.h>
 
 #include "amigaguide_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 
 #undef SysBase

@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.. -I.
-
-MODNAME := reqtools
-MODTYPE := library
-
 FILES := filereqalloc mem filereqextra req misc rtlocale \
 	 general filereq boopsigads filereqsetup filereqmain boopsi \
 	 palettereq rtfuncs
@@ -36,15 +31,11 @@ FUNCS :=	rtallocrequesta \
 		rtunlockprefs \
 		rtunlockwindow 
 
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
-
-#MM- workbench-libs-reqtools : setup includes linklibs workbench-libs-reqtools-module
+#MM- workbench-libs-reqtools : setup includes linklibs
 #MM- workbench-libs-reqtools : setup-libs-reqtools-catalogs
-%make_module_setup mmake=workbench-libs-reqtools
-%make_module_cpak
-%make_module mmake=workbench-libs-reqtools
-%make_lib_includes
+
+%build_module_macro mmake=workbench-libs-reqtools modname=reqtools \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \
+  conffile=lib.conf
 
 %common
-%include_deps

@@ -1,17 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I. -I..
-
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 FORCE_DEPLIBS 	:=
 FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libamiga.a
 USE_CPAK 		:= no
 endif
-
-MODNAME     := gadtools
-MODTYPE	    := library
 
 CLASSES	:=  buttonclass textclass sliderclass arrowclass scrollerclass \
 	    stringclass listviewclass checkboxclass cycleclass mxclass \
@@ -38,14 +33,10 @@ FUNCS	:=  createcontext \
 	    layoutmenuitemsa \
 	    layoutmenusa
 
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
+#MM- workbench-libs-gadtools : setup includes linklibs
 
-#MM- workbench-libs-gadtools : setup includes linklibs workbench-libs-gadtools-module
-%make_module_setup mmake=workbench-libs-gadtools
-%make_module_cpak
-%make_module mmake=workbench-libs-gadtools
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-gadtools modname=gadtools modtype=library \
+  funcs=$(FUNCS) files=$(FILES) conffile=lib.conf uselibs="rom amiga"
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
@@ -61,4 +52,3 @@ USE_AMIGALIB := yes
 #endif
 
 %common
-%include_deps

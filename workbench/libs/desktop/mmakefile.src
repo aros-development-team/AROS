@@ -1,22 +1,13 @@
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I. -I..
-
-MODNAME	    := desktop
-MODTYPE	    := library
-
 FILES := support newhandler worker iconcontainerclass amiga_lib_functions iconcontainerobserver observer presentation iconobserver diskiconobserver drawericonobserver tooliconobserver projecticonobserver trashcaniconobserver iconclass diskiconclass drawericonclass tooliconclass projecticonclass trashcaniconclass desktopobserver operationclass internaliconopsclass desktopclass internalwindowopsclass internaldesktopopsclass containericonobserver
 
 FUNCS := createdesktopobjecta getmenuitemlist dodesktopoperation builddesktopmenus
 
-USE_ROMLIB :=yes
-USE_MUILIB := yes
+#MM- workbench-libs-desktop : setup includes linklibs
 
-#MM- workbench-libs-desktop : setup includes linklibs workbench-libs-desktop-module
-%make_module_setup mmake=workbench-libs-desktop
-%make_module_cpak
-%make_module mmake=workbench-libs-desktop
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-desktop modname=desktop \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui rom" \
+  conffile=lib.conf
 
 %common
-%include_deps

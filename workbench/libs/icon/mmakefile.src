@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-
-MODNAME	    := icon
-MODTYPE	    := library
-
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 MOSLIB			:= /ade/morphos/lib
@@ -21,16 +16,10 @@ FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate 
 	    freediskobject freefreelist getdefdiskobject getdiskobject \
 	    getdiskobjectnew geticonrectangle geticontaglist matchtoolvalue putdefdiskobject putdiskobject
 
-USE_AMIGALIB := yes
-USE_ROMLIB := yes
-USE_MLIB := yes
-USE_AROSLIB := yes
+#MM- workbench-libs-icon : setup includes linklibs
 
-#MM- workbench-libs-icon : setup includes linklibs workbench-libs-icon-module
-%make_module_setup mmake=workbench-libs-icon
-%make_module_cpak
-%make_module mmake=workbench-libs-icon
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-icon modname=icon modtype=library \
+  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m" \
+  conffile=lib.conf
 
 %common
-%include_deps

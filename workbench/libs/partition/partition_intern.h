@@ -25,7 +25,7 @@
 #endif
 
 #include <aros/libcall.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /* Predeclaration */
 LIBBASETYPE;

@@ -34,7 +34,7 @@
 
 #include <exec/libraries.h>
 #include <exec/alerts.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #include "general.h"
 #include "boopsigads.h"

@@ -1,17 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.. -I.
-
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 FORCE_DEPLIBS 	:=
 FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a
 endif
-USE_CPAK 		:= no
-
-MODNAME 	:= commodities
-MODTYPE		:= library
 
 FILES := commodities_inputhandler eventfuncs
 
@@ -45,14 +39,10 @@ FUNCS := activatecxobj \
 	 setfilterix \
 	 settranslate
 
-USE_ROMLIB := yes
-USE_AROSLIB := yes
-	     
 #MM- workbench-libs-commodities : setup includes linklibs workbench-libs-commodities-module
-%make_module_setup mmake=workbench-libs-commodities
-%make_module_cpak
-%make_module mmake=workbench-libs-commodities
-%make_lib_includes
+
+%build_module_macro mmake=workbench-libs-commodities modname=commodities \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="arossupport rom" \
+  usecpak=no conffile=lib.conf
 
 %common
-%include_deps

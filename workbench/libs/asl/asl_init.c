@@ -21,7 +21,7 @@
 
 #include "initstruct.h"
 #include "asl_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define CATCOMP_NUMBERS
 #include "asl_strings.h"
