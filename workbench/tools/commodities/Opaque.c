@@ -35,7 +35,9 @@
    coords, instead of relative ones as in case of MoveWindow. OTOH it has the
    disadvantage that it also generates IDCMP_NEWSIZE IntuiMessages. */
    
-#define USE_CHANGEWINDOWBOX 0
+#define USE_CHANGEWINDOWBOX 1
+
+#define CALL_WINDOWFUNCS_IN_INPUTHANDLER 0
 
 /************************************************************************************/
 
@@ -100,6 +102,8 @@ static BOOL quitme, disabled;
 
 static LONG args[NUM_ARGS];
 static char s[256];
+
+static void HandleAction(void);
 
 /************************************************************************************/
 
@@ -324,7 +328,11 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	    case IECODE_NOBUTTON:
 	        if (opaque_active)
 		{
-		    Signal(maintask, actionmask);
+		    #if CALL_WINDOWFUNCS_IN_INPUTHANDLER
+	    		HandleAction();
+		    #else
+		    	Signal(maintask, actionmask);
+	    	    #endif
 		}
 		break;
 		
