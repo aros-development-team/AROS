@@ -1383,15 +1383,6 @@ endif
 %end
 
 #------------------------------------------------------------------------------
-# Add section with all necessary libs and dependencies for linking
-%define define_libs prelibs=$(PRELIBS) postlibs= deplibs=
-STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -lm -lautoinit %(postlibs) $(COMPILER_LIBS)
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a $(LIBDIR)/libm.a $(LIBDIR)/libautoinit.a %(deplibs)
-%end
-
-#------------------------------------------------------------------------------
 # Do something in all subdirs
 # This macro uses a trick: %(target) is evaluated *after* %(text), so one
 # can use %(target) in %(text).
@@ -1574,39 +1565,16 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
-#
-%define safe_define var=/A value=/M
-ifndef %(var)
-%(var) := %(value)
-endif
-%end
-
-#------------------------------------------------------------------------------
-# Do some setup common to all compiling directories.
-#
-#
-%define make_common_setup id=
-%safe_define var=OBJDIR%(id) value="$(GENDIR)/$(CURDIR)"
-ifneq (%(id),)
-  LIBS := LIBS%(id)
-endif
-%safe_define var=CFLAGS%(id) value="$(TARGET_CFLAGS) $(USER_CFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__"
-%safe_define var=AFLAGS%(id) value="$(TARGET_AFLAGS) $(USER_AFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__"
-%safe_define var=LDFLAGS%(id) value="$(TARGET_LDFLAGS) $(USER_LDFLAGS)"
-
-%end
-
-#------------------------------------------------------------------------------
 # Copy files from one directory to another.
 
-%define copy_files_q files=$(FILES) src=. dst=/A
+%define copy_files_q files=$(FILES) src=. dst=/A maketarget=files-copy
 
 SRC_FILES := $(foreach f, %(files), %(src)/$(f))
 DST_FILES := $(foreach f, %(files), %(dst)/$(f))
 
-files-copy : setup $(DST_FILES)
+%(maketarget) : setup $(DST_FILES)
 
-%(dst)/% : %(src)/%
+$(DST_FILES) : %(dst)/% : %(src)/%
 	@$(CP) $< $@
 	
 setup ::
@@ -1614,23 +1582,6 @@ setup ::
 
 %end
 
-#------------------------------------------------------------------------------
-# Just as above, but noisy.
-
-%define copy_files files=$(FILES) src=. dst=/A
-
-SRC_FILES := $(foreach f, %(files), %(src)/$(f))
-DST_FILES := $(foreach f, %(files), %(dst)/$(f))
-
-files-copy : setup $(DST_FILES)
-
-%(dst)/% : %(src)/%
-	$(CP) $< $@
-	
-setup ::
-	%mkdirs_q %(dst)
-
-%end
 
 #------------------------------------------------------------------------------
 #   Copy include files into the includes directories. There are currently
