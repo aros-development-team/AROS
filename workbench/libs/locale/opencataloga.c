@@ -359,7 +359,7 @@ struct header
 				    catalog->ic_CatStrings[i].cs_String = &buffer[8];
 				    catalog->ic_CatStrings[i].cs_Id = id;
 
-    	    	    	    	    kprintf("Catalog String #%d id=%d string=\"%s\"\n", i, id, catalog->ic_CatStrings[i].cs_String);
+    	    	    	    	    //kprintf("Catalog String #%d id=%d string=\"%s\"\n", i, id, catalog->ic_CatStrings[i].cs_String);
 
 				    strlen  = 8 + strlen + (strlen & 1);
 				    if (strlen & 3) strlen += 4 - (strlen & 3);
