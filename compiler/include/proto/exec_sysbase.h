@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,6 @@
 #endif
 
 #include <clib/exec_sysbase_protos.h>
-
-#if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/exec_sysbase.h>
-#else
 #include <defines/exec_sysbase.h>
-#endif
 
 #endif /* PROTO_EXEC_SYSBASE_H */
