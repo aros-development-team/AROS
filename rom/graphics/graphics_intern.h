@@ -29,6 +29,7 @@
 #   include <graphics/view.h>
 #endif
 
+#include <graphics/scale.h>
 #include "fontsupport.h"
 
 #define REGIONS_USE_MEMPOOL 	1
