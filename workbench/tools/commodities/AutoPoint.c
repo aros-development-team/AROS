@@ -166,7 +166,6 @@ static BOOL initiate(int argc, char **argv, APState *as)
 {
     CxObj *customObj;
     struct LibTable *tmpLibTable = libTable;
-    UBYTE tmpString[256];
     
     memset(as, 0, sizeof(APState));
 

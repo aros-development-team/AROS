@@ -192,7 +192,6 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 {
     CxObj *customObj;
     struct LibTable *tmpLibTable = libTable;
-    UBYTE tmpString[256];
 
     memset(cs, 0, sizeof(CFState));
 
