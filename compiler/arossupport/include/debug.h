@@ -229,7 +229,7 @@
 	    if(*__p != MEMFILL_WALL)			\
 	    {						\
 		struct Task *__t = FindTask(NULL);	\
-		kprintf("\x07Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n",	\
+		kprintf("\x07" "Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n",	\
 			__p, __t, __t->tc_Node.ln_Name);\
 	    }						\
 	    __p++;					\
