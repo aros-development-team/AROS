@@ -48,7 +48,7 @@ all: setup \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; else true ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libexec.a
