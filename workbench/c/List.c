@@ -600,15 +600,15 @@ void printSummary(int files, int dirs, int nBlocks, BOOL noHead)
     {
 	if (files != 0)
 	{
-	    Printf("%d files - ", files);
+	    Printf("%ld files - ", files);
 	}
 	
 	if (dirs != 0)
 	{
-	    Printf("%d directories - ", dirs);
+	    Printf("%ld directories - ", dirs);
 	}
 	
-	Printf("%d bytes used\n", nBlocks);
+	Printf("%ld bytes used\n", nBlocks);
     }
 }
 
