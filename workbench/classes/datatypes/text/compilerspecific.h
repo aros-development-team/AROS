@@ -27,9 +27,11 @@
 
 #else
 
-#define SAVEDS 	__saveds
-#define ASM	__asm
-#define STDARGS	__stdargs
+typedef unsigned long IPTR;
+
+#define SAVEDS  __saveds
+#define ASM     __asm
+#define STDARGS __stdargs
 
 #if !defined(_DOS_H) && defined(__SASC)
 #include <dos.h>

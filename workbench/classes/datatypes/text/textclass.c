@@ -468,7 +468,7 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 				    }
 				    mark_start = TRUE;
 
-				}	/* if(mark_line1 == line) */
+				}       /* if(mark_line1 == line) */
 				else
 				    mark_start = FALSE;
 
@@ -480,7 +480,7 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 
 					if (mark_start)
 					{
-					    LONG val = mark_x1 - line->ln_XOffset / fontx;	//- mincolnum;
+					    LONG val = mark_x1 - line->ln_XOffset / fontx;      //- mincolnum;
 
 					    newlen = mark_x2 - mark_x1;
 					    if (val < 0)
@@ -492,7 +492,7 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 					{
 					    LONG val = line->ln_XOffset / fontx - mincolnum;
 
-					    newlen = mark_x2 - line->ln_XOffset / fontx;	// - td->horiz_top;
+					    newlen = mark_x2 - line->ln_XOffset / fontx;        // - td->horiz_top;
 
 					    if (val < 0)
 						newlen += val;
@@ -527,7 +527,7 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 					    SetABPenDrMd(rp, line->ln_FgPen, line->ln_BgPen, JAM2);
 					    Text(rp, text, len);
 					}
-				    }	/* if(mark_line2 == line) */
+				    }   /* if(mark_line2 == line) */
 				    else
 				    {
 					if (mark_line1 != line && !norectfill)
@@ -736,7 +736,7 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 				}
 				mark_start = TRUE;
 
-			    }	/* if(mark_line1 == line) */
+			    }   /* if(mark_line1 == line) */
 			    else
 				mark_start = FALSE;
 
@@ -758,7 +758,7 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 				    {
 					LONG val = line->ln_XOffset / fontx - mincolnum;
 
-					newlen = mark_x2 - line->ln_XOffset / fontx;	// - td->horiz_top;
+					newlen = mark_x2 - line->ln_XOffset / fontx;    // - td->horiz_top;
 
 					if (val < 0)
 					    newlen += val;
@@ -791,7 +791,7 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 				    Text(rp, text, newlen);
 				    text += newlen;
 				    len -= newlen;
-				}	/* if(mark_line2 == line) */
+				}       /* if(mark_line2 == line) */
 				else
 				{
 				    if (mark_line1 != line)
@@ -815,22 +815,22 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 
 				    Text(rp, text, len);
 
-				}	/* if(mark_line2 == line) else ... */
+				}       /* if(mark_line2 == line) else ... */
 
-			    }	/* if(len>0) */
+			    }   /* if(len>0) */
 
-			}	/* if(len) */
+			}       /* if(len) */
 
-		    }	/* if(width > 0) */
+		    }   /* if(width > 0) */
 
-		}	/* if(len > 0) */
+		}       /* if(len > 0) */
 
-	    }	/* if(linenum >= minlinenum && mark) */
+	    }   /* if(linenum >= minlinenum && mark) */
 
 	    if (line->ln_Flags & LNF_LF)
 		y += fonty;
 
-	}	/* if(linenum >= td->vert_top) */
+	}       /* if(linenum >= td->vert_top) */
 
 
 	if (mark_line2 == line)
@@ -841,7 +841,7 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 	    linenum++;
 	}
 	line = (struct Line *) line->ln_Link.mln_Succ;
-    }	/* while(line) */
+    }   /* while(line) */
 
     SetABPenDrMd(rp, apen, bpen, mode);
     SetFont(rp, oldfont);
@@ -992,7 +992,7 @@ static struct Line *FindLine(struct Text_Data *td, LONG * px, LONG y)
 		break;
 	    }
 
-	}	/* if(y == linenum) */
+	}       /* if(y == linenum) */
 
 	if (line->ln_Flags & LNF_LF)
 	{
@@ -1000,7 +1000,7 @@ static struct Line *FindLine(struct Text_Data *td, LONG * px, LONG y)
 	}
 	line = (struct Line *) Node_Next(line);
 
-    }	/* while(line) */
+    }   /* while(line) */
 
     return line;
 }
@@ -1137,12 +1137,12 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
 		DrawMarkedText(td, rp, TRUE);
 	    }
 
-	}	/* if (DoubleClick(td->lastsecs, td->lastmics, secs, mics)) */
+	}       /* if (DoubleClick(td->lastsecs, td->lastmics, secs, mics)) */
 
 	td->lastsecs = secs;
 	td->lastmics = mics;
 
-    }	/* if (code == SELECTDOWN) */
+    }   /* if (code == SELECTDOWN) */
     else
     {
 	if (td->pressed)
@@ -1248,9 +1248,9 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
 		CopyText(td);
 	    }
 #endif
-	}	/* if(td->pressed) */
+	}       /* if(td->pressed) */
 
-    }	/* if (code == SELECTDOWN) else ... */
+    }   /* if (code == SELECTDOWN) else ... */
 
     return 0;
 }
@@ -1442,9 +1442,9 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 	    }
 	    line = (struct Line *) line->ln_Link.mln_Succ;
 
-	}	/* while(line) */
+	}       /* while(line) */
 
-    }	/* if (printer_io) */
+    }   /* if (printer_io) */
 
     D(bug("text.datatype/PrintText: Printing Text finished...\n"));
 }
@@ -1514,7 +1514,7 @@ static int LoadAsAscII(struct Text_Data *td)
 	     i++)
 	{
 	    /* Check for end of line */
-	    if (buffer[i] == 10)	// && buffer[i+1]==10)
+	    if (buffer[i] == 10)        // && buffer[i+1]==10)
 
 	    {
 		newseg = linefeed = TRUE;
@@ -1664,9 +1664,9 @@ STATIC struct Process *DoAsyncMethodA(Class *cl,Object *obj,Msg msg,struct TagIt
 
     if ((mport = CreateMsgPort()))
     {
-    	struct AsyncMethodMsg *amsg = (struct AsyncMethodMsg*)AllocVec(sizeof(struct AsyncMethodMsg),MEMF_PUBLIC);
-    	if (amsg)
-    	{
+	struct AsyncMethodMsg *amsg = (struct AsyncMethodMsg*)AllocVec(sizeof(struct AsyncMethodMsg),MEMF_PUBLIC);
+	if (amsg)
+	{
 	    amsg->amm_Object = obj;
 	    amsg->amm_Msg    = msg;
 
@@ -1679,9 +1679,9 @@ STATIC struct Process *DoAsyncMethodA(Class *cl,Object *obj,Msg msg,struct TagIt
 	    {
 		PutMsg(&proc->pr_MsgPort,&amsg->amm_ExecMessage);
 		WaitPort(mport);
-            }
-            FreeVec(amsg);
-        }
+	    }
+	    FreeVec(amsg);
+	}
 	DeleteMsgPort(mport);
     }
     return proc;
@@ -2156,15 +2156,15 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 	    LONG x = msg->gpi_Mouse.X, y = msg->gpi_Mouse.Y;
 	    LONG newx, newy;
 
- 	    if (x<0)
- 		diff_x = x / td->font->tf_XSize;
- 	    else
- 	    {
- 		if (x > td->width)
- 		    diff_x = (x - td->width + td->font->tf_XSize) / td->font->tf_XSize;
- 		else
- 		    diff_x = 0;
- 	    }
+	    if (x<0)
+		diff_x = x / td->font->tf_XSize;
+	    else
+	    {
+		if (x > td->width)
+		    diff_x = (x - td->width + td->font->tf_XSize) / td->font->tf_XSize;
+		else
+		    diff_x = 0;
+	    }
  
 
 	    if (y < 0)
@@ -2177,8 +2177,8 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		    diff_y = 0;
 	    }
 
- 	    if (diff_x)
- 	    {
+	    if (diff_x)
+	    {
 #ifdef _AROS
 		IPTR val;
 		LONG top, total, visible;
@@ -2198,13 +2198,13 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 				      DTA_TopHoriz, newx,
 				      TAG_DONE);
 #else
- 		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
- 		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
- 				  GA_ID, g->GadgetID,
- 				  DTA_TopHoriz, newx,
-  				  TAG_DONE);
+		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
+		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+				  GA_ID, g->GadgetID,
+				  DTA_TopHoriz, newx,
+				  TAG_DONE);
 #endif
-  	    }
+	    }
 
 	    if (diff_y)
 	    {
@@ -2409,7 +2409,7 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction,struct dttSearc
 	if (found < 0)
 	{
 	    DisplayBeep(msg->dttst_GInfo->gi_Screen);
-/*	    found = 0;*/
+/*          found = 0;*/
 	} else
 	{
 	    struct RastPort *rp = ObtainGIRPort(msg->dttst_GInfo);
@@ -2421,14 +2421,14 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction,struct dttSearc
 
 	    notifyAttrChanges(obj,msg->dttst_GInfo,0,DTA_TopVert,found,TAG_DONE);
 
-            td->mark_line1 = td->mark_line2 = line;
-            td->mark_x1 = found_x + line->ln_XOffset / td->font->tf_XSize;
-            td->mark_x2 = td->mark_x1 + msg->dttst_TextLen;
-            td->mark_y1 = td->mark_y2 = found;
+	    td->mark_line1 = td->mark_line2 = line;
+	    td->mark_x1 = found_x + line->ln_XOffset / td->font->tf_XSize;
+	    td->mark_x2 = td->mark_x1 + msg->dttst_TextLen;
+	    td->mark_y1 = td->mark_y2 = found;
 
 	    if (rp)
 	    {
-	    	DrawMarkedText(td,rp,TRUE);
+		DrawMarkedText(td,rp,TRUE);
 		ReleaseGIRPort(rp);
 	    }
 	}
@@ -2443,18 +2443,25 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
     if ((ReqToolsBase = OpenLibrary("reqtools.library",38)))
     {
 	struct GadgetInfo *ginfo = &msg->dttgs_GInfo;
+
+	/*
+	 *  SAS/C doesn't like non-constant data in initialisation.
+	 *  So we have to add ginfo->gi_Window later.
+	 */
 	struct TagItem tags[] =
 	{
-  	    {RT_Window     	, ginfo->gi_Window			},
-	    {RT_ReqPos     	, REQPOS_CENTERWIN			},
-	    {RT_LockWindow 	, TRUE					},
-	    {RT_Underscore	, '_'					},
-	    {RTGS_GadFmt	, "_Ok|_From Top|_From Bottom|_Cancel"	},
-	    {TAG_DONE							}
-	};
+	    {RT_Window          , 0                                     },
+	    {RT_ReqPos          , REQPOS_CENTERWIN                      },
+	    {RT_LockWindow      , TRUE                                  },
+	    {RT_Underscore      , '_'                                   },
+	    {RTGS_GadFmt        , (ULONG) "_Ok|_From Top|_From Bottom|_Cancel"  },
+	    {TAG_DONE                                                   }
+	};        
 	
 	ULONG retval = rtGetStringA(td->search_buffer,sizeof(td->search_buffer),
 				   "Text Datatype Search String", NULL, tags);
+
+	tags[0].ti_Data=(IPTR) ginfo->gi_Window;
 				 
 	CloseLibrary(ReqToolsBase);
 
@@ -2465,7 +2472,7 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
 
 	    if (retval == 1 || retval == 2)
 	    {
-	    	search_method = DTTM_SEARCH_NEXT;
+		search_method = DTTM_SEARCH_NEXT;
 	    }   else /* 3 */
 	    {
 		search_method = DTTM_SEARCH_PREV;
@@ -2482,7 +2489,7 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
     }
 
     if (FindTask(NULL) == (struct Task*)td->search_proc)
-    	td->search_proc = NULL;
+	td->search_proc = NULL;
 }
 
 #ifdef _AROS
@@ -2496,7 +2503,7 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 LONG * msg)
 {
 #endif
-    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);	/* Small Data */
+    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
     switch (*msg)
     {
@@ -2597,7 +2604,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 
     case DTM_TRIGGER:
 	{
-   	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
+	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 	    ULONG function = ((struct dtTrigger*)msg)->dtt_Function;
 
 	    D(bug("text.datatype/DT_Dispatcher: Method DTM_TRIGGER\n"));
@@ -2611,13 +2618,13 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 		     * creates this structure on the stack (Oh No) !
 		     */
 		    td->msg.dttgs_GInfo        = *((struct dtTrigger*)msg)->dtt_GInfo;
-/*		    td->msg.dttgs_SearchMethod = DTTM_SEARCH_NEXT;*/
+/*                  td->msg.dttgs_SearchMethod = DTTM_SEARCH_NEXT;*/
 
 		    td->search_proc = DoAsyncMethod(cl,o,(Msg) &td->msg,NP_Name,"text.datatype getstring process",TAG_DONE);
 		}
 	    } else
 	    {
-	    	ULONG search_method;
+		ULONG search_method;
 
 		if (function == STM_PREV_FIELD || function == STM_BROWSE_PREV)
 		    search_method = DTTM_SEARCH_PREV;
@@ -2670,7 +2677,7 @@ struct IClass *DT_MakeClass(struct Library *textbase)
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
 	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-	cl->cl_UserData = textbase;	/* Required by datatypes */
+	cl->cl_UserData = (IPTR) textbase;     /* Required by datatypes */
     }
 
     return cl;
