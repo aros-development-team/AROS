@@ -5,6 +5,14 @@
 #include "posinfo.h"
 #include "memory.h"
 
+static char * _Purify_MemTypeNames[] =
+{
+    "Heap",
+    "Stack",
+    "Code",
+    "Data"
+};
+
 int Purify_Error;
 
 static const char * purify_ErrorMsgs[] =
@@ -51,12 +59,13 @@ void Purify_PrintAccessError (const char * access, const void * addr, int size)
 	{
 	    Purify_PrintError (
 		"%s of %d bytes at %p. This is %d bytes into the block\n"
-		"%s%s%sat %p with the size of %d bytes (type=%d)",
+		"%s%s%sat %p with the size of %d bytes (type=%s)",
 		access, size, addr, offset,
 		Purify_LastNode->data ? "\"" : "",
 		Purify_LastNode->data ? (char *)Purify_LastNode->data : "",
 		Purify_LastNode->data ? "\" " : "",
-		Purify_LastNode->mem, Purify_LastNode->size, Purify_LastNode->type
+		Purify_LastNode->mem, Purify_LastNode->size,
+		_Purify_MemTypeNames[Purify_LastNode->type]
 	    );
 	}
 	else
@@ -66,11 +75,11 @@ void Purify_PrintAccessError (const char * access, const void * addr, int size)
 	    Purify_PrePrintError ();
 	    fprintf (stderr,
 		"%s of %d bytes at %p. This is %ld bytes into the block\n"
-		"allocated at %p with the size of %d bytes (type=%d)\n"
+		"allocated at %p with the size of %d bytes (type=%s)\n"
 		"The block was allocated ",
 		access, size, addr, offset,
 		Purify_LastNode->mem, Purify_LastNode->size,
-		Purify_LastNode->type
+		_Purify_MemTypeNames[Purify_LastNode->type]
 	    );
 	    Purify_PrintCallers (&node->alloc);
 	    if (node->free.nstack != -1)
@@ -90,12 +99,13 @@ void Purify_PrintAccessError (const char * access, const void * addr, int size)
 	{
 	    Purify_PrintError (
 		"%s of %d bytes at %p. This is %d bytes %s the block\n"
-		"%s%s%sat %p with the size of %d bytes (type=%d)",
+		"%s%s%sat %p with the size of %d bytes (type=%s)",
 		access, size, addr, offset, (offset < 0 ? "before" : "after"),
 		next->data ? "\"" : "",
 		next->data ? (char *)next->data : "",
 		next->data ? "\" " : "",
-		next->mem, next->size, next->type
+		next->mem, next->size,
+		_Purify_MemTypeNames[next->type]
 	    );
 	}
 	else
@@ -105,10 +115,11 @@ void Purify_PrintAccessError (const char * access, const void * addr, int size)
 	    Purify_PrePrintError ();
 	    fprintf (stderr,
 		"%s of %d bytes at %p. This is %d bytes %s the block\n"
-		"allocated at %p with the size of %d bytes (type=%d)\n"
+		"allocated at %p with the size of %d bytes (type=%s)\n"
 		"The block was allocated ",
 		access, size, addr, offset, (offset < 0 ? "before" : "after"),
-		next->mem, next->size, next->type
+		next->mem, next->size,
+		_Purify_MemTypeNames[next->type]
 	    );
 	    Purify_PrintCallers (&node->alloc);
 	    if (node->free.nstack != -1)
