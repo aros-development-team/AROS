@@ -20,7 +20,7 @@ enum
 {
     RTT_ALLOCMEM,
     RTT_ALLOCVEC,
-    RTT_PORTS,
+    RTT_PORT,
     RTT_LIBRARY,
     RTT_FILE,
     RTT_SCREEN, /* Screen before Window, so the windows are closed before the screen */
@@ -34,6 +34,7 @@ enum
 {
     RTTB_EXEC,
     RTTO_PutMsg,
+    RTTO_GetMsg,
 };
 
 enum
@@ -94,13 +95,15 @@ void RT_Leave (void);
 #	undef CreateMsgPort
 #	define CreateMsgPort()          (APTR)RT_Add(RTT_PORT,NULL,0)
 #	undef DeleteMsgPort
-#	define DeleteMsgPort(mp)        (APTR)RT_Free(RTT_PORT,(mp))
+#	define DeleteMsgPort(mp)        (void)RT_Free(RTT_PORT,(mp))
 #	undef CreatePort
 #	define CreatePort(name,pri)     (APTR)RT_Add(RTT_PORT,(name),(pri))
 #	undef DeletePort
-#	define DeletePort(mp)           (APTR)RT_Free(RTT_PORT,(mp))
+#	define DeletePort(mp)           (void)RT_Free(RTT_PORT,(mp))
 #	undef PutMsg
-#	define PutMsg(mp,msg)           (APTR)RT_Check(RTT_PORT,RTTO_PutMsg,(mp),(msg))
+#	define PutMsg(mp,msg)           (void)RT_Check(RTT_PORT,RTTO_PutMsg,(mp),(msg))
+#	undef GetMsg
+#	define GetMsg(mp)               (struct Message *)RT_Check(RTT_PORT,RTTO_GetMsg,(mp))
 
 #	undef Open
 #	define Open(path,mode)          (BPTR)RT_Add(RTT_FILE,(path),(mode))

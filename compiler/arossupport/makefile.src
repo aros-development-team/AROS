@@ -63,6 +63,9 @@ $(OBJDIR)/rawputchars.o: rawputchars.c
 $(OBJDIR)/_kprintf.o: _kprintf.c
 	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
 
+$(OBJDIR)/rt.o: rt.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
 $(OBJDIR)/rt_stubs.o: rt_stubs.s
 	%assemble_q cmd=$(SYS_AS)
 

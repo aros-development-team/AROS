@@ -23,8 +23,34 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/arossupport.h>
+#include "etask.h"
 
-static BOOL InitWasCalled;
+#define RT_VERSION	1	/* Current version of RT */
+
+#define HASH_BITS	4	/* Size of hash in bits and entries */
+#define HASH_SIZE	(1L << HASH_BITS)
+
+typedef struct
+{
+    const char * Function;
+    const char * File;
+    ULONG	 Line;
+}
+RTStack;
+
+#define STACKDEPTH  256
+
+
+/* This is what is behind etask->iet_RT */
+typedef struct
+{
+    ULONG	   rtd_Version; /* RT_VERSION */
+    struct MinList rtd_ResHash[RTT_MAX][HASH_SIZE];
+    ULONG	   rtd_StackPtr;
+    RTStack	   rtd_CallStack[STACKDEPTH];
+} RTData;
+
+static RTData * intRTD = NULL; /* Internal pointer in case no ETask is available */
 
 typedef struct
 {
@@ -41,7 +67,7 @@ RTNode;
 typedef struct
 {
     RTNode Node;
-    APTR   Resource;
+    APTR   Resource;	/* This should be common to every resource */
 }
 Resource;
 
@@ -95,11 +121,20 @@ WindowResource;
 
 typedef struct __RTDesc RTDesc;
 
-typedef IPTR (* RT_AllocFunc)  (RTNode *, va_list, BOOL * success);
-typedef IPTR (* RT_FreeFunc)   (RTNode *);
-typedef IPTR (* RT_SearchFunc) (RTDesc *, RTNode **, va_list);
-typedef IPTR (* RT_ShowError)  (RTDesc *, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
-typedef IPTR (* RT_CheckFunc)  (RTDesc *, const char * file, ULONG line, ULONG op, va_list);
+typedef IPTR (* RT_AllocFunc)  (RTData * rtd, RTNode *, va_list, BOOL * success);
+typedef IPTR (* RT_FreeFunc)   (RTData * rtd, RTNode *);
+typedef IPTR (* RT_SearchFunc) (RTData * rtd, int, RTNode **, va_list);
+typedef IPTR (* RT_ShowError)  (RTData * rtd, int, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
+typedef IPTR (* RT_CheckFunc)  (RTData * rtd, int, const char * file, ULONG line, ULONG op, va_list);
+
+#define HASH_BASE(rtn)  (((Resource *)rtn)->Resource)
+
+#if HASH_BITS==4
+#define CALCHASH(res)   \
+    ((((ULONG)res) + (((ULONG)res)>>4) +(((ULONG)res)>>8) + (((ULONG)res)>>12) + \
+     (((ULONG)res)>>16) + (((ULONG)res)>>20) +(((ULONG)res)>>24) + (((ULONG)res)>>28)) \
+     & 0x0000000FL)
+#endif
 
 struct __RTDesc
 {
@@ -109,43 +144,66 @@ struct __RTDesc
     RT_SearchFunc  SearchFunc;
     RT_ShowError   ShowError;
     RT_CheckFunc   CheckFunc;
-    struct MinList ResList;
 };
 
-static IPTR RT_Search (RTDesc *, RTNode **, va_list);
+#define GetRTData()                                                 \
+	({                                                          \
+	    struct IntETask * et;				    \
+								    \
+	    et = (struct IntETask *)GetETask (FindTask(NULL));      \
+								    \
+	    et							    \
+		&& et->iet_RT					    \
+		&& ((RTData *)et->iet_RT)->rtd_Version == RT_VERSION \
+	    ? et->iet_RT					    \
+	    : intRTD;						    \
+	})
+#define SetRTData(rtd)                                              \
+	{							    \
+	    struct IntETask * et;				    \
+								    \
+	    et = (struct IntETask *)GetETask (FindTask(NULL));      \
+								    \
+	    if (et)                                                 \
+		et->iet_RT = rtd;				    \
+	    else						    \
+		intRTD = rtd;					    \
+	}
 
-static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success);
-static IPTR RT_FreeMem (MemoryResource * rt);
-static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr, va_list args);
-static IPTR RT_ShowErrorMem (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_Search (RTData * rtd, int rtt, RTNode **, va_list);
 
-static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success);
-static IPTR RT_FreeVec (MemoryResource * rt);
-static IPTR RT_ShowErrorVec (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success);
+static IPTR RT_FreeMem (RTData * rtd, MemoryResource * rt);
+static IPTR RT_SearchMem (RTData * rtd, int rtt, MemoryResource ** rtptr, va_list args);
+static IPTR RT_ShowErrorMem (RTData * rtd, int rtt, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
-static IPTR RT_CreatePort (PortResource * rt, va_list args, BOOL * success);
-static IPTR RT_DeletePort (PortResource * rt);
-static IPTR RT_ShowErrorPort (RTDesc *, PortResource *, IPTR, int, const char * file, ULONG line, va_list);
-static IPTR RT_CheckPort (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success);
+static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt);
+static IPTR RT_ShowErrorVec (RTData * rtd, int, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
-static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success);
-static IPTR RT_CloseLibrary (LibraryResource * rt);
-static IPTR RT_ShowErrorLib (RTDesc *, LibraryResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL * success);
+static IPTR RT_DeletePort (RTData * rtd, PortResource * rt);
+static IPTR RT_ShowErrorPort (RTData * rtd, int, PortResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckPort (RTData * rtd, int desc, const char * file, ULONG line, ULONG op, va_list args);
 
-static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success);
-static IPTR RT_Close (FileResource * rt);
-static IPTR RT_ShowErrorFile (RTDesc *, FileResource *, IPTR, int, const char * file, ULONG line, va_list);
-static IPTR RT_CheckFile (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseLibrary (RTData * rtd, LibraryResource * rt);
+static IPTR RT_ShowErrorLib (RTData * rtd, int, LibraryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
-static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success);
-static IPTR RT_CloseScreen (ScreenResource * rt);
-static IPTR RT_ShowErrorScreen (RTDesc *, ScreenResource *, IPTR, int, const char * file, ULONG line, va_list);
-static IPTR RT_CheckScreen (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+static IPTR RT_Open (RTData * rtd, FileResource * rt, va_list args, BOOL * success);
+static IPTR RT_Close (RTData * rtd, FileResource * rt);
+static IPTR RT_ShowErrorFile (RTData * rtd, int, FileResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckFile (RTData * rtd, int desc, const char * file, ULONG line, ULONG op, va_list args);
 
-static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success);
-static IPTR RT_CloseWindow (WindowResource * rt);
-static IPTR RT_ShowErrorWindow (RTDesc *, WindowResource *, IPTR, int, const char * file, ULONG line, va_list);
-static IPTR RT_CheckWindow (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt);
+static IPTR RT_ShowErrorScreen (RTData * rtd, int, ScreenResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckScreen (RTData * rtd, int desc, const char * file, ULONG line, ULONG op, va_list args);
+
+static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseWindow (RTData * rtd, WindowResource * rt);
+static IPTR RT_ShowErrorWindow (RTData * rtd, int, WindowResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckWindow (RTData * rtd, int desc, const char * file, ULONG line, ULONG op, va_list args);
 
 /* Return values of SearchFunc */
 #define RT_SEARCH_FOUND 	    0
@@ -156,7 +214,7 @@ static IPTR RT_CheckWindow (RTDesc * desc, const char * file, ULONG line, ULONG 
 #define RT_CHECK    1
 #define RT_EXIT     2
 
-RTDesc RT_Resources[RTT_MAX] =
+static const RTDesc RT_Resources[RTT_MAX] =
 {
     { /* RTT_ALLOCMEM */
 	sizeof (MemoryResource),
@@ -174,7 +232,7 @@ RTDesc RT_Resources[RTT_MAX] =
 	(RT_ShowError) RT_ShowErrorVec,
 	NULL, /* Check */
     },
-    { /* RTT_PORTS */
+    { /* RTT_PORT */
 	sizeof (PortResource),
 	(RT_AllocFunc) RT_CreatePort,
 	(RT_FreeFunc)  RT_DeletePort,
@@ -216,20 +274,8 @@ RTDesc RT_Resources[RTT_MAX] =
     },
 };
 
-typedef struct
-{
-    const char * Function;
-    const char * File;
-    ULONG	 Line;
-}
-RTStack;
 
-#define STACKDEPTH  256
-
-ULONG RT_StackPtr = STACKDEPTH;
-static RTStack RT_CallStack[STACKDEPTH];
-
-static void RT_FreeResource (int rtt, RTNode * rtnode);
+static void RT_FreeResource (RTData * rtd, int rtt, RTNode * rtnode);
 
 /*****************************************************************************
 
@@ -265,15 +311,37 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    int t;
+    RTData * rtd;
+    int      t, i;
 
-    if (InitWasCalled)
+    if ((rtd = GetRTData ()))
+    {
+	kprintf ("RT_Init() called twice %p\n", rtd);
 	return;
+    }
 
-    InitWasCalled = 1;
+    if (!(rtd = AllocMem (sizeof (RTData), MEMF_ANY)) )
+    {
+	kprintf ("RT_Init(): No memory\n");
+	return;
+    }
+
+    SetRTData (rtd);
+
+    rtd->rtd_Version  = RT_VERSION;
+    rtd->rtd_StackPtr = STACKDEPTH;
 
     for (t=0; t<RTT_MAX; t++)
-	NEWLIST(&RT_Resources[t].ResList);
+    {
+	for (i=0; i<HASH_SIZE; i++)
+	{
+	    NEWLIST(&rtd->rtd_ResHash[t][i]);
+	}
+    }
+
+    kprintf ("RT_Init(): RT up and kicking in %s mode\n"
+	, intRTD ? "internal" : "ETask"
+    );
 } /* RT_Init */
 
 /*****************************************************************************
@@ -314,21 +382,27 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
+    RTData * rtd;
     RTNode * rt, * next;
-    int      t;
+    int      t, i;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return;
 
     for (t=RTT_MAX-1; t>=0; t--)
     {
-	for (next=GetHead(&RT_Resources[t].ResList); (rt=next); )
+	for (i=0; i<HASH_SIZE; i++)
 	{
-	    next = GetSucc (rt);
+	    for (next=GetHead(&rtd->rtd_ResHash[t][i]); (rt=next); )
+	    {
+		next = GetSucc (rt);
 
-	    RT_FreeResource (t, rt);
+		RT_FreeResource (rtd, t, rt);
+	    }
 	}
     }
+
+    FreeMem (rtd, sizeof (RTData));
 } /* RT_Exit */
 
 /*****************************************************************************
@@ -349,7 +423,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	line depend on the type of resource to be traced:
 
 	RTT_ALLOCMEM:	  APTR		memPtr,
-			ULONG	      size)
+			  ULONG 	size)
 
     INPUTS
 	rtt - Type of the resource
@@ -377,12 +451,13 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
+    RTData * rtd;
     IPTR     ret;
     va_list  args;
     RTNode * rtnew;
     BOOL     success;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return FALSE;
 
     if (!(rtnew = AllocMem (RT_Resources[rtt].Size, MEMF_ANY)) )
@@ -400,6 +475,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
     ret = (*(RT_Resources[rtt].AllocFunc))
     (
+	rtd,
 	rtnew,
 	args,
 	&success
@@ -409,8 +485,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
     if (success)
     {
-	AddTail ((struct List *)&RT_Resources[rtt].ResList,
-	    (struct Node *)rtnew
+	AddTail ((struct List *)&rtd->rtd_ResHash[rtt][CALCHASH(HASH_BASE(rtnew))]
+	    ,(struct Node *)rtnew
 	);
     }
     else
@@ -465,10 +541,11 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    va_list	args;
+    RTData   * rtd;
+    va_list    args;
     Resource * rtnew;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return;
 
     if (!(rtnew = AllocMem (RT_Resources[rtt].Size, MEMF_ANY|MEMF_CLEAR)) )
@@ -486,8 +563,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 	va_end (args);
 
-	AddTail ((struct List *)&RT_Resources[rtt].ResList,
-	    (struct Node *)rtnew
+	AddTail ((struct List *)&rtd->rtd_ResHash[rtt][CALCHASH(HASH_BASE(rtnew))]
+	    , (struct Node *)rtnew
 	);
     }
 } /* RT_IntTrack */
@@ -542,11 +619,12 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    IPTR     ret;
-    va_list  args;
+    RTData * rtd;
     RTNode * rt;
+    va_list  args;
+    IPTR     ret;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return FALSE;
 
     va_start (args, op);
@@ -555,7 +633,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     {
 	ret = (*(RT_Resources[rtt].CheckFunc))
 	(
-	    &RT_Resources[rtt],
+	    rtd,
+	    rtt,
 	    file,
 	    line,
 	    op,
@@ -566,7 +645,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     {
 	ret = (*(RT_Resources[rtt].SearchFunc))
 	(
-	    &RT_Resources[rtt],
+	    rtd,
+	    rtt,
 	    &rt,
 	    args
 	);
@@ -575,7 +655,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	{
 	    ret = (*(RT_Resources[rtt].ShowError))
 	    (
-		&RT_Resources[rtt],
+		rtd,
+		rtt,
 		rt,
 		ret,
 		RT_CHECK,
@@ -638,25 +719,27 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
+    RTData * rtd;
     IPTR     ret;
     va_list  args;
     RTNode * rt;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return FALSE;
 
     va_start (args, line);
 
     ret = (*(RT_Resources[rtt].SearchFunc))
     (
-	&RT_Resources[rtt],
+	rtd,
+	rtt,
 	&rt,
 	args
     );
 
     if (ret == RT_SEARCH_FOUND && !(rt->Flags & RTNF_DONT_FREE))
     {
-	ret = (*(RT_Resources[rtt].FreeFunc)) (rt);
+	ret = (*(RT_Resources[rtt].FreeFunc)) (rtd, rt);
 
 	Remove ((struct Node *)rt);
 	FreeMem (rt, RT_Resources[rtt].Size);
@@ -665,7 +748,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     {
 	ret = (*(RT_Resources[rtt].ShowError))
 	(
-	    &RT_Resources[rtt],
+	    rtd,
+	    rtt,
 	    rt,
 	    ret,
 	    RT_FREE,
@@ -721,17 +805,19 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    if (!InitWasCalled)
+    RTData * rtd;
+
+    if (!(rtd = GetRTData ()) )
 	return;
 
-    if (RT_StackPtr == 0)
+    if (rtd->rtd_StackPtr == 0)
 	return;
 
-    -- RT_StackPtr;
+    -- rtd->rtd_StackPtr;
 
-    RT_CallStack[RT_StackPtr].Function = function;
-    RT_CallStack[RT_StackPtr].File     = file;
-    RT_CallStack[RT_StackPtr].Line     = line;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].Function = function;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].File	   = file;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].Line	   = line;
 } /* RT_IntEnter */
 
 
@@ -769,17 +855,19 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    if (!InitWasCalled)
+    RTData * rtd;
+
+    if (!(rtd = GetRTData ()) )
 	return;
 
-    if (RT_StackPtr == STACKDEPTH)
+    if (rtd->rtd_StackPtr == STACKDEPTH)
 	return;
 
-    RT_CallStack[RT_StackPtr].Function = NULL;
-    RT_CallStack[RT_StackPtr].File     = NULL;
-    RT_CallStack[RT_StackPtr].Line     = 0;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].Function = NULL;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].File	   = NULL;
+    rtd->rtd_CallStack[rtd->rtd_StackPtr].Line	   = 0;
 
-    RT_StackPtr ++;
+    rtd->rtd_StackPtr ++;
 } /* RT_IntLeave */
 
 
@@ -818,9 +906,10 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 ******************************************************************************/
 {
 #if 0
-    int t;
+    RTData * rtd;
+    int      t;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return;
 
     for (t=0; t<KEEPDEPTH && node->Stack[t].Function; t++)
@@ -868,17 +957,18 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
+    RTData * rtd;
     int t;
 
-    if (!InitWasCalled)
+    if (!(rtd = GetRTData ()) )
 	return;
 
-    for (t=0; t<=RT_StackPtr; t++)
+    for (t=0; t<=rtd->rtd_StackPtr; t++)
     {
 	kprintf ("    %s (%s:%d)\n"
-	    , RT_CallStack[t].Function
-	    , RT_CallStack[t].File
-	    , RT_CallStack[t].Line
+	    , rtd->rtd_CallStack[t].Function
+	    , rtd->rtd_CallStack[t].File
+	    , rtd->rtd_CallStack[t].Line
 	);
     }
 } /* RT_ShowRTStack */
@@ -892,7 +982,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	void RT_FreeResource (
 
 /*  SYNOPSIS */
-	int rtt,
+	RTData * rtd,
+	int	 rtt,
 	RTNode * rtnode)
 
 /*  FUNCTION
@@ -922,7 +1013,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    if (!InitWasCalled)
+    if (!rtd && !(rtd = GetRTData ()))
 	return;
 
     if (!(rtnode->Flags & RTNF_DONT_FREE) )
@@ -930,7 +1021,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	/* Print an error */
 	(void) (*(RT_Resources[rtt].ShowError))
 	(
-	    &RT_Resources[rtt],
+	    rtd,
+	    rtt,
 	    rtnode,
 	    0UL,
 	    RT_EXIT,
@@ -940,7 +1032,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	);
 
 	/* free the resource */
-	(void) (*(RT_Resources[rtt].FreeFunc)) (rtnode);
+	(void) (*(RT_Resources[rtt].FreeFunc)) (rtd, rtnode);
     }
 
     /* Remove resource from list and free it */
@@ -994,14 +1086,14 @@ static BOOL CheckArea (APTR ptr, ULONG size, ULONG flags)
     return TRUE;
 } /* CheckArea */
 
-static IPTR RT_Search (RTDesc * desc, RTNode ** rtptr, va_list args)
+static IPTR RT_Search (RTData * rtd, int rtt, RTNode ** rtptr, va_list args)
 {
     Resource * rt;
     APTR     * res;
 
     res = va_arg (args, APTR);
 
-    ForeachNode (&desc->ResList, rt)
+    ForeachNode (&rtd->rtd_ResHash[rtt][CALCHASH(res)], rt)
     {
 	if (rt->Resource == res)
 	{
@@ -1019,7 +1111,7 @@ static IPTR RT_Search (RTDesc * desc, RTNode ** rtptr, va_list args)
 	   RT Memory
 **************************************/
 
-static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
+static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
@@ -1032,14 +1124,14 @@ static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->Memory);
 } /* RT_AllocMem */
 
-static IPTR RT_FreeMem (MemoryResource * rt)
+static IPTR RT_FreeMem (RTData * rtd, MemoryResource * rt)
 {
     FreeMem (rt->Memory, rt->Size);
 
     return TRUE;
 } /* RT_FreeMem */
 
-static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr,
+static IPTR RT_SearchMem (RTData * rtd, int rtt, MemoryResource ** rtptr,
 	va_list args)
 {
     MemoryResource * rt;
@@ -1049,7 +1141,7 @@ static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr,
     memory = va_arg (args, APTR);
     size   = va_arg (args, ULONG);
 
-    ForeachNode (&desc->ResList, rt)
+    ForeachNode (&rtd->rtd_ResHash[rtt][CALCHASH(memory)], rt)
     {
 	if (rt->Memory == memory)
 	{
@@ -1065,7 +1157,7 @@ static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr,
     return RT_SEARCH_NOT_FOUND;
 } /* RT_SearchMem */
 
-static IPTR RT_ShowErrorMem (RTDesc * desc, MemoryResource * rt,
+static IPTR RT_ShowErrorMem (RTData * rtd, int rtt, MemoryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     const char * modestr = (mode == RT_FREE) ? "Free" : "Check";
@@ -1135,7 +1227,7 @@ static IPTR RT_ShowErrorMem (RTDesc * desc, MemoryResource * rt,
     return ret;
 } /* RT_ShowErrorMem */
 
-static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success)
+static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
@@ -1148,14 +1240,14 @@ static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->Memory);
 } /* RT_AllocVec */
 
-static IPTR RT_FreeVec (MemoryResource * rt)
+static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt)
 {
     FreeVec (rt->Memory);
 
     return TRUE;
 } /* RT_FreeVec */
 
-static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
+static IPTR RT_ShowErrorVec (RTData * rtd, int rtt, MemoryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     const char * modestr = (mode == RT_FREE) ? "Free" : "Check";
@@ -1217,7 +1309,7 @@ static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
 	       RT Ports
 **************************************/
 
-static IPTR RT_CreatePort (PortResource * rt, va_list args, BOOL * success)
+static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL * success)
 {
     STRPTR name;
     LONG   pri;
@@ -1243,14 +1335,14 @@ static IPTR RT_CreatePort (PortResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->Port);
 } /* RT_CreatePort */
 
-static IPTR RT_DeletePort (PortResource * rt)
+static IPTR RT_DeletePort (RTData * rtd, PortResource * rt)
 {
     DeletePort (rt->Port);
 
     return TRUE;
 } /* RT_ClosePort */
 
-static IPTR RT_ShowErrorPort (RTDesc * desc, PortResource * rt,
+static IPTR RT_ShowErrorPort (RTData * rtd, int rtt, PortResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     if (mode != RT_EXIT)
@@ -1312,13 +1404,13 @@ static IPTR RT_ShowErrorPort (RTDesc * desc, PortResource * rt,
     return ret;
 } /* RT_ShowErrorPort */
 
-static IPTR RT_CheckPort (RTDesc * desc,
+static IPTR RT_CheckPort (RTData * rtd, int rtt,
 			const char * file, ULONG line,
 			ULONG op, va_list args)
 {
     PortResource * rt;
 
-    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
@@ -1357,6 +1449,26 @@ static IPTR RT_CheckPort (RTDesc * desc,
 	    return 0;
 	}
 
+    case RTTO_GetMsg:
+	{
+	    struct MsgPort * port;
+
+	    port = va_arg (args, struct MsgPort *);
+
+	    if (!rt)
+	    {
+		kprintf ("GetMsg(): Illegal port pointer\n"
+			"    Port=%p at %s:%d\n"
+		    , port
+		    , file, line
+		);
+
+		return 0L;
+	    }
+
+	    return (IPTR) GetMsg (port);
+	}
+
     } /* switch (op) */
 
     return 0L;
@@ -1367,7 +1479,7 @@ static IPTR RT_CheckPort (RTDesc * desc,
 	    RT Libraries
 **************************************/
 
-static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success)
+static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BOOL * success)
 {
     rt->Name	= va_arg (args, STRPTR);
     rt->Version = va_arg (args, ULONG);
@@ -1380,14 +1492,14 @@ static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->Lib);
 } /* RT_OpenLibrary */
 
-static IPTR RT_CloseLibrary (LibraryResource * rt)
+static IPTR RT_CloseLibrary (RTData * rtd, LibraryResource * rt)
 {
     CloseLibrary (rt->Lib);
 
     return TRUE;
 } /* RT_CloseLibrary */
 
-static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
+static IPTR RT_ShowErrorLib (RTData * rtd, int rtt, LibraryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
 
@@ -1447,7 +1559,7 @@ static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
 	      RT Files
 **************************************/
 
-static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success)
+static IPTR RT_Open (RTData * rtd, FileResource * rt, va_list args, BOOL * success)
 {
     STRPTR path;
 
@@ -1502,7 +1614,7 @@ static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->FH);
 } /* RT_Open */
 
-static IPTR RT_Close (FileResource * rt)
+static IPTR RT_Close (RTData * rtd, FileResource * rt)
 {
     Close (rt->FH);
     FreeVec (rt->Path);
@@ -1526,7 +1638,7 @@ static const STRPTR GetFileMode (LONG mode)
     return buffer;
 } /* GetFileMode */
 
-static IPTR RT_ShowErrorFile (RTDesc * desc, FileResource * rt,
+static IPTR RT_ShowErrorFile (RTData * rtd, int rtt, FileResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     if (mode != RT_EXIT)
@@ -1580,13 +1692,13 @@ static IPTR RT_ShowErrorFile (RTDesc * desc, FileResource * rt,
     return ret;
 } /* RT_ShowErrorFile */
 
-static IPTR RT_CheckFile (RTDesc * desc,
+static IPTR RT_CheckFile (RTData * rtd, int rtt,
 			const char * file, ULONG line,
 			ULONG op, va_list args)
 {
     FileResource * rt;
 
-    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
@@ -1705,7 +1817,7 @@ static IPTR RT_CheckFile (RTDesc * desc,
 	    RT Screens
 **************************************/
 
-static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success)
+static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL * success)
 {
     struct NewScreen * ns;
     struct TagItem   * tags = NULL;
@@ -1753,7 +1865,7 @@ static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success)
     return (IPTR)(rt->Screen);
 } /* RT_OpenScreen */
 
-static IPTR RT_CloseScreen (ScreenResource * rt)
+static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 {
     if (rt->Screen->FirstWindow)
     {
@@ -1768,9 +1880,9 @@ static IPTR RT_CloseScreen (ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-	    if (RT_Search (&RT_Resources[RTT_WINDOW], (RTNode **)&rtwin, NULL) == RT_SEARCH_FOUND)
+	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)&rtwin, NULL) == RT_SEARCH_FOUND)
 	    {
-		RT_FreeResource (RTT_WINDOW, (RTNode *)rtwin);
+		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }
 	    else
 	    {
@@ -1788,7 +1900,7 @@ static IPTR RT_CloseScreen (ScreenResource * rt)
     return TRUE;
 } /* RT_CloseScreen */
 
-static IPTR RT_ShowErrorScreen (RTDesc * desc, ScreenResource * rt,
+static IPTR RT_ShowErrorScreen (RTData * rtd, int rtt, ScreenResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     if (mode != RT_EXIT)
@@ -1842,13 +1954,13 @@ static IPTR RT_ShowErrorScreen (RTDesc * desc, ScreenResource * rt,
     return ret;
 } /* RT_ShowErrorScreen */
 
-static IPTR RT_CheckScreen (RTDesc * desc,
+static IPTR RT_CheckScreen (RTData * rtd, int rtt,
 			const char * file, ULONG line,
 			ULONG op, va_list args)
 {
     ScreenResource * rt;
 
-    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
@@ -1903,7 +2015,7 @@ static IPTR RT_CheckScreen (RTDesc * desc,
 	    RT Windows
 **************************************/
 
-static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success)
+static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL * success)
 {
     struct NewWindow * nw;
     struct TagItem   * tags = NULL;
@@ -1945,20 +2057,23 @@ static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success)
 
     rt->Window = OpenWindowTagList (nw, tags);
 
+    if (rt->Window->UserPort)
+	RT_IntTrack (RTT_PORT, __FILE__, __LINE__, rt->Window->UserPort);
+
     if (rt->Window)
 	*success = TRUE;
 
     return (IPTR)(rt->Window);
 } /* RT_OpenWindow */
 
-static IPTR RT_CloseWindow (WindowResource * rt)
+static IPTR RT_CloseWindow (RTData * rtd, WindowResource * rt)
 {
     CloseWindow (rt->Window);
 
     return TRUE;
 } /* RT_CloseWindow */
 
-static IPTR RT_ShowErrorWindow (RTDesc * desc, WindowResource * rt,
+static IPTR RT_ShowErrorWindow (RTData * rtd, int rtt, WindowResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
 {
     if (mode != RT_EXIT)
@@ -2012,13 +2127,13 @@ static IPTR RT_ShowErrorWindow (RTDesc * desc, WindowResource * rt,
     return ret;
 } /* RT_ShowErrorWindow */
 
-static IPTR RT_CheckWindow (RTDesc * desc,
+static IPTR RT_CheckWindow (RTData * rtd, int rtt,
 			const char * file, ULONG line,
 			ULONG op, va_list args)
 {
     WindowResource * rt;
 
-    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
@@ -2063,7 +2178,7 @@ static IPTR RT_CheckWindow (RTDesc * desc,
 	    return 0;
 	}
 
-    }
+    } /* switch (op) */
 
     return 0L;
 } /* RT_CheckWindow */
