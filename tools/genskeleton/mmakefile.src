@@ -1,18 +1,9 @@
 include $(TOP)/config/make.cfg
 
-FILES := genskeleton
-EXES := $(AROSDIR)/Build/Tools/genskeleton
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-genskeleton
 
-%make_prog_setup mmake=build-tools-genskeleton
-
-#MM
-build-tools-genskeleton : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-genskeleton \
+    progname=genskeleton targetdir=$(AROSDIR)/Build/Tools \
+    uselibs=arosc
 
 %common
-%include_deps

@@ -1,18 +1,10 @@
 include $(TOP)/config/make.cfg
 
-FILES := flexcat
-EXES := $(AROSDIR)/Build/Tools/flexcat
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-flexcat
 
-%make_prog_setup mmake=build-tools-flexcat
-
-#MM
-build-tools-flexcat : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-flexcat \
+    progname=flexcat targetdir=$(AROSDIR)/Build/Tools \
+    files=flexcat uselibs=arosc
 
 %common
-%include_deps
+

@@ -5,22 +5,14 @@ include $(TOP)/config/make.cfg
 
 FILES       := primitives
 EXEDIR      := $(AROSDIR)/test/benchmarks/graphics
-EXES        := $(FILES:%=$(EXEDIR)/%)
-
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
 
 #MM- test-benchmarks : test-benchmarks-graphics
 #MM- test-benchmarks-quick : test-benchmarks-graphics-quick
 
 #MM test-benchmarks-graphics : includes linklibs
 
-%make_prog_setup mmake=test-benchmarks-graphics
-
-test-benchmarks-graphics: setup $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
+%build_progs mmake=test-benchmarks-graphics \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="amiga arosc m"
 
 %common
-%include_deps

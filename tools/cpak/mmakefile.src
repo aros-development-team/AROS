@@ -1,18 +1,9 @@
 include $(TOP)/config/make.cfg
 
-FILES := cpak
-EXES := $(AROSDIR)/Build/Tools/cpak
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-cpak
 
-%make_prog_setup mmake=build-tools-cpak
-
-#MM
-build-tools-cpak : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-cpak \
+    progname=cpak targetdir=$(AROSDIR)/Build/Tools \
+    files=cpak uselibs=arosc
 
 %common
-%include_deps

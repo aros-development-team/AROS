@@ -1,19 +1,10 @@
 include $(TOP)/config/make.cfg
 
-FILES := createhdfile
-EXES := $(AROSDIR)/Build/Tools/createhdfile
-
-USE_CLIB := yes
-PRELIBS := $(PRELIBS) -ladf
-
 #MM- build-tools : build-tools-createhdfile
 
-%make_prog_setup mmake=build-tools-createhdfile
-
-#MM build-tools-createhdfile : linklibs
-build-tools-createhdfile : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-createhdfile \
+    progname=createhdfile targetdir=$(AROSDIR)/Build/Tools \
+    files=createhdfile uselibs="adf arosc"
 
 %common
-%include_deps
+

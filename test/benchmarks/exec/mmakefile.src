@@ -5,26 +5,14 @@ include $(TOP)/config/make.cfg
 
 FILES           := allocvec allocpooled
 EXEDIR          := $(AROSDIR)/test/benchmarks/exec
-EXES            := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-USE_AROSLIB     := yes
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
 
 #MM- test-benchmarks : test-benchmarks-exec
 #MM- test-benchmarks-quick : test-benchmarks-exec-quick
 
 #MM test-benchmarks-exec : includes linklibs 
 
-%make_prog_setup mmake=test-benchmarks-exec
-
-test-benchmarks-exec : setup $(EXES)
-
-setup ::
-	%mkdir_q $(EXEDIR)
-
-%make_prog_single dir=$(EXEDIR)
+%build_progs mmake=test-benchmarks-exec \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
 
 %common
-%include_deps

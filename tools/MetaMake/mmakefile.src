@@ -1,18 +1,9 @@
 include $(TOP)/config/make.cfg
 
-FILES := mmake
-EXES := $(AROSDIR)/Build/Tools/mmake
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-mmake
 
-%make_prog_setup mmake=build-tools-mmake
-
-#MM
-build-tools-mmake : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-mmake \
+    progname=mmake targetdir=$(AROSDIR)/Build/Tools \
+    files=mmake uselibs=arosc
 
 %common
-%include_deps

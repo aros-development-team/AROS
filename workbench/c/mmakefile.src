@@ -19,6 +19,7 @@ FILES := \
     Delete \
     DevList \
     Dir \
+    Eval \
     Filenote \
     Info \
     Install \
@@ -53,26 +54,16 @@ FILES := \
     Wait \
     Which
 
-EXEDIR := $(AROS_C)
-EXES   := $(foreach f,$(FILES), $(EXEDIR)/$(f))
-
 USER_CFLAGS     := -I$(TOP)/rom/dos
-
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
-USE_AROSLIB     := yes
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
 #MM workbench-c : includes linklibs
 
-%make_prog_setup mmake=workbench-c
-
-workbench-c : setup $(EXES) $(EXEDIR)/Eval
-
-%make_prog_single dir=$(EXEDIR)
+%build_progs mmake=workbench-c \
+    files=$(FILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m"
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
@@ -82,4 +73,3 @@ $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c Eval.c
 	%compile_q from=Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
 
 %common
-%include_deps

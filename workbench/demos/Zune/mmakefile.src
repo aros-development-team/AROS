@@ -10,24 +10,11 @@ FILES := \
     mui_notify2 \
     mui_input1
 
-EXEDIR := $(AROSDIR)/Demos/Zune
-EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+#MM workbench-demos-zune : includes linklibs  
 
-USE_CLIB     := yes
-USE_AMIGALIB := yes
-USE_MUILIB   := yes
-USE_AROSLIB  := yes
-
-#MM workbench-demos-zune : workbench-demos-zune-setup includes linklibs  
-
-%make_prog_setup mmake=workbench-demos-zune
-
-workbench-demos-zune : setup $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
-
-#MM workbench-demos-zune-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-demos-zune-setup
+%build_progs mmake=workbench-demos-zune \
+    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune \
+    uselibs="mui arossupport amiga arosc"
 
 %common
-%include_deps
+

@@ -1,20 +1,10 @@
 include $(TOP)/config/make.cfg
 
-FILES := createdtdesc
-EXES := $(AROSDIR)/Build/Tools/createdtdesc \
-	$(AROSDIR)/Build/Tools/examinedtdesc
-
-USE_CLIB := yes
-PRELIBS := $(PRELIBS) -lc_iff
-
 #MM- build-tools : linklibs build-tools-dtdesc
 
-%make_prog_setup mmake=build-tools-dtdesc
-
-#MM
-build-tools-dtdesc : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_progs mmake=build-tools-dtdesc \
+    files="createdtdesc examinedtdesc" \
+    targetdir=$(AROSDIR)/Build/Tools uselibs="c_iff arosc"
 
 %common
-%include_deps
+

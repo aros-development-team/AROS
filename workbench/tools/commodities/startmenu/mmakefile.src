@@ -9,7 +9,7 @@ FILES := main support
 EXEDIR := $(AROSDIR)/Tools/Commodities
 
 ##MM- workbench : workbench-tools
-##MM workbench-tools : setup-cx includes linklibs
+##MM workbench-tools : includes linklibs
 
 #%build_prog mmake=workbench-tools \
 #    progname=StartMenu targetdir=$(EXEDIR) \

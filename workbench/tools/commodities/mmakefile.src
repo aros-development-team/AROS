@@ -13,22 +13,14 @@ FILES	:= \
     NoCapsLock \
     Opaque
 
-EXEDIR := $(AROSDIR)/Tools/Commodities
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 USER_CFLAGS := -I$(TOP)/workbench/libs/commodities
 
-USE_CLIB := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_MUILIB := yes
-
 #MM- workbench : workbench-tools
-#MM workbench-tools : setup-cx includes linklibs workbench-tools-commodities-catalogs
+#MM workbench-tools : includes linklibs workbench-tools-commodities-catalogs
 
-%make_prog_setup mmake=workbench-tools
+%build_progs mmake=workbench-tools \
+    files=$(FILES) targetdir=$(AROSDIR)/Tools/Commodities \
+    uselibs="mui amiga arosc m"
 
-workbench-tools : setup $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
 %common
-%include_deps
+

@@ -5,26 +5,14 @@ include $(TOP)/config/make.cfg
 
 FILES           := newobject domethod
 EXEDIR          := $(AROSDIR)/test/benchmarks/boopsi
-EXES            := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-USE_AROSLIB     := yes
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
 
 #MM- test-benchmarks : test-benchmarks-boopsi
 #MM- test-benchmarks-quick : test-benchmarks-boopsi-quick
 
 #MM test-benchmarks-boopsi : includes linklibs 
 
-%make_prog_setup mmake=test-benchmarks-boopsi
-
-test-benchmarks-boopsi : setup $(EXES)
-
-setup ::
-	%mkdir_q $(EXEDIR)
-
-%make_prog_single dir=$(EXEDIR)
+%build_progs mmake=test-benchmarks-boopsi \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
 
 %common
-%include_deps

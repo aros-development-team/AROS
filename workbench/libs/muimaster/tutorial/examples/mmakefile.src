@@ -13,28 +13,10 @@ FILES  := \
     HVGroup   \
     Notify
 
-EXEDIR := $(AROSDIR)/Demos/Zune
-EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+#MM workbench-libs-muimaster-examples : includes linklibs
 
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
-
-#MM workbench-libs-muimaster-examples : \
-#MM   workbench-libs-muimaster-examples-setup includes linklibs
-
-%make_prog_setup mmake=workbench-libs-muimaster-examples
-
-workbench-libs-muimaster-examples : $(EXES)
-
-#MM
-workbench-libs-muimaster-examples-quick : $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
-
-#MM workbench-libs-muimaster-examples-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-libs-muimaster-examples-setup
+%build_progs mmake=workbench-libs-muimaster-examples \
+    files=$(FILES) targetdir=$(ARODIR)/Demos/Zune \
+    uselibs="mui arossupport amiga arosc"
 
 %common
-%include_deps
