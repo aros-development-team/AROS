@@ -23,6 +23,14 @@
 #   endif
 #endif
 
+#if defined __GNUC__ && defined __GNUC_MINOR__
+# define __GNUC_PREREQ(maj, min) \
+        ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+# define __GNUC_PREREQ(maj, min) 0
+#endif
+
+
 /*
  * 2. Analyze compiler for STD C/C++.
  *
@@ -30,6 +38,8 @@
  * a.	extern "C" linkage required for programs.
  * b.	inline, const, volatile, restrict keywords defined in
  *	newer C/C++ standards.
+ * c.	throw() being available, which lets the compiler better
+ *      optimize stuff
  */
 
 #if defined(__cplusplus)
@@ -71,6 +81,14 @@
 #   define	    volatile
 #   define	    __restrict__
 #   define	    restrict
+#endif
+
+#ifdef __GNUC__
+#    if defined __cplusplus && __GNUC_PREREQ (2,8)
+#        define __THROW       throw ()
+#    else
+#        define __THROW
+#    endif
 #endif
 
 /* 3. Macros for making things more efficient */
