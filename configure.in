@@ -239,7 +239,7 @@ aros_target_strip="true"
 # XXX We don't do this yet.
 aros_target_cflags="-Wall -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_target_aflags="-Wall -x assembler-with-cpp"
-aros_target_ldflags="-nostartfiles -nostdlib -Wl,-i"
+aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 
 aros_shared_default=yes
 
@@ -320,7 +320,6 @@ case "$target_os" in
     netbsd*)
         aros_target_arch="netbsd"
         aros_target_cpu="i386"
-	aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 	aros_target_genmap="-Wl,-M -Xlinker >" 
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
