@@ -35,7 +35,7 @@ asl00001;2;nlorentz;Write FreeFileRequest
 asl00002;2;nlorentz;Write RequestFile
 asl00003;2;nlorentz;Write AllocAslRequest
 asl00004;2;nlorentz;Write FreeAslRequest
-asl00005;1;nlorentz;Write AslRequest
+asl00005;2;nlorentz;Write AslRequest
 asl00006;2;stegerg;Write AbortAslRequest
 asl00007;2;stegerg;Write ActivateAslRequest
 battclock00000;2;iaint;Write ResetBattClock
