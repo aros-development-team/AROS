@@ -70,7 +70,7 @@ struct __MUIBuiltinClass {
 
 #define MUIOBJMACRO_START(class)   \
 ({                                 \
-     STRPTR __class = class;       \
+     ClassID __class = class;      \
      enum { __ismuiobjmacro = 1 }; \
      IPTR __tags[] = {0
 
@@ -80,13 +80,13 @@ struct __MUIBuiltinClass {
      enum { __ismuiobjmacro = 0 };  \
      IPTR __tags[] = {0
 
-#define OBJMACRO_END                                                          \
-     TAG_DONE};                                                               \
-     (                                                                        \
-         __ismuiobjmacro                                                      \
-         ? MUI_NewObjectA((STRPTR)__class, (struct TagItem *)(__tags + 1))    \
-         : NewObjectA((Class *)__class, NULL, (struct TagItem *)(__tags + 1)) \
-     );                                                                       \
+#define OBJMACRO_END                                                            \
+     TAG_DONE};                                                                 \
+     (                                                                          \
+         __ismuiobjmacro                                                        \
+         ? MUI_NewObjectA((ClassID)__class, (struct TagItem *)(__tags + 1)) \
+         : NewObjectA((Class *)__class, NULL, (struct TagItem *)(__tags + 1))   \
+     );                                                                         \
 })
 
 #else
