@@ -62,7 +62,7 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
     if (name && strlen(name) > 0)
     {
 	snprintf(buf, 255, "5:%s", name);
-	set(data->bitmap_image, MUIA_Image_Spec, (IPTR)buf);
+	set(data->bitmap_image, MUIA_Imagedisplay_Spec, (IPTR)buf);
     }
 }
 
@@ -296,11 +296,11 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type == MUIV_Imageadjust_Type_Background)
     {
 	bitmap_group = VGroup,
-	    Child, bitmap_image = ImageObject,
+	    Child, bitmap_image = ImagedisplayObject,
 	        TextFrame,
 	        InnerSpacing(4,4),
-	        MUIA_Image_FreeHoriz, TRUE,
-	        MUIA_Image_FreeVert, TRUE,
+	        MUIA_Imagedisplay_FreeHoriz, TRUE,
+	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End,
 	    Child, bitmap_popasl = PopaslObject,
 	        MUIA_Popstring_String, bitmap_string =
