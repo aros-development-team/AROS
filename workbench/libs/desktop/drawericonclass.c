@@ -20,36 +20,37 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR drawerIconNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR drawerIconNew(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct DrawerIconClassData *data;
     struct TagItem *tag;
 
-    retval=DoSuperMethodA(cl, obj, (Msg)msg);
-    if(retval)
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (retval)
     {
-        obj=(Object*)retval;
-        data=INST_DATA(cl, obj);
+        obj = (Object *) retval;
+        data = INST_DATA(cl, obj);
     }
 
     return retval;
 }
 
-IPTR drawerIconSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR drawerIconSet(Class * cl, Object * obj, struct opSet * msg)
 {
     struct DrawerIconClassData *data;
-    IPTR retval=1;
-    struct TagItem *tag, *tstate=msg->ops_AttrList;
+    IPTR            retval = 1;
+    struct TagItem *tag,
+                   *tstate = msg->ops_AttrList;
 
-    data=(struct DrawerIconClassData*)INST_DATA(cl, obj);
+    data = (struct DrawerIconClassData *) INST_DATA(cl, obj);
 
-    while((tag=NextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             default:
-                retval=DoSuperMethodA(cl, obj, (Msg)msg);
+                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
@@ -57,58 +58,56 @@ IPTR drawerIconSet(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-IPTR drawerIconGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR drawerIconGet(Class * cl, Object * obj, struct opGet * msg)
 {
-    IPTR retval=1;
+    IPTR            retval = 1;
     struct DrawerIconClassData *data;
 
-    data=(struct DrawerIconClassData*)INST_DATA(cl, obj);
+    data = (struct DrawerIconClassData *) INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
         default:
-            retval=DoSuperMethodA(cl, obj, (Msg)msg);
+            retval = DoSuperMethodA(cl, obj, (Msg) msg);
             break;
     }
 
     return retval;
 }
 
-IPTR drawerIconDispose(Class *cl, Object *obj, Msg msg)
+IPTR drawerIconDispose(Class * cl, Object * obj, Msg msg)
 {
-    IPTR retval;
+    IPTR            retval;
 
-    retval=DoSuperMethodA(cl, obj, msg);
+    retval = DoSuperMethodA(cl, obj, msg);
 
     return retval;
 }
 
 AROS_UFH3(IPTR, drawerIconDispatcher,
-    AROS_UFHA(Class  *, cl,  A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg     , msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
-    ULONG retval=0;
+    ULONG           retval = 0;
 
-    switch(msg->MethodID)
+    switch (msg->MethodID)
     {
         case OM_NEW:
-            retval=drawerIconNew(cl, obj, (struct opSet*)msg);
+            retval = drawerIconNew(cl, obj, (struct opSet *) msg);
             break;
         case OM_SET:
-            retval=drawerIconSet(cl, obj, (struct opSet*)msg);
+            retval = drawerIconSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval=drawerIconGet(cl, obj, (struct opGet*)msg);
+            retval = drawerIconGet(cl, obj, (struct opGet *) msg);
             break;
         case OM_DISPOSE:
-            retval=drawerIconDispose(cl, obj, msg);
+            retval = drawerIconDispose(cl, obj, msg);
             break;
         default:
-            retval=DoSuperMethodA(cl, obj, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
 
     return retval;
 }
-

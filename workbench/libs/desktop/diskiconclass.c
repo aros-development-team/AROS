@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   $Id$ 
+ */
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -24,37 +24,38 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR diskIconNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR diskIconNew(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct DiskIconClassData *data;
     struct TagItem *tag;
 
-    retval=DoSuperMethodA(cl, obj, (Msg)msg);
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
-    if(retval)
+    if (retval)
     {
-        obj=(Object*)retval;
-        data=INST_DATA(cl, obj);
+        obj = (Object *) retval;
+        data = INST_DATA(cl, obj);
     }
 
     return retval;
 }
 
-IPTR diskIconSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR diskIconSet(Class * cl, Object * obj, struct opSet * msg)
 {
     struct DiskIconClassData *data;
-    IPTR retval=1;
-    struct TagItem *tag, *tstate=msg->ops_AttrList;
+    IPTR            retval = 1;
+    struct TagItem *tag,
+                   *tstate = msg->ops_AttrList;
 
-    data=(struct DiskIconClassData*)INST_DATA(cl, obj);
+    data = (struct DiskIconClassData *) INST_DATA(cl, obj);
 
-    while((tag=NextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             default:
-                retval=DoSuperMethodA(cl, obj, (Msg)msg);
+                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
@@ -62,58 +63,56 @@ IPTR diskIconSet(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-IPTR diskIconGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR diskIconGet(Class * cl, Object * obj, struct opGet * msg)
 {
-    IPTR retval=1;
+    IPTR            retval = 1;
     struct DiskIconClassData *data;
 
-    data=(struct DiskIconClassData*)INST_DATA(cl, obj);
+    data = (struct DiskIconClassData *) INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
         default:
-            retval=DoSuperMethodA(cl, obj, (Msg)msg);
+            retval = DoSuperMethodA(cl, obj, (Msg) msg);
             break;
     }
 
     return retval;
 }
 
-IPTR diskIconDispose(Class *cl, Object *obj, Msg msg)
+IPTR diskIconDispose(Class * cl, Object * obj, Msg msg)
 {
-    IPTR retval;
+    IPTR            retval;
 
-    retval=DoSuperMethodA(cl, obj, msg);
+    retval = DoSuperMethodA(cl, obj, msg);
 
     return retval;
 }
 
 AROS_UFH3(IPTR, diskIconDispatcher,
-    AROS_UFHA(Class  *, cl,  A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg     , msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
-    ULONG retval=0;
+    ULONG           retval = 0;
 
-    switch(msg->MethodID)
+    switch (msg->MethodID)
     {
         case OM_NEW:
-            retval=diskIconNew(cl, obj, (struct opSet*)msg);
+            retval = diskIconNew(cl, obj, (struct opSet *) msg);
             break;
         case OM_SET:
-            retval=diskIconSet(cl, obj, (struct opSet*)msg);
+            retval = diskIconSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval=diskIconGet(cl, obj, (struct opGet*)msg);
+            retval = diskIconGet(cl, obj, (struct opGet *) msg);
             break;
         case OM_DISPOSE:
-            retval=diskIconDispose(cl, obj, msg);
+            retval = diskIconDispose(cl, obj, msg);
             break;
         default:
-            retval=DoSuperMethodA(cl, obj, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
 
     return retval;
 }
-

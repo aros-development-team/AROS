@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   $Id$ 
+ */
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -35,227 +35,281 @@ void startedMessage(void)
 {
     struct Message *m;
 
-    m=(struct Message*)AllocVec(sizeof(struct Message), MEMF_ANY);
-    m->mn_Node.ln_Type=NT_MESSAGE;
-    m->mn_ReplyPort=DesktopBase->db_HandlerPort;
-    m->mn_Length=sizeof(struct Message);
+    m = (struct Message *) AllocVec(sizeof(struct Message), MEMF_ANY);
+    m->mn_Node.ln_Type = NT_MESSAGE;
+    m->mn_ReplyPort = DesktopBase->db_HandlerPort;
+    m->mn_Length = sizeof(struct Message);
 
-    PutMsg((struct MsgPort*)((struct Process*)FindTask(NULL))->pr_Task.tc_UserData, m);
+    PutMsg((struct MsgPort *) ((struct Process *) FindTask(NULL))->pr_Task.
+           tc_UserData, m);
 }
 
 ULONG desktopHandler(void)
 {
-    struct DesktopInternMsg *msg, *finalMsg;
-    ULONG handlerState=HS_STARTING;
-    BOOL replyNow=TRUE, running=TRUE;
-    ULONG userCount=0, appCount=0;
-    ULONG idCount=0;
-    struct MinList workingMessages;
+    struct DesktopInternMsg *msg,
+                   *finalMsg;
+    ULONG           handlerState = HS_STARTING;
+    BOOL            replyNow = TRUE,
+        running = TRUE;
+    ULONG           userCount = 0,
+        appCount = 0;
+    ULONG           idCount = 0;
+    struct MinList  workingMessages;
 
-    NewList((struct List*)&workingMessages);
+    NewList((struct List *) &workingMessages);
 
-    // The library's OPEN vector gets a mutex on the library
-    // base.  Trouble will come our way if someone started this
-    // handler elsewhere
-    DesktopBase->db_HandlerPort=CreateMsgPort();
+// The library's OPEN vector gets a mutex on the library
+// base.  Trouble will come our way if someone started this
+// handler elsewhere
+    DesktopBase->db_HandlerPort = CreateMsgPort();
 
     kprintf("--- starting desktop handler\n");
 
-    // let the creater know that it's now safe to send the handler
-    // messages
+// let the creater know that it's now safe to send the handler
+// messages
     startedMessage();
 
     kprintf("--- desktop handler accepting messages\n");
 
-    while(running)
+    while (running)
     {
         WaitPort(DesktopBase->db_HandlerPort);
-        while((msg=((struct DesktopInternMsg*)GetMsg(DesktopBase->db_HandlerPort))))
+        while ((msg =
+                ((struct DesktopInternMsg *)
+                 GetMsg(DesktopBase->db_HandlerPort))))
         {
-            if(msg->di_Message.mn_Node.ln_Type==NT_MESSAGE)
+            if (msg->di_Message.mn_Node.ln_Type == NT_MESSAGE)
             {
-                if(handlerState==HS_STARTING)
+                if (handlerState == HS_STARTING)
                 {
-                    switch(msg->di_Command)
+                    switch (msg->di_Command)
                     {
                         case DIMC_ADDUSER:
                             userCount++;
-                            replyNow=TRUE;
-                            handlerState=HS_RUNNING;
+                            replyNow = TRUE;
+                            handlerState = HS_RUNNING;
                             break;
                         default:
                             break;
                     }
                 }
-                else if(handlerState==HS_STOPPING)
+                else if (handlerState == HS_STOPPING)
                 {
-                    switch(msg->di_Command)
+                    switch (msg->di_Command)
                     {
                         case DIMC_ADDUSER:
                             userCount++;
-                            replyNow=TRUE;
-                            handlerState=HS_RUNNING;
+                            replyNow = TRUE;
+                            handlerState = HS_RUNNING;
                             break;
                         default:
                             break;
                     }
                 }
-                else if(handlerState==HS_RUNNING)
+                else if (handlerState == HS_RUNNING)
                 {
-                    switch(msg->di_Command)
+                    switch (msg->di_Command)
                     {
                         case DIMC_ADDUSER:
-                        {
-                            userCount++;
-                            replyNow=TRUE;
-                            break;
-                        }
+                            {
+                                userCount++;
+                                replyNow = TRUE;
+                                break;
+                            }
                         case DIMC_SUBUSER:
-                        {
-                            kprintf("--- DIMC_SUBUSER\n");
-                            userCount--;
-                            if(userCount==0 && appCount==0)
                             {
-                            kprintf("--- time to exit...\n");
-                                handlerState=HS_STOPPING;
-                                replyNow=TRUE;
-                            kprintf("--- attempting semaphore\n");
-                                if(AttemptSemaphore(&DesktopBase->db_BaseMutex))
+                                kprintf("--- DIMC_SUBUSER\n");
+                                userCount--;
+                                if (userCount == 0 && appCount == 0)
                                 {
-                                    if(AttemptSemaphore(&DesktopBase->db_HandlerSafety))
+                                    kprintf("--- time to exit...\n");
+                                    handlerState = HS_STOPPING;
+                                    replyNow = TRUE;
+                                    kprintf("--- attempting semaphore\n");
+                                    if (AttemptSemaphore
+                                        (&DesktopBase->db_BaseMutex))
                                     {
-                                        running=FALSE;
-                                        replyNow=FALSE;
-                                        finalMsg=msg;
+                                        if (AttemptSemaphore
+                                            (&DesktopBase->db_HandlerSafety))
+                                        {
+                                            running = FALSE;
+                                            replyNow = FALSE;
+                                            finalMsg = msg;
+                                        }
+                                        else
+                                            ReleaseSemaphore(&DesktopBase->
+                                                             db_BaseMutex);
                                     }
-                                    else
-                                        ReleaseSemaphore(&DesktopBase->db_BaseMutex);
                                 }
+                                break;
                             }
-                            break;
-                        }
                         case DIMC_SCANDIRECTORY:
-                        {
-                            struct HandlerScanRequest *scanMsg=(struct HandlerScanRequest*)msg;
-                            struct WorkingMessageNode *wmn;
+                            {
+                                struct HandlerScanRequest *scanMsg =
+                                    (struct HandlerScanRequest *) msg;
+                                struct WorkingMessageNode *wmn;
 
-                            wmn=AllocVec(sizeof(struct WorkingMessageNode), MEMF_ANY);
-                            wmn->wm_Working=(struct DesktopInternMsg*)scanMsg;
-                            wmn->wm_ID=++idCount;
-                            AddTail((struct List*)&workingMessages, (struct Node*)wmn);
+                                wmn =
+                                    AllocVec(sizeof
+                                             (struct WorkingMessageNode),
+                                             MEMF_ANY);
+                                wmn->wm_Working =
+                                    (struct DesktopInternMsg *) scanMsg;
+                                wmn->wm_ID = ++idCount;
+                                AddTail((struct List *) &workingMessages,
+                                        (struct Node *) wmn);
 
-                            wmn->wm_Port=startScannerWorker(idCount, scanMsg->hsr_DirLock, DesktopBase->db_HandlerPort);
+                                wmn->wm_Port =
+                                    startScannerWorker(idCount,
+                                                       scanMsg->hsr_DirLock,
+                                                       DesktopBase->
+                                                       db_HandlerPort);
 
-                            replyNow=TRUE;
+                                replyNow = TRUE;
 
-                            break;
-                        }
+                                break;
+                            }
                         case DIMC_TOPLEVEL:
-                        {
-                            struct TempNode
                             {
-                                struct Node t_Node;
-                                UBYTE *t_Name;
-                            };
-                            struct HandlerTopLevelRequest *htl=(struct HandlerTopLevelRequest*)msg;
-                            struct DosList *dl;
-                            struct TempNode *tn;
-                            struct List tnList;
-                            UWORD i=0, j=0;
-                            struct SingleResult *sr;
-                            UBYTE *fullPath;
+                                struct TempNode
+                                {
+                                    struct Node     t_Node;
+                                    UBYTE          *t_Name;
+                                };
+                                struct HandlerTopLevelRequest *htl =
+                                    (struct HandlerTopLevelRequest *) msg;
+                                struct DosList *dl;
+                                struct TempNode *tn;
+                                struct List     tnList;
+                                UWORD           i = 0,
+                                    j = 0;
+                                struct SingleResult *sr;
+                                UBYTE          *fullPath;
 
-                            NewList(&tnList);
+                                NewList(&tnList);
 
-                            dl=LockDosList(htl->htl_Types | LDF_READ);
-                            while((dl=NextDosEntry(dl, htl->htl_Types)))
-                            {
-                                tn=(struct TempNode*)AllocVec(sizeof(struct TempNode), MEMF_ANY);
-                                tn->t_Name=AllocVec(strlen(dl->dol_DevName)+1, MEMF_ANY);
-                                strcpy(tn->t_Name, dl->dol_DevName);
-                                AddTail(&tnList, (struct Node*)tn);
-                                i++;
+                                dl = LockDosList(htl->htl_Types | LDF_READ);
+                                while ((dl =
+                                        NextDosEntry(dl, htl->htl_Types)))
+                                {
+                                    tn = (struct TempNode *)
+                                        AllocVec(sizeof(struct TempNode),
+                                                 MEMF_ANY);
+                                    tn->t_Name =
+                                        AllocVec(strlen(dl->dol_DevName) + 1,
+                                                 MEMF_ANY);
+                                    strcpy(tn->t_Name, dl->dol_DevName);
+                                    AddTail(&tnList, (struct Node *) tn);
+                                    i++;
+                                }
+
+                                UnLockDosList(htl->htl_Types | LDF_READ);
+
+                                sr = (struct SingleResult *)
+                                    AllocVec(sizeof(struct SingleResult) * i,
+                                             MEMF_ANY);
+                                tn = tnList.lh_Head;
+                                while (tn->t_Node.ln_Succ)
+                                {
+                                    sr[j].sr_Name = tn->t_Name;
+                                    fullPath =
+                                        AllocVec(strlen(tn->t_Name) + 2,
+                                                 MEMF_ANY);
+                                    strcpy(fullPath, tn->t_Name);
+                                    strcat(fullPath, ":");
+                                    sr[j].sr_DiskObject =
+                                        GetDiskObjectNew(fullPath);
+                                    tn = (struct TempNode *) tn->t_Node.
+                                        ln_Succ;
+                                    j++;
+                                }
+
+                                DoMethod(htl->htl_Application,
+                                         MUIM_Application_PushMethod,
+                                         htl->htl_CallBack, 3, ICOM_AddIcons,
+                                         i, sr);
+
+                                break;
                             }
-
-                            UnLockDosList(htl->htl_Types | LDF_READ);
-
-                            sr=(struct SingleResult*)AllocVec(sizeof(struct SingleResult)*i, MEMF_ANY);
-                            tn=tnList.lh_Head;
-                            while(tn->t_Node.ln_Succ)
-                            {
-                                sr[j].sr_Name=tn->t_Name;
-                                fullPath=AllocVec(strlen(tn->t_Name)+2, MEMF_ANY);
-                                strcpy(fullPath, tn->t_Name);
-                                strcat(fullPath, ":");
-                                sr[j].sr_DiskObject=GetDiskObjectNew(fullPath);
-                                tn=(struct TempNode*)tn->t_Node.ln_Succ;
-                                j++;
-                            }
-
-                            DoMethod(htl->htl_Application, MUIM_Application_PushMethod, htl->htl_CallBack, 3, ICOM_AddIcons, i, sr);
-
-                            break;
-                        }
                         default:
                             break;
                     }
                 }
 
-                if(replyNow)
-                    ReplyMsg((struct Message*)msg);
+                if (replyNow)
+                    ReplyMsg((struct Message *) msg);
             }
-            else if(msg->di_Message.mn_Node.ln_Type==NT_REPLYMSG)
+            else if (msg->di_Message.mn_Node.ln_Type == NT_REPLYMSG)
             {
-                struct WorkerMessage *wm=(struct WorkerMessage*)msg;
+                struct WorkerMessage *wm = (struct WorkerMessage *) msg;
 
-                switch(wm->w_Action)
+                switch (wm->w_Action)
                 {
                     case WA_SCANNER:
-                    {
-                        struct WorkerMessage *newMsg;
-                        struct WorkingMessageNode *wmn;
-                        struct WorkerScanRequest *wsr=(struct WorkerScanRequest*)wm;
-
-                        wmn=findWorkedMessage(&workingMessages, wsr->wsr_WMessage.w_ID);
-
-                        DoMethod(((struct HandlerScanRequest*)wmn->wm_Working)->hsr_Application, MUIM_Application_PushMethod, ((struct HandlerScanRequest*)wmn->wm_Working)->hsr_CallBack, 3, ICOM_AddIcons, wsr->wsr_Results, wsr->wsr_ResultsArray);
-                        DoMethod(((struct HandlerScanRequest*)wmn->wm_Working)->hsr_Application, MUIM_Application_PushMethod, ((struct HandlerScanRequest*)wmn->wm_Working)->hsr_CallBack, 2, OM_FreeList_Add, wsr->wsr_ExAllBuffer);
-
-                        if(wsr->wsr_More)
                         {
-                            newMsg=createWorkerScanMessage(WM_RESUME, WA_SCANNER, wmn->wm_ID, DesktopBase->db_HandlerPort, wsr->wsr_DirLock);
-                            PutMsg(wmn->wm_Port, (struct Message*)newMsg);
-                        }
-                        else
-                        {
-                            Remove((struct Node*)wmn);
-                            ReplyMsg((struct Message*)wmn->wm_Working);
-                        }
+                            struct WorkerMessage *newMsg;
+                            struct WorkingMessageNode *wmn;
+                            struct WorkerScanRequest *wsr =
+                                (struct WorkerScanRequest *) wm;
 
-                        FreeVec(wsr);
+                            wmn =
+                                findWorkedMessage(&workingMessages,
+                                                  wsr->wsr_WMessage.w_ID);
 
-                        break;
-                    }
+                            DoMethod(((struct HandlerScanRequest *) wmn->
+                                      wm_Working)->hsr_Application,
+                                     MUIM_Application_PushMethod,
+                                     ((struct HandlerScanRequest *) wmn->
+                                      wm_Working)->hsr_CallBack, 3,
+                                     ICOM_AddIcons, wsr->wsr_Results,
+                                     wsr->wsr_ResultsArray);
+                            DoMethod(((struct HandlerScanRequest *) wmn->
+                                      wm_Working)->hsr_Application,
+                                     MUIM_Application_PushMethod,
+                                     ((struct HandlerScanRequest *) wmn->
+                                      wm_Working)->hsr_CallBack, 2,
+                                     OM_FreeList_Add, wsr->wsr_ExAllBuffer);
+
+                            if (wsr->wsr_More)
+                            {
+                                newMsg =
+                                    createWorkerScanMessage(WM_RESUME,
+                                                            WA_SCANNER,
+                                                            wmn->wm_ID,
+                                                            DesktopBase->
+                                                            db_HandlerPort,
+                                                            wsr->wsr_DirLock);
+                                PutMsg(wmn->wm_Port,
+                                       (struct Message *) newMsg);
+                            }
+                            else
+                            {
+                                Remove((struct Node *) wmn);
+                                ReplyMsg((struct Message *) wmn->wm_Working);
+                            }
+
+                            FreeVec(wsr);
+
+                            break;
+                        }
                 }
-//              FreeVec(msg);
+            // FreeVec(msg);
             }
         }
     }
 
     kprintf("deleting port\n");
     DeleteMsgPort(DesktopBase->db_HandlerPort);
-    DesktopBase->db_HandlerPort=NULL;
+    DesktopBase->db_HandlerPort = NULL;
 
     kprintf("releasing semaphores\n");
     ReleaseSemaphore(&DesktopBase->db_HandlerSafety);
     ReleaseSemaphore(&DesktopBase->db_BaseMutex);
 
     kprintf("replying to msg\n");
-    ReplyMsg((struct Message*)finalMsg);
+    ReplyMsg((struct Message *) finalMsg);
 
     kprintf("--- shutting down desktop handler\n");
 
     return 0;
 }
-
-

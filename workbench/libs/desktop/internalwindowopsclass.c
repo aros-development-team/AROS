@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   $Id$ 
+ */
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -24,36 +24,37 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR internalWindowOpsNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalWindowOpsNew(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct InternalWindowOpsClassData *data;
     struct TagItem *tag;
 
-    retval=DoSuperMethodA(cl, obj, (Msg)msg);
-    if(retval)
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (retval)
     {
-        obj=(Object*)retval;
-        data=INST_DATA(cl, obj);
+        obj = (Object *) retval;
+        data = INST_DATA(cl, obj);
     }
 
     return retval;
 }
 
-IPTR internalWindowOpsSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalWindowOpsSet(Class * cl, Object * obj, struct opSet * msg)
 {
     struct InternalIconOpsClassData *data;
-    IPTR retval=1;
-    struct TagItem *tag, *tstate=msg->ops_AttrList;
+    IPTR            retval = 1;
+    struct TagItem *tag,
+                   *tstate = msg->ops_AttrList;
 
-    data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalWindowOpsClassData *) INST_DATA(cl, obj);
 
-    while((tag=NextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             default:
-                retval=DoSuperMethodA(cl, obj, (Msg)msg);
+                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
@@ -61,47 +62,48 @@ IPTR internalWindowOpsSet(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-IPTR internalWindowOpsGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR internalWindowOpsGet(Class * cl, Object * obj, struct opGet * msg)
 {
-    IPTR retval=1;
+    IPTR            retval = 1;
     struct InternalWindowOpsClassData *data;
 
-    data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalWindowOpsClassData *) INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
         default:
-            retval=DoSuperMethodA(cl, obj, (Msg)msg);
+            retval = DoSuperMethodA(cl, obj, (Msg) msg);
             break;
     }
 
     return retval;
 }
 
-IPTR internalWindowOpsDispose(Class *cl, Object *obj, Msg msg)
+IPTR internalWindowOpsDispose(Class * cl, Object * obj, Msg msg)
 {
-    IPTR retval;
+    IPTR            retval;
 
-    retval=DoSuperMethodA(cl, obj, msg);
+    retval = DoSuperMethodA(cl, obj, msg);
 
     return retval;
 }
 
-IPTR internalWindowOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
+IPTR internalWindowOpsExecute(Class * cl, Object * obj,
+                              struct opExecute * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct InternalIconOpsClassData *data;
-    Object *iconcontainer=NULL;
+    Object         *iconcontainer = NULL;
 
-    data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalWindowOpsClassData *) INST_DATA(cl, obj);
 
     GetAttr(MUIA_Window_RootObject, msg->target, &iconcontainer);
 
-    switch(msg->operationCode)
+    switch (msg->operationCode)
     {
         // close
         case (DOC_WINDOWOP | 1):
-//          SetAttrs(msg->target, ICA_Open, FALSE, TAG_END);
+        // SetAttrs(msg->target, ICA_Open, FALSE, TAG_END);
             SetAttrs(msg->target, MUIA_Window_Open, FALSE, TAG_END);
             break;
         // view by
@@ -125,34 +127,33 @@ IPTR internalWindowOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
 }
 
 AROS_UFH3(IPTR, internalWindowOpsDispatcher,
-    AROS_UFHA(Class  *, cl,  A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg     , msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
-    ULONG retval=0;
+    ULONG           retval = 0;
 
-    switch(msg->MethodID)
+    switch (msg->MethodID)
     {
         case OM_NEW:
-            retval=internalWindowOpsNew(cl, obj, (struct opSet*)msg);
+            retval = internalWindowOpsNew(cl, obj, (struct opSet *) msg);
             break;
         case OM_SET:
-            retval=internalWindowOpsSet(cl, obj, (struct opSet*)msg);
+            retval = internalWindowOpsSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval=internalWindowOpsGet(cl, obj, (struct opGet*)msg);
+            retval = internalWindowOpsGet(cl, obj, (struct opGet *) msg);
             break;
         case OM_DISPOSE:
-            retval=internalWindowOpsDispose(cl, obj, msg);
+            retval = internalWindowOpsDispose(cl, obj, msg);
             break;
         case OPM_Execute:
-            retval=internalWindowOpsExecute(cl, obj, (struct opExecute*)msg);
+            retval =
+                internalWindowOpsExecute(cl, obj, (struct opExecute *) msg);
             break;
         default:
-            retval=DoSuperMethodA(cl, obj, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
 
     return retval;
 }
-

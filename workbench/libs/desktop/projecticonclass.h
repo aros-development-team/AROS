@@ -1,10 +1,10 @@
 
 #ifndef PROJECTICONCLASS_H
-#define PROJECTICONCLASS_H
+#    define PROJECTICONCLASS_H
 
 struct ProjectIconClassData
 {
-    ULONG dummy;
+    ULONG           dummy;
 };
 
 
