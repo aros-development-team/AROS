@@ -15,6 +15,7 @@ FILES	:= \
 	arosc \
 	commandline \
 	cybergraphics \
+        datatypes \
 	diskfont \
 	dos \
 	expansion \
