@@ -127,7 +127,7 @@ struct MUI_IconData
 };
 
 /**************************************************************************
- 
+
 **************************************************************************/
 int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 {
@@ -248,7 +248,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconData   *data;
     struct TagItem  	    *tag, *tags;
-    
+
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Dropable, TRUE,
     	TAG_MORE, msg->ops_AttrList);
@@ -297,7 +297,7 @@ static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	if (node->dob) FreeDiskObject(node->dob);
 	node = Node_Next(node);
     }
-    
+
     if (data->pool) DeletePool(data->pool);
 
     DoSuperMethodA(cl,obj,msg);
@@ -369,9 +369,25 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct IconEntry *node;
+
     if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+
+    node = List_First(&data->icon_list);
+    while (node)
+    {
+	if (!node->dob)
+	{
+	    const static struct TagItem geticon_tags[] = {
+		{ICONGETA_FailIfUnavailable, FALSE},
+		{TAG_DONE,0}
+	    };
+	    node->dob = GetIconTagList(node->entry.filename, geticon_tags);
+	}
+	node = Node_Next(node);
+    }
 
     return 1;
 }
@@ -503,7 +519,15 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
 	    {
 		int loops = 0;
+		int cur_x_save = cur_x;
+		int cur_y_save = cur_y;
+		struct Rectangle icon_rect;
 
+		IconList_GetIconRectangle(obj, icon, &icon_rect);
+		icon_rect.MinX += cur_x - icon->width/2 + data->view_x;
+		if (icon_rect.MinX < 0)
+		    cur_x -= icon_rect.MinX;
+		
 		while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
 		{
 		    cur_y++;
@@ -515,7 +539,13 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 		    }
 	        }
 
-		IconList_PlaceIcon(obj, data, icon, cur_x - icon->width / 2, cur_y);
+		IconList_PlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y);
+		
+		if (icon_rect.MinX < 0)
+		{
+		    cur_x = cur_x_save;
+		    cur_y = cur_y_save;
+		}
 	    }
 	    icon = Node_Next(icon);
 	}
