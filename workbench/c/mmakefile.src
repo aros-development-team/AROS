@@ -60,7 +60,6 @@ FILES	:= \
     devlist \
     dir \
     echo \
-    execute \
     liblist \
     makedir \
     mount \
@@ -71,7 +70,6 @@ FILES	:= \
     screenpattern \
     setclock \
     setlocale \
-    shell \
     sort \
     stacksnoop \
     tasklist \
