@@ -161,7 +161,7 @@ boot:
     {
 	Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
     }
-    
+
     FreeMem( bootName, bootNameLength );
     lock = Lock("SYS:", SHARED_LOCK);
 
@@ -308,7 +308,9 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     LONG            bufferLength;
     struct InfoData info;
     
-    bufferLength = strlen( deviceName ) + 15;
+    #define STARTUP_SEQUENCE_FILE ":S/Startup-Sequence"
+    
+    bufferLength = strlen( deviceName ) + sizeof(STARTUP_SEQUENCE_FILE) + 1;
     
     if( (buffer = AllocMem( bufferLength, MEMF_ANY ) ) == NULL ) 
     {
@@ -316,7 +318,7 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     }
     
     strcpy( buffer, deviceName );        
-    strcat( buffer, ":S/Startup-Sequence" );
+    strcat( buffer, STARTUP_SEQUENCE_FILE );
        
     if( (lock = Lock( buffer, SHARED_LOCK )) == 0 )
     {
