@@ -483,6 +483,8 @@ AROS_LH1(void, beginio,
 	    D(bug("keyboard.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n"
 		    , (STRPTR)ioStd(ioreq)->io_Data ));
 
+	    if (KBBase->kb_Hidd != NULL)
+		OOP_DisposeObject(KBBase->kb_Hidd);
 	    KBBase->kb_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
 	    if (!KBBase->kb_Hidd)
 	    {
@@ -669,9 +671,9 @@ AROS_LH1(LONG, abortio,
 
 /****************************************************************************************/
 
-#define  CORRECT(x)        ((x) & AMIGAKEYMASK) || (((x) & NOTAMIGAKEYMASK) >> 1)
-#define  BVBITCLEAR(x, y)  ((y)[(x) / sizeof(UBYTE)] &= ~(1 << ((x) & (sizeof(UBYTE) - 1))))
-#define  BVBITSET(x, y)    ((y)[(x) / sizeof(UBYTE)] |=  (1 << ((x) & (sizeof(UBYTE) - 1))))
+#define  CORRECT(x)        ((x) & AMIGAKEYMASK) | (((x) & NOTAMIGAKEYMASK) >> 1)
+#define  BVBITCLEAR(x, y)  ((y)[(x) / (sizeof(UBYTE)*8)] &= ~(1 << ((x) & (sizeof(UBYTE) - 1))))
+#define  BVBITSET(x, y)    ((y)[(x) / (sizeof(UBYTE)*8)] |=  (1 << ((x) & (sizeof(UBYTE) - 1))))
 
 /****************************************************************************************/
 
@@ -739,7 +741,6 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 	    BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
 	else
 	    BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
-    
     	D(bug("Wrote to matrix\n"));
     }
     else
