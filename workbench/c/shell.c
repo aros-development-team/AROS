@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/30 17:02:03  digulla
+    Fixed a bug which caused the shell to exit if the timer sent a signal. This
+    	fix is a very bad hack :(
+
     Revision 1.3  1996/08/23 17:05:58  digulla
     Increased the stack.
 
@@ -130,9 +134,14 @@ static LONG readline(struct linebuf *lb)
 	    lb->eof=1;
 	}else if(subsize<0)
 	{
-	    FreeVec(lb->buf);
-	    lb->buf=NULL;
-	    return IoErr();
+	    /*ada 30.8.96 This is a REALLY BAD hack !! */
+	    if (IoErr() != -1)
+	    {
+		VPrintf("Got Error\n", NULL);
+		FreeVec(lb->buf);
+		lb->buf=NULL;
+		return IoErr();
+	    }
 	}else
 	    lb->bend+=subsize;
     }

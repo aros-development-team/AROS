@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/30 17:02:06  digulla
+    Fixed a bug which caused the shell to exit if the timer sent a signal. This
+    	fix is a very bad hack :(
+
     Revision 1.3  1996/08/13 15:35:07  digulla
     Replaced __AROS_LA by __AROS_LHA
 
@@ -104,6 +108,7 @@ LONG u2a[][2]=
 {
   { ENOMEM, ERROR_NO_FREE_STORE },
   { ENOENT, ERROR_OBJECT_NOT_FOUND },
+  { EINTR,  -1 }, /*ada 30.8.96 This is a REALLY BAD hack !! */
   { 0, 0 }
 };
 
