@@ -12,24 +12,8 @@
 
 static Hash * HTMLAmpDB;
 
+#if 0
 static int HTML_ScanAmp PARAMS ((String buffer, MyStream * stream, CBD data));
-
-void HTML_InitParse (void)
-{
-    HTMLAmpDB = Hash_New ();
-
-    Hash_StoreNC (HTMLAmpDB, "lt", "<");
-    Hash_StoreNC (HTMLAmpDB, "gt", ">");
-    Hash_StoreNC (HTMLAmpDB, "amp", "&");
-    Hash_StoreNC (HTMLAmpDB, "quot", "\"");
-    Hash_StoreNC (HTMLAmpDB, "auml", "ä");
-    Hash_StoreNC (HTMLAmpDB, "ouml", "ö");
-    Hash_StoreNC (HTMLAmpDB, "uuml", "ü");
-    Hash_StoreNC (HTMLAmpDB, "Auml", "ä");
-    Hash_StoreNC (HTMLAmpDB, "Ouml", "ö");
-    Hash_StoreNC (HTMLAmpDB, "Uuml", "ü");
-    Hash_StoreNC (HTMLAmpDB, "sz", "ß");
-}
 
 static int
 HTML_ScanAmp (String buffer, MyStream * stream, CBD data)
@@ -104,6 +88,24 @@ err_amphash:
     }
 
     return T_OK;
+}
+#endif
+
+void HTML_InitParse (void)
+{
+    HTMLAmpDB = Hash_New ();
+
+    Hash_StoreNC (HTMLAmpDB, "lt", "<");
+    Hash_StoreNC (HTMLAmpDB, "gt", ">");
+    Hash_StoreNC (HTMLAmpDB, "amp", "&");
+    Hash_StoreNC (HTMLAmpDB, "quot", "\"");
+    Hash_StoreNC (HTMLAmpDB, "auml", "ä");
+    Hash_StoreNC (HTMLAmpDB, "ouml", "ö");
+    Hash_StoreNC (HTMLAmpDB, "uuml", "ü");
+    Hash_StoreNC (HTMLAmpDB, "Auml", "ä");
+    Hash_StoreNC (HTMLAmpDB, "Ouml", "ö");
+    Hash_StoreNC (HTMLAmpDB, "Uuml", "ü");
+    Hash_StoreNC (HTMLAmpDB, "sz", "ß");
 }
 
 int
@@ -389,7 +391,15 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
     int    mode;
     int    line = Str_GetLine (stream);
 
-    mode = 0;
+    mode  = 0;
+
+    c = Str_Get (stream, data);
+
+    if (c == EOF)
+	return str;
+
+    if (c != '\n')
+	VS_AppendChar (str, c);
 
     while ((c = Str_Get (stream, data)) != EOF)
     {
