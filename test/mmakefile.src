@@ -69,7 +69,8 @@ FILES := amiga2date \
 	weightamatch \
 	printnativekeytable \
 	textbug \
-	testide
+	testide \
+	playoss
 
 EXEDIR := $(AROSDIR)/test
 
