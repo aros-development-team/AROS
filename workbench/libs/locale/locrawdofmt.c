@@ -40,15 +40,25 @@ extern struct LocaleBase *globallocalebase;
 #define SERIAL_FUNC2    0x4eaefdfc
 #define SERIAL_FUNC3    0x2c5f4e75
 
+struct HookData
+{
+	char	*PutChData;
+	ULONG	OldA4;
+};
+
 /* Quick reg layout function
  */
 char *_PPCCallM68k_RawDoFmt(char MyChar,
 			    char *(*PutChProc)(char*,char),
-			    char *PutChData);
+			    char *PutChData,
+			    ULONG OldA4,
+			    struct ExecBase *sysBase);
 
 char *PPCCallM68k_RawDoFmt(char MyChar,
 			   char *(*PutChProc)(char*,char),
-			   char *PutChData)
+			   char *PutChData,
+			   ULONG OldA4,
+			   struct ExecBase *sysBase)
 {
   /* As we call a *QUICK REG LAYOUT* function
    * below we must make sure that this function backups/restores
@@ -61,7 +71,9 @@ char *PPCCallM68k_RawDoFmt(char MyChar,
 
   return _PPCCallM68k_RawDoFmt(MyChar,
                                PutChProc,
-			       PutChData);
+			       PutChData,
+			       OldA4,
+			       sysBase);
 }
 #endif
 
@@ -73,20 +85,16 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 {
     AROS_USERFUNC_INIT
 
-#ifdef __mc68000__
-    register APTR pdata __asm(A3) = hook->h_Data;
-#else
-    char *pdata = hook->h_Data;
-#endif
 
 #ifdef __MORPHOS__
+    struct HookData *data = hook->h_Data;
     char str[2];
 
     switch ((ULONG) hook->h_SubEntry)
     {
       case 0:
 	/* Standard Array Function */
-	*pdata++ = fill;
+	*data->PutChData++ = fill;
 	break;
 
       case 1:
@@ -96,19 +104,26 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	break;
 
       default:
-	pdata = PPCCallM68k_RawDoFmt(fill,
+	data->PutChData = PPCCallM68k_RawDoFmt(fill,
 				     hook->h_SubEntry,
-				     pdata);
+					       data->PutChData,
+					       data->OldA4,
+					       IntLB(LocaleBase)->lb_SysBase);
 	break;
     }
 #else
+
+#ifdef __mc68000__
+    register APTR pdata __asm(A3) = hook->h_Data;
+#endif
+
     AROS_UFC3(void, hook->h_SubEntry,
     	AROS_UFCA(char, fill, D0),
 	AROS_UFCA(APTR, pdata, A3),
 	AROS_UFCA(struct ExecBase *, IntLB(LocaleBase)->lb_SysBase, A6));
-#endif
 
     hook->h_Data = pdata;
+#endif
 
     AROS_USERFUNC_EXIT
 }
@@ -166,9 +181,11 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #define LocaleBase globallocalebase
 
     struct Hook       hook;
+    struct HookData   data;
     APTR    	      retval;
 
 #ifdef __MORPHOS__
+
     if ((ULONG) PutChProc > 1)
     {
 	if (*((ULONG*) PutChProc) == ARRAY_FUNC)
@@ -183,11 +200,20 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	    PutChProc = (APTR) 1;
 	}
     }
-#endif
+
+    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
+    hook.h_SubEntry = (HOOKFUNC)PutChProc;
+    hook.h_Data     = &data;
+    data.PutChData  = PutChData;
+    data.OldA4      = REG_A4;
+
+#else
 
     hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
     hook.h_SubEntry = (HOOKFUNC)PutChProc;
     hook.h_Data     = PutChData;
+
+#endif
 
     //kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
 
