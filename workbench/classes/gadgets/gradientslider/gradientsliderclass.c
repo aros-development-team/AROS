@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc: AROS gradientslider gadget for use in gadtools.
+    Desc: AROS gradientslider gadget.
     Lang: english
 */
 
