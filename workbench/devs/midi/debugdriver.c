@@ -116,11 +116,11 @@ APTR UserData[NUMPORTS];
    But for this small example, sending the signal directly via
    kprintf is excactly what we want to do.
 ****************************************************************/
-SAVEDS ASM void ActivateXmit(ULONG REG(d0) portnum){
+SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum){
   ULONG data;
   for(;;){
 
-    data=(TransmitFunc)(UserData[portnum-1]);
+    data=(TransmitFunc)(userdata);
 
     if(data==0x100) return;
     kprintf("Debugdriver has received: %lx at port %ld\n",data,portnum);
