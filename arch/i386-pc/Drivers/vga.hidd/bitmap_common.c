@@ -216,6 +216,8 @@ static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_Get
     return pixel;
 }
 
+#if 0
+
 /*********  BitMap::DrawPixel()  ***************************/
 
 static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
@@ -260,6 +262,7 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel
     return;
 }
 
+#endif
 
 /*********  BitMap::PutImage()  ***************************/
 
