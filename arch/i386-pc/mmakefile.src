@@ -173,7 +173,7 @@ kernel-cgfx-native-i386 :
 
 #MM create-mf-inc-again
 create-mf-inc-again :
-	@make -f $(TOP)/config/mmakefile setup
+	@$(MAKE) -f $(TOP)/config/mmakefile setup
 
 # Setup the CLIB metatargets...
 #MM- setup-clib-native : setup-clib-native-i386
