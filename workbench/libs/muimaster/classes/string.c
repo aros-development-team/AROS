@@ -708,6 +708,8 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 {
     struct MUI_StringData *data = (struct MUI_StringData*)INST_DATA(cl, obj);
 
+    D(bug("code=%d qual=%d\n", code, qual));
+
     if (0 == code)
 	return 0;
 
@@ -737,6 +739,20 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 0;
     }
 
+    if (code == 21) // ctrl-u == NAK (like shift-bs)
+    {
+	if (data->BufferPos > 0)
+	{
+	    strcpy(&data->Buffer[0],
+		   &data->Buffer[data->BufferPos]);
+	    data->NumChars -= data->BufferPos;
+	    data->BufferPos = 0;
+	    data->msd_RedrawReason = NEW_CONTENTS;
+	    return 1;
+	}
+	return 0;
+    }
+
     if (code == 127) /* del */
     {
 	if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
@@ -756,6 +772,14 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 
 	    data->msd_RedrawReason = DO_DELETE;
 	}
+	return 1;
+    }
+
+    if (code == 11) // ctrl-k == VT == \v (like shift-del)
+    {
+	data->Buffer[data->BufferPos] = 0;
+	data->NumChars = data->BufferPos;
+	data->msd_RedrawReason = NEW_CONTENTS;
 	return 1;
     }
 
