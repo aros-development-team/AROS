@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-
-    Desc: function to write clib/modulename_protos.h. Part of genmodule.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Function to write clib/modulename_protos.h. Part of genmodule.
 */
 #include "genmodule.h"
 
@@ -26,7 +27,7 @@ void writeincclib(void)
 	    "\n"
 	    "/*\n"
 	    "    *** Automatically generated file. Please do not edit ***\n"
-	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "\n"
 	    "#include <aros/libcall.h>\n",

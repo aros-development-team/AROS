@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-
-    Desc: function to write module_autoinit.c. Part of genmodule.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Function to write module_autoinit.c. Part of genmodule.
 */
 #include "genmodule.h"
 
@@ -22,7 +23,7 @@ void writestubs(void)
     fprintf(out,
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "#define NOLIBDEFINES\n"
 	    "#include <proto/%s.h>\n"
