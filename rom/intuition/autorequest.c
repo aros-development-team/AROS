@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/09/30 19:45:41  stegerg
+    implemented
+
     Revision 1.8  1998/10/20 20:08:03  nlorentz
     Fixed lots of errors due to aros_not_implemented()
 
@@ -80,9 +83,31 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/AutoRequest()
-    aros_print_not_implemented ("AutoRequest");
-    return FALSE;
+    struct Window *req;
+    ULONG idcmp;
+    LONG result;
+    
+    req = BuildSysRequest(window,
+    			  body,
+			  posText,
+			  negText,
+			  pFlag | nFlag,
+			  width,
+			  height);
+
+    /* req = 0/1 is handled by SysReqHandler */
+    while ((result = SysReqHandler(req, &idcmp, TRUE)) == -2)
+    {
+    }
+
+    if (result == -1)
+    {
+	result = (idcmp & pFlag) ? 1 : 0;
+    }
+
+    FreeSysRequest(req);
+
+    return (BOOL)result;
 
     AROS_LIBFUNC_EXIT
 } /* AutoRequest */
