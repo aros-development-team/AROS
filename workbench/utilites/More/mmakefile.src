@@ -1,37 +1,27 @@
+#   $Id$
+#
+#   Makefile to make More.
+
 include $(TOP)/config/make.cfg
 
-%define_libs
-
-CFLAGS	:= $(USER_DEFINES) -O2 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
-OBJDIR	:= $(GENDIR)/$(CURDIR)
-DESTDIR := $(BINDIR)/Utilities
-
 FILES := more req
-SRCS := $(foreach f, $(FILES), $(f).c)
-OBJS := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
 
-EXE := $(DESTDIR)/More
+EXEDIR := $(AROSDIR)/Utilities
+EXE := $(EXEDIR)/More
 
-.PHONY : all clean
+USE_CLIB := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
 
-#MM workbench-utilities : setup-workbench-utilities
-workbench-utilities : $(OBJS) $(EXE)
-	@$(NOP)
+USER_CFLAGS := -O2 -Wunused -Wall
 
-#MM
-setup-workbench-utilities :
-	%mkdirs_q $(DESTDIR) $(OBJDIR)
+#MM workbench-utilities : includes linklibs
 
-$(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(ILDFLAGS) $(STARTUP) $(OBJS) -o $@ $(LIBS)
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@
+%make_prog_setup mmake=workbench-utilities
 
-#MM
-clean-workbench :
-	@$(RM) $(OBJDIR) $(DESTDIR)
+workbench-utilities : setup $(EXE)
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
+%common
+%include_deps

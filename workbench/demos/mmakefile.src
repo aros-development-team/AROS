@@ -1,79 +1,91 @@
-# $Id$
+#   $Id$
+#
+#   Makefile for AROS Demos
+
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
-
-#CC := $(PURIFY) $(SYS_CC)
-EXEDIR := $(BINDIR)/Demos
-OBJDIR := $(GENDIR)/$(CURDIR)
-
-%define_libs
+#   Some files cause problems for native compiles:
+#
+#   1) No working __chip keyword in the standard cc/ld
+#   2) Missing functions because we don't link with libc.a
+#   3) "Fixed or forbidden register was spilled"
 
 ifeq ($(FLAVOUR),native)
-#
-# Some files cause problems:
-#
-# 1) No (working) __chip keyword in the standard ld
-# 2) Missing functions because we don't link with libc.a
-# 3) "fixed or forbidden register was spilled"
-#
-
-FILES := font2c gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
-	 mxgads oopdemo readicon regiontest shadowborder sift strtest \
-	 ooplib consoledemo x11gfxhidd serialtest window test_text \
-	 clippingtest
-	 
+FILES	:= \
+    font2c gtdemo helloworld inquire intuitext librarytest listfonts \
+    keymap mxgads oopdemo readicon regiontest shadowborder sift strtest \
+    ooplib consoledemo x11gfxhidd serialtest window test_text \
+    clippingtest
 
 else
-
-FILES := compleximage demowin font2c gtdemo helloworld inquire intuitext \
-	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
-	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio ooplib consoledemo layerstest easyreq sysreq \
-	 x11gfxhidd serialtest window cxtest simple_timer multiple_timers \
-	 winbackfill scrbackfill scrollerwin test_text clippingtest cctest \
-	 menudemo
-	 
+FILES	:= \
+    cctest \
+    clippingtest \
+    compleximage \
+    consoledemo \
+    cxtest \
+    demowin \
+    easyreq \
+    filereq \
+    forkbomb \
+    font2c \
+    gtdemo \
+    helloworld \
+    inquire \
+    intuitext \
+    keymaptest \
+    layerstest \
+    librarytest \
+    listfonts \
+    mathtest \
+    menudemo \
+    multiple_timers \
+    mxgads \
+    oopdemo \
+    ooplib \
+    palettedemo \
+    readicon \
+    regiontest \
+    rtdemo \
+    scrbackfill \
+    scrollerwin \
+    serialtest \
+    shadowborder \
+    sift \
+    simple_timer \
+    simpleimage \
+    strtest \
+    sysreq \
+    test_text \
+    unixio \
+    winbackfill \
+    window \
+    x11gfxhidd
 endif
 
+EXEDIR := $(AROSDIR)/Demos
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+USER_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
 
-#MM demos-quick : 
-demos-quick : demos
-	@$(NOP)
-	
-#MM demos : setup demo-setup includes linklibs
-demos : $(EXES) $(EXEDIR)/forkbomb
-	@$(NOP)
+USE_CLIB := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
+USE_AROSLIB := yes
 
-#MM
-setup :
-	%mkdirs_q $(EXEDIR) $(OBJDIR)
+#MM demos : includes linklibs
 
-#MM
-clean ::
-	-$(RM) $(EXES)
+%make_prog_setup mmake=demos
 
+demos : setup $(EXES) $(EXEDIR)/forkbomb
+
+%make_prog_single dir=$(EXEDIR)
+
+# Don't need to compile this, so it gets a rule to itself.
 $(EXEDIR)/forkbomb : forkbomb
-	$(CP) $< $@
+	@$(CP) $< $@
 
-$(EXEDIR)/librarytest : $(OBJDIR)/librarytest.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/librarytest.o : librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
-	%compile_q opt=$(APPCFLAGS)
-
-$(EXEDIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(APPCFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-$(OBJDIR)/librarytest.d : librarytest.c
-	%mkdepend_q
+# librarytest depends upon this extra file.
+$(OBJDIR)/librarytest.o : $(TOP)/workbench/libs/dummylib_gcc.h
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,41 +1,31 @@
+#   $Id$
+#
+#   Makefile to make the Installer
+
 include $(TOP)/config/make.cfg
 
-%define_libs
-
-CFLAGS	:= $(USER_DEFINES) -O2 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
-OBJDIR	:= $(GENDIR)/$(CURDIR)
-DESTDIR := $(BINDIR)/Utilities
-
 FILES := main misc procedure parse variables gui more execute cleanup
-SRCS := $(foreach f, $(FILES), $(f).c)
-OBJS := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
 
-EXE := $(DESTDIR)/Installer
+EXEDIR := $(AROSDIR)/Utilities
+EXE := $(EXEDIR)/Installer
 SCRIPT := test.script
 
-.PHONY : all clean
+USE_CLIB := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
 
-#MM workbench-utilities : setup-workbench-utilities
-workbench-utilities : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
-	@$(NOP)
+USER_CFLAGS := -O2 -Wunused -Wall
 
-#MM
-setup-workbench-utilities :
-	%mkdirs_q $(DESTDIR) $(OBJDIR)
+#MM workbench-utilities : includes linklibs
 
-$(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(ILDFLAGS) $(STARTUP) $(OBJS) -o $@ $(LIBS)
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@
+%make_prog_setup mmake=workbench-utilities
 
-$(DESTDIR)/$(SCRIPT) :
-	$(CP) $(SCRIPT) $(DESTDIR)
+workbench-utilities : setup $(EXE) $(EXEDIR)/$(SCRIPT)
 
-#MM
-clean-workbench :
-	@$(RM) $(OBJDIR) $(DESTDIR)
+$(EXEDIR)/$(SCRIPT) : $(SCRIPT)
+	@$(CP) $? $@
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
+%common
+%include_deps

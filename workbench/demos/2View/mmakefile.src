@@ -1,34 +1,30 @@
+#   $Id$
+#
+#   Makefile to make the 2View image viewer.
+
 include $(TOP)/config/make.cfg
 
-%define_libs
+FILES := \
+    2View \
+    Misc \
+    read
 
-CFLAGS	:= $(USER_DEFINES) -O2 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
-OBJDIR	:= $(GENDIR)/$(CURDIR)
-DESTDIR := $(BINDIR)/Demos
+EXEDIR := $(AROSDIR)/Demos
+EXE := $(EXEDIR)/2View
 
+USE_CLIB := yes
+USE_MLIB := yes
+USE_AMIGALIB := yes
 
-FILES := 2View Misc read
-SRCS := $(foreach f, $(FILES), $(f).c)
-OBJS := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
+USER_CFLAGS := -O2 -Wunused -Wall
 
-EXE := $(DESTDIR)/2View
+#MM demos : includes linklibs
 
-.PHONY : all clean
+%make_prog_setup mmake=demos
 
-#MM demos : demos-setup
-demos : $(OBJS) $(EXE)
-	@$(NOP)
+demos : setup $(EXE)
 
-#MM
-demos-setup :
-	%mkdirs_q $(DESTDIR) $(OBJDIR)
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
-$(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(ILDFLAGS) $(STARTUP) $(OBJS) -o $@ $(LIBS)
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(APPCFLAGS)
-
+%common
+%include_deps

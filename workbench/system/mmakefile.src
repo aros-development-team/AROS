@@ -1,61 +1,25 @@
-# $Id$
+#   $Id$
+#
+#   Makefile for the Workbench:System directory.
+
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
+FILES	:= \
+    FixFonts
 
-#CC := $(PURIFY) $(SYS_CC)
-EXEDIR := $(BINDIR)/System
-OBJDIR := $(GENDIR)/$(CURDIR)
-
-%define_libs
-
-ifeq ($(FLAVOUR),native)
-#
-# Some files cause problems:
-#
-# 1) No (working) __chip keyword in the standard ld
-# 2) Missing functions because we don't link with libc.a
-# 3) "fixed or forbidden register was spilled"
-#
-
-FILES := FixFonts
-	 
-
-else
-
-FILES := FixFonts
-
-endif
-
+EXEDIR := $(AROSDIR)/System
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
-#MM workbench-system-quick : 
-workbench-system-quick : workbench-system
-	@$(NOP)
-	
-#MM workbench-system : setup workbench-system-setup includes linklibs
-workbench-system : $(EXES)
-	@$(NOP)
+USE_CLIB := yes
+USE_AMIGALIB := yes
 
-#MM
-setup :
-	%mkdirs_q $(EXEDIR) $(OBJDIR)
+#MM- workbench : workbench-system
+#MM workbench-system : includes linklibs
 
-#MM
-clean ::
-	-$(RM) $(EXES)
+%make_prog_setup mmake=workbench-system
 
-$(EXEDIR)/forkbomb : forkbomb
-	$(CP) $< $@
+workbench-system : setup $(EXES)
 
-$(EXEDIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(APPCFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
+%make_prog_single dir=$(EXEDIR)
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps
