@@ -10,7 +10,7 @@ int main()
 {
     struct timeval  tv_start, 
                     tv_end;
-    int             count   = 20000000;
+    int             count   = 100000000;
     double          elapsed = 0.0;
     Object         *object  = NULL;
     int             i;
