@@ -137,7 +137,7 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
 	*/
 
     	#warning This must be atomic!
-	AROS_ATOMIC_ANDL(me->tc_SigRecvd, ~SIGF_SINGLE);
+	AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
 	
 	if (urgent)
 	{

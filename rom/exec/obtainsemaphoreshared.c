@@ -137,7 +137,7 @@
     	
 	#warning this must be atomic
     
-    	AROS_ATOMIC_ANDL(me->tc_SigRecvd, ~SIGF_SINGLE);
+    	AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
 
 	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 

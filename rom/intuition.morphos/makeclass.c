@@ -130,7 +130,7 @@ AROS_LH5(struct IClass *, MakeClass,
                 iclass->cl_Flags      = flags;
                 
                 /* SuperClass is used one more time now */
-                AROS_ATOMIC_INCL(superClassPtr->cl_SubclassCount);
+                AROS_ATOMIC_INC(superClassPtr->cl_SubclassCount);
             }
         }
         else

@@ -20,7 +20,7 @@ AROS_LH0(void, Enable,
 {
     AROS_LIBFUNC_INIT
 
-    AROS_ATOMIC_DECB(SysBase->IDNestCnt);
+    AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     
     if(SysBase->IDNestCnt < 0)
     {

@@ -141,7 +141,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                      compiler on every machine produces an atomic instruction.
                 */
                 #warning check that window->Flags is atomically set everywhere!
-                AROS_ATOMIC_ORL(window->Flags, WFLG_WINDOWACTIVE);
+                AROS_ATOMIC_OR(window->Flags, WFLG_WINDOWACTIVE);
                 
                 pointer = IW(window)->pointer;
                 if (IW(window)->busy)
@@ -220,7 +220,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
         if (oldactive && oldactive != window)
         {
-            AROS_ATOMIC_ANDL(oldactive->Flags, ~WFLG_WINDOWACTIVE);
+            AROS_ATOMIC_AND(oldactive->Flags, ~WFLG_WINDOWACTIVE);
          
             int_refreshwindowframe(oldactive, REFRESHGAD_BORDER, 0, IntuitionBase);
             if (!window || oldactive->WScreen != window->WScreen)

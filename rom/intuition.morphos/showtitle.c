@@ -93,7 +93,7 @@ static VOID int_showtitle(struct ShowTitleActionMsg *msg,
 
             BehindLayer(0, screen->BarLayer);
 
-            AROS_ATOMIC_ANDW(screen->Flags, ~SHOWTITLE);
+            AROS_ATOMIC_AND(screen->Flags, ~SHOWTITLE);
 
             CheckLayers(screen, IntuitionBase);
 
@@ -108,7 +108,7 @@ static VOID int_showtitle(struct ShowTitleActionMsg *msg,
 
             UpfrontLayer(0, screen->BarLayer);
 
-            AROS_ATOMIC_ORW(screen->Flags, SHOWTITLE);
+            AROS_ATOMIC_OR(screen->Flags, SHOWTITLE);
 
             CheckLayers(screen, IntuitionBase);
 

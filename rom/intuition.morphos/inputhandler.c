@@ -212,7 +212,7 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                 break;
 
             case IDCMP_INTUITICKS:
-                AROS_ATOMIC_ANDL(im->IDCMPWindow->Flags, ~WFLG_WINDOWTICKED);
+                AROS_ATOMIC_AND(im->IDCMPWindow->Flags, ~WFLG_WINDOWTICKED);
                 break;
 
             case IDCMP_IDCMPUPDATE:
