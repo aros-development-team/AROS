@@ -61,7 +61,7 @@
 
 AROS_LH1(float, SPLog,
     AROS_LHA(float, fnum1, D0),
-    struct MathTransBase *, MathTransBase, 14, MathTrans
+    struct Library *, MathTransBase, 14, MathTrans
 )
 {
     AROS_LIBFUNC_INIT
@@ -103,11 +103,7 @@ AROS_LH1(float, SPLog,
         Exponent |= (0x47 - i + Sign);
     }
     
-    ld_M = intern_SPLd
-    (
-        (struct MathTransBase *) MathTransBase, 
-        (fnum1 & FFPMantisse_Mask) | 0x40
-    );
+    ld_M = intern_SPLd((fnum1 & FFPMantisse_Mask) | 0x40);
     
     /*               ld M + E
     ** log(fnum1) =  --------

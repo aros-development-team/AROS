@@ -33,7 +33,7 @@
 AROS_LH2(float, SPSincos,
     AROS_LHA(IPTR *, pfnum2, D1),
     AROS_LHA(float, fnum1, D0),
-    struct MathTransBase *, MathTransBase, 9, MathTrans
+    struct Library *, MathTransBase, 9, MathTrans
 )
 {
     AROS_LIBFUNC_INIT

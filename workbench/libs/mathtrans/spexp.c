@@ -35,7 +35,7 @@
 
 AROS_LH1(float, SPExp,
     AROS_LHA(float, fnum1, D0),
-    struct MathTransBase *, MathTransBase, 13, MathTrans
+    struct Library *, MathTransBase, 13, MathTrans
 )
 {
     AROS_LIBFUNC_INIT
