@@ -37,6 +37,16 @@
 #   define AROS_IS_POWER_OF_2(l)    (((l) & -(l)) == (l))
 #endif
 
+/* Round down <x> to a multiple of <r>. <r> must be a power of two */
+#ifndef AROS_ROUNDDOWN2
+#   define AROS_ROUNDDOWN2(x,r) ((x) & ~((r) - 1))
+#endif
+
+/* Round up <x> to a multiple of <r>. <r> must be a power of two */
+#ifndef AROS_ROUNDUP2
+#   define AROS_ROUNDUP2(x,r) (((x) + ((r) - 1)) &  ~((r) - 1))
+#endif
+
 /* Return the number of the least set bit, ie. 0xFF00 will return 8 */
 #ifndef AROS_LEAST_BIT_POS
 #   define AROS_LEAST_BIT_POS(l) \
