@@ -187,6 +187,8 @@ StrEditHookEntry (
 	if( ( sgw->EditOp == EO_INSERTCHAR ) ||
 	    ( sgw->EditOp == EO_REPLACECHAR ) ||
 	    ( sgw->EditOp == EO_SPECIAL ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
+	    ( sgw->EditOp == EO_NOOP ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
+	    ( sgw->EditOp == EO_ENTER ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
 	    ( sgw->EditOp == EO_BADFORMAT ) )
 	{
 //kprintf("sgsg2\n");
