@@ -143,6 +143,7 @@ int mflagc;
 char * targets[64];
 int targetc;
 int verbose = 0;
+int debug = 0;
 
 /* Macros */
 #   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
@@ -766,10 +767,11 @@ printf ("name=%s\n", name);
     fclose (optfh);
     free (optionfile);
 
-#if 0
-    printf ("known projects: ");
-    printlist (&projects);
-#endif
+    if (debug)
+    {
+	printf ("known projects: ");
+	printlist (&projects);
+    }
 }
 
 void
@@ -1328,10 +1330,11 @@ buildmflist (Project * prj)
 
     xfree (mfnsrc);
 
-#if 0
-    printf ("project %s.makefiles=\n", prj->node.name);
-    printlist (&prj->makefiles);
-#endif
+    if (debug)
+    {
+	printf ("project %s.makefiles=\n", prj->node.name);
+	printlist (&prj->makefiles);
+    }
     writecache (prj);
 }
 
@@ -1411,7 +1414,7 @@ setvar (Project * prj, const char * name, const char * val)
     SETSTR (var->value, val);
 
 #if 0
-    printf ("%s.vars=", prj->node.name);
+    printf ("project %s.vars=", prj->node.name);
     printvarlist (&prj->vars);
 #endif
 }
@@ -1528,10 +1531,11 @@ printf ("Read %d lines\n", lineno);
 
     putchar ('\n');
 
-#if 0
-    printf ("%s.targets=\n", prj->node.name);
-    printtargetlist (&prj->targets);
-#endif
+    if (debug)
+    {
+	printf ("%s.targets=\n", prj->node.name);
+	printtargetlist (&prj->targets);
+    }
 }
 
 void
@@ -1635,15 +1639,17 @@ readvars (Project * prj)
 	xfree (node);
     }
 
-#if 0
-    printf ("%s.genmfdeps=\n", prj->node.name);
-    printlist (&project->genmakefiledeps);
-#endif
+    if (debug)
+    {
+	printf ("project %s.genmfdeps=\n", prj->node.name);
+	printlist (&project->genmakefiledeps);
+    }
 
-#if 0
-    printf ("project %s.vars=", prj->node.name);
-    printvarlist (&prj->vars);
-#endif
+    if (debug)
+    {
+	printf ("project %s.vars=", prj->node.name);
+	printvarlist (&prj->vars);
+    }
 }
 
 int
@@ -1914,6 +1920,10 @@ main (int argc, char ** argv)
 	    else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
 	    {
 		verbose = 1;
+	    }
+	    else if (!strcmp (argv[t], "--debug"))
+	    {
+		debug = 1;
 	    }
 	    else
 	    {
