@@ -1,0 +1,22 @@
+## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## language deutsch
+## codeset 0
+;;
+MSG_NAME
+Wanderer Einstellungen
+;
+MSG_BACKGROUNDS
+Hintergründe
+;
+MSG_BACKGROUND_WORKBENCH
+Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Verzeichnisse
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Wähle Workbench Hintergrund
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Wähle Verzeichnis Hintergrund
+;
