@@ -23,6 +23,15 @@
 
 #undef SysBase
 
+#warning: prototypes which should actually be in some public header
+HIDDT_PCI_Device **HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags);
+VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device **devices);
+
+void new_setupAccel(struct nv_staticdata *nsd);
+OOP_Class *init_nvclass (struct nv_staticdata *nsd);
+OOP_Class *nv_init_onbmclass(struct nv_staticdata *nsd);
+OOP_Class *nv_init_offbmclass(struct nv_staticdata *nsd);
+
 #define SetBitField(value,from,to) SetBF(to,GetBF(value,from))
 #define SetBit(n)		(1<<(n))
 #define Set8Bits(value)		((value)&0xff)
@@ -103,7 +112,7 @@ UWORD default_cursor[] = {
 
 void load_cursor(struct nv_staticdata *nsd, UWORD *tmp)
 {
-    int show = nsd->riva.ShowHideCursor(&nsd->riva, 0);
+//    int show = nsd->riva.ShowHideCursor(&nsd->riva, 0);
     int         *image, i, numInts;
     numInts = (MAX_CURS*MAX_CURS*2) / sizeof(int);
 
@@ -264,7 +273,7 @@ int findCard(struct nv_staticdata *nsd)
 
 	nsd->card = NULL;
 
-	res = ptr = HIDD_PCI_FindDevice(nsd->pcihidd, &tags);
+	res = ptr = HIDD_PCI_FindDevice(nsd->pcihidd, tags);
 	while (*ptr)
 	{
 		UWORD d = (*ptr)->DeviceID;
@@ -291,7 +300,7 @@ int findCard(struct nv_staticdata *nsd)
 			is(d,GEFORCE4_440GO)	||
 			is(d,GEFORCE4_420GO)	||
 			is(d,GEFORCE4_420GO32)	||
-			is(d,QUADRO2_500)		||
+			is(d,QUADRO4_500)		||
 			is(d,GEFORCE4_440GO64)	||
 			is(d,QUADRO4_200)		||
 			is(d,QUADRO4_550)		||
@@ -322,7 +331,7 @@ int findCard(struct nv_staticdata *nsd)
 
 	if (!nsd->card)
 	{
-		res = ptr = HIDD_PCI_FindDevice(nsd->pcihidd, &tags_sgs);
+		res = ptr = HIDD_PCI_FindDevice(nsd->pcihidd, tags_sgs);
 		while (*ptr)
 		{
 			if ((*ptr)->DeviceID == DEVICE_RIVA128)
@@ -388,15 +397,15 @@ int findCard(struct nv_staticdata *nsd)
 			case NV_ARCH_03:
 				nsd->riva.PRAMIN = (unsigned *)(base + 0x00C00000);
 
-				nsd->base0 = &(nsd->riva.PGRAPH[0x00000630/4]);
-				nsd->base1 = &(nsd->riva.PGRAPH[0x00000634/4]);
-				nsd->base2 = &(nsd->riva.PGRAPH[0x00000638/4]);
-				nsd->base3 = &(nsd->riva.PGRAPH[0x0000063C/4]);
+				nsd->base0 = (ULONG *)&(nsd->riva.PGRAPH[0x00000630/4]);
+				nsd->base1 = (ULONG *)&(nsd->riva.PGRAPH[0x00000634/4]);
+				nsd->base2 = (ULONG *)&(nsd->riva.PGRAPH[0x00000638/4]);
+				nsd->base3 = (ULONG *)&(nsd->riva.PGRAPH[0x0000063C/4]);
 				
-				nsd->pitch0 = &(nsd->riva.PGRAPH[0x00000650/4]);
-				nsd->pitch1 = &(nsd->riva.PGRAPH[0x00000654/4]);
-				nsd->pitch2 = &(nsd->riva.PGRAPH[0x00000658/4]);
-				nsd->pitch3 = &(nsd->riva.PGRAPH[0x0000065C/4]);
+				nsd->pitch0 = (ULONG *)&(nsd->riva.PGRAPH[0x00000650/4]);
+				nsd->pitch1 = (ULONG *)&(nsd->riva.PGRAPH[0x00000654/4]);
+				nsd->pitch2 = (ULONG *)&(nsd->riva.PGRAPH[0x00000658/4]);
+				nsd->pitch3 = (ULONG *)&(nsd->riva.PGRAPH[0x0000065C/4]);
 
 				break;
 
@@ -405,15 +414,15 @@ int findCard(struct nv_staticdata *nsd)
 				nsd->riva.PCRTC = (unsigned *)(mmio + 0x00600000);
 				nsd->riva.PRAMIN = (unsigned *)(mmio + 0x00710000);
 
-				nsd->base0 = &(nsd->riva.PGRAPH[0x00000640/4]);
-				nsd->base1 = &(nsd->riva.PGRAPH[0x00000644/4]);
-				nsd->base2 = &(nsd->riva.PGRAPH[0x00000648/4]);
-				nsd->base3 = &(nsd->riva.PGRAPH[0x0000064C/4]);
+				nsd->base0 = (ULONG *)&(nsd->riva.PGRAPH[0x00000640/4]);
+				nsd->base1 = (ULONG *)&(nsd->riva.PGRAPH[0x00000644/4]);
+				nsd->base2 = (ULONG *)&(nsd->riva.PGRAPH[0x00000648/4]);
+				nsd->base3 = (ULONG *)&(nsd->riva.PGRAPH[0x0000064C/4]);
 
-				nsd->pitch0 = &(nsd->riva.PGRAPH[0x00000670/4]);
-				nsd->pitch1 = &(nsd->riva.PGRAPH[0x00000674/4]);
-				nsd->pitch2 = &(nsd->riva.PGRAPH[0x00000678/4]);
-				nsd->pitch3 = &(nsd->riva.PGRAPH[0x0000067C/4]);
+				nsd->pitch0 = (ULONG *)&(nsd->riva.PGRAPH[0x00000670/4]);
+				nsd->pitch1 = (ULONG *)&(nsd->riva.PGRAPH[0x00000674/4]);
+				nsd->pitch2 = (ULONG *)&(nsd->riva.PGRAPH[0x00000678/4]);
+				nsd->pitch3 = (ULONG *)&(nsd->riva.PGRAPH[0x0000067C/4]);
 
 				break;
 		}
@@ -439,7 +448,7 @@ int findCard(struct nv_staticdata *nsd)
 		    mc->mc_Next = NULL;
 		    mc->mc_Bytes = nsd->memheader.mh_Free;
 		    
-		    nsd->memory = base;
+		    nsd->memory = (APTR)base;
 		}
 	#else
 	
