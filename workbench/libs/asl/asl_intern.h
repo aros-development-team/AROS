@@ -1,8 +1,8 @@
 #ifndef ASL_INTERN_H
 #define ASL_INTERN_H
 
-#undef  AROS_ALMOST_COMPATIBLE 
-#define AROS_ALMOST_COMPATIBLE 
+#undef	AROS_ALMOST_COMPATIBLE
+#define AROS_ALMOST_COMPATIBLE
 
 
 #ifndef EXEC_TYPES_H
@@ -42,11 +42,11 @@ struct AslBase_intern;
 struct IntReq
 {
     UWORD		ir_ReqType;
-    struct Window 	*ir_Window;
-    struct Screen 	*ir_Screen;
+    struct Window	*ir_Window;
+    struct Screen	*ir_Screen;
     STRPTR		ir_PubScreenName;
-    struct Hook		*ir_IntuiMsgFunc;
-    struct TextAttr 	*ir_TextAttr;
+    struct Hook 	*ir_IntuiMsgFunc;
+    struct TextAttr	*ir_TextAttr;
     struct Locale	*ir_Locale;
     STRPTR		ir_TitleText;
     STRPTR		ir_PositiveText;
@@ -56,7 +56,7 @@ struct IntReq
     UWORD		ir_Width;
     UWORD		ir_Height;
     UBYTE		ir_Flags;
-	
+
 };
 
 /* Nodes in the ReqList */
@@ -72,15 +72,15 @@ struct ReqNode
 struct IntFileReq
 {
 	struct IntReq	ifr_IntReq;
-	
+
     STRPTR	ifr_File;
     STRPTR	ifr_Drawer;
     STRPTR	ifr_Pattern;
     UBYTE	ifr_Flags1;
     UBYTE	ifr_Flags2;
-    struct Hook	*ifr_FilterFunc;
-    struct Hook	*ifr_HookFunc; /* Combined callback function */
-	
+    struct Hook *ifr_FilterFunc;
+    struct Hook *ifr_HookFunc; /* Combined callback function */
+
     /* Some gadgettext specific for the file requester */
     STRPTR	ifr_VolumesText;
     STRPTR	ifr_ParentText;
@@ -88,29 +88,29 @@ struct IntFileReq
 
 struct IntFontReq
 {
-    struct IntReq 	ifo_IntReq;
+    struct IntReq	ifo_IntReq;
     struct TextAttr	ifo_TextAttr;
     UBYTE	ifo_FrontPen;
     UBYTE	ifo_BackPen;
     UBYTE	ifo_DrawMode;
-    
+
     UBYTE	ifo_Flags;
     UWORD	ifo_MinHeight;
     UWORD	ifo_MaxHeight;
-    struct Hook	*ifo_FilterFunc;
-    struct Hook	*ifo_HookFunc;
+    struct Hook *ifo_FilterFunc;
+    struct Hook *ifo_HookFunc;
     UBYTE	ifo_MaxFrontPen;
     UBYTE	ifo_MaxBackPen;
-    
+
     STRPTR	*ifo_ModeList;
     UBYTE	*ifo_FrontPens;
     UBYTE	*ifo_BackPens;
-    
+
 };
 
 struct IntModeReq
 {
-    struct IntReq 	ism_IntReq;
+    struct IntReq	ism_IntReq;
 };
 
 
@@ -119,7 +119,7 @@ struct ParseTagArgs
 {
     struct IntReq	*pta_IntReq;
     APTR		pta_Req;
-    struct TagItem 	*pta_Tags;
+    struct TagItem	*pta_Tags;
 };
 
 struct AslReqInfo
@@ -132,7 +132,7 @@ struct AslReqInfo
     struct Hook ParseTagsHook;
     struct Hook GadgetryHook;
 };
-	
+
 
 
 /* Flags */
@@ -145,32 +145,32 @@ struct AslReqInfo
 /* Prototypes */
 
 struct ReqNode *FindReqNode(APTR, struct AslBase_intern *);
-VOID ParseCommonTags(struct IntReq *, struct TagItem *,	struct AslBase_intern *);
+VOID ParseCommonTags(struct IntReq *, struct TagItem *, struct AslBase_intern *);
 UWORD BiggestTextLength(STRPTR *, UWORD, struct RastPort *, struct AslBase_intern *);
 VOID StripRequester(APTR, UWORD, struct AslBase_intern *AslBase);
 
 AROS_UFP3(VOID, FRTagHook,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct ParseTagArgs *,	pta,		A2),
-    AROS_UFPA(struct AslBase_intern *, 	AslBase,	A1)
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct ParseTagArgs *,    pta,            A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
 );
 
 AROS_UFP3(ULONG, FRGadgetryHook,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct LayoutData *,	ld,		A2),
-    AROS_UFPA(struct AslBase_intern *,	AslBase,	A1)
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct LayoutData *,      ld,             A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
 );
 
 AROS_UFP3(VOID, FOTagHook,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct ParseTagArgs *,	pta,		A2),
-    AROS_UFPA(struct AslBase_intern *, 	AslBase,	A1)
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct ParseTagArgs *,    pta,            A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
 );
 
 AROS_UFP3(ULONG, FOGadgetryHook,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct LayoutData *,	ld,		A2),
-    AROS_UFPA(struct AslBase_intern *,	AslBase,	A1)
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct LayoutData *,      ld,             A2),
+    AROS_UFPA(struct AslBase_intern *,  AslBase,        A1)
 );
 
 /* Return values for the gadgetry hooks */
@@ -179,18 +179,18 @@ AROS_UFP3(ULONG, FOGadgetryHook,
 
 /* Handy macros */
 #define SETFLAG(flagvar, boolvar, flag) \
-    if (boolvar)			\
-    	flagvar |= flag;		\
+    if (boolvar)                        \
+	flagvar |= flag;		\
     else				\
-    	flagvar &= ~flag;
+	flagvar &= ~flag;
 
 
 struct AslBase_intern
 {
-    struct Library 	library;
+    struct Library	library;
     struct ExecBase	*sysbase;
     BPTR		seglist;
-    
+
 #ifndef GLOBAL_DOSBASE
     struct Library	*dosbase;
 #endif
@@ -199,12 +199,13 @@ struct AslBase_intern
 #endif
 
     struct GfxBase	*gfxbase;
+    struct Library	*boopsibase;
     struct Library	*utilitybase;
     struct Library	*aroslistviewbase;
     struct Library	*aroslistbase;
-    	
-    struct MinList 		ReqList;
-    struct SignalSemaphore 	ReqListSem;
+
+    struct MinList		ReqList;
+    struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];
 };
 
@@ -218,7 +219,7 @@ typedef struct IntuitionBase IntuiBase;
 #undef ASLB
 #define ASLB(b) ((struct AslBase_intern *)b)
 #undef UtilityBase
-#define UtilityBase 	ASLB(AslBase)->utilitybase
+#define UtilityBase	ASLB(AslBase)->utilitybase
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
@@ -226,16 +227,19 @@ typedef struct IntuitionBase IntuiBase;
 #endif
 
 #undef GfxBase
-#define GfxBase		ASLB(AslBase)->gfxbase
+#define GfxBase 	ASLB(AslBase)->gfxbase
+
+#undef BOOPSIBase
+#define BOOPSIBase	   ASLB(AslBase)->boopsibase
 
 #ifndef GLOBAL_DOSBASE
 #undef DOSBase
-#define DOSBase		ASLB(AslBase)->dosbase
+#define DOSBase 	ASLB(AslBase)->dosbase
 #endif
 
 #ifndef GLOBAL_SYSBASE
 #undef SysBase
-#define SysBase		ASLB(AslBase)->sysbase
+#define SysBase 	ASLB(AslBase)->sysbase
 #endif
 
 

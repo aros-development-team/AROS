@@ -1,8 +1,8 @@
 #ifndef AROSLISTVIEW_INTERN_H
 #define AROSLISTVIEW_INTERN_H
 
-#undef  AROS_ALMOST_COMPATIBLE 
-#define AROS_ALMOST_COMPATIBLE 
+#undef	AROS_ALMOST_COMPATIBLE
+#define AROS_ALMOST_COMPATIBLE
 
 
 #ifndef EXEC_TYPES_H
@@ -50,28 +50,28 @@ struct LVData
 
     /* Damage area */
 
-    UWORD 	lvd_DamageOffset;
+    UWORD	lvd_DamageOffset;
     UWORD	lvd_NumDamaged;
-        
+
     UBYTE	lvd_HorSpacing;
     UBYTE	lvd_VertSpacing;
     UBYTE	lvd_Flags;
-    
+
     /* Number of columns that the displayhook returns items for */
     UBYTE	lvd_MaxColumns;
     /* Number of colomns to view. Depends on AROSA_List_Format */
     UBYTE	lvd_ViewedColumns;
-    
+
     UBYTE	lvd_BackPen;
     UBYTE	lvd_FrontPen;
-    
+
     /* To prevent 'echo' OM_UPDATEs (double redraws) */
     UBYTE	lvd_NotifyCount;
-    
+
     /* For testting for doubleclicks */
     ULONG	lvd_StartSecs;
     ULONG	lvd_StartMicros;
-    
+
 };
 
 
@@ -79,7 +79,7 @@ struct LVData
 /* The minwitdh of one or more colums is as large as the biggest entry */
 #define LVFLG_SPECIALCOLWIDTH	(1 << 0)
 
-#define LVFLG_READONLY  	(1 << 1)
+#define LVFLG_READONLY		(1 << 1)
 #define LVFLG_MULTISELECT	(1 << 2)
 #define LVFLG_DOUBLECLICK	(1 << 3)
 
@@ -97,16 +97,16 @@ struct LVData
 #define MIN(a,b) ((a < b) ? a : b)
 
 #define ReCalcEntryHeight(data) \
-    	    	data->lvd_EntryHeight =   data->lvd_Font->tf_YSize  \
-    	    				+ data->lvd_VertSpacing; 
+		data->lvd_EntryHeight =   data->lvd_Font->tf_YSize  \
+					+ data->lvd_VertSpacing;
 
 #undef NumVisible
 #define NumVisible(ibox, eh) \
 	(((ibox)->Height - LV_BORDERWIDTH_Y * 2) / eh)
-	
 
 
-	
+
+
 /* Constants */
 #define LV_BORDERWIDTH_X 2
 #define LV_BORDERWIDTH_Y 2
@@ -118,26 +118,26 @@ struct ColumnAttrs
 {
     UBYTE ca_Pen; /* Background pen for the entry */
     UBYTE ca_Flags;
-    			
+
     UWORD ca_Delta;
     WORD ca_MinWidth; /* A value of -1 makes minwidth as small as the largest text */
-    
+
     /* computed before each render */
 
     UWORD ca_Left;
     UWORD ca_Right;
     UWORD ca_Width;
-    
+
     /* Index into the array filled by displayhook for getting text for this column */
-    UBYTE ca_DHIndex; 
-    
+    UBYTE ca_DHIndex;
+
 };
 
 #define CA_ALIGN_MASK (3)
 
 #define CA_ALIGN_LEFT	0
 #define CA_ALIGN_RIGHT	1
-#define CA_ALIGN_CENTRE	2
+#define CA_ALIGN_CENTRE 2
 
 #define CAFLG_BAR		(1 << 3)
 #define CAFLG_SPECIALCOLWIDTH	(1 << 4)
@@ -150,7 +150,7 @@ VOID RenderEntries(Class *, Object *, struct gpRender *, LONG, UWORD, BOOL, stru
 
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
 VOID DrawListBorder(struct RastPort *, UWORD *, struct IBox *, BOOL, struct LVBase_intern *);
-VOID ComputeColumnWidths(UWORD,	struct LVData *, struct LVBase_intern *);
+VOID ComputeColumnWidths(UWORD, struct LVData *, struct LVBase_intern *);
 VOID ComputeColLeftRight(UWORD, struct LVData *);
 UWORD ShownEntries(struct LVData *, struct IBox *, struct LVBase_intern *);
 VOID NotifyAttrs(Class *, Object *, struct opSet *, struct TagItem *);
@@ -160,7 +160,7 @@ VOID NotifyAttrs(Class *, Object *, struct opSet *, struct TagItem *);
 /* Library stuff */
 struct LVBase_intern
 {
-    struct Library 	library;
+    struct Library	library;
     struct ExecBase	*sysbase;
     BPTR		seglist;
     struct Library	*dosbase;
@@ -170,9 +170,10 @@ struct LVBase_intern
     #endif
     struct GfxBase	*gfxbase;
     struct Library	*utilitybase;
-    
+    struct Library	*boopsibase;
+
     struct IClass	*classptr;
-	
+
 };
 
 /* The following typedefs are necessary, because the names of the global
@@ -185,7 +186,9 @@ typedef struct IntuitionBase IntuiBase;
 #undef LVB
 #define LVB(b) ((struct LVBase_intern *)b)
 #undef UtilityBase
-#define UtilityBase 	LVB(AROSListviewBase)->utilitybase
+#define UtilityBase	LVB(AROSListviewBase)->utilitybase
+#undef BOOPSIBase
+#define BOOPSIBase     LVB(AROSListviewBase)->boopsibase
 
 
 #ifndef GLOBAL_INTUIBASE
@@ -194,17 +197,17 @@ typedef struct IntuitionBase IntuiBase;
 #endif
 
 #undef GfxBase
-#define GfxBase		LVB(AROSListviewBase)->gfxbase
+#define GfxBase 	LVB(AROSListviewBase)->gfxbase
 
 /* On Linux-M68k SysBase has to be global! */
 extern struct ExecBase * SysBase;
 
 /*
 #undef SysBase
-#define SysBase		LVB(AROSListviewBase)->sysbase
+#define SysBase 	LVB(AROSListviewBase)->sysbase
 */
 #undef DOSBase
-#define DOSBase		LVB(AROSListviewBase)->dosbase
+#define DOSBase 	LVB(AROSListviewBase)->dosbase
 
 
 #define expunge() \

@@ -32,6 +32,9 @@
 #ifndef LIBRARIES_GADTOOLS_H
 #   include <libraries/gadtools.h>
 #endif
+#ifndef PROTO_BOOPSI_H
+#   include <proto/boopsi.h>
+#endif
 
 struct VisualInfo;
 
@@ -42,45 +45,46 @@ struct GadToolsBase_intern; /* prerefrence */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng);
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
-               struct IntuiText *itext);
+	       struct IntuiText *itext);
 void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
-                      struct RastPort *rport,
-                      WORD left, WORD top, WORD width, WORD height,
-                      struct TagItem *taglist);
+		      struct RastPort *rport,
+		      WORD left, WORD top, WORD width, WORD height,
+		      struct TagItem *taglist);
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
-                          struct TagItem stdgadtags[],
+			  struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
-                          struct TagItem *taglist);
+			  struct TagItem *taglist);
 struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
-                            struct TagItem stdgadtags[],
+			    struct TagItem stdgadtags[],
 			    struct VisualInfo *vi,
 			    struct TagItem *taglist);
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
-                      struct TagItem stdgadtags[],
-                      struct VisualInfo *vi,
-                      struct TagItem *taglist);
+		      struct TagItem stdgadtags[],
+		      struct VisualInfo *vi,
+		      struct TagItem *taglist);
 
 struct GadToolsBase_intern
 {
     struct Library    library;
     struct ExecBase * sysbase;
-    BPTR              seglist;
+    BPTR	      seglist;
 
     struct IntuitionBase * intuibase;
-    struct Library       * dosbase;
-    struct GfxBase       * gfxbase;
-    struct Library       * utilitybase;
+    struct Library	 * dosbase;
+    struct GfxBase	 * gfxbase;
+    struct Library	 * utilitybase;
+    struct Library	 * boopsibase;
 
-    struct Library       * aroscbbase;
-    struct Library       * arosmxbase;
+    struct Library	 * aroscbbase;
+    struct Library	 * arosmxbase;
 
     Class * buttonclass;
 };
 
 /* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers  and the corresponding
+   variables storing the library base pointers	and the corresponding
    structs are equal.
    This is a hack, of course. */
 typedef struct IntuitionBase IntuiBase;
@@ -100,6 +104,8 @@ extern struct ExecBase * SysBase;
 #define GfxBase (GTB(GadToolsBase)->gfxbase)
 #undef UtilityBase
 #define UtilityBase (GTB(GadToolsBase)->utilitybase)
+#undef BOOPSIBase
+#define BOOPSIBase (GTB(GadToolsBase)->boopsibase)
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
@@ -110,16 +116,16 @@ struct VisualInfo
     struct DrawInfo * vi_dri;
 };
 
-#define TAG_Left        0
-#define TAG_Top         1
-#define TAG_Width       2
-#define TAG_Height      3
-#define TAG_IText       4
-#define TAG_LabelPlace  5
-#define TAG_Previous    6
-#define TAG_ID          7
-#define TAG_DrawInfo    8
-#define TAG_UserData    9
+#define TAG_Left	0
+#define TAG_Top 	1
+#define TAG_Width	2
+#define TAG_Height	3
+#define TAG_IText	4
+#define TAG_LabelPlace	5
+#define TAG_Previous	6
+#define TAG_ID		7
+#define TAG_DrawInfo	8
+#define TAG_UserData	9
 #define TAG_Num        10
 
 #endif /* GADTOOLS_INTERN_H */

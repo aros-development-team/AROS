@@ -5,12 +5,15 @@
     Desc: GadTools initialization code.
     Lang: English.
 */
+#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <proto/exec.h>
+#include <proto/boopsi.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
+#include <utility/utility.h>
 #include "initstruct.h"
 #include "gadtools_intern.h"
 #include "libdefs.h"
@@ -131,7 +134,7 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     version=0;
 
     if (!IntuitionBase)
-	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 36);
+	IntuitionBase = (IntuiBase *)OpenLibrary(INTUITIONNAME, 36);
     if (!IntuitionBase)
 	return(NULL);
 
@@ -141,13 +144,18 @@ AROS_LH1(struct GadToolsBase_intern *, open,
 	return NULL;
 
     if (!GfxBase)
-	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+	GfxBase = (GraphicsBase *)OpenLibrary(GRAPHICSNAME, 37);
     if (!GfxBase)
 	return NULL;
 
     if (!UtilityBase)
-	UtilityBase = OpenLibrary("utility.library", 37);
+	UtilityBase = OpenLibrary(UTILITYNAME, 37);
     if (!UtilityBase)
+	return NULL;
+
+    if (!BOOPSIBase)
+	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
+    if (!BOOPSIBase)
 	return NULL;
 
     /* I have one more opener. */
@@ -174,13 +182,21 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
 
-        CloseLibrary(LIBBASE->arosmxbase);
-        CloseLibrary(LIBBASE->aroscbbase);
+	if (LIBBASE->arosmxbase)
+	    CloseLibrary(LIBBASE->arosmxbase);
+	if (LIBBASE->aroscbbase)
+	    CloseLibrary(LIBBASE->aroscbbase);
 
-	CloseLibrary(UtilityBase);
-        CloseLibrary((struct Library *)GfxBase);
-        CloseLibrary(DOSBase);
-        CloseLibrary((struct Library *)IntuitionBase);
+	if (BOOPSIBase)
+	    CloseLibrary(BOOPSIBase);
+	if (UtilityBase)
+	    CloseLibrary(UtilityBase);
+	if (GfxBase)
+	    CloseLibrary((struct Library *)GfxBase);
+	if (DOSBase)
+	    CloseLibrary(DOSBase);
+	if (IntuitionBase)
+	    CloseLibrary((struct Library *)IntuitionBase);
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)

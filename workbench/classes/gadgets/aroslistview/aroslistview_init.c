@@ -5,17 +5,27 @@
     Desc: AROSListview initialization code.
     Lang: English.
 */
-
-#include <proto/intuition.h>
-#include "initstruct.h"
-#include "aroslistview_intern.h"
-#include "libdefs.h"
+#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
+#include <dos/dos.h>
+#include <utility/utility.h>
+#include <graphics/gfxbase.h>
+#include <intuition/intuition.h>
 #include <proto/exec.h>
+#include <proto/boopsi.h>
+#include <proto/intuition.h>
+
+/*
+    These do magic things with some types and must come after all other
+    includes
+*/
+#include "initstruct.h"
+#include "aroslistview_intern.h"
+#include "libdefs.h"
 
 #define INIT AROS_SLIB_ENTRY(init, AROSListview)
 
@@ -138,34 +148,39 @@ AROS_LH1(struct LVBase_intern *, open,
     version=0;
 
     if (!GfxBase)
-    	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+	GfxBase = (GraphicsBase *)OpenLibrary(GRAPHICSNAME, 37);
     if (!GfxBase)
 	return(NULL);
 
+    if (!BOOPSIBase)
+	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
+    if (!BOOPSIBase)
+	return(NULL);
+
     if (!UtilityBase)
-	UtilityBase = OpenLibrary("utility.library", 37);
+	UtilityBase = OpenLibrary(UTILITYNAME, 37);
     if (!UtilityBase)
 	return(NULL);
 
     if (!IntuitionBase)
-    	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+	IntuitionBase = (IntuiBase *)OpenLibrary(INTUITIONNAME, 37);
     if (!IntuitionBase)
 	return (NULL);
-	
+
     if (!DOSBase)
-    	DOSBase = OpenLibrary("dos.library", 37);
+	DOSBase = OpenLibrary(DOSNAME, 37);
     if (!DOSBase)
 	return (NULL);
 
     /* ------------------------- */
     /* Create the class itself */
-    
+
     LIBBASE->classptr = InitListviewClass(LIBBASE);
     if (!LIBBASE->classptr)
-    	return (NULL);
-    
+	return (NULL);
+
     /* ------------------------- */
-    
+
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -195,6 +210,7 @@ AROS_LH0(BPTR, close, struct LVBase_intern *, LIBBASE, 2, BASENAME)
 	}
 
 	CloseLibrary(UtilityBase);
+	CloseLibrary(BOOPSIBase);
 	CloseLibrary((struct Library *)GfxBase);
 	CloseLibrary((struct Library *)IntuitionBase);
 	CloseLibrary(DOSBase);

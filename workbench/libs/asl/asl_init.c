@@ -6,15 +6,17 @@
     Lang: English.
 */
 
-#include "initstruct.h"
-#include "asl_intern.h"
-#include "libdefs.h"
 #include <stddef.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <proto/boopsi.h>
+
+#include "initstruct.h"
+#include "asl_intern.h"
+#include "libdefs.h"
 
 #define INIT AROS_SLIB_ENTRY(init, Asl)
 
@@ -99,28 +101,28 @@ const struct IntFileReq def_filereq =
 {
     {
 	ASL_FileRequest,
-	NULL, 	/* Window		*/
-	NULL, 	/* Screen		*/
-	NULL, 	/* PubScreenName	*/
-	NULL, 	/* IntuiMsgFunc		*/
-	NULL, 	/* TextAttr		*/
-	NULL, 	/* Locale		*/
+	NULL,	/* Window		*/
+	NULL,	/* Screen		*/
+	NULL,	/* PubScreenName	*/
+	NULL,	/* IntuiMsgFunc 	*/
+	NULL,	/* TextAttr		*/
+	NULL,	/* Locale		*/
 	"Open file",
 	"OK",
 	"Cancel",
 	0, 0,
 	500, 300
     },
-	
-    NULL, 	/* File		*/
-    "Sys:",	/* Drawer	*/
-    "#?",	/* Pattern	*/
+
+    NULL,	/* File 	*/
+    "Sys:",     /* Drawer       */
+    "#?",       /* Pattern      */
     FRF_DOPATTERNS,
     FRF_REJECTICONS,
     NULL,	/* FilterFunc	*/
     NULL,	/* HookFunc	*/
-    "Volumes",	/* VolumesText	*/
-    "Parent"	/* CancelText	*/
+    "Volumes",  /* VolumesText  */
+    "Parent"    /* CancelText   */
 };
 
 #include <intuition/screens.h> /* Needed for pen constants */
@@ -128,12 +130,12 @@ const struct IntFontReq def_fontreq =
 {
     {
 	ASL_FontRequest,
-	NULL, 	/* Window		*/
-	NULL, 	/* Screen		*/
-	NULL, 	/* PubScreenName	*/
-	NULL, 	/* IntuiMsgFunc		*/
-	NULL, 	/* TextAttr		*/
-	NULL, 	/* Locale		*/
+	NULL,	/* Window		*/
+	NULL,	/* Screen		*/
+	NULL,	/* PubScreenName	*/
+	NULL,	/* IntuiMsgFunc 	*/
+	NULL,	/* TextAttr		*/
+	NULL,	/* Locale		*/
 	"Open font",
 	"OK",
 	"Cancel",
@@ -145,18 +147,18 @@ const struct IntFontReq def_fontreq =
     BACKGROUNDPEN,	/* BackPen	*/
     JAM1,		/* DrawMode	*/
     0,		/* Flags	*/
-    
+
     2,		/* Minheight	*/
     100,	/* MaxHeight	*/
     NULL,	/* FilterFunc	*/
     NULL,	/* HookFunc	*/
-    32,		/* MaxFrontPen	*/
-    32,		/* MaxBackPen	*/
-    
+    32, 	/* MaxFrontPen	*/
+    32, 	/* MaxBackPen	*/
+
     NULL,	/* ModeList	*/
     NULL,	/* FrontPens	*/
     NULL	/* BackPens	*/
-    
+
 };
 
 
@@ -216,7 +218,7 @@ AROS_LH1(struct AslBase_intern *, open,
     version=0;
 
     D(bug("Inside openfunc\n"));
-    
+
 
     if (!DOSBase)
 	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
@@ -224,7 +226,7 @@ AROS_LH1(struct AslBase_intern *, open,
 	return(NULL);
 
     if (!GfxBase)
-    	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
 	return(NULL);
 
@@ -233,32 +235,37 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!UtilityBase)
 	return(NULL);
 
+    if (!BOOPSIBase)
+	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
+    if (!BOOPSIBase)
+	return(NULL);
+
     if (!IntuitionBase)
-    	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
 	return (NULL);
 
     if (!LIBBASE->aroslistviewbase)
-    	LIBBASE->aroslistviewbase = OpenLibrary("SYS:Classes/Gadgets/aroslistview.gadget", 37);
+	LIBBASE->aroslistviewbase = OpenLibrary("SYS:Classes/Gadgets/aroslistview.gadget", 37);
     if (!LIBBASE->aroslistviewbase)
 	return (NULL);
 
     if (!LIBBASE->aroslistbase)
-    	LIBBASE->aroslistbase = OpenLibrary("SYS:Classes/Gadgets/aroslist.class", 37);
+	LIBBASE->aroslistbase = OpenLibrary("SYS:Classes/Gadgets/aroslist.class", 37);
     if (!LIBBASE->aroslistbase)
 	return (NULL);
 
     /* ------------------------- */
-    
+
     /* Asl specific initialization stuff */
     NEWLIST( &(ASLB(AslBase)->ReqList));
 
     InitSemaphore( &(ASLB(AslBase)->ReqListSem));
-	
+
     InitReqInfo(ASLB(AslBase));
-    
+
     /* ------------------------- */
-    
+
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -283,6 +290,8 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
     {
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
+	if (BOOPSIBase)
+	    CloseLibrary(BOOPSIBase);
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
 	if (DOSBase)
@@ -351,41 +360,41 @@ AROS_LH0I(int, null, struct AslBase_intern *, LIBBASE, 4, BASENAME)
 VOID InitReqInfo(struct AslBase_intern *AslBase)
 {
     struct AslReqInfo *reqinfo;
-    
+
     /* Set file requester info */
-    
+
     reqinfo = &(ASLB(AslBase)->ReqInfo[ASL_FileRequest]);
     reqinfo->IntReqSize 	= sizeof (struct IntFileReq);
     reqinfo->ReqSize		= sizeof (struct FileRequester);
-    reqinfo->DefaultReq		= (struct IntFileReq *)&def_filereq;
+    reqinfo->DefaultReq 	= (struct IntFileReq *)&def_filereq;
     reqinfo->UserDataSize	= sizeof (struct FRUserData);
-    
+
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= (void *)FRTagHook;
     reqinfo->GadgetryHook.h_Entry	= (void *)FRGadgetryHook;
-    
+
     /* Set font requester info */
-    
+
     reqinfo = &(ASLB(AslBase)->ReqInfo[ASL_FontRequest]);
     reqinfo->IntReqSize 	= sizeof (struct IntFontReq);
     reqinfo->ReqSize		= sizeof (struct FontRequester);
-    reqinfo->DefaultReq		= (struct IntFontReq *)&def_fontreq;
+    reqinfo->DefaultReq 	= (struct IntFontReq *)&def_fontreq;
     reqinfo->UserDataSize	= sizeof (struct FOUserData);
-    
+
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= (void *)FOTagHook;
     reqinfo->GadgetryHook.h_Entry	= (void *)FOGadgetryHook;
 
     /* Set screenmode requester info */
-    
+
     reqinfo = &(ASLB(AslBase)->ReqInfo[ASL_ScreenModeRequest]);
     reqinfo->IntReqSize 	= sizeof (struct IntModeReq);
     reqinfo->ReqSize		= sizeof (struct ScreenModeRequester);
-    reqinfo->DefaultReq		= NULL;
+    reqinfo->DefaultReq 	= NULL;
     reqinfo->UserDataSize	= 0;
-    
+
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= NULL;
