@@ -920,10 +920,16 @@ VOID UpdateStringInfo(struct Gadget *gad)
     	{
             /* NOTE: The max number of chars written INCLUDES trailing \0 */
     	    snprintf(strinfo->Buffer, strinfo->MaxChars, "%d", strinfo->LongInt);
+	    
     	}
     }
     
     strinfo->NumChars = strlen(strinfo->Buffer);
+
+    if (strinfo->BufferPos > strinfo->NumChars)
+    {
+    	strinfo->BufferPos = strinfo->NumChars;
+    }
     
     D(bug("%s gadget contains buffer %s of length %d\n",
         (gad->Activation & GACT_LONGINT) ? "Integer" : "String",
