@@ -8,9 +8,13 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <string.h>
+#include <proto/cybergraphics.h>
 
 void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
     	    	    	  struct GfxBase *GfxBase);
+
+void BltTemplateAlphaBasedText(struct RastPort *rp, STRPTR text, ULONG len,
+    	    	    	       struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
@@ -55,10 +59,24 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
 
     if (count)
     {
-    	if ((rp->DrawMode & INVERSVID) ||
+	struct ColorTextFont *ctf = (struct ColorTextFont *)rp->Font;
+    	BOOL	    	      antialias;
+	
+	antialias = (ctf->ctf_TF.tf_Style & FSF_COLORFONT) &&
+	    	    (ctf->ctf_Flags & CT_ANTIALIAS) &&
+		    (GetBitMapAttr(rp->BitMap, BMA_DEPTH) >= 15);
+	
+    	if (antialias || (rp->DrawMode & INVERSVID) ||
 	    (rp->AlgoStyle & (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)))
 	{
-	    BltTemplateBasedText(rp, string, count, GfxBase);
+	    if (antialias)
+	    {
+	    	BltTemplateAlphaBasedText(rp, string, count, GfxBase);
+	    }
+	    else
+	    {
+	    	BltTemplateBasedText(rp, string, count, GfxBase);
+	    }
 	}
 	else
 	{
@@ -80,7 +98,7 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
     WORD    	    	 raswidth, raswidth16, raswidth_bpr, rasheight, x, y, gx;
     UBYTE   	    	*raster;
     BOOL    	    	 is_bold, is_italic;
-    
+        
     TextExtent(rp, text, len, &te);
     
     raswidth  = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
@@ -294,3 +312,194 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
     Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
     
 }
+
+/***************************************************************************/
+
+#define CyberGfxBase (PrivGBase(GfxBase)->cybergfxbase)
+
+/***************************************************************************/
+
+void BltTemplateAlphaBasedText(struct RastPort *rp, STRPTR text, ULONG len,
+    	    	    	       struct GfxBase *GfxBase)
+{
+    struct TextExtent 	 te;
+    struct TextFont 	*tf;
+    WORD    	    	 raswidth, raswidth_bpr, rasheight, x, y, gx;
+    UBYTE   	    	*raster;
+    BOOL    	    	 is_bold, is_italic;
+
+    if (!CyberGfxBase)
+    {
+    	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+	if (!CyberGfxBase) return;
+    }
+    
+    TextExtent(rp, text, len, &te);
+    
+    raswidth  = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
+    rasheight = te.te_Extent.MaxY - te.te_Extent.MinY + 1;
+    
+    raswidth_bpr = raswidth;
+    
+    if ((raster = AllocVec(raswidth * rasheight, MEMF_CLEAR)))
+    {
+ 	tf = rp->Font;
+	
+	x = -te.te_Extent.MinX;
+	
+	is_bold   = (rp->AlgoStyle & FSF_BOLD) != 0;
+	is_italic = (rp->AlgoStyle & FSF_ITALIC) != 0;
+	
+	while(len--)
+	{
+	    UBYTE c = *text++;
+	    ULONG idx;
+	    ULONG charloc;
+	    UWORD glyphwidth, glyphpos, bold;
+	    UBYTE *glyphdata;
+	    UBYTE *dst;
+	    
+	    if (c < tf->tf_LoChar || c > tf->tf_HiChar)
+	    {
+	    	idx = tf->tf_HiChar - tf->tf_LoChar;
+	    }
+	    else
+	    {
+	    	idx = c - tf->tf_LoChar;
+	    }
+
+	    charloc = ((ULONG *)tf->tf_CharLoc)[idx];
+
+    	    glyphwidth = charloc & 0xFFFF;
+	    glyphpos = charloc >> 16;
+	    
+    	    if (tf->tf_CharKern)
+	    {
+	    	x += ((WORD *)tf->tf_CharKern)[idx];
+	    }
+	    	
+	       
+	    for(bold = 0; bold <= is_bold; bold++)
+	    {
+	    	WORD wx;
+		WORD italicshift, italiccheck = 0;
+		
+		if (is_italic)
+		{
+	    	    italiccheck = tf->tf_Baseline;
+	    	    italicshift = italiccheck / 2;		
+		}
+		else
+		{
+	    	    italicshift = 0;
+		}
+		
+		wx = x + italicshift + (bold ? tf->tf_BoldSmear : 0);
+		
+		glyphdata = ((UBYTE *)((struct ColorTextFont *)tf)->ctf_CharData[0]) + glyphpos;
+		dst = raster + wx;
+
+		for(y = 0; y < rasheight; y++)
+		{
+	    	    UBYTE *glyphdatax = glyphdata;
+		    UBYTE *dstx = dst;
+
+	    	    for(gx = 0; gx < glyphwidth; gx++)
+		    {
+		    	UWORD old = *dstx;
+			
+			old += *glyphdatax++;
+			if (old > 255) old = 255;
+    	    	    	*dstx++ = old;
+		    }
+
+		    glyphdata += tf->tf_Modulo * 8;
+		    dst += raswidth_bpr;
+		    
+		    if (is_italic)
+		    {
+		    	italiccheck--;
+			if (italiccheck & 1)
+			{
+			    italicshift--;
+			    dst--;			    
+			}
+		    }
+		    
+		} /* for(y = 0; y < rasheight; y++) */
+		
+	    } /* for(bold = 0; bold < ((rp->AlgoStyle & FSF_BOLD) ? 2 : 1); bold++) */
+	    
+	    if (tf->tf_CharSpace)
+	    {
+	    	x += ((WORD *)tf->tf_CharSpace)[idx];
+	    }
+	    else
+	    {
+	    	x += tf->tf_XSize;
+	    }
+	    
+	    x += rp->TxSpacing;
+	    
+	} /* while(len--) */
+
+	if (rp->AlgoStyle & FSF_UNDERLINED)
+	{
+	    UBYTE *dst;
+	    UBYTE prev_byte, act_byte = 0, next_byte;
+	    WORD count;
+	    LONG underline;
+	    
+	    underline = rp->TxBaseline + 1;
+	    if (underline < rasheight - 1) underline++;
+	    
+	    if (underline < rasheight)
+	    {
+		dst = raster + underline * (LONG)raswidth_bpr;
+		count  = raswidth;
+
+    	    	next_byte = *dst;
+		
+		while(count--)
+		{
+	    	    prev_byte = act_byte;
+		    act_byte = next_byte;
+		    if (count > 1)
+		    {
+			next_byte = dst[1];
+		    }
+		    else
+		    {
+			next_byte = 0;
+		    }
+
+		    *dst++ = (act_byte || (!prev_byte && !next_byte)) ? 255 : 0;
+
+		} /* while(count--) */
+		
+	    } /* if (underline < rasheight) */
+	    
+	} /* if (rp->AlgoStyle & FSF_UNDERLINED) */
+	
+	BltTemplateAlpha(raster,
+	    		 0,
+			 raswidth_bpr,
+			 rp,
+			 rp->cp_x + te.te_Extent.MinX,
+			 rp->cp_y - rp->TxBaseline,
+			 raswidth,
+			 rasheight);
+		    	
+    	FreeVec(raster);
+	
+    } /* if ((raster = AllocVec(raswidth * rasheight, MEMF_CLEAR))) */
+    
+    Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
+    
+}
+
+/***************************************************************************/
+
+#undef CyberGfxBase
+
+/***************************************************************************/
