@@ -81,8 +81,7 @@ void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 		      
-		      
-void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase);
+void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase);
 
 
 #endif /* _GADGETS_H_ */
