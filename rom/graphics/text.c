@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_Text (rp, string, count, GfxBase);
+    if (count) driver_Text (rp, string, count, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* Text */
