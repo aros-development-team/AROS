@@ -6,3 +6,4 @@ configure
 crypt.c
 makefile
 tpl.c
+contents
