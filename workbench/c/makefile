@@ -32,7 +32,8 @@ FILES = \
 	makedir \
 	mount \
 	version \
-	copy
+	copy \
+	tasklist
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 

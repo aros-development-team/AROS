@@ -159,4 +159,12 @@ struct FileInfoBlock
 #define ERROR_LOCK_TIMEOUT		242
 #define ERROR_UNLOCK_ERROR		243
 
+/* Filesystem types (multi-character constants of identifier strings) */
+#define ID_DOS_DISK		0x444f5300	/* 'DOS\0' */
+#define ID_FFS_DISK		0x444f5301	/* 'DOS\1' */
+#define ID_INTER_DOS_DISK	0x444f5302	/* 'DOS\2' */
+#define ID_INTER_FFS_DISK	0x444f5303	/* 'DOS\3' */
+#define ID_FASTDIR_DOS_DISK	0x444f5304	/* 'DOS\4' */
+#define ID_FASTDIR_FFS_DISK	0x444f5305	/* 'DOS\5' */
+
 #endif

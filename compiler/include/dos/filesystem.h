@@ -1,6 +1,7 @@
 #ifndef DOS_FILESYSTEM_H
 #define DOS_FILESYSTEM_H
 #include <exec/io.h>
+#include <dos/filehandler.h>
 
 struct IOFileSys
 {

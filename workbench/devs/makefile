@@ -4,9 +4,12 @@ TOP=..
 include $(TOP)/config/make.cfg
 
 OBJDIR = $(GENDIR)/devs
+LIBS = -L$(LIBDIR) -larosc -lamiga -laros
 
 DEVS = $(DEVSDIR)/ram.handler \
-	$(DEVSDIR)/nil.handler
+	$(DEVSDIR)/nil.handler \
+	$(DEVSDIR)/ffs.handler \
+	$(DEVSDIR)/fdsk.device
 
 FILES = console cdinputhandler rawkeyconvert
 
@@ -31,7 +34,10 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(DEVSDIR)/%.handler: $(OBJDIR)/%_handler.o
-	$(CC) $(ILDFLAGS) $< -o $@
+	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
+
+$(DEVSDIR)/%.device: $(OBJDIR)/%_device.o
+	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi

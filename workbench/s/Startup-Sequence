@@ -2,3 +2,17 @@ path SYS:Demos ADD QUIET
 assign DEVS: devs
 assign LIBS: libs
 assign S: s
+mount RAM: NIL:
+makedir ram:T
+assign T: ram:t
+;
+; To mount unit /dev/fd0 as drive FDSK: make a link from
+; fdsk/Unit0 to /dev/fd0 (you'll need access rights on the device
+; later - on most systems this will work only if you are root)
+; then uncomment the last two lines below.
+;
+; Ordinary users can use fdsk.device both on their amiga and their
+; linux box to mount disc images.
+;
+;assign FDSK: SYS:fdsk
+;mount FDSK0:

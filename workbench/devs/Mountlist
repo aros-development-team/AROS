@@ -1,0 +1,22 @@
+/* Mountlist entry for the data killer (just a handler) */
+NIL:
+	FileSystem	= nil.handler
+#
+
+/* Entry for the variable sized ramdisk (just a handler) */
+RAM:
+	FileSystem	= ram.handler
+#
+
+/* Entry for a file mounted as filesystem FDSK0: */
+FDSK0:
+	FileSystem	= ffs.handler
+	Device		= fdsk.device
+	Unit		= 0
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 9
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
