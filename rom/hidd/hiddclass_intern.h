@@ -6,6 +6,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif

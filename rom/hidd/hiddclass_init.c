@@ -21,7 +21,7 @@
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hd_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hd_SegList)
-#define LC_RESIDENTNAME         hiddclass_resident
+#define LC_RESIDENTNAME         HIDD_resident
 #define LC_RESIDENTFLAGS        RTF_AUTOINIT |  RTF_COLDSTART
 #define LC_RESIDENTPRI          90
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)

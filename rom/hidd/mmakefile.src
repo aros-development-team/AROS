@@ -50,7 +50,7 @@ OSMODULE := $(LIBNAME).$(LIBPOST)
 endif
 
 OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-ALL_OBJS := $(OBJS) 
+ALL_OBJS := $(OBJS) $(INITFUNC) $(ENDFUNC)
 
 $(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a) $(ENDFUNC)
