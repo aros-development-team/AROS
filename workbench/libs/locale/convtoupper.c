@@ -10,6 +10,8 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+#define	DEBUG_CONVTOUPPER(x)	;
+
 /*****************************************************************************
 
     NAME */
@@ -58,9 +60,29 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_CALL1(ULONG, IntL(locale)->il_LanguageFunctions[1],
+    ULONG	retval;
+
+    DEBUG_CONVTOUPPER(dprintf("ConvToUpper: locale 0x%lx char 0x%lx\n",
+			locale,
+			character));
+
+    DEBUG_CONVTOUPPER(dprintf("ConvToUpper: func 0x%lx\n",
+			IntL(locale)->il_LanguageFunctions[1]));
+
+#ifdef AROS_CALL1
+    retval = AROS_CALL1(ULONG, IntL(locale)->il_LanguageFunctions[1],
 	AROS_LCA(ULONG, character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+   retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[1],
+	AROS_UFCA(ULONG, character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
+    DEBUG_CONVTOUPPER(dprintf("ConvToUpper: retval 0x%lx\n",
+			retval));
+
+    return(retval);
+    
     AROS_LIBFUNC_EXIT
 } /* ConvToUpper */

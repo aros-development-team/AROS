@@ -15,6 +15,8 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+#define	DEBUG_CONVTOUPPER(x)	;
+
 extern struct LocaleBase *globallocalebase;
 
  /*****************************************************************************
@@ -22,7 +24,7 @@ extern struct LocaleBase *globallocalebase;
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(UBYTE, LocToUpper,
+	AROS_LH1(ULONG, LocToUpper,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, character, D0),
@@ -62,10 +64,20 @@ extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
 
-    UBYTE retval;
+    ULONG retval;
     
     REPLACEMENT_LOCK;
+
+    DEBUG_CONVTOUPPER(dprintf("locToUpper: char 0x%lx\n",
+			character));
+
+    DEBUG_CONVTOUPPER(dprintf("locToUpper: locale 0x%lx\n",
+			(struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale));
+
     retval = ConvToUpper((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale, character);
+
+    DEBUG_CONVTOUPPER(dprintf("locToUpperr: retval 0x%lx\n",
+			retval));
     REPLACEMENT_UNLOCK;
     
     return retval;

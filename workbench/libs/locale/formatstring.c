@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+
 #include <stdlib.h>
 #include <exec/types.h>
 #include <utility/hooks.h>
@@ -15,8 +16,16 @@
 
 #include <aros/debug.h>
 
-char hexarray [] = "0123456789abcdef";
-char HEXarray [] = "0123456789ABCDEF";
+#if USE_QUADFMT
+typedef QUAD  FMTLARGESTTYPE;
+typedef UQUAD UFMTLARGESTTYPE;
+#else  /* USE_QUADFMT */
+typedef LONG  FMTLARGESTTYPE;
+typedef ULONG UFMTLARGESTTYPE;
+#endif /* USE_QUADFMT */
+
+static const UBYTE hexarray [] = "0123456789abcdef";
+static const UBYTE HEXarray [] = "0123456789ABCDEF";
 
 /*****************************************************************************
 
@@ -60,60 +69,69 @@ char HEXarray [] = "0123456789ABCDEF";
   AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
   enum {OUTPUT = 0,
-        FOUND_FORMAT};
-  
-  ULONG template_pos = 0;      /* Current position in the template string */
-  ULONG state        = OUTPUT; /* current state of parsing */
-  BOOL  end          = FALSE;
-  ULONG max_argpos   = 0;
-  ULONG arg_counter  = 0;
-  
-  ULONG * stream     = (ULONG *)dataStream;
-  BOOL  scanning     = TRUE;   /* The first time I will go through
-                                  and determine the width of the data in the dataStream */
+        FOUND_FORMAT} state;
 
-#define INDICES 256                                  
+  ULONG template_pos;
+  BOOL  end;
+  ULONG max_argpos;
+  ULONG arg_counter;
+  ULONG *stream;
+  BOOL  scanning;
+
+#define INDICES 256
   UWORD indices[INDICES];
 
+  if (!fmtTemplate)
+    return dataStream;
 
-  if (NULL == fmtTemplate)
-    return (APTR)stream;
+  template_pos = 0;      /* Current position in the template string */
+  state        = OUTPUT; /* current state of parsing */
+  end          = FALSE;
+  max_argpos   = 0;
+  arg_counter  = 0;
+  stream       = (ULONG *) dataStream;
+  scanning     = TRUE;   /* The first time I will go through
+                                  and determine the width of the data in the dataStream */
 
-  memset(indices, 0, INDICES*sizeof(UWORD));
+#ifdef __MORPHOS__
+  memclr(indices, sizeof(indices));
+#else
+  memset(indices, 0, sizeof(indices));
+#endif
 
-  while (FALSE == end)
+  while (!end)
   {
     /*
     ** A format description starts here?
     */
-    if ('%' == fmtTemplate[template_pos])
+    if (fmtTemplate[template_pos] == '%')
     {
       arg_counter++;
       state = FOUND_FORMAT;
     }
-    
+
     switch (state)
     {
       case OUTPUT:
         /*
         ** Call the hook for this character
         */
-        if (FALSE == scanning)
+        if (!scanning)
         {
           AROS_UFC3(VOID, putCharFunc->h_Entry,
             AROS_UFCA(struct Hook *,   putCharFunc,                A0),
             AROS_UFCA(struct Locale *, locale,                     A2),
-            AROS_UFCA(char,            fmtTemplate[template_pos],  A1));
+            AROS_UFCA(UBYTE,           fmtTemplate[template_pos],  A1));
         }
 
         /*
         ** End of template string? -> End of this function.
         */
-        if ('\0' == fmtTemplate[template_pos])
+        if (fmtTemplate[template_pos] == '\0')
         {
-          if (TRUE == scanning)
+          if (scanning)
           {
-            /* 
+            /*
             ** The scanning phase is over. Next time we do the output.
             */
             int i, sum;
@@ -127,22 +145,22 @@ char HEXarray [] = "0123456789ABCDEF";
             indices[0] = 0;
 
             i = 1;
-            
+
             while (i <= max_argpos)
             {
               int _sum;
-              if (0 != indices[i])
+              if (indices[i] != 0)
                 _sum =  sum + indices[i];
               else
                 _sum =  sum + 4;
-                
+
               indices[i] =  sum;
               sum        = _sum;
               i++;
             }
           }
           else
-          { 
+          {
             /*
             ** We already went through the output phase. So this is
             ** the end of it.
@@ -156,7 +174,7 @@ char HEXarray [] = "0123456789ABCDEF";
         //kprintf("OUTPUT: template_pos: %d\n",template_pos);
 
       break;
-      
+
       case FOUND_FORMAT:
         /*
         ** The '%' was found in the template string
@@ -167,14 +185,14 @@ char HEXarray [] = "0123456789ABCDEF";
         /*
         ** Does the user want the '%' to be printed?
         */
-        if ('%' == fmtTemplate[template_pos])
+        if (fmtTemplate[template_pos] == '%')
         {
-          if (FALSE == scanning)
+          if (!scanning)
           {
             AROS_UFC3(VOID, putCharFunc->h_Entry,
               AROS_UFCA(struct Hook *  , putCharFunc,                A0),
               AROS_UFCA(struct Locale *, locale,                     A2),
-              AROS_UFCA(char,            fmtTemplate[template_pos],  A1));
+              AROS_UFCA(UBYTE,           fmtTemplate[template_pos],  A1));
           }
           template_pos++;
 	  arg_counter--; //stegerg
@@ -187,41 +205,42 @@ char HEXarray [] = "0123456789ABCDEF";
           **
           ** arg_pos specifies the position of the argument in the dataStream
           ** flags   only '-' is allowd
-          ** width   
+          ** width
           ** .limit
-          ** length  if 'l' is found some datatyes are 32 bit
+          ** datasize size of the datatype
           ** type    b,d,D,u,U,x,X,s,c
           */
           ULONG arg_pos      = 1;
           BOOL  left         = FALSE;  // no flag was found
-          char  fill         = ' '; 
-          ULONG minus        = 0;
-          ULONG minwidth     = 0;
-          ULONG maxwidth     = ~0;
+          UBYTE fill         = ' ';
+          ULONG minus;
           ULONG width        = 0;
-          BOOL  length_found = FALSE;
-          ULONG	tmp          = 0;
+          ULONG limit        = ~0;
+          ULONG buflen        = 0;
+          ULONG datasize;
+          UFMTLARGESTTYPE tmp= 0;
 #define BUFFERSIZE 128
-          char  buf[BUFFERSIZE];
-          char  *buffer      = buf;
-          
+          UBYTE buf[BUFFERSIZE];
+          UBYTE *buffer      = buf;
+
           /*
-          ** arg_pos 
+          ** arg_pos
           */
-          
+
           //kprintf("next char: %c\n",fmtTemplate[template_pos]);
-          
-          if ('0' <= fmtTemplate[template_pos] &&
-              '9' >= fmtTemplate[template_pos])
+
+          if (fmtTemplate[template_pos] >= '0' &&
+              fmtTemplate[template_pos] <= '9')
           {
             ULONG old_template_pos = template_pos;
-            
-            arg_pos = 0;
-            while ('0' <= fmtTemplate[template_pos] &&
-                   '9' >= fmtTemplate[template_pos])
-              arg_pos = arg_pos * 10 + fmtTemplate[template_pos++] - '0';
-            
-            if ('$' == fmtTemplate[template_pos])
+
+            for (arg_pos = 0; (fmtTemplate[template_pos] >= '0' &&
+                               fmtTemplate[template_pos] <= '9'); template_pos++)
+            {
+              arg_pos = arg_pos * 10 + fmtTemplate[template_pos] - '0';
+            }
+
+            if (fmtTemplate[template_pos] == '$')
               template_pos++;
             else
             {
@@ -231,63 +250,86 @@ char HEXarray [] = "0123456789ABCDEF";
           }
           else
             arg_pos = arg_counter;
-          
+
           /*
           ** flags
           */
-          if ('-' == fmtTemplate[template_pos])
+          if (fmtTemplate[template_pos] == '-')
           {
-            template_pos ++;
+            template_pos++;
             left = TRUE;
           }
-          
+
           /*
           ** fill character a '0'?
           */
-          if ('0' == fmtTemplate[template_pos])
+          if (fmtTemplate[template_pos] == '0')
           {
             template_pos++;
             fill = '0';
           }
-          
+
           /*
           ** width
           */
-          if ('0' <= fmtTemplate[template_pos] &&
-              '9' >= fmtTemplate[template_pos])
+          if (fmtTemplate[template_pos] >= '0' &&
+              fmtTemplate[template_pos] <= '9')
           {
-            minwidth = 0;
-            while ('0' <= fmtTemplate[template_pos] &&
-                   '9' >= fmtTemplate[template_pos])
-              minwidth = minwidth * 10 + fmtTemplate[template_pos++] - '0';
+            for (width = 0; (fmtTemplate[template_pos] >= '0' &&
+                                fmtTemplate[template_pos] <= '9'); template_pos++)
+            {
+              width = width * 10 + fmtTemplate[template_pos] - '0';
+            }
           }
 
           /*
           ** limit
           */
-          if ('.' == fmtTemplate[template_pos])
+          if (fmtTemplate[template_pos] == '.')
           {
             template_pos++;
-	    if ('0' <= fmtTemplate[template_pos] &&
-	        '9' >= fmtTemplate[template_pos])
-	    {
-              maxwidth = 0;
 
-              while ('0' <= fmtTemplate[template_pos] &&
-                     '9' >= fmtTemplate[template_pos])
-        	maxwidth = maxwidth * 10 + fmtTemplate[template_pos++] - '0';
+	    if (fmtTemplate[template_pos] >= '0' &&
+	        fmtTemplate[template_pos] <= '9')
+	    {
+              for (limit = 0; (fmtTemplate[template_pos] >= '0' &&
+                                  fmtTemplate[template_pos] <= '9'); template_pos++)
+              {
+        	limit = limit * 10 + fmtTemplate[template_pos] - '0';
+              }
     	    }
           }
-          
+
           /*
           ** Length
           */
-          if ('l' == fmtTemplate[template_pos])
+          switch (fmtTemplate[template_pos])
           {
-            length_found = TRUE;
-            template_pos ++;
+#if USE_QUADFMT
+            case 'L':
+              datasize = 8;
+              template_pos++;
+              break;
+#endif /* USE_QUADFMT */
+
+            case 'l':
+              template_pos++;
+#if USE_QUADFMT
+              if (fmtTemplate[template_pos] == 'l')
+              {
+                datasize = 8;
+                template_pos++;
+              }
+              else
+#endif /* USE_QUADFMT */
+                datasize = 4;
+              break;
+
+            default:
+              datasize = 2;
+              break;
           }
-        
+
           /*
           ** Print it according to the given type info.
           */
@@ -296,293 +338,334 @@ char HEXarray [] = "0123456789ABCDEF";
             case 'b': /* BSTR, see autodocs */
               /*
               ** Important parameters:
-              ** arg_pos, left, width, limit
+              ** arg_pos, left, buflen, limit
               */
-              if (FALSE == scanning)
+              if (!scanning)
               {
-                buffer = (char *)BADDR(*(char **)(((IPTR)stream)+indices[arg_pos-1]));
-                
-                width = *buffer++;
-                
-                if (width > maxwidth)
-                  width = maxwidth;
+                buffer = (UBYTE *)BADDR(*(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]));
+
+                buflen = *buffer++;
+
+#if !USE_GLOBALLIMIT
+                if (buflen > limit)
+                  buflen = limit;
+#endif /* !USE_GLOBALLIMIT */
               }
               else
-              {
-                indices[arg_pos-1] = 4;
-              }
+                indices[arg_pos-1] = sizeof(BPTR);
             break;
-           
+
             case 'd': /* signed decimal */
             case 'u': /* unsigned decimal */
-              if (FALSE == scanning)
+
+              minus = fmtTemplate[template_pos] == 'd';
+
+              if (!scanning)
               {
-                if (FALSE == length_found)
+                switch (datasize)
                 {
-                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
-                  buffer = &buf[4+1];
+#if USE_QUADFMT
+                  case 8:
+                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[16+1];
+                    minus *= (FMTLARGESTTYPE) tmp < 0;
+                    if (minus)
+                      tmp = -tmp;
+                    break;
+#endif /* USE_QUADFMT */
+
+                  case 4:
+                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[8+1];
+                    minus *= (LONG) tmp < 0;
+                    if (minus)
+                      tmp = (ULONG) -tmp;
+                    break;
+
+                  default: /* 2 */
+                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[4+1];
+                    minus *= (WORD) tmp < 0;
+                    if (minus)
+                      tmp = (UWORD) -tmp;
+                    break;
                 }
-                else
-                {  
-                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
-                  buffer = &buf[8+1];
-                }
-                
-                if ((LONG) tmp < 0 && 'd' == fmtTemplate[template_pos])
-                {
-                  minus = 1;
-                  tmp = -tmp;
-                }
-                
+
                 buffer = &buf[BUFFERSIZE];
                 do
                 {
-                  *--buffer=(tmp%10) + '0';
+                  *--buffer = (tmp % 10) + '0';
                   tmp /= 10;
-                  width++;
+                  buflen++;
                 }
-                while(0 != tmp);
-                
+                while (tmp);
+
+                if (minus)
+                {
+                  *--buffer = '-';
+                  buflen++;
+                }
+
               }
               else
-              {
-                if (TRUE == length_found)
-                  indices[arg_pos-1] = 4;
-                else
-                  indices[arg_pos-1] = 2;
-              }
+                indices[arg_pos-1] = datasize;
             break;
-           
+
             case 'D': /* signed decimal with locale's formatting conventions */
             case 'U': /* unsigned decimal with locale's formatting conventions */
-              if (FALSE == scanning)
+              if (!scanning)
               {
                 UBYTE groupsize;
                 ULONG group_index = 0;
-                if (FALSE == length_found)
+
+                minus = fmtTemplate[template_pos] == 'D';
+
+                switch (datasize)
                 {
-                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+#if USE_QUADFMT
+                  case 8:
+                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    minus *= (FMTLARGESTTYPE) tmp < 0;
+                    if (minus)
+                      tmp = -tmp;
+                    break;
+#endif /* USE_QUADFMT */
+
+                  case 4:
+                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    minus *= (LONG) tmp < 0;
+                    if (minus)
+                      tmp = (ULONG) -tmp;
+                    break;
+
+                  default: /* 2 */
+                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    minus *= (WORD) tmp < 0;
+                    if (minus)
+                      tmp = (UWORD) -tmp;
+                    break;
                 }
-                else
-                {  
-                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
-                }
-                if ((LONG) tmp < 0 && 'D' == fmtTemplate[template_pos])
-                {
-                  minus = 1;
-                  tmp = -tmp;
-                }
-                
+
                 /* BUFFERSIZE should be big enough to format a string
                 ** according to locale's formatting conventions
                 */
                 buffer = &buf[BUFFERSIZE];
+                groupsize = locale ? locale->loc_Grouping[group_index] : 255;
 
-                if (NULL != locale)
-                {
-                  groupsize = locale->loc_Grouping[group_index];
-                }
-                else
-                  groupsize = 255;
-
-                
                 do
                 {
-                  *--buffer=(tmp%10) + '0';
+                  *--buffer = (tmp % 10) + '0';
                   tmp /= 10;
-                  width++;
+                  buflen++;
 
                   groupsize--;
 
-                  if (0 == groupsize && 0 != tmp)
+                  if (groupsize == 0 && tmp != 0)
                   {
                     /*
                     ** Write the separator
                     */
-                    
+
                     *--buffer = locale->loc_GroupSeparator[group_index];
-                  
+
                     groupsize = locale->loc_Grouping[group_index+1];
-                  
-                    if (0 == groupsize)
-                    { 
+
+                    if (groupsize == 0)
+                    {
                       /*
                       ** Supposed to use the previous element
                       */
                       groupsize = locale->loc_Grouping[group_index];
                     }
                     else
-                    {
                       group_index++;
-                    }
-                        
-                    width++;
+
+                    buflen++;
                   }
                 }
-                while(0 != tmp);
-                
+                while (tmp);
+
+                if (minus)
+                {
+                  *--buffer = '-';
+                  buflen++;
+                }
               }
               else
-              {
-                if (TRUE == length_found)
-                  indices[arg_pos-1] = 4;
-                else
-                  indices[arg_pos-1] = 2;
-              }
+                indices[arg_pos-1] = datasize;
             break;
-           
+
             case 'x': /* upper case hexadecimal string */
             case 'X': /* lower case hexadecimal string */
+            case 'p': /* lower case pointer string */
+            case 'P': /* upper case pointer string */
 
-              if (FALSE == scanning)
+              if (!scanning)
               {
+                const UBYTE *hexa;
 
-                if (FALSE == length_found)
+                /* %p is always at least natural pointer size (32bit) */
+                if (datasize < sizeof(void *) && (fmtTemplate[template_pos] == 'p' ||
+                                                  fmtTemplate[template_pos] == 'P'))
                 {
-                  tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
-                  buffer = &buf[4+1];
+                  datasize = sizeof(void *);
                 }
-                else
-                {  
-                  tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
-                  buffer = &buf[8+1];
-                }
-                
-                if ('X' == fmtTemplate[template_pos] )
+
+                switch (datasize)
                 {
-                  do
-                  {
-                    *--buffer = hexarray[tmp&0x0f];
-                    tmp >>= 4;
-                    width++;
-                  }
-                  while (tmp);
+#if USE_QUADFMT
+                  case 8:
+                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[16+1];
+                    break;
+#endif /* USE_QUADFMT */
+
+                  case 4:
+                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[8+1];
+                    break;
+
+                  default: /* 2 */
+                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    //buffer = &buf[4+1];
+                    break;
                 }
-                else
+
+                buffer = &buf[BUFFERSIZE];
+
+                /* NOTE: x/X is reverse to printf, coz orig RawDoFmt %lx for uppercase. */
+                hexa = (fmtTemplate[template_pos] == 'X' ||
+                        fmtTemplate[template_pos] == 'p') ? hexarray : HEXarray;
+                do
                 {
-                  do
-                  {
-                    *--buffer = HEXarray[tmp&0x0f];
-                    tmp >>= 4;
-                    width++;
-                  }
-                  while (tmp);
+                  *--buffer = hexa[tmp&0x0f];
+                  tmp >>= 4;
+                  buflen++;
                 }
+                while (tmp);
               }
               else
-              {
-                if (TRUE == length_found)
-                  indices[arg_pos-1] = 4;
-                else
-                  indices[arg_pos-1] = 2;
-              }
+                indices[arg_pos-1] = datasize;
             break;
-           
+
             case 's': /* NULL terminated string */
             {
-              if (FALSE == scanning)
+              if (!scanning)
               {
-                buffer = *(char **)(((IPTR)stream)+indices[arg_pos-1]);
-                width = strlen(buffer);
-                
-                if (width > maxwidth)
-                  width = maxwidth;
+                buffer = *(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]);
+                buflen = strlen(buffer);
+
+#if !USE_GLOBALLIMIT
+                if (buflen > limit)
+                  buflen = limit;
+#endif /* !USE_GLOBALLIMIT */
               }
               else
-              {
-                indices[arg_pos-1] = 4; /* the pointer has 4 bytes */
-              }
+                indices[arg_pos-1] = sizeof(UBYTE *); /* the pointer has 4 bytes */
             }
             break;
-           
-            case 'c': /* Character */
-              if (FALSE == scanning)
-              {
-                if (TRUE == length_found)
-                  buf[0] = (char)*(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
-                else
-                  buf[0] = (char)*(WORD  *)(((IPTR)stream)+indices[arg_pos-1]);
 
-                width = 1;
+            case 'c': /* Character */
+              if (!scanning)
+              {
+                switch (datasize)
+                {
+#if USE_QUADFMT
+                  case 8:
+                    buf[0] = (UBYTE)*(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    break;
+#endif /* USE_QUADFMT */
+
+                  case 4:
+                    buf[0] = (UBYTE)*(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    break;
+
+                  default: /* 2 */
+                    buf[0] = (UBYTE)*(WORD  *)(((IPTR)stream)+indices[arg_pos-1]);
+                    break;
+                }
+
+                buflen = 1;
               }
               else
-              {
-                if (TRUE == length_found)
-                  indices[arg_pos-1] = 4;
-                else
-                  indices[arg_pos-1] = 2;
-              }
+                indices[arg_pos-1] = datasize;
             break;
-         
+
             default:
-              goto error_exit;
+              /* Ignore the faulty '%' */
+
+              if (!scanning)
+              {
+                buf[0] = fmtTemplate[template_pos];
+                width = 1;
+                buflen = 1;
+              }
+
+              arg_pos = --arg_counter;
+            break;
           }
 
 
-          if (FALSE == scanning)
-          { 
+          if (!scanning)
+          {
             int i;
 
             /*
                Now everything I need is known:
                buffer  - contains the string to be printed
-               width   - size of the string
-               minus   - is 1 if there is a '-' to print
+               buflen  - size of the string
                fill    - the pad character
                left    - is 1 if the string should be left aligned
-               minwidth- is the minimal width of the field
+               width   - is the minimal width of the field
+               limit   - maximum number of characters to output from a string, default ~0
             */
-            
-            if (FALSE == left)
-              for(i = width + minus; i < minwidth; i++)
+
+#if USE_GLOBALLIMIT
+            if (buflen > limit)
+               buflen = limit;
+#endif /* USE_GLOBALLIMIT */
+
+            /* Print padding if right aligned */
+            if (!left)
+              for (i = buflen; i < width; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
                   AROS_UFCA(struct Hook *,   putCharFunc         , A0),
                   AROS_UFCA(struct Locale *, locale              , A2),
-                  AROS_UFCA(char,            fill                , A1)
+                  AROS_UFCA(UBYTE,           fill                , A1)
                 );
 
-            if (minus)
-              AROS_UFC3(VOID, putCharFunc->h_Entry,
-                AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                AROS_UFCA(struct Locale *, locale              , A2),
-                AROS_UFCA(char,            '-'                 , A1)
-              );
-            
-            /* Print body up to width */
-            for (i = 0; i < width; i++)
+            /* Print body up to buflen */
+            for (i = 0; i < buflen; i++)
             {
               AROS_UFC3(VOID, putCharFunc->h_Entry,
                 AROS_UFCA(struct Hook *,   putCharFunc         , A0),
                 AROS_UFCA(struct Locale *, locale              , A2),
-                AROS_UFCA(char,            *buffer++           , A1)
+                AROS_UFCA(UBYTE,           *buffer++           , A1)
               );
             }
-            
+
             /* Pad right if left aligned */
-            if (TRUE == left)
-              for (i = width+minus; i < minwidth; i++)
+            if (left)
+              for (i = buflen; i < width; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
                   AROS_UFCA(struct Hook *,   putCharFunc         , A0),
                   AROS_UFCA(struct Locale *, locale              , A2),
-                  AROS_UFCA(char,            fill                , A1)
+                  AROS_UFCA(UBYTE,           fill                , A1)
                 );
           }
 
           template_pos++;
-            
+
           if (arg_pos > max_argpos)
             max_argpos = arg_pos;
-          
-        }  
+
+        }
         state = OUTPUT;
       break;
     }
   }
-  
 
-error_exit:
-
-  return (APTR)(stream+indices[max_argpos]);
+  return (APTR) (((IPTR)stream) + indices[max_argpos]);
 
   AROS_LIBFUNC_EXIT
 } /* FormatString */

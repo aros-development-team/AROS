@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+
 #include <exec/types.h>
 #include <proto/exec.h>
 #include "locale_intern.h"
@@ -18,7 +19,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Catalog *, catalog, A0),
-	AROS_LHA(LONG            , stringNum, D0),
+	AROS_LHA(ULONG           , stringNum, D0),	/* Not a typo! Needs to be unsigned for ICF_INORDER */
 	AROS_LHA(STRPTR          , defaultString, A1),
 
 /*  LOCATION */

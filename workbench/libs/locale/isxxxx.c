@@ -72,7 +72,7 @@
 *****************************************************************************/
 
 
-AROS_LH2(BOOL, IsAlNum,
+AROS_LH2(ULONG, IsAlNum,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 14, Locale)
@@ -80,14 +80,20 @@ AROS_LH2(BOOL, IsAlNum,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[4],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[4],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsAlNum */
 
-AROS_LH2(BOOL, IsAlpha,
+AROS_LH2(ULONG, IsAlpha,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 15, Locale)
@@ -95,14 +101,20 @@ AROS_LH2(BOOL, IsAlpha,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[5],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[5],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsAlpha */
 
-AROS_LH2(BOOL, IsCntrl,
+AROS_LH2(ULONG, IsCntrl,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 16, Locale)
@@ -110,14 +122,20 @@ AROS_LH2(BOOL, IsCntrl,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[6],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[6],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsCntrl */
 
-AROS_LH2(BOOL, IsDigit,
+AROS_LH2(ULONG, IsDigit,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 17, Locale)
@@ -125,14 +143,20 @@ AROS_LH2(BOOL, IsDigit,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[7],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[7],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsDigit */
 
-AROS_LH2(BOOL, IsGraph,
+AROS_LH2(ULONG, IsGraph,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 18, Locale)
@@ -140,14 +164,20 @@ AROS_LH2(BOOL, IsGraph,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[8],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[8],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsGraph */
 
-AROS_LH2(BOOL, IsLower,
+AROS_LH2(ULONG, IsLower,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 19, Locale)
@@ -155,14 +185,20 @@ AROS_LH2(BOOL, IsLower,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[9],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[9],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsLower */
 
-AROS_LH2(BOOL, IsPrint,
+AROS_LH2(ULONG, IsPrint,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 20, Locale)
@@ -170,14 +206,20 @@ AROS_LH2(BOOL, IsPrint,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[10],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[10],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsPrint */
 
-AROS_LH2(BOOL, IsPunct,
+AROS_LH2(ULONG, IsPunct,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 21, Locale)
@@ -185,14 +227,20 @@ AROS_LH2(BOOL, IsPunct,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[11],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[11],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsPunct */
 
-AROS_LH2(BOOL, IsSpace,
+AROS_LH2(ULONG, IsSpace,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 22, Locale)
@@ -200,14 +248,20 @@ AROS_LH2(BOOL, IsSpace,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[12],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[12],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsSpace */
 
-AROS_LH2(BOOL, IsUpper,
+AROS_LH2(ULONG, IsUpper,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 23, Locale)
@@ -215,14 +269,20 @@ AROS_LH2(BOOL, IsUpper,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[13],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[13],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsUpper */
 
-AROS_LH2(BOOL, IsXDigit,
+AROS_LH2(ULONG, IsXDigit,
     AROS_LHA(struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 24, Locale)
@@ -230,9 +290,15 @@ AROS_LH2(BOOL, IsXDigit,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[14],
 	AROS_LCA(ULONG,    character, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[14],
+	AROS_UFCA(ULONG,    character, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* IsXDigit */

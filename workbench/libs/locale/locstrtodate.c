@@ -25,6 +25,10 @@
  #define YEAR_FORMAT "%Y"
 #endif
 
+#ifndef FORMAT_DEF
+#define FORMAT_DEF 4
+#endif
+
 extern struct LocaleBase *globallocalebase;
 
 AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
@@ -46,7 +50,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(BOOL, LocStrToDate,
+	AROS_LH1(LONG, LocStrToDate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DateTime *, datetime, D1),
@@ -83,22 +87,22 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
 #define LocaleBase globallocalebase
 
     struct Locale   *loc;
-    struct Hook     hook;    
+    struct Hook     hook;
     STRPTR  	    buf, fstring;
     LONG    	    days;
-    LONG    	    retval = DOSTRUE;
-    
+    LONG    	    retval = TRUE;
+
     hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(LocStrToDateGetCharFunc);
     hook.h_Data = &buf;
-    
+
     REPLACEMENT_LOCK;
-    
+
     loc = (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale;
-    
+
     if (datetime->dat_StrDate)
     {
     	struct DateStamp curr;
@@ -107,7 +111,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 
 	DateStamp(&curr);
     	
-	if (!strncasecmp(buf, GetLocaleStr(loc, YESTERDAYSTR), strlen(GetLocaleStr(loc, YESTERDAYSTR))))
+	if (!strnicmp(buf, GetLocaleStr(loc, YESTERDAYSTR), strlen(GetLocaleStr(loc, YESTERDAYSTR))))
 	{
 	    datetime->dat_Stamp.ds_Days = curr.ds_Days - 1;
 	}
@@ -115,23 +119,23 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 	{
 	    datetime->dat_Stamp.ds_Days = curr.ds_Days;
 	}
-	else if (!strncasecmp(buf, GetLocaleStr(loc, TOMORROWSTR), strlen(GetLocaleStr(loc, TOMORROWSTR))))
+	else if (!strnicmp(buf, GetLocaleStr(loc, TOMORROWSTR), strlen(GetLocaleStr(loc, TOMORROWSTR))))
 	{
 	    datetime->dat_Stamp.ds_Days = curr.ds_Days + 1;
 	}
 	else
 	{
 	    WORD i;
-	    
+	
 	    for(i = 0; i < 7; i++)
 	    {
-	    	if (!strncasecmp(buf, GetLocaleStr(loc, DAY_1 + i), strlen(GetLocaleStr(loc, DAY_1 + i))))
+	    	if (!strnicmp(buf, GetLocaleStr(loc, DAY_1 + i), strlen(GetLocaleStr(loc, DAY_1 + i))))
 		    break;
 	    }
-	    
+	
 	    if (i != 7)
-	    {		
-	    #if 1
+	    {
+#if 1
 	    	LONG diffdays;
 		
 		days = curr.ds_Days;
@@ -160,22 +164,22 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 		    	days += diffdays - 7;
 		    }
 		}		
-	    #else
+		datetime->dat_Stamp.ds_Days = days;
+#else
 	    	days = curr.ds_Days;
-
+		
 		if ((days %7) == 0)
 		    days -= 7;
 		else
 		    days -= (days % 7);
-		    
+		
 		days += i;
 		
 		if (datetime->dat_Flags & DTF_FUTURE)
 		    days += 7;
-	    #endif
-	       
+		
 		datetime->dat_Stamp.ds_Days = days;
-		    
+#endif	
 	    }
 	    else
 	    {
@@ -198,7 +202,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 	    		fstring = loc->loc_ShortDateFormat;
 			break;
 
-		    default:
+		    default: /* FORMAT_DOS */
 	    		fstring = "%d-%b-" YEAR_FORMAT;
 			break;
 
@@ -214,7 +218,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 		}
 		
 	    }
-	    
+	
 	}
 
     } /* if (datetime->dat_StrDate) */
@@ -247,13 +251,13 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 	    retval = FALSE;
 	}
     }
-        
+
     REPLACEMENT_UNLOCK;
-   
+
     return retval;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* LocStrToDate */
 
 #undef LocaleBase

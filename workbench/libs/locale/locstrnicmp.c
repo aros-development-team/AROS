@@ -15,6 +15,9 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+
+#define	DEBUG_STRNCMP(x)	;
+
 extern struct LocaleBase *globallocalebase;
 
  /*****************************************************************************
@@ -68,12 +71,23 @@ extern struct LocaleBase *globallocalebase;
     
     REPLACEMENT_LOCK;
     
+    DEBUG_STRNCMP(dprintf("locStrnCmp: <%s> <%s> len %ld\n",
+			string1,
+			string2,
+			length));
+
+    DEBUG_STRNCMP(dprintf("locStrnCmp: CurrentLocale 0x%lx\n",
+			(struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale));
+
     retval = StrnCmp((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale,
     	    	     (STRPTR)string1,
 		     (STRPTR)string2,
 		     length,
 		     SC_ASCII);
-    
+
+    DEBUG_STRNCMP(dprintf("StrnCmp: retval 0x%lx\n",
+			retval));
+
     REPLACEMENT_UNLOCK;
     
     return retval;

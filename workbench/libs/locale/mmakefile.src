@@ -12,7 +12,7 @@ endif
 MODNAME := locale
 MODTYPE := library
 
-FILES := defaultlocale english initlocale catalog_funcs patches rawdofmtsupport
+FILES := defaultlocale english initlocale catalog_funcs patches 
 FUNCS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \

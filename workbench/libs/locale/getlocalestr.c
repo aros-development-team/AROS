@@ -58,9 +58,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+#ifdef AROS_CALL1
     return AROS_CALL1(STRPTR, IntL(locale)->il_LanguageFunctions[3],
 	AROS_LCA(ULONG, stringNum, D0),
 	struct LocaleBase *, LocaleBase);
+#else
+    return AROS_UFC2(STRPTR, IntL(locale)->il_LanguageFunctions[3],
+	AROS_UFCA(ULONG, stringNum, D0),
+	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* GetLocaleStr */

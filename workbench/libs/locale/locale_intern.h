@@ -19,18 +19,38 @@
 #ifndef LIBRARIES_LOCALE_H
 #include <libraries/locale.h>
 #endif
+#ifndef UTILITY_UTILITY_H
+#include <utility/utility.h>
+#endif
+#ifdef __MORPHOS__
+#include <aros/libcall.h>
+#endif
 
 /* aros_print_not_implemented() macro: */
 #include <aros/debug.h>
 #include <aros/asmcall.h>
-#include <aros/libcall.h>
-
 /* Should the Loc???() replacement functions lock the default locale.
    1 = yes. 0 = no. If you set this to 0, then you must make sure that
    a Locale which was once set as default Locale never gets freed from
    memory. */
    
 #define REPLACEMENTFUNCS_LOCK_LOCALE 0
+
+/* [New]FormatString: Allow %width.limit formatting in all format
+   tokens not just s and b. 1 = yes. 0 = no. exec.doc/RawDoFmt autodoc
+   is wrong %d and %x do support this, too, so this should be set to 1. */
+
+#define	USE_GLOBALLIMIT              1
+
+/* [New]FormatString: Should formatting routine support 64bit formatting
+   %L<type> and %ll<type>. 1 = yes. 0 = no. Current implementation use
+   QUAD and UQUAD types. */
+
+#ifdef __MORPHOS__
+#define USE_QUADFMT                  1
+#else
+#define USE_QUADFMT                  0
+#endif
 
 struct IntLocaleBase
 {
@@ -39,7 +59,9 @@ struct IntLocaleBase
     struct DosLibrary       *lb_DosBase;
     struct Library          *lb_IFFParseBase;
     struct Library          *lb_UtilityBase;
+    struct Library          *lb_RexxSysBase;
 
+    struct IntLocale	    *lb_DefaultLocale;
     struct IntLocale	    *lb_CurrentLocale;
     struct SignalSemaphore   lb_LocaleLock;
     struct SignalSemaphore   lb_CatalogLock;
@@ -52,6 +74,7 @@ struct IntLocale
 
     UWORD                il_Count;
     struct Library      *il_CurrentLanguage;
+    struct Catalog      *il_DosCatalog;
     APTR                 il_LanguageFunctions[32];
 
     /* Need to put all sorts of crap here later. */
@@ -96,7 +119,7 @@ struct IntLocale
 struct CatStr
 {
     STRPTR  	    	cs_String;
-    ULONG               cs_Id;
+    ULONG               cs_Id;	/* Really signed, but need it to be unsigned for ICF_INORDER */
 };
 
 /* see Amiga Developer CD 2.1:NDK/NDK_3.1/Examples1/locale/SelfLoad/catalog.c */
@@ -135,6 +158,7 @@ struct IntCatalog
 #define DOSBase     (((struct IntLocaleBase *)LocaleBase)->lb_DosBase)
 #define IFFParseBase (((struct IntLocaleBase *)LocaleBase)->lb_IFFParseBase)
 #define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
+#define RexxSysBase (((struct IntLocaleBase *)LocaleBase)->lb_RexxSysBase)
 
 #if REPLACEMENTFUNCS_LOCK_LOCALE
 #define REPLACEMENT_LOCK    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock)
@@ -155,3 +179,5 @@ void dispose_catalog(struct IntCatalog * cat,
                      struct LocaleBase * LocaleBase);
 
 void InstallPatches(void);
+
+extern const struct Locale defLocale;

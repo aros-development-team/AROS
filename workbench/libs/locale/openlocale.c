@@ -5,6 +5,7 @@
     Desc: OpenLocale() - Give access to a new locale.
     Lang: english
 */
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <libraries/locale.h>
@@ -15,6 +16,8 @@
 #include <proto/exec.h>
 #include <proto/iffparse.h>
 #include "locale_intern.h"
+
+#define	DEBUG_OPENLOCALE(x)	;
 
 extern void InitLocale(
     STRPTR filename,
@@ -82,19 +85,26 @@ extern void InitLocale(
     
     struct IntLocale *locale = NULL;
     
+    DEBUG_OPENLOCALE(dprintf("OpenLocale: name <%s> localebase 0x%lx\n",
+				name,
+				LocaleBase));
+
     /* Have we been asked for a disk-based locale? */
     if(name != NULL)
     {
-    struct IFFHandle *iff;
+	struct IFFHandle *iff;
 	ULONG error;
 	struct LocalePrefs *lp;
 	struct ContextNode *cn;
 
 	/* Clear error condition before we start. */
 	
-    SetIoErr(0);
+	SetIoErr(0);
 
 	lp = AllocMem(sizeof(struct LocalePrefs), MEMF_CLEAR);
+
+	DEBUG_OPENLOCALE(dprintf("OpenLocale: lp 0x%lx\n",lp));
+
 	if( lp == NULL )
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
@@ -103,27 +113,32 @@ extern void InitLocale(
 	}
 
 	iff = AllocIFF();
-    
+
+	DEBUG_OPENLOCALE(dprintf("OpenLocale: iff 0x%lx\n",iff));
+
 	if(iff == NULL)
 	{
-        FreeMem(lp, sizeof(struct LocalePrefs));
-        SetIoErr(ERROR_NO_FREE_STORE);
-        return NULL;
+		FreeMem(lp, sizeof(struct LocalePrefs));
+		SetIoErr(ERROR_NO_FREE_STORE);
+		return NULL;
 	}
 
 	iff->iff_Stream = (ULONG)Open(name, MODE_OLDFILE);
+
+	DEBUG_OPENLOCALE(dprintf("OpenLocale: stream 0x%lx\n",iff->iff_Stream));
+
 	if(iff->iff_Stream == NULL)
 	{
-        FreeMem(lp, sizeof(struct LocalePrefs));
-        FreeIFF(iff);
-        return NULL;
+		FreeMem(lp, sizeof(struct LocalePrefs));
+		FreeIFF(iff);
+		return NULL;
 	}
 
-    InitIFFasDOS(iff);
+	InitIFFasDOS(iff);
 	
-    if(!OpenIFF(iff, IFFF_READ))
+	if(!OpenIFF(iff, IFFF_READ))
 	{
-        if(!StopChunk(iff, ID_PREF, ID_LCLE))
+	    if(!StopChunk(iff, ID_PREF, ID_LCLE))
 	    {
 		while(1)
 		{
@@ -136,6 +151,7 @@ extern void InitLocale(
 			    if(ReadChunkBytes(iff, lp, sizeof(struct LocalePrefs)) == sizeof(struct LocalePrefs))
 			    {
 				locale = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_PUBLIC);
+				DEBUG_OPENLOCALE(dprintf("OpenLocale: locale 0x%lx\n",locale));
 				if(locale)
 				{
 				    InitLocale(name, locale, lp, LocaleBase);
@@ -154,18 +170,23 @@ extern void InitLocale(
 
 	    CloseIFF(iff);
 	}
-    Close((BPTR)iff->iff_Stream);
+	Close((BPTR)iff->iff_Stream);
 	FreeIFF(iff);
 	FreeMem(lp, sizeof(struct LocalePrefs));
     }
     else
     {
 	/* Return the current default */
+
+	DEBUG_OPENLOCALE(dprintf("OpenLocale: LocaleLock 0x%lx\n",&IntLB(LocaleBase)->lb_LocaleLock));
+
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
-    locale = IntLB(LocaleBase)->lb_CurrentLocale;
-    locale->il_Count++;
-    ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+	locale = IntLB(LocaleBase)->lb_CurrentLocale;
+	locale->il_Count++;
+	ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
     }
+
+    DEBUG_OPENLOCALE(dprintf("OpenLocale: Locale 0x%lx\n",locale));
     /* We let the optimiser do some CSE above */
     return (struct Locale *)locale;
 

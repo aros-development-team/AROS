@@ -6,11 +6,13 @@
     Lang: English
 */
 
-#include <proto/utility.h>
 #include "locale_intern.h"
 #include <exec/types.h>
 #include <utility/hooks.h>
 #include <utility/date.h>
+#define __NOLIBBASE__
+#include <proto/utility.h>
+#undef __NOLIBBASE__
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
@@ -20,7 +22,7 @@ VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
 VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale);
 VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale);
 
-ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,304,334};
+static const ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,304,334};
 
 /*****************************************************************************
 
@@ -62,7 +64,7 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		      %h -- abbreviated month name
 		      %H -- hour using 24 hour style with leading zeros
 		      %I -- hour using 12 hour style with leading zeros
-		      %j -- julian date (day of year as a decimal)
+		      %j -- julian date
 		      %m -- month number with leading zeros
 		      %M -- the number of minutes with leading zeros
 		      %n -- linefeed
@@ -196,6 +198,8 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		break;
 		
 	    case 'j':
+	        /* TODO */
+#warning Julian date not tested.
 		/* Julian date is DDD (1 - 366)*/
 		PrintDigits(
 		    cData.mday + dayspermonth[cData.month],

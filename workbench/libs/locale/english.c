@@ -113,9 +113,8 @@ AROS_LH1(ULONG, convtolower,
 {
     AROS_LIBFUNC_INIT
 
-    return (  (chr < __CODE_TABLE_SIZE)
-           ?  __code_table_to_lower[chr]
-           :  chr );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + __code_table_to_lower[(UBYTE)chr]);
 
     AROS_LIBFUNC_EXIT
 }
@@ -133,10 +132,8 @@ AROS_LH1(ULONG, convtoupper,
 {
     AROS_LIBFUNC_INIT
 
-    return (  (chr < __CODE_TABLE_SIZE)
-           ?  __code_table_to_upper[chr]
-           :  chr );
-
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + __code_table_to_upper[(UBYTE)chr]);
 
     AROS_LIBFUNC_EXIT
 }
@@ -171,180 +168,167 @@ AROS_LH1(STRPTR, getlangstring,
     without those the effects would be quite peculiar.
 */
 
-AROS_LD1(BOOL, isalnum,
+AROS_LD1(ULONG, isalnum,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 10, english);
-AROS_LH1(BOOL, isalnum,
+AROS_LH1(ULONG, isalnum,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 10, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iAlNum)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iAlNum));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isalpha,
+AROS_LD1(ULONG, isalpha,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 11, english);
-AROS_LH1(BOOL, isalpha,
+AROS_LH1(ULONG, isalpha,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 11, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iAlpha)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iAlpha));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, iscntrl,
+AROS_LD1(ULONG, iscntrl,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 12, english);
-AROS_LH1(BOOL, iscntrl,
+AROS_LH1(ULONG, iscntrl,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 12, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iCntrl)
-                 : 0 );
-
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iCntrl));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isdigit,
+AROS_LD1(ULONG, isdigit,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 13, english);
-AROS_LH1(BOOL, isdigit,
+AROS_LH1(ULONG, isdigit,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 13, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iDigit)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iDigit));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isgraph,
+AROS_LD1(ULONG, isgraph,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 14, english);
-AROS_LH1(BOOL, isgraph,
+AROS_LH1(ULONG, isgraph,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 14, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iGraph)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iGraph));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, islower,
+AROS_LD1(ULONG, islower,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 15, english);
-AROS_LH1(BOOL, islower,
+AROS_LH1(ULONG, islower,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 15, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iLower)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iLower));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isprint,
+AROS_LD1(ULONG, isprint,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 16, english);
-AROS_LH1(BOOL, isprint,
+AROS_LH1(ULONG, isprint,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 16, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iPrint)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iPrint));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, ispunct,
+AROS_LD1(ULONG, ispunct,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 17, english);
-AROS_LH1(BOOL, ispunct,
+AROS_LH1(ULONG, ispunct,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 17, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iPunct)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iPunct));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isspace,
+AROS_LD1(ULONG, isspace,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 18, english);
-AROS_LH1(BOOL, isspace,
+AROS_LH1(ULONG, isspace,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 18, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iSpace)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iSpace));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isupper,
+AROS_LD1(ULONG, isupper,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 19, english);
-AROS_LH1(BOOL, isupper,
+AROS_LH1(ULONG, isupper,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 19, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iUpper)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iUpper));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LD1(BOOL, isxdigit,
+AROS_LD1(ULONG, isxdigit,
     AROS_LDA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 20, english);
-AROS_LH1(BOOL, isxdigit,
+AROS_LH1(ULONG, isxdigit,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 20, english)
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)(__code_table_ctype[chr] & iXDigit);
-    return (BOOL)( chr < __CODE_TABLE_SIZE
-                 ? (__code_table_ctype[chr] & iXDigit)
-                 : 0 );
+    /* For compatability we have to use only lower byte, and preserve upper word! */
+    return ((chr & ~0xFFFF) + (__code_table_ctype[(UBYTE)chr] & iXDigit));
 
     AROS_LIBFUNC_EXIT
 }
@@ -387,13 +371,15 @@ AROS_LH4(ULONG, strconvert,
     else /* Wrong argument: */
         return 0;
 
-    if (length && string2) {
+    if (length && string2)
+    {
         while(--length && *string1)
         {
             (ULONG)(*string2++) = collTab[ (UBYTE)*string1 ];
             count++;
         }
-        *string2 = '\0';}
+        *string2 = '\0';
+    }
 
     return count;
 
@@ -439,15 +425,15 @@ AROS_LH4(LONG, strcompare,
                       - collTab[(UBYTE)*(string2++)]))
         &&      *string1++ );
 
-        return a; }
-    else
-        if (length) {
-            if (string1 && *string1)
-                return  1; /* String1 exists therefore is bigger. */
-           if (string2 && *string2)
-                return -1; /* String2 exists therefore is bigger. */
-        }
-
+        return a;
+    }
+    else if (length)
+    {
+        if (string1 && *string1)
+            return  1; /* String1 exists therefore is bigger. */
+        if (string2 && *string2)
+            return -1; /* String2 exists therefore is bigger. */
+    }
 
     return 0; /* Equal for the 0 characters we compared. */
 
@@ -483,10 +469,10 @@ struct EmulLibEntry Xj(LIB_##n,_Gate) = { TRAP_LIB, 0, (void (*)(void)) LIB_##n 
     TRAPIT(isgraph, english);
     TRAPIT(islower, english);
     TRAPIT(isprint, english);
-    TRAPIT(isspace, english);
+    TRAPIT(ispunct, english);
 
     /* 12 - 15 */
-    TRAPIT(ispunct, english);
+    TRAPIT(isspace, english);
     TRAPIT(isupper, english);
     TRAPIT(isxdigit, english);
     TRAPIT(strconvert, english);
@@ -516,10 +502,10 @@ void *const __eng_functable[] =
     &AROS_SLIB_ENTRY_GATED(isgraph, english),
     &AROS_SLIB_ENTRY_GATED(islower, english),
     &AROS_SLIB_ENTRY_GATED(isprint, english),
-    &AROS_SLIB_ENTRY_GATED(isspace, english),
+    &AROS_SLIB_ENTRY_GATED(ispunct, english),
 
     /* 12 - 15 */
-    &AROS_SLIB_ENTRY_GATED(ispunct, english),
+    &AROS_SLIB_ENTRY_GATED(isspace, english),
     &AROS_SLIB_ENTRY_GATED(isupper, english),
     &AROS_SLIB_ENTRY_GATED(isxdigit, english),
     &AROS_SLIB_ENTRY_GATED(strconvert, english),

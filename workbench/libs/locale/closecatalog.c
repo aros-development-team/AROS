@@ -9,6 +9,8 @@
 #include <proto/exec.h>
 #include "locale_intern.h"
 
+#define	DEBUG_CLOSECATALOG(x)	;
+
 /*****************************************************************************
 
     NAME */
@@ -55,6 +57,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
+    DEBUG_CLOSECATALOG(dprintf("CloseCatalog: catalog 0x%lx\n",catalog));
+
     if(catalog != NULL)
     {
         ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
@@ -74,6 +78,7 @@
 
     }
 
+    DEBUG_CLOSECATALOG(dprintf("CloseCatalog: done\n"));
     AROS_LIBFUNC_EXIT
     
 } /* CloseCatalog */

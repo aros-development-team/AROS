@@ -48,6 +48,7 @@ struct HookData
 
 /* Quick reg layout function
  */
+#if 0
 char *_PPCCallM68k_RawDoFmt(char MyChar,
 			    char *(*PutChProc)(char*,char),
 			    char *PutChData,
@@ -64,7 +65,7 @@ char *PPCCallM68k_RawDoFmt(char MyChar,
    * below we must make sure that this function backups/restores
    * all registers
    */
-  asm(""
+  asm volatile (""
       :
       :
       : "r13");
@@ -75,6 +76,35 @@ char *PPCCallM68k_RawDoFmt(char MyChar,
 			       OldA4,
 			       sysBase);
 }
+#else
+char *PPCCallM68k_RawDoFmt(char MyChar,
+			   char *(*PutChProc)(char*,char),
+			   char *PutChData,
+			   ULONG OldA4,
+			   struct ExecBase *sysBase);
+
+/* Shitty workaround for release/cisc - ignores r13 clobber */
+
+__asm(".section \".text\"\n\t"
+      ".align 2\n\t"
+      ".globl PPCCallM68k_RawDoFmt\n\t"
+      ".type PPCCallM68k_RawDoFmt, @function\n"
+      "PPCCallM68k_RawDoFmt:\n\t"
+      "stwu 1, -96(1)\n\t"
+      "mflr 0\n\t"
+      "stmw 13, 20(1)\n\t"
+      "stw 0, 100(1)\n\t"
+      "bl _PPCCallM68k_RawDoFmt\n\t"
+      "lwz 0, 100(1)\n\t"
+      "mtlr 0\n\t"
+      "lmw 13, 20(1)\n\t"
+      "la 1, 96(1)\n\t"
+      "blr\n"
+      ".LfeN:\n\t"
+      ".size PPCCallM68k_RawDoFmt, .LfeN - PPCCallM68k_RawDoFmt"
+     );
+#endif
+
 #endif
 
 
@@ -88,7 +118,6 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 #ifdef __MORPHOS__
     struct HookData *data = hook->h_Data;
-    char str[2];
 
     switch ((ULONG) hook->h_SubEntry)
     {
@@ -96,16 +125,13 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	/* Standard Array Function */
 	*data->PutChData++ = fill;
 	break;
-
       case 1:
 	/* Standard Serial Function */
-	str[0] = fill;
-	str[1] = '\0';
+	dprintf("%c",fill);
 	break;
-
       default:
 	data->PutChData = PPCCallM68k_RawDoFmt(fill,
-				     hook->h_SubEntry,
+					       hook->h_SubEntry,
 					       data->PutChData,
 					       data->OldA4,
 					       IntLB(LocaleBase)->lb_SysBase);
@@ -194,6 +220,10 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	{
 	    PutChProc = 0;
 	}
+#if 0
+/*
+ * This is the job of exec
+ */
 	else if ((((ULONG*) PutChProc)[0] == SERIAL_FUNC0) &&
 		 (((ULONG*) PutChProc)[1] == SERIAL_FUNC1) &&
 		 (((ULONG*) PutChProc)[2] == SERIAL_FUNC2) &&
@@ -201,6 +231,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	{
 	    PutChProc = (APTR) 1;
 	}
+#endif
     }
 
     hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);

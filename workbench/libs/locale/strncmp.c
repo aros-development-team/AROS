@@ -10,6 +10,8 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+#define	DEBUG_STRNCMP(x)	;
+
 /*****************************************************************************
 
     NAME */
@@ -92,12 +94,37 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[16],
+    LONG Result;
+ 
+    DEBUG_STRNCMP(dprintf("StrnCmp: locale 0x%lx <%s> <%s> len %ld type 0x%lx\n",
+			locale,
+			string1,
+			string2,
+			length,
+			type));
+
+    DEBUG_STRNCMP(dprintf("StrnCmp: Function 0x%lx\n",
+			IntL(locale)->il_LanguageFunctions[16]));
+
+#ifdef AROS_CALL4
+    Result = AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[16],
 	AROS_LCA(STRPTR, string1, A1),
 	AROS_LCA(STRPTR, string2, A2),
 	AROS_LCA(ULONG, length, D0),
 	AROS_LCA(ULONG, type, D1),
         struct LocaleBase *, LocaleBase);
+#else
+    Result = AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[16],
+	AROS_UFCA(STRPTR, string1, A1),
+	AROS_UFCA(STRPTR, string2, A2),
+	AROS_UFCA(ULONG, length, D0),
+	AROS_UFCA(ULONG, type, D1));
+#endif
+
+    DEBUG_STRNCMP(dprintf("StrnCmp: retval %ld\n",
+			Result));
+
+    return(Result);
 
     AROS_LIBFUNC_EXIT
 } /* StrnCmp */

@@ -5,9 +5,29 @@
     Desc: Tell locale that the preferences have been changed.
     Lang: english
 */
+
 #include <exec/types.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <dos/var.h>
+#include <utility/utility.h>
 #include "locale_intern.h"
+
+static const char *langlist[] =
+{
+	"english",
+	"deutsch",
+	"français",
+	"español",
+	"italiano",
+	"português",
+	"dansk",
+	"nederlands",
+	"norsk",
+	"suomi",
+	"svenska",
+	NULL
+};
 
 /*****i***********************************************************************
 
@@ -57,6 +77,8 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     struct IntLocale *old = NULL;
+    STRPTR language, dotptr;
+    ULONG index = 0;
 
     if(locale != NULL)
     {
@@ -71,6 +93,29 @@
 	IntL(locale)->il_Count++;
 	IntLB(LocaleBase)->lb_CurrentLocale = IntL(locale);
 	ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+
+	/* Let's be mean to save some hassle */
+	language = locale->loc_LanguageName;
+	if ((dotptr = strchr(language, '.'))) *dotptr = 0;
+
+	/* Update ENV:Language */
+	SetVar("Language", language, -1, LV_VAR | GVF_GLOBAL_ONLY);
+
+	/* Update UtilityBase->ub_Language */
+	while (langlist[index] != NULL)
+	{
+		if (strcmp(language, langlist[index++]) == 0)
+		{
+			/* Check for american-english */
+			if (index == 1 && locale->loc_MeasuringSystem == MS_AMERICAN) --index;
+
+#undef UtilityBase
+			((struct UtilityBase *)IntLB(LocaleBase)->lb_UtilityBase)->ub_Language = index+1;
+			break;
+		}
+	}
+
+	if (dotptr) *dotptr = '.';
     }
     return (struct Locale *)old;
 	
