@@ -78,8 +78,13 @@ struct Region * ScaleLayerCallback();
 
   struct ScaleLayerParam parm = {factor, numerator, denominator, centerx, centery};
   struct Region * oldshape;
+  struct Hook hook;
   
-  oldshape = ChangeLayerShape(l, 0, ScaleLayerCallback, &parm);
+  hook.h_Entry = ScaleLayerCallback;
+  hook.h_Data  = &parm;
+
+  
+  oldshape = ChangeLayerShape(l, 0, &hook);
   if (oldshape)
   {
     DisposeRegion(oldshape);
@@ -90,12 +95,10 @@ struct Region * ScaleLayerCallback();
   AROS_LIBFUNC_EXIT
 } /* ScaleLayer */
 
-AROS_UFH5(struct Region *, ScaleLayerCallback,
-   AROS_UFHA(struct Region          *, newshape , A0),
-   AROS_UFHA(struct Layer           *, l        , A1),
-   AROS_UFHA(struct ClipRect        *, crlist   , A2),
-   AROS_UFHA(struct Region          *, region   , A3),
-   AROS_UFHA(struct ScaleLayerParam *, arg      , A4))
+AROS_UFH3(struct Region *, ScaleLayerCallback,
+   AROS_UFHA(struct Hook            *, hook     , A0),
+   AROS_UFHA(struct Layer           *, l        , A2),
+   AROS_UFHA(struct ScaleLayerParam *, arg      , A1))
 {
   return NULL;
 }
