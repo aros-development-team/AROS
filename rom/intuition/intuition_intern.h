@@ -269,8 +269,15 @@ struct closeMessage
 VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBase);
 VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
 
+#define REFRESHGAD_BOOPSI 1		/* boopsi gadgets */
+#define REFRESHGAD_BORDER 2		/* gadgets in window border */
+#define REFRESHGAD_REL    4		/* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM, GFLG_RELWIDTH, GFLG_RELHEIGHT */
+#define REFRESHGAD_RELS   8		/* GFLG_RELSPECIAL gadgets */
 
-
+VOID int_refreshglist(struct Gadget *gadgets, struct Window *window,
+		      struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
+		      struct IntuitionBase *IntuitionBase);
+		      
 struct IntWindow
 {
     struct Window window;
