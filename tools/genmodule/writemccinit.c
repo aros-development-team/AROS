@@ -203,7 +203,7 @@ void writemccinit(void)
         "    MUIMasterBase = OpenLibrary( \"muimaster.library\", 0 );\n"
         "    if( MUIMasterBase == NULL ) goto error;\n"
         "    \n"
-        "    MCC = MUI_CreateCustomClass( LIBBASE, \"%s\", NULL, ",
+        "    MCC = MUI_CreateCustomClass( (struct Library *) LIBBASE, \"%s\", NULL, ",
         superclass
     );
     
@@ -239,6 +239,7 @@ void writemccinit(void)
         "    if( UtilityBase != NULL ) CloseLibrary( (struct Library *) UtilityBase );\n"
         "    \n"
         "    MUI_DeleteCustomClass( MCC );\n"
+        "    return TRUE;\n"
         "}\n"
         "\n"
         "ADD2INITLIB( MCC_Startup, 0 );\n"
