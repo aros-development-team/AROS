@@ -1,27 +1,23 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-DEST	:= $(HOME)/www/www.aros.org/www/
-#DEST	 := ../html.test/
-SIZEDIR := $(HOME)/www/www.aros.org/tmp/
-JOBDEST := $(ARCHDIR)jobserver/
-MIC	:= $(TOP)/scripts/moveifchanged
-LITE	:= /usr/local/Hughes/bin/lite
-GNUPLOT := gnuplot
-CONVERT := /usr/bin/X11/convert
+DEST	  := $(HOME)/www/www.aros.org/www/
+SIZEDIR   := $(HOME)/www/www.aros.org/tmp/
+JOBDEST   := $(ARCHDIR)jobserver/
+MIC	  := $(TOP)/scripts/moveifchanged
+LITE	  := /usr/local/Hughes/bin/lite
+GNUPLOT   := gnuplot
+CONVERT   := /usr/bin/X11/convert
 DOCGENDIR := $(GENDIR)/docs
+PYTHON    := python
 
 FILES := main.src background.src faq.src differences.src cvs.src missing.src \
     included.src style.src devinfo_inside.src devinfo_outside.src \
-    autodoc.src history.src links.src
+    links.src
 
-AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
-	$(TOP)/compiler/alib/*.c \
-	$(TOP)/compiler/arossupport/*.c \
-	$(TOP)/rom/devs/*.c $(TOP)/compiler/clib/*.c \
-	$(TOP)/workbench/libs/*/*.c)
-
-INCLUDE_SRCS := $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
+AUTODOC_SRCS := $(wildcard $(TOP)/rom/*/*.arch \
+	$(TOP)/compiler/*/*.arch \
+	$(TOP)/workbench/libs/*/*.arch)
 
 SRC2HTML := $(DOCGENDIR)/src2html
 RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
@@ -30,7 +26,6 @@ RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 
 #MM docs : setup-docs
 docs : setup $(SRC2HTML) autodocs $(DEST)srcs $(DEST)index.html \
-	$(DEST)filesystems.doc \
 	copy-files copy-pics \
 	access-rights
 
@@ -81,9 +76,6 @@ access-rights :
 $(DEST)srcs :
 	ln -s $(TOP) $(DEST)srcs
 
-$(DEST)filesystems.doc : filesystems.doc
-	cp filesystems.doc $(DEST)
-
 #MM
 clean ::
 	-rm -f $(HTML)
@@ -94,9 +86,8 @@ $(SRC2HTML) : src2html/src2html
 	cp $< $@
 
 $(DEST)index.html : $(FILES) doc_header.html doc_footer.html \
-		$(DOCGENDIR)/autodoc.inc \
 	    	$(SRC2HTML) keywords.db files.db \
-		page_header.html 
+		page_header.html $(DOCGENDIR)/run-src2html
 	cp *.src *.html *.db $(DOCGENDIR)
 	cd $(DOCGENDIR) ; \
 	export TOP="$(TOP)" ; \
@@ -105,123 +96,19 @@ $(DEST)index.html : $(FILES) doc_header.html doc_footer.html \
 	$(RUN_SRC2HTML) && \
 	mv index.html index-*.html $(DEST)
 
-#MM
-jobserver : jobserver-setup \
-	    $(JOBDEST)jobserv-add.html \
-	    $(JOBDEST)jobserv-free.html \
-	    $(JOBDEST)jobserv-work.shtml \
-	    $(JOBDEST)jobserv-done.shtml \
-	    $(JOBDEST)jobserv-msql.html \
-	    $(JOBDEST)cgi-bin/jobserv-add.cgi \
-	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
-	    $(JOBDEST)cgi-bin/jobserv-work.cgi \
-	    $(JOBDEST)cgi-bin/jobserv-done.cgi \
-	    $(JOBDEST)cgi-bin/jobserv-msql.cgi \
-	    $(JOBDEST)cgi-bin/jobserv.cgi \
-	    $(JOBDEST)cgi-bin/support.lib \
-	    $(JOBDEST)index.html \
-	    $(DEST)jobserv-showfree.html \
-	    $(DEST)jobserv-showwork.html \
-	    $(DEST)jobserv-showdone.html
+# This is a trick: If any other rule touches this, src2html is run.
+$(DOCGENDIR)/run-src2html :
+	@touch $@
 
-jobserver-setup :
-	@if [ ! -d $(JOBDEST) ]; then $(MKDIR) $(JOBDEST); else true; fi
-	@if [ ! -d $(JOBDEST)cgi-bin ]; then $(MKDIR) $(JOBDEST)cgi-bin; else true; fi
+autodocs : $(DOCGENDIR)/htmlpages
 
-$(JOBDEST).ht% : jobserv.ht%
-	cp $< $@
-	chmod 644 $@
-
-$(JOBDEST)cgi-bin/%.cgi : %.cgi
-	cp $< $@
-	chmod 755 $@
-
-%.lib : %.lsrc
-	$(LITE) -l$@ $<
-
-$(JOBDEST)cgi-bin/%.lib : %.lib
-	cp $< $@
-	chmod 644 $@
-
-$(DEST)cgi-bin/%.lib : %.lib
-	cp $< $@
-	chmod 644 $@
-
-$(DEST)jobserv-showfree.html : support.lib
-$(DEST)jobserv-showwork.html : support.lib
-$(DEST)jobserv-showdone.html : support.lib
-
-$(JOBDEST)jobserv-add.html : page_header_nc.html jobserv-add.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Add jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(JOBDEST)jobserv-free.html : page_header_nc.html jobserv-free.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Free jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(JOBDEST)jobserv-work.shtml : page_header_nc.html jobserv-work.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Jobs which are in work/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(JOBDEST)jobserv-done.shtml : page_header_nc.html jobserv-done.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Finished jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(JOBDEST)jobserv-msql.html : page_header.html jobserv-msql.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/mSQL interface/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(JOBDEST)index.html : page_header.html jobserv.index \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/WWW Jobserver Interface/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-autodocs : $(DOCGENDIR)/autodoc.inc $(DOCGENDIR)/htmlpages
-
-$(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) adoc2html.gawk \
-		cvslog2html.gawk
+$(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) genadocs.py \
+		adoc_header.html adoc_footer.html page_header.html
 	@echo "Regenerating the HTML AutoDocs"
-	@TOP="$(TOP)" DESTDIR="$(DEST)" CURDIR="$(CURDIR)" \
+	@$(PYTHON) genadocs.py DESTDIR="$(DEST)/autodocs" \
 		DOCGENDIR="$(DOCGENDIR)" \
-		./makeadocs $(AUTODOC_SRCS)
-	@touch $(DOCGENDIR)/htmlpages
-
-$(DOCGENDIR)/autodoc.inc : $(DOCGENDIR)/adoc_index.tmp adocpost.gawk adoc_header.html
-	cat adoc_header.html > $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_bylib $(DOCGENDIR)/adoc_index.tmp | \
-	sort -f | \
-	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_byname $(DOCGENDIR)/adoc_index.tmp | \
-	sort -f | \
-	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
-	touch autodoc.src
-	chmod a+r $@
-
-$(DOCGENDIR)/adoc_index.tmp : $(AUTODOC_SRCS) adochtmlindex.gawk
-	@echo "Generating HTML AutoDoc Index"
-	@gawk -f adochtmlindex.gawk $(AUTODOC_SRCS) > $@
-	chmod -R a+r $(DEST)autodocs
-
-$(DEST)inc_index.html : $(INCLUDE_SRCS)
-	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
-	chmod a+r $@
+		$(AUTODOC_SRCS)
+	@touch $(DOCGENDIR)/htmlpages $(DOCGENDIR)/run-src2html
 
 includes : $(DOCGENDIR)/devlist.inc \
 	$(DOCGENDIR)/contents.inc \
@@ -247,17 +134,17 @@ $(DEST)contrib.png : size2plot.in $(SIZEDIR)/contrib.size
 
 $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
+	@touch $(DOCGENDIR)/run-src2html
 
 $(DOCGENDIR)/status.inc : stat2html.gawk
 	@echo "Rebuilding status table..."
 	gawk -f stat2html.gawk > $@.new
 	$(MIC) $@.new $@
-	if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
+	if $(TEST) -e $@.new; then $(RM) $@.new ; else touch $(DOCGENDIR)/run-src2html ; fi
 
-$(DOCGENDIR)/contents.inc : collectcontents.sh contents2html.gawk \
+$(DOCGENDIR)/contents.inc : contents2html.gawk \
 		makefile2html.gawk
-	./collectcontents.sh $(TOP) > $@
+	gawk -f contents2html.gawk --assign TOP="$(TOP)" $(TOP)/contents > $@
+	@touch $(DOCGENDIR)/run-src2html
 
-.PHONY : status.inc
-
-autodoc.src : $(DOCGENDIR)/autodoc.inc
+# vim:syn=make:
