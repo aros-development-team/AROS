@@ -1310,8 +1310,8 @@ ifdef USE_EXPATLIB
 %(deps) := $(%(deps)) $(LIBDIR)/libexpat.a
 endif
 ifdef USE_COOLIMAGESLIB
-%(libs) := $(%(libs)) -lcoolimages
-%(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
+%(libs) := $(%(libs)) -lcoolimagesstatic
+%(deps) := $(%(deps)) $(LIBDIR)/libcoolimagesstatic.a
 endif
 ifdef USE_BGUILIB
 %(libs) := $(%(libs)) -lbgui
