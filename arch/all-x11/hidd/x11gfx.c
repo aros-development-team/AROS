@@ -15,7 +15,7 @@
 #include <X11/cursorfont.h>
 #include <X11/Xutil.h>
 
-#include <sys/signal.h>
+#include <signal.h>
 #include <string.h>
 
 #include <exec/libraries.h>
