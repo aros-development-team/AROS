@@ -1,13 +1,32 @@
-#    $Id$
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
-FILES	:= intern_spisodd intern_spld 
+FILES := intern_spisodd intern_spld 
+FUNCS := \
+    spacos \
+    spasin \
+    spatan \
+    spcos \
+    spcosh \
+    spexp \
+    spfieee \
+    splog10 \
+    splog \
+    sppow \
+    spsin \
+    spsincos \
+    spsinh \
+    spsqrt \
+    sptan \
+    sptanh \
+    sptieee
 
-#MM- workbench-libs-mathtrans : setup includes
+#MM- workbench-libs-mathtrans : setup includes linklibs
 
 %build_module_macro mmake=workbench-libs-mathtrans \
-  modname=mathtrans modtype=library \
-  files=$(FILES) archfile=mathtrans.arch \
-  conffile=lib.conf uselibs=arosc
+ modname=mathtrans modtype=library files=$(FILES) funcs=$(FUNCS) \
+ conffile=lib.conf uselibs=arosc
 
 %common
