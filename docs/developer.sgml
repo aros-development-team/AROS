@@ -7,7 +7,7 @@
      part-NAME for <PART>
      chap-NAME for <CHAPTER>
      sect-NAME for <SECT1> through <SECT5>
-     expl-NAME for explanations inside a <SECT?>, for exaple flag-lists or
+     expl-NAME for explanations inside a <SECT?>, for example flag-lists or
                function descriptions
      TYPE-prog-NAME for explanations, how to implement a feature (eg
                     chap-prog_libraries on a tutorial, how to implement a
