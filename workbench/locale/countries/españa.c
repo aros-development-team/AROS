@@ -59,6 +59,15 @@ struct CountryPrefs espanaPrefs =
     */
     2, 2,
 
+#ifdef _EURO
+    /* Currency symbol, Small currency symbol */
+    "Euro", "Cent",
+
+    /* Int CS, this is the ISO 4217 symbol, followed by the character to
+       separate that symbol from the rest of the money. (\x00 for none).
+    */
+    "EUR",
+#else
     /* Currency symbol, Small currency symbol */
     "Pesetas", "",
 
@@ -66,7 +75,7 @@ struct CountryPrefs espanaPrefs =
        separate that symbol from the rest of the money. (\x00 for none).
     */
     "ESB",
-
+#endif
     /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
     "", SS_SPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 

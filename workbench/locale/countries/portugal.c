@@ -45,8 +45,13 @@ struct CountryPrefs portugalPrefs =
     /* Grouping, Frac Grouping */
     { 3 }, { 3 },
 
+#ifdef _EURO
+    /* Mon dec pt, mon group sep, mon frac group sep */
+    ".", ".", ".",
+#else
     /* Mon dec pt, mon group sep, mon frac group sep */
     ",", ".", ".",
+#endif
 
     /* Mon Grouping, Mon frac grouping */
     { 3 }, { 3 },
@@ -59,6 +64,15 @@ struct CountryPrefs portugalPrefs =
     */
     2, 3,
 
+#ifdef _EURO
+    /* Currency symbol, Small currency symbol */
+    "Euro", "Cent",
+
+    /* Int CS, this is the ISO 4217 symbol, followed by the character to
+       separate that symbol from the rest of the money. (\x00 for none).
+    */
+    "EUR",
+#else
     /* Currency symbol, Small currency symbol */
     "ESP", "",
 
@@ -66,7 +80,7 @@ struct CountryPrefs portugalPrefs =
        separate that symbol from the rest of the money. (\x00 for none).
     */
     "",
-
+#endif
     /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
     "+", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 

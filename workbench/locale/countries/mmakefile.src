@@ -7,10 +7,11 @@ COUNTRIES := australia belgie belgique canada canada_français \
 	     schweiz suisse suomi sverige svizzera united_kingdom \
 	     united_states
 
-COUNTRYDIR := $(AROS_LOCALE)/Countries
-MAKECOUNTRY=$(OBJDIR)/makecountry
-OBJDIR := $(GENDIR)/$(CURDIR)
-COUNTIFF=$(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
+COUNTRYDIR   := $(AROS_LOCALE)/Countries
+MAKECOUNTRY  := $(OBJDIR)/makecountry
+OBJDIR 	     := $(GENDIR)/$(CURDIR)
+COUNTIFF     := $(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
+USER_DEFINES := -D_EURO
 
 #MM- workbench-locale : workbench-locale-countries
 #MM workbench-locale-countries : setup includes
@@ -29,7 +30,7 @@ $(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f
 	@$(HOST_LD) $(HOST_LDFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(HOST_CC) opt="$(HOST_CFLAGS) -I$(AROS_INCLUDES)"
+	%compile_q cmd=$(HOST_CC) opt="$(HOST_CFLAGS) -I$(AROS_INCLUDES) $(USER_DEFINES)"
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
