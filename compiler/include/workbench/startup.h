@@ -15,17 +15,17 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef LIBRARIES_DOS_H
-#   include <libraries/dos.h>
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
 #endif
 
 struct WBStartup
 {
     struct Message   sm_Message;
     struct MsgPort * sm_Process;
-    BPTR             sm_Segment;
-    LONG             sm_NumArgs;
-    char           * sm_ToolWindow;
+    BPTR	     sm_Segment;
+    LONG	     sm_NumArgs;
+    char	   * sm_ToolWindow;
     struct WBArg   * sm_ArgList;
 };
 
