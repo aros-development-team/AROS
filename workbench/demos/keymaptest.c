@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-#define BUFSIZE 5
+#define BUFSIZE 10
 VOID HandleEvents(struct Window *win, UBYTE *buffer, LONG bufsize);
 
 struct IntuitionBase *IntuitionBase;
@@ -83,18 +83,17 @@ VOID HandleEvents(struct Window *win, UBYTE *buffer, LONG bufsize)
 	    	
 	        ie.ie_Code 	= imsg->Code;
 	        ie.ie_Qualifier	= imsg->Qualifier;
-	        printf("Got rawkey: code=$%04x, qual=$%04x\n",
+	        printf("rawkey: code=$%04x, qual=$%04x\n",
 	        	ie.ie_Code, ie.ie_Qualifier);
 	        
 	        ie.ie_EventAddress =  imsg->IAddress;
 	        
 	        written = MapRawKey(&ie, buffer, bufsize, NULL);
-	        printf("Written: %d\n", written);
 	        if (written == -1)
-	            printf("Buffer owerflow !!`n");
+	            printf("Buffer owerflow !!\n");
 	        else if (written)
 	        {
-	            printf("Maps to:");
+	            printf("Map:");
 	            Write(Output(), buffer, written);
 	            printf("\n");
 	        }
