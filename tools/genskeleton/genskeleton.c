@@ -36,7 +36,9 @@
 #define TYPE_MIN	TYPE_LIBRARY
 #define TYPE_MAX	TYPE_DATATYPE
 
-# define mkdir(name, mode) ((mkdir) (name))
+#ifdef __MINGW32__
+#    define mkdir(name, mode) ((mkdir) (name))
+#endif
 /****************************************************************************************/
 
 
