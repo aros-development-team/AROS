@@ -2,8 +2,7 @@ BEGIN {
     stderr="/dev/stderr";
 
     ename=tolower(lib) "_endtag.c";
-}
-END {
+
     print "/*" > ename;
     print "        (C) 1995-96 AROS - The Amiga Replacement OS" >> ename
     print "        *** Automatic generated file. Do not edit ***" >> ename
