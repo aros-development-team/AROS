@@ -95,6 +95,10 @@
 #include <libraries/locale.h>
 #endif
 
+#ifndef LIBRARIES_IFFPARSE_H
+#include <libraries/iffparse.h>
+#endif
+
 #ifndef DATATYPES_DATATYPES_H
 #include <datatypes/datatypes.h>
 #endif
@@ -153,6 +157,10 @@
 #include <proto/diskfont.h>
 #endif
 
+#ifndef PROTO_IFFPARSE_H
+#include <proto/iffparse.h>
+#endif
+
 /*********************************************************************************************/
 
 #define IPREFS_SEM_NAME "« IPrefs »"
@@ -177,9 +185,19 @@ void Cleanup(STRPTR msg);
 
 void InstallPatches(void);
 
+/* misc.c */
+
+struct IFFHandle *CreateIFF(STRPTR filename, LONG *stopchunks, LONG numstopchunks);
+void KillIFF(struct IFFHandle *iff);
+
+
 /* localeprefs.c */
 
 void LocalePrefs_Handler(STRPTR filename);
+
+/* fontprefs.c */
+
+void FontPrefs_Handler(STRPTR filename);
 
 /*********************************************************************************************/
 
