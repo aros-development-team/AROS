@@ -60,6 +60,7 @@ struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitStrGClass (struct LIBBASETYPE * LIBBASE);
 
 struct IClass *InitDragBarClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitSizeButtonClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitTitleBarButClass (struct LIBBASETYPE * LIBBASE);
 
 int Intuition_entry(void)
@@ -152,6 +153,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     GetPrivIBase(LIBBASE)->tbbclass = InitTitleBarButClass (LIBBASE); /* After GADGETCLASS */
     if (!GetPrivIBase(LIBBASE)->tbbclass)
+    	return NULL;
+
+    GetPrivIBase(LIBBASE)->sizebuttonclass = InitSizeButtonClass (LIBBASE); /* After GADGETCLASS */
+    if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
     	return NULL;
     
     /* You would return NULL if the init failed */

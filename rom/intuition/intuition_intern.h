@@ -90,6 +90,7 @@ struct IntIntuitionBase
 
     struct IClass *dragbarclass;
     struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
+    struct IClass *sizebuttonclass;
 };
 
 struct IntScreen

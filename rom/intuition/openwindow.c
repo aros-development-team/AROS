@@ -401,10 +401,11 @@
 
 
     UnlockIBase (lock);
-
+kprintf("%s: Calling DoGMLayout!\n",__FUNCTION__);
     /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
+kprintf("%s: Calling RefreshGadgets!\n",__FUNCTION__);
     if (NULL != w->FirstGadget)
       RefreshGadgets (w->FirstGadget, w, NULL);
     

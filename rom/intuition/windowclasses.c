@@ -450,6 +450,410 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
     ReturnPtr ("dragbar_dispatcher", IPTR, retval);
 }
 
+/*********************
+** The SizeButtonClass
+*********************/
+
+
+struct sizebutton_data
+{
+     /* Current right- and bottom edge of sized window. Ie when the user releases
+     the LMB after a windowdrag, the window's size will be changed
+     */
+
+     /* The current x and y coordinates relative to curleft/curtop */
+     LONG width;
+     LONG height;
+     
+     /* Whether the dragframe is currently drawn or erased */
+     BOOL isrendered;
+     
+     /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
+     BOOL drag_canceled;
+     
+     /* Rastport to use during update */
+     struct RastPort *rp;
+     
+     Object * image;
+};
+
+static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
+{
+	struct sizebutton_data *data = INST_DATA(cl, o);
+	struct IBox container;
+	struct RastPort *rp = msg->gpr_RPort;
+	
+	/* center image position, we assume image top and left is 0 */
+	ULONG x, y;
+        ULONG state;
+	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+	
+	GetGadgetIBox(o, msg->gpr_GInfo, &container);
+	D(bug("Gadget IBOX\n"));
+
+	x = container.Left + ((container.Width / 2) -
+		    (IM(data->image)->Width / 2));
+		    
+	y = container.Top + ((container.Height / 2) -
+		    (IM(data->image)->Height / 2));
+		
+	/* Are we part of the active window ? */
+	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
+	{
+	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
+	}
+	else
+	{
+	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_INACTIVESELECTED : IDS_INACTIVENORMAL );
+	}
+	
+	D(bug("Drawing image\n"));
+
+   	DrawImageState(rp
+	    , (struct Image *)data->image
+	    , x, y
+	    , state
+	    , msg->gpr_GInfo->gi_DrInfo);
+	    
+	/* For now just render a tiny black edge around the image */
+
+	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
+	RectFill(rp,container.Left,
+		    container.Top,
+		    container.Left,
+		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+	RectFill(rp,container.Left + 1,
+		    container.Top,
+		    container.Left + container.Width - 1,
+		    container.Top);
+	
+	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
+	RectFill(rp,container.Left + container.Width - 1,
+		    container.Top + 1,
+		    container.Left + container.Width - 1,
+		    container.Top + container.Height - 1);
+	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
+		    container.Top + container.Height - 1,
+		    container.Left + container.Width - 2,
+		    container.Top + container.Height - 1);
+    return;
+}
+
+static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
+{
+    
+    IPTR retval = GMR_NOREUSE;
+    
+    struct InputEvent *ie = msg->gpi_IEvent;
+    
+    if (ie)
+    {
+    	/* The gadget was activated via mouse input */
+	struct sizebutton_data *data;
+	struct Window *w;
+
+	/* There is no point in rerendering ourseleves her, as this
+	   is done by a call to RefreshWindowFrame() in the intuition inputhandler
+	*/
+    
+	w = msg->gpi_GInfo->gi_Window;
+    
+	data = INST_DATA(cl, o);
+	
+	
+	data->drag_canceled = FALSE;
+	
+	data->height = w->Height;
+	data->width  = w->Width;
+        
+	data->rp = CloneRastPort(&w->WScreen->RastPort);
+	if (data->rp)
+	{
+	
+	
+	    data->isrendered = FALSE;
+	    
+	    /* Lock all layers while the window is resized */
+D(bug("locking all layers\n"));
+	    LockLayers(&w->WScreen->LayerInfo);
+	    
+	
+	    retval = GMR_MEACTIVE;
+	}
+    }
+
+    return retval;
+    
+    
+}
+
+
+static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
+{
+    IPTR retval = GMR_MEACTIVE;
+    struct GadgetInfo *gi = msg->gpi_GInfo;
+    
+    if (gi)
+    {
+	struct InputEvent *ie = msg->gpi_IEvent;
+	struct sizebutton_data *data = INST_DATA(cl, o);
+	struct Window *w = msg->gpi_GInfo->gi_Window;
+	
+	switch (ie->ie_Class)
+	{
+	case IECLASS_RAWMOUSE:
+	    switch (ie->ie_Code)
+	    {
+	    case SELECTUP:
+	    	retval = GMR_NOREUSE;
+		break;
+		    
+
+	    case IECODE_NOBUTTON: {
+	    	struct Screen *scr = w->WScreen;
+		LONG new_width;
+		LONG new_height;
+		
+	    
+	    	/* Can we move to the new position, or is window at edge of display ? */
+		new_width   = ie->ie_X - w->LeftEdge;
+		new_height  = ie->ie_Y - w->TopEdge;
+		
+		if (new_width < 0)
+		{
+		  new_width = 1;
+		}
+		
+		if (new_height < 0)
+		{
+		  new_height = 1;
+		}
+		
+		if (new_width + w->LeftEdge > scr->Width)
+		{
+		  new_width = scr->Width - w->LeftEdge;
+		}
+		
+		if (new_height + w->TopEdge > scr->Height)
+		{
+		  new_height = scr->Height - w->TopEdge;
+		}
+		
+
+		if (data->height != new_height || data->width != new_width)
+		{
+		    SetDrMd(data->rp, COMPLEMENT);
+
+	    	    if (data->isrendered)
+		    {
+			/* Erase old frame */
+			drawrect(data->rp
+				, w->LeftEdge
+				, w->TopEdge
+				, w->LeftEdge + data->width  - 1
+				, w->TopEdge  + data->height - 1
+				, IntuitionBase
+			);
+			
+		    }
+		
+		    data->width   = new_width;
+		    data->height  = new_height;
+		     
+		    /* Rerender the window frame */
+		    
+  		    drawrect(data->rp
+				, w->LeftEdge
+				, w->TopEdge
+				, w->LeftEdge + data->width  - 1
+				, w->TopEdge  + data->height - 1
+				, IntuitionBase
+			);
+		    
+		    data->isrendered = TRUE;
+		
+		     
+		}
+		
+		retval = GMR_MEACTIVE;
+		
+		break; }
+		
+	    default:
+	    	retval = GMR_REUSE;
+		data->drag_canceled = TRUE;
+		break;
+	    	
+	    
+	    
+	    } /* switch (ie->ie_Code) */
+	    
+	    
+	} /* switch (ie->ie_Class) */
+	
+    } /* if (gi) */
+    return retval;
+}
+
+static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+{
+    struct sizebutton_data *data;
+    struct Window *w;
+    
+    data = INST_DATA(cl, o);
+    w = msg->gpgi_GInfo->gi_Window;
+    
+    /* Allways clear last drawn frame */
+		
+    if (data->width != w->Width || data->height != w->Height)
+    {
+		    
+	if (data->isrendered)
+	{
+
+	    SetDrMd(data->rp, COMPLEMENT);
+	    
+	    /* Erase old frame */
+	    drawrect(data->rp
+		, w->LeftEdge
+		, w->TopEdge
+		, w->LeftEdge + data->width  - 1
+		, w->TopEdge  + data->height - 1
+		, IntuitionBase
+	    );
+			
+	}
+	
+    }
+    if (!data->drag_canceled)
+    {
+	    
+		
+	SizeWindow(w
+	    , data->width  - w->Width	/* dx */
+	    , data->height - w->Height	/* dy */
+	);
+		
+    }
+    data->drag_canceled = FALSE;
+		    
+		
+    /* User throught with drag operation. Unlock layesr and free
+	   rastport clone
+    */
+    UnlockLayers(&w->WScreen->LayerInfo);
+    FreeRastPort(data->rp);
+    
+    return TRUE;
+}
+
+static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
+{
+    /* Only interesting attribute is gadget type */
+    
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (o)
+    {
+    	struct sizebutton_data *data = INST_DATA(cl, o);
+	ULONG dispose_mid = OM_DISPOSE;
+	struct DrawInfo *dri;
+	
+	memset(data, 0, sizeof (struct sizebutton_data));
+	
+	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+	if (dri)
+	{
+	    struct TagItem image_tags[] =
+	    {
+/*	    	{IA_Left,		image_leftedge[SYSGADTYPE_IDX(o)]				},*/
+	    	{IA_Width,		G(o)->Width - 2 /* - image_leftedge[SYSGADTYPE_IDX(o)] */	},
+	    	{IA_Height, 		G(o)->Height - 2						},
+	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]					},
+	    	{SYSIA_DrawInfo,	(IPTR)dri							},
+	    	{TAG_DONE, 0UL}
+	    };
+
+	    /* Create a sysimage with gadget's sizes */
+	    data->image = NewObjectA(NULL, SYSICLASS, image_tags);
+	    D(bug("tbb: image=%p\n", data->image));
+	    if (data->image)
+	    {
+	    	((struct Gadget *)o)->GadgetType |= GTYP_SYSGADGET;
+	   	return o;
+	    }
+	} /* if (dri) */
+	CoerceMethodA(cl, o, (Msg)&dispose_mid);
+	
+    } /* if (o) */
+    
+    return NULL;
+}
+
+static VOID sizebutton_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct sizebutton_data *data = INST_DATA(cl, o);
+    if (data->image)
+    	DisposeObject(data->image);
+    DoSuperMethodA(cl, o, msg);
+    return;
+}
+
+/***********  Size Button class **********************************/
+
+
+
+AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
+    AROS_UFHA(Class *,  cl,  A0),
+    AROS_UFHA(Object *, o,   A2),
+    AROS_UFHA(Msg,      msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    EnterFunc(bug("sizebutton_dispatcher(mid=%d)\n", msg->MethodID));
+    switch (msg->MethodID)
+    {
+	case GM_RENDER:
+	    sizebutton_render(cl, o, (struct gpRender *)msg);
+	    break;
+	    
+	case GM_LAYOUT:
+	    break;
+	    
+	case GM_DOMAIN:
+	    break;
+	    
+	case GM_GOACTIVE:
+	    retval = sizebutton_goactive(cl, o, (struct gpInput *)msg);
+	    break;
+	    
+	case GM_GOINACTIVE:
+	    retval = sizebutton_goinactive(cl, o, (struct gpGoInactive *)msg);
+	    break;
+	    
+	case GM_HANDLEINPUT:
+	    retval = sizebutton_handleinput(cl, o, (struct gpInput *)msg);
+	    break;
+	    
+	case OM_NEW:
+	    retval = (IPTR)sizebutton_new(cl, o, (struct opSet *)msg);
+	    break;
+	    
+	case OM_DISPOSE:
+	    sizebutton_dispose(cl, o, msg);
+	    break;
+	
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    break;
+    }
+    
+    ReturnPtr ("sizebutton_dispatcher", IPTR, retval);
+}
+
+
+
 /************************************************
 *  TBButton class (TitleBarButton)
 *************************************************/
@@ -723,6 +1127,25 @@ struct IClass *InitDragBarClass (struct IntuitionBase * IntuitionBase)
 
     return (cl);
 }
+
+
+/* Initialize our sizebutton class. */
+struct IClass *InitSizeButtonClass (struct IntuitionBase * IntuitionBase)
+{
+    struct IClass *cl = NULL;
+
+    /* This is the code to make the dragbarclass...
+    */
+    if ( (cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof (struct sizebutton_data), 0)) )
+    {
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_sizebuttonclass);
+	cl->cl_Dispatcher.h_SubEntry = NULL;
+	cl->cl_UserData 	     = (IPTR)IntuitionBase;
+    }
+
+    return (cl);
+}
+
 
 /* Initialize our TitleBarButton class. */
 struct IClass *InitTitleBarButClass (struct IntuitionBase * IntuitionBase)
