@@ -22,7 +22,7 @@
 # define   DEBUG 1
 # include  <aros/debug.h>
 
-static const char version[] = "$VER: Mount 41.1 (19.2.1997)\n";
+static const char version[] = "$VER: Mount 41.2 (27.10.2001)\n";
 
 extern struct Library     *ExpansionBase;
 
@@ -122,7 +122,7 @@ static void preparefile(STRPTR buf, LONG size)
 	}
 	
 	/* Skip strings */
-	if (*buf=='\"')
+	if (*buf == '\"')
 	{
 	    while (buf < end && *buf != '\"')
 	    {
@@ -298,7 +298,8 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 
 		if (dn != NULL)
 		{
-		    dn->dn_OldName = DuplicateBSTRVolumeName(name);
+		    /* Use the name found in the mountlist */
+		    dn->dn_OldName = DuplicateBSTRVolumeName(buffer);
 
 		    if (dn->dn_OldName != NULL)
 		    {
