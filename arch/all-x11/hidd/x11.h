@@ -181,10 +181,7 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 #define XTASK_STACKSIZE 8192
 
-#define LX11   		 ObtainSemaphore (&XSD(cl)->x11sema); \
-D(bug("SEMA OBTAIN: me=%p : owner=%p, cnt=%d\n", FindTask(NULL), XSD(cl)->x11sema.ss_Owner,XSD(cl)->x11sema.ss_NestCount));
-
-#define UX11 D(bug("SEMA RELEASE: me=%p : owner=%p, cnt=%d\n", FindTask(NULL), XSD(cl)->x11sema.ss_Owner,XSD(cl)->x11sema.ss_NestCount)); \
-	ReleaseSemaphore(&XSD(cl)->x11sema);
+#define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
+#define UX11 ReleaseSemaphore(&XSD(cl)->x11sema);
 
 #endif /* HIDD_X11_H */
