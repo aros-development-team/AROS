@@ -1,32 +1,15 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility Resident and initialization.
     Lang: english
 */
+
+#include <aros/symbolsets.h>
+
 #include "intern.h"
 #include LC_LIBDEFS_FILE
-
-#ifdef SysBase
-#   undef SysBase
-#endif
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((struct IntUtilityBase *)(lib))->ub_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((struct IntUtilityBase *)(lib))->ub_SegList)
-#define LC_RESIDENTNAME 	Utility_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		103
-#define LC_LIBBASESIZE		sizeof (struct IntUtilityBase)
-#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((struct IntUtilityBase *)(lib))->UBase.ub_LibNode)
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
-#define LC_STATIC_INITLIB
-
-#include <libcore/libheader.c>
 
 extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility)();
@@ -35,25 +18,11 @@ extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
 
-/* iaint:
-    Sigh, I require this to compile this with DICE, I will
-    remove it at a later date...or at least change it :)
-*/
-
-#ifndef _DCC
-#undef SysBase
-#define SysBase GetIntUtilityBase(LIBBASE)->ub_SysBase
-#else
-struct ExecBase *SysBase = 0L;
-#endif
-
 #define SetFunc(a,b) SetFunction((struct Library *)LIBBASETYPE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
+AROS_SET_LIBFUNC(UtilityInit, LIBBASETYPE, LIBBASE)
 {
-#ifdef _DCC
-    SysBase = GetIntUtilityBase(LIBBASE)->ub_SysBase;
-#endif
+    AROS_SET_LIBFUNC_INIT
 
     GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
@@ -92,7 +61,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     }
 #endif
 
-    /* You would return NULL if the init failed */
     return TRUE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(UtilityInit, 0);

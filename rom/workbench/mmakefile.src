@@ -21,11 +21,15 @@ FUNCS := \
     wbinfo \
     workbenchcontrola
 
-#MM- kernel-workbench : includes linklibs
+#MM kernel-workbench-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-dos-includes \
+#MM     workbench-libs-icon-includes \
+#MM     includes-copy
 
-%build_module_macro mmake=kernel-workbench \
-  modname=workbench modtype=library conffile=lib.conf \
-  funcs=$(FUNCS) files=$(FILES) \
-  uselibs="amiga rom"
-
-%common
+%build_module mmake=kernel-workbench \
+  modname=workbench modtype=library \
+  files="workbench_init $(FUNCS) $(FILES)" \
+  uselibs=rom
