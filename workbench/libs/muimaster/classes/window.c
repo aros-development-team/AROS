@@ -2503,6 +2503,15 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->wd_Y = tag->ti_Data;
 		break;
 
+	    case MUIA_Window_Width:
+		data->wd_ReqWidth = (LONG)tag->ti_Data;
+		data->wd_Width = 0; /* otherwise windowselectdimensions() ignores ReqWidth */
+		break;
+
+	    case MUIA_Window_Height:
+		data->wd_ReqWidth = (LONG)tag->ti_Data;
+		data->wd_Height = 0;
+		break;
 
 	}
     }
