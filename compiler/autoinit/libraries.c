@@ -36,12 +36,12 @@ static void __showerror(char *title, char *format, ...)
         PutStr(title);
         PutStr(": ");
 #warning This next line might break on bizarre architectures.
-        VPrintf(format, args);
+        VPrintf(format, (IPTR *)args);
         PutStr("\n");
     }
     else
     {
-     	if (IntuitionBase)
+     	if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
 	{
     	    struct EasyStruct es =
     	    {
@@ -53,6 +53,8 @@ static void __showerror(char *title, char *format, ...)
 	    };
 
 	    EasyRequestArgs(NULL, &es, NULL, (APTR)args);
+	    
+	    CloseLibrary((struct Library *)IntuitionBase);
 	}
     }
 
