@@ -344,6 +344,8 @@ enum
     */
     moHidd_BitMap_SetPixelFormat,
     moHidd_BitMap_SetColorMap,
+    moHidd_BitMap_ObtainDirectAccess,
+    moHidd_BitMap_ReleaseDirectAccess,
     
     moHidd_BitMap_PrivateSet
 };
@@ -615,6 +617,19 @@ struct pHidd_BitMap_SetPixelFormat {
 struct pHidd_BitMap_SetColorMap {
     MethodID mID;
     Object *colorMap;
+};
+
+struct pHidd_BitMap_ObtainDirectAccess {
+    MethodID mID;
+    UBYTE **addressReturn;
+    ULONG *widthReturn;
+    ULONG *heightReturn;
+    ULONG *bankSizeReturn;
+    ULONG *memSizeReturn;
+};
+
+struct pHidd_BitMap_ReleaseDirectAccess {
+    MethodID mID;
 };
 
 
