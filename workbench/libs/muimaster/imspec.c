@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -35,8 +35,11 @@
 #include <proto/muimaster.h>
 #endif
 
-/*  #define MYDEBUG 1 */
+/* #define MYDEBUG 1 */
 #include "debug.h"
+
+#define D(x) x
+#define bug(x...) kprintf(x)
 
 #include "mui.h"
 
@@ -124,14 +127,31 @@ static struct MUI_ImageSpec_intern *get_pen_imspec(CONST_STRPTR str)
 	spec->type = IST_COLOR;
     	return spec;
     }
-    return NULL;   
+    return NULL;
 }
 
+static struct MUI_ImageSpec_intern *get_gradient_imspec(CONST_STRPTR str)
+{
+    struct MUI_ImageSpec_intern *spec;
+
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+    {
+	if (!zune_gradient_string_to_intern(str, spec))
+	{
+	    D(bug("*** zune_gradient_string_to_intern failed\n"));
+	    mui_free(spec);
+	    return NULL;
+	}
+	spec->type = IST_GRADIENT;
+    	return spec;
+    }
+    return NULL;
+}
 
 static struct MUI_ImageSpec_intern *get_boopsi_imspec(CONST_STRPTR filename)
 {
     struct MUI_ImageSpec_intern *spec;
- 
+
     if (!filename)
 	return NULL;
     if (!strstr(filename, ".image"))
@@ -243,13 +263,17 @@ static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
 	case IST_BRUSH: /* this is really 3: too */
 	    sprintf(buf, "3:%s", spec->u.brush.filename[0]);
 	    break;
-       
+
 	case IST_BITMAP:
 	    sprintf(buf, "5:%s", spec->u.bitmap.filename);
 	    break;
 
 	case IST_CONFIG:
 	    sprintf(buf, "6:%ld", spec->u.cfg.muiimg);
+	    break;
+
+        case IST_GRADIENT:
+	    zune_gradient_intern_to_string(spec, buf);
 	    break;
     }
     return buf;
@@ -327,6 +351,11 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 		    spec = get_config_imspec(img);
 		break;
 	    }
+
+            case '7': /* gradient */
+		spec = get_gradient_imspec(s+2);
+		break;
+
 	} /* switch(*s) */
     }
     D(bug("zune_image_spec_to_structure : out=0x%lx [%s]\n",
@@ -338,9 +367,9 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 static struct MUI_ImageSpec_intern *zune_imspec_copy(struct MUI_ImageSpec_intern *spec)
 {
     struct MUI_ImageSpec_intern *nspec;
-    
+
     if (!spec) return NULL;
-    
+
     nspec = mui_alloc_struct(struct MUI_ImageSpec_intern);
     if (nspec) memcpy(nspec,spec,sizeof(struct MUI_ImageSpec_intern));
     return nspec;
@@ -381,7 +410,6 @@ static void zune_imspec_free(struct MUI_ImageSpec_intern *spec)
 
     mui_free(spec);
 }
-
 
 struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mri)
 {
@@ -457,6 +485,9 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    }
 	    break;
 	}
+
+        case IST_GRADIENT:
+            break;
     }
     return spec;
 }
@@ -510,6 +541,10 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 	case IST_CONFIG:
 	    D(bug("*** zune_imspec_cleanup : IST_CONFIG\n"));
 	    break;
+
+        case IST_GRADIENT:
+            break;
+
     }
 
     zune_imspec_free(spec);
@@ -535,7 +570,8 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 	case IST_VECTOR:
 	    return zune_imspec_vector_get_minmax(spec, minmax);
 	    break;
-	    
+
+        case IST_GRADIENT:
 	case IST_COLOR:
 	    minmax->MinWidth = 3;
 	    minmax->MinHeight = 3;
@@ -706,6 +742,10 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	case IST_CONFIG:
 	    D(bug("*** zune_imspec_draw : IST_CONFIG\n"));
 	    break;
+
+        case IST_GRADIENT:
+            zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
+            break;
     }
 }
 

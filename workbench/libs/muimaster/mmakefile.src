@@ -64,17 +64,18 @@ CLASSFILES := $(foreach f, $(CLASSES), classes/$(f))
 CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h)
 
 FILES := \
+    datatypescache \
+    dragndrop \
+    font \
+    frame \
+    imspec \
+    imspec_gradient \
+    imspec_vector \
+    menu \
+    penspec \
     support \
     support_classes \
     textengine \
-    frame \
-    penspec \
-    imspec_vector \
-    imspec \
-    dragndrop \
-    menu \
-    datatypescache \
-    font \
     $(CLASSFILES)
     	    
 FUNCS := \
