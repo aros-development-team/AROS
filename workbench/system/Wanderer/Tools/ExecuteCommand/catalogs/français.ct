@@ -1,0 +1,49 @@
+## version $VER: executecommand.catalog 1.1 (13.8.2003)
+## language français
+## codeset 0
+;
+;
+MSG_TITLE
+Exécuter une commande
+; Execute Command
+;
+MSG_LABEL_COMMANDLINE
+Commande et arguments :
+; Command and arguments:
+;
+MSG_BUTTON_EXECUTE
+_Excécute
+; _Execute
+;
+MSG_BUTTON_CANCEL
+_Annule
+; _Cancel
+;
+MSG_CONSOLE_TITLE
+Sortie de la commande
+; Command Output
+;
+MSG_ERROR_HEADER
+ERREUR
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Impossible d'initialiser la locale.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Impossible d'initialiser les classes.
+; Can't initialize classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Impossible de créer la fenêtre.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Impossible d'exécuter la commande.
+; Can't execute command.
+;
