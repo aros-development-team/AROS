@@ -7,6 +7,9 @@
 */
 
 #include "global.h"
+#include "version.h"
+
+const char *versionstring = VERSIONSTR;
 
 #undef VAR
 #define VAR

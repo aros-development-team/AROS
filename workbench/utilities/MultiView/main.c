@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /*********************************************************************************************/
@@ -425,8 +425,9 @@ static void AddDTOToWin(void)
 
 static void OpenDTO(void)
 {
-    IPTR  val;
-    ULONG *methods;
+    IPTR   val;
+    ULONG  *methods;
+    STRPTR objname = NULL;
     
     old_dto = dto;
 
@@ -435,18 +436,21 @@ static void OpenDTO(void)
         APTR clipunit = 0;
 	
 	if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
-kprintf("-------------------------------------------------------------------------------------\n");	
+
+	D(bug("MultiView: calling NewDTObject\n"));
+	
         dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
 				    GA_ID         , 1000	   ,
 				    DTA_SourceType, DTST_CLIPBOARD ,
 				    TAG_DONE);
-kprintf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+	
+	D(bug("MultiView: NewDTObject returned %x\n", dto));			    
     } else {
 	dto = NewDTObject(filename, ICA_TARGET, (IPTR)model_obj,
     				    GA_ID     , 1000	       ,
     				    TAG_DONE);
     }
-    
+
     if (!dto)
     {
         ULONG errnum = IoErr();
@@ -461,7 +465,7 @@ kprintf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	return;
     }
     
-    strncpy(filenamebuffer, filename, 299);
+    strncpy(filenamebuffer, (filename ? filename : (STRPTR)""), 299);
     
     SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
     SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
@@ -469,6 +473,9 @@ kprintf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     val = 0;
     GetDTAttrs(dto, DTA_NominalHoriz, &val, TAG_DONE); winwidth  = (WORD)val;
     GetDTAttrs(dto, DTA_NominalVert , &val, TAG_DONE); winheight = (WORD)val;
+    
+    GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);    
+    strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
     
     dto_supports_copy = FALSE;
     dto_supports_clearselected = FALSE;
@@ -487,7 +494,7 @@ kprintf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	if (win)
 	{
 	    AddDTOToWin();
-	    SetWindowTitles(win, filenamebuffer, (UBYTE *)~0);
+	    SetWindowTitles(win, objnamebuffer, (UBYTE *)~0);
 	    SetMenuFlags();
 	}
     }
@@ -520,7 +527,7 @@ static void MakeWindow(void)
     minheight = (winheight < 50) ? winheight : 50;
 
     win = OpenWindowTags(0, WA_PubScreen	, (IPTR)scr		,
-    			    WA_Title		, (IPTR)filenamebuffer	,
+    			    WA_Title		, (IPTR)objnamebuffer	,
 			    WA_CloseGadget	, TRUE			,
 			    WA_DepthGadget	, TRUE			,
 			    WA_DragBar		, TRUE			,

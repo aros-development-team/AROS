@@ -39,6 +39,7 @@ VAR Object			*gad[NUM_GADGETS];
 VAR Object			*img[NUM_IMAGES];
 VAR WORD			prog_exitcode;
 VAR UBYTE			filenamebuffer[300];
+VAR UBYTE			objnamebuffer[300];
 VAR UBYTE			s[300];
 VAR UBYTE			dto_supports_copy;
 VAR UBYTE 			dto_supports_clearselected;
