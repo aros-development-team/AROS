@@ -888,24 +888,49 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 {
      UWORD cpf = (UWORD)-1;
 
+kprintf("hidd2cyber stdpf = %d [%d]\n", stdpf, vHidd_StdPixFmt_BGR032);
+
      switch (stdpf)
      {
+	case vHidd_StdPixFmt_RGB15:
+	    cpf = PIXFMT_RGB15;
+	    break;
+
+	case vHidd_StdPixFmt_BGR15:
+	    cpf = PIXFMT_BGR15;
+	    break;
+	
 	case vHidd_StdPixFmt_RGB16:
 	    cpf = PIXFMT_RGB16;
+	    break;
+
+	case vHidd_StdPixFmt_BGR16:
+	    cpf = PIXFMT_BGR16;
 	    break;
 	
 	case vHidd_StdPixFmt_RGB24:
 	    cpf = PIXFMT_RGB24;
 	    break;
+
+	case vHidd_StdPixFmt_BGR24:
+	    cpf = PIXFMT_BGR24;
+	    break;
 	
+	case vHidd_StdPixFmt_0RGB32:
 	case vHidd_StdPixFmt_ARGB32:
 	    cpf = PIXFMT_ARGB32;
 	    break;
 	
+	case vHidd_StdPixFmt_RGB032:
 	case vHidd_StdPixFmt_RGBA32:
 	    cpf = PIXFMT_RGBA32;
 	    break;
 	
+	case vHidd_StdPixFmt_BGRA32:
+	case vHidd_StdPixFmt_BGR032:
+	    cpf = PIXFMT_BGRA32;
+	    break;
+	    
 	case vHidd_StdPixFmt_LUT8:
 	    cpf = PIXFMT_LUT8;
 	    break;
@@ -928,20 +953,40 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 
     switch (cpf)
     {
+	case PIXFMT_RGB15:
+	    stdpf = vHidd_StdPixFmt_RGB15;
+	    break;
+
+	case PIXFMT_BGR15:
+	    stdpf = vHidd_StdPixFmt_BGR15;
+	    break;
+	
 	case PIXFMT_RGB16:
 	    stdpf = vHidd_StdPixFmt_RGB16;
+	    break;
+
+	case PIXFMT_BGR16:
+	    stdpf = vHidd_StdPixFmt_BGR16;
 	    break;
 	
 	case PIXFMT_RGB24:
 	    stdpf = vHidd_StdPixFmt_RGB24;
 	    break;
 	
+	case PIXFMT_BGR24:
+	    stdpf = vHidd_StdPixFmt_BGR24;
+	    break;
+	    
 	case PIXFMT_ARGB32:
 	    stdpf = vHidd_StdPixFmt_ARGB32;
 	    break;
 	
 	case PIXFMT_RGBA32:
 	    stdpf = vHidd_StdPixFmt_RGBA32;
+	    break;
+	
+	case PIXFMT_BGRA32:
+	    stdpf = vHidd_StdPixFmt_BGRA32;
 	    break;
 	
 	case PIXFMT_LUT8:
