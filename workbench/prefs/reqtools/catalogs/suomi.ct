@@ -118,15 +118,15 @@ Väripyörä
 ; ** 2.7 **
 ;
 MSG_WHEEL_NONE
-No color wheel
+Ei väripyörää
 ;No color wheel
 ;
 MSG_WHEEL_SIMPLE
-Simple color wheel
+Yksinkertainen väripyörä
 ;Simple color wheel
 ;
 MSG_WHEEL_FANCY
-Fancy color wheel
+Hieno väripyörä
 ;Fancy color wheel
 ;
 ; ** 2.8 **
@@ -241,16 +241,16 @@ Virhe asetuksia tallennettaessa!
 ; * 2.7 *
 ;
 MSG_ERROR_ARGS
-Argument error
+Arkumentti virhe
 ;Argument error
 ;
 MSG_ERROR_LIBRARY
-Couldn't open %s\n\
-version %ld or higher!
+Ei voitu avata %s\n\
+versiota %ld tai uudempaa!
 ;Couldn't open %s\n\
 ;version %ld or higher!
 ;
 MSG_ERROR_MENUS
-Couldn't create menus!
+Ei voitu luoda valikoita!
 ;Couldn't create menus!
 ;
