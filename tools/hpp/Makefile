@@ -71,7 +71,8 @@ ctest.tex : srcs/ctest.c ctolatex tolatex.inc hpp ctolatex.filter
 	cd ../toollib ; make
 
 clean :
-	rm -f *.o format hpp htmlparsetest *.html *.bak *.log *.tex *.aux
+	rm -f *.o format hpp htmlparsetest *.html *.bak *.log *.tex *.aux \
+		*.ps *.cb lists.[ch]
 
 depend :
 	makedepend -- $(CFLAGS) -- *.c
