@@ -199,7 +199,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	    if (!mem->icon35.img1.palette) goto fail;
 	}
 		
-	if (srcnativeicon->icon35.img2.palette && srcnativeicon->icon35.img2.flags & IMAGE35F_HASPALETTE)
+	if (srcnativeicon->icon35.img2.palette && (srcnativeicon->icon35.img2.flags & IMAGE35F_HASPALETTE))
 	{
 	    mem->icon35.img2.palette = MemDupPooled(pool,
 	    	    	    	    	    	    srcnativeicon->icon35.img2.palette,
@@ -209,7 +209,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	else if (srcnativeicon->icon35.img1.palette)
 	{
 	    /* Both images use same palette which is kept in memory only once */
-	    srcnativeicon->icon35.img2.palette = srcnativeicon->icon35.img1.palette;
+	    mem->icon35.img2.palette = mem->icon35.img1.palette;
 	}
 	
     } /* if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE) */
