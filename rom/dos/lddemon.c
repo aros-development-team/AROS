@@ -485,6 +485,11 @@ AROS_UFH3(void, LDDemon,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    void AROS_SLIB_ENTRY(OpenLibrary,Dos)();
+    void AROS_SLIB_ENTRY(OpenDevice,Dos)();
+    void AROS_SLIB_ENTRY(CloseLibrary,Dos)();
+    void AROS_SLIB_ENTRY(CloseDevice,Dos)();
+    void AROS_SLIB_ENTRY(RemLibrary,Dos)();
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct LDDMsg *ldd;
 
