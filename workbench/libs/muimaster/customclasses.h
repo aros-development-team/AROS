@@ -7,12 +7,12 @@
 #include <aros/autoinit.h>
 #include <aros/debug.h>
 
-#define __ZUNE_CUSTOMCLASS_START(name)                                \
-BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg); \
-BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)  \
-{                                                                     \
-    switch (__msg->MethodID)                                          \
-    {                                                                 \
+#define __ZUNE_CUSTOMCLASS_START(name)                                      \
+BOOPSI_DISPATCHER_PROTO(IPTR, name ## _Dispatcher, __class, __self, __msg); \
+BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)        \
+{                                                                           \
+    switch (__msg->MethodID)                                                \
+    {                                                                       \
 
 #define __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
         default:                                                      \
@@ -21,6 +21,7 @@ BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)  \
                                                                       \
     return (IPTR) NULL;                                               \
 }                                                                     \
+BOOPSI_DISPATCHER_END                                                 \
                                                                       \
 struct MUI_CustomClass * name ## _CLASS;                              \
                                                                       \
