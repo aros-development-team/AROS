@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
+
 #include "datatypes_intern.h"
 #include <datatypes/datatypesclass.h>
 #include <utility/tagitem.h>
@@ -13,6 +11,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/workbench.h>
 
 /* Putchar procedure needed by RawDoFmt() */
 
@@ -84,10 +83,6 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
     INTERNALS
 
-    HISTORY
-
-    SDuvan  17.12.2000  --  basic implementation
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -111,8 +106,11 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 	    char tBuffer[512];
 	    LONG ret;
 
-	    dt__sprintf(DataTypesBase, tBuffer,
-			"%s \"%s\"", tool->tn_Program, project);
+	    dt__sprintf
+            (
+                DataTypesBase, tBuffer,
+                "\"%s\" \"%s\"", tool->tn_Program, project
+            );
 
 	    output = Open("CON:////Output window/AUTO/WAIT/CLOSE/INACTIVE",
 			  MODE_NEWFILE);
@@ -144,15 +142,34 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 	break;
 
     case TF_WORKBENCH:
-#warning WBlib not finished
-	/*
-	if (!OpenWorkbenchObject(tool->tn_Program, WBOPENA_ArgName, project,
-	                         TAG_DONE))
-	*/
 	{
-	    return 0;
-	}
-	
+            BOOL            success       = FALSE;
+            struct Library *WorkbenchBase = OpenLibrary("workbench.library", 39L);
+            
+            if (WorkbenchBase != NULL)
+            {
+                BPTR lock = Lock(project, ACCESS_READ);
+                
+                if (lock != NULL)
+                {
+                    BPTR parent = ParentDir(lock);
+                    
+                    success = OpenWorkbenchObject
+                    (
+                        tool->tn_Program, 
+                        WBOPENA_ArgLock, parent,
+                        WBOPENA_ArgName, FilePart(project),
+                        TAG_DONE
+                    );
+                    
+                    UnLock(lock);
+                }
+                
+                CloseLibrary(WorkbenchBase);
+            }
+            
+            if (!success) return 0;
+        }	
 	break;
 
     case TF_RX:
