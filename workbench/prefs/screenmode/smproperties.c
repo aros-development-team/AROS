@@ -17,29 +17,37 @@ struct ScreenModeProperties_DATA
 {
     Object *width, *height, *depth,
            *def_width, *def_height;
+	   
+    Object *autoscroll;
     
     ULONG DisplayID;
 };
 
-#define CheckMark(selected)                          \
+#define CheckMarkObject                              \
     ImageObject,                                     \
         ImageButtonFrame,                            \
         MUIA_InputMode      , MUIV_InputMode_Toggle, \
         MUIA_Image_Spec     , MUII_CheckMark,        \
         MUIA_Image_FreeVert , TRUE,                  \
-        MUIA_Selected       , selected,              \
         MUIA_Background     , MUII_ButtonBack,       \
-        MUIA_ShowSelState   , FALSE,                 \
-    End
+        MUIA_ShowSelState   , FALSE                 
 
 #define HLeft(obj...) \
     (IPTR)(HGroup, (IPTR)GroupSpacing(0), Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
+
+#undef HCenter
+#define HCenter(obj...) \
+    (HGroup, (IPTR)GroupSpacing(0), Child, (IPTR)HSpace(0), Child, (IPTR)(obj), Child, \
+    (IPTR)HSpace(0), End)
 
 Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeProperties_DATA *data;	 
     Object *width, *height, *depth,
            *def_width, *def_height;
+	   
+    Object *autoscroll;
+    
     ULONG id;
     
     self = (Object *)DoSuperNewTags
@@ -47,23 +55,28 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         CLASS, self, NULL,
         Child, (IPTR)HGroup,
 	    Child, (IPTR)ColGroup(4),
-	        Child, (IPTR)Label("\33lWidth:"),
+	        Child, (IPTR)Label1("\33lWidth:"),
 	        Child, HLeft(width = NumericbuttonObject, End),
-		Child, (IPTR)(def_width = CheckMark(TRUE)),
-	        Child, (IPTR)Label("\33l_default"),
+		Child, (IPTR)(def_width = CheckMarkObject, End),
+	        Child, (IPTR)Label1("\33l_default"),
 	        
-		Child, (IPTR)Label("\33lHeight:"),
+		Child, (IPTR)Label1("\33lHeight:"),
 	        Child, HLeft(height = NumericbuttonObject, End),
-		Child, (IPTR)(def_height = CheckMark(TRUE)),
-	        Child, (IPTR)Label("\33ld_efault"),
+		Child, (IPTR)(def_height = CheckMarkObject, End),
+	        Child, (IPTR)Label1("\33ld_efault"),
 	        
-		Child, (IPTR)Label("\33lDepth:"),
+		Child, (IPTR)Label1("\33lDepth:"),
 	        Child, HLeft(depth = NumericbuttonObject, End),
 		Child, (IPTR)RectangleObject, End,
 		Child, (IPTR)RectangleObject, End,		
 	    End,  
+	    
 	    Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
-	    Child, (IPTR)RectangleObject, End,
+	    
+	    Child, (IPTR)HCenter(HGroup,
+		Child, (IPTR)Label1("\33lAutoscroll"),
+		Child, (IPTR)(autoscroll = CheckMarkObject, End),
+	    End),
 	End,
 	
         TAG_MORE, (IPTR)message->ops_AttrList
@@ -79,6 +92,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     data->depth      = depth;
     data->def_width  = def_width;
     data->def_height = def_height;
+    data->autoscroll = autoscroll;
     
     DoMethod
     (
@@ -191,7 +205,9 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 	        
                 struct DimensionInfo dim;
 		
-                if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
+		BOOL autoscroll;
+                
+		if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
                     width_tags[1].ti_Data  = dim.MinRasterWidth;
                     height_tags[1].ti_Data = dim.MinRasterHeight;
@@ -205,15 +221,26 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     height_tags[3].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
 	            depth_tags[3].ti_Data  = dim.MaxDepth;
                     
-		    id = tag->ti_Data;
+		    id = tag->ti_Data;		    
 		}
-		    
+		
+		/* Enable autoscroll only if the maximum sizes are bigger than 
+		   the resolution.  */
+		   
+		autoscroll = width_tags[2].ti_Data  > width_tags[3].ti_Data  &&
+		             height_tags[2].ti_Data > height_tags[3].ti_Data;
+    
   	        data->DisplayID = id;
  	        nfset(self, MUIA_Disabled, id == INVALID_ID);
 		
 		SetAttrsA(data->width,  width_tags);
 		SetAttrsA(data->height, height_tags);
-		SetAttrsA(data->depth,  depth_tags);		
+		SetAttrsA(data->depth,  depth_tags);
+		
+		SetAttrs(data->autoscroll, no_notify, TRUE, 
+		                           MUIA_Disabled, !autoscroll,
+					   MUIA_Selected, autoscroll,
+					   TAG_DONE);
                 
 		break;
 	    }
@@ -254,6 +281,11 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 		        DoMethod(data->depth, MUIM_Numeric_SetDefault);
 		}
 		break;
+	    
+	    case MUIA_ScreenModeProperties_Autoscroll:
+	        if (id != INVALID_ID && !XGET(data->autoscroll, MUIA_Disabled))
+		    SetAttrs(data->autoscroll, no_notify, TRUE, MUIA_Selected, tag->ti_Data != 0);
+		break;
 	}
     }		    
 
@@ -286,6 +318,10 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
         
 	case MUIA_ScreenModeProperties_Depth:
 	    *message->opg_Storage = XGET(data->depth, MUIA_Numeric_Value);
+            break;
+	
+        case MUIA_ScreenModeProperties_Autoscroll:
+	    *message->opg_Storage = XGET(data->autoscroll, MUIA_Selected);
             break;
 	
 	default:

@@ -92,6 +92,13 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	    (IPTR)self, 3,
 	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
 	);
+	
+	DoMethod
+	(
+	    properties, MUIM_Notify, MUIA_ScreenModeProperties_Autoscroll, MUIV_EveryTime,
+	    (IPTR)self, 3,
+	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+	);
     }
     
     return self;
@@ -190,11 +197,12 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
 	SetAttrs
 	(
 	    data->properties,
-	    MUIA_NoNotify,                       TRUE,
-	    MUIA_ScreenModeProperties_DisplayID, smp.smp_DisplayID,
-	    MUIA_ScreenModeProperties_Width,     smp.smp_Width,
-	    MUIA_ScreenModeProperties_Height,    smp.smp_Height,
-	    MUIA_ScreenModeProperties_Depth,     smp.smp_Depth,
+	    MUIA_NoNotify,                        TRUE,
+	    MUIA_ScreenModeProperties_DisplayID,  smp.smp_DisplayID,
+	    MUIA_ScreenModeProperties_Width,      smp.smp_Width,
+	    MUIA_ScreenModeProperties_Height,     smp.smp_Height,
+	    MUIA_ScreenModeProperties_Depth,      smp.smp_Depth,
+	    MUIA_ScreenModeProperties_Autoscroll, smp.smp_Control & AUTOSCROLL,
 	    TAG_DONE
         );
     }
@@ -253,7 +261,11 @@ IPTR SMEditor__MUIM_PrefsEditor_ExportFH
                 smp.smp_Width     = XGET(data->properties, MUIA_ScreenModeProperties_Width);
                 smp.smp_Height    = XGET(data->properties, MUIA_ScreenModeProperties_Height);
                 smp.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
-                smp.smp_Control   = 0;
+                
+		if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
+		    smp.smp_Control = AUTOSCROLL;
+		else
+		    smp.smp_Control = 0;
                 
 		SMPByteSwap(&smp);
 			
