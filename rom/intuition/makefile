@@ -11,6 +11,8 @@ FILES = intuition_init intuition_functable gadgets \
 FUNCTIONS = \
 	activatewindow \
 	addclass \
+	addgadget \
+	addglist \
 	autorequest \
 	beginrefresh \
 	changewindowbox \
@@ -19,6 +21,7 @@ FUNCTIONS = \
 	closewindow \
 	disposeobject \
 	dogadgetmethoda \
+	doubleclick \
 	drawborder \
 	drawimage \
 	drawimagestate \
@@ -52,6 +55,9 @@ FUNCTIONS = \
 	refreshwindowframe \
 	releasegirport \
 	removeclass \
+	removegadget \
+	removeglist \
+	reportmouse \
 	screentofront \
 	setattrsa \
 	setdefaultpubscreen \

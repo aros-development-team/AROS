@@ -207,6 +207,18 @@
     AROS_LCA(ULONG            , count, D0), \
     struct GfxBase *, GfxBase, 10, Graphics)
 
+#define TextFit(rp, string, strLen, textExtent, constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight) \
+    AROS_LC8(ULONG, TextFit, \
+    AROS_LCA(struct RastPort   *, rp, A1), \
+    AROS_LCA(STRPTR             , string, A0), \
+    AROS_LCA(ULONG              , strLen, D0), \
+    AROS_LCA(struct TextExtent *, textExtent, A2), \
+    AROS_LCA(struct TextExtent *, constrainingExtent, A3), \
+    AROS_LCA(LONG               , strDirection, D1), \
+    AROS_LCA(ULONG              , constrainingBitWidth, D2), \
+    AROS_LCA(ULONG              , constrainingBitHeight, D3), \
+    struct GfxBase *, GfxBase, 116, Graphics)
+
 #define TextLength(rp, string, count) \
     AROS_LC3(WORD, TextLength, \
     AROS_LCA(struct RastPort *, rp, A1), \

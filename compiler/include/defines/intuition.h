@@ -21,6 +21,22 @@
     AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 114, Intuition)
 
+#define AddGadget(window, gadget, position) \
+    AROS_LC3(UWORD, AddGadget, \
+    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(struct Gadget *, gadget, A1), \
+    AROS_LCA(ULONG          , position, D0), \
+    struct IntuitionBase *, IntuitionBase, 7, Intuition)
+
+#define AddGList(window, gadget, position, numGad, requester) \
+    AROS_LC5(UWORD, AddGList, \
+    AROS_LCA(struct Window    *, window, A0), \
+    AROS_LCA(struct Gadget    *, gadget, A1), \
+    AROS_LCA(ULONG             , position, D0), \
+    AROS_LCA(LONG              , numGad, D1), \
+    AROS_LCA(struct Requester *, requester, A2), \
+    struct IntuitionBase *, IntuitionBase, 73, Intuition)
+
 #define AutoRequest(window, body, posText, negText, pFlag, nFlag, width, height) \
     AROS_LC8(BOOL, AutoRequest, \
     AROS_LCA(struct Window    *, window, A0), \
@@ -74,6 +90,14 @@
     AROS_LCA(struct Requester *, req, A2), \
     AROS_LCA(Msg               , msg, A3), \
     struct IntuitionBase *, IntuitionBase, 135, Intuition)
+
+#define DoubleClick(sSeconds, sMicros, cSeconds, cMicros) \
+    AROS_LC4(BOOL, DoubleClick, \
+    AROS_LCA(ULONG, sSeconds, D0), \
+    AROS_LCA(ULONG, sMicros, D1), \
+    AROS_LCA(ULONG, cSeconds, D2), \
+    AROS_LCA(ULONG, cMicros, D3), \
+    struct IntuitionBase *, IntuitionBase, 17, Intuition)
 
 #define DrawBorder(rp, border, leftOffset, topOffset) \
     AROS_LC4(void, DrawBorder, \
@@ -305,6 +329,25 @@
     AROS_LC1(void, RemoveClass, \
     AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 118, Intuition)
+
+#define RemoveGadget(window, gadget) \
+    AROS_LC2(UWORD, RemoveGadget, \
+    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(struct Gadget *, gadget, A1), \
+    struct IntuitionBase *, IntuitionBase, 38, Intuition)
+
+#define RemoveGList(remPtr, gadget, numGad) \
+    AROS_LC3(UWORD, RemoveGList, \
+    AROS_LCA(struct Window *, remPtr, A0), \
+    AROS_LCA(struct Gadget *, gadget, A1), \
+    AROS_LCA(LONG           , numGad, D0), \
+    struct IntuitionBase *, IntuitionBase, 74, Intuition)
+
+#define ReportMouse(flag, window) \
+    AROS_LC2(void, ReportMouse, \
+    AROS_LCA(LONG           , flag, D0), \
+    AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
 #define ScreenToFront(screen) \
     AROS_LC1(void, ScreenToFront, \

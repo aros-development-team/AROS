@@ -182,6 +182,17 @@ AROS_LP3(void, Text,
     AROS_LPA(ULONG            , count, D0),
     struct GfxBase *, GfxBase, 10, Graphics)
 
+AROS_LP8(ULONG, TextFit,
+    AROS_LPA(struct RastPort   *, rp, A1),
+    AROS_LPA(STRPTR             , string, A0),
+    AROS_LPA(ULONG              , strLen, D0),
+    AROS_LPA(struct TextExtent *, textExtent, A2),
+    AROS_LPA(struct TextExtent *, constrainingExtent, A3),
+    AROS_LPA(LONG               , strDirection, D1),
+    AROS_LPA(ULONG              , constrainingBitWidth, D2),
+    AROS_LPA(ULONG              , constrainingBitHeight, D3),
+    struct GfxBase *, GfxBase, 116, Graphics)
+
 AROS_LP3(WORD, TextLength,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(STRPTR           , string, A0),

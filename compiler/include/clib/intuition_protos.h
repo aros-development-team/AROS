@@ -50,6 +50,20 @@ AROS_LP1(void, AddClass,
     AROS_LPA(struct IClass *, classPtr, A0),
     struct IntuitionBase *, IntuitionBase, 114, Intuition)
 
+AROS_LP3(UWORD, AddGadget,
+    AROS_LPA(struct Window *, window, A0),
+    AROS_LPA(struct Gadget *, gadget, A1),
+    AROS_LPA(ULONG          , position, D0),
+    struct IntuitionBase *, IntuitionBase, 7, Intuition)
+
+AROS_LP5(UWORD, AddGList,
+    AROS_LPA(struct Window    *, window, A0),
+    AROS_LPA(struct Gadget    *, gadget, A1),
+    AROS_LPA(ULONG             , position, D0),
+    AROS_LPA(LONG              , numGad, D1),
+    AROS_LPA(struct Requester *, requester, A2),
+    struct IntuitionBase *, IntuitionBase, 73, Intuition)
+
 AROS_LP8(BOOL, AutoRequest,
     AROS_LPA(struct Window    *, window, A0),
     AROS_LPA(struct IntuiText *, body, A1),
@@ -95,6 +109,13 @@ AROS_LP4(IPTR, DoGadgetMethodA,
     AROS_LPA(struct Requester *, req, A2),
     AROS_LPA(Msg               , msg, A3),
     struct IntuitionBase *, IntuitionBase, 135, Intuition)
+
+AROS_LP4(BOOL, DoubleClick,
+    AROS_LPA(ULONG, sSeconds, D0),
+    AROS_LPA(ULONG, sMicros, D1),
+    AROS_LPA(ULONG, cSeconds, D2),
+    AROS_LPA(ULONG, cMicros, D3),
+    struct IntuitionBase *, IntuitionBase, 17, Intuition)
 
 AROS_LP4(void, DrawBorder,
     AROS_LPA(struct RastPort *, rp, A0),
@@ -292,6 +313,22 @@ AROS_LP1(void, ReleaseGIRPort,
 AROS_LP1(void, RemoveClass,
     AROS_LPA(struct IClass *, classPtr, A0),
     struct IntuitionBase *, IntuitionBase, 118, Intuition)
+
+AROS_LP2(UWORD, RemoveGadget,
+    AROS_LPA(struct Window *, window, A0),
+    AROS_LPA(struct Gadget *, gadget, A1),
+    struct IntuitionBase *, IntuitionBase, 38, Intuition)
+
+AROS_LP3(UWORD, RemoveGList,
+    AROS_LPA(struct Window *, remPtr, A0),
+    AROS_LPA(struct Gadget *, gadget, A1),
+    AROS_LPA(LONG           , numGad, D0),
+    struct IntuitionBase *, IntuitionBase, 74, Intuition)
+
+AROS_LP2(void, ReportMouse,
+    AROS_LPA(LONG           , flag, D0),
+    AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
 AROS_LP1(void, ScreenToFront,
     AROS_LPA(struct Screen *, screen, A0),
