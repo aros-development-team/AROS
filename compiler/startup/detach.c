@@ -49,6 +49,14 @@
 		process to have a name different than the detacher's one.
 		Set its value to a pointer to a string holding the name you
 		want the detached process to have.
+		
+	     4) LONG __detached_return_value;
+	     
+	        Define the above variable if you want the detacher
+		process to exit with the value you set that variable 
+                to. Useful when the detached process failed to
+		initialize before detaching and wants this fact to
+		be reported to the user.
 */
 
 #include <aros/config.h>
@@ -71,6 +79,7 @@ asm
 extern LONG            __detacher_must_wait_for_signal __attribute__((weak));
 extern struct Process *__detacher_process              __attribute__((weak));
 extern STRPTR          __detached_name                 __attribute__((weak));
+extern LONG            __detached_return_value         __attribute__((weak));
 
 DECLARESET(PROGRAM_ENTRIES);
 
@@ -104,12 +113,12 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     {
         struct TagItem tags[] =
         {
-	    { NP_Seglist,   (IPTR)mysegment                                            },
+	    { NP_Seglist,   (IPTR)mysegment                                   },
 	    { NP_Entry,     (IPTR)SETELEM(__detach_entry, program_entries)[1] },
-	    { NP_Name,      (IPTR)__detached_name                                      },
-	    { NP_Arguments, (IPTR)argstr                                               },
-	    { NP_Cli,       TRUE                                                       },
-            { TAG_DONE,     0                                                          }
+	    { NP_Name,      (IPTR)__detached_name                             },
+	    { NP_Arguments, (IPTR)argstr                                      },
+	    { NP_Cli,       TRUE                                              },
+            { TAG_DONE,     0                                                 }
         };
 
 	__detacher_process = (struct Process *)FindTask(NULL);
@@ -125,7 +134,10 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
     __detacher_process = NULL;
 
-    return newproc ? RETURN_OK : RETURN_FAIL;
+    if (!newproc || __detached_return_value)
+        PutStr(__detached_name); PutStr(": Failed to detach.\n");
+    
+    return newproc ? __detached_return_value : RETURN_FAIL;
     
     AROS_USERFUNC_EXIT
 }
@@ -133,6 +145,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 LONG            __detacher_must_wait_for_signal __attribute__((weak)) = 0;
 struct Process *__detacher_process              __attribute__((weak)) = NULL;
 STRPTR          __detached_name                 __attribute__((weak)) = NULL;
+LONG            __detached_return_value         __attribute__((weak)) = RETURN_OK;
 
 DEFINESET(PROGRAM_ENTRIES);
 ADD2SET(__detach_entry, program_entries, 0);
