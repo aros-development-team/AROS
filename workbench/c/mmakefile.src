@@ -35,6 +35,7 @@ FILES	    := \
 	type \
 	wait \
 	why \
+	AddDatatypes \
 	Alias \
 	Break \
 	ChangeTaskPri \
