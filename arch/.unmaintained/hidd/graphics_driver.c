@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -217,7 +217,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     {
         D(bug("Got bitmap\n"));
         /* Displayable ? (== rastport of a screen) */
-	if (IS_HIDD_BM(rp->BitMap))
+	//if (IS_HIDD_BM(rp->BitMap))
 	{
             D(bug("Has HIDD bitmap (displayable)\n"));
 
