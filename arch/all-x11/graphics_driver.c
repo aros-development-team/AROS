@@ -1,3 +1,4 @@
+#include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
@@ -113,6 +114,9 @@ int driver_init (struct GfxBase * GfxBase)
 	{
 	    if (XParseColor (sysDisplay, cm, sysColName[t], &xc))
 	    {
+/* printf ("Color(1) %d = %02x %02x %02x flags=%04x pixel=%08lx\n",
+    t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
+
 		if (!XAllocColor (sysDisplay, cm, &xc))
 		{
 		    fprintf (stderr, "Couldn't allocate color %s\n",
@@ -123,6 +127,8 @@ int driver_init (struct GfxBase * GfxBase)
 		}
 		else
 		    sysCMap[t] = xc.pixel;
+/* printf ("Color(2) %d = %02x %02x %02x flags=%04x pixel=%08lx\n",
+    t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
 
 		if (t == 0)
 		    bg = xc;
@@ -454,7 +460,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     unsigned long pixel;
     ULONG t;
 
-    XSync(sysDisplay, False);
+    XSync (sysDisplay, False);
 
     image = XGetImage (sysDisplay
 	, GetXWindow(rp)
@@ -699,9 +705,10 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
     /* Allocate new colors */
     for (t=0; t<count; t++)
     {
-	xc.red = ((colors[t] & 0x0F00) >> 8) << 4;
-	xc.green = ((colors[t] & 0x00F0) >> 4) << 4;
-	xc.blue = ((colors[t] & 0x000F) >> 0) << 4;
+	xc.flags = DoRed | DoGreen | DoBlue;
+	xc.red = ((colors[t] & 0x0F00) >> 8) << 12;
+	xc.green = ((colors[t] & 0x00F0) >> 4) << 12;
+	xc.blue = ((colors[t] & 0x000F) >> 0) << 12;
 
 	if (!XAllocColor (sysDisplay, cm, &xc))
 	{
@@ -713,10 +720,17 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 	}
 	else
 	    sysCMap[t] = xc.pixel;
+
+/* printf ("Color(1) %d = %04x %04x %04x flags=%04x pixel=%08lx\n",
+    t, xc.red, xc.green, xc.blue, xc.flags, xc.pixel); */
     }
+
+    XSync (sysDisplay, False);
 
     if (count > maxPen)
 	maxPen = count;
+
+/* printf ("maxPen = %d\n", maxPen); */
 
     for (t=0,sysPlaneMask=0; t<maxPen; t++)
 	sysPlaneMask |= sysCMap[t];
