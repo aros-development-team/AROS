@@ -629,7 +629,8 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 
 		if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
 		if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
-		if (newstyle != style)
+		if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
+                if (newstyle != style)
 		{
 		    SetSoftStyle(rp, newstyle, 0xff);
 		    style = newstyle;
@@ -687,6 +688,7 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 
 	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
 	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
 	    if (newstyle != style)
 	    {
 		SetSoftStyle(rp, newstyle, 0xff);
@@ -776,6 +778,7 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 
 	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
 	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
 	    if (newstyle != style)
 	    {
 		SetSoftStyle(rp, newstyle, 0xff);
