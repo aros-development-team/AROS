@@ -12,7 +12,7 @@ Workbench:> echo Test
 Test
 Workbench:>
 
-BUG000003
+BUG000003 fixed
 klaus21@t-online.de
 exec.library/RemTail() crashes on an empty list. It should return NULL.
 I wouldn't be too surprised if RemHead() crashes, too. ('Crash' means:
