@@ -69,7 +69,6 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct Window * w;
     struct RastPort * rp;
-    struct MsgPort * UserPort;
     ULONG lock;
     BOOL driver_init_done = FALSE;
 
@@ -82,7 +81,6 @@
     ));
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
-    UserPort = CreateMsgPort();
     
 /* nlorentz: For now, creating a rastport becomes the responiibility of
    intui_OpenWindow(). This is because intui_OpenWindow() in
@@ -97,11 +95,13 @@
    could get it inside this routine and put it into
    window->RPort;.
    
-   
-    rp = CreateRastPort ();
 */    
 
-    if (!w || (NULL == UserPort) /* || !rp */)
+    if (NULL == w)
+    	goto failexit;
+
+    w->UserPort = CreateMsgPort();
+    if (NULL == w->UserPort)
 	goto failexit;
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
@@ -179,7 +179,6 @@
     
     w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
-    w->UserPort = UserPort;
 
     if (newWindow->Flags & WFLG_ACTIVATE)
 	IntuitionBase->ActiveWindow = w;
@@ -200,9 +199,12 @@
 
 failexit:
     D(bug("fail\n"));
+    
+    if (w)
+    {
 
-    ModifyIDCMP (w, 0L);
-    D(bug("idcmp\n"));
+	ModifyIDCMP (w, 0L);
+
 
 /* nlorentz: Freeing the rasport is now intui_CloseWindow()'s task.
 
@@ -212,17 +214,14 @@ failexit:
     }
 */
 
-    if (UserPort)
-       DeleteMsgPort(UserPort);
 
-    if (driver_init_done)
-    	intui_CloseWindow(w, IntuitionBase);
+	if (driver_init_done)
+	    intui_CloseWindow(w, IntuitionBase);
+
+	if (w->UserPort)
+	    DeleteMsgPort(w->UserPort);
 	    
-    if (w)
-    {
-    D(bug("freeing window\n"));
 	FreeMem (w, intui_GetWindowSize ());
-    D(bug("freed window\n"));
 
 	w = NULL;
     }
