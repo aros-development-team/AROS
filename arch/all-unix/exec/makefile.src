@@ -27,7 +27,7 @@ all: setup $(foreach f,$(FILES), $(OSGENDIR)/exec/$(f).o)
 setup:
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec
 	%add_objects $(ADD_OBJS)
-	%supp_files  $(foreach f,$(REP_FILES),rom/exec/$(f))
+	%exclude_files  $(foreach f,$(REP_FILES),rom/exec/$(f))
 	@echo "CFLAGS= $(CFLAGS2)"
 
 clean::
