@@ -60,6 +60,7 @@ QUAD y2;
 tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
   if ( tmp > 0x41d00000 )
+  {
     if( is_lessSC(y, 0x0, 0x0, 0x0ULL))
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -70,6 +71,7 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x7fffffff;
     }
+  }
 
 
   if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
