@@ -1485,6 +1485,21 @@ struct MUI_CustomClass *FontWindowClass;
 
 #define FontWindowObject	NewObject(FontWindowClass->mcc_Class, NULL //)
 
+AROS_UFH3(void, CloseWinFunc,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(Object *, app, A2),
+		AROS_UFHA(Object **, winp, A1))
+{
+	AROS_USERFUNC_INIT
+	
+	set(*winp, MUIA_Window_Open, FALSE);
+	DoMethod(app, OM_REMMEMBER, *winp);
+	MUI_DisposeObject(*winp);
+	
+	AROS_USERFUNC_EXIT
+}
+
+struct Hook CloseWinHook = {{NULL, NULL}, UFHN(CloseWinFunc) };
 
 ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 {
@@ -1493,7 +1508,7 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 	STRPTR filename = (STRPTR)GetTagData(MUIA_FontWindow_Filename, NULL, msg->ops_AttrList);
 	FT_Face face;
 	FT_Error error;
-	Object *install, *info;
+	Object *install, *close, *info, *app;
 
 	if (filename == NULL)
 	{
@@ -1508,6 +1523,14 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 		return 0;
 	}
 
+	app = (Object *)GetTagData(MUIA_UserData, 0,
+				   msg->ops_AttrList);
+	if (NULL == app)
+	{
+		DEBUG_FONTWINDOW(dprintf("FontWindow: no app ptr.\n"));
+		return 0;
+	}
+
 	tags[0].ti_Tag = MUIA_Window_ID;
 	tags[0].ti_Data = MAKE_ID('F','O','N','T');
 	tags[1].ti_Tag = MUIA_Window_Title;
@@ -1519,11 +1542,10 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_FontInfo_Face, face,
 			End,
 		Child, HGroup,
+			Child, install = SimpleButton("_Install"),
 			Child, RectangleObject,
 				End,
-			Child, install = SimpleButton("Install"),
-			Child, RectangleObject,
-				End,
+			Child, close = SimpleButton("_Close"),
 			End,
 		End;
 	tags[3].ti_Tag = TAG_MORE;
@@ -1539,8 +1561,12 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 		FontWindowData *dat = INST_DATA(cl, o);
 		dat->Face = face;
 
-		DoMethod(install, MUIM_Notify, MUIA_Selected, FALSE,
+		DoMethod(install, MUIM_Notify, MUIA_Pressed, FALSE,
 				info, 1, MUIM_FontInfo_WriteFiles);
+		DoMethod(close, MUIM_Notify, MUIA_Pressed, FALSE,
+			 app, 6, MUIM_Application_PushMethod, app, 3,
+			 MUIM_CallHook, &CloseWinHook, o);
+
 	}
 	else
 	{
@@ -2091,20 +2117,6 @@ int Init(void)
 	return 1;
 }
 
-AROS_UFH3(void, CloseWinFunc,
-		AROS_UFHA(struct Hook *, hook, A0),
-		AROS_UFHA(Object *, app, A2),
-		AROS_UFHA(Object **, winp, A1))
-{
-	AROS_USERFUNC_INIT
-	
-	set(*winp, MUIA_Window_Open, FALSE);
-	DoMethod(app, OM_REMMEMBER, *winp);
-	MUI_DisposeObject(*winp);
-	
-	AROS_USERFUNC_EXIT
-}
-
 
 void SetDefaultCodePage(void)
 {
@@ -2166,8 +2178,6 @@ BOOL LoadCodePage(const char *filename)
 }
 
 
-struct Hook CloseWinHook = {{NULL, NULL}, UFHN(CloseWinFunc) };
-
 #define ID_SetSrc	1
 #define ID_SetDestDir	2
 #define ID_ShowFont	3
@@ -2176,7 +2186,7 @@ struct Hook CloseWinHook = {{NULL, NULL}, UFHN(CloseWinFunc) };
 int main(void)
 {
 	int ret = RETURN_FAIL;
-	Object *win, *src, *dest, *fontlist, *fontlv, *codepagestr;
+	Object *win, *src, *dest, *fontlist, *fontlv, *codepagestr, *quit;
 
 	if (!Init())
 		return RETURN_FAIL;
@@ -2239,6 +2249,7 @@ int main(void)
 						ASLFR_RejectIcons, TRUE,
 						End,
 					End,
+				Child, quit = SimpleButton("_Quit"),
 				End,
 			End,
 		End;
@@ -2262,6 +2273,9 @@ int main(void)
 				app, 2, MUIM_Application_ReturnID, ID_ShowFont);
 
 		DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+				app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+                
+		DoMethod(quit, MUIM_Notify, MUIA_Pressed, FALSE,
 				app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
                 
                 DoMethod(fontlist, MUIM_FontList_AddDir, XGET(src, MUIA_String_Contents));
@@ -2307,7 +2321,8 @@ int main(void)
 							DoMethod(fontlist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
 
 							w = FontWindowObject,
-								MUIA_FontWindow_Filename, entry->FileName,
+							    MUIA_FontWindow_Filename, entry->FileName,
+							    MUIA_UserData, app,
 								End;
 
 							if (w)
