@@ -1,5 +1,5 @@
-arosmutual_endtag.c
-arosmutual_functable.c
+arosmutualexclude_functable.c
+arosmutualexclude_endtag.c
 libdefs.h
 mmakefile
 *.err
