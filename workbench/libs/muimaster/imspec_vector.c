@@ -7,6 +7,7 @@
 
 #include <intuition/imageclass.h>
 #include <proto/graphics.h>
+#include <proto/exec.h>
 
 #include "mui.h"
 #include "imspec_intern.h"
