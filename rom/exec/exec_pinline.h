@@ -2,7 +2,7 @@
 #define _EXEC_PINLINE_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: Private m68k inlines for exec.library

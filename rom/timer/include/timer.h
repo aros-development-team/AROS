@@ -2,7 +2,7 @@
 #define HIDD_TIMER_H
 
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Definitions for the Timer HIDD system.

@@ -9,7 +9,7 @@ makefiles it finds for "metatargets" and then tries to build all
 metatargets. You can also specify a program which converts "source"
 makefiles into makefiles before MetaMake will invoke make.
 
-We use MetaMake to build AROS - The Amiga Replacement OS. AROS consists of
+We use MetaMake to build AROS - The Amiga Research OS. AROS consists of
 many different packages which depend on each other like this:
 
 \begin{example}

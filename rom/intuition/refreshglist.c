@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.14  1998/10/20 16:46:03  hkiel
+    Amiga Research OS
+
     Revision 1.13  1997/12/25 23:20:03  hkiel
     Keep compiler happy ;-)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997-98 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-98 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unix filedescriptor/socket IO

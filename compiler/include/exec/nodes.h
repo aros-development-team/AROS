@@ -1,6 +1,6 @@
 #ifndef EXEC_NODES_H
 #define EXEC_NODES_H
-/* (C) 1995 AROS - The Amiga Replacement OS */
+/* (C) 1995 AROS - The Amiga Research OS */
 
 /******************************************************************************
 

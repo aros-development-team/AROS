@@ -5,7 +5,7 @@ BEGIN {
     oname=tolower(lib) "_functable.c";
 
     print "/*" > oname;
-    print "        (C) 1995-96 AROS - The Amiga Replacement OS" >> oname
+    print "        (C) 1995-96 AROS - The Amiga Research OS" >> oname
     print "        *** Automatic generated file. Do not edit ***" >> oname
     print "        Desc: Function table for " lib >> oname
     print "        Lang: english" >> oname

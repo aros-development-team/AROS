@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Read a big endian double floating point (64bit) from a streamhook

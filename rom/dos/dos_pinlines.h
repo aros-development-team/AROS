@@ -1,7 +1,7 @@
 #ifndef _DOS_PINLINES_H
 #define _DOS_PINLINES_H
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Private inlines for dos.library

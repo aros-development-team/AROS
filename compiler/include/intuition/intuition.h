@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Important defines and structures for intuition.library

@@ -1,5 +1,5 @@
 /*
-    (C) 1996-97 AROS - The Amiga Replacement OS
+    (C) 1996-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS gadgetclass implementation.

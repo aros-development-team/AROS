@@ -1,7 +1,7 @@
 #ifndef BOOPSIGADGETS_H
 #define BOOPSIGADGETS_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Routines for BOOPSI Gadgets

@@ -1,7 +1,10 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  1998/10/20 16:46:15  hkiel
+    Amiga Research OS
+
     Revision 1.4  1998/04/19 14:05:38  bergers
     Fixed the library to become a resident one. Someone please take a look at its
     priority ( currently 101).

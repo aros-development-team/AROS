@@ -1,7 +1,10 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  1998/10/20 16:46:08  hkiel
+    Amiga Research OS
+
     Revision 1.4  1998/01/08 21:12:13  hkiel
     Added intui_WindowLimits().
 

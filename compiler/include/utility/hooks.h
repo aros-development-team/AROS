@@ -1,7 +1,7 @@
 #ifndef UTILITY_HOOKS_H
 #define UTILITY_HOOKS_H
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: Amiga include file utility/hooks.h

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Research OS
     $Id$
     
     Desc: Begining of AROS kernel
@@ -72,7 +72,7 @@ int d,i;
 
 int main()
 {
-  char text[] = "Now booting AROS - The Amiga Replacement OS\n";
+  char text[] = "Now booting AROS - The Amiga Research OS\n";
 
   showlogo();
   gotoxy(0,0);

@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Replacement OS
+    (C) 1995 AROS - The Amiga Research OS
     $Id$	$Log
 
     Desc: Graphics function InitRastPort()

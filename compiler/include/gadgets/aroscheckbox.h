@@ -2,7 +2,7 @@
 #define GADGETS_AROSCHECKBOX_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS checkbox class.

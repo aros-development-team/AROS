@@ -71,8 +71,8 @@ BEGIN {
 		location=0; # The field LOCATION hasn't been read yet
 
 		# Emit the header
-		print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
-		print "<CENTER><P>(C) 1998 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
+		print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Research OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
+		print "<CENTER><P>(C) 1998 AROS - The Amiga Research OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
 
 		# Next mode
 		mode="field";

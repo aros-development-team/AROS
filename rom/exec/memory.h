@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  1998/10/20 16:45:13  hkiel
+    Amiga Research OS
+
     Revision 1.4  1996/10/23 14:26:58  aros
     Renamed AROS macros from XYZ to AROS_XYZ, so we know what they are
 

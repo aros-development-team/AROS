@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1996 AROS - The Amiga Replacement OS
+    Copyright (C) 1996 AROS - The Amiga Research OS
     $Id$
 
     Desc: Expansion Resident and initialization.

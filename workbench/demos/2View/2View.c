@@ -1,4 +1,4 @@
-/* Modified version for AROS - The Amiga Replacement OS
+/* Modified version for AROS - The Amiga Research OS
 ** $Id$
 */
 

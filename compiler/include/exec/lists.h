@@ -1,6 +1,6 @@
 #ifndef EXEC_LISTS_H
 #define EXEC_LISTS_H
-/* (C) 1995 AROS - The Amiga Replacement OS */
+/* (C) 1995 AROS - The Amiga Research OS */
 
 /******************************************************************************
 

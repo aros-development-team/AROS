@@ -1,7 +1,7 @@
 #ifndef LIBRARIES_DISKFONT_H
 #define LIBRARIES_DISKFONT_H
 /*
-    (C) 1998 AROS - The Amiga Replacement OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Diskfont library definitions

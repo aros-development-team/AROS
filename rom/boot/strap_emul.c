@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1997 AROS - The Amiga Research OS
     $Id$
     
     Desc: Try and boot an emulated AROS under Unix

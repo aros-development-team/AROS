@@ -2,7 +2,7 @@
 #define CLIB_GADTOOLS_PROTOS_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Prototypes for layers.library

@@ -1,7 +1,7 @@
 #ifndef AROS_MACHINE_H
 #define AROS_MACHINE_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     NOTE: This file must compile *without* any other header !

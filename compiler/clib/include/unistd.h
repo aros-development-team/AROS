@@ -2,7 +2,7 @@
 #define _UNISTD_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI-C header file unistd.h

@@ -2,7 +2,7 @@
 #define LIBRARIES_MATHIEEESP_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Definitions for mathieeespbas.library and

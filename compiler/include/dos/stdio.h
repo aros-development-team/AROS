@@ -2,7 +2,7 @@
 #define DOS_STDIO_H
 
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Some stubs for ANSI-like stdio functions.

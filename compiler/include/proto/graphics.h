@@ -2,7 +2,7 @@
 #define PROTO_GRAPHICS_H
 
 /*
-    (C) 1995-98 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Research OS
     $Id$
 */
 

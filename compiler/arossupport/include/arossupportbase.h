@@ -1,7 +1,7 @@
 #ifndef AROS_AROSSUPPORTBASE_H
 #define AROS_AROSSUPPORTBASE_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
 */
 
 struct AROSSupportBase

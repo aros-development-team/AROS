@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: UDivMod32 - divide two 32 bit numbers.

@@ -1,5 +1,5 @@
 <REM>
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Research OS
     $Id$
 
     This file contains the macros to convert the sources to HTML.

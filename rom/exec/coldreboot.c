@@ -1,5 +1,5 @@
 /*
-    (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.

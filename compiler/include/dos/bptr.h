@@ -2,7 +2,7 @@
 #define DOS_BPTR_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS version of BPTRs

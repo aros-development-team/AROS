@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: signed 32 bit division/modulus functions for m68k

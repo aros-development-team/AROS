@@ -1,7 +1,7 @@
 #ifndef PROTO_EXEC_H
 #define PROTO_EXEC_H
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 */
 #ifndef AROS_SYSTEM_H

@@ -2,7 +2,7 @@
 #define CLIB_ICON_PROTOS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: Prototypes for icon.library

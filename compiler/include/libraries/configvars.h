@@ -2,7 +2,7 @@
 #define LIBRARIES_CONFIGVARS_H
 
 /*
-    Copyright (C) 1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Software structures used by expansion boards

@@ -1,9 +1,12 @@
 #ifndef INPUT_INTERN_H
 #define INPUT_INTERN_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  1998/10/20 16:44:24  hkiel
+    Amiga Research OS
+
     Revision 1.2  1998/04/11 19:34:52  nlorentz
     Added IND_WRITEEVENT and fixed bugs
 

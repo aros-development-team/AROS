@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Shortcut OpenLibrary call for system modules (private!)
@@ -25,9 +25,9 @@ char *const libnames[] =
 
 char *const copyrights[] =
 {
-    "AMIGA Replacement Operating System (AROS)",
+    "AMIGA Research Operating System (AROS)",
     "Copyright © 1995-1997 ",
-    "AROS - The Amiga Replacement OS  ",
+    "AROS - The Amiga Research OS  ",
     "Other parts © by respective owners.",
     "ALPHA ",
     "exec.library",

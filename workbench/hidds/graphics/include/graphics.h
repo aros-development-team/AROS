@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright (C) 1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Definitions for the Graphics HIDD system.

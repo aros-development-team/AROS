@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1998/10/20 16:46:14  hkiel
+    Amiga Research OS
+
     Revision 1.5  1998/02/01 21:47:20  bergers
     Use float instead of LONG when calling these functions now.
     A define in mathffp_intern.h does the trick.

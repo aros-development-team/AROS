@@ -1,7 +1,7 @@
 #ifndef _PROPGADGETS_H_
 #define _PROPGADGETS_H_
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Header for PROP Gadgets

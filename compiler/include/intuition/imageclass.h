@@ -2,7 +2,7 @@
 #define INTUITION_IMAGECLASS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Headerfile for Intuitions' IMAGECLASS

@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: Basic DOS structures and constants

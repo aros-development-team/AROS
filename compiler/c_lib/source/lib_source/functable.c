@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     *** Automatic generated file. Do not edit ***
     Desc: Function table for Example
     Lang: english

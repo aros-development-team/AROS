@@ -2,7 +2,7 @@
 #define EXEC_EXEC_H
 
 /*
-    (C) 1998 AROS - The Amiga Replacement OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Includes all other exec/ includes if they have not already been

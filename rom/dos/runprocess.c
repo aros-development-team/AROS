@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args

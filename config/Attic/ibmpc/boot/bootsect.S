@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Research OS
     $Id$
  
     Desc: Bootblock for standalone AROS on PC
@@ -294,7 +294,7 @@ msg2:
 		.ascii	"Fatal read error. System halted."
 msg1:
 		.byte	13,10
-		.ascii	"AROS - The Amiga Replacement OS"
+		.ascii	"AROS - The Amiga Research OS"
 		.byte	13,10
 		.ascii	"Loading"
 

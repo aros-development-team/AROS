@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  1998/10/20 16:46:01  hkiel
+    Amiga Research OS
+
     Revision 1.10  1998/08/16 18:48:34  nlorentz
     Bugfix: Now renders text so that TopEdge is top of character cell
 

@@ -2,7 +2,7 @@
 #define HIDD_UNIXIO_H
 
 /*
-    Copyright (C) 1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unix filedescriptor/socket IO Include File

@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1998/10/20 16:44:49  hkiel
+    Amiga Research OS
+
     Revision 1.7  1998/01/23 11:48:59  hkiel
     Made GCC-2.8.0 happy (Changed return type of main() to int, added braces
     to avoid ambiguous ´else´)

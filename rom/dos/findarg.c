@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1998/10/20 16:44:36  hkiel
+    Amiga Research OS
+
     Revision 1.7  1997/05/01 14:14:30  aros
     Added workaround for GCC braindamage. Needed at least for Linux/m68k.
 

@@ -1,7 +1,7 @@
 #ifndef LIBRARIES_FILEHANDLER_H
 #define LIBRARIES_FILEHANDLER_H
 /*
-    (C) 1998 AROS - The Amiga Replacement OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Device and filehandler specific code

@@ -1,7 +1,10 @@
 /*
-    (C) 1995 AROS - The Amiga Replacement OS
+    (C) 1995 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  1998/10/20 16:44:38  hkiel
+    Amiga Research OS
+
     Revision 1.2  1997/01/27 00:36:20  ldp
     Polish
 

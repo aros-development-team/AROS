@@ -5,7 +5,7 @@ search=`echo "$QUERY_STRING" | cut -d= -f2-`
 echo "Content-type: text/html"
 echo ""
 echo "<HTML>"
-echo "<TITLE>AROS - The Amiga Replacement OS - Search results for $search</TITLE>"
+echo "<TITLE>AROS - The Amiga Research OS - Search results for $search</TITLE>"
 echo "<H1>Search results for <I>$search</I></H1>"
 #echo "<PRE>"
 #pwd

@@ -2,7 +2,7 @@
 #define EXEC_LIBRARIES_H
 
 /*
-    (C) 1995-95 AROS - The Amiga Replacement OS
+    (C) 1995-95 AROS - The Amiga Research OS
     $Id$
 
     Desc: Amiga header file exec/libraries.h

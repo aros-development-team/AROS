@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  1998/10/20 16:44:56  hkiel
+    Amiga Research OS
+
     Revision 1.9  1998/04/17 08:08:36  bergers
     AllocMem, FreeMem and Read are called from an array of pointers to functions as
     supposed to in the internal* functions.

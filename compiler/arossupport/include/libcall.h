@@ -1,6 +1,6 @@
 #ifndef AROS_LIBCALL_H
 #define AROS_LIBCALL_H
-/* (C) 1995 AROS - The Amiga Replacement OS */
+/* (C) 1995 AROS - The Amiga Research OS */
 
 /******************************************************************************
 

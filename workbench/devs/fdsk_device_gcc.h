@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.2  1998/10/20 16:47:24  hkiel
+    Amiga Research OS
+
     Revision 1.1  1996/11/14 08:53:29  aros
     First attempt for a real fastfilesystem
     (only directoryscans for now)

@@ -2,7 +2,7 @@
 #define AROS_MACROS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Work on 64bit data types

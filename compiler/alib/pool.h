@@ -1,7 +1,7 @@
 #ifndef _POOL_H
 #define _POOL_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     Original version from libnix
     $Id$
 

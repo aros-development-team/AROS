@@ -1,7 +1,7 @@
 #ifndef GADTOOLS_INTERN_H
 #define GADTOOLS_INTERN_H
 /*
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal definitions for gadtools.library.

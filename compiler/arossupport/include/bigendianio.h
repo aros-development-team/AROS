@@ -1,7 +1,7 @@
 #ifndef AROS_STRUCTDESC_H
 #define AROS_STRUCTDESC_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Read and write big endian structures from and to a file

@@ -1,7 +1,7 @@
 #ifndef OOP_OOP_H
 #define OOP_OOP_H
 /*
-    Copyright 1995-1997 AROS - The Amiga Replacement OS
+    Copyright 1995-1997 AROS - The Amiga Research OS
     $Id$
 
     Desc:

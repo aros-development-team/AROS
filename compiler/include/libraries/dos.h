@@ -1,7 +1,7 @@
 #ifndef LIBRARIES_DOS_H
 #define LIBRARIES_DOS_H 1
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Definitions for dos.library

@@ -1,7 +1,7 @@
 #ifndef _GFX_PDEFS_H
 #define _GFX_PDEFS_H
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-1998 AROS - The Amiga Research OS
     $Id
 
     Desc: Private function definitions for DOS

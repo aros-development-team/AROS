@@ -2,7 +2,7 @@
 #define GRAPHICS_RASTPORT_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Rastport

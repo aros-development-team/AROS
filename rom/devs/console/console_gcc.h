@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  1998/10/20 16:44:17  hkiel
+    Amiga Research OS
+
     Revision 1.4  1998/10/03 12:02:33  nlorentz
     Bugfixes, but still buggy
 

@@ -2,7 +2,7 @@
 #define EXEC_ALERTS_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: alert numbers

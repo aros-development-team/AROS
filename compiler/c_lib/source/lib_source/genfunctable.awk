@@ -23,7 +23,7 @@ BEGIN {
     }
 
     print "/*";
-    print "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS";
+    print "    Copyright (C) 1995-1998 AROS - The Amiga Research OS";
     print "    *** Automatic generated file. Do not edit ***";
     print "    Desc: Function table for " lib;
     print "    Lang: english";

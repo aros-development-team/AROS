@@ -1,7 +1,7 @@
 #ifndef _BOOLGADGETS_H_
 #define _BOOLGADGETS_H_
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Routines for BOOL Gadgets

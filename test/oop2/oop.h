@@ -1,7 +1,7 @@
 #ifndef OOP_H
 #define OOP_H
 /*
-   (C) 1997-98 AROS - The Amiga Replacement OS
+   (C) 1997-98 AROS - The Amiga Research OS
    $Id$
 
    Desc: Demo of new OOP system

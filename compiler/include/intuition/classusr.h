@@ -2,7 +2,7 @@
 #define INTUITION_CLASSUSR_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: BOOPSI users

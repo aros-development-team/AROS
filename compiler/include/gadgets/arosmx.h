@@ -2,7 +2,7 @@
 #define GADGETS_AROSMX_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS mutualexclude class.

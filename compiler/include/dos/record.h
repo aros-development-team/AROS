@@ -2,7 +2,7 @@
 #define DOS_RECORD_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Record structures and definitions.

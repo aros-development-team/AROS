@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Research OS
     $Id$
     
     Desc: Kernel header for standalone AROS on PC
@@ -42,11 +42,11 @@ startup_32:
 
 		.word	41,0	/* kernel version */
 
-		.ascii	"AMIGA Replacement Operating System (AROS)"
+		.ascii	"AMIGA Research Operating System (AROS)"
 		.byte	0
 		.ascii	"Copyright (C) 1995-1998"
 		.byte	0
-		.ascii	"AROS - The Amiga Replacement OS "
+		.ascii	"AROS - The Amiga Research OS "
 		.byte	0
 		.ascii	"ALPHA "
 		.byte	0

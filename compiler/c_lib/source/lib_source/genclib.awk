@@ -50,7 +50,7 @@ BEGIN {
     print "#define CLIB_"BASENAME"_PROTOS_H"
     print ""
     print "/*"
-    print "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS"
+    print "    Copyright (C) 1995-1998 AROS - The Amiga Research OS"
     print "    $""Id$"
     print ""
     print "    Desc: Prototypes for "basename libext

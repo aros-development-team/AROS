@@ -1,7 +1,7 @@
 #ifndef LIBRARIES_DOSEXTENS_H
 #define LIBRARIES_DOSEXTENS_H
 /*
-    (C) 1998 AROS - The Amiga Replacement OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Extended DOS structures

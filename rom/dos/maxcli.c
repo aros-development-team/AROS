@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1998/10/20 16:44:46  hkiel
+    Amiga Research OS
+
     Revision 1.7  1997/11/10 17:37:46  turrican
     Return value was off by 1
 

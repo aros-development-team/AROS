@@ -1,7 +1,7 @@
 #ifndef _GADGETS_H_
 #define _GADGETS_H_
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Macros and stuff for Gadgets

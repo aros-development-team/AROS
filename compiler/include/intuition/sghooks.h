@@ -1,7 +1,7 @@
 #ifndef  INTUITION_SGHOOKS_H
 #define INTUITION_SGHOOKS_H 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: Include file for GTYP_STRGADGET gadgets.

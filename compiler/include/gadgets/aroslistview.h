@@ -2,7 +2,7 @@
 #define GADGETS_AROSLISTVIEW_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS listview class.

@@ -2,7 +2,7 @@
 #define GRAPHICS_VIEW_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: View structures

@@ -21,7 +21,7 @@
 -->
 
 <BOOK>
-  <TITLE><PRODUCTNAME>The Amiga Replacement OS</PRODUCTNAME></TITLE>
+  <TITLE><PRODUCTNAME>The Amiga Research OS</PRODUCTNAME></TITLE>
   <TITLEABBREV><ACRONYM role="aros">AROS</ACRONYM></TITLEABBREV>
   <BOOKINFO>
     <BOOKBIBLIO>
@@ -32,9 +32,9 @@
         <CORPAUTHOR>The AROS project</CORPAUTHOR>
         <AUTHOR lang="de"><FIRSTNAME>Sebastian</FIRSTNAME><SURNAME>Rittau</SURNAME></AUTHOR>
       </AUTHORGROUP>
-      <COPYRIGHT><YEAR>1998</YEAR><HOLDER>AROS - The Amiga Replacement OS</HOLDER></COPYRIGHT>
+      <COPYRIGHT><YEAR>1998</YEAR><HOLDER>AROS - The Amiga Research OS</HOLDER></COPYRIGHT>
       <ABSTRACT><SIMPARA>
-        <ACRONYM role="aros">AROS</ACRONYM> - The <PRODUCTNAME>Amiga Replacement Operating
+        <ACRONYM role="aros">AROS</ACRONYM> - The <PRODUCTNAME>Amiga Research Operating
         System</PRODUCTNAME> tries to port the <ACRONYM>API</ACRONYM> of the
         Amiga Operating System to different hardware platform. This document
         provides an introduction to programming <ACRONYM role="aros">AROS</ACRONYM> by

@@ -1,7 +1,7 @@
 #ifndef AROS_SYSTEM_H
 #define AROS_SYSTEM_H
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Analyse the current kind of system

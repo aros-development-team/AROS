@@ -2,7 +2,7 @@
 #define DOS_RDARGS_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Definitions for the dos function ReadArgs().

@@ -2,7 +2,7 @@
 #define AROS_PURIFY_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     Purify - a tool to check memory accesses
 
 */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Reschedule() - Put a task back into the ready or waiting list.

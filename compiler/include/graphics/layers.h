@@ -2,7 +2,7 @@
 #define GRAPHICS_LAYERS_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc: Layer description
