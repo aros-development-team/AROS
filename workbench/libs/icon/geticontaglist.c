@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
-
 #include <workbench/icon.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +10,7 @@
 #include "icon_intern.h"
 #include "support.h"
 #include "support_builtin.h"
-
-#   include <aros/debug.h>
+#include "identify.h"
 
 /*****************************************************************************
 
@@ -190,7 +187,7 @@
                     {
                         iim.iim_SysBase     = (struct Library *) SysBase;
                         iim.iim_DOSBase     = (struct Library *) DOSBase;
-                        iim.iim_UtilityBase = (struct Library *)UtilityBase;
+                        iim.iim_UtilityBase = (struct Library *) UtilityBase;
                         iim.iim_IconBase    =                    IconBase;
                         iim.iim_Tags        = tags;
                         
@@ -207,16 +204,12 @@
                             // FIXME: do sanity checks here (we don't trust
                             // FIXME: the user-provided hook ;-))
                         }
-                        else
-                        {
-                            /* Use default identify hook */
-                            icon = (struct DiskObject *) CALLHOOKPKT
-                            (
-                                &(LB(IconBase)->ib_DefaultIdentifyHook), NULL, &iim
-                            );
-                        }
                         
-                        // FIXME: fallback if identification failed here?
+                        if (icon == NULL)
+                        {
+                            /* Fallback to the default identify function */
+                            icon = FindDefaultIcon(&iim);
+                        }
                         
                         if (iim.iim_ParentLock != NULL) UnLock(iim.iim_ParentLock);
                         if (iim.iim_FileHandle != NULL) Close(iim.iim_FileHandle);

@@ -18,8 +18,8 @@
 #include LC_LIBDEFS_FILE
 
 LONG IFFParseBase_version = -39,
-    GfxBase_version = -39,
-    CyberGfxBase_version = -39;
+     GfxBase_version      = -39,
+     CyberGfxBase_version = -39;
 
 LIBBASETYPE *IconBase;
 
@@ -45,10 +45,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
     {
     	NewList((struct List *)&LB(lh)->iconlists[i]);
     }
-
-    /* Setup default identify hook -----------------------------------------*/
-    LB(lh)->ib_DefaultIdentifyHook.h_Entry = (HOOKFUNC) FindDefaultIcon;
-    LB(lh)->ib_DefaultIdentifyHook.h_Data  = DataTypesBase;
     
     /* Setup default global settings ---------------------------------------*/
     LB(lh)->ib_Screen               = NULL; // FIXME: better default
@@ -58,7 +54,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
     LB(lh)->ib_EmbossRectangle.MinY = 0; 
     LB(lh)->ib_EmbossRectangle.MaxY = 0; 
     LB(lh)->ib_Frameless            = TRUE;
-    LB(lh)->ib_IdentifyHook         = NULL; // FIXME: better default
+    LB(lh)->ib_IdentifyHook         = NULL;
     LB(lh)->ib_MaxNameLength        = 25;
     LB(lh)->ib_NewIconsSupport      = TRUE;
     LB(lh)->ib_ColorIconSupport     = TRUE;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,16 +30,12 @@ struct DiskObject *__GetDefaultIconFromType_WB(LONG type, struct TagItem *tags, 
 #define GetDefaultIconFromName(name, tags) (__GetDefaultIconFromName_WB((name), (tags), IconBase))
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
 
-AROS_UFH3
+/*** Functions **************************************************************/
+struct DiskObject *__FindDefaultIcon_WB
 (
-    struct DiskObject *, FindDefaultIcon,
-    AROS_UFHA(struct Hook *,            hook,     A0),
-    AROS_UFHA(APTR,                     reserved, A2),
-    AROS_UFHA(struct IconIdentifyMsg *, iim,      A1) 
+    struct IconIdentifyMsg *iim, struct Library *IconBase
 )
 {
-    AROS_USERFUNC_INIT
-    
     struct DiskObject *icon = NULL;
     
     /* Identify object -----------------------------------------------------*/
@@ -225,18 +221,9 @@ AROS_UFH3
                 
                 ReleaseDataType(dt);
             }
-            else
-            {
-                icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
-                
-                if (icon != NULL)
-                {
-                    /* Force the icon type, in case we have a broken icon */
-                    icon->do_Type = WBPROJECT;
-                }
-            }
         }
-        else
+        
+        if (icon == NULL)
         {
             /* Fallback to a more primitive identification -----------------*/
             if ((iim->iim_FIB->fib_Protection & FIBF_EXECUTE) == 0)
@@ -262,12 +249,9 @@ AROS_UFH3
                 }
             }
         }
-        
     }
     
     return icon;
-
-    AROS_USERFUNC_EXIT
 }
 
 /*** Support functions ******************************************************/
