@@ -138,6 +138,8 @@ struct MUI_DragImage
 #define MUIA_Window             	(TAG_USER|0x00421591) /* MUI: V4  ..g struct Window *   */
 #define MUIA_WindowObject       	(TAG_USER|0x0042669e) /* MUI: V4  ..g Object *          */
 
+#define MUIA_NestedDisabled           	(TAG_USER|0x0045cb11) /* Zune 20030530  isg BOOL        */
+
 #ifdef MUI_OBSOLETE	 		
 #define MUIA_ExportID (TAG_USER|0x0042d76e) /* V4  isg ULONG */
 #endif /* MUI_OBSOLETE */		
