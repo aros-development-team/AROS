@@ -463,7 +463,7 @@ void shell_open(char **cd_ptr)
 
 void workbench_about(void)
 {
-    MUI_Request(app,NULL,0,"About AROS Workbench", "*Better than ever",
+    MUI_RequestA(app,NULL,0,"About AROS Workbench", "*Better than ever",
 	"AROS ROM version 0.7 (alpha)\n"
 	"AROS Workbench version 0.1 (alpha)\n\n"
 	"Copyright © 2002, The AROS Development Team.\n"
@@ -480,7 +480,7 @@ void workbench_about(void)
 
 void workbench_quit(void)
 {
-    if (MUI_Request(app,NULL,0,"AROS Workbench", "*Ok|Cancel", "Do you really want to quit the Workbench?",NULL))
+    if (MUI_RequestA(app,NULL,0,"AROS Workbench", "*Ok|Cancel", "Do you really want to quit the Workbench?",NULL))
 	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
