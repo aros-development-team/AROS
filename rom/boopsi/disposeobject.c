@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Dispose of a BOOPSI Object.
@@ -40,7 +40,11 @@
 	None.
 
     NOTES
-	This functions sends OM_DISPOSE to the oejct.
+	This functions sends OM_DISPOSE to the object.
+
+        Be careful not to use this function inside of OM_NEW to dispose
+        the current object. This can cause massive problems. Use
+        CoerceMethod() on the current class and object instead.
 
     EXAMPLE
 
