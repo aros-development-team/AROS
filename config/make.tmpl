@@ -75,12 +75,13 @@
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	   	else \
 			$(NOP) ; \
-    	fi ; \
+    		fi ; \
 	else \
 	    $(ECHO) "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
-	fi
+	fi; \
+	$(STRIP) %(to)
 %end
 
 #------------------------------------------------------------------------------
@@ -419,11 +420,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
-ifeq ($(FLAVOUR),native)
-	@strip $@
-else
-	@strip -x $@
-endif
+	@$(STRIP) $@
 
 # Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
@@ -510,11 +507,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
-ifeq ($(FLAVOUR),native)
-	@strip $@
-else
-	@strip -x $@
-endif
+	@$(STRIP) $@
 
 setup :
 %mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
@@ -598,11 +591,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
-ifeq ($(FLAVOUR),native)
-	@strip $@
-else
-	@strip -x $@
-endif
+	@$(STRIP) $@
 
 setup ::
 %mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
@@ -1521,7 +1510,7 @@ clean ::
 	    cat $(OBJDIR%(id))/%(err); \
 	    exit 1; \
 	fi
-	
+
 	@if $(TEST) ! -s $(OBJDIR%(id))/%(err) ; then $(RM) $(OBJDIR%(id))/%(err) ; fi
 	@$(STRIP) $@
 %end
