@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Library header for intuition
@@ -56,6 +56,19 @@ struct LIBBASETYPE *INIT();
 extern const char LIBEND;
 
 /* There has to be a better way... */
+
+#if INTERNAL_BOOPSI
+
+AROS_UFP3(ULONG, rootDispatcher,
+    AROS_UFPA(Class *,  cl,  A0),
+    AROS_UFPA(Object *, obj, A2),
+    AROS_UFPA(Msg,      msg, A1)
+);
+
+#endif
+
+struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitModelClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitSysIClass (struct LIBBASETYPE * LIBBASE);
@@ -119,12 +132,15 @@ AROS_LH2(struct LIBBASETYPE *, init,
     /*  We have to open this here, but it doesn't do any allocations,
 	so it shouldn't fail...
     */
+
+#if !INTERNAL_BOOPSI
     if(!(BOOPSIBase = OpenLibrary("boopsi.library", 0)))
     {
 	/* Intuition couldn't open unknown library */
 	Alert(AT_DeadEnd | AN_Intuition | AG_OpenLib | AO_Unknown);
 	return NULL;
     }
+#endif
 
     /* Create semaphore and initialize it */
     GetPrivIBase(LIBBASE)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
@@ -149,7 +165,24 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->IntuiActionLock);
         
+#if INTERNAL_BOOPSI
+    InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
+    NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);
+
+    /* Setup root class */
+    
+    GetPrivIBase(LIBBASE)->RootClass.cl_Dispatcher.h_Entry = rootDispatcher;
+    GetPrivIBase(LIBBASE)->RootClass.cl_ID                 = (ClassID)ROOTCLASS;
+    GetPrivIBase(LIBBASE)->RootClass.cl_UserData           = (IPTR)LIBBASE;
+    AddClass(&(GetPrivIBase(LIBBASE)->RootClass));
+#endif
+    
     /* Add all other classes */
+
+#if INTERNAL_BOOPSI
+    InitICClass (LIBBASE);  	    	/* After ROOTCLASS 	*/
+    InitModelClass (LIBBASE);  	    	/* After ICCLASS 	*/
+#endif
     InitImageClass (LIBBASE); 		/* After ROOTCLASS 	*/
     InitFrameIClass (LIBBASE); 		/* After IMAGECLASS 	*/
     InitSysIClass (LIBBASE); 		/* After IMAGECLASS 	*/

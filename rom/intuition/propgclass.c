@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS propgclass implementation.
@@ -11,7 +11,6 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <proto/boopsi.h>
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
@@ -24,6 +23,7 @@
 #include <aros/debug.h>
 
 #include "intuition_intern.h"
+#include "maybe_boopsi.h"
 #include "propgadgets.h"
 
 /****************************************************************************************/

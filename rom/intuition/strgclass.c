@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Code for BOOPSI strgclass.
@@ -9,7 +9,6 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#include <proto/boopsi.h>
 #include <proto/exec.h>
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
@@ -22,6 +21,7 @@
 #include <stdio.h>
 
 #include "intuition_intern.h"
+#include "maybe_boopsi.h"
 #include "strgadgets.h"
 
 #undef DEBUG

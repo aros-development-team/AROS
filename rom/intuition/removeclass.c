@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -13,7 +13,8 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH1(void, RemoveClass,
 
@@ -56,22 +57,25 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Pass to boopsi.library */
-    RemoveClass(classPtr);
+#if INTERNAL_BOOPSI
 
-#if 0
-    /* Klasse da und noch/schon in der Liste ? */
+    /* Class there and still/already in the list ? */
     if (classPtr && (classPtr->cl_Flags & CLF_INLIST))
     {
-	Forbid ();
-
+	ObtainSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 	Remove ((struct Node *)classPtr);
-
-	Permit ();
+	ReleaseSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 
 	classPtr->cl_Flags &= ~CLF_INLIST;
     }
+
+#else
+
+    /* Pass to boopsi.library */
+    RemoveClass(classPtr);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* RemoveClass */

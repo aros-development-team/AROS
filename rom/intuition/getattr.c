@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: GetAttr() get an attribute from an object.
@@ -13,7 +13,8 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH3(ULONG, GetAttr,
 
@@ -68,10 +69,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Really call boopsi.library */
-    return GetAttr(attrID, object, storagePtr);
+#if INTERNAL_BOOPSI
 
-#if 0
     struct opGet get;
 
     get.MethodID    = OM_GET;
@@ -79,6 +78,14 @@
     get.opg_Storage = storagePtr;
 
     return (DoMethodA (object, (Msg)&get));
+
+#else
+
+    /* Really call boopsi.library */
+    return GetAttr(attrID, object, storagePtr);
+
 #endif
+
     AROS_LIBFUNC_EXIT
+    
 } /* GetAttr */

@@ -1,7 +1,7 @@
 #ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuitions internal structure
@@ -65,6 +65,8 @@
 #define MENUS_UNDERMOUSE 1
 #define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
 
+#define INTERNAL_BOOPSI  1
+
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
    will be restored only when ReleaseGIRPort is
@@ -87,7 +89,9 @@ struct IntIntuitionBase
     struct Library         	* LayersBase;
     struct ExecBase	   	* SysBase;
     struct UtilityBase	   	* UtilBase;
+#if !INTERNAL_BOOPSI
     struct Library	   	* BOOPSIBase;
+#endif
     struct Library	   	* KeymapBase;
     struct Library         	* DOSBase;
     struct Library	   	* TimerBase;
@@ -138,6 +142,12 @@ struct IntIntuitionBase
     
     /* Dos function DisplayError() before intuition.library patched it */
     APTR                        OldDisplayErrorFunc;
+    
+#if INTERNAL_BOOPSI
+    struct SignalSemaphore  	ClassListLock;
+    struct MinList  	    	ClassList;
+    struct IClass   	    	RootClass;
+#endif
 };
 
 struct IntScreen
@@ -221,10 +231,18 @@ struct IntRequestUserData
 #endif
 #define TimerIO (GetPrivIBase(IntuitionBase)->TimerIO)
 
+#if INTERNAL_BOOPSI
+
+#define BOOPSIBase BOOPSIBase_accessed_although_may_not_use
+
+#else
+
 #ifdef BOOPSIBase
 #undef BOOPSIBase
 #endif
 #define BOOPSIBase (GetPrivIBase(IntuitionBase)->BOOPSIBase)
+
+#endif
 
 
 #ifdef DOSBase

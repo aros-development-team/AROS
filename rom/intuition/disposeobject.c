@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -14,7 +14,8 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH1(void, DisposeObject,
 
@@ -62,19 +63,23 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* pass to boopsi.library */
-    DisposeObject(object);
-
-#if 0
-    ULONG MethodID = OM_DISPOSE;
-
+#if INTERNAL_BOOPSI
+    STACKULONG MethodID = OM_DISPOSE;
+    
     if (!object)
         return;
 
     OCLASS (object)->cl_ObjectCount --;
 
     DoMethodA (object, (Msg)&MethodID);
+    
+#else
+
+    /* pass to boopsi.library */
+    DisposeObject(object);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* DisposeObject */

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Miscellaneous requester functions
@@ -9,7 +9,7 @@
 #include "intuition_intern.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+#include "maybe_boopsi.h"
 #include <exec/types.h>
 #include <intuition/intuition.h>
 

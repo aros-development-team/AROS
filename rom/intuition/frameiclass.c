@@ -1,5 +1,5 @@
 /*
-    (C) 1996-97 AROS - The Amiga Research OS
+    (C) 1996-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS frameiclass implementation
@@ -35,10 +35,10 @@
 #include <proto/utility.h>
 
 #ifdef _AROS
-#include <proto/boopsi.h>
+#include "intuition_intern.h"
+#include "maybe_boopsi.h"
 #include <aros/asmcall.h>
 #include <proto/alib.h>
-#include "intuition_intern.h"
 #include "gadgets.h"
 #endif
 

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Iterate through a list of objects
@@ -14,7 +14,8 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH1(APTR, NextObject,
 
@@ -58,12 +59,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Pass call to the boopsi.library */
-    return NextObject(objectPtrPtr);
+#if INTERNAL_BOOPSI
 
-#if 0
-    APTR oldobject;
     struct _Object *nextobject;
+    APTR    	    oldobject;
     
     nextobject = (struct _Object *)(*((struct _Object **)objectPtrPtr))->o_Node.mln_Succ;
     if (nextobject)
@@ -77,7 +76,14 @@
     }
 
     return oldobject;
+
+#else
+
+    /* Pass call to the boopsi.library */
+    return NextObject(objectPtrPtr);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* NextObject */

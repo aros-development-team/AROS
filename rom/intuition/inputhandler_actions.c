@@ -10,7 +10,6 @@
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 
 #include <proto/exec.h>
-#include <proto/boopsi.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <proto/layers.h>
@@ -34,6 +33,7 @@
 #include "strgadgets.h"
 #include "gadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
+#include "maybe_boopsi.h"
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"

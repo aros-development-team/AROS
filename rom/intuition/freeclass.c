@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free a BOOPSI Class (obs)
@@ -13,7 +13,8 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH1(BOOL, FreeClass,
 
@@ -89,9 +90,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    return FreeClass(classPtr);
+#if INTERNAL_BOOPSI
 
-#if 0
     /* Make sure no one creates another object from this class. For private
 	classes, this call does nothing. */
     RemoveClass (classPtr);
@@ -105,8 +105,13 @@
 	return (TRUE);
     }
 
-    return (FALSE);
+#else
+
+    /* call boopsi.library function */
+    return FreeClass(classPtr);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* FreeClass */

@@ -1,7 +1,7 @@
 #ifndef _INTUITION_PRIVATE_H
 #define _INTUITION_PRIVATE_H
 /* 
-    Copyright (C) 1998 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Private function definitions for Intuition
@@ -31,5 +31,16 @@
 AROS_LP1(BOOL, LateIntuiInit,
     AROS_LPA(APTR, data, A0),
     struct IntuitionBase *, IntuitionBase, 120, Intuition)
+
+AROS_LP4(IPTR, DoNotify,
+    AROS_LPA(Class *,		cl,	A0),
+    AROS_LPA(Object *,		o,	A1),
+    AROS_LPA(struct ICData *,	ic,	A2),
+    AROS_LPA(struct opUpdate *,	msg,	A3),
+    struct IntuitionBase *, IntuitionBase, 145, Intuition)
+
+AROS_LP1(void, FreeICData,
+    AROS_LPA(struct ICData *, icdata, A0),
+    struct IntuitionBase *, IntuitionBaseBase, 146, Intuition)
 
 #endif /* _INTUITION_PRIVATE_H */

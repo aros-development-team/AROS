@@ -17,7 +17,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-#include <proto/boopsi.h>
+#include "maybe_boopsi.h"
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
