@@ -1,0 +1,69 @@
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+<html>
+
+<head>
+<title>Compilation Warnings</title>
+<meta name="generator" content="Namo WebEditor v5.0(Trial)">
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
+<h1>Compilation Warnings</h1>
+<h2>Definition</h2>
+<p>A compilation warning is a warning about an error in&nbsp;the input to the 
+compiler. &nbsp;Compilation warnings are distinct from compilation errors in 
+that the former doesn't prevent the compiler from producing an executable file.</p>
+<p>Compilation warnings are represented by instances of CompilationError. &nbsp;They 
+are distinguished from errors by the fact that they are passed as an argument 
+to a method on CompilationErrorHandler, instead of thrown. &nbsp;A single compilation 
+can generate multiple compilation warnings.</p>
+<p>Validation warnings and errors are compilation warnings.</p>
+<h2>Command-line Behavior</h2>
+<p>TBD</p>
+<h2>Server Behavior</h2>
+<p><a class="moz-txt-link-freetext" href="http://server/path/to/file.lzx">http://server/path/to/file.lzx</a> retrieves an HTML file that 
+includes an &lt;object&gt; element for embedding the swf (which is then 
+returned by a subsequent browser request).&nbsp; When 
+there are compilation warnings, the retrieved page looks like this instead:</p>
+<pre>&nbsp;&lt;html&gt;...
+&nbsp;&nbsp; &lt;object..../&gt;
+&nbsp;&nbsp; &lt;h1&gt;Compilation Warnings&lt;/h1&gt;
+&nbsp;&nbsp; &lt;pre&gt;compilation warnings, maybe several lines of them&lt;/pre&gt;
+&nbsp;&lt;/html&gt;</pre>
+<h2>Rationale</h2>
+<p>The intent is that the easiest thing to type in during development, gets 
+you the right response.&nbsp; For a deployed app, you've presumably verified 
+that it doesn't have warnings in the deployment setting (otherwise 
+you've got worse probems than the warnings showing up anyway), and 
+you're probably setting the application within an HTML page that you've 
+written, and are requesting the swf directly, instead of requesting the 
+html that embeds the swf, anyway.&nbsp; More clearly, we define the 
+<a class="moz-txt-link-freetext" href="http://server/path/to/files.lzx">http://server/path/to/files.lzx</a> as the syntax for executing the 
+application during development, and other syntaxes with more query 
+parameters to execute an application during deployment.</p>
+<p>A couple of previous behaviors didn't pan out:</p>
+<p>Validation errors were compiler errors, not warnings: a request for&nbsp;an 
+invalid file retrieved a page that listed the errors, instead of an executable. 
+&nbsp;This was too strict: prevented internal developers from implementing ahead 
+of the schema.</p>
+<p>Warnings were reported in the debug window of the compiled application. &nbsp;This 
+was too lax:&nbsp;it was too easy to miss compilation warnings --- when you're using the server for 
+development (the only way outside developers get to), and if you aren't 
+using &lt;debug/&gt;, you don't get any notification.&nbsp; At one point bug was 
+submitted that the compiler accepted text inside an element --- 
+actually it generated a warning, but this is swallowed if you aren't 
+using &lt;debug/&gt;.
+<br>
+</p>
+
+<hr>
+<address><a href="mailto:osteele@laszlosystems.com">Oliver Steele</a><br>
+<!-- hhmts start -->
+Last modified: October 1 2002
+<!-- hhmts end -->
+</address>
+</body>
+
+</html>

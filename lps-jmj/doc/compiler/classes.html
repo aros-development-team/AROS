@@ -1,0 +1,60 @@
+<html>
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Class Compilation</title>
+</head>
+
+<body>
+
+<h1>Class Compilation</h1>
+<p>Each topmost &lt;class&gt; element is compiled to a Javascript call to <i>LzMakeClass</i></p>
+<p>The &lt;class&gt; element is encoded as described in <a href="views.html">views.html</a>
+(except that font metrics are not cascaded or computed), to produce an <i>init object</i> (initobj)
+that describes the initialization arguments, and the children, of the
+&lt;class&gt; element.&nbsp; 
+
+<p>
+
+Example:
+
+<pre>&lt;class name=&quot;mywindow&quot; extends=&quot;view&quot;&gt;
+ &lt;property name=&quot;aroma&quot; value=&quot;vanilla&quot; /&gt;
+ &lt;attribute name=&quot;bgcolor&quot; default=&quot;#FFFFFF&quot; type=&quot;color&quot; onset=&quot;this.applyWindowColor( bgcolor)&quot; /&gt;
+ &lt;method name=&quot;mymethod&quot; args=&quot;x,y,z&quot;&gt;
+  Debug.write(&quot;x is&quot; + x + &quot;, y * z =&quot; + (y * z));&lt;/method&gt;
+  &lt;text&gt;MyWindow's Text&lt;/text&gt; 
+&lt;/class&gt;</pre>
+ 
+compiles to:<pre>LzMakeClass({name: &quot;mywindow&quot;, 
+             attrs: {$setters: {bgcolor: function (bgcolor) {
+this.applyWindowColor( bgcolor)},
+                     name: &quot;mywindow&quot;,
+                     properties: {mymethod: function (x,y,z) {
+                                                Debug.write(&quot;x is&quot; + x + &quot;, y * z =&quot; + (y * z));
+                                            }, 
+                                  aroma: vanilla},
+                     &quot;extends&quot;: view},
+            children: [{attrs: {label: &quot;MyWindow's Text&quot;,
+                                text: &quot;MyWindow's Text&quot;},
+                        name: &quot;text&quot;, 
+                        children: []}]
+  }, &quot;view&quot;);</pre>
+
+<hr>
+<address><a href="mailto:osteele@laszlosystems.com">Oliver Steele</a><br>
+<!-- hhmts start -->
+Last modified: Mon Oct 07 13:29:43 Eastern Daylight Time 2002
+<!-- hhmts end -->
+</address>
+
+</body>
+</html>
+

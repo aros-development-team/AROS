@@ -1,0 +1,55 @@
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+<html>
+
+<head>
+<title>Text Fields</title>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
+<h1>Input Text Fields</h1>
+
+Because Flash 5 has some limitations on how input-text objects can be modified at runtime, some special
+case code exists to work around these limitations. Input text objects cannot be resized at runtime,
+and their font cannot be changed. 
+<p>
+
+The XML compiler will treat specially &lt;inputtext&gt; (or &lt;windowtext&gt;) elements.
+
+<h2>Collecting Input Text Fonts</h2> 
+
+The view compiler makes a pass
+over the XML source looking for &lt;inputttext&gt; elements. It tries
+to decide which font is being used, either directly or by inheritance
+of font properties from the enclosing view or class.
+<p>
+As a special optimization, input text which has a <i>fixed width and
+height</i> at compile time is compiled into a specific Flash inputtext
+resource with that width and height, using the routine
+SWFWriter. addCustomInputText(). This allows us to use the faster
+native Flash input text wrapping routines.
+<p>
+Thus, 
+<pre>
+  &lt;inputtext name="t2" width="200" height="64"  bgcolor="#afcccc"/&gt;
+</pre>
+
+
+However, adding the attribute <code>resizable="true"</code> will force the runtime
+to use the generalized (but slower) resizable input text resource and routines.
+
+<pre>
+  &lt;inputtext name="t2" width="200" height="64" resizable="true" bgcolor="#afcccc"/&gt;
+
+</pre>
+
+<hr>
+<address><a href="mailto:osteele@laszlosystems.com">Oliver Steele</a><br>
+<!-- hhmts start -->
+Last modified: September 26 2002
+<!-- hhmts end -->
+</address>
+
+</html>
