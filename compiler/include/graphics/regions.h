@@ -15,11 +15,17 @@
 #ifndef GRAPHICS_GFX_H
 #   include <graphics/gfx.h>
 #endif
+#ifndef EXEC_LISTS_H
+#   include <exec/lists.h>
+#endif
 
 struct Region
 {
     struct Rectangle         bounds;
     struct RegionRectangle * RegionRectangle;
+#if 1
+    struct MinList         * RectPoolList;
+#endif
 };
 
 struct RegionRectangle
