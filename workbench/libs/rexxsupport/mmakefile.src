@@ -1,0 +1,26 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I.
+
+MODNAME	    := rexxsupport
+MODTYPE	    := library
+
+FILES := allocmem freemem
+FUNCS := arexxdispatch
+
+USE_ROMLIB := yes
+#USE_AMIGALIB := yes
+#USE_AROSLIB := yes
+
+#MM- workbench-libs-rexxsupport : setup includes linklibs workbench-libs-rexxsupport-module
+#MM
+workbench-libs-rexxsupport-quick : setup workbench-libs-rexxsupport-module
+
+%make_module_setup mmake=workbench-libs-rexxsupport
+%make_module_cpak
+%make_module mmake=workbench-libs-rexxsupport
+%make_lib_includes
+
+%common
+%include_deps
