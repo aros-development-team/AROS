@@ -8,7 +8,8 @@ ULIBNAME	:= MathIeeeDoubTrans
 
 FILES		:= \
 	intern_ieeedpisodd \
-	intern_ieeedpld
+	intern_ieeedpld \
+	ieeedptrans_fpu
 
 FUNCTIONS	:= \
 	ieeedpacos \
