@@ -22,7 +22,7 @@
 	AROS_LH2(struct DiskObject *, GetIconTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR,           name, A0),
+	AROS_LHA(CONST_STRPTR,     name, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 /*  LOCATION */
 	struct IconBase *, IconBase, 30, Icon)
