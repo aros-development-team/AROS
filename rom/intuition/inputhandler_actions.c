@@ -468,6 +468,41 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		remove_am = FALSE; /* because int_closewindow frees the message!!! */
 		free_am = FALSE;
 		
+		/* if there is an active gadget in the window being closed, then make
+		   it inactive */
+		   
+		if (iihdata->ActiveGadget &&
+		    !IS_SCREEN_GADGET(iihdata->ActiveGadget) &&
+		    (iihdata->GadgetInfo.gi_Window == targetwindow))
+		{
+		    struct Gadget *gadget = iihdata->ActiveGadget;
+		    
+		    switch(gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		        case GTYP_CUSTOMGADGET:
+			    {
+		    		struct gpGoInactive gpgi;
+
+				gpgi.MethodID = GM_GOINACTIVE;
+				gpgi.gpgi_GInfo = &iihdata->GadgetInfo;
+				gpgi.gpgi_Abort = 1; 
+
+				Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+			    }
+			    break;
+			
+			case GTYP_STRGADGET:
+			case GTYP_BOOLGADGET:
+			    gadget->Flags &= ~GFLG_SELECTED;
+			    break;
+		    }
+		    
+		    gadget->Activation &= ~GACT_ACTIVEGADGET;
+		    
+		    iihdata->ActiveGadget = NULL;
+		    
+		} /* if there's an active gadget in window which is being closed */
+		
 		LOCK_REFRESH(targetscreen);
 		
 		int_closewindow(am, IntuitionBase);
