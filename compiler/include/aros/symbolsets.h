@@ -108,7 +108,7 @@ static const int *__setincludelibrarieshandling __unused = &__includelibrariesha
 const ULONG bname##_version __attribute__((weak)) = ver;                     \
 struct libraryset libraryset_##bname =                                       \
 {                                                                            \
-     name, &bname##_version, &bname, postopenfunc, preclosefunc              \
+     name, &bname##_version, (void **)&bname, postopenfunc, preclosefunc     \
 };                                                                           \
 ADD2SET(libraryset_##bname, libs, pri)
 
