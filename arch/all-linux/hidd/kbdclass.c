@@ -119,7 +119,7 @@ ReleaseSemaphore(&LSD(cl)->sema);
 }
 
 
-static OOP_Object *kbd_dispose(OOP_Class *cl, OOP_Object *o, Msg msg)
+static OOP_Object *kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     ObtainSemaphore(&LSD(cl)->sema);
     LSD(cl)->kbdhidd = NULL;
