@@ -85,66 +85,122 @@ BEGIN {
     if (emit > 0)
 	print ""
 
-    print "/* Defines */"
+}
+#This function emits forward declarations for structures. To be used
+#when emitting inlines rather than defines
+function emit_struct(tname)
+{
+    if (match(tname,/struct.+[^ \t*]/))
+    {
+       struct_name = substr(tname,RSTART,RLENGTH);
+       match(struct_name, /[^ \t]+$/)
+       struct_name = substr(struct_name, RSTART,RLENGTH);
+
+       if (!(struct_name in structures))
+       {
+           printf "struct %s;\n", struct_name
+           structures[struct_name] = 1
+       }
+    }
 }
 /AROS_LH(A|(QUAD)?[0-9])/ {
     line=$0;
     isarg=match($0,/AROS_LHA/);
 
-    gsub(/AROS_LH/,"AROS_LC",line);
     gsub(/^[ \t]+/,"",line);
 
     if (!isarg)
     {
 	args="";
 	narg=0;
-	match(line,/[a-zA-Z_0-9]+[ \t]*,[ \t]*$/);
-	fname=substr(line,RSTART,RLENGTH);
-	gsub(/[ \t]*,[ \t]*$/,"",fname);
-	call=line;
+
+        match(line,/\(.+,.+[^,]/);
+	line=substr(line,RSTART+1,RLENGTH-1);
+	gsub(/[ \t]*,[ \t]*/,",",line);
+	split(line, a, ",");
+
+        tname = a[1]
+        fname = a[2]
+
+        #emit_struct(tname)
     }
     else
     {
-	arg[narg++] = line;
-	match(line,/,[^)]+/);
-	line=substr(line,RSTART+1,RLENGTH-1);
-	gsub(/[ \t]+/,"",line);
-	match(line,/[^,]+/);
-	if (args!="")
-	    args=args", "substr(line,RSTART,RLENGTH);
-	else
-	    args=substr(line,RSTART,RLENGTH);
+	arg[narg] = line;
+
+        match(line,/\(.+\)/);
+	line=substr(line,RSTART+1,RLENGTH-2);
+	gsub(/[ \t]*,[ \t]*/,",",line);
+
+        split(line, arg_args, ",");
+
+ 	arg[narg, 1] = arg_args[1]
+ 	arg[narg, 2] = arg_args[2]
+ 	arg[narg, 3] = arg_args[3]
+
+        #emit_struct(arg_args[1])
+
+        narg++
     }
 }
 /LIBBASE[ \t]*,[ \t]*[0-9]+/ || $0 ~ verbose_pattern {
     line=$0;
-    gsub(/LIBBASETYPEPTR/,libbtp,line);
-    gsub(/LIBBASE/,libbase,line);
-    gsub(/BASENAME/,basename,line);
-    gsub(/[ \t]*[)][ \t]*$/,"",line);
-    gsub(/^[ \t]+/,"",line);
+
+    match(line,/[a-zA-Z_0-9]+.*[^)]/);
+    line = substr(line	,RSTART,RLENGTH);
+    gsub(/[ \t]*,[ \t]*/,",",line);
     split(line,a,",");
-    lvo=int(a[3]);
+
+    libbtp   = a[1]
+    libbase  = a[2]
+    lvo      = a[3]
+    basename = a[4]
+
+    #emit_struct(libbtp)
+
+       #this commented out code is used for emitting inlines rather than macros
+       #unused as for now. Put it after the below if()
+       #-----------------------------------------------------------------------
+       #header     = tname  " __" fname "_WB"
+       #header_len = length(header)
+
+       #printf "static __inline__\n%s(%s %s", header, libbtp, libbase
+
+       #for (t=0; t<narg; t++)
+       #{
+       #     arg_to_print = arg[t, 1] " " arg[t, 2]
+       #     printf ",\n%+*s", header_len + length (arg_to_print) + 1, arg_to_print
+       #}
+       #print ")"
+
+       #print "{"
 
     if (lvo > firstlvo)
     {
-	print "#define "fname"("args") \\"
-	print "\t"call" \\";
-	for (t=0; t<narg; t++)
-	{
-	# parenthesize the second argument of AROS_LCA
-	# AROS_LCA(a,b,c) => AROS_LCA(a,(b),c)
-	#
-	match(arg[t],/\(.*\)/);
-	lca_args=substr(arg[t],RSTART+1,RLENGTH-2);
-	split(lca_args,lca_arg,",");
-	lca_args="("lca_arg[1]",("lca_arg[2]"),"lca_arg[3]")";
-	sub(/\(.*\)/,lca_args,arg[t]);
+        header     = "#define __" fname "_WB"
+        header_len = length(header)
 
-	    print "\t"arg[t]" \\"
+        printf "%s(%s", header, libbase
+
+        for (t=0; t<narg; t++)
+	{
+            arg_to_print = arg[t, 2]
+            printf ",\\\n%+*s", header_len + length (arg_to_print) + 1, arg_to_print
 	}
-	print "\t"line")"
-	print ""
+        print ")\\"
+
+        printf "    AROS_LC%d(%s, %s, \\\n", narg, tname, fname
+        for (t=0; t<narg; t++)
+	{
+            printf "    AROS_LCA(%s, %s, %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
+	}
+        printf "    %s, %s, %d, %s)\n\n", libbtp, libbase, lvo, basename
+
+        if (narg > 0)
+            printf "#define %s(...) __%s_WB(%s, __VA_ARGS__)\n\n", fname, fname, libbase
+        else
+            printf "#define %s() __%s_WB(%s)\n\n", fname, fname, libbase
+
     }
     narg=0;
 }
