@@ -8,20 +8,20 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-typedef struct node
+typedef struct setnode
 {
     char *secname;
     int   off_setname;
     unsigned long pri;
-    struct node *next;
-} node;
+    struct setnode *next;
+} setnode;
 
 
 
-node *new_node(char *name, node *next, int off, unsigned long pri){
-   node *n;
+setnode *new_setnode(const char *name, setnode *next, int off, unsigned long pri){
+   setnode *n;
 
-   if (!(n          = calloc(1, sizeof(node))) ||
+   if (!(n          = calloc(1, sizeof(setnode))) ||
        !(n->secname = strdup(name))
       )
    {
@@ -36,9 +36,9 @@ node *new_node(char *name, node *next, int off, unsigned long pri){
    return n;
 }
 
-node *get_node(node **list, char *name, int off, unsigned long pri)
+setnode *get_setnode(setnode **list, const char *name, int off, unsigned long pri)
 {
-    node **curr = list;
+    setnode **curr = list;
 
     while (*curr)
     {
@@ -62,10 +62,10 @@ node *get_node(node **list, char *name, int off, unsigned long pri)
 	curr = &(*curr)->next;
     }
 
-    return (*curr = new_node(name, *curr, off, pri));
+    return (*curr = new_setnode(name, *curr, off, pri));
 }
 
-int emit_sets(node *setlist, FILE *out)
+int emit_sets(setnode *setlist, FILE *out)
 {
     char setname_big[201];
     int i;
@@ -74,7 +74,7 @@ int emit_sets(node *setlist, FILE *out)
     {
         i = 0;
 
-        node *oldnode = setlist;
+        setnode *oldnode = setlist;
 
         do
         {
@@ -117,41 +117,46 @@ int emit_sets(node *setlist, FILE *out)
 }
 
 
+void parse_secname(const char *secname, setnode **setlist_ptr)
+{
+    char          *idx;
+    int            off;
+    unsigned long  pri = 0;
+
+    if (strncmp(secname, ".aros.set.", 10) == 0)
+        off = 10;
+    else
+    if (strncmp(secname, ".ctors", 5) == 0)
+        off = 1;
+    else
+    if (strncmp(secname, ".dtors", 5) == 0)
+        off = 1;
+    else
+	return;
+
+    idx = strchr(secname + off, '.');
+    if (idx)
+    {
+        *idx = '\0';
+	pri  = strtoul(&idx[1], NULL, 10);
+    }
+
+    get_setnode(setlist_ptr, secname, off, pri);
+}
+
 /*
     This routine is slow, but does the work and it's the simplest to write down.
     All this will get integrated into the linker anyway, so there's no point
     in doing optimizations
 */
-
 int gensets(FILE *in, FILE *out)
 {
     char sec[201];
-    node *setlist = NULL;
+    setnode *setlist = NULL;
 
     while (fscanf(in, " %200s ", sec)>0)
     {
-        char          *idx;
-	int            off;
-	unsigned long  pri;
-
-	if (strncmp(sec, ".aros.set.", 10) == 0)
-	    off = 10;
-	else
-	if (strncmp(sec, ".ctors", 5) == 0)
-            off = 1;
-	else
-	if (strncmp(sec, ".dtors", 5) == 0)
-            off = 1;
-        else
-	    continue;
-
-        idx = strchr(sec + off, '.');
-        if (idx)
-            *idx = '\0';
-
-	pri = idx ? strtoul(&idx[1], NULL, 10) : 0;
-
-	get_node(&setlist, sec, off, pri);
+        parse_secname(sec, &setlist);
     }
 
     return emit_sets(setlist, out);
