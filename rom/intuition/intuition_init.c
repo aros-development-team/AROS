@@ -209,10 +209,6 @@ AROS_LH2(LIBBASETYPEPTR, init,
     if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
     	return NULL;
   
-    /* FIXME: no cleanup routines for MenuHandler task */
-    if (!InitDefaultMenuHandler(IntuitionBase))
-        return NULL;
-
     LoadDefaultPreferences(LIBBASE);
           
     /* You would return NULL if the init failed */
@@ -270,8 +266,6 @@ AROS_LH1(LIBBASETYPEPTR, open,
     	D(bug("DoIO() called\n"));
     }
     
-    
-
     if (!GfxBase)
     {
 	if (!(GfxBase = (void *)OpenLibrary (GRAPHICSNAME, 39)) )
@@ -327,6 +321,13 @@ AROS_LH1(LIBBASETYPEPTR, open,
 			AROS_SLIB_ENTRY(DisplayError, Intuition));
     }
 #endif
+
+    /* FIXME: no cleanup routines for MenuHandler task */
+    if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
+    {
+    	if (!InitDefaultMenuHandler(LIBBASE))
+            return NULL;
+    }
 
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
