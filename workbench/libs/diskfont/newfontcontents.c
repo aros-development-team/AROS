@@ -20,11 +20,6 @@
 
 /****************************************************************************************/
 
-/* Should move this one to an include file */
-extern BPTR LoadSeg_AOS(BPTR file);
-
-/****************************************************************************************/
-
 /* Test */
 #define  GetByte(x)  ((x)[0])
 #define  GetWord(x)  ((x)[1] | ((x)[0] << 8))
@@ -154,7 +149,6 @@ struct contentsBuffer
 	while(ExNext(lock, fib))
 	{
 	    BPTR  fontSeg;
-	    BPTR  fontLock;
 	    UBYTE                 *fileDfh;  /* struct DiskFontHeader */ 
 	    struct contentsBuffer *cNode;
 	    
@@ -162,15 +156,7 @@ struct contentsBuffer
 	    if(fib->fib_DirEntryType >= 0)
 		continue;
 
-	    fontLock = Lock(fib->fib_FileName, SHARED_LOCK);
-
-	    /* Someone deleted the file just in time... */
-	    if(fontLock == NULL)
-		continue;
-
-	    fontSeg = LoadSeg_AOS(fontLock);
-
-	    UnLock(fontLock);
+	    fontSeg = LoadSeg(fib->fib_FileName);
 
 	    if(fontSeg == NULL)
 		continue;
