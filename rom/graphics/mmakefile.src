@@ -57,6 +57,7 @@ FUNCTIONS := \
 	bltclear \
 	clearrectregion \
 	clearregion \
+	clipblit \
 	clonerastport \
 	closefont \
 	cbump \
