@@ -3,6 +3,10 @@
 ## codeset 0
 ;
 ;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Kan inte skapa applikationsobjekt.
+; Can't create application object.
+;
 MSG_CANT_OPEN_LIB
 Kan inte öppna %s V%ld!\n
 ; Can't open %s V%ld!
@@ -63,8 +67,8 @@ MSG_CANT_ALLOCATE_MEM
 Kan inte allokera programminne! (%s)!
 ; Can't allocate application memory (%s)!
 ;
-MSG_WINTITLE
-Typstilsinställningar
+MSG_WINDOW_TITLE
+Typsnittsinställningar
 ; Font Preferences
 ;
 MSG_TAB_SETTINGS
@@ -127,30 +131,15 @@ MSG_OK
 OK
 ; Ok
 ;
-MSG_MX_WORKBENCH
-Workbench
-; Workbench
+MSG_ICONS
+Symboler:
+; Icons
 ;
-MSG_MX_SYSTEM
-System
-; System
+MSG_SYSTEM
+System:
+; System:
 ;
-MSG_MX_SCREEN
-Skärm
-; Screen
+MSG_SCREEN
+Skärm:
+; Screen:
 ;
-MSG_GAD_GET
-Hämta...
-; Get...
-;
-MSG_GAD_SAVE
-Spara
-; Save
-;
-MSG_GAD_USE
-Använd
-; Use
-;
-MSG_GAD_CANCEL
-Avbryt
-; Cancel

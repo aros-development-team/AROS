@@ -3,6 +3,10 @@
 ## codeset 0
 ;
 ;
+MSG_ERROR_CANT_CREATE_APPLICATION
+*** Can't create application object.
+; Can't create application object.
+;
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
 ; Can't open %s V%ld!\n
@@ -55,7 +59,7 @@ MSG_CANT_ALLOCATE_MEM
 Impossible d'allouer de la mémoire pour l'application (%s) !
 ; Can't allocate application memory (%s)!
 ;
-MSG_WINTITLE
+MSG_WINDOW_TITLE
 Préférences des polices de caractères (Font)
 ; Font Preferences
 ;
@@ -111,30 +115,15 @@ MSG_OK
 Ok
 ; Ok
 ;
-MSG_MX_WORKBENCH
-Workbench
-; Workbench
+MSG_ICONS
+*** Icons:
+; Icons:
 ;
-MSG_MX_SYSTEM
-Système
-; System
+MSG_SYSTEM
+Système:
+; System:
 ;
-MSG_MX_SCREEN
-Ecran
-; Screen
+MSG_SCREEN
+Ecran:
+; Screen:
 ;
-MSG_GAD_GET
-Charger ...
-; Get...
-;
-MSG_GAD_SAVE
-Sauver
-; Save
-;
-MSG_GAD_USE
-Utiliser
-; Use
-;
-MSG_GAD_CANCEL
-Annuler
-; Cancel

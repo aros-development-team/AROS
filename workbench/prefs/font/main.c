@@ -1,122 +1,60 @@
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+#define MUIMASTER_YES_INLINE_STDARG
 
-#include "global.h"
+#include <exec/types.h>
+#include <dos/dos.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <utility/tagitem.h>
+#include <prefs/font.h>
 
-#include <proto/iffparse.h>
-#include <proto/locale.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
 
-#include <libraries/iffparse.h>		// IFFHandle structure
+#include <stdlib.h>
 
-#include "stdlib.h"			// exit()
+#include "locale.h"
+#include "args.h"
+#include "prefs.h"
+#include "misc.h"
+#include "gui.h"
 
-UBYTE version[] = "$VER: Font 0.14 (14.1.2002)";
+#define DEBUG 1
+#include <aros/debug.h>
 
-struct Catalog *catalogPtr;
-extern struct RDArgs *readArgs;
+CONST_STRPTR version = "$VER: Font 0.14 (14.1.2002)";
 
-extern struct FontPrefs *fontPrefs[3];	// init.c
-
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
-{
-    STRPTR string;
-
-    if(catalogPtr)
-        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
-    else
-        string = CatCompArray[id].cca_Str;
-
-    return(string);
-}
-
-STRPTR formatErrorMsg(STRPTR message)
-{
-    static UBYTE bufferMem[128];	// We better not override the current space
-
-    sprintf(bufferMem, getCatalog(catalogPtr, MSG_CANT_ALLOCATE_MEM), message);
-
-    return(bufferMem);
-}
-
-void displayError(STRPTR errorMsg)
-{
-    printf("%s\n", errorMsg);
-}
+extern struct FontPrefs *fontPrefs[3];	// prefs.c
+extern struct RDArgs *readArgs; // args.c
 
 void quitApp(STRPTR errorMsg, UBYTE errorCode)
-{
-    UBYTE a;
-    extern struct IFFHandle *iffHandle;	// handleiff.c
-
-    extern struct RDArgs *readArgs;
-    if(errorMsg)
-        displayError(errorMsg);
-
-    CloseCatalog(catalogPtr); // Passing NULL is valid!
-
-    if(appGUIData)
+{    
+    D(bug("*** Exiting...\n"));
+    
+    if (errorMsg != NULL)
     {
-        if(appGUIData->agd_VisualInfo)
-            FreeVisualInfo(appGUIData->agd_VisualInfo);
-
-        if(appGUIData->agd_Screen)
-        {
-            // We don't have to check for agd_DrawInfo - passing NULL is valid!
-            FreeScreenDrawInfo(appGUIData->agd_Screen, appGUIData->agd_DrawInfo);
-        }
-
-        if(appGUIData->agd_GadgetList)
-            FreeGadgets(appGUIData->agd_GadgetList);
-
-        if(appGUIData->agd_Menu)
-        {
-            ClearMenuStrip(appGUIData->agd_Window); // Really necessary?
-            FreeMenus(appGUIData->agd_Menu);
-        }
-
-        freeRegisterTabs();
-
-        if(appGUIData->agd_Window)
-            CloseWindow(appGUIData->agd_Window);
-
-        FreeMem(appGUIData, sizeof(struct AppGUIData));
+        ShowError(errorMsg);
     }
-
-    // We don't have to check for a TRUE value. However, there is no reason
-    // why not to - it might turn out useful in the future.
-    if(readArgs)
-        FreeArgs(readArgs);
-
-    if(iffHandle)
-        FreeIFF(iffHandle);
-    else
-        kprintf("No iffHandle?!\n");
-
-    for(a = 0; a <= 2; a++)
-        if(fontPrefs[a])
-            FreeMem(fontPrefs[a], sizeof(struct FontPrefs));
-
+    
+    Prefs_Deinitialize();
+    Locale_Deinitialize();
+    
+    if(readArgs != NULL) FreeArgs(readArgs);
+    
     exit(errorCode);
 }
 
-int main(void)
+
+int main( void )
 {
-    extern struct AppGUIData *appGUIData; // init.c
-
-    // NULL is not runtime critical but should be dealt with in a smarter fashion!
-    // The default language (= built-in) language is english and doesn't need to be set (Introduced 0.13)
-    if(!(catalogPtr = OpenCatalog(NULL, "Sys/fontprefs.catalog", OC_Version, REQ_CAT_VERSION, TAG_DONE)))
-        PrintFault(IoErr(), NULL); // If invalid catalog --> "unknown error"?
-
-    if(!(initPrefMem()))
-        quitApp(formatErrorMsg("fontPrefs"), RETURN_FAIL);
-
-    printf("Welcome to Font Preferences for AROS!\nThis is alpha class software: read CAVEATS before you continue!\n");
-
-    // Check for shell (Desktop?) arguments
-    switch(processArguments())
+    Object *application,  *window;
+    
+    if (!Locale_Initialize()) return 20;
+    if (!Prefs_Initialize()) return 20;
+    if (!FPWindow_Initialize()) return 20;
+    
+    switch (processArguments())
     {
         case APP_STOP:
             quitApp(NULL, RETURN_OK);
@@ -127,37 +65,38 @@ int main(void)
             break;
     }
 
-    if((appGUIData = initAppGUIDataMem(catalogPtr)))
+    
+    application = ApplicationObject,
+        SubWindow, window = FPWindowObject,
+        EndBoopsi,
+    End;
+
+    if (application != NULL)
     {
-        if(createRegisterTabs())
+        ULONG signals = 0;
+                
+        SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
+        
+        while
+        ( 
+               DoMethod(application, MUIM_Application_NewInput, &signals) 
+            != MUIV_Application_ReturnID_Quit
+        )
         {
-
-            if((appGUIData = createGadgets()))
+            if(signals)
             {
-                // Open the application window and start the main I/O event loop!
-
-                if((appGUIData = openAppWindow()))
-                    quitApp(NULL, inputLoop());
-                else
-                    quitApp(getCatalog(catalogPtr, MSG_CANT_CREATE_WIN), RETURN_FAIL); 
-                    // Don't call quitApp(), change this!
-            }
-            else
-            {
-                quitApp(getCatalog(catalogPtr, MSG_CANT_CREATE_GADGET), RETURN_FAIL);
+                signals = Wait(signals | SIGBREAKF_CTRL_C);
+                if(signals & SIGBREAKF_CTRL_C) break;
             }
         }
-        else
-        {
-            quitApp(formatErrorMsg("Registertabs"), RETURN_FAIL);
-        }
-    }
-    else
-    {
-        quitApp(NULL, RETURN_FAIL);
+        
+        SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
+        MUI_DisposeObject(application);
     }
 
+    FPWindow_Deinitialize();
+    
     quitApp(NULL, RETURN_OK);
-
-    return 0; // Suppresses GCC warning
+    
+    return 0;
 }

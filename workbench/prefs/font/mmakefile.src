@@ -1,21 +1,20 @@
-#   $Id$
+# $Id$
 #
-#   Makefile to make Fonts prefs program.
+# Makefile to build Font Prefs program.
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main handleiff init asl args gui registertab inputloop
-EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/Font
+FILES 	    := main gui prefs locale misc args asl
+EXEDIR      := $(AROS_PREFS)
+EXE 	    := $(EXEDIR)/FontNG
 
-USE_AROSLIB := yes
+USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_COOLIMAGESLIB := no
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+USE_MUILIB      := yes
 
-#MM- workbench-prefs : workbench-prefs-font
-#MM workbench-prefs-font : includes linklibs setup-fontprefs-catalogs
+#MM workbench-prefs-font : includes linklibs workbench-prefs-font-catalogs 
 
 %make_prog_setup mmake=workbench-prefs-font
 
