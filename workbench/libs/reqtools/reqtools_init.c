@@ -288,7 +288,7 @@ AROS_LH1(struct IntReqToolsBase *, open,
 	{
 	    ButtonImgClass->cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(myBoopsiDispatch);
 	    ButtonImgClass->cl_Dispatcher.h_SubEntry = NULL;
-	    ButtonImgClass->cl_UserData = RTBase;
+	    ButtonImgClass->cl_UserData = (IPTR)RTBase;
 	}
     }
     if (ButtonImgClass == NULL)

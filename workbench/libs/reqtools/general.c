@@ -26,6 +26,10 @@
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 
+#ifdef _AROS
+#include <aros/asmcall.h>
+#endif
+
 #include "filereq.h"
 
 /****************************************************************************************/
@@ -187,7 +191,7 @@ GetVpCM( struct ViewPort *vp, APTR *cmap)
 #endif
     if( GfxBase->LibNode.lib_Version >= 39 )
     {
-	if( *cmap = AllocVec( ( numcols * 3 + 2 ) * 4, MEMF_PUBLIC | MEMF_CLEAR ) )
+	if( ( *cmap = AllocVec( ( numcols * 3 + 2 ) * 4, MEMF_PUBLIC | MEMF_CLEAR ) ) )
 	{
 	    ( ( UWORD * ) ( *cmap ) )[ 0 ] = numcols;
 	}
@@ -380,10 +384,17 @@ struct BackFillMsg
 
 /****************************************************************************************/
 
+#ifdef _AROS
+AROS_UFH3(void, WinBackFill,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct RastPort *, the_rp, A2),
+    AROS_UFHA(struct BackFillMsg, *msg, A1))
+#else
 void SAVEDS ASM WinBackFill (
 	register __a0 struct Hook *hook,
 	register __a2 struct RastPort *the_rp,
 	register __a1 struct BackFillMsg *msg)
+#endif
 {
     struct RastPort rp;
 
@@ -414,8 +425,6 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     UWORD maxpen = 0;
     int i;
 
-kprintf("--++OpenWindowBF\n");
-
     hook->h_Entry = (ULONG (*)())WinBackFill;
     hook->h_Data = (void *)pens;
     tags[0] = WA_BackFill;
@@ -438,11 +447,9 @@ kprintf("--++OpenWindowBF\n");
     {
 	tags[2] = TAG_IGNORE;
     }
-kprintf("--++OpenWindowBF 2\n");
 
     if ((win = OpenWindowTagList (nw, (struct TagItem *)tags)))
     {
-kprintf("--++OpenWindowBF 3\n");
 	rp = win->RPort;
 	for (i = 0; i <= HIGHLIGHTTEXTPEN; i++)
 		if (pens[i] > maxpen) maxpen = pens[i];
@@ -459,7 +466,6 @@ kprintf("--++OpenWindowBF 3\n");
     }
     
     return (win);
-kprintf("--++OpenWindowBF 10: returning %x\n", win);
 
 }
 

@@ -144,7 +144,7 @@ int REGARGS SetupReqWindow (GlobData *glob, int resized)
     totaloff = (leftoff + rightoff);
 
 
-rebuildwindow:
+//rebuildwindow:
     reqdefs = &rtLockPrefs()->ReqDefaults[reqdefnum];
 
     if (!glob->reqheight)

@@ -141,7 +141,7 @@ ULONG LoopReqHandler(struct rtHandlerInfo *rthi)
 	else
 	    sigs = Wait(rthi->WaitMask);
 
-	handler_retval = rtReqHandlerA(rthi, sigs, NULL);
+	handler_retval = (ULONG)rtReqHandlerA(rthi, sigs, NULL);
 	
     } while (handler_retval == CALL_HANDLER);
     

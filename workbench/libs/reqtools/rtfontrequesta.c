@@ -31,7 +31,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 16, ReqTools)
+	struct ReqToolsBase *, ReqToolsBase, 16, ReqTools)
 
 /*  FUNCTION
    
@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FileRequestA((struct RealFileRequester *)fontreq, NULL, title, taglist); /* in filereq.c */
+    return (ULONG)FileRequestA((struct RealFileRequester *)fontreq, NULL, title, taglist); /* in filereq.c */
     
     AROS_LIBFUNC_EXIT
     

@@ -56,7 +56,7 @@ FUNCTIONS :=	rtallocrequesta \
 
 %genlib_cpak
 
-#MM workbench-libs-reqtools : setup includes linklibs
+#MM workbench-libs-reqtools : setup includes linklibs setup-libs-reqtools-catalogs
 workbench-libs-reqtools : $(SLIB)
 	@$(NOP)
 

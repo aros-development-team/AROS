@@ -10,7 +10,7 @@ struct KeyButtonInfo
 };
 
 
-#define BUTTON_MAGIC_LONGWORD			'Oops'
+#define BUTTON_MAGIC_LONGWORD			(('O' << 24L) + ('o' << 16L) + ('p' << 8L) + 's')
 
 struct InitData
 {

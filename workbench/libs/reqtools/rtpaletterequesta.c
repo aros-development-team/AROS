@@ -31,7 +31,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 17, ReqTools)
+	struct ReqToolsBase *, ReqToolsBase, 17, ReqTools)
 
 /*  FUNCTION
    
@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return PaletteRequestA(title, reqinfo, taglist); /* in palettereq.c */
+    return (APTR)PaletteRequestA(title, reqinfo, taglist); /* in palettereq.c */
     
     AROS_LIBFUNC_EXIT
     

@@ -61,15 +61,12 @@ APTR ASM SAVEDS FileRequestA (
     ULONG 				tagdata;
 
 
-kprintf("--++FileRequesta\n");
-
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
 	 return ((APTR)FALSE);
 
     glob->reqtype = REQTYPE(freq);
     if (glob->reqtype == RT_FILEREQ)
     {
-kprintf("--++FileRequesta 2\n");
 
 	/* AROS timer.device checks IO length to make sure apps
 	   dont use a too small/wrong iorequest structure */
@@ -78,13 +75,10 @@ kprintf("--++FileRequesta 2\n");
 	
 	if (OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *)&glob->timereq, 0))
 	{
-kprintf("--++FileRequesta 3\n");
 
 	    FreeVec (glob);
 	    return ((APTR)FALSE);
 	}
-kprintf("--++FileRequesta 4\n");
-
 	
 	glob->buff = &freq->buff;
 	glob->freq = freq;

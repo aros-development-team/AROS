@@ -167,7 +167,6 @@ counter++;
 
     if (glob->newdir)
     {
-kprintf("filereqmain: glob->newdir = TRUE\n");
 
 	glob->disks = FALSE;
 	
@@ -646,11 +645,8 @@ skipfile:
 		    break;
 		    
 		case IDCMP_MOUSEMOVE:
-		    kprintf("---mouse move1 \n");
 		    if (!glob->downgadget) break;
-		    
-		    kprintf("---mouse move 2\n");
-		    
+		    		    
 		    if (glob->downgadget == FILES)
 		    {
 			if (glob->clicked != ~0)
@@ -700,7 +696,6 @@ skipfile:
 		    break;
 		    
 		case IDCMP_GADGETDOWN:
-		    kprintf("---gadgetdown\n");
 		    EndQuiet (glob);
 		    glob->downgadget = id = gad->GadgetID;
 		    if (id == FILES)
@@ -710,7 +705,10 @@ skipfile:
 			if (ClickDown (glob, clicked, &im, qual))
 			    return (LeaveReq (glob, filename));
 		    }
-		    else if (id == FPROP) ScrollerMoved (glob, code);
+		    else if (id == FPROP) 
+		    {
+		        ScrollerMoved (glob, code);
+		    }
 		    break;
 		    
 		case IDCMP_RAWKEY:

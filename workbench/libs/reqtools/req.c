@@ -67,11 +67,11 @@ struct FmtBuff
 
 /****************************************************************************************/
 
-/*
+
 extern APTR ASM DofmtCount (register __a0 char *, register __a1 APTR,
 				register __a3 struct FmtBuff *, register __d0 int);
-extern void STDARGS DofmtArgs (char *, char *,...);
-*/
+extern APTR STDARGS DofmtArgs (char *, char *,...);
+
 
 extern void ASM FillBarTable (register __a1 char **, register __a0 char *);
 extern void ASM FillNewLineTable (register __a1 char **, register __a0 char *);
@@ -555,7 +555,6 @@ ULONG ASM SAVEDS GetString (
 	    ng.ng_LeftEdge = glob->minmaxleft = (glob->width - glob->minmaxlen) / 2;
 	    ng.ng_Width = glob->minmaxlen;
 	    ng.ng_Height -= 2;
-printf("--++ ----------------> creating TEXT_KING wiht GTTX_Text = \"%s\"\n", glob->minmaxstr);
 
 	    gad = myCreateGadget (TEXT_KIND, gad, &ng,
 			    GTTX_Text, glob->minmaxstr, GTTX_Border, TRUE, TAG_END);

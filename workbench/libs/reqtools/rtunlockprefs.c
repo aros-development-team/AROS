@@ -26,7 +26,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 29, ReqTools)
+	struct ReqToolsBase *, ReqToolsBase, 29, ReqTools)
 
 /*  FUNCTION
 

@@ -36,6 +36,10 @@
 
 /****************************************************************************************/
 
+extern struct ReqToolsBase *ReqToolsBase;
+
+/****************************************************************************************/
+
 #define COLORWHEEL
 #define GRADIENT
 
@@ -956,12 +960,17 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 
     width1 *= 3;
     width2 *= 3;
+
     winwidth = (leftoff + rightoff) + 25 + width1 + 2 * 8;
     val = (leftoff + rightoff) + width2 + 2 * 8;
     if (val > winwidth) winwidth = val;
     if (winwidth < 256) winwidth = 256;
 
     val = glob->fontheight * 2 + 4;
+#ifdef _AROS
+    val += 5;
+#endif
+
     if (glob->colcount >= 64) val *= 2;
     if (glob->colcount >= 128) val *= 2;
 
