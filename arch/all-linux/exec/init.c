@@ -97,9 +97,9 @@ static const struct Resident *romtagList[] =
     &Mathffp_resident,			    /* ColdStart,  -120  */
 
     /*
-	NOTE: You must not put anything between these two; the code which
-	initialized boot_resident will directly call Dos_resident and
-	anything between the two will be skipped.
+	NOTE: You must not put anything between these two; the code 
+        which initialized boot_resident will directly call 
+        Dos_resident and anything between the two will be skipped.
     */
     &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_resident,			    /* None,	   -120  */
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 */
     if (TRUE == mapSysBase)
     {
-      *(APTR *)4 = SWAP(SysBase);
+      *(APTR *)4 = (APTR)SWAP(SysBase);
       if (mprotect((APTR)0, psize, PROT_READ))
       {
 	perror("mprotect");
