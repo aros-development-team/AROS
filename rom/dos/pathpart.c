@@ -1,31 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:36:27  ldp
-    Polish
 
-    Revision 1.4  1996/12/09 13:53:37  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.3  1996/11/21 10:49:47  aros
-    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
-    problems.
-
-The #includes
-    makedepend will ignore them (GCC works, though).
-
-    Removed a couple of Logs
-
-    Revision 1.2  1996/10/24 15:50:34  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/10/21 17:43:11  aros
-    A new function
-
-    Desc:
+    Desc: Return a pointer to after the directories in a path.
     Lang: english
 */
 #ifndef TEST
@@ -76,8 +53,6 @@ The #includes
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
