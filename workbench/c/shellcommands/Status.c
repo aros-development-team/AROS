@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Status CLI command
-    Lang: English
 */
 
 /*****************************************************************************
@@ -70,11 +67,6 @@
         <dos/dosextens.h>
 
     INTERNALS
-
-    HISTORY
-
-    17.11.2000  --  SDuvan, rewrote from scratch as the old version was
-                    very buggy and overly complex
 
 ******************************************************************************/
 
@@ -248,7 +240,7 @@ static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...)
     va_list args;
     va_start(args, format);
 
-    VPrintf(format, args);
+    VPrintf(format, (LONG *) args);
 
     va_end(args);
 }

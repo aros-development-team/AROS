@@ -1347,7 +1347,7 @@ static void PrintF(char *format, ...)
     va_list args;
     va_start(args, format);
 
-    VPrintf(format, args);
+    VPrintf(format, (LONG *) args);
 
     va_end(args);
 }
