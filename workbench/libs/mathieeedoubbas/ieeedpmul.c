@@ -59,7 +59,7 @@
 {
 AROS_LIBFUNC_INIT
 
-  return 0ULL;
+  return 0x0badc0de0badc0deULL;
 
 AROS_LIBFUNC_EXIT
 } /* IEEEDPMul */
