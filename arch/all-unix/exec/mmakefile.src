@@ -12,8 +12,8 @@ OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 # directories to the above.
 
 OS_INCLUDES	:= -I$(GENINCDIR)
-SPECIAL_CFLAGS	= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
-CFLAGS2 	= $(SHARED_CFLAGS) $(CFLAGS)
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
+CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
 CFILES		:= $(foreach f,$(FILES),$(f).c)
 DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
 TESTS		:= stackswap coretest
@@ -25,7 +25,7 @@ print-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "CFLAGS2=$(CFLAGS2)"
 
-#MM setup-exec-unix : setup-exec-unix-$(CPU)
+#MM
 setup-exec-unix :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(ADD_OBJS)
