@@ -19,11 +19,6 @@
 static Display	     * sysDisplay;
 static int	       sysScreen;
 static Cursor	       sysCursor;
-static struct TextAttr sysTA;
-
-#ifndef SYSFONTNAME
-#   define SYSFONTNAME	"topaz.font"
-#endif
 
 /* Table which links TextAttr with X11 font names */
 struct FontTable
@@ -147,52 +142,16 @@ int driver_init (struct GfxBase * GfxBase)
 
 int driver_open (struct GfxBase * GfxBase)
 {
-    struct TextFont * def;
-
-    if (!GfxBase->DefaultFont)
-    {
-	sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
-	sysTA.ta_YSize = 8;
-	sysTA.ta_Style = FS_NORMAL;
-	sysTA.ta_Flags = 0;
-
-	def = OpenFont (&sysTA);
-
-	if (!def)
-	{
-	    fprintf (stderr, "Cannot open font %s; trying fixed\n",
-		    SYSFONTNAME);
-
-	    sysTA.ta_Name = (STRPTR)"fixed";
-	    def = OpenFont (&sysTA);
-
-	    if (!def)
-	    {
-		fprintf (stderr, "Cannot open font\n");
-		return False;
-	    }
-	}
-
-	GfxBase->DefaultFont = def;
-	sysTA.ta_YSize = def->tf_YSize;
-    }
-
-    GfxBase->DefaultFont->tf_Accessors ++;
-
     return True;
 }
 
 void driver_close (struct GfxBase * GfxBase)
 {
-    GfxBase->DefaultFont->tf_Accessors --;
-
     return;
 }
 
 void driver_expunge (struct GfxBase * GfxBase)
 {
-    CloseFont (GfxBase->DefaultFont);
-
     return;
 }
 
