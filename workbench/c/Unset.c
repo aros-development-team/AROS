@@ -63,7 +63,7 @@
 static void GetNewString(STRPTR, STRPTR, LONG);
 
 AROS_SH1(Unset, 41.0, 27.07.1997,
-AROS_SHA(,NAME,,NULL))
+AROS_SHA(,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
 
