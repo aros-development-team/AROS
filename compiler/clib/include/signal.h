@@ -1,7 +1,8 @@
 #ifndef _SIGNAL_H_
 #define _SIGNAL_H_
+
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     System header file <signal.h>
