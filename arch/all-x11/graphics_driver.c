@@ -1443,6 +1443,28 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     return planecnt;
 }
 
+void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags)
+{
+  /* this will do the job on *any* system
+   * without using the blitter
+   */
+  ULONG count, end;
+
+  if (0 != (flags & 2) )
+    /* use row/bytesperrow */
+    bytecount = (bytecount & 0xFFFF) * (bytecount >> 16);
+
+  /* we have an even number of BYTES to clear here */
+  /* but use LONGS for clearing the block */
+  count = 0;
+  end = bytecount >> 2;
+  while(count < end)
+    ((ULONG *)memBlock)[count++] = 0;
+  /* see whether we had an odd number of WORDS */
+  if (0 != (bytecount & 2))
+    ((UWORD *)memBlock)[(count * 2)] = 0;
+}
+
 void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
 {
 LX11
