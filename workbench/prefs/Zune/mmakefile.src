@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 include ../make.cfg
 
-FILES  := zune zunestuff prefsio
+FILES  := zune zunestuff prefsio windowp
 
 EXEDIR := $(ZUNEDIR)/Prefs
 EXE    := $(EXEDIR)/Zune
