@@ -194,14 +194,14 @@ int         chown(const char *path, uid_t owner, gid_t group);
 int         close(int fd);
 int         dup(int oldfd);
 int         dup2(int oldfd, int newfd);
-/* NOTIMPL int         execl(const char *path, const char *arg, ...); */
+int         execl(const char *path, const char *arg, ...);
 /* NOTIMPL int         execle(const char *path, const char *arg, ...); */
 /* NOTIMPL int         execlp(const char *path, const char *arg, ...); */
 /* NOTIMPL int         execv(const char *path, char *const argv[]); */
 /* NOTIMPL int         execve(const char *path, char *const argv[]); */
 int         execvp(const char *path, char *const argv[]);
 void        _exit(int) __noreturn;
-/* NOTIMPL pid_t       fork(void); */
+pid_t       fork(void);
 /* NOTIMPL long        fpathconf(int fd, int name); */
 char        *getcwd(char *buf, size_t size);
 gid_t       getegid(void);
@@ -209,9 +209,9 @@ uid_t       geteuid(void);
 gid_t       getgid(void);
 int         getgroups(int gidsetlen, gid_t *gidset);
 /* NOTIMPL char        *getlogin(void); */
-/* NOTIMPL pid_t       getpgrp(void); */
+pid_t       getpgrp(void);
 pid_t       getpid(void);
-/* NOTIMPL pid_t       getppid(void); */
+pid_t       getppid(void);
 uid_t       getuid(void);
 int         isatty(int fd);
 int         link(const char *name1, const char *name2);

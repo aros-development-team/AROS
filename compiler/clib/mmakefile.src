@@ -128,6 +128,7 @@ SHARED	:= \
 	endgrent \
 	endpwent \
 	erand48 \
+        execl \
         execvp \
 	exit \
         _exit \
@@ -144,6 +145,7 @@ SHARED	:= \
 	fgets \
 	fileno \
 	fopen \
+	fork \
 	fprintf \
 	fscanf \
 	fsync \
@@ -172,6 +174,8 @@ SHARED	:= \
 	getgroups \
 	getgrnam \
 	getgrent \
+	getpgrp \
+	getppid \
         getpwent \
         getpwnam \
         getpwuid \
@@ -277,6 +281,7 @@ SHARED	:= \
 	vsnprintf \
 	vsprintf \
 	vsscanf \
+	wait \
 	write
 
 ROM_ONLY := \
