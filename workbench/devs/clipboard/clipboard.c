@@ -427,7 +427,7 @@ AROS_LH3(void, open,
     }
     else
     {
-	CBUn = (struct ClipboardUnit *)tempNode;
+	ioreq->io_Unit = (void *) tempNode;
     }
 
     if ((ioreq->io_Error == 0) && CBUn)
