@@ -411,29 +411,8 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    */
 	    
 	    ilock = LockIBase(0);
-	    
-	    gad = w->FirstGadget;
-	    while(gad)
-	    {
-	    	if (gad->Activation & (GACT_TOPBORDER |
-				       GACT_LEFTBORDER |
-				       GACT_RIGHTBORDER |
-				       GACT_BOTTOMBORDER))
-		{
-		    RefreshGList(gad, w, NULL, 1);
-		}
-		
-	    	gad = gad->NextGadget;
-	    }
-	    
+	    int_refreshglist(w->FirstGadget, w, NULL, -1, REFRESHGAD_BORDER, 0, IntuitionBase);	    
 	    UnlockIBase(ilock);
-#if 0	    
-	    for (i = 0; i < NUM_SYSGADS; i ++)
-	    {
-        	if (SYSGAD(w, i))
-		    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
-	    }
-#endif
 
 	    FreeScreenDrawInfo(w->WScreen, dri);
 	    
@@ -887,8 +866,7 @@ void windowneedsrefresh(struct Window * w,
   /* Refresh the window's gadgetry ... 
      ... stegerg: and in the actual implementation
      call RefershWindowFrame first, as the border gadgets don´t
-     cover the whole border area. bug: the border gadgets will
-     be refreshed twice :( */
+     cover the whole border area.*/
 
   
   if (FALSE != BeginUpdate(w->WLayer))
@@ -896,13 +874,12 @@ void windowneedsrefresh(struct Window * w,
   
     if (!(w->Flags & WFLG_GIMMEZEROZERO))
     {
-      kprintf("REFRESHING NON GZZ WINDOW FRAME\n");
       RefreshWindowFrame(w);
     }
   
-    kprintf("REFRESHING WINDOW GADGETS\n");
-
-    RefreshGadgets(w->FirstGadget, w, NULL);
+    /* refresh all gadgets except border gadgets, because they
+       were already refreshed in refreshwindowframe */
+    int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
   }
 
   EndUpdate(w->WLayer, FALSE);
