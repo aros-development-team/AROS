@@ -35,7 +35,6 @@
 #include "graphics_intern.h"
 #include "graphics_internal.h"
 
-
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
@@ -354,8 +353,15 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
     	struct TagItem gc_tags[] = {
     		{ aHidd_GC_Foreground,	apen & PEN_MASK},
     		{ aHidd_GC_Background,	bpen & PEN_MASK},
+		{ aHidd_GC_ColExpMode, 0UL},
 		{ TAG_DONE,	0}
     	};
+
+	if (drmd & JAM1)
+    	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Transparent;
+	if (drmd & JAM2)
+    	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Opaque;
+	
     	SetAttrs(dd->dd_GC, gc_tags);
 	
     }
@@ -412,7 +418,24 @@ void driver_SetOutlinePen (struct RastPort * rp, ULONG pen,
 void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+    struct TagItem drmd_tags[] =
+    {
+	{ aHidd_GC_ColExpMode, 0UL },
+	{ TAG_DONE, 0UL }
+    };
+    
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+	
+    if (mode & JAM1)
+    	drmd_tags[0].ti_Data = vHidd_GC_ColExp_Transparent;
+    if (mode & JAM2)
+    	drmd_tags[0].ti_Data = vHidd_GC_ColExp_Opaque;
+	
+    SetAttrs( GetDriverData(rp)->dd_GC, drmd_tags);
+	
+    return;
+    	
 }
 
 
@@ -671,7 +694,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     WORD  render_y;
     struct TextFont *tf;
     WORD current_x;
-    struct BitMap bm;
     
     if (!CorrectDriverData (rp, GfxBase))
     	return;
@@ -683,27 +705,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     render_y = rp->cp_y - tf->tf_Baseline;
     current_x = rp->cp_x;
     
-    /* Fill in bitmap with info about font */
-    memset(&bm,0, sizeof(struct BitMap));
-    bm.BytesPerRow = tf->tf_Modulo;
-    bm.Rows	= tf->tf_YSize;
-    bm.Flags = 0;
-    bm.Pad = 0;
-    if (tf->tf_Style & FSF_COLORFONT)
-    {
-    	UBYTE plane;
-	for (plane = 0; plane < CTF(tf)->ctf_Depth; plane ++)
-	{
-	    bm.Planes[plane] = CTF(tf)->ctf_CharData[plane];
-	    bm.Depth = CTF(tf)->ctf_Depth;
-	}
-	
-    }
-    else
-    {
-        bm.Planes[0] = tf->tf_CharData;
-	bm.Depth = 1;
-    }
     
     
     while ( len -- )
@@ -728,16 +729,38 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	}
 	else
 	{
-	    BltBitMapRastPort(&bm
-	    	, charloc >> 16 /* x */
-		, 0	/* y */
+	
+	    UWORD *src;
+	    WORD xoffset;
+	    
+	    xoffset = charloc >> 16;
+	    
+	    src = ((UWORD *)tf->tf_CharData) + (xoffset >> 4);
+	    xoffset &= 0x0F;
+
+	    /* Get pointer to start of chardata */
+	    D(bug("Blitting char at idx %d: %c\n", idx, *string));
+	    
+	    BltTemplate((PLANEPTR) src
+	    	, xoffset
+		, tf->tf_Modulo
 		, rp
 		, render_x, render_y
-		, charloc & 0xFFFF /* with of glyph */
+		, charloc & 0xFFFF 
 		, tf->tf_YSize
-		, 0xC0 /* Plain copy for now */
+	    );
+	    
+/*	    BltBitMapRastPort(&bm
+	    	, charloc >> 16 
+		, 0
+		, rp
+		, render_x, render_y
+		, charloc & 0xFFFF
+		, tf->tf_YSize
+		, 0xC0 
 		
 	    ); 
+*/
 	}
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
@@ -2051,11 +2074,14 @@ static VOID amiga2hidd_fast(APTR src_info
 	);
 	
 	/* Put it to the HIDD */
+	D(bug("Putting box\n"));
 	HIDD_BM_PutBox(hidd_bm
 		, temp_buf
 		, x_dest + current_x
 		, y_dest + current_y
 		, tocopy_w, tocopy_h);
+
+	D(bug("Box put\n"));
 
 	pixels_left_to_process -= (tocopy_w * tocopy_h);
 	
@@ -2950,18 +2976,28 @@ VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsi
 {
     UBYTE *srcptr;
     LONG x, y;
+    
+    EnterFunc(bug("template_to_buf(%p, %d, %d, %d, %d, %p)\n"
+    			, ti, x_src, y_src, xsize, ysize, buf));
     /* Find the exact startbyte */
     srcptr = ti->source + (x_src >> 3) + (ti->modulo * y_src);
     
+    D(bug("offset (in bytes): %d, modulo=%d, y_src=%d, x_src=%d\n"
+    	, (x_src >> 3) + (ti->modulo * y_src), ti->modulo, y_src, x_src ));
     /* Find the exact startbit */
+    
     x_src &= 0x07;
+    
+    
+    D(bug("new x_src: %d, srcptr=%p\n", x_src, srcptr));
 
     for (y = 0; y < ysize; y ++)
     {
+	UBYTE *byteptr = srcptr;
     	for (x = 0; x < xsize; x ++)
 	{
 	    UBYTE mask = 1 << (7 - ((x + x_src) & 0x07));
-	    BOOL is_set = ((*srcptr & mask) ? TRUE : FALSE);
+	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
 	    
 	    if (ti->invertsrc)
 	    {
@@ -2972,18 +3008,22 @@ VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsi
 		*buf = 1UL;
 	    else
 		*buf = 0UL;
-		
-	    buf ++;
-	
+/* D(bug("%d", *buf));
+*/	    buf ++;
+
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
-	    	srcptr ++;
+	    {
+	    	byteptr ++;
+	    }
 		
-	} 
-	srcptr += ti->modulo;
+	}
+/*	D(bug("\n"));
+*/	srcptr += ti->modulo;
     }
     
-    return;
+    D(bug("srcptr is %p\n", srcptr));
+    ReturnVoid("template_to_buf");
 }
 
 VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
@@ -3009,14 +3049,13 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	{ aHidd_BitMap_Displayable, FALSE },
 	{ TAG_DONE, 0UL }
     };
-    
 
     
-    EnterFunc(bug("driver_BltTemplate(%d %d %d, %d, %d, %d)\n"
+    EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
 	
     if (!CorrectDriverData(destRP, GfxBase))
-    	return;
+    	ReturnVoid("driver_BltTemplate");	
 	
     dd = GetDriverData(destRP);
     
@@ -3029,13 +3068,15 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
     template_bm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
     if (!template_bm)
-    	return;
+    	ReturnVoid("driver_BltTemplate");
 	
     /* Copy contents from Amiga bitmap to the offscreen HIDD bitmap */
     ti.source	 = source;
     ti.modulo	 = srcMod;
     ti.invertsrc = ((GetDrMd(destRP) & INVERSVID) ? TRUE : FALSE);
-    
+
+D(bug("Copying template to HIDD offscreen bitmap\n"));    
+
     amiga2hidd_fast( (APTR)&ti
     	, xSrc, 0
 	, template_bm
@@ -3043,7 +3084,10 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	, xSize, ySize
 	, template_to_buf
     );
-	
+
+
+D(bug("Done Copying template to HIDD offscreen bitmap\n"));    
+
     if (NULL == L)
     {
         /* No layer, probably a screen */
@@ -3056,7 +3100,6 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 		, 0, 0
 		, xDest, yDest
 		, xSize, ySize);
-	
 	
     }
     else
@@ -3269,8 +3312,6 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     EnterFunc(bug("driver_EraseRect(%d, %d, %d, %d)\n", x1, y1, x2, y2));
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("driver_EraseRect(No driverdata)");
-	
-    
 
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
