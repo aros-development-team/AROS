@@ -212,8 +212,6 @@ static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     DoMethod(_win(obj),MUIM_Window_AddEventHandler,&data->ehn);
     data->gadgetid = DoMethod(_win(obj),MUIM_Window_AllocGadgetID);
 
-    printf("alloc\n");
-
     return 1;
 }
 
@@ -225,7 +223,6 @@ static ULONG Prop_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     struct MUI_PropData *data = INST_DATA(cl, obj);
     DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,&data->ehn);
-    printf("free\n");
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
