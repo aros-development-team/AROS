@@ -10,6 +10,8 @@
 /*****************************************************************************
 
     NAME */
+
+#include <aros/debug.h>
 #include <dos/notify.h>
 #include <proto/dos.h>
 
@@ -59,34 +61,42 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct IOFileSys iofs;
-    struct FileHandle *dir = CurrentDir(NULL);
-
-    CurrentDir(dir);		/* Set back the current dir */
-
-    if (dir == NULL)
-    {
-	return DOSFALSE;
-    }
+    struct FileHandle *dir;
 
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
 
-    iofs.IOFS.io_Device = dir->fh_Device;
-    iofs.IOFS.io_Unit = dir->fh_Unit;
-
-    /* Save device for EndNotify() purposes */
-    notify->nr_Device = dir->fh_Device;
+    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
     notify->nr_MsgCount = 0;
 
-    if (iofs.IOFS.io_Device == NULL)
+    if (strchr(notify->nr_Name, ':') != NULL)
     {
-	return DOSFALSE;
+	DoName(&iofs, notify->nr_Name, DOSBase);
     }
+    else
+    {
+	dir = CurrentDir(NULL);
+	CurrentDir(dir);		/* Set back the current dir */
+	
+	if (dir == NULL)
+	{
+	    return DOSFALSE;
+	}
+	
+	iofs.IOFS.io_Device = dir->fh_Device;
+	iofs.IOFS.io_Unit = dir->fh_Unit;
+	
+	/* Save device for EndNotify() purposes */
+	notify->nr_Device = dir->fh_Device;
+	
+	if (iofs.IOFS.io_Device == NULL)
+	{
+	    return DOSFALSE;
+	}
 
-    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
-
-    DoIO(&iofs.IOFS);
+	DoIO(&iofs.IOFS);
+    }
 
     SetIoErr(iofs.io_DosError);
 
