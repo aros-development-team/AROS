@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,17 +7,11 @@
 #define DEBUG 1
 #endif
 
-#include <proto/exec.h>
-
-#include <dos/dosasl.h>
-
-#include <aros/debug.h>
-#include <aros/macros.h>
 #include <stddef.h>
-
+#include "os.h"
 #include "filehandles3.h"
 #include "afsblocks.h"
-#include "blockaccess.h"
+#include "cache.h"
 #include "hashing.h"
 #include "baseredef.h"
 
@@ -51,42 +45,42 @@ ULONG owner;
 	switch (mode)
 	{
 	case ED_OWNER :
-		owner=AROS_BE2LONG(entryblock->buffer[BLK_OWNER(volume)]);
+		owner=OS_BE2LONG(entryblock->buffer[BLK_OWNER(volume)]);
 		ead->ed_OwnerUID=owner>>16;
 		ead->ed_OwnerGID=owner & 0xFFFF;
 	case ED_COMMENT :
-		if (AROS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)])!=ST_ROOT)
+		if (OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)])!=ST_ROOT)
 		{
 			name=(STRPTR)((ULONG)entryblock->buffer+(BLK_COMMENT_START(volume)*4));
 			if ((next+name[0]+1)>end)
 				return ERROR_BUFFER_OVERFLOW;
 			ead->ed_Comment=next;
 			CopyMem(name+1, ead->ed_Comment, name[0]);
-			ead->ed_Comment[name[0]]=0;
+			ead->ed_Comment[(ULONG)name[0]]=0;
 			next += name[0]+1;		// NULL-Byte
 		}
 		else
 			ead->ed_Comment=0;
 	case ED_DATE :
-		ead->ed_Days=AROS_BE2LONG(entryblock->buffer[BLK_DAYS(volume)]);
-		ead->ed_Mins=AROS_BE2LONG(entryblock->buffer[BLK_MINS(volume)]);
-		ead->ed_Ticks=AROS_BE2LONG(entryblock->buffer[BLK_TICKS(volume)]);
+		ead->ed_Days=OS_BE2LONG(entryblock->buffer[BLK_DAYS(volume)]);
+		ead->ed_Mins=OS_BE2LONG(entryblock->buffer[BLK_MINS(volume)]);
+		ead->ed_Ticks=OS_BE2LONG(entryblock->buffer[BLK_TICKS(volume)]);
 	case ED_PROTECTION :
-		ead->ed_Prot=AROS_BE2LONG(entryblock->buffer[BLK_PROTECT(volume)]);
+		ead->ed_Prot=OS_BE2LONG(entryblock->buffer[BLK_PROTECT(volume)]);
 	case ED_SIZE :
-		ead->ed_Size=AROS_BE2LONG(entryblock->buffer[BLK_BYTE_SIZE(volume)]);
+		ead->ed_Size=OS_BE2LONG(entryblock->buffer[BLK_BYTE_SIZE(volume)]);
 	case ED_TYPE :
-		ead->ed_Type=AROS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)]);
+		ead->ed_Type=OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)]);
 	case ED_NAME :
 		name=(STRPTR)((ULONG)entryblock->buffer+(BLK_FILENAME_START(volume)*4));
 		if ((next+name[0]+1)>end)
 			return ERROR_BUFFER_OVERFLOW;
 		ead->ed_Name=next;
 		CopyMem(name+1, ead->ed_Name, name[0]);
-		ead->ed_Name[name[0]]=0;
+		ead->ed_Name[(ULONG)name[0]]=0;
 		next = (STRPTR)((ULONG)next+name[0]+1);		// NULL-Byte
 	case 0 :
-		ead->ed_Next = (struct ExAllData *)(((ULONG)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
+		ead->ed_Next = (struct ExAllData *)(((ULONG)next + OS_PTRALIGN - 1) & ~(OS_PTRALIGN - 1));
 	}
 	return 0;
 }
@@ -127,8 +121,8 @@ STRPTR string;
 		{
 			string=(STRPTR)((ULONG)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4));
 			CopyMem(string+1,cstr,string[0]);
-			cstr[string[0]]=0;
-			*pos=BLK_TABLE_START+getHashKey(cstr,ah->volume->SizeBlock-56,ah->volume->flags)+1;
+			cstr[(ULONG)string[0]]=0;
+			*pos=BLK_TABLE_START+getHashKey(cstr,ah->volume->SizeBlock-56,ah->volume->dosflags)+1;
 			if (*pos>BLK_TABLE_END(ah->volume))
 				return ERROR_NO_MORE_ENTRIES;
 			entryblock=getBlock(afsbase, ah->volume, ah->header_block);
@@ -147,7 +141,7 @@ STRPTR string;
 		*pos += 1;
 	}
 	// now i is on a valid position
-	*key=AROS_BE2LONG(entryblock->buffer[*pos]);
+	*key=OS_BE2LONG(entryblock->buffer[*pos]);
 	return 0;
 }
 
@@ -165,7 +159,7 @@ ULONG error,i,block;
 	if (!headerblock)
 		return ERROR_UNKNOWN;
 	/* is it a file? */
-	if (AROS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])<0)
+	if (OS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])<0)
 		return examineEAD(afsbase, ah->volume, ead, headerblock, size, mode);
 	error=getNextExamineBlock(afsbase, ah, &ah->dirpos, &i);
 #warning "if ah->dirpos is a entry stored in a hashchain we return entries twice"
@@ -187,7 +181,7 @@ ULONG error,i,block;
 	{
 		if (headerblock->buffer[i])
 		{
-			block=AROS_BE2LONG(headerblock->buffer[i]);
+			block=OS_BE2LONG(headerblock->buffer[i]);
 			do
 			{
 				entryblock=getBlock(afsbase, ah->volume, block);
@@ -202,7 +196,7 @@ ULONG error,i,block;
 				    /* stegerg: CHECK CHECK CHECK CHECK CHECK */
 					if (error == ERROR_BUFFER_OVERFLOW)
 					{
-						ah->dirpos=AROS_BE2LONG(headerblock->buffer[i]);
+						ah->dirpos=OS_BE2LONG(headerblock->buffer[i]);
 						error=0;
 					}
 				   /* stegerg: END CHECK CHECK CHECK CHECK CHECK */
@@ -214,8 +208,8 @@ ULONG error,i,block;
 				size -= (ULONG)ead->ed_Next-(ULONG)ead;
 				last=ead;
 				ead=ead->ed_Next;
-				ah->dirpos=AROS_BE2LONG(headerblock->buffer[i]);
-				block=AROS_BE2LONG(entryblock->buffer[BLK_HASHCHAIN(ah->volume)]);
+				ah->dirpos=OS_BE2LONG(headerblock->buffer[i]);
+				block=OS_BE2LONG(entryblock->buffer[BLK_HASHCHAIN(ah->volume)]);
 			} while (block);
 		}
 	}
@@ -240,28 +234,28 @@ ULONG error,filekey;
 	// examine the block
 	if (!(entryblock=getBlock(afsbase, ah->volume,fib->fib_DiskKey)))
 		return ERROR_UNKNOWN;
-	fib->fib_DirEntryType=AROS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]);
+	fib->fib_DirEntryType=OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]);
 	string=(STRPTR)((ULONG)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4));
 	CopyMem(string+1,fib->fib_FileName,string[0]);
-	fib->fib_FileName[string[0]]=0;
-	fib->fib_Protection=AROS_BE2LONG(entryblock->buffer[BLK_PROTECT(ah->volume)]);
+	fib->fib_FileName[(ULONG)string[0]]=0;
+	fib->fib_Protection=OS_BE2LONG(entryblock->buffer[BLK_PROTECT(ah->volume)]);
 	fib->fib_EntryType=fib->fib_DirEntryType;
-	fib->fib_Size=AROS_BE2LONG(entryblock->buffer[BLK_BYTE_SIZE(ah->volume)]);
+	fib->fib_Size=OS_BE2LONG(entryblock->buffer[BLK_BYTE_SIZE(ah->volume)]);
 	filelistentries=ah->volume->SizeBlock-56;
 	datablocksize=BLOCK_SIZE(ah->volume);
-	if (ah->volume->flags==0)
+	if (ah->volume->dosflags==0)
 		datablocksize=datablocksize-24;
 	datablocks=((fib->fib_Size+datablocksize-1)/datablocksize);
 	fib->fib_NumBlocks=datablocks+((datablocks+filelistentries-1)/filelistentries);
-	fib->fib_Date.ds_Days=AROS_BE2LONG(entryblock->buffer[BLK_DAYS(ah->volume)]);
-	fib->fib_Date.ds_Minute=AROS_BE2LONG(entryblock->buffer[BLK_MINS(ah->volume)]);
-	fib->fib_Date.ds_Tick=AROS_BE2LONG(entryblock->buffer[BLK_TICKS(ah->volume)]);
+	fib->fib_Date.ds_Days=OS_BE2LONG(entryblock->buffer[BLK_DAYS(ah->volume)]);
+	fib->fib_Date.ds_Minute=OS_BE2LONG(entryblock->buffer[BLK_MINS(ah->volume)]);
+	fib->fib_Date.ds_Tick=OS_BE2LONG(entryblock->buffer[BLK_TICKS(ah->volume)]);
 	if (fib->fib_DirEntryType!=ST_ROOT) {
 		string=(STRPTR)((ULONG)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4));
 		CopyMem(string+1,fib->fib_Comment,string[0]);
-		fib->fib_Comment[string[0]]=0;
+		fib->fib_Comment[(ULONG)string[0]]=0;
 	}
-	owner=AROS_BE2LONG(entryblock->buffer[BLK_OWNER(ah->volume)]);
+	owner=OS_BE2LONG(entryblock->buffer[BLK_OWNER(ah->volume)]);
 	fib->fib_OwnerUID=owner>>16;
 	fib->fib_OwnerGID=owner & 0xFFFF;
 	return 0;

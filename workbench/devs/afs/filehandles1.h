@@ -2,19 +2,17 @@
 #define FILEHANDLES1_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/types.h>
-#include <dos/dosextens.h>
-
-#include "blockaccess.h"
+#include "os.h"
+#include "cache.h"
 
 struct AfsHandle	*openf(struct afsbase *, struct AfsHandle *, STRPTR, ULONG);
 void	closef(struct afsbase *, struct AfsHandle *);
-LONG	read(struct afsbase *, struct AfsHandle *, void *, ULONG);
-LONG	write(struct afsbase *, struct AfsHandle *, void *, ULONG);
+LONG	readf(struct afsbase *, struct AfsHandle *, void *, ULONG);
+LONG	writef(struct afsbase *, struct AfsHandle *, void *, ULONG);
 LONG	seek(struct afsbase *, struct AfsHandle *, LONG, LONG);
 struct AfsHandle *openfile(struct afsbase *, struct AfsHandle *, STRPTR, ULONG, ULONG);
 

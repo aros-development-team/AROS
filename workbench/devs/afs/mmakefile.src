@@ -3,17 +3,18 @@ include $(TOP)/config/make.cfg
 
 ifneq ($(FLAVOUR),palmnative)
 FILES := main \
-	volumes \
+	bitmap \
+	cache \
+	checksums \
+	error \
+	extstrings \
 	filehandles1 \
 	filehandles2 \
 	filehandles3 \
 	hashing \
-	extstrings \
-	bitmap \
-	blockaccess \
-	error \
-	checksums \
-	misc
+	misc \
+	os_aros_support \
+	volumes
 else
 FILES :=
 endif

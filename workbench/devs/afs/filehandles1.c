@@ -1,21 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
-#include <aros/debug.h>
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <aros/macros.h>
-#include <dos/dos.h>
-#include <dos/stdio.h>
-#include <exec/memory.h>
-
-
+#include "os.h"
 #include "filehandles1.h"
 #include "filehandles2.h"
 #include "hashing.h"
@@ -50,14 +42,14 @@ struct BlockCache *getHeaderBlock
 ULONG key;
 
 	D(bug("afs.handler:    getHeaderBlock: searching for block of %s\n",name));
-	key = getHashKey(name,volume->SizeBlock-56,volume->flags)+BLK_TABLE_START;
+	key = getHashKey(name,volume->SizeBlock-56,volume->dosflags)+BLK_TABLE_START;
 	*block = blockbuffer->blocknum;
 	if (blockbuffer->buffer[key] == 0)
 	{
 		error = ERROR_OBJECT_NOT_FOUND;
 		return NULL;
 	}
-	blockbuffer=getBlock(afsbase, volume,AROS_BE2LONG(blockbuffer->buffer[key]));
+	blockbuffer=getBlock(afsbase, volume,OS_BE2LONG(blockbuffer->buffer[key]));
 	if (blockbuffer == NULL)
 	{
 		error = ERROR_UNKNOWN;
@@ -69,7 +61,7 @@ ULONG key;
 		error = ERROR_UNKNOWN;
 		return NULL;
 	}
-	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
+	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
 		showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
 		error = ERROR_OBJECT_WRONG_TYPE;
@@ -84,7 +76,7 @@ ULONG key;
 								(ULONG)blockbuffer->buffer+
 								(BLK_DIRECTORYNAME_START(volume)*4)
 							),
-						volume->flags
+						volume->dosflags
 					)
 			)
 	{
@@ -97,7 +89,7 @@ ULONG key;
 		blockbuffer=getBlock
 			(
 				afsbase,
-				volume,AROS_BE2LONG(blockbuffer->buffer[BLK_HASHCHAIN(volume)])
+				volume,OS_BE2LONG(blockbuffer->buffer[BLK_HASHCHAIN(volume)])
 			);
 		if (blockbuffer == NULL)
 		{
@@ -110,7 +102,7 @@ ULONG key;
 			error=ERROR_UNKNOWN;
 			return NULL;
 		}
-		if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
+		if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 		{
 			showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
 			error = ERROR_OBJECT_WRONG_TYPE;
@@ -165,7 +157,7 @@ UBYTE buffer[32];
 		error = ERROR_UNKNOWN;
 		return NULL;
 	}
-	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
+	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
 		showError(afsbase, ERR_BLOCKTYPE, *block);
 		error = ERROR_OBJECT_WRONG_TYPE;
@@ -184,7 +176,7 @@ UBYTE buffer[32];
 				(
 					afsbase,
 					dirah->volume,
-					AROS_BE2LONG(blockbuffer->buffer[BLK_PARENT(dirah->volume)])
+					OS_BE2LONG(blockbuffer->buffer[BLK_PARENT(dirah->volume)])
 				);
 			if (blockbuffer == NULL)
 			{
@@ -196,15 +188,15 @@ UBYTE buffer[32];
 		else
 		{
 			if (
-					(AROS_BE2LONG
+					(OS_BE2LONG
 						(
 							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
 						) != ST_ROOT) &&
-					(AROS_BE2LONG
+					(OS_BE2LONG
 						(
 							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
 						) != ST_USERDIR) &&
-					(AROS_BE2LONG
+					(OS_BE2LONG
 						(
 							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
 						) != ST_LINKDIR))
@@ -314,7 +306,7 @@ struct AfsHandle *ah;
 		ah->current.filekey=BLK_TABLE_END(volume);
 		ah->current.byte=0;
 		ah->current.offset=0;
-		ah->filesize=AROS_BE2LONG(fileblock->buffer[BLK_BYTE_SIZE(volume)]);
+		ah->filesize=OS_BE2LONG(fileblock->buffer[BLK_BYTE_SIZE(volume)]);
 		ah->volume=volume;
 		addHandle(ah);
 	}
@@ -350,7 +342,7 @@ struct AfsHandle *ah;
 			fileblock->blocknum)
 		);
 	ah=findHandle(volume, fileblock->blocknum);
-	if (ah)
+	if (ah != NULL)
 	{
 		if (ah->mode & FMF_LOCK)
 		{
@@ -407,7 +399,7 @@ ULONG block;
 
 	D(bug("afs.handler: openf(%ld,%s,%ld)\n",dirah->header_block,filename,mode));
 	fileblock=findBlock(afsbase, dirah,filename,&block);
-	if (fileblock)
+	if (fileblock != NULL)
 		ah=getHandle(afsbase, dirah->volume,fileblock,mode);
 	return ah;
 }
@@ -439,18 +431,18 @@ ULONG block;
 
 	D(bug
 		(
-			"afs.handler: openfile(%ld,%s,%ld,%d)\n",
+			"afs.handler: openfile(%ld,%s,%ld,%ld)\n",
 			dirah->header_block,name,mode,protection)
 		);
+	error = 0;
 	dirblock=getDirBlockBuffer(afsbase, dirah, name, filename);
-	if (dirblock)
+	if (dirblock != NULL)
 	{
 		D(bug
 			(
 				"afs.handler:    parent of %s is on block %ld\n",
 				name,dirblock->blocknum)
 			);
-		dirblock->flags |= BCF_USED;
 		fileblock=getHeaderBlock
 			(
 				afsbase,
@@ -459,9 +451,10 @@ ULONG block;
 				dirblock,
 				&block
 			);
+		block = dirblock->blocknum;
 		if (
 				(fileblock) &&
-				(AROS_BE2LONG
+				(OS_BE2LONG
 					(fileblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_FILE)
 				)
 		{
@@ -470,27 +463,35 @@ ULONG block;
 		else
 		{
 			if (mode & FMF_CLEAR)
-				deleteObject(afsbase, dirah, name);
-			if (mode & FMF_CREATE)
+				error = deleteObject(afsbase, dirah, name);
+			if ((error == 0) || (error == ERROR_OBJECT_NOT_FOUND))
 			{
-				fileblock=createNewEntry
-					(
-						afsbase,
-						dirah->volume,
-						ST_FILE,
-						filename,
-						dirblock,
-						protection
-					);
-			}
-			if (fileblock)
-			{
-				error=0;	//reset error
-				ah=getHandle(afsbase, dirah->volume,fileblock, mode);
+				dirblock = getBlock(afsbase, dirah->volume, block);
+				if (dirblock != NULL)
+				{
+					if (mode & FMF_CREATE)
+					{
+						fileblock=createNewEntry
+							(
+								afsbase,
+								dirah->volume,
+								ST_FILE,
+								filename,
+								dirblock,
+								protection
+							);
+					}
+					if (fileblock != NULL)
+					{
+						error=0;	//reset error
+						ah=getHandle(afsbase, dirah->volume,fileblock, mode);
+					}
+				}
+				else
+					error = ERROR_UNKNOWN;
 			}
 		}
 	}
-	dirblock->flags &= ~BCF_USED;
 	return ah;
 }
 
@@ -554,7 +555,7 @@ ULONG source;
 		if (ah->current.filekey<BLK_TABLE_START)
 		{
 			ah->current.block=
-				AROS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)]);
+				OS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)]);
 			ah->current.filekey=BLK_TABLE_END(ah->volume);
 			extensionbuffer->flags &= ~BCF_USED;		//we can now overwrite that cache block
 			D(bug("afs.handler:   readData: reading extensionblock=%ld\n",ah->current.block));
@@ -574,8 +575,8 @@ D(
 					bug
 						(
 							"Shit, out of extensionblocks!\n"
-							"Bytes left: %d\n"
-							"Last extensionblock: %d\n",
+							"Bytes left: %ld\n"
+							"Last extensionblock: %ld\n",
 							length,extensionbuffer->blocknum
 						);
 );
@@ -583,13 +584,13 @@ D(
 		D(bug
 			(
 				"afs.handler:   readData: reading datablock %ld\n",
-				AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
+				OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
 			);
 		databuffer=getBlock
 			(
 				afsbase,
 				ah->volume,
-				AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey])
+				OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey])
 			);
 		if (databuffer == 0)
 		{
@@ -598,9 +599,9 @@ D(
 			return ENDSTREAMCH; //was   readbytes;
 		}
 		source=(ULONG)databuffer->buffer+ah->current.byte;
-		if (ah->volume->flags==0)
+		if (ah->volume->dosflags==0)
 		{
-			size=AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE]);
+			size=OS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE]);
 			source += (BLK_DATA_START*4);
 		}
 		else
@@ -626,7 +627,7 @@ D(
 	return readbytes;
 }
 
-LONG read(struct afsbase *afsbase, struct AfsHandle *ah,void *buffer,ULONG length) {
+LONG readf(struct afsbase *afsbase, struct AfsHandle *ah,void *buffer,ULONG length) {
 LONG readbytes;
 
 	D(bug("afs.handler:   read(ah,buffer,%ld)\n",length));
@@ -644,13 +645,13 @@ void newFileExtensionBlock
 {
 UWORD i;
 
-	extension->buffer[BLK_PRIMARY_TYPE]=AROS_LONG2BE(T_LIST);
-	extension->buffer[BLK_OWN_KEY]=AROS_LONG2BE(extension->blocknum);
+	extension->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_LIST);
+	extension->buffer[BLK_OWN_KEY]=OS_LONG2BE(extension->blocknum);
 	for (i=3;i<BLK_PARENT(volume);i++)
 		extension->buffer[i]=0;
-	extension->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(parent);
+	extension->buffer[BLK_PARENT(volume)]=OS_LONG2BE(parent);
 	extension->buffer[BLK_EXTENSION(volume)]=0;
-	extension->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(ST_FILE);
+	extension->buffer[BLK_SECONDARY_TYPE(volume)]=OS_LONG2BE(ST_FILE);
 }
 
 void writeExtensionBlock
@@ -663,12 +664,12 @@ void writeExtensionBlock
 {
 
 	extension->buffer[BLK_BLOCK_COUNT]=
-		AROS_LONG2BE(BLK_TABLE_END(volume)-(filekey-1));
+		OS_LONG2BE(BLK_TABLE_END(volume)-(filekey-1));
 	if (next)
-		extension->buffer[BLK_EXTENSION(volume)]=AROS_LONG2BE(next);
+		extension->buffer[BLK_EXTENSION(volume)]=OS_LONG2BE(next);
 	extension->buffer[BLK_CHECKSUM]=0;
 	extension->buffer[BLK_CHECKSUM]=
-		AROS_LONG2BE
+		OS_LONG2BE
 			(
 				0-calcChkSum(volume->SizeBlock,extension->buffer)
 			);
@@ -706,7 +707,7 @@ ULONG destination;
 				(ah->current.filekey!=BLK_TABLE_END(ah->volume)) // this is not the first block of the file
 			)
 		{
-			lastblock=AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey+1]);
+			lastblock=OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey+1]);
 			D(bug
 				(
 					"afs.handler:   writeData: for OFS last datablock was %ld\n",
@@ -727,7 +728,7 @@ ULONG destination;
 					(
 						afsbase,
 						ah->volume,
-						AROS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)])
+						OS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)])
 					);
 				if (extensionbuffer == 0)
 				{
@@ -770,13 +771,13 @@ ULONG destination;
 			D(bug
 				(
 					"afs.handler:   writeData: using old datablock %ld\n",
-					AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
+					OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
 				);
 			databuffer=getBlock
 				(
 					afsbase,
 					ah->volume,
-					AROS_LONG2BE(extensionbuffer->buffer[ah->current.filekey])
+					OS_LONG2BE(extensionbuffer->buffer[ah->current.filekey])
 				);
 			if (databuffer == 0)
 			{
@@ -811,8 +812,8 @@ ULONG destination;
 				error = ERROR_NO_FREE_STORE;
 				return ENDSTREAMCH; //was   writtenbytes;
 			}
-			extensionbuffer->buffer[ah->current.filekey]=AROS_LONG2BE(block);
-			if ((ah->volume->flags==0) && (lastblock))
+			extensionbuffer->buffer[ah->current.filekey]=OS_LONG2BE(block);
+			if ((ah->volume->dosflags==0) && (lastblock))
 			{
 				D(bug("afs.handler:   writeData: OFS->fill in %ld BLK_NEXT_DATA\n",lastblock));
 				/*
@@ -834,10 +835,10 @@ ULONG destination;
 					error = ERROR_UNKNOWN;
 					return ENDSTREAMCH; //was   writtenbytes;
 				}
-				databuffer->buffer[BLK_NEXT_DATA]=AROS_LONG2BE(block);
+				databuffer->buffer[BLK_NEXT_DATA]=OS_LONG2BE(block);
 				databuffer->buffer[BLK_CHECKSUM]=0;
 				databuffer->buffer[BLK_CHECKSUM]=
-					AROS_LONG2BE
+					OS_LONG2BE
 						(
 							0-calcChkSum(ah->volume->SizeBlock,databuffer->buffer)
 						);
@@ -858,12 +859,12 @@ ULONG destination;
 				error = ERROR_UNKNOWN;
 				return ENDSTREAMCH; //was   writtenbytes;
 			}
-			if (ah->volume->flags==0)
+			if (ah->volume->dosflags==0)
 			{
-				databuffer->buffer[BLK_PRIMARY_TYPE]=AROS_LONG2BE(T_DATA);
-				databuffer->buffer[BLK_HEADER_KEY]=AROS_LONG2BE(ah->header_block);
+				databuffer->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_DATA);
+				databuffer->buffer[BLK_HEADER_KEY]=OS_LONG2BE(ah->header_block);
 				databuffer->buffer[BLK_SEQUENCE_NUMBER]=
-					AROS_LONG2BE
+					OS_LONG2BE
 						(
 							((ah->current.offset+writtenbytes)/488)+1
 						);
@@ -873,7 +874,7 @@ ULONG destination;
 		}
 		destination=(ULONG)databuffer->buffer+ah->current.byte;
 		size=BLOCK_SIZE(ah->volume);
-		if (ah->volume->flags==0)
+		if (ah->volume->dosflags==0)
 		{
 			size -= (6*4);
 			destination += (BLK_DATA_START*4);
@@ -890,20 +891,20 @@ ULONG destination;
 			ah->current.filekey--;
 		}
 		CopyMem((APTR)((ULONG)buffer+writtenbytes),(APTR)destination,size);
-		if (ah->volume->flags==0)
+		if (ah->volume->dosflags==0)
 		{
 			if (ah->current.byte==0)
 			{
 				databuffer->buffer[BLK_DATA_SIZE]=
-					AROS_LONG2BE(BLOCK_SIZE(ah->volume)-(6*4));
+					OS_LONG2BE(BLOCK_SIZE(ah->volume)-(6*4));
 			}
-			else if (AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE])<ah->current.byte)
+			else if (OS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE])<ah->current.byte)
 			{
-				databuffer->buffer[BLK_DATA_SIZE]=AROS_LONG2BE(ah->current.byte);
+				databuffer->buffer[BLK_DATA_SIZE]=OS_LONG2BE(ah->current.byte);
 			}
 			databuffer->buffer[BLK_CHECKSUM]=0;
 			databuffer->buffer[BLK_CHECKSUM]=
-				AROS_LONG2BE
+				OS_LONG2BE
 					(
 						0-calcChkSum(ah->volume->SizeBlock,databuffer->buffer)
 					);
@@ -924,7 +925,7 @@ ULONG destination;
 	return writtenbytes;
 }
 
-LONG write
+LONG writef
 	(
 		struct afsbase *afsbase,
 		struct AfsHandle *ah,
@@ -951,7 +952,7 @@ struct DateStamp ds;
 			{
 				ah->filesize=ah->current.offset;
 				headerblock->buffer[BLK_BYTE_SIZE(ah->volume)]=
-					AROS_LONG2BE(ah->filesize);
+					OS_LONG2BE(ah->filesize);
 			}
 			DateStamp(&ds);
 			setHeaderDate(afsbase, ah->volume,headerblock,&ds);
@@ -1003,7 +1004,7 @@ struct BlockCache *blockbuffer;
 	if (newoffset>=0)
 	{
 		size=BLOCK_SIZE(ah->volume);
-		if (ah->volume->flags==0)
+		if (ah->volume->dosflags==0)
 			size -= (BLK_DATA_START*4);
 		togo = newoffset / size;
 		byte = BLK_TABLE_END(ah->volume)-BLK_TABLE_START+1; /* hashtable size */
@@ -1015,7 +1016,7 @@ struct BlockCache *blockbuffer;
 			blockbuffer=getBlock(afsbase, ah->volume,block);
 			if (!blockbuffer)
 				return -1;
-			block=AROS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)]);
+			block=OS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)]);
 			togo--;
 		}
 		if (togo == 0)

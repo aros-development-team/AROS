@@ -2,12 +2,11 @@
 #define BITMAP_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/types.h>
-
+#include "os.h"
 #include "volumes.h"
 
 ULONG	countUsedBlocks(struct afsbase *, struct Volume *);

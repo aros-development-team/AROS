@@ -25,7 +25,7 @@ struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 	else
 	{
 #warning kprintf for error printing when gfx.hidd is not initialized
-		vkprintf(string,args);
+		vkprintf(string, (va_list)args);
 		kprintf("\n");
 	}
 #endif

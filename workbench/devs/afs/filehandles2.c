@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,12 +7,7 @@
 #define DEBUG 1
 #endif
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-
-#include <aros/debug.h>
-#include <aros/macros.h>
-
+#include "os.h"
 #include "filehandles2.h"
 #include "afsblocks.h"
 #include "bitmap.h"
@@ -50,11 +45,11 @@ ULONG setHeaderDate
 			"afs.handler: setHeaderDate: for headerblock %ld\n",
 			blockbuffer->blocknum)
 		);
-	blockbuffer->buffer[BLK_DAYS(volume)]=AROS_LONG2BE(ds->ds_Days);
-	blockbuffer->buffer[BLK_MINS(volume)]=AROS_LONG2BE(ds->ds_Minute);
-	blockbuffer->buffer[BLK_TICKS(volume)]=AROS_LONG2BE(ds->ds_Tick);
+	blockbuffer->buffer[BLK_DAYS(volume)]=OS_LONG2BE(ds->ds_Days);
+	blockbuffer->buffer[BLK_MINS(volume)]=OS_LONG2BE(ds->ds_Minute);
+	blockbuffer->buffer[BLK_TICKS(volume)]=OS_LONG2BE(ds->ds_Tick);
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+	blockbuffer->buffer[BLK_CHECKSUM]=OS_LONG2BE
 		(
 			0-calcChkSum(volume->SizeBlock,blockbuffer->buffer)
 		);
@@ -63,7 +58,7 @@ ULONG setHeaderDate
 		(
 			afsbase,
 			volume,
-			AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)])
+			OS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)])
 		);
 	if (!blockbuffer)
 		return ERROR_UNKNOWN;
@@ -122,7 +117,7 @@ struct BlockCache *blockbuffer;
 	blockbuffer=findBlock(afsbase, ah, name, &block);
 	if (!blockbuffer)
 		return error;
-	blockbuffer->buffer[BLK_PROTECT(ah->volume)]=AROS_LONG2BE(mask);
+	blockbuffer->buffer[BLK_PROTECT(ah->volume)]=OS_LONG2BE(mask);
 	return writeHeader(afsbase, ah->volume, blockbuffer);
 }
 
@@ -183,13 +178,13 @@ ULONG key;
 	// find the "member" where entry is linked
 	// ->linked into hashchain or hashtable
 	key=BLK_HASHCHAIN(volume);
-	if (AROS_BE2LONG(lastentry->buffer[key])!=entry->blocknum)
+	if (OS_BE2LONG(lastentry->buffer[key])!=entry->blocknum)
 		for (key=BLK_TABLE_START;key<=BLK_TABLE_END(volume);key++)
-			if (AROS_BE2LONG(lastentry->buffer[key])==entry->blocknum)
+			if (OS_BE2LONG(lastentry->buffer[key])==entry->blocknum)
 				break;
 	lastentry->buffer[key]=entry->buffer[BLK_HASHCHAIN(volume)];	//unlink block
 	lastentry->buffer[BLK_CHECKSUM]=0;
-	lastentry->buffer[BLK_CHECKSUM]=AROS_LONG2BE
+	lastentry->buffer[BLK_CHECKSUM]=OS_LONG2BE
 		(
 			0-calcChkSum(volume->SizeBlock, lastentry->buffer)
 		);
@@ -213,13 +208,13 @@ struct BlockCache *blockbuffer, *priorbuffer;
 		return error;
 	if (findHandle(ah->volume, blockbuffer->blocknum))
 		return ERROR_OBJECT_IN_USE;
-	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
+	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
 		return ERROR_DELETE_PROTECTED;
 	/* if we try to delete a directory
       check if it is empty
 	*/
 	if (
-			AROS_BE2LONG
+			OS_BE2LONG
 				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_USERDIR
 		)
 	{
@@ -248,7 +243,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	writeBlock(afsbase, ah->volume,priorbuffer);
 	markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
 	if (
-			AROS_BE2LONG
+			OS_BE2LONG
 				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_FILE
 		)
 	{
@@ -266,7 +261,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 					(
 						afsbase,
 						ah->volume,
-						AROS_BE2LONG(blockbuffer->buffer[key]),
+						OS_BE2LONG(blockbuffer->buffer[key]),
 						-1
 					);
 			}
@@ -278,7 +273,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 				(
 					afsbase,
 					ah->volume,
-					AROS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
+					OS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
 				);
 			if (blockbuffer == NULL)
 			{
@@ -325,38 +320,38 @@ ULONG key; /* parent; */
 UBYTE buffer[32];
 STRPTR name;
 
-	file->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dir->blocknum);
+	file->buffer[BLK_PARENT(volume)]=OS_LONG2BE(dir->blocknum);
 	D(bug("afs.handler: linkNewBlock: linking block %ld\n",file->blocknum));
 	name=(STRPTR)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
-	StrCpyFromBstr(name,buffer);
-	key=getHashKey(buffer,volume->SizeBlock-56,volume->flags)+BLK_TABLE_START;
+	StrCpyFromBstr(name, buffer);
+	key=getHashKey(buffer,volume->SizeBlock-56,volume->dosflags)+BLK_TABLE_START;
 	/* sort in ascending order */
 	if (
 			(dir->buffer[key]) &&
-			(AROS_BE2LONG(dir->buffer[key])<file->blocknum))
+			(OS_BE2LONG(dir->buffer[key])<file->blocknum))
 	{
-		dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]));
+		dir=getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
 		if (!dir)
 			return 0;
 		key=BLK_HASHCHAIN(volume);
 		while (
 					(dir->buffer[key]) &&
-					(AROS_BE2LONG(dir->buffer[key])<file->blocknum)
+					(OS_BE2LONG(dir->buffer[key])<file->blocknum)
 				)
 		{
-			dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]));
+			dir=getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
 			if (!dir)
 				return 0;
 		}
 	}
 	file->buffer[BLK_HASHCHAIN(volume)]=dir->buffer[key];
-	dir->buffer[key]=AROS_LONG2BE(file->blocknum);
+	dir->buffer[key]=OS_LONG2BE(file->blocknum);
 	file->buffer[BLK_CHECKSUM]=0;
 	file->buffer[BLK_CHECKSUM]=
-		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
 	dir->buffer[BLK_CHECKSUM]=0;
 	dir->buffer[BLK_CHECKSUM]=
-		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
 	return dir;
 }
 
@@ -399,7 +394,7 @@ UBYTE buffer[256];
 }
 
 /********************************************
- Name  : rename
+ Name  : renameObject
  Descr.: rename an object
  Input : afsbase -
          dirah   - filehandle names are relative to
@@ -407,7 +402,7 @@ UBYTE buffer[256];
          newname - new name of the object
  Output: 0 for success; error code otherwise
 *********************************************/
-ULONG rename
+ULONG renameObject
 	(
 		struct afsbase *afsbase,
 		struct AfsHandle *dirah,
@@ -436,7 +431,7 @@ UBYTE newentryname[34];
 	oldfile->flags |= BCF_USED;
 	// do we move a directory?
 	if (
-			AROS_BE2LONG
+			OS_BE2LONG
 				(
 					oldfile->buffer
 						[BLK_SECONDARY_TYPE(dirah->volume)]
@@ -450,7 +445,7 @@ UBYTE newentryname[34];
 			oldfile->flags &= ~BCF_USED;
 			return ERROR_UNKNOWN;
 		}
-		while ((block=AROS_BE2LONG(dirblock->buffer[BLK_PARENT(dirah->volume)])))
+		while ((block=OS_BE2LONG(dirblock->buffer[BLK_PARENT(dirah->volume)])))
 		{
 			if (block==oldfile->blocknum)
 			{
@@ -492,7 +487,7 @@ UBYTE newentryname[34];
 	}
 	if (
 			(
-				AROS_BE2LONG
+				OS_BE2LONG
 					(
 						dirblock->buffer
 							[
@@ -501,7 +496,7 @@ UBYTE newentryname[34];
 					)!=ST_USERDIR
 			) &&
 			(
-				AROS_BE2LONG
+				OS_BE2LONG
 					(
 						dirblock->buffer
 							[
@@ -592,6 +587,7 @@ struct BlockCache *newblock;
 struct DateStamp ds;
 ULONG i;
 
+	D(bug("afs.handler: createNewEntry(%ld, %s)\n", dirblock->blocknum, entryname));
 	dirblock->flags |= BCF_USED;
 	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i))
 	{
@@ -622,14 +618,14 @@ ULONG i;
 		return 0;
 	}
 	newblock->flags |= BCF_USED;
-	newblock->buffer[BLK_PRIMARY_TYPE]=AROS_LONG2BE(T_SHORT);
+	newblock->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_SHORT);
 	for (i=BLK_BLOCK_COUNT;i<=BLK_COMMENT_END(volume);i++)
 		newblock->buffer[i]=0;
-	newblock->buffer[BLK_PROTECT(volume)]=AROS_LONG2BE(protection);
+	newblock->buffer[BLK_PROTECT(volume)]=OS_LONG2BE(protection);
 	DateStamp(&ds);
-	newblock->buffer[BLK_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
-	newblock->buffer[BLK_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
-	newblock->buffer[BLK_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
+	newblock->buffer[BLK_DAYS(volume)]=OS_LONG2BE(ds.ds_Days);
+	newblock->buffer[BLK_MINS(volume)]=OS_LONG2BE(ds.ds_Minute);
+	newblock->buffer[BLK_TICKS(volume)]=OS_LONG2BE(ds.ds_Tick);
 	StrCpyToBstr
 		(
 			entryname,
@@ -637,10 +633,10 @@ ULONG i;
 		);
 	for (i=BLK_FILENAME_END(volume)+1;i<BLK_HASHCHAIN(volume);i++)
 		newblock->buffer[i]=0;
-	newblock->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dirblock->blocknum);
+	newblock->buffer[BLK_PARENT(volume)]=OS_LONG2BE(dirblock->blocknum);
 	newblock->buffer[BLK_EXTENSION(volume)]=0;
-	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(entrytype);
-	newblock->buffer[BLK_OWN_KEY]=AROS_LONG2BE(newblock->blocknum);
+	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=OS_LONG2BE(entrytype);
+	newblock->buffer[BLK_OWN_KEY]=OS_LONG2BE(newblock->blocknum);
 	dirblock->flags &= ~BCF_USED;
 	dirblock=linkNewBlock(afsbase, volume,dirblock,newblock);
 	if (!dirblock)

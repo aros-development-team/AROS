@@ -2,15 +2,12 @@
 #define BLOCKACCESS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/types.h>
-#include <devices/trackdisk.h>
-
+#include "os.h"
 #include "volumes.h"
-#include "afshandler.h"
 
 struct BlockCache {
 	struct BlockCache *next;
@@ -30,12 +27,6 @@ struct BlockCache *getFreeCacheBlock(struct afsbase *, struct Volume *, ULONG);
 struct BlockCache *getBlock(struct afsbase *, struct Volume *, ULONG);
 LONG writeBlock(struct afsbase *, struct Volume *, struct BlockCache *);
 void flushCache(struct BlockCache *);
-void motorOff(struct afsbase *, struct Volume *);
-UBYTE diskPresent(struct afsbase *, struct Volume *);
-LONG getGeometry(struct afsbase *, struct Volume *, struct DriveGeometry *);
-ULONG flush(struct afsbase *, struct Volume *);
-LONG addChangeInt(struct afsbase *, struct Volume *);
-void remChangeInt(struct afsbase *, struct Volume *);
 void checkCache(struct afsbase *, struct BlockCache *);
 
 #endif

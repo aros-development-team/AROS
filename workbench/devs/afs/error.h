@@ -2,11 +2,11 @@
 #define ERROR_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "afshandler.h"
+#include "os.h"
 
 enum {
 	ERR_NONE,
