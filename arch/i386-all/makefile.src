@@ -37,7 +37,7 @@ CLIBFILES = \
 CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
 DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
-TESTS = stackswap
+TESTS = stackswap runprocess
 
 all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
@@ -64,6 +64,11 @@ test : $(TESTS)
 
 % : %.c
 	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+
+runprocess : runprocess.c stackswap.c
+	$(CC) -DTEST -DNO_MAIN -I/usr/include $(CFLAGS) -c stackswap.c -o ss.o
+	$(CC) -DTEST -I/usr/include $(CFLAGS) $< ss.o -o $@
+	@$(RM) ss.o
 
 $(CLIBDIR)/%.o: %.s machine.i
 	%assemble_q
