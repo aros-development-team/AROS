@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/27 15:22:20  ldp
+    Include proto instead of clib
+
     Revision 1.8  1997/01/08 03:36:14  iaint
     A few more utility.lib functions
 
@@ -68,14 +71,14 @@
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
-#ifndef CLIB_EXEC_PROTOS_H
-#include <clib/exec_protos.h>
+#ifndef PROTO_EXEC_H
+#include <proto/exec.h>
 #endif
-#ifndef CLIB_UTILITY_PROTOS_H
-#include <clib/utility_protos.h>
+#ifndef PROTO_UTILITY_H
+#include <proto/utility.h>
 #endif
-#ifndef CLIB_ALIB_PROTOS_H
-#include <clib/alib_protos.h>
+#ifndef PROTO_ALIB_H
+#include <proto/alib.h>
 #endif
 
 /*
