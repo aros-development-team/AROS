@@ -13,9 +13,15 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
+ifeq ($(FLAVOUR),native)
+# Only these subdirs for the native Amiga version, for the moment.
+SUBDIRS = config \
+	include clib exec
+else
 SUBDIRS = config \
 	include aros clib exec dos utility graphics intuition \
 	alib filesys libs devs c Demos
+endif
 
 # Extra files which should go in the developer dist
 DIST_FILES = \
@@ -55,8 +61,12 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/devicetest \
 	$(TESTDIR)/filetest
 
+ifeq ($(FLAVOUR),native)
+all: setup subdirs
+else
 all : setup subdirs AmigaOS \
 	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell
+endif
 
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
