@@ -1,4 +1,5 @@
+host.cfg.in
 host.cfg
 config.h
+mmakefile
 makefile
-makefile.bak

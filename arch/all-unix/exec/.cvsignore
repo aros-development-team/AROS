@@ -1,3 +1,4 @@
 *.err
+mmakefile
 makefile
 makefile.bak

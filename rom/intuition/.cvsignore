@@ -3,3 +3,4 @@ intuition_endtag.c
 makefile
 .cvsignore
 libdefs.h
+mmakefile
