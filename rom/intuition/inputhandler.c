@@ -1391,7 +1391,7 @@ D(bug("Window: %p\n", w));
                        */
                        if (NULL != cr)
                        {
-                         /* reinstall the cliprects */
+                         /* reinstall the clipregion cliprects */
                          L->ClipRect = cr;
                        }
                      }
@@ -1420,7 +1420,7 @@ D(bug("Window: %p\n", w));
 
                      /* 
                         Only if the window is smaller now there can be damage
-                        to report to layers further behind
+                        to report to layers further behind.
                      */
                      if (msg->dx < 0 || msg->dy < 0)
                      {
