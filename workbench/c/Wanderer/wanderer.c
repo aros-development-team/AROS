@@ -339,6 +339,7 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 				MUIA_Window_DragBar, FALSE,
 				MUIA_Window_UseBottomBorderScroller, FALSE,
 				MUIA_Window_UseRightBorderScroller, FALSE,
+				MUIA_Window_Backdrop, TRUE,
 				TAG_DONE);
 				
 		        } else
@@ -356,6 +357,7 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 				MUIA_Window_DragBar, TRUE,
 				MUIA_Window_UseBottomBorderScroller, TRUE,
 				MUIA_Window_UseRightBorderScroller, TRUE,
+				MUIA_Window_Backdrop, FALSE,
 				TAG_DONE);
 			}
 		        data->is_backdrop = !!tag->ti_Data;
