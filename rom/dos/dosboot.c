@@ -236,6 +236,7 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 	{ NP_Input,	 (IPTR) NULL },
 	{ NP_Output,	 (IPTR) NULL },
 	{ NP_CurrentDir, (IPTR) NULL },
+	{ NP_StackSize, AROS_STACKSIZE * 2},
 	{ NP_Cli,	 (IPTR) 0 },
 	{ TAG_END, }
     };
