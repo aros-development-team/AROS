@@ -58,7 +58,7 @@
     struct Task *me;
 
     /* Get pointer to current task - I'll need it very often */
-    me=SysBase->ThisTask;
+    me = FindTask (NULL);
 
     /* Protect the task lists against access by other tasks. */
     Disable();
