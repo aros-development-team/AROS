@@ -38,7 +38,7 @@ ChangeLog()
     oldpwd=$PWD
     printi "Generating ChangeLog for the" $module "module"
     cd $dir
-    cvs2cl -l "-d'>$VERSION'" -f $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml
+    cvs2cl -l "-d'>1 day ago'" -f $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml
     
     if [ -e $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml ]; then
         cd $ARCHIVE_BASE
