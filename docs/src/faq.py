@@ -38,10 +38,10 @@ class FAQ:
 		self.items.append (Item (path))
 
     def toXml (self):
-	result = xmlsupport.Tag ('faq')
+	result = xmlsupport.Tag ('chapter title="FAQ - Frequently Asked Questions"')
 
 	for item in self.items:
-	    xf = xmlsupport.XmlFile ()
+	    xf = xmlsupport.AROSXmlFile ()
 	    xf.parseString (item.text)
 
 	    for child in xf.tree:
