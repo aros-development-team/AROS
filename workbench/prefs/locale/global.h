@@ -105,6 +105,14 @@
 #include <datatypes/datatypesclass.h>
 #endif
 
+#ifndef PREFS_LOCALE_H
+#include <prefs/locale.h>
+#endif
+
+#ifndef PREFS_PREFHDR_H
+#include <prefs/prefhdr.h>
+#endif
+
 /*********************************************************************************************/
 
 #ifndef PROTO_EXEC_H
@@ -176,7 +184,9 @@
 #define PAGECMD_ADDGADGETS   	10
 #define PAGECMD_REMGADGETS   	11
 #define PAGECMD_HANDLEINPUT  	12
-#define PAGECMD_CLEANUP      	13
+#define PAGECMD_PREFS_CHANGING  13
+#define PAGECMD_PREFS_CHANGED   14
+#define PAGECMD_CLEANUP      	15
 
 #define BORDER_X    	    	4
 #define BORDER_Y    	    	4
@@ -196,6 +206,7 @@ struct ListviewEntry
 {
     struct Node node;
     UBYTE   	name[30];
+    UBYTE   	realname[30];
 };
 
 struct CountryEntry
@@ -213,6 +224,7 @@ struct LanguageEntry
 /* main.c */
 
 void Cleanup(STRPTR msg);
+void TellGUI(LONG cmd);
 
 /* misc.c */
 
@@ -248,6 +260,9 @@ STRPTR MSG(ULONG id);
 
 void InitPrefs(void);
 void CleanupPrefs(void);
+BOOL LoadPrefs(STRPTR filename);
+BOOL DefaultPrefs(void);
+void GetActualPrefs(void);
 
 /*********************************************************************************************/
 /*********************************************************************************************/

@@ -42,7 +42,7 @@ static struct libinfo
 libtable[] =
 {
     {&IntuitionBase     , "intuition.library"	 , 39, TRUE  },
-    {&GfxBase           , "graphics.library" 	 , 39, TRUE  },
+    {&GfxBase           , "graphics.library" 	 , 40, TRUE  }, /* 40, because of WriteChunkyPixels */
     {&GadToolsBase      , "gadtools.library" 	 , 39, TRUE  },
     {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
     {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
@@ -457,10 +457,12 @@ static void MakeWin(void)
 			    WA_DepthGadget  , TRUE,
 			    WA_Activate     , TRUE,
 			    WA_Gadgets	    , (IPTR)buttontable[0].gad,
+			    WA_NewLookMenus , TRUE,
 			    WA_IDCMP	    , REGISTERTAB_IDCMP |
 			    	      	      BUTTONIDCMP   	|
 				      	      LISTVIEWIDCMP 	|
-				      	      IDCMP_CLOSEWINDOW,
+				      	      IDCMP_CLOSEWINDOW |
+					      IDCMP_MENUPICK,
 			    TAG_DONE);
 
     SetMenuStrip(win, menus);
@@ -478,6 +480,18 @@ static void KillWin(void)
     pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
     
     if (win) CloseWindow(win);
+}
+
+/*********************************************************************************************/
+
+void TellGUI(LONG cmd)
+{
+    WORD i;
+    
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+    	pagetable[i].handler(cmd, 0);
+    }
 }
 
 /*********************************************************************************************/
@@ -526,6 +540,28 @@ static void HandleAll(void)
 			{
 			    switch((ULONG)GTMENUITEM_USERDATA(item))
 			    {
+			    	case MSG_MEN_PROJECT_OPEN:
+				    break;
+				
+				case MSG_MEN_PROJECT_SAVEAS:
+				    break;
+				    
+			    	case MSG_MEN_PROJECT_QUIT:
+				    break;
+				
+				case MSG_MEN_EDIT_DEFAULT:
+				    DefaultPrefs();
+				    break;
+				
+				case MSG_MEN_EDIT_LASTSAVED:
+				    break;
+				    
+				case MSG_MEN_EDIT_RESTORE:
+				    break;
+				    
+				case MSG_MEN_SETTINGS_CREATEICONS:
+				    break;
+				    
     	    	    	    	default:
 				    break;
 				

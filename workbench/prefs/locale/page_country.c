@@ -15,6 +15,8 @@
 
 static struct Gadget *gadlist, *countrygad, *gad;
 static WORD domleft, domtop, domwidth, domheight;
+static WORD active_country = 0;
+static BOOL page_active;
 
 /*********************************************************************************************/
 
@@ -33,10 +35,12 @@ static LONG country_makegadgets(void)
     ng.ng_GadgetID   = MSG_GAD_TAB_COUNTRY;
     ng.ng_Flags      = 0;
     ng.ng_VisualInfo = vi;
-    
-    gad = countrygad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels, (IPTR)&country_list,
-    	    	    	    	    	    	    	     GTLV_ShowSelected, NULL,
-    	    	    	    	    	    	    	     TAG_DONE);
+
+    gad = countrygad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels    	, (IPTR)&country_list,
+    	    	    	    	    	    	    	     GTLV_ShowSelected	, NULL	    	     ,
+							     GTLV_Selected    	, active_country     ,
+							     GTLV_MakeVisible	, active_country     ,
+   	    	    	    	    	    	    	     TAG_DONE);
     
 
     return gad ? TRUE : FALSE;
@@ -48,6 +52,35 @@ static void country_cleanup(void)
 {
     if (gadlist) FreeGadgets(gadlist);
     gadlist = NULL;
+}
+
+/*********************************************************************************************/
+
+static void country_prefs_changed(void)
+{
+    struct CountryEntry *entry;
+    WORD                i = 0;
+    
+    active_country = 0;
+    
+    ForeachNode(&country_list, entry)
+    {
+    	if (Stricmp(localeprefs.lp_CountryName, entry->lve.realname) == 0)
+	{
+	    active_country = i;
+	    break;
+	}
+	i++;
+    }
+    
+    if (gadlist)
+    {
+    	struct Window *winparam = page_active ? win : NULL;
+	
+	GT_SetGadgetAttrs(countrygad, winparam, NULL, GTLV_Selected   , active_country,
+	    	    	    	    	    	      GTLV_MakeVisible, active_country,
+						      TAG_DONE); 
+    }
 }
 
 /*********************************************************************************************/
@@ -93,13 +126,28 @@ LONG page_country_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_ADDGADGETS:
-	    AddGList(win, gadlist, -1, -1, NULL);
-	    GT_RefreshWindow(win, NULL);
-	    RefreshGList(gadlist, win, NULL, -1);
+	    if (!page_active)
+	    {
+		GT_SetGadgetAttrs(countrygad, NULL, NULL, GTLV_MakeVisible, active_country, TAG_DONE);
+		AddGList(win, gadlist, -1, -1, NULL);
+		GT_RefreshWindow(win, NULL);
+		RefreshGList(gadlist, win, NULL, -1);
+		
+		page_active = TRUE;
+	    }
     	    break;
 	    
 	case PAGECMD_REMGADGETS:
-	    RemoveGList(win, gadlist, -1);
+	    if (page_active)
+	    {
+		if (gadlist) RemoveGList(win, gadlist, -1);
+		
+		page_active = FALSE;
+	    }
+	    break;
+	
+	case PAGECMD_PREFS_CHANGED:
+	    country_prefs_changed();
 	    break;
 	    
 	case PAGECMD_HANDLEINPUT:
