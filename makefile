@@ -297,12 +297,8 @@ includes: \
 	    $(CLIBDIR)/iffparse_protos.h \
 	    $(CLIBDIR)/mathffp_protos.h
 
-$(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
-	    config/$(KERNEL)/*.c config/$(ARCH)/*.c rom/exec/*.c) \
-	    scripts/genprotos.h scripts/genprotos
-	$(GENPROTOS) Exec "$(TOP)" \
-	    config/$(KERNEL)/*.s config/$(KERNEL)/*.c config/$(ARCH)/*.c \
-	    rom/exec/*.c
+$(CLIBDIR)/exec_protos.h: $(wildcard rom/exec/*.c) scripts/genprotos.h
+	$(GENPROTOS) Exec "$(TOP)" rom/exec/*.c
 
 $(CLIBDIR)/aros_protos.h: $(wildcard rom/aros/*.c) scripts/genprotos.h
 	$(GENPROTOS) Aros "$(TOP)" rom/aros/*.c
