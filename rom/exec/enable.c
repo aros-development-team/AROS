@@ -8,6 +8,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 
 /*****************************************************************************/
 #undef  Exec
@@ -77,10 +78,13 @@
     /* Only disable interrupts if they are not already disabled. The
        initial (enabled) value of IDNestCnt is -1
     */
-    if( --SysBase->IDNestCnt < 0)
+    
+    AROS_ATOMIC_DECB(SysBase->IDNestCnt);
+    
+    if( SysBase->IDNestCnt < 0)
     {
 	/*
-	    We have to disable interrupts, however some silly person
+	    We have to enable interrupts, however some silly person
 	    hasn't written the code required to do it yet. They should
 	    have created a file in config/$(KERNEL)/exec or
 	    config/$(ARCH)/exec called disable.c or disable.s which
