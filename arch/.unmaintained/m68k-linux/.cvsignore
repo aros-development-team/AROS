@@ -1,0 +1,4 @@
+*.err
+mmakefile
+geninc
+machine.i
