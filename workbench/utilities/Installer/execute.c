@@ -23,6 +23,7 @@ extern struct ProcedureList *find_proc( char * );
 extern void traperr( char *, char * );
 extern void outofmem( void * );
 extern void link_function( char *, long int );
+extern int user_confirmation( char * );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -1088,6 +1089,71 @@ void *params;
 			  }
 			  break;
 
+      case _RENAME	: /* Rename a file or relabel a disk if disk parameter */
+			  if( current->next != NULL && current->next->next != NULL )
+			  {
+			  int success = DOSFALSE,
+			      usrconfirm = FALSE;
+			    /* Get strings */
+			    current = current->next;
+			    ExecuteCommand();
+			    ExecuteNextCommand();
+			    if( current->arg != NULL && current->next->arg != NULL )
+			    {
+			      string = strip_quotes( current->arg );
+			      clip = strip_quotes( current->next->arg );
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires two strings as arguments!\n", current->parent->cmd->arg );
+			    }
+			    if( current->next->next )
+			    {
+			      parameter = get_parameters( current->next->next, level );
+			      if( GetPL( parameter, _CONFIRM ).used == 1 )
+			      {
+				usrconfirm = request_confirm( parameter, _AVERAGE );
+			      }
+			      if( GetPL( parameter, _DISK ).used == 1 )
+			      {
+				/* Relabel disk */
+				if(    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				    && usrconfirm
+				  )
+				{
+				  success = Relabel(string,clip);
+				}
+			      }
+			      else
+			      {
+			        /* Rename file */
+				if(    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				    && usrconfirm )
+				{
+				  success = Rename(string,clip);
+				}
+			      }
+			      free_parameterlist( parameter );
+			    }
+			    else
+			    {
+			      if( preferences.pretend == 0 )
+			      {
+				success = Rename(string,clip);
+			      }
+			    }
+			    current->parent->intval = (success == DOSTRUE ? 1 : 0);
+			    free( string );
+			    free( clip );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
+
       case _RUN		: /* Execute a command line */
 #warning TODO: Check me for correctness
 			  if( current->next != NULL )
@@ -1192,7 +1258,6 @@ void *params;
       case _PATHONLY	:
       case _PATMATCH	:
       case _PROTECT	:
-      case _RENAME	:
       case _REXX	:
       case _TACKON	:
       case _TEXTFILE	:
@@ -2068,12 +2133,25 @@ int i, changed = 0, cont = 0;
   Close( userstartup );
 
   DeleteFile( "S:User-Startup" );
-#warning FIXME: Rename( "old", "new" ) does not work here
-  Rename( "S:User-Startup.tmp", "S:User-Startup" );
+#warning FIXME: Check correctness of Rename()
+/*
+    IMO both arguments to Rename() should contain S:, check again if
+    Rename() is proven to work as expected
+*/
+#if DEBUG
+  if(
+#endif /* DEBUG */
+      Rename( "S:User-Startup.tmp", "User-Startup" )
+#if !DEBUG
+						    ;
+#else /* !DEBUG */
+						     == DOSFALSE )
+  {
+    printf("Rename failed because of %s\n", DosGetString(IoErr()) );
+  }
+#endif /* !DEBUG */
 
 }
-
-
 
 
 /*
@@ -2123,3 +2201,5 @@ int i, j;
     exit(-1);
   }
 }
+
+

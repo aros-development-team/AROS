@@ -11,8 +11,16 @@
 */
 #define DEBUG 1
 
+#ifdef DEBUG
+#   include <proto/arossupport.h>
+#   define DMSG(x) kprintf(x)
+#else
+#   define DMSG(x) /* */
+#endif /* DEBUG */
+
+
 #ifdef ADE
-#define IPTR int
+#   define IPTR int
 #endif /* ADE */
 
 #include <ctype.h>

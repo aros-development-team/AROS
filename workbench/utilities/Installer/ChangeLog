@@ -300,4 +300,12 @@
 - new mmakefile.src by Iain Templeton (iaint@aros.org) for the
   New Build Process
 
+0048
+- execute destructors of some gui-functions and call abort_install()
+  with pointer to this destructor (or NULL if not needed)
+- small changes to request_number (integer gadget)
+- implemented "rename"
+- added a GUI function user_confirm(char *) to ask user to proceed or skip
+- added some more preset variables/help texts
+
 

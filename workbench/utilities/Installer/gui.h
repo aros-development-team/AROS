@@ -19,5 +19,6 @@ extern long int request_options( struct ParameterList *pl );
 extern int request_confirm( struct ParameterList * pl, long int minuser );
 extern void final_report( );
 extern void display_text( char * msg );
+extern int user_confirmation( char * );
 
 #endif /* _GUI_H */

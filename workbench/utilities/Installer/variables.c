@@ -210,14 +210,16 @@ char *ttemp;
 
   set_variable( "@pretend",		NULL,	preferences.pretend );
 
+  /* Set help texts */
+  set_variable( "@askchoice-help",	ASKCHOICE_HELP,	0 );
+  set_variable( "@asknumber-help",	ASKNUMBER_HELP,	0 );
+  set_variable( "@askoptions-help",	ASKOPTIONS_HELP,0 );
+  set_variable( "@askstring-help",	ASKSTRING_HELP,	0 );
+
   /* Set other variables to (NULL|0) */
-  set_variable( "@askchoice-help",	NULL,	0 );
   set_variable( "@askdir-help",		NULL,	0 );
   set_variable( "@askdisk-help",	NULL,	0 );
   set_variable( "@askfile-help",	NULL,	0 );
-  set_variable( "@asknumber-help",	NULL,	0 );
-  set_variable( "@askoptions-help",	NULL,	0 );
-  set_variable( "@askstring-help",	NULL,	0 );
   set_variable( "@copyfiles-help",	NULL,	0 );
   set_variable( "@copylib-help",	NULL,	0 );
   set_variable( "@each-name",		NULL,	0 );

@@ -56,11 +56,12 @@ char *request_disk( struct ParameterList * );
 char *request_file( struct ParameterList * );
 long int request_options( struct ParameterList * );
 int request_confirm( struct ParameterList *, long int );
-void abort_install();
+void abort_install( VOID_FUNC );
 void final_report();
 void setgadgetdisable( int );
 void setaboutgaddisable( int );
 void display_text( char * );
+int user_confirmation( char * );
 
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
@@ -323,7 +324,7 @@ struct TagItem ti2[] = {
 
   stringgad = gad = CreateGadget( STRING_KIND, gad, &gt_stringgad,
 			GTST_String, "Blah",
-			GTST_MaxChars, 8,
+			GTST_MaxChars, 128,
 			GTTX_Border, TRUE,
 			TAG_DONE );
 
@@ -332,7 +333,7 @@ struct TagItem ti2[] = {
     fprintf( stderr, "CreateContext() failed\n");
 
   integergad = gad = CreateGadget( INTEGER_KIND, gad, &gt_integergad,
-			GTIN_MaxChars, 8,
+			GTIN_MaxChars, 16,
 			GTTX_Border, TRUE,
 			TAG_DONE );
 
@@ -406,7 +407,7 @@ int finish = FALSE;
     itext.IText = text;
     PrintIText( rp, &itext, 10, 10 );
 #else
-    Move( rp, 20, 25 );
+    Move( rp, 15, 25 );
     Text( rp, text, strlen(text) );
 #endif
     free( text );
@@ -420,7 +421,7 @@ int finish = FALSE;
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+2) );
 #else
-      Move( rp, 20, 15*n+45 );
+      Move( rp, 15, 15*n+45 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
       free( out[n] );
@@ -497,7 +498,7 @@ int n, m;
   itext.IText = text;
   PrintIText( rp, &itext, 10, 10 );
 #else
-  Move( rp, 20, 25 );
+  Move( rp, 15, 25 );
   Text( rp, text, strlen(text) );
 #endif
   free( text );
@@ -511,7 +512,7 @@ int n, m;
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
 #else
-    Move( rp, 20, 15*n+45 );
+    Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
 #endif
     free( out[n] );
@@ -526,7 +527,7 @@ int n, m;
   itext.IText = text;
   PrintIText( rp, &itext, 10, 15*(n+2) );
 #else
-  Move( rp, 20, 15*n+45 );
+  Move( rp, 15, 15*n+45 );
   Text( rp, text, strlen(text) );
 #endif
   free( text );
@@ -602,7 +603,7 @@ int n, m;
   itext.IText = text;
   PrintIText( rp, &itext, 10, 10 );
 #else
-  Move( rp, 20, 25 );
+  Move( rp, 15, 25 );
   Text( rp, text, strlen(text) );
 #endif
 #ifdef DEBUG
@@ -619,7 +620,7 @@ int n, m;
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
 #else
-    Move( rp, 20, 15*n+45 );
+    Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
 #endif
     free( out[n] );
@@ -661,7 +662,7 @@ int finish = FALSE;
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
 #else
-      Move( rp, 20, 15*n+30 );
+      Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
       free( out[n] );
@@ -687,7 +688,7 @@ int finish = FALSE;
 		    finish = TRUE;
 		    break;
 		  case ID_ABORTGAD:
-		    abort_install();
+		    abort_install( NULL );
 		    break;
 		  case ID_HELPGAD:
 		    m = GetPL( pl, _HELP ).intval;
@@ -794,7 +795,7 @@ char welcome[1024];
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
 #else
-      Move( rp, 20, 15*n+30 );
+      Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
 #endif
       free( out[n] );
@@ -880,7 +881,7 @@ char welcome[1024];
 		  finish = TRUE;
 		  break;
 	      case ID_ABORTGAD:
-		  abort_install();
+		  abort_install( NULL );
 		  break;
 	      case ID_HELPGAD:
 		  setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
@@ -929,7 +930,7 @@ char welcome[1024];
     itext.IText = LOG_QUESTION;
     PrintIText( rp, &itext, 15, 35 );
 #else
-    Move( rp, 25, 50 );
+    Move( rp, 15, 50 );
     Text( rp, LOG_QUESTION, strlen(LOG_QUESTION) );
 #endif
 
@@ -995,7 +996,7 @@ char welcome[1024];
 		    finish = TRUE;
 		    break;
 		  case ID_ABORTGAD:
-		    abort_install();
+		    abort_install( NULL );
 		    break;
 		  case ID_HELPGAD:
 		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
@@ -1028,7 +1029,7 @@ char welcome[1024];
       itext.IText = PRETEND_QUESTION;
       PrintIText( rp, &itext, 15, 35 );
 #else
-      Move( rp, 25, 50 );
+      Move( rp, 15, 50 );
       Text( rp, PRETEND_QUESTION, strlen(PRETEND_QUESTION) );
 #endif
 
@@ -1090,7 +1091,7 @@ char welcome[1024];
 		      finish = TRUE;
 		      break;
 		    case ID_ABORTGAD:
-		      abort_install();
+		      abort_install( NULL );
 		      break;
 		    case ID_HELPGAD:
 		      setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
@@ -1130,6 +1131,8 @@ char welcome[1024];
  */
 void request_bool_destruct()
 {
+  RemoveGList(GuiWin,glist,-1);
+  GT_RefreshWindow(GuiWin,NULL);
 }
 long int request_bool( struct ParameterList *pl)
 {
@@ -1165,7 +1168,7 @@ int finish = FALSE;
 
     clear_gui();
 
-    setgadgetdisable( PROCEEDGAD );
+    setgadgetdisable( PROCEEDGAD|SKIPGAD );
     AddGList(GuiWin,glist,-1,-1,NULL);
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
@@ -1200,7 +1203,7 @@ int finish = FALSE;
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
 #else
-	Move( rp, 25, 15*j+22 );
+	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
 	free( out[n] );
@@ -1229,7 +1232,7 @@ int finish = FALSE;
 		    finish = TRUE;
 		    break;
 		  case ID_ABORTGAD:
-		    abort_install();
+		    abort_install( &request_bool_destruct );
 		    break;
 		  case ID_HELPGAD:
 		    for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
@@ -1254,8 +1257,8 @@ int finish = FALSE;
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
 
     } while( !finish );
-    RemoveGList(GuiWin,glist,-1);
-    GT_RefreshWindow(GuiWin,NULL);
+
+    request_bool_destruct();
   }
 
   if( preferences.transcriptstream != NULL )
@@ -1274,6 +1277,8 @@ return retval;
  */
 void request_number_destruct()
 {
+  RemoveGList(GuiWin,integerglist,-1);
+  GT_RefreshWindow(GuiWin,NULL);
 }
 long int request_number( struct ParameterList *pl)
 {
@@ -1341,7 +1346,7 @@ int finish = FALSE;
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
 #else
-	Move( rp, 25, 15*j+22 );
+	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
 	free( out[n] );
@@ -1364,10 +1369,31 @@ int finish = FALSE;
 		switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
 		{
 		  case ID_PROCEEDGAD:
-		    finish = TRUE;
+		    GT_GetGadgetAttrs( integergad, GuiWin, NULL,
+					GTIN_Number, &m,
+					TAG_DONE );
+		    if( m < min )
+		    {
+		      GT_SetGadgetAttrs( integergad, GuiWin, NULL,
+					GTIN_Number, min,
+					TAG_DONE );
+		      ActivateGadget( integergad, GuiWin, NULL );
+		    }
+		    else if( m > max )
+		    {
+		      GT_SetGadgetAttrs( integergad, GuiWin, NULL,
+					GTIN_Number, max,
+					TAG_DONE );
+		      ActivateGadget( integergad, GuiWin, NULL );
+		    }
+		    else
+		    {
+		      retval = m;
+		      finish = TRUE;
+		    }
 		    break;
 		  case ID_ABORTGAD:
-		    abort_install();
+		    abort_install( &request_number_destruct );
 		    break;
 		  case ID_HELPGAD:
 #warning FIXME: What is this help like?
@@ -1385,11 +1411,19 @@ int finish = FALSE;
 		    GT_GetGadgetAttrs( integergad, GuiWin, NULL,
 					GTIN_Number, &m,
 					TAG_DONE );
-		    if( m < min || m > max )
+		    if( m < min )
 		    {
 		      GT_SetGadgetAttrs( integergad, GuiWin, NULL,
-					GTIN_Number, retval,
+					GTIN_Number, min,
 					TAG_DONE );
+		      ActivateGadget( integergad, GuiWin, NULL );
+		    }
+		    else if( m > max )
+		    {
+		      GT_SetGadgetAttrs( integergad, GuiWin, NULL,
+					GTIN_Number, max,
+					TAG_DONE );
+		      ActivateGadget( integergad, GuiWin, NULL );
 		    }
 		    else
 		    {
@@ -1408,8 +1442,7 @@ int finish = FALSE;
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
-    RemoveGList(GuiWin,integerglist,-1);
-    GT_RefreshWindow(GuiWin,NULL);
+    request_number_destruct();
   }
 
   if( preferences.transcriptstream != NULL )
@@ -1428,6 +1461,8 @@ return retval;
  */
 void request_string_destruct()
 {
+  RemoveGList(GuiWin,stringglist,-1);
+  GT_RefreshWindow(GuiWin,NULL);
 }
 char *request_string( struct ParameterList *pl)
 {
@@ -1484,7 +1519,7 @@ int finish = FALSE;
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
 #else
-	Move( rp, 25, 15*j+22 );
+	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
 	free( out[n] );
@@ -1510,7 +1545,7 @@ int finish = FALSE;
 		    finish = TRUE;
 		    break;
 		  case ID_ABORTGAD:
-		    abort_install();
+		    abort_install( &request_string_destruct );
 		    break;
 		  case ID_HELPGAD:
 #warning FIXME: What is this help like?
@@ -1538,8 +1573,7 @@ int finish = FALSE;
 
     GT_GetGadgetAttrs(stringgad,GuiWin,NULL,GTST_String,&string,TAG_DONE);
 
-    RemoveGList(GuiWin,stringglist,-1);
-    GT_RefreshWindow(GuiWin,NULL);
+    request_string_destruct();
   }
 
   retval = addquotes( string );
@@ -1556,9 +1590,12 @@ return retval;
 /*
  * Ask user to choose one of N items
  */
+void request_choice_destruct()
+{
+}
 long int request_choice( struct ParameterList *pl )
 {
-int i;
+int i,m,n;
 long int retval;
 int max, finish = FALSE;
 char c;
@@ -1585,81 +1622,94 @@ char c;
     traperr( "No choices given!\n", NULL );
   }
 
-  clear_gui();
-
-  RefreshGList(stdglist,GuiWin,NULL,-1);
-  GT_RefreshWindow(GuiWin,NULL);
-
-  mxlabels = malloc( (max+1)*sizeof(STRPTR) );
-  for( i = 0 ; i < max ; i ++ )
+  if( get_var_int( "@user-level" ) > _NOVICE )
   {
-    mxlabels[i] = strdup(GetPL( pl, _CHOICES ).arg[i] );
-  }
-  mxlabels[i] = NULL;
+    clear_gui();
 
-  gad = CreateContext( &mxglist );
-  if(gad==NULL)
-    fprintf( stderr, "CreateContext() failed\n");
+    RefreshGList(stdglist,GuiWin,NULL,-1);
+    GT_RefreshWindow(GuiWin,NULL);
 
-  gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
+    mxlabels = malloc( (max+1)*sizeof(STRPTR) );
+    for( i = 0 ; i < max ; i ++ )
+    {
+      mxlabels[i] = strdup(GetPL( pl, _CHOICES ).arg[i] );
+    }
+    mxlabels[i] = NULL;
+
+    gad = CreateContext( &mxglist );
+    if(gad==NULL)
+      fprintf( stderr, "CreateContext() failed\n");
+
+    gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
 			GTMX_Labels, mxlabels,
 			GTMX_Scaled, TRUE,
 			GTMX_TitlePlace, PLACETEXT_ABOVE,
 			GA_Immediate, TRUE,
 			TAG_DONE );
 
-  AddGList(GuiWin,mxglist,-1,-1,NULL);
-  RefreshGList(mxglist,GuiWin,NULL,-1);
-  GT_RefreshWindow(GuiWin,NULL);
-  DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
-  DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
-  if( get_var_int( "@user-level" ) > _NOVICE )
-  do
-  {
-    for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
+    AddGList(GuiWin,mxglist,-1,-1,NULL);
+    RefreshGList(mxglist,GuiWin,NULL,-1);
+    GT_RefreshWindow(GuiWin,NULL);
+    DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
+    DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
+    do
     {
-      printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
-    }
-    for( i = 0 ; i < max ; i ++)
-    {
-      printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
-    }
-    printf( " V - Change Value\n P - Proceed\n A - Abort\n H - Help\n" );
-    scanf( "%c", &c );
-    switch( tolower( c ) )
-    {
-      case 'a'	: /* abort */
-		  abort_install();
+      for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
+      {
+	printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+      }
+      for( i = 0 ; i < max ; i ++)
+      {
+	printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
+      }
+      printf( " V - Change Value\n P - Proceed\n A - Abort\n H - Help\n" );
+      scanf( "%c", &c );
+      switch( tolower( c ) )
+      {
+	case 'a': /* abort */
+		  abort_install( &request_choice_destruct );
 		  break;
-      case 'p'	: /* proceed */
+	case 'p': /* proceed */
 		  if( retval < max )
 		  {
 		    finish = TRUE;
 		  }
 		  break;
-      case 'h'	: /* help */
-		  for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
+	case 'h': /* help */
+		  setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		  m = GetPL( pl, _HELP ).intval;
+		  if(m)
 		  {
-		    printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
+#ifdef DEBUG
+		    for( n = 0 ; n < m ; n++ )
+		    {
+		      printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		    }
+#endif /* DEBUG */
+		    morenmain( HELP_ON_ASKCHOICE, m, GetPL( pl, _HELP ).arg );
 		  }
-		  if( i == 0 )
+		  else
 		  {
-		    printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+#ifdef DEBUG
+		    printf( "%s\n", get_var_arg( "@askchoice-help" ) );
+#endif /* DEBUG */
+		    moremain( HELP_ON_ASKCHOICE, ASKCHOICE_HELP );
 		  }
+		  setgadgetdisable( 0 );
 		  break;
-      case 'v'	: /* change value */
+	case 'v': /* change value */
 		  scanf( "%s", buffer );
 		  i = atol( buffer );
 		  retval = ( i < max && i > 0 ) ? i : retval ;
 		  break;
-      default	: break;
-    }
-  } while( !finish );
-
-  RemoveGList(GuiWin,mxglist,-1);
-  GT_RefreshWindow(GuiWin,NULL);
-  FreeGadgets( mxglist );
-  freestrlist( mxlabels );
+	default	: break;
+      }
+    } while( !finish );
+    RemoveGList(GuiWin,mxglist,-1);
+    GT_RefreshWindow(GuiWin,NULL);
+    FreeGadgets( mxglist );
+    freestrlist( mxlabels );
+  }
 
   if( preferences.transcriptstream != NULL )
   {
@@ -1676,6 +1726,9 @@ return retval;
  * Ask user for a directory
  */
 #warning TODO: write whole function
+void request_dir_destruct()
+{
+}
 char *request_dir( struct ParameterList *pl )
 {
 char *retval, *string;
@@ -1694,10 +1747,12 @@ return retval;
 
 
 /*
- * Ask user for a specific disk
+ * Ask user to insert a specific disk
  */
 #warning TODO: write whole function
-/* Ask user to insert a specific disk */
+void request_disk_destruct()
+{
+}
 char *request_disk( struct ParameterList *pl )
 {
 char *retval, *string;
@@ -1719,6 +1774,9 @@ return retval;
  * Ask user for a file
  */
 #warning TODO: write whole function
+void request_file_destruct()
+{
+}
 char *request_file( struct ParameterList *pl )
 {
 char *retval, *string;
@@ -1772,6 +1830,9 @@ return retval;
  * Ask user for a selection of multiple items (choose m of n items)
  */
 #warning TODO: write whole function
+void request_options_destruct()
+{
+}
 long int request_options( struct ParameterList *pl )
 {
 long int retval;
@@ -1785,6 +1846,9 @@ return retval;
 /*
  * Ask user to confirm
  */
+void request_confirm_destruct()
+{
+}
 int request_confirm( struct ParameterList * pl, long int minuser )
 {
 int m, n, i, j, finish = FALSE;
@@ -1794,7 +1858,7 @@ char **out;
   if( ( get_var_int( "@user-level" ) >= minuser ) || ( get_var_int( "@user-level" ) >= GetPL( pl, _CONFIRM).intval ) )
   {
 
-    setgadgetdisable( 0 );
+    setgadgetdisable( (GetPL( pl, _HELP ).used == 1) ? 0 : HELPGAD );
     clear_gui();
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
@@ -1827,7 +1891,7 @@ char **out;
 	itext.IText = out[n];
 	PrintIText( rp, &itext, 15, 15*j+7 );
 #else
-	Move( rp, 25, 15*j+22 );
+	Move( rp, 15, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
 #endif
 	free( out[n] );
@@ -1857,15 +1921,19 @@ char **out;
 		      finish = TRUE;
 		      break;
 		    case ID_ABORTGAD:
-		      abort_install();
+		      abort_install( &request_confirm_destruct );
 		      break;
 		    case ID_HELPGAD:
-#warning FIXME: What is this help like?
 		      m = GetPL( pl, _HELP ).intval;
+#ifdef DEBUG
 		      for( n = 0 ; n < m ; n++ )
 		      {
-			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		        printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
 		      }
+#endif /* DEBUG */
+		      setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		      morenmain( HELP_ON_CONFIRM, m, GetPL( pl, _HELP ).arg );
+		      setgadgetdisable( 0 );
 		      break;
 		    default:
 		      break;
@@ -1897,12 +1965,16 @@ struct IntuiText n = {1,0,JAM1,70,30,NULL,(UBYTE *)"Cancel",NULL };
 struct IntuiText abortq_body = {1,0,JAM1,0,0,NULL,(UBYTE *)"Do you really want to quit Installer?",NULL };
 struct IntuiText displaytext = {1,0,JAM1,0,0,NULL,NULL,NULL };
 
-void abort_install( )
+void abort_install( VOID_FUNC destructor )
 {
   if( AutoRequest(GuiWin,&abortq_body,&p,&n,(scr->Width-200)/2,(scr->Height-75)/2,200,75) != 0 )
   {
     error = USERABORT;
     grace_exit = TRUE;
+    if( destructor )
+    {
+      destructor();
+    }
     /* Execute trap(1) */
     traperr( "User aborted!\n", NULL );
   }
@@ -1953,6 +2025,68 @@ void display_text( char * msg )
   printf( "ERROR: %s\n", msg );
 #endif /* DEBUG */
   AutoRequest(GuiWin,&displaytext,&p,NULL,0L,0L,200,75);
+}
+
+
+int user_confirmation( char *message )
+{
+int retval;
+int finish = FALSE;
+
+  setgadgetdisable( 0 );
+  clear_gui();
+  RefreshGList(stdglist,GuiWin,NULL,-1);
+  GT_RefreshWindow(GuiWin,NULL);
+
+#ifdef USE_INTUITEXT
+  itext.IText = message;
+  PrintIText( rp, &itext, 10, 10 );
+#else
+  Move( rp, 15, 25 );
+  Text( rp, message, strlen(message) );
+#endif
+
+  do
+  {
+    WaitPort( GuiWin->UserPort );
+    while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+    {
+      class = imsg->Class;
+      code = imsg->Code;
+      switch( class )
+      {
+	case IDCMP_GADGETUP:
+	      switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+	      {
+		case ID_PROCEEDGAD:
+		  retval = TRUE;
+		  finish = TRUE;
+		  break;
+		case ID_SKIPGAD:
+		  retval = FALSE;
+		  finish = TRUE;
+		  break;
+		case ID_ABORTGAD:
+		  abort_install( NULL );
+		  break;
+		case ID_HELPGAD:
+#warning FIXME: What default help text is used?
+		  moremain( HELP_ON_USERCONFIRM, USERCONFIRM_HELP );
+		  break;
+		default:
+		  break;
+	      }
+	      break;
+	default:
+	      break;
+      }
+      GT_ReplyIMsg(imsg);
+
+    } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+
+  } while( !finish );
+
+return retval;
 }
 
 

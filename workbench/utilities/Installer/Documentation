@@ -388,6 +388,22 @@ will be replaced by this new one.
 The commands between the markers are given in (command ...).
 The user will only be prompted to confirm this action if in Expert mode.
 
+( rename <oldname> <newname>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(disk)]
+      [(safe)]
+)
+Renames the file "oldname" to "newname". If the parameter (disk) is
+passed, then this command relabels the disk "oldname" to "newname".
+When relabeling disks *only* include a colon ":" in the oldname.
+The function proceeds silently unless (confirm) is passed where the
+(prompt) is shown and (help) is available. If (safe) is passed then
+the renaming will be done even when in PRETEND mode.
+This function returns 1 on success and 0 on failure.
+
+
 
 /* Unimplemented commands */
 ( copyfiles )
@@ -411,7 +427,6 @@ The user will only be prompted to confirm this action if in Expert mode.
 ( pathonly )
 ( patmatch )
 ( protect )
-( rename )
 ( rexx )
 ( tackon )
 ( tooltype )
