@@ -22,6 +22,7 @@
 #include <utime.h>
 #include <errno.h>
 #include <locale.h>
+#include <process.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */
