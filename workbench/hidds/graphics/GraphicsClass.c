@@ -1010,25 +1010,34 @@ static OOP_Object *hiddgfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     bm = msg->bitMap;
     
     /* We have to do some consistency checking */
-    OOP_GetAttr(bm, aHidd_BitMap_Displayable, &displayable);
-
+    if (bm)
+    {
+    	OOP_GetAttr(bm, aHidd_BitMap_Displayable, &displayable);
+    }
     
-    if (!displayable)
+    if (bm && !displayable)
     	/* We cannot show a non-displayable bitmap */
 	return NULL;
 	
     if (NULL == data->framebuffer)
 	return NULL;
 	
-    if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
+    if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack))
+    {
     	/* Copy the framebuffer data back into the old shown bitmap */
 	copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, data->shownbm);
     }
 
-    copy_bm_and_colmap(cl, o, bm, data->framebuffer, bm);
+    if (bm)
+    {
+    	copy_bm_and_colmap(cl, o, bm, data->framebuffer, bm);
+    }
+    else
+    {
+    	#warning should clear framebuffer to black
+    }
     data->shownbm = bm;
     
-
     return data->framebuffer;
 }
 
