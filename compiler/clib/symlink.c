@@ -5,13 +5,16 @@
     POSIX function symlink().
 */
 
-#include "__errno.h"
+#include <aros/debug.h>
 
 #include <unistd.h>
+#include "__errno.h"
 
 int symlink(const char *oldpath, const char *newpath)
-
 {
+#   warning Implement symlink()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     errno = EPERM;
     return -1;
 } /* symlink */
