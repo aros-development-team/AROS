@@ -2,7 +2,7 @@
 #define DOS_FILESYSTEM_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS specific structures and definitions for filesystems.
@@ -10,6 +10,9 @@
 */
 #ifndef EXEC_IO_H
 #   include <exec/io.h>
+#endif
+#ifndef EXEC_TASKS_H
+#   include <exec/tasks.h>
 #endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
@@ -347,9 +350,11 @@ struct IFS_INFO
     struct InfoData *io_Info;
 };
 
-#if 0
 #define FSA_CHANGE_SIGNAL   38
-#endif
+struct IFS_CHANGE_SIGNAL
+{
+    struct Task *io_Task;
+};
 
 #define FSA_LOCK_RECORD     39
 struct IFS_RECORD
@@ -476,6 +481,7 @@ struct IOFileSys
 	struct IFS_NOTIFY          io_NOTIFY;         /* FSA_ADD_NOTIFY */
 	struct IFS_INFO            io_INFO;           /* FSA_INFO */
 	struct IFS_RECORD          io_RECORD;         /* FSA_LOCK_RECORD */
+	struct IFS_CHANGE_SIGNAL   io_CHANGE_SIGNAL;  /* FSA_CHANGE_SIGNAL */
     } io_Union;
 };
 
