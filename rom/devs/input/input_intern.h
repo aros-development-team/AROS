@@ -4,6 +4,12 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  1999/10/20 19:36:24  stegerg
+    When testing the Workbench background pattern once
+    a deadend alert showed up saying something about
+    stack overflow on input.device task so I increaed
+    the input.device stack from 20000 to 25000 Bytes.
+
     Revision 1.3  1998/10/20 16:44:24  hkiel
     Amiga Research OS
 
@@ -35,7 +41,7 @@
 #endif
 
 /* Size of the input device's stack */
-#define IDTASK_STACKSIZE 20000
+#define IDTASK_STACKSIZE 25000
 /* Priority of the input.device task */
 #define IDTASK_PRIORITY 20
 
