@@ -29,11 +29,14 @@
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
 		? HIDD_BM_OBJ(bitmap)	\
-		: get_planarbm_object((bitmap), GfxBase) ) 
+		: get_planarbm_object((bitmap), GfxBase) )
 
-#define RELEASE_HIDD_BM(bm_obj, bitmap)	\
-	{ if(! IS_HIDD_BM(bitmap))	\
-		release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); }
+#define RELEASE_HIDD_BM(bm_obj, bitmap)                                        \
+do                                                                             \
+{                                                                              \
+    if(! IS_HIDD_BM(bitmap))                                                   \
+        release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); \
+} while (0)
 
 
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
@@ -50,6 +53,7 @@
 	| ((minterm & 0x10) << 3) )  >> 4 )
 
 #define TranslateRect(rect, dx, dy) \
+do                                  \
 {                                   \
     struct Rectangle *_rect = rect; \
     WORD _dx = dx;                  \
@@ -58,7 +62,7 @@
     (_rect)->MinY += (_dy);         \
     (_rect)->MaxX += (_dx);         \
     (_rect)->MaxY += (_dy);         \
-}
+} while(0)
 
 /* Rastport flag that tells whether or not the driver has been inited */
 
