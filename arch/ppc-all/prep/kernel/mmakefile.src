@@ -1,0 +1,50 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+MY_CFLAGS := $(CFLAGS) -D__KERNEL__ -D__ROM__
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__ -D__ROM__
+
+LIBNAME := kernel
+
+FILES	:= kernel_init functable functions
+OBJDIR	:= $(GENDIR)/$(CURDIR)
+END_FILE:= $(OBJDIR)/endtag
+ENDFUNC := $(END_FILE).o
+
+FUNCTIONS := io
+ALL_FUNCTIONS := $(FUNCTIONS)
+
+TARGET_LD := ppc-linux-ld
+TARGET_OBJCOPY := ppc-linux-objcopy
+
+NO_FUNCTABLE = 1
+
+#MM
+setup-prep-ppc :
+	%mkdirs_q $(OBJDIR)
+
+#MM
+kernel-resource-prep-ppc : libdefs.h $(foreach f, $(FILES), $(OBJDIR)/$(f).o) $(ENDFUNC) 
+	%add_objects rom/boot/kernel.resource
+	$(TARGET_LD) -r -d $(foreach f, $(FILES), $(OBJDIR)/$(f).o) $(ENDFUNC) \
+	    -o $(OSGENDIR)/boot/kernel.resource.o
+	$(TARGET_OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/kernel.resource.o
+
+$(OBJDIR)/%.o : %.S
+	%compile_q opt=$(MY_CFLAGS)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(MY_CFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q opt=$(MY_CFLAGS)
+
+	%ctoasm_q 
+
+%genromlib_finline
+
+%common
+%include_deps 
