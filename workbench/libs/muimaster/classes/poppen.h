@@ -13,9 +13,8 @@
 #define MUIB_Poppen              (MUIB_ZUNE | 0x00002700)
 
 /*** Methods ****************************************************************/
-/* CHECKME: I used same values as in popimage.h!? */ /* PRIV */
-#define MUIM_Poppen_OpenWindow   (MUIB_MUI|0x0042a548)     /* PRIV */
-#define MUIM_Poppen_CloseWindow  (MUIB_MUI|0x0042a549)     /* PRIV */
+#define MUIM_Poppen_OpenWindow   (MUIB_Poppen | 0x00000000)     /* PRIV */
+#define MUIM_Poppen_CloseWindow  (MUIB_Poppen | 0x00000001)     /* PRIV */
 struct MUIP_Poppen_OpenWindow    {ULONG MethodID;};           /* PRIV */
 struct MUIP_Poppen_CloseWindow   {ULONG MethodID; LONG ok;};  /* PRIV */
 

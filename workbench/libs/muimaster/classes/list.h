@@ -45,6 +45,19 @@ struct MUIP_List_Select               {ULONG MethodID; LONG pos; LONG seltype; L
 struct MUIP_List_Sort                 {ULONG MethodID;};
 struct MUIP_List_TestPos              {ULONG MethodID; LONG x; LONG y; struct MUI_List_TestPos_Result *res;};
 
+#define MUIM_List_Construct           (MUIB_List | 0x00000000) /* Zune: V1 same like NList, PRIV for now! */
+#define MUIM_List_Destruct            (MUIB_List | 0x00000001) /* Zune: V1 same like NList, PRIV for now! */
+#define MUIM_List_Compare             (MUIB_List | 0x00000002) /* Zune: v1 same like NList, PRIV for now! */
+#define MUIM_List_Display             (MUIB_List | 0x00000003) /* Zune: V1 same like NList, PRIV for now! */
+#define MUIM_List_SelectChange        (MUIB_List | 0x00000004) /* Zune: V1 same like NLIST, PRIV for now! */
+#define MUIM_List_InsertSingleAsTree  (MUIB_List | 0x00000005) /* Zune: V1 */
+struct MUIP_List_Construct            {ULONG MethodID; APTR entry; APTR pool;};
+struct MUIP_List_Destruct             {ULONG MethodID; APTR entry; APTR pool;};
+struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2;};
+struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
+struct MUIP_List_SelectChange         {ULONG MethodID; LONG pos; LONG state; ULONG flags;};
+struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
+
 /*** Attributes *************************************************************/
 #define MUIA_List_Active              (MUIB_MUI|0x0042391c) /* MUI: V4  isg LONG          */
 #define MUIA_List_AdjustHeight        (MUIB_MUI|0x0042850d) /* MUI: V4  i.. BOOL          */
@@ -70,6 +83,16 @@ struct MUIP_List_TestPos              {ULONG MethodID; LONG x; LONG y; struct MU
 #define MUIA_List_SourceArray         (MUIB_MUI|0x0042c0a0) /* MUI: V4  i.. APTR          */
 #define MUIA_List_Title               (MUIB_MUI|0x00423e66) /* MUI: V6  isg char *        */
 #define MUIA_List_Visible             (MUIB_MUI|0x0042191f) /* MUI: V4  ..g LONG          */
+#define MUIA_List_Prop_Entries        (MUIB_MUI|0x0042a8f5) /* .sg LONG  PRIV */
+#define MUIA_List_Prop_Visible        (MUIB_MUI|0x004273e9) /* .sg LONG  PRIV */
+#define MUIA_List_Prop_First          (MUIB_MUI|0x00429df3) /* .sg LONG  PRIV */
+
+#define MUIA_List_VertProp_Entries   MUIA_List_Prop_Entries  /* PRIV */
+#define MUIA_List_VertProp_Visible   MUIA_List_Prop_Visible  /* PRIV */
+#define MUIA_List_VertProp_First     MUIA_List_Prop_First    /* PRIV */
+#define MUIA_List_HorizProp_Entries  (MUIB_List | 0x00000000) /* ... LONG  PRIV */
+#define MUIA_List_HorizProp_Visible  (MUIB_List | 0x00000001) /* ... LONG  PRIV */
+#define MUIA_List_HorizProp_First    (MUIB_List | 0x00000002) /* ... LONG  PRIV */
 
 /* Structure of the List Position Text (MUIM_List_TestPos) */
 struct MUI_List_TestPos_Result
@@ -173,32 +196,6 @@ enum
 #define MUIV_List_NextSelected_Start  (-1)
 #define MUIV_List_NextSelected_End    (-1)
 
-/* MUI Private stuff */
-#define MUIA_List_Prop_Entries  (MUIB_MUI|0x0042a8f5) /* .sg LONG  PRIV */
-#define MUIA_List_Prop_Visible  (MUIB_MUI|0x004273e9) /* .sg LONG  PRIV */
-#define MUIA_List_Prop_First    (MUIB_MUI|0x00429df3) /* .sg LONG  PRIV */
-
-
-/* The following stuff is only availabe with zune and considered as private for now! */
-#define MUIA_List_VertProp_Entries  MUIA_List_Prop_Entries  /* PRIV */
-#define MUIA_List_VertProp_Visible  MUIA_List_Prop_Visible  /* PRIV */
-#define MUIA_List_VertProp_First    MUIA_List_Prop_First    /* PRIV */
-#define MUIA_List_HorizProp_Entries  (MUIB_MUI|0x10429df4) /* ... LONG  PRIV */
-#define MUIA_List_HorizProp_Visible  (MUIB_MUI|0x80429df5) /* ... LONG  PRIV */
-#define MUIA_List_HorizProp_First    (MUIB_MUI|0x80429df6) /* ... LONG  PRIV */
-
-#define MUIM_List_Construct           (MUIB_MUI|0x1d5100A1) /* Zune: V1 same like NList, PRIV for now! */
-#define MUIM_List_Destruct            (MUIB_MUI|0x1d5100A2) /* Zune: V1 same like NList, PRIV for now! */
-#define MUIM_List_Compare             (MUIB_MUI|0x1d5100A3) /* Zune: v1 same like NList, PRIV for now! */
-#define MUIM_List_Display             (MUIB_MUI|0x1d5100A4) /* Zune: V1 same like NList, PRIV for now! */
-#define MUIM_List_SelectChange        (MUIB_MUI|0x1d5100A5) /* Zune: V1 same like NLIST, PRIV for now! */
-#define MUIM_List_InsertSingleAsTree  (MUIB_MUI|0x1d5100A6) /* Zune: V1 */
-struct MUIP_List_Construct            {ULONG MethodID; APTR entry; APTR pool;};
-struct MUIP_List_Destruct             {ULONG MethodID; APTR entry; APTR pool;};
-struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2;};
-struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
-struct MUIP_List_SelectChange         {ULONG MethodID; LONG pos; LONG state; ULONG flags;};
-struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
 
 #define MUIV_NList_SelectChange_Flag_Multi (1 << 0)
 

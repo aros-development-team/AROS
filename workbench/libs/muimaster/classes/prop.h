@@ -26,7 +26,7 @@ struct  MUIP_Prop_Increase  {ULONG MethodID; LONG amount;};
 #define MUIA_Prop_UseWinBorder   (MUIB_MUI|0x0042deee) /* MUI: V13 i.. LONG */
 #define MUIA_Prop_Visible        (MUIB_MUI|0x0042fea6) /* MUI: V4  isg LONG */
 
-#define MUIA_Prop_OnlyTrigger    (MUIB_MUI|0x1042fea7) /* Zune: PRIV .s. BOOL */
+#define MUIA_Prop_OnlyTrigger    (MUIB_Prop | 0x00000000) /* Zune: PRIV .s. BOOL */
 
 enum
 {

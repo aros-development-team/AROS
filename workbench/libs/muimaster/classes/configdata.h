@@ -103,14 +103,14 @@
 
 
 /*** Methods ****************************************************************/
-#define MUIM_Configdata_GetString      (MUIB_MUI|0x00426621) /* Zune 20030319 */
-#define MUIM_Configdata_GetULong       (MUIB_MUI|0x00427253) /* Zune 20030319 */
-#define MUIM_Configdata_SetULong       (MUIB_MUI|0x00427224) /* Zune 20030320 */
-#define MUIM_Configdata_SetImspec      (MUIB_MUI|0x0042b581) /* Zune 20030323 */
-#define MUIM_Configdata_SetFramespec   (MUIB_MUI|0x00424b5c) /* Zune 20030331 */
-#define MUIM_Configdata_SetFont        (MUIB_MUI|0x004265c4) /* Zune 20030323 */
-#define MUIM_Configdata_Save           (MUIB_MUI|0x0042571a) /* Zune 20030320 */
-#define MUIM_Configdata_Load           (MUIB_MUI|0x004278ba) /* Zune 20030320 */
+#define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000) /* Zune 20030319 */
+#define MUIM_Configdata_GetULong       (MUIB_Configdata | 0x00000001) /* Zune 20030319 */
+#define MUIM_Configdata_SetULong       (MUIB_Configdata | 0x00000002) /* Zune 20030320 */
+#define MUIM_Configdata_SetImspec      (MUIB_Configdata | 0x00000003) /* Zune 20030323 */
+#define MUIM_Configdata_SetFramespec   (MUIB_Configdata | 0x00000004) /* Zune 20030331 */
+#define MUIM_Configdata_SetFont        (MUIB_Configdata | 0x00000005) /* Zune 20030323 */
+#define MUIM_Configdata_Save           (MUIB_Configdata | 0x00000006) /* Zune 20030320 */
+#define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007) /* Zune 20030320 */
 struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
@@ -121,9 +121,9 @@ struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; }
 struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
 
 /*** Attributes *************************************************************/
-#define MUIA_Configdata_Application (MUIB_MUI|0x10203453) /* ZV1: i..  Object * */
-#define MUIA_Configdata_ZunePrefs   (MUIB_MUI|0x10203454) /* ZV1: PRIV .g.  struct ZunePrefsNew * */
-#define MUIA_Configdata_ApplicationBase (MUIB_MUI|0x10203455) /* ZV1: i..  Object * */
+#define MUIA_Configdata_Application     (MUIB_Configdata | 0x00000000) /* ZV1: i..  Object * */
+#define MUIA_Configdata_ZunePrefs       (MUIB_Configdata | 0x00000001) /* ZV1: PRIV .g.  struct ZunePrefsNew * */
+#define MUIA_Configdata_ApplicationBase (MUIB_Configdata | 0x00000002) /* ZV1: i..  Object * */
 
 
 extern const struct __MUIBuiltinClass _MUI_Configdata_desc; /* PRIV */

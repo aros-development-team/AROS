@@ -61,6 +61,11 @@ struct MUIP_SetUDataOnce         {ULONG MethodID; ULONG udata; ULONG attr; ULONG
 struct MUIP_WriteLong            {ULONG MethodID; ULONG val; ULONG *memory;};
 struct MUIP_WriteString          {ULONG MethodID; char *str; char *memory;};
 
+#define MUIM_ConnectParent       (MUIB_Notify | 0x00000000) /* Zune: V1 */
+#define MUIM_DisconnectParent    (MUIB_Notify | 0x00000001) /* Zune: V1 */
+struct MUIP_ConnectParent        {ULONG MethodID; Object *parent;};
+struct MUIP_DisconnectParent     {ULONG MethodID;};
+
 /*** Attributes *************************************************************/
 #define MUIA_ApplicationObject   (MUIB_MUI|0x0042d3ee) /* MUI: V4  ..g Object *            */
 #define MUIA_AppMessage          (MUIB_MUI|0x00421955) /* MUI: V5  ..g struct AppMessage * */
@@ -92,10 +97,5 @@ extern const struct __MUIBuiltinClass _MUI_Notify_desc; /* PRIV */
 
 #define _parent(obj)    (muiNotifyData(obj)->mnd_ParentObject) /* Shortcut */
 
-#define MUIM_ConnectParent       (MUIB_MUI|0x10429ab9) /* Zune: V1 */
-#define MUIM_DisconnectParent    (MUIB_MUI|0x10429aba) /* Zune: V1 */
-
-struct MUIP_ConnectParent          {ULONG MethodID; Object *parent;};
-struct MUIP_DisconnectParent       {ULONG MethodID;};
 
 #endif /* _MUI_CLASSES_NOTIFY_H */

@@ -15,7 +15,7 @@
 /*** Attributes *************************************************************/
 #define MUIA_Penadjust_PSIMode (MUIB_MUI|0x00421cbb) /* MUI: V11  i.. BOOL       */
 
-#define MUIA_Penadjust_Spec    (MUIB_MUI|0x0062339b) /* isg  struct MUI_Penspec *  PRIV */
+#define MUIA_Penadjust_Spec    (MUIB_Penadjust | 0x00000000) /* ZUNE isg  struct MUI_Penspec *  PRIV */
 
 
 extern const struct __MUIBuiltinClass _MUI_Penadjust_desc; /* PRIV */

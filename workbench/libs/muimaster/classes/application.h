@@ -38,8 +38,10 @@
 #define MUIM_Application_SetMenuCheck		(MUIB_MUI|0x0042a707) /* MUI: V4  */
 #define MUIM_Application_SetMenuState		(MUIB_MUI|0x00428bef) /* MUI: V4  */
 #define MUIM_Application_ShowHelp		(MUIB_MUI|0x00426479) /* MUI: V4  */
-#define MUIM_Application_SetConfigdata		(MUIB_MUI|0x00425ba3) /* Zune 20030407 */
-#define MUIM_Application_OpenWindows		(MUIB_MUI|0x00425ba4) /* Zune 20030407 */
+
+#define MUIM_Application_SetConfigdata		(MUIB_Application | 0x00000000) /* Zune 20030407 */
+#define MUIM_Application_OpenWindows		(MUIB_Application | 0x00000001) /* Zune 20030407 */
+#define MUIM_Application_Iconify                (MUIB_Application | 0x00000002) /* Zune: V1  */
 
 /* Method Structures */
 struct MUIP_Application_AboutMUI		{ ULONG MethodID; Object *refwindow; };
@@ -95,7 +97,8 @@ struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 #define MUIA_Application_Version            	(MUIB_MUI|0x0042b33f) /* MUI: V4  i.g STRPTR            */
 #define MUIA_Application_Window             	(MUIB_MUI|0x0042bfe0) /* MUI: V4  i.. Object *          */
 #define MUIA_Application_WindowList         	(MUIB_MUI|0x00429abe) /* MUI: V13 ..g struct List *     */
-#define MUIA_Application_Configdata         	(MUIB_MUI|0x00425ba3) /* Zune 20030407 .s. Object *     */
+
+#define MUIA_Application_Configdata         	(MUIB_Application | 0x00000000) /* Zune 20030407 .s. Object *     */
 
 /* MUI Obsolette tags */
 #ifdef MUI_OBSOLETE
@@ -148,11 +151,6 @@ struct MUI_InputHandlerNode
 #define MUIV_Application_ReturnID_Quit (-1)
 
 
-/**************************************************************************
- Zune extensions. Note that the tag values of the Zune extensions
- might be changed in the future
-**************************************************************************/
-#define MUIM_Application_Iconify       (MUIB_MUI|0x00429ab8) /* Zune: V1  */
 
 extern const struct __MUIBuiltinClass _MUI_Application_desc; /* PRIV */
 

@@ -25,7 +25,7 @@ enum
 };
 
 /*** Methods ****************************************************************/
-#define MUIM_Imageadjust_ReadExternal (MUIB_MUI|0x10101010) /* PRIV */
+#define MUIM_Imageadjust_ReadExternal (MUIB_Imageadjust | 0x00000000) /* PRIV */
 
 
 extern const struct __MUIBuiltinClass _MUI_Imageadjust_desc; /* PRIV */

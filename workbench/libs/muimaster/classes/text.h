@@ -28,9 +28,8 @@
 #define MUIA_Text_SetMin    (MUIB_MUI|0x00424e10) /* MUI: V4  i.. BOOL   */
 #define MUIA_Text_SetVMax   (MUIB_MUI|0x00420d8b) /* MUI: V11 i.. BOOL   */
 
-/* The following stuff in new for Zune */
-#define MUIA_Text_Editable    (MUIB_MUI|0x00420d8c)  /* Zune: V1 i.. BOOL */
-#define MUIA_Text_Multiline   (MUIB_MUI|0x00420d8d)  /* Zune: V1 i.. BOOL */
+#define MUIA_Text_Editable    (MUIB_Text | 0x00000000)  /* Zune: V1 i.. BOOL */
+#define MUIA_Text_Multiline   (MUIB_Text | 0x00000001)  /* Zune: V1 i.. BOOL */
 
 /* Codes which can be used in text strings */
 #define MUIX_L "\033l"	    /* justify left */
