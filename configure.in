@@ -58,8 +58,8 @@ AC_ARG_ENABLE(gfxhidd,
 [  --enable-gfxhidd	Use Graphics HIDD system for graphics output],
 [aros_gfxhidd=$enable_gfxhidd], [aros_gfxhidd=no])
 
-AC_CACHE_VAL(aros_cv_gfxhidd,[aros_cv_gfxhidd=$aros_gfxhidd])
-aros_gfxhidd=`eval echo '$''{'aros_cv_gfxhidd'}'`
+# AC_CACHE_VAL(aros_cv_gfxhidd,[aros_cv_gfxhidd=$aros_gfxhidd])
+# aros_gfxhidd=`eval echo '$''{'aros_cv_gfxhidd'}'`
 
 AC_MSG_RESULT($aros_gfxhidd)
 
