@@ -54,7 +54,7 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     BPTR seg=seglist;
     while(seg)
     {
-	STRPTR addr=(STRPTR)BADDR(seg)-AROS_ALIGN(sizeof(ULONG));
+	STRPTR addr=((STRPTR)BADDR(seg))-sizeof(ULONG);
 	ULONG size=*(ULONG *)addr;
 	for(;size>=sizeof(struct Resident);size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN)
 	{
