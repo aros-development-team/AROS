@@ -92,5 +92,5 @@ dist-clean: arch-clean
 
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean \
-	install $(TOP)/make.opts
+	install $(TOP)/make.opts test workbench rom compiler contrib
 
