@@ -87,30 +87,4 @@ BEGIN {
 	    $self->SUPER::function_arg (@_);
 	}
     }
-
-    sub function_end {
-	my $self      = shift;
-	my %params    = @_;
-	my $prototype = $params{'prototype'};
-	my $sfd       = $self->{SFD};
-
-	if ($$prototype{'type'} eq 'function') {
-	    if (!$prototype->{nb}) {
-		print ",\\\n	, (___base)";
-	    }
-
-	    if ($self->{FUNCARGTYPE} ne '') {
-		my $fa = $self->{FUNCARGTYPE};
-
-		$fa =~ s/\(\*\)/(*__fpt)/;
-		
-		print ", $fa";
-	    }
-	    
-	    print ")\n";
-	}
-	else {
-	    $self->SUPER::function_end (@_);
-	}
-    }
 }
