@@ -125,7 +125,8 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     ENOMEM_IF(memlist==NULL);
     if(defaults[13].ti_Data)
     {
-	cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,NULL);
+	/* Don't forget to pass tags to AllocDosObject() */
+	cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,tags);
 	ENOMEM_IF(cli==NULL);
 	Forbid();
 	process->pr_TaskNum=DOSBase->dl_ProcCnt++;
