@@ -75,5 +75,5 @@ const struct __MUIBuiltinClass _MUI_Scrollbar_desc = {
     MUIC_Scrollbar, 
     MUIC_Group, 
     sizeof(struct MUI_ScrollbarData), 
-    Scrollbar_Dispatcher 
+    (void*)Scrollbar_Dispatcher 
 };

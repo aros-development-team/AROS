@@ -437,6 +437,6 @@ const struct __MUIBuiltinClass _MUI_Family_desc = {
     MUIC_Family,
     MUIC_Notify,
     sizeof(struct MUI_FamilyData),
-    MUI_FamilyDispatcher
+    (void*)MUI_FamilyDispatcher
 };
 

@@ -415,5 +415,5 @@ const struct __MUIBuiltinClass _MUI_Rectangle_desc = {
     MUIC_Rectangle, 
     MUIC_Area, 
     sizeof(struct MUI_RectangleData), 
-    Rectangle_Dispatcher 
+    (void*)Rectangle_Dispatcher 
 };

@@ -486,5 +486,5 @@ const struct __MUIBuiltinClass _MUI_Bitmap_desc = {
     MUIC_Bitmap, 
     MUIC_Area, 
     sizeof(struct MUI_BitmapData), 
-    Bitmap_Dispatcher 
+    (void*)Bitmap_Dispatcher 
 };

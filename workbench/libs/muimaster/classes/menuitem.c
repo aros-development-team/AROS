@@ -293,5 +293,5 @@ const struct __MUIBuiltinClass _MUI_Menuitem_desc = {
     MUIC_Menuitem, 
     MUIC_Family, 
     sizeof(struct MUI_MenuitemData), 
-    Menuitem_Dispatcher 
+    (void*)Menuitem_Dispatcher 
 };

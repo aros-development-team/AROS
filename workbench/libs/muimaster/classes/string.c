@@ -81,5 +81,5 @@ const struct __MUIBuiltinClass _MUI_String_desc = {
     MUIC_String, 
     MUIC_Text, 
     sizeof(struct MUI_StringData), 
-    String_Dispatcher 
+    (void*)String_Dispatcher 
 };

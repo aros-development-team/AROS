@@ -433,6 +433,6 @@ const struct __MUIBuiltinClass _MUI_Numeric_desc = {
     MUIC_Numeric, 
     MUIC_Area, 
     sizeof(struct MUI_NumericData), 
-    Numeric_Dispatcher 
+    (void*)Numeric_Dispatcher 
 };
 

@@ -453,5 +453,5 @@ const struct __MUIBuiltinClass _MUI_Boopsi_desc = {
     MUIC_Boopsi, 
     MUIC_Area, 
     sizeof(struct MUI_BoopsiData), 
-    Boopsi_Dispatcher 
+    (void*)Boopsi_Dispatcher 
 };

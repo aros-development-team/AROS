@@ -662,5 +662,5 @@ const struct __MUIBuiltinClass _MUI_Notify_desc = {
     MUIC_Notify,                        /* Class name */
     ROOTCLASS,                          /* super class name */
     sizeof(struct MUI_NotifyData),      /* size of class own datas */
-    MyDispatcher                        /* class dispatcher */
+    (void*)MyDispatcher                        /* class dispatcher */
 };

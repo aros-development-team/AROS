@@ -217,5 +217,5 @@ const struct __MUIBuiltinClass _MUI_Scrollbutton_desc = {
     MUIC_Scrollbutton, 
     MUIC_Area, 
     sizeof(struct Scrollbutton_Data),
-    Scrollbutton_Dispatcher 
+    (void*)Scrollbutton_Dispatcher 
 };

@@ -413,5 +413,5 @@ const struct __MUIBuiltinClass _MUI_Bodychunk_desc = {
     MUIC_Bodychunk, 
     MUIC_Bitmap, 
     sizeof(struct MUI_BodychunkData), 
-    Bodychunk_Dispatcher 
+    (void*)Bodychunk_Dispatcher 
 };

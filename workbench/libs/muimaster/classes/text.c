@@ -799,5 +799,5 @@ const struct __MUIBuiltinClass _MUI_Text_desc = {
     MUIC_Text,
     MUIC_Area, 
     sizeof(struct MUI_TextData), 
-    Text_Dispatcher
+    (void*)Text_Dispatcher
 };

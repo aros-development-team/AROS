@@ -1645,6 +1645,6 @@ const struct __MUIBuiltinClass _MUI_Window_desc = {
     MUIC_Window, 
     MUIC_Notify, 
     sizeof(struct MUI_WindowData), 
-    Window_Dispatcher 
+    (void*)Window_Dispatcher 
 };
 

@@ -57,5 +57,5 @@ const struct __MUIBuiltinClass _MUI_Virtgroup_desc = {
     MUIC_Virtgroup, 
     MUIC_Group, 
     sizeof(struct MUI_VirtgroupData), 
-    Virtgroup_Dispatcher 
+    (void*)Virtgroup_Dispatcher 
 };

@@ -310,7 +310,9 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(obj, MUIM_Notify, MUIA_Application_Iconified, TRUE,
 	     MUIV_Notify_Self, 1, MUIM_Application_Iconify);
 
+#ifndef __MAXON__
 #warning FIXME: prefs
+#endif
 #if 0
     __zune_prefs_sys_global_read(&__zprefs);
     __zune_prefs_user_global_read(&__zprefs);
@@ -318,7 +320,9 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	__zune_prefs_user_app_read(&__zprefs, data->app_Title);
 #endif
 
+#ifndef __MAXON__
 #warning FIXME: implement checking for prefs change
+#endif
 
 #if 0
 #ifndef _AROS
@@ -368,7 +372,9 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_GlobalInfo.mgi_UserPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
 
+#ifndef __MAXON__
 #warning FIXME: prefs
+#endif
 #if 0
     __zune_prefs_release(&__zprefs);
 #endif
@@ -895,5 +901,5 @@ const struct __MUIBuiltinClass _MUI_Application_desc = {
     MUIC_Application,
     MUIC_Notify,
     sizeof(struct MUI_ApplicationData),
-    Application_Dispatcher
+    (void*)Application_Dispatcher
 };

@@ -289,5 +289,5 @@ const struct __MUIBuiltinClass _MUI_Scrollgroup_desc = {
     MUIC_Scrollgroup, 
     MUIC_Group, 
     sizeof(struct MUI_ScrollgroupData), 
-    Scrollgroup_Dispatcher 
+    (void*)Scrollgroup_Dispatcher 
 };
