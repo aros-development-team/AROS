@@ -9,6 +9,11 @@ Intuition:
     Lennard voor den Dag
     Aaron Digulla
 
+Graphics: 
+    Nils Henrik Lorentzen
+    Georg Stegerg
+    Fabio Alemagna
+
 Shell Commands:
     Martin Recktenwald
     Henning Kiel
@@ -46,8 +51,15 @@ Kernel:
     Michael Schulz
     Aaron Digulla
     Sebastian Heutling
+    Fabio Alemagna
 
 DOS:
     Georg Steger
     Fabio Alemagna
     The MorphOS team
+
+libc and Posix layer:
+    Aaron Digulla
+    Fabio Alemagna
+    Iain Templeton
+
