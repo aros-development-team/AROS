@@ -156,8 +156,12 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_Sync_VTotal:
 		*msg->storage = (IPTR)(data->vdisp + data->lower_margin + data->vsync_length + data->upper_margin);
 		break;
+				
+	    case aoHidd_Sync_Description:
+	    	*msg->storage = (IPTR)data->description;
+		break;
 		
-	     default:
+	    default:
 	     	D(bug("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
