@@ -773,7 +773,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    	    sgw->EditOp = EO_BADFORMAT;
     	
     	    }
-    	    else if (letter < 0x30 && letter > 0x39)
+    	    else if ((letter < 0x30) ||  (letter > 0x39))
     	    {
     	     	sgw->EditOp = EO_BADFORMAT;
     	    }
