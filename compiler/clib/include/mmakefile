@@ -1,7 +1,8 @@
 # $Id$
+
 include $(TOP)/config/make.cfg
 
-INCDIR		:= $(AROSDIR)/Include
+INCDIR		:= $(AROS_INCLUDES)
 INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 DIRS            := $(INCDIR) $(INCDIR)/sys
