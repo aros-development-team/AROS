@@ -38,10 +38,8 @@ AROS_UFP6(int, set_call_devfuncs,
 	  AROS_UFPA(void*, libbase, A6)
 );
 
-extern int set_open_libraries_Sys(struct ExecBase *);
-extern void set_close_libraries_Sys(struct ExecBase *);
-#define set_open_libraries()      set_open_libraries_Sys(SysBase)
-#define set_close_libraries()     set_close_libraries_Sys(SysBase)
+extern int set_open_libraries(void);
+extern void set_close_libraries(void);
 
 #define SETNAME(set) __##set##_LIST__
 

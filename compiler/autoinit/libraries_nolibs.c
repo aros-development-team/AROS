@@ -8,14 +8,14 @@
 */
 
 
-int set_open_libraries_Sys(void)   __attribute__ ((weak));
-void set_close_libraries_Sys(void) __attribute__ ((weak));
+int set_open_libraries(void)   __attribute__ ((weak));
+void set_close_libraries(void) __attribute__ ((weak));
 
-int set_open_libraries_Sys(void)
+int set_open_libraries(void)
 {
     return 1;
 }
 
-void set_close_libraries_Sys(void)
+void set_close_libraries(void)
 {
 }
