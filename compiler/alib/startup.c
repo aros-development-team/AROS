@@ -161,3 +161,28 @@ DEFINESET(DTORS);
 DEFINESET(INIT);
 DEFINESET(EXIT);
 
+#if defined (__ELF__)
+/*
+    Include an ELF ABI ".note" section specifying the ABI version.
+    See http://www.netbsd.org/Documentation/kernel/elf-notes.html
+*/
+#define ABI_VENDOR          "AROS"
+#define ABI_SECTION         ".note.ABI-tag"
+#define ABI_NOTETYPE        1
+#define ABI_VERSION         1
+
+static const struct {
+    LONG        namesz;
+    LONG        descsz;
+    LONG        type;
+    char        name[sizeof ABI_VENDOR];
+    LONG        desc;
+} abitag __attribute__ ((section (ABI_SECTION))) = {
+    sizeof ABI_VENDOR,
+    sizeof (LONG),
+    ABI_NOTETYPE,
+    ABI_VENDOR,
+    ABI_VERSION
+};
+
+#endif /* __ELF__ */
