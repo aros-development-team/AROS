@@ -117,39 +117,51 @@ void readref(void)
 		    }
 		    begin++;
 		    while (isspace(*begin)) begin++;
-			
-		    end = begin+strlen(begin);
-		    while (isspace(*(end-1))) end--;
-		    while (*(end-1)==']')
+
+		    /* for libcall == STACK the whole argument is the type
+		     * otherwise split the argument in type and name
+		     */
+		    if (libcall != STACK)
 		    {
-			brackets++;
-			end--;
+			/* Count the [] specification at the end of the argument */
+			end = begin+strlen(begin);
 			while (isspace(*(end-1))) end--;
-			if (*(end-1)!='[')
+			while (*(end-1)==']')
 			{
-			    fprintf(stderr, "Argument \"%s\" not understood for function %s\n",
-				    begin, parseinfo.currentfunc->name);
-			    exit(20);
+			    brackets++;
+			    end--;
+			    while (isspace(*(end-1))) end--;
+			    if (*(end-1)!='[')
+			    {
+				fprintf(stderr, "Argument \"%s\" not understood for function %s\n",
+					begin, parseinfo.currentfunc->name);
+				exit(20);
+			    }
+			    end--;
+			    while (isspace(*(end-1))) end--;
 			}
-			end--;
+			*end='\0';
+			
+			/* Skip over the argument name and duplicate it */
+			while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+			name = strdup(end);
+
+			/* Add * for the brackets */
 			while (isspace(*(end-1))) end--;
+			for (i=0; i<brackets; i++)
+			{
+			    *end='*';
+			    end++;
+			}
+			*end='\0';
 		    }
-		    *end='\0';
-		    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
-		    name = strdup(end);
-		    while (isspace(*(end-1))) end--;
-		    for (i=0; i<brackets; i++)
-		    {
-			*end='*';
-			end++;
-		    }
-		    *end='\0';
+
 		    if (strcasecmp(begin, "void")==0)
 			free(name);
 		    else
 		    {
 			if (parseinfo.newarg)
-                        {
+			{
 			    assert(*parseinfo.arglistptr==NULL);
 			    *parseinfo.arglistptr = malloc(sizeof(struct arglist));
 			    (*parseinfo.arglistptr)->next = NULL;
@@ -166,8 +178,17 @@ void readref(void)
 			    }
 			}
 			
-			(*parseinfo.arglistptr)->name = name;
-			(*parseinfo.arglistptr)->type = strdup(begin);
+			if (libcall == STACK)
+			{
+			    (*parseinfo.arglistptr)->type = strdup(begin);
+			    (*parseinfo.arglistptr)->name = NULL;
+			}
+			else
+			{
+			    (*parseinfo.arglistptr)->type = strdup(begin);
+			    (*parseinfo.arglistptr)->name = name;
+			}
+			
 			parseinfo.arglistptr = &((*parseinfo.arglistptr)->next);
 		    }
 		}
@@ -301,6 +322,7 @@ int parsemuimethodname(char *name,
 	    method->type = NULL; /* not known yet */
 	    method->argcount = 0;
 	    method->arguments = NULL;
+	    method->aliases = NULL;
 	    method->lvo = 0; /* not used */
 	    method->novararg = 0;
 	    
@@ -355,6 +377,7 @@ int parsemacroname(char *name,
 	func = malloc(sizeof(struct functionlist));
 	func->argcount = 0;
 	func->arguments = NULL;
+	func->aliases = NULL;
 	func->novararg = novararg;
 	
 	while(end != begin && *end != '_') end--;
