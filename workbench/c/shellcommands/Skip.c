@@ -59,18 +59,16 @@
 #include <dos_commanderrors.h>
 #include <dos/stdio.h>
 
-enum { ARG_LABEL = 0, ARG_BACK };
+#include "shcommands.h"
 
-
-int __nocommandline = 1;
-
-int main(void)
+AROS_SH2(Skip, 41.1,
+AROS_SHA(STRPTR, , LABEL,  , NULL),
+AROS_SHA(BOOL,   , BACK, /S, FALSE))
 {
-    struct RDArgs *rda;
-    IPTR           args[2] = { NULL, FALSE };
+    AROS_SHCOMMAND_INIT
+
     struct CommandLineInterface *cli = Cli();
-    int            retval = RETURN_OK;
-    BOOL           labelFound = FALSE;
+    BOOL                  labelFound = FALSE;
 
     if(cli == NULL || cli->cli_CurrentInput == cli->cli_StandardInput)
     {
@@ -78,9 +76,6 @@ int main(void)
 	return RETURN_FAIL;
     }
 
-    rda = ReadArgs("LABEL,BACK/S", args, NULL);
-
-    if(rda != NULL)
     {
 	char  buffer[256];
 	LONG  status;
@@ -88,7 +83,7 @@ int main(void)
 
 	SelectInput(cli->cli_CurrentInput);
 
-	if((BOOL)args[ARG_BACK])
+	if(SHArg(BACK))
 	{
 	    Flush(Input());
 	    Seek(Input(), 0, OFFSET_BEGINNING);
@@ -105,26 +100,26 @@ int main(void)
 	    {
 		if(FGetC(Input()) == ENDSTREAMCH)
 		    break;
-	    }	    
+	    }
 
 	    switch(FindArg("LAB,ENDSKIP", buffer))
 	    {
-	    case 0:
-		if(args[ARG_LABEL] != NULL)
-		{
-		    ReadItem(buffer, sizeof(buffer), NULL);
-		    
-		    if(FindArg((STRPTR)args[ARG_LABEL], buffer) == 0)
+	        case 0:
+		    if(SHArg(LABEL) != NULL)
 		    {
-			quit = TRUE;
-			labelFound = TRUE;
-		    }
-		}
-		break;
+		        ReadItem(buffer, sizeof(buffer), NULL);
 
-	    case 1:
-		quit = TRUE;
-		break;
+		        if(FindArg(SHArg(LABEL), buffer) == 0)
+		        {
+			    quit = TRUE;
+			    labelFound = TRUE;
+		        }
+		    }
+		    break;
+
+	        case 1:
+		    quit = TRUE;
+		    break;
 	    }
 
 	    /* Skip to the next line */
@@ -138,13 +133,14 @@ int main(void)
 	}
     }
 
-    if(!labelFound && args[ARG_LABEL] != NULL)
+    if(!labelFound && SHArg(LABEL) != NULL)
     {
 	SetIoErr(ERROR_OBJECT_NOT_FOUND);
 	PrintFault(ERROR_OBJECT_NOT_FOUND, "Skip");
+	return RETURN_FAIL;
     }
 
-    FreeArgs(rda);
+    return RETURN_OK;
 
-    return retval;
+    AROS_SHCOMMAND_EXIT
 }
