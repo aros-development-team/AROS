@@ -84,7 +84,12 @@ struct TextFont *zune_font_get(Object *obj, LONG preset)
 	    }
 	    else /* MUIV_Font_Fixed */
 	    {
-		mri->mri_Fonts[-preset] = GfxBase->DefaultFont;
+		struct TextAttr def_attr;
+		def_attr.ta_Name = GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
+		def_attr.ta_YSize = GfxBase->DefaultFont->tf_YSize;
+		def_attr.ta_Style = GfxBase->DefaultFont->tf_Style;
+		def_attr.ta_Flags = GfxBase->DefaultFont->tf_Flags;
+		mri->mri_Fonts[-preset] = OpenDiskFont(&def_attr);
 	    }
 	}
 	return mri->mri_Fonts[-preset];
