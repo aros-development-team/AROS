@@ -25,4 +25,5 @@ $(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
 	    $(OBJDIR)/kprintf.o $(OBJDIR)/nastyfreemem.o \
 	    $(OBJDIR)/rt.o $(OBJDIR)/rt_stubs.o $(OBJDIR)/purify.o
 	$(AR) $@ $?
+	$(RANLIB) $@
 
