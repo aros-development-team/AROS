@@ -1100,17 +1100,17 @@ struct image
 /****************************************************************************************/
 
 #define SET_BYTE(field,value) \
-    ACT_STRUCT ## . ## field = value
+    ACT_STRUCT.field = value
     
 #define SET_WORD(field, value) \
-    ACT_STRUCT ## . ## field[0] = ((value) >> 8) & 0xFF; \
-    ACT_STRUCT ## . ## field[1] = (value) & 0xFF;
+    ACT_STRUCT.field[0] = ((value) >> 8) & 0xFF; \
+    ACT_STRUCT.field[1] = (value) & 0xFF;
 
 #define SET_LONG(field,value) \
-    ACT_STRUCT ## . ## field[0] = ((value) >> 24) & 0xFF; \
-    ACT_STRUCT ## . ## field[1] = ((value) >> 16) & 0xFF; \
-    ACT_STRUCT ## . ## field[2] = ((value) >> 8) & 0xFF; \
-    ACT_STRUCT ## . ## field[3] = (value) & 0xFF;
+    ACT_STRUCT.field[0] = ((value) >> 24) & 0xFF; \
+    ACT_STRUCT.field[1] = ((value) >> 16) & 0xFF; \
+    ACT_STRUCT.field[2] = ((value) >> 8) & 0xFF; \
+    ACT_STRUCT.field[3] = (value) & 0xFF;
 
 #define BOOL_YES 0x2A2A2A2A
 #define BOOL_NO  0x00000000
