@@ -144,8 +144,13 @@ static void set_pen_from_rgb (struct MUI_PenSpec_intern *psi, struct ColorMap *c
 			      ULONG r, ULONG g, ULONG b)
 {
     LONG pen;
+    struct TagItem obp_tags[] =
+    {
+	{ OBP_FailIfBad, FALSE  },
+	{ TAG_DONE,      0L     }
+    };
 
-    pen = ObtainBestPenA(cm, r, g, b, NULL);
+    pen = ObtainBestPenA(cm, r, g, b, obp_tags);
     if (pen == -1)
     {
 	psi->p_is_allocated = FALSE;
@@ -169,19 +174,25 @@ BOOL zune_penspec_setup(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *m
     switch (psi->p_type)
     {
 	case PST_MUI:
-	    psi->p_pen = mri->mri_Pens[psi->p_mui];
+	    if ((psi->p_pen >= 0) && (psi->p_pen < MPEN_COUNT))
+		psi->p_pen = mri->mri_Pens[psi->p_mui];
+	    else
+		return FALSE;
 	    break;
 
 	case PST_CMAP:
 	{
 	    psi->p_pen = (psi->p_cmap >= 0) ?
 		psi->p_cmap :
-		mri->mri_Screen->ViewPort.ColorMap->Count + psi->p_cmap;
-	    psi->p_is_allocated = FALSE;
+		mri->mri_Colormap->Count + psi->p_cmap;
+	    if ((psi->p_pen >= 0) && (psi->p_pen < mri->mri_Colormap->Count))
+		psi->p_is_allocated = FALSE;
+	    else
+		return FALSE;
 	    break;
 	}
 	case PST_RGB:
-	    set_pen_from_rgb(psi, mri->mri_Screen->ViewPort.ColorMap,
+	    set_pen_from_rgb(psi, mri->mri_Colormap,
 			     psi->p_rgb.red, psi->p_rgb.green, psi->p_rgb.blue);
 	    D(bug("zune_penspec_setup(%lx)=%ld RGB(%lx,%lx,%lx)\n", psi,
 		  psi->p_pen, psi->p_rgb.red, psi->p_rgb.green, psi->p_rgb.blue));
@@ -208,12 +219,12 @@ BOOL zune_penspec_cleanup(struct MUI_PenSpec_intern *psi)
 
 	case PST_CMAP:
 	    if (psi->p_is_allocated)
-		ReleasePen(psi->p_mri->mri_Screen->ViewPort.ColorMap, psi->p_pen);
+		ReleasePen(psi->p_mri->mri_Colormap, psi->p_pen);
 	    break;
 	
 	case PST_RGB:
 	    if (psi->p_is_allocated)
-		ReleasePen(psi->p_mri->mri_Screen->ViewPort.ColorMap, psi->p_pen);
+		ReleasePen(psi->p_mri->mri_Colormap, psi->p_pen);
 	    break;
 
 	case PST_SYS:
