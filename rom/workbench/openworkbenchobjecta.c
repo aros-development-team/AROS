@@ -118,7 +118,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     }
                     else
                     {
-                        FreeVec(namecopy);
+                        FreeVec((STRPTR)namecopy);
                         DestroyWBHM(wbhm);
                         DestroyWBCM(wbcm);
                     }
