@@ -18,10 +18,6 @@
 #include <workbench/workbench.h>
 
 
-struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
-				  struct WorkbenchBase *WorkbenchBase);
-
-
 /*****************************************************************************
 
     NAME */
@@ -341,7 +337,7 @@ struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
 
     if (appIcon->ai_Flags & WBAPPICONF_PropagatePosition)
     {
-	appIcon->ai_DiskObject = copyDiskObject(diskobj, WorkbenchBase);
+	appIcon->ai_DiskObject = DupDiskObject(diskobj, TAG_DONE);
 
 	if (appIcon->ai_DiskObject == NULL)
 	{
@@ -366,50 +362,4 @@ struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
     return appIcon;
 
     AROS_LIBFUNC_EXIT
-} /* AddAppIconA */
-
-
-struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
-				  struct WorkbenchBase *WorkbenchBase)
-{
-    struct DiskObject *copy;
-
-    copy = AllocVec(sizeof(struct DiskObject), MEMF_PUBLIC | MEMF_CLEAR);
-
-    if (copy != NULL)
-    {
-	struct Image *oldIm = (struct Image *)diskObj->do_Gadget.GadgetRender;
-
-	int  size  = RASSIZE(oldIm->Width, oldIm->Height)*oldIm->Depth;
-
-	CopyMem(diskObj, copy, sizeof(struct DiskObject));
-
-	copy->do_Gadget.GadgetRender = AllocVec(sizeof(struct Image),
-						MEMF_PUBLIC);
-
-	if (copy->do_Gadget.GadgetRender != NULL)
-	{
-	    APTR *imageDataPtr;
-
-	    CopyMem(diskObj->do_Gadget.GadgetRender,
-		    copy->do_Gadget.GadgetRender, sizeof(struct Image));
-
-	    imageDataPtr = &(((struct Image *)(copy->do_Gadget.GadgetRender))->ImageData);
-	    *imageDataPtr = AllocVec(size, MEMF_PUBLIC);
-	    
-	    if (*imageDataPtr != NULL)
-	    {
-		struct Image *im = (struct Image *)diskObj->do_Gadget.GadgetRender;
-		CopyMem(im->ImageData, *imageDataPtr, size);
-		
-		return copy;
-	    }
-
-	    FreeVec(copy->do_Gadget.GadgetRender);
-	}
-	
-	FreeVec(copy);
-    }
-    
-    return NULL;
-}
+} /* AddAppIconA() */
