@@ -43,9 +43,7 @@
 #include <oop/oop.h>
 
 /* POSIX includes */
-#ifdef __NetBSD__
 #define timeval sys_timeval
-#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -53,9 +51,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <errno.h>
-#ifndef __NetBSD__
-#define timeval sys_timeval
-#endif
 #include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
