@@ -1,16 +1,16 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-hidds : workbench-graphics-hidd-kobj
-#MM- workbench-graphics-hidd : workbench-graphics-hidd-stubs
-#MM- workbench-graphics-hidd-kobj : workbench-graphics-hidd-stubs
+#MM- workbench-hidds : workbench-hidd-graphics
+#MM- workbench-hidd-graphics : workbench-hidd-graphics-module
+#MM- linklibs : workbench-hidd-graphics-stubs
 
 FILES       := GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
 	       pixfmt sync
 
 USER_CFLAGS      := -DAROS_USE_OOP
-%build_module_macro mmake=workbench-graphics-hidd \
+%build_module_macro mmake=workbench-hidd-graphics \
   modname=graphics modtype=hidd \
   files=$(FILES) \
   conffile=lib.conf \
@@ -22,11 +22,11 @@ STUBS       := $(LIBNAME)_stubs
 STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
 STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
-#MM workbench-hidd-setup :
-workbench-hidd-setup : setup
+#MM workbench-hidd-graphics-setup :
+workbench-hidd-graphics-setup : setup
 
-#MM workbench-graphics-hidd-stubs : workbench-graphics-hidd-setup
-workbench-graphics-hidd-stubs : $(STUB_FILE)
+#MM workbench-hidd-stubs : workbench-hidd-graphics-setup
+workbench-hidd-graphics-stubs : $(STUB_FILE)
 
 $(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
 	%mklib_q from=$(STUB_OBJS)
