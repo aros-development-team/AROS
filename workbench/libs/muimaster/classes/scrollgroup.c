@@ -40,31 +40,45 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 		    /* Calulate the minmax dimension of the group,
 		    ** We only have a fixed number of children, so we need no NextObject()
 		    */
-		    WORD maxxxxwidth = 0;
-		    WORD maxxxxheight = 0;
+		    
+		    if (data->usewinborder)
+		    {
+		    	lm->lm_MinMax.MinWidth  = _minwidth(data->contents);
+		    	lm->lm_MinMax.MinHeight = _minheight(data->contents);
+		    	lm->lm_MinMax.DefWidth  = _defwidth(data->contents);
+		    	lm->lm_MinMax.DefHeight = _defheight(data->contents);
+		    	lm->lm_MinMax.MaxWidth  = _maxwidth(data->contents);
+		    	lm->lm_MinMax.MaxHeight = _maxheight(data->contents);
+			
+		    }
+		    else
+		    {
+			WORD maxxxxwidth = 0;
+			WORD maxxxxheight = 0;
 
-		    maxxxxwidth = _minwidth(data->contents);
-		    if (_minwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _minwidth(data->horiz);
-		    maxxxxwidth += _minwidth(data->vert);		    
-		    lm->lm_MinMax.MinWidth = maxxxxwidth;
+			maxxxxwidth = _minwidth(data->contents);
+			if (_minwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _minwidth(data->horiz);
+			maxxxxwidth += _minwidth(data->vert);		    
+			lm->lm_MinMax.MinWidth = maxxxxwidth;
 
-		    maxxxxheight = _minheight(data->contents);
-		    if (_minheight(data->vert) > maxxxxheight) maxxxxheight = _minheight(data->vert);
-		    maxxxxheight += _minheight(data->horiz);
-		    lm->lm_MinMax.MinHeight = maxxxxheight;
+			maxxxxheight = _minheight(data->contents);
+			if (_minheight(data->vert) > maxxxxheight) maxxxxheight = _minheight(data->vert);
+			maxxxxheight += _minheight(data->horiz);
+			lm->lm_MinMax.MinHeight = maxxxxheight;
 
-		    maxxxxwidth = _defwidth(data->contents);
-		    if (_defwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _defwidth(data->horiz);
-		    if (maxxxxwidth < lm->lm_MinMax.MinWidth) maxxxxwidth = lm->lm_MinMax.MinWidth;
-		    lm->lm_MinMax.DefWidth = maxxxxwidth;
+			maxxxxwidth = _defwidth(data->contents);
+			if (_defwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _defwidth(data->horiz);
+			if (maxxxxwidth < lm->lm_MinMax.MinWidth) maxxxxwidth = lm->lm_MinMax.MinWidth;
+			lm->lm_MinMax.DefWidth = maxxxxwidth;
 
-		    maxxxxheight = _defheight(data->contents);
-		    if (_defheight(data->vert) > maxxxxheight) maxxxxheight = _defheight(data->vert);
-		    if (maxxxxheight < lm->lm_MinMax.MinHeight) maxxxxheight = lm->lm_MinMax.MinHeight;
-		    lm->lm_MinMax.DefHeight = maxxxxheight;
+			maxxxxheight = _defheight(data->contents);
+			if (_defheight(data->vert) > maxxxxheight) maxxxxheight = _defheight(data->vert);
+			if (maxxxxheight < lm->lm_MinMax.MinHeight) maxxxxheight = lm->lm_MinMax.MinHeight;
+			lm->lm_MinMax.DefHeight = maxxxxheight;
 
-		    lm->lm_MinMax.MaxWidth  = MUI_MAXMAX;
-		    lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
+			lm->lm_MinMax.MaxWidth  = MUI_MAXMAX;
+			lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
+		    }
 		    
 		    //kprintf("scrollgroup minmax: min %d x %d  def %d x %d\n",
 		    //	lm->lm_MinMax.MinWidth, lm->lm_MinMax.MinHeight,
@@ -96,48 +110,52 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 		    LONG cont_height = lay_height - _subheight(data->contents);
     	    	    BOOL vbar = FALSE, hbar = FALSE;
 		    
-    	    	    //kprintf("scrollgroup layout: %d x %d  sub contents size %d,%d\n",
-		    //	lay_width, lay_height, _subwidth(data->contents), _subheight(data->contents));
-		    
-		    /* layout the virtual group a first time, to determine the virtual width/height */
-		    //MUI_Layout(data->contents,0,0,lay_width,lay_height,0);
+		    if (!data->usewinborder)
+		    {
+    	    		//kprintf("scrollgroup layout: %d x %d  sub contents size %d,%d\n",
+			//	lay_width, lay_height, _subwidth(data->contents), _subheight(data->contents));
 
-    	    	    get(data->contents, MUIA_Virtgroup_MinWidth, &virt_minwidth);
-		    get(data->contents, MUIA_Virtgroup_MinHeight, &virt_minheight);
-    	    	    virt_minwidth -= _subwidth(data->contents);
-		    virt_minheight -= _subheight(data->contents);
-		    
-		    virt_maxwidth = _maxwidth(data->contents) - _subwidth(data->contents);
-		    virt_maxheight = _maxheight(data->contents) - _subheight(data->contents);
-		    
-    	    	    virt_width = CLAMP(cont_width, virt_minwidth, virt_maxwidth);
-		    virt_height = CLAMP(cont_height, virt_minheight, virt_maxheight);
-		    
-    	    	    if (virt_width > cont_width)
-		    {
-		    	cont_height -= horiz_height;
+			/* layout the virtual group a first time, to determine the virtual width/height */
+			//MUI_Layout(data->contents,0,0,lay_width,lay_height,0);
+
+    	    		get(data->contents, MUIA_Virtgroup_MinWidth, &virt_minwidth);
+			get(data->contents, MUIA_Virtgroup_MinHeight, &virt_minheight);
+    	    		virt_minwidth -= _subwidth(data->contents);
+			virt_minheight -= _subheight(data->contents);
+
+			virt_maxwidth = _maxwidth(data->contents) - _subwidth(data->contents);
+			virt_maxheight = _maxheight(data->contents) - _subheight(data->contents);
+
+    	    		virt_width = CLAMP(cont_width, virt_minwidth, virt_maxwidth);
 			virt_height = CLAMP(cont_height, virt_minheight, virt_maxheight);
-			hbar = TRUE;
-		    }
-		    //kprintf("      1: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
+
+    	    		if (virt_width > cont_width)
+			{
+		    	    cont_height -= horiz_height;
+			    virt_height = CLAMP(cont_height, virt_minheight, virt_maxheight);
+			    hbar = TRUE;
+			}
+			//kprintf("      1: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
+
+			if (virt_height > cont_height)
+			{
+		    	    cont_width -= vert_width;
+    	    	    	    virt_width = CLAMP(cont_width, virt_minwidth, virt_maxheight);
+			    vbar = TRUE;
+			}
+			//kprintf("      2: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
+
+			/* We need to check this a 2nd time!! */
+    	    		if (!hbar && (virt_width > cont_width))
+			{
+		    	    cont_height -= horiz_height;
+			    virt_height = CLAMP(cont_height, virt_minheight, virt_maxheight);
+			    hbar = TRUE;
+			}
+			//kprintf("      3: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
 		    
-		    if (virt_height > cont_height)
-		    {
-		    	cont_width -= vert_width;
-    	    	    	virt_width = CLAMP(cont_width, virt_minwidth, virt_maxheight);
-			vbar = TRUE;
-		    }
-		    //kprintf("      2: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
+		    } /* if (!data->usewinborder) */
 		    
-		    /* We need to check this a 2nd time!! */
-    	    	    if (!hbar && (virt_width > cont_width))
-		    {
-		    	cont_height -= horiz_height;
-			virt_height = CLAMP(cont_height, virt_minheight, virt_maxheight);
-			hbar = TRUE;
-		    }
-		    //kprintf("      3: %d x %d   hbar %d  vbar %d\n", cont_width, cont_height, hbar, vbar);
-		    		   
     	    	    cont_width += _subwidth(data->contents);
 		    cont_height += _subheight(data->contents);
 		    		
@@ -152,32 +170,28 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 			MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,0);
 			MUI_Layout(data->horiz, 0, cont_height, cont_width, horiz_height, 0);
 			MUI_Layout(data->button, cont_width, cont_height, vert_width, horiz_height, 0);
-		    } else
+		    }
+		    else if (vbar)
 		    {
-		    	if (vbar)
-		    	{
-			    set(data->vert, MUIA_ShowMe, TRUE);
-			    set(data->horiz, MUIA_ShowMe, FALSE);
-			    set(data->button, MUIA_ShowMe, FALSE);
+			set(data->vert, MUIA_ShowMe, TRUE);
+			set(data->horiz, MUIA_ShowMe, FALSE);
+			set(data->button, MUIA_ShowMe, FALSE);
 
-			    MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,0);
-		    	} else
-		    	{
-			    if (hbar)
-			    {
-				set(data->vert, MUIA_ShowMe, FALSE);
-				set(data->horiz, MUIA_ShowMe, TRUE);
-				set(data->button, MUIA_ShowMe, FALSE);
+			MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,0);
+		    }
+		    else if (hbar)
+		    {
+			set(data->vert, MUIA_ShowMe, FALSE);
+			set(data->horiz, MUIA_ShowMe, TRUE);
+			set(data->button, MUIA_ShowMe, FALSE);
 
-				MUI_Layout(data->horiz, 0, cont_height, cont_width, horiz_height, 0);
-			    } else
-			    {
-				set(data->vert, MUIA_ShowMe, FALSE);
-				set(data->horiz, MUIA_ShowMe, FALSE);
-				set(data->button, MUIA_ShowMe, FALSE);
-
-			    }
-		    	}
+			MUI_Layout(data->horiz, 0, cont_height, cont_width, horiz_height, 0);
+		    }
+		    else if (!data->usewinborder)
+		    {
+			set(data->vert, MUIA_ShowMe, FALSE);
+			set(data->horiz, MUIA_ShowMe, FALSE);
+			set(data->button, MUIA_ShowMe, FALSE);
 		    }
 
 		    /* Layout the group a second time, note that setting _mwidth() and _mheight() should be enough, or we invent a new flag */
@@ -235,12 +249,22 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     //struct TagItem *tags,*tag;
     Object *contents = (Object*)GetTagData(MUIA_Scrollgroup_Contents, 0, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
-
+    BOOL usewinborder;
+    Tag  hbordertag = TAG_IGNORE;
+    Tag  vbordertag = TAG_IGNORE;
+    
     struct Hook *layout_hook = mui_alloc_struct(struct Hook);
     if (!layout_hook) return 0;
 
     layout_hook->h_Entry = (HOOKFUNC)Scrollgroup_Layout_Function;
 
+    usewinborder = GetTagData(MUIA_Scrollgroup_UseWinBorder, FALSE, msg->ops_AttrList);
+    if (usewinborder)
+    {
+    	hbordertag = MUIA_Prop_UseWinBorder;
+	vbordertag = MUIA_Prop_UseWinBorder;
+    }
+    
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
@@ -249,8 +273,8 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	Child, (IPTR) (group = GroupObject,
 	    MUIA_Group_LayoutHook, (IPTR) layout_hook,
 	    Child, (IPTR) contents,
-	    Child, (IPTR) (vert   = ScrollbarObject, MUIA_Group_Horiz, FALSE, End),
-	    Child, (IPTR) (horiz  = ScrollbarObject, MUIA_Group_Horiz, TRUE, End),
+	    Child, (IPTR) (vert   = ScrollbarObject, MUIA_Group_Horiz, FALSE, vbordertag, MUIV_Prop_UseWinBorder_Right, End),
+	    Child, (IPTR) (horiz  = ScrollbarObject, MUIA_Group_Horiz, TRUE, hbordertag, MUIV_Prop_UseWinBorder_Bottom, End),
 	    Child, (IPTR) (button = ScrollbuttonObject, End),
         End),
 	
@@ -268,7 +292,8 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->horiz = horiz;
     data->button = button;
     data->contents = contents;
-
+    data->usewinborder = usewinborder;
+    
     data->hook.h_Entry = (HOOKFUNC)Scrollgroup_Function;
     data->hook.h_Data = data;
     data->layout_hook = layout_hook;
