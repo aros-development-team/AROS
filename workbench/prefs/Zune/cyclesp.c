@@ -66,70 +66,80 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_CyclesPData *data;
     struct MUI_CyclesPData d;
     
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-			       MUIA_Group_Horiz, FALSE,
-			       Child, HGroup,
-			       GroupFrameT("Cycle Gadget Design"),
-			       Child, HVSpace,
-			       Child, d.cycle_popimage =
-			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-					 MUIA_Draggable, TRUE, 
-					 MUIA_CycleChain, 1,
-					 MUIA_MaxWidth, 28,
-					 MUIA_MaxHeight, 28,
-					 MUIA_Imagedisplay_FreeHoriz, FALSE,
-					 MUIA_Imagedisplay_FreeVert, FALSE,
-					 MUIA_Window_Title, (IPTR)"Cycle",
-					 TAG_DONE),
-			       Child, HVSpace,
-			       End, /* Cycle Gadget Design */
-			       Child, HGroup,
-			       Child, VGroup,
-			       GroupFrameT("Popup Menu Control"),
-			       Child, VSpace(0),
-			       Child, ColGroup(2),
-			       MUIA_Group_VertSpacing, 2,
-			       Child, Label("Position:"),
-			       Child, d.menu_position_cycle =
-			       MakeCycle("Position:", positions_labels),
-			       Child, Label("Level:"),
-			       Child, d.menu_level_slider = MakeLevelSlider(),
-			       Child, Label("Speed:"),
-			       Child, d.menu_speed_slider = MakeSpeedSlider(),
-			       End,
-			       Child, VSpace(0),
-			       End, /* Popup Menu Control */
-			       Child, VGroup,
-			         MUIA_Group_VertSpacing, 2,
-			         GroupFrameT("Popup Menu Design"),
-			         Child, HGroup,
-			           MUIA_Group_SameWidth, TRUE,
-			           Child, VGroup,
-			               MUIA_Group_VertSpacing, 1,
-			               Child, d.menu_popframe = MakePopframe(),
-			               Child, CLabel("Frame"),
-			               End, /* VGroup */
-			           Child, VGroup,
-			               MUIA_Group_VertSpacing, 1,
-			               Child, d.background_menu_popimage =
-			                 NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Draggable, TRUE,
-					 MUIA_CycleChain, 1,
-					 MUIA_Window_Title, (IPTR)"Adjust Background",
-					 TAG_DONE),
-			               Child, CLabel((IPTR)"Background"),
-			               End, /* VGroup */
-			         End, /* HGroup */
-			         Child, HGroup,
-			           Child, HSpace(0),
-			           Child, Label1("Recessed Entries:"),
-			           Child, d.recessed_entries_checkmark =
-			           MakeCheck(NULL),
-			           End, /* HGroup recessed CM */
-			       End, /* Popup Menu Design */
-			     End, /* HGroup Popup Menu */			       
-    	TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        MUIA_Group_Horiz, FALSE,
+        Child, HGroup,
+            GroupFrameT("Cycle Gadget Design"),
+            Child, HVSpace,
+            Child, d.cycle_popimage =
+            NewObject
+            (
+                CL_ImageClipboard->mcc_Class, NULL,
+                MUIA_Imageadjust_Type,       MUIV_Imageadjust_Type_Image,
+                MUIA_Draggable,              TRUE, 
+                MUIA_CycleChain,             1,
+                MUIA_MaxWidth,               28,
+                MUIA_MaxHeight,              28,
+                MUIA_Imagedisplay_FreeHoriz, FALSE,
+                MUIA_Imagedisplay_FreeVert,  FALSE,
+                MUIA_Window_Title,           (IPTR) "Cycle",
+                TAG_DONE
+            ),
+            Child, HVSpace,
+        End, /* Cycle Gadget Design */
+        Child, HGroup,
+            Child, VGroup,
+                GroupFrameT("Popup Menu Control"),
+                Child, VSpace(0),
+                Child, ColGroup(2),
+                    MUIA_Group_VertSpacing, 2,
+                    Child, Label("Position:"),
+                    Child, d.menu_position_cycle =
+                    MakeCycle("Position:", positions_labels),
+                    Child, Label("Level:"),
+                    Child, d.menu_level_slider = MakeLevelSlider(),
+                    Child, Label("Speed:"),
+                    Child, d.menu_speed_slider = MakeSpeedSlider(),
+                End,
+                Child, VSpace(0),
+            End, /* Popup Menu Control */
+            Child, VGroup,
+                MUIA_Group_VertSpacing, 2,
+                GroupFrameT("Popup Menu Design"),
+                Child, HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.menu_popframe = MakePopframe(),
+                        Child, CLabel("Frame"),
+                    End, /* VGroup */
+                    Child, VGroup,
+                        MUIA_Group_VertSpacing, 1,
+                        Child, d.background_menu_popimage = NewObject
+                        (
+                            CL_ImageClipboard->mcc_Class, NULL,
+                            MUIA_Draggable,           TRUE,
+                            MUIA_CycleChain,          1,
+                            MUIA_Window_Title, (IPTR) "Adjust Background",
+                            TAG_DONE
+                        ),
+                        Child, CLabel((IPTR)"Background"),
+                    End, /* VGroup */
+                End, /* HGroup */
+                Child, HGroup,
+                    Child, HSpace(0),
+                    Child, Label1("Recessed Entries:"),
+                    Child, d.recessed_entries_checkmark =
+                    MakeCheck(NULL),
+                End, /* HGroup recessed CM */
+            End, /* Popup Menu Design */
+        End, /* HGroup Popup Menu */			       
+    	
+        TAG_MORE, msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
     
