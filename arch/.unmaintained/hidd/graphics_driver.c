@@ -37,7 +37,7 @@
 #include "graphics_internal.h"
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /* Default font for the HIDD driver */
@@ -3385,11 +3385,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
     			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
 			
 
-    if ((drmd & JAM2) == 0)
-    {
-    	/* We must get the data from the destination bitmap */
-	HIDD_BM_GetImage(pi->destbm, buf, x_dest, y_dest, xsize, ysize);
-    }
+    HIDD_BM_GetImage(pi->destbm, buf, x_dest, y_dest, xsize, ysize);
 			
     
     for (y = 0; y < ysize; y ++)
@@ -3405,9 +3401,9 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	    if (pi->mask)
 	    {
 		ULONG idx, mask;
+		
 		idx = COORD_TO_BYTEIDX(x + pi->mask_xmin, y + pi->mask_ymin, pi->mask_bpr);
 		mask = XCOORD_TO_MASK(x + pi->mask_xmin);
-		 
 		 
 		set_pixel = pi->mask[idx] & mask;
 		 
@@ -3430,12 +3426,15 @@ static VOID pattern_to_buf(struct pattern_info *pi
 		    	*buf = pixval;
 		   }
 		    
-		   D(bug("(%d, %d): %d", x, y, *buf));
-		   buf ++;
 		}
+		else
+		    *buf = apen;
 	    
 	    } /* if (pixel should be set */
 	    
+
+	    D(bug("(%d, %d): %d", x, y, *buf));
+	    buf ++;
 	    
 	} /* for (each column) */
 	
