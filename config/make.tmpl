@@ -8,13 +8,20 @@
 
 # Create one directory without any output
 %define mkdir_q dir=.
-	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
+	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 %end
 
 # Create several directories without any output
 %define mkdirs_q dirs=/M
-	@for dir in %(dirs) ; do \
-	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	@$(FOR) dir in %(dirs) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+%end
+
+# Same, more noisy
+%define mkdirs dirs=/M
+	@$(FOR) dir in %(dirs) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
 	done
 %end
 
@@ -23,7 +30,7 @@
 %define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ err=$*.err
 	@$(ECHO) "Assembling $(CURDIR)/%(from)..."
 	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
@@ -31,7 +38,7 @@
 %define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ err=$*.err
 	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
 	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 %define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS) us=undefdsyms.list
@@ -39,23 +46,23 @@
 	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
 	@$(ECHO) "Checking %(to)..."
 	@$(CHECKUDS) %(to) > %(us)
-	@if test -s %(us); then \
+	@$(IF) $(TEST) -s %(us); then \
 	    cat %(us) >> %(err); \
 	    echo "There are undefined symbols in %(to):"; \
 	    cat %(us); \
-	else true ; fi
+	else $(NOP) ; fi
 	@$(RM) %(us)
-	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
 %define checkuds us=undefdsyms.list err=$(@F)-x.err to=$@
 	@$(ECHO) "Checking %(to)..."
 	@$(CHECKUDS) %(to) > %(us)
-	@if test -s %(us); then \
-	    cat %(us) >> %(err); \
-	    echo "There are undefined symbols in %(to):"; \
-	    cat %(us); \
-	else true ; fi
+	@$(IF) $(TEST) -s %(us); then \
+	    $(CAT) %(us) >> %(err); \
+	    $(ECHO) "There are undefined symbols in %(to):"; \
+	    $(CAT) %(us); \
+	else $(NOP) ; fi
 	@$(RM) %(us)
 %end
 
@@ -75,14 +82,14 @@
 
 # Create the dependency file %(to) for %(from) in the directory %(dir)
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
-	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
+	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
 	@$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
 %end
 
 # Same but more noisy
 %define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
-	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
+	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
 	$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
 %end
@@ -99,13 +106,13 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 # This macro uses a trick: %(target) is evaluated *after* %(text), so one
 # can use %(target) in %(text).
 %define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile top=$(TOP)
-	@for dir in %(dirs) ; do \
-	    echo "%(text) in %(curdir)/$$dir..." ; \
-	    if test -e $$dir/%(submf).src && \
-		{ test ! -e $$dir/%(submf) \
+	@$(FOR) dir in %(dirs) ; do \
+	    $(ECHO) "%(text) in %(curdir)/$$dir..." ; \
+	    if $(TEST) -e $$dir/%(submf).src && \
+		{ $(TEST) ! -e $$dir/%(submf) \
 		-o $$dir/%(submf).src -nt $$dir/%(submf) \
 		-o %(top)/config/make.tmpl -nt $$dir/%(submf) ; } ; then \
-		echo "Generating %(submf)..." ; \
+		$(ECHO) "Generating %(submf)..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
 		--assign TOP="$(TOP)" \
 		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
@@ -114,7 +121,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 		$(MAKE) %(mflags) --file=%(submf) \
 		    TOP="%(top)/.." CURDIR="%(curdir)/$$dir" \
 		    TARGET=%(target) %(target) ) ; \
-	    then true ; else exit 1 ; fi ; \
+	    then $(NOP) ; else exit 1 ; fi ; \
 	done
 %end
 
@@ -125,7 +132,7 @@ ifeq ("%(shflag)","yes")
 LIB=$(LIBDIR)/lib%(lib).so
 RMLIB=$(LIBDIR)/lib%(lib).a
 AR=$(SHARED_AR)
-RANLIB=true
+RANLIB=$(NOP)
 else
 LIB=$(LIBDIR)/lib%(lib).a
 RMLIB=$(LIBDIR)/lib%(lib).so
@@ -165,39 +172,37 @@ makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 %end
 
 # Include the dependency files and add some internal rules
-%define include_deps deps=$(DEPS)/M
+%define include_deps deps=$(DEPS)/M nodepstargets=
 # Include these files but only if the current target is neither
 # setup nor clean.
-ifneq ("$(TARGET)","clean")
-ifneq ("$(TARGET)","setup")
+ifeq (,$(filter clean% setup% includes% %(nodepstargets),$(TARGET)))
 include %(deps)
-endif
 endif
 %end
 
 # rule to generate libdefs.h
 %define libdefs_rule conffile=lib.conf script=$(TOP)/scripts/genlibdefs.gawk dest=libdefs.h
 %(dest) : %(conffile) %(script)
-	@echo "Generating $@..."
+	@$(ECHO) "Generating $@..."
 	@$(AWK) -f %(script) $< > $@
 %end
 
 # Rule to create a .library in the local dir
 %define genlib
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@echo "Generating $@..."
+	@$(ECHO) "Generating $@..."
 	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
 	    libdefs.h
-	@echo "Generating $@..."
+	@$(ECHO) "Generating $@..."
 	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) > $@
 
 endtag.c :
-	@echo "Generating $@..."
-	@echo "#include <libcore/libtail.c>" > $@
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
@@ -209,7 +214,7 @@ asm : $(foreach f,%(opt),$(f).s) all
 # generate asm files from c files (for debugging purposes)
 %define ctoasm_q
 %.s : %.c
-	@echo "Generating $(CURDIR)/$@..."
+	@$(ECHO) "Generating $(CURDIR)/$@..."
 	@$(CC) -S $(CFLAGS) $< -c -o $@
 %end
 
@@ -247,14 +252,18 @@ asm : $(foreach f,%(opt),$(f).s) all
 # config/$(...) directories to not be compiled by the local makefile.
 %define additional_objs_rule
 $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
-	@echo Error: One of the precompiled object files did not exist.
+	@$(ECHO) Error: One of the precompiled object files did not exist.
 	@exit 1
 %end
 
 %define add_objects files=/M
-	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files add $(f)))
+	@$(FOR) file in %(files) ; do \
+	    $(ECHO) >> $(GENDIR)/config.files "add $$file" ; \
+	done
 %end
 
 %define exclude_files files=/M
-	$(foreach f,%(files),$(shell echo >> $(GENDIR)/config.files not $(f)))
+	@$(FOR) file in %(files) ; do \
+	    $(ECHO) >> $(GENDIR)/config.files "not $$file" ; \
+	done
 %end
