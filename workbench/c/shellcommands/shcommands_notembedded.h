@@ -14,7 +14,7 @@
      asm("\t.text                  \n"  \
          "\tmove.l	4.w,a6     \n"  \
 	 "\tjra		_entry(pc) \n");
-#endif
+#else
 #    define AMIGANATIVETRICK
 #endif
 
