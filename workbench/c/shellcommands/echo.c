@@ -40,7 +40,7 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 	    ERROR(RETURN_ERROR);
     }
 
-    a=SHArg();
+    a=SHArg( );
     while(*a!=NULL)
     {
 	b=*a;
