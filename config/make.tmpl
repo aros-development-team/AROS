@@ -1104,7 +1104,7 @@ ifeq (%(modname),)
 $(error using %build_module: modname may not be empty)
 endif
 ifeq (%(modtype),)
-$(error using %build_module: $(MODTYPE) has to be defined with the type of the module
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
 endif
 OBJDIR               ?= $(GENDIR)/$(CURDIR)
 BD_MODNAME$(BDID)    := %(modname)
@@ -1113,11 +1113,11 @@ BD_CONFFILE$(BDID)   := %(conffile)
 BD_FILES$(BDID)      := %(files)
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
 BD_OBJDIR$(BDID)     := %(objdir)
-BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID))
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -D'LC_LIBDEFS_FILE="$(BD_MODNAME$(BDID))_libdefs.h"'
 ifeq (%(dflags),)
 BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
-BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID))
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -D'LC_LIBDEFS_FILE="$(BD_MODNAME$(BDID))_libdefs.h"'
 endif
 BD_OBJS$(BDID)       := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_ENDOBJ$(BDID)     := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
@@ -1167,19 +1167,30 @@ BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
 	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
 	    $(BD_EXTRAFILES$(BDID)) \
-	    $(BD_EXTRAOBJS$(BDID))
+	    $(BD_EXTRAOBJS$(BDID)) \
+	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 
-$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF) $(BD_OBJDIR$(BDID))
+$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
 	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
-	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(BD_SRCS$(BDID)) >$@
+	@$(CXREF) -raw -CPP 'gcc $(subst ','',$(strip $(BD_CFLAGS$(BDID)))) -E -C -dD' $(subst $(CXREF),,$^) >$@
 
-$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(patsubst %.o,%.c,$(BD_ENDOBJ$(BDID))) \
-$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) : \
-$(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID)) $(BD_OBJDIR$(BDID))
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c \
+$(BD_OBJDIR$(BDID))/$(DB_MODNAME$(BDID))_libdefs.h \
+$(patsubst %.o,%.c,$(BD_ENDOBJ$(BDID))) \
+$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) \
+: $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID)) $(BD_OBJDIR$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
+ifneq ($(BD_CONFFILE$(BDID)),lib.conf)
+	@$(IF) $(TEST) -f lib.conf; then \
+	  echo "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	fi
+endif
+	@$(IF) $(TEST) -f libdefs.h; then \
+	  echo "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	fi
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
-$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
+$(BD_MODULE$(BDID)) : $(BD_OBJDIR$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
 	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
 
 $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
