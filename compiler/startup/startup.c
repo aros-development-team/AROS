@@ -1,3 +1,4 @@
+
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
@@ -145,8 +146,6 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
 static struct aros_startup __aros_startup;
-
-int do_arosc_internals = 1;
 
 DEFINESET(CTORS);
 DEFINESET(DTORS);
