@@ -4,3 +4,13 @@ CFG_PACKAGES=( sources )
 
 # Which C compiler to use.
 CFG_CC=gcc
+
+# The "Distribution Server" for the nightlies
+CFG_DS=aros.sf.net
+
+# Which Distribution Server's user is in charge of a determinate build
+# machine. Defaults to chodorowski (Adam Chodorowski)
+CFG_DS_USER=chodorowski
+
+# Which directory on the DS is meant to store the nighlies
+CFG_DS_DIRECTORY=aros/uploads/nightly/

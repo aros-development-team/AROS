@@ -56,7 +56,7 @@ archive()
     archname=$(basename $1)
     oldpwd=$(pwd)
     
-    execute mkdir -p $archdir
+    makedir $archdir
     execute tar cjvf $1 --exclude=CVS $2
     cd      $archdir
     echo    ">>> md5sum $archname >$archname.md5"
