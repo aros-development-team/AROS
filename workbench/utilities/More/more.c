@@ -110,7 +110,7 @@ UBYTE			filenamebuffer[300];
 static struct RastPort 	*rp;
 static struct RDArgs 	*MyArgs;
 
-static struct Gadget 	*gad[NUM_GADGETS], *firstgadget;
+static struct Gadget 	*gad[NUM_GADGETS], *firstgadget, *activearrowgad;
 static struct Image 	*img[NUM_GADGETS];
 
 static struct LineNode 	*linearray;
@@ -133,6 +133,7 @@ static WORD 		winwidth, winheight;
 static ULONG		winmask;
 static LONG 		filelen, num_lines, max_textlen;
 static LONG 		search_startline, found_line = -1;
+static WORD 	    	arrowticker;
 
 static BOOL		in_main_loop;
 
@@ -460,7 +461,8 @@ static void MakeGadgets(void)
 						  GA_RelBottom	, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	, 
 						  GA_ID		, GAD_UPARROW								, 
 						  GA_RightBorder, TRUE									, 
-						  GA_Immediate	, TRUE									, 
+						  GA_Immediate	, TRUE									,
+						  GA_RelVerify	, TRUE	    	    	    	    	    	    	    	    	, 
 						  TAG_DONE);
 
     gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_DOWNARROW]				, 
@@ -469,7 +471,8 @@ static void MakeGadgets(void)
 						    GA_ID		, GAD_DOWNARROW					, 
 						    GA_RightBorder	, TRUE						, 
 						    GA_Previous		, gad[GAD_UPARROW]				, 
-						    GA_Immediate	, TRUE						, 
+						    GA_Immediate	, TRUE						,
+						    GA_RelVerify    	, TRUE	    	    	    	    	    	, 
 						    TAG_DONE);
 
     gad[GAD_VERTSCROLL] = NewObject(0, PROPGCLASS, GA_Top		, btop + 1									, 
@@ -495,6 +498,7 @@ static void MakeGadgets(void)
 						     GA_BottomBorder	, TRUE						, 
 						     GA_Previous	, gad[GAD_VERTSCROLL]				, 
 						     GA_Immediate	, TRUE						, 
+						     GA_RelVerify   	, TRUE	    	    	    	    	    	,
 						     TAG_DONE);
 
     gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_LEFTARROW]							, 
@@ -504,6 +508,7 @@ static void MakeGadgets(void)
 						    GA_BottomBorder	, TRUE									, 
 						    GA_Previous		, gad[GAD_RIGHTARROW]							, 
 						    GA_Immediate	, TRUE									, 
+						    GA_RelVerify    	, TRUE	    	    	    	    	    	    	    	    	,
 						    TAG_DONE);
 
     gad[GAD_HORIZSCROLL] = NewObject(0, PROPGCLASS, GA_Left		, scr->WBorLeft, 
@@ -727,6 +732,7 @@ static void MakeWin(void)
 							  IDCMP_GADGETUP      |
 					    		  IDCMP_MOUSEMOVE     |
 							  IDCMP_VANILLAKEY    |
+							  IDCMP_INTUITICKS    |
 					  		#ifdef USE_SIMPLEREFRESH
 					    		  IDCMP_REFRESHWINDOW |
 					  		#endif
@@ -1094,56 +1100,6 @@ static void HandleScrollGadget(WORD gadid)
 
 /****************************************************************************************/
 
-static void HandleArrowGadget(WORD gadid)
-{
-    struct IntuiMessage *msg;
-
-    BOOL ok = FALSE;
-
-    while (!ok)
-    {
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-#ifdef USE_SIMPLEREFRESH
-	    if (msg->Class == IDCMP_REFRESHWINDOW)
-	    {
-		HandleRefresh();
-	    }
-#endif
-	    ReplyMsg((struct Message *)msg);
-	}
-
-	if (gad[gadid]->Flags & GFLG_SELECTED)
-	{
-	    switch (gadid)
-	    {
-		case GAD_UPARROW:
-		    ScrollTo(GAD_VERTSCROLL, viewstarty - 1, TRUE);
-		    break;
-
-		case GAD_DOWNARROW:
-		    ScrollTo(GAD_VERTSCROLL, viewstarty + 1, TRUE);
-		    break;
-
-		case GAD_LEFTARROW:
-		    ScrollTo(GAD_HORIZSCROLL, viewstartx - 1, TRUE);
-		    break;
-
-		case GAD_RIGHTARROW:
-		    ScrollTo(GAD_HORIZSCROLL, viewstartx + 1, TRUE);
-		    break;
-
-	    } /* switch (gid) */
-
-	} /* if (gad[gadid]->Flags & GFLG_SELECTED) */
-
-	if (!(gad[gadid]->Activation & GACT_ACTIVEGADGET)) ok=TRUE;
-
-    } /* while (!ok) */	
-}
-
-/****************************************************************************************/
-
 static BOOL FindString(struct LineNode *ln, char *search, LONG searchlen)
 {
     char *text = ln->text;
@@ -1262,7 +1218,8 @@ static BOOL HandleWin(void)
 #endif
 	    case IDCMP_GADGETDOWN:
 		gadid = ((struct Gadget *)msg->IAddress)->GadgetID;
-
+    	    	arrowticker = 3;
+		
 		switch(gadid)
 		{
 		    case GAD_HORIZSCROLL:
@@ -1271,14 +1228,62 @@ static BOOL HandleWin(void)
 			break;
 
 		    case GAD_UPARROW:
+		    	activearrowgad = (struct Gadget *)msg->IAddress;
+			ScrollTo(GAD_VERTSCROLL, viewstarty - 1, TRUE);
+			break;
+			
 		    case GAD_DOWNARROW:
+		    	activearrowgad = (struct Gadget *)msg->IAddress;
+			ScrollTo(GAD_VERTSCROLL, viewstarty + 1, TRUE);
+			break;
+			
 		    case GAD_LEFTARROW:
+		    	activearrowgad = (struct Gadget *)msg->IAddress;
+			ScrollTo(GAD_HORIZSCROLL, viewstartx - 1, TRUE);
+			break;
+			
 		    case GAD_RIGHTARROW:
-			HandleArrowGadget(gadid);
+		    	activearrowgad = (struct Gadget *)msg->IAddress;
+			ScrollTo(GAD_HORIZSCROLL, viewstartx + 1, TRUE);
 			break;
 		};
 		break;
 
+    	    case IDCMP_INTUITICKS:
+	    	if (activearrowgad)
+		{
+		    if (arrowticker)
+		    {
+		    	arrowticker--;
+		    }
+		    else if (activearrowgad->Flags & GFLG_SELECTED)
+    	    	    {
+		    	switch(activearrowgad->GadgetID)
+			{
+			    case GAD_UPARROW:
+			    	ScrollTo(GAD_VERTSCROLL, viewstarty - 1, TRUE);
+				break;
+				
+			    case GAD_DOWNARROW:
+			    	ScrollTo(GAD_VERTSCROLL, viewstarty + 1, TRUE);
+				break;
+				
+			    case GAD_LEFTARROW:
+			    	ScrollTo(GAD_HORIZSCROLL, viewstartx - 1, TRUE);
+				break;
+				
+			    case GAD_RIGHTARROW:
+			    	ScrollTo(GAD_HORIZSCROLL, viewstartx + 1, TRUE);
+				break;
+			}
+		    }
+		}
+		break;
+		
+	    case IDCMP_GADGETUP:
+	    	activearrowgad = NULL;
+	    	break;
+		
 	    case IDCMP_VANILLAKEY:
 	    	key = toupper(msg->Code);
 		if (key == 27)
