@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include "misc.h"
 #include "docommand.h"
@@ -134,6 +135,8 @@ int main(int argc, char *argv[])
         remove(output);
         return EXIT_FAILURE;
     }
+
+    chmod(output, 0766);
 
     if (strip_all)
     {
