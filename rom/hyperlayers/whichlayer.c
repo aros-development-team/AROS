@@ -56,54 +56,25 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer *l;
+    struct Layer *l;
 
-  D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
-  
-  LockLayers(li);
+    D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
 
-  for(l = li->top_layer; l != NULL; l = l->back)
-    if(IS_VISIBLE(l) &&
-       x >= l->visibleshape->bounds.MinX && x <= l->visibleshape->bounds.MaxX &&
-       y >= l->visibleshape->bounds.MinY && y <= l->visibleshape->bounds.MaxY)
-    {
-       struct RegionRectangle * rr;
+    LockLayers(li);
 
-       int found = FALSE;
-       int _x, _y;
+    for
+    (
+        l = li->top_layer;
+        l != NULL && !(IS_VISIBLE(l) && IsPointInRegion(l->visibleshape, x, y));
+        l = l->back
+    );
 
-       _x = x - l->visibleshape->bounds.MinX;
-       _y = y - l->visibleshape->bounds.MinY;
-       rr = l->visibleshape->RegionRectangle;
-       
-       /*
-        * If it is just a square the region is empty.
-        */
-       if (NULL == rr)
-         break;
-       while (rr)
-       {
-         if (_x >= rr->bounds.MinX && _x <= rr->bounds.MaxX &&
-             _y >= rr->bounds.MinY && _y <= rr->bounds.MaxY)
-         {
-           found = TRUE;
-           break;
-         }
-         rr = rr->Next;
-       }
-       
-       if (TRUE == found)
-         break;
+    UnlockLayers(li);
 
-    }
+    return l;
 
-
-  UnlockLayers(li);
-
-  return l;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* WhichLayer */
