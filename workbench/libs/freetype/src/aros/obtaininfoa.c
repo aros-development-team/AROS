@@ -220,7 +220,10 @@ ULONG ObtainInfoA(struct GlyphEngine *ge, struct TagItem *tags)
 	    gm_p = (struct GlyphMap **)otagdata;
 
 	    if((*gm_p = GetGlyph(engine, FALSE))==NULL)
+	    {
+		D(bug("Could not obtain GlyphMap\n"));
 		rc = (ULONG) engine->last_error;
+	    }
 	    break;
 
 	case OT_GlyphMap8Bits:
@@ -230,7 +233,10 @@ ULONG ObtainInfoA(struct GlyphEngine *ge, struct TagItem *tags)
 	    gm_p = (struct GlyphMap **)otagdata;
 
 	    if((*gm_p = GetGlyph(engine, TRUE))==NULL)
+            {
+                D(bug("Could not obtain GlyphMap8Bit\n"));
 		rc = (ULONG) engine->last_error;
+            }
 	    break;
 
 	case OT_WidthList:
