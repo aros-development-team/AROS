@@ -178,32 +178,32 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             Child, (IPTR) Label2(_(MSG_ICONS)),
             Child, (IPTR) PopaslObject,
                 MUIA_Popasl_Type,              ASL_FontRequest,
-		ASLFO_MaxHeight,               100,
-                MUIA_Popstring_String,  (IPTR) iconsString = StringObject, 
+                ASLFO_MaxHeight,               100,
+                MUIA_Popstring_String,  (IPTR) (iconsString = StringObject, 
                     TextFrame,
-		    MUIA_Background, MUII_TextBack,
-                End,
+                    MUIA_Background, MUII_TextBack,
+                End),
                 MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
             End,
             Child, (IPTR) Label2(_(MSG_SCREEN)),
             Child, (IPTR) PopaslObject,
                 MUIA_Popasl_Type,              ASL_FontRequest,
-		ASLFO_MaxHeight,               100,
-                MUIA_Popstring_String,  (IPTR) screenString = StringObject, 
+                ASLFO_MaxHeight,               100,
+                MUIA_Popstring_String,  (IPTR) (screenString = StringObject, 
                     TextFrame,
-		    MUIA_Background, MUII_TextBack,
-                End,
+                    MUIA_Background, MUII_TextBack,
+                End),
                 MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
             End,
             Child, (IPTR) Label2(_(MSG_SYSTEM)),
             Child, (IPTR) PopaslObject,
-		MUIA_Popasl_Type,              ASL_FontRequest,
+                MUIA_Popasl_Type,              ASL_FontRequest,
                 ASLFO_FixedWidthOnly,          TRUE,
-		ASLFO_MaxHeight,               100,
-                MUIA_Popstring_String,  (IPTR) systemString = StringObject, 
+                ASLFO_MaxHeight,               100,
+                MUIA_Popstring_String,  (IPTR) (systemString = StringObject, 
                     TextFrame,
-		    MUIA_Background, MUII_TextBack,
-                End,
+                    MUIA_Background, MUII_TextBack,
+                End),
                 MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
             End,
         End,
@@ -358,7 +358,7 @@ IPTR FPEditor__MUIM_PrefsEditor_ExportFH
                 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    printf("error: PushChunk() = %d ", error);
+                    printf("error: PushChunk() = %ld\n", error);
                 }
                 
                 convertEndian(FP(i)); // Convert to m68k endian
@@ -370,7 +370,7 @@ IPTR FPEditor__MUIM_PrefsEditor_ExportFH
                 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    printf("error: PopChunk() = %d ", error);
+                    printf("error: PopChunk() = %ld\n", error);
                 }
             }
 

@@ -42,13 +42,13 @@ struct ExecuteCommand_DATA
 };
 
 /*** Methods ****************************************************************/
-IPTR ExecuteCommand__OM_NEW
+Object *ExecuteCommand__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct ExecuteCommand_DATA *data           = NULL;
-    struct TagItem             *tstate         = message->ops_AttrList,
+    const struct TagItem       *tstate         = message->ops_AttrList,
                                *tag            = NULL;
     BPTR                        parent         = NULL;
     BOOL                        unlockParent   = FALSE;
@@ -106,7 +106,7 @@ IPTR ExecuteCommand__OM_NEW
         
         MUIA_Application_Title, __(MSG_TITLE),
         
-        SubWindow, (IPTR) window = WindowObject,
+        SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,       __(MSG_TITLE),
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
@@ -115,14 +115,14 @@ IPTR ExecuteCommand__OM_NEW
             WindowContents, (IPTR) VGroup,
                 Child, (IPTR) VGroup,
                     Child, (IPTR) LLabel(_(MSG_LABEL_COMMANDLINE)),
-                    Child, (IPTR) commandPop = PopaslObject,
-                        MUIA_Popstring_String, (IPTR) commandString = StringObject,
+                    Child, (IPTR) (commandPop = PopaslObject,
+                        MUIA_Popstring_String, (IPTR) (commandString = StringObject,
                             MUIA_String_Contents, (IPTR) initial,
                             MUIA_CycleChain,             1,
                             StringFrame,
-                        End,
+                        End),
                         MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
-                    End,
+                    End),
                 End,
                 Child, (IPTR) HGroup,
                     InnerSpacing(0, 0),
@@ -133,12 +133,12 @@ IPTR ExecuteCommand__OM_NEW
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Weight,         0,
                         
-                        Child, (IPTR) executeButton = SimpleButton(_(MSG_BUTTON_EXECUTE)),
-                        Child, (IPTR) cancelButton  = SimpleButton(_(MSG_BUTTON_CANCEL)),
+                        Child, (IPTR) (executeButton = SimpleButton(_(MSG_BUTTON_EXECUTE))),
+                        Child, (IPTR) (cancelButton  = SimpleButton(_(MSG_BUTTON_CANCEL))),
                     End,
                 End,
             End,
-        End,
+        End),
         
         TAG_DONE
     );
@@ -194,7 +194,7 @@ IPTR ExecuteCommand__OM_NEW
         (IPTR) window, 3, MUIM_Set, MUIA_Window_ActiveObject, (IPTR) commandString
     );
     
-    return (IPTR) self;
+    return self;
 }
 
 IPTR ExecuteCommand__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
@@ -223,7 +223,7 @@ IPTR ExecuteCommand__MUIM_Application_Execute
     
     SET(data->ecd_Window, MUIA_Window_Open, FALSE);
 
-    return NULL;
+    return 0;
 }
 
 IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
@@ -346,7 +346,7 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
         DoMethod(self, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
     
-    return NULL;
+    return 0;
 }
 
 
@@ -355,14 +355,14 @@ BOOPSI_DISPATCHER(IPTR, ExecuteCommand_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:                             return ExecuteCommand__OM_NEW(CLASS, self, (struct opSet *) message);
+        case OM_NEW:                             return (IPTR) ExecuteCommand__OM_NEW(CLASS, self, (struct opSet *) message);
         case OM_DISPOSE:                         return ExecuteCommand__OM_DISPOSE(CLASS, self, message);
         case MUIM_Application_Execute:           return ExecuteCommand__MUIM_Application_Execute(CLASS, self, message);
         case MUIM_ExecuteCommand_ExecuteCommand: return ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand(CLASS, self, (struct MUIP_ExecuteCommand_ExecuteCommand *) message);
         default:                                 return DoSuperMethodA(CLASS, self, message);
     }
     
-    return NULL;
+    return 0;
 }
 BOOPSI_DISPATCHER_END
 
