@@ -1736,19 +1736,19 @@ $(OBJDIR) $(MOD_DIR%(id)) :
 # happen though.
 
 $(OBJDIR%(id))/%.o : $(OBJDIR%(id))/%.c
-	%compile_q cmd=$(HOST_CC) opt=$(CFLAGS%(id))
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS%(id))
 
 $(OBJDIR%(id))/%.so : $(OBJDIR%(id))/%.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
+	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
 
 $(OBJDIR%(id))/%.d : $(OBJDIR%(id))/%.c
 	%mkdepend_q flags=%(dflags)
 
 $(OBJDIR%(id))/%.o : %.c
-	%compile_q cmd=$(HOST_CC) opt=$(CFLAGS%(id))
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS%(id))
 
 $(OBJDIR%(id))/%.so : %.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
+	%compile_q cmd=$(TARGET_CC) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
 
 $(OBJDIR%(id))/%.d : %.c
 	%mkdepend_q flags=%(dflags)
