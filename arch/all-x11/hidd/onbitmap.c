@@ -169,6 +169,8 @@ UX11
 	    sizehint.max_height = height;
 	    XSetWMNormalHints (GetSysDisplay(), DRAWABLE(data), &sizehint);
 	    
+	    XSetWMProtocols (GetSysDisplay(), DRAWABLE(data), &XSD(cl)->delete_win_atom, 1);
+
 	    D(bug("Calling XMapRaised\n"));
 LX11	    
 	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
@@ -176,7 +178,7 @@ UX11
 	    /* Now we need to get some message from the X11 task about when
 	       the window has been mapped (ie. MapWindow event).
 	       This is because we cannot render into the window until the
-	       it has been mapped.
+	       it has been mapped.kfind &
 	    */
 
 	    /* Create X11 GC */

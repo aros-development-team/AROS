@@ -186,7 +186,7 @@ struct x11_staticdata
     ULONG size; /* Size of pixel in bits */
     ULONG bytes_per_pixel;
     
-    
+    Atom delete_win_atom;
 };
 
 

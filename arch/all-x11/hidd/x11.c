@@ -595,6 +595,13 @@ UX11
 		     
 		    break; }
 
+         	case ClientMessage:
+            	    if (event.xclient.data.l[0] == xsd->delete_win_atom)
+		    {
+		        kill(getpid(), SIGINT);
+		    }
+		    break;
+
 	        } /* switch (X11 event type) */
 		
 	    } /* if (is event for HIDD window) */

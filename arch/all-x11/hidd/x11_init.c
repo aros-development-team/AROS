@@ -214,6 +214,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     /*		    XAutoRepeatOff(xsd->display);
     */		    
     
+			xsd->delete_win_atom = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
 
     			xtp.parent = FindTask(NULL);
     			xtp.ok_signal	= SIGBREAKF_CTRL_E;
