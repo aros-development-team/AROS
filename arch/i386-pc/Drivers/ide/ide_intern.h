@@ -82,32 +82,35 @@ struct ide_Unit
 
 struct iDev
 {
-    UWORD           idev_DInfo;             /* Device ID */
-    UWORD           idev_Cylinders;         /* Total Cyl number */
-    UWORD           idev_Rsrvd1;
-    UWORD           idev_Heads;             /* Number of heads */
-    UWORD           idev_BPT;               /* Bytes per track */
-    UWORD           idev_BPS;               /* Bytes per sector */
-    UWORD           idev_Sectors;           /* Number of sectors */
-    UWORD           idev_Rsrvd2[3];
-    char            idev_SerialNumber[20];  /* Disk SN */
-    UWORD           idev_BufType;           /* Buffer type */
-    UWORD           idev_BufSize;           /* Buffer size in 512 byte blocks */
-    UWORD           idev_ECCSize;           /* ECC code size */
-    char            idev_RevisionNumber[8]; /* Drive Revision Number */
-    char            idev_ModelNumber[40];   /* Model name */
-    UWORD           idev_RWMultipleSize;    /* Max sector count for R/W Multiple */
-    UWORD           idev_32Bit;             /* Is 32 bit mode allowed? */
-    UWORD           idev_Features;          /* Drive features */
-    UWORD           idev_Rsrvd3;
-    UWORD           idev_PIOTime;           /* Pio timing */
-    UWORD           idev_DMATime;           /* DMA Timing */
-    UWORD           idev_NextAvail;         /* Next bytes available? */
-    UWORD           ideva_Cylinders;
-    UWORD           ideva_Heads;
-    UWORD           ideva_Sectors;
-    ULONG           ideva_Capacity;
-    UWORD           ideva_Rsrvd4[197];
+    UWORD           idev_DInfo;             /* 0     Device ID */
+    UWORD           idev_Cylinders;         /* 1     Total Cyl number */
+    UWORD           idev_Rsrvd1;            /* 2     Reserved */
+    UWORD           idev_Heads;             /* 3     Number of heads */
+    UWORD           idev_BPT;               /* 4     Bytes per track */
+    UWORD           idev_BPS;               /* 5     Bytes per sector */
+    UWORD           idev_Sectors;           /* 6     Number of sectors */
+    UWORD           idev_Rsrvd2[3];         /* 7-9   Reserved */
+    char            idev_SerialNumber[20];  /* 10-19 Disk SN */
+    UWORD           idev_BufType;           /* 20    Buffer type */
+    UWORD           idev_BufSize;           /* 21    Buffer size in 512 byte blocks */
+    UWORD           idev_ECCSize;           /* 22    ECC code size */
+    char            idev_RevisionNumber[8]; /* 23-26 Drive Revision Number */
+    char            idev_ModelNumber[40];   /* 27-46 Model name */
+    UWORD           idev_RWMultipleSize;    /* 47    Max sector count for R/W multiple */
+    UWORD           idev_32Bit;             /* 48    Is 32 bit mode allowed? */
+    UWORD           idev_Features;          /* 49    Drive features */
+    UWORD           idev_Rsrvd3;            /* 50    Reserved */
+    UWORD           idev_PIOTime;           /* 51    Pio timing */
+    UWORD           idev_DMATime;           /* 52    DMA Timing */
+    UWORD           idev_NextAvail;         /* 53    Next bytes available? */
+    UWORD           ideva_Cylinders;	    /* 54    Number of logical cylinders */
+    UWORD           ideva_Heads;	    /* 55    Number of logical heads */
+    UWORD           ideva_Sectors;	    /* 56    Number of logical sectors */
+    UWORD           ideva_Capacity1;	    /* 57    Current capacity in sectors */
+    UWORD           ideva_Capacity2;        /* 58    Current capacity */
+    UWORD           ideva_MultSect;         /* 59    Multiple sector settings */
+    ULONG           ideva_LBASectors;       /* 60-61 LBA reported sectors */
+    UWORD           ideva_Rsrvd4[194];
 };
 
 /* Unit flags */
@@ -171,20 +174,20 @@ struct ideBase
 
 /* ATA Commands */
 #define ATA_IDENTDEV    0xec
-#define ATA_READ	    0x20
+#define ATA_READ	0x20
 #define ATA_WRITE       0x30
 #define ATA_SEEK        0x70
-#define ATA_NOP		    0x00
+#define ATA_NOP		0x00
 #define ATA_MEDIAEJECT  0xed
 #define ATA_RECALIBRATE 0x10
 
-#define ATAB_LBA	    6
+#define ATAB_LBA	9
 #define ATAB_ATAPI      7
 #define ATAB_DATAREQ    3
 #define ATAB_ERROR      0
 #define ATAB_BUSY       7
 
-#define ATAF_LBA	    0x40
+#define ATAF_LBA	(1L << ATAB_LBA)
 #define ATAF_ATAPI      0x80
 #define ATAF_DATAREQ    0x08
 #define ATAF_ERROR      0x01
