@@ -202,7 +202,6 @@ int main(int argc, char **argv)
 
     	printf("Object system initialized\n");
 
-
     	/* Initialize the string class */
     	if (CreateClass(STRINGCLASSNAME, ROOTCLASSNAME, str_descr, sizeof (struct StringData)) )
     	{
@@ -537,6 +536,11 @@ UnlockCL;
     	/* Free class ID */
     	D(bug("Freeing class ID %s\n", cl->ClassID));
     	FreeVec(cl->ClassID);
+LockCL;
+		Remove(&(cl->ClassNode));
+UnlockCL;
+
+	FreeMem(cl, sizeof (Class));
     }
     ReturnVoid("DeleteClass");
 }
