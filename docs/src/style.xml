@@ -195,14 +195,15 @@ you should explain what it returns on failure and why it might fail.
 <li><item>NOTES</item> Important things the user must know or take into account.
 </li>
 
-<li><item>EXAMPLE</item> This field should contain a small or fully featured example.
-A good way to present an example is to write some code which tests the
-function, put it into <code>#ifdef TEST</code> somewhere in the file and put a
-"See below." here. If you need comments in the code, you have two ways for
-this. If you need only short one-line comments, use C++ style (|//
-comment<code>). Everything from the </code>//| to the end if the line is the comment.
-If you need more comment, then you can end the comment after the <code>EXAMPLE</code>
-and use <code>#ifdef EXAMPLE</code> to mask the example out:
+<li><item>EXAMPLE</item> This field should contain a small or fully featured
+example.  A good way to present an example is to write some code which tests
+the function, put it into <code>#ifdef TEST</code> somewhere in the file and
+put a "See below." here. If you need comments in the code, you have two ways
+for this. If you need only short one-line comments, use C++ style (|//
+comment<code>). Everything from the </code>//| to the end of the line is
+the comment.  If you need more comment, then you can end the comment after the
+<code>EXAMPLE</code> and use <code>#ifdef EXAMPLE</code> to mask the example
+out:
 
 <code>
     EXAMPLE */
@@ -310,7 +311,7 @@ the code between is small (c)
 <p>The reasons for this are: 1. While some editors can use an arbitrary
 sizes for tabs, it's a bit complicated to tell another editor which
 tab size was used by the one used to write the code. 2. Most code in
-AROS was written this way and you're code should look like the
+AROS was written this way and your code should look like the
 rest. 3. You can print this code on any printer without special
 tools to "fix" the tabs. 4. Most editors have smart tabs which do
 exactly this. If your editor doesn't, write a bug report.</p>
