@@ -68,7 +68,7 @@
     }
 
     rp->FgPen = pen;
-    rp->linpatcnt = 0;
+    rp->linpatcnt = 15;
 
     AROS_LIBFUNC_EXIT
 } /* SetAPen */

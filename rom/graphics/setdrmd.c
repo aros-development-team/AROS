@@ -81,7 +81,7 @@
     }
 
     rp->DrawMode = drawMode;
-    rp->linpatcnt = 0;
+    rp->linpatcnt = 15;
 
     AROS_LIBFUNC_EXIT
 } /* SetDrMd */
