@@ -232,7 +232,7 @@ void intui_WindowToBack (struct Window * window,
     BehindLayer(0, window->WLayer);
 }
 
-void intui_MoveWindowInFrontOf(struct Winodw * window, 
+void intui_MoveWindowInFrontOf(struct Window * window, 
                                struct Window * behindwindow,
                                struct IntuitionBase * IntuitionBase)
 {
