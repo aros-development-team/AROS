@@ -2,7 +2,7 @@
 TOP=../..
 
 USER_DEFINES = -D__AROS
-USER_INCLUDES = -I$(TOP)/apps/compiler/clib/include
+USER_INCLUDES = -I$(TOP)/compiler/clib/include
 
 include $(TOP)/config/make.cfg
 
@@ -13,6 +13,7 @@ DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = alib_util \
+	allocnamedobject \
 	callhook \
 	coercemethod \
 	createextio \
