@@ -86,7 +86,7 @@ int main(void)
 	int      i = 0;
 	STRPTR  *name = (STRPTR *)args[ARG_NAME];
 
-	if(*name == NULL)
+	if((name == NULL) || (*name == NULL))
 	{
 	    PutStr("No name given\n");
 	    error = RETURN_FAIL;

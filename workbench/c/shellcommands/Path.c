@@ -49,7 +49,7 @@ AROS_SHA(BOOL, ,HEAD,/S,FALSE))
 
     cur = (PathEntry *)&cli->cli_CommandDir;
 
-    if (*names)
+    if (names && *names)
     {
         BPTR next;
 

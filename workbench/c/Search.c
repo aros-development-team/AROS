@@ -217,7 +217,7 @@ int main(void)
 	    
 	    /* Get the next starting point */
 	    
-	    for(from = *(((TEXT ***)args) + ARG_FROM); *from && success; 
+	    for(from = *(((TEXT ***)args) + ARG_FROM); from && *from && success; 
 		from++)
 	    {
 		
