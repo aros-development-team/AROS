@@ -22,7 +22,6 @@
 #include <hidd/keyboard.h>
 
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 
 #include <hardware/custom.h>

@@ -24,7 +24,6 @@
 #include <clib/alib_protos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include <oop/oop.h>
 #include <proto/oop.h>
 #include <hidd/irq.h>

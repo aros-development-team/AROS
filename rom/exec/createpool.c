@@ -8,7 +8,6 @@
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
-#include <aros/machine.h>
 #include "memory.h"
 
 /*****************************************************************************

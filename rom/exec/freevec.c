@@ -7,7 +7,6 @@
 */
 #include "exec_intern.h"
 #include <aros/libcall.h>
-#include <aros/machine.h>
 #include "memory.h"
 #include <proto/exec.h>
 

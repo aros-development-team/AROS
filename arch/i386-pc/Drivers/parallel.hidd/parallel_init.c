@@ -10,7 +10,6 @@
 #include <exec/alerts.h>
 
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 
 #include <hidd/irq.h>

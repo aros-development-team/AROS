@@ -11,7 +11,6 @@
 #include "locale_intern.h"
 
 #include <exec/execbase.h>
-#include <aros/machine.h>
 #include <aros/libcall.h>
 
 #include <proto/exec.h>

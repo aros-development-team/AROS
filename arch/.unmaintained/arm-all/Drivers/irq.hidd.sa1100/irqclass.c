@@ -16,7 +16,6 @@
 #include <exec/alerts.h>
 #include <exec/memory.h>
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 
 #define DEBUG 0

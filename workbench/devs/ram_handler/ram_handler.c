@@ -33,7 +33,6 @@
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "ram_handler_gcc.h"
 #endif
-#include <aros/machine.h>
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>

@@ -16,7 +16,6 @@
 #include "dos_intern.h"
 #include <aros/debug.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include "internalloadseg.h"
 
 extern struct DosLibrary * DOSBase;

@@ -11,7 +11,6 @@
 #include "global.h"
 
 #include <exec/execbase.h>
-#include <aros/machine.h>
 #include <aros/libcall.h>
 
 /*********************************************************************************************/

@@ -15,7 +15,6 @@
 #include <proto/dos.h>
 #include <proto/arossupport.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include <aros/debug.h>
 #include <string.h>
 

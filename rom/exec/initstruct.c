@@ -8,7 +8,6 @@
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include <exec/alerts.h>
-#include <aros/machine.h>
 #include <proto/exec.h>
 
 /*****************************************************************************

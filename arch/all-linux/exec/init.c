@@ -13,8 +13,6 @@
 
 #include <proto/exec.h>
 
-#include <aros/machine.h>
-
 #if (AROS_BIG_ENDIAN == 0)
 #define SWAP(x) ((((ULONG)x >> 24) & 0x000000ff) |\
 		 (((ULONG)x >> 8 ) & 0x0000ff00) |\

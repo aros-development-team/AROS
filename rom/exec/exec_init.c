@@ -20,7 +20,6 @@
 
 #include <aros/system.h>
 #include <aros/arossupportbase.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 #include <aros/config.h>
 

@@ -14,7 +14,6 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "fdsk_device_gcc.h"
 #endif

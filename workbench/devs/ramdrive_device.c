@@ -26,7 +26,6 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include <aros/macros.h>
 #include <string.h>
 
