@@ -260,3 +260,19 @@ compiler/arossupport/include/rt.h
 BUG000038 (fixed for layers.library)
 bergers@aros.org
 We seem to have a serious memory leak problem with just about all programs.
+
+BUG000039
+nlorentz@online.no
+Some events are lost, especially when there ies rendering going
+on.
+
+BUG000040
+nlorentz@online.no
+String gadgets get coordinates relative to screen, but should
+get relative to window.
+
+BUG000041
+nlorentz@online.no
+Cause() does not work from inside keyboard.device, so input.device
+never gets keyboard events.
+
