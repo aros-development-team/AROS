@@ -137,7 +137,7 @@ ULONG cylsecs;
 			FreeMem(ph, sizeof(struct PartitionHandle));
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 LONG PartitionMBROpenPartitionTable
@@ -160,7 +160,7 @@ UBYTE i;
 			for (i=0;i<4;i++)
 			{
 				ph = PartitionMBRNewHandle(PartitionBase, root, i, &mbr->pcpt[i]);
-				if (ph)
+				if (ph != NULL)
 					Enqueue(&root->table->list, &ph->ln);
 			}
 			return 0;
@@ -331,14 +331,14 @@ struct TagItem *tag;
 				entry->type = 0;
 			PartitionMBRSetDosEnvec(root, entry, de);
 			ph = PartitionMBRNewHandle(PartitionBase,	root, pos, entry);
-			if (ph)
+			if (ph != NULL)
 				Enqueue(&root->table->list, &ph->ln);
 			else
 				fillMem((BYTE *)entry, sizeof(struct PCPartitionTable), 0);
 			return ph;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 void PartitionMBRDeletePartition
@@ -350,7 +350,7 @@ void PartitionMBRDeletePartition
 struct MBRData *data;
 
 	data = (struct MBRData *)ph->data;
-	fillMem((BYTE *)data->entry, sizeof(struct PCPartitionTable *), 0);
+	fillMem((BYTE *)data->entry, sizeof(struct PCPartitionTable), 0);
 	PartitionMBRFreeHandle(PartitionBase, ph);
 }
 
@@ -438,7 +438,7 @@ LONG PartitionMBRGetPartitionAttrs
 			*((LONG *)taglist[0].ti_Data) = (LONG)data->position;
 			break;
 		case PT_ACTIVE:
-			*((LONG *)taglist[0].ti_Data) = data->entry->type & 0x80 ? 1 : 0;
+			*((LONG *)taglist[0].ti_Data) = data->entry->status & 0x80 ? 1 : 0;
 			break;
 		}
 		taglist++;
@@ -501,9 +501,9 @@ posbreak:
 			break;
 		case PT_ACTIVE:
 			if (taglist[0].ti_Data)
-				data->entry->type |= 0x80;
+				data->entry->status |= 0x80;
 			else
-				data->entry->type &= ~0x80;
+				data->entry->status &= ~0x80;
 			break;
 		}
 		taglist++;
@@ -517,7 +517,7 @@ ULONG PartitionMBRPartitionTableAttrs[]=
 	PTTA_TYPE,
 	PTTA_RESERVED,
 	PTTA_MAX_PARTITIONS,
-	NULL
+	0
 };
 
 ULONG *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
@@ -531,12 +531,27 @@ ULONG PartitionMBRPartitionAttrs[]=
 	PTA_TYPE,
 	PTA_POSITION,
 	PTA_ACTIVE,
-	NULL
+	0
 };
 
 ULONG *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
 {
 	return PartitionMBRPartitionAttrs;
+}
+
+ULONG PartitionMBRDestroyPartitionTable
+	(
+		struct Library *PartitionBase,
+		struct PartitionHandle *root
+	)
+{
+struct MBR *mbr;
+
+	mbr = root->table->data;
+	fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
+	if (writeBlock(PartitionBase, root, 0, root->table->data))
+		return 1;
+	return 0;
 }
 
 struct PTFunctionTable PartitionMBR =
@@ -555,6 +570,7 @@ struct PTFunctionTable PartitionMBR =
 	PartitionMBRGetPartitionAttrs,
 	PartitionMBRSetPartitionAttrs,
 	PartitionMBRQueryPartitionTableAttrs,
-	PartitionMBRQueryPartitionAttrs
+	PartitionMBRQueryPartitionAttrs,
+	PartitionMBRDestroyPartitionTable
 };
 
