@@ -261,14 +261,6 @@ const struct Resident Exec_resident __text=
 
 struct view { unsigned char sign; unsigned char attr; };
 
-void IdleTask()
-{
-    do {
-        ((struct view*)0xb8000)[0].attr = 0x2f;
-        ((struct view*)0xb8000)[0].sign ++;
-    } while(1);
-}
-
 /*
  * Init the exec.library and as well whole system. This routine has to prepare
  * all needed structures, GDT and IDT tables, TSS structure and many other.
