@@ -124,6 +124,7 @@ SHARED	:= \
 	erand48 \
 	errno \
 	exit \
+        _exit \
 	fchmod \
 	fclose \
 	fcntl \
