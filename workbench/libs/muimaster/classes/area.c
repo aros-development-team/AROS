@@ -1496,17 +1496,17 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
 	    case IDCMP_RAWKEY:
 	    {
-	        if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-	        {
-		    if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
-		    {
+		if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
+		{
+	            if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+	            {
 			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 			data->mad_ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE|IDCMP_RAWKEY);
 			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 			nnset(obj, MUIA_Pressed, FALSE); /* aborted */
 			handle_release(cl,obj);
-			return MUI_EventHandlerRC_Eat;
 		    }
+		    return MUI_EventHandlerRC_Eat;
 		}
 	    }
 	    break;
