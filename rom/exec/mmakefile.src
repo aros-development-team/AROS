@@ -127,13 +127,6 @@ $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
 
-#CFLAGS2 := $(CFLAGS) -I$(TOP)/config/unix/exec -I.
-#
-#$(OBJDIR)/init.o : init.c
-#	 %compile_q opt=$(CFLAGS2)
-#
-#$(OBJDIR)/init.d : init.c
-#	 %mkdepend_q flags=$(CFLAGS2)
 
 # ***** END ***************
 endif
