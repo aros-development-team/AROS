@@ -33,7 +33,7 @@ FUNCS := activatecxobj \
 	 setfilterix \
 	 settranslate
 
-#MM workbench-libs-includes : \
+#MM workbench-libs-commodities-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-keymap-includes \
 #MM     kernel-timer-includes \
