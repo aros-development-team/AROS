@@ -31,13 +31,10 @@ DECLARESET(DTORS);
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
-    in A6. The correct way is to use *(struct ExecBase **)4 and because gcc
+    in A6. The correct way is to use *(struct ExecBase **)4 and because GCC
     emits strings for a certain function _before_ the code the program will
     crash immediately because the first element in the code won't be valid
     assembler code.
-
-    970314 ldp: It will now work because of the asm-stub above.
-
 */
 
 extern char *__argstr;
@@ -61,8 +58,8 @@ AROS_UFH3(LONG, __startup_entry,
     SysBase = sysbase;
 
     /*
-      No one program will be able to do anything useful without the dos.library,
-      so we open it here instead of using the automatic opening system
+        No program will be able to do anything useful without the dos.library,
+        so we open it here instead of using the automatic opening system
     */
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
     if (!DOSBase) return RETURN_FAIL;
