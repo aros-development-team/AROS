@@ -30,6 +30,9 @@
 #define ICA_ScrollToVert  ICA_BASE+4
 #define ICA_SelectedIcons ICA_BASE+6
 
+#define AICA_BASE TAG_USER+1800
+#define AICA_SelectedIcons     AICA_BASE+1
+
 #define DA_BASE  TAG_USER+7500
 #define DA_ActiveWindow DA_BASE+1
 
