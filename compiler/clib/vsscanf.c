@@ -27,7 +27,7 @@ static int _vsscanf_unget (int c, char ** str)
 /*****************************************************************************
 
     NAME */
-#include <stdio.h>
+	#include <stdio.h>
 #include <stdarg.h>
 
 	int vsscanf (
