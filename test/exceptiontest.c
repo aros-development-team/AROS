@@ -1,30 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.7  1998/10/20 16:46:38  hkiel
-    Amiga Research OS
-
-    Revision 1.6  1998/04/28 18:26:33  bergers
-    Bugfixes. Should compile w/o error now. Compile w/ mmake AROS.test.
-
-    Revision 1.5  1998/04/13 22:50:02  hkiel
-    Include <proto/exec.h>
-
-    Revision 1.4  1996/10/24 15:51:34  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/23 14:06:40  aros
-    Use AROS_LHA() instead of AROS_LA()
-
-    Use AROS_SLIB_ENTRY() to generate the name of a symbol in AROS_LH*()
-
-    Revision 1.2  1996/08/01 17:41:39  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <clib/exec_protos.h>

@@ -1,9 +1,8 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Demo showing x11gfx.hidd
-    Lang: English.
+    Demo showing x11gfx.hidd
 */
 
 #include <stdio.h>

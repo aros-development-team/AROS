@@ -1,22 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.5  1998/10/20 16:46:37  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1998/04/13 22:50:01  hkiel
-    Include <proto/exec.h>
-
-    Revision 1.3  1996/09/13 17:57:10  digulla
-    Use IPTR
-
-    Revision 1.2  1996/08/01 17:41:38  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #include <proto/exec.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
@@ -27,7 +13,6 @@
 #include "dummydev_gcc.h"
 
 extern const struct Resident resident;
-extern struct ExecBase *SysBase;
 
 int main(void)
 {
