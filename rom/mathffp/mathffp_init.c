@@ -29,11 +29,6 @@ static void *const FUNCTABLE[];
 struct LIBBASETYPE * INIT();
 extern const char END;
 
-extern int  driver_init (struct LIBBASETYPE *);
-extern int  driver_open (struct LIBBASETYPE *);
-extern void driver_close (struct LIBBASETYPE *);
-extern void driver_expunge (struct LIBBASETYPE *);
-
 int MathFFP_entry(void)
 {
     /* If the library was executed by accident return error code. */
@@ -46,7 +41,7 @@ const struct Resident Mathffp_resident=
     (struct Resident *)&Mathffp_resident,
     (APTR)&END,
     RTF_AUTOINIT,
-    39,
+    41,
     NT_LIBRARY,
     0,
     (char *)name,
@@ -75,14 +70,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     SysBase = sysBase;
 
-    Disable();
-    if (!driver_init (LIBBASE))
-    {
-	Enable();
-	return NULL;
-    }
-    Enable();
-
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
@@ -96,14 +83,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
 
     /* Keep compiler happy */
     version=0;
-
-    Disable();
-    if (!driver_open (LIBBASE))
-    {
-	Enable();
-	return NULL;
-    }
-    Enable();
 
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
@@ -122,8 +101,6 @@ AROS_LH0(BPTR, close,
     /* I have one fewer opener. */
     if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
-	driver_close (LIBBASE);
-
 	/* Delayed expunge pending? */
 	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
@@ -141,7 +118,6 @@ AROS_LH0(BPTR, expunge,
     if (!(LIBBASE->LibNode.lib_OpenCnt) )
     {
 	/* Allow the driver to release uneccessary memory */
-	driver_expunge (LIBBASE);
     }
 
     /* Don't delete this library. It's in ROM and therefore cannot be
