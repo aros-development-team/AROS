@@ -20,12 +20,15 @@ static void KillCurrentProcess(void);
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
-static void freeLocalVars(struct Process *process);
+static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
+
+void internal_ChildWait(struct Task *task);
+void internal_ChildFree(APTR tid);
 
 #include <aros/debug.h>
 
 /* Temporary macro */
-#define P(x)
+#define P(x)   x
 
 /*****************************************************************************
 
@@ -79,33 +82,31 @@ static void freeLocalVars(struct Process *process);
     STRPTR           s;
     BPTR            *oldpath, *newpath, *nextpath;
 
-    /* NOTE: NP_Synchronous and NP_NotifyOnDeath is not implemented -- they
-             aren't in AmigaOS either... */
-
-    /* TODO: NP_CommandName, NP_HomeDir, NP_ConsoleTask */
+    /* TODO: NP_CommandName, NP_HomeDir, NP_ConsoleTask, NP_NotifyOnDeath */
 
     struct TagItem defaults[]=
     {
-    /* 0 */    { NP_Seglist,	   0 },
-    /* 1 */    { NP_Entry,	   (IPTR)NULL },
-    /* 2 */    { NP_Input,	   ~0ul },
-    /* 3 */    { NP_CloseInput,    1 },
-    /* 4 */    { NP_Output,	   ~0ul },
-    /* 5 */    { NP_CloseOutput,   1 },
-    /* 6 */    { NP_Error,	   0 },
-    /* 7 */    { NP_CloseError,    1 },
-    /* 8 */    { NP_CurrentDir,    ~0ul },
+    /* 0 */    { NP_Seglist,	   0           },
+    /* 1 */    { NP_Entry,	   (IPTR)NULL  },
+    /* 2 */    { NP_Input,	   ~0ul        },
+    /* 3 */    { NP_CloseInput,    1           },
+    /* 4 */    { NP_Output,	   ~0ul        },
+    /* 5 */    { NP_CloseOutput,   1           },
+    /* 6 */    { NP_Error,	   0           },
+    /* 7 */    { NP_CloseError,    1           },
+    /* 8 */    { NP_CurrentDir,    ~0ul        },
     /* 9 */    { NP_StackSize,	   AROS_STACKSIZE },
     /*10 */    { NP_Name,	   (IPTR)"New Process" },
     /*11 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
-    /*12 */    { NP_Arguments,	   (IPTR)NULL },
-    /*13 */    { NP_Cli,	   0          },
-    /*14 */    { NP_UserData,	   (IPTR)NULL },
-    /*15 */    { NP_ExitCode,      (IPTR)NULL },
-    /*16 */    { NP_ExitData,      (IPTR)NULL },
-    /*17 */    { NP_WindowPtr,     (IPTR)NULL }, /* Default: default public
-                                                    screen */
-    /*18 */    { NP_CopyVars,      (IPTR)TRUE },
+    /*12 */    { NP_Arguments,	   (IPTR)NULL  },
+    /*13 */    { NP_Cli,	   0           },
+    /*14 */    { NP_UserData,	   (IPTR)NULL  },
+    /*15 */    { NP_ExitCode,      (IPTR)NULL  },
+    /*16 */    { NP_ExitData,      (IPTR)NULL  },
+    /*17 */    { NP_WindowPtr,     (IPTR)NULL  }, /* Default: default public
+                                                     screen */
+    /*18 */    { NP_CopyVars,      (IPTR)TRUE  },
+    /*19 */    { NP_Synchronous,   (IPTR)FALSE },
 	       { TAG_END,          0           }
     };
 
@@ -132,6 +133,7 @@ static void freeLocalVars(struct Process *process);
     name = AllocMem(namesize, MEMF_PUBLIC);
     ENOMEM_IF(name == NULL);
 
+    /* NP_Arguments */
     s = (STRPTR)defaults[12].ti_Data;
     if(s != NULL)
     {
@@ -255,13 +257,14 @@ static void freeLocalVars(struct Process *process);
 /*  process->pr_ConsoleTask=; */
 /*  process->pr_FileSystemTask=; */
     process->pr_CLI = MKBADDR(cli);
-/*  process->pr_PktWait=; */
+    process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data; 
 /*  process->pr_HomeDir=; */
     process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT  : 0) |
 		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT : 0) |
 		        (defaults[7].ti_Data  ? PRF_CLOSEERROR  : 0) |
 		        (defaults[13].ti_Data ? PRF_FREECLI     : 0) |
+	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS : 0) |
 		        PRF_FREEARGS | PRF_FREESEGLIST | PRF_FREECURRDIR;
     process->pr_ExitCode = (APTR)defaults[15].ti_Data; 
     process->pr_ExitData = defaults[16].ti_Data; 
@@ -316,18 +319,27 @@ static void freeLocalVars(struct Process *process);
 		  (BPTR *)BADDR(defaults[0].ti_Data) + 1 :
 		  (BPTR *)defaults[1].ti_Data,
 		  KillCurrentProcess, DOSBase) != NULL)
+    {
+	/* NP_Synchronous */
+	if(defaults[19].ti_Data)
+	{
+	    P(kprintf("Calling ChildWait()\n"));
+	    internal_ChildWait(process);
+	}
+
 	return process;
+    }
 
     /* Fall through */
 enomem:
     if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	SetIoErr(ERROR_NO_FREE_STORE);
 
-    freeLocalVars(process);
+    freeLocalVars(process, DOSBase);
 
 error:
     if(cli)
-	FreeDosObject(DOS_CLI,cli);
+	FreeDosObject(DOS_CLI, cli);
 
     if(curdir)
 	UnLock(curdir);
@@ -371,7 +383,7 @@ static void KillCurrentProcess(void)
     P(kprintf("Deleting local variables\n"));
 
     /* Clean up */
-    freeLocalVars(me);
+    freeLocalVars(me, DOSBase);
 
     P(kprintf("Closing input stream\n"));
 
@@ -408,11 +420,25 @@ static void KillCurrentProcess(void)
     if(me->pr_Flags & PRF_FREECLI)
 	FreeDosObject(DOS_CLI,BADDR(me->pr_CLI));
 
+    /* To implement NP_Synchronous and NP_NotifyOnDeath I need Child***()
+       here */
+
+    // if(me->pr_Flags & PRF_NOTIFYONDEATH)
+    //     Signal(GetETask(me)->iet_Parent, SIGF_CHILD);
+
+    if(me->pr_Flags & PRF_SYNCHRONOUS)
+    {
+	P(kprintf("Calling ChildFree()\n"));
+
+	// ChildStatus(me);
+	internal_ChildFree(me);
+    }
+
     RemTask(NULL);
 }
 
 
-static void freeLocalVars(struct Process *process)
+static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 {
     struct LocalVar *varNode;
     struct Node     *tempNode;
@@ -426,4 +452,33 @@ static void freeLocalVars(struct Process *process)
 	Remove((struct Node *)varNode);
 	FreeVec(varNode);
     }
+}
+
+
+void internal_ChildWait(struct Task *task)
+{
+    task->tc_State = TS_WAIT;
+    Reschedule(task);
+    Switch();
+}
+
+
+void internal_ChildFree(APTR tid)
+{
+    struct Task *task = (struct Task *)tid;
+
+    // Parent may now run again
+    ((struct Task *)(GetETask(task)->et_Parent))->tc_State = TS_READY;
+
+    kprintf("Setting parent task %p (called %s) to TS_READY\n",
+	    ((struct Task *)(GetETask(task)->et_Parent)),
+	    task->tc_Node.ln_Name);
+
+    // This is OK to do as we know that the parent is blocked
+    Forbid();
+    Remove((struct Node *)(GetETask(task)->et_Parent));
+    Permit();
+
+    Reschedule(((struct Task *)(GetETask(task)->et_Parent)));
+    Switch();
 }
