@@ -43,11 +43,11 @@ clean:
 
 $(OSGENDIR)/driver_x11.o: driver_x11.c
 	$(CC) $(CFLAGS) $(X11CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
+	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
+	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk

@@ -2,27 +2,35 @@ TOP=..
 
 include $(TOP)/make.cfg
 
+SPECIAL_CFLAGS = -I $(TOP)/exec
+
 OBJDIR=$(GENDIR)/m68k-native
 
-all: setup $(LIBDIR)/libkernel.a
+all: setup  $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
+	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
+	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
+	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
+	    $(OSGENDIR)/cachecleare.o $(OSGENDIR)/cacheclearu.o \
+	    $(OSGENDIR)/cachecontrol.o $(OSGENDIR)/cachepostdma.o \
+	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
+	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
-	$(RM) $(LIBDIR)/libkernel.a
+	$(RM) $(OSGENDIR) $(LIBDIR)/libAmigaOS.a
 
-$(OBJDIR)/%.o: %.s
+$(OSGENDIR)/%.o: %.s
+	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	if test ! -s $*.err; then rm $*.err; else true ; fi
+
+$(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
+	if test ! -s $*.err; then rm $*.err; else true ; fi
 
-$(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
-
-libkernel.a: $(OBJDIR)/init.o $(OBJDIR)/supervisor.o $(OBJDIR)/switch.o \
-	    $(OBJDIR)/dispatch.o $(OBJDIR)/disable.o $(OBJDIR)/enable.o \
-	    $(OBJDIR)/forbid.o $(OBJDIR)/permit.o $(OBJDIR)/preparecontext.o \
-	    $(OBJDIR)/special.o
-	$(AR) $@ $^
-
+$(OSGENDIR)/%.d: %.c
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
