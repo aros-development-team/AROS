@@ -1,8 +1,10 @@
 BEGIN {
     stderr="/dev/stderr";
 
-    file = "libdefs.h";
-
+    if (file == "")
+    {
+        file = "libdefs.h";
+    }
     while ((getline < file) > 0)
     {
         if ($2 == "BASENAME")
