@@ -54,6 +54,10 @@
 #define cosh    SPCosh
 #define tanh    SPTanh
 
+/* FIXME: Should these really be included here. It will generate
+ * include dependencies that are hard to handle
+ */
+#if 0
 /* I also include the function prototypes here! */
 
 #ifndef PROTO_MATHFFP_H
@@ -63,6 +67,6 @@
 #ifndef PROTO_MATHFFP_H
 #include <proto/mathieeedoubtrans.h>
 #endif
-
+#endif
 
 #endif /* LIBRARIES_MATHFFP_H */
