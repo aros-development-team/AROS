@@ -71,7 +71,7 @@ struct CountryPrefs nederlandPrefs =
     "\x00", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
     /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-    "-", SS_SPACE, SP_SUCC_CUR, CSP_PRECEDES,
+    "-", SS_SPACE, SP_SUCC_CURR, CSP_PRECEDES,
 
     /* Calendar type */
     CT_7MON
