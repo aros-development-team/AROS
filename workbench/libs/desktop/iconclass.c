@@ -843,19 +843,19 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             {
                 if (strcmp(dt.dat_StrDay, "Yesterday") == 0)
                 {
-                    strlcpy(buffer, dt.dat_StrDay, length);
+                    strlcpy(buffer, dt.dat_StrDay, bufferLength);
                 }
                 else if (strcmp(dt.dat_StrDay, "Today") == 0)
                 {
-                    strlcpy(buffer, dt.dat_StrDay, length);
+                    strlcpy(buffer, dt.dat_StrDay, bufferLength);
                 }
                 else
                 {
-                    strlcpy(buffer, dt.dat_StrDate, length);
+                    strlcpy(buffer, dt.dat_StrDate, bufferLength);
                 }
                 
-                strlcat(buffer, " ");
-                strlcat(buffer, dt.dat_StrTime);
+                strlcat(buffer, " ", bufferLength);
+                strlcat(buffer, dt.dat_StrTime, bufferLength);
             }
             else
             {
