@@ -211,6 +211,13 @@
     struct CR_tmp;
     struct Layer * l_behind; 
     LONG width, height;
+    /* 
+       we must keep the original DamageList since the DeleteLayer
+       operation will mess it up otherwise.
+    */ 
+    struct Region * damagelist = l->DamageList;
+    l->DamageList = NewRegion();
+
     /* link the temporary layer in front of the layer to resize */
     l_tmp->back  = l;
     l_tmp->front = l->front;
@@ -280,15 +287,7 @@
     ** the damage list if there is a damage list.
     ** If it's a simple refresh layer then just clear the damage list.
     */
-#if 0
-    if (IS_SIMPLEREFRESH(l))
-    {
-kprintf("Clearing region!\n");
-//      ClearRegion(l->DamageList);
-    } 
-    else
-#endif
-    if (NULL != l->DamageList->RegionRectangle)
+    if (NULL != damagelist->RegionRectangle)
     {
       if (dx <= 0 || dy <= 0)
       {
@@ -296,38 +295,39 @@ kprintf("Clearing region!\n");
         tmpRect.MinY = 0;
         tmpRect.MaxX = l->bounds.MaxX - l->bounds.MinX;
         tmpRect.MaxY = l->bounds.MaxY - l->bounds.MinY;
-        AndRectRegion(l->DamageList, &tmpRect);
+        AndRectRegion(damagelist, &tmpRect);
       }
-    
+
       /*
       ** Keep the damage list, but change it in such a way that
       ** rectangles with screen coordinates can be or'ed to it.
       */
-      l->DamageList->bounds.MinX += l->bounds.MinX;
-      l->DamageList->bounds.MinY += l->bounds.MinY;
-      l->DamageList->bounds.MaxX += l->bounds.MinX;
-      l->DamageList->bounds.MaxY += l->bounds.MinY;
+      damagelist->bounds.MinX += l->bounds.MinX;
+      damagelist->bounds.MinY += l->bounds.MinY;
+      damagelist->bounds.MaxX += l->bounds.MinX;
+      damagelist->bounds.MaxY += l->bounds.MinY;
     }
+
      
     /*
-    ** For a smart refresh layer add that area to the damage list
+    ** Add that area to the damage list
     ** where the layer increased its size
     */
-    if (IS_SMARTREFRESH(l) && ((dx > 0) || (dy > 0)))
+    if (!IS_SIMPLEREFRESH(l) && (dx > 0 || dy > 0))
     {
         tmpRect = l->bounds;
+
         if (dx > 0)
         {
-          tmpRect.MinX = l->bounds.MaxX - dx;
-          /* Rect.MinY = l->bounds.MinY; is's still correct! */
-          OrRectRegion(l->DamageList, &tmpRect);
+          tmpRect.MinX = tmpRect.MaxX - dx;
+          OrRectRegion(damagelist, &tmpRect);
         }
 
         if (dy > 0)
         {
           tmpRect.MinX = l->bounds.MinX;
-          tmpRect.MinY = l->bounds.MaxY - dy;
-          OrRectRegion(l->DamageList, &tmpRect);
+          tmpRect.MinY = tmpRect.MaxY - dy;
+          OrRectRegion(damagelist, &tmpRect);
         }
     }
     
@@ -451,8 +451,8 @@ kprintf("Clearing region!\n");
       new layer is bigger or smaller than before! It can be done
       with less calls to BltBitMap than when calling DeleteLayer().
     */
-    DeleteLayer(0, l_tmp);
 
+    DeleteLayer(0, l_tmp);
 
     /*
     ** If the layer was a simple layer then there might be bitmap
@@ -478,9 +478,7 @@ kprintf("Clearing region!\n");
                         );
       FreeBitMap(SimpleBackupBM);
       
-      ClearRegion(l->DamageList);
     }
-
     /* One more thing to do: Walk through all layers behind the layer and
        check for simple refresh layers and clear that region of this layer 
        out of their damage list
@@ -553,17 +551,13 @@ kprintf("Clearing region!\n");
                              bounds.MinX,
                              bounds.MinY);
 	      /* 
-	         Build the DamageList relative to the screen, 
-	         fix it later 
+	         Add this to the DamageList. 
 	      */
 	      if (IS_SIMPLEREFRESH(l))
-                OrRectRegion(l->DamageList, &bounds);
-#if 0
-kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
-                                         bounds.MinY,
-                                         bounds.MaxX,
-                                         bounds.MaxY);
-#endif
+	      {
+                OrRectRegion(damagelist, &bounds);
+              }
+
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -610,17 +604,13 @@ kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
               /* no superbitmap */
 
 	      /* 
-	         Build the DamageList relative to the screen, 
-	         fix it later 
+	         Add that part to the damage list
 	      */
               if (IS_SIMPLEREFRESH(l))
-                OrRectRegion(l->DamageList, &bounds);
-#if 0
-kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
-                                         bounds.MinY,
-                                         bounds.MaxX,
-                                         bounds.MaxY);
-#endif
+              {
+                OrRectRegion(damagelist, &bounds);
+              }
+
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -676,13 +666,17 @@ kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
       CR = CR->Next;
       }
     }
-   
+
     /* The DamageList was built relative to the screen -> fix that! */
     /* DamageList exists in any case!!!! */
-    l->DamageList->bounds.MinX -= l->bounds.MinX;
-    l->DamageList->bounds.MinY -= l->bounds.MinY;
-    l->DamageList->bounds.MaxX -= l->bounds.MinX;
-    l->DamageList->bounds.MaxY -= l->bounds.MinY;
+    damagelist->bounds.MinX -= l->bounds.MinX;
+    damagelist->bounds.MinY -= l->bounds.MinY;
+    damagelist->bounds.MaxX -= l->bounds.MinX;
+    damagelist->bounds.MaxY -= l->bounds.MinY;
+
+    DisposeRegion(l->DamageList);
+    l->DamageList = damagelist;
+
     /* That's it */
     CleanupLayers(LI);
 
