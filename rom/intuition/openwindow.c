@@ -77,6 +77,8 @@
     struct RastPort *rp;
     struct Hook *backfillhook = LAYERS_BACKFILL;
     struct Rectangle *zoomrectangle = NULL;
+    struct Image *AmigaKey = NULL;
+    struct Image *Checkmark = NULL;
     
     UBYTE * screenTitle = NULL;
     BOOL    autoAdjust	= FALSE;
@@ -253,10 +255,16 @@
 	    case WA_RptQueue:
 	    	repeatqueue = tag->ti_Data;
 		break;
+
+	    case WA_Checkmark:
+	        Checkmark = (struct Image *)tag->ti_Data;
+		break;
+		
+	    case WA_AmigaKey:
+		AmigaKey = (struct Image *)tag->ti_Data;
+		break;
 		
 	    case WA_MenuHelp:
-	    case WA_Checkmark:
-	    case WA_AmigaKey:
 	    case WA_Pointer:
 	    case WA_BusyPointer:
 	    case WA_PointerDelay:
@@ -308,7 +316,7 @@
     if (!ModifyIDCMP (w, nw.IDCMPFlags))
 	goto failexit;
 	
-    IW(w)->closeMessage = AllocMem(sizeof (struct closeMessage), MEMF_PUBLIC);
+    IW(w)->closeMessage = AllocMem(sizeof (struct DeferedActionMessage), MEMF_PUBLIC);
     if (NULL == IW(w)->closeMessage)
     	goto failexit;
 
@@ -438,6 +446,14 @@
     IW(w)->mousequeue = mousequeue;
     IW(w)->repeatqueue = repeatqueue;
     
+    /* Amiga and checkmark images for menus */
+    
+    IW(w)->Checkmark = Checkmark ? Checkmark :
+				   ((struct IntScreen *)(w->WScreen))->DInfo.dri_CheckMark;
+
+    IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
+				   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
+    
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
 
@@ -537,7 +553,7 @@ failexit:
 	*/
 	
 	if (IW(w)->closeMessage)
-	    FreeMem(IW(w)->closeMessage, sizeof (struct closeMessage));
+	    FreeMem(IW(w)->closeMessage, sizeof (struct DeferedActionMessage));
 	
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);
