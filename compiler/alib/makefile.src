@@ -22,7 +22,7 @@ FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
 	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
 	libdeletepool libfreepooled newlist newobject openscreentags	    \
 	openwindowtags rangerand setattrs setgadgetattrs		    \
-	setsuperattrs arosinquire
+	setsuperattrs arosinquire opencatalog timedelay
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
