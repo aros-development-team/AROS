@@ -24,22 +24,6 @@
 #    define AMIGANATIVETRICK
 #endif
 
-#if DEBUG
-#    undef  SH_GLOBAL_SYSBASE
-#    define SH_GLOBAL_SYSBASE 1
-#endif
-
-#if SH_GLOBAL_SYSBASE
-#    define DECLARE_SysBase_global extern struct ExecBase *SysBase;
-#    define DEFINE_SysBase_global struct ExecBase *SysBase;
-#    define DEFINE_SysBase_local
-#else
-#    define DECLARE_SysBase_global
-#    define DEFINE_SysBase_local struct ExecBase *SysBase;
-#    define DEFINE_SysBase_global
-#endif
-
-
 #if SH_GLOBAL_DOSBASE
 #    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global struct DosLibrary *DOSBase;
@@ -53,7 +37,7 @@
 #define CALL_main(name) name##_main(__shargs, argstr, SysBase, DOSBase)
 #define DECLARE_main(name)                                    \
     static ULONG name##_main(IPTR *__shargs, char * __argstr, \
-			     struct ExecBase *SysBase,        \
+                             struct ExecBase *SysBase,        \
 			     struct DosLibrary *DOSBase)
 #define DEFINE_main(name) DECLARE_main(name)
 
@@ -71,18 +55,16 @@
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
 AMIGANATIVETRICK                                               \
 DECLARE_main(name);                                            \
-DECLARE_SysBase_global                                         \
 DECLARE_DOSBase_global                                         \
                                                                \
 AROS_UFH3(__unused static LONG, _entry,                        \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
-    AROS_UFHA(struct ExecBase *,sysBase,A6)                    \
+    AROS_UFHA(struct ExecBase *,SysBase,A6)                    \
 )                                                              \
 {                                                              \
     AROS_USERFUNC_INIT                                         \
 							       \
-    DEFINE_SysBase_local                                       \
     DEFINE_DOSBase_local                                       \
                                                                \
     LONG __retcode = RETURN_FAIL;                              \
@@ -90,7 +72,6 @@ AROS_UFH3(__unused static LONG, _entry,                        \
     struct RDArgs *__rda  = NULL;                              \
     struct RDArgs *__rda2 = NULL;                              \
 							       \
-    SysBase = sysBase;                                         \
     DOSBase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);  \
                                                                \
     if (!DOSBase)                                              \
@@ -126,14 +107,13 @@ __exit:                                                        \
     if (DOSBase) CloseLibrary((struct Library *)DOSBase);      \
                                                                \
     return __retcode;                                          \
-							       \
+                                                               \
     AROS_USERFUNC_EXIT                                         \
 }                                                              \
                                                                \
-DEFINE_SysBase_global                                          \
 DEFINE_DOSBase_global                                          \
 							       \
-__unused static const UBYTE name##_version[] = "$VER: "        \
+__used static const UBYTE name##_version[] = "$VER: "          \
                                  stringify(name) " "           \
 		                 stringify(version) " "        \
 				 "(" __DATE__ ")\n";           \
