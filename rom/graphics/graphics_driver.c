@@ -871,7 +871,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     if ((rp->DrawMode & ~INVERSVID) == JAM2)
     {
     	struct TextExtent te;
-    	UBYTE 	    	  old_apen = (UBYTE)rp->FgPen;
+    	ULONG 	    	  old_drmd = GetDrMd(rp);
 
     	/* This is actually needed, because below only the
 	   part of the glyph which contains data is rendered:
@@ -888,12 +888,12 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	*/
 	
 	TextExtent(rp, string, len, &te);
-	SetAPen(rp, (UBYTE)rp->BgPen);
+	SetDrMd(rp, old_drmd ^ INVERSVID);
 	RectFill(rp, rp->cp_x + te.te_Extent.MinX,
 	    	     rp->cp_y + te.te_Extent.MinY,
 		     rp->cp_x + te.te_Extent.MaxX,
 		     rp->cp_y + te.te_Extent.MaxY);
-	SetAPen(rp, old_apen);
+	SetDrMd(rp, old_drmd);
     }
     
     /* does this rastport have a layer. If yes, lock the layer it.*/
