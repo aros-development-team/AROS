@@ -100,8 +100,8 @@ struct nv_staticdata
 	UWORD				*cursor;
 	UWORD				cw;
 	UWORD				ch;
-	UWORD				cx;
-	UWORD				cy;
+	WORD				cx;
+	WORD				cy;
 	UBYTE				cvisible;
 
 	struct bitmap_data	*visible;
