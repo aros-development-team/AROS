@@ -11,7 +11,7 @@ CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = \
-	execstubs 
+	execstubs \
 	sdivmod32 \
 	smult32 \
 	smult64 \
