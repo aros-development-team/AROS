@@ -3,7 +3,7 @@ TOP = ../../..
 INCDIR = $(TOP)/bin/linux-i386/AROS/Include
 ARCH = -mc68000 -Wa,-mc68000
 
-all : test test2
+all : test
 
 test.o : test.c
 	m68k-linux-gcc -c test.c -O0 -I $(INCDIR) $(ARCH)
