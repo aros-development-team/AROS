@@ -19,7 +19,7 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(ALIBDIR)/%.o : %.s
-	%assemble_q cmd=$(SYS_AS)
+	%assemble_q cmd=$(TARGET_AS)
 
 $(ALIBDIR)/%.d : %.c
 	%mkdepend_q

@@ -37,7 +37,7 @@ LIBS :=	-L$(LIBDIR) \
 
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
-		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(SHELL_LDFLAGS)
+		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(KERNEL_LDFLAGS)
 
 $(GENDIR)/aros.o : aros.c
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< -c -o $@
