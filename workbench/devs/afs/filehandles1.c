@@ -158,44 +158,31 @@ UBYTE buffer[32];
 	if (blockbuffer == NULL)
 	{
 		error = ERROR_UNKNOWN;
+		D(bug("[afs]    error blockbuffer\n"));
 		return NULL;
 	}
 	if (calcChkSum(dirah->volume->SizeBlock, blockbuffer->buffer))
 	{
 		showError(afsbase, ERR_CHECKSUM, *block);
 		error = ERROR_UNKNOWN;
+		D(bug("[afs]    error checksum\n"));
 		return NULL;
 	}
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
 		showError(afsbase, ERR_BLOCKTYPE, *block);
 		error = ERROR_OBJECT_WRONG_TYPE;
+		D(bug("[afs]    error wrong type\n"));
 		return NULL;
 	}
 	while (*name)
 	{
-		if (
-				(OS_BE2LONG
-					(
-						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-					) != ST_ROOT) &&
-				(OS_BE2LONG
-					(
-						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-					) != ST_USERDIR) &&
-				(OS_BE2LONG
-					(
-						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-					) != ST_LINKDIR))
-		{
-			error = ERROR_OBJECT_WRONG_TYPE;
-			return NULL;
-		}
 		if (*name == '/')	/* get parent entry ? */
 		{
 			if (blockbuffer->buffer[BLK_PARENT(dirah->volume)] == 0)
 			{
 				error = ERROR_OBJECT_NOT_FOUND;
+				D(bug("[afs]    object not found\n"));
 				return NULL;
 			}
 			blockbuffer = getBlock
@@ -207,12 +194,31 @@ UBYTE buffer[32];
 			if (blockbuffer == NULL)
 			{
 				error = ERROR_UNKNOWN;
+				D(bug("[afs]    error no blockbuffer\n"));
 				return NULL;
 			}
 			name++;
 		}
 		else
 		{
+			if (
+					(OS_BE2LONG
+						(
+							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+						) != ST_ROOT) &&
+					(OS_BE2LONG
+						(
+							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+						) != ST_USERDIR) &&
+					(OS_BE2LONG
+						(
+							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+						) != ST_LINKDIR))
+			{
+				error = ERROR_OBJECT_WRONG_TYPE;
+				D(bug("[afs]    error wrong type\n"));
+				return NULL;
+			}
 			pos = buffer;
 			while ((*name != 0) && (*name != '/'))
 			{
