@@ -33,8 +33,10 @@ struct HIDDSerialData
 
 struct HIDDSerialUnitData
 {
-    VOID (*DataWriteCallBack)	(ULONG unitnum);
-    VOID (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum);
+    VOID (*DataWriteCallBack)	(ULONG unitnum, APTR userdata);
+    VOID (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum, APTR userdata);
+    VOID 		*DataWriteUserData;
+    VOID		*DataReceivedUserData;
     
     ULONG 		unitnum;
     ULONG		baseaddr;

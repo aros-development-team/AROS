@@ -109,7 +109,7 @@ static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
 ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
 
 /******* SerialUnit::New() ***********************************/
-static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
+static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
 {
   struct HIDDSerialUnitData * data;
   
@@ -121,16 +121,16 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
   {
     data = INST_DATA(cl, obj);
     
-    data->baseaddr = bases[*msg];
+    data->baseaddr = bases[msg->unitnum];
     
     data->datalength = 8;
     data->parity     = FALSE;
     data->baudrate   = 0; /* will be initialize in set_baudrate() */
-    data->unitnum    = *msg;
+    data->unitnum    = msg->unitnum;
 
-    CSD(cl->UserData)->units[*msg] = data;
+    CSD(cl->UserData)->units[data->unitnum] = data;
 
-    D(bug("Unit %d at 0x0%x\n", *msg, data->baseaddr));
+    D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
 
     /* Wake up UART */
     serial_outp(data, UART_LCR, 0xBF);
@@ -191,7 +191,9 @@ BOOL serialunit_init(Class *cl, Object *o, struct pHidd_SerialUnit_Init *msg)
   
   EnterFunc(bug("SerialUnit::Init()\n"));
   data->DataReceivedCallBack = msg->DataReceived;
+  data->DataReceivedUserData = msg->DataReceivedUserData;
   data->DataWriteCallBack    = msg->WriteData;
+  data->DataWriteUserData    = msg->WriteDataUserData;
 
   ReturnBool("SerialUnit::Init()", TRUE);
 }
@@ -381,7 +383,7 @@ AROS_UFH3(void, serialunit_receive_data,
   */
 
   if (NULL != data->DataReceivedCallBack)
-    data->DataReceivedCallBack(buffer, len, data->unitnum);
+    data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 }
 
 AROS_UFH3(void, serialunit_write_more_data,
@@ -397,7 +399,7 @@ AROS_UFH3(void, serialunit_write_more_data,
   D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
 
   if (NULL != data->DataWriteCallBack)
-    data->DataWriteCallBack(data->unitnum);
+    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
 }
 
 
