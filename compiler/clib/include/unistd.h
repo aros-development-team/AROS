@@ -19,4 +19,9 @@ int close (int fd);
 int unlink(const char *pathname);
 void usleep(unsigned long usec);
 
+/* Standard file descriptors */
+#define STDIN_FILENO  0 /* Standard input */
+#define STDOUT_FILENO 1 /* Standard output */
+#define STDERR_FILENO 2 /* Standard error output */
+
 #endif /* _UNISTD_H */
