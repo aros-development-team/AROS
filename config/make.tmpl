@@ -1397,11 +1397,12 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=%(dflags)
 
 ifeq ($(USE_LIBDEFS),yes)
+LIBDEFS := libdefs.h
 %libdefs_rule
 endif
 
 #MM
-setup ::
+setup :: $(LIBDEFS)
 	%mkdirs_q  $(OBJDIR) $(LIBDIR) $(MOD_DIR)
 
 clean ::
