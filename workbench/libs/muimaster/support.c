@@ -284,7 +284,7 @@ ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
     return DoMethod(obj, MUIM_Setup, info);
 }
 
-APTR REGARGS AllocVecPooled (APTR pool, ULONG memsize)
+APTR AllocVecPooled (APTR pool, ULONG memsize)
 {
     if (pool)
     {
@@ -305,7 +305,7 @@ APTR REGARGS AllocVecPooled (APTR pool, ULONG memsize)
     }
 }
 
-void REGARGS FreeVecPooled (APTR pool, APTR mem)
+void FreeVecPooled (APTR pool, APTR mem)
 {
     if (mem)
     {
