@@ -43,7 +43,7 @@ BPTR file;
   file = Open( "seek.txt", MODE_OLDFILE );
   i = Read( file, buffer, 7 );
   buffer[i] = 0;
-  printf( "Seek%s", buffer );
+  printf( " and Seek%s", buffer );
   Seek( file, 4, OFFSET_CURRENT );
   i = Read( file, buffer, 11 );
   buffer[i] = 0;
