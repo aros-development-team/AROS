@@ -585,6 +585,7 @@
     
       w->nextchild = parentwin->firstchild;
       parentwin->firstchild = w;
+      w->parent = parentwin;
     }
     
     /* Help stuff */
