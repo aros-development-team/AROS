@@ -108,9 +108,27 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
  	packet->dp_Res2 = iofs->io_DosError;
 	break;
 
+	/* This FSA corrsponds to ACTION_LOCATE_OBJECT, ACTION_COPY_DIR and
+	   ACTION_COPY_DIR_FH */
+    case FSA_OPEN:
+	{
+	    struct FileHandle *fh = (struct FileHandle *)packet->dp_Arg6;
+
+	    packet->dp_Res1 = MKBADDR(fh);
+	    packet->dp_Res2 = iofs->io_DosError;
+
+	    if (iofs->io_DosError != 0)
+	    {
+		FreeDosObject(DOS_FILEHANDLE, fh);
+	    }
+
+	    fh->fh_Device = iofs->IOFS.io_Device;
+	    fh->fh_Unit   = iofs->IOFS.io_Unit;
+	    break;
+	}
+	
 	/* This corresponds to ACTION_FINDINPUT, ACTION_FINDOUTPUT,
 	   ACTION_FINDUPDATE which fortunately have the same return values */
-    case FSA_OPEN:
     case FSA_OPEN_FILE:
 	{
 	    struct FileHandle *fh = (struct FileHandle *)BADDR(packet->dp_Arg1);
@@ -181,6 +199,8 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_SET_DATE:
     case FSA_FORMAT:
     case FSA_IS_FILESYSTEM:
+    case FSA_LOCK_RECORD:
+    case FSA_UNLOCK_RECORD:
 	packet->dp_Res1 = iofs->io_DosError == 0;
  	packet->dp_Res2 = iofs->io_DosError;
 	break;
@@ -236,8 +256,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 	/* TODO */
     case FSA_ADD_NOTIFY:
     case FSA_REMOVE_NOTIFY:
-    case FSA_LOCK_RECORD:
-    case FSA_UNLOCK_RECORD:
     case FSA_READ_SOFTLINK:
     case FSA_FILE_MODE:
     default:

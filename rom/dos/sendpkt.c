@@ -341,11 +341,26 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 
 	case ACTION_LOCK_RECORD:    // LockRecord()
-	    /* TODO */
+	    fh = (struct FileHandle *)BADDR(dp->dp_Arg1);
+
+	    iofs->IOFS.io_Device = fh->fh_Device;
+	    iofs->IOFS.io_Unit = fh->fh_Unit;
+
+	    iofs->io_Union.io_RECORD.io_Offset = (QUAD)dp->dp_Arg2;
+	    iofs->io_Union.io_RECORD.io_Size = (LONG)dp->dp_Arg3;
+	    iofs->io_Union.io_RECORD.io_RecordMode = (LONG)dp->dp_Arg4;
+	    iofs->io_Union.io_RECORD.io_Timeout = (LONG)dp->dp_Arg5;
 	    break;
 	    
 	case ACTION_FREE_RECORD:    // UnlockRecord()
-	    /* TODO */
+	    fh = (struct FileHandle *)BADDR(dp->dp_Arg1);
+	    
+	    iofs->IOFS.io_Device = fh->fh_Device;
+	    iofs->IOFS.io_Unit = fh->fh_Unit;
+
+	    iofs->io_Union.io_RECORD.io_Offset = (QUAD)dp->dp_Arg2;
+	    iofs->io_Union.io_RECORD.io_Size = (LONG)dp->dp_Arg3;
+	    iofs->io_Union.io_RECORD.io_RecordMode = (LONG)dp->dp_Arg4;
 	    break; 
 
 	case ACTION_PARENT:         // ParentDir()     [*]
@@ -428,17 +443,46 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		return;
 	    }
 	    	    
+	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
+
+	    if (dp->dp_Arg6 == NULL)
+	    {
+		return;
+	    }
+
 	    break;
 
 	case ACTION_COPY_DIR:       // DupLock()
 	case ACTION_COPY_DIR_FH:    // DupLockFromFH() -- the same thing
 	                            //                    in AROS
-	    /* TODO */
-	    /* Should be quite like ACTION_LOCATE_OBJECT */
+	    fh = (struct FileHandle *)BADDR(dp->dp_Arg1);
 	    
+	    iofs->IOFS.io_Device = fh->fh_Device;
+	    iofs->IOFS.io_Unit   = fh->fh_Unit;
+	    
+	    iofs->IOFS.io_Command = FSA_OPEN;
+	    
+	    /* Create a shared lock */
+	    iofs->io_Union.io_OPEN.io_FileMode = FMF_READ;
+		
+	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg1);
+	    result = DoNameAsynch(iofs, "", DOSBase);
+	    CurrentDir(oldCurDir);
+
+	    if (result != 0)
+	    {
+		return;
+	    }
+	    
+	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
+
+	    if (dp->dp_Arg6 == NULL)
+	    {
+		return;
+	    }
+
 	    break;
 
-	    
 	case ACTION_END:            // Close() [*]
 	case ACTION_FREE_LOCK:      // UnLock() -- the same thing in AROS
 	    fh = (struct FileHandle *)dp->dp_Arg1;
@@ -512,15 +556,16 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    /* TODO */
 	    break;
 	    
-	case ACTION_RENAME_DISK:    // Relabel()
-	    /* TODO */
-	    break;
 
-	    /* The following four packets are only relative to the
+	    /* The following five packets are only relative to the
 	       message port of the file system to send to. Therefore, 
 	       we fill in only partial information in the IOFileSys and
 	       hope for the best... Specifically, the device cannot
 	       use iofs->io_Device. TODO */
+	case ACTION_RENAME_DISK:    // Relabel()
+	    /* TODO */
+	    break;
+
 	case ACTION_FORMAT:         // Format()
 	    /* TODO */
 	    break;
