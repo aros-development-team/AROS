@@ -45,15 +45,15 @@ void clean_string( char *dirtystring );
 
 int main(int argc, char **argv)
 {
-    IPTR args[NOOFARGS] = { (STRPTR)NULL,         // ARG_ADDRESS
-	                    NULL,                    // ARG_SIZE
-                            (IPTR)FALSE,             // ARG_SERIAL
-                            (IPTR)FALSE              // ARG_QUIET
+    IPTR args[NOOFARGS] = { (IPTR) NULL,         // ARG_ADDRESS
+	                    (IPTR) NULL,         // ARG_SIZE
+                                   FALSE,        // ARG_SERIAL
+                                   FALSE         // ARG_QUIET
     };
 
     struct RDArgs           *rda;
     char                    outpstring[sizeof(unsigned int)*6];
-    unsigned int            addr_value,offset,start_address,dump_size;
+    unsigned int            offset,start_address,dump_size;
     BOOL                    line_end;
     int                     PROGRAM_ERROR = RETURN_OK;
     char                    *ERROR_TEXT,*HELPTXT;
@@ -72,18 +72,17 @@ int main(int argc, char **argv)
 	
             if (args[ARG_SIZE]!=0)
 	    {
+                BOOL serial_out = (BOOL)args[ARG_SERIAL];
+                BOOL quiet_out = (BOOL)args[ARG_QUIET];
 	        ULONG  *sizptr = (ULONG *)args[ARG_SIZE];
                 char   * pEnd;
-
+                
 	        if ( sizptr != NULL ) dump_size = *sizptr;
                 else PROGRAM_ERROR = RETURN_FAIL;
                 
-                start_address = strtoul( (STRPTR *)args[ARG_ADDRESS], &pEnd, 16 );
+                start_address = strtoul((CONST_STRPTR) args[ARG_ADDRESS], &pEnd, 16 );
                 dump_size = ( dump_size / sizeof(unsigned int));
-
-                BOOL serial_out = (BOOL)args[ARG_SERIAL];
-                BOOL quiet_out = (BOOL)args[ARG_QUIET];
-
+                
                 if ( dump_size <= 0) 
                 {
                     ERROR_TEXT = "Size must be a positive value\n";
@@ -93,25 +92,24 @@ int main(int argc, char **argv)
                 /* a quick warning */
                 if ( ( !quiet_out  ) && ( PROGRAM_ERROR != RETURN_FAIL ) )
                 {
-                    char szInput [256];                         
+                    TEXT szInput[256];                         
                     printf( "\n  *Some memory areas should NOT be read\n  use this tool carefully!\n  would you like to proceed? ");
-
+                    
                     gets ( szInput );
-
+                    
                     printf( "\n" );
-
-                    if ( ( strncmp( &szInput, "n", 1) )||( strncmp( &szInput, "N", 1) ) )
+                    
+                    if ( ( strncmp( szInput, "n", 1) )||( strncmp( szInput, "N", 1) ) )
                     {
                         ERROR_TEXT = "User canceled..\n";
                         PROGRAM_ERROR = RETURN_FAIL;
                     }
                 }
-
                 
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
-                    if (serial_out) kprintf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
-                    else printf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
+                    if (serial_out) kprintf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
+                    else printf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
 
                     for ( offset = 0 ; offset < dump_size ; offset += sizeof(unsigned int) )
                     {
@@ -128,18 +126,18 @@ int main(int argc, char **argv)
                             else printf("0x%8.8X        ",start_address+offset);
                         }
                         
-                        if (serial_out) kprintf("%8.8X", (unsigned int *)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
-                        else printf("%8.8X", (unsigned int *)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
-                        sprintf( &outpstring + ((((offset/sizeof(unsigned int)) % 6) * 4)) ,"%4.4s\0", (unsigned int *)((IPTR *)start_address+offset)[0]);
+                        if (serial_out) kprintf("%8.8X", (unsigned int)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
+                        else printf("%8.8X", (unsigned int)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
+                        sprintf( (char *) &outpstring + ((((offset/sizeof(unsigned int)) % 6) * 4)) ,"%4.4s", (char *)((IPTR *)start_address+offset)[0]);
 
                         if ( ((offset/sizeof(unsigned int)) % 6) == 5 ) 
                         {
                             line_end = TRUE;
                             
-                            clean_string( &outpstring );
+                            clean_string( outpstring );
 
-                            if (serial_out) kprintf("       '%24.24s'                         \t\n",&outpstring);
-                            else printf("       '%24.24s'                         \t\n",&outpstring);
+                            if (serial_out) kprintf("       '%24.24s'                         \t\n",outpstring);
+                            else printf("       '%24.24s'                         \t\n",outpstring);
                         }
                         else
                         {   
@@ -241,7 +239,8 @@ void clean_string( char *dirtystring )
 
     for (i = 0 ; i < (sizeof(unsigned int) * 6) ; i++)
     {
-        if (( (UBYTE *)((IPTR *)dirtystring)[i] < 32 )||( (UBYTE *)((IPTR *)dirtystring)[i] > 126 )) (char *)((IPTR *)dirtystring)[i] = ".";
+        if (( (TEXT)((IPTR *)dirtystring)[i] < 32 )||( (TEXT)((IPTR *)dirtystring)[i] > 126 )) 
+            (char *)((IPTR *)dirtystring)[i] = ".";
     }
 
 }
