@@ -8,6 +8,7 @@
 #include <proto/intuition.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
+#include <string.h>
 
 /*****************************************************************************
 

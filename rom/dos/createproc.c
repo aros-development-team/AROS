@@ -8,6 +8,7 @@
 
 #include "dos_intern.h"
 #include <dos/dostags.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 

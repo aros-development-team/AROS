@@ -16,6 +16,7 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
+#include <string.h>
 
 static void KillCurrentProcess(void);
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,

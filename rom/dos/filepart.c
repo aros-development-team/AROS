@@ -17,6 +17,7 @@
 #    include <exec/types.h>
 #    define CLIB_DOS_PROTOS_H
 #endif
+#include <string.h>
 
 
 /*****************************************************************************

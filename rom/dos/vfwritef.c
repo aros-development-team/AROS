@@ -7,6 +7,7 @@
 */
 #include "dos_intern.h"
 #include <dos/bptr.h>
+#include <string.h>
 
 LONG    putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh,
 		  struct DosLibrary *DOSBase);

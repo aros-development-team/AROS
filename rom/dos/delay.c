@@ -8,6 +8,7 @@
 
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include "dos_intern.h"
 #include <devices/timer.h>
 #include <string.h>

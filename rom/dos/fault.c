@@ -10,6 +10,7 @@
 #if PassThroughErrnos
 #   include <errno.h>
 #endif
+#include <string.h>
 
 /*****************************************************************************
 

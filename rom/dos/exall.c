@@ -11,6 +11,7 @@
 #include <dos/exall.h>
 #include <stddef.h>
 #include "dos_intern.h"
+#include <aros/asmcall.h>
 
 /*****************************************************************************
 

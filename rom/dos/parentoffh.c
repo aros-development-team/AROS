@@ -7,6 +7,7 @@
 */
 #include "dos_intern.h"
 #include <dos/dosasl.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 

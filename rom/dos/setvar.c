@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <exec/lists.h>
+#include <string.h>
 
 
 /*****************************************************************************

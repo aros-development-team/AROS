@@ -6,10 +6,14 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dosextens.h>
 #include <dos/notify.h>
+#include <proto/exec.h>
 #include <exec/initializers.h>
+#include <string.h>
+#include <proto/utility.h>
 
 /* TODO: This can be done much better! */
 #ifndef AROS_FAST_BPTR

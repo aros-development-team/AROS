@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include "dos_intern.h"
+#include <string.h>
 
 /*****************************************************************************
 
