@@ -640,10 +640,8 @@ static ULONG mInputBuffered(struct IClass *cl, Object *obj,
     imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort);
     if (imsg != NULL)
     {
-        /*
-         * Let window object process message
-         */
-        _zune_window_message(imsg);
+        /* Let window object process message */
+        _zune_window_message(imsg); /* will reply the message */
 
         ReplyMsg((struct Message *)imsg);
     }
@@ -690,8 +688,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    while ((imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort)))
 	    {
 		/* Let window object process message */
-		_zune_window_message(imsg);
-		ReplyMsg((struct Message *)imsg);
+		_zune_window_message(imsg); /* will reply the message */
 	    }
 	}
 

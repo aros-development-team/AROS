@@ -114,11 +114,13 @@ struct MUI_WindowData
 #endif
 
 /* wd_Flags */
-#define MUIWF_OPENED    (1<<0) /* window currently opened */
-#define MUIWF_ICONIFIED (1<<1) /* window currently iconified */
-#define MUIWF_ACTIVE    (1<<2) /* window currently active */
-#define MUIWF_CLOSEREQUESTED (1<<3) /* when user hits close gadget */
-#define MUIWF_RESIZING (1<<4) /* window currently resizing, for simple refresh */
+#define MUIWF_OPENED          (1<<0) /* window currently opened */
+#define MUIWF_ICONIFIED       (1<<1) /* window currently iconified */
+#define MUIWF_ACTIVE          (1<<2) /* window currently active */
+#define MUIWF_CLOSEREQUESTED  (1<<3) /* when user hits close gadget */
+#define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
+#define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a messag */
+#define MUIWF_CLOSEME         (1<<6) /* close the window after processing the message */
 
 struct __dummyXFC3__
 {
@@ -410,6 +412,10 @@ STATIC BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
 /**************/
 
+static ULONG window_Open(struct IClass *cl, Object *obj);
+static ULONG window_Close(struct IClass *cl, Object *obj);
+
+/* process window message, this does a ReplyMsg() to the message */
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -549,8 +555,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    data->wd_DropWindow = NULL;
 	    data->wd_dnd = NULL;
     	}
+    	ReplyMsg((struct Message*)imsg);
     	return;
     }
+
+    data->wd_Flags |= MUIWF_HANDLEMESSAGE;
 
     switch (imsg->Class)
     {
@@ -653,6 +662,19 @@ void _zune_window_message(struct IntuiMessage *imsg)
     }
 
     handle_event(oWin, imsg);
+
+    data->wd_Flags &= ~MUIWF_HANDLEMESSAGE;
+
+    ReplyMsg((struct Message*)imsg);
+
+    if (data->wd_Flags & MUIWF_CLOSEME)
+    {
+    	/* Now it's safe to close the window */
+    	D(bug("Detected delayed closing. Going to close the window now.\n"));
+    	nnset(oWin,MUIA_Window_Open,FALSE);
+	data->wd_Flags &= ~MUIWF_CLOSEME;
+    }
+
 }
 
 /****************************************************************************/
@@ -874,8 +896,6 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 /******************************************************************************/
 /******************************************************************************/
-static ULONG window_Open(struct IClass *cl, Object *obj);
-static ULONG window_Close(struct IClass *cl, Object *obj);
 
 /* code for setting MUIA_Window_RootObject */
 static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
@@ -1543,16 +1563,20 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
+    if (data->wd_Flags & MUIWF_HANDLEMESSAGE)
+    {
+    	D(bug("Window should be closed while handling it's messages. Closing delayed.\n"));
+	data->wd_Flags |= MUIWF_CLOSEME;
+	return TRUE;
+    }
+
     /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
-/*    for (i = 0; i < MUII_Count; i++) */
-/*        zune_imspec_hide(__zprefs.images[i]); */
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
     UndisplayWindow(data);
     data->wd_Flags &= ~MUIWF_OPENED;
-
     data->wd_Menustrip = NULL;
 
     /* free display dependant data */
