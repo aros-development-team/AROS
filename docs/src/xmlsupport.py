@@ -303,6 +303,14 @@ class XmlFile:
 		    print `item`
 		    raise
 
+class AROSXmlFile (XmlFile):
+    def __init__ (self):
+	XmlFile.__init__ (self)
+
+	self.addEntity ('AROS', 'AROS')
+	self.addEntity ('AMIGA', 'Amiga®')
+	self.addEntity ('AMIGAOS', 'AmigaOS')
+	
 class Processor:
     def __init__ (self, **kw):
 	self.processors = kw
