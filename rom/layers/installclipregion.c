@@ -6,31 +6,37 @@
     Lang: english
 */
 #include <aros/libcall.h>
-#include <proto/graphics.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
+#include <graphics/clip.h>
+#include <exec/types.h>
+#include <proto/exec.h>
+#include <graphics/layers.h>
+#include "layers_intern.h"
+#include "basicfuncs.h"
 
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
-#include "basicfuncs.h"
 
 	AROS_LH2(struct Region *, InstallClipRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer  *, layer, A0),
+	AROS_LHA(struct Layer  *, l     , A0),
 	AROS_LHA(struct Region *, region, A1),
 
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 29, Layers)
 
 /*  FUNCTION
+       Install a transparent Clip region in the layer. All subsequent
+       graphics call to the rastport of the layer will be clipped to
+       that region. 
+       None of the system functions will free the ClipRegion for you,
+       so you will have to call InstallClipRegion(l, NULL) before
+       closing a window or deleting a layer.
 
     INPUTS
+       l      - pointer to layer
+       region - pointer to region to be clipped against.
 
     RESULT
 
@@ -50,12 +56,19 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    D(bug("InstallClipRegion(layer @ $%lx)\n", layer));
+  struct Region * OldRegion = l->ClipRegion;
+  struct ClipRect * FirstCR; 
 
-    return NULL;
+  /* First I cut down the region to the rectangle of the layer */
+  l -> ClipRegion = region;
 
-    AROS_LIBFUNC_EXIT
+  /* convert the region to a list of ClipRects */
+
+  return OldRegion;
+  
+
+  AROS_LIBFUNC_EXIT
 } /* InstallClipRegion */

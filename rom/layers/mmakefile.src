@@ -41,6 +41,7 @@ FILES	  := cliprectfunctions \
 	helpfunctions
 	
 FUNCTIONS := \
+	beginupdate			\
 	behindlayer			\
 	createbehindhooklayer		\
 	createbehindlayer		\
@@ -48,6 +49,7 @@ FUNCTIONS := \
 	createupfrontlayer		\
 	deletelayer			\
 	disposelayerinfo		\
+	endupdate			\
 	fattenlayerinfo			\
 	initlayers			\
 	locklayer			\
@@ -57,6 +59,7 @@ FUNCTIONS := \
 	movelayerinfrontof		\
 	movesizelayer			\
 	newlayerinfo			\
+	scrolllayer			\
         sizelayer			\
 	swapbitsrastportcliprect        \
 	thinlayerinfo			\
