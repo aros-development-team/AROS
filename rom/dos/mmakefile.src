@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Use OS's own includes over the ones from AROS
-OS_INCLUDES := -I$(GENINCDIR)
+OS_INCLUDES := -I$(INCDIR)
 ifeq ("$(SHARED_DOS)","yes")
 SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 endif
@@ -16,12 +15,12 @@ LIB	    := $(LIBDIR)/lib$(LIBNAME).so
 
 %define_libs
 
-%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+%prepare_shlib $(LIBNAME) $(SHARED_DOS)
 
 INIT_FILE   := $(LIBNAME)_init
 
 FILES	    := $(LIBNAME)_functable lddemon errorlist loadseg_elf doname \
-	       loadseg_aout loadseg_aos
+	       loadseg_aout loadseg_aos dosboot
 
 END_FILE    := $(LIBNAME)_endtag
 
@@ -67,14 +66,14 @@ ALL_FILES   := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
-kernel-dos-linux-$(CPU) : show-flags $(LIB)
+kernel-dos-linklib : show-flags $(LIB)
 	@$(NOP)
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 # MetaMake targets
-#MM kernel-dos : setup-dos includes kernel-setup dos-$(ARCH) kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos : setup-dos includes kernel-setup kernel-dos-$(ARCH)-$(CPU)
 kernel-dos :
 	@$(NOP)
 
