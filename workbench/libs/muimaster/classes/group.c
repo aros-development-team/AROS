@@ -1194,11 +1194,6 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	if (_minwidth(child) != _maxwidth(child))
 	    data->horiz_weight_sum += _hweight(child);
     }
-    if (data->horiz_weight_sum == 0) /* fixed width childs */
-    {
-	left = totalBonus / 2;
-	data->horiz_weight_sum = 1;
-    }
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -1206,6 +1201,12 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
         ** then there is a bug in the layout function
         */
     	if (totalBonus < 0) totalBonus = 0;
+    }
+
+    if (data->horiz_weight_sum == 0) /* fixed width childs */
+    {
+	left = totalBonus / 2;
+	data->horiz_weight_sum = 1;
     }
 
     /* max size ?  (too much bonus) */
@@ -1280,8 +1281,8 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 
     if (data->flags & GROUP_VIRTUAL)
     {
+	data->virt_mheight = _mheight(obj);
 	data->virt_mwidth = left - data->horiz_spacing;
-//	data->virt_mheight = _mheight(obj);
     }
 }
 
