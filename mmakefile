@@ -158,22 +158,22 @@ dist : dist-dir dist-tar dist-lha dist-src
 	cp README dist/$(BINARCHIVE).readme
 	cp README dist/$(DEVARCHIVE).readme
 
-dist-dir : .FORCE
+dist-dir :
 	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
 	@echo "Correcting access flags"
 	@chmod -R ug=rwX,o=rX .
 
-dist-tar : .FORCE
+dist-tar :
 	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
 	    tar chvvzf ../../dist/$(BINARCHIVE).tgz AROS
 
-dist-lha : .FORCE
+dist-lha :
 	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/$(BINARCHIVE).lha ; \
 	    lha a ../../dist/$(BINARCHIVE).lha AROS
 
-dist-src : .FORCE
+dist-src :
 	$(TOP)/scripts/makedist src $(DEVARCHIVE)
 
 # BEGIN_DESC{target}
@@ -254,4 +254,4 @@ docs:
 mmake : mmake.c
 	$(CC) -Wall -g -O0 $< -o $@
 
-.PHONY: docs
+.PHONY: docs dist
