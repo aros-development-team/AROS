@@ -1,6 +1,12 @@
 #ifndef PARTITION_SUPPORT_H
 #define PARTITION_SUPPORT_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+*/
+
 #include <exec/types.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
