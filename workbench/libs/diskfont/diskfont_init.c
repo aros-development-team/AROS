@@ -34,7 +34,7 @@ AROS_UFP3(int, CleanMem,
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     /* This function is single-threaded by exec by calling Forbid. */
     D(bug("Inside initfunc\n"));
@@ -57,7 +57,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -65,7 +65,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     /*
 	This function is single-threaded by exec by calling Forbid.
@@ -81,7 +81,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -92,7 +92,7 @@ AROS_UFH3(int, CleanMem,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-    AROS_USERFUNC_INIT;
+    AROS_USERFUNC_INIT
     
     struct DiskFontHeader *dfh, *dfh2;
 
@@ -123,7 +123,7 @@ AROS_UFH3(int, CleanMem,
     
     return MEM_ALL_DONE;
     
-    AROS_USERFUNC_EXIT;
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

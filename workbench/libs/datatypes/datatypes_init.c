@@ -20,7 +20,7 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     int i;
 
@@ -62,13 +62,13 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     return TRUE;
 
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     D(bug("Inside open of datatypes.library\n"));
 
@@ -91,13 +91,13 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
 #if 0
     /* stegerg: if later someone else re-opens datatypes.library, then
@@ -111,7 +111,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init, 0);
