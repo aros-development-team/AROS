@@ -575,5 +575,27 @@ stefan.berger@att.net
 'Which' does almost never return the path to the program even if that
 program is in the path list. Try "Which Which".
 
+BUG000082
+adam.chodorowski@chello.se
+Keyboard repeat in X isn't re-enabled properly after AROS has exited (either 
+cleanly or killed by force) or if it looses focus. This makes it a bit 
+annoying to use other X programs when AROS is running.
+
+BUG000083
+adam.chodorowski@chello.se
+In the CLI, entered commands containing only blank characters are not treated 
+as empty and are incorrectly added to the command history.
+
+BUG000084
+adam.chodorowski@chello.se
+In the CLI, the command history is circular (ie. it wraps around). The proper
+behaviour would be to stop at the endpoints and present an empty prompt (this
+is the way it works in AmigaOS).
+
+BUG000085
+adam.chodorowski@chello.se
+In the CLI, ^L (formfeed -> clears the screen and positions the cursor at (0,0))
+seems to end up in the command history, leading to "interesting" results when
+you press arrow up/down.
 
 !! Keep the list of outstanding bugs at the top up-to-date
