@@ -50,8 +50,41 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/DisplayBeep()
-    aros_print_not_implemented ("DisplayBeep");
+    ULONG color[3];
+    UWORD BGPen;
+    struct DrawInfo *DInfo = NULL;
+    struct MsgPort *TimerMsgPort = NULL;
+    struct timerequest *MyTimerIO = NULL;
+   
+    TimerMsgPort = CreateMsgPort();
+    MyTimerIO = (struct timerequest *) CreateIORequest (TimerMsgPort, sizeof (struct timerequest));
+    OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *) MyTimerIO, 0);
+    
+    MyTimerIO->tr_time.tv_secs = 0;
+    MyTimerIO->tr_time.tv_micro = 200000;
+    MyTimerIO->tr_node.io_Command = TR_ADDREQUEST;
+  
+    if (! screen)
+        screen = IntuitionBase->FirstScreen;
+
+    DInfo = GetScreenDrawInfo (screen);
+    BGPen = DInfo->dri_Pens[BACKGROUNDPEN];
+	
+    GetRGB32 (screen->ViewPort.ColorMap, BGPen, 1, color);
+
+    SetRGB32 (&screen->ViewPort, BGPen, color[0] - 0x7FFFFFFF, color[1] - 0x7FFFFFFF, color[2] - 0x7FFFFFFF);
+    DoIO ((struct IORequest *) MyTimerIO);
+    SetRGB32 (&screen->ViewPort, BGPen, color[0], color[1], color[2]);
+
+    FreeScreenDrawInfo (screen, DInfo);
+
+    CloseDevice ((struct IORequest *) MyTimerIO);
+    DeleteIORequest ((struct IORequest *) MyTimerIO);
+    DeleteMsgPort (TimerMsgPort);
+
+    
+#warning TODO: Add support for non-CLUT screens
+#warning TODO: Use TimerIO (IntuitionBase->TimerIO) instead of self-made MyTimerIO!
 
     AROS_LIBFUNC_EXIT
 } /* DisplayBeep */
