@@ -266,9 +266,9 @@ static void readsectionconfig(FILE *in)
 	snprintf(libbase, len, "%sBase", basename);
     }
     if (libbasetype==NULL)
-	libbasetype = "struct Library";
+	libbasetype = "struct LibHeader";
     if (libbasetypeextern==NULL)
-	libbasetypeextern = strdup(libbasetype);
+	libbasetypeextern = "struct Library";
 }
 
 static void readsectionproto(FILE *in)
@@ -487,37 +487,40 @@ static void readsectionfunctionlist(FILE *in)
 		arglistptr = &(*funclistptr)->arguments;
 		
 		s2++;
-		
-		while ((s = strpbrk(s2,",)"))!=NULL)
+		while (isspace(*s2)) s2++;
+		if (*s2!=')')
 		{
-		    char *s3=s+1;
-
-		    while (isspace(*s2)) s2++;
-		    while (isspace(*(s-1))) s--;
-		    *s='\0';
-		    
-		    *s2 = toupper(*s2);
-		    if (strlen(s2)==2 && memchr("AD",s2[0],2)!=NULL && memchr("01234567",s2[1],8)!=NULL)
+		    while ((s = strpbrk(s2,",)"))!=NULL)
 		    {
-			(*funclistptr)->argcount++;
-			(*arglistptr) = malloc(sizeof(struct arglist));
-			(*arglistptr)->reg = strdup(s2);
-			(*arglistptr)->next = NULL;
-			(*arglistptr)->type = NULL;
-			(*arglistptr)->name = NULL;
-			arglistptr = &(*arglistptr)->next;
+			char *s3=s+1;
+			
+			while (isspace(*s2)) s2++;
+			while (isspace(*(s-1))) s--;
+			*s='\0';
+			
+			*s2 = toupper(*s2);
+			if (strlen(s2)==2 && memchr("AD",s2[0],2)!=NULL && memchr("01234567",s2[1],8)!=NULL)
+			{
+			    (*funclistptr)->argcount++;
+			    (*arglistptr) = malloc(sizeof(struct arglist));
+			    (*arglistptr)->reg = strdup(s2);
+			    (*arglistptr)->next = NULL;
+			    (*arglistptr)->type = NULL;
+			    (*arglistptr)->name = NULL;
+			    arglistptr = &(*arglistptr)->next;
+			}
+			else
+			{
+			    fprintf(stderr, "%s:%d:error wrong register \"%s\" for argument %u\n",
+				    conffile, lineno, s2, (*funclistptr)->argcount+1);
+			    exit(20);
+			}
+			s2 = s3;
 		    }
-		    else
-		    {
-			fprintf(stderr, "%s:%d:error wrong register \"%s\" for argument %u\n",
-				conffile, lineno, s2, (*funclistptr)->argcount+1);
-			exit(20);
-		    }
-		    s2 = s3;
 		}
 		funclistptr = &((*funclistptr)->next);
 		break;
-		
+			
 	    default:
 		fprintf(stderr, "Internal error: unsupported libcall type\n");
 		exit(20);
