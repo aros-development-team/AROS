@@ -78,8 +78,8 @@ AC_CYGWIN
 AC_EXEEXT
 AC_OBJEXT
 
-# Check for awk and a few other programs.
-AC_PROG_AWK
+# Check for gawk and mmake.
+AROS_PROG(AWK,gawk)
 AROS_PROG(MMAKE,mmake)
 
 # Perform some default variable assignments. Note all of these will be
