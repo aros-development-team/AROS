@@ -142,9 +142,13 @@ BOOL InitCamdTimer(void){
 		TAG_END
 	);
 	if(process==NULL) return FALSE;
+	if(camdwaitprocstatus==2) return FALSE;
 
+	return TRUE;
+}
+
+BOOL InitCamdTimerOkey(void){
 	while(camdwaitprocstatus==0) Delay(1);
-
 	if(camdwaitprocstatus==2) return FALSE;
 
 	return TRUE;

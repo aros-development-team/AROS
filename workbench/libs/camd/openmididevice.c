@@ -13,7 +13,7 @@
 
 #  undef DEBUG
 #  define DEBUG 1
-#  include <aros/debug.h>
+#  include AROS_DEBUG_H_FILE
 
 BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 

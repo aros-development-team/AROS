@@ -375,6 +375,7 @@ struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
 BOOL InitCamdTimer(void);
 void UninitCamdTimer(void);
 void CamdWait(void);
+BOOL InitCamdTimerOkey(void);
 
 #if 0
 	AROS_LP2(BOOL, SetMidiAttrsA,
