@@ -969,11 +969,13 @@ void PerformIO(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *t
 
     if (comm == NSCMD_DEVICEQUERY)
         cmd_DevQuery(iorq, unit, td);
-
-    if (comm < NSCMD_TD_READ64)
-        (*map32[comm])(iorq, unit, td);
     else
-        (*map64[comm - NSCMD_TD_READ64])(iorq, unit, td);
+    {
+        if (comm < NSCMD_TD_READ64)
+            (*map32[comm])(iorq, unit, td);
+        else
+            (*map64[comm - NSCMD_TD_READ64])(iorq, unit, td);
+    }
 }
 
 /**** ide.task and ide.daemon placed here *************************************/
