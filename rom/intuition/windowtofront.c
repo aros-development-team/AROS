@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    intui_WindowToFront (window);
+    intui_WindowToFront (window,IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 } /* WindowToFront */
