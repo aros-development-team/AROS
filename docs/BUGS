@@ -452,3 +452,13 @@ BUG000065
 bernie@aros.org
 AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
 the Workbench: directory).
+
+BUG000066
+digulla@hepe.com
+(Reported by Dirk Weber) Run AROS, "cd C", "cd ..". The path reads now
+"Workbench:C/..".
+
+BUG000067
+digulla@hepe.com
+(Reported by Dirk Weber) The fillpattern for the workbench screen
+is distorted.
