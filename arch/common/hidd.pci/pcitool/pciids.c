@@ -9,6 +9,24 @@
 
 #include <aros/debug.h>
 
+// it's supposed to become a shared library one day ...
+// 
+// current implementation:
+// on pciids_Open(), the file is read in memory, then
+// an index is built (in computeVendorIndexes()), as an array
+// of couples (vendor_id, offset)
+// where offset is the offset where the vendor stuff begins
+// in the memory file. This array is ascending sorted by vendor_id,
+// so a binary search can be done to retrieve the vendor offset
+// given its id. This search is done in getVendorIndex().
+// All the stringification functions first call this search func,
+// then parse the memory:
+// 1234  VendorName (so: s[0] = hex digit,  s[4] == ' ', s[6+] == name)
+// <tab>1234  DeviceName (same with a tab on linestart)
+// todo: subvendor/subdevice parsing
+// todo: proper memory reallocation, currently the index is fixed
+// to 2000 vendors (around 1700 exist on 2004-02-08)
+
 static STRPTR mem = NULL;
 static ULONG memsize = 0;
 
@@ -77,6 +95,8 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 	    if (j > vi_allocated)
 	    {
 		bug("[pcitool] pciids.c:computeVendorIndexes: vendor_index overflow\n");
+		FreeVec(vendor_index);
+		vendor_index = NULL;
 		return FALSE;
 	    }
 	}
@@ -89,35 +109,42 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 void pciids_Open(void)
 {
     APTR fh;
+    LONG size;
 
     fh = Open("DEVS:pci.ids", MODE_OLDFILE);
-    if (fh)
-    {
-	LONG size;
+    if (!fh)
+	goto err_open_ids;
 
-	Seek(fh, 0, OFFSET_END);
-	size = Seek(fh, 0, OFFSET_CURRENT);
-	if (size > 0)
-	{
-	    memsize = (ULONG)size;
-	    Seek(fh, 0, OFFSET_BEGINNING);
+    Seek(fh, 0, OFFSET_END);
+    size = Seek(fh, 0, OFFSET_CURRENT);
+    if (size <= 0)
+	goto err_size;
 
-	    mem = AllocVec(memsize, MEMF_ANY);
-	    if (mem)
-	    {
-		if (Read(fh, mem, memsize) == size)
-		{
-		    computeVendorIndexes(mem, memsize);
-		}
-		else
-		{
-		    FreeVec(mem);
-		    mem = NULL;
-		}
-	    }
-	}
-	Close(fh);
-    }
+    memsize = (ULONG)size;
+    Seek(fh, 0, OFFSET_BEGINNING);
+
+    mem = AllocVec(memsize, MEMF_ANY);
+    if (NULL == mem)
+	goto err_mem;
+
+    if (Read(fh, mem, memsize) != size)
+	goto err_read;
+
+    if (!computeVendorIndexes(mem, memsize))
+	goto err_index;
+
+    // success !
+    return;
+
+  err_index:
+  err_read:
+    FreeVec(mem);
+    mem = NULL;
+  err_mem:
+  err_size:
+    Close(fh);
+  err_open_ids:
+    return;
 }
 
 void pciids_Close(void)
