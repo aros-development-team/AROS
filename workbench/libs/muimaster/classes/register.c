@@ -552,5 +552,5 @@ const struct __MUIBuiltinClass _MUI_Register_desc = {
     MUIC_Register, 
     MUIC_Group, 
     sizeof(struct MUI_RegisterData), 
-    Register_Dispatcher 
+    (void*)Register_Dispatcher 
 };

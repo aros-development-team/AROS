@@ -131,5 +131,5 @@ const struct __MUIBuiltinClass _MUI_Semaphore_desc = {
     MUIC_Semaphore, 
     ROOTCLASS, 
     sizeof(struct MUI_SemaphoreData), 
-    Semaphore_Dispatcher 
+    (void*)Semaphore_Dispatcher 
 };

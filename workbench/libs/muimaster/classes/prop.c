@@ -380,5 +380,5 @@ const struct __MUIBuiltinClass _MUI_Prop_desc = {
     MUIC_Prop, 
     MUIC_Area, 
     sizeof(struct MUI_PropData), 
-    Prop_Dispatcher 
+    (void*)Prop_Dispatcher 
 };

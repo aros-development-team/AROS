@@ -1711,6 +1711,6 @@ const struct __MUIBuiltinClass _MUI_Area_desc = {
     MUIC_Area, 
     MUIC_Notify, 
     sizeof(struct MUI_AreaData), 
-    Area_Dispatcher 
+    (void*)Area_Dispatcher 
 };
 

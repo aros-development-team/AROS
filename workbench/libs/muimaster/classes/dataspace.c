@@ -126,5 +126,5 @@ const struct __MUIBuiltinClass _MUI_Dataspace_desc = {
     MUIC_Dataspace,                        /* Class name */
     MUIC_Semaphore,                          /* super class name */
     sizeof(struct MUI_DataspaceData),      /* size of class own datas */
-    Dataspace_Dispatcher                        /* class dispatcher */
+    (void*)Dataspace_Dispatcher                        /* class dispatcher */
 };

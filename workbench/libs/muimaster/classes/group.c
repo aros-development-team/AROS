@@ -2140,5 +2140,5 @@ const struct __MUIBuiltinClass _MUI_Group_desc = {
     MUIC_Group, 
     MUIC_Area, 
     sizeof(struct MUI_GroupData), 
-    Group_Dispatcher 
+    (void*)Group_Dispatcher 
 };

@@ -315,5 +315,5 @@ const struct __MUIBuiltinClass _MUI_Slider_desc = {
     MUIC_Slider, 
     MUIC_Numeric, 
     sizeof(struct MUI_SliderData), 
-    Slider_Dispatcher 
+    (void*)Slider_Dispatcher 
 };
