@@ -197,6 +197,46 @@ void query(void)
   }
 }
 
+void stop(void)
+{
+  int index;
+  printf("Stop/pause IO on a serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    IORequests[index]->IOSer.io_Command = CMD_STOP;
+
+    DoIO((struct IORequest *)IORequests[index]);
+    printf("IO has been stopped!\n");
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
+void start(void)
+{
+  int index;
+  printf("Start/resume IO on a serial device.\n");
+  printf("Referncenumber: ");
+  scanf("%d", &index);
+  
+  if (index >= 0 && index <= 9 && NULL != IORequests[index])
+  {
+    IORequests[index]->IOSer.io_Command = CMD_START;
+
+    DoIO((struct IORequest *)IORequests[index]);
+    printf("IO has started!\n");
+  }
+  else
+  {
+    printf("No such refence.\n");
+  }
+}
+
 
 void set_parameters(void)
 {
@@ -245,7 +285,7 @@ void doall(void)
     else if (!strcmp(buf, "help"))
     {
       printf("quit help open_device [od] close_device [cd] write_to_device [wd]\n");
-      printf("read_from_device [rd] query [q] set_parameters [sp]\n");
+      printf("read_from_device [rd] query [q] set_parameters [sp] stop [pa]\nstart [st]\n");
     }
     else if (!strcmp(buf, "open_device") || !strcmp(buf, "od"))
     {
@@ -270,6 +310,14 @@ void doall(void)
     else if (!strcmp(buf, "set_parameters") || !strcmp(buf, "sp"))
     {
       set_parameters();
+    }
+    else if (!strcmp(buf, "stop") || !strcmp(buf, "pa"))
+    {
+      stop();
+    }
+    else if (!strcmp(buf, "start") || !strcmp(buf, "st"))
+    {
+      start();
     }
   }
 }
