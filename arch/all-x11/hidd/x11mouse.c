@@ -124,17 +124,46 @@ static VOID x11mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11M
     
     if (msg->event->type == ButtonRelease)
     {
-    	e.button = xbutton2hidd(xb);
-	e.type =  vHidd_Mouse_Release;
-	 
-        data->mouse_callback(data->callbackdata, &e);
+    	switch(xb->button)
+	{
+	    case Button1:
+	    case Button2:
+	    case Button3:
+    	    	e.button = xbutton2hidd(xb);
+	    	e.type   = vHidd_Mouse_Release;
+	    	data->mouse_callback(data->callbackdata, &e);
+		break;
+	}
     }
     else if (msg->event->type == ButtonPress)
     {
-    	e.button = xbutton2hidd(xb);
-	e.type =  vHidd_Mouse_Press;
-	
-        data->mouse_callback(data->callbackdata, &e);
+    	switch(xb->button)
+	{
+	    case Button1:
+	    case Button2:
+	    case Button3:	    	
+    		e.button = xbutton2hidd(xb);
+		e.type   = vHidd_Mouse_Press;
+        	data->mouse_callback(data->callbackdata, &e);
+		break;
+		
+	    case Button4:
+	    	e.type   = vHidd_Mouse_WheelMotion;
+		e.button = vHidd_Mouse_NoButton;
+		e.x      = 0;
+		e.y      = -1;
+        	data->mouse_callback(data->callbackdata, &e);
+		break;
+		
+	    case Button5:
+	    	e.type   = vHidd_Mouse_WheelMotion;
+		e.button = vHidd_Mouse_NoButton;
+		e.x 	 = 0;
+		e.y 	 = 1;
+        	data->mouse_callback(data->callbackdata, &e);
+		break;
+		
+	}
     }
     else if (msg->event->type == MotionNotify)
     {
