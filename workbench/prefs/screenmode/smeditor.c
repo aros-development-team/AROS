@@ -286,10 +286,46 @@ IPTR SMEditor__MUIM_PrefsEditor_ExportFH
     return success;
 }
 
-ZUNE_CUSTOMCLASS_3
+IPTR SMEditor__MUIM_PrefsEditor_Test
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+   return FALSE;
+}
+
+IPTR SMEditor__MUIM_PrefsEditor_Use
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    #warning "FIXME: Closing the window here only works because we're lucky   "
+    #warning "       and nothing needs to access anything that is put in the  "
+    #warning "       RasterInfo structure, which gets deallocated when closing"
+    #warning "       the window. This needs to be fixed directly in the       "
+    #warning "       PrefsEditor class.                                       "
+    set(_win(self), MUIA_Window_Open, FALSE);
+	    
+    return DoSuperMethodA(CLASS, self, message);
+}
+
+#undef ALIAS
+#define ALIAS(old, new) \
+    AROS_MAKE_ALIAS(SMEditor__MUIM_PrefsEditor_ ## old, SMEditor__MUIM_PrefsEditor_ ## new)
+
+ALIAS(Test, Revert);
+ALIAS(Use, Save);
+ALIAS(Use, Cancel);
+
+ZUNE_CUSTOMCLASS_8
 (
     SMEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                    struct opSet *,
     MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
-    MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *
+    MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Test,     Msg,
+    MUIM_PrefsEditor_Revert,   Msg,
+    MUIM_PrefsEditor_Use,      Msg,
+    MUIM_PrefsEditor_Save,     Msg,
+    MUIM_PrefsEditor_Cancel,   Msg
 );
