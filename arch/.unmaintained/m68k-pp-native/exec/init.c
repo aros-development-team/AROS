@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <asm/registers.h>
-#include <gfx.h>
 
 #define AROS_USE_OOP
 
@@ -22,6 +20,7 @@
 #include <devices/keyboard.h>
 
 #include <aros/core.h>
+#include <asm/registers.h>
 
 #include "memory.h"
 #include "traps.h"
@@ -30,15 +29,17 @@
 #include "exec_intern.h"
 #include "etask.h"
 
-//extern const char Exec_end;
-
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern void switch_to_user_mode(void *, ULONG *, ULONG *);
-extern void Init_Hardware(void);
-extern void Init_IRQVectors(void);
 extern void main_init_cont(void);
 
 
+/*
+ * Just to be sure all of these modules get linked into the 
+ * final module, this structure should stay here, because
+ * otherwise the linker might not take it if there is no
+ * reference to a certain module at all.
+ */
 extern const struct Resident
 	Expansion_resident,
 	Exec_resident,
@@ -77,43 +78,74 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-	&Expansion_resident,            /* SingleTask,  110  */
-	&Exec_resident,                 /* SingleTask,  105  */
-	&Utility_resident,              /* ColdStart,   103  */
-	&Aros_resident,                 /* ColdStart,   102  */
-	&Mathieeesingbas_resident,      /* ColdStart,   101  */
-	&OOP_resident,                  /* ColdStart,   94	 */
-	&HIDD_resident,                 /* ColdStart,   92	 */
-	&irqHidd_resident,              /* ColdStart,   90	 */
-	&Graphics_resident,             /* ColdStart,   65	 */
-	&Layers_resident,               /* ColdStart,   60	 */
-	&Timer_resident,                /* ColdStart,   50	 */
-	&Misc_resident,                 /* ColdStart,   45	 */
-	&Battclock_resident,	        /* ColdStart,   45	 */
-	&Keyboard_resident,             /* ColdStart,   44       */
-	&Gameport_resident,             /* ColdStart,   43	 */
-	&Keymap_resident,               /* ColdStart,   40       */
-	&Input_resident,                /* ColdStart,   30	 */
-	&Intuition_resident,            /* ColdStart,   10	 */	
-	&hiddgraphics_resident,		/* ColdStart,   9	 */
-	&displayHidd_resident,		/* ColdStart,   9	 */
-	&hiddserial_resident,		/* ColdStart,   9	 */
-	&Console_resident,              /* ColdStart,   5	 */
-	&Workbench_resident,		/* ColdStart,  -120	 */
-	&Mathffp_resident,		/* ColdStart,  -120	 */
-	/*
-	  NOTE: You must not put anything between these two; the code which
-	  initialized boot_resident will directly call Dos_resident and
-	  anything between the two will be skipped.
-	*/
-	&boot_resident,			    /* ColdStart,  -50	 */
-	&Dos_resident,			    /* None,	   -120  */
-	&LDDemon_resident,		    /* AfterDOS,   -125  */
-	&con_handler_resident,		    /* AfterDOS,   -126  */
-	NULL
+	&Expansion_resident,
+	&Exec_resident,
+	&Utility_resident,
+	&Aros_resident,
+	&Mathieeesingbas_resident,
+	&OOP_resident,
+	&HIDD_resident,
+	&irqHidd_resident,
+	&Graphics_resident,
+	&Layers_resident,
+	&Timer_resident,
+	&Misc_resident,
+	&Battclock_resident,
+	&Keyboard_resident,
+	&Gameport_resident,
+	&Keymap_resident,
+	&Input_resident,
+	&Intuition_resident,	
+	&hiddgraphics_resident,
+	&displayHidd_resident,
+	&hiddserial_resident,
+	&Console_resident,
+	&Workbench_resident,
+	&Mathffp_resident,
+	&boot_resident,
+	&Dos_resident,
+	&LDDemon_resident,
+	&con_handler_resident
 };
 
 /************************************************************************************/
+
+void processor_init(void)
+{
+	/************ CPU setup *******************/
+	__asm__ __volatile__("oriw #0x0700,%%sr" :: );
+
+	/************ LCD Controller **************/
+	/*
+	 * Turn the LCD controller on
+	 */
+	WREG_B(PFDATA) = 0x010;
+
+	WREG_L(LSSA)  = 0x90000;
+	WREG_B(LVPW)  = 160/16;
+	WREG_W(LXMAX) = 160-1;
+	WREG_W(LYMAX) = 160-1;
+	WREG_W(LCXP)  = 80;
+	WREG_W(LCYP)  = 80;
+	WREG_W(LCWCH) = (10 << 8) | 10;
+	WREG_B(LBLKC) = 0x80 | 0x10;
+	WREG_B(LPICF) = 0x4;
+
+#if 0 
+	// DO NOT ACTIVATE THESE! IT STOPS OUTPUT ON XCOPILOT!!
+	WREG_B(LPOLCF)= 0x0;
+	WREG_B(LACDRC)= 0x0;
+	WREG_B(LPXCD) = 0x0;
+	WREG_B(LCKCON)= 0x0;
+	WREG_W(LRRA)  = 0x0;
+#endif
+	WREG_B(LPOSR) = 0x0;
+	WREG_B(LOTCR) = 0x4e; // 0xfffffa2b
+
+	/************* Interrupt Controller **********/
+	WREG_L(IMR) = ~((1 << 1) | (1 << 5));
+	WREG_B(IVR) = 0x40;
+}
 
 /************************************************************************************/
 
@@ -123,8 +155,10 @@ void main_init(void * memory, ULONG memSize)
 	struct ExecBase *SysBase = NULL;
 	ULONG * m68k_USP, * m68k_SSP;
 	struct MemHeader *mh = NULL;
+	UWORD * ranges[] = {0x10c00000 , 0x10c00000 + 1024 * 1024,
+	                    -1};
 
-
+	processor_init();
 	/*
 	   Prepare first memory list. Our memory will start at 'memory'.
 	 */
@@ -170,8 +204,7 @@ void main_init(void * memory, ULONG memSize)
 	}
 	m68k_USP = (ULONG *)(((ULONG)m68k_USP) + AROS_STACKSIZE);
 
-
-	SysBase->ResModules=romtagList;
+	SysBase->ResModules=Exec_RomTagScanner(SysBase, ranges);
 	
 	/*
 	 * Get some memory for the SSP. 
