@@ -221,7 +221,7 @@ $(COMMONOBJDIR)/%.o : %.c
 	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -include $(INCDIR)/libraries/arosc.h"
 
 $(SOBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h -I$(TOP)"
+	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h -I$(TOP)/rom/exec"
 
 $(COMMONLIB) : $(COMMONOBJS)
 	%mklib_q from=$(COMMONOBJS)

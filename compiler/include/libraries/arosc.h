@@ -57,7 +57,16 @@ extern struct Library *aroscbase;
 
 #ifdef _CLIB_KERNEL_
 
-#define GETUSER struct AroscUserData *clib_userdata = (struct AroscUserData *)(FindTask(0)->tc_UserData)
+#define CLIB_USES_ETASK 1
+
+#if CLIB_USES_ETASK
+#   include "etask.h"
+#   define AROSC_USERDATA(task) (struct AroscUserData *)(GetIntETask(FindTask(task))->iet_AroscUserData)
+#else
+#   define AROSC_USERDATA(task) (struct AroscUserData *)(FindTask(task)->tc_UserData)
+#endif
+
+#define GETUSER struct AroscUserData *clib_userdata = AROSC_USERDATA(0)
 
 #define errno               (*(int *)         (clib_userdata->errnoptr))
 #define stdin               (*(FILE **)       (clib_userdata->stdinptr))
