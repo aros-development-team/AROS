@@ -171,7 +171,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
 
 	} /* switch (currently parsed tag) */
 
-	if (notify)
+	if (notify && (msg->MethodID != OM_NEW))
 	{
 	    struct opUpdate nmsg = {OM_NOTIFY, notify_tags, msg->ops_GInfo, 0};
 	    notify_tags[0].ti_Tag  = tag->ti_Tag;
