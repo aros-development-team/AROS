@@ -30,7 +30,7 @@
 
 AROS_LP1(BOOL, LateIntuiInit,
     AROS_LPA(APTR, data, A0),
-    struct IntuitionBase *, IntuitionBase, 120, Intuition)
+    struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 AROS_LP4(IPTR, DoNotify,
     AROS_LPA(Class *,		cl,	A0),
