@@ -158,11 +158,6 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
 
-    IntuitionBase->ActiveScreen->Width =
-	DisplayWidth (GetSysDisplay (), GetSysScreen ());
-    IntuitionBase->ActiveScreen->Height =
-	DisplayHeight (GetSysDisplay (), GetSysScreen ());
-
     for (t=0; keytable[t].amiga != -1; t++)
 	keytable[t].keycode = XKeysymToKeycode (sysDisplay,
 		keytable[t].keysym);
@@ -170,6 +165,7 @@ int intui_init (struct IntuitionBase * IntuitionBase)
     XSetErrorHandler (MyErrorHandler);
     XSetIOErrorHandler (MySysErrorHandler);
 
+    /* TODO this is a hack */
     IntuiBase = IntuitionBase;
 
     return True;
@@ -177,6 +173,14 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 
 int intui_open (struct IntuitionBase * IntuitionBase)
 {
+    if (GetPrivIBase(IntuitionBase)->WorkBench)
+    {
+	GetPrivIBase(IntuitionBase)->WorkBench->Width =
+	    DisplayWidth (GetSysDisplay (), GetSysScreen ());
+	GetPrivIBase(IntuitionBase)->WorkBench->Height =
+	    DisplayHeight (GetSysDisplay (), GetSysScreen ());
+    }
+
     return True;
 }
 
@@ -636,7 +640,7 @@ struct Gadget * FindGadget (struct Window * window, int x, int y)
     return gadget;
 } /* FindGadget */
 
-/* Use local copy of IntuitionBase */
+#undef IntuitionBase
 #define IntuitionBase IntuiBase
 
 void intui_ProcessEvents (void)
@@ -680,6 +684,9 @@ void intui_ProcessEvents (void)
 		    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
 			break;
 		}
+
+		if (w)
+		    break;
 	    }
 
 	    if (w)
@@ -1152,5 +1159,4 @@ void intui_ProcessEvents (void)
 	}
     }
 }
-
 
