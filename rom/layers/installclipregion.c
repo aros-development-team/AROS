@@ -73,7 +73,9 @@
       /* InstallClipRegion does not work if the layer is in update state (BeginUpdate) */
 
       updating = TRUE;
-      EndUpdate(l, FALSE); 
+      EndUpdate(l, FALSE);
+      
+      OldRegion = l->ClipRegion;
     }
 
     /* is there a clipregion currently installed? */
@@ -100,16 +102,12 @@
     /* at this point the regular cliprects are in l->ClipRect in any case !*/
 
     /* if there's no new region to install then there's not much to do */
+    l->ClipRegion = region;
+
     if (NULL == region)
-    {
       l->_cliprects = NULL;
-      l->ClipRegion = NULL;
-    }
     else
     {
-
-      /* install the new clipregion */
-      l->ClipRegion = region;
 
       /* convert the region to a list of ClipRects */
       /* backup the old cliprects */
@@ -121,9 +119,8 @@
     }
   
     if (updating)
-    {
       BeginUpdate(l);
-    }
+
   } /* if ((OldRegion != NULL) || (region != NULL)) */
   
   UnlockLayer(l);
