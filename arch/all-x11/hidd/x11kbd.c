@@ -7,8 +7,11 @@
 */
 
 
+#include <dos/dos.h>
+
 #include <proto/utility.h>
 #include <proto/oop.h>
+#include <proto/dos.h>
 #include <oop/oop.h>
 
 #include <X11/Xlib.h>
@@ -25,6 +28,10 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
+#include <stdio.h>
+
+static UBYTE keycode2rawkey[256];
+static BOOL havetable;
 
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
@@ -616,6 +623,16 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
  
     D(bug("xkey2hidd\n"));
    
+    if (havetable)
+    {
+        result = -1;
+	if ((xk->keycode >= 0) && (xk->keycode < 256))
+	{
+	    result = keycode2rawkey[xk->keycode];
+	    if (result == 255) result = -1;
+	}
+	return result;
+    }
 LX11
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
@@ -637,6 +654,27 @@ UX11
     ReturnInt ("xk2h", long, result);
 } /* XKeyToAmigaCode */
 
+/****************  LoadKeyCode2RawKeyTable()  ***************************/
+
+static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
+{
+    char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
+    BPTR fh;
+    
+    if ((fh =Open(filename, MODE_OLDFILE)))
+    {
+        if ((256 == Read(fh, keycode2rawkey, 256)))
+	{
+	    bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
+	    havetable = TRUE;
+	} else {
+	    bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
+	}
+        Close(fh);
+    } else {
+        bug("LoadKeyCode2RawKeyTable: Could not open \"%s\"\n", filename);
+    }
+}
 
 /********************  init_kbdclass()  *********************************/
 
@@ -679,6 +717,8 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
     };
 
     EnterFunc(bug("KbdHiddClass init\n"));
+    
+    LoadKeyCode2RawKeyTable(xsd);
     
     if (MetaAttrBase)
     {
