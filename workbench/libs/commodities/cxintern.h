@@ -18,7 +18,12 @@
 enum { CX_OBJECT, CX_MESSAGE, CX_INPUTEVENT };
 enum { CXM_SINGLE, CXM_DOUBLE };
 
+#define  AROS_ALMOST_COMPATIBLE
+#define CxObj void
+#define CxMsg void
 #include <exec/lists.h>
+#undef CxObj
+#undef CxMsg
 
 #include <exec/types.h>
 #include <exec/io.h>
@@ -38,26 +43,6 @@ enum { CXM_SINGLE, CXM_DOUBLE };
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
-
-typedef struct cx_Object
-{
-    struct   Node     co_Node;
-    UBYTE             co_Flags;
-    UBYTE             co_Error;
-    struct   MinList  co_ObjList;
-    
-    union
-    {
-	ULONG                co_DebugID;
-	ULONG                co_TypeFilter;
-	struct InputEvent   *co_IE;		/* Translate */
-	IX		    *co_FilterIX;
-	struct BrokerExt    *co_BExt;
-	struct SendExt      *co_SendExt;
-	struct SignalExt    *co_SignalExt;
-	struct CustomExt    *co_CustomExt;
-    } co_Ext;
-} CxObj;
 
 struct BrokerExt
 {
@@ -82,10 +67,30 @@ struct SignalExt
 
 struct CustomExt
 {
-    VOID  (*cext_Action)();
+    VOID  (*cext_Action)(VOID);
     ULONG   cext_ID;
 };
 
+
+typedef struct cx_Object
+{
+    struct   Node     co_Node;
+    UBYTE             co_Flags;
+    UBYTE             co_Error;
+    struct   MinList  co_ObjList;
+    
+    union
+    {
+	ULONG                co_DebugID;
+	ULONG                co_TypeFilter;
+	struct InputEvent   *co_IE;		/* Translate */
+	IX		    *co_FilterIX;
+	struct BrokerExt    *co_BExt;
+	struct SendExt      *co_SendExt;
+	struct SignalExt    *co_SignalExt;
+	struct CustomExt    *co_CustomExt;
+    } co_Ext;
+} CxObj;
 
 typedef struct cx_Message
 {
@@ -168,8 +173,8 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #ifdef SysBase
 #undef SysBase
 #endif
-#ifdef KeyMapBase
-#undef KeyMapBase
+#ifdef KeymapBase
+#undef KeymapBase
 #endif
 #ifdef UtilityBase
 #undef UtilityBase
@@ -191,13 +196,8 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct CommoditiesBase *, CxBase, 3, Commodities)
 
-#ifdef __MORPHOS__
-#define CxNotify(name, command) \
-	LP2(0xc6, ULONG, CxNotify, STRPTR, name, a0, ULONG, command, d0, \
-	, COMMODITIES_BASE_NAME, IF_CACHEFLUSHALL, NULL, 0, IF_CACHEFLUSHALL, NULL, 0)
-
-#define FreeBrokerList(brokerList) \
-	LP1NR(0xc0, FreeBrokerList, struct List *, brokerList, a0, \
-	, COMMODITIES_BASE_NAME, IF_CACHEFLUSHALL, NULL, 0, IF_CACHEFLUSHALL, NULL, 0)
+#ifndef __MORPHOS__
+#define dprintf bug
 #endif
+
 #endif /* COMMODITIES_BASE_H */

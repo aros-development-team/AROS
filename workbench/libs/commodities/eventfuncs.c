@@ -46,13 +46,8 @@ VOID FreeCxStructure(APTR obj, int type, struct Library *CxBase)
     switch (type)
     {
     case CX_OBJECT:
-	if (Extensions[((CxObj *)obj)->co_Node.ln_Type] != 0)
-	{
-	    FreeVec(((CxObj *)obj)->co_Ext.co_FilterIX);
-	}
-	
 	FreeVec(obj);
-    	break;
+	break;
 	
     case CX_MESSAGE:
 	FreeCxStructure(((CxMsg *)obj)->cxm_Data, CX_INPUTEVENT, CxBase);
@@ -83,21 +78,11 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
     switch (type)
     {
     case CX_OBJECT:
-	tempObj = (CxObj *)AllocVec(sizeof(CxObj),
+	tempObj = (CxObj *)AllocVec(sizeof(CxObj) + Extensions[objtype],
 				    MEMF_CLEAR | MEMF_PUBLIC);
-	if (Extensions[objtype] != 0)
-	{
-	    tempObj->co_Ext.co_FilterIX = AllocVec(Extensions[objtype],
-					           MEMF_CLEAR | MEMF_PUBLIC);
 
-	    if (tempObj->co_Ext.co_FilterIX == NULL)
-	    {
-		FreeVec(tempObj);
+	tempObj->co_Ext.co_FilterIX = (APTR)(tempObj + 1);
 
-		return NULL;
-	    }
-	}
-	
 	NEWLIST(&tempObj->co_ObjList);
 	
 	/* This is done to make it easy for Exchange */
@@ -137,7 +122,7 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 		
 		if (tempMsg->cxm_Data == NULL)
 		{
-		    FreeCxStructure(tempMsg, CX_MESSAGE, CxBase);
+		    FreeVec(tempMsg);
 		    tempMsg = NULL;
 		}
 		

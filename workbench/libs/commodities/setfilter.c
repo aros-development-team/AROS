@@ -15,6 +15,8 @@
 #include <proto/exec.h>
 #include <proto/commodities.h>
 
+#define DEBUG_BADFILTER(x)	x;
+
     AROS_LH2(VOID, SetFilter,
 
 /*  SYNOPSIS */
@@ -68,12 +70,17 @@
     
     if (CXOBJType(filter) == CX_FILTER)
     {
-	if (ParseIX(text, filter->co_Ext.co_FilterIX) == 0)
+	LONG err;
+
+	err = ParseIX(text, filter->co_Ext.co_FilterIX);
+
+	if (err == 0 || err == -2)
 	{
 	    filter->co_Error &= ~COERR_BADFILTER;
 	}
 	else
 	{
+	    DEBUG_BADFILTER(dprintf("SetFilter: Bad filter \"%s\"!\n", text));
 	    filter->co_Error |= COERR_BADFILTER;
 	}
     }

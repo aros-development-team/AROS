@@ -10,6 +10,7 @@
 
     NAME */
 
+#define AROS_ALMOST_COMPATIBLE
 
 #include "cxintern.h"
 #include <exec/memory.h>

@@ -15,6 +15,10 @@
 #include <devices/inputevent.h>
 #include <exec/memory.h>
 
+#define DEBUG_COPYIEVENT(x)	x;
+
+BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct CommoditiesBase *CxBase);
+
     AROS_LH1(VOID, AddIEvents,
 
 /*  SYNOPSIS */
@@ -71,39 +75,9 @@
 	    break;
 	}
 	
-	*(msg->cxm_Data) = *events;
-	
-	/* Copy the structure pointed to by ie_EventAddress in case of
-	   a NEWPOINTERPOS event */
-	
-	if (events->ie_Class == IECLASS_NEWPOINTERPOS)
+	if (!CopyInputEvent(events, msg->cxm_Data, GPB(CxBase)))
 	{
-	    switch (events->ie_SubClass)
-	    {
-	    case IESUBCLASS_PIXEL :
-		msg->cxm_Data->ie_EventAddress =
-		    AllocVec(sizeof(struct IEPointerPixel), MEMF_ANY);
-		*((struct IEPointerPixel *)(msg->cxm_Data->ie_EventAddress)) =
-		    *((struct IEPointerPixel *)(events->ie_EventAddress));
-		break;
-		
-	    case IESUBCLASS_TABLET :
-		msg->cxm_Data->ie_EventAddress =
-		    AllocVec(sizeof(struct IEPointerTablet), MEMF_ANY);
-		*((struct IEPointerTablet *)(msg->cxm_Data->ie_EventAddress)) =
-		    *((struct IEPointerTablet *)(events->ie_EventAddress));
-		break;
-		
-	    case IESUBCLASS_NEWTABLET :
-		msg->cxm_Data->ie_EventAddress =
-		    AllocVec(sizeof(struct IENewTablet), MEMF_ANY);
-		*((struct IENewTablet *)(msg->cxm_Data->ie_EventAddress)) =
-		    *((struct IENewTablet *)(events->ie_EventAddress));
-		break;
-		
-	    default :
-		break;
-	    }
+	    DEBUG_COPYIEVENT(dprintf("AddIEvents: CopyInputEvent() failed!\n"));
 	}
 	
 	ROUTECxMsg(msg, (CxObj *) &GPB(CxBase)->cx_BrokerList.lh_Head);

@@ -14,6 +14,8 @@
 #include <libraries/commodities.h>
 #include <proto/exec.h>
 
+#define DEBUG_BADFILTER(x)	x;
+
     AROS_LH2(VOID, SetFilterIX,
 
 /*  SYNOPSIS */
@@ -74,11 +76,13 @@
     {
 	if (ix->ix_Version == IX_VERSION)
 	{
-	    filter->co_Ext.co_FilterIX = ix;
+	    CopyMem(ix, filter + 1, sizeof(IX));
+	    filter->co_Ext.co_FilterIX = (APTR)(filter + 1);
 	    filter->co_Error &= ~COERR_BADFILTER;
 	}
 	else
 	{
+	    DEBUG_BADFILTER(dprintf("SetFilterIX: ix_Version == %lu (should be %lu)!\n", ix->ix_Version, IX_VERSION));
 	    filter->co_Error |= COERR_BADFILTER;
 	}
     }

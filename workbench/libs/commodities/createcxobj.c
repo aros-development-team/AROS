@@ -18,6 +18,9 @@
 
 #include <aros/debug.h>
 
+#define DEBUG_CREATECXOBJ(x)	;
+
+
 VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
 
@@ -82,8 +85,8 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
     CxObj *co;
 
-    D(bug("CreateCxObject: Entering..., trying to create an object "
-	  "of type %d\n", type));
+    DEBUG_CREATECXOBJ(dprintf("CreateCxObj: type %lu Arg1 0x%lx Arg2 0x%lx\n",
+			      type, arg1, arg2));
 
     if ((co = (CxObj *)AllocCxStructure(CX_OBJECT, type, CxBase)) == NULL)
     {
@@ -105,7 +108,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 	break;
 	
     case CX_TYPEFILTER:
-	co->co_Ext.co_FilterIX = (IX *)arg1;
+	/* Obsolete and undocumented */
 	break;
 	
     case CX_SEND:
@@ -139,7 +142,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 	break;
     }
     
-    D(bug("CreateCxObject: Leaving...\n"));
+    DEBUG_CREATECXOBJ(dprintf("CreateCxObject: Leaving...\n"));
     
     return co;
 
