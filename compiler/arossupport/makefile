@@ -28,10 +28,12 @@ FILES = calcchecksum kprintf nastyfreemem \
 
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
+LIB = $(LIBDIR)/libarossupport.a
+
 INCLUDE_FILES = $(wildcard include/*.h)
 DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
 
-all: setup $(LIBDIR)/libarossupport.a
+all: setup $(LIB)
 
 setup : make-dirs os-include
 
@@ -76,7 +78,9 @@ $(OBJDIR)/rt_stubs.o: rt_stubs.s
 	@$(SYS_AS) $(AFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(LIBDIR)/libarossupport.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+
+$(LIB) : $(OBJS)
 	@$(ECHO) "Creating library $@..."
 	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
