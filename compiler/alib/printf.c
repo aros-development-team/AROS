@@ -34,6 +34,8 @@
     EXAMPLE
 
     BUGS
+	This is a quick hack. It doesn't work on 64bit nor when the stack
+	is reversed.
 
     SEE ALSO
 
@@ -43,5 +45,8 @@
 
 *****************************************************************************/
 {
-  return 0L;
+    IPTR * args;
+
+    args = ((IPTR *)fmt) + 1;
+    return VPrintf (fmt, args);
 } /* Printf */
