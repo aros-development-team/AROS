@@ -297,6 +297,8 @@ int main()
 
     /* KeyCode -> ASCII conversion table */
 
+
+#if !AROS_IDE_DRIVER
     InitKeyboard();
     kprintf("--------------------------------------------------------------------------------");
     kprintf("                 Insert a bootable disk in DF0: and press ENTER                 ");
@@ -307,7 +309,7 @@ int main()
        key = transl[(key == 0x39) ? 1 : key - 1];
        UnGetK();
     } while(key !=10);
-    
+#endif
 
 	InitResident(&Dos_resident,0);	// should be placed into boot_resident later
     /*
