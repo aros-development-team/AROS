@@ -67,7 +67,7 @@
 	return 0;
     }
 
-    cnt = FWrite ((BPTR)fdesc->fh, buf, size, nblocks);
+    cnt = FWrite ((BPTR)fdesc->fh, (CONST APTR)buf, size, nblocks);
 
     if (cnt == -1)
     {
