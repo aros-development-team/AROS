@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include <proto/graphics.h>
 #include <graphics/text.h>
 
 #define max(a,b)  (((a) > (b)) ? (a) : (b))

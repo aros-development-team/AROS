@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <proto/graphics.h>
+#include <string.h>
 #include "graphics_intern.h"
 
 #undef SDEBUG

@@ -5,6 +5,7 @@
     Desc: Graphics function GetExtSpriteA()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>
 

@@ -5,9 +5,11 @@
     Desc: Free the memory occupied by a BitMap.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 

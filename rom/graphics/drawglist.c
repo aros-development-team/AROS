@@ -5,6 +5,8 @@
     Desc: Draw the list of gels
     Lang: english
 */
+#include <aros/debug.h>
+#include <proto/graphics.h>
 #include "graphics_intern.h"
 #include "gels_internal.h"
 

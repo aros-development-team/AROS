@@ -5,10 +5,15 @@
     Desc: Graphics function GetDisplayInfoData()
     Lang: english
 */
+#include <aros/debug.h>
+#include <proto/graphics.h>
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
 #include "dispinfo.h"
+#include <proto/oop.h>
 #include <stdio.h>
+#include <string.h>
+#include "graphics_intern.h"
 
 struct size_check
 {

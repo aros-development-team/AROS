@@ -5,6 +5,7 @@
     Desc: Graphics function LoadView()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 
 /*****************************************************************************

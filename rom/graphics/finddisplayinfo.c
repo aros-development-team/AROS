@@ -5,9 +5,12 @@
     Desc: Graphics function FindDisplayInfo()
     Lang: english
 */
+#include <aros/debug.h>
+#include <proto/graphics.h>
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
 #include "dispinfo.h"
+#include "graphics_intern.h"
 
 /*****************************************************************************
 

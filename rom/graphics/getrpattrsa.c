@@ -9,6 +9,7 @@
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
 #include "graphics_intern.h"
+#include <proto/utility.h>
 
 /*****************************************************************************
 
