@@ -70,7 +70,7 @@
 
 
 #include "emul_handler_intern.h"
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   include "emul_handler_gcc.h"
 #endif
 
