@@ -690,11 +690,22 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
-
+    struct gfx_driverdata *dd;
+    struct Layer *L = rp->Layer;
+    
     if(!CorrectDriverData (rp, GfxBase))
 	return ((ULONG)-1L);
+	
+    dd = GetDriverData(rp);
+    
+    if (L != NULL)
+    {
+    	x += L->bounds.MinX;
+	y += L->bounds.MinY;
+    }
+    return HIDD_GC_ReadPixel(dd->dd_GC, x, y);
 
-    return ((ULONG)-1L);
+
 }
 
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
@@ -717,11 +728,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 	
   dd = GetDriverData(rp);
 
-  if (NULL == L)
-  {
-     Width = GetBitMapAttr(bm, BMA_WIDTH);  
-     Height = GetBitMapAttr(bm, BMA_HEIGHT);
-  }
+  Width = GetBitMapAttr(bm, BMA_WIDTH);  
+  Height = GetBitMapAttr(bm, BMA_HEIGHT);
+  
   /* 
      Is there a layer. If not then it cannot be a regular window!!
   */
@@ -854,18 +863,18 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
   }
 
-  /* nlorentz: For now don't bother writing into bitmap planes,
-     as HIDD bitmap object is stored in bm->Planes[0];
+  /* nlorentz: before writing to the bitmap manually,
+     check that it is not a HIDD bitmap. 
+     HIDD bitmaps have no planes in them
   */
-  
-  ReturnInt("driver_WritePixel(at bottom)", LONG,  0);
+  if ((bm->Flags & BMF_AROS_DISPLAYED) == 0)
+  {
 
   /* get the pen for this rastport */
   pen = GetAPen(rp);
 
   pen_Mask = 1;
   CLR_Mask = ~Mask;
-  
   
   /* we use brute force and write the pixel to
      all bitplane, setting the bitplanes where the pen is
@@ -887,6 +896,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     }
     pen_Mask = pen_Mask << 1;
   } /* for */
+  
+  } /* if (not a hidd bitmap) */
+
 
   /* if there was a layer I have to unlock it now */
 /*!!!
@@ -894,7 +906,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     UnlockLayer(L);
 */
 
-  ReturnInt("driver_WritePixel", LONG,  0);
+  ReturnInt("driver_WritePixel(at bottom)", LONG,  0);
 
 }
 
@@ -1243,7 +1255,11 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	{
 	    /* Store it in plane array */
 	    BM_OBJ(nbm) = bm_obj;
-	
+	    nbm->Rows  = ((sizex - 1) >> 3) + 1;
+	    nbm->BytesPerRow = sizey;
+	    nbm->Depth  = depth;
+	    nbm->Flags  = flags;
+	    
 	    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 	    
 	}
@@ -1266,7 +1282,39 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     
     EnterFunc(bug("driver_BltBitMap()\n"));
     
+    /* The posibble cases:
+	1) both src and dest is HIDD bitmaps
+	2) src is HIDD bitmap, dest is amigabitmap.
+     	3) srcBitMap is amiga bitmap, dest is HIDD bitmap.
+	
+	The case where both src & dest is amiga bitma is handled
+	by BltBitMap() itself.
+    */
+    	
+    if (srcBitMap->Flags & BMF_AROS_DISPLAYED)
+    {
+    	if (destBitMap->Flags & BMF_AROS_DISPLAYED)
+	{
+	    /* Case 1. */
+	    
+	}
+	else
+	{
+	    /* Case 2. */
+	    
+	}
+    }
+    else
+    {
+	/* Case 3. */
+	switch (minterm)
+	{
+	    case 0: { /* Clear the destination */
+	        break; }
+	}
+	
     
+    }
 
     ReturnInt("driver_BltBitMap", LONG, planecnt);
 }
