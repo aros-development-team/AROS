@@ -16,15 +16,19 @@
 #include <dos/dos.h>
 #include <aros/startup.h>
 
+#include <aros/debug.h>
+
 #include <setjmp.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/param.h>
 
 #include "__upath.h"
 
 static BOOL clone_vars(struct MinList *old_vars);
 static void restore_vars(struct MinList *old_vars);
 static void free_vars(struct MinList *vars);
+static void update_PATH(void);
 
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
@@ -51,7 +55,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 
     /* Here we clone environment variables. We do this because
        if we've been invoked as a coroutine via dos.library/RunCommand()
-       rather than as a newly created process, then we share our env varibles
+       rather than as a newly created process, then we share our env variables
        with the caller, but we do not want that. It's kind of wasteful to do
        it even if we've been started as a fresh process, though, so if we can
        we avoid it. */
@@ -62,6 +66,13 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 	    __aros_startup_error = RETURN_FAIL;
 	    goto err_vars;
 	}
+    }
+
+    /* If the PATH variable is not defined, then define it to be what CLI's path list
+       points to.  */
+    if (!getenv("PATH"))
+    {
+        update_PATH();
     }
 
     /* Call the real main.  */
@@ -170,4 +181,75 @@ static void free_vars(struct MinList *vars)
         Remove((struct Node *)varNode);
         FreeVec(varNode);
     }
+}
+
+/* setenv("PATH", current_cli_path, 1) */
+static void update_PATH(void)
+{
+    typedef struct
+    {
+        BPTR next;
+        BPTR lock;
+    } PathEntry;
+
+    #define PE(x) ((PathEntry *)(BADDR(x)))
+
+    UBYTE aname[PATH_MAX]; /* PATH_MAX Ought to enough, it would be too complicated
+                              handling aname dynamically (thanks to our suxxy dos.library).  */
+    char *PATH = NULL;
+    size_t oldlen = 0;
+    PathEntry *cur;
+    struct CommandLineInterface *cli = Cli();
+
+    /* No cli, no luck.  */
+    if (cli == NULL)
+        return;
+
+    for
+    (
+        cur = PE(cli->cli_CommandDir);
+        cur != NULL;
+        cur = PE(cur->next)
+    )
+    {
+        char *new_PATH;
+	const char *uname;
+	size_t ulen, newlen;
+
+        if (NameFromLock(cur->lock, aname, sizeof(aname)) == DOSFALSE)
+	    continue;
+
+	D(bug("aname = %s\n", aname));
+
+        uname = __path_a2u(aname);
+	if (!uname)
+	    continue;
+
+	D(bug("uname = %s\n", uname));
+
+	ulen = strlen(uname);
+	newlen = oldlen + ulen + 1;
+
+	new_PATH = realloc(PATH, newlen);
+	if (!new_PATH)
+	    continue;
+
+	PATH = new_PATH;
+
+	new_PATH[oldlen] = '\0';
+	D(bug("new_PATH = %s\n", new_PATH));
+
+	if (oldlen)
+	{
+            new_PATH[oldlen] = ':';
+	    new_PATH++;
+	}
+	memcpy(new_PATH + oldlen, uname, ulen + 1);
+
+        D(bug("PATH = %s - oldlen = %d, newlen = %d\n", PATH, oldlen, newlen));
+	oldlen = newlen - 1;
+    }
+
+    if (PATH)
+        setenv("PATH", PATH, 1);
 }
