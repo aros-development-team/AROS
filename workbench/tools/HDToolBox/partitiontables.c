@@ -267,6 +267,7 @@ BOOL retval=FALSE;
 				PTT_MAX_PARTITIONS, &table->maxpartitions,
 				TAG_DONE
 			);
+			setPartitionType(table);
 			retval = TRUE;
 		}
 	}
