@@ -823,21 +823,24 @@ LX11
     {
 	ok = FALSE;
     }
-#if USE_XSHM
-    	    
-    /* Do we have Xshm support ? */
-    xsd->xshm_info = init_shared_mem(xsd->display);
-    if (NULL == xsd->xshm_info)
-    {
-    	/* ok = FALSE; */
-    	kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
-    }
-    else
-    {
 
-    	InitSemaphore(&xsd->shm_sema);
-    	xsd->use_xshm = TRUE;
-    }    	
+#if USE_XSHM    	    
+    if (xsd->local_display)
+    {
+	/* Do we have Xshm support ? */
+	xsd->xshm_info = init_shared_mem(xsd->display);
+	if (NULL == xsd->xshm_info)
+	{
+    	    /* ok = FALSE; */
+    	    kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
+	}
+	else
+	{
+
+    	    InitSemaphore(&xsd->shm_sema);
+    	    xsd->use_xshm = TRUE;
+	}    	
+    }
 #endif
 
 
