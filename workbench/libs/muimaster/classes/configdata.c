@@ -98,9 +98,13 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     LoadPrefs("env:zune/global.prefs",obj);
 
     data->prefs.fonts[-MUIV_Font_Normal] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Normal);
-    data->prefs.fonts[-MUIV_Font_Big] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Big);
+    data->prefs.fonts[-MUIV_Font_List] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_List);
     data->prefs.fonts[-MUIV_Font_Tiny] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Tiny);
+    data->prefs.fonts[-MUIV_Font_Fixed] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Fixed);
+    data->prefs.fonts[-MUIV_Font_Title] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Title);
+    data->prefs.fonts[-MUIV_Font_Big] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Big);
     data->prefs.fonts[-MUIV_Font_Button] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Button);
+    data->prefs.fonts[-MUIV_Font_Knob] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Knob);
 
     data->prefs.imagespecs[MUII_WindowBack] = (char*)GetConfigData(obj,MUICFG_Background_Window,"0:128"); /* MUII_BACKGROUND */
     data->prefs.imagespecs[MUII_RequesterBack] = (char*)GetConfigData(obj,MUICFG_Background_Requester,"0:137"); /* MUII_SHINEBACK */
