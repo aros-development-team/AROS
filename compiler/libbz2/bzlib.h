@@ -110,8 +110,10 @@ typedef
 #define BZ_EXPORT
 #endif
 
+#ifndef BZ_NO_STDIO
 /* Need a definitition for FILE */
 #include <stdio.h>
+#endif
 
 #ifdef _WIN32
 #   include <windows.h>
