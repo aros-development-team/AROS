@@ -1,4 +1,3 @@
-\begin{new}{16.10.1997}
 \chapter{Random Ideas}
 \section{Introduction}
 
@@ -233,5 +232,33 @@ This conversion-tool should do: (open, unordered list)
 \end{itemize}
 \end{new}
 
-\end{itemize}
+\item
+\begin{new}{2.7.1998}
+By Dave Haynie:
+Stuff we spoke about over lunch, dating back to our days consulting for
+Amiga Technologies. Andy mentioned the model they use for the 3DO
+operating system (the original one, not the M2 version, which is
+supposedly more like the BeOS).
+
+In this system, each process has its own memory map, but the actual
+mapping is still global (eg, there's just one memory space). Your
+process can see the rest of the world as read-only. Functions like
+AllocMem() transparently work from local memory pools attached to your
+process, so things stay nicely page-aligned. This has the secondary
+effect of making AllocMem() faster than it is today, since you only have
+to involve Exec proper (locking the system up to keep things atomic)
+every so often, not at every AllocMem().
+
+I would make the extension to this that memory contexts become first-class
+Exec objects. The System context would be the "root", with read/write
+access as we have today. Device drivers that need the direct access to
+hardware, or the performance of using references rather than copies, could
+be started on this context. You could build alternate contexts, such as the
+read-only underlay, as mentioned, or even fully private memory spaces, as
+in UNIX. Obviously this is for new code, and Exec would need to add/enhance
+functions for sending messages, copying, etc. between memory spaces. But
+since you're not expecting any old code to run in a fully separate space,
+some of today's bad habits wouldn't really be an issue.
 \end{new}
+
+\end{itemize}
