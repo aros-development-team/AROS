@@ -1,0 +1,34 @@
+include $(TOP)/config/make.cfg
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+KEYMAPDIR := $(DEVSDIR)/Keymaps
+
+KEYMAPS := pc105_d pc105_i
+
+KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(KEYMAPDIR)/$(f))
+
+CFLAGS := $(INCLUDES) -nostartfiles -nostdlib -Xlinker -i
+
+#MM workbench-devs-keymaps : setup includes keymapobjs
+workbench-devs-keymaps : show-flags keymapobjs
+	@$(NOP)
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(KEYMAPDIR)
+
+#MM
+keymapobjs : $(KEYMAPOBJS)
+	@$(NOP)
+	
+$(KEYMAPDIR)/%: %.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+
+%common
+
