@@ -81,7 +81,7 @@
 #define  AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 
-#define  DEBUG  1
+#define  DEBUG  0
 #include <aros/debug.h>
 
 #include <proto/dos.h>
@@ -131,19 +131,21 @@ int main(int argc, char *argv[])
     {
 	BOOL   full    = (BOOL)args[ARG_FULL];
 	BOOL   tcb     = (BOOL)args[ARG_TCB];
-	BOOL   all     = (BOOL)args[ARG_ALL];
-	ULONG  process = (LONG)args[ARG_PROCESS];
-	STRPTR command = (STRPTR)args[ARG_COMMAND];
+	BOOL   all     = (BOOL)args[ARG_ALL];    /* It seems like this is not
+						    needed */
+	ULONG  processNum = 0;
+	STRPTR command    = (STRPTR)args[ARG_COMMAND];
 
-	if(!full && !tcb && process == 0 && command == NULL)
+	if(args[ARG_PROCESS] != NULL)
+	    processNum = *(ULONG *)args[ARG_PROCESS];
+
+	if(!full && !tcb && processNum == 0 && command == NULL)
 	    all = TRUE;
 
-	// TODO: Use "all"?
-	
 	if(command != NULL)
 	{
-	    struct List *cliList;
-	    struct Process *process;
+	    struct List     *cliList;
+	    struct CLIInfo  *ci;
 
 	    D(bug("command != NULL in Status\n"));
 
@@ -153,19 +155,38 @@ int main(int argc, char *argv[])
 	    D(bug("Got RootLock\n"));
 
 	    cliList = (struct List *)&root->rn_CliList;
-	    process = (struct Process *)FindName(cliList, command);
+	    ci = (struct CLIInfo *)FindName(cliList, command);
 
-	    if(process != NULL)
+	    if(ci != NULL)
 	    {
-		if(process->pr_TaskNum != 0)
+		if(ci->ci_Process->pr_TaskNum != 0)
 		{
-		    printf(" %li\n", process->pr_TaskNum);
+		    printf(" %li\n", ci->ci_Process->pr_TaskNum);
 		}
 	    }
 	    else
 		retval = RETURN_WARN;
 
 	    ReleaseSemaphore(&root->rn_RootLock);
+	}
+	else if(processNum != 0)
+	{
+	    struct Process *process;
+
+	    ObtainSemaphore(&root->rn_RootLock);
+	 
+	    /* This is a temporary construction until I've fixed the
+	       implementation of FindCliProc() */
+	    Forbid();
+	    process = FindCliProc(processNum);
+	    Permit();
+
+	    ReleaseSemaphore(&root->rn_RootLock);
+
+	    if(process != NULL)
+		printProcess(full, tcb, process);
+	    else
+		printf("Process %i does not exist\n", (int)processNum);
 	}
 	else
 	{
@@ -209,12 +230,10 @@ void printProcess(BOOL full, BOOL tcb, struct Process *process)
 
     printf("Process %li ", process->pr_TaskNum);
 
-    if(tcb)
+    if(tcb || full)
     {
-	printf("CLI = %p\n", cli);
-	//	LONG olle = cli->cli_DefaultStack;
-	//	printf("stk %u, pri %u", cli->cli_DefaultStack,
-	//	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
+	printf("stk %u, pri %u ", (ULONG)cli->cli_DefaultStack,
+	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
     if(!tcb || full)
