@@ -1081,8 +1081,26 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
 {
     struct TextFont *tf = NULL;
     struct FontDescrHeader *fdh;
-
+    BPTR olddir, lock, dirlock;
+    
     D(bug("DF_OpenFontPath(reqattr=0x%lx)\n", reqattr));
+    
+    lock = Lock(reqattr->ta_Name, ACCESS_READ);
+    if (lock == NULL)
+    {
+	D(bug("DF_OpenFontPath: Could not lock file\n"));
+	return NULL;
+    }
+    
+    dirlock = ParentDir(lock);
+    UnLock(lock);
+    if (dirlock == NULL)
+    {
+	D(bug("DF_OpenFontPath: Could not get ParentDir\n"));
+	return NULL;
+    }
+    
+    olddir = CurrentDir(dirlock);
     
     fdh = ReadFontDescr(reqattr->ta_Name, DiskfontBase);
     
@@ -1094,7 +1112,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
         
 	D(bug("DF_OpenFontPath: Font Description read\n"));
        
-        for (i=0; i>fdh->NumEntries; i++)
+        for (i=0; i<fdh->NumEntries; i++)
 	{
 	    match_weight = WeighTAMatch((struct TTextAttr *)reqattr,
 					(struct TextAttr *)&fdh->TAttrArray[i],
@@ -1131,11 +1149,16 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
 	       D(bug("DF_OpenFontPath: tf=0x%lx\n", tf));
 	   }
 	}
-       
+	else
+	    D(bug("DF_OpenFontPath: No matching font found\n"));
+	    
         FreeFontDescr(fdh, DiskfontBase);
     }
     else
         D(bug("DF_OpenFontPath: Font Description read failed\n"));
+
+    CurrentDir(olddir);
+    UnLock(dirlock);
     
     if (tf != NULL)
     {
