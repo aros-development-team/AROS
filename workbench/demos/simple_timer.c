@@ -66,7 +66,7 @@ struct Library *TimerBase;      /* to get at the time comparison functions */
 #define   SECSPERHOUR  (60*60)
 #define   SECSPERDAY   (60*60*24)
 
-void main(int argc,char **argv)
+int main(int argc,char **argv)
 {
 LONG seconds;
 struct timerequest *tr;      /* IO block for timer commands */
@@ -144,6 +144,8 @@ TimerBase = (struct Library *)tr->tr_node.io_Device;
 /* and how to clean up afterwards */
 TimerBase = (struct Library *)(-1);
 delete_timer( tr );
+
+return 0;
 }
 
 struct timerequest *create_timer( ULONG unit )

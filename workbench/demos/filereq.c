@@ -147,7 +147,7 @@ static void showrequester(char *msg, struct TagItem *tags)
 
 		for(i = 1; i <= fr->fr_NumArgs; i++)
 		{
-		    printf("%3ld: %s\n", i, wbarg->wa_Name);
+		    printf("%3ld: %s\n", (long)i, wbarg->wa_Name);
 		    wbarg++;
 		}
 	    }
