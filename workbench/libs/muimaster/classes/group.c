@@ -817,8 +817,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    cstate = (Object *)ChildList->mlh_Head;
 	    while ((child = NextObject(&cstate)))
 	    {
-		/* ??? */
-		++page;
+		/*page++;*//* redraw problem with colorwheel in coloradjust register */
 		if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
 		    continue;
 
