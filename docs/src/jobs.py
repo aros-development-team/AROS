@@ -20,8 +20,10 @@
 # done   - print all jobs that are done
 # inwork - print all jobs that are in work
 # todo   - print all jobs that are still todo
+# none   - print no jobs
 #
 # stats  - print some statistics on the end
+# long - print stats per library
 #
 '''This module allows to read the jobs.dat DB. It will collect
 the statistics about all jobs. You can access the following
@@ -53,6 +55,8 @@ class Library:
     def __init__ (self, name):
 	self.name = name
 	self.longName = abbreviations[name]
+	if not self.longName or self.name == self.longName:
+	    print `self.name`, `self.longName`
 	self.jobsDone, self.jobsInWork, self.jobsTodo = 0, 0, 0
 	self.jobsTotal = 0
 	self.status = [0.0, 0.0, 0.0]
@@ -64,15 +68,18 @@ class Library:
 
 	if status == 0:
 	    self.jobsTodo = self.jobsTodo + 1
-	    self.status[status] = 100.0*self.jobsTodo/self.jobsTotal
 	elif status == 1:
 	    self.jobsInWork = self.jobsInWork + 1
-	    self.status[status] = 100.0*self.jobsInWork/self.jobsTotal
 	elif status == 2:
 	    self.jobsDone = self.jobsDone + 1
-	    self.status[status] = 100.0*self.jobsDone/self.jobsTotal
 	else:
 	    raise 'Illegal status %s in %s%s' % (`status`, self.name, `id`)
+
+    def update (self):
+	if self.jobsTotal:
+	    self.status[0] = 100.0*self.jobsTodo/self.jobsTotal
+	    self.status[1] = 100.0*self.jobsInWork/self.jobsTotal
+	    self.status[2] = 100.0*self.jobsDone/self.jobsTotal
 
     def printJob (self, job):
 	# Has this job an ID ?
@@ -116,6 +123,9 @@ for line in fileinput.input (filename):
     id = jobid[j:]
     if id:
 	id = int (id)
+    else:
+	id = name
+	name = 'other'
 
     lib = __jobs.get (name, None)
     if not lib:
@@ -132,6 +142,11 @@ jobsTodo   = 0
 
 # Parse arguments
 for lib in __jobs.values ():
+    lib.update ()
+    # 'other' jobs don't count
+    if lib.name == 'other':
+	continue
+
     jobsDone = jobsDone + lib.jobsDone
     jobsInWork = jobsInWork + lib.jobsInWork
     jobsTodo = jobsTodo + lib.jobsTodo
@@ -143,16 +158,23 @@ status = [
     100.0*jobsDone/jobsTotal,
 ]
 
+# These are jobs which are not related to the AROS core.
+if __jobs.has_key ('other'):
+    otherJobs = __jobs['other']
+else:
+    otherJobs = Library ('other')
+    otherJobs.update ()
+
 #print jobsDone, jobsInWork, jobsTodo, jobsTotal
 
 if __name__ == '__main__':
     showStats =  0   # Don't show stats as default
+    longStatus = 0   # Don't show the verbose statistics
     listMode  =  0   # Print jobs that are todo as default
 
     for argument in sys.argv[1:]:
 	if argument == 'stats':
 	    showStats = 1
-
 	elif argument == 'done':
 	    listMode = 2
 	elif argument == 'inwork':
@@ -161,6 +183,8 @@ if __name__ == '__main__':
 	    listMode = 0
 	elif argument == 'none':
 	    listMode = -1
+	elif argument == 'long':
+	    longStatus = 1
 
     list = jobs.keys ()
     list.sort ()
@@ -175,14 +199,29 @@ if __name__ == '__main__':
 		lib.printJob (job)
 
     # Print statistics
-    if showStats and jobsTotal:
-	print ''
+    if showStats:
+	if longStatus:
+	    for name in list:
+		lib = jobs[name]
+		print '%-40s %6.2f%% %6.2f%% %6.2f%% = %6.2f%%' % (
+		    lib.name, lib.status[0], lib.status[1], lib.status[2],
+			lib.status[0] + lib.status[1] + lib.status[2])
+		print '%40d %6d  %6d  %6d = %6d' % (
+		    lib.jobsTotal, lib.jobsTodo, lib.jobsInWork, lib.jobsDone,
+			lib.jobsTodo + lib.jobsInWork + lib.jobsDone)
+
+	print
 	print 'Statistics:'
 	print 'Jobs todo   : %4d (%6.2f%%)' % (jobsTodo, status[0])
 	print 'Jobs in work: %4d (%6.2f%%)' % (jobsInWork, status[1])
 	print 'Jobs done   : %4d (%6.2f%%)' % (jobsDone, status[2])
-	print ''
+	print
 	print 'Jobs total  : %4d' % jobsTotal
+	print
+	print 'Other jobs todo   : %4d (%6.2f%%)' % (otherJobs.jobsTodo, otherJobs.status[0])
+	print 'Other jobs in work: %4d (%6.2f%%)' % (otherJobs.jobsInWork, otherJobs.status[1])
+	print 'Other jobs done   : %4d (%6.2f%%)' % (otherJobs.jobsDone, otherJobs.status[2])
+	print
 
     if not jobsTotal:
 	raise 'jobsTotal == 0'
