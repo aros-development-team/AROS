@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2000/08/12 19:21:28  stegerg
+    if there is a IntuiText->ITextFont must SetSoftStyle(rp,
+    IntuiText->ITextFont->ta_Style)
+
     Revision 1.11  1998/10/20 16:46:01  hkiel
     Amiga Research OS
 
@@ -98,15 +102,16 @@
     ULONG  apen;
     ULONG  bpen;
     ULONG  drmd;
+    UBYTE  style;
     struct TextFont * font;
     struct TextFont * newfont = NULL;
 
     /* Store important variables of the RastPort */
-    apen = GetAPen (rp);
-    bpen = GetBPen (rp);
-    drmd = GetDrMd (rp);
-
-    font = rp->Font;
+    apen  = GetAPen (rp);
+    bpen  = GetBPen (rp);
+    drmd  = GetDrMd (rp);
+    font  = rp->Font;
+    style = rp->AlgoStyle; 
 
     /* For all borders... */
     for ( ; iText; iText=iText->NextText)
@@ -122,6 +127,8 @@
 
 	    if (newfont)
 		SetFont (rp, newfont);
+		
+	    SetSoftStyle(rp, iText->ITextFont->ta_Style, AskSoftStyle(rp));
 	}
 
 	/* Move to initial position */
@@ -142,10 +149,11 @@
     }
 
     /* Restore RastPort */
-    SetAPen (rp, apen);
-    SetBPen (rp, bpen);
-    SetDrMd (rp, drmd);
-    SetFont (rp, font);
-
+    SetAPen      (rp, apen);
+    SetBPen      (rp, bpen);
+    SetDrMd      (rp, drmd);
+    SetFont      (rp, font);
+    SetSoftStyle (rp, style, AskSoftStyle(rp));
+    
     AROS_LIBFUNC_EXIT
 } /* PrintIText */
