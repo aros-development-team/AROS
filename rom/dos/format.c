@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Format a device.
@@ -26,10 +26,19 @@
 	struct DosLibrary *, DOSBase, 119, Dos)
 
 /*  FUNCTION
+	Initialise a filesystem for use by the system. This instructs
+	a filesystem to write out the data that it uses to describe the
+	device.
+
+	The device should already have been formatted.
 
     INPUTS
+	devicename	- Name of the device to format.
+	volumename	- The name you wish the volume to be called.
+	dostype		- The DOS type you wish on the disk.
 
     RESULT
+	!= 0 if the format was successful, 0 otherwise.
 
     NOTES
 
@@ -84,6 +93,7 @@
 	    SetIoErr(iofs->io_DosError);
     }else
 	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);
     return success;

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: GetProgramDir() - Get the lock for PROGDIR:
@@ -23,7 +23,7 @@
 
 /*  FUNCTION
 	This function will return the shared lock on the directory that
-	the current directory was loaded from. You can use this to help
+	the current process was loaded from. You can use this to help
 	you find data files which were supplied with your program.
 
 	A NULL return is possible, which means that you may be running

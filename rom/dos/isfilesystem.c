@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Check if a device is a filesystem.
@@ -24,12 +24,17 @@
 	struct DosLibrary *, DOSBase, 118, Dos)
 
 /*  FUNCTION
+	Query the device whether it is a filesystem.
 
     INPUTS
+	devicename	- Name of the device to query.
 
     RESULT
+	TRUE if the device is a filesystem, FALSE otherwise.
 
     NOTES
+	DF0:, HD0:, ... are filesystems.
+	CON:, PIPE:, AUX:, ... are not
 
     EXAMPLE
 

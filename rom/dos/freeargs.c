@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Free arguments structure from ReadArgs()
     Lang: english
 */
 #include <proto/exec.h>
@@ -23,10 +23,13 @@
 	struct DosLibrary *, DOSBase, 143, Dos)
 
 /*  FUNCTION
+	FreeArgs() will clean up after a call to ReadArgs().
 
     INPUTS
+	args		- The data used by ReadArgs().
 
     RESULT
+	Some memory will have been returned to the system.
 
     NOTES
 
@@ -35,6 +38,7 @@
     BUGS
 
     SEE ALSO
+	ReadArgs()
 
     INTERNALS
 

@@ -39,10 +39,21 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	struct DosLibrary *, DOSBase, 84, Dos)
 
 /*  FUNCTION
+	RunCommand() will run the command loaded in the |segList| with the
+	arguments specified with a new stack of |stacksize| bytes.
+
+	The return code of the command run will be returned.
+
+	This call will not return until the command has completed.
 
     INPUTS
+	segList		- segment of program to run.
+	stacksize	- size of the stack to use.
+	argptr		- pointer to NUL-terminated arguments.
+	argsize		- size of the arguments string.
 
     RESULT
+	The return code from the program. See also IoErr().
 
     NOTES
 
@@ -51,6 +62,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     BUGS
 
     SEE ALSO
+	SystemTagList()
 
     INTERNALS
 
