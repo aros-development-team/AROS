@@ -63,7 +63,8 @@ LONG adjust_leftpos(Project p, WORD step)
 /*** Search for next available word in the line ***/
 LONG forward_word(LINE *ln, ULONG pos)
 {
-	UBYTE type, *str;
+	UBYTE type;
+	STRPTR str;
 	/* Search next */
 	for(str=ln->stream+pos,type=TypeChar[*str]; pos<ln->size && type==TypeChar[*str]; pos++,str++);
 	/* Skip white spaces */
@@ -74,7 +75,8 @@ LONG forward_word(LINE *ln, ULONG pos)
 /*** Search for previous word in a line ***/
 LONG backward_word(LINE *ln, ULONG pos)
 {
-	UBYTE type, *str;
+	UBYTE type;
+	STRPTR str;
 	/* Skip white spaces */
 	for(str=ln->stream + pos; pos>0 && TypeChar[*str]==SPACE; str--,pos--);
 	/* Search previous */
