@@ -50,4 +50,7 @@ struct PlatformData
 BOOL init_core(struct ExecBase *);
 BOOL irqSet(int, struct irqServer *, void *, struct ExecBase *);
 
+void disable_irq(unsigned int virq);
+void  enable_irq(unsigned int virq);
+
 #endif
