@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <sys/time.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 
