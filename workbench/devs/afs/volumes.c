@@ -24,6 +24,8 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
+extern void timercode();
+
 /*******************************************
  Name  : initDeviceList
  Descr.: initializes a devicelist structure
@@ -392,6 +394,8 @@ struct Volume *volume;
 						volume->cmdseek=TD_SEEK;
 						volume->cmdformat=TD_FORMAT;
 						nsdCheck(afsbase, volume);
+						volume->vbl_int.is_Code = (void(*)())&timercode;
+						volume->vbl_int.is_Data = volume;
 						*error=newMedium(afsbase, volume);
 						if ((!*error) || (*error=ERROR_NOT_A_DOS_DISK))
 						{
