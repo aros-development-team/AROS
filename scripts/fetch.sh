@@ -20,8 +20,8 @@ fetch_sf()
         echo "Checking SourceForge mirror \`$mirror'..."
         fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=${mirror}" "$destination" \
             2>/dev/null && \
-            full_path=`awk '/<META[ \t\n]+HTTP-EQUIV.+/ { match($4, /=.+"/); print substr($4, RSTART+1, RLENGTH-2) }' "${file}?use_mirror=${mirror}"` && \
-            rm "${file}?use_mirror=${mirror}" && \
+            full_path=`awk '/<META[ \t\n]+HTTP-EQUIV.+/ { match($4, /=.+"/); print substr($4, RSTART+1, RLENGTH-2) }' "$destination/${file}?use_mirror=${mirror}"` && \
+            rm "$destination/${file}?use_mirror=${mirror}" && \
             test "x$full_path" != "x" && \
             fetch "`dirname $full_path`" "$file" "$destination" && \
             break
