@@ -27,8 +27,8 @@ MSG_TITLE
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2003, The AROS Development Team. Alle Rechte vorbehalten.
-; Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+Copyright © 1995-2005, The AROS Development Team. Alle Rechte vorbehalten.
+; Copyright © 1995-2005, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Veröffentlicht gemäß den Richtlinien der
@@ -58,6 +58,57 @@ MSG_PAGE_ACKNOWLEDGEMENTS
 Danksagung
 ; Acknowledgements
 ;
+MSG_SECTION_COORDINATION
+Koordination
+; Coordination
+MSG_SECTION_EVANGELISM
+Evangelismus
+; Evangelism
+MSG_SECTION_HIDD
+HIDD Subsystem
+; HIDD Subsystem
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+MSG_SECTION_GRAPHICS
+Graphics
+; Graphics
+MSG_SECTION_SHELL_COMMANDS
+Shell Kommandos
+; Shell Commands
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
 MSG_SECTION_TOOLS
 Tools
 ; Tools
+MSG_SECTION_PREFERENCES
+Voreinstellungen
+; Preferences
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+MSG_SECTION_ZUNE
+Zune
+; Zune
+MSG_SECTION_KERNEL
+Kernel
+; Kernel
+MSG_SECTION_DOS
+DOS
+; DOS
+MSG_SECTION_LIBC_POSIX
+C Link Library und POSIX Layer
+; C link library and POSIX layer
+MSG_SECTION_DOCUMENTATION
+Dokumentation
+; Documentation
+MSG_SECTION_TRANSLATION
+Übersetzungen
+; Translation
+MSG_SECTION_ARTISTRY
+Kunstwerke
+; Artistry
+MSG_SECTION_WEBSITE
+Webseiten
+; Website
