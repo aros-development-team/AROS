@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #include <proto/utility.h>
@@ -44,10 +41,6 @@
 
     INTERNALS
 
-    HISTORY
-
-	2001-01-12 ksvalast first created
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -75,7 +68,7 @@
 	InitSemaphore(&midinode->sysexsemaphore);
 	InitSemaphore(&midinode->sysexsemaphore2);
 
-	if(SetMidiAttrsA(&midinode->midinode,tags)==NULL)
+	if(!SetMidiAttrsA(&midinode->midinode,tags))
 	  {
 		FreeMem(midinode,sizeof(struct MyMidiNode));
 		return NULL;

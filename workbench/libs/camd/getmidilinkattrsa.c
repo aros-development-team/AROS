@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 
@@ -47,8 +44,6 @@
     INTERNALS
 
     HISTORY
-
-	2001-01-12 ksvalast first created
 
 *****************************************************************************/
 {
@@ -100,7 +95,7 @@
 				*where=(ULONG)midilink->ml_SysExFilter.sxf_Packed;
 				break;
 			case MLINK_Parse:
-				*where=(ULONG)midilink->ml_ParserData==NULL?FALSE:TRUE;
+				*where=(ULONG)midilink->ml_ParserData==0?FALSE:TRUE;
 				break;
 			default:
 				ret--;

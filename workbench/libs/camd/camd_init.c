@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Camd initialization code.
-    Lang: English
+    Camd initialization code.
 */
 
 #include <exec/types.h>
@@ -42,7 +41,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT;
     
-    UninitCamd(LIBBASE);
+    UninitCamd((struct CamdBase *) LIBBASE);
     
     return TRUE;
     

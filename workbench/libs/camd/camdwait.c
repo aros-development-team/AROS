@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 #include <proto/dos.h>
@@ -151,8 +148,8 @@ BOOL InitCamdTimer(void){
 	InitSemaphore(&camdwaitsemaphore2);
 
 	process=CreateNewProcTags(
-		NP_Entry,CamdTimerProc,
-		NP_Name,"Camd Wait Proc",
+		NP_Entry, (IPTR) CamdTimerProc,
+		NP_Name,  (IPTR) "Camd Wait Proc",
 		NP_Priority,5,
 		TAG_END
 	);

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 #include <proto/utility.h>
@@ -60,10 +57,6 @@
 
     INTERNALS
 
-    HISTORY
-
-	2001-01-12 ksvalast first created
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -71,8 +64,6 @@
 
 	struct TagItem *tag;
 
-	//If your compiler complains about the const qualifier, change your protos file,
-	//not this file.
 	const struct TagItem *tstate=tags;
 
 	BOOL ret=TRUE;
@@ -81,7 +72,7 @@
 	struct MyMidiCluster *mycluster;
 	struct DriverData *driverdata=NULL;
 
-	ULONG *ErrorCode=(ULONG *)GetTagData(MLINK_ErrorCode,NULL,tags);
+	ULONG *ErrorCode = (ULONG *)GetTagData(MLINK_ErrorCode, (IPTR) NULL,tags);
 
 	while((tag=NextTagItem(&tstate))){
 		switch(tag->ti_Tag){
@@ -157,7 +148,7 @@
 	}
 
 	if(ret!=FALSE){
-		clustername=(char *)GetTagData(MLINK_Location,NULL,tags);
+		clustername = (char *) GetTagData(MLINK_Location, (IPTR) NULL, tags);
 		if(clustername!=NULL){
 			ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 				if(SetClusterForLink(midilink,clustername,ErrorCode,CamdBase)==FALSE){

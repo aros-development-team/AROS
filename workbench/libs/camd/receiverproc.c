@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 #include <proto/dos.h>
@@ -77,8 +74,8 @@ BOOL CreateReceiverProc(
 	driverdata->isReceiverProcessAlive=0;
 
 	process=CreateNewProcTags(
-		NP_Entry,ReceiverFunc,
-		NP_Name,name,
+		NP_Entry, (IPTR) ReceiverFunc,
+		NP_Name, (IPTR) name,
 		NP_Priority,36,
 		TAG_END
 	);
