@@ -67,17 +67,17 @@
 %end
 
 #------------------------------------------------------------------------------
-%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS)
+%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
 	@$(ECHO) "Linking %(to)..."
-	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
+				$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	   	else \
 			$(NOP) ; \
     	fi ; \
 	else \
-	    $(ECHO) "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" 1>&2 ; \
+	    $(ECHO) "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
@@ -169,9 +169,9 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs= postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm %(postlibs)
+LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm -lautoinit %(postlibs)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a %(deplibs)
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a $(LIBDIR)/libautoinit.a %(deplibs)
 %end
 
 #------------------------------------------------------------------------------
@@ -1317,7 +1317,6 @@ clean ::
 %(libs) := -L$(LIBDIR) %(prelibs)
 %(deps) :=
 STARTUP := %(startup)
-
 ifdef USE_AROSLIB
 %(libs) := $(%(libs)) -larossupport
 %(deps) := $(%(deps)) $(LIBDIR)/libarossupport.a
@@ -1333,6 +1332,11 @@ endif
 ifdef USE_CLIB
 %(libs) := $(%(libs)) -larosc
 %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+else
+    ifdef USE_CLIB_SHARED
+	%(libs) := $(%(libs)) -larosc_shared
+	%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
+    endif
 endif
 ifdef USE_MLIB
 %(libs) := $(%(libs)) -larosm
@@ -1350,6 +1354,11 @@ ifdef USE_COOLIMAGESLIB
 %(libs) := $(%(libs)) -lcoolimages
 %(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
 endif
+
+#this MUST be always linked
+%(libs) := $(%(libs)) -lautoinit
+%(deps) := $(%(deps)) $(LIBDIR)/libautoinit.a
+
 %(libs) := $(%(libs)) %(postlibs)
 %end
 
