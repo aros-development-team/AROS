@@ -60,12 +60,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct UtilityBase *, UtilityBase)
 
-    Tag 	tagBase;
-    UWORD	memOff;
-    UWORD	tagOff;
-    UBYTE	bitOff;
-    struct TagItem *ti;
-    LONG	count = 0;
+    Tag			tagBase;
+    UWORD		memOff;
+    UWORD		tagOff;
+    UBYTE		bitOff;
+    struct TagItem *	ti;
+    LONG		count = 0;
+    union memaccess *	memptr;
+
 
     tagBase = *packTable++;
     for( ; *packTable != 0; packTable++)
@@ -90,6 +92,8 @@
 	memOff = *packTable & 0x1FFF;
 	bitOff = (*packTable & 0xE000) >> 13;
 
+	memptr = (union memaccess *)((UBYTE *)pack + memOff);
+
 	/*
 	    If the PSTF_EXISTS bit is 1, then the tagexists says that we
 	    set the bit to 1.
@@ -100,70 +104,63 @@
 	{
 	    /* If the PSTF_SIGNED bit is 1, then this is actually FLIPBIT */
 	    if(*packTable & PSTF_SIGNED)
-		*(UBYTE *)&((UBYTE *)pack)[memOff] &= ~(1 << bitOff);
+		memptr->ub &= ~(1 << bitOff);
 	    else
-		*(UBYTE *)&((UBYTE *)pack)[memOff] |= (1 << bitOff);
+		memptr->ub |= (1 << bitOff);
 
 	    count++;
 	    continue;
 	}
 
 	/*
-	    I need this rather interesting casting because the offset
-	    is always in bytes, but the cast to (ULONG *) etc, will cause
-	    the array indexing to be done in different sizes, so I basically
-	    override that, then cast to the required size. I've got to cast
-	    like: &((UBYTE *)pack)[memOff],
-	    not:  (UBYTE *)&pack[memOff]
-	    because otherwise I'd be dereferencing a void *.
-
-	    Ah, so much easier in assembly eh?
-
-	    Also the assigning is different for signed and unsigned since
+	    The assigning is different for signed and unsigned since
 	    ti_Data is not necessarily the same size as the structure field,
 	    so we have to let the compiler do sign extension.
 
 	    Bit shifting the packTable entry >> 24, we can do some more
 	    instruction space efficient stuff.
+
+	    This used to be done with horrible casting, but using a union
+	    is much neater.
 	*/
 	switch((*packTable >> 24) & 0x98)
 	{
 	    case (PKCTRL_ULONG >> 24):
-		*(ULONG *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->ul = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_UWORD >> 24):
-		*(UWORD *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->uw = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_UBYTE >> 24):
-		*(UBYTE *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->ub = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_LONG >> 24):
-		*(LONG *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->sl = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_WORD >> 24):
-		*(WORD *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->sw = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_BYTE >> 24):
-		*(BYTE *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
+		memptr->sb = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_BIT >> 24):
 		if(ti->ti_Data)
-		    *(UBYTE *)&((UBYTE *)pack)[memOff] |= (1 << bitOff);
+		    memptr->ub |= (1L << bitOff);
 		else
-		    *(UBYTE *)&((UBYTE *)pack)[memOff] &= ~(1 << bitOff);
+		    memptr->ub &= ~(1L << bitOff);
 		break;
 
 	    case (PKCTRL_FLIPBIT >> 24):
 		if(ti->ti_Data)
-		    *(UBYTE *)&((UBYTE *)pack)[memOff] &= ~(1 << bitOff);
+		    memptr->ub &= ~(1L << bitOff);
 		else
-		    *(UBYTE *)&((UBYTE *)pack)[memOff] |= (1 << bitOff);
+		    memptr->ub |= (1L << bitOff);
 		break;
 
 	    /* We didn't actually pack anything */
