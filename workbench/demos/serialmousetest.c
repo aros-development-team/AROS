@@ -22,11 +22,12 @@
 
 #include <stdio.h>
 
-#define ARG_TEMPLATE "KILL/S,"
+#define ARG_TEMPLATE "KILL/S,UNIT/N"
 
 enum 
 {
 	ARG_KILL = 0,
+	ARG_UNIT,
 	NOOFARGS
 };
 
@@ -102,16 +103,21 @@ static void read_input(struct IOExtSer * IORequest, struct MsgPort * notifport)
 	}
 } /* read_input */
 
-static void mouse_driver(struct MsgPort * notifport)
+static void mouse_driver(IPTR * unit, struct MsgPort * notifport)
 {
 	struct MsgPort * SerPort;
-    
+        ULONG unitnum = 0;
+        
+        if (NULL != unit)
+        	unitnum = *unit;
+
+printf("Unit=%d\n",unitnum);    
 	SerPort = CreatePort(NULL,0);
 	if (NULL != SerPort)  {
 		struct IOExtSer * IORequest;
 		IORequest = (struct IOExtSer *)CreateExtIO(SerPort, sizeof(struct IOExtSer));
 		if (NULL != IORequest) {
-			BYTE err = OpenDevice("serial.device", 0, (struct IORequest *)IORequest, 0);
+			BYTE err = OpenDevice("serial.device", unitnum, (struct IORequest *)IORequest, 0);
 			if (0 == err) {
 				/*
 				 * Set parameters to read from mouse.
@@ -141,7 +147,8 @@ static void mouse_driver(struct MsgPort * notifport)
 
 int main(int argc, char **argv)
 {
-	IPTR args[NOOFARGS] = {(IPTR)FALSE   // ARG_KILL
+	IPTR args[NOOFARGS] = {(IPTR)FALSE,  // ARG_KILL
+	                       0             // ARG_UNIT
 	                     };
 	struct RDArgs *rda;
 
@@ -170,7 +177,7 @@ int main(int argc, char **argv)
 			} else {
 				struct MsgPort * notifport = CreatePort(MSGPORT_NAME, 0);
 				if (NULL != notifport) {
-					mouse_driver(notifport);
+					mouse_driver(args[ARG_UNIT],notifport);
 					DeletePort(notifport);
 				} else {
 					printf("Could not create notification port!\n");
