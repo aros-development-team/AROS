@@ -2727,7 +2727,11 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_CreateDragImage:
     case MUIM_DeleteDragImage:
     case MUIM_GoActive:
-    case MUIM_GoInactive:  
+    case MUIM_GoInactive:
+    case MUIM_CreateBubble:
+    case MUIM_DeleteBubble:
+    case MUIM_CreateShortHelp:
+    case MUIM_DeleteShortHelp:  
     	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
