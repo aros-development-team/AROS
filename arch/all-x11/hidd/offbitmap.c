@@ -103,7 +103,8 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
     width  = attrs[AO(Width)];
     height = attrs[AO(Height)];
-    pixfmt = attrs[AO(PixFmt)];
+    pixfmt = (Object *)attrs[AO(PixFmt)];
+
     
     GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
     
