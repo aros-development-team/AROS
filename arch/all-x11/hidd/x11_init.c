@@ -195,7 +195,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	            STRPTR displayname;
 
 		    /* Try to get the display */
-		    if (!(displayname = getenv("DISPLAY")))
+		    if (!(displayname = (STRPTR)getenv("DISPLAY")))
 			displayname =":0.0";
 
 		    /* Do not need to singlethead this

@@ -51,7 +51,7 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     struct TagItem * tag;
 
-    while ((tag = NextTagItem (&tags)))
+    while ((tag = NextTagItem ((const struct TagItem **)&tags)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -84,7 +84,9 @@
 
 	case RPTAG_DrawBounds:
 	    break;
+	    
 	} /* switch (tag) */
+	
     } /* while (tag) */
 
     AROS_LIBFUNC_EXIT
