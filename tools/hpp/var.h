@@ -47,5 +47,7 @@ extern String Var_Subst PARAMS ((const char * str));
 
 extern void Func_Add PARAMS ((const char * name, CB cb, CBD cbd));
 extern Function * Func_Find PARAMS ((const char * name));
+extern char ** Func_SplitArgs PARAMS ((const char * args));
+extern void Func_FreeArgs PARAMS ((char ** argv));
 
 #endif /* VAR_H */

@@ -65,11 +65,12 @@ static int HTML_OtherTag PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, 
 static int
 HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
-    String	 body;
-    HTMLTagArg * condarg;
-    String	 condstr;
-    int 	 condvalue;
-    char       * elseptr;
+    String	   body;
+    HTMLTagArg	 * condarg;
+    String	   condstr;
+    int 	   condvalue;
+    char	 * elseptr;
+    char	 * str;
 
     body = HTML_ReadBody (in, data, "IF", 1);
 
@@ -115,8 +116,24 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     while (*elseptr)
     {
-	if (*elseptr == '<' && !strcasecmp (elseptr+1, "ELSE"))
-	    break;
+	if (*elseptr == '<')
+	{
+	    elseptr ++;
+
+	    while (isspace (*elseptr)) elseptr ++;
+
+	    if (!strncasecmp (elseptr, "ELSE", 4))
+	    {
+		elseptr += 4;
+
+		while (isspace (*elseptr)) elseptr ++;
+
+		if (*elseptr == '>')
+		    break;
+	    }
+	}
+
+	elseptr ++;
     }
 
     if (!*elseptr)
@@ -125,18 +142,61 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     if (condvalue)
     {
 	if (elseptr)
-	    *elseptr = 0;
+	{
+	    while (*elseptr != '<') elseptr --;
 
-	Str_Puts (out, body->buffer, data);
+	    *elseptr = 0;
+	}
+
+	str = body->buffer;
     }
     else if (elseptr)
     {
 	while (*elseptr && *elseptr != '>') elseptr ++;
 
-	Str_Puts (out, elseptr, data);
+	if (*elseptr)
+	    elseptr ++;
+
+	str = elseptr;
+    }
+    else
+	str = NULL;
+
+#if 0
+    printf ("condvalue=%d elseptr=\"%s\" out=\"%s\"\n", condvalue,
+	elseptr ? elseptr : "(nil)",
+	str ? str : "(nil)");
+#endif
+
+    if (str)
+    {
+	String	       vstr;
+	StringStream * ss;
+	int	       rc;
+
+	vstr = Var_Subst (str);
+
+	if (!vstr)
+	{
+	    PushError ("Error expanding IF body");
+	    return T_ERROR;
+	}
+
+#if 0
+    printf ("Parse \"%s\"\n", vstr->buffer);
+#endif
+
+	ss = StrStr_New (vstr->buffer);
+
+	rc = HTML_Parse ((MyStream *)ss, out, data);
+
+	StrStr_Delete (ss);
+	VS_Delete (vstr);
+
+	return rc;
     }
 
-    return 1;
+    return T_OK;
 }
 
 static void
@@ -200,7 +260,8 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     macro = new (HTMLMacro);
 
-    macro->node.name = stripquotes (name->value);
+    macro->node.name = xstrdup (name->value);
+    strupper (macro->node.name);
     NewList (&macro->args);
 
     option = NULL;
@@ -217,7 +278,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    option = new (HTMLOptArg);
 
-	    option->node.name = stripquotes (arg->value);
+	    option->node.name = xstrdup (arg->value);
 	    option->defvalue = NULL;
 	    strupper (option->node.name);
 	    AddTail (&macro->args, option);
@@ -317,7 +378,8 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     block = new (HTMLBlock);
 
-    block->node.name = stripquotes (name->value);
+    block->node.name = xstrdup (name->value);
+    strupper (block->node.name);
     NewList (&block->args);
 
     option = NULL;
@@ -334,7 +396,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    option = new (HTMLOptArg);
 
-	    option->node.name = stripquotes (arg->value);
+	    option->node.name = xstrdup (arg->value);
 	    option->defvalue = NULL;
 	    strupper (option->node.name);
 	    AddTail (&block->args, option);
@@ -431,9 +493,11 @@ HTML_EDEF (HTMLTag * tag)
 
     env = new (HTMLEnv);
 
-    env->node.name = stripquotes (name->value);
-    env->begin	   = begin->value ? stripquotes (begin->value) : NULL;
-    env->end	   = end->value   ? stripquotes (end->value) : NULL;
+    env->node.name = xstrdup (name->value);
+    env->begin	   = begin->value ? xstrdup (begin->value) : NULL;
+    env->end	   = end->value   ? xstrdup (end->value) : NULL;
+
+    strupper (env->node.name);
 
     AddTail (&EDefs, env);
 
@@ -449,6 +513,7 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     HTMLTagArg * arg;
     char       * name;
     int 	 endtag;
+    int 	 rc = T_OK;
 
     name = tag->node.name;
 
@@ -479,21 +544,61 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (env)
     {
+	char * str = NULL;
+
 	if (!endtag)
-	{
-	    if (env->begin)
-		Str_Puts (out, env->begin, data);
-	}
+	    str = env->begin;
 	else
+	    str = env->end;
+
+	if (str)
 	{
-	    if (env->end)
-		Str_Puts (out, env->end, data);
+	    StringStream * ss = StrStr_New (str);
+
+	    rc = HTML_Parse ((MyStream *)ss, out, data);
+
+	    StrStr_Delete (ss);
 	}
     }
     else if (macro)
     {
-	printf ("Found as DEF:");
-	Str_Puts (out, macro->body->buffer, data);
+	if (macro->body->buffer)
+	{
+	    StringStream * ss;
+
+	    if (!IsListEmpty (&macro->args))
+	    {
+		HTMLOptArg * oarg;
+
+		Var_PushLevel ();
+
+		ForeachNode (&macro->args, oarg)
+		{
+		    arg = (HTMLTagArg *) FindNodeNC (&tag->args, oarg->node.name);
+
+		    if (!arg)
+		    {
+			if (!oarg->defvalue)
+			    Warn ("Missing value for DEF argument %s\n", oarg->node.name);
+			else
+			    Var_Set (oarg->node.name, oarg->defvalue);
+		    }
+		    else
+			Var_Set (oarg->node.name, arg->value);
+		}
+	    }
+
+	    ss = StrStr_New (macro->body->buffer);
+
+	    rc = HTML_Parse ((MyStream *)ss, out, data);
+
+	    StrStr_Delete (ss);
+
+	    if (!IsListEmpty (&macro->args))
+	    {
+		Var_FreeLevel (Var_PopLevel ());
+	    }
+	}
     }
     else if (block)
     {
@@ -529,7 +634,7 @@ printf ("Found as BDEF.Def=%s\nBody=%s\n",
 	Str_Put (out, '>', data);
     }
 
-    return 1;
+    return rc;
 }
 
 void
@@ -572,7 +677,9 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 
 		tag = HTML_ParseTag ((MyStream *)strs, NULL);
 
-		/* HTML_PrintTag (tag); */
+#if 0
+    HTML_PrintTag (tag);
+#endif
 
 		if (!strcmp (tag->node.name, "DEF"))
 		{
@@ -592,7 +699,7 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		}
 		else if (!strcmp (tag->node.name, "IF"))
 		{
-		    if (!HTML_IF (tag, in, out, data))
+		    if (HTML_IF (tag, in, out, data) != T_OK)
 		    {
 			PushError ("HTML_Parse() failed in IF");
 			return T_ERROR;
@@ -605,6 +712,31 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			PushError ("HTML_Parse() failed in EDEF");
 			return T_ERROR;
 		    }
+		}
+		else if (!strcmp (tag->node.name, "LINK"))
+		{
+		    HTMLTagArg * name, * ref;
+
+		    name = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
+		    ref  = (HTMLTagArg *) FindNodeNC (&tag->args, "REF");
+
+		    if (!name)
+		    {
+			PushError ("Missing argument NAME in LINK");
+			return T_ERROR;
+		    }
+
+		    if (!ref)
+		    {
+			PushError ("Missing argument REF in LINK");
+			return T_ERROR;
+		    }
+
+		    Str_Puts (out, "<A HREF=\"", data);
+		    Str_Puts (out, ref->value, data);
+		    Str_Puts (out, "\">", data);
+		    Str_Puts (out, name->value, data);
+		    Str_Puts (out, "</A>", data);
 		}
 		else
 		{

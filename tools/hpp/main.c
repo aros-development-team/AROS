@@ -17,6 +17,8 @@ void main (int argc, char ** argv)
     DB_Init ();
     HTML_Init ();
 
+    DB_Add ("filenames", "filenames.db");
+
     Var_Set ("outputFormat", "html");
 
     out = StdStr_New ("-", "w");

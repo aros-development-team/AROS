@@ -7,17 +7,15 @@
 <EDEF NAME="cidentifier" BEGIN="<FONT COLOR="black"><I>" END="</I></FONT>">
 <EDEF NAME="cpunctuation" BEGIN="<FONT COLOR="black"><TT>" END="</TT></FONT>">
 
-<filename>This is a filename</filename>
+<DEF NAME="filename" OPTION="text"><
+    IF COND="$checkdb(filenames,$text)"><
+	filename><LINK NAME="$text" REF="$querydb(filenames,$text)"></filename><
+    ELSE><
+	filename>$text</filename><
+    /IF><
+/DEF>
 
-<DEF NAME="filename" OPTION="text">
-    <filename>
-    <IF COND="$checkdb(filenames,$text)">
-	<LINK NAME="$text" REF="$querydb(filenames,$text)">
-    <ELSE>
-	$text
-    </IF>
-    </filename>
-</DEF>
+<filename>This is a filename</filename>
 
 This is a filename <filename text="test.src">.
 

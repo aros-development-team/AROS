@@ -121,12 +121,25 @@ int HTML_ScanText (String buffer, MyStream * stream, CBD data)
 
 	while ((c = Str_Get (stream, data)) != EOF)
 	{
+	    if (!isspace (c))
+		goto beginOfTag;
+	}
+
+	if (c == EOF)
+	{
+	    PushError ("Unexpected EOF while parsing HTML tag");
+	    return T_ERROR;
+	}
+
+	while ((c = Str_Get (stream, data)) != EOF)
+	{
 	    if (mode == M_EOWS && c == '>')
 		break;
 
 	    if (c == '"')
 		mode = (mode == M_EOWS) ? M_SKIPQUOTE : M_EOWS;
 
+beginOfTag:
 	    VS_AppendChar (buffer, c);
 	}
 
@@ -135,6 +148,8 @@ int HTML_ScanText (String buffer, MyStream * stream, CBD data)
 	    PushError ("Unexpected EOF while parsing HTML tag");
 	    return T_ERROR;
 	}
+
+/* printf ("Tag=\"%s\"\n", buffer->buffer); */
 
 	return T_HTML_TAG;
     }
@@ -181,10 +196,21 @@ HTML_ParseTag (MyStream * stream, CBD data)
 
     while ((c = Str_Get (stream, data)) != EOF)
     {
-	if (isspace (c))
+	if (!isspace (c))
 	    break;
+    }
 
+    if (c != EOF)
+    {
 	VS_AppendChar (str, c);
+
+	while ((c = Str_Get (stream, data)) != EOF)
+	{
+	    if (isspace (c))
+		break;
+
+	    VS_AppendChar (str, c);
+	}
     }
 
     if (!str->len)
@@ -199,6 +225,8 @@ HTML_ParseTag (MyStream * stream, CBD data)
     VS_ToUpper (str);
 
     tag->node.name = xstrdup (str->buffer);
+
+/* printf ("Tag2=\"%s\"\n", tag->node.name); */
 
     while ((c = Str_Get (stream, data)) != EOF)
     {
@@ -249,11 +277,11 @@ HTML_ParseTag (MyStream * stream, CBD data)
 	    if (*ptr)
 		*ptr++ = 0;
 
-	    VS_ToUpper (str);
 	    arg->node.name = xstrdup (str->buffer);
+	    strupper (arg->node.name);
 
 	    if (*ptr)
-		arg->value = xstrdup (ptr);
+		arg->value = stripquotes (ptr);
 	    else
 		arg->value = NULL;
 
@@ -308,16 +336,28 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
     String str	 = VS_New (NULL);
     int    start = 0;
     int    level = 0;
+    int    paren = 0;
     int    c;
+    int    mode;
+
+    mode = 0;
 
     while ((c = Str_Get (stream, data)) != EOF)
     {
 	if (c == '<')
+	{
+	    mode = 1;
+	    paren = str->len;
+	}
+	else if (mode == 1 && !isspace (c))
+	{
+	    mode = 0;
 	    start = str->len;
+	}
 
 	if (c == '>')
 	{
-	    if (!strcasecmp (str->buffer+start+1, name))
+	    if (!strcasecmp (str->buffer+start, name))
 	    {
 		if (!allowNest)
 		{
@@ -330,15 +370,16 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 		    level ++;
 		}
 	    }
-	    else if (str->buffer[start+1] == '/' &&
-		!strcasecmp (str->buffer+start+2, name))
+	    else if (str->buffer[start] == '/' &&
+		!strcasecmp (str->buffer+start+1, name))
 	    {
 		if (level == 0)
 		{
 		    if (start)
 			start --;
-		    str->len = start;
-		    str->buffer[start] = 0;
+
+		    str->len = paren;
+		    str->buffer[paren] = 0;
 		    break;
 		}
 		else

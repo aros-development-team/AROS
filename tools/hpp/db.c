@@ -87,6 +87,8 @@ DB_Add (const char * dbname, const char * filename)
     db->node.name = xstrdup (dbname);
     db->db = Hash_New ();
 
+    AddTail (&dbs, db);
+
     while (fgets (key, sizeof (key), fh))
     {
 	if (!fgets (data, sizeof (data), fh))
@@ -99,7 +101,11 @@ DB_Add (const char * dbname, const char * filename)
 	key[strlen (key) - 1] = 0;
 	data[strlen (data) - 1] = 0;
 
-	Hash_Store (db->db, xstrdup (key), xstrdup (data));
+#if 0
+    printf ("Adding \"%s\":\"%s\"\n", key, data);
+#endif
+
+	Hash_StoreNC (db->db, xstrdup (key), xstrdup (data));
     }
 
     return 1;
@@ -124,16 +130,28 @@ DB_Free (DB * db)
 DB *
 DB_Find (const char * name)
 {
-    return (DB *) FindNode (&dbs, name);
+    return (DB *) FindNodeNC (&dbs, name);
 }
 
 void *
 DB_FindData (const char * name, const char * key)
 {
-    DB * db = DB_Find (name);
+    DB	 * db = DB_Find (name);
+    void * data;
 
     if (!db)
+    {
+#if 0
+	printf ("No DB %s\n", name);
+#endif
 	return NULL;
+    }
 
-    return Hash_Find (db->db, key);
+    data = Hash_FindNC (db->db, key);
+
+#if 0
+    printf ("Key \"%s\" -> %p\n", key, data);
+#endif
+
+    return data;
 }
