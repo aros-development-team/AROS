@@ -199,7 +199,7 @@ STUBS   := $(wildcard $(OBJDIR)/stubs/*.o)
 DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
 	$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).d) \
 	$(foreach f,$(SHARED),$(OBJDIR)/shared/$(f).d) \
-	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_endtag.d
+	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d $(OBJDIR)/shared/arosc_endtag.d
 
 STATIC_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
 		$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).o)
@@ -226,7 +226,7 @@ $(SHARED_LIB) : $(SHARED_OBJ)
 	%mklib_q from=$^
 
 $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ)
-	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o"
+	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o"
 
 $(OBJDIR)/static/%.o : %.c
 	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
@@ -269,7 +269,7 @@ clean ::
 %include_deps
 
 # Fix up the deps, these won't end up in $^, but they'll make it work.
-$(AROS_LIBS)/$(MODULE) : $(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_endtag.o
+$(AROS_LIBS)/$(MODULE) : $(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(OBJDIR)/shared/arosc_endtag.o
 $(AROS_LIBS)/$(MODULE) : $(foreach f,$(DEP_LIBS),$(AROS_LIB)/lib$(f).a)
-$(OBJDIR)/shared/arosc_init.o : $(AROS_INCLUDES)/sys/syscall.def
+$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o: $(AROS_INCLUDES)/sys/syscall.def
 

@@ -18,21 +18,21 @@
 #endif
 
 #include <libraries/arosc.h>
+
 #include <stddef.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 extern const char name[];
 extern const char version[];
 extern const APTR inittabl[4];
-extern void *const functable[];
+extern void *const arosc_functable[];
 extern const struct inittable datatable;
 extern struct aroscbase *AROS_SLIB_ENTRY(init,arosc)();
 extern struct aroscbase *AROS_SLIB_ENTRY(open,arosc)();
 extern BPTR AROS_SLIB_ENTRY(close,arosc)();
 extern BPTR AROS_SLIB_ENTRY(expunge,arosc)();
 extern int AROS_SLIB_ENTRY(null,arosc)();
-extern ULONG AROS_SLIB_ENTRY(add,arosc)();
-extern ULONG AROS_SLIB_ENTRY(asl,arosc)();
 extern const char arosc_end;
 
 extern struct ExecBase   *SysBase;
@@ -65,7 +65,7 @@ const char version[]="$VER: arosc.library 41.1 (28.3.96)\n\015";
 const APTR inittabl[4]=
 {
     (APTR)sizeof(struct aroscbase),
-    (APTR)functable,
+    (APTR)arosc_functable,
     NULL,
     &AROS_SLIB_ENTRY(init,arosc)
 };
@@ -179,23 +179,6 @@ AROS_LH0I(int, null, struct aroscbase *, aroscbase, 4, arosc)
     AROS_LIBFUNC_EXIT
 }
 
-#define SYSTEM_CALL(name) extern int name ();
-#include <sys/syscall.def>
-#undef SYSTEM_CALL
-
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,arosc),
-    &AROS_SLIB_ENTRY(close,arosc),
-    &AROS_SLIB_ENTRY(expunge,arosc),
-    &AROS_SLIB_ENTRY(null,arosc),
-#define SYSTEM_CALL(name)  &name,
-#include <sys/syscall.def>
-#undef SYSTEM_CALL
-    (void *)-1
-};
-
 int arosc_internalinit(struct AroscUserData *userdata)
 {
     /*save the old value of tc_UserData */
@@ -208,6 +191,11 @@ int arosc_internalinit(struct AroscUserData *userdata)
     userdata->ctype_b       = __ctype_b;
     userdata->ctype_toupper = __ctype_toupper;
     userdata->ctype_tolower = __ctype_tolower;
+
+    if (userdata->olduserdata)
+        userdata->umask = userdata->olduserdata->umask;
+    else
+        userdata->umask = S_IWGRP|S_IWOTH;
 
     return set_call_funcs(SETNAME(INIT), 1);
 }
