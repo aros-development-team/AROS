@@ -29,15 +29,15 @@
 
 struct IntBOOPSIBase
 {
-    struct Library 		 bb_LibNode;
-    struct Library 		*bb_SysBase;
-    struct Library		*bb_UtilityBase;
+    struct Library		 bb_LibNode;
+    struct ExecBase	       * bb_SysBase;
+    struct Library	       * bb_UtilityBase;
     BPTR			 bb_SegList;
 
     struct SignalSemaphore	 bb_ClassListLock;
     struct MinList		 bb_ClassList;
 };
 
-#define GetBBase(lib)		((struct IntBOOPSIBase *)(lib))
-#define SysBase			(GetBBase(BOOPSIBase)->bb_SysBase)
+#define GetBBase(lib)           ((struct IntBOOPSIBase *)(lib))
+#define SysBase 		(GetBBase(BOOPSIBase)->bb_SysBase)
 #define UtilityBase		(GetBBase(BOOPSIBase)->bb_UtilityBase)

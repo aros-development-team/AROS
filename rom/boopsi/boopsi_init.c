@@ -7,6 +7,7 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE
+#include <utility/utility.h>
 #include <proto/boopsi.h>
 #include "intern.h"
 #include "libdefs.h"
@@ -35,6 +36,7 @@ extern Class rootclass;
 extern struct IClass *InitICClass(struct Library *base);
 extern struct IClass *InitModelClass(struct Library *base);
 
+#if 0
 static void FreeAllClasses(struct Library *BOOPSIBase)
 {
     Class *cl;
@@ -46,12 +48,18 @@ static void FreeAllClasses(struct Library *BOOPSIBase)
 	    FreeClass(cl);
     }
 }
+#endif
 
 static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 {
     Class *cl;
-    /* All we have to do is to set up the pre-existing classes. */
 
+    UtilityBase = OpenLibrary (UTILITYNAME, 0);
+
+    if (!UtilityBase)
+	return FALSE;
+
+    /* All we have to do is to set up the pre-existing classes. */
     NEWLIST(&GetBBase(LIBBASE)->bb_ClassList);
     InitSemaphore(&GetBBase(LIBBASE)->bb_ClassListLock);
 
@@ -59,12 +67,16 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     AddClass(&rootclass);
 
     if((cl = InitICClass(LIBBASE)) == 0)
+    {
+	CloseLibrary (UtilityBase);
 	return FALSE;
+    }
 
 #if 0
     if((cl = InitModelClass(LIBBASE)) == 0)
     {
 	FreeAllClasses(LIBBASE);
+	CloseLibrary (UtilityBase);
 	return FALSE;
     }
 #endif
