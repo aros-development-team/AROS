@@ -140,10 +140,17 @@ dirs:
 all.gst: headers.c
   sc headers.c noobjname makegst all.gst
 
-zunemaster.library: objs/zunemaster_lib.o objs/muimaster_init.o
+zunemaster.library: objs/zunemaster_lib.o objs/muimaster_init.o $(LIBOBJS) $(SUPPORTOBJS) $(CLASSESOBJS)
+  sc to zunemaster.library nostartup link with <<
+lib:debug.lib
+objs/zunemaster_lib.o
+objs/muimaster_init.o
+$(LIBOBJS) $(SUPPORTOBJS) $(CLASSESOBJS)
+nocheckabort
+<
 
 objs/zunemaster_lib.o: zunemaster_lib.c
-  sc $(CFLAGS) zunemaster_lib.c objname=$@
+  sc $(CFLAGS) stringmerge zunemaster_lib.c objname=$@
 
 objs/muimaster_init.o: muimaster_init.c
   sc $(CFLAGS) muimaster_init.c objname=$@
