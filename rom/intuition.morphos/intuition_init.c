@@ -347,6 +347,19 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 #ifdef SKINS
         strcpy(GetPrivIBase(IntuitionBase)->IControlExtensions.ice_ClockFormat,"%X");
 #endif
+        
+        GetPrivIBase(LIBBASE)->MenuLook = MENULOOK_CLASSIC;
+        GetPrivIBase(LIBBASE)->MenusUnderMouse = FALSE;
+        GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
+
+        {
+           WORD i;
+           
+           for(i = 0; i < RESOURCELIST_HASHSIZE; i++)
+           {
+               NewList((struct List *)&GetPrivIBase(LIBBASE)->ResourceList[i]);
+           }
+        }
 
         DEBUG_INIT(dprintf("LIB_Init: done\n"));
         /* You would return NULL if the init failed */
