@@ -1,9 +1,17 @@
+#   Copyright (C) 1995-1998 AROS
+#   $Id$
+#
+#   Desc: Create mf.inc files from the %add_objects,%exclude_files stuff
+#
+BEGIN {
+	lastdir = "";
+}
 {
 	match($2,/(.*\/)+/);
 	funct = substr($2,RLENGTH + 1);
 	path = substr($2,1,RLENGTH);
 
-	if(path != lastdir)
+	if((path != lastdir) && (lastdir != ""))
 	{
 		file = GENDIR "/" lastdir "mf.inc";
 		printf "SUPPRESS_FILES = %s\n", suppress > file;
