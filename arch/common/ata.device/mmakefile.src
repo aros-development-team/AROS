@@ -1,0 +1,9 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_module_macro mmake=kernel-ata \
+  modname=ata modtype=device \
+  files="lowlevel ata dma_generic" funcs="ata lowlevel"\
+  conffile=lib.conf genfunctable=yes
+
+%common
