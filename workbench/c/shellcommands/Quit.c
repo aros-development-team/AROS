@@ -62,12 +62,13 @@ AROS_SHA(LONG *, ,RC,/N,NULL))
 
     if(cli && !cli->cli_Interactive)
     {
+        struct FileHandle *fh = BADDR(cli->cli_CurrentInput);
+
+        fh->fh_Pos = fh->fh_End + 1; /* Simulate an EOF */
 
 	if(SHArg(RC) != NULL)
 	    retval = (int)*SHArg(RC);
 
-	Close(cli->cli_CurrentInput);
-	cli->cli_CurrentInput = NULL;
     }
     else
     {
