@@ -4,8 +4,8 @@
 #define NT_TYPE          NT_LIBRARY
 #define LC_BUILDNAME(n)  n
 #define LIBBASE          MathIeeeSingBasBase
-#define LIBBASETYPE      MathIeeeSingBasBase
-#define LIBBASETYPEPTR   MathIeeeSingBasBase *
+#define LIBBASETYPE      struct MathIeeeSingBasBase
+#define LIBBASETYPEPTR   struct MathIeeeSingBasBase *
 #define VERSION_NUMBER   40
 #define REVISION_NUMBER  3
 #define BASENAME         Mathieeesingbas

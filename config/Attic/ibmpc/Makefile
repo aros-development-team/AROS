@@ -22,6 +22,7 @@ IMAGE	=	$(TOPDIR)/bin/Image
 
 BUILD	=	$(TOPDIR)/boot/tools/build
 CPAK	=	$(TOP)/tools/cpak/cpak
+ARCHTOOL=	$(TOP)/tools/archtools/archtool
 BOOTSECT=	$(TOPDIR)/bin/bootsect
 SETUP	=	$(TOPDIR)/bin/setup
 KERNEL	=	$(TOPDIR)/bin/kernel
@@ -36,7 +37,7 @@ MATHIEEESINGBAS= $(OBJDIR)/mathieeesingbas.o
 AMIGALIB = $(TOP)/bin/$(ARCH)-$(CPU)/AROS/lib/libamiga.a
 
 OBJECTS =	$(HEADER) $(CORE) $(EXEC) $(EXPANSION) $(UTILITY) $(AROS) \
-    $(BOOPSI) #$(MATHIEEESINGBAS)
+    $(BOOPSI) $(MATHIEEESINGBAS) 
 
 all:	$(IMAGE)
 	@echo

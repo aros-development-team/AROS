@@ -15,12 +15,14 @@ endtag.c:
 	@echo -e "#include \"libdefs.h\"\n#include <libcore/libtail.c>" >$@
 
 functions.c:
-	@$(CPAK) >/dev/null $(shell for i in $(FUNCTIONS); do \
+	@mkdir -p arch
+	@$(ARCHTOOL) -e arch $(TOP)/rom/mathieeesingbas/mathieeesingbas.arch
+	$(CPAK) $(shell for i in $(FUNCTIONS); do \
 	if [ -f "$$i.c" ]; then echo $$i; \
-	else echo $(TOP)/rom/mathieeesingbas/$$i; fi; done)
+	else echo arch/$$i; fi; done)
 
 %.s: %.c
 	@gcc -S -O0 -I../../include -I../../../../compiler/include $<
 
 clean::
-	@rm -f *.o $(MATHIEEESINGBAS) functions.* endtag.c
+	@rm -f *.o $(MATHIEEESINGBAS) functions.* endtag.c $(foreach f, $(FUNCTIONS), arch/$(f).c)

@@ -61,8 +61,7 @@ static const struct Resident *romtagList[] =
     &Exec_resident,			/* SingleTask,	105 */
     &Utility_resident,			/* ColdStart,	103 */
     &Aros_resident,			/* ColdStart,	102 */
-#warning FIXME Disabled because it must be compiled with archtool
-/*    &Mathieeesingbas_resident,	  / * ColdStart,   101 */
+    &Mathieeesingbas_resident,		/* ColdStart,   101 */
     &BOOPSI_resident,			/* ColdStart,	 95 */
     NULL
 };
