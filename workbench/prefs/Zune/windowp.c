@@ -19,8 +19,8 @@
 #include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-/*  #define DEBUG 1 */
-/*  #include <aros/debug.h> */
+//#define DEBUG 1
+//#include <aros/debug.h>
 #endif
 
 #include "zunestuff.h"
@@ -64,6 +64,8 @@ static CONST_STRPTR redraw_labels[] =
 };
 
 
+static Object *a, *b, *c;
+
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
@@ -72,54 +74,54 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 	Child, HGroup,
 	   Child, VGroup,
-	       Child, ColGroup(2),
-		   MUIA_Group_VertSpacing, 2,
-                   GroupFrameT("Control"),
-		   MUIA_Disabled, TRUE,
-                   Child, HVSpace,
-                   Child, HVSpace,
-		   Child, MakeLabel("Positions:"),
-		   Child, MUI_MakeObject(MUIO_Cycle, "Positions:", positions_labels),
-		   Child, MakeLabel("Refresh:"),
-		   Child, MUI_MakeObject(MUIO_Cycle, "Refresh:", refresh_labels),
-		   Child, MakeLabel("Redraw:"),
-		   Child, MUI_MakeObject(MUIO_Cycle, "Redraw:", redraw_labels),
-                   Child, HVSpace,
-                   Child, HVSpace,
+	       Child, VGroup,
+/*  		   Child, VSpace(0), */
+		   Child, ColGroup(2),
+		      MUIA_Group_VertSpacing, 2,
+                      GroupFrameT("Control"),
+		      MUIA_Disabled, TRUE,
+		      Child, Label("Positions:"),
+		      Child, MakeCycle("Positions:", positions_labels),
+		      Child, Label("Refresh:"),
+		      Child, MakeCycle("Refresh:", refresh_labels),
+		      Child, Label("Redraw:"),
+		      Child, MakeCycle("Redraw:", redraw_labels),
+		      End,
+/*  		   Child, VSpace(0), */
 		   End,
-   	       Child, ColGroup(2),
-		   MUIA_Group_VertSpacing, 2,
+   	       Child, VGroup,
    		   GroupFrameT("Fonts"),
-	           Child, HVSpace,
-	           Child, HVSpace,
-   		   Child, MakeLabel("Normal"),
-   		   Child, PopaslObject,
-   		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_normal_string = StringObject,
+	           Child, VSpace(0),
+		   Child, ColGroup(2),
+		       MUIA_Group_VertSpacing, 2,
+   		       Child, Label("Normal:"),
+   		       Child, PopaslObject,
+   		           MUIA_Popasl_Type, ASL_FontRequest,
+   		           MUIA_Popstring_String, d.font_normal_string = StringObject,
 			       MUIA_CycleChain, 1,
 			       StringFrame, End,
-   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
-   		       End,
+   		           MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		           End,
    
-   		   Child, MakeLabel("Tiny"),
-   		   Child, PopaslObject,
-   		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_tiny_string = StringObject,
+   		       Child, Label("Tiny:"),
+   		       Child, PopaslObject,
+   		           MUIA_Popasl_Type, ASL_FontRequest,
+   		           MUIA_Popstring_String, d.font_tiny_string = StringObject,
 			       MUIA_CycleChain, 1,
 			       StringFrame, End,
-   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
-   		       End,
+   		           MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		           End,
    
-   		   Child, MakeLabel("Big"),
-   		   Child, PopaslObject,
-   		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_big_string = StringObject,
+   		       Child, Label("Big:"),
+   		       Child, PopaslObject,
+   		           MUIA_Popasl_Type, ASL_FontRequest,
+   		           MUIA_Popstring_String, d.font_big_string = StringObject,
 			       MUIA_CycleChain, 1,
 			       StringFrame, End,
-   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
-   		       End,
-	           Child, HVSpace,
-	           Child, HVSpace,
+   		           MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		           End,
+		       End,
+	           Child, VSpace(0),
    		   End,
 	        End,
 	     Child, VGroup,
@@ -129,27 +131,25 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		   Child, VGroup,
 		      MUIA_Group_VertSpacing, 1,
 		      Child, d.background_window_popimage = MakeBackgroundPopimage(),
-		      Child, MUI_MakeObject(MUIO_Label, "Window",
-					    MUIO_Label_Centered),
+		      Child, CLabel("Window"),
 		      End,
 		   Child, VGroup,
 		      MUIA_Group_VertSpacing, 1,
 		      Child, d.background_requester_popimage = MakeBackgroundPopimage(),
-		      Child, MUI_MakeObject(MUIO_Label, "Requester",
-					    MUIO_Label_Centered),
+		      Child, CLabel("Requester"),
 	              End,
 		   End,
-	        Child, ColGroup(4),
+	        Child, a = ColGroup(4),
                    GroupFrameT("Spacing"),
 			       MUIA_Group_Spacing, 2,
-			       Child, MakeLabel("L"),
-			       Child, d.spacing_left_slider = MakeSpacingSlider(),
+			       Child, c = Label("L"),
+			       Child, b = d.spacing_left_slider = MakeSpacingSlider(),
 			       Child, d.spacing_top_slider = MakeSpacingSlider(),
-			       Child, MakeLabel("T"),
-			       Child, MakeLabel("R"),
+			       Child, Label("T"),
+			       Child, Label("R"),
 			       Child, d.spacing_right_slider = MakeSpacingSlider(),
 			       Child, d.spacing_bottom_slider = MakeSpacingSlider(),
-			       Child, MakeLabel("B"),
+			       Child, Label("B"),
 			       End,
 		End,
 	    End,
@@ -171,9 +171,9 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj,
     STRPTR spec;
 
 /* Fonts */
-    setstring(data->font_normal_string, FindFont(MUICFG_Font_Normal));
-    setstring(data->font_tiny_string, FindFont(MUICFG_Font_Tiny));
-    setstring(data->font_big_string, FindFont(MUICFG_Font_Big));
+    setstring(data->font_normal_string, (IPTR)FindFont(MUICFG_Font_Normal));
+    setstring(data->font_tiny_string, (IPTR)FindFont(MUICFG_Font_Tiny));
+    setstring(data->font_big_string, (IPTR)FindFont(MUICFG_Font_Big));
 
 /* Backgrounds */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,

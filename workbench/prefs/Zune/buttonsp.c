@@ -49,137 +49,93 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, HGroup,
             Child, VGroup, /* Text Buttons */
                 Child, ColGroup(2),
-                    GroupFrameT("General"),
-                    MUIA_Group_SameHeight, TRUE,
-                    
-                    Child, VGroup,
-                        MUIA_HorizWeight, 0,
-                        Child, HVSpace,
-                        Child, MakeLabel("Background:"),
-                        Child, HVSpace,
-                    End,
+	            MUIA_Group_SameHeight, TRUE,
+                    GroupFrameT("General"),                    
+                    Child, FreeLabel("Background:"),
                     Child, d.text_background_popimage = MakeBackgroundPopimage(),
-        
-                    Child, VGroup,
-                        MUIA_HorizWeight, 0,
-                        Child, HVSpace,
-                        Child, MakeLabel("Background in\npressed state:"),
-                        Child, HVSpace,
-                    End,
+                    Child, FreeLabel("Background in\npressed state:"),
                     Child, d.text_selbackground_popimage = MakeBackgroundPopimage(),
-                End,
+                    End,
                 Child, ColGroup(2),
                     GroupFrameT("Text Buttons"),
-                    MUIA_Group_SameHeight, TRUE,
-                    
-                    Child, VGroup,
-                        Child, HVSpace,
-                        Child, MakeLabel("Frame:"),
-                        Child, HVSpace,
-                    End,
-                    Child, d.button_popframe = MakePopframe(),
-                    
-                    Child, MakeLabel("Font:"),
+                    Child, FreeLabel("Frame:"),
+                    Child, d.button_popframe = MakePopframe(),                  
+                    Child, Label("Font:"),
                     Child, PopaslObject,
                         MUIA_Popasl_Type, ASL_FontRequest,
                         MUIA_Popstring_String, d.text_font_string = StringObject,
                             MUIA_CycleChain, 1,
                             StringFrame, 
-                        End,
+                            End,
                         MUIA_Popstring_Button, PopButton(MUII_PopUp),
+                        End,
                     End,
-                End,
-            End, /* Text Buttons */
+                End, /* Text Buttons */
             Child, VGroup, /* other buttons */
                 Child, HGroup, /* Image Buttons */
                     GroupFrameT("Image Buttons"),
                     
-                    Child, VGroup,
-                        Child, HVSpace,
-                        Child, MakeLabel("Frame:"),
-                        Child, HVSpace,
-                    End,
-                    Child, HGroup,
-                        Child, d.imagebutton_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+                    Child, HSpace(0),
+                    Child, FreeLabel("Frame:"),
+                    Child, d.imagebutton_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
                             MUIA_Draggable, TRUE, 
                             MUIA_CycleChain, 1,
                             MUIA_MaxWidth, 28,
-                            MUIA_Window_Title, "Adjust Frame",
+                            MUIA_Window_Title, (IPTR)"Adjust Frame",
                             TAG_DONE),
-                        Child, HVSpace,
-                    End,
-                End, /* Image Buttons */
+                    Child, HSpace(0),
+                    End, /* Image Buttons */
                 Child, HGroup, /* Checkmarks */
                     GroupFrameT("Checkmarks"),
-                    
-                    Child, VGroup,
-                        Child, HVSpace,
-                        Child, MakeLabel("Look:"),
-                        Child, HVSpace,
-                    End,
-                    Child, HGroup,
+                        Child, HSpace(0),
+                        Child, FreeLabel("Look:"),
                         Child, d.checkmark_look_popimage = NewObject(CL_ImageClipboard->mcc_Class, NULL,
                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
                             MUIA_Draggable, TRUE,
                             MUIA_CycleChain, 1,
-                            MUIA_MaxWidth, 28,
+                            MUIA_FixWidth, 28,
                             MUIA_MaxHeight, 28,
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
-                            MUIA_Window_Title, "Checkmark",
+                            MUIA_Window_Title, (IPTR)"Checkmark",
                             TAG_DONE),
-                        Child, HVSpace,
-                    End, /* HGroup */
-                End, /* Checkmarks */
+                        Child, HSpace(0),
+                    End, /* Checkmarks */
                 Child, HGroup, /* Radio Buttons */
                     GroupFrameT("Radio Buttons"),
                     /* MUIA_Group_SameHeight, TRUE, */
                     
-                    Child, HVSpace,
+	            Child, HSpace(0),
                     Child, VGroup,
                         MUIA_Group_VertSpacing, 1,
-                  
                         Child, d.radio_look_popimage = NewObject(CL_ImageClipboard->mcc_Class, NULL,
                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
                             MUIA_Draggable, TRUE, 
                             MUIA_CycleChain, 1,
                             MUIA_MaxWidth, 28,
+                            MUIA_FixHeight, 28,
+			    MUIA_Weight, 300,
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
-                            MUIA_Window_Title, "Radiobutton",
+                            MUIA_Window_Title, (IPTR)"Radiobutton",
                             TAG_DONE),
-                        Child, /*  HGroup, */
-                            /* Child, HVSpace, */
-                            /* Child, */ MUI_MakeObject(MUIO_Label, (IPTR)"Look",MUIO_Label_Centered),
-                            /* Child, HVSpace, */
-                        /* End, */
-                    End,
+	                Child, CLabel("Look"),
+                        End,
                     Child, HSpace(4),
                     Child, ColGroup(2),
                         MUIA_Group_VertSpacing, 1,
                         MUIA_Group_HorizSpacing, 2,
-                      
-                        Child, MakeLabel("H"),
+                        Child, Label("H"),
                         Child, d.spacing_horiz_slider = MakeSpacingSlider(),
-                        Child, MakeLabel("V"),
+                        Child, Label("V"),
                         Child, d.spacing_vert_slider = MakeSpacingSlider(),
                         Child, HVSpace,
-                        Child, HGroup,
-                            MUIA_Group_HorizSpacing, 0,
-                            Child, HVSpace,
-                            Child, MUI_MakeObject
-                            (
-                                MUIO_Label, (IPTR)"Spacing",
-                                MUIO_Label_Centered
-                            ),
-                            Child, HVSpace,
-                        End,
-                    End, /* ColGroup */
-                    Child, HVSpace,
-                End, /* Radio Buttons */
-            End, /* other buttons */
-        End, /* obj */
-        
+                        Child, CLabel("Spacing"),
+                        End, /* ColGroup */
+                    Child, HSpace(0),
+                    End, /* Radio Buttons */
+                End, /* other buttons */
+            End, /* obj */
         TAG_MORE, msg->ops_AttrList
     );
 
@@ -199,7 +155,7 @@ static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj,
     STRPTR spec;
 
 /* Font */
-    setstring(data->text_font_string, FindFont(MUICFG_Font_Button));
+    setstring(data->text_font_string, (IPTR)FindFont(MUICFG_Font_Button));
 
 /* Backgrounds */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,

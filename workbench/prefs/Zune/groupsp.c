@@ -65,73 +65,72 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GroupsPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-	    MUIA_Group_SameSize, TRUE,
+	    MUIA_Group_SameWidth, TRUE,
 	    MUIA_Group_Columns, 2,
-	    Child, ColGroup(2),
-		MUIA_Group_VertSpacing, 2,
+	    Child, VGroup,
 		GroupFrameT("Title"),
-		    Child, HVSpace,
-		    Child, HVSpace,
-		    Child, MakeLabel("Position:"),
+		Child, VSpace(0),
+		Child, ColGroup(2),
+		    MUIA_Group_VertSpacing, 2,
+		    Child, Label("Position:"),
 		    Child, d.title_position_cycle =
-			       MUI_MakeObject(MUIO_Cycle,
-					      (IPTR)"Position:", positions_labels),
-	            Child, MakeLabel("Color:"),
+			       MakeCycle("Position:", positions_labels),
+	            Child, Label("Color:"),
 	    	    Child, d.title_color_cycle =
-			       MUI_MakeObject(MUIO_Cycle, (IPTR)"Color:", color_labels),
-   		    Child, MakeLabel("Font:"),
+			       MakeCycle("Color:", color_labels),
+   		    Child, Label("Font:"),
    		    Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
    		       MUIA_Popstring_String, d.font_title_string = StringObject,
 			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
-		    Child, HVSpace,
-		    Child, HVSpace,
-			       End, /* Title */
+		    End, /* Title */
+		Child, VSpace(0),
+		End,
 	    Child, HGroup,
 		GroupFrameT("Frame"),
 		MUIA_Group_SameWidth, TRUE,
 		Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
 		   Child, d.normal_popframe = MakePopframe(),
-		   Child, MUI_MakeObject(MUIO_Label, (IPTR)"Normal", MUIO_Label_Centered),
+		   Child, CLabel("Normal"),
 	           End,
        	       Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
 		   Child, d.virtual_popframe = MakePopframe(),
-		   Child, MUI_MakeObject(MUIO_Label, (IPTR)"Virtual", MUIO_Label_Centered),
+		   Child, CLabel("Virtual"),
 	           End,
 							 End, /* Frame */
-	    Child, ColGroup(2),
-		MUIA_Group_VertSpacing, 2,
+	    Child, VGroup,
 		GroupFrameT("Spacing"),
-	        Child, HVSpace,
-	        Child, HVSpace,
-		Child, MakeLabel("Horizontal:"),
-	        Child, d.spacing_horiz_slider = (Object*)MakeSpacingSlider(),
-	        Child, MakeLabel("Vertical:"),
-		Child, d.spacing_vert_slider = (Object*)MakeSpacingSlider(),
-	        Child, HVSpace,
-	        Child, HVSpace,
-							 End, /* Spacing */
+		Child, VSpace(0),
+		Child, ColGroup(2),
+		    MUIA_Group_VertSpacing, 2,
+		    Child, Label("Horizontal:"),
+	            Child, d.spacing_horiz_slider = (Object*)MakeSpacingSlider(),
+	            Child, Label("Vertical:"),
+		    Child, d.spacing_vert_slider = (Object*)MakeSpacingSlider(),
+		    End, /* Spacing */
+		Child, VSpace(0),
+		End,
 	    Child, HGroup,
 		GroupFrameT("Background"),
                 MUIA_Group_SameWidth, TRUE,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
 		    Child, d.background_framed_popimage = MakeBackgroundPopimage(),
-		    Child, MUI_MakeObject(MUIO_Label, (IPTR)"Framed", MUIO_Label_Centered),
+		    Child, CLabel("Framed"),
 		    End,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
 		    Child, d.background_page_popimage = MakeBackgroundPopimage(),
-		    Child, MUI_MakeObject(MUIO_Label, (IPTR)"Page", MUIO_Label_Centered),
+		    Child, CLabel("Page"),
 		    End,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
 		    Child, d.background_register_popimage = MakeBackgroundPopimage(),
-		    Child, MUI_MakeObject(MUIO_Label, (IPTR)"Register", MUIO_Label_Centered),
+		    Child, CLabel("Register"),
 		    End,
 		End, /* Background */
     	TAG_MORE, msg->ops_AttrList);
@@ -140,8 +139,6 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     *data = d;
-    set(data->title_position_cycle, MUIA_CycleChain, 1);
-    set(data->title_color_cycle, MUIA_CycleChain, 1);
     set(data->font_title_string, MUIA_CycleChain, 1);
 
     return (IPTR)obj;
@@ -155,7 +152,7 @@ static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj,
     STRPTR spec;
 
 /* Fonts */
-    setstring(data->font_title_string, FindFont(MUICFG_Font_Title));
+    setstring(data->font_title_string, (IPTR)FindFont(MUICFG_Font_Title));
 
 /* Backgrounds */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
