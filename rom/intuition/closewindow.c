@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.26  2000/07/08 20:16:17  stegerg
+    bugfix (could access memory which it just freed a bit before)
+
     Revision 1.25  2000/06/06 17:35:24  stegerg
     now opening/closeing windows works also on the input.device task. This
     is needed for things like boopsi popup gadget where one often uses a
@@ -175,7 +178,7 @@ void LateCloseWindow(struct MsgPort *userport,
     struct MsgPort *userport;
     struct Screen *screen;
     BOOL do_unlockscreen;
-    
+
     D(bug("CloseWindow (%p)\n", window));
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
@@ -203,7 +206,7 @@ void LateCloseWindow(struct MsgPort *userport,
     /* Attention: a window can also be created on the input device task context,
        usually (only?) for things like popup gadgets. */
        
-    if (msg->Task != iihd->InputDeviceTask)
+    if (FindTask(NULL) != iihd->InputDeviceTask) /* don't use msg->Task instead of FindTask(NULL) here!! */
     {
 
 	/* We must use a bit hacky way to wait for intuition
@@ -215,8 +218,7 @@ void LateCloseWindow(struct MsgPort *userport,
 	Wait(SIGF_INTUITION);
         LateCloseWindow(userport, screen, do_unlockscreen, IntuitionBase);
     }
-    
-    
+        
     ReturnVoid ("CloseWindow");
     AROS_LIBFUNC_EXIT
 } /* CloseWindow */
@@ -259,11 +261,13 @@ VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *Int
     struct Screen *screen;
     struct MsgPort *userport;
     struct IIHData *iihd;
+    struct Task	*msgtask;
     BOOL do_unlockscreen;
     
     D(bug("CloseWindow (%p)\n", window));
 
     window = msg->Window;
+    msgtask = msg->Task;
     
     /* Need this in case of a window created under the input.device task context */
     screen = window->WScreen;
@@ -338,23 +342,27 @@ VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *Int
     /* Let the driver clean up. Driver wil dealloc window's rastport */
     intui_CloseWindow (window, IntuitionBase);
 
+    /* msg param now longer valid ... */
+    
     if (IW(window)->closeMessage)
 	FreeMem(IW(window)->closeMessage, sizeof (struct DeferedActionMessage));
 
+    /* ... after the FreeMem above!! */
+    
     /* Free memory for the window */
     FreeMem (window, sizeof(struct IntWindow));
     
-    if (msg->Task != iihd->InputDeviceTask)
+    if (msgtask != iihd->InputDeviceTask)
     {
 	/* All done. signal caller task that it may proceed */
-	Signal(msg->Task, SIGF_INTUITION);
+	Signal(msgtask, SIGF_INTUITION);
     } else {
         LateCloseWindow(userport, screen, do_unlockscreen, IntuitionBase);
     }
     
     return;
     
-} /* CloseWindow */
+} /* int_closewindow */
 
 
 /**********************************************************************************/
