@@ -61,7 +61,10 @@
     struct IFFStreamCmd    cmd;
 
     /* clear the IFFF_OPEN bit to mark IFF stream closed */
-    iff->iff_Flags &= !IFFF_OPEN;
+    if (!(iff->iff_Flags & IFFF_OPEN) )
+	return;
+
+    iff->iff_Flags &= ~IFFF_OPEN;
 
     /* Pop of all contextnodes so that only the default one is remaining */
 
@@ -82,18 +85,14 @@
 	GetIntIH(iff)->iff_BufferStartDepth = 0;
     }
 
-    /* Check if there is a handler */
-    if (GetIntIH(iff)->iff_StreamHandler)
-    {
-	/* Tell the custom stream to cleanup */
-	cmd.sc_Command = IFFCMD_CLEANUP;
-	CallHookPkt
-	(
-	    GetIntIH(iff)->iff_StreamHandler,
-	    iff,
-	    &cmd
-	);
-    }
+    /* Tell the custom stream to cleanup */
+    cmd.sc_Command = IFFCMD_CLEANUP;
+    CallHookPkt
+    (
+	GetIntIH(iff)->iff_StreamHandler,
+	iff,
+	&cmd
+    );
 
     return;
     AROS_LIBFUNC_EXIT
