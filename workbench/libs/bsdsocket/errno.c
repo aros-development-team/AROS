@@ -12,7 +12,7 @@
 
     NAME */
 
-        AROS_LH0(ulong, Errno,
+        AROS_LH0(LONG, Errno,
 
 /*  SYNOPSIS */
 

@@ -12,7 +12,7 @@
 
     NAME */
 
-        AROS_LH1(int, getsockname,
+        AROS_LH3(int, getsockname,
 
 /*  SYNOPSIS */
         AROS_LHA(int,               s,       D0),
