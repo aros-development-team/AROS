@@ -25,7 +25,7 @@
 
 #ifndef __typedef_Msg
 #   define __typedef_Msg
-    typedef struct
+    typedef struct _struct_Msg
     {
         STACKULONG MethodID;
     } *Msg;
