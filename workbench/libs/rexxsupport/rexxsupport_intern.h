@@ -29,9 +29,6 @@
 #ifndef REXX_STORAGE_H
 #   include <rexx/storage.h>
 #endif
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
-#endif
 #include <rexx/rxslib.h>
 
 /* Some external stuff (rexxsupport_init.c) */
@@ -43,7 +40,9 @@ struct RexxSupportBase_intern; /* prereference */
 
 struct RexxSupportBase_intern
 {
-    struct LibHeader library;
+    struct Library lib;
+    struct ExecBase *sysbase;
+    APTR seglist;
     struct List openports;
 };
 

@@ -47,12 +47,12 @@
 #    include "layout.h"
 #endif
 
+#include <dos/dos.h>
+
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
 #include <aros/libcall.h>
-
-#include <libcore/base.h>
 
 /*****************************************************************************************/
 
@@ -276,8 +276,9 @@ struct AslReqInfo
 
 struct AslBase_intern
 {
-    struct LibHeader            lh;
-
+    struct Library              Lib;
+    struct ExecBase             *aslSysBase;
+    BPTR                        aslSegList;
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];

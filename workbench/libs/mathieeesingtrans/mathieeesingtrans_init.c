@@ -7,7 +7,6 @@
 */
 
 #include <aros/symbolsets.h>
-#include <libcore/base.h>
 
 #include "mathieeesingtrans_intern.h"
 #include LC_LIBDEFS_FILE

@@ -53,8 +53,6 @@
 #include <libraries/locale.h>
 #endif
 
-#include <libcore/base.h>
-
 enum
 {
     SEM_LIB,
@@ -139,7 +137,9 @@ struct DTObject
 struct DataTypesBase
 {
     /* Datatypes library structure */
-    struct LibHeader dtb_LibHeader;
+    struct Library dtb_Library;
+    struct ExecBase *dtd_SysBase;
+    APTR dtd_SegList;
     
     /* Align to long word */
     UWORD dtb_Pad1;

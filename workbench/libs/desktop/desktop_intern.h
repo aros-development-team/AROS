@@ -13,8 +13,6 @@
 #    include <intuition/intuitionbase.h>
 #    include <intuition/classes.h>
 
-#    include <libcore/base.h>
-
 // this is extremely temporary! This is part of the extensible
 // context menus.  Because new menuitems can be added by anyone
 // via a nice prefs program, we need to store what to do when
@@ -41,7 +39,9 @@ struct DesktopOperation
 
 struct DesktopBase
 {
-    struct LibHeader db_LibHeader;
+    struct Library db_Library;
+    struct ExecBase *db_SysBase;
+    APTR db_SegList;
 
     struct Library *db_InputBase;
     struct IORequest *db_InputIO;

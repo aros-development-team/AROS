@@ -15,7 +15,6 @@
 #include <exec/semaphores.h>
 
 #include <proto/exec.h>
-#include <libcore/base.h>
 
 #include <aros/debug.h>
 
@@ -27,12 +26,13 @@
 
 struct LowLevelBase
 {
-    struct LibHeader ll_LibHeader;
+    struct Library         ll_Lib;
+    struct ExecBase       *ll_SysBase;
+    APTR                   ll_SegList;
 
     struct SignalSemaphore ll_Lock;
     struct Interrupt       ll_VBlank;
 };
-
 
 /*
  * Defintion of internal structures.

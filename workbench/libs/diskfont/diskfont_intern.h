@@ -33,8 +33,6 @@
 #endif
 #include <aros/libcall.h>
 
-#include <libcore/base.h>
-
 /* Options */
 
 #define ALWAYS_ZERO_LIBCOUNT 1
@@ -203,7 +201,9 @@ ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase
 
 struct DiskfontBase_intern
 {
-    struct LibHeader	   libheader;
+    struct Library	   lib;
+    struct ExecBase	   *sysbase;
+    APTR                   seglist;
 
     /* dosstreamhandler hook neede for endian io funcs */
     struct Hook		   dsh;

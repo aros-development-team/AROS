@@ -46,8 +46,6 @@
 #endif
 #include <stdlib.h>
 
-#include <libcore/base.h>
-
 /* Some external stuff (iffparse_init.c) */
 
 
@@ -269,7 +267,9 @@ struct CIPtr
 
 struct IFFParseBase_intern
 {
-    struct LibHeader  libheader;
+    struct Library    lib;
+    struct ExecBase  *sysbase;
+    APTR              seglist;
 
     struct Hook       stophook;
     struct Hook       prophook;

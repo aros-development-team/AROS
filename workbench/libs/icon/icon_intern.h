@@ -28,11 +28,6 @@
 
 #include <stddef.h>
 
-#ifndef LIBCORE_BASE_H
-#ifndef __MORPHOS__
-#   include <libcore/base.h>
-#endif
-#endif
 #include <string.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -132,7 +127,10 @@ struct NativeIcon
 
 struct IconBase
 {
-    struct LibHeader        LibHeader;
+    struct Library          ib_Lib;
+    struct ExecBase        *ib_SysBase;
+    APTR                    ib_SegList;
+
     struct Library  	   *pngbase;
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;

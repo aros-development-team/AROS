@@ -19,7 +19,7 @@ AROS_SET_LIBFUNC(PartitionInit, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
-    LIBBASE->tables = (struct PartitionTableInfo **)PartitionSupport;
+    ((struct PartitionBase *)LIBBASE)->tables = (struct PartitionTableInfo **)PartitionSupport;
     return TRUE;
 
     AROS_SET_LIBFUNC_EXIT

@@ -16,10 +16,6 @@
 #   include <exec/libraries.h>
 #endif
 
-#ifndef LIBCORE_COMPILER_H
-#  include <libcore/compiler.h>
-#endif
-
 #ifndef __AROS__
 #  define AROS_LIBFUNC_INIT
 #  define AROS_LIBBASE_EXT_DECL(a,b)
@@ -61,8 +57,6 @@
 #  define DEBUG 1
 #  include <aros/debug.h>
 #endif
-
-#include <libcore/base.h>
 
 /****************************************************************************************/
 
@@ -199,7 +193,9 @@ struct MyMidiNode{
 };
 
 struct CamdBase_intern{
-    struct LibHeader		lh;
+    struct Library library;
+    struct ExecBase *sysbase;
+    APTR seglist;
 
     struct Drivers *drivers;
     struct List mymidinodes;

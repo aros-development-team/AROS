@@ -39,7 +39,6 @@ enum { CXM_SINGLE, CXM_DOUBLE };
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
-#include <libcore/base.h>
 
 struct BrokerExt
 {
@@ -130,7 +129,9 @@ struct BrokerCopy
 
 struct CommoditiesBase
 {
-    struct LibHeader   cx_lh;
+    struct Library          cx_Lib;
+    struct ExecBase        *cx_SysBase;
+    APTR                    cx_SegList;
     
     struct Library         *cx_TimerBase;
     
@@ -150,7 +151,6 @@ struct CommoditiesBase
     struct timerequest      cx_TimerIO;	      /* For timer.device... */
     struct MsgPort          cx_TimerMP;	      /* ... communication */
 };
-
 
 /* Extra prototypes */
 
