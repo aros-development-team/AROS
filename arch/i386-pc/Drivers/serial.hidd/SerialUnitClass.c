@@ -764,7 +764,7 @@ void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    break;
 	case UART_IIR_THRI:
 	    if (csd->units[2]) 
-	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
+	      if (0 == serialunit_write_more_data(csd->units[2], NULL, SysBase))
 	        (void)serial_inp(csd->units[2], UART_IIR);
 	    break;
     }	
@@ -792,7 +792,7 @@ void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 	    break;
 	case UART_IIR_THRI:
 	    if (csd->units[1]) 
-	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
+	      if (0 == serialunit_write_more_data(csd->units[1], NULL, SysBase))
 	        (void)serial_inp(csd->units[1], UART_IIR);
 	    break;
     }
