@@ -28,15 +28,9 @@
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
-/* #include <proto/alib.h> */
-#include "intuition_intern.h"
-#include "inputhandler_support.h"
-#include "gadgets.h"
 
 #undef GfxBase
 #undef LayersBase
-
-#include "graphics_internal.h"
 
 #include <proto/intuition.h>
 
@@ -46,9 +40,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#if 0
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
 static struct Library *LayersBase = NULL;
+#endif
 
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
@@ -118,7 +114,7 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 
 int intui_GetWindowSize (void)
 {
-    return sizeof (struct IntWindow);
+    return 10;
 }
 
 
