@@ -55,7 +55,7 @@
     
     return OpenWorkbenchObject
     (
-        "SYS:System/Wanderer/Info",
+        "WANDERER:Tools/Info",
         WBOPENA_ArgLock, (IPTR) lock,
         WBOPENA_ArgName, (IPTR) name,
         TAG_DONE
