@@ -58,6 +58,7 @@ CLASSESOBJS= \
 	objs/classes/colorfield.o \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
+  objs/classes/dirlist.o \
   objs/classes/family.o \
   objs/classes/frameadjust.o \
   objs/classes/framedisplay.o \
@@ -74,6 +75,7 @@ CLASSESOBJS= \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/numericbutton.o \
   objs/classes/penadjust.o \
   objs/classes/pendisplay.o \
   objs/classes/poppen.o \
@@ -98,7 +100,6 @@ CLASSESOBJS= \
   objs/classes/text.o \
   objs/classes/virtgroup.o \
   objs/classes/volumelist.o \
-  objs/classes/dirlist.o \
   objs/classes/window.o
 
 NLISTOBJS= \
@@ -369,6 +370,9 @@ objs/classes/menuitem.o: classes/menuitem.c
 
 objs/classes/numeric.o: classes/numeric.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
+
+objs/classes/numericbutton.o: classes/numericbutton.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/numericbutton.c objname=$@
 
 objs/classes/penadjust.o: classes/penadjust.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/penadjust.c objname=$@

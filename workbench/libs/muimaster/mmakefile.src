@@ -26,6 +26,7 @@ MAKE_BUILTIN_SETTINGSGROUP := no
 MAKE_BUILTIN_VIRTGROUP     := no
 MAKE_BUILTIN_VOLUMELIST    := no
 MAKE_BUILTIN_DIRLIST       := no
+MAKE_BUILTIN_NUMERICBUTTON := yes
 
 CLASSES := \
     application \
@@ -295,6 +296,15 @@ else
     EXTCLASSES  := $(EXTCLASSES) dirlist
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_DIRLIST=0
 endif
+
+ifeq ($(MAKE_BUILTIN_NUMERICBUTTON),yes)
+    CLASSES     := $(CLASSES) numericbutton
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=1
+else
+    EXTCLASSES  := $(EXTCLASSES) numericbutton
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=0
+endif
+
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
 CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h) \
