@@ -936,7 +936,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    height = data->wd_RenderInfo.mri_Window->Height
 			- data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
 		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 				     left, top, width, height, left, top, 0);
 		}
@@ -975,7 +974,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 		    if(data->wd_Flags & MUIWF_ERASEAREA)
 		    {
-/*  			D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
 			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 					 left, top, width, height, left, top, 0);
 		    }
@@ -1566,7 +1564,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_ReqWidth = MUIV_Window_Width_Default;
     data->wd_RootObject = NULL;
     data->wd_DefaultObject = NULL;
-    data->wd_Flags = 0;
+    data->wd_Flags = MUIWF_ERASEAREA;
 /* alternate dimensions */
 /* no change in coordinates */
     data->wd_AltDim.Top = MUIV_Window_AltTopEdge_NoChange;
@@ -1584,6 +1582,10 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Window_EraseArea:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ERASEAREA);
+		    break;
+
 	    case    MUIA_Window_CloseGadget:
 		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
 		    break;
@@ -1716,7 +1718,7 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("Window_Dispose(%p)\n", obj));
+/*      D(bug("Window_Dispose(%p)\n", obj)); */
     if (muiGlobalInfo(obj) && _app(obj))
     {
 	D(bug(" Window_Dispose(%p) : calling app->OM_REMMEMBER\n", obj));
@@ -2292,7 +2294,8 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 	height = data->wd_RenderInfo.mri_Window->Height
 	    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+/*  	D(bug("zune_imspec_draw %s %d : %d %d %d %d\n", __FILE__, __LINE__, */
+/*  	      left, top, width, height)); */
 	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 			 left, top, width, height, left, top, 0);
 	MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
