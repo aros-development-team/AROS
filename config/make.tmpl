@@ -1119,7 +1119,7 @@ endif
 # - cflags (default: $(CFLAGS)): The C options used during compilation
 %define build_module mmake=\A modname=\A modtype=\A \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
-  cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
+  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
   linklibname=$(BD_MODNAME$(BDID)) uselibs=
 
@@ -1136,6 +1136,7 @@ BD_MODNAME$(BDID)    := %(modname)
 BD_MODTYPE$(BDID)    := %(modtype)
 BD_CONFFILE$(BDID)   := %(conffile)
 BD_FILES$(BDID)      := %(files)
+BD_LIBFILES$(BDID)   := %(linklibfiles)
 BD_OBJDIR$(BDID)     := %(objdir)
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
 BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
@@ -1170,7 +1171,12 @@ BD_MODDIR$(BDID)     := bollocks
 
 ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_MODDIR$(BDID)       := $(AROS_LIBS)
-  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c \
+			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
+  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o \
+			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
+  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
   BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs    objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
@@ -1182,8 +1188,6 @@ endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
 BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
-BD_EXTRAOBJS$(BDID) := $(patsubst %.c,%.o,$(BD_EXTRAFILES$(BDID)))
-BD_EXTRADEPS$(BDID) := $(patsubst %.c,%.d,$(BD_EXTRAFILES$(BDID)))
 BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 
 #MM
@@ -1232,7 +1236,8 @@ endif
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
 $(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
-	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
+	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) \
+	    objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
 
 $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
 	@cd $(subst $(AROS_INCLUDES),$(GENINCDIR),$(dir $@)); \
@@ -1242,8 +1247,8 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 $(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
 	%mklib_q from=$^
 
-$(BD_EXTRAOBJS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
-$(BD_EXTRADEPS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
+#$(BD_EXTRAOBJS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
+#$(BD_EXTRADEPS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
 endif
 
 $(BD_OBJDIR$(BDID)) :
