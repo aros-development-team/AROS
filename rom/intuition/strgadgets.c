@@ -442,7 +442,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     {
     	D(bug("SGA_BEEP not yet implemented. (lack of DisplayBeep())\n"));
     }
-    if (sgw.Actions & SGA_END)
+    if (sgw.Actions & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE))
     {
     	gad->Flags &= ~GFLG_SELECTED;
     	*imsgcode = sgw.Code;
@@ -599,9 +599,10 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
  #define DELETE		0x7F
  #define CSI		155
 #else
- #define HELP		95 /* Raw */
+ #define HELPRAW	95 /* Raw */
  #define BACKSPACE	8 /* Vanilla */
  #define TAB		9 /* Vanilla */
+ #define TABRAW		66 /* Raw */
  #define RETURN		13 /* Vanilla */
  #define DELETE		127 /* Vanilla */
 #endif
@@ -692,7 +693,14 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     		sgw->EditOp = EO_MOVECURSOR;
     	    }
 	}
-	else if (letter == HELP)
+	else if ((letter == TABRAW) && (qual & SHIFT))
+	{
+	    D(bug("sghkey: SHIFT TAB\n"));
+	    sgw->EditOp = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
+	    sgw->Code = 9;
+	    sgw->Actions = (SGA_USE|SGA_PREVACTIVE);
+	}
+	else if (letter == HELPRAW)
 	{	
 	}
     }
@@ -749,6 +757,13 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    D(bug("sghkey: ENTER\n"));
     	    sgw->EditOp  = EO_ENTER;
     	    sgw->Actions = (SGA_USE|SGA_END);
+	}
+	else if (letter == TAB)
+	{
+	    D(bug("sghkey: TAB\n"));
+	    sgw->EditOp = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
+	    sgw->Code = 9;
+	    sgw->Actions = (SGA_USE|SGA_NEXTACTIVE);
 	}
 	else
 	{
