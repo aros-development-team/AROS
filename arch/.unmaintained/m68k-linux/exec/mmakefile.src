@@ -10,9 +10,6 @@ AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=
 
 #MM
-exec-linux : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
-
-#MM
 exec-linux-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
 
 #MM
