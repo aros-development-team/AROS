@@ -5,6 +5,7 @@
 #include <libraries/locale.h>
 #include <dos/datetime.h>
 #include <utility/date.h>
+#include <aros/asmcall.h>
 #include <stdio.h>
 
 
@@ -12,9 +13,10 @@
 struct LocaleBase * LocaleBase;
 struct UtilityBase * UtilityBase;
 
-void printchar(struct Hook * myhook,
-               char c,
-               struct Locale * locale)
+AROS_UFH3(void, printchar,
+    AROS_UFHA(struct Hook *, myhook, A0),
+    AROS_UFHA(struct Locale *, locale, A2),
+    AROS_UFHA(char, c, A1))
 {
   if ('\0' != c)
    printf("%c",c);
