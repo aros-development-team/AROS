@@ -798,8 +798,8 @@ ULONG SendPacket(struct ide_Unit *unit, ULONG port, APTR cmd)
     if (WaitBusy(port, unit))
     {
         ide_out(0, atapi_Features, port);
-        ide_out(0, atapi_ByteCntL, port);
-        ide_out(0, atapi_ByteCntH, port);
+        ide_out(0xfe, atapi_ByteCntL, port);
+        ide_out(0xff, atapi_ByteCntH, port);
         ide_out(ATAPI_PACKET, atapi_Command, port);
         if (WaitBusySlow(port, unit))
         {
