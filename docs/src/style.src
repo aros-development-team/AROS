@@ -301,3 +301,59 @@ put before the code they explain with only one blank line before them.
 
 \end{itemize}
 
+
+\begin{new}{27.2.2000}
+\section{Writing ROM-able code}
+
+Code in AROS modules should be written in a way that makes it suitable
+for embedding into a ROM, FlashRAM or other kinds read-only
+memory. The following coding style rules are meant to make it
+possible. Of course they apply to all Kickstart modules and to code
+that may be made resident, shared or linked to other modules.
+
+\begin{itemize}
+\item
+ROM modules must have no .data and .bss sections.
+Basically, we need to get rid of all non-const global data.
+The real Amiga Kickstart proves that it's both possible
+and easy to achieve this.
+
+If you encounter an external variable (static or not) that
+is modified by the code, try to get rid of it or move it into
+the base of the library/device (or in the device node of your
+handler or in the userdata of your class).
+
+\item
+The above applies to library bases as well. If you are writing
+a library, put the bases of other libraries into your own library
+base structure. Boopsi classes can store library bases in their
+class private data.
+
+\item
+Try to set the "static" and "const" attributes to all your global
+data. You can also use the CONST_STRPTR and CONST_APTR types defined
+in <exec/types.h>. Using "static const" allows the compiler to move
+data into the .text (AKA code) segment.
+If you need to pass these globals to another function, try
+to chenge its prototype to use "const" too. Note that, as of OS 3.5,
+Olaf Barthel has finally switched to using "const" in \filename{<clib/#?_protos.h>}
+headers.
+
+\item
+NEVER, NEVER touch buffers passed in by the user as an "input"
+parameter. The concept of input parameters is often implicit
+in the function description. For istance, the filename passed
+to Open() is clearly an input variable and Open() must not
+mess with it, even if it is going to fix it back later. Keep
+in mind that the buffer might be in read-only memory or shared
+among several instances of a resident or multithreaded program.
+
+\item
+Try to avoid host-OS calls such as malloc() and free()
+if you can do with AllocMem() and FreeMem(). This is because
+the pointer checking debug macros rely on finding the pointer
+within the Exec memory blocks with TypeOfMem().
+
+\end{itemize}
+
+\end{new}
