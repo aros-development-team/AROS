@@ -53,6 +53,22 @@
   AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
   struct VisualInfo * vinfo = (struct VisualInfo *)vi;
+  struct MenuItem *item = menuitem;
+  
+  /* First layout subitems */
+  
+  while (NULL != item)
+  {
+    if (NULL != item->SubItem)
+    {
+      if (FALSE == layoutsubitems(item,
+                                  vinfo,
+                                  tagList,
+                                  GTB(GadToolsBase)))
+        return FALSE;
+    }
+    item = item->NextItem;
+  }
 
   /*
   ** Process all menu items and subitems
@@ -63,18 +79,6 @@
                                GTB(GadToolsBase)))
       return FALSE;
 
-  while (NULL != menuitem)
-  {
-    if (NULL != menuitem->SubItem)
-    {
-      if (FALSE == layoutsubitems(menuitem,
-                                  vinfo,
-                                  tagList,
-                                  GTB(GadToolsBase)))
-        return FALSE;
-    }
-    menuitem = menuitem->NextItem;
-  }
 
   return TRUE;  
 
