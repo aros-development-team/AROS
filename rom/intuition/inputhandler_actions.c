@@ -772,6 +772,13 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		   SIGF_INTUITION to the app task and placing
 		   a result code in am->Code!!! */
 
+		ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		Remove(&am->ExecMessage.mn_Node);
+		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		
+		remove_am = FALSE;
+		free_am = FALSE;
+
 		am->Code = FALSE;
 		
 		/* Activate gadget only if no other gadget is
