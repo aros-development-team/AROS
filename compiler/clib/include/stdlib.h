@@ -151,7 +151,7 @@ lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
 /* Multibyte character functions */
-int mblen(const char *s, size_t n);
+size_t mblen(const char *s, size_t n);
 int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
 int wctomb(char *s, wchar_t wchar);
 
