@@ -57,7 +57,7 @@ AROS_SLIB_ENTRY(Switch,Exec):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 
 	/* Get SysBase */
-	move.l	24(%sp),%a0
+	move.l	20(%sp),%a0
 
 	/* If not in state TS_RUN the current task is already moved
 	   to one of the task lists. */
