@@ -48,6 +48,7 @@ FILES	    := \
 	Join \
 	List \
 	Lock \
+	Prompt \
 	Protect \
 	RequestChoice \
 	Set \
