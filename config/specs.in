@@ -1,0 +1,29 @@
+*cpp:
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} -I@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include
+
+*endfile:
+-lautoinit
+
+*link:
+-m elf_i386 -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
+
+*lib:
+%{!static: -larosc_shared} %{static: -larosc} -larosm
+
+*libgcc:
+
+
+*startfile:
+@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
+
+*signed_char:
+%{funsigned-char:-D__CHAR_UNSIGNED__}
+
+*predefines:
+-D__ELF__ -Dunix -D__i386__ -Dlinux -Asystem(posix) -D__AROS__ -D__AROS
+
+*cross_compile:
+1
+
+*linker:
+@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros
