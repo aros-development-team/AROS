@@ -1,7 +1,5 @@
 # $Id$
 #
-#
-#
 include $(TOP)/config/make.cfg
 
 LIB :=	arosm
@@ -88,7 +86,7 @@ FILES := \
     w_sinh \
     w_sqrt
 
-USER_CFLAGS	:= -O2 -Wall -D_IEEE_LIBM -Iinclude
+USER_CFLAGS	:= -D_IEEE_LIBM -Iinclude
 
 #MM- linklibs : linklibs-arosm-$(CPU)
 #MM- linklibs-mlib : linklibs-arosm-$(CPU)
