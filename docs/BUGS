@@ -126,7 +126,7 @@ reads "Workbench:.". If you CD into a subdir (say libs), then
 it doesn't change.
 The "cd" command didn't SetCurrentDirName().
 
-BUG000017
+BUG000017 fixed
 bergers@aros.org
 Local DOS-variables are not deallocated yet when the task is ending.
 
@@ -420,11 +420,14 @@ bergers@aros.org
 Newshell creates two (?) simple refresh windows. When moving these windows
 the result is garbage on the screen.
 
-BUG000061
+BUG000061 fixed
 sduvan@aros.org
 When having multiple windows and one of them includes an active string gadget,
 activating another window will make the string gadget clone itself to the
 activated window.
+
+The problem was in relation to ActivateGadget(); changing active windows 
+didn't set the active gadget to NULL:
 
 BUG000062
 hkiel@aros.org
