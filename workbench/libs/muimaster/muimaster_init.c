@@ -13,7 +13,6 @@
 
 #include "muimaster_intern.h"
 #include "mui.h"
-#include "prefs.h"
 #include "libdefs.h"
 
 /****************************************************************************************/
