@@ -57,7 +57,7 @@
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    ASSERT(me->pr_Task.tc_Node.ln_Type == NT_PROCESS);
+    ASSERT(__is_process(me));
     
     /* Nothing spectacular */
     old = me->pr_Result2;
