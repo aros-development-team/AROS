@@ -93,7 +93,7 @@ AROS_UFH3(IPTR, MyRenderFunc,
     AROS_UFHA(struct LVDrawMsg *,	msg,	        A1)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     IPTR retval;
     
@@ -189,7 +189,7 @@ AROS_UFH3(IPTR, MyRenderFunc,
     
     return TRUE;
     
-     AROS_LIBFUNC_EXIT
+     AROS_USERFUNC_EXIT
 }
 
 static void makegadgets(void)
