@@ -26,6 +26,7 @@
 #include "intuition_intern.h" /* EWFLG_xxx */
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
+#include "menus.h"
 
 #undef DEBUG
 #define DEBUG 0
@@ -53,8 +54,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	{
 	    struct MsgPort *port;
 	    
-	    /* Multiply with 2 because we need memory for two MsgPorts!!! */
-	    port = AllocMem(sizeof (struct MsgPort) * 2, MEMF_PUBLIC | MEMF_CLEAR);
+	    port = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
 	    if (port)
 	    {
 	        if ((iihdata->InputEventMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
@@ -69,19 +69,11 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 		    */
 	    	    port->mp_Flags   = PA_IGNORE;
 
-	    	    /* stegerg: PA_IGNORE doesn't need mp_SigBit and mp_SigTask
-		    port->mp_SigBit  = SIGB_INTUITION;
-	    	    port->mp_SigTask = FindTask("input.device");
-		    */
 	    	    NEWLIST( &(port->mp_MsgList) );
 	    	    iihdata->IntuiReplyPort = port;
 
-		    port++;
-
-		    port->mp_Flags	 = PA_IGNORE;
-		    NEWLIST( &(port->mp_MsgList) );
-		    iihdata->IntuiDeferedActionPort = port;
-
+		    NEWLIST(&iihdata->IntuiDeferedActionQueue);
+		    
 		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
 		    iihandler->is_Data = iihdata;
 		    iihandler->is_Node.ln_Pri	= 50;
@@ -94,12 +86,12 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 		    UnlockIBase(lock);
 
 		    GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
-		    GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort = iihdata->IntuiDeferedActionPort;
+		    GetPrivIBase(IntuitionBase)->IntuiDeferedActionQueue = &iihdata->IntuiDeferedActionQueue;
 
 		    ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
 		    
 		} /* if (iihdata->InputEventMemPool = ... */
-		FreeMem(port, sizeof(struct MsgPort) * 2);
+		FreeMem(port, sizeof(struct MsgPort));
 		
 	    } /* if (port) */
 	    FreeMem(iihdata, sizeof (struct IIHData));
@@ -126,10 +118,8 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
     /* One might think that this port is still in use by the inputhandler.
     ** However, if intuition is closed for the last time, there should be no
     ** windows that IntuiMessage can be sent to.
-    **
-    ** sizeof(struct MsgPort) * 2, because memory for two MsgPorts was allocated!
     */
-    FreeMem(iihdata->IntuiReplyPort, sizeof (struct MsgPort) * 2);
+    FreeMem(iihdata->IntuiReplyPort, sizeof (struct MsgPort));
         
     FreeMem(iihdata, sizeof (struct IIHData));
     FreeMem(iihandler, sizeof (struct Interrupt));
@@ -221,124 +211,128 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	reuse_event = FALSE;
 	ptr = NULL;
 	
-        /* Use event to find the active window */
-             
-        lock = LockIBase(0UL);
-       
-    	old_w = IntuitionBase->ActiveWindow;
-	if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
+	/* Use event to find the active window */
+        
+	if (!MENUS_ACTIVE)
 	{
-	    w = FindActiveWindow(ie, &swallow_event, IntuitionBase);
-	}
-	else
-	{
-	    w = old_w;
-	}
-	
-	D(bug("iih:New active window: %p\n", w));
+            lock = LockIBase(0UL);
 
-
-	if ( w != old_w )
-	{
-
-	    if (w)
+    	    old_w = IntuitionBase->ActiveWindow;
+	    if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
 	    {
-	        D(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
-
-	        D(bug("Window activated\n"));
+		w = FindActiveWindow(ie, &swallow_event, IntuitionBase);
 	    }
 	    else
 	    {
-	    	D(bug("Making active window inactive. Now there's no active window\n"));
+		w = old_w;
 	    }
-	    new_active_window = TRUE;
-	}
-		
- 	UnlockIBase(lock);
-		
-	if (new_active_window)
-	{
-	    /* If there was an active gadget in the old window
-	       we must make it inactive */
-	    
-	    if (gadget)
+
+	    D(bug("iih:New active window: %p\n", w));
+
+
+	    if ( w != old_w )
 	    {
-	    	switch (gadget->GadgetType & GTYP_GTYPEMASK)
+
+		if (w)
 		{
-		
-		case GTYP_CUSTOMGADGET:
-		    {
-		    	struct gpGoInactive gpgi;
-			
-			gpgi.MethodID = GM_GOINACTIVE;
-			gpgi.gpgi_GInfo = gi;
-			gpgi.gpgi_Abort = 1; 
-			
-			Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
-		    }
-		    break;
+	            D(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
 
-		case GTYP_STRGADGET:
-		    gadget->Flags &= ~GFLG_SELECTED;
-		    RefreshStrGadget(gadget, gi->gi_Window, IntuitionBase);
-		    break;
-
-		case GTYP_BOOLGADGET:
-		    /* That a bool gadget is active here can only happen
-		       if user used LMB to activate gadget and LAMIGA + LALT
-		       to activate other window, or viceversa */
-
-		    gadget->Flags &= ~GFLG_SELECTED;
-		    RefreshGList(gadget, gi->gi_Window, NULL, 1);
-		    break;
-		    
-	        case GTYP_PROPGADGET:
-		    /* That a prop gadget is active here can only happen
-		       if user used LMB to activate gadget and LAMIGA + LALT
-		       to activate other window, or viceversa */
-
-		    HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
-		    if (gadget->Activation & GACT_RELVERIFY)
-		    {
-			ih_fire_intuimessage(gi->gi_Window,
-			    		     IDCMP_GADGETUP,
-					     0,
-					     gadget,
-					     IntuitionBase);
-		    }
-		   
+	            D(bug("Window activated\n"));
 		}
-		
-		gadget->Activation &= ~GACT_ACTIVEGADGET;
-		iihdata->ActiveGadget = NULL;
-		gadget = NULL;
-		
-	    } /* if (gadget) */
-
-	    if(old_w)
-	    {
-		ih_fire_intuimessage(old_w,
-				     IDCMP_INACTIVEWINDOW,
-				     0,
-				     old_w,
-				     IntuitionBase);
+		else
+		{
+	    	    D(bug("Making active window inactive. Now there's no active window\n"));
+		}
+		new_active_window = TRUE;
 	    }
 
-	    /* int_activatewindow works if w = NULL */
-	    int_activatewindow(w, IntuitionBase);
+ 	    UnlockIBase(lock);
 
-	    if (w)
+	    if (new_active_window)
 	    {
-		ih_fire_intuimessage(w,
-				     IDCMP_ACTIVEWINDOW,
-				     0,
-				     w,
-				     IntuitionBase);
-	    }
-	    
-	    
-	} /* if (new_active_window) */
-		
+		/* If there was an active gadget in the old window
+		   we must make it inactive */
+
+		if (gadget)
+		{
+	    	    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+
+		    case GTYP_CUSTOMGADGET:
+			{
+		    	    struct gpGoInactive gpgi;
+
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 1; 
+
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+			}
+			break;
+
+		    case GTYP_STRGADGET:
+			gadget->Flags &= ~GFLG_SELECTED;
+			RefreshStrGadget(gadget, gi->gi_Window, IntuitionBase);
+			break;
+
+		    case GTYP_BOOLGADGET:
+			/* That a bool gadget is active here can only happen
+			   if user used LMB to activate gadget and LAMIGA + LALT
+			   to activate other window, or viceversa */
+
+			gadget->Flags &= ~GFLG_SELECTED;
+			RefreshGList(gadget, gi->gi_Window, NULL, 1);
+			break;
+
+	            case GTYP_PROPGADGET:
+			/* That a prop gadget is active here can only happen
+			   if user used LMB to activate gadget and LAMIGA + LALT
+			   to activate other window, or viceversa */
+
+			HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
+			if (gadget->Activation & GACT_RELVERIFY)
+			{
+			    ih_fire_intuimessage(gi->gi_Window,
+			    			 IDCMP_GADGETUP,
+						 0,
+						 gadget,
+						 IntuitionBase);
+			}
+
+		    }
+
+		    gadget->Activation &= ~GACT_ACTIVEGADGET;
+		    iihdata->ActiveGadget = NULL;
+		    gadget = NULL;
+
+		} /* if (gadget) */
+
+		if(old_w)
+		{
+		    ih_fire_intuimessage(old_w,
+					 IDCMP_INACTIVEWINDOW,
+					 0,
+					 old_w,
+					 IntuitionBase);
+		}
+
+		/* int_activatewindow works if w = NULL */
+		int_activatewindow(w, IntuitionBase);
+
+		if (w)
+		{
+		    ih_fire_intuimessage(w,
+					 IDCMP_ACTIVEWINDOW,
+					 0,
+					 w,
+					 IntuitionBase);
+		}
+
+
+	    } /* if (new_active_window) */
+	
+	} /* if (!MENUS_ACTIVE) */
+	
 	if (!swallow_event) switch (ie->ie_Class)
 	{
 	    
@@ -349,6 +343,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		BOOL new_gadget = FALSE;
 
 		iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
+		
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
 		
 		if (!gadget)
 		{
@@ -455,6 +456,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case SELECTUP:
 		iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
 
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
+
 		if (gadget)
 		{
 		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
@@ -525,15 +533,37 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		break; /* case SELECTUP */
 
 	    case MENUDOWN:
+	        iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
+
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
+
+	        if (w && !gadget)
+		{
+		    if (!(w->Flags & WFLG_RMBTRAP))
+		    {
+			if (FireMenuMessage(MMCODE_START, w, ie, IntuitionBase))
+			{
+			    /* This lock will be released only when the user is
+			       done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
+			       event arrives (generated by MenuHandler task) */
+			       
+			    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+			    MENUS_ACTIVE = TRUE;
+			}			
+		    }
+		}
+		/* fall through */
+		
 	    case MENUUP:
 	    case MIDDLEDOWN:
 	    case MIDDLEUP:
 	    	switch(ie->ie_Code)
 		{
-		    case MENUDOWN:
-		    	iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
-			break;
-		
 		    case MENUUP:
 		    	iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
 			break;
@@ -547,6 +577,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 		}
 		
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
+
 		if (gadget)
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
@@ -576,6 +613,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		notify_mousemove_screensandwindows(ie->ie_X, 
 		                                   ie->ie_Y, 
 		                                   IntuitionBase);
+
+		if (MENUS_ACTIVE)
+		{
+		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    break;
+		}
 
 		if (gadget)
 		{
@@ -719,6 +763,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    
 	    iihdata->ActQualifier &= ~KEY_QUALIFIERS;
 	    iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
+
+	    if (MENUS_ACTIVE)
+	    {
+		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		orig_ie->ie_Class = IECLASS_NULL;
+		break;
+	    }
 				      
 	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
 	         (!gadget && w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
@@ -829,6 +880,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break; /* case IECLASS_RAWKEY */
 	    
 	case IECLASS_TIMER:	    	    
+	    if (MENUS_ACTIVE)
+	    {
+		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		orig_ie->ie_Class = IECLASS_NULL;
+		break;
+	    }
+
 	    if (gadget)
 	    {
 	        if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
@@ -864,7 +922,33 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    
 	    break; /* case IECLASS_TIMER */
 
+	case IECLASS_MENU:
+	    if (MENUS_ACTIVE && (ie->ie_SubClass == IESUBCLASS_MENUSTOP))
+	    {
+	        MENUS_ACTIVE = FALSE;
+		/* semaphore was locked when menu action started, see
+		   above where MMCODE_START MenuMessage is sent */	
+    		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+
+	        orig_ie->ie_Class = IECLASS_NULL;
+
+		    ih_fire_intuimessage((struct Window *)ie->ie_EventAddress,
+		    			 IDCMP_MENUPICK,
+					 ie->ie_Code,
+					 (struct Window *)ie->ie_EventAddress,
+					 IntuitionBase);
+
+	    }
+	    break;
+	    
 	default:
+	    if (MENUS_ACTIVE)
+	    {
+		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		orig_ie->ie_Class = IECLASS_NULL;
+		break;
+	    }
+
 	    ptr = NULL;
 
             kprintf("Unknown IEClass!\n");
