@@ -10,7 +10,6 @@
 #include <stdarg.h>
 //#include <limits.h>
 #include <ctype.h>
-#include <math.h>
 
 /* some macros to cut this short
  * NEXT(c);     read next character

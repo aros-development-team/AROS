@@ -1,35 +1,78 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= setjmp longjmp strtod __vcformat __vcscan sscanf isinf atof difftime __isinf drand48 strtol strtoul
-CLIBDIR 	:= $(GENDIR)/compiler/clib
-SPECIAL_CFLAGS	:= -I$(TOP)/compiler/clib -I..
-CFLAGS2 	:= $(CFLAGS)
-AFLAGS2 	:= $(AFLAGS) -I..
-TESTS		:=
+COMMONOBJDIR    := $(GENDIR)/compiler/clib
+OBJDIR		:= $(COMMONOBJDIR)/static
+SOBJDIR		:= $(COMMONOBJDIR)/shared
+
+COMMONFILES     := \
+	strtod \
+	strtol \
+	strtoul 
+
+SFILES := \
+	__isinf \
+	__vcformat \
+	__vcscan \
+	difftime \
+	drand48 \
+	atof \
+	isinf \
+	sscanf \
+	strtol \
+	strtoul
+
+ASMFILES  := setjmp longjmp
+
+OBJS  := $(foreach f, $(SFILES)     , $(SOBJDIR)/$(f).o)
+OBJS  += $(foreach f, $(SFILES)     , $(OBJDIR)/$(f).o)
+OBJS  += $(foreach f, $(ASMFILES)   , $(COMMONOBJDIR)/$(f).o)
+OBJS  += $(foreach f, $(COMMONFILES), $(COMMONOBJDIR)/$(f).o)
+
+AFLAGS2         := $(AFLAGS) -I..
 
 #MM
-clib-palm : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+clib-palm : $(OBJS)
 	@$(NOP)
 
 #MM
 setup-clib-palm-m68k :
-	%mkdirs_q $(CLIBDIR)
-	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
-	%exclude_files $(foreach f,$(FILES), compiler/clib/$(f))
+	%mkdirs_q $(OBJDIR) $(SOBJDIR)
+	%add_objects   $(foreach f,$(COMMONFILES), compiler/clib/$(f))
+	%exclude_files $(foreach f,$(COMMONFILES), compiler/clib/$(f))
+	%add_objects   $(foreach f,$(SFILES)     , compiler/clib/$(f))
+	%exclude_files $(foreach f,$(SFILES)     , compiler/clib/$(f))
 
 
 #MM
 clean ::
 	-$(RM) $(TESTS)
 
-$(CLIBDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
+$(COMMONOBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS)
 
-$(CLIBDIR)/%.o : %.s
+$(COMMONOBJDIR)/%.o : %.s
 	%assemble_q opt=$(AFLAGS2)
 
-$(CLIBDIR)/%.d : %.c
+$(COMMONOBJDIR)/%.d : %.c
+	%mkdepend_q
+
+$(SOBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS)
+
+$(SOBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS)
+
+$(SOBJDIR)/%.d : %.c
+	%mkdepend_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS)
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS)
+
+$(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common

@@ -15,7 +15,7 @@
 //#include <limits.h>
 #include <ctype.h>
 #include "__math.h"
-#include <math.h>
+//#include <math.h>
 #ifndef __palmos__
 #include <float.h>
 #endif
