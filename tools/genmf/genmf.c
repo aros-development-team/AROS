@@ -204,6 +204,7 @@ void error (const char * fmt, ...)
     vfprintf (stderr, fmt, args);
     fprintf (stderr, ": %s\n", strerror (errno));
     va_end (args);
+    exit (1);
 }
 
 void cleanup (int exitcode)
@@ -552,7 +553,7 @@ Arg * findArg (Template * tmpl, char ** argstr)
     arg = (Arg *)FindNode (&tmpl->args, argname);
 
     if (!arg)
-	error ("Unknown argument %s of template %s",
+	error ("Unknown argument %s for template %s",
 	    argname, tmpl->node.name);
 
     *argstr = ptr;
