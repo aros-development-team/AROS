@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include "boopsigadgets.h"
+#include <exec/ports.h>
 
 #ifndef DEBUG_OpenWindow
 #   define DEBUG_OpenWindow 0
@@ -68,6 +69,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct Window * w;
     struct RastPort * rp;
+    struct MsgPort * UserPort;
     ULONG lock;
     BOOL driver_init_done = FALSE;
 
@@ -80,6 +82,7 @@
     ));
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
+    UserPort = CreateMsgPort();
     
 /* nlorentz: For now, creating a rastport becomes the responiibility of
    intui_OpenWindow(). This is because intui_OpenWindow() in
@@ -98,7 +101,7 @@
     rp = CreateRastPort ();
 */    
 
-    if (!w /* || !rp */)
+    if (!w || (NULL == UserPort) /* || !rp */)
 	goto failexit;
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
@@ -114,6 +117,7 @@
 /*    w->RPort	   = rp; */
 
     w->FirstGadget = newWindow->FirstGadget;
+
 
     D(bug("Window dims: (%d, %d, %d, %d)\n"
     	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
@@ -138,7 +142,7 @@
 	w->WScreen = newWindow->Screen;
     else
 	w->WScreen = GetPrivIBase (IntuitionBase)->WorkBench;
-	
+
 
     /* Copy flags */
     w->Flags = newWindow->Flags;
@@ -159,15 +163,12 @@
 
     D(bug("set fonts\n"));
 
-
     SetAPen (rp, newWindow->DetailPen);
     SetBPen (rp, newWindow->BlockPen);
     SetDrMd (rp, JAM2);
 
     D(bug("set pens\n"));
-
     SetWindowTitles (w, newWindow->Title, (STRPTR)-1);
-
     D(bug("set title\n"));
 
     lock = LockIBase (0);
@@ -178,6 +179,8 @@
     
     w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
+    w->UserPort = UserPort;
+
     if (newWindow->Flags & WFLG_ACTIVATE)
 	IntuitionBase->ActiveWindow = w;
 
@@ -186,10 +189,12 @@
     /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
-    RefreshGadgets (w->FirstGadget, w, NULL);
+    if (NULL != w->FirstGadget)
+      RefreshGadgets (w->FirstGadget, w, NULL);
     
     /* !!! This does double refreshing as the system gadgets also are refreshed
        in the above RfreshGadgets() call */
+
     RefreshWindowFrame(w);
     goto exit;
 
@@ -206,6 +211,10 @@ failexit:
 	FreeRastPort (rp);
     }
 */
+
+    if (UserPort)
+       DeleteMsgPort(UserPort);
+
     if (driver_init_done)
     	intui_CloseWindow(w, IntuitionBase);
 	    
