@@ -52,6 +52,7 @@ BOOT_TAR_FILES := \
     Tools/calculator Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info \
+    Themes \
     contrib/aminet/Format64 \
     test/printnativekeytable
 
