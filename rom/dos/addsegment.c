@@ -70,12 +70,12 @@
     int namelen = strlen(name);
 
     /* Make sure type is valid */
-    if( type < -1 )
+    if(type < -1)
 	return FALSE;
-
+    
     sptr = AllocVec(sizeof(struct Segment) + namelen - 3,
-		    MEMF_CLEAR|MEMF_PUBLIC);
-
+		    MEMF_CLEAR | MEMF_PUBLIC);
+    
     if( sptr != NULL )
     {
 	sptr->seg_UC = type;
@@ -90,11 +90,16 @@
 
 	/* Sigh, we just add the segment to the start of the list */
 	Forbid();
+
 	sptr->seg_Next = DOSBase->dl_ResList;
 	DOSBase->dl_ResList = MKBADDR(sptr);
+
 	Permit();
+
 	return TRUE;
     }
+
     return FALSE;
+
     AROS_LIBFUNC_EXIT
 } /* AddSegment */

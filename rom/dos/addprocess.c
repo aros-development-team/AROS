@@ -25,27 +25,24 @@ LONG DosEntry (
 
 
 
-struct Process * AddProcess (
-    struct Process    * process,
-    STRPTR		argPtr,
-    ULONG		argSize,
-    APTR		initialPC,
-    APTR		finalPC,
-    struct DosLibrary * DOSBase)
+struct Process *AddProcess(struct Process *process, STRPTR argPtr,
+			   ULONG argSize, APTR initialPC, APTR finalPC,
+			   struct DosLibrary *DOSBase)
 {
-    APTR * sp = process->pr_Task.tc_SPUpper;
-
+    APTR *sp = process->pr_Task.tc_SPUpper;
+  
     *--sp = SysBase;
     *--sp = initialPC;
     *--sp = (APTR)argSize;
     *--sp = argPtr;
-
-    process->pr_ReturnAddr = sp-4;
-
-    process->pr_Task.tc_SPReg  = (STRPTR)sp-SP_OFFSET;
+    
+    process->pr_ReturnAddr = sp - 4;
+    
+    process->pr_Task.tc_SPReg  = (STRPTR)sp - SP_OFFSET;
     process->pr_Task.tc_Flags |= TF_ETASK;
-
+    
     addprocesstoroot(process, DOSBase);
-
-    return (struct Process *)AddTask (&process->pr_Task, (APTR)DosEntry, finalPC);
+    
+    return (struct Process *)AddTask(&process->pr_Task, (APTR)DosEntry,
+				     finalPC);
 } /* AddProcess */

@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Add a directory to an assign.
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -35,7 +35,7 @@
 	lock - Lock on the assigned directory.
 
     RESULT
-	!=0 success, 0 on failure. IoErr() gives additional information
+	!= 0 success, 0 on failure. IoErr() gives additional information
 	in that case. The lock is not freed on failure.
 
     NOTES
@@ -60,34 +60,41 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    struct DosList *dl;
+    struct DosList     *dl;
     struct AssignList **al, *newal;
 
-    if (!lock)
+    if(lock == NULL)
 	return DOSFALSE;
 
-    dl = LockDosList(LDF_ASSIGNS|LDF_WRITE);
+    dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);
     dl = FindDosEntry(dl, name, LDF_ASSIGNS);
-    if ((dl == NULL) || (dl->dol_Type != DLT_DIRECTORY))
+
+    if((dl == NULL) || (dl->dol_Type != DLT_DIRECTORY))
     {
-	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+	UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
 	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+
 	return DOSFALSE;
     }
+    
+    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC | MEMF_CLEAR);
 
-    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC|MEMF_CLEAR);
-    if (newal == NULL)
+    if(newal == NULL)
     {
-	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+	UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
 	SetIoErr(ERROR_NO_FREE_STORE);
+
 	return DOSFALSE;
     }
-
+    
     newal->al_Lock = lock;
-    for (al = &dl->dol_misc.dol_assign.dol_List; *al; al = &((*al)->al_Next));
+
+    for(al = &dl->dol_misc.dol_assign.dol_List; *al; al = &((*al)->al_Next));
 
     *al = newal;
-    UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+    UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
+
     return DOSTRUE;
+
     AROS_LIBFUNC_EXIT
 } /* AssignAdd */
