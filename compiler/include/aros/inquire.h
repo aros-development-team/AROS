@@ -25,18 +25,16 @@
 #define AI_ArosReleaseMinor	(AI_Base + 3)
 	/* ULONG: Minor AROS release version, e.g. 11 */
 
-#define AI_ArosType		(AI_Base + 4)
-
 /* Architecture specific tags */
 
 /* Native Amiga */
 #define AI_BaseA		(AI_Base + 0x10000)
 
 #define AI_KickstartBase	(AI_BaseA + 1)
-	/* IPTR: Kickstart base address or 0 if no kickstart present */
+	/* IPTR: Kickstart base address */
 
 #define AI_KickstartSize	(AI_BaseA + 2)
-	/* IPTR: Kickstart size or 0 if no kickstart present */
+	/* IPTR: Kickstart size */
 
 #define AI_KickstartVersion	(AI_BaseA + 3)
 	/* UWORD: Major Kickstart version */
