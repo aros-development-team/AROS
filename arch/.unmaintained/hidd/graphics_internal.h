@@ -25,8 +25,9 @@ VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated);
 BOOL init_activescreen_stuff(struct GfxBase *GfxBase);
 VOID cleanup_activescreen_stuff(struct GfxBase *GfxBase);
 
-APTR build_dispinfo_db(struct List *gfxmodes, struct GfxBase *GfxBase);
+APTR build_dispinfo_db(struct GfxBase *GfxBase);
 VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase);
+HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase);
 
 
 /* A Pointer to this struct is stored in each RastPort->longreserved[0] */

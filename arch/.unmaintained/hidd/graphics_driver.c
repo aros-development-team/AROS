@@ -163,7 +163,7 @@ static struct ABDescr attrbases[] = {
 #else
 AttrBase HiddBitMapAttrBase	= 0;
 AttrBase HiddGCAttrBase		= 0;
-AttrBase HiddGfxModeAttrBase	= 0;
+AttrBase HiddSyncAttrBase	= 0;
 AttrBase HiddPixFmtAttrBase	= 0; 
 AttrBase HiddPlanarBMAttrBase	= 0; 
 AttrBase HiddGfxAttrBase	= 0; 
@@ -171,7 +171,7 @@ AttrBase HiddGfxAttrBase	= 0;
 struct ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_GC,		&HiddGCAttrBase		},
-    { IID_Hidd_GfxMode,		&HiddGfxModeAttrBase	},
+    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
     { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
@@ -422,10 +422,6 @@ void driver_expunge (struct GfxBase * GfxBase)
 
 	if (SDD(GfxBase)->dispinfo_db)
 	    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
-	    
-	if (SDD(GfxBase)->queried_modes)
-	    HIDD_Gfx_ReleaseGfxModes(SDD(GfxBase)->gfxhidd,
-	    	SDD(GfxBase)->queried_modes);
 
 	if ( SDD(GfxBase)->planarbm_cache )
 	    delete_object_cache( SDD(GfxBase)->planarbm_cache, GfxBase );
@@ -476,6 +472,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 	    struct TagItem bm_create_tags[] = {
 #warning Maybe make this attr private and create the object through the graphicshidd	    
 	    	{ aHidd_BitMap_GfxHidd,		(IPTR)SDD(GfxBase)->gfxhidd },
+		{ aHidd_BitMap_Displayable,	FALSE	},
 	    	{ aHidd_PlanarBM_AllocPlanes,	FALSE },
 	    	{ TAG_DONE, 0UL }
 	    };
@@ -485,35 +482,21 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		
 		
 	    if (NULL != SDD(GfxBase)->planarbm_cache) {
-		struct TagItem qgm_tags[] = {
-		    { TAG_DONE, 0UL }	/* Anything goes ! */
-		};
 	    	
-		/* Get all available possible gfxmodes from the HIDD */
-		SDD(GfxBase)->queried_modes = HIDD_Gfx_QueryGfxModes(SDD(GfxBase)->gfxhidd, qgm_tags);
-		if (NULL != SDD(GfxBase)->queried_modes) {
-		
-		    /* Move the modes into the displayinfo DB */
-		    SDD(GfxBase)->dispinfo_db = build_dispinfo_db(SDD(GfxBase)->queried_modes, GfxBase);
-		    if (NULL != SDD(GfxBase)->dispinfo_db) {
+		/* Move the modes into the displayinfo DB */
+		SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
+		if (NULL != SDD(GfxBase)->dispinfo_db) {
 
-	            	SDD(GfxBase)->activescreen_inited = init_activescreen_stuff(GfxBase);
-kprintf("ACTIVE_SCREEN_INITED: %d\n", SDD(GfxBase)->activescreen_inited);
-		    	if (SDD(GfxBase)->activescreen_inited) {
-		
-			    ReturnBool("driver_LateGfxInit", TRUE);
-		    	}
-
-			destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
-			SDD(GfxBase)->dispinfo_db = NULL;
+	            SDD(GfxBase)->activescreen_inited = init_activescreen_stuff(GfxBase);
+		    if (SDD(GfxBase)->activescreen_inited) {
+		        ReturnBool("driver_LateGfxInit", TRUE);
 		    }
-		    
-		    HIDD_Gfx_ReleaseGfxModes(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->queried_modes);
-	    	    SDD(GfxBase)->queried_modes = NULL;
+
+		    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
+		    SDD(GfxBase)->dispinfo_db = NULL;
 		}
-		
 		delete_object_cache(SDD(GfxBase)->planarbm_cache, GfxBase);
-	    SDD(GfxBase)->planarbm_cache = NULL;
+	        SDD(GfxBase)->planarbm_cache = NULL;
 	    }
 	    delete_object_cache(SDD(GfxBase)->gc_cache, GfxBase);
 	    SDD(GfxBase)->gc_cache = NULL;
@@ -1910,7 +1893,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    WORD xoffset;
 	    xoffset = charloc >> 16;
 	
-//	    kprintf("F ");  
 	    blit_glyph_fast(rp
 		, fontbm
 		, xoffset
@@ -2370,72 +2352,95 @@ void driver_LoadRGB32(struct ViewPort * vp, const ULONG * table,
 
 } /* driver_LoadRGB32 */
 
+struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase)
+{
+    struct BitMap *nbm = NULL;
+    HIDDT_ModeID hiddmode;
+    
+    /* First get the the gfxmode for this modeid */
+    hiddmode = get_hiddmode_for_amigamodeid(modeid, GfxBase);
+    if (vHidd_ModeID_Invalid != hiddmode) {
+	/* Create the bitmap from the hidd mode */
+	Object *sync, *pf;
+	if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
+	    ULONG width, height, depth;
+	    
+	    GetAttr(sync, aHidd_Sync_HDisp,	&width);
+	    GetAttr(sync, aHidd_Sync_VDisp,	&height);
+	    GetAttr(pf,   aHidd_PixFmt_Depth,	&depth);
+	    nbm = driver_AllocBitMap(width, height, depth, BMF_DISPLAYABLE, NULL, hiddmode, GfxBase);    
+	}
+    }
+    
+    return nbm;
+}
+
 struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
-	ULONG flags, struct BitMap * friend, struct GfxBase * GfxBase)
+	ULONG flags, struct BitMap * friend, HIDDT_ModeID hiddmode, struct GfxBase * GfxBase)
 {
     struct BitMap * nbm;
     
-    
+/*
     kprintf("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
     	sizex, sizey, depth, flags, friend);
+*/
 
     nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
-    if (nbm)
-    {
+    if (NULL != nbm) {
     	
 	    Object *bm_obj;
 	    Object *gfxhidd;
-	
-	    struct TagItem bm_tags[] =
-	    {
-		{ aHidd_BitMap_Width,		0	},	/* 0 */
-		{ aHidd_BitMap_Height,		0	},	/* 1 */
-		{ aHidd_BitMap_Depth,		0	},	/* 2 */
-		{ aHidd_BitMap_Displayable,	0	},	/* 3 */
-		{ aHidd_BitMap_Friend,		0	},	/* 4 */
-		{ aHidd_BitMap_StdPixFmt,	0	},	/* 5 */
-		{ TAG_DONE, 0 }
-	    };
+	    
+	    struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
 
-kprintf("bitmap struct allocated\n");	    
-	    /* Insert supplied values */
-	    bm_tags[0].ti_Data = sizex;
-	    bm_tags[1].ti_Data = sizey;
-	    bm_tags[2].ti_Data = depth;
-	    bm_tags[3].ti_Data = ((flags & BMF_DISPLAYABLE) ? TRUE : FALSE);
+#define SET_TAG(tags, idx, tag, val)	\
+    tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
+
+#define SET_BM_TAG(tags, idx, tag, val)	\
+    SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
+    
 	    
-	    if (NULL != friend)
-	    {
-		if (IS_HIDD_BM(friend))
-		    bm_tags[4].ti_Data = (IPTR)HIDD_BM_OBJ(friend);
-	    }
+	    SET_BM_TAG( bm_tags, 0, Width,  sizex	);
+	    SET_BM_TAG( bm_tags, 1, Height, sizey	);
 	    
-	    if (flags & BMF_SPECIALFMT) {
-	    	HIDDT_StdPixFmt stdpf;
-		
-		stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
-		bm_tags[5].ti_Data = (IPTR)stdpf;
-		
+	    if ((flags & BMF_DISPLAYABLE) && vHidd_ModeID_Invalid != hiddmode) {
+		/* Use the hiddmode instead of depth/friend */
+		SET_BM_TAG(bm_tags, 2, ModeID, hiddmode);
+		SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
+		SET_TAG(bm_tags, 4, TAG_DONE, 0);
 	    } else {
-	    	bm_tags[5].ti_Tag = TAG_IGNORE;
-	    }
+		
+		if (NULL != friend) {
+		    if (IS_HIDD_BM(friend))
+			SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend));
+		} else {
+		    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	        }
 
-	
+		if (flags & BMF_SPECIALFMT) {
+	    	    HIDDT_StdPixFmt stdpf;
+		
+		    stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
+		    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+		} else {
+	    	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+		}
+
+		SET_TAG(bm_tags, 4, TAG_DONE, 0);
+	    }
+	    
 	    gfxhidd  = SDD(GfxBase)->gfxhidd;
 
 	    /* Create HIDD bitmap object */
-	    if (gfxhidd)
-	    {
-kprintf("Creating HIDD bitmap\n");	    
+	    if (NULL != gfxhidd) {
 		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
 		if (NULL != bm_obj)
 		{
 		
 		    Object *pf;
 		    Object *colmap;
-		    ULONG graphtype;
+		    HIDDT_ColorModel colmod;
 
-kprintf("HIDD bitmap created\n");		    
 		    
 		    /* 	It is possible that the HIDD had to allocate
 		   	a larger depth than that supplied, so
@@ -2447,16 +2452,16 @@ kprintf("HIDD bitmap created\n");
 		   	the onscreen ones.
 		    */
 		   
-		    pf = HIDD_BM_GetPixelFormat(bm_obj, vHidd_PixFmt_Native);
+		    GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 		   
 		    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-		    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
+		    GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
 		    
 		    GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 	    	    
 		    	/* Store it in plane array */
 		    HIDD_BM_OBJ(nbm) = bm_obj;
-		    HIDD_BM_GRAPHTYPE(nbm) = graphtype;
+		    HIDD_BM_COLMOD(nbm) = colmod;
 		    HIDD_BM_COLMAP(nbm) = colmap;
 		    nbm->Rows   = sizey;
 		    nbm->BytesPerRow = WIDTH_TO_BYTES(sizex);
@@ -2473,14 +2478,13 @@ kprintf("HIDD bitmap created\n");
 			    
 			    HIDDT_Color col;
 			    ULONG i;
-kprintf("Pixtab allocated\n");			
-			
+			    
 			    col.red     = 0;
 			    col.green   = 0;
 			    col.blue    = 0;
 			    col.alpha   = 0;
 			
-			    if (vHidd_GT_Palette == graphtype || vHidd_GT_TrueColor == graphtype) {
+			    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
 			
 			    	ULONG numcolors;
 			
@@ -2494,7 +2498,7 @@ kprintf("Pixtab allocated\n");
 				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
 			        }
 			    }
-kprintf("EXIT FROM driver_AllocBitMap()\n");
+
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			    
@@ -2536,7 +2540,6 @@ for (i =0; i < 8; i ++)
 }
 #endif
 
-kprintf("EXIT FROM driver_AllocBitMap()\n");
 
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
@@ -2556,7 +2559,6 @@ kprintf("EXIT FROM driver_AllocBitMap()\n");
 	
     }
 
-kprintf("EXIT FROM driver_AllocBitMap()\n");
 
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
 }
@@ -2658,7 +2660,7 @@ LOCK_PIXBUF
 		, x_dest + current_x
 		, y_dest + current_y
 		, tocopy_w, tocopy_h
-		, vHidd_PixFmt_Native32
+		, vHidd_StdPixFmt_Native32
 	);
 
 	D(bug("Box put\n"));
@@ -2749,7 +2751,7 @@ LOCK_PIXBUF
 		, x_src + current_x
 		, y_src + current_y
 		, tocopy_w, tocopy_h
-		, vHidd_PixFmt_Native32);
+		, vHidd_StdPixFmt_Native32);
 
 
 	/*  Write pixels to the destination */
@@ -2778,12 +2780,12 @@ ULOCK_PIXBUF
 
 
 
-#define FLG_PALETTE		( 1L << vHidd_GT_Palette	)
-#define FLG_STATICPALETTE	( 1L << vHidd_GT_StaticPalette	)
-#define FLG_TRUECOLOR		( 1L << vHidd_GT_TrueColor	)
-#define FLG_HASCOLMAP		( 1L << num_Hidd_GT		)
+#define FLG_PALETTE		( 1L << vHidd_ColorModel_Palette	)
+#define FLG_STATICPALETTE	( 1L << vHidd_ColorModel_StaticPalette	)
+#define FLG_TRUECOLOR		( 1L << vHidd_ColorModel_TrueColor	)
+#define FLG_HASCOLMAP		( 1L << num_Hidd_CM		)
 
-#define GET_GT_FLAGS(bm) (1L << HIDD_BM_GRAPHTYPE(bm))
+#define GET_COLMOD_FLAGS(bm) (1L << HIDD_BM_COLMOD(bm))
 
 
 LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
@@ -2804,9 +2806,6 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 /* kprintf("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
 		,srcBitMap, xSrc, ySrc, dstBitMap, xDest, yDest, xSize, ySize, minterm);
 
-		
-kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
-		wSrc, wDest);
 */	
     wSrc  = GetBitMapAttr( srcBitMap, BMA_WIDTH);
     wDest = GetBitMapAttr(dstBitMap, BMA_WIDTH);
@@ -2917,7 +2916,7 @@ LOCK_BLIT
     if (IS_HIDD_BM(srcBitMap)) {
     	if (NULL != HIDD_BM_COLMAP(srcBitMap))
     	    srcflags |= FLG_HASCOLMAP;
-    	dstflags |= GET_GT_FLAGS(srcBitMap);
+    	dstflags |= GET_COLMOD_FLAGS(srcBitMap);
     } else {
     	/* Amiga BM */
     	srcflags |= FLG_PALETTE;
@@ -2926,13 +2925,12 @@ LOCK_BLIT
     if (IS_HIDD_BM(dstBitMap)) {
     	if (NULL != HIDD_BM_COLMAP(dstBitMap))
     	    dstflags |= FLG_HASCOLMAP;
-    	dstflags |= GET_GT_FLAGS(dstBitMap);
+    	dstflags |= GET_COLMOD_FLAGS(dstBitMap);
     } else {
     	/* Amiga BM */
     	dstflags |= FLG_PALETTE;
     }
     	
-//kprintf("BltBitMap: Checking, srcflags=%d, dstflags=%d\n", srcflags, dstflags);
 
     if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
     	/* palettized with no colmap. Neew to get a colmap from dest*/
@@ -3068,10 +3066,11 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
     struct BitMap *bm;
    HIDDT_Color hidd_col;
    Object *pf;
-   ULONG graphtype;
+   HIDDT_ColorModel colmod;
    
    EnterFunc(bug("driver_SetRGB32(vp=%p, color=%d, r=%x, g=%x, b=%x)\n",
    		vp, color, red, green, blue));
+
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
 		
@@ -3094,12 +3093,11 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    hidd_col.blue  = blue  >> 16;
    hidd_col.alpha = 0;
    
-   pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(bm), vHidd_PixFmt_Native);
+   GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
+   GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
    
-   GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
    
-   
-   if (vHidd_GT_Palette == graphtype || vHidd_GT_TrueColor == graphtype) {
+   if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
    	HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, color, 1);
 
 /*
@@ -3414,10 +3412,9 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     
     struct TagItem bm_tags[] = 
     {
-    	{ aHidd_BitMap_Width,	xSize },
-	{ aHidd_BitMap_Height,	ySize },
-	{ aHidd_BitMap_Depth,	1 },
-	{ aHidd_BitMap_Displayable, FALSE },
+    	{ aHidd_BitMap_Width,		xSize },
+	{ aHidd_BitMap_Height,		ySize },
+	{ aHidd_BitMap_StdPixFmt,	vHidd_StdPixFmt_Plane },
 	{ TAG_DONE, 0UL }
     };
     
@@ -3547,7 +3544,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	, xsize * sizeof (HIDDT_Pixel)
 	, x_dest, y_dest
 	, xsize, ysize
-	, vHidd_PixFmt_Native32
+	, vHidd_StdPixFmt_Native32
     );
 
     
@@ -3931,7 +3928,7 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 	, xsize * sizeof (HIDDT_Pixel)
 	, x_dest, y_dest
 	, xsize, ysize
-	, vHidd_PixFmt_Native32
+	, vHidd_StdPixFmt_Native32
     );
 			
     
@@ -4142,8 +4139,7 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
     struct TagItem bm_tags[] = {
 	{ aHidd_BitMap_Width,		0	},
 	{ aHidd_BitMap_Height,		0	},
-	{ aHidd_BitMap_Displayable,	FALSE	},
-	{ aHidd_BitMap_Depth,		1	},
+	{ aHidd_BitMap_StdPixFmt,	vHidd_StdPixFmt_Plane	},
 	{ TAG_DONE,	0UL }
     };
     
@@ -4158,7 +4154,6 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
     bm_tags[1].ti_Data = height;
 	    
 #warning Handle color textfonts
-	    
     bm_obj = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
     if (NULL != bm_obj)
     {
@@ -4168,10 +4163,11 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	    { aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy },
 	    { TAG_DONE, 0UL }
 	};
+
 	
 	HIDD_BM_OBJ(&bm)	= bm_obj;
 	HIDD_BM_COLMAP(&bm)	= NULL;
-	HIDD_BM_GRAPHTYPE(&bm)	= vHidd_GT_Palette;
+	HIDD_BM_COLMOD(&bm)	= vHidd_ColorModel_Palette;
 	
 	bm.Rows		= height;
 	bm.BytesPerRow	= WIDTH_TO_BYTES(width);
@@ -4209,15 +4205,24 @@ static inline Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase 
 
 kprintf("get_planarbm_object()\n");    
     pbm_obj = obtain_cache_object(SDD(GfxBase)->planarbm_cache, GfxBase);
+    
+    if (NULL != pbm_obj) {
+/*
 kprintf("Got cache object %p, class=%s, domethod=%p, instoffset=%d\n"
 	, pbm_obj
 	, OCLASS(pbm_obj)->ClassNode.ln_Name
 	, OCLASS(pbm_obj)->DoMethod
 	, OCLASS(pbm_obj)->InstOffset
 );
-    
-    if (NULL != pbm_obj) {
-    	HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap);
+*/
+    	if (!HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap)) {
+	     kprintf("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n");
+	     release_cache_object(SDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
+	     pbm_obj = NULL;
+	}
+		
+    } else {
+    	kprintf("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n");
     }
     
     return pbm_obj;
@@ -4241,8 +4246,6 @@ ULONG do_pixel_func(struct RastPort *rp
 	ULONG width, height;
 	
 	bm_obj = OBTAIN_HIDD_BM(bm);
-	
-	
 	if (NULL == bm_obj)
 	    return -1;
 	    
@@ -4930,9 +4933,9 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     }
     
     switch (srcformat) {
-	case RECTFMT_RGB  : srcfmt_hidd = vHidd_PixFmt_RGB24;  break;
-	case RECTFMT_RGBA : srcfmt_hidd = vHidd_PixFmt_RGBA32; break;
-	case RECTFMT_ARGB : srcfmt_hidd = vHidd_PixFmt_ARGB32; break;
+	case RECTFMT_RGB  : srcfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
+	case RECTFMT_RGBA : srcfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
+	case RECTFMT_ARGB : srcfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
     }
 
     /* Compute the start of the array */
@@ -4946,7 +4949,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), srcfmt_hidd);
+    pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
     GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
     start_offset = srcy * srcmod + srcx * bppix;
@@ -5005,9 +5008,9 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     
     
     switch (dstformat) {
-	case RECTFMT_RGB  : dstfmt_hidd = vHidd_PixFmt_RGB24;  break;
-	case RECTFMT_RGBA : dstfmt_hidd = vHidd_PixFmt_RGBA32; break;
-	case RECTFMT_ARGB : dstfmt_hidd = vHidd_PixFmt_ARGB32; break;
+	case RECTFMT_RGB  : dstfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
+	case RECTFMT_RGBA : dstfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
+	case RECTFMT_ARGB : dstfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
     }
 
 #warning Get rid of the below code ?
@@ -5019,7 +5022,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), dstfmt_hidd);
+    pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
     GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
     start_offset = srcy * dstmod + srcx * bppix;
@@ -5186,7 +5189,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	
     bm_obj = HIDD_BM_OBJ(bitMap);
     
-    pf = HIDD_BM_GetPixelFormat(bm_obj, vHidd_PixFmt_Native);
+    GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
     switch (attribute) {
    	case CYBRMATTR_XMOD:
@@ -5335,7 +5338,7 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     LONG pixread = 0;
     struct extcol_render_data ecrd;
     Object *pf;
-    ULONG graphtype;
+    HIDDT_ColorModel colmod;
     
     if (!CorrectDriverData(rp, GfxBase))
     	return FALSE;
@@ -5350,11 +5353,11 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     rr.MaxX = srcx + width  - 1;
     rr.MaxY = srcy + height - 1;
     
-    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), vHidd_PixFmt_Native32);
+    GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
-    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
+    GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
     
-    if (vHidd_GT_Palette == graphtype) {
+    if (vHidd_ColorModel_Palette == colmod) {
         ecrd.pixel = color;
     } else {
 	HIDDT_Color col;
@@ -5396,7 +5399,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     }
 
     /* Get the bitmap std pixfmt */    
-    dmrd.pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), vHidd_PixFmt_Native);
+    GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&dmrd.pf);
     GetAttr(dmrd.pf, aHidd_PixFmt_StdPixFmt, &dmrd.stdpf);
     dmrd.msg.colormodel = hidd2cyber_pixfmt(dmrd.stdpf, GfxBase);
     dmrd.hook = hook;
@@ -5447,7 +5450,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
 	return NULL;
     }
 
-    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(bm), vHidd_PixFmt_Native);
+    GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
     GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
     cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
@@ -5461,7 +5464,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     	return NULL;
     
     
-    while ((tag = NextTagItem(&tags))) {
+    while ((tag = NextTagItem((const struct TagItem **)&tags))) {
     	switch (tag->ti_Tag) {
 	    case LBMI_BASEADDRESS:
 	    	*((ULONG **)tag->ti_Data) = (ULONG *)baseaddress;
@@ -5546,23 +5549,23 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
      UWORD cpf = (UWORD)-1;
      
      switch (stdpf) {
-	case vHidd_PixFmt_RGB16:
+	case vHidd_StdPixFmt_RGB16:
 	    cpf = PIXFMT_RGB16;
 	    break;
 	
-	case vHidd_PixFmt_RGB24:
+	case vHidd_StdPixFmt_RGB24:
 	    cpf = PIXFMT_RGB24;
 	    break;
 	
-	case vHidd_PixFmt_ARGB32:
+	case vHidd_StdPixFmt_ARGB32:
 	    cpf = PIXFMT_ARGB32;
 	    break;
 	
-	case vHidd_PixFmt_RGBA32:
+	case vHidd_StdPixFmt_RGBA32:
 	    cpf = PIXFMT_RGBA32;
 	    break;
 	
-	case vHidd_PixFmt_LUT8:
+	case vHidd_StdPixFmt_LUT8:
 	    cpf = PIXFMT_LUT8;
 	    break;
 	    
@@ -5578,27 +5581,27 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 
 HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 {
-    HIDDT_StdPixFmt stdpf = vHidd_PixFmt_Unknown;
+    HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
 
     switch (cpf) {
 	case PIXFMT_RGB16:
-	    stdpf = vHidd_PixFmt_RGB16;
+	    stdpf = vHidd_StdPixFmt_RGB16;
 	    break;
 	
 	case PIXFMT_RGB24:
-	    stdpf = vHidd_PixFmt_RGB24;
+	    stdpf = vHidd_StdPixFmt_RGB24;
 	    break;
 	
 	case PIXFMT_ARGB32:
-	    stdpf = vHidd_PixFmt_ARGB32;
+	    stdpf = vHidd_StdPixFmt_ARGB32;
 	    break;
 	
 	case PIXFMT_RGBA32:
-	    stdpf = vHidd_PixFmt_RGBA32;
+	    stdpf = vHidd_StdPixFmt_RGBA32;
 	    break;
 	
 	case PIXFMT_LUT8:
-	    stdpf = vHidd_PixFmt_LUT8;
+	    stdpf = vHidd_StdPixFmt_LUT8;
 	    break;
 	    
 	default:
