@@ -77,6 +77,9 @@ char tab[127];
 #else
 
 #define clr() /* eps */
+#ifdef rkprintf
+#undef rkprintf
+#endif
 #define rkprintf(x...) /* eps */
 
 #endif
@@ -179,15 +182,15 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				    ObtainSemaphore(&XSD(cl)->HW_acc);
 
 				    /* Now, when the best display mode is chosen, we can build it */
-				    DisplayInitMode(&mode, data->Regs);
-				    DisplayLoadPalette(data->Regs,(unsigned char *)NULL);
+				    DisplayInitMode(&mode, (struct DisplayHWRec *)data->Regs);
+				    DisplayLoadPalette((struct DisplayHWRec *)data->Regs,(unsigned char *)NULL);
 
 				    /*
 				       Because of not defined BitMap_Show method show 
 				       bitmap immediately
 				    */
 		
-				    DisplayRestore(data->Regs, FALSE);
+				    DisplayRestore((struct DisplayHWRec *)data->Regs, FALSE);
 				    DisplayRefreshArea(data, 1, &box);
 
 				    ReleaseSemaphore(&XSD(cl)->HW_acc);

@@ -85,7 +85,7 @@ static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
     /* Restore palette if OnBitmap */
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    DisplayRestore(data->Regs, TRUE);
+    DisplayRestore((struct DisplayHWRec *)data->Regs, TRUE);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 
@@ -102,7 +102,6 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 #ifdef OnBitmap
     int pix;
-    int i;
     unsigned char *ptr2;
 #endif /* OnBitmap */
 
@@ -113,7 +112,7 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 #ifdef OnBitmap
 
-    ptr2 = RREG_L(LSSA) + (msg->y * RREG_B(LVPW) * 2) + msg->x / 8;
+    ptr2 = (unsigned char *)(RREG_L(LSSA) + (msg->y * RREG_B(LVPW) * 2) + msg->x / 8);
     pix = 0x80 >> (msg->x % 8);
     if (fg)
     {

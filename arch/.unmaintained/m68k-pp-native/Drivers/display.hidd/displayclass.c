@@ -32,7 +32,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define ONLY640
 
 /* Some attrbases needed as global vars.
   These are write-once read-many */
