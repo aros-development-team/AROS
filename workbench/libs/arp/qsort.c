@@ -19,10 +19,10 @@
       AROS_LH4(ULONG, QSort,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(void *, baseptr            , A0),
-      AROS_LHA(ULONG , region_size        , D0),
-      AROS_LHA(ULONG , byte_size          , D1),
-      AROS_LHA(LONG  , (* user_function)(), A1),
+      AROS_LHA(void *   , baseptr            , A0),
+      AROS_LHA(ULONG    , region_size        , D0),
+      AROS_LHA(ULONG    , byte_size          , D1),
+      AROS_LHA(LONG_FUNC, user_function      , A1),
 
 /*  LOCATION */
       struct ArpBase *, ArpBase, 71, Arp)
