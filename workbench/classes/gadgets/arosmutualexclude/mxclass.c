@@ -214,7 +214,10 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
         STRPTR *labels;
 	WORD minx, miny, maxx, maxy;
 	
-	if (data->font) SetFont(msg->gpr_RPort, data->font);
+	if (data->font)
+	    SetFont(msg->gpr_RPort, data->font);
+	else
+	    SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
 	
         /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
