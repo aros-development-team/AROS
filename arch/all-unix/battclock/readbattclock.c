@@ -8,12 +8,16 @@
 
 #include "battclock_intern.h"
 #include <proto/battclock.h>
+#include <proto/utility.h>
+#include <utility/date.h>
+#if 0
 #include <aros/host-conf.h>
+#endif
 
 #include <time.h>
 
 
-AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
+AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclock)
 {
     AROS_LIBFUNC_INIT
 
@@ -28,6 +32,21 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
     time(&t);
     tm = localtime(&t);
 
+#if 1
+    {
+    	struct ClockData date;
+	
+	date.year  = tm->tm_year + 1900;
+	date.month = tm->tm_mon + 1;
+	date.mday  = tm->tm_mday;
+	date.hour  = tm->tm_hour;
+	date.min   = tm->tm_min;
+	date.sec   = tm->tm_sec;
+	
+	return Date2Amiga(&date);
+    }
+    
+#else
     /*
 	This time is however relative to 1.1.1970, so we have to subtract a
 	large number of seconds so that things actually work correctly.
@@ -42,5 +61,7 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
 #else
     return (t - 252460800);
 #endif
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */
