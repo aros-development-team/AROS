@@ -18,11 +18,11 @@ FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
 	creategadget createmenus createport createstdio createtask	    \
 	deleteextio deleteport deletestdio deletetask dogadgetmethod	    \
 	domethod dosupermethod drawbevelbox easyrequest	fastrand	    \
-	getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry	    \
+	fprintf getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry \
 	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
 	libdeletepool libfreepooled newlist newobject openscreentags	    \
-	openwindowtags rangerand setattrs setgadgetattrs setsuperattrs	    \
-	arosinquire
+	openwindowtags printf rangerand setattrs setgadgetattrs		    \
+	setsuperattrs arosinquire
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
