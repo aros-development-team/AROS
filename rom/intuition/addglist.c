@@ -12,6 +12,10 @@
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
+#include "boopsigadgets.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 	AROS_LH5(UWORD, AddGList,
 
@@ -65,21 +69,28 @@
     struct Gadget * last;
     UWORD count;
 
+    D(bug("AddGList()\n"));
     pred = (struct Gadget *)&window->FirstGadget;
     count = 0;
-
+    
+    /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
+    DoGMLayout(gadget, window, requester, numGad, TRUE, IntuitionBase);
+    
     while (position && pred->NextGadget)
     {
 	position --;
 	pred = pred->NextGadget;
 	count ++;
+	D(bug("count=%d\n", count));
     }
+    D(bug("Finished iterating window list\n"));
 
     for (last=gadget; last->NextGadget && --numGad; last=last->NextGadget);
 
+    D(bug("Finished finding end of supplied glist\n"));
     last->NextGadget = pred->NextGadget;
     pred->NextGadget = gadget;
-
-    return count;
+    
+    ReturnInt ("AddGList", UWORD, count);
     AROS_LIBFUNC_EXIT
 } /* AddGList */

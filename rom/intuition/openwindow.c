@@ -10,6 +10,7 @@
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include "boopsigadgets.h"
 
 #ifndef DEBUG_OpenWindow
 #   define DEBUG_OpenWindow 0
@@ -137,6 +138,9 @@
 	IntuitionBase->ActiveWindow = w;
 
     UnlockIBase (lock);
+
+    /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
+    DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
     RefreshGadgets (w->FirstGadget, w, NULL);
 
