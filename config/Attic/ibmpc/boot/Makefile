@@ -17,7 +17,7 @@ $(BOOTSECT): bootsect.S $(IPATH)/aros/config.h Makefile
 	@$(AS86) -o bootsect.o bootsect.s
 	@$(LD86) -s -o $(BOOTSECT) bootsect.o
 	@rm -f bootsect.s bootsect.o
-	@echo OK
+	@echo Done!
 
 $(SETUP): setup.S $(IPATH)/aros/config.h Makefile
 	@echo -n Compiling setup functions...
@@ -25,7 +25,7 @@ $(SETUP): setup.S $(IPATH)/aros/config.h Makefile
 	@$(AS86) -o setup.o setup.s
 	@$(LD86) -s -o $(SETUP) setup.o
 	@rm -f setup.s setup.o
-	@echo OK
+	@echo Done!
 
 init.o:	init.c
 	@$(CC) -c init.c
@@ -40,7 +40,7 @@ head.o:	head.S
 	@$(CC) -traditional -c head.S
 
 %.s: %.c
-	@gcc -S -O1 -I../include $<
+	@gcc -S -O1 -I../include -I../../../compiler/include $<
 
 clean:
 	@rm -f $(BOOTSECT) $(SETUP) $(HEADER)

@@ -45,7 +45,10 @@ unsigned char *p;
     }
     p = VGA_BASE + 80*2*(MAXROW-1);
     for(i=0;i<80;i++)
-      p[i*2] &= C_BGCOLOR;
+    {
+      p[i*2] = 0;
+      p[i*2+1] &= C_BGCOLOR;
+    }
     c_col = 0;
     c_row--;
   }
@@ -233,4 +236,20 @@ unsigned int i=0;
   while(s[i++]);
   --i;
 return i;
+}
+
+int strcmp(const char *string1, const char *string2)
+{
+    unsigned char c1, c2;
+
+    /* Loop as long as the strings are identical and valid. */
+    do
+    {
+	/* Get characters, convert them to lower case. */
+	c1=*string1++;
+	c2=*string2++;
+    }while(c1==c2&&c1);
+
+    /* Get result. */
+    return (int)c1-(int)c2;
 }

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-1999 AROS - The Amiga Research OS
     $Id$
     
     Desc: Kernel header for standalone AROS on PC
@@ -16,9 +16,9 @@
 
     0x00000008 - 0x00000808	int vectors
     0x00000900 - 0x00000b00	data from setup
-    0x00000b00 - 0x00000b18	Global Descriptor Table
+    0x00000b00 - 0x00000b18	Global Descriptor Table - 3 entries
     0x00001000 - ....		Kernel
-    ....       - 0x0009f000	Supervisor stack
+    ....       - 0x0009f000	Temporary stack frame for startup code.
     0x0009f000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
 
     *** end of SYSTEM USE ONLY area ***
@@ -40,15 +40,13 @@
 
 		.globl	startup_32
 startup_32:
-/* Set segment registers up */
-
 		jmp	start	/* Skip header */
 
 		.word	41,5	/* kernel version */
 
 		.ascii	"AMIGA Research Operating System (AROS)"
 		.byte	0
-		.ascii	"Copyright (C) 1995-1998"
+		.ascii	"Copyright (C) 1995-1999"
 		.byte	0
 		.ascii	"AROS - The Amiga Research OS "
 		.byte	0
@@ -70,6 +68,9 @@ start_again:	cld
 		mov	%ax,%gs
 		mov	%ax,%ss
 		mov	$0x0009f000,%esp
+
+		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
+		popf
 
 		sidt	idt
 
@@ -111,9 +112,11 @@ copy_idts_2:	movl	%eax,(%edi)
 		call	main
 		jmp	dummy_halt
 
-
 start:		cld
 		cli
+
+/* Set segment registers up */
+
 		movl	$KERNEL_DS,%eax		/* Fill segment registers */
 		mov	%ax,%ds			/* All are the same - one */
 		mov	%ax,%es			/* 4GB data segment */
@@ -163,7 +166,7 @@ start:		cld
 		movl	%eax,(0x00000000)
 /*
     Don't touch ExecBase. We'll try (maybe) leter to detect whether OS starts
-    first time or after soft reset - We'll control soft resets - Yuppi!!!
+    first time or after soft reset - We'll control soft resets - Yuppi!!! :-))
 */
 
 		call	make_ientry
@@ -203,7 +206,7 @@ copy_idts:	movl	%eax,(%edi)
 		mov	$23864,%eax	/* 1193180/50 */
 		outb	%al,$0x40	/* We don't need sending any comands */
 		xchg	%ah,%al		/* BIOS did it for us */
-		outb	%al,$0x40
+		outb	%al,$0x40	/* It was a bit dangerous ... */
 
 /* OK, head has finished its job. Go to the exec now */
 /* In future there will be "jmp ..." instead of "call" */
@@ -224,9 +227,9 @@ make_ientry:	lea	(empty_int),%edx
 		lea	(int_entry),%edi
 
 		movw	%dx,(%edi)
-		rorl	$16,%edx
-		movw	$KERNEL_CS,2(%edi)
-		movw	$0x8e00,4(%edi)
+		rorl	$16,%edx		/* Split offset */
+		movw	$KERNEL_CS,2(%edi)	/* Code segment */
+		movw	$0x8e00,4(%edi)		/* Type = interrupt */
 		movw	%dx,6(%edi)
 		ret
 
@@ -257,6 +260,44 @@ Set_cursor:	pushl	%ebp
 		popl	%ebx
 		popl	%ecx
 		popl	%edx
+		popl	%ebp
+		ret
+
+/* Here are some well known standard C functions written in asm */
+
+		.globl	strcpy
+strcpy:		pushl	%ebp
+		movl	%esp,%ebp
+		pushl	%esi
+		pushl	%edi
+		movl	12(%ebp),%esi
+		movl	%esi,%edi
+		subb	%al,%al
+		movl	$-1,%ecx
+		rep
+		scasb
+		negl	%ecx
+		movl	8(%ebp),%edi
+		movl	%edi,%eax
+		rep
+		movsb
+		popl	%edi
+		popl	%esi
+		popl	%ebp
+		ret
+
+		.globl	memset
+memset:		pushl	%ebp
+		movl	%esp,%ebp
+		pushl	%edi
+		movl	16(%ebp),%ecx
+		movl	12(%ebp),%eax
+		movl	8(%ebp),%edi
+		cld
+		rep
+		stosb
+		movl	8(%ebp),%eax
+		popl	%edi
 		popl	%ebp
 		ret
 
