@@ -1,8 +1,0 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
-# $Id$
-
-include $(TOP)/config/make.cfg
-
-%build_catalogs mmake=workbench-classes-zune-preferenceswindow-catalogs \
-                name=PreferencesWindow subdir=System/Classes/Zune
-
