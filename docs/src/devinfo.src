@@ -52,17 +52,17 @@ possible for users to allocate ranges of tags for specific uses.
 
 \section{DoMethod() or the stack is all wrong}
 
-Short: \bold{Don't use DoMethod(), use DoMethodA().}
-
 There are CPUs around which don't care that the rest of the world have
 stacks which grow from large to small adresses. HPPA is an example for
 this. While it might look neat to the engineers who did it, it breaks our
 code. Another thing which breaks the code are small data types (eg. |WORD|,
 |UBYTE|, etc), because most systems put only integers or longs and pointers
 on the stack. So if some Msg structure expects |WORD| (see
-\filename{include:intuition/gadgetclass.h}),
-this fails on every system but the Amiga. To
-overcome this, we introduce this rule:
+\filename{include:intuition/gadgetclass.h}), this fails on every system but
+the Amiga. Then there are rumours about CPUs which use 32bit numbers and
+64bit pointers or the other way round. On these CPUs, |SetAttrs()| and all
+other function which pass TagLists over the stack will fail. To overcome
+this, we introduce this rule:
 
 \begin{emph}
 If you want to pass a structure with |DoMethod()| and |DoMethodA()|
@@ -70,8 +70,9 @@ or similar functions, you must prepend "STCK" to each type, like
 this: |WORD| becomes |STCKWORD|, |ULONG| becomes |STCKULONG|, etc.
 \end{emph}
 
-If you want to be safe: Don't use |DoMethod()| at all. It's very likely
-that the final AROS release will not support it at all.
+To solve special problems on certain CPUs, we try to get a compiler which
+gets it right or, if that is impossible, we write a small preprocessor
+which replaces the dubious code by calls to the array versions.
 
 \section{One for all and all for one - CVS}
 
