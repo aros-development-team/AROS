@@ -60,6 +60,7 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer *l;
+  struct Region * tmpr = NULL;
 
   D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
   
@@ -70,10 +71,28 @@
        x >= l->shape->bounds.MinX && x <= l->shape->bounds.MaxX &&
        y >= l->shape->bounds.MinY && y <= l->shape->bounds.MaxY)
     {
-       struct RegionRectangle * rr = l->shape->RegionRectangle;
+       struct RegionRectangle * rr;
        int found = FALSE;
        int _x = x - l->shape->bounds.MinX;
        int _y = y - l->shape->bounds.MinY;
+      
+       /* 
+        * Must make a copy of the shape of the layer and
+        * cut it down to the potentially visible part
+        */ 
+       tmpr = CopyRegion(l->shape);
+       
+       if (tmpr)
+       {
+         if (!AndRegionRegion(l->parent->shape, tmpr))
+         {
+           DisposeRegion(tmpr);
+           tmpr = NULL;
+           return NULL;
+         }
+       }
+       rr = tmpr->RegionRectangle;
+       
        /*
         * If it is just a square the region is empty.
         */
@@ -92,9 +111,16 @@
        
        if (TRUE == found)
          break;
+         
+       DisposeRegion(tmpr);
+       tmpr = NULL;
     }
 
+
   UnlockLayers(li);
+
+  if (tmpr)
+    DisposeRegion(tmpr);
 
   return l;
 
