@@ -413,9 +413,15 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	
         old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
     }
+
+    /* argsize variable includes trailing 0 byte, but is supposed
+       not to. */
+
+    if (argsize) argsize--;
     
     if
     (
+	   	
         AddProcess
         (
             process, argptr, argsize,
