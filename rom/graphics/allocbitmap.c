@@ -115,6 +115,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     struct BitMap * nbm;
+    ULONG attributes;
 
     /*
 	If the depth is too large or the bitmap should be displayable or
@@ -137,7 +138,11 @@
     }
     else /* Otherwise init a plain Amiga bitmap */
     {
-	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY);
+        if (flags & BMF_CLEAR)
+          attributes = MEMF_ANY|MEMF_CLEAR;
+        else
+          attributes = MEMF_ANY;
+	nbm = AllocMem (sizeof (struct BitMap), attributes);
 
 	if (nbm)
 	{
@@ -145,7 +150,7 @@
 
 	    nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
 	    nbm->Rows	     = sizey;
-	    nbm->Flags	     = 0;
+	    nbm->Flags	     = flags;
 	    nbm->Depth	     = depth;
 	    nbm->Pad	     = 0;
 
