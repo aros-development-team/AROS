@@ -30,6 +30,6 @@
 
 AROS_LP1(BOOL, LateIntuiInit,
     AROS_LPA(APTR, data, A0),
-    struct IntuitionBase *, IntuittionBase, 120, Intuition)
+    struct IntuitionBase *, IntuitionBase, 120, Intuition)
 
 #endif /* _INTUITION_PRIVATE_H */
