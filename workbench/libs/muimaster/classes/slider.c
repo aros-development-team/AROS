@@ -247,9 +247,9 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 
 			    if (_between(data->clickx - data->knob_click + _mleft(obj), msg->imsg->MouseX, data->clickx - data->knob_click + data->knob_width - 1 + _mleft(obj)))
 			    {
-				DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+				DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
 				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-				DoMethod(obj, MUIM_Window_AddEventHandler, &data->ehn);
+				DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
 				data->state = 1;
 				MUI_Redraw(obj,MADF_DRAWUPDATE);
 			    }   else
@@ -264,9 +264,9 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 		    {
 			if (data->state)
 			{
-			    DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(obj, MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
 			    data->state = 0;
 			    MUI_Redraw(obj,MADF_DRAWUPDATE);
 			}
