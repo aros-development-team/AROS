@@ -65,7 +65,10 @@
     if (newRP)
     {
 	CopyMem (rp, newRP, sizeof (struct RastPort));
-
+	RP_BACKPOINTER(newRP) = newRP;
+	RP_DRIVERDATA(newRP) = NULL;
+    	newRP->Flags |= RPF_SELF_CLEANUP;
+	
 	if (!OBTAIN_DRIVERDATA(newRP,  GfxBase))
 	{
 	    FreeMem (newRP, sizeof (struct RastPort));
@@ -73,10 +76,6 @@
 	}
 	else
 	{
-	    struct gfx_driverdata *dd = GetDriverData(newRP);
-	    
-	    dd->dd_NoAutoKill = TRUE;
-	    
 	    /* copy rastports attributes */
 	    SetFont(newRP, rp->Font);
 	    SetABPenDrMd(newRP, GetAPen(rp), GetBPen(rp), GetDrMd(rp));

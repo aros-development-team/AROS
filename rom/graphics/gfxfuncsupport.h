@@ -75,15 +75,18 @@ do                                  \
 /* Rastport flag that tells whether or not the driver has been inited */
 
 #define RPF_DRIVER_INITED (1L << 15)
+#define RPF_SELF_CLEANUP  (1L << 14)
 
 #define AROS_PALETTE_SIZE 256
 #define AROS_PALETTE_MEMSIZE (sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
 
-#define GetDriverData(rp) ((struct gfx_driverdata *)rp->longreserved[0])
+#define RP_BACKPOINTER(rp)  (*(struct RastPort **)&((rp)->wordreserved[0]))
+#define RP_DRIVERDATA(rp)   (*(struct gfx_driverdata **)&((rp)->longreserved[0]))
+#define GetDriverData(rp)   RP_DRIVERDATA(rp)
 
 /* SetDriverData() should only be used when cloning RastPorts           */
 /* For other purposes just change the values directly in the struct.	*/
-#define SetDriverData(rp,dd) rp->longreserved[0] = (IPTR)dd
+#define SetDriverData(rp,dd) RP_DRIVERDATA(rp) = dd
 
 #define NUMPIX 50000
 #define PIXELBUF_SIZE (NUMPIX * 4)
@@ -128,7 +131,6 @@ struct gfx_driverdata
     OOP_Object	    * dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
     WORD    	      dd_LockCount;
-    BOOL    	      dd_NoAutoKill;
 };
 
 /****************************************************************************************/
