@@ -12,28 +12,36 @@
 #include <exec/types.h>
 #include <exec/ports.h>
 
+#include <workbench/handler.h>
+
 /*** Messages ***************************************************************/
-struct HandlerMessage
+enum WBCM_Type
 {
-    struct Message hm_Message;
-    ULONG          hm_Type;     /* see below */
+    WBCM_TYPE_LAUNCH,  /* Launch a program */
+    WBCM_TYPE_RELAY    /* Relay a message to the workbench application */
 };
 
-#define HM_TYPE_UNKNOWN (0)
-#define HM_TYPE_LAUNCH  (1)     /* launch a program */
-#define HM_TYPE_DRAWER  (2)     /* open a drawer */
-
-struct LaunchMessage
+struct WBCommandMessage
 {
-    struct HandlerMessage  lm_HandlerMessage;
-    struct WBStartup      *lm_StartupMessage;
+    struct Message wbcm_Message;
+    enum WBCM_Type wbcm_Type;
+    
+    union
+    {
+        struct
+        {
+            struct WBStartup        *Startup;
+        } Launch;
+        
+        struct
+        {
+            struct WBHandlerMessage *Message;
+        } Relay;
+    } wbcm_Data;
 };
 
-struct DrawerMessage
-{
-    struct HandlerMessage  dm_HandlerMessage;
-    struct WBArg           dm_Drawer;
-};
+#define WBCM_SIZE (sizeof(struct WBCommandMessage))
+#define WBCM(msg) ((struct WBCommandMessage *) (msg))
 
 /*** Prototypes *************************************************************/
 AROS_UFP3
