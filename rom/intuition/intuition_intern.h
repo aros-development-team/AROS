@@ -264,12 +264,6 @@ void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *Intuit
 
 void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase);
 
-/* These recide in inputhandler.c */
-inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase);
-inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *IntuitionBase);
-inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
-
-
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 
 /* Replacement for dos.library/DisplayError() */
