@@ -259,8 +259,8 @@ STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
     ** clicked, we rule it out here.
     */
     
-    x = msg->gpht_Mouse.X;
-    y = msg->gpht_Mouse.Y;
+    x = msg->gpht_Mouse.X + data->pd_GadgetBox.Left;
+    y = msg->gpht_Mouse.Y + data->pd_GadgetBox.Top;
 
     if (    (x > data->pd_PaletteBox.Left)
 	 && (x < data->pd_PaletteBox.Left + data->pd_PaletteBox.Width - 1)
@@ -296,7 +296,9 @@ STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
     	    /* Set temporary active to the old active */
     	    data->pd_ColorBackup = data->pd_Color;
     	
-    	    clicked_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
+    	    clicked_color = ComputeColor(data,
+	                                 msg->gpi_Mouse.X + data->pd_GadgetBox.Left,
+					 msg->gpi_Mouse.Y + data->pd_GadgetBox.Top);
     	
     	    if (clicked_color != data->pd_Color)
     	    {
@@ -342,8 +344,8 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	/* Georg Steger: did not behave like on real Amiga when
 	   mouse is outside palettebox. */
 	   
-    	WORD x = msg->gpi_Mouse.X;
-	WORD y = msg->gpi_Mouse.Y;
+    	WORD x = msg->gpi_Mouse.X + data->pd_GadgetBox.Left;
+	WORD y = msg->gpi_Mouse.Y + data->pd_GadgetBox.Top;
 	
 	if (x <= data->pd_PaletteBox.Left) x = data->pd_PaletteBox.Left + 1;
 	if (y <= data->pd_PaletteBox.Top)  y = data->pd_PaletteBox.Top + 1;

@@ -478,7 +478,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
     shown = ShownEntries(data, &container, AROSListviewBase);
 
     /* offset from top of listview of the entry clicked */
-    clickpos = (msg->gpi_Mouse.Y - (container.Top + LV_BORDERWIDTH_Y))
+    clickpos = (msg->gpi_Mouse.Y - LV_BORDERWIDTH_Y)
 		 / data->lvd_EntryHeight;
 
     data->lvd_Flags &= ~LVFLG_DOUBLECLICK;

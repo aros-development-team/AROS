@@ -238,7 +238,7 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
     for (y = 0; y < data->numlabels; y++)
     {
         D(bug("Mouse.Y: %d, y: %d\n", msg->gpi_Mouse.Y, y));
-        if (msg->gpi_Mouse.Y - G(obj)->TopEdge < blobheight * (y+1))
+        if (msg->gpi_Mouse.Y < blobheight * (y+1))
         {
             if (y != data->active)
             {

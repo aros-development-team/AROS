@@ -2367,7 +2367,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
     shown = ShownEntries(o, data);
 
     /* offset from top of listview of the entry clicked */
-    clickpos = (msg->gpi_Mouse.Y - (G(o)->TopEdge + LV_BORDER_Y)) / 
+    clickpos = (msg->gpi_Mouse.Y - LV_BORDER_Y) / 
     		TotalItemHeight(data);
     if (clickpos < shown)
     {
