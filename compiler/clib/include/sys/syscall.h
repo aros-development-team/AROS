@@ -1,5 +1,5 @@
-#ifndef _SYSCALL_H
-#define _SYSCALL_H
+#ifndef _SYSCALL_H_
+#define _SYSCALL_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -20,6 +20,16 @@ SYS_clibdummy = LIB_RESERVED
 #undef SYSTEM_CALL
 };
 
-#define syscall(name,args...) ({ register int (*_sc)() = __AROS_GETVECADDR(aroscbase, SYS_##name); _sc (args) ;})
+#ifdef __GNUC__
+#   define syscall(name,args...)				    \
+    ({								    \
+	extern struct Library *aroscbase;			    \
+	register int (*_sc)() = __AROS_GETVECADDR(aroscbase, name); \
+	_sc (args);						    \
+    })
+#else
+/* Force an error! When syscall() is used*/
+#   define syscall(name,args...)    SYSCALL_BROKEN
+#endif
 
-#endif /* _SYSCALL_H */
+#endif /* _SYSCALL_H_ */
