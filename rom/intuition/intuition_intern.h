@@ -16,8 +16,14 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
+#endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
 #endif
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
@@ -58,6 +64,12 @@ struct IntScreen
     /* Private fields */
     struct DrawInfo DInfo;
     UWORD  Pens[NUMDRIPENS];
+};
+
+struct EasyRequestUserData
+{
+    ULONG    IDCMP;
+    STRPTR * GadgetLabels;
 };
 
 extern struct IntuitionBase * IntuitionBase;
@@ -111,5 +123,9 @@ extern void intui_WindowToFront (struct Window * window);
 extern void intui_WindowToBack (struct Window * window);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_SizeWindow (struct Window * win, long dx, long dy);
+
+/* Miscellaneous prototypes */
+void easyrequest_freelabels(STRPTR *gadgetlabels);
+void easyrequest_freegadgets(struct Gadget *gadgets);
 
 #endif /* INTUITION_INTERN_H */

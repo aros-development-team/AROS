@@ -1,0 +1,111 @@
+/*
+    (C) 1997 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Intuition function SysReqHandler()
+    Lang: english
+*/
+
+#include "intuition_intern.h"
+#include <proto/exec.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/intuition.h>
+#include <exec/types.h>
+#include <intuition/intuition.h>
+
+	AROS_LH3(LONG, SysReqHandler,
+
+/*  SYNOPSIS */
+	AROS_LHA(struct Window  *, Window, A0),
+	AROS_LHA(ULONG   *,        IDCMPFlagsPtr, A1),
+	AROS_LHA(BOOL            , WaitInput, D0),
+
+/*  LOCATION */
+	struct IntuitionBase *, IntuitionBase, 100, Intuition)
+
+/*  FUNCTION
+	Handles a requester, which was opened with BuildSysRequest() or
+	BuildEasyRequestArgs(). When this function is called all outstanding
+	IDCMP requests are processed. If an IDCMP request that would close
+	a normal EasyRequestArgs() is encountered, SysReqHandler() returns
+	with a return code equally to the return code EasyRequestArgs()
+	would have returned. You may call this function in synchronous or
+	asynchronous mode, by setting the WaitInput parameter.
+
+    INPUTS
+	Window - The window pointer returned by either BuildSysRequest() or
+	         BuildEasyRequestArgs().
+	IDCMPFlagsPtr - Pointer to a ULONG to store the IDCMP flag that was
+	                received by the window. This will be set if you
+		        provided additional IDCMP flags to BuildSysRequest() or
+		        BuildEasyRequest(). You may set this to NULL. You must
+		        initialize the pointed to ULONG every time you call
+		        SysReqHandler().
+	WaitInput - Set this to TRUE, if you want this function to wait for
+	            the next IDCMP request, if there is none at the moment
+		    the function is called.
+
+    RESULT
+	-2, if the requester was not satisfied. Normally you want to call
+	    this function at least until this function returns something
+	    different than -2.
+	-1, if one of the IDCMP flags of idcmpPTR was set.
+	 0, if the rightmost button was clicked or an error occured.
+	 n, if the n-th button from the left was clicked.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+	Gadget placing is still untidy.
+	Does not support BuildSysRequest() requesters, yet.
+
+    SEE ALSO
+	BuildSysRequest(), BuildEasyRequestArgs()
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    LONG result = -3;
+    struct IntuiMessage *msg;
+
+    if (WaitInput)
+        WaitPort(Window->UserPort);
+    while (result == -3)
+    {
+        msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
+        if (msg)
+        {
+            switch (msg->Class)
+            {
+            case IDCMP_GADGETUP:
+                result = ((struct Gadget *)msg->IAddress)->GadgetID;
+                break;
+            default:
+                if (msg->Class |
+		    ((struct EasyRequestUserData *)Window->UserData)->IDCMP)
+                {
+                    if (IDCMPFlagsPtr)
+                        *IDCMPFlagsPtr |= msg->Class;
+                    result = -1;
+                }
+                break;
+            }
+            ReplyMsg((struct Message *)msg);
+        } else
+            result = -2;
+    }
+
+    return result;
+    AROS_LIBFUNC_EXIT
+} /* SysReqHandler() */

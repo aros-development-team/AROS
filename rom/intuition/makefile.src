@@ -16,10 +16,12 @@ OBJDIR=$(OSGENDIR)/intuition
 
 INIT_FILE = intuition_init
 
-FILES = intuition_functable gadgets \
-	boolgadgets propgadgets boopsigadgets \
-	imageclass frameiclass sysiclass icclass buttongclass gadgetclass \
-	frbuttonclass propgclass notify
+FILES = intuition_functable \
+	gadgets boolgadgets propgadgets boopsigadgets \
+	imageclass frameiclass sysiclass \
+	icclass \
+	gadgetclass buttongclass frbuttonclass propgclass \
+	notify requesters
 
 END_FILE = intuition_endtag
 
@@ -31,6 +33,7 @@ FUNCTIONS = \
 	allocremember \
 	autorequest \
 	beginrefresh \
+	buildeasyrequestargs \
 	changewindowbox \
 	clearmenustrip \
 	closescreen \
@@ -47,6 +50,7 @@ FUNCTIONS = \
 	freeclass \
 	freeremember \
 	freescreendrawinfo \
+	freesysrequest \
 	getattr \
 	getdefaultpubscreen \
 	getscreendata \
@@ -86,6 +90,7 @@ FUNCTIONS = \
 	setpointer \
 	setwindowtitles \
 	sizewindow \
+	sysreqhandler \
 	unlockibase \
 	unlockpubscreen \
 	windowlimits \
