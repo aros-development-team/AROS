@@ -283,11 +283,11 @@ static ULONG mTransfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transf
 }
 
 
-/*
- * MUIM_FindUData : tests if the MUIA_UserData of the object
- * contains the given <udata> and returns the object pointer in this case.
- */
-static ULONG mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+/**************************************************************************
+ MUIM_FindUData : tests if the MUIA_UserData of the object
+ contains the given <udata> and returns the object pointer in this case.
+**************************************************************************/
+static ULONG Family_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -295,11 +295,13 @@ static ULONG mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *m
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
 	return (ULONG)obj;
-    while ((child = NextObject(&cstate)))
-       if (DoMethodA(child, (Msg)msg))
-	   return (ULONG)child;
 
-    return 0L;
+    while ((child = NextObject(&cstate)))
+    {
+    	Object *found = (Object*)DoMethodA(child, (Msg)msg);
+    	if (found) return (ULONG)found;
+    }
+    return 0;
 }
 
 
@@ -458,8 +460,7 @@ AROS_UFH3S(IPTR, MUI_FamilyDispatcher,
 	return(mSort(cl, obj, (APTR)msg));
     case MUIM_Family_Transfer :
 	return(mTransfer(cl, obj, (APTR)msg));
-    case MUIM_FindUData :
-	return(mFindUData(cl, obj, (APTR)msg));
+    case MUIM_FindUData: return Family_FindUData(cl, obj, (APTR)msg);
     case MUIM_GetUData :
 	return(mGetUData(cl, obj, (APTR)msg));
     case MUIM_SetUData :
