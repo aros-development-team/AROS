@@ -127,7 +127,7 @@
 
 #ifndef __typedef_STRPTR
 #   define __typedef_STRPTR
-    typedef UBYTE STRPTR;	/* Pointer to string (NULL terminated) */
+    typedef UBYTE * STRPTR;	/* Pointer to string (NULL terminated) */
 #endif
 
 #ifndef __typedef_CONST_STRPTR
