@@ -127,33 +127,33 @@ it doesn't change.
 Still using the "cd" command the prompt does not change.
 
 BUG000017
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 Local DOS-variables are not deallocated yet when the task is ending.
 
 BUG000018
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 Devicetest cannot be linked correctly as there is no external Resident
 structure found in a linkfile.
 
 BUG000019
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 test/matchtest: when unlocking dirlock at the end of the program the dirlock 
 should still exist and not create a GURU-Meditation saying that this memory 
 has already been freed.
 
 BUG000020 fixed
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 Demos/2View causes a Segmentation Fault before any output occurs.
 The problem was that programs with mutiple object files must have $(STARTUP)
 before $(OBJS) in mmakefile when linking
 
 BUG000021
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 Demos/demowin kills the X server (on Linux/m68k) after correctly drawing the
 windowcontents.
 
 BUG000022
-bergers@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 After Demos/listfonts the next entry to the shell will cause a Segmentation 
 Fault. The output of listfonts looks like garbage at some lines.
 
@@ -168,7 +168,7 @@ CallHookPkt() you'll get the segmentation fault. Unfortunately I don't know
 which code is executed by the call to CallHookPkt()."
 
 BUG000023
-berger@cip.e-technik.uni-erlangen.de
+bergers@aros.org
 Demos/sift crashes with a GURU-Meditation saying that memory was
 freed twice.
 
@@ -201,3 +201,7 @@ BUG000028
 srittau@aros.org
 The sliders next to listviews don't work.
 
+BUG000029
+bergers@aros.org
+Henon started with "henon ?" should be recognized and the help-text 
+should appear. -> The "?" as a signle character is not recognized!!
