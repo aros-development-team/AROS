@@ -30,8 +30,8 @@
 	AROS_LH2(LONG, SystemTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR          , command, D1),
-	AROS_LHA(struct TagItem *, tags, D2),
+	AROS_LHA(CONST_STRPTR    , command, D1),
+	AROS_LHA(struct TagItem *, tags,    D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 101, Dos)
