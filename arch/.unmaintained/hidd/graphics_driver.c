@@ -1049,8 +1049,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         y > (L->bounds.MaxY - YRel + 1)   )
     {
       /* ah, no it is not. So we exit. */
-      UnlockLayerRom(L);
-      return -1;
+      penno = -1;
+      goto exit;
     }
     /* No one may interrupt me while I'm working with this layer */
 
@@ -1080,7 +1080,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 	  
 	  if (bm->Flags & BMF_AROS_DISPLAYED)
 	  {
-	    return HIDD_BM_GetPixel(BM_OBJ(bm), x + XRel, y + YRel);
+	    penno = HIDD_BM_GetPixel(BM_OBJ(bm), x + XRel, y + YRel);
+	    goto exit;
 	  }
         } 
         else
@@ -1126,12 +1127,14 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
       CR = CR->Next;
     } /* while */   
   } /* if */
-  else
-  { /* this is probably a screen */
+  else /* NULL == L */
+  { /* this is probably a screen, it doesn't have layer!!! */
 
     if (bm->Flags & BMF_AROS_DISPLAYED)
+    {
+        /* no need to unlock the layer!!!! */
         return HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
-    
+    }
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
   }
@@ -1161,6 +1164,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   
  } /* if (found inside offsecreen cliprect) */
   /* if there was a layer I have to unlock it now */
+
+exit:
 
   if (NULL != L) 
     UnlockLayerRom(L);
@@ -1239,8 +1244,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         y > (L->bounds.MaxY - YRel + 1)   )
     {
       /* ah, no it is not. So we exit */
-        UnlockLayerRom(L);
-	return -1L;
+	goto fail_exit;
     }
     
     /* No one may interrupt me while I'm working with this layer */
@@ -1373,12 +1377,17 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
 
   /* if there was a layer I have to unlock it now */
-
+exit:
   if (NULL != L) 
     UnlockLayerRom(L);
 
   return 0;
 
+fail_exit:
+  if (NULL != L)
+    UnlockLayerRom(L);
+  
+  return -1L;
 }
 
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
