@@ -42,6 +42,7 @@ IPTR IconImage$OM_NEW
     struct IconImage_DATA *data       = NULL; 
     struct TagItem        *tag        = NULL, *tstate = message->ops_AttrList;    
     struct DiskObject     *diskObject = NULL;
+    CONST_STRPTR           file       = NULL;
     
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -51,11 +52,24 @@ IPTR IconImage$OM_NEW
                 diskObject = (struct DiskObject *) tag->ti_Data;
                 break;
                 
+            case MUIA_IconImage_File:
+                file = (CONST_STRPTR) tag->ti_Data;
+                break;
+            
             default:
                 continue; /* Don't supress non-processed tags */
         }
         
         tag->ti_Tag = TAG_IGNORE;
+    }
+    
+    if (diskObject == NULL && file == NULL) goto error; /* Must specify one */
+    if (diskObject != NULL && file != NULL) goto error; /* Cannot specify both */
+    
+    if (diskObject == NULL && file != NULL)
+    {
+        diskObject = GetDiskObjectNew(file);
+        if (diskObject == NULL) goto error;
     }
     
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);

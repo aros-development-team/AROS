@@ -11,6 +11,7 @@
 
 /*** Attributes *************************************************************/
 #define MUIA_IconImage_DiskObject  (MUIB_IconImage | 0x00000000) /* I-- struct DiskObject * */
+#define MUIA_IconImage_File        (MUIB_IconImage | 0x00000001) /* I-- CONST_STRPTR        */
 
 /*** Macros *****************************************************************/
 #define IconImageObject MUIOBJMACRO_START(MUIC_IconImage)
