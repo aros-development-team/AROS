@@ -8,7 +8,7 @@ ULIBNAME	:= GadTools
 CLASSFILES	:= buttonclass textclass sliderclass arrowclass scrollerclass \
 		   stringclass listviewclass checkboxclass cycleclass mxclass paletteclass
 		   
-FILES		:= functable basicfuncs gadgets menus $(CLASSFILES)
+FILES		:= basicfuncs gadgets menus $(CLASSFILES)
 FUNCTIONS	:= \
 	createcontext \
 	creategadgeta \
@@ -48,8 +48,7 @@ setup :
 
 #MM
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
-	$(END_FILE).c $(LIB) $(SLIB)
+	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q

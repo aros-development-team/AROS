@@ -24,7 +24,7 @@ setup :
 
 #MM
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(RM) $(OBJDIR) *.err libdefs.h mmakefile \
 	$(END_FILE).c $(LIB) $(SLIB)
 
 

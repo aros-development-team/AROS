@@ -1,6 +1,5 @@
 *.bak
 mmakefile
 graphics_end.c
-functable.c
 libdefs.h
 CHANGES

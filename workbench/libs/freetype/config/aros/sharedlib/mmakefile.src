@@ -33,8 +33,7 @@ contrib-freetype-library-clean : clean
 
 #MM
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
-	$(END_FILE).c $(LIB) $(SLIB)
+	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q

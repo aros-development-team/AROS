@@ -120,30 +120,7 @@ $(END_FILE).c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
-# scripts/genfunctable.awk needs at least one function because a hidd
-# does not have functions the table is currently gerated with $(EDHO)
-functable.c : libdefs.h
-	@$(ECHO) "#ifndef LIBCORE_COMPILER_H"  > $@
-	@$(ECHO) "#   include <libcore/compiler.h>"  >> $@
-	@$(ECHO) "#endif"  >> $@
-	@$(ECHO) "#ifndef NULL"  >> $@
-	@$(ECHO) "#define NULL ((void *)0)"  >> $@
-	@$(ECHO) "#endif"  >> $@
-	@$(ECHO) ""  >> $@
-	@$(ECHO) '#include "libdefs.h"'  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);" >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);"  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);"  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);"  >> $@
-	@$(ECHO) ""  >> $@
-	@$(ECHO) "void *const LIBFUNCTABLE[]="  >> $@
-	@$(ECHO) "{"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),"  >> $@
-	@$(ECHO) "    (void *)-1L"  >> $@
-	@$(ECHO) "};"  >> $@
+%mkfunctable_arch
 
 #MM
 clean ::

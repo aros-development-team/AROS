@@ -1,6 +1,4 @@
-functable.c
 makefile
-iffparse_functable.c
 iffparse_endtag.c
 libdefs.h
 mmakefile

@@ -1,5 +1,4 @@
 *.bak
 mmakefile
-functable.c
 hiddclass_end.c
 libdefs.h

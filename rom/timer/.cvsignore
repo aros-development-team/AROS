@@ -2,4 +2,3 @@ endtag.c
 mmakefile
 libdefs.h
 *.s
-functable.c

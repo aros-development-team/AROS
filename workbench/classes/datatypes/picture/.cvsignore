@@ -1,5 +1,4 @@
 *.map
-functable.c
 libdefs.h
 *_endtag.c
 mmakefile

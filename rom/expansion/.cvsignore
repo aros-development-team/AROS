@@ -1,5 +1,3 @@
 mmakefile
 libdefs.h
-expansion_functable.c
 expansion_endtag.c
-functable.c

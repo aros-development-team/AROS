@@ -1,5 +1,4 @@
 libdefs.h
-functable.c
 parallel_end.c
 mmakefile
 *.err

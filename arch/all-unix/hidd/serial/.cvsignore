@@ -1,6 +1,4 @@
 libdefs.h
-functable.c
-serial_end.c
 mmakefile
 serial_end.c
 *.err

@@ -1,7 +1,5 @@
 libdefs.h
 makefile
-asl_functable.c
 asl_endtag.c
 mmakefile
-functable.c
 *.err

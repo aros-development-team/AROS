@@ -43,6 +43,7 @@ clean ::
 	    $(OSGENDIR)/graphics/fakegfxhidd.o \
 	    *.err
 
+%mkfunctable_arch
 
 $(OSGENDIR)/graphics/%.o: %.c
 	%compile_q opt=$(GFX_CFLAGS)

@@ -118,7 +118,7 @@ setup :
 	done
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h functable.c $(END_FILE) $(EXTRA_CLEAN) \
+	$(RM) $(OBJDIR) *.err libdefs.h $(END_FILE) $(EXTRA_CLEAN) \
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
@@ -133,9 +133,7 @@ libdefs.h : lib.conf $(ARCHTOOL)
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
-functable.c : $(FUNCTABLE_SRCS) $(ARCHTOOL) libdefs.h
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -t
+%mkfunctable_arch
 
 $(END_FILE).c :
 	@$(ECHO) "Generating $@..."

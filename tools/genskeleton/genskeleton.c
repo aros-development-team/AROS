@@ -235,8 +235,6 @@ static void make_cvsignore(void)
 
     fprintf(f, "*_end.c\n"
     	       "*_endtag.c\n"
-	       "*.map\n"
-	       "functable.c\n"
 	       "libdefs.h\n"
 	       "mmakefile\n");
     fclose(f);
@@ -335,8 +333,7 @@ static void make_mmakefilesrc(void)
 
     fprintf(f, "#MM\n"
     	       "clean ::\n"
-	       "\t$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \\\n"
-	       "\t$(END_FILE).c $(LIB) $(SLIB)\n\n");
+	       "\t$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)\n\n");
 
     fprintf(f, "%%common\n");
 

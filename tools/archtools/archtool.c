@@ -921,15 +921,22 @@ int has_arch = 1;
 
   if(has_arch)
   {
-    if(argc != 2)
+    if(argc == 2)
+    {
+      fd = fopen(argv[1],"rb");
+      if(!fd)
+      {
+        fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
+        exit(-1);
+      }
+    }
+    else if (argc == 1)
+    {
+      has_arch = 0;
+    }
+    else
     {
       fprintf( stderr, "Usage: %s <archfile>\n", argv[0] );
-      exit(-1);
-    }
-    fd = fopen(argv[1],"rb");
-    if(!fd)
-    {
-      fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
       exit(-1);
     }
   }

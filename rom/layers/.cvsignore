@@ -2,6 +2,4 @@ makefile
 mmakefile
 *.s
 libdefs.h
-layers_functable.c
 endtag.c
-functable.c
