@@ -78,8 +78,7 @@
 		if (Current -> ClearPath == vs) {
 			Current -> ClearPath = vs -> ClearPath;
 			break;
-		}
-		else
+		} else
 			Current = Current -> NextVSprite;
 	}
 

@@ -152,3 +152,60 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 	
 	return TRUE;
 }
+
+/*
+ * Erase the VSprite from the list and follow the clear path
+ * first, if necessary! This way of organizing the ClearPath
+ * makes it easy to implement RemIBob but it leads to a recursion!
+ * RemIBob could simply call this function here and then redraw
+ * all cleared Bobs.
+ * If a recursion is not what we want this can be easily
+ * changed.
+ */
+ 
+void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite, 
+                                 struct RastPort * rp)
+{
+	if (NULL != CurVSprite->ClearPath) {
+		/*
+		 * Clear the next one first. (recursion!!!)
+		 */
+		_ClearBobAndFollowClearPath(CurVSprite->ClearPath, rp);
+		CurVSprite->ClearPath = NULL;
+	}
+
+	/*
+	 * Only restore the background if the bob image
+	 * that is currently there is to be replaced by
+	 * the background. If SAVEBOB is set the user
+	 * might want some kind of a brush effect.
+	 */
+	if (0 == (CurVSprite->Flags & SAVEBOB)) {
+		if (0 != (CurVSprite->Flags & BACKSAVED)) {
+
+			BltBitMapRastPort(CurVSprite->IntVSprite->SaveBuffer,
+			                  0,
+			                  0,
+			                  rp,
+			                  CurVSprite->OldX,
+			                  CurVSprite->OldY,
+			                  CurVSprite->Width << 4,
+			                  CurVSprite->Height,
+			                  0x0c0);
+			CurVSprite->Flags &= ~BACKSAVED;
+			
+		} /* if (0 != (CurVSprite->Flags & BACKSAVED)) */
+		  else {
+			/*
+			 * No background was saved. So let's restore the
+			 * standard background!
+			 */
+#warning This is only here temporarily until a bugfix for the ClipBlit above has been found! Its not copying the right info!
+			EraseRect(rp,
+			          CurVSprite->OldX,
+			          CurVSprite->OldY,
+			          CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
+			          CurVSprite->OldY +   CurVSprite->Height	   - 1);
+		}
+	} /* if (0 == (CurVSprite->Flags & SAVEBOB)) */
+}

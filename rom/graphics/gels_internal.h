@@ -25,6 +25,8 @@ VOID _DeleteIntVSprite(struct VSprite * vs);
 BOOL _ValidateIntVSprite(struct IntVSprite * ivs, 
                          struct RastPort * rp,
                          BOOL force_change);
+void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite, 
+                                 struct RastPort * rp);
 
 
 #endif
