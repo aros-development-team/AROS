@@ -24,6 +24,7 @@ BOOT_TAR_FILES := \
     C/RequestFile C/Resident C/Run C/Search C/Set C/SetClock C/SetDate \
     C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias C/Unset \
     C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
+    C/Partition \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
     Classes/DataTypes/text.datatype \
@@ -50,7 +51,7 @@ BOOT_TAR_FILES := \
     Prefs/Env-Archive Prefs/Presets \
     S/Shell-Startup S/Startup-Sequence \
     System System.info \
-    Tools/calculator Tools/HDToolBox Tools/HDToolBox.info \
+    Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info \
     Themes \
