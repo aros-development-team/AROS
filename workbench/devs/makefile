@@ -29,10 +29,7 @@ $(OSGENDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(DEVSDIR)/ram.handler: $(OBJDIR)/ram_handler.o
-	$(CC) $(ILDFLAGS) $< -o $@
-
-$(DEVSDIR)/nil.handler: $(OBJDIR)/nil_handler.o
+$(DEVSDIR)/%.handler: $(OBJDIR)/%_handler.o
 	$(CC) $(ILDFLAGS) $< -o $@
 
 $(OSGENDIR)/%.d: %.c
