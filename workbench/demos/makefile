@@ -18,7 +18,8 @@ FILES = helloworld \
 	simpleimage \
 	intuitext \
 	compleximage \
-	shadowborder
+	shadowborder \
+	readicon
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
