@@ -447,10 +447,12 @@ AROS_LH4(BYTE, OpenDevice,
     AROS_LIBFUNC_INIT
 
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
-    struct Device *device, *tmpdev;
-    BYTE ret = IOERR_OPENFAIL;
+    struct Device *tmpdev;
     STRPTR stripped_devname;
     struct LDObjectNode *object;
+
+    iORequest->io_Error  = IOERR_OPENFAIL;
+    iORequest->io_Device = NULL;
 
     /*	We use FilePart() because the liblist is built from resident IDs,
 	and contain no path. Eg. The user can request gadgets/foo.gadget,
@@ -491,16 +493,13 @@ AROS_LH4(BYTE, OpenDevice,
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
     if (!object)
-    {
-        iORequest->io_Device = NULL;
         return IOERR_OPENFAIL;
-    }
 
     ObtainSemaphore(&object->ldon_SigSem);
 
-    ret = ExecOpenDevice(stripped_devname, unitNumber, iORequest, flags);
+    ExecOpenDevice(stripped_devname, unitNumber, iORequest, flags);
 
-    if( ret )
+    if (iORequest->io_Error)
     {
 	/* Use stack for now, this could be a security hole */
 	struct LDDMsg ldd;
@@ -522,36 +521,35 @@ AROS_LH4(BYTE, OpenDevice,
 	D(bug("LDCaller: Sending request for %s\n", devname));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
+	D(bug("LDCaller: Returned\n"));
 
-	device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
+	iORequest->io_Device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
 
-	if( device != NULL )
+	if(iORequest->io_Device)
         {
 	    Forbid();
 	    tmpdev = (struct Device *)FindName(&SysBase->DeviceList, stripped_devname);
 	    Permit();
 
 	    if(tmpdev != NULL)
-	        device = tmpdev;
+	        iORequest->io_Device = tmpdev;
 
 	    iORequest->io_Error = 0;
-	    iORequest->io_Device = device;
 	    iORequest->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
   	    D(bug("LDCaller: Calling devOpen() of %s unit %ld\n",
-		    device->dd_Library.lib_Node.ln_Name, unitNumber));
+		    iORequest->io_Device->dd_Library.lib_Node.ln_Name, unitNumber));
 
 	    AROS_LVO_CALL3(void,
 	        AROS_LCA(struct IORequest *, iORequest, A1),
 	        AROS_LCA(ULONG, unitNumber, D0),
 	        AROS_LCA(ULONG, flags, D1),
-	        struct Device *, device, 1,
+	        struct Device *, iORequest->io_Device, 1,
 	    );
 
 	    D(bug("LDCaller: devOpen() returned\n"));
 
-	    ret = iORequest->io_Error;
-	    if( ret )
+	    if (iORequest->io_Error)
 	        iORequest->io_Device = NULL;
         }
     }
@@ -566,7 +564,9 @@ AROS_LH4(BYTE, OpenDevice,
        ReleaseSemaphore(&object->ldon_SigSem);
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
-    return ret;
+    D(bug("%s", iORequest->io_Error?"LDCaller: Couldn't open the device\n":""));
+
+    return iORequest->io_Error;
 
     AROS_LIBFUNC_EXIT
 }
