@@ -505,6 +505,11 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 	    	result = INP_LINEFEED;
 		break;
 		
+	    case 12: /* CTRL-L */
+		*buffer = c;		
+	    	result = INP_ECHO_STRING;
+		break;
+		
 	    case 13:
 	    	result = INP_RETURN;
 		break;
