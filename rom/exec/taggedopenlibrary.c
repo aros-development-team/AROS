@@ -31,7 +31,7 @@ char *const copyrights[] =
     "Other parts © by respective owners.",
     "ALPHA ",
     "exec.library",
-    "exec 41.1 (15.3.97)\r\n"
+    "exec 41.11 (27.09.1998)\r\n"
 };
 
 /*****i* exec.library/TaggedOpenLibrary **************************************
