@@ -154,10 +154,12 @@ static struct IntuiMessage *SendIDCMPUpdate(
 		    }
 		} /* CloneTagItems() */
 
-		ic->ic_LoopCounter -= 1UL;
-
 	    } /* LoopCounter == 1UL */
+
+	    ic->ic_LoopCounter -= 1UL;
+
 	} /* valid parameters */
+
     } /* valid target */
 
     return 1UL;
