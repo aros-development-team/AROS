@@ -42,8 +42,8 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 	@$(CHECKUDS) $@
 
 libheader.o : $(LIBHEADER_SRC) libdefs.h
-	@echo "Compiling $<..."
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiling $< with -DLC_NO_OPENLIB..."
+	@$(CC) $(CFLAGS) -DLC_NO_OPENLIB -c $< -o $@
 
 libtail.o : $(LIBTAIL_SRC) libdefs.h
 	@echo "Compiling $<..."
@@ -63,7 +63,7 @@ SampleFuncs.o : SampleFuncs.c SampleFuncs.h intern.h libdefs.h
 
 libdefs.h : lib.conf ./genlibdefs.awk
 	@echo "Generating $@..."
-	@$(AWK) -f ./genlibdefs.gawk $< > $@
+	@$(AWK) -f ./genlibdefs.awk $< > $@
 
 functable.c : $(SRCS) ./genfunctable.awk
 	@echo "Generating $@..."
