@@ -8,6 +8,7 @@
 
 /****************************************************************************************/
 
+#define AROS_ALMOST_COMPATIBLE
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -330,14 +331,15 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 
 /****************************************************************************************/
 
-#define LCTRL	0x00000008
-#define RCTRL	0x00000010
-#define LALT	0x00000020
-#define RALT	0x00000040
-#define	LSHIFT	0x00000080
-#define RSHIFT	0x00000100
-#define	LMETA	0x00000200
-#define RMETA	0x00000400
+#define FLAG_LCTRL	0x00000008
+#define FLAG_RCTRL	0x00000010
+#define FLAG_LALT	0x00000020
+#define FLAG_RALT	0x00000040
+#define	FLAG_LSHIFT	0x00000080
+#define FLAG_RSHIFT	0x00000100
+#define	FLAG_LMETA	0x00000200
+#define FLAG_RMETA	0x00000400
+#define FLAG_DEL    	0x00000800
 
 #warning Old place of kbd_reset
 
@@ -399,22 +401,26 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    /* Ignore these */
 	    continue;
 	}
+	
 	if ((keycode == 0xE0) || (keycode == 0xE1))
 	{
 	    /* Extended keycodes: E0 gets followed by one code, E1 by two */
 	    data->prev_keycode = keycode;
 	    continue;
 	}
+	
 	if ((keycode == 0x00) || (keycode == 0xFF))
 	{
 	    /* 00 is error. FF is sent by some keyboards -> ignore it. */
 	    data->prev_keycode = 0;
 	    continue;
 	}
+
 	amigacode = NOKEY;
     	event = 0;
     	downkeycode = keycode & 0x7F;
 	releaseflag = keycode & 0x80;
+
 	if (data->prev_keycode)
 	{
 	    if (data->prev_keycode == 0xE0)
@@ -463,75 +469,102 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		if (amigacode != NOKEY) amigacode |= releaseflag;
 	    }	    
 	}
+
         switch(event)
         {
             case K_KP_Numl:
-                kbd_keystate^=0x02;	/* Turn Numlock bit on */
+                kbd_keystate ^= 0x02;	/* Turn Numlock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+ 
             case K_Scroll_Lock:
-                kbd_keystate^=0x01;	/* Turn Scrolllock bit on */
+                kbd_keystate ^= 0x01;	/* Turn Scrolllock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+
             case K_CapsLock:
-                kbd_keystate^=0x04;	/* Turn Capslock bit on */
+                kbd_keystate ^= 0x04;	/* Turn Capslock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+
             case K_LShift:
-                kbd_keystate|=LSHIFT;
+                kbd_keystate |= FLAG_LSHIFT;
                 break;
-            case (K_LShift|0x80):
-                kbd_keystate&=~LSHIFT;
+
+            case (K_LShift | 0x80):
+                kbd_keystate &= ~FLAG_LSHIFT;
                 break;
+
             case K_RShift:
-                kbd_keystate|=RSHIFT;
+                kbd_keystate |= FLAG_RSHIFT;
                 break;
-            case (K_RShift|0x80):
-                kbd_keystate&=~RSHIFT;
+
+            case (K_RShift | 0x80):
+                kbd_keystate &= ~FLAG_RSHIFT;
                 break;
+
             case K_LCtrl:
-                kbd_keystate|=LCTRL;
+                kbd_keystate |= FLAG_LCTRL;
                 break;
-            case (K_LCtrl|0x80):
-                kbd_keystate&=~LCTRL;
+
+            case (K_LCtrl | 0x80):
+                kbd_keystate &= ~FLAG_LCTRL;
                 break;
+
             case K_RCtrl:
-                kbd_keystate|=RCTRL;
+                kbd_keystate |= FLAG_RCTRL;
                 break;
-            case (K_RCtrl|0x80):
-                kbd_keystate&=~RCTRL;
+
+            case (K_RCtrl | 0x80):
+                kbd_keystate &= ~FLAG_RCTRL;
                 break;
+
             case K_LMeta:
-                kbd_keystate|=LMETA;
+                kbd_keystate |= FLAG_LMETA;
                 break;
-            case (K_LMeta|0x80):
-                kbd_keystate&=~LMETA;
+
+            case (K_LMeta | 0x80):
+                kbd_keystate &= ~FLAG_LMETA;
                 break;
+ 
             case K_RMeta:
-                kbd_keystate|=RMETA;
+                kbd_keystate |= FLAG_RMETA;
                 break;
-            case (K_RMeta|0x80):
-                kbd_keystate&=~RMETA;
+
+            case (K_RMeta | 0x80):
+                kbd_keystate &= ~FLAG_RMETA;
                 break;
+
             case K_LAlt:
-                kbd_keystate|=LALT;
+                kbd_keystate |= FLAG_LALT;
                 break;
-            case (K_LAlt|0x80):
-                kbd_keystate&=~LALT;
+
+            case (K_LAlt | 0x80):
+                kbd_keystate &= ~FLAG_LALT;
                 break;
+
             case K_RAlt:
-                kbd_keystate|=RALT;
+                kbd_keystate |= FLAG_RALT;
                 break;
 		
-            case (K_RAlt|0x80):
-                kbd_keystate&=~RALT;
+            case (K_RAlt | 0x80):
+                kbd_keystate &= ~FLAG_RALT;
                 break;
 
+    	    case K_Del:
+	    	kbd_keystate |= FLAG_DEL;
+		break;
+		
+	    case (K_Del | 0x80):
+	    	kbd_keystate &= ~FLAG_DEL;
+		break;
+		
         } /* switch(event) */
 
-        if ((kbd_keystate & (LCTRL|LMETA|RMETA)) == (LCTRL|LMETA|RMETA))
+        if ( ((kbd_keystate & (FLAG_LCTRL|FLAG_LMETA|FLAG_RMETA)) == (FLAG_LCTRL|FLAG_LMETA|FLAG_RMETA)) ||
+	     ((kbd_keystate & (FLAG_LCTRL|FLAG_LALT|FLAG_DEL)) == (FLAG_LCTRL|FLAG_LALT|FLAG_DEL)) )
 	{
-	    amigacode = 0x78;
+	    amigacode = 0x78; /* Reset */
 	}
 
     	D(bug("ki: amigacode %d (%x) last %d (%x)\n", amigacode, amigacode, data->prev_amigacode, data->prev_amigacode));
@@ -539,8 +572,10 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         /* Update keystate */
         data->kbd_keystate = kbd_keystate;
 
+#if 0
         if (amigacode == 0x78)    // Reset request
             ColdReboot();
+#endif
 
     	if (amigacode == NOKEY) continue;
 
@@ -554,19 +589,12 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	}
 
 	data->prev_amigacode = amigacode;
-
+	
 	D(bug("ki: ********************* c %d (%x)\n", amigacode, amigacode));
 
         /* Pass the code to handler */
         data->kbd_callback(data->callbackdata, amigacode);
 
-	/* Protect as from forever loop */
-	if (!--work)
-	{
-            D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
-            break;
-	}
-      
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
     if (!work)
@@ -613,6 +641,7 @@ int kbd_reset(void)
     }
 
     kbd_write_command_w(KBD_CTRLCMD_KBD_TEST);
+    
     if (kbd_wait_for_input() != 0)
     {
         return FALSE;
@@ -626,10 +655,13 @@ int kbd_reset(void)
     {
         kbd_write_output_w(KBD_OUTCMD_RESET);
         status = kbd_wait_for_input();
+	
         if (status == KBD_REPLY_ACK)
             break;
+	    
         if (status != KBD_REPLY_RESEND)
             return FALSE;
+	    
     } while(1);
 
     if (kbd_wait_for_input() != KBD_REPLY_POR)
@@ -639,10 +671,13 @@ int kbd_reset(void)
     {
         kbd_write_output_w(KBD_OUTCMD_DISABLE);
         status = kbd_wait_for_input();
+	
         if (status == KBD_REPLY_ACK)
             break;
+	    
         if (status != KBD_REPLY_RESEND)
             return FALSE;
+	    
     } while (1);
 
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
@@ -672,4 +707,3 @@ int kbd_reset(void)
 }
 
 /****************************************************************************************/
-
