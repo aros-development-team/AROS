@@ -11,6 +11,12 @@
 #include "intern.h"
 #include <aros/debug.h>
 
+#ifndef AROS_CREATE_ROM
+#  define STATIC_MID static OOP_MethodID mid
+#else
+#  define STATIC_MID OOP_MethodID mid = 0
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -64,7 +70,7 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     struct pRoot_Get p;
-    static OOP_MethodID mid = 0UL;
+    STATIC_MID;
     
     EnterFunc(bug("OOP_GetAttr())\n"));
     
