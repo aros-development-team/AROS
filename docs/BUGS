@@ -381,3 +381,11 @@ be drawn into the window in fish/304_clines.
 
 BUG000055
 newshell draws the window but then segfaults
+
+BUG000056
+hkiel@aros.org
+'Run' fish/worldtime twice. When the two programs update their display,
+the strings are only partially displayed in their correct colors (for
+active/inactive window): The strings first part is in the correct color
+but then they swap fg and bg color.
+
