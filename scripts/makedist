@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+#set -x
 # Create a source archive plus binaries.
 #
 # Install:
@@ -43,7 +44,7 @@ if [ ! -f "$dstdir/AROS-lx86-bin-$rel.tgz" ]; then
 	autoconf && \
 	./configure --enable-gfxhidd && \
 	make
-    ) > "$dstdir/AROS-lx86-bin-$rel.log" 2>&1
+    ) >& "$dstdir/AROS-lx86-bin-$rel.log"
     if [ $? -ne 0 ]; then
 	( 
 	    echo "Building Linux/i386 failed. See the complete log at"
@@ -70,7 +71,7 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 	autoconf && \
 	./configure --enable-gfxhidd --target=native-i386 && \
 	make
-    ) > "$dstdir/AROS-ibmpc-bin-$rel.log" 2>&1
+    ) >& "$dstdir/AROS-ibmpc-bin-$rel.log"
     if [ $? -ne 0 ]; then
 	( 
 	    echo "Building Native/i386 failed. See the complete log at"
