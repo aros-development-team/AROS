@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Window Manipulation Program
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -76,7 +76,7 @@ struct GfxBase *GfxBase;
 struct Screen *Screen;
 struct Window *Window;
 struct Menu *menus;
-
+ULONG lock;
 
 enum {None_type,Window_type,Screen_type,Max_type};
 
@@ -154,7 +154,6 @@ struct NewGadget listviewgad =
 
 #define NUMLVNODES  3
 struct List lv_list;
-STRPTR lv_texts[] = {"Blah","blah","blubb"};
 APTR vi;
 struct Gadget *glist = NULL;
 struct Gadget *screenlistg = NULL;
@@ -178,10 +177,12 @@ static struct NewMenu nm[] = {
   {NM_END}
 };
 
-struct IntuiText killscr_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Screen?",NULL};
-struct IntuiText killwin_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Window?",NULL};
-struct IntuiText pos_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Yes.",NULL};
-struct IntuiText neg_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"No!",NULL};
+#define EASYTRUE 1
+const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
+const STRPTR CLOSEWINDOW_TXT	= "Do you really want to Close the selected Window?";
+const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\nCopyright 2000 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS";
+const STRPTR YESNO_TXT		= "Yes.|No!";
+const STRPTR CONTINUE_TXT	= "Continue";
 
 VOID initlvnodes(struct List *list)
 {
@@ -193,7 +194,9 @@ char *string;
 
   NewList(list);
 
+  lock = LockIBase(0);
   scr = IntuitionBase->FirstScreen;
+  UnlockIBase(lock);
   while( scr )
   {
     sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
@@ -299,14 +302,14 @@ struct Gadget *makegadgets(struct Gadget *gad)
     return gad;
 }
 
-void open_lib()
+VOID open_lib()
 {
   IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library",0L);
   GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0L);
   GadToolsBase = OpenLibrary("gadtools.library",0L);
 }
 
-void open_window()
+VOID open_window()
 {
   Window = OpenWindowTags ( NULL
 	, WA_Title,	    "WiMP"
@@ -330,7 +333,7 @@ void open_window()
     );
 }
 
-void close_window()
+VOID close_window()
 {
   CloseWindow(Window);
   FreeGadgets(glist);
@@ -338,7 +341,7 @@ void close_window()
   UnlockPubScreen(NULL, Screen);
 }
 
-void close_lib()
+VOID close_lib()
 {
   CloseLibrary((struct Library *)IntuitionBase);
   CloseLibrary((struct Library *)GfxBase);
@@ -348,7 +351,7 @@ void close_lib()
 IPTR getsw(int *type)
 {
 IPTR gadget;
-IPTR xptr;
+IPTR xptr = NULL;
 
   GT_GetGadgetAttrs(screenlistg,Window,NULL,
       GTLV_Selected, (IPTR)&gadget,
@@ -391,7 +394,9 @@ VOID rescue_all()
 struct Screen *scr;
 struct Window *win;
 
+  lock = LockIBase(0);
   scr = IntuitionBase->FirstScreen;
+  UnlockIBase(lock);
   while( scr )
   {
     win = scr->FirstWindow;
@@ -443,6 +448,10 @@ int quit=0;
 
   makemenus();
   
+  es.es_StructSize = sizeof(es);
+  es.es_Flags	= 0;
+  es.es_Title	= "WiMP - The Window Manipulation Program";
+
   while(quit==0)
   {
     WaitPort(Window->UserPort);
@@ -465,12 +474,9 @@ int quit=0;
 			switch(ITEMNUM(code))
 			{
 			  case 0: /* About */
-				es.es_StructSize = sizeof(es);
-				es.es_Flags	= 0;
-				es.es_Title	= "WiMP - The Window Manipulation Program";
-				es.es_TextFormat = "WiMP - The Window Manipulation Program\nCopyright 2000 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS";
-				es.es_GadgetFormat = "Continue";
-				EasyRequest(Window,&es,NULL,"Hallo","Blah");
+				es.es_TextFormat = ABOUT_TXT;
+				es.es_GadgetFormat = CONTINUE_TXT;
+				EasyRequest(Window,&es,NULL,NULL,NULL);
 				break;
 			  case 2: /* Quit */
 				quit = 1;
@@ -491,15 +497,19 @@ int quit=0;
 				  switch(type)
 				  {
 				    case Screen_type :
-					killit = AutoRequest(Window,&killscr_body,&pos_body,&neg_body,0,0,200,75);
-					if( killit == TRUE )
+					es.es_TextFormat = CLOSESCREEN_TXT;
+					es.es_GadgetFormat = YESNO_TXT;
+					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					if( killit == EASYTRUE )
 					{
 					  CloseScreen((struct Screen *)object);
 					}
 					break;
 				    case Window_type :
-					killit = AutoRequest(Window,&killwin_body,&pos_body,&neg_body,0,0,200,75);
-					if( killit == TRUE )
+					es.es_TextFormat = CLOSEWINDOW_TXT;
+					es.es_GadgetFormat = YESNO_TXT;
+					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					if( killit == EASYTRUE )
 					{
 					  CloseWindow((struct Window *)object);
 					}
@@ -699,15 +709,19 @@ int quit=0;
 			  switch(type)
 			  {
 			    case Screen_type :
-				killit = AutoRequest(Window,&killscr_body,&pos_body,&neg_body,0,0,200,75);
-				if( killit == TRUE )
+				es.es_TextFormat = CLOSESCREEN_TXT;
+				es.es_GadgetFormat = YESNO_TXT;
+				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				if( killit == EASYTRUE )
 				{
 				  CloseScreen((struct Screen *)object);
 				}
 				break;
 			    case Window_type :
-				killit = AutoRequest(Window,&killwin_body,&pos_body,&neg_body,0,0,200,75);
-				if( killit == TRUE )
+				es.es_TextFormat = CLOSEWINDOW_TXT;
+				es.es_GadgetFormat = YESNO_TXT;
+				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				if( killit == EASYTRUE )
 				{
 				  CloseWindow((struct Window *)object);
 				}
