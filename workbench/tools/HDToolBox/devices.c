@@ -2,6 +2,7 @@
 
 #include <proto/exec.h>
 #include <exec/memory.h>
+#include <string.h>
 
 #include "devices.h"
 #include "gui.h"

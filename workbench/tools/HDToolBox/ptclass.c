@@ -18,6 +18,8 @@
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 
+#include <string.h>
+
 #include "ptclass.h"
 #include "partitions.h"
 #include "partitiontables.h"
