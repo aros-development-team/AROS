@@ -358,7 +358,7 @@ AROS_UFH3(static IPTR, dispatch_gadgetclass,
 	break;
 
     case GM_LAYOUT:
-    /* case GM_DOMAIN:*/
+    case GM_DOMAIN:
     case GM_GOACTIVE:
     case GM_HANDLEINPUT:
     case GM_GOINACTIVE:
