@@ -1,0 +1,5 @@
+Hack which turns byte writes to address 0xdddddebc into
+output going into the Linux shell.
+
+See ../DEBUGGING.txt!
+
