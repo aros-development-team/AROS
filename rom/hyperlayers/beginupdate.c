@@ -70,24 +70,26 @@
 
   l->cr2 = l->ClipRect;
 
-  damage_region = CopyRegion(l->DamageList);
-  if (l->ClipRegion) AndRegionRegion(l->ClipRegion, damage_region);
-  
+
+  if (l->ClipRegion)
+      damage_region = AndRegionRegionND(l->ClipRegion, l->DamageList);
+  else
+      damage_region = CopyRegion(l->DamageList);
+
   /* The DamageList is in layer coords. So convert it to screen coords */
-  
+
   _TranslateRect(&damage_region->bounds, l->bounds.MinX, l->bounds.MinY);
 
   AndRectRegion(damage_region, &l->bounds);
 
-  visible_damage_region = CopyRegion(damage_region);    
-  AndRegionRegion(l->VisibleRegion, visible_damage_region);
+  visible_damage_region = AndRegionRegionND(l->VisibleRegion, damage_region);
   if (l->shaperegion)
   {
     _TranslateRect(&visible_damage_region->bounds, -l->bounds.MinX, -l->bounds.MinY);
     AndRegionRegion(l->shaperegion, visible_damage_region);
-    _TranslateRect(&visible_damage_region->bounds, l->bounds.MinX, l->bounds.MinY);    
+    _TranslateRect(&visible_damage_region->bounds, l->bounds.MinX, l->bounds.MinY);
   }
-  
+
   l->ClipRect = _CreateClipRectsFromRegion(visible_damage_region,
                                            l,
                                            FALSE,
@@ -107,10 +109,10 @@
 				LayersBase);
 
   }
-  
+
   DisposeRegion(damage_region);
   DisposeRegion(visible_damage_region);
-  
+
   /*
   ** Must not set flag before InstallClipRegion!!! Keep this order!!!
   */
