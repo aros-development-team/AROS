@@ -188,8 +188,7 @@
     }
 
     isBackground = GetTagData(SYS_Background, TRUE, tags);
-    isAsynch     = GetTagData(SYS_Asynch, FALSE, tags);
-
+    isAsynch     = GetTagData(SYS_Asynch,    FALSE, tags);
 
     newtags = CloneTagItems(tags);
     if (newtags)
@@ -212,13 +211,11 @@
 	    { NP_Output     , (IPTR)cos                     }, /* 7  */
 	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 8  */
 	    { NP_CloseOutput, (isAsynch || cis_opened)      }, /* 9  */
-	    { NP_HomeDir    , NULL                          }, /* 10 */
 	    { NP_Cli        , (IPTR)TRUE                    }, /* 11 */
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
 	                      (IPTR)me->pr_WindowPtr        }, /* 12 */
 	    { NP_Arguments  , (IPTR)command                 }, /* 13 */
 	    { NP_Synchronous, FALSE                         }, /* 14 */
-	    { NP_UserData   , (IPTR)&csm                    }, /* 15 */
 	    { NP_Error      , (IPTR)ces                     }, /* 16 */
 	    { NP_CloseError , (isAsynch || cis_opened)      }, /* 17 */
 	    { TAG_END       , 0                             }
