@@ -26,14 +26,6 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
-static OOP_AttrBase HiddSerialUnitAB;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
-    { NULL,	NULL }
-};
-
 /*** HIDDSerial::NewUnit() *********************************************************/
 
 static OOP_Object *hiddserial_newunit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Serial_NewUnit *msg)
@@ -72,7 +64,9 @@ static OOP_Object *hiddserial_newunit(OOP_Class *cl, OOP_Object *obj, struct pHi
 	if (unitnum >= 0 && unitnum < SER_MAX_UNITS) {
 		struct TagItem tags[] =
 		{
+#define csd CSD(cl->UserData)
 				{aHidd_SerialUnit_Unit, unitnum},
+#undef csd
 				{TAG_DONE }
 		};
 
@@ -170,7 +164,8 @@ OOP_Class *init_serialhiddclass (struct class_static_data *csd)
 		D(bug("serialunitclass: %p\n", csd->serialunitclass));
 
 		if(csd->serialunitclass) {
-			if (OOP_ObtainAttrBases(attrbases)) {
+			__IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
+			if (NULL != __IHidd_SerialUnitAB) {
 				D(bug("SerialUnitClass ok\n"));
 
 				ok = TRUE;
@@ -195,7 +190,7 @@ void free_serialhiddclass(struct class_static_data *csd)
 
 	if(csd) {
 		OOP_RemoveClass(csd->serialhiddclass);
-	
+
 		free_serialunitclass(csd);
 
 		if(csd->serialhiddclass) OOP_DisposeObject((OOP_Object *) csd->serialhiddclass);
@@ -204,5 +199,3 @@ void free_serialhiddclass(struct class_static_data *csd)
 
 	ReturnVoid("free_serialhiddclass");
 }
-
-
