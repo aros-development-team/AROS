@@ -69,6 +69,7 @@
         NEWLIST( &replymp.mp_MsgList );
 
         /* Setup our message */
+    	imsg.ExecMessage.mn_ReplyPort = &replymp;	
         imsg.Class = IDCMP_WBENCHMESSAGE;
         imsg.Code  = WBENCHCLOSE;
 
