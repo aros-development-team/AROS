@@ -1,0 +1,30 @@
+include $(TOP)/config/make.cfg
+
+FILES := \
+    70scurve.png \
+    amoeba.png \
+    arabesq.png \
+    arizonabg.png \
+    backblue.png \
+    bluefuture.png \
+    bluegear.png \
+    bluejag.png \
+    bluestripe.png \
+    blueswirl.png \
+    greendrp.png \
+    grnswrl.png \
+    litemrbl.png \
+    rednoise.png \
+    ripples.png \
+    rock.png \
+    starblu.png \
+    wp_ivy.png \
+    wp_rose10.png
+
+#MM workbench-prefs-patterns : setup
+workbench-prefs-patterns : files-copy
+
+%copy_files_q files=$(FILES) dst=$(AROSDIR)/Prefs/Presets/Patterns/Misc
+
+%common
+
