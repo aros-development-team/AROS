@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := main gui prefs locale misc args asl
 EXEDIR      := $(AROS_PREFS)
-EXE 	    := $(EXEDIR)/FontNG
+EXE 	    := $(EXEDIR)/Font
 
 USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
