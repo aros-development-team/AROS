@@ -2,12 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Format a string and call a usercallback to output each char
+    Desc: C function vsprintf()
     Lang: english
 */
 /* Original source from libnix */
 #define AROS_ALMOST_COMPATIBLE
 #include <stdio.h>
+
+static int _vsprintf_uc (int c, char ** str)
+{
+    *(*str)++ = c;
+    return 1;
+}
 
 /*****************************************************************************
 
@@ -15,18 +21,18 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-	int vfprintf (
+	int vsprintf (
 
 /*  SYNOPSIS */
-	FILE	   * stream,
+	char	   * str,
 	const char * format,
 	va_list      args)
 
 /*  FUNCTION
-	Format a list of arguments and print them on the specified stream.
+	Format a list of arguments and put them into the string str.
 
     INPUTS
-	stream - A stream on which one can write
+	str - The formatted result is stored here
 	format - A printf() format string.
 	args - A list of arguments for the format string.
 
@@ -34,19 +40,29 @@
 	The number of characters written.
 
     NOTES
+	No check is beeing made that str is large enough to contain
+	the result.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	printf(), sprintf(), fprintf(), vprintf(), vfprintf(), snprintf(),
+	vsnprintf()
 
     INTERNALS
 
     HISTORY
-	06.12.1996 digulla copied from libnix
+	11.12.1996 digulla created
 
 ******************************************************************************/
 {
-    return __vcformat (stream, (void *)fputc, format, args);
-} /* vfprintf */
+    int rc;
+
+    rc = __vcformat (&str, (void *)_vsprintf_uc, format, args);
+
+    *str = 0;
+
+    return rc;
+} /* vsprintf */

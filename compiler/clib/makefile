@@ -6,6 +6,9 @@ USER_INCLUDES=-Iinclude
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/clib
+LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
+DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = ctype printf strcmp stricmp strlen strcpy qsort \
 	strdup malloc free calloc realloc memcpy bcopy \
@@ -13,12 +16,18 @@ FILES = ctype printf strcmp stricmp strlen strcpy qsort \
 	fgetc fprintf errno feof fgetc fflush fputs puts \
 	strncmp memchr memmove strcat strchr strcspn \
 	strerror strncat strncpy strpbrk strrchr strspn \
-	strstr strtok strncasecmp
+	strstr strtok strncasecmp sprintf vsprintf \
+	snprintf vsnprintf __vcformat
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
 setup:
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+
+test: $(TESTDIR)/snprintf
+
+$(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
+	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/links:
 	$(TOP)/scripts/makelinks include $(BINDIR)/include "*.h"
