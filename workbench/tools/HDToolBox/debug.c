@@ -2,14 +2,18 @@
 #include <stdarg.h>
 #include <proto/exec.h>
 #include "debug.h"
-#define DBUG 1
-#include <dbug.h>
 
-void kprintf(char *fmt, ...) {
-va_list ap;
+#define RawPutChar(chr) \
+  LP1NR(0x204, RawPutChar, UBYTE, chr, d0, \
+  , SysBase)
+  
+void puttostr(register UBYTE chr asm("d0"))
+{
+    RawPutChar(chr);
+}
 
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
+void kprintf(char *fmt, ...)
+{    
+    RawDoFmt(fmt, &fmt + 1, puttostr, NULL);
 }
 
