@@ -6,7 +6,10 @@
     Lang: english
 */
 
-int __dstflag;
+/* At the moment no daylight saving time information
+ * Implementation has to be changed when DST is implemented in AROS
+ */
+int __dstflag = -1;
 
 static char monthtable[] =
 {
@@ -65,9 +68,6 @@ static char monthtable[] =
 	3. every 400th is one
 
 	4. 1900 was none, 2000 is one
-
-    HISTORY
-	29.01.1997 digulla created
 
 ******************************************************************************/
 {
