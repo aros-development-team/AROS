@@ -4,8 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB	:= autoinit
-
 LIBBASEFILES := \
 	aros \
 	asl \
@@ -40,9 +38,6 @@ FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES)
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes
 
-%make_linklib_setup mmake=linklibs-autoinit
-
-%make_linklib
+%build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
 
 %common
-%include_deps

@@ -2,10 +2,6 @@
 #
 include $(TOP)/config/make.cfg
 
-#TARGET_CFLAGS := $(subst -O2,,$(TARGET_CFLAGS))
-
-LIB :=	arosm
-
 # Not implemented yet: w_cabs.c, w_cabsf.c
 FILES := \
         e_acos \
@@ -174,31 +170,23 @@ FILES := \
         w_yn \
         w_ynf
 
-# Define lint to get rid of the warnings about rcsid[]
-USER_CFLAGS	:= -D_IEEE_LIBM -Dlint
-
-INCLUDES_COPY	:= math.h
-DEST_INCLUDES	:= $(foreach f,$(INCLUDES_COPY),$(AROS_INCLUDES)/$(f))
-
 #MM includes-copy : setup-includes
-includes-copy : $(DEST_INCLUDES)
+includes-copy : $(AROS_INCLUDES)/math.h
 
-$(AROS_INCLUDES)/%.h : %.h
-	$(CP) $< $@
+%rule_copy from=%.h to=$(AROS_INCLUDES)/%.h
 
 #MM- linklibs : linklibs-arosm-$(CPU)
 #MM- linklibs-mlib : linklibs-arosm-$(CPU)
-#MM linklibs-arosm-hasfpu : includes
+#MM linklibs-arosm-hasfpu : arosm-setup-link includes
 
-%make_linklib_setup mmake=linklibs-arosm-hasfpu
-%make_linklib
+# Define lint to get rid of the warnings about rcsid[]
+USER_CFLAGS	:= -D_IEEE_LIBM -Dlint
 
-linklibs-$(LIB)-hasfpu: setup $(LIBDIR)/lib$(LIB).a
-	@$(NOP)
+%build_linklib mmake=linklibs-arosm-hasfpu libname=arosm files=$(FILES)
 
-setup ::
+#MM
+arosm-setup-link :
 	@$(RM) $(AROSDIR)/lib/libm.a
 	@ln -s $(AROSDIR)/lib/libarosm.a $(AROSDIR)/lib/libm.a
 
 %common
-%include_deps
