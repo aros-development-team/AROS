@@ -71,7 +71,7 @@ typedef struct _AddChar
 	LINE *line;									/* Line where operation occured */
 	UWORD pos;									/* Position in this line */
 	UWORD nbc;									/* Nb. of char inserted */
-#ifdef _AROS
+#ifdef __AROS__
 	UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE commit;								/* Savepoint */
@@ -85,7 +85,7 @@ typedef struct _RemLine
 {
 	LINE  *line;								/* Line removed */
 	LINE  *after;								/* Insert the line after this one */
-#ifdef _AROS
+#ifdef __AROS__
 	UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE  commit;								/* Savepoint */
@@ -97,7 +97,7 @@ typedef struct _JoinLine
 	LINE  *line;								/* First line concerned */
 	LINE  *old;									/* Old line removed */
 	ULONG  pos;									/* Joined position */
-#ifdef _AROS
+#ifdef __AROS__
    UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE  commit;								/* Savepoint */
@@ -106,7 +106,7 @@ typedef struct _JoinLine
 
 typedef struct _GroupBy						/* Gather multiple operations */
 {
-#ifdef	_AROS
+#ifdef	__AROS__
    UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE  commit;								/* Savepoint */

@@ -27,7 +27,7 @@ static UBYTE  SPrintfBuf[80], *savea3;
 /** SPrintf like routine **/
 
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <aros/asmcall.h>
 
 AROS_UFH2(void, PutChProc,
@@ -52,7 +52,7 @@ void __asm PutChProc(register __d0 UBYTE data, register __a3 STRPTR out)
 		*savea3++ = data;
 	else *savea3 = 0;
 
-#ifdef _AROS
+#ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
 }
