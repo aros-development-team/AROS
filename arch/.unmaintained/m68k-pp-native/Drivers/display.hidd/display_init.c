@@ -36,14 +36,14 @@
 
 #define NOEXPUNGE
 
-struct dsiplaybase
+struct displaybase
 {
     struct Library library;
     struct ExecBase *sysbase;
     BPTR	seglist;
 };
 
-extern struct displayModeDesc displayDefMode[];
+extern struct DisplayModeDesc DisplayDefMode[];
 
 #include <libcore/libheader.c>
 
@@ -73,9 +73,11 @@ static BOOL initclasses(struct display_staticdata *xsd)
 {
 
     /* Get some attrbases */
-    
+
+#ifndef AROS_CREATE_ROM_BUG
     if (!OOP_ObtainAttrBases(abd))
     	goto failure;
+#endif
 
     xsd->displayclass = init_displayclass(xsd);
     if (NULL == xsd->displayclass)
@@ -88,11 +90,7 @@ static BOOL initclasses(struct display_staticdata *xsd)
     xsd->offbmclass = init_offbmclass(xsd);
     if (NULL == xsd->offbmclass)
     	goto failure;
-#if 0
-    xsd->mouseclass = init_mouseclass(xsd);
-    if (NULL == xsd->mouseclass)
-    	goto failure;
-#endif
+
     return TRUE;
         
 failure:
@@ -104,10 +102,6 @@ failure:
 
 static VOID freeclasses(struct display_staticdata *xsd)
 {
-#if 0
-    if (xsd->mouseclass)
-    	free_mouseclass(xsd);
-#endif
     if (xsd->displayclass)
     	free_displayclass(xsd);
 
@@ -117,7 +111,9 @@ static VOID freeclasses(struct display_staticdata *xsd)
     if (xsd->onbmclass)
     	free_onbmclass(xsd);
 
+#ifndef AROS_CREATE_ROM_BUG
     OOP_ReleaseAttrBases(abd);
+#endif
 	
     return;
 }
@@ -141,10 +137,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	
 	for (i=0; i<NUM_MODES; i++)
 	{
-	    entry = AllocMem(sizeof(struct displayModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
+	    entry = AllocMem(sizeof(struct DisplayModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
 	    if (entry)
 	    {
-		entry->Desc=&(displayDefMode[i]);
+//		entry->Desc=&(DisplayDefMode[i]);
 		ADDHEAD(&xsd->modelist,entry);
 		D(bug("Added default mode: %s\n", entry->Desc->name));
 	    }
@@ -165,7 +161,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    }
 	    CloseLibrary(xsd->oopbase);
 	}
-	if (entry) FreeMem(entry, sizeof(struct displayModeEntry));
+	if (entry) FreeMem(entry, sizeof(struct DisplayModeEntry));
 	FreeMem(xsd, sizeof (struct display_staticdata));
     }
     return FALSE;

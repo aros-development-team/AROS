@@ -13,7 +13,7 @@
 
 /* This structure keeps contents of mode registers including palette */
 
-struct displayHWRec
+struct DisplayHWRec
 {
   char NoClock;                 /* number of selected clock */
 };
