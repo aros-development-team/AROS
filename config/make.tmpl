@@ -1607,7 +1607,7 @@ endef
 	done
 	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";                           \
 	for f in $(%(mmake)_FILES); do                                            \
-	    echo -e "%(dst)/$$f: %(src)/$$f | \$$\$$(@D); $(CP) \$$< \$$@" >> $$m; \
+	    $(ECHO) "%(dst)/$$f: %(src)/$$f | \$$\$$(@D); $(CP) \$$< \$$@" >> $$m; \
 	done;  \
 	$(MAKE) -f $$m all
 
