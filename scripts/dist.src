@@ -1,3 +1,4 @@
+contents
 cint2.awk
 gendef.awk
 genprotos.h
@@ -10,3 +11,10 @@ makelinks
 relpath
 stat.awk
 makedist
+genlibdefs.gawk
+findhit
+genprotos
+genprotos.h
+gendef.awk
+strtoint.c
+moveifchanged
