@@ -36,7 +36,7 @@ extern void boot();
 
 BOOL init_hidds( struct ExecBase *, struct DosLibrary * );
 BOOL mount( struct DeviceNode *dn, struct DosLibrary * ); 
-BOOL isBootable( CONST_STRPTR deviceName );
+BOOL isBootable( CONST_STRPTR deviceNam, struct DosLibrary * );
 
 AROS_UFH3(void, intBoot,
     AROS_UFHA(APTR, argString, A0),
@@ -47,19 +47,17 @@ AROS_UFH3(void, intBoot,
     AROS_USERFUNC_INIT
 
     struct ExpansionBase *ExpansionBase = NULL;
-    struct Library       *DOSBase       = NULL;
+    struct DosLibrary    *DOSBase       = NULL;
     struct BootNode      *bootNode      = NULL;
-#if 0
     STRPTR                bootName;
     LONG                  bootNameLength;        
     BPTR                  lock;
     LONG                  second;
-#endif
 
 #   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_DevName)
     
     /**** Open all required libraries **********************************************/
-    DOSBase       =                          OpenLibrary( "dos.library", 0 );
+    DOSBase       = (struct DosLibrary *)    OpenLibrary( "dos.library", 0 );
     ExpansionBase = (struct ExpansionBase *) OpenLibrary( "expansion.library", 0 );
 
     if( DOSBase == NULL )
@@ -93,14 +91,14 @@ AROS_UFH3(void, intBoot,
 	    from the list so DOS doesn't try to boot from it later. 
         */ 
 
-	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode, (struct DosLibrary *)DOSBase ) )
+	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
+	            (struct DosLibrary *) DOSBase))
 	{
 	    REMOVE( bootNode );
 	}
 #endif
     }
-
-#if 0   
+   
     /**** Try to find a bootable filesystem ****************************************/   
     while( TRUE )
     {
@@ -113,7 +111,7 @@ AROS_UFH3(void, intBoot,
                 the list. 
             */
         
-            if( isBootable( deviceName ) )
+            if( isBootable( deviceName, (struct DosLibrary *)DOSBase ) )
             {
                 goto boot;
             }
@@ -148,9 +146,8 @@ boot:
     CloseLibrary( (struct Library *) ExpansionBase );
 
     /* Lock the boot device and add some default assigns */
-    D(bug("Locking primary boot device %s\n", bootName));
     
-    lock = Lock(bootName, SHARED_LOCK);
+    lock = DOSBase->dl_SYSLock = Lock(bootName, SHARED_LOCK);
     
     if (lock != NULL)
     {
@@ -206,7 +203,7 @@ boot:
 	
     /* Initialize HIDDs */
     init_hidds(SysBase, (struct DosLibrary *)DOSBase);
-#endif
+
     /* We now call the system dependant boot - should never return. */
     AROS_UFC3(void, boot, 
 	      AROS_UFCA(STRPTR, argString, A0),
@@ -217,6 +214,7 @@ boot:
 
     AROS_USERFUNC_EXIT
 }
+
 
 void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 {
@@ -242,6 +240,10 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
     }
 }
 
+#ifdef SysBase
+#undef SysBase
+#endif
+
 #define SysBase (DOSBase->dl_SysBase)
 
 BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase ) 
@@ -261,7 +263,7 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
 	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 	    iofs->io_Union.io_OpenDevice.io_Environ    = BADDR(fssm->fssm_Environ);
 	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_NewName;
-	    if (!OpenDevice((STRPTR)AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
+	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
 	    {
 		if (AddDosEntry(dn))
 		{
@@ -289,10 +291,13 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
     return rc;
 }
 
+#ifdef SysBase
 #undef SysBase
+#endif
 
-#if 0
-BOOL isBootable( CONST_STRPTR deviceName )
+#define SysBase (DOSBase->dl_SysBase)
+
+BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
 {
     BOOL            result = FALSE;
     BPTR            lock;
@@ -333,4 +338,7 @@ cleanup:
     
     return result;
 }
+
+#ifdef SysBase
+#undef SysBase
 #endif
