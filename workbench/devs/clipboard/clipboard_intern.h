@@ -15,10 +15,6 @@
 #include <dos/bptr.h>
 #endif
 
-#ifndef __MORPHOS__
-# pragma pack(2)
-#endif
-
 struct ClipboardBase
 {
     struct Device      cb_device;
@@ -47,13 +43,7 @@ struct PostRequest
 
 struct ClipboardUnit
 {
-    struct Node  cu_Node;                   /* These two fields MUST be  */
-    ULONG        cu_UnitNum;                /* first and in this order in */
-                                            /* the clipboard unit as they're
-					       also present in struct
-					       ClipboardUnitPartial so that
-					       users can check the unitnum when
-					       a hook is called. */
+    struct ClipboardUnitPartial cu_Head;	/* MUST be first! */
 
     LONG      cu_ReadID;
     LONG      cu_WriteID;
@@ -71,10 +61,6 @@ struct ClipboardUnit
     struct SignalSemaphore  cu_UnitLock;
 
 };
-
-#ifndef __MORPHOS__
-# pragma pack()
-#endif
 
 #ifdef SysBase
 #undef SysBase

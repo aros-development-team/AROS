@@ -243,8 +243,8 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 	if ((ioreq->io_Unit = (struct Unit *)AllocMem(sizeof(struct ClipboardUnit),
 						     MEMF_CLEAR | MEMF_PUBLIC)))
 	{
-	    CBUn->cu_UnitNum = unitnum;
-	    CBUn->cu_Node.ln_Type = unitnum;
+	    CBUn->cu_Head.cu_UnitNum = unitnum;
+	    CBUn->cu_Head.cu_Node.ln_Type = unitnum;
 	    CBUn->cu_PostID = 0;
 	    CBUn->cu_WriteID = 0;
 
@@ -443,6 +443,7 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case CMD_READ:
+
 	    D(bug("clipboard.device/Command: CMD_READ\n"));
 
 	    /* Get new ID if this is the beginning of a read operation */
@@ -464,13 +465,12 @@ AROS_LH1(void, beginio,
 		      CBUn->cu_WriteID == CBUn->cu_PostID)
 		{
 		    struct PostRequest pr = {
-			{ NULL, NULL },
+		        { NULL, NULL },
 			FindTask(NULL)
 		    };
 		    
 		    /* Make sure we are signalled. */
-		    AddTail((struct List*) &CBUn->cu_PostRequesters,
-			    (struct Node*) &pr);
+		    ADDTAIL((struct List*) &CBUn->cu_PostRequesters, (struct Node*) &pr);
 		    
 		    /* A poster reading will deadlock that process
 		     * until somebody else writes to the
@@ -479,8 +479,7 @@ AROS_LH1(void, beginio,
 		    
 		    if (CBUn->cu_PostPort)
 		    {
-			D(bug("clipboard.device/Command: CMD_READ..notify PostPort 0x%lx\n",
-			      CBUn->cu_PostPort));
+			D(bug("clipboard.device/Command: CMD_READ..notify PostPort 0x%lx\n", CBUn->cu_PostPort));
 
 			CBUn->cu_Satisfy.sm_ClipID = CBUn->cu_PostID;
 			PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
@@ -531,7 +530,7 @@ AROS_LH1(void, beginio,
 //		ioClip(ioreq)->io_Error = IOERR_ABORTED;
 		break;
 	    }
-	    D(bug("Jag kom hit\n"));
+
 	    readCb(ioreq, CBBase);
 
 	    break;
@@ -591,8 +590,7 @@ AROS_LH1(void, beginio,
 	         deadlocked by posting and then reading, try to make
 	         this CBD_POST turn into a CMD_WRITE immediately. */
 
-	      D(bug("clipboard.device/Command: CMD_POST..notify PostPort 0x%lx\n",
-		    CBUn->cu_PostPort));
+	      D(bug("clipboard.device/Command: CMD_POST..notify PostPort 0x%lx\n", CBUn->cu_PostPort));
 
 	      CBUn->cu_Satisfy.sm_ClipID = CBUn->cu_PostID;
 	      PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
@@ -607,8 +605,8 @@ AROS_LH1(void, beginio,
 	case CBD_CURRENTREADID:
 	    D(bug("clipboard.device/Command: CBD_CURRENTREADID\n"));
 	    ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
-	    /* Was PostID. Note that AmigaOS really has a ReadID
-	       counter that is *almost* always the same as WriteID. */
+	    /* NOTE: NOT A BUG! Was PostID. Note that AmigaOS really has a
+	       ReadID counter that is *almost* always the same as WriteID. */
 	    break;
 
 
@@ -831,8 +829,7 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
-    if(CBUn->cu_WriteID != 0 &&
-       CBUn->cu_WriteID == ioClip(ioreq)->io_ClipID)
+    if(CBUn->cu_WriteID != 0 && CBUn->cu_WriteID == ioClip(ioreq)->io_ClipID)
     {
 	D(bug("clipboard.device/updateCb: Closing ClipFile\n"));
 
