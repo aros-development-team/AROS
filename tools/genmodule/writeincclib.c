@@ -38,7 +38,7 @@ void writeincclib(struct config *cfg)
     {
 	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
-	    if (funclistit->lvo >= cfg->firstlvo)
+	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	    {
 		fprintf(out, "\nAROS_LP%d(%s, %s,\n", funclistit->argcount, funclistit->type, funclistit->name);
 		

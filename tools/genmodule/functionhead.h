@@ -29,7 +29,8 @@ struct functionhead {
     struct functionarg *arguments;
     struct functionalias *aliases;
     unsigned int lvo;
-    int novararg;
+    int novararg : 1;
+    int priv     : 1;
 };
 
 /* In funclist the information of all the functions of the module will be stored.

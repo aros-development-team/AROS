@@ -43,7 +43,7 @@ void writeincdefines(struct config *cfg)
     {
 	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
-	    if (funclistit->lvo >= cfg->firstlvo)
+	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	    {
 		if (cfg->libcall != STACK)
 		{
