@@ -12,6 +12,7 @@ LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libarosc.a
 
+SRCS = LibInit.c SampleFuncs.c
 OBJS = libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
 LIB = $(SLIBDIR)/example.library
 
@@ -49,6 +50,11 @@ SampleFuncs.o : SampleFuncs.c SampleFuncs.h intern.h libdefs.h
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-libdefs.h : lib.conf ./genlibdefs.gawk
+libdefs.h : lib.conf ./genlibdefs.awk
 	@echo "Generating $@..."
 	@$(AWK) -f ./genlibdefs.gawk $< > $@
+
+functable.c : $(SRCS) ./genfunctable.awk
+	@echo "Generating $@..."
+	@$(AWK) -f ./genfunctable.awk $(SRCS) > $@
+
