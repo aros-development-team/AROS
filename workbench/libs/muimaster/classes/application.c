@@ -26,6 +26,33 @@
 
 extern struct Library *MUIMasterBase;
 
+struct MUI_ApplicationData
+{
+    struct MUI_GlobalInfo app_GlobalInfo;
+    APTR           app_WindowFamily; /* delegates window list */
+    struct MinList app_IHList;
+    struct MinList app_MethodQueue;
+    struct SignalSemaphore app_MethodSemaphore;
+    struct MinList app_ReturnIDQueue;
+    APTR           app_RIDMemChunk;
+    STRPTR         app_Author;
+    STRPTR         app_Base;
+    STRPTR         app_Copyright;
+    STRPTR         app_Description;
+    STRPTR         app_HelpFile;
+    STRPTR         app_Title;
+    STRPTR         app_Version;
+    ULONG          app_SleepCount;
+    BOOL           app_ForceQuit;
+    BOOL           app_Iconified;
+    BOOL           app_SingleTask;
+    struct MsgPort *app_TimerPort;
+    struct timerequest *app_TimerReq;
+    ULONG	   app_TimerOutstanding;
+    Object        *app_Menustrip;
+    ULONG          app_MenuAction; /* Remember last action */
+};
+
 struct timerequest_ext
 {
     struct timerequest treq;
