@@ -6,10 +6,12 @@
 .EXPORT_ALL_VARIABLES:
 
 TOPDIR	:=	$(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
+TOP     :=	$(TOPDIR)/../..
 
 IPATH	=	$(TOPDIR)/include
+INCLUDE	=	$(TOP)/compiler/include
 OBJDIR	=	$(TOPDIR)/lib
-CC	=	gcc -I$(IPATH) -O1 -m486 -Wall
+CC	=	gcc -I$(IPATH) -I$(INCLUDE) -O1 -m486 -Wall
 LD	=	ld -Ttext 0x1000 -e startup_32 -N -Map Output.map
 LINK	=	ld -N -r -s
 MAKE	=	make
@@ -24,8 +26,6 @@ HEADER	=	$(OBJDIR)/header.o
 CORE	=	$(OBJDIR)/core.o
 
 OBJECTS	=	$(HEADER) $(CORE)
-
-INCLUDE	=	~/AROS/bin/linux-i386/gen/include
 
 all:	$(IMAGE)
 	@echo
@@ -51,26 +51,26 @@ $(KERNEL): $(OBJECTS)
 $(HEADER): $(TOPDIR)/boot/head.S $(TOPDIR)/boot/init.c $(TOPDIR)/boot/logo.c \
            $(TOPDIR)/boot/text.c
 	@echo -n Compiling kernel header...
-	@$(MAKE) -s -C boot $(HEADER)
+	@$(MAKE) -C boot $(HEADER)
 	@echo OK
 
 $(CORE):
-	@$(MAKE) -s -C rom $(CORE)
+	@$(MAKE) -C rom $(CORE)
 
 $(BUILD): $(BUILD).c
 	@echo -n Compiling build tool...
-	@$(MAKE) -s -C boot/tools $(BUILD)
+	@$(MAKE) -C boot/tools $(BUILD)
 	@echo OK
 
 $(BOOTSECT): $(TOPDIR)/boot/bootsect.S
-	@$(MAKE) -s -C boot $(BOOTSECT)
+	@$(MAKE) -C boot $(BOOTSECT)
 
 $(SETUP): $(TOPDIR)/boot/setup.S $(TOPDIR)/boot/video.S
-	@$(MAKE) -s -C boot $(SETUP)
+	@$(MAKE) -C boot $(SETUP)
 
 clean:
 	@echo Cleaning up the mess...
-	@$(MAKE) -s -C boot clean
-	@$(MAKE) -s -C boot/tools clean
-	@$(MAKE) -s -C rom clean
+	@$(MAKE) -C boot clean
+	@$(MAKE) -C boot/tools clean
+	@$(MAKE) -C rom clean
 	@rm -f $(KERNEL) $(IMAGE)
