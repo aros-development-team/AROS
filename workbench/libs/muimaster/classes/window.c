@@ -30,6 +30,7 @@
 #endif
 
 #include "mui.h"
+#include "support.h"
 #include "classes/window.h"
 #include "classes/area.h"
 
@@ -252,48 +253,6 @@ _zune_window_resize (struct MUI_WindowData *data)
                       data->wd_MinMax.MaxHeight);
 
     SizeWindow(win, dx, dy);
-}
-
-/**************/
-
-void _zune_focus_new (Object *obj)
-{
-    struct RastPort *rp = _rp(obj);
-    UWORD oldDrPt = rp->LinePtrn;
-
-    int x1 = _left(obj) - 1;
-    int y1 = _top(obj)  - 1;
-    int x2 = _left(obj) + _width(obj);
-    int y2 = _top(obj)  + _height(obj);
-
-    SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW], JAM2);
-    SetDrPt(rp, 0xCCCC);
-    Move(rp, x1, y1);
-    Draw(rp, x2, y1);
-    Draw(rp, x2, y2);
-    Draw(rp, x2, y1);
-    Draw(rp, x1, y1);
-    SetDrPt(rp, oldDrPt);
-}
-
-void _zune_focus_destroy (Object *obj)
-{
-#warning FIXME: focus destroy (redraw object)
-
-#if 0
-    GdkWindow    **focuswin = muiRenderInfo(obj)->mri_FocusWin;
-    int i;
-
-    for (i = 0; i < 4; i++)
-    {
-	if (focuswin[i])
-	    gdk_window_destroy(focuswin[i]);
-	else
-	    break;
-	focuswin[i] = NULL;
-    }
-
-#endif
 }
 
 /**************/
@@ -610,48 +569,45 @@ static ULONG window_Close(struct IClass *cl, Object *obj);
 static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
 			   Object *newRoot)
 {
-    static ULONG disconnect = MUIM_DisconnectParent;
     Object *oldRoot = data->wd_RootObject;
 
     if (!(data->wd_Flags & MUIWF_OPENED))
     {
 	if (oldRoot)
 	{
-/* FIXME: ActiveObject
-	    if (data->wd_ActiveObject
-		&& (Object *)data->wd_ActiveObject->data == oldRoot)
-		set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);*/
-/* FIXME: CycleChain 
-	    if (_flags(oldRoot) & MADF_CYCLECHAIN)
-		data->wd_CycleChain = g_list_remove(data->wd_CycleChain,
-						    oldRoot);*/
-	    DoMethodA(oldRoot, (Msg)&disconnect);
+	    if (data->wd_ActiveObject && data->wd_ActiveObject->obj == oldRoot)
+		set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+	    DoMethod(oldRoot, MUIM_DisconnectParent);
 	}
 
 	data->wd_RootObject = newRoot;
 	if (newRoot)
 	{
-	    _parent(newRoot) = NULL;
 	    /* if window is in App tree, inform child */
 	    if (muiNotifyData(obj)->mnd_GlobalInfo)
-		DoMethod(newRoot, MUIM_ConnectParentWindow,
-			 (IPTR)obj, (IPTR)&data->wd_RenderInfo);
+		DoMethod(newRoot, MUIM_ConnectParent, (IPTR)obj);
 	}
     }
 }
 
+static struct ObjNode *FindObjNode(struct MUI_WindowData *data, Object *obj)
+{
+    struct ObjNode *node;
+    for (node = (struct ObjNode*)data->wd_CCList.mlh_Head; node->node.mln_Succ; node = (struct ObjNode*)node->node.mln_Succ)
+    {
+    	if (node->obj == obj)
+	{
+	    return node;
+	}
+    }
+    return NULL;
+}
 
 /* code for setting MUIA_Window_ActiveObject */
 static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 			  ULONG newval)
 {
-    return;
-#if 0
-    static const STACKULONG goActive[]   = { MUIM_GoActive };
-    static const STACKULONG goInactive[] = { MUIM_GoInactive };
-
-    if (data->wd_ActiveObject
-	&& (ULONG)data->wd_ActiveObject->data == newval)
+    if (data->wd_ActiveObject && (ULONG)data->wd_ActiveObject->obj == newval)
 	return;
 
     switch (newval)
@@ -659,73 +615,45 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 	case MUIV_Window_ActiveObject_None:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goInactive);
+		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
 		data->wd_ActiveObject = NULL;
 	    }
 	    break;
 
 	case MUIV_Window_ActiveObject_Next:
-/*  g_print("list has %d elem\n", g_list_length(data->wd_CycleChain)); */
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goInactive);
-		data->wd_ActiveObject = g_list_next(data->wd_ActiveObject);
+		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
+		data->wd_ActiveObject = (struct ObjNode*)((data->wd_ActiveObject->node.mln_Succ->mln_Succ)?(data->wd_ActiveObject->node.mln_Succ):NULL);
 	    }
-	    else if (data->wd_CycleChain)
-	    {
-		data->wd_ActiveObject = g_list_first(data->wd_CycleChain);
-		/* anyway wd_CycleChain is the first node */
-		ASSERT(data->wd_ActiveObject == data->wd_CycleChain);
-	    }
-
-	    if (data->wd_ActiveObject)
-	    {
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goActive);
-	    }
+	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_Head;
 	    break;
 
 	case MUIV_Window_ActiveObject_Prev:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethodA((Object *)data->wd_ActiveObject->data, (Msg)goInactive);
-		data->wd_ActiveObject = g_list_previous(data->wd_ActiveObject);
+		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
+		data->wd_ActiveObject = (struct ObjNode*)((data->wd_ActiveObject->node.mln_Pred->mln_Pred)?(data->wd_ActiveObject->node.mln_Pred):NULL);
 	    }
-	    else if (data->wd_CycleChain)
-	    {
-		data->wd_ActiveObject = g_list_last(data->wd_CycleChain);
-	    }
-
-	    if (data->wd_ActiveObject)
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goActive);
+	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_TailPred;
 	    break;
 
 	default:
 	    if (data->wd_ActiveObject)
 	    {
-		if ((gpointer)newval == data->wd_ActiveObject)
-		    return;
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goInactive);
+		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
 	    }
-	    else if ((gpointer)newval == NULL)
-		return;
-
-	    data->wd_ActiveObject =
-		g_list_find(data->wd_CycleChain,
-			    (gpointer)newval);
-	    if (data->wd_ActiveObject)
-	    {
-		DoMethodA((Object *)data->wd_ActiveObject->data,
-			  (Msg)goActive);	    
-	    }
+	    else if (!newval == NULL) return;
+	    data->wd_ActiveObject = FindObjNode(data,(Object*)newval);
 	    break;
     }
-/*  g_print("active obj is now %lx\n", data->wd_ActiveObject ? data->wd_ActiveObject->data : 0L); */
-#endif
+
+    if (data->wd_ActiveObject)
+    {
+	DoMethod(data->wd_ActiveObject->obj, MUIM_GoActive);
+    }
 }
 
 
@@ -827,12 +755,13 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     NewList((struct List*)&(data->wd_EHList));
     NewList((struct List*)&(data->wd_CCList));
+    NewList((struct List*)&(data->wd_CycleChain));
 
     data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET
                       | WFLG_SIMPLE_REFRESH | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
 
     data->wd_Events = _zune_window_get_default_events();
-//    data->wd_ActiveObject = NULL;
+    data->wd_ActiveObject = NULL;
     data->wd_ID = 0;
     data->wd_Title = "";
     data->wd_ReqHeight = MUIV_Window_Height_Default;
@@ -850,7 +779,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -948,7 +877,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem        *tags = msg->ops_AttrList;
     struct TagItem        *tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -985,11 +914,10 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/******************************************************************************/
-/* GET                                                                        */
-/******************************************************************************/
-
-static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -1043,52 +971,35 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/*
- * Called by Application (parent) object whenever this object is added.
- * init GlobalInfo
- */
-static ULONG
-mConnectParent(struct IClass *cl, Object *obj,
+/**************************************************************************
+ Called by Application (parent) object whenever this object is added.
+ init GlobalInfo
+**************************************************************************/
+static ULONG Window_ConnectParent(struct IClass *cl, Object *obj,
 		     struct MUIP_ConnectParent *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    Object                *parent = msg->parent;
 
-//    ASSERT(parent != NULL);
-//    ASSERT(muiNotifyData(parent)->mnd_GlobalInfo != NULL);
+    if (!DoSuperMethodA(cl,obj,(Msg)msg)) return 0;
 
-    muiNotifyData(obj)->mnd_GlobalInfo = muiNotifyData(parent)->mnd_GlobalInfo;
     if (data->wd_RootObject)
-    {
-#warning FIXME: mad_Background
-#if 0
-	if (muiAreaData(data->wd_RootObject)->mad_Background == NULL)
-	    muiAreaData(data->wd_RootObject)->mad_Background =
-		zune_imspec_copy(__zprefs.images[MUII_WindowBack]);
-/*  	g_print("rootobj bg=%p\n", muiAreaData(data->wd_RootObject)->mad_Background); */
-#endif
-	DoMethod(data->wd_RootObject, MUIM_ConnectParentWindow,
-		 (IPTR)obj, (IPTR)&data->wd_RenderInfo);
-    }
+	DoMethod(data->wd_RootObject, MUIM_ConnectParent, (IPTR)obj);
+
     return TRUE;
 }
 
 
-/*
- * called by parent object
- */
-static ULONG
-mDisconnectParent(struct IClass *cl, Object *obj,
-			struct MUIP_DisconnectParent *msg)
+/**************************************************************************
+ called by parent object
+**************************************************************************/
+static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
     if (data->wd_RootObject)
 	DoMethodA(data->wd_RootObject, (Msg)msg);
 
-    muiNotifyData(obj)->mnd_GlobalInfo = NULL;
-
-    return TRUE;
+    return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 /*
@@ -1247,9 +1158,9 @@ mRecalcDisplay(struct IClass *cl, Object *obj,
 }
 
 
-/******************************************************************************/
-/******************************************************************************/
-
+/**************************************************************************
+ ...
+**************************************************************************/
 static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_AddEventHandler *msg)
 {
@@ -1262,9 +1173,9 @@ static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/******************************************************************************/
-/******************************************************************************/
-
+/**************************************************************************
+ ...
+**************************************************************************/
 static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_RemEventHandler *msg)
 {
@@ -1277,53 +1188,68 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/* Note that this is MUIM_Window_Setup, not MUIM_Setup */
-static ULONG
-mSetup(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ Note that this is MUIM_Window_Setup, not MUIM_Setup
+**************************************************************************/
+static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-/*      int i; */
-
-//    data->wd_ActiveObject = NULL;
     if (!SetupRenderInfo(&data->wd_RenderInfo))
 	return FALSE;
 
-/*      for (i = 0; i < MUII_Count; i++) */
-/*      { */
-/*  	g_print("imspec_setup %d\n", i); */
-/*  	zune_imspec_setup(&__zprefs.images[i], FALSE); */
-/*      } */
     return TRUE;
 }
 
-static ULONG mCleanup(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+
+**************************************************************************/
+static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-/*      int i; */
-
-/*      for (i = 0; i < MUII_Count; i++) */
-/*      { */
-/*  	g_print("imspec_cleanup %d\n", i);	 */
-/*  	zune_imspec_cleanup(&__zprefs.images[i], FALSE); */
-/*      } */
     CleanupRenderInfo(&data->wd_RenderInfo);
     return TRUE;
 }
 
 
-static ULONG mAddControlCharHandler(struct IClass *cl, Object *obj,
-		 struct MUIP_Window_AddControlCharHandler *msg)
+/**************************************************************************
+ This adds the the control char handler and also do the MUIA_CycleChain
+ stuff. Orginal MUI does this in an other way.
+**************************************************************************/
+static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_AddControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
     Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
+
+    /* Due to the lack of an better idea ... */
+    if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
+    {
+	struct ObjNode *node = mui_alloc_struct(struct ObjNode);
+	if (node)
+	{
+	    node->obj = msg->ccnode->ehn_Object;
+	    AddTail((struct List *)&data->wd_CycleChain,(struct Node*)node);
+	}
+    }
     return TRUE;
 }
 
-static ULONG mRemControlCharHandler(struct IClass *cl, Object *obj,
-		 struct MUIP_Window_RemControlCharHandler *msg)
+/**************************************************************************
+ 
+**************************************************************************/
+static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_RemControlCharHandler *msg)
 {
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct ObjNode     *node = FindObjNode(data,msg->ccnode->ehn_Object);
+
     Remove((struct Node *)msg->ccnode);
+    if (node)
+    {
+    	/* Remove from the chain list */
+	Remove((struct Node *)node);
+	mui_free(node);
+    }
+
     return TRUE;
 }
 
@@ -1344,35 +1270,23 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	/* Whenever an object shall be created using NewObject(), it will be
 	** sent a OM_NEW method.
 	*/
-	case OM_NEW:
-	    return(Window_New(cl, obj, (struct opSet *) msg));
-	case OM_DISPOSE:
-	    return(Window_Dispose(cl, obj, msg));
-	case OM_SET:
-	    return(Window_Set(cl, obj, (struct opSet *)msg));
-	case OM_GET:
-	    return(mGet(cl, obj, (struct opGet *)msg));
-	case MUIM_Window_AddEventHandler :
-	    return Window_AddEventHandler(cl, obj, (APTR)msg);
-	case MUIM_Window_RemEventHandler :
-	    return Window_RemEventHandler(cl, obj, (APTR)msg);
-	case MUIM_ConnectParent :
-	    return(mConnectParent(cl, obj, (APTR)msg));
-	case MUIM_DisconnectParent :
-	    return(mDisconnectParent(cl, obj, (APTR)msg));
+	case OM_NEW: return Window_New(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return Window_Dispose(cl, obj, msg);
+	case OM_SET: return Window_Set(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Window_Get(cl, obj, (struct opGet *)msg);
+	case MUIM_Window_AddEventHandler: return Window_AddEventHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_RemEventHandler: return Window_RemEventHandler(cl, obj, (APTR)msg);
+	case MUIM_ConnectParent: return Window_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Window_DisconnectParent(cl, obj, (APTR)msg);
 	case MUIM_Window_RecalcDisplay :
 	    return(mRecalcDisplay(cl, obj, (APTR)msg));
-	case MUIM_Window_Setup :
-	    return(mSetup(cl, obj, (APTR)msg));
-	case MUIM_Window_Cleanup :
-	    return(mCleanup(cl, obj, (APTR)msg));
-	case MUIM_Window_AddControlCharHandler :
-	    return(mAddControlCharHandler(cl, obj, (APTR)msg));
-	case MUIM_Window_RemControlCharHandler :
-	    return(mRemControlCharHandler(cl, obj, (APTR)msg));
+	case MUIM_Window_Setup: return Window_Setup(cl, obj, (APTR)msg);
+	case MUIM_Window_Cleanup: return Window_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Window_AddControlCharHandler: return Window_AddControlCharHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_RemControlCharHandler: return Window_RemControlCharHandler(cl, obj, (APTR)msg);
     }
 
-    return(DoSuperMethodA(cl, obj, msg));
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 

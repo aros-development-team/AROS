@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <exec/types.h>
+#include <graphics/gfxmacros.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -146,9 +147,52 @@ static void area_update_data(struct MUI_AreaData *data);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
-static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
-static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 
+//static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
+//static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
+
+
+void _zune_focus_new(Object *obj)
+{
+    Object *parent = _parent(obj);
+    struct RastPort *rp = _rp(obj);
+    UWORD oldDrPt = rp->LinePtrn;
+
+    int x1 = _left(obj) - 1;
+    int y1 = _top(obj)  - 1;
+    int x2 = _left(obj) + _width(obj);
+    int y2 = _top(obj)  + _height(obj);
+
+    if (!parent || parent == _win(obj)) return;
+
+    SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW], JAM2);
+    SetDrPt(rp, 0xCCCC);
+    Move(rp, x1, y1);
+    Draw(rp, x2, y1);
+    Draw(rp, x2, y2);
+    Draw(rp, x1, y2);
+    Draw(rp, x1, y1);
+    SetDrPt(rp, oldDrPt);
+}
+
+void _zune_focus_destroy(Object *obj)
+{
+    Object *parent = _parent(obj);
+
+    int x1 = _left(obj) - 1;
+    int y1 = _top(obj)  - 1;
+    int x2 = _left(obj) + _width(obj);
+    int y2 = _top(obj)  + _height(obj);
+    int width = x2 - x1 + 1;
+    int height = y2 - y1 + 1;
+
+    if (!parent || parent == _win(obj)) return;
+
+    DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, 0, 0, 0);
+    DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, 0, 0, 0);
+    DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, 0, 0, 0);
+    DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, 0, 0, 0);
+}
 
 
 /**************************************************************************
@@ -355,32 +399,18 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_CycleChain:
-		if (data->mad_InputMode == MUIV_InputMode_None)
-		    break;
+//		if (data->mad_InputMode == MUIV_InputMode_None)
+//		    break;
 
 		if ((!(_flags(obj) & MADF_CYCLECHAIN) && tag->ti_Data)
 		    || ((_flags(obj) & MADF_CYCLECHAIN) && !tag->ti_Data))
 		{
 		    if (_flags(obj) & MADF_SETUP)
 		    {
-			if (_flags(obj) & MADF_CYCLECHAIN)
-			{
-			    _handle_bool_tag(data->mad_Flags,
-					     tag->ti_Data, MADF_CYCLECHAIN);
-			    cleanup_cycle_chain(data, obj);
-			}
-			else
-			{
-			    _handle_bool_tag(data->mad_Flags,
-					     tag->ti_Data, MADF_CYCLECHAIN);
-			    setup_cycle_chain(data, obj);
-			}
-		    }
-		    else
-		    {
-			_handle_bool_tag(data->mad_Flags,
-					 tag->ti_Data, MADF_CYCLECHAIN);
-		    }
+		    	cleanup_control_char(data,obj);
+			_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
+			setup_control_char(data,obj,cl);
+		    }   else _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
 		}
 		break;
 
@@ -878,8 +908,7 @@ static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct I
 }
 
 
-static void
-cleanup_control_char (struct MUI_AreaData *data, Object *obj)
+static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 {
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
@@ -888,6 +917,7 @@ cleanup_control_char (struct MUI_AreaData *data, Object *obj)
     }
 }
 
+#if 0
 static void
 setup_cycle_chain (struct MUI_AreaData *data, Object *obj)
 {
@@ -902,7 +932,9 @@ setup_cycle_chain (struct MUI_AreaData *data, Object *obj)
 #endif
     }
 }
+#endif
 
+#if 0
 static void
 cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj)
 {
@@ -916,7 +948,7 @@ cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj)
 #endif
     }
 }
-
+#endif
 
 /**************************************************************************
  First method to be called after an OM_NEW, it is the place
@@ -927,8 +959,9 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-    area_update_data(data);
     muiRenderInfo(obj) = msg->RenderInfo;
+
+    area_update_data(data);
 
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 
@@ -943,11 +976,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
     setup_control_char (data, obj, cl);
-    setup_cycle_chain (data, obj);
+//    setup_cycle_chain (data, obj);
 
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
-	if (_parent(obj) != NULL) data->mad_Font = _font(_parent(obj));
+	if (_parent(obj) != NULL && _parent(obj) != _win(obj)) data->mad_Font = _font(_parent(obj));
 	else data->mad_Font = zune_font_get(MUIV_Font_Normal);
     }
     else data->mad_Font = zune_font_get(data->mad_FontPreset);
@@ -992,7 +1025,7 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 	data->mad_TitleText = NULL;
     }
 
-    cleanup_cycle_chain (data, obj);
+//    cleanup_cycle_chain (data, obj);
     cleanup_control_char (data, obj);
 
     if (data->mad_InputMode != MUIV_InputMode_None)
@@ -1007,6 +1040,8 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     }
 
     zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
+
+    muiRenderInfo(obj) = NULL;
     return TRUE;
 }
 
@@ -1071,62 +1106,15 @@ static ULONG Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 
 
 /**************************************************************************
- called by parent between OM_NEW and MUIM_Setup,
- init RenderInfo and GlobalInfo
-**************************************************************************/
-static ULONG  Area_ConnectParent(struct IClass *cl, Object *obj,
-		   struct MUIP_ConnectParent *msg)
-{
-/*      struct MUI_AreaData *data = INST_DATA(cl, obj); */
-    Object *parent = msg->parent;
-
-//    ASSERT(parent != NULL);
-//    ASSERT(muiAreaData(parent)->mad_RenderInfo != NULL);
-//    ASSERT(muiNotifyData(parent)->mnd_GlobalInfo != NULL);
-
-    _parent(obj) = parent;
-    muiAreaData(obj)->mad_RenderInfo = muiAreaData(parent)->mad_RenderInfo;
-    muiNotifyData(obj)->mnd_GlobalInfo =
-	muiNotifyData(parent)->mnd_GlobalInfo;
-    return TRUE;
-}
-
-
-
-/**************************************************************************
- called by window parent between OM_NEW and MUIM_Setup,
- init RenderInfo and GlobalInfo.
-**************************************************************************/
-static ULONG Area_ConnectParentWindow(struct IClass *cl, Object *obj,
-			 struct MUIP_ConnectParentWindow *msg)
-{
-/*      struct MUI_AreaData *data = INST_DATA(cl, obj); */
-    Object *parent = msg->win;
-
-//  ASSERT(parent != NULL);
-//  ASSERT(muiNotifyData(parent)->mnd_GlobalInfo != NULL);
-
-    muiAreaData(obj)->mad_RenderInfo = msg->mri;
-    muiNotifyData(obj)->mnd_GlobalInfo =
-	muiNotifyData(parent)->mnd_GlobalInfo;
-    return TRUE;
-}
-
-
-/**************************************************************************
  called by parent object.
 **************************************************************************/
-static ULONG Area_DisconnectParent(struct IClass *cl, Object *obj,
-		      struct MUIP_DisconnectParent *msg)
+static ULONG Area_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     /* don't be active if added elsewhere */
     data->mad_Flags &= ~MADF_ACTIVE;
-    data->mad_RenderInfo = NULL;
-    muiNotifyData(obj)->mnd_GlobalInfo = NULL;
-    _parent(obj) = NULL;
-    return TRUE;
+    return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 /**************************************************************************
@@ -1134,11 +1122,11 @@ static ULONG Area_DisconnectParent(struct IClass *cl, Object *obj,
 **************************************************************************/
 static ULONG Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
-/*      g_print("mGoActive %p\n", obj); */
     if (!(_flags(obj) & MADF_ACTIVE))
     {
 	if (_flags(obj) & MADF_CANDRAW)
 	    _zune_focus_new(obj);
+
 	_flags(obj) |= MADF_ACTIVE;
     }
     return TRUE;
@@ -1149,11 +1137,11 @@ static ULONG Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static ULONG Area_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
-/*      g_print("mGoInactive %p\n", obj); */
     if (_flags(obj) & MADF_ACTIVE)
     {
 	if (_flags(obj) & MADF_CANDRAW)
 	    _zune_focus_destroy(obj);
+
 	_flags(obj) &= ~MADF_ACTIVE;
     }
     return TRUE;
@@ -1670,8 +1658,6 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	case MUIM_Cleanup: return Area_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Show: return Area_Show(cl, obj, (APTR)msg);
 	case MUIM_Hide: return Area_Hide(cl, obj, (APTR)msg);
-	case MUIM_ConnectParent: return Area_ConnectParent(cl, obj, (APTR)msg);
-	case MUIM_ConnectParentWindow: return Area_ConnectParentWindow(cl, obj, (APTR)msg);
 	case MUIM_DisconnectParent: return Area_DisconnectParent(cl, obj, (APTR)msg);
 	case MUIM_GoActive: return Area_GoActive(cl, obj, (APTR)msg);
 	case MUIM_GoInactive: return Area_GoInactive(cl, obj, (APTR)msg);

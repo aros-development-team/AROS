@@ -263,9 +263,6 @@ static ULONG Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
 	return FALSE;
 
-
-    D(bug("muimaster.library/text.c: Show Text Object at 0x%lx\n",obj));
-
     return TRUE;
 }
 

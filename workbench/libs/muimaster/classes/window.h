@@ -1,6 +1,13 @@
 #ifndef _MUI_CLASSES_WINDOW_H
 #define _MUI_CLASSES_WINDOW_H
 
+/* this is for the cycle list */
+struct ObjNode
+{
+    struct MinNode node;
+    Object *obj;
+};
+
 struct MUI_WindowData
 {
     struct MUI_RenderInfo wd_RenderInfo;
@@ -8,12 +15,12 @@ struct MUI_WindowData
     struct MsgPort       *wd_UserPort; /* IDCMP port */
 
     struct IBox    wd_AltDim;       /* zoomed dimensions */
-//    struct MinList *wd_CycleChain;   /* objects activated with tab */
+    struct MinList wd_CycleChain;   /* objects activated with tab */
     struct MinList wd_EHList;       /* event handlers */
     struct MinList wd_CCList;       /* control chars */
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
-//    GList         *wd_ActiveObject; /* list node of active obj */
+    struct ObjNode *wd_ActiveObject; /* the active object */
     APTR           wd_DefaultObject;
     ULONG          wd_ID;
     STRPTR         wd_Title;

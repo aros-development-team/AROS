@@ -107,4 +107,13 @@ struct  MUIP_WriteString                    { ULONG MethodID; char *str; char *m
 
 extern const struct __MUIBuiltinClass _MUI_Notify_desc; /* PRIV */
 
+/* Private stuff */
+
+#define MUIM_ConnectParent          0x80429ab9 /* ZV1  */
+#define MUIM_DisconnectParent       0x80429aba /* ZV1  */
+
+struct  MUIP_ConnectParent          { ULONG MethodID; Object *parent; };
+struct  MUIP_DisconnectParent       { ULONG MethodID; };
+
+
 #endif
