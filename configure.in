@@ -64,7 +64,7 @@ dnl --------------------------------------------------------------------
 dnl
 dnl The idea here is to find out all the information we need about the
 dnl host. This means things like tools for building directory structures
-dnl copying files around and the like. 
+dnl copying files around and the like.
 
 # The first step is to find the host binaries.
 # Check for a compiler.
@@ -205,7 +205,7 @@ case "$host_os" in
                 ;;
         esac
         ;;
-        
+
     morphos*)
 	aros_host_cc="$aros_host_cc"
 	aros_host_arch="morphos"
@@ -304,6 +304,7 @@ aros_target_as="$aros_host_cc"
 aros_shared_ld="$aros_host_ld"
 aros_static_ld="$aros_host_ld"
 aros_kernel_ld="$aros_host_ld"
+aros_target_ld="/usr/bin/ld"
 
 aros_target_mkdep="$aros_host_mkdep"
 aros_target_incl_def="$aros_host_incl"
@@ -312,7 +313,7 @@ aros_target_incl_def="$aros_host_incl"
 aros_target_ar="ar"
 aros_target_ar_flags="cr"
 aros_target_nm="nm"
-aros_target_nm_flags="-ul"
+aros_target_nm_flags="-C -ul"
 aros_target_objcopy="objcopy"
 aros_target_objdump="objdump"
 aros_target_ranlib="ranlib"
@@ -458,7 +459,7 @@ case "$target_os" in
             *)
         	AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
         	;;
-	esac 
+	esac
 	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
@@ -499,7 +500,7 @@ case "$target_os" in
         esac
         aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
         aros_flavour="emulation"
-        ;;  
+        ;;
 
     morphos*)
 	aros_target_arch="morphos"
@@ -573,7 +574,7 @@ case "$target_os" in
                 aros_default_wbheight=160
 		aros_default_wbdepth=1
                 aros_target_cc="m68k-elf-gcc -pipe"
-                aros_target_ld="m68k-elf-gcc"
+                aros_target_ld="$(which m68k-elf-ld)"
 		aros_target_as="m68k-elf-gcc -pipe"
 		aros_static_ld="m68k-elf-gcc"
 		aros_shared_ld="m68k-elf-gcc"
@@ -842,13 +843,17 @@ AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cc_includes)
+AC_SUBST(aros_target_objdump)
+AC_SUBST(aros_target_nm)
 AC_SUBST(aros_shared_default)
 AC_SUBST(aros_object_format)
 AC_SUBST(aros_compiler_libs)
 
 AC_SUBST(aros_target_cflags)
 AC_SUBST(aros_target_aflags)
+AC_SUBST(aros_target_ld)
 AC_SUBST(aros_target_ldflags)
+
 AC_SUBST(aros_static_cflags)
 AC_SUBST(aros_static_aflags)
 AC_SUBST(aros_static_ldflags)
