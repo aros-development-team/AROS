@@ -2,11 +2,11 @@
 #define LIBRARIES_COMMODITIES_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-99 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Includes for commodities.library
-    Lang: english
+    Lang: English
 */
 
 #ifndef EXEC_PORTS_H
@@ -85,13 +85,13 @@ struct NewBroker
 #define CX_CUSTOM     8
 #define CX_ZERO       9
 
-/* macros */
-#define CxFilter(d)         CreateCxObj((LONG)CX_FILTER,    (LONG)(d),      0L)
-#define CxSender(port,id)   CreateCxObj((LONG)CX_SEND,      (LONG)(port),   (LONG)(id))
-#define CxSignal(task,sig)  CreateCxObj((LONG)CX_SIGNAL,    (LONG)(task),   (LONG)(sig))
-#define CxTranslate(ie)     CreateCxObj((LONG)CX_TRANSLATE, (LONG)(ie),     0L)
-#define CxDebug(id)         CreateCxObj((LONG)CX_DEBUG,     (LONG)(id),     0L)
-#define CxCustom(action,id) CreateCxObj((LONG)CX_CUSTOM,    (LONG)(action), (LONG)(id))
+/* Macros */
+#define CxFilter(d)         CreateCxObj((LONG)CX_FILTER,    (IPTR)(d),      0L)
+#define CxSender(port,id)   CreateCxObj((LONG)CX_SEND,      (IPTR)(port),   (LONG)(id))
+#define CxSignal(task,sig)  CreateCxObj((LONG)CX_SIGNAL,    (IPTR)(task),   (LONG)(sig))
+#define CxTranslate(ie)     CreateCxObj((LONG)CX_TRANSLATE, (IPTR)(ie),     0L)
+#define CxDebug(id)         CreateCxObj((LONG)CX_DEBUG,     (IPTR)(id),     0L)
+#define CxCustom(action,id) CreateCxObj((LONG)CX_CUSTOM,    (IPTR)(action), (LONG)(id))
 
 struct InputXpression
 {
@@ -101,7 +101,7 @@ struct InputXpression
     UWORD ix_CodeMask;
     UWORD ix_Qualifier;
     UWORD ix_QualMask;  /* see below */
-    UWORD ic_QualSame;  /* see below */
+    UWORD ix_QualSame;  /* see below */
 };
 typedef struct InputXpression IX;
 
