@@ -3,7 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=icon iffparse
+SUBDIRS=icon iffparse gadtools
 
 OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy
