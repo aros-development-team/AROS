@@ -1,0 +1,264 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+DEST	:= ../html/
+#DEST	 := ../html.test/
+JOBDEST := $(DEST)jobserver/
+MIC	:= $(TOP)/scripts/moveifchanged
+
+FILES := main.src
+
+AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
+	$(TOP)/compiler/alib/*.c \
+	$(TOP)/compiler/arossupport/*.c \
+	$(TOP)/rom/devs/*.c $(TOP)/compiler/clib/*.c \
+	$(TOP)/workbench/libs/*/*.c)
+
+INCLUDE_SRCS := $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
+
+SRC2HTML := src2html --html --output=index.html --keywords=keywords.db \
+	    --files=files.db main.src
+
+#MM docs : setup-docs
+docs : setup src2html autodocs $(DEST)srcs $(DEST)index.html \
+	$(DEST)filesystems.doc \
+	jobserver cgi-scripte dist copy-files link-pics \
+	access-rights
+
+#MM
+setup-docs :
+	@for dir in $(DEST) $(DEST)/autodocs $(DEST)/cgi-bin \
+		$(JOBDEST) $(JOBDEST)/cgi-bin ; do \
+	    if [ ! -d $$dir ]; then \
+		mkdir $$dir ; \
+	    else true ; fi \
+	done
+	cd conv ; make
+
+copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc
+
+$(DEST)% : %
+	cp $< $@
+
+link-pics :
+	@if [ ! -L $(DEST)/pics ]; then \
+	    ln -sf ../src/pics $(DEST)/pics ; else true ; \
+	fi
+
+dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
+	$(JOBDEST)cgi-bin/dist.src \
+	$(DEST)autodocs/dist.src
+
+$(DEST)dist.src :
+	echo -e "*.html\n*.doc" > $@
+
+$(DEST)cgi-bin/dist.src :
+	echo -e "*.cgi\n*.lib" > $@
+
+$(JOBDEST)dist.src $(DEST)autodocs/dist.src :
+	echo -e "*.html" > $@
+
+$(JOBDEST)cgi-bin/dist.src :
+	echo -e "*.cgi\n*.lib" > $@
+
+cgi-scripte : \
+	$(DEST)cgi-bin/search.cgi \
+	$(DEST)cgi-bin/counter.cgi \
+	$(DEST)cgi-bin/jobserv-showfree.cgi \
+	$(DEST)cgi-bin/jobserv-showwork.cgi \
+	$(DEST)cgi-bin/jobserv-showdone.cgi \
+	$(DEST)cgi-bin/counter.txt
+
+access-rights :
+	cd $(DEST) ; \
+	    chmod -R u=rwX,og=rX . ; \
+	    chmod o+w cgi-bin/counter.txt
+
+$(DEST)cgi-bin/counter.txt :
+	    echo "0" > $@
+
+#MM docs-index : setup-docs docs
+docs-index :
+	cd $(DEST) ; glimpseindex -H . -o .
+
+$(DEST)srcs :
+	ln -s $(TOP) $(DEST)srcs
+
+$(DEST)cgi-bin/%.cgi : %.cgi
+	cp $< $@
+	chmod 755 $@
+
+$(DEST)filesystems.doc : filesystems.doc
+	cp filesystems.doc $(DEST)
+
+#MM
+clean :
+	rm -f $(HTML)
+
+src2html : conv/src2html
+	cp $< $@
+
+$(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
+	    includes src2html keywords.db files.db
+	export TOP="$(TOP)" ; \
+	$(SRC2HTML) ; \
+	$(SRC2HTML) ; \
+	$(SRC2HTML)
+	mv index* $(DEST)
+
+jobserver : jobserver-setup \
+	    $(JOBDEST).htaccess \
+	    $(JOBDEST)jobserv-add.html \
+	    $(JOBDEST)jobserv-free.html \
+	    $(JOBDEST)jobserv-work.html \
+	    $(JOBDEST)jobserv-done.html \
+	    $(JOBDEST)jobserv-msql.html \
+	    $(JOBDEST)cgi-bin/jobserv-add.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-work.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-done.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-msql.cgi \
+	    $(JOBDEST)cgi-bin/jobserv.cgi \
+	    $(JOBDEST)cgi-bin/support.lib \
+	    $(JOBDEST)index.html \
+	    $(DEST)jobserv-showfree.html \
+	    $(DEST)jobserv-showwork.html \
+	    $(DEST)jobserv-showdone.html
+
+jobserver-setup :
+	@if [ ! -d $(JOBDEST) ]; then $(MKDIR) $(JOBDEST); else true; fi
+	@if [ ! -d $(JOBDEST)cgi-bin ]; then $(MKDIR) $(JOBDEST)cgi-bin; else true; fi
+
+$(JOBDEST).ht% : jobserv.ht%
+	cp $< $@
+	chmod 644 $@
+
+$(JOBDEST)cgi-bin/%.cgi : %.cgi
+	cp $< $@
+	chmod 755 $@
+
+LITE=/usr/local/Hughes/bin/lite
+
+%.lib : %.lsrc
+	$(LITE) -l$@ $<
+
+$(JOBDEST)cgi-bin/%.lib : %.lib
+	cp $< $@
+	chmod 644 $@
+
+$(DEST)cgi-bin/%.lib : %.lib
+	cp $< $@
+	chmod 644 $@
+
+$(DEST)jobserv-showfree.html : support.lib
+$(DEST)jobserv-showwork.html : support.lib
+$(DEST)jobserv-showdone.html : support.lib
+
+$(JOBDEST)jobserv-add.html : page_header.html jobserv-add.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Add jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)jobserv-free.html : page_header.html jobserv-free.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Free jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)jobserv-work.html : page_header.html jobserv-work.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Jobs which are in work/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)jobserv-done.html : page_header.html jobserv-done.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Finished jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)jobserv-msql.html : page_header.html jobserv-msql.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/mSQL interface/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)index.html : page_header.html jobserv.index \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/WWW Jobserver Interface/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+autodocs : autodoc.inc gen/htmlpages
+
+gen/htmlpages : $(AUTODOC_SRCS)
+	@echo "Regenerating the HTML AutoDocs"
+	@makeadocs $(AUTODOC_SRCS)
+	@touch gen/htmlpages
+
+autodoc.inc : gen/adoc_index.tmp adocpost.gawk adoc_header.html
+	cat adoc_header.html > $@
+	gawk -F: -f adocpost.gawk --assign mode=pre_bylib gen/adoc_index.tmp | \
+	sort -f | \
+	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
+	gawk -F: -f adocpost.gawk --assign mode=pre_byname gen/adoc_index.tmp | \
+	sort -f | \
+	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
+	touch autodoc.src
+	chmod a+r $@
+
+gen/adoc_index.tmp : $(AUTODOC_SRCS) adoc2html.gawk
+	@echo "Generating HTML AutoDoc Index"
+	@gawk -f adochtmlindex.gawk $(AUTODOC_SRCS) > $@
+	chmod -R a+r $(DEST)autodocs
+
+$(DEST)inc_index.html : $(INCLUDE_SRCS)
+	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
+	chmod a+r $@
+
+#MM all-docs : setup-docs
+all-docs : includes docs docs-index
+
+includes : devlist.inc contents.inc status.inc \
+	jobserv-free.inc jobserv-work.inc jobserv-done.inc
+
+devlist.inc : devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
+	gawk -f $< > $@
+
+status.inc :
+	gawk -f stathtml.gawk > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
+
+jobserv-free.inc :
+	jobserv-showfree.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
+
+jobserv-work.inc :
+	jobserv-showwork.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
+
+jobserv-done.inc :
+	jobserv-showdone.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
+
+.PHONY : status.inc jobserv-free.inc jobserv-work.inc jobserv-done.inc
+
+contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
+	collectcontents.sh $(TOP) > $@
+
+main.src : background.src faq.src differences.src cvs.src missing.src \
+    included.src style.src devinfo_inside.src devinfo_outside.src \
+    autodoc.src history.src links.src jobserv.src
+
+autodoc.src : autodoc.inc
