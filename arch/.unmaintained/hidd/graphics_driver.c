@@ -3263,7 +3263,7 @@ LOCK_BLIT
     	dstflags |= FLG_PALETTE;
     }
     	
-kprintf("BltBitMap: Checking, srcflags=%d, dstflags=%d\n", srcflags, dstflags);
+//kprintf("BltBitMap: Checking, srcflags=%d, dstflags=%d\n", srcflags, dstflags);
 
     if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
     	/* palettized with no colmap. Neew to get a colmap from dest*/
@@ -5194,10 +5194,12 @@ LONG driver_FillPixelArray(struct RastPort *rp
     HIDDT_Color col;
     HIDDT_Pixel pix;
     
-    col.alpha	= (HIDDT_ColComp)(pixel >> 24);
-    col.red	= (HIDDT_ColComp)((pixel >> 16) & 0x000000FF);
-    col.green	= (HIDDT_ColComp)((pixel >> 8) & 0x000000FF);
-    col.blue	= (HIDDT_ColComp)(pixel & 0x000000FF);
+    /* HIDDT_ColComp are 16 Bit */
+    
+    col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
+    col.red	= (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
+    col.green	= (HIDDT_ColComp)(pixel & 0x0000FF00);
+    col.blue	= (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
     
     pix = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
 
@@ -5237,10 +5239,13 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteRGBPixel() !!!\n");
     	return 0;
     }
-    col.alpha	= (HIDDT_ColComp)(pixel >> 24);
-    col.red	= (HIDDT_ColComp)((pixel >> 16) & 0x000000FF);
-    col.green	= (HIDDT_ColComp)((pixel >> 8) & 0x000000FF);
-    col.blue	= (HIDDT_ColComp)(pixel & 0x000000FF);
+
+    /* HIDDT_ColComp are 16 Bit */
+    
+    col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
+    col.red	= (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
+    col.green	= (HIDDT_ColComp)(pixel & 0x0000FF00);
+    col.blue	= (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
     
     prd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
     
@@ -5270,11 +5275,13 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     	return (ULONG)-1;
 
     HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), prd.pixel, &col);
+
+    /* HIDDT_ColComp are 16 Bit */
     
-    pix =	  (col.alpha << 24)
-    		| (col.red   << 16)
-		| (col.green << 8 )
-		| (col.blue);
+    pix =	  ((col.alpha & 0xFF00) << 16)
+    		| ((col.red & 0xFF00) << 8)
+		| (col.green & 0xFF00)
+		| ((col.blue & 0xFF00) >> 8);
     
     return pix;
 }
