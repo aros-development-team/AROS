@@ -22,8 +22,8 @@
 
 /*  FUNCTION
 	Returns the address of the next tag-item in the list. This
-	routine correctly handles TAG_END, TAG_DONE, TAG_MORE and
-	TAG_IGNORE.
+	routine correctly handles TAG_END, TAG_DONE, TAG_MORE,
+	TAG_IGNORE and TAG_SKIP.
 
 	TAG_END and TAG_DONE both terminate a TagItems-array (in
 	fact, TAG_DONE is the same as TAG_END).
@@ -34,6 +34,9 @@
 
 	TAG_IGNORE disables the processing of an entry in the list.
 	This entry is just ignored (We use this technique for filtering).
+
+	TAG_SKIP skips this tagitem, and the next number of tagitems as
+	indicated in the tag's ti_Data field.
 
     INPUTS
 	tagListPtr - Pointer to an element in a taglist.
@@ -69,13 +72,15 @@
 	switch ((*tagListPtr)->ti_Tag)
 	{
 	case TAG_MORE:
-	    (*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data;
+	    if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
+		return NULL;
 	    continue;
 
 	case TAG_IGNORE:
 	    break;
 
 	case TAG_END:
+	    (*tagListPtr) = NULL;
 	    return (NULL);
 
 	case TAG_SKIP:
