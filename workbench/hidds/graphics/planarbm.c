@@ -25,6 +25,8 @@ struct planarbm_data {
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 
+/*** PlanarBM::New ************************************************************/
+
 static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     ULONG width, height, depth;
@@ -89,6 +91,7 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     return o;
 }
 
+/*** PlanarBM::Dispose ************************************************************/
 
 static VOID planarbm_dispose(Class *cl, Object *o, Msg msg)
 {
@@ -115,6 +118,7 @@ static VOID planarbm_dispose(Class *cl, Object *o, Msg msg)
     return;
 }
 
+/*** PlanarBM::PutPixel ************************************************************/
 static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE **plane;
@@ -150,7 +154,7 @@ static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
     }
 }
 
-
+/*** PlanarBM::GetPixel ************************************************************/
 static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     UBYTE **plane;
