@@ -68,6 +68,12 @@
 
     if(!(*tagListPtr)) return NULL;
 
+/*  Gosh, can't enable these because we get LOTS of hits at startup time
+ *
+ *  ASSERT_VALID_PTR(tagListPtr);
+ *  ASSERT_VALID_PTR(*tagListPtr);
+ */
+
     while (TRUE)
     {
 	switch ((*tagListPtr)->ti_Tag)
