@@ -1,5 +1,10 @@
-AROS notes:
------------
+In 1997 the CLib37x package was imported in the AROS source tree and
+therefore these files are under the AROS Public License. A more recent
+version of the files of the original package can be found in the
+CLib37x.lha package on aminet.
+
+Other AROS notes:
+-----------------
 [Andreas R. Kleinert <Andreas_Kleinert@t-online.de]
 
  - made some changes to Aaron's sources to get
