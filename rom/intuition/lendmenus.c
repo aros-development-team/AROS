@@ -56,17 +56,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    if ( towindow == NULL )
-    {
-	/* End lending */
-    }
-    else
-    {
-	/* Lend fromwindow's events to towindow */
-    }
-
-#warning TODO: Write intuition/LendMenus()
-    aros_print_not_implemented ("LendMenus");
+    ASSERT_VALID_PTR(fromwindow);
+    ASSERT_VALID_PTR_OR_NULL(towindow);
+    
+    ((struct IntWindow *)fromwindow)->menulendwindow = towindow;
 
     AROS_LIBFUNC_EXIT
 } /* LendMenus */
