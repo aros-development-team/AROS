@@ -107,7 +107,7 @@
      (and a ClipRect list) installed
    */
 
-  if (NULL != l->ClipRegion)
+  if (NULL != l->ClipRegion && NULL != l->_cliprects)
   {
     CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
     l->ClipRect = l->_cliprects;
@@ -228,11 +228,6 @@
     if (NULL != l_tmp->back)
       l_tmp->back->front = l_tmp;
 
-    /* 
-    ** For all layers install the regular cliprects and remove
-    ** the installe clipregion cliprects 
-    */
-    UninstallClipRegionClipRects(LI);
 
     /* copy important data to the temporary layer. this list might be 
        shrinkable depending on what data deletelayer() needs later on */
