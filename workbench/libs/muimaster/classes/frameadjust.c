@@ -147,33 +147,42 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     int lut[] = { 0, 1, 2, 3, 4, 6, 9, 10, 8, 7, 5 };
     int i;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-			       MUIA_Group_Horiz, TRUE,
-			       MUIA_Group_HorizSpacing, 20,
-			       Child, FD_display = MUI_NewObject(MUIC_Framedisplay,
-								 MUIA_FixWidth, 32,
-								 TAG_DONE),
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 10,
-			       Child, GR_fd = RowGroup(2),
-			       End, /* RowGroup */
-			       Child, HGroup,
-			       Child, Label("Inner Spacing:"),
-			       Child, RowGroup(2),
-			       Child, Label2("Left"),
-			       Child, SL_left = MakeSpacingSlider(),
-			       Child, HSpace(8),
-			       Child, Label2("Top"),
-			       Child, SL_top = MakeSpacingSlider(),
-			       Child, Label2("Right"),
-			       Child, SL_right = MakeSpacingSlider(),
-			       Child, HSpace(8),
-			       Child, Label2("Bottom"),
-			       Child, SL_bottom = MakeSpacingSlider(),
-			       End, /* RowGroup */
-			       End, /* HGroup */
-			       End, /* VGroup */
-			       TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+			       
+        MUIA_Group_Horiz,        TRUE,
+        MUIA_Group_HorizSpacing, 20,
+        
+        Child, (IPTR) FD_display = MUI_NewObject
+        (
+            MUIC_Framedisplay,
+            MUIA_FixWidth, 32,
+            TAG_DONE
+        ),
+        Child, (IPTR) VGroup,
+            MUIA_Group_VertSpacing, 10,
+            Child, (IPTR) GR_fd = RowGroup(2),
+            End, /* RowGroup */
+            Child, (IPTR) HGroup,
+                Child, (IPTR) Label("Inner Spacing:"),
+                Child, (IPTR) RowGroup(2),
+                    Child, (IPTR) Label2("Left"),
+                    Child, (IPTR) SL_left = MakeSpacingSlider(),
+                    Child, (IPTR) HSpace(8),
+                    Child, (IPTR) Label2("Top"),
+                    Child, (IPTR) SL_top = MakeSpacingSlider(),
+                    Child, (IPTR) Label2("Right"),
+                    Child, (IPTR) SL_right = MakeSpacingSlider(),
+                    Child, (IPTR) HSpace(8),
+                    Child, (IPTR) Label2("Bottom"),
+                    Child, (IPTR) SL_bottom = MakeSpacingSlider(),
+                End, /* RowGroup */
+            End, /* HGroup */
+        End, /* VGroup */
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
 

@@ -57,7 +57,7 @@ static void UpdateState(Object *obj, struct Penadjust_DATA *data)
 	    break;
 	    
     	case PST_RGB:
-	    set(data->coloradjobj, MUIA_Coloradjust_RGB, &data->intpenspec.p_rgb);
+	    set(data->coloradjobj, MUIA_Coloradjust_RGB, (IPTR) &data->intpenspec.p_rgb);
 	    set(obj, MUIA_Group_ActivePage, 2);
 	    break;
     }  
@@ -128,24 +128,29 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	       *tag, *tags;
     Object  	    	       *listobj, *sliderobj, *coloradjobj;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	MUIA_Register_Titles, register_labels,
-	Child, ListviewObject,
-	   MUIA_Listview_List, listobj = ListObject,
-	       InputListFrame,
-	       MUIA_List_SourceArray, lv_labels,
-	       MUIA_List_Format, ",,",
-	       MUIA_List_DisplayHook, &muipen_display_hook,
-   	       End,
-	    End,
-	Child, sliderobj = SliderObject,
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+    	
+        MUIA_Register_Titles, (IPTR) register_labels,
+	Child, (IPTR) ListviewObject,
+            MUIA_Listview_List, (IPTR) listobj = ListObject,
+                InputListFrame,
+	        MUIA_List_SourceArray, (IPTR) lv_labels,
+	        MUIA_List_Format,      (IPTR) ",,",
+	        MUIA_List_DisplayHook, (IPTR) &muipen_display_hook,
+            End,
+        End,
+	Child, (IPTR) sliderobj = SliderObject,
 	    MUIA_Slider_Horiz, TRUE,
-	    MUIA_Numeric_Min, -128,
-	    MUIA_Numeric_Max, 127,
-	    End,  
-	Child, coloradjobj = ColoradjustObject,
-	    End,
-	TAG_MORE, msg->ops_AttrList);
+	    MUIA_Numeric_Min,  -128,
+	    MUIA_Numeric_Max,  127,
+        End,  
+	Child, (IPTR) coloradjobj = ColoradjustObject,
+        End,
+	
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
 
