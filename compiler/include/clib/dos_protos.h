@@ -405,10 +405,10 @@ __AROS_LP2(BOOL, MatchPatternNoCase,
     __AROS_LCA(STRPTR, str, D2), \
     struct DosLibrary *, DOSBase, 162, Dos)
 
-__AROS_LP0(BPTR, MaxCli,
+__AROS_LP0(ULONG, MaxCli,
     struct DosLibrary *, DOSBase, 92, Dos)
 #define MaxCli() \
-    __AROS_LC0(BPTR, MaxCli, \
+    __AROS_LC0(ULONG, MaxCli, \
     struct DosLibrary *, DOSBase, 92, Dos)
 
 __AROS_LP3(BOOL, NameFromLock,
