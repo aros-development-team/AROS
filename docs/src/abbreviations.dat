@@ -55,6 +55,6 @@ realtime;RealTime.library
 reqtools;ReqTools.library
 rexxsyslib;RexxSys.library
 timer;Timer.device
-translator;Translater.library
+translator;Translator.library
 utility;Utility.library
 wb;Workbench.library
