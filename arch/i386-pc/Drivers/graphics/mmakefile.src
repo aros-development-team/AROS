@@ -1,0 +1,49 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+FILES	:=	graphics_init functable endtag
+OBJDIR	:=	$(GENDIR)/$(CURDIR)
+
+#MM Drivers-native : hidd-graphics-module
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	%add_objects rom/boot/hidd_graphics
+	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	    -o $(OSGENDIR)/boot/hidd_graphics.o
+	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd_graphics.o
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) libdefs.h functable.c endtag.c *.err
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+$(OBJDIR)/%.o : %.S
+	%assemble_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+	
+libdefs.h : lib.conf
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -c
+	
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+	
+functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
+	libdefs.h
+	@$(ECHO) "Generating $@..."
+	$(ARCHTOOL) -t
+
+endtag.c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+%common
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
