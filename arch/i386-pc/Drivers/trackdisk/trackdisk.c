@@ -18,6 +18,9 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include "trackdisk_intern.h"
+#include <proto/expansion.h>
+#include <libraries/expansionbase.h>
+#include <dos/filehandler.h>
 
 #include <oop/oop.h>
 #include <proto/oop.h>
@@ -107,9 +110,14 @@ AROS_LH2(struct TrackDiskBase *,  init,
 {
     AROS_LIBFUNC_INIT
 
+struct DeviceNode *devnode;
+ULONG *pp;
+
+
     int i;
     ULONG drives;
-	
+	struct ExpansionBase *ExpansionBase;
+
     TDBase->sysbase=sysBase;
     InitSemaphore(&TDBase->io_lock);
 
@@ -180,6 +188,7 @@ AROS_LH2(struct TrackDiskBase *,  init,
 
     /* Build units */
     	
+	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
     for (i=0; i<2; i++)
     {
     	struct TDU *unit=NULL;
@@ -212,10 +221,51 @@ AROS_LH2(struct TrackDiskBase *,  init,
     	    	FreeMem(unit->dma_buffer,DP_SECTORS*512);
     	    	unit->dma_buffer=buffer;
     	    }
+			if (ExpansionBase)
+			{
+				pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
+				if (pp)
+				{
+					pp[0]="afs.handler";
+					pp[1]=name;
+					pp[2]=i;
+					pp[DE_TABLESIZE+4]=DE_BOOTBLOCKS;
+					pp[DE_SIZEBLOCK+4]=128;
+					pp[DE_NUMHEADS+4]=2;
+					pp[DE_SECSPERBLOCK+4]=1;
+					pp[DE_BLKSPERTRACK+4]=18;
+					pp[DE_RESERVEDBLKS+4]=2;
+					pp[DE_LOWCYL+4]=0;
+					pp[DE_HIGHCYL+4]=79;
+					pp[DE_NUMBUFFERS+4]=10;
+					pp[DE_BUFMEMTYPE+4]=MEMF_PUBLIC | MEMF_CHIP;
+					pp[DE_MAXTRANSFER+4]=0x00200000;
+					pp[DE_MASK+4]=0x7FFFFFFE;
+					pp[DE_BOOTPRI+4]=5;
+					pp[DE_DOSTYPE+4]=0x444F5300;
+					pp[DE_BOOTBLOCKS+4]=2;
+					devnode = MakeDosNode(pp);
+					if (devnode)
+					{
+						if ((devnode->dn_NewName=AllocMem(5,MEMF_PUBLIC|MEMF_CLEAR)))
+						{
+							devnode->dn_NewName[0]=3;
+							devnode->dn_NewName[1]='D';
+							devnode->dn_NewName[2]='F';
+							devnode->dn_NewName[3]=i+'0';
+							devnode->dn_OldName=MKBADDR(devnode->dn_NewName);
+							devnode->dn_NewName += 1;
+							AddBootNode(pp[DE_BOOTPRI+4],0,devnode,0);
+						}
+					}
+				}
+			}
     	}
     	TDBase->units[i]=(struct TDU*)unit;
     	unit=NULL;
     }
+	if (ExpansionBase)
+		CloseLibrary((struct Library *)ExpansionBase);
     TDBase->units[2]=NULL;	/* Third and fourth drives are disabled now */
     TDBase->units[3]=NULL;
 
