@@ -372,33 +372,34 @@ static int relocate
 {
     const char *contents = ph[toreloc_idx].paddr;
 
-    int i, j, num_segments;
+    int num_segments;
     
     for
     (
-        i = 0, num_segments = (rel++)->num_entries;
-        i < num_segments;
-        i++
+        num_segments = (rel++)->num_entries;
+        num_segments--;
     )
     {
         const struct pheader *fromreloc   = &ph[(rel++)->segment];
         const ULONG           addr_to_add = fromreloc->paddr - fromreloc->vaddr;
         const ULONG           num_relocs  = (rel++)->num_entries;
         
-        kprintf("Section = %d\n", rel[-2].segment);
-        kprintf("Num relocs for this section = %d\n", num_relocs);
-        
-        for (j=0; j < num_relocs; j++, rel++)
-        {
-            register ULONG offset = rel->offset;
+        register unsigned long j = (num_relocs + 7) / 8;
             
-            kprintf("(Old value, old address, new address) = (0x%08lx, 0x%08lx, 0x%08lx)\n",
-                     *((ULONG *)&contents[offset]), fromreloc->vaddr, fromreloc->paddr);
-            kprintf("Reloc offset = 0x%08x\n", offset);
-            *((ULONG *)&contents[offset]) += addr_to_add;
+        switch (num_relocs % 8)
+        {
+            case 0: do {    *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 7:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 6:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 5:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 4:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 3:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 2:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+            case 1:         *((ULONG *)&contents[rel++->offset]) += addr_to_add;
+                       } while (--j > 0);
         }
     }
-
+    
     return 1;
 }
 
