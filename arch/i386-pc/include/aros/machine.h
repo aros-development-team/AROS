@@ -35,6 +35,13 @@
     address. There are also a couple of macros which you should use to
     access the vector table from C.
 */
+struct FullJumpVec
+{
+    unsigned char jmp;
+    unsigned char vec[4];
+};
+#define __AROS_SET_FULLJMP(v,a)         (struct FullJumpVec *)v->jmp = 0xE9,        \
+					(*(ULONG*)(v)->vec=(ULONG)(a)-(ULONG)(v)-5))
 struct JumpVec
 {
     unsigned char vec[4];
@@ -45,7 +52,7 @@ struct JumpVec
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-((n)*LIB_VECTSIZE)))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_SETVECADDR(lib,n,_aros_not_implemented)
