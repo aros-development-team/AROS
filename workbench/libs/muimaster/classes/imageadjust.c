@@ -546,11 +546,10 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    if (data->imagespec) *msg->opg_Storage = (ULONG)data->imagespec;
 		    else *msg->opg_Storage = (ULONG)"0:128";
 		}
-		return 1;
+		return TRUE;
     }
 
-    if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
-    return 0;
+    return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
 
 /**************************************************************************
