@@ -5,9 +5,15 @@
 #include <setjmp.h>
 
 #ifdef __linux__
-#   define SP(env)	((APTR)(env[0].__sp))
-#   define FP(env)	((APTR)(env[0].__bp))
-#   define PC(env)	((APTR)(env[0].__pc))
+#   if defined(__GLIBC__) && (__GLIBC__ >= 2)
+#      define SP(env)	((APTR)(env[0].__jmpbuf[JB_SP]))
+#      define FP(env)	((APTR)(env[0].__jmpbuf[JB_BP]))
+#      define PC(env)	((APTR)(env[0].__jmpbuf[JB_PC]))
+#   else
+#      define SP(env)	((APTR)(env[0].__sp))
+#      define FP(env)	((APTR)(env[0].__bp))
+#      define PC(env)	((APTR)(env[0].__pc))
+#   endif
 #endif
 #ifdef __FreeBSD__
 #   define SP(env)	((APTR)(env[0]._jb[2]))

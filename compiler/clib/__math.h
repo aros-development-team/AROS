@@ -36,6 +36,7 @@
 #define _SVID_		2
 #define _IEEE_		3
 
+#if !defined(__GLIBC__) || (__GLIBC__ < 2)
 struct exception
 {
     int    type;
@@ -44,6 +45,7 @@ struct exception
     double arg2;
     double retval;
 };
+#endif
 
 /* exception.type */
 #define DOMAIN		1
