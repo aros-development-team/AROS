@@ -68,10 +68,23 @@ DB_Exit (void)
     }
 }
 
+DB *
+DB_New (const char * dbname)
+{
+    DB * db = new (DB);
+
+    db->node.name = xstrdup (dbname);
+    db->db = Hash_New ();
+
+    AddTail (&dbs, db);
+
+    return db;
+}
+
 int
 DB_Add (const char * dbname, const char * filename)
 {
-    DB	 * db = new (DB);
+    DB	 * db;
     FILE * fh;
     char   key[256], data[256];
 
@@ -79,15 +92,11 @@ DB_Add (const char * dbname, const char * filename)
 
     if (!fh)
     {
-	xfree (db);
 	PushStdError ("Can't open %s for reading", filename);
 	return 0;
     }
 
-    db->node.name = xstrdup (dbname);
-    db->db = Hash_New ();
-
-    AddTail (&dbs, db);
+    db = DB_New (dbname);
 
     while (fgets (key, sizeof (key), fh))
     {
@@ -155,3 +164,10 @@ DB_FindData (const char * name, const char * key)
 
     return data;
 }
+
+void
+DB_AddData (DB * db, const char * key, const char * data)
+{
+    Hash_StoreNC (db->db, xstrdup (key), xstrdup (data));
+}
+
