@@ -1336,11 +1336,16 @@ AROS_LH1(void, beginio,
             parent_dir_post(&(iofs->io_Union.io_PARENT_DIR.io_DirName));
             break;    
             
+	case FSA_IS_FILESYSTEM:
+	    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
+	    error = 0;
+	    break;
+	    
+	    
 	case FSA_SET_COMMENT:
 	case FSA_SET_PROTECT:
 	case FSA_SET_OWNER:
 	case FSA_SET_DATE:
-	case FSA_IS_FILESYSTEM:
 	case FSA_MORE_CACHE:
 	case FSA_FORMAT:
 	case FSA_MOUNT_MODE:
