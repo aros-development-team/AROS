@@ -138,14 +138,14 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 		//D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
 
 		/* Init UART - See 14-10 of dragonball documentation */
-		serial_out_w(data, USTCNT, UEN | RXEN | TXEN);
+		serial_out_w(data, O_USTCNT, UEN_F | RXEN_F | TXEN_F);
 		dummy = RREG_W(URX1);
 		//D(bug("Setting baudrate now!"));
 		/* Now set the baudrate */
 		set_baudrate(data, data->baudrate);
 
 		/* Set the interrupts and the levels according to the baudrate */
-		serial_out_w(data, USTCNT, (get_ustcnt(data) | UEN | RXEN | TXEN));
+		serial_out_w(data, O_USTCNT, (get_ustcnt(data) | UEN_F | RXEN_F | TXEN_F));
 
 	} /* if (obj) */
 
@@ -163,7 +163,7 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 	CSD(cl->UserData)->units[data->unitnum] = NULL;
 
 	/* stop all interrupts, disabling the UART (might save power) */
-	serial_out_w(data, USTCNT, 0);
+	serial_out_w(data, O_USTCNT, 0);
 
 	OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 	ReturnPtr("SerialUnit::Dispose()", OOP_Object *, obj);
@@ -201,20 +201,20 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
 	if (TRUE == data->stopped)
 		return 0;
 
-	utx = serial_in_w(data, UTX);
+	utx = serial_in_w(data, O_UTX);
 
 	/*
 	 * I may only write something here if nothing is in the fifo right
 	 * now because otherwise this might be handled through an interrupt.
 	 */
-	if (utx & FIFO_EMPTY) {
+	if (utx & FIFO_EMPTY_F) {
 		/* write data into FIFO */
 		do {
 			//D(bug("%c",msg->Outbuffer[count]));
-			serial_out_w(data, UTX, msg->Outbuffer[count++]);
+			serial_out_w(data, O_UTX, msg->Outbuffer[count++]);
 			len--;
-			utx = serial_in_w(data, UTX);
-		} while (len > 0 && (utx & TX_AVAIL));
+			utx = serial_in_w(data, O_UTX);
+		} while (len > 0 && (utx & TX_AVAIL_F));
 	}
 
 	ReturnInt("SerialUnit::Write()",ULONG, count);
@@ -290,7 +290,6 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
 
 			case TAG_SET_MCR:
 #warning MCR??
-//				serial_out_w(data, UART_MCR, (tags[i].ti_Data & 0x0f) | 0x08);
 			break;
 			
 			case TAG_SKIP:
@@ -303,7 +302,7 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
 		i++;
 	}
 
-	serial_out_w(data, USTCNT, get_ustcnt(data));
+	serial_out_w(data, O_USTCNT, get_ustcnt(data));
 
 	return valid;
 }
@@ -313,9 +312,8 @@ BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_
 {
 	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
-	UWORD code = serial_in_w(data, UTX);
-	serial_out_w(data, UTX, code | SEND_BREAK);
-	
+	UWORD code = serial_in_w(data, O_UTX);
+	serial_out_w(data, O_UTX, code | SEND_BREAK_F);
 
 	return SerErr_LineErr;
 }
@@ -415,8 +413,8 @@ AROS_UFH3(void, serialunit_receive_data,
 	** byte per interrupt. I hope the real thing is a bit better... !!!
 	*/
 	while (len < sizeof(buffer)) {
-		UWORD urx = serial_in_w(data, URX);
-		if (urx & DATA_READY) {
+		UWORD urx = serial_in_w(data, O_URX);
+		if (urx & DATA_READY_F) {
 			buffer[len++] = (UBYTE)urx;
 			/* for xcopilot need to get out of here. */
 			break;
@@ -445,7 +443,7 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
 	 * anything here.
 	 */
 	if (TRUE == data->stopped)
-		return;
+		return -1;
     
 	/*
 	** Ask for more data be written to the unit
@@ -454,6 +452,7 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
 
 	if (NULL != data->DataWriteCallBack)
 		data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+	return 0;
 }
 
 
@@ -555,7 +554,7 @@ UWORD get_ustcnt(struct HIDDSerialUnitData * data)
 {
 	UWORD ustcnt = 0;
 	switch (data->datalength) {
-		case 8: ustcnt |= EITHER8OR7;
+		case 8: ustcnt |= EITHER8OR7_F;
 		break;
 	}
   
@@ -565,28 +564,28 @@ UWORD get_ustcnt(struct HIDDSerialUnitData * data)
 		break;
     
 		case 2: /* 2 stopbits */
-			ustcnt |= STOP;
+			ustcnt |= STOP_F;
 		break;
 	  
 		default:
 	}
   
 	if (TRUE == data->parity) {
-		ustcnt |= PEN;
-  
+		ustcnt |= PEN_F;
+
 		switch (data->paritytype) {
 			case PARITY_ODD:
-				ustcnt |= ODD;
+				ustcnt |= ODD_F;
 			break;
 		}
 	}
 
 	if (data->baudrate < 1200) {
-		ustcnt |= /*RXFE|RXHE|*/ RXRE | /* TXEE|*/ TXHE;
+		ustcnt |= /*RXFE_F|RXHE_F|*/ RXRE_F | /* TXEE_F|*/ TXHE_F;
 	} else if (data->baudrate < 9600) {
-		ustcnt |= /* RXHE|*/ RXRE | /* TXEE|*/ TXHE;
+		ustcnt |= /* RXHE_F|*/ RXRE_F | /* TXEE_F|*/ TXHE_F;
 	} else {
-		ustcnt |= RXRE|TXHE;
+		ustcnt |= RXRE_F|TXHE_F;
 	}
 
 	return ustcnt;
@@ -675,7 +674,7 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 		ubaud |= (((UWORD)_divider) << 8) | (65-_prescaler);
 	}
 
-	serial_out_w(data, UBAUD, ubaud);
+	serial_out_w(data, O_UBAUD, ubaud);
 	return TRUE;
 }
 
@@ -692,9 +691,9 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 {
 	UWORD code = 0;
 	if (csd->units[unitnum])
-		code = serial_in_w(csd->units[unitnum], URX);
+		code = serial_in_w(csd->units[unitnum], O_URX);
 	
-	if (code & (FIFO_EMPTY|FIFO_HALF|DATA_READY)) {
+	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|DATA_READY_F)) {
 		D(bug("In %s 1\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
 			serialunit_receive_data(csd->units[unitnum],
@@ -705,9 +704,9 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 
 	code = 0;
 	if (csd->units[unitnum])
-		code = serial_in_w(csd->units[unitnum], UTX);
+		code = serial_in_w(csd->units[unitnum], O_UTX);
 
-	if (code & (FIFO_EMPTY|FIFO_HALF|TX_AVAIL)) {
+	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|TX_AVAIL_F)) {
 		D(bug("In %s 2\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
 			if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase)) {
