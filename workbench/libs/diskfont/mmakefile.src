@@ -18,7 +18,7 @@ endif
 
 FILES	:=  af_copyfontstobuffer af_scanfontinfo af_fontcache_io \
 	    af_fontdescr_io memoryfontfunc diskfontfunc \
-	    dosstreamhook af_helpfuncs diskfont_io
+	    dosstreamhook af_helpfuncs diskfont_io bullet
 
 # Guarantee that this will go at the end of the file:
 FUNCS	:=  opendiskfont	\
