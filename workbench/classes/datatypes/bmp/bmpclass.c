@@ -318,7 +318,7 @@ static BOOL LoadBMP(Object *o)
     /* set BitMapHeader with image size */
     bmhd->bmh_Width  = bmhd->bmh_PageWidth  = biWidth;
     bmhd->bmh_Height = bmhd->bmh_PageHeight = biHeight;
-    bmhd->bmh_Depth  = biClrUsed;
+    bmhd->bmh_Depth  = biBitCount;
 
     /* get empty colormap, then fill in colormap to use*/
     if( !(GetDTAttrs(o, PDTA_ColorRegisters, &colormap,
