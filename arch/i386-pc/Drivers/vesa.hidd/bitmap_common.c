@@ -190,12 +190,56 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 		     
     	    } /* switch(data->bytesperpix) */
 	    break;
+	
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpix)
+	    {
+	    	case 1:
+		    HIDD_BM_PutMem32Image8(o,
+		    	    	    	   msg->pixels,
+					   data->VideoData,
+					   msg->x,
+					   msg->y,
+					   msg->width,
+					   msg->height,
+					   msg->modulo,
+					   data->bytesperline);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_PutMem32Image16(o,
+		    	    	    	    msg->pixels,
+					    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    data->bytesperline);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
 	    
 	default:
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	    break;
 	    
-    }
+    } /* switch(msg->pixFmt) */
 	    
 }
 
@@ -254,12 +298,56 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 		     
     	    } /* switch(data->bytesperpix) */
 	    break;
+
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpix)
+	    {
+	    	case 1:
+		    HIDD_BM_GetMem32Image8(o,
+		    	    	    	   data->VideoData,
+					   msg->x,
+					   msg->y,
+					   msg->pixels,
+					   msg->width,
+					   msg->height,
+					   data->bytesperline,
+					   msg->modulo);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_GetMem32Image16(o,
+		    	    	    	    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->pixels,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    msg->modulo);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
 	    
 	default:
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	    break;
 	    
-    }
+    } /* switch(msg->pixFmt) */
 	    
 }
 
