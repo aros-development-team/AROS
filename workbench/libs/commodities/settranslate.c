@@ -64,15 +64,21 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(translator == NULL)
+    if (translator == NULL)
+    {
 	return;
+    }
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
-    if(translator->co_Node.ln_Type != CX_TRANSLATE)
+    if (CXOBJType(translator) != CX_TRANSLATE)
+    {
 	translator->co_Error |= COERR_BADTYPE;
+    }
     else
+    {
 	translator->co_Ext.co_IE = events;
+    }
 
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     

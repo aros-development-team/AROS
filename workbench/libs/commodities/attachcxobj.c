@@ -62,18 +62,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(headObj == NULL)
+    if (headObj == NULL)
     {
 	DeleteCxObjAll(co);
+
 	return;
     }
     
-    if(co == NULL)
+    if (co == NULL)
     {
 	headObj->co_Error |= COERR_NULLATTACH;
+
 	return;
     }
-
+    
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
     AddTail((struct List *)&headObj->co_ObjList, &co->co_Node);

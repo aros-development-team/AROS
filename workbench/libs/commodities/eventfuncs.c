@@ -38,32 +38,35 @@ static ULONG Extensions[] =
 
 VOID FreeCxStructure(APTR obj, int type, struct Library *CxBase)
 {
-    if(obj == NULL)
+    if (obj == NULL)
+    {
 	return;
+    }
  
-    switch(type)
+    switch (type)
     {
     case CX_OBJECT:
-	
-	if(Extensions[((CxObj *)obj)->co_Node.ln_Type] != 0)
+	if (Extensions[((CxObj *)obj)->co_Node.ln_Type] != 0)
+	{
 	    FreeVec(((CxObj *)obj)->co_Ext.co_FilterIX);
+	}
 	
 	FreeVec(obj);
     	break;
 	
     case CX_MESSAGE:
-	
 	FreeCxStructure(((CxMsg *)obj)->cxm_Data, CX_INPUTEVENT, CxBase);
 	FreeVec(obj);
 	break;
 	
     case CX_INPUTEVENT:
-	
 	if(((struct InputEvent *)obj)->ie_Class == IECLASS_NEWPOINTERPOS &&
 	   (((struct InputEvent *)obj)->ie_SubClass == IESUBCLASS_TABLET ||
 	    ((struct InputEvent *)obj)->ie_SubClass == IESUBCLASS_NEWTABLET ||
 	    ((struct InputEvent *)obj)->ie_SubClass == IESUBCLASS_PIXEL))
+	{
 	    FreeVec(((struct InputEvent *)obj)->ie_EventAddress);
+	}
 
 	FreeMem(obj, sizeof(struct GeneratedInputEvent));
 	break;
@@ -77,40 +80,43 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
     CxObj *tempObj;
     CxMsg *tempMsg;
     
-    switch(type)
+    switch (type)
     {
     case CX_OBJECT:
 	tempObj = (CxObj *)AllocVec(sizeof(CxObj),
 				    MEMF_CLEAR | MEMF_PUBLIC);
-	if(Extensions[objtype] != 0)
+	if (Extensions[objtype] != 0)
 	{
 	    tempObj->co_Ext.co_FilterIX = AllocVec(Extensions[objtype],
 					           MEMF_CLEAR | MEMF_PUBLIC);
 
-	    if(tempObj->co_Ext.co_FilterIX == NULL)
+	    if (tempObj->co_Ext.co_FilterIX == NULL)
 	    {
 		FreeVec(tempObj);
+
 		return NULL;
 	    }
 	}
 	
 	NEWLIST(&tempObj->co_ObjList);
-
+	
 	/* This is done to make it easy for Exchange */
-	if(objtype == CX_BROKER)
+	if (objtype == CX_BROKER)
+	{
 	    tempObj->co_Node.ln_Name = (char *)&tempObj->co_Ext.co_BExt->bext_Name;
+	}
 
 	temp = (APTR)tempObj;
 	break;
 	
     case CX_MESSAGE: 
 	
-	switch(objtype)
+	switch (objtype)
 	{
 	case CXM_SINGLE:
 	    tempMsg = AllocVec(sizeof(CxMsg), MEMF_CLEAR | MEMF_PUBLIC);
 	    
-	    if(tempMsg != NULL)
+	    if (tempMsg != NULL)
 	    {
 		tempMsg->cxm_Data = NULL;
 		tempMsg->cxm_Type = CXM_COMMAND;
@@ -118,17 +124,18 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 		tempMsg->cxm_Message.mn_Length = sizeof(CxMsg);
 		temp = (APTR)tempMsg;
 	    }
+
 	    break;
 	    
 	case CXM_DOUBLE:
 	    tempMsg = AllocVec(sizeof(CxMsg), MEMF_CLEAR | MEMF_PUBLIC);
 	    
-	    if(tempMsg != NULL)
+	    if (tempMsg != NULL)
 	    {
 		tempMsg->cxm_Type = CXM_IEVENT;
 		tempMsg->cxm_Data = AllocCxStructure(CX_INPUTEVENT, 0, CxBase);
-
-		if(tempMsg->cxm_Data == NULL)
+		
+		if (tempMsg->cxm_Data == NULL)
 		{
 		    FreeCxStructure(tempMsg, CX_MESSAGE, CxBase);
 		    tempMsg = NULL;
@@ -136,8 +143,10 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 		
 		temp = (APTR)tempMsg;
 	    }
+
 	    break;
 	}
+
 	break;
 	
     case CX_INPUTEVENT:
@@ -145,6 +154,7 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 	temp = AllocMem(sizeof(struct GeneratedInputEvent), MEMF_CLEAR | MEMF_PUBLIC);
 	break;
     }
+
     return temp;
 }
 

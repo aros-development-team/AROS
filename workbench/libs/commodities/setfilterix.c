@@ -63,23 +63,29 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(filter == NULL)
+    if (filter == NULL)
+    {
 	return;
+    }
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
-    if(filter->co_Node.ln_Type == CX_FILTER)
+    if (CXOBJType(filter) == CX_FILTER)
     {
-	if(ix->ix_Version == IX_VERSION)
+	if (ix->ix_Version == IX_VERSION)
 	{
 	    filter->co_Ext.co_FilterIX = ix;
 	    filter->co_Error &= ~COERR_BADFILTER;
 	}
 	else
+	{
 	    filter->co_Error |= COERR_BADFILTER;
+	}
     }
     else
-	filter->co_Error|=COERR_BADTYPE;
+    {
+	filter->co_Error |= COERR_BADTYPE;
+    }
     
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     

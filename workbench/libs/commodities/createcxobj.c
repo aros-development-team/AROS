@@ -85,8 +85,10 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
     D(bug("CreateCxObject: Entering..., trying to create an object "
 	  "of type %d\n", type));
 
-    if((co = (CxObj *)AllocCxStructure(CX_OBJECT, type, CxBase)) == NULL)
-	return NULL; /* No memory for object */
+    if ((co = (CxObj *)AllocCxStructure(CX_OBJECT, type, CxBase)) == NULL)
+    {
+	return NULL;      /* No memory for object */
+    }
 
     D(bug("CreateCxObject: Memory for object allocated.\n"));
 
@@ -96,7 +98,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
     NEWLIST(&co->co_ObjList);
 
-    switch(type)
+    switch (type)
     {
     case CX_FILTER:
 	SetFilter(co, (STRPTR)arg1);

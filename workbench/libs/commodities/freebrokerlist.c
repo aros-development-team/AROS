@@ -54,8 +54,10 @@
 
     CxObj *broker;
 
-    while((broker = (CxObj *)RemHead(brokerList)) != NULL)
+    while ((broker = (CxObj *)RemHead(brokerList)) != NULL)
+    {
         FreeCxStructure(broker, CX_OBJECT, CxBase);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* FreeBrokerList */

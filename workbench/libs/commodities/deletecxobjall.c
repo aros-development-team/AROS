@@ -60,8 +60,10 @@ VOID RecRem(CxObj *, struct Library *CxBase);
 {
     AROS_LIBFUNC_INIT
 
-    if(co == NULL)
+    if (co == NULL)
+    {
 	return;
+    }
 
     RemoveCxObj(co);
     RecRem((CxObj *)co->co_ObjList.mlh_Tail, CxBase);
@@ -73,7 +75,7 @@ VOID RecRem(CxObj *, struct Library *CxBase);
 
 VOID RecRem(CxObj *obj, struct Library *CxBase)
 {
-    while(obj != NULL)
+    while (obj != NULL)
     {
 	FreeCxStructure(obj->co_ObjList.mlh_Tail, CX_OBJECT, CxBase);
 	obj = (CxObj *)RemHead((struct List *)&obj->co_ObjList);

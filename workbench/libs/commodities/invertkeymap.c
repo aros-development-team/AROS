@@ -83,25 +83,27 @@
     k = MapANSI((STRPTR) &str, 1, (STRPTR) &buf, 3, km);
 
     switch(k)
-	{
-	case 1 :   /* One code / qualifier */
-	    event->ie_Prev1DownCode = 0;
-	    event->ie_Prev1DownQual = 0;
-	    D(bug("Buf 0: %i\n", buf[0]));
-	    event->ie_Code = (WORD)(buf[0]);
-	    event->ie_Qualifier = (WORD) buf[1];
-	    return TRUE;
-	    
-	case 2 :   /* Two codes / qualifiers */
-	    event->ie_Prev1DownCode = buf[0];
-	    event->ie_Prev1DownQual = buf[1];
-	    event->ie_Code = (WORD) buf[2];
-	    event->ie_Qualifier = (WORD) buf[3];
-	    return TRUE;
+    {
+    case 1 :   /* One code / qualifier */
+	event->ie_Prev1DownCode = 0;
+	event->ie_Prev1DownQual = 0;
+	D(bug("Buf 0: %i\n", buf[0]));
+	event->ie_Code = (WORD)(buf[0]);
+	event->ie_Qualifier = (WORD) buf[1];
 
-	default :
-	    return FALSE; /* Error mapping ANSI */
-	}
-
+	return TRUE;
+	
+    case 2 :   /* Two codes / qualifiers */
+	event->ie_Prev1DownCode = buf[0];
+	event->ie_Prev1DownQual = buf[1];
+	event->ie_Code = (WORD) buf[2];
+	event->ie_Qualifier = (WORD) buf[3];
+	
+	return TRUE;
+	
+    default :
+	return FALSE; /* Error mapping ANSI */
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* InvertKeyMap */

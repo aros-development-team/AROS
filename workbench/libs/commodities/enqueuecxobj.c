@@ -67,15 +67,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(headObj == NULL)
+    if (headObj == NULL)
     {
 	DeleteCxObjAll(co);
+
 	return;
     }
 
-    if(co == NULL)
+    if (co == NULL)
     {
 	headObj->co_Error |= COERR_NULLATTACH;
+
 	return;
     }
 

@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return ((co == NULL) ? CX_INVALID : co->co_Node.ln_Type);
+    return ((co == NULL) ? CX_INVALID : CXOBJType(co));
 
     AROS_LIBFUNC_EXIT
 } /* CxObjType */

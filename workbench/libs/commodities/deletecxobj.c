@@ -59,8 +59,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(co == NULL)
+    if (co == NULL)
+    {
 	return;
+    }
 
     RemoveCxObj(co);
     FreeCxStructure(co, CX_OBJECT, CxBase);

@@ -56,25 +56,30 @@
 
     CxMsg *msg;
 
-    if(events == NULL)
+    if (events == NULL)
+    {
 	return;
+    }
     
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
-    do {
+    do
+    {
 	msg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE, CxBase);
 	
-	if(msg == NULL)
+	if (msg == NULL)
+	{
 	    break;
+	}
 	
 	*(msg->cxm_Data) = *events;
 	
 	/* Copy the structure pointed to by ie_EventAddress in case of
 	   a NEWPOINTERPOS event */
 	
-	if(events->ie_Class == IECLASS_NEWPOINTERPOS)
+	if (events->ie_Class == IECLASS_NEWPOINTERPOS)
 	{
-	    switch(events->ie_SubClass)
+	    switch (events->ie_SubClass)
 	    {
 	    case IESUBCLASS_PIXEL :
 		msg->cxm_Data->ie_EventAddress =

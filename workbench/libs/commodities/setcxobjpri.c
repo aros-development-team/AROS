@@ -67,11 +67,14 @@ AROS_LH2I(LONG, SetCxObjPri,
 
     UBYTE oldPri;
 
-    if(co == NULL)
+    if (co == NULL)
+    {
 	return 0;
+    }
 
     oldPri = co->co_Node.ln_Pri;
     co->co_Node.ln_Pri = pri;
+
     return oldPri;
     
     AROS_LIBFUNC_EXIT

@@ -71,11 +71,15 @@
     {
 	APTR  ptrSave;
 
-	if(CxObjType(tempObj) == CX_ZERO)
+	if (CxObjType(tempObj) == CX_ZERO)
+	{
 	    break;
+	}
 
-	if(!(te2 = (CxObj *)AllocCxStructure(CX_OBJECT, CX_BROKER, CxBase)))
+	if (!(te2 = (CxObj *)AllocCxStructure(CX_OBJECT, CX_BROKER, CxBase)))
+	{
 	    break;
+	}
 
 	ptrSave = te2->co_Ext.co_BExt;
 	CopyMem(tempObj, te2, sizeof(CxObj));
@@ -87,6 +91,7 @@
     }
 
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
+
     return count;
 
     AROS_LIBFUNC_EXIT
