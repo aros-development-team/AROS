@@ -119,4 +119,12 @@ void LayerSplitsLayer(struct Layer * L_active, struct Layer * L_passive, BOOL no
 #define IS_SMARTREFRESH(l)  (LAYERSMART == ((l)->Flags & (LAYERSMART|LAYERSUPER)))
 #define IS_SUPERREFRESH(l)  (0 != ((l)->Flags & LAYERSUPER))
 
+#warning Might want to move this to a public include file.
+struct ChangeLayerShapeMsg
+{
+  struct Region   * newshape; // same as passed to ChangeLayerShape()
+  struct ClipRect * cliprect;
+  struct Region   * shape;
+};
+
 #endif /* _LAYERS_INTERN_H */
