@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.11  1996/09/17 16:42:59  digulla
+    Revision 1.12  1996/09/18 14:42:07  digulla
+    Our window is simplerefresh
+
+    Revision 1.11  1996/09/17 16:42:59	digulla
     Use general startup code
 
     Revision 1.10  1996/09/17 16:08:53	digulla
@@ -426,7 +429,7 @@ int main (int argc, char ** argv)
 		  | IDCMP_GADGETDOWN
 		  | IDCMP_GADGETUP
 		  ;
-    nw.Flags = 0L;
+    nw.Flags = WFLG_SIMPLE_REFRESH;
     nw.FirstGadget = &ExitGadget;
     nw.CheckMark = NULL;
     nw.Title = "Open a window demo";
