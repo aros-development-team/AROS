@@ -610,9 +610,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	{
 	    UBYTE *buf = NULL;
 	    get(obj,MUIA_String_Contents, &buf);
-	    set(obj,MUIA_String_Acknowledge,buf);
 	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
+	    set(obj,MUIA_String_Acknowledge,buf);
 	    return 0;
 	} else
 	{
@@ -668,8 +668,8 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	{
 	    UBYTE *buf = NULL;
 	    get(obj,MUIA_String_Contents, &buf);
-	    set(obj,MUIA_String_Acknowledge,buf);
 	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
+	    set(obj,MUIA_String_Acknowledge,buf);
 	    return 0;
 	}
     }
