@@ -52,7 +52,7 @@ static ULONG  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	return NULL;
 
     data = INST_DATA(cl, obj);
-    data->format = "%d";
+    data->format = "%ld";
     data->max    = 100;
     data->min    =   0;
     data->flags  =   0;

@@ -176,7 +176,7 @@ IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		//int pct = j * 100 / i;
 
-		snprintf(buf, 255, "%d%%", j);
+		snprintf(buf, 255, "%ld%%", j);
 		total_width += TextLength(_rp(obj),buf,strlen(buf));
 		if (total_width > (3 * _mwidth(obj) / 8))
 		{
@@ -222,7 +222,7 @@ IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		ZText *ztext;
 		int val = k * 100 / i;
 
-		snprintf(buf, 255, "%d%%", val);
+		snprintf(buf, 255, "%ld%%", val);
 		ztext = zune_text_new(NULL,buf,ZTEXT_ARG_NONE,0);
 		if (ztext)
 		{

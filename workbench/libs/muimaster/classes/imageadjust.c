@@ -57,7 +57,7 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     int is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
-	     "%s:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+	     "%s:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
 	     is_tiled ? "8" : "7",
                  angle,
                  start_rgb->red,start_rgb->green,start_rgb->blue,
