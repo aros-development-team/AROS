@@ -53,6 +53,11 @@
 {
     LONG value, c;
 
+    assert (hook);
+    assert (stream);
+    assert (dataptr);
+    assert (*dataptr);
+
     /* High byte */
     c = CallHook (hook, stream, BEIO_READ);
 
