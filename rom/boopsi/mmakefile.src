@@ -6,7 +6,7 @@ USER_INCLUDES := -I.
 LIBNAME  := boopsi
 ULIBNAME := BOOPSI
 
-FILES := functable rootclass icclass
+FILES := rootclass icclass
 FUNCTIONS := addclass disposeobject donotify findclass freeclass freeicdata \
 	     getattr makeclass newobjecta nextobject removeclass setattrsa
 
