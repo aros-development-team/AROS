@@ -133,7 +133,7 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 	    if (!buf) return 0;
 
 	    strncpy(buf,str,path_end - str);
-	    strcpy(buf + (path_end - str),".font");
+	    buf[path_end - str] = 0;
 
 	    data->tag_list[5].ti_Tag = ASLFR_InitialFile;
 	    data->tag_list[5].ti_Data = (IPTR)FilePart(str);
@@ -152,11 +152,11 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 	    if (str)
 	    {
 		name_end = PathPart(str);
-		buf = (char*)AllocVec(name_end - str + 2, MEMF_PUBLIC);
+		buf = (char*)AllocVec(name_end - str + 10, MEMF_PUBLIC);
 		if (!buf) return 0;
 
 		strncpy(buf,str,name_end - str);
-		buf[name_end - str] = 0;
+		strcpy(buf + (name_end - str),".font");
 		StrToLong(FilePart(str),&size);
 
 		data->tag_list[5].ti_Tag = ASLFO_InitialName;

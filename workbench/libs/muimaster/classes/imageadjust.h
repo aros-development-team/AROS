@@ -10,6 +10,9 @@
 
 #define MUIC_Imageadjust "Imageadjust.mui"
 
+#define MUIA_Imageadjust_Type (TAG_USER|0x00422f2b) /* MUI: V11 i.. LONG */
+#define MUIA_Imageadjust_Spec (TAG_USER|0x004279e1) /* MUI: ??? .g. char * */
+
 enum
 {
     MUIV_Imageadjust_Type_All = 0,
