@@ -100,7 +100,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* Unblock signals if necessary */
 	tst.b	tc_IDNestCnt(%a2)
 	jbpl	.noen
-	/* If called from the signal handler don't do it.
+	/* If called from the signal handler don't do it. */
 	tst.b	AROS_CSYMNAME(supervisor)
 	jbne	.noen
 	jbsr	AROS_CSYMNAME(os_enable)
