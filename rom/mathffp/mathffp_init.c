@@ -9,7 +9,7 @@
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include "mathffp_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /* Basename != Libname */
 #define Math_functable	Mathffp_functable
