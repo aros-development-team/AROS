@@ -293,7 +293,7 @@
              {
                /* the part to become visible belongs to a simple layer,
                   I add that part to the damage list and clear the part. */
-               OrRectRegion(_L->DamageList, &CR->bounds);
+               OrRectRegion(_L->DamageList, &_CR->bounds);
                _L->Flags |= LAYERREFRESH;
                BltBitMap(_L->rp->BitMap,
                          0,
