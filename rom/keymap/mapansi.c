@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "keymap_intern.h"
+#include <devices/inputevent.h>
 
 #include <aros/debug.h>
 #define DEBUG_MAPANSI(x) D(x)
