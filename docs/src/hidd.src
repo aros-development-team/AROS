@@ -25,15 +25,17 @@ a device. Here is a quick overview:
 \item Query the system for all available HIDDs or only for certain types
 (eg. all serial HIDDs or all graphics HIDDs).
 \item Configure a HIDD
+\item Use a HIDD
 \end{itemize}
 
 The complete life cycle of a HIDD is like this:
 
 \begin{enumeration}
-\item The OS boots. HIDDs on external cards get installed by the
-OS in the global list of all available HIDDs.
+\item The OS boots. HIDDs on external cards and in the ROM get installed by
+the OS in the global list of all available HIDDs. Also the OS searches for
+HIDDs installed on the harddisk.
 
-\item The OS reads the extended romtags from the HIDD and puts that
+\item The OS reads the extended romtags from all HIDDs and puts that
 information in the global list of all available HIDDs.
 
 \item Some application asks for a list with the informations about
@@ -58,7 +60,8 @@ to have modes where certain other modes are not available (eg.
 \item When the user presses ok, the application or config plugin closes
 the window/GUI. The Ok or Apply button must be ghosted as long as
 the HIDD says that the configuration is not ok. The application can
-now expunge the config plugin.
+now expunge the config plugin. If a HIDD supports saving its config,
+it must do so.
 
 \item When the device is explicitly activated or used for the first time
 (eg. data is written to it), it will use the configuration to initialize
@@ -66,6 +69,7 @@ the hardware.
 
 \item The user can deactivate the device and change the config if the
 HIDD permits that.
+
 \end{enumeration}
 
 \section{The HIDD Support API}
@@ -76,115 +80,202 @@ ULONG HIDD_FindHIDD (struct TagItem *, Class ** hiddArray);
 \end{code}
 
 You can then use the HIDD API to query the devices for their infos. Use
-|FreeVec()| to dispose the array. |HIDDC_QueryHIDDList_All| as type gives
+|FreeVec()| to dispose the array. |HIDDV_FindHIDD_All| as type gives
 the complete list of all known HIDDs.
 
 \section{The HIDD API}
 
-HIDDs are plain exec devices with an extended API which looks like this:
+HIDDs are BOOPSI objects which support the Exec Device API.
 
-\begin{description}
-\item{|HIDD_Get()|} Query information about the HIDD in gerenal (eg. its name
-and version) and the current status.
-
-\item{|HIDD_Set()|} Change the current status of a HIDD.
-
-\end{itemize}
-
-\subsection{|HIDD_Get()|}
-
-|HIDD_Get()| queries information about the HIDD in general and the
-current status. The prototype looks like this:
-
-\begin{code}
-IPTR HIDD_GetA (HIDDT hidd, struct TagItem * tags);
-IPTR HIDD_Get (HIDDT hidd, Tag tag, ...);
-\end{core}
+\begin{methods}
+\item{LONG OM_SET (struct TagItem * AttrList)}
+Change some attributes of a HIDD.
 
 The return type is device specific but should be 0 in case of success
 and non-zero in case of an error. A good practice is either to return
 an error code or the number of an offending tag in the taglist.
 
-The data field of the tagitem lists must be a pointer to the data type
-of the tag.
+\item{LONG OM_GET (Tag AttrID, IPTR * Storage)} Query a single attribute
+from the HIDD in general (eg. its name and version) and the current status.
+You can only query attributes which are gettable.
 
-\subsection{|HIDD_Set()|}
+The return type is device specific but should be 0 in case of success
+and non-zero in case of an error.
 
-|HIDD_Set()| changes the current status of a HIDD.
-The prototype looks like this:
-
-\begin{code}
-IPTR HIDD_SetA (HIDDT hidd, struct TagItem * tags);
-IPTR HIDD_Set (HIDDT hidd, Tag tag, ...);
-\end{core}
+\item{LONG OM_MGET (struct TagItem * AttrList)} Query a single attribute
+from the HIDD in general (eg. its name and version) and the current status.
+You can only query attributes which are gettable. The |ti_Data| fields of
+|AttrList| must be pointers of the type which is expected for the
+respective attribute.
 
 The return type is device specific but should be 0 in case of success
 and non-zero in case of an error. A good practice is either to return
 an error code or the number of an offending tag in the taglist.
 
-\subsection{Common tags for all HIDDs}
+\item{LONG HIDDM_BeginIO (struct IORequest *)} Initiate a device operation.
+See the Exec Device API for details.
 
-\begin{description}
-\item{|HIDDA_Type|} [G] This is the basic type of the HIDD (eg. serial, parallel,
-graphics).
+\item{LONG HIDDM_AbortIO (struct IORequest *)} Abort a running device
+operation. See the Exec Device API for details.
 
-\item{|HIDDA_SubType|} [G] This is a more specific type. If |HIDDA_Type| is
-|HIDDC_Type_Serial|, then this is a bitfield with one or more bits
-of |HIDDC_Type_Serial_RS232| or |HIDDC_Type_Serial_RS488| set.
+\item{HIDDT_Config HIDDM_LoadConfigPlugin (APTR PluginData)}
+Tells the HIDD to load its configuration plugin. This method returns
+a pointer to the plugin. |PluginData| is a pointer with plugin
+specific data. For details, look into the manual for the HIDD.
 
-\item{|HIDDA_Producer|} [G] The ID of the producer as handed out by Amiga
-International.
+\end{methods}
 
-\item{|HIDDA_Name|} |char *| [G] The name of this device (eg. serial.device).
+\section{The HIDD Config Plugin API}
 
-\item{|HIDDA_HardwareName|} |char *| [G] The name of the hardware
-(eg. "Builtin Serial Port", "COM1", etc.).
+\begin{methods}
+\item{LONG OM_SET (struct TagItem * AttrList)}
+Change some attributes of a HIDD Config Plugin (HIDD CP).
 
-\item{|HIDDA_Active|} |BOOL| [ISG] Tells if the device is active or
-(de-)actives it when set.
+The return type is device specific but should be 0 in case of success
+and non-zero in case of an error. A good practice is either to return
+an error code or the number of an offending tag in the taglist.
 
-\item{|HIDDA_Status|} [G] The current status of a HIDD. This is a
-set of bits which show if the init of the hardware was successful,
-if the device is active or if the device is ready to be activated.
+Note that changing attributes changes only the HIDD CP, never the HIDD
+itself. When the HIDD CP tells you that the current config works, then
+you can copy the config to the HIDD.
 
-\end{itemize}
+\item{LONG OM_GET (Tag AttrID, IPTR * Storage)} Query a single attribute
+from the HIDD CP. You can only query attributes which are gettable.
 
-\section{The HIDD Config API}
+The return type is HIDD CP specific but should be 0 in case of success
+and non-zero in case of an error.
 
-\begin{code}
-/* load and dispose plugin */
-HIDDT_Config HIDD_LoadPlugin (HIDDT hidd);
-void HIDD_ExpungePlugin (HIDDT_Config configPlugin);
+\item{LONG OM_MGET (struct TagItem * AttrList)} Query a single attribute
+from the HIDD CP. You can only query attributes which are gettable. The
+|ti_Data| fields of |AttrList| must be pointers of the type which is
+expected for the respective attribute.
 
-/* Query plugin */
-ULONG HIDD_QueryConfig (HIDDT_Config configPlugin, struct TagItem ** tagList);
-ULONG HIDD_QueryModes (HIDDT_Config configPlugin, struct TagItem ** tagList);
+The return type is HIDD CP specific but should be 0 in case of success
+and non-zero in case of an error. A good practice is either to return
+an error code or the number of an offending tag in the taglist.
 
-/* Modify plugin */
-ULONG HIDD_GetConfigA (HIDDT_Config configPlugin, struct TagItem * tagList);
-ULONG HIDD_GetConfig (HIDDT_Config configPlugin, Tag tag, ...);
-ULONG HIDD_SetConfigA (HIDDT_Config configPlugin, struct TagItem * tagList);
-ULONG HIDD_SetConfig (HIDDT_Config configPlugin, Tag tag, ...);
+\item{void HIDDM_QueryConfig (struct TagItem ** AttrList)}
+Ask the HIDD CP for the current configuration of the HIDD. The AttrList
+should be built in such a way that one can go back to the current config by
+either loading the device for the first time or disabling it and use
+|OM_SET| with this AttrList. Some applications will save this list to a
+file and load it again later to configure the HIDD.
 
-/* Convert values to strings and vice versa */
-STRPTR HIDD_IntToString (HIDDT_Config configPlugin, Tag tag, ULONG value);
-ULONG HIDD_StringToInt (HIDDT_Config configPlugin, Tag tag, STRPTR string);
+\item{void HIDDM_FreeConfig (struct TagItem * AttrList)}
+Dispose the list of attributes which you got by |HIDDM_QueryConfig()|.
 
-/* Get a name for a tag */
-STRPTR HIDD_GetTagName (HIDDT_Config configPlugin, Tag tag);
-\end{core}
+\item{ULONG HIDDM_QueryModes (struct TagItem ** tagList)}
+Ask the HIDD CP about the currently available modes.
 
-The taglist of |HIDD_QueryModes()| consists of the types |BOOL|,
+The taglist consists of tags which have the types |BOOL|,
 |HIDDT_Limit| (a min and max value), |HIDDT_List| (a list with
 string/value pairs or one-of-many selection) or |HIDDT_OptionList| (same as
 |HIDDT_List| but for some-of-many selection. The result is
 passed as a bitfield).
 
-\section{Random unsorted ideas}
+HIDD CPs which supply their own GUI don't need to support this
+tag (but most will because you need something like this internally
+anyway).
 
-HIDDs must allow sharing when appropriate (eg. sound or screens).
+\item{ULONG HIDDM_Apply (void)} Apply the current config to the HIDD.
+If you dispose the HIDD CP, then all changes will be lost.
 
-HIDDs as BOOPSI objects ?
+\item{STRPTR HIDDM_ValueToString (Tag tag, IPTR value)} Convert the
+value |value| for the tag |tag| into a human readable string.
+The string returned must not be written to or be freed.
+
+HIDD CPs which supply their own GUI don't need to support this
+tag (but most will because you need something like this internally
+anyway).
+
+The application will use this value to generate the visual feedback
+in its GUI.
+
+\item{IPTR HIDDM_StringToValue (Tag tag, STRPTR string)} Convert
+the string |string| for the tag |tag| back into a value.
+
+HIDD CPs which supply their own GUI don't need to support this
+tag (but most will because you need something like this internally
+anyway).
+
+Also note that a HIDD can ask that you return exactly the string
+which was passed to you by |HIDDM_ValueToString()| (ie. the
+string must have the same address).
+
+\item{STRPTR HIDDM_GetTagName (Tag tag)} Return a human readble string
+with the name for a tag. For example a serial HIDD with the
+tag |HIDDV_Serial_Baudrate| might return |"Baud rate"|. The
+application will use this to generate its GUI.
+
+\end{methods}
+
+\subsection{Common tags for all HIDDs}
+
+\begin{taglist}
+\item{HIDDA_Type,ULONG,G} This is the basic type of the HIDD (eg. serial, parallel,
+graphics).
+
+\item{HIDDA_SubType,ULONG,G} This is a more specific type. If |HIDDA_Type| is
+|HIDDV_Type_Serial|, then this is a bitfield with one or more bits
+of |HIDDV_Type_Serial_RS232| or |HIDDV_Type_Serial_RS488| set.
+
+\item{HIDDA_Producer,ULONG,G} The ID of the producer as handed out by Amiga
+International.
+
+\item{HIDDA_Name,STRPTR,G} The name of this device (eg. serial.device).
+
+\item{HIDDA_HardwareName,STRPTR,G} The name of the hardware
+(eg. "Builtin Serial Port", "COM1", "CyberVision/3D", etc.). Note that
+you must initialize some HIDDs before you can query this attribute
+because some HIDDs work with more than one type of hardware.
+
+\item{HIDDA_Active,BOOL,ISG} Tells if the device is active or
+(de-)actives it when set.
+
+\item{HIDDA_Status,ULONG,G} The current status of a HIDD. This is a
+set of bits which show if the init of the hardware was successful,
+if the device is active or if the device is ready to be activated.
+
+\end{taglist}
+
+\subsection{Sags for some HIDDs}
+
+\begin{taglist}
+\item{HIDDA_Shared,BOOL,ISG} Allow to share a HIDD with other
+applications or lock it for single use. This might be used
+in a sound HIDD or a serial HIDD or a graphics HIDD.
+
+\end{taglist}
+
+\section{Sample HIDDs}
+
+\subsection{Serial HIDD}
+
+The type of a serial HIDD is |HIDDV_Type_Serial| and the names
+for serial specific things is prefixed with |HIDD?_Serial_|.
+
+Subtypes of serial HIDDs are |HIDDV_RS232| and |HIDDV_RS488|, for
+example.
+
+\begin{taglist}
+\item{HIDDA_Serial_BaudRate,ULONG,ISG} The baud rate in baud (bits
+per second) or a logical baudrate (1: 300baud, 2: 600baud,
+3: 1200baud, 4: 2400baud, 5: 4800, 6: 9600, 7: 19200, 8: 38400,
+9: 57600, 10: 64000, 11: 76800, 12: 112000(?), 13: 200kbaud,
+14: 400kbaud, 15: 1Mbaud, 16: 2MBaud, 17: 4MBaud, 18: 10MBaud,
+19: 20MBaud, 20: 40MBaud, 21: 100MBaud, etc).
+
+\item{HIDDA_Serial_DataLength,ULONG,ISG} The number of data bits. Most
+HIDDs support only 7 or 8 bits but you should expect at least anything
+between 5 and 8.
+
+\item{HIDDA_Serial_StopBits,ULONG,ISG} The number of stopbits between
+two data bytes multiplied by 16 (ie. one stopbit is 16, one and a half
+would be 24 and two stopbits is 32).
+
+\end{taglist}
+
+\subsection{Sound HIDD}
 
 Okay, here are some examples, how a sound.hidd could be implemented on
 different hardware-bases. This is how the class would behave, if a method
@@ -266,6 +357,23 @@ o Some thoughts about the sound.hidd:
     are called, if a not-locked unit is exclusively locked by another
     application (or this exclusive lock is freed). So these attributes
     makes only sense with HIDDV_Sound_NonExclusiveNotLocked.
+
+\section{Internals}
+
+A HIDD is a normal Exec Device which creates a BOOPSI class when
+loaded. A HIDD is recognised by the name in the ROMtag structure.
+This name must begin with the four letters "HIDD" (in that order).
+Note that the name of the HIDD is the string after the first four
+letters. Also note that a HIDD need not have a unique name.
+
+Every HIDD has an extended ROMtag structure which contains the
+infos needed to find a HIDD by |HIDD_FindHIDD()|.
+
+HIDDs are BOOPSI objects but unlike other BOOPSI objects, they
+are not created by classname but by the pointer returned by
+|HIDD_FindHIDD()|.
+
+\section{Random unsorted ideas}
 
 \end{new}
 
