@@ -502,7 +502,8 @@ UX11
     SIGID ();
 }
 
-void intui_WindowToFront (struct Window * window)
+void intui_WindowToFront (struct Window * window,
+                          struct IntuitionBase * IntuitionBase)
 {
 LX11
     XRaiseWindow (sysDisplay, IW(window)->iw_XWindow);
@@ -510,7 +511,8 @@ UX11
     SIGID ();
 }
 
-void intui_WindowToBack (struct Window * window)
+void intui_WindowToBack (struct Window * window,
+                         struct IntuitionBase * IntuitionBase)
 {
 LX11
     XLowerWindow (sysDisplay, IW(window)->iw_XWindow);
