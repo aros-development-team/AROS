@@ -133,7 +133,7 @@ esac
 HAVE_SHM_SUPPORT=0
 if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
   AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
-  LIBS="-L/usr/X11/lib -lX11 -lXext"
+  LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
   AC_TRY_LINK([
 #include <sys/types.h>
 #include <X11/Xlib.h>
