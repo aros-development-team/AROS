@@ -12,6 +12,11 @@ class Token:
     def __repr__ (self):
 	return self.__class__.__name__
 
+class Entity (Token):
+    def dump (self, level):
+	sys.stdout.write ('    '*level)
+	print '&%s;' % self.text
+
 class Text (Token):
     pass
 
@@ -33,7 +38,7 @@ class Tag (Token):
 	    rest = words[1]
 	    while rest:
 		attr, rest = string.split (rest, '=', 1)
-		pos = string.find (rest, '"', 2)
+		pos = string.find (rest, '"', 1)
 		value = rest[1:pos]
 		self.attr[attr] = value
 		rest = string.lstrip (rest[pos+1:])
@@ -56,6 +61,19 @@ class Tag (Token):
 	sys.stdout.write ('    '*level)
 	print '</%s>' % self.name
 	
+class Emptytag (Tag):
+    def setContents (self, content):
+	raise '%s: An empty tag cannot have contents' % self.name
+
+    def dump (self, level):
+	sys.stdout.write ('    '*level)
+	print '<%s' % self.name
+	for key in self.attr.keys ():
+	    sys.stdout.write ('    '*(level+1))
+	    print '%s="%s"' % (key, self.attr[key])
+	sys.stdout.write ('    '*level)
+	print '/>'
+
 class Endtag (Token):
     def __init__ (self, text):
 	self.name = text
@@ -71,6 +89,7 @@ class Reader:
 	self.string, self.pos = string, 0
 	self.lineno = 1
 	self.tokenContext = ''
+	self.filename = ''
 
     def read (self):
 	if self.pos >= len (self.string):
@@ -99,24 +118,44 @@ class Reader:
 		tagEnd = string.find (self.string, '>', self.pos)
 		assert tagEnd != -1
 		text = self.string[self.pos+1:tagEnd]
+		empty = 0
+		if text[-1] == '/':
+		    #print text
+		    empty = 1
+		    text = text[:-1]
 		self.adjustLineCount (text)
 		self.pos = tagEnd + 1
 		text = string.strip (text)
 		if text[0] == '/':
 		    text = string.strip (text[1:])
 		    return Endtag (text)
+		elif empty:
+		    #print text
+		    return Emptytag (text)
 		else:
 		    return Tag (text)
+	elif self.string[self.pos] == '&':
+	    pos = string.find (self.string, ';', self.pos)
+	    assert pos != -1
+	    text = self.string[self.pos+1:pos]
+	    self.pos = pos+1
+	    return Entity (text)
 	else:
 	    nextTagStart = string.find (self.string, '<', self.pos)
 	    if nextTagStart == -1:
-		text = self.string[self.pos:]
-		self.adjustLineCount (text)
-		self.pos = len (self.string)
-	    else:
-		text = self.string[self.pos:nextTagStart]
-		self.adjustLineCount (text)
-		self.pos = nextTagStart
+		nextTagStart = len (self.string)
+
+	    nextEntityStart = string.find (self.string, '&', self.pos)
+	    if nextEntityStart == -1:
+		nextEntityStart = len (self.string)
+
+	    maxLen = nextTagStart
+	    if nextEntityStart < maxLen:
+		maxLen = nextEntityStart
+
+	    text = self.string[self.pos:maxLen]
+	    self.adjustLineCount (text)
+	    self.pos = maxLen
 
 	    return Text (text)
 
@@ -127,7 +166,7 @@ class Reader:
 	pos = string.find (self.string, '\n', self.pos)
 	if pos > 79:
 	    pos = 79
-	self.tokenContext = '%d: %s' % (self.lineno, self.string[self.pos:pos])
+	self.tokenContext = '%s:%d: %s' % (self.filename, self.lineno, self.string[self.pos:pos])
 
 class XmlFile:
     def __init__ (self, filename):
@@ -137,9 +176,38 @@ class XmlFile:
 	fh.close ()
 
 	self.reader = Reader (data)
-	self.tree = self.parse (0)
+	self.reader.filename = self.filename
+	self.entities = {
+	    'lt': '&lt;',
+	    'gt': '&gt;',
+	    'quot': '&quot;',
+	    'amp': '&amp;',
+	}
 
-    def parse (self, level):
+    def addEntity (self, name, replacement):
+	self.entities[name] = replacement
+
+    def parseEntity (self, token, tree, level):
+	str = '&%s;' % token.text
+	# Disable recursive invokations. This is a crude workaround for the
+	# fact that we don't have encodings.
+	replacement = self.entities.get (token.text, None)
+	if not replacement:
+	    print 'Warning: &%s; not defined' % token.text
+	    replacement = '&%s;' % token.text
+	if str == replacement:
+	    tree.append (Text (str))
+	    return
+	
+	reader = self.reader
+	self.reader = Reader (replacement)
+	entityTree = self.parse (level+1)
+	tree = tree + entityTree
+	#print entityTree
+	self.reader = reader
+	return
+	
+    def parse (self, level=0):
 	tree = []
 	
 	while 1:
@@ -150,8 +218,14 @@ class XmlFile:
 	    #print token
 	    #token.dump (level)
 
+	    if isinstance (token, Entity):
+		self.parseEntity (token, tree, level)
+		continue
+
 	    tree.append (token)
-	    if isinstance (token, Tag):
+	    if isinstance (token, Emptytag):
+		continue
+	    elif isinstance (token, Tag):
 		#print 'Reading contents for',token.name
 		context = self.reader.tokenContext
 		subtree = self.parse (level+1)
@@ -172,6 +246,8 @@ class XmlFile:
 		break
 
 	#print '    '*level,tree
+	if level == 0:
+	    self.tree = tree
 	return tree
 
     def dump (self):
@@ -186,7 +262,11 @@ class XmlFile:
 	    if isinstance (item, Tag):
 		p.call (item.name, self, item)
 	    else:
-		p.call (item.__class__.__name__, self, item)
+		try:
+		    p.call (item.__class__.__name__, self, item)
+		except:
+		    print `item`
+		    raise
 
 class Processor:
     def __init__ (self):
@@ -207,5 +287,6 @@ class Processor:
 
 if __name__ == '__main__':
     xmlfile = XmlFile (sys.argv[1])
+    xmlfile.parse ()
     xmlfile.dump ()
 
