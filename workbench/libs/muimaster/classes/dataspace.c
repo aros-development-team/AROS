@@ -124,7 +124,7 @@ AROS_UFH3S(IPTR, Dataspace_Dispatcher,
  */
 const struct __MUIBuiltinClass _MUI_Dataspace_desc = {
     MUIC_Dataspace,                        /* Class name */
-    ROOTCLASS,                          /* super class name */
+    MUIC_Semaphore,                          /* super class name */
     sizeof(struct MUI_DataspaceData),      /* size of class own datas */
     Dataspace_Dispatcher                        /* class dispatcher */
 };
