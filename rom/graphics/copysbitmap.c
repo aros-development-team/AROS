@@ -2,7 +2,7 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Graphics function SyncSBitMap()
+    Desc: Graphics function CopySBitMap()
     Lang: english
 */
 #include <graphics/layers.h>
