@@ -140,10 +140,10 @@ struct ZunePrefsNew
     BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
 
     /* Strings */
-    STRPTR string_bg_active;
-    STRPTR string_text_active;
-    STRPTR string_bg_inactive;
-    STRPTR string_text_inactive;
+    CONST_STRPTR string_bg_active;
+    CONST_STRPTR string_text_active;
+    CONST_STRPTR string_bg_inactive;
+    CONST_STRPTR string_text_inactive;
 
     /* Lists */
     ListviewMulti   list_multi; /* yet unused, remove this comment when handled */
