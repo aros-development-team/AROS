@@ -949,7 +949,7 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 #MM
 %(mmake)-setup : setup-module$(BDID)
 
-#MM %(mmake)-includes : %(mmake)-includes-libdefs setup-clib
+#MM %(mmake)-includes : setup-clib
 
 TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifneq ($(BD_GENINCS$(BDID)),)
@@ -959,9 +959,7 @@ endif
 
 %(mmake)-includes : $(TMP_DEPS)
   
-
-#MM
-%(mmake)-includes-libdefs : $(BD_LIBDEFSINC$(BDID))
+$(TMP_DEPS) : $(BD_LIBDEFSINC$(BDID))
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick %(mmake)-kobj),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
