@@ -15,9 +15,11 @@
 #ifndef  DEBUG
 #define  DEBUG 0
 #endif
-#include <aros/debug.h>
 
 #include "cxintern.h"
+
+#include <aros/debug.h>
+
 #include <devices/input.h>
 #include <proto/commodities.h>
 #include <proto/exec.h>

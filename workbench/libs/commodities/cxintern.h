@@ -33,7 +33,12 @@ enum { CXM_SINGLE, CXM_DOUBLE };
 #include <devices/timer.h>
 #include <libraries/commodities.h>
 #include <dos/dos.h>
-
+#ifndef AROS_LIBCALL_H
+#   include <aros/libcall.h>
+#endif
+#ifndef PROTO_EXEC_H
+#   include <proto/exec.h>
+#endif
 
 typedef struct cx_Object
 {
@@ -187,4 +192,13 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct CommoditiesBase *, CxBase, 3, Commodities)
 
+#ifdef __MORPHOS__
+#define CxNotify(name, command) \
+	LP2(0xc6, ULONG, CxNotify, STRPTR, name, a0, ULONG, command, d0, \
+	, COMMODITIES_BASE_NAME, IF_CACHEFLUSHALL, NULL, 0, IF_CACHEFLUSHALL, NULL, 0)
+
+#define FreeBrokerList(brokerList) \
+	LP1NR(0xc0, FreeBrokerList, struct List *, brokerList, a0, \
+	, COMMODITIES_BASE_NAME, IF_CACHEFLUSHALL, NULL, 0, IF_CACHEFLUSHALL, NULL, 0)
+#endif
 #endif /* COMMODITIES_BASE_H */

@@ -7,10 +7,16 @@
 */
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
+#include "cxintern.h"
+#ifdef __MORPHOS__
+#define __NOLIBBASE__ /*looks horrible but I see no other way*/
+#endif
 #include <proto/keymap.h>
 #include <proto/timer.h>
+#ifdef __MORPHOS__
+#undef __NOLIBBASE__
+#endif
 #include <aros/debug.h>
-#include "cxintern.h"
 
 /*****************************************************************************
 

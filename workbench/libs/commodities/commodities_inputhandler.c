@@ -428,7 +428,7 @@ AROS_UFH2(struct InputEvent *, cxIHandler,
 {
     AROS_USERFUNC_INIT
 
-    AROS_UFC2(struct InputEvent *, CxTree,
+    AROS_UFC2(struct InputEvent *, AROS_ASMSYMNAME(CxTree),
 	      AROS_UFCA(struct InputEvent *     , events , A0),
 	      AROS_UFCA(struct CommoditiesBase *, CxBase , A6));
 
