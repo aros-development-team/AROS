@@ -1,7 +1,8 @@
-# Main makefile for AROS
-# Copyright (C) 2000 AROS - The Amiga Research OS
-#
+# Copyright © 2000-2003, The AROS Development Team. All rights reserved.
 # $Id$
+#
+# Main makefile for AROS
+
 default: all
 
 AROS_HOST_CPU    ?= @aros_host_cpu@
@@ -34,42 +35,55 @@ tools : makedirs $(TOOLLIB) $(GENMF) $(CPAK) $(ARCHTOOL) \
 	$(MKFSAFFS)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
+	@$(ECHO) Building toollib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
 
 $(GENMF) : $(TOP)/tools/genmf/genmf.c
+	@$(ECHO) Building genmf...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
 
 $(CPAK) : $(TOP)/tools/cpak/cpak.c
+	@$(ECHO) Building cpak...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
 
 $(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
+	@$(ECHO) Building archtool...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
 
 $(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
+	@$(ECHO) Building flexcat...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
 
 $(GENSKELETON) : $(TOP)/tools/genskeleton/genskeleton.c
+	@$(ECHO) Building genskeleton...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton TOP=$(TOP)
 
 $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
+	@$(ECHO) Building createdtdesc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
 
 $(ADFLIB) : $(wildcard $(TOP)/tools/adflib/*.[ch])
+	@$(ECHO) Building adflib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/adflib -f Makefile.aros TOP=$(TOP)
 
 $(CREATEHDFILE) : $(TOP)/tools/disktool/createhdfile.c
+	@$(ECHO) Building createhdfile...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/disktool TOP=$(TOP)
 
 $(MKFSAFFS) : $(TOP)/tools/mkfsaffs/mkfsaffs.c
+	@$(ECHO) Building mkfsaffs...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/mkfsaffs TOP=$(TOP)
 
 $(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
+	@$(ECHO) Building ilbmtoc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
 
 $(ILBMTOICON) : $(TOP)/tools/ilbmtoicon/ilbmtoicon.c
+	@$(ECHO) Building ilbmtoicon...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoicon TOP=$(TOP)
 
 $(COLLECT-AROS) : $(wildcard $(TOP)/tools/collect-aros/*.[hc])
+	@$(ECHO) Building collect-aros...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
@@ -78,13 +92,14 @@ $(COLLECT-AROS) : $(wildcard $(TOP)/tools/collect-aros/*.[hc])
 mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
+	@$(ECHO) Building MetaMake...
 	cd $(TOP)/tools/MetaMake ; aclocal ; autoconf
 
 $(TOP)/tools/MetaMake/Makefile.in : $(TOP)/tools/MetaMake/Makefile.am
 	cd $(TOP)/tools/MetaMake ; automake -a -c
 
 $(TOP)/tools/MetaMake/Makefile : $(TOP)/tools/MetaMake/configure \
-		$(TOP)/tools/MetaMake/Makefile.in
+	$(TOP)/tools/MetaMake/Makefile.in
 	cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" ./configure --prefix=$(TOOLDIR)
 
 $(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
