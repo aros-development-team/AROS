@@ -5,6 +5,7 @@
 */
 
 #include <intuition/gadgetclass.h>
+#include <intuition/intuitionbase.h>
 #include <graphics/rpattr.h>
 #include <cybergraphx/cybergraphics.h>
 
