@@ -31,11 +31,16 @@ AC_MSG_CHECKING([for AROS style target])
 AC_CACHE_VAL(aros_cv_target,[aros_cv_target=$target])
 target=`eval echo '$''{'aros_cv_target'}'`
 
-if test $target = "NONE" ; then
+if test "$target" = "NONE" ; then
     target=$host_os-$host_cpu
     cross_compile=no
 else
-    cross_compile=yes
+    if test "$target" = "" ; then
+        target=$host_os-$host_cpu
+        cross_compile=no
+    else
+        cross_compile=yes
+    fi
 fi
 AC_MSG_RESULT($target)
 
