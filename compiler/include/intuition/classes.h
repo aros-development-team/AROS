@@ -8,6 +8,9 @@
     BOOPSI structures.
 */
 
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
+#endif
 #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
@@ -57,5 +60,12 @@ struct _Object
 
 #define SIZEOF_INSTANCE(class) ((class)->cl_InstOffset + (class)->cl_InstSize \
                                + sizeof(struct _Object))
+
+struct ClassLibrary
+{
+    struct Library  cl_Lib;
+    UWORD   	    cl_Pad;
+    Class    	    *cl_Class;
+};
 
 #endif /* INTUITION_CLASSES_H */
