@@ -172,15 +172,18 @@ BOOL add_string(JBuf jb, LINE *ln, ULONG pos, STRPTR string, ULONG lg, LONG *buf
 	ULONG i; STRPTR str;
 	for(str=string, i=0, buf[0]=pos, buf[1]=0; i<lg; str++, i++)
 		if(*str=='\n')
+		{
 			/* Add string at pos and copy rest of line to a new one */
 			if(break_line(jb,ln,pos,string,str-string)) string=str+1,pos=0,ln=ln->next,buf[1]++;
 			/* Fucking memory failure! */
 			else return FALSE;
+		}
 
 	/* Some bytes left */
-	if(string < str)
+	if(string < str) {
 		if( !insert_str(jb, ln,pos,string,str-string) ) return FALSE;
 		else buf[0] = str-string;
+	}
 
 	if( 0 == (buf[2] = buf[1]) ) buf[0] += pos;
 	return TRUE;

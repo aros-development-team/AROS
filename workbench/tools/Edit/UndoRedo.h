@@ -16,7 +16,7 @@
 #endif
 
 /* Size of one chunk of undo/redo buf (must be a power of 2) */
-#define	UNDO_CHUNK			1024
+#define	UNDO_CHUNK			32
 
 /** Structure holding modifications data (operations) **/
 typedef struct _RBOps
@@ -60,8 +60,8 @@ typedef JBUF *				JBuf;				/* Main type pointer */
 #define	JOIN_LINE		4					/* Line joined */
 #define	GROUP_BY			5					/* Group of operation */
 
-#define	LAST_TYPE(x)	((UBYTE *)(x))[-1]
-#define	IS_COMMIT(x)	((UBYTE *)(x))[-2]
+#define	LAST_TYPE(x)	((STRPTR)(x))[-1]
+#define	IS_COMMIT(x)	((STRPTR)(x))[-2]
 #define	OUT_OF_DATE		((STRPTR)-1)
 #define	NO_MEANING_VAL	((STRPTR)-2)
 
@@ -72,7 +72,7 @@ typedef struct _AddChar
 	UWORD pos;									/* Position in this line */
 	UWORD nbc;									/* Nb. of char inserted */
 #ifdef _AROS
-    	UWORD pad; /* to get multiple-of-4 structure sizeof */
+	UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE commit;								/* Savepoint */
 	UBYTE type;									/* ADD_CHAR */
@@ -86,7 +86,7 @@ typedef struct _RemLine
 	LINE  *line;								/* Line removed */
 	LINE  *after;								/* Insert the line after this one */
 #ifdef _AROS
-    	UWORD pad; /* to get multiple-of-4 structure sizeof */
+	UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE  commit;								/* Savepoint */
 	UBYTE  type;								/* REM_LINE */
@@ -98,12 +98,20 @@ typedef struct _JoinLine
 	LINE  *old;									/* Old line removed */
 	ULONG  pos;									/* Joined position */
 #ifdef _AROS
-    	UWORD pad; /* to get multiple-of-4 structure sizeof */
+   UWORD pad;									/* to get multiple-of-4 structure sizeof */
 #endif
 	UBYTE  commit;								/* Savepoint */
 	UBYTE  type;								/* JOIN_LINE */
 }	*JoinLine;
 
+typedef struct _GroupBy						/* Gather multiple operations */
+{
+#ifdef	_AROS
+   UWORD pad;									/* to get multiple-of-4 structure sizeof */
+#endif
+	UBYTE  commit;								/* Savepoint */
+	UBYTE  type;								/* GROUP_BY */
+}  *GroupBy;
 
 void flush_undo_buf ( JBuf );
 void rollback       ( JBuf );

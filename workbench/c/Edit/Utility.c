@@ -7,7 +7,7 @@
 #include <intuition/intuitionbase.h>
 #include <workbench/startup.h>
 #include <utility/tagitem.h>
-#include <libraries/dos.h>
+#include <dos/dos.h>
 #include <exec/memory.h>
 #include <exec/io.h>
 #include "ClipLoc.h"
@@ -21,11 +21,11 @@
 #include "Jed_Strings.h"
 
 extern struct IntuitionBase *IntuitionBase;
-extern STRPTR MsgAbout[];
 extern ULONG  err_time;
 static UBYTE  SPrintfBuf[80], *savea3;
 
 /** SPrintf like routine **/
+
 
 #ifdef _AROS
 #include <aros/asmcall.h>
@@ -36,17 +36,16 @@ AROS_UFH2(void, PutChProc,
 {
     AROS_USERFUNC_INIT
 
-#else
+#elif defined( __GNUC__ )
 
-#ifdef	__GNUC__					/* Register based-argument passing with gcc */
-void PutChProc( void )
+void PutChProc( void )        /* Register based-argument passing with gcc */
 {
 	register UBYTE data __asm("d0");
 
-#else									/* Same proc with SAS/C */
+#else                         /* Same proc with SAS/C */
+
 void __asm PutChProc(register __d0 UBYTE data, register __a3 STRPTR out)
 {
-#endif
 #endif
 	/* Can't use a3 ; compiler will restore register content on exit */
 	if( savea3 < SPrintfBuf + sizeof(SPrintfBuf) - 1 )
@@ -353,7 +352,7 @@ char warn_overwrite( STRPTR path )
 }
 
 /*** Simple requester to ask user for a number ***/
-int get_number( Project p, STRPTR title, ULONG * result )
+int get_number( Project p, STRPTR title, LONG * result )
 {
 	struct Window *win;
 	static UBYTE  LineNum[10];
@@ -362,18 +361,17 @@ int get_number( Project p, STRPTR title, ULONG * result )
 		NULL,0,0,0,0,GFLG_GADGHCOMP,GACT_IMMEDIATE | GACT_RELVERIFY | GACT_LONGINT | GACT_STRINGCENTER,
 		GTYP_STRGADGET,NULL,NULL,NULL,NULL,(APTR) &SI,0,NULL
 	};
-	WORD *Box = &Wnd->LeftEdge;
 
 	/* Open our window */
 	if((win = (void *) OpenWindowTags( NULL,
-			WA_Width, 160,
+			WA_Width,       160,
 			WA_InnerHeight, prefs.scrfont->tf_YSize+2,
-			WA_Left, Box[0]+((Box[2]-160)>>1),
-			WA_Top,  Box[1]+((Box[3]-30)>>1),
-			WA_Title, (ULONG)title,
-			WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP,
-			WA_Flags, WFLG_RMBTRAP | WFLG_ACTIVATE | WFLG_DRAGBAR | WFLG_CLOSEGADGET,
-			WA_PubScreen, (ULONG)Scr,
+			WA_Left,        Wnd->LeftEdge + (Wnd->Width  - 160) / 2,
+			WA_Top,         Wnd->TopEdge  + (Wnd->Height - 30)  / 2,
+			WA_Title,       (ULONG) title,
+			WA_IDCMP,       IDCMP_CLOSEWINDOW | IDCMP_GADGETUP,
+			WA_Flags,       WFLG_CLOSEGADGET  | WFLG_ACTIVATE | WFLG_RMBTRAP | WFLG_DRAGBAR,
+			WA_PubScreen,   (ULONG) Scr,
 			TAG_DONE)))
 	{
 		extern struct IntuiMessage msgbuf,*msg;
@@ -381,10 +379,10 @@ int get_number( Project p, STRPTR title, ULONG * result )
 		BusyWindow(Wnd);
 		/* Attach the simple OS1.3 compliant string gadget */
 		*LineNum = 0;
-		StrGad.Width = 160 - win->BorderRight - (
+		StrGad.Width    = 160 - win->BorderRight - (
 		StrGad.LeftEdge = win->BorderLeft);
-		StrGad.TopEdge = win->BorderTop+1;
-		StrGad.Height = prefs.scrfont->tf_YSize;
+		StrGad.TopEdge  = win->BorderTop+1;
+		StrGad.Height   = prefs.scrfont->tf_YSize;
 		AddGList(win, &StrGad, 0, 1, NULL);
 		ActivateGadget(&StrGad, win, NULL);
 
@@ -395,7 +393,7 @@ int get_number( Project p, STRPTR title, ULONG * result )
 
 			while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 			{
-				CopyMemQuick((void *)msg,(void *)&msgbuf,sizeof(msgbuf));
+				CopyMemQuick(msg, &msgbuf, sizeof(msgbuf));
 				ReplyMsg((struct Message *)msg);
 
 				switch( msgbuf.Class )

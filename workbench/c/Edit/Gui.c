@@ -9,7 +9,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
-#include <libraries/dos.h>
+#include <dos/dos.h>
 #include <exec/memory.h>
 #include "Jed.h"
 #include "Prefs.h"
@@ -157,7 +157,7 @@ struct Scroll ScrollBar = {
 {	/* PropGadget */
 	NULL, 0,0, 0,0,
 	GFLG_RELRIGHT|GFLG_RELHEIGHT,
-	GACT_RIGHTBORDER|GACT_RELVERIFY|GACT_IMMEDIATE|GACT_FOLLOWMOUSE,
+	GACT_RIGHTBORDER|GACT_RELVERIFY|GACT_FOLLOWMOUSE,
 	GTYP_PROPGADGET,
 	NULL, NULL, NULL, NULL, NULL,
 	0, NULL },
@@ -257,17 +257,6 @@ void prop_adj(Project p)
 	extern UBYTE record;
 	if(record == 2) return;
 
-#ifdef FARSCROLL
-	if (p->max_lines > 1)
-	{
-	    VertPot = (p->top_line * MAXPOT) / (p->max_lines - 1);
-	}
-	else
-	{
-	    VertPot = 0;
-	}
- 	VertBody = (gui.nbline * MAXBODY) / (p->max_lines + gui.nbline - 1);
-#else
 	/* If we have more lines visible than the text actually has (ie. **
 	** there are empty lines visible) the body-size represents the   **
 	** lines visible according to the actual screen size:            */
@@ -283,7 +272,6 @@ void prop_adj(Project p)
 			VertPot = (p->top_line * MAXPOT) / (p->max_lines - gui.nbline),
 			/* The body-size is (number of lines for jump-scroll / all other lines) */
 			VertBody = (gui.nbline * MAXBODY) / p->max_lines;
-#endif
 
 	/* Let's set it */
 	NewModifyProp((struct Gadget *)Prop,Wnd,NULL,ScrollBar.pinfo.Flags,MAXPOT,VertPot,MAXBODY,VertBody,1);
@@ -309,6 +297,7 @@ struct Scroll *add_prop(struct Window *win)
 						GA_Height,      win->Height,
 						GA_RelVerify,   TRUE,
 						GA_FollowMouse, TRUE,
+						GA_Immediate,   TRUE,
 						PGA_VertPot,    MAXPOT,
 						PGA_VertBody,   MAXBODY,
 						PGA_Freedom,    FREEVERT,
@@ -585,7 +574,6 @@ long setup( void )
 /*** Cleanup properly the ressources allocated for GUIs ***/
 void CloseMainWnd(BOOL CloseScr)
 {
-#warning: stegerg first param to send_pref() was missing. Check if &prefs is correct!
 	send_pref(&prefs, CMD_KILL);
 	close_searchwnd(FALSE);
 	if(Wnd)

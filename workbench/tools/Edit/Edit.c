@@ -164,11 +164,11 @@ BYTE move_column_selection(Project p, LONG xn, LONG yn)
 		}
 		/* If user has changed vertical position of selection an **
 		** update of part of selected buffer will be required:   */
-		if(xn != p->ccp.xc)
+		if(xn != p->ccp.xc) {
 			if(p->ccp.yp < p->ccp.yc) rdw=6;
 			else if(p->ccp.yp > yn) rdw=1;
+		}
 	} else {
-
 		/* Scan is backward */
 		for(; yline>yn; y-=YSIZE, yline--, ln=ln->prev)
 		{
@@ -179,9 +179,10 @@ BYTE move_column_selection(Project p, LONG xn, LONG yn)
 		}
 		/* If user has changed vertical position of selection an **
 		** update of part of selected buffer will be required:   */
-		if(xn != p->ccp.xc)
+		if(xn != p->ccp.xc) {
 			if(p->ccp.yp > p->ccp.yc) rdw=5;
 			else if(p->ccp.yp < yn) rdw=2;
+		}
 	}
 
 	/** Current point now become the previous **/
@@ -371,17 +372,17 @@ void indent_by(Project p, UBYTE ch, BYTE method)
 					Move(RP,gui.left,y),write_text(p,ln);
 			}
 		reg_group_by(&p->undo);
-/*		printf("endsel:%d, flags:%02x\n", p->ccp.endsel, ln->prev->flags); */
-		move_selection=move_stream_selection; 
+		move_selection = move_stream_selection; 
 		if(p->nbc==0) goto redraw; goto refresh;
 	}
 
 	/* Should we add or remove the char? */
-	if(method == -1)
+	if(method == -1) {
 		if(p->edited->size > 0 && p->edited->stream[0]==ch) {
 			rem_chars(&p->undo,p->edited,0,0); 
 			if(p->nbc==0) goto redraw; goto refresh;
 		} else return;
+	}
 
 	if( add_char(&p->undo, p->edited, 0, ch) )
 	{

@@ -185,7 +185,7 @@ void play_macro( int nb_times )
 
 void repeat_macro( Project p )
 {
-	ULONG nb;
+	LONG nb;
 
 	if( MainMacro && get_number(p, GetMenuText(404), &nb) )
 		play_macro( nb );

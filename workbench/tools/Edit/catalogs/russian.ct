@@ -1,6 +1,6 @@
-##version $VER: JanoEditor.catalog 1.0 (1.10.2000).
-##codeset 0
-##language russian
+## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## codeset 0
+## language russian
 ;
 ; *****************************
 ;  NewMenu strings
@@ -190,9 +190,6 @@ ERR_BADOS
 ERR_NOASLREQ
 Не могу разместить ASL-запросник!
 ;
-ERR_NOWRTACCESS
-Диск зашищен от записи
-;
 ERR_NOMEM
 Не хватает памяти!
 ;
@@ -327,7 +324,7 @@ MSG_CANCELSEARCH
 Cancel
 ;
 MSG_REPLACEALL
-%d %s of `%s' replaced
+%ld %s of `%s' replaced
 ;
 MSG_OCCURENCY
 occurency

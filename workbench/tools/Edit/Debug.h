@@ -44,7 +44,7 @@
 #endif
 
 #ifdef	DEBUG_UNDO_STUFF		/* For undo/redo tracking */
-extern char SizeOf[];
+extern UBYTE SizeOf[];
 RBSeg rbs;
 ULONG rbsz;
 
@@ -107,7 +107,7 @@ void show_modifs( JBuf jb )
 	{
 		while(size != 0)
 		{
-			op = ((UWORD *)(buf->data + size))[-1];
+			op = LAST_TYPE(buf->data + size);
 			size -= SizeOf[ op ];
 			switch( op )
 			{

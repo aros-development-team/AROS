@@ -17,70 +17,70 @@
 /*** Global preferences ***/
 typedef struct prefs
 {
-	char   use_pub;				/* TRUE if a pubscreen is created */
-	char   use_txtfont;			/* TRUE if a custom text font is used */
-	char   use_scrfont;			/* TRUE if a custom screen font is used */
-	char   backdrop;				/* TRUE if use a backdrop'ed window */
-	char   left_margin;			/* Left margin for easy line selection */
-	char   auto_indent;			/* TRUE if auto indent mode */
-	char   xtend;					/* TRUE if use PC-like numeric keypad */
-	char   reserved;				/* Unused for now */
-	char   matchcase;				/* TRUE if search is case insensitive */
-	char   wholewords;			/* TRUE if only whole words match in a search */
-	char   tabsize;				/* Tabulation size */
-	char   depth;					/* Depth of custom screen */
-	STRPTR wordssep;				/* List of characters used to separate words */
-	struct TextAttr attrtxt;	/* Font used to edit text */
-	struct TextAttr attrscr;	/* Font used for graphical interface */
-	WORD   left,top;				/* Left corner of the window */
-	WORD   width,height;			/* Dimensions */
+	char   use_pub;            /* TRUE if a pubscreen is created */
+	char   use_txtfont;        /* TRUE if a custom text font is used */
+	char   use_scrfont;        /* TRUE if a custom screen font is used */
+	char   backdrop;           /* TRUE if use a backdrop'ed window */
+	char   left_margin;        /* Left margin for easy line selection */
+	char   auto_indent;        /* TRUE if auto indent mode */
+	char   xtend;              /* TRUE if use PC-like numeric keypad */
+	char   reserved;           /* Unused for now */
+	char   matchcase;          /* TRUE if search is case insensitive */
+	char   wholewords;         /* TRUE if only whole words match in a search */
+	char   tabsize;            /* Tabulation size */
+	char   depth;              /* Depth of custom screen */
+	STRPTR wordssep;           /* List of characters used to separate words */
+	struct TextAttr attrtxt;   /* Font used to edit text */
+	struct TextAttr attrscr;   /* Font used for graphical interface */
+	WORD   left,top;           /* Left corner of the window */
+	WORD   width,height;       /* Dimensions */
 
 	/* Information about duplicated screen */
-	WORD   scrw,scrh,scrd;		/* Properties of cloned screen */
-	ULONG  modeid;					/* Mode id of new screen */
-	ULONG  vmd;						/* Display ID of pubscreen */
-//#ifdef	GUI_H						/* Not always required */
-	struct pens pen;				/* Pens offset used */
+	WORD   scrw,scrh,scrd;     /* Properties of cloned screen */
+	ULONG  modeid;             /* Mode id of new screen */
+	ULONG  vmd;                /* Display ID of pubscreen */
+#ifdef	GUI_H                /* Not always required */
+	struct pens pen;           /* Pens offset used */
 
 	/* Information allocated at run-time */
-	struct TextFont *txtfont;	/* Font usable with rastport */
-	struct TextFont *scrfont;	/* Font used to render gui */
-	struct Screen   *parent;	/* Parent screen */
-	struct Screen   *current;	/* Screen where window remains */
-//#endif
+	struct TextFont *txtfont;  /* Font usable with rastport */
+	struct TextFont *scrfont;  /* Font used to render gui */
+	struct Screen   *parent;   /* Parent screen */
+	struct Screen   *current;  /* Screen where window remains */
+#endif
 }	PREFS;
 
 /** Maximal fields saved in preference file **/
-#define	MAX_NUMFIELD	sizeof(sizefields)
+#define	MAX_NUMFIELD   sizeof(sizefields)
 
 /** Command search to edit preference of editor **/
-#define	SYS_DIR			"SYS:"
-#define	PREF_DIR			"Prefs/"
-#define	PREF_NAME		"JanoPrefs"
+#define	SYS_DIR        "SYS:"
+#define	PREF_DIR       "Prefs/"
+#define	PREF_NAME      "JanoPrefs"
 
 /** Character types to split words **/
-#define	ALPHA				0
-#define	SEPARATOR		1
-#define	SPACE				2
-#define	MAX_SPLIT		40		/* Maximal string separator length */
+#define	ALPHA          0
+#define	SEPARATOR      1
+#define	SPACE          2
+#define	MAX_SPLIT      40    /* Maximal string separator length */
 
 /** Table where character type can be found **/
 extern UBYTE TypeChar[256];
 
-#define	JANO_PREFSID	MAKE_ID('J','A','N','O')
-#define	JANO_STRID		"JANO"
+#define	ID_JANO        MAKE_ID('J','A','N','O')
+#define	ID_PREF        MAKE_ID('P','R','E','F')
 
 /** Open preference file according to mode **/
 APTR open_prefs(STRPTR name, UBYTE mode);
 
 /** Values for `mode' **/
-#define	MODE_USE			1		/* Open file for reading (name can be NULL) */
-#define	MODE_SAVE		2		/* Open file for writing with IFF header */
+#define	MODE_USE       1     /* Open file for reading (name can be NULL) */
+#define	MODE_SAVE      2     /* Open file for writing with IFF header */
 
 
 /** Load/save preference file **/
-char  load_prefs(PREFS *, UBYTE *file);
-char  save_prefs(PREFS *);
+UBYTE load_prefs(PREFS *, STRPTR file);
+UBYTE save_prefs(PREFS *);
 
 /** Search for janoprefs and launch it **/
 void  setup_winpref(void);
@@ -114,6 +114,16 @@ void ask_new_screen( void );
 void ask_new_font( void );
 
 
-#endif
+#endif /* JANOPREF */
 
-#endif
+/** Convert a TextFont struct into a TextAttr **/
+void text_to_attr(struct TextFont *, struct TextAttr *);
+
+/** Try to load a preference file **/
+UBYTE load_prefs( PREFS *, STRPTR );
+
+/** Set preference to default settings **/
+void set_default_prefs( PREFS *, struct Screen * );
+
+#endif /* PREFS_H */
+

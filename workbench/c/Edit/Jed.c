@@ -8,7 +8,7 @@
 
 #include <intuition/intuition.h>				/* Std types */
 #include <libraries/gadtools.h>				/* Menu events */
-#include <libraries/dos.h>						/* Standard error codes */
+#include <dos/dos.h>								/* Standard error codes */
 #include <exec/memory.h>						/* Memory allocation */
 #include "Version.h"
 #include "Jed.h"
@@ -35,24 +35,17 @@ pfnSelectFunc move_selection;
 const char Version[]=SVER;
 
 /* Shared libraires we'll need to open */
-struct IntuitionBase	*IntuitionBase = NULL;
-struct GfxBase			*GfxBase       = NULL;
-struct Library			*KeymapBase		= NULL;
-struct Library			*GadToolsBase  = NULL;
-struct Library			*AslBase       = NULL;
-#ifdef __GNUC__
-struct LocaleBase		*LocaleBase    = NULL;
-#else
-struct Library			*LocaleBase    = NULL;
-#endif
-struct Library			*DiskfontBase  = NULL;
-#ifdef __GNUC__
-struct UtilityBase		*UtilityBase   = NULL;
-#else
-struct Library			*UtilityBase   = NULL;
-#endif
+struct IntuitionBase *IntuitionBase = NULL;
+struct GfxBase       *GfxBase       = NULL;
+struct Library       *KeymapBase    = NULL;
+struct Library       *GadToolsBase  = NULL;
+struct Library       *AslBase       = NULL;
+struct LocaleBase    *LocaleBase    = NULL;
+struct Library       *DiskfontBase  = NULL;
+struct UtilityBase   *UtilityBase   = NULL;
+struct Library       *IFFParseBase  = NULL;
 
-struct IntuiMessage *msg, msgbuf;					/* Used to collect events */
+struct IntuiMessage *msg, msgbuf;     /* Used to collect events */
 
 StartUpArgs args;
 
@@ -76,29 +69,22 @@ int main(int argc, char *argv[])
 	init_searchtable();
 
 	/* Optionnal libraries */
-	AslBase      = (struct Library *) OpenLibrary("asl.library",     36);
-#ifdef __GNUC__
+	AslBase      = (struct Library *)    OpenLibrary("asl.library",     36);
 	LocaleBase   = (struct LocaleBase *) OpenLibrary("locale.library",  38);
-#else
-	LocaleBase   = (struct Library *) OpenLibrary("locale.library",  38);
-#endif
-	DiskfontBase = (struct Library *) OpenLibrary("diskfont.library", 0);
+	DiskfontBase = (struct Library *)    OpenLibrary("diskfont.library", 0);
+	IFFParseBase = (struct Library *)    OpenLibrary("iffparse.library",36);
 
-	if(LocaleBase) jano_local();		/* Localize the prog */
+	if(LocaleBase) InitLocale();    /* Localize the prog */
 
-	/* Open the required ROM libraries: */
+	/* Open the required ROM libraries */
 	if( (IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 36)) &&
 	    (GfxBase       = (struct GfxBase *)       OpenLibrary("graphics.library",  36)) &&
 	    (GadToolsBase  = (struct Library *)       OpenLibrary("gadtools.library",  36)) &&
 	    (KeymapBase    = (struct Library *)       OpenLibrary("keymap.library",    36)) &&
-#ifdef __GNUC__
-		 (UtilityBase   = (struct UtilityBase *)       OpenLibrary("utility.library",   36)) )
-#else
-		 (UtilityBase   = (struct Library *)       OpenLibrary("utility.library",   36)) )
-#endif
+		 (UtilityBase   = (struct UtilityBase *)   OpenLibrary("utility.library",   36)) )
 	{
 		init_macros();
-		load_prefs(&prefs, NULL);			/* See if it exists a config file */
+		load_prefs(&prefs, NULL);     /* See if it exists a config file */
 		sigport = create_port();
 
 		/* Create whether an empty project or an existing one */
@@ -121,35 +107,34 @@ int main(int argc, char *argv[])
 	/* Hope that all were well... */
 	cleanup(0, RETURN_OK);
 	
-	/* Avoid compiler warning */
 	return 0;
 }
 
 /*** Deallocate ressources properly ***/
 void cleanup(UBYTE *msg, int errcode)
 {
-	extern void *clip;
-	CBClose(clip);
+	CBClose();
 	close_port();
 	CloseMainWnd(1);
-	free_locale();
+	CleanupLocale();
 	free_macros();
 	free_diskio_alloc();		/* ASL */
 	if(args.sa_Free)  FreeVec(args.sa_ArgLst);
-	if(DiskfontBase)	CloseLibrary(DiskfontBase);
-	if(LocaleBase)		CloseLibrary((struct Library *)LocaleBase);
-	if(AslBase)			CloseLibrary(AslBase);
-	if(UtilityBase)	CloseLibrary((struct Library *)UtilityBase);
-	if(KeymapBase)		CloseLibrary(KeymapBase);
-	if(GadToolsBase)	CloseLibrary(GadToolsBase);
-	if(GfxBase)			CloseLibrary((struct Library *)GfxBase);
-	if(IntuitionBase)	CloseLibrary((struct Library *)IntuitionBase);
-	if(msg)				puts(msg);
+	if(DiskfontBase)  CloseLibrary(DiskfontBase);
+	if(LocaleBase)    CloseLibrary((struct Library *)LocaleBase);
+	if(AslBase)       CloseLibrary(AslBase);
+   if(IFFParseBase)  CloseLibrary(IFFParseBase);
+	if(UtilityBase)   CloseLibrary((struct Library *)UtilityBase);
+	if(KeymapBase)    CloseLibrary(KeymapBase);
+	if(GadToolsBase)  CloseLibrary(GadToolsBase);
+	if(GfxBase)       CloseLibrary((struct Library *)GfxBase);
+	if(IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+	if(msg)           puts(msg);
 
 #ifdef	DEBUG
 	/* Here can be compared good programs with the others :-) */
 	amem = AvailMem( MEMF_PUBLIC );
-	if(amem < bmem)	printf("Possible memory lost of %d bytes\n", bmem-amem);
+	if(amem < bmem)  printf("Possible memory lost of %d bytes\n", bmem-amem);
 #endif
 	exit(errcode);
 }
@@ -173,7 +158,7 @@ void dispatch_events()
 		else if(sigrcvd & swinsig) { handle_search(); continue; }
 
 		/* Collect messages posted to the window port */
-		while( ( msg=(struct IntuiMessage *)GetMsg(Wnd->UserPort) ) )
+		while( ( msg = (struct IntuiMessage *) GetMsg(Wnd->UserPort) ) )
 		{
 			/* Copy the entire message into the buffer */
 			CopyMemQuick(msg, &msgbuf, sizeof(msgbuf));
@@ -181,12 +166,13 @@ void dispatch_events()
 
 			switch( msgbuf.Class )
 			{
-				case IDCMP_CLOSEWINDOW:	handle_menu(112); break;
+				case IDCMP_CLOSEWINDOW: handle_menu(112); break;
 				case IDCMP_RAWKEY:
 					handle_kbd(edit);
-					if(record)
+					if(record) {
 						if(record == 1) reg_act_com(MAC_ACT_SHORTCUT, msgbuf.Code, msgbuf.Qualifier);
 						else record &= 0x7f;
+					}
 					break;
 				case IDCMP_INTUITICKS:
 					/* An error message which needs to be removed? */
@@ -219,11 +205,11 @@ void dispatch_events()
 				case IDCMP_NEWSIZE:
 					new_size(EDIT_ALL);
 					break;
-				case IDCMP_GADGETDOWN:					/* Left scroll bar */
+				case IDCMP_GADGETDOWN:       /* Left scroll bar */
 					if(msgbuf.IAddress == (APTR) &Prop->down) state=1;
 					if(msgbuf.IAddress == (APTR) &Prop->up)   state=2;
 					break;
-				case IDCMP_GADGETUP:						/* Arrows or prop gadget */
+				case IDCMP_GADGETUP:        /* Arrows or prop gadget */
 					state=0;
 					if(msgbuf.IAddress == (APTR) Prop)
 						scroll_disp(edit, FALSE), scrolldisp=0;
@@ -231,35 +217,24 @@ void dispatch_events()
 				case IDCMP_MOUSEMOVE:
 					if(mark) scrolldisp=2;
 					else
-						/* Fucking Boopsi propgadget doesn't send any GAGETDOWN msg! */
 						if(Prop->scroller.Flags & GFLG_SELECTED) scrolldisp=1;
 					break;
 				case IDCMP_MENUPICK:
-				{
-                                #if 1
-                                       struct MenuItem *item;
-                                       ULONG MenuId;
-                                       UWORD men = msgbuf.Code;
+				{	struct MenuItem * Item;
+					ULONG             MenuId;
 
-                                       while(men != MENUNULL)
-                                       {
-                                           item = ItemAddress( Menu, men );
-                                           if (!item) break;
+					/* Multi-selection of menu entries */
+					while(msgbuf.Code != MENUNULL)
+						if( (Item = ItemAddress( Menu, msgbuf.Code )) )
+						{
+							MenuId = (ULONG)GTMENUITEM_USERDATA( Item );
+							handle_menu( MenuId );
 
-                                           MenuId = (ULONG)GTMENUITEM_USERDATA( item );
-                                           handle_menu( MenuId );
+							if(record) reg_act_com(MAC_ACT_COM_MENU, MenuId, msgbuf.Qualifier);
+							else record &= 0x7f;
 
-                                           if(record) reg_act_com(MAC_ACT_COM_MENU, MenuId, msgbuf.Qualifier);
-                                           else record &= 0x7f;
-
-                                           men = item->NextSelect;
-                                       }
-                                #else
-					register ULONG MenuId = (ULONG) GTMENUITEM_USERDATA( ItemAddress(Menu,msgbuf.Code) );
-					handle_menu( MenuId );
-					if(record) reg_act_com(MAC_ACT_COM_MENU, MenuId, msgbuf.Qualifier);
-					else record &= 0x7f;
-    	    	    	    	#endif
+							msgbuf.Code = Item->NextSelect;
+						}
 				}
 			}
 		}
@@ -312,16 +287,10 @@ void new_size(UBYTE Flags)
 /*** Scroll display according to right prop gadget ***/
 void scroll_disp(Project p, BOOL adjust)
 {
-#ifdef FARSCROLL
-	ULONG pos = ((struct PropInfo *)((struct Gadget*)Prop)->SpecialInfo)->VertPot *
-	            (p->max_lines - 1) / MAXPOT;
-
-	if(pos!=p->top_line)
-#else
 	ULONG pos = ((struct PropInfo *)((struct Gadget*)Prop)->SpecialInfo)->VertPot *
 	            (p->max_lines - gui.nbline) / MAXPOT;
+
 	if(p->max_lines>gui.nbline && pos!=p->top_line)
-#endif
 	{
 		if(p->ccp.select)
 			/* If selection mode is on, don't move cursor */
@@ -343,7 +312,7 @@ LONG curs_visible(Project p, LONG newtop)
 		p->ycurs = gui.topcurs;
 		p->nbl   = newtop;
 		goto adj_edited;
-	}	else if(p->nbl >= newtop+gui.nbline) {
+	} else if(p->nbl >= newtop+gui.nbline) {
 		register LONG nb;
 		register LINE *ln;
 
@@ -356,7 +325,7 @@ LONG curs_visible(Project p, LONG newtop)
 		if(ln) p->edited=ln;
 		draw_info(p);
 
-	}	else
+	} else
 		/* Is between the top and bottom line */
 		p->ycurs = (p->nbl-newtop) * YSIZE+ gui.topcurs;
 
@@ -491,14 +460,13 @@ void scroll_ydelta(Project p, LONG y)
 {
 	LONG pos=p->top_line+y;
 	/* Clamp values to the boundary */
-
-#if defined(_AROS) && !defined(FARSCROLL)
-       if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
-        if(pos<0) pos=0;
+#if 0
+	if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
 #else
-	if(pos<0) pos=0;
 	if(pos>p->max_lines-1) pos=p->max_lines-1;
 #endif
+	if(pos<0) pos=0;
+
 	if(pos!=p->top_line)
 	{
 		if(!p->ccp.select) inv_curs(p,FALSE);
@@ -512,15 +480,13 @@ void scroll_ydelta(Project p, LONG y)
 BOOL autoscroll(Project p, WORD y)
 {
 	LONG pos=p->top_line+y;
-	/* Clamp values to the boundary: */
-
-#if defined(_AROS) && !defined(FARSCROLL)
+	/* Clamp values to the boundary */
+#if 1
 	if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
-	if(pos<0) pos=0;
 #else
-	if(pos<0) pos=0;
 	if(pos>p->max_lines-1) pos=p->max_lines-1;
 #endif
+	if(pos<0) pos=0;
 
 	if(pos!=p->top_line)
 	{
@@ -588,11 +554,8 @@ void scroll_xy(Project p, LONG xp, LONG yp, BYTE adj)
 				ystart       = gui.botcurs - ystart + YSIZE;
 				for(; nb--; disp=disp->next);
 				p->show      = disp;
-			#if 1
-				for(nb=gui.nbline - skipy; nb--; disp=disp ? disp->next : NULL);
-			#else
-				for(nb=gui.nbline - skipy; nb--; disp=disp->next);
-			#endif
+
+				for(nb=gui.nbline - skipy; disp && nb--; disp=disp->next);
 			}
 		}
 

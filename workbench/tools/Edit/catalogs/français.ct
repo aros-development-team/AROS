@@ -1,6 +1,6 @@
-##version $VER: JanoEditor.catalog 1.0 (1.10.2000).
-##codeset 0
-##language français
+## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## codeset 0
+## language français
 ;
 ;
 ; *****************************
@@ -189,10 +189,7 @@ ERR_BADOS
 Système obsolète. Installez la version 2.0 ou mieux
 ;
 ERR_NOASLREQ
-Impossible d'allouer la requète ASL!
-;
-ERR_NOWRTACCESS
-Erreur d'accès en écriture!
+Impossible d'ouvrir le sélecteur de fichier!
 ;
 ERR_NOMEM
 Plus assez de mémoire!
@@ -329,7 +326,7 @@ MSG_CANCELSEARCH
 Annuler
 ;
 MSG_REPLACEALL
-Remplacement de %d %s de `%s'.
+Remplacement de %ld %s de `%s'.
 ;
 MSG_OCCURENCY
 occurence
