@@ -88,7 +88,7 @@ int SetInstance(FT_GlyphEngine *ge)
     }
     else
     {
-	TT_OS2 *os2;
+	TT_OS2 *os2 = NULL;
 	
 	if (ge->metric_source == METRIC_TYPOASCEND ||
 	    ge->metric_source == METRIC_USWINASCEND)
@@ -189,7 +189,6 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 {
     FT_Error error;
     int do_transform;
-    FT_Vector trans={0, 0};
     FT_Vector offset;
     FT_Glyph_Metrics *metrics;
     FT_Bitmap bitmap;
