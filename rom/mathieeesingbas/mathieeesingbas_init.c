@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
     Desc: Init of mathieeesingbas.library
@@ -37,7 +37,7 @@
 
 struct ExecBase   * SysBase; /* global variable */
 
-ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
+ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     SysBase = lh->misb_SysBase;
 
