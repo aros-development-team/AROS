@@ -67,6 +67,14 @@ struct ColorRegister
 #define PDTA_NumSparse          (DTA_Dummy + 217)
 #define PDTA_SparseTable        (DTA_Dummy + 218)
 
+#define PDTA_SourceMode		(DTA_Dummy + 250) /* Set the interface mode for the sub datatype. See below. */
+#define PDTA_DestMode		(DTA_Dummy + 251) /* Set the interface mode for the app datatype. See below. */
+#define PDTA_UseFriendBitMap	(DTA_Dummy + 255) /* Make the allocated bitmap be a "friend" bitmap (BOOL) */
+
+/* Interface modes */
+#define PMODE_V42 (0)	/* Mode used for backward compatibility */
+#define PMODE_V43 (1)	/* Use the new features*/
+
 
 #define mskNone                 0
 #define mskHasMask              1
