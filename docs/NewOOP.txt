@@ -345,8 +345,8 @@ Observe this type definition in C
 
     typedef struct Object
     {
-        IPTR (*)() vtable;
-        APTR       data;
+        IPTR (**)() vtable;
+        APTR        data;
     } Object;
 
 This type describes a "reference" to an object of the class Object, that would
@@ -392,11 +392,11 @@ this:
     #define DoMethod(Obj, Method, Args...) \
         (((nameoftype(typeof(Obj)) ## _ ## Method ## _ ## type)(Obj)).Vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Args))
 
-So this is definitely something that must be looked for.
+So this is definitely something that must be looked into.
 
 5.6 Casting
 
-Now say that I have this class hierarchy:
+Say that I have this class hierarchy:
 
           Object
             ||
@@ -430,7 +430,7 @@ A macro StaticCast() will come in hand, in this case:
 
     #define StaticCast(Interface, Obj) ((Interface){Obj.vtable, Obj.data})
 
-This macros accept as input the interface to which the object has to be casted
+This macro accepts as input the interface to which the object has to be casted
 and the object itself.
 
 Thus, whilst 5.6.a is wrong, this is correct:
