@@ -74,6 +74,10 @@
 #include "exec_util.h"
 
 
+/* As long as we don't have CPU detection routine, assume FPU to be present */
+
+#define ASSUME_FPU 1
+
 /*
  * Some macro definitions. __text will place given structure in .text section.
  * __no_ret will force function type to be no-return function. __packed will
@@ -106,6 +110,10 @@ extern struct Library * PrepareAROSSupportBase (void);
 extern ULONG SoftIntDispatch();
 extern void Exec_SerialRawIOInit();
 extern void Exec_SerialRawPutChar(UBYTE chr);
+
+extern void Exec_Switch_FPU();
+extern void Exec_PrepareContext_FPU();
+extern void Exec_Dispatch_FPU();
 
 AROS_UFH5S(void, IntServer,
     AROS_UFHA(ULONG, intMask, D0),
@@ -945,6 +953,13 @@ void exec_cinit()
 	SetFunction(&ExecBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
 	RawIOInit();
 #endif
+
+#if ASSUME_FPU
+    SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_FPU, Exec));
+    SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_FPU, Exec));
+    SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_FPU, Exec));
+#endif
+    
     /* Scan for valid RomTags */
     ExecBase->ResModules = exec_RomTagScanner();
 
