@@ -2464,14 +2464,16 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 void driver_LoadRGB32(struct ViewPort * vp, const ULONG * table,
 	    struct GfxBase * GfxBase)
 {
-    LONG t;
+    LONG  t;
+    ULONG count;
     
     EnterFunc(bug("driver_LoadRGB32(vp=%p, table=%p)\n", vp, table));
     
-    
-    while (*table)
+    /* table is terminated by a count value of 0 */
+   
+    while ((count = (*table) >> 16))
     {
-        ULONG count, first;
+        ULONG first;
 	
 	count = (*table) >> 16;
 	first = *table & 0xFFFF;
