@@ -62,27 +62,28 @@ Basic Installation of AROS-SOURCES
 
 	  	--target=native-i386
 
-	  AROS bootable from floppy disk. If you want to create
-	  this, then you must also copy make.defaults to make.opts
-	  and you must set all SHARED_* options to "no".
+	  AROS bootable from floppy disk.
 
 
 	Use "./configure --help" for all possible options.
 
 
-5. Configure make.opts
+6. Configure make.opts
 
 	AROS/make.defaults contains the default values for compilation.
 	Copy this file to AROS/make.opts and edit it to your needs.
 	Options are documented in the default file.
 
+	If you want to create target=native-i386 , then you must set
+	all SHARED_* options to "no".
 
-6. Compile your sources.
+
+7. Compile your sources.
 
 	Call the wrapper Makefile with 'make'
 
 
-7. Install the package.
+8. Install the package.
 
 	If you compiled AROS as an emulation then all binaries are placed
 	in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into this dir,
