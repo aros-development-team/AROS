@@ -85,6 +85,7 @@
 	Make sure the buffer wouldn't overflow, also finds the ends
 	of the strings...
     */
+
     didx = fidx = 0;
 
     while(dirname[didx])    didx++;
@@ -132,6 +133,40 @@
 	{
 	    dirname[didx++] = '/';
 	}
+	
+	/*
+	    Handle leading '/'s 
+	*/
+	while (*filename == '/')
+	{
+	    filename ++; 
+	    while ((dirname[didx] != '/') && (dirname[didx] != ':') && didx)
+	    	didx --;
+	    
+	    /*
+	    	if we are at start of dirname buf then break even
+	    	if there are more leading '/'s
+	    */
+	    if	(!didx)
+	    	break;
+	    
+	    /* 
+	    	Another leading '/' ?.
+	    	Only move up a dir if we are not at the root
+	    */
+	    if ((*filename== '/') && (dirname[didx] != ':'))
+	    	didx --;
+	    	
+	}
+	/* If at root, don't overwrite the ':' */ 
+	if (dirname[didx] == ':')
+	     didx ++;
+	/* 
+	    if filename not only was a number of '/'s but also contained
+	    a subpath, then be sure to skip the found '/' of dirname.
+	*/
+	else if ((dirname[didx] == '/') && *filename)
+	    didx ++;
 
 	/* Now add the parts, making sure to do any backtracking... */
 	while(*filename)
