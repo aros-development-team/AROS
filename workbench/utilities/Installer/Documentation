@@ -360,23 +360,23 @@ Execute an AmigaDOS script.
 
 
 ( onerror (...) )
- Use this function to define code to be executed after an error occurred.
- This can be used to delete installed stuff if an error occurs or user
- aborted installation. This function is mutually exclusive with trap command.
+  Use this function to define code to be executed after an error occurred.
+  This can be used to delete installed stuff if an error occurs or user
+  aborted installation. This function is mutually exclusive with trap command.
 
 
 ( trap <trapflag> (...) )
- Use this function to set an error handling routine.
- When an error occurs and ( trap ... ) has been set before, the statements
- of the trap command are executed. Use this to clean up if an abnormal
- termination of the script occurs. If no trap is set for a specific errorcode
- the more general ( onerror ... ) statements are executed if declared before.
- Error codes:
-   1 := User aborted
-   2 := Ran out of memory
-   3 := Error in script
-   4 := DOS error (more infos in @ioerr , see below )
-   5 := Bad parameter data
+  Use this function to set an error handling routine.
+  When an error occurs and ( trap ... ) has been set before, the statements
+  of the trap command are executed. Use this to clean up if an abnormal
+  termination of the script occurs. If no trap is set for a specific errorcode
+  the more general ( onerror ... ) statements are executed if declared before.
+  Error codes:
+    1 := User aborted
+    2 := Ran out of memory
+    3 := Error in script
+    4 := DOS error (more infos in @ioerr , see below )
+    5 := Bad parameter data
 
 
 ( startup <name-string>
@@ -385,16 +385,16 @@ Execute an AmigaDOS script.
       [(confirm)]
       (command <string>... )
 )
-Inserts a section
+  Inserts a section
 
 ;BEGIN <name-string>
 ...
 ;END <name-string>
 
-into S:User-Startup. If a section with this name already exists the section
-will be replaced by this new one.
-The commands between the markers are given in (command ...).
-The user will only be prompted to confirm this action if in Expert mode.
+  into S:User-Startup. If a section with this name already exists the section
+  will be replaced by this new one.
+  The commands between the markers are given in (command ...).
+  The user will only be prompted to confirm this action if in Expert mode.
 
 
 ( delete <filename>
@@ -406,20 +406,20 @@ The user will only be prompted to confirm this action if in Expert mode.
       [(delopts)]
       [(safe)]
 )
-Delete a file. (only plain deletion is implemented by now!)
-options are:
-  force   - unprotect file
-  askuser - ask user if file should be unprotected,
-            in novice the automatic answer is "no"
+  Delete a file. (only plain deletion is implemented by now!)
+  options are:
+    force   - unprotect file
+    askuser - ask user if file should be unprotected,
+              in novice the automatic answer is "no"
 
 
 ( exists <name>
       [(noreq)]
 )
-Checks if a <name> exists.
-Returns 0 if non-existant, 1 for a file or 2 for a directory.
-If (noreq) is specified, then no requester will pop up if
-<name> should be on a not-mounted volume.
+  Checks if a <name> exists.
+  Returns 0 if non-existant, 1 for a file or 2 for a directory.
+  If (noreq) is specified, then no requester will pop up if
+  <name> should be on a not-mounted volume.
 
 
 ( makedir <name>
@@ -429,8 +429,8 @@ If (noreq) is specified, then no requester will pop up if
       [(confirm)]
       [(safe)]
 )
-Create a directory.
-(infos) creates also an icon for the new directory (not yet implemented).
+  Create a directory.
+  (infos) creates also an icon for the new directory (not yet implemented).
 
 
 ( rename <oldname> <newname>
@@ -440,14 +440,23 @@ Create a directory.
       [(disk)]
       [(safe)]
 )
-Renames the file "oldname" to "newname". If the parameter (disk) is
-passed, then this command relabels the disk "oldname" to "newname".
-When relabeling disks *only* include a colon ":" in the oldname.
-The function proceeds silently unless (confirm) is passed where the
-(prompt) is shown and (help) is available. If (safe) is passed then
-the renaming will be done even when in PRETEND mode.
-This function returns 1 on success and 0 on failure.
+  Renames the file "oldname" to "newname". If the parameter (disk) is
+  passed, then this command relabels the disk "oldname" to "newname".
+  When relabeling disks *only* include a colon ":" in the oldname.
+  The function proceeds silently unless (confirm) is passed where the
+  (prompt) is shown and (help) is available. If (safe) is passed then
+  the renaming will be done even when in PRETEND mode.
+  This function returns 1 on success and 0 on failure.
 
+( fileonly <pathname> )
+  Returns the file part of <pathname>.
+  Example:
+    (fileonly "A:BC/def/gh") -> "gh"
+
+( pathonly <pathname> )
+  Returns the path part of <pathname>.
+  Example:
+    (pathonly "A:BC/def/gh") -> "A:BC/def"
 
 
 /* Unimplemented commands */
@@ -455,7 +464,6 @@ This function returns 1 on success and 0 on failure.
 ( copylib )
 ( earlier )
 ( expandpath )
-( fileonly )
 ( foreach )
 ( getassign )
 ( getdevice )
@@ -465,7 +473,6 @@ This function returns 1 on success and 0 on failure.
 ( getsum )
 ( getversion )
 ( makeassign )
-( pathonly )
 ( patmatch )
 ( protect )
 ( rexx )

@@ -322,3 +322,6 @@
 - moved version string from main.c to version.h
 - implemented a basic (execute)
 
+0052
+- implemented (fileonly) and (pathonly)
+
