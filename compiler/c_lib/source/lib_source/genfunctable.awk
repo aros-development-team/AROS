@@ -54,6 +54,16 @@ BEGIN {
 #print "/* FOUND " name " */";
     }
 }
+/AROS_AREXXLIBQUERYFUNC/ {
+    line=$0;
+    sub(/\([ \t]*/,"\(",line);
+    gsub(/[ \t]*,[ \t]*/,",",line);
+    if (match(line,/\([a-zA-Z0-9_]+,/))
+    {
+	name=substr(line,RSTART+1,RLENGTH-2);
+#print "/* FOUND " name " */";
+    }
+}
 /LIBBASE[ \t]*,[ \t]*[0-9]+/ || $0 ~ verbose_pattern {
 #print "/* LOC " $0 " */"
     match ($0, /,[ \t]*[0-9]+/);
