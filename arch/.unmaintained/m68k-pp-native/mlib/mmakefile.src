@@ -4,29 +4,11 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB	:= arosm
-
-FILES	:= \
-	dummy
-
 #MM linklibs-arosm-m68000
 #MM linklibs-arosm-m68328
 
-#Needed to write this target so it becomes m68k specific
-linklibs-$(LIB)-m68000: setup $(LIBDIR)/lib$(LIB).a
-	@$(NOP)
+linklibs-$(LIB)-m68328: linklibs-$(LIB)-m68328
 
-linklibs-$(LIB)-m68328: setup $(LIBDIR)/lib$(LIB).a
-	@$(NOP)
-
-AFLAGS = -mc68000
-
-$(OBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS)
-
-%make_linklib_setup mmake=linklibs-gcc1-m68000
-
-%make_linklib
+%build_linklib mmake=linklibs-gcc1-m68000 libname=arosm files=dummy
 
 %common
-%include_deps
