@@ -2,6 +2,13 @@ dnl Some autoconf macros for AROS
 dnl
 dnl Search for a file, and place the result into the cache.
 
+dnl AROS_REQUIRED(name,var)
+dnl Checks if var is defined, and aborts otherwise
+AC_DEFUN(AROS_REQUIRED,
+[if test "$2" == ""; then
+    AC_MSG_ERROR($1 is required to build AROS. Please install and run configure again.)
+fi])
+
 dnl AROS_PROG(var,prog,args)
 AC_DEFUN(AROS_PROG,
 [AC_CHECK_PROG([$1],[$2],[$2])

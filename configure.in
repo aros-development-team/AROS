@@ -80,6 +80,7 @@ AC_OBJEXT
 
 # Check for gawk and mmake.
 AROS_PROG(AWK,gawk)
+AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
 
 # Perform some default variable assignments. Note all of these will be
@@ -254,23 +255,39 @@ case "$host_os" in
 esac
 
 AROS_PROG(HOST_AR,[ar],[cr])
+AROS_REQUIRED(ar,$HOST_AR)
 AROS_PROG(HOST_RANLIB,ranlib)
 
 AROS_PROG(RM,[rm],[-rf])
+AROS_REQUIRED(rm,$RM)
 AROS_PROG(CP,[cp])
+AROS_REQUIRED(cp,$CP)
 AROS_PROG(MV,[mv])
+AROS_REQUIRED(mv,$MV)
 AROS_PROG(ECHO,[echo])
+AROS_REQUIRED(echo,$ECHO)
 AROS_PROG(MKDIR,[mkdir],[-p])
+AROS_REQUIRED(mkdir,$MKDIR)
 AROS_PROG(TOUCH,[touch])
+AROS_REQUIRED(touch,$TOUCH)
 AROS_PROG(SORT,[sort])
+AROS_REQUIRED(sort,$SORT)
 AROS_PROG(UNIQ,[uniq])
+AROS_REQUIRED(uniq,$UNIQ)
 AROS_PROG(NOP,[true])
-AROS_PROG(PYTHON,[python])
+AROS_REQUIRED(true,$NOP)
 AROS_PROG(CAT,[cat])
+AROS_REQUIRED(cat,$CAT)
 AROS_PROG(BISON,[bison])
+AROS_REQUIRED(bison,$BISON)
 AROS_PROG(PNGTOPNM,[pngtopnm])
+AROS_REQUIRED(pngtopnm,$PNGTOPNM)
 AROS_PROG(PPMTOILBM,[ppmtoilbm])
+AROS_REQUIRED(ppmtoilbm,$PPMTOILBM)
 AROS_PROG(STRIP,[strip])
+AROS_REQUIRED(strip,$STRIP)
+
+AROS_PROG(PYTHON,[python])
 
 FOR=for
 IF=if
