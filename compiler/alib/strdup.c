@@ -49,7 +49,7 @@
     STRPTR dup;
     ULONG  len;
 
-    if (str = NULL) return NULL;
+    if (str == NULL) return NULL;
     
     len = strlen(str);
     dup = AllocVec(len + 1, MEMF_PUBLIC);
