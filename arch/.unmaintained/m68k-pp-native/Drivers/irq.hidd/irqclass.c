@@ -6,7 +6,7 @@
     Lang: english
 */
 
-//#include <hidd/irq.h>
+#include <hidd/irq.h>
 #include "irq.h"
 
 #include <proto/exec.h>
@@ -21,16 +21,6 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
-
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
-
-static OOP_AttrBase HiddIRQAttrBase;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_IRQ,	&HiddIRQAttrBase	},
-    { NULL, NULL }
-};
 
 struct irq_data
 {

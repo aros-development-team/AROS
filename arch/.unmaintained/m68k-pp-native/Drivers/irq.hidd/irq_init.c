@@ -50,7 +50,7 @@ struct irqbase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef SysBase
@@ -86,7 +86,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
                 if(isd->irqclass)
                 {
 		    Disable();
-                    init_Servers(isd);	/* Initialize all known IRQ servers */
+//                    init_Servers(isd);	/* Initialize all known IRQ servers */
                     Enable();		/* Turn interrupts on */
 
                     D(bug("     Init OK\n"));
@@ -100,3 +100,4 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     return FALSE;
 }
 
+#undef SysBase
