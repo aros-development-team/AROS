@@ -50,7 +50,13 @@
 
 #include "traps.h"
 
+#include "exec_intern.h"
+#include <asm/ptrace.h>
+#include "etask.h"
+#include "../speaker.h"
+
 void Handler(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+void InitKeyboard(void);
 
 void hidd_demo();
 
@@ -67,6 +73,10 @@ extern ULONG SSP;
 
 struct ExecBase *SysBase=NULL;
 struct MemHeader *mh;
+
+char GetK();
+void UnGetK();
+
 
 //struct Library *IntuitionBase=NULL;
 
@@ -193,6 +203,12 @@ int main()
     char text0[] = "AROS - The Amiga Research OS\n";
     char text1[60];
     char text2[] = "\nOops! Kernel under construction...\n";
+    char key;
+    static char transl[] =
+    { ' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ' ', ' ', ' ',
+      ' ', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', ' ', ' ', 10,
+      ' ', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ' ', ' ', ' ', ' ', 
+      ' ', 'Z', 'X', 'C', 'V', 'B', 'N', 'M' };
 
     OOP_Object *o;
 
@@ -275,9 +291,21 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
-    kprintf("Starting SAD\n");
+    /* Debug(0); */
 
-	Debug(0);
+    /* KeyCode -> ASCII conversion table */
+
+    InitKeyboard();
+    kprintf("--------------------------------------------------------------------------------");
+    kprintf("                 Insert a bootable disk in DF0: and press ENTER                 ");
+    kprintf("--------------------------------------------------------------------------------");
+    do
+    {
+       key = GetK();
+       key = transl[(key == 0x39) ? 1 : key - 1];
+       UnGetK();
+    } while(key !=10);
+    
 
 	InitResident(&Dos_resident,0);	// should be placed into boot_resident later
     /*
@@ -288,3 +316,7 @@ int main()
 	ColdReboot();
 	do {} while(1);
 }
+
+
+
+
