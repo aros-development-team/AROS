@@ -47,13 +47,15 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/GetDefPrefs()
-    aros_print_not_implemented ("GetDefPrefs");
+  if (NULL != prefbuffer && 0 != size)
+    memcpy(prefbuffer,
+           GetPrivIBase(IntuitionBase)->DefaultPreferences, 
+           size);
 
-    return NULL;
+  return (struct Preferences *)prefbuffer;
 
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* GetDefPrefs */

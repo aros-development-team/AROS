@@ -38,7 +38,7 @@ OSMODULE  := intuition.library
 FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass sysiclass windowclasses \
-	     displayerror
+	     displayerror intuition_misc
 
 FUNCTIONS := \
 	activategadget \

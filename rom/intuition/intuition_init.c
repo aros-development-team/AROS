@@ -159,7 +159,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     GetPrivIBase(LIBBASE)->sizebuttonclass = InitSizeButtonClass (LIBBASE); /* After GADGETCLASS */
     if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
     	return NULL;
-    
+  
+    LoadDefaultPreferences(LIBBASE);
+          
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_LIBFUNC_EXIT

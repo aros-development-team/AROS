@@ -113,6 +113,9 @@ struct IntIntuitionBase
     struct IClass *dragbarclass;
     struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
     struct IClass *sizebuttonclass;
+    
+    struct Preferences	    *DefaultPreferences;
+    struct Preferences	    *ActivePreferences;
 };
 
 struct IntScreen
@@ -264,6 +267,8 @@ inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *I
 inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
 
 
+void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
+
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,
     AROS_UFPA(STRPTR, formatStr , A0),
@@ -376,5 +381,6 @@ enum
 
 #define  WMFLG_NOTIFYDEPTH  (1 << 0)     /* Window wants notification when
 					    it's depth arranged */
+
 
 #endif /* INTUITION_INTERN_H */
