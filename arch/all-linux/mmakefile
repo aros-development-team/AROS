@@ -1,0 +1,46 @@
+# $Id$
+
+#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-exec-$(CPU) setup-x11
+setup-linux :
+	@$(NOP)
+
+#MM setup-exec-linux : setup-exec-unix
+setup-exec-linux :
+	@$(NOP)
+
+#MM exec-linux : exec-unix
+exec-linux :
+	@$(NOP)
+
+#MM setup-dos-linux : setup-dos-unix
+setup-dos-linux :
+	@$(NOP)
+
+#MM dos-linux : dos-unix
+dos-linux :
+	@$(NOP)
+
+#MM setup-battclock-linux : setup-battclock-unix
+setup-battclock-linux :
+	@$(NOP)
+
+#MM battclock-linux : battclock-unix
+battclock-linux :
+	@$(NOP)
+
+#MM graphics-linux : graphics-x11
+graphics-linux :
+	@$(NOP)
+
+#MM intuition-linux : intuition-x11
+intuition-linux :
+	@$(NOP)
+
+#MM check : check-exec-unix
+check :
+	@$(NOP)
+
+#MM clib-linux : clib-linux-$(CPU)
+clib-linux :
+	@$(NOP)
+

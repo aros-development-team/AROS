@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+SRCS := stackswap.c sigcore.h
+DEST := $(foreach f,$(SRCS),../$(f))
+
+#MM
+setup-exec-unix-i386 : $(DEST)
+
+../% : %
+	@$(CP) $< $@
