@@ -1799,7 +1799,97 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #                         
 #                         The patch_subdir and patch_opt fields are optional.
 
-%define fetch archive_origins=. archive=/A destination=. patches_origins=. patches_specs=::
-	$(FETCH) -ao "%(archive_origins)" -a %(archive) -d %(destination) -po "%(patches_origins)" \
+%define fetch archive_origins=. archive=/A suffixes= destination=. patches_origins=. patches_specs=::
+	$(FETCH) -ao "%(archive_origins)" -a %(archive) -as "%(suffixes)" -d %(destination) -po "%(patches_origins)" \
 	         -p %(patches_specs)
+%end
+
+#-----------------------------------------------------------------------------------------
+# Joins the features of %fetch and %build_with_configure, taking advantage of
+# the naming scheme of GNU packages. GNU packages names are in the form
+#
+#     <package name>-<version number>.<archive format suffix>
+#
+# If a patch is provided, it *must* be named the following way:
+#
+#    <package name>-<version number>-aros.diff
+#
+# Moreover, it *must* be appliable with the -p1 option of the `patch' command after
+# CD'ing into the archive's extracted directory.
+#
+# Note that whilst the %fetch macro accepts a list of patches for any given archive,
+# the %fetch_and_build macro only accept *one* patch for each package. It's up to you
+# to make that patch fully comprehensive.
+#
+# NOTE: GNU packages are always compiled with *nix semantics turned on.
+#
+# Arguments:
+#
+#    - mmake        = the meta make target, as would be supplied to the %build_with_configure
+#                     macro.
+#    - package      = the GNU package name, sans version and archive format suffixes.
+#    - version      = the package's version number, or otherwise any other version string.
+#                     It gets appended to the package name to form the basename of the archive.
+#    - suffixes     = a list of suffixes to apped to the the package name plus the
+#                     version. Each one of them is tried until a matching archive is found.
+#                     Defaults to "tat.bz2 tar.gz".
+#    - destination  = same meaning as the one for the %fetch macro
+#    - package_repo = same meaning as the one of the %fetch macro's %(archive_origins) argument
+#    - patch        = "yes" or "no", depending on whether a patch for this package needs to be
+#                     fetched or not
+#    - patch_repo   = same meaning as the one of the %fetch macro's %(patches_origins) argument
+#    - prefix       = same meaning as the one for the %build_with_configure macro. Defaults to
+#                     $(GNUDIR).
+#    - aros_prefix  = same meaning as the one for the %build_with_configure macro. Defaults to
+#                     /GNU.
+#    - extraoptions = same meaning as the one for the %build_with_configure macro.
+
+%define fetch_and_build_gnu mmake=/A package=/A version=/A suffixes="tar.bz2 tar.gz" \
+    destination=$(PORTSDIR) package_repo=. patch=no patch_repo=. prefix=$(GNUDIR) \
+    aros_prefix=/GNU extraoptions= 
+
+#MM %(mmake)-quick : %(mmake)-fetch
+
+%(mmake)-archbase  := %(package)-%(version)
+
+ifeq (%(patch),yes)
+    %(mmake)-patches_specs := %(package)-%(version)-aros.diff:%(package)-%(version):-p1    
+else
+    %(mmake)-patches_specs := ::
+endif
+
+#MM
+%(mmake)-fetch :
+	%fetch archive=$(%(mmake)-archbase) suffixes="%(suffixes)" destination=%(destination)/%(package) \
+	    archive_origins="%(package_repo)" patches_specs="$(%(mmake)-patches_specs)" \
+	    patches_origins="%(patch_repo)"
+
+%build_with_configure mmake=%(mmake) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
+     nix=yes prefix=%(prefix) aros_prefix=%(aros_prefix) extraoptions="%(extraoptions)"
+     
+%end
+
+
+#-----------------------------------------------------------------------------------------
+# Same job as the one of %fetch_and_build_gnu, except that this one assumes
+# that the package is a "Development" package, and as such it needs to be placed
+# under the $(AROS_DEVELOPMENT) directory, as a default. 
+#
+# All the arguments have the same meaning as the ones of the %fetch_and_build_gnu 
+# macro, but notice that %fetch_and_build_gnu_development *doesn't* have a
+# "mmake" argument, because the metatarget is implicitely defined as
+#
+#     #MM- development-%(package)
+
+%define fetch_and_build_gnu_development package=/A version=/A suffixes="tar.bz2 tar.gz" \
+    destination=$(PORTSDIR) package_repo=. patch=no patch_repo=. prefix=$(AROS_DEVELOPMENT) \
+    aros_prefix=/Development extraoptions= 
+
+#MM- development : development-%(package)
+
+
+%fetch_and_build_gnu mmake=development-%(package) package=%(package) version=%(version) \
+   suffixes="%(suffixes)" destination=%(destination) package_repo="%(package_repo)" \
+   patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
+   aros_prefix=%(aros_prefix) extraoptions="%(extraoptions)"   
 %end
