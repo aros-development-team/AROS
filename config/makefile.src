@@ -4,18 +4,27 @@ CURDIR=config
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=$(KERNEL) $(ARCH)
+SUBDIRS=$(ARCH) $(CPU)
 
 CONFIG_H = $(INCDIR)/aros/config.h
 
 all: setup
+	@echo "Creating mf.inc files..."
+	@sort +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
+	@uniq $(GENDIR)/config.files.sort $(GENDIR)/config.files
+	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
+		--assign TOP="$(TOP)" --assign GENDIR="$(GENDIR)" \
+		$(GENDIR)/config.files
 	%subdirs_q target=all
+	%subdirs_q dirs=$(ARCH) target=stage2
 
 setup : make-dirs $(CONFIG_H)
 	%subdirs_q "Setting up" setup
 
 make-dirs:
-	%mkdirs_q $(INCDIR)/aros
+	%mkdirs_q $(INCDIR)/aros $(GENDIR)
+
+mf_inc:
 
 $(CONFIG_H): $(TOP)/configure
 	sh $(TOP)/configure -h $@
