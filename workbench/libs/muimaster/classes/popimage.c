@@ -5,8 +5,6 @@
     $Id$
 */
 
-#include <graphics/gfx.h>
-#include <graphics/view.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -25,82 +23,12 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_PopimageData
 {
-    struct Hook press_hook;
-    struct Hook close_hook;
     Object *wnd;
     Object *imageadjust;
+    ULONG adjust_type;
+    CONST_STRPTR wintitle;
 };
 
-
-#ifndef __AROS__
-static __asm VOID Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(VOID,Close_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
-{
-    struct MUI_PopimageData *data = (struct MUI_PopimageData *)hook->h_Data;
-    int ok = (int)msg[0];
-
-    set(data->wnd,MUIA_Window_Open,FALSE);
-
-    if (ok)
-    {
-	char *spec;
-	get(data->imageadjust,MUIA_Imageadjust_Spec,&spec);
-	set(obj,MUIA_Image_Spec,spec);
-    }
-
-    DoMethod(_app(obj),OM_REMMEMBER,(IPTR)data->wnd);
-    MUI_DisposeObject(data->wnd);
-    data->wnd = NULL;
-    data->imageadjust = NULL;
-}
-
-#ifndef __AROS__
-static __asm VOID Press_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(VOID,Press_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
-{
-    struct MUI_PopimageData *data = (struct MUI_PopimageData *)hook->h_Data;
-    if (!data->wnd)
-    {
-    	Object *ok_button, *cancel_button;
-    	char *img_spec;
-
-	get(obj,MUIA_Image_Spec, &img_spec);
-
-    	data->wnd = WindowObject,
-          MUIA_Window_Activate, TRUE,
-    	    WindowContents, VGroup,
-		Child, data->imageadjust = MUI_NewObject(MUIC_Imageadjust, MUIA_Imageadjust_Spec, img_spec, TAG_DONE),
-		Child, HGroup,
-		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
-		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
-		    End,
-		End,
-	    End;
-
-	if (data->wnd)
-	{
-	    DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
-
-	    DoMethod(ok_button,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->close_hook, 1);
-	    DoMethod(cancel_button,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3 ,MUIM_CallHook,(IPTR)&data->close_hook,0);
-	    DoMethod(data->wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3, MUIM_CallHook,(IPTR)&data->close_hook,0);
-	}
-    }
-    if (data->wnd)
-    {
-	set(data->wnd,MUIA_Window_Open,TRUE);
-    }
-}
 
 
 /**************************************************************************
@@ -113,75 +41,37 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
     //Object *image;
 
     obj = (Object *)DoSuperNew(cl, obj,
-			ButtonFrame,
-			MUIA_InputMode, MUIV_InputMode_RelVerify,
-			MUIA_Image_FreeHoriz, TRUE,
-			MUIA_Image_FreeVert, TRUE,
-			TAG_MORE, msg->ops_AttrList);
+			       ButtonFrame,
+			       InnerSpacing(4,4),
+			       MUIA_Background, MUII_ButtonBack,
+			       MUIA_InputMode, MUIV_InputMode_RelVerify,
+			       TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
-    data->press_hook.h_Data = data;
-    data->press_hook.h_Entry = (HOOKFUNC)Press_Function;
-
-    data->close_hook.h_Data = data;
-    data->close_hook.h_Entry = (HOOKFUNC)Close_Function;
+    data->wintitle = NULL;
+    data->adjust_type = MUIV_Imageadjust_Type_All;
 
     /* parse initial taglist */
-
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
-    	}
+	    case MUIA_Window_Title:
+		data->wintitle = (CONST_STRPTR)tag->ti_Data;
+		break;
+
+	    case MUIA_Imageadjust_Type:
+		data->adjust_type = tag->ti_Data;
+		break;
+	}
     }
 
-    DoMethod(obj,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_CallHook,(IPTR)&data->press_hook);
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 1,
+	     MUIM_Popimage_OpenWindow);
 
     return (IPTR)obj;
-}
-
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-STATIC IPTR Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
-{
-    DoSuperMethodA(cl,obj,msg);
-    return 0;
-}
-
-/**************************************************************************
- OM_SET
-**************************************************************************/
-STATIC IPTR Popimage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct TagItem *tags,*tag;
-    //struct MUI_PopimageData *data = INST_DATA(cl, obj);
-
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
-    {
-	switch (tag->ti_Tag)
-	{
- 	}
-    }
-
-    return DoSuperMethodA(cl,obj,(Msg)msg);
-}
-
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Popimage_Get(struct IClass *cl, Object *obj, struct opGet *msg)
-{
-    //struct MUI_PopimageData *data = INST_DATA(cl, obj);
-
-    switch (msg->opg_AttrID)
-    {
-    }
-
-    if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
-    return 0;
 }
 
 
@@ -202,15 +92,106 @@ static IPTR Popimage_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
+/**************************************************************************
+ MUIM_Popimage_OpenWindow
+**************************************************************************/
+STATIC IPTR Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+
+    if (!data->wnd)
+    {
+    	Object *ok_button, *cancel_button;
+    	char *img_spec;
+
+	get(obj,MUIA_Imagedisplay_Spec, &img_spec);
+
+    	data->wnd = WindowObject,
+	  MUIA_Window_Title, (IPTR)data->wintitle,
+          MUIA_Window_Activate, TRUE,
+    	    WindowContents, VGroup,
+		Child, data->imageadjust = MUI_NewObject(
+		    MUIC_Imageadjust,
+		    MUIA_CycleChain, 1,
+		    MUIA_Imageadjust_Spec, img_spec,
+		    MUIA_Imageadjust_Type, data->adjust_type,
+		    TAG_DONE),
+		Child, HGroup,
+		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
+		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
+		    End,
+		End,
+	    End;
+
+	if (data->wnd)
+	{
+	    set(ok_button, MUIA_CycleChain, 1);
+	    set(cancel_button, MUIA_CycleChain, 1);
+
+	    DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
+
+	    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
+		     MUIM_Application_PushMethod, (IPTR)obj, 2,
+		     MUIM_Popimage_CloseWindow, TRUE);
+	    DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
+		     MUIM_Application_PushMethod, (IPTR)obj, 2,
+		     MUIM_Popimage_CloseWindow, FALSE);
+	    DoMethod(data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)_app(obj), 6,
+		     MUIM_Application_PushMethod, (IPTR)obj, 2,
+		     MUIM_Popimage_CloseWindow, FALSE);
+	}
+    }
+
+    if (data->wnd)
+    {
+	ULONG opened;
+
+	set(data->wnd, MUIA_Window_Open,TRUE);
+	get(data->wnd, MUIA_Window_Open, &opened);
+	if (!opened)
+	{
+	    DoMethod(obj, MUIM_Popimage_CloseWindow, FALSE);
+	}
+    }
+
+    return 1;
+}
+
+
+/**************************************************************************
+ MUIM_Popimage_CloseWindow
+**************************************************************************/
+STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
+				 struct MUIP_Popimage_CloseWindow *msg)
+{
+    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    int ok = msg->ok;
+
+    set(data->wnd, MUIA_Window_Open, FALSE);
+
+    if (ok)
+    {
+	char *spec;
+	get(data->imageadjust, MUIA_Imageadjust_Spec, &spec);
+	set(obj, MUIA_Imagedisplay_Spec, spec);
+    }
+
+    DoMethod(_app(obj), OM_REMMEMBER, (IPTR)data->wnd);
+    MUI_DisposeObject(data->wnd);
+    data->wnd = NULL;
+    data->imageadjust = NULL;
+    return 1;
+}
+
+
 BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
 	case OM_NEW: return Popimage_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Popimage_Dispose(cl,obj,(APTR)msg);
-	case OM_SET: return Popimage_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Popimage_Get(cl,obj,(APTR)msg);
-	case MUIM_Hide: return Popimage_Hide(cl,obj,(APTR)msg);
+	case MUIM_Hide: return Popimage_Hide(cl, obj, (APTR)msg);
+	case MUIM_Popimage_OpenWindow: return Popimage_OpenWindow(cl, obj, (APTR)msg);
+	case MUIM_Popimage_CloseWindow: return Popimage_CloseWindow(cl, obj, (APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
@@ -221,7 +202,7 @@ BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
  */
 const struct __MUIBuiltinClass _MUI_Popimage_desc = { 
     MUIC_Popimage, 
-    MUIC_Image, 
+    MUIC_Imagedisplay, 
     sizeof(struct MUI_PopimageData), 
     (void*)Popimage_Dispatcher 
 };
