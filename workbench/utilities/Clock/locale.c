@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,33 +18,35 @@ struct Catalog *catalog;
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
-STRPTR MSG(ULONG id)
+CONST_STRPTR MSG(ULONG id)
 {
     if(LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
 /* Setup ********************************************************************/
-BOOL Locale_Initialize(void)
+VOID Locale_Initialize(VOID)
 {
     if(LocaleBase != NULL)
     {
-	catalog = OpenCatalog
+        catalog = OpenCatalog
         (
             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
         );
     }
-
-    return TRUE;
+    else
+    {
+        catalog = NULL;
+    }
 }
 
-void Locale_Deinitialize(void)
+VOID Locale_Deinitialize(VOID)
 {
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
