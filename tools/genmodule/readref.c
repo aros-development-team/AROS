@@ -392,6 +392,9 @@ int parsefunctionname(char *name,
 {
     struct functionlist *funclistit;
     
+    if (libcall == REGISTERMACRO)
+	return 0;
+    
     for (funclistit = funclist;
 	 funclistit!=NULL && strcmp(funclistit->name, name)!=0;
 	 funclistit = funclistit->next)
