@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Date CLI command
@@ -33,7 +33,7 @@ int setdate(STRPTR day, STRPTR date, STRPTR time)
     timererror = OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)&timerreq, 0L);
     if (timererror == 0)
     {
-        /* !!! */
+        /* FIXME */
         VPrintf("Function not implemented, yet\n", NULL);
         error = RETURN_FAIL;
         CloseDevice((struct IORequest *)&timerreq);
