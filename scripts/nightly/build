@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+START_TIME=$(date -u +"%H:%M") 
+
 export SP=$(dirname $0)
 export CFG_NAME=$1
 source $SP/setup initial
@@ -14,21 +16,78 @@ if [ $? != 0 ]; then
 fi
 resetl
 
-FAILED=""
-
+failed=()
+succeeded=()
 for package in $CFG_PACKAGES; do
     zsh $SP/pkg/$package
     if [ $? != 0 ]; then
         printe "Build of package '"$package"' FAILED."
-        FAILED="$FAILED $package"
+        failed=( $failed $package )
     else
         printi "Build of package '"$package"' completed successfully."
+        succeeded=( $succeeded $package )
     fi
 done
 
+# Cleanup 
 setl cleanup.log
 source $SP/cleanup
 resetl
+
+STOP_TIME=$(date -u +"%H:%M")
+
+# Generate report
+MAIL_FILE=/tmp/_aros_build_report
+
+SUBJECT_PREFIX='[BUILD]'
+SUBJECT_BASE='Nightly builds on '$CFG_NAME
+
+if   [ -z $failed ]; then
+    RESULT='completed successfully'
+elif [ -z $succeeded ]; then
+    RESULT='FAILED COMPLETELY'
+else
+    RESULT='FAILED PARTLY'
+fi
+
+SUBJECT=$SUBJECT_PREFIX $SUBJECT_BASE $RESULT
+HEADER=$SUBJECT_BASE $RESULT
+
+function write()
+{
+    echo >>$MAIL_FILE $*
+}
+
+write $HEADER
+write 'Build started at '$START_TIME', finished at '$STOP_TIME'.'
+write ''
+ATTACH=''
+if [ ! -z $failed ]; then
+    write 'The following packages FAILED to build completely:'
+    for package in $failed; do
+        write '    '$package
+	tail -100 $LOG_BASE/$package.log >/tmp/_aros_build_log_$package
+	ATTACH=$ATTACH '-a /tmp/_aros_build_log_'$package
+    done
+    write ''
+    write 'Please see the attached shortened logs or the full logs at'
+    write 'http://aros.sf.net/download/nightly/logs/ for details.'
+fi
+if [ ! -z $succeeded ]; then
+    write ''
+    write 'The following packages were built successfully:'
+    for package in $succeeded; do
+        write '    '$package
+    done
+fi
+write ''
+write 'The following archives were created:'
+ls -1 -I logs $ARCHIVE_BASE >>$MAIL_FILE
+
+mutt -s $SUBJECT -c $CFG_MAIL_CC $ATTACH $CFG_MAIL_TO <$MAIL_FILE
+
+rm -rf /tmp/_aros_build_log_*
+rm -f $MAIL_FILE
 
 printi "Compressing log files..."
 for file in $LOG_BASE/*.log; do
