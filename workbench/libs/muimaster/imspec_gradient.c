@@ -307,6 +307,9 @@ VOID zune_gradient_draw
     if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
         return;
 
+    if (spec->u.gradient.obj == NULL)
+	return;
+
     switch(spec->u.gradient.angle)
     {
         case 0:
