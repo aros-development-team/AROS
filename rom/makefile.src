@@ -7,7 +7,7 @@ ifeq ($(FLAVOUR),native)
 # Only exec, for the moment.
 SUBDIRS=aros exec utility alerthook
 else
-SUBDIRS=exec utility dos graphics intuition devs
+SUBDIRS=aros exec utility dos graphics intuition devs
 endif
 
 all:
