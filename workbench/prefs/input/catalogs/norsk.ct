@@ -139,3 +139,19 @@ MSG_TIME_FORMAT
 %d.%02d s
 ; %d.%02d s
 ;
+MSG_GAD_MOUSE_BUTTON_MAPPING
+Button mapping
+; Button mapping
+;
+MSG_GAD_MOUSE_MAPPING_SELECT
+Select
+; Select
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Menu
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Third
+; Third
+;
