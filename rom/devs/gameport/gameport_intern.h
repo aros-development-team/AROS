@@ -12,6 +12,8 @@
 #define GP_NUMELEMENTS (100 * 3)
 #define GP_BUFFERSIZE  (sizeof (UWORD) * GP_NUMELEMENTS) 
 
+#define GP_MAXUNIT 1                   /* Highest possible gameport unit */
+
 struct GameportBase
 {
     struct Device      gp_device;
@@ -23,13 +25,17 @@ struct GameportBase
     struct MinList          gp_PendingQueue;  /* IOrequests (GPD_READEVENT) not done quick */
     struct SignalSemaphore  gp_QueueLock;
 
-    struct Interrupt  gp_Interrupt;     /* Interrupt to invoke in case of keypress (or
-					   releases) and there are pending requests */
+    struct Interrupt  gp_Interrupt;     /* Interrupt to invoke in case of
+					   keypress (or releases) and there
+					   are pending requests */
+    struct Interrupt  gp_VBlank;        /* Gameport VBlank server */
 
     UWORD  *gp_eventBuffer;
     UWORD   gp_writePos;
+
+    ULONG   gp_nTicks;          /* Bookkeeping of frames */
     
-    Object	*gp_Hidd;	/* Hidd object to use */
+    Object	   *gp_Hidd;	/* Hidd object to use */
     struct Library *gp_OOPBase;
     
 };

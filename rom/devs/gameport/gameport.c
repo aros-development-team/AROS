@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Gameport device
@@ -9,6 +9,7 @@
 #define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <exec/interrupts.h>
+#include <hardware/intbits.h>
 #include <devices/inputevent.h>
 #include <devices/gameport.h>
 #include <proto/exec.h>
@@ -118,7 +119,6 @@ AROS_LH2(struct GameportBase *,  init,
 {
     AROS_LIBFUNC_INIT
 
-
     /* Store arguments */
     GPBase->gp_sysBase = sysBase;
     GPBase->gp_seglist = segList;
@@ -131,6 +131,22 @@ AROS_LH2(struct GameportBase *,  init,
 }
 
 
+/* 'data' is a pointer to GPBase->gp_nTicks. */
+
+AROS_UFH4(ULONG, gpVBlank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{ /* The random constant is there as MAXINT didn't work... */
+    if((*(ULONG *)data) < (1 << ((sizeof(ULONG)*8-1))))
+	(*(ULONG *)data)++;
+
+    return 0;
+}
+
+
+
 AROS_LH3(void, open,
  AROS_LHA(struct IORequest *, ioreq, A1),
  AROS_LHA(ULONG,              unitnum, D0),
@@ -139,10 +155,26 @@ AROS_LH3(void, open,
 {
     AROS_LIBFUNC_INIT
 
+
     /* Keep compiler happy */
-    unitnum = 0;
     flags   = 0;
 
+    GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
+    GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
+    GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
+    GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
+    GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
+
+    /* Erroneous unit? */
+    if(unitnum > GP_MAXUNIT)
+    {
+	ioreq->io_Error = IOERR_OPENFAIL;
+	return;
+    }
+
+    /* Add a VBLANK server to take care of event timing. */
+    AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
+    
     if(GPBase->gp_eventBuffer == NULL)
     {
 	GPBase->gp_eventBuffer = AllocMem(sizeof(UWORD)*GP_BUFFERSIZE, MEMF_ANY);
@@ -190,7 +222,6 @@ AROS_LH3(void, open,
     GPBase->gp_Interrupt.is_Code = sendQueuedEvents;
 	
 /******* nlorentz: End of stuff added by me ********/
-
 
 
     /* I have one more opener. */
@@ -247,7 +278,6 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
-    
     BOOL request_queued = FALSE;
     
     
@@ -264,16 +294,7 @@ AROS_LH1(void, beginio,
 	
 	
     case GPD_READEVENT:
-	
-	/* TODO */
-	
-	/* Is it OK to presuppose that __AROS_STRUCTURE_ALIGNMENT is 2^n ? */
-	/* if((&ioStd(ioreq)->io_Data != ALIGN(&iostd(ioreq)->io_Data))
-	   well, this should actually be more like
-	   if((&ioStd(ioreq)->io_Data) < (AROS_PTR_MAX - __AROS_STRUCTURE_ALIGNMENT) ?
-	   (&ioStd(ioreq)->io_Data != ALIGN(&ioStd(ioreq)->io_Data)) : &ioStd(ioreq)->io_Data != ... */
-	
-	/* Hmm... (int) */
+		
 	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	{
 	    D(bug("gpd: Bad address\n"));
@@ -358,7 +379,7 @@ AROS_LH1(LONG, abortio,
     {
 	Disable();
 	
-/*	Remove((struct Node *)ioreq);		 Correct? Interference? */
+	Remove((struct Node *)ioreq);
 	ReplyMsg(&ioreq->io_Message);
 	gpUn->gpu_flags &= ~GBUF_PENDING;
 	
@@ -404,9 +425,9 @@ static VOID mouseCallback(struct GameportBase *GPBase, struct pHidd_Mouse_Event 
 	    break;
     }
     
-    GPBase->gp_eventBuffer[GPBase->gp_writePos ++] = amigacode;
-    GPBase->gp_eventBuffer[GPBase->gp_writePos ++] = ev->x;
-    GPBase->gp_eventBuffer[GPBase->gp_writePos ++] = ev->y;
+    GPBase->gp_eventBuffer[GPBase->gp_writePos++] = amigacode;
+    GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->x;
+    GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->y;
     
 
 D(bug("Wrote to buffer\n"));
@@ -418,15 +439,7 @@ D(bug("Wrote to buffer\n"));
     {
 D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 
-#warning Cause() does not seem to work.
-/* It seems Cause() doesn't work, so I just call it directly for now 
-	Cause(&GPBase->gp_Interrupt);
-*/
-	AROS_UFC3(void, sendQueuedEvents,
-		AROS_UFCA(struct GameportBase *, GPBase, A1),
-		AROS_UFCA(APTR, sendQueuedEvents, A5),
-		AROS_UFCA(struct ExecBase *, SysBase, A6));
-	
+	Cause(&GPBase->gp_Interrupt);	
     }
 }
 
@@ -457,11 +470,6 @@ AROS_UFH3(static VOID, sendQueuedEvents,
         D(bug("Replying msg\n"));
 	moreevents = fillrequest(ioreq, GPBase);
 
-	/* Remove must be before ReplyMsg(), otherwise
-	the message is removed from the replyport 
-	It Is NOT done in ReplyMsg, and must be done here to empty the list!
-	   The "moreevents" is unnecessary... */
-	
 	Remove((struct Node *)ioreq);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
 
@@ -504,10 +512,12 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 	WORD x;
 	WORD y;
 	
+	if(i != 0)
+	    event = event->ie_NextEvent;
 	    
-	code = GPBase->gp_eventBuffer[gpUn->gpu_readPos ++];
-	x = GPBase->gp_eventBuffer[gpUn->gpu_readPos ++];
-	y = GPBase->gp_eventBuffer[gpUn->gpu_readPos ++];
+	code = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
+	x = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
+	y = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 
     
 	if (gpUn->gpu_readPos == GP_NUMELEMENTS)
@@ -519,7 +529,6 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 	event->ie_Class = IECLASS_RAWMOUSE;
 	event->ie_SubClass = 0; /* Only port 0 for now */
 	event->ie_Code = code;
-	event->ie_Qualifier = 0; /* Do it simple for now */
 	event->ie_Qualifier = 0; /* Do it simple for now */
 	    
 	event->ie_X = x;
@@ -542,7 +551,6 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
     event->ie_NextEvent = NULL;
     
     return moreevents;
-    
 }
 
 static const char end = 0;
