@@ -6,6 +6,8 @@
     Lang: English
 */
 
+/* NOTE: Currently, only mice are supported */
+
 #define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <exec/interrupts.h>
@@ -38,6 +40,7 @@
 #define gpUn      ((struct GPUnit *)(ioreq->io_Unit))
 
 #define min(a,b)  ((a) < (b)) ? (a) : (b)
+#define ABS(a)    ((a) >= 0) ? (a) : (-(a))
 #define ALIGN(x)  ((((x) + (__AROS_STRUCTURE_ALIGNMENT - 1)) / __AROS_STRUCTURE_ALIGNMENT) * __AROS_STRUCTURE_ALIGNMENT)
 
 
@@ -108,21 +111,26 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_Event *ev);
 AROS_UFP3S(VOID, gpSendQueuedEvents,
-	   AROS_UFPA(struct GameportBase *, GPBase, A1),
-	   AROS_UFPA(APTR, thisfunc, A5),
-	   AROS_UFPA(struct ExecBase *, SysBase, A6));
+	   AROS_UFPA(struct GameportBase *, GPBase  , A1),
+	   AROS_UFPA(APTR                 , thisfunc, A5),
+	   AROS_UFPA(struct ExecBase *    , SysBase , A6));
 
 
 AROS_LH2(struct GameportBase *,  init,
-	 AROS_LHA(struct GameportBase *, GPBase, D0),
-	 AROS_LHA(BPTR,         segList, A0),
+	 AROS_LHA(struct GameportBase *, GPBase , D0),
+	 AROS_LHA(BPTR                 , segList, A0),
 	 struct ExecBase *, sysBase, 0, Gameport)
 {
     AROS_LIBFUNC_INIT
 
+    int i;
+
     /* Store arguments */
     GPBase->gp_sysBase = sysBase;
     GPBase->gp_seglist = segList;
+
+    for(i = 0; i < GP_NUNITS; i++)
+	GPBase->gp_cTypes[i] = GPCT_NOCONTROLLER;
     
     InitSemaphore(&GPBase->gp_QueueLock);
     InitSemaphore(&GPBase->gp_Lock);
@@ -151,9 +159,9 @@ AROS_UFH4(ULONG, gpVBlank,
 
 
 AROS_LH3(void, open,
-	 AROS_LHA(struct IORequest *, ioreq, A1),
-	 AROS_LHA(ULONG,              unitnum, D0),
-	 AROS_LHA(ULONG,              flags, D1),
+	 AROS_LHA(struct IORequest *, ioreq  , A1),
+	 AROS_LHA(ULONG             , unitnum, D0),
+	 AROS_LHA(ULONG             , flags  , D1),
 	 struct GameportBase *, GPBase, 1, Gameport)
 {
     AROS_LIBFUNC_INIT
@@ -324,6 +332,29 @@ AROS_LH1(void, beginio,
 	ReleaseSemaphore(&GPBase->gp_Lock);
 	break;
 
+
+    case GPD_ASKTRIGGER:
+	if(ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+
+	*((struct GamePortTrigger *)(ioStd(ioreq)->io_Data)) = gpUn->gpu_trigger;
+	break;
+
+
+    case GPD_SETTRIGGER:
+	if(ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+
+	gpUn->gpu_trigger = *((struct GamePortTrigger *)(ioStd(ioreq)->io_Data));
+	break;
+
+
     case GPD_READEVENT:
 #if 0
 	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
@@ -337,7 +368,10 @@ AROS_LH1(void, beginio,
 	D(bug("gpd: Readpos: %d, Writepos: %d\n", gpUn->gpu_readPos,
 	      GPBase->gp_writePos));
 	
-	if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	/* We queue the request if there are no events in the queue or if
+	   the unit didn't trig on the events thate were in the queue. */
+	if(gpUn->gpu_readPos == GPBase->gp_writePos || 
+	   !fillrequest(ioreq, GPBase))
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
 	    request_queued = TRUE;
@@ -352,13 +386,9 @@ AROS_LH1(void, beginio,
 	    
 	    break;
 	}
-	
-	D(bug("gpd: Events ready for prosessing\n"));
-	
-	/* Fill the request with info from buffer */
-	fillrequest(ioreq, GPBase);
-	
+		
 	break;
+
 	
 /* nlorentz: This command lets the gameport.device initialize
    the HIDD to use. It must be done this way, because
@@ -425,8 +455,6 @@ AROS_LH1(LONG, abortio,
 }
 
 
-
-
 static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_Event *ev)
 {
@@ -480,8 +508,6 @@ D(bug("doing software irq, node type=%d\n",
 }
 
 
-     
-
 /* nlorentz: Software interrupt to be called when keys are received
 Copied and pasted from the function above */
 #undef SysBase
@@ -500,18 +526,13 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
 
     ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
-	BOOL moreevents;
-	
         D(bug("Replying msg\n"));
-	moreevents = fillrequest(ioreq, GPBase);
+	fillrequest(ioreq, GPBase);
 
 	Remove((struct Node *)ioreq);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
 	
 	gpUn->gpu_flags &= ~GBUF_PENDING;
-	
-	if(!moreevents)
-	    break;
     }
 }
 
@@ -520,14 +541,15 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
 
 static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 {
-    BOOL moreevents;
+    BOOL   trigged;
+    BOOL   down, up;
     int    i;			     /* Loop variable */
     int    nEvents;                  /* Number of struct InputEvent that there
 					is room for in memory pointed to by
 					io_Data */
     struct InputEvent *event;        /* Temporary variable */
 
-    (void)moreevents;		     /* Suppress warning */
+    (void)trigged;		     /* Suppress warning */
 	
     /* Number of InputEvents we can store in io_Data */
     nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
@@ -535,7 +557,7 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
     {
 	ioreq->io_Error = IOERR_BADLENGTH;
 	D(bug("gpd: Bad length\n"));
-	return TRUE; /* Continue processing events */
+	return TRUE;
     }
     else
     {
@@ -543,45 +565,50 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
     }
     
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
-	
+    
     for(i = 0; i < nEvents; i++)
     {
     	UWORD code;
 	WORD x;
 	WORD y;
-	
-	if(i != 0)
-	    event = event->ie_NextEvent;
-	
+		
 	code = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	x = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	y = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	
+	down = up = FALSE;	/* Reset states */
+
 	/* Take care of the qualifiers */
 	switch(code)
 	{
 	case IECODE_LBUTTON:
 	    gpUn->gpu_Qualifiers |= IEQUALIFIER_LEFTBUTTON;
+	    down = TRUE;
 	    break;
 	    
 	case IECODE_LBUTTON | IECODE_UP_PREFIX:
 	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_LEFTBUTTON;
+	    up = TRUE;
 	    break;
 	    
 	case IECODE_MBUTTON:
 	    gpUn->gpu_Qualifiers |= IEQUALIFIER_MIDBUTTON;
+	    down = TRUE;
 	    break;
 	    
 	case IECODE_MBUTTON | IECODE_UP_PREFIX:
 	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_MIDBUTTON;
+	    up = TRUE;
 	    break;
 	    
 	case IECODE_RBUTTON:
 	    gpUn->gpu_Qualifiers |= IEQUALIFIER_RBUTTON;
+	    down = TRUE;
 	    break;
 	    
 	case IECODE_RBUTTON | IECODE_UP_PREFIX:
 	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_RBUTTON;
+	    up = TRUE;
 	    break;
 	}
 	
@@ -589,34 +616,47 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 	    gpUn->gpu_readPos = 0;	
 	
 	D(bug("gpd: Adding event of code %d\n", code));
-	    
-	event->ie_Class = IECLASS_RAWMOUSE;
-	event->ie_SubClass = 0;          /* Only port 0 for now */
-	event->ie_Code = code;
-	event->ie_Qualifier = gpUn->gpu_Qualifiers;
 	
-	event->ie_X = x;
-	event->ie_Y = y;
-	
-	event->ie_TimeStamp.tv_secs = GPBase->gp_nTicks;
-	event->ie_TimeStamp.tv_micro = 0;
-	
-	/* Reset frame delta counter */
-	GPBase->gp_nTicks = 0;
-	
-	/* No more keys in buffer? */
-	if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	/* Should we report this event? */    
+	if((down && (gpUn->gpu_trigger.gpt_Keys & GPTF_DOWNKEYS)) ||
+	   (up   && (gpUn->gpu_trigger.gpt_Keys & GPTF_UPKEYS))   ||
+	   (ABS(gpUn->gpu_lastX - x) > gpUn->gpu_trigger.gpt_XDelta) ||
+	   (ABS(gpUn->gpu_lastY - y) > gpUn->gpu_trigger.gpt_YDelta) ||
+	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout))
 	{
-	    moreevents = FALSE;
-	    break;
+	    if(trigged == TRUE)
+		event = event->ie_NextEvent;
+
+	    trigged = TRUE;
+
+	    event->ie_Class = IECLASS_RAWMOUSE;
+	    event->ie_SubClass = 0;          /* Only port 0 for now */
+	    event->ie_Code = code;
+	    event->ie_Qualifier = gpUn->gpu_Qualifiers;
+	    
+	    event->ie_X = x;
+	    event->ie_Y = y;
+	    
+	    gpUn->gpu_lastX = x;
+	    gpUn->gpu_lastY = x;
+	    
+	    event->ie_TimeStamp.tv_secs = GPBase->gp_nTicks;
+	    event->ie_TimeStamp.tv_micro = 0;
+	    
+	    /* Reset frame delta counter */
+	    GPBase->gp_nTicks = 0;
+	    
+	    /* No more keys in buffer? */
+	    if(gpUn->gpu_readPos == GPBase->gp_writePos)
+		break;
+	    
+	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
+				     + ALIGN(sizeof(struct InputEvent)));
 	}
-	
-	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
-				 + ALIGN(sizeof(struct InputEvent)));
     }
     event->ie_NextEvent = NULL;
     
-    return moreevents;
+    return trigged;
 }
 
 static const char end = 0;

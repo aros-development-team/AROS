@@ -54,6 +54,11 @@ typedef struct GPUnit
 
     UWORD  gpu_unitNum;
     UBYTE  gpu_flags;           /* For unit flags definitions, see below */
+
+    UWORD  gpu_lastX;
+    UWORD  gpu_lastY;
+
+    struct GamePortTrigger gpu_trigger;
 } GPUnit;
 
 #define GBUB_PENDING 0		/* Unit has pending request for gameport
