@@ -24,20 +24,23 @@
 
 #include "workbench_intern.h"
 #include "support.h"
+#include "support_messages.h"
 #include "handler.h"
 #include "handler_support.h"
 
 struct HandlerContext
 {
     /* Ports and signals ---------------------------------------------------*/
-    struct MsgPort *hc_CommandPort;     /* Commands from the library */
-    ULONG           hc_CommandSignal;   /* Signal bit field for the above */
-    struct MsgPort *hc_StartupPort;     /* Startup message replies */
-    ULONG           hc_StartupSignal;   /* Signal bit field for the above */
-    struct MsgPort *hc_IntuitionPort;   /* Messages from Intuition */
-    ULONG           hc_IntuitionSignal; /* Signal bit field for the above */
+    struct MsgPort *hc_CommandPort;          /* Command messages from the library */
+    ULONG           hc_CommandSignal;        /* Signal bit field for the above */
+    struct MsgPort *hc_StartupReplyPort;     /* Replies to startup messages */
+    ULONG           hc_StartupReplySignal;   /* Signal bit field for the above */
+    struct MsgPort *hc_WorkbenchReplyPort;   /* Replies to messages sent to the workbench application */
+    ULONG           hc_WorkbenchReplySignal; /* Signal bit field for the above */
+    struct MsgPort *hc_IntuitionPort;        /* Messages from Intuition */
+    ULONG           hc_IntuitionSignal;      /* Signal bit field for the above */
     
-    ULONG           hc_Signals;         /* Mask from all signals above */
+    ULONG           hc_Signals;              /* Mask from all signals above */
 };
 
 
@@ -109,28 +112,18 @@ AROS_UFH3
         }
         
         /*== Message replies from started WB programs ======================*/
-        if (signals & hc->hc_StartupSignal)
+        if (signals & hc->hc_StartupReplySignal)
         {
             struct WBStartup *message;
             
             D(bug("Workbench Handler: Got message(s) at startup port\n"));
             
-            while ((message = (struct WBStartup *) GetMsg(hc->hc_StartupPort)))
+            while ((message = WBS(GetMsg(hc->hc_StartupReplyPort))) != NULL)
             {
                 if (message->sm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                 {
-                    // FIXME: move into function
-                    ULONG i;
-                    
                     D(bug("Workbench Handler: Deallocating WBStartup message and arguments\n"));
-                    
-                    for (i = 0; i < message->sm_NumArgs; i++)
-                    {
-                        if (message->sm_ArgList[i].wa_Lock != NULL) UnLock(message->sm_ArgList[i].wa_Lock);
-                        if (message->sm_ArgList[i].wa_Name != NULL) FreeVec(message->sm_ArgList[i].wa_Name);
-                    }
-                    
-                    FreeMem(message, sizeof(struct WBStartup));
+                    DestroyWBS(message);
                 }
                 else
                 {
@@ -177,20 +170,23 @@ static BOOL __Initialize_WB
     /* Create message ports ------------------------------------------------*/
     if
     (
-           (hc->hc_StartupPort   = CreateMsgPort()) != NULL
-        && (hc->hc_IntuitionPort = CreateMsgPort()) != NULL
+           (hc->hc_StartupReplyPort   = CreateMsgPort()) != NULL
+        && (hc->hc_WorkbenchReplyPort = CreateMsgPort()) != NULL
+        && (hc->hc_IntuitionPort      = CreateMsgPort()) != NULL
     )
     {
         /* Store command port ----------------------------------------------*/
         hc->hc_CommandPort   = &(WorkbenchBase->wb_HandlerPort);
         
         /* Calculate and store signal flags --------------------------------*/
-        hc->hc_CommandSignal   = 1UL << hc->hc_CommandPort->mp_SigBit;
-        hc->hc_StartupSignal   = 1UL << hc->hc_StartupPort->mp_SigBit;
-        hc->hc_IntuitionSignal = 1UL << hc->hc_IntuitionPort->mp_SigBit;
+        hc->hc_CommandSignal        = 1UL << hc->hc_CommandPort->mp_SigBit;
+        hc->hc_StartupReplySignal   = 1UL << hc->hc_StartupReplyPort->mp_SigBit;
+        hc->hc_WorkbenchReplySignal = 1UL << hc->hc_WorkbenchReplyPort->mp_SigBit;
+        hc->hc_IntuitionSignal      = 1UL << hc->hc_IntuitionPort->mp_SigBit;
         
         hc->hc_Signals = hc->hc_CommandSignal
-                       | hc->hc_StartupSignal
+                       | hc->hc_StartupReplySignal
+                       | hc->hc_WorkbenchReplySignal
                        | hc->hc_IntuitionSignal;
                        
         /* We're now ready to accept messages ------------------------------*/
@@ -226,8 +222,10 @@ static VOID __Deinitialize_WB
     WorkbenchBase->wb_HandlerPort.mp_SigTask = NULL;
     
     /* Deallocate message ports --------------------------------------------*/
-    if (hc->hc_IntuitionPort != NULL) DeleteMsgPort(hc->hc_IntuitionPort);
-    if (hc->hc_StartupPort != NULL)   DeleteMsgPort(hc->hc_StartupPort);
+    // FIXME: should we get & deallocate all queued messages?
+    if (hc->hc_IntuitionPort != NULL)      DeleteMsgPort(hc->hc_IntuitionPort);
+    if (hc->hc_WorkbenchReplyPort != NULL) DeleteMsgPort(hc->hc_WorkbenchReplyPort);
+    if (hc->hc_StartupReplyPort != NULL)   DeleteMsgPort(hc->hc_StartupReplyPort);
 }
 
 static VOID __HandleLaunch_WB
@@ -261,11 +259,11 @@ static VOID __HandleLaunch_WB
                 
         if (process != NULL)
         {
-            D(bug("Workbench Handler: handleLaunch: Process created successfully\n"));
+            D(bug("Workbench Handler: HandleLaunch: Process created successfully\n"));
                         
             /* Setup startup message */
-            startup->sm_Message.mn_ReplyPort = hc->hc_StartupPort;
             startup->sm_Process              = &process->pr_MsgPort;
+            startup->sm_Message.mn_ReplyPort = hc->hc_StartupReplyPort;
             
             /* Send startup message to program */ 
             PutMsg(startup->sm_Process, (struct Message *) startup);
@@ -274,18 +272,21 @@ static VOID __HandleLaunch_WB
         }
         else
         {
-            D(bug("Workbench Handler: handleLaunch: Failed to create process\n"));
+            D(bug("Workbench Handler: HandleLaunch: Failed to create process\n"));
+            UnLoadSeg(startup->sm_Segment); 
         }
         
     }
     else
     {
-        D(bug("Workbench Handler: handleLaunch: Failed to load segment\n"));
+        D(bug("Workbench Handler: HandleLaunch: Failed to load segment\n"));
     }
     
     if (!success)
     {
-        //FIXME: report error? free startup msg mem
+        //FIXME: report error somehow?
+        D(bug("Workbench Handler: HandleLaunch: Failed to launch program. Deallocating resources.\n"));
+        DestroyWBS(startup);
     }
     
     /* Restore current directory */

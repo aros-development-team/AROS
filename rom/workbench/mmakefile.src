@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := support handler handler_support
+FILES := support support_messages handler handler_support 
 FUNCS := \
     addappicona \
     addappmenuitema \
