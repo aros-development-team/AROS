@@ -138,8 +138,8 @@
 	    /* Close the font */
 	    CloseFont(((struct IntScreen *)screen)->DInfo.dri_Font);
 
-            /* Free the ColorMap *
-            FreeColorMap(screen.ViewPort.ColorMap);
+            /* Free the ColorMap */
+            FreeColorMap(screen->ViewPort.ColorMap);
 	    
 	    /* Free the memory */
 	    FreeMem(screen, sizeof (struct IntScreen));
