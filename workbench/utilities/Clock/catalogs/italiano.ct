@@ -1,0 +1,16 @@
+## version $VER: clock.catalog 1.0 (16.10.2002)
+## codeset 0
+## language italiano
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+*** Errore: impossibile aprire l'applicazione.
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Ora corrente
+; Clock
+;
+MSG_OK
+Ok
+; Ok
+;

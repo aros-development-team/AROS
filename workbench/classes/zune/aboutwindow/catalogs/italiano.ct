@@ -1,0 +1,25 @@
+## version $VER: AboutWindow.catalog 1.0 (19.02.2004)
+## codeset 0
+## language italiano
+;
+;
+MSG_ABOUT
+Informazioni
+;About
+;
+MSG_AUTHORS
+Autori
+;Authors
+;
+MSG_SPONSORS
+Sponsor
+;Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Programmazione
+;Programming
+;
+MSG_SECTION_TRANSLATING
+Traduzione
+;Translating
+;

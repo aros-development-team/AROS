@@ -1,0 +1,404 @@
+## version $VER: asl.catalog 1.0 (12.03.2001)
+## codeset 0
+## language italiano
+;
+MSG_FILEREQ_TITLE
+Scegliere file
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Annulla
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Volumi
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Superiore
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Tipo
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Directory
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+File
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Directory
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Assign
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Cancellare file
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Attenzione: i dati cancellati non si possono recuperare.
+Procedere nell'eliminazione di %s ?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Ok cancella|Annulla
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Rinominare
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Rinominare
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Annulla
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Crea directory
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Creare
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Annullare
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Rinominami
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Scegliere per tipo
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Seleziona
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Annulla
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Controlla
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+L\0Ultimo nome
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+M\0Nome successivo
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Ripristina 
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+P\0Superiore
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Volumi
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+A\0Aggiorna
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Cancella
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+ \0Crea nuova directory...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+M\0Rinomina...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Seleziona...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Annulla
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Lista file
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Ordina alfabeticamente
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Ordina per data
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Ordina per dimensioni
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0Ordine ascendente
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0Ordine inverso
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Mostra prima le directory
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Mostra directory non vuote
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Mostra le directory per ultime
+; 6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Modalità dei file
+;
+MSG_MODEREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Annulla
+; Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overscan
+; Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Area del testo
+; Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Area grafica
+; Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Ampiezza estrema
+; Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Ampiezza massima
+; Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+Larghezza
+; Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Altezza
+; Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Coulori
+; Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+AutoScroll
+; AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+OFF
+; OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+ON
+; ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Modalità
+; Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+Non supporta il Workbench
+; Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+Non supporta il Genlock
+; Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+Non si può disegnare
+; Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Hold & Modify
+; Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Extra-Halfbright
+; Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Interlacciato
+; Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Richiede ECS
+; Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Supporta il Workbench
+; Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Supporta il Genlock
+; Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Disegnabile
+; Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+DualPlayfield di priorità 2
+; DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ldHz, %ld,%ldkHz
+; %ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Controllo
+; Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Ultimo modo
+; L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Modo successivo
+; N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Lista delle proprietà ...
+; ?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Ripristina
+; R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Annulla
+; C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Scegliere font
+; Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Annulla
+; Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Controlla
+; Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Ultimo font
+; L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Font successivo
+; N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Ripristina
+; R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Controlla su disco
+; D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Annulla
+; C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Modo
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Testo
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Testo+Fondo
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Inverso
+; Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Stile
+; Style
+;
+MSG_FONTREQ_STYLE_BOLD
+G
+; B
+;
+MSG_FONTREQ_STYLE_ITALIC
+I
+; I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+S
+; U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Colore
+; Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Colore di fondo
+; BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Coulori
+; Colors
+;

@@ -1,0 +1,111 @@
+## version $VER: serialprefs.catalog 1.0 (23.02.2001)
+## codeset 0
+## language français
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld !\n
+;
+MSG_CANT_LOCK_SCR
+Impossibile accedere allo schermo pubblico!
+;
+MSG_CANT_GET_DRI
+Impossibile aprire la struttura DrawInfo!
+;
+MSG_CANT_GET_VI
+Impossibile aprire la struttura VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossibile creare i gadget!
+;
+MSG_CANT_CREATE_MENUS
+Impossibile creare i menu!
+;
+MSG_CANT_CREATE_WIN
+Impossibile creare la finestra!
+;
+MSG_WINTITLE
+Preferenze della porta Seriale
+;
+MSG_MEN_PROJECT
+Progetto
+;
+MSG_MEN_PROJECT_OPEN
+O\0Apri...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Salva come...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Esci
+;
+MSG_MEN_EDIT
+Modifica
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Ripristina valori di default
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Ultima versione salvata
+;
+MSG_MEN_EDIT_RESTORE
+R\0Ripristina
+;
+MSG_MEN_SETTINGS
+Preferenze
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Creare icone?
+;
+MSG_ASL_OPEN_TITLE
+Modifica preferenze
+;
+MSG_ASL_SAVE_TITLE
+Salva preferenze
+;
+MSG_OK
+Ok
+;
+MSG_GAD_SAVE
+Salva
+;
+MSG_GAD_USE
+Usa
+;
+MSG_GAD_CANCEL
+Annulla
+;
+;
+MSG_GAD_BAUDRATE
+Velocità
+;
+MSG_GAD_PARITY
+Controllo parità
+;
+MSG_GAD_STOPBITS
+Bit di stop
+;
+MSG_GAD_DATABITS
+Bit dei dati
+;
+;
+MSG_GAD_INPUTBUFFERSIZE
+Dimensioni buffer d'ingresso
+;
+MSG_GAD_OUTPUTBUFFERSIZE
+Dimensioni buffer d'uscita
+;
+MSG_PARITY_NONE
+Nessuno
+;
+MSG_PARITY_EVEN
+Pari
+;
+MSG_PARITY_ODD
+Dispari
+;
+MSG_PARITY_MARK
+Marcatore
+;
+MSG_PARITY_SPACE
+Spazio
+;

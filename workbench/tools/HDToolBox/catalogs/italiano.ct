@@ -1,0 +1,135 @@
+## version $VER: hdtoolbox.catalog 1.0 (19.02.2004)
+## codeset 0
+## language italiano
+;
+WORD_Active
+Attiva
+;
+WORD_AddEntry
+Aggiungi una voce
+;
+WORD_All
+Tutte
+;
+WORD_Automount
+Monta automaticamente
+;
+WORD_Bootable
+Avviabile
+;
+WORD_BootPri
+Priorità d'avvio
+;
+WORD_Cancel
+Annulla
+;
+WORD_Changed
+Modifica
+;
+WORD_Change_Type
+Cambia tipo
+;
+WORD_Create_Table
+Crea tavola
+;
+WORD_Devices
+Periferiche
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Esci
+;
+WORD_Geometry
+Geometria
+;
+WORD_Name
+Nome
+;
+WORD_Switches
+Scambia
+;
+WORD_Parent
+Superiore
+;
+WORD_Ok
+Ok
+;
+WORD_Partitions
+Partizioni
+;
+WORD_Partition_Table
+Tavola delle partizioni
+;
+WORD_Partition_Table_Type
+Tipo di tavola delle partizioni
+;
+WORD_Partition_Type
+Tipo della partizione
+;
+WORD_RemoveEntry
+Rimuovi voce
+;
+WORD_Rename
+Rinomina
+;
+WORD_Resize_Move
+Ridimensiona/Sposta
+;
+WORD_Save_Changes
+Salva le modifiche
+;
+WORD_Size
+Dimensioni
+;
+WORD_Unit
+Unità
+;
+WORD_Units
+Unità
+;
+WORD_Unknown
+Sconosciuta
+;
+WORD_MENU_Project
+Progetto
+;
+WORD_MENU_About
+Informazioni
+;
+WORD_MENU_Quit
+Esci
+;
+MSG_ASK_SAVE
+Tutte le mofiche alle partizioni sono perdute\n Siete sicuri di voler conservare la tavola delle partizioni '%s' ?
+;Alle Daten auf modifizierten Partitionen werden zerstört!\nBist du dir sicher die Änderungen der Partitionstabelle '%s' zu speichern?
+;
+MSG_NO_MEMORY
+Non c'è abbastanza memoria
+;Nicht genug Speicher vorhanden
+;
+MSG_PARTITION_TABLE_FULL
+Tavola delle partizioni completa
+;Partitionstabelle voll
+;
+MSG_Select_Empty_Area
+Scegliere un'area vuota
+;Wähle eine freien Bereich
+;
+MSG_Select_Partition_Resize_Move
+Scegliere la partizione da ridimensionare o spostare
+;Wähle eine Partition und ändere die Größe bzw. bewege sie
+;
+MSG_Welcome
+Benvenuti all'utilità di partizionamento
+;Willkommen zum Partitionierungswerkzeug
+;
+MSG_WriteTableError
+Impossibile scrivere la tavola delle partizioni
+;Fehler beim Schreiben der Partitionstabelle
+;
+MSG_CreateTableError
+Impossibile creare la tavola delle partizioni
+;Fehler beim Erstellen der Partitionstabelle
+;

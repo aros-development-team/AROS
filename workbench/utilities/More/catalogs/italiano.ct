@@ -1,0 +1,112 @@
+## version $VER: more.catalog 1.0 (13.09.2000)
+## codeset 0
+## language italiano
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld !
+;
+MSG_NO_MEM
+Non c'è abbastanza memoria!
+;
+MSG_CANT_LOCK_SCR
+Impossibile accedere allo schermo pubblico!
+;
+MSG_CANT_GET_DRI
+Impossibile aprire la struttura DrawInfo!
+;
+MSG_CANT_GET_VI
+Impossibile aprire la struttura VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Impossibile creare oggetto SYSICLASS!
+;
+MSG_CANT_CREATE_GADGET
+Impossibile creare i gadget!
+;
+MSG_CANT_CREATE_MENUS
+Impossibile creare i menu!
+;
+MSG_CANT_CREATE_WIN
+Impossibile creare la finestra!
+;
+MSG_MEN_PROJECT
+Documento
+;
+MSG_MEN_PROJECT_OPEN
+O\0Apri...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Salva come...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Stampa
+;
+MSG_MEN_PROJECT_ABOUT
+?\0Informazioni...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Esci
+;
+MSG_MEN_NAVIGATION
+Testo
+;
+MSG_MEN_NAVIGATION_FIND
+F\0Trova...
+;
+MSG_MEN_NAVIGATION_FIND_NEXT
+.\0Trova successivo
+;
+MSG_MEN_NAVIGATION_FIND_PREV
+,\0Trova precedente
+;
+MSG_MEN_NAVIGATION_JUMP
+G\0Vai alla riga...
+;
+MSG_ASL_OPEN_TITLE
+Apri file
+;
+MSG_ASL_SAVE_TITLE
+Salva file
+;
+MSG_ABOUT
+More V%ld.%ld\n (%s)\nCopyright © %s by %s
+;
+MSG_ABOUT_TITLE
+Info su More
+;
+MSG_CONTINUE
+Continua
+;
+MSG_JUMP_TITLE
+Vai al titolo...
+;
+MSG_FIND_TITLE
+Cerca titolo
+;
+MSG_OK
+Ok
+;
+MSG_CANCEL
+Annulla
+;
+MSG_WIN_TITLE
+More: %s (%ld linee - %ld byte)
+;
+MSG_SHORTCUT_TOP
+T
+;
+MSG_SHORTCUT_BOTTOM
+B
+;
+MSG_SHORTCUT_JUMP
+GJ
+;
+MSG_SHORTCUT_FIND
+FS
+;
+MSG_SHORTCUT_NEXT
+N
+;
+MSG_SHORTCUT_PREV
+P
+;

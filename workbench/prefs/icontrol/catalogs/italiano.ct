@@ -1,0 +1,96 @@
+## version $VER: icontrolprefs.catalog 1.0 (25.08.2003)
+## codeset 0
+## language deutsch
+;
+MSG_CANT_OPEN_LIB
+Impossibile aprire %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Impossibile creare oggetto applicazione!
+; Can't create application object!
+;
+MSG_WINTITLE
+Preferenze IControl
+; IControl Preferences
+;
+MSG_MEN_PROJECT
+Progetto
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Apri ...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Salva come...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Esci
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Modifica
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Rirpistina valori iniziali
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Ultima versione salvata
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Ripristina
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Impostazioni
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Creare icona?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Carica preferenze IControl
+; Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Salva preferenze IControl
+; Save IControl Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+;
+MSG_MENUS_GROUP
+Menu
+; Menus
+;
+MSG_MENUS_TYPE
+Tipo
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Pull-Down
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Pop-Up
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Aspetto
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Classico
+; Classic
+;
+MSG_MENUS_LOOK_3D
+3D
+; 3D
+;
