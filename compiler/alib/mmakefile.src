@@ -28,6 +28,7 @@ FILES	:= \
     asmdeletepool \
     asmfreepooled \
     beginio \
+    bestcmodeidtags \
     bestmodeid \
     buildeasyrequest \
     callhook \
