@@ -212,6 +212,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	is still active.) If the current task isn't of type TS_RUN it
 	is already gone.
     */
+
     if(task->tc_Node.ln_Pri>SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->ThisTask->tc_State==TS_RUN)
     {
@@ -222,8 +223,8 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	else
 	{
 	    /* Switches are allowed. Move the current task away. */
-	    SysBase->ThisTask->tc_State=TS_READY;
-	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+	    //SysBase->ThisTask->tc_State=TS_READY;
+	    //Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 	    /* And force a reschedule. */
 	    Reschedule(task);
