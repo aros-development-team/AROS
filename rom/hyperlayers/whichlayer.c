@@ -73,8 +73,7 @@
     {
        struct RegionRectangle * rr;
        int found = FALSE;
-       int _x = x - l->shape->bounds.MinX;
-       int _y = y - l->shape->bounds.MinY;
+       int _x, _y;
       
        /* 
         * Must make a copy of the shape of the layer and
@@ -91,6 +90,8 @@
            return NULL;
          }
        }
+       _x = x - tmpr->bounds.MinX;
+       _y = y - tmpr->bounds.MinY;
        rr = tmpr->RegionRectangle;
        
        /*
