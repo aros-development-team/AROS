@@ -19,7 +19,7 @@ BEGIN {
 /^[ \t]*.section/ {
     section="$2";
 }
-/^[ \t]call ([mc]alloc|free|realloc|f?read|mem(move|mem)|str(n?cpy|dup|cat)|fgets|getcwd|[lf]?stat|readdir)$/ {
+/^[ \t]call ([mc]alloc|free|realloc|f?read|mem(move|mem|set)|str(n?cpy|dup|cat)|fgets|getcwd|[lf]?stat|readdir)$/ {
     #print >> out; next;
     print "\t\tcall Purify_"$2 >> out; next;
 }

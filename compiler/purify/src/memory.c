@@ -190,6 +190,14 @@ void * Purify_memmove (void *dest, const void *src, size_t n)
     return memmove (dest, src, n);
 }
 
+void * Purify_memset (void *dest, int c, size_t n)
+{
+    if (!Purify_CheckMemoryAccess (dest, n, PURIFY_MemAccess_Write))
+	Purify_PrintAccessError ("memmove (dest)", dest, n);
+
+    return memset (dest, c, n);
+}
+
 void * Purify_memcpy (void *dest, const void *src, size_t n)
 {
     if (!Purify_CheckMemoryAccess (src, n, PURIFY_MemAccess_Read))
