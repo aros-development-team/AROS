@@ -14,7 +14,7 @@
 
 
 *startfile:
-@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
+%{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o} @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
 
 *signed_char:
 %{funsigned-char:-D__CHAR_UNSIGNED__}
