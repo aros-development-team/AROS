@@ -110,10 +110,10 @@ static const ULONG coltab[] = {
     BOOL	      ok = TRUE, rp_inited = FALSE;
     
     struct TagItem   modetags[] = {
-    	{ BIDTAG_Depth,		0UL },
-	{ BIDTAG_DesiredWidth,		0UL },
-	{ BIDTAG_DesiredHeight,	0UL },
-	{ TAG_DONE, 0UL }
+    	{ BIDTAG_Depth		, 0UL 	},
+	{ BIDTAG_DesiredWidth	, 0UL 	},
+	{ BIDTAG_DesiredHeight	, 0UL 	},
+	{ TAG_DONE			}
     };
     
     ULONG modeid = INVALID_ID;
