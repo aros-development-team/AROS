@@ -27,7 +27,7 @@ can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
 There has been some talks about writing something which is something like
 an advanced OS with the features of the AmigaOS. This has been dropped
 and for good reason. First, everyone agrees that the current AmigaOS
-should be enhances but no one knows how to do that or even agrees on what
+should be enhanced but no one knows how to do that or even agrees on what
 has to be enhanced or what is important. Some want memory protection but
 don't want to pay the price (major rewrite of the available software and
 speed cut-offs).
