@@ -11,7 +11,7 @@ ARCHIVE	:= mathieeesingbas.arch
 
 MAKE_SHLIB := $(SHARED_MATHIEEESINGBAS)
 
-#MM- kernel-mathieeesing : setup includes linklibs
+#MM- kernel-mathieeesing : includes linklibs
 %make_module_setup mmake=kernel-mathieeesingbas
 %make_module_archtool
 %make_module mmake=kernel-mathieeesingbas

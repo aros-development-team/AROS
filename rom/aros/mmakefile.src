@@ -15,7 +15,7 @@ MAKE_SHLIB := $(SHARED_AROS)
 
 # This metatarget is so that the xxx-module and xxx-linklib both require
 # the same things to be built before running those targets.
-#MM- kernel-aros : setup includes linklibs
+#MM- kernel-aros : includes linklibs
 
 %make_module_setup mmake=kernel-aros
 %make_module_cpak

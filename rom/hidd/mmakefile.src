@@ -67,11 +67,11 @@ else
 	@strip -x $@
 endif
 
-#MM kernel-hidd-linklib : setup includes kernel-hidd-$(ARCH)-$(CPU)
+#MM kernel-hidd-linklib : includes kernel-hidd-$(ARCH)-$(CPU)
 kernel-hidd-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-hidd-module : setup includes kernel-hidd-$(ARCH)-$(CPU)
+#MM kernel-hidd-module : includes kernel-hidd-$(ARCH)-$(CPU)
 kernel-hidd-module : $(HIDDSDIR)/$(OSMODULE)
 
 # --- QUICK HACKS BEGIN --- 

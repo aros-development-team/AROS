@@ -12,7 +12,7 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime
 
 MAKE_SHLIB := $(SHARED_TIMER)
 
-#MM- kernel-timer : setup includes linklibs
+#MM- kernel-timer : includes linklibs
 %make_module_setup mmake=kernel-timer
 %make_module_cpak
 %make_module mmake=kernel-timer

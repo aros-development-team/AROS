@@ -15,7 +15,7 @@ USE_CLIB := yes
 
 MAKE_SHLIB := $(SHARED_KEYMAP)
 
-#MM- kernel-keymap : setup includes linklibs
+#MM- kernel-keymap : includes linklibs
 %make_module_setup mmake=kernel-keymap
 %make_module_cpak
 %make_module mmake=kernel-keymap

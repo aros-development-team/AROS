@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 MODULE := alert.hook
 MODTYPE := module
 
-#MM kernel-alerthook-module : setup includes linklibs
+#MM kernel-alerthook-module : includes linklibs
 kernel-alerthook-module : $(AROS_MODULES)/$(MODULE)
 
 #MM

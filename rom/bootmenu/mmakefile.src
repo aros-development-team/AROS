@@ -16,12 +16,10 @@ FUNCS :=
 
 USE_ROMLIB := yes
 
-#MM- kernel-bootmenu : setup includes linklibs kernel-bootmenu-module
+#MM- kernel-bootmenu : includes linklibs kernel-bootmenu-module
 %make_module_setup mmake=kernel-bootmenu
 %make_module_cpak
 %make_module mmake=kernel-bootmenu
-##%make_lib_includes
 
 %common
 %include_deps
-

@@ -19,7 +19,7 @@ MAKE_SHLIB := $(SHARED_GAMEPORT)
 
 #XXX Get rid of the next line.
 #MM- kernel-devs : kernel-gameport-linklib
-#MM- kernel-gameport : setup includes linklibs
+#MM- kernel-gameport : includes linklibs
 %make_module_setup mmake=kernel-gameport
 %make_module mmake=kernel-gameport
 

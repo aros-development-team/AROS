@@ -17,7 +17,7 @@ USE_CLIB := yes
 
 MAKE_SHLIB := $(SHARED_BOOPSI)
 
-#####MM- kernel-boopsi : setup includes linklibs
+#####MM- kernel-boopsi : includes linklibs
 
 #%make_module_setup mmake=kernel-boopsi
 #%make_module mmake=kernel-boopsi

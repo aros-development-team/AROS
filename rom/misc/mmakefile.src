@@ -12,7 +12,7 @@ FUNCS := allocmiscresource freemiscresource
 
 MAKE_SHLIB := $(SHARED_MISC)
 
-#MM- kernel-misc : setup includes linklibs
+#MM- kernel-misc : includes linklibs
 %make_module_setup mmake=kernel-misc
 %make_module_cpak
 %make_module mmake=kernel-misc
