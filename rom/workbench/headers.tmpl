@@ -1,0 +1,20 @@
+##begin clib
+
+#ifndef WORKBENCH_WORKBENCH_H
+#   include <workbench/workbench.h>
+#endif
+
+#ifndef DOS_BPTR_H
+#   include <dos/bptr.h>
+#endif
+
+/* Prototypes for stubs in amiga.lib */
+struct AppIcon * AddAppIcon (ULONG id, ULONG userdata, STRPTR text, struct MsgPort * msgport, BPTR lock, struct DiskObject * diskobj, Tag tag1, ...);
+struct AppMenuItem * AddAppMenuItem (ULONG id, ULONG userdata, STRPTR text, struct MsgPort * msgport, Tag tag1, ...);
+struct AppWindow * AddAppWindow (ULONG id, ULONG userdata, struct Window * window, struct MsgPort * msgport, Tag tag1, ...);
+	
+##end clib
+
+##begin proto
+extern struct Library * WorkbenchBase;
+##end proto
