@@ -58,7 +58,7 @@
 	if (obj) return obj;
 
         bug("*** Could not create object of %s\n", classname);
-	MUI_FreeClass(classname);
+	MUI_FreeClass(cl);
     }
 
     bug("*** Couldn't find %s\n", classname);
