@@ -12,6 +12,10 @@ ROOT:
 	FileSystem	= rootfs.handler
 #
 
+PIPE:
+	FileSystem	= pipe.handler
+#
+
 /* Entry for a file mounted as filesystem FDSK0: */
 FDSK0:
 	FileSystem	= ffs.handler
