@@ -32,9 +32,9 @@ ULONG color_distance(struct ColorMap * cm,
     c1 = ((UWORD *)cm->ColorTable)[index];
     c2 = ((UWORD *)cm->LowColorBits)[index];
 
-    dr = (LONG)(r >> (32-8)) - (LONG)(((c1 >> 4) & 0x00f0) | (c2 >> 8));
-    dg = (LONG)(g >> (32-8)) - (LONG)(((c1 >> 0) & 0x00f0) | (c2 >> 4));
-    db = (LONG)(b >> (32-8)) - (LONG)(((c1 << 4) & 0x00f0) | (c2 >> 0));
+    dr = (LONG)(r >> (32-8)) - (LONG)(((c1 >> 4) & 0x00f0) | ((c2 >> 8) & 0x000f));
+    dg = (LONG)(g >> (32-8)) - (LONG)(((c1 >> 0) & 0x00f0) | ((c2 >> 4) & 0x000f));
+    db = (LONG)(b >> (32-8)) - (LONG)(((c1 << 4) & 0x00f0) | ((c2 >> 0) & 0x000f));
 
     return dr*dr+dg*dg+db*db;
 }
