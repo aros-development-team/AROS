@@ -1,7 +1,7 @@
 # $Id$
 TOP=..
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 FILES = utility_init utility_functable
 FUNCTIONS = \

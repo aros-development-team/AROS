@@ -3,7 +3,7 @@ TOP=..
 
 USER_INCLUDES=-Iinclude
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/clib
 

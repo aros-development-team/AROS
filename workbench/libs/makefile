@@ -1,7 +1,7 @@
 # $Id$
 TOP=..
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/libs
 

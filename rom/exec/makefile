@@ -4,7 +4,7 @@ TOP=..
 # Use OS's own includes over the local ones
 SPECIAL_CFLAGS=-I/usr/include
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 FILES = init execfunctions
 

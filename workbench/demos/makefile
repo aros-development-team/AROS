@@ -3,7 +3,7 @@ TOP=..
 
 SPECIAL_CFLAGS = -D__AROS
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 #CC=$(PURIFY) $(SYS_CC)
 EXEDIR=$(BINDIR)/Demos

@@ -1,7 +1,7 @@
 # $Id$
 TOP=..
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname
 FUNCTIONS = \
