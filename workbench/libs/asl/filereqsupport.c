@@ -17,8 +17,6 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/datetime.h>
-#include <gadgets/aroslist.h>
-#include <gadgets/aroslistview.h>
 #include <stdio.h>
 #include <string.h>
 #include <clib/macros.h>

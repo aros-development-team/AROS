@@ -238,7 +238,7 @@ static void DrawMenu(Class *cl, Object *o, struct DrawInfo *dri)
     RectFill(data->rp, x1, y1 + 1, x1, y2 - 1);
     
     SetAPen (data->rp, dri->dri_Pens[SHINEPEN]);
-    RectFill(data->rp, x1 + 1, y1  + 1, x2  - 1 - 1, y2 - 1 - 1);
+    RectFill(data->rp, x1 + 1, y1  + 1, x2  - 1, y2 - 1);
 
     for(i = data->top;i < data->top + data->visible;i++)
     {

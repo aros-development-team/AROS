@@ -162,7 +162,7 @@ static struct Node *findnode(Class *cl, Object *o, WORD which)
     
     if (data->nodetable)
     {
-        if (which < data->total) node = data->nodetable[which];
+        if ((which < data->total) && (which >= 0)) node = data->nodetable[which];
     } else {
         node = FindListNode(data->labels, which);
     }
@@ -250,7 +250,8 @@ static void rendersingleitem(Class *cl, Object *o, struct GadgetInfo *gi, WORD w
 
     data = INST_DATA(cl, o);
 
-    if ((which >= data->top) &&
+    if (gi &&
+    	(which >= data->top) &&
         (which < data->top + data->visible) &&
 	(which < data->total))
     {
@@ -352,14 +353,12 @@ static void notifyall(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
 
 static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 {
-    struct AslListViewData *data;
+    struct AslListViewData *data = INST_DATA(cl, o);
     struct TagItem *tag, *tstate = msg->ops_AttrList;
     IPTR retval;
     BOOL redraw = FALSE;
     WORD newtop;
     
-    data = INST_DATA(cl, o);
-
     retval = DoSuperMethodA(cl, o, (Msg) msg);
 
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -382,6 +381,42 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		}
 		break;
 	
+	    case ASLLV_Active:
+	        {
+		    struct Node *node;
+		    WORD	n = 0;
+		    WORD 	old_active = data->active;
+		    
+		    data->active = (WORD)tag->ti_Data;
+		    
+		    if (data->domultiselect)
+		    {
+			ForeachNode(data->labels, node)
+			{
+		            if (IS_MULTISEL(node) && IS_SELECTED(node) && (n != data->active))
+			    {
+				MARK_UNSELECTED(node);
+				rendersingleitem(cl, o, msg->ops_GInfo, n);
+			    }
+		            n++;
+			}
+		    } else {
+		        if ((node = findnode(cl, o, old_active)))
+			{
+			    MARK_UNSELECTED(node);
+			    rendersingleitem(cl, o, msg->ops_GInfo, old_active);
+			}			
+		    }
+
+		    if ((node = findnode(cl, o, data->active)))
+		    {
+		        MARK_SELECTED(node);
+		        rendersingleitem(cl, o, msg->ops_GInfo, data->active);
+		    }
+
+		}
+	        break;
+		
 	    case ASLLV_Labels:
 	    	data->labels = tag->ti_Data ? (struct List *)tag->ti_Data : &data->emptylist;
 		data->total = CountNodes(data->labels, 0);

@@ -23,8 +23,6 @@
 #include <graphics/monitor.h>
 
 #include <graphics/gfx.h>
-#include <gadgets/aroslistview.h>
-#include <gadgets/aroslist.h>
 #include <libraries/gadtools.h>
 #include <workbench/startup.h>
 #include <string.h>
@@ -32,6 +30,7 @@
 
 #include "asl_intern.h"
 #include "modereqhooks.h"
+#include "modereqsupport.h"
 #include "layout.h"
 #include "coolimages.h"
 
@@ -587,7 +586,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {
 	        {GA_Previous		, (IPTR)gad					 },
 		{GA_ID			, ID_COLORS					 },
-		{ASLCY_Labels		, udata->colorarray				 },
+		{ASLCY_Labels		, (IPTR)udata->colorarray			 },
 		{ASLCY_Active		, imreq->ism_DisplayDepth - imreq->ism_MinDepth	 },
 		{GA_RelBottom		, y						 },
 		{GA_Left		, x						 },
@@ -641,10 +640,8 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
     } /* if (i) */
 
-    
-    SetAttrs(udata->Listview, ASLLV_Labels, (IPTR)&udata->ListviewList,
-                              TAG_DONE);
-     
+    SMGetModes(ld, AslBase);
+         
     ld->ld_GList = (struct Gadget *)udata->Listview;							 
     
     /* Menus */

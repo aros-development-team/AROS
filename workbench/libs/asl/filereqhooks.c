@@ -19,8 +19,6 @@
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
 #include <graphics/gfx.h>
-#include <gadgets/aroslistview.h>
-#include <gadgets/aroslist.h>
 #include <libraries/gadtools.h>
 #include <workbench/startup.h>
 #include <string.h>

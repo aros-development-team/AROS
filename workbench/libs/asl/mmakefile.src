@@ -6,11 +6,13 @@ USER_INCLUDES := -I. -I..
 LIBNAME 	:= asl
 ULIBNAME	:= Asl
 
-FILES := functable filereqhooks filereqsupport \
-         basicfuncs fontreqhooks \
+FILES := functable basicfuncs \
+	 filereqhooks filereqsupport \
+	 modereqhooks modereqsupport \
+         fontreqhooks \
 	 propclass arrowclass listviewclass \
-	 buttonclass stringclass cycleclass gadgets \
-	 coolimagedata modereqhooks
+	 buttonclass stringclass cycleclass \
+	 gadgets coolimagedata 
 
 FUNCTIONS := \
 	allocfilerequest	\

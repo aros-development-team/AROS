@@ -24,7 +24,7 @@
 
 /* Options */
 
-#define SREQ_MIN_VISIBLELINES 	 	5
+#define SREQ_MIN_VISIBLELINES 	 	3
 #define SREQ_COOL_BUTTONS 		1
 
 #define SREQ_FIRST_OBJECT(x) ((x)->Listview)
