@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Window *, window, A0),
-	AROS_LHA(ULONG         *, flags, D0),
+	AROS_LHA(ULONG          , flags, D0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 138, Intuition)
@@ -52,8 +52,47 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/HelpControl()
-    aros_print_not_implemented ("HelpControl");
+    ULONG ilock;
+    ULONG clearmask = 0;
+    ULONG setmask = 0;
+    
+    ASSERT_VALID_PTR(window);
+    
+    ilock = LockIBase(0);
+    
+    if (flags & HC_GADGETHELP)
+    {
+        setmask |= HELPF_GADGETHELP;
+    } else {
+        clearmask |= HELPF_GADGETHELP;
+    }
+
+    #undef IW
+    #define IW(x) ((struct IntWindow *)(x))
+    #define CHANGEHELPFLAGS(x) ( IW(x)->helpflags = (IW(x)->helpflags | setmask) & ~clearmask )
+
+    CHANGEHELPFLAGS(window);
+    
+    if (IW(window)->helpflags & HELPF_ISHELPGROUP)
+    {
+        struct Screen *scr = IntuitionBase->FirstScreen;
+	
+	for(; scr; scr = scr->NextScreen)
+	{
+	    struct Window *win = scr->FirstWindow;
+	    
+	    for(; win; win = win->NextWindow)
+	    {
+	        if ( (IW(win)->helpflags & HELPF_ISHELPGROUP) &&
+		     (IW(win)->helpgroup == IW(window)->helpgroup) )
+		{
+		    CHANGEHELPFLAGS(win);
+		}
+	    }
+	}
+    }
+    
+    UnlockIBase(ilock);
 
     AROS_LIBFUNC_EXIT
 } /* HelpControl */

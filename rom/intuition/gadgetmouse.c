@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include "inputhandler_support.h"
 
 /*****************************************************************************
 
@@ -55,8 +56,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/GadgetMouse()
-    aros_print_not_implemented ("GadgetMouse");
+    struct gpInput dummy_gpi;
+    
+    ASSERT_VALID_PTR(gadget);
+    ASSERT_VALID_PTR(ginfo);
+    ASSERT_VALID_PTR(mousepoint);
+    
+    dummy_gpi.gpi_GInfo = ginfo;
+    SetGPIMouseCoords(&dummy_gpi, gadget);
 
+    mousepoint[0] = dummy_gpi.gpi_Mouse.X;
+    mousepoint[1] = dummy_gpi.gpi_Mouse.Y;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* GadgetMouse */
