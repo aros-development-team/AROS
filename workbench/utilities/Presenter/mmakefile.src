@@ -1,11 +1,10 @@
+# Copyright © 2003-2004, The AROS Development Team. All rights reserved.
 # $Id$
-#
-# Makefile to build Presenter program.
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main imagesequence
-EXEDIR      := $(AROSDIR)/Utilities
+FILES  := main presenter presentation
+EXEDIR := $(AROSDIR)/Utilities
 
 #MM workbench-utilities-presenter : includes linklibs 
 
