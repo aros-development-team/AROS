@@ -3,14 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main support wanderer wandererprefs iconwindow
+FILES := main locale support wanderer wandererprefs iconwindow
 
 #MM- workbench-system : workbench-system-wanderer
-##MM workbench-system-wanderer : includes linklibs
+##MM workbench-system-wanderer : workbench-system-wanderer-catalogs includes linklibs
 
-%build_prog mmake=workbench-system-wanderer \
-    progname=Wanderer targetdir=$(AROS_WANDERER) \
-    files=$(FILES) uselibs="mui arossupport amiga rom m" \
-    detach=yes
+%build_prog mmake=workbench-system-wanderer-disabled \
+    progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
+    uselibs="mui arossupport amiga rom m" detach=yes
 
 %common
