@@ -149,7 +149,7 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 			{
 			    /* This is a message, send it back to its owner */
 			    ((struct SemaphoreMessage *)sr)->ssm_Semaphore = sigSem;
-			    ReplyMsg((struct Message *)sr->sr_Waiter);
+			    ReplyMsg((struct Message *)sr);
 			}
 		    }
 		}
