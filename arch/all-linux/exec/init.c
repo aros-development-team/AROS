@@ -37,6 +37,7 @@ extern const struct Resident
     Layers_resident,
     Timer_resident,
     Battclock_resident,
+    Keyboard_resident,
     Keymap_resident,
     Input_resident,
     Intuition_resident,
@@ -68,6 +69,7 @@ static const struct Resident *romtagList[] =
     &Layers_resident,			    /* ColdStart,   60   */
     &Timer_resident,			    /* ColdStart,   50	 */
     &Battclock_resident,		    /* ColdStart,   45	 */
+    &Keyboard_resident,			    /* ColdStart,   44	 */
     &Keymap_resident,			    /* ColdStart,   40	 */
     &Input_resident,			    /* ColdStart,   30	 */
     &Intuition_resident,		    /* ColdStart,   10	 */
