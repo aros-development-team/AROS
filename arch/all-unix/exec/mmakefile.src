@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-REP_FILES   := cause disable enable preparecontext stackswap switch \
+REP_FILES   := alert cause disable enable preparecontext stackswap switch \
 		rawioinit rawputchar rawmaygetchar
 FILES	    := kernel $(REP_FILES)
 OBJDIR	    := $(OSGENDIR)/exec
