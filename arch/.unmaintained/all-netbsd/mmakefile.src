@@ -22,7 +22,7 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM	kernel-cgfx-linklib
 
 # Setup the CLIB metatargets...
-#MM- setup-clib-netbsd : setup-clib-netbsd-i386
+#MM- setup-clib-netbsd : setup-clib-netbsd-$(CPU)
 
 #MM
 kernel :
@@ -35,7 +35,7 @@ setup-netbsd :
 	%add_objects rom/boot/strap_emul
 
 
-#MM setup-exec-netbsd : setup-exec-unix setup-exec-i386
+#MM setup-exec-netbsd : setup-exec-unix setup-exec-$(CPU)
 setup-exec-netbsd : $(GENINCDIR)/sigcore.h 
 	%add_objects rom/exec/init
 
@@ -43,7 +43,7 @@ $(GENINCDIR)/sigcore.h : $(TOP)/config/netbsd/exec/sigcore.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $^ $@
 
-#MM- kernel-exec-netbsd : exec-netbsd exec-i386 exec-unix \
+#MM- kernel-exec-netbsd : exec-netbsd exec-$(CPU) exec-unix \
 #MM	kernel-exec-linklib
 
 #MM
@@ -67,9 +67,9 @@ exec-netbsd : $(OSGENDIR)/exec/init.o
 
 #MM- check : check-exec-unix
 
-#MM- clib-netbsd : clib-netbsd-i386
+#MM- clib-netbsd : clib-netbsd-$(CPU)
 
-#MM- includes-netbsd : includes-copy includes-netbsd-i386
+#MM- includes-netbsd : includes-copy includes-netbsd-$(CPU)
 
 #MM- workbench-netbsd : workbench-complete workbench-hidd-unix
 

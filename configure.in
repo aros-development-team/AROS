@@ -125,7 +125,18 @@ case "$host_os" in
         aros_host_cc="$aros_host_cc -pipe"
 	aros_host_make="gmake"
         aros_host_arch="netbsd"
-        aros_host_cpu="i386"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *m68k*)
+		aros_host_cpu="m68k"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
 	aros_host_lib_suffix=".0.0"
         ;; 
 
@@ -322,10 +333,23 @@ case "$target_os" in
 
     netbsd*)
         aros_target_arch="netbsd"
-        aros_target_cpu="i386"
+	case "$target_cpu" in
+	    *m68k*)
+		aros_target_cpu="m68k"
+		aros_flavour="emulcompat"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
+		;;
+	    *i?86*)
+		aros_target_cpu="i386"
+		aros_flavour="emulation"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
+		aros_default_wbdepth=8
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
+		;;
+	esac
 	aros_target_genmap="-Wl,-M -Xlinker >" 
-        aros_flavour="emulation"
-        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         strip_args="-x"
         ;;   
 
