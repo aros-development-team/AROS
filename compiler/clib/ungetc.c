@@ -54,37 +54,19 @@
 
 ******************************************************************************/
 {
-    BPTR fh;
-
-    switch ((IPTR)stream)
-    {
-    case 1: /* Stdin */
-	fh = Input ();
-	break;
-
-    case 2: /* Stdout */
-    case 3: /* Stderr */
-	errno = EINVAL;
-	return EOF;
-
-    default:
-	fh = (BPTR)stream->fh;
-	break;
-    }
-
     if (c < -1)
-	c = (unsigned int)c;
+		c = (unsigned int)c;
 
-    if (!UnGetC (fh, c))
+    if (!UnGetC ((BPTR)stream->fh, c))
     {
-	errno = IoErr2errno (IoErr ());
+		errno = IoErr2errno (IoErr ());
 
-	if (errno)
-	    stream->flags |= _STDIO_FILEFLAG_ERROR;
-	else
-	    stream->flags |= _STDIO_FILEFLAG_EOF;
+		if (errno)
+	    	stream->flags |= _STDIO_FILEFLAG_ERROR;
+		else
+	    	stream->flags |= _STDIO_FILEFLAG_EOF;
 
-	return EOF;
+		return EOF;
     }
 
     return c;

@@ -62,18 +62,13 @@
 
     switch (whence)
     {
-    case SEEK_SET: whence = OFFSET_BEGINNING; break;
-    case SEEK_CUR: whence = OFFSET_CURRENT; break;
-    case SEEK_END: whence = OFFSET_END; break;
-    default:
-	errno = EINVAL;
-	return -1;
-    }
+    	case SEEK_SET: whence = OFFSET_BEGINNING; break;
+    	case SEEK_CUR: whence = OFFSET_CURRENT; break;
+    	case SEEK_END: whence = OFFSET_END; break;
 
-    if (((IPTR)stream) < 3)
-    {
-	errno = EINVAL;
-	return -1;
+		default:
+			errno = EINVAL;
+			return -1;
     }
 
     fh = (BPTR)(stream->fh);
@@ -83,12 +78,9 @@
     cnt = Seek (fh, offset, whence);
 
     if (cnt == -1)
-    {
-	errno = IoErr2errno (IoErr ());
-    }else
-    {
-	cnt = 0;
-    }
-
+    	errno = IoErr2errno (IoErr ());
+    else
+    	cnt = 0;
+    
     return cnt;
 } /* fseek */

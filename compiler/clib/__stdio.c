@@ -14,9 +14,9 @@
 #include <aros/symbolsets.h>
 #include "__stdio.h"
 
-FILE * stdin  = (FILE *)1L;
-FILE * stdout = (FILE *)2L;
-FILE * stderr = (FILE *)3L;
+FILE * stdin;
+FILE * stdout;
+FILE * stderr;
 
 struct MinList __stdio_files =
 {
@@ -25,7 +25,7 @@ struct MinList __stdio_files =
     (struct MinNode *)&__stdio_files
 };
 
-int __stdio_fd = 4;
+int __stdio_fd = 3;
 
 static FILENODE *new_file_node(BPTR fh, long flags, int fd)
 {
@@ -45,7 +45,7 @@ static FILENODE *new_file_node(BPTR fh, long flags, int fd)
 }
 
 void __init_stdio(void)
-{                                /*
+{
 	struct Process *me;
 	FILENODE *fn;
 
@@ -60,7 +60,7 @@ void __init_stdio(void)
 	me = (struct Process *)FindTask (NULL);
 	fn = new_file_node(me->pr_CES ? me->pr_CES : me->pr_COS, 0, 2);
     AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
-	stderr = FILENODE2FILE(fn);*/
+	stderr = FILENODE2FILE(fn);
 }
 
 ADD2INIT(__init_stdio, 5);
