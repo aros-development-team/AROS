@@ -41,10 +41,11 @@ ChangeLog()
     cvs2cl -l "-d'>$VERSION'" -f $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml
     
     if [ -e $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml ]; then
-        md5sum $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml > $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml.md5
+        cd $ARCHIVE_BASE
+        md5sum $BASENAME-ChangeLog-$module.xml > $BASENAME-ChangeLog-$module.xml.md5
     fi
     
-    cd $PWD
+    cd $oldpwd
 }
 
 ChangeLog AROS    $SOURCE_AROS
