@@ -21,8 +21,8 @@ INIT_FILE   := execstrap_init
 FILES	    :=
 FUNCTIONS   := \
 	initcode initstruct makelibrary makefunctions findresident	    \
-	initresident setintvector addintserver remintserver allocmem	    \
-	freemem availmem allocentry freeentry typeofmem addmemlist	    \
+	initresident setintvector addintserver remintserver                 \
+	availmem allocentry freeentry typeofmem addmemlist                  \
 	addmemhandler remmemhandler insert addhead addtail remove remhead   \
 	remtail enqueue findname setsignal allocsignal freesignal addport   \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
