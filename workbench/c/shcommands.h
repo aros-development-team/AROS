@@ -26,11 +26,11 @@ int __nocommandline = 1;                                       \
 int main (void)                                                \
 {                                                              \
     int __shretcode = RETURN_OK;                               \
-    static const char __shcommandname[] = stringify(name);     \
+    static char __shcommandname[] = stringify(name);           \
 
 
 #define __AROS_SH_ARGS(numargs, defaults, template) \
-    IPTR __shargs[numargs] = { defaults };          \
+    IPTR __shargs[numargs] = defaults;              \
     struct RDArgs *___rda;                          \
                                                     \
     ___rda = ReadArgs(template, __shargs, NULL);    \
@@ -55,22 +55,24 @@ __shexitpoint:                                \
     __AROS_SH_COMMON(name, version, date) \
     const struct RDArgs *___rda = NULL;
 
-#define AROS_SH1(name, version, date, a1)           \
-    __AROS_SH_COMMON(name, version, date)           \
-    __AROS_SH_ARGS(1, __SHA_DEF(a1), __SHA_OPT(a1)) \
-    {                                               \
+#define __DEF(x...) {x}
+
+#define AROS_SH1(name, version, date, a1)                  \
+    __AROS_SH_COMMON(name, version, date)                  \
+    __AROS_SH_ARGS(1, __DEF(__SHA_DEF(a1)), __SHA_OPT(a1)) \
+    {                                                      \
         enum {__SHA_ENUM(a1)};
 
-#define AROS_SH2(name, version, date, a1, a2)            \
-    __AROS_SH_COMMON(name, version, date)                \
-    __AROS_SH_ARGS(2, (__SHA_DEF(a1), __SHA_DEF(a2)),    \
-                      __SHA_OPT(a1) "," __SHA_OPT(a2))   \
-    {                                                    \
+#define AROS_SH2(name, version, date, a1, a2)              \
+    __AROS_SH_COMMON(name, version, date)                  \
+    __AROS_SH_ARGS(2, __DEF(__SHA_DEF(a1), __SHA_DEF(a2)), \
+                      __SHA_OPT(a1) "," __SHA_OPT(a2))     \
+    {                                                      \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)};
 
 #define AROS_SH3(name, version, date, a1, a2, a3)         \
     __AROS_SH_COMMON(name, version, date)                 \
-    __AROS_SH_ARGS(3, (__SHA_DEF(a1), __SHA_DEF(a2)       \
+    __AROS_SH_ARGS(3, __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                        __SHA_DEF(a3)),                    \
                       __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
 		      __SHA_OPT(a3))                      \
@@ -80,7 +82,7 @@ __shexitpoint:                                \
 
 #define AROS_SH4(name, version, date, a1, a2, a3, a4)     \
     __AROS_SH_COMMON(name, version, date)                 \
-    __AROS_SH_ARGS(4, (__SHA_DEF(a1), __SHA_DEF(a2)       \
+    __AROS_SH_ARGS(4, __DEF(__SHA_DEF(a1), __SHA_DEF(a2)  \
                        __SHA_DEF(a3), __SHA_DEF(a4)),     \
                       __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
 		      __SHA_OPT(a3) "," __SHA_OPT(a4))    \
@@ -90,7 +92,7 @@ __shexitpoint:                                \
 
 #define AROS_SH5(name, version, date, a1, a2, a3, a4, a5)     \
     __AROS_SH_COMMON(name, version, date)                     \
-    __AROS_SH_ARGS(5, (__SHA_DEF(a1), __SHA_DEF(a2),          \
+    __AROS_SH_ARGS(5, __DEF(__SHA_DEF(a1), __SHA_DEF(a2),     \
                        __SHA_DEF(a3), __SHA_DEF(a4),          \
 		       __SHA_DEF(a5)),                        \
                       __SHA_OPT(a1) "," __SHA_OPT(a2) ","     \
