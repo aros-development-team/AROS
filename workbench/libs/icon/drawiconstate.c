@@ -64,6 +64,7 @@
 	    if (bmdepth >= 15)
 	    {
 	    	struct Image35 *img;
+		ULONG	    	*cgfxcoltab;
 		
 		if (state == IDS_SELECTED && nativeicon->icon35.img2.imagedata)
 		{
@@ -74,69 +75,86 @@
 		    img = &nativeicon->icon35.img1;
 		}
 		
-		if (img->mask)
+		if ((cgfxcoltab = AllocVec(img->numcolors * sizeof(ULONG), MEMF_ANY)))
 		{
-		    struct BitMap *bm;
+		    struct ColorRegister *cr;
+		    WORD i;
 		    
-		    bm = AllocBitMap(nativeicon->icon35.width,
-		    	    	     nativeicon->icon35.height,
-				     0,
-				     0,
-				     rp->BitMap);
-		    
-		    if (bm)
+		    cr = (struct ColorRegister *)img->palette;
+		    for(i = 0; i < img->numcolors; i++)
 		    {
-		    	struct RastPort bmrp;
-			
-			InitRastPort(&bmrp);
-			bmrp.BitMap = bm;
-			
-			WriteLUTPixelArray(img->imagedata,
-		    	    		   0,
-					   0,
-					   nativeicon->icon35.width,
-					   &bmrp,
-					   img->palette,
-					   0,
-					   0,
-					   nativeicon->icon35.width,
-					   nativeicon->icon35.height,
-					   CTABFMT_XRGB8);
-			
-			#if 1
-			BltMaskBitMapRastPort(bm,
-			    	    	      0,
-					      0,
-					      rp,
-					      leftEdge,
-					      topEdge,
-					      nativeicon->icon35.width,
-					      nativeicon->icon35.height,
-					      0xE0,
-					      img->mask);
-			#endif		      
-			DeinitRastPort(&bmrp);
-			
-			FreeBitMap(bm);
-			
-			return;
-			
-		    } /* if (bm) */ 
+		    	cgfxcoltab[i] = (cr->red << 16) | (cr->green << 8) | cr->blue;
+			cr++;
+		    }
 		    
-		} /* if (img->mask) */
-		
-		WriteLUTPixelArray(img->imagedata,
-		    	    	   0,
-				   0,
-				   nativeicon->icon35.width,
-				   rp,
-				   img->palette,
-				   leftEdge,
-				   topEdge,
-				   nativeicon->icon35.width,
-				   nativeicon->icon35.height,
-				   CTABFMT_XRGB8);
-		return;
+		    if (img->mask)
+		    {
+			struct BitMap *bm;
+
+			bm = AllocBitMap(nativeicon->icon35.width,
+		    	    		 nativeicon->icon35.height,
+					 0,
+					 0,
+					 rp->BitMap);
+
+			if (bm)
+			{
+		    	    struct RastPort bmrp;
+
+			    InitRastPort(&bmrp);
+			    bmrp.BitMap = bm;
+
+			    WriteLUTPixelArray(img->imagedata,
+		    	    		       0,
+					       0,
+					       nativeicon->icon35.width,
+					       &bmrp,
+					       cgfxcoltab,
+					       0,
+					       0,
+					       nativeicon->icon35.width,
+					       nativeicon->icon35.height,
+					       CTABFMT_XRGB8);
+
+			    #if 1
+			    BltMaskBitMapRastPort(bm,
+			    	    		  0,
+						  0,
+						  rp,
+						  leftEdge,
+						  topEdge,
+						  nativeicon->icon35.width,
+						  nativeicon->icon35.height,
+						  0xE0,
+						  img->mask);
+			    #endif		      
+			    DeinitRastPort(&bmrp);
+
+			    FreeBitMap(bm);
+    	    	    	    FreeVec(cgfxcoltab);
+			    
+			    return;
+
+			} /* if (bm) */ 
+
+		    } /* if (img->mask) */
+
+		    WriteLUTPixelArray(img->imagedata,
+		    	    	       0,
+				       0,
+				       nativeicon->icon35.width,
+				       rp,
+				       cgfxcoltab,
+				       leftEdge,
+				       topEdge,
+				       nativeicon->icon35.width,
+				       nativeicon->icon35.height,
+				       CTABFMT_XRGB8);
+				       
+		    FreeVec(cgfxcoltab);
+		    return;
+		    
+		} /* if ((cgfxcoltab = AllocVec(img->numcolors * sizeof(ULONG), MEMF_ANY))) */
 		
 	    } /* if (bmdepth >= 15) */
 	    

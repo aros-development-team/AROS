@@ -195,7 +195,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	{
 	    mem->icon35.img1.palette = MemDupPooled(pool,
 	    	    	    	    	    	    srcnativeicon->icon35.img1.palette,
-						    srcnativeicon->icon35.img1.numcolors * sizeof(ULONG));
+						    srcnativeicon->icon35.img1.numcolors * sizeof(struct ColorRegister));
 	    if (!mem->icon35.img1.palette) goto fail;
 	}
 		
@@ -203,7 +203,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	{
 	    mem->icon35.img2.palette = MemDupPooled(pool,
 	    	    	    	    	    	    srcnativeicon->icon35.img2.palette,
-						    srcnativeicon->icon35.img2.numcolors * sizeof(ULONG));
+						    srcnativeicon->icon35.img2.numcolors * sizeof(struct ColorRegister));
 	    if (!mem->icon35.img2.palette) goto fail;
 	}
 	else if (srcnativeicon->icon35.img1.palette)
