@@ -10,7 +10,10 @@
 #include <exec/alerts.h>
 #include <proto/exec.h>
 
-void kprintf(const char *, ...);
+#ifdef kprintf
+#undef kprintf
+#endif
+int kprintf(const UBYTE *, ...);
 
 /*****************************************************************************
 
