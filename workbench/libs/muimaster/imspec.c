@@ -2024,6 +2024,75 @@ void cycle_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left
     Draw(rport,right, bottom - 1);
 }
 
+void popup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom,cx,i;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    height -= 3;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    cx = width / 2;
+
+    Move(rport, left + HSPACING + 1, top + VSPACING);
+    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
+    Move(rport, left + HSPACING, top + VSPACING);
+    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
+
+    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
+    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
+    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+    Draw(rport, left + cx, top + height - 1 - VSPACING);
+
+    bottom = top + height - 1 + 3;
+    right = left + width - 1;
+    Move(rport, left, bottom-2);
+    Draw(rport, right, bottom-2);
+    Move(rport, left, bottom-1);
+    Draw(rport, right, bottom-1);
+}
+
+void popfile_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom;
+    int edgex,edgey;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    right = left + width - 1;
+    bottom = top + height - 1;
+
+    edgex = left + width * 5 / 8;
+    edgey = top + height * 5 / 8;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    Move(rport, left, top);
+    Draw(rport, left, bottom);
+    Move(rport, left+1, top);
+    Draw(rport, left+1, bottom);
+
+    Move(rport, left, bottom);
+    Draw(rport, right, bottom);
+    Move(rport, left, bottom-1);
+    Draw(rport, right, bottom-1);
+
+    Move(rport, right, bottom-1);
+    Draw(rport, right, edgey);
+    Move(rport, right-1, bottom-1);
+    Draw(rport, right-1, edgey);
+
+    Move(rport, right, edgey-1);
+    Draw(rport, edgex, edgey-1);
+    Draw(rport, edgex, top);
+    Draw(rport, left+2,top);
+    Move(rport, left+2,top+1);
+    Draw(rport, edgex-1,top+1);
+
+    Move(rport, edgex+1, top);
+    Draw(rport, right, edgey-1);
+
+}
+
 struct vector_image
 {
     int minwidth;
@@ -2040,6 +2109,8 @@ static struct vector_image vector_table[] =
     {16,10,checkbox_draw},
     {16,10,mx_draw},
     {16,10,cycle_draw},
+    {10,11,popup_draw},
+    {10,11,popfile_draw},
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
