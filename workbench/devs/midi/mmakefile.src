@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES := debugdriver
 
-EXEDIR := $(DEVSDIR)Midi
+EXEDIR := $(DEVSDIR)/Midi
 EXE    := $(EXEDIR)/debugdriver
 
 USE_CLIB_STATIC := yes
