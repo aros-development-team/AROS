@@ -503,14 +503,14 @@ static const ULONG coltab[] = {
 	    }
 	}
 	
+        D(bug("callling SetRast()\n"));	    
+	/* Set screen to background color */
+	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+
 	if (!(screen->Screen.Flags & SCREENQUIET))
 	{
 	    CreateScreenBar(&screen->Screen, IntuitionBase);
 	}
-
-        D(bug("callling SetRast()\n"));	    
-	/* Set screen to background color */
-	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
 
         D(bug("SetRast() called\n"));	    
 
