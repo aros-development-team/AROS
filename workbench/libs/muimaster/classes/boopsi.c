@@ -26,7 +26,9 @@ ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Boopsi_DATA *data;
     struct TagItem *tags,*tag;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+				   MUIA_FillArea, FALSE,
+				   TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj)
 	return FALSE;
 
