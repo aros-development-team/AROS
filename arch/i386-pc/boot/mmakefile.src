@@ -83,7 +83,6 @@ bootdisk-pc-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
 	$(BINDIR)/boot/aros-pc-i386 install
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(CP) $(TOP)/config/i386-native/boot/menu.lst $(AROSDIR)/boot/grub/
 	@$(CP) $(BINDIR)/boot/aros-pc-i386 $(BOOT_DEST_DIR)/boot
 	@gzip -9 -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
@@ -94,6 +93,7 @@ install: install.c
 	@$(HOST_CC) install.c -o install
 
 $(BOOT_DEST_DIR)/AROS.pkg :
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(RM) -rf $(GENDIR)/gen/rom/bootdisk.compressed
 	@$(MKDIR) -p $(GENDIR)/gen/rom/bootdisk.compressed
 	@( \
@@ -119,7 +119,7 @@ $(AROSDIR)/boot/aros.bin : $(OSGENDIR)/boot/aros.bin
 
 #TODO: it depend on all files in workbench dir
 $(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence.CDROM $(AROSDIR)/S/Startup-Sequence
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@mkisofs \
 		-output $(OSGENDIR)/boot/aros.iso \
 		-b boot/aros.bin \
