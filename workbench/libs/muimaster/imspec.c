@@ -2093,6 +2093,37 @@ void popfile_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG le
 
 }
 
+void popdrawer_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom;
+    int halfx,halfy,quartery;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    right = left + width - 1;
+    bottom = top + height - 1;
+
+    halfx = (left + right) / 2;
+    halfy = (top + bottom) / 2;
+    quartery = top + height / 4;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    Move(rport, left, quartery);
+    Draw(rport, left, bottom);
+    Move(rport, left+1, quartery);
+    Draw(rport, left+1, bottom);
+    Draw(rport, right, bottom);
+    Draw(rport, right, halfy);
+    Draw(rport, halfx, halfy);
+    Draw(rport, halfx, quartery);
+    Draw(rport, left+1,quartery);
+
+    Move(rport, halfx, quartery-1);
+    Draw(rport, halfx + 2, top);
+    Draw(rport, right - 2, top);
+    Draw(rport, right, quartery-1);
+    Draw(rport, right, halfy);
+}
+
 struct vector_image
 {
     int minwidth;
@@ -2111,6 +2142,7 @@ static struct vector_image vector_table[] =
     {16,10,cycle_draw},
     {10,11,popup_draw},
     {10,11,popfile_draw},
+    {10,11,popdrawer_draw},
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
