@@ -142,6 +142,8 @@ AROS_LH2(struct ideBase *,  init,
     IBase->ide_SysLib = sysBase;
     IBase->ide_SegList = segList;
 
+    InitSemaphore(&IBase->ide_HardwareLock);
+    
     /* Alloc some memory */
     IBase->ide_BoardAddr = AllocMem(MAX_UNIT * 4, MEMF_PUBLIC|MEMF_CLEAR);
     if (IBase->ide_BoardAddr)
@@ -479,10 +481,24 @@ AROS_LH1(void, BeginIO,
     Disable();
 
     /* Should this command be immediate? */
-    if (!((1 << comm) & IMMEDIATES_CMD))
+    
+    /* stegerg: If disk presence is still unknown handle all cmds slow.
+                Might be possibly problematic, if someone expects certain
+		cmds to be handled quick (sending requests from interrupts) :-\ */
+    
+    if ((comm > 31) || !((1 << comm) & IMMEDIATES_CMD) || (unit->au_Flags & AF_DiskPresenceUnknown))
     {
+    #if 0
         /* No, if it's ATAPI device or active device send command through ide.task */
         if ((unit->au_Flags & AF_AtapiDev) || (unit->au_Unit.unit_flags & UNITF_ACTIVE))
+    #else
+    	/* stegerg: This UNTIF_ACTIVE stuff is unsafe, IMHO. Not
+	            only but mostly because two different units
+		    (a master and a slave on same ide channel) use
+		    the same hw ports. So treat non-quick (hw accesing)
+		    cmds always non-quick. */
+    	if (1)
+    #endif
         {
             /* Make unit active */
             unit->au_Unit.unit_flags |= UNITF_ACTIVE | UNITF_INTASK;
@@ -509,10 +525,12 @@ AROS_LH1(void, BeginIO,
 
     /* Unit inactive */
     unit->au_Unit.unit_flags &= ~UNITF_ACTIVE;
-    /* If IO_QUICK cleared, reply message */
-    if (!(iorq->io_Flags & IOF_QUICK))
+    /* If IO_QUICK cleared, reply message. stegerg: but not if cmd is TD_ADDCHANGEINT */
+    if (!(iorq->io_Flags & IOF_QUICK) && (iorq->io_Command != TD_ADDCHANGEINT))
+    {
         ReplyMsg((struct Message *)iorq);
-
+    }
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -865,7 +883,12 @@ void cmd_TestChanged(struct IORequest *iorq, struct ide_Unit *unit, struct TaskD
     {
         if (unit->au_Flags & AF_Removable)
         {
+	#if 0
             if (!(unit->au_Flags & AF_Used))
+	#else
+	    /* stegerg: Don't trust this AF_Used stuff */	    
+	    if (1)
+	#endif
             {
                 struct IORequest *msg;
 
@@ -876,6 +899,10 @@ void cmd_TestChanged(struct IORequest *iorq, struct ide_Unit *unit, struct TaskD
                     {
                         /* Nothing has changed from last check */
                         unit->au_Flags &= ~AF_Used;
+			if (unit->au_Flags & AF_DiskPresenceUnknown)
+			{
+			    unit->au_Flags &= ~AF_DiskPresenceUnknown;
+			}
                         return;
                     }
                     unit->au_Flags &= ~AF_DiskPresent;
@@ -886,13 +913,23 @@ void cmd_TestChanged(struct IORequest *iorq, struct ide_Unit *unit, struct TaskD
                     if (unit->au_Flags & AF_DiskPresent)
                     {
                         unit->au_Flags &= ~AF_Used;
+			if (unit->au_Flags & AF_DiskPresenceUnknown)
+			{
+			    unit->au_Flags &= ~AF_DiskPresenceUnknown;
+			}
                         return;
                     }
                     unit->au_Flags |= AF_DiskPresent;
                 }
                 unit->au_ChangeNum++;
 
-                D(bug("(0%x:%x):Media changed\n", unit->au_PortAddr, unit->au_DevMask));
+		if (unit->au_Flags & AF_DiskPresenceUnknown)
+		{
+		    unit->au_Flags &= ~AF_DiskPresenceUnknown;
+		}
+
+                D(bug("(0%x:%x):Media changed  thistask = %x [%s]\n", unit->au_PortAddr, unit->au_DevMask,
+		    FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name));
 
                 Forbid();
 
@@ -972,37 +1009,37 @@ void (*map64[])() =
 
 void (*map32[])() =
 {
-    cmd_Invalid,        // CMD_INVALID
-    cmd_Reset,          // CMD_RESET
-    cmd_Read32,         // CMD_READ
-    cmd_Write32,        // CMD_WRITE
-    cmd_Update,         // CMD_UPDATE
-    cmd_Reset,          // CMD_CLEAR
-    cmd_Reset,          // CMD_STOP
-    cmd_Reset,          // CMD_START
-    cmd_Flush,          // CMD_FLUSH
-    cmd_Reset,          // TD_MOTOR
-    cmd_Seek32,         // TD_SEEK
-    cmd_Write32,        // TD_FORMAT
-    cmd_Remove,         // TD_REMOVE
-    cmd_ChangeNum,      // TD_CHANGENUM
-    cmd_ChangeState,    // TD_CHANGESTATE
-    cmd_ProtStatus,     // TD_PROTSTATUS
-    cmd_Invalid,        // TD_RAWREAD
-    cmd_Invalid,        // TD_RAWWRITE
-    cmd_GetDriveType,   // TD_GETDRIVETYPE
-    cmd_GetNumTracks,   // TD_GETNUMTRACKS
-    cmd_AddChangeInt,   // TD_ADDCHANGEINT
-    cmd_RemChangeInt,   // TD_REMCHANGEINT
-    cmd_GetGeometry,    // TD_GETGEOMETRY
-    cmd_Eject,          // TD_EJECT
-    cmd_Invalid,        // -
-    cmd_Invalid,        // -
-    cmd_Invalid,        // -
-    cmd_Invalid,        // -
-    cmd_ScsiDirect,     // HD_SCSICMD
-    cmd_TestChanged,    // APCMD_TESTCHANGED
-    cmd_UnitParams      // APCMD_UNITPARAMS
+    cmd_Invalid,        //  0 CMD_INVALID
+    cmd_Reset,          //  1 CMD_RESET
+    cmd_Read32,         //  2 CMD_READ
+    cmd_Write32,        //  3 CMD_WRITE
+    cmd_Update,         //  4 CMD_UPDATE
+    cmd_Reset,          //  5 CMD_CLEAR
+    cmd_Reset,          //  6 CMD_STOP
+    cmd_Reset,          //  7 CMD_START
+    cmd_Flush,          //  8 CMD_FLUSH
+    cmd_Reset,          //  9 TD_MOTOR
+    cmd_Seek32,         // 10 TD_SEEK
+    cmd_Write32,        // 11 TD_FORMAT
+    cmd_Remove,         // 12 TD_REMOVE
+    cmd_ChangeNum,      // 13 TD_CHANGENUM
+    cmd_ChangeState,    // 14 TD_CHANGESTATE
+    cmd_ProtStatus,     // 15 TD_PROTSTATUS
+    cmd_Invalid,        // 16 TD_RAWREAD
+    cmd_Invalid,        // 17 TD_RAWWRITE
+    cmd_GetDriveType,   // 18 TD_GETDRIVETYPE
+    cmd_GetNumTracks,   // 19 TD_GETNUMTRACKS
+    cmd_AddChangeInt,   // 20 TD_ADDCHANGEINT
+    cmd_RemChangeInt,   // 21 TD_REMCHANGEINT
+    cmd_GetGeometry,    // 22 TD_GETGEOMETRY
+    cmd_Eject,          // 23 TD_EJECT
+    cmd_Invalid,        // 24 -
+    cmd_Invalid,        // 25 -
+    cmd_Invalid,        // 26 -
+    cmd_Invalid,        // 27 -
+    cmd_ScsiDirect,     // 28 HD_SCSICMD
+    cmd_TestChanged,    // 29 APCMD_TESTCHANGED
+    cmd_UnitParams      // 30 APCMD_UNITPARAMS
 };
 
 void PerformIO(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
@@ -1073,8 +1110,23 @@ void TaskCode(struct ideBase *ib)
     
             while((msg = (struct IORequest *)GetMsg(&td->td_Port)))
             {
+	    	/* stegerg: lock semaphore here to protect against
+		            hw accesses during OpenDevice(ide.device)
+			    in ide-lowlevel.c/InitUnit() -> UnitInfo()
+			    -> ata_Identify() */
+			    
+		ObtainSemaphore(&ib->ide_HardwareLock);
                 PerformIO(msg, (struct ide_Unit *)msg->io_Unit, td);
-                ReplyMsg((struct Message *)msg);
+		ReleaseSemaphore(&ib->ide_HardwareLock);
+
+    	    	/* stegerg: Don't reply TD_ADDCHANGEINT. Is normally a
+		            quick cmd, but because of my "handle all
+			    cmds slow until disk presence is known"
+			    check this here too */
+    	    	if (msg->io_Command != TD_ADDCHANGEINT)
+		{
+                    ReplyMsg((struct Message *)msg);
+		}
             }
             td->td_Flags &= ~(UNITF_INTASK | UNITF_ACTIVE);
         }
@@ -1109,16 +1161,20 @@ void DaemonCode(struct ideBase *ib)
     /* Loop forever... */
     for(;;)
     {
-        dd->dd_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
-        dd->dd_TimerIO->tr_time.tv_secs = 3;
-        dd->dd_TimerIO->tr_time.tv_micro = 0;
-        DoIO((struct IORequest *)dd->dd_TimerIO);
-
+    	/* stegerg: moved the 3-sec-delay code below the for
+	            loop to make sure that "first_check_for_diskpresence"
+		    happens as soon as possible */
+		    
         for (i = 0; i < ib->ide_NumUnit; i++)
         {
 	    if (dd->dd_DevIO[i]->io_Unit)
         	DoIO((struct IORequest *)dd->dd_DevIO[i]);
         }
+
+        dd->dd_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
+        dd->dd_TimerIO->tr_time.tv_secs = 3;
+        dd->dd_TimerIO->tr_time.tv_micro = 0;
+        DoIO((struct IORequest *)dd->dd_TimerIO);
     }
 }
 
