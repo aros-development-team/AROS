@@ -116,10 +116,10 @@ MSG_ERROR_OBJECT_LINKED
 l'oggetto è collegato
 ;
 MSG_ERROR_BAD_HUNK
-bad loadfile hunk
+descrizione del file corrotta
 ;
 MSG_ERROR_NOT_IMPLEMENTED
-funzione mancante
+funzione non ancora supportata
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
 record non bloccato
@@ -142,30 +142,32 @@ MSG_ERROR_BREAK
 MSG_ERROR_NOT_EXECUTABLE
 file non eseguibile
 ;
-MSG_STRING_INSERT_VOLUME)
-Prego inserire volume\n%s\nin un drive qualsiasi
+MSG_STRING_INSERT_VOLUME
+Prego inserire volume\n
+%s\n
+in un drive qualsiasi
 ;
-MSG_STRING_VOLUME_FULL)
+MSG_STRING_VOLUME_FULL
 Il volume %s è pieno
 ;
-MSG_STRING_NO_DISK)
+MSG_STRING_NO_DISK
 Disco non presente nel drive %s
 ;
-MSG_STRING_NO_DOS_DISK)
+MSG_STRING_NO_DOS_DISK
 Disco non-DOS nel drive %s
 ;
-MSG_STRING_MUST_REPLACE)
-È NECESSARIO sostituire il volume\n\
+MSG_STRING_MUST_REPLACE
+È necessario sostituire il volume\n\
 %s\n\
 nel drive %s
 ;
-MSG_STRING_RETRY)
+MSG_STRING_RETRY
 Riprova
 ;
-MSG_STRING_CANCEL)
+MSG_STRING_CANCEL
 Annulla
 ;
-MSG_STRING_REQUESTTITLE)
+MSG_STRING_REQUESTTITLE
 Richiesta di sistema
 ;
 MSG_ERROR_NO_MATCHING_ELSEENDIF
