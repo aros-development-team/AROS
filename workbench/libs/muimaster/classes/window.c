@@ -883,11 +883,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    break;
 
 	case IDCMP_ACTIVEWINDOW:
-	    data->wd_Flags |= MUIWF_ACTIVE;
+	    set(oWin, MUIA_Window_Activate, TRUE);
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
-	    data->wd_Flags &= ~MUIWF_ACTIVE;
+	    set(oWin, MUIA_Window_Activate, FALSE);
 	    break;
 
 	case	IDCMP_NEWSIZE:
@@ -1768,7 +1768,11 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Window_Activate:
 		    if (data->wd_RenderInfo.mri_Window)
 		    {
-			if (tag->ti_Data) ActivateWindow(data->wd_RenderInfo.mri_Window);
+			if (tag->ti_Data)
+			{
+			    ActivateWindow(data->wd_RenderInfo.mri_Window);
+			    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ACTIVE);
+			}
 		    } else _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
 		    break;
 
@@ -1881,12 +1885,15 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    STORE = (ULONG)0;
+    STORE = (IPTR)0;
 
     switch(msg->opg_AttrID)
     {
 	case MUIA_Window_Activate:
-	    STORE = (data->wd_Flags & MUIWF_ACTIVE) ? TRUE : FALSE;
+	    if (data->wd_Flags & MUIWF_OPENED)
+		STORE = (data->wd_Flags & MUIWF_ACTIVE) ? TRUE : FALSE;
+	    else
+		STORE = (data->wd_Flags & MUIWF_DONTACTIVATE) ? FALSE : TRUE;
 	    return(TRUE);
         case MUIA_Window_Window:
             STORE = (data->wd_Flags & MUIWF_OPENED) ? ((ULONG)data->wd_RenderInfo.mri_Window) : FALSE;
