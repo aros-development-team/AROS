@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IntuitionBase * const IntuitionBase = DOSBase->dl_IntuitionBase;
+    struct IntuitionBase * IntuitionBase;
     struct Window * window;	/* The window to put the requester in */
     char	    gadTexts[128];
     char *	    gtPtr = (char *)gadTexts;
@@ -77,6 +77,18 @@
     /* Supress requesters? */
     if( (IPTR)window == (IPTR)-1L)
 	return 0;
+
+    if(DOSBase->dl_IntuitionBase == NULL)
+    {
+	DOSBase->dl_IntuitionBase = OpenLibrary("intuition.library", 37L);
+    }
+
+    if(DOSBase->dl_IntuitionBase == NULL)
+    {
+	/* XXX Do something else here please */
+    }
+    else
+	IntuitionBase = DOSBase->dl_IntuitionBase;
 
     /* Create localised gadget texts */
     strcpy(gtPtr, DosGetString(STRING_RETRY));

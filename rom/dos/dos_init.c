@@ -107,12 +107,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	return NULL;
     }
 
-    LIBBASE->dl_IntuitionBase = OpenLibrary("intuition.library", 39L);
-    if(LIBBASE->dl_IntuitionBase == NULL)
-    {
-	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_Intuition);
-	return NULL;
-    }
+    LIBBASE->dl_IntuitionBase = NULL;
 
     {
 	/*  iaint:
