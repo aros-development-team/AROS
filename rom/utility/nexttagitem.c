@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$    $Log
-
-    Desc:
-    Lang: english
 */
 #include "intern.h"
 
@@ -16,7 +13,7 @@
 	AROS_LH1(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem **, tagListPtr, A0),
+	AROS_LHA(const struct TagItem **, tagListPtr, A0),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 8, Utility)
@@ -56,10 +53,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
 
 *****************************************************************************/
 {
