@@ -54,7 +54,7 @@
 
   BPTR lock = MKBADDR(NULL); 
   LONG success = DOSFALSE;
-  char * Buffer;
+  char * Buffer = NULL;
   LONG Buffersize = 256;
   #define DEF_BUFSIZESTEP 128
   LONG Attempts = 1;
