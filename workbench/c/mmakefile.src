@@ -30,6 +30,7 @@ FILES	    := \
 	shell \
 	setclock \
 	setlocale \
+	sort \
 	tasklist \
 	crlist \
 	stacksnoop \
@@ -59,6 +60,7 @@ FILES	    := \
 	Setenv \
 	Setmap \
 	Stack \
+	Status \
 	Unalias \
 	Unset \
 	Unsetenv \

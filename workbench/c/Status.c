@@ -80,6 +80,7 @@
 #include <exec/types.h>
 
 #include <strings.h>
+#include <stdio.h>
 
 #define ARG_TEMPLATE    "PROCESS/N,FULL/S,TCB/S,CLI=ALL/S,COM=COMMAND/K"
 #define ARG_PROCESS     0
@@ -97,7 +98,7 @@ int Do_Status(LONG *, LONG, LONG, LONG, STRPTR *);
 
 int main(int argc, char *argv[])
 {
-	struct RDArgs * rda;
+    struct RDArgs * rda;
     IPTR          * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL };
     int             Return_Value;
 
@@ -134,6 +135,7 @@ int main(int argc, char *argv[])
 } /* main */
 
 
+
 #define BUFFER_SIZE   100
 
 void BSTRtoCSTR(BSTR, STRPTR, LONG);
@@ -143,12 +145,12 @@ int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
 {
 	struct Process              *Proc;
 	struct CommandLineInterface *CurrentCLI;
-	char                         Buffer[BUFFER_SIZE];
+	char                         Buffer[BUFFER_SIZE]="fixme!";
 	BOOL                         Done;
 	LONG                        *Tasks;
 	LONG                         CurrentTask;
 	LONG                         NumberOfTasks;
-    STRPTR                       msg;
+	STRPTR                       msg;
 	LONG                         ProcNum;
 	LONG                         ProcStackSize;
 	LONG                        *ProcGlobalVectorSize;
@@ -172,26 +174,28 @@ int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
             Proc                 = (struct Process *)(msg - sizeof(struct Task));
             ProcNum              = Proc->pr_TaskNum;
             ProcGlobalVectorSize = Proc->pr_GlobVec;
-            CurrentCLI           = (struct CommandLineInterface *)BADDR(Proc->pr_CLI);
-            ProcStackSize        = CurrentCLI->cli_DefaultStack * 4;
+#warning Some structures are not correct, yet!
+//            CurrentCLI           = (struct CommandLineInterface *)BADDR(Proc->pr_CLI);
+//            ProcStackSize        = CurrentCLI->cli_DefaultStack * 4;
 
-            BSTRtoCSTR(CurrentCLI->cli_CommandName, &Buffer[0], BUFFER_SIZE);
+//            BSTRtoCSTR(CurrentCLI->cli_CommandName, &Buffer[0], BUFFER_SIZE);
+
 
             /* Work out what to display.
              */
-            if (*Command != NULL)
+            if (NULL != *Command)
             {
-                if (Stricmp((STRPTR)*Command, (STRPTR)&Buffer[0]) == 0)
+                if (strcmp((STRPTR)*Command, (STRPTR)&Buffer[0]) == 0)
                 {
-                    Printf(" %ld\n", ProcNum);
+                    printf(" %ld\n", ProcNum);
                 }
             }
-            else if (*Process != NULL)
+            else if(Process != NULL)
             {
                 if (CurrentTask == *Process)
                 {
                     DumpInfo(ProcNum,
-                             *ProcGlobalVectorSize,
+                             1234, //*ProcGlobalVectorSize,
                              ProcStackSize,
                              Proc->pr_Task.tc_Node.ln_Pri,
                              Buffer,
@@ -204,7 +208,7 @@ int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
             else
             {
                 DumpInfo(ProcNum,
-                         *ProcGlobalVectorSize,
+                         1234, //*ProcGlobalVectorSize,
                          ProcStackSize,
                          Proc->pr_Task.tc_Node.ln_Pri,
                          Buffer,
@@ -215,7 +219,8 @@ int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
             }
         }
 
-        if (CurrentTask == NumberOfTasks || CurrentTask == *Process)
+        if (CurrentTask == NumberOfTasks || 
+            (NULL != Process && CurrentTask == *Process))
         {
             Done = TRUE;
         }
@@ -225,6 +230,7 @@ int Do_Status(LONG *Process, LONG Full, LONG Tcb, LONG All, STRPTR *Command)
         }
     }
 
+    return 0;
 } /* Do_Status */
 
 
@@ -249,7 +255,7 @@ void BSTRtoCSTR(BSTR In, STRPTR Out, LONG Length)
         }
     }
 
-    Out[TextLength] = NULL;
+    Out[TextLength] = '\0';
 
 } /* BSTRtoCSTR */
 
@@ -266,17 +272,17 @@ void DumpInfo(LONG Num,
 {
     if (Full != NOT_SET)
     {
-        Printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld Loaded as command: %s\n",
+        printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld Loaded as command: %s\n",
                Num,
                Stack,
                GVec,
                Pri,
-               (LONG)&Name[0]
+               (char *)&Name[0]
         );
     }
     else if (Tcb != NOT_SET)
     {
-        Printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld\n",
+        printf("Process %2ld: Stk %6ld, gv %3ld, Pri %3ld\n",
                Num,
                Stack,
                GVec,
@@ -285,9 +291,9 @@ void DumpInfo(LONG Num,
     }
     else if (All != NOT_SET)
     {
-        Printf("Process %2ld: Loaded as command: %s\n",
+        printf("Process %2ld: Loaded as command: %s\n",
                Num,
-               (LONG)&Name[0]
+               (char *)&Name[0]
         );
     }
 
