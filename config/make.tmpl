@@ -84,8 +84,7 @@ $(OBJDIR)/functions.o : functions.c
 	@%(cmd) %(opt) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
-
-functions.c :
+functions.c : $(TOP)/tools/cpak/cpak $(foreach f,$(FUNCTIONS),$(f).c)
 	@$(TOP)/tools/cpak/cpak $(FUNCTIONS)
 
 %end
