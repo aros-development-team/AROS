@@ -16,6 +16,12 @@
 #ifndef EXEC_TASKS_H
 struct Task;
 #endif
+#ifndef EXEC_LISTS_H
+struct List;
+#endif
+#ifndef ETASK_H
+struct IntETask;
+#endif
 
 /*
     Prototypes
@@ -23,5 +29,7 @@ struct Task;
 APTR AllocTaskMem (struct Task * task, ULONG size, ULONG flags);
 void FreeTaskMem (struct Task * task, APTR mem);
 
+struct Task *FindTaskByID(ULONG id);
+struct IntETask *FindETask(struct List *, ULONG id);
 
 #endif /* _EXEC_UTIL_H */
