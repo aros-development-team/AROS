@@ -677,7 +677,7 @@ endif
 	        exit $$ret; \
 	    fi; \
 	fi; \
-        $(%(mmake)-install_command)
+	$(%(mmake)-install_command)
 
 %(srcdir)/.files-touched:
 	find %(srcdir) -exec $(TOUCH) -r %(srcdir)/configure '{}' \; && \
@@ -1047,8 +1047,8 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o \
 $(BD_OBJS$(BDID)) \
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 	@$(ECHO) "Linking $@"
-	@$(COLLECT-AROS) -ius -o $@ $^
-	@$(OBJCOPY) $@ `nm $@ | $(AWK) '$$3 ~ /^__.*_LIST__$$/ {print "-L " $$3;}'`
+	@$(COLLECT-AROS) -Ur -o $@ $^
+	@$(OBJCOPY) $@ `$(NM) $@ | $(AWK) '$$3 ~ /^__.*_LIST__$$/ {print "-L " $$3;}'`
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
 %end
@@ -1345,7 +1345,6 @@ ifneq ($(filter $(TARGET),%(mmake)-linklib %(mmake)-kobj),)
 
 $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : $(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
 	@$(LD) -r -o $@ $^
-
 endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-linklib %(mmake)-kobj" deps=$(BD_DEPS$(BDID))
@@ -1881,10 +1880,23 @@ GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
+GNU_PACKAGES := $(AROSDIR)/../GnuPackages
+
+%(mmake)-%(subpackage)-package-dir := $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)
+
 %build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
-     nix=yes prefix=%(prefix) aros_prefix=%(aros_prefix) postinstall=%(postinstall) \
-     extraoptions="%(extraoptions)"
-     
+     nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix=%(aros_prefix) \
+     postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" extraoptions="%(extraoptions)"
+
+#MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
+%(mmake)-%(subpackage)-make-package :
+	@$(ECHO) "Building \`$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar.bz2'" && \
+	cd $(%(mmake)-%(subpackage)-package-dir) && \
+	tar cvfj $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar.bz2 * && \
+        mkdir -p "%(prefix)" && \
+        cp -a * "%(prefix)"/ && \
+        cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase)
+
 %end
 
 
