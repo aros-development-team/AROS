@@ -56,16 +56,27 @@ UBYTE *vers = "$VER: filereq 37.0";
 
 struct Library *AslBase = NULL;
 
+struct TextAttr mytextattr = 
+{
+    "arial.font", 13, 0, 0
+};
+
 struct TagItem frtags[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Custom Positive and Negative text" },
     { ASLFR_PositiveText,       (IPTR)"Load File" },
     { ASLFR_NegativeText,       (IPTR)"Forget it" },
+    { ASLFR_InitialShowVolumes, TRUE		  },
+    { ASLFR_SetSortBy,		ASLFRSORTBY_Size  },
+    { ASLFR_SetSortOrder,	ASLFRSORTORDER_Descend },
+    { ASLFR_SetSortDrawers,	ASLFRSORTDRAWERS_Mix	},
     { TAG_DONE,       	        NULL }
 };
 
 struct TagItem frtags2[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Save mode" },
     { ASLFR_DoSaveMode,         TRUE},
     { TAG_DONE,       	        NULL }
@@ -73,6 +84,7 @@ struct TagItem frtags2[] =
 
 struct TagItem frtags3[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"DoPatterns" },
     { ASLFR_DoSaveMode,         TRUE},
     { ASLFR_DoPatterns,		TRUE},
@@ -81,6 +93,7 @@ struct TagItem frtags3[] =
 
 struct TagItem frtags4[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Drawers Only" },
     { ASLFR_DrawersOnly,	TRUE},
     { TAG_DONE,       	        NULL }
@@ -88,6 +101,7 @@ struct TagItem frtags4[] =
 
 struct TagItem frtags5[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Drawers Only + DoPatterns (pattern hasn't any effect like on AmigaoS)" },
     { ASLFR_DrawersOnly,	TRUE},
     { ASLFR_DoPatterns,		TRUE},
@@ -96,6 +110,7 @@ struct TagItem frtags5[] =
 
 struct TagItem frtags6[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Multiselection (use SHIFT)" },
     { ASLFR_DoMultiSelect,	TRUE},
     { ASLFR_InitialDrawer,      (IPTR)"Libs:"},
@@ -107,6 +122,7 @@ struct TagItem frtags6[] =
 
 struct TagItem frtags_[] =
 {
+    { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"The RKM file requester" },
     { ASLFR_InitialHeight,      MYHEIGHT },
     { ASLFR_InitialWidth,       MYWIDTH },
@@ -133,7 +149,7 @@ static void showrequester(char *msg, struct TagItem *tags)
 	if (AslRequest(fr, NULL))
 	{
 	    printf("\n-------------------------------------------------------\n\n");
-	    printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File ? fr->rf_File : (STRPTR)"<NOFILE>");
+	    printf("PATH=\"%s\"  FILE=\"%s\"\n", fr->rf_Dir, fr->rf_File ? fr->rf_File : (STRPTR)"<NOFILE>");
 	    printf("To combine the path and filename, copy the path\n");
 	    printf("to a buffer, add the filename with Dos AddPart().\n\n");
 
@@ -151,7 +167,7 @@ static void showrequester(char *msg, struct TagItem *tags)
 		    wbarg++;
 		}
 	    }
-	} else printf("Requester was aborted\n");
+	} else printf("\nRequester was aborted\n");
 	FreeAslRequest(fr);
     }
     else printf("Could not alloc FileRequester\n");
