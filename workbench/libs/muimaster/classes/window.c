@@ -1285,7 +1285,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    {
 		data->wd_Width  = iWin->GZZWidth;
 		data->wd_Height = iWin->GZZHeight;
-		DoMethod(data->wd_RootObject, MUIM_Hide);
+		DoHideMethod(data->wd_RootObject);
 
 		if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
 		{
@@ -1296,7 +1296,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		    _width(data->wd_RootObject) = data->wd_Width;
 		    _height(data->wd_RootObject) = data->wd_Height;
 		    DoMethod(data->wd_RootObject, MUIM_Layout);
-		    DoMethod(data->wd_RootObject, MUIM_Show);
+		    DoShowMethod(data->wd_RootObject);
 		    {
 			LONG left,top,width,height;
 
@@ -1338,7 +1338,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		_width(data->wd_RootObject) = data->wd_Width;
 		_height(data->wd_RootObject) = data->wd_Height;
 		DoMethod(data->wd_RootObject, MUIM_Layout);
-		DoMethod(data->wd_RootObject, MUIM_Show);
+		DoShowMethod(data->wd_RootObject);
 
 		if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITH_CLEAR)
 		{
@@ -2811,7 +2811,7 @@ static void WindowShow (struct IClass *cl, Object *obj)
     ShowRenderInfo(&data->wd_RenderInfo);
 /*      D(bug("zune_imspec_show %s %d\n", __FILE__, __LINE__)); */
     zune_imspec_show(data->wd_Background, obj);
-    DoMethod(data->wd_RootObject, MUIM_Show);
+    DoShowMethod(data->wd_RootObject);
 }
 
 static ULONG WindowOpen(struct IClass *cl, Object *obj)
@@ -2908,7 +2908,7 @@ static ULONG WindowClose(struct IClass *cl, Object *obj)
     KillHelpBubble(data, obj, BUBBLEHELP_TICKER_FIRST);
     
     /* remove from window */
-    DoMethod(data->wd_RootObject, MUIM_Hide);
+    DoHideMethod(data->wd_RootObject);
     zune_imspec_hide(data->wd_Background);
 
     DeinstallBackbuffer(cl, obj);
@@ -2941,7 +2941,7 @@ static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Win
 
     if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
-    DoMethod(data->wd_RootObject, MUIM_Hide);
+    DoHideMethod(data->wd_RootObject);
     DeinstallBackbuffer(cl, obj);
     HideRenderInfo(&data->wd_RenderInfo);
 

@@ -569,7 +569,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    ** as objects with MUIA_ShowMe to false neighter get MUIM_Setup nor MUIM_Show */
 			    if (_flags(obj)&MADF_CANDRAW)
 			    {
-			    	DoMethod(obj,MUIM_Hide);
+			    	DoHideMethod(obj);
 			    	recalc = 1;
 			    }
 			    if (_flags(obj)&MADF_SETUP) DoMethod(obj,MUIM_Cleanup);
@@ -579,7 +579,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    if (parent)
 			    {
 				if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
-				if (_flags(parent) & MADF_CANDRAW) DoMethod(obj,MUIM_Show);
+				if (_flags(parent) & MADF_CANDRAW) DoShowMethod(obj);
 			    } else
 			    {
 				/* Check if window is open... */
@@ -1395,7 +1395,6 @@ static IPTR Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     Object *activeobj;
 
-    _flags(obj) |= MADF_CANDRAW;
 /*  g_print("show %p, bg=%p (%s)\n", obj, data->mad_Background, */
 /*  	zune_imspec_to_string(data->mad_Background)); */
 /*  g_print("dims=%dx%d\n", _width(obj), _height(obj)); */
@@ -1446,7 +1445,6 @@ static IPTR Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	data->mad_ContextZMenu = NULL;
     }
 
-    _flags(obj) &= ~MADF_CANDRAW;
     return TRUE;
 }
 

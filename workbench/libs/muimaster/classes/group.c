@@ -554,7 +554,7 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
     }
     if (_flags(obj) & MADF_CANDRAW)
-	DoMethod(msg->opam_Object, MUIM_Show);
+	DoShowMethod(msg->opam_Object);
 
     return TRUE;
 }
@@ -567,7 +567,7 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
     if (_flags(obj) & MADF_CANDRAW)
-	DoMethod(msg->opam_Object, MUIM_Hide);
+	DoHideMethod(msg->opam_Object);
     if (_flags(obj) & MADF_SETUP)
 	DoMethod(msg->opam_Object, MUIM_Cleanup);
     if (muiNotifyData(obj)->mnd_GlobalInfo)
@@ -2384,7 +2384,7 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 	{
 	    if (page == data->active_page)
 	    {
-		DoMethod(child, MUIM_Show);
+		DoShowMethod(child);
 		break;
 	    }
 	    page++;
@@ -2396,14 +2396,14 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 	    while ((child = NextObject(&cstate)))
 	    {
 		if (IsObjectVisible(child,MUIMasterBase))
-		    DoMethod(child, MUIM_Show);
+		    DoShowMethod(child);
 	    }
     	} else
     	{
 	    while ((child = NextObject(&cstate)))
 	    {
 		if (_flags(child) & MADF_SHOWME)
-		    DoMethod(child, MUIM_Show);
+		    DoShowMethod(child);
 	    }
 	}
     }
@@ -2430,7 +2430,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	{
 	    if (page == data->active_page)
 	    {
-		DoMethod(child, MUIM_Hide);
+		DoHideMethod(child);
 		break;
 	    }
 	    page++;
@@ -2442,14 +2442,14 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	    while ((child = NextObject(&cstate)))
 	    {
 		if (IsObjectVisible(child,MUIMasterBase))
-		    DoMethod(child, MUIM_Hide);
+		    DoHideMethod(child);
 	    }
     	} else
     	{
 	    while ((child = NextObject(&cstate)))
 	    {
 		if (_flags(child) & MADF_CANDRAW)
-		    DoMethod(child, MUIM_Hide);
+		    DoHideMethod(child);
 	    }
 	}
     }
