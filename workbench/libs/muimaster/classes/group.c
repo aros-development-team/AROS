@@ -611,6 +611,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if (data->flags & GROUP_VIRTUAL)
     {
+    	/* Not really needed if MUI Draws all the object, maybe that's where DRAWALL is for??? */
 	clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
     } else clip = 0; /* Makes compiler happy */
 
