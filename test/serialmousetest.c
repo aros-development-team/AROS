@@ -2,7 +2,6 @@
 #include <aros/debug.h>
 
 #include <exec/memory.h>
-#include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/exall.h>
 #include <dos/datetime.h>
@@ -11,17 +10,18 @@
 #include <utility/tagitem.h>
 #include <utility/utility.h>
 #include <devices/serial.h>
-#include <string.h>
-#include <stdlib.h>
-#include <memory.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/commodities.h>
 
 #include <devices/serial.h>
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <memory.h>
 
 #define ARG_TEMPLATE "KILL/S,UNIT/N,PROBE/S"
 
@@ -98,6 +98,25 @@ const struct protocol protocols[] = {
 	{ms_mouse, sizeof(ms_mouse), 3, ms_mouse_protocol, "ms-mouse"},
 	{NULL    , 0               , 0, NULL             , NULL}
 };
+
+
+static struct NewBroker nb =
+{
+	NB_VERSION,
+	NULL,
+	NULL,
+	NULL,
+	NBU_NOTIFY | NBU_UNIQUE, 
+	0,
+	0,
+	NULL,                             
+	0 
+};
+
+static CxObj * cxbroker;
+
+
+
 
 static const void ms_mouse_protocol(char * buffer, 
                                     ULONG len,
@@ -203,17 +222,21 @@ static void check_mouse_action(struct mouse_action * old_action,
 
 static void read_input(struct IOExtSer * IORequest, 
                        struct MsgPort * notifport,
+                       struct MsgPort * cxport,
                        const void (* handler)(char *, ULONG, struct mouse_action *))
 {
 	struct mouse_action old_action, cur_action;
+	BOOL end = FALSE;
 	old_action.flags = 0;
 	cur_action.flags = 0;
 	int n = 3;
-	while (1) {
+	while (FALSE == end) {
 		BYTE buf[10];
 		struct Message * msg;
 		BOOL IODone = FALSE;
 		ULONG sigs;
+		ULONG cxsig = (NULL != cxport) ? (1 << cxport->mp_SigBit)
+		                               : 0;
 		
 		memset(buf, 0x00, 10);
 		IORequest->IOSer.io_Command = CMD_READ;
@@ -223,6 +246,7 @@ static void read_input(struct IOExtSer * IORequest,
 		SendIO((struct IORequest *)IORequest);
 		sigs = Wait((1 << ((struct IORequest *)IORequest)->io_Message.mn_ReplyPort->mp_SigBit) |
 		            (1 << notifport->mp_SigBit) |
+		            cxsig |
 		            SIGBREAKF_CTRL_C );
 		if (NULL != CheckIO((struct IORequest *)IORequest)) {
 			
@@ -241,18 +265,43 @@ static void read_input(struct IOExtSer * IORequest,
 			IODone = TRUE;
 		}
 		
+		if (sigs & cxsig) {
+			CxMsg * cxmsg;
+			printf("Got a signal for me as commodity.\n");
+			while (NULL != (cxmsg = (CxMsg *)GetMsg(cxport))) {
+				switch (CxMsgType(cxmsg)) {
+					case CXM_COMMAND:
+						switch (CxMsgID(cxmsg)) {
+							case CXCMD_DISABLE:
+								ActivateCxObj(cxbroker, FALSE);
+							break;
+							
+							case CXCMD_ENABLE:
+								ActivateCxObj(cxbroker, TRUE);
+							break;
+							
+							case CXCMD_KILL:
+								end = TRUE;
+							break;
+						}
+					break;
+				}
+				ReplyMsg((struct Message *)cxmsg);
+			}
+		}
+		
 		if (NULL != (msg = GetMsg(notifport))) {
 			printf("Serial mouse driver ends.\n");
 			if (FALSE == IODone)
 				AbortIO((struct IORequest *)IORequest);
 			FreeMem(msg, sizeof(struct Message));
-			break;
+			end = TRUE;
 		}
 		
 		if (sigs & SIGBREAKF_CTRL_C) {
-			break;
+			end = TRUE;
 		}
-	}
+	} /* while (FALSE == end) */
 } /* read_input */
 
 
@@ -303,7 +352,7 @@ static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struc
 	return p;
 }
 
-static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport)
+static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport,struct MsgPort *cxport)
 {
 	struct MsgPort * SerPort;
         ULONG unitnum = unit;
@@ -341,7 +390,7 @@ static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport
 							goto probe_fail;
 						}
 					}
-					read_input(IORequest, notifport, handler);
+					read_input(IORequest, notifport, cxport, handler);
 				} else {
 					printf("Could not set parameters for serial port.\n");
 					printf("Error code: %d\n",((struct IORequest *)IORequest)->io_Error);
@@ -356,6 +405,47 @@ probe_fail:
 
 }
 
+
+static BOOL InitCommodity(void)
+{
+	BOOL rc = FALSE;
+	
+	if (NULL != CxBase) {
+	
+		nb.nb_Name  = strdup("Mouse Driver");
+		nb.nb_Title = strdup("Mouse Driver");
+		nb.nb_Descr = strdup("Mouse Driver for serial mice.");
+	
+		if (NULL != (nb.nb_Port = CreateMsgPort())) {
+			if (NULL != (cxbroker = CxBroker(&nb, 0))) {
+				ActivateCxObj(cxbroker, TRUE);
+				rc = TRUE;
+			} else {
+				DeleteMsgPort(nb.nb_Port);
+				nb.nb_Port = NULL;
+			}
+		}
+	}
+	return rc;
+}
+
+
+static void CleanupCommodity(void)
+{
+	if (NULL != CxBase) {
+		if (NULL != cxbroker)
+			DeleteCxObjAll(cxbroker);
+		if (NULL != nb.nb_Port) {
+			struct Message * msg;
+			while (NULL != (msg = GetMsg(nb.nb_Port))) {
+				ReplyMsg(msg);
+			}
+			DeleteMsgPort(nb.nb_Port);
+			nb.nb_Port = NULL;
+		}
+	}
+}
+
 #define MSGPORT_NAME "serial_mouse_driver"
 
 int main(int argc, char **argv)
@@ -365,9 +455,7 @@ int main(int argc, char **argv)
 	                       FALSE   // ARG_PROBE
 	                     };
 	struct RDArgs *rda;
-printf("!!\n");
 	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-printf("??\n");	
 	if (NULL != rda) {
 		if (TRUE == args[ARG_KILL]) {
 			struct MsgPort * mport = FindPort(MSGPORT_NAME);
@@ -389,12 +477,17 @@ printf("??\n");
 			if (NULL != mport) {
 				printf("Program already running!\n");
 			} else {
+				BOOL have_cx = InitCommodity();
 				struct MsgPort * notifport = CreatePort(MSGPORT_NAME, 0);
 				if (NULL != notifport) {
 					mouse_driver(args[ARG_UNIT],
 					             args[ARG_PROBE],
-					             notifport);
+					             notifport,
+					             nb.nb_Port);
 					DeletePort(notifport);
+					if (TRUE == have_cx) {
+						CleanupCommodity();
+					}
 				} else {
 					printf("Could not create notification port!\n");
 				}
