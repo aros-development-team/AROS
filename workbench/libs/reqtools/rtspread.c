@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -84,23 +85,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG gadpos = min << 16;
-    ULONG gadgap;
-    UWORD i;
-
-    gadgap = ((max - min - totalsize) << 16) / (num - 1); 
-
-    posarray[0] = min;
-
-    for(i = 1; i < num - 1; i++)
-    {
-	gadpos += (sizearray[i - 1] << 16) + gadgap;
-	posarray[i] = gadpos >> 16;
-    }
-
-    posarray[num - 1] = max - sizearray[i];
+    RTFuncs_rtSpread(posarray, sizearray, totalsize, min, max, num);
 
     AROS_LIBFUNC_EXIT
+    
 } /* rtSpread */
 
 

@@ -16,6 +16,7 @@
 #include <aros/libcall.h>
 
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -150,8 +151,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    return  ((ULONG (*)(struct rtHandlerInfo *, ULONG, struct TagItem *))handlerinfo->private1)(handlerinfo, sigs, taglist);
-    
+    return RTFuncs_rtReqHandlerA(handlerinfo, sigs, taglist);
+        
     AROS_LIBFUNC_EXIT
     
 } /* rtReqHandlerA */

@@ -14,7 +14,9 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
+#include "general.h"
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -77,30 +79,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IntuiMessage *msg;
-
-    Forbid();
-
-    if(window->UserPort != NULL)
-    {
-	while((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
-	{
-	    if(msg->IDCMPWindow == window)
-	    {
-		Remove((struct Node *)msg);
-		ReplyMsg((struct Message *)msg);
-	    }
-	}
-    }
-
-    window->UserPort = NULL;
-
-    ModifyIDCMP(window, 0);
-
-    Permit();
-
-    CloseWindow(window);
-
+    RTFuncs_CloseWindowSafely(window);
+    
     AROS_LIBFUNC_EXIT
     
 } /* rtCloseWindowSafely*/

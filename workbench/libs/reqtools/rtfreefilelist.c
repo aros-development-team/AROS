@@ -63,14 +63,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct rtFileList *last;
-
-    while(selfile != NULL)
-    {
-	last    = selfile;
-	selfile = selfile->Next;
-	FreeVec(last);
-    }
-
+    FreeFileList(selfile);
+    
     AROS_LIBFUNC_EXIT
+    
 } /* rtFreeFileList */

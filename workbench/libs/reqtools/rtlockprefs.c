@@ -15,6 +15,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -52,9 +53,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphore(&GPB(ReqToolsBase)->rt.ReqToolsPrefs.PrefsSemaphore);
-
-    return &GPB(ReqToolsBase)->rt.ReqToolsPrefs;
+    return RTFuncs_LockPrefs(ReqToolsBase);
 
     AROS_LIBFUNC_EXIT
+    
 } /* rtLockPrefs */

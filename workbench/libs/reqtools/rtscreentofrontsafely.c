@@ -15,6 +15,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include "reqtools_intern.h"
+#include "rtfuncs.h"
 
 /*****************************************************************************
 
@@ -65,22 +66,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Screen *scr = ((IntuiBase *)IntuitionBase)->FirstScreen;
-
-    Forbid();
-
-    while(scr != NULL)
-    {
-	if(scr == screen)
-	{
-	    ScreenToFront(screen);
-	    break;
-	}
-	
-	scr = scr->NextScreen;
-    }
-
-    Permit();
-
+    RTFuncs_ScreenToFrontSafely(screen);
+    
     AROS_LIBFUNC_EXIT
+    
 } /* rtScreenToFrontSafely*/
