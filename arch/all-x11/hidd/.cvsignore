@@ -1,2 +1,6 @@
 mmakefile
 *.err
+x11gfx_end.c
+*.map
+libdefs.h
+functable.c

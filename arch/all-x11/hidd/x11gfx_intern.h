@@ -1,3 +1,5 @@
+#ifndef X11GFX_INTERN_H
+#define X11GFX_INTERN_H
 /*
     (C) 1997 AROS - The Amiga Research OS
     $Id$
@@ -5,8 +7,6 @@
     Desc: X11 gfx HIDD for AROS.
     Lang: English.
 */
-#ifndef X11GFX_INTERN_H
-#define X11GFX_INTERN_H
 
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>

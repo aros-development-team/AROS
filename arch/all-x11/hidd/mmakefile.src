@@ -1,39 +1,33 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/$(CURDIR)
+# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+USER_INCLUDES := -I.
 
-%define_libs
+LIBNAME 	:= x11gfx
+LIBPOST		:= hidd
+DESTDIR		:= $(HIDDSDIR)
 
-HIDDS := $(HIDDSDIR)/x11gfx.hidd
+FILES	:= x11gfx
+
+#Generate the shared object
+%genwblib
 
 #MM workbench-hidds-quick :
-workbench-hidds-quick : show-flags $(HIDDS)
+workbench-hidds-quick : show-flags $(SLIB)
 	@$(NOP)
 
 #MM workbench-hidds : setup includes
-workbench-hidds : show-flags $(HIDDS)
+workbench-hidds : show-flags $(SLIB)
 	@$(NOP)
 
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(HIDDSDIR)
+#MM setup : setup
 
-#MM
+#MM 
 clean ::
 	-$(RM) $(HIDDSDIR) *.err
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
 
-$(HIDDSDIR)/%.hidd : $(OBJDIR)/%.o
-	%link_q startup=
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
 
 %common
-%include_deps $(OBJDIR)/x11gfx.d
