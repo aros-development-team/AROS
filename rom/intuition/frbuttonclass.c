@@ -190,7 +190,7 @@ AROS_UFH3S(IPTR, dispatch_frbuttonclass,
 	    * The check of cl == OCLASS(o) should fail if we have been
 	    * subclassed, and we have gotten here via DoSuperMethodA().
 	    */
-	if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
 	{
 	    struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
 	    if (gi)
