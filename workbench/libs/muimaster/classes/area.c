@@ -273,7 +273,7 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -442,7 +442,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
     int change_disable = 0; /* Has the disable state changed? */
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -890,7 +890,8 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
 					 const struct ZuneFrameGfx *zframe)
 {
     struct MUI_ImageSpec_intern *background;
-    int bgtop, bgleft, bgw, bgh;
+    struct Rectangle r, r2, rects[4];    
+    int i, bgtop, bgleft, bgw, bgh, numrects;
 
     if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE))
 	background = data->mad_Background;
@@ -902,20 +903,64 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
     bgw = _width(obj);
     bgh = _height(obj) - bgtop + _top(obj);
 
-    if (!background)
+    r.MinX = bgleft;
+    r.MinY = bgtop;
+    r.MaxX = bgleft + bgw - 1;
+    r.MaxY = bgtop + bgh - 1;
+    
+    if (data->mad_Flags & MADF_FILLAREA)
     {
-	/* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-/*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__)); */
-	DoMethod(obj, MUIM_DrawBackground, bgleft, bgtop, bgw, bgh, bgleft, bgtop,
-		 data->mad_Flags);
+    	rects[0] = r;
+	numrects = 1;
     }
     else
     {
-/*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
-	zune_imspec_draw(background, data->mad_RenderInfo,
-			 bgleft, bgtop, bgw, bgh, bgleft, bgtop, 0);
+    	/* MADF_FILLAREA not set. Only draw frame outside of
+	   innerbox (_mleft, _mtop, _mright, _mbottom):
+	   
+	   .............
+	   .***********.
+	   .*#########*.
+	   .*#########*.
+	   .***********.
+	   .............
+	   
+	   # = innerbox
+	   * = frame outside of innerbox
+	   . = object frame
+    	*/
+	
+    	r2.MinX = _mleft(obj);
+    	r2.MinY = _mtop(obj);
+	r2.MaxX = _mright(obj);
+	r2.MaxY = _mbottom(obj);
+	
+	numrects = SubtractRectFromRect(&r, &r2, rects);
     }
-
+    
+    for(i = 0; i < numrects; i++)
+    {
+	if (!background)
+	{
+	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
+    	    /*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__)); */
+	    DoMethod(obj, MUIM_DrawBackground,
+	    	     rects[i].MinX, rects[i].MinY,
+		     rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
+		     rects[i].MinX, rects[i].MinY,
+		     data->mad_Flags);
+	}
+	else
+	{
+    	    /*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
+	    zune_imspec_draw(background, data->mad_RenderInfo,
+	    		     rects[i].MinX, rects[i].MinY,
+			     rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
+			     rects[i].MinX, rects[i].MinY,
+			     0);
+	}
+    }
+    
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
 	if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
@@ -1090,10 +1135,7 @@ static IPTR Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
 
     /* Background drawing */
-    if (data->mad_Flags & MADF_FILLAREA)
-    {
-	Area_Draw__handle_background(obj, data, msg->flags, zframe);
-    }
+    Area_Draw__handle_background(obj, data, msg->flags, zframe);
 
     obj_font = _font(obj);
     _font(obj) = zune_font_get(obj, MUIV_Font_Title);

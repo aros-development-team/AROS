@@ -108,3 +108,91 @@ void *List_First(APTR list)
     if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
     return ((struct MinList*)list)->mlh_Head;
 }
+
+/* subtract rectangle b from rectangle b. resulting rectangles will be put into
+   destrectarray which must have place for at least 4 rectangles. Returns number
+   of resulting rectangles */
+   
+WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray)
+{
+    struct Rectangle    intersect;
+    BOOL            	intersecting = FALSE;
+    WORD            	numrects = 0;
+
+    /* calc. intersection between a and b */
+
+    if (a->MinX <= b->MaxX)
+    {
+        if (a->MinY <= b->MaxY)
+        {
+            if (a->MaxX >= b->MinX)
+            {
+                if (a->MaxY >= b->MinY)
+                {
+                    intersect.MinX = MAX(a->MinX, b->MinX);
+                    intersect.MinY = MAX(a->MinY, b->MinY);
+                    intersect.MaxX = MIN(a->MaxX, b->MaxX);
+                    intersect.MaxY = MIN(a->MaxY, b->MaxY);
+
+                    intersecting = TRUE;
+                }
+            }
+        }
+    }
+
+    if (!intersecting)
+    {
+        destrectarray[numrects++] = *a;
+
+    } /* not intersecting */
+    else
+    {
+        if (intersect.MinY > a->MinY) /* upper */
+        {
+            destrectarray->MinX = a->MinX;
+            destrectarray->MinY = a->MinY;
+            destrectarray->MaxX = a->MaxX;
+            destrectarray->MaxY = intersect.MinY - 1;
+
+            numrects++;
+            destrectarray++;
+        }
+
+        if (intersect.MaxY < a->MaxY) /* lower */
+        {
+            destrectarray->MinX = a->MinX;
+            destrectarray->MinY = intersect.MaxY + 1;
+            destrectarray->MaxX = a->MaxX;
+            destrectarray->MaxY = a->MaxY;
+
+            numrects++;
+            destrectarray++;
+        }
+
+        if (intersect.MinX > a->MinX) /* left */
+        {
+            destrectarray->MinX = a->MinX;
+            destrectarray->MinY = intersect.MinY;
+            destrectarray->MaxX = intersect.MinX - 1;
+            destrectarray->MaxY = intersect.MaxY;
+
+            numrects++;
+            destrectarray++;
+        }
+
+        if (intersect.MaxX < a->MaxX) /* right */
+        {
+            destrectarray->MinX = intersect.MaxX + 1;
+            destrectarray->MinY = intersect.MinY;
+            destrectarray->MaxX = a->MaxX;
+            destrectarray->MaxY = intersect.MaxY;
+
+            numrects++;
+            destrectarray++;
+        }
+
+    } /* intersecting */
+
+    return numrects;
+
+}
