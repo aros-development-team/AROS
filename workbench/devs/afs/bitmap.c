@@ -392,7 +392,7 @@ ULONG bblock,togo,maxinbitmap;
 		if (volume->bitmapblock == NULL)
 		{
 			showText(afsbase, "Could not read bitmap block!");
-			return;
+			return FALSE;
 		}
 		volume->bitmapblock->flags |= BCF_USED;
 	}
