@@ -185,46 +185,46 @@ static void KillFont(void)
 static void GetArguments(void)
 {
     struct TextFont *defaultfont = GfxBase->DefaultFont;
-    
+
     /* This might be a bit problematic depending on how default system font
        switching through Font prefs program works and if then the previous
        default system font is closed or not. So this is very likely only safe
        when in such a case the previous font is not closed (means -> the font
        will remain in memory in any case)
-       
+
        ClipView example program on Amiga Dev CD also does it like this. So ... */
-       
+
     textattr.ta_Name  = defaultfont->tf_Message.mn_Node.ln_Name;
     textattr.ta_YSize = defaultfont->tf_YSize;
     textattr.ta_Style = defaultfont->tf_Style;
     textattr.ta_Flags = defaultfont->tf_Flags;
-    
+
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
     {
 	Fault(IoErr(), 0, s, 256);
 	Cleanup(s);
     }
-    
+
     filename = (STRPTR)args[ARG_FILE];
     if (!filename && !args[ARG_CLIPBOARD])
     {
 	filename = GetFile();
 	if (!filename) Cleanup(NULL);
     }
-    
+
     if (args[ARG_FONTNAME])
     {
 	strncpy(fontname, (char *)args[ARG_FONTNAME], 255 - 5);
 	if (!strstr(fontname, ".font")) strcat(fontname, ".font");
-	
+
 	textattr.ta_Name = fontname;
     }
-    
+
     if (args[ARG_FONTSIZE])
     {
 	textattr.ta_YSize = *(LONG *)args[ARG_FONTSIZE];
     }
-    
+
 }
 
 /*********************************************************************************************/
@@ -262,7 +262,7 @@ static void MakeICObjects(void)
 	{PGA_Top                , DTA_TopHoriz  },
 	{TAG_DONE                               }
     };
-	
+
     model_obj           = NewObject(NULL, MODELCLASS, ICA_TARGET, ICTARGET_IDCMP,
 						      TAG_DONE);
     dto_to_vert_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, dto_to_vert_map,
@@ -272,19 +272,19 @@ static void MakeICObjects(void)
     vert_to_dto_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, vert_to_dto_map,
 						   TAG_DONE);
     horiz_to_dto_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, horiz_to_dto_map,
-						   TAG_DONE);   
+						   TAG_DONE);
 
     if (!model_obj || !dto_to_vert_ic_obj || !dto_to_horiz_ic_obj ||
 	!vert_to_dto_ic_obj || !horiz_to_dto_ic_obj)
     {
 	Cleanup(MSG(MSG_CANT_CREATE_IC));
-    }                                                                      
+    }
 
     DoMethod(model_obj, OM_ADDMEMBER, dto_to_vert_ic_obj);
     DoMethod(model_obj, OM_ADDMEMBER, dto_to_horiz_ic_obj);
-    
+
     model_has_members = TRUE;
-						 
+
 }
 
 /*********************************************************************************************/
@@ -296,7 +296,7 @@ static void KillICObjects(void)
 	if (dto_to_vert_ic_obj) DisposeObject(dto_to_vert_ic_obj);
 	if (dto_to_horiz_ic_obj) DisposeObject(dto_to_horiz_ic_obj);
     }
-    
+
     if (model_obj) DisposeObject(model_obj);
     if (vert_to_dto_ic_obj) DisposeObject(vert_to_dto_ic_obj);
     if (horiz_to_dto_ic_obj) DisposeObject(horiz_to_dto_ic_obj);
@@ -308,10 +308,10 @@ static void GetVisual(void)
 {
     scr = LockPubScreen(NULL);
     if (!scr) Cleanup(MSG(MSG_CANT_LOCK_SCR));
-    
+
     dri = GetScreenDrawInfo(scr);
     if (!dri) Cleanup(MSG(MSG_CANT_GET_DRI));
-    
+
     vi = GetVisualInfoA(scr, NULL);
     if (!vi) Cleanup(MSG(MSG_CANT_GET_VI));
 }
@@ -336,7 +336,7 @@ static void MakeGadgets(void)
 	RIGHTIMAGE,
 	SIZEIMAGE
     };
-   
+
     IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
     WORD v_offset, h_offset, btop, i;
 
@@ -354,7 +354,7 @@ static void MakeGadgets(void)
 
     sizeimagewidth  = imagew[IMG_SIZE];
     sizeimageheight = imageh[IMG_SIZE];
-    
+
     btop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
 
     v_offset = imagew[IMG_DOWNARROW] / 4;
@@ -453,7 +453,7 @@ static void MakeGadgets(void)
 static void KillGadgets(void)
 {
     WORD i;
-    
+
     for(i = 0; i < NUM_GADGETS;i++)
     {
 	if (win) RemoveGadget(win, (struct Gadget *)gad[i]);
@@ -496,49 +496,82 @@ static void OpenDTO(void)
     ULONG           *methods;
     STRPTR          objname = NULL;
     IPTR            val;
-    
+
     old_dto = dto;
 
-    if (!old_dto && args[ARG_CLIPBOARD])
+    do
     {
-	APTR clipunit = 0;
-	
-	if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
+        if (!old_dto && args[ARG_CLIPBOARD])
+        {
+	    APTR clipunit = 0;
 
-	D(bug("MultiView: calling NewDTObject\n"));
-	
-	dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
+	    if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
+
+	    D(bug("MultiView: calling NewDTObject\n"));
+
+	    dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
 				    GA_ID         , 1000           ,
 				    DTA_SourceType, DTST_CLIPBOARD ,
 				    DTA_TextAttr  , (IPTR)&textattr,
 				    TAG_DONE);
-	
-	D(bug("MultiView: NewDTObject returned %x\n", dto));                        
-    }
-    else
-    {
-	dto = NewDTObject(filename, ICA_TARGET      , (IPTR)model_obj,
+
+	    D(bug("MultiView: NewDTObject returned %x\n", dto));
+        }
+        else
+        {
+	     dto = NewDTObject(filename, ICA_TARGET      , (IPTR)model_obj,
 				    GA_ID           , 1000           ,
 				    DTA_TextAttr    , (IPTR)&textattr,
 				    TAG_DONE);
-    }
+        }
 
-    if (!dto)
-    {
-	ULONG errnum = IoErr();
-	
-	if (errnum >= DTERROR_UNKNOWN_DATATYPE)
-	    sprintf(s, GetDTString(errnum), filename);
-	else
-	    Fault(errnum, 0, s, 256);
-	
-	if (!old_dto) Cleanup(s);
-	dto = old_dto;
-	return;
-    }
-    
+        if (!dto)
+        {
+	    ULONG errnum = IoErr();
+
+	    if (errnum == DTERROR_UNKNOWN_DATATYPE)
+	    {
+	        BPTR lock = Lock(filename,ACCESS_READ);
+	        if (lock)
+	        {
+		    struct DataType *dtn;
+		    if ((dtn = ObtainDataTypeA(DTST_FILE, lock, NULL)))
+		    {
+			if (!Stricmp(dtn->dtn_Header->dth_Name, "directory"))
+			{
+			    /* file is a directory and no directory.datatype is installed */
+			    strncpy(filenamebuffer, (filename ? filename : (STRPTR)""), 298);
+			    filenamebuffer[298]=0;
+
+			    if (strlen(filenamebuffer) &&
+			        filenamebuffer[strlen(filenamebuffer)-1] != ':' &&
+				filenamebuffer[strlen(filenamebuffer)-1] != '/')
+			    {
+				strcat(filenamebuffer,"/");
+			    }
+
+			    filename = GetFile();
+			    if (filename) continue;
+			}
+		        ReleaseDataType(dtn);
+		    }
+		    UnLock(lock);
+	        }
+	    }
+
+	    if (errnum >= DTERROR_UNKNOWN_DATATYPE)
+	        sprintf(s, GetDTString(errnum), filename);
+	    else
+	        Fault(errnum, 0, s, 256);
+
+	    if (!old_dto) Cleanup(s);
+	    dto = old_dto;
+	    return;
+        }
+    } while (!dto);
+
     strncpy(filenamebuffer, (filename ? filename : (STRPTR)""), 299);
-    
+
     SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
     SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
 
@@ -560,7 +593,7 @@ static void OpenDTO(void)
      winheight += 4;
     }
 
-    GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);    
+    GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);
     strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
     
     dto_supports_copy = FALSE;
@@ -685,7 +718,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     {
 	horiz = FALSE;
 	if (dir == CURSORUP) inc = FALSE; else inc = TRUE;
-	
+
 	GetDTAttrs(dto, DTA_TopVert, &val, TAG_DONE);top = (LONG)val;
 	GetDTAttrs(dto, DTA_TotalVert, &val, TAG_DONE);total = (LONG)val;
 	GetDTAttrs(dto, DTA_VisibleVert, &val, TAG_DONE);visible = (LONG)val;
@@ -700,7 +733,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
 	GetDTAttrs(dto, DTA_VisibleHoriz, &val, TAG_DONE);visible = (LONG)val;
 
     }
-    
+
     oldtop = top;
     if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
     {
@@ -715,14 +748,14 @@ static void ScrollTo(UWORD dir, UWORD quali)
     {
 	if (inc) top++; else top--;
     }
-    
+
     if (top + visible > total) top = total - visible;
     if (top < 0) top = 0;
-    
+
     if (top != oldtop)
     {
 	struct Gadget *g;
-	
+
 	if (horiz)
 	{
 	    g = (struct Gadget *)gad[GAD_HORIZSCROLL];
@@ -740,10 +773,10 @@ static void ScrollTo(UWORD dir, UWORD quali)
 	   to be sent (to dto). Or something like that. */
 
 	SetDTAttrs(dto, win, NULL, (horiz ? DTA_TopHoriz : DTA_TopVert), top, TAG_DONE);
-#endif     
+#endif
 
     } /* if (top != oldtop) */
-    
+
 }
 
 /*********************************************************************************************/
@@ -833,7 +866,7 @@ static void HandleAll(void)
 			    activearrowkind = CURSORUP;
 			    ScrollTo(CURSORUP, 0);
 			    break;
-			    
+
 			case GAD_DOWNARROW:
 			    activearrowkind = CURSORDOWN;
 			    ScrollTo(CURSORDOWN, 0);
@@ -889,28 +922,28 @@ static void HandleAll(void)
 				    filename = GetFile();
 				    if (filename) OpenDTO();
 				    break;
-				
+
 				case MSG_MEN_PROJECT_SAVEAS:
 				    break;
-				    
+
 				case MSG_MEN_PROJECT_PRINT:
 				    break;
-				    
+
 				case MSG_MEN_PROJECT_ABOUT:
 				    About();
 				    break;
-				    
+
 				case MSG_MEN_PROJECT_QUIT:
 				    quitme = TRUE;
 				    break;
-				
+
 				case MSG_MEN_EDIT_MARK:
 				#if defined(_AROS) && !defined(__MORPHOS__)
 				    if (StartDragSelect(dto))
 				#else
 				    {
 					struct DTSpecialInfo *si;
-					
+
 					/*
 					** ClipView example on AmigaDev CD does just the following.
 					** None of the checks AROS datatypes.library/StartDragSelect()
@@ -925,7 +958,7 @@ static void HandleAll(void)
 					#warning TODO: change mouse pointer to crosshair
 				    }
 				    break;
-				    
+
 				case MSG_MEN_EDIT_COPY:
 				    {
 					struct dtGeneral dtg;
@@ -943,14 +976,14 @@ static void HandleAll(void)
 				case MSG_MEN_EDIT_CLEARSELECTED:
 				    {
 					struct dtGeneral dtg;
-					
+
 					dtg.MethodID = DTM_CLEARSELECTED;
 					dtg.dtg_GInfo = NULL;
 					
 					DoDTMethodA(dto, win, NULL, (Msg)&dtg);
 				    }
 				    break;
-				
+
 				case MSG_MEN_SETTINGS_SAVEDEF:
 				    break;
 				    
@@ -999,7 +1032,7 @@ static void HandleAll(void)
 				/* Refresh the DataType object */
 				RefreshDTObjects (dto, win, NULL, NULL);
 				break;
-					    
+
 			} /* switch (tag->ti_Tag) */
 			
 		    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
