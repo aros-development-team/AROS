@@ -74,10 +74,13 @@ Task: 0x80765e8 (Idle task)
 Either the problem is that the stack grows or the Task structure for the
 idle task gets corrupted. Might be connected to BUG000007.
 
-BUG000009
+BUG000009 partial fix
 digulla@aros.fh-konstanz.de
 demowin doesn't refresh correctly anymore since Moria3D bug has been
 fixed. The initial REFRESH is not sent to the window.
+
+It refreshes now more or less correctly but it sometimes hangs until one
+moves the mouse :-/
 
 BUG000010
 digulla@aros.fh-konstanz.de
