@@ -56,9 +56,7 @@ int main()
         
         TAG_DONE
     );
-    // FIXME: broken???
-    // GetPartitionTableAttrsTags(root, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
-    reserved = 2;
+    GetPartitionTableAttrsTags(root, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
     
     CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
     
@@ -70,7 +68,9 @@ int main()
     partitionDE.de_TableSize      = DE_DOSTYPE;
     partitionDE.de_Reserved       = 2;
     partitionDE.de_HighCyl        = tableDE.de_HighCyl;
-    partitionDE.de_LowCyl         = tableDE.de_LowCyl + reserved;
+    partitionDE.de_LowCyl         = reserved 
+                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
+                                  + 1;
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
