@@ -1,0 +1,20 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES         := systemprefswindow
+INCLUDE_FILES := systemprefswindow.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-systemprefswindow
+#MM workbench-classes-zune-systemprefswindow : workbench-classes-zune-systemprefswindow-catalogs includes
+%build_module \
+    mmake=workbench-classes-zune-systemprefswindow \
+    modname=SystemPrefsWindow modtype=mcc \
+    conffile=systemprefswindow.conf \
+    uselibs="amiga rom"
+    
+%copy_includes path=zune dir=
+    
+%common
+%include_deps

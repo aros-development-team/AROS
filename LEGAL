@@ -10,6 +10,8 @@ The following components are distributed under the terms of version 2.1 of the
 GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 
 + Classes/Zune/PrefsWindow.mcc [workbench/classes/zune/prefswindow]
++ Classes/Zune/PrefsEditor.mcc [workbench/classes/zune/prefseditor]
++ Classes/Zune/SystemPrefsWindow.mcc [workbench/classes/zune/systemprefswindow]
 
 The following components are distributed under the terms of version 2 of the
 GNU General Public License, as specified in the file "LICENSE.GPL":
