@@ -95,15 +95,14 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	/*
 	 * Also attach the packet to the io request.
 	 * Will remain untouched by the driver.
-	 *
 	 */
 
 	iofs->io_PacketEmulation = dp;
     
 	/*
-	 * So just in case the packet is to be aborted 
+	 * In case the packet is to be aborted 
 	 * I know which IORequest to use. The user will
-	 * us the packet itself to abort it.
+	 * use the packet itself to abort the operation.
 	 */
 	dp->dp_Arg7 = (IPTR)iofs;
 
@@ -268,9 +267,8 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	case ACTION_EXAMINE_OBJECT: // Examine() [*]  --  the same thing
 	                            //                    in AROS
 	    {
-#define  bufferSize  512
-
-		UBYTE *buffer = AllocVec(bufferSize, MEMF_PUBLIC | MEMF_CLEAR);
+		UBYTE *buffer = AllocVec(sizeof(struct ExAllData), 
+					 MEMF_PUBLIC | MEMF_CLEAR);
 
 		if (buffer == NULL)
 		{
@@ -287,8 +285,10 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		
 		iofs->IOFS.io_Command = FSA_EXAMINE;
 		iofs->io_Union.io_EXAMINE.io_ead = (struct ExAllData *)buffer;
-		iofs->io_Union.io_EXAMINE.io_Size = bufferSize;
+		iofs->io_Union.io_EXAMINE.io_Size = sizeof(struct ExAllData);
 		iofs->io_Union.io_EXAMINE.io_Mode = ED_OWNER;
+
+		/* A supplied FileInfoBlock (is a BPTR) is in dp_Arg2 */
 		
 		break;
 	    }

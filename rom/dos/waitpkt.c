@@ -128,6 +128,41 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
 
     case FSA_EXAMINE:
+	{
+	    /* Get supplied FileInfoBlock */
+	    struct FileInfoBlock *fib = (IPTR)BADDR(packet->dp_Arg2);
+	    struct ExAllData     *ead = iofs->io_Union.io_EXAMINE.io_ead;
+
+	    packet->dp_Res1 = iofs->io_DosError == 0;
+	    packet->dp_Res2 = iofs->io_DosError;
+	    
+	    /* in fib_DiskKey the result from telldir is being stored which
+	       gives us important info for a call to ExNext() */
+	    fib->fib_DiskKey      = iofs->io_DirPos;
+	    fib->fib_DirEntryType = ead->ed_Type;
+
+	    strncpy(fib->fib_FileName, ead->ed_Name, MAXFILENAMELENGTH);
+
+	    fib->fib_Protection = ead->ed_Prot;
+	    fib->fib_EntryType = ead->ed_Type;
+	    fib->fib_Size = ead->ed_Size;
+	    fib->fib_Date.ds_Days = ead->ed_Days;
+	    fib->fib_Date.ds_Minute = ead->ed_Mins;
+	    fib->fib_Date.ds_Tick = ead->ed_Ticks;
+
+	    if (ead->ed_Comment != NULL)
+	    {
+		strncpy(fib->fib_Comment, ead->ed_Comment, MAXCOMMENTLENGTH);
+	    }
+
+	    fib->fib_OwnerUID = ead->ed_OwnerUID;
+	    fib->fib_OwnerGID = ead->ed_OwnerGID;
+
+	    /* Release temporary buffer memory */
+	    FreeVec(ead);
+	    break;
+	}
+	
     case FSA_EXAMINE_NEXT:
     case FSA_SET_FILE_SIZE:
     case FSA_DELETE_OBJECT:
