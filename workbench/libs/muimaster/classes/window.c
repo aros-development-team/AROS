@@ -754,7 +754,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_Zoom,                (IPTR) &altdims,
         REDUCE_FLICKER_TEST ? 
         WA_BackFill         : 
-        TAG_IGNORE,                    LAYERS_NOBACKFILL,
+        TAG_IGNORE,             (IPTR) LAYERS_NOBACKFILL,
         TAG_DONE
     );
 
@@ -1410,6 +1410,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     LONG muikey = MUIKEY_NONE;
     ULONG mask = event->Class;
     Object *active_object = NULL;
+    IPTR disabled;
 
     if (mask == IDCMP_RAWKEY)
     {
@@ -1440,8 +1441,12 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	    muikey = MUIKEY_RELEASE;
     }
 
+    active_object = data->wd_ActiveObject;
+    if (active_object)
+	get(active_object, MUIA_Disabled, &disabled);
+
     /* try ActiveObject */
-    if ((active_object = data->wd_ActiveObject))
+    if (active_object && !disabled)
     {
 #if 0
 	/* sba:
@@ -1465,11 +1470,15 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 	    if
             (
-                ehn->ehn_Object == active_object && 
+		(ehn->ehn_Object == active_object)
+	    && 
                 (
-                    ehn->ehn_Events & mask || 
+                    (ehn->ehn_Events & mask)
+		|| 
                     (
-                        muikey != MUIKEY_NONE && (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)
+                        (muikey != MUIKEY_NONE)
+		    &&
+			(ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)
                     )
                 )
             ) /* the last condition ??? */
@@ -1479,13 +1488,23 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 		    return;
 
 		/* Leave the loop if a differnt object has been activated */
-		if (active_object != data->wd_ActiveObject) break;
+		if (active_object != data->wd_ActiveObject)
+		    break;
 	    }
 	}
     }
 
     /* try DefaultObject */
-    if (data->wd_DefaultObject && active_object != data->wd_DefaultObject)
+    if (data->wd_DefaultObject)
+	get(data->wd_DefaultObject, MUIA_Disabled, &disabled);
+
+    if (
+	   (data->wd_DefaultObject != NULL)
+       &&
+	   (active_object != data->wd_DefaultObject)
+       &&
+	   (!disabled)
+       )
     {
     	/* No, we only should do this if the object actually has requested this via RequestIDCMP()! */
 //    	if (muikey != MUIKEY_NONE && (_flags(data->wd_DefaultObject) & MADF_CANDRAW))
@@ -1530,14 +1549,20 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 		if (ehn->ehn_Events == key)
 		{
+		    IPTR disabled;
 		    LONG muikey = ehn->ehn_Flags;
+
+		    get(ehn->ehn_Object, MUIA_Disabled, &disabled);
+		    if (disabled)
+			continue;
+
 		    if (event->Code & IECODE_UP_PREFIX)
 		    {
 			if (muikey == MUIKEY_PRESS) muikey = MUIKEY_RELEASE;
 			else muikey = MUIKEY_RELEASE;
 		    }
 
-		    if (muikey != MUIKEY_NONE && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
+		    if ((muikey != MUIKEY_NONE) && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
 		    {
 			res = CoerceMethod
                         (
@@ -1564,6 +1589,12 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	    
 	    if (ehn->ehn_Events & mask)
 	    {
+		IPTR disabled;
+
+		get(ehn->ehn_Object, MUIA_Disabled, &disabled);
+		if (disabled)
+		    continue;
+
 		/* non-active and non-default objects dont get the MUIKEY because
 		 * they dont have focus.
 		 */
