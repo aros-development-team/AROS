@@ -14,92 +14,6 @@
 /*
     Defines
 */
-#define Dispatch() \
-    AROS_LC0(void, Dispatch, \
-    struct ExecBase *, SysBase, 10, Exec)
-
-#define CacheClearE(address, length, caches) \
-    AROS_LC3(void, CacheClearE, \
-    AROS_LCA(APTR,  address, A0), \
-    AROS_LCA(ULONG, length,  D0), \
-    AROS_LCA(ULONG, caches,  D1), \
-    struct ExecBase *, SysBase, 107, Exec)
-
-#define CacheClearU() \
-    AROS_LC0(void, CacheClearU, \
-    struct ExecBase *, SysBase, 106, Exec)
-
-#define CacheControl() \
-    AROS_LC0(void, CacheControl, \
-    struct ExecBase *, SysBase, 108, Exec)
-
-#define CachePostDMA() \
-    AROS_LC0(void, CachePostDMA, \
-    struct ExecBase *, SysBase, 128, Exec)
-
-#define CachePreDMA() \
-    AROS_LC0(void, CachePreDMA, \
-    struct ExecBase *, SysBase, 127, Exec)
-
-#define Disable() \
-    AROS_LC0(void, Disable, \
-    struct ExecBase *, SysBase, 20, Exec)
-
-#define Enable() \
-    AROS_LC0(void, Enable, \
-    struct ExecBase *, SysBase, 21, Exec)
-
-#define Exception() \
-    AROS_LC0(void, Exception, \
-    struct ExecBase *, SysBase, 11, Exec)
-
-#define Forbid() \
-    AROS_LC0(void, Forbid, \
-    struct ExecBase *, SysBase, 22, Exec)
-
-#define GetCC() \
-    AROS_LC0(ULONG, GetCC, \
-    struct ExecBase *, SysBase, 88, Exec)
-
-#define Permit() \
-    AROS_LC0(void, Permit, \
-    struct ExecBase *, SysBase, 23, Exec)
-
-#define PrepareContext(stackPointer, entryPoint, fallBack) \
-    AROS_LC3I(APTR, PrepareContext, \
-    AROS_LCA(APTR, stackPointer, A0), \
-    AROS_LCA(APTR, entryPoint,   A1), \
-    AROS_LCA(APTR, fallBack,     A2), \
-    struct ExecBase *, SysBase, 6, Exec)
-
-#define SetSR(newSR, mask) \
-    AROS_LC2(ULONG, SetSR, \
-    AROS_LCA(ULONG, newSR, D0), \
-    AROS_LCA(ULONG, mask, D1), \
-    struct ExecBase *, SysBase, 24, Exec)
-
-#define StackSwap(sss) \
-    AROS_LC1(void, StackSwap, \
-    AROS_LCA(struct StackSwapStruct *, sss, A0), \
-    struct ExecBase *, SysBase, 122, Exec)
-
-#define SuperState() \
-    AROS_LC0(void, SuperState, \
-    struct ExecBase *, SysBase, 25, Exec)
-
-#define Supervisor(userFunction) \
-    AROS_LC1(void, Supervisor, \
-    AROS_LCA(ULONG_FUNC, userFunction, A5), \
-    struct ExecBase *, SysBase, 5, Exec)
-
-#define Switch() \
-    AROS_LC0(void, Switch, \
-    struct ExecBase *, SysBase, 9, Exec)
-
-#define UserState() \
-    AROS_LC0(void, UserState, \
-    struct ExecBase *, SysBase, 26, Exec)
-
 #define AbortIO(iORequest) \
     AROS_LC1I(LONG, AbortIO, \
     AROS_LCA(struct IORequest *, iORequest, A1), \
@@ -234,9 +148,40 @@
     AROS_LCA(ULONG, attributes, D1), \
     struct ExecBase *, SysBase, 36, Exec)
 
-#define Cause(interrupt) \
+#define CacheClearE(address, length, caches) \
+    AROS_LC3(void, CacheClearE, \
+    AROS_LCA(APTR, address, A0), \
+    AROS_LCA(ULONG, length, D0), \
+    AROS_LCA(ULONG, caches, D1), \
+    struct ExecBase *, SysBase, 107, Exec)
+
+#define CacheClearU() \
+    AROS_LC0(void, CacheClearU, \
+    struct ExecBase *, SysBase, 106, Exec)
+
+#define CacheControl(cacheBits, cacheMask) \
+    AROS_LC2(ULONG, CacheControl, \
+    AROS_LCA(ULONG, cacheBits, D0), \
+    AROS_LCA(ULONG, cacheMask, D1), \
+    struct ExecBase *, SysBase, 108, Exec)
+
+#define CachePostDMA(address, length, flags) \
+    AROS_LC3(void, CachePostDMA, \
+    AROS_LCA(APTR,    address, A0), \
+    AROS_LCA(ULONG *, length,  A1), \
+    AROS_LCA(ULONG,   flags,  D0), \
+    struct ExecBase *, SysBase, 128, Exec)
+
+#define CachePreDMA(address, length, flags) \
+    AROS_LC3(APTR, CachePreDMA, \
+    AROS_LCA(APTR,    address, A0), \
+    AROS_LCA(ULONG *, length,  A1), \
+    AROS_LCA(ULONG,   flags,  D0), \
+    struct ExecBase *, SysBase, 127, Exec)
+
+#define Cause(softint) \
     AROS_LC1(void, Cause, \
-    AROS_LCA(struct Interrupt *, interrupt, A1), \
+    AROS_LCA(struct Interrupt *, softint, A1), \
     struct ExecBase *, SysBase, 30, Exec)
 
 #define CheckIO(iORequest) \
@@ -336,10 +281,18 @@
     AROS_LCA(APTR, poolHeader, A0), \
     struct ExecBase *, SysBase, 117, Exec)
 
+#define Disable() \
+    AROS_LC0(void, Disable, \
+    struct ExecBase *, SysBase, 20, Exec)
+
 #define DoIO(iORequest) \
     AROS_LC1(BYTE, DoIO, \
     AROS_LCA(struct IORequest *, iORequest, A1), \
     struct ExecBase *, SysBase, 76, Exec)
+
+#define Enable() \
+    AROS_LC0(void, Enable, \
+    struct ExecBase *, SysBase, 21, Exec)
 
 #define Enqueue(list, node) \
     AROS_LC2I(void, Enqueue, \
@@ -373,6 +326,10 @@
     AROS_LCA(STRPTR, name, A1), \
     struct ExecBase *, SysBase, 49, Exec)
 
+#define Forbid() \
+    AROS_LC0(void, Forbid, \
+    struct ExecBase *, SysBase, 22, Exec)
+
 #define FreeEntry(entry) \
     AROS_LC1(void, FreeEntry, \
     AROS_LCA(struct MemList *, entry,A0), \
@@ -405,6 +362,10 @@
     AROS_LC1(void, FreeVec, \
     AROS_LCA(APTR, memoryBlock, A1), \
     struct ExecBase *, SysBase, 115, Exec)
+
+#define GetCC() \
+    AROS_LC0(UWORD, GetCC, \
+    struct ExecBase *, SysBase, 88, Exec)
 
 #define GetMsg(port) \
     AROS_LC1(struct Message *, GetMsg, \
@@ -501,6 +462,10 @@
     AROS_LC1(APTR, OpenResource, \
     AROS_LCA(STRPTR, resName, A1), \
     struct ExecBase *, SysBase, 83, Exec)
+
+#define Permit() \
+    AROS_LC0(void, Permit, \
+    struct ExecBase *, SysBase, 23, Exec)
 
 #define Procure(sigSem, bidMsg) \
     AROS_LC2(ULONG, Procure, \
@@ -623,6 +588,12 @@
     AROS_LCA(ULONG, signalSet,  D1), \
     struct ExecBase *, SysBase, 51, Exec)
 
+#define SetSR(newSR, mask) \
+    AROS_LC2(ULONG, SetSR, \
+    AROS_LCA(ULONG, newSR, D0), \
+    AROS_LCA(ULONG, mask,  D1), \
+    struct ExecBase *, SysBase, 24, Exec)
+
 #define SetTaskPri(task, priority) \
     AROS_LC2(BYTE, SetTaskPri, \
     AROS_LCA(struct Task *, task,      A1), \
@@ -635,6 +606,11 @@
     AROS_LCA(ULONG,             signalSet, D0), \
     struct ExecBase *, SysBase, 54, Exec)
 
+#define StackSwap(sss) \
+    AROS_LC1(void, StackSwap, \
+    AROS_LCA(struct StackSwapStruct *,  sss, A0), \
+    struct ExecBase *, SysBase, 122, Exec)
+
 #define SumKickData() \
     AROS_LC0(ULONG, SumKickData, \
     struct ExecBase *, SysBase, 102, Exec)
@@ -644,10 +620,28 @@
     AROS_LCA(struct Library *, library,A1), \
     struct ExecBase *, SysBase, 71, Exec)
 
+#define SuperState() \
+    AROS_LC0(APTR, SuperState, \
+    struct ExecBase *, SysBase, 25, Exec)
+
+#define Supervisor(userFunction) \
+    AROS_LC1(void, Supervisor, \
+    AROS_LCA(ULONG_FUNC, userFunction, A5), \
+    struct ExecBase *, SysBase, 5, Exec)
+
+#define Switch() \
+    AROS_LC0(void, Switch, \
+    struct ExecBase *, SysBase, 9, Exec)
+
 #define TypeOfMem(address) \
     AROS_LC1(ULONG, TypeOfMem, \
     AROS_LCA(APTR, address, A1), \
     struct ExecBase *, SysBase, 89, Exec)
+
+#define UserState(sysStack) \
+    AROS_LC1(void, UserState, \
+    AROS_LCA(APTR, sysStack, D0), \
+    struct ExecBase *, SysBase, 26, Exec)
 
 #define Vacate(sigSem, bidMsg) \
     AROS_LC2(void, Vacate, \
