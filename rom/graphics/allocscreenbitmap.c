@@ -9,8 +9,10 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <oop/oop.h>
 #include "gfxfuncsupport.h"
+#include "dispinfo.h"
 
 /*****************************************************************************
 

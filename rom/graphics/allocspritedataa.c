@@ -5,9 +5,11 @@
     Desc: Graphics function AllocSpriteDataA()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/gfx.h>
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>
+#include <exec/exec.h>
 
 /*****************************************************************************
 

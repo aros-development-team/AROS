@@ -7,6 +7,7 @@
 */
 #include <proto/layers.h>
 #include <graphics/clip.h>
+#include <proto/exec.h>
 #include <exec/types.h>
 
 /*****************************************************************************

@@ -5,6 +5,10 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+#include <proto/graphics.h>
+#include <proto/oop.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include <proto/oop.h>

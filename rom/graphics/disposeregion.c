@@ -5,8 +5,10 @@
     Desc: Graphics function DisposeRegion()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <graphics/regions.h>
 #include "intregions.h"
 

@@ -8,6 +8,7 @@
 #include <graphics/gels.h>
 #include <graphics/rastport.h>
 #include "graphics_intern.h"
+#include "gels_internal.h"
 #include <proto/exec.h>
 
 /*****************************************************************************

@@ -5,6 +5,7 @@
     Desc: (AROS only) Graphics function AndRectRect()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <clib/macros.h>

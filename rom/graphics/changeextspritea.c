@@ -5,6 +5,7 @@
     Desc: Graphics function ChangeExtSpriteA()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>

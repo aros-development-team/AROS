@@ -8,6 +8,7 @@
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <clib/macros.h>
 #include "intregions.h"
 

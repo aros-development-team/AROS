@@ -5,8 +5,10 @@
     Desc: Graphics function BitMapScale()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/scale.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "objcache.h"

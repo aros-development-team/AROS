@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <graphics/view.h>
+#include "graphics_intern.h"
 
 /*****************************************************************************
 

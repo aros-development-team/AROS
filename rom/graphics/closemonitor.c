@@ -5,6 +5,7 @@
     Desc: Graphics function CloseMonitor()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/monitor.h>
 
 /*****************************************************************************
