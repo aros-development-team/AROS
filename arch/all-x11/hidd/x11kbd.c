@@ -9,6 +9,7 @@
 
 #include <dos/dos.h>
 
+#include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
@@ -26,9 +27,6 @@
 
 #include <devices/inputevent.h>
 
-#if X11_LOAD_KEYMAPTABLE
-#include <proto/dos.h>
-#endif
 
 //#define DEBUG 1
 #include <aros/debug.h>
