@@ -7,6 +7,9 @@
 #define ICA_HorizScroller ICA_BASE+2
 #define ICA_ScrollToHoriz ICA_BASE+3
 #define ICA_ScrollToVert  ICA_BASE+4
+#define ICA_JustSelected  ICA_BASE+5
+
+#define ICM_UnselectAll   ICA_BASE+10
 
 struct MemberNode
 {
@@ -28,6 +31,8 @@ struct IconContainerClassData
 	BOOL horizScroll, vertScroll;
 	ULONG visibleWidth, visibleHeight;
 	LONG heightAdjusted, widthAdjusted;
+	BOOL iconSelected;
+	BOOL justSelected;
 };
 
 #define ICONSPACINGX 10
