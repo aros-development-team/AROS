@@ -66,7 +66,6 @@ kernel-link-native : $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 	@$(LLINK) -o $(OSGENDIR)/boot/kernel.o \
 	    $(foreach f,$(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
 	    $(OSGENDIR)/graphics/graphics_driver.o \
-	    $(OSGENDIR)/intuition/intuition_driver.o \
 	    $(LINKLIBS)
 	@$(BLINK) -o $(OSGENDIR)/boot/kernel \
 	    $(OSGENDIR)/boot/kernel.o $(LINKLIBS)
