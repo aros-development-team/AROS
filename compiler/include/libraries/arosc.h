@@ -59,6 +59,14 @@ struct AroscUserData
     /* Used by chdir() */
     BOOL startup_cd_changed;
     BPTR startup_cd_lock;
+
+    /* Used by multi-byte functions */
+    int		*mb_cur_max;
+
+    /* Used by time.h functions */
+    int		*daylight;
+    long int	*timezone;
+    char	***tzname;
 };
 
 extern struct Library *aroscbase;
@@ -100,6 +108,12 @@ extern struct Library *aroscbase;
 #define __umask                               (clib_userdata->umask)
 #define __startup_cd_changed                  (clib_userdata->startup_cd_changed)
 #define __startup_cd_lock                     (clib_userdata->startup_cd_lock)
+#define __mb_cur_max                          (clib_userdata->mb_cur_max)
+#define	daylight                              (clib_userdata->daylight)
+#define tzname		                      (clib_userdata->tzname)
+
+/* Special, there is a type called timezone as well */
+#define _timezone                             (clib_userdata->timezone)
 
 #else
 
