@@ -10,7 +10,7 @@ FILES = \
 	disable \
 	forbid \
 	getcc \
-	cacheclearu
+	cacheclearu cachepredma cachepostdma
 else
 FILES = \
 	supervisor \
@@ -38,17 +38,17 @@ FILES = \
 	initcore
 endif
 
-all: setup $(TOP)/include/aros/machine.h machine.i \
+all: setup $(TOP)/apps/compiler/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
-$(TOP)/include/aros/machine.h:
-	$(TOP)/scripts/makelinks . $(TOP)/include/aros machine.h
+$(TOP)/apps/compiler/include/aros/machine.h: machine.h
+	cp machine.h $(TOP)/apps/compiler/include/aros
 
 clean:
-	$(RM) $(TOP)/include/aros/machine.h
+	$(RM) $(TOP)/apps/compiler/include/aros/machine.h
 
 config:
 	@echo "Configuring for a m68k CPU..."
