@@ -84,8 +84,6 @@ struct MUIMasterBase_intern
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
-#ifdef __AROS__
-
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
 
@@ -130,61 +128,5 @@ struct MUIMasterBase_intern
 
 #undef CoolImagesBase
 #define CoolImagesBase	(MUIMB(MUIMasterBase)->coolimagesbase)
-
-/*
-#undef DataTypesBase
-#define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
-*/
-#else /* ! __AROS__ */
-
-#undef SysBase
-#define SysBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->sysbase)
-
-#undef DOSBase
-#define DOSBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->dosbase)
-
-#undef UtilityBase
-#define UtilityBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->utilitybase)
-
-#undef AslBase
-#define AslBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->aslbase)
-
-#undef GfxBase
-#define GfxBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->gfxbase)
-
-#undef LayersBase
-#define LayersBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->layersbase)
-
-#undef IntuitionBase
-#define IntuitionBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->intuibase)
-
-#undef CxBase
-#define CxBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->cxbase)
-
-#undef KeymapBase
-#define KeymapBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->keymapbase)
-
-#undef GadToolsBase
-#define GadToolsBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->gadtoolsbase)
-
-#undef IFFParseBase
-#define IFFParseBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->iffparsebase)
-
-#undef DiskfontBase
-#define DiskfontBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->diskfontbase)
-
-#undef CyberGfxBase
-#define CyberGfxBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->cybergfxbase)
-
-#undef CoolImagesBase
-#define CoolImagesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->coolimagesbase)
-
-/*
-#undef DataTypesBase
-#define DataTypesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->datatypesbase)
-*/
-
-
-#endif /* ! __AROS__ */
 
 #endif /* MUIMASTER_INTERN_H */
