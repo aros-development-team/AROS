@@ -38,7 +38,10 @@ int unlink(const char *pathname);
 unsigned int sleep(unsigned int);
 void usleep(unsigned long usec);
 ssize_t write (int fd, const void * buf, size_t count);
+
 void _exit(int code) __noreturn;
+
+int execvp(const char *file, char *const argv[]);
 
 /* Standard file descriptors */
 #define STDIN_FILENO  0 /* Standard input */
