@@ -15,7 +15,7 @@
 #include "mathieeesingbas_intern.h"
 #/Header
 
-#Function LHA LONG IEEESPFix
+#Function LONG IEEESPFix
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -92,7 +92,7 @@
 #/Function
 
 
-#Function LHA float IEEESPFlt
+#Function float IEEESPFlt
 #Parameter LONG y D0
     IEEEE single precision floating point
 #/Parameter
@@ -175,7 +175,7 @@
 #/Function
 
 
-#Function LHA LONG IEEESPCmp
+#Function LONG IEEESPCmp
 #Parameter LONG y D0
     IEEEE single precision floating point
 #/Parameter
@@ -247,7 +247,7 @@
 #/Function
 
 
-#Function LHA LONG IEEESPTst
+#Function LONG IEEESPTst
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -307,7 +307,7 @@
 #/Function
 
 
-#Function LHA float IEEESPAbs
+#Function float IEEESPAbs
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -355,7 +355,7 @@
 #/Function
 
 
-#Function LHA float IEEESPNeg
+#Function float IEEESPNeg
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -411,7 +411,7 @@
 #/Function
 
 
-#Function LHA float IEEESPAdd
+#Function float IEEESPAdd
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -542,7 +542,7 @@
 #/Function
 
 
-#Function LHA float IEEESPSub
+#Function float IEEESPSub
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -584,7 +584,7 @@
 #/Function
 
 
-#Function LHA float IEEESPMul
+#Function float IEEESPMul
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -669,7 +669,7 @@
 #/Function
 
 
-#Function LHA float IEEESPDiv
+#Function float IEEESPDiv
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -785,7 +785,7 @@
 #/Function
 
 
-#Function LHA float IEEESPFloor
+#Function float IEEESPFloor
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
@@ -861,7 +861,7 @@
 #/Function
 
 
-#Function LHA float IEEESPCeil
+#Function float IEEESPCeil
 #Parameter float y D0
     IEEEE single precision floating point
 #/Parameter
