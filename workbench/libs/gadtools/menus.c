@@ -37,7 +37,7 @@
 #define CHECKMARK_TEXT_SPACING 2
 #define MENU_COLUMN_SPACING    8 /* when items must be arranged in 2 or more columns to fit on screen */
 #define AMIGAKEY_KEY_SPACING   4 /* we guess that Intuition uses the same value */
-#define TEXT_AMIGAKEY_SPACING  6
+#define TEXT_AMIGAKEY_SPACING  20
 
 #define ITEXT_EXTRA_LEFT   2
 #define ITEXT_EXTRA_RIGHT  2
@@ -702,14 +702,15 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
                      struct TagItem * taglist,
                      struct GadToolsBase_intern * GadToolsBase)
 {
+    struct Menu     	* menu;
     struct MenuItem 	* menuitem = firstitem;
     struct MenuItem 	* equalizeitem = firstitem;
     struct Image 	* amikeyimage, * chkimage;
-    struct TextExtent	te;
-    
+    struct TextExtent	te;    
     ULONG 		curX = 0;
     ULONG 		curY = 0;
-
+    WORD    	    	numcolumns = 1;
+    
     amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
     if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
 
@@ -725,50 +726,6 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 
 	menuitem->LeftEdge = curX;
 	menuitem->TopEdge  = curY;
-
-    #if 0 /* stegerg: disabled, because menuitem->Width right here, is supposed to
-             only contain the width of the leftside stuff, ie. excluding possible
-	     commseq or commtext! */
-	/*
-	** Check the flags whether there exists a shortcut or a checkmark is
-	** necessary..
-	*/
-	if (0 != (menuitem->Flags & COMMSEQ))
-	{
-	    /*
-	    ** An Amiga key image and a character will appear
-	    */
-	    struct Image * amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
-
-	    if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
-
-	    addwidth = te.te_Width;
-	    if (menuitem->Flags & ITEMTEXT)
-	    {
-        	struct TextFont  *font;
-		struct IntuiText *it = (struct IntuiText *)menuitem->ItemFill;
-
-		if (it->ITextFont)
-		{
-        	    if ((font = OpenFont(it->ITextFont)))
-        	    {
-		    	struct TextExtent e;
-			
-			FontExtent(font, &e);
-			
-        	      	addwidth = e.te_Width;
-			
-        	      	CloseFont(font);
-        	    }
-		}
-	    }
-
-	    addwidth += amikeyimage->Width +
-			AMIGAKEY_KEY_SPACING +
-			TEXT_AMIGAKEY_SPACING;
-
-	} /* if (0 != (menuitem->Flags & COMMSEQ)) */
-    #endif
 
 	if (0 != (menuitem->Flags & CHECKIT))
 	{
@@ -879,6 +836,8 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 	    menuitem->TopEdge  = curY;
 
 	    curY += menuitem->Height;
+	    
+	    numcolumns++;
 	}
 
 	/*
@@ -890,6 +849,75 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 
     EqualizeItems(equalizeitem, NULL, amikeyimage, vi, GadToolsBase);
 
+    menu = (struct Menu *)GetTagData(GTMN_Menu, 0, taglist);
+    if (menu && (menu->FirstItem == firstitem))
+    {
+    	/* Make sure the menu box is at least as large as the menu title,
+	   otherwise it looks ugly */
+
+ 	WORD menuwidth, minx, maxx, titlewidth, prevy = -1, col = 1;
+	
+	minx = 32767;
+	maxx = -32768;
+	
+	for(menuitem = firstitem; menuitem; menuitem = menuitem->NextItem)
+	{
+	    if (menuitem->LeftEdge < minx) minx = menuitem->LeftEdge;
+	    if (menuitem->LeftEdge + menuitem->Width - 1 > maxx) maxx = menuitem->LeftEdge + menuitem->Width - 1;	    
+	}
+	
+	menuwidth = maxx - minx + 1;
+	titlewidth = TextLength(&vi->vi_screen->RastPort, menu->MenuName, strlen(menu->MenuName));
+	
+	if (titlewidth > menuwidth)
+	{
+	    WORD extrawidth = (titlewidth - menuwidth + numcolumns / 2) / numcolumns;
+
+	    for(menuitem = firstitem; menuitem; menuitem = menuitem->NextItem)
+	    {
+	    	struct MenuItem *subitem;
+		
+	    	if (menuitem->TopEdge < prevy) col++;
+		prevy = menuitem->TopEdge;
+		
+	    	menuitem->LeftEdge += (col - 1) * extrawidth;
+    	    	menuitem->Width += extrawidth;
+		
+		if (menuitem->Flags & ITEMTEXT)
+		{
+		    struct IntuiText *it = (struct IntuiText *)menuitem->ItemFill;
+		    
+		    if ((it = it->NextText))
+		    {
+		    	it->LeftEdge += extrawidth;
+		    } 
+		}
+		else
+		{
+	    	    struct Image *im = (struct Image *)menuitem->ItemFill;
+		    
+		    if (is_menubarlabelclass_image(im, GadToolsBase))
+		    {
+		    	im->Width += extrawidth;
+		    }
+		}
+		
+		if ((subitem = menuitem->SubItem))
+		{
+		    while(subitem)
+		    {
+		    	subitem->LeftEdge += extrawidth;
+			subitem = subitem->NextItem;
+		    }
+		}
+				
+	    } /* for(menuitem = firstitem; menuitem; menuitem = menuitem->NextItem) */
+	    
+	} /* if (titlewidth > menuwidth) */
+	
+    } /* if (menu && (menu->FirstItem == firstitem)) */
+    
+    
     return TRUE;
 }
 
