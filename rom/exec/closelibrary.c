@@ -11,6 +11,17 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_debug.h"
+#ifndef DEBUG_CloseLibrary
+#   define DEBUG_CloseLibrary 0
+#endif
+#if DEBUG_CloseLibrary
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
+
 /*****************************************************************************
 
     NAME */
@@ -49,6 +60,14 @@
 {
     AROS_LIBFUNC_INIT
 
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    BPTR lc_ret;
+#endif
+
+    D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
+	library ? library->lib_Node.ln_Name : "(null)",
+	SysBase->ThisTask->tc_Node.ln_Name));
+
     /* Something to do? */
     if(library!=NULL)
     {
@@ -56,7 +75,7 @@
 	Forbid();
 
 	/* Do the close */
-	(void)AROS_LVO_CALL0(BPTR,struct Library,library,2,);
+	lc_ret = AROS_LVO_CALL0(BPTR,struct Library,library,2,);
 	/*
 	    Normally you'd expect the library to be expunged if this returns
 	    non-zero, but this is only exec which doesn't know anything about
@@ -67,17 +86,22 @@
 	/* All done. */
 	Permit();
     }
-
-
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    else
+    {
+	/* local vars not guaranteed to be initialised to 0 */
+	lc_ret = 0;
+    }
+
     /*
-	Kludge to force the library base to register d0. Ramlib patches this
-	vector for seglist expunge capability and expects the library base in
+	Kludge to force the seglist to register d0. Ramlib patches this
+	vector for seglist expunge capability and expects the seglist in
 	d0 after it has called the original (this) function.
+	Also see CloseDevice().
     */
     {
 	/* Put the library base in register d0 */
-	register struct Library *ret __asm("d0") = library;
+	register BPTR ret __asm("d0") = lc_ret;
 
 	/* Make sure the above assignment isn't optimized away */
 	asm volatile("": : "r" (ret));
