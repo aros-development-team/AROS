@@ -1,3 +1,11 @@
+/*
+     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+     $Id$
+
+     Desc: Sort a list using a variant of the MergeSort algorithm.
+     Lang: english
+*/
+
 #include <exec/lists.h>
 #include <stddef.h>
 
