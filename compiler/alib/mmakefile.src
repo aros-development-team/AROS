@@ -11,6 +11,7 @@ FILES	:= \
     addappicon \
     addappmenuitem \
     addappwindow \
+    addappwindowdropzone \
     alib_util \
     allocaslrequesttags \
     allocdosobjecttags \
@@ -28,6 +29,7 @@ FILES	:= \
     callhook \
     changeextsprite \
     coercemethod \
+    closeworkbenchobject \
     createextio \
     creategadget \
     createmenus \
@@ -65,6 +67,7 @@ FILES	:= \
     libdeletepool \
     libfreepooled \
     lockbitmaptags \
+    makeworkbenchobjectvisible \
     newdtobject \
     newlist \
     newloadsegtags \
@@ -75,6 +78,7 @@ FILES	:= \
     opencatalog \
     openscreentags \
     openwindowtags \
+    openworkbenchobject \
     printf \
     rangerand \
     refreshdtobject \
@@ -94,7 +98,8 @@ FILES	:= \
     systemtags \
     timedelay \
     unlockbitmaptags \
-    videocontroltags
+    videocontroltags \
+    workbenchcontrol
 
 
 #MM- linklibs: linklibs-amiga linklibs-startup
