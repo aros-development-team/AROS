@@ -123,7 +123,10 @@ struct IconBase
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
-
+    
+    APTR                    ib_MemoryPool;
+    
+    /* Default identify hook -----------------------------------------------*/
     struct Hook             ib_DefaultIdentifyHook;
     
     /* Global settings -----------------------------------------------------*/

@@ -74,6 +74,12 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
         return FALSE;
     }
     
+    /* Initialize memory pool ----------------------------------------------*/
+    if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY, 8192, 8192)))
+    {
+        return FALSE;
+    }
+    
     /* 
         Following libraries needed only for 3.5 style icons. If the libraries
         cannot be opened, we simply don't support 3.5 icons.
