@@ -13,7 +13,7 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 
 BOOT_C := \
 	Alias assign avail cd Copy date delete dir echo execute FailAt \
-	Info List makedir mount newshell path Prompt Protect Relabel rename \
+	Info install List makedir mount newshell path Prompt Protect Relabel rename \
 	run Set Setenv shell Stack type
 BOOT_Gadgets := \
 	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
@@ -95,8 +95,8 @@ $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 	
 # software-native-i386
-#MM boot-disk:
-boot-disk: \
+#MM bootdisk-native-i386:
+bootdisk-native-i386: \
 	$(BOOT_DEST_C) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
 	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_S) $(BOOT_DEST_Tools) \
 	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
