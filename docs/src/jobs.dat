@@ -124,7 +124,7 @@ c00036;2;SDuvan;Write C:Relabel
 c00037;2;laguest,SDuvan;Write C:Rename
 c00038;2;laguest;Write C:RequestChoice
 c00039;2;laguest;Write C:RequestFile
-c00040;1;matthias;Write C:Run
+c00040;2;matthias,SDuvan;Write C:Run
 c00041;2;Neil Cafferkey;Write C:Search
 c00042;2;laguest;Write C:Set
 c00043;2;srittau;Write C:SetClock
