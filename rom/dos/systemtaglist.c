@@ -212,7 +212,11 @@
 	    { NP_Arguments  , (IPTR)command                 }, /* 13 */
 	    { NP_Synchronous, FALSE                         }, /* 14 */
 	    { NP_Error      , (IPTR)ces                     }, /* 16 */
-	    { NP_CloseError , (isAsynch || ces_opened)      }, /* 17 */
+	    { NP_CloseError , (isAsynch || ces_opened) &&
+              /* Since old AmigaOS programs don't know anything about Error()
+              being handled by this function, don't close the Error stream
+              if it's the same as the caller's one*/
+			      ces != Error()                }, /* 17 */
 	    { TAG_END       , 0                             }
 	};
 
