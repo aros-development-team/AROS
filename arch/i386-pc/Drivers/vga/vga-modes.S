@@ -162,8 +162,7 @@ __svp_l:		movb	(%esi),%al
 			.globl	InitGfxAROS
 			.type	InitGfxAROS,@function
 			
-InitGfxAROS:
-		pushl	%ebp
+InitGfxAROS:		pushl	%ebp
 			movl	%esp,%ebp
 			pushl	%ebx
 			pushl	%ecx
@@ -172,6 +171,9 @@ InitGfxAROS:
 			pushl	%edi
 
 			movl	$0,xc_x
+			movl	$1,__draw_enable			
+			movl	$0,c_x
+			movl	$0,c_y
 			
 			pushl	$2
 			call	SetMode
@@ -261,7 +263,7 @@ __iga_2:		movb	(%esi),%al
 			incl	%esi
 			decl	%ecx
 			jne	__iga_1
-			ret
+__ret1:			ret
 
 			.globl	putc
 			.type	putc,@function
@@ -269,7 +271,12 @@ __iga_2:		movb	(%esi),%al
 c_x:	.long	0
 c_y:	.long	0
 
-putc:			pushl	%ebp
+			.globl	__draw_enable
+__draw_enable:		.long	0
+
+putc:			cmpl	$0,__draw_enable
+			je	__ret1
+			pushl	%ebp
 			movl	%esp,%ebp
 			pushl	%esi
 			pushl	%edi
@@ -297,7 +304,7 @@ putc:			pushl	%ebp
 			movl	$0x3ce,%edx
 			movl	$0x0001,%eax
 			outw	%ax,%dx
-
+			
 			movl	$0x3c4,%edx
 			movl	$0x0702,%eax
 			outw	%ax,%dx
@@ -368,8 +375,9 @@ __pc_1:			popl	%ebx
 
 xc_x:	.long	0
 
-xputc:
-		pushl	%ebp
+xputc:			cmpl	$0,__draw_enable
+			je	__ret1
+			pushl	%ebp
 			movl	%esp,%ebp
 			pushl	%esi
 			pushl	%edi
