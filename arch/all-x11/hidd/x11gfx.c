@@ -113,79 +113,90 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     
     struct TagItem tags_160_160[] =
     {
-    	{ aHidd_Sync_HDisp  , 160 },
-	{ aHidd_Sync_VDisp  , 160 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 160 	    	    	},
+	{ aHidd_Sync_VDisp  	, 160 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:160x160" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
     
     struct TagItem tags_240_320[] =
     {
-    	{ aHidd_Sync_HDisp  , 240 },
-	{ aHidd_Sync_VDisp  , 320 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 240 	    	    	},
+	{ aHidd_Sync_VDisp  	, 320 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:240x320" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	} 
     };
 
     struct TagItem tags_320_240[] = 
     {
-    	{ aHidd_Sync_HDisp  , 320 },
-	{ aHidd_Sync_VDisp  , 240 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 320 	    	    	},
+	{ aHidd_Sync_VDisp  	, 240 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:320x240" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
 
     struct TagItem tags_512_384[] = 
     {
-    	{ aHidd_Sync_HDisp  , 512 },
-	{ aHidd_Sync_VDisp  , 384 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 512 	    	    	},
+	{ aHidd_Sync_VDisp  	, 384 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:512x384" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
 
     struct TagItem tags_640_480[] = 
     {
-    	{ aHidd_Sync_HDisp  , 640 },
-	{ aHidd_Sync_VDisp  , 480 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 640 	    	    	},
+	{ aHidd_Sync_VDisp  	, 480 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:640x480" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
 
     struct TagItem tags_800_600[] = 
     {
-    	{ aHidd_Sync_HDisp  , 800 },
-	{ aHidd_Sync_VDisp  , 600 },
-	{ TAG_DONE  	    , 0UL }
+    	{ aHidd_Sync_HDisp  	, 800 	    	    	},
+	{ aHidd_Sync_VDisp  	, 600 	    	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:800x600" 	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
 
     struct TagItem tags_1024_768[] = 
     {
-    	{ aHidd_Sync_HDisp  , 1024  },
-	{ aHidd_Sync_VDisp  , 768   },
-	{ TAG_DONE  	    , 0UL   }
+    	{ aHidd_Sync_HDisp  	, 1024      	    	},
+	{ aHidd_Sync_VDisp  	, 768       	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1024x768"  },
+	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
     struct TagItem tags_1152_864[] = 
     {
-    	{ aHidd_Sync_HDisp  , 1152  },
-	{ aHidd_Sync_VDisp  , 864   },
-	{ TAG_DONE  	    , 0UL   }
+    	{ aHidd_Sync_HDisp  	, 1152      	    	},
+	{ aHidd_Sync_VDisp  	, 864       	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1152x864"  },
+	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
     struct TagItem tags_1280_960[] = 
     {
-    	{ aHidd_Sync_HDisp  , 1280  },
-	{ aHidd_Sync_VDisp  , 960   },
-	{ TAG_DONE  	    , 0UL   }
+    	{ aHidd_Sync_HDisp  	, 1280      	    	},
+	{ aHidd_Sync_VDisp  	, 960       	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1280x960"  },
+	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
     struct TagItem tags_1280_1024[] =
     {
-    	{ aHidd_Sync_HDisp  , 1280  },
-	{ aHidd_Sync_VDisp  , 1024  },
-	{ TAG_DONE  	    , 0UL   }
+    	{ aHidd_Sync_HDisp  	, 1280      	    	},
+	{ aHidd_Sync_VDisp  	, 1024      	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1280x1024" },
+	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
     struct TagItem tags_1600_1200[] = 
     {
-    	{ aHidd_Sync_HDisp  , 1600  },
-	{ aHidd_Sync_VDisp  , 1200  },
-	{ TAG_DONE  	    , 0UL   }
+    	{ aHidd_Sync_HDisp  	, 1600      	    	},
+	{ aHidd_Sync_VDisp  	, 1200      	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1600x1200" },
+	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
     struct TagItem mode_tags[] =
