@@ -113,3 +113,6 @@ Menu
 MSG_GAD_MOUSE_MAPPING_THIRD (//)
 Third
 ;
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY (//)
+Double-Click Delay
+;

@@ -34,14 +34,22 @@
 
 #define MAPGAD_SPACEX 5 /* should be odd */
 
+#define DOUBLECLICK_DELAY_TICS_MIN 1
+#define DOUBLECLICK_DELAY_TICS_MAX 200
+#define DOUBLECLICK_DELAY_TICS_RANGE (DOUBLECLICK_DELAY_TICS_MAX - DOUBLECLICK_DELAY_TICS_MIN + 1)
+
 /*********************************************************************************************/
 
 static struct Gadget *gadlist, *gad, *leftmapgad, *rightmapgad, *midmapgad;
+static struct Gadget *doublegad, *showdoublegad;
 static WORD minwidth, minheight;
 static WORD domleft, domtop, domwidth, domheight;
 static WORD mapgroupwidth, mapgroupheight, mapgroupx1, mapgroupy1;
+static WORD doublegroupwidth, doublegroupheight;
+static WORD doublegroupx1, doublegroupy1;
 static WORD mapgadwidth, computermousex1, computermousey1;
 static WORD leftlinex1, leftliney1, rightlinex1, rightliney1, midlinex1, midliney1;
+static WORD showtimewidth;
 static BOOL init_done;
 
 static UBYTE computermouse_chunky[COMPUTERMOUSE_WIDTH * COMPUTERMOUSE_HEIGHT];
@@ -50,6 +58,7 @@ static UBYTE *computermouse_chunky_remapped;
 static STRPTR maplabels[4];
 static ULONG computermouse_coltab[256];
 static WORD  remaptable[256];
+static UBYTE showdoubleclickbuf[30];
 
 static BOOL pens_alloced, page_active;
 
@@ -100,6 +109,13 @@ static void DrawFrames(void)
 		       mapgroupx1 + mapgroupwidth - 1,
 		       mapgroupy1 + mapgroupheight - 1,
 		       MSG(MSG_GAD_MOUSE_BUTTON_MAPPING));
+ 
+    DrawFrameWithTitle(win->RPort,
+    	    	       doublegroupx1,
+		       doublegroupy1,
+		       doublegroupx1 + doublegroupwidth - 1,
+		       doublegroupy1 + doublegroupheight - 1,
+		       MSG(MSG_GAD_MOUSE_DOUBLECLICK_DELAY));
 
 }
 
@@ -252,6 +268,8 @@ static LONG mouse_layout(void)
     InitRastPort(&temprp);
     SetFont(&temprp, dri->dri_Font);
     
+    /* Button mapping gadgets */
+    
     biggestw = 0;
     for(i = 0; i < 3; i++)
     {
@@ -275,17 +293,119 @@ static LONG mouse_layout(void)
     mapgroupwidth  = biggestw;
     mapgroupheight = COMPUTERMOUSE_HEIGHT + FRAME_FRAMEHEIGHT;
            
+    /* Double-Click Delay gadget */
+    
+    for(i = DOUBLECLICK_DELAY_TICS_MIN; i <= DOUBLECLICK_DELAY_TICS_MAX; i++)
+    {
+    	LONG secs, micro;
+	
+	secs = i / 50;
+	micro = (i % 50) * 2;
+	
+    	snprintf(showdoubleclickbuf, sizeof(showdoubleclickbuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    	w = TextLength(&temprp, showdoubleclickbuf, strlen(showdoubleclickbuf));
+	if (w > showtimewidth) showtimewidth = w;
+    }
+    
+    doublegroupwidth  = TextLength(&temprp,
+    	    	    	    	   MSG(MSG_GAD_MOUSE_DOUBLECLICK_DELAY),
+				   strlen(MSG(MSG_GAD_MOUSE_DOUBLECLICK_DELAY)));
+
+    doublegroupwidth += FRAMETITLE_EXTRAWIDTH;
+    if (doublegroupwidth < 200 + LABELSPACE_X + showtimewidth)
+    {
+    	doublegroupwidth = 200 + LABELSPACE_X + showtimewidth;
+    }
+
+    doublegroupheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + FRAME_FRAMEHEIGHT;
+    
     minwidth  = mapgroupwidth;
-    minheight = mapgroupheight;
+    minheight = mapgroupheight + SPACE_Y + doublegroupheight;
 
     DeinitRastPort(&temprp);
+    
+    return TRUE;
 }
+
+/*********************************************************************************************/
+
+static void update_showdouble_gad(void)
+{
+    struct TagItem settags[] =
+    {
+    	{GTTX_Text, (IPTR)showdoubleclickbuf},
+	{TAG_DONE   	    	      	    }
+    };
+    LONG secs, micro;
+    
+    secs  = inputprefs.ip_DoubleClick.tv_secs;
+    micro = inputprefs.ip_DoubleClick.tv_micro / 10000;
+    
+    snprintf(showdoubleclickbuf, sizeof(showdoubleclickbuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    
+    GT_SetGadgetAttrsA(showdoublegad, win, NULL, settags);
+}
+
+/*********************************************************************************************/
+
+static void update_double_gad(void)
+{
+    struct TagItem scsettags[] =
+    {
+    	{GTSC_Top, 0},
+	{TAG_DONE   }
+    };
+    LONG delay;
+    
+    delay = inputprefs.ip_DoubleClick.tv_secs * 50;
+    delay += inputprefs.ip_DoubleClick.tv_micro / (1000000 / 50);
+    
+    if (delay < DOUBLECLICK_DELAY_TICS_MIN)
+    {
+    	delay = DOUBLECLICK_DELAY_TICS_MIN;
+    }
+    else if (delay > DOUBLECLICK_DELAY_TICS_MAX)
+    {
+    	delay = DOUBLECLICK_DELAY_TICS_MAX;
+    }
+    
+    scsettags[0].ti_Data = delay - DOUBLECLICK_DELAY_TICS_MIN;
+    
+    GT_SetGadgetAttrsA(doublegad, win, NULL, scsettags);
+    
+    update_showdouble_gad();}
 
 /*********************************************************************************************/
 
 static LONG mouse_input(struct IntuiMessage *msg)
 {
-    return FALSE;
+    struct Gadget   *gad;
+    LONG    	    retval = FALSE;
+    LONG    	    top;
+
+    gad =(struct Gadget *)msg->IAddress;
+
+    switch(msg->Class)
+    {
+	case IDCMP_GADGETUP:
+	case IDCMP_GADGETDOWN:
+	case IDCMP_MOUSEMOVE:
+    	    if (gad == doublegad)
+	    {
+		top = msg->Code + DOUBLECLICK_DELAY_TICS_MIN;
+
+		inputprefs.ip_DoubleClick.tv_secs = top / 50;
+		inputprefs.ip_DoubleClick.tv_micro = (top % 50) * (1000000 / 50);
+		update_showdouble_gad();
+
+		retval = TRUE;
+	    }
+	    break;
+
+    } /* switch(msg->Class) */
+    
+    return retval;
+     
 }
 
 /*********************************************************************************************/
@@ -359,8 +479,29 @@ static LONG mouse_makegadgets(void)
     midliney1 = ng.ng_TopEdge - 1;
     					   
     gad = midmapgad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR)maplabels,
-    	    	    	    	    	    	    	   TAG_DONE);
+    	    	    	    	    	    	    	 TAG_DONE);
     
+    doublegroupx1 = domleft;
+    doublegroupy1 = mapgroupy1 + mapgroupheight + SPACE_Y;
+    
+    ng.ng_LeftEdge = doublegroupx1 + FRAME_OFFX;
+    ng.ng_TopEdge  = doublegroupy1 + FRAME_OFFY;
+    ng.ng_Width    = showtimewidth;
+    ng.ng_Height   = doublegroupheight - FRAME_FRAMEHEIGHT;
+    ng.ng_GadgetID = 0;
+    
+    gad = showdoublegad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Text, (IPTR)showdoubleclickbuf,
+    	    	    	    	    	    	    	    GTTX_Justification, GTJ_RIGHT,
+							    TAG_DONE);
+    
+    ng.ng_LeftEdge += showtimewidth + LABELSPACE_X;
+    ng.ng_Width    = doublegroupwidth - FRAME_FRAMEWIDTH - LABELSPACE_X - showtimewidth;
+    ng.ng_GadgetID = MSG_GAD_MOUSE_DOUBLECLICK_DELAY;
+    
+    gad = doublegad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, DOUBLECLICK_DELAY_TICS_RANGE + 9,
+    	    	    	    	    	    	    	    GTSC_Visible, 10,
+							    TAG_DONE);
+							    
     return gad ? TRUE : FALSE;
 }
 
@@ -368,7 +509,10 @@ static LONG mouse_makegadgets(void)
 
 static void mouse_prefs_changed(void)
 {
-
+    if (page_active)
+    {
+    	update_double_gad();
+    }
 }
 
 /*********************************************************************************************/
@@ -421,6 +565,8 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	    {
 		page_active = TRUE;
 
+    	    	mouse_prefs_changed();
+		
 	    	RepaintComputerMouse();
 
 		AddGList(win, gadlist, -1, -1, NULL);
