@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.29  2000/12/15 00:52:50  bergers
+    Added child support for windows.
+
     Revision 1.28  2000/08/03 20:36:31  stegerg
     screen depth gadget should be usable now + src cleanup + small fixes
 
@@ -198,6 +201,23 @@ void LateCloseWindow(struct MsgPort *userport,
        intuition input handler running one input.device 's task:
        We just send it a msg about closing the window
     */
+    if (HAS_CHILDREN(window))
+    {
+      struct Window * cw = window->firstchild;
+      /*
+       * First close all its children, we could also return 
+       * a failure value which newer apps that use child windows
+       * have to look at.
+       */
+      while (cw)
+      {
+        struct Window * _cw;
+        _cw = cw->nextchild;
+        window->firstchild = _cw;
+        CloseWindow(cw);
+        cw = _cw;
+      }
+    }
 
     msg = IW(window)->closeMessage;
     msg->Task = FindTask(NULL); /* !! */
