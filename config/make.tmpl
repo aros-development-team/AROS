@@ -321,6 +321,18 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Link %(objs) to %(prog) using the libraries in %(uselibs)
+%define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= usehostlibs=
+
+%(prog) : STARTUP := $(AROS_LIB)/startup.o
+%(prog) : %(objs) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+	%link_q from="%(objs)" opt=%(ldflags) \
+	    libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit $(addprefix -l,%(usehostlibs))"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Link the %(objs) to the library %(libdir)/lib%(libname).a in
 %define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR)
 
@@ -342,7 +354,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
-# the libraries in use_libs
+# the libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs= usehostlibs=
 
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
@@ -446,6 +458,58 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Build a program
+%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) \
+    objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
+    uselibs= usehostlibs=
+
+.PHONY : %(mmake) %(mmake)-setup
+
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+
+BD_PROGNAME$(BDID)  := %(progname)
+BD_OBJDIR$(BDID)    := %(objdir)
+BD_TARGETDIR$(BDID) := %(targetdir)
+
+BD_FILES$(BDID)     := %(files)
+BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+
+BD_CFLAGS$(BDID)    := %(cflags)
+ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
+BD_CFLAGS$(BDID)    += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
+endif
+BD_DFLAGS$(BDID)    := %(dflags)
+BD_LDFLAGS$(BDID)   := %(ldflags)
+
+#MM %(mmake) : %(mmake)-setup
+
+#MM
+%(mmake)-quick : %(mmake)
+
+%(mmake) : $(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID))
+
+#MM %(mmake)-setup
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))" \
+    setuptarget=%(mmake)-setup
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+    cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+
+%rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
+    objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
+    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Build a module
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A \
@@ -455,7 +519,7 @@ endif
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
 
 .PHONY : setup-module$(BDID)
 
@@ -478,7 +542,6 @@ BD_LIBFILES$(BDID)   := %(linklibfiles)
 BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
 
-BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
 BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_STARTOBJ$(BDID)   := $(addsuffix .o,$(BD_STARTFILE$(BDID)))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
@@ -522,8 +585,6 @@ endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
   BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
-  BD_SRCS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.c \
-                            $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.c
   BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o \
                             $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.o
   BD_LINKLIBGENFILES$(BDID):= 
@@ -565,6 +626,9 @@ endif
 #MM %(mmake) : %(mmake)-setup
 
 #MM
+%(mmake)-quick : %(mmake)
+
+#MM
 %(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
 
 #MM
@@ -583,7 +647,7 @@ endif
 #MM
 %(mmake)-setup : setup-module$(BDID)
 
-ifeq ($(TARGET),%(mmake)) # Avoid conflicts
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
 endif
