@@ -1,22 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := con
-MODTYPE := handler
-
-INIT_FILE := con_handler
 FILES := con_task support completion
-FUNCS := 
-
-USE_CLIB_STATIC := yes
-USE_LIBDEFS := no
-USE_ROMLIB := yes
-USE_MLIB := yes
 
 #MM- kernel-filesys : kernel-fs-con
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
-%make_module_setup mmake=kernel-fs-con
-%make_module mmake=kernel-fs-con
+
+%build_module_macro mmake=kernel-fs-con \
+  modname=con modtype=handler \
+  initfile=con_handler files=$(FILES) \
+  conffile=lib.conf \
+  uselibs="amiga rom arosc m"
 
 %common
-%include_deps

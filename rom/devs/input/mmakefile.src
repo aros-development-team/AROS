@@ -1,22 +1,17 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := input
-MODTYPE := device
-
-USER_INCLUDES := -I.
-OBJDIR := $(GENDIR)/rom/input
-
-INIT_FILE := input
-FILES :=    processevents support
-FUNCS :=    peekqualifier
-
-MAKE_SHLIB := $(SHARED_INPUT)
-
 #MM- kernel-devs : kernel-input-linklib
 #MM- kernel-input : includes linklibs
-%make_module_setup mmake=kernel-input
-%make_module mmake=kernel-input
 
+FUNCS := peekqualifier
+FILES := processevents support
+
+%build_module_macro mmake=kernel-input \
+  modname=input modtype=device \
+  initfile=input funcs=$(FUNCS) files=$(FILES) \
+  objdir=$(GENDIR)/rom/input \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_INPUT)
+  
 %common
-%include_deps

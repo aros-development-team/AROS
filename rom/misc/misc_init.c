@@ -18,7 +18,7 @@
 #include <aros/asmcall.h>
 #include "misc_intern.h"
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
 static const UBYTE idstring[];
