@@ -9,7 +9,9 @@ GENMODULE_SRCS := \
     writestart.c \
     writeend.c \
     writeautoinit.c \
-    writestubs.c
+    writestubs.c \
+    writemccinit.c \
+    writemccquery.c
 GENMODULE_INCS := genmodule.h fileread.h
 GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS)
 
@@ -19,7 +21,7 @@ GENLIBDEFS_SRCS := \
     readconfig.c \
     writeinclibdefs.c
 GENLIBDEFS_DEPS := $(GENLIBDEFS_SRCS) $(GENMODULE_INCS)
-	
+
 GENMODULEDUMMY_SRCS := \
     genmoduledummy.c \
     fileread.c \
