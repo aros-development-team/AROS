@@ -89,7 +89,7 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 	Amiga2Date(tv.tv_secs, &data->clockdata);
     }
     
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -533,8 +533,75 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
 IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
-    
-    if (msg->muikey == MUIKEY_NONE)
+        
+    if (msg->muikey != MUIKEY_NONE)
+    {
+    	UWORD day = data->clockdata.mday;
+	
+    	switch(msg->muikey)
+	{
+	    case MUIKEY_LEFT:
+	    	if (day > 1)
+		{
+		    set(obj, MUIA_Calendar_MonthDay, day - 1);
+		    return MUI_EventHandlerRC_Eat;	    
+		}
+	    	break;
+		
+	    case MUIKEY_RIGHT:
+	    	if (day < NumMonthDays(&data->clockdata))
+		{
+		    set(obj, MUIA_Calendar_MonthDay, day + 1);
+		    return MUI_EventHandlerRC_Eat;	    
+		}
+		break;
+		
+	    case MUIKEY_UP:
+	    	{
+		    UWORD newday = (day > 7) ? day - 7 : 1;
+		    
+		    if (newday != day)
+		    {
+		    	set(obj, MUIA_Calendar_MonthDay, newday);
+		    	return MUI_EventHandlerRC_Eat;	    
+		    }		    
+		}
+		break;
+		
+	    case MUIKEY_DOWN:
+	    	{
+		    UWORD newday = (day < NumMonthDays(&data->clockdata) - 7) ?
+		    	    	   day + 7 : NumMonthDays(&data->clockdata);
+		    
+		    if (newday != day)
+		    {
+		    	set(obj, MUIA_Calendar_MonthDay, newday);
+		    	return MUI_EventHandlerRC_Eat;	    
+		    }		    
+		}
+		break;
+	    	
+	    case MUIKEY_TOP:
+	    case MUIKEY_LINESTART:
+	    	if (day != 1)
+		{
+		    set(obj, MUIA_Calendar_MonthDay, 1);
+		    return MUI_EventHandlerRC_Eat;	    	    
+		}
+		break;
+		
+	    case MUIKEY_BOTTOM:
+	    case MUIKEY_LINEEND:
+	    	if (day != NumMonthDays(&data->clockdata))
+		{
+		    set(obj, MUIA_Calendar_MonthDay, NumMonthDays(&data->clockdata));
+		    return MUI_EventHandlerRC_Eat;	    	    
+		}
+		break;
+		
+	}
+    }
+    else
     {
     	WORD x1 = _mleft(obj) + (_mwidth(obj)  - data->cellwidth  * 7 - 2) / 2 + 1;
 	WORD y1 = _mtop(obj)  + (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
@@ -560,7 +627,7 @@ IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
 			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
 	                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			    return MUI_EventHandlerRC_Eat;
+			    return 0;
 			}
 			break;
 			
@@ -570,7 +637,7 @@ IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
 			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
 	                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-		    	    return MUI_EventHandlerRC_Eat;
+		    	    return 0;
 			}
 			break;
 		}
@@ -584,7 +651,7 @@ IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
 		    {
 			set(obj, MUIA_Calendar_MonthDay, day);
 		    }
-		    return MUI_EventHandlerRC_Eat;		    
+		    return 0;		    
 		}
 	    	break;
 		
