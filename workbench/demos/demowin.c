@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/15 13:17:32  digulla
+    More types of IntuiMessages are checked
+    Problem with empty window was due to unhandled REFRESH
+    Commented some annoying debug output out
+
     Revision 1.2  1996/08/13 15:35:44  digulla
     Removed some comments
     Replied IntuiMessage
@@ -21,6 +26,7 @@
 #include <dos/exall.h>
 #include <dos/datetime.h>
 #include <clib/dos_protos.h>
+#include <clib/aros_protos.h>
 #include <clib/utility_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/intuition_protos.h>
@@ -70,39 +76,19 @@ void D(char *str)
     Flush(Output());
 }
 
-static LONG tinymain(void)
+void Refresh (struct RastPort * rp)
 {
-    struct NewWindow nw;
-    struct Window * win;
-    struct RastPort * rp;
-    struct IntuiMessage * im;
-    int cont;
-
-    nw.LeftEdge = 100;
-    nw.TopEdge = 100;
-    nw.Width = 640;
-    nw.Height = 512;
-    nw.DetailPen = nw.BlockPen = (UBYTE)-1;
-    nw.IDCMPFlags = IDCMP_RAWKEY;
-    nw.Flags = 0L;
-    nw.FirstGadget = NULL;
-    nw.CheckMark = NULL;
-    nw.Title = "Open a window demo";
-    nw.Type = WBENCHSCREEN;
-
-    D("OpenWindow\n");
-    win = OpenWindow (&nw);
-
-    rp = win->RPort;
-
-    Move (rp, 0, 0);
-    Draw (rp, 640, 512);
-
     SetAPen (rp, 1);
     SetDrMd (rp, JAM2);
 
     Move (rp, 0, 0);
     Draw (rp, 320, 256);
+
+    Move (rp, 640, 0);
+    Draw (rp, 0, 512);
+
+    Move (rp, 300, 40);
+    Text (rp, "Hello World.", 12);
 
     SetAPen (rp, 0);
     RectFill (rp, 100, 10, 110, 20);
@@ -115,27 +101,85 @@ static LONG tinymain(void)
 
     SetAPen (rp, 3);
     RectFill (rp, 250, 10, 260, 20);
+}
+
+static LONG tinymain(void)
+{
+    struct NewWindow nw;
+    struct Window * win;
+    struct RastPort * rp;
+    struct IntuiMessage * im;
+    int cont, draw;
+    ULONG args[3];
+
+    args[0] = (ULONG) tinymain;
+    args[1] = (ULONG) Refresh;
+    args[2] = (ULONG) _entry;
+    VPrintf ("main=%08lx\nRefresh=%08lx\nentry=%08lx\n", args);
+
+    nw.LeftEdge = 100;
+    nw.TopEdge = 100;
+    nw.Width = 640;
+    nw.Height = 512;
+    nw.DetailPen = nw.BlockPen = (UBYTE)-1;
+    nw.IDCMPFlags = IDCMP_RAWKEY
+		  | IDCMP_REFRESHWINDOW
+		  | IDCMP_MOUSEBUTTONS
+		  | IDCMP_MOUSEMOVE
+		  ;
+    nw.Flags = 0L;
+    nw.FirstGadget = NULL;
+    nw.CheckMark = NULL;
+    nw.Title = "Open a window demo";
+    nw.Type = WBENCHSCREEN;
+
+    D("OpenWindow\n");
+    win = OpenWindow (&nw);
+
+    rp = win->RPort;
 
     cont = 1;
+    draw = 0;
 
     while (cont)
     {
 	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
 	{
-	    D("Got msg\n");
+	    /* D("Got msg\n"); */
 	    switch (im->Class)
 	    {
 	    case IDCMP_RAWKEY:
 		cont = 0;
 		break;
 
+	    case IDCMP_MOUSEBUTTONS:
+		if (im->Code == SELECTDOWN)
+		{
+		    SetAPen (rp, 2);
+		    Move (rp, im->MouseX, im->MouseY);
+		    draw = 1;
+		}
+		else if (im->Code == SELECTUP)
+		    draw = 0;
+
+		break;
+
+	    case IDCMP_MOUSEMOVE:
+		if (draw)
+		    Draw (rp, im->MouseX, im->MouseY);
+
+		break;
+
+	    case IDCMP_REFRESHWINDOW:
+		Refresh (rp);
+		break;
 	    }
 
 	    ReplyMsg ((struct Message *)im);
 	}
 	else
 	{
-	    D("Waiting\n");
+	    /* D("Waiting\n"); */
 	    Wait (1L << win->UserPort->mp_SigBit);
 	}
     }
