@@ -179,8 +179,17 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
 	    {
 		if ((menu = CreateMenusA(newmenu,NULL)))
 		{
-		    LayoutMenus(menu,visinfo,GTMN_NewLookMenus,TRUE,TAG_DONE);
-		}
+#ifdef _AROS
+		    struct TagItem tags[] =
+                    {
+                        {GTMN_NewLookMenus,TRUE},
+                        {TAG_DONE, NULL}
+                    };
+                    LayoutMenusA(menu, visinfo, tags);
+#else
+                    LayoutMenus(menu,visinfo,GTMN_NewLookMenus,TRUE,TAG_DONE);
+#endif
+                }
 	    }
 	}
 	FreeVisualInfo(visinfo);
