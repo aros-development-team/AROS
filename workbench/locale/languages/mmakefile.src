@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 LANGUAGES = dansk deutsch español français italiano nederlands norsk \
-	    piglatin polski português suomi svenska 
+	    piglatin polski português suomi svenska magyar
 
 MODULES := $(foreach f,$(LANGUAGES),$(AROS_LOCALE)/Languages/$(f).language)
 MODTYPE := language
