@@ -21,11 +21,11 @@ BOOT_Gadgets := \
 	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
 BOOT_Aminet := Format64
 BOOT_Demos := gtdemo menudemo
-BOOT_Devs := Mountlist nil.handler ram.handler
+BOOT_Devs := Mountlist nil.handler ram.handler cdrom.handler
 BOOT_Libs := \
-	amigaguide arosc asl commodities datatypes diskfont gadtools iffparse \
-	locale lowlevel mathieeedoubbas mathieeedoubtrans mathieeesingtrans \
-	mathtrans nonvolatile nvdisk realtime
+	amigaguide arosc asl commodities diskfont gadtools iffparse \
+	icon locale lowlevel mathieeedoubbas mathieeedoubtrans \
+	mathieeesingtrans mathtrans nonvolatile nvdisk realtime
 BOOT_S := hidd.prefs Shell-Startup Startup-Sequence
 BOOT_Tools := Debug/sashimi HDToolBox
 BOOT_grub := stage1 stage2 menu.lst
@@ -104,7 +104,6 @@ bootdisk-native-i386: \
 	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
 	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
 	@gzip -f $(BOOT_DEST_DIR)/Devs/aros-native-i386
-	@strip --strip-unneeded $(BOOT_DEST_C) $(BOOT_DEST_Tools) $(BOOT_DEST_Demos) $(BOOT_DEST_Aminet)
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
 
@@ -113,6 +112,21 @@ install: install.c
 
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
+
+#MM bootiso-native-i386 : software-native-i386 bootdisk-native-i386
+bootiso-native-i386: $(OSGENDIR)/boot/aros.iso
+
+$(AROSDIR)/boot/aros.bin : $(OSGENDIR)/boot/aros.bin
+	@$(CP) $< $@
+
+#TODO: it depend on all files in workbench dir
+$(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
+	@mkisofs \
+		-output $(OSGENDIR)/boot/aros.iso \
+		-b boot/aros.bin \
+		-allow-leading-dots \
+		-preparer AROS-Build -publisher AROS -rock \
+		$(AROSDIR)
 
 #MM
 clean ::
