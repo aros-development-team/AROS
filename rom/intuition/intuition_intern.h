@@ -246,7 +246,13 @@ same as the first ones in IntuiMessage.
 However we could instead use another message port in
 the inputhandler to handle these messages and then add
 a pointer to this one in struct IntWindow above.
+
+
+
+Another note: Maybe use a union here to save space.
+
 */
+
 
 struct shortIntuiMessage
 {
@@ -257,6 +263,11 @@ struct shortIntuiMessage
     struct Window * BehindWindow; /* only used by MoveWindowInFrontOf */
     WORD            dx;           /* used by MoveLayer, SizeLayer */
     WORD            dy;           /* used by MoveLayer, SizeLayer */
+    LONG	    left;
+    LONG	    top;
+    LONG	    width;
+    LONG 	    height;
+    
 };
 
 /* IDCMP_WBENCHMESSAGE parameters */
@@ -272,7 +283,8 @@ enum
 	IMCODE_WINDOWTOFRONT,
 	IMCODE_MOVEWINDOW,
 	IMCODE_MOVEWINDOWINFRONTOF,
-	IMCODE_ZIPWINDOW
+	IMCODE_ZIPWINDOW,
+	IMCODE_CHANGEWINDOWBOX
 };
 
 #endif /* INTUITION_INTERN_H */
