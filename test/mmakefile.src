@@ -18,6 +18,7 @@ FILES := amigademo \
 	newmatch \
 	scantest \
 	semaphoretest \
+	sortlayercr \
 	signaltest \
 	tasktest \
 	tasktest2 \
