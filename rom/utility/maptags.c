@@ -9,8 +9,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <utility/tagitem.h>
-	#include <clib/utility_protos.h>
+#include <utility/tagitem.h>
+#include <clib/utility_protos.h>
 
 	AROS_LH3(void, MapTags,
 

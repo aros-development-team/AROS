@@ -12,8 +12,8 @@ extern APTR __startup_mempool;
 /*****************************************************************************
 
     NAME */
-	#include <sys/types.h>
-	#include <memory.h>
+#include <sys/types.h>
+#include <memory.h>
 
 	void * malloc (
 

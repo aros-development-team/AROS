@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/12/10 13:59:45  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.1  1996/08/23 17:26:45  digulla
     Files with functions for RT and Purify
 
@@ -46,7 +49,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/purify.h>
+#include <aros/purify.h>
 
 	void Purify_Init (
 
@@ -85,7 +88,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/purify.h>
+#include <aros/purify.h>
 
 	void Purify_AddMemory (
 
@@ -139,7 +142,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/purify.h>
+#include <aros/purify.h>
 
 	void Purify_SetState (
 
@@ -234,7 +237,7 @@ extern void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/purify.h>
+#include <aros/purify.h>
 
 	void Purify_CheckAccess (
 

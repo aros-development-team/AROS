@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/12/10 14:00:08  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.2  1996/10/24 15:51:24  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -19,8 +22,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <intuition/classusr.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/classusr.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH2(ULONG, SetAttrsA,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/12/10 13:59:49  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.5  1996/11/14 22:33:52  aros
     Fixed register conflict
 
@@ -30,7 +33,7 @@
 #include <clib/dos_protos.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
-    #include "nil_handler_gcc.h"
+#include "nil_handler_gcc.h"
 #endif
 
 static const char name[];

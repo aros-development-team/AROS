@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/12/10 14:00:08  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.9  1996/11/08 11:28:04  aros
     All OS function use now Amiga types
 
@@ -47,8 +50,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <intuition/intuition.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/intuition.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH4(void, RefreshGList,
 

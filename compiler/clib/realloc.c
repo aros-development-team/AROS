@@ -11,8 +11,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <sys/types.h>
-	#include <memory.h>
+#include <sys/types.h>
+#include <memory.h>
 
 	void * realloc (
 

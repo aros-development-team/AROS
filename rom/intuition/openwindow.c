@@ -23,8 +23,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <intuition/intuition.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/intuition.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH1(struct Window *, OpenWindow,
 

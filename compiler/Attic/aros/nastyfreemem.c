@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/12/10 13:59:44  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.4  1996/09/21 15:47:33  digulla
     Use Amiga types
 
@@ -35,7 +38,7 @@ extern void PurgeChunk (ULONG *, ULONG);
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+#include <clib/aros_protos.h>
 
 	void NastyFreeMem (
 

@@ -11,8 +11,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <graphics/rastport.h>
-	#include <clib/graphics_protos.h>
+#include <graphics/rastport.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH3(void, Text,
 

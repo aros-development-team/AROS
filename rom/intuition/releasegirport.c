@@ -11,8 +11,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <graphics/rastport.h>
-	#include <clib/intuition_protos.h>
+#include <graphics/rastport.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH1(void, ReleaseGIRPort,
 

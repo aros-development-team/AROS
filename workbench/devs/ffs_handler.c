@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/12/10 13:59:49  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.2  1996/11/22 12:29:01  aros
     More complete filesystem: Readonly and makedir.
 
@@ -25,7 +28,7 @@
 #include <aros/libcall.h>
 #include <aros/machine.h>
 #ifdef __GNUC__
-    #include "ffs_handler_gcc.h"
+#include "ffs_handler_gcc.h"
 #endif
 #include <stddef.h>
 

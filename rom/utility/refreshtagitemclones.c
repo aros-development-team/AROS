@@ -1,6 +1,9 @@
  /*
     $Id$
     $Log$
+    Revision 1.4  1996/12/10 14:00:15  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.3  1996/10/24 15:51:36  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,8 +23,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <utility/tagitem.h>
-	#include <clib/utility_protos.h>
+#include <utility/tagitem.h>
+#include <clib/utility_protos.h>
 
 	AROS_LH2(void, RefreshTagItemClones,
 

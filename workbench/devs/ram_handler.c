@@ -20,7 +20,7 @@
 #include <clib/dos_protos.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
-    #include "ram_handler_gcc.h"
+#include "ram_handler_gcc.h"
 #endif
 #include <aros/machine.h>
 #include <stddef.h>

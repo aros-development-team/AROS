@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/intuition_protos.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH4(LONG, EasyRequestArgs,
 

@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.6  1996/12/10 14:00:12  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.5  1996/10/24 22:51:46  aros
     Use proper Amiga datatypes (eg: ULONG not unsigned long)
 
@@ -24,8 +27,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <utility/tagitem.h>
-	#include <clib/utility_protos.h>
+#include <utility/tagitem.h>
+#include <clib/utility_protos.h>
 
 	AROS_LH1(struct TagItem *, AllocateTagItems,
 

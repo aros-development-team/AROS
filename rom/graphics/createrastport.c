@@ -13,8 +13,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <graphics/rastport.h>
-	#include <clib/graphics_protos.h>
+#include <graphics/rastport.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH0(struct RastPort *, CreateRastPort,
 

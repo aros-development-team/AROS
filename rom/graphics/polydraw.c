@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH3(void, PolyDraw,
 

@@ -9,8 +9,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <utility/hooks.h>
-	#include <clib/utility_protos.h>
+#include <utility/hooks.h>
+#include <clib/utility_protos.h>
 
 	AROS_LH3(ULONG, CallHookPkt,
 

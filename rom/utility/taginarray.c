@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/12/10 14:00:16  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.2  1996/10/24 15:51:38  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -16,7 +19,7 @@
 /*****************************************************************************
 
     NAME */
-        #include <clib/utility_protos.h>
+#include <clib/utility_protos.h>
 
         AROS_LH2(BOOL, TagInArray,
 

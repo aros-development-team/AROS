@@ -22,8 +22,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <intuition/screens.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/screens.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH1(struct Screen *, OpenScreen,
 

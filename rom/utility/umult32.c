@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.4  1996/12/10 14:00:16  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.3  1996/10/24 22:51:47  aros
     Use proper Amiga datatypes (eg: ULONG not unsigned long)
 
@@ -18,7 +21,7 @@
 /*****************************************************************************
 
     NAME */
-        #include <clib/utility_protos.h>
+#include <clib/utility_protos.h>
 
         AROS_LH2(ULONG, UMult32,
 

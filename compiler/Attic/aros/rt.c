@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/12/10 13:59:45  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.1  1996/08/23 17:26:44  digulla
     Files with functions for RT and Purify
 
@@ -73,7 +76,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_Init (
 
@@ -120,7 +123,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_IntAdd (
 
@@ -220,7 +223,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_IntCheck (
 
@@ -313,7 +316,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_IntFree (
 
@@ -410,7 +413,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_IntEnter (
 
@@ -467,7 +470,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_IntLeave (
 
@@ -517,7 +520,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_ShowStack (
 
@@ -567,7 +570,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_ShowRTStack (
 
@@ -620,7 +623,7 @@ void RT_ShowRTStack (void);
 /*****************************************************************************
 
     NAME */
-	#include <aros/rt.h>
+#include <aros/rt.h>
 
 	void RT_FreeResource (
 

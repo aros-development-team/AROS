@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/12/10 13:59:49  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.2  1996/11/16 01:18:18  aros
     Fixed register usage (register used twice)
 
@@ -23,7 +26,7 @@
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #ifdef __GNUC__
-    #include "fdsk_device_gcc.h"
+#include "fdsk_device_gcc.h"
 #endif
 
 #define NEWLIST(l)                          \

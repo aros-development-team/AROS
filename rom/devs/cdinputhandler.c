@@ -9,9 +9,9 @@
 /*****************************************************************************
 
     NAME */
-	#include <exec/libraries.h>
-	#include <devices/inputevent.h>
-	#include <clib/console_protos.h>
+#include <exec/libraries.h>
+#include <devices/inputevent.h>
+#include <clib/console_protos.h>
 
 	AROS_LH2(struct InputEvent *, CDInputHandler,
 

@@ -47,7 +47,7 @@ static const struct RastPort defaultRastPort =
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH1(BOOL, InitRastPort,
 

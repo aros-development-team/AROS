@@ -9,8 +9,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <string.h>
-	#include <memory.h>
+#include <string.h>
+#include <memory.h>
 
 	char * strdup (
 

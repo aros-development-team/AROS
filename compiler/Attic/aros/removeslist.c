@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/12/10 13:59:45  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.2  1996/10/02 16:36:06  digulla
     Fixed a couple of typos in TEST
 
@@ -20,7 +23,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+#include <clib/aros_protos.h>
 
 	APTR RemoveSList (
 

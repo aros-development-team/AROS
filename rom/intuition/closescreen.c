@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/12/10 14:00:01  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.3  1996/10/31 13:50:39  aros
     Don't forget to free the RastPort
 
@@ -31,8 +34,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <intuition/screens.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/screens.h>
+#include <clib/intuition_protos.h>
 
 	AROS_LH1(BOOL, CloseScreen,
 

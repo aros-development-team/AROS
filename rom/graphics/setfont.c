@@ -12,9 +12,9 @@
 /*****************************************************************************
 
     NAME */
-	#include <graphics/rastport.h>
-	#include <graphics/text.h>
-	#include <clib/graphics_protos.h>
+#include <graphics/rastport.h>
+#include <graphics/text.h>
+#include <clib/graphics_protos.h>
 
 	AROS_LH2(void, SetFont,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/12/10 14:00:13  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.4  1996/10/24 15:51:35  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -22,7 +25,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/utility_protos.h>
+#include <clib/utility_protos.h>
 
 	AROS_LH2(struct TagItem *, FindTagItem,
 

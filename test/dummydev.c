@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/12/10 14:00:11  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.4  1996/10/24 15:51:34  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,7 +23,7 @@
 #include <clib/exec_protos.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
-    #include "dummydev_gcc.h"
+#   include "dummydev_gcc.h"
 #endif
 #include "initstruct.h"
 

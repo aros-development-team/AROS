@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/12/10 13:59:44  aros
+    Moved #include into first column to allow makedepend to see it.
+
     Revision 1.1  1996/08/01 18:46:46  digulla
     Calculate simple checksum for a block of memory
 
@@ -13,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+#include <clib/aros_protos.h>
 
 	ULONG CalcChecksum (
 
