@@ -1030,10 +1030,12 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	top = (_mheight(obj) - height) / 2;
 	width = (_flags(child) & MADF_MAXSIZE) ?
 	    _maxwidth(child) : _minwidth(child);
-	if (has_variable_width)
+	if (has_variable_width && data->horiz_weight_sum)
 	{
-	    bonus = ROUND(totalBonus * _hweight(child)
-			  / (double)data->horiz_weight_sum);
+//	    bonus = ROUND(totalBonus * _hweight(child)
+//			  / (double)data->horiz_weight_sum);
+	    bonus = (totalBonus * _hweight(child) + data->horiz_weight_sum  / 2) / data->horiz_weight_sum;
+
 	    bonus = MIN(bonus, _maxwidth(child) - width);
 	    width += bonus;
 	}
