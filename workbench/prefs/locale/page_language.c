@@ -17,6 +17,7 @@
 static struct Gadget *gadlist, *availgad, *prefgad, *cleargad, *gad;
 static WORD domleft, domtop, domwidth, domheight;
 static WORD minwidth, minheight;
+static BOOL page_active;
 
 /*********************************************************************************************/
 
@@ -100,31 +101,52 @@ static LONG language_makegadgets(void)
 
 static void empty_listviews(void)
 {
-    GT_SetGadgetAttrs(availgad, win, NULL, GTLV_Labels, NULL,
-		    	    	    	   TAG_DONE);
+    if (gadlist)
+    {
+	struct Window *winparam = page_active ? win : NULL;
 
-    GT_SetGadgetAttrs(prefgad, win, NULL, GTLV_Labels, NULL,
-		    	    	    	   TAG_DONE);
+	GT_SetGadgetAttrs(availgad, winparam, NULL, GTLV_Labels, NULL,
+		    	    	    	    	    TAG_DONE);
 
+	GT_SetGadgetAttrs(prefgad, winparam, NULL, GTLV_Labels, NULL,
+		    	    	    		   TAG_DONE);
+    }
 }
 
 /*********************************************************************************************/
 
 static void reset_listviews(void)
 {
-    GT_SetGadgetAttrs(availgad, win, NULL, GTLV_Labels, (IPTR)&language_list,
-		    	    	    	   TAG_DONE);
+    if (gadlist)
+    {
+	struct Window *winparam = page_active ? win : NULL;
 
-    GT_SetGadgetAttrs(prefgad, win, NULL, GTLV_Labels, (IPTR)&pref_language_list,
-		    	    	    	   TAG_DONE);
-		    
+	GT_SetGadgetAttrs(availgad, winparam, NULL, GTLV_Labels, (IPTR)&language_list,
+		    	    	    	    	    TAG_DONE);
+
+	GT_SetGadgetAttrs(prefgad, winparam, NULL, GTLV_Labels, (IPTR)&pref_language_list,
+		    	    	    		   TAG_DONE);
+    }	    
+}
+
+/*********************************************************************************************/
+
+static void clear_languages(void)
+{
+    struct Node *node, *node2;
+    
+    ForeachNodeSafe(&pref_language_list, node, node2)
+    {
+	Remove(node);
+	SortInNode(&language_list, node);
+    }
 }
 
 /*********************************************************************************************/
 
 static LONG language_input(struct IntuiMessage *msg)
 {
-    struct Node *node, *node2;
+    struct Node *node;
     LONG retval = FALSE;
     
     if (msg->Class == IDCMP_GADGETUP)
@@ -144,14 +166,22 @@ static LONG language_input(struct IntuiMessage *msg)
     	    	    reset_listviews();
 		}
 	    	break;
+
+	    case MSG_GAD_PREF_LANGUAGES:
+	    	if ((node = FindListNode(&pref_language_list, msg->Code)))
+		{
+		    empty_listviews();
+		    
+		    Remove(node);
+		    SortInNode(&language_list, node);
+
+    	    	    reset_listviews();
+		}
+	    	break;
 		
 	    case MSG_GAD_CLEAR_LANGUAGES:
 	    	empty_listviews();
-		ForeachNodeSafe(&pref_language_list, node, node2)
-		{
-		    Remove(node);
-		    SortInNode(&language_list, node);
-		}
+	    	clear_languages();
 		reset_listviews();
 	    	break;
 	}
@@ -166,6 +196,35 @@ static void language_cleanup(void)
 {
     if (gadlist) FreeGadgets(gadlist);
     gadlist = NULL;
+}
+
+/*********************************************************************************************/
+
+static void language_prefs_changed(void)
+{
+    struct LanguageEntry *entry, *entry2;
+    WORD    	    	 i;
+    
+    empty_listviews();
+    
+    clear_languages();
+    
+    for(i = 0; i < 10; i++)
+    {
+    	if (localeprefs.lp_PreferredLanguages[i][0] == '\0') break;
+	
+    	ForeachNodeSafe(&language_list, entry, entry2)
+	{
+	    if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.realname) == 0)
+	    {
+	    	Remove(&entry->lve.node);
+		AddTail(&pref_language_list, &entry->lve.node);
+	    }
+	}
+    }
+    
+    reset_listviews();
+
 }
 
 /*********************************************************************************************/
@@ -212,17 +271,34 @@ LONG page_language_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_ADDGADGETS:
-	    AddGList(win, gadlist, -1, -1, NULL);
-	    GT_RefreshWindow(win, NULL);
-	    RefreshGList(gadlist, win, NULL, -1);
+	    if (!page_active)
+	    {
+		AddGList(win, gadlist, -1, -1, NULL);
+		GT_RefreshWindow(win, NULL);
+		RefreshGList(gadlist, win, NULL, -1);
+		
+		page_active = TRUE;
+	    }
 	    break;
 	    
 	case PAGECMD_REMGADGETS:
-	    RemoveGList(win, gadlist, -1);
+	    if (page_active)
+	    {
+		if (gadlist) RemoveGList(win, gadlist, -1);
+		
+		page_active = FALSE;
+	    }
 	    break;
 	    
 	case PAGECMD_HANDLEINPUT:
 	    retval = language_input((struct IntuiMessage *)param);
+	    break;
+	
+	case PAGECMD_PREFS_CHANGING:
+	    break;
+	
+	case PAGECMD_PREFS_CHANGED:
+	    language_prefs_changed();
 	    break;
 	    
 	case PAGECMD_CLEANUP:
