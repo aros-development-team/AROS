@@ -21,15 +21,15 @@ ifeq ($(LAYERSTNG), "yes")
 includes-generate :
 	@$(NOP)
 #MM
-kernel-layers-linklib :
+kernel-oldlayers-linklib :
 	@$(NOP)
 
 #MM
-kernel-layers-module :
+kernel-oldlayers-module :
 	@$(NOP)
 
 #MM
-kernel-layers-module-quick :
+kernel-oldlayers-module-quick :
 	@$(NOP)	
 	
 else
@@ -153,16 +153,16 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_finline
 
-#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-linklib : $(LIB)
+#MM kernel-oldlayers-linklib : setup includes kernel-oldlayers-$(ARCH)-$(CPU)
+kernel-oldlayers-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-layers-module : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-oldlayers-module : setup includes kernel-oldlayers-$(ARCH)-$(CPU)
+kernel-oldlayers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
-#MM kernel-layers-module-quick : kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-oldlayers-module-quick : kernel-oldlayers-$(ARCH)-$(CPU)
+kernel-oldlayers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup
