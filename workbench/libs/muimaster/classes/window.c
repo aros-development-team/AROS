@@ -931,7 +931,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 				     left, top, width, height, left, top, 0);
 		}
-		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		MUI_Redraw(data->wd_RootObject, REDUCE_FLICKER_TEST?MADF_DRAWOBJECT:MADF_DRAWALL);
 	    }
 	}
 	break;
@@ -952,6 +952,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		DoMethod(data->wd_RootObject, MUIM_Layout);
 		DoMethod(data->wd_RootObject, MUIM_Show);
 
+#if REDUCE_FLICKER_TEST
+#else
 		{
 		    LONG left,top,width,height;
 
@@ -966,9 +968,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 					 left, top, width, height, left, top, 0);
 		    }
 		}
-
-		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-
+#endif
+		MUI_Redraw(data->wd_RootObject, REDUCE_FLICKER_TEST?MADF_DRAWOBJECT:MADF_DRAWALL);
 	    } else
 	    {
 		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
