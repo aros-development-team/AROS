@@ -28,6 +28,7 @@ FILES := amiga2date \
         clippingtest \
         helloworld \
         oopdemo \
+        ooplib \
         scrollerwin \
         serialmousetest \
         serialtest \
