@@ -3,7 +3,7 @@
     $Id$
 
     Desc: ANSI C function getenv()
-    Lang: english
+    Lang: English
 */
 
 #include <proto/dos.h>
@@ -23,7 +23,7 @@
 	 deletes a variable from the environment.
 
     INPUTS
-	name - Name of the environment variable to delete.
+	name  --  Name of the environment variable to delete.
 
     RESULT
        Returns zero on success, or -1 if the variable was not found.
