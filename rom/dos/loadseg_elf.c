@@ -27,7 +27,7 @@ extern struct DosLibrary * DOSBase;
 #define EM_386		3
 #define EM_68K		4
 
-#define R_386_32 	1
+#define R_386_32	1
 #define R_386_PC32	2
 #define R_68K_32	1
 #define R_68K_PC32	4
@@ -360,9 +360,10 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 	    if (strtab)
 	    {
-		kprintf ("    Loading section %s at %p\n",
-		    &shstrtab[sh->name],
-		    loaded
+		kprintf ("    Loading section %-10s at %p ... %p\n"
+		    , &shstrtab[sh->name]
+		    , loaded
+		    , loaded + sh->size - 1
 		);
 	    }
 
