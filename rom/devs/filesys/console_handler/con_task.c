@@ -31,6 +31,7 @@
 
 #include "con_handler_intern.h"
 #include "support.h"
+#include "completion.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -98,6 +99,10 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
 	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->breaktask)
 	{
 	    fh->breaktask = NULL;
+	}	
+	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->lastwritetask)
+	{
+	    fh->lastwritetask = NULL;
 	}	
     }
     else
@@ -175,6 +180,15 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
     	fh->breaktask = iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask;
     }
 #endif
+
+    /* PARANOIA ^ 3 */
+       
+    if (iofs->IOFS.io_Message.mn_ReplyPort)
+    if ((iofs->IOFS.io_Message.mn_ReplyPort->mp_Flags & PF_ACTION) == PA_SIGNAL)
+    if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask)
+    {
+    	fh->lastwritetask = iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask;
+    }
     
 #if !BETTER_WRITE_HANDLING    
     if ((fh->inputsize - fh->inputstart) == 0)
@@ -825,6 +839,10 @@ AROS_UFH3(VOID, conTaskEntry,
 			    }
 		    	    break;
 
+    	    	    	case INP_TAB:
+			    Completion(conbase, fh);
+			    break;
+			    
 		    } /* switch(inp) */
 
 		} /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */

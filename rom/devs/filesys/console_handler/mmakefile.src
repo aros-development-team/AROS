@@ -5,7 +5,7 @@ MODNAME := con
 MODTYPE := handler
 
 INIT_FILE := con_handler
-FILES := con_task support
+FILES := con_task support completion
 FUNCS := 
 
 USE_CLIB_STATIC := yes
