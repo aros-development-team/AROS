@@ -499,7 +499,15 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			    Object *item_obj = (Object*)GTMENUITEM_USERDATA(item);
 			    if (item_obj)
 			    {
+			    	Object *app;
+			    	ULONG udata;
+
 				set(item_obj, MUIA_Menuitem_Trigger, item);
+
+				get(oWin, MUIA_ApplicationObject, &app);
+				get(item_obj, MUIA_UserData, &udata);
+
+				set(app, MUIA_Application_MenuAction, udata);
 			    }
 		    	}
 		    }
