@@ -193,7 +193,7 @@ COMMONOBJS := $(foreach f, $(COMMONFILES), $(COMMONOBJDIR)/$(f).o)
 # M M linklibs : setup includes clib-$(ARCH) clib-stubs
 #MM- linklibs : linklibs-arosc
 #MM- linklibs-clib : linklibs-arosc
-#MM linklibs-arosc : setup includes linklibs-amiga linklibs-arossupport linklibs-arosm linklibs-autoinit clib-$(ARCH) clib-stubs
+#MM linklibs-arosc : setup includes linklibs-amiga linklibs-arosm-$(CPU) linklibs-arossupport linklibs-autoinit clib-$(ARCH) clib-stubs
 linklibs-arosc : $(COMMONLIB) $(LIB) $(SLIB) $(STUBLIB)
 	@$(NOP)
 
