@@ -1019,13 +1019,14 @@ D(bug("Window: %p\n", w));
 
 		case IMCODE_WINDOWTOBACK: {
 		    /* I don't move backdrop layers! */
+		    L = msg->Window->WLayer;
 		    if (0 == (L->Flags & LAYERBACKDROP))
 		    {
 		      /* The layer behind the one to move will be the 
 		         first one to check for damage */
 		       
-		      L = msg->Window->WLayer->back;
 		      BehindLayer(NULL, L);
+		      L = msg->Window->WLayer->back;
 		      CheckLayersBehind = TRUE;
 		    }
 		    
