@@ -53,7 +53,7 @@ struct Menu *setupMenus(APTR visualInfo)
 {
  struct Menu *menuPtr = NULL; // Menu pointer; better set it to NULL, just in case
 
- if(menuPtr = CreateMenus(windowMenus, TAG_END))
+ if((menuPtr = CreateMenus(windowMenus, TAG_END)))
  {
   if(LayoutMenusA(menuPtr, visualInfo, TAG_END))
    return(menuPtr);
@@ -165,7 +165,7 @@ struct AppGUIData * createGadgets(struct Screen *publicScreen, APTR visualInfo)
 
  appGUIData->agd_MaxWidth = preCalculateGUI(publicScreen);
 
- if(gadget = CreateContext(&gList))
+ if((gadget = CreateContext(&gList)))
  {
   // These Gadget structure members should be common for all gadgets:
   newGadget.ng_TextAttr = publicScreen->Font;
@@ -345,7 +345,7 @@ void inputLoop(struct AppGUIData *appGUIData)
        switch((UBYTE)GTMENUITEM_USERDATA(menuItem))
        {
         case MENU_ID_OPEN :
-         if(fileName = aslOpenPrefs())
+         if((fileName = aslOpenPrefs()))
          {
           printf("reading %s...\n", fileName);
           readIFF(fileName, fontPrefs);
@@ -354,7 +354,7 @@ void inputLoop(struct AppGUIData *appGUIData)
         break;
 
         case MENU_ID_SAVE :
-         if(fileName = aslSavePrefs())
+         if((fileName = aslSavePrefs()))
          {
           printf("saving %s...\n", fileName);
           writeIFF(fileName, fontPrefs);
