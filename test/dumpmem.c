@@ -61,8 +61,8 @@ int main(int argc, char **argv)
     HELPTXT =
         "ADDRESS  The start address to dump from (in hex)\n"
 	"SIZE     The number of bytes to dump\n"
-	"SERIAL   if specified, output will be using serial debugging rather than stdout\n"
-	"QUIET    do not display warnings\n";
+	"SERIAL   If specified, output will use serial debugging instead of stdout\n"
+	"QUIET    Do not display warnings\n";
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
     if (NULL != rda)
