@@ -23,14 +23,6 @@
 </item>
 
 <item>
-    <dir>commonlib</dir>
-    All functions which are often used (e.g. strlen()) are put
-	here. Other libraries which offer these functions should use the
-	code in here.
-
-</item>
-
-<item>
     <dir>cpak</dir>
     The first version of archtool.
 
