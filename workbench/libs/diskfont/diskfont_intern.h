@@ -236,6 +236,8 @@ VOID  UpdatePointers	(UBYTE *, ULONG, struct MinList *, struct DiskfontBase_inte
 
 /* diskfont_io.c */
 
+struct DiskFontHeader *ConvDiskFont(BPTR, STRPTR, struct DiskfontBase_intern *);
+void DisposeConvDiskFont(struct DiskFontHeader *, struct DiskfontBase_intern *);
 struct TextFont *ReadDiskFont(struct TTextAttr *, STRPTR, struct DiskfontBase_intern *);
 
 /* af_fontdescr_io.c */
