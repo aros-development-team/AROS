@@ -888,49 +888,22 @@ int intui_OpenWindow (struct Window * w,
 	  {LA_Visible       , (ULONG)visible                                                    },
 	  {TAG_DONE 	    	    	    	    	    	    	    	    	    	}
       };
-      BOOL shape_created = FALSE;
-
-      if (!shape) 
-      {
-          if ((shape = NewRegion()))
-	  {
-	      struct Rectangle rect;
-	      
-	      rect.MinX = w->RelLeftEdge;
-	      rect.MinY = w->RelTopEdge;
-	      rect.MaxX = rect.MinX + w->Width - 1;
-	      rect.MaxY = rect.MinY + w->Height - 1;
-	      
-	      if (!OrRectRegion(shape, &rect))
-	      {
-	          DisposeRegion(shape);
-	      }
-	      else
-	      {
-	          win_tags[2].ti_Data = (IPTR)shape;
-	          shape_created = TRUE;
-	      }
-	  }	  
-      }
-      else
-      {
-          shape->bounds.MinX += w->RelLeftEdge;
-          shape->bounds.MinY += w->RelTopEdge;
-          shape->bounds.MaxX += w->RelLeftEdge;
-          shape->bounds.MaxY += w->RelTopEdge;
-      }
       
-      if (shape) w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
-      	    	    	    	    	    	w->WScreen->RastPort.BitMap,
-						layerflags,
-						win_tags);
-      if (shape_created && !w->WLayer) DisposeRegion(shape);					
+      w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
+      	    	    	    	     w->WScreen->RastPort.BitMap,
+				     w->RelLeftEdge,
+				     w->RelTopEdge,
+				     w->RelLeftEdge + w->Width - 1,
+				     w->RelTopEdge + w->Height - 1,
+				     layerflags,
+				     win_tags);
+				     
 #else
       w->WLayer = CreateUpfrontHookLayer( 
                    &w->WScreen->LayerInfo
 	  	  , w->WScreen->RastPort.BitMap
-		  , w->LeftEdge
-		  , w->TopEdge
+		  , w->RelLeftEdge
+		  , w->RelTopEdge
 		  , w->LeftEdge + w->Width - 1
 		  , w->TopEdge  + w->Height - 1
 		  , layerflags
