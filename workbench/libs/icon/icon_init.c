@@ -55,6 +55,10 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     if (!LB(lh)->utilitybase)
 	return NULL;
 
+    LB(lh)->intuitionbase = OpenLibrary ("intuition.library", 39);
+    if (!LB(lh)->intuitionbase)
+	return NULL;
+
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = DOSBase;
 
@@ -66,6 +70,9 @@ void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (DOSBase)
 	CloseLibrary ((struct Library *)DOSBase);
+
+    if (LB(lh)->intuitionbase)
+	CloseLibrary (LB(lh)->intuitionbase);
 
     if (LB(lh)->utilitybase)
 	CloseLibrary (LB(lh)->utilitybase);

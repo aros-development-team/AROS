@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+
 #include "icon_intern.h"
 
 /*****************************************************************************
@@ -45,8 +48,13 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
+    
+    rectangle->MinX = 0;
+    rectangle->MinY = 0;
+    rectangle->MaxX = icon->do_Gadget.Width - 1;
+    rectangle->MaxY = icon->do_Gadget.Height - 1;
 
-#warning GetIconRectangleA() only very limited implented
+#warning GetIconRectangleA() is only very limited implemented
 
     AROS_LIBFUNC_EXIT
 } /* GetIconRectangle */
