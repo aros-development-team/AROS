@@ -100,14 +100,6 @@
 #   define IntDrawInfo DrawInfo
 #endif
 
-// FIXME: do we want these MOS extensions?
-// FIXME: what are the correct values?
-#define ICF_OPAQUEMOVE          (1<<30)
-#define ICF_PRIVILEDGEDREFRESH  (1<<29)
-#define ICF_OFFSCREENLAYERS     (1<<28)
-#define ICF_DEFPUBSCREEN        (1<<27)
-#define ICF_SCREENACTIVATION    (1<<26)
-
 // FIXME: seems only used for RefreshWindowTitles() ? -> better names
 // FIXME: what are the correct values?
 #define NO_DOUBLEBUFFER         (0)
