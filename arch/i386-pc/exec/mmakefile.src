@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES		:= \
-	disable enable switch preparecontext rawputchar addtask cause \
+	disable enable switch preparecontext rawputchar newaddtask cause \
 	dispatch debug supervisor reschedule permit wait remtask \
 	settaskpri signal setexcept superstate userstate core traps \
 	screen serialrawio exec_init execfunctions prepareexecbase
