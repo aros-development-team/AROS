@@ -451,8 +451,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 		{
 		    struct TagItem tags[] =
                     {
-                        {GTMN_NewLookMenus,TRUE},
-                        {TAG_DONE, NULL}
+                        { GTMN_NewLookMenus, TRUE       },
+                        { TAG_DONE,          (IPTR)NULL }
                     };
                     LayoutMenusA(menu, visinfo, tags);
                 }
@@ -1685,7 +1685,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
 	for (muikey = MUIKEY_COUNT - 1; muikey >= MUIKEY_PRESS; muikey--)
 	{
-	    if (muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well != NULL
+	    if (muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well != 0
 		&& MatchIX(&ievent, &muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix))
 	    {
 		matched = TRUE;
@@ -1747,7 +1747,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     active_object = NULL;
     if ((data->wd_ActiveObject != NULL)
 	&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
-		     (IPTR)data->wd_ActiveObject) != NULL))
+		     (IPTR)data->wd_ActiveObject) != (IPTR)NULL))
     {
 	active_object = data->wd_ActiveObject;
 	get(active_object, MUIA_Disabled, &disabled);
@@ -1927,10 +1927,10 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 		    && (_flags(ehn->ehn_Object) & MADF_SHOWME))
 		{
 		    res = CoerceMethod
-			(
-			    ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
-			    NULL, muikey2
-			    );
+		    (
+		        ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
+		        (IPTR)NULL, muikey2
+		    );
 		    if (res & MUI_EventHandlerRC_Eat)
 			return;
 		}
@@ -2184,7 +2184,7 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
 
     if ((data->wd_ActiveObject != NULL)
 	&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
-		     (IPTR)data->wd_ActiveObject) != NULL))
+		     (IPTR)data->wd_ActiveObject) != (IPTR)NULL))
     {
 	if ((IPTR)data->wd_ActiveObject == newval)
 	    return;
@@ -2337,7 +2337,7 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (NULL == data->wd_MemoryPool)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
 
     data->wd_RenderInfo.mri_WindowObject = obj;
@@ -2746,7 +2746,7 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case MUIA_Window_Activate:
-	    STORE = (data->wd_Flags & (MUIWF_ACTIVE | MUIWF_OPENED)) == MUIWF_ACTIVE | MUIWF_OPENED;
+	    STORE = (data->wd_Flags & (MUIWF_ACTIVE | MUIWF_OPENED)) == (MUIWF_ACTIVE | MUIWF_OPENED);
 	    return TRUE ;
         
 	case MUIA_Window_Window:
@@ -2756,7 +2756,7 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_ActiveObject:
 	    if ((data->wd_ActiveObject != NULL)
 		&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
-			     (IPTR)data->wd_ActiveObject) != NULL))
+			     (IPTR)data->wd_ActiveObject) != (IPTR)NULL))
 		STORE = (IPTR)data->wd_ActiveObject;
 	    else
 		STORE = (IPTR)NULL;
@@ -3332,7 +3332,7 @@ static IPTR Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window
 	struct MUI_DragImage *di;
 	struct BitMapNode *bmn;
 
-	if (!(dnd = CreateDragNDropA(NULL))) return NULL;
+	if (!(dnd = CreateDragNDropA(NULL))) return 0;
 	if (!(di = (struct MUI_DragImage*)DoMethod(msg->obj,MUIM_CreateDragImage,-msg->touchx,-msg->touchy,msg->flags)))
 	{
 	    DeleteDragNDrop(dnd);
@@ -3353,7 +3353,7 @@ static IPTR Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window
 		GUI_Height, di->height,
 		TAG_DONE)))
 	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
+	    DoMethod(msg->obj, MUIM_DeleteDragImage, (IPTR)di);
 	    DeleteDragNDrop(dnd);
 	    return 0;
 	}
