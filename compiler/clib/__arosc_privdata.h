@@ -69,6 +69,11 @@ struct arosc_privdata
     /* __arosc_usedata  */
     APTR acpd_process_returnaddr;
     ULONG acpd_usercount;
+
+    /* __upath */
+    char *acpd_apathbuf; /* Buffer that holds the AROS path converted from the
+                            equivalent *nix path.  */
+    int   acpd_doupath;  /* BOOL - does the conversion need to be done?  */
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
@@ -89,7 +94,8 @@ struct arosc_privdata
 #define __timereq                             (__get_arosc_privdata()->acpd_timereq)
 #define __timeport                            (__get_arosc_privdata()->acpd_timeport)
 #define TimerBase                             (__get_arosc_privdata()->acpd_TimerBase)
-
+#define __apathbuf                            (__get_arosc_privdata()->acpd_apathbuf)
+#define __doupath                             (__get_arosc_privdata()->acpd_doupath)
 
 #define __aros_startup          ((struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup)
 #define __aros_startup_jmp_buf  (__aros_startup->as_startup_jmp_buf)
