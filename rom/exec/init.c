@@ -54,6 +54,7 @@ extern const struct Resident Mathffp_resident;
 extern const struct Resident Aros_resident;
 extern const struct Resident BOOPSI_resident;
 extern const struct Resident HIDD_resident;
+extern const struct Resident UnixIO_resident;
 
 extern void InitCore(void);
 
@@ -83,6 +84,12 @@ static void idleTask (void)
     {
 	if (inputDevice)
 	    Signal (inputDevice, SIGBREAKF_CTRL_F);
+
+	Disable ();
+	SysBase->ThisTask->tc_State = TS_READY;
+	AddTail (&SysBase->TaskReady, &SysBase->ThisTask->tc_Node);
+	Enable ();
+	Switch ();
     }
 }
 
@@ -397,6 +404,7 @@ printf ("SysBase = %p\n", SysBase);
     (void) InitResident((struct Resident *)&Utility_resident,0);
     (void) InitResident((struct Resident *)&BOOPSI_resident,0);
     (void) InitResident((struct Resident *)&HIDD_resident,0);
+    (void) InitResident((struct Resident *)&UnixIO_resident,0);
     DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
     (void) InitResident((struct Resident *)&Graphics_resident,0);
