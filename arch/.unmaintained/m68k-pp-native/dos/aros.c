@@ -16,9 +16,12 @@
 #define CANNOT_LOAD_SHELL	"Unable to load C:shell\n"
 #define CANNOT_OPEN_CON		"Cannot open boot console\n"
 
+extern void hidd_demo(struct ExecBase * SysBase);
+
 int main(struct ExecBase * SysBase, struct Library * DOSBase)
 {
     LONG            rc = RETURN_FAIL;
+    hidd_demo(SysBase);
 
 *(ULONG *)0xc0de0000 = 0;
 

@@ -7,7 +7,8 @@ OBJS := $(OSGENDIR)/graphics/graphics_driver.o				\
 	$(OSGENDIR)/graphics/objcache.o					\
 	$(OSGENDIR)/graphics/dispinfo.o					\
 	$(OSGENDIR)/graphics/fakegfxhidd.o				\
-	$(OSGENDIR)/boot/hidd_graphics.o
+	$(OSGENDIR)/boot/hidd_graphics.o				\
+	$(OSGENDIR)/boot/display_driver.o
 
 LIBS = -L$(LIBDIR)    \
 	-lexec        \

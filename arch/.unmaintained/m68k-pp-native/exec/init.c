@@ -61,7 +61,7 @@ extern const struct Resident
 	Input_resident,
 	Intuition_resident,
 	hiddgraphics_resident,
-	vgaHidd_resident,
+	displayHidd_resident,
 	hiddserial_resident,
 	mouseHidd_resident,
 	Console_resident,
@@ -98,7 +98,7 @@ static const struct Resident *romtagList[] =
 	&Input_resident,                /* ColdStart,   30	 */
 	&Intuition_resident,            /* ColdStart,   10	 */	
 	&hiddgraphics_resident,		/* ColdStart,   9	 */
-//	&vgaHidd_resident,		/* ColdStart,   9	 */
+	&displayHidd_resident,		/* ColdStart,   9	 */
 //	&hiddserial_resident,		/* ColdStart,   9	 */
 	&Console_resident,              /* ColdStart,   5	 */
 	&Workbench_resident,		/* ColdStart,  -120	 */

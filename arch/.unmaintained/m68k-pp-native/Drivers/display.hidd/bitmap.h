@@ -63,6 +63,6 @@ VOID bitmap_putpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *);
 HIDDT_Pixel bitmap_getpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *);
 ULONG bitmap_drawpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *);
 
-void displayRefreshArea(struct bitmap_data *, int , struct Box *);
+void DisplayRefreshArea(struct bitmap_data *, int , struct Box *);
 
 #endif /* _BITMAP_H */

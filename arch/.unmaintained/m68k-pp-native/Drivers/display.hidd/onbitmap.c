@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Bitmap class for VGA hidd.
+    Desc: Bitmap class for Display hidd.
     Lang: English.
 */
 
@@ -84,7 +84,7 @@ char tab[127];
 static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("DisplayGfx.BitMap::New()\n"));
-
+*(ULONG *)0xc0de3123 = 0;
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
@@ -281,7 +281,6 @@ OOP_Class *init_onbmclass(struct display_staticdata *xsd)
     {
 	D(bug("Got attrbase\n"));
        
-/*    for (;;) {cl = cl; } */
         cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
         if(cl)
         {

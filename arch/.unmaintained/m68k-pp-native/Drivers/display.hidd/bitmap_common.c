@@ -32,8 +32,7 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
 
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaRefreshArea(data, 1, &box);
-    draw_mouse(XSD(cl));
+    DisplayRefreshArea(data, 1, &box);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
     
@@ -69,7 +68,7 @@ static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	    data->Regs->DAC[i*3+2] = blue >> 2;
 #ifdef OnBitmap
 	    ObtainSemaphore(&XSD(cl)->HW_acc);
-	    vgaRestore(data->Regs);
+	    DisplayRestore(data->Regs);
 	    ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 	}
@@ -168,7 +167,7 @@ static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
     /* Restore palette if OnBitmap */
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaRestore(data->Regs, TRUE);
+    DisplayRestore(data->Regs, TRUE);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 
@@ -199,12 +198,6 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     pix = 0x8000 >> (msg->x % 8);
     ObtainSemaphore(&XSD(cl)->HW_acc);
 
-    outw(0x3c4,0x0f02);
-    outw(0x3ce,pix | 8);
-    outw(0x3ce,0x0005);
-    outw(0x3ce,0x0003);
-    outw(0x3ce,(fg << 8));
-    outw(0x3ce,0x0f01);
 
     *ptr2 |= 1;		// This or'ed value isn't important
 
@@ -257,12 +250,6 @@ static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_D
     pix = 0x8000 >> (msg->x % 8);
     ObtainSemaphore(&XSD(cl)->HW_acc);
 
-    outw(0x3c4,0x0f02);
-    outw(0x3ce,pix | 8);
-    outw(0x3ce,0x0005);
-    outw(0x3ce,0x0003);
-    outw(0x3ce,(fg << 8));
-    outw(0x3ce,0x0f01);
 
     *ptr2 |= 1;		// This or'ed value isn't important
 
@@ -343,7 +330,7 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
         ObtainSemaphore(&XSD(cl)->HW_acc);
 	
-        vgaRefreshArea(data, 1, &box);
+        DisplayRefreshArea(data, 1, &box);
 	
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 
@@ -450,7 +437,7 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
         ObtainSemaphore(&XSD(cl)->HW_acc);
 
-        vgaRefreshArea(data, 1, &box);
+        DisplayRefreshArea(data, 1, &box);
 
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 
@@ -591,7 +578,7 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
         ObtainSemaphore(&XSD(cl)->HW_acc);
 
-        vgaRefreshArea(data, 1, &box);
+        DisplayRefreshArea(data, 1, &box);
 
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 
@@ -660,7 +647,7 @@ static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd
 
         ObtainSemaphore(&XSD(cl)->HW_acc);
 
-        vgaRefreshArea(data, 1, &box);
+        DisplayRefreshArea(data, 1, &box);
 
         ReleaseSemaphore(&XSD(cl)->HW_acc);
 

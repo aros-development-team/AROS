@@ -3,8 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-#FILES	:=	vga_init functable vgaclass vgahw offbitmap onbitmap
-FILES   :=      display_init offbitmap onbitmap
+FILES   :=      display_init functable displayclass displayhw offbitmap onbitmap
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o

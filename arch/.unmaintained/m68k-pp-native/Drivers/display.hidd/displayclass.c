@@ -50,7 +50,7 @@ static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB	},
-    { IID_Hidd_DISPLAYgfx,	&HiddDisplayAB		},
+    { IID_Hidd_Displaygfx,	&HiddDisplayAB		},
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { IID_Hidd_Sync,		&HiddSyncAttrBase	},
     { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
@@ -179,6 +179,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ TAG_MORE, 0UL }
     };
     struct pRoot_New mymsg;
+*(ULONG *)0xc0de2122=0;
 
     /* Init the pixel format */
     pftags[0].ti_Data = 0;
@@ -237,11 +238,6 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	D(bug("Got object from super\n"));
 
 
-	XSD(cl)->mouseW = 11;
-	XSD(cl)->mouseH = 11;
-	XSD(cl)->mouseShape = shape;
-	XSD(cl)->mouseVisible = 1;
-
 	XSD(cl)->displayhidd = o;
 	
 	ReturnPtr("DisplayGfx::New", OOP_Object *, o);
@@ -286,6 +282,7 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct pHidd_Gfx_NewBitMap mymsg;
     
     EnterFunc(bug("DisplayGfx::NewBitMap()\n"));
+*(ULONG *)0xc0de2123=0;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -724,12 +721,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
  
             ObtainSemaphore(&XSD(cl)->HW_acc);
 
-    	    displayRefreshArea(ddata, 1, &box);
-            if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
-                    (XSD(cl)->mouseX <= box.x2) ) ||
-        	(   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
-                    (XSD(cl)->mouseY <= box.y2) ) )
-        	draw_mouse(XSD(cl));
+    	    DisplayRefreshArea(ddata, 1, &box);
 
             ReleaseSemaphore(&XSD(cl)->HW_acc);
 
@@ -758,28 +750,12 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 {
     struct Box box = {0, 0, 0, 0};
 
-    box.x1 = XSD(cl)->mouseX;
-    box.y1 = XSD(cl)->mouseY;
-    box.x2 = box.x1 + XSD(cl)->mouseW;
-    box.y2 = box.y1 + XSD(cl)->mouseH;
 
     ObtainSemaphore(&XSD(cl)->HW_acc);
 
     if (XSD(cl)->visible)
-	displayRefreshArea(XSD(cl)->visible, 1, &box);
+	DisplayRefreshArea(XSD(cl)->visible, 1, &box);
 
-    XSD(cl)->mouseX = (short)msg->x;
-    XSD(cl)->mouseY = (short)msg->y;
-
-    if (XSD(cl)->visible)
-    {
-        if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
-	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
-	if (XSD(cl)->mouseX >= XSD(cl)->visible->width) XSD(cl)->mouseX = XSD(cl)->visible->width - 1;
-	if (XSD(cl)->mouseY >= XSD(cl)->visible->height) XSD(cl)->mouseY = XSD(cl)->visible->height - 1;
-    }
-    
-    draw_mouse(XSD(cl));
 
     ReleaseSemaphore(&XSD(cl)->HW_acc);
     
@@ -790,10 +766,8 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
-    XSD(cl)->mouseVisible = msg->visible;
 
     ObtainSemaphore(&XSD(cl)->HW_acc);    
-    draw_mouse(XSD(cl));
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 }
 
@@ -846,12 +820,12 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct display_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_Displaygfx },
+//	{ aMeta_ID,			(IPTR)CLID_Hidd_Displaygfx },
 	{TAG_DONE, 0UL}
     };
 
     EnterFunc(bug("VgaHiddClass init\n"));
-    
+*(ULONG *)0xc0de76ac = 0;
     if (MetaAttrBase)
     {
     	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
@@ -895,49 +869,3 @@ VOID free_displayclass(struct display_staticdata *xsd)
     ReturnVoid("free_displayclass");
 }
 
-void draw_mouse(struct display_staticdata *xsd)
-{
-    int pix;
-    unsigned char *ptr, *data;
-    int x, y, width, fg, x_i, y_i;
-    
-    if (xsd->mouseVisible)
-    {
-        if (xsd->visible)
-	{
-	    /* Get display width */
-	    width = xsd->visible->width;
-
-    	    /* And pointer data */
-    	    data = xsd->mouseShape;
-    
-    	    ObtainSemaphore(&xsd->HW_acc);
-
-    	    outw(0x3c4,0x0f02);
-	    outw(0x3ce,0x0005);
-	    outw(0x3ce,0x0003);
-	    outw(0x3ce,0x0f01);
-
-	    for (y_i = 0, y = xsd->mouseY ; y_i < xsd->mouseH; y_i++, y++)
-    	    {
-    		for (x_i = 0, x = xsd->mouseX; x_i < xsd->mouseW; x_i++, x++)
-		{
-		    ptr = (char *)(0xa0000 + (x + (y * width)) / 8);
-		    pix = 0x8000 >> (x % 8);
-    
-		    fg = (char)*data++;
-
-		    if (fg && (x < width))
-		    {
-			outw(0x3ce,pix | 8);
-			outw(0x3ce,(fg << 8));
-
-			*ptr |= 1;		// This or'ed value isn't important
-		    }
-		}
-	    }
-	    
-	    ReleaseSemaphore(&xsd->HW_acc);
-	}
-    }
-}

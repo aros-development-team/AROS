@@ -61,7 +61,7 @@ void DisplayRefreshArea(struct bitmap_data *, int , struct Box *);
 static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("DisplayGfx.BitMap::New()\n"));
-    
+*(ULONG *)0xc0de5433=0;    
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
