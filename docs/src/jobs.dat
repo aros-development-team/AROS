@@ -685,7 +685,7 @@ graphics00009;2;SDuvan;Write AskSoftStyle
 graphics00010;2;SDuvan;Write SetSoftStyle
 graphics00011;2;bergers;Write AddBob
 graphics00012;2;bergers;Write AddVSprite
-graphics00013;1;bergers;Write DoCollision
+graphics00013;2;bergers;Write DoCollision
 graphics00014;1;bergers;Write DrawGList
 graphics00015;2;bergers;Write InitGels
 graphics00016;2;bergers;Write InitMasks
