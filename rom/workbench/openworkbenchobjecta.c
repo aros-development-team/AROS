@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Open a drawer or launch a program.
@@ -13,6 +13,7 @@
 #include <intuition/intuition.h>
 #include <workbench/workbench.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 
 #include <string.h>
 
@@ -141,9 +142,9 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 )
                 {
                     /* It's a Workbench program */
-                    D(bug("OpenWorkbenchObject: it's a WB program\n"));
-                    
                     BPTR lock = Lock(name, ACCESS_READ);
+                    
+                    D(bug("OpenWorkbenchObject: it's a WB program\n"));
                     
                     if (lock != NULL)
                     {
@@ -462,11 +463,11 @@ BOOL __WB_BuildArguments
     args = AllocMem(sizeof(struct WBArg) * startup->sm_NumArgs, MEMF_ANY | MEMF_CLEAR);
     if (args != NULL)
     {
+        LONG i = 0;
+        
         startup->sm_ArgList = args;
         
         /*-- Build the argument list ---------------------------------------*/
-        LONG i = 0;
-        
         if
         (
                (args[i].wa_Lock = DupLock(lock)) == NULL
