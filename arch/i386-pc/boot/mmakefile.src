@@ -11,8 +11,10 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/dispinfo.o					\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
+#	C/Assign C/CD C/Mount C/Shell \
+
 BOOT_FILES := \
-	C/Assign C/CD C/Mount C/Shell \
+	C/Mount C/Shell \
 	Libs/arosc.library \
 	Devs/Mountlist Devs/nil.handler Devs/ram.handler Devs/pipefs.handler \
 	S/Startup-Sequence S/hidd.prefs \

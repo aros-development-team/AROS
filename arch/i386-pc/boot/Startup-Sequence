@@ -14,11 +14,12 @@ Mount PIPEFS:
 
 ;-----------------------------------------------
 ; Copy System to RAM:
-CD RAM:
+RAM:
+
 SYS:contrib/gnu/gzip -dc SYS:AROS.tgz | SYS:contrib/aminet/untar IN: > "CON:0/0/640/480/Decompressing AROS.../NODEPTH/NOSIZE"
 
-Assign SYS: RAM:
-Assign C: SYS:C
+C/Assign SYS: RAM:
+C/Assign C: SYS:C
 Assign DEVS: SYS:Devs
 Assign LIBS: SYS:LIBS
 Assign S: SYS:S
