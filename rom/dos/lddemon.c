@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/01 05:01:13  ldp
+    Changed AROS_LVO_CALL3 to AROS_LVO_CALL3NR
+
     Revision 1.8  1996/10/24 15:50:31  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -175,7 +178,7 @@ AROS_LH4(BYTE,OpenDevice,
 	iORequest->io_Device=device;
 	iORequest->io_Flags=flags;
 	iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	AROS_LVO_CALL3(void,
+	AROS_LVO_CALL3NR(
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(ULONG,unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
