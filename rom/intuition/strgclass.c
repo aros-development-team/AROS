@@ -366,6 +366,10 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		retval = GMR_REUSE;
 	    }
 	}
+	else if (ie->ie_Code == MENUDOWN)
+	{
+	    retval = GMR_REUSE;
+	}
 	/* Just to prevent a whole lot of MOUSE_MOVE messages being passed */
 	else if (ie->ie_Code == IECODE_NOBUTTON)
 	{
@@ -534,7 +538,7 @@ AROS_UFH3S(IPTR, dispatch_strgclass,
 	     * The check of cl == OCLASS(o) should fail if we have been
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
-	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	    if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
 	    {
 		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
 		if (gi)
