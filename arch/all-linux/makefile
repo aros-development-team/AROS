@@ -1,9 +1,8 @@
 # $Id$
 
 TOP=../..
-COMPILE_KERNEL = yes # Must have a value, no matter which one
 
-USER_INCLUDES=-I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
+USER_INCLUDES=-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
 
 include $(TOP)/config/make.cfg
 
