@@ -75,7 +75,7 @@
      
     Forbid();
 
-    ForeachNode(sigSem,(struct Node *)ss)
+    ForeachNode(sigSem, ss)
     {
 	/* QueueCount == -1 means unlocked */
 	ss->ss_QueueCount++;
