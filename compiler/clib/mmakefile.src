@@ -43,7 +43,8 @@ COMMON	:= \
 	isinf \
 	ldiv \
 	lldiv \
-	memchr \
+	mblen \
+        memchr \
 	memcmp \
 	memcpy \
 	memmove \
@@ -284,6 +285,7 @@ ROM_COMMON := \
 	div \
 	ldiv \
 	lldiv \
+        mblen \
 	memchr \
 	memcmp \
 	memcpy \
