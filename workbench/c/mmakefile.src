@@ -57,6 +57,7 @@ FILES	    := \
 	Set \
 	SetDate \
 	Setenv \
+	Setmap \
 	Stack \
 	Unalias \
 	Unset \
