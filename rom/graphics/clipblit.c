@@ -14,6 +14,8 @@
 #include <graphics/layers.h>
 #include <graphics/clip.h>
 
+#define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
+
 /*****************************************************************************
 
     NAME */
@@ -96,11 +98,11 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     BOOL li_locked = FALSE;
-    
+
     /* overlapping and non-overlapping blits are handled differently. */
 
     if (srcRP->Layer &&
-	destRP->Layer && 
+	destRP->Layer &&
 	(srcRP->Layer != destRP->Layer) &&
 	(srcRP->Layer->LayerInfo == destRP->Layer->LayerInfo))
     {
@@ -108,17 +110,16 @@
 	   have to be locked, lock first LayerInfo, otherwise there
 	   is a potential deadlock problem */
     	LockLayerInfo(srcRP->Layer->LayerInfo);
-	li_locked = TRUE;
+        li_locked = TRUE;
     }
-    
+
     if (srcRP->Layer) LockLayerRom( srcRP->Layer);
     if (destRP->Layer && (destRP->Layer != srcRP->Layer)) LockLayerRom(destRP->Layer);
 
     /* Once the layers are locked there's no more need to hold the layerinfo lock */
-    
+
     if (li_locked) UnlockLayerInfo(srcRP->Layer->LayerInfo);
 
-    
     /* check for overlapping blits */
     if ( srcRP == destRP )
     {
@@ -157,7 +158,7 @@
 	if (NULL != RR)
 	{
 	    int xs, ys;
-	    /* 
+	    /*
                It's overlapping; depending on how bad it is overlapping I
                will have to split this up into several calls to the
                internal ClipBlit routine
@@ -173,11 +174,11 @@
               difficult case
 	    */
 
-	    if (xs * 2 < xSize || 
+	    if (xs * 2 < xSize ||
         	ys * 2 < ySize)
 	    {
-        	/* 
-        	   In this case I use a special routine to copy the rectangle 
+        	/*
+        	   In this case I use a special routine to copy the rectangle
         	*/
 
 	    	#warning set driver_MoveRaster hasClipRegion param correctly
@@ -195,10 +196,10 @@
 	    }
 	    else
 	    {
-        	/* 
+        	/*
         	   This case is not as difficult as the overlapping
         	   part can be copied first and then the other parts can
-        	   be copied. 
+        	   be copied.
         	*/
         	/* first copy the overlapping part to its destination */
         	internal_ClipBlit(srcRP,
@@ -234,11 +235,11 @@
                         	      minterm,
                         	      GfxBase);
         	    RR = RR->Next;
-		    
+
         	} /* while */
-		
+
 	    }
-	    
+
 	} /* if (NULL != RR)*/
 	else
 	{
@@ -274,7 +275,7 @@
                 	  ySize,
                 	  minterm,
                 	  GfxBase);
-    }  
+    }
 
     /* the way out, even in failure */
 exit:
@@ -286,7 +287,7 @@ exit:
     return;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* ClipBlit */
 
 void internal_ClipBlit(struct RastPort * srcRP,
@@ -611,3 +612,5 @@ void internal_ClipBlit(struct RastPort * srcRP,
 
   return;
 }
+
+#undef LayersBase
