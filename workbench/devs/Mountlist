@@ -60,3 +60,55 @@ FDSK3:
 	Reserved	= 2
 #
 
+/* Entry for a file mounted as filesystem AFDSK0: */
+AFD0:
+	FileSystem	= afs.handler
+	Device		= fdsk.device
+	Unit		= 0
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a file mounted as filesystem AFDSK1: */
+AFD1:
+	FileSystem	= afs.handler
+	Device		= fdsk.device
+	Unit		= 1
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a file mounted as filesystem AFDSK2: */
+AFD2:
+	FileSystem	= afs.handler
+	Device		= fdsk.device
+	Unit		= 2
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a file mounted as filesystem AFDSK3: */
+AFD3:
+	FileSystem	= afs.handler
+	Device		= fdsk.device
+	Unit		= 3
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
