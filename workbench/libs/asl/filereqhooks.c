@@ -404,7 +404,11 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
     win     = ld->ld_Window;
 
 
-    butrelbottom = - (win->BorderBottom + MIN_SPACING + udata->ButHeight);
+    butrelbottom = - (win->BorderBottom + udata->ButHeight + 1);
+    
+/* kprintf("butrelbuttom: %d, borderbottom: %d, minspacing: %d, butheight: %d\n"
+	, butrelbottom, win->BorderBottom, MIN_SPACING, udata->ButHeight);
+*/	
     left = win->BorderLeft + MIN_SPACING;
 
     if (!(udata->Flags & FRFLG_LAYOUTED))
@@ -415,17 +419,17 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		GA_Left,	left,
 		GA_Top, 	win->BorderTop	+ MIN_SPACING,
 		GA_RelWidth,	- (win->BorderRight  + 3 * MIN_SPACING + DEF_PROPWIDTH),
-		GA_RelHeight,	butrelbottom - MIN_SPACING - 2,
+		GA_RelHeight,	butrelbottom - MIN_SPACING * 3 - 2,
 		TAG_END);
 
 	SetAttrs(udata->Prop,
 		GA_RelRight,	- (win->BorderRight  + MIN_SPACING + DEF_PROPWIDTH),
 		GA_Top, 	win->BorderTop	+ MIN_SPACING,
 		GA_Width,	DEF_PROPWIDTH,
-		GA_RelHeight,	butrelbottom - MIN_SPACING - 2,
+		GA_RelHeight,	butrelbottom - MIN_SPACING * 3 - 2,
 		TAG_END);
 
-	/* Get & set the list, so that the prop receives OM_UPTAE and resizes
+	/* Get & set the list, so that the prop receives OM_UPDATE and resizes
 	** itself properly.
 	*/
 	GetAttr(AROSA_Listview_List, udata->DirList, (IPTR *)&list);
