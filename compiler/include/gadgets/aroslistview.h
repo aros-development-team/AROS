@@ -22,21 +22,25 @@
 
 /* Attribute IDs */
 
-#define AROSA_Listview_DisplayHook	AROSLV_TAGBASE + 0 /* [I..] */
-#define AROSA_Listview_RenderHook	AROSLV_TAGBASE + 1 /* [IS.] */
+#define AROSA_Listview_DisplayHook	AROSLV_TAGBASE + 0 /* [I] */
+#define AROSA_Listview_RenderHook	AROSLV_TAGBASE + 1 /* [IS] */
 #define AROSA_Listview_HorSpacing	AROSLV_TAGBASE + 2 /* [ISG] */
 #define AROSA_Listview_VertSpacing	AROSLV_TAGBASE + 3 /* [ISG] */
-#define AROSA_Listview_List		AROSLV_TAGBASE + 4 /* [I..] */
+#define AROSA_Listview_List		AROSLV_TAGBASE + 4 /* [IS] */
 
 
-#define AROSA_Listview_MaxColumns	AROSLV_TAGBASE + 5 /* [I..] The displayhook limit */
+#define AROSA_Listview_MaxColumns	AROSLV_TAGBASE + 5 /* [I] The displayhook limit */
 
 
 /* Formatstring for the coulumns. If none is specified the default will be BACKGROUNDPEN,
  Leftalign and equal weight */
 
-#define AROSA_Listview_Format 		AROSLV_TAGBASE + 6 /* [IS.] */
-#define AROSA_Listview_First 		AROSLV_TAGBASE + 7 /* [IS.] */
+#define AROSA_Listview_Format 		AROSLV_TAGBASE + 6  /* [IS]	*/
+#define AROSA_Listview_First 		AROSLV_TAGBASE + 7  /* [ISGUN]	*/
+#define AROSA_Listview_MultiSelect	AROSLV_TAGBASE + 8  /* [IS]	*/
+#define AROSA_Listview_DoubleClick	AROSLV_TAGBASE + 9  /* [G]	*/
+#define AROSA_Listview_Visible		AROSLV_TAGBASE + 10 /* [N]	*/
+#define AROSA_Listview_Total		AROSLV_TAGBASE + 11 /* [N]	*/
 
 /* These methods are merely aliases for the List ones.
  * These are needed because I must include that damn
