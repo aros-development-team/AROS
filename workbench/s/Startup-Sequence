@@ -36,8 +36,8 @@ SetEnv Workbench $Workbench
 SetEnv Kickstart $Kickstart
 
 AddDatatypes REFRESH QUIET
-Run IPrefs
-;ConClip
+Run <NIL: >NIL: IPrefs
+Run <NIL: >NIL: ConClip
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
@@ -72,7 +72,7 @@ Assign FDSK: SYS:DiskImages
 ;Mount FDSK0:
 
 ; Install a Workbench screen background pattern.
-run >NIL: screenpattern
+Run <NIL: >NIL: screenpattern
 
 PATH SYS:Demos ADD QUIET
 
