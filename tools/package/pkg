@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+
+import os, sys, struct
+
+PKG_PREFIX                 = 'PKG'
+PKG_VERSION                = 0
+
+PKG_HEADER_FORMAT          = '3cB' 
+
+PKG_FILE_PATHLENGTH_FORMAT = 'L'
+PKG_FILE_DATALENGTH_FORMAT = 'L'
+
+def readHeader( file ):
+    'readHeader( file ) -> version'
+    
+    header = struct.unpack( 
+        PKG_HEADER_FORMAT, 
+        file.read( struct.calcsize( PKG_HEADER_FORMAT ) ) 
+    )
+    version = header[3]
+    
+    return version
+    
+
+def writeHeader( file, version ):
+    'writeHeader( file, version ) -> None'
+    
+    file.write( 
+        struct.pack( 
+            PKG_HEADER_FORMAT, 
+            PKG_PREFIX[0], PKG_PREFIX[1], PKG_PREFIX[2], PKG_VERSION
+        )
+    )
+    
+
+def readFile( file ):
+    'readFile( file ) -> (path, data)'
+      
+    pathLength = struct.unpack(
+        PKG_FILE_PATHLENGTH_FORMAT,
+        file.read( struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT ) )
+    )
+    
+    path = file.read( pathLength[0] )
+    
+    dataLength = struct.unpack(
+        PKG_FILE_DATALENGTH_FORMAT,
+        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
+    )
+    
+    data = file.read( dataLength[0] )
+    
+    return (path, data)
+    
+
+def writeFile( file, path, data ):
+    'writeFile( file, path, data ) -> None'
+    
+    file.write( struct.pack( PKG_FILE_PATHLENGTH_FORMAT, len( path ) ) )
+    file.write( path )
+    file.write( struct.pack( PKG_FILE_DATALENGTH_FORMAT, len( data ) ) )
+    file.write( data )
+
+
+def listFiles( path='.' ):
+    'listFiles( path ) -> []'
+    
+    files = []
+    for name in os.listdir( path ):
+        name = os.path.join( path, name )
+        
+        if os.path.isdir( name ):
+            files.extend( listFiles( name ) )
+        else:
+            files.append( os.path.normpath( name ) )
+            
+    return files
+    
+
+def unpack( source, destination ):
+    'unpack( source, destination ) -> None'
+    
+    if not os.path.exists( destination ):
+        os.makedirs( destination )
+    
+    inputSize = os.path.getsize( source )
+    input     = open( source )
+    
+    oldwd = os.getcwd()
+    os.chdir( destination )
+    
+    version = readHeader( input )
+    
+    while input.tell() < inputSize:
+        (path, data) = readFile( input )
+        
+        print '« %s (%d bytes)' % (path, len( data ))
+        
+        directory = os.path.dirname( path )
+        if directory != '' and not os.path.exists( directory ):
+            os.makedirs( directory )
+            
+        output = open( path, 'w' )
+        output.write( data )
+        output.close()
+        
+    os.chdir( oldwd )
+    
+
+def pack( source, destination ):
+    'pack( source, destination ) -> None'
+    
+    output = open( destination, 'w' )
+    
+    oldwd = os.getcwd()
+    os.chdir( source )
+    
+    files = listFiles()   
+    
+    writeHeader( output, PKG_VERSION )
+    
+    for path in files:
+        print '» %s (%d bytes)' % (path, os.path.getsize( path ))
+        
+        input = open( path )
+        writeFile( output, path, input.read() )
+        input.close()
+    
+    os.chdir( oldwd )
+    
+    output.close()
+    
+    
+if __name__ == '__main__':
+    mode        = sys.argv[1]
+    source      = sys.argv[2]
+    destination = sys.argv[3]
+    
+    if   mode == 'c':
+        pack( destination, source )
+    elif mode == 'x':
+        unpack( source, destination )
+    else:
+        print 'Invalid mode.'
+
