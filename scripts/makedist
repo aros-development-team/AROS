@@ -1,5 +1,5 @@
 #!/bin/bash
-#set -x
+set -x
 # Create a source archive plus binaries.
 #
 # Install:
@@ -89,6 +89,29 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 	cp AROS/bin/native-i386/gen/rom/boot/aros.map AROS/bin/native-i386/AROS/Image.map
 	cp AROS/docs/README.native-i386 AROS/bin/native-i386/AROS/
 	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/native-i386/AROS
+    fi
+fi
+
+if [ ! -f "$dstdir/AROS-DiskImage-$rel.log" ]; then
+    # Build Native/i386
+    (
+	#sed 's/ = yes/ = no/' make.defaults > make.opts 
+
+	cd AROS && \
+	make contrib-disks
+    ) >& "$dstdir/AROS-DiskImage-$rel.log"
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building DiskImages for Native/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-DiskImage-$rel.log"
+	    echo "..."
+	    tail -50 "$dstdir/AROS-DiskImage-$rel.log"
+	    echo
+	    echo
+	) 1>&2
+	fail=1
+    else
+	cp bin/native-i386/gen/contrib-disks/*.img "$dstdir"
     fi
 fi
 
