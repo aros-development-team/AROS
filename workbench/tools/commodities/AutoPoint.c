@@ -175,7 +175,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
 	if(IconBase != NULL)
 	{
-	    UBYTE *array = ArgArrayInit(argc, argv);
+	    UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
 
 	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
 	    ArgArrayDone();
