@@ -35,6 +35,17 @@ FUNCS := adddtobject \
 
 #MM- workbench-libs-datatypes : linklibs
 
+#MM workbench-libs-datatypes-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-layers-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-icon-includes \
+#MM     includes-copy
+
 %build_module mmake=workbench-libs-datatypes \
     modname=datatypes modtype=library \
     files="datatypes_init $(FUNCS) $(FILES)" \
