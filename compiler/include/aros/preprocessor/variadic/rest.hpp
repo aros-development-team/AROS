@@ -5,4 +5,4 @@
 #
 # define AROS_PP_VARIADIC_REST_I(a, ...) __VA_ARGS__
 #
-# endif 
+# endif
