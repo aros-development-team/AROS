@@ -1157,8 +1157,16 @@ D(bug("Window: %p\n", w));
 		      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
 		      {
 		        /* bring outer window to front first!! */
+
 		        UpfrontLayer(NULL, targetwindow->BorderRPort->Layer);
-		        RefreshWindowFrame(targetwindow);
+			if (targetwindow->BorderRPort->Layer->Flags & LAYERREFRESH)
+			{
+			    /* BeginUpdate(targetwindow->BorderRPort->Layer); */
+		            RefreshWindowFrame(targetwindow);
+			    /* EndUpdate(targetwindow->BorderRPort->Layer, TRUE); */
+			    
+			    targetwindow->BorderRPort->Layer->Flags &= ~LAYERREFRESH;
+			}
 		      }
 		      
 		      UpfrontLayer(NULL, targetlayer);
@@ -1166,7 +1174,19 @@ D(bug("Window: %p\n", w));
 		      /* only this layer (inner window) needs to be updated */
 		      if (0 != (targetlayer->Flags & LAYERREFRESH))
 		      {
-		        struct IntuiMessage * IM = alloc_intuimessage(IntuitionBase);
+		        struct IntuiMessage * IM;
+			
+			/* stegerg */
+			
+			BeginUpdate(targetlayer);
+			if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+			{
+			     RefreshWindowFrame(targetwindow);
+			}
+			RefreshGadgets(targetwindow->FirstGadget, w, NULL);
+			EndUpdate(targetlayer, FALSE);
+			
+			IM = alloc_intuimessage(IntuitionBase);
 		        targetlayer->Flags &= ~LAYERREFRESH;
 		        if (NULL != IM)
 		        {
@@ -1248,9 +1268,7 @@ D(bug("Window: %p\n", w));
 
                      CheckLayersBehind = TRUE;
                      L = targetlayer;
-                     
-
-                     
+                                          
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
 
@@ -1485,33 +1503,75 @@ D(bug("Window: %p\n", w));
 	         and check whether a layer needs a refresh 
 	      */ 
 	      struct Layer * _L = L;
+	      struct Window * _W;
+	      
 	      while (NULL != _L)
 	      {
-	        if (0 != (_L->Flags & LAYERREFRESH) && NULL != _L->Window)
-	          windowneedsrefresh((struct Window *)_L->Window,
-	                             IntuitionBase);
-	       
+	        _W = (struct Window *)_L->Window;
+		
+	        if (0 != (_L->Flags & LAYERREFRESH) && NULL != _W)
+		{
+		  if (_W->WLayer == _L)
+		  {
+	            windowneedsrefresh(_W, IntuitionBase);
+		  }
+		  else
+		  {
+		    /* gzz outer layer */
+
+		    /* BeginUpdate(_L); */
+		    RefreshWindowFrame(_W);
+		    /* EndUpdate(_L, TRUE); */
+		    
+		    _L->Flags &= ~ LAYERREFRESH;
+		  }
+		  
+	        } /* if (0 != (_L->Flags & LAYERREFRESH) && NULL != _W) */
+		
 	       _L = _L->back;
-	      }
-	    }
+	       
+	      } /* while (NULL != _L) */
+	      
+	    } /* if (TRUE == CheckLayersBehind) */
 	    
 	    if (TRUE == CheckLayersInFront)
 	    {
 	      /* Walk through all layers in front of including the layer L
 	         and check whether a layer needs a refresh 
 	      */
+	      struct Window *_W;
+	      
 	      if (TRUE == CheckLayersBehind)
 	        L=L->front; /* the layer L has already been checked */
 	      
 	      while (NULL != L)
-	      {  
-	        if (0 != (L->Flags & LAYERREFRESH) && NULL != L->Window)
-	          windowneedsrefresh((struct Window *)L->Window,
-	                             IntuitionBase);
-	      
+	      {
+	        _W = (struct Window *)L->Window;
+		  
+	        if (0 != (L->Flags & LAYERREFRESH) && NULL != _W)
+		{
+		  if (_W->WLayer == L)
+		  {
+	            windowneedsrefresh(_W, IntuitionBase);
+		  }
+		  else
+		  {
+		    /* gzz outer layer */
+
+		    /* BeginUpdate(L); */
+		    RefreshWindowFrame(_W);
+		    /* EndUpdate(L, TRUE); */
+		    
+		    L->Flags &= ~ LAYERREFRESH;
+		  }
+		  
+	        } /* if (0 != (L->Flags & LAYERREFRESH) && NULL != _W) */
+		
 	        L = L->front;
-	      }
-	    }
+		
+	      } /* while (NULL != L) */
+	      
+	    } /* if (TRUE == CheckLayersInFront) */
 	}
 	else
 	{
