@@ -9,33 +9,34 @@ AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/exec -I$(GENINCDIR)
 TESTS		:=
 
 
-FILES := coldreboot \
-	addtask \
-	rawputchar \
-	remtask \
-	preparecontext \
-	prepareexecbase \
-	disable \
+FILES := \
+	cache \
 	cause \
+	coldreboot \
+	disable \
 	enable \
-	switch \
-	sys_dispatch \
 	idletask \
-	stackswap \
-	supervisor \
-	userstate \
-	superstate \
 	ints \
-	switchtouser \
 	offsets \
+	preparecontext \
+	rawputchar \
 	setsr \
+	stackswap \
+	superstate \
+	supervisor \
+	switch \
+	switchtouser \
+	sys_dispatch \
 	sys_trap1_handler \
-	traps
+	traps \
+	userstate
 
-COREFILES	:= init \
-	execstubs \
+COREFILES	:= \
 	core \
-	detect_memory
+	detect_memory \
+	detect_memory_handlers \
+	execstubs \
+	init
 
 
 #MM
