@@ -23,6 +23,7 @@ struct Library *DiskfontBase;
 int main(int argc, char ** argv)
 {
     ULONG afshortage;
+    IPTR  pargs[2];
 
     struct AvailFontsHeader *afh;
     struct AvailFonts *afptr;
@@ -32,8 +33,8 @@ int main(int argc, char ** argv)
 
     if (!(DiskfontBase = OpenLibrary("diskfont.library", 0L)))
     {
-	FPrintf((BPTR)stderr, "Couldn't open diskfont.library\n");
-	return (0);
+	VPrintf ("Couldn't open diskfont.library\n", NULL);
+	return (RETURN_FAIL);
     }
 
     do
@@ -56,24 +57,23 @@ int main(int argc, char ** argv)
 	/* Print some info about the fonts */
 	UWORD count;
 
-	Printf("Number of fonts found: %d\n", afh->afh_NumEntries);
+	pargs[0] = afh->afh_NumEntries;
+	VPrintf("Number of fonts found: %d\n", pargs);
 
 	/* Get pointer to the first AvailFonts item */
 	afptr = (struct AvailFonts*)&afh[1];
 
-	for (count = afh->afh_NumEntries; count --;)
+	for (count = afh->afh_NumEntries; count; count --)
 	{
-	    Printf
-	    (
-		"Font name: %s\t\t\tFont YSize: %d\n",
-		(LONG)afptr->af_Attr.ta_Name,
-		afptr->af_Attr.ta_YSize
-	    );
+	    pargs[0] = (IPTR)afptr->af_Attr.ta_Name;
+	    pargs[1] = afptr->af_Attr.ta_YSize;
+
+	    VPrintf ("Font name: %s\t\t\tFont YSize: %d\n", pargs);
 
 	    afptr ++;
 	}
     }
 
     CloseLibrary(DiskfontBase);
-    return (0);
+    return (RETURN_OK);
 }
