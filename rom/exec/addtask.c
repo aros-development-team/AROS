@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a task.
@@ -27,9 +27,6 @@
 /* if #define fills the unused stack with 0xE1 */
 #define STACKSNOOP
 
-static void KillCurrentTask(void);
-void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
-
 /*****************************************************************************
 
     NAME */
@@ -48,22 +45,30 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	Add a new task to the system. If the new task has the highest
 	priority of all and task switches are allowed it will be started
 	immediately.
-	Certain task fields should be intitialized and a stack must be
-	allocated before calling this function. tc_SPReg will be used as the
-	starting location for the stack pointer, i.e. a part of the stack can
-	be reserved to pass the task some initial arguments.
-	Memory can be added to the tc_MemEntry list and will be freed when the
-	task dies. The new task's registers are set to 0.
+
+	You must initialise certain fields, and allocate a stack before
+	calling this function. The fields that must be initialised are:
+	tc_SPLower, tc_SPUpper, tc_SPReg, and the tc_Node structure.
+
+	If any other fields are initialised to zero, then they will be
+	filled in with the system defaults.
+
+	The value of tc_SPReg will be used as the location for the stack
+	pointer. You can place any arguments you wish to pass to the Task
+	onto the stack before calling AddTask(). However note that you may
+	need to consider the stack direction on your processor.
+
+	Memory can be added to the tc_MemEntry list and will be freed when
+	the task dies. The new task's registers are set to 0.
 
     INPUTS
 	task	  - Pointer to task structure.
 	initialPC - Entry point for the new task.
-	finalPC   - Routine that is called if the initialPC() function returns.
-		    A NULL pointer installs the default finalizer.
+	finalPC   - Routine that is called if the initialPC() function
+		    returns. A NULL pointer installs the default finalizer.
 
     RESULT
-	The address of the new task or NULL if the operation failed (can only
-	happen with TF_ETASK set - currenty not implemented).
+	The address of the new task or NULL if the operation failed.
 
     NOTES
 
@@ -81,7 +86,6 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    /* APTR sp; */
 
     D(bug("Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
 	, task
@@ -92,24 +96,29 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     ASSERT_VALID_PTR(task);
 
     /* Set node type to NT_TASK if not set to something else. */
-    if(!task->tc_Node.ln_Type)
-	task->tc_Node.ln_Type=NT_TASK;
+    if(task->tc_Node.ln_Type == 0)
+	task->tc_Node.ln_Type = NT_TASK;
 
     /* Sigh - you should provide a name for your task. */
-    if(task->tc_Node.ln_Name==NULL)
-	task->tc_Node.ln_Name="unknown task";
+    if(task->tc_Node.ln_Name == NULL)
+	task->tc_Node.ln_Name = "unknown task";
 
     /* This is moved into SysBase at the tasks's startup */
     task->tc_IDNestCnt=-1;
     task->tc_TDNestCnt=-1;
 
     /* Signals default to all system signals allocated. */
-    if(task->tc_SigAlloc==0)
-	task->tc_SigAlloc=0xffff;
+    if(task->tc_SigAlloc == 0)
+	task->tc_SigAlloc = SysBase->TaskSigAlloc;
+
+    /*
+     *	tc_SigWait, tc_SigRecvd, tc_SigExcept are default 0
+     *	tc_ExceptCode, tc_ExceptData default to NULL.
+     */
 
     /* Currently only used for segmentation violation */
-    if(task->tc_TrapCode==NULL)
-	task->tc_TrapCode=&AROS_SLIB_ENTRY(TrapHandler,Exec);
+    if(task->tc_TrapCode == NULL)
+	task->tc_TrapCode = SysBase->TaskTrapCode;
 
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
@@ -122,20 +131,63 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
     {
-	task->tc_UnionETask.tc_ETask = AllocTaskMem (task
-	    , sizeof (struct IntETask)
-	    , MEMF_ANY|MEMF_CLEAR
+	struct ETask *et;
+
+	/*
+	 *  We don't add this to the task memory, it isn't free'd by
+	 *  RemTask(), rather by somebody else calling ChildFree().
+	 *  Alternatively, an orphaned task will free its own ETask.
+	 */
+	task->tc_UnionETask.tc_ETask = AllocVec
+	(
+	    sizeof (struct IntETask),
+	    MEMF_ANY|MEMF_CLEAR
 	);
 
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
 
-	/* I'm the parent task */
-	GetETask(task)->et_Parent = FindTask(NULL);
+	et = (struct ETask *)task->tc_UnionETask.tc_ETask;
+	et->et_Parent = FindTask(NULL);
+	NEWLIST(&et->et_Children);
+
+	/* Initialise the message list */
+	NEWLIST(&et->et_TaskMsgPort.mp_MsgList);
+	et->et_TaskMsgPort.mp_Flags = PA_SIGNAL;
+	et->et_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
+	et->et_TaskMsgPort.mp_SigTask = task;
+	et->et_TaskMsgPort.mp_SigBit = SIGB_CHILD;
+
+	/* Initialise the trap fields */
+	et->et_TrapAlloc = SysBase->TaskTrapAlloc;
+	et->et_TrapAble = 0;
+
+#if 0
+	Forbid();
+	while(et->et_UniqueID == 0)
+	{
+	    /*
+	     *	Add some fuzz on wrapping. Its likely that the early numbers
+	     *	where taken by somebody else.
+	     */
+	    if(++SysBase->ex_TaskID == 0)
+		SysBase->exTaskID = 1024;
+
+	    Disable();
+	    if(FindTaskByID(SysBase->ex_TaskID, SysBase) == NULL)
+		et->et_UniqueID = SysBase->ex_TaskID;
+	    Enable();
+	}
+	Permit();
+#endif
+    }
+    else
+    {
+	task->tc_UnionETask.tc_ETrap.tc_ETrapAlloc = SysBase->TaskTrapAlloc;
+	task->tc_UnionETask.tc_ETrap.tc_ETrapAble = 0;
     }
 
-    /* Get new stackpointer. */
-    /* sp=task->tc_SPReg; */
+    /* Get new stackpointer. Note, the doc says this MUST be initialised. */
     if (task->tc_SPReg==NULL)
 #if AROS_STACK_GROWS_DOWNWARDS
 	task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
@@ -164,18 +216,15 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 #endif
 
     /* Default finalizer? */
-    if(finalPC==NULL)
-	finalPC=&KillCurrentTask;
+    if(finalPC == NULL)
+	finalPC = SysBase->TaskExitCode;
 
     /* Init new context. */
     if (!PrepareContext (task, initialPC, finalPC))
     {
-	FreeTaskMem (task, task->tc_UnionETask.tc_ETask);
+	FreeVec(task->tc_UnionETask.tc_ETask);
 	return NULL;
     }
-
-    /* store sp */
-    /* task->tc_SPReg=sp; */
 
     /* Set the task flags for switch and launch. */
     if(task->tc_Switch)
@@ -227,8 +276,8 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     AROS_LIBFUNC_EXIT
 } /* AddTask */
 
-/* Default finalizer. */
-static void KillCurrentTask(void)
+/* Default finaliser. */
+void AROS_SLIB_ENTRY(TaskFinaliser,Exec)(void)
 {
     /* I need the global SysBase variable here - there's no local way to get it. */
     extern struct ExecBase *SysBase;
