@@ -353,8 +353,8 @@ VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale)
 {
      AROS_UFC3(VOID, hook->h_Entry,
        AROS_UFCA(struct Hook *,   hook,   A0),
-       AROS_UFCA(char,            token,  A1),
-       AROS_UFCA(struct Locale *, locale, A2)
+       AROS_UFCA(struct Locale *, locale, A2),
+       AROS_UFCA(char,            token,  A1)
      );
 }
 

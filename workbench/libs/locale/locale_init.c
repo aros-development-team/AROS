@@ -68,6 +68,10 @@ static const APTR inittabl[4] =
 #undef UtilityBase
 #undef IFFParseBase
 
+/* This global variable is needed for LocRawDoFmt */
+
+struct LocaleBase *globallocalebase;
+
 AROS_LH2(LIBBASETYPE *, init,
     AROS_LHA(LIBBASETYPE *,  LIBBASE, D0),
     AROS_LHA(BPTR,                  segList, A0),
@@ -79,6 +83,8 @@ AROS_LH2(LIBBASETYPE *, init,
 
     SysBase = sysBase;
   
+    globallocalebase = LIBBASE;
+    
     /* Do whatever static initialisation you need here */
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_LocaleLock);
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogLock);
