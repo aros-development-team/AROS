@@ -1,4 +1,6 @@
+PURIFY	= /home/digulla/AROS/compiler/purify/purify
 CC	 = gcc
+#CC	  = $(PURIFY) gcc
 CFLAGS	 = -g -Wall -O -I../toollib
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib

@@ -21,13 +21,12 @@
 
 This is a filename <filename text="test.src">.
 
-<DEF NAME="code" OPTION="type">
+<BDEF NAME="code" OPTION="type" DEFAULT="c">
     <ENV NAME="code">
-    <SET tmpfile="$gentmpfile()">
-    <WRITE FILENAME="$tmpfile">$text</WRITE>
-    <EXEC CMD="format -type $type -style $outputStyle < $tmpfile" OPTION="IncludeOutput ProcessOutput NoInput">
+    <FILTER CMD="format -type $type -style $outputStyle $infilename"
+	OPTION="VerbatimInput InputFile ProcessOutput">
     </ENV>
-</DEF>
+</BDEF>
 
 <code>
 #include <stdio.h>
