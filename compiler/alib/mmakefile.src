@@ -48,6 +48,7 @@ FILES	:= \
     deleteport \
     deletestdio \
     deletetask \
+    dodtmethod \
     dogadgetmethod \
     domethod \
     dosupermethod \
