@@ -59,7 +59,11 @@ Boston, MA 02111-1307, USA.  */
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
 
-#define ID	((0L << 24) | (6L << 16) | 0)
+#define MAJOR		0L
+#define MINOR		6L
+#define REVISION	1L
+#define ID		((MAJOR << 24) | (MINOR << 16) | REVISION)
+#define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))
 
 /* Types */
 typedef struct _Node Node;
@@ -887,7 +891,7 @@ readcache (Project * prj)
     if (fh)
     {
 	fread (&id, sizeof(id), 1, fh);
-	if (id != ID)
+	if (!CHECK_ID(id))
 	{
 	    fclose (fh);
 	    fh = NULL;
