@@ -8,6 +8,7 @@
 #MM- workbench-classes-datatypes-complete : \
 #MM	    workbench-classes-datatypes-text \
 #MM	    workbench-classes-datatypes-ascii \
-#MM	    workbench-classes-datatypes-binary
+#MM	    workbench-classes-datatypes-binary \
+#MM	    workbench-classes-datatypes-picture
 
 #MM- workbench-complete : workbench-classes-complete
