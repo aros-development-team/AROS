@@ -93,7 +93,7 @@ void
 PrintErrorStack (void)
 {
     while (ErrorSP--)
-	printf ("%s\n", ErrorStack[ErrorSP]);
+	fprintf (stderr, "%s\n", ErrorStack[ErrorSP]);
 
     ErrorSP = 0;
 }
