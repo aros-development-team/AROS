@@ -111,9 +111,7 @@ struct NativeIcon
 
 struct IconBase
 {
-    struct Library          LibNode;
-    BPTR                    ib_SegList;
-    struct ExecBase        *ib_SysBase;
+    struct LibHeader        LibHeader;
     struct Library         *ib_UtilityBase;
     struct Library         *ib_IntuitionBase;
     struct Library         *ib_IFFParseBase;
