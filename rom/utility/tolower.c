@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:14:47  digulla
+    Removed the TOLOWER() macros. Use the library function instead
+
     Revision 1.3  1996/08/13 14:10:31  digulla
     Replaced __AROS_LA by __AROS_LHA
 
@@ -30,7 +33,7 @@
 
 /*  FUNCTION
 	Convert a character to lower case.
-	
+
     INPUTS
 	character - The character to convert.
 
@@ -52,6 +55,16 @@
 *****************************************************************************/
 {
     __AROS_FUNC_INIT
-    return TOLOWER(character);
+
+    return
+    (
+	(character >= 'A' && character <= 'Z')
+	|| (character >= 0xC0
+	    && character <= 0xDE
+	    && character != 0xD7)
+	? character + 0x20
+	: character
+    );
+
     __AROS_FUNC_EXIT
 } /* ToLower */
