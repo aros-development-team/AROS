@@ -2,6 +2,7 @@
 # Creates hosted binary packages.
 
 source $SP/setup
+setl   hosted.log
 
 printi "Creating hosted binary packages..."
 
@@ -47,3 +48,5 @@ if [[ $CFG_CONTRIB_TYPE == "hosted" ]]; then
 fi
 
 cd      $ROOT
+resetl
+
