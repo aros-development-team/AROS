@@ -20,6 +20,8 @@ FILES := \
 	Generic/adf_nativ
 
 #MM- linklibs : linklibs-adf
+#MM
+linklibs-adf :
 
 %make_linklib_setup mmake=linklibs-adf
 %make_linklib
