@@ -120,7 +120,7 @@ AROS_LH0(IPTR, OpenWorkBench,
 	    struct DimensionInfo dim;
 
 	    #define BOUND(min, val, max) \
-	        (((min) < (val)) ? (min) : ((max) > (val)) ? (max) : (val))
+	        (((min) > (val)) ? (min) : ((max) < (val)) ? (max) : (val))
             
 	    if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, 0))
             {
