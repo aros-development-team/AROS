@@ -1,6 +1,6 @@
 # Makefile for c_iff
 
-.SUFFIXES: .c.o
+#.SUFFIXES: .c.o
 
 CC = \
 	cc
@@ -26,26 +26,29 @@ OBJS = \
 	skipchunkdata.o \
 	writechunkdata.o
 
-.c.o:
-	$(CC) $(CFLAGS) -c $*.c -o $@
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-all: libc_iff.a
-doc: c_iff.txt
+#.c.o:
+#	$(CC) $(CFLAGS) -c $*.c -o $@
 
-libc_iff.a: $(OBJS)
+all : libc_iff.a
+doc : c_iff.txt
+
+libc_iff.a : $(OBJS)
 	$(RM) libc_iff.a
 	$(AR) $@ $(OBJS)
 	$(RANLIB) $@
 
-c_iff.txt:
+c_iff.txt :
 	perl autodoc.pl *.c >c_iff.txt
 
-example: example.o libc_iff.a hot.iff
+example : example.o libc_iff.a hot.iff
 	$(CC) $(CFLAGS) -o $@ example.o -L . -lc_iff
 
-$(OBJS): c_iff.h
+$(OBJS) : c_iff.h
 
-clean:
+clean :
 	$(RM) libc_iff.a
 	$(RM) *.o
 	$(RM) c_iff.txt

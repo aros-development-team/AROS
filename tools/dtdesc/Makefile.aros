@@ -2,7 +2,7 @@
 
 -include $(TOP)/config/make.cfg
 
-.SUFFIXES: .c.o
+#.SUFFIXES: .c.o
 
 CC = \
 	cc
@@ -13,8 +13,11 @@ RM = rm -f
 AR = ar rv
 RANLIB = ranlib
 
-.c.o:
-	$(CC) $(CFLAGS) -c $*.c -o $@
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#.c.o:
+#	$(CC) $(CFLAGS) -c $*.c -o $@
 
 all: $(CREATEDTDESC) examinedtdesc
 
