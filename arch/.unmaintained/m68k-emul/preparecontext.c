@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/12/05 15:31:00  aros
+    Patches by Geert Uytterhoeven integrated
+
     Revision 1.3  1996/10/24 15:51:28  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -21,9 +24,9 @@
 	AROS_LH3I(APTR, PrepareContext,
 
 /*  SYNOPSIS */
-	AROS_LA(APTR, stackPointer, A0),
-	AROS_LA(APTR, entryPoint,   A1),
-	AROS_LA(APTR, fallBack,     A2),
+	AROS_LHA(APTR, stackPointer, A0),
+	AROS_LHA(APTR, entryPoint,   A1),
+	AROS_LHA(APTR, fallBack,     A2),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 9, Exec)

@@ -3,26 +3,61 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/m68k-emul
+SPECIAL_CFLAGS = -I $(TOP)/exec
 
-all: setup $(LIBDIR)/libkernel.a
+FILES = \
+      supervisor \
+      switch \
+      dispatch \
+      disable \
+      enable \
+      forbid \
+      permit \
+      preparecontext \
+      special \
+      semaphoreglue \
+      exception \
+      cachecleare \
+      cacheclearu \
+      cachecontrol \
+      cachepostdma \
+      cachepredma \
+      setsr \
+      getcc \
+      superstate \
+      userstate \
+      stackswap \
+      runprocess
+
+all: setup $(TOP)/include/aros/machine.h machine.i \
+      $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
-	$(RM) $(LIBDIR)/libkernel.a
+	$(RM) $(TOP)/include/aros/machine.h
 
-$(OBJDIR)/%.o: %.s
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+config:
+      @echo "Configuring for a m68k CPU..."
 
-$(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+machine.i: geninc.c
+      $(CC) $(CFLAGS) -o geninc geninc.c
+      ./geninc > machine.i
 
-libkernel.a: $(OBJDIR)/init.o $(OBJDIR)/supervisor.o $(OBJDIR)/switch.o \
-	    $(OBJDIR)/dispatch.o $(OBJDIR)/disable.o $(OBJDIR)/enable.o \
-	    $(OBJDIR)/forbid.o $(OBJDIR)/permit.o $(OBJDIR)/preparecontext.o \
-	    $(OBJDIR)/special.o
-	$(AR) $@ $^
+$(OSGENDIR)/%.o: %.s machine.i
+      $(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
+      if test ! -s $*.err; then rm $*.err ; else true ; fi
+
+$(OSGENDIR)/%.o: %.c
+      $(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+      if test ! -s $*.err; then rm $*.err ; else true ; fi
+
+$(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
+      @if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+      @$(RM) $@
+      @touch $@
+      $(MKDEPEND) -p$(OSGENDIR)/
+
+include $(OSGENDIR)/geninc.d
+
