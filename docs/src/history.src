@@ -13,6 +13,8 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item All neccessary includes to compile AROS
 \item Added conditional build (see make.defaults)
 \item Much faster linking on Unix
+\item Makefiles are generated from templates
+\item AROS has Ressource Tracking now :-)
 \end{itemize}
 
 Things we currently work on:
