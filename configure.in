@@ -481,7 +481,7 @@ case "$target_os" in
 		aros_target_nm="m68k-linux-nm"
 		aros_target_objcopy="m68k-linux-objcopy"
 		aros_target_objdump="m68k-linux-objdump"
-		aros_target_cflags="-Wall -fomit-frame-pointer -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H"
+		aros_target_cflags="-Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 		aros_shared_default=no
