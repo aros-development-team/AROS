@@ -1,13 +1,10 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := htmlclass libfunc tables parse layout
-FUNCS := obtainengine
+FILES := htmlclass tables parse layout
 
 #MM workbench-datatypes-html : includes linklibs
 
-%build_module_macro mmake=workbench-datatypes-html modname=html \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="rom amiga"
-
-%common
+%build_module mmake=workbench-datatypes-html \
+    modname=html modtype=datatype \
+    files=$(FILES) uselibs="rom amiga"

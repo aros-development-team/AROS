@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Based on ascii.datatype
@@ -41,6 +41,11 @@
 #undef DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
+
+#include <aros/symbolsets.h>
+
+/* Open superclass */
+ADD2LIBS("datatypes/text.datatype", 0, struct Library *, TextBase);
 
 /*******************************************************************************************/
 /* Parser */
@@ -221,7 +226,7 @@ static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,
 
 /**************************************************************************************************/
 
-static IPTR Html_New(Class * cl, Object *o, struct opSet *msg)
+IPTR Html__OM_NEW(Class * cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -279,7 +284,7 @@ static IPTR Html_New(Class * cl, Object *o, struct opSet *msg)
 
 /**************************************************************************************************/
 
-static IPTR Html_Dispose(Class *cl, Object *o, Msg msg)
+IPTR Html__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct HtmlData 	*data;
     struct List 	*linelist = 0;
@@ -308,7 +313,7 @@ static IPTR Html_Dispose(Class *cl, Object *o, Msg msg)
 
 /**************************************************************************************************/
 
-static IPTR Html_Set(Class *cl, Object *o, struct opSet *msg)
+IPTR Html__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -339,10 +344,14 @@ static IPTR Html_Set(Class *cl, Object *o, struct opSet *msg)
  
     return retval;  
 }
+IPTR Html__OM_UPDATE(Class *cl, Object *o, struct opSet *ops)
+{
+    return Html__OM_SET(cl, o, ops);
+}
 
 /**************************************************************************************************/
 
-static IPTR Html_Layout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR Html__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     IPTR retval;
     
@@ -363,7 +372,7 @@ static IPTR Html_Layout(Class *cl, Object *o, struct gpLayout *msg)
 
 /**************************************************************************************************/
 
-static IPTR Html_ProcLayout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR Html__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     IPTR retval;
     
@@ -381,7 +390,7 @@ static IPTR Html_ProcLayout(Class *cl, Object *o, struct gpLayout *msg)
 	
 /**************************************************************************************************/
 
-static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
+IPTR Html__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 {
     struct DTSpecialInfo 	*si;
     struct HtmlData 		*data;
@@ -512,80 +521,5 @@ static IPTR Html_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
     return (IPTR)height;
 }
 
-
-/**************************************************************************************************/
-/**************************************************************************************************/
-/**************************************************************************************************/
-
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-	   AROS_UFHA(Class *, cl, A0),
-	   AROS_UFHA(Object *, o, A2),
-	   AROS_UFHA(Msg, msg, A1))
-{
-    AROS_USERFUNC_INIT
-#else
-IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-{
-#endif
-    IPTR retval = 0;
-
-    switch(msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = Html_New(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    retval = Html_Dispose(cl, o, msg);
-	    break;
-	    
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = Html_Set(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case GM_LAYOUT:
-	    retval = Html_Layout(cl, o, (struct gpLayout *)msg);
-	    break;
-	
-	case DTM_PROCLAYOUT:
-	    retval = Html_ProcLayout(cl, o, (struct gpLayout *)msg);
-	    /* fall through */
-	    
-	case DTM_ASYNCLAYOUT:
-	    retval = Html_AsyncLayout(cl, o, (struct gpLayout *)msg);
-	    break;
-	
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	    
-    } /* switch(msg->MethodID) */
-    
-    return retval;
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-/**************************************************************************************************/
-
-struct IClass *DT_MakeClass(struct Library *htmlbase)
-{
-    struct IClass *cl = MakeClass("html.datatype", "text.datatype", 0, sizeof(struct HtmlData), 0);
-
-    if (cl)
-    {
-#ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
-	cl->cl_UserData = (IPTR)htmlbase; /* Required by datatypes (see disposedtobject) */
-    }
-
-    return cl;
-}
 
 /**************************************************************************************************/
