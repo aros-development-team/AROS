@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -23,11 +23,23 @@
 
 /*  FUNCTION
 
+    Send a notification request to a filesystem. You will then be notified
+    whenever the file (or directory) changes.
+
     INPUTS
+
+    notify  --  a notification request for the file or directory to monitor
 
     RESULT
 
+    Success/failure indicator.
+
     NOTES
+
+    The file or directory connected to a notification request does not have
+    to exist at the time of calling StartNotify().
+    The NotifyRequest used with this function should not be altered while
+    active.
 
     EXAMPLE
 
@@ -35,20 +47,54 @@
 
     SEE ALSO
 
+    EndNotify(), <dos/notify.h>
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/StartNotify()
-    aros_print_not_implemented ("StartNotify");
+    struct IOFileSys iofs;
+    struct FileHandle *dir = CurrentDir(NULL);
 
-    return DOSFALSE;
+    CurrentDir(dir);		/* Set back the current dir */
+
+    if (dir == NULL)
+    {
+	return DOSFALSE;
+    }
+
+    /* Prepare I/O request. */
+    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
+
+    iofs.IOFS.io_Device = dir->fh_Device;
+
+    /* Save device for EndNotify() purposes */
+    notify->nr_Device = dir->fh_Device;
+
+    notify->nr_MsgCount = 0;
+
+    if (iofs.IOFS.io_Device == NULL)
+    {
+	return DOSFALSE;
+    }
+
+    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
+
+    DoIO(&iofs.IOFS);
+
+    SetIoErr(iofs.io_DosError);
+
+    if (iofs.io_DosError != 0)
+    {
+	return DOSFALSE;
+    }
+
+    return DOSTRUE;
+
     AROS_LIBFUNC_EXIT
 } /* StartNotify */
