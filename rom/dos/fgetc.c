@@ -61,6 +61,11 @@
 
     LONG  size;
 
+    if (fh == NULL)
+    {
+    	return EOF;
+    }
+    
     /* If the file is in write mode... */
     if(fh->fh_Flags & FHF_WRITE)
     {
