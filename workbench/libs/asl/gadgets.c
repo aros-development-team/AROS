@@ -66,6 +66,13 @@ static const struct TagItem lv_to_prop [] =
 BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *ld,
 			struct TagItem *tags, struct AslBase_intern *AslBase)
 {
+    struct TagItem extraproptags[] =
+    {
+    	{PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE},
+	{PGA_RenderBehaviour, PG_BEHAVIOUR_NICE},
+	{TAG_MORE   	    , 0     	       }
+    };
+    
     struct TagItem *ti, *h_ti, *w_ti;
     WORD x, y, w, h, aw, ah;
     UWORD flags = 0;
@@ -115,7 +122,8 @@ BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *l
 	if (h_ti) h_ti->ti_Data = h; 
     }
     
-    if ((scrollergad->prop = NewObjectA(AslBase->aslpropclass, NULL, tags)))
+    extraproptags[2].ti_Data = (IPTR)tags;
+    if ((scrollergad->prop = NewObjectA(AslBase->aslpropclass, NULL, extraproptags)))
     {
         struct TagItem arrow_tags[] =
 	{
