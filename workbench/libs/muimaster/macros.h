@@ -264,20 +264,14 @@
 
 /* Some macros */
 #ifdef __GNUC__
-#define get(obj, attr, store)                             \
-GetAttr                                                   \
-(                                                         \
-    (attr) * (sizeof                                      \
-    (                                                     \
-        struct                                            \
-        {                                                 \
-            int GetAttr_storage_size_too_little           \
-            [                                             \
-                (sizeof(*store) == sizeof(IPTR)) ? 1 : -1 \
-            ];                                            \
-        }                                                 \
-    ) != 0), (obj), (IPTR *)(store)                       \
-)
+#define get(obj, attr, storage)                                         \
+({                                                                      \
+    IPTR  __zune_get_storage;                                           \
+    ULONG __zune_get_ret = GetAttr((attr), (obj), &__zune_get_storage); \
+    (IPTR)(*storage) = __zune_get_storage;                              \
+    __zune_get_ret;                                                     \
+})
+
 #else  /* !__GNUC__ */
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
 #endif /* !__GNUC__ */
