@@ -137,6 +137,15 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	    pftags[7].ti_Data = pf->alpha_mask;
 		
 	} else {
+#warning Check this
+	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
+	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
+			correct values (they are calculated based on the red/green/blue masks)
+			which reflect the "size" of the palette (16M, 4096, 262144) */
+
+	    pftags[4].ti_Data = pf->red_mask;
+	    pftags[5].ti_Data = pf->green_mask;
+	    pftags[6].ti_Data = pf->blue_mask;
 	    
 	    pftags[13].ti_Data = pf->clut_shift;
 	    pftags[14].ti_Data = pf->clut_mask;
@@ -452,13 +461,34 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd)
     	case FB_VISUAL_PSEUDOCOLOR:
 	    pf->clut_shift = 0;
 	    pf->clut_mask = 0xFF;
+
+#warning also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?
+	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
+	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
+			correct values (they are calculated based on the red/green/blue masks)
+			which reflect the "size" of the palette (16M, 4096, 262144) */
 	    
+	    pf->red_mask	= bitfield2mask(&vsi->red);
+	    pf->green_mask	= bitfield2mask(&vsi->green);
+	    pf->blue_mask	= bitfield2mask(&vsi->blue);
+	    	    
 	    SET_PF_COLMODEL(pf, vHidd_ColorModel_Palette);
 	    break;
     
     	case FB_VISUAL_STATIC_PSEUDOCOLOR:
 	    pf->clut_shift = 0;
 	    pf->clut_mask = 0xFF;
+
+#warning also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?
+	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
+	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
+			correct values (they are calculated based on the red/green/blue masks)
+			which reflect the "size" of the palette (16M, 4096, 262144) */
+	    
+	    pf->red_mask	= bitfield2mask(&vsi->red);
+	    pf->green_mask	= bitfield2mask(&vsi->green);
+	    pf->blue_mask	= bitfield2mask(&vsi->blue);
+	    	    
 	    SET_PF_COLMODEL(pf, vHidd_ColorModel_StaticPalette);
 	    break;
     
