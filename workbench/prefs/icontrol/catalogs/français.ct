@@ -1,0 +1,96 @@
+## version $VER: icontrolprefs.catalog 1.0 (15.10.2001)
+## codeset 0
+## language français
+;
+MSG_CANT_OPEN_LIB
+Impossible d'ouvrir %s V%ld !\n
+;
+;
+MSG_CANT_CREATE_APP
+Impossible de créer l'application !
+;
+;
+MSG_WINTITLE
+Préférences IControl
+;
+;
+MSG_MEN_PROJECT
+Projet
+;
+;
+MSG_MEN_PROJECT_OPEN
+O\0Ouvrir
+;
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Sauver sous...
+;
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Quitter
+;
+;
+MSG_MEN_EDIT
+Modifier
+;
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Configuration par défaut
+;
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Dernière sauvegarde
+;
+;
+MSG_MEN_EDIT_RESTORE
+R\0Revenir à l'initial
+;
+;
+MSG_MEN_SETTINGS
+Préférences
+;
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Créer des icônes ?
+;
+;
+MSG_ASL_OPEN_TITLE
+Charger les préférences
+;
+;
+MSG_ASL_SAVE_TITLE
+Sauver les préférences
+;
+;
+MSG_OK
+Ok
+;
+;
+MSG_MENUS_GROUP
+Menus
+; Menus
+;
+MSG_MENUS_TYPE
+Type
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Tracter
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Suivre
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Aspect
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Classique
+; Classic
+;
+MSG_MENUS_LOOK_3D
+3D
+; 3D
+;
