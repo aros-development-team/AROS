@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := main locale executecommand
+FILES       := main support locale executecommand
 EXEDIR      := $(AROS_WANDERER)/Tools
 EXE         := $(EXEDIR)/ExecuteCommand
 ICONS       := ExecuteCommand
