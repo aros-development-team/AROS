@@ -30,7 +30,7 @@ HTMLOptArg;
 typedef struct
 {
     Node   node;
-    List   args; /* HTMLOptArg */
+    List   args; /* <C>HTMLOptArg</C> */
     String body;
     int    expanding;
 }
@@ -39,7 +39,7 @@ HTMLMacro;
 typedef struct
 {
     Node   node;
-    List   args; /* HTMLOptArg */
+    List   args; /* <C>HTMLOptArg</C> */
     String body;
     int    expanding;
 }
@@ -52,13 +52,13 @@ static int	    ENVEndSP = MAX_ENVSP;
 /* Definitions:
 
     Macros are texts which are replaced by other texts. The code between
-    the <DEF></DEF> is parsed and inserted.
+    the <VERB TEXT="<DEF></DEF>"> is parsed and inserted.<P>
 
     Environments insert text before and after other text. Their contents
-    is parsed before it is inserted.
+    is parsed before it is inserted.<P>
 
     Blocks convert the text between the two tags. The code between the
-    <BDEF></BDEF> is parsed and inserted.
+    <VERB TEXT="<BDEF></BDEF>"> is parsed and inserted.
 */
 static List Defs;   /* Macros */
 static List BDefs;  /* Blocks */
@@ -989,6 +989,31 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    Str_Puts (out, text2->buffer, data);
 		    VS_Delete (text1);
 		    VS_Delete (text2);
+		}
+		else if (!strcmp (tag->node.name, "VERB"))
+		{
+		    HTMLTagArg * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
+		    const char * ptr;
+
+		    if (!textarg)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Missing argument TEXT for VERB");
+			return T_ERROR;
+		    }
+
+		    Str_Puts (out, "<TT>", data);
+		    for (ptr=textarg->value; *ptr; ptr++)
+		    {
+			switch (*ptr)
+			{
+			case '<': Str_Puts (out, "&lt;", data); break;
+			case '>': Str_Puts (out, "&gt;", data); break;
+			case '&': Str_Puts (out, "&amp;", data); break;
+			default: Str_Put (out, *ptr, data);
+			}
+		    }
+		    Str_Puts (out, "</TT>", data);
 		}
 		else if (!strcmp (tag->node.name, "PRINTVARS"))
 		{
