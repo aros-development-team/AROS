@@ -1,9 +1,12 @@
 \chapter{History}
 
-\begin{new}{1.12.1997}
+\begin{new}{22.12.1997}
 \section{Project History}
 
 \begin{itemize}
+\item 7.1.1998 Updated FAQ: Read the status between AROS and Amiga Int/Inc.
+\item 22.12.1997 50% of AROS are completed and the homepage has now
+    about 200hits/day (more then 13'000 in all)
 \item 1.12.1997 These pages are available as
     \link{tar.gz archive}{ftp://wi-pc44.fh-konstanz.de/pub/aros/AROSdocs-current.tgz}
 \item 18.11.1997 Removed the source from our FTP server until Amiga
@@ -17,8 +20,6 @@
     and \shell{aros-user}.
 \item 15.10.1997 AROS has it's own domain now ! Use
     \link{http://www.aros.org/}{http://www.aros.org/}
-\item 6.10.1997 AROS is now built with own make tool
-\item 2.10.1997 Got first running version of VBCC for i386
 \end{itemize}
 \end{new}
 

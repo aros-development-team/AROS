@@ -67,7 +67,7 @@ But you can use Miami with CVS to work on AROS after you have created
 a password with AmiTCP.
 \end{new}
 
-\begin{new}{7.1.1997}
+\begin{new}{7.1.1998}
 Versions of AmiTCP greater than 4.3 don't work either; they have changed
 the algorithm for encoding the password.
 \end{new}
@@ -117,7 +117,7 @@ where \shell{user} is your login, eg. digulla:
 > cvs -d :pserver:digulla@aros.fh-konstanz.de:/home/AROS/CVS login
 \end{example}
 
-\begin{new}{7.1.1997}
+\begin{new}{7.1.1998}
 On the Amiga, you must \shell{setenv HOME} to a directory (eg.
 \shell{setenv HOME SYS:Home}). Setting it to a device or assign
 doesn't work because CVS always adds a / after \shell{$HOME} when

@@ -97,7 +97,7 @@ AROS, but what counts here is the intention of the law: It's ok to write a
 software which is compatible to some other software. Therefore we believe
 that AROS is protected by the law.
 
-\begin{new}{7.1.1997}
+\begin{new}{7.1.1998}
 Patents and header files are a different issue, though. We can use patented
 algorithms (eg. screen dragging or getting a menu when you press the
 right mousebutton) in Europe but this must not be imported into the US.
@@ -237,7 +237,7 @@ want, it's just that we can't.
 
 \section{What does Amiga International say about AROS ?}
 
-\begin{new}{1.7.1997}
+\begin{new}{7.1.1998}
 Short: They are not sure if they like it.
 Long: We are now in contact with both Amiga Int (Petro Tyschtschenko) and
 Amiga Inc (Jeff Schindler). Aaron Digulla had a long talk to both
