@@ -170,7 +170,13 @@ SHARED	:= \
 	setvbuf \
 	sigaction \
 	sigaddset \
+	sigdelset \
 	sigemptyset \
+	sigfillset \
+	sigismember \
+	sigpending \
+	sigprocmask \
+	sigsuspend \
 	sleep \
 	snprintf \
 	sprintf \
