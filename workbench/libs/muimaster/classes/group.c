@@ -664,19 +664,19 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	    if ((region = NewRegion()))
 	    {
-	    	if (diff_virt_offy)
+	    	if (diff_virt_offx)
 	    	{
 		    rect.MinY = _mtop(obj);
 		    rect.MaxY = _mbottom(obj);
 
 		    if (diff_virt_offx > 0)
 		    {
-		    	rect.MinX = _mright(obj) - diff_virt_offx;
+		    	rect.MinX = _mright(obj) - diff_virt_offx + 1;
 		    	rect.MaxX = _mright(obj);
 		    } else
 		    {
 		    	rect.MinX = _mleft(obj);
-		    	rect.MaxX = _mleft(obj) - diff_virt_offx;
+		    	rect.MaxX = _mleft(obj) - diff_virt_offx - 1;
 		    }
 		    OrRectRegion(region,&rect);
 		}
@@ -688,12 +688,12 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 		    if (diff_virt_offy > 0)
 		    {
-		    	rect.MinY = _mbottom(obj) - diff_virt_offy;
+		    	rect.MinY = _mbottom(obj) - diff_virt_offy + 1;
 		    	rect.MaxY = _mbottom(obj);
 		    } else
 		    {
 		    	rect.MinY = _mtop(obj);
-		    	rect.MaxY = _mtop(obj) - diff_virt_offy;
+		    	rect.MaxY = _mtop(obj) - diff_virt_offy - 1;
 		    }
 		    OrRectRegion(region,&rect);
 		}
