@@ -695,7 +695,7 @@ endif
   objdir=$(OBJDIR) moduledir= prefix=$(AROSDIR)\
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref noref= \
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
-  compiler=target
+  compiler=target genincludes=
 
 %buildid targets="%(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick %(mmake)-kobj"
 
@@ -746,7 +746,16 @@ BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(not
 endif
 BD_REFFILE$(BDID)    := %(reffile)
 
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
+BD_DOINCS$(BDID)     := no
+ifeq (%(genincludes),yes)
+    BD_DOINCS$(BDID) := yes
+endif
+ifeq (%(genincludes),)
+    ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget),)
+        BD_DOINCS$(BDID) := yes
+    endif
+endif
+ifeq ($(BD_DOINCS$(BDID)), yes)
 BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
@@ -917,7 +926,7 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h : $(BD_CONFFILE$(BDID))
 		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)"
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget datatype),)
+ifeq ($(BD_DOINCS$(BDID)),yes)
 %rule_makedirs dirs="$(addprefix $(BD_INCLUDE$(BDID))/, clib defines pragmas proto)" setuptarget=setup-module$(BDID)
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(BD_INCLUDE$(BDID))/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/defines/$(BD_MODNAME$(BDID)).h
