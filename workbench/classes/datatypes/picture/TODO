@@ -1,0 +1,28 @@
+picture.datatype is an external class. So it has only very few
+functions: some library-support and the class-dispatcher.
+But the methods and properties of the class must be written.
+The following items must be implemented:
+
+library-framework               100% done
+documentation                   Hey, I am a programmer, not an author ;)
+dispatcher-function             80% done, some missing support-functions
+				for the methods
+
+methods:                        still missing completely
+    OM_NEW
+    OM_DISPOSE
+    OM_UPDATE
+    OM_SET
+    OM_GET
+    GM_RENDER
+    GM_LAYOUT
+    GM_GOACTIVE
+    GM_HANDLEINPUT
+    DTM_CLEARSELECTED
+    DTM_COPY
+    DTM_SELECT
+    DTM_WRITE
+    DTM_PRINT
+    GM_HITTEST
+    DTM_PROCLAYOUT
+    DTM_FRAMEBOX    

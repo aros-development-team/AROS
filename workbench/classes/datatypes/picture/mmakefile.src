@@ -1,0 +1,35 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+USER_CFLAGS   := -DCOMPILE_DATATYPE
+
+LIBNAME  := picture
+ULIBNAME := Picture
+LIBPOST  := datatype
+DESTDIR  := $(DATATYPESDIR)
+
+FILES := picture_init pictureclass libfunc
+# support
+
+FUNCTIONS := \
+	obtainengine
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_cpak
+
+#MM workbench-classes-datatypes-picture : setup includes
+workbench-classes-datatypes-picture : $(SLIB)
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
+
+#MM 
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
+
+%common

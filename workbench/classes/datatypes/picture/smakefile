@@ -1,0 +1,30 @@
+LIBOBJS = libfunc.o pictureclass_dt.o
+# support_dt.o
+
+jdpicture.datatype: ${LIBOBJS}
+   slink with <<
+LIBFD FD:dtclass_lib.fd
+to jdpicture.datatype
+FROM lib:libent.o lib:libinit.o $(LIBOBJS)
+lib lib:sc.lib
+#lib lib:sc.lib lib:mydebug.o
+NOICONS
+SD
+SC
+libversion 44 librevision 5 libid "picture.datatype 44.5 (21.09.00)"
+<
+#   copy picture.datatype SYS:Classes/datatypes
+   avail flush
+
+libfunc.o: libfunc.c
+   sc nostackcheck libcode libfunc.c OBJNAME=$@
+
+pictureclass_dt.o: pictureclass.c
+   sc nostackcheck define=COMPILE_DATATYPE pictureclass.c OBJNAME=$@
+
+support_dt.o: support.c
+   sc nostackcheck define=COMPILE_DATATYPE support.c OBJNAME=$@
+
+install:
+   copy ReadMe DH2:Projects/Picture-DT
+   copy picture.datatype DH2:Projects/Picture-DT

@@ -1,0 +1,13 @@
+This picture.datatype is a work in progress. It compiles cleanly, 
+but is far from being complete!
+Currently only the library-framework is done (trough copying from
+text.datatype ;) ) See the file TODO for a detailed description
+of the missing pieces.
+Feel free to help me with picure.datatype. But please contact me
+before to avoid double work.
+One word about style: I do use a strange intention-scheme!
+As long as picture.datatype is in development, I will use
+my own style, but I will fix this, if it's complete.
+
+Joerg Dietrich
+<Dietrich_Joerg@t-online.de>

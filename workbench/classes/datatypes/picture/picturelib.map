@@ -1,0 +1,299 @@
+Archive member included       because of file (symbol)
+
+/home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o)
+                              /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o (__UserLibInit)
+/home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(functions.o)
+                              /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/functable.o (Picture_ObtainEngine)
+/home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o)
+                              /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o) (DT_MakeClass)
+/home/aros/AROS/bin/linux-i386/AROS/lib/libamiga.a(dosupermethod.o)
+                              /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o) (DoSuperMethodA)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o
+LOAD /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/functable.o
+LOAD /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a
+LOAD /home/aros/AROS/bin/linux-i386/AROS/lib/libarossupport.a
+LOAD /home/aros/AROS/bin/linux-i386/AROS/lib/libamiga.a
+LOAD /home/aros/AROS/bin/linux-i386/AROS/lib/libarosc.a
+LOAD /home/aros/AROS/bin/linux-i386/AROS/lib/libarosm.a
+LOAD /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_endtag.o
+
+.interp
+ *(.interp)
+
+.hash
+ *(.hash)
+
+.dynsym
+ *(.dynsym)
+
+.dynstr
+ *(.dynstr)
+
+.gnu.version
+ *(.gnu.version)
+
+.gnu.version_d
+ *(.gnu.version_d)
+
+.gnu.version_r
+ *(.gnu.version_r)
+
+.rel.init
+ *(.rel.init)
+
+.rela.init
+ *(.rela.init)
+
+.rel.text
+ *(.rel.text)
+
+.rela.text
+ *(.rela.text)
+
+.rel.fini
+ *(.rel.fini)
+
+.rela.fini
+ *(.rela.fini)
+
+.rel.rodata
+ *(.rel.rodata)
+
+.rela.rodata
+ *(.rela.rodata)
+
+.rel.data
+ *(.rel.data)
+
+.rela.data
+ *(.rela.data)
+
+.rel.ctors
+ *(.rel.ctors)
+
+.rela.ctors
+ *(.rela.ctors)
+
+.rel.dtors
+ *(.rel.dtors)
+
+.rela.dtors
+ *(.rela.dtors)
+
+.rel.got
+ *(.rel.got)
+
+.rela.got
+ *(.rela.got)
+
+.rel.sdata
+ *(.rel.sdata)
+
+.rela.sdata
+ *(.rela.sdata)
+
+.rel.sbss
+ *(.rel.sbss)
+
+.rela.sbss
+ *(.rela.sbss)
+
+.rel.bss
+ *(.rel.bss)
+
+.rela.bss
+ *(.rela.bss)
+
+.rel.plt
+ *(.rel.plt)
+
+.rela.plt
+ *(.rela.plt)
+
+.init
+ *(.init)
+
+.plt
+ *(.plt)
+
+.text           0x00000000      0xd68
+ *(.text)
+ .text          0x00000000      0x2d9 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o
+                0x00000000                entry
+                0x000002c0                L_ExpungeLib
+                0x00000020                LibHeader_InitLib
+                0x00000270                L_InitLib
+                0x00000260                LibHeader_ExtFuncLib
+                0x000000e0                LibHeader_OpenLib
+                0x00000180                LibHeader_ExpungeLib
+                0x00000110                LibHeader_CloseLib
+ *fill*         0x000002d9        0x3 37008
+ *fill*         0x000002dc        0x4 37008
+ .text          0x000002e0      0x524 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o)
+                0x000002e0                __UserLibInit
+                0x000007f0                ObtainEngine
+                0x00000580                __UserLibCleanup
+ *fill*         0x00000804        0xc 37008
+ .text          0x00000810       0x15 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(functions.o)
+                0x00000810                Picture_ObtainEngine
+ *fill*         0x00000825        0xb 37008
+ .text          0x00000830      0x485 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o)
+                0x00000c40                DT_MakeClass
+ *fill*         0x00000cb5        0xb 37008
+ .text          0x00000cc0       0xa7 /home/aros/AROS/bin/linux-i386/AROS/lib/libamiga.a(dosupermethod.o)
+                0x00000d10                DoSuperMethod
+                0x00000cc0                DoSuperMethodA
+ *fill*         0x00000d67        0x1 37008
+ *(.stub)
+ *(.gnu.warning)
+
+.fini
+ *(.fini)
+
+.rodata         0x00000000      0x54b
+ *(.rodata)
+ .rodata        0x00000000       0xa3 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o
+                0x00000068                LibName
+                0x00000000                ROMTag
+                0x00000080                LibID
+                0x000000a2                Copyright
+ *fill*         0x000000a3        0x1
+ .rodata        0x000000a4       0x18 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/functable.o
+                0x000000a4                Picture_functable
+ .rodata        0x000000bc       0x82 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o)
+ *fill*         0x0000013e        0x2
+ .rodata        0x00000140      0x40a /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o)
+ .rodata        0x0000054a        0x1 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_endtag.o
+                0x0000054a                Picture_end
+
+.rodata1
+ *(.rodata1)
+
+.data           0x00000000        0x0
+ *(.data)
+
+.data1
+ *(.data1)
+
+.eh_frame
+ *(.eh_frame)
+
+.gcc_except_table
+ *(.gcc_except_table)
+
+.got
+ *(.got.plt)
+ *(.got)
+
+.dynamic
+ *(.dynamic)
+
+.sdata
+ *(.sdata)
+
+.sbss
+ *(.dynsbss)
+ *(.sbss)
+ *(.scommon)
+
+.bss            0x00000000        0x0
+ *(.dynbss)
+ *(.bss)
+ *(COMMON)
+
+.stab
+ *(.stab)
+
+.stabstr
+ *(.stabstr)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment        0x00000000      0x10a
+ *(.comment)
+ .comment       0x00000000       0x26 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o
+ .comment       0x00000026       0x26 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/functable.o
+ .comment       0x0000004c       0x26 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o)
+ .comment       0x00000072       0x26 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(functions.o)
+ .comment       0x00000098       0x26 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o)
+ .comment       0x000000be       0x26 /home/aros/AROS/bin/linux-i386/AROS/lib/libamiga.a(dosupermethod.o)
+ .comment       0x000000e4       0x26 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_endtag.o
+
+.debug
+ *(.debug)
+
+.line
+ *(.line)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.debug_aranges
+ *(.debug_aranges)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_info
+ *(.debug_info)
+
+.debug_abbrev
+ *(.debug_abbrev)
+
+.debug_line
+ *(.debug_line)
+
+.debug_frame
+ *(.debug_frame)
+
+.debug_str
+ *(.debug_str)
+
+.debug_loc
+ *(.debug_loc)
+
+.debug_macinfo
+ *(.debug_macinfo)
+
+.debug_weaknames
+ *(.debug_weaknames)
+
+.debug_funcnames
+ *(.debug_funcnames)
+
+.debug_typenames
+ *(.debug_typenames)
+
+.debug_varnames
+ *(.debug_varnames)
+OUTPUT(/home/aros/AROS/bin/linux-i386/AROS/Classes/DataTypes/picture.datatype elf32-i386)
+
+.note           0x00000000       0x8c
+ .note          0x00000000       0x14 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_init.o
+ .note          0x00000014       0x14 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/functable.o
+ .note          0x00000028       0x14 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(libfunc.o)
+ .note          0x0000003c       0x14 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(functions.o)
+ .note          0x00000050       0x14 /home/aros/AROS/bin/linux-i386/AROS/lib/libpicture.a(pictureclass.o)
+ .note          0x00000064       0x14 /home/aros/AROS/bin/linux-i386/AROS/lib/libamiga.a(dosupermethod.o)
+ .note          0x00000078       0x14 /home/aros/AROS/bin/linux-i386/gen/workbench/classes/datatypes/picture/picture_endtag.o
