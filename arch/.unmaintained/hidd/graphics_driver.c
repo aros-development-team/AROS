@@ -3659,7 +3659,7 @@ LOCK_HIDD(bm);
 		    SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    HIDD_BM_PutImageLUT(BM_OBJ(bm)
-		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
+		    	, array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			, array_width
 			, intersect.MinX, intersect.MinY
 			, inter_width, inter_height
@@ -3687,7 +3687,7 @@ LOCK_HIDD(CR->BitMap);
 	
 
 			HIDD_BM_PutImageLUT(BM_OBJ(CR->BitMap)
-			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
+			    , array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			    , array_width
 			    , cr_rel_x, cr_rel_y
 			    , inter_width, inter_height
@@ -5047,7 +5047,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
     
     buf = (UBYTE *)srcrect;
     
-    buf += COORD_TO_BYTEIDX(srcx, srcy, srcmod);
+    buf += CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, srcmod);
     
     pixwritten = write_pixels_8(rp
     	, buf
