@@ -111,6 +111,7 @@ SHARED	:= \
 	calloc \
 	chdir \
 	chmod \
+	chown \
 	clearerr \
 	ctime \
 	clock \

@@ -11,6 +11,10 @@
 #include <sys/types.h>
 #include <sys/_posix.h>
 
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
+
 /* Prototypes */
 int   access (const char *path, int mode);
 int   close (int fd);
@@ -20,6 +24,7 @@ int   chdir( const char *path );
 char *getcwd(char *buf, size_t size);
 int   isatty(int fd);
 int   lseek(int fildes, off_t offset, int whence);
+int   chown(const char *path, uid_t owner, gid_t group);
 
 /* returns the caller's process ID */
 pid_t getpid(void);
@@ -45,6 +50,8 @@ int execvp(const char *file, char *const argv[]);
 
 uid_t getuid(void);
 uid_t geteuid(void);
+
+__END_DECLS
 
 /* Standard file descriptors */
 #define STDIN_FILENO  0 /* Standard input */
