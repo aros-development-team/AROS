@@ -194,6 +194,7 @@ void enable_irq(unsigned int irq)
 	}
 }
 
+extern void sys_Dispatch(struct pt_regs * regs);
 /*
  * Called from low level assembly code. Handles irq number 'irq'.
  */
@@ -234,6 +235,14 @@ void enable_irq(unsigned int irq)
 *(UBYTE *)0xdddddebc = '!';
 				irq_desc[vHidd_IRQ_Timer].id_count++;
 				irq_desc[vHidd_IRQ_Timer].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
+#warning Remove later on - but leave for now to enable multitasking!
+sys_Dispatch(regs);
+				/*
+				 * Leave the following three lines as they are.
+				 * If you remove the D(bug()) then the emulation
+				 * will be extremly slow (probably the first line
+				 * is removed by gcc then).
+				 */
 				tstat2 = RREG_W(TSTAT2);
 				WREG_W(TSTAT2) = 0;
 				D(bug("%x ",tstat2));
