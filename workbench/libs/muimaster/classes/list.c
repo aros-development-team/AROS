@@ -645,6 +645,20 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    data->update = 2;
 			    data->update_pos = data->entries_active;
 			    MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+			    /* Selectchange stuff */
+			    if (old != -1)
+			    {
+				DoMethod(obj,MUIM_List_SelectChange,old,MUIV_List_Select_Off,0);
+			    }
+
+			    if (new_entries_active != -1)
+			    {
+				DoMethod(obj,MUIM_List_SelectChange,new_entries_active,MUIV_List_Select_On,0);
+				DoMethod(obj,MUIM_List_SelectChange,new_entries_active,MUIV_List_Select_Active,0);
+			    } else DoMethod(obj,MUIM_List_SelectChange,MUIV_List_Active_Off,MUIV_List_Select_Off,0);
+
+			    set(obj,MUIA_Listview_SelectChange,TRUE);
 			}
 		    }
 		    break;
@@ -924,6 +938,7 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
     if (new_act != data->entries_active && data->entries_num)
     {
     	LONG new_entries_first = data->entries_first;
+    	LONG old_act = data->entries_active;
     	if (new_act < new_entries_first)
 	    new_entries_first = new_act;
 	if (new_act >= data->entries_first + data->entries_visible - 1)
@@ -1495,6 +1510,13 @@ STATIC ULONG List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Displ
     return CallHookPkt(data->display_hook,msg->strings,msg->entry);
 }
 
+/**************************************************************************
+ MUIM_List_SelectChange
+**************************************************************************/
+STATIC ULONG List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_SelectChange *msg)
+{
+    return 1;
+}
 
 #ifndef _AROS
 __asm IPTR List_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -1528,6 +1550,7 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 	case MUIM_List_Destruct: return List_Destruct(cl,obj,(APTR)msg);
 	case MUIM_List_Compare: return List_Compare(cl,obj,(APTR)msg);
 	case MUIM_List_Display: return List_Display(cl,obj,(APTR)msg);
+	case MUIM_List_SelectChange: return List_SelectChange(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingleAsTree: return List_InsertSingleAsTree(cl,obj,(APTR)msg);
     }
     
