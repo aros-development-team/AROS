@@ -101,16 +101,21 @@ AROS_UFH3(LONG, __startup_entry,
             !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
         )
         {
-            int n = 1;
-
-            while (SETNAME(CTORS)[n]) ((VOID_FUNC)(SETNAME(CTORS)[n++]))();
+            /* ctors get called in inverse order than init funcs */
+            set_call_funcs(SETNAME(CTORS), -1);
 
 	    __startup_error = main (__argc, __argv);
         }
 
     }
 
-    set_call_funcs(SETNAME(DTORS), -1);
+    /* dtors get called in inverse order than exit funcs */
+    {
+        int n = 1;
+
+        while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
+    }
+
     set_call_funcs(SETNAME(EXIT), -1);
     set_close_libraries();
 
