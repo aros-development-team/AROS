@@ -101,10 +101,12 @@ struct IntCatalog
 #define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
 
 
-/* Some internal functions */
-ULONG calendar_day(struct DateStamp * date);
-ULONG calendar_month(struct DateStamp * date);
-ULONG calendar_week(struct DateStamp *  date);
-ULONG calendar_weekmonday(struct DateStamp * date);
-ULONG calendar_weekday(struct DateStamp * date);
-ULONG calendar_year(struct DateStamp * date);
+#define ID_CTLG MAKE_ID('C','T','L','G')
+#define ID_FVER MAKE_ID('F','V','E','R')
+#define ID_LANG MAKE_ID('L','A','N','G')
+#define ID_CSET MAKE_ID('C','S','E','T')
+#define ID_STRS MAKE_ID('S','T','R','S')
+
+
+void dispose_catalog(struct IntCatalog * cat,
+                     struct Library * LocaleBase);
