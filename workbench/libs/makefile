@@ -3,11 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-ifeq ($(FLAVOUR),native)
-SUBDIRS=     iffparse
-else
 SUBDIRS=icon iffparse
-endif
 
 OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy
