@@ -61,10 +61,6 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
-    char * args = NULL,	** argv = NULL, * ptr = NULL;
-    int    argc, argmax;
-    LONG   namlen = 64;
-    int    done = 0;
     struct Process *myproc;
 
     __argstr  = argstr;
@@ -73,6 +69,7 @@ AROS_UFH3(LONG, entry,
     SysBase = sysbase;
 
     myproc = (struct Process *)FindTask(NULL);
+
     /* Do we have a CLI structure? */
     if (!myproc->pr_CLI)
     {
@@ -81,24 +78,19 @@ AROS_UFH3(LONG, entry,
 	WaitPort(&myproc->pr_MsgPort);
 	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
 	__argv = (char **)WBenchMsg;
-	__argc = 0;
     }
 
     if
     (
-        (__startup_error = set_open_libraries(SETNAME(LIBS))) ||
-        (__startup_error = set_call_funcs(SETNAME(INIT), 1))
+        !(__startup_error = set_open_libraries(SETNAME(LIBS))) &&
+        !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
     )
     {
-	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries(SETNAME(LIBS));
+        /* Invoke main() */
+        if (!setjmp(__startup_jmp_buf))
+	    __startup_error = main (__argc, __argv);
 
-	return __startup_error;
     }
-
-    /* Invoke main() */
-    if (!setjmp(__startup_jmp_buf))
-	__startup_error = main (__argc, __argv);
 
     set_call_funcs(SETNAME(EXIT), -1);
     set_close_libraries(SETNAME(LIBS));
