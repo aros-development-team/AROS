@@ -1,12 +1,12 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Obtain the best pen available for a given color
+    Desc: Varargs version of graphics.library/ExtendFont()
     Lang: english
 */
-#define AROS_TAGRETURNTYPE LONG
-#include <graphics/view.h>
+#define AROS_TAGRETURNTYPE ULONG
+#include <graphics/text.h>
 #include <utility/tagitem.h>
 
 /*****************************************************************************
@@ -15,19 +15,16 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG ObtainBestPen (
+	ULONG ExtendFontTags (
 
 /*  SYNOPSIS */
-	struct ColorMap * cm,
-	ULONG R,
-	ULONG G,
-	ULONG B,
+	struct TextFont * font,
 	Tag tag1,
-	... )
+	...)
 
 /*  FUNCTION
-        This is the varargs version of graphics.library/ObtainBestPenA().
-        For information see graphics.library/ObtainBestPenA().
+        This is the varargs version of graphics.library/ExtendFont().
+        For information see graphics.library/ExtendFont().
 
     INPUTS
 
@@ -40,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ObtainBestPenA()
+        graphics/ExtendFont()
 
     INTERNALS
 
@@ -49,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    ObtainBestPenA (cm, R,G,B, AROS_SLOWSTACKTAGS_ARG(tag1));
+    ExtendFont (font, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
-} /* ObtainBestPen */
+} /* ExtendFontTags */

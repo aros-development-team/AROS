@@ -1,12 +1,12 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Obtain the best pen available for a given color
+    Desc: Varargs version of graphics.library/SetRPAttrsA()
     Lang: english
 */
-#define AROS_TAGRETURNTYPE LONG
-#include <graphics/view.h>
+#define AROS_TAGRETURNTYPEVOID
+#include <graphics/rastport.h>
 #include <utility/tagitem.h>
 
 /*****************************************************************************
@@ -15,19 +15,16 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG ObtainBestPen (
+	void SetRPAttrs (
 
 /*  SYNOPSIS */
-	struct ColorMap * cm,
-	ULONG R,
-	ULONG G,
-	ULONG B,
+	struct RastPort * rp,
 	Tag tag1,
-	... )
+	...)
 
 /*  FUNCTION
-        This is the varargs version of graphics.library/ObtainBestPenA().
-        For information see graphics.library/ObtainBestPenA().
+        This is the varargs version of graphics.library/SetRPAttrsA().
+        For information see graphics.library/SetRPAttrsA().
 
     INPUTS
 
@@ -40,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ObtainBestPenA()
+        graphics/SetRPAttrsA()
 
     INTERNALS
 
@@ -49,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    ObtainBestPenA (cm, R,G,B, AROS_SLOWSTACKTAGS_ARG(tag1));
+    SetRPAttrsA (rp, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
-} /* ObtainBestPen */
+} /* SetRPAttrs */

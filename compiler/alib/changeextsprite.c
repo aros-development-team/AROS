@@ -1,12 +1,13 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Obtain the best pen available for a given color
+    Desc: Varargs version of graphics.library/ChangeExtSpriteA()
     Lang: english
 */
 #define AROS_TAGRETURNTYPE LONG
 #include <graphics/view.h>
+#include <graphics/sprite.h>
 #include <utility/tagitem.h>
 
 /*****************************************************************************
@@ -15,19 +16,18 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG ObtainBestPen (
+	LONG ChangeExtSprite (
 
 /*  SYNOPSIS */
-	struct ColorMap * cm,
-	ULONG R,
-	ULONG G,
-	ULONG B,
+	struct ViewPort * vp,
+	struct ExtSprite * oldsprite,
+	struct ExtSprite * newsprite,
 	Tag tag1,
-	... )
+	...)
 
 /*  FUNCTION
-        This is the varargs version of graphics.library/ObtainBestPenA().
-        For information see graphics.library/ObtainBestPenA().
+        This is the varargs version of graphics.library/ChangeExtSpriteA().
+        For information see graphics.library/ChangeExtSpriteA().
 
     INPUTS
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ObtainBestPenA()
+        graphics/ChangeExtSpriteA()
 
     INTERNALS
 
@@ -49,6 +49,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    ObtainBestPenA (cm, R,G,B, AROS_SLOWSTACKTAGS_ARG(tag1));
+    ChangeExtSpriteA (vp, oldsprite, newsprite, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
-} /* ObtainBestPen */
+} /* ChangeExtSprite */

@@ -14,15 +14,18 @@ FILES		:= \
 	alib_util \
 	allocaslrequesttags \
 	allocnamedobject \
-	aslrequesttags \
-	argarrayinit \
+	allocspritedata \
 	argarraydone \
+	argarrayinit \
 	argint \
 	argstring \
 	arosinquire \
+	aslrequesttags \
 	beginio \
+	bestmodeid \
 	buildeasyrequest \
 	callhook \
+	changeextsprite \
 	coercemethod \
 	createextio \
 	creategadget \
@@ -39,8 +42,11 @@ FILES		:= \
 	dosupermethod \
 	drawbevelbox \
 	easyrequest \
+	extendfonttags \
 	fastrand \
 	freeievents \
+	getextsprite \
+	getrpattrs \
 	getvisualinfo \
 	gt_getgadgetattrs \
 	gt_setgadgetattrs \
@@ -62,10 +68,12 @@ FILES		:= \
 	rangerand \
 	setattrs \
 	setgadgetattrs \
+	setrpattrs \
 	setsuperattrs \
-	sprintf \
 	setwindowpointer \
-	timedelay
+	sprintf \
+	timedelay \
+	videocontroltags
 
 %prepare_replace compiler/alib
 
