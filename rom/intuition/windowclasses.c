@@ -561,6 +561,8 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    
 		    
 #warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?
+		    
+		    LockLayerInfo(&w->WScreen->LayerInfo);
 
 		    if (NULL == w->WLayer->front)
 		    {
@@ -572,6 +574,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    	/* Send window to front */
 			UpfrontLayer(0L, w->WLayer);
 		    }
+		    UnlockLayerInfo(&w->WScreen->LayerInfo);
 		    
 		    break; }
 		
