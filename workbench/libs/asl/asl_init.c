@@ -43,7 +43,7 @@ int entry(void)
     return -1;
 }
 
-const struct Resident resident=
+static const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
@@ -248,12 +248,12 @@ AROS_LH1(struct AslBase_intern *, open,
 	return (NULL);
 
     if (!LIBBASE->aroslistviewbase)
-	LIBBASE->aroslistviewbase = OpenLibrary("SYS:Classes/Gadgets/aroslistview.gadget", 37);
+	LIBBASE->aroslistviewbase = OpenLibrary("Gadgets/aroslistview.gadget", 37);
     if (!LIBBASE->aroslistviewbase)
 	return (NULL);
 
     if (!LIBBASE->aroslistbase)
-	LIBBASE->aroslistbase = OpenLibrary("SYS:Classes/Gadgets/aroslist.class", 37);
+	LIBBASE->aroslistbase = OpenLibrary("Gadgets/aroslist.class", 37);
     if (!LIBBASE->aroslistbase)
 	return (NULL);
 
