@@ -1,5 +1,4 @@
 # $Id$
-TOP=../../..
 CURDIR=workbench/countries
 
 include $(TOP)/config/make.cfg
@@ -15,25 +14,28 @@ COUNTRIES=australia deutschland great_britain nederland
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
 
-all: setup $(MAKECOUNTRY) $(COUNTIFF)
+#MM workbench-locale : setup includes
+workbench-locale: $(MAKECOUNTRY) $(COUNTIFF)
 
-setup:
+#MM
+setup :
 	%mkdirs_q $(OBJDIR) $(LOCALEDIR) $(COUNTRYDIR)
 
-clean::
+#MM
+clean ::
 	$(RM)   $(OBJDIR) *.err
 
-$(COUNTIFF): $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
+$(COUNTIFF) : $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
 	@echo Making $(notdir $@)...
 	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $(foreach f, $@, $(notdir $(basename $(f))))
 
-$(MAKECOUNTRY): $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
+$(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.o : %.c
 	%compile_q
 
-$(OBJDIR)/%.d: %.c
+$(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common
