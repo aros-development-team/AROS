@@ -19,12 +19,12 @@
 
     NAME */
 
-      AROS_LH2(LONG, IEEESPSincos,
+      AROS_LH2(float, IEEESPSincos,
 
 /*  SYNOPSIS */
 
-      AROS_LHA(IPTR*, z, A0),
-      AROS_LHA(LONG , y, D0),
+      AROS_LHA(float *, z, A0),
+      AROS_LHA(float , y, D0),
 
 /*  LOCATION */
 
