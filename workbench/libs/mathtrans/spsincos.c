@@ -19,12 +19,12 @@
 
     NAME */
 
-      AROS_LH2(LONG, SPSincos,
+      AROS_LH2(float, SPSincos,
 
 /*  SYNOPSIS */
 
       AROS_LHA(IPTR*, pfnum2, D1),
-      AROS_LHA(LONG , fnum1 , D0),
+      AROS_LHA(float , fnum1 , D0),
 
 /*  LOCATION */
 

@@ -20,11 +20,11 @@
 
     NAME */
 
-      AROS_LH1(LONG, SPTieee,
+      AROS_LH1(float, SPTieee,
 
 /*  SYNOPSIS */
 
-      AROS_LHA(LONG, fnum, D0),
+      AROS_LHA(float, fnum, D0),
 
 /*  LOCATION */
       

@@ -9,6 +9,12 @@
 #ifndef MATHTRANS_INTERN_H
 #define MATHTRANS_INTERN_H
 
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#define float LONG
+
+
 /* This is a short file that contains a few things every mathffp function
     needs */
 
