@@ -11,8 +11,6 @@
 #include <proto/intuition.h>
 #include <proto/alib.h>
 
-#include <libraries/mui.h>
-
 #ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/muimaster.h>
