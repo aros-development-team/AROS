@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERNAL_H
 #define GRAPHICS_INTERNAL_H
 
-typedef ObjectCache;
+
 /*
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
@@ -9,6 +9,16 @@ typedef ObjectCache;
     Desc: GfxHIDD specific Internal Information Management
     Lang: english
 */
+
+#ifndef GRAPHICS_GFXBASE_H
+#   include <graphics/gfxbase.h>
+#endif
+
+typedef ObjectCache;
+
+VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated);
+BOOL init_activescreen_stuff(struct GfxBase *GfxBase);
+VOID cleanup_activescreen_stuff(struct GfxBase *GfxBase);
 
 /* A Pointer to this struct is stored in each RastPort->longreserved[0] */
 
@@ -35,6 +45,11 @@ struct shared_driverdata
     struct Library *oopbase;
     ObjectCache *gc_cache;
     ObjectCache *planarbm_cache;
+    
+    
+    BOOL activescreen_inited;
+
+
 };
 
 
