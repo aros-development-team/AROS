@@ -162,7 +162,7 @@ readcache (Cache_priv * cache)
 {
     char path[256];
     FILE * fh;
-    long id;
+    uint32_t id;
 
     strcpy (path, cache->project->top);
     strcat (path, "/mmake.cache");
@@ -172,8 +172,7 @@ readcache (Cache_priv * cache)
 
     if (fh)
     {
-	fread (&id, sizeof(id), 1, fh);
-	if (!CHECK_ID(id))
+	if (!readuint32 (fh, &id) || !CHECK_ID(id))
 	{
 	    fclose (fh);
 	    fh = NULL;
@@ -182,33 +181,21 @@ readcache (Cache_priv * cache)
 
     if (fh)
     {
-	int in, len = 0;
 	char * name;
 	
-	while (len >= 0)
+	while (name != NULL)
 	{
-	    fread (&in, sizeof(in), 1, fh);
-	    if (ferror (fh))
+	    if (!readstring (fh, &name))
 	    {
 		fh = NULL;
 		break;
 	    }
 
-	    len = ntohl (in);
-	    if (len > 0)
-	    {
-		name = xmalloc(len+1);
-		fread (name, len, 1, fh);
-		if (ferror(fh))
-		{
-		    fh = NULL;
-		    xfree (name);
-		    break;
-		}
-		name[len] = 0;
-		addnodeonce (&cache->addedfiles, name);
-		xfree (name);
-	    }
+	    if (name == NULL)
+		continue;
+
+	    addnodeonce (&cache->addedfiles, name);
+	    xfree (name);
 	}
 
 	if (fh)
@@ -246,10 +233,10 @@ readcache (Cache_priv * cache)
 void
 writecache (Cache_priv * cache)
 {
+    int ok = 1;
     char path[256];
     FILE * fh = NULL;
-    int ret, len, out;
-    long id;
+    uint32_t id;
     Node *addedfile;
     
     if (!cache->topdir)
@@ -263,50 +250,38 @@ writecache (Cache_priv * cache)
 
     if (!fh)
     {
-	ret = -1;
+	ok = 0;
 	goto writecacheend;
     }
 
-    id = ID;
-    fwrite (&id, sizeof (id), 1, fh);
+    ok = writeuint32 (fh, ID);
+    if (!ok)
+	goto writecacheend;
 
     ForeachNode (&cache->addedfiles, addedfile)
     {
-	len = strlen (addedfile->name);
-	out = htonl (len);
-	ret = fwrite (&out, sizeof(out), 1, fh);
-	if (ret <= 0)
+	ok = writestring (fh, addedfile->name);
+	if (!ok)
 	{
-	    error ("writecache/fwrite():%d", __LINE__);
+	    error ("writecache/writestring():%d", __LINE__);
 	    goto writecacheend;
-	}
-
-	if (len)
-	{
-	    ret = fwrite (addedfile->name, len, 1, fh);
-	    if (ret <= 0)
-	    {
-		error ("writecache/fwrite():%d", __LINE__);
-		goto writecacheend;
-	    }
 	}
     }
 
-    out = htonl (-1);
-    ret = fwrite (&out, sizeof (out), 1, fh);
-    if (ret <= 0)
+    ok = writestring (fh, NULL);
+    if (!ok)
     {
 	error("writecache/fwrite():%d", __LINE__);
 	goto writecacheend;
     }
 
-    ret = writecachedir (fh, cache->topdir);
+    ok = writecachedir (fh, cache->topdir);
 
 writecacheend:
     if (fh)
 	fclose (fh);
 
-    if (ret <= 0)
+    if (!ok)
     {
 	unlink (path);
 
