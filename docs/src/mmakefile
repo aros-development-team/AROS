@@ -3,11 +3,12 @@ include $(TOP)/config/make.cfg
 
 DEST	:= $(HOME)/www/www.aros.org/www/
 #DEST	 := ../html.test/
+AROS_SIZE := $(HOME)/www/www.aros.org/tmp/aros.size
 JOBDEST := $(ARCHDIR)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
 LITE	:= /usr/local/Hughes/bin/lite
 GNUPLOT := gnuplot
-PPMTOGIF := ppmtogif
+CONVERT := convert
 DOCGENDIR := $(GENDIR)/docs
 
 FILES := main.src background.src faq.src differences.src cvs.src missing.src \
@@ -224,14 +225,14 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 includes : $(DOCGENDIR)/devlist.inc \
 	$(DOCGENDIR)/contents.inc \
 	$(DOCGENDIR)/status.inc \
-	$(DEST)progress.gif
+	$(DEST)progress.png
 
-$(DEST)progress.gif : size2plot.in $(TOP)/../CVSROOT/aros.size
+$(DEST)progress.png : size2plot.in $(AROS_SIZE)
 	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
-	    -e "s;@AROS-SIZE@;$(TOP)/../CVSROOT/aros.size;" \
+	    -e "s;@AROS-SIZE@;$(AROS_SIZE);" \
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
 	$(GNUPLOT) $(DOCGENDIR)/size2plot.gp
-	$(PPMTOGIF) $(DOCGENDIR)/plot.pbm > $@
+	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
 
 $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
