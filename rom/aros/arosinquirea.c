@@ -25,6 +25,9 @@
 #define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
 #define ROM_END 	0x1000000
 
+#define AROS_VERSION_MAJOR 1
+#define AROS_VERSION_MINOR 12
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
 IPTR kicksize(void);
@@ -133,12 +136,12 @@ IPTR kickbase(void);
 
 	case AI_ArosReleaseMajor:
 	    /* Update this whenever a new AROS is released */
-	    SetData (tag, IPTR, 1);
+	    SetData (tag, IPTR, AROS_VERSION_MAJOR);
 	    break;
 
 	case AI_ArosReleaseMinor:
 	    /* Update this whenever a new AROS is released */
-	    SetData (tag, IPTR, 12);
+	    SetData (tag, IPTR, AROS_VERSION_MINOR);
 	    break;
 
 	}
