@@ -52,6 +52,7 @@ FILES	    := \
 	Protect \
 	RequestChoice \
 	Set \
+	SetDate \
 	Setenv \
 	Unalias \
 	Version \
@@ -62,6 +63,10 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM workbench-c : setup includes
 workbench-c : show-flags $(EXES)
+	@$(NOP)
+
+#MM workbench-c-quick :
+workbench-c-quick : show-flags $(EXES)
 	@$(NOP)
 
 show-flags :
