@@ -106,25 +106,9 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, (IPTR) ColGroup(2),
                 MUIA_Group_VertSpacing, 2,
                 Child, (IPTR) Label("Normal:"),
-                Child, (IPTR) PopaslObject,
-                    MUIA_Popasl_Type, ASL_FontRequest,
-                    MUIA_Popstring_String, (IPTR) d.fonts_normal_string = StringObject,
-                        MUIA_CycleChain, 1,
-                        StringFrame, 
-                    End, /* String */
-                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
-                End, /* PopaslObject */
-            
+                Child, (IPTR) MakePopfont(&d.fonts_normal_string, FALSE),
                 Child, (IPTR) Label("Fixed:"),
-                Child, (IPTR) PopaslObject,
-                    MUIA_Popasl_Type, ASL_FontRequest,
-                    MUIA_Popstring_String, (IPTR) d.fonts_fixed_string = StringObject,
-                        MUIA_CycleChain, 1,
-                        StringFrame, 
-                    End, /* String */
-                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
-                End, /* PopaslObject */
-            
+                Child, (IPTR) MakePopfont(&d.fonts_fixed_string, TRUE),
                 Child, (IPTR) Label("Leading:"),
                 Child, (IPTR) d.fonts_leading_slider = MakeListviewspSlider(),
             
