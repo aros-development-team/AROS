@@ -1,8 +1,21 @@
+/*
+    (C) 1999 - 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: AmigaOS specific ReqTools initialization code.
+    Lang: English.
+*/
+
+/****************************************************************************************/
+
 #include <exec/libraries.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
+#include <exec/tasks.h>
+#include <exec/memory.h>
 #include <libraries/reqtools.h>
 #include <intuition/classes.h>
+#include <proto/exec.h>
 
 #include "reqtools_intern.h"
 #include "general.h"
@@ -12,7 +25,9 @@
 #define REVISION 0
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.0 (16.06.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.0 (29.06.2001)\r\n"
+
+/****************************************************************************************/
 
 extern const char name[];
 extern const char version[];
@@ -21,10 +36,14 @@ extern void *const functable[];
 extern struct IntReqToolsBase *libinit();
 extern const char libend;
 
+/****************************************************************************************/
+
 int entry(void)
 {
   return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident ROMTag =
 {
@@ -40,6 +59,8 @@ const struct Resident ROMTag =
   (ULONG *)inittable
 };
 
+/****************************************************************************************/
+
 const char name[]    = NAME_STRING;
 const char version[] = VERSION_STRING;
 
@@ -51,9 +72,13 @@ const APTR inittable[4] =
     (APTR)&libinit
 };
 
+/****************************************************************************************/
+
 #define extern
 #include "globalvars.h"
 #undef extern
+
+/****************************************************************************************/
 
 struct IntReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct IntReqToolsBase *, RTBase),
     	    	    	    	    	    REGPARAM(a0, BPTR, segList))
@@ -71,6 +96,8 @@ struct IntReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct IntReqToolsBase 
     return (struct IntReqToolsBase *)RTFuncs_Init(&RTBase->rt, segList);
 }
 
+/****************************************************************************************/
+
 extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
 				   REGPARAM(d0, LONG, maxlen),
 				   REGPARAM(a2, char *, title),
@@ -81,13 +108,124 @@ extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
 				   REGPARAM(a0, struct TagItem *, taglist));
 
 
+/****************************************************************************************/
+
+#ifdef USE_STACKSWAP
+
+/****************************************************************************************/
+
+#ifdef _AROS
+#error No StackSwap support for AROS yet
+#endif
+
+#ifndef __GNUC__
+#error Only StackSwap support for GCC compiler for now
+#endif
+
+/****************************************************************************************/
+
+struct MyStackSwapStruct
+{
+    struct StackSwapStruct  sss;
+    UBYTE   	    	    *stringbuff;
+    LONG    	    	    maxlen;
+    char    	    	    *title;
+    ULONG   	    	    checksum;
+    ULONG   	    	    *value;
+    LONG    	    	    mode;
+    struct rtReqInfo 	    *reqinfo;
+    struct TagItem  	    *taglist;
+};
+
+#ifndef MIN_STACK
+#define MIN_STACK 4096
+#endif
+
+/****************************************************************************************/
+
+static ULONG CheckStack_GetString(UBYTE *stringbuff,
+    	    	    	    	  LONG maxlen,
+				  char *title,
+				  ULONG checksum,
+				  ULONG *value,
+				  LONG mode,
+				  struct rtReqInfo *reqinfo,
+				  struct TagItem *taglist)
+{
+/* I could not manage to get correct code to be generated when
+   using asm("a7") or asm("sp") to access sp!? :-( */
+   
+#define sp ((IPTR)(&sss))
+
+    struct MyStackSwapStruct 	sss;
+    struct MyStackSwapStruct 	*sssptr asm("a3") = &sss;
+    struct Task     	    	*me = FindTask(NULL);
+    ULONG   	    	    	retval asm("d5") = 0;
+    
+    if ((sp <= (IPTR)me->tc_SPLower) ||
+        (sp >= (IPTR)me->tc_SPUpper) ||
+	(sp - MIN_STACK < (IPTR)me->tc_SPLower))
+    {
+    	sssptr->sss.stk_Lower = AllocVec(MIN_STACK, MEMF_PUBLIC);
+	if (sssptr->sss.stk_Lower)
+	{
+	    sssptr->sss.stk_Upper = ((IPTR)sssptr->sss.stk_Lower) + MIN_STACK;
+	    sssptr->sss.stk_Pointer = sssptr->sss.stk_Upper;
+	    
+	    sssptr->stringbuff  = stringbuff;
+	    sssptr->maxlen  	= maxlen;
+	    sssptr->title   	= title;
+	    sssptr->checksum 	= checksum;
+	    sssptr->value   	= value;
+	    sssptr->mode    	= mode;
+	    sssptr->reqinfo 	= reqinfo;
+	    sssptr->taglist 	= taglist;
+	    
+	    StackSwap(&sssptr->sss);
+	    
+    	    retval = GetString(sssptr->stringbuff,
+	    	    	       sssptr->maxlen,
+			       sssptr->title,
+			       sssptr->checksum,
+			       sssptr->value,
+			       sssptr->mode,
+			       sssptr->reqinfo,
+			       sssptr->taglist);
+			       	    
+	    StackSwap(&sssptr->sss);
+	    
+	    FreeVec(sssptr->sss.stk_Lower);
+	}
+    }
+    else
+    {
+    	retval = GetString(stringbuff, maxlen, title, checksum, value, mode, reqinfo, taglist);
+    }
+    
+    return retval;
+}
+
+/****************************************************************************************/
+
+#define GETSTRING CheckStack_GetString
+
+#else
+
+#define GETSTRING GetString
+
+/****************************************************************************************/
+
+#endif /* USE_STACKSWAP */
+
+/****************************************************************************************/
+
 ULONG SAVEDS ASM librtEZRequestA(REGPARAM(a1, char *, bodyfmt),
                                  REGPARAM(a2, char *, gadfmt),
 			         REGPARAM(a3, struct rtReqInfo *, reqinfo),
 			         REGPARAM(a4, APTR, argarray),
 			         REGPARAM(a0, struct TagItem *, taglist))
 {
-    return GetString(bodyfmt,
+    return GETSTRING(bodyfmt,
     		     (LONG)argarray,
 		     gadfmt,
 		     0,
@@ -97,13 +235,15 @@ ULONG SAVEDS ASM librtEZRequestA(REGPARAM(a1, char *, bodyfmt),
 		     taglist);
 }
 
+/****************************************************************************************/
+
 ULONG SAVEDS ASM librtGetStringA(REGPARAM(a1, UBYTE *, buffer),
     	    	    	    	 REGPARAM(d0, ULONG, maxchars),
 				 REGPARAM(a2, char *, title),
 				 REGPARAM(a3, struct rtReqInfo *, reqinfo),
 				 REGPARAM(a0, struct TagItem *, taglist))
 {
-    return GetString(buffer,
+    return GETSTRING(buffer,
     		     maxchars,
 		     title,
 		     0,
@@ -113,12 +253,14 @@ ULONG SAVEDS ASM librtGetStringA(REGPARAM(a1, UBYTE *, buffer),
 		     taglist);
 }
 
+/****************************************************************************************/
+
 ULONG SAVEDS ASM librtGetLongA(REGPARAM(a1, ULONG *, longptr),
     	    	    	       REGPARAM(a2, char *, title),
 			       REGPARAM(a3, struct rtReqInfo *, reqinfo),
 			       REGPARAM(a0, struct TagItem *, taglist))
 {
-    return GetString(NULL,
+    return GETSTRING(NULL,
     		     0,
 		     title,
 		     0,
@@ -128,6 +270,7 @@ ULONG SAVEDS ASM librtGetLongA(REGPARAM(a1, ULONG *, longptr),
 		     taglist);
 }
 
+/****************************************************************************************/
 
 extern void libopen(void);
 extern void libclose(void);
@@ -142,6 +285,8 @@ extern void FileRequestA(void);
 extern void FreeFileList(void);
 extern void PaletteRequestA(void);
 extern void GetVScreenSize(void);
+
+/****************************************************************************************/
 
 void *const functable[]=
 {
@@ -177,5 +322,9 @@ void *const functable[]=
     (void *)-1L
 };
 
+/****************************************************************************************/
 
 const char libend = 0;
+
+/****************************************************************************************/
+

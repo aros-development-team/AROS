@@ -1,7 +1,7 @@
 CC 	:= gcc
 LD	:= gcc
 RM  	:= rm
-CFLAGS	:= -Wall -DNO_INLINE_STDARG -O2 -m68020
+CFLAGS	:= -Wall -DUSE_STACKSWAP -DNO_INLINE_STDARG -O2 -m68020
 LDFLAGS := -noixemul -nostartfiles -s
 LIBFILE := /ram/reqtools.library
 CFILES	:= reqtoolsami_init req boopsigads general filereq filereqalloc \
