@@ -88,10 +88,11 @@ AROS_PROG(MMAKE,mmake)
 # Regenerated from the script, so there is no need to cache them.
 
 aros_host_cc="$CC"
-aros_host_ld="$CC"
+AROS_TOOL_CCPATH(aros_host_ld,ld)
+AROS_REQUIRED(ld,$aros_host_ld)
 aros_host_make="make"
-aros_host_cflags=
-aros_host_ldflags=
+aros_host_cflags=$CFLAGS
+aros_host_ldflags=$LDFLAGS
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(TOP)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
@@ -363,20 +364,28 @@ aros_target_cc="$aros_host_cc"
 aros_target_as="$aros_host_cc"
 aros_shared_ld="$aros_host_ld"
 aros_kernel_ld="$aros_host_ld"
-aros_target_ld="/usr/bin/ld"
+aros_target_ld="$aros_host_ld"
 
 aros_target_mkdep="$aros_host_mkdep"
 aros_target_incl_def="$aros_host_incl"
 
-# The default tools.
-aros_target_ar="ar"
-aros_target_ar_flags="cr"
-aros_target_nm="nm"
-aros_target_nm_flags="-C -ul"
-aros_target_objcopy="objcopy"
-aros_target_objdump="objdump"
-aros_target_ranlib="ranlib"
-aros_target_strip="strip"
+# The default tools executables to be linked at.
+AROS_TOOL_CCPATH(aros_target_ar_ln,ar)
+AROS_REQUIRED(ar,$aros_target_ar_ln)
+AROS_TOOL_CCPATH(aros_target_nm_ln,nm)
+AROS_REQUIRED(nm,$aros_target_nm_ln)
+AROS_TOOL_CCPATH(aros_target_objcopy_ln,objcopy)
+AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
+AROS_TOOL_CCPATH(aros_target_objdump_ln,objdump)
+AROS_REQUIRED(objdump,$aros_target_objdump_ln)
+AROS_TOOL_CCPATH(aros_target_ranlib_ln,ranlib)
+AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
+AROS_TOOL_CCPATH(aros_target_strip_ln,strip)
+AROS_REQUIRED(strip,$aros_target_strip_ln)
+
+if test "$GCC" = "yes"; then
+    aros_target_cc_path=`$CC -print-search-dirs | grep "programs: =" | cut -c 12-`
+fi
 
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
@@ -839,9 +848,12 @@ else
     fi
 fi
 
-TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
-TARGET_AS=$TARGET_CC
-TARGET_LD=$TARGET_CC
+prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
+
+TARGET_CC="${prefix}-gcc"
+TARGET_AS="$TARGET_CC"
+TARGET_LD="${prefix}-ld"
+aros_target_ld="${prefix}-ld"
 
 NOSTDINC_CFLAGS=-nostdinc
 
@@ -849,6 +861,28 @@ NOSTARTUP_LDFLAGS=-nostartfiles
 NIX_LDFLAGS=-nix
 DETACH_LDFLAGS=-detach
 NOSTDLIB_LDFLAGS=-nostdlib
+
+AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
+AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
+
+# The default tools
+aros_target_ar=${prefix}-ar
+aros_target_ar_flags="cr"
+aros_target_nm=${prefix}-nm
+aros_target_nm_flags="-C -ul"
+aros_target_objcopy=${prefix}-objcopy
+aros_target_objdump=${prefix}-objdump
+aros_target_ranlib=${prefix}-ranlib
+aros_target_strip=${prefix}-strip
+
+prefix="\$(TOOLDIR)/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
+AR="${prefix}-ar $aros_target_ar_flags"
+RANLIB="${prefix}-ranlib $aros_target_ranlib_flags"
+NM="${prefix}-nm $aros_target_nm_flags"
+NM_PLAIN="${prefix}-nm"
+STRIP="${prefix}-strip $aros_target_strip_flags"
+OBJDUMP="${prefix}-objdump"
+OBJCOPY="${prefix}-objcopy"
 
 AC_SUBST(TARGET_CC)
 AC_SUBST(TARGET_AS)
@@ -859,17 +893,13 @@ AC_SUBST(NIX_LDFLAGS)
 AC_SUBST(DETACH_LDFLAGS)
 AC_SUBST(NOSTDLIB_LDFLAGS)
 AC_SUBST(aros_cc_pre)
-
-AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
-AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
-
-AROS_TOOL(AR,$aros_target_ar,$aros_target_ar_flags)
-AROS_TOOL(RANLIB,$aros_target_ranlib,$aros_target_ranlib_flags)
-AROS_TOOL(NM,$aros_target_nm,$aros_target_nm_flags)
-AROS_TOOL(NM_PLAIN,$aros_target_nm,)
-AROS_TOOL(STRIP,$aros_target_strip,$aros_target_strip_flags)
-AROS_TOOL(OBJDUMP,$aros_target_objdump)
-AROS_TOOL(OBJCOPY,$aros_target_objcopy)
+AC_SUBST(AR)
+AC_SUBST(RANLIB)
+AC_SUBST(NM)
+AC_SUBST(NM_PLAIN)
+AC_SUBST(STRIP)
+AC_SUBST(OBJDUMP)
+AC_SUBST(OBJCOPY)
 
 #-----------------------------------------------------------------------------
 # See if we can compile SHM support
@@ -1018,6 +1048,7 @@ AC_SUBST(aros_host_mkdep)
 AC_SUBST(aros_host_mkargs)
 AC_SUBST(aros_host_exe_suffix)
 AC_SUBST(aros_host_lib_suffix)
+AC_SUBST(aros_tools_dir)
 
 # Target Related
 AC_SUBST(aros_target_arch)
@@ -1027,6 +1058,7 @@ AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cc_includes)
+AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
 AC_SUBST(aros_target_strip)
@@ -1164,40 +1196,43 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 
 AC_CONFIG_COMMANDS([compiler_executable],
     [
-        chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc
+        prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+	mkdir -p $prefix
+	prefix="${prefix}/${aros_target_cpu}-aros"
+        prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+
+	echo ${prefix}
+	echo ${prefix2}
+        chmod a+x ${prefix2}-gcc ${prefix2}-ld
         
-	prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}	
-	mkdir -p $prefix	
-	prefix=${prefix}/${aros_target_cpu}-aros
-	prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
-	
-	ln -sf ${prefix2}-gcc               ${prefix}-gcc
+	ln -sf ${prefix2}-gcc          ${prefix}-gcc
+	ln -sf ${prefix2}-ld           ${prefix}-ld
         
-	ln -sf `which $aros_target_ld`      ${prefix}-ld
-        ln -sf `which $aros_target_nm`      ${prefix}-nm
-        ln -sf `which $aros_target_ar`      ${prefix}-ar
-        ln -sf `which $aros_target_ranlib`  ${prefix}-ranlib
-        ln -sf `which $aros_target_objcopy` ${prefix}-objcopy
-        ln -sf `which $aros_target_objdump` ${prefix}-objdump
+        ln -sf $aros_target_nm_ln      ${prefix}-nm
+        ln -sf $aros_target_ar_ln      ${prefix}-ar
+        ln -sf $aros_target_ranlib_ln  ${prefix}-ranlib
+        ln -sf $aros_target_objcopy_ln ${prefix}-objcopy
+        ln -sf $aros_target_objdump_ln ${prefix}-objdump
+        ln -sf $aros_target_strip_ln   ${prefix}-strip
     
-        ln -sf `which $aros_target_ld`      ${prefix2}-ld
-        ln -sf `which $aros_target_nm`      ${prefix2}-nm
-        ln -sf `which $aros_target_ar`      ${prefix2}-ar
-        ln -sf `which $aros_target_ranlib`  ${prefix2}-ranlib
-        ln -sf `which $aros_target_objcopy` ${prefix2}-objcopy
-        ln -sf `which $aros_target_objdump` ${prefix2}-objdump
+        ln -sf $aros_target_nm_ln      ${prefix2}-nm
+        ln -sf $aros_target_ar_ln      ${prefix2}-ar
+        ln -sf $aros_target_ranlib_ln  ${prefix2}-ranlib
+        ln -sf $aros_target_objcopy_ln ${prefix2}-objcopy
+        ln -sf $aros_target_objdump_ln ${prefix2}-objdump
+        ln -sf $aros_target_strip_ln   ${prefix2}-strip
     ],
     [
         aros_tools_dir=${aros_tools_dir}
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
-	aros_target_ld=${aros_target_ld}
-	aros_target_nm=${aros_target_nm}
-	aros_target_ar=${aros_target_ar}
-	aros_target_ranlib=${aros_target_ranlib}
-	aros_target_objdump=${aros_target_objdump}
-	aros_target_objcopy=${aros_target_objcopy}
+	aros_target_nm_ln=${aros_target_nm_ln}
+	aros_target_ar_ln=${aros_target_ar_ln}
+	aros_target_ranlib_ln=${aros_target_ranlib_ln}
+	aros_target_objdump_ln=${aros_target_objdump_ln}
+	aros_target_objcopy_ln=${aros_target_objcopy_ln}
+	aros_target_strip_ln=${aros_target_strip_ln}
     ]
 )
 AC_CONFIG_COMMANDS([genshared_executable],
@@ -1207,6 +1242,9 @@ AC_CONFIG_COMMANDS([genshared_executable],
 AC_CONFIG_COMMANDS([genmf_executable],
     [chmod a+x ${aros_tools_dir}/genmf.py],
     [aros_tools_dir=${aros_tools_dir}]
+)
+AC_CONFIG_COMMANDS([adflib/myaros.conf_executable],
+    [chmod a+x tools/adflib/myconf.aros]
 )
 
 AC_CONFIG_FILES(
@@ -1219,8 +1257,10 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
     ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
+    tools/adflib/myconf.aros
 )
 
 AC_OUTPUT
