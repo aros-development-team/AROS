@@ -8,6 +8,7 @@
 #include <asm/ptrace.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 #include "traps.h"
 
@@ -95,8 +96,12 @@ void set_system_gate(unsigned int n, void *addr)
 	_set_gate(idt_base+n,14,3,addr);
 }
 
-void do_TRAP(struct pt_regs regs) {
-ULONG alert;
+void do_TRAP(struct pt_regs regs)
+{
+    ULONG alert;
+
+    kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
+    	    regs.eip, regs.eflags, regs.xds, &regs);
 
 	switch (regs.orig_eax)
 	{
