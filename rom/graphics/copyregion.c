@@ -56,9 +56,9 @@
     {
         if (region->RegionRectangle)
         {
-	    nreg->bounds = region->bounds;
-
             struct RegionRectangle *new = NULL;
+
+            nreg->bounds = region->bounds;
 
             if (!_LinkRegionRectangleList(region->RegionRectangle, &new, GfxBase))
 	    {
