@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 FLAGS := Australia  	    \
     	 Belgie     	    \
 	 Belgique   	    \
+	 Brasil             \
 	 Canada     	    \
 	 Canada_Français    \
 	 Danmark    	    \
