@@ -356,11 +356,23 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 	    GetGadgetIBox(o, msg->gpi_GInfo, &container);
 
+	    D(bug("*** click: mouse = %d,%d (%d %d) box = %d,%d - %d %d (%d x %d)\n ***\n",
+	    		ie->ie_X,
+			ie->ie_Y,
+			msg->gpi_Mouse.X,
+			msg->gpi_Mouse.Y,
+			container.Left,
+			container.Top,
+			container.Left + container.Width - 1,
+			container.Top + container.Height - 1,
+			container.Width,
+			container.Height));
+			
 	    /* Click outside gadget ? */
-	    if (    (ie->ie_X > container.Left + container.Width)
-		 || (ie->ie_X < container.Left)
-		 || (ie->ie_Y > container.Top  + container.Height)
-		 || (ie->ie_Y < container.Top))
+	    if (    (msg->gpi_Mouse.X >= container.Width)
+		 || (msg->gpi_Mouse.X < 0)
+		 || (msg->gpi_Mouse.Y >= container.Height)
+		 || (msg->gpi_Mouse.Y < 0))
 
 	    {
 		retval = GMR_REUSE;
