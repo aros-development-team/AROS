@@ -49,6 +49,7 @@ FILES := \
     imspec \
     dragndrop \
     menu \
+    datatypescache \
     $(CLASSFILES)
     	    
 FUNCS := \

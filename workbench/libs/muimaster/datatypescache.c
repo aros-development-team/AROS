@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define DT_V44_SUPPORT
+
 #include <datatypes/pictureclass.h>
 
 #include <clib/alib_protos.h>
@@ -36,7 +38,12 @@
 #include <proto/utility.h>
 #include <proto/layers.h>
 
+#ifndef _AROS
 #include <dos.h>
+#else
+#include <aros/asmcall.h>
+#include <dos/dos.h>
+#endif
 
 #include "muimaster_intern.h"
 
@@ -106,6 +113,8 @@ struct BltMaskHook
   LONG destx,desty;
 };
 
+#ifndef _AROS
+
 #ifndef _DCC
 VOID MyBltMaskBitMap( CONST struct BitMap *srcBitMap, LONG xSrc, LONG ySrc, struct BitMap *destBitMap, LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct BitMap *maskBitMap )
 {
@@ -164,6 +173,8 @@ VOID MyBltMaskBitMapRastPort( struct BitMap *srcBitMap, LONG xSrc, LONG ySrc, st
 	BltMaskBitMapRastPort(srcBitMap, xSrc, ySrc, destRP, xDest, yDest, xSize, ySize, minterm, bltMask);
     }
 }
+
+#endif
 
 
 static Object *LoadPicture(char *filename, struct Screen *scr)
@@ -303,7 +314,11 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
 	GetDTAttrs(o,PDTA_MaskPlane,&mask,TAG_DONE);
 	if (mask)
 	{
+	#ifndef _AROS
 	    MyBltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe2,(PLANEPTR)mask);
+	#else
+	    BltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe2,(PLANEPTR)mask);	
+	#endif
 	} else BltBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xc0);
     }
 }
@@ -394,14 +409,21 @@ static void CopyTiledBitMap(struct BitMap *Src,WORD SrcOffsetX,WORD SrcOffsetY,W
 	}
 }
 
+#ifndef _AROS
 __asm STATIC void WindowPatternBackFillFunc(register __a0 struct Hook *Hook,register __a2 struct RastPort *RP,register __a1 struct BackFillMsg *BFM)
+#else
+AROS_UFH3S(void, WindowPatternBackFillFunc,
+    AROS_UFHA(struct Hook *, Hook, A0),
+    AROS_UFHA(struct RastPort *, RP, A2),
+    AROS_UFHA(struct BackFillMsg *, BFM, A1))
+#endif
 {
 	WORD OffsetX; // the offset within the tile in x direction
 	WORD OffsetY; // the offset within the tile in y direction
 
 	struct BackFillInfo *BFI = (struct BackFillInfo *)Hook; // get the data for our backfillhook (but __saveds is nonetheless required because this function needs GfxBase)
 
-#ifndef __MAXON__
+#if !defined(__MAXON__) && !defined(_AROS)
 	putreg(12,(long)Hook->h_Data);
 #endif
 
@@ -452,7 +474,7 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
 	{
 	    LONG depth = GetBitMapAttr(bitmap,BMA_DEPTH);
 	    bfi->Hook.h_Entry = (ULONG (*)())WindowPatternBackFillFunc;
-#ifndef __MAXON__
+#if !defined(__MAXON__) && !defined(_AROS)
 	    bfi->Hook.h_Data = (APTR)getreg(12);	/* register A4 */
 #endif
 
