@@ -71,6 +71,11 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys io,*iofs=&io;
 
+    ASSERT_VALID_PTR(fh);
+    ASSERT_VALID_PTR(fh->fh_Device);
+    ASSERT_VALID_PTR(fh->fh_Unit);
+    ASSERT_VALID_PTR(buffer);
+
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
