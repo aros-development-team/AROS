@@ -30,7 +30,8 @@ void _Exec_Enable(struct ExecBase * SysBase)
 	/* Block all signals. We should really only block those that
 	   map to interrupts.
 	*/
-	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
+
+#if 0
 
 	if( (SysBase->AttnResched & 0x80) 
 	 && (SysBase->TDNestCnt < 1)
@@ -39,6 +40,11 @@ void _Exec_Enable(struct ExecBase * SysBase)
 		SysBase->AttnResched &= ~0x80;
 		Switch();
 	}
+
+#endif
+
+	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
+
     }
 
     AROS_LIBFUNC_EXIT
