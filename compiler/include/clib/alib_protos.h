@@ -24,6 +24,9 @@
 #ifndef LIBRARIES_COMMODITIES_H
 #   include <libraries/commodities.h>
 #endif
+#ifndef DEVICES_INPUTEVENT_H
+#   include <devices/inputevemt.h>
+#endif
 #ifdef AROS_SLOWSTACKTAGS
 #   include <stdarg.h>
 #   ifndef UTILITY_TAGITEM_H
