@@ -32,6 +32,7 @@ FILES	:= \
     closeworkbenchobject \
     createextio \
     creategadget \
+    createlayertags \
     createmenus \
     createnewproctags \
     createport \
