@@ -74,7 +74,7 @@ struct x11_data
     
 };
 
-static struct abdescr attrbases[] =
+static struct ABDescr attrbases[] =
 {
     { NULL, NULL }
 };
@@ -159,7 +159,7 @@ Class *init_x11class (struct x11_staticdata *xsd)
 	    cl->UserData = (APTR)xsd;
 	    xsd->x11class = cl;
 	    
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
 	    {
 		D(bug("X11HiddClass ok\n"));
 		
@@ -193,7 +193,7 @@ VOID free_x11class(struct x11_staticdata *xsd)
         if(xsd->x11class) DisposeObject((Object *) xsd->x11class);
         xsd->x11class = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 
     }
 

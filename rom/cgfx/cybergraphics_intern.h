@@ -47,4 +47,8 @@ extern LONG driver_WriteLUTPixelArray(APTR srcrect,
 	UBYTE ctabformat,
 	struct Library *CyberGfxBase);
 
+extern VOID driver_FreeCModeList(struct List *modeList, struct Library *CyberGfxBase);
+
+extern ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Library *CyberGfxBase);
+
 #endif /* CYBERGRAPHICS_INTERN_H */

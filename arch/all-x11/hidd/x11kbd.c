@@ -41,9 +41,9 @@ struct x11kbd_data
     APTR callbackdata;
 };
 
-static AttrBase HiddKbdAB;
+static AttrBase HiddKbdAB = 0;
 
-static struct abdescr attrbases[] =
+static struct ABDescr attrbases[] =
 {
     { IID_Hidd_Kbd, &HiddKbdAB },
     { NULL, NULL }
@@ -763,7 +763,7 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
 	    cl->UserData = (APTR)xsd;
 	    xsd->kbdclass = cl;
 	    
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
 	    {
 		D(bug("KbdHiddClass ok\n"));
 		
@@ -795,7 +795,7 @@ VOID free_kbdclass(struct x11_staticdata *xsd)
         if(xsd->kbdclass) DisposeObject((Object *) xsd->kbdclass);
         xsd->kbdclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 
     }
 

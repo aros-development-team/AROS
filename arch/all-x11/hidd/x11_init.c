@@ -13,6 +13,7 @@
 #include <exec/types.h>
 
 #include <proto/exec.h>
+#include <proto/oop.h>
 
 #include <utility/utility.h>
 #include <oop/oop.h>
@@ -69,7 +70,7 @@ VOID x11task_entry(struct x11task_params *xtp);
 
 AttrBase HiddPixFmtAttrBase = 0;
 
-struct abdescr abd[] = {
+struct ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
@@ -79,7 +80,7 @@ static BOOL initclasses(struct x11_staticdata *xsd)
 
     /* Get some attrbases */
     
-    if (!obtainattrbases(abd, OOPBase))
+    if (!ObtainAttrBases(abd))
     	goto failure;
 
     xsd->x11class = init_x11class(xsd);
@@ -139,7 +140,7 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     if (xsd->x11class)
     	free_x11class(xsd);
 	
-    releaseattrbases(abd, OOPBase);
+    ReleaseAttrBases(abd);
 	
     return;
 }

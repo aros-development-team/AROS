@@ -125,7 +125,7 @@ static VOID true_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels
 
 static VOID true_to_pal(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
-
+kprintf("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n");
 }
 
 static VOID pal_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
@@ -162,8 +162,25 @@ static VOID pal_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels 
 
 static VOID pal_to_pal(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)
 {
-     /* This one is rather easy, just copy the data */
+    HIDDT_PixelFormat *spf, *dpf;
      
+    spf = msg->srcPixFmt;
+    dpf = msg->dstPixFmt;
+     
+     
+    if (    spf->clut_shift == dpf->clut_shift
+         && spf->clut_mask  == dpf->clut_mask ) {
+	/* This one is rather easy, just copy the data */
+	
+	
+	  
+	  
+    } else {
+     	/* Convert pixel-by pixel */
+     
+    }
+    
+    return;
 }
 
 static void native32_to_native(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg)

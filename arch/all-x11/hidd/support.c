@@ -154,37 +154,6 @@ UX11
 
 
 #undef OOPBase
-VOID releaseattrbases(struct abdescr *abd, struct Library * OOPBase)
-{
-    for (; abd->interfaceid; abd ++)
-    {
-        if ( *(abd->attrbase) != 0 )
-	{
-	    ReleaseAttrBase(abd->interfaceid);
-	    *(abd->attrbase) = 0;
-	}
-    }
-    return;
-}
-
-#undef SysBase
-BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
-{
-    struct abdescr *d;
-    for (d = abd; d->interfaceid; d ++)
-    {
-        *(d->attrbase) = ObtainAttrBase(d->interfaceid);
-	
-	if ( *(d->attrbase) == 0 )
-	{
-	    releaseattrbases(abd, OOPBase);
-	    return FALSE;
-	}   
-    }
-    return TRUE;
-    
-}
-
 
 #undef OOPBase
 #define OOPBase ((struct Library *)OCLASS(OCLASS(o))->UserData)

@@ -43,7 +43,10 @@ OSMODULE  := cybergraphics.library
 FILES	  :=	
 	
 FUNCTIONS := 	\
+	alloccmodelisttaglist	\
 	fillpixelarray		\
+	freecmodelist		\
+	getcybermapattr		\
 	invertpixelarray	\
 	readpixelarray		\
 	readrgbpixel		\

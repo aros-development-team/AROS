@@ -49,7 +49,7 @@ static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddX11GfxAB		= 0;
 static AttrBase HiddGfxModeAttrBase	= 0;
 
-static struct abdescr attrbases[] =
+static struct ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,  &HiddBitMapAttrBase },
     { IID_Hidd_X11Gfx,  &HiddX11GfxAB },
@@ -319,7 +319,7 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
 	    cl->UserData = (APTR)xsd;
 	    xsd->gfxclass = cl;
 	    
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
 	    {
 		D(bug("GfxHiddClass ok\n"));
 	    	AddClass(cl);
@@ -353,7 +353,7 @@ VOID free_gfxclass(struct x11_staticdata *xsd)
         if(xsd->gfxclass) DisposeObject((Object *) xsd->gfxclass);
         xsd->gfxclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 
     }
 

@@ -43,7 +43,7 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddX11GfxAB = 0;
 static AttrBase HiddX11BitMapAB = 0;
 
-static struct abdescr attrbases[] = 
+static struct ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -103,10 +103,13 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		
 	
 	/* Get attr values */
+kprintf("Getting stuff\n");
 	GetAttr(o, aHidd_BitMap_Width,		&width);
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
-	GetAttr(o, aHidd_BitMap_Depth,		&depth);
 	
+kprintf("Getting depth\n");
+	GetAttr(o, aHidd_BitMap_Depth,		&depth);
+kprintf("Got depth\n");
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
@@ -371,7 +374,7 @@ Class *init_offbmclass(struct x11_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
             {
 	    
                 AddClass(cl);
@@ -403,7 +406,7 @@ void free_offbmclass(struct x11_staticdata *xsd)
         if(xsd->offbmclass) DisposeObject((Object *) xsd->offbmclass);
         xsd->offbmclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 	
     }
 

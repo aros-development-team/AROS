@@ -15,7 +15,7 @@
 	AROS_LH1(void, FreeCModeList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct List *, , A0),
+	AROS_LHA(struct List *, modeList, A0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 13, Cybergraphics)
@@ -44,9 +44,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("FreeCModeList");
+    
+    driver_FreeCModeList(modeList, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* FreeCModeList */

@@ -15,7 +15,7 @@
 	AROS_LH1(struct List *, AllocCModeListTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, , A1),
+	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 12, Cybergraphics)
@@ -44,9 +44,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
+    
+    
+    driver_AllocCModeListTagList(tags, CyberGfxBase);
+    
 
-    aros_print_not_implemented ("AllocCModeListTagList");
 
     AROS_LIBFUNC_EXIT
 } /* AllocCModeListTagList */

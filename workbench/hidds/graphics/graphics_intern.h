@@ -30,7 +30,6 @@ struct gfxmode_data {
     
     Object *gfxhidd;
     
-    UWORD depth;
     
 };
 
@@ -102,11 +101,13 @@ struct HIDDBitMapData
     ULONG height;        /* height of the bitmap in pixel */
     ULONG reqdepth;	 /* Depth as requested by user */
     BOOL  displayable;   /* bitmap displayable?           */
-    ULONG format;        /* planar or chunky              */
     ULONG flags;         /* see hidd/graphic.h 'flags for */
                          /* HIDD_Graphics_CreateBitMap'   */
+#if 0
+    ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
+#endif
     APTR  colorTab;      /* color table of the bitmap     */
     HIDDT_Color *coltab;
 

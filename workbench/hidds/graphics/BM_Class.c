@@ -117,7 +117,6 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->reqdepth	  = 8;
         data->displayable = FALSE;
-        data->format      = vHidd_BitMap_Format_Planar;
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
         data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
@@ -139,8 +138,10 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                     case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
                     case aoHidd_BitMap_Depth       : data->reqdepth    = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
+
+#if 0		    
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
-		    
+#endif		    
 		    case aoHidd_BitMap_GC	   : update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
 		    
 		    case aoHidd_BitMap_Foreground  : data->fg		= tag->ti_Data; break;
@@ -228,7 +229,9 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
             case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
             case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
+#if 0
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
+#endif
 	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
 	    case aoHidd_BitMap_Foreground  : *msg->storage = data->fg; break;
 	    case aoHidd_BitMap_Background  : *msg->storage = data->bg; break;
@@ -247,8 +250,19 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 		    *msg->storage = data->reqdepth;
 		}
 		break;
+
+	    case aoHidd_BitMap_BytesPerRow: {
+	    	HIDDT_PixelFormat *pf;
+		
+		pf = (HIDDT_PixelFormat *)data->prot.pixfmt;
+		
+		*msg->storage = pf->bytes_per_pixel * data->width;
+		break;
+	    }
     
-            default: DoSuperMethod(cl, obj, (Msg) msg);
+            default:
+	    	kprintf("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx);
+	    	DoSuperMethod(cl, obj, (Msg) msg);
         }
     }
 
@@ -1334,7 +1348,6 @@ static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
     
     
-    
     for (y = 0; y < msg->height; y ++)
     {
     	for (x = 0; x < msg->width; x ++)
@@ -1495,9 +1508,14 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
                 case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
                 case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
                 case aoHidd_BitMap_Displayable   : data->displayable   = (BOOL) tag->ti_Data; break;
+#if 0		
                 case aoHidd_BitMap_Format        : data->format        = tag->ti_Data; break;
-                case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
                 case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
+
+                case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
+#endif
+
+
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
 		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 

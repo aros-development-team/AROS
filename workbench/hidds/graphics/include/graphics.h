@@ -203,6 +203,7 @@ typedef ULONG HIDDT_DrawMode;
 
 /* Standard pixelformats */
 enum {
+	vHidd_PixFmt_Unknown,
 	vHidd_PixFmt_Native,
 	vHidd_PixFmt_Native32,
 	
@@ -319,11 +320,16 @@ enum {
     aoHidd_BitMap_Depth,         /* [I.G] Bitmap depth                         */
     aoHidd_BitMap_Displayable,   /* [I.G] BOOL bitmap is displayable           */
     aoHidd_BitMap_Visible,       /* [..G] Check if a bitmap is visible         */
-    aoHidd_BitMap_Mode,          /* [ISG] The display mode of this bitmap      */
     aoHidd_BitMap_BaseAddress,   /* [ISG] Bitmap adress in RAM                 */
-    aoHidd_BitMap_Format,        /* [..G] Tell the format of the bitmap data   */
+    aoHidd_BitMap_IsLinearMem,   /* [..G] Is the bitmap memory contigous       */
     aoHidd_BitMap_BytesPerRow,   /* [..G] Number of bytes in a row             */
+
+#if 0    
+    aoHidd_BitMap_Mode,          /* [ISG] The display mode of this bitmap      */
     aoHidd_BitMap_BytesPerPixel, /* [..G] Number of byter per pixel            */
+    aoHidd_BitMap_Format,        /* [..G] Tell the format of the bitmap data   */
+#endif
+    
     aoHidd_BitMap_BestSize,      /* [..G] Best size for depth                  */
     aoHidd_BitMap_LeftEdge,      /* [I.G] Left edge position of the bitmap     */
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap      */
@@ -355,11 +361,16 @@ enum {
 #define aHidd_BitMap_Depth         (HiddBitMapAttrBase + aoHidd_BitMap_Depth)
 #define aHidd_BitMap_Displayable   (HiddBitMapAttrBase + aoHidd_BitMap_Displayable)
 #define aHidd_BitMap_Visible       (HiddBitMapAttrBase + aoHidd_BitMap_Visible)
-#define aHidd_BitMap_Mode          (HiddBitMapAttrBase + aoHidd_BitMap_Mode)
 #define aHidd_BitMap_BaseAddress   (HiddBitMapAttrBase + aoHidd_BitMap_BaseAddress)
+#define aHidd_BitMap_IsLinearMem   (HiddBitMapAttrBase + aoHidd_BitMap_IsLinearMem)
+
+#if 0
+#define aHidd_BitMap_Mode          (HiddBitMapAttrBase + aoHidd_BitMap_Mode)
 #define aHidd_BitMap_Format        (HiddBitMapAttrBase + aoHidd_BitMap_Format)
-#define aHidd_BitMap_BytesPerRow   (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerRow)
 #define aHidd_BitMap_BytesPerPixel (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerPixel)
+#endif
+
+#define aHidd_BitMap_BytesPerRow   (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerRow)
 #define aHidd_BitMap_BestSize      (HiddBitMapAttrBase + aoHidd_BitMap_BestSize)
 #define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
@@ -641,7 +652,7 @@ VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
 BOOL	 HIDD_Gfx_RegisterGfxModes(Object *hiddGfx, struct TagItem **modeTags);
 
 struct List *HIDD_Gfx_QueryGfxModes(Object *hiddGfx, struct TagItem *queryTags);
-VOID HIDD_Gfx_ReleaseModes(Object *hiddGfx, struct List *modeList);
+VOID HIDD_Gfx_ReleaseGfxModes(Object *hiddGfx, struct List *modeList);
 
 VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
 BOOL     HIDD_BM_Show        (Object obj);
@@ -716,7 +727,6 @@ enum {
      aoHidd_GfxMode_Height,
      aoHidd_GfxMode_StdPixFmt,
      aoHidd_GfxMode_PixFmtTags,
-     aoHidd_GfxMode_Depth,
      
      num_Hidd_GfxMode_Attrs
 };
@@ -725,7 +735,6 @@ enum {
 #define aHidd_GfxMode_Height		(HiddGfxModeAttrBase + aoHidd_GfxMode_Height	)
 #define aHidd_GfxMode_StdPixFmt		(HiddGfxModeAttrBase + aoHidd_GfxMode_StdPixFmt	)
 #define aHidd_GfxMode_PixFmtTags	(HiddGfxModeAttrBase + aoHidd_GfxMode_PixFmtTags	)
-#define aHidd_GfxMode_Depth		(HiddGfxModeAttrBase + aoHidd_GfxMode_Depth	)
 
 
 

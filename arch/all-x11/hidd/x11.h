@@ -92,11 +92,6 @@ struct pHidd_X11Kbd_HandleEvent
 VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event);
 /* misc */
 
-struct abdescr
-{
-    STRPTR interfaceid;
-    AttrBase *attrbase;
-};
 
 
 
@@ -186,12 +181,11 @@ struct x11_staticdata
     ULONG size; /* Size of pixel in bits */
     ULONG bytes_per_pixel;
     
+    
     Atom delete_win_atom;
 };
 
 
-BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
-VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 VOID get_bitmap_info(struct x11_staticdata *xsd
 	, Drawable d
 	, ULONG *sz

@@ -15,8 +15,8 @@
 	AROS_LH2(ULONG, GetCyberMapAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct BitMap *, , A0),
-	AROS_LHA(ULONG          , , D0),
+	AROS_LHA(struct BitMap *, bitMap, A0),
+	AROS_LHA(ULONG          , attribute, D0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 16, Cybergraphics)
@@ -45,9 +45,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("GetCyberMapAttr");
+    
+    return driver_GetCyberMapAttr(bitMap, attribute, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* GetCyberMapAttr */

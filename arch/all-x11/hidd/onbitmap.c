@@ -38,7 +38,7 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddX11GfxAB = 0;
 static AttrBase HiddX11BitMapAB = 0;
 
-static struct abdescr attrbases[] = 
+static struct ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -448,7 +448,7 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
             {
 	    
                 AddClass(cl);
@@ -480,7 +480,7 @@ void free_onbmclass(struct x11_staticdata *xsd)
         if(xsd->onbmclass) DisposeObject((Object *) xsd->onbmclass);
         xsd->onbmclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 	
     }
 

@@ -28,7 +28,7 @@ struct x11mouse_data
 
 static AttrBase HiddMouseAB;
 
-static struct abdescr attrbases[] =
+static struct ABDescr attrbases[] =
 {
     { IID_Hidd_Mouse, &HiddMouseAB },
     { NULL,	NULL }
@@ -199,7 +199,7 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
 	    cl->UserData = (APTR)xsd;
 	    xsd->mouseclass = cl;
 	    
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
 	    {
 		D(bug("MouseHiddClass ok\n"));
 		
@@ -233,7 +233,7 @@ VOID free_mouseclass(struct x11_staticdata *xsd)
         if(xsd->mouseclass) DisposeObject((Object *) xsd->mouseclass);
         xsd->mouseclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
 
     }
 

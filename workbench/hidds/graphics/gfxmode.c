@@ -18,6 +18,13 @@
 #include "graphics_intern.h"
 
 static AttrBase HiddGfxModeAttrBase = 0;
+static AttrBase HiddPixFmtAttrBase  = 0;
+
+static struct ABDescr attrbases[] = {
+    { IID_Hidd_GfxMode,	&HiddGfxModeAttrBase	},
+    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+    { NULL, 0UL }
+};
 
 #define IS_GFXMODE_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddGfxModeAttrBase) < num_Total_GfxMode_Attrs)
@@ -31,7 +38,6 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     Object *gfxhidd = NULL;
     
     ULONG width, height;
-    UWORD depth;
     
     HIDDT_StdPixFmt stdpf;
     struct TagItem * pftags = NULL;
@@ -79,10 +85,6 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    gotpf = TRUE;
 		    break;
 		    
-		case aoHidd_GfxMode_Depth:
-		    depth = (UWORD)tag->ti_Data;
-		    break;
-		    
 		case aoHidd_GfxMode_GfxHidd:
 		    gfxhidd = (Object *)tag->ti_Data;
 		    break;
@@ -128,7 +130,6 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     data->width		= width;
     data->height	= height;
     data->pixfmt  	= pfobj;
-    data->depth		= depth;
     
     return o;
      
@@ -148,6 +149,113 @@ static VOID gfxmode_dispose(Class *cl, Object *o, Msg msg)
      return;
 }
 
+static VOID gfxmode_get(Class *cl, Object *o, struct pRoot_Get *msg)
+{
+    struct gfxmode_data *data;
+    
+    ULONG idx;
+    
+    if (IS_GFXMODE_ATTR(msg->attrID, idx)) {
+    	switch (idx) {
+	    case aoHidd_GfxMode_Width:
+	    	*msg->storage = data->width;
+		break;
+
+	    case aoHidd_GfxMode_Height:
+	    	*msg->storage = data->height;
+		break;
+		
+	     default:
+	     	kprintf("TRYING TO GET UNKNOWN ATTR FROM GFXMODE CLASS\n");
+		break;
+
+	}
+    
+    } else if (IS_PIXFMT_ATTR(msg->attrID, idx)) {
+    	/* Just as a service, we export the pixel format interface */
+	HIDDT_PixelFormat *pf;
+	
+	pf = (HIDDT_PixelFormat *)data->pixfmt;
+    	switch (idx) {
+	    case aoHidd_PixFmt_RedShift:
+	    	*msg->storage = pf->red_shift;
+	    	break;
+	
+	    case aoHidd_PixFmt_GreenShift:
+	    	*msg->storage = pf->green_shift;
+	    	break;
+	
+	    case aoHidd_PixFmt_BlueShift:
+	    	*msg->storage = pf->blue_shift;
+	    	break;
+	
+	    case aoHidd_PixFmt_AlphaShift:
+	    	*msg->storage = pf->alpha_shift;
+	    	break;
+	
+	    case aoHidd_PixFmt_RedMask:
+	    	*msg->storage = pf->red_mask;
+	    	break;
+	
+	    case aoHidd_PixFmt_GreenMask:
+	    	*msg->storage = pf->green_mask;
+	    	break;
+	
+	    case aoHidd_PixFmt_BlueMask:
+	    	*msg->storage = pf->blue_mask;
+	    	break;
+	
+	    case aoHidd_PixFmt_AlphaMask:
+	    	*msg->storage = pf->alpha_mask;
+	    	break;
+	
+	    case aoHidd_PixFmt_CLUTShift:
+	    	*msg->storage = pf->clut_shift;
+	    	break;
+	
+	    case aoHidd_PixFmt_CLUTMask:
+	    	*msg->storage = pf->clut_mask;
+	    	break;
+	
+	    case aoHidd_PixFmt_Depth:
+	    	*msg->storage = pf->depth;
+	    	break;
+	
+	    case aoHidd_PixFmt_BitsPerPixel:
+	    	*msg->storage = pf->size;
+	    	break;
+	
+	    case aoHidd_PixFmt_BytesPerPixel:
+	    	*msg->storage = pf->bytes_per_pixel;
+	    	break;
+	    
+	    case aoHidd_PixFmt_StdPixFmt:
+	    	*msg->storage = pf->stdpixfmt;
+	    	break;
+	    
+	    case aoHidd_PixFmt_GraphType:
+	    	*msg->storage = pf->flags;
+	    	break;
+	    
+	    default:
+	    	kprintf("TRYING TO GET UNKNOWN PIXFMT ATTR\n");
+		break;
+	}
+    
+    } else {
+    	DoSuperMethod(cl, o, (Msg)msg);
+    }
+    
+    return;
+    
+    
+    
+    
+    data = INST_DATA(cl, o);
+    
+    
+}
+
 /*** init_gfxmodeclass *********************************************************/
 
 #undef OOPBase
@@ -156,7 +264,7 @@ static VOID gfxmode_dispose(Class *cl, Object *o, Msg msg)
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
 
-#define NUM_ROOT_METHODS   2
+#define NUM_ROOT_METHODS 3
 #define NUM_GFXMODE_METHODS 0
 
 Class *init_gfxmodeclass(struct class_static_data *csd)
@@ -165,6 +273,7 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     {
         {(IPTR (*)())gfxmode_new, 	moRoot_New	},
         {(IPTR (*)())gfxmode_dispose,	moRoot_Dispose	},
+        {(IPTR (*)())gfxmode_get,	moRoot_Get	},
 	{ NULL, 0UL }
     };
     
@@ -205,12 +314,7 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
             cl->UserData     = (APTR) csd;
             
             /* Get attrbase for the GfxMode interface */
-            HiddGfxModeAttrBase = ObtainAttrBase(IID_Hidd_GfxMode);
-            if(HiddGfxModeAttrBase)
-            {
-            }
-            else
-            {
+	    if (!ObtainAttrBases(attrbases)) {
 			
                 free_gfxmodeclass(csd);
                 cl = NULL;
@@ -227,6 +331,8 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
 void free_gfxmodeclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_gfxmodeclass(csd=%p)\n", csd));
+    
+    ReleaseAttrBases(attrbases);
 
     if(csd)
     {
@@ -235,8 +341,6 @@ void free_gfxmodeclass(struct class_static_data *csd)
 	    DisposeObject((Object *) csd->gfxmodeclass);
             csd->gfxmodeclass = NULL;
 	}
-        if(HiddGfxModeAttrBase)
-	    ReleaseAttrBase(IID_Hidd_GfxMode);
     }
 
     ReturnVoid("free_gfxmodeclass");

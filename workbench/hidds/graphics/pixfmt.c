@@ -45,7 +45,7 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     /* If no attrs are supplied, just create an empty pixfmt object */
     if (NULL == msg->attrList)
-    	return DoSuperMethod(cl, o, (Msg)msg);
+    	return (Object *)DoSuperMethod(cl, o, (Msg)msg);
 
     for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
     	ULONG idx;
