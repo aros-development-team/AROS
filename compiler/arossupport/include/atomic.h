@@ -10,52 +10,54 @@
 
 #ifdef __i386__
 
-#define AROS_ATOMIC_INCB(var) \
+#define __AROS_ATOMIC_INC_B(var) \
     __asm__ __volatile__ ("incb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_INCW(var) \
+#define __AROS_ATOMIC_INC_W(var) \
     __asm__ __volatile__ ("incw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_INCL(var) \
+#define __AROS_ATOMIC_INC_L(var) \
     __asm__ __volatile__ ("incl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 
-#define AROS_ATOMIC_DECB(var) \
+#define __AROS_ATOMIC_DEC_B(var) \
     __asm__ __volatile__ ("decb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_DECW(var) \
+#define __AROS_ATOMIC_DEC_W(var) \
     __asm__ __volatile__ ("decw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_DECL(var) \
+#define __AROS_ATOMIC_DEC_L(var) \
     __asm__ __volatile__ ("decl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 
-#define AROS_ATOMIC_ANDB(var,mask) \
+#define __AROS_ATOMIC_AND_B(var, mask) \
     __asm__ __volatile__ ("andb %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_ANDW(var,mask) \
+#define __AROS_ATOMIC_AND_W(var, mask) \
     __asm__ __volatile__ ("andw %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_ANDL(var,mask) \
+#define __AROS_ATOMIC_AND_L(var, mask) \
     __asm__ __volatile__ ("andl %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
 
 
-#define AROS_ATOMIC_ORB(var,mask) \
+#define __AROS_ATOMIC_OR_B(var, mask) \
     __asm__ __volatile__ ("orb %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_ORW(var,mask) \
+#define __AROS_ATOMIC_OR_W(var, mask) \
     __asm__ __volatile__ ("orw %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define AROS_ATOMIC_ORL(var,mask) \
+#define __AROS_ATOMIC_OR_L(var, mask) \
     __asm__ __volatile__ ("orl %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
 
 #else
 
-#define AROS_ATOMIC_INCB(var) do {Disable(); (var)++; Enable(); } while(0)
-#define AROS_ATOMIC_INCW(var) do {Disable(); (var)++; Enable(); } while(0)
-#define AROS_ATOMIC_INCL(var) do {Disable(); (var)++; Enable(); } while(0)
+#include <proto/exec.h>
 
-#define AROS_ATOMIC_DECB(var) do {Disable(); (var)--; Enable(); } while(0)
-#define AROS_ATOMIC_DECW(var) do {Disable(); (var)--; Enable(); } while(0)
-#define AROS_ATOMIC_DECL(var) do {Disable(); (var)--; Enable(); } while(0)
+#define __AROS_ATOMIC_INC_B(var) do {Disable(); (var)++; Enable(); } while(0)
+#define __AROS_ATOMIC_INC_W(var) do {Disable(); (var)++; Enable(); } while(0)
+#define __AROS_ATOMIC_INC_L(var) do {Disable(); (var)++; Enable(); } while(0)
 
-#define AROS_ATOMIC_ANDB(var,mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
-#define AROS_ATOMIC_ANDW(var,mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
-#define AROS_ATOMIC_ANDL(var,mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_DEC_B(var) do {Disable(); (var)--; Enable(); } while(0)
+#define __AROS_ATOMIC_DEC_W(var) do {Disable(); (var)--; Enable(); } while(0)
+#define __AROS_ATOMIC_DEC_L(var) do {Disable(); (var)--; Enable(); } while(0)
 
-#define AROS_ATOMIC_ORB(var,mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
-#define AROS_ATOMIC_ORW(var,mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
-#define AROS_ATOMIC_ORL(var,mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_AND_B(var, mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_AND_W(var, mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_AND_L(var, mask) do {Disable(); (var) &= (mask); Enable(); } while(0)
+
+#define __AROS_ATOMIC_OR_B(var, mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_OR_W(var, mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
+#define __AROS_ATOMIC_OR_L(var, mask) do {Disable(); (var) |= (mask); Enable(); } while(0)
 
 #endif
 
@@ -73,13 +75,13 @@ do                                                           \
     };                                                       \
                                                              \
     if (sizeof(var) == sizeof(BYTE))                         \
-        AROS_ATOMIC_ ## __instr__ ## B((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _B((var) , ## args);     \
     else                                                     \
     if (sizeof(var) == sizeof(WORD))                         \
-        AROS_ATOMIC_ ## __instr__ ## W((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _W((var) , ## args);     \
     else                                                     \
     if (sizeof(var) == sizeof(LONG))                         \
-        AROS_ATOMIC_ ## __instr__ ## L((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _L((var) , ## args);     \
 } while (0)
 
 #define AROS_ATOMIC_INC(var)       __AROS_ATOMIC(INC, (var))
