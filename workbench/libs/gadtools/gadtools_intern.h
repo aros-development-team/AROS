@@ -56,7 +56,8 @@ struct GadToolsBase_intern; /* prerefrence */
 
 /* Internal prototypes */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
-			    struct NewGadget *ng);
+			    struct NewGadget *ng,
+			    struct TagItem *taglist);
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
 	       struct IntuiText *itext);
 	       

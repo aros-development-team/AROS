@@ -24,7 +24,18 @@
 
 /**********************************************************************************************/
 
+#define HIGH_COLOR 1  /* instead of underscore use different color to highlight key */
+
 #define EG(x) ((struct ExtGadget *)(x))
+
+struct GTIText
+{
+    struct IntuiText it;
+    struct IntuiText it2;
+    struct TextAttr  ta;
+    struct TextAttr  ta2;
+    UBYTE	     text[0];
+};
 
 /**********************************************************************************************/
 
@@ -33,8 +44,7 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
 {
     if (!itext)
         return;
-    FreeVec(itext->ITextFont->ta_Name);
-    FreeVec(itext->ITextFont);
+	
     FreeVec(itext);
 }
 
@@ -42,64 +52,135 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
 
 /* Create a struct IntuiText accordings to a struct NewGadget */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
-			    struct NewGadget *ng)
+			    struct NewGadget *ng,
+			    struct TagItem *taglist)
 {
-    struct IntuiText *it;
-    struct DrawInfo *dri = ((struct VisualInfo *)ng->ng_VisualInfo)->vi_dri;
+    struct GTIText 	*gtit;
+    struct DrawInfo 	*dri = ((struct VisualInfo *)ng->ng_VisualInfo)->vi_dri;
+    struct TextFont	*font = NULL;
+    struct RastPort	temprp;
+    STRPTR		underscorepos;
+    STRPTR		fontname;
+    UWORD		fontysize;
+    UBYTE		fontstyle;
+    UBYTE		fontflags;
+    WORD		gadgettextlen;
+    WORD		fontnamelen;
+    WORD		underscorelen;
+    WORD		alloclen;
+    BOOL		fontopened = FALSE;
+    UBYTE		underscore = 1; /* default for GT_Underscore = a char which hopefully a normal
+    				           string never contains */
 
-    it = (struct IntuiText *)AllocVec(sizeof(struct IntuiText), MEMF_ANY);
-    if (!it)
-	return NULL;
-
-    if (!(ng->ng_Flags & NG_HIGHLABEL))
-	it->FrontPen = dri->dri_Pens[TEXTPEN];
-    else
-	it->FrontPen = dri->dri_Pens[HIGHLIGHTTEXTPEN];
-    it->BackPen   = dri->dri_Pens[BACKGROUNDPEN];
-    it->DrawMode  = JAM1;
-    it->LeftEdge  = 0;
-    it->TopEdge   = 0;
-    it->ITextFont = AllocVec(sizeof(struct TextAttr), MEMF_ANY);
-    if (!it->ITextFont)
-    {
-        FreeVec(it);
-        return NULL;
-    }
+    underscore = (UBYTE)GetTagData(GT_Underscore, underscore, taglist);    
+    underscorepos = strchr(ng->ng_GadgetText, underscore);
+    gadgettextlen = strlen(ng->ng_GadgetText);
+    
     if (ng->ng_TextAttr)
     {
-        int len = strlen(ng->ng_TextAttr->ta_Name) + 1;
-
-        it->ITextFont->ta_Name = AllocVec(len, MEMF_ANY);
-        if (!it->ITextFont->ta_Name)
-        {
-            FreeVec(it->ITextFont);
-            FreeVec(it);
-            return NULL;
-        }
-        CopyMem(ng->ng_TextAttr->ta_Name, it->ITextFont->ta_Name, len);
-        it->ITextFont->ta_YSize = ng->ng_TextAttr->ta_YSize;
-        it->ITextFont->ta_Style = ng->ng_TextAttr->ta_Style;
-        it->ITextFont->ta_Flags = ng->ng_TextAttr->ta_Flags;
-    } else /* (!ng->ng_TextAttr) */
-    {
-        int len = strlen(dri->dri_Font->tf_Message.mn_Node.ln_Name) + 1;
-
-        it->ITextFont->ta_Name = AllocVec(len, MEMF_ANY);
-        if (!it->ITextFont->ta_Name)
-        {
-            FreeVec(it->ITextFont);
-            FreeVec(it);
-            return NULL;
-        }
-        CopyMem(dri->dri_Font->tf_Message.mn_Node.ln_Name, it->ITextFont->ta_Name, len);
-        it->ITextFont->ta_YSize = dri->dri_Font->tf_YSize;
-        it->ITextFont->ta_Style = dri->dri_Font->tf_Style;
-        it->ITextFont->ta_Flags = dri->dri_Font->tf_Flags;
+        font = OpenFont(ng->ng_TextAttr);
+	if (!font) return NULL;
+	
+	fontopened = TRUE;
+	
+        fontname  = ng->ng_TextAttr->ta_Name;
+	fontysize = ng->ng_TextAttr->ta_YSize;
+	fontstyle = ng->ng_TextAttr->ta_Style;
+	fontflags = ng->ng_TextAttr->ta_Flags;
+    } else {
+        font = dri->dri_Font;
+	
+        fontname  = dri->dri_Font->tf_Message.mn_Node.ln_Name;
+	fontysize = dri->dri_Font->tf_YSize;
+	fontstyle = dri->dri_Font->tf_Style;
+	fontflags = dri->dri_Font->tf_Flags;
     }
-    it->IText     = ng->ng_GadgetText;
-    it->NextText  = NULL;
+    
+    if (!fontname) return NULL;
+    
+    fontnamelen = strlen(fontname);
+    
+    alloclen = sizeof(struct GTIText) + fontnamelen + 1 + gadgettextlen + 1 + 2; /* 2 for safety */
+    		   
+    gtit = (struct GTIText *)AllocVec(alloclen, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!gtit)
+    {
+        if (fontopened) CloseFont(font);
+	return NULL;
+    }
 
-    return it;
+    CopyMem(fontname, gtit->text, fontnamelen);
+
+    gtit->ta.ta_Name  = gtit->text;
+    gtit->ta.ta_YSize = fontysize;
+    gtit->ta.ta_Style = fontstyle;
+    gtit->ta.ta_Flags = fontflags;
+    
+    gtit->it.FrontPen  = dri->dri_Pens[(ng->ng_Flags & NG_HIGHLABEL) ? HIGHLIGHTTEXTPEN : TEXTPEN];
+    gtit->it.BackPen   = dri->dri_Pens[BACKGROUNDPEN];
+    gtit->it.DrawMode  = JAM1;
+    gtit->it.LeftEdge  = 0;
+    gtit->it.TopEdge   = 0;
+    gtit->it.ITextFont = &gtit->ta;
+    
+    if (!underscorepos)
+    {
+        gtit->it.IText = gtit->text + fontnamelen + 1;	
+        gtit->it.NextText = NULL;
+	
+	if (gadgettextlen) CopyMem(ng->ng_GadgetText, gtit->it.IText, gadgettextlen);
+    }
+    else
+    {	
+        gadgettextlen--;
+	underscorelen = underscorepos - ng->ng_GadgetText;
+	
+	gtit->it.IText = gtit->text + fontnamelen + 1;	
+	if (underscorelen)
+	{
+	    CopyMem(ng->ng_GadgetText, gtit->it.IText, underscorelen);
+	}
+	if (gadgettextlen - underscorelen)
+	{
+	    CopyMem(underscorepos + 1, gtit->it.IText + underscorelen, gadgettextlen - underscorelen);
+	}
+		
+	gtit->it.NextText = &gtit->it2;
+	
+    	gtit->it2 = gtit->it;
+	gtit->it2.ITextFont = &gtit->ta2;
+	gtit->it2.IText = gtit->it.IText + gadgettextlen + 1;
+	gtit->it2.NextText = NULL;
+
+	gtit->ta2 = gtit->ta;
+
+#if HIGH_COLOR
+	gtit->it2.FrontPen = dri->dri_Pens[(ng->ng_Flags & NG_HIGHLABEL) ? TEXTPEN : HIGHLIGHTTEXTPEN];
+#else
+	gtit->ta2.ta_Style |= FSF_UNDERLINED;
+#endif
+	
+
+	if (!underscorelen)
+	{
+	    gtit->it2.LeftEdge = 0;
+	}
+	else
+	{
+	    InitRastPort(&temprp);
+	    SetFont(&temprp, font);
+	
+	    gtit->it2.LeftEdge = TextLength(&temprp, ng->ng_GadgetText, underscorelen);
+	    	
+	    DeinitRastPort(&temprp);
+	}
+	
+	gtit->it2.IText[0] = underscorepos[1];	
+    }
+    
+    if (fontopened) CloseFont(font);
+    
+    return &gtit->it;
 }
 
 /**********************************************************************************************/
@@ -148,12 +229,12 @@ void closefont(struct GadToolsBase_intern *GadToolsBase,
 BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
 {
-    struct TextFont *font = NULL, *oldfont;
-    struct TextExtent te;
-    STRPTR text;
-    int len = 0, x, y;
-    UWORD width, height;
-    WORD gadleft, gadtop, gadwidth, gadheight;
+    struct TextFont 	*font = NULL, *oldfont;
+    struct TextExtent 	te;
+    STRPTR 		text;
+    int 		len = 0, x, y;
+    UWORD 		width, height;
+    WORD 		gadleft, gadtop, gadwidth, gadheight;
     
     if (EG(gad)->MoreFlags & GMORE_BOUNDS)
     {

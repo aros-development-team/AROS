@@ -101,7 +101,7 @@
 
     if (ng->ng_GadgetText)
     {
-    	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng);
+    	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng, taglist);
     	if (!stdgadtags[TAG_IText].ti_Data)
             return (NULL);
     } else {
