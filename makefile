@@ -13,7 +13,7 @@ LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
 SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
-	filesys libs devs c
+	alib filesys libs devs c
 DIST_FILES = makefile arosshell.c README.CVS make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
 	scripts/genprotos.h
@@ -100,7 +100,8 @@ subdirs:
 AmigaOS :
 	$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
 
-$(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o)
+$(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
+	    $(wildcard $(GENDIR)/alib/*.o)
 	$(AR) $@ $?
 	$(RANLIB) $@
 
