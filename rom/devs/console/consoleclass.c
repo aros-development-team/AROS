@@ -129,7 +129,7 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
     if (CHECK_MODE(o, PMB_AWM))
     {
     	WORD scrollcount = 0;
-	
+
 	while(newx < CHAR_XMIN(o))
 	{
             newx += (CHAR_XMAX(o) + 1);
@@ -204,7 +204,7 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
     {
     	if (CHECK_MODE(o, PMB_ASM))
 	{
-    	    UBYTE scroll_param = -YCCP;
+    	    IPTR scroll_param = -YCCP;
 
     	    YCCP = YCP = 0;
 	    Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
@@ -231,12 +231,12 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
     EnterFunc(bug("Console::Down(num=%d)\n", msg->Num));
 
     YCCP += msg->Num;
-    
+
     if (YCCP > CHAR_YMAX(o))
     {
     	if (CHECK_MODE(o, PMB_ASM))
 	{
-    	    UBYTE scroll_param = YCCP - CHAR_YMAX(o);
+    	    IPTR scroll_param = YCCP - CHAR_YMAX(o);
 
     	    YCCP = YCP = CHAR_YMAX(o);
 	    Console_DoCommand(o, C_SCROLL_UP, 1, &scroll_param);
@@ -247,7 +247,7 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 	}
     }
     YCP = YCCP; /* YCP always same as YCCP ?? */
-    
+
     D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
     	XCCP, YCCP, CP_X(o), CP_Y(o) ));
     ReturnVoid("Console::Down");
@@ -401,16 +401,16 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	case C_SCROLL_DOWN:
 	    msg->Params[0] = 1;
 	    break;
-	    
+
 	case C_CURSOR_TAB_CTRL:
 	    msg->Params[0] = 0; /* set tab */
 	    break;
-	    
-	    
+
+
 	case C_CURSOR_BACKTAB:
 	    msg->Params[0] = 1;
 	    break;
-	    
+
 	case C_SELECT_GRAPHIC_RENDITION:
 	    /* don't do anything, as params may be in any order */
 	    break;
@@ -418,13 +418,13 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	case C_SET_RAWEVENTS:
 	    /* don't do anything, as params may be in any order */
 	    break;
-	    
+
 	case C_RESET_RAWEVENTS:
 	    /* don't do anything, as params may be in any order */
 	    break;
-	    
+
     } /* switch (msg->Command) */
-    
+
     return;
 }
 
@@ -436,7 +436,7 @@ static VOID console_newwindowsize(Class *cl, Object *o, struct P_Console_NewWind
     struct ConUnit *unit;
     struct consoledata *data;
     struct Window *win;
-    
+
     data = INST_DATA(cl, o);
     unit = (struct ConUnit *)data;
 

@@ -27,8 +27,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
-static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, IPTR *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, IPTR *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
 
 #define ESC 0x1B
 #define CSI 0x9B
@@ -65,55 +65,54 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams
 
 ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct ConsoleBase *ConsoleDevice)
 {
-    UBYTE param_tab[MAX_COMMAND_PARAMS];
-    
+    IPTR param_tab[MAX_COMMAND_PARAMS];
+
     BYTE command;
     UBYTE numparams;
     UBYTE *orig_write_str, *write_str;
     LONG written, orig_towrite;
 
     write_str = orig_write_str = (UBYTE *)buf;
-    
-    
+
+
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
-    
-	
+
+
     orig_towrite = towrite;
-    
+
     D(bug("Number of chars to write %d\n", towrite));
-    
-    
+
+
     /* Interpret string into a command and execute command */
-    
+
     /* DEBUG aid */
 
 #if DEBUG
 {
-    UWORD i;    
+    UWORD i;
     for (i = 0; i < towrite; i ++)
     	kprintf("%x", write_str[i]);
-	
+
     kprintf("\n");
-    
-}    
+
+}
 #endif
-    
     while (towrite > 0)
     {
         numparams = 0;
-	
+
     	if (!string2command(&command, &write_str, &numparams, towrite, param_tab, (Object *)unit, ConsoleDevice))
     	    break;
-    	
-	
+
+
 	Console_DoCommand((Object *)unit, command, numparams, param_tab);
-	
+
 	towrite = orig_towrite - (write_str - orig_write_str);
-    	
+
     } /* while (characters left to interpret) */
-    
+
     written = write_str - orig_write_str;
-    
+
     ReturnInt("WriteToConsole", LONG, written);
 }
 
@@ -138,7 +137,7 @@ static const struct special_cmd_descr
 {
     BYTE	Command;
     STRPTR	CommandStr;
-    BYTE	Length; 
+    BYTE	Length;
 } scd_tab[NUM_SPECIAL_COMMANDS] = {
 
     {C_SET_LF_MODE, 		(STRPTR)str_slm, 3 },
@@ -156,9 +155,9 @@ static const struct special_cmd_descr
 #if DEBUG
 static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
 {
-	
+
     "Ascii",			/* C_ASCII = 0	    	    	*/
-    
+
     "Esc",			/* C_ESC	    	    	*/
     "Bell",			/* C_BELL,	    	    	*/
     "Backspace",		/* C_BACKSPACE,	    	    	*/
@@ -176,7 +175,7 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
     "Set LF Mode",		/* C_SET_LF_MODE,   	    	*/
     "Reset LF Mode",	    	/* C_RESET_lF_MODE,    	    	*/
     "Device Status Report",	/* C_DEVICE_STATUS_REPORT,  	*/
-    
+
     "Insert Char",		/* C_INSERT_CHAR,   	    	*/
     "Cursor Up",		/* C_CURSOR_UP,		    	*/
     "Cursor Down",		/* C_CURSOR_DOWN,	    	*/
@@ -211,11 +210,31 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
 };
 #endif
 
+static BOOL check_special(STRPTR string, LONG toparse)
+{
+    return
+    (
+        (*string == CSI) || (toparse >= 2 && (string[0] == ESC) && (string[1] == '[')) ||  /* CSI */
+    	(*string == BELL)            ||
+    	(*string == BACKSPACE)       ||
+    	(*string == HTAB)            ||
+    	(*string == LINEFEED)        ||
+    	(*string == FORMFEED)        ||
+    	(*string == CARRIAGE_RETURN) ||
+    	(*string == SHIFT_OUT)       ||
+    	(*string == SHIFT_IN)        ||
+    	(*string == ESC)             ||
+    	(*string == INDEX)           ||
+    	(*string == H_TAB_SET)       ||
+    	(*string == REVERSE_INDEX)
+    );
+}
+
 static BOOL string2command( BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
 		, UBYTE			*numparams_ptr
 		, LONG			toparse
-		, UBYTE 		*p_tab
+		, IPTR    		*p_tab
 		, Object		*unit
 		, struct ConsoleBase 	*ConsoleDevice)
 {
@@ -223,14 +242,14 @@ static BOOL string2command( BYTE 	*cmd_ptr
 
     UBYTE *csi_str = write_str;
     LONG csi_toparse;
-    
+
     BOOL found = FALSE,
     	 csi   = FALSE;
 
-    	 
+
     EnterFunc(bug("StringToCommand(toparse=%d)\n", toparse));
-    		
-    
+
+
     /* Look for <CSI> */
     if (*write_str == CSI)
     {
@@ -248,13 +267,13 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	    csi = TRUE;
     	}
     }
-    
+
     if (csi)
     {
         D(bug("CSI found, getting command\n"));
-	
+
 	/* Search for the longest commands first */
-	
+
 	if (!found)
 	{
 	    BYTE i;
@@ -264,29 +283,29 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	    	/* Check whether command sequence is longer than input */
 	    	if (scd_tab[i].Length > csi_toparse)
 	    	    continue; /* if so, check next command sequence */
-	    	
-		D(bug("Comparing for special command %d, idx %d, cmdstr %p, len %d, csistr %p \n", 
+
+		D(bug("Comparing for special command %d, idx %d, cmdstr %p, len %d, csistr %p \n",
 			scd_tab[i].Command, i, scd_tab[i].CommandStr, scd_tab[i].Length, csi_str));
- 		/* Command match ? */    
+ 		/* Command match ? */
 	    	if (0 == strncmp(csi_str, scd_tab[i].CommandStr, scd_tab[i].Length))
 		{
 		    D(bug("Special command found\n"));
 	    	    csi_str += scd_tab[i].Length;
 	    	    *cmd_ptr = scd_tab[i].Command;
-	    	
+
 	    	    found = TRUE;
 	    	}
-	    	
+
 	    } /* for (each special command) */
-	    
+
 	}
 
 	/* A parameter command ? (Ie. one of the commands that takes parameters) */
 	if (!found)
 	    found = getparamcommand(cmd_ptr, &csi_str, numparams_ptr, csi_toparse, p_tab, unit, ConsoleDevice);
-	
+
     } /* if (CSI was found) */
-    
+
     if (found)
     	write_str = csi_str;
     else
@@ -298,32 +317,32 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	    *cmd_ptr = C_BELL;
     	    found = TRUE;
     	    break;
-    	    
+
     	case BACKSPACE:
     	    *cmd_ptr = C_BACKSPACE;
     	    found = TRUE;
     	    break;
-    	    
+
     	case HTAB:
     	    *cmd_ptr = C_HTAB;
     	    found = TRUE;
     	    break;
-    	    
+
     	case LINEFEED:
     	    *cmd_ptr = C_LINEFEED;
     	    found = TRUE;
     	    break;
-    	    
+
     	case VTAB:
     	    *cmd_ptr = C_VTAB;
     	    found = TRUE;
     	    break;
-    	    
+
     	case FORMFEED:
     	    *cmd_ptr = C_FORMFEED;
     	    found = TRUE;
     	    break;
-    	    
+
     	case CARRIAGE_RETURN:
     	    *cmd_ptr = C_CARRIAGE_RETURN;
     	    found = TRUE;
@@ -333,32 +352,32 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	    *cmd_ptr = C_SHIFT_OUT;
     	    found = TRUE;
     	    break;
-    	    
+
     	case SHIFT_IN:
     	    *cmd_ptr = C_SHIFT_IN;
     	    found = TRUE;
     	    break;
-    	    
+
     	case ESC:
     	    *cmd_ptr = C_ESC;
     	    found = TRUE;
     	    break;
-    	    
+
     	case INDEX:
     	    *cmd_ptr = C_INDEX;
     	    found = TRUE;
     	    break;
-    	    
+
     	case NEXT_LINE:
     	    *cmd_ptr = C_NEXT_LINE;
     	    found = TRUE;
     	    break;
-    	    
+
     	case H_TAB_SET:
     	    *cmd_ptr = C_H_TAB_SET;
     	    found = TRUE;
     	    break;
-    	    
+
     	case REVERSE_INDEX:
     	    *cmd_ptr = C_REVERSE_IDX;
     	    found = TRUE;
@@ -372,23 +391,31 @@ static BOOL string2command( BYTE 	*cmd_ptr
 
 	    write_str ++;
     	}
-    	
-    }
-    
-    if (!found) /* Still not any found ? Try to print as plain ASCII */
-    {
-    	*cmd_ptr = C_ASCII;
-	
-	p_tab[0] = *write_str ++;
-    	*numparams_ptr = 1;
-    	found = TRUE;
+
     }
 
-    D(bug("FOUND CMD: %s\n", cmd_names[*cmd_ptr]));    
-    
+    if (!found) /* Still not any found ? Try to print as plain ASCII */
+    {
+        *cmd_ptr = C_ASCII_STRING;
+
+	p_tab[0] = (IPTR)write_str;
+    	*numparams_ptr = 2;
+    	found = TRUE;
+
+	do
+	{
+	    toparse--;
+	    write_str++;
+	} while (toparse && !check_special(write_str, toparse));
+
+	p_tab[1] = (IPTR)(write_str - (UBYTE *)p_tab[0]); /* store the string length */
+    }
+
+    D(bug("FOUND CMD: %s\n", cmd_names[*cmd_ptr]));
+
     /* Return pointer to first character AFTER last interpreted char */
     *writestr_ptr = write_str;
-    
+
     ReturnBool ("StringToCommand", found);
 }
 
@@ -398,14 +425,14 @@ static BOOL string2command( BYTE 	*cmd_ptr
 ************************/
 
 /* !!! IMPORTANT !!!
-   If you add a command her, you should also add default values for
+   If you add a command here, you should also add default values for
    its parameters in Console::GetDefaultParams()
 */
 static const struct Command
 {
     BYTE Command;
     UBYTE MaxParams;
-    
+
 } csi2command[] = {
 
     { C_INSERT_CHAR		, 1 			},	/* 0x40 @ */
@@ -500,7 +527,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
 		, UBYTE			*numparams_ptr
 		, LONG 			toparse
-		, UBYTE 		*p_tab
+		, IPTR  		*p_tab
 		, Object 		*unit
 		, struct ConsoleBase 	*ConsoleDevice)
 {
@@ -512,31 +539,31 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     ** end of the command. Therefore we must continue scanning
     ** even if we found a command ID.
     */
-    
+
     struct cmd_params params;
-        
+
     BYTE cmd = -1;
     BYTE cmd_next_idx = 0; /* Index to byte after the command */
-    
+
     /* write_str points to first character after <CSI> */
     UBYTE *write_str = *writestr_ptr;
 
     UBYTE num_params = 0;
-    
+
     BOOL done  = FALSE,
     	 found = FALSE;
-	 
+
     BOOL next_can_be_separator = TRUE,
     	next_can_be_param = TRUE,
 	next_can_be_commandid = TRUE,
 	last_was_param = FALSE;
 
     UBYTE num_separators_found = 0;
-       
+
     while (!done)
     {
     	/* In case it's a parameter */
-	
+
 	if (toparse <= 0)
     	    done = TRUE;
 
@@ -551,12 +578,12 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	case 0x46:
     	case 0x48:
     	case 0x49:
-	
+
 	case 0x4A:
 	case 0x4B:
 	case 0x4C:
 	case 0x4D:
-	
+
     	case 0x50:
     	case 0x53:
     	case 0x54:
@@ -572,10 +599,10 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	{
     	    UBYTE idx = *write_str - FIRST_CSI_CMD;
 	    UBYTE maxparams = csi2command[idx].MaxParams;
-	    
+
 	    if (next_can_be_commandid)
 	    {
-#warning Should also do a MinParams compare    	    
+#warning Should also do a MinParams compare
 		if (num_params <= maxparams) /* Valid command ? */
 		{
 
@@ -585,20 +612,20 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 		       || ((num_separators_found == 0) && (maxparams == 0)))
 		    {
 			cmd = csi2command[idx].Command;
-		
+
 			/* Save index to where the next command will start */
 			cmd_next_idx = write_str - *writestr_ptr + 1;
-		
+
 			params.numparams = num_params;
 		    }
 		}
     	    }
-	    
+
 	    done = TRUE;
-    	    
-    	break;  
-    	}   
-	
+
+    	break;
+    	}
+
     	case ';': /* parameter separator, skip it */
 
 	    if (!next_can_be_separator)
@@ -688,7 +715,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
         UBYTE i;
     	/* First fill in some default values in p_tab */
 	Console_GetDefaultParams(unit, *cmd_ptr, p_tab);
-	
+
 	for (i = 0; i < params.numparams; i ++)
 	{
 	    /* Override with parsed values */

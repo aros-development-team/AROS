@@ -39,14 +39,14 @@ struct P_Console_ScrollDown
 {
     ULONG MethodID;
     WORD  LinePos;	/* Lines including this one will be scrolled */
-     
+
 };
 
 struct P_Console_ScrollUp
 {
     ULONG MethodID;
     WORD  LinePos;	/* Lines including this one will be scrolled */
-     
+
 };
 
 struct P_Console_DoCommand
@@ -54,7 +54,7 @@ struct P_Console_DoCommand
     ULONG MethodID;
     BYTE Command;	/* Erase in display, scroll, next line etc.. */
     UBYTE NumParams;
-    UBYTE *Params; /* The command's parameters */
+    IPTR *Params; /* The command's parameters */
 };
 
 struct P_Console_Left
@@ -105,7 +105,7 @@ struct P_Console_GetDefaultParams
 {
     ULONG MethodID;
     BYTE Command;
-    UBYTE *Params;
+    IPTR *Params;
 };
 
 
