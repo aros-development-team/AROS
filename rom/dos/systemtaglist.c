@@ -109,24 +109,64 @@ static BPTR DupFH(BPTR fh, LONG mode);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *, DOSBase)
 
-    BPTR   cis = NULL, cos = NULL, ces = NULL, script = NULL;
+    BPTR   cis = Input(), cos = Output(), ces = Error(), script = NULL;
     BPTR   shellseg = NULL;
-    STRPTR cShell;
+    STRPTR cShell   = NULL;
     BOOL script_opened = FALSE;
     BOOL cis_opened    = FALSE;
     BOOL cos_opened    = FALSE;
     BOOL ces_opened    = FALSE;
-    BOOL isBoot        = FALSE;
-    BOOL isBackground;
-    BOOL isAsynch;
-    LONG rc = -1;
+    BOOL isBoot        = TRUE;
+    BOOL isBackground  = TRUE;
+    BOOL isAsynch      = FALSE;
+    LONG rc            = -1;
+    LONG *cliNumPtr    = NULL;
 
-    struct TagItem *newtags;
+    struct TagItem *newtags, *tags2 = tags, *tag;
+
+    while ((tag = NextTagItem(&tags2)))
+    {
+        switch (tag->ti_Tag)
+	{
+	    case SYS_ScriptInput:
+	        script = (BPTR)tag->ti_Data;
+		break;
+
+	    case SYS_Input:
+	        cis = (BPTR)tag->ti_Data;
+		break;
+
+	    case SYS_Output:
+	        cos = (BPTR)tag->ti_Data;
+		break;
+
+	    case SYS_Error:
+	        ces = (BPTR)tag->ti_Data;
+		break;
+
+	    case SYS_CustomShell:
+	        cShell = (STRPTR)tag->ti_Data;
+		break;
+
+            case SYS_UserShell:
+	        isBoot = !tag->ti_Data;
+	        break;
+
+	    case SYS_Background:
+                isBackground = tag->ti_Data;
+		break;
+
+	    case SYS_Asynch:
+		isAsynch = tag->ti_Data;
+		break;
+
+	    case SYS_CliNumPtr:
+	        cliNumPtr = (LONG *)tag->ti_Data;
+		break;
+	}
+    }
 
     /* Set up the streams */
-    script = (BPTR)GetTagData(SYS_ScriptInput, (IPTR)NULL, tags);
-
-    cis  = (BPTR)GetTagData(SYS_Input , (IPTR)Input(), tags);
     if (!cis)
     {
         cis = Open("NIL:", FMF_READ);
@@ -138,10 +178,11 @@ static BPTR DupFH(BPTR fh, LONG mode);
     if (cis == (BPTR)SYS_DupStream)
     {
         cis = DupFH(Input(), FMF_READ);
+	if (!cis) goto end;
+
 	cis_opened = TRUE;
     }
 
-    cos  = (BPTR)GetTagData(SYS_Output , (IPTR)Output(), tags);
     if (!cos)
     {
         if (IsInteractive(cis))
@@ -157,10 +198,11 @@ static BPTR DupFH(BPTR fh, LONG mode);
     if (cos == (BPTR)SYS_DupStream)
     {
         cos = DupFH(Output(), FMF_WRITE);
+	if (!cos) goto end;
+
 	cos_opened = TRUE;
     }
 
-    ces  = (BPTR)GetTagData(SYS_Error , (IPTR)Error(), tags);
     if (!ces)
     {
         if (IsInteractive(cis))
@@ -176,29 +218,16 @@ static BPTR DupFH(BPTR fh, LONG mode);
     if (ces == (BPTR)SYS_DupStream)
     {
         ces = DupFH(Output(), FMF_WRITE);
+	if (!ces) goto end;
+
 	ces_opened = TRUE;
     }
 
     /* Load the shell */
-    cShell = (STRPTR)GetTagData(SYS_CustomShell, (IPTR)NULL, tags);
-    if (cShell)
-    {
-	shellseg = LoadSeg(cShell);
-    }
-    else
 #warning implement UserShell and BootShell
-    if (!GetTagData(SYS_UserShell, FALSE, tags))
-    {
-	isBoot   = TRUE;
-    }
     shellseg = LoadSeg("C:Shell");
     if (!shellseg)
-    {
         goto end;
-    }
-
-    isBackground = GetTagData(SYS_Background, TRUE, tags);
-    isAsynch     = GetTagData(SYS_Asynch,    FALSE, tags);
 
     newtags = CloneTagItems(tags);
     if (newtags)
@@ -256,6 +285,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
 	proctags[sizeof(proctags)/(sizeof(proctags[0]))].ti_Data = (IPTR)newtags;
 
 	cliproc = CreateNewProc(proctags);
+	
 	if (cliproc)
 	{
 	    csm.csm_Msg.mn_Node.ln_Type = NT_MESSAGE;
@@ -264,17 +294,14 @@ static BPTR DupFH(BPTR fh, LONG mode);
 
 	    csm.csm_CurrentInput = script;
             csm.csm_ShellSeg     = shellseg;
-            csm.csm_Background   = GetTagData(SYS_Background, TRUE, tags);
+            csm.csm_Background   = isBackground;
 	    csm.csm_Asynch       = isAsynch;
 
 	    PutMsg(&cliproc->pr_MsgPort, (struct Message *)&csm);
 	    WaitPort(&me->pr_MsgPort);
 	    GetMsg(&me->pr_MsgPort);
 
-	    {
-	        struct TagItem *tag = FindTagItem(SYS_CliNumPtr, tags);
-		if (tag) *(LONG *)tag->ti_Data = csm.csm_CliNumber;
- 	    }
+  	    if (cliNumPtr) *cliNumPtr = csm.csm_CliNumber;
 
 	    rc = csm.csm_ReturnCode;
 
