@@ -104,9 +104,8 @@ static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
 
-#define  COMMANDSTR_SIZE  (256 + 2)  /* Maximum length of a 'command' */
-#define  FILENAME_SIZE    256	     /* Maximum length of a redirection
-					filename */
+#define  COMMANDSTR_LEN  (256 + 2)  /* Maximum length of a 'command' */
+#define  FILENAME_LEN    256	    /* Maximum length of a redirection filename */
 
 struct Redirection
 {
@@ -805,7 +804,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		return FALSE;
 
 	    advance(1);
-	    result = ReadItem(rd->inFileName, FILENAME_SIZE, cs);
+	    result = ReadItem(rd->inFileName, FILENAME_LEN, cs);
 
 	    P(kprintf("Found input redirection\n"));
 	    
@@ -829,7 +828,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		    return FALSE;
 
 		advance(1);
-		result = ReadItem(rd->outFileName, FILENAME_SIZE, cs);
+		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
 		
 		P(kprintf("Found append redirection\n"));
 
@@ -844,7 +843,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		if(rd->haveOutRD)
 		    return FALSE;
 
-		result = ReadItem(rd->outFileName, FILENAME_SIZE, cs);
+		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
 		
 		P(kprintf("Found output redirection\n"));
 
@@ -1035,7 +1034,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 
     P(kprintf("Command found!\n"));
 		
-    result = ReadItem(rd->commandStr, COMMANDSTR_SIZE, cs);
+    result = ReadItem(rd->commandStr, COMMANDSTR_LEN, cs);
     
     if(result == ITEM_ERROR || result == ITEM_NOTHING)
 	return FALSE;
@@ -1046,7 +1045,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
     {
 	struct CSource aliasCs = { avBuffer, sizeof(avBuffer), 0 };
 	
-	result = ReadItem(rd->commandStr, COMMANDSTR_SIZE, &aliasCs);
+	result = ReadItem(rd->commandStr, COMMANDSTR_LEN, &aliasCs);
 	
 	P(kprintf("Found alias! value = %s\n", avBuffer));
 	    
@@ -1424,10 +1423,10 @@ BOOL Redirection_init(struct Redirection *rd)
 {
     memset(rd, 0, sizeof(struct Redirection));
 
-    rd->commandStr  = AllocVec(COMMANDSTR_SIZE, MEMF_CLEAR);
+    rd->commandStr  = AllocVec(COMMANDSTR_LEN, MEMF_CLEAR);
 
-    rd->outFileName = AllocVec(FILENAME_SIZE, MEMF_CLEAR);
-    rd->inFileName  = AllocVec(FILENAME_SIZE, MEMF_CLEAR);
+    rd->outFileName = AllocVec(FILENAME_LEN, MEMF_CLEAR);
+    rd->inFileName  = AllocVec(FILENAME_LEN, MEMF_CLEAR);
 
     if(rd->commandStr == NULL || rd->outFileName == NULL ||
        rd->inFileName == NULL)
