@@ -1,0 +1,27 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(DEVSDIR)
+EXE := $(EXEDIR)/afs.handler
+FILES :=	arosdevice \
+			main \
+			volumes \
+			filehandles1 \
+			filehandles2 \
+			filehandles3 \
+			hashing \
+			extstrings \
+			bitmap \
+			blockaccess \
+			error \
+			checksums \
+			misc
+
+#MM afshandler:
+afshandler: $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
+
