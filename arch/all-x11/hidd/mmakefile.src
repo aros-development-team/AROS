@@ -101,7 +101,7 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 	
 $(OBJDIR)/xshm.o	: xshm.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) (CFLAGS2)"
+	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) $(CFLAGS2)"
 	
 %libdefs_rule
 	
