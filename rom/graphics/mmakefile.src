@@ -29,13 +29,17 @@ FUNCTIONS	:= \
 	andrectregion \
 	animate \
 	askfont \
+	bitmapscale \
 	bltbitmap \
 	bltclear \
 	clearrectregion \
 	clearregion \
 	clonerastport \
 	closefont \
+	cbump \
+	cmove \
 	createrastport \
+	cwait \
 	deinitrastport \
 	disposeregion \
 	draw \
@@ -43,9 +47,12 @@ FUNCTIONS	:= \
 	extendfont \
 	eraserect \
 	freebitmap \
+	freecoplist \
+	freecprlist \
 	freegbuffers \
 	freeraster \
 	freerastport \
+	freevportcoplists \
 	getapen \
 	getbitmapattr \
 	getbpen \
@@ -92,6 +99,7 @@ FUNCTIONS	:= \
 	textextent \
 	textfit \
 	textlength \
+	ucopperlistinit \
 	waittof \
 	weightamatch \
 	writepixel \
