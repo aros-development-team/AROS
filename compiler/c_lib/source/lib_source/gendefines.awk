@@ -106,8 +106,8 @@ BEGIN {
     else
     {
 	arg[narg++] = line;
-	match($0,/,[^)]+/);
-	line=substr($0,RSTART+1,RLENGTH-1);
+	match(line,/,[^)]+/);
+	line=substr(line,RSTART+1,RLENGTH-1);
 	gsub(/[ \t]+/,"",line);
 	match(line,/[^,]+/);
 	if (args!="")
@@ -123,7 +123,7 @@ BEGIN {
     gsub(/BASENAME/,basename,line);
     gsub(/[ \t]*[)][ \t]*$/,"",line);
     gsub(/^[ \t]+/,"",line);
-    na=split(line,a,",");
+    split(line,a,",");
     lvo=int(a[3]);
 
     if (lvo > firstlvo)
@@ -131,7 +131,18 @@ BEGIN {
 	print "#define "fname"("args") \\"
 	print "\t"call" \\";
 	for (t=0; t<narg; t++)
+	{
+	# parenthesize the second argument of AROS_LCA
+	# AROS_LCA(a,b,c) => AROS_LCA(a,(b),c)
+	#
+	match(arg[t],/\(.*\)/);
+	lca_args=substr(arg[t],RSTART+1,RLENGTH-2);
+	split(lca_args,lca_arg,",");
+	lca_args="("lca_arg[1]",("lca_arg[2]"),"lca_arg[3]")";
+	sub(/\(.*\)/,lca_args,arg[t]);
+
 	    print "\t"arg[t]" \\"
+	}
 	print "\t"line")"
 	print ""
     }
