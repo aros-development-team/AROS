@@ -35,6 +35,9 @@ extern long sysCMap[];
 extern unsigned long sysPlaneMask;
 extern Cursor sysCursor;
 
+extern struct Task * inputDevice;
+#define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
+
 Display * GetSysDisplay (void);
 int	  GetSysScreen (void);
 extern void SetGC (struct RastPort * rp, GC gc);
@@ -225,6 +228,8 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 
     XSetStandardProperties (sysDisplay, w->iw_XWindow, text, screen,
 	    None, NULL, 0, &hints);
+
+    SIGID ();
 }
 
 int intui_GetWindowSize (void)
@@ -326,6 +331,8 @@ int intui_OpenWindow (struct Window * w,
 
     Diow(bug("Opening Window %p (X=%ld)\n", iw, IW(w)->iw_XWindow));
 
+    SIGID ();
+
     return 1;
 }
 
@@ -339,27 +346,37 @@ void intui_CloseWindow (struct Window * w,
     XDestroyRegion (IW(w)->iw_Region);
 
     XSync (sysDisplay, FALSE);
+
+    SIGID ();
 }
 
 void intui_WindowToFront (struct Window * window)
 {
     XRaiseWindow (sysDisplay, IW(window)->iw_XWindow);
+
+    SIGID ();
 }
 
 void intui_WindowToBack (struct Window * window)
 {
     XLowerWindow (sysDisplay, IW(window)->iw_XWindow);
+
+    SIGID ();
 }
 
 void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
 {
     XMoveWindow (sysDisplay, IW(window)->iw_XWindow, dx, dy);
+
+    SIGID ();
 }
 
 void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
     XMoveResizeWindow (sysDisplay, IW(window)->iw_XWindow, x, y, width, height);
+
+    SIGID ();
 }
 
 long StateToQualifier (unsigned long state)
@@ -432,11 +449,15 @@ void intui_SizeWindow (struct Window * win, long dx, long dy)
 	, win->Width + dx
 	, win->Height + dy
     );
+
+    SIGID ();
 }
 
 void intui_ActivateWindow (struct Window * win)
 {
     XSetInputFocus (sysDisplay, IW(win)->iw_XWindow, RevertToNone, XCurrentTime);
+
+    SIGID ();
 }
 
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
@@ -615,6 +636,7 @@ void intui_ProcessEvents (void)
     int    wait;
     XEvent event;
     ULONG  lock;
+    ULONG  waitmask;
 
     intuiReplyPort = CreateMsgPort ();
     wait = 0;
@@ -622,6 +644,8 @@ void intui_ProcessEvents (void)
     gadget = NULL;
 
     gi = AllocMem (sizeof (struct GadgetInfo), MEMF_ANY|MEMF_CLEAR);
+
+    waitmask = (1L << intuiReplyPort->mp_SigBit) | SIGBREAKF_CTRL_F;
 
     for (;;)
     {
@@ -867,7 +891,7 @@ void intui_ProcessEvents (void)
 
 			case GTYP_PROPGADGET:
 			    HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
-			    break; 
+			    break;
 
 			case GTYP_CUSTOMGADGET: {
 			    struct gpInput gpi;
@@ -986,21 +1010,21 @@ void intui_ProcessEvents (void)
 
 			break;
 
-		    case GTYP_PROPGADGET: 
-		    
-		    	HandlePropMouseMove
-		    	(
-		    	    gadget,
-		    	    w,
-		    	    NULL,
-	    	    	    /* Delta movement */
-		    	    xm->x - mpos_x,
-		    	    xm->y - mpos_y,
-		    	    IntuitionBase
-		    	);
-		    	    
-		    	break;
-		    	/* PROPGADGET */
+		    case GTYP_PROPGADGET:
+
+			HandlePropMouseMove
+			(
+			    gadget,
+			    w,
+			    NULL,
+			    /* Delta movement */
+			    xm->x - mpos_x,
+			    xm->y - mpos_y,
+			    IntuitionBase
+			);
+
+			break;
+			/* PROPGADGET */
 
 
 		    case GTYP_CUSTOMGADGET: {
@@ -1101,7 +1125,7 @@ void intui_ProcessEvents (void)
 	    im = NULL;
 	}
 
-	Wait (1L << intuiReplyPort->mp_SigBit | SIGBREAKF_CTRL_F);
+	Wait (waitmask);
 
 	/* Empty port */
 	while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))

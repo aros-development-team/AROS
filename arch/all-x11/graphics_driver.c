@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <exec/memory.h>
+
 #include <clib/exec_protos.h>
 #include <graphics/rastport.h>
 #include <graphics/gfxbase.h>
@@ -22,9 +23,15 @@
 #define BMT_XIMAGE	(BMT_DRIVER+0)
 #define BMT_XWINDOW	(BMT_DRIVER+1)
 
-static Display	     * sysDisplay;
-static int	       sysScreen;
-static Cursor	       sysCursor;
+static Display	       * sysDisplay;
+static int		 sysScreen;
+static Cursor		 sysCursor;
+#if 0
+static SignalSemaphore * X11lock;
+#endif
+
+extern struct Task * inputDevice;
+#define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
 
 /* Table which links TextAttr with X11 font names */
 struct FontTable
@@ -80,6 +87,18 @@ struct ETextFont
 
 #define ETF(tf)         ((struct ETextFont *)tf)
 
+#if 0
+void LockX11 (void)
+{
+    ObtainSemaphore (X11lock);
+}
+
+void UnlockX11 (void)
+{
+    ReleaseSemaphore (X11lock);
+}
+#endif
+
 int driver_init (struct GfxBase * GfxBase)
 {
     char * displayName;
@@ -89,6 +108,11 @@ int driver_init (struct GfxBase * GfxBase)
     short t;
     short depth;
 
+    if (!XInitThreads ())
+    {
+	fprintf (stderr, "Warning: XInitThreads() failed or threads not supported\n");
+    }
+
     if (!(displayName = getenv ("DISPLAY")) )
 	displayName = ":0.0";
 
@@ -97,6 +121,18 @@ int driver_init (struct GfxBase * GfxBase)
 	fprintf (stderr, "Cannot open display %s\n", displayName);
 	return False;
     }
+
+#if 0
+    X11lock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+
+    if (!X11lock)
+    {
+	fprintf (stderr, "Can't create X11lock\n");
+	return False;
+    }
+
+    InitSemaphore (X11lock);
+#endif
 
     sysScreen = DefaultScreen (sysDisplay);
 
@@ -329,6 +365,8 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 {
     XClearArea (sysDisplay, GetXWindow (rp),
 		x1, y1, x2-x1+1, y2-y1+1, False);
+
+    SIGID ();
 }
 
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
@@ -350,6 +388,8 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     else
 	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
 		x1, y1, x2-x1+1, y2-y1+1);
+
+    SIGID ();
 }
 
 #define SWAP(a,b)       { a ^= b; b ^= a; a ^= b; }
@@ -424,6 +464,8 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     }
 
     SetAPen (rp, apen);
+
+    SIGID ();
 }
 
 void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
@@ -434,6 +476,8 @@ void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
     XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x-rx, y-ry, rx*2, ry*2,
 	    0, 360*64);
+
+    SIGID ();
 }
 
 void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
@@ -447,6 +491,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    rp->cp_y, string, len);
 
     rp->cp_x += TextLength (rp, string, len);
+
+    SIGID ();
 }
 
 WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
@@ -473,6 +519,8 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
     XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    rp->cp_x, rp->cp_y,
 	    x, y);
+
+    SIGID ();
 }
 
 ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
@@ -483,6 +531,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     ULONG t;
 
     XSync (sysDisplay, False);
+    SIGID ();
 
     image = XGetImage (sysDisplay
 	, GetXWindow(rp)
@@ -512,6 +561,8 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
 
+    /* SIGID (); */
+
     return 0;
 }
 
@@ -524,6 +575,8 @@ void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 	    (XPoint *)coords, count,
 	    CoordModeOrigin
     );
+
+    SIGID ();
 }
 
 void driver_SetRast (struct RastPort * rp, ULONG color,
@@ -533,6 +586,8 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	    0, 0,
 	    1000, 1000,
 	    FALSE);
+
+    SIGID ();
 }
 
 void driver_SetFont (struct RastPort * rp, struct TextFont * font,
@@ -764,6 +819,7 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
     }
 
     XSync (sysDisplay, False);
+    SIGID ();
 
     if (count > maxPen)
 	maxPen = count;
@@ -816,6 +872,7 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
     }
 
     XSync (sysDisplay, False);
+    SIGID();
 
 /* printf ("maxPen = %d\n", maxPen); */
 
@@ -981,6 +1038,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	break;
     }
 
+    SIGID();
+
     return planecnt;
 }
 
@@ -1031,6 +1090,7 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 	sysCMap[color] = xc.pixel;
 
     XSync (sysDisplay, False);
+    SIGID ();
 
     if (color > maxPen)
 	maxPen = color;
@@ -1151,6 +1211,8 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	}
     }
 #endif
+
+    SIGID();
 
     return width*(ystop - ystart + 1);
 } /* driver_WritePixelArray8 */
