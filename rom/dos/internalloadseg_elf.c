@@ -270,7 +270,7 @@ Load Elf Header
 
 */
 
-static __inline__ int check_header(struct elfheader *eh)
+static __inline__ int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 {
     if
     (
@@ -348,7 +348,8 @@ static int load_hunk
 static int relocate
 (
     struct sheader *sh,
-    int             shrel_idx
+    int             shrel_idx,
+    struct DosLibrary  *DOSBase
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
@@ -455,7 +456,7 @@ BPTR InternalLoadSeg_ELF
     if
     (
         read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) &&
-        check_header(&eh)
+        check_header(&eh, DOSBase)
     )
     {
         /* Load Section Headers. Also allocate space for a probable common section */
@@ -540,7 +541,7 @@ BPTR InternalLoadSeg_ELF
 			    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
                             if (sh[i].addr)
                             {
-                                if (!relocate(sh, i))
+                                if (!relocate(sh, i, DOSBase))
                                     break;
                             }
 
