@@ -2450,67 +2450,119 @@ STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
 /**************************
 **  Lisview::GoActive()  **
 **************************/
-STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
+STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 {
     struct LVData *data = INST_DATA(cl, o);
-    UWORD clickpos;    
+    WORD clickpos;    
     BOOL shown;
     
     EnterFunc(bug("Listview::GoActive()\n"));
 
-    if (!msg->gpi_IEvent) /* Not activated ny user ? */
-    	ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);    
-    	
-    if (data->ld_Flags & LVFLG_READONLY)
-    	ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);
-    	
+    if (msg->MethodID == GM_GOACTIVE)
+    {
+	if (!msg->gpi_IEvent) /* Not activated ny user ? */
+    	    ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);    
+
+	if (data->ld_Flags & LVFLG_READONLY)
+    	    ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);
+    }	
     
     /* How many entries are currently shown in the Gtlv ? */
     shown = ShownEntries(o, data);
 
-    /* offset from top of listview of the entry clicked */
-    clickpos = (msg->gpi_Mouse.Y - LV_BORDER_Y) / 
-    		TotalItemHeight(data);
-    if (clickpos < shown)
+
+    if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
     {
-    	if (clickpos + data->ld_Top != data->ld_Selected)
-    	{
-	    struct RastPort *rp;
-	    WORD oldpos = data->ld_Selected;
-	    data->ld_Selected = clickpos + data->ld_Top;
+        if ((msg->gpi_IEvent->ie_Code == SELECTDOWN) ||
+	    (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON))
+	{
+	    /* offset from top of listview of the entry clicked */
+	    clickpos = (msg->gpi_Mouse.Y - LV_BORDER_Y) / 
+    			TotalItemHeight(data);
 
-	    *(msg->gpi_Termination) = data->ld_Selected;
-	    
-	    rp = ObtainGIRPort(msg->gpi_GInfo);
-	    if (rp)
+	    if (clickpos < 0)
 	    {
-	    	/* Rerender new active */
-	    	data->ld_FirstDamaged = clickpos;
-	    	data->ld_NumDamaged = 1;
-	    
-		DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
-		
-		/* Rerender old active if it was shown in the listview */
-		if (    (oldpos >= data->ld_Top) 
-		     && (oldpos < data->ld_Top + NumItemsFit(o, data)) )
+	        if (data->ld_Top > 0)
 		{
+	            struct TagItem set_tags[] =
+		    {
+			 {GTLV_Top, data->ld_Top - 1},
+			 {TAG_DONE		    }
+		    };
 
-	    	    data->ld_FirstDamaged = oldpos - data->ld_Top;
-	    	    data->ld_NumDamaged = 1;
-
-		    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+		    DoMethod(o, OM_SET, set_tags, msg->gpi_GInfo);		    
 		}
-
-		ReleaseGIRPort(rp);
 		
-		ReturnInt ("ListView::GoActive", IPTR, GMR_VERIFY | GMR_NOREUSE);
+	        clickpos = 0;
+		
+	    } else if (clickpos >= shown)
+	    {
+	        WORD max_top = data->ld_NumEntries - NumItemsFit(o, data);
+		
+		if (max_top < 0) max_top = 0;
+		
+	    	if (data->ld_Top < max_top)
+		{
+	            struct TagItem set_tags[] =
+		    {
+			 {GTLV_Top, data->ld_Top + 1},
+			 {TAG_DONE		    }
+		    };
+
+		    DoMethod(o, OM_SET, set_tags, msg->gpi_GInfo);		    		
+		}
+		
+	        clickpos = shown - 1;
 	    }
+	    
+	    
+	    if ((clickpos >= 0) && (clickpos < shown))
+	    {
+    		if (clickpos + data->ld_Top != data->ld_Selected)
+    		{
+		    struct RastPort *rp;
+		    WORD oldpos = data->ld_Selected;
+		    data->ld_Selected = clickpos + data->ld_Top;
 
-	} /* if (click wasn't on old acive gadget) */
+		    rp = ObtainGIRPort(msg->gpi_GInfo);
+		    if (rp)
+		    {
+	    		/* Rerender new active */
+	    		data->ld_FirstDamaged = clickpos;
+	    		data->ld_NumDamaged = 1;
 
-    } /* if (entry is shown) */
+			DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
 
-    ReturnInt ("Listview::GoActive", IPTR, GMR_NOREUSE);
+			/* Rerender old active if it was shown in the listview */
+			if (    (oldpos >= data->ld_Top) 
+			     && (oldpos < data->ld_Top + NumItemsFit(o, data)) )
+			{
+
+	    		    data->ld_FirstDamaged = oldpos - data->ld_Top;
+	    		    data->ld_NumDamaged = 1;
+
+			    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+			}
+
+			ReleaseGIRPort(rp);
+
+			ReturnInt ("ListView::Input", IPTR, GMR_MEACTIVE);
+		    }
+
+		} /* if (click wasn't on old active item) */
+
+	    } /* if (entry is shown) */
+
+        } /* if mouse down or mouse move event */
+	else if (msg->gpi_IEvent->ie_Code == SELECTUP)
+	{
+	    *(msg->gpi_Termination) = data->ld_Selected;	    
+	    ReturnInt ("ListView::Input", IPTR, GMR_VERIFY | GMR_NOREUSE);	    
+	} /* mouse up event */
+	 	 
+    } /* if (is mouse event) */
+    
+    ReturnInt ("Listview::Input", IPTR, GMR_MEACTIVE);
 }
 
 
@@ -2657,7 +2709,8 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 	    break;
 
 	case GM_GOACTIVE:
-	    retval = listview_goactive(cl, o, (struct gpInput *)msg);
+	case GM_HANDLEINPUT:
+	    retval = listview_input(cl, o, (struct gpInput *)msg);
 	    break;
 
 	case OM_NEW:
