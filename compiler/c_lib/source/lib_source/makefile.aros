@@ -12,10 +12,13 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 OBJS = StartUp.o LibInit.o SampleFuncs.o
 LIB = $(SLIBDIR)/example.library
 
-all : $(LIB)
+all : setup $(LIB)
 
 clean :
 	$(RM) *.o $(LIB)
+
+setup :
+	@echo "CFLAGS=$(CFLAGS)"
 
 $(LIB) : $(OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
