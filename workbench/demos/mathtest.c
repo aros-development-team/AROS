@@ -2,7 +2,10 @@
 #include <proto/aros.h>
 #include <proto/dos.h>
 
+/* to avoid casts these two lines are absolutely necessary!!*/
 #define float LONG
+#define double QUAD
+
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
 #include <proto/mathieeesingbas.h>
@@ -30,6 +33,7 @@ int main(int argc, char ** argv)
     LONG wanted;
     double double_res;
     QUAD * double_resptr = (QUAD *)&double_res;
+    QUAD MyQUAD;
 
     #define DEF_FFPOne		0x80000041UL
     #define DEF_FFPTwo		0x80000042UL
@@ -42,6 +46,7 @@ int main(int argc, char ** argv)
     #define DEF_SPOnehalf	0x3f000000UL
     
     #define DEF_DPOne		0x3ff0000000000000ULL
+    #define DEF_DPMinusOne	0xbff0000000000000ULL
     #define DEF_DPTwo		0x4000000000000000ULL
     
     ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
@@ -69,7 +74,7 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 #define CHECK_DOUBLE(func, args, cres) \
     double_res = func args; \
     if (*double_resptr != cres) \
-	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", __LINE__, (LONG)(((QUAD)*double_resptr)>>32),(LONG)double_resptr, (LONG)(((QUAD)cres)>>32),(LONG)cres); \
+	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", __LINE__, (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1), (LONG)(((QUAD)cres)>>32),(LONG)cres); \
     else \
 	printf ("OK  : " #func " " #args "\n");
 
@@ -152,8 +157,13 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return (0);
     }
     
+
     CHECK_DOUBLE(IEEEDPFlt, (1), DEF_DPOne);
-    CHECK_DOUBLE(IEEEDPAdd, (DEF_DPOne, DEF_DPOne), DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPFlt, (2), DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPAbs, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
+    CHECK_DOUBLE(IEEEDPNeg, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
+    //CHECK_DOUBLE(IEEEDPAdd, ((QUAD)DEF_DPOne,  (QUAD)DEF_DPOne), (QUAD)DEF_DPTwo);
+    
     CloseLibrary(MathIeeeDoubBasBase);
 
     return (0);
