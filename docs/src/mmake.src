@@ -114,6 +114,8 @@ like this filename.
 with this name. Try \shell{ignore CVS} if you use CVS to
 manage your projects' sources.
 
+\end{description}
+
 Any option which is not recognised will be added to the list
 of known variables (ie. \shell{foo bar} will create a
 variable \shell{$(foo)} which is expanded to \shell{bar}).

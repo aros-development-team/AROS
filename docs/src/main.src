@@ -8,6 +8,7 @@
 \include{devinfo_inside.src}
 \include{devinfo_outside.src}
 \include{hidd.src}
+\include{mmake.src}
 \appendix
 \include{autodoc.src}
 \include{history.src}
