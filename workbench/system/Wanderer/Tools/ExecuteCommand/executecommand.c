@@ -228,6 +228,15 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
             console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
             if (console != NULL)
             {
+                BPTR searchPath = NULL;
+                
+                WorkbenchControl
+                (
+                    NULL, 
+                    WBCTRLA_DuplicateSearchPath, (IPTR) &searchPath,
+                    TAG_DONE
+                );
+            
                 if
                 (
                     SystemTags
@@ -239,13 +248,27 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                         SYS_Output,     (IPTR) NULL,
                         SYS_Error,      (IPTR) NULL,
                         SYS_Background,        FALSE,
+                        NP_Path,        (IPTR) searchPath,
                         
                         TAG_DONE
                     ) == -1
                 )
                 {
-                    /* An error occured, so we need to close the filehandle */
+                    /*
+                        An error occured, so we need to close the filehandle
+                        and free the search path list (which are otherwise
+                        automatically freed when the process exits).
+                    */
+                    
                     // FIXME: error dialog
+                    
+                    WorkbenchControl
+                    (
+                        NULL,
+                        WBCTRLA_FreeSearchPath, (IPTR) searchPath,
+                        TAG_DONE
+                    );
+                    
                     Close(console);
                 }
             }
