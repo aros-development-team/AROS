@@ -52,7 +52,7 @@ AROS_LH2(struct Preferences *, GetDefPrefs,
     DEBUG_GETDEFPREFS(dprintf("GetDefPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
                               prefbuffer, size));
 
-    if (prefbuffer)
+    if (prefbuffer != NULL && size != 0)
     {
         ULONG lock = LockIBase(0);
         CopyMem(GetPrivIBase(IntuitionBase)->DefaultPreferences,
