@@ -14,14 +14,6 @@
 #include <graphics/scale.h>
 #include "basicfuncs.h"
 
-#define LA_SRCX	      100
-#define LA_SRCY       101
-#define LA_DESTX      102
-#define LA_DESTY      103
-#define LA_SRCWIDTH   104
-#define LA_SRCHEIGHT  105
-#define LA_DESTWIDTH  106
-#define LA_DESTHEIGHT 107
 
 struct ScaleLayerParam
 {
@@ -81,18 +73,27 @@ struct Region * ScaleLayerCallback();
   hook.h_Entry = (IPTR)ScaleLayerCallback;
   hook.h_Data  = (APTR)&parm;
 
-  
+
   oldshape = ChangeLayerShape(l, 0, &hook);
-  if (oldshape)
-  {
-    DisposeRegion(oldshape);
-    return TRUE;
-  }
+
+  /*
+   * I must not free oldshape here since it is also the new shape!
+   */
   
   return FALSE;
   AROS_LIBFUNC_EXIT
 } /* ScaleLayer */
 
+
+
+
+
+
+
+/*
+ * The ScaleLayer callback is doing the actul work of
+ * scaling the layer.
+ */
 AROS_UFH3(struct Region *, ScaleLayerCallback,
    AROS_UFHA(struct Hook                *, hook     , A0),
    AROS_UFHA(struct Layer               *, l        , A2),
@@ -104,7 +105,7 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
   struct LayersBase * LayersBase = slp->LayersBase;
   
   struct TagItem * taglist = slp->taglist;
-  
+
   if (l->ClipRect->Next)
   {
     kprintf("%s: Only expecting one ClipRect - leaving!\n",__FUNCTION__);
@@ -116,7 +117,7 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
                    l->ClipRect->BitMap->Depth,
                    0,
                    l->rp->BitMap);
-  
+
   bsa.bsa_SrcX        = GetTagData(LA_SRCX, 0, taglist);
   bsa.bsa_SrcY        = GetTagData(LA_SRCY, 0, taglist);
   bsa.bsa_SrcWidth    = GetTagData(LA_SRCWIDTH , l->Width , taglist);
@@ -125,8 +126,10 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
   bsa.bsa_YSrcFactor  = bsa.bsa_SrcHeight;
   bsa.bsa_DestX       = GetTagData(LA_DESTX, 0, taglist);
   bsa.bsa_DestY       = GetTagData(LA_DESTY, 0, taglist);
+/*
   bsa.bsa_DestWidth   = GetTagData(LA_DESTWIDTH , l->Width , taglist);
   bsa.bsa_DestHeight  = GetTagData(LA_DESTHEIGHT, l->Height, taglist);
+ */
   bsa.bsa_XDestFactor = GetTagData(LA_DESTWIDTH , l->Width , taglist);
   bsa.bsa_YDestFactor = GetTagData(LA_DESTHEIGHT, l->Height, taglist);
   bsa.bsa_SrcBitMap   = l->ClipRect->BitMap;
@@ -138,11 +141,15 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
   bsa.bsa_Reserved1;
   bsa.bsa_Reserved2;
 #endif
-  
+
+//kprintf("Scaling bitmap!\n");
   BitMapScale(&bsa);
-  
+
   FreeBitMap(l->ClipRect->BitMap);
   l->ClipRect->BitMap = bm;
-  
-  return NULL;
+//kprintf("Leaving %s!\n",__FUNCTION__);
+
+kprintf("shaperegion: %p\n",l->shaperegion);
+
+  return l->shaperegion;
 }
