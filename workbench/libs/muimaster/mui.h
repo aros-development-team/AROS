@@ -533,6 +533,10 @@ struct MUI_RGBcolor
 #include "classes/coloradjust.h"
 #endif
 
+#ifndef _MUI_CLASSES_MCCPREFS_H
+#include "classes/mccprefs.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
