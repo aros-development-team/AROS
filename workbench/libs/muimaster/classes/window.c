@@ -142,7 +142,8 @@ struct MUI_WindowData
 #define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
 #define MUIWF_ISAPPWINDOW     (1<<11) /* Is an app window (user can drop icons on it) */
 #define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
-#define MUIWF_BUBBLEMODE      (1<<13) /* Quick bubble mode. Bubbles appear quick when moving around */
+#define MUIWF_BUBBLEMODE      (1<<13) /* Quick bubble mode. Bubbles appear quick when moving */
+#define MUIWF_OPENONDEICONIFY (1<<14) /* Open the window when deiconifying */
 
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
@@ -2583,20 +2584,63 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_ID:
 		data->wd_ID = tag->ti_Data;
 		break;
+	    
 	    case MUIA_Window_IsSubWindow:
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISSUBWINDOW);
 		break;
+	    
 	    case MUIA_Window_Open:
-		if (tag->ti_Data && !(data->wd_Flags & MUIWF_OPENED))
-		    WindowOpen(cl, obj);
-		else if (!tag->ti_Data && (data->wd_Flags & MUIWF_OPENED))
-		    WindowClose(cl, obj);
-		else if (tag->ti_Data && (data->wd_Flags & MUIWF_OPENED))
+		if (tag->ti_Data)
 		{
-		    DoMethod(obj, MUIM_Window_ToFront);
-		    set(obj, MUIA_Window_Activate, TRUE);
+		    if (data->wd_Flags & MUIWF_ICONIFIED)
+		        data->wd_Flags |= MUIWF_OPENONDEICONIFY;
+		    else
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+		        WindowOpen(cl, obj);
+		    else
+		    {
+		        DoMethod(obj, MUIM_Window_ToFront);
+		        set(obj, MUIA_Window_Activate, TRUE);
+		    }
 		}
+		else
+  	        if (data->wd_Flags & MUIWF_ICONIFIED)
+		    data->wd_Flags &= ~MUIWF_OPENONDEICONIFY;
+		else
+		if (data->wd_Flags & MUIWF_OPENED)
+		    WindowClose(cl, obj);
 		break;
+	    
+	    case MUIA_ShowMe:  /* PRIVATE *abuse* of the Area's ShowMe attr */
+	        if (tag->ti_Data)
+		{
+		    /* Deiconify */
+		    
+		    if (data->wd_Flags & MUIWF_ICONIFIED)
+		    {
+			data->wd_Flags &= ~MUIWF_ICONIFIED;
+			
+		        if (data->wd_Flags & MUIWF_OPENONDEICONIFY)
+			{
+			    data->wd_Flags &=  ~MUIWF_OPENONDEICONIFY;
+			    set(obj, MUIA_Window_Open, TRUE);
+			}
+		    }
+		}
+		else
+		{
+		    /* Iconify */
+		    
+		    if (data->wd_Flags & MUIWF_OPENED)
+		    {
+		        data->wd_Flags |= MUIWF_OPENONDEICONIFY;
+			
+			set(obj, MUIA_Window_Open, FALSE);
+		    }
+			
+		    data->wd_Flags |= MUIWF_ICONIFIED;
+		}
+	    
 	    case MUIA_Window_RootObject:
 		ChangeRootObject(data, obj, (Object *)tag->ti_Data);
 		break;
@@ -2702,14 +2746,13 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case MUIA_Window_Activate:
-	    if (data->wd_Flags & MUIWF_OPENED)
-		STORE = (data->wd_Flags & MUIWF_ACTIVE) ? TRUE : FALSE;
-	    else
-		STORE = FALSE;
-	    return(TRUE);
-        case MUIA_Window_Window:
+	    STORE = (data->wd_Flags & (MUIWF_ACTIVE | MUIWF_OPENED)) == MUIWF_ACTIVE | MUIWF_OPENED;
+	    return TRUE ;
+        
+	case MUIA_Window_Window:
             STORE = (IPTR)data->wd_RenderInfo.mri_Window;
-            return 1;
+            return TRUE;
+	
 	case MUIA_Window_ActiveObject:
 	    if ((data->wd_ActiveObject != NULL)
 		&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
@@ -2717,58 +2760,73 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		STORE = (IPTR)data->wd_ActiveObject;
 	    else
 		STORE = (IPTR)NULL;
-	    return 1;
+	    return TRUE;
+	
 	case MUIA_Window_CloseRequest:
 	    STORE = FALSE;
-	    return(TRUE);
+	    return TRUE;
+	
 	case MUIA_Window_DefaultObject:
 	    STORE = (IPTR)data->wd_DefaultObject;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_DisableKeys:
 	    STORE = data->wd_DisabledKeys;
-	    break;
+	    return TRUE;
+	
 	case MUIA_Window_Height:
 	    STORE = (IPTR)data->wd_Height;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_ID:
 	    STORE = data->wd_ID;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_IsSubWindow:
-	    STORE = (data->wd_Flags & MUIWF_ISSUBWINDOW) ? TRUE : FALSE;
-	    return(TRUE);
+	    STORE = (data->wd_Flags & MUIWF_ISSUBWINDOW) == MUIWF_ISSUBWINDOW;
+	    return TRUE;
+	    
 	case MUIA_Window_LeftEdge:
 	    if (data->wd_RenderInfo.mri_Window)
 		STORE = (IPTR)data->wd_RenderInfo.mri_Window->LeftEdge;
 	    else
 		STORE = (IPTR)0;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_Open:
-	    STORE = (data->wd_Flags & MUIWF_OPENED) ? TRUE : FALSE;
-	    return(TRUE);
+	    STORE = (data->wd_Flags & MUIWF_OPENED) == MUIWF_OPENED;
+	    return TRUE;
+	
 	case MUIA_Window_RootObject:
 	    STORE = (IPTR)data->wd_RootObject;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_ScreenTitle:
 	    STORE = (IPTR)data->wd_ScreenTitle;
-	    return(TRUE);
+	    return TRUE;
+	
 	case MUIA_Window_Title:
 	    STORE = (IPTR)data->wd_Title;
-	    return(TRUE);
+	    return TRUE;
+	    
 	case MUIA_Window_TopEdge:
 	    if (data->wd_RenderInfo.mri_Window)
 		STORE = (IPTR)data->wd_RenderInfo.mri_Window->TopEdge;
 	    else
 		STORE = (IPTR)0;
 	    return(TRUE);
+	
 	case MUIA_Window_Width:
 	    STORE = (IPTR)data->wd_Width;
-	    return(TRUE);
+	    return TRUE;
+	
 	case MUIA_Version:
 	    STORE = __version;
-	    return(TRUE);
+	    return TRUE;
+	
 	case MUIA_Revision:
 	    STORE = __revision;
-	    return(TRUE);
+	    return TRUE;
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -3521,8 +3579,9 @@ static IPTR Window_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Window_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
 {
-    set(_app(obj),MUIA_Application_Iconified,TRUE);
-    return 1;
+    set(_app(obj), MUIA_Application_Iconified, TRUE);
+    
+    return TRUE;
 }
 
 
