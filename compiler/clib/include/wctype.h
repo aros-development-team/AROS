@@ -10,15 +10,9 @@
 
 #include <sys/_types.h>
 
-#ifndef __AROS_WCHAR_T_DECLARED
-#define __AROS_WCHAR_T_DECLARED
-typedef __wchar_t   wchar_t;
-#endif
-
-#ifndef __AROS_WINT_T_DECLARED
-#define __AROS_WINT_T_DECLARED
-typedef __wint_t    wint_t;
-#endif
+#define __need_wchar_t
+#define __need_wint_t
+#include <stddef.h>
 
 #ifndef WEOF
 #define	WEOF	((wint_t)-1)

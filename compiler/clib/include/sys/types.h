@@ -58,6 +58,12 @@ typedef quad_t *        qaddr_t;
 #include <stddef.h>
 
 /* Define the rest of the POSIX types */
+
+#ifndef __AROS_SSIZE_T_DECLARED
+#define __AROS_SSIZE_T_DECLARED
+typedef __ssize_t                   ssize_t;    /* Byte count or error      */
+#endif
+
 #ifndef __AROS_CLOCKID_T_DECLARED
 #define __AROS_CLOCKID_T_DECLARED
 typedef __clockid_t                 clockid_t;  /* ID for clock_ function   */
@@ -117,16 +123,6 @@ typedef __off_t                     off_t;      /* Offset (in files)        */
 #ifndef __AROS_PID_T_DECLARED
 #define __AROS_PID_T_DECLARED
 typedef __pid_t                     pid_t;      /* Process ID               */
-#endif
-
-#ifndef __AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t                    size_t;     /* Size of objects          */
-#endif
-
-#ifndef __AROS_SSIZE_T_DECLARED
-#define __AROS_SSIZE_T_DECLARED
-typedef __ssize_t                   ssize_t;    /* Byte count or error      */
 #endif
 
 #ifndef __AROS_SUSECONDS_T_DECLARED

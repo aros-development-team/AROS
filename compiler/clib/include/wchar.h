@@ -10,25 +10,16 @@
 #include <sys/_types.h>
 #include <sys/cdefs.h>
 
-#ifndef	__AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t        size_t;
-#endif
+#define __need_size_t
+#define __need_wchar_t
+#define __need_wint_t
+#define __need_NULL
+#include <stddef.h>
+#include <stdarg.h>
 
-#ifndef	__AROS_WCHAR_T_DECLARED
-#define __AROS_WCHAR_T_DECLARED
-typedef	__wchar_t       wchar_t;
-#endif
+#include <stdint.h>
 
-#ifndef	__AROS_WINT_T_DECLARED
-#define __AROS_WINT_T_DECLARED
-typedef	__wint_t        wint_t;
-#endif
-
-#ifdef  _AROS_VA_LIST_
-typedef _AROS_VA_LIST_  va_list;
-#undef  _AROS_VA_LIST_
-#endif
+__BEGIN_DECLS
 
 /* Users are not allowed to access this type. */
 typedef union
@@ -39,12 +30,8 @@ typedef union
 
 struct tm;
 
-#ifndef	NULL
-#   define  NULL    0
-#endif
-
-#define	WCHAR_MIN	INT_MIN
-#define WCHAR_MAX	INT_MAX
+#define	WCHAR_MIN	(-__WCHAR_MAX__ - 1l)
+#define WCHAR_MAX	__WCHAR_MAX__
 
 #ifndef WEOF
 #define WEOF		((wint_t)-1)
@@ -53,7 +40,6 @@ struct tm;
 /*  wchar.h should not include stdio.h */
 struct __sFILE;
 
-__BEGIN_DECLS
 
 /* Formatted wide-character input/output functions */
 int fwprintf(struct __sFILE * restrict stream,
