@@ -15,6 +15,7 @@
 #include <aros/core.h>
 #include <asm/irq.h>
 #include <asm/registers.h>
+#include <asm/cpu.h>
 
 # define  DEBUG  1
 # include <aros/debug.h>
@@ -48,12 +49,12 @@ BOOL init_core(struct ExecBase * SysBase)
 		/*
 		 * Activate the low-level (assembly) interrupt handlers 
 		 */
-		WREG_L(IRQ_LEVEL6) = (ULONG)IRQ6_interrupt;
-		WREG_L(IRQ_LEVEL5) = (ULONG)IRQ5_interrupt;
-		WREG_L(IRQ_LEVEL4) = (ULONG)IRQ4_interrupt;
-		WREG_L(IRQ_LEVEL3) = (ULONG)IRQ3_interrupt;
-		WREG_L(IRQ_LEVEL2) = (ULONG)IRQ2_interrupt;
-		WREG_L(IRQ_LEVEL1) = (ULONG)IRQ1_interrupt;
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL6, IRQ6_interrupt);
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL5, IRQ5_interrupt);
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL4, IRQ4_interrupt);
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL3, IRQ3_interrupt);
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL2, IRQ2_interrupt);
+		INSTALL_IRQ_HANDLER(IRQ_LEVEL1, IRQ1_interrupt);
 
 //		WREG_L(0x100) = (ULONG)IRQ0_interrupt;
 		WREG_L(0x104) = (ULONG)IRQ1_interrupt;
@@ -94,9 +95,30 @@ static void disable_db_irq(unsigned int irq)
 {
 }
 
-static void enable_db_irq(unsigned int irq)
+static void enable_db_irq(unsigned int virq)
 {
+	ULONG imr = RREG_L(IMR);
+	/*
+	 * On this processor I must clear the flags of those interrupts
+	 * that I want to enable.
+	 */
+	switch (virq) {
+		case vHidd_IRQ_Timer2:
+			imr &= ~(TMR2_F);
+		break;
+		case vHidd_IRQ_CustomD:
+			imr &= ~(INT0_F | INT1_F | INT2_F | INT3_F | INT4_F | INT5_F | INT6_F | INT7_F);
+		break;
+		case vHidd_IRQ_Serial1:
+			imr &= ~(UART1_F);
+		break;
+		case vHidd_IRQ_Touchscreen:
+			imr &= ~(PEN_F);
+		break;
+	}
+	WREG_L(IMR) = imr;
 }
+
 
 static inline void mask_and_ack_dbirq(unsigned int irq)
 {
@@ -156,6 +178,8 @@ static void handle_IRQ_event(unsigned int virq, struct pt_regs * regs, struct ir
 	WREG_L(IMR) = imr;
 }
 
+
+
 /*
  * Generic enable/disable code: this just calls
  * down into the PIC-specific version for the actual
@@ -175,26 +199,34 @@ void disable_irq_nosync(unsigned int irq)
  * Synchronous version of the above, making sure the IRQ is
  * no longer running on any other IRQ..
  */
-void disable_irq(unsigned int irq)
+void disable_irq(unsigned int virq)
 {
+	disable_db_irq(virq);
+#if 0
 	disable_irq_nosync(irq);
+#endif
 }
 
-void enable_irq(unsigned int irq)
+void enable_irq(unsigned int virq)
 {
+	enable_db_irq(virq);
+#if 0
 	AROS_GET_SYSBASE
 	struct irqDescriptor * irq_desc = PLATFORMDATA(SysBase)->irq_desc;
 	switch (irq_desc[irq].id_depth) {
 		case 0: break;
 		case 1:
 			irq_desc[irq].id_status &= ~IRQ_DISABLED;
-			irq_desc[irq].id_handler->ic_enable(irq);
+			irq_desc[irq].id_handler->ic_enable(virq);
 			/* fall throught */
 		default:
 			irq_desc[irq].id_depth--;
 	}
+#endif
 }
 
+
+// !!! Move this into include file !!!
 extern void sys_Dispatch(struct pt_regs * regs);
 /*
  * Called from low level assembly code. Handles irq number 'irq'.
@@ -250,7 +282,7 @@ extern void sys_Dispatch(struct pt_regs * regs);
 				irq_desc->id_count++;
 
 				irq_desc->id_handler->ic_handle(irq,
-				                                0, /* -> index of vHidd_IRQ_Timer in servers.c */
+				                                0, /* -> index of vHidd_IRQ_Timer2 in servers.c */
 				                                regs);
 			}
 
@@ -260,7 +292,7 @@ extern void sys_Dispatch(struct pt_regs * regs);
 				treated = TRUE;
 
 				irq_desc->id_count++;
-				irq_desc->id_handler->ic_handle(irq, 
+				irq_desc->id_handler->ic_handle(irq,
 				                                4, /* -> index of vHidd_IRQ_Serial1 in servers.c */ 
 				                                regs);
 			}
@@ -279,6 +311,18 @@ extern void sys_Dispatch(struct pt_regs * regs);
 
 			if (isr & KB_F) {
 				/* Keyboard */
+			}
+			
+			if (isr & (INT0_F|INT1_F|INT2_F|INT3_F|INT4_F|INT5_F|INT6_F|INT7_F)) {
+				/* Port D */
+				D(bug("--------------- Keyboard IRQ!\n"));
+				treated = TRUE;
+
+				irq_desc->id_count++;
+				irq_desc->id_handler->ic_handle(irq,
+				                                1, /* -> index of vHidd_IRQ_CustomD */
+				                                regs);
+				
 			}
 		break;
 		
