@@ -24,6 +24,10 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+#ifdef __AROS__
+#include <devices/rawkeycodes.h>
+#endif
+
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -147,7 +151,7 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG String_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data;
     struct TagItem *tags,*tag;
@@ -217,13 +221,13 @@ static ULONG String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG String_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -236,7 +240,7 @@ static ULONG String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     struct TagItem      *tags = msg->ops_AttrList;
@@ -279,7 +283,7 @@ static ULONG String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -302,7 +306,7 @@ static ULONG String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	{
 	    STRPTR buf = NULL;
 	    STORE = 0;
-	    get(obj, MUIA_String_Contents, &buf);
+	    get(obj, MUIA_String_Contents, (IPTR *)&buf);
 	    if (NULL != buf)
 	    {
 		LONG val = 0;
@@ -320,7 +324,7 @@ static ULONG String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+static IPTR String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -353,7 +357,7 @@ static ULONG String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -369,7 +373,7 @@ static ULONG String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static ULONG String_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+static IPTR String_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -615,7 +619,7 @@ static VOID UpdateStringData(struct IClass *cl, Object *obj)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static ULONG String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     UWORD   text_left;
@@ -826,8 +830,8 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
-				struct MUIP_HandleEvent *msg)
+static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
+			       struct MUIP_HandleEvent *msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     ULONG retval = 0;
@@ -923,7 +927,7 @@ static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
 	    case MUIKEY_PRESS: {
 		UBYTE *buf = NULL;
 
-		get(obj, MUIA_String_Contents, &buf);
+		get(obj, MUIA_String_Contents, (IPTR *)&buf);
 		
 		if (data->msd_Flags & MSDF_ADVANCEONCR)
 		    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
@@ -1032,6 +1036,22 @@ static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
 		    break;
 
 		code = ConvertKey(msg->imsg);
+	    #ifdef __AROS__
+		if (!code)
+		{
+		    switch(msg->imsg->Code)
+		    {
+		    	case RAWKEY_HOME:
+			    code = 1; /* ctrl-a */
+			    break;
+			    
+			case RAWKEY_END:
+			    code = 26; /* ctrl-z */
+			    break;
+		    }
+		}
+	    #endif
+	    
 		if (code)
 		{
 		    update = String_HandleVanillakey(cl, obj, code, msg->imsg->Qualifier);
@@ -1055,7 +1075,7 @@ static ULONG String_HandleEvent(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
-static ULONG String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+static IPTR String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     STRPTR id;
@@ -1078,7 +1098,7 @@ static ULONG String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *m
 /**************************************************************************
  MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
-static ULONG String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+static IPTR String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     STRPTR id;
     STRPTR s;
@@ -1096,7 +1116,7 @@ static ULONG String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *m
 /**************************************************************************
  MUIM_GoActive
 **************************************************************************/
-static ULONG String_GoActive(struct IClass * cl, Object * obj, Msg msg)
+static IPTR String_GoActive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
@@ -1115,7 +1135,7 @@ static ULONG String_GoActive(struct IClass * cl, Object * obj, Msg msg)
 /**************************************************************************
  MUIM_GoInactive
 **************************************************************************/
-static ULONG String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
+static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
