@@ -21,7 +21,7 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ListviewData
 {
-    Object *list, *group, *vert, *horiz, *button;
+    Object *list, *group, *vert/*  , */ /*  *horiz, *//*   *button */;
     struct Hook *layout_hook;
     struct Hook hook;
 };
@@ -40,18 +40,18 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 		    WORD maxxxxheight = 0;
 
 		    maxxxxwidth = _minwidth(data->list) + _minwidth(data->vert);
-		    if (_minwidth(data->horiz) + _minwidth(data->vert) > maxxxxwidth) maxxxxwidth = _minwidth(data->horiz) + _minwidth(data->vert);
+		    if (/*  _minwidth(data->horiz) + */ _minwidth(data->vert) > maxxxxwidth) maxxxxwidth = /*  _minwidth(data->horiz) */ + _minwidth(data->vert);
 		    lm->lm_MinMax.MinWidth = maxxxxwidth;
 
-		    maxxxxheight = _minheight(data->list) + _minheight(data->horiz);
-		    if (_minheight(data->vert) + _minheight(data->horiz) > maxxxxheight) maxxxxheight = _minheight(data->vert) + _minheight(data->horiz);
+		    maxxxxheight = _minheight(data->list) /*  + _minheight(data->horiz) */;
+		    if (_minheight(data->vert) /*  + _minheight(data->horiz) */ > maxxxxheight) maxxxxheight = _minheight(data->vert) /*  + _minheight(data->horiz) */;
 		    lm->lm_MinMax.MinHeight = maxxxxheight;
 
 		    maxxxxwidth = _defwidth(data->list) + _defwidth(data->vert);
-		    if (_defwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _defwidth(data->horiz);
+		    /*  if (_defwidth(data->horiz) > maxxxxwidth) maxxxxwidth = _defwidth(data->horiz); */
 		    lm->lm_MinMax.DefWidth = maxxxxwidth;
 
-		    maxxxxheight = _defheight(data->list) + _defheight(data->horiz);
+		    maxxxxheight = _defheight(data->list)/*   + _defheight(data->horiz) */;
 		    if (_defheight(data->vert) > maxxxxheight) maxxxxheight = _defheight(data->vert);
 		    lm->lm_MinMax.DefHeight = maxxxxheight;
 
@@ -66,7 +66,7 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 		    */
 
 		    LONG vert_width = _minwidth(data->vert);
-		    LONG horiz_height = _minheight(data->horiz);
+		    /*  LONG horiz_height = _minheight(data->horiz); */
 		    LONG lay_width = lm->lm_Layout.Width;
 		    LONG lay_height = lm->lm_Layout.Height;
 		    LONG cont_width;
@@ -74,14 +74,15 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 
 		    /* We need all scrollbars and the button */
 		    set(data->vert, MUIA_ShowMe, TRUE); /* We could also overload MUIM_Show... */
-		    set(data->horiz, MUIA_ShowMe, TRUE);
-		    set(data->button, MUIA_ShowMe, TRUE);
+		    /*  set(data->horiz, MUIA_ShowMe, TRUE); */
+		    /*  set(data->button, MUIA_ShowMe, TRUE); */
 		    cont_width = lay_width - vert_width;
-		    cont_height = lay_height - horiz_height;
+		    cont_height = lay_height /*  - horiz_height */;
 
 		    MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,0);
-		    MUI_Layout(data->horiz, 0, cont_height, cont_width, horiz_height, 0);
-		    MUI_Layout(data->button, cont_width, cont_height, vert_width, horiz_height, 0);
+		    /*  if (xget(data->horiz, MUIA_ShowMe)) */
+/*  			MUI_Layout(data->horiz, 0, cont_height, cont_width, horiz_height, 0); */
+		    /*  MUI_Layout(data->button, cont_width, cont_height, vert_width, horiz_height, 0); */
 
 		    /* Layout the group a second time, note that setting _mwidth() and _mheight() should be enough, or we invent a new flag */
 		    MUI_Layout(data->list,0,0,cont_width,cont_height,0);
@@ -111,11 +112,11 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 
 	case	2:
 		{
-		    get(data->horiz,MUIA_Prop_First,&val);
+		    /*  get(data->horiz,MUIA_Prop_First,&val); */
 //		    SetAttrs(data->contents,MUIA_Virtgroup_Left, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE);
 		    break;
 		}
-	case	3: nnset(data->horiz, MUIA_Prop_First, val); break;
+	case	3:/*   nnset(data->horiz, MUIA_Prop_First, val) */; break;
 
 	case	LIST_VERT_FIRST: nnset(data->vert, MUIA_Prop_First, val); break;
 	case	LIST_VERT_VISIBLE: nnset(data->vert, MUIA_Prop_Visible, val); break;
@@ -153,8 +154,8 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    MUIA_Group_LayoutHook, layout_hook,
 	    Child, list,
 	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,
-	    Child, horiz = ScrollbarObject, MUIA_Group_Horiz, TRUE, End,
-	    Child, button = ScrollbuttonObject, End,
+/*  	    Child, horiz = ScrollbarObject, MUIA_Group_Horiz, TRUE, End, */
+/*  	    Child, button = ScrollbuttonObject, End, */
 	    End,
 	TAG_DONE);
 
@@ -168,8 +169,8 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook->h_Data = data;
     data->list = list;
     data->vert = vert;
-    data->horiz = horiz;
-    data->button = button;
+/*      data->horiz = horiz; */
+/*      data->button = button; */
     data->group = group;
     data->layout_hook = layout_hook;
 
