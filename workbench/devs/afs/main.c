@@ -157,7 +157,9 @@ LONG retval;
 								&iofs->io_DirPos
 							);
 						break;
-					case FSA_EXAMINE_ALL :
+					#warning FIXME: Disabled FSA_EXAMINE_ALL support since it seems to have bugs
+                                        #if 0
+                                        case FSA_EXAMINE_ALL :
 						error=examineAll
 							(
 								afsbase,
@@ -168,6 +170,7 @@ LONG retval;
 								iofs->io_Union.io_EXAMINE_ALL.io_Mode
 							);
 						break;
+                                        #endif 
 					case FSA_EXAMINE_NEXT :
 						error=examineNext
 							(
@@ -305,8 +308,11 @@ LONG retval;
 					case FSA_SET_FILE_SIZE :
 					case FSA_FILE_MODE :
 					case FSA_EXAMINE :
-					case FSA_EXAMINE_ALL :
-					case FSA_EXAMINE_NEXT :
+					#warning FIXME: Disabled FSA_EXAMINE_ALL support
+                                        #if 0
+                                        case FSA_EXAMINE_ALL :
+					#endif
+                                        case FSA_EXAMINE_NEXT :
 					case FSA_OPEN_FILE :
 					case FSA_CREATE_DIR :
 					case FSA_CREATE_HARDLINK :
