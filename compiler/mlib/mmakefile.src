@@ -101,7 +101,6 @@ FILES := \
         s_log1pf \
         s_logb \
         s_logbf \
-        s_lrintf \
         s_matherr \
         s_modf \
         s_modff \
