@@ -47,20 +47,29 @@ UBYTE i;
 
 	for (i=0;(path[i]) && (path[i]!=':');i++)
 		dname[i] = path[i];
-	dname[i] = 0;
-	dl = LockDosList(LDF_READ);
-	if (dl)
+	if (path[i] == ':')
 	{
-		dn = (struct DeviceNode *)FindDosEntry(dl, dname, LDF_DEVICES);
-		UnLockDosList(LDF_READ);
-		if (dn)
+		dname[i] = 0;
+		dl = LockDosList(LDF_READ);
+		if (dl)
 		{
-			if (IsFileSystem(dname))
+			dn = (struct DeviceNode *)FindDosEntry(dl, dname, LDF_DEVICES);
+			UnLockDosList(LDF_READ);
+			if (dn)
 			{
-				return (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
+				if (IsFileSystem(dname))
+				{
+					return (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
+				}
+				else
+					printf("device '%s' doesn't contain a file system\n", dname);
 			}
+			else
+				PrintFault(ERROR_OBJECT_NOT_FOUND, dname);
 		}
 	}
+	else
+		printf("'%s' doesn't contain a device name\n",path);
 	return 0;
 }
 
@@ -560,210 +569,310 @@ UWORD i;
 	return first_block;
 }
 
-void installStageFiles
+void copyRootPath(char *dst, char *rpdos, BOOL isRDB) {
+
+	if (isRDB)
+	{
+		/* we have an RDB so use devicename */
+		*dst++ = '/';
+		while ((*rpdos) && (*rpdos!=':'))
+			*dst++ = *rpdos++;
+	}
+	else
+	{
+		while ((*rpdos) && (*rpdos!=':'))
+			rpdos++;
+	}
+	rpdos++; /* skip colon */
+	*dst++ = '/';
+	/* append path */
+	while (*rpdos)
+		*dst++ = *rpdos++;
+	if (dst[-1] == '/')
+		dst[-1] = 0;
+	else
+		*dst = 0;
+}
+
+UBYTE *memstr(UBYTE *mem, UBYTE *str, LONG len) {
+UBYTE *next;
+UBYTE *search;
+LONG left;
+
+	while (len)
+	{
+		len--;
+		if (*mem++ == *str)
+		{
+			next = mem;
+			search = str+1;
+			left = len;
+			while ((*search) && (left) && (*next++ == *search++))
+				left--;
+			if (*search == 0)
+				return mem-1;
+		}
+	}
+	return 0;
+}
+
+void writeKernelPath(BPTR fh, STRPTR kernelpath, UBYTE *buffer, BOOL isRDB) {
+LONG offset=0;
+LONG len;
+UBYTE *pos;
+
+kprintf("store kernel path\n");
+	Seek(fh, 0, OFFSET_BEGINNING);
+	do
+	{
+		len = Read(fh, buffer, 512);
+		if (len>0)
+		{
+#warning "FIXME: ID may be split into two parts (this block + next block)"
+			pos = memstr(buffer, "AROS_PRESET_MENU", len);
+			if (pos)
+			{
+				offset += (LONG)(pos-buffer);
+				if (Seek(fh, offset, OFFSET_BEGINNING) != -1)
+				{
+					if (Read(fh, buffer, 512) == 512)
+					{
+						pos = memstr(buffer, "kernel", len);
+						if (pos)
+						{
+							copyRootPath(pos+7, kernelpath, isRDB);
+kprintf("path is %s\n", pos);
+							if (Seek(fh, -512, OFFSET_CURRENT) != -1)
+								Write(fh, buffer, 512);
+							else
+								PrintFault(IoErr(), kernelpath);
+						}
+						else
+							printf("Error in preset menu\n");
+					}
+					else
+						printf("%s: Read Error\n", kernelpath);
+				}
+				else
+					PrintFault(IoErr(), kernelpath);
+				break;
+			}
+			offset += len;
+		}
+	} while (len>0);
+	if (len == -1)
+		printf("%s: Read Error\n", kernelpath);
+	else if (len==0)
+		printf("%s: ID not found!?\n", kernelpath);
+}
+
+BOOL writeStage2
 	(
-		struct Volume *s2vol, /* stage2 volume */
-		STRPTR stagepath,     /* path to stage* files */
-		ULONG unit,           /* unit stage2 is on */
-		struct Volume *s1vol  /* device on which stage1 will be stored */
+		BPTR fh,
+		UBYTE *buffer,
+		STRPTR kernelpath,
+		struct Volume *volume
 	)
 {
-char stagename[256];
-struct FileInfoBlock fib;
-BPTR fh, fh2;
-ULONG block,retval;
-ULONG error=0;
-STRPTR errstr=NULL;
+BOOL retval = FALSE;
+UBYTE menupath[256];
+char *menuname;
 
-	AddPart(stagename, stagepath, 256);
-	AddPart(stagename, "stage2", 256);
-	fh = Open(stagename,MODE_OLDFILE);
+	if (Seek(fh, 0, OFFSET_BEGINNING) != -1)
+	{
+		/* write back first block */
+		if (Write(fh, buffer, 512)==512)
+		{
+			/* read second stage2 block */
+			if (Read(fh, buffer, 512) == 512)
+			{
+				/* set partition number where stage2 is on */
+				buffer[8] = 0xFF;
+				buffer[9] = 0xFF;
+				buffer[10] = volume->partnum;
+				buffer[11] = 0;
+				/* get ptr to version string */
+				menuname = buffer+18;
+				while (*menuname++); /* skip version string */
+				copyRootPath(menuname, menupath, volume->flags & VF_IS_RDB);
+				strcat(menuname, "/menu.lst");
+				/* write second stage2 block back */
+				if (Seek(fh, -512, OFFSET_CURRENT) != -1)
+				{
+					if (Write(fh, buffer, 512) == 512)
+					{
+						writeKernelPath(fh,kernelpath,buffer,volume->flags&VF_IS_RDB);
+						retval = TRUE;
+					}
+					else
+						printf("%s: Write Error\n", menuname);
+				}
+				else
+					printf("%s: Seek Error\n", menuname);
+			}
+			else
+				printf("Read Error\n");
+		}
+		else
+			printf("Write Error\n");
+	}
+	else
+		PrintFault(IoErr(), NULL);
+	return retval;
+}
+
+ULONG changeStage2
+	(
+		STRPTR stage2path,     /* path of stage2 file */
+		STRPTR kernelpath,     /* path of the kernel image */
+		struct Volume *volume, /* volume stage2 is on */
+		ULONG *buffer          /* a buffer of at least 512 bytes */
+	)
+{
+ULONG block = 0;
+struct FileInfoBlock fib;
+BPTR fh;
+
+	fh = Open(stage2path, MODE_OLDFILE);
 	if (fh)
 	{
 		if (Examine(fh, &fib))
 		{
-			if (Read(fh, s1vol->blockbuffer, 512) == 512)
+			if (Read(fh, buffer, 512) == 512)
 			{
 				/*
 					get and store all blocks of stage2 in first block of stage2
 					first block of stage2 will be returned
-				*/ 
-				block=collectBlockList
-					(
-						s2vol,
-						fib.fib_DiskKey,
-						(struct BlockNode *)&s1vol->blockbuffer[128]
-					);
+				*/
+				block = collectBlockList
+					(volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]);
 				if (block)
 				{
-					if (Seek(fh, 0, OFFSET_BEGINNING)!=-1)
-					{
-						/* write back first block */
-						if (Write(fh, s1vol->blockbuffer, 512)==512)
-						{
-						char *menuname;
-						ULONG i;
-						UBYTE *bootfrom;
-
-							/* read second stage2 block */
-							Read(fh, s1vol->blockbuffer, 512);
-							/* set partition number where stage2 is on */
-							bootfrom = &s1vol->blockbuffer[2];
-							bootfrom[0] = 0xFF;
-							bootfrom[1] = 0xFF;
-							bootfrom[2] = s2vol->partnum;
-							bootfrom[3] = 0;
-							/* get ptr to version string */
-							menuname = ((char *)s1vol->blockbuffer+18);
-							/* skip version string */
-							while (*menuname++);
-							/* now we are at path to menu.lst */
-							/* copy new path */
-							i=0;
-							if (s2vol->flags & VF_IS_RDB)
-							{
-								/* we have an RDB so use devicename */
-								*menuname++ = '/';
-								while ((stagepath[i]) && (stagepath[i]!=':'))
-									*menuname++ = stagepath[i++];
-							}
-							else
-							{
-								while ((stagepath[i]) && (stagepath[i]!=':'))
-									i++;
-							}	
-							i++; /* skip colon */
-							*menuname++ = '/';
-							/* append path */
-							while (stagepath[i])
-								*menuname++ = stagepath[i++];
-							if (menuname[-1]!='/')
-								*menuname++ = '/';
-							*menuname=0;
-							strcat(menuname, "menu.lst");
-							/* write second stage2 block back */
-							if (Seek(fh, -512, OFFSET_CURRENT) != -1)
-								Write(fh, s1vol->blockbuffer, 512);
-							else
-								printf("Seek Error: menu.lst path couldn't be written\n");
-							AddPart(stagename, stagepath, 256);
-							AddPart(stagename, "stage1", 256);
-							fh2 = Open(stagename, MODE_OLDFILE);
-							if (fh2)
-							{
-								if (Read(fh2, s1vol->blockbuffer, 512) == 512)
-								{
-									s1vol->blockbuffer[17]=block;
-									retval = 0;
-									/* install into MBR? */
-									if (
-											(s1vol->startblock == 0) &&
-											(!(s1vol->flags & VF_IS_TRACKDISK))
-										)
-									{
-										/* add stage2 partition startblock */
-										s1vol->blockbuffer[17] += s2vol->startblock;
-										/* read ol MBR */
-										retval = readwriteBlock
-											(
-												s1vol, 0,
-												s2vol->blockbuffer, 512, s1vol->readcmd
-											);
-										/* copy BPB (BIOS Parameter Block)*/
-										CopyMem
-											(
-												(APTR)((char *)s2vol->blockbuffer+0x3),
-												(APTR)((char *)s1vol->blockbuffer+0x3),
-												0x3B
-											);
-										/* copy partition table */
-										CopyMem
-											(
-												(APTR)((char *)s2vol->blockbuffer+0x1BE),
-												(APTR)((char *)s1vol->blockbuffer+0x1BE),
-												0x40
-											);
-										/* store the drive num stage2 is stored on */
-										((char *)s1vol->blockbuffer)[0x40] = unit+0x80;
-									}
-									if (retval==0)
-									{
-										retval = readwriteBlock
-											(
-												s1vol, 0,
-												s1vol->blockbuffer, 512, s1vol->writecmd
-											);
-										if (retval)
-											printf("WriteError %ld\n", retval);
-									}
-									else
-										printf("WriteError %ld\n", retval);
-								}
-								else
-									error = IoErr();
-								Close(fh2);
-							}
-							else
-							{
-								error = IoErr();
-								errstr = stagename;
-							}
-						}
-						else
-							error = IoErr();
-					}
-					else
-						error = IoErr();
+					if (!writeStage2(fh, (UBYTE *)buffer, kernelpath, volume))
+						block = 0;
 				}
 			}
 			else
-			{
-				error = IoErr();
-				errstr = stagename;
-			}
+				printf("%s: Read Error\n", stage2path);
 		}
 		else
-		{
-			error = IoErr();
-			errstr = stagename;
-		}
+			PrintFault(IoErr(), stage2path);
 		Close(fh);
 	}
 	else
-	{
-		error = IoErr();
-		errstr = stagename;
-	}
-	if (error)
-		PrintFault(error, errstr);
+		PrintFault(IoErr(), stage2path);
+	return block;
 }
 
-struct RDArgs *MyReadArgs(STRPTR template, IPTR *args, struct RDArgs *rdargs) {
-struct RDArgs *retval;
+BOOL writeStage1
+	(
+		STRPTR stage1path,
+		struct Volume *volume,
+		struct Volume *s2vol,
+		ULONG block,           /* first block of stage2 file */
+		ULONG unit
+	)
+{
+BOOL retval = FALSE;
+LONG error = 0;
+BPTR fh;
 
-	retval = ReadArgs(template, args, rdargs);
-	if (args[0] && args[1] && args[3])
+	fh = Open(stage1path, MODE_OLDFILE);
+	if (fh)
 	{
-		return retval;
+		if (Read(fh, volume->blockbuffer, 512) == 512)
+		{
+			volume->blockbuffer[17] = block;
+			/* install into MBR ? */
+			if ((volume->startblock == 0) && (!(volume->flags & VF_IS_TRACKDISK)))
+			{
+				/* add stage2 partition startblock */
+				volume->blockbuffer[17] += s2vol->startblock;
+				/* read old MBR */
+				error = readwriteBlock
+					(volume, 0,	s2vol->blockbuffer, 512, volume->readcmd);
+				/* copy BPB (BIOS Parameter Block)*/
+				CopyMem
+					(
+						(APTR)((char *)s2vol->blockbuffer+0x3),
+						(APTR)((char *)volume->blockbuffer+0x3),
+						0x3B
+					);
+				/* copy partition table */
+				CopyMem
+					(
+						(APTR)((char *)s2vol->blockbuffer+0x1BE),
+						(APTR)((char *)volume->blockbuffer+0x1BE),
+						0x40
+					);
+				/* store the drive num stage2 is stored on */
+				((char *)volume->blockbuffer)[0x40] = unit+0x80;
+			}
+			if (error == 0)
+			{
+				error = readwriteBlock
+					(volume, 0, volume->blockbuffer, 512, volume->writecmd);
+				if (error)
+					printf("WriteError %ld\n", error);
+				else
+					retval = TRUE;
+			}
+			else
+				printf("WriteError %ld\n", error);
+		}
+		else
+			printf("%s: Read Error\n", stage1path);
+		Close(fh);
 	}
-	FreeArgs(retval);
-	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-	return NULL;
+	else
+		PrintFault(IoErr(), stage1path);
+	return retval;
+}
+
+BOOL installStageFiles
+	(
+		struct Volume *s2vol, /* stage2 volume */
+		STRPTR stagepath,     /* path to stage* files */
+		STRPTR kernelpath,    /* path to kernel image */
+		ULONG unit,           /* unit stage2 is on */
+		struct Volume *s1vol  /* device on which stage1 will be stored */
+	)
+{
+BOOL retval = FALSE;
+char stagename[256];
+ULONG block;
+
+	AddPart(stagename, stagepath, 256);
+	AddPart(stagename, "stage2", 256);
+	block = changeStage2(stagename, kernelpath, s2vol, s1vol->blockbuffer);
+	if (block)
+	{
+		AddPart(stagename, stagepath, 256);
+		AddPart(stagename, "stage1", 256);
+		if (writeStage1(stagename, s1vol, s2vol, block, unit))
+			retval = TRUE;
+	}
+	return retval;
 }
 
 int main(int argc, char **argv) {
-char *template = "DEVICE/K/A,UNIT/N/K/A,PARTITIONNUMBER=PN/K/N,GRUB/K/A";
-IPTR myargs[4] = {0,0,0,0};
+char *template =
+	"DEVICE/K/A,"
+	"UNIT/N/K/A,"
+	"PARTITIONNUMBER=PN/K/N,"
+	"GRUB/K/A,"
+	"KERNEL/K/A";
+IPTR myargs[6] = {0,0,0,0,0};
 struct RDArgs *rdargs;
 struct Volume *grubvol;
 struct Volume *bbvol;
 struct FileSysStartupMsg *fssm;
 
-	rdargs = MyReadArgs(template, myargs, NULL);
+	rdargs = ReadArgs(template, myargs, NULL);
 	if (rdargs)
 	{
 		fssm = getDiskFSSM((STRPTR)myargs[3]);
-		if (fssm)
+		if ((fssm) && (getDiskFSSM((STRPTR)myargs[4])))
 		{
 			if (
 					(strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),(char*)myargs[0])==0)//&&
@@ -805,8 +914,14 @@ struct FileSysStartupMsg *fssm;
 						}
 						if (retval == 0)
 						{
-							installStageFiles
-								(grubvol, (STRPTR)myargs[3], fssm->fssm_Unit, bbvol);
+								installStageFiles
+								(
+									grubvol,
+									(STRPTR)myargs[3], /* grub path (stage1/2) */
+									(STRPTR)myargs[4], /* kernel path */
+									fssm->fssm_Unit,
+									bbvol
+								);
 						}
 						else
 							printf("Read Error: %ld\n", retval);
@@ -825,7 +940,8 @@ struct FileSysStartupMsg *fssm;
 			}
 		}
 		else
-			PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
+			if (fssm)
+				printf("kernel path must begin with a device name\n");
 		FreeArgs(rdargs);
 	}
 	else
