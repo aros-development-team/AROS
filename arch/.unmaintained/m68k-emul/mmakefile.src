@@ -2,30 +2,17 @@
 TOP=../..
 CURDIR=config/m68k-emul
 
-USER_INCLUDES=-I$(TOP)/rom/exec
-
 include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
 CLIBDIR = $(GENDIR)/compiler/clib
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
+AFLAGS2 = $(AFLAGS) -I..
 
-SUBDIRS = exec
+SUBDIRS = exec clib utility
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
-
-FILES = \
-	sdivmod32 \
-	smult32 \
-	smult64 \
-	udivmod32 \
-	umult32 \
-	umult64 \
-
-CLIBFILES = \
-	longjmp \
-	setjmp
 
 CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
 DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
@@ -33,9 +20,6 @@ DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 TESTS =
 
 all: machine.i subdirs
-	
-#       $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-#	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
 setup : $(MACHINE_H)
 	%subdirs_q "Setting up" setup
@@ -66,16 +50,15 @@ test : $(TESTS)
 	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
 
 $(CLIBDIR)/%.o: %.s machine.i
-	%assemble_q
+	%assemble_q opt=$(AFLAGS2)
 
 $(OSGENDIR)/%.o: %.s machine.i
-	%assemble_q
+	%assemble_q opt=$(AFLAGS2)
 
-$(OSGENDIR)/%.o: %.c
-	%compile_q opt=$(CFLAGS2)
+#$(OSGENDIR)/%.o: %.c
+#	%compile_q opt=$(CFLAGS2)
 
-$(OSGENDIR)/%.d: %.c $(MACHINE_H)
-	%mkdepend_q
+#$(OSGENDIR)/%.d: %.c $(MACHINE_H)
+#	%mkdepend_q
 
 %common
-%include_deps
