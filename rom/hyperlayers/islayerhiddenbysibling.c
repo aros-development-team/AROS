@@ -11,6 +11,7 @@
 #include <aros/libcall.h>
 #include <proto/graphics.h>
 #include "basicfuncs.h"
+#include "../graphics/intregions.h"
 
 /*****************************************************************************
 
@@ -84,11 +85,9 @@
 		 */
 		if (l->nesting == _l->nesting &&
 		    ( IS_VISIBLE(_l) || TRUE == check_invisible) &&
-		    TRUE == AndRectRect(&_l->visibleshape->bounds,
-		                        & l->visibleshape->bounds,
-		                        NULL)) {
-			/*
-			 * The layers overlap if an AND operation on
+		    TRUE == overlap(_l->visibleshape->bounds, l->visibleshape->bounds))
+		{
+			/* The layers overlap if an AND operation on
 			 * both layers' visible region does not
 			 * leave an empty region.
 			 */
