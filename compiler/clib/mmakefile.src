@@ -211,6 +211,7 @@ SHARED	:= \
 	puts \
     putw \
 	qsort \
+    raise \
 	rand \
 	random \
 	read \
