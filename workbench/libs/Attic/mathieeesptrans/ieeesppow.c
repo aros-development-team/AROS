@@ -28,7 +28,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 15, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 15, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -45,9 +45,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : result is negative
-        overflow : result is too big
+	zero	 : result is zero
+	negative : result is negative
+	overflow : result is too big
 
     NOTES
 
@@ -71,7 +71,7 @@
 
   /* y^x is illegal if y<0 and x is not an integer-value */
   if (y < 0 && x != IEEESPCeil(x) )
-        return 0;
+	return 0;
 
   Res = IEEESPLog( y & (IEEESPMantisse_Mask + IEEESPExponent_Mask) );
   Res = IEEESPMul(Res, x);
@@ -90,11 +90,11 @@
   }
 
   SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
-  
+
   if ( Res < 0)
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
-  if ( IEEESP_Pinfty == (Res & (IEEESPMantisse_Mask + IEEESPExponent_Mask)) )  
+  if ( IEEESP_Pinfty == (Res & (IEEESPMantisse_Mask + IEEESPExponent_Mask)) )
     /* don`t touch the Negative_Bit now!*/
     SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
 

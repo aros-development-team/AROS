@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 14, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 14, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -42,9 +42,9 @@
       IEEE single precision number
 
       flags:
-        zero     : result is zero
-        negative : result is negative
-        overflow : argument was negative
+	zero	 : result is zero
+	negative : result is negative
+	overflow : argument was negative
 
     NOTES
 
@@ -68,17 +68,17 @@
 
       ln y = ln ( M * 2^E ) =
 
-           = ln M + ln 2^E =
+	   = ln M + ln 2^E =
 
-           = ln M + E * ln (2) =
+	   = ln M + E * ln (2) =
 
-             ld M        ld 2
-           = ----- + E * ----- =      [ld 2 = 1]
-             ld e        ld e
+	     ld M	 ld 2
+	   = ----- + E * ----- =      [ld 2 = 1]
+	     ld e	 ld e
 
-             ld M + E
-           = --------
-             ld e
+	     ld M + E
+	   = --------
+	     ld e
 
       ld e can be precalculated, of course.
       For calculating ld M see file intern_ieeespld.c
@@ -128,12 +128,12 @@
   }
 
   ld_M = intern_IEEESPLd( (struct MathIeeeSingTransBase_intern *)
-                                                  MathIeeeSingTransBase,
-                          (y & IEEESPMantisse_Mask) | 0x3f000000 );
+						  MathIeeeSingTransBase,
+			  (y & IEEESPMantisse_Mask) | 0x3f000000 );
 
-  /*               ld M + E
+  /*		   ld M + E
   ** log(fnum1) =  --------
-  **                 ld e
+  **		     ld e
   */
 
   return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLde);

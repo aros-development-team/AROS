@@ -28,7 +28,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 10, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 10, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -44,9 +44,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : result is negative
-        overflow : result is too big for IEEE single precsion format
+	zero	 : result is zero
+	negative : result is negative
+	overflow : result is too big for IEEE single precsion format
 
     NOTES
 

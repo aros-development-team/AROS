@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 7, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 7, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -43,9 +43,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : result is negative
-        overflow : 0
+	zero	 : result is zero
+	negative : result is negative
+	overflow : 0
 
     NOTES
 
@@ -57,21 +57,21 @@
 
     INTERNALS
       Algorithm for Calculation of cos(y):
-         z    = floor ( |y| / pi );
-         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
+	 z    = floor ( |y| / pi );
+	 y_1  = |y| - z * pi;	     => 0 <= y_1 < pi
 
-         if (y_1 > pi/2 ) then y_1 = pi - y_1;
+	 if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-         => 0 <= y_1 < pi/2
+	 => 0 <= y_1 < pi/2
 
-         Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
-             = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
+	 Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
+	     = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
 
-         if (z was an odd number)
-           Res = -Res;
+	 if (z was an odd number)
+	   Res = -Res;
 
-         if (y_1 was greater than pi/2 in the test above)
-           Res = -Res;
+	 if (y_1 was greater than pi/2 in the test above)
+	   Res = -Res;
 
 
     HISTORY
@@ -103,15 +103,15 @@
 
   ysquared = IEEESPMul(yabs,yabs);
   Res = IEEESPAdd(cosf1,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf2,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf3,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf4,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf5,
-        IEEESPMul(ysquared, cosf6))))))))));
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf2,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf3,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf4,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf5,
+	IEEESPMul(ysquared, cosf6))))))))));
 
   if (0 == Res)
   {

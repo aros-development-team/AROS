@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 8, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 8, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -43,9 +43,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : result is negative
-        overflow :
+	zero	 : result is zero
+	negative : result is negative
+	overflow :
 
     NOTES
 
@@ -85,27 +85,27 @@
     tmp = FALSE;
   ysquared = IEEESPMul(yabs,yabs);
   SIN = IEEESPMul(yabs,
-        IEEESPAdd(sinf1,
-        IEEESPMul(ysquared,
-        IEEESPAdd(sinf2,
-        IEEESPMul(ysquared,
-        IEEESPAdd(sinf3,
-        IEEESPMul(ysquared,
-        IEEESPAdd(sinf4,
-        IEEESPMul(ysquared,
-        IEEESPAdd(sinf5,
-        IEEESPMul(ysquared, sinf6)))))))))));
+	IEEESPAdd(sinf1,
+	IEEESPMul(ysquared,
+	IEEESPAdd(sinf2,
+	IEEESPMul(ysquared,
+	IEEESPAdd(sinf3,
+	IEEESPMul(ysquared,
+	IEEESPAdd(sinf4,
+	IEEESPMul(ysquared,
+	IEEESPAdd(sinf5,
+	IEEESPMul(ysquared, sinf6)))))))))));
   /* cos: */
   z   = IEEESPAdd(cosf1,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf2,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf3,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf4,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf5,
-        IEEESPMul(ysquared, cosf6))))))))));
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf2,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf3,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf4,
+	IEEESPMul(ysquared,
+	IEEESPAdd(cosf5,
+	IEEESPMul(ysquared, cosf6))))))))));
 
 
   Res = IEEESPDiv(SIN, z);

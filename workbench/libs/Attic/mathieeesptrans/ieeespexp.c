@@ -44,10 +44,10 @@
 
 
       flags:
-        zero     : result is zero
-        negative : 0
-        overflow : the result was out of range for the IEEE single precision
-                   format
+	zero	 : result is zero
+	negative : 0
+	overflow : the result was out of range for the IEEE single precision
+		   format
 
     NOTES
 
@@ -130,13 +130,13 @@ char Exponent;
       Res = IEEESPMul(Res, ExpTable[i]);
       if (0 == Res)
       {
-        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        return Res;
+	SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+	return Res;
       }
       if (IEEESP_Pinfty == Res)
       {
-        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        return Res;
+	SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+	return Res;
       }
     }
     i++;

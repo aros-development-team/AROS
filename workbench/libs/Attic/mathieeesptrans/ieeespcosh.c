@@ -28,7 +28,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 11, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 11, Mathieeesingtrans)
 
 /*  FUNCTION
 
@@ -44,9 +44,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : 0 (not possible)
-        overflow : result too big for ffp-number
+	zero	 : result is zero
+	negative : 0 (not possible)
+	overflow : result too big for ffp-number
 
     NOTES
 
