@@ -238,7 +238,8 @@ AROS_LH3(void, open,
           SU->su_Unit  = HIDD_Serial_NewUnit(SerialDevice->SerialObject, unitnum);
           if (NULL != SU->su_Unit)
           {
-            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL, NULL, NULL);
+            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL, 
+                                              WBE_InterruptHandler, NULL);
             ioreq->io_Device = (struct Device *)SerialDevice;
             ioreq->io_Unit   = (struct Unit *)SU;  
             SerialDevice->device.dd_Library.lib_OpenCnt ++;
@@ -560,6 +561,8 @@ AROS_LH1(void, beginio,
 	                                       stringlen);
 	  if (writtenbytes == stringlen)
 	    complete = TRUE;
+	  else
+	    SU->su_WriteLength = stringlen-writtenbytes;
 	}
 	else
 	{
@@ -568,6 +571,8 @@ AROS_LH1(void, beginio,
                                                ioreq->IOSer.io_Length);
           if (writtenbytes == ioreq->IOSer.io_Length)
             complete = TRUE;
+	  else
+	    SU->su_WriteLength = ioreq->IOSer.io_Length-writtenbytes;
         }
         /*
         ** A consistency check between the STATUS_WRITES_PENDING flag
@@ -597,7 +602,8 @@ AROS_LH1(void, beginio,
           */
           ioreq->IOSer.io_Flags &= ~IOF_QUICK;
           SU->su_ActiveWrite = (struct Message *)ioreq;
-          SU->su_Status |= STATUS_WRITES_PENDING;
+          SU->su_Status |= STATUS_WRITES_PENDING; 
+          SU->su_NextToWrite = writtenbytes;
         }
       }
       else
@@ -610,6 +616,7 @@ AROS_LH1(void, beginio,
         */
         PutMsg(&SU->su_QWriteCommandPort,
                (struct Message *)ioreq);
+        SU->su_Status |= STATUS_WRITES_PENDING;
         /* 
         ** As I am returning immediately I will tell that this
         ** could not be done QUICK   

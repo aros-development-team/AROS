@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2001/10/07 14:26:09  bergers
+    Implemented Write Buffer Empty interrupt handler.
+
     Revision 1.8  2000/11/03 23:37:44  stegerg
     oop renaming stuff
 
@@ -77,6 +80,7 @@ struct SerialUnit * findUnit(struct serialbase * SerialDevice,
 
 
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
+ULONG WBE_InterruptHandler(ULONG unitum, APTR userdata);
 
 extern struct ExecBase * SysBase;
 
@@ -113,6 +117,8 @@ struct SerialUnit
   
   struct MsgPort      su_QWriteCommandPort;
   struct Message    * su_ActiveWrite;
+  ULONG               su_NextToWrite;  /* index in the buffer of next data to tx */
+  ULONG               su_WriteLength;  /* Number of bytes left to tx */
 
   ULONG               su_UnitNum;
   ULONG               su_SerFlags;    // copy of IOExtSer->io_SerFlags;
