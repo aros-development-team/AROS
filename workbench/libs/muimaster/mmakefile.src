@@ -1,0 +1,41 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I. -Ipriv
+
+LIBNAME 	:= muimaster
+ULIBNAME	:= MUIMaster
+
+FILES := mbuiltins mdynamic mframes mkey mprefs mprefsio \
+	znotify zfamily zapplication zwindow zarea zrectangle \
+	ztext zgroup znumeric zslider \
+	file font textengine window_Amiga \
+	gdkrectangle
+
+#	zdataspace zconfigdata \
+#	uproperties \
+
+FUNCTIONS := mclass mclipping mlayout mobject mpen muimaster_missing GList GString
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_cpak
+
+#MM workbench-libs-muimaster : setup includes linklibs
+workbench-libs-muimaster : $(SLIB) ;
+
+#MM workbench-libs-muimaster-quick : 
+workbench-libs-muimaster-quick : $(SLIB) ;
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) functions,$(OBJDIR)/$(f).d)
+
+### EOF ###
