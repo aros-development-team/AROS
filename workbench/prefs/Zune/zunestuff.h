@@ -16,7 +16,22 @@ Object *MakeSpacingSlider (void);
 Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);
 Object *MakePoppen(void);
+Object *MakeString(void);
 Object *MakePopfont(Object **string, BOOL fixed);
+
+void SliderToConfig (Object *slider, Object *configdata, ULONG cfg);
+void CheckmarkToConfig (Object *checkmark, Object *configdata, ULONG cfg);
+void FrameToConfig (Object *popframe, Object *configdata, ULONG cfg);
+void PenToConfig (Object *poppen, Object *configdata, ULONG cfg);
+void CycleToConfig (Object *cycle, Object *configdata, ULONG cfg);
+void StringToConfig (Object *string, Object *configdata, ULONG cfg);
+
+void ConfigToSlider (Object *configdata, ULONG cfg, Object *slider);
+void ConfigToCheckmark (Object *configdata, ULONG cfg, Object *checkmark);
+void ConfigToFrame (Object *configdata, ULONG cfg, Object *popframe);
+void ConfigToPen (Object *configdata, ULONG cfg, Object *poppen);
+void ConfigToCycle (Object *configdata, ULONG cfg, Object *cycle);
+void ConfigToString (Object *configdata, ULONG cfg, Object *string);
 
 #ifndef __GNUC__
 LONG XGET(Object * obj, ULONG attr);
