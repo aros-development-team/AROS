@@ -4,13 +4,14 @@ include $(TOP)/config/make.cfg
 FILES         := clock
 INCLUDE_FILES := clock.h
 
+
 #MM- workbench-classes-zune : workbench-classes-zune-clock 
 #MM workbench-classes-zune-clock
 %build_module \
     mmake=workbench-classes-zune-clock \
     modname=Clock modtype=mcc \
     conffile=clock.conf \
-    uselibs="amiga m"
+    uselibs="amiga m arosc"
     
 %copy_includes path=zune dir=
     
