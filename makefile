@@ -14,7 +14,7 @@ LIBS=-L$(LIBDIR) \
 
 SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
 	filesys libs c
-DIST_FILES = makefile arosshell.c README.CVS make.cfg \
+DIST_FILES = makefile arosshell.c README.CVS make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
 	scripts/genprotos.h
 
@@ -85,7 +85,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) -L/usr/lib/X11 -lX11 -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) /usr/lib/X11/libX11.a -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
@@ -105,7 +105,7 @@ AmigaOS :
 	$(MAKE) $(MFLAGS) $(LIBDIR)/libAmigaOS.a
 
 $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o)
-	$(AR) $@ $^
+	$(AR) $@ $?
 	$(RANLIB) $@
 
 $(SDIR)/Startup-Sequence : s/Startup-Sequence
