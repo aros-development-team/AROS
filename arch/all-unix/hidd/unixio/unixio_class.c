@@ -130,6 +130,8 @@ AROS_UFH5 (void, SigIO_IntServer,
     AROS_USERFUNC_INIT
 
     struct uio_data * ud = (struct uio_data *) intList;
+
+kprintf("SigIO_IntServer\n");
     Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
 
     AROS_USERFUNC_EXIT
@@ -188,7 +190,7 @@ static void WaitForIO (void)
 
 #ifdef __linux__
     timer_port = CreateMsgPort();
-    timerio = CreateIORequest(timer_port, sizeof(struct timerequest));
+    timerio = (struct timerequest *)CreateIORequest(timer_port, sizeof(struct timerequest));
     OpenDevice("timer.device", UNIT_VBLANK, &timerio->tr_node, 0);
 #endif
 
@@ -407,7 +409,8 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
 		        ReplyMsg ((struct Message *)msg);
 #ifdef __linux__
-                        if (msg->mode & vHidd_UnixIO_Write)
+                        if ((msg->mode & vHidd_UnixIO_Write) &&
+			    (msg->fd_type & vHidd_UnixIO_Terminal)) /* stegerg: CHECKME added vHidd_Unixio_terminal check */
                             terminals_write_counter--;
 #endif
 		    } else {
@@ -525,6 +528,7 @@ static IPTR unixio_wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 
 	umsg->Message.mn_ReplyPort = port;
 	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
+	umsg->fd_type = vHidd_UnixIO_Socket;
 	umsg->mode = ((struct uioMsg *)msg)->um_Mode;
 	umsg->callback = ((struct uioMsg *)msg)->um_CallBack;
 	umsg->callbackdata = ((struct uioMsg *)msg)->um_CallBackData;
@@ -625,7 +629,71 @@ static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbort
         DeletePort(port);
 }
 
+/*****************************
+**  UnixIO::OpenFile()      **
+*****************************/
+static APTR unixio_openfile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile *msg)
+{
+    APTR retval = (APTR)open((const char *)msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
+    
+    if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
+    
+    return retval;
+}
 
+/*****************************
+**  UnixIO::CloseFile()      **
+*****************************/
+static VOID unixio_closefile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
+{
+    if (msg->um_FD != (APTR)-1) close((int)msg->um_FD);
+    if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
+}
+
+/*****************************
+**  UnixIO::WriteFile()     **
+*****************************/
+static IPTR unixio_writefile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
+{
+    IPTR retval = (IPTR)-1;
+    
+    if (msg->um_FD != (APTR)-1)
+    {
+    	do
+	{
+	    static int count;
+	    
+    	    retval = (IPTR)write((int)msg->um_FD, (const void *)msg->um_Buffer, (size_t)msg->um_Count);
+    	    //kprintf(" unixio_writefile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, errno, msg->um_Buffer, msg->um_Count);
+
+    	    if (msg->um_ErrNoPtr) break;
+	    	    
+	} while(((int)retval < 1) && (((int)errno == EINTR) || ((int)errno == EAGAIN) || (errno == 0)));
+    }
+
+    if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
+    
+    //if ((int)retval == -1) kprintf("unixio_writefile: errno %d  buff %x  count %d\n", errno, msg->um_Buffer, msg->um_Count);
+    
+    return retval;
+}
+
+/*****************************
+**  UnixIO::IOControlFile() **
+*****************************/
+static IPTR unixio_iocontrolfile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOControlFile *msg)
+{
+    IPTR retval = (IPTR)-1;
+
+    if (msg->um_FD != (APTR)-1)
+    {
+    	retval = (IPTR)ioctl((int)msg->um_FD, (int)msg->um_Request, msg->um_Param);
+    }
+
+    if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
+    
+    return retval;
+}
 
 /* This is the initialisation code for the HIDD class itself. */
 #undef OOPBase
@@ -633,7 +701,7 @@ static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbort
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_UNIXIO_METHODS 3
+#define NUM_UNIXIO_METHODS 7
 
 AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
@@ -661,10 +729,14 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
 
     struct OOP_MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
     {
-    	{ (IPTR (*)())unixio_wait,	moHidd_UnixIO_Wait		},
-    	{ (IPTR (*)())unixio_asyncio,	moHidd_UnixIO_AsyncIO		},
-    	{ (IPTR (*)())unixio_abortasyncio,moHidd_UnixIO_AbortAsyncIO	},
-    	{ NULL, 0UL }
+    	{ (IPTR (*)())unixio_wait   	    , moHidd_UnixIO_Wait	    },
+    	{ (IPTR (*)())unixio_asyncio	    , moHidd_UnixIO_AsyncIO 	    },
+    	{ (IPTR (*)())unixio_abortasyncio   , moHidd_UnixIO_AbortAsyncIO    },
+    	{ (IPTR (*)())unixio_openfile  	    , moHidd_UnixIO_OpenFile	    },
+    	{ (IPTR (*)())unixio_closefile 	    , moHidd_UnixIO_CloseFile	    },
+    	{ (IPTR (*)())unixio_writefile 	    , moHidd_UnixIO_WriteFile	    },
+    	{ (IPTR (*)())unixio_iocontrolfile  , moHidd_UnixIO_IOControlFile   },
+    	{ NULL	    	    	    	    , 0UL   	    	    	    }
     };
 
     struct OOP_InterfaceDescr ifdescr[] =
@@ -807,70 +879,3 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
 }
 
 
-
-/************
-**  Stubs  **
-************/
-
-#define OOPBase ( ((struct uio_data *)OOP_OCLASS(o)->UserData)->ud_OOPBase )
-
-IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase * SysBase)
-{
-     static OOP_MethodID mid = 0UL;
-     struct uioMsg p;
-     
-     if (!mid)
-     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
-     p.um_MethodID = mid;
-     p.um_Filedesc = fd;
-     p.um_Mode	   = mode;
-     p.um_CallBack = callback;
-     p.um_CallBackData = callbackdata;
-     
-     
-     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
-}
-
-IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
-{
-     static OOP_MethodID mid = 0UL;
-     struct uioMsgAsyncIO p;
-     
-     if (!mid)
-     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
-     p.um_MethodID      = mid;
-     p.um_Filedesc      = fd;
-     p.um_Filedesc_Type = fd_type;
-     p.um_ReplyPort     = port;
-     p.um_Mode	        = mode;
-     
-     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
-}
-
-
-VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
-{
-     static OOP_MethodID mid = 0UL;
-     struct uioMsgAbortAsyncIO p;
-     
-     if (!mid) mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
-     p.um_MethodID = mid;
-     p.um_Filedesc = fd;
-     
-     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
-}
-
-
-
-
-
-/* The below function is just a hack to avoid
-   name conflicts inside intuition_driver.c
-*/
-
-#undef OOPBase
-HIDD *New_UnixIO(struct Library *OOPBase, struct ExecBase * SysBase)
-{
-   struct TagItem tags[] = {{ TAG_END, 0 }};
-   return (HIDD)OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
-}
