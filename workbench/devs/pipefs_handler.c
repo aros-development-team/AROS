@@ -17,27 +17,16 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
-#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <aros/asmcall.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "pipefs_handler_gcc.h"
 #endif
 
+#include LC_LIBDEFS_FILE
+
 #include <string.h>
 #include <stddef.h>
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-struct pipefsbase *AROS_SLIB_ENTRY(init,pipefs_handler)();
-void AROS_SLIB_ENTRY(open,pipefs_handler)();
-BPTR AROS_SLIB_ENTRY(close,pipefs_handler)();
-BPTR AROS_SLIB_ENTRY(expunge,pipefs_handler)();
-int AROS_SLIB_ENTRY(null,pipefs_handler)();
-void AROS_SLIB_ENTRY(beginio,pipefs_handler)();
-LONG AROS_SLIB_ENTRY(abortio,pipefs_handler)();
-static const char end;
 
 AROS_UFP3(LONG, pipefsproc,
     AROS_UFPA(char *,argstr,A0),
@@ -94,61 +83,11 @@ static ULONG            SendRequest  (struct pipefsbase *pipefsbase, struct IOFi
 static STRPTR           StrDup       (struct pipefsbase *pipefsbase, STRPTR str);
 
 
-int entry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, pipefsbase)
 {
-    /* If the handler was executed by accident return error code. */
-    return -1;
-}
+    AROS_SET_LIBFUNC_INIT
 
-const struct Resident pipefs_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&pipefs_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT,
-    41,
-    NT_DEVICE,
-    0,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="pipefs.handler";
-
-static const char version[]="$VER: pipefs-handler 41.1 (" __DATE__ ")\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct pipefsbase),
-    (APTR)functable,
-    NULL,
-    &AROS_SLIB_ENTRY(init,pipefs_handler)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,pipefs_handler),
-    &AROS_SLIB_ENTRY(close,pipefs_handler),
-    &AROS_SLIB_ENTRY(expunge,pipefs_handler),
-    &AROS_SLIB_ENTRY(null,pipefs_handler),
-    &AROS_SLIB_ENTRY(beginio,pipefs_handler),
-    &AROS_SLIB_ENTRY(abortio,pipefs_handler),
-    (void *)-1
-};
-
-AROS_UFH3(struct pipefsbase *, AROS_SLIB_ENTRY(init,pipefs_handler),
-    AROS_UFHA(struct pipefsbase *, pipefsbase, D0),
-    AROS_UFHA(BPTR,              segList,  A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    SysBase =  sysBase;
     DOSBase =  (struct DosLibrary *)OpenLibrary("dos.library",39);
-    pipefsbase->seglist=segList;
 
     if(DOSBase)
     {
@@ -163,27 +102,25 @@ AROS_UFH3(struct pipefsbase *, AROS_SLIB_ENTRY(init,pipefs_handler),
 	pipefsbase->proc = CreateNewProc(taglist);
 
        	if (pipefsbase->proc)
-	    return pipefsbase;
+	    return TRUE;
 
         CloseLibrary((struct Library *)DOSBase);
     }
 
-    return NULL;
-    AROS_USERFUNC_EXIT
+    return FALSE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct pipefsbase *, pipefsbase, 1, pipefs_handler)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, pipefsbase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     struct usernode *un;
     struct dirnode  *dn;
-
-    /* Get compiler happy */
-    unitnum=flags=0;
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
@@ -206,13 +143,9 @@ AROS_LH3(void, open,
 	    iofs->IOFS.io_Unit=(struct Unit *)un;
             iofs->IOFS.io_Device=&pipefsbase->device;
 
-	    /* I have one more opener. */
-            pipefsbase->device.dd_Library.lib_OpenCnt++;
-
-	    pipefsbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
     	    iofs->IOFS.io_Error=0;
 
-    	    return;
+    	    return TRUE;
         }
 
 	FreeVec(un);
@@ -222,14 +155,17 @@ AROS_LH3(void, open,
 
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
 
-    AROS_LIBFUNC_EXIT
+    return FALSE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct pipefsbase *, pipefsbase, 2, pipefs_handler)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, pipefsbase,
+		      struct IOFileSys, iofs
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     struct usernode *un;
     struct dirnode  *dn;
 
@@ -239,76 +175,39 @@ AROS_LH1(BPTR, close,
     if(!IsListEmpty(&dn->files))
     {
 	iofs->io_DosError=ERROR_OBJECT_IN_USE;
-	return 0;
+	return FALSE;
     }
-
-    /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
 
     FreeVec(dn);
     FreeVec(un);
 
     iofs->io_DosError=0;
 
-    /* I have one fewer opener. */
-    if(!--pipefsbase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if(pipefsbase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
-    }
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct pipefsbase *, pipefsbase, 3, pipefs_handler)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, pipefsbase)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
-    BPTR ret;
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
     */
-
-    /* Test for openers. */
-    if(pipefsbase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Set the delayed expunge flag and return. */
-	pipefsbase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-	return 0;
-    }
 
     SendRequest(pipefsbase, NULL, TRUE);
 
     /* Free all resources */
     CloseLibrary((struct Library *)pipefsbase->dosbase);
 
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&pipefsbase->device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret=pipefsbase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)pipefsbase-pipefsbase->device.dd_Library.lib_NegSize,
-	    pipefsbase->device.dd_Library.lib_NegSize+pipefsbase->device.dd_Library.lib_PosSize);
-
-    return ret;
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(int, null, struct pipefsbase *, pipefsbase, 4, pipefs_handler)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct pipefsbase *, pipefsbase, 5, pipefs_handler)
+	   struct pipefsbase *, pipefsbase, 5, Pipefs)
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
@@ -362,9 +261,14 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+
 AROS_LH1(LONG, abortio,
 AROS_LHA(struct IOFileSys *, iofs, A1),
-struct pipefsbase *, pipefsbase, 6, pipefs_handler)
+struct pipefsbase *, pipefsbase, 6, Pipefs)
 {
     AROS_LIBFUNC_INIT
 
@@ -1204,5 +1108,3 @@ AROS_UFH3(LONG, pipefsproc,
 
     AROS_USERFUNC_EXIT
 }
-
-static const char end=0;

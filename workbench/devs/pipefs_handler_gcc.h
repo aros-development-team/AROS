@@ -20,9 +20,6 @@ struct pipefsbase
     BPTR               seglist;
 };
 
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct pipefsbase *, pipefsbase, 3, pipefs_handler)
-
 #ifdef SysBase
     #undef SysBase
 #endif

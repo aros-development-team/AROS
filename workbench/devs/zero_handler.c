@@ -15,102 +15,35 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include "zero_handler_gcc.h"
 
+#include LC_LIBDEFS_FILE
 
 #include <string.h>
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-struct zerobase *AROS_SLIB_ENTRY(init,zero_handler)();
-void AROS_SLIB_ENTRY(open,zero_handler)();
-BPTR AROS_SLIB_ENTRY(close,zero_handler)();
-BPTR AROS_SLIB_ENTRY(expunge,zero_handler)();
-int AROS_SLIB_ENTRY(null,zero_handler)();
-void AROS_SLIB_ENTRY(beginio,zero_handler)();
-LONG AROS_SLIB_ENTRY(abortio,zero_handler)();
-static const char end;
-
-int entry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, zerobase)
 {
-    /* If the handler was executed by accident return error code. */
-    return -1;
-}
+    AROS_SET_LIBFUNC_INIT
 
-const struct Resident zero_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&zero_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT,
-    41,
-    NT_DEVICE,
-    0,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="zero.handler";
-
-static const char version[]="$VER: zero-handler 41.1 (2.9.2001)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct zerobase),
-    (APTR)functable,
-    NULL,
-    &AROS_SLIB_ENTRY(init,zero_handler)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,zero_handler),
-    &AROS_SLIB_ENTRY(close,zero_handler),
-    &AROS_SLIB_ENTRY(expunge,zero_handler),
-    &AROS_SLIB_ENTRY(null,zero_handler),
-    &AROS_SLIB_ENTRY(beginio,zero_handler),
-    &AROS_SLIB_ENTRY(abortio,zero_handler),
-    (void *)-1
-};
-
-AROS_UFH3(struct zerobase *, AROS_SLIB_ENTRY(init,zero_handler),
- AROS_UFHA(struct zerobase *, zerobase, D0),
- AROS_UFHA(BPTR,             segList, A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    zerobase->sysbase=sysBase;
-    zerobase->seglist=segList;
     zerobase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(zerobase->dosbase!=NULL)
-	return zerobase;
+	return TRUE;
 
-    return NULL;
-    AROS_USERFUNC_EXIT
+    return FALSE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct zerobase *, zerobase, 1, zero_handler)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, zerobase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
-
-    /* Make compiler happy */
-    unitnum=flags=0;
-
-    /* I have one more opener. */
-    zerobase->device.dd_Library.lib_OpenCnt++;
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
@@ -120,9 +53,8 @@ AROS_LH3(void, open,
     {
         iofs->IOFS.io_Unit=(struct Unit *)dev;
         iofs->IOFS.io_Device=&zerobase->device;
-    	zerobase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
     	iofs->IOFS.io_Error=0;
-    	return;
+    	return TRUE;
     }
     else
     {
@@ -130,87 +62,43 @@ AROS_LH3(void, open,
     }
 	
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
-    zerobase->device.dd_Library.lib_OpenCnt--;
 
-    AROS_LIBFUNC_EXIT
+    return FALSE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct zerobase *, zerobase, 2, zero_handler)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, zerobase,
+		      struct IOFileSys, iofs
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
    
     dev=(ULONG *)iofs->IOFS.io_Unit;
     if(*dev)
     {
 	iofs->io_DosError=ERROR_OBJECT_IN_USE;
-	return 0;
+	return FALSE;
     }
 
     /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
     FreeMem(dev,sizeof(ULONG));
     iofs->io_DosError=0;
 
-    /* I have one fewer opener. */
-    if(!--zerobase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if(zerobase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
-    }
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct zerobase *, zerobase, 3, zero_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    BPTR ret;
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
-    */
-
-    /* Test for openers. */
-    if(zerobase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Set the delayed expunge flag and return. */
-	zerobase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-	return 0;
-    }
-
-    /* Free all resources */
-    CloseLibrary((struct Library *)zerobase->dosbase);
-
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&zerobase->device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret=zerobase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)zerobase-zerobase->device.dd_Library.lib_NegSize,
-	    zerobase->device.dd_Library.lib_NegSize+zerobase->device.dd_Library.lib_PosSize);
-
-    return ret;
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(int, null, struct zerobase *, zerobase, 4, zero_handler)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct zerobase *, zerobase, 5, zero_handler)
+	   struct zerobase *, zerobase, 5, Zero)
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
@@ -287,12 +175,10 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct zerobase *, zerobase, 6, zero_handler)
+	   struct zerobase *, zerobase, 6, Zero)
 {
     AROS_LIBFUNC_INIT
     /* Everything already done. */
     return 0;
     AROS_LIBFUNC_EXIT
 }
-
-static const char end=0;
