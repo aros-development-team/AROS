@@ -112,7 +112,7 @@ int main()
     listConstructHook.h_Entry = (HOOKFUNC) listConstructFunction;
     listDestructHook.h_Entry  = (HOOKFUNC) listDestructFunction;
     listDisplayHook.h_Entry   = (HOOKFUNC) listDisplayFunction;
-    
+
     application = ApplicationObject,
         MUIA_Application_Menustrip, MenuitemObject,
             MUIA_Family_Child, MenuitemObject,
@@ -121,12 +121,12 @@ int main()
                     MUIA_Menuitem_Title,    "Backdrop",
                     MUIA_Menuitem_Shortcut, "B",
                     MUIA_Menuitem_Checkit,  TRUE,
-                End, 
+                End,
                 MUIA_Family_Child, MenuitemObject,
                     MUIA_Menuitem_Title,    "Execute Command",
                     MUIA_Menuitem_Shortcut, "E",
                 End,
-                MUIA_Family_Child, MenuitemObject, 
+                MUIA_Family_Child, MenuitemObject,
                     MUIA_Menuitem_Title,    "Quit",
                     MUIA_Menuitem_Shortcut, "Q",
                 End,
@@ -135,7 +135,7 @@ int main()
         SubWindow, window = WindowObject,
             MUIA_Window_Title,   "Browse",
             MUIA_Window_Activate, TRUE,
-            
+
             WindowContents, VGroup,
                 Child, list = ListviewObject,
                     MUIA_Listview_List, ListObject,
@@ -174,7 +174,9 @@ int main()
 	}
 
 	MUI_DisposeObject( application );
+	
+	return RETURN_OK;
     }
 
-    return 0;
+    return RETURN_FAIL;
 }
