@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -56,13 +56,31 @@ enum
     MEN_WANDERER_GUISETTINGS,
     MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
-    MEN_WINDOW_UPDATE,
+	
+	MEN_WINDOW_NEW_DRAWER,
+	MEN_WINDOW_OPEN_PARENT,
+	MEN_WINDOW_CLOSE,
+	MEN_WINDOW_UPDATE,
+
+	MEN_WINDOW_SELECT,
+	MEN_WINDOW_CLEAR,
+
+	MEN_WINDOW_SNAP_WIN,
+	MEN_WINDOW_SNAP_ALL,
+
+	MEN_WINDOW_VIEW_ICON,
+	MEN_WINDOW_VIEW_DETAIL,
+	MEN_WINDOW_VIEW_ALL,
+
+	MEN_WINDOW_SORT_NOW,
     MEN_WINDOW_SORT_NAME,
     MEN_WINDOW_SORT_TYPE,
     MEN_WINDOW_SORT_DATE,
     MEN_WINDOW_SORT_SIZE,
     MEN_WINDOW_SORT_REVERSE,
     MEN_WINDOW_SORT_TOPDRAWERS,
+	MEN_WINDOW_SORT_GROUP,
+    
     MEN_ICON_OPEN,
     MEN_ICON_INFORMATION,
     MEN_ICON_DELETE,
@@ -82,34 +100,35 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "Quit...",            "Q", 0,               0, (APTR) MEN_WANDERER_QUIT},
 
   {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
+  /* Replace NEW Drawer with New.. -> (plugins in wanderer/templates/) ?? */
+    {NM_ITEM,  "New Drawer", "N", 0,               0, (APTR) MEN_WINDOW_NEW_DRAWER},
+    {NM_ITEM,  "Open Parent" , NULL, 0,               0, (APTR) MEN_WINDOW_OPEN_PARENT},
+    {NM_ITEM,  "Close", "K", 0,               0, (APTR) MEN_WINDOW_CLOSE},
     {NM_ITEM,  "Update",           NULL, 0, 0, (APTR) MEN_WINDOW_UPDATE},
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM,  "Sort By Name",           NULL, CHECKIT|CHECKED,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
-    {NM_ITEM,  "Sort By Date",           NULL, CHECKIT,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
-    {NM_ITEM,  "Sort By Size",           NULL, CHECKIT,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-    /*{NM_ITEM,  "Sort By Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},*/
-	{NM_ITEM, NM_BARLABEL},
-    {NM_ITEM,  "Reverse Sort",           NULL, CHECKIT|MENUTOGGLE, 0, (APTR) MEN_WINDOW_SORT_REVERSE},
-    {NM_ITEM,  "Drawers First",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
-  /*  {NM_ITEM,  "New Drawer", "N"},
-
-    {NM_ITEM,  "Open Parent" },
-    {NM_ITEM,  "Close", "K"},
-    {NM_ITEM,  "Update" },
-    {NM_ITEM,  "Select contents", "A"},
-    {NM_ITEM,  "Clear selection", "Z"},
-    {NM_ITEM,  "Clean Up", "."},
+    {NM_ITEM,  "Select contents", "A", 0,               0, (APTR) MEN_WINDOW_SELECT},
+    {NM_ITEM,  "Clear selection", "Z", 0,               0, (APTR) MEN_WINDOW_CLEAR},
+    {NM_ITEM, NM_BARLABEL},
     {NM_ITEM,  "Snapshot" },
-      {NM_SUB, "Window"},
-      {NM_SUB, "All"},
-    {NM_ITEM,  "Show" },
-      {NM_SUB, "Only Icons", NULL, CHECKIT | CHECKED, 2},
-      {NM_SUB, "All Files", NULL, CHECKIT, 1 },
-    {NM_ITEM,  "View By" },
-      {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 2 + 4 + 8},
-      {NM_SUB, "Name",NULL, CHECKIT, 1 + 4 + 8},
-      {NM_SUB, "Size",NULL, CHECKIT, 1 + 2 + 8},
-      {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},*/
+      {NM_SUB, "Window", NULL, 0,               0, (APTR) MEN_WINDOW_SNAP_WIN},
+      {NM_SUB, "All", NULL, 0,               0, (APTR) MEN_WINDOW_SNAP_ALL},
+    {NM_ITEM, NM_BARLABEL},      
+    {NM_ITEM,  "View.."},
+      {NM_SUB,  "Icon View",           NULL, CHECKIT|CHECKED,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
+      {NM_SUB,  "Detail View",           NULL, CHECKIT,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
+      {NM_SUB, NM_BARLABEL},
+      {NM_SUB,  "All Files",           NULL, CHECKIT|MENUTOGGLE, 0, (APTR) MEN_WINDOW_VIEW_ALL},
+    {NM_ITEM,  "Sort Icons.."},
+      {NM_SUB,  "Clean Up", ".", NULL, 0,               0, (APTR) MEN_WINDOW_SORT_NOW},
+      {NM_SUB, NM_BARLABEL},
+      {NM_SUB,  "..by Name",           NULL, CHECKIT|CHECKED,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+      {NM_SUB,  "..by Date",           NULL, CHECKIT,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+      {NM_SUB,  "..by Size",           NULL, CHECKIT,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+    /*{NM_SUB,  "..by Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},*/
+      {NM_SUB, NM_BARLABEL},
+      {NM_SUB,  "Reverse Sort",           NULL, CHECKIT|MENUTOGGLE, 0, (APTR) MEN_WINDOW_SORT_REVERSE},
+      {NM_SUB,  "Drawers First",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
+/*      {NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP}, */
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "Open", "O", 0, 0, (APTR) MEN_ICON_OPEN},
@@ -124,9 +143,9 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "Delete...", NULL, 0, 0, (APTR) MEN_ICON_DELETE},
 /*    {NM_ITEM,  "Format Disk..." },
     {NM_ITEM,  "Empty Trash..." },
-
+*/
   {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "ResetWanderer" },*/
+/*     {NM_ITEM,  "ResetWanderer" },*/
   {NM_END}
 };
 
@@ -157,7 +176,7 @@ void execute_open_with_command(BPTR cd, char *contents)
 
  This function will always get the current drawer as argument
 **************************************************************************/
-VOID execute_open(STRPTR *cdptr)
+VOID execute_open(char **cdptr)
 {
     BPTR lock = NULL;
     
@@ -192,6 +211,58 @@ void wanderer_backdrop(Object **pstrip)
 	SET(window, MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
     	SET(window, MUIA_Window_Open, TRUE);
     }
+}
+
+void window_open_parent(char **cdptr)
+{
+	IPTR	path_len=0;
+	char	*last_letter=NULL;
+	last_letter = *((char *)(*cdptr+strlen(*cdptr)-1));
+	
+	IPTR thispath = FilePart(*cdptr);
+	
+	if (last_letter==0x3a) return; /* Top Drawer has no parent to open */
+	
+	last_letter = *((char *)(thispath-1));
+	
+	if (last_letter==0x3a) path_len = (thispath-(IPTR)(*cdptr));
+	else path_len = (thispath-(IPTR)(*cdptr))-1;
+	
+	CONST_STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
+	CopyMem(*cdptr, buf, path_len);
+	
+	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+	Object *child;
+	
+	while ((child = NextObject(&cstate)))
+	{
+		if (XGET(child, MUIA_UserData))
+		{
+			char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+			if (child_drawer && !Stricmp(buf,child_drawer))
+			{
+				int is_open = XGET(child, MUIA_Window_Open);
+				if (!is_open)
+					DoMethod(child, MUIM_IconWindow_Open);
+				else
+				{
+					DoMethod(child, MUIM_Window_ToFront);
+					set(child, MUIA_Window_Activate, TRUE);
+				}
+			FreeVec(buf);
+			return; 
+			}
+		}
+	}
+	
+	DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+	FreeVec(buf);
+}
+
+void window_close()
+{
+	Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+	set(window, MUIA_Window_CloseRequest, TRUE);
 }
 
 void window_update()
@@ -604,6 +675,9 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     DoMenuNotify(strip,MEN_WANDERER_GUISETTINGS,wanderer_guisettings,NULL);
     DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
     DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
+
+    DoMenuNotify(strip,MEN_WINDOW_OPEN_PARENT,window_open_parent,path);
+    DoMenuNotify(strip,MEN_WINDOW_CLOSE,window_close,NULL);
     DoMenuNotify(strip,MEN_WINDOW_UPDATE,window_update,NULL);
     DoMenuNotify(strip,MEN_WINDOW_SORT_NAME,window_sort_name,strip);
     DoMenuNotify(strip,MEN_WINDOW_SORT_TYPE,window_sort_type,strip);
@@ -611,6 +685,7 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     DoMenuNotify(strip,MEN_WINDOW_SORT_SIZE,window_sort_size,strip);
     DoMenuNotify(strip,MEN_WINDOW_SORT_REVERSE,window_sort_reverse,strip);
     DoMenuNotify(strip,MEN_WINDOW_SORT_TOPDRAWERS,window_sort_topdrawers,strip);
+
     DoMenuNotify(strip,MEN_ICON_OPEN,icon_open,NULL);
     DoMenuNotify(strip,MEN_ICON_INFORMATION,icon_information,NULL);
     DoMenuNotify(strip,MEN_ICON_DELETE,icon_delete,NULL);
