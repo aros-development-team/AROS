@@ -8,6 +8,16 @@
 /*
     Prototypes
 */
+AROS_LP2(BOOL, AddNamedObject,
+    AROS_LPA(struct NamedObject *, nameSpace, A0),
+    AROS_LPA(struct NamedObject *, object, A1),
+    struct UtilityBase *, UtilityBase, 37, Utility)
+#define AddNamedObject(nameSpace, object) \
+    AROS_LC2(BOOL, AddNamedObject, \
+    AROS_LCA(struct NamedObject *, nameSpace, A0), \
+    AROS_LCA(struct NamedObject *, object, A1), \
+    struct UtilityBase *, UtilityBase, 37, Utility)
+
 AROS_LP1(struct TagItem *, AllocateTagItems,
     AROS_LPA(ULONG, numTags, D0),
     struct UtilityBase *, UtilityBase, 11, Utility)
@@ -15,6 +25,16 @@ AROS_LP1(struct TagItem *, AllocateTagItems,
     AROS_LC1(struct TagItem *, AllocateTagItems, \
     AROS_LCA(ULONG, numTags, D0), \
     struct UtilityBase *, UtilityBase, 11, Utility)
+
+AROS_LP2(struct NamedObject *, AllocNamedObjectA,
+    AROS_LPA(STRPTR          , name, A0),
+    AROS_LPA(struct TagItem *, tagList, A1),
+    struct UtilityBase *, UtilityBase, 38, Utility)
+#define AllocNamedObjectA(name, tagList) \
+    AROS_LC2(struct NamedObject *, AllocNamedObjectA, \
+    AROS_LCA(STRPTR          , name, A0), \
+    AROS_LCA(struct TagItem *, tagList, A1), \
+    struct UtilityBase *, UtilityBase, 38, Utility)
 
 AROS_LP2(void, Amiga2Date,
     AROS_LPA(ULONG             , seconds, D0),
@@ -35,6 +55,14 @@ AROS_LP2(void, ApplyTagChanges,
     AROS_LCA(struct TagItem *, list,       A0), \
     AROS_LCA(struct TagItem *, changelist, A1), \
     struct UtilityBase *, UtilityBase, 31, Utility)
+
+AROS_LP1(LONG, AttemptRemNamedObject,
+    AROS_LPA(struct NamedObject *, object, A0),
+    struct Library *, UtilityBase, 39, Utility)
+#define AttemptRemNamedObject(object) \
+    AROS_LC1(LONG, AttemptRemNamedObject, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    struct Library *, UtilityBase, 39, Utility)
 
 AROS_LP3(ULONG, CallHookPkt,
     AROS_LPA(struct Hook *, hook, A0),
@@ -64,6 +92,18 @@ AROS_LP1(ULONG, Date2Amiga,
     AROS_LCA(struct ClockData *, date, A0), \
     struct UtilityBase *, UtilityBase, 21, Utility)
 
+AROS_LP3(struct NamedObject *, FindNamedObject,
+    AROS_LPA(struct NamedObject *, nameSpace, A0),
+    AROS_LPA(STRPTR              , name, A1),
+    AROS_LPA(struct NamedObject *, lastObject, A2),
+    struct UtilityBase *, UtilityBase, 40, Utility)
+#define FindNamedObject(nameSpace, name, lastObject) \
+    AROS_LC3(struct NamedObject *, FindNamedObject, \
+    AROS_LCA(struct NamedObject *, nameSpace, A0), \
+    AROS_LCA(STRPTR              , name, A1), \
+    AROS_LCA(struct NamedObject *, lastObject, A2), \
+    struct UtilityBase *, UtilityBase, 40, Utility)
+
 AROS_LP2(struct TagItem *, FindTagItem,
     AROS_LPA(Tag,              tagValue, D0),
     AROS_LPA(struct TagItem *, tagList,  A0),
@@ -73,6 +113,14 @@ AROS_LP2(struct TagItem *, FindTagItem,
     AROS_LCA(Tag,              tagValue, D0), \
     AROS_LCA(struct TagItem *, tagList,  A0), \
     struct UtilityBase *, UtilityBase, 5, Utility)
+
+AROS_LP1(void, FreeNamedObject,
+    AROS_LPA(struct NamedObject *, object, A0),
+    struct UtilityBase *, UtilityBase, 41, Utility)
+#define FreeNamedObject(object) \
+    AROS_LC1(void, FreeNamedObject, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    struct UtilityBase *, UtilityBase, 41, Utility)
 
 AROS_LP1(void, FreeTagItems,
     AROS_LPA(struct TagItem *, tagList, A0),
@@ -112,6 +160,14 @@ AROS_LP3(void, MapTags,
     AROS_LCA(ULONG           , mapType, D0), \
     struct Library *, UtilityBase, 10, Utility)
 
+AROS_LP1(STRPTR, NamedObjectName,
+    AROS_LPA(struct NamedObject *, object, A0),
+    struct UtilityBase *, UtilityBase, 42, Utility)
+#define NamedObjectName(object) \
+    AROS_LC1(STRPTR, NamedObjectName, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    struct UtilityBase *, UtilityBase, 42, Utility)
+
 AROS_LP1(struct TagItem *, NextTagItem,
     AROS_LPA(struct TagItem **, tagListPtr, A0),
     struct Library *, UtilityBase, 8, Utility)
@@ -141,6 +197,24 @@ AROS_LP2(void, RefreshTagItemClones,
     AROS_LCA(struct TagItem *, clone, A0), \
     AROS_LCA(struct TagItem *, original, A1), \
     struct UtilityBase *, UtilityBase, 14, Utility)
+
+AROS_LP1(void, ReleaseNamedObject,
+    AROS_LPA(struct NamedObject *, object, A0),
+    struct UtilityBase *, UtilityBase, 43, Utility)
+#define ReleaseNamedObject(object) \
+    AROS_LC1(void, ReleaseNamedObject, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    struct UtilityBase *, UtilityBase, 43, Utility)
+
+AROS_LP2(void, RemNamedObject,
+    AROS_LPA(struct NamedObject *, object, A0),
+    AROS_LPA(struct Message     *, message, A1),
+    struct UtilityBase *, UtilityBase, 44, Utility)
+#define RemNamedObject(object, message) \
+    AROS_LC2(void, RemNamedObject, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    AROS_LCA(struct Message     *, message, A1), \
+    struct UtilityBase *, UtilityBase, 44, Utility)
 
 AROS_LP2(LONG, SMult32,
     AROS_LPA(LONG, arg1, D0),
