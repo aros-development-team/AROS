@@ -10,9 +10,10 @@ DEVS := $(DEVSDIR)/ram.handler    \
 	$(DEVSDIR)/nil.handler    \
 	$(DEVSDIR)/ffs.handler    \
 	$(DEVSDIR)/pipefs.handler \
-# 	$(DEVSDIR)/rootfs.handler \
 	$(DEVSDIR)/fdsk.device    \
 	$(DEVSDIR)/ramdrive.device
+
+# 	$(DEVSDIR)/rootfs.handler 
 
 #MM workbench-devs : setup includes
 workbench-devs : $(DEVS) $(DEVSDIR)/Mountlist
