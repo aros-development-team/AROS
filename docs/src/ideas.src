@@ -1,5 +1,4 @@
 \chapter{Random Ideas}
-\section{Introduction}
 
 This part of the documentation for AROS contains random and unsorted and
 possibly impossible improvements, ideas and other things which might
@@ -265,7 +264,6 @@ driver must be visible by some file system-like means or the searching
 for it will fail.
 
 \item
-\begin{new}{24.1.2000}
 By: Aaron Digulla
 Date: Fri, 23 Oct 1998
 Subject: [aros-dev] Shared libs/objects idea
@@ -296,25 +294,428 @@ This way, we could separate the amiga-specific parts of AROS
 much better from the portable parts. Also, it would be possible
 to create different interfaces much better. And the interface
 wouldn't be intermixed with the portable code as it is now.
-\end{new}
 
 \item
-\begin{new}{24.1.2000}
-By: Aaron Digulla
-Date: Wed, 3 Mar 1999 10:25:09 +0100
-Subject: [aros-dev] Idea: Configuration Database
+By: Aaron Digulla \nl
+Date: Wed, 3 Mar 1999 10:25:09 +0100 \nl
+Subject: [aros-dev] Idea: Configuration Database \nl
 
+\par
 Ok, since the topic has been brought up: Here is something which I'm
 missing in the current config DBs/registries:
 
+\par
 There should be a way to keep histories of configurations plus
 "commit logs". Basically, the whole config should work with CVS.
 That would make debugging much more simple (just throw anything
 out and when it works again, do a diff to see what has changed).
 It would also answer the question "why did I disable that" ?
 
+\par
 And with tags, you can name stable states of the config and
 switch between them.
+
+\item
+\begin{new}{27.2.2000}
+By: Bernardo Innocenti \nl
+Date: 27-Jan-00 \nl
+Subject: [AROS-Dev] Torturing code \nl
+
+\par
+Debugging in AROS is becoming harder as we add new functionality and
+the system becomes more complex. So we need more debug support in AROS.
+Here are some misc ideas:
+
+\begin{description}
+\item{DEBUGGING MEMORY}
+I'm thinking of adding some tortures into AllocMem(), FreeMem()
+and possibly other system calls to encourage buggy code to crash. Mungwalls
+around allocated blocks would be another great thing.
+
+\item{ASSERTING EVERYWHERE}
+To reach rock stability we must put all kinds of validity checks everywhere
+in the code. Please everybody start using those ASSERT_#? macros and create
+new ones for checking structures which may need further checks. I'm planning
+a ASSERT_VALID_LIST() macro for checking Exec lists against dangling pointers,
+infinite loops and succ <-> pred inconsistencies.
+
+\item{IMPLEMENTING COMPLEX CHECKS}
+Some of those macros might become too big to put them always inline. We may
+need to add some support code into exec.library or perhaps arossupport.library.
+Some I already feel the need for are _kassert() and _kbadpointer().
+
+\item{DIAGNOSTIC DUMPS}
+The need may arise to dump some system structures in a human-readable format
+to help debugging. I've done some DUMP_#?() macros (such as DUMP_LAYER(l) to
+track bugs in my own programs in the past, but I would like to turn them into
+functions because they are usually too big for inlining.
+
+\item{TRACING SUPPORT}
+Assertions in functions such as AddNode() would be pretty useless without some
+facility to trace back the call stack down to the caller. A single level might
+not be sufficient and gdb can't be used to debug programs loaded by LoadSeg().
+Unfortunately, this is a very CPU-dependent feature and I have no clue of how
+it should be done.
+
+\item{TRAPPING EXCEPTIONS}
+We might benefit by implementing an handler to trap seg faults and other
+exceptions. This could dump the CPU registers and trace into the stack.
+Hits could be tracked down to the module responsable for them by adding
+SegTracker-like functionality into LoadSeg().
+
+\item{STACK TRACEBACK}
+We need to provide a CPU-dependent support function to unroll the stack to help
+tracking the origin of a bug. Seeing that AddNode() got an illegal node pointer
+is no big help if you don't know where AddNode() has been called from.
+
+\end{description}
+
 \end{new}
 
+\item
+\begin{new}{27.2.2000}
+By: Bernardo Innocenti \nl
+Date: 24-Feb-00 \nl
+Subject: [AROS-Dev] Child Windows \nl
+
+\par
+Quoting Bernardo Innocenti:
+
+\begin{indent}
+
+I would like to extend Layers and Intuition to support child layers.
+
+\par
+Basically, since V37 and upto V40 Intuition has undergone
+a major philosophical rearrangement. The old structure-centric way of doing
+things has been replaced by an object-centric fashon round the concept of
+boopsi classes. Gadgets and images have been hit first by this new technology.
+Windows, menus and screens would have had to, but for some reason it did not
+happen (lack of time or compatibility issues).
+
+\par
+If windows were boopsi classes, you could override their default behaviour
+simply by subclassing them.
+
+\par
+Some months ago I had a very interesting technical discussion around this
+topic with Massimo Tantignone, author of VisualPrefs. We talked about a
+possible design to implement child layers in a semi-compatible fashon,
+which would allow nested windows as well. The current Intuition already has
+some features (implemented in a non-OOP fashon) which simulate nested layers.
+These are GimmeZeroZero windows and requesters. Screens could be considered
+containers for windows, thus adding another level, but hierarchy stops here.
+There are ugly design asymmetries that prevent you from drawing in a
+Requester the same way you draw in a window and other similar problems.
+
+\par
+I must admit that in this field Windows has a cleaner design (please don't
+kill me). A window is just a rectangular clip region and everything from
+menus to buttons is represented by a window. Dialogs and frame windows are
+just two special kinds of windows that are attached to standard window
+borders and system gadgets.
+
+\par
+X11 has a very flexible concept for window borders. Insead of belonging
+to the application, the borders are drawn and refreshed by the window manager,
+which can even replaced at run-time.
+\end{indent}
+
+\par
+Quoting Georg Steger:
+
+\begin{indent}
+
+Child windows could be done similiar to MUI's virtual groups = with InstallClipRegion.
+Unfortunately InstallClipRegion in AmigaOS can be very slow and in case
+of SMART REFRESH windows also eat terrible lots of memory (hidden areas in
+the worst case might be backuped three times!!) because it is optimized for:
+
+\begin{example}
+one installclipregion --> many render functions --> one installclipregion
+\end{example}
+
+\par
+instead of:
+
+\begin{example}
+many installclipregion with few render functions inbetween.
+\end{example}
+
+\par
+It's also bad that there is no additional rastport-based clipping. Actually
+the gfx-functions don't know anything about a clip-region (or beginupdate state),
+they just clip to the cliprect list in layer->ClipRect.
+For AmigaOS maybe it would be easier to not add real child layers, but only
+child windows, which layers.library does not know about. I would also limit
+the child windows to SIMPLE REFRESH (and maybe SUPERREFRESH) type, as
+SMART REFRESH child windows would probably be too slow, and SMART REFRESH
+layers are the most complicated ones anyway.
+
+\par
+One would need special funcs for GetMsg/ReplyMsg on win->UserPort similiar to
+GT_GetIMsg and GT_ReplyIMsg from gadtools.library. This funcs would filter
+certain messages, for example divert IDCMP_MOUSEBUTTON to the correct child
+window or "add" additional IDCMP_REFRESHWINDOW messages for example because
+of damage resulted from a MoveChildWindow which would first add this message
+to a private ChildWindow port. A ??_GetMsg(realwindow->UserPort) would
+therefore also return messages from private ChildWindow ports.
+
+\par
+For rendering into a child-window (assuming non-SMART child windows only)
+I would use something like this:
+
+\begin{code}
+ObtainChildWindowRastPort(childwindow)
+{
+  LockLayer(realwindow->Layer);
+  save realwindow->Layer->ClipRect somewhere
+  create a realwindow->Layer->ClipRect list based on:
+  
+     childwindow->visibleRegion AND    visibleregion must be calculated here *
+     childwindow->clipRegion           from a InstallChildWindowClipRegion() *
+}
+ReleaseChildWindowRastPort(childwindow)
+{
+  restore realwindow->Layer->ClipRect
+  UnLockLayer(realwindow->Layer);
+}
+BeginChildWindowRefresh(childwindow)
+{
+  LockLayer(realwindow->Layer);
+  save realwindow->Layer->ClipRect somewhere
+  create a realwindow->Layer->ClipRect list based on:
+  
+     childwindow->visibleRegion AND  visibleregion must be calculated here *
+     childwindow->clipRegion AND
+     childwindow->damageRegion
+}
+EndChildWindowRefresh(childwindow, done)
+{
+  if (done) childwindow->damageRegion = EMPTY
+  restore realwindow->Layer->ClipRect
+  UnLockLayer(realwindow->Layer);
+}
+\end{code}
+
+\par
+Creating Layer->ClipRect lists for non-SMART REFRESH child windows is easy
+as you never have to backup hidden areas, so it is basically an AllocMem
+and setting some coordinates.
+
+But if you want child layers for the actual AmigaOS, then you can only replace
+layers.library completely, but not Intuition for which you need special functions
+for MoveChildWindow, SizeChildWindow, ... which know about the child layers.
+It is not a good idea to patch the normal MoveWindow, SizeWindow, ... because
+child layers really need special functions like HideChildWindow, MakeChildWindowVisible.
+
+\end{indent}
+
+\par
+Quoting Bernardo Innocenti:
+
+\begin{indent}
+
+This would make child layers very different from normal layers. You woudn't be
+able to render inside them using exactly the same code, which is bad because
+authors of boopsi gadgets would have to take special precautions to support
+child layers. The same is true for requesters: have you ever tried to add
+boopsi classes to requesters? Well, you would find out that most of them won't
+work because of bugs in both Intuition, the gadgetclass and the subclasses.
+
+\par
+I meant REALLY implemeninting child layers and child windows, not just faking
+them with some clever patch. Each child window would just get its own Layer
+structure and  layers.library would have to be improved to take children into
+account when depth arranging or moving their parents.
+
+\par
+I was thinking about something like this:
+
+\begin{code}
+struct Layer
+{
+    struct Layer front, *back;
+    [...]
+    struct Layer parent, *children;
+};
+\end{code}
+
+\par
+Where "parent" points to the parent (NULL if it's a top-level layer),
+and "children" points to the frontmost child layer (NULL if there are none).
+Children are chained together with front/back pointers in the same fashon
+of normal layers.
+
+\par 
+This way you wouldn't need to install any additional clip regions before
+rendering. That's exactly like window requesters: they are just a limited
+special case of child layers. The main weak points of the requesters design
+is that you can't nest a requester into another requester, and you must use
+a different set of functions to manage them. Furthermore, you can't move
+or depth-arrange requesters. If these limitations could be removed by
+implementing child-layers in a simmetrical OOP fashon, you would just use
+Open/Close/Move/SizeWindow() on them.
+
+\par
+Another important improvement that could be done quite easily is turning
+Layer and Window structures into white-box instances of boopsi objects,
+like it has been done for Gadget and Image structures. Then the old-style
+functions (Open/Close/Move/Size/Window()) would just build the appropriate
+boopsi message and invoke the dispatcher. The same technique has been used
+to add boopsi support in pre-V36 functions such as ActivateGadget() and
+DrawImage().
+
+\par
+Of course these ideas would require mayor reworking in both layers and
+Intuition, but I bet it could be done without breaking the current API
+and OS structures, so that unaware applications would continue to work
+as usual.
+
+\par
+We wanted to submit our draft proposal to the AmigaOS developers for comment.
+If we could convince them of taking this way for the next Kickstart release,
+we would have no reason for patching or replacing layers.library at all.
+
+\end{indent}
+
+\par
+Quoting Georg Steger:
+
+\begin{indent}
+Requesters aren't child windows/layers in any way.
+For layers.library there is no difference between a requester layer and
+a window layer. It's just Intuition, which when moving or depth-arranging
+a window, additionally to the window layer also moves/depth arranges
+the requester layers of a window. If you tried to directly call MoveLayer
+(I know, it's not allowed) on a requester Layer you would see that you
+can easily move it out of the (not so) parent Window's layer or depth arrange
+it behind the parent Window's layer.
+
+\par
+The only thing layers.library would have to do in such a case is add/remove
+damage to the child windows (whose coords are relative to parent window) that
+are non-hidden, right? Or do you think child layer cliprects should be re-
+"calculated" immediately as well, like what is happening with the normal layers.
+With the ObtainChildRastPort, ReleaseChildRastPort I was talking about this
+would not be done (= faster moving of top level layers) but instead ObtainChild-
+RastPort would take care about it = you have precalculated cliprects (= fast
+gfx functions) until you call ReleaseChildRastPort.
+
+\par
+It is not a good idea to patch the normal MoveWindow, SizeWindow, ... because
+child layers really need special functions like HideChildWindow,
+MakeChildWindowVisible.
+
+\end{indent}
+
+
+\par
+Quoting Bernardo Innocenti:
+
+\begin{indent}
+
+We don't really need any special code for child layers: top-level layers
+would just be a special case of child layers whose parent is the screen
+layer_info. This asymmetry is bad, but you can't do anything about it
+because layer_info must be ratained for backwards compatibility.
+
+\par
+Instead of adding adding a new set of functions to layers.library, we
+would have rather implemented it through boopsi classes. Layers could
+be turned into white-box boopsi objects (i.e: have a pointer to the
+class at a negative offset from the Layers structure and optionally
+additional instance data after the old-style structure). Then most of
+the current layers.library code would be moved inside the dispatcher
+of this new "layerclass", and the old functions would become stubs for
+call the respective methods. I think that would be a clean and
+extensible design for OOP layers.
+
+\par
+Optionally they would have to clip the children to appear "inside" the
+parent when they are partially outside the edges of their parent. Look at
+Microsoft's MDI interface: if you open Word and move a document window outside
+Word's main window, it gets clipped inside it.
+
+\par
+Perhaps we could get the same effect of child layers without touching the
+layers.library at all and doing OOP magic on Intuition windows instead.
+What if the Window structure had a pointer to its parent window and a
+linked list of children? Again, Intuition's Move/Size/OpenWindow() would
+have to be extended to support child windows in a OOP fashon.
+\end{indent}
+
+\par
+Quoting Aaron Digulla:
+
+\begin{indent}
+Moving this into Intuition looks most clean to me. Basically, what will happen
+is that you get a window which moves with it's parent and where the code which
+calculates the size of the window (or the cliprect for it) takes the size and
+position of the parent window into account. That should work best and looks
+simple enough to me to work.
+\end{indent}
+
+\par
+Quoting Bernardo Innocenti:
+
+\begin{indent}
+On a second thought, there would be some hard-to-solve efficiency and aestetic
+problems when child windows are implemented without the help of the
+layers.library.
+
+\par
+I think it can be explained better by showing a piece of pseudo-code:
+
+\begin{code}
+MoveWindow(struct Window *w, int x, int y)
+{
+    [...clip coordinates inside screen...]
+     move window layer (relative to parent) *
+    MoveLayer(w->WLayer, x + w->WParent->LeftEdge, y + w->WParent->TopEdge);
+#ifdef INTUITION_CHILD_WINDOWS
+    struct Window *child = w->WFirstChild;
+    while(child)
+    {
+        MoveWindow(child, child->LeftEdge , child->TopEdge);
+        child = child->NextWindow;
+    }
+#endif /* INTUITION_CHILD_WINDOWS
+    [...check for damage in ANY layer on the screen and send refresh
+    notifications...]
+}
+\end{code}
+
+\par
+Here we recursively call MoveWindow() on each children to adjust their
+relative position. Since MoveLayer() knows nothing about child windows,
+the effect you will see on the screen is:
+
+\begin{itemize}
+
+\item the parent slides under its children, eventually damaging other windows
+on the screen.
+
+\item the children (which are layers in front of the parent) inflict damage to
+their parent. These damage rectangles get immediately filled by the
+layer backfilling hook.
+
+\item each of the children moves to "follow" its parent, eventually damaging
+each other (no matter which order you choose to move them). Again, the
+damage in the children windows is backfilled.
+
+\item If the children had their own children (nephews? ;-), you would see
+them moving as described above.
+
+\end{itemize}
+
+\par
+This scenario is awful and must be absolutely avoided. A clever workaround
+could be adding a very complex function in layers.library such as MoveMultipleLayers(),
+which takes a linked list of layers as an argument. I can't imagine what kind of
+efforts this function should do to move all the layers at once in a way that
+minimizes damage. For sure, it would be rather complex to write.
+
+\end{indent}
+\end{new}
 \end{itemize}
