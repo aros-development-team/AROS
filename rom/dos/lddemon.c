@@ -30,6 +30,13 @@
 
 #undef SysBase
 
+/* Please leave them here! They are needed on Linux-M68K */
+struct Library * Dos_OpenLibrary();
+BYTE Dos_OpenDevice();
+void Dos_CloseLibrary();
+void Dos_CloseDevice();
+void Dos_RemLibrary();
+
 struct LDDMsg
 {
     struct Message 	 ldd_Msg;	    /* Message link */
@@ -164,12 +171,15 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     return NULL;
 }
 
+
 AROS_LH2(struct Library *, OpenLibrary,
     AROS_LHA(STRPTR, libname, A1),
     AROS_LHA(ULONG, version, D0),
     struct ExecBase *, SysBase, 0, Dos)
 {
     AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
+
 
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library, *tmplib;
