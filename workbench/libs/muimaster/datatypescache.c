@@ -34,6 +34,15 @@
 
 extern struct Library *MUIMasterBase;
 
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
+
 static struct List dt_list;
 static int dt_initialized;
 
@@ -222,7 +231,7 @@ struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
     node = (struct dt_node*)List_First(&dt_list);
     while (node)
     {
-	if (!Stricmp(filename,node->filename))
+	if (!Stricmp(filename,node->filename) && scr == node->scr)
 	{
 	    node->count++;
 	    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -233,22 +242,26 @@ struct dt_node *dt_load_picture(char *filename, struct Screen *scr)
 
     if ((node = (struct dt_node*)AllocVec(sizeof(struct dt_node),MEMF_CLEAR)))
     {
-	/* create the datatypes object */
-	if ((node->o = LoadPicture(filename,scr)))
+	if ((node->filename = StrDup(filename)))
 	{
-	    struct BitMapHeader *bmhd;
-	    GetDTAttrs(node->o,PDTA_BitMapHeader,&bmhd,TAG_DONE);
-
-	    if (bmhd)
+	    /* create the datatypes object */
+	    if ((node->o = LoadPicture(filename,scr)))
 	    {
-		node->width = bmhd->bmh_Width;
-		node->height = bmhd->bmh_Height;
-	    }
-	    node->scr = scr;
+		struct BitMapHeader *bmhd;
+		GetDTAttrs(node->o,PDTA_BitMapHeader,&bmhd,TAG_DONE);
 
-	    AddTail((struct List*)&dt_list,(struct Node*)node);
-	    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-	    return node;
+		if (bmhd)
+		{
+		    node->width = bmhd->bmh_Width;
+		    node->height = bmhd->bmh_Height;
+		}
+		node->scr = scr;
+		node->count = 1;
+		AddTail((struct List*)&dt_list,(struct Node*)node);
+		ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+		return node;
+	    }
+	    FreeVec(node->filename);
 	}
 	FreeVec(node);
     }
@@ -266,6 +279,7 @@ void dt_dispose_picture(struct dt_node *node)
 	{
 	    Remove((struct Node*)node);
 	    DisposeDTObject(node->o);
+	    FreeVec(node->filename);
 	    FreeVec(node);
 	}
     }
