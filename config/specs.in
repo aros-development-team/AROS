@@ -19,7 +19,6 @@
 *predefines:
 -D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__ -DAMIGA -D_AMIGA -D__AROS_ARCH_@aros_target_arch@__ %{nix:-D__NIX__ }
 
-
 *cross_compile:
 1
 
