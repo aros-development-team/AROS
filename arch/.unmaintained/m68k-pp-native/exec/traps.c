@@ -8,6 +8,7 @@
 #include <exec/alerts.h>
 #include <proto/exec.h>
 #include <aros/debug.h>
+#include <asm/cpu.h>
 #include <asm/registers.h>
 
 #include "traps.h"
@@ -36,5 +37,5 @@ void do_TRAP(struct pt_regs regs)
 }
 
 void Init_Traps(void) {
-	WREG_L(TRAP_1) = (ULONG)_sys_trap1_handler;
+	INSTALL_TRAP_HANDLER(TRAP_1, _sys_trap1_handler);
 }
