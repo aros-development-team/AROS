@@ -103,7 +103,42 @@ struct MUI_ApplicationData
     BOOL           app_ForceQuit;
     BOOL           app_Iconified;
     BOOL           app_SingleTask;
+    struct MsgPort *app_TimerPort;
+    struct timerequest *app_TimerReq;
+    ULONG	   app_TimerOutstanding;
 };
+
+/*****************************/
+/* Application Input Handler */
+/*****************************/
+
+struct MUI_InputHandlerNode
+{
+    struct MinNode ihn_Node;
+    Object        *ihn_Object;
+
+    union
+    {
+	ULONG ihn_sigs;
+	struct
+	{
+	    UWORD ihn_millis;
+	    UWORD ihn_current;
+	} ihn_timer;
+    }
+    ihn_stuff;
+
+    ULONG          ihn_Flags; /* see below */
+    ULONG          ihn_Method;
+};
+
+#define ihn_Signals ihn_stuff.ihn_sigs
+#define ihn_Millis  ihn_stuff.ihn_timer.ihn_millis
+#define ihn_Current ihn_stuff.ihn_timer.ihn_current
+
+/* Flags for ihn_Flags */
+#define MUIIHNF_TIMER (1<<0) /* set ihn_Ticks to number of 1/1000 sec ticks you want to be triggered */
+
 
 /*************************/
 /* Application */

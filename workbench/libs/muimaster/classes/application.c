@@ -18,6 +18,7 @@
  */
 
 #include <exec/types.h>
+#include <devices/timer.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -35,6 +36,12 @@
 #include "support.h"
 
 extern struct Library *MUIMasterBase;
+
+struct timerequest_ext
+{
+    struct timerequest treq;
+    struct MUI_InputHandlerNode *ihn;
+};
 
 /*
  * Application class is the master class for all
@@ -233,6 +240,25 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
 
+    /* Setup timer stuff */
+    if (!(data->app_TimerPort = CreateMsgPort()))
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+	return 0;
+    }
+
+    if (!(data->app_TimerReq = (struct timerequest *)CreateIORequest(data->app_TimerPort, sizeof(struct timerequest))))
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+	return 0;
+    }
+
+    if (OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)data->app_TimerReq, 0))
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+	return 0;
+    }
+
     muiNotifyData(obj)->mnd_GlobalInfo = &data->app_GlobalInfo;
 
     /* parse initial taglist */
@@ -314,6 +340,24 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_WindowFamily)
 	MUI_DisposeObject(data->app_WindowFamily);
+
+    /* free timer stuff */
+    if (data->app_TimerReq)
+    {
+	if (data->app_TimerReq->tr_node.io_Device)
+	{
+	    while (data->app_TimerOutstanding)
+	    {
+		if (Wait(1L << data->app_TimerPort->mp_SigBit | 4096) & 4096)
+		    break;
+		data->app_TimerOutstanding--;
+	    }
+	    CloseDevice((struct IORequest *)data->app_TimerReq);
+	}
+	DeleteIORequest(data->app_TimerReq);
+    }
+    if (data->app_TimerPort)
+	DeleteMsgPort(data->app_TimerPort);
 
     if (data->app_GlobalInfo.mgi_UserPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
@@ -433,9 +477,9 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/*
- * OM_ADDMEMBER
- */
+/**************************************************************************
+ OM_ADDMEMBER
+**************************************************************************/
 static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -449,9 +493,9 @@ static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMemb
 }
 
 
-/*
- * OM_REMMEMBER
- */
+/**************************************************************************
+ OM_REMMEMBER
+**************************************************************************/
 static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -464,15 +508,49 @@ static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMemb
 }
 
 
-/*
- * 
- */
-static ULONG mAddInputHandler(struct IClass *cl, Object *obj,
+
+/**************************************************************************
+ MUIM_Application_AddInputHandler
+**************************************************************************/
+static ULONG Application_AddInputHandler(struct IClass *cl, Object *obj,
 		 struct MUIP_Application_AddInputHandler *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
-    AddTail((struct List *)&data->app_IHList, (struct Node *)msg->ihnode);
+    if (msg->ihnode->ihn_Flags & MUIIHNF_TIMER)
+    {
+	struct timerequest_ext *time_ext = (struct timerequest_ext *)AllocVec(sizeof(struct timerequest_ext),MEMF_PUBLIC);
+	if (time_ext)
+	{
+	   /* Store the request inside the input handler, so the we can remove
+	   ** the inputhandler without problems */
+	   msg->ihnode->ihn_Node.mln_Pred = (struct MinNode*)time_ext;
+
+	   time_ext->treq = *data->app_TimerReq;
+	   time_ext->treq.tr_node.io_Command = TR_ADDREQUEST;
+	   time_ext->treq.tr_time.tv_secs = msg->ihnode->ihn_Millis/1000;
+	   time_ext->treq.tr_time.tv_micro = (msg->ihnode->ihn_Millis%1000)*1000;
+	   time_ext->ihn = msg->ihnode;
+	   SendIO((struct IORequest*)time_ext);
+	}
+    } else AddTail((struct List *)&data->app_IHList, (struct Node *)msg->ihnode);
+    return TRUE;
+}
+
+
+/**************************************************************************
+ MUIM_Application_RemInputHandler
+**************************************************************************/
+static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct MUIP_Application_RemInputHandler *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    if (msg->ihnode->ihn_Flags & MUIIHNF_TIMER)
+    {
+	struct timerequest_ext *time_ext = (struct timerequest_ext*)msg->ihnode->ihn_Node.mln_Pred;
+	if (!CheckIO((struct IORequest*)time_ext)) AbortIO((struct IORequest*)time_ext);
+	WaitIO((struct IORequest*)time_ext);
+    }	else Remove((struct Node *)msg->ihnode);
+
     return TRUE;
 }
 
@@ -539,20 +617,64 @@ static ULONG mNewInput(struct IClass *cl, Object *obj,
     struct RIDNode *rid;
     ULONG          retval = 0;
     ULONG          signal;
+    ULONG	   handler_mask = 0; /* the mask of the signal handlers */
+    struct MinNode *mn;
+
+    struct MinNode ihn_Node;
 
     /* if user didn't handle ctrl-c himself, quit */
     if (*msg->signal & SIGBREAKF_CTRL_C)
 	return MUIV_Application_ReturnID_Quit;
 
     /* process all pushed methods */
-    while (application_do_pushed_method(data))
-        ;
+    while (application_do_pushed_method(data));
 
-    signal = 1L << data->app_GlobalInfo.mgi_UserPort->mp_SigBit;
+    /* query the signal for the handlers */
+    for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+	struct MUI_InputHandlerNode *ihn;
+	ihn = (struct MUI_InputHandlerNode *)mn;
+	handler_mask |= ihn->ihn_Flags;
+    }
+
+    signal = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
     if (*msg->signal & signal)
     {
-        while (!IsMsgPortEmpty(data->app_GlobalInfo.mgi_UserPort))
-            mInputBuffered(cl, obj, NULL);
+    	if (signal & (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)))
+    	{
+	    struct IntuiMessage *imsg;
+	    /* process all pushed methods */
+
+	    while ((imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort)))
+	    {
+		/* Let window object process message */
+		_zune_window_message(imsg);
+		ReplyMsg((struct Message *)imsg);
+	    }
+	}
+
+	if (signal & (1L << data->app_TimerPort->mp_SigBit))
+	{
+	    struct timerequest_ext *time_ext;
+	    while ((time_ext = (struct timerequest_ext *)GetMsg(data->app_TimerPort)))
+	    {
+		struct MUI_InputHandlerNode *ihn = time_ext->ihn;
+		time_ext->treq.tr_time.tv_secs = time_ext->ihn->ihn_Millis/1000;
+		time_ext->treq.tr_time.tv_micro = (time_ext->ihn->ihn_Millis%1000)*1000;
+		SendIO((struct IORequest *)&time_ext->treq);
+		DoMethod(ihn->ihn_Object,ihn->ihn_Method);
+	    }
+	}
+
+	if (signal & handler_mask)
+	{
+	    for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	    {
+		struct MUI_InputHandlerNode *ihn;
+		ihn = (struct MUI_InputHandlerNode *)mn;
+		if (signal & ihn->ihn_Flags) DoMethod(ihn->ihn_Object,ihn->ihn_Method);
+	    }
+	}
     }
 
     *msg->signal = signal | SIGBREAKF_CTRL_C;
@@ -590,19 +712,6 @@ static ULONG mPushMethod(struct IClass *cl, Object *obj,
 
     /* enqueue method */
     AddTail((struct List *)&data->app_MethodQueue, (struct Node *)mq);
-    return TRUE;
-}
-
-
-/*
- *
- */
-static ULONG mRemInputHandler(struct IClass *cl, Object *obj,
-		 struct MUIP_Application_RemInputHandler *msg)
-{
-    /*struct MUI_ApplicationData *data = INST_DATA(cl, obj);*/
-
-    Remove((struct Node *)msg->ihnode);
     return TRUE;
 }
 
@@ -725,8 +834,8 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
 	return(mGet(cl, obj, (struct opGet *)msg));
     case OM_ADDMEMBER: return Application_AddMember(cl, obj, (APTR)msg);
     case OM_REMMEMBER: return Application_RemMember(cl, obj, (APTR)msg);
-    case MUIM_Application_AddInputHandler :
-	return(mAddInputHandler(cl, obj, (APTR)msg));
+    case MUIM_Application_AddInputHandler: return Application_AddInputHandler(cl, obj, (APTR)msg);
+    case MUIM_Application_RemInputHandler: return Application_RemInputHandler(cl, obj, (APTR)msg);
     case MUIM_Application_Iconify :
 	return(mIconify(cl, obj, (APTR)msg));
     case MUIM_Application_Input :
@@ -737,8 +846,6 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
 	return(mNewInput(cl, obj, (APTR)msg));
     case MUIM_Application_PushMethod :
 	return(mPushMethod(cl, obj, (APTR)msg));
-    case MUIM_Application_RemInputHandler :
-	return(mRemInputHandler(cl, obj, (APTR)msg));
     case MUIM_Application_ReturnID :
 	return(mReturnID(cl, obj, (APTR)msg));
 
