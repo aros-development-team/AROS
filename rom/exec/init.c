@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.13  1996/10/02 16:39:59  digulla
+    Revision 1.14  1996/10/04 17:10:04  digulla
+    Create SysBase with version
+
+    Revision 1.13  1996/10/02 16:39:59	digulla
     Linux needs even more stack
 
     Revision 1.12  1996/10/01 15:49:19	digulla
@@ -216,6 +219,9 @@ int main(int argc,char *argv[])
 #endif
 
 	SysBase->LibNode.lib_Node.ln_Name="exec.library";
+	SysBase->LibNode.lib_Version = 41;
+	SysBase->LibNode.lib_Revision = 9;
+
 	SysBase->DebugData = &AROSBase;
 
 	AROSBase.kprintf = (void *)kprintf;
