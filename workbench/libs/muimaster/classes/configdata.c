@@ -689,7 +689,7 @@ static ULONG Configdata_GetULong(struct IClass *cl, Object * obj,
     }
     else
     {
-	return AROS_LONG2BE(*vp);
+	return AROS_BE2LONG(*vp);
     }
 }
 
