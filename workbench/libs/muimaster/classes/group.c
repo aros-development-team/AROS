@@ -289,7 +289,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-/*      D(bug("Group_New(0x%lx)\n",obj)); */
+    D(bug("Group_New(0x%lx)\n",obj));
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -299,7 +299,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* This is only used for virtual groups */
-    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS; /* Will be filled on demand */
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS; /* Will be filled on demand */
     data->ehn.ehn_Priority = 10; /* Will hear the click before all other normal objects */
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -350,7 +350,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
 		break;
 	    case MUIA_Group_Forward:
-		forward = FALSE;
+		forward = tag->ti_Data;
 		break;
 	    case MUIA_Group_HorizSpacing:
 		data->horiz_spacing = tag->ti_Data;
@@ -924,41 +924,6 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
-/*
- * Find object given the coordinates
- */
-//static IPTR
-//mFindObject(Class *cl, Object *obj, struct MUIP_Group_FindObject *msg)
-//{
-//    struct MUI_GroupData *data = INST_DATA(cl, obj);
-//    Object                *cstate;
-//    Object                *child;
-//    Object                *result;
-//    struct MinList        *ChildList;
-//    int x = msg->x;
-//    int y = msg->y;
-//
-//    get(data->family, MUIA_Family_List, (ULONG *)&ChildList);
-//    cstate = (Object *)ChildList->mlh_Head;
-//    while ((child = NextObject(&cstate)) != NULL)
-//    {
-//        /* FIXME: may need to adjust between _mleft and _left et al. */
-//        if (_between(_mleft(child), x, _mright(child))
-//         && _between(_mtop(child),  y, _mbottom(child)))
-//        {
-//            result = DoMethodA(obj, (Msg)msg);
-//            if (result)
-//              return result;
-//            else
-//              return child;
-//        }
-//    }
-//
-//    /* didn't find any */
-//    return NULL;
-//}
-
-
 #define END_MINMAX() \
     tmp.DefHeight = CLAMP(tmp.DefHeight, tmp.MinHeight, tmp.MaxHeight); \
     tmp.DefWidth = CLAMP(tmp.DefWidth, tmp.MinWidth, tmp.MaxWidth); \
@@ -1250,7 +1215,6 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
      */
     childMsg.MethodID = msg->MethodID;
     childMsg.MinMaxInfo = &childMinMax;
-    lm.lm_Type = MUILM_MINMAX;
     get(data->family, MUIA_Family_List, (ULONG *)&(lm.lm_Children));
 
     cstate = (Object *)lm.lm_Children->mlh_Head;
@@ -1261,7 +1225,7 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 	    continue;
 	/*  Ask child  */
 	DoMethodA(child, (Msg)&childMsg);
-
+	D(bug("*** group %lx, child %lx min=%ld,%ld\n", obj, child, childMinMax.MinWidth, childMinMax.MinHeight));
 	__area_finish_minmax(child, childMsg.MinMaxInfo);
     }
 
@@ -1274,6 +1238,7 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
     }
     else if (data->layout_hook)
     {
+	lm.lm_Type = MUILM_MINMAX;
     	CallHookPkt(data->layout_hook, obj, &lm);
 
 	if (lm.lm_MinMax.MaxHeight < lm.lm_MinMax.MinHeight)
@@ -2010,43 +1975,6 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 }
 
 /*
- * MUIM_Export : to export an objects "contents" to a dataspace object.
- */
-static ULONG Group_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
-{
-    //struct MUI_GroupData *data = INST_DATA(cl, obj);
-    STRPTR id;
-
-    if ((id = muiNotifyData(obj)->mnd_ObjectID))
-    {
-#ifndef __MAXON__
-#warning Do Export
-#endif
-//	DoMethod(msg->dataspace, MUIM_Dataspace_AddInt,
-//		 _U(id), _U("activePage"), data->active_page);
-    }
-    return DoSuperMethodA(cl, obj, (Msg)msg);
-}
-
-
-/*
- * MUIM_Import : to import an objects "contents" from a dataspace object.
- */
-static ULONG Group_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
-{
-    //struct MUI_GroupData *data = INST_DATA(cl, obj);
-    STRPTR id;
-
-    if ((id = muiNotifyData(obj)->mnd_ObjectID))
-    {
-//	DoMethod(msg->dataspace, MUIM_Dataspace_FindInt,
-//		 _U(id), _U("activePage"), _U(&data->active_page));
-    }
-    return DoSuperMethodA(cl, obj, (Msg)msg);
-}
-
-
-/*
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
@@ -2151,10 +2079,8 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
     /* check this, otherwise a superclass who has IDCMP_MOUSEBUTTONS
        eventhandler might call DoSuperMethod, and this function gets
        called even when he have not added any eventhandler */
-       
-    if (!(data->flags & GROUP_VIRTUAL)) return 0;
-    	
-    if (msg->imsg)
+
+    if ((data->flags & GROUP_VIRTUAL) && msg->imsg)
     {
 	switch (msg->imsg->Class)
 	{
@@ -2288,12 +2214,6 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_Cleanup: return Group_Cleanup(cl, obj, (APTR)msg);
     case MUIM_Draw: return Group_Draw(cl, obj, (APTR)msg);
 
-//    case MUIM_Group_FindObject :
-//	return mFindObject(cl, obj, (APTR)msg);
-    case MUIM_Export :
-	return Group_Export(cl, obj, (APTR)msg);
-    case MUIM_Import :
-	return Group_Import(cl, obj, (APTR)msg);
     case MUIM_FindUData :
 	return Group_FindUData(cl, obj, (APTR)msg);
     case MUIM_GetUData :
@@ -2309,9 +2229,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     /* Disabled. See above */
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
 #endif
-    case MUIM_CallHook: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
-    case MUIM_DrawBackground: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
- 
+    case MUIM_CallHook:
+    case MUIM_DrawBackground:
     case MUIM_DragBegin:
     case MUIM_DragDrop: 
     case MUIM_DragQuery:
@@ -2319,6 +2238,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_DoDrag:
     case MUIM_CreateDragImage:
     case MUIM_DeleteDragImage:
+    case MUIM_GoActive:
+    case MUIM_GoInactive:  
     	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
