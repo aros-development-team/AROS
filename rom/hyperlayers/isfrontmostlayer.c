@@ -17,10 +17,11 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH1(LONG, IsFrontmostLayer,
+	AROS_LH2(BOOL, IsFrontmostLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l      , A0),
+	AROS_LHA(struct Layer *, l              , A0),
+	AROS_LHA(BOOL          , check_invisible, D0),
 
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 43, Layers)
@@ -31,9 +32,13 @@
        its children will be disregarded. Comparisons are only
        done with layers that have the same 'depth' of relation-
        ship (=nesting counter) to the root layer.
+       It can be specified whether invisible siblings are to be
+       considered in the comparison.
 
     INPUTS
-       L       - pointer to layer 
+       L               - pointer to layer 
+       check_invisible - whether invisible siblings are to be considered
+       
 
     RESULT
        TRUE  - layer is frontmost layer within its priority
@@ -68,12 +73,18 @@
 
 	while (NULL != _l) {
 		/*
-		 * If they differ in priority then return FALSE.
-		 * If the nesting counter of one layer in front
-		 * of the layer l is equal (or less) then also return FALSE.
+		 * If they differ in priority then return TRUE.
+		 * I did not meet another (elegible) sibling so
+		 * far.
 		 */
-		if (_l->priority != l->priority ||
-		    _l->nesting  <= l->nesting) {
+		if (_l->priority != l->priority)
+			break;
+		/*
+		 * If the nesting counter of one layer in front
+		 * of the layer l is equal (or less) then return FALSE.
+		 */
+		if (_l->nesting  <= l->nesting &&
+		    ( IS_VISIBLE(_l) || TRUE == check_invisible)) {
 			result = FALSE;
 			break;
 		}
@@ -84,5 +95,5 @@
 
 	return result;
 
-  AROS_LIBFUNC_EXIT
+	AROS_LIBFUNC_EXIT
 } /* IsFrontmostLayer */
