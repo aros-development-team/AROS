@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Base class for console units
@@ -278,7 +278,44 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 		} /* for(i = 0; i < msg->NumParams; i++) */
 	    }
 	    break;
-	   
+
+
+	case C_SET_RAWEVENTS:
+	    D(bug("Set Raw Events\n"));
+	    {
+	        UBYTE i, param;
+		
+		for(i = 0; i < msg->NumParams; i++)
+		{
+		    param = msg->Params[i];
+
+		    if (param <= IECLASS_MAX)
+		    {
+		    	SET_RAWEVENT(o, param);
+		    }
+		    
+		} /* for(i = 0; i < msg->NumParams; i++) */
+	    }
+	    break;	  
+
+	case C_RESET_RAWEVENTS:
+	    D(bug("Set Raw Events\n"));
+	    {
+	        UBYTE i, param;
+		
+		for(i = 0; i < msg->NumParams; i++)
+		{
+		    param = msg->Params[i];
+
+		    if (param <= IECLASS_MAX)
+		    {
+		    	RESET_RAWEVENT(o, param);
+		    }
+		    
+		} /* for(i = 0; i < msg->NumParams; i++) */
+	    }
+	    break;	  
+	     
     } /* switch (msg->Command) */
     
     ReturnVoid("Console::DoCommand");
@@ -325,7 +362,16 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	case C_SELECT_GRAPHIC_RENDITION:
 	    /* don't do anything, as params may be in any order */
 	    break;
-    }
+
+	case C_SET_RAWEVENTS:
+	    /* don't do anything, as params may be in any order */
+	    break;
+	    
+	case C_RESET_RAWEVENTS:
+	    /* don't do anything, as params may be in any order */
+	    break;
+	    
+    } /* switch (msg->Command) */
     
     return;
 }

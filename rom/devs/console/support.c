@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for console.device
@@ -57,10 +57,10 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams
 /*
 ** SGR is the command with most params: 4
 **   stegerg: RKRMs say it can have any number of parameters in any order. So instead of 4
-**            we assume and hope that there will never be more than 8 params :-\
+**            we assume and hope that there will never be more than 16 params :-\
 */
 
-#define MAX_COMMAND_PARAMS 8
+#define MAX_COMMAND_PARAMS 16
 
 
 ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct ConsoleBase *ConsoleDevice)
@@ -149,47 +149,49 @@ static const struct special_cmd_descr
 static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
 {
 	
-    "Ascii",			/* C_ASCII = 0	*/
+    "Ascii",			/* C_ASCII = 0	    	    	*/
     
-    "Esc",			/* C_ESC	*/
-    "Bell",			/* C_BELL,	*/
-    "Backspace",		/* C_BACKSPACE,	*/
-    "HTab",			/* C_HTAB,	*/
-    "Linefeed",			/* C_LINEFEED,	*/
-    "VTab",			/* C_VTAB,	*/
-    "Formefeed",		/* C_FORMFEED,	*/
-    "Carriage return",		/* C_CARRIAGE_RETURN,	*/
-    "Shift In",			/* C_SHIFT_IN,	*/
-    "Shift Out",		/* C_SHIFT_OUT,	*/
-    "Index",			/* C_INDEX,	*/
-    "Nex Line",			/* C_NEXT_LINE,	*/
-    "Tab set",			/* C_H_TAB_SET, */
-    "Reverse Idx",		/* C_REVERSE_IDX, */
-    "Set LF Mode",		/* C_SET_LF_MODE, */
-    "Reset Newline Mode",	/* C_RESET_NEWLINE_MODE,	*/
-    "Device Status Report",	/* C_DEVICE_STATUS_REPORT,	*/
+    "Esc",			/* C_ESC	    	    	*/
+    "Bell",			/* C_BELL,	    	    	*/
+    "Backspace",		/* C_BACKSPACE,	    	    	*/
+    "HTab",			/* C_HTAB,	    	    	*/
+    "Linefeed",			/* C_LINEFEED,	    	    	*/
+    "VTab",			/* C_VTAB,	    	    	*/
+    "Formefeed",		/* C_FORMFEED,	    	    	*/
+    "Carriage return",		/* C_CARRIAGE_RETURN,	    	*/
+    "Shift In",			/* C_SHIFT_IN,	    	    	*/
+    "Shift Out",		/* C_SHIFT_OUT,	    	    	*/
+    "Index",			/* C_INDEX,	    	    	*/
+    "Nex Line",			/* C_NEXT_LINE,	    	    	*/
+    "Tab set",			/* C_H_TAB_SET,     	    	*/
+    "Reverse Idx",		/* C_REVERSE_IDX,   	    	*/
+    "Set LF Mode",		/* C_SET_LF_MODE,   	    	*/
+    "Reset Newline Mode",	/* C_RESET_NEWLINE_MODE,    	*/
+    "Device Status Report",	/* C_DEVICE_STATUS_REPORT,  	*/
     
-    "Insert Char",		/* C_INSERT_CHAR, */
-    "Cursor Up",		/* C_CURSOR_UP,		*/
-    "Cursor Down",		/* C_CURSOR_DOWN,	*/
-    "Cursor Forward",		/* C_CURSOR_FORWARD,	*/
-    "Cursor Backward",		/* C_CURSOR_BACKWARD,	*/
-    "Cursor Next Line",		/* C_CURSOR_NEXT_LINE,	*/
-    "Cursor Prev Line",		/* C_CURSOR_PREV_LINE,	*/
-    "Cursor Pos",		/* C_CURSOR_POS,	*/
-    "Cursor HTab",		/* C_CURSOR_HTAB,	*/
-    "Erase In Display",		/* C_ERASE_IN_DISPLAY,	*/
-    "Erase In Line",		/* C_ERASE_IN_LINE,	*/
-    "Insert Line",		/* C_INSERT_LINE,	*/
-    "Delete Line",		/* C_DELETE_LINE,	*/
-    "Delete Char",		/* C_DELETE_CHAR,	*/
-    "Scroll Up",		/* C_SCROLL_UP,		*/
-    "Scroll Down",		/* C_SCROLL_DOWN,	*/
-    "Cursor Tab Ctrl",		/*C_CURSOR_TAB_CTRL,	*/
-    "Cursor Backtab",		/* C_CURSOR_BACKTAB	*/
-    "Select Graphic Rendition",
-    "Cursor Visible",		/* C_CURSOR_VISIBLE     */
-    "Cursor Invisible"		/* C_CURSOR_INVISIBLE   */
+    "Insert Char",		/* C_INSERT_CHAR,   	    	*/
+    "Cursor Up",		/* C_CURSOR_UP,		    	*/
+    "Cursor Down",		/* C_CURSOR_DOWN,	    	*/
+    "Cursor Forward",		/* C_CURSOR_FORWARD,	    	*/
+    "Cursor Backward",		/* C_CURSOR_BACKWARD,	    	*/
+    "Cursor Next Line",		/* C_CURSOR_NEXT_LINE,	    	*/
+    "Cursor Prev Line",		/* C_CURSOR_PREV_LINE,	    	*/
+    "Cursor Pos",		/* C_CURSOR_POS,	    	*/
+    "Cursor HTab",		/* C_CURSOR_HTAB,	    	*/
+    "Erase In Display",		/* C_ERASE_IN_DISPLAY,	    	*/
+    "Erase In Line",		/* C_ERASE_IN_LINE,	    	*/
+    "Insert Line",		/* C_INSERT_LINE,	    	*/
+    "Delete Line",		/* C_DELETE_LINE,	    	*/
+    "Delete Char",		/* C_DELETE_CHAR,	    	*/
+    "Scroll Up",		/* C_SCROLL_UP,		    	*/
+    "Scroll Down",		/* C_SCROLL_DOWN,	    	*/
+    "Cursor Tab Ctrl",		/* C_CURSOR_TAB_CTRL,	    	*/
+    "Cursor Backtab",		/* C_CURSOR_BACKTAB,	    	*/
+    "Select Graphic Rendition", /* C_SELECT_GRAPHIC_RENDITION 	*/
+    "Cursor Visible",		/* C_CURSOR_VISIBLE,        	*/
+    "Cursor Invisible",		/* C_CURSOR_INVISIBLE,      	*/
+    "Set Raw Events",	    	/* C_SET_RAWEVENTS, 	    	*/
+    "Reset Raw Events",     	/* C_RESET_RAWEVENTS	    	*/
 };
 #endif
 
@@ -397,7 +399,7 @@ static const struct Command
     { C_CURSOR_BACKWARD		, 1 			},	/* 0x44 */
     { C_CURSOR_NEXT_LINE	, 1 			},	/* 0x45 */
     { C_CURSOR_PREV_LINE	, 1 			},	/* 0x46 */
-    { -1			, 			},
+    { -1			, 			},  	/* 0x47 */
     { C_CURSOR_POS		, 2 			},	/* 0x48 */
     { C_CURSOR_HTAB		, 1			},	/* 0x49 */
     
@@ -405,38 +407,54 @@ static const struct Command
     { C_ERASE_IN_LINE		, 0			},	/* 0x4B */
     { C_INSERT_LINE		, 0			},	/* 0x4C */
     { C_DELETE_LINE		, 0 			},	/* 0x4D */
-    { -1			, 			},
-    { -1			, 			},
+    { -1			, 			},  	/* 0x4E */
+    { -1			, 			},  	/* 0x4F */
     { C_DELETE_CHAR		, 1 			},	/* 0x50 */
-    { -1			,			},
-    { -1			,			},
+    { -1			,			},  	/* 0x51 */
+    { -1			,			},  	/* 0x52 */
     { C_SCROLL_UP		, 1			},	/* 0x53 */
     { C_SCROLL_DOWN		, 1 			},	/* 0x54 */
-    { -1			, 			},
-    { -1			, 			},
+    { -1			, 			},  	/* 0x55 */
+    { -1			, 			},  	/* 0x56 */
     { C_CURSOR_TAB_CTRL		, 1 			},	/* 0x57	*/
-    { -1			, 			},
-    { -1			, 			}, 
+    { -1			, 			},  	/* 0x58 */
+    { -1			, 			},  	/* 0x59 */
     { C_CURSOR_BACKTAB		, 1 			},	/* 0x5A	*/
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { -1			, 			},
-    { C_SELECT_GRAPHIC_RENDITION, MAX_COMMAND_PARAMS	}	/* 0x6D */
+    { -1			, 			},	/* 0x5B	*/
+    { -1			, 			},	/* 0x5C	*/
+    { -1			, 			},	/* 0x5D	*/
+    { -1			, 			},	/* 0x5E	*/
+    { -1			, 			},	/* 0x5F	*/
+    { -1			, 			},	/* 0x60	*/
+    { -1			, 			},	/* 0x61	*/
+    { -1			, 			},	/* 0x62	*/
+    { -1			, 			},	/* 0x63	*/
+    { -1			, 			},	/* 0x64	*/
+    { -1			, 			},	/* 0x65	*/
+    { -1			, 			},	/* 0x66	*/
+    { -1			, 			},	/* 0x67	*/
+    { -1			, 			},	/* 0x68	*/
+    { -1			, 			},	/* 0x69	*/
+    { -1			, 			},	/* 0x6A	*/
+    { -1			, 			},	/* 0x6B	*/
+    { -1			, 			},	/* 0x6C	*/
+    { C_SELECT_GRAPHIC_RENDITION, MAX_COMMAND_PARAMS	},	/* 0x6D */
+    { -1    	    	    	,   	    	    	},  	/* 0x6E */
+    { -1    	    	    	,   	    	    	},  	/* 0x6F */
+    { -1    	    	    	,   	    	    	},  	/* 0x70 */
+    { -1    	    	    	,   	    	    	},  	/* 0x71 */
+    { -1    	    	    	,   	    	    	},  	/* 0x72 */
+    { -1    	    	    	,   	    	    	},  	/* 0x/3 */
+    { -1    	    	    	,   	    	    	},  	/* 0x74 */
+    { -1    	    	    	,   	    	    	},  	/* 0x75 */
+    { -1    	    	    	,   	    	    	},  	/* 0x76 */
+    { -1    	    	    	,   	    	    	},  	/* 0x77 */
+    { -1    	    	    	,   	    	    	},  	/* 0x78 */
+    { -1    	    	    	,   	    	    	},  	/* 0x79 */
+    { -1    	    	    	,   	    	    	},  	/* 0x7A */
+    { C_SET_RAWEVENTS  	    	, MAX_COMMAND_PARAMS   	},  	/* 0x7B */
+    { -1    	    	    	,   	    	    	},  	/* 0x7C */
+    { C_RESET_RAWEVENTS    	, MAX_COMMAND_PARAMS   	},  	/* 0x7D */
 };
 
 
@@ -528,7 +546,10 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	case 0x54:
     	case 0x57:
     	case 0x5A:
-	case 0x6D: {
+	case 0x6D:
+	case 0x7B:
+	case 0x7D:
+	{
     	    UBYTE idx = *write_str - FIRST_CSI_CMD;
 	    UBYTE maxparams = csi2command[idx].MaxParams;
 	    
@@ -555,9 +576,9 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	    
 	    done = TRUE;
     	    
-
-    	} break;
-    	    
+    	break;  
+    	}   
+	
     	case ';': /* parameter separator, skip it */
 
 	    if (!next_can_be_separator)
