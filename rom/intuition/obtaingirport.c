@@ -59,7 +59,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    return CloneRastPort (gInfo->gi_RastPort);
-
+    if (gInfo)
+    {
+    	return CloneRastPort (gInfo->gi_RastPort);
+    }
+    else
+    {
+    	return NULL;
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* ObtainGIRPort */
