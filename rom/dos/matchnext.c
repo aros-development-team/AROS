@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -81,11 +81,12 @@
 	(ac->an_Child == NULL))
     {
         /*
-	** Alloc a new AChain. Make it the active one. Set its string to "#?" and
-	** mark it with DDF_AllBit Flag to indicate that this is a "APF_DODIR-AChain".
-	** This is important for "back steppings", because "APF_DODIR-AChains" must
-	** be removed and freed then and the user must be notified about the leaving
-	** of a APF_DODIR-AChain with APF_DIDDIR.
+	** Alloc a new AChain. Make it the active one. Set its string to
+	** "#?" and mark it with DDF_AllBit Flag to indicate that this is a
+	** "APF_DODIR-AChain".  This is important for "back steppings",
+	** because "APF_DODIR-AChains" must be removed and freed then and
+	** the user must be notified about the leaving of a APF_DODIR-AChain
+	** with APF_DIDDIR.
 	*/
 	   
         if ((ac->an_Child = Match_AllocAChain(1, DOSBase)))
@@ -100,8 +101,8 @@
 	}
 	
 	/*
-	** If the allocation did not work, we simple ignore APF_DODIR. Just like if
-	** the user did not set this flag. Good idea or bad idea?
+	** If the allocation did not work, we simple ignore APF_DODIR. Just
+	** like if the user did not set this flag. Good idea or bad idea?
 	*/
     }
 
@@ -158,7 +159,8 @@
 #else
 	    /*
 	    ** If there was no ac->an_Parent then we are dealing with the
-	    ** first AChain whose lock was already setup in Match_BuildAChainList
+	    ** first AChain whose lock was already setup in
+	    ** Match_BuildAChainList
 	    */
 #endif
 	    
@@ -238,8 +240,9 @@
 		    ac->an_Flags |= DDF_ExaminedBit;
 
 		    /*
-		    ** If this is a file, but there are still more path components to
-		    ** follow then we have to go back one step (AChain)
+		    ** If this is a file, but there are still more path
+		    ** components to follow then we have to go back one step
+		    ** (AChain)
 		    */
 		    
 		    if (ac->an_Child && (ac->an_Info.fib_DirEntryType < 0))
@@ -250,10 +253,10 @@
 		    }
 		
 		    /*
-		    ** Here we either have found a matching file/directory (result)
-		    ** or, if ac->an_Child != NULL we have still to continue walking
-		    ** through the AChains until we are in the last one. This all
-		    ** happens further below 
+		    ** Here we either have found a matching file/directory
+		    ** (result) or, if ac->an_Child != NULL we have still to
+		    ** continue walking through the AChains until we are in
+		    ** the last one. This all happens further below 
 		    */
 		    
 		} /* if (!(lock = Lock(ac->an_String, SHARED_LOCK))) else ... */
@@ -266,9 +269,9 @@
 	    /*
 	    ** This AChain was already setup.
 	    **
-	    ** When an AChain which is *not* a pattern already had DDF_PatternBit
-	    ** set, then this means ERROR_NO_MORE_ENTRIES, so we try to go back
-	    ** one step
+	    ** When an AChain which is *not* a pattern already had
+	    ** DDF_PatternBit set, then this means ERROR_NO_MORE_ENTRIES, so
+	    ** we try to go back one step
 	    */
 	       
 	    if (!(ac->an_Flags & DDF_PatternBit))
@@ -281,8 +284,8 @@
 	
 	/*
 	** Here we can be sure that the actual AChain is setup, ie: it will
-	** have ac->an_Lock set correctly and to indicate this DDF_ExaminedBit
-	** was set
+	** have ac->an_Lock set correctly and to indicate this
+	** DDF_ExaminedBit was set
 	*/
 	   
 	CurrentDir(ac->an_Lock);
@@ -294,11 +297,12 @@
 	        if (MatchPatternNoCase(ac->an_String, ac->an_Info.fib_FileName))
 		{
 		    /*
-		    ** This file matches the pattern in ac->an_String. If there
-		    ** are no more AChains to follow then we have found a matching
-		    ** file/directory (a result)  --> break.
+		    ** This file matches the pattern in ac->an_String. If
+		    ** there are no more AChains to follow then we have
+		    ** found a matching file/directory (a result)  -->
+		    ** break.
 		    */	
-		    	       
+			       
 		    if (!ac->an_Child) break;
 
 		} else {
@@ -319,12 +323,13 @@
 	} /* if (ac->an_Flags & DDF_PatternBit) */
 	
 	/*
-	** Handle the cases where we must (try to) go back to the previous AChain.
-	** This can happen if the actual AChain turned out to be a file although
-	** there are still more AChains to follow [1]. Or if the actual AChain did not
-	** exist at all [2]. Or if in a pattern AChain ExNext() told us that there are
-	** no more entries [3]. Or if we were getting to a normal (no pattern) AChain
-	** which was already setup (DDF_ExaminedBit) [4].
+	** Handle the cases where we must (try to) go back to the previous
+	** AChain.  This can happen if the actual AChain turned out to be a
+	** file although there are still more AChains to follow [1]. Or if
+	** the actual AChain did not exist at all [2]. Or if in a pattern
+	** AChain ExNext() told us that there are no more entries [3]. Or if
+	** we were getting to a normal (no pattern) AChain which was already
+	** setup (DDF_ExaminedBit) [4].
 	*/
 	
 	if (must_go_back)
