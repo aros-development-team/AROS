@@ -34,8 +34,10 @@ static void *const LIBFUNCTABLE[];
 LIBBASETYPEPTR INIT ();
 extern const char LIBEND;
 
+#ifndef CREATE_ROM
 struct DosLibrary *DOSBase;
 struct DosLibrary **dosPtr = &DOSBase;
+#endif
 
 extern void DOSBoot(struct ExecBase *, struct DosLibrary *);
 
@@ -149,7 +151,9 @@ AROS_LH2(LIBBASETYPEPTR, init,
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
+#ifndef CREATE_ROM
 	    *dosPtr = LIBBASE;
+#endif
 	    AddLibrary((struct Library *)LIBBASE);
 
 	    /* This is where we start the RTC_AFTERDOS residents */
