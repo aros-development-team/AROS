@@ -469,6 +469,7 @@ struct DeviceList
     LONG                dl_Type; /* see above, always = DLT_VOLUME */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* This field was dl_Task */
     struct MsgPort * dl_NoAROS1;
 #endif
     BPTR             dl_Lock;
@@ -592,6 +593,7 @@ struct DosPacket
 /* dp_Type */
 #define ACTION_NIL             0
 #define ACTION_STARTUP         0
+#define ACTION_GET_BLOCK       2	/* Obsolete */
 #define ACTION_SET_MAP         4
 #define ACTION_DIE             5
 #define ACTION_EVENT           6
