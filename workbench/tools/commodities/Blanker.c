@@ -17,7 +17,14 @@
 #include <proto/alib.h>
 #include <proto/locale.h>
 
-#include <aros/debug.h>
+#ifdef __AROS__
+#    include <aros/debug.h>
+#else
+#    undef kprintf
+#    define kprintf(...) (void)0
+     typedef ULONG IPTR;
+#endif
+     
 
 #include <stdio.h>
 #include <stdlib.h>
