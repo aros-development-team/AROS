@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/02/17 02:17:49  ldp
+    Implement using NextTagItem() instead of local system tag handling.
+
     Revision 1.7  1997/02/14 21:19:42  ldp
     Add extra checks for empty arguments
 
@@ -64,35 +67,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(!tagList) return NULL;
+    struct TagItem *tagptr, *tag;
 
-    /* Loop over the whole list */
-    for(;;)
+    tagptr = tagList;
+
+    while( (tag = NextTagItem(&tagptr)) )
     {
-	switch(tagList->ti_Tag)
-	{
-	    /* End of list */
-	    case TAG_END:
-		return NULL;
-	    /* Ignore this tag */
-	    case TAG_IGNORE:
-		break;
-	    /* Jump to new tag list */
-	    case TAG_MORE:
-		tagList=(struct TagItem *)tagList->ti_Data;
-		continue;
-	    /* Ignore this and skip the next ti_Data tags */
-	    case TAG_SKIP:
-		tagList+=tagList->ti_Data;
-		break;
-	    /* Normal tag */
-	    default:
-		if(tagList->ti_Tag==tagValue)
-		    return tagList;
-		break;
-	}
-	/* Got to next tag */
-	tagList++;
+	if(tag->ti_Tag == tagValue) return tag;
     }
+
+    return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* FindTagItem */
