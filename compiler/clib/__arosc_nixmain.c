@@ -139,7 +139,7 @@ BOOL clone_vars(struct MinList *old_vars)
 	memcpy(newVar, lv, copyLength);
 	newVar->lv_Node.ln_Name = (char *)newVar + sizeof(struct LocalVar);
         newVar->lv_Value        = AllocMem(lv->lv_Len, MEMF_PUBLIC);
-        if (newVar->lv_Value == NULL)
+        if (newVar->lv_Value == NULL && lv->lv_Len > 0)
         {
 	    FreeVec(newVar);
 	    free_vars(&l);
