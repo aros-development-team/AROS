@@ -322,7 +322,7 @@ ROM_STATIC := \
 	vsscanf
 
 #   - The stubs are generated, and are in the shared link library.
-STUBS   := $(wildcard $(OBJDIR)/stubs/*.o)
+STUBS    := $(wildcard $(OBJDIR)/stubs/*.o)
 
 # Dependancies
 DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
@@ -332,7 +332,8 @@ DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
 
 SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
 	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
-		$(STUBS)
+		$(STUBS) $(OBJDIR)/arosc_autoinit.o
+
 MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o) \
 	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o)
 
