@@ -1769,6 +1769,7 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	    if (!execute (prj, prj->genmakefilescript,"-",dest,src))
 	    {
 		fprintf (stderr, "Error while regenerating makefile %s\n", dest);
+		unlink (dest);
 		exit (10);
 	    }
 	}
@@ -1907,6 +1908,8 @@ main (int argc, char ** argv)
 	    if (!strcmp (argv[t], "--version"))
 	    {
 		printf ("MetaMake %s (%s)\n", VERSION, __DATE__);
+		if (argc == 2)
+		    exit (0);
 	    }
 	    else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
 	    {
