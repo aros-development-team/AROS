@@ -204,6 +204,7 @@ if (volname)
 	    {
 		UnLockDosList(LDF_ALL|LDF_READ);
 		FreeMem(volname, s1-name);
+		FreeMem(dp, sizeof(struct DevProc));
 		SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
 		return NULL;
 	    }
