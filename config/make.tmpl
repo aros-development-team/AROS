@@ -707,7 +707,8 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(TARGET_CC) -nix $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
 	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros && \
+	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
+	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls && \
 	    $(TOUCH) $@
 endif
 	
