@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 
 MAKE_BUILTIN_ABOUTMUI      := no
 MAKE_BUILTIN_BOOPSI        := no
+MAKE_BUILTIN_BALANCE       := no
 MAKE_BUILTIN_COLORADJUST   := no
 MAKE_BUILTIN_COLORFIELD    := no
 MAKE_BUILTIN_FRAMEADJUST   := yes
@@ -27,7 +28,6 @@ MAKE_BUILTIN_VIRTGROUP     := no
 CLASSES := \
     application \
     area \
-    balance \
     bitmap \
     bodychunk \
     chunkyimage \
@@ -115,6 +115,14 @@ ifeq ($(MAKE_BUILTIN_BOOPSI),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) boopsi
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BOOPSI=0
+endif
+
+ifeq ($(MAKE_BUILTIN_BALANCE),yes)
+    CLASSES     := $(CLASSES) balance
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BALANCE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) balance
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BALANCE=0
 endif
 
 ifeq ($(MAKE_BUILTIN_COLORADJUST),yes)

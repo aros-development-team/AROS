@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,6 +30,12 @@
 #   define ZUNE_BOOPSI_DESC (&_MUI_Boopsi_desc),
 #else
 #   define ZUNE_BOOPSI_DESC
+#endif
+
+#if ZUNE_BUILTIN_BALANCE
+#   define ZUNE_BALANCE_DESC (&_MUI_Balance_desc),
+#else
+#   define ZUNE_BALANCE_DESC
 #endif
 
 #if ZUNE_BUILTIN_COLORADJUST

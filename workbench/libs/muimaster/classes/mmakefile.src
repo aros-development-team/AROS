@@ -68,6 +68,14 @@ USER_LIBS   := amiga arosc m mui
     cflags="$(CFLAGS) -DZUNE_BUILTIN_BOOPSI=0" \
     uselibs=$(USER_LIBS)
 
+#MM workbench-classes-zune-balance : includes
+%build_module \
+    mmake=workbench-classes-zune-balance \
+    modname=Balance modtype=mui files=balance \
+    conffile=balance.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0" \
+    uselibs=$(USER_LIBS)
+
 #MM workbench-classes-zune-coloradjust : includes
 %build_module \
     mmake=workbench-classes-zune-coloradjust \
