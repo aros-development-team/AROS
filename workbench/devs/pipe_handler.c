@@ -46,7 +46,7 @@ AROS_UFP3(LONG, pipeproc,
     AROS_UFPA(ULONG,argsize,D0),
     AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-ULONG sendRequest(struct pipebase *pipebase, struct IOFileSys *iofs);
+ULONG SendRequest(struct pipebase *pipebase, struct IOFileSys *iofs);
 
 
 struct pipemessage
@@ -191,6 +191,9 @@ AROS_LH3(void, open,
 	rn = AllocVec(sizeof(*rn),MEMF_PUBLIC|MEMF_CLEAR);
 	if (rn)
 	{
+	    rn->node.ln_Type = ST_ROOT;
+	    rn->node.ln_Name = "Root PIPE";
+
 	    NEWLIST(&rn->files);
 	    NEWLIST(&rn->pendingwrites);
 	    NEWLIST(&rn->pendingreads);
@@ -275,7 +278,7 @@ AROS_LH0(BPTR, expunge, struct pipebase *, pipebase, 3, pipe_handler)
 	return 0;
     }
 
-    sendRequest(pipebase, NULL);
+    SendRequest(pipebase, NULL);
 
     /* Free all resources */
     CloseLibrary((struct Library *)pipebase->dosbase);
@@ -307,32 +310,22 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
+    BOOL enqueued = FALSE;
 
     kprintf("COMMAND %d\n", iofs->IOFS.io_Command);
     switch(iofs->IOFS.io_Command)
     {
 	case FSA_OPEN:
-	    break;
 	case FSA_OPEN_FILE:
-	    {
-	        /* No names allowed on pipe: */
-	        if(stricmp(iofs->io_Union.io_NamedFile.io_Filename, "pipe:") != 0)
-	        {
-		    error=ERROR_OBJECT_NOT_FOUND;
-		    break;
-	        }
-
-	    }
-	    /* Fall through */
 	case FSA_READ:
 	case FSA_WRITE:
 	case FSA_CLOSE:
-	    error = sendRequest(pipebase, iofs);
+	    error = SendRequest(pipebase, iofs);
+	    enqueued = !error;
 	    break;
 
 	case FSA_SEEK:
 	    error = ERROR_SEEK_ERROR;
-	    iofs->io_Union.io_SEEK.io_Offset = -1;
 	    break;
         case FSA_SET_FILE_SIZE:
         case FSA_EXAMINE:
@@ -354,6 +347,12 @@ AROS_LH1(void, beginio,
     /* Set error code */
     iofs->io_DosError=error;
 
+    /* If the quick bit is not set and the request hasn't been redirected
+       send the message to the port
+    */
+    if(!(iofs->IOFS.io_Flags&IOF_QUICK) && !enqueued)
+	ReplyMsg(&iofs->IOFS.io_Message);
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -367,7 +366,7 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
-ULONG sendRequest(struct pipebase *pipebase, struct IOFileSys *iofs)
+ULONG SendRequest(struct pipebase *pipebase, struct IOFileSys *iofs)
 {
     struct pipemessage *msg = AllocVec(sizeof(*msg), MEMF_PUBLIC);
 
@@ -394,8 +393,36 @@ ULONG sendRequest(struct pipebase *pipebase, struct IOFileSys *iofs)
     return ERROR_NO_FREE_STORE;
 }
 
+/* The helper process */
+
 #undef SysBase
-struct ExecBase *SysBase;
+#ifndef kprintf
+     struct ExecBase *SysBase;
+#else
+#    define SysBase _SysBase
+#endif
+
+#define SendBack(msg)                        \
+{                                            \
+    ReplyMsg(&(msg)->iofs->IOFS.io_Message); \
+    FreeVec(msg);                            \
+}
+
+STRPTR SkipColon(STRPTR str)
+{
+    STRPTR oldstr = str;
+
+    while(str[0])
+        if (str++[0] == ':') return str;
+
+    return oldstr;
+}
+
+struct filenode *GetPipe(struct rootnode *rn, STRPTR pipename, ULONG mode)
+{
+    return NULL;
+}
+
 AROS_UFH3(LONG, pipeproc,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
@@ -403,13 +430,14 @@ AROS_UFH3(LONG, pipeproc,
 {
     AROS_USERFUNC_INIT
 
+    SysBase = _SysBase;
+
     struct Process     *me = (struct Process *)FindTask(0);
     struct pipemessage *msg;
     struct usernode    *un;
     struct filenode    *fn;
     BOOL cont = TRUE;
 
-    SysBase = _SysBase;
     do
     {
     	WaitPort(&(me->pr_MsgPort));
@@ -427,22 +455,48 @@ AROS_UFH3(LONG, pipeproc,
 
 	    switch (msg->iofs->IOFS.io_Command)
 	    {
+		case FSA_OPEN:
 		case FSA_OPEN_FILE:
 		{
 		    struct usernode *un;
-		    BOOL stillwaiting;
+		    ULONG            mode;
+		    STRPTR           pipename;
+		    BOOL             stillwaiting;
 
 		    kprintf("Command is OPEN\n");
+
+		    mode     = msg->iofs->io_Union.io_OPEN.io_FileMode;
+		    pipename = SkipColon(msg->iofs->io_Union.io_NamedFile.io_Filename);
+
+		    kprintf("User wants to open pipe \"%s\".\n", pipename);
+		    kprintf("Current pipe type is %d\n", fn->node.ln_Type);
+
+		    if (pipename[0])
+		    {
+		        if
+			(
+			    (fn->node.ln_Type <= 0) ||
+			    (fn = GetPipe((struct rootnode *)fn, pipename, mode)) == NULL
+			)
+			{
+			    kprintf("The requested pipe couldn't be found\n");
+			    msg->iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
+			    SendBack(msg);
+			    continue;
+			}
+		    }
+
+		    kprintf("Pipe requested found.\n");
 
 		    un = AllocVec(sizeof(*un), MEMF_PUBLIC);
 		    if (!un)
 		    {
 		        msg->iofs->io_DosError = ERROR_NO_FREE_STORE;
-			ReplyMsg(&msg->iofs->IOFS.io_Message);
-			FreeVec(msg);
+			SendBack(msg);
+			continue;
 		    }
 
-		    un->mode = msg->iofs->io_Union.io_OPEN.io_FileMode;
+		    un->mode = mode;
 		    un->fn   = fn;
 		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
 
@@ -467,7 +521,7 @@ AROS_UFH3(LONG, pipeproc,
 		    if (!fn->numwriters || !fn->numreaders)
 		    {
 			/*
-			   If we're lacking of writers orreaders
+			   If we're lacking of writers or readers
 			   then add this message to a waiting list.
 			*/
 			kprintf("There are no %s at the moment, so this %s must wait\n",
@@ -478,9 +532,6 @@ AROS_UFH3(LONG, pipeproc,
                     }
 		    else
 		    {
-			ReplyMsg(&msg->iofs->IOFS.io_Message);
-			FreeVec(msg);
-
 			if (stillwaiting)
 		        {
 		            /*
@@ -492,11 +543,9 @@ AROS_UFH3(LONG, pipeproc,
 			            "Wake up all of them\n");
 
 			    while ((msg = (struct pipemessage *)RemHead(&fn->waitinglist)))
-			    {
-			        ReplyMsg(&msg->iofs->IOFS.io_Message);
-			        FreeVec(msg);
-			    }
-			}
+			        SendBack(msg);
+           		}
+			SendBack(msg);
 		    }
 
 		    continue;
@@ -530,8 +579,7 @@ AROS_UFH3(LONG, pipeproc,
 			    msg->iofs->io_DosError = 0;
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length =
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length - msg->curlen;
-			    ReplyMsg(&msg->iofs->IOFS.io_Message);
-			    FreeVec(msg);
+			    SendBack(msg);
 			}
 		    }
 		    if (!fn->numreaders)
@@ -546,14 +594,11 @@ AROS_UFH3(LONG, pipeproc,
 			while ((msg = (struct pipemessage *)RemHead(&fn->pendingwrites)))
 			{
 			    msg->iofs->io_DosError = ERROR_BROKEN_PIPE;
-			    msg->iofs->io_Union.io_READ_WRITE.io_Length = -1;
-			    ReplyMsg(&msg->iofs->IOFS.io_Message);
-			    FreeVec(msg);
+			    SendBack(msg);
 			}
 		    }
 
-		    ReplyMsg(&msg->iofs->IOFS.io_Message);
-		    FreeVec(msg);
+		    SendBack(msg);
 
 		    continue;
 		case FSA_WRITE:
@@ -562,9 +607,7 @@ AROS_UFH3(LONG, pipeproc,
 		    {
 			kprintf("There are no more readers: PIPE BROKEN.\n");
 			msg->iofs->io_DosError = ERROR_BROKEN_PIPE;
-			msg->iofs->io_Union.io_READ_WRITE.io_Length = -1;
-		    	ReplyMsg(&msg->iofs->IOFS.io_Message);
-		    	FreeVec(msg);
+			SendBack(msg);
 		        continue;
 		    }
 		    kprintf("Enqueing the message\n");
@@ -577,8 +620,7 @@ AROS_UFH3(LONG, pipeproc,
 		    {
 			kprintf("There's no data to read: send EOF\n");
 			msg->iofs->io_Union.io_READ_WRITE.io_Length = 0;
-		    	ReplyMsg(&msg->iofs->IOFS.io_Message);
-		    	FreeVec(msg);
+			SendBack(msg);
 		        continue;
 		    }
 		    kprintf("Enqueing the message\n");
@@ -592,8 +634,8 @@ AROS_UFH3(LONG, pipeproc,
 		struct pipemessage *rmsg = (struct pipemessage *)GetHead(&fn->pendingreads);
 		struct pipemessage *wmsg = (struct pipemessage *)GetHead(&fn->pendingwrites);
 
-		LONG len = (rmsg->curlen > wmsg->curlen) ?
-		            wmsg->curlen : rmsg->curlen;
+		ULONG len = (rmsg->curlen > wmsg->curlen) ?
+		             wmsg->curlen : rmsg->curlen;
 
 	    	kprintf("Writer len = %d - Reader len = %d. Copying %d bytes\n",
 		         wmsg->curlen, rmsg->curlen, len);
@@ -619,22 +661,16 @@ AROS_UFH3(LONG, pipeproc,
 
 		if (!wmsg->curlen)
 		{
-		    kprintf("Writer: finished its job. Removing it from the list\n");
-		    Remove((struct Node *)wmsg);
-		    kprintf("Writer: Replying to the message.\n");
-		    ReplyMsg(&wmsg->iofs->IOFS.io_Message);
-		    kprintf("Writer: freeing resources.\n");
-		    FreeVec(wmsg);
+		    kprintf("Writer: finished its job. Removing it from the list.\n");
+		    Remove(wmsg);
+		    SendBack(wmsg);
 		}
 
 		if (!rmsg->curlen)
 		{
-		    kprintf("Reader: finished its job. Removing it from the list\n");
-		    Remove((struct Node *)rmsg);
-		    kprintf("Reader: Replying to the message.\n");
-		    ReplyMsg(&rmsg->iofs->IOFS.io_Message);
-		    kprintf("Reader: freeing resources.\n");
-		    FreeVec(rmsg);
+		    kprintf("Reader: finished its job. Removing it from the list.\n");
+		    Remove(rmsg);
+		    SendBack(rmsg);
 		}
 
 	    }
