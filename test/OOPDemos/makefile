@@ -1,6 +1,6 @@
 -include Make.Cfg
 CC = gcc
-CFLAGS = -O2 -Wall -I./include -D $(SYSTEM)
+CFLAGS = -O2 -Wall -I./include -D $(SYSTEM) -g
 
 LIBS =
 SRC = *.c ./sysdep/$(SYSFILE).c
