@@ -1,25 +1,25 @@
-## version $VER: PrefsWindows.catalog 1.0 (16.02.2004)
-## language italiano
+## version $VER: PrefsWindow.catalog 1.0 (16.02.2004)
+## language X
 ## codeset 0
 ;
 ;
 MSG_TEST
-
-; _Prova
+_Prova
+; _Test
 ;
 MSG_REVERT
-
-; _Ripristina
+_Ripristina
+; _Revert
 ;
 MSG_SAVE
-
-; _Salva
+_Salva
+; _Save
 ;
 MSG_USE
-
-; _Usa
+_Usa
+; _Use
 ;
 MSG_CANCEL
-
-; _Cancella
+_Cancella
+; _Cancel
 ;
