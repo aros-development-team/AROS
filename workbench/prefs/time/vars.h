@@ -29,7 +29,6 @@ VAR struct MsgPort  	    	*TimerMP;
 VAR struct timerequest	    	*TimerIO;
 VAR struct Catalog              *catalog;
 VAR struct ClockData	    	clockdata;
-VAR LONG    	    	    	firstweekday;
 VAR UBYTE   	    	    	s[256];
 
 VAR LONG    	    	    	prog_exitcode;
