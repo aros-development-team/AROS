@@ -63,8 +63,8 @@ VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
     };
     
     ntags[0].ti_Data = ((EG(o)->Flags & GFLG_SELECTED) ? EG(o)->GadgetID : - EG(o)->GadgetID);
-    
-    DoSuperMethod(cl, o, OM_NOTIFY, ntags, ginfo, flags);
+
+    DoMethod(o, OM_NOTIFY, ntags, ginfo, flags);
     
     return;
 }
@@ -83,6 +83,7 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 	if (container.Width <= 1 || container.Height <= 1)
 	    return;
 
+#if 0 /* stegerg: ??? */
 	/* clear gadget */
 	if (EG(o)->Flags & GFLG_SELECTED)
 	    SetAPen(rp, pens[FILLPEN]);
@@ -94,6 +95,7 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 	    container.Top,
 	    container.Left + container.Width - 1,
 	    container.Top + container.Height - 1);
+#endif
 
 	if ((EG(o)->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
 	{
@@ -109,8 +111,6 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 		    container.Left,
 		    container.Top);
 
-	    /* print label */
-	    printgadgetlabel(cl, o, msg);
 	}
 	else /* GFLG_GADGIMAGE set */
 	{
@@ -165,6 +165,11 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 		    msg->gpr_GInfo->gi_DrInfo);
 	    }
 	}
+
+#warning Amiga buttongclass does not seem to render gadgetlabel at all
+
+	/* print label */
+	printgadgetlabel(cl, o, msg);
 
 	if ( EG(o)->Flags & GFLG_DISABLED )
 	{
