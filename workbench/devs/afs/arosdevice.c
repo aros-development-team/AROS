@@ -156,7 +156,9 @@ AROS_LH3(void, open,
            struct AFSBase *, afsbase, 1,afsdev)
 {
 	AROS_LIBFUNC_INIT
+#if 0
 	struct Volume *volume;
+#endif
 
 	unitnum = flags = 0;
 	afsbase->device.dd_Library.lib_OpenCnt++;
