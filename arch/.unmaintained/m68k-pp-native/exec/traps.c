@@ -17,7 +17,7 @@ extern void _sys_trap1_handler(void);
 void do_TRAP(struct pt_regs regs)
 {
 	AROS_GET_SYSBASE
-	ULONG alert;
+	ULONG alert = 0;
 #if 0
 	kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
 	        regs.eip, regs.eflags, regs.xds, &regs);

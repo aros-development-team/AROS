@@ -165,10 +165,10 @@ void main_init(void * memory, ULONG memSize)
  	SysBase->ChkBase=~(ULONG)SysBase;
 #warning TODO: SysBase->ChkSum=.....
 
-	if (NULL == (m68k_USP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
+	if (NULL == (m68k_USP =(ULONG *)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
 		do {} while(1);
 	}
-	m68k_USP = ((ULONG)m68k_USP) + AROS_STACKSIZE;
+	m68k_USP = (ULONG *)(((ULONG)m68k_USP) + AROS_STACKSIZE);
 
 
 	SysBase->ResModules=romtagList;
@@ -176,10 +176,10 @@ void main_init(void * memory, ULONG memSize)
 	/*
 	 * Get some memory for the SSP. 
 	 */
-	if (NULL == (m68k_SSP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
+	if (NULL == (m68k_SSP =(ULONG *)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
 		do {} while(1);
 	}
-	m68k_SSP = ((ULONG)m68k_SSP) + AROS_STACKSIZE;
+	m68k_SSP = (ULONG *)(((ULONG)m68k_SSP) + AROS_STACKSIZE);
 
 	/*
 	 * Init the core
@@ -197,7 +197,7 @@ void main_init(void * memory, ULONG memSize)
 /*
  * The following function will be executed whan AROS is in user mode
  */
-int main_init_cont(void)
+void main_init_cont(void)
 {
 	struct ExecBase * SysBase;
 	SysBase = (struct ExecBase *)(*(ULONG *)0x04);
