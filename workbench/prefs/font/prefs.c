@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,6 +25,7 @@
 struct IFFHandle *iffHandle;
 struct FontPrefs *fp_Current[FP_COUNT];
 struct FontPrefs *fp_Original[FP_COUNT];
+struct FontPrefs *fp_Temporary[FP_COUNT];    
 
 /*** Prototypes *************************************************************/
 /* struct FontPrefs handling ************************************************/
@@ -117,28 +118,31 @@ BOOL FP_Initialize(void)
 {
     UBYTE i;
 
+    iffHandle = NULL;   /* FIXME: ?? */
+    
     FontPrefs_Clear(fp_Current);
     FontPrefs_Clear(fp_Original);
-
+    FontPrefs_Clear(fp_Temporary);
+    
     if (!FontPrefs_Allocate(fp_Current)) goto error;
     if (!FontPrefs_Allocate(fp_Original)) goto error;
+    if (!FontPrefs_Allocate(fp_Temporary)) goto error;
     
     FontPrefs_Default(fp_Original);
     FontPrefs_Copy(fp_Current, fp_Original);
     
-    iffHandle = NULL;   /* FIXME: ?? */
     
     return TRUE;
     
 error:
-    FontPrefs_Free(fp_Original);
-    FontPrefs_Free(fp_Current);
+    FP_Deinitialize();
     
     return FALSE;
 }
 
 void FP_Deinitialize(void)
 {
+    FontPrefs_Free(fp_Temporary);
     FontPrefs_Free(fp_Current);
     FontPrefs_Free(fp_Original);
     
@@ -213,7 +217,7 @@ BOOL FP_Cancel(void)
 }
 
 /* File IO (low-level) ******************************************************/
-BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fontPrefs[FP_COUNT])
+BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
 {
     BOOL              rc = TRUE;
     UBYTE             a = 0, b = 0;
@@ -225,7 +229,7 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fontPrefs[FP_COUNT])
     {
         if ((iffHandle->iff_Stream = (IPTR) Open(filename, MODE_NEWFILE)))
         {
-            InitIFFasDOS(iffHandle); /* Can't fail? Look it up! */
+            InitIFFasDOS(iffHandle);
     
             if (!(b = OpenIFF(iffHandle, IFFF_WRITE))) /* NULL = successful! */
             {
@@ -240,7 +244,7 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fontPrefs[FP_COUNT])
     
                 PopChunk(iffHandle);
     
-                for (a = 0; a <= 2; a++)
+                for (a = 0; a < FP_COUNT; a++)
                 {
                     b = PushChunk(iffHandle, ID_PREF, ID_FONT, sizeof(struct FontPrefs));
     
@@ -248,15 +252,13 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fontPrefs[FP_COUNT])
                     {
                         printf("error: PushChunk() = %d ", b);
                     }
-                    kprintf("fontPrefs = %d bytes struct FontPrefs = %d bytes\n", sizeof(fontPrefs), sizeof(struct FontPrefs));
-    
-                    convertEndian(fp_Current[a]); // Convert to m68k endian
-    
-                    b = WriteChunkBytes(iffHandle, fp_Current[a], sizeof(struct FontPrefs));
-    
+                    
+                    convertEndian(fp[a]); // Convert to m68k endian
+                    
+                    b = WriteChunkBytes(iffHandle, fp[a], sizeof(struct FontPrefs));
                     b = PopChunk(iffHandle);
     
-                    convertEndian(fp_Current[a]); // Revert to initial endian
+                    convertEndian(fp[a]); // Revert to initial endian
     
                     if (b) // TODO: We need some error checking here!
                     {
@@ -297,68 +299,59 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fontPrefs[FP_COUNT])
         rc = FALSE;
     }
 
-    kprintf("Finished writing IFF file\n");
-
     return rc;
 }
 
-BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *readFontPrefs[FP_COUNT])
+BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
 {
     UBYTE a;
     LONG error;
     struct ContextNode *conNode;
 
-    kprintf("reading %s preferences...\n", filename);
-
-    if(!(iffHandle = AllocIFF()))
+    if (!(iffHandle = AllocIFF()))
     {
         ShowError(MSG(MSG_CANT_ALLOCATE_IFFPTR));
         return(FALSE);
     }
 
-    if ((iffHandle->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE))) // Whats up with the "IPTR"? Why not the usual "BPTR"?
+    if ((iffHandle->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE))) // FIXME: Whats up with the "IPTR"? Why not the usual "BPTR"?
     {
-        InitIFFasDOS(iffHandle); // No need to check for errors? RKRM:Libraries p. 781
+        InitIFFasDOS(iffHandle);
     
         if (!(error = OpenIFF(iffHandle, IFFF_READ))) // NULL = successful!
         {
-            // TODO: We want some sanity checking here!
-            for (a = 0; a <= 2; a++)
+            // FIXME: We want some sanity checking here!
+            for (a = 0; a < FP_COUNT; a++)
             {
                 if (0 <= (error = StopChunk(iffHandle, ID_PREF, ID_FONT)))
                 {
-                    kprintf("StopChunk() returned %ld\n", error);
-    
                     if (0 <= (error = ParseIFF(iffHandle, IFFPARSE_SCAN)))
                     {
-                        kprintf("ParseIFF returned %ld\n", error);
-    
                         conNode = CurrentChunk(iffHandle);
-    
+                        
                         // Check what structure goes where!
-                        error = ReadChunkBytes(iffHandle, readFontPrefs[a], sizeof(struct FontPrefs));
-    
+                        error = ReadChunkBytes(iffHandle, fp[a], sizeof(struct FontPrefs));
+                        
                         if (error < 0)
                         {
                             printf("Error: ReadChunkBytes() returned %ld!\n", error);
                         }
                         
-                        readFontPrefs[a]->fp_TextAttr.ta_Name = readFontPrefs[a]->fp_Name;
-    
-                        kprintf("readFontPrefs->YSize = >%d< ", readFontPrefs[a]->fp_TextAttr.ta_YSize);
-    
-                        convertEndian(readFontPrefs[a]);
-    
-                        kprintf("Converted = >%d<\n", readFontPrefs[a]->fp_TextAttr.ta_YSize);
+                        fp[a]->fp_TextAttr.ta_Name = fp[a]->fp_Name;
+                        
+                        convertEndian(fp[a]);
                     }
                     else
                     {
                         printf("ParseIFF() failed, returncode %ld!\n", error);
-                        a = 3; // Bail out!
+                        break; /* FIXME: return error? */
                     }
                 }
                 else
+                {
                     printf("StopChunk() failed, returncode %ld!\n", error);
+                    /* FIXME: return error? */
+                }
             }
     
             CloseIFF(iffHandle);
@@ -369,8 +362,6 @@ BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *readFontPrefs[FP_COUNT])
         }
         
         Close((BPTR) iffHandle->iff_Stream);
-
-        kprintf("Closed IFF file for reading!\n");
     }
     else
     {
