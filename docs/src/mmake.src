@@ -46,6 +46,18 @@ the current target but this will not be passed to make automatically. If
 you need the target in the makefile, you can use the \shell{maketool}
 option to change this.
 
+For convenience, you can also let MetaMake find the target like this:
+
+\begin{example}
+#MM
+kernel : kernel-$(ARCH)-$(CPU)
+\end{example}
+
+but this is not the same as above. In this case, MetaMake will not try
+to build \shell{kernel-$(ARCH)-$(CPU)} but only \shell{kernel}.
+This is useful if your metatarget doesn't depend on anything else
+than local targets in the current makefile.
+
 \section{Usage and Config Files}
 
 \shell{Usage: mmake [<options>] [<metatargets>]}
