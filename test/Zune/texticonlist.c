@@ -2625,18 +2625,18 @@ IPTR TextIconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Group_Horiz, FALSE,
     	Child, (IPTR) (group = GroupObject,
-	    Child, texticonlist,
-	    Child, vert = ScrollbarObject,
-		usewinborder?MUIA_Prop_UseWinBorder:TAG_IGNORE, MUIV_Prop_UseWinBorder_Right,
+	    Child, (IPTR) texticonlist,
+	    Child, (IPTR) (vert = ScrollbarObject,
+		usewinborder ? MUIA_Prop_UseWinBorder : TAG_IGNORE, MUIV_Prop_UseWinBorder_Right,
 		MUIA_Prop_DeltaFactor, 20,
-		MUIA_Group_Horiz, FALSE,
-		End,
-	    Child, horiz = ScrollbarObject,
+		MUIA_Group_Horiz,      FALSE,
+		End),
+	    Child, (IPTR) (horiz = ScrollbarObject,
 	    	usewinborder?MUIA_Prop_UseWinBorder:TAG_IGNORE, MUIV_Prop_UseWinBorder_Bottom,
 		MUIA_Prop_DeltaFactor, 20,
-	    	MUIA_Group_Horiz, TRUE,
-	    	End,
-	    usewinborder?TAG_IGNORE:Child, button,
+	    	MUIA_Group_Horiz,      TRUE,
+	    	End),
+	    usewinborder ? TAG_IGNORE : Child, (IPTR) button,
 	    End),
        TAG_DONE);
 
@@ -2658,7 +2658,7 @@ IPTR TextIconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->layout_hook.h_Data = data;
 
 	SetAttrs(group, MUIA_Group_Forward, FALSE,
-	    	    	MUIA_Group_LayoutHook, &data->layout_hook,
+	    	    	MUIA_Group_LayoutHook, (IPTR) &data->layout_hook,
 			TAG_DONE);
     }
     
@@ -2726,41 +2726,44 @@ BOOPSI_DISPATCHER(IPTR,TextIconListview_Dispatcher, cl, obj, msg)
 
 int main(void)
 {
-    Object *wnd, *iconlist, *texticonlist;
-    
+    Object *wnd, *texticonlist;
+#if 0
+    Object *iconlist;
+#endif 
+
     MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
 
     CL_TextIconListview = MUI_CreateCustomClass(NULL,MUIC_Group,NULL,sizeof(struct TextIconListview_DATA), TextIconListview_Dispatcher);
     CL_TextIconList = MUI_CreateCustomClass(NULL,MUIC_Area,NULL,sizeof(struct TextIconList_DATA), TextIconList_Dispatcher);
 
     app = ApplicationObject,
-   	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "texticonlist",
-	    MUIA_Window_Activate, TRUE,
+   	SubWindow, (IPTR) (wnd = WindowObject,
+    	    MUIA_Window_Title,    (IPTR) "texticonlist",
+	    MUIA_Window_Activate,        TRUE,
 
-    	    WindowContents, VGroup,
+    	    WindowContents, (IPTR) VGroup,
 	    	MUIA_Background, MUII_GroupBack,
 #if 0
-		Child, IconListviewObject,
-		    MUIA_IconListview_IconList, iconlist = IconDrawerListObject,
+		Child, (IPTR) IconListviewObject,
+		    MUIA_IconListview_IconList, (IPTR) (iconlist = IconDrawerListObject,
     	    	    	InputListFrame,
-			MUIA_IconDrawerList_Drawer,"C:",
-		    	End,
+			MUIA_IconDrawerList_Drawer, (IPTR) "C:",
+		    	End),
 		    End,
 #endif
-		Child, TextIconListviewObject,
+		Child, (IPTR) TextIconListviewObject,
     	    	    // MUIA_TextIconListview_UseWinBorder, TRUE,
-		    MUIA_TextIconListview_TextIconList, texticonlist = TextIconListObject,
+		    MUIA_TextIconListview_TextIconList, (IPTR) (texticonlist = TextIconListObject,
     	    	    	InputListFrame,
 			InnerSpacing(0,0),
-		    	End,
+		    	End),
 		    End,
 
 /*
-    	    	Child, texticonlist = TextIconListObject, InputListFrame, End,
+    	    	Child, (IPTR) (texticonlist = TextIconListObject, InputListFrame, End),
 */
 		End,
-	    End,
+	    End),
 	End;
 
     if (app)
@@ -2785,7 +2788,7 @@ int main(void)
 		    {
 		    	while(ExNext(lock, fib))
 			{
-			    DoMethod(texticonlist, MUIM_TextIconList_Add, fib);
+			    DoMethod(texticonlist, MUIM_TextIconList_Add, (IPTR) fib);
 			}
 		    }
 		    
