@@ -771,6 +771,7 @@ STATIC Object *slider_new(Class * cl, Object * o, struct opSet *msg)
 	{IA_Height, 0UL},
 	{IA_Resolution, 0UL},
 	{IA_FrameType, FRAME_BUTTON},
+	{IA_EdgesOnly, TRUE},
 	{TAG_DONE, 0UL}
     };
     
@@ -1033,6 +1034,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     	{SYSIA_DrawInfo, 0},
     	{IA_Left,	0},
     	{IA_Top,	0},
+	{IA_Width,	0},
+	{IA_Height,	0},
 	{SYSIA_WithBorder, FALSE},
 	{SYSIA_Style, SYSISTYLE_GADTOOLS},    	
     	{TAG_DONE,}
@@ -1047,8 +1050,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
  
     EnterFunc(bug("Arrow::New()\n"));
     
-    fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
-    fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
+    fitags[0].ti_Data = itags[4].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
+    fitags[1].ti_Data = itags[5].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
     fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
     
     frame = NewObjectA(NULL, FRAMEICLASS, fitags);
@@ -1066,8 +1069,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     D(bug("Created Arrowimage: %p, dims=(%d, %d, %d, %d)\n",
     	arrowimage, IM(arrowimage)->LeftEdge, IM(arrowimage)->TopEdge, IM(arrowimage)->Width, IM(arrowimage)->Height));
     	
-    atags[0].ti_Data = (IPTR)frame;
-    atags[1].ti_Data = (IPTR)arrowimage;
+    atags[0].ti_Data = (IPTR)arrowimage;
+    atags[1].ti_Data = (IPTR)frame;
     atags[2].ti_Data = (IPTR)msg->ops_AttrList;
     
     o = (Object *)DoSuperMethod(cl, o, OM_NEW, atags, NULL);
@@ -1366,6 +1369,7 @@ Object *scroller_new(Class * cl, Object * o, struct opSet *msg)
 	{IA_Height, 0UL},
 	{IA_Resolution, 0UL},
 	{IA_FrameType, FRAME_BUTTON},
+	{IA_EdgesOnly, TRUE},
 	{TAG_DONE, 0UL}
     };
     
@@ -1633,6 +1637,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 	    {IA_Height, 0UL},
 	    {IA_Resolution, 0UL},
 	    {IA_FrameType, FRAME_RIDGE},
+	    {IA_EdgesOnly, TRUE},
 	    {TAG_DONE, 0UL}
     	};
     	
@@ -2335,6 +2340,7 @@ STATIC Object *listview_new(Class *cl, Object *o, struct opSet *msg)
 	    {IA_Height, 0UL},
 	    {IA_Resolution, 0UL},
 	    {IA_FrameType, FRAME_BUTTON},
+	    {IA_EdgesOnly, TRUE},
 	    {TAG_DONE, 0UL}
 	};
 
