@@ -67,7 +67,7 @@
   
   struct AChain * AC = AP->ap_Current;
   BOOL success;
-  stuct Taks * task = FindTask(NULL);
+  struct Task * task = FindTask(NULL);
   
   AP->ap_BreakBits &= (SIGBREAKF_CTRL_C|
                        SIGBREAKF_CTRL_D|
