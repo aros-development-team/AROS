@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/11 13:05:34  digulla
+    Own function to open a file (M. Fleischer)
+
     Revision 1.5  1996/08/31 12:58:11  aros
     Merged in/modified for FreeBSD.
 
@@ -144,25 +147,24 @@ static void shrink(char *filename)
 	filename[len-1]=0;
 }
 
-static LONG locate(struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
+static LONG open_(struct filehandle **handle,STRPTR name,LONG mode)
 {
     LONG ret=ERROR_NO_FREE_STORE;
     struct filehandle *fh;
     struct stat st;
     long flags;
-    int ste;
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
-	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
-	{
-	    fh->type=FHD_FILE;
-	    fh->fd=(*handle)->fd;
-	    fh->name="";
-	    *handle=fh;
-	    return 0;
-	}
+        if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
+           (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+        {
+            fh->type=FHD_FILE;
+            fh->fd=(*handle)->fd;
+            fh->name="";
+            *handle=fh;
+            return 0;
+        }
 	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
 	if(fh->name!=NULL)
 	{
@@ -170,26 +172,24 @@ static LONG locate(struct filehandle **handle,STRPTR name,LONG mode,LONG protect
 	    strcat(fh->name,"/");
 	    strcat(fh->name,name);
 	    shrink(fh->name);
-	    ste=stat(*fh->name?fh->name:".",&st);
-	    if(!ste||(errno==ENOENT&&mode&LMF_CREATE))
+	    if(!stat(*fh->name?fh->name:".",&st))
 	    {
-		if(ste||S_ISREG(st.st_mode))
+		if(S_ISREG(st.st_mode))
 		{
 		    fh->type=FHD_FILE;
-		    flags=(mode&LMF_CREATE?O_CREAT:0)|
-			  (mode&LMF_CLEAR?O_TRUNC:0);
-		    if(mode&LMF_WRITE)
-			flags|=mode&LMF_READ?O_RDWR:O_WRONLY;
+		    flags=(mode&FMF_CREATE?O_CREAT:0)|
+			  (mode&FMF_CLEAR?O_TRUNC:0);
+		    if(mode&FMF_WRITE)
+			flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
 		    else
 			flags|=O_RDONLY;
-		    fh->fd=open(fh->name,flags,0770);
+		    fh->fd=open(*fh->name?fh->name:".",flags,0770);
 		    if(fh->fd>=0)
 		    {
 			*handle=fh;
 			return 0;
 		    }
-		}
-		else if(S_ISDIR(st.st_mode))
+		}else if(S_ISDIR(st.st_mode))
 		{
 		    fh->type=FHD_DIRECTORY;
 		    fh->fd=(long)opendir(*fh->name?fh->name:".");
@@ -198,13 +198,58 @@ static LONG locate(struct filehandle **handle,STRPTR name,LONG mode,LONG protect
 			*handle=fh;
 			return 0;
 		    }
-		}
-		errno=ENOENT;
+		}else
+		    errno=ENOENT;
 	    }
 	    ret=err_u2a();
 	    free(fh->name);
 	}
 	free(fh);
+    }
+    return ret;
+}
+
+static LONG open_file(struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
+{
+    LONG ret=ERROR_NO_FREE_STORE;
+    struct filehandle *fh;
+    long flags;
+    fh=(struct filehandle *)malloc(sizeof(struct filehandle));
+    if(fh!=NULL)
+    {
+        if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
+           (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+        {
+            fh->type=FHD_FILE;
+            fh->fd=(*handle)->fd;
+            fh->name="";
+            *handle=fh;
+            return 0;
+        }
+	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
+	if(fh->name!=NULL)
+	{
+	    strcpy(fh->name,(*handle)->name);
+	    strcat(fh->name,"/");
+	    strcat(fh->name,name);
+	    shrink(fh->name);
+            fh->type=FHD_FILE;
+            flags=(mode&FMF_CREATE?O_CREAT:0)|
+        	  (mode&FMF_CLEAR?O_TRUNC:0);
+            if(mode&FMF_WRITE)
+        	flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
+            else
+        	flags|=O_RDONLY;
+            fh->fd=open(fh->name,flags,0770);
+            if(fh->fd>=0)
+            {
+        	*handle=fh;
+        	return 0;
+            }
+            ret=err_u2a();
+	    free(fh->name);
+        }
+        free(fh);
     }
     return ret;
 }
@@ -217,8 +262,8 @@ static LONG free_lock(struct filehandle *current)
 	    if(current->fd!=STDIN_FILENO&&current->fd!=STDOUT_FILENO&&
 	       current->fd!=STDERR_FILENO)
 	    {
-		close(current->fd);
-		free(current->name);
+	        close(current->fd);
+	        free(current->name);
 	    }
 	    break;
 	case FHD_DIRECTORY:
@@ -247,15 +292,15 @@ static LONG startup(struct emulbase *emulbase)
 	    if(fhe!=NULL)
 	    {
 		fhv=&sys;
-		ret=locate(&fhv,"",0,0);
+		ret=open_(&fhv,"",0);
 		if(!ret)
 		{
 		    fhc=&sys;
-		    ret=locate(&fhc,"",0,0);
+		    ret=open_(&fhc,"",0);
 		    if(!ret)
 		    {
 			fhs=&sys;
-			ret=locate(&fhs,"",0,0);
+			ret=open_(&fhs,"",0);
 			if(!ret)
 			{
 			    ret=ERROR_NO_FREE_STORE;
@@ -343,9 +388,9 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 	    ead->ed_Ticks=(st.st_ctime%60)*TICKS_PER_SECOND;
 	case ED_PROTECTION:
 	    ead->ed_Prot=(st.st_mode&S_IRUSR?FIBF_READ:0)|
-			 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
-			 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
-			 FIBF_SCRIPT|FIBF_DELETE;
+	    		 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
+	    		 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
+	    		 FIBF_SCRIPT|FIBF_DELETE;
 	case ED_SIZE:
 	    ead->ed_Size=st.st_size;
 	case ED_TYPE:
@@ -399,7 +444,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 	}
 	strcpy(name,fh->name);
 	if(*name)
-	    strcat(name,"/");
+  	    strcat(name,"/");
 	strcat(name,dir->d_name);
 	old=fh->name;
 	fh->name=name;
@@ -413,12 +458,12 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
     }
     if((!error||error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
     {
-	last->ed_Next=NULL;
+        last->ed_Next=NULL;
 	seekdir((DIR *)fh->fd,oldpos);
 	return 0;
     }
     if(!error)
-	error=ERROR_NO_MORE_ENTRIES;
+        error=ERROR_NO_MORE_ENTRIES;
     rewinddir((DIR *)fh->fd);
     return error;
 }
@@ -522,22 +567,27 @@ __AROS_LH1(void, beginio,
     switch(iofs->IOFS.io_Command)
     {
 	case FSA_OPEN:
-	    error=locate((struct filehandle **)&iofs->IOFS.io_Unit,
+	    error=open_((struct filehandle **)&iofs->IOFS.io_Unit,
+			 (char *)iofs->io_Args[0],iofs->io_Args[1]);
+	    break;
+
+	case FSA_OPEN_FILE:
+	    error=open_file((struct filehandle **)&iofs->IOFS.io_Unit,
 			 (char *)iofs->io_Args[0],
 			 iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
-
+		    
 	case FSA_CLOSE:
 	    error=free_lock((struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
-
+	    
 	case FSA_IS_INTERACTIVE:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
-		iofs->io_Args[0]=isatty(fh->fd);
+	        iofs->io_Args[0]=isatty(fh->fd);
 	    else
-		iofs->io_Args[0]=0;
+	        iofs->io_Args[0]=0;
 	    break;
 	}
 
@@ -546,8 +596,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-		if(fh->fd==STDOUT_FILENO)
-		    fh->fd=STDIN_FILENO;
+	        if(fh->fd==STDOUT_FILENO)
+	            fh->fd=STDIN_FILENO;
 		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -561,8 +611,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-		if(fh->fd==STDIN_FILENO)
-		    fh->fd=STDOUT_FILENO;
+	        if(fh->fd==STDIN_FILENO)
+	            fh->fd=STDOUT_FILENO;
 		iofs->io_Args[1]=write(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -570,7 +620,7 @@ __AROS_LH1(void, beginio,
 		error=ERROR_OBJECT_WRONG_TYPE;
 	    break;
 	}
-
+		    
 	case FSA_SEEK:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
@@ -595,7 +645,7 @@ __AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_EXAMINE_ALL:
-	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
+	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,	    
 			  (struct ExAllData *)iofs->io_Args[0],
 			  iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
@@ -604,7 +654,7 @@ __AROS_LH1(void, beginio,
 	    error=ERROR_NOT_IMPLEMENTED;
 	    break;
     }
-
+    
     /* Set error code */
     iofs->io_DosError=error;
 
@@ -616,11 +666,11 @@ __AROS_LH1(void, beginio,
     if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
     {
-	SysBase->ThisTask->tc_State=TS_READY;
-	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-	Switch();
+        SysBase->ThisTask->tc_State=TS_READY;
+        Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+        Switch();
     }
-
+    
     __AROS_FUNC_EXIT
 }
 
