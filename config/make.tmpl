@@ -110,7 +110,7 @@
 
 #------------------------------------------------------------------------------
 # Create the function reference file %(to) to %(from)
-%define mkref_q cc=$(AROS_CC) cppflags="-E -C -dD" cflags=$(CFLAGS) from=$< to=$@
+%define mkref_q cc=$(AROS_CC) cppflags="-E -C -dD -D__CXREF__" cflags=$(CFLAGS) from=$< to=$@
 	@$(ECHO) "Generating ref for $(notdir %(from))..."
 	@$(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to) 2>$(GENDIR)/cerrors
 	@$(IF) $(TEST) -s %(to) ; \
@@ -726,9 +726,9 @@ BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
 BD_STARTOBJ$(BDID)   := $(addsuffix .o,$(BD_STARTFILE$(BDID)))
 BD_ARCHOBJS$(BDID)   := $(wildcard $(BD_OBJDIR$(BDID))/arch/*.o)
 BD_ARCHFILES$(BDID)  := $(basename $(notdir $(BD_ARCHOBJS$(BDID))))
-BD_FILES$(BDID)      := $(filter-out $(BD_ARCHFILES$(BDID)),$(BD_FILES$(BDID)))
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID)))) \
-		     	$(BD_ARCHOBJS$(BDID))
+BD_NEWARCHFILES$(BDID):= $(filter-out $(BD_FILES$(BDID)),$(BD_ARCHFILES$(BDID)))
+BD_OBJS$(BDID)       := $(foreach f,$(BD_FILES$(BDID)),$(if $(filter $(f),$(BD_ARCHFILES$(BDID))),$(BD_OBJDIR$(BDID))/arch/$(f).o,$(BD_OBJDIR$(BDID))/$(f).o)) \
+		     	$(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/arch/,$(BD_NEWARCHFILES$(BDID))))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)))
@@ -1389,7 +1389,7 @@ BD_OBJS$(BDID) := $(foreach icon, %(icons), %(dir)/$(icon).info)
 # - compiler: (host or target) specifies which compiler to use. By default
 #   the target compiler is used
 %define build_archspecific files= asmfiles= mainmmake=/A maindir=/A arch=/A \
-cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target
+cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target modulename=
 
 ifeq (%(files) %(asmfiles),)
   $(error no files or asmfiles given)
@@ -1401,7 +1401,7 @@ endif
 #MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 
-#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-setup
+#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-setup %(mainmmake)-includes
 
 ifeq (%(arch),)
   $(error argument arch has to be non empty for the rule_compile_archspecific macro)
@@ -1437,9 +1437,15 @@ endif
 ifeq (%(compiler),host)
 $(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
 endif
+ifneq (%(modulename),)
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) \
+                     --include $(GENDIR)/%(maindir)/%(modulename)_deflibdefs.h
+else
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
+endif
 ifeq ($(TARGET),%(mainmmake)-%(arch))
 $(BD_OBJDIR$(BDID))/%.o : %.c
-	%compile_q opt=%(cflags) cmd=$(TMP_CMD)
+	%compile_q opt=$(TMP_CFLAGS) cmd=$(TMP_CMD)
 endif
 
 ifeq (%(dflags),)
