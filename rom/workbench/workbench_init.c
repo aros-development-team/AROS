@@ -51,7 +51,6 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
 void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    if (lh->wb_AppReplyPort)
-	DeleteMsgPort(lh->wb_AppReplyPort);
+    DeleteMsgPort(lh->wb_AppReplyPort); /* NULL-safe */
 }
 
