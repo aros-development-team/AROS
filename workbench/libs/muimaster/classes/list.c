@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -35,7 +37,7 @@ struct MUI_ListData
     struct Hook *destruct_hook;
     struct Hook *display_hook;
 
-    /* List managment */
+    /* List managment, currently we use a simple flat array, which is not good if many entries are inserted/deleted */
     LONG entries_num; /* Number of Entries in the list */
     LONG entries_allocated;
     struct ListEntry **entries;
@@ -70,6 +72,31 @@ static void FreeListEntry(struct MUI_ListData *data, struct ListEntry *entry)
 {
     ULONG *mem = ((ULONG*)entry)-1;
     FreePooled(data->pool,mem,mem[0]);
+}
+
+/**************************************************************************
+ Ensures that we there can be at least the given amount of entries within
+ the list. Returns 0 if not.
+**************************************************************************/
+static int SetListSize(struct MUI_ListData *data, LONG size)
+{
+    struct ListEntry **new_entries;
+    int new_entries_allocated;
+
+    if (size <= data->entries_allocated) return 1;
+
+    new_entries_allocated = data->entries_allocated*2+4;
+    if (new_entries_allocated < size) new_entries_allocated = size + 10; /* random value */
+
+    new_entries = (struct ListEntry**)AllocVec(new_entries_allocated * sizeof(struct ListEntry*),0);
+    if (!new_entries) return 0;
+    if (data->entries)
+    {
+	CopyMem(data->entries,new_entries,data->entries_num);
+	FreeVec(data->entries);
+    }
+    data->entries = new_entries;
+    return 1;
 }
 
 /**************************************************************************
@@ -157,6 +184,7 @@ static IPTR List_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     if (data->intern_pool) DeletePool(data->intern_pool);
+    if (data->entries) FreeVec(data->entries);
     DoSuperMethodA(cl,obj,msg);
     return 0;
 }
@@ -223,6 +251,42 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 STATIC ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg)
 {
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG pos;
+    switch (msg->pos)
+    {
+    	case    MUIV_List_Insert_Top:
+    		pos = 0;
+	        break;
+
+    	case    MUIV_List_Insert_Active:
+		if (data->entries_active != -1) pos = data->entries_active;
+		else pos = data->entries_active;
+	        break;
+
+	case    MUIV_List_Insert_Sorted:
+		pos = -1;
+	        break;
+
+	case    MUIV_List_Insert_Bottom:
+		pos = data->entries_num;
+	        break;
+
+	default:
+		if (msg->pos > data->entries_num) pos = data->entries_num;
+		else if (msg->pos < 0) pos = 0;
+		else pos = msg->pos;
+	        break;		
+
+    }
+
+    if (!(SetListSize(data,data->entries_num + msg->count)))
+	return ~0;
+
+    if (pos != -1)
+    {
+    	return (ULONG)pos;
+    }
     return ~0;
 }
 
