@@ -1,5 +1,6 @@
 BEGIN {
     file=ENVIRON["HOME"] "/Mail/jobs"
+    IGNORECASE=1
 
     while ((getline < file) > 0)
     {
@@ -16,7 +17,7 @@ BEGIN {
 
 	for (t=0; t<ARGC; t++)
 	{
-	    if (match (text,ARGV[t]))
+	    if (match (id,ARGV[t]) || match (text,ARGV[t]))
 	    {
 		gsub(text,"\n","\n# ");
 		print "# " text;
