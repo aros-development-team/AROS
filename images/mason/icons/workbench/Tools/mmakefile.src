@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := HDToolBox WiMP Commodities
+ICONS     := HDToolBox WiMP Commodities Calculator
 ICONDIR   := $(AROSDIR)/Tools
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
