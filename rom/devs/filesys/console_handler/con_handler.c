@@ -121,9 +121,9 @@ AROS_LH2(struct conbase *, init,
 {
     AROS_LIBFUNC_INIT
  
+    static const char *devnames[2] = { "CON", "RAW" };
     struct DeviceNode *dn;
-    static char devnames[2][5] = { "\003CON", "\003RAW" };
-    int i;
+    int     	      i;
 
 
     /* Store arguments */
@@ -155,15 +155,24 @@ AROS_LH2(struct conbase *, init,
 	     */
 	    for(i = 0; i < 2; i++)
 	    {
-		if((dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC)))
+		if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
 		{
+		    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+		    WORD   a;
+		    
+		    for(a = 0; a < 3; a++)
+		    {
+		    	AROS_BSTR_putchar(s, a, devnames[i][a]);
+		    }
+		    AROS_BSTR_setstrlen(s, 3);
+		    
 		    dn->dn_Type		= DLT_DEVICE;
 		    dn->dn_Unit		= NULL;
 		    dn->dn_Device	= &conbase->device;
 		    dn->dn_Handler	= NULL;
 		    dn->dn_Startup	= NULL;
-		    dn->dn_OldName	= MKBADDR(devnames[i]);
-		    dn->dn_NewName	= &devnames[i][1];
+		    dn->dn_OldName	= MKBADDR(s);
+		    dn->dn_NewName	= AROS_BSTR_ADDR(dn->dn_OldName);
 
 		    if (AddDosEntry((struct DosList *)dn))
 		    {
