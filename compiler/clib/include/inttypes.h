@@ -40,10 +40,8 @@
 #endif
 */
 
-#ifndef __AROS_WCHAR_T_DECLARED
-#define __AROS_WCHAR_T_DECLARED
-typedef __wchar_t           wchar_t;
-#endif
+#define __need_wchar_t
+#include <stddef.h>
 
 __BEGIN_DECLS
 
