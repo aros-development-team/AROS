@@ -167,6 +167,20 @@
                          (struct VisualInfo *)ng->ng_VisualInfo,
                          taglist);
 	break;
+
+        case STRING_KIND:
+            gad = makestring((struct GadToolsBase_intern *)GadToolsBase,
+                         stdgadtags,
+                         (struct VisualInfo *)ng->ng_VisualInfo,
+                         taglist);
+	break;
+	
+        case INTEGER_KIND:
+            gad = makeinteger((struct GadToolsBase_intern *)GadToolsBase,
+                         stdgadtags,
+                         (struct VisualInfo *)ng->ng_VisualInfo,
+                         taglist);
+	break;
         }
     }
 

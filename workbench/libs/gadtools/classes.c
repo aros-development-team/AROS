@@ -782,15 +782,6 @@ AROS_UFH3(static IPTR, dispatch_sliderclass,
 }
 
 /*************************** SCROLLER_KIND *****************************/
-#ifdef SDEBUG
-#   undef SDEBUG
-#endif
-#ifdef DEBUG
-#   undef DEBUG
-#endif
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 struct ArrowData {
 	Object *arrowimage;
@@ -858,8 +849,6 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     frame = NewObjectA(NULL, FRAMEICLASS, fitags);
     if (!frame)
 	return NULL;
-	
-    
 	
     itags[0].ti_Data = GetTagData(GTA_Arrow_Type, LEFTIMAGE, msg->ops_AttrList);
     itags[1].ti_Data = (IPTR)dri;
@@ -1160,6 +1149,207 @@ AROS_UFH3(static IPTR, dispatch_scrollerclass,
     return retval;
 }
 
+/*************************** STRING_KIND and INTEGER_KIND *****************************/
+
+#ifdef SDEBUG
+#   undef SDEBUG
+#endif
+#ifdef DEBUG
+#   undef DEBUG
+#endif
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
+struct StringData
+{
+    LONG 	labelplace;
+    Object	*frame;
+};
+/***********************
+**  String::SetNew()  **
+***********************/
+
+IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
+{
+    struct TagItem *tag, *tstate, tags[] =
+    {
+    	{STRINGA_TextVal,	0UL},
+    	{STRINGA_LongVal,	0UL},
+    	{STRINGA_MaxChars,	0UL},
+    	{STRINGA_EditHook,	0UL},
+    	{TAG_MORE,		0UL}
+    };
+    
+    LONG labelplace = GV_LabelPlace_Left;
+    struct DrawInfo *dri;
+    IPTR retval = 0UL;
+
+    EnterFunc(bug("String::SetNew()\n"));    
+    tstate = msg->ops_AttrList;
+    while ((tag = NextTagItem(&tstate)))
+    {
+    	IPTR tidata = tag->ti_Data;
+    	
+    	switch (tag->ti_Tag)
+    	{
+    	    case GTST_String:	tags[0].ti_Data = tidata; break;
+    	    case GTIN_Number:	tags[1].ti_Data = tidata; break;
+    	    
+    	    /* Another weird inconsistency of AmigaOS GUI objects:
+    	    ** For intuition and strgclass gadgets, MaxChars includes trailing
+    	    ** zero, but this is NOT true for gadtools string gadgets
+    	    */
+    	    case GTIN_MaxChars:
+    	    case GTST_MaxChars:	tags[2].ti_Data = ((WORD)tidata) + 1; break;
+/*    	    case GTIN_EditHook:  Duplicate case value */
+    	    case GTST_EditHook:	tags[3].ti_Data = tidata; break;
+    	    
+    	    case GA_LabelPlace:
+    	    	labelplace = (LONG)tidata;
+    	    	break;
+    	    case GA_DrawInfo:
+    	    	dri = (struct DrawInfo *)tidata;
+    	    	break;
+    	    
+    	}
+    }
+    
+    tags[4].ti_Data = (IPTR)msg->ops_AttrList;
+    
+    retval = DoSuperMethod(cl, o, msg->MethodID, tags, msg->ops_GInfo);
+    
+    D(bug("Returned from supermethod: %p\n", retval));
+    
+    if ((msg->MethodID == OM_NEW) && (retval != 0UL))
+    {
+    	struct StringData *data = INST_DATA(cl, retval);
+    	struct TagItem fitags[] =
+    	{
+	    {IA_Width, 0UL},
+	    {IA_Height, 0UL},
+	    {IA_Resolution, 0UL},
+	    {IA_FrameType, FRAME_RIDGE},
+	    {TAG_DONE, 0UL}
+    	};
+    	
+    	fitags[0].ti_Data = G(retval)->Width;
+    	fitags[1].ti_Data = G(retval)->Height;
+    	fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+    	
+    	data->labelplace = labelplace;
+
+    	D(bug("Creating frame image"));
+    	
+    	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+    	D(bug("Created frame image: %p", data->frame));
+
+    	if (!data->frame)
+    	{
+    	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+    	    
+    	    retval = (IPTR)NULL;
+    	}
+    }
+    
+    ReturnPtr ("String::SetNew", IPTR, retval);
+
+}
+
+/***********************
+**  String::Render()  **
+***********************/
+#undef G
+#define G(o) ((struct Gadget *)o)
+STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    IPTR retval;
+    
+    EnterFunc(bug("String::Render()\n"));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    
+    D(bug("Superclass render OK\n"));
+    
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {
+    	struct StringData *data = INST_DATA(cl, o);
+    	
+	WORD x, y;
+	    
+	struct TagItem itags[] =
+	{
+	    {IA_Width,	0L},
+	    {IA_Height,	0L},
+	    {TAG_DONE,}
+	};
+	
+	D(bug("Full redraw\n"));
+
+	/* center image position, we assume image top and left is 0 */
+	itags[0].ti_Data = G(o)->Width + 4;
+	itags[1].ti_Data = G(o)->Height + 4;
+	
+	D(bug("Setting attrs on frame %p\n", data->frame));
+	SetAttrsA((Object *)data->frame, itags);
+	
+	D(bug("Image attrs set to (%d, %d, %d, %d)\n",
+		IM(data->frame)->LeftEdge, IM(data->frame)->TopEdge,
+		IM(data->frame)->Width, IM(data->frame)->Height));
+
+	x = G(o)->LeftEdge - 2; 
+	y = G(o)->TopEdge - 2;
+	    
+	D(bug("Rendering image at (%d,%d)\n", x, y));
+	DrawImageState(msg->gpr_RPort,
+		(struct Image *)data->frame,
+		x, y,
+		((G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		msg->gpr_GInfo->gi_DrInfo);
+   
+   	D(bug("Rendering label\n"));
+   	/* render label */
+   	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+
+   	D(bug("label rendered\n"));
+   	
+    } /* if (whole gadget should be redrawn) */
+    
+    ReturnInt ("String::Render", IPTR, retval);
+}
+
+AROS_UFH3(static IPTR, dispatch_stringclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, o, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID) {
+    case OM_NEW:
+    case OM_SET:
+	retval = string_setnew(cl, o, (struct opSet *)msg);
+	break;
+	
+    case GM_RENDER:
+    	retval = string_render(cl, o, (struct gpRender *)msg);
+    	break;
+   
+    case OM_DISPOSE: {
+    	struct StringData *data = INST_DATA(cl, o);
+    	if (data->frame)
+    	    DisposeObject(data->frame);
+    } break;
+
+    default:
+	retval = DoSuperMethodA(cl, o, msg);
+	break;
+    }
+
+    return retval;
+}
+
 /*************************** Classes *****************************/
 
 #undef GadToolsBase
@@ -1258,3 +1448,25 @@ Class *makearrowclass(struct GadToolsBase_intern * GadToolsBase)
 
     return cl;
 }
+
+
+Class *makestringclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl;
+
+    if (GadToolsBase->stringclass)
+	return GadToolsBase->stringclass;
+
+    cl = MakeClass(NULL, STRGCLASS, NULL, sizeof(struct StringData), 0UL);
+    if (!cl)
+	return NULL;
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_stringclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->stringclass = cl;
+
+    return cl;
+}
+
+

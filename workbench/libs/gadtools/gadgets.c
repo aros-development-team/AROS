@@ -817,3 +817,115 @@ failure:
    
    ReturnPtr("makescroller", struct Gadget *, NULL);
 }
+
+/*******************
+**  makestring()  **
+*******************/
+struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
+                         struct TagItem stdgadtags[],
+                         struct VisualInfo *vi,
+                         struct TagItem *taglist)
+{
+    struct Gadget *obj;
+    Class *cl;
+
+    struct TagItem *tag, tags[] =
+    {
+    	{GA_Disabled,		FALSE},
+    	{GA_Immediate,		FALSE},
+    	{GA_TabCycle,		FALSE},
+    	{GTST_String,		(IPTR)NULL},
+    	{GTST_MaxChars,		0UL},
+    	{GTST_EditHook,		(IPTR)NULL},
+    	{STRINGA_ExitHelp,	FALSE},
+    	{STRINGA_Justification,	GACT_STRINGLEFT},
+    	{STRINGA_ReplaceMode,	FALSE},
+	{TAG_MORE, 	(IPTR)NULL}
+    };
+    
+   
+    /* Could use GetTagData(), but this is faster */
+    while ((tag = NextTagItem(&taglist)))
+    {
+    	IPTR tidata = tag->ti_Data;
+    	
+    	switch (tag->ti_Tag)
+    	{
+    	case GA_Disabled:		tags[0].ti_Data = tidata; break;
+    	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
+    	case GA_TabCycle:		tags[2].ti_Data	= tidata; break;
+    	case GTST_String:		tags[3].ti_Data	= tidata; break;
+    	case GTST_MaxChars:		tags[4].ti_Data	= tidata; break;
+    	case GTST_EditHook:		tags[5].ti_Data	= tidata; break;
+    	case STRINGA_ExitHelp:		tags[6].ti_Data	= tidata; break;
+    	case STRINGA_Justification:	tags[7].ti_Data	= tidata; break;
+    	case STRINGA_ReplaceMode:	tags[8].ti_Data	= tidata; break;
+    	}
+    	
+    } /* while (iterate taglist) */
+
+    tags[9].ti_Data = (IPTR)stdgadtags;
+
+    cl = makestringclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+
+    return  (obj);
+}
+
+/********************
+**  makeinteger()  **
+********************/
+struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
+                         struct TagItem stdgadtags[],
+                         struct VisualInfo *vi,
+                         struct TagItem *taglist)
+{
+    struct Gadget *obj;
+    Class *cl;
+
+    struct TagItem *tag, tags[] =
+    {
+    	{GA_Disabled,		FALSE},
+    	{GA_Immediate,		FALSE},
+    	{GA_TabCycle,		FALSE},
+    	{GTIN_Number,		0L},
+    	{GTIN_MaxChars,		10L},
+    	{GTIN_EditHook,		(IPTR)NULL},
+    	{STRINGA_ExitHelp,	FALSE},
+    	{STRINGA_Justification,	GACT_STRINGLEFT},
+    	{STRINGA_ReplaceMode,	FALSE},
+	{TAG_MORE, 	(IPTR)NULL}
+    };
+    
+   
+    /* Could use GetTagData(), but this is faster */
+    while ((tag = NextTagItem(&taglist)))
+    {
+    	IPTR tidata = tag->ti_Data;
+    	
+    	switch (tag->ti_Tag)
+    	{
+    	case GA_Disabled:		tags[0].ti_Data = tidata; break;
+    	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
+    	case GA_TabCycle:		tags[2].ti_Data	= tidata; break;
+    	case GTIN_Number:		tags[3].ti_Data	= tidata; break;
+    	case GTIN_MaxChars:		tags[4].ti_Data	= tidata; break;
+    	case GTIN_EditHook:		tags[5].ti_Data	= tidata; break;
+    	case STRINGA_ExitHelp:		tags[6].ti_Data	= tidata; break;
+    	case STRINGA_Justification:	tags[7].ti_Data	= tidata; break;
+    	case STRINGA_ReplaceMode:	tags[8].ti_Data	= tidata; break;
+    	}
+    	
+    } /* while (iterate taglist) */
+
+    tags[9].ti_Data = (IPTR)stdgadtags;
+
+    cl = makestringclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+
+    return  (obj);
+}

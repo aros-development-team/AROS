@@ -58,6 +58,7 @@ Class *maketextclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makesliderclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makearrowclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makestringclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
@@ -110,6 +111,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct VisualInfo *vi,
 		      	  struct TagItem *taglist);
 
+struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TagItem *taglist);
+
+struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TagItem *taglist);
 
 /* Tags for the private gadtool classes */
 #define GT_Dummy (TAG_USER)
