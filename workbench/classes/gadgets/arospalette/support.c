@@ -52,14 +52,13 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
 **  GetPalettePen()  **
 **********************/
 
-UWORD GetPalettePen(struct PaletteData *data, struct DrawInfo *dri, UWORD idx)
+UWORD GetPalettePen(struct PaletteData *data, UWORD idx)
 {
     UWORD pen;
 
     if (data->pd_ColorTable)
 	pen = data->pd_ColorTable[idx];
     else
-//	pen = dri->dri_Pens[idx];
 	pen = idx + data->pd_ColorOffset;
 
     return (pen);
@@ -87,7 +86,7 @@ UBYTE Colors2Depth(UWORD numcolors)
 
 BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
 {
-    /* Georg Steger */
+    /* stegerg */
 
     return TRUE;
 
@@ -133,7 +132,6 @@ UWORD ComputeColor(struct PaletteData *data, WORD x, WORD y)
 
      color = data->pd_NumCols * row + col;
 
-     /* Georg Steger */
      if (color < 0)
      {
      	 color = 0;
@@ -152,15 +150,15 @@ UWORD ComputeColor(struct PaletteData *data, WORD x, WORD y)
 ********************/
 
 #define MIN(a, b) (( a < b) ? a : b)
-VOID RenderPalette(struct PaletteData *data, struct DrawInfo *dri,
-	struct RastPort *rp, struct PaletteBase_intern *AROSPaletteBase)
+VOID RenderPalette(struct PaletteData *data, struct RastPort *rp,
+		   struct PaletteBase_intern *AROSPaletteBase)
 {
     UWORD currentcolor = data->pd_ColorOffset, colors_left;
     WORD left, top;
     register UWORD col, row;
     struct IBox *pbox = &(data->pd_PaletteBox);
 
-    EnterFunc(bug("RenderPalette(data=%p, dri=%p, rp=%p)\n", data, dri, rp));
+    EnterFunc(bug("RenderPalette(data=%p, rp=%p)\n", data, rp));
 
     top  = pbox->Top;
 
@@ -173,7 +171,7 @@ VOID RenderPalette(struct PaletteData *data, struct DrawInfo *dri,
     	for (col = MIN(data->pd_NumCols, colors_left); col; col --)
     	{
 
-    	    SetAPen(rp, GetPalettePen(data, dri, currentcolor));
+    	    SetAPen(rp, GetPalettePen(data, currentcolor));
 
     	    RectFill(rp, left, top,
     	    	left + data->pd_ColWidth - VSPACING - 1, 
@@ -235,7 +233,7 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     	    top  + data->pd_RowHeight);
 
     	/* Rerender in original color */
-    	SetAPen(rp, GetPalettePen(data, dri, data->pd_OldColor + data->pd_ColorOffset));
+    	SetAPen(rp, GetPalettePen(data, data->pd_OldColor + data->pd_ColorOffset));
 
     	RectFill(rp, left, top,
     	    left + data->pd_ColWidth  - VSPACING - 1,
