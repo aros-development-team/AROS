@@ -28,8 +28,11 @@
 #include <aros/asmcall.h>
 #include "intuition_intern.h"
 
+
+#include "gadgets.h" /* Some handy rendering funtions */
+
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Image data */
@@ -132,10 +135,6 @@ UWORD ArrowRight1Data[] =
 #define IM(o) ((struct Image *)o)
 
 static UWORD getbgpen(ULONG state, UWORD *pens);
-static VOID drawrect(struct RastPort *rp
-	, WORD x1, WORD y1
-	, WORD x2, WORD y2
-	, struct IntuitionBase *IntuitionBase);
 
 #undef IntuitionBase
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
@@ -214,10 +213,11 @@ D(bug("SYSIA_Which type: %d\n", data->type));
                 break;
 
             case DEPTHIMAGE:
-	        break;
             case ZOOMIMAGE:
-            case SIZEIMAGE:
             case CLOSEIMAGE:
+            case SIZEIMAGE:
+	        break;
+		
             case SDEPTHIMAGE:
             case MENUCHECK:
             case AMIGAKEY:
@@ -294,6 +294,9 @@ D(bug("sysi_setnew called successfully\n"));
     case DOWNIMAGE:
     
     case DEPTHIMAGE:
+    case ZOOMIMAGE:
+    case CLOSEIMAGE:
+    case SIZEIMAGE:
         break;
     
     default:
@@ -434,7 +437,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 		, left
 		, top + (height / 3)
 		, right - (width / 3 )
-		, top + height
+		, bottom
 		, IntuitionBase);
 	
 	/* Render top right window  */
@@ -456,20 +459,125 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 
         
         break; }
+	
+    	
          
 	
-    case SIZEIMAGE:
-        break;
+    case CLOSEIMAGE: {
+        /* Closeimage is just a black rectangle filled with white */
+        UWORD *pens = data->dri->dri_Pens;
+	UWORD bg;
+
+        WORD h_spacing = width  / 4;
+	WORD v_spacing = height / 4;
 	
-    case ZOOMIMAGE:
+	/* Bottom & right of image */
+
+	WORD right;
+	WORD bottom;
+	
+
+	bg = getbgpen(msg->imp_State, pens);
+	
+	/* Clear background into correct color */
+	SetAPen(rport, bg);
+	RectFill(rport, left, top, left + width - 1, top + height - 1);
+	
+	right  = left + width  - 1 - h_spacing;
+	bottom = top  + height - 1 - v_spacing;
+
+	left += h_spacing; top += v_spacing;
+	
+	
+	/* in bottom left draw a rect and fill it with white */
+
+	SetAPen(rport, pens[SHADOWPEN]);
+	drawrect( rport
+		, left
+		, top
+		, right
+		, bottom
+		, IntuitionBase);
+		
+	SetAPen(rport, pens[SHINEPEN]);
+	RectFill( rport
+		, left   + 1
+		, top    + 1
+		, right  - 1
+		, bottom - 1);
+
+        break; }
+	
+    case ZOOMIMAGE: {
+        UWORD *pens = data->dri->dri_Pens;
+	UWORD bg;
+
+	WORD bottom = top + height -1 ;
+
+	bg = getbgpen(msg->imp_State, pens);
+	
+	/* Clear background into correct color */
+	SetAPen(rport, bg);
+	RectFill(rport, left, top, left + width - 1, top + height - 1);
+	
+	
+	
+	/* in bottom left draw a rect and fill it with white */
+
+	SetAPen(rport, pens[SHADOWPEN]);
+	drawrect( rport
+		, left
+		, top  + (height / 2)
+		, left + (width  / 2)
+		, bottom
+		, IntuitionBase);
+		
+	SetAPen(rport, pens[SHINEPEN]);
+	RectFill( rport
+		, left		      + 1
+		, top  + (height / 2) + 1
+		, left + (width  / 2) - 1
+		, bottom	      - 1);
+
+        break; }
+	
     
-        break;
+    case SIZEIMAGE: {
+        UWORD *pens = data->dri->dri_Pens;
+	UWORD bg;
+
+        WORD h_spacing = width  / 4;
+	WORD v_spacing = height / 4;
 	
-    case CLOSEIMAGE:
-        break;
+	WORD right, bottom;
 	
 	
-    
+	
+	bg = getbgpen(msg->imp_State, pens);
+	
+	/* Clear background into correct color */
+	SetAPen(rport, bg);
+	RectFill(rport, left, top, left + width - 1, top + height - 1);
+	
+	/* A triangle image 	*/
+	
+	left += h_spacing;
+	top  += v_spacing;
+	
+	right  = left + width  - 1 - h_spacing;
+	bottom = top  + height - 1 - v_spacing;
+	
+	/* Draw triangle border */
+	Move(rport, left, bottom);
+	Draw(rport, right, top);
+	Draw(rport, right, bottom);
+	Draw(rport, left, bottom);
+	
+	break; }
+	
+	/* Fill rectangle with white color */
+	
+	/* !! need AreaFill() for this */
     
     } /* switch (image type) */
     return;
@@ -561,17 +669,3 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
     return bg;
 }
 
-static VOID drawrect(struct RastPort *rp
-	, WORD x1, WORD y1
-	, WORD x2, WORD y2
-	, struct IntuitionBase *IntuitionBase)
-{
-    Move(rp, x1, y1);
-    
-    Draw(rp, x2, y1);
-    Draw(rp, x2, y2);
-    Draw(rp, x1, y2);
-    Draw(rp, x1, y1);
-    
-    return;
-}

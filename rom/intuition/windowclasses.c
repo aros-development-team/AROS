@@ -92,12 +92,15 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	    container.Left + container.Width - 1,
 	    container.Top + container.Height - 2);
 	    
-	/* Draw a thin dark line under the bar */
+	/* Draw a thin dark line around the bar */
 	
 	SetAPen(rp, pens[SHADOWPEN]);
-	Move(rp, container.Left, container.Top + container.Height - 1);
-	Draw(rp, container.Left + container.Width - 1,
-		 container.Top  + container.Height - 1);
+	drawrect( rp
+		, container.Left
+		, container.Top
+		, container.Left + container.Width  - 1
+		, container.Top  + container.Height - 1
+		, IntuitionBase);
 	
 	    
 	
@@ -229,8 +232,8 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	{
 	    struct TagItem image_tags[] =
 	    {
-	    	{IA_Width,		G(o)->Width 			},
-	    	{IA_Height, 		G(o)->Height 			},
+	    	{IA_Width,		G(o)->Width  - 2		},
+	    	{IA_Height, 		G(o)->Height - 2		},
 	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]	},
 	    	{SYSIA_DrawInfo,	(IPTR)dri			},
 	    	{TAG_DONE, 0UL}
@@ -273,6 +276,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	/* center image position, we assume image top and left is 0 */
 	ULONG x, y;
         ULONG state;
+	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	D(bug("Gadget IBOX\n"));
@@ -300,7 +304,15 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	    , x, y
 	    , state
 	    , msg->gpr_GInfo->gi_DrInfo);
-	
+	    
+	/* For now just render a tiny black edge around the image */
+	SetAPen(msg->gpr_RPort, pens[SHADOWPEN]);
+	drawrect(msg->gpr_RPort
+		, container.Left
+		, container.Top
+		, container.Left + container.Width - 1
+		, container.Top + container.Height - 1
+		, IntuitionBase);
 		
     
     return;
