@@ -3,6 +3,7 @@
 *********/
 
 #include <libraries/locale.h>
+#include "general.h"
 #include "catalog.h"
 
 #ifndef _AROS

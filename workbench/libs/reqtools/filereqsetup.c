@@ -85,6 +85,8 @@ int REGARGS SetupReqWindow (GlobData *glob, int resized)
 	char *overscanstr, *widthstr, *heightstr, *defaultstr;
 	ULONG mask;
 
+
+
 	defaultheight = (glob->reqheight == 0);
 	spacing = rtGetVScreenSize (glob->scr, (ULONG *)&scrwidth, (ULONG *)&scrheight);
 	createpatgad = (glob->flags & FREQF_PATGAD) && !(glob->flags & FREQF_NOFILES);
@@ -96,6 +98,7 @@ int REGARGS SetupReqWindow (GlobData *glob, int resized)
 	stdgadheight = glob->fontheight + 6;
 
 	glob->entryheight = glob->fontheight + 1;
+
 
 	switch (glob->reqtype) {
 		case RT_FILEREQ:
@@ -114,6 +117,7 @@ int REGARGS SetupReqWindow (GlobData *glob, int resized)
 	rightoff = glob->scr->WBorRight + 5;
 	totaloff = (leftoff + rightoff);
 
+
 rebuildwindow:
 	reqdefs = &rtLockPrefs()->ReqDefaults[reqdefnum];
 
@@ -126,15 +130,18 @@ rebuildwindow:
 
 	rtUnlockPrefs();
 
+
 	start_top = (glob->scr->WBorTop + glob->scr->Font->ta_YSize + 1) + spacing;
 
 	ng.ng_VisualInfo = glob->visinfo;
 	ng.ng_TextAttr = &glob->font;
 	glob->itxt.ITextFont = &glob->font;
 
+
 	checkw = CheckBoxWidth (&ng);
 	checkh = checkskip = CheckBoxHeight (&ng);
 	if (glob->fontheight > checkskip) checkskip = glob->fontheight;
+
 
 	if (isfilereq) {
 		val = (stdgadheight + spacing) * 4 + 4;
@@ -163,11 +170,14 @@ rebuildwindow:
 	glob->numentries = (glob->reqheight - val - start_top
 		- BottomBorderHeight (glob->scr)) / glob->entryheight;
 
+
 retryopenwindow:
+
 	top = start_top;
 
 	gad = (struct Gadget *)CreateContext (&glob->buttoninfo.glist);
 	img = &glob->labelimages;
+
 
 	reqtoolsprefs = rtLockPrefs();
 
@@ -181,6 +191,7 @@ retryopenwindow:
 	if (glob->numentries > val) glob->numentries = val;
 
 	rtUnlockPrefs();
+
 
 	/* calculate width of gadgets and window */
 	gadtxt[7] = GetStr (glob->catalog, MSG_CANCEL);
@@ -228,6 +239,7 @@ retryopenwindow:
 		}
 	if (num2 == 2) gadtxt[5] = gadtxt[7];
 
+
 	/* Calculate width of button row of gadgets */
 	width2 = 0;
 	for (i = 0; i < num2; i++) {
@@ -237,10 +249,13 @@ retryopenwindow:
 	for (i = 0; i < num2; i++) gadlen[i+4] = width2;
 	width2 *= num2;
 
+
 	if (isfilereq && !(glob->flags & FREQF_MULTISELECT)) width1 = 0;
+
 
 	if (isscreenmodereq) {
 		int len;
+
 
 		overscanstr = GetStr (glob->catalog, MSG_OVERSCAN);
 		overscanstrlen = StrWidth_noloc (&glob->itxt, overscanstr);
@@ -274,6 +289,7 @@ retryopenwindow:
 		if (winwidth < 300) winwidth = 300;
 		val = width2 + (num2-1) * 8 + totaloff;
 		}
+
 	if (val > winwidth) winwidth = val;
 	if (winwidth > scrwidth) winwidth = scrwidth;
 	if (isfontreq || (isfilereq && (glob->flags & FREQF_MULTISELECT))) {
@@ -287,6 +303,7 @@ retryopenwindow:
 		gadlen[7] = gadlen[5];
 		}
 
+
 	if (isfilereq && (glob->flags & FREQF_MULTISELECT) && (width2 > width1)) {
 		for (i = 1; i < 4; i++) {
 			val = gadpos[i-1] + gadlen[i-1] + 8;
@@ -294,6 +311,7 @@ retryopenwindow:
 			gadpos[i] = val;
 			}
 		}
+
 
 	glob->boxleft = leftoff + 2; glob->boxtop = top + 2;
 	glob->boxheight = glob->numentries * glob->entryheight;
@@ -303,18 +321,22 @@ retryopenwindow:
 	ng.ng_Flags = 0;
 	InitNewGadget (&ng, leftoff + 4, top + 2,
 				winwidth - 26 - totaloff, glob->boxheight, NULL, FILES);
+
 	gad = myCreateGadget (GENERIC_KIND, gad, &ng, TAG_END);
 	if (gad) {
 		gad->GadgetType |= GTYP_BOOLGADGET;
 		gad->Flags |= GFLG_GADGHNONE;
 		gad->Activation |= GACT_IMMEDIATE|GACT_FOLLOWMOUSE|GACT_RELVERIFY;
 		}
+
 	ng.ng_LeftEdge -= 4;
 	ng.ng_Width += 8;
 	ng.ng_TopEdge -= 2;
 	ng.ng_Height += 4;
 	ng.ng_GadgetID = 0;
+
 	gad = my_CreateButtonGadget (gad, 0, &ng);
+
 	if (gad) gad->Flags |= GFLG_GADGHNONE;
 
 	InitNewGadget (&ng, winwidth - 18 - rightoff, top, 18, glob->boxheight + 4, NULL, FPROP);
@@ -323,6 +345,7 @@ retryopenwindow:
 		GTSC_Top, glob->buff->pos, GTSC_Total, glob->buff->currentnum,
 		GA_RelVerify, TRUE, GA_Immediate, TRUE, TAG_END);
 	top += glob->boxheight + 4 + spacing / 2;
+
 
 	if (isfilereq || isvolreq) {
 
@@ -432,6 +455,7 @@ retryopenwindow:
 		}
 	else {
 
+
 		/*
 		 * ScreenMode Requester gadgets
 		 */
@@ -443,6 +467,7 @@ retryopenwindow:
 			  GTTX_Text, glob->nameinfo.Name,
 			  GTTX_Border, TRUE, TAG_END);
 		top += ng.ng_Height + spacing;
+
 
 		if (glob->flags & SCREQF_OVERSCANGAD) {
 			glob->overscankey = KeyFromStr (overscanstr, '_');
@@ -457,15 +482,22 @@ retryopenwindow:
 			top += stdgadheight + spacing;
 			}
 
+
 		if (glob->flags & SCREQF_SIZEGADS) {
+
 			/* Screen width and height gadgets */
 			glob->widthkey = KeyFromStr (widthstr, '_');
+
 			val = widthheightlen + 8 + leftoff + 2;
 			InitNewGadget (&ng, val, top, dimgadwidth, stdgadheight, NULL, SCRWIDTH);
+
 			gad = glob->widthgad = my_CreateIntegerGadget (gad, &ng, 5,
-																glob->width, GACT_STRINGLEFT);
+								       glob->width, GACT_STRINGLEFT);
+
 			img = my_CreateGadgetLabelImage (img, &ng, widthstr,
+
 														val - 8 - widthstrlen, top + 3, TEXTPEN);
+
 
 			ng.ng_Flags = PLACETEXT_RIGHT;
 
@@ -476,14 +508,19 @@ retryopenwindow:
 			ng.ng_Height = checkh;
 			ng.ng_GadgetText = defaultstr;
 			ng.ng_GadgetID = DEFWIDTH;
+
 			gad = glob->defwgad = myCreateGadget (CHECKBOX_KIND, gad, &ng, GTCB_Scaled, TRUE,
+
 											 GTCB_Checked, glob->usedefwidth, TAG_END);
+
 			top += stdgadheight + spacing / 2;
 
 			ng.ng_TopEdge = top + (glob->os30 ? checktopoff : 1);
 			ng.ng_GadgetID = DEFHEIGHT;
+
 			gad = glob->defhgad = myCreateGadget (CHECKBOX_KIND, gad, &ng, GTCB_Scaled, TRUE,
 											 GTCB_Checked, glob->usedefheight, TAG_END);
+
 
 			ng.ng_Flags = 0;
 
@@ -495,15 +532,20 @@ retryopenwindow:
 			ng.ng_GadgetID = SCRHEIGHT;
 			str = heightstr;
 			glob->heightkey = KeyFromStr (str, '_');
+
 			gad = glob->heightgad = my_CreateIntegerGadget (gad, &ng, 5,
+
 																glob->height, GACT_STRINGLEFT);
+
 			img = my_CreateGadgetLabelImage (img, &ng, str,
 														val - 8 - heightstrlen, top + 3, TEXTPEN);
+
 
 			top += ng.ng_Height + spacing;
 			}
 
 		if (glob->flags & SCREQF_DEPTHGAD) {
+
 
 			/* Colors gadget */
 			str = GetStr (glob->catalog, MSG_COLORS);
@@ -540,6 +582,7 @@ retryopenwindow:
 			}
 
 		if (glob->flags & SCREQF_AUTOSCROLLGAD) {
+
 			str = GetStr (glob->catalog, MSG_AUTOSCROLL);
 			glob->gadkey[CHECKBOX_AUTOSCROLL] = KeyFromStr (str, '_');
 			val = StrWidth_noloc (&glob->itxt, str) + 8;
@@ -556,16 +599,19 @@ retryopenwindow:
 		ng.ng_Flags = 0;
 		}
 
+
 	/* create buttons */
 	buttonheight = createstyle ? (checkskip + 4) : (glob->fontheight + 6);
 	ng.ng_TextAttr = &glob->font;
 	checkboxcount = CHECKBOX_BOLD;
 	for (i = 0; i < 8; i++) {
+
 		if (i == num1) {
 			if (createstyle || (isfilereq && (glob->flags & FREQF_MULTISELECT)))
 				top += buttonheight + spacing;
 			if (createstyle) buttonheight = (glob->fontheight + 6);
 			}
+
 		ng.ng_TopEdge = top;
 		ng.ng_LeftEdge = gadpos[i];
 		ng.ng_Width = gadlen[i];
@@ -577,6 +623,7 @@ retryopenwindow:
 				if ((i == 3) || (i == 5) || (i == 6)) continue;
 				if (i < 3) {
 					if (createstyle) {
+
 						check = FALSE;
 						switch (i) {
 							case 0: check = (glob->fontstyle & FSF_BOLD); break;
@@ -601,6 +648,7 @@ retryopenwindow:
 				}
 			else if (i < 4 || i == 5 || i == 6) continue;
 			}
+
 		if (i == 0) {
 			if (glob->flags & FREQF_MULTISELECT) {
 				ng.ng_GadgetText = NULL;
@@ -615,6 +663,7 @@ retryopenwindow:
 			if (i == 7) glob->cancelgad = gad;
 			}
 		}
+
 
 	ng.ng_LeftEdge = ng.ng_TopEdge = ng.ng_Width = ng.ng_Height = 0;
 	ng.ng_GadgetText = NULL;

@@ -25,13 +25,14 @@ ULIBNAME	:= ReqTools
 
 FILES := functable filereqalloc mem filereqextra req misc rtlocale \
 	 general filereq boopsigads filereqsetup filereqmain boopsi \
-	 
+	 palettereq
 
 FUNCTIONS :=	rtallocrequesta \
 		rtchangereqattra \
 		rtclosewindowsafely \
 		rtezrequesta \
 		rtfilerequesta \
+		rtfontrequesta \
 		rtfreefilelist \
 		rtfreerequest \
 		rtfreereqbuffer \
@@ -40,7 +41,9 @@ FUNCTIONS :=	rtallocrequesta \
 		rtgetvscreensize \
 		rtlockwindow \
 		rtlockprefs \
+		rtpaletterequesta \
 		rtreqhandlera \
+		rtscreenmoderequesta \
 		rtscreentofrontsafely \
 		rtsetreqposition \
 		rtsetwaitpointer \

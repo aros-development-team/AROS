@@ -135,19 +135,14 @@ AROS_UFH3(IPTR, myBoopsiDispatch,
     WORD 		xpos, ypos;
     IPTR 		retval = 0;
     
-kprintf("--++myBoopsiDispatch\n");
-    
     switch(msg->MethodID)
     {
         case OM_NEW:
-kprintf("--++myBoopsiDispatch 2\n");
  	    retval = DoSuperMethodA(cl, (Object *)im, msg);
-kprintf("--++myBoopsiDispatch 3\n");
  	    if (retval)
 	    {
 	        UBYTE underscorestr[2];
 		
-kprintf("--++myBoopsiDispatch 4\n");
  	        im = (struct Image *)retval;
 		
 		data = INST_DATA(cl, im);
@@ -155,11 +150,7 @@ kprintf("--++myBoopsiDispatch 4\n");
 		
 		underscorestr[0] = data->lod_IData.idata_Underscore;
 		underscorestr[1] = '\0';
-		
-kprintf("--++myBoopsiDispatch 5: label = \"%s\" textattr = %x  \n",
-	data->lod_IData.idata_Label,
-	data->lod_IData.idata_TextAttr);
-	
+			
  		im->Width = myTextLength(data->lod_IData.idata_Label,
 					 data->lod_IData.idata_TextAttr,
 					 underscorestr, /* AROS FIXME: correct ? */
@@ -168,7 +159,6 @@ kprintf("--++myBoopsiDispatch 5: label = \"%s\" textattr = %x  \n",
 					 );
 		
 		/* Calculate text position if we have a gadget */
-kprintf("--++myBoopsiDispatch 6\n");
  					 
 		if ((gad = data->lod_IData.idata_Gadget))
 		{
@@ -183,7 +173,6 @@ kprintf("--++myBoopsiDispatch 6\n");
 	    break;
 	
 	case IM_DRAW:
-kprintf("--++myBoopsiDispatch IM_DRAW: \n");
 	    data = INST_DATA(cl, im);
 	    
 	    rp = imsg->imp_RPort;
@@ -205,18 +194,12 @@ kprintf("--++myBoopsiDispatch IM_DRAW: \n");
 	    pens = imsg->imp_DrInfo->dri_Pens;
 	    if (!pens) pens = (UWORD *)defaultpens;
 	    
-kprintf("--++myBoopsiDispatch IM_DRAW: 2\n");
 	    if ((gad = data->lod_IData.idata_Gadget))
 	    {
 	        xpos = gad->LeftEdge;
 		ypos = gad->TopEdge;
 		
 	        SetAPen(rp, pens[(imsg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-kprintf("--++myBoopsiDispatch IM_DRAW: 3 (%d,%d) - (%d,%d)\n",
-			xpos,
-			ypos,
-			gad->LeftEdge + gad->Width - 1,
-			gad->TopEdge + gad->Height -1 );
 
 		RectFill(rp, xpos,
 			     ypos,

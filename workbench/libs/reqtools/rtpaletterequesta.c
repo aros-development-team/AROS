@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -14,22 +14,27 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
+
 #include "reqtools_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-    AROS_LH0(VOID, rtUnlockPrefs,
+    AROS_LH3(APTR, rtPaletteRequestA,
 
 /*  SYNOPSIS */
 
+	AROS_LHA(char *, title, A2),
+	AROS_LHA(struct rtReqInfo *, reqinfo, A3),
+	AROS_LHA(struct TagItem *, taglist, A0),
+
 /*  LOCATION */
 
-	struct Library *, RTBase, 29, ReqTools)
+	struct Library *, RTBase, 17, ReqTools)
 
 /*  FUNCTION
-
+   
     INPUTS
 
     RESULT
@@ -42,8 +47,6 @@
 
     SEE ALSO
 
-    rtLockPrefs()
-
     INTERNALS
 
     HISTORY
@@ -52,7 +55,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ReleaseSemaphore(&GPB(RTBase)->rt.ReqToolsPrefs.PrefsSemaphore);
-
+    return PaletteRequestA(title, reqinfo, taglist); /* in palettereq.c */
+    
     AROS_LIBFUNC_EXIT
-} /* rtUnlockPrefs */
+    
+} /* rtPaletteRequestA */

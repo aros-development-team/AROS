@@ -154,8 +154,6 @@ ULONG ASM SAVEDS GetString (
     ULONG 		tagdata, *gadlenptr, *gadposptr, idcmpflags;
     APTR 		gadfmtargs, textfmtargs, args;
 
-kprintf("--++getstring\n");
-
     memset (&itxt, 0, sizeof (struct IntuiText));
     memset (&ng, 0, sizeof (struct NewGadget));
 
@@ -189,7 +187,6 @@ kprintf("--++getstring\n");
 	glob->shareidcmp = reqinfo->ShareIDCMP;
 	glob->imsghook = reqinfo->IntuiMsgFunc;
     }
-kprintf("--++getstring 2\n");
 	    
     /* parse tags */
     tstate = taglist;
@@ -255,10 +252,8 @@ kprintf("--++getstring 2\n");
 	} /* if (tag->ti_Tag > RT_TagBase)*/
 	
     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
-kprintf("--++getstring 3\n");
 
     glob->catalog = RT_OpenCatalog (locale);
-kprintf("--++getstring 4\n");
 
     /* ignore RTGL_Min and RTGL_Max if not rtNewGetLongA() */
     if (mode != ENTER_NUMBER) glob->minmax = FALSE;
@@ -276,22 +271,18 @@ kprintf("--++getstring 4\n");
     if (!(glob->scr = GetReqScreen (&glob->newreqwin, &glob->prwin, glob->scr, pubname)))
 	return (ReqExit (glob, FALSE));
 	
-kprintf("--++getstring 5\n");
     spacing = rtGetVScreenSize (glob->scr, (ULONG *)&scrwidth, (ULONG *)&scrheight);
-kprintf("--++getstring 6\n");
 
     if (fontattr)
     {
 	if (!(glob->reqfont = OpenFont (fontattr))) fontattr = NULL;
     }
-kprintf("--++getstring 7\n");
     
     if (!fontattr) fontattr = glob->scr->Font;
 
     if (!(glob->visinfo = GetVisualInfoA (glob->scr, NULL))
 	|| !(glob->drinfo = GetScreenDrawInfo (glob->scr)))
 	return (ReqExit (glob, FALSE));
-kprintf("--++getstring 8\n");
 
     itxt.ITextFont = fontattr;
     glob->boldattr = *fontattr;
@@ -303,8 +294,6 @@ kprintf("--++getstring 8\n");
 
     /* Calculate the width, height and position of the requester window. We try
 	    to position the window as close to the mouse as possible (default). */
-
-kprintf("--++getstring 9\n");
 
     if (mode != IS_EZREQUEST)
     {
@@ -328,7 +317,6 @@ kprintf("--++getstring 9\n");
 	glob->textfmt = stringbuff;
 	textfmtargs = (APTR)maxlen;
     }
-kprintf("--++getstring 10\n");
 
     if (glob->textfmt)
     {
@@ -336,7 +324,6 @@ kprintf("--++getstring 10\n");
 		calculates number of lines in format string.
 		(APTR)maxlen points to the arguments! */
 
-kprintf("--++getstring 11 \n");
 	DofmtCount (glob->textfmt, textfmtargs, &glob->bodyfmt, DOFMT_COUNTNEWLINES);
 	glob->numlines = glob->bodyfmt.numlines;
 	
@@ -349,7 +336,6 @@ kprintf("--++getstring 11 \n");
 	bodyitxt = (struct IntuiText *)&glob->lenptr[glob->numlines];
 	ptr = (char *)&bodyitxt[glob->numlines];
 	args = Dofmt (ptr, glob->textfmt, textfmtargs);
-kprintf("--++\n\n***** Dofmt created \"%s\"\n\n", ptr);
 
 	if (mode == IS_EZREQUEST) gadfmtargs = args;
 	FillNewLineTable (glob->buff, ptr);
@@ -363,13 +349,11 @@ kprintf("--++\n\n***** Dofmt created \"%s\"\n\n", ptr);
 	}
 	glob->width = glob->len + 70;
     }
-kprintf("--++getstring 20\n");
     
     nogadgets = (gadfmt == NULL);
 
     if (!nogadgets)
     {
-kprintf("--++getstring 21\n");
 	DofmtCount (gadfmt, gadfmtargs, &glob->gadfmtbuff, DOFMT_COUNTBARS);
 	gadlines = glob->gadfmtbuff.numlines;
 	glob->gadfmtbuff.bufflen += 12 * gadlines;
@@ -391,7 +375,6 @@ kprintf("--++getstring 21\n");
     } /* if (!nogadgets) */
     
     /* else gadlines = 0; is always NULL (cleared at beginning) */
-kprintf("--++getstring 30\n");
 
     if (!title)
     {
@@ -404,11 +387,9 @@ kprintf("--++getstring 30\n");
     top = (glob->scr->WBorTop + scrfontht + 1) + spacing;
     val = glob->fontht + 6;
 
-kprintf("--++getstring 31\n");
     
     if (mode != IS_EZREQUEST)
     {
-kprintf("--++getstring 32\n");
 #if 1
 	/* AROS FIX: calc. was wrong because scr->WBorTop not taken into account. */
 	
@@ -459,15 +440,12 @@ kprintf("--++getstring 32\n");
 #endif
 	if (!nogadgets) height += spacing + val;
     }
-kprintf("--++getstring 40\n");
 
     i = gadlen + gadlines * 16;
     if (i > glob->width) glob->width = i;
 
     if (glob->width > scrwidth) glob->width = scrwidth;
     if (height > scrheight) height = scrheight;
-
-kprintf("--++getstring 41\n");
 
     /* Create gadgets */
     gad = (struct Gadget *)CreateContext (&glob->buttoninfo.glist);
@@ -479,7 +457,6 @@ kprintf("--++getstring 41\n");
 
     if (!nogadgets)
     {
-kprintf("--++getstring 42\n");
 	nlen = gadlenptr[gadlines-1];
 
 	if (gadlines > 1)
@@ -493,11 +470,9 @@ kprintf("--++getstring 42\n");
 	    gadposptr[0] = npos = (glob->width - nlen) / 2;
 	    retnum = 1;
 	}
-kprintf("--++getstring 43\n");
 
 	for (i = 0; i < gadlines; i++)
 	{
-kprintf("--++getstring 44\n");
 	    ng.ng_GadgetID++;
 	    if (i == gadlines - 1) ng.ng_GadgetID = 1;
 	    
@@ -509,14 +484,8 @@ kprintf("--++getstring 44\n");
 	    if ((val = (ng.ng_GadgetID == retnum
 		&& !(glob->reqflags & EZREQF_NORETURNKEY))))
 		ng.ng_TextAttr = &glob->boldattr;
-kprintf("--++getstring 45: creating buttongad(%d,%d) - (%d x %d)\n",
-		ng.ng_LeftEdge,
-		ng.ng_TopEdge,
-		ng.ng_Width,
-		ng.ng_Height);
 		
 	    gad = my_CreateButtonGadget (gad, underscore, &ng);
-kprintf("--++getstring 46\n");
 	    
 	    if (val) glob->retgad = gad;
 	    if (!i) glob->yesgad = gad;
@@ -530,7 +499,6 @@ kprintf("--++getstring 46\n");
 	npos = glob->width / 2;
 	nlen = 0;
     }
-kprintf("--++getstring 50\n");
 
     if (!glob->nowinbackfill && glob->texttop)
     {
@@ -542,7 +510,6 @@ kprintf("--++getstring 50\n");
 	
 	gad = myCreateGadget (TEXT_KIND, gad, &ng, GTTX_Border, TRUE, TAG_END);
     }
-kprintf("--++getstring 60\n");
 
     glob->newreqwin.Width = glob->width;
     glob->newreqwin.Height = height;
@@ -553,7 +520,6 @@ kprintf("--++getstring 60\n");
 	glob->newreqwin.LeftEdge = -npos - nlen / 2;
 	glob->newreqwin.TopEdge = -height + glob->fontht / 2 + 5 + spacing;
     }
-kprintf("--++getstring 70\n");
     
     rtSetReqPosition (reqpos, &glob->newreqwin, glob->scr, glob->prwin);
 
@@ -561,7 +527,6 @@ kprintf("--++getstring 70\n");
 
     if (mode != IS_EZREQUEST)
     {
-kprintf("--++getstring 71\n");
 	glob->minmaxtop = ng.ng_TopEdge = height - 2 * (glob->fontht + spacing) - 10 - glob->scr->WBorBottom;
 	ng.ng_GadgetText = NULL;
 	
@@ -607,7 +572,6 @@ printf("--++ ----------------> creating TEXT_KING wiht GTTX_Text = \"%s\"\n", gl
 	gad = glob->strgad;
 	
     } /* if (mode != IS_EZREQUEST) */
-kprintf("--++getstring 80\n");
 
     img = &glob->headimg;
     if (!glob->nowinbackfill)
@@ -632,7 +596,6 @@ kprintf("--++getstring 80\n");
 				  glob->width - (leftoff + rightoff + 4), glob->strgadht,
 				  BACKGROUNDPEN, BACKGROUNDPEN);
     }
-kprintf("--++getstring 90\n");
 
     if (glob->textfmt)
     {
@@ -650,36 +613,44 @@ kprintf("--++getstring 90\n");
 	    bodyitxt[i].LeftEdge = val;
 	    bodyitxt[i].TopEdge += j;
 	    bodyitxt[i].IText = glob->buff[i];
-kprintf("--++ bodyitext at %d,%d witht text \"%s\"\n",
-	bodyitxt[i].LeftEdge,bodyitxt[i].TopEdge,bodyitxt[i].IText);
 
 	    if (i) bodyitxt[i-1].NextText = &bodyitxt[i];
 	}
 	
     } /* if (glob->textfmt) */
-kprintf("--++getstring 100\n");
 
     if (glob->headimg.NextImage || glob->textfmt)
     {
 	ng.ng_LeftEdge = ng.ng_TopEdge = ng.ng_Width = ng.ng_Height = 0;
 	ng.ng_GadgetText = NULL;
+
 	gad = myCreateGadget (GENERIC_KIND, gad, &ng, TAG_END);
 	if (gad)
 	{
 	    gad->GadgetType |= GTYP_BOOLGADGET;
+#ifdef _AROS
+#warning A workaround here for AROS, because this would overpaint many gadgets
+	    /* This seems to rely somehow on how GadTools refreshes gadgets
+	       (the order etc.).
+	       
+	       This gadget is at the end of the gadget list and in GadgetRender
+	       contains a linked list of fillrectclass images for the requester
+	       background and textbox backgrounds. */
+	       
+	    gad->Flags |= GFLG_GADGHNONE;
+#else
 	    gad->Flags |= GFLG_GADGIMAGE|GFLG_GADGHNONE;
 	    gad->GadgetRender = (APTR)glob->headimg.NextImage;
+#endif
 	    gad->GadgetText = &bodyitxt[0];
-kprintf("--++getstring 105: gadgettext = %x  gadgetrender = %x\n", gad->GadgetText, gad->GadgetRender);
+
 	}
     }
-kprintf("--++getstring 110\n");
 
     if (!gad || (!glob->nowinbackfill && !img)) return (ReqExit (glob, FALSE));
 
     glob->newreqwin.IDCMPFlags = glob->shareidcmp ? 0 : idcmpflags;
 
-kprintf("--++getstring 115\n");
 
     /* Now open the message window. */
     if (!(glob->reqwin = OpenWindowBF (&glob->newreqwin, &glob->backfillhook, glob->drinfo->dri_Pens, NULL, NULL)))
@@ -690,18 +661,12 @@ kprintf("--++getstring 115\n");
 	glob->reqwin->UserPort = glob->prwin->UserPort;
 	ModifyIDCMP (glob->reqwin, idcmpflags);
     }
-kprintf("--++getstring 120\n");
 
     AddGList (glob->reqwin, glob->buttoninfo.glist, -1, -1, NULL);
-kprintf("--++getstring 121\n");
     RefreshGadgets (glob->buttoninfo.glist, glob->reqwin, NULL);
-kprintf("--++getstring 122\n");
     GT_RefreshWindow (glob->reqwin, NULL);
-kprintf("--++getstring 123\n");
     glob->winlock = DoLockWindow (glob->prwin, glob->lockwindow, NULL, TRUE);
-kprintf("--++getstring 124\n");
     DoWaitPointer (glob->prwin, glob->waitpointer, TRUE);
-kprintf("--++getstring 125\n");
 
     glob->frontscr = IntuitionBase->FirstScreen;
     DoScreenToFront (glob->scr, glob->noscreenpop, TRUE);
@@ -947,8 +912,11 @@ static ULONG ASM SAVEDS myReqHandler (
 	
     } /* while ((msg = GetWin_GT_Msg (glob->reqwin, glob->imsghook, glob->reqinfo))) */
 
-    if (doactgad) ActivateGadget (glob->strgad, glob->reqwin, NULL);
-
+    if (doactgad)
+    {
+        ActivateGadget (glob->strgad, glob->reqwin, NULL);
+    }
+    
     glob->DoNotWait = FALSE;
     
     return (CALL_HANDLER);

@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -14,22 +14,27 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
+
 #include "reqtools_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-    AROS_LH0(VOID, rtUnlockPrefs,
+    AROS_LH3(ULONG, rtScreenModeRequestA,
 
 /*  SYNOPSIS */
 
+	AROS_LHA(struct rtScreenModeRequester *, screenmodereq, A1),
+	AROS_LHA(char *, title, A3),
+	AROS_LHA(struct TagItem *, taglist, A0),
+
 /*  LOCATION */
 
-	struct Library *, RTBase, 29, ReqTools)
+	struct Library *, RTBase, 24, ReqTools)
 
 /*  FUNCTION
-
+   
     INPUTS
 
     RESULT
@@ -42,8 +47,6 @@
 
     SEE ALSO
 
-    rtLockPrefs()
-
     INTERNALS
 
     HISTORY
@@ -52,7 +55,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ReleaseSemaphore(&GPB(RTBase)->rt.ReqToolsPrefs.PrefsSemaphore);
-
+    return (ULONG)FileRequestA((struct RealFileRequester *)screenmodereq, NULL, title, taglist); /* in filereq.c */
+    
     AROS_LIBFUNC_EXIT
-} /* rtUnlockPrefs */
+    
+} /* rtScreenModeRequestA */

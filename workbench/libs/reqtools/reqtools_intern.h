@@ -77,6 +77,10 @@ ULONG GetString (UBYTE *stringbuff, LONG maxlen, char *title,
 		 ULONG checksum, ULONG *value, LONG mode,
 	         struct rtReqInfo *reqinfo, struct TagItem *taglist);
 
+/* palettereq.c */
+
+LONG PaletteRequestA (char *title, struct rtReqInfo *reqinfo, struct TagItem *taglist);
+
 /****************************************************************************************/
 
 /* Fix name clashes */

@@ -58,12 +58,15 @@ APTR ASM SAVEDS FileRequestA (
     int 				reqhandler = FALSE, mon, propmaskset = FALSE;
     ULONG 				tagdata;
 
+
+
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
 	 return ((APTR)FALSE);
 
     glob->reqtype = REQTYPE(freq);
     if (glob->reqtype == RT_FILEREQ)
     {
+
 	if (OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *)&glob->timereq, 0))
 	{
 	    FreeVec (glob);
@@ -78,6 +81,7 @@ APTR ASM SAVEDS FileRequestA (
     }
     else if (glob->reqtype == RT_FONTREQ)
     {
+
 	DiskfontBase = (struct DiskfontBase *)OldOpenLibrary ("diskfont.library");
 	glob->diskfontbase = DiskfontBase;
 	
@@ -95,6 +99,7 @@ APTR ASM SAVEDS FileRequestA (
     }
     else
     { /* RT_SCREENMODEREQ */
+
 	glob->scrmodereq = scrmodereq = (struct RealScreenModeRequester *)freq;
 	glob->buff = &scrmodereq->buff;
     }
@@ -120,6 +125,8 @@ APTR ASM SAVEDS FileRequestA (
     glob->req = freq;
     glob->newdir = TRUE;
     glob->maxdepth = glob->maxwidth = glob->maxheight = MAXINT;
+
+
 
     /* parse tags */
     tstate = taglist;
@@ -190,6 +197,8 @@ APTR ASM SAVEDS FileRequestA (
 	}
     }
 
+
+
     glob->catalog = RT_OpenCatalog (locale);
     if (!glob->gadtxt[4])
     {
@@ -197,12 +206,14 @@ APTR ASM SAVEDS FileRequestA (
 	glob->underchar = '_';
     }
 
+
     if (glob->volumerequest)
     {
 	FreeReqBuffer (glob->req);
 	glob->flags |= FREQF_NOFILES|FREQF_NOBUFFER;
 	glob->flags &= ~(FREQF_SAVE|FREQF_PATGAD|FREQF_SELECTDIRS);
     }
+
 
     if (glob->reqtype == RT_FILEREQ)
     {
@@ -212,9 +223,11 @@ APTR ASM SAVEDS FileRequestA (
 	glob->directory_id = glob->buff->directory_id;
     }
 
+
     if (!glob->prwin || !glob->prwin->UserPort
 		     || (glob->prwin->UserPort->mp_SigTask != ThisProcess()))
 	glob->shareidcmp = FALSE;
+
 
     if (!(glob->scr = GetReqScreen (&glob->newreqwin, &glob->prwin,
 						      glob->scr, pubname)))
@@ -222,6 +235,7 @@ APTR ASM SAVEDS FileRequestA (
 	FreeAll (glob);
 	return ((APTR)FALSE);
     }
+
     
     glob->vp = &glob->scr->ViewPort;
     if (glob->flags & FREQF_CHANGEPALETTE)
@@ -233,12 +247,14 @@ APTR ASM SAVEDS FileRequestA (
 	}
 	glob->colcount = (1 << glob->colcount);
     }
+
     
     if (fontattr) glob->font = *fontattr;
     else glob->font = *glob->scr->Font;
 
     if (glob->reqtype == RT_SCREENMODEREQ)
     {
+
 	if (scrmodereq->DisplayID == INVALID_ID)
 	{
 	    glob->modeid = GetVPModeID (glob->vp);
@@ -275,12 +291,14 @@ APTR ASM SAVEDS FileRequestA (
 	}
     }
 
+
     if (!(glob->visinfo = GetVisualInfoA (glob->scr, NULL))
 	|| !(glob->drinfo = GetScreenDrawInfo (glob->scr)))
     {
 	FreeAll (glob);
 	return ((APTR)FALSE);
     }
+
 
     glob->pens = glob->drinfo->dri_Pens;
     glob->title = title;
@@ -291,6 +309,7 @@ APTR ASM SAVEDS FileRequestA (
 	glob->buff->gotopos = glob->buff->pos = glob->buff->currentnum = 0;
     }
 
+
     entry = glob->buff->firstname;
     while (entry)
     {
@@ -298,7 +317,9 @@ APTR ASM SAVEDS FileRequestA (
 	entry = (struct ReqEntry *)entry->re_Next;
     }
 
+
 retryopenwin:
+
     if (!(glob->reqfont = GetReqFont (&glob->font, deffont, &glob->fontheight,
 				      &glob->fontwidth, TRUE)))
     {
@@ -307,8 +328,10 @@ retryopenwin:
     }
     glob->fontbase = glob->reqfont->tf_Baseline;
 
+
     if (!SetupReqWindow (glob, FALSE))
     {
+
 	if (glob->font.ta_YSize > 8)
 	{
 	    glob->font = topaz80;
@@ -318,6 +341,7 @@ retryopenwin:
 	FreeAll (glob);
 	return ((APTR)FALSE);
     }
+
 
     if (glob->reqtype == RT_SCREENMODEREQ) DisplayModeAttrs (glob);
     RenderReqWindow (glob, FALSE, TRUE);

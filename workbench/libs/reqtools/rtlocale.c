@@ -7,13 +7,22 @@
 #include <proto/locale.h>
 #include <string.h>
 
+#ifdef _AROS
+#include <aros/macros.h>
+#endif
 
 char *REGARGS GetStr (struct Catalog *cat, char *idstr)
 {
 	char *local;
+	UWORD id = *(UWORD *)idstr;
 
+#ifdef _AROS
+#if !AROS_BIG_ENDIAN
+	id = AROS_BE2WORD(id);
+#endif
+#endif	
 	local = idstr + 2;
-	if (LocaleBase) return ((char *)GetCatalogStr (cat, *(UWORD *)idstr, local));
+	if (LocaleBase) return ((char *)GetCatalogStr (cat, id, local));
 	return (local);
 }
 

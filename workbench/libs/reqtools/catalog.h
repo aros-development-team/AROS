@@ -2,6 +2,7 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
+
 #define MSG_OK "\x00" "\x01" " _Ok"
 #define MSG_CANCEL "\x00" "\x02" "_Cancel"
 #define MSG_OK_BAR_CANCEL "\x00" "\x03" " _Ok |_Cancel"
