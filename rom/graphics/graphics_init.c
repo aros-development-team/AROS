@@ -105,6 +105,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     
     NEWLIST(&LIBBASE->TextFonts);
     InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
+    InitSemaphore( &PrivGBase(GfxBase)->fontsem );
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
