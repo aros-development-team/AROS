@@ -24,10 +24,10 @@ SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
 
 # New: Also trying to build
 #   $(AROS_LIB)/librom.a	    from $(COMMON) and $(ROMONLY)
-#   
+#
 #   This is a library that is allowed to be used inside modules and the
 #   kernel. It must include no code which refers to global variables.
-#   
+#
 #   Currently the main difference is that it includes a different __assert()
 #   function to handle asserts in the kernel.
 ROM_LIB	    :=	$(AROS_LIB)/librom.a
@@ -293,6 +293,7 @@ ROM_STATIC := \
 	atol \
 	bsearch \
 	ctype \
+	errno \
 	isinf \
 	labs \
 	qsort \
