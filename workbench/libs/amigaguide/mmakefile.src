@@ -23,7 +23,7 @@ FUNCS := \
 
 #MM workbench-libs-amigaguide-includes : \
 #MM     includes-copy
-#MM- workbench-libs-amigaguide : linklibs
+#MM- workbench-libs-amigaguide : linklibs includes
 
 %build_module mmake=workbench-libs-amigaguide \
     modname=amigaguide modtype=library \
