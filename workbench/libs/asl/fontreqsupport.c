@@ -522,7 +522,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
-/*  struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;*/
+    struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
     struct ASLLVFontReqNode *fontnode;
     struct TagItem  	    set_tags[] =
     {
@@ -547,6 +547,11 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
     }
     
     FOActivateFont(ld, i, fontsize, AslBase);
+    
+    if (iforeq->ifo_Flags & FOF_DODRAWMODE)
+    {
+    	FOSetDrawMode(ld, iforeq->ifo_DrawMode, AslBase);
+    }
 }
 
 /*****************************************************************************************/
@@ -578,7 +583,36 @@ void FOSetSizeString(LONG size, struct LayoutData *ld, struct AslBase_intern *As
 }
 
 /*****************************************************************************************/
+
+LONG FOGetDrawMode(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    IPTR		active;
+    
+    ASSERT(udata->DrawModeGadget);
+    
+    GetAttr(ASLCY_Active, udata->DrawModeGadget, &active);
+    
+    return (LONG)active;
+}
+
 /*****************************************************************************************/
+
+void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCY_Active	, id		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->DrawModeGadget);
+    
+    SetGadgetAttrsA((struct Gadget *)udata->DrawModeGadget, ld->ld_Window, NULL, set_tags);
+    
+}
+
 /*****************************************************************************************/
 
 

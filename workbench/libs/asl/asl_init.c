@@ -273,15 +273,6 @@ const struct IntFontReq def_fontreq =
     NULL,				/* FrontPens		*/
     NULL,				/* BackPens		*/
     
-    "Control",
-    "L\0Last Font",
-    "N\0Next Font",
-    "R\0Restore",
-    "D\0Rescan Disk",
-    "O\0Ok",
-    "C\0Cancel"
-
-
 };
 
 /*****************************************************************************************/

@@ -722,7 +722,7 @@ UWORD BiggestTextLength(STRPTR          *strarray,
 
     UWORD i, w = 0, new_w;
 
-    for (i = 0; i < numstrings; i ++)
+    for (i = 0; strarray[i] && i < numstrings; i ++)
     {
 	new_w = TextLength(rp, strarray[i], strlen(strarray[i]));
 	if (new_w > w)

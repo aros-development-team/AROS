@@ -31,6 +31,6 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
 void FOSetFontString(STRPTR name, struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetSizeString(LONG size, struct LayoutData *ld, struct AslBase_intern *AslBase);
 VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase);
-
-
+LONG FOGetDrawMode(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase);
 

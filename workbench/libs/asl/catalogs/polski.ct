@@ -361,3 +361,19 @@ MSG_FONTREQ_MEN_CONTROL_CANCEL
 C\0Poniechaj
 ; C\0Cancel
 ;
+MSG_FONTREQ_MODE_LABEL
+Mode
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Text
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Text+Field
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Complement
+; Complement
+;

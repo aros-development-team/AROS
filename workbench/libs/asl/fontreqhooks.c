@@ -57,6 +57,7 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 #define ID_NAMESTRING  	3
 #define ID_SIZESTRING	4
 #define ID_PREVIEW  	5
+#define ID_DRAWMODE 	6
 
 #undef NUMBUTS
 #define NUMBUTS     	2L
@@ -418,7 +419,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     udata->ButHeight = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
 #endif
     
-    gadrows = 2; /* button row  */
+    gadrows = 2; /* button row + string gadgets under listviews */
+    if (iforeq->ifo_Flags & FOF_DODRAWMODE) gadrows++;
     
     ld->ld_MinWidth =  OUTERSPACINGX * 2 +
 		       GADGETSPACINGX * 1 +
@@ -640,9 +642,10 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     x = ld->ld_WBorLeft + OUTERSPACINGX;
     y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
+    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 2) -
+	(FONTPREVIEWHEIGHT + GADGETSPACINGY) + 1;
 
-    if (i)
+    if (iforeq->ifo_Flags & (FOF_DODRAWMODE))
     {
         #define FSET(x) ((iforeq->ifo_Flags & x) ? TRUE : FALSE)
 	
@@ -653,11 +656,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    Object **objvar;
 	} li [] =
 	{
-//	    {FSET(ISMF_DOOVERSCAN)  , iforeq->ifo_OverscanText  , &udata->OverscanLabel  },
-//	    {FSET(ISMF_DOWIDTH)     , iforeq->ifo_WidthText     , &udata->WidthLabel     },
-//	    {FSET(ISMF_DOHEIGHT)    , iforeq->ifo_HeightText    , &udata->HeightLabel    },
-//	    {FSET(ISMF_DODEPTH)     , iforeq->ifo_ColorsText    , &udata->DepthLabel     },
-//	    {FSET(ISMF_DOAUTOSCROLL), iforeq->ifo_AutoScrollText, &udata->AutoScrollLabel}
+	    {FSET(FOF_DODRAWMODE)   , (STRPTR)MSG_FONTREQ_MODE_LABEL  , &udata->DrawModeLabel  },
 	}; 
 
         #undef FSET
@@ -674,10 +673,20 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_Disabled	, TRUE			},
 	    {TAG_DONE					}
 	};
-
-	w = labelwidth = BiggestTextLength(str, i, &(ld->ld_DummyRP), AslBase);
+    	WORD i2;
+	
+    	for(i = 0, i2 = 0; i < 1; i++)
+	{
+	    if (li[i].doit)
+	    {
+	    	li[i].text = GetString((LONG)li[i].text, GetIR(iforeq)->ir_Catalog, AslBase);
+		str[i2++] = li[i].text;
+	    }
+	}
+	
+	w = labelwidth = BiggestTextLength(str, i2, &(ld->ld_DummyRP), AslBase);
             
-	for(i = 0; i < 5;i++)
+	for(i = 0; i < 1;i++)
 	{
 	    if (!li[i].doit) continue;
 	    
@@ -693,14 +702,74 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    label_tags[1].ti_Data = y;
 	}	
 
-	y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	    (udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
+    	y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
+    	    (udata->ButHeight + GADGETSPACINGY) * (gadrows - 2) -
+	    (FONTPREVIEWHEIGHT + GADGETSPACINGY) + 1;
+	    
 	x = ld->ld_WBorLeft + OUTERSPACINGX + w + LABELSPACINGX;
 
 	w = -ld->ld_WBorLeft - ld->ld_WBorRight - OUTERSPACINGX * 2 -
             w - LABELSPACINGX;
 
-    } /* if (i) */
+    	/* Make DrawMode gadget */
+	
+	if (iforeq->ifo_Flags & FOF_DODRAWMODE)
+	{
+	    struct TagItem cycle_tags[] =
+	    {
+	        {GA_Previous		, (IPTR)gad			  },
+		{GA_Left		, x				  },
+		{GA_RelBottom		, y				  },
+		{GA_RelWidth		, w				  },
+		{GA_Height		, udata->ButHeight		  },
+		{GA_RelVerify		, TRUE				  },
+		{GA_UserData		, (IPTR)ld			  },
+		{GA_ID			, ID_DRAWMODE			  },
+		{ASLCY_Labels		, 0 	    	    	    	  },
+		{ASLCY_Active		, iforeq->ifo_DrawMode	    	  },
+		{ASLCY_Font 	    	, (IPTR)ld->ld_Font 	    	  },
+		{TAG_DONE						  }
+		
+	    };
+	    static LONG labelids[] =
+	    {
+		MSG_FONTREQ_MODE_TEXT,
+		MSG_FONTREQ_MODE_TEXTANDFIELD,
+		MSG_FONTREQ_MODE_COMPLEMENT,
+	    };
+	    STRPTR *labels;
+	    
+	    
+	    if (iforeq->ifo_ModeList)
+	    {
+	    	labels = (IPTR)iforeq->ifo_ModeList;
+	    }
+	    else
+	    {
+    	    	labels = (STRPTR *)&iforeq->ifo_DrawModeJAM1Text;
+	    	
+    		for(i = 0; i < 3; i++)
+		{
+	    	    labels[i] = GetString(labelids[i], GetIR(iforeq)->ir_Catalog, AslBase);
+		}
+	    }
+	    
+	    cycle_tags[8].ti_Data = (IPTR)labels;
+	    
+	    i = CYCLEEXTRAWIDTH +  BiggestTextLength(labels,
+	    					     0x7FFF,
+						     &(ld->ld_DummyRP),
+						     AslBase);						     
+	    if (i > maxcyclewidth) maxcyclewidth = i;
+	    
+	    udata->DrawModeGadget = gad = NewObjectA(AslBase->aslcycleclass, NULL, cycle_tags);
+	    if (!gad) goto failure;
+	    
+	    y += udata->ButHeight + GADGETSPACINGY;
+	    
+	} /* if (ismreq->ism_Flags & ISMF_DOOVERSCAN) */
+	
+    }
     
     w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxcyclewidth + OUTERSPACINGX;
     if (w > ld->ld_MinWidth) ld->ld_MinWidth = w;
@@ -1077,6 +1146,14 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *Asl
     req->fo_Attr.ta_YSize = req->fo_TAttr.tta_YSize;
     req->fo_Attr.ta_Style = req->fo_TAttr.tta_Style;
     req->fo_Attr.ta_Flags = req->fo_TAttr.tta_Flags;
+    
+    /* DrawMode */
+    
+    if (iforeq->ifo_Flags & FOF_DODRAWMODE)
+    {
+    	iforeq->ifo_DrawMode = FOGetDrawMode(ld, AslBase);
+    }
+    req->fo_DrawMode = iforeq->ifo_DrawMode;
     
     retval = GHRET_FINISHED_OK;
 
