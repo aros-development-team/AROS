@@ -59,8 +59,12 @@ Basic Installation of AROS-SOURCES
 	  environment based on top of Linux/FreeBSD and X11
 
 	  additional target:
-	  '--target=native-i386'
-	  AROS bootable from floppy disk
+
+	  	--target=native-i386
+
+	  AROS bootable from floppy disk. If you want to create
+	  this, then you must also copy make.defaults to make.opts
+	  and you must set all SHARED_* options to "no".
 
 
 	Use "./configure --help" for all possible options.
