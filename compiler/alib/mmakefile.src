@@ -49,6 +49,7 @@ FILES	:= \
     fprintf \
     freeievents \
     fwritef \
+    getdtattrs \
     getextsprite \
     getrpattrs \
     getvisualinfo \
