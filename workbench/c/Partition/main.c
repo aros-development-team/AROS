@@ -17,8 +17,20 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-int main()
+#define SH_GLOBAL_SYSBASE TRUE
+#define SH_GLOBAL_DOSBASE TRUE
+#include <aros/shcommands.h>
+
+AROS_SH2
+(
+    Partition, 0.1,
+    AROS_SHA(BOOL, ,   FORCE, /S,   FALSE),
+    AROS_SHA(BOOL, ,   QUIET, /S,   FALSE)
+)
 {
+    AROS_SHCOMMAND_INIT
+    
+    struct Library         *PartitionBase = NULL;
     struct PartitionHandle *root = NULL,
                            *rdbp = NULL;
     struct DosEnvec         tableDE,
@@ -26,7 +38,42 @@ int main()
     struct DriveGeometry    tableDG;
     LONG                    rc;
     LONG                    reserved = 0;
+    TEXT                    choice = 'N';
     
+    if (SHArg(QUIET) && !SHArg(FORCE))
+    {
+        PutStr("ERROR: Cannot specify QUIET without FORCE.\n");
+        return RETURN_FAIL;
+    }
+    
+    PartitionBase = OpenLibrary("partition.library", 0);
+    if (PartitionBase == NULL)
+    {
+        PutStr("ERROR: Could not open partition.library.\n");
+        return RETURN_FAIL;
+    }
+    
+    if (!SHArg(FORCE))
+    {
+        Printf("About to partition ide.device unit 0.\n");
+        Printf("This will DESTROY ALL DATA on the drive!\n");
+        Printf("Are you sure? (y/N)"); Flush(Output());
+    
+        Read(Input(), &choice, 1);
+    }
+    else
+    {
+        choice = 'y';
+    }
+
+    if (choice != 'y' && choice != 'Y') return RETURN_OK;
+    
+    if (!SHArg(QUIET))
+    {
+        Printf("Partitioning drive...");
+        Flush(Output());
+    }
+
     memset(&tableDG, 0, sizeof(struct DriveGeometry));
     
     /* Step 1: Destroy the existing partitiontable, if any exists. */
@@ -40,7 +87,7 @@ int main()
     if (rc != 0)
     {
         printf("*** ERROR: Creating partition table failed. Aborting.\n");
-        exit(RETURN_FAIL); /* FIXME: take care of allocated resources... */
+        return RETURN_FAIL; /* FIXME: take care of allocated resources... */
     }
     
     /* Step 3: Create a RDB partition in the table. */
@@ -51,8 +98,8 @@ int main()
     (
         root, 
         
-        PT_DOSENVEC, &tableDE, 
-        PT_GEOMETRY, &tableDG,
+        PT_DOSENVEC, (IPTR) &tableDE, 
+        PT_GEOMETRY, (IPTR) &tableDG,
         
         TAG_DONE
     );
@@ -97,5 +144,11 @@ int main()
     ClosePartitionTable(root);
     CloseRootPartition(root);
 
+    if (!SHArg(QUIET)) Printf("done\n");
+    
+    CloseLibrary(PartitionBase);
+    
     return RETURN_OK;
+
+    AROS_SHCOMMAND_EXIT
 }

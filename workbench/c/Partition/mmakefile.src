@@ -7,14 +7,14 @@ FILES  := main
 EXEDIR := $(AROS_C)
 EXE    := $(EXEDIR)/Partition
 
-USE_AROSLIB     := yes
-USE_CLIB_SHARED := yes
+USE_CLIB_STATIC := yes
 USE_AMIGALIB    := yes
+NO_AUTOINIT     := yes
 
 #MM- workbench-c : workbench-c-partition
 #MM workbench-c-partition : includes linklibs 
 
-%make_prog_setup mmake=workbench-c-partition
+%make_prog_setup mmake=workbench-c-partition startup=
 
 workbench-c-partition : setup $(EXE)
 
