@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:32:56  aros
+    Added missing include
+
     Revision 1.3  1996/09/21 14:14:23  digulla
     Hand DOSBase to DoName()
 
@@ -20,6 +23,7 @@
 #include <dos/filesystem.h>
 #include <clib/dos_protos.h>
 #include <clib/utility_protos.h>
+#include <string.h>
 #include "dos_intern.h"
 
 LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
