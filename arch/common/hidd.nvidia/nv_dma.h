@@ -148,6 +148,10 @@
 #define STRETCH_BLIT_FORMAT_A8R8G8B8				    0x00000003
 #define STRETCH_BLIT_FORMAT_YUYV                                    0x00000005
 #define STRETCH_BLIT_FORMAT_UYVY                                    0x00000006
+#define STRETCH_BLIT_OPERATION					    0x0000E304
+#define STRETCH_BLIT_OPERATION_ROP				    0x00000001
+#define STRETCH_BLIT_OPERATION_COPY				    0x00000003
+#define STRETCH_BLIT_OPERATION_BLEND				    0x00000005
 #define STRETCH_BLIT_CLIP_POINT                                     0x0000E308
 #define STRETCH_BLIT_CLIP_POINT_X                                   15:0 
 #define STRETCH_BLIT_CLIP_POINT_Y                                   31:16
