@@ -77,8 +77,17 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 /* Declare all macros which the systems' libcall didn't */
+#ifndef __AROS_SLIB_ENTRY
+#   define __AROS_SLIB_ENTRY(n,s)   s ## _ ## n
+#endif
 #ifndef AROS_SLIB_ENTRY
-#   define AROS_SLIB_ENTRY(n,s)   s ## _ ## n
+/*
+    This is to allow the C preprocessor to expand n and s before they are
+    maybe concatenated (the CPP first evaluates a ## b and the tries
+    to expand ab instead of expanding a and b and then concatenating the
+    results
+*/
+#   define AROS_SLIB_ENTRY(n,s)   __AROS_SLIB_ENTRY(n,s)
 #endif
 
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
