@@ -17,6 +17,7 @@ FILES := amigademo \
 	messagetest \
 	scantest \
 	semaphoretest \
+	sift \
 	signaltest \
 	tasktest \
 	tasktest2
