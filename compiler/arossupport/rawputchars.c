@@ -8,7 +8,6 @@
 
 #include <aros/config.h>
 #include <proto/exec.h>
-#include "exec_private.h"
 
 /*****************************************************************************
 
