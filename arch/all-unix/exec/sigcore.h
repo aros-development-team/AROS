@@ -1,20 +1,14 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
-#ifdef __linux__
-    /* This is neccessary on Linux to get the sigcontext_struct */
-#   define __KERNEL__
-#endif
 #include <signal.h>
-#ifdef __KERNEL__
-#   undef __KERNEL__
-#endif
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
 #define _POP(sp)            (*sp++)
 
 #ifdef __linux__
+#   include <asm/sigcontext.h>
     /* sigcontext_t is the type of the signals' context. Linux offers no way
 	to get this context in a legal way, so I have to use tricks. */
     typedef struct sigcontext_struct sigcontext_t;
@@ -296,7 +290,7 @@ typedef struct sigcontext sigcontext_t;
 #   define R3(sc)           (sc->sc_edx)
 #   define R4(sc)           (sc->sc_edi)
 #   define R5(sc)           (sc->sc_esi)
-#   define R6(sc)	    (sc->sc_isp)
+#   define R6(sc)           (sc->sc_isp)
 
 #   define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
@@ -311,7 +305,7 @@ typedef struct sigcontext sigcontext_t;
 	_PUSH(sp,pc), \
 	_PUSH(sp,sp), \
 	sp -= CPU_NUMREGS
-	  	  
+
 #   define SAVEREGS(sp,sc) \
 	sp = (SP_TYPE *)SP(sc), \
 	sp -= 128, \
