@@ -220,25 +220,19 @@ class Parser:
 		text = text[:match.start (0)]
 		eof = 0
 
-	pos = 0
-	while 1:
-	    match = self.newLinePattern.search (text, pos)
-	    if not match: break
-	    self.lineno = self.lineno + 1
-	    pos = match.end (0)
-
+	self.lineno = self.lineno + self.calcNewLines (text, 0, len (text))
 	return text, eof
 
-    def calcNewLines (str, start, end):
+    def calcNewLines (self, str, start, end):
 	"""For return the number of lines between two positions in the
 	string."""
 
 	pos = start
 	count = 0
 	while 1:
-	    match = self.newLinePattern (text, pos, end)
+	    match = self.newLinePattern.search (str, pos, end)
 	    if not match: break
-	    self.lineno = self.lineno + 1
+	    count = count + 1
 	    pos = match.end (0)
 
 	return count
@@ -304,7 +298,7 @@ class Parser:
 	    if not argname:
 		if match.group (0) == '=':
 		    self.lineno = self.lineno + self.calcNewLines (text, 0, pos)
-		    error ('Missing argument name in line %d\n' % self.lineno)
+		    self.error ('Missing argument name in line %d\n' % self.lineno)
 		break
 	    
 	    # If a '=' follows, then there must be some value
@@ -426,7 +420,7 @@ class Parser:
 	self.wf.write (str)
 
     def writeline (self, str):
-	"Write a line to the output stream. This also writes an EOL to the
+	"""Write a line to the output stream. This also writes an EOL to the
 	stream."""
 	self.wf.write (str)
 	self.wf.write ('\n')
