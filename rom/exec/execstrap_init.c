@@ -5,21 +5,32 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/nodes.h>
 #include <exec/execbase.h>
-
 #include <proto/exec.h>
+
+#if DEBUG > 0
+#include <hardware/cia.h>
+#endif
 
 #include "exec_extfuncs.h"
 
-#define DEBUG 2
 #include <aros/debug.h>
 #undef kprintf
 
 #define SetFunc(offset,name) \
     SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec));
+
+/* flash() */
+void flash(UWORD);
+
+#define RED	0xf00
+#define GREEN	0x0f0
+#define BLUE	0x00f
 
 /*
     Architecture dependent function variations:
@@ -65,17 +76,28 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.6 (27.02.97)";
+const char version[] = "$VER: exec.strap 41.7 (6.3.97)";
 
 int start(void)
 {
-    ULONG x, y;
-    UWORD *color00 = (void *)0xdff180;
+#if DEBUG > 0
+    UBYTE *ciapra = (void *)0xbfe001;
+#endif
     struct ExecBase *SysBase;
     UWORD cpuflags;
 
     SysBase = *(void **)4;
     cpuflags = SysBase->AttnFlags;
+
+#if DEBUG > 0
+    if(!(*ciapra & CIAF_GAMEPORT0))
+    {
+	D(bug("\nLMB pressed. Clearing reset vectors and resetting.\n\n"));
+	SysBase->KickTagPtr = SysBase->KickMemPtr = SysBase->KickCheckSum = 0;
+	flash(RED);
+	ColdReboot(); /* Never returns. */
+    }
+#endif
 
     DB2(bug("exec.strap installing...\n"));
 
@@ -86,12 +108,7 @@ int start(void)
 	return 0;
     }
 
-    /* High-tech display tricks (blue effects) :-) */
-    for (x=0; x<1000; x++)
-    {
-	for (y = 200; y; y--) *color00 = 0x00f;
-	for (y = 200; y; y--) *color00 = 0x000;
-    }
+    flash(BLUE);
 
     /* First patch SetFunction itself. */
     SetFunc( 70, SetFunction);
@@ -206,12 +223,8 @@ int start(void)
     SetFunc( 35, FreeMem);
 #endif
     SetFunc( 36, AvailMem);
-#if 0
-    /* "Could not mount PC0:": */
     SetFunc( 37, AllocEntry);
-    /* Also disabled, as a dtor to AllocEntry */
     SetFunc( 38, FreeEntry);
-#endif
     SetFunc( 51, SetSignal);
     SetFunc( 55, AllocSignal);
     SetFunc( 56, FreeSignal);
@@ -229,6 +242,7 @@ int start(void)
     SetFunc( 71, SumLibrary);
     SetFunc( 72, AddDevice);
     SetFunc( 73, RemDevice);
+    SetFunc( 74, OpenDevice);
     SetFunc( 76, DoIO);
     SetFunc( 77, SendIO);
     SetFunc( 78, CheckIO);
@@ -285,17 +299,78 @@ int start(void)
     }
     /* We don't have to clear any caches, SetFunction takes care of them. */
 
-    /*
-	High-tech display tricks (green effects) :-)
-    */
-    for (x=0; x<1000; x++)
-    {
-	for (y = 200; y; y--) *color00 = 0x0f0;
-	for (y = 200; y; y--) *color00 = 0x000;
-    }
+    flash(GREEN);
 
     DB2(bug("exec.strap installation done.\n"));
     return 0;
 }
 
+/* High-tech display tricks :-) */
+void flash(UWORD color)
+{
+    ULONG x, y;
+    UWORD *color00 = (void *)0xdff180;
+
+    for (x=0; x<1000; x++)
+    {
+	for (y = 200; y; y--) *color00 = color;
+	for (y = 200; y; y--) *color00 = 0x000;
+    }
+}
+
 const char end = 0;
+
+/*************************************************************************
+ *  Functions not yet added to this file (whether enabled or not):
+ *  
+ *  Supervisor
+ *  ExitIntr
+ *  Schedule
+ *  Reschedule
+ *  Switch
+ *  Dispatch
+ *  Exception
+ *  Alert
+ *  Debug
+ *  Enable
+ *  SetSR
+ *  SuperState
+ *  UserState
+ *  Cause
+ *  Allocate
+ *  Deallocate
+ *  AllocAbs
+ *  AddTask
+ *  RemTask
+ *  SetTaskPri
+ *  SetExcept
+ *  Wait
+ *  Signal
+ *  AllocTrap
+ *  FreeTrap
+ *  CloseDevice
+ *  RawIOInit
+ *  RawMayGetChar
+ *  RawPutChar
+ *  Procure
+ *  Vacate
+ *  ReleaseSemaphore
+ *  ObtainSemaphoreList
+ *  ReleaseSemaphoreList
+ *  CopyMem
+ *  CopyMemQuick
+ *  CacheClearE
+ *  CacheControl
+ *  CreatePool
+ *  DeletePool
+ *  AllocPooled
+ *  FreePooled
+ *  ColdReboot
+ *  StackSwap
+ *  ChildFree
+ *  ChildOrphan
+ *  ChildStatus
+ *  ChildWait
+ *  ObtainQuickVector
+ *
+ ************************************************************************/
