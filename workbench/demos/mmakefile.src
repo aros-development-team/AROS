@@ -53,6 +53,7 @@ FILES	:= \
     palettedemo \
     readicon \
     regiontest \
+    realtdemo \
     roundshape \
     rtdemo \
     rtezrequest \
