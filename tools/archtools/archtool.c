@@ -2172,6 +2172,495 @@ struct libconf *lc;
 return 0;
 }
 
+const char * m68k_registers[] = {
+	"A0",
+	"A1",
+	"A2",
+	"A3",
+	"A4",
+	"A5",
+	"A6",
+	"A7",
+	"D0",
+	"D1",
+	"D2",
+	"D3",
+	"D4",
+	"D5",
+	"D6",
+	"D7"
+};
+
+struct pragma_description 
+{
+	struct pragma_description	*next;
+	char				basename[200];
+	char				funcname[200];
+	unsigned short			offset;
+	int				numargs;
+	int				args[16];
+};
+
+char * skipstr(char * line, char skipper,int direction)
+{
+	while (line[0] == skipper) {
+		line += direction;
+	}
+	return line;
+}
+
+void free_pragma_description(struct pragma_description * pd)
+{
+	struct pragma_description * _pd;
+	while (pd != NULL) {
+		_pd = pd -> next;
+		free(pd);
+		pd = _pd;
+	}
+	
+}
+
+struct pragma_description * find_pragma_description(struct pragma_description * pd,
+                                                   char * funcname)
+{
+	while (NULL != pd) {
+		if (0 == strcmp(&pd->funcname[0],
+		                funcname))
+			return pd;
+		pd = pd->next;
+	}
+	return NULL;
+}
+
+struct pragma_description * parse_pragmas(char * filename)
+{
+	FILE *fdi =NULL;
+	char *line;
+	struct pragma_description * base_pd = NULL;
+	fdi = fopen(filename,"r");
+	
+        if (!fdi){
+		fprintf(stderr, "Couldn't open file %s!\n",filename);
+		return NULL;
+	}
+	
+	while( (line = get_line(fdi))) {
+		char * substr;
+		//printf("%s\n",line);
+		/*
+		 * look for '#', then 'pragma'.
+		 */
+		substr = skipstr(line,' ',1);
+		
+		if (substr[0] == '#'){
+			substr++;
+			substr = skipstr(substr, ' ',1);
+			//printf("1. %s\n",substr);
+			if (0 == strncmp(substr, "pragma",6)) {
+				substr += 6;
+				substr = skipstr(substr,' ',1);
+				//printf("2. %s\n",substr);
+				if (!strncmp(substr, "amicall",7)) {
+					substr += 7;
+					substr = skipstr(substr,' ',1);
+					
+					if (substr[0] == '(') {
+						struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
+						substr += 1;
+						substr = skipstr(substr,' ',1);
+						if (NULL != pd) {
+							char * comma;
+							char * lastchar;
+							pd->next = base_pd;
+							base_pd = pd;
+							/*
+							 * Now read the name of the base
+							 * of the library!
+							 */
+							comma = strchr(substr, ',');
+							lastchar = skipstr(comma-1,' ',-1);
+							
+							strncpy(&pd->basename[0],
+							        substr,
+							        lastchar-substr+1);
+							//printf("basename: %s\n",pd->basename);
+							
+							/*
+							 * after the comma comes the offset in HEX!
+							 */
+							pd->offset = strtol(comma+1,&lastchar,16)/6;
+							//printf("Offset : %x\n",pd->offset);
+							
+							/*
+							 * Now for the next ','
+							 */
+							comma = strchr(lastchar, ',');
+							comma = skipstr(comma+1,' ',1);
+							//printf("%s\n",comma);
+							
+							if ( NULL == comma) {
+								fprintf(stderr, "Error parsing pragma file!\n");
+								free_pragma_description(base_pd);
+								fclose(fdi);
+								exit(-1);
+							}
+							
+							/*
+							 * Now the name of the function
+							 */
+							lastchar = strchr(comma+1, '(');
+							if ( NULL == lastchar) {
+								fprintf(stderr, "Error parsing pragma file!\n");
+								free_pragma_description(base_pd);
+								fclose(fdi);
+								exit(-1);
+							}
+							
+							
+							strncpy(&pd->funcname[0],
+							        comma,
+							        skipstr(lastchar,' ',-1)-comma);
+							//printf("funcname: %s\n",pd->funcname);
+							        
+							substr = lastchar + 1;
+							//printf("%s\n",substr);
+							lastchar = strchr(substr,')');
+							/*
+							 * Now read the CPU registers.
+							 */
+							
+							while (substr < lastchar) {
+								int r = 0;
+								substr = skipstr(substr, ' ',1);
+								
+								if (substr[0] == 'a' ||
+								    substr[0] == 'A') {
+								} else if (substr[0] == 'd' ||
+								           substr[0] == 'D') {
+										r = 8;
+									} else {
+										fprintf(stderr, "Wrong register (letter) in pragma file!\n");
+										free_pragma_description(base_pd);
+										fclose(fdi);
+										exit(-1);
+									}
+								
+								if (substr[1] >= '0' && substr[1] <= '8') {
+									r += substr[1] - '0';
+								} else {
+									fprintf(stderr, "Wrong register (number) in pragma file!\n");
+									free_pragma_description(base_pd);
+									fclose(fdi);
+									exit(-1);
+								}
+/*
+								printf("r:%d\n",r);
+								printf("parameter %d goes into %s\n",
+								        pd->numargs+1,
+								        m68k_registers[r]);
+*/
+								pd->args[pd->numargs] = r;
+								pd->numargs++;
+								
+								substr+=2;
+								skipstr(substr, ' ', 1);
+								substr+=1;
+								
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		free(line);
+	}
+	
+
+	fclose(fdi);
+	return base_pd;
+}
+
+
+int countchars (char * s, char c)
+{
+	int ctr = 0;
+	while (s[0] != 0) {
+		if (s[0] == c)
+			ctr++;
+		s++;
+	}
+	return ctr;
+}
+
+/*
+ * Add a line to the cache. If NULL is added the old cache
+ * is flushed to the disk.
+ * If a line is added everything that ended with a ';' up
+ * to that point will be written into the file and the
+ * cache will be cut down to everything that was not written
+ * so far.
+ */
+char * addtocache(char * cache, char * newline, int len, FILE * fdo)
+{
+	int cachelen;
+	char * semic;
+	char * newcache = NULL;
+	
+	
+	if (NULL == newline) {
+		if (NULL != cache) {
+			fprintf(fdo, "%s\n", cache);
+			free(cache);
+		}
+		return NULL;
+	}
+	
+//printf("adding: %s\n",newline);
+	
+	semic = strchr(newline, ';');
+	
+	if (NULL != semic) {
+		int newlinelen = strlen(newline);
+		int i = newlinelen -1;
+		char * tmp;
+		/*
+		 * write the cache and everything up to the
+		 * last ';' in the new line to the file.
+		 */
+		if (NULL != cache) {
+			fprintf(fdo,"%s\n",cache);
+//printf("1. Flush: |%s|\n",cache);
+		}
+		
+		while (newline[i] != ';')
+			i--;
+			
+		tmp = malloc(i+1);
+		memcpy(tmp,newline,i+1);
+		tmp[i] = 0;
+		fprintf(fdo, "%s",tmp);
+//printf("2. Flush: |%s|\n",tmp);
+		free(tmp);
+		
+		if (i+1 != newlinelen) {
+			newcache = malloc(strlen(newline)+1);
+			memcpy(newcache, &newline[i+1], newlinelen-i);
+		}
+		free(cache);
+		
+	} else {
+		/*
+		 * ';' could not be found. Enhance the cache.
+		 */
+		cachelen = 0;
+		if (NULL != cache)
+			cachelen = strlen(cache);
+			
+		cachelen += strlen(newline)+1+1;
+		newcache = malloc(cachelen);
+		if (NULL != cache)
+			sprintf(newcache,"%s\n%s",cache,newline);
+		else
+			sprintf(newcache,"%s",newline);
+//printf("cache: %s\tnewcache: %s\n",cache,newcache);
+		free (cache);
+	}
+	
+	return newcache;
+}
+
+char * getfuncname(char * s)
+{
+	int i = strlen(s)-1;
+	int c = 0;
+	char * name;
+	int last;
+	while (i > 0) {
+		if (')' == s[i])
+			c++;
+		else if ('(' == s[i]) {
+			c--;
+			if (0 == c) {
+				i--;
+				while (i >= 0 && ' ' == s[i])
+					i--;
+
+				if (i == 0)
+					return NULL;
+					
+				last = i;
+				while (i > 0 && ' ' != s[i])
+					i--;
+				
+				if (last == i)
+					return NULL;
+				
+				if (s[i+1] == '*')
+					i++;
+				
+				name = malloc(last-i+2);
+				strncpy(name, &s[i+1], last-i);
+				name[last-i]=0;
+				return name;
+			}
+				
+		}
+		i--;
+	}
+	return NULL;
+}
+
+int rewrite_function(FILE * fdo, char * pattern, struct pragma_description * pd, struct libconf * lc)
+{
+	char output[1024];
+	int i = 0;
+	bzero(&output[0],1024);
+	
+	printf("AROS_LH%d(????, %s,\n",
+	       pd->numargs,
+	       pd->funcname);
+	       
+	while (i < pd->numargs) {
+		printf("\tAROS_LHA(????, ????, %s),\n",
+		       m68k_registers[pd->args[i]]);
+		i++;
+	}  
+	
+	printf("\tstruct %s, %s, %d, %s)\n",
+	       lc->libbasetype,
+	       lc->libbase,
+	       pd->offset,
+	       lc->basename);
+	
+	printf("must pick ???? from info in: \n%s\n",pattern);
+	
+	return 0;
+}
+
+int rewritecfile(FILE * fdi, FILE * fdo, struct pragma_description * pd, struct libconf * lc) 
+{
+	char * line;
+	int depth = 0; // counting '{' and '}'
+	char * cache = NULL;
+	
+	while (1) {
+		line = get_line(fdi);
+		if (NULL == line) {
+			cache = addtocache(cache, NULL, 0, fdo);
+			return 0;
+		}
+		
+		if (0 == depth) {
+			depth = countchars(line,'{');
+			if (0 != depth) {
+				char * funcname;
+				/*
+				 * A function begins in this line.
+				 */
+				
+				cache = addtocache(cache,line,-1,fdo);
+				
+				//printf("\ncache where to find function: %s\n",cache);
+				funcname = getfuncname(cache);
+				if (funcname != NULL) {
+					struct pragma_description * _pd;
+					printf("funcname: %s",funcname);
+					_pd = find_pragma_description(pd, funcname);
+					if (_pd) {
+						printf("-> Rewriting!\n");
+						rewrite_function(fdo,cache,_pd,lc);
+					} else
+						printf("-> Not rewriting!\n");
+					free(funcname);
+				} else {
+					cache = addtocache(cache,line,-1,fdo);
+				}				
+				
+				
+				cache = addtocache(cache,NULL,0,fdo);
+			} else {
+				char * substr;
+				/*
+				 * No function begins in this line.
+				 * So let's collect it unless it is
+				 * a comment ot starts with a '#'.
+				 */
+				substr = skipstr(line, ' ',1);
+
+				if ('#' == substr[0] ||
+				    NULL != strstr(line,"//") ) {
+				    	cache = addtocache(cache,line,-1,fdo);
+				    	cache = addtocache(cache,NULL,0,fdo);
+					//printf("cache: %p\n",cache);
+					//fprintf(fdo,"%s\n",line);
+				} else {
+					cache = addtocache(cache,line,-1,fdo);
+				}
+			}
+			depth -= countchars(line,'}');
+		} else {
+			depth += countchars(line,'{');
+			depth -= countchars(line,'}');
+			fprintf(fdo,"%s\n",line);
+		}
+		free(line);
+	}
+
+	return 0;
+}
+
+/*
+ * Generate AROS source code for a library from the description 
+ * in a pragmas file.
+ */
+int genarossource(int argc, char **argv)
+{
+	FILE *fdo =NULL;
+	FILE *fdi =NULL;
+	char * filename;
+	char * sourcefile, * destfile;
+	struct libconf *lc;
+	struct pragma_description * pd;
+	
+	if (argc !=4) {
+		fprintf(stderr,"Usage: %s <pragma file> <source file> <dest file>\n", argv[0]);
+		exit(-1);
+	}
+	
+	lc = calloc(1,sizeof(struct libconf));
+	if (parse_libconf(NULL,lc))
+		return (-1);
+	filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+	sprintf( filename, "%s", argv[1]);
+
+	sourcefile = argv[2];
+	destfile   = argv[3];
+	
+	pd = parse_pragmas(filename);
+	
+	/*
+	 * Now open and parse the C input file and generate an output.
+	 */
+	fdi = fopen(sourcefile, "r");
+	fdo = fopen(destfile, "w");
+	
+	if (NULL != fdi && NULL != fdo)
+		rewritecfile(fdi,fdo,pd,lc);
+	
+	if (NULL != fdi)
+		fclose(fdi);
+	if (NULL != fdo)
+		fclose(fdo);
+
+	free_pragma_description(pd);
+	
+	free(lc);        
+	free(filename);
+	return 0;
+}
+
+
 int genproto(int argc, char **argv)
 {
 FILE *fdo = NULL;
@@ -2920,7 +3409,7 @@ char option;
   if( argc < 2 )
   {
     fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>\n", argv[0] );
-    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  -r genpragmas\n  -I genincludes\n" );
+    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  -r genpragmas\n  -I genincludes\n  -R genarossource\n" );
     exit(-1);
   }
 
@@ -2999,6 +3488,9 @@ char option;
         break;
       case 'r':
         retval = genpragmas( argc, &argv[1] );
+        break;
+      case 'R':
+        retval = genarossource(argc, &argv[1]);
         break;
       case 'h':
       default:
