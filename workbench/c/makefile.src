@@ -38,7 +38,12 @@ FILES = \
 	version \
 	wait \
 	why \
-	rename
+	rename \
+	Filenote \
+	Get \
+	Getenv \
+	Protect \
+	RequestChoice
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
