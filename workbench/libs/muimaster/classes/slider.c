@@ -345,7 +345,7 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 
 	case IDCMP_MOUSEMOVE:
 	{
-	    LONG oldval;
+	    IPTR oldval;
 	    LONG newval;
 
 	    if (data->flags & SLIDER_HORIZ)
@@ -363,8 +363,8 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 		D(bug("%p: Y=%ld scale=%ld val=%ld\n", obj, msg->imsg->MouseY, scale, newval));
 	    }
 
-	    get(obj, MUIA_Numeric_Value, oldval);
-	    if (oldval != newval)
+	    get(obj, MUIA_Numeric_Value, &oldval);
+	    if ((LONG)oldval != newval)
 	    {
 		set(obj, MUIA_Numeric_Value, newval);
 	    }
