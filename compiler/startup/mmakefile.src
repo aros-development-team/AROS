@@ -5,24 +5,31 @@
 include $(TOP)/config/make.cfg
 
 #MM- linklibs: linklibs-startup
-#MM linklibs-startup : includes includes-copy
+#MM linklibs-startup : linklibs-startup-setup includes includes-copy
 
 FILES :=        \
 	startup \
 	detach  \
 	nixmain
 
-OBJS  := $(FILES:%=$(LIBDIR)/%.o)
+OBJS  := $(addprefix $(LIBDIR)/,$(addsuffix .o,$(FILES)))
+DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
 linklibs-startup: $(OBJS)
 
-%copy_includes includes=startup.h path=aros dir=
+$(LIBDIR)/%.o : $(GENDIR)/$(CURDIR)/%.o
+	@$(CP) $< $@
 
 USER_CFLAGS := -I $(TOP)/rom/exec
+%rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
 
-$(LIBDIR)/%.o : %.c
-	%compile_q 
+#MM linklibs-startup-setup
+%rule_makedirs dirs=$(GENDIR)/$(CURDIR) setuptarget=linklibs-startup-setup
 
-.PHONY: linklibs-startup
+%copy_includes includes=startup.h path=aros dir=
+
+.PHONY: linklibs-startup linklibs-startup-setup
+
+%include_deps depstargets="linklibs-startup" deps=$(DEPS)
 
 %common
