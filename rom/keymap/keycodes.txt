@@ -1,0 +1,66 @@
+*------ Key Translation Table ----------------------------------------
+*  Raw key codes
+*
+*  45   50  51  52  53  54   55  56  57  58  59
+*  00   01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 41  46  5F    5A  5B  5C  5D
+*  42    10 11 12 13 14 15 16 17 18 19 1A 1B   44            3D  3E  3F  4A
+*  63 62  20 21 22 23 24 25 26 27 28 29 2A 2B        4C      2D  2E  2F  5E
+*  60 30   31 32 33 34 35 36 37 38 39 3A     61   4F 4D 4E   1D  1E  1F  43
+*     64  66                40             67 65             0F      3C
+*
+*---------------------------------------------------------------------
+*  German (D) mapping
+*
+*  ESC  F1  F2  F3  F4  F5   F6  F7  F8  F9  F10
+*  `~   1! 2" 3S 4$ 5% 6& 7/ 8( 9) 0= B? '` \| BS  DEL HELP  [{  ]}  /   *
+*  TAB   qQ wW eE rR tT zZ uU iI oO pP uU +*  RET            7   8   9   -
+*  CT CL  aA sS dD fF gG hH jJ kK lL oO aA #^        UC      4   5   6   +
+*  SH <>   yY xX cC vV bB nN mM ,; .: -_     SH   LC DC RC   1   2   3   ENT
+*     ALT AM              SPACE            AM ALT            0       .
+*
+*---------------------------------------------------------------------
+*   For comparison, here's the USA1 mapping
+*
+*  ESC  F1  F2  F3  F4  F5   F6  F7  F8  F9  F10
+*  `~   1! 2@ 3# 4$ 5% 6^ 7& 8* 9( 0) -_ =+ \| BS  DEL HELP  ((  ))  //  **
+*  TAB   qQ wW eE rR tT yY uU iI oO pP [{ ]}  RET            77  88  99  --
+*  CT CL  aA sS dD fF gG hH jJ kK lL ;: '" [2B]      UC      44  55  66  ++
+*  SH [30] zZ xX cC vV bB nN mM ,< .> /?     SH   LC DC RC   11  22  33 ENT
+*     ALT AM              SPACE            AM ALT            00      ..
+*
+*--------------------------------------------------------------------------
+*
+*       40      Space
+*       41      Backspace
+*       42      Tab
+*       43      Enter
+*       44      Return
+*       45      Escape
+*       46      Delete
+*       4A      Numeric Pad -
+*       4C      Cursor Up
+*       4D      Cursor Down
+*       4E      Cursor Forward
+*       4F      Cursor Backward
+*
+*       50-59   Function keys F1-F10
+*       5A      Numeric Pad [{  (A2000)
+*       5B      Numeric Pad ]}  (A2000)
+*       5C      Numeric Pad /   (A2000)
+*       5D      Numeric Pad *   (A2000)
+*       5E      Numeric Pad +   (A2000)
+*       5F      Help
+*
+*       60      Left Shift
+*       61      Right Shift
+*       62      Caps Lock
+*       63      Control
+*       64      Left Alt
+*       65      Right Alt
+*       66      Left Amiga
+*       67      Right Amiga
+*
+*       68      Left Mouse Button (not converted)
+*       69      Right Mouse Button (not converted)
+*       6A      Middle Mouse Button (not converted)
+*
