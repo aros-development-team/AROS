@@ -31,6 +31,9 @@
 #ifndef GRAPHICS_RASTPORT_H
 #   include <graphics/rastport.h>
 #endif
+#ifndef GRAPHICS_CLIP_H
+#   include <graphics/clip.h>
+#endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
@@ -47,6 +50,18 @@
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
+
+/* ObtainGIRPort must install a 0 clipregion and
+   set scrollx/scrolly of layer to 0. Since this
+   will be restored only when ReleaseGIRPort is
+   called, we must backup the orig values somewhere */
+   
+struct LayerContext
+{
+    struct Region *clipregion;
+    WORD scroll_x;
+    WORD scroll_y;
+};
 
 struct IntIntuitionBase
 {
@@ -88,6 +103,9 @@ struct IntIntuitionBase
     struct MinList	     PubScreenList;
     UWORD                    pubScrGlobalMode;
 
+    struct SignalSemaphore   GadgetLock;
+    struct LayerContext      BackupLayerContext;
+    
     struct IClass *dragbarclass;
     struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
     struct IClass *sizebuttonclass;
