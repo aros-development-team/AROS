@@ -182,10 +182,10 @@ return retval;
 
 char *request_string(char *def)
 {
-char *retval, *string;
+char *retval, *string, *secret;
 char *out;
 BOOL running = TRUE;
-Object *st, *wc;
+Object *st, *tst, *wc;
 ULONG val, sigs = 0;
 
     string = def;
@@ -205,7 +205,15 @@ ULONG val, sigs = 0;
 		MUIA_String_AdvanceOnCR,TRUE,
 		MUIA_CycleChain,	TRUE,
 	    End,
-	End;
+	    Child, tst  = StringObject,
+		StringFrame,
+		MUIA_String_Contents,	(IPTR)secret,
+		MUIA_String_MaxLen,	12,
+		MUIA_String_Secret,     TRUE,
+                MUIA_String_AdvanceOnCR,TRUE,
+		MUIA_CycleChain,	TRUE,
+	    End,
+        End;
 
 	if (wc)
 	{
@@ -229,7 +237,13 @@ ULONG val, sigs = 0;
 
 	    }
 	    get(st, MUIA_String_Contents, (IPTR *)&string);
-	    retval = StrDup(string);
+	    if (strlen(string)==0)
+            {
+                get(tst, MUIA_String_Contents, (IPTR *)&secret);
+                retval = StrDup(secret);
+            }
+            else retval = StrDup(string);
+
 	    DelContents(wc);
 	}
 	else
