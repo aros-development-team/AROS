@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function memmove()
@@ -56,8 +56,8 @@
 
     if (s < d)
     {
-	d += count-1;
-	s += count-1;
+	d += count;
+	s += count;
 
 #if 0 /* stegerg: I think this is the wrong way round (and even then buggy) */
 	mis = sizeof (long) - ((long)s & (sizeof (long) - 1));
@@ -72,7 +72,7 @@
 	if (mis)
 	{
 	    while (mis--)
-		*d-- = *s--;
+		*--d = *--s;
 	}
 
 	if (!((long)d & (sizeof (long) - 1)) )
@@ -87,19 +87,19 @@
 	    high = longs >> 3;
 
 	    while (low--)
-		*dl-- = *sl--;
+		*--dl = *--sl;
 
 	    while (high--)
 	    {
-		*dl-- = *sl--;
-		*dl-- = *sl--;
-		*dl-- = *sl--;
-		*dl-- = *sl--;
+		*--dl = *--sl;
+		*--dl = *--sl;
+		*--dl = *--sl;
+		*--dl = *--sl;
 
-		*dl-- = *sl--;
-		*dl-- = *sl--;
-		*dl-- = *sl--;
-		*dl-- = *sl--;
+		*--dl = *--sl;
+		*--dl = *--sl;
+		*--dl = *--sl;
+		*--dl = *--sl;
 	    }
 
 	    #if 0 /* stegerg: this is slower than */
@@ -118,19 +118,19 @@
 	high = count >> 3;
 
 	while (low--)
-	    *d-- = *s--;
+	    *--d = *--s;
 
 	while (high--)
 	{
-	    *d-- = *s--;
-	    *d-- = *s--;
-	    *d-- = *s--;
-	    *d-- = *s--;
+	    *--d = *--s;
+	    *--d = *--s;
+	    *--d = *--s;
+	    *--d = *--s;
 
-	    *d-- = *s--;
-	    *d-- = *s--;
-	    *d-- = *s--;
-	    *d-- = *s--;
+	    *--d = *--s;
+	    *--d = *--s;
+	    *--d = *--s;
+	    *--d = *--s;
 	}
     }
     else
