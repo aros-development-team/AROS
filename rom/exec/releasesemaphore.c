@@ -97,6 +97,17 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 		    /* Yes. Remove it from the list */
 		    Remove(&on->node);
 
+		    /*
+			Mark the semaphore as having one more openers.
+			This happens here because the new owner(s) may need
+			some time to really wake up and I don't want other
+			tasks obtaining the semaphore before him.
+		    */
+		    sigSem->ss_NestCount--;
+		    
+		    /* Dito. Invalidate the owner field. */
+		    sigSem->ss_Owner=NULL;
+		    
 		    /* Wake the new owner. Check access type. */
 		    if(on->node.ln_Pri==SN_TYPE_OBTAIN)
 			/* ObtainSemaphore() type. Send the semaphore signal. */
@@ -108,22 +119,16 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 			ReplyMsg((struct Message *)on);
 		    }
 
-		    /*
-			Mark the semaphore as having one more openers.
-			This happens here because the new owner(s) may need
-			some time to really wake up and I don't want other
-			tasks obtaining the semaphore before him.
-		    */
-		    sigSem->ss_NestCount--;
 		}
-		/* Dito. Invalidate the owner field. */
-		sigSem->ss_Owner=NULL;
 	    }
 	}else
 	{
 	    /* The new owner wants an exclusive lock. Remove him from the list. */
 	    Remove(&sn->node);
 
+	    /* Mark the semaphore as having one more openers. */
+	    sigSem->ss_NestCount++;
+	    
 	    /* Check access type */
 	    if(sn->node.ln_Pri==SN_TYPE_OBTAIN)
 	    {
@@ -140,8 +145,6 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 		sigSem->ss_Owner=((struct Message *)sn)->mn_ReplyPort->mp_SigTask;
 		ReplyMsg((struct Message *)sn);
 	    }
-	    /* Mark the semaphore as having one more openers. */
-	    sigSem->ss_NestCount++;
 	}
     }
 
