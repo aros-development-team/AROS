@@ -24,19 +24,19 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Blanker 0.2 (14.10.2001)";
+UBYTE version[] = "$VER: Blanker 0.9 (02.10.2002)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,SECONDS=SEC/N/K,STARS=ST/N/K"
 
-#define ARG_PRI   0
-#define ARG_SEC   1
-#define ARG_STARS 2
-#define NUM_ARGS  3
+#define ARG_PRI     	0
+#define ARG_SEC     	1
+#define ARG_STARS   	2
+#define NUM_ARGS    	3
 
-#define MAX_STARS 1000
+#define MAX_STARS   	1000
 
-#define CMD_STARTBLANK 1
-#define CMD_STOPBLANK  2
+#define CMD_STARTBLANK	1
+#define CMD_STOPBLANK   2
 
 #define CATCOMP_NUMBERS
 #define CATCOMP_STRINGS
@@ -57,50 +57,68 @@ static struct NewBroker nb =
    0 
 };
 
+
 /* Libraries to open */
 struct LibTable
 {
- APTR   lT_Library;
- STRPTR lT_Name;
- ULONG  lT_Version;
+    APTR   lT_Library;
+    STRPTR lT_Name;
+    ULONG  lT_Version;
 }
 libTable[] =
 {
- { &IntuitionBase,	"intuition.library",    39L},
- { &GfxBase,		"graphics.library",     39L},
- { &CxBase,		"commodities.library",  39L},
- { NULL }
+    { &IntuitionBase, "intuition.library"   , 39L },
+    { &GfxBase	    , "graphics.library"    , 39L },
+    { &CxBase	    , "commodities.library" , 39L },
+    { NULL  	    	    	    	    	  }
 };
 
-struct LocaleBase *LocaleBase       = NULL;
-struct Library *GadToolsBase        = NULL;
-struct Library *CxBase              = NULL;
-struct IntuitionBase *IntuitionBase = NULL;
+struct LocaleBase   	*LocaleBase    = NULL;
+struct Library      	*GadToolsBase  = NULL;
+struct Library      	*CxBase        = NULL;
+struct IntuitionBase 	*IntuitionBase = NULL;
 
-static struct MsgPort *cxport;
-static struct Window *win;
-static struct RastPort *rp;
-static struct Task *maintask;
+static struct MsgPort 	*cxport;
+static struct Window 	*win;
+static struct RastPort  *rp;
+static struct ColorMap  *cm;
+static struct Task  	*maintask;
 
-static struct Catalog *catalogPtr;
-static struct RDArgs *myargs;
-static CxObj *cxbroker, *cxcust;
-static ULONG cxmask, actionmask;
-static WORD scrwidth, scrheight, actioncmd;
-static WORD num_stars = 200, blankwait = 30;
-static UBYTE actionsig;
-static BOOL blanked, quitme, disabled;
+static struct Catalog 	*catalogPtr;
+static struct RDArgs 	*myargs;
+static CxObj 	    	*cxbroker, *cxcust;
+static ULONG 	    	cxmask, actionmask;
+static WORD 	    	scrwidth, scrheight, actioncmd, visible_sky;
+static LONG 	    	blackpen, star1pen, star2pen, star3pen;
+static WORD 	    	num_stars = 200, blankwait = 30;
+static UBYTE 	    	actionsig;
+static BOOL 	    	blanked, quitme, disabled, pens_allocated;
 
-static LONG args[NUM_ARGS];
-static char s[256];
-static WORD star_x[MAX_STARS], star_y[MAX_STARS],
-	    star_speed[MAX_STARS], star_col[MAX_STARS];
+static LONG 	    	args[NUM_ARGS];
+static char 	    	s[256];
+static WORD 	    	star_x[MAX_STARS], star_y[MAX_STARS],
+	    	    	star_speed[MAX_STARS], star_col[MAX_STARS];
+
+/************************************************************************************/
+
+static void FreePens(void)
+{
+    if (pens_allocated)
+    {
+    	ReleasePen(cm, blackpen);
+    	ReleasePen(cm, star1pen);
+    	ReleasePen(cm, star2pen);
+    	ReleasePen(cm, star3pen);
+	
+	pens_allocated = FALSE;
+    }
+}
 
 /************************************************************************************/
 
 static void Cleanup(char *msg)
 {
-    struct Message *cxmsg;
+    struct Message  *cxmsg;
     struct LibTable *tmpLibTable = libTable;
     
     if(msg)
@@ -111,7 +129,10 @@ static void Cleanup(char *msg)
     if(IntuitionBase)
     {
 	if(win)
+	{
+	    FreePens();
 	    CloseWindow(win);
+	}
     }
 
     if(CxBase)
@@ -194,7 +215,7 @@ static void Init(void)
 static void OpenLibs(void)
 {
     struct LibTable *tmpLibTable = libTable;
-    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
+    UBYTE   	    tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
 
     if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
@@ -229,7 +250,9 @@ static void GetArguments(void)
     }
     
     if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
+
     if (args[ARG_SEC]) blankwait = *(LONG *)args[ARG_SEC];
+
     if (args[ARG_STARS])
     {
     	num_stars = *(LONG *)args[ARG_STARS];
@@ -248,7 +271,7 @@ static void GetArguments(void)
 static void BlankerAction(CxMsg *msg,CxObj *obj)
 {
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
-    static ULONG timecounter = 0;
+    static ULONG       timecounter = 0;
 
     if (ie->ie_Class == IECLASS_TIMER)
     {
@@ -259,6 +282,7 @@ static void BlankerAction(CxMsg *msg,CxObj *obj)
 	else if (!blanked)
 	{
             timecounter++;
+	    
             if(timecounter >= blankwait * 10)
             {
         	actioncmd = CMD_STARTBLANK;
@@ -267,7 +291,9 @@ static void BlankerAction(CxMsg *msg,CxObj *obj)
         	blanked = TRUE;
             }
 	}
-    } else {
+    }
+    else
+    {
 	if (ie->ie_Class != IECLASS_TIMER)
 	{
 	    timecounter = 0;
@@ -324,24 +350,18 @@ static LONG myrand(void)
 
 /************************************************************************************/
 
+static void HandleWin(void);
+
+/************************************************************************************/
+
 static void MakeWin(void)
 {
-    struct Screen *screenPtr;
-    WORD y, y2, stripheight = 20;
-    LONG i;
-
-/* FIXME: LockPubScreen() thank you. Here's what AROS says when blanking:
-lockpubscreen.c, 153: bad pointer: name = $40059027
-lparent: 403e7490, l->parent: 403e7490
-*/
+    struct Screen  *screenPtr;
+    WORD    	    y, y2, stripheight = 20;
+    LONG    	    i;
 
     if(!(screenPtr = LockPubScreen(NULL)))
      kprintf("Warning: LockPubScreen() failed!\n");
-
-/*    
-     printf("Width = %d Height = %d\n", screenPtr->Width, screenPtr->Height);
-commented out, because it is unnecessary an opens a shell just to print!!!
-*/
 
     win = OpenWindowTags(0, WA_Left, 0,
 			    WA_Top, 0,
@@ -354,7 +374,7 @@ commented out, because it is unnecessary an opens a shell just to print!!!
 			    TAG_DONE);
 
     if(screenPtr)
-     UnlockPubScreen(NULL, screenPtr);
+    	UnlockPubScreen(NULL, screenPtr);
 
     if(win)
     {
@@ -363,29 +383,42 @@ commented out, because it is unnecessary an opens a shell just to print!!!
         scrwidth  = win->Width;
 	scrheight = win->Height;
 	
+	cm = win->WScreen->ViewPort.ColorMap;
+	
+	blackpen = ObtainBestPenA(cm, 0x00000000, 0x00000000, 0x00000000, NULL);
+	star1pen = ObtainBestPenA(cm, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, NULL);
+	star2pen = ObtainBestPenA(cm, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, NULL);
+	star3pen = ObtainBestPenA(cm, 0x88888888, 0x88888888, 0x88888888, NULL);
+	
+	pens_allocated = TRUE;
+	
 	for(i = 0;i < num_stars;i++)
 	{
 	    star_x[i] = myrand() * scrwidth / MY_RAND_MAX;
-	    star_y[i] = 1 + (myrand() * scrheight) -2 / MY_RAND_MAX;
+	    star_y[i] = 1 + (myrand() * (scrheight - 2)) / MY_RAND_MAX;
 	    star_speed[i] = 1 + myrand() * 3 / MY_RAND_MAX;
 	    if (star_speed[i] < 2)
 	    {
-		star_col[i] = 12;
-	    } else if (star_speed[i] < 3)
+		star_col[i] = star3pen;
+	    }
+	    else if (star_speed[i] < 3)
 	    {
-		star_col[i] = 0;
-	    } else {
-		star_col[i] = 2;
+		star_col[i] = star2pen;
+	    }
+	    else
+	    {
+		star_col[i] = star1pen;
 	    }
 	}
 
-	SetAPen(rp, 1);
+	SetAPen(rp, blackpen);
 	for(y = 0;y < scrheight - 1;y++, stripheight++)
 	{
 	    if (CheckSignal(actionmask))
 	    {
 	        if (actioncmd == CMD_STOPBLANK)
 		{
+		    FreePens();
 		    CloseWindow(win);
 		    win = 0;
 		    break;
@@ -395,9 +428,10 @@ commented out, because it is unnecessary an opens a shell just to print!!!
             for(y2 = y;y2 < scrheight - 1;y2 += stripheight)
 	    {
         	ClipBlit(rp, 0, y2, rp, 0, y2 + 1, scrwidth, scrheight - y2 - 1, 192);
-		SetAPen(rp, 1);
+		SetAPen(rp, blackpen);
         	RectFill(rp, 0, y2, scrwidth - 1, y2);
 
+    	    #if 0
         	if (y2 == y)
 		{
 		    for(i = 0; i < num_stars; i++)
@@ -408,15 +442,25 @@ commented out, because it is unnecessary an opens a shell just to print!!!
 			    WritePixel(rp, star_x[i], y2);
 			}
 		    }
+		    
 		} /* if (y2 == y) */
-		
+	    #endif
+	    
 	    } /* for(y2 = y;y2 < scrheight - 1;y2 += stripheight) */
+	    
+	    visible_sky = y;
+	    
+	    HandleWin();
+	    
+	    WaitTOF();
 	    
 	} /* for(y = 0;y < scrheight - 1;y++, stripheight++) */
 	
     } /* if (win) */
     else
-     printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_WIN));
+    {
+    	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_WIN));
+    }
 }
 
 /************************************************************************************/
@@ -427,14 +471,17 @@ static void HandleWin(void)
     
     for(i = 0; i < num_stars;i++)
     {
-	SetAPen(rp, 1);
-	WritePixel(rp, star_x[i], star_y[i]);
+    	if (star_y[i] <= visible_sky)
+	{
+	    SetAPen(rp, blackpen);
+	    WritePixel(rp, star_x[i], star_y[i]);
 
-	star_x[i] += star_speed[i];
-	if (star_x[i] >= scrwidth) star_x[i] -= scrwidth;
+	    star_x[i] -= star_speed[i];
+	    if (star_x[i] < 0) star_x[i] += scrwidth;
 
-	SetAPen(rp, star_col[i]);
-	WritePixel(rp, star_x[i], star_y[i]);
+	    SetAPen(rp, star_col[i]);
+	    WritePixel(rp, star_x[i], star_y[i]);
+	}
     }
 	
 }
@@ -452,6 +499,7 @@ static void HandleAction(void)
 	case CMD_STOPBLANK:
 	    if (win)
 	    {
+	    	FreePens();
 	        CloseWindow(win);
 		win = 0;
 	    }
@@ -464,6 +512,7 @@ static void HandleAction(void)
 static void HandleCx(void)
 {
     CxMsg *msg;
+    
     while((msg = (CxMsg *)GetMsg(cxport)))
     {
        switch(CxMsgType(msg))
@@ -493,6 +542,7 @@ static void HandleCx(void)
        ReplyMsg((struct Message *)msg);
        
    } /* while((msg = (CxMsg *)GetMsg(cxport))) */
+   
 }
 
 /************************************************************************************/
@@ -506,8 +556,11 @@ static void HandleAll(void)
         if (win)
 	{
 	    HandleWin();
+	    WaitTOF();
 	    sigs = CheckSignal(cxmask | actionmask | SIGBREAKF_CTRL_C);
-	} else {
+	}
+	else
+	{
             sigs = Wait(cxmask | actionmask | SIGBREAKF_CTRL_C);
 	}
 	
