@@ -65,30 +65,35 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
     struct VisualInfo *vi;
-    Object *frame;
+    struct Image *frame;
+    struct TagItem tags[7];
 
     vi = (struct VisualInfo *)GetTagData(GT_VisualInfo, NULL, taglist);
     if (vi == NULL)
 	return;
 
-    frame = NewObject(NULL, FRAMEICLASS,
-        IA_Left, left,
-        IA_Top, top,
-        IA_Width, width,
-        IA_Height, height,
-        IA_Resolution, vi->vi_dri->dri_Resolution,
-        IA_Recessed, GetTagData(GTBB_Recessed, FALSE, taglist),
-	IA_FrameType, GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist),
-        IA_EdgesOnly, TRUE,
-        TAG_DONE);
+    tags[0].ti_Tag = IA_Width;
+    tags[0].ti_Data = width;
+    tags[1].ti_Tag = IA_Height;
+    tags[1].ti_Data = height;
+    tags[2].ti_Tag = IA_Resolution;
+    tags[2].ti_Data = (vi->vi_dri->dri_Resolution.X<<16) + vi->vi_dri->dri_Resolution.Y;
+    tags[3].ti_Tag = IA_Recessed;
+    tags[3].ti_Data = GetTagData(GTBB_Recessed, FALSE, taglist);
+    tags[4].ti_Tag = IA_FrameType;
+    tags[4].ti_Data = GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist);
+    tags[5].ti_Tag = IA_EdgesOnly;
+    tags[5].ti_Data = TRUE;
+    tags[6].ti_Tag = TAG_DONE;
+    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, tags);
     if (!frame)
     {
         drawbevelsbyhand((struct GadToolsBase_intern *)GadToolsBase,
             rport, left, top, width, height, taglist);
         return;
     }
-    DoMethod(frame, IM_DRAW, rport, 0, IDS_NORMAL, vi->vi_dri, 0);
-    DisposeObject(frame);
+    DrawImageState(rport, frame, left, top, IDS_NORMAL, vi->vi_dri);
+    DisposeObject((Object *)frame);
 
     AROS_LIBFUNC_EXIT
 } /* DrawBevelBoxA */
