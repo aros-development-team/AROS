@@ -55,6 +55,8 @@ AROS_UFP8(void, CallLayerHook,
 /*                                 LAYER                                   */
 /***************************************************************************/
 
+void SetLayerPriorities(struct Layer_Info * li);
+
 /***************************************************************************/
 /*                               LAYERINFO                                 */
 /***************************************************************************/
@@ -86,6 +88,8 @@ AROS_UFP2(void, SafeFreeExtLI,
 /***************************************************************************/
 /*                                RECTANGLE                                */
 /***************************************************************************/
+
+struct ClipRect * internal_WhichClipRect(struct Layer * L, WORD x, WORD y);
 
 AROS_UFP3(void, ClearRect,
     AROS_UFPA(struct RastPort *,   rp,         A0),

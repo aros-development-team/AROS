@@ -73,7 +73,6 @@
 
   /* no one else may screw around with the layers I will be working with */
   /* don't forget to add UnlockLayers(li) before any return-statement! */
-  LockLayers(li);
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
   CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
@@ -98,11 +97,7 @@
     L->Height = y1-y0+1;
 
     InitSemaphore(&L->Lock);
-    /* also lock this one layer, because I will insert it into the
-       linked list of layers and then UnLockLayers will be called and
-       Unlock this layer.
-    */
-    LockLayer(NULL, L);
+    LockLayer(0, L);
 
     L->DamageList = NewRegion();
 
@@ -122,43 +117,104 @@
     RP->Layer  = L;
     RP->BitMap = bm;
 
-    /* add the layer to the list of layers. It becomes the first one
-       in the doubly linked list */
-    L_behind          = li->top_layer;
-    if (NULL != L_behind)
+    /* add the layer at the correct position in the linked list of layers
+       non-BACKDROP layer: insert it as the very first layer
+           BACKDROP layer: insert if befor the first BACKDROP layer
+                           found in the list.
+			   */
+
+    LockLayers(li);
+    
+    /* non BACKDROP? or layer is the very first one in the list */
+    L_behind = li->top_layer;
+    
+    if ((flags & LAYERBACKDROP) == 0 ||
+        NULL == L_behind || 
+        (L_behind->Flags & LAYERBACKDROP)  != 0)
     {
-      L_behind->front = L;
-      L->back         = L_behind;
-
-      /*
-        L->_cliprects   = ;
-      */
+      if (NULL != L_behind)
+      {
+        L_behind -> front = L;
+        L        -> back  = L_behind;
+      }
+      /* make the new layer the top layer.*/
+      li->top_layer     = L;
+kprintf("cuhl: Inserting layer as very first one!\n");
     }
-    /* make the new layer the top layer.*/
-    li->top_layer     = L;
+    else
+    {
+      /* we have a BACKDROP layer and there a some non-BACKDROP layers */
+      while ( L_behind->back != NULL &&
+             (L_behind->back->Flags & LAYERBACKDROP) == 0)
+        L_behind = L_behind->back;
+kprintf("BACKDROP layer inserted after non-BACKDROP layers!\n");
+      /* 
+         L_behind now points to the layer that the new layer has
+         to go behind. 
+      */
+      if (NULL != L_behind->back)
+      {
+        L_behind->back->front = L;
+      }
+      L       ->front = L_behind;
+      L       ->back  = L_behind->back;
+      L_behind->back  = L;
+    }
 
-    CreateClipRectsBehindLayer(L);
-
+    /* 
+        Now create all ClipRects of all Layers correctly.
+        Comment: The purpose here has to be to backup display data
+                 of layers that are to be hidden now. 
+     */
+    SetLayerPriorities(li);
+    CreateClipRectsOther(L);
+    /*
+       And to keep consistency of the layers I have to split the layer 
+       that is behind the new top layer, if I generated the top-layer,
+       otherwise (for a BACKDROP layer) I have to split the BACKDROP
+       layer itself.
+       Comment: This function call might be *unnecessary*, depending on
+                how moving, resizing etc. layers is handled.
+                Other functions are depending on this call however,
+                if they depend on the consistency of the cliprects.
+     */
+ 
+    if (li->top_layer == L && NULL != L->back)
+      CreateClipRectsSelf(L->back, FALSE);
+    else
+      CreateClipRectsSelf(L, FALSE);
+ 
     /*
        Ok, all other layers were visited and pixels are backed up.
-       Now we can draw the new layer by clearing the part of the
-       displaybitmap.
+       Now we can draw the new layer by clearing these parts of the
+       displaybitmap for which the ClipRects of this layer have no
+       entry in lobs (these are not hidden, but might be hiding other
+       layers behind them, but those parts are backed up now)
     */
-    BltBitMap(
-      bm /* Source Bitmap - we don't need one for clearing, but this
-            one will also do :-) */,
-      0,
-      0,
-      bm /* Destination Bitmap - */,
-      x0,
-      y0,
-      x1-x0+1,
-      y1-y0+1,
-      0x000 /* supposed to clear the destination */,
-      0xff,
-      NULL
-    );
 
+    CR = L->ClipRect;
+    while (CR != NULL)
+    {
+      if (NULL == CR->lobs)
+      {
+        BltBitMap(
+          bm /* Source Bitmap - we don't need one for clearing, but this
+                one will also do :-) */,
+          0,
+          0,
+          bm /* Destination Bitmap - */,
+          CR->bounds.MinX,
+          CR->bounds.MinY,
+          CR->bounds.MaxX-CR->bounds.MinX+1,
+          CR->bounds.MaxY-CR->bounds.MinY+1,
+          0x000 /* supposed to clear the destination */,
+          0xff,
+          NULL
+        );
+      }
+      CR = CR->Next;
+    }
+    UnlockLayers(li);    
   }
   else /* not enough memory */
   {
@@ -168,8 +224,6 @@
     L = NULL;
   }
 
-  /* let anybody else play with these layers - I'm done. */
-  UnlockLayers(li);
   return L;
 
   AROS_LIBFUNC_EXIT

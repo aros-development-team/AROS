@@ -12,14 +12,10 @@
 #include <aros/libcall.h>
 #include <proto/graphics.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
 
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
 
 	AROS_LH2(LONG, UpfrontLayer,
 
@@ -56,76 +52,111 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer_Info * LI = L->LayerInfo;
+  struct ClipRect * CR_old = L->ClipRect;
 
-  
-  /* see whether this is already the most upfront layer */
-  if (LI->top_layer != L)
+  /* see whether this is already the most upfront layer of its kind */
+  if (LI->top_layer == L || 
+       ( (L->Flags & LAYERBACKDROP) != 0 &&  
+         (L->front->Flags & LAYERBACKDROP) == 0))
+    return TRUE;
+
+  /*
+     If there are only BACKDROP layers in the list I will also
+     treat it here, otherwise I will simply call MoveLayerInfrontOf
+     for the BACKDROP layer.
+   */
+
+  if ((L->Flags & LAYERBACKDROP) != 0 &&
+      (LI->top_layer -> Flags & LAYERBACKDROP) == 0)
   {
-    /* no, we actually have to move it to the front. */
-    struct ClipRect * CR_old = L->ClipRect;
-    /* no one else may interrupt me while I do this */
-    LockLayers(LI);
-
-    /* take layer out of the list of layers */
-    L->front->back = L->back;
-    if (NULL != L->back)
-      L->back->front = L->front;
-    
-    /* and hang it in at the front */
-    L->back = LI->top_layer;
-    L->front = NULL;
-    /* I am in front of the old top_layer */
-
-    LI->top_layer->front = L;
-    /* and now I am the top_layer */
-    LI->top_layer = L;
-      
-    /* get a new cliprect structure */
-    L->ClipRect = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
-
-    /* and init. it with the layer's bounds */
-    L->ClipRect->bounds = L->bounds;
-    
-    /* 
-       and now we insert this layer at the top and split the
-       layers behind it 
-     */
-
-    CreateClipRectsBehindLayer(L);
-
-    /* Cool! Now we process the ClipRectsList and restore the
-       cliprects found there and free the bitmaps and the
-       list itself while doing so. */
-    while (NULL != CR_old)
-    {
-      struct ClipRect * _CR_old = CR_old->Next;
-      if (NULL != CR_old->lobs)
-      {
-        /* this ClipRect was hidden before, but not any more, so let's
-           show what we have there. */
-        BltBitMap(
-          CR_old->BitMap,
-          CR_old->bounds.MinX & 0x0f,
-          0,
-          L->rp->BitMap,
-          CR_old->bounds.MinX,
-          CR_old->bounds.MinY,
-          CR_old->bounds.MaxX - CR_old->bounds.MinX + 1,
-          CR_old->bounds.MaxY - CR_old->bounds.MinY + 1,
-          0x0c0, /* copy */
-          0xff,
-          NULL
-        );
-        FreeBitMap(CR_old->BitMap);
-      }
-      FreeMem(CR_old, sizeof(struct ClipRect));
-      CR_old = _CR_old;
-    }    
-
-    /* Ok, I am done now. */
-    UnlockLayers(LI);
-  } /* if not already topmost layer */
+    /* L is a BACKDROP layer and there are non-BACKDROP layers
+       in front of it, so I will call MoveLayerInfrontOf() and
+       put L in front of the first BACKDROP layer.
+    */
+    struct Layer * L_behind = L->front;
+    while ((L_behind->front->Flags & LAYERBACKDROP) != 0)
+      L_behind =  L_behind->front;
+    return MoveLayerInFrontOf(L, L_behind);
+  }  
   
+  /* I actually have to move it to the very front of the layers. */
+  /* no one else may interrupt me while I do this */
+  LockLayers(LI);
+
+  /* take layer out of the list of layers */
+  L->front->back = L->back;
+  if (NULL != L->back)
+    L->back->front = L->front;
+    
+  /* and hang it in at the position where it belongs */
+
+  /* as it's a non-BACKDROP layer I put it in the front */
+  L->back  = LI->top_layer;
+  L->front = NULL;
+  /* I am in front of the old top_layer */
+
+  LI->top_layer->front = L;
+  /* and now I am the top_layer */
+  LI->top_layer = L;
+      
+  /* get a new cliprect structure */
+  L->ClipRect = (struct ClipRect *)
+                  AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+
+  /* and initilize it with the layer's bounds */
+  L->ClipRect->bounds = L->bounds;
+
+  /*
+     And split all ClipRects that are further behind 
+     Comment: This seems to be the only way for backing up
+              the bitmaps of the layers behind it and the
+              amount of cliprects is also at a minimum.
+   */
+  CreateClipRects(LI, L);
+
+  /* 
+     Cool! Now we process the ClipRectsList and restore the
+     cliprects found there and free the bitmaps and the
+     list itself while doing so. 
+   */
+  while (NULL != CR_old)
+  {
+    struct ClipRect * _CR_old = CR_old->Next;
+    if (NULL != CR_old->lobs)
+    {
+      /* 
+         This ClipRect was hidden before, but not any more, so let's
+         show what we have there. 
+      */
+      BltBitMap(
+        CR_old->BitMap,
+        CR_old->bounds.MinX & 0x0f,
+        0,
+        L->rp->BitMap,
+        CR_old->bounds.MinX,
+        CR_old->bounds.MinY, 
+        CR_old->bounds.MaxX - CR_old->bounds.MinX + 1,
+        CR_old->bounds.MaxY - CR_old->bounds.MinY + 1,
+        0x0c0, /* copy */
+        0xff,
+        NULL
+      );
+      FreeBitMap(CR_old->BitMap);
+    }
+    FreeMem(CR_old, sizeof(struct ClipRect));
+    CR_old = _CR_old;
+  }    
+
+  /*
+     To keep consistency of the layers' cliprects I have to split the
+     layer that has previously been the front layer.
+   */
+
+  if (NULL != L->back)
+    CreateClipRectsSelf(L->back, FALSE);
+
+  /* Ok, I am done now. */
+  UnlockLayers(LI);
 
   return TRUE;
 

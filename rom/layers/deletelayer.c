@@ -88,11 +88,16 @@
       Otherwise make lobs point to the result of the call to 
       internal_WhichLayer();
   
+    - If we take out the very first layer then the new top layer
+      doesn't have to have several cliprects. It just needs to have
+      one single layer.
+      !!!This is not implemented yet
+
   Ok, here we go: 
   */
   
   struct Layer_Info * LI = LD->LayerInfo;
-  struct ClipRect * DCR,  * CR;
+  struct ClipRect * CR;
   struct Region * R;
   struct RegionRectangle * RR;
 
@@ -160,7 +165,8 @@
     FreeMem(CR, sizeof(struct ClipRect));      
     CR = _CR;
   }
-  /* just to make sure...
+  /* 
+     just to make sure...
      Remember: The ClipRects list is now invalid!
   */
   
@@ -217,7 +223,7 @@
              );
             /* 
                Free the bitmap and clear the lobs entry 
-             */
+            */
             FreeBitMap(CR->BitMap);
             CR->BitMap = NULL;
             CR->lobs   = NULL;
@@ -257,33 +263,16 @@
   */
   /*
       The last thing we have to do now is clear those parts of
-      the deleted layer that we not hiding anything.
-      !!! Actuall we should use EraseRect() here so the background
+      the deleted layer that were not hiding anything.
+      !!! Actually we should use EraseRect() here so the background
       can be restored with the installed backfill hook.
   */
   R = LD->DamageList;
-
-
 
   RR = R->RegionRectangle;
   /* check if a region is empty */
   while (NULL != RR)
   {
-/*
-    Move(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
-    Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MinY);
-    Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MaxY);
-    Draw(LD->rp,RR->bounds.MinX,RR->bounds.MaxY);
-    Draw(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
-    Delay(10);
-
-    printf("Found RectangleRegion: (%i,%i) - (%i,%i)\n",
-      RR->bounds.MinX,
-      RR->bounds.MinY,
-      RR->bounds.MaxX,
-      RR->bounds.MaxY);
-*/
-
     BltBitMap(
       LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
       0,

@@ -27,10 +27,13 @@ struct ClipRect * GetClipRectStruct(struct Layer * L)
 
 struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y)
 {
-  for( ; l != NULL; l = l->back)
+  while(l != NULL)
+  {
     if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
        y >= l->bounds.MinY && y <= l->bounds.MaxY)
 	     return l;
+    l = l->back;
+  }
 
   return NULL;
 }

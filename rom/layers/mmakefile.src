@@ -35,9 +35,13 @@ LIBNAME  := layers
 ULIBNAME := Layers
 
 OSMODULE  := layers.library
-FILES	  := cliprectfunctions createcliprectsbehindlayer basicfuncs helpfunctions
+FILES	  := cliprectfunctions \
+	createcliprects \
+	basicfuncs \
+	helpfunctions
 	
 FUNCTIONS := \
+	behindlayer			\
 	createbehindhooklayer		\
 	createbehindlayer		\
 	createupfronthooklayer		\
@@ -53,6 +57,7 @@ FUNCTIONS := \
 	movelayerinfrontof		\
 	movesizelayer			\
 	newlayerinfo			\
+	swapbitsrastportcliprect        \
 	thinlayerinfo			\
 	unlocklayer			\
 	unlocklayerinfo 		\

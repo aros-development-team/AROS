@@ -145,6 +145,18 @@ AROS_UFH8(void, CallLayerHook,
 /*                                 LAYER                                   */
 /***************************************************************************/
 
+void SetLayerPriorities(struct Layer_Info * li)
+{
+  struct Layer * L = li -> top_layer;
+  UWORD pri = 10000;
+  while (NULL != L)
+  {
+    L -> priority = pri;
+    pri--;
+    L = L->back;
+  }
+}
+
 /***************************************************************************/
 /*                               LAYERINFO                                 */
 /***************************************************************************/
@@ -270,6 +282,25 @@ AROS_UFH2(void, SafeFreeExtLI,
 /***************************************************************************/
 /*                                RECTANGLE                                */
 /***************************************************************************/
+
+/*
+  Within the linked list of rectangles search for the rectangle that
+  contains the given coordinates.
+ */
+struct ClipRect * internal_WhichClipRect(struct Layer * L, WORD x, WORD y)
+{
+  struct ClipRect * CR = L->ClipRect;
+  while (NULL != CR)
+  {
+    if (x >= CR->bounds.MinX &&
+        x <= CR->bounds.MaxX &&
+        y >= CR->bounds.MinY &&
+        y <= CR->bounds.MaxY)
+      return CR;
+    CR = CR->Next;
+  }
+  return NULL;
+}
 
 /*
  * Clear a Rectangle
