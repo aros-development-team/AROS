@@ -60,6 +60,7 @@ FILES	:= \
     dir \
     echo \
     execute \
+    install \
     liblist \
     makedir \
     mount \
