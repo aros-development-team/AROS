@@ -8,6 +8,7 @@
 #include <string.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <cybergraphx/cybergraphics.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -61,6 +62,10 @@
 		This is for system use and should not be used by
 		applications use as it is inefficient, and may waste
 		memory.
+
+	    \item{BMF_SPECIALFMT} causes graphics to allocate a bitmap
+	    	of a standard CyberGraphX format. The format
+		(PIXFMT_????) must be stored in the 8 most significant bits.
 
 	    \end{description}
 
@@ -128,8 +133,10 @@
     if (
 	depth > 8
 	|| (flags & BMF_DISPLAYABLE)
-	|| (friend_bitmap && friend_bitmap->Pad != 0)
+/*	|| (friend_bitmap && friend_bitmap->Pad != 0) */
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
+#warning Should	we also check for BMF_MINPLANES ?
+	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
     )
     {
 	nbm = driver_AllocBitMap (sizex
