@@ -94,7 +94,7 @@ static void LayoutTabItems(Object *obj, struct Register_DATA *data)
 	    x = INTERTAB - 1;
 	    if (i > data->active && !tabs_on_bottom)
 	    {
-		y = _height(obj) - muiAreaData(obj)->mad_HardIBottom;
+		y = _height(obj) - muiAreaData(obj)->mad_InnerBottom;
 		tabs_on_bottom = 1;
 	    } else y += data->tab_height;
 	}
@@ -293,7 +293,7 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 	{
 	    if (!tabs_on_bottom && (i > data->active/data->columns))
 	    {
-		y = _bottom(obj) - muiAreaData(obj)->mad_HardIBottom + data->tab_height;
+		y = _bottom(obj) - muiAreaData(obj)->mad_InnerBottom + data->tab_height;
 		tabs_on_bottom = 1;
 	    }
 
@@ -332,12 +332,22 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 static void SetHardCoord(Object *obj, struct Register_DATA *data)
 {
     struct MUI_AreaData *adata = muiAreaData(obj);
+    const struct MUI_FrameSpec_intern *frame;
 
-    adata->mad_HardILeft  	= REGISTER_FRAMEX;
-    adata->mad_HardITop   	= data->tab_height * (1 + data->active/data->columns) + REGISTER_FRAMETOP;
-    adata->mad_HardIRight  	= REGISTER_FRAMEX;
-    adata->mad_HardIBottom 	= data->tab_height * (data->rows - 1 - data->active/data->columns) +  REGISTER_FRAMEBOTTOM;
+    //adata->mad_InnerLeft  	= REGISTER_FRAMEX;
+    //adata->mad_InnerTop   	= data->tab_height * (1 + data->active/data->columns) + REGISTER_FRAMETOP;
+    //adata->mad_InnerRight  	= REGISTER_FRAMEX;
+    //adata->mad_InnerBottom 	= data->tab_height * (data->rows - 1 - data->active/data->columns) +  REGISTER_FRAMEBOTTOM;
 
+    frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Group];
+
+    adata->mad_InnerLeft   = frame->innerLeft + 1;
+    adata->mad_InnerTop    = data->tab_height * (1 + data->active/data->columns)
+	+ frame->innerTop;
+    adata->mad_InnerRight  = frame->innerRight + 1;
+    adata->mad_InnerBottom =
+	data->tab_height * (data->rows - 1 - data->active/data->columns)
+	+ frame->innerBottom + 1;
 /*      D(bug("Hardcoord %p top=%ld bottom=%ld\n", obj, adata->mad_HardITop, adata->mad_HardIBottom)); */
 }
 
