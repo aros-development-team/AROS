@@ -267,10 +267,11 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 {
     AROS_USERFUNC_INIT
 
+    int ok = TRUE;
+
     LC_SYSBASE_FIELD(lh) = sysBase;
     LC_SEGLIST_FIELD(lh) = segList;
 
-    int ok = TRUE;
 
 #ifdef AROS_LC_SETFUNCS
     ok = !set_open_libraries() && !set_call_funcs(SETNAME(INIT), 1);
