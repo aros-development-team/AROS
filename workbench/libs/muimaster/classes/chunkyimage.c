@@ -250,11 +250,11 @@ static IPTR ChunkyImage_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 
     if (!make_bitmap(cl, obj)) return FALSE;
     
-    set(obj, MUIA_Bitmap_Bitmap, data->bm);
+    set(obj, MUIA_Bitmap_Bitmap, (IPTR)data->bm);
     
     if (data->palette32)
     {
-    	set(obj, MUIA_Bitmap_SourceColors, data->palette32);
+    	set(obj, MUIA_Bitmap_SourceColors, (IPTR)data->palette32);
     }
     
     if (!DoSuperMethodA(cl, obj, (Msg)msg))

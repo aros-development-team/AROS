@@ -410,7 +410,7 @@ static ULONG Boopsi_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	    ** object checks wheather the gadget id equals to its allocated
 	    **/
 
-	    SetAttrs(obj,MUIA_Boopsi_OnlyTrigger,TRUE,TAG_MORE,msg->imsg->IAddress);
+	    SetAttrs(obj,MUIA_Boopsi_OnlyTrigger,TRUE,TAG_MORE,(IPTR)msg->imsg->IAddress);
 
 //            for (tags = (struct TagItem*)msg->imsg->IAddress; (tag = NextTagItem(&tags)); )
 //            {

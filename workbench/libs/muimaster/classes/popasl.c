@@ -226,7 +226,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 
 		    strcpy(buf, drawer);
 		    AddPart(buf, file, len);
-		    set(string, MUIA_String_Contents, buf);
+		    set(string, MUIA_String_Contents, (IPTR)buf);
 		    get(string, MUIA_String_Contents, &contents);
 		    /* trigger string notification */
 		    set(string, MUIA_String_Acknowledge, contents);
@@ -252,7 +252,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 		    if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
 		    snprintf(num_buf, 20, "%ld", size);
 		    AddPart(buf,num_buf,len);
-		    set(string,MUIA_String_Contents,buf);
+		    set(string, MUIA_String_Contents, (IPTR)buf);
 		    get(string, MUIA_String_Contents, &contents);
 		    /* trigger string notification */
 		    set(string, MUIA_String_Acknowledge, contents);
@@ -315,8 +315,8 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->type = asl_type;
     
     SetAttrs(obj,
-	MUIA_Popstring_OpenHook, &data->open_hook,
-	MUIA_Popstring_CloseHook, &data->close_hook,
+	MUIA_Popstring_OpenHook, (IPTR)&data->open_hook,
+	MUIA_Popstring_CloseHook, (IPTR)&data->close_hook,
 	MUIA_Popstring_Toggle, FALSE,
 	TAG_DONE);
 
