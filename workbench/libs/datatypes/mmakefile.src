@@ -42,6 +42,7 @@ FUNCS := adddtobject \
 #MM     kernel-graphics-includes \
 #MM     kernel-intuition-includes \
 #MM     kernel-layers-includes \
+#MM     kernel-workbench-includes \
 #MM     workbench-libs-iffparse-includes \
 #MM     workbench-libs-icon-includes \
 #MM     includes-copy
