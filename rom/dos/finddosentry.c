@@ -1,42 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.12  2001/03/04 12:44:49  SDuvan
-    Added debug stuff and made the code somewhat more readable
-
-    Revision 1.11  2000/03/24 17:54:38  bernie
-    add const qualifier to function paramenters where appropriate
-
-    Revision 1.10  1998/10/20 16:44:36  hkiel
-    Amiga Research OS
-
-    Revision 1.9  1997/01/27 00:36:19  ldp
-    Polish
-
-    Revision 1.8  1996/12/09 13:53:28  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.7  1996/11/14 08:54:17  aros
-    Some more changes
-
-    Revision 1.6  1996/10/24 15:50:28  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.5  1996/10/10 13:20:49  digulla
-    Use dol_DevName(STRPTR) instead of dol_Name(BSTR) (Fleischer)
-
-    Revision 1.4  1996/09/11 12:58:46  digulla
-    Determine the size of the name (M. Fleischer)
-
-    Revision 1.3  1996/08/13 13:52:46  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:51  digulla
-    Added standard header for all files
 
     Desc:
     Lang: English

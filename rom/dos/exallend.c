@@ -1,29 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.7  2000/11/23 19:55:26  SDuvan
-    Added or improved documentation
-
-    Revision 1.6  2000/11/18 12:21:37  SDuvan
-    Simplified
-
-    Revision 1.5  1998/10/20 16:44:34  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1997/01/27 00:36:17  ldp
-    Polish
-
-    Revision 1.3  1996/12/09 13:53:25  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:27  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:45  digulla
-    A couple of new DOS functions from M. Fleischer
 
     Desc:
     Lang: English

@@ -1,41 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.10  1998/10/20 16:44:56  hkiel
-    Amiga Research OS
-
-    Revision 1.9  1998/04/17 08:08:36  bergers
-    AllocMem, FreeMem and Read are called from an array of pointers to functions as
-    supposed to in the internal* functions.
-
-    Revision 1.8  1997/12/14 20:21:18  hkiel
-    Changed to use cpak.
-
-    Revision 1.7  1997/12/11 14:32:09  bergers
-    UnLoadSeg() built on top of InternalUnLoadSeg().
-
-
-    Revision 1.7  1997/12/09 00:17:00  bergers
-    Calls InternalUnLoadSeg() now.
-
-    Revision 1.6  1997/01/27 00:36:33  ldp
-    Polish
-
-    Revision 1.5  1996/12/09 13:53:48  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.4  1996/10/24 15:50:38  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 13:52:52  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:59  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
