@@ -9,10 +9,6 @@
     $Id$
 */
 
-#ifndef _MUI_TEXTENGINE_H
-#include "textengine.h"
-#endif
-
 /*** Name *******************************************************************/
 #define MUIC_Text           "Text.mui"
 

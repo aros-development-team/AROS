@@ -28,6 +28,7 @@ extern struct Library *MUIMasterBase;
 #include "menu.h"
 #include "prefs.h"
 #include "font.h"
+#include "textengine.h"
 
 //#define MYDEBUG 1
 #include "debug.h"
@@ -755,10 +756,10 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
     msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 
-    D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->mad_FrameTitle,
-	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
-	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
-	  msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
+   /*   D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->mad_FrameTitle, */
+/*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
+/*  	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
+/*  	  msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
 
     return TRUE;
 }
@@ -1133,6 +1134,7 @@ static ULONG Area_DrawParentBackground(struct IClass *cl, Object *obj, struct MU
     }
     else
     {
+	D(bug("Area_DrawParentBackground(%p) : MUIM_Window_DrawBackground\n", obj));
     	DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
 		 msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
     }
@@ -1169,6 +1171,8 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
 	Object *parent;
 	get(obj, MUIA_Parent, &parent);
 
+	D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
+	      obj));
 	return DoMethod(obj, MUIM_DrawParentBackground, msg->left, msg->top,
 		     msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
     }
