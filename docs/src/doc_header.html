@@ -21,6 +21,73 @@ since 12. October 1999.
 <HR WIDTH="100%"><p>
 <H2>NEWS</H2>
 <TABLE>
+
+<TR><TD VALIGN=TOP>1.8.2000</TD><TD>
+BGUI has been completely ported to AROS, now. This means that the library
+can be compiled and that all demos run. Cudos go to Stefan Berger.<P>
+
+Michael Schulz is working on making mice work on AROS Native/i386.
+This includes work on a PCI.HIDD, an IRQ.HIDD, the VGA.HIDD and the
+Serial.HIDD plus an IDE driver. Trackdisk is there, too, so the
+next thing is to find a filesystem to use. We try to get SFS because
+it seems one of the best filesystems for the Amiga at this time.
+The SFS developers seem to be very positive to this, we'll see what
+comes from it.<P>
+
+As for the <A HREF="http://www.sowatec.com/">Sowatec AG</A> hiring
+developers for AROS, all I can say at this time is that we had several
+job interviews and things look quite good. The only thing that might
+break it at this time (as I see it) is that we get not enough people.
+We figured that we need four developers and last I looked, we had three
+and one interview still open. Don't hold your breath but press your
+thumbs :-)<P>
+
+Nils Henrik Lorentzen has begun to write a framebuffer.HIDD which
+uses Linux' framebuffer for rendering. Right now, it's mostly for
+debugging (it's a synchronous interface instead of X11s' asynchronous
+one) but maybe, there will be a AROS Native/linux-i386, ie. a
+version of AROS that will boot with the help of a Linux kernel
+but without the need to install a complete Linux system. We'll
+see what can be done here.<P>
+
+And I'm diving into the depths of Ami, the SDK for the next Amiga
+by <A HREF="http://www.amiga.com/">Amiga Inc.</A>. As it looks, the
+SDK is a bit disappointing because it's very rough and has lots of
+holes but on the positive side, Amiga's crew is very helpful and
+the developer support is just great. *sigh* Had we just had such
+a support in the old C= days. Many thanks for their effort go to
+Ray A. Akey and Gary Peake and all the members of the 
+<A HREF="http://www.tao-group.com/">Tao</A> and Amiga
+support staff that I'm bombing with EMails ;-) If they can keep this
+attitude, then I have no doubt that in five or ten years, people
+will name Ami in the same breath as Windows, EPOC and Linux.
+Something really to look forward to.<P>
+
+As for stats, I'm proud that we made 40k hits on our web page and
+this year has also been very productive from the EMail side: Last
+year, there were about 300KB mails/month in the developer list.
+This year, we have 1MB mails/month ! Thanks go to all those
+members of the development team that have not been mentioned here
+but who do important stuff, nonetheless (in no order): Henning
+Kiel and Lars Bischoff for reporting bugs, Georg Steger for
+cleaning up after the other developers have raged through the
+code and calling me back to earth when necessary, Jaime Dias for
+asking "stupid" questions that make us think what we're doing,
+Manuel Lemos for trusting us with BGUI, Requin Frederic for
+helping Michael Schulz, Tobias Seiler for continuing the NetBSD
+port, Bernardo Innocenti for bugging people to allow us to port
+their software to AROS and last but not least all those people
+who I forgot :-) Thanks to you all; it's <strong>your</strong>
+work that makes this possible.<P>
+
+And at the end, a short note to all those people who started own
+ports of the AmigaOS: Good luck to you all. I think you will find
+out soon enough why AROS took soo long. The AROS team is still
+willing to share their knowledge and code with everyone out
+there. And we can do this because of the MPL, the only true Open
+Source license :-)
+</TD></TR>
+
 <TR><TD VALIGN=TOP>19.6.2000</TD><TD>
 Some new software is ported to AROS: The freetype library
 (<A HREF="http://www.freetype.org">www.freetype.org</A>),
@@ -162,20 +229,6 @@ server which I will update once per day. Please continue voting.
 Since there seems to be a confusion how the polling works: My
 script looks for the questions and then for a digit and counts
 that.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>20.3.2000</TD><TD>
-Unnoticed, our WWW site has passed 20'000 hits this weekend :-)<P>
-
-<A HREF="http://amiga.eden.it/">AmiWorld On-Line</A> has translated versions
-of their AROS article. There is now a german, an english, an italian
-and even a japanese version ! Follow
-<A HREF="http://amiga.eden.it/index_e.html">this link</A> to the index
-of all articles.<P>
-
-We are currently doing a poll on options. Please read
-<A HREF="http://www.aros.org/pipermail/aros-announce/2000-March/000006.html">this
-announcement</A>.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
