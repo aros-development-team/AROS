@@ -213,34 +213,40 @@ struct MUI_AreaData
 
 
 /* mad_Flags, private one */
-#define MADF_FIXHEIGHT         (1<< 2) /* PRIV */
-#define MADF_FIXWIDTH          (1<< 3) /* PRIV */
-#define MADF_MAXHEIGHT         (1<< 4) /* PRIV */
-#define MADF_MAXWIDTH          (1<< 5) /* PRIV */
-#define MADF_FILLAREA          (1<< 6) /* PRIV */
-#define MADF_INNERLEFT         (1<< 7) /* PRIV */
-#define MADF_INNERRIGHT        (1<< 8) /* PRIV */
-#define MADF_INNERTOP          (1<< 9) /* PRIV */
-#define MADF_INNERBOTTOM       (1<< 10) /* PRIV */
-#define MADF_FRAMEPHANTOM      (1<< 11) /* PRIV */
-#define MADF_SELECTED          (1<< 12) /* PRIV */
-#define MADF_PRESSED           (1<< 13) /* PRIV */
-#define MADF_SHOWME            (1<< 14) /* PRIV */
-#define MADF_SHOWSELSTATE      (1<< 15) /* PRIV */
-#define MADF_CANDRAW           (1<< 16) /* PRIV */
-#define MADF_SETUP             (1<< 17) /* PRIV */
-#define MADF_MAXSIZE           (1<< 18) /* PRIV */
-#define MADF_CYCLECHAIN        (1<< 20) /* PRIV */
-#define MADF_ACTIVE            (1<< 21) /* PRIV */
-#define MADF_DRAGGABLE         (1<< 22) /* PRIV */
-#define MADF_DRAGGING          (1<< 23) /* PRIV */
-#define MADF_DROPABLE          (1<< 24) /* PRIV */
-#define MADF_OWNBG						 (1<< 25) /* PRIV */
-#define MADF_BORDERGADGET      (1<< 26) /* PRIV - is a border gadget */
-#define MADF_DRAWING           (1<< 27) /* PRIV - set during MUI_Redraw */
+#define MADF_DRAW_XXX          (1<< 2) /* PRIV - mui verified, what use ? */
+#define MADF_DRAGGABLE         (1<< 3) /* PRIV - mui verified */
+#define MADF_MAXHEIGHT         (1<< 4) /* PRIV - share bit 6 in mui */
+#define MADF_CYCLECHAIN        (1<< 5) /* PRIV - mui verified */
+#define MADF_MAXWIDTH          (1<< 6) /* PRIV - share bit 6 in mui */
+#define MADF_DRAGGING          (1<< 7) /* PRIV - zune-specific ? */
+#define MADF_OWNBG	       (1<< 8) /* PRIV - zune-specific ? */
+#define MADF_SHOWME            (1<< 9) /* PRIV - mui verified */
+#define MADF_BORDERGADGET      (1<< 10) /* PRIV - is a border gadget; zune-specific ? */
+#define MADF_DRAWFRAME         (1<< 11) /* PRIV - nearly mui verified */
+#define MADF_DRAW_XXX_2        (1<< 12) /* PRIV - mui verified, what use ? */
+#define MADF_DROPABLE          (1<< 13) /* PRIV - mui verified */
+#define MADF_CANDRAW           (1<< 14) /* PRIV - zune-specific */
+#define MADF_DISABLED          (1<< 15) /* PRIV - mui verified */
+#define MADF_SHOWSELSTATE      (1<< 16) /* PRIV - mui verified */
+#define MADF_PRESSED           (1<< 17) /* PRIV - nearly mui verified */
+#define MADF_SELECTED          (1<< 18) /* PRIV - mui verified */
+#define MADF_FIXHEIGHT         (1<< 19) /* PRIV - zune-specific */
+#define MADF_FILLAREA          (1<< 20) /* PRIV - mui verified */
+#define MADF_ACTIVE            (1<< 21) /* PRIV - zune-specific */
+#define MADF_FIXWIDTH          (1<< 22) /* PRIV - zune-specific */
+#define MADF_FIXHEIGHTTXT      (1<< 22) /* PRIV - mui verified (unused in zune) */
+#define MADF_INNERLEFT         (1<< 23) /* PRIV - mui verified */
+#define MADF_INNERTOP          (1<< 24) /* PRIV - mui verified */
+#define MADF_INNERRIGHT        (1<< 25) /* PRIV - mui verified */
+#define MADF_INNERBOTTOM       (1<< 26) /* PRIV - mui verified */
+#define MADF_FRAMEPHANTOM      (1<< 27) /* PRIV - mui verified */
+#define MADF_SETUP             (1<< 28) /* PRIV - zune-specific */
 
 #define MADF_INVIRTUALGROUP	(1<<29) /* PRIV UNDOC: The object is inside a virtual group */
 #define MADF_ISVIRTUALGROUP	(1<<30) /* PRIV UNDOC: The object is a virtual group */
+
+#define MADF_DRAWFLAGS (MADF_DRAWOBJECT | MADF_DRAWUPDATE | MADF_DRAW_XXX \
+    | MADF_DRAWFRAME | MADF_DRAW_XXX_2)
 
 
 enum {
