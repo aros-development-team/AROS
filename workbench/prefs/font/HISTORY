@@ -17,3 +17,5 @@
 			to pave way for a more polished source code. The internal API has changed;
 			we are not backwards compatible with earlier versions! Gadtools GUI has been
 			totally reworked - most parts rewritten. (Developer's release 3)
+0.8 (28.4.2001)		A bug somewhere in "Font" 0.7 caused AROS to crash. The erroneous code was
+			isolated in getArguments() and fixed. (Developer's release 4)

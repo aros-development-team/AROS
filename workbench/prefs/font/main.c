@@ -106,6 +106,7 @@ int main(void)
  /* Get arguments. If failure, should we quit or not? If started from
     shell, do we assume the user wants to run Font Preferences on a "non
     GUI interactive basis"? Request for comments to author! */
+
  if(!(readArgs = getArguments()))
   printf("Warning: getArguments() failed!\n");
 
@@ -123,7 +124,9 @@ int main(void)
   /* If USE or SAVE is set, write the FROM file to ENV: and/or ENVARC: and then quit. Is this
      what the "Classic" Font Preferences does? Look it up! (As a side note, if FILE is not
      found, the old settings will be overwritten with default values. Should we avoid this and
-     implement some error checking in writeIFF() ? Request for comments to author! */
+     implement some error checking in writeIFF() ? What if FROM is not set? Should we still 
+     react for USE and SAVE (which we currently don't)? Request for comments to author! */
+
   if(argArray[ARG_USE] || argArray[ARG_SAVE])
   {
    writeIFF("ENV:sys/font.prefs", fontPrefs);
@@ -151,8 +154,6 @@ int main(void)
     the specified screen, should we try the Workbench screen instead? */
  if(screenPtr = LockPubScreen((UBYTE *)argArray[ARG_PUBSCREEN]))
  {
-  //setupGadgets();
-
   if(drawInfo = GetVisualInfo(screenPtr, NULL))
   {
    if(appGUIData = createGadgets(screenPtr, drawInfo))
