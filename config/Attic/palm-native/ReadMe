@@ -56,7 +56,7 @@ Now go into config/palm-native
 
 and start compiling the source tree with the given script 'compile'. This
 will compile all linklibs, exec and maybe a couple of other libraries:
-	./compile
+	./compile.coff
 
 To upload it onto a palm device do the following:
 	cd boot ; make clean ; make send

@@ -22,6 +22,8 @@
 #define AROS_DOUBLEALIGN           2 /* Alignment for double */
 #define AROS_WORSTALIGN            8 /* Worst case alignment */
 
+#define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
+
 /*
     How much do I have to add to sp to get the address of the first
     byte on the stack?
