@@ -82,7 +82,7 @@
 		/*
 		 * Enable interrupt by allowing all of them.
 		 */
-		WREG_L(IMR) = 0
+		WREG_L(IMR) = 0;
 	}
 
 	AROS_LIBFUNC_EXIT
