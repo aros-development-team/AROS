@@ -112,7 +112,7 @@ ULONG do_render_func(struct RastPort *rp
 	    RSI(funcdata)->layer_rel_srcx = srcx;
 	    RSI(funcdata)->layer_rel_srcy = srcy;
 	}
-	    
+
 	pixwritten = render_func(funcdata
 		, srcx, srcy
 		, bm_obj, gc
@@ -264,7 +264,7 @@ ULONG do_pixel_func(struct RastPort *rp
 	     
 	     RELEASE_HIDD_BM(bm_obj, bm);
 	     return -1;
-	     
+
 	}
 	
     	/* This is a screen */
@@ -338,9 +338,9 @@ ULONG do_pixel_func(struct RastPort *rp
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
 	} /* while (cliprects to examine) */
-	
+
 	UnlockLayerRom( L );
-    
+
     }
     
     return retval;
@@ -530,7 +530,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
     		 { aHidd_GC_DrawMode	, vHidd_GC_DrawMode_Copy    },
     		 { TAG_DONE 	    	    	    	    	    }
     	    };
-	    
+
 	    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
 	    OOP_GetAttr(gc, aHidd_GC_Foreground, &old_fg);
     	    
@@ -606,7 +606,7 @@ static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_
 {
     struct wp8_render_data *wp8rd;
     ULONG   	    	    width, height;
-    
+
     wp8rd = (struct wp8_render_data *)wp8r_data;
     
     width  = x2 - x1 + 1;
@@ -644,7 +644,7 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 	{ TAG_DONE, 0}
     };
     
-    
+
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
 	
@@ -758,7 +758,7 @@ void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src
 		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 		, GfxBase
 	);
-	
+
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
 
@@ -910,7 +910,7 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 	case vHidd_StdPixFmt_LUT8:
 	    cpf = PIXFMT_LUT8;
 	    break;
-	    
+
 	default:
 	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
 	    break;
@@ -948,7 +948,7 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 	case PIXFMT_LUT8:
 	    stdpf = vHidd_StdPixFmt_LUT8;
 	    break;
-	    
+
 	default:
 	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
 	    break;
@@ -965,7 +965,7 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 {
     UBYTE   *srcptr;
     LONG    x, y;
-    
+
     EnterFunc(bug("template_to_buf(%p, %d, %d, %d, %d, %p)\n"
     			, ti, x_src, y_src, xsize, ysize, buf));
 			
@@ -978,7 +978,7 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
     for (y = 0; y < ysize; y ++)
     {
 	UBYTE *byteptr = srcptr;
-	
+
     	for (x = 0; x < xsize; x ++)
 	{
 	    UBYTE mask = XCOORD_TO_MASK(x + x_src);
@@ -1000,15 +1000,46 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 	    {
 	    	byteptr ++;
 	    }
-		
+
 	}
 	srcptr += ti->modulo;
     }
-    
+
     ReturnVoid("template_to_buf");
 }
 
 /****************************************************************************************/
+
+#define ENABLE_PROFILING   0
+#define USE_OLD_MoveRaster 0
+
+#define rdtscll(val) \
+     __asm__ __volatile__("rdtsc" : "=A" (val))
+
+#if ENABLE_PROFILING
+
+
+#define AROS_BEGIN_PROFILING(context)  \
+{                                      \
+    unsigned long long _time1, _time2; \
+    char *_text = #context;            \
+    rdtscll(_time1);                   \
+    {
+
+#define AROS_END_PROFILING                                                     \
+    }                                                                          \
+    rdtscll(_time2);                                                           \
+    kprintf("%s: Ticks count: %u\n", _text, (unsigned long)(_time2 - _time1)); \
+}
+
+#else
+
+#define AROS_BEGIN_PROFILING(context)
+#define AROS_END_PROFILING
+
+#endif
+
+#if USE_OLDMoveRaster
 
 BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
@@ -1049,67 +1080,51 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     }
     else
     {
-    	struct ClipRect *CR, *LastHiddenCR;
-        struct Region    R;
+    	struct ClipRect *CR, *LastHiddenCR = NULL;
+        struct Region   *Damage;
 
 	LockLayerRom(L);
 
-	TranslateRect(&ScrollRect, L->bounds.MinX, L->bounds.MinY);
+        /*
+           The scrolling area is relative to the layer's coords, thus make it relative to the screen,
+           as the cliprect's coords are
+        */
+	TranslateRect(&ScrollRect, MinX(L), MinY(L));
 
-	InitRegion(&R);
+        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
+        {
+            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+        }
 
-	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
-	{
-	    if (!SetRegion(L->DamageList, &R))
-	        goto failexit;
-
-	    /* The damage list is relative to the layer */
-	    TranslateRect(&R.bounds, L->bounds.MinX, L->bounds.MinY);
-	}
+        AROS_BEGIN_PROFILING(SortLayerCR)
 
         #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
 	SortLayerCR(L, dx, dy);
 	#undef LayersBase
 
-	for (LastHiddenCR = NULL, CR = L->ClipRect; CR; CR = CR->Next)
-    	{
-	    CR->_p1 = LastHiddenCR;
+        AROS_END_PROFILING
 
-	    if (CR->lobs)
-	    {
-		if (LastHiddenCR)
-		    LastHiddenCR->_p2 = CR;
+	AROS_BEGIN_PROFILING(Blitting loop)
 
-		LastHiddenCR = CR;
+        for (LastHiddenCR = NULL, CR = L->ClipRect; CR; CR = CR->Next)
+        {
+            CR->_p1 = LastHiddenCR;
 
-		if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
-		{
-		    if (!OrRectRegion(&R, &CR->bounds))
-		        goto failexit;
-		}
-	    }
-
-	    CR->_p2 = NULL;
- 	}
-
-
-	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
-	{
-	    TranslateRect(&R.bounds, -dx, -dy);
-
-	    AndRectRegion(&R, &ScrollRect);
+            if (CR->lobs)
+                LastHiddenCR = CR;
 	}
 
-	for (CR = L->ClipRect; CR; CR = CR->Next)
+
+        for (CR = L->ClipRect; CR; CR = CR->Next)
     	{
  	    int cando = 0;
 
-	    if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
+            if (CR->lobs && (L->Flags & LAYERSIMPLE))
 	    {
-	        ClearRectRegion(&R, &CR->bounds);
+                continue;
 	    }
-	    else
-	    if (_AndRectRect(&ScrollRect, &CR->bounds, &Rect))
+
+            if (_AndRectRect(&ScrollRect, Bounds(CR), &Rect))
 	    {
 		TranslateRect(&Rect, -dx, -dy);
 
@@ -1123,18 +1138,27 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
 		if (!CR->_p1 && !CR->lobs)
 		{
-		    /* there are no hidden/obscured rectangles with which this recrtangle has to deal */
-		    BltBitMap(rp->BitMap,
-                              Rect.MinX + dx,
-        		      Rect.MinY + dy,
-	          	      rp->BitMap,
-                    	      Rect.MinX,
-                   	      Rect.MinY,
-                  	      Rect.MaxX - Rect.MinX + 1,
-                  	      Rect.MaxY - Rect.MinY + 1,
-			      0xc0, /* copy */
-         		      0xff,
-                 	      NULL );
+		    /* there are no hidden/obscured rectangles this recrtangle has to deal with*/
+		    BltBitMap
+                    (
+                        rp->BitMap,
+                        Rect.MinX + dx,
+        		Rect.MinY + dy,
+	          	rp->BitMap,
+                    	Rect.MinX,
+                   	Rect.MinY,
+                  	Rect.MaxX - Rect.MinX + 1,
+                  	Rect.MaxY - Rect.MinY + 1,
+			0xc0, /* copy */
+         		0xff,
+                 	NULL
+ 		    );
+
+ 	  	    if (Damage)
+                    {
+                        ClearRectRegion(Damage, &Rect);
+                    }
+
 		}
 		else
 		{
@@ -1154,13 +1178,13 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		    {
 			if (L->Flags & LAYERSUPER)
 		        {
-   		            corrsrcx = - L->bounds.MinX - L->Scroll_X;
-          	            corrsrcy = - L->bounds.MinY - L->Scroll_Y;
+   		            corrsrcx = - MinX(L) - L->Scroll_X;
+          	            corrsrcy = - MinY(L) - L->Scroll_Y;
 		        }
 			else
 			{
-		            corrsrcx = - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
-		            corrsrcy = - CR->bounds.MinY;
+		            corrsrcx = - MinX(CR) + ALIGN_OFFSET(MinX(CR));
+		            corrsrcy = - MinY(CR);
 		        }
 			srcbm = CR->BitMap;
 		    }
@@ -1173,37 +1197,39 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 		    for (HiddCR = CR->_p1; HiddCR; HiddCR = HiddCR->_p1)
 		    {
-			if (_AndRectRect(&RectRegion->bounds, &HiddCR->bounds, &Tmp))
+			if (_AndRectRect(Bounds(RectRegion), Bounds(HiddCR), &Tmp))
 			{
-
 			    if (!(L->Flags & LAYERSIMPLE))
 			    {
     			        WORD corrdstx, corrdsty;
 
 				if (L->Flags & LAYERSUPER)
 				{
-	                            corrdstx =  - L->bounds.MinX - L->Scroll_X;
-                        	    corrdsty =  - L->bounds.MinY - L->Scroll_Y;
+	                            corrdstx =  - MinX(L) - L->Scroll_X;
+                        	    corrdsty =  - MinY(L) - L->Scroll_Y;
 				}
 				else
 				{
 				    /* Smart layer */
-				    corrdstx =  - HiddCR->bounds.MinX + ALIGN_OFFSET(HiddCR->bounds.MinX);
-				    corrdsty =  - HiddCR->bounds.MinY;
+				    corrdstx =  - MinX(HiddCR) + ALIGN_OFFSET(MinX(HiddCR));
+				    corrdsty =  - MinY(HiddCR);
 				}
 
 
-				BltBitMap(srcbm,
-				          Tmp.MinX + corrsrcx + dx,
-					  Tmp.MinY + corrsrcy + dy,
-					  HiddCR->BitMap,
-					  Tmp.MinX + corrdstx,
-					  Tmp.MinY + corrdsty,
-					  Tmp.MaxX - Tmp.MinX + 1,
-                	      	          Tmp.MaxY - Tmp.MinY + 1,
-			      	          0xc0, /* copy */
-         		      	          0xff,
-                 	   	          NULL );
+				BltBitMap
+                                (
+                                    srcbm,
+				    Tmp.MinX + corrsrcx + dx,
+				    Tmp.MinY + corrsrcy + dy,
+				    HiddCR->BitMap,
+				    Tmp.MinX + corrdstx,
+				    Tmp.MinY + corrdsty,
+				    Tmp.MaxX - Tmp.MinX + 1,
+                	      	    Tmp.MaxY - Tmp.MinY + 1,
+			      	    0xc0, /* copy */
+         		      	    0xff,
+                 	   	    NULL
+                                );
 			    }
 
 			    if (!ClearRectRegion(RectRegion, &Tmp))
@@ -1225,68 +1251,267 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 		    for (rr = RectRegion->RegionRectangle; rr; rr = rr->Next)
 		    {
-
-			BltBitMap(srcbm,
-			          rr->bounds.MinX + RectRegion->bounds.MinX + corrsrcx + dx,
-                	          rr->bounds.MinY + RectRegion->bounds.MinY + corrsrcy + dy,
-	          	          rp->BitMap,
-                	  	  rr->bounds.MinX + RectRegion->bounds.MinX,
-          			  rr->bounds.MinY + RectRegion->bounds.MinY,
-                		  rr->bounds.MaxX - rr->bounds.MinX + 1,
-                	  	  rr->bounds.MaxY - rr->bounds.MinY + 1,
-			      	  0xc0, /* copy */
-         		      	  0xff,
-                 	   	  NULL );
+			BltBitMap
+                        (
+                            srcbm,
+			    MinX(rr) + MinX(RectRegion) + corrsrcx + dx,
+                	    MinY(rr) + MinY(RectRegion) + corrsrcy + dy,
+	          	    rp->BitMap,
+                	    MinX(rr) + MinX(RectRegion),
+        		    MinY(rr) + MinY(RectRegion),
+                	    Width(rr),
+                	    Height(rr),
+			    0xc0, /* copy */
+         		    0xff,
+                 	    NULL
+                        );
 		    }
 
-		    if (dosrcsrc)
+  	            if (Damage)
+                    {
+                        ClearRegionRegion(RectRegion, Damage);
+                    }
+
+                    if (dosrcsrc)
 		    {
-			BltBitMap(srcbm,
-			          Tmp.MinX + corrsrcx + dx,
-                	          Tmp.MinY + corrsrcy + dy,
-	          		  srcbm,
-			          Tmp.MinX + corrsrcx,
-                	          Tmp.MinY + corrsrcy,
-                		  Tmp.MaxX - Tmp.MinX + 1,
-                	  	  Tmp.MaxY - Tmp.MinY + 1,
-			      	  0xc0, /* copy */
-         		      	  0xff,
-                 	   	  NULL );
+			BltBitMap
+                        (
+                            srcbm,
+			    Tmp.MinX + corrsrcx + dx,
+                	    Tmp.MinY + corrsrcy + dy,
+	      		    srcbm,
+			    Tmp.MinX + corrsrcx,
+                	    Tmp.MinY + corrsrcy,
+       			    Tmp.MaxX - Tmp.MinX + 1,
+                	    Tmp.MaxY - Tmp.MinY + 1,
+			    0xc0, /* copy */
+         		    0xff,
+                 	    NULL
+                        );
 
+       	                if (Damage && srcbm == rp->BitMap)
+                        {
+                            ClearRectRegion(Damage, &Tmp);
+                        }
 		    }
 
-		    DisposeRegion(RectRegion);
+                    DisposeRegion(RectRegion);
 		}
 	    }
         }
 
-        if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+        AROS_END_PROFILING
+
+        if (Damage)
         {
             /* Add the damagelist to the layer's damage list and set the
                LAYERREFRESH flag, but of course only if it's necessary */
 
-            /* first clear the damage lists of the scrolled area */
-
-	    TranslateRect(&ScrollRect, -L->bounds.MinX, -L->bounds.MinY);
-	    ClearRectRegion(L->DamageList, &ScrollRect);
-
-            if (R.RegionRectangle)
+            if (Damage->RegionRectangle)
             {
-		TranslateRect(&R.bounds, -L->bounds.MinX, -L->bounds.MinY);
+                TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
+                OrRegionRegion(Damage, L->DamageList);
 
-		OrRegionRegion(&R, L->DamageList);
                 L->Flags |= LAYERREFRESH;
             }
+
+            DisposeRegion(Damage);
         }
 
 failexit:
-        ClearRegion(&R);
+        UnlockLayerRom(L);
+    }
+
+    return TRUE;
+}
+
+#else
+
+BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
+    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
+{
+    struct Layer     *L       = rp->Layer;
+    struct Rectangle  ScrollRect;
+    struct Rectangle  Rect;
+
+    if (!CorrectDriverData (rp, GfxBase))
+	return FALSE;
+
+    if (0 == dx && 0 == dy)
+    	return TRUE;
+
+    ScrollRect.MinX = x1;
+    ScrollRect.MinY = y1;
+    ScrollRect.MaxX = x2;
+    ScrollRect.MaxY = y2;
+
+    if (!L)
+    {
+        Rect = ScrollRect;
+	TranslateRect(&Rect, -dx, -dy);
+        if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+        {
+            BltBitMap
+            (
+                rp->BitMap,
+                Rect.MinX + dx,
+                Rect.MinY + dy,
+	        rp->BitMap,
+                Rect.MinX,
+                Rect.MinY,
+                Rect.MaxX - Rect.MinX + 1,
+                Rect.MaxY - Rect.MinY + 1,
+		0xc0, /* copy */
+                0xff,
+                NULL
+	    );
+	}
+    }
+    else
+    {
+        struct ClipRect *SrcCR, *DstCR/*, *OldCR*/;
+	struct Region *Damage = NULL;
+
+        LockLayerRom(L);
+
+        AROS_BEGIN_PROFILING(SortLayerCR)
+
+        #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
+	SortLayerCR(L, dx, dy);
+	#undef LayersBase
+
+        AROS_END_PROFILING
+
+	/* The scrolling area is relative to the window, so make it relative to the screen */
+        TranslateRect(&ScrollRect, MinX(L), MinY(L));
+
+        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
+        {
+            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+        }
+
+        AROS_BEGIN_PROFILING(Blitting loop)
+
+        for (/*OldCR = NULL,*/ SrcCR = L->ClipRect; SrcCR; /*OldCR = SrcCR,*/ SrcCR = SrcCR->Next)
+    	{
+//            SrcCR->_p1 = OldCR;
+
+            if (_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect))
+	    {
+		TranslateRect(&Rect, -dx, -dy);
+
+		if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+                {
+                    struct BitMap *srcbm;
+	            LONG           corrsrcx, corrsrcy;
+                    ULONG          area;
+
+                    if (SrcCR->lobs)
+	            {
+		        if (L->Flags & LAYERSIMPLE) continue;
+
+                	if (L->Flags & LAYERSUPER)
+	        	{
+	            	    corrsrcx = - MinX(L) - L->Scroll_X;
+       	            	    corrsrcy = - MinY(L) - L->Scroll_Y;
+	        	}
+			else
+			{
+	            	    corrsrcx = - MinX(SrcCR) + ALIGN_OFFSET(MinX(SrcCR));
+	            	    corrsrcy = - MinY(SrcCR);
+	  		}
+			srcbm = SrcCR->BitMap;
+	  	    }
+	    	    else
+	    	    {
+	       		corrsrcx  = 0;
+	        	corrsrcy  = 0;
+	        	srcbm = rp->BitMap;
+	    	    }
+
+                    area = (ULONG)(Rect.MaxX - Rect.MinX + 1) * (ULONG)(Rect.MaxY - Rect.MinY + 1);
+
+            	    for (DstCR = L->ClipRect /*SrcCR*/; area && DstCR; DstCR = DstCR->Next /*_p1*/)
+            	    {
+		  	struct Rectangle Rect2;
+
+                        if (_AndRectRect(Bounds(DstCR), &Rect, &Rect2))
+ 			{
+                            struct BitMap   *dstbm;
+	                    LONG             corrdstx, corrdsty;
+
+                            area -= (ULONG)(Rect2.MaxX - Rect2.MinX + 1) * (ULONG)(Rect2.MaxY - Rect2.MinY + 1);
+
+                            if (DstCR->lobs)
+	                    {
+		                if (L->Flags & LAYERSIMPLE) continue;
+
+                    	        if (L->Flags & LAYERSUPER)
+ 	          	        {
+	            	            corrdstx = - MinX(L) - L->Scroll_X;
+       	            	            corrdsty = - MinY(L) - L->Scroll_Y;
+	          	        }
+			        else
+		  	        {
+	            	            corrdstx = - MinX(DstCR) + ALIGN_OFFSET(MinX(DstCR));
+	            	            corrdsty = - MinY(DstCR);
+	  		        }
+			        dstbm = DstCR->BitMap;
+	  	            }
+	    	            else
+	    	            {
+	       		        corrdstx  = 0;
+	        	        corrdsty  = 0;
+	        	        dstbm = rp->BitMap;
+	    	            }
+
+                            BltBitMap
+                            (
+                                srcbm,
+                                Rect2.MinX + corrsrcx + dx,
+                                Rect2.MinY + corrsrcy + dy,
+                                dstbm,
+                                Rect2.MinX + corrdstx,
+                                Rect2.MinY + corrdsty,
+				Rect2.MaxX - Rect2.MinX + 1,
+				Rect2.MaxY - Rect2.MinY + 1,
+                                0xC0,
+                                0xFF,
+                                NULL
+			    );
+
+	  	            if (Damage && dstbm == rp->BitMap)
+                            {
+                                ClearRectRegion(Damage, &Rect2);
+                            }
+			}
+            	    }
+        	}
+	    }
+ 	}
+
+	AROS_END_PROFILING
+
+        if (Damage)
+        {
+	    if (Damage->RegionRectangle)
+            {
+                TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
+                OrRegionRegion(Damage, L->DamageList);
+
+                L->Flags |= LAYERREFRESH;
+            }
+
+            DisposeRegion(Damage);
+        }
+
         UnlockLayerRom(L);
     }
 
     return TRUE;
 
 }
+#endif
 
 /****************************************************************************************/
 /****************************************************************************************/
