@@ -174,8 +174,8 @@ $(AROSDIR)/boot/cdboot.bin : $(OSGENDIR)/boot/cdboot.bin
 	@$(CP) $< $@
 
 #TODO: it depend on all files in workbench dir
-$(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/cdboot.bin
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+$(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/cdboot.bin $(BINDIR)/boot/grub/menu.lst.DH0
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence 
 	@mkisofs \
 		-output $(OSGENDIR)/boot/aros.iso \
 		-b boot/cdboot.bin \
