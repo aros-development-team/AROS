@@ -17,7 +17,7 @@
 		
     TEMPLATE
 
-        DIR/M
+        DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S
 
     LOCATION
 
@@ -84,35 +84,52 @@
 
 static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 
-#define TEMPLATE "DIR/M"
-#define ARG_DIR 0
-#define ARG_NUM 1
+#define TEMPLATE "DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S"
 
-int printdirheader(STRPTR dirname)
+#define ARG_DIR		0
+#define ARG_DATES	1
+#define ARG_NODATES	2
+#define ARG_QUICK 	3
+#define ARG_NOHEAD	4
+#define ARG_FILES	5
+#define ARG_DIRS	6
+
+#define ARG_NUM 	7
+
+int printdirheader(STRPTR dirname, IPTR * mainargs)
 {
     struct DateTime dt;
     char datestr[LEN_DATSTRING], dow[LEN_DATSTRING];
     IPTR args[] = { (IPTR)dirname, (IPTR)dow, (IPTR)datestr };
 
-    DateStamp((struct DateStamp *)&dt);
-    dt.dat_Format = FORMAT_DEF;
-    dt.dat_Flags = 0;
-    dt.dat_StrDay = dow;
-    dt.dat_StrDate = datestr;
-    dt.dat_StrTime = NULL;
-    DateToStr(&dt);
+    if (!mainargs[ARG_NOHEAD])
+    {
+      DateStamp((struct DateStamp *)&dt);
+      dt.dat_Format = FORMAT_DEF;
+      dt.dat_Flags = 0;
+      dt.dat_StrDay = dow;
+      dt.dat_StrDate = datestr;
+      dt.dat_StrTime = NULL;
+      DateToStr(&dt);
 
-    if (VPrintf("Directory \"%s\" on %s %s:\n", args) < 0)
-        return RETURN_ERROR;
-
+      if (VPrintf("Directory \"%s\" on %s %s:\n", args) < 0)
+         return RETURN_ERROR;
+    }
     return RETURN_OK;
 }
 
 
-int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protection, ULONG size, STRPTR filenote)
+int printfiledata(STRPTR filename, 
+                  BOOL dir, 
+                  struct DateStamp *ds, 
+                  ULONG protection, 
+                  ULONG size, 
+                  STRPTR filenote,
+                  IPTR * args,
+                  BOOL show_files,
+                  BOOL show_dirs)
 {
     int error = RETURN_OK;
-    IPTR argv[5];
     UBYTE date[LEN_DATSTRING];
     UBYTE time[LEN_DATSTRING];
     struct DateTime dt;
@@ -136,20 +153,51 @@ int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protect
     flags[6] = protection&FIBF_DELETE?'-':'d';
     flags[7] = 0x00;
 
-    argv[0] = (IPTR)filename;
     if (dir) {
-        argv[1] = (IPTR)flags;
-        argv[2] = (IPTR)date;
-        argv[3] = (IPTR)time;
-        if (VPrintf("%-25.s   <Dir> %7.s %-11.s %s\n", argv) < 0)
-            error = RETURN_ERROR;
-    } else {
-        argv[1] = size;
-        argv[2] = (IPTR)flags;
-        argv[3] = (IPTR)date;
-        argv[4] = (IPTR)time;
-        if (VPrintf("%-25.s %7.ld %7.s %-11.s %s\n", argv) < 0)
-            error = RETURN_ERROR;
+      if (show_dirs) {
+        
+        if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
+          error = RETURN_ERROR;
+        
+        if (!args[ARG_QUICK])
+        {
+          IPTR argv[1];
+          argv[0] = (IPTR)flags;
+          VPrintf("  <Dir> %7.s ",argv); // don't try &flags!!
+        }
+
+        if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+        {
+          IPTR argv[2];
+          argv[0] = (IPTR)date;
+          argv[1] = (IPTR)time;
+          VPrintf("%-11.s %s",argv);
+        }
+
+        VPrintf("\n",NULL);
+      }
+    } else if (show_files) {
+
+        if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
+          error = RETURN_ERROR;
+        
+        if (!args[ARG_QUICK])
+        {
+          IPTR argv[2];
+          argv[0] = (IPTR)size;
+          argv[1] = (IPTR)flags;
+          VPrintf("%7.ld %7.s ",argv);
+        }
+        
+        if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+        {
+          IPTR argv[2];
+          argv[0] = (IPTR)date;
+          argv[1] = (IPTR)time;
+          VPrintf("%-11.s %s",argv);
+        }
+
+        VPrintf("\n",NULL);
     }
     if ((!error) && (filenote) && (filenote[0]))
         error = VPrintf(": %s\n", (IPTR *)&filenote);
@@ -159,34 +207,37 @@ int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protect
 
 
 /* print directory summary information */
-int printsummary(int files, int dirs, int blocks)
+int printsummary(int files, int dirs, int blocks, IPTR * args)
 {
     int error = RETURN_OK;
 
-    if ((files == 0) && (dirs == 0)) {
-        if (VPrintf("Directory is empty\n", NULL) < 0)
-            error = RETURN_ERROR;
-    } else {
-        if ((files)) {
-            if (VPrintf("%ld files - ", (IPTR *)&files) < 0)
-                error = RETURN_ERROR;
-        }
-        if ((dirs) && (!error)) {
-            if (VPrintf("%ld directories - ", (IPTR *)&dirs) < 0)
-                error = RETURN_ERROR;
-        }
-        if (!error) {
-            if (VPrintf("%ld bytes used\n", (IPTR *)&blocks) < 0)
-                error = RETURN_ERROR;
-        }
-    }
+    if (!args[ARG_NOHEAD])
+    {
 
+      if ((files == 0) && (dirs == 0)) {
+          if (VPrintf("Directory is empty\n", NULL) < 0)
+              error = RETURN_ERROR;
+      } else {
+          if ((files)) {
+              if (VPrintf("%ld files - ", (IPTR *)&files) < 0)
+                  error = RETURN_ERROR;
+          }
+          if ((dirs) && (!error)) {
+              if (VPrintf("%ld directories - ", (IPTR *)&dirs) < 0)
+                  error = RETURN_ERROR;
+          }
+          if (!error) {
+              if (VPrintf("%ld bytes used\n", (IPTR *)&blocks) < 0)
+                  error = RETURN_ERROR;
+          }
+      }
+    }
     return error;
 }
 
 
 /* print information about all files in a directory */
-int scandir(BPTR dir)
+int scandir(BPTR dir, IPTR * args, BOOL show_files, BOOL show_dirs)
 {
     int error = RETURN_OK;
     LONG files=0, dirs=0, blocks=0;
@@ -215,7 +266,10 @@ int scandir(BPTR dir)
                                                  &ds,
                                                  ead->ed_Prot,
                                                  ead->ed_Size,
-                                                 ead->ed_Comment);
+                                                 ead->ed_Comment,
+                                                 args,
+                                                 show_files,
+                                                 show_dirs);
                         error = MAX(error,tmperror);
                         if (ead->ed_Type >= 0)
                             dirs++;
@@ -236,15 +290,15 @@ int scandir(BPTR dir)
     }
 
     if (!error)
-        printsummary(files, dirs, blocks);
+        printsummary(files, dirs, blocks, args);
 
     return error;
 }
 
 
-int listfile(STRPTR filename)
+int listfile(STRPTR filename, IPTR * args, BOOL show_files, BOOL show_dirs)
 {
-    int error;
+    int error = 0;
     BPTR dir;
     struct FileInfoBlock *fib;
 
@@ -254,9 +308,9 @@ int listfile(STRPTR filename)
         if (fib) {
             if (Examine(dir, fib)) {
                 if (fib->fib_DirEntryType >= 0) {
-                    error = printdirheader(filename);
+                    error = printdirheader(filename, args);
                     if (!error)
-                        error = scandir(dir);
+                      error = scandir(dir, args, show_files, show_dirs);
                 } else {
                     /* The lock is just an ordinary file. */
                     STRPTR dirname;
@@ -265,7 +319,7 @@ int listfile(STRPTR filename)
                     if (dirname) {
                         CopyMem(filename, dirname, dirlen);
                         PathPart(dirname)[0] = 0x00;
-                        error = printdirheader(dirname);
+                        error = printdirheader(dirname, args);
                         FreeVec(dirname);
                         if (!error) {
                             error = printfiledata(fib->fib_FileName,
@@ -273,9 +327,12 @@ int listfile(STRPTR filename)
                                                   &fib->fib_Date,
                                                   fib->fib_Protection,
                                                   fib->fib_NumBlocks,
-                                                  fib->fib_Comment);
+                                                  fib->fib_Comment,
+                                                  args,
+                                                  show_files,
+                                                  show_dirs);
                             if (!error)
-                                error = printsummary(1, 0, fib->fib_Size);
+                                error = printsummary(1, 0, fib->fib_Size, args);
                         }
                     } else {
                         SetIoErr(ERROR_NO_FREE_STORE);
@@ -299,24 +356,35 @@ int listfile(STRPTR filename)
 
 int main (int argc, char **argv)
 {
-    IPTR args[ARG_NUM] = { NULL };
+    IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     struct RDArgs *rda;
     LONG error = RETURN_OK;
     STRPTR *filelist;
+    BOOL show_files = TRUE;
+    BOOL show_dirs  = TRUE;
 
     rda = ReadArgs(TEMPLATE, args, NULL);
+
+    if (args[ARG_DIRS])
+      if (!args[ARG_FILES])
+        show_files = FALSE;
+    
+    if (args[ARG_FILES])
+      if (!args[ARG_DIRS])
+        show_dirs = FALSE;    
+    
     if (rda) {
         filelist = (STRPTR *)args[ARG_DIR];
         if ((filelist) && (*filelist)) {
             while ((*filelist) && (!error)) {
-                error = listfile(filelist[0]);
+                error = listfile(filelist[0],args,show_files,show_dirs);
                 filelist++;
                 if ((filelist[0]) && (!error))
                     VPrintf("\n", NULL);
             }
         } else
             /* No file to list given. Just list the current directory */
-            error = listfile("");
+            error = listfile("",args,show_files,show_dirs);
 	FreeArgs(rda);
     } else
 	error=RETURN_FAIL;
