@@ -9,6 +9,7 @@ FILES  := test      	    \
 	  gradient  	    \
 	  volumelist	    \
 	  dirlist   	    \
+	  string            \
 	  numericbutton     \
 	  poplist   	    \
 	  popscreen 	    \
