@@ -25,6 +25,7 @@ FILES = alib_util \
 	dogadgetmethod \
 	domethod \
 	dosupermethod \
+	fastrand \
 	freestruct \
 	hookentry \
 	liballocpooled \
@@ -35,6 +36,7 @@ FILES = alib_util \
 	newobject \
 	openscreentags \
 	openwindowtags \
+	rangerand \
 	readbyte \
 	readdouble \
 	readfloat \
