@@ -2245,6 +2245,18 @@ static struct MUI_ImageSpec *get_color_imspec(ULONG r, ULONG g, ULONG b)
     return NULL;
 }
 
+static struct MUI_ImageSpec *get_muicolor_imspec(ULONG muicolor)
+{
+    struct MUI_ImageSpec *spec;
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    {
+	spec->type = IST_MUICOLOR;
+	spec->muicolor = muicolor;
+    	return spec;
+    }
+    return NULL;
+}
+
 static struct MUI_ImageSpec *get_bitmap_imspec(char *filename)
 {
     struct MUI_ImageSpec *spec;
@@ -2330,9 +2342,19 @@ struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj)
 		break;
 
 	case	'2':
+	    	s += 2;	
+		if (s[0] == 'm')
+		{
+		    LONG muicolor;
+		    
+		    s++;
+		    
+		    StrToLong(s, &muicolor);
+		    return get_muicolor_imspec(muicolor);
+		}
+		else
 		{
 		    ULONG r,g,b;
-	     	    s += 2;
 		    r = strtoul(s,&s, 16);
 		    s++;
 		    g = strtoul(s,&s, 16);
