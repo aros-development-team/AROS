@@ -1,2 +1,7 @@
+*.err
 graphics_driver.c
 intuition_driver.c
+rawmaygetchar.c
+rawputchar.c
+rawioinit.c
+makefile
