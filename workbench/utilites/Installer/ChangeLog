@@ -45,4 +45,43 @@
 - fixed bug that ->parent has not been set
 - fixed bug in dynamic variable list creation
 
+0012
+- prepared main() for ReadArgs()
+- realloc() can be used as malloc() -- shortenes code ;-)
+- added collection of arguments for _STRING ( "..." ... ) to pass
+  to RawDoFmt()
+- fixed a bug which caused parse_script() to have an empty ScriptArg at
+  end of lists, now if RBRACK is detected the last element is deleted
+  and pointers made valid (except if it would be the one and only!!!
+  In this case ->parent->cmd has to be set to NULL as well etc.
+  (Maybe we should terminate if braces are empty?) )
+- added missing "@" for preset variables
+
+0014
+- left out previous version due to superstition ;-)
+- fixed bug which allocated one byte too less 8-|
+  (hope this fixes previous problems...), marked those bugs as fixed
+- symbols now may be finished with a semicolon
+- added some cleanup routines
+- split variable specific stuff into own object file variables.c
+- added function prototypes to *.c
+- added stripping of quotes in _STRING (plus freeing temporary spaces
+  for stripped strings)
+
+0015
+- commands are now caseinsensitive
+- supplied debugging code for "working" "welcome" and "complete"
+- reduced code in variables.c
+- supplied final code for "transcript [string|var|cmd]..."
+- now we execute commands, too, where values should be (we always get
+  return values)
+- removed obsolete testing code
+
+0016
+- added demo/test script for written functions test.script_simple
+- added "+" and "and" handling
+- added function for stripping quotes off a string
+  ( to be more precise: strip off first and last chararcter )
+- installer didn't recognize negative numbers :-( Fixed.
+
 

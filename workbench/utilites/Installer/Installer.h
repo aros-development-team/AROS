@@ -4,10 +4,11 @@
 #define DEBUG 1
 
 #ifdef LINUX
-#define FALSE 0
-#define TRUE 1
-#define PrintFault(x,y) /* */
-#define IoErr() /* */
+#define FALSE	0
+#define TRUE	1
+#define IPTR	int
+#define PrintFault(x,y)	/* */
+#define IoErr()		/* */
 #endif /* LINUX */
 
 #include <ctype.h>
@@ -35,6 +36,8 @@ typedef struct ScriptArg
 typedef struct InstallerPrefs
 {
   char * transcriptfile;
+  FILE * transcriptstream;
+  int welcome;
 } InstallerPrefs;
 
 struct VariableList
@@ -53,6 +56,8 @@ struct VariableList
 #define RBRACK		0x29
 #define DOLLAR		0x24
 #define PERCENT		0x25
+#define PLUS		0x2B
+#define MINUS		0x2D
 
 #define MAXARGSIZE	1024
 

@@ -8,6 +8,8 @@ struct CommandList
   int  cmdnumber;
 };
 
+#define _UNKNOWN	0
+
 #define _ABORT		1
 #define _ALL		2
 #define _APPEND		3
@@ -230,7 +232,8 @@ struct CommandList internal_commands[] =
   {"in",		_IN		},
   {"not",		_NOT		},
   {"or",		_OR		},
-  {"xor",		_XOR		}
+  {"xor",		_XOR		},
+  {"",			0		}
 };
 
 

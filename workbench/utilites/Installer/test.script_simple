@@ -1,0 +1,8 @@
+ ( set a 1 b 2 c 3 d ( set x 4 y ( set z 5 ) Hello "World" ) z "Here I am!" )
+ ( complete 20 )
+ ( transcript %10100 20 $14 )
+ ( "Hello " b z 99 "Test 234" )
+ ( set a z )
+ ( complete x )
+ ( set b @abort-button )
+ ( transcript "Ready" ( set go "GO!" steady "Steady" ) go ( "Go for %s!" "Gold" ) )

@@ -2,9 +2,18 @@
 
 #include "Installer.h"
 
+/* External variables */
 extern char buffer[MAXARGSIZE];
 extern FILE *inputfile;
 extern int error;
+extern InstallerPrefs preferences;
+
+/* External function prototypes */
+extern void end_malloc();
+
+/* Internal function prototypes */
+void parse_file( ScriptArg * );
+
 
 void parse_file( ScriptArg *first )
 {
@@ -36,8 +45,7 @@ int count, i, ready;
                          current->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
                          if( current->cmd == NULL )
                          {
-                           printf("Couldn't malloc memory!\n");
-                           exit(-1);
+                           end_malloc();
                          }
                          /* Set initial values */
                          current->cmd->parent = current;
@@ -49,8 +57,7 @@ int count, i, ready;
                          current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
                          if( current->next == NULL )
                          {
-                           printf("Couldn't malloc memory!\n");
-                           exit(-1);
+                           end_malloc();
                          }
                          current->next->parent = current->parent;
                          current = current->next;
@@ -61,6 +68,22 @@ int count, i, ready;
                          break;
 
         case RBRACK    : /* All args collected return to lower level */
+                         /* We have allocated one ScriptArg too much */
+                         current = current->parent->cmd;
+                         if( current->next != NULL )
+                         {
+                           while( current->next->next != NULL )
+                           {
+                             current = current->next;
+                           }
+                           free( current->next );
+                           current->next = NULL;
+                         }
+                         else
+                         {
+                           /* This is an empty bracket */
+#warning FIXME: What to do if bracket is empty ?
+                         }
                          ready = TRUE;
                          break;
 
@@ -82,13 +105,12 @@ int count, i, ready;
                                printf("Argument length overflow!\n");
                                exit(-1);
                              }
-		             count = fread( &buffer[i], 1, 1, inputfile );
+                             count = fread( &buffer[i], 1, 1, inputfile );
                            } while( masquerade || ( buffer[i] != buffer[0] && count != 0 ) );
                            current->arg = (char *)malloc( sizeof(char)*(i+2) );
                            if( current->arg == NULL )
                            {
-                             printf("Couldn't malloc memory!\n");
-                             exit(-1);
+                             end_malloc();
                            }
                            buffer[i+1] = 0;
                            strncpy( current->arg, buffer, i+2 );
@@ -99,7 +121,19 @@ int count, i, ready;
                            {
                              i++;
                              count = fread( &buffer[i], 1, 1, inputfile );
-                           } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && count != 0 );
+                           } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+                           if( i == MAXARGSIZE )
+                           {
+                             printf("Argument length overflow!\n");
+                             exit(-1);
+                           }
+                           if( buffer[i] == SEMICOLON )
+                           {
+                             do
+                             {
+                               count = fread( &buffer[i], 1, 1, inputfile );
+                             } while( buffer[i] != LINEFEED && count != 0 );
+                           }
                            if( buffer[i] == LBRACK || buffer[i] == RBRACK )
                            {
 #warning FIXME: fseek() does not work!
@@ -115,19 +149,22 @@ int count, i, ready;
                                             current->intval = strtol( &buffer[1], NULL, 2 );
                                             break;
                              default : /* number or variable */
-                                            if( isdigit(buffer[0]) )
+                                            if( isdigit( buffer[0] ) || ( ( buffer[0] == PLUS || buffer[0] == MINUS ) && isdigit( buffer[1] ) ) )
                                             {
                                               current->intval = atoi( buffer );
                                             }
                                             else
                                             {
-                                              current->arg = (char *)malloc( sizeof(char)*i );
+                                              current->arg = (char *)malloc( sizeof(char)*(i+1) );
                                               if( current->arg == NULL )
                                               {
-                                                printf("Couldn't malloc memory!\n");
-                                                exit(-1);
+                                                end_malloc();
                                               }
                                               strncpy( current->arg, buffer, i+1 );
+                                            }
+                                            if( strcasecmp( buffer, "welcome" ) == 0 )
+                                            {
+                                              preferences.welcome = TRUE;
                                             }
                                             break;
                            }
@@ -135,8 +172,7 @@ int count, i, ready;
                          current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
                          if( current->next == NULL )
                          {
-                           printf("Couldn't malloc memory!\n");
-                           exit(-1);
+                           end_malloc();
                          }
                          current->next->parent = current->parent;
                          current = current->next;

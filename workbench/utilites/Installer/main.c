@@ -9,37 +9,64 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 0.1 (08.07.1998)\n";
+static const char version[] = "$VER: Installer 0.1 (18.07.1998)\n";
+
+
+/* External variables */
+
+/* External function prototypes */
+extern void parse_file( ScriptArg * );
+extern void execute_script( ScriptArg * , int );
+extern void cleanup();
+extern void set_preset_variables();
+extern void *get_variable( char *name );
+extern void set_variable( char *name, char *text, int intval );
+extern void end_malloc();
+#ifdef DEBUG
+extern void dump_varlist();
+#endif
+
+/* Internal function prototypes */
+int main( int, char ** );
 
 
 FILE *inputfile;
 char buffer[MAXARGSIZE];
 int error = 0;
 
-
-/* Prototypes: */
-extern void parse_file( ScriptArg * );
-extern void execute_script( ScriptArg * , int );
-extern void free_script(ScriptArg * );
-extern void set_preset_variables();
-extern void *get_variable( char *name );
-extern void set_variable( char *name, char *text, int intval );
-#ifdef DEBUG
-extern void dump_varlist();
-#endif
-
 InstallerPrefs preferences;
 ScriptArg script;
 
 int main( int argc, char *argv[] )
 {
+#ifndef LINUX
+IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+struct RDArgs *rda;
+#endif /* !LINUX */
+
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
 char *filename;
 
+#ifndef LINUX
   /* evaluate args with RDArgs(); */
+  rda = ReadArgs( ARG_TEMPLATE, args, NULL );
+  if( rda == NULL )
+  {
+    PrintFault( IoErr(), "Installer" );
+    exit(-1);
+  }
 #warning FIXME: evaluate args with RDArgs()
+#endif /* !LINUX */
+
+  preferences.welcome = FALSE;
+  preferences.transcriptstream = NULL;
+#ifdef DEBUG
+  preferences.transcriptfile = "test.transcript";
+#else
+  preferences.transcriptfile = NULL;
+#endif
 
 #warning FIXME: distinguish between cli/workbench invocation
 
@@ -58,9 +85,6 @@ char *filename;
     exit(-1);
   }
 
-
-  preferences.transcriptfile = NULL;
-
   endoffile = FALSE;
   script.arg = NULL;
   script.cmd = NULL;
@@ -76,8 +100,7 @@ char *filename;
       script.cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
       if( script.cmd == NULL )
       {
-        printf("Couldn't malloc memory!\n");
-        exit(-1);
+        end_malloc();
       }
       currentarg = script.cmd;
       currentarg->parent = &script;
@@ -87,8 +110,7 @@ char *filename;
       currentarg->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
       if( currentarg->next == NULL )
       {
-        printf("Couldn't malloc memory!\n");
-        exit(-1);
+        end_malloc();
       }
       currentarg->next->parent = currentarg->parent;
       currentarg = currentarg->next;
@@ -123,8 +145,7 @@ char *filename;
                             currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
                             if( currentarg->cmd == NULL )
                             {
-                              printf("Couldn't malloc memory!\n");
-                              exit(-1);
+                              end_malloc();
                             }
                             dummy = currentarg->cmd;
                             dummy->parent = currentarg;
@@ -136,7 +157,7 @@ char *filename;
                             nextarg = TRUE;
                             break;
 
-             default	  : /* Plain text is not allowed */
+          default	  : /* Plain text or closing bracket is not allowed */
                             printf( "Script syntax error!\n" );
                             exit(-1);
                             break;
@@ -147,8 +168,30 @@ char *filename;
 
   fclose( inputfile );
 
+  if( preferences.transcriptfile != NULL )
+  {
+    /* open transcript file */
+    preferences.transcriptstream = fopen( preferences.transcriptfile, "w" );
+    if( preferences.transcriptstream == NULL )
+    {
+      PrintFault( IoErr(), "Installer" );
+      exit(-1);
+    }
+  }
+
   /* execute parsed script */
+  if( preferences.welcome == FALSE )
+  {
+#ifdef DEBUG
+    printf( "Welcome to %s App installation utility.\n", (char *)get_variable( "@app-name" ) );
+#endif
+  }
   execute_script( &script, 0 );
+
+  if( preferences.transcriptstream != NULL )
+  {
+    fclose( preferences.transcriptstream );
+  }
 
 #define DOTHIS
 #ifdef DOTHIS
@@ -156,7 +199,7 @@ char *filename;
   dump_varlist();
 #endif
 
-/*  free_script( script.cmd ); */
+ cleanup();
 
 return error;
 }
