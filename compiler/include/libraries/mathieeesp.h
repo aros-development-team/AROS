@@ -19,17 +19,21 @@
 #define PI4     (PI/((float)4))
 
 #ifndef E
-#define E       ((float)        2.718281828459045)
+#define E       ((float)2.718281828459045)
 #endif
 
-#define LOG10   ((float)  2.302585092994046)
-#define FPTEN   ((float) 10.0)
-#define FPONE   ((float)  1.0)
-#define FPHALF  ((float)  0.5)
-#define FPZERO  ((float)  0.0)
-#define trunc(x) ((int)  (x))
-#define round(x) ((int)  ((x) + 0.5))
-#define itof(i)  ((float) (i))
+#define LOG10   ((float)2.302585092994046)
+#define FPTEN   ((float)10.0)
+#define FPONE   ((float)1.0)
+#define FPHALF  ((float)0.5)
+#define FPZERO  ((float)0.0)
+#define trunc(x) ((int)(x))
+#define round(x) ((int)((x) + 0.5))
+#define itof(i)  ((float)(i))
+
+/* Now let's define the ANSI C functions and map them to the
+   IEEE signle precision functions
+ */
 
 #define fabs    IEEESPAbs
 #define floor   IEEESPFloor
@@ -54,31 +58,14 @@
 #define sqrt    IEEESPSqrt
 
 
-/*
+/* I also include the function prototypes here! */
 
-LONG    IEEESPFix();
-LONG    IEEESPCmp(),IEEESPTst();
-LONG    IEEESPFlt();
-LONG    IEEESPAbs();
-LONG    IEEESPNeg();
-LONG    IEEESPAdd();
-LONG    IEEESPSub();
-LONG    IEEESPMul();
-LONG    IEEESPDiv();
-LONG    IEEESPFloor();
-LONG    IEEESPCeil();
+#ifndef PROTO_MATHIEEESINGBAS_H
+#include <proto/mathieeesingbas.h>
+#endif
 
-float   IEEESPTan(),IEEESPAtan();
-float   IEEESPCos(),IEEESPACos();
-float   IEEESPSin(),IEEESPASin();
-float   IEEESPExp(),IEEESPLog();
-float   IEEESPSqrt();
-float   IEEESPLog10(),IEEESPPow();
-float   IEEESPSincos();
-float   IEEESPSinh(),IEEESPCosh(),IEEESPTanh();
-float   IEEESPTieee();
-float   IEEESPFieee();
-
-*/
+#ifndef PROTO_MATHIEEESINGTRANS_H
+#include <proto(mathieeesingtrans.h>
+#endif
 
 #endif  /* LIBRARIES_MATHIEEESP_H */

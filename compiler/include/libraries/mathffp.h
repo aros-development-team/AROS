@@ -29,6 +29,10 @@
 #define round(x)  ((int) ((x) + 0.5))
 #define itof(i)   ((float) (i))
 
+/* Now let's define the ANSI C functions and map them to the
+   IEEE signle precision functions
+ */
+
 #define fabs    SPAbs
 #define floor   SPFloor
 #define ceil    SPCeil
@@ -49,4 +53,15 @@
 #define cosh    SPCosh
 #define tanh    SPTanh
 
-#endif          /* LIBRARIES_MATHFFP_H */
+/* I also include the function prototypes here! */
+
+#ifndef PROTO_MATHFFP_H
+#include <proto/mathieeedoubbas.h>
+#endif
+
+#ifndef PROTO_MATHFFP_H
+#include <proto(mathieeedoubtrans.h>
+#endif
+
+
+#endif /* LIBRARIES_MATHFFP_H */
