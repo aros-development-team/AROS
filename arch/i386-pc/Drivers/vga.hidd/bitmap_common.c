@@ -123,6 +123,8 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
     /* We have a vHidd_GT_Palette bitmap */    
     
+    if (!DoSuperMethod(cl, o, (Msg)msg)) return FALSE;
+    
     if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
 	return FALSE;
     
