@@ -212,7 +212,7 @@ AROS_LH0(BPTR, close,
     /* I have one fewer opener. */
     if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
-        driver_close (LIBBASE);
+	driver_close (LIBBASE);
 
         /* Delayed expunge pending? */
         if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
@@ -237,7 +237,10 @@ AROS_LH0(BPTR, expunge,
             LIBBASE->DefaultFont = NULL;
         }
 
-        /* Allow the driver to release uneccessary memory */
+	if (LIBBASE->gb_LayersBase)
+	    CloseLibrary((struct Library *)LIBBASE->gb_LayersBase);
+	    
+	/* Allow the driver to release uneccessary memory */
         driver_expunge (LIBBASE);
     }
 
