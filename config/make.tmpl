@@ -701,6 +701,7 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
   $(INCDIR)/defines/$(BD_MODNAME$(BDID)).h \
   $(INCDIR)/inline/$(BD_MODNAME$(BDID)).h \
   $(INCDIR)/proto/$(BD_MODNAME$(BDID)).h \
+  $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
   $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp
 
 ifneq ($(dir $(BD_FILES$(BDID))),./)
@@ -792,7 +793,7 @@ endif
 
 # For a shared library also build a static link lib
 #ifeq ($(BD_MODTYPE$(BDID)),library)
-#%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
+#% rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
 #endif
 
 MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
@@ -802,11 +803,13 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
   
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
 
-#MM %(mmake)-linklib : %(mmake)
+%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+
+#MM %(mmake)-linklib : %(mmake) %(mmake)-setup
+
 %build_linklib mmake=%(mmake)-linklib libname=partition \
   files="$(BD_INITFILE$(BDID)) $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID)) $(BD_ENDFILE$(BDID))"
 
-%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
