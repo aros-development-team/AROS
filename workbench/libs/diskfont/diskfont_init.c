@@ -24,28 +24,32 @@ struct inittable;
 extern const char name[];
 extern const char version[];
 extern const APTR inittabl[4];
-extern void *const FUNCTABLE[];
+extern void *const LIBFUNCTABLE[];
 extern const struct inittable datatable;
 extern struct DiskfontBase_intern *INIT();
 extern struct DiskfontBase_intern *AROS_SLIB_ENTRY(open,Diskfont)();
 extern BPTR AROS_SLIB_ENTRY(close,Diskfont)();
 extern BPTR AROS_SLIB_ENTRY(expunge,Diskfont)();
 extern int AROS_SLIB_ENTRY(null,Diskfont)();
-extern const char END;
+extern const char LIBEND;
 
+#if (defined(__mc68000__) && (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE))
+const LONG entry = 0x70FF4E75;
+#else
 int entry(void)
 {
     /* If the library was executed by accident return error code. */
     return -1;
 }
+#endif
 
 const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&Diskfont_end,
+    (APTR)&LIBEND,
     RTF_AUTOINIT,
-    LIBVERSION,
+    VERSION_NUMBER,
     NT_LIBRARY,
     -120,	/* priority */
     (char *)name,
@@ -53,14 +57,14 @@ const struct Resident resident=
     (ULONG *)inittabl
 };
 
-const char name[]=LIBNAME;
+const char name[]=NAME_STRING;
 
-const char version[]=VERSION;
+const char version[]=VERSION_STRING;
 
 const APTR inittabl[4]=
 {
     (APTR)sizeof(struct DiskfontBase_intern),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     (APTR)&datatable,
     &INIT
 };
@@ -73,7 +77,7 @@ struct inittable
     S_CPYO(4,1,W);
     S_CPYO(5,1,W);
     S_CPYO(6,1,L);
-    S_END (END);
+    S_END (LIBEND);
 };
 
 #define O(n) offsetof(struct DiskfontBase_intern,n)
@@ -83,8 +87,8 @@ const struct inittable datatable=
     { { I_CPYO(1,B,O(library.lib_Node.ln_Type)), { NT_LIBRARY } } },
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
-    { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
-    { { I_CPYO(1,W,O(library.lib_Revision    )), { LIBREVISION } } },
+    { { I_CPYO(1,W,O(library.lib_Version     )), { VERSION_NUMBER } } },
+    { { I_CPYO(1,W,O(library.lib_Revision    )), { REVISION_NUMBER } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };

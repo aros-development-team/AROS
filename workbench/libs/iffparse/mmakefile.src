@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I..
+USER_INCLUDES = -I. -I..
 
 LIBNAME 	:= iffparse
 ULIBNAME	:= IFFParse
@@ -23,7 +23,7 @@ ULIBNAME	:= IFFParse
 #
 # END_DESC{localmakevar}
 
-FILES := $(LIBNAME)_functable basicfuncs bufferingfuncs \
+FILES := functable basicfuncs bufferingfuncs \
 	clipboardfuncs collectionhooks prophooks stophook \
 	dosstreamhandler
 
@@ -46,7 +46,6 @@ FUNCTIONS := \
 	goodid \
 	goodtype \
 	idtostr \
-	iffparse_init \
 	initiff \
 	initiffasclip \
 	initiffasdos \
@@ -72,14 +71,20 @@ FUNCTIONS := \
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_old
+%genlib_cpak
 
 #MM workbench-libs-iffparse : setup includes linklibs
 workbench-libs-iffparse : show-flags $(SLIB)
 	@$(NOP)
 
-#MM clean
-#MM setup
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
 
 %common
 %include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

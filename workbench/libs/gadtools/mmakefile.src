@@ -5,7 +5,7 @@ USER_INCLUDES	:= -I..
 
 LIBNAME 	:= gadtools
 ULIBNAME	:= GadTools
-FILES		:= $(LIBNAME)_functable basicfuncs classes gadgets
+FILES		:= functable basicfuncs classes gadgets
 FUNCTIONS	:= \
 	createcontext \
 	creategadgeta \
@@ -29,14 +29,20 @@ FUNCTIONS	:= \
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_old
+%genlib_cpak
 
 #MM workbench-libs-gadtools : setup includes linklibs
 workbench-libs-gadtools : show-flags $(SLIB)
 	@$(NOP)
 
-#MM clean
-#MM setup
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
