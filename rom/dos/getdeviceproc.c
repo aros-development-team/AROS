@@ -44,6 +44,10 @@
     EXAMPLE
 
     BUGS
+	Currently doesn't return dvp_DevNode for locks which are
+	relative to "PROGDIR:", ":", or the current directory.
+
+	I'm working on it though...
 
     SEE ALSO
 	FreeDeviceProc()
@@ -101,17 +105,19 @@
 	    We have to find the starting dl structure
 	    What is the volume part of the filesystem?
 	*/
+	cur = pr->pr_CurrentDir;
+
     	if(!Strnicmp(name, "PROGDIR:", 8))
     	{
     	    /* The path refers to PROGDIR: */
     	    cur = pr->pr_HomeDir;
-    	    volname = NULL;
     	}
     	else if( *name == ':' )
     	{
-    	    /* Relative to the current volume (ie current directory) */
-    	    cur = pr->pr_CurrentDir;
-    	    volname = NULL;
+    	    /*
+		Relative to the current volume (ie current directory)
+		We simply need to remove this case from the below.
+	    */
     	}
     	else
     	{
@@ -168,6 +174,7 @@
 	    dp->dvp_Lock = cur;
 	    dp->dvp_Flags = 0;
 	    dp->dvp_DevNode = NULL;
+	    UnLockDosList(LDF_ALL|LDF_READ);
 	    SetIoErr(0);
 	    return dp;
 	}
