@@ -2,12 +2,13 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
     Lang: English
 */
+
 #ifndef AROS_CONFIG_H
 #   include <aros/config.h>
 #endif

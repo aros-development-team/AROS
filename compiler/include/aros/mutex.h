@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A simpler mutual exclusion device than semaphores.

@@ -2,7 +2,7 @@
 #define INTUITION_POINTERCLASS_H
 
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headerfile for Intuitions' pointer classes.

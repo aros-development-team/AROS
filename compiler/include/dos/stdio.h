@@ -2,13 +2,12 @@
 #define DOS_STDIO_H
 
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some stubs for ANSI-like stdio functions.
     Lang: english
 */
-
 
   /* Read one character from stdin. */
 #define ReadChar()           FGetC(Input())

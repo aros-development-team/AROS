@@ -2,7 +2,7 @@
 #define GADGETS_COLORWHEEL_H
 
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MethodIDs and AttrIDs for the colorwheel class.

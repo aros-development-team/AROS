@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef _INLINE_TRANSLATOR_H
 #define _INLINE_TRANSLATOR_H
 

@@ -2,7 +2,7 @@
 #define GRAPHICS_COPPER_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copper definitions and structures.

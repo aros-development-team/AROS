@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef DEFINES_INPUT_H
 #define DEFINES_INPUT_H
 

@@ -1,6 +1,10 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef EXEC_NODES_H
 #define EXEC_NODES_H
-/* (C) 1995 AROS - The Amiga Research OS */
 
 /******************************************************************************
 

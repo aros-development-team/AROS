@@ -2,16 +2,16 @@
 #define DOS_VAR_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Environment variable handling.
     Lang: english
 */
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif
-
 
 /* This structure describes a local variable. The list is normally held in
    Process->pr_LocalVars. See <dos/dosextens.h> for more information about

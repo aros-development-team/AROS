@@ -2,12 +2,13 @@
 #define DOS_FILEHANDLER_H
 
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Constants for filehandlers.
     Lang: english
 */
+
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
