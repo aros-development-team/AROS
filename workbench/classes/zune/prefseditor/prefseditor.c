@@ -42,8 +42,14 @@ Object *PrefsEditor__OM_NEW
 
     if (self != NULL)
     {
+        SETUP_INST_DATA;
+        
         /*-- Handle initial attribute values -------------------------------*/
         SetAttrsA(self, message->ops_AttrList);
+        
+        /*-- Set defaults --------------------------------------------------*/
+        data->ped_CanSave = TRUE;
+        data->ped_CanTest = TRUE;
     }
     
     return self;
@@ -55,6 +61,7 @@ IPTR PrefsEditor__MUIM_Setup
 )
 {
     SETUP_INST_DATA;
+    BPTR lock;
     
     if (!DoSuperMethodA(CLASS, self, (Msg) message)) return FALSE;
     
@@ -76,14 +83,39 @@ IPTR PrefsEditor__MUIM_Setup
             )
         )
         {
-            // FIXME: error handling. permdisable test/revert somehow?
+            /* Remove the incomplete backup file */
+            Close(data->ped_BackupFH);
+            DeleteFile(data->ped_BackupPath);
+            data->ped_BackupFH = NULL;
         }
+    }
+    
+    if (data->ped_BackupFH == NULL)
+    {
+        data->ped_CanTest = FALSE;
+    }
+    
+    /*-- Completely disable save if ENVARC: is write-protected -------------*/
+    lock = Lock("ENVARC:", SHARED_LOCK);
+    if (lock != NULL)
+    {
+        struct InfoData id;
+        
+        if (Info(lock, &id))
+        {
+            if (id.id_DiskState == ID_WRITE_PROTECTED)
+            {
+                data->ped_CanSave = FALSE;
+            }
+        }
+        
+        UnLock(lock);
     }
     else
     {
-        // FIXME: error handling. permdisable test/revert somehow?
+        data->ped_CanSave = FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -170,7 +202,15 @@ IPTR PrefsEditor__OM_GET
         case MUIA_PrefsEditor_Testing:
             *store = data->ped_Testing;
             break;
+        
+        case MUIA_PrefsEditor_CanSave:
+            *store = data->ped_CanSave;
+            break;
             
+        case MUIA_PrefsEditor_CanTest:
+            *store = data->ped_CanTest;
+            break;
+        
         case MUIA_PrefsEditor_Name:
             *store = (IPTR) data->ped_Name;
             break;

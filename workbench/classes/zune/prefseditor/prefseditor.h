@@ -38,6 +38,8 @@ struct  MUIP_PrefsEditor_ExportFH  {ULONG MethodID; BPTR fh;};
 #define MUIA_PrefsEditor_Name      (MUIB_PrefsEditor | 0x00000000) /* --G  CONST_STRPTR */
 #define MUIA_PrefsEditor_Changed   (MUIB_PrefsEditor | 0x00000001) /* -SG  BOOL */
 #define MUIA_PrefsEditor_Testing   (MUIB_PrefsEditor | 0x00000002) /* -SG  BOOL */
+#define MUIA_PrefsEditor_CanSave   (MUIB_PrefsEditor | 0x00000004) /* --G  BOOL */
+#define MUIA_PrefsEditor_CanTest   (MUIB_PrefsEditor | 0x00000005) /* --G  BOOL */
 
 /*** Protected Attributes ***************************************************/
 #define MUIA_PrefsEditor_Path      (MUIB_PrefsEditor | 0x00000003) /* I-G  CONST_STRPTR */
