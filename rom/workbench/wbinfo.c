@@ -10,9 +10,11 @@
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>
+#include <workbench/workbench.h>
 
 #include "workbench_intern.h"
-#include <workbench/workbench.h>
+
+#include <aros/debug.h>
 
 /*****************************************************************************
 
