@@ -8688,10 +8688,18 @@ cat >>$CONFIG_STATUS <<_ACEOF
 # INIT-COMMANDS section.
 #
 
-aros_tools_dir=${aros_tools_dir}
-     aros_target_cpu=${aros_target_cpu}
-     aros_target_arch=${aros_target_arch}
-     aros_target_suffix=${aros_target_suffix}
+
+        aros_tools_dir=${aros_tools_dir}
+        aros_target_cpu=${aros_target_cpu}
+        aros_target_arch=${aros_target_arch}
+        aros_target_suffix=${aros_target_suffix}
+	aros_target_ld=${aros_target_ld}
+	aros_target_nm=${aros_target_nm}
+	aros_target_ar=${aros_target_ar}
+	aros_target_ranlib=${aros_target_ranlib}
+	aros_target_objdump=${aros_target_objdump}
+	aros_target_objcopy=${aros_target_objcopy}
+
 
 aros_scripts_dir=${aros_scripts_dir}
 
@@ -9510,7 +9518,30 @@ esac
   { echo "$as_me:$LINENO: executing $ac_dest commands" >&5
 echo "$as_me: executing $ac_dest commands" >&6;}
   case $ac_dest in
-    compiler_executable ) chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc ;;
+    compiler_executable )
+        chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc
+
+	prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+	mkdir -p $prefix
+	prefix=${prefix}/${aros_target_cpu}-aros
+	prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+
+	ln -sf ${prefix2}-gcc               ${prefix}-gcc
+
+	ln -sf `which $aros_target_ld`      ${prefix}-ld
+        ln -sf `which $aros_target_nm`      ${prefix}-nm
+        ln -sf `which $aros_target_ar`      ${prefix}-ar
+        ln -sf `which $aros_target_ranlib`  ${prefix}-ranlib
+        ln -sf `which $aros_target_objcopy` ${prefix}-objcopy
+        ln -sf `which $aros_target_objdump` ${prefix}-objdump
+
+        ln -sf `which $aros_target_ld`      ${prefix2}-ld
+        ln -sf `which $aros_target_nm`      ${prefix2}-nm
+        ln -sf `which $aros_target_ar`      ${prefix2}-ar
+        ln -sf `which $aros_target_ranlib`  ${prefix2}-ranlib
+        ln -sf `which $aros_target_objcopy` ${prefix2}-objcopy
+        ln -sf `which $aros_target_objdump` ${prefix2}-objdump
+     ;;
     genshared_executable ) chmod a+x ${aros_scripts_dir}/genshared ;;
     genmf_executable ) chmod a+x ${aros_tools_dir}/genmf.py ;;
   esac
