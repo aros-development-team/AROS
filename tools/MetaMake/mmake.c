@@ -52,6 +52,8 @@ Boston, MA 02111-1307, USA.  */
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
 
+#define ID	((0L << 24) | (5L << 16) | 1)
+
 /* Types */
 struct Node
 {
@@ -135,6 +137,7 @@ char * mflags[64];
 int mflagc;
 char * targets[64];
 int targetc;
+int verbose = 0;
 
 /* Macros */
 #   define NEWLIST(l)       (((struct List *)l)->prelast \
@@ -191,14 +194,25 @@ int targetc;
 extern int execute PARAMS ((Project * prj, const char * cmd, const char * in,
 			    const char * out, const char * args));
 extern void setvar PARAMS ((Project *, const char *, const char *));
+extern void freecachenodes PARAMS((DirNode * node));
 
 /* Functions */
 char *
 xstrdup (const char * str)
 {
+    char * nstr;
+
     assert (str);
 
-    return strdup (str);
+    nstr = strdup (str);
+
+    if (!nstr)
+    {
+	fprintf (stderr, "Out of memory");
+	exit (20);
+    }
+
+    return nstr;
 }
 
 void *
@@ -257,7 +271,7 @@ printlist (struct List * l)
 
     ForeachNode (l,n)
     {
-	printf ("    %s\n", n->name);
+	printf ("    \"%s\"\n", n->name);
     }
 }
 
@@ -300,6 +314,23 @@ newnode (const char * name, const char * value)
 
     n->node.name = xstrdup (name);
     SETSTR(n->value, value);
+
+    return n;
+}
+
+Dep *
+newdepnode (const char * path)
+{
+    Dep * n;
+    struct stat st;
+
+    assert (path);
+
+    n = (Dep *) xmalloc (sizeof (Dep));
+
+    n->node.name = xstrdup (path);
+    lstat (path, &st);
+    n->time = st.st_mtime;
 
     return n;
 }
@@ -382,7 +413,7 @@ substvars (Project * prj, const char * str)
 }
 
 char **
-getargs (Project * prj, const char * line, int * argc)
+getargs (Project * prj, const char * line, int * argc, int subst)
 {
     static char * argv[64];
     static char * buffer = NULL;
@@ -396,7 +427,10 @@ getargs (Project * prj, const char * line, int * argc)
 
     assert (line);
 
-    buffer = xstrdup (substvars (prj, line));
+    if (subst)
+	buffer = xstrdup (substvars (prj, line));
+    else
+	buffer = xstrdup (line);
 
     assert (buffer);
 
@@ -551,6 +585,8 @@ freeproject (Project * prj)
     freevarlist (&prj->vars);
     freelist (&prj->makefiles);
     freetargetlist (&prj->targets);
+    if (prj->topdir)
+	freecachenodes (prj->topdir);
 
     xfree (prj);
 }
@@ -691,21 +727,15 @@ printf ("name=%s\n", name);
 	    }
 	    else if (!strcmp (cmd, "genmakefiledeps"))
 	    {
-		Dep * dep;
+		Var * dep;
 		int depc, t;
-		struct stat st;
-		char ** deps = getargs (project, args, &depc);
-		char * depname;
+		char ** deps = getargs (project, args, &depc, 0);
 
 		for (t=0; t<depc; t++)
 		{
-		    depname = substvars (project, deps[t]);
-
-		    if (!lstat (depname, &st))
-		    {
-			dep = (Dep *)addnodeonce (&project->genmakefiledeps,depname,NULL);
-			dep->time = st.st_mtime;
-		    }
+		    dep = (Var *)addnodeonce (&project->genmakefiledeps,
+			deps[t], NULL
+		    );
 		}
 	    }
 	    else if (!strcmp (cmd, "globalvarfile"))
@@ -758,6 +788,20 @@ printdirtree (Project * prj)
 {
     printf ("top=%s\n", prj->top);
     printdirnode (prj->topdir, 1);
+}
+
+void freecachenodes (DirNode * node)
+{
+    DirNode * subnode;
+
+    while ((subnode = GetHead (&node->subdirs)))
+    {
+	Remove (subnode);
+	freecachenodes (subnode);
+    }
+
+    xfree (node->node.name);
+    xfree (node);
 }
 
 DirNode *
@@ -823,6 +867,7 @@ readcache (Project * prj)
 {
     char path[256];
     FILE * fh;
+    long id;
 
     strcpy (path, prj->top);
     strcat (path, "/mmake.cache");
@@ -830,7 +875,28 @@ readcache (Project * prj)
 
     fh = fopen (path, "r");
 
-    if (!fh || !(prj->topdir = readcachedir (fh)))
+    if (fh)
+    {
+	fread (&id, sizeof(id), 1, fh);
+	if (id != ID)
+	{
+	    fclose (fh);
+	    fh = NULL;
+	}
+    }
+
+    if (fh)
+    {
+	prj->topdir = readcachedir (fh);
+
+	if (!prj->topdir)
+	{
+	    fclose (fh);
+	    fh = NULL;
+	}
+    }
+
+    if (!fh)
     {
 	struct stat st;
 
@@ -844,7 +910,7 @@ readcache (Project * prj)
 	prj->topdir->time = st.st_mtime;
     }
 
-    if (fh);
+    if (fh)
 	fclose (fh);
 
 #if 0
@@ -958,19 +1024,6 @@ writecachedir (FILE * fh, DirNode * node)
     int len, ret, out;
     DirNode * subnode;
 
-    if (!len)
-    {
-	out = htonl (-1);
-	ret = fwrite (&out, sizeof(out), 1, fh);
-	if (ret <= 0)
-	{
-	    error ("writecachedir/fwrite():%d: %s",
-		__LINE__, strerror(errno)
-	    );
-	}
-	return ret;
-    }
-
     len = strlen (node->node.name);
     out = htonl (len);
     ret = fwrite (&out, sizeof(out), 1, fh);
@@ -1029,6 +1082,7 @@ writecache (Project * prj)
     char path[256];
     FILE * fh;
     int ret;
+    long id;
 
     if (!prj->topdir)
 	return;
@@ -1041,6 +1095,9 @@ writecache (Project * prj)
 
     if (!fh)
 	return;
+
+    id = ID;
+    fwrite (&id, sizeof (id), 1, fh);
 
     ret = writecachedir (fh, prj->topdir);
 
@@ -1398,7 +1455,7 @@ printf ("found #MM in %s\n", mfnode->name);
 
 		    *ptr = 0;
 
-		    targets = getargs (prj, line, &count);
+		    targets = getargs (prj, line, &count, 1);
 
 		    if (count != 0)
 			appendtarget (prj, targets[0], mfnode->name, NULL);
@@ -1416,10 +1473,10 @@ printf ("found #MM in %s\n", mfnode->name);
 			*ptr ++ = 0;
 		    depptr = ptr;
 
-		    tptr = getargs (prj, lptr, &count);
+		    tptr = getargs (prj, lptr, &count, 1);
 		    for (t=0; t<count; t++)
 			targets[t] = xstrdup (tptr[t]);
-		    deps = getargs (prj, depptr, &depc);
+		    deps = getargs (prj, depptr, &depc, 1);
 
 		    for (t=0; t<count; t++)
 		    {
@@ -1450,6 +1507,10 @@ printf ("Read %d lines\n", lineno);
 void
 readvars (Project * prj)
 {
+    struct List deps;
+    struct Node * node, * next;
+    Dep * dep;
+
     if (!prj->readvars)
 	return;
 
@@ -1528,6 +1589,27 @@ readvars (Project * prj)
 	fclose (fh);
     }
 
+    NEWLIST(&deps);
+    ForeachNodeSafe (&project->genmakefiledeps, node, next)
+    {
+	Remove (node);
+	ADDTAIL (&deps, node);
+    }
+
+    ForeachNodeSafe (&deps, node, next)
+    {
+	Remove (node);
+	dep = newdepnode (substvars (project, node->name));
+	ADDTAIL (&project->genmakefiledeps, dep);
+	xfree (node->name);
+	xfree (node);
+    }
+
+#if 0
+    printf ("%s.genmfdeps=\n", prj->node.name);
+    printlist (&project->genmakefiledeps);
+#endif
+
 #if 0
     printf ("project %s.vars=", prj->node.name);
     printvarlist (&prj->vars);
@@ -1563,9 +1645,8 @@ execute (Project * prj, const char * cmd, const char * in,
 
     cmdstr = substvars (prj, buffer);
 
-#if 0
-    printf ("Executing %s...\n", cmdstr);
-#endif
+    if (verbose)
+	printf ("Executing %s...\n", cmdstr);
 
     rc = system (cmdstr);
 
@@ -1784,7 +1865,18 @@ main (int argc, char ** argv)
     {
 	if (argv[t][0] == '-')
 	{
-	    mflags[mflagc++] = argv[t];
+	    if (!strcmp (argv[t], "--version"))
+	    {
+		printf ("MetaMake %s (%s)\n", VERSION, __DATE__);
+	    }
+	    else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
+	    {
+		verbose = 1;
+	    }
+	    else
+	    {
+		mflags[mflagc++] = argv[t];
+	    }
 	}
 	else
 	{
@@ -1815,7 +1907,7 @@ main (int argc, char ** argv)
     free (currdir);
 
     /* Free internal memory */
-    getargs (NULL, NULL, NULL);
+    getargs (NULL, NULL, NULL, 0);
 
     return 0;
 }
