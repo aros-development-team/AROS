@@ -1276,8 +1276,8 @@ endif
 ifneq (%(id),)
   LIBS := LIBS%(id)
 endif
-%safe_define var=CFLAGS%(id) value="$(TARGET_CFLAGS) $(USER_CFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS"
-%safe_define var=AFLAGS%(id) value="$(TARGET_AFLAGS) $(USER_AFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS"
+%safe_define var=CFLAGS%(id) value="$(TARGET_CFLAGS) $(USER_CFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS -D_AROS"
+%safe_define var=AFLAGS%(id) value="$(TARGET_AFLAGS) $(USER_AFLAGS) $(INCLUDES) $(LIB_CFLAGS) -I$(AROS_INCLUDES) -D__AROS__ -D__AROS -D_AROS"
 %safe_define var=LDFLAGS%(id) value="$(TARGET_LDFLAGS) $(USER_LDFLAGS)"
 
 %end
