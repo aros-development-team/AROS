@@ -92,6 +92,11 @@ struct DropText_Data
     ULONG times;
 };
 
+#ifdef __MAXON__
+#undef KeymapBase
+struct Library *KeymapBase;
+#endif
+
 #ifndef _AROS
 __saveds __asm IPTR dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -118,8 +123,11 @@ AROS_UFH3S(IPTR, dispatcher,
 
 struct MUI_CustomClass *CL_DropText;
 
+#ifdef __MAXON__
+#define DropTextObject TextObject
+#else
 #define DropTextObject (Object*)NewObject(CL_DropText->mcc_Class, NULL
-
+#endif
 
 /* Main prog */
 
@@ -155,6 +163,10 @@ void main(void)
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
     __zune_prefs_init(&__zprefs);
+
+#ifdef __MAXON__
+    KeymapBase = MUIMasterBase_instance.keymapbase;
+#endif
 #else
     MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
 #endif
@@ -205,8 +217,8 @@ void main(void)
 			    End,
 		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),
-			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			   End,
 		       End,
 
@@ -235,24 +247,63 @@ void main(void)
 		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        End,
+
+#if 0
+Child, ScrollgroupObject,   
+    MUIA_Scrollgroup_Contents, HGroupV,   
+Child, VGroup,   
+    Child, TextObject,   
+TextFrame,   
+MUIA_Text_Contents,   
+"Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",   
+End,   
+    Child, HGroup,   
+Child, MUI_MakeObject(MUIO_Button,"Button9"),   
+Child, MUI_MakeObject(MUIO_Button,"Button10"),   
+Child, MUI_MakeObject(MUIO_Button,"Button11"),   
+Child, MUI_MakeObject(MUIO_Button,"Button12"),   
+Child, MUI_MakeObject(MUIO_Button,"Button13"),   
+End,   
+    End,   
+Child, VGroup,   
+    Child, SimpleButton("blabla"),   
+    Child, SimpleButton("blabla"),   
+    Child, SimpleButton("blabla"),   
+    Child, SimpleButton("blabla"),   
+    Child, SimpleButton("blabla"),   
+    Child, SimpleButton("blabla"),   
+    End,   
+
+Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,   
+    GroupFrameT("virtvir"),   
+    Child, SimpleButton("eins"),   
+    Child, SimpleButton("zwei"),   
+    Child, SimpleButton("drei"),   
+    Child, SimpleButton("vier"),   
+    Child, SimpleButton("eins"),   
+    Child, SimpleButton("zwei"),   
+    Child, SimpleButton("drei"),   
+    Child, SimpleButton("vier"),   
+    Child, SimpleButton("eins"),   
+    Child, SimpleButton("zwei"),   
+    Child, SimpleButton("drei"),   
+    Child, SimpleButton("vier"),   
+    Child, SimpleButton("eins"),   
+    Child, SimpleButton("zwei"),   
+    Child, SimpleButton("drei"),   
+    Child, SimpleButton("vier"),   
+    End,   
+    End,
+End,   
+    End,   
+#else
+
 		    Child, ScrollgroupObject,
 			MUIA_Scrollgroup_Contents, VGroupV,
 			    VirtualFrame,
 			    Child, TextObject,
 				TextFrame,
 				MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
-				End,
-			    Child, VGroupV,
-			        VirtualFrame,
-				Child, MUI_MakeObject(MUIO_Button,"VBut1"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut2"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut3"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut4"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut5"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut6"),
-				Child, VSpace(3),
-				Child, MUI_MakeObject(MUIO_Button,"VBut7"),
-				Child, MUI_MakeObject(MUIO_Button,"VBut8"),
 				End,
 			    Child, HGroup,
 				Child, MUI_MakeObject(MUIO_Button,"Button9"),
@@ -261,7 +312,7 @@ void main(void)
 			    End,
 		    	End,
 		    End,
-
+#endif
 		Child, RectangleObject,
 		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
 		    MUIA_Rectangle_HBar, TRUE,
