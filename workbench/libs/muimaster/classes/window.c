@@ -26,6 +26,7 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include <proto/commodities.h>
+#include <proto/layers.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -292,11 +293,46 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     	    if (!data->wd_DropObject)
     	    {
-    	    	/* TODO: also should look inside diffeent windows */
-		if ((data->wd_DropObject = (Object*)DoMethod(data->wd_RootObject,MUIM_DragQueryExtended,data->wd_DragObject,imsg->MouseX,imsg->MouseY)))
+		struct Layer *l;
+		Object *dest_wnd = NULL;
+
+		/* Find out if app has an openend window at this position */
+		if ((l = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY)))
 		{
-		    UndrawDragNDrop(data->wd_dnd);
-		    DoMethod(data->wd_DropObject, MUIM_DragBegin,data->wd_DragObject);
+		    Object                *cstate;
+		    Object                *child;
+		    struct MinList        *ChildList;
+
+		    get(_app(oWin), MUIA_Application_WindowList, (ULONG *)&(ChildList));
+		    cstate = (Object *)ChildList->mlh_Head;
+		    while ((child = NextObject(&cstate)))
+		    {
+			struct Window *wnd;
+			get(child, MUIA_Window_Window,(ULONG*)&wnd);
+			if (wnd->WLayer == l)
+			{
+			    data->wd_DropWindow = wnd;
+			    dest_wnd = child;
+			    break;
+			}
+		    }
+		}
+
+		if (dest_wnd)
+		{
+		    Object *root;
+		    get(dest_wnd, MUIA_Window_RootObject, &root);
+
+		    if (root)
+		    {
+			if ((data->wd_DropObject = (Object*)DoMethod(root,MUIM_DragQueryExtended,data->wd_DragObject,
+		    			imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+		    			imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge)))
+		    	{
+			    UndrawDragNDrop(data->wd_dnd);
+			    DoMethod(data->wd_DropObject, MUIM_DragBegin,data->wd_DragObject);
+		        }
+		    }
 		}
 	    }
 
@@ -306,7 +342,9 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	LONG i;
 	    	for (i=0;i<2;i++)
 	    	{
-		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,data->wd_DragObject,imsg->MouseX,imsg->MouseY,update);
+		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,data->wd_DragObject,
+						imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+						imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
 		    switch (res)
 		    {
 			case    MUIV_DragReport_Abort:
@@ -335,7 +373,9 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	{
 		    UndrawDragNDrop(data->wd_dnd);
 		    DoMethod(data->wd_DropObject, MUIM_DragFinish, data->wd_DragObject);
-		    DoMethod(data->wd_DropObject, MUIM_DragDrop, data->wd_DragObject, imsg->MouseX, imsg->MouseY);
+		    DoMethod(data->wd_DropObject, MUIM_DragDrop, data->wd_DragObject,
+		    		imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+		    		imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge);
 		    data->wd_DropObject = NULL;
 	    	}
 		finish_drag = 1;
@@ -356,6 +396,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, data->wd_DragImage);
 	    data->wd_DragImage = NULL;
 	    data->wd_DragObject = NULL;
+	    data->wd_DropWindow = NULL;
 	    data->wd_dnd = NULL;
 	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
     	}
@@ -1034,9 +1075,12 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_Activate:
 	    STORE = (data->wd_Flags & MUIWF_ACTIVE) ? TRUE : FALSE;
 	    return(TRUE);
+        case MUIA_Window_Window:
+            STORE = (data->wd_Flags & MUIWF_OPENED) ? ((ULONG)data->wd_RenderInfo.mri_Window) : FALSE;
+            return 1;
 	case MUIA_Window_ActiveObject:
-//	    if (data->wd_ActiveObject)
-//		STORE = (ULONG)data->wd_ActiveObject->data;
+	    if (data->wd_ActiveObject)
+		STORE = (ULONG)data->wd_ActiveObject->obj;
 	    return(TRUE);
 	case MUIA_Window_CloseRequest:
 	    STORE = (data->wd_Flags & MUIWF_CLOSEREQUESTED) ? TRUE : FALSE;
