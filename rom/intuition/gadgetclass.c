@@ -2,7 +2,7 @@
     (C) 1996-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: AROS gadgetclass implementation
+    Desc: AROS gadgetclass implementation.
     Lang: english
 
     Original version 10/25/96 by caldi@usa.nai.net
@@ -270,14 +270,28 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		EG(o)->Activation &= ~GACT_BOTTOMBORDER;
 	    break;
 
+	case GA_ToggleSelect:
+	    if ((BOOL)tidata)
+		EG(o)->Activation |= GACT_TOGGLESELECT;
+	    else
+		EG(o)->Activation &= ~GACT_TOGGLESELECT;
+	    break;
+
+	case GA_TabCycle:
+	    if ((BOOL)tidata)
+		EG(o)->Flags |= GFLG_TABCYCLE;
+	    else
+		EG(o)->Flags &= ~GFLG_TABCYCLE;
+	    break;
+
 	case GA_Highlight:
 	    EG(o)->Flags &= ~GFLG_GADGHIGHBITS;
-	    EG(o)->Flags |= tidata;
+	    EG(o)->Flags |= tidata & GFLG_GADGHIGHBITS;
 	    break;
 
 	case GA_SysGType:
 	    EG(o)->GadgetType &= ~GTYP_SYSTYPEMASK;
-	    EG(o)->GadgetType |= tidata;
+	    EG(o)->GadgetType |= tidata & GTYP_SYSTYPEMASK;
 	    break;
 
 	case GA_ID:
@@ -323,34 +337,41 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
     {
     case GA_Left:
     case GA_RelRight:
-	*msg->opg_Storage = (ULONG) EG(o)->LeftEdge;
+	*msg->opg_Storage = (IPTR) EG(o)->LeftEdge;
 	break;
 
     case GA_Top:
     case GA_RelBottom:
-	*msg->opg_Storage = (ULONG) EG(o)->TopEdge;
+	*msg->opg_Storage = (IPTR) EG(o)->TopEdge;
 	break;
 
     case GA_Width:
     case GA_RelWidth:
-	*msg->opg_Storage = (ULONG) EG(o)->Width;
+	*msg->opg_Storage = (IPTR) EG(o)->Width;
 	break;
 
     case GA_Height:
     case GA_RelHeight:
-	*msg->opg_Storage = (ULONG) EG(o)->Height;
+	*msg->opg_Storage = (IPTR) EG(o)->Height;
 	break;
 
     case GA_Selected:
-	*msg->opg_Storage = (ULONG)((BOOL)(EG(o)->Flags & GFLG_SELECTED));
+	*msg->opg_Storage = (IPTR)((BOOL)(EG(o)->Flags & GFLG_SELECTED));
 	break;
 
     case GA_Disabled:
-	*msg->opg_Storage = (ULONG)((BOOL)(EG(o)->Flags & GFLG_DISABLED));
+	*msg->opg_Storage = (IPTR)((BOOL)(EG(o)->Flags & GFLG_DISABLED));
 	break;
-	
+
+    case GA_ID:
+	*msg->opg_Storage = (IPTR)EG(o)->GadgetID;
+	break;
+
+    case GA_UserData:
+	*msg->opg_Storage = (IPTR)EG(o)->UserData;
+
     default:
-	*msg->opg_Storage = (ULONG)NULL;
+	*msg->opg_Storage = (IPTR)NULL;
 	retval = 0UL;
 	break;
     }
