@@ -5,8 +5,8 @@
 */
 
 #include <proto/exec.h>
-#include "intuition_intern.h"
 #include <intuition/preferences.h>
+#include "intuition_intern.h"
 
 /*****************************************************************************
  
@@ -43,8 +43,6 @@ AROS_LH2(struct Preferences *, GetDefPrefs,
     GetPrefs(), SetPrefs()
  
     INTERNALS
- 
-    HISTORY
  
 *****************************************************************************/
 {
