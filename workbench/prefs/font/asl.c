@@ -18,12 +18,12 @@ BOOL getFont(struct FontPrefs *currentFont)
  BOOL returnCode = FALSE;
  struct FontRequester *fontReq;
 
- if(AslBase = OpenLibrary("asl.library", 0L))
+ if((AslBase = OpenLibrary("asl.library", 0L)))
  {
   /* Pass ASLXX_SleepWindow to this call*/
-  if(fontReq = AllocAslRequestTags(ASL_FontRequest,
+  if((fontReq = AllocAslRequestTags(ASL_FontRequest,
 							ASL_FuncFlags,	FONF_FRONTCOLOR | FONF_BACKCOLOR,
-							TAG_DONE))
+							TAG_DONE)))
 
   {
    printf("AllocAslRequest ok!\n");
@@ -72,9 +72,9 @@ STRPTR aslOpenPrefs(void)
 {
  struct FileRequester *fileReq;
 
- if(AslBase = OpenLibrary("asl.library", 0))
+ if((AslBase = OpenLibrary("asl.library", 0)))
  {
-  if(fileReq = AllocAslRequestTags(ASL_FileRequest, TAG_END))
+  if((fileReq = AllocAslRequestTags(ASL_FileRequest, TAG_END)))
   {
    if(AslRequest(fileReq, NULL))
    {
@@ -103,9 +103,9 @@ STRPTR aslSavePrefs(void)
 {
  struct FileRequester *fileReq;
 
- if(AslBase = OpenLibrary("asl.library", 0))
+ if((AslBase = OpenLibrary("asl.library", 0)))
  {
-  if(fileReq = AllocAslRequestTags(ASL_FileRequest, ASL_FuncFlags, FILF_SAVE, TAG_END))
+  if((fileReq = AllocAslRequestTags(ASL_FileRequest, ASL_FuncFlags, FILF_SAVE, TAG_END)))
   {
    if(AslRequest(fileReq, NULL))
    {
