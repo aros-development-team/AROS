@@ -2,3 +2,5 @@ makefile
 iffparse_endtag.c
 libdefs.h
 mmakefile
+functable.c
+*.map
