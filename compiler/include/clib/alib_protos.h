@@ -23,6 +23,9 @@
 #ifndef  DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+#ifndef LIBRARIES_COMMODITIES_H
+#   include <libraries/commodities.h>
+#endif
 #ifdef AROS_SLOWSTACKTAGS
 #   include <stdarg.h>
 #   ifndef UTILITY_TAGITEM_H
@@ -41,24 +44,47 @@
 /*
     Prototypes
 */
-ULONG DoMethodA (Object * obj, Msg message);
-ULONG DoMethod (Object * obj, ULONG MethodID, ...);
-ULONG DoGadgetMethod (struct Gadget * gad, struct Window * win,
+IPTR DoMethodA (Object * obj, Msg message);
+IPTR DoMethod (Object * obj, ULONG MethodID, ...);
+IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
 		    struct Requester * req, ULONG MethodID, ...);
-ULONG DoSuperMethodA (Class  * cl, Object * obj, Msg message);
-ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-ULONG CoerceMethodA (Class * cl, Object * obj, Msg msg);
-void SetAttrs (Object * obj, ULONG tag1, ...);
+IPTR DoSuperMethodA (Class  * cl, Object * obj, Msg message);
+IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
+ULONG SetAttrs (Object * obj, ULONG tag1, ...);
+ULONG SetSuperAttrs (Object * obj, ULONG tag1, ...);
 APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
 struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 
+/* Exec support */
 struct IORequest * CreateExtIO (struct MsgPort * port, ULONG iosize);
 struct IOStdReq * CreateStdIO (struct MsgPort * port);
 void DeleteExtIO (struct IORequest * ioreq);
 void DeleteStdIO (struct IOStdReq * ioreq);
+struct MsgPort * CreatePort (STRPTR name, LONG pri);
+void DeletePort (struct MsgPort * mp);
+struct Task * CreateTask (STRPTR name, LONG pri, APTR initpc, ULONG stacksize);
+void DeleteTask (struct Task * task);
+void NewList (struct List *);
+
+/* Extra */
+ULONG RangeRand (ULONG maxValue);
+ULONG FastRand (ULONG seed);
+LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
+void waitbeam (LONG pos);
+
+/* Commodities */
+CxObj * HotKey (STRPTR description, struct MsgPort *port, LONG id);
+void FreeIEvents (volatile struct InputEvent *events);
+
+/* Pools */
+APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
+void LibDeletePool (APTR poolHeader);
+APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
+void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
 /* AROS enhancements */
 BOOL ReadByte	 (BPTR fh, UBYTE  * dataptr);
@@ -83,12 +109,16 @@ AROS_UFH3(IPTR, HookEntry,
     AROS_UFHA(APTR,          param, A1)
 );
 
+#ifndef AROS_METHODRETURNTYPE
+#   define AROS_METHODRETURNTYPE IPTR
+#endif
 #ifdef AROS_SLOWSTACKMETHODS
     Msg  GetMsgFromStack  (ULONG MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
 
 #   define AROS_SLOWSTACKMETHODS_PRE(arg)       \
-    ULONG   retval;				\
+    AROS_METHODRETURNTYPE retval;		\
+						\
     va_list args;				\
     Msg     msg;				\
 						\
@@ -96,21 +126,20 @@ AROS_UFH3(IPTR, HookEntry,
 						\
     if ((msg = GetMsgFromStack (arg, args)))    \
     {						\
-	retval =
 #   define AROS_SLOWSTACKMETHODS_ARG(arg) msg
 #   define AROS_SLOWSTACKMETHODS_POST		\
 	FreeMsgFromStack (msg);                 \
     }						\
     else					\
-	retval = 0L; /* fail :-/ */		\
+	retval = (AROS_METHODRETURNTYPE)0L;     \
 						\
     va_end (args);                              \
 						\
     return retval;
 #else
-#   define AROS_SLOWSTACKMETHODS_PRE(arg) return
-#   define AROS_SLOWSTACKMETHODS_ARG(arg) ((Msg)&(arg))
-#   define AROS_SLOWSTACKMETHODS_POST
+#   define AROS_SLOWSTACKMETHODS_PRE(arg)   AROS_METHODRETURNTYPE retval;
+#   define AROS_SLOWSTACKMETHODS_ARG(arg)   ((Msg)&(arg))
+#   define AROS_SLOWSTACKMETHODS_POST	    return retval;
 #endif /* AROS_SLOWSTACKMETHODS */
 
 #ifdef AROS_SLOWSTACKTAGS

@@ -289,6 +289,20 @@ AROS_LP2(LONG, FPuts,
     AROS_LCA(STRPTR, string, D2), \
     struct DosLibrary *, DOSBase, 56, Dos)
 
+AROS_LP4(LONG, FRead,
+    AROS_LPA(BPTR , fh, D1),
+    AROS_LPA(APTR , block, D2),
+    AROS_LPA(ULONG, blocklen, D3),
+    AROS_LPA(ULONG, number, D4),
+    struct DosLibrary *, DOSBase, 54, Dos)
+#define FRead(fh, block, blocklen, number) \
+    AROS_LC4(LONG, FRead, \
+    AROS_LCA(BPTR , fh, D1), \
+    AROS_LCA(APTR , block, D2), \
+    AROS_LCA(ULONG, blocklen, D3), \
+    AROS_LCA(ULONG, number, D4), \
+    struct DosLibrary *, DOSBase, 54, Dos)
+
 AROS_LP1(void, FreeArgs,
     AROS_LPA(struct RDArgs *, args, D1),
     struct DosLibrary *, DOSBase, 143, Dos)
@@ -314,6 +328,20 @@ AROS_LP2(void, FreeDosObject,
     AROS_LCA(ULONG, type, D1), \
     AROS_LCA(APTR,  ptr,  D2), \
     struct DosLibrary *, DOSBase, 39, Dos)
+
+AROS_LP4(LONG, FWrite,
+    AROS_LPA(BPTR , fh, D1),
+    AROS_LPA(APTR , block, D2),
+    AROS_LPA(ULONG, blocklen, D3),
+    AROS_LPA(ULONG, number, D4),
+    struct DosLibrary *, DOSBase, 55, Dos)
+#define FWrite(fh, block, blocklen, number) \
+    AROS_LC4(LONG, FWrite, \
+    AROS_LCA(BPTR , fh, D1), \
+    AROS_LCA(APTR , block, D2), \
+    AROS_LCA(ULONG, blocklen, D3), \
+    AROS_LCA(ULONG, number, D4), \
+    struct DosLibrary *, DOSBase, 55, Dos)
 
 AROS_LP0(STRPTR, GetArgStr,
     struct DosLibrary *, DOSBase, 89, Dos)

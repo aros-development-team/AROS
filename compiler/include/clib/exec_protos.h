@@ -111,10 +111,10 @@ AROS_LP0(void, SuperState,
     AROS_LC0(void, SuperState, \
     struct ExecBase *, SysBase, 25, Exec)
 
-AROS_LP0(void, Switch,
+AROS_LP0(void, Supervisor,
     struct ExecBase *, SysBase, 6, Exec)
-#define Switch() \
-    AROS_LC0(void, Switch, \
+#define Supervisor() \
+    AROS_LC0(void, Supervisor, \
     struct ExecBase *, SysBase, 6, Exec)
 
 AROS_LP0(void, Switch,
