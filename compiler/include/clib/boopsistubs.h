@@ -198,8 +198,8 @@
 		IPTR _msg[] = { msg }; \
 		ASSERT_VALID_PTR(cl) \
 		ASSERT_VALID_PTR_OR_NULL(o) \
-		_cl = cl = cl->cl_Super; \
-		ASSERT_VALIDNO0(_cl) \
+		_cl = cl->cl_Super; \
+		ASSERT_VALID_PTR(_cl) \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
 	})
 
