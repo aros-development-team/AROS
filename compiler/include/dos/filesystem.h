@@ -329,9 +329,16 @@ struct IFS_INHIBIT
 #if 0
 #define FSA_WRITE_PROTECT   33
 #define FSA_DISK_CHANGE     34
-#define FSA_ADD_NOTIFY	    35
-#define FSA_REMOVE_NOTIFY   36
 #endif
+
+#define FSA_ADD_NOTIFY	    35
+struct IFS_NOTIFY
+{
+    struct NotifyRequest *io_NotificationRequest;
+};
+
+/* Uses IFS_NOTIFY */
+#define FSA_REMOVE_NOTIFY   36
 
 #define FSA_DISK_INFO	    37
 
@@ -406,11 +413,6 @@ struct IOFileSys
     /* This union contains all the data needed for the various actions. */
     union
     {
-/* Obsolete definition, included for backwards compatibility.*/
-#if 0
-        IPTR io_ArgArray[4]; /* Generic argument space. */
-#endif
-
         struct {
             STRPTR io_DeviceName; /* Name of the device to open. */
             ULONG  io_Unit;       /* Number of unit to open. */
@@ -454,10 +456,8 @@ struct IOFileSys
         struct IFS_PARENT_DIR      io_PARENT_DIR;     /* FSA_PARENT_DIR */
 	struct IFS_CONSOLE_MODE	   io_CONSOLE_MODE;   /* FSA_CONSOLE_MODE */
 	struct IFS_RELABEL         io_RELABEL;        /* FSA_RELABEL */
+	struct IFS_NOTIFY          io_NOTIFY;         /* FSA_ADD_NOTIFY */
     } io_Union;
 };
-#if 0
-    #define io_Args io_Union.io_ArgArray
-#endif
 
 #endif /* DOS_FILESYSTEM_H */
