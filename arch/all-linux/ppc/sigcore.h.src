@@ -101,7 +101,7 @@ struct AROS_cpu_context
     GetCpuContext(task)->regs.result	= sc->regs->result;	\
 }
 
-// ppc abi says do r2 is reserved
+// ppc abi says r2 is reserved
 #define RESTORE_CPU(task,sc)\
 {								\
     long i;							\
@@ -151,7 +151,8 @@ struct AROS_cpu_context
    RESTOREREGS() below to restore this context. */
 
 #define SAVEREGS(task,sc)\
-	SAVE_CPU(task,sc)
+    GetSP(task) = (SP_TYPE *)SP(sc); \
+    SAVE_CPU(task,sc)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
@@ -159,8 +160,9 @@ struct AROS_cpu_context
    The macro will save the new SP into the sigcontext "sc". */
 
 #define RESTOREREGS(task,sc)\
-	RESTORE_CPU(task,sc)
-	
+    RESTORE_CPU(task,sc)\
+    SP(sc) = (typeof(SP(sc)))GetSP(task)
+    
 /* This macro prints the current signals' context */
 
 #define PRINT_SC(sc) \
