@@ -4,6 +4,7 @@
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <proto/layers.h>
+#include <proto/graphics.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/interrupts.h>
@@ -1049,6 +1050,35 @@ kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
                 break; }
                     
                 case IMCODE_SIZEWINDOW: {
+                     /* First erase the old frame on the right side and 
+                        on the lower side if necessary */
+
+                     if (msg->dy > 0)
+                     {
+                       struct RastPort * rp = msg->Window->RPort;
+                       WORD Oldcp_x = rp->cp_x;
+                       WORD Oldcp_y = rp->cp_y;
+                       ULONG OldAPen = GetAPen(rp);
+                       SetAPen(rp, 0);
+                       Move(rp, 0, msg->Window->Height-1);
+                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
+                       SetAPen(rp, OldAPen);
+                       rp->cp_x = Oldcp_x;
+                       rp->cp_y = Oldcp_y;
+                     }
+                     if (msg->dx > 0)
+                     {
+                       struct RastPort * rp = msg->Window->RPort;
+                       WORD Oldcp_x = rp->cp_x;
+                       WORD Oldcp_y = rp->cp_y;
+                       ULONG OldAPen = GetAPen(rp);
+                       SetAPen(rp, 0);
+                       Move(rp, msg->Window->Width-1, 0);
+                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
+                       SetAPen(rp, OldAPen);
+                       rp->cp_x = Oldcp_x;
+                       rp->cp_y = Oldcp_y;
+                     }
                      SizeLayer(NULL, 
                                msg->Window->WLayer,
                                msg->dx,
@@ -1095,10 +1125,37 @@ kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
                 break; }
 		
 		case IMCODE_CHANGEWINDOWBOX:
-		    intui_ChangeWindowBox(msg->Window
-		    	, msg->left, msg->top
+                     if (msg->height > msg->Window->Height)
+                     {
+                       struct RastPort * rp = msg->Window->RPort;
+                       WORD Oldcp_x = rp->cp_x;
+                       WORD Oldcp_y = rp->cp_y;
+                       ULONG OldAPen = GetAPen(rp);
+                       SetAPen(rp, 0);
+                       Move(rp, 0, msg->Window->Height-1);
+                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
+                       SetAPen(rp, OldAPen);
+                       rp->cp_x = Oldcp_x;
+                       rp->cp_y = Oldcp_y;
+                     }
+                     if (msg->width > msg->Window->Width)
+                     {
+                       struct RastPort * rp = msg->Window->RPort;
+                       WORD Oldcp_x = rp->cp_x;
+                       WORD Oldcp_y = rp->cp_y;
+                       ULONG OldAPen = GetAPen(rp);
+                       SetAPen(rp, 0);
+                       Move(rp, msg->Window->Width-1, 0);
+                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
+                       SetAPen(rp, OldAPen);
+                       rp->cp_x = Oldcp_x;
+                       rp->cp_y = Oldcp_y;
+                     }
+
+ 		     intui_ChangeWindowBox(msg->Window
+		     	, msg->left, msg->top
 			, msg->width, msg->height
-		    );
+		     );
 		    
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
 		    
