@@ -15,7 +15,7 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 /*
    Base class for the classes handling standard, charmap and snipmap
@@ -81,10 +81,13 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	    	
     	unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * unit->cu_XMax);
     	unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * unit->cu_YMax);
+	
+	unit->cu_XCP = MIN_XCP;
+	unit->cu_YCP = MIN_YCP;
 	    
 	
     }
-    ReturnPtr("Console::New", Object *, NULL);
+    ReturnPtr("Console::New", Object *, o);
     
 }
  
@@ -221,12 +224,12 @@ static VOID getcoordptrs(Object *con, WORD **x_ptr, WORD **y_ptr, UWORD cp)
 {
     switch (cp)
     {
-        case CP_WRITE:
+        case COORD_WRITEPOS:
 	    *x_ptr = &(CU(con)->cu_XCP);
 	    *y_ptr = &(CU(con)->cu_YCP);
 	    break;
 	
-	case CP_CURSOR:
+	case COORD_CURSOR:
 	    *x_ptr = &(CU(con)->cu_XCP);
 	    *y_ptr = &(CU(con)->cu_YCP);
 	    break;

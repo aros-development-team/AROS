@@ -12,7 +12,7 @@
 #   include <utility/tagitem.h>
 #endif
 
-enum  { CP_WRITE, CP_CURSOR };
+enum  { COORD_WRITEPOS, COORD_CURSOR };
 
 enum
 {

@@ -128,7 +128,6 @@ AROS_LH3(void, open,
     AROS_LIBFUNC_INIT
     
     BOOL success = FALSE;
-
     
     /* Keep compiler happy */
     unitnum=0;
@@ -172,6 +171,12 @@ AROS_LH3(void, open,
 	    goto open_fail;
     }	    
     
+    if (!STDCONCLASSPTR)
+    {
+    	STDCONCLASSPTR = makestdconclass(ConsoleDevice);
+    	if (!STDCONCLASSPTR)
+	    goto open_fail;
+    }	    
     
     if (unitnum == CONU_LIBRARY)
     {
@@ -196,6 +201,7 @@ AROS_LH3(void, open,
     	switch (unitnum)
     	{
     	    case CONU_STANDARD:
+	    	D(bug("Opening CONU_STANDARD console\n"));
     	    	classptr = STDCONCLASSPTR;
     	    	break;
     		
@@ -293,8 +299,6 @@ AROS_LH1(void, beginio,
     {
     	case CMD_WRITE:
     	    D(bug("CMD_WRITE\n"));
-	    
-	    kprintf("Argh!!\n");
 
     	    write2console(ioreq, ConsoleDevice);
     	    break;

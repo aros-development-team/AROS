@@ -20,8 +20,8 @@
 
 #include "consoleif.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, UBYTE *p_tab);

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1998/08/01 17:53:39  nlorentz
+    Now able to text to the console
+
     Revision 1.1  1998/07/31 19:28:23  nlorentz
     A start at the console device
 
@@ -36,16 +39,10 @@ struct ConsoleBase;
 #define COTASK_PRIORITY  10
 
 
-/* Class TagIDs */
-struct Coord
-{
-    WORD *XPtr;
-    WORD *YPtr;
-};
+/* Minimum x & y char positions */
+#define MIN_XCP 0
+#define MIN_YCP 0
 
-#define CA_Unit		TAG_USER + 1
-
-#define CM_DoCommand	TAG_USER + 2
 
 #define CONSOLECLASSPTR		(ConsoleDevice->consoleclass)
 #define STDCONCLASSPTR		(ConsoleDevice->stdconclass)
@@ -122,6 +119,7 @@ BOOL  InsertChar   (APTR map, UBYTE c, struct ConsoleBase *ConsoleDevice);
 VOID write2console(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
 
 Class *makeconsoleclass(struct ConsoleBase *ConsoleDevice);
+Class *makestdconclass(struct ConsoleBase *ConsoleDevice);
 
 struct ConsoleBase
 {

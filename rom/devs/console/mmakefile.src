@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 OBJDIR	:= $(OSGENDIR)/console
 FILES	:= cdinputhandler console rawkeyconvert support \
-	   consoleclass
+	   consoleclass stdconclass
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libconsole.a
 
