@@ -29,15 +29,18 @@ FUNCTIONS := 	 adddtobject \
 		 disposedtobject \
 		 doasynclayout \
 		 dodtmethoda \
+		 drawdtobjecta \
 		 getdtattrsa \
 		 getdtmethods \
 		 getdtstring \
 		 getdttriggermethods \
 		 newdtobjecta \
 		 obtaindatatypea \
+		 obtaindtdrawinfoa \
 		 printdtobjecta \
 		 refreshdtobjecta \
 		 releasedatatype \
+		 releasedtdrawinfo \
 		 removedtobject \
 		 setdtattrsa
 
