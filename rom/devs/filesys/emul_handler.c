@@ -383,7 +383,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
-        fh->DIR      = NULL;
+        fh->DIR      = 0L;
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
@@ -1116,7 +1116,6 @@ AROS_LH1(void, beginio,
 
 		if(lseek(fh->fd,iofs->io_Union.io_SEEK.io_Offset,mode)<0)
 		    error=err_u2a();
-		iofs->io_Union.io_SEEK.io_Negative=0;
 		iofs->io_Union.io_SEEK.io_Offset  =oldpos;
 	    }else
 		error=ERROR_OBJECT_WRONG_TYPE;
