@@ -25,7 +25,9 @@
   AROS_LH2(ULONG, f, \
 	     AROS_LCA(struct RexxMsg *, m, A0), \
 	     AROS_LCA(STRPTR *, _retargstringptr, A1), \
-	     lt, l, o, p)
+	     lt, l, o, p) { AROS_LIBFUNC_INIT
+#define AROS_AREXXLIBQUERYFUNC_END \
+    AROS_LIBFUNC_EXIT }
 
 #define ReturnRexxQuery(rc,arg) \
   ({ *_retargstringptr = arg; \
