@@ -42,7 +42,8 @@ else
 
 %prepare_shlib exec $(SHARED_EXEC)
 
-FILES	    := init execfunctions traphandler exec_util
+FILES	    := exec_init execfunctions traphandler exec_util \
+	       prepareexecbase
 
 FUNCTIONS   := \
 	allocmem freemem addhead addtask remtask wait signal allocsignal    \
@@ -126,13 +127,13 @@ $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
 
-CFLAGS2 := $(CFLAGS) -I$(TOP)/config/unix/exec -I.
-
-$(OBJDIR)/init.o : init.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OBJDIR)/init.d : init.c
-	%mkdepend_q flags=$(CFLAGS2)
+#CFLAGS2 := $(CFLAGS) -I$(TOP)/config/unix/exec -I.
+#
+#$(OBJDIR)/init.o : init.c
+#	 %compile_q opt=$(CFLAGS2)
+#
+#$(OBJDIR)/init.d : init.c
+#	 %mkdepend_q flags=$(CFLAGS2)
 
 # ***** END ***************
 endif
@@ -148,7 +149,7 @@ kernel-exec :
 	@$(NOP)
 
 #MM
-setup :
+setup : libdefs.h
 	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 
 #MM
@@ -156,6 +157,7 @@ clean ::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
 %additional_objs_rule
+%libdefs_rule
 
 $(OBJDIR)/%.o : %.c
 	%compile_q
