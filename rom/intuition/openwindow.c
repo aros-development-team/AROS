@@ -79,7 +79,7 @@
     struct Window   	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
     struct TagItem  	*tag, *tagList;
     struct RastPort 	*rp;
-    struct Hook     	*backfillhook = LAYERS_BACKFILL;
+    struct Hook     	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
     struct Region   	*shape = NULL;
     struct IBox     	*zoombox = NULL;
     struct Image    	*AmigaKey = NULL;
@@ -279,6 +279,10 @@
 	    	shape = (struct Region *)tag->ti_Data;
 		break;
 
+    	    case WA_ShapeHook:
+	    	shapehook = (struct Hook *)tag->ti_Data;
+		break;
+		
             case WA_Parent:
                 parentwin = ((struct Window *)tag->ti_Data);
                 parentl   = parentwin->WLayer;
@@ -618,7 +622,8 @@
                            IntuitionBase, 
                            nw.BitMap, 
                            backfillhook, 
-                           shape, 
+                           shape,
+			   shapehook,
                            parentl,
                            windowvisible))
 	goto failexit;
@@ -788,6 +793,7 @@ int intui_OpenWindow (struct Window * w,
 	struct BitMap        * SuperBitMap,
 	struct Hook          * backfillhook,
 	struct Region	     * shape,
+	struct Hook 	     * shapehook,
 	struct Layer         * parent,
 	ULONG                  visible)
 {
@@ -896,6 +902,7 @@ int intui_OpenWindow (struct Window * w,
           {LA_Hook  	    , (IPTR)backfillhook	    	    	    	    	    	},
 	  {LA_Priority	    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
 	  {LA_Shape 	    , (IPTR)shape   	    	    	    	    	    	    	},
+    	  {LA_ShapeHook     , (IPTR)shapehook	    	    	    	    	    	    	},
 	  {LA_SuperBitMap   , (IPTR)SuperBitMap							},
 	  {LA_ChildOf       , (IPTR)parent							},
 	  {LA_Visible       , (ULONG)visible                                                    },
