@@ -71,8 +71,18 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 
 #define _IsPointInRect(Rect, x, y) _IsRectInRect(Rect, (x), (y), (x), (y))
 
+#define _SwapRegions(region1, region2) \
+do                                     \
+{                                      \
+    struct Region tmp;                 \
+                                       \
+    tmp      = *region1;               \
+    *region1 = *region2;               \
+    *region2 = tmp;                    \
+} while (0);
 
 #define _TranslateRect(rect, dx, dy) \
+do                                   \
 {                                    \
     struct Rectangle *_rect = rect;  \
     WORD _dx = dx;                   \
@@ -81,7 +91,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     (_rect)->MinY += _dy;            \
     (_rect)->MaxX += _dx;            \
     (_rect)->MaxY += _dy;            \
-}
+} while(0)
 
 #define _TranslateRegionRectangles(rr, dx, dy) \
 if (dx || dy)                                  \
@@ -99,13 +109,14 @@ if (dx || dy)                                  \
  */
 
 #define InitRegion(region)            \
+do                                    \
 {                                     \
     MinX(region) = 0;                 \
     MinY(region) = 0;                 \
     MaxX(region) = 0;                 \
     MaxY(region) = 0;                 \
     (region)->RegionRectangle = NULL; \
-}
+} while (0)
 
 
 /* ugly hack, I know... */
