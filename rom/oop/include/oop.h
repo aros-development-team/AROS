@@ -1,11 +1,9 @@
 #ifndef OOP_OOP_H
 #define OOP_OOP_H
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
 
-    Desc:
-    Lang: english
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #ifndef EXEC_TYPES_H
@@ -67,16 +65,14 @@ typedef struct OOP_IClass OOP_Class;
 
 struct OOP_IClass
 {
-
     /* Array of pointers to methodtables for this class */
     struct Node 	ClassNode;    
     struct Library  	*OOPBasePtr;
     ULONG   	    	InstOffset;
     APTR    	    	UserData;
-    IPTR    	    	(*DoMethod)(OOP_Object *, OOP_Msg);
-    IPTR    	    	(*CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
-    IPTR    	    	(*DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
-
+    IPTR    	    	(*cl_DoMethod)(OOP_Object *, OOP_Msg);
+    IPTR    	    	(*cl_CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
+    IPTR    	    	(*cl_DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
 };
 
 
@@ -104,9 +100,9 @@ struct _OOP_Object
 #define OOP_OOPBASE(obj) \
     	(OOP_OCLASS(obj)->OOPBasePtr)
 
-#define OOP_DoMethod(o, msg) ( (OOP_OCLASS(o))->DoMethod((o), (msg)) )
-#define OOP_DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
-#define OOP_CoerceMethod(cl, o, msg) ((cl)->CoerceMethod(cl, o, msg))
+#define OOP_DoMethod(o, msg) ( (OOP_OCLASS(o))->cl_DoMethod((o), (msg)) )
+#define OOP_DoSuperMethod(cl, o, msg) ((cl)->cl_DoSuperMethod(cl, o, msg))
+#define OOP_CoerceMethod(cl, o, msg) ((cl)->cl_CoerceMethod(cl, o, msg))
 
 #define OOP_METHODDEF(x) (IPTR (*)())x
 
