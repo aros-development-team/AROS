@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -270,6 +270,18 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
     EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, iofs->io_Union.io_WRITE.io_Buffer));
 
+    /* Change the task to which CTRL/C/D/E/F signals are sent to
+       the task which sent this write request */
+    
+    /* PARANOIA ^ 3 */
+       
+    if (iofs->IOFS.io_Message.mn_ReplyPort)
+    if ((iofs->IOFS.io_Message.mn_ReplyPort->mp_Flags & PF_ACTION) == PA_SIGNAL)
+    if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask)
+    {
+    	fh->breaktask = iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask;
+    }
+    
 #if !BETTER_WRITE_HANDLING    
     if ((fh->inputsize - fh->inputstart) == 0)
     {
