@@ -410,6 +410,7 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data);
 static void CreateWindowScrollbars(Object *obj, struct MUI_WindowData *data);
 static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data);
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data);
+static struct ObjNode *FindObjNode(struct MinList *list, Object *obj);
 
 static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
@@ -1063,6 +1064,16 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
 /**************/
 
+static void ActivateObject (struct MUI_WindowData *data)
+{
+    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+    else
+	data->wd_ActiveObject = NULL;
+}
+
+/**************/
+
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 			     struct IntuiMessage *event);
 
@@ -1251,15 +1262,21 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
     {
 	case IDCMP_ACTIVEWINDOW:
 	    data->wd_Flags |= MUIWF_ACTIVE;
+	    if (data->wd_OldActive)
+		set(oWin, MUIA_Window_ActiveObject, data->wd_OldActive);
 	    set(oWin, MUIA_Window_Activate, TRUE);
 	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
 	    KillHelpBubble(data, oWin, TRUE);
+	    if (data->wd_ActiveObject)
+	    {
+		data->wd_OldActive = data->wd_ActiveObject;
+		set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+	    }
 	    data->wd_Flags &= ~MUIWF_ACTIVE;
 	    set(oWin, MUIA_Window_Activate, FALSE);
-	    set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
@@ -1317,6 +1334,8 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 		    else
 			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		    // but should only draw focus without using MUIM_GoActive !
+		    ActivateObject(data);
 		}
 	    }
 	    break;
@@ -1361,12 +1380,16 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		}
 		else
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+		// but should only draw focus without using MUIM_GoActive !
+		ActivateObject(data);
 	    }
 	    else
 	    {
 		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
 		{
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		    // but should only draw focus without using MUIM_GoActive !
+		    ActivateObject(data);
 		    MUI_EndRefresh(&data->wd_RenderInfo, 0);
 		}
 	    }
@@ -1674,9 +1697,12 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	}
     } /* check if imsg translate to predefined keystroke */
 
-    active_object = data->wd_ActiveObject;
-    if (active_object != NULL)
+    active_object = NULL;
+    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+    {
+	active_object = data->wd_ActiveObject;
 	get(active_object, MUIA_Disabled, &disabled);
+    }
 
     /* try ActiveObject */
     if ((active_object != NULL) && !disabled)
@@ -1693,7 +1719,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
 	if (muikey != MUIKEY_NONE)
 	{
-	    res = DoMethod(data->wd_ActiveObject, MUIM_HandleEvent, (IPTR)event, muikey);
+	    res = DoMethod(active_object, MUIM_HandleEvent, (IPTR)event, muikey);
 	    if (res & MUI_EventHandlerRC_Eat) return;
 	}
 #endif
@@ -1706,7 +1732,10 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 		    || ((muikey != MUIKEY_NONE)
 			&& (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS))))
 	    {
+		D(bug("HandleRawkey: invoking on %p (ehn=%p) event=%p muikey=%p\n",
+		    ehn->ehn_Object, ehn, event, muikey));
 		res = InvokeEventHandler(ehn, event, muikey);
+		D(bug("HandleRawkey: got res=%d\n", res));
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 
@@ -1948,6 +1977,8 @@ static void ChangeRootObject (struct MUI_WindowData *data, Object *obj,
     }
 }
 
+// find the ObjNode containing a pointer to the given object
+// currently only used for cycle chain objects
 static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 {
     struct ObjNode *node;
@@ -1959,7 +1990,9 @@ static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 
     ASSERT_VALID_PTR(obj);
 
-    for (node = (struct ObjNode*)list->mlh_Head; node->node.mln_Succ; node = (struct ObjNode*)node->node.mln_Succ)
+    for (node = (struct ObjNode*)list->mlh_Head;
+	 node->node.mln_Succ;
+	 node = (struct ObjNode*)node->node.mln_Succ)
     {
     	if (node->obj == obj)
 	{
@@ -2036,7 +2069,7 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
 
 	    get(obj, MUIA_Disabled, &is_disabled);
 
-	    if (!is_disabled && (_flags(obj) & MADF_CANDRAW))
+	    if (!is_disabled && (_flags(obj) & MADF_SHOWME))
 	    {
 		return obj;
 	    }
@@ -2052,9 +2085,11 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
 
 /**************************************************************************
  Code for setting MUIA_Window_ActiveObject
- If the current active object is not in a cycle chain it handles
- MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
- currently as there is no active object
+Basically, it will:
+- remove focus drawing for current active object
+- find (if needed) the new active object
+- set data->wd_ActiveObject to the new object
+- draw focus around the new active object
 **************************************************************************/
 static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newval)
 {
@@ -2064,13 +2099,16 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
     ASSERT_VALID_PTR(data);
     ASSERT_VALID_PTR(obj);
 
+    D(bug("MUIC_Window:SetActiveObject(data, obj, %08lx) Active=%p\n",
+	  newval, data->wd_ActiveObject));
+
     if ((IPTR)data->wd_ActiveObject == newval)
 	return;
 
     old_active = data->wd_ActiveObject;
     old_activenode = FindObjNode(&data->wd_CycleChain, old_active);
     data->wd_ActiveObject = NULL;
-    if ((old_active != NULL) && (_flags(old_active) & MADF_CANDRAW))
+    if ((old_activenode != NULL) && (_flags(old_active) & MADF_CANDRAW))
 	DoMethod(old_active, MUIM_GoInactive);
 
     switch (newval)
@@ -2099,13 +2137,9 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
 	    break;
     }
 
-    if (data->wd_ActiveObject != NULL)
-    {
-	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
-	{
-	    DoMethod(data->wd_ActiveObject, MUIM_GoActive);
-	}
-    }
+    if (data->wd_ActiveObject != NULL
+	&& FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
 }
 
 
@@ -2588,7 +2622,10 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
             STORE = (data->wd_Flags & MUIWF_OPENED) ? ((IPTR)data->wd_RenderInfo.mri_Window) : FALSE;
             return 1;
 	case MUIA_Window_ActiveObject:
-	    STORE = (IPTR)data->wd_ActiveObject;
+	    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+		STORE = (IPTR)data->wd_ActiveObject;
+	    else
+		STORE = (IPTR)NULL;
 	    return 1;
 	case MUIA_Window_CloseRequest:
 	    STORE = FALSE;
@@ -2878,19 +2915,11 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 
-    /* stegerg: CHECKME! */
-#if 1
-    if (data->wd_ActiveObject)
+    D(bug("MUIC_Window:windowOpen() ActiveObject=%p\n", data->wd_ActiveObject));
+    if (data->wd_OldActive != NULL)
     {
-    	Object *active = data->wd_ActiveObject;
-	
-    	data->wd_ActiveObject = NULL; /* because of that check, whether it is same as old one */
-	set(obj, MUIA_Window_ActiveObject,active);
-    }
-#else
-    if (data->wd_OldActive)
 	set(obj, MUIA_Window_ActiveObject, data->wd_OldActive);
-#endif
+    }
 
     return TRUE;
 }
@@ -2902,8 +2931,11 @@ static ULONG WindowClose(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    data->wd_OldActive = data->wd_ActiveObject;
-    set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+    if (data->wd_ActiveObject != NULL)
+    {
+	data->wd_OldActive = data->wd_ActiveObject;
+	set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+    }
 
     KillHelpBubble(data, obj, BUBBLEHELP_TICKER_FIRST);
     
@@ -2993,6 +3025,9 @@ static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Win
 	    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 	}
     }
+
+    ActivateObject(data);
+
     return TRUE;
 }
 
@@ -3005,7 +3040,7 @@ static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-//    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
+    D(bug("muimaster.library/window.c: Add Eventhandler %p\n", msg->ehnode));
 
 #ifdef __AROS__
     msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
@@ -3023,7 +3058,7 @@ static IPTR Window_RemEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-//    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
+    D(bug("muimaster.library/window.c: Rem Eventhandler %p\n", msg->ehnode));
 
     Remove((struct Node *)msg->ehnode);
     ChangeEvents(data, GetDefaultEvents());
@@ -3076,6 +3111,7 @@ static IPTR Window_AddControlCharHandler(struct IClass *cl, Object *obj,
 					  struct MUIP_Window_AddControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct ObjNode *node;
 
     if (msg->ccnode->ehn_Events)
     {
@@ -3087,7 +3123,7 @@ static IPTR Window_AddControlCharHandler(struct IClass *cl, Object *obj,
     /* Due to the lack of a better idea ... */
     if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
     {
-	struct ObjNode *node = AllocPooled(data->wd_MemoryPool, sizeof(struct ObjNode));
+	node = AllocPooled(data->wd_MemoryPool, sizeof(struct ObjNode));
 	if (node)
 	{
 	    node->obj = msg->ccnode->ehn_Object;
