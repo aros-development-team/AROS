@@ -33,6 +33,7 @@
 #include "xshm.h"
 
 
+#define X11_LOAD_KEYMAPTABLE	    1
 
 /****** X11 hidd  *****************************/
 

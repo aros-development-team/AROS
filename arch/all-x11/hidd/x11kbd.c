@@ -11,7 +11,6 @@
 
 #include <proto/utility.h>
 #include <proto/oop.h>
-#include <proto/dos.h>
 #include <oop/oop.h>
 
 #include <X11/Xlib.h>
@@ -24,6 +23,10 @@
 #include <devices/inputevent.h>
 
 #include "x11.h"
+
+#if X11_LOAD_KEYMAPTABLE
+#include <proto/dos.h>
+#endif
 
 //#define DEBUG 1
 #include <aros/debug.h>
@@ -617,6 +620,8 @@ UX11
     ReturnInt ("xk2h", long, result);
 } /* XKeyToAmigaCode */
 
+#if X11_LOAD_KEYMAPTABLE
+
 /****************  LoadKeyCode2RawKeyTable()  ***************************/
 
 static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
@@ -674,6 +679,8 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
     }
 }
 
+#endif
+
 /********************  init_kbdclass()  *********************************/
 
 
@@ -715,9 +722,11 @@ OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
     };
 
     EnterFunc(bug("KbdHiddClass init\n"));
-    
+
+#if X11_LOAD_KEYMAPTABLE
     LoadKeyCode2RawKeyTable(xsd);
-    
+#endif
+
     if (MetaAttrBase)
     {
     	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
