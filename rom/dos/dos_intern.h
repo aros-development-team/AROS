@@ -18,10 +18,7 @@
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
 
-BYTE DosDoIO(struct IORequest * iORequest,
-	     struct ExecBase * SysBase);
-
-#define DosDoIO(iorequest) DosDoIO(iorequest, SysBase)
+#include "dos_dosdoio.h"
 
 #ifdef SysBase
 #undef SysBase

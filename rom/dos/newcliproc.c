@@ -4,6 +4,7 @@
 #include <proto/exec.h>
 
 #include "dos_newcliproc.h"
+#include "dos_dosdoio.h"
 
 AROS_UFH3(LONG, NewCliProc,
 AROS_UFHA(char *,argstr,A0),
