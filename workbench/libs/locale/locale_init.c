@@ -52,10 +52,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 	def->il_Count = 0;
    	InstallPatches();
 	
-#warning FIXME: More elegant solution in libcore needed ?
-	/* Lock locale.library in memory by keeping opencount always above zero */
-	LIBBASE->lb_LocaleBase.lb_LibNode.lib_OpenCnt++;
-
 	return TRUE;
     }
 
