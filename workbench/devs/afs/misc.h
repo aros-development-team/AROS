@@ -5,6 +5,6 @@
 
 #include "volumes.h"
 
-ULONG writeHeader(struct Volume *, struct BlockCache *);
+ULONG writeHeader(struct afsbase *, struct Volume *, struct BlockCache *);
 
 #endif

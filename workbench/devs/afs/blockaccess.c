@@ -14,8 +14,10 @@
 #include "blockaccess.h"
 #include "error.h"
 #include "afsblocks.h"
+#include "afshandler.h"
+#include "baseredef.h"
 
-struct BlockCache *initCache(struct Volume *volume, ULONG numBuffers) {
+struct BlockCache *initCache(struct afsbase *afsbase, struct Volume *volume, ULONG numBuffers) {
 struct BlockCache *head;
 struct BlockCache *cache;
 ULONG i;
@@ -34,7 +36,7 @@ ULONG i;
 	return head;
 }
 
-void freeCache(struct BlockCache *cache) {
+void freeCache(struct afsbase *afsbase, struct BlockCache *cache) {
 	if (cache) FreeVec(cache);
 }
 
@@ -51,7 +53,7 @@ void flushCache(struct BlockCache *cache) {
 }
 
 /********************* for trackdisk reading ***********************/
-void sendDeviceCmd(struct Volume *volume, UWORD command) {
+void sendDeviceCmd(struct afsbase *afsbase, struct Volume *volume, UWORD command) {
 
 	volume->iorequest->iotd_Req.io_Command=command;
 	volume->iorequest->iotd_Req.io_Length=0;
@@ -59,7 +61,7 @@ void sendDeviceCmd(struct Volume *volume, UWORD command) {
 }
 /*******************************************************************/
 
-ULONG readDisk(struct Volume *volume, ULONG start, ULONG count, APTR mem, ULONG cmd) {
+ULONG readDisk(struct afsbase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR mem, ULONG cmd) {
 ULONG retval;
 
 	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
@@ -69,13 +71,13 @@ ULONG retval;
 	volume->iorequest->iotd_Req.io_Offset=(start+volume->startblock)*BLOCK_SIZE(volume);	// bootblock is first disk on device and we always get offsets from start
 	DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
 	if ((retval=(ULONG)volume->iorequest->iotd_Req.io_Error))
-		showError(ERR_READWRITE);
+		showError(afsbase, ERR_READWRITE);
 	if (volume->istrackdisk)
-		sendDeviceCmd(volume,ETD_MOTOR);
+		sendDeviceCmd(afsbase, volume,ETD_MOTOR);
 	return retval;
 }
 
-struct BlockCache *getFreeCacheBlock(struct Volume *volume, ULONG blocknum) {
+struct BlockCache *getFreeCacheBlock(struct afsbase *afsbase, struct Volume *volume, ULONG blocknum) {
 struct BlockCache *cache;
 struct BlockCache *smallest=0;
 
@@ -119,12 +121,12 @@ struct BlockCache *smallest=0;
 		smallest->volume=volume;
 	}
 	else
-		showText("No free cache available!?\nAdd more cache!!!");
+		showText(afsbase, "No free cache available!?\nAdd more cache!!!");
 	return smallest;
 }
 
 #ifdef DEBUG
-void umpBlock(struct BlockCache *block) {
+void umpBlock(struct afsbase *afsbase, struct BlockCache *block) {
 UWORD i,j;
 
 	for (i=0;i<=31;i++) {
@@ -136,19 +138,19 @@ UWORD i,j;
 }
 #endif
 
-struct BlockCache *getBlock(struct Volume *volume, ULONG blocknum) {
+struct BlockCache *getBlock(struct afsbase *afsbase, struct Volume *volume, ULONG blocknum) {
 struct BlockCache *blockbuffer;
 
-	if ((blockbuffer=getFreeCacheBlock(volume, blocknum))) {
+	if ((blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum))) {
 		if (blockbuffer->acc_count==1)		//do we have to read that block ?
-			if (readDisk(volume,blocknum,1,blockbuffer->buffer,CMD_READ))
+			if (readDisk(afsbase, volume,blocknum,1,blockbuffer->buffer,CMD_READ))
 				blockbuffer=0;
 	}
 	return blockbuffer;
 }
 
-LONG writeBlock(struct Volume *volume, struct BlockCache *blockbuffer) {
+LONG writeBlock(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
 
-	readDisk(volume, blockbuffer->blocknum,1,blockbuffer->buffer,CMD_WRITE);
+	readDisk(afsbase, volume, blockbuffer->blocknum,1,blockbuffer->buffer,CMD_WRITE);
 	return DOSTRUE;
 }

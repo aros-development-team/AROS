@@ -1,6 +1,8 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include "afshandler.h"
+
 enum {
 	ERR_NONE,
 	ERR_IOPORT,
@@ -16,7 +18,7 @@ enum {
 	ERR_UNKNOWN
 };
 
-void showText(char *, ...);
-void showError(ULONG, ...);
+void showText(struct afsbase *, char *, ...);
+void showError(struct afsbase *, ULONG, ...);
 
 #endif

@@ -7,6 +7,7 @@
 
 #include "filehandles.h"
 #include "blockaccess.h"
+#include "afshandler.h"
 
 struct Volume {
 	struct Device *device;		// the handler this volume uses
@@ -31,12 +32,12 @@ struct Volume {
 	UBYTE flags;
 };
 
-struct Volume *initVolume(struct Device *, STRPTR, ULONG, struct DosEnvec *);
-void uninitVolume(struct Volume *);
-LONG newMedium(struct Volume *);
-LONG addDosVolume(struct Volume *);
-void remDosVolume(struct Volume *);
-LONG initDeviceList(struct Volume *,struct BlockCache *);
+struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *);
+void uninitVolume(struct afsbase *, struct Volume *);
+LONG newMedium(struct afsbase *, struct Volume *);
+LONG addDosVolume(struct afsbase *, struct Volume *, LONG);
+void remDosVolume(struct afsbase *, struct Volume *);
+LONG initDeviceList(struct afsbase *, struct Volume *,struct BlockCache *);
 
 #endif
 

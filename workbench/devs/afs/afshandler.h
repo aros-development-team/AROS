@@ -7,6 +7,9 @@
 struct afsbase
 {
 	struct Device device;
+	struct IntuitionBase *intuitionbase;
+	struct DosLibrary *dosbase;
+	struct ExecBase *sysbase;
 	BPTR seglist;
 	struct MsgPort port;			/* MsgPort of the handler */
 	struct MsgPort rport;		/* replyport of the handler */

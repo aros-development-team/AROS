@@ -5,12 +5,12 @@
 
 #include "volumes.h"
 
-ULONG	countUsedBlocks(struct Volume *);
-ULONG createNewBitmapBlocks(struct Volume *);
-LONG setBitmapFlag(struct Volume *, LONG);
-LONG invalidBitmap(struct Volume *);
-LONG validBitmap(struct Volume *);
-LONG markBlock(struct Volume *, ULONG, ULONG);
-ULONG allocBlock(struct Volume *);
+ULONG	countUsedBlocks(struct afsbase *, struct Volume *);
+ULONG createNewBitmapBlocks(struct afsbase *, struct Volume *);
+LONG setBitmapFlag(struct afsbase *, struct Volume *, LONG);
+LONG invalidBitmap(struct afsbase *, struct Volume *);
+LONG validBitmap(struct afsbase *, struct Volume *);
+LONG markBlock(struct afsbase *, struct Volume *, ULONG, ULONG);
+ULONG allocBlock(struct afsbase *, struct Volume *);
 
 #endif
