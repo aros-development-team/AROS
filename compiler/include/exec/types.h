@@ -82,8 +82,8 @@
 #ifndef __typedef_WORD
 #   define __typedef_WORD
 #   ifdef AROS_16BIT_TYPE
-	typedef   signed AROS_16BIT_TYPE	WORD;	/* signed 64-bit value */
-	typedef unsigned AROS_16BIT_TYPE	UWORD;	/* unsigned 64-bit-value */
+	typedef   signed AROS_16BIT_TYPE	WORD;	/* signed 16-bit value */
+	typedef unsigned AROS_16BIT_TYPE	UWORD;	/* unsigned 16-bit-value */
 #   else
 	typedef   signed short			WORD;	/* signed 16-bit value */
 	typedef unsigned short			UWORD;	/* unsigned 16-bit value */
@@ -137,8 +137,8 @@
 #ifndef __typedef_STACKWORD
 #   define __typedef_STACKWORD
 #   ifdef AROS_16BIT_STACKTYPE
-	typedef   signed AROS_16BIT_STACKTYPE	STACKWORD;   /* signed 64-bit value */
-	typedef unsigned AROS_16BIT_STACKTYPE	STACKUWORD;  /* unsigned 64-bit-value */
+	typedef   signed AROS_16BIT_STACKTYPE	STACKWORD;   /* signed 16-bit value */
+	typedef unsigned AROS_16BIT_STACKTYPE	STACKUWORD;  /* unsigned 16-bit-value */
 #   else
 	typedef   signed int			STACKWORD;   /* signed 16-bit value */
 	typedef unsigned int			STACKUWORD;  /* unsigned 16-bit value */
@@ -247,6 +247,42 @@
 #define IMPORT	 extern
 #define STATIC	 static
 #define REGISTER register
+
+#ifndef CONST
+#if __STDC__
+#define CONST	    const
+#else
+#define CONST
+#endif
+#endif
+
+#ifndef VOLATILE
+#if __STDC__
+#define VOLATILE    volatile
+#else
+#define VOLATILE
+#endif
+#endif
+
+#ifndef RESTRICT
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define RESTRICT    restrict
+#else
+#define RESTRICT    restrict
+#endif
+#endif
+
+/*
+    Provide a workaround for non-ANSI compilers that do not understand
+    prototypes in function pointer members of structure/union types.
+
+    From NDK3.9.
+*/
+#if defined(__STDC__)
+#   define __CLIB_PROTOTYPE(a) a
+#else
+#   define __CLIB_PROTOTYPE(a)
+#endif
 
 /*
     Minimum support library version. AROS doesn't have system libraries
