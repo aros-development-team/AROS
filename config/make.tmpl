@@ -102,6 +102,13 @@ endif
 	    --assign lib="%(lib)" %(from)
 %end
 
+# Generate endskip variable
+%define mkendtag_q lib=dummy from=$^ to=$@
+	@$(ECHO) "Regenerating %(to)..."
+	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
+	    --assign lib="%(lib)" %(from)
+%end
+
 # Common rules for all makefiles
 %define common
 # Check if the makefile itself must be remade
