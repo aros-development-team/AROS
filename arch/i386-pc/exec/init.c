@@ -110,7 +110,7 @@ static const struct Resident *romtagList[] =
     &Exec_resident,                 /* SingleTask,  105  */
     &Utility_resident,              /* ColdStart,   103  */
     &Aros_resident,                 /* ColdStart,   102  */
-    &Mathieeesingbas_resident,      /* ColdStart,   101  */
+//    &Mathieeesingbas_resident,      /* ColdStart,   101  */
     &BOOPSI_resident,               /* ColdStart,   95	 */
     &OOP_resident,                  /* ColdStart,   94	 */
     &HIDD_resident,                 /* ColdStart,   92	 */
@@ -138,8 +138,8 @@ static const struct Resident *romtagList[] =
     &ide_resident,                  /* ColdStart,   4    */	//IDE device
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
-    &Workbench_resident,		    /* ColdStart,  -120  */
-    &Mathffp_resident,			    /* ColdStart,  -120  */
+//    &Workbench_resident,		    /* ColdStart,  -120  */
+//    &Mathffp_resident,			    /* ColdStart,  -120  */
 
     /*
 	NOTE: You must not put anything between these two; the code which
