@@ -42,8 +42,8 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 {
     while (idDescr->ID)
     {
-    	*(idDescr->Storage) = GetAttrBase(idDescr->ID);
-	if (-1UL == *(idDescr->Storage))
+    	*(idDescr->Storage) = ObtainAttrBase(idDescr->ID);
+	if (0UL == *(idDescr->Storage))
 	    return (FALSE);
 	    
 	idDescr ++;
@@ -109,12 +109,14 @@ BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOO
 BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase)
 {
     BOOL inited = FALSE;
-    struct iid_bucket *idb;
+    struct iid_bucket *idb = NULL;
     struct HashTable *iidtable = OOPBase->ob_IIDTable;
     
     
-    EnterFunc(bug("init_interface_id(interface_id=%s, methodbase=%ld)\n",
+    EnterFunc(bug("init_methodbase(interface_id=%s, methodbase=%ld)\n",
     	interface_id, methodbase));
+	
+    ObtainSemaphore(&OOPBase->ob_IIDTableLock);
 	
     /* Has ID allready been mapped to a methodbase ? */
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, (struct IntOOPBase *)OOPBase);
@@ -165,7 +167,43 @@ BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_pt
 	    }
 	}
     }
-    
-    ReturnBool ("init_interface_id", inited);
+    if (idb)
+    {
+    	idb->refcount ++;
+    }
 
+    ReleaseSemaphore(&OOPBase->ob_IIDTableLock);
+    
+    ReturnBool ("init_methodbase", inited);
+
+}
+
+/* Release a interface bucket */
+VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
+{
+    /* Look up ID */
+    struct iid_bucket *idb;
+    struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
+
+    ObtainSemaphore(&OOPBase->ob_IIDTableLock);
+    /* Has ID allready been mapped to a numeric ID ? */
+    idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, OOPBase);
+    if (idb)
+    {
+    	/* Reduce interface bucket's refcount */
+	idb->refcount --;
+	
+	/* Last ref released ? */
+	if (idb->refcount == 0)
+	{
+	    /* Remove and free the bucket */
+	    RemoveBucket(iidtable, (struct Bucket *)idb);
+	    FreeVec(idb->interface_id);
+	    FreeMem(idb, sizeof (struct iid_bucket));
+	}
+    }
+    
+    ReleaseSemaphore(&OOPBase->ob_IIDTableLock);
+    
+    ReturnVoid ("ReleaseAttrBase");
 }

@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: OOP function GetAttrBase
+    Desc: OOP function ObtainAttrBase
     Lang: english
 */
 
@@ -17,34 +17,41 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(AttrBase, GetAttrBase,
+	AROS_LH1(AttrBase, ObtainAttrBase,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, interfaceID, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 15, OOP)
+	struct Library *, OOPBase, 6, OOP)
 
 /*  FUNCTION
 	Maps a globally unique string interface ID into
 	a numeric AttrBase ID that is unique on
-	pr. machine basis. IMPORTANT: You MUST
-	be sure that at least one class implementing 
-	specified interface is initialized at the time calling
-	this function. This function is especially useful
-	for a class to get AttrBases of the interfaces
-	it implements.
+	pr. machine basis. The AttrBase can be combiner
+	with attribute offsets to generate attribute IDs.
+	
+	
 
     INPUTS
     	interfaceID	- globally unique interface identifier.
+			  for which to obtain an attrbase.
 
     RESULT
     	Numeric AttrBase that is unique for this machine.
-	There are NO error conditions.
+	A return value of 0 means that the call failed.
 
     NOTES
+    	Obtained attrbases should be released with ReleasAttrBase().
 
     EXAMPLE
+	#define aTimer_CurrentTime    (__AB_Timer + aoTime_CurrentTime)
+	
+	..
+	__AB_Timer = ObtainAttrBase(IID_Timer);
+	
+	SetAttrs(timer, aTimer_CurrentTime, "10:37:00");
+	
 
     BUGS
 
@@ -64,7 +71,7 @@
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
     ULONG base = -1UL;
     
-    EnterFunc(bug("GetAttrBase(interfaceID=%s)\n", interfaceID));
+    EnterFunc(bug("ObtainAttrBase(interfaceID=%s)\n", interfaceID));
     
     ObtainSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
@@ -79,16 +86,7 @@
 	*/
 	if (idb->attrbase == -1UL)
 	{
-	    /* The AttrBase has not yet been inited with ObtainAttrBase.
-	       I COULD init the attrbase now with the line below,
-	       but GetAttrBase() is only meant to work when
-	       attrbase has been previously initialized, so I won't
-	       support this.
-	       
 	    idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
-	    */
-	    
-	    base = 0;
 	}
 	
     	base = idb->attrbase;
@@ -98,18 +96,52 @@
     }
     else
     {
-    	base = 0;
+    
     	D(bug("No existing bucket\n"));
-
+	
+	
+    	/* If not, then map it and create a new bucket in the
+	** hashtable to store it
+	*/
+	idb = AllocMem(sizeof (struct iid_bucket), MEMF_ANY|MEMF_CLEAR);
+	if (idb)
+	{
+	    idb->interface_id = AllocVec(strlen(interfaceID) + 1, MEMF_ANY);
+	    if (idb->interface_id)
+	    {
+	    	D(bug("Allocated bucket\n"));
+	    	strcpy(idb->interface_id, interfaceID);
+		
+		/* Get next free ID, and increase the free ID count to mark it as used */
+		base = idb->attrbase = ++ GetOBase(OOPBase)->ob_CurrentAttrBase;
+		
+		base <<= NUM_METHOD_BITS;
+		
+		/* Methodbase not inited yet */
+		idb->methodbase = -1UL;
+		
+		/* Insert bucket into hash table */
+		InsertBucket(iidtable, (struct Bucket *)idb, GetOBase(OOPBase));
+	    }
+	    else
+	    {
+	    	FreeMem(idb, sizeof (struct iid_bucket));
+		
+/* Throw exception here ? */		
+		base = 0UL;
+	    }
+	}
     }
     
-    if (base == 0)
+    if (base)
     {
-	/* Throw exception here */		
+    	/* Increase refcount of bucket */
+	idb->refcount ++;
     }
+
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
-    ReturnInt ("GetAttrBase", ULONG, base);
+    ReturnInt ("ObtainAttrBase", AttrBase, base);
     
     AROS_LIBFUNC_EXIT
 

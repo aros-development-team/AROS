@@ -41,7 +41,7 @@ static Object *basemeta_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct metadata *data;
 
     struct InterfaceDescr *ifdescr = NULL;
-    STRPTR superid = NULL, clid = NULL;
+    STRPTR superid = NULL, clid = "-- private class -- ";
     struct metadata *superptr = NULL;
     struct TagItem *tag, *tstate;
     ULONG instsize = (ULONG)-1L;
@@ -189,9 +189,19 @@ static Object *basemeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 static VOID basemeta_dispose(Class *cl, Object *o, Msg msg)
 {
     struct metadata *data = INST_DATA(cl, o);
+    IPTR iterval = 0UL;
+    STRPTR interface_id = NULL;
+    ULONG num_methods = 0UL;
     
     if (data->public.ClassNode.ln_Name)
     	FreeVec(data->public.ClassNode.ln_Name);
+	
+    /* Release interfaces from global interfce table */
+    while (meta_iterateifs(o, &iterval, &interface_id, &num_methods))
+    {
+    	release_idbucket(interface_id, GetOBase(OOPBase));
+    }
+    
 
     if (data->disptabs_inited)
     	meta_freedisptabs(o);

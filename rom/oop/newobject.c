@@ -95,7 +95,7 @@
     p.mID = GetMethodID(IID_Root, moRoot_New);
     p.attrList = tagList;
     
-    D(bug("mid=%ld\n", p.MID));
+    D(bug("mid=%ld\n", p.mID));
 
     /* Call the New() method of the specified class */
     

@@ -189,7 +189,7 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 	    	/* Copy interface into dispatch tables */
     		copy_size = UB(&mtab[num_methods]) - UB(&mtab[0]);
 		
-		D(bug("Copyinf mtab from parent, size: %ld\n", copy_size));
+		D(bug("Copying mtab (%p to %p) , size: %ld\n", ifm, mtab, copy_size));
 		CopyMem(ifm, mtab, copy_size);
 		
 		D(bug("mtab copied, mtab=%p\n", mtab));
@@ -197,17 +197,46 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 		
 		/* allready copied by superclass, no need to recopy it */
 		ifinfo->interface_id	= interface_id;
-		D(bug("interfaceID set to %s\n", interface_id));
+		D(bug("interfaceID for ifinfo %p set to %s\n", ifinfo, ifinfo->interface_id));
 		ifinfo->num_methods	= num_methods;
 		D(bug("numemthods set to %ld\n", num_methods));
 		ifinfo->mtab_offset	= mtab_offset;
 		D(bug("mtab_offset set to %ld\n", mtab_offset));
 		
 		mtab_offset += num_methods;
-		mtab = &(mtab[mtab_offset]);
+		mtab += num_methods;
+	    {
+	    	ULONG idx;
+		D(bug("\n"));
+		for (idx = 0; idx < total_num_ifs; idx ++)
+		{
+		    D(bug("ifinfo: (%p, %s), idx: %ld\n"
+		     	,&(data->ifinfo[idx])
+			,data->ifinfo[idx].interface_id
+			,idx ));
+		
+		}
+		D(bug("\n"));
+	    }
 
 		ifinfo ++;
 	    }
+	    
+	    D(bug("Finished copying super IFs\n\n"));
+	    
+	    {
+	    	ULONG idx;
+		for (idx = 0; idx < total_num_ifs; idx ++)
+		{
+		    D(bug(" ifinfo: (%p, %s), idx: %ld\n"
+		     	,&(data->ifinfo[idx])
+			,data->ifinfo[idx].interface_id
+			,idx ));
+		
+		}
+	    }
+	    	
+	    
 	    
 	    /* Now find the interface (max one) that is new for this class,
 	       and at the same time override all methods for all interfaces
@@ -247,22 +276,30 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 		    
 		    ifinfo ++;
 		    mtab_offset += ifdescr->NumMethods;
-		    mtab = &mtab[mtabf_offset];
+		    mtab = &mtab[mtab_offset];
 		    		    
 	       	    */
 		}
 		
 		/* Find the index into the ifinfo table for the current entry */
+		D(bug("Finding current idx\n"));
 		for (current_idx = 0; ; current_idx ++)
 		{
+		    D(bug("ifdecr: %s, ifinfo: (%p, %s), idx: %ld\n", ifdescr->InterfaceID, &(data->ifinfo[current_idx]), data->ifinfo[current_idx].interface_id, current_idx ));
+		    
 		    if (!strcmp(ifdescr->InterfaceID, data->ifinfo[current_idx].interface_id))
 		    	break;
 		}
+		
+		D(bug("Overriding methods\n"));
+
 
 	    	for (mdescr = ifdescr->MethodTable; mdescr->MethodFunc != NULL; mdescr ++)
 	    	{
 		    ULONG mtab_idx;
+		    
 		    mtab_idx = mdescr->MethodIdx + data->ifinfo[current_idx].mtab_offset;
+		    D(bug("Initing of if %s methods at %ld\n", ifdescr->InterfaceID, mtab_idx));
 		    
 		    data->methodtable[mtab_idx].MethodFunc = mdescr->MethodFunc;
 		    data->methodtable[mtab_idx].mClass = (Class *)o;

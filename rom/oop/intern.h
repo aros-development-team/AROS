@@ -124,6 +124,7 @@ struct IFMethod *findinterface(Class *cl, STRPTR interface_id);
 struct IFMethod *findmethod(Class *cl, STRPTR interface_id, ULONG method_offset);
 BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
+VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
 
 /*****************
 **  Structures  **
@@ -139,6 +140,7 @@ struct iid_bucket
     STRPTR interface_id;
     ULONG  methodbase;
     ULONG  attrbase;
+    ULONG refcount;
 };
 
 
@@ -304,6 +306,7 @@ struct IntOOPBase
     ** ID mappings. Used by GetMethodID() and GetAttrBase()
     */
     struct HashTable	       * ob_IIDTable;
+    struct SignalSemaphore       ob_IIDTableLock;
     
     /* The currently lowest available numeric interfaceID that
     ** we can map a new interface string ID onto.

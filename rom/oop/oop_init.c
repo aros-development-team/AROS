@@ -88,6 +88,8 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 
     NEWLIST(&GetOBase(LIBBASE)->ob_ServerList);
     InitSemaphore(&GetOBase(LIBBASE)->ob_ServerListLock);
+
+    InitSemaphore(&GetOBase(LIBBASE)->ob_IIDTableLock);
     
     SDInit();
 	

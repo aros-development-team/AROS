@@ -57,7 +57,7 @@ OSMODULE  := oop.library
 FILES	  := support hash rootclass metaclass   \
 	 privatestubs methodclass interfaceclass serverclass proxyclass hiddmetaclass
 	
-FUNCTIONS := newobject getattrbase  getmethodid \
+FUNCTIONS := newobject obtainattrbase releaseattrbase getattrbase getmethodid \
 	disposeobject addclass removeclass addserver removeserver findserver
 
 # BEGIN_DESC{localmakevar}

@@ -232,6 +232,35 @@ VOID InsertBucket(struct HashTable *ht, struct Bucket *b, struct IntOOPBase *OOP
     
 }
 
+VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b)
+{
+    ULONG idx;
+    struct Bucket *last_b = NULL,
+    		  *cur_b;
+    idx = ht->CalcHash(ht, b->ID);
+    
+    /* Search for bucket to remove */
+    for (cur_b = ht->Table[idx]; cur_b; cur_b = cur_b->Next)
+    {
+    	if (cur_b == b)
+	{
+	    /* Bucket found */
+	    if (last_b)
+	    {
+	    	/* Remove bucket from chain */
+	    	last_b->Next = cur_b->Next;
+		
+		/* Not really neccessar, but ... */
+		b->Next = NULL;
+	    }
+	}
+	
+	last_b = cur_b;
+	
+    } /* for (each bucket at idx) */
+     
+}
+
 
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id)
 {

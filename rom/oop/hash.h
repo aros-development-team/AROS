@@ -96,6 +96,9 @@ BOOL CopyHash(struct HashTable *dest_ht
 /* Inserts a bucket into the hashtable, according to it's ID */	
 VOID InsertBucket(struct HashTable *ht, struct Bucket *b, struct IntOOPBase *OOPBase);
 
+/* Removes a bucket from a hashtable */
+VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b);
+
 /* The implemntations of hashtable->CalcHash() */
 ULONG CalcHashStr(struct HashTable *ht, IPTR id);
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id);
