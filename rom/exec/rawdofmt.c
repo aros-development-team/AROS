@@ -86,7 +86,11 @@
     /* Cast for easier access */
     ULONG stream=(IPTR)DataStream;
 #ifdef __mc68000__
+# ifdef __DONT_UNDERSTAND__ASM__
+    register APTR pdata = PutChData;
+# else
     register APTR pdata __asm(A3) = PutChData;
+# endif
 #else
 #   define pdata PutChData
 #endif
