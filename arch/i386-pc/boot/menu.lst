@@ -20,7 +20,7 @@ setvbe 800 600 16
 
 title AROS VBE 1024x768 16
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
-setvbe 1024 1024 16
+setvbe 1024 768 16
 
 title AROS VBE 640x480 32
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
