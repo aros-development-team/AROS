@@ -144,6 +144,8 @@ struct ZunePrefsNew
     CONST_STRPTR string_text_active;
     CONST_STRPTR string_bg_inactive;
     CONST_STRPTR string_text_inactive;
+    CONST_STRPTR string_bg_marked;
+    CONST_STRPTR string_text_marked;
     CONST_STRPTR string_cursor;
 
     /* Lists */

@@ -207,7 +207,7 @@ const static struct def_ulval DefULValues[] =
     { MUICFG_Drag_Autostart,          TRUE },
     { MUICFG_Drag_Autostart_Length,   3 },
     { MUICFG_Drag_LeftButton,         TRUE },
-    { MUICFG_Drag_MiddleButton,       TRUE },
+    { MUICFG_Drag_MiddleButton,       FALSE },
     { 0, 0 },
 };
 
@@ -236,6 +236,8 @@ const static struct def_strval DefStrValues[] =
     { MUICFG_String_ActiveBackground,   "2:m1" },
     { MUICFG_String_ActiveText,         "m5" },
     { MUICFG_String_Cursor,             "m7" },
+    { MUICFG_String_MarkedBackground,   "m6" },
+    { MUICFG_String_MarkedText,         "m0" },
     { MUICFG_ActiveObject_Color,        "m0" },
     { MUICFG_Keyboard_Press,            "-upstroke return" },
     { MUICFG_Keyboard_Toggle,           "-repeat space" },
@@ -392,6 +394,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.string_bg_active = GetConfigString(obj, MUICFG_String_ActiveBackground);
     data->prefs.string_text_active = GetConfigString(obj, MUICFG_String_ActiveText);
     data->prefs.string_cursor = GetConfigString(obj, MUICFG_String_Cursor);
+    data->prefs.string_bg_marked = GetConfigString(obj, MUICFG_String_MarkedBackground);
+    data->prefs.string_text_marked = GetConfigString(obj, MUICFG_String_MarkedText);
 
     /*---------- Navigation ----------*/
 
