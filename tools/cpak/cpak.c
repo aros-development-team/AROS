@@ -9,52 +9,9 @@ struct inclist {
     char *text;
 };
 
-int fd,fdo;
-char rbuf[1025];
-int rbufc;
-int pos=0;
+FILE * fd, * fdo;
 
-void _backseek(int fh,int cnt)
-{
-    if(pos >= cnt)
-	pos-=cnt;
-    else
-    {
-	lseek(fh,(pos-cnt),SEEK_CUR);
-	rbufc=read(fh,rbuf,1024);
-	pos=0;
-    }
-}
-
-int _read(int fh,char *buff,int cnt)
-{
-int curr=0;
-
-    if( rbufc==0 || pos>(rbufc-1) )
-    {
-	pos=0;
-	rbufc=read(fh,rbuf,1024);
-    }
-    if(rbufc!=0)
-    {
-	while( ( (pos+cnt-curr) > rbufc ) && (rbufc != 0) )
-	{
-	    strncpy(&buff[curr],&rbuf[pos],rbufc-pos);
-	    curr+=rbufc-pos;
-	    rbufc=read(fh,rbuf,1024);
-	    pos=0;
-	}
-	if(rbufc != 0)
-	{
-	    strncpy(&buff[curr],&rbuf[pos],(cnt-curr));
-	    pos+=(cnt-curr);
-	    curr=cnt;
-	}
-	return(curr);
-    }
-    else
-	return(0);
-}
+#define _read(stream,buff,count)    fread(buff,1,count,stream)
 
 int main(int argc,char **argv)
 {
@@ -69,10 +26,10 @@ char bracket;
 char incname[50];
 char filename[50];
 
-    fdo=open("functions.c",O_WRONLY|O_CREAT,0644);
-    if(fdo==-1)
-	printf("Could not open functions.c out-file!\n"),exit(-1);
-    write(fdo,"#include \"functions.h\"\n",23);
+    fdo=fopen("functions.c","w");
+    if(!fdo)
+	fprintf(stderr, "Could not open functions.c out-file!\n"),exit(-1);
+    fprintf(fdo,"#include \"functions.h\"\n");
 
     printf("Collecting functions...");
     for(filecount=1;filecount<argc;filecount++)
@@ -80,11 +37,12 @@ char filename[50];
 /*	printf("Opening %s\n",argv[filecount]);*/
 	strcpy(filename,argv[filecount]);
 	strcat(filename,".c");
-	fd=open(filename,O_RDONLY);
-	if(fd==-1)
-	    printf("\n%s - No such file !\n",argv[filecount]),exit(-1);
+	fd=fopen(filename,"r");
+	if(!fd)
+	    fprintf(stderr,"\n%s - No such file !\n",argv[filecount]),exit(-1);
 
-	rbufc=0;
+	fprintf(fdo,"#line 1 \"%s\"\n", filename);
+	/* rbufc=0; */
 	count=_read(fd,fbuf,1);
 	while(count==1)
 	{
@@ -121,42 +79,40 @@ char filename[50];
 		    }
 		    else
 		    {
-			write(fdo,"#include ",9);
-			write(fdo,&incname[0],1);
+			fprintf (fdo,"#include %s", &incname[0]);
 		    }
 		}
 		else
 		{
-		    _backseek(fd,count);
-		    write(fdo,fbuf,1);
+		    fseek(fd,-count,SEEK_CUR);
+		    putc (fbuf[0],fdo);
 		}
 		if(count>0)
 		    count=1;
 	    }
 	    else
-		write(fdo,fbuf,1);
+		putc (fbuf[0],fdo);
 	    count=_read(fd,fbuf,1);
 	}
-	close(fd);
+	fclose(fd);
     }
-    close(fdo);
+    fclose(fdo);
 
-    fdo=open("functions.h",O_WRONLY|O_CREAT,0644);
-    if(fdo==-1)
-	printf("Could not open functions.h out-file!\n"),
+    fdo=fopen("functions.h","w");
+    if(!fdo)
+	fprintf(stderr, "Could not open functions.h out-file!\n"),
 	exit(-1);
-    write(fdo,"#define AROS_ALMOST_COMPATIBLE\n",31);
+    fprintf(fdo,"#define AROS_ALMOST_COMPATIBLE\n");
     search=first.next;
     while(search!=NULL)
     {
 	current=search;
-	write(fdo,"\n#include ",10);
-	write(fdo,current->text,strlen(current->text));
+	fprintf(fdo,"\n#include %s", current->text);
 	search=current->next;
 	free(current->text);
 	free(current);
     }
-    close(fdo);
+    fclose(fdo);
 
     printf("Done!\n");
 
