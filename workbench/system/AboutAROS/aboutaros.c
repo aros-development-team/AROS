@@ -136,7 +136,11 @@ BOOL NamesToList
                 {
                     sectionFirst 
                         ? sectionFirst = FALSE
-                        : DoMethod(list, MUIM_List_InsertSingle, (IPTR) "");
+                        : DoMethod
+                          (
+                              list, MUIM_List_InsertSingle, (IPTR) "", 
+                              MUIV_List_Insert_Bottom
+                          );
                     
                     length = strlen(MUIX_B) + strlen(sectionName) + 1;
                     buffer = AllocPooled(data->aad_Pool, length);
