@@ -1,44 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.9  1996/10/21 17:12:35  aros
-    Use the ANSI C function
 
-    Revision 1.8  1996/09/21 15:46:46  digulla
-    "%d", 0 gave " " instead of "0"
-
-    Revision 1.7  1996/09/18 14:41:54  digulla
-    Fixed the bug from %ld for %d also
-    Fill with "0" or " "
-
-    Revision 1.6  1996/09/17 18:07:18  digulla
-    DOSBase and SysBase are now declared in the respective header files.
-    The type of DOSBase is "struct DosLibrary *". Fixed everywhere
-
-    Revision 1.5  1996/09/17 16:08:40  digulla
-    Bug: val always contained 1 or 0
-
-    Revision 1.4  1996/08/30 16:56:46  digulla
-    At last, it works :) *phew*
-
-    Revision 1.3  1996/08/23 17:00:49  digulla
-    Another attempt to make kprintf() work, but to no avail :(
-
-    Revision 1.2  1996/08/16 14:02:56  digulla
-    Fixed some bugs.
-    The v*printf() routines of linux have bugs that make them write into arbitrary
-	memory.
-
-    Revision 1.1  1996/08/15 13:24:20  digulla
-    New function: kprintf() allows to print a text which is always shown to the
-    user no matter what.
-
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
-
-    Desc:
-    Lang:
+    Desc: Formats a message and makes sure the user will see it.
+    Lang: english
 */
 #include <aros/arosbase.h>
 #include <stdarg.h>
@@ -55,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+#include <clib/aros_protos.h>
 
 	int kprintf (
 
@@ -91,7 +56,6 @@
 
 ******************************************************************************/
 {
-#if 1
     va_list	 args;
     int 	 ret;
     static const char * hex = "0123456789ABCDEF";
@@ -306,8 +270,5 @@ print_int:
     va_end (args);
 
     return ret;
-#else
-    return -1;
-#endif
 } /* kprintf */
 
