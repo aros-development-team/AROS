@@ -22,6 +22,7 @@
 #include <graphics/view.h>
 #include <graphics/layers.h>
 #include <graphics/clip.h>
+#include <graphics/gfxmacros.h>
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
@@ -353,7 +354,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
     	struct TagItem gc_tags[] = {
     		{ aHidd_GC_Foreground,	apen & PEN_MASK},
     		{ aHidd_GC_Background,	bpen & PEN_MASK},
-		{ aHidd_GC_ColExpMode, 0UL},
+		{ aHidd_GC_ColorExpansionMode, 0UL},
 		{ TAG_DONE,	0}
     	};
 
@@ -420,7 +421,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 {
     struct TagItem drmd_tags[] =
     {
-	{ aHidd_GC_ColExpMode, 0UL },
+	{ aHidd_GC_ColorExpansionMode, 0UL },
 	{ TAG_DONE, 0UL }
     };
     
@@ -750,17 +751,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		, tf->tf_YSize
 	    );
 	    
-/*	    BltBitMapRastPort(&bm
-	    	, charloc >> 16 
-		, 0
-		, rp
-		, render_x, render_y
-		, charloc & 0xFFFF
-		, tf->tf_YSize
-		, 0xC0 
-		
-	    ); 
-*/
 	}
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
@@ -1841,7 +1831,7 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
 	( ((y) * (bytes_per_row)) + ((x) >> 3) )
 
-#define XCOORD_TO_MASK(x) (1L << (7 - (x & 0x07)))
+#define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
 
 static VOID setbitmappixel(struct BitMap *bm
 	, LONG x, LONG y
@@ -1856,7 +1846,7 @@ static VOID setbitmappixel(struct BitMap *bm
 
     idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
 
-    mask = 1L << (7 - (x & 0x07));
+    mask = XCOORD_TO_MASK( x );
     clr_mask = ~mask;
     
     penmask = 1;
@@ -1892,7 +1882,7 @@ static ULONG getbitmappixel(struct BitMap *bm
     ULONG pen = 0L;
     
     idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
-    mask = 1L << (7 - (x & 0x07));
+    mask = XCOORD_TO_MASK( x );
     
     for (i = depth - 1; depth ; i -- , depth -- )
     {
@@ -1920,7 +1910,11 @@ struct blit_info
 };
 
 #define BI(x) ((struct blit_info *)x)
-static VOID bitmap_to_buf(APTR src_info, LONG x_src, LONG y_src, LONG width, LONG height, ULONG *bufptr)
+static VOID bitmap_to_buf(APTR src_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, LONG width, LONG height
+	, ULONG *bufptr)
 {
 
     LONG y;
@@ -1947,7 +1941,11 @@ static VOID bitmap_to_buf(APTR src_info, LONG x_src, LONG y_src, LONG width, LON
 }
 
 
-static VOID buf_to_bitmap(APTR dest_info, LONG x_dest, LONG y_dest, ULONG width, ULONG height, ULONG *bufptr)
+static VOID buf_to_bitmap(APTR dest_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG width, ULONG height
+	, ULONG *bufptr)
 {
 
     /*  Write pixels to the bitmap */
@@ -2090,13 +2088,15 @@ static VOID amiga2hidd_fast(APTR src_info
 	fillbuf_hook(src_info
 		, current_x + x_src
 		, current_y + y_src
+		, current_x + x_dest
+		, current_y + y_dest
 		, tocopy_w, tocopy_h
 		, temp_buf
 	);
 	
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
-	HIDD_BM_PutBox(hidd_bm
+	HIDD_BM_PutImage(hidd_bm
 		, temp_buf
 		, x_dest + current_x
 		, y_dest + current_y
@@ -2170,7 +2170,7 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 	
 	
 	/* Get some more pixels from the HIDD */
-	HIDD_BM_GetBox(hidd_bm
+	HIDD_BM_GetImage(hidd_bm
 		, temp_buf
 		, x_src + current_x
 		, y_src + current_y
@@ -2179,7 +2179,9 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 
 	/*  Write pixels to the destination */
 	putbuf_hook(dest_info
-		, current_x + x_dest
+		, current_x + x_src
+		, current_x + x_src
+		, current_y + y_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
 		, temp_buf
@@ -2192,6 +2194,7 @@ static VOID hidd2amiga_fast(Object *hidd_bm
     return;
     
 }
+
 
 static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize)
 {
@@ -2581,7 +2584,11 @@ void driver_SetRGB4 (struct ViewPort * vp, ULONG color,
 
 
 /* Hook for moving data from pixelarray to chunky format buffer */
-static VOID pixarray_to_buf(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+static VOID pixarray_to_buf(APTR src_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG width, ULONG height
+	, ULONG *bufptr)
 {
     UBYTE * pixarray = (UBYTE *)src_info;
     ULONG numpix = width * height;
@@ -2597,14 +2604,18 @@ static VOID pixarray_to_buf(APTR src_info, LONG x_src, LONG y_src, ULONG width, 
     return;
 }
 
-static VOID buf_to_pixarray(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+static VOID buf_to_pixarray(APTR src_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG width, ULONG height
+	, ULONG *bufptr)
 {
     UBYTE * pixarray = (UBYTE *)src_info;
     ULONG numpix = width * height;
     ULONG i;
     
     /* Get the pointer to the element we're currently working on */
-    pixarray = &(pixarray[(y_src * width) + x_src]);
+    pixarray = &(pixarray[(y_dest * width) + x_dest]);
     
     for (i = 0; i < numpix; i ++)
     {
@@ -2993,7 +3004,11 @@ struct template_info
     
 };
 
-VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsize, ULONG ysize, ULONG *buf)
+VOID template_to_buf(struct template_info *ti
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG *buf)
 {
     UBYTE *srcptr;
     LONG x, y;
@@ -3029,8 +3044,8 @@ VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsi
 		*buf = 1UL;
 	    else
 		*buf = 0UL;
-/* D(bug("%d", *buf));
-*/	    buf ++;
+ D(bug("%d", *buf));
+	    buf ++;
 
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
@@ -3039,8 +3054,8 @@ VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsi
 	    }
 		
 	}
-/*	D(bug("\n"));
-*/	srcptr += ti->modulo;
+	D(bug("\n"));
+	srcptr += ti->modulo;
     }
     
     D(bug("srcptr is %p\n", srcptr));
@@ -3082,6 +3097,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     
     /* Prepare for setting bitmap GC */
     setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
+    SetAttrs( BM_OBJ(bm), setgc_tags );
 
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
@@ -3113,10 +3129,8 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
     {
         /* No layer, probably a screen */
 	
-	SetAttrs( BM_OBJ(bm), setgc_tags );
-	
 	/* Blit with color expansion */
-	HIDD_BM_BlitColExp( BM_OBJ(bm)
+	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
 		, template_bm
 		, 0, 0
 		, xDest, yDest
@@ -3160,7 +3174,7 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 			, intersect.MaxY
 		    ));
 		    
-		    HIDD_BM_BlitColExp( BM_OBJ(bm)
+		    HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
 			, template_bm
 			, clipped_xsrc, clipped_ysrc
 			, intersect.MinX
@@ -3206,6 +3220,438 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
     HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, template_bm);
 	
     ReturnVoid("driver_BltTemplate");
+}
+
+
+struct pattern_info
+{
+    PLANEPTR mask;
+    struct RastPort *rp;
+    LONG mask_xmin;
+    LONG mask_ymin;
+    LONG mask_bpr; /* Butes per row */
+    UBYTE dest_depth;
+    struct GfxBase * gfxbase;
+    Object *destbm;
+    
+};
+
+#define GfxBase (pi->gfxbase)
+static VOID pattern_to_buf(struct pattern_info *pi
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG *buf)
+{
+
+    /* x_src, y_src is the coordinates int the layer. */
+    LONG y;
+    struct RastPort *rp = pi->rp;
+    
+    ULONG drmd = GetDrMd(rp);
+    ULONG apen = GetAPen(rp);
+    ULONG bpen = GetBPen(rp);
+    UBYTE *apt = (UBYTE *)rp->AreaPtrn;
+    
+    ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
+
+    EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %p)\n"
+    			, pi, x_src, y_src, xsize, ysize, buf ));
+			
+
+    if ((drmd & JAM2) == 0)
+    {
+    	/* We must get the data from the destination bitmap */
+	HIDD_BM_GetImage(pi->destbm, buf, x_dest, y_dest, xsize, ysize);
+    }
+			
+    
+    for (y = 0; y < ysize; y ++)
+    {
+        LONG x;
+	
+	for (x = 0; x < xsize; x ++)
+	{
+	    ULONG set_pixel;
+	    ULONG pixval;
+	    
+	    /* Mask supplied ? */
+	    if (pi->mask)
+	    {
+		ULONG idx, mask;
+		idx = COORD_TO_BYTEIDX(x + pi->mask_xmin, y + pi->mask_ymin, pi->mask_bpr);
+		mask = XCOORD_TO_MASK(x + pi->mask_xmin);
+		 
+		 
+		set_pixel = pi->mask[idx] & mask;
+		 
+	    }
+	    else
+	        set_pixel = 1UL;
+		
+		
+	    if (set_pixel)
+	    {
+	   
+	
+		if (apt)
+		{
+		    ULONG idx, mask;
+		    
+		    /* This rp has area pattern. Get pattern offset.
+		       Patterns are allways 16 bits wide.
+		    */
+
+		    
+		    idx = COORD_TO_BYTEIDX((x + x_src) & 0x0F, (y + y_src) & (pattern_height - 1), 2);
+		    mask = XCOORD_TO_MASK(x + x_src);
+		    
+/*		    D(bug("idx: %d, mask: %d\n", idx, mask));
+*/		    
+		    /* Mono- or multicolor ? */
+		    if (rp->AreaPtSz > 0)
+		    {
+		    	/* mono */
+			set_pixel = apt[idx] & mask;
+			if (drmd & INVERSVID)
+			    set_pixel = ((set_pixel != 0) ? 0UL : 1UL );
+			
+			if (set_pixel)
+			{
+			    /* Use FGPen to render */
+			    pixval = apen;
+			}
+			else
+			{
+			    if (drmd & JAM2)
+			    {
+			    	pixval = bpen;
+				set_pixel = 1UL;
+			    }
+			    else
+			    {   
+			        /* Do not set pixel */
+			    	set_pixel = 0UL;
+			    }
+			
+			}
+
+			
+		    }
+		    else
+		    {
+		        UBYTE i, depth;
+			ULONG plane_size, pen_mask;
+			UBYTE *plane;
+			
+			plane_size = (/* bytesperrow = */ 2 ) * pattern_height;
+			depth = pi->dest_depth;
+			plane = apt;
+			
+		    	/* multicolored pattern, get pixel from all planes */
+			for (i = 0; i < depth; i ++)
+			{
+
+			    pen_mask <<= 1;
+	
+			    if ((plane[idx] & mask) != 0)
+				pixval |= pen_mask;
+			}
+			
+			set_pixel = TRUE;
+		   }
+		    
+		   if (set_pixel)
+		   {
+		   	D(bug(" s"));
+		    	*buf = pixval;
+		   }
+		   else
+/*		   	*buf ++ =  Keep old value */
+
+			
+		   D(bug("(%d, %d): %d", x, y, *buf));
+		   buf ++;
+		}
+	    
+	    } /* if (pixel should be set */
+	    
+	    
+	} /* for (each column) */
+	
+    } /* for (each row) */
+
+    
+    ReturnVoid("pattern_to_buf");
+}
+
+
+#undef GfxBase
+
+static VOID bltpattern_amiga(struct pattern_info *pi
+		, struct BitMap *dest_bm
+		, LONG x_src, LONG y_src	/* offset into layer */
+		, LONG x_dest, LONG y_dest	/* offset into bitmap */
+		, ULONG xsize, LONG ysize
+		, struct GfxBase *GfxBase
+)
+{
+
+    /* x_src, y_src is the coordinates int the layer. */
+    LONG y;
+    struct RastPort *rp = pi->rp;
+    
+    ULONG drmd = GetDrMd(rp);
+    ULONG apen = GetAPen(rp);
+    ULONG bpen = GetBPen(rp);
+    UBYTE *apt = (UBYTE *)rp->AreaPtrn;
+    
+    ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
+    UBYTE dest_depth = GetBitMapAttr(dest_bm, BMA_DEPTH);
+    
+    for (y = 0; y < ysize; y ++)
+    {
+        LONG x;
+	
+	for (x = 0; x < xsize; x ++)
+	{
+	    ULONG set_pixel;
+	    ULONG pixval;
+	    
+	    
+	    /* Mask supplied ? */
+	    if (pi->mask)
+	    {
+		ULONG idx, mask;
+		idx = COORD_TO_BYTEIDX(x + pi->mask_xmin, y + pi->mask_ymin, pi->mask_bpr);
+		mask = XCOORD_TO_MASK(x + pi->mask_xmin);
+		 
+		set_pixel = pi->mask[idx] & mask;
+		 
+	    }
+	    else
+	        set_pixel = 1UL;
+		
+		
+	    if (set_pixel)
+	    {
+	   
+	
+		if (apt)
+		{
+		    ULONG idx, mask;
+		    
+		    /* This rp has area pattern. Get pattern offset.
+		       Patterns are allways 16 bits wide.
+		    */
+
+		    idx = COORD_TO_BYTEIDX((x + x_src) & 0x0F, (y + y_src) & (pattern_height - 1), 2);
+		    mask = XCOORD_TO_MASK(x + x_src);
+		    
+/*		    D(bug("idx: %d, mask: %d\n", idx, mask));
+*/		    
+		    /* Mono- or multicolor ? */
+		    if (rp->AreaPtSz > 0)
+		    {
+		    	/* mono */
+			set_pixel = apt[idx] & mask;
+			if (drmd & INVERSVID)
+			    set_pixel = ((set_pixel != 0) ? 0UL : 1UL );
+			
+			if (set_pixel)
+			{
+			    /* Use FGPen to render */
+			    pixval = apen;
+			}
+			else
+			{
+			    if (drmd & JAM2)
+			    {
+			    	pixval = bpen;
+				set_pixel = 1UL;
+			    }
+			    else
+			    {   
+			        /* Do not set pixel */
+			    	set_pixel = 0UL;
+			    }
+			
+			}
+
+			
+		    }
+		    else
+		    {
+		        UBYTE i, depth;
+			ULONG plane_size, pen_mask;
+			UBYTE *plane;
+			
+			plane_size = (/* bytesperrow = */ 2 ) * pattern_height;
+			depth = pi->dest_depth;
+			plane = apt;
+			
+		    	/* multicolored pattern, get pixel from all planes */
+			for (i = 0; i < depth; i ++)
+			{
+
+			    pen_mask <<= 1;
+	
+			    if ((plane[idx] & mask) != 0)
+				pixval |= pen_mask;
+			}
+			
+			set_pixel = TRUE;
+		   }
+		    
+		   if (set_pixel)
+		   {
+		    	setbitmappixel(dest_bm, x + x_dest, y + y_dest, pixval, dest_depth, 0xFF);
+		   }
+		   
+		}
+	    
+	    } /* if (pixel should be set */
+	    
+	    
+	} /* for (each column) */
+	
+    } /* for (each row) */
+    
+    return;
+
+}    
+
+VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
+		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase)
+{
+
+    struct gfx_driverdata *dd;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    ULONG width, height;
+    
+    struct pattern_info pi;
+    
+    struct TagItem setgc_tags[] =
+    {
+    	{aHidd_BitMap_GC, 0UL},
+	{TAG_DONE, 0UL}
+    };
+    
+    EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
+    	, xMin, yMin, xMax, yMax, byteCnt));
+	
+	
+    if (!CorrectDriverData(rp, GfxBase))
+    	ReturnVoid("driver_BltPattern");
+
+    pi.mask	= mask;
+    pi.rp	= rp;
+    pi.gfxbase	= GfxBase;
+    pi.mask_bpr = byteCnt;
+    pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+    pi.destbm	= BM_OBJ(bm);
+	
+    dd = GetDriverData(rp);
+    
+    width  = xMax - xMin + 1;
+    height = yMax - yMin + 1;
+    
+    /* Prepare for setting bitmap GC */
+    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
+    SetAttrs( BM_OBJ(bm), setgc_tags );
+    
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	
+	pi.mask_xmin = 0;
+	pi.mask_ymin = 0;
+	
+	amiga2hidd_fast( (APTR) &pi
+		, 0, 0
+		, BM_OBJ(bm)
+		, xMin, yMin
+		, width
+		, height
+		, pattern_to_buf
+	);
+	
+	
+    }
+    else
+    {
+    	/* Window rastport, we need to clip the operation */
+	
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toblit, intersect;
+	
+	toblit.MinX = xMin + xrel;
+	toblit.MinY = yMin + yrel;
+	toblit.MaxX = xMax + xrel;
+	toblit.MaxY = yMax + yrel;
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toblit, &intersect))
+	    {
+		    
+		
+	        if (NULL == CR->lobs)
+		{
+		
+		    
+		    pi.mask_xmin = intersect.MinX - toblit.MinX;
+		    pi.mask_ymin = intersect.MinY - toblit.MinY;
+		    
+D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
+			, xMin, yMin 
+			, intersect.MinX, intersect.MaxX
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+		    ));
+		    amiga2hidd_fast( (APTR) &pi
+			, xMin, yMin 
+			, BM_OBJ(bm)
+			, intersect.MinX, intersect.MaxX
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, pattern_to_buf
+		    );
+		    
+		}
+		else
+		{
+		    bltpattern_amiga( &pi
+		    	, CR->BitMap
+			, xMin, yMin
+			, intersect.MinX - CR->bounds.MinX
+			, intersect.MinY - CR->bounds.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, GfxBase
+		    );
+		    
+		    	
+
+		}
+		
+	    } /* if (cliprect intersects with area we want to draw to) */
+	    
+	    CR = CR->Next;
+	} /* while (cliprects to examine) */
+	
+    } /* if (not screen rastport) */
+	
+    ReturnVoid("driver_BltPattern");
 }
 
 
@@ -3257,16 +3703,6 @@ LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
     );
 }
 
-
-VOID driver_CopySBitMap(struct Layer *L)
-{
-    /* Move all info from superbitmap into layer */
-}
-
-VOID driver_SyncSBitMap(struct Layer *L)
-{
-    /* Move all info from superbitmap into layer */
-}
 
 struct layerhookmsg
 {
