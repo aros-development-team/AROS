@@ -105,7 +105,6 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 }
 
 
-
 static BOOL InsideGadget(struct Window *win, struct Gadget *gad,
 			 WORD x, WORD y)
 {
@@ -125,11 +124,25 @@ static BOOL InsideGadget(struct Window *win, struct Gadget *gad,
     return rc; 
 }
 
+/*************************
+**  Locked_DoMethodA	**
+*************************/
+static IPTR Locked_DoMethodA (Object * obj, Msg message, struct IntuitionBase *IntuitionBase)
+{
+    IPTR rc;
+    
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+    rc = DoMethodA(obj, message);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+    
+    return rc;
+}
+
 /*****************
 **  FindGadget	**
 *****************/
-struct Gadget * FindGadget (struct Window * window, int x, int y,
-			struct GadgetInfo * gi)
+static struct Gadget * FindGadget (struct Window * window, int x, int y,
+			           struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase)
 {
     struct Gadget * gadget;
     struct gpHitTest gpht;
@@ -162,7 +175,7 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 	    gpht.gpht_Mouse.X = xrel - ibox.Left;
 	    gpht.gpht_Mouse.Y = yrel - ibox.Top;
 
-	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
+	    if (Locked_DoMethodA ((Object *)gadget, (Msg)&gpht, IntuitionBase) == GMR_GADGETHIT)
 		break;
 	}
 
@@ -345,7 +358,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (!gadget)
 		{
-  		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
+  		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi, IntuitionBase);
 		    if (gadget)
 		    {
 			new_gadget = TRUE;
@@ -463,7 +476,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_TabletData	= NULL;
 
 
-			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -488,7 +501,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			    
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 
@@ -580,7 +593,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
 
-			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 
 			if (retval != GMR_MEACTIVE)
@@ -607,7 +620,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
@@ -655,7 +668,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
-			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -681,7 +694,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
@@ -728,7 +741,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
-			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -754,7 +767,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
@@ -834,7 +847,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
-			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 			
 			if (retval != GMR_MEACTIVE)
 			{
@@ -860,7 +873,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			    
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
@@ -961,7 +974,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_Mouse.Y     = im->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
-			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -987,7 +1000,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_GInfo = gi;
 			    gpgi.gpgi_Abort = 0;
 
-			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			    
 			    
 			    gadget->Activation &= ~GACT_ACTIVEGADGET;
@@ -1055,7 +1068,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    gpi.gpi_Mouse.Y     = im->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 		    gpi.gpi_TabletData  = NULL;
 
-		    retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+		    retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 		    if (retval != GMR_MEACTIVE)
 		    {
@@ -1081,7 +1094,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpgi.gpgi_GInfo = gi;
 			gpgi.gpgi_Abort = 0;
 
-			DoMethodA((Object *)gadget, (Msg)&gpgi);
+			Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
 			
 			
 			gadget->Activation &= ~GACT_ACTIVEGADGET;
