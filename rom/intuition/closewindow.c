@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.34  2000/12/25 12:59:42  hkiel
+    Immediately return on NULL argument.
+
     Revision 1.33  2000/12/19 14:24:02  bergers
     Bugfix in unlinking childwindows.
 
@@ -200,6 +203,11 @@ void LateCloseWindow(struct MsgPort *userport,
     BOOL 			do_unlockscreen;
 
     D(bug("CloseWindow (%p)\n", window));
+
+    if ( window == NULL )
+    {
+      ReturnVoid ("CloseWindow");
+    }
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     

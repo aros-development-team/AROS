@@ -67,6 +67,11 @@
 
     D(bug("CloseScreen (%p)\n", screen));
 
+    if ( screen == NULL )
+    {
+      ReturnBool("CloseScreen",TRUE);
+    }
+
     /* If this is a public screen, free related information if there are
        no windows left on the screen */
     if(GetPrivScreen(screen)->pubScrNode != NULL)
