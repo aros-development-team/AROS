@@ -5,6 +5,7 @@
     Desc: Graphics function StripFont()
     Lang: english
 */
+#include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include "graphics_intern.h"
@@ -52,30 +53,33 @@
 	struct TextFontExtension *tfe;
 	
 	/* Valid parameter ? */
-	if (font == 0)
+	if (font == NULL)
 		return;
 		
+	/* Forbid() this early in case someon else calls StripFont()
+	   on the font. (We might risk to find an extension, but when
+	   we are to free it, it's no longer there.
+	*/
+	  
+	Forbid();
+
 	/* Does the font have an extension ? */
-	if (TFE(font->tf_Extension)->tfe_MatchWord == TFE_COOKIE)
+	if (ExtendFont(font, NULL))
 	{
-		tfe = (struct TextFontExtension*)font->tf_Extension;
-		/* 
-			Prevent race conditions. 
-			(This may not be necessar but better to be 100% safe)
-		*/
-		Forbid();
-		
-		font->tf_Extension = 0;
+		tfe = (struct TextFontExtension *)font->tf_Extension;
+		font->tf_Extension = NULL;
 		/* Font is not tagged anymore */
 		font->tf_Style ^= FSF_TAGGED;
 		
-		Permit();
+	
 		
 		FreeTagItems(tfe->tfe_Tags);
 		FreeMem(tfe, sizeof (struct TextFontExtension));
 		
 	}
-	
+
+	Permit();
+
 	return;	
 
     AROS_LIBFUNC_EXIT
