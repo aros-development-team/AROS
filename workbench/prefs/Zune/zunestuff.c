@@ -73,7 +73,7 @@ Object *MakeBackgroundPopimage(void)
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
 		     MUIA_Draggable, TRUE,
 		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, "Adjust Background",
+		     MUIA_Window_Title, (IPTR)"Adjust Background",
 		     TAG_DONE);
 }
 
@@ -82,7 +82,7 @@ Object *MakePopframe(void)
     return NewObject(CL_FrameClipboard->mcc_Class, NULL,
 		     MUIA_Draggable, TRUE,
 		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, "Adjust Frame",
+		     MUIA_Window_Title, (IPTR)"Adjust Frame",
 		     TAG_DONE);
 }
 
