@@ -48,6 +48,7 @@ CLASSESOBJS= \
   objs/classes/family.o \
   objs/classes/gauge.o \
   objs/classes/group.o \
+  objs/classes/image.o \
   objs/classes/list.o \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
@@ -235,6 +236,9 @@ objs/classes/gauge.o: classes/gauge.c
 
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/image.o: classes/image.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/image.c objname=$@
 
 objs/classes/list.o: classes/list.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@

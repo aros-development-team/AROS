@@ -203,6 +203,12 @@ void main(void)
 
     	    WindowContents, VGroup,
     	    	Child, TextObject, TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
+    	    	Child, ListviewObject,
+    	    	    MUIA_Listview_List, ListObject,
+    	    	    	InputListFrame,
+    	    	    	MUIA_List_SourceArray, pages,
+    	    	    	End,
+    	    	    End,
     	    	Child, RegisterGroup(pages),
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
