@@ -15,7 +15,7 @@ Mount NIL:
 ; Copy System to RAM:
 RAM:
 
-SYS:contrib/aminet/untgz SYS:AROS.tgz > "CON:0/0/640/480/Uncompressing AROS.../NODEPTH/NOSIZE/AUTO"
+SYS:contrib/aminet/untgz SYS:AROS.tgz > "CON:0/0/640/480/Decompressing AROS.../NODEPTH/NOSIZE/AUTO"
 
 C/Assign SYS: RAM:
 C/Assign C: SYS:C
