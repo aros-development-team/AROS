@@ -12,7 +12,6 @@ FILES	:= \
     ChangeTaskPri \
     ConClip \
     Copy \
-    Fault \
     Filenote \
     Get \
     Getenv \
