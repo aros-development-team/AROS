@@ -72,7 +72,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    if ((!data->dri) || (data->type != CHECKIMAGE))
+    if ((!data->dri) || ((data->type != CHECKIMAGE) && (data->type != MXIMAGE)))
 	return FALSE;
     return TRUE;
 }
@@ -88,6 +88,8 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         return NULL;
 
     data = INST_DATA(cl, obj);
+    data->type = 0L;
+    data->dri = NULL;
     data->frame = NULL;
     if (!sysi_setnew(cl, obj, (struct opSet *)msg))
     {
@@ -110,14 +112,37 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         if (!data->frame)
         {
             CoerceMethod(cl, obj, OM_DISPOSE);
-            return NULL;
+            obj = NULL;
         }
+        break;
     }
+
+    case MXIMAGE:
+        break;
+
+    default:
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        obj = NULL;
+        break;
     }
 
     return obj;
 }
 
+
+ULONG CHECKIMAGEDEF[] =
+{ 0x00000000,
+  0x00000000,
+  0x000000d0,
+  0x00000180,
+  0x00000300,
+  0x00068600,
+  0x0001cc00,
+  0x0000f100,
+  0x00007000,
+  0x00000000,
+  0x00000000
+};
 
 void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 {
@@ -145,22 +170,31 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
        	    SetDrMd(rport, JAM1);
 
-            x = left + width / 4;
-            for (y=height/2; y<height/2+height/3; y++)
+            for (y=0; y<height; y++)
             {
-                Move(rport, x, top + y);
-                Draw(rport, x + (width / 10), top + y);
-                x++;
+                for (x=0; x<width; x++)
+                {
+                    WORD currentx = x * 26 / width, currenty = y * 11 / height;
+                    if ((CHECKIMAGEDEF[currenty] & (2<<(25-currentx))))
+                    {
+                        Move(rport, left + currentx, top + currenty);
+                        Draw(rport, left + currentx, top + currenty);
+                    }
+                }
             }
-            x++;
-            for (y=height/2+height/3-1; y>height/5; y--)
-            {
-                Move(rport, x, top + y);
-                Draw(rport, x + (width / 15), top + y);
-                x++;
-            }
-            Draw(rport, x + (width / 10) - 1, top + y + 1);
         }
+        break;
+    }
+    case MXIMAGE:
+    {
+      /* !!! */
+        if (msg->imp_State == IDS_SELECTED)
+            SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+        else
+            SetAPen(rport, data->dri->dri_Pens[SHINEPEN]);
+        SetDrMd(rport, JAM1);
+        RectFill(rport, left, top, left + width - 1, top + height - 1);
+        break;
     }
     }
     return;
