@@ -110,11 +110,11 @@ AROS_LH2(struct Language *, init,
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
-    (const)language->library.lib_Node.ln_Name = name;
+    (const UBYTE *)language->library.lib_Node.ln_Name = name;
     language->library.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     language->library.lib_Version = LANGVER;
     language->library.lib_Revision = LANGREV;
-    (const)language->library.lib_IdString = &version[7];
+    (const UBYTE *)language->library.lib_IdString = &version[7];
 
     language->seglist = segList;
     language->sysbase = SysBase;

@@ -315,7 +315,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				case DTF_IFF:
 				    if((newdto->dto_Handle = (APTR)AllocIFF()))
 				    {
-					if((((struct IFFHandle *)newdto->dto_Handle)->iff_Stream = NewOpen((struct Library *)DTBase, newdto->dto_Name, DTST_FILE, 0)))
+					if((((struct IFFHandle *)newdto->dto_Handle)->iff_Stream = (IPTR)NewOpen((struct Library *)DTBase, newdto->dto_Name, DTST_FILE, 0)))
 					{
 					    InitIFFasDOS((struct IFFHandle*)newdto->dto_Handle);
 					    
