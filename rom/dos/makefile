@@ -13,7 +13,15 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
 
 OBJDIR=$(OSGENDIR)/dos
+ifeq ("$SHARED_DOS","yes")
 LIB=$(LIBDIR)/libdos.so
+RMLIB=$(LIBDIR)/libdos.a
+AR=$(SHARED_AR)
+RANLIB=true
+else
+LIB=$(LIBDIR)/libdos.a
+RMLIB=$(LIBDIR)/libdos.so
+endif
 
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout
@@ -61,13 +69,15 @@ setup :
 clean:
 	$(RM) $(OBJDIR) *.err $(LIB)
 
-TESTS = datetostr strtodate splitname
+TESTS = datetostr strtodate splitname readargs
 
 test: setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
 $(LIB) : $(OBJS)
 	@echo "Recreating $@..."
-	@$(SHARED_AR) $@ $(OBJS)
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
+	@$(RM) $(RMLIB)
 
 $(EXEDIR)/%: %.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBDIR)/startup.o \
@@ -90,7 +100,7 @@ dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $CURDIR/$<..."
+	@echo "Makedepend $(CURDIR)/$<..."
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
