@@ -71,7 +71,7 @@ ExpandLink( GlobData *glob )
     {
 	BPTR lock;
 
-	if( lock = Lock( glob->linkbuf, SHARED_LOCK ) )
+	if( ( lock = Lock( glob->linkbuf, SHARED_LOCK ) ) )
 	{
 	    STRPTR end = FilePart( glob->linkbuf );
 

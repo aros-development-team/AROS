@@ -22,37 +22,7 @@
 
 /* AmigaOS */
 
-#define REGPARAM(reg,type,name)     	register __ ## reg type name
-
-#if USE_ASM_FUNCS
-#   define ASM_REGPARAM(reg,type,name) 	register __ ## reg type name
-#else
-#   define ASM_REGPARAM(reg,type,name) 	type name
-#endif
-
-#if USE_OPTASM_FUNCS
-#   define OPT_REGPARAM(reg,type,name) 	register __ ## reg type name
-#else
-#   define OPT_REGPARAM(reg,type,name) 	type name
-#endif
-
-#undef 	REGARGS
-#define REGARGS     	    	    	__regargs
-
-#undef 	STDARGS
-#define STDARGS     	    	    	__stdargs
-
-#undef  ALIGNED
-#define ALIGNED     	    	    	__aligned
-
-#undef	CHIP
-#define CHIP	    	    	    	__chip
-
-#undef 	ASM
-#define ASM 	    	    	    	__asm
-
-#undef	SAVEDS
-#define SAVEDS	    	    	    	__saveds
+#include "compilerspecific.h"
 
 #else
 

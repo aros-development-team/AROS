@@ -16,9 +16,30 @@
 #define AROS_ASMSYMNAME(x)  x
 #define AROS_LONG2BE(x)     x
 #define AROS_WORD2BE(x)     x
-#define IPTR	    	    ULONG
 
 #endif
+
+/****************************************************************************************/
+
+struct rtWindowLock
+{
+    struct Requester     rtwl_Requester;
+    LONG                 rtwl_Magic;
+    struct rtWindowLock *rtwl_RequesterPtr;
+    ULONG                rtwl_LockCount;
+    BOOL                 rtwl_ReqInstalled;
+
+    /* To save window parameters */
+    APTR                 rtwl_Pointer;
+    BYTE                 rtwl_PtrHeight;
+    BYTE                 rtwl_PtrWidth;
+    BYTE                 rtwl_XOffset;
+    BYTE                 rtwl_YOffset;
+    WORD                 rtwl_MinWidth;
+    WORD                 rtwl_MaxWidth;
+    WORD                 rtwl_MinHeight;
+    WORD                 rtwl_MaxHeight;
+};
 
 /****************************************************************************************/
 
@@ -28,7 +49,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *,
 #ifdef _AROS
     /* SysBase is setup in reqtools_init.c */
 #else
-    RTBase->SysBase = SysBase = *(struct ExecBase **)4L;
+    SysBase = *(struct ExecBase **)4L;
 #endif
 
     RTBase->SegList = segList;
@@ -91,7 +112,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     {
         UBYTE configbuffer[RTPREFS_SIZE];
 	
-        DOSBase = RTBase->rt_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+        DOSBase = RTBase->DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
         if (DOSBase == NULL)
             return NULL;
 
@@ -146,22 +167,22 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     } /* if (DOSBase == NULL) */
     
     if(IntuitionBase == NULL)
-	IntuitionBase = RTBase->rt_IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+	IntuitionBase = RTBase->IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
     if(IntuitionBase == NULL)
 	return NULL;
 
     if(GfxBase == NULL)
-	GfxBase = RTBase->rt_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+	GfxBase = RTBase->GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
     if(GfxBase == NULL)
 	return NULL;
     
     if(UtilityBase == NULL)
-	UtilityBase = RTBase->rt_UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
+	UtilityBase = RTBase->UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
     if(UtilityBase == NULL)
 	return NULL;
 
     if(GadToolsBase == NULL)
-	GadToolsBase = RTBase->rt_GadToolsBase = OpenLibrary("gadtools.library", 37);
+	GadToolsBase = RTBase->GadToolsBase = OpenLibrary("gadtools.library", 37);
     if(GadToolsBase == NULL)
 	return NULL;
 
@@ -294,16 +315,16 @@ SAVEDS ASM int RTFuncs_Null(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 
 SAVEDS ASM struct ReqToolsPrefs *RTFuncs_LockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase))
 {
-    ObtainSemaphore(&GPB(ReqToolsBase)->rt.ReqToolsPrefs.PrefsSemaphore);
+    ObtainSemaphore(&ReqToolsBase->ReqToolsPrefs.PrefsSemaphore);
 
-    return &GPB(ReqToolsBase)->rt.ReqToolsPrefs;
+    return &ReqToolsBase->ReqToolsPrefs;
 }
 
 /****************************************************************************************/
 
 SAVEDS ASM void RTFuncs_UnlockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase))
 {
-    ReleaseSemaphore(&GPB(ReqToolsBase)->rt.ReqToolsPrefs.PrefsSemaphore);
+    ReleaseSemaphore(&ReqToolsBase->ReqToolsPrefs.PrefsSemaphore);
 }
 
 /****************************************************************************************/
@@ -443,7 +464,7 @@ SAVEDS ASM void RTFuncs_rtSpread(REGPARAM(a0, ULONG *, posarray),
 
 SAVEDS ASM void RTFuncs_ScreenToFrontSafely(REGPARAM(a0, struct Screen *, screen))
 {
-    struct Screen *scr = ((IntuiBase *)IntuitionBase)->FirstScreen;
+    struct Screen *scr = IntuitionBase->FirstScreen;
 
     Forbid();
 

@@ -56,7 +56,7 @@ extern struct DosLibrary 	*DOSBase;
 extern struct IntuitionBase 	*IntuitionBase;
 extern struct GfxBase 		*GfxBase;
 extern struct ReqToolsBase 	*ReqToolsBase;
-#ifdef _AROS
+#if defined(_AROS) || defined(__GNUC__)
 extern struct UtilityBase 	*UtilityBase;
 #else
 extern struct Library 		*UtilityBase;

@@ -1,0 +1,19 @@
+CC 	:= gcc
+LD	:= gcc
+CFLAGS	:= -Wall -DNO_INLINE_STDARG
+LDFLAGS := -noixemul -nostartfiles -s
+LIBFILE := /ram/reqtools.library
+CFILES	:= req boopsigads general filereq filereqalloc \
+	   filereqextra filereqmain filereqsetup \
+	   palettereq rtlocale \
+	   mem misc boopsi rtfuncs
+COBJS	:= $(foreach f, $(CFILES), $(f).o)
+	   
+All 	: $(LIBFILE)
+
+$(LIBFILE) : $(COBJS)
+	$(LD) $^ -o $@
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+

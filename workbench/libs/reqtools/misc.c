@@ -1,10 +1,10 @@
-#ifdef _AROS
-#include <aros/asmcall.h>
-#endif
-
 #include "filereq.h"
 
 #include <string.h>
+
+#ifndef _AROS
+typedef void (*VOID_FUNC)();
+#endif
 
 /****************************************************************************************/
 
