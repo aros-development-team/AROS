@@ -5,8 +5,11 @@ Version:  1.7
 Type:	  misc/emu
 
 New this time:
-
-
+- The demo "openwin" gets more and more complex
+- First steps to introduce Ressource Tracking and Purify into the AmigaOS
+- Intuition supports now Gadgets (well, only GTYP_BOOLGADGET for now)
+- We have a console for RawKeyConvert().
+- Some small bugfixes
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -29,7 +32,9 @@ There are two archives which contain different things:
 where ## is the version-number. The dev archive contains all files
 neccessary to create bin and dev archives and to build/port the
 complete tree. The bin Archive right now contains everything to test
-AROS on Linux. Sorry, no Amiga port at this time.
+AROS on Linux, ie. it contains an executable which simulates an Amiga
+and some binaries to test it (Dir, List, Echo, LibraryTest and OpenWin).
+Sorry, no Amiga port at this time.
 
 If you want to contribute, read README.CVS. Right now, you need access
 to a Unix site to do this (or a friend you trust) to generate a password.
