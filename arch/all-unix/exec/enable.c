@@ -33,7 +33,7 @@ void _Exec_Enable(struct ExecBase * SysBase)
 	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
 
 	if( (SysBase->AttnResched & 0x80) 
-	 && (SysBase->TDNestCnt > 0)
+	 && (SysBase->TDNestCnt < 1)
 	)
 	{
 		SysBase->AttnResched &= ~0x80;
