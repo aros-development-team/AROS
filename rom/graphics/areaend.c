@@ -111,7 +111,7 @@
         	     * the fill algo does not work nicely.
         	     */
 #if 1
-        	    if (rp->cp_y > CurVctr[1]) {
+        	    if (rp->cp_y <= CurVctr[1]) {
         	      Draw(rp, CurVctr[0], CurVctr[1]);
         	    } else {
         	      int _x = rp->cp_x;
@@ -119,8 +119,8 @@
         	      rp->cp_x = CurVctr[0];
         	      rp->cp_y = CurVctr[1];
         	      Draw(rp, _x, _y);
-        	      rp->cp_x = _x;
-        	      rp->cp_y = _y;
+        	      rp->cp_x = CurVctr[0];
+        	      rp->cp_y = CurVctr[1];
         	    }
 #endif
         	    CurVctr = &CurVctr[2];
@@ -152,6 +152,7 @@
         		kprintf("width: %d, bytesperrow: %d\n",bounds.MaxX-bounds.MinX+1,
                                                 	       BytesPerRow);
 	  */
+#if 1
         		if (TRUE == areafillpolygon(rp,
                                         	    &bounds, 
                                         	    first_idx, 
@@ -182,6 +183,7 @@
 			    }
 
 			}
+#endif
 		    }
         	    /* set first_idx for a possible next polygon to draw */
         	    first_idx = last_idx + 1;
@@ -194,7 +196,7 @@
         	     * Must draw from lower y's to higher ones otherwise
         	     * the fill algo does not work nicely.
         	     */
-        	    if (rp->cp_y > CurVctr[1]) {
+        	    if (rp->cp_y <= CurVctr[1]) {
         	      Draw(rp, CurVctr[0], CurVctr[1]);
         	    } else {
         	      int _x = rp->cp_x;
@@ -202,8 +204,8 @@
         	      rp->cp_x = CurVctr[0];
         	      rp->cp_y = CurVctr[1];
         	      Draw(rp, _x, _y);
-        	      rp->cp_x = _x;
-        	      rp->cp_y = _y;
+        	      rp->cp_x = CurVctr[0];
+        	      rp->cp_y = CurVctr[1];
         	    }
 #endif
         	    if (bounds.MinX > CurVctr[0])
