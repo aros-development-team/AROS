@@ -113,6 +113,13 @@ const char ALIGNED ExLibName [] = NAME_STRING;
 const char ALIGNED ExLibID   [] = VERSION_STRING;
 const char ALIGNED Copyright [] = COPYRIGHT_STRING;
 
+#ifndef SYSBASE_FIELD
+#   define SYSBASE_FIELD(libBase)   (libBase)->lh_SysBase
+#endif
+#ifndef SEGLIST_FIELD
+#   define SEGLIST_FIELD(libBase)   (libBase)->lh_SegList
+#endif
+
 /* Use supplied functions to initialize the non-standard parts of the
    library */
 ULONG SAVEDS STDARGS L_OpenLibs(struct LibHeader * lh);
@@ -124,8 +131,8 @@ AROS_LH2 (struct LibHeader *, InitLib,
     struct ExecBase *, sysBase, 0, LibHeader
 )
 {
-    lh->lh_SysBase = sysBase;
-    lh->lh_SegList = segList;
+    SYSBASE_FIELD(lh) = sysBase;
+    SEGLIST_FIELD(lh) = segList;
 
     if (L_OpenLibs (lh))
 	return (lh);
@@ -165,7 +172,6 @@ AROS_LH1 (struct LibHeader *, OpenLib,
 
     lh->lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
 
-
     return(lh);
 }
 
@@ -200,7 +206,7 @@ AROS_LH0 (BPTR, ExpungeLib,
 	ULONG negsize, possize, fullsize;
 	UBYTE *negptr = (UBYTE *)lh;
 
-	seglist = lh->lh_SegList;
+	seglist = SEGLIST_FIELD(lh);
 
 	Remove((struct Node *)lh);
 
