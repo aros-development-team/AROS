@@ -150,9 +150,10 @@ boot:
     /* Lock the boot device and add some default assigns */
     D(bug("Locking primary boot device %s\n", bootName));
     
-    lock = DOSBase->dl_SYSLock = Lock(bootName, SHARED_LOCK);
-    
-    if (lock != NULL)
+    lock =  Lock(bootName, SHARED_LOCK);
+    if (lock) DOSBase->dl_SYSLock = DupLock(lock);
+        
+    if ((lock != NULL) && (DOSBase->dl_SYSLock != NULL))
     {
 	AssignLock("SYS", lock);
     }
