@@ -94,7 +94,25 @@ int strlcat(char *buf, char *src, int len);
 #define AROS_UFH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
     __asm rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_UFHA(type, name, reg) register reg type name
+#define AROS_UFH0S(rt, fn, bt, bn, lvo, p) \
+    __asm static rt fn()
+#define AROS_UFH1S(rt, fn, a1, bt, bn, lvo, p) \
+    __asm static rt fn(a1)
+#define AROS_UFH2S(rt, fn, a1, a2, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2)
+#define AROS_UFH3S(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3)
+#define AROS_UFH4S(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3, a4)
+#define AROS_UFH5S(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3, a4, a5)
+#define AROS_UFH6S(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3, a4, a5, a6)
+#define AROS_UFH7S(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3, a4, a5, a6, a7)
+#define AROS_UFH8S(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
+    __asm static rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
 
+#define AROS_UFHA(type, name, reg) register reg type name
 
 #endif /* _MUIMASTER_SUPPORT_AMIGAOS_H_ */
