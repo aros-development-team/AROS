@@ -2,11 +2,10 @@
 #define DOS_FILEHANDLER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Constants for filehandlers.
-    Lang: english
+    Constants for filehandlers.
 */
 
 #ifndef EXEC_PORTS_H
@@ -33,7 +32,7 @@ struct DosEnvec
     IPTR de_TableSize;      /* Size of this structure. Must be at least
                                11 (DE_NUMBUFFERS). */
     IPTR de_SizeBlock;      /* Size in longwords of a block on the disk. */
-    IPTR de_SegOrg;         /* Unused. Must be 0 for now. */
+    IPTR de_SecOrg;         /* Unused. Must be 0 for now. */
     IPTR de_Surfaces;       /* Number of heads/surfaces in drive. */
     IPTR de_SectorPerBlock; /* Unused. Must be 1 for now. */
     IPTR de_BlocksPerTrack; /* Number of blocks on a track. */
