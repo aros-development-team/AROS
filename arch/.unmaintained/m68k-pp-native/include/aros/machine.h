@@ -171,8 +171,8 @@ extern void aros_not_implemented ();
 	"move.l %4,-(%%sp)\n\t"\
 	"move.l %3,-(%%sp)\n\t"\
 	"move.l %%sp,%1\n\t"\
-	"move.l %2,-(%%sp)\n\t"\
-	"rts    \n\t"\
+	"move.l %2,%%a0\n\t"\
+	"jsr    (%%a0)\n\t"\
 	"adda.l #12,%%sp\n\t"\
 	"movl   %%d0,%0"\
 	: "=g"(_re), "=m"(*(APTR *)p)\
