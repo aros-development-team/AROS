@@ -22,7 +22,7 @@
     AROS_LH2(BOOL, WorkbenchControlA,
 
 /*  SYNOPSIS */
-    AROS_LHA(STRPTR,             window, A0),
+    AROS_LHA(STRPTR,           name, A0),
     AROS_LHA(struct TagItem *, tags,   A1),
 
 /*  LOCATION */
