@@ -1,6 +1,10 @@
 #ifndef _COLORADJUST_PRIVATE_H_
 #define _COLORADJUST_PRIVATE_H_
 
+#ifndef _MUIMASTER_SUPPORT_H
+#include "support.h"
+#endif
+
 /*** Instance data **********************************************************/
 struct Coloradjust_DATA
 {
