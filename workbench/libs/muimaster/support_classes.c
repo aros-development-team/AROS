@@ -170,6 +170,9 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
 {
     Class *cl;
 
+
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
     cl = ZUNE_FindBuiltinClass(classid, mb);
 
     if (!cl)
@@ -179,6 +182,8 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
 	if (cl)
 	    ZUNE_AddBuiltinClass(cl, mb);
     }
+
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
     return cl;
 }
