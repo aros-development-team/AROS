@@ -12,33 +12,47 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 
+#include <workbench/startup.h>
+
+extern struct WBStartup *WBenchMsg;
+
 char *__getprogramname(void)
 {
-    char *name;
-    LONG  namlen = 64;
-    int   done   = 0;
+    char *name = NULL;
 
-    do
+    if (WBenchMsg)
     {
-	if (!(name = AllocVec(namlen, MEMF_ANY)))
-	{
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    return NULL;
-	}
+        if (WBenchMsg->sm_NumArgs)
+            name = WBenchMsg->sm_ArgList[0].wa_Name;
+    }
+    else
+    {
+        LONG  namlen = 64;
+        int   done   = 0;
 
-	if (!(GetProgramName(name, namlen)))
-	{
-	    if (IoErr() == ERROR_LINE_TOO_LONG)
+        do
+        {
+	    if (!(name = AllocVec(namlen, MEMF_ANY)))
 	    {
-		namlen *= 2;
-		FreeVec(name);
+	        SetIoErr(ERROR_NO_FREE_STORE);
+	        return NULL;
+	    }
+
+	    if (!(GetProgramName(name, namlen)))
+	    {
+	        if (IoErr() == ERROR_LINE_TOO_LONG)
+	        {
+		    namlen *= 2;
+		    FreeVec(name);
+	        }
+	        else
+		    return NULL;
 	    }
 	    else
-		return NULL;
-	}
-	else
-	    done = 1;
-    } while (!done);
+	        done = 1;
+        } while (!done);
+
+    }
 
     return name;
 }
