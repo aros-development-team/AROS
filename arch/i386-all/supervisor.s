@@ -9,7 +9,7 @@
 /******************************************************************************
 
     NAME
-	AROS_LH0(void, Supervisor,
+	AROS_LH1(void, Supervisor,
 
     SYNOPSIS
 	AROS_LHA(ULONG_FUNC, userFunction, A5),
