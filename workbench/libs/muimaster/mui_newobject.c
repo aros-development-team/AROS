@@ -9,6 +9,9 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 
+/* #define MYDEBUG 1 */
+#include "debug.h"
+
 /*****************************************************************************
 
     NAME */
