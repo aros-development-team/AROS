@@ -261,6 +261,7 @@ aros_target_genmap="-Wl,-Map -Xlinker"
 # Native flavour stuff
 aros_vmware_hack="0"
 aros_bochs_hack="0"
+aros_ide_driver="0"
 
 # Check for some includes
 AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
