@@ -1,0 +1,11 @@
+# DataType Description for GIF
+Name=GIF
+Version=$VER: GIF 41.0 (28-Nov-2002)
+BaseName=gif
+Pattern=#?
+Mask=GIF8ÿa
+GroupID=pict
+ID=_gif
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
+
