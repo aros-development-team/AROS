@@ -5,6 +5,9 @@ include $(TOP)/config/make.cfg
 #MM kernel-link-emul : kernel-objs
 kernel-link-emul : $(BINDIR)/aros
 
+#MM
+kernel-link-emul-quick : kernel-link-emul
+
 KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
       	   mathieeesingbas expansion oop layers workbench cybergraphics
 KDEVS   := timer input keyboard console gameport
