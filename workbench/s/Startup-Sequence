@@ -91,8 +91,10 @@ If EXISTS S:User-Startup
 EndIf
 
 ;LoadWB
-NewShell CON:0/30/640/300/AROS-Shell/CLOSE
+;NewShell CON:0/30/640/300/AROS-Shell/CLOSE
 ;NewShell CON:160/300/640/300/AROS-Shell/CLOSE
 
-EndCLI
+Execute S:Shell-Startup
+
+;EndCLI
 
