@@ -97,6 +97,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     /* This is moved into SysBase at the tasks's startup */
     task->tc_IDNestCnt=-1;
+    task->tc_TDNestCnt=-1;
 
     /* Signals default to all system signals allocated. */
     if(task->tc_SigAlloc==0)
