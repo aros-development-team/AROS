@@ -93,6 +93,10 @@ extern LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
 	, UWORD width, UWORD height, UBYTE srcformat, struct Library *CyberGfxBase);
 
+extern LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
+	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
+	, UWORD width, UWORD height, ULONG globalalpha, struct Library *CyberGfxBase);
+
 extern VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Library *CyberGfxBase);
 extern VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase);
 extern APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CyberGfxBase);
