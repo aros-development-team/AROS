@@ -11,7 +11,7 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH1(void, Supervisor,
+	AROS_LH1(ULONG, Supervisor,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG_FUNC, userFunction, A5),
@@ -74,13 +74,15 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ULONG retval;
 
     __asm__ __volatile__ (
 	"movl $-2,%%eax\n\t"
 	"int $0x80"
-	:
+	:"=a"(retval)
 	:"d"(userFunction)
-	:"eax","memory");
+	);
 
+    return retval;
     AROS_LIBFUNC_EXIT
 } /* Supervisor() */
