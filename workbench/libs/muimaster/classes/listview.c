@@ -20,6 +20,7 @@ struct MUI_ListviewData
 {
     Object *list, *group, *vert, *horiz, *button;
     struct Hook *layout_hook;
+    struct Hook hook;
 };
 
 #ifndef _AROS
@@ -94,6 +95,10 @@ AROS_UFH3(ULONG,Listview_Layout_Function,
     return 0;
 }
 
+#define PROP_VERT_FIRST   1
+#define LIST_VERT_FIRST   4
+#define LIST_VERT_VISIBLE 5
+#define LIST_VERT_ENTRIES 6
 
 #ifndef _AROS
 __asm ULONG Listview_Function(register __a0 struct Hook *hook, register __a1 void **msg)
@@ -110,12 +115,10 @@ AROS_UFH3(ULONG,Listview_Function,
 
     switch (type)
     {
-	case	1:
-		{
-		    get(data->vert,MUIA_Prop_First,&val);
-//		    SetAttrs(data->contents,MUIA_Virtgroup_Top, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE);
-		    break;
-		}
+	case	PROP_VERT_FIRST:
+		get(data->vert,MUIA_Prop_First,&val);
+		nnset(data->list,MUIA_List_VertProp_First,val);
+		break;
 
 	case	2:
 		{
@@ -124,7 +127,10 @@ AROS_UFH3(ULONG,Listview_Function,
 		    break;
 		}
 	case	3: nnset(data->horiz, MUIA_Prop_First, val); break;
-	case	4: nnset(data->vert, MUIA_Prop_First, val); break;
+
+	case	LIST_VERT_FIRST: nnset(data->vert, MUIA_Prop_First, val); break;
+	case	LIST_VERT_VISIBLE: nnset(data->vert, MUIA_Prop_Visible, val); break;
+	case	LIST_VERT_ENTRIES: nnset(data->vert, MUIA_Prop_Entries, val); break;
     }
     return 0;
 }
@@ -139,6 +145,7 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Hook *layout_hook;
     Object *group, *vert, *horiz, *button;
     Object *list = (Object*)GetTagData(MUIA_Listview_List, NULL, msg->ops_AttrList);
+    LONG entries,first,visible;
     if (!list) return NULL;
 
     layout_hook = mui_alloc_struct(struct Hook);
@@ -170,6 +177,10 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->horiz = horiz;
     data->button = button;
     data->group = group;
+    data->layout_hook = layout_hook;
+
+    data->hook.h_Entry = (HOOKFUNC)Listview_Function;
+    data->hook.h_Data = data;
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -178,7 +189,22 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
     	}
     }
-    
+
+    get(list,MUIA_List_VertProp_First,&first);
+    get(list,MUIA_List_VertProp_Visible,&visible);
+    get(list,MUIA_List_VertProp_Entries,&entries);
+
+    SetAttrs(data->vert,
+	MUIA_Prop_First, first,
+	MUIA_Prop_Visible, visible,
+	MUIA_Prop_Entries, entries,
+	TAG_DONE);
+
+    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, PROP_VERT_FIRST, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_FIRST, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_VISIBLE, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_ENTRIES, MUIV_TriggerValue);
+
     return (IPTR)obj;
 }
 
