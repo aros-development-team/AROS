@@ -258,20 +258,25 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 	for(;;)
 	{
 	    c=getc(in);
+
 	    if(c<0)
 	    {
 	        if (lastc!='\n')
 	          putc(out, '\n');
+
+                put(out);
 		return 0;
             }
 
-	    if (lastc=='\n' && showline)
+	    if (lastc==0x0a && showline)
 	      putlinenumber(out, ++line);
 
-	    if(putc(out,c)||(c=='\n'&&put(out)))
+	    if(putc(out,c)||(c=='\n' && put(out)))
 	    {
 	        if (c!='\n')
 	          putc(out, '\n');
+
+	        put(out);
 		return 1;
 	    }
 	
