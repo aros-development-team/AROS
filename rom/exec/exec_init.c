@@ -89,7 +89,7 @@ void _aros_not_implemented(char *X)
     Hmm, in that case I would have to separate it from this file in order
     to replace it...
 */
-AROS_UFH5(static void, IntServer,
+AROS_UFH5S(void, IntServer,
     AROS_UFHA(ULONG, intMask, D0),
     AROS_UFHA(struct Custom *, custom, A0),
     AROS_UFHA(struct List *, intList, A1),
