@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function GetColorMap()
@@ -52,32 +52,33 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  /* if colormap != NULL return the memory */
-  if (NULL != colormap)
-  {
-    /* free the ColorTable */
-    FreeMem(colormap->ColorTable  , (colormap->Count) << 1);
-
-    /* free the LowColorBits */
-    FreeMem(colormap->LowColorBits, (colormap->Count) << 1);
-
-    /* free a ViewPortExtra structure that might be connected to this one */
-    if (NULL != colormap->cm_vpe)
-      GfxFree((struct ExtendedNode *)colormap->cm_vpe);
-
-    /* free a PaletteExtra structure that might be connected to this */
-    if (NULL != colormap->PalExtra)
+    /* if colormap != NULL return the memory */
+    if (NULL != colormap)
     {
-      FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count);
-      FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count);
-      FreeMem(colormap->PalExtra, sizeof(struct PaletteExtra));
-    }
-    /* free the structure itself */
-    FreeMem(colormap, sizeof(struct ColorMap));
-  }
+	/* free the ColorTable */
+	FreeMem(colormap->ColorTable  , (colormap->Count) * sizeof(UWORD));
 
-  AROS_LIBFUNC_EXIT
+	/* free the LowColorBits */
+	FreeMem(colormap->LowColorBits, (colormap->Count) * sizeof(UWORD));
+
+	/* free a ViewPortExtra structure that might be connected to this one */
+	if (NULL != colormap->cm_vpe)
+	    GfxFree((struct ExtendedNode *)colormap->cm_vpe);
+
+	/* free a PaletteExtra structure that might be connected to this */
+	if (NULL != colormap->PalExtra)
+	{
+	    FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count);
+	    FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count);
+	    FreeMem(colormap->PalExtra, sizeof(struct PaletteExtra));
+	}
+	/* free the structure itself */
+	FreeMem(colormap, sizeof(struct ColorMap));
+    }
+
+    AROS_LIBFUNC_EXIT
+    
 } /* FreeColorMap */
