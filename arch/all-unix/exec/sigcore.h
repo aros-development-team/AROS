@@ -126,7 +126,8 @@
 	(R1(sc) = GetCpuContext(task)->regs[1]), \
 	(R2(sc) = GetCpuContext(task)->regs[2]), \
 	(R3(sc) = GetCpuContext(task)->regs[3]), \
-	(R4(sc) = GetCpuContext(task)->regs[4])
+	(R4(sc) = GetCpuContext(task)->regs[4]), \
+	(R5(sc) = GetCpuContext(task)->regs[5])
 
     /*
 	It's not possible to do save the FPU under linux because linux
