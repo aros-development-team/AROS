@@ -1,6 +1,7 @@
 libdefs.h
 functable.c
 seriallib.map
+serial_end.c
 mmakefile
 serial_end.c
 *.err
