@@ -8,9 +8,6 @@
 
 /****************************************************************************************/
 
-#include <exec/resident.h>
-#include <exec/interrupts.h>
-#include <exec/initializers.h>
 #include <devices/inputevent.h>
 #include <devices/input.h>
 #include <devices/newstyle.h>
@@ -18,8 +15,11 @@
 #include <proto/input.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <exec/initializers.h>
+#include <aros/symbolsets.h>
+
+#include LC_LIBDEFS_FILE
+
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "input_intern.h"
 #endif
@@ -33,90 +33,12 @@
 
 /****************************************************************************************/
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct inputbase *AROS_SLIB_ENTRY(init,Input)();
-void AROS_SLIB_ENTRY(open,Input)();
-BPTR AROS_SLIB_ENTRY(close,Input)();
-BPTR AROS_SLIB_ENTRY(expunge,Input)();
-int AROS_SLIB_ENTRY(null,Input)();
-void AROS_SLIB_ENTRY(beginio,Input)();
-LONG AROS_SLIB_ENTRY(abortio,Input)();
-
 extern UWORD AROS_SLIB_ENTRY(PeekQualifier,Input) ();
 extern void AROS_SLIB_ENTRY(AddNullEvent,Input) ();
 
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry,Input)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident Input_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Input_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    30,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="input.device";
-
-static const char version[]="$VER: input 41.1 (17.3.2001)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct inputbase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,Input)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,Input),
-    &AROS_SLIB_ENTRY(close,Input),
-    &AROS_SLIB_ENTRY(expunge,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(beginio,Input),
-    &AROS_SLIB_ENTRY(abortio,Input),
-    &AROS_SLIB_ENTRY(PeekQualifier,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(null,Input),
-    &AROS_SLIB_ENTRY(AddNullEvent,Input),    
-    (void *)-1
-};
-
-/****************************************************************************************/
-
 #if NEWSTYLE_DEVICE
 
+#include <devices/newstyle.h>
 static const UWORD SupportedCommands[] =
 {
     IND_ADDHANDLER,
@@ -132,16 +54,9 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
- AROS_UFHA(struct inputbase *,	InputDevice,	D0),
- AROS_UFHA(BPTR,		segList,	A0),
- AROS_UFHA(struct ExecBase *,	sysBase,	A6))
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, InputDevice)
 {
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    InputDevice->sysBase = sysBase;
-    InputDevice->seglist = segList;
+    AROS_SET_LIBFUNC_INIT
 
     NEWLIST( &(InputDevice->HandlerList) );
 
@@ -205,7 +120,7 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
 
 	    if(NewAddTask(task, ProcessEvents, NULL, tags) != NULL)
 	    {
-		return InputDevice;
+		return TRUE;
 	    }
 #else
 	    task->tc_SPLower = stack;
@@ -221,7 +136,7 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
 
 	    if(AddTask(task, ProcessEvents, NULL) != NULL)
 	    {
-		return InputDevice;
+		return TRUE;
 	    }
 #endif
 	}
@@ -229,20 +144,20 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
 
     Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
     
-    return NULL;
+    return FALSE;
     
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH3(void, open,
- AROS_LHA(struct IORequest *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct inputbase *, InputDevice, 1, Input)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, InputDevice,
+		     struct IORequest, ioreq,
+		     unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     D(bug("id: open()\n"));
 
@@ -250,68 +165,16 @@ AROS_LH3(void, open,
     {
         bug("[InputDev] Open: IORequest structure passed to OpenDevice is too small\n");
         ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
 
-    /* Keep compiler happy */
-    unitnum=0;
-    flags=0;
-    
-    ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    return TRUE;
 
-    InputDevice->device.dd_Library.lib_OpenCnt ++;
-    InputDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-    
-    return;    
-
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
-/****************************************************************************************/
-
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct inputbase *, InputDevice, 2, Input)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Let any following attemps to use the device crash hard. */
-    ioreq->io_Device=(struct Device *)-1;
-
-    InputDevice->device.dd_Library.lib_OpenCnt--;
-
-#if 0
-    if (InputDevice->device.dd_Library.lib_OpenCnt == 0)
-	expunge();
-#endif    
-
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    InputDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-    return 0;
-    
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct inputbase *, InputDevice, 4, Input)
-{
-    AROS_LIBFUNC_INIT
-    
-    return 0;
-    
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 
 /****************************************************************************************/
 
