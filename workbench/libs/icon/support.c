@@ -123,12 +123,12 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
             ICONDUPA_JustLoadedFromDisk, TRUE,
             TAG_DONE
         );
+
+	// FIXME: Read/FreeStruct seem a bit broken in memory handling
+	// FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
+	FreeStruct(temp, IconDesc);
     }
     
-    // FIXME: Read/FreeStruct seem a bit broken in memory handling
-    // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
-    FreeStruct(temp, IconDesc);
-
     return icon;
 }
 
