@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function ExtendFont()
@@ -60,27 +60,35 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct TagItem def_tags = { TAG_DONE, 0};
-    struct tfe_hashnode *hn;
+    struct TagItem  	     def_tags = { TAG_DONE, 0};
+    struct tfe_hashnode      *hn;
     struct TextFontExtension *tfe;
     
     if (font == NULL)
 	return FALSE;
 
-	
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
+    
     /* Does the font allready have an extension ? */
     hn = tfe_hashlookup(font, GfxBase);
     if (NULL == hn)
     {
     	hn = tfe_hashnode_create(GfxBase);
 	if (NULL == hn)
-		return FALSE;
+	{
+    	    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);	    
+	    return FALSE;
+	}
     }
     
     tfe = hn->ext;
     if (NULL != tfe)
+    {
+    	ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);	    
     	return TRUE;
-
+    }
+    
+    
     /* Try to build an extension */
     if (!fontTags)
 	fontTags = &def_tags;
@@ -101,6 +109,8 @@
 	    if (driver_ExtendFont(font, hn, GfxBase))
 	    {
 		tfe_hashadd(hn, font, tfe, GfxBase);
+		
+		ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
     		return TRUE;
 	    }
 
@@ -111,7 +121,8 @@
 	FreeMem(tfe, sizeof (struct TextFontExtension));
 	
     } /* if (memory for extension allocated) */
-    
+
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);    
     return FALSE;
 
     AROS_LIBFUNC_EXIT

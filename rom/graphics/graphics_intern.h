@@ -50,6 +50,7 @@ struct GfxBase_intern
 
     struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
     struct SignalSemaphore  	tfe_hashtab_sema;
+    struct SignalSemaphore  	fontsem;
 #if REGIONS_USE_MEMPOOL
     struct SignalSemaphore  	regionsem;
     APTR    	    	    	regionpool;
