@@ -10,10 +10,14 @@
 */
 
 #if !defined(_SIZE_T) && !defined(__typedef_size_t)
-#define __typedef_size_t
-#define _SIZE_T
-/* Must be int and not long. Otherwise gcc will complain */
-typedef unsigned int size_t;
+#   define __typedef_size_t
+#   define _SIZE_T
+#   ifdef AMIGA
+	typedef unsigned long size_t;
+#   else
+	/* Must be int and not long. Otherwise gcc will complain */
+	typedef unsigned int size_t;
+#   endif
 #endif
 
 #if !defined(_SSIZE_T) && !defined(__typedef_ssize_t)
