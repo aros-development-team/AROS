@@ -35,8 +35,8 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 
     switch (type)
     {
-    	case	1: nnset(data->contents,MUIA_Virtgroup_Top, val); break;
-    	case    2: nnset(data->contents,MUIA_Virtgroup_Left, val); break;
+	case	1: SetAttrs(data->contents,MUIA_Virtgroup_Top, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE); break;
+	case	2: SetAttrs(data->contents,MUIA_Virtgroup_Left, val, MUIA_NoNotify, TRUE, MUIA_Group_Forward, FALSE, TAG_DONE); break;
 	case	3: nnset(data->horiz, MUIA_Prop_First, val); break;
 	case	4: nnset(data->vert, MUIA_Prop_First, val); break;
     }
@@ -81,8 +81,8 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 1, MUIV_TriggerValue);
     DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 2, MUIV_TriggerValue);
-//    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
-//    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
+    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
+    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
 
     return (ULONG)obj;
 }

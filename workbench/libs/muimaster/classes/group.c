@@ -23,6 +23,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/graphics.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -59,9 +60,10 @@ struct MUI_GroupData
     ULONG        num_childs;
     ULONG        horiz_weight_sum;
     ULONG        vert_weight_sum;
-    ULONG        update; /* for MUI_Refraw() 1 - do not redraw the frame */
+    ULONG        update; /* for MUI_Redraw() 1 - do not redraw the frame, 2 - the virtual pos has changed */
     struct MUI_EventHandlerNode ehn;
     LONG virt_offx, virt_offy; /* diplay offsets */
+    LONG old_virt_offx, old_virt_offy; /* Saved virtual positions, used for update == 2 */
     LONG virt_mwidth,virt_mheight; /* The complete width */
     LONG saved_minwidth,saved_minheight;
     LONG dont_forward_get; /* Setted temporary to 1 so that the get method is not forwarded */
@@ -319,8 +321,8 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	/* Relayout ourself, this will also relayout all the children */
 	DoMethod(obj,MUIM_Layout);
 	if (_flags(obj) & MADF_CANDRAW) Group_Show(cl,obj,NULL);
-	/* Needs to be optimized! */
-	MUI_Redraw(obj,MADF_DRAWOBJECT);
+	data->update = 2;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -627,13 +629,14 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MinList        *ChildList;
     struct Rectangle        group_rect, child_rect;
     int                    page = -1;
+    struct Region *region = NULL;
     APTR clip;
 
     D(bug("muimaster.library/group.c: Draw Group Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if ((msg->flags & MADF_DRAWOBJECT) && data->update == 1)
+    if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
 	/*
 	 * update is set when changing active page of a page group
@@ -645,8 +648,23 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	data->update = 0;
     } else
     {
-	if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
-	    return TRUE;
+	if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2)
+	{
+	    LONG diff_virt_offx = data->virt_offx - data->old_virt_offx;
+	    LONG diff_virt_offy = data->virt_offy - data->old_virt_offy;
+
+	    if (!diff_virt_offx && !diff_virt_offy)
+	    {
+	    	data->update = 0;
+		return 1;
+	    }
+
+	    ScrollRasterBF(_rp(obj), diff_virt_offx, diff_virt_offy, _mleft(obj), _mtop(obj), _mright(obj),_mbottom(obj));
+	} else
+	{
+	    if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
+	        return TRUE;
+	}
     }
 
     if (data->flags & GROUP_VIRTUAL)
@@ -694,6 +712,10 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
 	MUI_RemoveClipping(muiRenderInfo(obj), clip);
     }
+
+    data->old_virt_offx = data->virt_offx;
+    data->old_virt_offy = data->virt_offy;
+    data->update = 0;
 
     return TRUE;
 }
