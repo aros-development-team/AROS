@@ -10,6 +10,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
+#include <devices/serial.h>
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -58,7 +59,7 @@ static void mouse_buffer(char * buffer, ULONG len)
 					if ((mousebuffer[1] & 0x10))
 						printf("Right mouse button.\n");
 					dx = (mousebuffer[0] & 0x03) << 6 | (mousebuffer[1] & 0x3f);
-					dy = (mousebuffer[0] & 0x03) << 6 | (mousebuffer[2] & 0x3f);
+					dy = (mousebuffer[0] & 0x0c) << 4 | (mousebuffer[2] & 0x3f);
 					if (dx || dy)
 						printf("Movement: dx %d, dy %d\n",dx,dy);
 				} else
@@ -126,12 +127,17 @@ printf("Unit=%d\n",unitnum);
 				IORequest->io_Baud          = 1200;
 				IORequest->io_ReadLen       = 7;
 				IORequest->io_WriteLen      = 7;
+				IORequest->io_StopBits      = 1;
+				IORequest->io_RBufLen       = 512;
+				IORequest->io_ExtFlags      = 0;
+				IORequest->IOSer.io_Flags   = 0;
 				DoIO((struct IORequest *)IORequest);
 				
 				if (0 == ((struct IORequest *)IORequest)->io_Error) {
 					read_input(IORequest, notifport);
 				} else {
 					printf("Could not set parameters for serial port.\n");
+					printf("Error code: %d\n",((struct IORequest *)IORequest)->io_Error);
 				}
 				
 				CloseDevice((struct IORequest *)IORequest);
