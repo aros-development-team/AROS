@@ -34,13 +34,6 @@ extern struct ExecBase * Sysbase;
     Prototypes
 */
 ULONG	CalcChecksum (APTR mem, ULONG size);
-int	STRCMP	     (const UBYTE *, const UBYTE *);
-int	STRICMP      (const UBYTE *, const UBYTE *);
-UBYTE * StrDup	     (const UBYTE *);
-ULONG	StrLen	     (const UBYTE *);
-UBYTE * StrCpy	     (UBYTE * dest, const UBYTE * src);
-void	QSort	     (APTR array, ULONG count, ULONG size,
-			int (*cmp)(const APTR e1, const APTR e2));
 int	kprintf      (const UBYTE *, ...);
 void	NastyFreeMem (APTR, ULONG);
 APTR	RemoveSList  (APTR *, APTR);
