@@ -29,47 +29,41 @@
 	FILE * restrict		stream)
 
 /*  FUNCTION
-	Read an amount of bytes from a stream.
+        Write an amount of bytes to a stream.
 
     INPUTS
-	buf - The buffer to write to the stream
-	size - Size of one block to write
-	nblocks - The number of blocks to write
-	stream - Write to this stream
+        buf - The buffer to write to the stream
+        size - Size of one block to write
+        nblocks - The number of blocks to write
+        stream - Write to this stream
 
     RESULT
-	The number of blocks written. If no error occurred, this is
-	nblocks. Otherwise examine errno for the reason of the error.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
+        The number of blocks written. If no error occurred, this is
+        nblocks. Otherwise examine errno for the reason of the error.
 
     SEE ALSO
-	fopen(), fwrite()
-
-    INTERNALS
+        fopen(), fwrite()
 
 ******************************************************************************/
 {
     size_t cnt;
 
     fdesc *fdesc = __getfdesc(stream->fd);
+
     if (!fdesc)
     {
-	errno = EBADF;
-	return 0;
+        errno = EBADF;
+
+        return 0;
     }
 
     cnt = FWrite ((BPTR)fdesc->fh, (CONST APTR)buf, size, nblocks);
 
     if (cnt == -1)
     {
-	errno = IoErr2errno (IoErr ());
-
-	cnt = 0;
+        errno = IoErr2errno (IoErr ());
+        
+        cnt = 0;
     }
 
     return cnt;
