@@ -20,7 +20,7 @@
 
 
 struct MidiPortData{
-	void (* ASM ActivateXmit)(ULONG REG(d0) portnum);
+	void (* ASM ActivateXmit)(APTR REG(a2) userdata,ULONG REG(d0) portnum);
 };
 
 struct MidiDeviceData{
