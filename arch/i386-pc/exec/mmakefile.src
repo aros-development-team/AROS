@@ -19,13 +19,13 @@ REPLFILES	:= \
 	exec_init execfunctions prepareexecbase
 
 #MM
-exec-native-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+exec-pc-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
 	$(foreach f,$(REPLFILES), $(OBJDIR)/$(f).o) \
 	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
 	@$(NOP)
 
 #MM
-setup-exec-native-i386 :
+setup-exec-pc-i386 :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))

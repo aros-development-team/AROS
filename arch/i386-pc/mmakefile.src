@@ -4,150 +4,153 @@ include $(TOP)/config/make.cfg
 OS_INCLUDES	:= -I$(GENINCDIR)
 
 #
-# General rule to create AROS for native
+# Rule to create AROS for pc-i386
 #   
 
 # contrib-grub is only needed to boot native version(s)
 # therefore it is put directly here instead into "contrib-complete"
 
-#MM- AROS-native : general-setup-native-i386 kernel-native-i386 software-native-i386 \
-#MM	    contrib-grub bootdisk-native-i386
+#MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 \
+#MM	    contrib-grub bootdisk-pc-i386
 
-#MM- general-setup-native-i386: setup setup-native includes compiler
+#MM- general-setup-pc-i386: setup setup-pc-i386 includes compiler
 
-#MM- kernel-native-i386 : general-setup-native-i386 kernel create-mf-inc-again \
-#MM	    create-mf-inc-again kernel-link-native
+#MM- kernel-pc-i386 : general-setup-pc-i386 kernel kernel-module-pc-i386 \
+#MM	    create-mf-inc-again kernel-link-pc-i386
 
-#MM- software-native-i386 : general-setup binary-native-i386 \
-#MM	    workbench-native-i386 demos contrib-native-i386
+#MM- software-pc-i386 : general-setup binary-pc-i386 \
+#MM	    workbench-pc-i386 demos contrib-pc-i386
 
-#MM- workbench-native-i386 : workbench-complete workbench workbench-boot-native-i386
+#MM- workbench-pc-i386 : workbench-complete workbench workbench-boot-pc-i386
 
-#MM- contrib-native-i386 : contrib-complete aminet-disk-misc-format64 aminet-disk-cdrom-amicdrom \
+#MM- contrib-pc-i386 : contrib-complete aminet-disk-misc-format64 aminet-disk-cdrom-amicdrom \
 #MM	    aminet-util-arc-untgz
 
 #
 # Kernel modules
 #
 
-#MM- kernel-native : 				\
-#MM	kernel-exec-native			\
-#MM	kernel-expansion-native			\
+#MM- kernel-module-pc-i386 : 				\
+#MM	kernel-exec-module-pc-i386			\
+#MM	kernel-expansion-module-pc-i386			\
 #MM	kernel-utility-linklib			\
-#MM	kernel-dos-native			\
+#MM	kernel-dos-module-pc-i386			\
 #MM	kernel-boot-linklib			\
-#MM	kernel-aros-native			\
-#MM	kernel-oop-native			\
+#MM	kernel-aros-module-pc-i386			\
+#MM	kernel-oop-module-pc-i386			\
 #MM	kernel-hidd-linklib			\
 #MM	kernel-layers-linklib			\
-#MM	kernel-timer-native			\
-#MM	kernel-misc-native			\
-#MM	kernel-battclock-native			\
-#MM	kernel-keymap-native			\
+#MM	kernel-timer-module-pc-i386			\
+#MM	kernel-misc-module-pc-i386			\
+#MM	kernel-battclock-module-pc-i386			\
+#MM	kernel-keymap-module-pc-i386			\
 #MM	kernel-mathieeesingbas-linklib		\
 #MM	kernel-mathffp-linklib			\
-#MM	kernel-devs-native			\
-#MM	kernel-filesys				\
+#MM	kernel-devs-module-pc-i386			\
+#MM	kernel-filesys		\
 #MM	kernel-graphics-linklib			\
-#MM	kernel-graphics-native-i386 		\
-#MM	kernel-intuition-native			\
-#MM	kernel-cgfx-native-i386			\
-#MM	kernel-workbench-native			\
-#MM	kernel-filesys-native-i386		\
-#MM Drivers-native-i386-pci			\
-#MM	Drivers-native-i386-irq			\
-#MM	Drivers-native-i386-kbd			\
-#MM	Drivers-native-i386
+#MM	kernel-intuition-module-pc-i386			\
+#MM	kernel-cgfx-module-pc-i386			\
+#MM	kernel-workbench-module-pc-i386			\
+#MM	kernel-filesys-pc-i386 \
+#MM	Drivers-pc-i386-pci			\
+#MM	Drivers-pc-i386-irq			\
+#MM	Drivers-pc-i386-kbd			\
+#MM	Drivers-pc-i386
 
 #
 # Setup
 #
 
-#MM- setup-native :				\
-#MM	setup-exec-native-i386			\
-#MM	setup-battclock-native-i386		\
-#MM	setup-dos-native-i386
+#MM- setup-pc-i386 :				\
+#MM	setup-exec-pc-i386			\
+#MM	setup-battclock-pc-i386		\
+#MM	setup-dos-pc-i386
 
-# Misc rules
+#
+# Misc
+#
 
-#MM- kernel-exec-native : exec-native-i386 kernel-exec-linklib
-#MM- kernel-expansion-native : kernel-expansion-native-i386 kernel-expansion-linklib
-#MM- kernel-aros-native : kernel-aros-native-i386 kernel-aros-linklib
-#MM- kernel-oop-native : kernel-oop-native-i386 kernel-oop-linklib
-#MM- kernel-timer-native : kernel-timer-native-i386 kernel-timer-linklib
-#MM- kernel-misc-native : kernel-misc-native-i386 kernel-misc-linklib
-#MM- kernel-battclock-native : kernel-battclock-native-i386 kernel-battclock-linklib
-#MM- kernel-keymap-native : kernel-keymap-native-i386 kernel-keymap-linklib
-#MM- kernel-devs-native : kernel-devs-native-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib aminet-disk-cdrom-amicdrom-linklib
-#MM- kernel-intuition-native : intuition-gfxhidd intuition-native-i386 kernel-intuition-linklib
-#MM- kernel-dos-native : dos-native-i386 kernel-dos-linklib
-#MM- kernel-workbench-native : kernel-workbench-native-i386 kernel-workbench-linklib
+#MM- kernel-exec-module-pc-i386 : exec-pc-i386 kernel-exec-linklib
+#MM- kernel-expansion-module-pc-i386 : kernel-expansion-pc-i386 kernel-expansion-linklib
+#MM- kernel-dos-module-pc-i386 : dos-pc-i386 kernel-dos-linklib
+#MM- kernel-aros-module-pc-i386 : kernel-aros-pc-i386 kernel-aros-linklib
+#MM- kernel-oop-module-pc-i386 : kernel-oop-pc-i386 kernel-oop-linklib
+#MM- kernel-timer-module-pc-i386 : kernel-timer-pc-i386 kernel-timer-linklib
+#MM- kernel-misc-module-pc-i386 : kernel-misc-pc-i386 kernel-misc-linklib
+#MM- kernel-battclock-module-pc-i386 : kernel-battclock-pc-i386 kernel-battclock-linklib
+#MM- kernel-keymap-module-pc-i386 : kernel-keymap-pc-i386 kernel-keymap-linklib
+#MM- kernel-workbench-module-pc-i386 : kernel-workbench-pc-i386 kernel-workbench-linklib
+#MM- kernel-devs-module-pc-i386 : kernel-devs-pc-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib aminet-disk-cdrom-amicdrom-linklib
+#MM- kernel-intuition-module-pc-i386 : intuition-gfxhidd intuition-pc-i386 kernel-intuition-linklib
+#MM- kernel-cgfx-module-pc-i386 : kernel-cgfx-pc-i386 kernel-cgfx-linklib
 
 #
 # Setup libraries
 #
 
-#MM kernel-expansion-native-i386 :
-kernel-expansion-native-i386 :
+
+#MM kernel-expansion-pc-i386 :
+kernel-expansion-pc-i386 :
 	%add_objects rom/boot/libexpansion
 
-#MM kernel-utility-native-i386 :
-kernel-utility-native-i386 :
+#MM kernel-utility-pc-i386 :
+kernel-utility-pc-i386 :
 	%add_objects rom/boot/libutility
 
-#MM kernel-dos-native-i386 :
-kernel-dos-native-i386 :
+#MM kernel-dos-pc-i386 :
+kernel-dos-pc-i386 :
 	%add_objects rom/boot/libdos
 
-#MM kernel-boot-native-i386 :
+#MM kernel-boot-pc-i386 :
 	%add_objects rom/boot/libboot
 
-#MM kernel-aros-native-i386 :
-kernel-aros-native-i386 :
+#MM kernel-aros-pc-i386 :
+kernel-aros-pc-i386 :
 	%add_objects rom/boot/libaros
 
-#MM kernel-oop-native-i386 :
-kernel-oop-native-i386 :
+#MM kernel-oop-pc-i386 :
+kernel-oop-pc-i386 :
 	%add_objects rom/boot/liboop
 
-#MM kernel-hidd-native-i386 :
-kernel-hidd-native-i386 :
+#MM kernel-hidd-pc-i386 :
+kernel-hidd-pc-i386 :
 	%add_objects rom/boot/libhiddclass
 
-#MM kernel-layers-native-i386 :
-kernel-layers-native-i386 :
+#MM kernel-layers-pc-i386 :
+kernel-layers-pc-i386 :
 	%add_objects rom/boot/liblayers
 
-#MM kernel-timer-native-i386 :
-kernel-timer-native-i386 :
+#MM kernel-timer-pc-i386 :
+kernel-timer-pc-i386 :
 	%add_objects rom/boot/libtimer
 
-#MM kernel-misc-native-i386 :
-kernel-misc-native-i386 :
+#MM kernel-misc-pc-i386 :
+kernel-misc-pc-i386 :
 	%add_objects rom/boot/libmisc
 
-#MM kernel-battclock-native-i386 :
-kernel-battclock-native-i386 :
+#MM kernel-battclock-pc-i386 :
+kernel-battclock-pc-i386 :
 	%add_objects rom/boot/libbattclock
 
-#MM kernel-keymap-native-i386 :
-kernel-keymap-native-i386 :
+#MM kernel-keymap-pc-i386 :
+kernel-keymap-pc-i386 :
 	%add_objects rom/boot/libkeymap
 
-#MM kernel-mathffp-native-i386 :
-kernel-mathffp-native-i386 :
+#MM kernel-mathffp-pc-i386 :
+kernel-mathffp-pc-i386 :
 	%add_objects rom/boot/libmathffp
 
-#MM kernel-mathieeesingbas-native-i386 :
-kernel-mathieeesingbas-native-i386 :
+#MM kernel-mathieeesingbas-pc-i386 :
+kernel-mathieeesingbas-pc-i386 :
 	%add_objects rom/boot/libmathieeesingbas
 
-#MM kernel-workbench-native-i386 :
-kernel-workbench-native-i386 :
+#MM kernel-workbench-pc-i386 :
+kernel-workbench-pc-i386 :
 	%add_objects rom/boot/libworkbench
 
-#MM kernel-devs-native-i386 :
-kernel-devs-native-i386 :
+#MM kernel-devs-pc-i386 :
+kernel-devs-pc-i386 :
 	%add_objects rom/boot/libgameport
 	%add_objects rom/boot/libinput
 	%add_objects rom/boot/libkeyboard
@@ -159,21 +162,21 @@ kernel-devs-native-i386 :
 	%add_objects rom/boot/libram
 	%add_objects rom/boot/libcdrom
         
-#MM kernel-graphics-native-i386 :
-kernel-graphics-native-i386 :
+#MM kernel-graphics-pc-i386 :
+kernel-graphics-pc-i386 :
 	%add_objects rom/boot/libgraphics
 	%add_objects rom/boot/libhiddgraphicsstubs
 
-#MM kernel-intuition-native-i386 :
-kernel-intuition-native-i386 :
+#MM kernel-intuition-pc-i386 :
+kernel-intuition-pc-i386 :
 	%add_objects rom/boot/libintuition
 
-#MM kernel-filesys-native-i386 :
-kernel-filesys-native-i386 :
+#MM kernel-filesys-pc-i386 :
+kernel-filesys-pc-i386 :
 	%add_objects rom/boot/libcon
 
-#MM kernel-cgfx-native-i386 : kernel-cgfx-linklib
-kernel-cgfx-native-i386 :
+#MM kernel-cgfx-pc-i386 :
+kernel-cgfx-pc-i386 :
 	%add_objects rom/boot/libcybergraphics
 
 
@@ -182,12 +185,7 @@ kernel-cgfx-native-i386 :
 create-mf-inc-again :
 	@$(MAKE) -f $(TOP)/config/mmakefile setup
 
-# Setup the CLIB metatargets...
-#MM- setup-clib-native : setup-clib-native-i386
-
-#MM- clib-native : clib-native-i386
-
-#MM- includes-native : includes-copy-native-i386 includes-copy includes-native-i386
+#MM- includes-pc-i386 : includes-copy-pc-i386 includes-copy
 
 #MM
 install-bootdisk :
@@ -197,9 +195,9 @@ install-bootdisk :
 	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
 
 #MM
-install-native-i386 :
+install-pc-i386 :
 	@$(ECHO) -n "Copying aros kernel to /aros/boot directory... "
-	@cp $(BINDIR)/boot/aros-native-i386 /aros/boot/
+	@cp $(BINDIR)/boot/aros-pc-i386 /aros/boot/
 	@$(ECHO) "Done."
 #	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
 #	@read

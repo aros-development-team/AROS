@@ -12,7 +12,7 @@ AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
 %define_libs
 
 #MM
-kernel-devs-native-i386 : $(LIB)
+kernel-devs-pc-i386 : $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)

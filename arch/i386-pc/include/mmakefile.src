@@ -15,11 +15,11 @@ DIRS :=	$(INCDIR) $(GENINCDIR) \
 MACHINE_H := $(GENINCDIR)/aros/machine.h
 
 #MM
-includes-native-i386 : $(INCFILES) machine.i
+includes-pc-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
-includes-copy-native-i386 : $(INCFILES) $(GENINCDIR)/sigcore.h
+includes-copy-pc-i386 : $(INCFILES) $(GENINCDIR)/sigcore.h
 	@$(NOP)
 
 #MM

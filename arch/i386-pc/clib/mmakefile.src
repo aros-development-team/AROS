@@ -9,11 +9,11 @@ AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=
 
 #MM
-clib-native-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+clib-pc-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 	@$(NOP)
 
 #MM
-setup-clib-native-i386 :
+setup-clib-pc-i386 :
 	%mkdirs_q $(CLIBDIR)
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 
