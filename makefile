@@ -190,8 +190,7 @@ setup :
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
 	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
 	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
-
-	#@$(MAKE) $(MFLAGS) subdirs TARGET=setup
+	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
 
 # BEGIN_DESC{target}
 # \item{check} Run tests to check if AROS runs ok on your system.
