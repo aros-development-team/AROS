@@ -74,14 +74,14 @@ struct DriveGeometry
 {
     ULONG dg_SectorSize;
     ULONG dg_TotalSectors;
-    ULONG dg_Cyclinders;
+    ULONG dg_Cylinders;
     ULONG dg_CylSectors;
     ULONG dg_Heads;
     ULONG dg_TrackSectors;
     ULONG dg_BufMemType;
     UBYTE dg_DeviceType;   /* see below */
     UBYTE dg_Flags;        /* see below */
-    UWORD gd_Reserved;
+    UWORD dg_Reserved;
 };
 
 /* dg_DeviceType */
