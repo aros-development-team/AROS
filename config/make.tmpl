@@ -1644,51 +1644,58 @@ DEPS := $(DEPS) $(STUBS_DEP)
 # already contains either a '/' (slash) or a ':' (colon), thus simply attach it
 # to the name which has to follow it.
 
-%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
-    aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
+
+%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= aros_prefix= \
+    extraoptions= nix_dir_layout= nix=no host=no \
     install_target=install postconfigure= postinstall=
 
-ifeq (%(nix),yes)
-    %(mmake)-nix := -nix
-endif
-ifneq (%(bindir),)
-    %(mmake)-bindir := --bindir=%(bindir)
-    %(mmake)-PROGDIR := %(bindir)
-endif
-ifneq (%(includedir),)
-    %(mmake)-includedir := --includedir=%(includedir)
-endif
-ifneq (%(libdir),)
-    %(mmake)-libdir := --libdir=%(libdir)
-endif
 ifneq (%(prefix),)
-    %(mmake)-install_prefix      := prefix=%(prefix)
-    %(mmake)-install_exec-prefix := exec_prefix=%(prefix)
+    %(mmake)-prefix := %(prefix)
 else
-    %(mmake)-install_prefix      := prefix=$(CONTRIBDIR)
-    %(mmake)-install_exec-prefix := exec_prefix=$(CONTRIBDIR)
-    
-    ifeq ($(%(mmake)-bindir),)
-        %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
-        %(mmake)-PROGDIR := $(CONTRIBDIR)
-    endif
-    ifeq ($(%(mmake)-libdir),)
-        %(mmake)-libdir := --libdir=$(LIBDIR)
-    endif
-    ifeq ($(%(mmake)-includedir),)
-        %(mmake)-includedir := --includedir=$(AROS_INCLUDES)
-    endif
+    %(mmake)-prefix := $(AROS_CONTRIB)
 endif
 
 ifneq (%(aros_prefix),)
-    %(mmake)-compile_prefix := --prefix=%(aros_prefix)
+    %(mmake)-aros_prefix := %(aros_prefix)
 else
-    %(mmake)-compile_prefix := --$(%(mmake)-install_prefix)
+    %(mmake)-aros_prefix := $(%(mmake)-prefix)
 endif
 
-ifeq ($(%(mmake)-PROGDIR),)
-    %(mmake)-PROGDIR := %(prefix)/bin
+ifeq (%(nix),yes)
+    %(mmake)-nix    := -nix
+    %(mmake)-volpfx := /
+    %(mmake)-volsfx := /
+    
+    ifeq (%(nix_dir_layout),)
+        %(mmake)-nix_dir_layout := yes
+    endif
+else
+    %(mmake)-volsfx := :
+    
+    ifeq (%(nix_dir_layout),)
+        %(mmake)-nix_dir_layout := no
+    endif
 endif
+
+%(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
+
+ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) %(host)),yes)
+    %(mmake)-config_opts  := --prefix=$(%(mmake)-aros_prefix)
+    %(mmake)-PROGDIR      := $(%(mmake)-aros_prefix)/bin
+    %(mmake)-install_opts :=   
+else
+    %(mmake)-config_opts := --prefix=$(call %(mmake)-volfunc, PROGDIR) \
+    --bindir=$(call %(mmake)-volfunc, PROGDIR) --sbindir=$(call %(mmake)-volfunc, PROGDIR) \
+    --libdir=$(call %(mmake)-volfunc, LIB) --includedir=$(call %(mmake)-volfunc, INCLUDE) \
+    --oldincludedir=$(call %(mmake)-volfunc, INCLUDE)  
+
+    %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
+    
+    %(mmake)-install_opts := bindir=$(%(mmake)-PROGDIR) sbindir=bindir=$(%(mmake)-PROGDIR) \
+    libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) oldincludedir=$(AROS_INCLUDES)
+endif
+
+%(mmake)-install_opts += prefix=$(%(mmake)-prefix) exec_prefix=$(%(mmake)-prefix)
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
 
@@ -1697,14 +1704,14 @@ endif
 ifneq (%(install_target),)
     %(mmake)-install_command := \
     if ! test -e $(GENDIR)/$(CURDIR)/.installed; then \
-        $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
-        $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) %(install_target); \
+        $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
+        -C $(GENDIR)/$(CURDIR) %(install_target) && \
         $(TOUCH) $(GENDIR)/$(CURDIR)/.installed; \
     fi
 
     %(mmake)-uninstall_command := \
-    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
-    $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) uninstall; \
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
+    -C $(GENDIR)/$(CURDIR) uninstall && \
     $(RM) $(GENDIR)/$(CURDIR)/.installed
 else
     %(mmake)-install_command   := $(TRUE)
@@ -1715,14 +1722,10 @@ endif
 
 #MM
 %(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.configured
-	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
-            $(RM) $(GENDIR)/$(CURDIR)/.installed; \
-	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
-	    ret=$$?; \
-	    if [ $$ret -ne 0 ]; then \
-	        exit $$ret; \
-	    fi; \
-	fi; \
+	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(GENDIR)/$(CURDIR); then \
+            $(RM) $(GENDIR)/$(CURDIR)/.installed && \
+	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(GENDIR)/$(CURDIR); \
+	fi && \
 	$(%(mmake)-install_command)
 
 %(srcdir)/.files-touched:
@@ -1739,13 +1742,12 @@ endif
 
 ifeq (%(host),yes)
 $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
+	$(RM) $@ 
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) && \
+	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	    $(TOUCH) $@
 else
 $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
@@ -1754,8 +1756,7 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
+	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
 	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls --without-x \
             --without-pic --disable-shared && \
 	    $(TOUCH) $@
@@ -1807,8 +1808,8 @@ endif
 #                         The patch_subdir and patch_opt fields are optional.
 
 %define fetch archive_origins=. archive=/A suffixes= destination=. patches_origins=. patches_specs=::
-	$(FETCH) -ao "%(archive_origins)" -a %(archive) -as "%(suffixes)" -d %(destination) -po "%(patches_origins)" \
-	         -p %(patches_specs)
+	$(FETCH) -ao "%(archive_origins)" -a %(archive) -as "%(suffixes)" -d %(destination) \
+        -po "%(patches_origins)" -p %(patches_specs)
 %end
 
 #-----------------------------------------------------------------------------------------
@@ -1883,6 +1884,7 @@ GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
 
 #MM- %(mmake)-fetch : %(mmake)-%(subpackage)-fetch
 
+.PHONY : %(mmake)-%(subpackage)-fetch
 #MM
 %(mmake)-%(subpackage)-fetch :
 	%fetch archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" \
@@ -1899,12 +1901,13 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %(mmake)-%(subpackage)-package-basename := \
     $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
 
-%build_with_configure mmake=%(mmake)-%(subpackage) \
+% mmake=%(mmake)-%(subpackage) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix="%(aros_prefix)" \
      postconfigure="%(postconfigure)" postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" \
      extraoptions="%(extraoptions)"
 
+.PHONY : %(mmake)-%(subpackage)-make-package
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 %(mmake)-%(subpackage)-make-package :
 	@if test $(GENDIR)/$(CURDIR)/.installed -nt $(%(mmake)-%(subpackage)-package-basename).tar.bz2; then \
