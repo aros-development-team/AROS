@@ -130,7 +130,7 @@
     /* Construct the name from top to bottom */
     name=buffer+length;
     *--name=0;
-    curlock= fh==NULL?DOSBase->dl_NulLock:fh->fh_Unit;
+    curlock = fh->fh_Unit;
     /* Loop over path */
     do
     {
@@ -197,6 +197,8 @@
     /* All done. */
     me->pr_Result2=error;
     
+    UnLock((BPTR)MKBADDR(fh));
+        
     return error ? DOSFALSE : DOSTRUE;
     
     AROS_LIBFUNC_EXIT
