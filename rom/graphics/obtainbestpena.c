@@ -129,7 +129,17 @@
         	** In the other case retval is not changed.
         	*/
         	if (TRUE == defaults[1].ti_Data)
-        	  retval = -1;
+		{
+        	    retval = -1;
+		}
+		else if (retval != -1)
+		{
+		    /*
+		    ** One more application is using this color
+		    */
+		    
+		    pe->pe_RefCnt[retval]++;
+		}
 	    }
 	    else
                 retval = tmp;
