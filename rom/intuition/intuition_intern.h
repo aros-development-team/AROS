@@ -317,6 +317,9 @@ struct IntWindow
     WORD mousequeue;
     /* act. number of mousemove events sent to this window */
     WORD num_mouseevents;
+    
+    WORD sizeimage_width;
+    WORD sizeimage_height;
 };
 
 
