@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
+#include <string.h>
 /*****************************************************************************
 
     NAME */
