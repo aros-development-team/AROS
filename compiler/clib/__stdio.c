@@ -60,7 +60,7 @@ int __smode2oflags(char *mode)
     {
 	ret = O_RDWR | (ret & ~O_ACCMODE);
     }
-    else if (*mode)
+    else if (*mode != 'b')
     {
     	errno = EINVAL;
 	return -1;
