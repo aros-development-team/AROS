@@ -1,7 +1,7 @@
 /* gui.c -- here are all functions for the gui */
 
 /*
-  Comment the next line if do not you want to use the
+  Comment out the next line if do not you want to use the
   experimental Intuition based GUI
 */
 #define INTUIGUI 1
@@ -81,34 +81,43 @@ const char GuiWinTitle[] ="AROS - Installer V43.3";
 
 APTR vi;
 struct Screen *scr;
-struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
+struct Gadget *glist = NULL, *gad = NULL;
 
+struct IntuiText itext = {
+    1,		/* FrontPen */
+    0,		/* BackPen */
+    JAM1,	/* DrawMode */
+    10,		/* LeftEdge */
+    10,		/* TopEdge */
+    NULL,	/* ITextFont */
+    NULL,	/* IText */
+    NULL	/* NextText */
+};
 
-#define ID_BOOLGAD 1
+#define ID_BOOLGADFALSE 0
 struct NewGadget gt_boolgadfalse = {
-  10,10, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  15,92, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
   NULL, /* ng_GadgetText */
   NULL, /* ng_TextAttr */
-  ID_BOOLGAD, /* ng_GadgetID */
+  ID_BOOLGADFALSE, /* ng_GadgetID */
   PLACETEXT_IN, /* ng_Flags */
   NULL, /* ng_VisualInfo */
   NULL  /* ng_UserData */
 };
 
-#define ID_BOOLGAD 2
+#define ID_BOOLGADTRUE 1
 struct NewGadget gt_boolgadtrue = {
-  50,10, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  15,132, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
   NULL, /* ng_GadgetText */
   NULL, /* ng_TextAttr */
-  ID_BOOLGAD, /* ng_GadgetID */
+  ID_BOOLGADTRUE, /* ng_GadgetID */
   PLACETEXT_IN, /* ng_Flags */
   NULL, /* ng_VisualInfo */
   NULL  /* ng_UserData */
 };
 
-#define ID_TEXTGAD 4
 struct NewGadget gt_textgad = {
-  10,50, 100,70, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
+  15,90, 100,70, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
   NULL, /* ng_GadgetText */
   NULL, /* ng_TextAttr */
   0, /* ng_GadgetID */
@@ -144,6 +153,18 @@ struct TagItem tags[] =
 
   { TAG_DONE }
 };
+struct TagItem ti1[] = {
+  { GA_Immediate, TRUE },
+  { TAG_DONE }
+};
+/*
+    struct TagItem ti2[] = {
+	{ GTTX_Text, (ULONG)"dummystring" },
+	{ GTTX_CopyText, TRUE },
+	{ GTTX_Border, TRUE },
+	{ GTTX_Justification, GTJ_LEFT },
+	{ TAG_DONE } };
+*/
 
   IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37 );
   if (IntuitionBase == NULL)
@@ -184,6 +205,11 @@ struct TagItem tags[] =
   gt_boolgadtrue.ng_VisualInfo = vi;
   gt_boolgadfalse.ng_VisualInfo = vi;
   gt_textgad.ng_VisualInfo = vi;
+
+  gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadtrue, ti1 );
+  gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadfalse, ti1 );
+//  gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
+
 }
 
 
@@ -217,20 +243,12 @@ void clear_gui()
  */
 void show_abort( char *msg )
 {
-struct IntuiText itext;
 char **out, *text;
 int n, m;
 
   if( get_var_int( "@user-level" ) > _NOVICE )
   {
     clear_gui();
-    itext.NextText = NULL;
-    itext.FrontPen = 1;
-    itext.BackPen = 0;
-    itext.DrawMode = JAM1;
-    itext.LeftEdge = 10;
-    itext.TopEdge = 10;
-    itext.ITextFont = NULL;
 
     text = strdup( "Aborting Installation:" );
     outofmem( text );
@@ -277,18 +295,10 @@ char *text;
  */
 void show_exit( char *msg )
 {
-struct IntuiText itext;
 char **out, *text;
 int n, m;
 
   clear_gui();
-  itext.NextText = NULL;
-  itext.FrontPen = 1;
-  itext.BackPen = 0;
-  itext.DrawMode = JAM1;
-  itext.LeftEdge = 10;
-  itext.TopEdge = 10;
-  itext.ITextFont = NULL;
 
   text = strdup( "Aborting Installation:" );
   outofmem( text );
@@ -369,18 +379,10 @@ int count = 1, i = -1;
  */
 void show_working( char *msg )
 {
-struct IntuiText itext;
 char *text, **out;
 int n, m;
 
   clear_gui();
-  itext.NextText = NULL;
-  itext.FrontPen = 1;
-  itext.BackPen = 0;
-  itext.DrawMode = JAM1;
-  itext.LeftEdge = 10;
-  itext.TopEdge = 10;
-  itext.ITextFont = NULL;
 
   text = strdup( "Working on Installation:" );
   outofmem( text );
@@ -411,7 +413,6 @@ int n, m;
  */
 void show_message( char * msg ,struct ParameterList * pl )
 {
-struct IntuiText itext;
 char **out;
 int n, m;
 char c;
@@ -420,13 +421,6 @@ int finish = FALSE;
   if( GetPL( pl, _ALL ).used == 1 || get_var_int( "@user-level" ) > _NOVICE )
   {
     clear_gui();
-    itext.NextText = NULL;
-    itext.FrontPen = 1;
-    itext.BackPen = 0;
-    itext.DrawMode = JAM1;
-    itext.LeftEdge = 10;
-    itext.TopEdge = 10;
-    itext.ITextFont = NULL;
 
     out = malloc( sizeof( char * ) );
     outofmem( out );
@@ -640,40 +634,23 @@ char c;
   if( get_var_int( "@user-level" ) > _NOVICE )
 #ifdef INTUIGUI
   {
-    struct IntuiText itext;
     char **out;
     int j, n, m;
-    struct TagItem ti1[] = {
-		    	{ GA_Immediate, TRUE },
-		    	{ TAG_DONE }
-    };
-    struct TagItem ti2[] = {
-	{ GTTX_Text, (ULONG)yesstring },
-	{ GTTX_CopyText, TRUE },
-	{ GTTX_Border, TRUE },
-	{ GTTX_Justification, GTJ_CENTER },
-	{ TAG_DONE } };
 
     clear_gui();
-    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadtrue, ti1 );
-    first = gad;
-    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadfalse, ti1 );
-
-    gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
 
     AddGList(GuiWin,glist,-1,-1,NULL);
     RefreshGList(glist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
-    //DrawBevelBoxA(rp, 8,8,160,75,bevel_tag);
+    DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-15-GuiWin->BorderTop,bevel_tag);
+    DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-110-GuiWin->BorderTop,bevel_tag);
         
 #if 1
-    itext.NextText = NULL;
-    itext.FrontPen = 1;
-    itext.BackPen = 0;
-    itext.DrawMode = JAM1;
-    itext.LeftEdge = 10;
-    itext.TopEdge = 10;
-    itext.ITextFont = NULL;
+
+    itext.IText = nostring;
+    PrintIText( rp, &itext, 40, 92 );
+    itext.IText = yesstring;
+    PrintIText( rp, &itext, 40, 132 );
 
     j = 0;
     for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
@@ -688,7 +665,7 @@ char c;
       for( n = 0 ; n < m ; n++ )
       {
         itext.IText = out[n];
-        PrintIText( rp, &itext, 10, 15*(j+5) );
+        PrintIText( rp, &itext, 15, 15*j+7 );
         free( out[n] );
         j++;
       }
@@ -696,11 +673,9 @@ char c;
     }
     do
     {
-      printf("******* Waiting\n");
       WaitPort( GuiWin->UserPort );
       while((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
-        printf("*** recevied\n");
 	class = imsg->Class;
 	code = imsg->Code;
 	switch( class )
@@ -708,15 +683,15 @@ char c;
           case IDCMP_GADGETUP:
         	switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
         	{
-                  case 1:
+                  case 0:
                     retval = 0;
                     finish = TRUE;
                     break;
-                  case 2:
+                  case 1:
                     retval = 1;
                     finish = TRUE;
                     break;
-                  case 0:
+                  case 2:
                     abort_install();
                     break;
                   case 3:
@@ -1185,7 +1160,6 @@ return retval;
  */
 int request_confirm( struct ParameterList * pl, long int minuser )
 {
-struct IntuiText itext;
 int n, m, finish = FALSE;
 int retval = 1;
 char c;
@@ -1193,13 +1167,6 @@ char c;
   if( get_var_int( "@user-level" ) >= minuser )
   {
     clear_gui();
-    itext.NextText = NULL;
-    itext.FrontPen = 1;
-    itext.BackPen = 0;
-    itext.DrawMode = JAM1;
-    itext.LeftEdge = 10;
-    itext.TopEdge = 10;
-    itext.ITextFont = NULL;
 
     m = GetPL( pl, _PROMPT ).intval;
     if( m == 0 )

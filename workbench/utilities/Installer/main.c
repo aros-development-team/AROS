@@ -43,7 +43,7 @@ int error = 0, grace_exit = 0;
 InstallerPrefs preferences;
 ScriptArg script;
 
-IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+IPTR * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
 /*
  * MAIN
@@ -56,7 +56,7 @@ ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
   /* evaluate args with RDArgs(); */
-  rda = ReadArgs( ARG_TEMPLATE, args, NULL );
+  rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
   if( rda == NULL )
   {
     PrintFault( IoErr(), "Installer" );
@@ -67,14 +67,16 @@ int nextarg, endoffile, count;
 #ifdef DEBUG
   if( args[ARG_SCRIPT] )
   {
-    filename = strdup( (char *)args[ARG_SCRIPT] );
+    printf( "Using script %s.\n", (STRPTR)args[ARG_SCRIPT] );
+    filename = strdup( (STRPTR)args[ARG_SCRIPT] );
   }
   else
   {
+    printf( "Using default script.\n" );
     filename = strdup( "test.script" );
   }
 #else /* DEBUG */
-  filename = strdup( args[ARG_SCRIPT] );
+  filename = strdup( (STRPTR)args[ARG_SCRIPT] );
 #endif /* DEBUG */
 
   inputfile = Open( filename, MODE_OLDFILE );
@@ -95,7 +97,7 @@ int nextarg, endoffile, count;
   }
   preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
   preferences.transcriptstream = NULL;
-  preferences.nopretend = args[ARG_NOPRETEND];
+  preferences.nopretend = (int)args[ARG_NOPRETEND];
   preferences.pretend = 0;
 
 #ifdef DEBUG
@@ -140,7 +142,6 @@ int nextarg, endoffile, count;
     preferences.trapparent[count] = NULL;
   }
 
-  FreeArgs(rda);
 #warning FIXME: distinguish between cli/workbench invocation
 
   /* Init GUI -- i.e open empty window */
@@ -273,6 +274,9 @@ int nextarg, endoffile, count;
 
   /* Set variables which are not constant */
   set_preset_variables();
+
+  /* Finally free ReadArgs struct (set_preset_variables() needed them) */
+  FreeArgs(rda);
 
   if( get_var_int( "@user-level" ) == _NOVICE )
   {

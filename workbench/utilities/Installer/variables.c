@@ -160,7 +160,7 @@ void set_preset_variables( )
 #ifdef DEBUG
   if( args[ARG_APPNAME] )
   {
-    set_variable( "@app-name", (char *)args[ARG_APPNAME], 0 );
+    set_variable( "@app-name", (STRPTR)args[ARG_APPNAME], 0 );
   }
   else
   {
