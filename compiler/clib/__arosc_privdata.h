@@ -67,6 +67,10 @@ struct arosc_privdata
     struct timerequest  acpd_timereq;
     struct MsgPort      acpd_timeport;
     struct Device      *acpd_TimerBase;
+
+    /* __arosc_usedata  */
+    void (*acpd_oldexitcode)();
+    IPTR acpd_oldexitdata;
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())

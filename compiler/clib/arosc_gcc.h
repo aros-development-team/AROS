@@ -14,7 +14,6 @@
 struct aroscbase
 {
     struct Library library;
-    struct ExecBase *sysbase;
     BPTR seglist;
 };
 /*
