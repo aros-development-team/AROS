@@ -1,14 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
-                                                                                
-SPECIAL_AFLAGS := -I..
+
+USER_AFLAGS := -I..
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles=execstubs \
   files=atomic \
   arch=ppc
-                                                                                
-#MM kernel-exec-ppc : kernel-ppc-machine_i
-                                                                                
-%common
 
+#MM kernel-exec-ppc : kernel-ppc-machine_i
+
+%common

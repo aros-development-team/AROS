@@ -1,11 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS     := $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I../include
 USER_AFLAGS 	:= -I../include
 %build_archspecific \
   mainmmake=linklibs-clib maindir=compiler/clib \
   arch=ppc \
   asmfiles="longjmp setjmp"
 
-%common
+#MM linklibs-clib-ppc : kernel-ppc-machine_i
 
+%common
