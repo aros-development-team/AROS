@@ -4,6 +4,10 @@ int
 <ckeyword>int</ckeyword>
 char
 <ckeyword>char</ckeyword>
+void
+<ckeyword>void</ckeyword>
+struct
+<ckeyword>struct</ckeyword>
 @include
 <cppkeyword>#include</cppkeyword>
 @comment
