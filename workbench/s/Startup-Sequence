@@ -1,82 +1,50 @@
-; $Id$
-;
-; $VER: AROS Startup-Sequence 1.39
-
-;SetPatch QUIET
-
-;SetClock LOAD
+SetClock LOAD
 
 Mount PIPEFS:
 
-Version >NIL:
 FailAt 21
 
-MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
+Makedir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/SYS
+
 
 Assign ENV:     RAM:ENV
 Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
+
 Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
+Assign FDSK: SYS:DiskImages
 
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
+Path C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+Path SYS:Demos ADD QUIET
+
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
-;Mount DEVS:DOSDrivers/~(#?.info)
 
-SetEnv Workbench $Workbench
-SetEnv Kickstart $Kickstart
+If NOT EXISTS FONTS:fixed.font
+    FixFonts
+EndIf
 
 AddDatatypes REFRESH QUIET
 IPrefs
 Run <NIL: >NIL: ConClip
 
-Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
-
-; -- BEGIN "AROS under construction" section -------------------------
-
-SetClock LOAD
-
-; Call FixFonts if it was never called before
-If NOT EXISTS SYS:Fonts/_fixfonts_called
-  FixFonts
-  echo "blah" >SYS:Fonts/_fixfonts_called
-EndIf
-
-; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
-; to /dev/fd0 (you'll need access rights on the device later -
-; on most systems this will work only if you are root) then uncomment
-; the last two lines below.
-;
-; Ordinary users can use fdsk.device both on their Amiga and their
-; linux box to mount disc images.
-
-Assign FDSK: SYS:DiskImages
-;Mount FDSK0:
-
-PATH SYS:Demos ADD QUIET
-
-If exists C:RexxMast
-  assign REXX: S:
-  run <NIL: >NIL: C:RexxMast
+If EXISTS C:RexxMast
+    Assign REXX: S:
+    Run <NIL: >NIL: C:RexxMast
 EndIf
   
-; -- END "AROS under construction" section ---------------------------
-
-
 If EXISTS S:User-Startup
-  Execute S:User-Startup
+    Execute S:User-Startup
 EndIf
 
 LoadWB
 
-Execute S:Shell-Startup
-
-;EndCLI
-
+EndCLI
