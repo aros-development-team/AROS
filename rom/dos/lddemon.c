@@ -491,7 +491,10 @@ AROS_LH4(BYTE, OpenDevice,
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
     if (!object)
-        return NULL;
+    {
+        iORequest->io_Device = NULL;
+        return IOERR_OPENFAIL;
+    }
 
     ObtainSemaphore(&object->ldon_SigSem);
 
