@@ -50,13 +50,13 @@ $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(APPCFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

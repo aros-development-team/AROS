@@ -47,25 +47,25 @@ $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
-	$(CC) $(CFLAGS) -I$(TOP)/libs -c $< -o $@
+	$(CC) $(APPCFLAGS) -I$(TOP)/libs -c $< -o $@
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(APPCFLAGS) -- $^
 
 $(OBJDIR)/librarytest.d: librarytest.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -I$(TOP)/libs -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -I$(TOP)/libs -- $(APPCFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

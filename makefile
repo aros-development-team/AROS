@@ -124,7 +124,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) $(X11LDFLAGS) -lX11 -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \

@@ -12,11 +12,16 @@ type=`uname`
 proc=`uname -m`
 
 # Reasonable defaults
+# $COMMON_CFLAGS - the compile-flags for objects that are a part of AROS.
+# $APP_CFLAGS    - the compile-flags for applications that will run under AROS
+#                  (e.g. AROS/c/#?). If you do not define this, $COMMON_CFLAGS
+#                  will be used.
 CC="cc"
 COMMON_CFLAGS="-g"
 RANLIB="ranlib"
-X11LIBDIR=""
-X11INCDIR=""
+GUI_LIBDIR=""
+GUI_INCDIR=""
+GUI_LIBFLAGS=""
 MKDEPEND="makedepend"
 
 # Flags to link AROS binaries (ie. binaries which are to be started
@@ -29,10 +34,10 @@ ILDFLAGS="-nostartfiles -nostdlib"
 # Special flags for $AS are taken from $COMMON_AFLAGS, if it exists or
 # from $COMMON_CFLAGS otherwise.
 # If X11 is installed in a directory of it's own, you can specify that
-# directory in $X11BASEDIR. $X11LIBDIR will then point to $X11BASEDIR/lib
-# and $X11LDFLAGS will contain -L$X11LIBDIR. The same applies to $X11INCDIR.
+# directory in $GUI_BASEDIR. $GUI_LIBDIR will then point to $GUI_BASEDIR/lib
+# and $GUI_LDFLAGS will contain -L$GUI_LIBDIR. The same applies to $GUI_INCDIR.
 # If only one part is in a nonstandard place (eg. the libs), you
-# can set one of the $X11LIBDIR/X11INCDIRs, too.
+# can set one of the $GUI_LIBDIR/GUI_INCDIRs, too.
 
 case "$type" in
 "Linux" )
@@ -47,7 +52,8 @@ case "$type" in
 	    KERNEL="i386-emul"
 	    MKDEPEND="makedepend -D__GNUC__ -Di386"
         fi
-	X11LIBDIR="/usr/X11R6/lib"
+	GUI_LIBDIR="/usr/X11R6/lib"
+	GUI_LIBFLAGS="-lX11"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "HP-UX" )
@@ -65,13 +71,14 @@ case "$type" in
 	KERNEL="i386-emul"
 	COMMON_CFLAGS="-Wall -g -O2"
 	ILDFLAGS="-nostartfiles -nostdlib"
-	X11BASEDIR="/usr/X11R6"
+	GUI_BASEDIR="/usr/X11R6"
+	GUI_LIBFLAGS="-lX11"
 	AS="gcc"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "AmigaOS" )
 	CC="gcc"
-	COMMON_CFLAGS="-Wall -O0 -m68020"
+	COMMON_CFLAGS="-Wall -O -m68020"
 	ILDFLAGS="-nostartfiles -nostdlib"
 	ARCH="amiga"
 	KERNEL="m68k-native"
@@ -102,26 +109,33 @@ else
     echo "COMMON_AFLAGS = $COMMON_AFLAGS" >> $1
 fi
 
-if [ -n "$X11BASEDIR" ]; then
-    X11LIBDIR=$X11BASEDIR/lib
-    X11INCDIR=$X11BASEDIR/include
+if [ -z "$APP_CFLAGS" ]; then
+    echo "APP_CFLAGS = $COMMON_CFLAGS" >> $1
+else
+    echo "APP_CFLAGS = $APP_CFLAGS" >> $1
 fi
 
-if [ -n "$X11LIBDIR" ]; then
-    echo "X11LIBDIR = $X11LIBDIR" >> $1
-    echo "X11LDFLAGS = -L$X11LIBDIR" >> $1
-else
-    echo "X11LIBDIR = /usr/lib" >> $1
-    echo "X11LDFLAGS =" >> $1
-fi
-if [ -n "$X11INCDIR" ]; then
-    echo "X11INCDIR = $X11INCDIR" >> $1
-    echo "X11CCFLAGS = -I$X11INCDIR" >> $1
-else
-    echo "X11INCDIR = /usr/include" >> $1
-    echo "X11CCFLAGS =" >> $1
+if [ -n "$GUI_BASEDIR" ]; then
+    GUI_LIBDIR=$GUI_BASEDIR/lib
+    GUI_INCDIR=$GUI_BASEDIR/include
 fi
 
+if [ -n "$GUI_LIBDIR" ]; then
+    echo "GUI_LIBDIR = $GUI_LIBDIR" >> $1
+    echo "GUI_LDFLAGS = -L$GUI_LIBDIR" >> $1
+else
+    echo "GUI_LIBDIR = /usr/lib" >> $1
+    echo "GUI_LDFLAGS =" >> $1
+fi
+if [ -n "$GUI_INCDIR" ]; then
+    echo "GUI_INCDIR = $GUI_INCDIR" >> $1
+    echo "GUI_CCFLAGS = -I$GUI_INCDIR" >> $1
+else
+    echo "GUI_INCDIR = /usr/include" >> $1
+    echo "GUI_CCFLAGS =" >> $1
+fi
+
+echo "GUI_LIBFLAGS = $GUI_LIBFLAGS" >> $1
 echo "MKDEPEND = $MKDEPEND" >> $1
 
 if [ -d config ]; then
