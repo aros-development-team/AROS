@@ -13,8 +13,11 @@
 /*****************************************************************************
 
     NAME */
+
 #include <dos/notify.h>
 #include <proto/dos.h>
+
+#include <string.h>
 
 	AROS_LH1(void, EndNotify,
 
@@ -59,16 +62,23 @@
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
 
-    iofs.IOFS.io_Device = (struct Device *)notify->nr_Device;
-
-    if (iofs.IOFS.io_Device == NULL)
-    {
-	return;
-    }
-
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
-    DoIO(&iofs.IOFS);
+    if (strchr(notify->nr_Name, ':'))
+    {
+	DoName(&iofs, notify->nr_Name, DOSBase);
+    }
+    else
+    {
+	iofs.IOFS.io_Device = (struct Device *)notify->nr_Device;
+	
+	if (iofs.IOFS.io_Device == NULL)
+	{
+	    return;
+	}
+	
+	DoIO(&iofs.IOFS);
+    }
 
     if (notify->nr_Flags & NRF_SEND_MESSAGE)
     {
