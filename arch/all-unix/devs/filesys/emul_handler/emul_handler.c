@@ -1350,6 +1350,7 @@ static LONG examine_next(struct emulbase *emulbase,
 static LONG examine_all(struct emulbase *emulbase,
 			struct filehandle *fh,
                         struct ExAllData *ead,
+                        struct ExAllControl *eac,
                         ULONG  size,
                         ULONG  type)
 {
@@ -1360,6 +1361,7 @@ static LONG examine_all(struct emulbase *emulbase,
     LONG error;
     off_t dummy; /* not anything is done with this value but passed to examine */
 
+    eac->eac_Entries = 0;
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
 
@@ -1397,12 +1399,14 @@ static LONG examine_all(struct emulbase *emulbase,
 	emul_free(emulbase, name);
 	if(error)
 	    break;
+	eac->eac_Entries++;
 	last=ead;
 	ead=ead->ed_Next;
     }
-    if((!error||error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
-    {
+    if (last!=NULL)
 	last->ed_Next=NULL;
+    if((error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
+    {
 	seekdir((DIR *)fh->fd,oldpos);
 	return 0;
     }
@@ -2018,6 +2022,7 @@ AROS_LH1(void, beginio,
 	error = examine_all(emulbase,
 			    (struct filehandle *)iofs->IOFS.io_Unit,
 			    iofs->io_Union.io_EXAMINE_ALL.io_ead,
+			    iofs->io_Union.io_EXAMINE_ALL.io_eac,
 			    iofs->io_Union.io_EXAMINE_ALL.io_Size,
 			    iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	break;
@@ -2151,7 +2156,7 @@ AROS_LH1(void, beginio,
     }
 
     AROS_LIBFUNC_EXIT
-	}
+}
 
 /*********************************************************************************************/
 

@@ -1516,7 +1516,7 @@ static LONG examine(struct ffsbase *ffsbase, struct fh *fh, struct ExAllData *ea
 
 /****************************************************************************************/
 
-static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllData *ead, ULONG size, ULONG type)
+static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllData *ead, struct ExAllControl *eac, ULONG size, ULONG type)
 {
     STRPTR 		end;
     struct ExAllData 	*last=NULL;
@@ -1524,6 +1524,7 @@ static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllDat
     struct dev 		*dev;
     LONG 		error;
     
+    eac->eac_Entries = 0;
     dev=dir->block?dir->vol->dev:(struct dev *)dir->vol;
     end=(STRPTR)ead+size;
     error=read_block_chk(ffsbase,dev,&block,dir->block);
@@ -1561,7 +1562,7 @@ static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllDat
 	    
             return 0;
         }
-	
+	eac->eac_Entries++;
         last=ead;
         ead=ead->ed_Next;
         error=read_block_chk(ffsbase,dev,&block,dir->blocknr);
@@ -1671,6 +1672,7 @@ void deventry(struct ffsbase *ffsbase)
 	    case FSA_EXAMINE_ALL:
 		error = examine_all(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
 				    iofs->io_Union.io_EXAMINE_ALL.io_ead,
+				    iofs->io_Union.io_EXAMINE_ALL.io_eac,
 				    iofs->io_Union.io_EXAMINE_ALL.io_Size,
 				    iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 		break;
