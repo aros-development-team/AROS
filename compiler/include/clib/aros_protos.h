@@ -12,6 +12,9 @@
 #   include <exec/types.h>
 #endif
 
+/*
+    Prototypes
+*/
 ULONG CalcChecksum (APTR mem, ULONG size);
 int   STRCMP	   (const UBYTE *, const UBYTE *);
 
