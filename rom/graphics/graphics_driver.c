@@ -761,7 +761,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     	    current_x += ((WORD *)tf->tf_CharKern)[idx];
 	}
 	    
-	if (tf->tf_Style & FSF_COLORFONT)
+	if ((tf->tf_Style & FSF_COLORFONT) &&
+	    !(CTF(tf)->ctf_Flags & CT_ANTIALIAS))
 	{
     	    #warning Handle color fonts	
 	}
