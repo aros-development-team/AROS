@@ -26,12 +26,14 @@
 #include "include/cd.h"
 #include "include/scsicmds.h"
 
+#include <hidd/irq.h>
+
 #include LC_LIBDEFS_FILE
 
 #define MAX_UNIT    2
 #define MAX_BUS	    4
 #define STACK_SIZE  16384
-#define TASK_PRI    10
+#define TASK_PRI    -10
 
 extern UBYTE LIBEND;
 
@@ -84,7 +86,15 @@ struct ata_Bus {
     UBYTE		    ab_Irq;	/* IRQ used */
     UBYTE		    ab_Dev[2];	/* Master/Slave type, see below */
     UBYTE		    ab_Flags;	/* Bus flags similar to unit flags */
+    BYTE		    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
+					     /* for data requests/DMA */
+    BOOL		    ab_Waiting;
+    ULONG		    ab_Timeout;
+
     struct ata_Unit	    *ab_Units[MAX_UNIT];    /* Units on the bus */
+
+    HIDDT_IRQ_Handler	    *ab_IntHandler;
+    ULONG		    ab_IntCnt;
 
     struct Task		    *ab_Task;	    /* Bus task handling all not-immediate transactions */
     struct MsgPort	    *ab_MsgPort;    /* Task's message port */
@@ -307,6 +317,26 @@ struct ata_Unit {
 #define ATAPIF_COMMAND	    0x01
 #define ATAPIF_READ	    0x02
 #define ATAPIF_WRITE	    0x00
+
+/* SFF-8038i DMA registers */
+#define dma_Command	    0x00
+#define dma_Status	    0x02
+#define dma_PRD		    0x04
+
+/* DMA command register */
+#define DMA_READ	    0x00    /* PCI *READS* from memory to drive */
+#define DMA_WRITE	    0x08    /* PCI *WRITES* to memory from drive */
+#define DMA_START	    0x01    /* DMA Start/Stop */
+
+#define DMAB_Active	    0
+#define DMAB_Error	    1
+#define DMAB_Interrupt	    2
+#define DMAB_Simplex	    7
+
+#define DMAF_Active	    (1 << DMAB_Active)
+#define DMAF_Error	    (1 << DMAB_Error)
+#define DMAF_Interrupt	    (1 << DMAB_Interrupt)
+#define DMAF_Simplex	    (1 << DMAB_Simplex)
 
 #define Unit(io) ((struct ata_Unit *)(io)->io_Unit)
 #define IOStdReq(io) ((struct IOStdReq *)io)
