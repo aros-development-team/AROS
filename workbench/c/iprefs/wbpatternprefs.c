@@ -281,12 +281,12 @@ static struct BitMap *LoadDTBitmap (CONST_STRPTR filename, struct Screen *scr,
     if (o)
     {
 	struct FrameInfo fri = {0};
-	DoMethod(o, DTM_FRAMEBOX, NULL, (IPTR)&fri, (IPTR)&fri, 
+	DoMethod(o, DTM_FRAMEBOX, (IPTR) NULL, (IPTR) &fri, (IPTR) &fri, 
 		 sizeof(struct FrameInfo), 0);
 	
 	if (fri.fri_Dimensions.Depth > 0)
 	{
-	    if (DoMethod(o, DTM_PROCLAYOUT, NULL, 1))
+	    if (DoMethod(o, DTM_PROCLAYOUT, (IPTR) NULL, 1))
 	    {
 		*obj = o;
 		GetDTAttrs(o, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -228,8 +225,8 @@ static void KillNotifications(void)
     if (notifyport)
     {
     	DeleteMsgPort(notifyport);
-	notifyport = NULL;
-	notifysig = NULL;
+	    notifyport = NULL;
+	    notifysig  = 0;
     }
 }
 
