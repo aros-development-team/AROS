@@ -35,12 +35,8 @@
 
 #include <libcore/libheader.c>
 
-struct ExecBase   * SysBase; /* global variable */
-
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    SysBase = lh->misb_SysBase;
-
     return TRUE;
 } /* L_InitLib */
 
