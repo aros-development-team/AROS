@@ -93,7 +93,7 @@ TestExampleLib creates corrupt memory. Maybe library is freed twice ?
 BUG000013
 srittau@aros.org
 Moria3D segfaults with a fp exception while "Loading Fading..." on an
-i486 with internal fpu.
+Intel (compatible) processors with internal FPU.
 This is because you can't operate on floats anymore, maybe FPU has been
 disabled.
 
@@ -113,7 +113,6 @@ the hd filesystem, you can change to RAM: where everything works okay.
 Location of the bug:
 The line file = Open("test.rtdemo",...) causes the error in the long run
 because when removing this line verything seems to work alright.
-
 
 BUG000016 partial fix
 digulla@fh-konstanz.de
@@ -163,7 +162,6 @@ commands to the shell. But if you put these two lines after the call to
 CallHookPkt() you'll get the segmentation fault. Unfortunately I don't know
 which code is executed by the call to CallHookPkt()."
 
-
 BUG000023
 berger@cip.e-technik.uni-erlangen.de
 Demos/sift crashes with a GURU-Meditation saying that memory was
@@ -180,4 +178,17 @@ BUG000025
 hkiel@aros.org
 Seek() does not work properly: The position of the file only changes
 to the new one if the current position is on EOF.
+
+BUG000026
+srittau@aros.org
+When using 2View, it prints multiple error-messages:
+|XError 10 (Major=88, Minor=0)
+|BadAccess (attempt to access private resource denied)
+After quitting graphical programs (eg gtdemo) don't work as expected.
+(Linux 2.0.35, XFree86 3.3.1)
+
+BUG000027
+srittau@aros.org
+Disable does not work correctly with some gadtools-gadgets. At least
+the gadgets are not ghosted.
 
