@@ -170,7 +170,7 @@ void idleTask(struct ExecBase *SysBase)
 	/* Test if there are any other tasks in the ready queue */
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{
-#warning TODO: Doesn't work, yet Reschedule(FindTask(NULL));
+#warning TODO: Does not work, yet Reschedule(FindTask(NULL));
 	    Disable ();
 	    idle->tc_State = TS_READY;
 	    AddTail (&SysBase->TaskReady, &idle->tc_Node);

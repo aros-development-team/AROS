@@ -407,14 +407,14 @@ AROS_UFH2(void,putchr,
 #undef SysBase
 #endif
 
-#warning FIXME: This won't work for normal AmigaOS
+#warning FIXME: This will not work for normal AmigaOS
 /* TODO: This won't work for normal AmigaOS since you can't expect SysBase in A6 */
 AROS_LH0(LONG,entry,struct ExecBase *,SysBase,,)
 {
     UBYTE buf[10+sizeof(LONG)*8*301/1000+1];
     STRPTR ptr=buf;
     struct Process *me=(struct Process *)FindTask(NULL);
-    LONG err;
+    LONG err = 0L;
     struct IOExtTD *iotd;
     struct unit *unit;
 
@@ -428,6 +428,7 @@ AROS_LH0(LONG,entry,struct ExecBase *,SysBase,,)
     unit->file=Open(buf,MODE_READWRITE);
     if(!unit->file)
     {
+#warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
 	iotd->iotd_Req.io_Error=error(IoErr());
 	Forbid();
 	ReplyMsg(&unit->msg);
