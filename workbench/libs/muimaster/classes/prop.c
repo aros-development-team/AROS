@@ -286,10 +286,26 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     	{
 	    case    MUIV_Prop_UseWinBorder_Right:
 		    data->prop_object = muiRenderInfo(obj)->mri_VertProp;
+		    if (data->prop_object)
+		    {
+		    	/* Store pointer to this propclass object in propgadget->UserData,
+			   so that window class when receiving IDCMP_IDCMUPDATE from
+			   arrow gadgets can notify propclass object */
+			   
+		    	((struct Gadget *)data->prop_object)->UserData = obj;
+		    }
 		    break;
 
 	    case    MUIV_Prop_UseWinBorder_Bottom:
 		    data->prop_object = muiRenderInfo(obj)->mri_HorizProp;
+		    if (data->prop_object)
+		    {
+		    	/* Store pointer to this propclass object in propgadget->UserData,
+			   so that window class when receiving IDCMP_IDCMUPDATE from
+			   arrow gadgets can notify propclass object */
+
+		    	((struct Gadget *)data->prop_object)->UserData = obj;
+		    }
 		    break;
     	}
     	if (data->prop_object)
