@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -78,7 +82,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		NewList((struct List*)&data->memberList);
-		data->searchForGaps=FALSE;
+		data->perfectLayout=TRUE;
 		data->thisColumnWidth=0;
 		data->thisColumnHeight=0;
 		data->virtualWidth=0;
@@ -177,39 +181,75 @@ IPTR iconConAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 	msg->MinMaxInfo->DefHeight+=300;
 	msg->MinMaxInfo->MaxHeight=MUI_MAXMAX;
 
-	minMax.MinWidth=0;
-	minMax.DefWidth=0;
-	minMax.MaxWidth=0;
-	minMax.MinHeight=0;
-	minMax.DefHeight=0;
-	minMax.MaxHeight=0;
-	DoMethod(data->vertProp, MUIM_AskMinMax, &minMax);
+	if(data->vertProp)
+	{
+		minMax.MinWidth=0;
+		minMax.DefWidth=0;
+		minMax.MaxWidth=0;
+		minMax.MinHeight=0;
+		minMax.DefHeight=0;
+		minMax.MaxHeight=0;
+		DoMethod(data->vertProp, MUIM_AskMinMax, &minMax);
+	}
 
-	minMax.MinWidth=0;
-	minMax.DefWidth=0;
-	minMax.MaxWidth=0;
-	minMax.MinHeight=0;
-	minMax.DefHeight=0;
-	minMax.MaxHeight=0;
-	DoMethod(data->horizProp, MUIM_AskMinMax, &minMax);
+	if(data->horizProp)
+	{
+		minMax.MinWidth=0;
+		minMax.DefWidth=0;
+		minMax.MaxWidth=0;
+		minMax.MinHeight=0;
+		minMax.DefHeight=0;
+		minMax.MaxHeight=0;
+		DoMethod(data->horizProp, MUIM_AskMinMax, &minMax);
+	}
 
 	return retval;
 }
 
+BOOL canLay(Object *parent, Object *newObject, ULONG newX, ULONG newY, struct MinList *memberList)
+{
+	struct MemberNode *mn;
+
+	if(!IsListEmpty(memberList))
+	{
+		mn=(struct MemberNode*)memberList->mlh_Head;
+		while(mn->m_Node.mln_Succ)
+		{
+			if(!((newX < _left(mn->m_Object) || newX > _right(mn->m_Object)) &&
+			   (newY < _top(mn->m_Object) || newY > _bottom(mn->m_Object)) &&
+			   (newX+_defwidth(mn->m_Object) < _left(mn->m_Object) || newX+_defwidth(mn->m_Object) > _right(mn->m_Object)) &&
+			   (newY+_defheight(mn->m_Object) < _top(mn->m_Object) || newY+_defheight(mn->m_Object) > _bottom(mn->m_Object))))
+			{
+				return FALSE;
+			}
+
+			mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+		}
+
+		return TRUE;
+	}
+	else
+		return TRUE;
+
+	return FALSE;
+}
+
+// lay out a newly added icon
 ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *newObject)
 {
 	ULONG retval=0;
 	struct MemberNode *last;
 	ULONG newX, newY;
+	BOOL laid=TRUE;
 
-//	if(!searchForGaps)
-//	{
+	if(data->perfectLayout)
+	{
 		if(IsListEmpty(&data->memberList))
 		{
 			newX=ICONSPACINGX;
 			newY=ICONSPACINGY;
 
-			data->virtualWidth=_defwidth(newObject)+ICONSPACINGX;
+//			data->virtualWidth=_defwidth(newObject)+ICONSPACINGX;
 			data->thisColumnWidth=_defwidth(newObject);
 		}
 		else
@@ -222,27 +262,64 @@ ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *new
 				// new column
 				newX+=data->thisColumnWidth+ICONSPACINGX;
 				newY=ICONSPACINGY;
-				data->virtualWidth+=_defwidth(newObject)+ICONSPACINGX;
+//				data->virtualWidth+=(_defwidth(newObject)+ICONSPACINGX);
 				data->thisColumnHeight=0;
 				data->thisColumnWidth=0;
 			}
 
 			if(_defwidth(newObject) > data->thisColumnWidth)
 			{
-				data->virtualWidth+=(_defwidth(newObject)-data->thisColumnWidth);
+//				data->virtualWidth+=(_defwidth(newObject)-data->thisColumnWidth);
 				data->thisColumnWidth=_defwidth(newObject);
 			}
 		}
-//	}
 
-	data->thisColumnHeight+=(ICONSPACINGY+_defheight(newObject));
-	if(data->thisColumnHeight+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
-		data->virtualHeight+=data->thisColumnHeight;
+		data->thisColumnHeight+=(ICONSPACINGY+_defheight(newObject));
+//		if(data->thisColumnHeight+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
+//			data->virtualHeight+=data->thisColumnHeight;
+	}
+	else
+	{
+		struct MemberNode *mn;
+		BOOL laid=FALSE;
 
-	MUI_Layout(newObject, newX, newY, _defwidth(newObject), _defheight(newObject), 0);
+		newX=ICONSPACINGX;
+		newY=ICONSPACINGY;
 
+		laid=canLay(obj, newObject, newX, newY, &data->memberList);
+
+		mn=(struct MemberNode*)data->memberList.mlh_Head;
+		while(mn->m_Node.mln_Succ && !laid)
+		{
+			newX=_left(mn->m_Object)-_mleft(obj);
+			newY=_bottom(mn->m_Object)+ICONSPACINGY-_mtop(obj);
+
+			// will the icon go off the bottom of the screen?
+			if((newY+_defwidth(newObject) > _mheight(obj)) && _mheight(obj) > _defheight(newObject))
+			{
+				newX+=_width(mn->m_Object)+ICONSPACINGX;
+				newY=ICONSPACINGY;
+			}
+
+			laid=canLay(obj, newObject, newX, newY, &data->memberList);
+
+			mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+		}
+	}
+
+	if(laid)
+	{
+		if(newX+_defwidth(newObject)+ICONSPACINGX > data->virtualWidth)
+			data->virtualWidth=newX+_defwidth(newObject+ICONSPACINGX);
+
+		if(newY+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
+			data->virtualHeight=newY+_defheight(newObject)+ICONSPACINGX;
+
+		MUI_Layout(newObject, newX, newY, _defwidth(newObject), _defheight(newObject), 0);
+	}
 	return retval;
 }
+
 
 ULONG iconConLayout(Class *cl, Object *obj, Msg msg)
 {
@@ -255,6 +332,8 @@ ULONG iconConLayout(Class *cl, Object *obj, Msg msg)
 	if(data->visibleHeight==0)
 	{
 		// first layout
+		SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
+		SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
 	}
 	else
 	{
@@ -269,6 +348,7 @@ ULONG iconConLayout(Class *cl, Object *obj, Msg msg)
 			// width adjusted
 			data->widthAdjusted=_mwidth(obj)-data->visibleWidth;
 		}
+
 	}
 
 	return retval;
@@ -283,6 +363,8 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	Object *container, *win, *rect, *par;
 	struct Region *clippingRegion;
 	struct ConnectParentData *connectParent;
+	APTR clip;
+	ULONG blah;
 
 	minMax.MinWidth=0;
 	minMax.DefWidth=0;
@@ -317,7 +399,9 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 
 	DoMethod(msg->opam_Object, MUIM_Show);
 
+	clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 	MUI_Redraw(msg->opam_Object, MADF_DRAWOBJECT);
+	MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
 	AddTail((struct List*)&data->memberList, (struct Node*)mn);
 
@@ -355,55 +439,69 @@ void redrawRectangle(LONG x1, LONG y1, LONG x2, LONG y2, Object *obj, struct Ico
 	}
 }
 
+IPTR drawAll(Class *cl, Object *obj, struct MUIP_Draw *msg, struct IconContainerClassData *data)
+{
+	IPTR retval=1;
+	struct MemberNode *mn;
+	APTR clip;
+
+	clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+
+	if(data->widthAdjusted!=0)
+	{
+		if(data->widthAdjusted>0)
+			redrawRectangle(_mright(obj)-data->widthAdjusted, _mtop(obj), _mright(obj), _mbottom(obj), obj, data);
+		SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
+	}
+
+	if(data->heightAdjusted!=0)
+	{
+		if(data->heightAdjusted>0)
+			redrawRectangle(_mleft(obj), _mbottom(obj)-data->heightAdjusted, _mright(obj), _mbottom(obj), obj, data);
+		SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
+	}
+
+	if(data->heightAdjusted==0 && data->widthAdjusted==0)
+	{
+//		if(!(muiRenderInfo(obj)->mri_Flags & MUIMRI_REFRESHMODE))
+//		{
+//			SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
+//			SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
+//		}
+
+		mn=(struct MemberNode*)data->memberList.mlh_Head;
+		while(mn->m_Node.mln_Succ)
+		{
+			MUI_Redraw(mn->m_Object, MADF_DRAWOBJECT);
+			mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+		}
+	}
+
+	data->visibleWidth=_mwidth(obj);
+	data->visibleHeight=_mheight(obj);
+	data->widthAdjusted=0;
+	data->heightAdjusted=0;
+
+	MUI_RemoveClipping(muiRenderInfo(obj), clip);
+
+	return retval;
+}
+
 IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
 	struct IconContainerClassData *data;
 	struct MemberNode *mn;
 	IPTR retval=1;
 	APTR clip=NULL;
+	BOOL layerrefresh, scroll_caused_damage;
 
 	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 
-	if(msg->flags & MADF_DRAWOBJECT)
+	if((msg->flags & MADF_DRAWOBJECT) || (msg->flags & MADF_DRAWALL))
 	{
-		clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-
-		if(data->widthAdjusted!=0)
-		{
-			SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
-			if(data->widthAdjusted>0)
-				redrawRectangle(_mright(obj)-data->widthAdjusted, _mtop(obj), _mright(obj), _mbottom(obj), obj, data);
-		}
-
-		if(data->heightAdjusted!=0)
-		{
-			if(data->heightAdjusted>0)
-			{
-				SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
-				if(data->heightAdjusted>0)
-					redrawRectangle(_mleft(obj), _mbottom(obj)-data->heightAdjusted, _mright(obj), _mbottom(obj), obj, data);
-			}
-		}
-
-		if(data->heightAdjusted==0 && data->widthAdjusted==0)
-		{
-			SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
-			SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
-
-			mn=(struct MemberNode*)data->memberList.mlh_Head;
-			while(mn->m_Node.mln_Succ)
-			{
-				MUI_Redraw(mn->m_Object, MADF_DRAWOBJECT);
-				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
-			}
-		}
-
-		data->visibleWidth=_mwidth(obj);
-		data->visibleHeight=_mheight(obj);
-		data->widthAdjusted=0;
-		data->heightAdjusted=0;
+		retval=drawAll(cl, obj, msg, data);
 	}
 	else if(msg->flags & MADF_DRAWUPDATE)
 	{
@@ -435,23 +533,49 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			mn=(struct MemberNode*)data->memberList.mlh_Head;
 			while(mn->m_Node.mln_Succ)
 			{
-				//_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
-				//_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
-
-				// this is slow... but necessary. If members are groups, then
-				// we can't resort to the above
-				// todo: ONLY layout those objects that are, or will be, on-scren
 				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
-
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
 
 			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+			layerrefresh = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+
 			ScrollRaster(_rp(obj), 0, scrollAmountY, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
 			// redraw in gap
 			redrawRectangle(redrawX1, redrawY1, redrawX2, redrawY2, obj, data);
+
+			if((_rp(obj)->Layer->Flags & LAYERREFRESH) && !layerrefresh)
+				scroll_caused_damage=TRUE;
+			else
+				scroll_caused_damage=FALSE;
+
+			MUI_RemoveClipping(muiRenderInfo(obj), clip);
+
+			if(scroll_caused_damage)
+			{
+				struct Region *damageList;
+				struct RegionRectangle *rr;
+				WORD x1, y1, x2, y2;
+
+				// get the damage area bounds in x1,x2,y1,y2
+				LockLayer(0, _window(obj)->WLayer);
+				damageList=_window(obj)->WLayer->DamageList;
+				x1=damageList->bounds.MinX;
+				y1=damageList->bounds.MinY;
+				x2=damageList->bounds.MaxX;
+				y2=damageList->bounds.MaxY;
+				UnlockLayer(_window(obj)->WLayer);
+
+				if(MUI_BeginRefresh(muiRenderInfo(obj), 0))
+    			{
+					EraseRect(_rp(obj), x1, y1, x2, y2);
+					redrawRectangle(x1, y1, x2, y2, obj, data);
+
+	  				MUI_EndRefresh(muiRenderInfo(obj), 0);
+				}
+			}
 
 			data->vertScroll=FALSE;
 		}
@@ -482,9 +606,6 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			mn=(struct MemberNode*)data->memberList.mlh_Head;
 			while(mn->m_Node.mln_Succ)
 			{
-//				_left(mn->m_Object)=_left(mn->m_Object)-scrollAmountX;
-//				_top(mn->m_Object)=_top(mn->m_Object)-scrollAmountY;
-
 				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
 
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
@@ -492,18 +613,45 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+			layerrefresh = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+
 			ScrollRaster(_rp(obj), scrollAmountX, 0, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
-			// redraw in gap
 			redrawRectangle(redrawX1, redrawY1, redrawX2, redrawY2, obj, data);
 
-			data->horizScroll=FALSE;
+			if((_rp(obj)->Layer->Flags & LAYERREFRESH) && !layerrefresh)
+				scroll_caused_damage=TRUE;
+			else
+				scroll_caused_damage=FALSE;
 
+			MUI_RemoveClipping(muiRenderInfo(obj), clip);
+
+			if(scroll_caused_damage)
+			{
+				struct Region *damageList;
+				struct RegionRectangle *rr;
+				WORD x1, y1, x2, y2;
+
+				// get the damage area bounds in x1,x2,y1,y2
+				LockLayer(0, _window(obj)->WLayer);
+				damageList=_window(obj)->WLayer->DamageList;
+				x1=damageList->bounds.MinX;
+				y1=damageList->bounds.MinY;
+				x2=damageList->bounds.MaxX;
+				y2=damageList->bounds.MaxY;
+				UnlockLayer(_window(obj)->WLayer);
+
+				if(MUI_BeginRefresh(muiRenderInfo(obj), 0))
+    			{
+					EraseRect(_rp(obj), x1, y1, x2, y2);
+					redrawRectangle(x1, y1, x2, y2, obj, data);
+
+	  				MUI_EndRefresh(muiRenderInfo(obj), 0);
+				}
+			}
 		}
+		data->horizScroll=FALSE;
 	}
-
-	if(clip)
-		MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
 	return retval;
 }
@@ -522,7 +670,6 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 		{
 			case ICA_ScrollToHoriz:
 			{
-//				printf("ScrollX: %d\n", tag->ti_Data);
 				data->lastXView=data->xView;
 				data->xView=tag->ti_Data;
 				data->horizScroll=TRUE;
@@ -530,7 +677,6 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 				break;
 			}
 			case ICA_ScrollToVert:
-//				printf("ScrollY: %d\n", tag->ti_Data);
 				data->lastYView=data->yView;
 				data->yView=tag->ti_Data;
 				data->vertScroll=TRUE;
@@ -651,7 +797,7 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			retval=iconConAskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
 			break;
 		case MUIM_Layout:
-			iconConLayout(cl, obj, msg);
+			retval=iconConLayout(cl, obj, msg);
 			break;
 		case MUIM_DrawBackground:
 			break;
