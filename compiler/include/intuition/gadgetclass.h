@@ -18,16 +18,6 @@
 #   include <utility/tagitem.h>
 #endif
 
-#ifdef _AMIGA
-#   define STCKWORD	WORD
-#   define STCKULONG	ULONG
-#   define STCKLONG	LONG
-#else
-#   define STCKWORD	int
-#   define STCKULONG	unsigned long
-#   define STCKLONG	long
-#endif
-
 /* GadgetClass attributes */
 #define GA_Dummy	    (TAG_USER + 0x30000)
 #define GA_Left 	    (GA_Dummy +  1) /* (LONG) Left edge */
@@ -155,12 +145,12 @@
  */
 struct gpHitTest
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct GadgetInfo  *gpht_GInfo;
     struct
     {
-	STCKWORD X;
-	STCKWORD Y;
+	STACKWORD X;
+	STACKWORD Y;
     }			gpht_Mouse;
 };
 
@@ -186,14 +176,10 @@ struct gpHitTest
 /* GM_RENDER	*/
 struct gpRender
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct GadgetInfo  *gpr_GInfo;	/* gadget context		*/
     struct RastPort    *gpr_RPort;	/* all ready for use		*/
-#ifdef _AMIGA
-    LONG		gpr_Redraw;	/* might be a "highlight pass"  */
-#else
-    int 		gpr_Redraw;	/* might be a "highlight pass"  */
-#endif
+    STACKLONG		gpr_Redraw;	/* might be a "highlight pass"  */
 };
 
 /* values of gpr_Redraw */
@@ -204,14 +190,14 @@ struct gpRender
 /* GM_GOACTIVE, GM_HANDLEINPUT	*/
 struct gpInput
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct GadgetInfo  *gpi_GInfo;
     struct InputEvent  *gpi_IEvent;
-    LONG	       *gpi_Termination;
+    STACKLONG	       *gpi_Termination;
     struct
     {
-	STCKWORD X;
-	STCKWORD Y;
+	STACKWORD X;
+	STACKWORD Y;
     }			gpi_Mouse;
 
     /* (V39) Pointer to TabletData structure, if this event originated
@@ -245,11 +231,11 @@ struct gpInput
 /* GM_GOINACTIVE */
 struct gpGoInactive
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct GadgetInfo  *gpgi_GInfo;
 
     /* V37 field only!	DO NOT attempt to read under V36! */
-    STCKULONG		gpgi_Abort;	/* gpgi_Abort=1 if gadget was aborted
+    STACKULONG		gpgi_Abort;	/* gpgi_Abort=1 if gadget was aborted
 					 * by Intuition and 0 if gadget went
 					 * inactive at its own request
 					 */
@@ -268,9 +254,9 @@ struct gpGoInactive
 /* GM_LAYOUT */
 struct gpLayout
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct GadgetInfo  *gpl_GInfo;
-    STCKULONG		gpl_Initial;	/* non-zero if this method was invoked
+    STACKULONG		gpl_Initial;	/* non-zero if this method was invoked
 					 * during AddGList() or OpenWindow()
 					 * time.  zero if this method was invoked
 					 * during window resizing.
@@ -285,10 +271,10 @@ struct gpLayout
 /* GM_DOMAIN */
 struct gpDomain
 {
-    ULONG		 MethodID;
+    STACKULONG		 MethodID;
     struct GadgetInfo	*gpd_GInfo;
     struct RastPort	*gpd_RPort;	/* RastPort to layout for */
-    STCKLONG		 gpd_Which;
+    STACKLONG		 gpd_Which;
     struct IBox 	 gpd_Domain;	/* Resulting domain */
     struct TagItem	*gpd_Attrs;	/* Additional attributes */
 };

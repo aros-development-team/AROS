@@ -14,12 +14,12 @@
 #   include <exec/types.h>
 #endif
 
-typedef ULONG Tag;
+typedef STACKULONG Tag;
 
 struct TagItem
 {
-    Tag  ti_Tag;  /* What is this ? */
-    IPTR ti_Data; /* Tag-specific data */
+    Tag       ti_Tag;  /* What is this ? */
+    STACKIPTR ti_Data; /* Tag-specific data */
 };
 
 /* constants for Tag.ti_Tag, control tag values */

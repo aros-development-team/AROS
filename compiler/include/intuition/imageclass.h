@@ -126,48 +126,34 @@
 /* IM_FRAMEBOX	*/
 struct impFrameBox
 {
-    ULONG	      MethodID;
+    STACKULONG	      MethodID;
     struct IBox     * imp_ContentsBox;	/* in: relative box of contents */
     struct IBox     * imp_FrameBox;	/* out: rel. box of enclosing frame */
     struct DrawInfo * imp_DrInfo;	/* May be NULL */
-#ifdef _AMIGA
-    ULONG	      imp_FrameFlags;
-#else
-    unsigned int      imp_FrameFlags;
-#endif
+    STACKULONG	      imp_FrameFlags;
 };
 
 #define FRAMEF_SPECIFY	(1<<0)
 
 struct impPos
 {
-#ifdef _AMIGA
-	WORD	X;
-	WORD	Y;
-#else
-	int	X;
-	int	Y;
-#endif
+    STACKWORD	 X;
+    STACKWORD	 Y;
 };
 
 struct impSize
 {
-#ifdef _AMIGA
-	WORD	Width;
-	WORD	Height;
-#else
-	int	Width;
-	int	Height;
-#endif
+    STACKWORD	 Width;
+    STACKWORD	 Height;
 };
 
 /* IM_DRAW, IM_DRAWFRAME */
 struct impDraw
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct RastPort    *imp_RPort;
     struct impPos	imp_Offset;
-    ULONG		imp_State;
+    STACKULONG		imp_State;
     struct DrawInfo    *imp_DrInfo;    /* May be NULL */
 
     /* Only valid for IM_DRAWFRAME */
@@ -178,7 +164,7 @@ struct impDraw
 /* NOTE: This is a subset of impDraw	*/
 struct impErase
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct RastPort    *imp_RPort;
     struct impPos	imp_Offset;
 
@@ -188,7 +174,7 @@ struct impErase
 
 /* IM_HITTEST, IM_HITFRAME	*/
 struct impHitTest {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct impPos	imp_Point;
 
     /* Only valid for IM_HITFRAME */
