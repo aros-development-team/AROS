@@ -111,7 +111,7 @@
 
     /* did I get the region structure? */
     if (NULL == R)
-      return;
+      goto exit;
 
     /* define the rectangle of the destination */
     Rect.MinX = xDest;
@@ -538,6 +538,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
     /* if the source rastport doesn't have a layer then I am done here
        as all the blits from the one bitmap have already happened.
      */
+
     if (NULL != srcCR)
      srcCR = srcCR->Next;
 
@@ -546,6 +547,4 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
   } /* while (TRUE) */
 
   return;
-
-
 }

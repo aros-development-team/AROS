@@ -167,7 +167,7 @@ extern LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
 			    struct GfxBase *);
 extern void driver_RectFill (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
-extern void driver_ScrollRaster (struct RastPort *,
+extern BOOL driver_ScrollRaster (struct RastPort *,
 			    LONG, LONG, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
 extern void driver_SetABPenDrMd (struct RastPort *, ULONG, ULONG, ULONG,

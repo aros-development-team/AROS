@@ -93,11 +93,11 @@
 
     Count = areainfo->Count;  
 
-kprintf("%d coord to process\n",Count);
+//kprintf("%d coord to process\n",Count);
     /* process the list of vectors */
     while (Count > 0)
     {
-kprintf("Flags:%d Coord: (%d,%d)\n",CurFlag[0], CurVctr[0],CurVctr[1]);
+//kprintf("Flags:%d Coord: (%d,%d)\n",CurFlag[0], CurVctr[0],CurVctr[1]);
       last_idx ++;
       switch((unsigned char)CurFlag[0])
       {

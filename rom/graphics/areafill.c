@@ -9,7 +9,7 @@
 #include <graphics/gfxbase.h>
 
 /*
-  The algorithm was taken from 
+  The algorithm was taken from: 
   Computer Graphics
   A programming approach, 2n edition
   Steven Harrington
@@ -17,6 +17,10 @@
   
   pages 79-91.
 
+
+  The algorithm that follows the borderlines has to go hand in hand
+  with the algorithm that draws the line, such that no parts are
+  filled that aren't supposed to be filled.
  */
 
 struct BoundLine
@@ -81,9 +85,10 @@ void FillScan(UWORD StartIndex,
 
       if (x1 <= AreaBound[i+1].LeftX-1)
         Draw(rp, AreaBound[i+1].LeftX-1, scanline);
+/*
       else
         kprintf("Refusing to draw from %d to %d\n",x1,AreaBound[i+1].LeftX-1);
-
+*/
     i+=2;
   }
 }
@@ -146,7 +151,7 @@ UWORD UpdateXValues(UWORD StartIndex,
     {
 /*
 if (AreaBound[i].Valid == FALSE)
-  kprintf ("already amrked as invalid! ");
+  kprintf ("already marked as invalid! ");
 else
   kprintf("marking %d as anvalid! ",i);
 kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
@@ -169,7 +174,8 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
         i++;
         continue;
       }
-
+     
+      /* line towards right? */
       if  (AreaBound[i].DeltaX > 0)
       {
         if (AreaBound[i].DeltaX > AreaBound[i].DeltaY)
@@ -182,13 +188,16 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
           {
             /* Now search for the right X coord. */
             AreaBound[i].Count += AreaBound[i].DeltaY;
+
             if (AreaBound[i].Count > AreaBound[i].DeltaX)
 	    {
               AreaBound[i].Count -= AreaBound[i].DeltaX;
               break;
  	    }
+
             /* we're going towards the right in (almost) every step. */
             AreaBound[i].RightX++;
+
           }        
 	}
         else
@@ -196,6 +205,7 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
           /* in every calculation we go down one scan line */
           /* LeftX == RightX at all times!! */
           AreaBound[i].Count += AreaBound[i].DeltaX;
+          
           if (AreaBound[i].Count > AreaBound[i].DeltaY)
 	  {
             AreaBound[i].Count -= AreaBound[i].DeltaY;
@@ -204,9 +214,9 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
 	  }
 	}
       }
-      else
+      else /* line goes towards left */
       {
-        if (-AreaBound[i].DeltaX > -AreaBound[i].DeltaY)
+        if (-AreaBound[i].DeltaX > AreaBound[i].DeltaY)
         {
           /* more towards left than down */
           AreaBound[i].LeftX--;
@@ -216,12 +226,13 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
           {
             /* Now search for the left X coord. */
             AreaBound[i].Count += AreaBound[i].DeltaY;
-            if (AreaBound[i].Count > -AreaBound[i].DeltaX)
+
+            if (AreaBound[i].Count >= -AreaBound[i].DeltaX)
 	    {
-              /* take back that last step. */
               AreaBound[i].Count += AreaBound[i].DeltaX;
               break;
  	    }
+
             /* we're going towards the left in (almost) every step. */
             AreaBound[i].LeftX--;
           }        
@@ -231,7 +242,8 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
           /* in every calculation we go down one scan line */
           /* LeftX == RightX at all times!! */
           AreaBound[i].Count -= AreaBound[i].DeltaX;
-          if (AreaBound[i].Count > AreaBound[i].DeltaY)
+          
+          if (AreaBound[i].Count >= AreaBound[i].DeltaY)
 	  {
             AreaBound[i].Count -= AreaBound[i].DeltaY;
             AreaBound[i].LeftX--;
@@ -304,7 +316,7 @@ BOOL areafillpolygon(struct RastPort  * rp,
 */
     if (StartVctTbl[c+1] == StartVctTbl[c+3])
     { 
-      kprintf("Found horiontal Line!!\n");
+//      kprintf("Found horiontal Line!!\n");
       c+=2;
       continue;
     }
@@ -423,11 +435,13 @@ kprintf("at end!\n");
 	  {
             /* search for the right-hand X coord. */
             AreaBound[i].Count += AreaBound[i].DeltaY;
+
             if (AreaBound[i].Count > AreaBound[i].DeltaX)
 	    {
               AreaBound[i].Count -= AreaBound[i].DeltaX;
               break;
 	    }
+
 	    /* we're going towards the right in (almost) every step */
             AreaBound[i].RightX++;
 	  }
@@ -450,8 +464,10 @@ kprintf("at end!\n");
               AreaBound[i].Count += AreaBound[i].DeltaX;
               break;
 	    }
+
             /* we're going towards the left in (almost) every step */
             AreaBound[i].LeftX--;
+
 	  }
 	}
         else
@@ -517,35 +533,3 @@ kprintf("at end!\n");
 
   return TRUE;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
