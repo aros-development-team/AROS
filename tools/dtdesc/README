@@ -22,12 +22,17 @@ For more informations see the header <datatypes/datatypes.h> .
 
 examinedtdesc is used to disassemble an existing DataType descriptor.
 It accepts as its only argument the filename of a DataType descriptor.
-And puts out a DataType description named descriptor.dtd .
-This DataType description is a ASCII-file, for details see the file FORMAT .
+It outputs a DataType description suitable for createdtdesc (see below)
+to stdout. This DataType description is an ASCII-file, for details see
+the file FORMAT .
 
 createdtdesc is a tool to create a DataType descriptor.
-It accepts as its only argument the filename of a DataType description (*.dtd).
-And puts out the DataType descriptor, named after the "Name" keyword inside.
+It has one required argument: the filename of a DataType description (*.dtd file).
+Optional with the "-o" switch you can define the Name of the output
+DataType descriptor.
+When no output-name is given, the name for the Datatype descriptor is taken
+from the "Name" keyword from the Datatype description. The resulting
+Datatype descriptor is placed in the current directory.
+
 Yes I know my naming convention is a bit confusing, come with better names!
-You can feed createdtdesc with the output of examinedtdesc.
 

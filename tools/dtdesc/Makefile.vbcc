@@ -2,8 +2,7 @@
 
 .SUFFIXES: .c.o
 
-CC = \
-	vc
+CC = vc
 
 CFLAGS = -Ic_iff/
 
@@ -26,3 +25,4 @@ clean:
 	delete FORCE #?.o
 	delete FORCE examinedtdesc
 	delete FORCE createdtdesc
+

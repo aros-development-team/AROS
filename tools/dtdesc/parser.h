@@ -6,6 +6,20 @@
     Lang: English.
 */
 
+enum Keywords
+{
+ Name,
+ Version,
+ BaseName,
+ Pattern,
+ Mask,
+ GroupID,
+ ID,
+ Flags,
+ Priority,
+ NumKeywords
+};
+
 const char *Keywords[] =
 {
  "Name=",
@@ -32,6 +46,20 @@ const int KeywordLength[] =
  9
 };
 
-const int NumKeywords=9;
+/*
+ *  Jetzt wirds haarig, ein Array von Funktionspointern.
+ */
+int (*KeywordHandler[])(struct DTDesc *) =
+{
+ HandleName,
+ HandleVersion,
+ HandleBaseName,
+ HandlePattern,
+ HandleMask,
+ HandleGroupID,
+ HandleID,
+ HandleFlags,
+ HandlePriority
+};
 
 

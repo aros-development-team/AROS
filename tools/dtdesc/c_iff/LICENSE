@@ -1,25 +1,9 @@
-Because c_iff might be usefull outside of AROS,
-I release it under the
+This is the AROS-version of c_iff.
+It is distributed under the AROS Public License.
+But I reserve the right to distribute
+my own version under other licenses.
 
-GNU LESSER GENERAL PUBLIC LICENSE
-Version 2.1, February 1999
-
-See the file lesser.txt for details.
-
-This shouldn't be a problem for AROS, because
-c_iff is not part of the main-tree.
-
-The utility autodoc.pl is released under the
-
-GNU GENERAL PUBLIC LICENSE
-Version 2, June 1991
-
-because I use it with other projects too.
-
-See the file gpl.txt for details.
-
-
-Joerg Dietrich, Ruesselsheim 05-Nov-2000
+Joerg Dietrich, Ruesselsheim 11-Nov-2001
 
 
 

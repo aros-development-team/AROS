@@ -1,21 +1,12 @@
 /*
  *  c_iff - a portable IFF-parser
  *
- *  Copyright (C) 2000 Joerg Dietrich
+ *  Copyright (C) 2000, 2001 Joerg Dietrich
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  This is the AROS-version of c_iff.
+ *  It is distributed under the AROS Public License.
+ *  But I reserve the right to distribute
+ *  my own version under other licenses.
  */
 
 /*
@@ -32,7 +23,7 @@
 *   SYNOPSIS
 *       Success = NewSubFORM( TheHandle,Type )
 *
-*       int NewSubFORM( struct IFFHandle *,long )
+*       int NewSubFORM( struct IFFHandle *,CARD32 )
 *
 *   FUNCTION
 *       Some IFF's, e.g. ANIM, have cascading FORM's, this means one or
@@ -63,9 +54,9 @@
 *       Private notes:
 */
 
-int NewSubFORM(struct IFFHandle *TheHandle, long Type)
+int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type)
 {
- long Buffer[3];
+ CARD32 Buffer[3];
  struct ChunkNode *CN, *PN;
 
  if(!TheHandle)
@@ -73,7 +64,6 @@ int NewSubFORM(struct IFFHandle *TheHandle, long Type)
   return(FALSE);
  }
 
- CN=NULL;
  CN=(struct ChunkNode *) malloc(sizeof(struct ChunkNode));
  if(!CN)
  {
@@ -88,13 +78,13 @@ int NewSubFORM(struct IFFHandle *TheHandle, long Type)
  Buffer[1]=Swap32IfLE(Buffer[1]);
  Buffer[2]=Swap32IfLE(Buffer[2]);
 
- if(!(fwrite((void *) Buffer, 4, 3, TheHandle->TheFile)==3))
+ if(!(fwrite((void *) Buffer, sizeof(CARD32), 3, TheHandle->TheFile)==3))
  {
   free((void *) CN);
   return(FALSE);
  }
 
- CN->Size=4;
+ CN->Size=sizeof(CARD32);
  CN->FilePos=ftell(TheHandle->TheFile);
  CN->FilePos-=8;
  CN->Previous=TheHandle->LastNode;
@@ -103,12 +93,12 @@ int NewSubFORM(struct IFFHandle *TheHandle, long Type)
 
  while(PN)
  {
-  PN->Size+=12;
+  PN->Size+=3*sizeof(CARD32);
 
   PN=PN->Previous;
  }
 
- TheHandle->IFFSize+=12;
+ TheHandle->IFFSize+=3*sizeof(CARD32);
  TheHandle->LastNode=CN;
 
  return(TRUE);

@@ -4,21 +4,12 @@
 /*
  *  c_iff - a portable IFF-parser
  *
- *  Copyright (C) 2000 Joerg Dietrich
+ *  Copyright (C) 2000, 2001 Joerg Dietrich
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  This is the AROS-version of c_iff.
+ *  It is distributed under the AROS Public License.
+ *  But I reserve the right to distribute
+ *  my own version under other licenses.
  */
 
 /*
@@ -39,6 +30,28 @@
 #ifndef TRUE
 #define TRUE (~0)
 #endif /* TRUE */
+
+/*
+ *  typedefs
+ */
+
+/*
+ *  support for multibyte numbers
+ *  Do you have a non-Unix 32-bit machine?
+ *  Then add it here!
+ *  Do you have a non-Unix, non-32-bit machine?
+ *  Then make your own typedefs!
+ */
+#if defined amiga || defined __PPC__
+typedef unsigned char  CARD8;
+typedef unsigned short CARD16;
+typedef unsigned int   CARD32;
+typedef signed char  INT8;
+typedef signed short INT16;
+typedef signed int   INT32;
+#else
+#include <X11/Xmd.h>
+#endif
 
 /*
  *  Do you have a big-endain machine?
@@ -112,7 +125,7 @@ struct ChunkNode
 {
  struct ChunkNode *Previous; /* the previous chunk */
  long              Size;     /* size of the chunk */
- long              FilePos;  /* position of the size-int in the file */
+ long              FilePos;  /* position of the size-CARD32 in the file */
 };
 
 /*
@@ -122,8 +135,8 @@ struct ChunkNode
 struct IFFHandle
 {
  FILE             *TheFile;          /* filehandle of the IFF */
- long              IFFType;          /* type of the IFF */
- long              ChunkID;          /* chunk-ID of the current chunk */
+ CARD32            IFFType;          /* type of the IFF */
+ CARD32            ChunkID;          /* chunk-ID of the current chunk */
  long              BytesLeftInChunk; /* byte-counter for reading*/
  int               NewIFF;           /* marker for a IFF for writing */
  long              IFFSize;          /* size of the new IFF */
@@ -143,9 +156,9 @@ extern long ReadChunkData(struct IFFHandle *TheHandle,
 			  char *Buffer,
 			  size_t BufferSize);
 
-extern struct IFFHandle *NewIFF(char *Name, long IFFType);
-extern int NewChunk(struct IFFHandle *TheHandle, long ID);
-extern int NewSubFORM(struct IFFHandle *TheHandle, long Type);
+extern struct IFFHandle *NewIFF(char *Name, CARD32 IFFType);
+extern int NewChunk(struct IFFHandle *TheHandle, CARD32 ID);
+extern int NewSubFORM(struct IFFHandle *TheHandle, CARD32 Type);
 extern void EndChunk(struct IFFHandle *TheHandle);
 extern long WriteChunkData(struct IFFHandle *TheHandle,
 			   char *Buffer,

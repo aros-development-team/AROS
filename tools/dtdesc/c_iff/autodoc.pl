@@ -2,21 +2,12 @@
 
 # autodoc.pl - an autodoc-replacement
 #
-# Copyright (C) 2000 Joerg Dietrich
+# Copyright (C) 2000, 2001 Joerg Dietrich
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# This is the AROS-version of autodoc.pl.
+# It is distributed under the AROS Public License.
+# But I reserve the right to distribute
+# my own version under other licenses.
 
 # This is a quick and dirty hack. It is just for internal use.
 # But feel free to improve it.
