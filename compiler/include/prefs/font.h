@@ -37,7 +37,7 @@ struct FontPrefs
     BYTE            fp_Name[FONTNAMESIZE];
 };
 
-/* fp_Type */
+/* Values for fp_Type */
 #define FP_WBFONT     0
 #define FP_SYSFONT    1
 #define FP_SCREENFONT 2

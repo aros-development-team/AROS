@@ -24,15 +24,13 @@
 
 #define ID_INPT MAKE_ID('I','N','P','T')
 
-
-struct InputPrefs
-{
-    char	   ip_Keymap[16];
-    UWORD	   ip_PointerTicks;
+struct InputPrefs {
+    char           ip_Keymap[16];
+    UWORD          ip_PointerTicks;
     struct timeval ip_DoubleClick;
     struct timeval ip_KeyRptDelay;
     struct timeval ip_KeyRptSpeed;
-    WORD	   ip_MouseAccel;
+    WORD           ip_MouseAccel;
 };
 
 #endif /* PREFS_INPUT_H */

@@ -19,20 +19,19 @@
 #define ID_LCLE MAKE_ID('L','C','L','E')
 #define ID_CTRY MAKE_ID('C','T','R','Y')
 
-struct CountryPrefs
-{
+struct CountryPrefs {
     ULONG cp_Reserved[4];
 
     ULONG cp_CountryCode;
     ULONG cp_TelephoneCode;
     UBYTE cp_MeasuringSystem;
 
-    char cp_DateTimeFormat[80];
-    char cp_DateFormat[40];
-    char cp_TimeFormat[40];
-    char cp_ShortDateTimeFormat[80];
-    char cp_ShortDateFormat[40];
-    char cp_ShortTimeFormat[40];
+    char  cp_DateTimeFormat[80];
+    char  cp_DateFormat[40];
+    char  cp_TimeFormat[40];
+    char  cp_ShortDateTimeFormat[80];
+    char  cp_ShortDateFormat[40];
+    char  cp_ShortTimeFormat[40];
 
     char  cp_DecimalPoint[10];
     char  cp_GroupSeparator[10];
@@ -47,9 +46,9 @@ struct CountryPrefs
     UBYTE cp_MonFracDigits;
     UBYTE cp_MonIntFracDigits;
 
-    char cp_MonCS[10];
-    char cp_MonSmallCS[10];
-    char cp_MonIntCS[10];
+    char  cp_MonCS[10];
+    char  cp_MonSmallCS[10];
+    char  cp_MonIntCS[10];
 
     char  cp_MonPositiveSign[10];
     UBYTE cp_MonPositiveSpaceSep;
@@ -63,8 +62,7 @@ struct CountryPrefs
     UBYTE cp_CalendarType;
 };
 
-struct LocalePrefs
-{
+struct LocalePrefs {
     ULONG lp_Reserved[4];
     char  lp_CountryName[32];
     char  lp_PreferredLanguages[10][30];
