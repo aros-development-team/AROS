@@ -344,7 +344,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     NewList((struct List*)&data->icon_list);
 
-    set(obj,MUIA_FillArea,FALSE);
+    set(obj,MUIA_FillArea,TRUE);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -598,7 +598,8 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    rect.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
 
 	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
+		     _mleft(obj), _mtop(obj), 0);
 
 	    /* We could have deleted also other icons so they must be redrawn */
 	    icon = List_First(&data->icon_list);
