@@ -81,11 +81,11 @@ ULONG a;
 		GetPartitionTableAttrsA
 		(
 			root,
-			PTT_DOSENVEC, &de,
 			PTT_TYPE, &type,
 			PTT_RESERVED, &reserved,
 			TAG_DONE
 		);
+		GetPartitionAttrsA(root, PT_DOSENVEC, &de, TAG_DONE);
 		for (a=i;a;a--)
 			printf("  ");
 		printf("Partition type is ");
