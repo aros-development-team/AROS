@@ -80,7 +80,7 @@
 
     HISTORY
 
-        10.04.97    laguest    Corrected 'FromFiles ++' to '*(FromFiles ++)'
+	10.04.97    laguest    Corrected 'FromFiles ++' to '*(FromFiles ++)'
 
 	08.04.97    laguest    Corrected the pointer arithmetic error,
 			       from (*FromFiles)++ to *(Fromfiles++)
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 
 		MatchEnd(apath);
 
-		*(FromFiles ++);
+		FromFiles ++;
 	    }
 	}
 
