@@ -150,6 +150,10 @@ static VOID pixfmt_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = HIDD_PF_BITMAPTYPE(pf);
 		break;
 	    
+	    case aoHidd_PixFmt_SwapPixelBytes:
+	    	*msg->storage = HIDD_PF_SWAPPIXELBYTES(pf);
+		break;
+		
 	    default:
 	    	D(bug("TRYING TO GET UNKNOWN PIXFMT ATTR\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
