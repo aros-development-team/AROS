@@ -26,22 +26,6 @@
 #include "locale.h"
 #include "aboutaros.h"
 
-VOID Cleanup(CONST_STRPTR error)
-{
-    Locale_Deinitialize();
-
-    if (error != NULL)
-    {
-        PutStr(error);
-        PutStr("\n");
-        exit(20);
-    }
-    else
-    {
-        exit(0);
-    }
-}
-
 int __nocommandline       = 1;
 int __forceerrorrequester = 1;
 
@@ -49,20 +33,11 @@ int main()
 {
     Object *application;
 
-    if (!Locale_Initialize()) Cleanup("Locale!");
-
     if ((application = AboutAROSObject, End) != NULL)
     {
         DoMethod(application, MUIM_Application_Execute);
-
         MUI_DisposeObject(application);
     }
-    else
-    {
-        Cleanup("Objects!");
-    }
 
-    Cleanup(NULL);
-
-    return 0; /* keep compiler happy */
+    return 0;
 }
