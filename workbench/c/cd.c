@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Cd CLI command
+    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -18,7 +18,7 @@ int main (int argc, char ** argv)
 {
     STRPTR args[1]={ 0 };
     struct RDArgs *rda;
-    BPTR dir;
+    BPTR dir,newdir;
     STRPTR buf;
     ULONG i;
     struct FileInfoBlock *fib;
@@ -38,7 +38,32 @@ int main (int argc, char ** argv)
 		    if(Examine(dir,fib))
 		    {
 			if(fib->fib_DirEntryType>0)
-			    dir=CurrentDir(dir);
+			{
+			    newdir=dir;
+			    dir=CurrentDir(newdir);
+			    for(i=256;;i+=256)
+			    {
+				buf=AllocVec(i,MEMF_ANY);
+				if(buf==NULL)
+				{
+				    SetIoErr(ERROR_NO_FREE_STORE);
+				    error=RETURN_ERROR;
+				    break;
+				}
+				if(NameFromLock(newdir,buf,i))
+				{
+				    SetCurrentDirName(buf);
+				    FreeVec(buf);
+				    break;
+				}
+				FreeVec(buf);
+				if(IoErr()!=ERROR_LINE_TOO_LONG)
+				{
+				    error=RETURN_ERROR;
+				    break;
+				}
+			    }
+			}
 			else
 			{
 			    SetIoErr(ERROR_DIR_NOT_FOUND);
