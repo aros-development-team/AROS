@@ -280,18 +280,20 @@ const char *const Dos_SubstDateTable[]=
 		    days --;
 
 	    } /* Normal date */
+
 	} /* Not "Tomorrow", "Today" or "Yesterday" */
+
+        datetime->dat_Stamp.ds_Days   = days;
+
     } /* Convert date ? */
-    else
-	days = 0;
 
     if ((ptr = datetime->dat_StrTime))
     {
 	len = StrToLong (ptr, &t);
 
-	if (len == -1)
+	if ((len == -1) || (t < 0) || (t > 23))
 	    return DOSFALSE;
-
+	    
 	min = t * 60;
 
 	ptr += len;
@@ -301,7 +303,7 @@ const char *const Dos_SubstDateTable[]=
 
 	len = StrToLong (ptr, &t);
 
-	if (len == -1)
+	if ((len == -1) || (t < 0) || (t > 59))
 	    return DOSFALSE;
 
 	min += t;
@@ -313,20 +315,15 @@ const char *const Dos_SubstDateTable[]=
 
 	len = StrToLong (ptr, &t);
 
-	if (len == -1)
+	if ((len == -1) || (t < 0) || (t > 59))
 	    return DOSFALSE;
 
 	tick = t * TICKS_PER_SECOND;
-    }
-    else
-    {
-	min = 0;
-	tick = 0;
-    }
 
-    datetime->dat_Stamp.ds_Days   = days;
-    datetime->dat_Stamp.ds_Minute = min;
-    datetime->dat_Stamp.ds_Tick   = tick;
+	datetime->dat_Stamp.ds_Minute = min;
+	datetime->dat_Stamp.ds_Tick   = tick;
+
+    }
 
     return DOSTRUE;
     AROS_LIBFUNC_EXIT
