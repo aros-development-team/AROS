@@ -59,6 +59,10 @@ MSG_PRODUCTNAME
 Nom du produit :
 ;ProductID:
 ;
+MSG_SUBSYSTEM
+Sous-système :
+;Subsystem:
+;
 MSG_VENDORID
 n° constructeur :
 ;VendorID:

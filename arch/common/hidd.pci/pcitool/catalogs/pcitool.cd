@@ -41,6 +41,9 @@ Vendor Name:
 MSG_PRODUCTNAME (//)
 Product Name:
 ;
+MSG_SUBSYSTEM (//)
+Subsystem:
+;
 MSG_VENDORID (//)
 VendorID:
 ;
