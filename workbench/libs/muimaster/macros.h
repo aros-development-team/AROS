@@ -57,6 +57,8 @@
 #define PopaslObject        MUI_NewObject(MUIC_Popasl
 #define PendisplayObject    MUI_NewObject(MUIC_Pendisplay
 #define PoppenObject        MUI_NewObject(MUIC_Poppen
+/* The following in zune only */
+#define PopimageObject      MUI_NewObject(MUIC_Popimage
 #define AboutmuiObject      MUI_NewObject(MUIC_Aboutmui
 #define ScrmodelistObject   MUI_NewObject(MUIC_Scrmodelist
 #define KeyentryObject      MUI_NewObject(MUIC_Keyentry
