@@ -149,7 +149,7 @@
 #define SYMLINK_MAX                             _POSIX_SYMLINK_MAX
 #define SYMLOOP_MAX                             _POSIX_SYMLOOP_MAX
 #define TTY_NAME_MAX                            _POSIX_TTY_NAME_MAX
-#define NGROUPS_MAX                             _POSIX2_NGROUPS_MAX
+#define NGROUPS_MAX                             _POSIX_NGROUPS_MAX
 
 #define _POSIX_HOST_NAME_MAX                    255
 #define _POSIX_LOGIN_NAME_MAX                   9
