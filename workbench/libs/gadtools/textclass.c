@@ -13,6 +13,7 @@
 #include <proto/dos.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
@@ -90,8 +91,16 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     	    	D(bug("GTNM_Number: %ld\n", tidata));
     	    	if (data->dispfunc)
     	    	{
+#ifdef __MORPHOS__
+		    REG_A7 -= 8;
+		    ((ULONG *)REG_A7)[0] = (ULONG)o;
+		    ((ULONG *)REG_A7)[1] = data->toprint;
+		    data->toprint = MyEmulHandle->EmulCallDirect68k(data->dispfunc);
+		    REG_A7 += 8;
+#else
     	    	    data->toprint = (ULONG)data->dispfunc((struct Gadget *)o,
     	    	    					(WORD)data->toprint);
+#endif
     	    	}
     	    	retval = 1UL;
     	    	break;
