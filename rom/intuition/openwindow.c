@@ -83,7 +83,8 @@
     BOOL    autoAdjust	= FALSE;
     ULONG   innerWidth	= ~0L;
     ULONG   innerHeight = ~0L;
-
+    WORD    mousequeue = DEFAULTMOUSEQUEUE;
+    
     ULONG lock;
     BOOL driver_init_done = FALSE;
 
@@ -232,10 +233,13 @@
 	    case WA_BackFill:
 	    	backfillhook = (struct Hook *)tag->ti_Data;
 		break;
+	    
+	    case WA_MouseQueue:
+	    	mousequeue = tag->ti_Data;
+	    	break;
 		
 	    case WA_WindowName:
 	    case WA_Colors:
-	    case WA_MouseQueue:
 	    case WA_RptQueue:
 	    case WA_MenuHelp:
 	    case WA_NotifyDepth:
@@ -390,6 +394,8 @@
 	((struct IntWindow *)w)->ZipWidth    = w->Width;
 	((struct IntWindow *)w)->ZipHeight   = w->Height;
     }
+    
+    IW(w)->mousequeue = mousequeue;
     
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
