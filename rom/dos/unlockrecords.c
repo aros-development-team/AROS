@@ -43,12 +43,23 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    aros_print_not_implemented ("UnLockRecords");
+  while (NULL != BADDR(recArray->rec_FH))
+  {
+    LONG success =
+      UnLockRecord(
+        recArray->rec_FH,
+        recArray->rec_Offset,
+        recArray->rec_Length
+      );
+    if (success != DOSTRUE)
+      return success;
+    /* everything OK -> advance to the next entry */
+    recArray++;
+  }
+  return DOSTRUE;
 
-    return DOSFALSE;
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* UnLockRecords */
