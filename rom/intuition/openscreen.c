@@ -222,14 +222,26 @@ static const ULONG coltab[] = {
 		    
 		    LockPubScreenList();
 		    
-		    old = LockPubScreen((STRPTR)tag->ti_Data);
-		    
-		    if(old != NULL)
+		    if (strcmp((char *)tag->ti_Data, "Workbench") == 0)
 		    {
-			UnlockPubScreen(NULL, old);
-			SetError(OSERR_PUBNOTUNIQUE);
-			UnlockPubScreenList();
-			return NULL;
+#warning This would still not be safe, if a normal app tried to open its own screen with SA_PubName=Workbench
+		        if (GetPrivIBase(IntuitionBase)->WorkBench)
+			{
+			    UnlockPubScreenList();
+			    return NULL;
+			}
+		    }
+		    else
+		    {
+			old = LockPubScreen((STRPTR)tag->ti_Data);
+
+			if(old != NULL)
+			{
+			    UnlockPubScreen(NULL, old);
+			    SetError(OSERR_PUBNOTUNIQUE);
+			    UnlockPubScreenList();
+			    return NULL;
+			}
 		    }
 		    
 		    UnlockPubScreenList();
@@ -473,8 +485,8 @@ static const ULONG coltab[] = {
 
 		r.MinX = screen->Screen.LeftEdge;
 		r.MinY = screen->Screen.TopEdge;
-		r.MaxX = screen->Screen.LeftEdge + screen->Screen.Width - 1 - 50;
-		r.MaxY = screen->Screen.TopEdge  + screen->Screen.Height - 1 - 50;
+		r.MaxX = screen->Screen.LeftEdge + screen->Screen.Width - 1;// - 50;
+		r.MaxY = screen->Screen.TopEdge  + screen->Screen.Height - 1;// - 50;
 
 #warning Should check whether OrRectRegion succeeds and whether layer gets created!
 		OrRectRegion(ls, &r);
