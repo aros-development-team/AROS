@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: UnpackStructureTags - unpack structure to values in TagList.
@@ -30,7 +30,7 @@
 	to by the tags ti_Data.
 
 	Note: The value contained in ti_Data must be a *POINTER* to a
-	      LONGWORD.
+	      IPTR.
 
     INPUTS
 	pack		-   Pointer to the memory area to be unpacked.
@@ -110,51 +110,55 @@
 	switch(*packTable & 0x98000000)
 	{
 	    case PKCTRL_ULONG:
-		*(ULONG *)ti->ti_Data = *(ULONG *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(ULONG *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_UWORD:
-		*(ULONG *)ti->ti_Data = *(UWORD *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(UWORD *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_UBYTE:
-		*(ULONG *)ti->ti_Data = *(UBYTE *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(UBYTE *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_LONG:
-		*(LONG *)ti->ti_Data = *(LONG *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(LONG *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_WORD:
-		*(LONG *)ti->ti_Data = *(WORD *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(WORD *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_BYTE:
-		*(LONG *)ti->ti_Data = *(BYTE *)&((UBYTE *)pack)[memOff];
+		*(IPTR *)ti->ti_Data = (IPTR)(*(BYTE *)&((UBYTE *)pack)[memOff]);
 		break;
 
 	    case PKCTRL_BIT:
 		if( ((UBYTE *)pack)[memOff] & (1 << bitOff) )
-		    *(ULONG *)ti->ti_Data = TRUE;
+		    *(IPTR *)ti->ti_Data = TRUE;
 		else
-		    *(ULONG *)ti->ti_Data = FALSE;
+		    *(IPTR *)ti->ti_Data = FALSE;
 		break;
 
 	    case PKCTRL_FLIPBIT:
 		if( ((UBYTE *)pack)[memOff] & (1 << bitOff) )
-		    *(ULONG *)ti->ti_Data = FALSE;
+		    *(IPTR *)ti->ti_Data = FALSE;
 		else
-		    *(ULONG *)ti->ti_Data = TRUE;
+		    *(IPTR *)ti->ti_Data = TRUE;
 		break;
 
 	    /* We didn't actually pack anything */
 	    default:
 		count--;
+		
 	} /* switch() */
+	
 	count++;
+	
     } /* for() */
 
     return count;
 
     AROS_LIBFUNC_EXIT
+    
 } /* UnpackStructureTags */
