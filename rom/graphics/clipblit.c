@@ -161,7 +161,6 @@
         /* 
            In this case I use a special routine to copy the rectangle 
         */
-        /* */                  
         driver_MoveRaster(srcRP,
                           xDest-xSrc,
                           yDest-ySrc,
@@ -171,7 +170,6 @@
                           (ySrc > yDest) ? ySrc : yDest,
                           FALSE,
                           GfxBase);
-                                  
       }
       else
       {
@@ -288,6 +286,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
   ULONG bltSrcX, bltSrcY, bltDstX, bltDstY, bltWidth, bltHeight;
   ULONG SrcOffsetX;
   UBYTE bltMask;
+  UBYTE useminterm;
   UBYTE MaskTab[] = {0x00, 0x01, 0x03, 0x07, 0x0F,
                            0x1F, 0x3F, 0x7F, 0xFF};
   LONG i1 = GetBitMapAttr(srcBM , BMA_DEPTH);
@@ -309,16 +308,8 @@ void internal_ClipBlit(struct RastPort * srcRP,
     /* Does the source have layers? */ 
     if (NULL != srcRP->Layer)
     {
-      /* search for the next BitMap that can serve as a source */
       while (NULL != srcCR)
       {
-        /* only do this if the source is not a simple layer and does
-           not have a certain bit set in this ClipRect or
-           is not hidden  */
-        if (!(0 != (srcLayer->Flags & LAYERSIMPLE) &&
-             (NULL != srcCR->lobs ||
-              0 != (srcCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))))
-        { 
           ULONG crX0, crX1, crY0, crY1;
           /* cr?? have to be coordinates related to the rastport */
           crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX;
@@ -423,14 +414,17 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
             kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
                  destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
 	    */
+    
+            if ((0 != (srcLayer->Flags & LAYERSIMPLE) &&
+                (NULL != srcCR->lobs ||
+                0 != (srcCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))))
+              useminterm = 0x0;     /* clear this area in the destination */
+            else
+              useminterm = minterm;
+
             break;
 	  } /* if () */
-        }
-        srcCR = srcCR -> Next;
-      } /* while () */
-      if (NULL == srcCR)
-      {
-        return;
+	srcCR = srcCR -> Next;
       }
     } /* if() */
     else /* no layer in the source rastport */
@@ -440,15 +434,15 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
       destRect.MinY = yDest;
       destRect.MaxX = xDest+xSize-1;
       destRect.MaxY = yDest+ySize-1;
+      
+      useminterm = minterm;
       /*
       kprintf("The source rastport has no layer!\n");
           kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
                destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
       */ 
     }
-    /*
-    kprintf("\nLooking for destination areas to blit to.\n");
-    */
+
     destCR = destLayer -> ClipRect;
 
     /* Does the destination have layers */
@@ -486,6 +480,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
             ULONG bltSrcY_tmp = bltSrcY;        
             bltWidth  = destRect.MaxX - destRect.MinX + 1;
             bltHeight = destRect.MaxY - destRect.MinY + 1;
+            
             /* 
                destCR actually contains the/a part of the rectangle that 
                we have to blit to 
@@ -551,6 +546,8 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
           kprintf("bltMask : %d\n",bltMask);
           kprintf("srcBM   : %x\n",srcBM);
 	  */
+	  
+	      
             BltBitMap(srcBM,
                       bltSrcX_tmp,
                       bltSrcY_tmp,
@@ -559,7 +556,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
                       bltDstY,
                       bltWidth,
                       bltHeight,
-                      minterm,
+                      useminterm,
                       bltMask,
                       NULL);
 	  } /* if (... ) */
@@ -583,7 +580,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
                 destRect.MinY,
                 destRect.MaxX - destRect.MinX + 1,
                 destRect.MaxY - destRect.MinY + 1,
-                minterm,
+                useminterm,
                 bltMask,
                 NULL);
     }    
@@ -593,7 +590,9 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
      */
 
     if (NULL != srcCR)
-     srcCR = srcCR->Next;
+      srcCR = srcCR->Next;
+    else
+      break;
 
     if (NULL == srcLayer)
       break;
