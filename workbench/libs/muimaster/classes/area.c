@@ -1259,7 +1259,9 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	case    MENUDOWN:
 		if (in)
 		{
+		#ifndef _AROS
 		    printf("Display Menu\n");
+		#endif
 	            return MUI_EventHandlerRC_Eat;
         	}
 	        break;
