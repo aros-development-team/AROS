@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 
         FreeVec(apath);
 
-        CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
     }
     else
     {
