@@ -13,6 +13,13 @@ clean:
 	$(RM) $(OBJDIR)
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
+
+$(OBJDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+
+include $(OBJDIR)/emul_handler.d
 

@@ -13,7 +13,7 @@ clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
 
 $(OBJDIR)/%.o: %.c
-	$(SYS_CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 FILES=boopsi newobject setattrs
@@ -22,3 +22,9 @@ $(LIBDIR)/libamiga.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	$(AR) $@ $?
 	$(RANLIB) $@
 
+$(OBJDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+
+include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

@@ -11,4 +11,12 @@ clean:
 	$(RM) $(SLIBDIR)/dummy.library
 
 $(SLIBDIR)/dummy.library: dummylib.c
-	$(CC) $(CFLAGS) -I $(TOP) $^ -c -o $@
+	$(CC) $(CFLAGS) -I $(TOP) $< -c -o $@
+
+$(SLIBDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(SLIBDIR)/ -- $(CFLAGS) -- $^
+
+include $(SLIBDIR)/dummylib.d
+

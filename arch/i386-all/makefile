@@ -21,10 +21,16 @@ clean:
 	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
 
 $(OSGENDIR)/%.o: %.s
-	$(AS) $(AFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
+$(OSGENDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+
+include $(OSGENDIR)/init.d

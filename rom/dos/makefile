@@ -11,7 +11,7 @@ FILES = adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	remdosentry runcommand seek selectinput selectoutput setioerr	    \
 	setowner strtolong ungetc unloadseg unlockdoslist vfprintf	    \
 	vprintf write filepart addbuffers changemode createdir deletefile   \
-	exallend isfilesystem lock matchpattern matchpatternnocase          \
+	exallend isfilesystem lock matchpattern matchpatternnocase	    \
 	parsepattern parsepatternnocase setcomment setfiledate setfilesize  \
 	setprotection
 
@@ -29,7 +29,7 @@ clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 dos_functable.c : $(foreach f,$(FILES),$(f).c) \
@@ -37,3 +37,10 @@ dos_functable.c : $(foreach f,$(FILES),$(f).c) \
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Dos \
 	    $(foreach f,$(FILES),$(f).c)
+
+$(OSGENDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+
+include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)

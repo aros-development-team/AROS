@@ -17,11 +17,11 @@ clean:
 	$(RM) $(OSGENDIR) *.err
 
 $(OSGENDIR)/driver_x11.o: driver_x11.c
-	$(CC) $(CFLAGS) $(X11CCFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $(X11CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 graphics_functable.c : $(foreach f,$(FILES),$(f).c) \
@@ -29,3 +29,11 @@ graphics_functable.c : $(foreach f,$(FILES),$(f).c) \
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Graphics \
 	    $(foreach f,$(FILES),$(f).c)
+
+$(OSGENDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+
+include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+
