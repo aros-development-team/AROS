@@ -88,8 +88,9 @@ int ASM SAVEDS GetVScreenSize (
 
     Forbid();
 
-#ifndef _AROS
+#ifdef _AROS
 #warning No VideoControl in AROS, yet
+#else
     if (IntuitionBase->FirstScreen == scr &&
 	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
     {
@@ -126,8 +127,9 @@ int ASM SAVEDS GetVScreenSize (
 	UnlockIBase(ilock);
     }
 
-#ifndef _AROS
+#ifdef _AROS
 #warning No VideoControl in AROS, yet
+#else
     if (isfirst &&
 	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
     {
