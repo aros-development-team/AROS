@@ -26,9 +26,12 @@ hidd-graphics-linklib-quick : $(LIB)
 	@$(NOP)
 
 # Install Linux specific hidd.prefs file
-#MM
-workbench-s-hiddprefs-linux-$(CPU) :
-	@$(CP) hidd.prefs $(SDIR)
+#MM workbench-s-hiddprefs-linux-$(CPU) :
+workbench-s-hiddprefs-linux-$(CPU) : $(SDIR)/hidd.prefs
+	@$(NOP)
+	
+$(SDIR)/hidd.prefs : hidd.prefs
+	@$(CP) $< $@
 
 #MM
 hidd-linux : $(LIB) setup
