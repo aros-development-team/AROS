@@ -18,7 +18,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
 
-#MM test-clib 
+#MM test-clib : includes includes-copy linklibs kernel
 
 %make_prog_setup mmake=test-clib
 

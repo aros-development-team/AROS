@@ -1,7 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-devs : kernel-input-linklib
 #MM- kernel-input : includes linklibs
 
 FUNCS := peekqualifier

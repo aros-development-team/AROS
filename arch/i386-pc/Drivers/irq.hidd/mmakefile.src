@@ -11,12 +11,11 @@ OBJDIR	    := $(GENDIR)/$(CURDIR)
 END_FILE    := $(OBJDIR)/endtag
 ENDFUNC     := $(END_FILE).o
 
-#MM Drivers-pc-i386-irq : hidd-irq-stubs
-Drivers-pc-i386-irq : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd.kernel.irq
+#MM kernel-pc-i386-irq-kobj : hidd-irq-stubs
+kernel-pc-i386-irq-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd.kernel.irq.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.irq.o
+	    -o $(KOBJSDIR)/irq_hidd.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/irq_hidd.o
 
 #MM
 includes-pc-i386 : $(DEST_INC) $(GEN_INC)

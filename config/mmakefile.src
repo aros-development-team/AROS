@@ -7,6 +7,7 @@ GENCONFIG_H := $(GENINCDIR)/aros/config.h
 #MM setup : setup-$(ARCH)-$(CPU)
 setup : make-dirs
 	@$(ECHO) "Creating mf.inc files..."
+	@touch $(GENDIR)/config.files
 	@$(SORT) -k 2 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
 	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
 	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
@@ -25,6 +26,16 @@ clean ::
 machine :
 	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
+
+#MM- AROS : kernel
+#MM- kernel : kernel-link-$(ARCH)-$(CPU)
+#MM- kernel-link-$(ARCH)-$(CPU) : kernel-objs
+#MM- kernel-objs : kernel-$(ARCH)-$(CPU)
+
+#MM- AROS : workbench demos contrib
+#MM- workbench : kernel-objs
+#MM- demos : workbench
+#MM- contrib : workbench
 
 %common
 %include_deps $(TOP)/bin/$(AROS_TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg

@@ -33,6 +33,12 @@ else
 kernel-boot-linklib : $(LIB)
 endif
 
+#MM
+kernel-boot-kobj : $(KOBJSDIR)/boot_library.o
+
+$(KOBJSDIR)/boot_library.o : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	@$(LD) -r -o $@ $^
+
 $(LIB) : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%mklib_q from=$^
 

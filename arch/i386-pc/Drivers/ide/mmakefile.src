@@ -8,15 +8,22 @@ FILES	:= ide ide-lowlevel
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libide.a
 AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
+KOBJ    := $(KOBJSDIR)/ide_device.o
 
 %define_libs
 
 #MM
 kernel-devs-pc-i386 : $(LIB)
-	@$(NOP)
+
+#MM
+kernel-pc-i386-ide-kobj : $(KOBJ)
 
 $(LIB) : $(OBJS)
 	%mklib_q
+
+$(KOBJ) : $(OBJS)
+	@echo Linking $@
+	@$(LD) -r -o $@ $^
 
 #MM
 clean ::

@@ -1,8 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#XXX Get rid of the next line.
-#MM- kernel-devs : kernel-gameport-linklib
 #MM- kernel-gameport : includes linklibs
 
 USER_INCLUDES := -I$(TOP)/rom/devs

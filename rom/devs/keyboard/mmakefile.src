@@ -1,7 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-devs : kernel-keyboard-linklib
 #MM- kernel-keyboard : includes linklibs
 
 USER_INCLUDES := -I$(TOP)/rom/devs

@@ -1,82 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= exec/init
-DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
-CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
-		   $(CFLAGS)
-
-# sheutlin: these cpu specific things should be in a separate directory
-#MM- AROS-linux-i386: AROS-linux
-#MM- setup-linux-i386: setup-linux
-#MM- includes-linux-i386 : includes-copy
-#MM- kernel-linux-i386: kernel-linux
-#MM- kernel-exec-linux-i386: kernel-exec-linux
-#MM- kernel-dos-linux-i386: kernel-dos-linux
-#MM- kernel-graphics-linux-i386: kernel-graphics-linux
-#MM- kernel-intuition-linux-i386: kernel-intution-linux
-#MM- kernel-hidd-linux-i386: kernel-hidd-linux
-#MM- kernel-utility-linux-i386: kernel-utility-linux
-#MM- kernel-battclock-linux-i386: kernel-battclock-linux
-#MM- workbench-linux-i386: workbench-linux
-#MM- contrib-linux-i386: contrib-linux
-
-#MM- AROS-linux-ppc: AROS-linux
-#MM- setup-linux-ppc: setup-linux
-#MM- includes-linux-ppc : includes-copy
-#MM- kernel-linux-ppc: kernel-linux
-#MM- kernel-exec-linux-ppc: kernel-exec-linux
-#MM- kernel-dos-linux-ppc: kernel-dos-linux
-#MM- kernel-graphics-linux-ppc: kernel-graphics-linux
-#MM- kernel-intuition-linux-ppc: kernel-intution-linux
-#MM- kernel-hidd-linux-ppc: kernel-hidd-linux
-#MM- kernel-utility-linux-ppc: kernel-utility-linux
-#MM- kernel-battclock-linux-ppc: kernel-battclock-linux
-#MM- workbench-linux-ppc: workbench-linux
-#MM- contrib-linux-ppc: contrib-linux
-
-
-#MM- AROS-linux : setup setup-linux includes compiler kernel workbench \
-#MM	    demos contrib shell
-
-#MM- kernel-linux : kernel-exec-linux \
-#MM	    kernel-aros-linklib \
-#MM	    kernel-dos-linux \
-#MM	    kernel-boot-linklib \
-#MM	    kernel-graphics-linux \
-#MM	    kernel-utility-linux \
-#MM	    kernel-intuition-linux \
-#MM	    kernel-keymap-linklib \
-#MM	    kernel-mathffp-linklib \
-#MM	    kernel-mathieeesingbas-linklib \
-#MM	    kernel-devs \
-#MM	    kernel-expansion-linklib \
-#MM	    kernel-filesys \
-#MM	    kernel-filesys-unix \
-#MM	    kernel-hidd-linux \
-#MM	    kernel-timer-linklib \
-#MM	    kernel-battclock-linux \
-#MM	    kernel-oop-linklib \
-#MM	    kernel-layers-linklib \
-#MM	    kernel-workbench-linklib \
-#MM	    kernel-cgfx-linklib
-
-# 'Re'target the serial and parallel hidds to what is needed in linux.
-#MM- hidd-serial-module   : hidd-serial-unix-module
-#MM- hidd-parallel-module : hidd-parallel-unix-module
-
 # Setup the CLIB metatargets...
 #MM- setup-clib-linux : setup-clib-linux-$(CPU)
 
 # Setup the ALIB metatargets...
 #MM- setup-alib-linux : setup-alib-linux-$(CPU)
 
-#MM
-kernel :
-	@$(NOP)
-
-# FIXME move battclock to own rule
 #MM setup-linux :
 setup-linux :
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
@@ -84,6 +14,23 @@ setup-linux :
 
 # These are the targets to get mmake to do what I want...
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM) setup-alib-linux
+
+#MM- setup-exec-m68k : setup-exec-linux-m68k
+
+#MM- kernel-linux : \
+#MM    kernel-unix \
+#MM    exec-linux \
+#MM    hidd-linux
+
+#MM- exec-m68k : exec-linux-m68k
+
+#MM- setup-dos-linux : setup-dos-unix
+
+#MM- setup-battclock-linux : setup-battclock-unix
+
+MM- check : check-exec-unix
+
+#MM- contrib-linux : contrib-complete
 
 #MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
 setup-exec-linux : $(GENINCDIR)/sigcore.h
@@ -94,50 +41,14 @@ $(GENINCDIR)/sigcore.h : $(TOP)/config/linux/exec/sigcore.h.src
 	%mkdirs_q $(GENINCDIR)
 	$(SHELL) $(TOP)/config/linux/exec/mksigcore.sh $(TOP)/config/linux/exec $(GENINCDIR)/sigcore.h
 
-#MM- setup-exec-m68k : setup-exec-linux-m68k
-
-#MM- kernel-exec-linux : exec-linux exec-$(CPU) exec-unix \
-#MM	    kernel-exec-linklib
-
-#MM- exec-m68k : exec-linux-m68k
-
 #MM
 exec-linux : $(OSGENDIR)/exec/init.o
-	@$(NOP)
 
-#MM- setup-dos-linux : setup-dos-unix
-
-#MM- kernel-dos-linux : dos-unix kernel-dos-linklib
-
-#MM- setup-battclock-linux : setup-battclock-unix
-
-#MM- kernel-graphics-linux : graphics-$(GFXSYSTEM) hidd-graphics-x11 kernel-graphics-linklib
-
-#MM- kernel-intuition-linux : intuition-$(GFXSYSTEM) kernel-intuition-linklib
-
-#MM- kernel-hidd-linux : kernel-hidd-linklib kernel-hidd-unix hidd-linux
-
-#MM- kernel-utility-linux : kernel-utility-linklib
-
-#MM- kernel-battclock-linux : battclock-unix kernel-battclock-linklib
-
-#MM- check : check-exec-unix
-
-# sheutlin: they are obsolete now
-##MM- clib-linux : clib-linux-$(CPU)
-#
-##MM- alib-linux : alib-linux-$(CPU)
-#
-# sheutlin: moved up
-##MM- includes-linux : includes-copy includes-linux-$(CPU)
-
-#MM- workbench-linux : workbench-complete workbench-hidd-unix
-
-#MM- contrib-linux : contrib-complete
-
-#MM
-clean ::
-	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
+FILES		:= exec/init
+DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
+CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
+		   $(CFLAGS)
 
 $(OSGENDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
@@ -146,4 +57,9 @@ $(OSGENDIR)/%.d : %.c
 	%mkdepend_q $(CFLAGS2)
 
 %include_deps
+
+#MM
+clean ::
+	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
+
 %common

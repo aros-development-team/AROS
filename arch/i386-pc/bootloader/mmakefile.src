@@ -102,6 +102,15 @@ kernel-bootloader-linklib : $(LIB)
 kernel-bootloader-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
+KOBJ := $(KOBJSDIR)/bootloader_resource.o
+
+#MM kernel-bootloader-kobj : setup includes kernel-bootloader-pc-i386
+kernel-bootloader-kobj : $(KOBJ)
+
+$(KOBJ) : $(ALL_OBJS)
+	@echo Linking $@
+	@$(LD) -r -o $@ $^
+
 #MM clean setup
 
 %asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"

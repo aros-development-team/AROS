@@ -2,170 +2,25 @@
 
 include $(TOP)/config/make.cfg
 
-CC := $(HOST_CC)
+#MM kernel-link-emul : kernel-objs
+kernel-link-emul : $(BINDIR)/aros
 
-# BEGIN_DESC{internaltarget}
-# \item{$(BINDIR)/aros} Create the AROS shell for systems which
-#       support emulation.
-#
-# END_DESC{internaltarget}
+KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
+      	   mathieeesingbas expansion oop layers workbench cybergraphics
+KDEVS   := timer input keyboard console gameport
+KHNDLRS := con emul nil ram
+KHIDDS  := hiddclass unixio x11gfx
+KRSRCS  := battclock
 
-#MM- kernel : workbench-fs-ram-linklib workbench-fs-nil-linklib
-
-#MM
-shell : $(BINDIR)/aros
-	@$(NOP)
-
-# BEGIN_DESC{localmakevar}
-# \item{LIBS} Flags which are passed to the linker for executables.
-#
-# \item{DEP_LIBS} Files on which executables depend (ie. if these files are
-#	newer than the executable, then the executable is linked anew).
-#
-# END_DESC{localmakevar}
-
-ifeq ("$(SHARED_EXEC)","yes")
-DEPLIB_EXEC=$(LIBDIR)/libexec.so$(HOST_LIB_SUFFIX)
-LIBEXEC=-lexec
-else
-DEPLIB_EXEC=$(LIBDIR)/libexec.a
-endif
-
-ifeq ("$(SHARED_DOS)","yes")
-DEPLIB_DOS=$(LIBDIR)/libdos.so$(HOST_LIB_SUFFIX)
-LIBDOS=-ldos
-else
-DEPLIB_DOS=$(LIBDIR)/libdos.a
-endif
-
-ifeq ("$(SHARED_INTUITION)","yes")
-DEPLIB_INTUITION=$(LIBDIR)/libintuition.so$(HOST_LIB_SUFFIX)
-LIBINTUITION=-lintuition
-else
-DEPLIB_INTUITION=$(LIBDIR)/libintuition.a
-endif
-
-ifeq ("$(SHARED_GRAPHICS)","yes")
-DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so$(HOST_LIB_SUFFIX)
-LIBGRAPHICS=-lgraphics
-else
-DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.a
-endif
-
-ifeq ("$(SHARED_UTILITY)","yes")
-DEPLIB_UTILITY=$(LIBDIR)/libutility.so$(HOST_LIB_SUFFIX)
-LIBUTILITY=-lutility
-else
-DEPLIB_UTILITY=$(LIBDIR)/libutility.a
-endif
-
-ifeq ("$(SHARED_LAYERS)","yes")
-DEPLIB_LAYERS=$(LIBDIR)/liblayers.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_LAYERS=$(LIBDIR)/liblayers.a
-endif
-
-ifeq ("$(SHARED_MATHFFP)","yes")
-DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
-endif
-
-ifeq ("$(SHARED_MATHIEEESINGBAS)","yes")
-DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
-endif
-
-ifeq ("$(SHARED_WORKBENCH)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.a
-endif
-
-ifeq ("$(SHARED_HIDDCLASS)","yes")
-DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.a
-endif
-
-ifeq ("$(SHARED_UNIXIOCLASS)","yes")
-DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
-endif
-
-ifeq ("$(SHARED_EXPANSION)","yes")
-DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
-endif
-
-ifeq ("$(SHARED_TIMER)","yes")
-DEPLIB_TIMER=$(LIBDIR)/libtimer.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_TIMER=$(LIBDIR)/libtimer.a
-endif
-
-ifeq ("$(SHARED_BATTCLOCK)","yes")
-DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.a
-endif
-
-ifeq ("$(SHARED_BOOT)","yes")
-DEPLIB_BOOT=$(LIBDIR)/libboot.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_BOOT=$(LIBDIR)/libboot.a
-endif
-
-ifeq ("$(SHARED_AROS)","yes")
-DEPLIB_AROS=$(LIBDIR)/libaros.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_AROS=$(LIBDIR)/libaros.a
-endif
-
-ifeq ("$(SHARED_OOP)","yes")
-DEPLIB_OOP=$(LIBDIR)/liboop.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_OOP=$(LIBDIR)/liboop.a
-endif
-
-ifeq ("$(SHARED_CGFX)","yes")
-DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.a
-endif
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) ))
 
 DEP_LIBS := \
-	$(LIBDIR)/libemul.a \
-	$(LIBDIR)/libcon.a \
-	$(LIBDIR)/libnil.a \
-	$(LIBDIR)/libram.a \
 	$(LIBDIR)/libamiga.a \
-	$(LIBDIR)/libarossupport.a \
-	$(DEPLIB_DOS) \
-	$(DEPLIB_EXEC) \
-	$(DEPLIB_UTILITY) \
-	$(DEPLIB_INTUITION) \
-	$(DEPLIB_LAYERS) \
-	$(DEPLIB_GRAPHICS) \
-	$(DEPLIB_MATHFFP) \
-	$(DEPLIB_OOP) \
-	$(DEPLIB_HIDDCLASS) \
-	$(DEPLIB_UNIXIOCLASS) \
-	$(DEPLIB_EXPANSION) \
-	$(DEPLIB_BOOT) \
-	$(DEPLIB_TIMER) \
-	$(DEPLIB_BATTCLOCK) \
-	$(DEPLIB_CGFX)	\
-	$(LIBDIR)/libconsole.a \
-	$(LIBDIR)/libinput.a \
-	$(LIBDIR)/libkeymap.a \
-	$(LIBDIR)/libx11cl.a \
-	$(LIBDIR)/libkeyboard.a \
-	$(LIBDIR)/libgameport.a \
-	$(DEPLIB_AROS)
+	$(LIBDIR)/libarossupport.a
 
 ifeq ("$(AROS_HOST_ARCH)","linux")
 DEP_LIBS := $(DEP_LIBS) $(LIBDIR)/liblinux.a
@@ -173,20 +28,15 @@ endif
 
 
 LIBS :=	-L$(LIBDIR) \
-	-lexec -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
-	-lhiddclass -lunixiocl -lutility -ltimer \
-	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
-	-larossupport -lamiga -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon -lnil -lram -lemul \
-	-lcybergraphics
+	-larossupport -lamiga -lhiddgraphicsstubs
 
 ifeq ("$(AROS_HOST_ARCH)","linux")
 LIBS := $(LIBS) -llinux
 endif
 
-$(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) -Dmain=submain $< $(LIBS) \
+$(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
+	$(HOST_CC) $(CFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
 		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(SHELL_LDFLAGS)
 
 $(GENDIR)/aros.o : aros.c
-	$(CC) $(CFLAGS) -Dmain=submain $< -c -o $@
+	$(HOST_CC) $(CFLAGS) -Dmain=submain $< -c -o $@

@@ -1,11 +1,27 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
--include $(OSGENDIR)/boot/mf.inc
-
 FILES	:= libexec
-LIBS	:= -lamiga -larossupport -larosc -larosm
-OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
+USELIBS	:= graphics hiddgraphicsstubs amiga arossupport arosc arosm
+LIBS    := $(addprefix -l,$(USELIBS))
+DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+
+KLIBS   := exec boot aros dos graphics utility intuition keymap \
+      	   mathieeesingbas expansion oop layers workbench cybergraphics \
+	   bootmenu partition
+KDEVS   := timer input keyboard console gameport ide trackdisk
+KHNDLRS := con nil ram cdrom afs
+KHIDDS  := hiddclass pci irq mouse graphics
+KRSRCS  := battclock bootloader misc
+KDRVRS  := kbd serial vesagfx vgah vmwaregfx
+#Disabled DRVR usbuhci
+
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+	 $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 
 BOOT_FILES := \
     C/Shell \
@@ -78,11 +94,10 @@ setup-pc-i386 :
 
 #MM kernel-link-pc-i386 : setup
 kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
-	@$(NOP)
 
-$(BINDIR)/boot/aros-pc-i386 : $(OBJS)
+$(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
 	@ld -N -e kernel_startup -Ttext 0x00100000 -Map $(OSGENDIR)/boot/aros.map \
-	    -o $@ $(OBJS) -L$(LIBDIR) $(LIBS)
+	    -o $@ $(KOBJS) -L$(LIBDIR) $(LIBS)
 	@strip --strip-unneeded -R .note -R .comment $@
 
 $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
@@ -104,7 +119,7 @@ workbench-boot-pc-i386:
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
-#MM bootdisk-pc-i386 : software-pc-i386 test
+#MM bootdisk-pc-i386 : software-pc-i386 workbench test
 bootdisk-pc-i386: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
                   $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst \
                   $(BINDIR)/boot/grub/menu.lst.DH0 install

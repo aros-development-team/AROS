@@ -3,7 +3,6 @@ include $(TOP)/config/make.cfg
 
 FILES := con_task support completion
 
-#MM- kernel-filesys : kernel-fs-con
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
 %build_module_macro mmake=kernel-fs-con \

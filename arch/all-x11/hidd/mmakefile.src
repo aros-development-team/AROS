@@ -29,19 +29,23 @@ END_FILE := $(OBJDIR)/endtag
 ENDFUNC := $(END_FILE).o
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(OBJDIR)/functable.o $(OBJDIR)/xshm.o
 LIB	:= $(LIBDIR)/libx11cl.a
-
+KOBJ    := $(KOBJSDIR)/x11gfx_hidd.o
 
 #MM hidd-graphics-linklib-quick
 hidd-graphics-linklib-quick : $(LIB)
-	@$(NOP)
 
 #MM
 hidd-graphics-x11 : $(LIB) setup
-hidd-graphics-x11 : $(LIB)
-	@$(NOP)
+
+#MM
+kernel-x11gfx-kobj : $(KOBJ)
 
 $(LIB) : $(OBJS)
 	%mklib_q
+
+$(KOBJ) : $(OBJS)
+	echo Linking $@
+	@$(LD) -r -o $@ $^
 
 #MM
 clean ::

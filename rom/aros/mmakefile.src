@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 # This metatarget is so that the xxx-module and xxx-linklib both require
 # the same things to be built before running those targets.
 #MM- kernel-aros : includes linklibs
+#MM- kernel-aros-kobj : includes linklibs
 
 #MM- kernel-aros-includes : setup-clib
 #MM includes-generate : setup-clib

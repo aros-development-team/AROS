@@ -10,12 +10,11 @@ LIBS    :=	-L$(LIBDIR) -lhiddstubs
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-#MM Drivers-pc-i386 : workbench-hidd-serial-stubs
-Drivers-pc-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd.bus.mouse
+#MM kernel-pc-i386-mouse-kobj : workbench-hidd-serial-stubs
+kernel-pc-i386-mouse-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(LIBS) \
-	    -o $(OSGENDIR)/boot/hidd.bus.mouse.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.bus.mouse.o
+	    -o $(KOBJSDIR)/mouse_hidd.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/mouse_hidd.o
 
 #MM
 clean ::

@@ -50,7 +50,7 @@ OSMODULE := $(LIBNAME).$(LIBPOST)
 endif
 
 OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS) functable,$(OBJDIR)/$(f).o)
-ALL_OBJS := $(OBJS) $(INITFUNC) $(ENDFUNC)
+ALL_OBJS := $(INITFUNC) $(OBJS) $(ENDFUNC)
 
 $(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a) $(ENDFUNC)
@@ -71,6 +71,9 @@ kernel-hidd-linklib : $(LIB)
 
 #MM kernel-hidd-module : includes kernel-hidd-$(ARCH)-$(CPU)
 kernel-hidd-module : $(HIDDSDIR)/$(OSMODULE)
+
+#MM kernel-hidd-kobj : includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd-kobj : $(KOBJSDIR)/hiddclass_hidd.o
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -96,6 +99,9 @@ DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(notdir $(END_FILE)), $(OBJDIR)/$(f)
 $(LIB): libdefs.h $(ALL_OBJS)
 	%mklib_q from=$(ALL_OBJS)
 	@$(RM) $(RMLIB)
+
+$(KOBJSDIR)/hiddclass_hidd.o : libdefs.h $(ALL_OBJS)
+	@$(LD) -r -o $@ $(ALL_OBJS)
 
 %copy_includes path=hidd
 

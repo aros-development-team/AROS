@@ -13,13 +13,11 @@ OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-# do not build it into the kernel
-##MM Drivers-pc-i386 : 
-Drivers-pc-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/usbuhci_driver
+#MM
+kernel-pc-i386-usb-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/usbuhci_driver.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/usbuhci_driver.o
+	    -o $(KOBJSDIR)/usbuhci_driver.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/usbuhci_driver.o
 
 #MM
 clean ::

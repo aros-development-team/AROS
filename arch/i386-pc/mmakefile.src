@@ -12,8 +12,9 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- general-setup-pc-i386: setup setup-pc-i386 includes compiler
 
-#MM- kernel-pc-i386 : general-setup-pc-i386 kernel kernel-module-pc-i386 \
-#MM	    create-mf-inc-again kernel-link-pc-i386
+#MM- kernel-pc-i386 : general-setup-pc-i386
+
+#MM- kernel-link-pc-i386 : bootdisk-pc-i386
 
 #MM- software-pc-i386 : general-setup binary-pc-i386 \
 #MM	    workbench-pc-i386 demos contrib-pc-i386
@@ -27,35 +28,16 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 # Kernel modules
 #
 
-#MM- kernel-module-pc-i386 : 				\
-#MM	kernel-exec-module-pc-i386			\
-#MM	kernel-expansion-module-pc-i386			\
-#MM	kernel-bootmenu-module-pc-i386 \
-#MM	kernel-utility-module-pc-i386			\
-#MM	kernel-dos-module-pc-i386			\
-#MM	kernel-boot-linklib			\
-#MM	kernel-aros-module-pc-i386			\
-#MM	kernel-oop-module-pc-i386			\
-#MM	kernel-hidd-linklib			\
-#MM	kernel-layers-linklib			\
-#MM	kernel-timer-module-pc-i386			\
-#MM	kernel-misc-module-pc-i386			\
-#MM	kernel-battclock-module-pc-i386			\
-#MM	kernel-bootloader-module-pc-i386		\
-#MM	kernel-keymap-module-pc-i386			\
-#MM	kernel-mathieeesingbas-module-pc-i386		\
-#MM	kernel-mathffp-linklib			\
-#MM	kernel-devs-module-pc-i386			\
-#MM	kernel-filesys-module-pc-i386		\
-#MM	kernel-graphics-linklib			\
-#MM	kernel-intuition-module-pc-i386			\
-#MM	kernel-cgfx-module-pc-i386			\
-#MM	kernel-workbench-module-pc-i386			\
-#MM	kernel-libs-module-pc-i386 \
-#MM	Drivers-pc-i386-pci			\
-#MM	Drivers-pc-i386-irq			\
-#MM	Drivers-pc-i386-kbd			\
-#MM	Drivers-pc-i386
+#MM- kernel-pc-i386 : \
+#MM     exec-pc-i386 \
+#MM     dos-pc-i386 \
+#MM	kernel-bootmenu-kobj \
+#MM	kernel-misc-kobj \
+#MM	kernel-bootloader-kobj \
+#MM     workbench-libs-partition-kobj \
+#MM     workbench-fs-afs-kobj \
+#MM     aminet-disk-cdrom-amicdrom-kobj \
+#MM	kernel-pc-i386-drivers
 
 #
 # Setup
@@ -66,143 +48,6 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	setup-battclock-pc-i386		\
 #MM	setup-bootloader-pc-i386	\
 #MM	setup-dos-pc-i386
-
-#
-# Misc
-#
-
-#MM- kernel-exec-module-pc-i386 : exec-pc-i386 kernel-exec-linklib
-#MM- kernel-expansion-module-pc-i386 : kernel-expansion-pc-i386 kernel-expansion-linklib
-#MM- kernel-bootmenu-module-pc-i386 : kernel-bootmenu-pc-i386 kernel-bootmenu-linklib
-#MM- kernel-utility-module-pc-i386 : kernel-utility-pc-i386 kernel-utility-linklib
-#MM- kernel-dos-module-pc-i386 : kernel-dos-pc-i386 dos-pc-i386 kernel-dos-linklib
-#MM- kernel-aros-module-pc-i386 : kernel-aros-pc-i386 kernel-aros-linklib
-#MM- kernel-oop-module-pc-i386 : kernel-oop-pc-i386 kernel-oop-linklib
-#MM- kernel-timer-module-pc-i386 : kernel-timer-pc-i386 kernel-timer-linklib
-#MM- kernel-misc-module-pc-i386 : kernel-misc-pc-i386 kernel-misc-linklib
-#MM- kernel-battclock-module-pc-i386 : kernel-battclock-pc-i386 kernel-battclock-linklib
-#MM- kernel-bootloader-module-pc-i386 : kernel-bootloader-pc-i386 kernel-bootloader-linklib
-#MM- kernel-keymap-module-pc-i386 : kernel-keymap-pc-i386 kernel-keymap-linklib
-#MM- kernel-mathieeesingbas-module-pc-i386: kernel-mathieeesingbas-pc-i386 kernel-mathieeesingbas-linklib
-#MM- kernel-mathffp-module-pc-i386: kernel-mathffp-pc-i386 kernel-mathffp-linklib
-#MM- kernel-workbench-module-pc-i386 : kernel-workbench-pc-i386 kernel-workbench-linklib
-#MM- kernel-devs-module-pc-i386 : kernel-devs-pc-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib aminet-disk-cdrom-amicdrom-linklib
-#MM- kernel-filesys-module-pc-i386 : kernel-filesys-pc-i386 kernel-filesys
-#MM- kernel-intuition-module-pc-i386 : intuition-gfxhidd kernel-intuition-pc-i386 intuition-pc-i386 kernel-intuition-linklib
-#MM- kernel-cgfx-module-pc-i386 : kernel-cgfx-pc-i386 kernel-cgfx-linklib
-#MM- kernel-libs-module-pc-i386 :kernel-libs-pc-i386 workbench-libs-partition-linklib 
-
-#
-# Setup libraries
-#
-
-
-#MM kernel-expansion-pc-i386 :
-kernel-expansion-pc-i386 :
-	%add_objects rom/boot/libexpansion
-
-#MM kernel-bootmenu-pc-i386 :
-kernel-bootmenu-pc-i386 :
-	%add_objects rom/boot/libbootmenu
-
-#MM kernel-utility-pc-i386 :
-kernel-utility-pc-i386 :
-	%add_objects rom/boot/libutility
-
-#MM kernel-dos-pc-i386 :
-kernel-dos-pc-i386 :
-	%add_objects rom/boot/libdos
-
-#MM kernel-boot-pc-i386 :
-	%add_objects rom/boot/libboot
-
-#MM kernel-aros-pc-i386 :
-kernel-aros-pc-i386 :
-	%add_objects rom/boot/libaros
-
-#MM kernel-oop-pc-i386 :
-kernel-oop-pc-i386 :
-	%add_objects rom/boot/liboop
-
-#MM kernel-hidd-pc-i386 :
-kernel-hidd-pc-i386 :
-	%add_objects rom/boot/libhiddclass
-
-#MM kernel-layers-pc-i386 :
-kernel-layers-pc-i386 :
-	%add_objects rom/boot/liblayers
-
-#MM kernel-timer-pc-i386 :
-kernel-timer-pc-i386 :
-	%add_objects rom/boot/libtimer
-
-#MM kernel-misc-pc-i386 :
-kernel-misc-pc-i386 :
-	%add_objects rom/boot/libmisc
-
-#MM kernel-battclock-pc-i386 :
-kernel-battclock-pc-i386 :
-	%add_objects rom/boot/libbattclock
-
-#MM kernel-bootloader-pc-i386 :
-kernel-bootloader-pc-i386 :
-	%add_objects rom/boot/libbootloader
-
-#MM kernel-keymap-pc-i386 :
-kernel-keymap-pc-i386 :
-	%add_objects rom/boot/libkeymap
-
-#MM kernel-mathffp-pc-i386 :
-kernel-mathffp-pc-i386 :
-	%add_objects rom/boot/libmathffp
-
-#MM kernel-mathieeesingbas-pc-i386 :
-kernel-mathieeesingbas-pc-i386 :
-	%add_objects rom/boot/libmathieeesingbas
-
-#MM kernel-workbench-pc-i386 :
-kernel-workbench-pc-i386 :
-	%add_objects rom/boot/libworkbench
-
-#MM kernel-devs-pc-i386 :
-kernel-devs-pc-i386 :
-	%add_objects rom/boot/libgameport
-	%add_objects rom/boot/libinput
-	%add_objects rom/boot/libkeyboard
-	%add_objects rom/boot/libconsole
-	%add_objects rom/boot/libtrackdisk
-	%add_objects rom/boot/libide
-	%add_objects rom/boot/libafs
-	%add_objects rom/boot/libnil
-	%add_objects rom/boot/libram
-	%add_objects rom/boot/libcdrom
-        
-#MM kernel-graphics-pc-i386 :
-kernel-graphics-pc-i386 :
-	%add_objects rom/boot/libgraphics
-	%add_objects rom/boot/libhiddgraphicsstubs
-
-#MM kernel-intuition-pc-i386 :
-kernel-intuition-pc-i386 :
-	%add_objects rom/boot/libintuition
-
-#MM kernel-filesys-pc-i386 :
-kernel-filesys-pc-i386 :
-	%add_objects rom/boot/libcon
-
-#MM kernel-cgfx-pc-i386 :
-kernel-cgfx-pc-i386 :
-	%add_objects rom/boot/libcybergraphics
-
-#MM kernel-libs-pc-i386 :
-kernel-libs-pc-i386 :
-	%add_objects rom/boot/libpartition
-
-
-
-#MM create-mf-inc-again
-create-mf-inc-again :
-	@$(MAKE) -f $(TOP)/config/mmakefile setup
 
 #MM- includes-pc-i386 : includes-copy-pc-i386 includes-copy
 

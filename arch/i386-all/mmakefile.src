@@ -9,6 +9,15 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(GENINCDIR)/jmpdefs.h
 
 
+#MM includes-linux-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
+#MM   compiler-arossupport-includes
+#MM includes-freebsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
+#MM   compiler-arossupport-includes
+#MM includes-netbsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
+#MM   compiler-arossupport-includes
+#MM includes-openbsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
+#MM   compiler-arossupport-includes
+
 #MM
 includes-linux-i386 : $(INCFILES) machine.i
 	@$(NOP)
@@ -33,6 +42,8 @@ includes-cygwin-i386 : $(INCFILES) machine.i
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
+#MM- kernel-i386 : exec-i386
+
 $(INCDIR)/aros/%.h : %.h
 	%mkdirs_q $(INCDIR)/aros
 	$(CP) $< $@
@@ -47,7 +58,7 @@ $(GENINCDIR)/%.h : %.h
 
 GENINC_CFLAGS := $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
 
-$(GENINC) : geninc.c
+$(GENINC) : geninc.c 
 	@echo "CFLAGS=$(GENINC_CFLAGS)"
 	@echo "Creating geninc..."
 	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
