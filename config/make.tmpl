@@ -845,7 +845,7 @@ SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
