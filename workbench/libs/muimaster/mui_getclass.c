@@ -14,12 +14,24 @@
 #include "support.h"
 #include "support_classes.h"
 
+/*#define MYDEBUG 1*/
+#include "debug.h"
+
 static CONST_STRPTR searchpaths[] = {
     "PROGDIR:Zune/%s",
     "Zune/%s",
     "Classes/Zune/%s",
+#ifndef __AROS__
+    "MUI/%s",
+    "PROGDIR:MUI/%s",
+#endif
     NULL,
 };
+
+#ifndef __AROS__
+struct MUI_CustomClass *MCC_Query(ULONG d0);
+#pragma  libcall mcclib MCC_Query 01e 001
+#endif
 
 static struct IClass *load_external_class(CONST_STRPTR classname, struct Library *MUIMasterBase)
 {
@@ -33,6 +45,8 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
     {
 	snprintf(s, 255, *pathptr, classname);
 	
+	D(bug("Trying opening of %s\n",s));
+
         if ((mcclib = OpenLibrary(s, 0)))
 	{
 	    /* call MCC_Query(0) */
@@ -42,8 +56,8 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 				 AROS_LCA(LONG, 0, D0),
 				 struct Library *, mcclib, 5, lib);
 #else
-#warning "You need to make MCC_Query() call here!!!!!!!!!!!!!!!!!!!"
-	    mcc = 0;
+	    D(bug("Calling MCC Query. Librarybase at 0x%lx\n",mcclib));
+	    mcc = MCC_Query(0);
 #endif			
 	    if (mcc)
 	    {
@@ -51,6 +65,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 		if (cl)
 		{
 		    mcc->mcc_Module = mcclib;
+		    D(bug("Successfully opened %s as external class\n",classname));
 		    return cl;
 		}
 	    }
@@ -58,6 +73,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 	    if (!cl) CloseLibrary(mcclib);
 	}
     }
+    D(bug("Failed to open external class %s\n",classname));
     return NULL;
 }
 
