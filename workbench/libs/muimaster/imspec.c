@@ -230,6 +230,7 @@ static struct MUI_ImageSpec_intern *get_config_imspec(LONG img)
 }
 
 
+#ifdef MYDEBUG
 static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
 {
     static char buf[64];
@@ -275,6 +276,7 @@ static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
     }
     return buf;
 }
+#endif
 
 /**************************************************************************
  Create a image spec from a string or a magic value.
