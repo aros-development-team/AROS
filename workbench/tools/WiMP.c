@@ -249,6 +249,27 @@ const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\nCopyright 200
 const STRPTR YESNO_TXT		= "Yes.|No!";
 const STRPTR CONTINUE_TXT	= "Continue";
 
+/* Internal Prototypes */
+VOID initlvnodes(struct List *list);
+VOID freelvnodes(struct List *list);
+VOID update_list();
+struct Gadget *gt_init();
+IPTR getsw(int *type);
+VOID update_actionglist();
+VOID makemenus();
+struct Gadget *makegadgets(struct Gadget *gad);
+VOID open_lib();
+VOID open_window();
+VOID close_window();
+VOID close_lib();
+VOID open_infowindow();
+VOID close_infowindow();
+VOID WindowInfo( struct Window *win );
+VOID ScreenInfo( struct Screen *scr );
+VOID rescue_all();
+VOID show_all();
+
+
 VOID initlvnodes(struct List *list)
 {
 struct Screen *scr;
@@ -327,6 +348,28 @@ struct Node *popnode;
 return;
 }
 
+VOID update_list()
+{
+  /* Detach List from Gadget */
+  GT_SetGadgetAttrs(screenlistg,Window,NULL,
+      GTLV_Labels, (IPTR)~0,
+      TAG_DONE);
+
+  /* Recalculate List */
+  freelvnodes(&lv_list);
+  initlvnodes(&lv_list);
+
+  /* Attach List to Gadget */
+  GT_SetGadgetAttrs(screenlistg,Window,NULL,
+      GTLV_Labels, (IPTR)&lv_list,
+      GTLV_Selected, (IPTR)~0,
+      TAG_DONE);
+  update_actionglist();
+  GT_RefreshWindow(Window,NULL);
+
+return;
+}
+
 struct Gadget *gt_init()
 {
     struct Gadget *gad = NULL;
@@ -377,18 +420,18 @@ struct Window *win;
     scr = IntuitionBase->FirstScreen;
     UnlockIBase(lock);
     /* Traverse through all Screens */
-    while ( scr && scr != xptr )
+    while ( scr && scr != (struct Screen *)xptr )
     {
       /* Traverse through all Windows of current Screen */
       win = scr->FirstWindow;
-      while ( win && win != xptr )
+      while ( win && win != (struct Window *)xptr )
       {
 	win = win->NextWindow;
       }
       scr = scr->NextScreen;
     }
-    if ( ( win == xptr && *type == Window_type )
-      || ( scr == xptr && *type == Screen_type ) )
+    if ( ( win == (struct Window *)xptr && *type == Window_type )
+      || ( scr == (struct Screen *)xptr && *type == Screen_type ) )
     {
       return xptr;
     }
@@ -634,24 +677,24 @@ char tmp[1024];
 		 TAG_DONE );
 
   SetAPen(iw_rp,1);
-  sprintf(tmp,"Window: %p \"%s\"",win,win->Title);		WPRINT(  1 );
-  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);		WPRINT(  3 );
-  sprintf(tmp,"TopEdge      = %d", win->TopEdge);		WPRINT(  4 );
-  sprintf(tmp,"Width        = %d", win->Width);			WPRINT(  5 );
-  sprintf(tmp,"Height       = %d", win->Height);		WPRINT(  6 );
-  sprintf(tmp,"MinWidth     = %d", win->MinWidth);		WPRINT(  7 );
-  sprintf(tmp,"MinHeight    = %d", win->MinHeight);		WPRINT(  8 );
-  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);		WPRINT(  9 );
-  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);		WPRINT( 10 );
-  sprintf(tmp,"Flags        = %010p", (void *)win->Flags);	WPRINT( 11 );
-  sprintf(tmp,"Title        = \"%s\"", win->Title);		WPRINT( 12 );
-  sprintf(tmp,"ReqCount     = %d", win->ReqCount);		WPRINT( 13 );
+  sprintf(tmp,"Window: %p \"%s\"",win,win->Title);	WPRINT(  1 );
+  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);	WPRINT(  3 );
+  sprintf(tmp,"TopEdge      = %d", win->TopEdge);	WPRINT(  4 );
+  sprintf(tmp,"Width        = %d", win->Width);		WPRINT(  5 );
+  sprintf(tmp,"Height       = %d", win->Height);	WPRINT(  6 );
+  sprintf(tmp,"MinWidth     = %d", win->MinWidth);	WPRINT(  7 );
+  sprintf(tmp,"MinHeight    = %d", win->MinHeight);	WPRINT(  8 );
+  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);	WPRINT(  9 );
+  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);	WPRINT( 10 );
+  sprintf(tmp,"Flags        = 0x%08lx", win->Flags);	WPRINT( 11 );
+  sprintf(tmp,"Title        = \"%s\"", win->Title);	WPRINT( 12 );
+  sprintf(tmp,"ReqCount     = %d", win->ReqCount);	WPRINT( 13 );
   sprintf(tmp,"WScreen      = %p \"%s\"", win->WScreen,
-				win->WScreen->Title);		WPRINT( 14 );
-  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);		WPRINT( 15 );
-  sprintf(tmp,"BorderTop    = %d", win->BorderTop);		WPRINT( 16 );
-  sprintf(tmp,"BorderRight  = %d", win->BorderRight);		WPRINT( 17 );
-  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);		WPRINT( 18 );
+				win->WScreen->Title);	WPRINT( 14 );
+  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);	WPRINT( 15 );
+  sprintf(tmp,"BorderTop    = %d", win->BorderTop);	WPRINT( 16 );
+  sprintf(tmp,"BorderRight  = %d", win->BorderRight);	WPRINT( 17 );
+  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);	WPRINT( 18 );
 
 return;
 }
@@ -680,7 +723,7 @@ char tmp[1024];
   sprintf(tmp,"TopEdge      = %d", scr->TopEdge);		WPRINT(  4 );
   sprintf(tmp,"Width        = %d", scr->Width);			WPRINT(  5 );
   sprintf(tmp,"Height       = %d", scr->Height);		WPRINT(  6 );
-  sprintf(tmp,"Flags        = %010p", (void *)scr->Flags);	WPRINT(  7 );
+  sprintf(tmp,"Flags        = 0x%08x", scr->Flags);		WPRINT(  7 );
   sprintf(tmp,"Title        = \"%s\"", scr->Title);		WPRINT(  8 );
   sprintf(tmp,"DefaultTitle = \"%s\"", scr->DefaultTitle);	WPRINT(  9 );
 
@@ -748,28 +791,6 @@ struct Window *win;
     }
     scr = scr->NextScreen;
   }
-
-return;
-}
-
-VOID update_list()
-{
-  /* Detach List from Gadget */
-  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-      GTLV_Labels, (IPTR)~0,
-      TAG_DONE);
-
-  /* Recalculate List */
-  freelvnodes(&lv_list);
-  initlvnodes(&lv_list);
-
-  /* Attach List to Gadget */
-  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-      GTLV_Labels, (IPTR)&lv_list,
-      GTLV_Selected, (IPTR)~0,
-      TAG_DONE);
-  update_actionglist();
-  GT_RefreshWindow(Window,NULL);
 
 return;
 }
