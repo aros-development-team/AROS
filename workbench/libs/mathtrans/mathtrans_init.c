@@ -38,7 +38,7 @@ const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&MathTrans_end,
+    (APTR)&END,
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
@@ -113,9 +113,9 @@ AROS_LH1(struct MathTransBase_intern *, open,
 {
     AROS_LIBFUNC_INIT
     /*
-        This function is single-threaded by exec by calling Forbid.
-        If you break the Forbid() another task may enter this function
-        at the same time. Take care.
+	This function is single-threaded by exec by calling Forbid.
+	If you break the Forbid() another task may enter this function
+	at the same time. Take care.
     */
 
     /* Keep compiler happy */
@@ -123,10 +123,10 @@ AROS_LH1(struct MathTransBase_intern *, open,
 
 
     if (!MathBase)
-        MathBase = OpenLibrary ("mathffp.library", 39);
+	MathBase = OpenLibrary ("mathffp.library", 39);
 
     if (!MathBase)
-        return NULL;        
+	return NULL;
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -141,21 +141,21 @@ AROS_LH0(BPTR, close, struct MathTransBase_intern *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
-        This function is single-threaded by exec by calling Forbid.
-        If you break the Forbid() another task may enter this function
-        at the same time. Take care.
+	This function is single-threaded by exec by calling Forbid.
+	If you break the Forbid() another task may enter this function
+	at the same time. Take care.
     */
 
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
       if (MathBase)
-        CloseLibrary (MathBase);
+	CloseLibrary (MathBase);
 
       /* Delayed expunge pending? */
       if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
-         /* Then expunge the library */
-         return expunge();
+	 /* Then expunge the library */
+	 return expunge();
     }
     return 0;
     AROS_LIBFUNC_EXIT
@@ -167,16 +167,16 @@ AROS_LH0(BPTR, expunge, struct MathTransBase_intern *, LIBBASE, 3, BASENAME)
 
     BPTR ret;
     /*
-        This function is single-threaded by exec by calling Forbid.
-        Never break the Forbid() or strange things might happen.
+	This function is single-threaded by exec by calling Forbid.
+	Never break the Forbid() or strange things might happen.
     */
 
     /* Test for openers. */
     if(LIBBASE->library.lib_OpenCnt)
     {
-        /* Set the delayed expunge flag and return. */
-        LIBBASE->library.lib_Flags|=LIBF_DELEXP;
-        return 0;
+	/* Set the delayed expunge flag and return. */
+	LIBBASE->library.lib_Flags|=LIBF_DELEXP;
+	return 0;
     }
 
     /* Get rid of the library. Remove it from the list. */
@@ -187,7 +187,7 @@ AROS_LH0(BPTR, expunge, struct MathTransBase_intern *, LIBBASE, 3, BASENAME)
 
     /* Free the memory. */
     FreeMem((char *)LIBBASE-LIBBASE->library.lib_NegSize,
-        LIBBASE->library.lib_NegSize+LIBBASE->library.lib_PosSize);
+	LIBBASE->library.lib_NegSize+LIBBASE->library.lib_PosSize);
 
     return ret;
     AROS_LIBFUNC_EXIT
