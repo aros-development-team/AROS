@@ -320,7 +320,7 @@ LONG execute(STRPTR com)
 	cli->cli_ReturnCode = RunCommand(seglist,100000,s2,last-s2-1);
 	AROS_BSTR_setstrlen(cli->cli_CommandName,0);
 	AROS_BSTR_putchar(cli->cli_CommandName,0,'\0');
-	cli->cli_Module=0;
+	seglist = cli->cli_Module;
 	UnLoadSeg(seglist);
 	cli->cli_Result2 = IoErr();
     }else if(infile==NULL&&outfile==NULL)
