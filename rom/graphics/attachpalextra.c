@@ -71,9 +71,29 @@
 
 	if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
 	{
+	    UWORD sharablecolors, bmdepth;
+	    
+	    sharablecolors = cm->Count;
+
+    	    /* cm->Count may contain more entries than 2 ^ bitmapdepth,
+	       for pointer sprite colors, etc. Sharablecolors OTOH is
+	       limited to 2 ^ bitmapdepth */
+	         
+	    bmdepth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
+	    if (bmdepth < 8)
+	    {
+	    	if ((1L << bmdepth) < sharablecolors)
+		{
+		    sharablecolors = 1L << bmdepth;
+		}
+	    }
+	    	    
 	    /* initialize the AllocList BYTE-array */
 	    ULONG i = 0;
-	    while (i < cm->Count)
+
+	    /* CHECKME: Should probably say "i < sharablecolors", but might
+	       not actually cause anything bad either, even if it doesn't. */	       
+    	    while (i < cm->Count) 
 	    {
                 PALEXTRA_ALLOCLIST(pe, i) = (PalExtra_AllocList_Type)i-1;
                 i++;
@@ -86,15 +106,15 @@
 	    InitSemaphore(&pe->pe_Semaphore);
 	    pe->pe_ViewPort = vp;
 
-	    pe->pe_FirstFree   = cm->Count-1;
-	    pe->pe_NFree       = cm->Count;
+	    pe->pe_FirstFree   = sharablecolors-1;
+	    pe->pe_NFree       = sharablecolors;
 	    pe->pe_FirstShared = (UWORD)-1;
 	    pe->pe_NShared     = 0;
 
 	    /* set all entries in the color table to be shareable
                pe_SharableColors is not the number of colors but the last color index! */
 
-	    pe->pe_SharableColors = cm->Count-1;
+	    pe->pe_SharableColors = sharablecolors;
 	    
 	} /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
 	else
