@@ -230,7 +230,7 @@ The format is date (DD-MM-YY), acronym (one word) and description.
 
 Here is an example of how to format AROS code:
 
-\begin{example}
+\begin{code}
 {
     /* a */
     struct RastPort * rp;
@@ -242,7 +242,7 @@ Here is an example of how to format AROS code:
 
     /* c */
     if (a == 1)
-	printf ("Init worked\\n");
+	printf ("Init worked\n");
 
     /* d */
     if
@@ -258,19 +258,19 @@ Here is an example of how to format AROS code:
 	a == 0
     )
     {
-	printf ("Something failed\\n");
+	printf ("Something failed\n");
 	return FAIL;
     }
 
     /* e */
-    a = printf ("My RastPort is %p, a=%d\\n"
+    a = printf ("My RastPort is %p, a=%d\n"
 	, rp
 	, a
     );
 
     return OK;
 }
-\end{example}
+\end{code}
 
 Looks ugly, eh ? :-)
 
@@ -282,7 +282,7 @@ other (see a and b);
 
 \item Put spaces between operands and operators
 
-\item Put braces {}, brackets [] and parenthese () below each other (d) if
+\item Put braces \{\}, brackets [] and parenthese () below each other (d) if
 there is much code between. Brackets and parenthese may be in one line if
 the code between is small (c)
 
