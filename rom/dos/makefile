@@ -16,7 +16,7 @@ FUNCTIONS = \
 	vprintf write filepart addbuffers changemode createdir deletefile   \
 	exallend isfilesystem lock matchpattern matchpatternnocase	    \
 	parsepattern parsepatternnocase setcomment setfiledate setfilesize  \
-	setprotection pathpart fread fwrite
+	setprotection pathpart fread fwrite checksignal nextdosentry
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
