@@ -558,6 +558,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 				get(item_obj, MUIA_UserData, &udata);
 
 				set(app, MUIA_Application_MenuAction, udata);
+				set(oWin, MUIA_Window_MenuAction, udata);
+				DoMethod(app, MUIM_Application_ReturnID, udata);
 			    }
 		    	}
 		    }
