@@ -14,10 +14,13 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
+#include <intuition/cghooks.h>
+#include <intuition/gadgetclass.h>
 #include <clib/exec_protos.h>
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/aros_protos.h>
+#include <clib/alib_protos.h>
 #include "intuition_intern.h"
 #include "gadgets.h"
 #include "propgadgets.h"
@@ -566,22 +569,37 @@ void intui_EndRefresh (struct IntWindow * win, BOOL free)
 	    && (y) < GetTop(gad,w) + GetHeight(gad,w))
 
 
-struct Gadget * FindGadget (struct Window * window, int x, int y)
+struct Gadget * FindGadget (struct Window * window, int x, int y,
+			struct GadgetInfo * gi)
 {
     struct Gadget * gadget;
+    struct gpHitTest gpht;
     int gx, gy;
+
+    gpht.MethodID     = GM_HITTEST;
+    gpht.gpht_GInfo   = gi;
+    gpht.gpht_Mouse.X = x;
+    gpht.gpht_Mouse.Y = y;
 
     for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
-	gx = x - GetLeft(gadget,window);
-	gy = y - GetTop(gadget,window);
+	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
+	{
+	    gx = x - GetLeft(gadget,window);
+	    gy = y - GetTop(gadget,window);
 
-	if (gx >= 0
-	    && gy >= 0
-	    && gx < GetWidth(gadget,window)
-	    && gy < GetHeight(gadget,window)
-	)
-	    break;
+	    if (gx >= 0
+		&& gy >= 0
+		&& gx < GetWidth(gadget,window)
+		&& gy < GetHeight(gadget,window)
+	    )
+		break;
+	}
+	else
+	{
+	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
+		break;
+	}
     }
 
     return gadget;
@@ -598,6 +616,7 @@ void intui_ProcessEvents (void)
     struct Gadget	* gadget;
     struct MsgPort	* intuiReplyPort;
     struct Screen	* screen;
+    struct GadgetInfo	* gi;
     char * ptr;
     int    mpos_x, mpos_y;
     int    wait;
@@ -606,6 +625,8 @@ void intui_ProcessEvents (void)
 
     intuiReplyPort = CreateMsgPort ();
     wait = 0;
+
+    gi = AllocMem (sizeof (struct GadgetInfo), MEMF_ANY|MEMF_CLEAR);
 
     for (;;)
     {
@@ -658,6 +679,14 @@ void intui_ProcessEvents (void)
 
 	    if (!w)
 		continue;
+
+	    gi->gi_Screen	  = screen;
+	    gi->gi_Window	  = w;
+	    gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
+	    gi->gi_RastPort	  = w->RPort;
+	    gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
+	    gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
+	    gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
 
 	    iw = (struct IntWindow *)w;
 
@@ -730,7 +759,7 @@ void intui_ProcessEvents (void)
 		case Button1:
 		    im->Code = SELECTDOWN;
 
-		    gadget = FindGadget (w, xb->x, xb->y);
+		    gadget = FindGadget (w, xb->x, xb->y, gi);
 
 		    if (gadget)
 		    {
@@ -832,9 +861,36 @@ void intui_ProcessEvents (void)
 			    );
 
 			    break; }
-			}
 
-		    }
+			case GTYP_CUSTOMGADGET: {
+			    struct gpInput gpi;
+			    struct InputEvent ie; /* TODO */
+			    IPTR retval;
+			    ULONG termination;
+
+			    ie.ie_Class = IECLASS_RAWMOUSE;
+			    ie.ie_Code	= SELECTDOWN;
+
+			    gpi.MethodID	= GM_GOACTIVE;
+			    gpi.gpi_GInfo	= gi;
+			    gpi.gpi_IEvent	= &ie;
+			    gpi.gpi_Termination = &termination;
+			    gpi.gpi_Mouse.X	= xb->x;
+			    gpi.gpi_Mouse.Y	= xb->y;
+			    gpi.gpi_TabletData	= NULL;
+
+			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+
+			    if (retval != GMR_MEACTIVE)
+			    {
+				im->Class = 0L;
+				gadget = NULL;
+			    }
+
+			    break; }
+
+			} /* GadgetType */
+		    } /* Over some gadget ? */
 
 		    break;
 
@@ -908,10 +964,34 @@ void intui_ProcessEvents (void)
 
 			    break; }
 
-			}
+			case GTYP_CUSTOMGADGET: {
+			    struct gpInput gpi;
+			    struct InputEvent ie; /* TODO */
+			    IPTR retval;
+			    ULONG termination;
+
+			    ie.ie_Class = IECLASS_RAWMOUSE;
+			    ie.ie_Code	= SELECTUP;
+
+			    gpi.MethodID	= GM_HANDLEINPUT;
+			    gpi.gpi_GInfo	= gi;
+			    gpi.gpi_IEvent	= &ie;
+			    gpi.gpi_Termination = &termination;
+			    gpi.gpi_Mouse.X	= xb->x;
+			    gpi.gpi_Mouse.Y	= xb->y;
+			    gpi.gpi_TabletData	= NULL;
+
+			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+
+			    if (retval & GMR_NOREUSE && !(retval & GMR_VERIFY))
+				im->Class = 0L; /* Swallow event */
+
+			    break; }
+
+			} /* switch GadgetType */
 
 			gadget = NULL;
-		    }
+		    } /* if (gadget) */
 
 		    break;
 
@@ -1073,6 +1153,35 @@ void intui_ProcessEvents (void)
 			);
 
 			break; } /* PROPGADGET */
+
+		    case GTYP_CUSTOMGADGET: {
+			struct gpInput gpi;
+			struct InputEvent ie; /* TODO */
+			IPTR retval;
+			ULONG termination;
+
+			ie.ie_Class = IECLASS_RAWMOUSE;
+			ie.ie_Code  = IECODE_NOBUTTON;
+
+			gpi.MethodID	    = GM_HANDLEINPUT;
+			gpi.gpi_GInfo	    = gi;
+			gpi.gpi_IEvent	    = &ie;
+			gpi.gpi_Termination = &termination;
+			gpi.gpi_Mouse.X     = xm->x;
+			gpi.gpi_Mouse.Y     = xm->y;
+			gpi.gpi_TabletData  = NULL;
+
+			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+
+			if (retval == GMR_MEACTIVE)
+			{
+			    im->Class = 0L;
+			}
+
+			if (retval & GMR_NOREUSE)
+			    im->Class = 0L; /* Swallow event */
+
+			break; }
 
 		    } /* switch GadgetType */
 		} /* if (gadget) */
