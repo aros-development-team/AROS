@@ -40,15 +40,15 @@ setup :
 #->8----- stegerg: someone please check if this is okay ------------------------------
 
 #MM x11keymaptable
-x11keymaptable : setup-x11keymaptable $(GENDIR)/tools/makexkeytable $(X11KEYMAPTABLE_FILE)
+x11keymaptable : setup-x11keymaptable $(ARCHDIR)/tools/makexkeytable $(X11KEYMAPTABLE_FILE)
 	@$(SNOP)
 
 #MM change-x11keymaptable
-change-x11keymaptable : setup-x11keymaptable $(GENDIR)/tools/makexkeytable
+change-x11keymaptable : setup-x11keymaptable $(ARCHDIR)/tools/makexkeytable
 	$(ARCHDIR)/tools/makexkeytable -o $(X11KEYMAPTABLE_FILE)
 	
 $(X11KEYMAPTABLE_FILE) :
-	$(GENDIR)/tools/makexkeytable -o $(X11KEYMAPTABLE_FILE)
+	$(ARCHDIR)/tools/makexkeytable -o $(X11KEYMAPTABLE_FILE)
 	
 setup-x11keymaptable :
 	%mkdirs_q $(DEVSDIR)/Keymaps $(DEVSDIR)/Keymaps/X11
@@ -58,7 +58,7 @@ setup-x11keymaptable :
 	
 	
 		
-$(GENDIR)/tools/makexkeytable: makexkeytable.c
+$(ARCHDIR)/tools/makexkeytable: makexkeytable.c
 	$(CC) $(GUI_CCFLAGS) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
