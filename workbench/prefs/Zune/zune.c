@@ -367,6 +367,8 @@ int init_gui(void)
     Object *use_button;
     Object *test_button;
     Object *cancel_button;
+    STRPTR wintitle;
+    char titlebuf[255];
 
     static struct Hook page_display_hook;
 
@@ -374,6 +376,14 @@ int init_gui(void)
     hook_standard.h_SubEntry = (APTR)hook_func_standard;
     page_display_hook.h_Entry = HookEntry;
     page_display_hook.h_SubEntry = (APTR)main_page_list_display;
+
+    if (!strcmp(appname, "global"))
+	wintitle = "Zune - Global Prefs";
+    else
+    {
+	snprintf(titlebuf, 255, "Zune - Prefs for : %s", appname);
+	wintitle = titlebuf;
+    }
 
     app = ApplicationObject,
 	MUIA_Application_Menustrip, MenuitemObject,
@@ -389,7 +399,7 @@ int init_gui(void)
 	    	End,
 	    End,
     	SubWindow, main_wnd = WindowObject,
-    	    MUIA_Window_Title, "Zune - Preferences",
+    	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_Activate, TRUE,
 
 	    WindowContents, VGroup,
