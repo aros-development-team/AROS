@@ -34,6 +34,7 @@
 #include <exec/interrupts.h>
 #endif
 
+#include <dos/dos.h>
 
 #define  GPB(x)  ((struct internal_RealTimeBase *)x)
 
