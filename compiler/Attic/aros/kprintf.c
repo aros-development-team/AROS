@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <aros/system.h>
-#include <proto/dos.h>
+#include <proto/exec.h>
 #include <proto/aros.h>
 #undef kprintf
 #include <unistd.h>
@@ -66,7 +66,10 @@
     LONG	 lval;
 
     if (!fmt)
-	return write (2, "(null)", 6);
+    {
+	RawPutChars ("(null)", 6);
+	return 6;
+    }
 
     va_start (args, fmt);
 
@@ -99,7 +102,7 @@
 	    switch (*fmt)
 	    {
 	    case '%': break;
-		write (2, fmt, 1);
+		RawPutChar (*fmt);
 		ret ++;
 		break;
 
@@ -113,18 +116,18 @@
 
 		if (*fmt == 'S')
 		{
-		    write (2, "\"", 1);
+		    RawPutChar ('"');
 		    ret ++;
 		}
 
 		len = strlen (str);
 
-		write (2, str, len);
+		RawPutChars (str, len);
 		ret += len;
 
 		if (*fmt == 'S')
 		{
-		    write (2, "\"", 1);
+		    RawPutChar ('"');
 		    ret ++;
 		}
 
@@ -144,7 +147,7 @@
 		    val >>= 4;
 		}
 
-		write (2, puffer, sizeof (void *)*2);
+		RawPutChars (puffer, sizeof (void *)*2);
 
 		break; }
 
@@ -153,7 +156,7 @@
 
 		c = va_arg (args, char);
 
-		write (2, &c, 1);
+		RawPutChar (c);
 
 		break; }
 
@@ -186,12 +189,12 @@ print_int:
 
 		    while (width > 0)
 		    {
-			write (2, fill, (width < 8) ? width : 8);
+			RawPutChars (fill, (width < 8) ? width : 8);
 			width -= 8;
 		    }
 
 		    if (*fill == ' ')
-			write (2, "0", 1);
+			RawPutChar ('0');
 
 		    ret ++;
 		    break;
@@ -205,7 +208,7 @@ print_int:
 		    {
 			if (lval < 0)
 			{
-			    write (2, "-", 1);
+			    RawPutChar ('-');
 			    ret ++;
 			    val = -lval;
 			}
@@ -243,11 +246,11 @@ print_int:
 
 		while (width > 0)
 		{
-		    write (2, fill, (width < 8) ? width : 8);
+		    RawPutChars (fill, (width < 8) ? width : 8);
 		    width -= 8;
 		}
 
-		write (2, &puffer[t], 32-t);
+		RawPutChars (&puffer[t], 32-t);
 		ret += 32-t;
 
 		break; }
@@ -271,7 +274,7 @@ print_int:
 	}
 	else
 	{
-	    write (2, fmt, 1);
+	    RawPutChar (*fmt);
 	    ret ++;
 	}
 
