@@ -66,7 +66,7 @@
 
 ******************************************************************************/
 {
-    int oflags, tmp;
+    int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
     FILENODE *fn;
 
@@ -82,13 +82,21 @@
 
     if (mode)
     {
-    	oflags = __smode2oflags(mode);
-    	tmp = oflags & O_ACCMODE;
-
-    	/* check if oflags are a subset of the flags that the already open file has */
-    	if (tmp != O_RDWR && (tmp != (fdesc->flags & O_ACCMODE)))
+    	oflags          = __smode2oflags(mode);
+    	
+        wanted_accmode  = oflags & O_ACCMODE;
+        current_accmode = fdesc->flags & O_ACCMODE;
+        
+        /* 
+           Check if the requested access mode flags are a valid subset of the 
+           flags of the already open file has. Thus, if the files access mode
+           is O_RDWR the requested mode can be anything (O_RDONLY, O_WRONLY or 
+           O_RDWR), else they must match exactly.
+        */
+        
+        if ((current_accmode != O_RDWR) && (wanted_accmode != current_accmode))
     	{
-     	    errno = EINVAL;
+            errno = EINVAL;
 	    return NULL;
     	}
     }
