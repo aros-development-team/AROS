@@ -43,8 +43,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    struct TagItem *tstate        = tags,
-                   *tag           = NULL;
+    const struct TagItem *tstate  = tags;
+    struct TagItem       *tag     = NULL;
     
     BOOL    success               = FALSE;
     LONG    defaultType           = -1;

@@ -46,20 +46,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
 
-    struct TagItem    *tstate            = tags,
-                      *tag;
-    struct DiskObject *icon              = NULL;
-    LONG               defaultType       = -1;
-    STRPTR             defaultName       = NULL;
-    BOOL               failIfUnavailable = TRUE;
-    LONG              *isDefaultIcon     = NULL;
+    const struct TagItem *tstate            = tags;
+    struct TagItem       *tag;
+    struct DiskObject    *icon              = NULL;
+    LONG                  defaultType       = -1;
+    STRPTR                defaultName       = NULL;
+    BOOL                  failIfUnavailable = TRUE;
+    LONG                 *isDefaultIcon     = NULL;
     
-    BOOL               getPaletteMappedIcon = TRUE; // FIXME: not used
-    BOOL               remapIcon            = TRUE; // FIXME: not used
-    BOOL               generateImageMasks   = TRUE; // FIXME: not used
-    struct Screen     *screen               = NULL; // FIXME: not used
-    STRPTR             label                = NULL; // FIXME: not used
-    LONG              *errorCode            = NULL; // FIXME: not used
+    BOOL                  getPaletteMappedIcon = TRUE; // FIXME: not used
+    BOOL                  remapIcon            = TRUE; // FIXME: not used
+    BOOL                  generateImageMasks   = TRUE; // FIXME: not used
+    struct Screen        *screen               = NULL; // FIXME: not used
+    STRPTR                label                = NULL; // FIXME: not used
+    LONG                 *errorCode            = NULL; // FIXME: not used
     
 #   define SET_ISDEFAULTICON(value) (isDefaultIcon != NULL ? *isDefaultIcon = (value) : (value))
 #   define SET_ERRORCODE(value)     (errorCode     != NULL ? *errorCode     = (value) : (value))

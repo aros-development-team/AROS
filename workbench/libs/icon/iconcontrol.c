@@ -46,12 +46,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    struct TagItem  *tstate       = tags,
-                    *tag          = NULL;
-    ULONG            processed    = 0;
+    const struct TagItem *tstate       = tags;
+    struct TagItem       *tag          = NULL;
+    ULONG                 processed    = 0;
 
-    LONG            *errorCode    = NULL;
-    struct TagItem **errorTagItem = NULL;
+    LONG                 *errorCode    = NULL;
+    struct TagItem      **errorTagItem = NULL;
     
 #   define STORE(pointer, value)   (pointer != NULL ? *pointer = (value) : (value))
 #   define SET_ERRORCODE(value)    STORE(errorCode, (value))
