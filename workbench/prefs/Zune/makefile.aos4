@@ -1,0 +1,92 @@
+#
+# Makefile for zunemaster.library
+#
+
+# If Kickstart isn't defined, we don't run on AmigaOS
+ifndef Kickstart
+
+CROSS_COMPILE = ppc-amigaos-
+RM     = rm -R
+MKDIR  = mkdir -p
+
+else
+
+RM = delete all
+MKDIR = makedir
+endif
+
+# Uncomment the next line if you are cross compiling
+
+CC     = $(CROSS_COMPILE)gcc
+CXX    = $(CROSS_COMPILE)c++
+AS     = $(CROSS_COMPILE)as
+LD     = $(CROSS_COMPILE)ld
+RANLIB = $(CROSS_COMPILE)ranlib
+STRIP  = $(CROSS_COMPILE)strip
+
+# Change these as required
+OPTIMIZE = #-O3
+DEBUG = -g #-DMYDEBUG #-ggdb # -g -DDEBUG
+INC = -I include -I . -I /cygdrive/d/Sources/zune-new/include-generated
+CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
+
+# Flags passed to gcc during linking
+LINK = 
+
+# Name of the "thing" to build
+TARGET = Zune
+
+# Additional linker libraries
+LIBS = -ldebug -lauto
+
+# Version of the binary to build
+VERSION = 0
+
+# Source code files used in this project
+
+
+SRCS=\
+	buttonsp.c \
+	cyclesp.c \
+	groupsp.c \
+	listviewsp.c \
+	navigationp.c \
+	prefsio.c \
+	scrollbarsp.c \
+	slidersp.c \
+	specialp.c \
+	stringsp.c \
+	windowp.c \
+	zune.c \
+	zunestuff.c
+
+# -------------------------------------------------------------
+
+OBJS = $(SRCS:%.c=ppc-amigaos-objs/%.o)
+AOBJS = $(ASRCS:%.S=ppc-amigaos-objs/%.o)
+
+all: envs dirs $(TARGET)
+
+.PHONY: envs
+envs:
+
+.PHONY: dirs
+dirs:
+	-$(MKDIR) ppc-amigaos-objs
+
+# Rules for building
+$(TARGET): $(OBJS) $(AOBJS)
+	$(CC) $(LINK) -o $@.debug $(OBJS) $(AOBJS) $(LIBS) -Wl,--cref,-M,-Map=$@.map
+	$(STRIP) --strip-all -o $@ $@.debug
+	cp $@.debug "/cygdrive/c/Dokumente und Einstellungen/sba/Eigene Dateien/AmigaOne/$@"
+
+ppc-amigaos-objs/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: clean
+clean:
+	$(RM) $(TARGET) $(OBJS) ppc-amigaos-objs
+
+.PHONY: revision
+revision:
+	bumprev $(VERSION) $(TARGET)
