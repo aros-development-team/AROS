@@ -175,6 +175,7 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 		Forbid();
 		lib = InitResident(res, seglist);
 		Permit();
+		D(bug("Done calling InitResident(%p) on %s\n", res, res->rt_Name));
 		if( lib == NULL )
 		    UnLoadSeg(seglist);
 		return lib;
