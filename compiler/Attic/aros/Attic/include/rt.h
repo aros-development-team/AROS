@@ -11,8 +11,10 @@
 #endif
 
 #define RTT_MEMORY	0
+#define RTT_MAX 	1
 
 void RT_Init (void);
+void RT_Exit (void);
 void RT_IntAdd (int rtt, char * file, int line, ...); /* Add a resource for tracking */
 void RT_IntCheck (int rtt, char * file, int line, ...); /* Check a resource before use */
 void RT_IntFree (int rtt, char * file, int line, ...); /* Stop tracking of a resource */

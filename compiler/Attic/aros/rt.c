@@ -1,19 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 00:17:41  ldp
-    Include proto instead of clib
 
-    Revision 1.2  1996/12/10 13:59:45  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.1  1996/08/23 17:26:44  digulla
-    Files with functions for RT and Purify
-
-
-    Desc:
-    Lang:
+    Desc: Basic functions for ressource tracking
+    Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
 
@@ -47,9 +37,8 @@ struct CallStack
 struct RTNode
 {
     struct Node      Node;
-    char	   * File;
+    const char	   * File;
     int 	     Line;
-    struct CallStack Stack[KEEPDEPTH];
 };
 
 struct CallStack RT_CallStack[RT_STACKDEPTH];
@@ -62,9 +51,8 @@ struct MemoryResource
     ULONG	  Size;
 };
 
-#define MAX_RESOURCES	2
-static struct List RT_Resources[MAX_RESOURCES];
-static int RT_Sizes[MAX_RESOURCES] =
+static struct List RT_Resources[RT_MAX];
+static int RT_Sizes[RT_MAX] =
 {
     sizeof (struct MemoryResource),
 };
@@ -87,7 +75,7 @@ void RT_ShowRTStack (void);
 	void)
 
 /*  FUNCTION
-	Initialize the resource tracking
+	Initialize the resource tracking.
 
     INPUTS
 	none
@@ -96,8 +84,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -114,7 +100,7 @@ void RT_ShowRTStack (void);
 {
     int t;
 
-    for (t=0; t<MAX_RESOURCES; t++)
+    for (t=0; t<RT_MAX; t++)
 	NEWLIST (&RT_Resources[t]);
 
     InitWasCalled = 1;
@@ -122,6 +108,50 @@ void RT_ShowRTStack (void);
     FindTask(NULL)->tc_UserData = RT_ShowRTStack;
 } /* RT_Init */
 
+/*****************************************************************************
+
+    NAME */
+#include <aros/rt.h>
+
+	void RT_Exit (
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+	Stops the resource tracking. All resources which are still allocated
+	are printed and then released.
+
+    INPUTS
+	none
+
+    RESULT
+	none
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	24-12-95    digulla created
+
+******************************************************************************/
+{
+    int t;
+
+    for (t=0; t<RT_MAX; t++)
+	NEWLIST (&RT_Resources[t]);
+
+    InitWasCalled = 1;
+
+    FindTask(NULL)->tc_UserData = RT_ShowRTStack;
+} /* RT_Init */
 
 /*****************************************************************************
 
@@ -155,8 +185,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -178,7 +206,7 @@ void RT_ShowRTStack (void);
     if (!InitWasCalled)
 	return;
 
-    if (!(rtnew = malloc (RT_Sizes[rtt])) )
+    if (!(rtnew = AllocMem (RT_Sizes[rtt], MEMF_ANY)) )
     {
 	kprintf ("RT_IntAdd: Out of memory\n");
 	return;
@@ -187,7 +215,7 @@ void RT_ShowRTStack (void);
     rtnew->File = file;
     rtnew->Line = line;
 
-
+#if 0
     if (RT_StackPtr < KEEPDEPTH)
     {
 	for (t=0; t<=RT_StackPtr; t++)
@@ -205,6 +233,7 @@ void RT_ShowRTStack (void);
 	    rtnew->Stack[t] = RT_CallStack[RT_StackPtr - (KEEPDEPTH-1) + t];
 	}
     }
+#endif
 
     va_start (args, line);
 
@@ -257,8 +286,7 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
+	All strings must be static.
 
     EXAMPLE
 
@@ -290,7 +318,7 @@ void RT_ShowRTStack (void);
 	memory = va_arg (args, APTR);
 	size = va_arg (args, ULONG);
 
-	for (rt=GetHead (&RT_Resources[rtt]); rt; rt=GetSucc(rt))
+	ForeachNode (&RT_Resources[rtt], rt)
 	{
 	    if (rt->Memory == memory)
 	    {
@@ -299,7 +327,7 @@ void RT_ShowRTStack (void);
 
 		kprintf ("RT: Size mismatch (%ld)\n", size);
 		kprintf ("    MemPtr=%p Size=%ld\n", rt->Memory, rt->Size);
-		RT_ShowStack (&rt->Node);
+		/* RT_ShowStack (&rt->Node); */
 
 		return;
 	    }
@@ -307,7 +335,7 @@ void RT_ShowRTStack (void);
 
 	kprintf ("RT: Memory not found %p, Size=%ld\n", memory, size);
 	kprintf ("    %s:%d\n", file, line);
-	RT_ShowRTStack ();
+	/* RT_ShowRTStack (); */
 
 	break; }
 
@@ -348,8 +376,7 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
+	All strings must be static.
 
     EXAMPLE
 
@@ -381,21 +408,22 @@ void RT_ShowRTStack (void);
 	memory = va_arg (args, APTR);
 	size = va_arg (args, ULONG);
 
-	for (rt=GetHead (&RT_Resources[rtt]); rt; rt=GetSucc(rt))
+	ForeachNode (&RT_Resources[rtt], rt)
 	{
 	    if (rt->Memory == memory)
 	    {
 		if (rt->Size == size)
 		{
 		    Remove ((struct Node *)rt);
-		    free (rt);
+		    FreeMem (rt, RT_Sizes[rtt]);
+		    FreeMem (memory, size);
 
 		    return;
 		}
 
 		kprintf ("RT: Size mismatch (%ld)\n", size);
 		kprintf ("    MemPtr=%p Size=%ld\n", rt->Memory, rt->Size);
-		RT_ShowStack (&rt->Node);
+		/* RT_ShowStack (&rt->Node); */
 
 		return;
 	    }
@@ -403,7 +431,7 @@ void RT_ShowRTStack (void);
 
 	kprintf ("RT: Memory not found %p, Size=%ld\n", memory, size);
 	kprintf ("    %s:%d\n", file, line);
-	RT_ShowRTStack ();
+	/* RT_ShowRTStack (); */
 
 	break; }
 
@@ -438,9 +466,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
-
 	All strings must be static.
 
     EXAMPLE
@@ -490,8 +515,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -540,8 +563,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -591,8 +612,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -645,8 +664,6 @@ void RT_ShowRTStack (void);
 	none
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -676,7 +693,7 @@ void RT_ShowRTStack (void);
 	    , rt->Memory
 	    , rt->Size
 	);
-	RT_ShowStack (rtnode);
+	/* RT_ShowStack (rtnode); */
 
 	/* free the resource */
 	FreeMem (rt->Memory, rt->Size);
