@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/03/19 10:38:08  nlorentz
+    Bugfix (fixes memleak in Open/CloseWindow(): Only create new window->UserPort when window->UserPort == NULL
+
     Revision 1.8  1998/10/20 16:45:59  hkiel
     Amiga Research OS
 
@@ -119,7 +122,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    if (!window->IDCMPFlags && flags)
+    if (!window->IDCMPFlags && flags && !window->UserPort)
     {
 	window->UserPort = CreateMsgPort ();
 
