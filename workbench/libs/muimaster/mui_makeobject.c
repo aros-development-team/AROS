@@ -427,12 +427,14 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_HSpace: /* LONG space   */
 	    return MUI_NewObject(MUIC_Rectangle,
+		MUIA_VertWeight, 0,
 		MUIA_FixWidth, params[0],
 		TAG_DONE);
 	    break;
 
 	case MUIO_VSpace: /* LONG space   */
 	    return MUI_NewObject(MUIC_Rectangle,
+		MUIA_HorizWeight, 0,
 		MUIA_FixHeight, params[0],
 		TAG_DONE);
 	    break;
