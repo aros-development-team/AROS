@@ -1,6 +1,0 @@
-<DEF NAME="loop">
-    Bei der Erweiterung des Macros ruft sich das Macro selbst wieder auf
-    <loop>
-</DEF>
-
-<loop>

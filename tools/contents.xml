@@ -23,13 +23,6 @@
 </item>
 
 <item>
-    <dir>buildshared</dir>
-    This should become the main build tool for shared libraries,
-	devices, HIDDs, etc.
-
-</item>
-
-<item>
     <dir>commonlib</dir>
     All functions which are often used (e.g. strlen()) are put
 	here. Other libraries which offer these functions should use the
@@ -58,26 +51,9 @@
 </item>
 
 <item>
-    <dir>hpp</dir>
-    Very simple tool to preprocess HTML files.
-
-</item>
-
-<item>
     <dir>toollib</dir>
     Functions used by several tools in this directory.
 
-</item>
-
-<item>
-    <dir>xil</dir>
-    Enhanced HTML/XML preprocessor.
-
-</item>
-
-<item>
-    <dir>gensets</dir>
-    Tool to handle symbol sets
 </item>
 
 <item>
