@@ -14,16 +14,16 @@
 
 struct Resident
 {
-    UWORD             rt_MatchWord; /* equal to RTC_MATCHWORD (see below) */
-    struct Resident * rt_MatchTag;  /* Pointer to this struct */
-    APTR              rt_EndSkip;
-    UBYTE             rt_Flags;     /* see below */
-    UBYTE             rt_Version;
-    UBYTE             rt_Type;
-    BYTE              rt_Pri;
-    CONST_STRPTR      rt_Name;
-    CONST_STRPTR      rt_IdString;
-    APTR              rt_Init;
+    UWORD                  rt_MatchWord; /* equal to RTC_MATCHWORD (see below) */
+    const struct Resident *rt_MatchTag;  /* Pointer to this struct */
+    APTR                   rt_EndSkip;
+    UBYTE                  rt_Flags;     /* see below */
+    UBYTE                  rt_Version;
+    UBYTE                  rt_Type;
+    BYTE                   rt_Pri;
+    CONST_STRPTR           rt_Name;
+    CONST_STRPTR           rt_IdString;
+    APTR                   rt_Init;
 };
 
 #define RTC_MATCHWORD  (0x4AFC)
