@@ -10,6 +10,9 @@
 #include "diskfont_intern.h"
 
 #ifndef TURN_OFF_DEBUG
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 1
 #endif
 
