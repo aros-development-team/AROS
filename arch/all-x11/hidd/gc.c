@@ -16,14 +16,15 @@
 
 #include <proto/oop.h>
 #include <oop/oop.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
 
 #include <hidd/graphics.h>
 
 #include "x11gfx_intern.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -49,6 +50,8 @@ struct gc_data
     Window 	xwindow;
     Display	*display;
     int		screen;
+    long	*hidd2x11cmap;
+
     
 };
 
@@ -90,10 +93,11 @@ static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 	 data->xwindow = bm_data->xwindow;
 	 data->display = bm_data->sysdisplay;
 	 data->screen  = bm_data->sysscreen;
+	 data->hidd2x11cmap = bm_data->hidd2x11cmap;
 	 
 	 /* Create X11 GC */
 	 
-	 gcval.plane_mask = BlackPixel(data->display, data->screen); /* bm_data->sysplanemask; */
+	 gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
 	 gcval.graphics_exposures = True;
 	 
 	 D(bug("Creating X11 GC\n"));
@@ -119,7 +123,7 @@ static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 }
 
-/**********  GC::Dispose() **********************************/
+/********** GC::Dispose() **********************************/
 
 static VOID gc_dispose(Class *cl, Object *o, Msg msg)
 {
@@ -141,33 +145,133 @@ static VOID gc_dispose(Class *cl, Object *o, Msg msg)
    ReturnVoid("X11Gfx.GC::Dispose");
 }
 
+/*********  GC::Set()  ****************************************/
+#define IS_GC_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGCAttrBase) < num_Hidd_GC_Attrs)
 
+static VOID gc_set(Class *cl, Object *o, struct pRoot_Set *msg)
+{
+    struct gc_data *data = INST_DATA(cl, o);
+    struct TagItem *tag, *tstate;
+    ULONG idx;
+    
+    tstate = msg->attrList;
+    while((tag = NextTagItem(&tstate)))
+    {
+        if(IS_GC_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+                case aoHidd_GC_Foreground :
+		    /* Set X GC color */
+		    XSetForeground(data->display, data->gc, data->hidd2x11cmap[tag->ti_Data]);
+		    break;
+		    
+                case aoHidd_GC_Background :
+		    XSetBackground(data->display, data->gc, data->hidd2x11cmap[tag->ti_Data]);
+		    break;
+            }
+        }
+    }
+    
+    
+    
+    return;
+}
 /*********  GC::WritePixelDirect()  ***************************/
 
 static VOID gc_writepixeldirect(Class *cl, Object *o, struct pHidd_GC_WritePixelDirect *msg)
 {
      struct gc_data *data = INST_DATA(cl, o);
-     UWORD i;
+     EnterFunc(bug("X11Gfx.GC::WritePixelDirect(x=%d, y=%d, val=%d)\n",
+     	msg->x, msg->y, msg->val));
      
-     EnterFunc(bug("X11Gfx.GC::WritePixelDirect()\n"));
-
-     for (i = 0; i < 100; i ++) {
-     
-     XSetForeground(data->display, data->gc, BlackPixel(data->display, data->screen));
-     XDrawPoint(data->display, data->xwindow, data->gc, i, i); /* msg->x, msg->y); */
-     }
-     ReturnVoid("X11Gfx.GC::WritePixelDirect");
-   
+     XSetForeground(data->display, data->gc, data->hidd2x11cmap[msg->val]);
+     XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+     ReturnVoid("X11Gfx.GC::WritePixelDirect");   
 }
 
+/*********  GC::ReadPixel()  *********************************/
+static ULONG gc_readpixel(Class *cl, Object *o, struct pHidd_GC_ReadPixel *msg)
+{
+    ULONG pixel, i;
+    struct gc_data *data = INST_DATA(cl, o);
+    
+    XImage *image;
+
+    EnterFunc(bug("X11Gfx.GC::ReadPixel(x=%d, y=%d)\n", msg->x, msg->y));
+
+    
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, 1, 1
+	, AllPlanes
+	, ZPixmap);
+    
+    if (!image)
+    	ReturnInt("X11Gfx.GC::ReadPixel", ULONG, -1L);
+    pixel = XGetPixel(image, 0, 0);
+    XDestroyImage(image);
+    
+    /* Get pen number from colortab */
+    for (i = 0; i < 256; i ++)
+    {
+        if (pixel == data->hidd2x11cmap[i])
+    	    ReturnInt("X11Gfx.GC::ReadPixel", ULONG, i);		
+    }
+    
+    ReturnInt("X11Gfx.GC::ReadPixel", ULONG, -1L);
+    
+    
+}
+
+/*********  gc_writepixel ************************************/
+static ULONG gc_writepixel(Class *cl, Object *o, struct pHidd_GC_WritePixel *msg)
+{
+
+    struct gc_data *data = INST_DATA(cl, o);
+    
+
+    /* Foreground pen allready set in X GC. Note, though, that a
+       call to WritePixelDirect may owerwrite th GC's pen  */
+    XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+    XFlush(data->display);
+    
+    return 0;
+
+    
+}
+
+
+/*********  GC::Clear()  *************************************/
+static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
+{
+    Object *bitmap;
+    ULONG width, height;
+    struct gc_data *data = INST_DATA(cl, o);
+    
+    GetAttr(o, aHidd_GC_BitMap, (IPTR *)&bitmap);
+    /* Get width & height from bitmap */
+    
+    GetAttr(bitmap, aHidd_BitMap_Width,  &width);
+    GetAttr(bitmap, aHidd_BitMap_Height, &height);
+    
+    XClearArea (data->display, data->xwindow,
+	    0, 0,
+	    width, height,
+	    FALSE);
+    
+    return;
+    
+}
 
 /****************  init_gcclass()  **************************/
 #undef X11GfxBase
 
 
 
-#define NUM_ROOT_METHODS	2
-#define NUM_GC_METHODS 		1
+#define NUM_ROOT_METHODS	3
+#define NUM_GC_METHODS 		4
 
 
 Class *init_gcclass(struct x11gfxbase *X11GfxBase)
@@ -176,12 +280,16 @@ Class *init_gcclass(struct x11gfxbase *X11GfxBase)
     {
     	{(IPTR (*)())gc_new,		moRoot_New},
     	{(IPTR (*)())gc_dispose,	moRoot_Dispose},
+    	{(IPTR (*)())gc_set,		moRoot_Set},
 	{NULL, 0UL}
     };
 
     struct MethodDescr gc_descr[NUM_GC_METHODS + 1] = 
     {
     	{(IPTR (*)())gc_writepixeldirect,	moHidd_GC_WritePixelDirect},
+    	{(IPTR (*)())gc_clear,			moHidd_GC_Clear},
+    	{(IPTR (*)())gc_readpixel,		moHidd_GC_ReadPixel},
+    	{(IPTR (*)())gc_writepixel,		moHidd_GC_WritePixel},
 	{NULL, 0UL}
     };
     

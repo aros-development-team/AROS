@@ -148,6 +148,8 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    	/* Key press & release .. */
 	    	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
 	    
+		/* We must allways have this one */
+		winattr.event_mask |= StructureNotifyMask;
 	    
 	    	/* Use backing store for now. (Uses lots of mem) */
 	    	winattr.backing_store = Always;
@@ -180,8 +182,16 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    	{
 	            D(bug("Calling XMapRaised\n"));
 	    	    XMapRaised (GetSysDisplay(), data->xwindow);
+
+		    /* Wait for MapNotify (ie. for window to be displayed) */
+		    for (;;)
+		    {
+		        XEvent e;
+			XNextEvent(data->sysdisplay, &e);
+			if (e.type == MapNotify)
+			    break;
+		    }
 		    
-		    XFlush(GetSysDisplay());
 		
 	
 	    	}
@@ -250,20 +260,26 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     		col_i < msg ->numColors; 
 		xc_i ++, col_i ++ )
     {
-    	xc.pixel = xc_i;
 	xc.red   = msg->colors[col_i].red;
 	xc.green = msg->colors[col_i].green;
 	xc.blue	 = msg->colors[col_i].blue;
 	
 	if (XAllocColor(data->sysdisplay, data->colmap, &xc))
+	{
 		D(bug("Successfully allocated color (%x, %x, %x)\n",
 			xc.red, xc.green, xc.blue));
-		
+			
+	    /* Remember the color */
+	    data->hidd2x11cmap[xc_i] =xc.pixel;
+        			
+	}		
     }
     
     ReturnBool("X11Gfx.BitMap::SetColors",  TRUE);
 
 }
+
+
 
 
 /*** init_bitmapclass *********************************************************/

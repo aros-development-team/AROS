@@ -32,6 +32,8 @@ struct bitmap_data
     unsigned long sysplanemask;
     Colormap	colmap;
     int		depth;
+    long	hidd2x11cmap[256];
+    
 };
 
 
