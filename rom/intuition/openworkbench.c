@@ -64,16 +64,16 @@
         struct Screen *screen = NULL;
 
         struct TagItem screenTags[] = {
-            { SA_Depth      , AROS_DEFAULT_WBDEPTH  },
-            { SA_Type       , WBENCHSCREEN          },
-            { SA_Title      , (IPTR)"Workbench"     },
-            { SA_Width      , AROS_DEFAULT_WBWIDTH  },
-            { SA_Height     , AROS_DEFAULT_WBHEIGHT },
-            { SA_PubName    , (IPTR)"Workbench"     },
-            { SA_Pens       , (IPTR) pens           },
-            { SA_SharePens  , TRUE                  },
-	    { SA_SysFont    , 1     	    	    },
-            { TAG_END       , 0                     }
+            { SA_Depth      , AROS_DEFAULT_WBDEPTH  	},
+            { SA_Type       , WBENCHSCREEN          	},
+            { SA_Title      , (IPTR)"Workbench Screen"  },
+            { SA_Width      , AROS_DEFAULT_WBWIDTH  	},
+            { SA_Height     , AROS_DEFAULT_WBHEIGHT 	},
+            { SA_PubName    , (IPTR)"Workbench"     	},
+            { SA_Pens       , (IPTR) pens           	},
+            { SA_SharePens  , TRUE                  	},
+	    { SA_SysFont    , 1     	    	    	},
+            { TAG_END       , 0                     	}
         };
 
         screen = OpenScreenTagList( NULL, screenTags );
