@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR := $(GENDIR)/$(CURDIR)
+USER_CFLAGS := -O2 -fomit-frame-pointer
 
 %define_libs
 
@@ -9,7 +10,7 @@ DEVS := $(DEVSDIR)/ram.handler    \
 	$(DEVSDIR)/nil.handler    \
 	$(DEVSDIR)/ffs.handler    \
 	$(DEVSDIR)/pipefs.handler \
-## 	$(DEVSDIR)/rootfs.handler \
+# 	$(DEVSDIR)/rootfs.handler \
 	$(DEVSDIR)/fdsk.device    \
 	$(DEVSDIR)/ramdrive.device
 
