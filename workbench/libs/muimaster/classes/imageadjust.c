@@ -300,7 +300,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	bitmap_group = VGroup,
 	    Child, bitmap_image = ImagedisplayObject,
 	        TextFrame,
-	        InnerSpacing(4,4),
+	        InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End,
