@@ -328,7 +328,7 @@ static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    if (!(msg->flags & MADF_DRAWOBJECT))
+    if (!(msg->flags & (MADF_DRAWOBJECT|MADF_DRAWUPDATE)))
                 return 0;
 
     if (data->img)
