@@ -121,6 +121,16 @@ struct ExecBase
 #define AFF_68882   (1L<<5)
 #define AFB_FBU40        6
 #define AFF_FBU40   (1L<<6)
+#define AFB_80386	 10
+#define	AFF_80386   (1L<<10)
+#define	AFB_80486	 11
+#define AFF_80486   (1L<<11)
+#define	AFB_PENTIUM	 12  /* There MUST be additional flags */
+#define	AFF_PENTIUM (1L<<12) /* for 586+ CPUs: AFB_MMX, AFB_3DNOW... */
+#define	AFB_PII		 13
+#define	AFF_PII     (1L<<13)
+#define	AFB_FPU		 14
+#define AFF_FPU     (1L<<14)
 #define AFB_PRIVATE      15 /* PRIVATE */
 #define AFF_PRIVATE (1L<<15)
 

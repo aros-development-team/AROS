@@ -18,6 +18,7 @@ struct IntETask
     APTR	 iet_RT;	/* Structure for resource tracking */
     APTR	 iet_Context;	/* Structure to store CPU registers */
     APTR	 iet_FPU;	/* Structure to store FPU data */
+    APTR	 iet_CR3;	/* Reserved for VMM and PM */
 };
 
 #define GetIntETask(task) ((struct IntETask *)(((struct Task *) \
