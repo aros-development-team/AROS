@@ -76,6 +76,7 @@ COMMON	:= \
 	strtod \
 	strtok \
 	strupr \
+	strxfrm \
 	swab
 
 COMMON_ARCH := \
