@@ -59,7 +59,7 @@
 #endif
 
 /* Define the following to enable the debug version */
-#define MYDEBUG
+//#define MYDEBUG
 #include "debug.h"
 
 #ifndef __varargs68k
