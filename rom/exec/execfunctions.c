@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:27:37  aros
+    Space/Tab conversion by XDME :-)
+
     Revision 1.7  1996/10/14 11:17:26  digulla
     Use __AROS_SLIB_ENTRY
 
@@ -10,8 +13,8 @@
 
     Revision 1.5  1996/09/11 16:54:24  digulla
     Always use __AROS_SLIB_ENTRY,Exec)() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.4  1996/08/23 17:07:22  digulla
     The number of functions is hardcoded in init.c, so it should be the same here.
