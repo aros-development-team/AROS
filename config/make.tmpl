@@ -903,8 +903,8 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
 %rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/proto/$(BD_MODNAME$(BDID)).h
 endif
 
-# For a shared library also build a static link lib
-ifeq ($(BD_MODTYPE$(BDID)),library)
+# For a shared library and device also build a static link lib
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
 %rule_makedirs dirs=$(BD_PREFIX$(BDID))/$(AROS_DIR_LIB) setuptarget=setup-module$(BDID)
 %rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID)) libdir=$(BD_PREFIX$(BDID))/$(AROS_DIR_LIB)
 endif
