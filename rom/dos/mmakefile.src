@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 # only this part of AROS.
 # END_DESC{makefile}
 
-USER_INCLUDES := -I. -I$(TOP)/rom/devs $(shell sdl-config --cflags)
+USER_INCLUDES := -I. -I$(TOP)/rom/devs
 OS_INCLUDES := -I$(INCDIR)
 
 # BEGIN_DESC{localmakevar}
