@@ -311,7 +311,9 @@ end:
 	if (SysBase->DebugAROSBase)
 	{	
     	    allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
+	    Forbid();
     	    AddHead(allocmemlist, (struct Node *)&header->mwh_node);
+	    Permit();
 	}
 	else
 	{
