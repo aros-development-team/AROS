@@ -20,7 +20,7 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
-
+#include <hidd/irq.h>
 /****************************************************************************************/
 
 #define KBD_STATUS_OBF 			0x01 	/* keyboard output buffer full */
@@ -141,6 +141,7 @@ struct kbd_staticdata
     OOP_Object 			*kbdhidd;
     
     OOP_AttrBase        hiddKbdAB;
+    HIDDT_IRQ_Handler	*irq;
 };
 
 /****************************************************************************************/
