@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: BumpRevision() change a filename for Workbench copy function.
 */
+
 #include <stdio.h>
 #include "icon_intern.h"
 
@@ -40,8 +39,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
