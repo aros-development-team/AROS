@@ -102,7 +102,6 @@ void sys_Dispatch(struct pt_regs * regs)
 	if(!user_mode(regs)) {
 		return;
 	}
-
 #if 0
 #warning Enabling Multitasking here. Remove this!The Boot Task seems to run under Forbid().
 if (SysBase->TDNestCnt >= 0)
@@ -114,7 +113,6 @@ if (SysBase->TDNestCnt >= 0)
 	/* 2. The first task in the ready list hast to have the
 	      same or higher priority than the currently active task */
 
-	    				      
 	if( SysBase->TaskReady.lh_Head->ln_Succ != NULL  /* &&
 	   ((BYTE)SysBase->ThisTask->tc_Node.ln_Pri <=   
 	    (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri )*/
