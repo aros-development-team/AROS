@@ -11,7 +11,7 @@ FILES := \
 	stpblk \
 	spawnv
 
-EXEDIR := $(AROSDIR)/test/clib
+EXEDIR := $(AROS_TESTS)/clib
 
 #MM test-clib : includes includes-copy linklibs kernel
 

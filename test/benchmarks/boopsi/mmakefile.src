@@ -3,8 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-FILES           := newobject domethod
-EXEDIR          := $(AROSDIR)/test/benchmarks/boopsi
+FILES  := newobject domethod
+EXEDIR := $(AROS_TESTS)/benchmarks/boopsi
 
 #MM- test-benchmarks : test-benchmarks-boopsi
 #MM- test-benchmarks-quick : test-benchmarks-boopsi-quick

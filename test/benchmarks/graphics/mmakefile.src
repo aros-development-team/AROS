@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 FILES       := primitives
-EXEDIR      := $(AROSDIR)/test/benchmarks/graphics
+EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 
 #MM- test-benchmarks : test-benchmarks-graphics
 #MM- test-benchmarks-quick : test-benchmarks-graphics-quick

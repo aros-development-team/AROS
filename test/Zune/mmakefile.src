@@ -17,7 +17,7 @@ FILES  := test      	    \
 	  levelmeter	    \
 	  knob
 
-EXEDIR := $(AROSDIR)/test/Zune
+EXEDIR := $(AROS_TESTS)/Zune
 
 #MM test-zune : test-zune-setup includes linklibs
 

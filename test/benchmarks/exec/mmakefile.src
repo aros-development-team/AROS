@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 FILES           := allocvec allocpooled
-EXEDIR          := $(AROSDIR)/test/benchmarks/exec
+EXEDIR          := $(AROS_TESTS)/benchmarks/exec
 
 #MM- test-benchmarks : test-benchmarks-exec
 #MM- test-benchmarks-quick : test-benchmarks-exec-quick
