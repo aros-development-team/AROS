@@ -364,15 +364,15 @@ static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
     
     if (active == hourobj)
     {
-    	hand = EDITHAND_HOUR;
+    	hand = MUIV_Clock_EditHand_Hour;
     }
     else if (active == minobj)
     {
-	hand = EDITHAND_MIN;
+	hand = MUIV_Clock_EditHand_Minute;
     }
     else if (active == secobj)
     {
-	hand = EDITHAND_SEC;
+	hand = MUIV_Clock_EditHand_Second;
     }
     
     if (hand != -1)
