@@ -897,25 +897,32 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
     Object                *child;
     struct MinList        *ChildList;
 
+    if (!(x >= _left(obj) && x <= _right(obj) 
+	  && y >= _top(obj)  && y <= _bottom(obj))) 
+    {
+        return FALSE;
+    }
+
     if (get(obj, MUIA_Group_ChildList, (ULONG *)&(ChildList)))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
-	    if (ContextMenuUnderPointer(data,child,x,y)) return TRUE;
+	    if ((x >= _left(child) && x <= _right(child) 
+		 &&
+		 y >= _top(child)  && y <= _bottom(child))
+		&&
+		(ContextMenuUnderPointer(data,child,x,y)))
+		return TRUE;
 	}
     }
 
-    if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return FALSE;
-    if (!(muiAreaData(obj)->mad_ContextMenu)) return FALSE;
-    if
-    (
-           x >= _left(obj) && x <= _right(obj) 
-        && y >= _top(obj)  && y <= _bottom(obj)
-    ) 
-        return TRUE;
+    if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW))
+	return FALSE;
+    if (!(muiAreaData(obj)->mad_ContextMenu))
+	return FALSE;
 
-    return FALSE;
+    return TRUE;
 }
 
 /**************/
