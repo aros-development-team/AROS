@@ -1707,3 +1707,14 @@ UX11
 } /* driver_WritePixelArray8 */
 
 
+
+void BltBitMapRastPort (struct BitMap   * srcBitMap,
+	LONG xSrc, LONG ySrc,
+	struct RastPort * destRP,
+	LONG xDest, LONG yDest,
+	LONG xSize, LONG ySize,
+	ULONG minterm
+)
+{
+    return;
+}
