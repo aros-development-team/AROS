@@ -16,6 +16,9 @@
  * no branching!
  */
 
+
+#ifndef AROS_NOFPU
+
 #include "__math.h"
 #include <math.h>
 
@@ -31,3 +34,12 @@ int __isinf(double val)
 
     return (hx == 0);
 } /* __isinf */
+
+#else
+
+int __isinf(void)
+{
+	return 0;
+}
+
+#endif /* AROS_NOFPU */

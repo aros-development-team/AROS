@@ -16,6 +16,8 @@
  * no branching!
  */
 
+#ifndef AROS_NOFPU
+
 #include "__math.h"
 #include <math.h>
 
@@ -26,3 +28,12 @@ int isinf(double val)
 {
     return __isinf(val);
 } /* isinf */
+
+#else
+
+int isinf(void)
+{
+    return 0;
+}
+
+#endif /* AROS_NOFPU */

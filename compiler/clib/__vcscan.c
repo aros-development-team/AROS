@@ -11,7 +11,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <limits.h>
+#ifndef AROS_NO_LIMITS_H
+#	include <limits.h>
+#else
+#	define ULONG_MAX	4294967295UL
+#endif
 #include <ctype.h>
 #include <math.h>
 
@@ -20,7 +24,9 @@
  * PREV(c);     ungetc a character
  * VAL(a)       leads to 1 if a is true and valid
  */
-#define FULL_SPECIFIERS
+#ifndef AROS_NOFPU
+#	define FULL_SPECIFIERS
+#endif
 
 #define NEXT(c) ((c)=(*getc)(data),size++,incount++)
 #define PREV(c) do{if((c)!=EOF)(*ungetc)((c),data);size--;incount--;}while(0)

@@ -8,7 +8,11 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
+#ifndef AROS_NO_LIMITS_H
+#	include <limits.h>
+#else
+#	define ULONG_MAX	4294967295UL
+#endif
 
 /*****************************************************************************
 
