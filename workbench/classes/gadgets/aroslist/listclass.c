@@ -180,7 +180,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
     	
 	if (srcarray)
 	{
-	    DoMethod(o, AROSM_List_Insert, srcarray, AROSV_List_Insert_Top);
+	    DoMethod(o, AROSM_List_Insert, (IPTR) srcarray, AROSV_List_Insert_Top);
 	}
 
 	
