@@ -102,7 +102,7 @@ ULONG change_screen_mode(WORD *,ULONG);
 void update_prefs( Project );
 
 /** Ask user for a new preference file with ASL **/
-void ask_prefs( Project, char save, STRPTR);
+void ask_prefs( Project, char save, CONST_STRPTR);
 
 /** Ask user for a new screen mode **/
 ULONG change_screen_mode(UBYTE *,ULONG);

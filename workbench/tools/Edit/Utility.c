@@ -346,20 +346,20 @@ char warn_overwrite( STRPTR path )
 		request.es_TextFormat   = ErrMsg(ERR_FILEEXISTS);
 		request.es_GadgetFormat = ErrMsg(ERR_OC);
 
-		return (char) EasyRequest(Wnd,&request,0,NULL);
+		return (char) EasyRequest(Wnd,&request,0,(IPTR)NULL);
 	}
 	return 1;
 }
 
 /*** Simple requester to ask user for a number ***/
-int get_number( Project p, STRPTR title, LONG * result )
+int get_number( Project p, CONST_STRPTR title, LONG * result )
 {
 	struct Window *win;
 	static UBYTE  LineNum[10];
-	static struct StringInfo SI = {LineNum,NULL,0,sizeof(LineNum),0,0,0,0,0,0,NULL,NULL,NULL};
+	static struct StringInfo SI = {LineNum,NULL,0,sizeof(LineNum),0,0,0,0,0,0,NULL,0,NULL};
 	static struct Gadget StrGad = {
 		NULL,0,0,0,0,GFLG_GADGHCOMP,GACT_IMMEDIATE | GACT_RELVERIFY | GACT_LONGINT | GACT_STRINGCENTER,
-		GTYP_STRGADGET,NULL,NULL,NULL,NULL,(APTR) &SI,0,NULL
+		GTYP_STRGADGET,NULL,NULL,NULL,0,(APTR) &SI,0,NULL
 	};
 
 	/* Open our window */

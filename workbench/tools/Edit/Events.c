@@ -13,6 +13,7 @@
 #include "IPC_Prefs.h"
 #include "DiskIO.h"
 #include "Macros.h"
+#include "Gui.h"
 #include "Edit.h"
 #include "Search.h"
 #include "ProtoTypes.h"
@@ -264,7 +265,6 @@ void handle_kbd(Project p)
 /*** Handle menu related events ***/
 void handle_menu( LONG MenuID )
 {
-	extern STRPTR GetMenuText(ULONG);
 	static UBYTE  shift;
 
 	shift = (msgbuf.Qualifier & SHIFTKEYS ? 1 : 0);

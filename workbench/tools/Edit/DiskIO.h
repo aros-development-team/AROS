@@ -42,13 +42,13 @@ typedef	struct
 void split_path( AskArgs *, STRPTR *, STRPTR * );
 
 /** Prompt user for a filename **/
-STRPTR ask_save(struct Window *, AskArgs *, STRPTR);
+STRPTR ask_save(struct Window *, AskArgs *, CONST_STRPTR);
 
 /** Like previous but with ASL_LOAD. if setfile is 1 File gadget will
 *** be initially fill. Otherwise it will be empty and multi-select will
 *** be enabled. Thus a (StartUpArgs *) will be returned instead (utility.h).
 **/
-STRPTR ask_load(struct Window *, AskArgs *, BYTE setfile, STRPTR asltitle);
+STRPTR ask_load(struct Window *, AskArgs *, BYTE setfile, CONST_STRPTR asltitle);
 
 void free_diskio_alloc(void);
 

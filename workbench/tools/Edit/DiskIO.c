@@ -157,7 +157,7 @@ struct TagItem *init_tags(struct Window *wnd, ULONG flags)
 }
 
 /*** Popup a file requester to choose a save file ***/
-STRPTR ask_save(struct Window *wnd, AskArgs *path, STRPTR title)
+STRPTR ask_save(struct Window *wnd, AskArgs *path, CONST_STRPTR title)
 {
 	split_path(path, (STRPTR *)&tags[17], (STRPTR *)&tags[19]);
 	tags[23] = (ULONG)title;
@@ -281,7 +281,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol)
 }
 
 /*** Show a requester to choose a file to load ***/
-STRPTR ask_load(struct Window *wnd, AskArgs *path, BYTE set_file, STRPTR title)
+STRPTR ask_load(struct Window *wnd, AskArgs *path, BYTE set_file, CONST_STRPTR title)
 {
 	split_path(path, (STRPTR *)&tags[17], (STRPTR *)&tags[19]);
 	if(set_file == 0) tags[19] = 0;

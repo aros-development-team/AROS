@@ -138,7 +138,7 @@ APTR open_prefs(STRPTR file, UBYTE mode)
 
 	if( IFFParseBase != NULL && (pref = (APTR) AllocIFF() ) )
 	{
-		ULONG fh = 0;
+		BPTR fh = 0;
 		switch( mode )
 		{
 			case MODE_USE:
@@ -146,23 +146,23 @@ APTR open_prefs(STRPTR file, UBYTE mode)
 				{
 					/* First: search in local directory */
 					CopyMem(File, Path, sizeof(File)-1);
-					if(NULL == (fh = (ULONG) Open( Path, MODE_OLDFILE )))
+					if(NULL == (fh = Open( Path, MODE_OLDFILE )))
 					{
 						/* Otherwise, look in directory ENVARC */
 						CopyMem(ENV, Path,sizeof(ENV)-1);
 						CopyMem(File,Path+sizeof(ENV)-1,sizeof(File)-1);
-						fh = (ULONG) Open( Path, MODE_OLDFILE );
+						fh = Open( Path, MODE_OLDFILE );
 					}
-				} else if(NULL != (fh = (ULONG) Open( file, MODE_OLDFILE )))
+				} else if(NULL != (fh = Open( file, MODE_OLDFILE )))
 					strcpy(Path, file);
 				break;
 			case MODE_SAVE:
-				fh = (ULONG) Open(Path, MODE_NEWFILE);
+				fh = Open(Path, MODE_NEWFILE);
 		}
 		/* Did we have a opened file? */
 		if( fh )
 		{
-			pref->iff_Stream = fh;
+			pref->iff_Stream = (IPTR) fh;
 			/* Use DOS function for accessing it */
 			InitIFFasDOS( pref );
 			/* Open it through iffparse */
@@ -361,7 +361,7 @@ ULONG change_screen_mode(WORD *whd, ULONG ModeID)
 #include "DiskIO.h"
 
 /*** Ask where to load/save a preference file ***/
-void ask_prefs(Project edit, char save, STRPTR title )
+void ask_prefs(Project edit, char save, CONST_STRPTR title )
 {
 	STRPTR  new;
 	AskArgs arg;
@@ -488,10 +488,10 @@ void update_prefs( Project edit )
 void setup_winpref( void )
 {
 	static UBYTE JPPath[] = SYS_DIR PREF_DIR PREF_NAME " >NIL:";
-	static ULONG systags[] = {
-		SYS_Input,   NULL,
-		SYS_Output,  NULL,
-		SYS_Asynch,  TRUE,
+	static IPTR  systags[] = {
+		SYS_Input,   (IPTR) NULL,
+		SYS_Output,  (IPTR) NULL,
+		SYS_Asynch,         TRUE,
 		TAG_DONE
 	};
 	struct FileLock *lock;
