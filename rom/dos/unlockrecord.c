@@ -46,7 +46,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
 #warning TODO: Write dos/UnLockRecord()
     aros_print_not_implemented ("UnLockRecord");

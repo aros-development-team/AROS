@@ -8,6 +8,9 @@
 #ifndef __EXEC_INTERN_H__
 #define __EXEC_INTERN_H__
 
+/* Needed for aros_print_not_implemented macro */
+#include <aros/debug.h>
+
 /* This is a short file that contains a few things every Exec function
     needs */
 
@@ -31,7 +34,6 @@
 extern void __AROS_InitExecBase (void);
 #endif
 
-void aros_print_not_implemented (char * name);
 
 /* These are the bit definitions of the SysFlags and AttnResched flags.
     They are listed here more as somewhere to list them.

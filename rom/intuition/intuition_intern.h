@@ -39,6 +39,9 @@
 #endif
 #include "intuition_debug.h"
 
+/* Needed for aros_print_not_implemented macro */
+#include <aros/debug.h>
+
 struct IntIntuitionBase
 {
     struct IntuitionBase IBase;

@@ -11,6 +11,9 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 
+/* Needed for aros_print_not_implemented macro */
+#include <aros/debug.h>
+
 #ifdef SysBase
 #undef SysBase
 #endif

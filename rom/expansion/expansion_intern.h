@@ -13,6 +13,9 @@
 #include <libraries/expansionbase.h>
 #include <libraries/configvars.h>
 
+/* Needed for aros_print_not_implemented macro */
+#include <aros/debug.h>
+
 #define Z2SLOTS         256
 #define Z3SLOTS         2048
 #define SLOTSPERBYTE    8
@@ -38,7 +41,3 @@ struct IntExpansionBase
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
 
-#ifdef _AMIGA
-	#define SysBase (((struct IntExpansionBase *)ExpansionBase)->eb_SysBase)
-	extern __inline__ void aros_print_not_implemented (char *msg) {}
-#endif

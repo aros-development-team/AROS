@@ -6,8 +6,6 @@
     Lang: english
 */
 
-extern void aros_print_not_implemented(char *);
-
 /*****************************************************************************
 
     NAME */

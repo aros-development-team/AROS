@@ -10,8 +10,6 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
-extern void aros_print_not_implemented(char *);
-
 /*****************************************************************************
 
     NAME */
