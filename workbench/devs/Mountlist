@@ -145,3 +145,11 @@ RAD2:
 	HighCyl		= 79
 	Reserved	= 2
 #
+
+/* Entry for cdrom.handler */
+CD0:
+	FileSystem = cdrom.handler
+	Device = ide.device
+	Unit = 1
+#
+
