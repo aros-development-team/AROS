@@ -43,6 +43,7 @@ static const char * listmodename[] =
     "new",
     "methods",
     "taglist",
+    "indent",
     NULL
 };
 

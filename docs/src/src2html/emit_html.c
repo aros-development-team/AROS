@@ -586,14 +586,15 @@ void emit_html (int token, va_list args)
 
 	switch (lmode)
 	{
-	case lm_new: /* doesn't happen */
 	case lm_none: break;
+	case lm_new: /* doesn't happen */
 	case lm_methods:
 	case lm_tags:
 	case lm_description: emit_special ("<DL>"); break;
 	case lm_itemize:     emit_special ("<UL>"); break;
 	case lm_enumeration: emit_special ("<OL TYPE=1>"); break;
 	case lm_emph:	     emit_special ("<P>\n<UL>\n<EM>"); break;
+	case lm_indent:      emit_special ("<UL>"); break;
 	}
 	break;
 
@@ -640,6 +641,10 @@ void emit_html (int token, va_list args)
 	    case lm_emph:
 		yyerror ("Unexpected \\item in emph/example");
 		break;
+
+	    case lm_indent:
+		yyerror ("Unexpected \\item in indented block");
+		break;
 	    }
 	}
 	break;
@@ -647,17 +652,31 @@ void emit_html (int token, va_list args)
     case END:
 	switch (lmode)
 	{
-	case lm_none: break;
+	case lm_none:
+		break;
 	case lm_new:
 	    if (isnewtext)
 		emit_special ("</FONT>");
 	    break;
-	case lm_methods:
-	case lm_tags:
-	case lm_description: emit_nl (); emit_special ("</DL>"); break;
-	case lm_itemize:     emit_nl (); emit_special ("</UL>"); break;
-	case lm_enumeration: emit_nl (); emit_special ("</OL>"); break;
-	case lm_emph:	     emit_special ("</EM>\n</UL>"); break;
+
+	case lm_methods: /* fall-thru */
+	case lm_tags:    /* fall-thru */
+	case lm_description:
+	    emit_nl (); emit_special ("</DL>");
+	    break;
+
+	case lm_indent:  /* fall-thru */
+	case lm_itemize:
+	    emit_nl (); emit_special ("</UL>");
+	    break;
+
+	case lm_enumeration:
+	    emit_nl (); emit_special ("</OL>");
+	    break;
+
+	case lm_emph:
+	    emit_special ("</EM>\n</UL>");
+	    break;
 	}
 	emit_par ();
 	break;

@@ -30,6 +30,7 @@ enum listmode
     lm_new,
     lm_methods,
     lm_tags,
+    lm_indent
 };
 
 enum lastemittype
@@ -38,7 +39,7 @@ enum lastemittype
     let_space,
     let_nl,
     let_par,
-    let_special,
+    let_special
 };
 
 extern enum emitmode emode;
