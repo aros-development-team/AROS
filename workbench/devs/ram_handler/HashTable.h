@@ -32,7 +32,7 @@ typedef struct _HashTable
 
     ULONG (*hash)(struct rambase *rambase, const void *key);
     int  (*compare)(struct rambase *rambase, const void *key1, const void *key2);
-    void (*delete)(struct rambase *rambase, const void *key, struct List *list);
+    void (*delete)(struct rambase *rambase, void *key, struct List *list);
 } HashTable;
 
 
@@ -60,7 +60,7 @@ HashTable *HashTable_new(struct rambase *rambase, ULONG size,
 			 int (*compare)(struct rambase *rambase,
 					const void *key1, const void *key2),
 			 void (*delete)(struct rambase *rambase,
-					const void *key, struct List *list));
+					void *key, struct List *list));
 
 
 /* HashTable_delete

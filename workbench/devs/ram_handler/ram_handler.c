@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: RAM: handler
-    Lang: English
+    RAM: handler.
 */
 
 #define  INKERNEL 1
@@ -412,11 +411,11 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 
 /***************************************************************************/
 
-void nullDelete(struct rambase *rambase, const void *key, struct List *list)
+void nullDelete(struct rambase *rambase, void *key, struct List *list)
 {
-    struct Receiver *rr;
-    struct Node     *tempNode;
-
+    // struct Receiver *rr;
+    // struct Node     *tempNode;
+    //
     //    ForeachNodeSafe(list, rr, tempNode)
     //    {
     //        Remove(&rr->node);
@@ -2746,7 +2745,7 @@ HashTable *HashTable_new(struct rambase *rambase, ULONG size,
 					const void *key1,
 					const void *key2),
 			 void (*delete)(struct rambase *rambase,
-					const void *key,
+					void *key,
 					struct List *list))
 {
     ULONG       i;		/* Loop variable */
