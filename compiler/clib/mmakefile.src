@@ -200,6 +200,7 @@ SHARED	:= \
 	ungetc \
 	unlink \
 	unsetenv \
+	updatestdio \
 	utime \
 	utimes \
 	vfprintf \
