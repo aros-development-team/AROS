@@ -72,4 +72,27 @@ int strlcat(char *buf, char *src, int len);
 
 #define AROS_LHA(type, name, reg) register reg type name
 
+/*** AROS user function macros **********************************************/
+#define AROS_UFH0(rt, fn, bt, bn, lvo, p) \
+    __asm rt fn()
+#define AROS_UFH1(rt, fn, a1, bt, bn, lvo, p) \
+    __asm rt fn(a1)
+#define AROS_UFH2(rt, fn, a1, a2, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2)
+#define AROS_UFH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3)
+#define AROS_UFH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4)
+#define AROS_UFH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5)
+#define AROS_UFH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6)
+#define AROS_UFH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6, a7)
+#define AROS_UFH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
+
+#define AROS_UFHA(type, name, reg) register reg type name
+
+
 #endif /* _MUIMASTER_SUPPORT_AMIGAOS_H_ */
