@@ -66,11 +66,13 @@ typedef struct
 	UBYTE	SubClass;
 	UBYTE	Interface;
 	UBYTE	RevisionID;
-	UWORD	SubsystemVendorID;
+	UWORD	SubsysVID;
 	UWORD	SubsystemID;
 	APTR	BaseAddress[6];
+	ULONG	BaseSizes[6];
 	UBYTE	INTLine;
 	UBYTE	IRQLine;
+	UBYTE	HeaderType;
 } HIDDT_PCI_Device;
 
 #define PCI_BUS(addr) ((addr) >> 8)

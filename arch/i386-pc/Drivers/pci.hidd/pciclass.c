@@ -56,11 +56,11 @@ static HIDDT_PCI_Device **pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct 
 	mask.Class				= GetTagData(tHidd_PCI_Class, -1, msg->deviceTags);
 	mask.SubClass			= GetTagData(tHidd_PCI_SubClass, -1, msg->deviceTags);
 	mask.Interface			= GetTagData(tHidd_PCI_Interface, -1, msg->deviceTags);
-	mask.SubsystemVendorID	= GetTagData(tHidd_PCI_SubsystemVendorID, -1, msg->deviceTags);
+	mask.SubsysVID	= GetTagData(tHidd_PCI_SubsystemVendorID, -1, msg->deviceTags);
 	mask.SubsystemID		= GetTagData(tHidd_PCI_SubsystemID, -1, msg->deviceTags);
 
 	D(bug("mask: %04.4lx:%$04.4lx %d %d/%d/%d %x %x\n", mask.VendorID, mask.DeviceID, mask.RevisionID, mask.Class,
-		mask.SubClass, mask.Interface, mask.SubsystemVendorID, mask.SubsystemID));
+		mask.SubClass, mask.Interface, mask.SubsysVID, mask.SubsystemID));
 
 	ListLength(&PSD(cl)->devices, length);
 
@@ -73,7 +73,7 @@ static HIDDT_PCI_Device **pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct 
 		dev = &ndev->dev;
 	
 		D(bug("d: %04.4lx:%$04.4lx %d %d/%d/%d %x %x\n", dev->VendorID, dev->DeviceID, dev->RevisionID, dev->Class,
-			dev->SubClass, dev->Interface, dev->SubsystemVendorID, dev->SubsystemID));
+			dev->SubClass, dev->Interface, dev->SubsysVID, dev->SubsystemID));
 	
 		if (mask.VendorID != 0xffff)
 		{
@@ -105,9 +105,9 @@ static HIDDT_PCI_Device **pci_finddevice(OOP_Class *cl, OOP_Object *obj, struct 
 			if (mask.Interface != dev->Interface)
 				continue;
 		}
-		if (mask.SubsystemVendorID != 0xffff)
+		if (mask.SubsysVID != 0xffff)
 		{
-			if (mask.SubsystemVendorID != dev->SubsystemVendorID)
+			if (mask.SubsysVID != dev->SubsysVID)
 				continue;
 		}
 		if (mask.SubsystemID != 0xffff)
@@ -184,6 +184,7 @@ OOP_Class *init_pciclass (struct pci_staticdata *psd)
         D(bug("PCIClass ok\n"));
         cl->UserData = (APTR)psd;
        	psd->pciclass = cl;
+	psd->highBus = 0;
         
         ok = TRUE;
     }
