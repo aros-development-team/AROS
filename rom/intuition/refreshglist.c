@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/29 07:50:49  digulla
+    Fixed a small bug in PropGadgets. The jumpsize of the knob was too small.
+
     Revision 1.1  1996/08/28 17:55:36  digulla
     Proportional gadgets
     BOOPSI
@@ -43,20 +46,38 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 
     if (pi->Flags & FREEHORIZ)
     {
-	pi->HPotRes = pi->CWidth * pi->HorizBody / MAXBODY;
+	*knobwidth = pi->CWidth * pi->HorizBody / MAXBODY;
 
-	*knobleft = *knobleft + (pi->CWidth - pi->HPotRes)
+	*knobleft = *knobleft + (pi->CWidth - *knobwidth)
 		* pi->HorizPot / MAXPOT;
-	*knobwidth = pi->HPotRes;
+
+	if (pi->HorizBody)
+	{
+	    if (pi->HorizBody < MAXBODY/2)
+		pi->HPotRes = MAXPOT / ((MAXBODY / pi->HorizBody) - 1);
+	    else
+		pi->HPotRes = MAXPOT;
+	}
+	else
+	    pi->HPotRes = 1;
     }
 
     if (pi->Flags & FREEVERT)
     {
-	pi->VPotRes = pi->CHeight * pi->VertBody / MAXBODY;
+	*knobheight = pi->CHeight * pi->VertBody / MAXBODY;
 
-	*knobtop = *knobtop + (pi->CHeight - pi->VPotRes)
+	*knobtop = *knobtop + (pi->CHeight - *knobheight)
 		* pi->VertPot / MAXPOT;
-	*knobheight = pi->VPotRes;
+
+	if (pi->VertBody)
+	{
+	    if (pi->VertBody < MAXBODY/2)
+		pi->VPotRes = MAXPOT / ((MAXBODY / pi->VertBody) - 1);
+	    else
+		pi->VPotRes = MAXPOT;
+	}
+	else
+	    pi->VPotRes = 1;
     }
 
     return TRUE;
@@ -145,19 +166,19 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 	if (width <= 0 || height <= 0)
 	    continue;
 
+	SetDrMd (window->RPort, JAM1);
+	SetAPen (window->RPort, 0);
+
+	RectFill (window->RPort
+	    , left
+	    , top
+	    , left + width - 1
+	    , top + height - 1
+	);
+
 	switch (gadgets->GadgetType & GTYP_GTYPEMASK)
 	{
 	case GTYP_BOOLGADGET:
-	    SetDrMd (window->RPort, JAM1);
-	    SetAPen (window->RPort, 0);
-
-	    RectFill (window->RPort
-		, left
-		, top
-		, left + width - 1
-		, top + height - 1
-	    );
-
 	    if (gadgets->GadgetText)
 	    {
 		switch (gadgets->Flags & GFLG_LABELMASK)
@@ -288,26 +309,113 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 
 	    if (!(pi->Flags & PROPBORDERLESS) )
 	    {
-		SetAPen (window->RPort, 2);
+		if (pi->Flags & PROPNEWLOOK)
+		{
+		    if (width <= 6 || height <= 6)
+		    {
+			SetAPen (window->RPort, 2);
 
-		RectFill (window->RPort
-		    , left
-		    , top
-		    , left + width - 1
-		    , top + height - 1
-		);
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + width - 1
+			    , top + height - 1
+			);
 
-		SetAPen (window->RPort, 0);
+			break;
+		    }
+		    else
+		    {
+			SetAPen (window->RPort, 2);
 
-		if (width <= 6 || height <= 6)
-		    break;
+			/* right */
+			RectFill (window->RPort
+			    , left + width - 2
+			    , top
+			    , left + width - 1
+			    , top + height - 1
+			);
 
-		RectFill (window->RPort
-		    , left + 2
-		    , top + 2
-		    , left + width - 3
-		    , top + height - 3
-		);
+			/* bottom */
+			RectFill (window->RPort
+			    , left
+			    , top + height - 2
+			    , left + width - 3
+			    , top + height - 1
+			);
+
+			SetAPen (window->RPort, 1);
+
+			/* top */
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + width - 2
+			    , top + 1
+			);
+
+			/* left */
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + 1
+			    , top + height - 2
+			);
+
+			WritePixel (window->RPort, left + width - 1, top);
+			WritePixel (window->RPort, left, top + height - 1);
+		    }
+		}
+		else
+		{
+		    SetAPen (window->RPort, 2);
+
+		    if (width <= 6 || height <= 6)
+		    {
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + width - 1
+			    , top + height - 1
+			);
+
+			break;
+		    }
+		    else
+		    {
+			/* right */
+			RectFill (window->RPort
+			    , left + width - 2
+			    , top
+			    , left + width - 1
+			    , top + height - 1
+			);
+
+			/* bottom */
+			RectFill (window->RPort
+			    , left
+			    , top + height - 2
+			    , left + width - 1
+			    , top + height - 1
+			);
+
+			/* top */
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + width - 3
+			    , top + 1
+			);
+
+			/* left */
+			RectFill (window->RPort
+			    , left
+			    , top
+			    , left + 1
+			    , top + height - 3
+			);
+		    }
+		}
 	    }
 
 	    if (pi->Flags & AUTOKNOB)
@@ -320,7 +428,7 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 
 		    /* Draw right border */
 		    RectFill (window->RPort
-			, knobleft + knobwidth - 3
+			, knobleft + knobwidth - 2
 			, knobtop
 			, knobleft + knobwidth - 1
 			, knobtop + knobheight - 1
@@ -329,7 +437,7 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 		    /* Draw bottom border */
 		    RectFill (window->RPort
 			, knobleft
-			, knobtop + knobheight - 3
+			, knobtop + knobheight - 2
 			, knobleft + knobwidth - 3
 			, knobtop + knobheight - 1
 		    );

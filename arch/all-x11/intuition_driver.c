@@ -863,15 +863,15 @@ void intui_ProcessXEvents (void)
 			    {
 				if (xb->x < knobleft)
 				{
-				    if (pi->HorizPot > pi->HorizBody)
-					pi->HorizPot -= pi->HorizBody;
+				    if (pi->HorizPot > pi->HPotRes)
+					pi->HorizPot -= pi->HPotRes;
 				    else
 					pi->HorizPot = 0;
 				}
 				else if (xb->x >= knobleft + knobwidth)
 				{
-				    if (pi->HorizPot + pi->HorizBody < MAXPOT)
-					pi->HorizPot += pi->HorizBody;
+				    if (pi->HorizPot + pi->HPotRes < MAXPOT)
+					pi->HorizPot += pi->HPotRes;
 				    else
 					pi->HorizPot = MAXPOT;
 				}
@@ -881,15 +881,15 @@ void intui_ProcessXEvents (void)
 			    {
 				if (xb->y < knobtop)
 				{
-				    if (pi->VertPot > pi->VertBody)
-					pi->VertPot -= pi->VertBody;
+				    if (pi->VertPot > pi->VPotRes)
+					pi->VertPot -= pi->VPotRes;
 				    else
 					pi->VertPot = 0;
 				}
 				else if (xb->y >= knobtop + knobheight)
 				{
-				    if (pi->VertPot + pi->VertBody < MAXPOT)
-					pi->VertPot += pi->VertBody;
+				    if (pi->VertPot + pi->VPotRes < MAXPOT)
+					pi->VertPot += pi->VPotRes;
 				    else
 					pi->VertPot = MAXPOT;
 				}
@@ -1076,22 +1076,22 @@ void intui_ProcessXEvents (void)
 				knobleft += dx; knobtop += dy;
 
 				knobleft = knobleft
-				    + (knobwidth - pi->HPotRes)
+				    + (pi->CWidth - knobwidth)
 				    * pi->HorizPot / MAXPOT;
 
-				ie. dx = (knobwidth - pi->HPotRes)
+				ie. dx = (pi->CWidth - knobwidth)
 				    * pi->HorizPot / MAXPOT;
 
 				or
 
 				pi->HorizPot = (dx * MAXPOT) /
-				    (knobwidth - pi->HPotRes);
+				    (pi->CWidth - knobwidth);
 			    */
 			    if (pi->Flags & FREEHORIZ
-				&& pi->CWidth != pi->HPotRes)
+				&& pi->CWidth != knobwidth)
 			    {
 				dx = (dx * MAXPOT) /
-					(pi->CWidth - pi->HPotRes);
+					(pi->CWidth - knobwidth);
 
 				if (dx < 0)
 				{
@@ -1112,10 +1112,10 @@ void intui_ProcessXEvents (void)
 			    } /* FREEHORIZ */
 
 			    if (pi->Flags & FREEVERT
-				&& pi->CHeight != pi->VPotRes)
+				&& pi->CHeight != knobheight)
 			    {
 				dy = (dy * MAXPOT) /
-					(pi->CHeight - pi->VPotRes);
+					(pi->CHeight - knobheight);
 
 				if (dy < 0)
 				{
