@@ -49,6 +49,7 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     NEWLIST(&(WorkbenchBase->wb_HiddenDevices));
 
     /* Initialize our semaphores -------------------------------------------*/
+    InitSemaphore(&(WorkbenchBase->wb_WorkbenchPortSemaphore));
     InitSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
     InitSemaphore(&(WorkbenchBase->wb_BaseSemaphore));
     

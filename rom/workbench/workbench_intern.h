@@ -46,10 +46,10 @@ struct WorkbenchBase
     struct Library         *wb_IntuitionBase;
     struct Library         *wb_IconBase;
     
-    struct MsgPort          wb_HandlerPort;       /* The Workbench Handler's message port */
+    struct MsgPort          wb_HandlerPort;            /* The handler's message port */
+    struct MsgPort         *wb_WorkbenchPort;          /* The workbench application's message port */
+    struct SignalSemaphore  wb_WorkbenchPortSemaphore; /* Arbitrates initializetion access to the port above */
     
-    struct MsgPort         *wb_AppPort;           /* The Workbench App's message port */
-
     struct List             wb_AppWindows;
     struct List             wb_AppIcons;
     struct List             wb_AppMenuItems;
@@ -58,10 +58,10 @@ struct WorkbenchBase
     ULONG                   wb_DefaultStackSize;
     ULONG                   wb_TypeRestartTime;
 
-    struct SignalSemaphore  wb_InitializationSemaphore; /* Arbitrates library initializtion */
+    struct SignalSemaphore  wb_InitializationSemaphore; /* Arbitrates library initialization */
     struct SignalSemaphore  wb_BaseSemaphore;           /* Arbitrates library base access */
     
-    BOOL                    wb_Initialized;        /* Has the library been intialized in libOpen? */
+    BOOL                    wb_Initialized;             /* Has the library been intialized in libOpen? */
 };
 
 #define SysBase         (WorkbenchBase->wb_SysBase)
