@@ -110,6 +110,7 @@ $(GENINCDIR)/libraries/%.h : $(BUILDINCTOOL)
 	@$(BUILDINCTOOL) > $@
 
 $(BUILDINCTOOL) : buildincludes.c
+	%mkdirs_q $(dir $(BUILDINCTOOL))
 	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
 
 #MM setup
