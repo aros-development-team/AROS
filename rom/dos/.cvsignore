@@ -3,3 +3,5 @@ dos_endtag.c
 libdefs.h
 makefile
 mmakefile
+makefile.bak
+*.err

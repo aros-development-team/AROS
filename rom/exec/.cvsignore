@@ -1,4 +1,6 @@
 *.s
 *.map
+*.err
 makefile
 mmakefile
+makefile.bak
