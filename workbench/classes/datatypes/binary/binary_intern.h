@@ -1,7 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <exec/types.h>
 
 #define G(o) ((struct Gadget *)(o))
 
