@@ -1,31 +1,41 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -Iinclude
-COMMONOBJDIR    := $(GENDIR)/compiler/clib
-OBJDIR		:= $(COMMONOBJDIR)/static
-SOBJDIR		:= $(COMMONOBJDIR)/shared
-STUBSDIR	:= $(COMMONOBJDIR)/stubs
-INCDIR		:= $(BINDIR)/Include
-LIB		:= $(LIBDIR)/libarosc.a
-STUBLIB		:= $(LIBDIR)/libarosc_shared.a
-SLIB		:= $(AROS_LIBS)/arosc.library
-COMMONLIB	:= $(COMMONOBJDIR)/libclibcommon.a
+#
+#   This is a rather special include file. It builds both a shared library
+#   and a link library from the same source, with only a small amount of
+#   overlap.
+#
+USER_CFLAGS :=	-Iinclude -I$(TOP)/rom/exec
 
-%define_libs
+# We are trying to build:
+#   $(AROS_LIBS)/arosc.library	    from $(SHARED)
+#   $(AROS_LIB)/libarosc.a	    from $(COMMON) and $(STATIC)
+#   $(AROS_LIB)/libarosc_shared.a   from $(COMMON) and $(STUBS)
+#
+#   Note that $(SHARED) and $(STATIC) are the same group of files, but
+#   compiled slightly differently.
+#
+#   It turns out that some of $(SHARED) refer to things in $(COMMON), so
+#   I've put that into the arosc.library as well.
+MODULE	    :=	arosc.library
+STATIC_LIB  :=	$(AROS_LIB)/libarosc.a
+SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
 
-FILES  := \
-	__assert
+# Lists of files
+#   - Common always exist in the link library.
 
-COMMONFILES := \
+COMMON	:= \
 	bcopy \
 	bzero \
+	longjmp \
 	memchr \
 	memcmp \
 	memcpy \
 	memmove \
 	memset \
 	putchar \
+	setjmp \
 	stpcpy \
 	strcasecmp \
 	strcat \
@@ -45,12 +55,12 @@ COMMONFILES := \
 	strspn \
 	strstr \
 	strtod \
-	strtok \
-	strtol \
-	strtoul
+	strtok
 	
 
-SFILES := \
+#   - Shared are in either the shared linklib, or the arosc.library module
+SHARED	:= \
+	__assert \
 	__env \
 	__ioerr2errno \
 	__isinf \
@@ -60,8 +70,8 @@ SFILES := \
 	__stdio \
 	__vcformat \
 	__vcscan \
-	abs \
 	abort \
+	abs \
 	access \
 	asctime \
 	atof \
@@ -177,38 +187,68 @@ SFILES := \
 	vsscanf \
 	write
 
-ASMFILES  := setjmp longjmp
-SASMFILES := longjmp
+#   - The stubs are generated, and are in the shared link library.
+STUBS   := $(wildcard $(OBJDIR)/stubs/*.o)
 
-OBJS  := $(foreach f, $(FILES)   , $(OBJDIR)/$(f).o)
-OBJS  += $(foreach f, $(SFILES)  , $(OBJDIR)/$(f).o)
-OBJS  += $(foreach f, $(ASMFILES), $(COMMONOBJDIR)/$(f).o)
+# Dependancies
+DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
+	$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).d) \
+	$(foreach f,$(SHARED),$(OBJDIR)/shared/$(f).d) \
+	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_endtag.d
 
-STUBOBJS := $(foreach f, $(FILES)    , $(OBJDIR)/$(f).o)
-STUBOBJS += $(foreach f, $(ASMFILES) , $(COMMONOBJDIR)/$(f).o)
-STUBOBJS += $(wildcard $(STUBSDIR)/*.o)
+STATIC_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
+		$(foreach f,$(SHARED),$(OBJDIR)/static/$(f).o)
+SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
+		$(STUBS)
+MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o)
 
-SOBJS := $(foreach f, $(SFILES)   , $(SOBJDIR)/$(f).o)
-SOBJS += $(foreach f, $(SASMFILES), $(COMMONOBJDIR)/$(f).o)
+# These are added to the link step of arosc.library
+LIBS := -L$(AROS_LIB) -larosm -lautoinit
+DEP_LIBS := arosm autoinit
 
-COMMONOBJS := $(foreach f, $(COMMONFILES), $(COMMONOBJDIR)/$(f).o)
+%make_linklib_setup mmake=linklibs-clib
 
-# M M linklibs : setup includes clib-$(ARCH) clib-stubs
-#MM- linklibs : linklibs-arosc
-#MM- linklibs-clib : linklibs-arosc
-#MM linklibs-arosc : setup includes linklibs-amiga linklibs-arosm-$(CPU) linklibs-arossupport linklibs-autoinit clib-$(ARCH) clib-stubs
-linklibs-arosc : $(COMMONLIB) $(LIB) $(SLIB) $(STUBLIB)
-	@$(NOP)
+#MM- linklibs : linklibs-clib
+#MM linklibs-clib : includes linklibs-mlib linklibs-autoinit \
+#MM			clib-$(ARCH) clib-stubs
 
-DEPS  := $(foreach f, $(FILES)     , $(OBJDIR)/$(f).d)
-DEPS  += $(foreach f, $(SFILES)    , $(SOBJDIR)/$(f).d)
-DEPS  += $(foreach f, $(COMMONOBJS), $(COMMONOBJDIR)/$(f).d)
-DEPS  += $(foreach f, arosc_init,    $(SOBJDIR)/$(f).d)
+linklibs-clib : setup $(STATIC_LIB) $(SHARED_LIB) $(AROS_LIBS)/$(MODULE)
 
+$(STATIC_LIB) : $(STATIC_OBJ)
+	%mklib_q from=$^
+
+$(SHARED_LIB) : $(SHARED_OBJ)
+	%mklib_q from=$^
+
+$(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ)
+	%link_module_q objs="$(OBJDIR)/shared/arosc_init.o $(MODULE_OBJ)" endtag="$(OBJDIR)/shared/arosc_endtag.o"
+
+$(OBJDIR)/static/%.o : %.c
+	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
+
+$(OBJDIR)/shared/%.o : %.c
+	%compile_q opt="$(CFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h"
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
+
+# Need to copy these files in from the machine dependant build.
+$(OBJDIR)/shared/%jmp.o : $(OBJDIR)/%jmp.o
+	@$(CP) $< $@
+
+# The rules to create the dependancy files.
+$(OBJDIR)/static/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
+$(OBJDIR)/shared/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
 
 #MM
 setup :
-	%mkdirs_q $(INCDIR)/sys $(OBJDIR) $(SOBJDIR)
+	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR) $(OBJDIR)/static $(OBJDIR)/shared
 
 #MM
 check : $(TESTDIR)/snprint
@@ -220,34 +260,11 @@ $(TESTDIR)/snprintf : snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -include $(INCDIR)/libraries/arosc.h"
-
-$(COMMONOBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -include $(INCDIR)/libraries/arosc.h"
-
-$(SOBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt="$(APPCFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h -I$(TOP)/rom/exec"
-
-$(COMMONLIB) : $(COMMONOBJS)
-	%mklib_q from=$(COMMONOBJS)
-
-$(LIB) : $(OBJS)
-	$(CP) $(COMMONLIB) $(LIB)
-	%mklib_q from=$(OBJS)
-
-$(SLIB) : $(SOBJS) $(SOBJDIR)/arosc_init.o $(SOBJDIR)/arosc_endtag.o
-	%link_q startup=$(SOBJDIR)/arosc_init.o opt=$(ILDFLAGS) from=$(SOBJS)  libs="$(filter-out -larosc, $(LIBS)) $(COMMONLIB)" end=$(SOBJDIR)/arosc_endtag.o
-
-$(STUBLIB) : $(STUBOBJS)
-	$(CP) $(COMMONLIB) $(STUBLIB)
-	%mklib_q from=$(STUBOBJS)
-
-$(SOBJDIR)/arosc_init.o : arosc_init.c
-
 %common
 %include_deps
 
-arosc_init.c : $(AROS_INCLUDES)/sys/syscall.def
-
+# Fix up the deps, these won't end up in $^, but they'll make it work.
+$(AROS_LIBS)/$(MODULE) : $(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_endtag.o
+$(AROS_LIBS)/$(MODULE) : $(foreach f,$(DEP_LIBS),$(AROS_LIB)/lib$(f).a)
+$(OBJDIR)/shared/arosc_init.o : $(AROS_INCLUDES)/sys/syscall.def
 
