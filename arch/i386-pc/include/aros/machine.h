@@ -30,6 +30,8 @@
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 #define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
+register unsigned char * AROS_GET_SP asm("%esp");
+
 /* ??? */
 #define SP_OFFSET 0
 
