@@ -18,7 +18,8 @@
 
 void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
 {
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL )
+    if (GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL)
+    if (GetPrivIBase(IntuitionBase)->WorkBenchMP->mp_SigTask != FindTask(NULL))
     {
         struct MsgPort      replymp;
         struct IntuiMessage imsg;
@@ -54,7 +55,8 @@ void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
 
 void TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
 {
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL )
+    if (GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL)
+    if (GetPrivIBase(IntuitionBase)->WorkBenchMP->mp_SigTask != FindTask(NULL))
     {
         struct MsgPort      replymp;
         struct IntuiMessage imsg;
