@@ -86,7 +86,9 @@ FILES = \
 	vsprintf \
 	write
 
+ifneq ($(FLAVOUR),native)
 ASMFILES = setjmp longjmp
+endif
 
 all: setup update-includes $(LIBDIR)/libarosc.a
 
