@@ -27,7 +27,6 @@
 /*** Variables **************************************************************/
 struct Device      *TimerBase;
 
-struct MsgPort     *TimerMP;
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
@@ -35,15 +34,13 @@ AROS_SET_LIBFUNC( Clock_Startup, LIBBASETYPE, LIBBASE )
 {
     SysBase = LIBBASE->lh_SysBase;
     
-    TimerMP   = NULL;
     TimerIO   = NULL;
     TimerBase = NULL;
     
-    TimerMP = CreateMsgPort();
-    if( TimerMP == NULL ) goto error;
-    
-    TimerIO = (struct timerequest *) CreateIORequest( TimerMP, sizeof(struct timerequest) );
+    TimerIO = AllocMem( sizeof( struct timerequest ), MEMF_CLEAR );
     if( TimerIO == NULL ) goto error;
+    
+    TimerIO->tr_node.io_Message.mn_Length = sizeof( struct timerequest );
     
     if( OpenDevice( "timer.device", UNIT_VBLANK, (struct IORequest *) TimerIO, 0) == 0 )
         TimerBase = (struct Device *) TimerIO->tr_node.io_Device;
@@ -53,18 +50,16 @@ AROS_SET_LIBFUNC( Clock_Startup, LIBBASETYPE, LIBBASE )
     return TRUE;
 
 error:
-    if( TimerBase != NULL ) CloseDevice( TimerBase );
-    if( TimerIO != NULL ) DeleteIORequest( TimerIO );
-    if( TimerMP != NULL ) DeleteMsgPort( TimerMP );
-
+    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
+    
     return FALSE;
 }
 
 AROS_SET_LIBFUNC( Clock_Shutdown, LIBBASETYPE, LIBBASE )
 {
-    if( TimerBase != NULL ) CloseDevice( TimerBase );
-    if( TimerIO != NULL ) DeleteIORequest( TimerIO );
-    if( TimerMP != NULL ) DeleteMsgPort( TimerMP );
+    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
 }
 
 ADD2INITLIB( Clock_Startup, 1 );
