@@ -155,19 +155,23 @@
         width or height of the source area, then it is the more
         difficult case
       */
-      if (xs * 2 > xSize || 
-          ys * 2 > ySize)
+
+      if (xs * 2 < xSize || 
+          ys * 2 < ySize)
       {
         /* 
            In this case I use a special routine to copy the rectangle 
         */
+
+#warning set driver_MoveRaster hasClipRegion param correctly
+			
         driver_MoveRaster(srcRP,
-                          xDest-xSrc,
-                          yDest-ySrc,
+                          xSrc - xDest,
+                          ySrc - yDest,
                           (xSrc < xDest) ? xSrc : xDest,
                           (ySrc < yDest) ? ySrc : yDest,
-                          (xSrc > xDest) ? xSrc : xDest,
-                          (ySrc > yDest) ? ySrc : yDest,
+                          (xSrc > xDest) ? xSrc + xSize - 1 : xDest + xSize - 1,
+                          (ySrc > yDest) ? ySrc + ySize - 1 : yDest + ySize - 1,
                           FALSE,
                           FALSE,
                           GfxBase);
