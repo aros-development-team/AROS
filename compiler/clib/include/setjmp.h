@@ -13,14 +13,11 @@
 #include <sys/_posix.h>
 
 #ifdef __mc68000__
-#define _JMPLEN 12
-
-#elif i386
-#define _JMPLEN 7
-
+#   define _JMPLEN 12
+#elif __i386__
+#   define _JMPLEN 7
 #elif ppc
-#define _JMPLEN 58
-
+#   define _JMPLEN 58
 #endif
 
 typedef struct jmp_buf
