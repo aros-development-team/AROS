@@ -10,8 +10,11 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include "intuition_intern.h"
-#include "intuition_customize.h"
 #include "inputhandler_actions.h"
+
+#ifdef SKINS
+#   include "intuition_customize.h"
+#endif
 
 #ifndef DEBUG_CloseScreen
 #define DEBUG_CloseScreen 0

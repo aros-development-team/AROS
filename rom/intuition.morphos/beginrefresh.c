@@ -10,7 +10,10 @@
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 #include "inputhandler_support.h"
-#include "renderwindowframe.h"
+
+#ifdef SKINS
+#   include "renderwindowframe.h"
+#endif
 
 #define IW(x) ((struct IntWindow *)x)
 

@@ -7,22 +7,20 @@
 */
 #include <proto/layers.h>
 #include <proto/graphics.h>
-#include <proto/cybergraphics.h>
+//#include <proto/cybergraphics.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/rpattr.h>
 #include <cybergraphx/cybergraphics.h>
-#include "intuition_intern.h"
-#include "inputhandler.h"
-#include "inputhandler_actions.h"
-#include "intuition_customize.h"
-#include "renderwindowframe.h"
-#include "mosmisc.h"
 
-#include <string.h>
+#include "intuition_intern.h"
 
 #define IW(x)   ((struct IntWindow *)(x))
 
-#define GADGETCLIPPING
+//#define GADGETCLIPPING
+
+#ifdef GADGETCLIPPING
+void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBase *IntuitionBase);
+#endif
 
 /*****************************************************************************
  
@@ -77,54 +75,41 @@ VOID int_RefreshWindowFrame(struct Window *window,
 {
     /* Draw a frame around the window */
     struct RastPort *rp = window->BorderRPort;
-    struct Layer *layer = (BLAYER(window)) ? BLAYER(window) : WLAYER(window);
-    struct IntDrawInfo  *dri;
+    struct DrawInfo *dri;
     struct Region   *old_clipregion;
+
 #ifdef GADGETCLIPPING
     struct Region   *gadgetclipregion;
 #endif
-    struct windowclassprefs *wcprefs=NULL;
+
     WORD        old_scroll_x, old_scroll_y;
-    WORD left = 0;
-    WORD leftoffset=0,topoffset=0,rightoffset=1,bottomoffset=1;
+    int left = 0, right = window->Width - 1;
 
     if (!(window->Flags & WFLG_BORDERLESS))
     {
-
-        dri = (struct IntDrawInfo *)GetScreenDrawInfo(window->WScreen);
-
+        dri = GetScreenDrawInfo(window->WScreen);
         if (dri)
         {
-            wcprefs = (struct windowclassprefs *)int_GetCustomPrefs(TYPE_WINDOWCLASS,dri,IntuitionBase);
-
-            LOCK_REFRESH(window->WScreen);
             LOCKGADGET
-#if 0
+#if 1
             if ((rp->Layer==NULL) ||
                     ((!(window->Flags & WFLG_GIMMEZEROZERO)) && (rp->Layer != window->RPort->Layer)))
             {
-                dprintf("RefreshWindowFrame: Window 0x%lx\n", (ULONG) window);
-                dprintf("RefreshWindowFrame: WLayer 0x%lx\n", (ULONG) window->WLayer);
-                dprintf("RefreshWindowFrame: RPort 0x%lx BorderRPort 0x%lx\n", (ULONG) window->RPort, (ULONG) window->BorderRPort);
-                dprintf("RefreshWindowFrame: RPort's layer 0x%lx BorderRPort's layer 0x%lx\n", (ULONG) window->RPort->Layer, (ULONG) window->BorderRPort->Layer);
+                dprintf("RefreshWindowFrame: Window 0x%lx\n",window);
+                dprintf("RefreshWindowFrame: WLayer 0x%lx\n",window->WLayer);
+                dprintf("RefreshWindowFrame: RPort 0x%lx BorderRPort 0x%lx\n",window->RPort,window->BorderRPort);
+                dprintf("RefreshWindowFrame: RPort's layer 0x%lx BorderRPort's layer 0x%lx\n",window->RPort,window->RPort->Layer,window->BorderRPort,window->BorderRPort->Layer);
             }
 
 #endif
 
-            if (!rp->Layer || !layer)
-            {
-                //must NOT happen!
-                dprintf("RefreshWindowFrame: Panic! Window 0x%lx has no layer in BorderRPort!\n",(ULONG)window);
-                return;
-            }
+            LockLayer(NULL,rp->Layer);
 
-            LockLayer(0,layer);
+            old_scroll_x = rp->Layer->Scroll_X;
+            old_scroll_y = rp->Layer->Scroll_Y;
 
-            old_scroll_x = layer->Scroll_X;
-            old_scroll_y = layer->Scroll_Y;
-
-            layer->Scroll_X = 0;
-            layer->Scroll_Y = 0;
+            rp->Layer->Scroll_X = 0;
+            rp->Layer->Scroll_Y = 0;
 
 #ifdef GADGETCLIPPING
             gadgetclipregion = NewRegion();
@@ -144,40 +129,167 @@ VOID int_RefreshWindowFrame(struct Window *window,
 
             }
 
-            old_clipregion = InstallClipRegion(layer, gadgetclipregion);
+            old_clipregion = InstallClipRegion(rp->Layer, gadgetclipregion);
 #else
-            old_clipregion = InstallClipRegion(layer, NULL);
+old_clipregion = InstallClipRegion(rp->Layer, NULL);
 #endif
 
-/*            if (((wcprefs->flags & WINDOWCLASS_PREFS_USEBORDERSEFFECT) && (dri->dri_Flags & DRIF_DIRECTCOLOR)) || (wcprefs->flags & WINDOWCLASS_PREFS_FRAMELESS))
-            {
-                leftoffset = 0;
-                rightoffset = 1;
-                topoffset = 0;
-                bottomoffset = 1;
-            }
-*/
+            SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+            if (window->BorderTop > 0)  CheckRectFill(rp,
+                        0,
+                        0,
+                        window->Width - 1,
+                        0,
+                        IntuitionBase);
+
             if (!(mustbe & REFRESHGAD_TOPBORDER))
             {
-                if (window->BorderLeft > leftoffset + 1)
-                    RenderWindowFrame(window,leftoffset,window->BorderTop,window->BorderLeft - (leftoffset*2),window->Height - window->BorderTop - window->BorderBottom + 1,TRUE,mode,NULL,dri,IntuitionBase);
+                if (window->BorderLeft > 0) CheckRectFill(rp,
+                            0,
+                            0,
+                            0,
+                            window->Height - 1,
+                            IntuitionBase);
 
-                if (window->BorderRight > rightoffset)
-                    RenderWindowFrame(window,window->Width - window->BorderRight + leftoffset,window->BorderTop,window->BorderRight - rightoffset - leftoffset + 1,window->Height - bottomoffset - window->BorderTop - 1,TRUE,mode,NULL,dri,IntuitionBase);
+                if (window->BorderRight > 1) CheckRectFill(rp,
+                            window->Width - window->BorderRight,
+                            window->BorderTop,
+                            window->Width - window->BorderRight,
+                            window->Height - window->BorderBottom,
+                            IntuitionBase);
 
-                if (window->BorderBottom > bottomoffset)
-                    RenderWindowFrame(window,leftoffset,window->Height - window->BorderBottom + topoffset,window->Width - leftoffset - rightoffset + 1,window->BorderBottom - topoffset - bottomoffset + 1,TRUE,mode,NULL,dri,IntuitionBase);
+                if (window->BorderBottom > 1) CheckRectFill(rp,
+                            window->BorderLeft,
+                            window->Height - window->BorderBottom,
+                            window->Width - window->BorderRight,
+                            window->Height - window->BorderBottom,
+                            IntuitionBase);
+            }
+
+            SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+            if (!(mustbe & REFRESHGAD_TOPBORDER))
+            {
+                if (window->BorderRight > 0) CheckRectFill(rp,
+                            window->Width - 1,
+                            1,
+                            window->Width - 1,
+                            window->Height - 1,
+                            IntuitionBase);
+
+                if (window->BorderBottom > 0) CheckRectFill(rp,
+                            1,
+                            window->Height - 1,
+                            window->Width - 1,
+                            window->Height - 1,
+                            IntuitionBase);
+
+                if (window->BorderLeft > 1) CheckRectFill(rp,
+                            window->BorderLeft - 1,
+                            window->BorderTop - 1,
+                            window->BorderLeft - 1,
+                            window->Height - window->BorderBottom,
+                            IntuitionBase);
+            }
+
+            if (window->BorderTop > 1) CheckRectFill(rp,
+                        window->BorderLeft - 1,
+                        window->BorderTop - 1,
+                        window->Width - window->BorderRight,
+                        window->BorderTop - 1,
+                        IntuitionBase);
+
+            SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
+
+            if (window->BorderTop > 2)  CheckRectFill(rp,
+                        1,
+                        1,
+                        window->Width - 2,
+                        window->BorderTop - 2,
+                        IntuitionBase);
+
+            if (!(mustbe & REFRESHGAD_TOPBORDER))
+            {
+                if (window->BorderLeft > 2) CheckRectFill(rp,
+                            1,
+                            1,
+                            window->BorderLeft - 2,
+                            window->Height - 2,
+                            IntuitionBase);
+
+                if (window->BorderRight > 2) CheckRectFill(rp,
+                            window->Width - window->BorderRight + 1,
+                            1,
+                            window->Width - 2,
+                            window->Height - 2,
+                            IntuitionBase);
+
+                if (window->BorderBottom > 2) CheckRectFill(rp,
+                            1,
+                            window->Height - window->BorderBottom + 1,
+                            window->Width - 2,
+                            window->Height - 2,
+                            IntuitionBase);
             }
 
 
-            if (window->BorderTop > leftoffset*2)
             {
-                ((struct IntWindow *)(window))->titlepos = left + 3;
-                RenderWindowFrame(window,0,0,window->Width,window->BorderTop,TRUE,mode,NULL,(struct IntDrawInfo *)dri,IntuitionBase);
+                struct Gadget *g;
+
+                for (g = window->FirstGadget; g; g = g->NextGadget)
+                {
+                    if (g->Activation & GACT_TOPBORDER && g != (struct Gadget *)IW(window)->sysgads[DRAGBAR])
+                    {
+                        if (g->LeftEdge >= 0)
+                        {
+                            if (g->LeftEdge + g->Width > left)
+                                left = g->LeftEdge + g->Width;
+                        }
+                        else
+                        {
+                            if (g->LeftEdge + window->Width < right)
+                                right = g->LeftEdge + window->Width;
+                        }
+                    }
+                }
+            }
+
+
+            /* Render the titlebar */
+            if (NULL != window->Title)
+            {
+
+                if (right - left > 6)
+                {
+                    ULONG textlen, titlelen;
+                    struct TextExtent te;
+
+                    SetFont(rp, dri->dri_Font);
+
+                    titlelen = strlen(window->Title);
+                    textlen = TextFit(rp
+                                      , window->Title
+                                      , titlelen
+                                      , &te
+                                      , NULL
+                                      , 1
+                                      , right - left - 6
+                                      , window->BorderTop - 2);
+
+
+                    SetRPAttrs(rp, RPTAG_DrMd,JAM1,
+                               RPTAG_APen,dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN],
+                               TAG_DONE);
+#ifdef __MORPHOS__
+                    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
+#else
+Move(rp, left + 3, dri->dri_Font->tf_Baseline + 3);
+#endif
+                    Text(rp, window->Title, textlen);
+                }
             }
 
 #ifdef GADGETCLIPPING
-            InstallClipRegion(layer,NULL);
+            InstallClipRegion(rp->Layer,NULL);
 #endif
 
             /* Emm: RefreshWindowFrame() is documented to refresh *all* the gadgets,
@@ -186,22 +298,18 @@ VOID int_RefreshWindowFrame(struct Window *window,
 #if 1
             /* Refresh rel gadgets first, since wizard.library (burn in hell!) seems
              * to rely on that. */
-            /* jDc: | ((window->Height <= window->BorderTop) ? REFRESHGAD_TOPBORDER : 0)
-            ** is here to protect from sizegadget drawing on depthgadget when window is
-            ** zoomed to titlebar height (example: magellan listers)
-            */
             int_refreshglist(window->FirstGadget,
                              window,
                              NULL,
                              -1,
-                             mustbe | REFRESHGAD_REL | (((window->Height <= window->BorderTop) ? REFRESHGAD_TOPBORDER : 0)),
+                             mustbe | REFRESHGAD_REL,
                              mustnotbe,
                              IntuitionBase);
             int_refreshglist(window->FirstGadget,
                              window,
                              NULL,
                              -1,
-                             mustbe | (((window->Height <= window->BorderTop) ? REFRESHGAD_TOPBORDER : 0)),
+                             mustbe,
                              mustnotbe | REFRESHGAD_REL,
                              IntuitionBase);
 #else
@@ -210,26 +318,21 @@ int_refreshglist(window->FirstGadget,
             NULL,
             -1,
             mustbe,
-            mustnotbe ,
+            mustnotbe,
             IntuitionBase);
 #endif
 
-            InstallClipRegion(layer,old_clipregion);
+            InstallClipRegion(rp->Layer,old_clipregion);
 
 #ifdef GADGETCLIPPING
             if (gadgetclipregion) DisposeRegion(gadgetclipregion);
 #endif
 
-            layer->Scroll_X = old_scroll_x;
-            layer->Scroll_Y = old_scroll_y;
+            rp->Layer->Scroll_X = old_scroll_x;
+            rp->Layer->Scroll_Y = old_scroll_y;
 
-            UnlockLayer(layer);
-
+            UnlockLayer(rp->Layer);
             UNLOCKGADGET
-
-            UNLOCK_REFRESH(window->WScreen);
-            
-            int_FreeCustomPrefs(TYPE_WINDOWCLASS,(struct IntDrawInfo*)dri,IntuitionBase);
 
             FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
 
@@ -239,3 +342,67 @@ int_refreshglist(window->FirstGadget,
 
     } /* if (!(win->Flags & WFLG_BORDERLESS)) */
 }
+
+#ifdef GADGETCLIPPING
+void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBase *IntuitionBase)
+{
+    struct Gadget *gad;
+
+    for (gad = w->FirstGadget; gad; gad = gad->NextGadget)
+    {
+        BOOL qualified = FALSE;
+        WORD left,top,right,bottom;
+
+        top = gad->TopEdge;
+    2    left = gad->LeftEdge;
+
+        if (gad->Flags & GFLG_RELBOTTOM) top = w->Height - 1 + gad->TopEdge;
+        if (gad->Flags & GFLG_RELRIGHT) left = w->Width - 1 + gad->LeftEdge;
+
+        /* we need to be prepared for GFLG_GADGIMAGE and IA_Left set to -1, etc */
+        if (gad->Flags & GFLG_GADGIMAGE && gad->SelectRender)
+            left += ((struct Image *)gad->SelectRender)->LeftEdge;
+
+        right = left + gad->Width - 1;
+        bottom = top + gad->Height - 1;
+
+        /* let's do some clipping now */
+
+        if (left >= w->Width) continue;
+        if (top >= w->Height) continue;
+        if (right < 0) continue;
+        if (bottom < 0) continue;
+
+        if (left < 0) left = 0;
+        if (top < 0) top = 0;
+        if (right > w->Width) right = w->Width;
+        if (top > w->Height) top = w->Height;
+
+        /* sanity check */
+
+        if (right < left) continue;
+        if (bottom < top) continue;
+
+        /* clip this gadget ? */
+
+        if (top >= w->Height - 1 - w->BorderBottom) qualified = TRUE;
+        if (left >= w->Width - 1 - w->BorderRight) qualified = TRUE;
+        if (top + gad->Height - 1 <= w->BorderTop) qualified = TRUE;
+        if (left + gad->Width - 1 <= w->BorderLeft) qualified = TRUE;
+
+        if (qualified)
+        {
+            struct Rectangle rect;
+            rect.MinX = left;
+            rect.MinY = top;
+            rect.MaxX = right;
+            rect.MaxY = bottom;
+
+            OrRectRegion(region,&rect);
+
+        }
+
+    }
+};
+#endif
+

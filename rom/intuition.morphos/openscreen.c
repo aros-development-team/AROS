@@ -51,7 +51,12 @@ struct OpenScreenActionMsg
 static VOID int_openscreen(struct OpenScreenActionMsg *msg,
                             struct IntuitionBase *IntuitionBase);
 
+#ifdef __MORPHOS__
 extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
+#else
+//FIXME: NUMDRIPENS == DRIPEN_NUMDRIPENS ???
+extern const ULONG defaultdricolors[NUMDRIPENS];
+#endif
 
 #if DEBUG
 #undef THIS_FILE
@@ -391,7 +396,6 @@ AROS_LH1(struct Screen *, OpenScreen,
     ULONG modeid = INVALID_ID;
 
     ASSERT_VALID_PTR_ROMOK(newScreen);
-
 
 #define COPY(x)     screen->Screen.x = ns.x
 #define SetError(x) if (errorPtr != NULL) *errorPtr = x;

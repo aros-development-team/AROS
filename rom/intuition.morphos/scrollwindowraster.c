@@ -7,10 +7,14 @@
 */
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <stdlib.h>
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 #include "inputhandler_support.h"
-#include "mosmisc.h"
+
+#ifdef __MORPHOS__
+#   include "mosmisc.h"
+#endif
 
 struct ScrollWindowRasterMsg
 {
@@ -105,7 +109,10 @@ AROS_LH7(void, ScrollWindowRaster,
         struct ScrollWindowRasterMsg msg;
         msg.window = win;
 
+#ifdef __MORPHOS__
+    //FIXME: AROS ??
         RecordDamage(win->WScreen,IntuitionBase);
+#endif
         UnlockLayers(&win->WScreen->LayerInfo);
 
         DoASyncAction((APTR)int_scrollwindowraster, &msg.msg, sizeof(msg), IntuitionBase);

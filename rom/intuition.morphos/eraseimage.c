@@ -83,7 +83,9 @@ AROS_LH4(void, EraseImage,
             struct impErase method;
             ULONG penmode;
 
+#ifdef __MORPHOS__
             GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,TAG_DONE);
+#endif
 
             method.MethodID = IM_ERASE;
             method.imp_RPort = rp;
@@ -91,7 +93,9 @@ AROS_LH4(void, EraseImage,
             method.imp_Offset.Y = topOffset;
             DoMethodA ((Object *)image, (Msg)&method);
 
+#ifdef __MORPHOS__
             SetRPAttrs(rp,RPTAG_PenMode,penmode,TAG_DONE);
+#endif
         }
         else
         {

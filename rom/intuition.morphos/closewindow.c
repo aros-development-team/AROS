@@ -13,7 +13,7 @@
 #include "inputhandler.h"
 #include "inputhandler_actions.h"
 #include "inputhandler_support.h"
-#include "segtracker.h"
+//#include "segtracker.h"
 #include <intuition/gadgetclass.h>
 
 #ifndef DEBUG_CloseWindow

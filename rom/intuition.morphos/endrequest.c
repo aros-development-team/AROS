@@ -8,7 +8,10 @@
 #include <proto/layers.h>
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
-#include "mosmisc.h"
+
+#ifdef SKINS
+#   include "mosmisc.h"
+#endif
 
 struct EndRequestActionMsg
 {

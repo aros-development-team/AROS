@@ -87,6 +87,11 @@
 
 #include <aros/asmcall.h>
 
+// FIXME: implement macro for AROS ??
+#ifndef __MORPHOS__
+#   define ASSERT_VALID_PTR_ROMOK(ptr)
+#endif
+
 // FIXME: needs better solution...
 #ifndef SKINS
 #   define IntDrawInfo DrawInfo
@@ -1052,12 +1057,12 @@ AROS_UFPA(APTR  , args      , A1));
 #ifdef __MORPHOS__
 #define DEBUG_SETIPREFS(x)      if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETIPREFS(x)      if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETIPREFS(x)      ;
 #endif
 #ifdef __MORPHOS__
 #define DEBUG_SETPREFS(x)       if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETPREFS(x)       if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETPREFS(x)       ;
 #endif
 #define DEBUG_SHOWWINDOW(x)     ;
 #define DEBUG_UNLOCKPUBSCREEN(x)    ;

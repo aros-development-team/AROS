@@ -57,8 +57,8 @@
 #include "menutask.h"
 
 #ifdef SKINS
-#include "transplayers.h"
-#include "smallmenu.h"
+    #include "transplayers.h"
+    #include "smallmenu.h"
 #endif
 
 #define DEBUG 0
