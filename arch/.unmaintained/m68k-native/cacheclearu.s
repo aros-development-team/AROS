@@ -16,7 +16,7 @@
  	struct ExecBase *, SysBase, 106, Exec)
  
     FUNCTION
- 	Flushes the contents of all CPU chaches in a simple way.
+ 	Flushes the contents of all CPU caches in a simple way.
  
     INPUTS
  
@@ -31,10 +31,19 @@
     SEE ALSO
  
     INTERNALS
+	68000/10: do nothing
+	68020/30: clear instruction cache and (030) data cache
+	68040/60: push dirty lines to memory and invalidate both caches
  
     HISTORY
  
 ******************************************************************************/
+
+/*
+   XDEF AROS_SLIB_ENTRY(CacheClearU,Exec)    for 68000/68010
+   XDEF AROS_SLIB_ENTRY(CacheClearU_20,Exec) for 68020/68030
+   XDEF AROS_SLIB_ENTRY(CacheClearU_40,Exec) for 68040/68060
+*/
 
 	#include "machine.i"
 
@@ -46,24 +55,37 @@ AROS_SLIB_ENTRY(CacheClearU,Exec):
 	/* Simple 68000s have no chaches */
 	rts
 
-	/* Is this the same routine for 20? */
 	.text
 	.balign 16
-	.globl	AROS_SLIB_ENTRY(CacheClearU_30,Exec)
-	.type	AROS_SLIB_ENTRY(CacheClearU_30,Exec),@function
-AROS_SLIB_ENTRY(CacheClearU_30,Exec):
-	/* Do the real work in supervisor mode
-	   Preserve a5 in a1 (faster than stack space) */
-	move.l	a5,a1
-	lea.l	cacheclearusup,a5
-	jsr	Supervisor(a6)
-	move.l	a1,a5
-	rts
+	.globl	AROS_SLIB_ENTRY(CacheClearU_20,Exec)
+	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec),@function
+AROS_SLIB_ENTRY(CacheClearU_20,Exec):
+	move.l	a5,a1		/* Save a5 */
+	lea.l	cacheclearusup_20,a5
+	jmp	Supervisor(a6)	/* No jsr: this saves an rts */
 
-cacheclearusup:
-	/* Set CD and CI bit in cacr */
+cacheclearusup_20:
+	or.w	#0x0700,sr	/* Disable interrupts so cacr can not be influenced
+				   while we clear the caches */
 	movec	cacr,d0
-	or.w	#0x0808,d0
+	or.w	#0x0808,d0	/* Set CD and CI bit in cacr */
 	movec	d0,cacr
+	move.l	a1,a5		/* Restore a5 */
+	rte			/* This rte will restore the SR from the stack */
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(CacheClearU_40,Exec)
+	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec),@function
+AROS_SLIB_ENTRY(CacheClearU_40,Exec):
+	move.l	a5,a1
+	lea.l	cacheclearusup_40,a5
+	jmp	Supervisor(a6)
+
+cacheclearusup_40:
+	cpusha	bc	/* Push dirty cache lines to memory and invalidate both caches */
+	cinva	bc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
+			   bit of CACR. Force an invalidation with CINV. */
+	move.l	a1,a5
 	rte
 
