@@ -59,7 +59,7 @@ GENMAP		:= @aros_target_genmap@
 
 TARGET_CFLAGS	:= @aros_target_cflags@
 TARGET_AFLAGS	:= @aros_target_aflags@
-TARGET_LDFLAGS	:= @aros_target_ldflags@ -specs=$(TOP)/scripts/specs
+TARGET_LDFLAGS	= @aros_target_ldflags@ -specs=$(SPECS)
 STATIC_CFLAGS	:= @aros_static_cflags@
 STATIC_AFLAGS	:= @aros_static_aflags@
 STATIC_LDFLAGS	:= @aros_static_ldflags@
@@ -103,7 +103,7 @@ SYS_AS		:= $(TARGET_AS)
 COMMON_CFLAGS	:= $(TARGET_CFLAGS)
 COMMON_AFLAGS	:= $(TARGET_AFLAGS)
 APP_CFLAGS	:=
-ILDFLAGS	:= $(TARGET_LDFLAGS)
+ILDFLAGS	= $(TARGET_LDFLAGS)
 SHELL_LDFLAGS	:= $(KERNEL_LDFLAGS)
 CHECKUDS	:= $(NM)
 
