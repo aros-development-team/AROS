@@ -1862,9 +1862,9 @@ else
 endif
 
 ifneq ($(srcdir),)
-    %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase))
-else
     %(mmake)-%(subpackage)-srcdir  := %(srcdir)
+else
+    %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase))
 endif
 
 ifeq (%(patch),yes)
