@@ -46,9 +46,9 @@ const char GIFheader[] = "GIF87a";
 
 /**************************************************************************************************/
 
-static void LoadGIF_Exit(GifHandleType *gifhandle, LONG errorcode)
+static void GIF_Exit(GifHandleType *gifhandle, LONG errorcode)
 {
-    D(if (errorcode) bug("gif.datatype/LoadGIF_Exit() --- IoErr %ld\n", errorcode));
+    D(if (errorcode) bug("gif.datatype/GIF_Exit() --- IoErr %ld\n", errorcode));
 	if (gifhandle->filebuf)
 	{
 		FreeMem(gifhandle->filebuf, gifhandle->filebufsize);
@@ -57,11 +57,33 @@ static void LoadGIF_Exit(GifHandleType *gifhandle, LONG errorcode)
 	{
 		FreeMem(gifhandle->linebuf, gifhandle->linebufsize);
 	}
-	if (gifhandle->lzwdecode)
+	if (gifhandle->codecvars)
 	{
-		FreeVec(gifhandle->lzwdecode);
+		FreeVec(gifhandle->codecvars);
 	}
     SetIoErr(errorcode);
+}
+
+/**************************************************************************************************/
+
+/* This buffered file access might look complicated, but it is very fast, because for byte accesses
+** no subroutine calls are neccessary, except when the buffer is empty. */
+BOOL SaveGIF_EmptyBuf(GifHandleType *gifhandle, long minbytes)
+{
+	long				bytes, bytestowrite;
+	
+	bytestowrite = gifhandle->filebufsize - gifhandle->filebufbytes;
+	D(bug("gif.datatype/SaveGIF_EmptyBuf() --- minimum %ld bytes of %ld bytes\n", (long)minbytes, (long)bytestowrite));
+	bytes = Write(gifhandle->filehandle, gifhandle->filebuf, bytestowrite);
+	if ( bytes < bytestowrite )
+	{
+		D(bug("gif.datatype/SaveGIF_EmptyBuf() --- writing failed, wrote %ld bytes\n", (long)bytes));
+		return FALSE;
+	}
+	gifhandle->filebufpos = gifhandle->filebuf;
+	gifhandle->filebufbytes = gifhandle->filebufsize - minbytes;
+	D(bug("gif.datatype/SaveGIF_EmptyBuf() --- wrote %ld bytes\n", (long)bytes));
+	return TRUE;
 }
 
 /* This buffered file access might look complicated, but it is very fast, because for byte accesses
@@ -131,16 +153,17 @@ static BOOL LoadGIF(Object *o)
 	UBYTE					*filebuf;
     IPTR					sourcetype;
 	int						done, ret;
-    int						i;
+    int						i, line, inc;
 	long					j;
-	unsigned int			width, height, leftedge, topedge;
-	unsigned int			numplanes, numcolors, scrnumcolors, fillcolor;
+	unsigned int			scrwidth, scrheight, width, height, widthxheight, leftedge, topedge;
+	unsigned int			scrnumplanes, scrnumcolors, numplanes, numcolors, fillcolor, colrez, colsorted;
 	int						havecolmap, interlaced;
     struct BitMapHeader		*bmhd;
     struct BitMap			*bm;
-	struct ColorRegister	*colormap;
-	long					*colorregs;
 	struct RastPort			rp;
+	struct ColorRegister	*colormap;
+	ULONG					*colorregs;
+	STRPTR					name;
 
     D(bug("gif.datatype/LoadGIF()\n"));
 
@@ -151,16 +174,27 @@ static BOOL LoadGIF(Object *o)
     }
 	gifhandle->filebuf = NULL;
 	gifhandle->linebuf = NULL;
-	gifhandle->lzwdecode = NULL;
+	gifhandle->codecvars = NULL;
 	
-    if( !(GetDTAttrs(o,	DTA_SourceType	, (IPTR)&sourcetype ,
-						DTA_Handle    	, (IPTR)&(gifhandle->filehandle),
-						PDTA_BitMapHeader , (IPTR)&(bmhd),
-						TAG_DONE) == 3) ||
-		(sourcetype != DTST_FILE) || !gifhandle->filehandle || !bmhd )
+    if( GetDTAttrs(o,	DTA_SourceType	  , (IPTR)&sourcetype ,
+						DTA_Handle    	  , (IPTR)&(gifhandle->filehandle),
+						PDTA_BitMapHeader , (IPTR)&bmhd,
+						TAG_DONE) != 3 )
+    {
+    	GIF_Exit(gifhandle, ERROR_OBJECT_NOT_FOUND);
+		return FALSE;
+    }
+	
+	if ( sourcetype == DTST_RAM && gifhandle->filehandle == NULL && bmhd )
+	{
+		D(bug("gif.datatype/LoadGIF() --- Creating an empty object\n"));
+    	GIF_Exit(gifhandle, 0);
+		return TRUE;
+	}
+	if ( sourcetype != DTST_FILE || !gifhandle->filehandle || !bmhd )
     {
 		D(bug("gif.datatype/LoadGIF() --- unsupported mode\n"));
-    	LoadGIF_Exit(gifhandle, ERROR_OBJECT_NOT_FOUND);
+    	GIF_Exit(gifhandle, ERROR_OBJECT_NOT_FOUND);
 		return FALSE;
     }
     
@@ -169,7 +203,7 @@ static BOOL LoadGIF(Object *o)
 	gifhandle->filebufsize = FILEBUFSIZE;
 	if( !(gifhandle->filebuf = gifhandle->filebufpos = AllocMem(gifhandle->filebufsize, MEMF_ANY)) )
     {
-    	LoadGIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
     	return FALSE;
     }
 
@@ -177,7 +211,7 @@ static BOOL LoadGIF(Object *o)
 	if ( (gifhandle->filebufbytes -= 13) < 0 && !LoadGIF_FillBuf(gifhandle, 13) )
 	{
 		D(bug("gif.datatype/LoadGIF() --- filling buffer with header failed\n"));
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
     	return FALSE;
     }
 	
@@ -185,35 +219,29 @@ static BOOL LoadGIF(Object *o)
 	filebuf = gifhandle->filebufpos;	/* this makes things easier */
 	gifhandle->filebufpos += 13;
 	for (i = 0; i < 6; i++)
-	if( (filebuf[i] != GIFheader[i]) && (i != 5) )
+	if( (filebuf[i] != GIFheader[i] && i != 4) ||
+		(i == 4 && filebuf[i] != '7' && filebuf[i] != '9') )
 	{
 		D(bug("gif.datatype/LoadGIF() --- type mismatch\n"));
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
 
-	/* get screen descriptor attributes and set BitMapHeader*/
-    width = filebuf[6] | filebuf[7] << 8;
-    height = filebuf[8] | filebuf[9] << 8;
-    numplanes = (filebuf[10] & 0x0F) + 1;
+	/* get screen descriptor attributes and set BitMapHeader */
+    scrwidth = filebuf[6] | filebuf[7] << 8;
+    scrheight = filebuf[8] | filebuf[9] << 8;
+    scrnumplanes = (filebuf[10] & 0x07) + 1;
+    colsorted = (filebuf[10] & 0x08) != 0;
+	colrez = ((filebuf[10] & 0x70) >> 4) + 1;
     havecolmap = (filebuf[10] & 0x80) != 0;
-    numcolors = 1 << numplanes;
-    fillcolor = filebuf[11];		/* filebuf[12] is reserved */
+    numcolors = 1 << scrnumplanes;
+    fillcolor = filebuf[11];		/* filebuf[12] is pixel aspect ratio */
+    D(bug("gif.datatype/LoadGIF() --- GIF-Screen %d x %d x %d, bgcol %d, rez %d sort %d\n",
+	      scrwidth, scrheight,  havecolmap ? scrnumplanes : 0, fillcolor, colrez, colsorted));
 
-	bmhd->bmh_Width  = bmhd->bmh_PageWidth  = width;
-    bmhd->bmh_Height = bmhd->bmh_PageHeight = height;
-    bmhd->bmh_Depth  = numplanes;
-
-	/* get BitMap to draw into */
-    D(bug("gif.datatype/LoadGIF() --- allocating bitmap\n"));
-	if( !(bm = AllocBitMap(width, height, numplanes, BMF_CLEAR, NULL)) )
-    {
-		D(bug("gif.datatype/LoadGIF() --- error allocating bitmap\n"));
-		LoadGIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
-    	return FALSE;
-    }
-	InitRastPort(&rp);
-	rp.BitMap=bm;
+	bmhd->bmh_Width  = bmhd->bmh_PageWidth  = scrwidth;
+    bmhd->bmh_Height = bmhd->bmh_PageHeight = scrheight;
+    bmhd->bmh_Depth  = scrnumplanes;
 
 	/* get empty colormap to fill in colormap to use*/
 	if( !(GetDTAttrs(o,	PDTA_ColorRegisters, &colormap,
@@ -222,24 +250,17 @@ static BOOL LoadGIF(Object *o)
 		!(colormap && colorregs) )
 	{
 		D(bug("gif.datatype/LoadGIF() --- got no colormap\n"));
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 		return FALSE;
 	}
 
 	/* if we have a colormap for the screen, use it */
 	if( !LoadGIF_Colormap(gifhandle, havecolmap, &numcolors, colormap, colorregs) )
 	{
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 		return FALSE;
 	}
 	scrnumcolors = numcolors;
-
-    D(bug( "gif scrwidth		%ld\n", (long)width));
-    D(bug( "gif scrheight		%ld\n", (long)height));
-    D(bug( "gif scrnumplanes	%ld\n", (long)numplanes));
-    D(bug( "gif scrhavecolmap	%ld\n", (long)havecolmap));
-    D(bug( "gif scrnumcolors	%ld\n", (long)numcolors));
-    D(bug( "gif scrfillcolor	%ld\n", (long)fillcolor));
 
     /* Now search for the first GIF picture object in file */
 	done = FALSE;
@@ -248,23 +269,25 @@ static BOOL LoadGIF(Object *o)
 		if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
 		{
 			D(bug("gif.datatype/LoadGIF() --- early end 1\n"));
-			LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+			GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 			return FALSE;
 		}
 #if 0
-		D(bug("gif remaining bytes %02ld\n", (long)gifhandle->filebufbytes);
+		D(bug("gif remaining bytes %ld = %ld, read %ld\n", (long)gifhandle->filebufbytes, (long)(gifhandle->filebufsize - (gifhandle->filebufpos - gifhandle->filebuf)), (long)(gifhandle->filebufpos - gifhandle->filebuf));
 		for (j=-8; j<12; j+=4)
 		{
 			bug(" pos %02ld: %02lx %02lx %02lx %02lx\n", (long)j, (long)gifhandle->filebufpos[j],
 				(long)gifhandle->filebufpos[j+1], (long)gifhandle->filebufpos[j+2], (long)gifhandle->filebufpos[j+3]);
-		} )
+		}
+		)
 #endif
 		switch ( *(gifhandle->filebufpos)++ )
 		{
 		case ';':
 			/* End of the GIF dataset */
-			done = TRUE;
-			break;
+			D(bug("gif.datatype/LoadGIF() --- early end 2\n"));
+			GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+			return FALSE;
 
 	    case ',':
 			/* Start of an image object. Jump out of the loop. */
@@ -272,14 +295,28 @@ static BOOL LoadGIF(Object *o)
 			break;
 
 	    case '!':
-			/* Start of an extended object, but we cannot handle it */
-			D(bug("gif.datatype/LoadGIF() --- extended object\n"));
-			LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
-			return FALSE;
+			/* Start of an extended object, just skip it */
+			if ( (gifhandle->filebufbytes -= 2) < 0 && !LoadGIF_FillBuf(gifhandle, 2) )
+			{
+				GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+				return FALSE;
+			}
+			D(bug("gif.datatype/LoadGIF() --- extended object type %02x len %d\n", (int)gifhandle->filebufpos[0], (int)gifhandle->filebufpos[1]));
+			gifhandle->filebufpos++;
+			while ( (i = *(gifhandle->filebufpos)++) )
+			{
+				if ( (gifhandle->filebufbytes -= i+1) < 0 && !LoadGIF_FillBuf(gifhandle, i+1) )
+				{
+					GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+					return FALSE;
+				}
+				gifhandle->filebufpos += i;
+			}
+			break;
 
 	    default:
 			D(bug("gif.datatype/LoadGIF() --- unknown marker\n"));
-			LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+			GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 			return FALSE;
 	    }
 	}
@@ -287,8 +324,8 @@ static BOOL LoadGIF(Object *o)
 	/* Start of an image object. Read the image description. */
 	if ( (gifhandle->filebufbytes -= 9) < 0 && !LoadGIF_FillBuf(gifhandle, 9) )
 	{
-		D(bug("gif.datatype/LoadGIF() --- early end 2\n"));
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		D(bug("gif.datatype/LoadGIF() --- early end 3\n"));
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 		return FALSE;
 	}
 	filebuf = gifhandle->filebufpos;	/* this makes things easier */
@@ -297,90 +334,291 @@ static BOOL LoadGIF(Object *o)
 	topedge = filebuf[2] | filebuf[3] << 8;
 	width = filebuf[4] | filebuf[5] << 8;
 	height = filebuf[6] | filebuf[7] << 8;
-	numplanes = (filebuf[8] & 0x0F) + 1;
-	interlaced = ((filebuf[8] & 0x70) >> 4) + 1;
+	numplanes = (filebuf[8] & 0x07) + 1;
+	colsorted = (filebuf[8] & 0x20) != 0;
+	interlaced = (filebuf[8] & 0x40) != 0;
 	havecolmap = (filebuf[8] & 0x80) != 0;
 	numcolors = 1 << numplanes;
+	if( (leftedge + width) > scrwidth || (topedge + height) > scrheight )
+	{
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	}
+    D(bug("gif.datatype/LoadGIF() --- GIF-Win: %d x %d x %d, edge: %d, %d, %s, sort %d\n",
+	      width, height, havecolmap ? numplanes : 0, leftedge, topedge, interlaced ? "interlaced" : "non-interlaced", colsorted));
 
 	/* Get image colormap, if present. This overrides screen colormap. */
 	if( !LoadGIF_Colormap(gifhandle, havecolmap, &numcolors, colormap, colorregs) ||
 		(!numcolors && !scrnumcolors) )
 	{
 		D(bug("gif.datatype/LoadGIF() --- problem with image colors or no colors at all\n"));
-		LoadGIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 		return FALSE;
 	}
 
-	D(bug( "gif winleftedge		%ld\n", (long)leftedge));
-	D(bug( "gif wintopedge		%ld\n", (long)topedge));
-	D(bug( "gif winwidth		%ld\n", (long)width));
-	D(bug( "gif winheight		%ld\n", (long)height));
-	D(bug( "gif winnumplanes	%ld\n", (long)numplanes));
-	D(bug( "gif wininterlaced	%ld\n", (long)interlaced));
-	D(bug( "gif winhavecolmap	%ld\n", (long)havecolmap));
-	D(bug( "gif winnumcolors	%ld\n", (long)numcolors));
+	if (!numcolors)
+	{
+		numplanes = scrnumplanes;
+		numcolors = scrnumcolors;
+	}
+    D(bug("gif.datatype/LoadGIF() --- numcolors %d\n", numcolors));
+
+	/* Get BitMap to draw into */
+    D(bug("gif.datatype/LoadGIF() --- allocating bitmap\n"));
+	if( !(bm = AllocBitMap(scrwidth, scrheight, numplanes, BMF_CLEAR, NULL)) )
+    {
+		D(bug("gif.datatype/LoadGIF() --- error allocating bitmap\n"));
+		GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	return FALSE;
+    }
+	InitRastPort(&rp);
+	rp.BitMap=bm;
 
 	/* Now decode the picture data into a chunky buffer */
 	/* For now, we use a full picture pixel buffer, not a single line */
-	gifhandle->linebufsize = gifhandle->linebufbytes = width*height;
+	widthxheight = width*height;
+	gifhandle->linebufsize = gifhandle->linebufbytes = widthxheight;
 	if (! (gifhandle->linebuf = gifhandle->linebufpos = AllocMem(gifhandle->linebufsize, MEMF_ANY)) )
     {
-    	LoadGIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
     	return FALSE;
     }
-    
-    for(j=0; j<width*height; j++)
+#if 0   
+    for(j=0; j<widthxheight; j++)
     {
 		(gifhandle->linebuf)[j] = j & 0xff;	/* pre-fill picture with some crap */
     }
-
-	ret = DecompressInit(gifhandle);
-	D(bug("gif.datatype/LoadGIF() --- DecompressInit() returned %d\n", ret));
-	ret = DecompressLine(gifhandle);
-	D(bug("gif.datatype/LoadGIF() --- DecompressLine() returned %d\n", ret));
+#endif
+	ret = DecodeInit(gifhandle);
+	D(bug("gif.datatype/LoadGIF() --- DecodeInit() returned %d\n", ret));
+	ret = DecodeLines(gifhandle);
+	D(bug("gif.datatype/LoadGIF() --- DecodeLines() returned %d\n", ret));
+	ret = DecodeEnd(gifhandle);
+	D(bug("gif.datatype/LoadGIF() --- DecodeEnd() returned %d\n", ret));
 	if ( gifhandle->filebufbytes == 1 && gifhandle->filebufpos[0] == ';' )
-	{
 		D(bug("gif.datatype/LoadGIF() --- reached normal end of file\n"));
-	}
 	else
 	{
-		D(bug("gif.datatype/LoadGIF() --- not at end of file, next char 0x%02lx\n", (long)(gifhandle->filebufpos[0])));
+		D(bug("gif.datatype/LoadGIF() --- not at end of file, next char 0x%02lx, %ld bytes remaining\n", (long)(gifhandle->filebufpos[0]), (long)(gifhandle->filebufbytes)));
+#if 0
+		D(bug("gif remaining bytes %ld = %ld, read %ld\n", (long)gifhandle->filebufbytes, (long)(gifhandle->filebufsize - (gifhandle->filebufpos - gifhandle->filebuf)), (long)(gifhandle->filebufpos - gifhandle->filebuf));
+		for (j=-8; j<12; j+=4)
+		{
+			D(bug(" pos %02ld: %02lx %02lx %02lx %02lx\n", (long)j, (long)gifhandle->filebufpos[j],
+				(long)gifhandle->filebufpos[j+1], (long)gifhandle->filebufpos[j+2], (long)gifhandle->filebufpos[j+3]));
+		}
+		)
+#endif
 	}
 	
 	/* Copy the chunky buffer to the bitmap */
-	WriteChunkyPixels(&rp, 0, 0, width-1, height-1, gifhandle->linebuf, width);
+	if (!interlaced)
+	{
+		WriteChunkyPixels(&rp, leftedge, topedge, leftedge+width-1, topedge+height-1, gifhandle->linebuf, width);
+	}
+	else
+	{
+		D(bug("gif.datatype/LoadGIF() --- de-interlacing\n"));
+		line = 0;
+		inc = 8;
+		j = 0;
+		for (i=0; i<widthxheight; i+=width)
+		{
+			WriteChunkyPixels(&rp, leftedge, topedge+line, leftedge+width-1, topedge+line, gifhandle->linebuf+i, width);
+			line += inc;
+			if (line >= height)
+			{
+				j++;
+				if (j > 3) break;
+				switch (j)
+				{
+					case 1: inc = 8; line = 4; break;
+					case 2: inc = 4; line = 2; break;
+					case 3: inc = 2; line = 1; break;
+				}
+			}
+			
+		}
+	}
 
 	/* Pass new bitmap to picture.datatype and exit */
-    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, scrnumcolors,
-							  TAG_DONE);
-   	SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz, bmhd->bmh_Width,
-    	    	    	      DTA_NominalVert , bmhd->bmh_Height,
+    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
+   	SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors,
+							  DTA_NominalHoriz, scrwidth,
+    	    	    	      DTA_NominalVert , scrheight,
 			      			  PDTA_BitMap     , (IPTR)bm,
+							  DTA_ObjName     , name,
 			      			  TAG_DONE);
 
-   	LoadGIF_Exit(gifhandle, 0);
     D(bug("gif.datatype/LoadGIF() --- Normal Exit\n"));
+   	GIF_Exit(gifhandle, 0);
     return TRUE;
 }
 
 /**************************************************************************************************/
 
-static IPTR GIF_New(Class *cl, Object *o, struct opSet *msg)
+static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
-    IPTR retval;
-    
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
-    if (retval)
+	GifHandleType			*gifhandle;
+	UBYTE					*filebuf;
+	unsigned int			width, height, widthxheight, numplanes, numcolors;
+    struct BitMapHeader		*bmhd;
+    struct BitMap			*bm;
+	struct RastPort			rp;
+	long					*colorregs;
+	int						i, j, ret;
+
+    D(bug("gif.datatype/SaveGIF()\n"));
+
+	if( !(gifhandle = AllocMem(sizeof(GifHandleType), MEMF_ANY)) )
     {
-    	if (!LoadGIF((Object *)retval))
-	{
-	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-	    retval = 0;
-	}
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	return FALSE;
     }
-    
-    return retval;
+	gifhandle->filebuf = NULL;
+	gifhandle->linebuf = NULL;
+	gifhandle->codecvars = NULL;
+
+    /* A NULL file handle is a NOP */
+    if( !dtw->dtw_FileHandle )
+    {
+		D(bug("gif.datatype/SaveGIF() --- empty Filehandle - just testing\n"));
+		GIF_Exit(gifhandle, 0);
+		return TRUE;
+	}
+	gifhandle->filehandle = dtw->dtw_FileHandle;
+
+	/* Get BitMap and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, (&bmhd),
+                        PDTA_BitMap,       (&bm),
+                        PDTA_CRegs,        (&colorregs),
+                        PDTA_NumColors,    (&numcolors),
+                        TAG_DONE ) != 4UL ||
+		!bmhd || !bm || !colorregs || !numcolors)
+    {
+		D(bug("gif.datatype/SaveGIF() --- missing attributes\n"));
+    	GIF_Exit(gifhandle, ERROR_OBJECT_NOT_FOUND);
+		return FALSE;
+	}
+#if 0
+    /* Check if this is a standard BitMap */
+    if( !( GetBitMapAttr(bm, BMA_FLAGS) & BMF_STANDARD ) )
+	{
+		D(bug("gif.datatype/SaveGIF() --- wrong BitMap type\n"));
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	}
+#endif
+	/* initialize buffered file reads */
+	gifhandle->filebufsize = FILEBUFSIZE;
+	gifhandle->filebufbytes = gifhandle->filebufsize;
+	if( !(gifhandle->filebuf = gifhandle->filebufpos = AllocMem(gifhandle->filebufsize, MEMF_ANY)) )
+    {
+    	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	return FALSE;
+    }
+
+	/* write GIF 87a header to file, make sure, there are at least 13 bytes in buffer */
+	if ( (gifhandle->filebufbytes -= 13) < 0 && !SaveGIF_EmptyBuf(gifhandle, 13) )
+	{
+		D(bug("gif.datatype/SaveGIF() --- filling buffer with header failed\n"));
+		GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	return FALSE;
+    }
+	filebuf = gifhandle->filebufpos;	/* this makes things easier */
+	gifhandle->filebufpos += 13;
+	for (i = 0; i < 6; i++)
+		filebuf[i] = GIFheader[i];
+
+	/* set screen descriptor attributes (from BitMapHeader) */
+	width = bmhd->bmh_PageWidth;
+    height = bmhd->bmh_PageHeight;
+    numplanes = bmhd->bmh_Depth - 1;
+	numcolors = 1 << (numplanes + 1);
+    D(bug("gif.datatype/SaveGIF() --- GIF-Image %d x %d x %d, cols %d\n", width, height, numplanes+1, numcolors));
+    filebuf[6] = width & 0xff;
+	filebuf[7] = width >> 8;
+    filebuf[8] = height & 0xff;
+	filebuf[9] = height >> 8;
+    filebuf[10] = 0x80 | ((numplanes & 0x07) << 4) | (numplanes & 0x07) ; /* set numplanes, havecolmap=1 */
+    filebuf[11] = 0;	/* this is fillcolor */
+	filebuf[12] = 0;	/* this is pixel aspect ratio, 0 means unused */
+
+	/* write screen colormap, we don't use an image colormap */
+	for (i = 0; i < numcolors*3; i += 3)
+	{
+		if ( (gifhandle->filebufbytes -= 3) < 0 && !SaveGIF_EmptyBuf(gifhandle, 3) )
+		{
+			GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+			return FALSE;
+		}
+		*(gifhandle->filebufpos)++ = colorregs[i] >> 24;
+		*(gifhandle->filebufpos)++ = colorregs[i+1] >> 24;
+		*(gifhandle->filebufpos)++ = colorregs[i+2] >> 24;
+	}
+
+	/* write image header, image has same size as screen */
+	if ( (gifhandle->filebufbytes -= 10) < 0 && !SaveGIF_EmptyBuf(gifhandle, 10) )
+	{
+		GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+		return FALSE;
+	}
+	filebuf = gifhandle->filebufpos;	/* this makes things easier */
+	gifhandle->filebufpos += 10;
+	filebuf[0] = ',';		/* header ID */
+	filebuf[1] = filebuf[2] = 0;	/* no left edge */
+	filebuf[3] = filebuf[4] = 0;	/* no top edge */
+    filebuf[5] = width & 0xff;
+	filebuf[6] = width >> 8;
+    filebuf[7] = height & 0xff;
+	filebuf[8] = height >> 8;
+    filebuf[9] = numplanes & 0x07; /* set numplanes, havecolmap=0, interlaced=0 */
+
+	/* Now read the picture data from the bitplanes and write it to a chunky buffer */
+	/* For now, we use a full picture pixel buffer, not a single line */
+	widthxheight = width*height;
+	gifhandle->linebufsize = gifhandle->linebufbytes = widthxheight;
+	if (! (gifhandle->linebuf = gifhandle->linebufpos = AllocMem(gifhandle->linebufsize, MEMF_ANY)) )
+    {
+    	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+    	return FALSE;
+    }
+	InitRastPort(&rp);
+	rp.BitMap=bm;
+	for (j=0; j<height; j++)
+	{
+		for (i=0; i<width; i++)
+		{
+			ret = (UBYTE)ReadPixel(&rp, i, j);	/* very slow, to be changed */
+			*(gifhandle->linebufpos)++ = ret;
+		}
+	}
+	gifhandle->linebufpos = gifhandle->linebuf;
+
+	/* write the chunky buffer to file, after encoding */
+	ret = EncodeInit(gifhandle, numplanes+1);
+	D(bug("gif.datatype/SaveGIF() --- EncodeInit() returned %d\n", ret));
+	ret = EncodeLines(gifhandle);
+	D(bug("gif.datatype/SaveGIF() --- EncodeLines() returned %d\n", ret));
+	ret = EncodeEnd(gifhandle);
+	D(bug("gif.datatype/SaveGIF() --- EncodeEnd() returned %d\n", ret));
+	
+	/* write end-of-GIF marker */
+	if ( !gifhandle->filebufbytes-- && !SaveGIF_EmptyBuf(gifhandle, 1) )
+	{
+		GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
+		return FALSE;
+	}
+	*(gifhandle->filebufpos)++ == ';';
+
+	/* flush write buffer to file and exit */
+	SaveGIF_EmptyBuf(gifhandle, 0);
+    D(bug("gif.datatype/SaveGIF() --- Normal Exit\n"));
+	GIF_Exit(gifhandle, 0);
+    return TRUE;
 }
+
+
 
 /**************************************************************************************************/
 
@@ -398,6 +636,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 #endif
 
     IPTR retval;
+    struct dtWrite *dtw;
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
@@ -405,15 +644,38 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
     switch(msg->MethodID)
     {
-	case OM_NEW:
-	    D(bug("gif.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = GIF_New(cl, o, (struct opSet *)msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-
+		case OM_NEW:
+			D(bug("gif.datatype/DT_Dispatcher: Method OM_NEW\n"));
+			retval = DoSuperMethodA(cl, o, (Msg)msg);
+			if (retval)
+			{
+				if (!LoadGIF((Object *)retval))
+				{
+					CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+					retval = 0;
+				}
+			}
+			break;
+	
+		case DTM_WRITE:
+			D(bug("gif.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+			dtw = (struct dtWrite *)msg;
+			if( (dtw -> dtw_Mode) == DTWM_RAW )
+			{
+				/* Local data format requested */
+				retval = SaveGIF(cl, o, dtw );
+			}
+			else
+			{
+				/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+				retval = DoSuperMethodA( cl, o, msg );
+			}
+			break;
+	
+		default:
+			retval = DoSuperMethodA(cl, o, msg);
+			break;
+	
     } /* switch(msg->MethodID) */
 
 //    D(bug("gif.datatype/DT_Dispatcher: Leaving\n"));
