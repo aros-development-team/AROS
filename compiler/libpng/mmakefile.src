@@ -5,8 +5,8 @@
 include $(TOP)/config/make.cfg
 
 #MM- linklibs : linklibs-png
-#MM linklibs-pnglib : linklibs-png
-#MM linklibs-png : includes
+#MM- linklibs-pnglib : linklibs-png
+#MM- linklibs-png : includes
 #MM includes-copy
 
 INCLUDE_FILES	:= png.h pngconf.h
