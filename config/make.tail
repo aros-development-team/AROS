@@ -7,13 +7,13 @@
 include $(TOP)/tools/genmodule/Makefile.deps
 
 # Rules for the AROS build tools
-$(GENMODULE) : $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_DEPS))
+$(GENMODULE) : $(GENMODULE_DEPS)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENMODULE)
 
-$(GENLIBDEFS) : $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_DEPS))
+$(GENLIBDEFS) : $(GENLIBDEFS_DEPS)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENLIBDEFS)
 
-$(GENMODULEDUMMY) : $(addprefix $(TOP)/tools/genmodule/,$(GENMODULEDUMMY_DEPS))
+$(GENMODULEDUMMY) : $(GENMODULEDUMMY_DEPS)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENMODULEDUMMY)
 
 $(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
@@ -23,7 +23,7 @@ $(TOP)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure $(TOP)/tools/cxref/Ma
 	cd $(TOP)/tools/cxref ; \
 	CC='' CFLAGS='' ./configure --prefix=$(TOOLDIR)
 
-$(CXREF): $(TOP)/tools/cxref/*.[ch] $(TOP)/tools/cxref/cpp/*.[ch] $(TOP)/tools/cxref/query/*.[ch] \
+$(CXREF): $(TOP)/tools/cxref/*.[chyl] $(TOP)/tools/cxref/cpp/*.[ch] $(TOP)/tools/cxref/query/*.[ch] \
 		$(TOP)/tools/cxref/Makefile
 	$(MAKE) $(MKARGS) -C $(TOP)/tools/cxref
 	cp $(TOP)/tools/cxref/cxref$(HOST_EXE_SUFFIX) $(CXREF)
