@@ -49,8 +49,8 @@ done
 sort $filenames > $filenames.srt
 
 # Create compressed tar archive
-rm -f $archive.tar.gz
-tar -cvvz --files-from=$filenames.srt -f "$archive.tar.gz"
+rm -f $archive.tgz
+tar -cvvz --files-from=$filenames.srt -f "$archive.tgz"
 
 # Create LhA archive
 rm -f $archive.lha
