@@ -58,7 +58,7 @@ extern const IPTR IconDesc[];
     
     if (file == NULL)
     {
-        D(bug("icon.library: '%s' not found\n"));
+        bug("icon.library: '%s' not found\n", name);
         return NULL;
     }
     
@@ -69,13 +69,12 @@ extern const IPTR IconDesc[];
     /* Make the icon "native" so it can be free'd with FreeDiskObject() */
     if (temp != NULL)
     {
-        struct TagItem dup_tags[] =
-        {
-            {ICONDUPA_JustLoadedFromDisk, TRUE},
-            {TAG_DONE                         }
-        };
-
-        final = DupDiskObjectA(temp, dup_tags);
+        final = DupDiskObject
+        (
+            temp, 
+            ICONDUPA_JustLoadedFromDisk, TRUE, 
+            TAG_DONE
+        );
     }
     else
     {

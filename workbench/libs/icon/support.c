@@ -10,6 +10,9 @@
 #include "icon_intern.h"
 #include "support.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 
 BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
@@ -35,12 +38,12 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
         ULONG  length = nameLength + 5 /* strlen(".info") */ + 1 /* '\0' */;
         STRPTR path   = AllocVec(length, MEMF_ANY);
         
-        if(file != NULL)
+        if(path != NULL)
         {
             strlcpy(path, name, length);
             strlcat(path, ".info", length);
             
-            file = Open(file, mode);
+            file = Open(path, mode);
             
             FreeVec(path);
         }
