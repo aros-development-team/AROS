@@ -23,6 +23,7 @@ void UnlockX11();
 #include <exec/alerts.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
+#include <graphics/rastport.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <devices/keymap.h>
@@ -369,13 +370,22 @@ int intui_GetWindowSize (void)
 #define IW(w)   ((struct IntWindow *)w)
 
 int intui_OpenWindow (struct Window * w,
-	struct IntuitionBase * IntuitionBase)
+	struct IntuitionBase * IntuitionBase,
+	struct BitMap        * SuperBitMap)
 {
     XSetWindowAttributes winattr;
     
 /* nlorentz: It is now driver's responsibility to create window
        rastport. See rom/intuition/openwindow.c for more info.
     */
+    /*
+      Reset the Window coordinates. This is necessary as
+      all IntuiMessages will be created relative to these
+      coordinates. But as XWindow = AmigaWindow this has
+      to be set to zero.
+    */
+    w->LeftEdge = 0;
+    w->TopEdge = 0;
     if (!(IW(w)->iw_Window.RPort = CreateRastPort()))
     	return FALSE;
 
