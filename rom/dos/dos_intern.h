@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <dos/dosasl.h>
+#include <utility/tagitem.h>
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
@@ -67,6 +68,9 @@ struct vfp
 
 LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase);
 LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
+
+BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
+		 BPTR output, struct TagItem *tl, struct DosLibrary *DOSBase);
 
 BOOL writeFullPath(struct AnchorPath * AP);
 LONG followpattern(struct AnchorPath * AP, 
