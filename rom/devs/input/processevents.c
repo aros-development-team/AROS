@@ -3,6 +3,7 @@
 #include <exec/lists.h>
 #include <exec/interrupts.h>
 #include <devices/inputevent.h>
+#include <devices/input.h>
 #include <intuition/intuition.h>
 #include <aros/asmcall.h>
 
@@ -11,78 +12,107 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-extern struct inputbase *IBase;
-#define InputDevice IBase
-extern void intui_WaitEvent(struct InputEvent *, struct Window **);
-
-
-/********************************
-** Input device main function  **
-********************************/
-void ProcessEvents (void)
+/**********************
+**  ForwardEvents()  **
+**********************/
+/* Forwards a chain of events to the inputhandlers */
+VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 {
+   struct InputEvent *ie_chain;
+   struct Interrupt *ihiterator;
+   
+   ie_chain = GetEventsFromQueue(InputDevice);
+   if (ie_chain)
+   {
+   	ForeachNode(&(InputDevice->HandlerList), ihiterator)
+    	{
+	    D(bug("ipe: calling inputhandler %s at %p\n",
+	    		ihiterator->is_Node.ln_Name, ihiterator->is_Code));
+		
+            ie_chain = AROS_UFC2(struct InputEvent *, ihiterator->is_Code,
+		    AROS_UFCA(struct InputEvent *,  ie_chain,          	    A0),
+		    AROS_UFCA(APTR,                 ihiterator->is_Data,    A1));
 
-    int i;
-    struct Window *w;
-    struct List *handlerlist = (struct List *)&(InputDevice->HandlerList);
-    struct SignalSemaphore *handlersema = &(InputDevice->HandlerSema);
-    struct InputEvent ie = {0,};
+	    D(bug("ipe: returned from inputhandler\n"));
+	} /* for each input handler */
+	
+    } 
+    
+    return;
+}
 
+/***********************************
+** Input device task entry point  **
+***********************************/
+void ProcessEvents (struct IDTaskParams *taskparams)
+{
+    struct inputbase *InputDevice = taskparams->InputDevice;
     
-    /* We must initialize the intuition input handler from
-    ** inside the input.device task, so that the intuition
-    ** IDCMP replyport gets the right task as owner.
-    */
+    ULONG commandsig, wakeupsigs;
     
-    D(bug("ProcessEvents: initializing intuition input handler\n"));
-    InputDevice->IntuiInputHandler = InitIIH(InputDevice);
+    D(bug("idtask: setting up commandport\n"));
     
-    /* Now, what on earth do we do if this fails ? Do an Alert() ?? 
-    */
-    if (!InputDevice->IntuiInputHandler)
-    	;
+    /* Initializing command msgport */
+    InputDevice->CommandPort->mp_Flags	 = PA_SIGNAL;
+    InputDevice->CommandPort->mp_SigTask = FindTask(NULL);
 
-    	
-    /* Add the intuition inputhandler to th handler list */
-    ObtainSemaphore( handlersema );
-    AddTail( handlerlist, (struct Node *)InputDevice->IntuiInputHandler);
-    ReleaseSemaphore( handlersema );
+    D(bug("idtask: allocating signal\n"));
     
+    /* This will always succeed, as this task just has been created */
+    InputDevice->CommandPort->mp_SigBit = AllocSignal(-1L);
+    NEWLIST( &(InputDevice->CommandPort->mp_MsgList) );
+
+    D(bug("idtask: signaling parent\n"));
+    
+    /* Tell the task that created us, that we are finished initializing */
+    Signal(taskparams->Caller, taskparams->Signal);
+    
+    D(bug("idtask: getting commandsig\n"));
+    
+    commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
     D(bug("ProcessEvents: Going into infinite loop\n"));
-
-    
 
     for (;;)
     {
-	struct Interrupt *ihiterator;
 
-	D(bug("ipe : waiting for event\n"));
-	intui_WaitEvent(&ie, &w);
-	D(bug("ipe: Got event of class %d for window %s\n",
-		ie.ie_Class, w->Title));
-		
-	/* Arbitrate for handler list */
-	ObtainSemaphore( handlersema );
-		
-	ForeachNode(handlerlist, ihiterator)
-	{
-	    D(bug("ipe: calling inputhandler %s at %p\n",
-		ihiterator->is_Node.ln_Name, ihiterator->is_Code));
-		
-	    AROS_UFC3(struct InputEvent *, ihiterator->is_Code,
-		AROS_UFCA(struct InputEvent *,  &ie,            	A0),
-		AROS_UFCA(APTR,                 ihiterator->is_Data,    A1),
-		AROS_UFCA(struct Window *,      w,              	A2));
-	    D(bug("ipe: returned from inputhandler\n"));
-	}
-
-	ReleaseSemaphore( handlersema );
+	D(bug("id : waiting for wakeup-call\n"));
+	wakeupsigs = Wait (commandsig);
 	
+	if (wakeupsigs & commandsig)
+	{
+	    struct IOStdReq *ioreq;
+	    /* Get all commands from the port */
+	    while ( (ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)) )
+	    {
+	    	D(bug("id task: processing sommand %d\n", ioreq->io_Command));
+	    	
+	    	switch (ioreq->io_Command)
+	    	{
+	    	case IND_ADDHANDLER:
+    	    	    Enqueue((struct List *)&(InputDevice->HandlerList),
+    	    		(struct Node *)ioreq->io_Data);
+    	    	    break;
+    	    	    
+    	    	case IND_REMHANDLER:
+    	    	    Remove((struct Node *)ioreq->io_Data);
+    	    	    break;
+    	    	    
+    	    	case IND_WRITEEVENT:
+    	    	    /* Add event to queue */
+    	    	    AddEQTail((struct InputEvent *)ioreq->io_Data, InputDevice);
+    	    	    /* Forward event (and possible others in the queue) */
+    	    	    ForwardQueuedEvents(InputDevice);
+    	    	    break;
+	    	    
+	    	} /* switch (IO command) */
 
-    } /* for (;;) */
-    
-        
-    for (;;) {i=i;}
+    		ReplyMsg((struct Message *)ioreq);
+    		
+	    } /* while (messages in the command port) */
+	    
+	} /* if (IO command received) */
+	
+    } /* Forever */
    
 } /* ProcessEvents */
 

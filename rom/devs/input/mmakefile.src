@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:= input inputhandler peekqualifier processevents support
+FILES	:= input peekqualifier processevents support
 OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libinput.a
 

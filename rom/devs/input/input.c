@@ -85,8 +85,6 @@ static void *const functable[]=
     (void *)-1
 };
 
-/* This must be global so that the input.device task can now it */
-struct inputbase *IBase;
 
 AROS_LH2(struct inputbase *, init,
  AROS_LHA(struct inputbase *, InputDevice, D0),
@@ -100,13 +98,7 @@ AROS_LH2(struct inputbase *, init,
     InputDevice->sysBase = sysBase;
     InputDevice->seglist = segList;
     
-    InitSemaphore( &(InputDevice->HandlerSema) );
     NEWLIST( &(InputDevice->HandlerList) );
-    
-    /* Put Input Device library base into global variable, 
-    ** so that the input.device task can see it
-    */
-    IBase = InputDevice;
 
     InputDevice->device.dd_Library.lib_OpenCnt=1;
 
@@ -131,31 +123,79 @@ AROS_LH3(void, open,
     unitnum=0;
     flags=0;
     
-    if (!InputDevice->InputTask)
-    {
-    	D(bug("id_open: Creating input task\n"));
-    	InputDevice->InputTask = CreateInputTask(IDTASK_STACKSIZE, InputDevice);
-    	D(bug("id_open: input task created: %p\n", InputDevice->InputTask));
-    	
-    	if (!InputDevice->InputTask)
-    	{
-    	    ioreq->io_Error = IOERR_OPENFAIL;
-    	}
+    ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     
-	/* !!! May be obsolete !!!
-	** It was there in the old code that I mode to the input.device,
-	** so I include it for now.
-	*/    	
-	idleT = FindTask("Idle Task");
-    	if( idleT )
-	   Signal(idleT, SIGBREAKF_CTRL_F);
+    if (!InputDevice->CommandPort)
+    {
+    	D(bug("id_open: Fist time opened\n"));
+    	InputDevice->CommandPort = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC);
+    	if (InputDevice->CommandPort)
+    	{
+    	    /* Since the input device task will use this before this function
+    	    ** has exited, we can put it on the stack
+    	    */
+    	    struct IDTaskParams idtask_params;
+    	    idtask_params.InputDevice = InputDevice;
+    	    idtask_params.Caller = FindTask(NULL);
+    	    
+    	    /* We don't use a OS signel (like SIGBREAKF_CTRL_D), because
+    	    ** we might get it from elsewere.
+    	    */
+    	    idtask_params.Signal = 1 << ioreq->io_Message.mn_ReplyPort->mp_SigBit;
+    	
+    	    D(bug("id_open: Creating input task\n"));
+    	    
+    	    InputDevice->InputTask = CreateInputTask(&idtask_params, InputDevice);
+    	    
+    	    D(bug("id_open: input task created: %p\n", InputDevice->InputTask));
+    	
+    	    if (InputDevice->InputTask)
+    	    {
+    	    	/* Here we wait for the input.device to initialize it's
+    	    	** command msgport etc. (see processevents.c). This
+    	    	** is to prevent race conditions.
+    	    	** Say that we exited succesfully now and did
+    	    	** an asynchronous IO request to the device, while
+    	    	** the input.device yet not had created it's command port.
+    	    	** It would most certainly crash the machine
+    	    	*/
+    	    	D(bug("id_open(): Waiting for idtask to initialize itself\n"));
+    	    	Wait (idtask_params.Signal);
+    	    	D(bug("id_open(): Got signal from idtask\n"));
+    	    	
+    	    	ioreq->io_Error = NULL;
+
+   	 	/* I have one more opener. */
+    		InputDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+    		InputDevice->device.dd_Library.lib_OpenCnt ++;
+
+    
+		/* !!! May be obsolete !!!
+		** It was there in the old code that I mode to the input.device,
+		** so I include it for now.
+		*/    	
+		idleT = FindTask("Idle Task");
+    		if( idleT )
+	       	    Signal(idleT, SIGBREAKF_CTRL_F);
+    	    	
+    	    	return;
+    	    	
+    	    } /* if (input task created) */
+    	    FreeMem(InputDevice->CommandPort, sizeof (struct MsgPort));
+    	} /* if (command msgport created) */
+
+    	ioreq->io_Error = IOERR_OPENFAIL;
+    	    
+    } /* if (first time opened) */
+
+    if (!ioreq->io_Error != IOERR_OPENFAIL)
+    {
+    	InputDevice->device.dd_Library.lib_OpenCnt ++;
+    	InputDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
+
     }
     
-    D(bug("id: open(): everything went OK\n"));
-
-
-    /* I have one more opener. */
-    InputDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
+    return;    
 
     AROS_LIBFUNC_EXIT
 }
@@ -191,99 +231,57 @@ AROS_LH0I(int, null, struct inputbase *, InputDevice, 4, Input)
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 AROS_LH1(void, beginio,
- AROS_LHA(struct IORequest *, ioreq, A1),
+ AROS_LHA(struct IOStdReq *, ioreq, A1),
 	   struct inputbase *, InputDevice, 5, Input)
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
     
+    BOOL done_quick = TRUE;
+    
     D(bug("id: beginio(ioreq=%p)\n", ioreq));
-
 
     /* WaitIO will look into this */
     ioreq->io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
-    /*
-	Do everything quick no matter what, still if I *DO*
-	may have to Wait() in IND_ADDHANDLER an IND_REMHANDLER,
-	since the inputhandler list is semaphore protected.
-
-	In the case that these commands were called asynchrounously,
-	we will still force them to be performed synchronous.
-	
-	This of course has a reason: The intui_WaitEvent()
-	function (config/x11/intuition_driver.c),
-	can not wait for x11 events and events at the
-	input device's port at the same time.
-	
-	But hopefully a fix for this can to poll the
-	input process' msg port each time before entering
-	or when returned from intui_WaitEvent()
-	
-	
-    */
     switch (ioreq->io_Command)
     {
-    case IND_ADDHANDLER: {
-    
-    	struct Interrupt *ir;
-    
-    	D(bug("id: IND_ADDHANDLER\n"));
-
-    	D(bug("id: Obtaining semaphore\n"));
-    	ObtainSemaphore( &(InputDevice->HandlerSema) );
-
-    	D(bug("id: Enqueue()ing handler %p of pri %d\n",
-    		ioStd(ioreq)->io_Data,
-    		((struct Node *)ioStd(ioreq)->io_Data)->ln_Pri));
-    		
-    	Enqueue( (struct List *)&(InputDevice->HandlerList),
-    			(struct Node *)ioStd(ioreq)->io_Data);
-
-    	D(bug("id: Releasing semaphore\n"));
-
-    	ReleaseSemaphore(&InputDevice->HandlerSema);
-    	
-    			
-	ForeachNode( &(InputDevice->HandlerList), ir)
-	{
-	    D(bug("id: List conatins inputhandler %s\n",
-	    	ir->is_Node.ln_Name));
-	}
-    	
-    	D(bug("id: All done !\n"));
-    	
-    	} break;
-    
+    case IND_ADDHANDLER:
     case IND_REMHANDLER:
-    	D(bug("id: IND_REMHANDLER\n"));
-
-    	ObtainSemaphore( &(InputDevice->HandlerSema) );
-    	Remove( (struct Node*)ioStd(ioreq)->io_Data);
-    	ReleaseSemaphore( &(InputDevice->HandlerSema) );
-
-    	D(bug("id: All done !\n"));
-
+    case IND_WRITEEVENT:
+        done_quick = FALSE;
     	break;
     	
     default:
 	error=ERROR_NOT_IMPLEMENTED;
 	break;
     }
+    
+    if (!done_quick)
+    {
+        /* Mark IO request to be done non-quick */
+    	ioreq->io_Flags &= ~IOF_QUICK;
+    	PutMsg(InputDevice->CommandPort, (struct Message *)ioreq);
+    }
+    else
+    {
 
-    /* If the quick bit is not set send the message to the port */
-    if(!(ioreq->io_Flags&IOF_QUICK))
-	ReplyMsg (&ioreq->io_Message);
+    	/* If the quick bit is not set but the IO request was done quick,
+    	** reply the message to tell we're throgh
+    	*/
+   	if (!(ioreq->io_Flags & IOF_QUICK))
+	    ReplyMsg (&ioreq->io_Message);
+    }
 
     /* Trigger a rescedule every now and then */
-    if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
+/*    if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
     {
 	SysBase->ThisTask->tc_State=TS_READY;
 	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 	Switch();
     }
-    
+*/    
     D(bug("id: Return from BeginIO()\n"));
 
     AROS_LIBFUNC_EXIT

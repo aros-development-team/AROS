@@ -1,16 +1,16 @@
+#ifndef INPUT_INTERN_H
+#define INPUT_INTERN_H
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.1  1998/04/07 20:49:18  nlorentz
-    Initial revision
+    Revision 1.2  1998/04/11 19:34:52  nlorentz
+    Added IND_WRITEEVENT and fixed bugs
 
 
     Desc: Private definitions for Input device.
     Lang:
 */
-#ifndef INPUT_INTERN_H
-#define INPUT_INTERN_H
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
@@ -27,20 +27,32 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#ifndef DEVICES_INPUTEVENT_H
+#   include <devices/inputevent.h>
+#endif
 
 /* Size of the input device's stack */
 #define IDTASK_STACKSIZE 20000
+/* Priority of the input.device task */
+#define IDTASK_PRIORITY 20
 
 /* Predeclaration */
 struct inputbase;
 
+/* Structure passed to the input.device task when it's initialized */
+struct IDTaskParams
+{
+    struct inputbase 	*InputDevice;
+    struct Task		*Caller; /* Signal this task.. */
+    ULONG		Signal; /* Using this sigs, that the ID task */
+    				/* has been initialized and is ready to handle IO requests */
+};
+
 /* Prototypes */
-VOID ProcessEvents();
-
-struct Interrupt *InitIIH(struct inputbase *InputDevice);
-VOID CleanupIIH(struct Interrupt *handler, struct inputbase *InputDevice);
-struct Task *CreateInputTask(ULONG stacksize, struct inputbase *InputDevice);
-
+VOID ProcessEvents(struct IDTaskParams *taskparams);
+struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
+VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
+struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
 
 
 struct inputbase
@@ -55,8 +67,8 @@ struct inputbase
     struct Task *InputTask;
     struct MsgPort *CommandPort;
     struct MinList HandlerList;
-    struct SignalSemaphore HandlerSema;
-    struct Interrupt *IntuiInputHandler;
+    struct InputEvent *EventQueueHead;
+    struct InputEvent *EventQueueTail;
 };
 
 #define expunge() \
