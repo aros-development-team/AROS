@@ -78,7 +78,7 @@ typedef enum ActiveObjectLook {
 } ActiveObjectLook;
 
 typedef struct _ZuneKeySpec {
-    STRPTR readable_hotkey;
+    CONST_STRPTR readable_hotkey;
     LONG ix_well;
     IX ix;
 } ZuneKeySpec;
@@ -154,15 +154,16 @@ struct ZunePrefsNew
     UWORD           list_smoothval; /* yet unused, remove this comment when handled */
 
     /* Navigation */
-    BOOL                 dragndrop_left_button; /* yet unused, remove this comment when handled */
-    ZuneKeySpec          dragndrop_left_modifier; /* yet unused, remove this comment when handled */
-    BOOL                 dragndrop_middle_button; /* yet unused, remove this comment when handled */
-    ZuneKeySpec          dragndrop_middle_modifier; /* yet unused, remove this comment when handled */
-    LONG                 dragndrop_autostart; /* yet unused, remove this comment when handled */
-    DNDLook              dragndrop_look; /* yet unused, remove this comment when handled */
+    BOOL                 drag_left_button; /* yet unused, remove this comment when handled */
+    ZuneKeySpec          drag_left_modifier; /* yet unused, remove this comment when handled */
+    BOOL                 drag_middle_button; /* yet unused, remove this comment when handled */
+    ZuneKeySpec          drag_middle_modifier; /* yet unused, remove this comment when handled */
+    BOOL                 drag_autostart;
+    UWORD                drag_autostart_length;
+    DNDLook              drag_look; /* yet unused, remove this comment when handled */
     BalancingLook        balancing_look; /* yet unused, remove this comment when handled */
     ActiveObjectLook     active_object_look; /* yet unused, remove this comment when handled */
-    struct MUI_PenSpec   active_object_color; /* yet unused, remove this comment when handled */
+    CONST_STRPTR         active_object_color; /* yet unused, remove this comment when handled */
 
     /* Scrollbars */
     ScrollbarType        scrollbar_type;
