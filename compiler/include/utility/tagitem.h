@@ -48,6 +48,9 @@ struct TagItem
 #define MAP_REMOVE_NOT_FOUND 0	/* remove tags that aren't in mapList */
 #define MAP_KEEP_NOT_FOUND   1	/* keep tags that aren't in mapList   */
 
+/* Macro for syntactic sugar (and a little extra bug-resiliance) */
+#define TAGLIST(args...) ((struct TagItem *)(IPTR []){ args, TAG_DONE })
+
 /*
     Some macros to make it easier to write functions which operate on
     stacktags on every CPU/compiler/hardware.
