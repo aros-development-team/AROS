@@ -16,6 +16,10 @@
 #include <string.h>
 
 
+struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
+			  struct DosLibrary *DOSBase);
+
+
 inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 		     struct DosLibrary *DOSBase)
 { 
@@ -29,12 +33,28 @@ inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 }
 
 
+
+
+struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit, 
+			 struct DosLibrary *DOSBase)
+{
+    return GetDosType(DLT_DEVICE, name, unit, DOSBase);
+}
+
+
+struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
+			 struct DosLibrary *DOSBase)
+{
+    return GetDosType(DLT_VOLUME, name, unit, DOSBase);
+}
+
+
 /* Return the device corresponding to the 'name'. This function will
    only look into "real" devices, that is no "PROGDIR:" or such.
    The pointer to the device unit will be written into 'unit' if
    'unit' is not NULL. */ 
-struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
-			 struct DosLibrary *DOSBase)
+struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
+			  struct DosLibrary *DOSBase)
 {
     int     len = strlen(name);
     int     size;
@@ -44,7 +64,7 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
     struct Device  *device = NULL;
     struct DosList *dl;
 
-    if(colon == NULL)
+    if (colon == NULL)
     {
 	return NULL;
     }
@@ -52,14 +72,14 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
     size = colon - name;
 
     /* Not only a device name with trailing colon? */
-    if(size + 1 != len)
+    if (size + 1 != len)
     {
 	return NULL;
     }
 
     tempName = AllocVec(len, MEMF_ANY);
 
-    if(tempName == NULL)
+    if (tempName == NULL)
     {
 	return NULL;
     }
@@ -67,26 +87,23 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
     CopyMem(name, tempName, size);
     tempName[size] = 0;		/* Terminate string */
 
-    dl = LockDosList(LDF_DEVICES | LDF_READ);
-    dl = FindDosEntry(dl, name, LDF_DEVICES);
+    dl = LockDosList(type | LDF_READ);
+    dl = FindDosEntry(dl, name, type);
 
-    if(dl != NULL)
+    if (dl != NULL)
     {
 	device = dl->dol_Device;
-
-	if(unit != NULL)
-	{
-	    *unit = dl->dol_Unit;
-	}
+	*unit = dl->dol_Unit;
     }
 
-    UnLockDosList(LDF_DEVICES | LDF_READ);
+    UnLockDosList(type | LDF_READ);
 
-    if(device == NULL)
+    if (device == NULL)
     {
 	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
     }
 
+    FreeVec(tempName);
+
     return device;
 }
-
