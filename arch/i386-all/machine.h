@@ -21,7 +21,7 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
-#define AROS_GET_SYSBASE  /* expands into nothing */
+#define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
 
 /* ??? */
 #define SP_OFFSET 0
