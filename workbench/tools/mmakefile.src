@@ -33,7 +33,7 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 tools-quick : tools
 	@$(NOP)
 	
-#MM tools : setup tools-setup includes linklibs
+#MM tools : setup tools-setup includes linklibs commodities
 tools : show-flags $(EXES)
 	@$(NOP)
 
