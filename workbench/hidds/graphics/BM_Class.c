@@ -2114,9 +2114,7 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
 
 	    HIDDT_Pixel pixel = MAP_RGB(red, green, blue, pf);
 	    
-	    SWAPBYTES_WORD(pixel);
-	    
-	    msg->color->pixval = pixel;
+	    msg->color->pixval = SWAPBYTES_WORD(pixel);
 	}
 	else
 	{
@@ -2346,7 +2344,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 #define SysBase     	    (csd->sysbase)
 
 #define NUM_ROOT_METHODS    4
-#define NUM_BITMAP_METHODS  31
+#define NUM_BITMAP_METHODS  34
 
 /****************************************************************************************/
 
@@ -2387,6 +2385,9 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
 	{(IPTR (*)())bitmap_fillmemrect16    	, moHidd_BitMap_FillMemRect16	    },
 	{(IPTR (*)())bitmap_fillmemrect32    	, moHidd_BitMap_FillMemRect32	    },
 	{(IPTR (*)())bitmap_invertmemrect    	, moHidd_BitMap_InvertMemRect	    },
+	{(IPTR (*)())bitmap_copymembox8    	, moHidd_BitMap_CopyMemBox8	    },
+	{(IPTR (*)())bitmap_copymembox16    	, moHidd_BitMap_CopyMemBox16	    },
+	{(IPTR (*)())bitmap_copymembox32    	, moHidd_BitMap_CopyMemBox32	    },
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },

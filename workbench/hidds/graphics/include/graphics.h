@@ -453,6 +453,9 @@ enum {
     moHidd_BitMap_FillMemRect16,
     moHidd_BitMap_FillMemRect32,
     moHidd_BitMap_InvertMemRect,
+    moHidd_BitMap_CopyMemBox8,
+    moHidd_BitMap_CopyMemBox16,
+    moHidd_BitMap_CopyMemBox32,
     
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
@@ -770,6 +773,42 @@ struct pHidd_BitMap_InvertMemRect
     ULONG   	 dstMod;
 };
 
+struct pHidd_BitMap_CopyMemBox8
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD            srcX, srcY;
+    APTR      	    dst;
+    WORD            dstX, dstY;
+    UWORD   	    width, height;
+    ULONG   	    srcMod;
+    ULONG           dstMod;
+};
+
+struct pHidd_BitMap_CopyMemBox16
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD            srcX, srcY;
+    APTR      	    dst;
+    WORD            dstX, dstY;
+    UWORD   	    width, height;
+    ULONG   	    srcMod;
+    ULONG           dstMod;
+};
+
+struct pHidd_BitMap_CopyMemBox32
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD            srcX, srcY;
+    APTR      	    dst;
+    WORD            dstX, dstY;
+    UWORD   	    width, height;
+    ULONG   	    srcMod;
+    ULONG           dstMod;
+};
+
 struct pHidd_BitMap_SetColorMap {
     OOP_MethodID mID;
     OOP_Object *colorMap;
@@ -982,6 +1021,41 @@ VOID	HIDD_BM_InvertMemRect(OOP_Object *obj
 	, ULONG dstMod
 );
 
+VOID	HIDD_BM_CopyMemBox8(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod);
+	
+VOID	HIDD_BM_CopyMemBox16(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod);
+
+VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod);
 	
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
