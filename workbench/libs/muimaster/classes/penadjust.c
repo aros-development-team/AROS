@@ -33,7 +33,6 @@ struct MUI_PenadjustData
 {
     struct MUI_PenSpec      	penspec;
     struct MUI_PenSpec_intern	intpenspec;
-    struct Hook     	    	inputhook;
     Object  	    	    	*listobj;
     Object  	    	    	*sliderobj;
     Object  	    	    	*coloradjobj;
@@ -46,27 +45,24 @@ static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
     switch(data->intpenspec.p_type)
     {
     	case PST_MUI:
-	    nnset(data->listobj, MUIA_List_Active, data->intpenspec.p_mui);
-	    nnset(obj, MUIA_Group_ActivePage, 0);
+	    set(data->listobj, MUIA_List_Active, data->intpenspec.p_mui);
+	    set(obj, MUIA_Group_ActivePage, 0);
 	    break;
 	    
     	case PST_CMAP:
-	    nnset(data->sliderobj, MUIA_Numeric_Value, data->intpenspec.p_cmap);
-	    nnset(obj, MUIA_Group_ActivePage, 1);
+	    set(data->sliderobj, MUIA_Numeric_Value, data->intpenspec.p_cmap);
+	    set(obj, MUIA_Group_ActivePage, 1);
 	    break;
 	    
     	case PST_RGB:
-	    SetAttrs(data->coloradjobj, MUIA_NoNotify, TRUE,
-		     MUIA_Coloradjust_RGB, &data->intpenspec.p_rgb, TAG_DONE);
-	    
-	    nnset(obj, MUIA_Group_ActivePage, 2);
+	    set(data->coloradjobj, MUIA_Coloradjust_RGB, &data->intpenspec.p_rgb);
+	    set(obj, MUIA_Group_ActivePage, 2);
 	    break;
     }  
 }
 
-static void InputFunc(struct Hook *hook, Object *obj, APTR msg)
+static void UpdatePenspec(Object *obj, struct MUI_PenadjustData *data)
 {
-    struct MUI_PenadjustData *data = (struct MUI_PenadjustData *)hook->h_Data;
     IPTR    	    	      val;
 
     get(obj, MUIA_Group_ActivePage, &val);
@@ -156,10 +152,6 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    data->inputhook.h_Entry = HookEntry;
-    data->inputhook.h_SubEntry = (HOOKFUNC)InputFunc;
-    data->inputhook.h_Data = data;
-    
     data->listobj   	= listobj;
     data->sliderobj 	= sliderobj;
     data->coloradjobj 	= coloradjobj;
@@ -179,15 +171,6 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
         
     UpdateState(obj, data);
 
-    DoMethod(obj, MUIM_Notify, MUIA_Group_ActivePage, MUIV_EveryTime,
-    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->inputhook);
-    DoMethod(listobj, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->inputhook);
-    DoMethod(sliderobj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->inputhook);
-    DoMethod(coloradjobj, MUIM_Notify, MUIA_Coloradjust_RGB, MUIV_EveryTime,
-    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->inputhook);
-	    
     return (IPTR)obj;
 }
 
@@ -227,6 +210,7 @@ static IPTR Penadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
     	case MUIA_Penadjust_Spec:
+	    UpdatePenspec(obj, data);
 	    *store = (IPTR)&data->penspec;
 	    break;
 	    
