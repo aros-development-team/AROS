@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 
 #include "workbench_intern.h"
