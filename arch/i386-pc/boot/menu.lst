@@ -1,7 +1,7 @@
 # test
 
 default 0
-timeout 10
+timeout 4 
 fallback 1
 
 #aros
