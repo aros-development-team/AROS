@@ -618,13 +618,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
 
-        WORD h_spacing = width  / 4;
-	WORD v_spacing = height / 4;
+        WORD h_spacing = width  / 5;
+	WORD v_spacing = height / 5;
 	
-	WORD right, bottom;
+	WORD right, bottom, x, y;
 	
 	
-	
+	bug("************* size image draw **************\n");
 	bg = getbgpen(msg->imp_State, pens);
 	
 	/* Clear background into correct color */
@@ -636,9 +636,23 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	left += h_spacing;
 	top  += v_spacing;
 	
-	right  = left + width  - 1 - h_spacing;
-	bottom = top  + height - 1 - v_spacing;
+	right  = left + width  - 1 - (h_spacing * 2);
+	bottom = top  + height - 1 - (v_spacing * 2);
 	
+	width  = right  - left + 1;
+	height = bottom - top  + 1;
+	
+	if (msg->imp_State != IDS_INACTIVENORMAL)
+	{
+	    SetAPen(rport, pens[SHINEPEN]);
+	    for(y = top; y <= bottom; y++)
+	    {
+	    	x = left + (bottom - y) * width / height;
+		RectFill(rport, x, y, right, y);
+	    }
+	}
+	
+	SetAPen(rport, pens[SHADOWPEN]);
 	/* Draw triangle border */
 	Move(rport, left, bottom);
 	Draw(rport, right, top);
