@@ -284,6 +284,77 @@ BEGIN {
 			gsub(/>/,"\\&gt;",line);
 			gsub(/"/,"\\&quot;",line);
 
+			if (match(line,/\\begin{.*}/))
+			{
+			    stack[sp] = env;
+			    sp ++;
+			    pre=substr(line,1,RSTART-1);
+			    env=substr(line,RSTART+7,RLENGTH-8);
+			    post=substr(line,RSTART+RLENGTH);
+
+			    if (env=="description")
+			    {
+				line=pre"\n\n<DL>"post;
+			    }
+			    else if (env=="itemize")
+			    {
+				line=pre"\n\n<UL>"post;
+			    }
+			    else if (env=="enumeration")
+			    {
+				line=pre"\n\n<OL TYPE=1>"post;
+			    }
+			}
+
+			if (match(line,/\\item({.*})?/))
+			{
+			    pre=substr(line,1,RSTART-1);
+			    item=substr(line,RSTART+6,RLENGTH-7);
+			    post=substr(line,RSTART+RLENGTH);
+			    if (env=="description")
+			    {
+				line=pre"\n\n<DT><B>"item"</B><DD>"post;
+			    }
+			    else if (env=="itemize")
+			    {
+				line=pre"\n\n<LI>"post;
+			    }
+			    else if (env=="enumeration")
+			    {
+				line=pre"\n\n<OL TYPE=1>"post;
+			    }
+			}
+
+			if (match(line,/\\end{.*}/))
+			{
+			    pre=substr(line,1,RSTART-1);
+			    endenv=substr(line,RSTART+5,RLENGTH-6);
+			    post=substr(line,RSTART+RLENGTH);
+
+			    if (endenv != env)
+			    {
+				print "ERROR: \\end{"endenv"} doesn't match \\begin{"env"}" >> "/dev/stderr"
+				exit 10;
+			    }
+
+
+			    if (env=="description")
+			    {
+				line=pre"\n</DL>"post;
+			    }
+			    else if (env=="itemize")
+			    {
+				line=pre"\n</UL>"post;
+			    }
+			    else if (env=="enumeration")
+			    {
+				line=pre"\n</OL>"post;
+			    }
+
+			    sp --;
+			    env = stack[sp];
+			}
+
 			print line >> out;
 		    }
 
