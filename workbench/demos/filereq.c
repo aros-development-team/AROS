@@ -133,7 +133,7 @@ static void showrequester(char *msg, struct TagItem *tags)
 	if (AslRequest(fr, NULL))
 	{
 	    printf("\n-------------------------------------------------------\n\n");
-	    printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File ? fr->rf_File : "<NOFILE>");
+	    printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File ? fr->rf_File : (STRPTR)"<NOFILE>");
 	    printf("To combine the path and filename, copy the path\n");
 	    printf("to a buffer, add the filename with Dos AddPart().\n\n");
 
