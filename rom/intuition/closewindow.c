@@ -258,7 +258,7 @@ VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *Intui
 	window->Parent->Descendant = window->Descendant;
 
 	if (!IntuitionBase->ActiveWindow && window->Parent)
-	    int_activatewindow (window->Parent, IntuitionBase);
+	    ActivateWindow (window->Parent);
     }
 
     /* Make sure the Screen's window list is still valid */
