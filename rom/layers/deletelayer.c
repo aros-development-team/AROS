@@ -283,7 +283,14 @@
 	      /* this layer needs a refresh in that area */
 	      L_behind->Flags |= LAYERREFRESH;
 	      
-	      /* I also clear this area */
+	      /* I call the hook for this area */
+	      _CallLayerHook(L_behind->BackFill,
+	                     L_behind->rp,
+	                     L_behind,
+	                     &CR->bounds,
+	                     CR->bounds.MinX,
+	                     CR->bounds.MinY);
+/*
 	      BltBitMap(L_behind->rp->BitMap,
 	                0,
 	                0,
@@ -295,6 +302,7 @@
 	                0x000,
 	                0xff,
 	                NULL);
+*/
 	    }
             /* 
                clear the lobs entry and BitMap entry 
@@ -342,9 +350,19 @@
   /* check if a region is empty */
   while (NULL != RR)
   {
-    /* !!!here should actually be filled with the layerinfo hook!!!*/
+    RR->bounds.MinX += R->bounds.MinX;
+    RR->bounds.MinY += R->bounds.MinY;
+    RR->bounds.MaxX += R->bounds.MinX;
+    RR->bounds.MaxY += R->bounds.MinY;
+    _CallLayerHook(LI->BlankHook,
+                   LD->rp,
+                   LD,
+                   &RR->bounds,
+                   RR->bounds.MinX,
+                   RR->bounds.MinY);
+/*
     BltBitMap(
-      LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
+      LD->rp->BitMap, // don't need a source but mustn't give NULL!!!
       0,
       0,
       LD->rp->BitMap,
@@ -352,10 +370,11 @@
       RR->bounds.MinY + R->bounds.MinY,
       RR->bounds.MaxX - RR->bounds.MinX + 1,
       RR->bounds.MaxY - RR->bounds.MinY + 1,
-      0x000, /* clear destination */
+      0x000, // clear destination 
       0xff,
       NULL
     );      
+*/
     RR = RR->Next;
   } /* while */
   

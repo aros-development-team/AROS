@@ -48,9 +48,12 @@ FUNCTIONS := \
 	createupfrontlayer		\
 	deletelayer			\
 	disposelayerinfo		\
+	dohookcliprects                 \
 	endupdate			\
 	fattenlayerinfo			\
 	initlayers			\
+	installlayerhook		\
+	installlayerinfohook		\
 	locklayer			\
 	locklayerinfo			\
 	locklayers			\

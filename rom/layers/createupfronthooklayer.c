@@ -184,8 +184,6 @@
        layers behind them, but those parts are backed up now)
     */
 
-    /* the whole part from here ... */
-
     CR = L->ClipRect;
     while (CR != NULL)
     {
@@ -194,20 +192,30 @@
         if (0 == (L->Flags & LAYERSUPER))
 	{
           /* no superbitmap */
+          
+          /* clear the visible area with the given hook */
+          _CallLayerHook(hook,
+                         L->rp,
+                         L,
+                         &CR->bounds,
+                         0,
+                         0);
+/*
           BltBitMap(
-            bm /* Source Bitmap - we don't need one for clearing, but this
-                  one will also do :-) */,
+            bm, // Source Bitmap - we don't need one for clearing, but this
+                // one will also do :-) 
             0,
             0,
-            bm /* Destination Bitmap - */,
+            bm, // Destination Bitmap
             CR->bounds.MinX,
             CR->bounds.MinY,
             CR->bounds.MaxX-CR->bounds.MinX+1,
             CR->bounds.MaxY-CR->bounds.MinY+1,
-            0x000 /* supposed to clear the destination */,
+            0x000, // supposed to clear the destination
             0xff,
             NULL
           );
+*/
 	}
         else
 	{
@@ -229,15 +237,6 @@
       }
       CR = CR->Next;
     }
-
-    /* ... to here will be replaced by : */
-    /*
-    DoHookClipRects(hook, RP, L->bounds);
-     */
-    /*
-       once DoHookClipRects is there and a default backfill is implemented. 
-       (basically the same code as above) 
-     */
 
     UnlockLayers(li);    
   }

@@ -7,6 +7,8 @@
 */
 
 #include "layers_intern.h"
+#include <exec/types.h>
+#include <graphics/gfx.h>
 
 /*
  *  Sections:
@@ -36,6 +38,13 @@ void BltCRtoRP(struct RastPort *    rp,
 /***************************************************************************/
 /*                                  HOOK                                   */
 /***************************************************************************/
+
+void _CallLayerHook(struct Hook * h,
+                    struct RastPort * rp,
+                    struct Layer * L,
+                    struct Rectangle * R,
+                    WORD offsetx,
+                    WORD offsety);
 
 
 /***************************************************************************/

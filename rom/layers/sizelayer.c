@@ -303,6 +303,7 @@
         if (NULL == CR->lobs)
         {
           LONG DestX, DestY;
+          struct Rectangle bounds;
 
           if (dx > 0 && (CR->bounds.MaxX - l->bounds.MinX) > width)
 	  {
@@ -313,21 +314,36 @@
 
             if (0 == (l->Flags & LAYERSUPER))
 	    {
+	      bounds.MinX = DestX;
+	      bounds.MinY = CR->bounds.MinY;
+	      bounds.MaxX = CR->bounds.MaxX;
+	      bounds.MaxY = CR->bounds.MaxY;
+          
+              /* clearing the visible area with the backfill hook */
+              _CallLayerHook(l->BackFill,
+                             l->rp,
+                             l,
+                             &bounds,
+                             bounds.MinX,
+                             bounds.MinY);
+	    
               /* no superbitmap */
+/*
               BltBitMap(
-                bm /* Source Bitmap - we don't need one for clearing, but this
-                     one will also do :-) */,
+                bm,// Source Bitmap - we don't need one for clearing, but this
+                   // one will also do :-) 
                 0,
                 0,
-                bm /* Destination Bitmap - */,
+                bm, // Destination Bitmap - 
                 DestX,
                 CR->bounds.MinY,
                 CR->bounds.MaxX - DestX           + 1,
                 CR->bounds.MaxY - CR->bounds.MinY + 1,
-                0x000 /* supposed to clear the destination */,
+                0x000, // supposed to clear the destination
                 0xff,
                 NULL
               );
+*/
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -359,21 +375,35 @@
 
             if (0 == (l->Flags & LAYERSUPER))
 	    {
+	      bounds.MinX = CR->bounds.MinX;
+	      bounds.MinY = DestY;
+	      bounds.MaxX = CR->bounds.MaxX;
+	      bounds.MaxY = CR->bounds.MaxY;
+          
+              /* clearing visible area with the backfill hook */
+              _CallLayerHook(l->BackFill,
+                             l->rp,
+                             l,
+                             &bounds,
+                             bounds.MinX,
+                             bounds.MinY);
               /* no superbitmap */
+/*
               BltBitMap(
-                bm /* Source Bitmap - we don't need one for clearing, but this
-                     one will also do :-) */,
+                bm, // Source Bitmap - we don't need one for clearing, but this
+                    // one will also do :-) 
                 0,
                 0,
-                bm /* Destination Bitmap */,
+                bm, // Destination Bitmap
                 CR->bounds.MinX,
                 DestY,
                 CR->bounds.MaxX-CR->bounds.MinX+1,
                 CR->bounds.MaxY-DestY+1,
-                0x000 /* supposed to clear the destination */,
+                0x000, // supposed to clear the destination
                 0xff,
                 NULL
               );
+*/
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -395,6 +425,37 @@
               );
 	    }
 	  }
+        }
+        else
+        {
+          /* this is a hidden ClipRect */
+          /* if it's from a smart layer then I will have to fill it
+             with the backfill hook. */
+          if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)) &&
+              l->BackFill != LAYERS_BACKFILL &&  /* try to avoid wasting time */
+              l->BackFill != LAYERS_NOBACKFILL)
+          {
+            /* it's a pure smart layer that needs to be filled with a
+               !!pattern!!. LAYERS_BACKFILL & LAYERS_NOBACKFILL wouldn't
+               do anything good here at all.
+            */
+            struct Rectangle bounds;
+            struct BitMap * bm = l->rp->BitMap;
+            bounds.MinX = (CR->bounds.MinX & 0x0f);
+            bounds.MinY = 0;
+            bounds.MaxX = CR->bounds.MaxX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+            bounds.MaxY = CR->bounds.MaxY;
+
+            /* filling the hidden cliprect's bitmap with the pattern */
+            l->rp->BitMap = CR->BitMap;            
+            _CallLayerHook(l->BackFill,
+                           l->rp,
+                           l,
+                           &bounds,
+                           CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                           CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+            l->rp->BitMap = bm;             
+          }  
         }
       CR = CR->Next;
       }

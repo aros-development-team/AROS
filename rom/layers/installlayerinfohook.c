@@ -28,12 +28,23 @@
 	struct LayersBase *, LayersBase, 34, Layers)
 
 /*  FUNCTION
+        Install a backfill hook into the LayerInfo structure. This
+        backfill hook will be called to clear the areas where there
+        is no layer. It will be used for every layer.        
 
     INPUTS
+        li - pointer to layer info
 
     RESULT
+        If there was a backfill hook installed before it will be 
+        returned. LAYERS_BACKFILL will be returned if the default 
+        backfill hook was installed, LAYERS_NOBACKFILL if there
+        was nothing to be called for clearing an area.
 
     NOTES
+        The hook is not called immediately. It will be called for
+        those areas that have to be cleared when layers move away
+        from those areas.
 
     EXAMPLE
 
@@ -56,14 +67,13 @@
 
     D(bug("InstallLayerInfoHook(li @ $%lx, hook @ $%lx)\n", li, hook));
 
-    if(!_AccessLayerInfo(li, LayersBase))
-	return (struct Hook *)~0;
+    LockLayerInfo(li);    
 
     OldHook = li->BlankHook;
 
     li->BlankHook = hook;
-
-    _ReleaseLayerInfo(li, LayersBase);
+    
+    UnlockLayerInfo(li);
 
     return OldHook;
 

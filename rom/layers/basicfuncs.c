@@ -83,13 +83,60 @@ void BltCRtoRP(struct RastPort *   rp,
 /*                                  HOOK                                   */
 /***************************************************************************/
 
-struct LayerHookMsg
+struct layerhookmsg
 {
     struct Layer *l;
 /*  struct Rectangle rect; (replaced by the next line!) */
     WORD MinX, MinY, MaxX, MaxY;
     LONG OffsetX, OffsetY;
 };
+
+void _CallLayerHook(struct Hook * h,
+                    struct RastPort * rp,
+                    struct Layer * L,
+                    struct Rectangle * R,
+                    WORD offsetX,
+                    WORD offsetY)
+{
+  struct BitMap * bm = rp->BitMap;
+  if (h == LAYERS_BACKFILL)
+  {
+    /* Use default backfill, which means that I will clear the area */
+    BltBitMap(bm,
+              0,
+              0,
+              bm,
+              R->MinX,
+              R->MinY,
+              R->MaxX - R->MinX + 1,
+              R->MaxY - R->MinY + 1,
+              0x000,
+              0xff,
+              NULL);
+    /* that's it */
+    return;
+  }
+  
+  if (h != LAYERS_NOBACKFILL)
+  {
+    struct layerhookmsg msg;
+    msg.l    = L;
+    msg.MinX = R->MinX;
+    msg.MinY = R->MinY;
+    msg.MaxX = R->MaxX;
+    msg.MaxY = R->MaxY;
+    msg.OffsetX = offsetX;
+    msg.OffsetY = offsetY;
+    
+    AROS_UFC3(void, h->h_Entry,
+        AROS_UFCA(struct Hook *,         h   ,A0),
+        AROS_UFCA(struct RastPort *,     rp  ,A2),
+        AROS_UFCA(struct layerhookmsg *, &msg,A1)
+    );  
+  }
+  
+}         
+
 
 /***************************************************************************/
 /*                                 LAYER                                   */
@@ -340,32 +387,23 @@ struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li)
 
 struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
 {
-  struct ClipRect * CR = NULL;
+  struct ClipRect * CR =  LI->FreeClipRects;
 
-  /* I want to access the list of free ClipRects alone */
-  ObtainSemaphore(&LI->Lock);
-
-/*
-  if (!IsListEmpty(&LI->FreeClipRects))
+  if (NULL != CR)
   {
-    CR = (struct ClipRect *)RemHead((struct List *)&LI->FreeClipRects);  
+   /* I want to access the list of free ClipRects alone */
+    ObtainSemaphore(&LI->Lock);
+    LI->FreeClipRects = CR->Next;
     ReleaseSemaphore(&LI->Lock);
-    CR->lobs = NULL;
+
+    CR->Flags  = 0;
+    CR->Next   = NULL; 
+    CR->lobs   = NULL;
     CR->BitMap = NULL;
-    CR->bounds.MinX = 0;
-    CR->bounds.MinY = 0;
-    CR->bounds.MaxX = 0;
-    CR->bounds.MaxY = 0;
-    CR->Flags = 0;
     return CR;
   }
-*/
-  /* I am done, anybody else may get a ClipRect now */
-  ReleaseSemaphore(&LI->Lock);
-
-  CR =  AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
-
-  return CR;  
+  CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
+  return CR;
 }
 
 /*
@@ -379,7 +417,8 @@ void _FreeClipRect(struct ClipRect   * CR,
   ObtainSemaphore(&LI->Lock);
   
   /* Add the ClipRect to the list */
-  AddHead((struct List *)&LI->FreeClipRects, (struct Node *)CR);
+  CR -> Next = LI -> FreeClipRects;
+  LI -> FreeClipRects = CR; 
 
   /* I am done, anybody else may get a ClipRect now */
   ReleaseSemaphore(&LI->Lock);

@@ -29,8 +29,12 @@
 	struct LayersBase *, LayersBase, 33, Layers)
 
 /*  FUNCTION
+        Safely install a new backfill hook. Return the old hook.
+        If hook is NULL, then the default backfill hook will be installed.
 
     INPUTS
+        layer - layer that will get the new backfill hook
+        hook  - pointer to backfill hook to be installed
 
     RESULT
 
@@ -60,13 +64,13 @@
     if(layer == NULL)
 	return NULL;
 
-    LockLayerRom(layer);
+    LockLayer(0, layer);
 
     OldHook = layer->BackFill;
 
     layer->BackFill = hook;
 
-    UnlockLayerRom(layer);
+    UnlockLayer(layer);
 
     return OldHook;
 

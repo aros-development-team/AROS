@@ -99,7 +99,7 @@
    */
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = _AllocClipRect(l_tmp->LayerInfo);
+  CR = _AllocClipRect(LI);
   RP = (struct RastPort *)AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   if (NULL != l_tmp && NULL != CR && NULL != RP)
@@ -153,7 +153,6 @@
       l_behind = l_behind ->back;
     } /* while */
 
-   
     InitSemaphore(&l_tmp->Lock);
     LockLayer(0, l_tmp);
 
@@ -199,7 +198,6 @@
     else
       height = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
 
-    
     ClipBlit(l_tmp->rp,
              0,
              0,
@@ -284,6 +282,7 @@
       The layer that was moved is totally visible now at its new position
       and also at its old position. I delete it now from its old position.
     */
+    
     DeleteLayer(0, l_tmp);
     /*
        The new layer might be larger than the previously shown layer,
@@ -300,6 +299,7 @@
         if (NULL == CR->lobs)
         {
           LONG DestX, DestY;
+          struct Rectangle bounds;
 
           if (dw > 0 && (CR->bounds.MaxX - l->bounds.MinX) > width)
 	  {
@@ -311,20 +311,34 @@
             if (0 == (l->Flags & LAYERSUPER))
 	    {
               /* no superbitmap */
+	      bounds.MinX = DestX;
+	      bounds.MinY = CR->bounds.MinY;
+	      bounds.MaxX = CR->bounds.MaxX;
+	      bounds.MaxY = CR->bounds.MaxY;
+	      
+	      /* clearing visible area with the backfill hook */
+              _CallLayerHook(l->BackFill,
+                             l->rp,
+                             l,
+                             &bounds,
+                             bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                             bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+/*              
               BltBitMap(
-                bm /* Source Bitmap - we don't need one for clearing, but this
-                     one will also do :-) */,
+                bm,// Source Bitmap - we don't need one for clearing, but this
+                   //  one will also do :-) 
                 0,
                 0,
-                bm /* Destination Bitmap - */,
+                bm, // Destination Bitmap - 
                 DestX,
                 CR->bounds.MinY,
                 CR->bounds.MaxX-DestX+1,
                 CR->bounds.MaxY-CR->bounds.MinY+1,
-                0x000 /* supposed to clear the destination */,
+                0x000, // supposed to clear the destination 
                 0xff,
                 NULL
               );
+*/              
               OrRectRegion(l->DamageList,&CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -340,7 +354,7 @@
                 CR->bounds.MinY,
                 CR->bounds.MaxX - DestX           + 1,
                 CR->bounds.MaxY - CR->bounds.MinY + 1,
-                0x0c0 /* supposed to clear the destination */,
+                0x0c0 /* copy */,
                 0xff,
                 NULL
               );
@@ -356,20 +370,35 @@
 
             if (0 == (l -> Flags & LAYERSUPER))
 	    {
+	      bounds.MinX = CR->bounds.MinX;
+	      bounds.MinY = DestY;
+	      bounds.MaxX = CR->bounds.MaxX;
+	      bounds.MaxY = CR->bounds.MaxY;
+	      
+	      /* clearing visible area with the backfillhook */
+              _CallLayerHook(l->BackFill,
+                             l->rp,
+                             l,
+                             &bounds,
+                             bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                             bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+
+/*
               BltBitMap(
-                bm /* Source Bitmap - we don't need one for clearing, but this
-                     one will also do :-) */,
+                bm, // Source Bitmap - we don't need one for clearing, but this
+                       one will also do :-) 
                 0,
                 0,
-                bm /* Destination Bitmap - */,
+                bm, // Destination Bitmap 
                 CR->bounds.MinX,
                 DestY,
                 CR->bounds.MaxX-CR->bounds.MinX+1,
                 CR->bounds.MaxY-DestY+1,
-                0x000 /* supposed to clear the destination */,
+                0x000,  // supposed to clear the destination
                 0xff,
                 NULL
               );
+*/
               OrRectRegion(l->DamageList,&CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -384,12 +413,43 @@
                 DestY,
                 CR->bounds.MaxX - CR->bounds.MinX + 1,
                 CR->bounds.MaxY - DestY           + 1,
-                0x0c0 /* supposed to clear the destination */,
+                0x0c0 /* copy */,
                 0xff,
                 NULL
               );
 	    }
 	  }
+        }
+        else
+        { 
+          /* this is a hidden ClipRect */
+          /* if it's from a smart layer then I will have to fill it 
+             with the backfill hook. */
+          if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)) &&
+              l->BackFill != LAYERS_BACKFILL && /* try to avoid wasting time */
+              l->BackFill != LAYERS_NOBACKFILL)
+          {
+            /* it's a pure smart layer that needs to be filled with a
+               !!pattern!!. LAYERS_BACKFILL & LAYERS_NOBACKFILL wouldn't 
+               do anything good here at all.
+            */
+            struct Rectangle bounds;
+            struct BitMap * bm = l->rp->BitMap;
+            bounds.MinX = CR->bounds.MinX & 0x0f;
+            bounds.MinY = 0;
+            bounds.MaxX = CR->bounds.MaxX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+            bounds.MaxY = CR->bounds.MaxY;
+            
+            /* filling the hidden cliprect's bitmap with the pattern */
+            l->rp->BitMap = CR->BitMap;
+            _CallLayerHook(l->BackFill,
+                           l->rp,
+                           l,
+                           &bounds,
+                           CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                           CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+            l->rp->BitMap = bm;
+          }
         }
       CR = CR->Next;
       }

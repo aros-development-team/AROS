@@ -208,26 +208,36 @@
     CR = L->ClipRect;
     while (CR != NULL)
     {
-      /* only show thos cliprects that are visible, of course. */
+      /* only show those cliprects that are visible, of course. */
       if (NULL == CR->lobs)
       {
         if (0 == (L->Flags & LAYERSUPER))
 	{
           /* no superbitmap */
+          /* fill visible area with backfill hook */
+          _CallLayerHook(hook,
+                         L->rp,
+                         L,
+                         &CR->bounds,
+                         CR->bounds.MinX - L->bounds.MinX,
+                         CR->bounds.MinY - L->bounds.MinY);
+
+/*          
           BltBitMap(
-            bm /* Source Bitmap - we don't need one for clearing, but this
-                  one will also do :-) */,
+            bm, // Source Bitmap - we don't need one for clearing, but this
+                //  one will also do :-) 
             0,
             0,
-            bm /* Destination Bitmap - */,
+            bm, // Destination Bitmap
             CR->bounds.MinX,
             CR->bounds.MinY,
             CR->bounds.MaxX-CR->bounds.MinX+1,
             CR->bounds.MaxY-CR->bounds.MinY+1,
-            0x000 /* supposed to clear the destination */,
+            0x000, // supposed to clear the destination
             0xff,
             NULL
           );
+*/
 	}
         else
 	{
@@ -246,6 +256,38 @@
             NULL
           );
 	}
+      }
+      else
+      {
+        /* this is an invisible cliprect */
+        /* if it's from a smart layer then I will have to fill it
+           with the backfill hook. */
+        if (LAYERSMART == (flags & (LAYERSMART|LAYERSUPER)) &&
+            hook != LAYERS_BACKFILL && /* try to avoid wasting time */
+            hook != LAYERS_NOBACKFILL)
+        {
+          /*
+            it's a pure smart layer that needs to be filled with a 
+            !! pattern !!. LAYERS_BACKFILL & LAYERS_NOBACKFILL wouldn't 
+            do anything good here at all.
+          */
+          struct Rectangle bounds;
+          struct BitMap * bm = L->rp->BitMap;
+          bounds.MinX = CR->bounds.MinX & 0x0f;
+          bounds.MinY = 0;
+          bounds.MaxX = CR->bounds.MaxX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+          bounds.MaxY = CR->bounds.MaxY;
+          
+          /* filling the hidden cliprect's bitmap with the pattern */
+          L->rp->BitMap = CR->BitMap;
+          _CallLayerHook(hook,
+                         L->rp,
+                         L,
+                         &bounds,
+                         CR->bounds.MinX - L->bounds.MinX,
+                         CR->bounds.MinX - L->bounds.MinY);
+          L->rp->BitMap = bm;
+        }
       }
       CR = CR->Next;
     }  
