@@ -9,11 +9,16 @@
 
 #include <sys/times.h>
 
-clock_t times(struct tms *buffer)
+clock_t times(struct tms *tms)
 {
 #   warning Implement times()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-
-    return (clock_t) -1;
+    
+    tms->tms_utime  = 0;
+    tms->tms_stime  = 0;
+    tms->tms_cutime = 0;
+    tms->tms_cstime = 0;
+    
+    return -1;
 }
 
