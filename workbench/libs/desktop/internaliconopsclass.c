@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   $Id$ 
+ */
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -24,36 +24,37 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR internalIconOpsNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalIconOpsNew(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct InternalIconOpsClassData *data;
     struct TagItem *tag;
 
-    retval=DoSuperMethodA(cl, obj, (Msg)msg);
-    if(retval)
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (retval)
     {
-        obj=(Object*)retval;
-        data=INST_DATA(cl, obj);
+        obj = (Object *) retval;
+        data = INST_DATA(cl, obj);
     }
 
     return retval;
 }
 
-IPTR internalIconOpsSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalIconOpsSet(Class * cl, Object * obj, struct opSet * msg)
 {
     struct InternalIconOpsClassData *data;
-    IPTR retval=1;
-    struct TagItem *tag, *tstate=msg->ops_AttrList;
+    IPTR            retval = 1;
+    struct TagItem *tag,
+                   *tstate = msg->ops_AttrList;
 
-    data=(struct InternalIconOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalIconOpsClassData *) INST_DATA(cl, obj);
 
-    while((tag=NextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             default:
-                retval=DoSuperMethodA(cl, obj, (Msg)msg);
+                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
@@ -61,40 +62,40 @@ IPTR internalIconOpsSet(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-IPTR internalIconOpsGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR internalIconOpsGet(Class * cl, Object * obj, struct opGet * msg)
 {
-    IPTR retval=1;
+    IPTR            retval = 1;
     struct InternalIconOpsClassData *data;
 
-    data=(struct InternalIconOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalIconOpsClassData *) INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
         default:
-            retval=DoSuperMethodA(cl, obj, (Msg)msg);
+            retval = DoSuperMethodA(cl, obj, (Msg) msg);
             break;
     }
 
     return retval;
 }
 
-IPTR internalIconOpsDispose(Class *cl, Object *obj, Msg msg)
+IPTR internalIconOpsDispose(Class * cl, Object * obj, Msg msg)
 {
-    IPTR retval;
+    IPTR            retval;
 
-    retval=DoSuperMethodA(cl, obj, msg);
+    retval = DoSuperMethodA(cl, obj, msg);
 
     return retval;
 }
 
-IPTR internalIconOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
+IPTR internalIconOpsExecute(Class * cl, Object * obj, struct opExecute * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct InternalIconOpsClassData *data;
 
-    data=(struct InternalIconOpsClassData*)INST_DATA(cl, obj);
+    data = (struct InternalIconOpsClassData *) INST_DATA(cl, obj);
 
-    switch(msg->operationCode)
+    switch (msg->operationCode)
     {
         // open
         case (DOC_ICONOP | 1):
@@ -106,34 +107,33 @@ IPTR internalIconOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
 }
 
 AROS_UFH3(IPTR, internalIconOpsDispatcher,
-    AROS_UFHA(Class  *, cl,  A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg     , msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
-    ULONG retval=0;
+    ULONG           retval = 0;
 
-    switch(msg->MethodID)
+    switch (msg->MethodID)
     {
         case OM_NEW:
-            retval=internalIconOpsNew(cl, obj, (struct opSet*)msg);
+            retval = internalIconOpsNew(cl, obj, (struct opSet *) msg);
             break;
         case OM_SET:
-            retval=internalIconOpsSet(cl, obj, (struct opSet*)msg);
+            retval = internalIconOpsSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval=internalIconOpsGet(cl, obj, (struct opGet*)msg);
+            retval = internalIconOpsGet(cl, obj, (struct opGet *) msg);
             break;
         case OM_DISPOSE:
-            retval=internalIconOpsDispose(cl, obj, msg);
+            retval = internalIconOpsDispose(cl, obj, msg);
             break;
         case OPM_Execute:
-            retval=internalIconOpsExecute(cl, obj, (struct opExecute*)msg);
+            retval =
+                internalIconOpsExecute(cl, obj, (struct opExecute *) msg);
             break;
         default:
-            retval=DoSuperMethodA(cl, obj, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
 
     return retval;
 }
-

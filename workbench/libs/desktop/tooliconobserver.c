@@ -20,36 +20,37 @@
 
 #include "desktop_intern_protos.h"
 
-IPTR toolIconObserverNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR toolIconObserverNew(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR retval=0;
+    IPTR            retval = 0;
     struct ToolIconObserverClassData *data;
     struct TagItem *tag;
 
-    retval=DoSuperMethodA(cl, obj, (Msg)msg);
-    if(retval)
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (retval)
     {
-        obj=(Object*)retval;
-        data=INST_DATA(cl, obj);
+        obj = (Object *) retval;
+        data = INST_DATA(cl, obj);
     }
 
     return retval;
 }
 
-IPTR toolIconObserverSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR toolIconObserverSet(Class * cl, Object * obj, struct opSet * msg)
 {
     struct ToolIconObserverClassData *data;
-    IPTR retval=1;
-    struct TagItem *tag, *tstate=msg->ops_AttrList;
+    IPTR            retval = 1;
+    struct TagItem *tag,
+                   *tstate = msg->ops_AttrList;
 
-    data=(struct ToolIconObserverClassData*)INST_DATA(cl, obj);
+    data = (struct ToolIconObserverClassData *) INST_DATA(cl, obj);
 
-    while((tag=NextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             default:
-                retval=DoSuperMethodA(cl, obj, (Msg)msg);
+                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
@@ -57,58 +58,56 @@ IPTR toolIconObserverSet(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-IPTR toolIconObserverGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR toolIconObserverGet(Class * cl, Object * obj, struct opGet * msg)
 {
-    IPTR retval=1;
+    IPTR            retval = 1;
     struct ToolIconObserverClassData *data;
 
-    data=(struct ToolIconObserverClassData*)INST_DATA(cl, obj);
+    data = (struct ToolIconObserverClassData *) INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
         default:
-            retval=DoSuperMethodA(cl, obj, (Msg)msg);
+            retval = DoSuperMethodA(cl, obj, (Msg) msg);
             break;
     }
 
     return retval;
 }
 
-IPTR toolIconObserverDispose(Class *cl, Object *obj, Msg msg)
+IPTR toolIconObserverDispose(Class * cl, Object * obj, Msg msg)
 {
-    IPTR retval;
+    IPTR            retval;
 
-    retval=DoSuperMethodA(cl, obj, msg);
+    retval = DoSuperMethodA(cl, obj, msg);
 
     return retval;
 }
 
 AROS_UFH3(IPTR, toolIconObserverDispatcher,
-    AROS_UFHA(Class  *, cl,  A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg     , msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
-    ULONG retval=0;
+    ULONG           retval = 0;
 
-    switch(msg->MethodID)
+    switch (msg->MethodID)
     {
         case OM_NEW:
-            retval=toolIconObserverNew(cl, obj, (struct opSet*)msg);
+            retval = toolIconObserverNew(cl, obj, (struct opSet *) msg);
             break;
         case OM_SET:
-            retval=toolIconObserverSet(cl, obj, (struct opSet*)msg);
+            retval = toolIconObserverSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval=toolIconObserverGet(cl, obj, (struct opGet*)msg);
+            retval = toolIconObserverGet(cl, obj, (struct opGet *) msg);
             break;
         case OM_DISPOSE:
-            retval=toolIconObserverDispose(cl, obj, msg);
+            retval = toolIconObserverDispose(cl, obj, msg);
             break;
         default:
-            retval=DoSuperMethodA(cl, obj, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
 
     return retval;
 }
-

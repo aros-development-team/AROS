@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   $Id$ 
+ */
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -30,93 +30,99 @@
         #include <proto/desktop.h>
 
         AROS_LH2(ULONG, DoDesktopOperation,
-
-/*  SYNOPSIS */
-        AROS_LHA(ULONG,        operationCode, D0),
-        AROS_LHA(struct TagItem*,     tags, D2),
-
-/*  LOCATION */
+     /*
+        SYNOPSIS 
+      */
+            AROS_LHA(ULONG, operationCode, D0),
+            AROS_LHA(struct TagItem *, tags, D2),
+     /*
+        LOCATION 
+      */
         struct DesktopBase *, DesktopBase, 9, Desktop)
+/*
+   FUNCTION
 
-/*  FUNCTION
+   INPUTS
 
-    INPUTS
+   RESULT
 
-    RESULT
+   NOTES
 
-    NOTES
+   EXAMPLE
 
-    EXAMPLE
+   BUGS
 
-    BUGS
+   SEE ALSO
 
-    SEE ALSO
+   INTERNALS
 
-    INTERNALS
+   HISTORY
 
-    HISTORY
-
-******************************************************************************/
+   *****************************************************************************
+ */
 {
-    AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT 
+    struct DesktopOperation *dop,
+                   *subdop;
+    BOOL            found = FALSE;
+    ULONG           result = 0;
+    Object         *newObject;
+    Object         *target;
 
-    struct DesktopOperation *dop, *subdop;
-    BOOL found=FALSE;
-    ULONG result=0;
-    Object *newObject;
-    Object *target;
-
-    dop=DesktopBase->db_OperationList.lh_Head;
-    while(dop->do_Node.ln_Succ && !found)
+    dop = DesktopBase->db_OperationList.lh_Head;
+    while (dop->do_Node.ln_Succ && !found)
     {
-        if(operationCode==dop->do_Code)
+        if (operationCode == dop->do_Code)
         {
-            newObject=NewObjectA(dop->do_Impl->mcc_Class, NULL, NULL);
-            if(newObject)
+            newObject = NewObjectA(dop->do_Impl->mcc_Class, NULL, NULL);
+            if (newObject)
             {
-                target=GetTagData(DDO_Target, NULL, tags);
-                if(target)
+                target = GetTagData(DDO_Target, NULL, tags);
+                if (target)
                 {
-                    result=DoMethod(newObject, OPM_Execute, target, operationCode);
+                    result =
+                        DoMethod(newObject, OPM_Execute, target,
+                                 operationCode);
                 }
                 DisposeObject(newObject);
             }
 
-            found=TRUE;
+            found = TRUE;
         }
 
-        if(!IsListEmpty(&dop->do_SubItems))
+        if (!IsListEmpty(&dop->do_SubItems))
         {
-            subdop=dop->do_SubItems.lh_Head;
-            while(subdop->do_Node.ln_Succ && !found)
+            subdop = dop->do_SubItems.lh_Head;
+            while (subdop->do_Node.ln_Succ && !found)
             {
-                if(operationCode==subdop->do_Code)
+                if (operationCode == subdop->do_Code)
                 {
-                    newObject=NewObjectA(subdop->do_Impl->mcc_Class, NULL, NULL);
-                    if(newObject)
+                    newObject =
+                        NewObjectA(subdop->do_Impl->mcc_Class, NULL, NULL);
+                    if (newObject)
                     {
-                        target=GetTagData(DDO_Target, NULL, tags);
-                        if(target)
+                        target = GetTagData(DDO_Target, NULL, tags);
+                        if (target)
                         {
-                            result=DoMethod(newObject, OPM_Execute, target, operationCode);
+                            result =
+                                DoMethod(newObject, OPM_Execute, target,
+                                         operationCode);
                         }
                         DisposeObject(newObject);
                     }
 
-                    found=TRUE;
+                    found = TRUE;
                 }
 
-                subdop=subdop->do_Node.ln_Succ;
+                subdop = subdop->do_Node.ln_Succ;
             }
 
         }
 
-        dop=(struct DesktopOperation*)dop->do_Node.ln_Succ;
+        dop = (struct DesktopOperation *) dop->do_Node.ln_Succ;
     }
 
     return result;
 
     AROS_LIBFUNC_EXIT
 } /* DoDesktopOperation */
-
-
