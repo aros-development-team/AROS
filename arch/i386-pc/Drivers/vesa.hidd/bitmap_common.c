@@ -16,6 +16,7 @@
 
 
 /*********  BitMap::PutPixel()  ***************************/
+
 static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
@@ -37,6 +38,7 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 }
 
 /*********  BitMap::GetPixel()  *********************************/
+
 static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel pixel;
@@ -56,6 +58,8 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	pixel = *((ULONG*)(data->VideoData + offset));
     return pixel;
 }
+
+/*********  BitMap::FillRect()  ***************************/
 
 static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
@@ -131,7 +135,179 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
 }
 
+/*********  BitMap::PutImage()  ***************************/
+
+static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpix)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		msg->pixels,
+					0,
+					0,
+					data->VideoData,
+					msg->x,
+					msg->y,
+					msg->width,
+					msg->height,
+					msg->modulo,
+					data->bytesperline);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		   
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    }
+	    
+}
+
+/*********  BitMap::GetImage()  ***************************/
+
+static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpix)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		data->VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					data->bytesperline,
+					msg->modulo);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		   
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    }
+	    
+}
+
+static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpix)
+    {
+	case 2:
+	    HIDD_BM_CopyLUTMemBox16(o,
+		    	    	 msg->pixels,
+				 0,
+				 0,
+				 data->VideoData,
+				 msg->x,
+				 msg->y,
+				 msg->width,
+				 msg->height,
+				 msg->modulo,
+				 data->bytesperline,
+				 msg->pixlut);
+	    break;
+
+	case 4:
+	    HIDD_BM_CopyLUTMemBox32(o,
+		    	    	    msg->pixels,
+				    0,
+				    0,
+				    data->VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    data->bytesperline,
+				    msg->pixlut);
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    } /* switch(data->bytesperpix) */
+	    
+}
+
 /*** BitMap::Get() *******************************************/
+
 static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
