@@ -47,6 +47,7 @@ responsibility is assumed.
 
 #ifdef __AROS
 #define __chip
+#include <clib/alib_protos.h>
 #endif
 
 #ifdef LATTICE
