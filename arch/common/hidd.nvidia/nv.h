@@ -82,6 +82,7 @@ typedef struct CardState {
     ULONG   scale;
     ULONG   dither;
     ULONG   extra;
+    ULONG   fifo;
     ULONG   pixel;
     ULONG   horiz;
     ULONG   arbitration0;
