@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 #include <aros/macros.h>
@@ -480,32 +477,28 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 	{
 	    CreateBasicType(sv, &dtl->dtl_BinaryList, &dtl->dtl_SortedList,
 			    "binary", DTF_BINARY, 
-			    MAKE_ID('b','i','n','a'), 
-			    MAKE_ID('s','y','s','t'));
+			    ID_BINARY, GID_SYSTEM);
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_ASCIIList, "ascii"))
 	{
 	    CreateBasicType(sv, &dtl->dtl_ASCIIList,  &dtl->dtl_SortedList,
 			    "ascii", DTF_ASCII,
-			    MAKE_ID('a','s','c','i'),
-			    MAKE_ID('t','e','x','t'));
+			    ID_ASCII, GID_TEXT);
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_IFFList, "iff"))
 	{
 	    CreateBasicType(sv, &dtl->dtl_IFFList, &dtl->dtl_SortedList,
 			    "iff", DTF_IFF,
-			    MAKE_ID('i','f','f', 0 ),
-			    MAKE_ID('s','y','s','t'));
+			    ID_IFF, GID_SYSTEM);
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_MiscList, "directory"))
 	{
 	    CreateBasicType(sv, &dtl->dtl_MiscList, &dtl->dtl_SortedList,
 			    "directory", DTF_MISC, 
-			    MAKE_ID('d','i','r','e'), 
-			    MAKE_ID('s','y','s','t'));
+			    ID_DIRECTORY, GID_SYSTEM);
 	}
     }
     
