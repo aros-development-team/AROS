@@ -31,7 +31,7 @@ FILES := compleximage demowin font2c gtdemo helloworld inquire intuitext \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
 	 strtest unixio ooplib consoledemo layerstest easyreq sysreq \
 	 x11gfxhidd serialtest window cxtest simple_timer multiple_timers \
-	 winbackfill scrbackfill scrollerwin test_text clippingtest
+	 winbackfill scrbackfill scrollerwin test_text clippingtest cctest
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
