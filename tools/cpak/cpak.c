@@ -50,19 +50,16 @@ char filename[50];
 	    {
 		case '/':
 		    count=_read(fd,&fbuf[1],1);
-		    fbuf[count+1]=0;
-		    if(strcmp(fbuf,comment)==0)
+		    if(fbuf[count]=='*')
 		    {
 			fprintf(fdo,comment);
-			count=_read(fd,fbuf,1);
-			putc (fbuf[0],fdo);
 			do
 			{
-			    while (count==1 && fbuf[0]!='*')
+			    do
 			    {
 				count=_read(fd,fbuf,1);
 				putc (fbuf[0],fdo);
-			    }
+			    } while (count==1 && fbuf[0]!='*');
 		    	    count=_read(fd,fbuf,1);
 			    putc (fbuf[0],fdo);
 			} while (count==1 && fbuf[0]!='/');
@@ -102,8 +99,7 @@ char filename[50];
 			    {
 				current=malloc(sizeof(struct inclist));
 				current->next=NULL;
-				current->text=malloc(sizeof(char)*(i+2));
-				strcpy(current->text,incname);
+				current->text=strdup(incname);
 				search->next=current;
 			    }
 			}
