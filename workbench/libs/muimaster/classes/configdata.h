@@ -96,6 +96,19 @@
 #define MUICFG_Background_Page          0x95
 #define MUICFG_Background_ReadList      0x96
 
+
+#define MUIM_Configdata_GetString      (METHOD_USER|0x00426621) /* Zune 20030319 */
+#define MUIM_Configdata_GetULong       (METHOD_USER|0x00427253) /* Zune 20030319 */
+#define MUIM_Configdata_SetULong       (METHOD_USER|0x00427224) /* Zune 20030320 */
+#define MUIM_Configdata_Save           (METHOD_USER|0x0042571a) /* Zune 20030320 */
+#define MUIM_Configdata_Load           (METHOD_USER|0x004278ba) /* Zune 20030320 */
+struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
+struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
+struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
+struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
+struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
+
+
 #define MUIA_Configdata_Application (TAG_USER|0x10203453) /* ZV1: PRIV i.g  Object * */
 #define MUIA_Configdata_ZunePrefs   (TAG_USER|0x10203454) /* ZV1: PRIV .g.  struct ZunePrefsNew * */
 
