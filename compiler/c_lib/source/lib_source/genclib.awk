@@ -112,7 +112,7 @@ BEGIN {
         narg=0;
 
         doInsertFct = 0;
-        for (i = 0; (i < nifct && doInterFct == 0); i++)
+        for (i = 0; (i < nifct && doInsertFct == 0); i++)
         {
           if(call ~ insert_fct[i]) doInsertFct = 1;
         }
