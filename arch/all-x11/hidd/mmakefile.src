@@ -13,9 +13,8 @@ else
 USER_INCLUDES := -I.
 XSHM_INCLUDES := -I$(SYS_INCLUDES)
 endif
-ifneq ("$(AROS_HOST_ARCH)","linux")
+
 USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
-endif
 
 OS_INCLUDES := -I$(GENINCDIR)
 
