@@ -147,10 +147,10 @@ int __vcscan (void * data, int (*getc)(void *),
  */
 void updatestdio(void);
 
-#define putc(stream) fputc(stream)
-#define getc(stream) fgetc(stream)
-#define getchar()    getc(stdin)
-#define gets(s)      fgets(s, BUFSIZ, stdin)
+#define putc(c, stream) fputc(c, stream)
+#define getc(stream)    fgetc(stream)
+#define getchar()       getc(stdin)
+#define gets(s)         fgets(s, BUFSIZ, stdin)
 
 #if !defined(_ANSI_SOURCE)
 FILE *fdopen (int filedes, const char *mode);
