@@ -56,8 +56,6 @@ UBYTE * memory;
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
-#define STACKSIZE 20000
-
 static int returncode=20;
 static struct AROSBase AROSBase;
 
@@ -109,6 +107,11 @@ static APTR allocmem(ULONG size)
     return ret;
 }
 
+void _aros_not_implemented (void)
+{
+    fprintf (stderr, "This function is not implemented\n");
+}
+
 int main(int argc,char *argv[])
 {
     ULONG * space;
@@ -147,19 +150,18 @@ int main(int argc,char *argv[])
     {
 	/* Prepare exec.library */
 	ULONG neg,i;
-	neg=sizeof(struct JumpVec)*NUMVECT;
-	neg=(neg+LIBALIGN-1)&~(LIBALIGN-1);
+	neg=AROS_ALIGN(LIB_VECTSIZE*NUMVECT);
 	SysBase=(struct ExecBase *)
 		((UBYTE *)allocmem(neg+sizeof(struct ExecBase))+neg);
-	for(i=0;i<NUMVECT;i++)
+	for(i=1;i<=NUMVECT;i++)
 	{
-	    SET_JMP(&((struct JumpVec *)SysBase)[-i-1]);
-	    SET_VEC(&((struct JumpVec *)SysBase)[-i-1],ExecFunctions[i]);
+	    __AROS_INITVEC(SysBase,i);
+	    __AROS_SETVECADDR(SysBase,i,ExecFunctions[i-1]);
 	}
 #if 0
 	/* Build GetCC vector (68000 version) */
-	((UWORD *)((UBYTE *)SysBase-88*LIB_VECTSIZE))[0]=0x40c0; /* movew sr,d0 */
-	((UWORD *)((UBYTE *)SysBase-88*LIB_VECTSIZE))[1]=0x4e75; /* rts         */
+	((UWORD *)(__AROS_GETJUMPVEC(SysBase,34))[0]=0x40c0; /* movew sr,d0 */
+	((UWORD *)(__AROS_GETJUMPVEC(SysBase,34))[1]=0x4e75; /* rts         */
 #endif
 
 	SysBase->LibNode.lib_Node.ln_Name="exec.library";
@@ -212,6 +214,8 @@ int main(int argc,char *argv[])
 	t->tc_Node.ln_Pri=0;
 	t->tc_State=TS_RUN;
 	t->tc_SigAlloc=0xffff;
+	t->tc_SPLower = NULL;	    /* This is the system's stack */
+	t->tc_SPUpper = (APTR)~0UL; /* all available addresses are ok */
 	SysBase->ThisTask=t;
     }
     {
@@ -225,24 +229,19 @@ int main(int argc,char *argv[])
 	ml=(struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry),
 				      MEMF_PUBLIC|MEMF_CLEAR);
 	t =(struct Task *)   AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
-	s =(UBYTE *)         AllocMem(STACKSIZE,              MEMF_PUBLIC|MEMF_CLEAR);
+	s =(UBYTE *)         AllocMem(AROS_STACKSIZE,              MEMF_PUBLIC|MEMF_CLEAR);
 	ml->ml_NumEntries     =2;
 	ml->ml_ME[0].me_Addr  =t;
 	ml->ml_ME[0].me_Length=sizeof(struct Task);
 	ml->ml_ME[1].me_Addr  =s;
-	ml->ml_ME[1].me_Length=STACKSIZE;
+	ml->ml_ME[1].me_Length=AROS_STACKSIZE;
 
 	NEWLIST(&t->tc_MemEntry);
 	AddHead(&t->tc_MemEntry,&ml->ml_Node);
 	t->tc_SPLower=s;
-	t->tc_SPUpper=s+STACKSIZE;
+	t->tc_SPUpper=s+AROS_STACKSIZE;
 	t->tc_Node.ln_Name="Idle task";
 	t->tc_Node.ln_Pri=-128;
-#if STACK_GROWS_DOWNWARDS
-	t->tc_SPReg=(UBYTE *)t->tc_SPUpper-SP_OFFSET;
-#else
-	t->tc_SPReg=(UBYTE *)t->tc_SPLower-SP_OFFSET;
-#endif
 	AddTask(t,&idleTask,NULL);
     }
     Enable();
@@ -303,32 +302,34 @@ int main(int argc,char *argv[])
 
 	struct TagItem bootprocess[]=
 	{
-	    { NP_Entry, (IPTR)boot },
-	    { NP_Input, (IPTR)MKBADDR(fh_stdin) },
-	    { NP_Output, (IPTR)MKBADDR(fh_stdout) },
-	    { NP_Name, (IPTR)"Boot process" },
-	    { NP_StackSize, 20000 }, /* linux's printf needs that much. */
-	    { NP_Cli, 1 },
-	    { TAG_END, 0 }
+	    { NP_Entry,     (IPTR)boot },
+	    { NP_Input,     (IPTR)MKBADDR(fh_stdin) },
+	    { NP_Output,    (IPTR)MKBADDR(fh_stdout) },
+	    { NP_Name,	    (IPTR)"Boot process" },
+	    { NP_Cli,	    1 },
+	    { TAG_END, }
 	};
 
-	emulbase=(struct emulbase *)InitResident((struct Resident *)&emul_handler_resident,0);
-	AddDevice(&emulbase->eb_device);
+	emulbase = (struct emulbase *) InitResident (
+	    (struct Resident *)&emul_handler_resident,
+	    0
+	);
+	AddDevice (&emulbase->eb_device);
 
-	AssignLock("C",Lock("SYS:c",SHARED_LOCK));
-	AssignLock("S",Lock("SYS:s",SHARED_LOCK));
-	AssignLock("Libs",Lock("SYS:libs",SHARED_LOCK));
-	AssignLock("Devs",Lock("SYS:devs",SHARED_LOCK));
+	AssignLock ("C",    Lock ("SYS:c",    SHARED_LOCK));
+	AssignLock ("S",    Lock ("SYS:s",    SHARED_LOCK));
+	AssignLock ("Libs", Lock ("SYS:libs", SHARED_LOCK));
+	AssignLock ("Devs", Lock ("SYS:devs", SHARED_LOCK));
 
-	fh_stdin->fh_Device=&emulbase->eb_device;
-	fh_stdin->fh_Unit  =emulbase->eb_stdin;
-	fh_stdout->fh_Device=&emulbase->eb_device;
-	fh_stdout->fh_Unit  =emulbase->eb_stdout;
+	fh_stdin->fh_Device  =&emulbase->eb_device;
+	fh_stdin->fh_Unit    =emulbase->eb_stdin;
+	fh_stdout->fh_Device =&emulbase->eb_device;
+	fh_stdout->fh_Unit   =emulbase->eb_stdout;
 
 	/* AROSBase.StdOut = MKBADDR(fh_stdout); */
 	AROSBase.StdOut = stderr;
 
-	CreateNewProc(bootprocess);
+	CreateNewProc (bootprocess);
 
 	{
 	    struct itimerval interval;
@@ -345,6 +346,8 @@ int main(int argc,char *argv[])
 
     RemTask(NULL); /* get rid of Boot task */
 
-    /* Get compiler happy */
-    return 0;
+    Switch (); /* Rescedule */
+
+    /* Should never get here... */
+    return 21;
 }
