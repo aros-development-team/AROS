@@ -18,7 +18,7 @@
 
 #define DosGetString(stringnum) \
     LP1( , STRPTR , DosGetString, \
-	ULONG, (stringnum), d0, \
+	LONG, (stringnum), d0, \
 	DOS_BASE_NAME )
 
 #endif _DOS_PINLINES_H

@@ -29,7 +29,7 @@
 */
 
 AROS_LP1(STRPTR, DosGetString,
-    AROS_LPA(ULONG, stringNum, D0),
+    AROS_LPA(LONG, stringNum, D0),
     struct DosLibrary *, DOSBase, 163, Dos)
 
 #endif /* _DOS_PRIVATE_H */
