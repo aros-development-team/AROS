@@ -31,6 +31,7 @@ BOOT_TAR_FILES := \
     Classes/DataTypes/ilbm.datatype \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
     Classes/Zune/Calendar.mcc Classes/Zune/Clock.mcc \
+    Classes/Zune/PreferencesWindow.mcc \
     Devs.info \
     Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
     Devs/parallel.device Devs/serial.device Devs/Mountlist \
