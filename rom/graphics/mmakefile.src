@@ -44,6 +44,7 @@ FUNCTIONS := \
 	allocbitmap \
 	allocraster \
 	andrectregion \
+	andregionregion \
 	animate \
 	areadraw \
 	areaellipse \
@@ -104,6 +105,7 @@ FUNCTIONS := \
 	newregion \
 	openfont \
 	orrectregion \
+	orregionregion \
 	polydraw \
 	readpixel \
 	rectfill \
@@ -137,7 +139,8 @@ FUNCTIONS := \
 	weightamatch \
 	writepixel \
 	writepixelarray8 \
-	xorrectregion
+	xorrectregion \
+	xorregionregion
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
