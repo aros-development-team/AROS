@@ -427,5 +427,3 @@ LONG retval;
 	}
 }
 
-const char endhandler = 0;
-

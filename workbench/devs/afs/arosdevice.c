@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <proto/exec.h>
 
 #include <exec/errors.h>
@@ -7,6 +9,7 @@
 #include <dos/dos.h>
 
 #include <aros/libcall.h>
+#include <aros/debug.h>
 
 #include "afshandler.h"
 
@@ -18,8 +21,8 @@
 extern const char name[];
 extern const char version[];
 extern const APTR inittab[4];
-extern void *const functable[];
-extern const UBYTE datatable;
+extern void *const afsfunctable[];
+extern const UBYTE afsdatatable;
 extern struct afsbase *AROS_SLIB_ENTRY(init,afsdev)();
 extern void AROS_SLIB_ENTRY(open,afsdev)();
 extern BPTR AROS_SLIB_ENTRY(close,afsdev)();
@@ -28,40 +31,40 @@ extern int AROS_SLIB_ENTRY(null,afsdev)();
 extern void AROS_SLIB_ENTRY(beginio,afsdev)();
 extern LONG AROS_SLIB_ENTRY(abortio,afsdev)();
 extern void work();
-extern const char endhandler;
+extern const char afshandlerend;
 
-int entry(void)
+int AFS_entry(void)
 {
 	/* If the device was executed by accident return error code. */
 	return -1;
 }
 
-const struct Resident resident=
+const struct Resident AFS_resident=
 {
 	RTC_MATCHWORD,
-	(struct Resident *)&resident,
-	(APTR)&endhandler,
+	(struct Resident *)&AFS_resident,
+	(APTR)&afshandlerend,
 	RTF_AUTOINIT,
 	41,
 	NT_DEVICE,
-	0,
+	-122,
 	(char *)name,
 	(char *)&version[6],
 	(ULONG *)inittab
 };
 
-const char name[]="afs.handler";
-const char version[]="$VER: afs-handler 41.0 (2001-01-17)\n";
+static const char name[]="afs.handler";
+static const char version[]="$VER: afs-handler 41.0 (2001-01-17)\n";
 
-const APTR inittab[4]=
+static const APTR inittab[4]=
 {
 	(APTR)sizeof(struct afsbase),
-	(APTR)functable,
-	(APTR)&datatable,
+	(APTR)afsfunctable,
+	(APTR)&afsdatatable,
 	&AROS_SLIB_ENTRY(init,afsdev)
 };
 
-void *const functable[]=
+void *const afsfunctable[]=
 {
 	&AROS_SLIB_ENTRY(open,afsdev),
 	&AROS_SLIB_ENTRY(close,afsdev),
@@ -72,7 +75,7 @@ void *const functable[]=
 	(void *)-1
 };
 
-const UBYTE datatable = 0;
+const UBYTE afsdatatable = 0;
 
 AROS_LH2(struct afsbase *, init,
  AROS_LHA(struct afsbase *, afsbase, D0),
@@ -246,4 +249,4 @@ AROS_LH1(LONG, abortio,
 	AROS_LIBFUNC_EXIT
 }
 
-
+static const char afshandlerend = 0;
