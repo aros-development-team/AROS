@@ -18,7 +18,7 @@ switch_to_user_mode:
 	move.l	%ssp,%a1
 	lea.l	in_user_mode,%a0
 	move.l	%a0,-(%ssp)	// PC
-	move.w	#0x0000,-(%ssp)	// SR
+	move.w	#0x0700,-(%ssp)	// SR
 	rte			// get the PC and SR
 in_user_mode:
 	move.l	0x4(%a1),%a0

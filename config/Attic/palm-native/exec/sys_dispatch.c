@@ -9,19 +9,16 @@
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
 #include <exec/interrupts.h>
-#include <hardware/custom.h>
-#include <hardware/intbits.h>
 #include <proto/exec.h>
-
 #include <exec_intern.h>
-
 #include <asm/ptrace.h>
+#include "etask.h"
 
 
 void SaveRegs(struct Task *task, struct pt_regs *regs)
 {
 	/* Copy registers from struct pt_regs into the user stack */
-	struct pt_regs * dest = (struct pt_regs *)((ULONG)regs->usp - sizeof(struct pt_regs));
+	struct pt_regs * dest = (struct pt_regs *)GetIntETask(task)->iet_Context;
 	/*
 	 * Use this rather than memcpy! It does NOT work otherwise
 	 */
@@ -51,13 +48,13 @@ void SaveRegs(struct Task *task, struct pt_regs *regs)
 		i++;
 	}
 #endif
-	task->tc_SPReg = (APTR)dest;
+	task->tc_SPReg = regs->usp;
 }
 
 void RestoreRegs(struct Task *task, struct pt_regs *regs)
 {
 	/* Copy registers from the task's stack into struct pt_regs */
-	struct pt_regs * src = (struct pt_regs *)task->tc_SPReg;
+	struct pt_regs * src = (struct pt_regs *)GetIntETask(task)->iet_Context;
 
 	/*
 	 * Use this rather than memcpy! It does NOT work otherwise
@@ -89,7 +86,7 @@ void RestoreRegs(struct Task *task, struct pt_regs *regs)
 	}
 #endif
 
-	task->tc_SPReg = (APTR)((ULONG)src + sizeof(struct pt_regs));
+	task->tc_SPReg = regs->usp;
 }
 
 #define SC_ENABLE(regs)	 (regs->sr &= 0xf8ff)
@@ -99,13 +96,12 @@ void sys_Dispatch(struct pt_regs * regs)
 {
 	struct IntVector *iv;
 
-	struct ExecBase * SysBase = (struct ExecBase *)*(ULONG *)0x04; 
+	struct ExecBase * SysBase = (struct ExecBase *)*(ULONG *)0x04;
 
 	/* Hmm, interrupts are nesting, not a good idea... */
 	if(!user_mode(regs)) {
 		return;
 	}
-
 
 #warning Enabling Multitasking here. Remove this!The Boot Task seems to run under Forbid().
 #if 1
