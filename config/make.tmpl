@@ -1641,21 +1641,21 @@ $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
 
 %end
 
-%define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS)
+%define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs
 STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
 STUBS_OBJ := $(foreach f,$(STUBS),$(OBJDIR)/$(f).o)
 STUBS_MEM := $(foreach f,$(STUBS),$(f).o)
 STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
 HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
-#MM- linklibs: hidd-%(hidd)-stubs
+#MM- %(parenttarget): hidd-%(hidd)-stubs
 #MM hidd-%(hidd)-stubs : includes includes-copy
-hidd-%(hidd)-stubs : $(HIDD_LIB)($(STUBS_MEM))
+hidd-%(hidd)-stubs : setup $(HIDD_LIB)($(STUBS_MEM))
 
 $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
 	%mklib_q from=$^
 
-$(STUBS_OBJ) : $(STUBS_SRC)
+$(STUBS_OBJ) : $(STUBS_SRC) 
 	%compile_q cmd=$(TARGET_CC) opt=%(cflags)
 
 $(STUBS_DEP) : $(STUBS_SRC)
