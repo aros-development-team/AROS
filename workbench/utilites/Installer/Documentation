@@ -200,7 +200,7 @@ Arguments in [...] are optional.
 )
   Asks the user to select yes or no unless user is NOVICE
   (ie. @user-level = 0 ).
-  default defaults to 0 = no
+  defaults to 0 = no
 
 
 ( asknumber [( help <string>... )]
@@ -209,7 +209,7 @@ Arguments in [...] are optional.
             [( range <min-int> <maxint>] )]
 )
   Asks the user for a number unless user is NOVICE (ie. @user-level = 0 ).
-  default defaults to 0
+  defaults to 0
   range defaults to non-negative numbers, unless default is negative which
   causes range to be extended to include the default number.
 
@@ -219,7 +219,7 @@ Arguments in [...] are optional.
             [( default <int> )]
 )
   Asks the user for a string unless user is NOVICE (ie. @user-level = 0 ).
-  default defaults to ""
+  defaults to ""
 
 
 ( askchoice [( help <string>... )]
@@ -229,7 +229,7 @@ Arguments in [...] are optional.
 )
   Asks the user to select one item out of N unless user is NOVICE
   (ie. @user-level = 0 ).
-  default defaults to 0
+  defaults to 0
   choices is list of strings listed as items of the requester
   NULL strings will not be displayed.
   The Return value is the number of the selected item, starting with 0 as

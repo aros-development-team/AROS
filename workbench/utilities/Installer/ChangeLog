@@ -292,4 +292,12 @@
 - added gui.h as API description for future GUIs
 - scaled size of mxgadgets
 
+0047
+- added gui for request_string(), lacks gui for help text
+- moved help texts to texts.h
+- added gui for request_number() (clone from request_string())
+- added macros ExecuteCommand() and ExecuteNextCommand() in execute.c
+- new mmakefile.src by Iain Templeton (iaint@aros.org) for the
+  New Build Process
+
 

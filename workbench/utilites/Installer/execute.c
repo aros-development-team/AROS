@@ -39,6 +39,17 @@ void free_parameterlist( struct ParameterList * );
 void free_parameter( struct ParameterList );
 void traperr( char *, char * );
 
+#define ExecuteCommand()				\
+    if( current->cmd != NULL )				\
+    {							\
+      execute_script( current->cmd, level + 1 );	\
+    }
+#define ExecuteNextCommand()				\
+    if( current->next->cmd != NULL )			\
+    {							\
+      execute_script( current->next->cmd, level + 1 );	\
+    }
+
 int doing_abort = FALSE;
 char * callbackstring = NULL, * globalstring = NULL;
 
@@ -132,14 +143,8 @@ void *params;
 			  if( current->next != NULL  && current->next->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
-			    if( current->next->cmd != NULL )
-			    {
-			      execute_script( current->next->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
+			    ExecuteNextCommand();
 			    i = getint( current );
 			    current = current->next;
 			    j = getint( current );
@@ -217,10 +222,7 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			  }
 			  else
@@ -265,10 +267,7 @@ void *params;
 			  {
 			    char *stringarg = NULL;
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			    if( i == 0 )
 			    {
@@ -278,10 +277,7 @@ void *params;
 			    if( current->next != NULL )
 			    {
 			      current = current->next;
-			      if( current->cmd != NULL )
-			      {
-				execute_script( current->cmd, level + 1 );
-			      }
+			      ExecuteCommand();
 			      current->parent->intval = current->intval;
 			      if( current->arg != NULL )
 			      {
@@ -307,20 +303,14 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			  }
 			  /* Write the corresponding bits of i into parent */
 			  while( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    j = getint( current );
 			    current->parent->intval |= i & ( 1 << j );
 			  }
@@ -331,10 +321,7 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			    current->parent->intval = ( cmd_type == _NOT ) ? !i : ~i;
 			  }
@@ -349,10 +336,7 @@ void *params;
 			  while( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			    current->parent->intval += i;
 			  }
@@ -366,10 +350,7 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			    if( i > 0 )
 			    {
@@ -414,10 +395,7 @@ void *params;
 			      i = current->next->intval;
 			      clip = NULL;
 			      string = NULL;
-			      if( current->cmd != NULL )
-			      {
-				execute_script( current->cmd, level + 1 );
-			      }
+			      ExecuteCommand();
 			      if( current->arg == NULL )
 			      {
 				/* There is no varname */
@@ -443,11 +421,7 @@ void *params;
 				string = strdup( clip2 );
 				outofmem( string );
 			      }
-			      if( current->next->cmd != NULL )
-			      {
-				/* There is a command instead of a value -- execute command */
-				execute_script( current->next->cmd, level + 1 );
-			      }
+			      ExecuteNextCommand();
 			      if( current->next->arg != NULL )
 			      {
 				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
@@ -507,13 +481,10 @@ void *params;
       case _SYMBOLVAL	: /* return values of variables -- allow strings and commands as variablenames */
 			  if( current->next != NULL )
 			  {
-			    current = current->next;
 			    string = NULL;
 			    clip = NULL;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    current = current->next;
+			    ExecuteCommand();
 			    if( current->arg == NULL )
 			    {
 			      /* There is no varname */
@@ -568,11 +539,7 @@ void *params;
 				error = BADPARAMETER;
 				traperr( "<%s> expected symbol, found quoted string instead!\n", current->parent->cmd->arg );
 			      }
-			      if( current->next->cmd != NULL )
-			      {
-				/* There is a command instead of a value -- execute command */
-				execute_script( current->next->cmd, level + 1 );
-			      }
+			      ExecuteNextCommand();
 			      if( current->next->arg != NULL )
 			      {
 				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
@@ -625,10 +592,7 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    if( current->arg != NULL )
 			    {
 			      current->parent->intval = ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE ) ?
@@ -655,11 +619,7 @@ void *params;
 			  while( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      /* There is a command instead of a value -- execute command */
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    if( current->arg != NULL )
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
@@ -714,12 +674,9 @@ void *params;
       case _SUBSTR	: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
 			  if( current->next != NULL && current->next->next != NULL )
 			  {
-			    current = current->next;
 			    /* Get string */
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    current = current->next;
+			    ExecuteCommand();
 			    if( current->arg != NULL )
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
@@ -763,10 +720,7 @@ void *params;
 			    if( current->next != NULL )
 			    {
 			      current = current->next;
-			      if( current->cmd != NULL )
-			      {
-				execute_script( current->cmd, level + 1 );
-			      }
+			      ExecuteCommand();
 			      j = getint( current );
 			      if( j < 0 )
 			      {
@@ -802,10 +756,7 @@ void *params;
 			  while( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current );
 			    current->parent->intval *= i;
 			  }
@@ -837,16 +788,10 @@ void *params;
 			    while( i == 0 )
 			    {
 			      /* Execute command */
-			      if( current->next->cmd != NULL )
-			      {
-				execute_script( current->next->cmd, level + 1 );
-			      }
+			      ExecuteNextCommand();
 
 			      /* Now check condition */
-			      if( current->cmd != NULL )
-			      {
-				execute_script( current->cmd, level + 1 );
-			      }
+			      ExecuteCommand();
 			      i = getint( current );
 
 			      /* condition is true -> return values and exit */
@@ -872,10 +817,7 @@ void *params;
 			  if( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    if( current->arg != NULL )
 			    {
 			      string = NULL;
@@ -950,19 +892,13 @@ void *params;
 			    i = 1;
 			    while( i != 0 )
 			    {
-			      if( current->cmd != NULL )
-			      {
-				execute_script( current->cmd, level + 1 );
-			      }
+			      ExecuteCommand();
 
 			      /* Now check condition */
 			      i = getint( current );
 			      if( i != 0 )
 			      {
-				if( current->next->cmd != NULL )
-				{
-				  execute_script( current->next->cmd, level + 1 );
-				}
+				ExecuteNextCommand();
 			      }
 			      else
 			      {
@@ -1124,10 +1060,7 @@ void *params;
 			  if( current->next != NULL  && current->next->next->cmd != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    i = getint( current ) - 1;
 			    current = current->next;
 			    /* reset parent of old trap statement */
@@ -1217,11 +1150,7 @@ void *params;
 			  break;
 
       case _STARTUP	:
-			  if( current->next->cmd != NULL )
-			  {
-			    /* There is a command instead of a value -- execute command */
-			    execute_script( current->next->cmd, level + 1 );
-			  }
+			  ExecuteNextCommand();
 			  if( current->next->arg != NULL )
 			  {
 			    string = strip_quotes( current->next->arg );
@@ -1278,11 +1207,7 @@ void *params;
 			  while( current->next != NULL && i < usrproc->argnum )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
-			    {
-			      /* There is a command instead of a value -- execute command */
-			      execute_script( current->cmd, level + 1 );
-			    }
+			    ExecuteCommand();
 			    if( current->arg != NULL )
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
@@ -1604,11 +1529,7 @@ int i;
 
   while( current != NULL )
   {
-    if( current->cmd != NULL )
-    {
-      /* There is a command instead of a value -- execute command */
-      execute_script( current->cmd, level + 1 );
-    }
+    ExecuteCommand();
     /* Concatenate string unless it was a parameter which will be ignored */
     if( current->ignore == 0 )
     {
@@ -1689,11 +1610,14 @@ void free_parameterlist(struct ParameterList *pl)
 {
 int i;
 
-  for( i = 0 ; i < NUMPARAMS ; i++ )
+  if( pl )
   {
-    free_parameter( pl[i] );
+    for( i = 0 ; i < NUMPARAMS ; i++ )
+    {
+      free_parameter( pl[i] );
+    }
+    free(pl);
   }
-  free(pl);
 }
 
 
@@ -1759,11 +1683,7 @@ char *string, *clip;
 				  i = _EXPERT;
 				  if( current != NULL )
 				  {
-				    if( current->cmd != NULL )
-				    {
-				      /* There is a command instead of a value -- execute command */
-				      execute_script( current->cmd, level + 1 );
-				    }
+				    ExecuteCommand();
 				    if( current->arg != NULL )
 				    {
 				      string = NULL;
@@ -1811,11 +1731,7 @@ char *string, *clip;
 				  string = NULL;
 				  if( current != NULL )
 				  {
-				    if( current->cmd != NULL )
-				    {
-				      /* There is a command instead of a value -- execute command */
-				      execute_script( current->cmd, level + 1 );
-				    }
+				    ExecuteCommand();
 				    if( current->arg != NULL )
 				    {
 				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
@@ -1870,18 +1786,10 @@ char *string, *clip;
 				  i = 0;
 				  if( current != NULL && current->next != NULL )
 				  {
-				    if( current->cmd != NULL )
-				    {
-				      /* There is a command instead of a value -- execute command */
-				      execute_script( current->cmd, level + 1 );
-				    }
+				    ExecuteCommand();
 				    GetPL( pl, cmd ).intval = getint( current );
 				    current = current->next;
-				    if( current->cmd != NULL )
-				    {
-				      /* There is a command instead of a value -- execute command */
-				      execute_script( current->cmd, level + 1 );
-				    }
+				    ExecuteCommand();
 				    GetPL( pl, cmd ).intval2 = getint( current );
 				  }
 				  else
@@ -1895,11 +1803,7 @@ char *string, *clip;
 				  i = 0;
 				  if( current != NULL )
 				  {
-				    if( current->cmd != NULL )
-				    {
-				      /* There is a command instead of a value -- execute command */
-				      execute_script( current->cmd, level + 1 );
-				    }
+				    ExecuteCommand();
 				    if( current->arg != NULL )
 				    {
 				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
@@ -1954,10 +1858,7 @@ char *string, *clip;
 	    case _IF	: /* if 1st arg != 0 get parameter from 2nd cmd else get optional 3rd cmd parameter */
 			if( current != NULL && current->next != NULL )
 			{
-			  if( current->cmd != NULL )
-			  {
-			    execute_script( current->cmd, level + 1 );
-			  }
+			  ExecuteCommand();
 			  i = getint( current );
 			  if( i == 0 )
 			  {
@@ -2016,11 +1917,7 @@ int j = 0;
 
   while( current != NULL )
   {
-    if( current->cmd != NULL )
-    {
-      /* There is a command instead of a value -- execute command */
-      execute_script( current->cmd, level + 1 );
-    }
+    ExecuteCommand();
     mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
     outofmem( mclip );
     if( current->arg != NULL )

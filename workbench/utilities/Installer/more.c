@@ -29,8 +29,8 @@
 #define INNER_SPACING_X 2
 #define INNER_SPACING_Y 2
 
-#define WINDOWWIDTH	360
-#define WINDOWHEIGHT	210
+#define WINDOWWIDTH	390
+#define WINDOWHEIGHT	228
 
 #define MAX_TEXTLINELEN 4096
 
@@ -438,7 +438,7 @@ static void MakeWin(char *title)
 
     if (!(morewin = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
 				 WA_Left,(scr->Width - WINDOWWIDTH)/2,
-				 WA_Top,(scr->Height - WINDOWHEIGHT)/2,
+				 WA_Top,(scr->Height - (WINDOWHEIGHT-10))/2+1,
 				 WA_Width,WINDOWWIDTH,
 				 WA_Height,WINDOWHEIGHT,
 				 WA_Title,(IPTR)wintitle,
