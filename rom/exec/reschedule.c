@@ -84,10 +84,7 @@
     switch(task->tc_State)
     {
 	case TS_READY:
-            AddTail(&SysBase->TaskReady, (struct Node *)task);
-/*  This would be the correct implementation
             Enqueue(&SysBase->TaskReady, (struct Node *)task);
-*/
             break;
 
 	case TS_ADDED:
