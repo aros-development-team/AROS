@@ -83,14 +83,28 @@ static void KillNotifications(void);
 WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 {
     struct EasyStruct es;
-    
+
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;
     es.es_Title        = title;
     es.es_TextFormat   = text;
     es.es_GadgetFormat = gadtext;
-   
-    return EasyRequestArgs(NULL, &es, NULL, NULL);  
+
+    return EasyRequestArgs(NULL, &es, NULL, NULL);
+}
+/*********************************************************************************************/
+
+LONG __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
+struct Process *__detacher_process = NULL;
+
+void DoDetach(void)
+{
+    /* If there's a detacher, tell it to go away */
+    if (__detacher_process)
+    {
+        Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
+    }
+    __detacher_process = NULL;
 }
 
 /*********************************************************************************************/
@@ -107,6 +121,7 @@ void Cleanup(STRPTR msg)
 
     KillNotifications();
     CloseLibs();
+    DoDetach();
 
     exit(prog_exitcode);
 }
@@ -124,7 +139,7 @@ static void OpenLibs(void)
 	{
 	    sprintf(s, "Can't open %s V%ld!", li->name, li->version);
 	    Cleanup(s);
-	}       
+	}
     }
        
 }
@@ -196,7 +211,7 @@ static void StartNotifications(void)
 	{
 	    D(bug("Notification start failed!! Continuing anyway!\n"));
 	}
-	
+
     } /* for(i = 0; preftable[i].filename; i++) */
 }
 
@@ -229,10 +244,10 @@ static void PreparePatches(void)
 {
     struct IPrefsSem 	   *sem;
     BOOL    	    	   created_sem = FALSE;
-    
+
     sem = AllocVec(sizeof(struct IPrefsSem), MEMF_PUBLIC | MEMF_CLEAR);
     if (!sem) Cleanup("Out of memory!");
-    
+
     InitSemaphore(&sem->sem);
     sem->sem.ss_Link.ln_Name = sem->semname;
     strcpy(sem->semname, IPREFS_SEM_NAME);
@@ -298,13 +313,11 @@ static void HandleAll(void)
     } /* for(;;) */
 }
 
+
 /*********************************************************************************************/
 
 
 int __nocommandline = 1;
-
-LONG __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
-struct Process *__detacher_process = NULL;
 
 int main(void)
 {
@@ -315,13 +328,7 @@ int main(void)
     StartNotifications();
     PreparePatches();
     HandleNotify();
-
-    /* If there's a detacher, tell it to go away */
-    if (__detacher_process)
-    {
-        Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
-    }
-
+    DoDetach();
     HandleAll();
     Cleanup(NULL);
 
