@@ -56,7 +56,43 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
     it->DrawMode  = JAM1;
     it->LeftEdge  = 0;
     it->TopEdge   = 0;
-    it->ITextFont = ng->ng_TextAttr;
+    it->ITextFont = AllocVec(sizeof(struct TextAttr), MEMF_ANY);
+    if (!it->ITextFont)
+    {
+        FreeVec(it);
+        return NULL;
+    }
+    if (ng->ng_TextAttr)
+    {
+        int len = strlen(ng->ng_TextAttr->ta_Name) + 1;
+
+        it->ITextFont->ta_Name = AllocVec(len, MEMF_ANY);
+        if (!it->ITextFont->ta_Name)
+        {
+            FreeVec(it->ITextFont);
+            FreeVec(it);
+            return NULL;
+        }
+        CopyMem(ng->ng_TextAttr->ta_Name, it->ITextFont->ta_Name, len);
+        it->ITextFont->ta_YSize = ng->ng_TextAttr->ta_YSize;
+        it->ITextFont->ta_Style = ng->ng_TextAttr->ta_Style;
+        it->ITextFont->ta_Flags = ng->ng_TextAttr->ta_Flags;
+    } else
+    {
+        int len = strlen(dri->dri_Font->tf_Message.mn_Node.ln_Name) + 1;
+
+        it->ITextFont->ta_Name = AllocVec(len, MEMF_ANY);
+        if (!it->ITextFont->ta_Name)
+        {
+            FreeVec(it->ITextFont);
+            FreeVec(it);
+            return NULL;
+        }
+        CopyMem(dri->dri_Font->tf_Message.mn_Node.ln_Name, it->ITextFont->ta_Name, len);
+        it->ITextFont->ta_YSize = dri->dri_Font->tf_YSize;
+        it->ITextFont->ta_Style = dri->dri_Font->tf_Style;
+        it->ITextFont->ta_Flags = dri->dri_Font->tf_Flags;
+    }
     it->IText     = ng->ng_GadgetText;
     it->NextText  = NULL;
 

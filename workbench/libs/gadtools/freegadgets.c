@@ -58,7 +58,10 @@
 	nextgad = glist->NextGadget;
 	if ((glist->Flags & GTYP_GADTOOLS))
 	{
+            FreeVec(glist->GadgetText->ITextFont->ta_Name);
+            FreeVec(glist->GadgetText->ITextFont);
 	    FreeVec(glist->GadgetText);
+            glist->GadgetText = NULL;
 	    DisposeObject(glist);
 	}
 	else

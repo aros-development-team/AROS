@@ -91,15 +91,15 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 {
     struct Gadget *gad;
     int labels = 0;
-    UWORD height;
     STRPTR *labellist;
     struct TagItem *tag, tags[] =
     {
 	{GA_Disabled, FALSE},
-	{GTMX_Labels, (IPTR) NULL},
-	{GTMX_Active, 0},
-	{GTMX_Spacing, 1},
-	{GA_LabelPlace, GV_LabelPlace_Above},
+	{AROSMX_Labels, (IPTR) NULL},
+	{AROSMX_Active, 0},
+	{AROSMX_Spacing, 1},
+        {AROSMX_TickHeight, MX_HEIGHT},
+        {AROSMX_TickLabelPlace, GV_LabelPlace_Right},
 	{TAG_MORE, (IPTR) NULL}
     };
 
@@ -108,8 +108,6 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     if (!GadToolsBase->arosmxbase)
         return NULL;
 
-    height = stdgadtags[TAG_Height].ti_Data;
-
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     labellist = (STRPTR *) GetTagData(GTMX_Labels, (IPTR) NULL, taglist);
     if (!labellist)
@@ -117,34 +115,47 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     tags[1].ti_Data = (IPTR) labellist;
     tags[2].ti_Data = GetTagData(GTMX_Active, 0, taglist);
     tags[3].ti_Data = GetTagData(GTMX_Spacing, 1, taglist);
+    if (GetTagData(GTMX_Scaled, FALSE, taglist))
+        tags[4].ti_Data = stdgadtags[TAG_Height].ti_Data;
+    else
+        stdgadtags[TAG_Width].ti_Data = MX_WIDTH;
+    tags[5].ti_Data = stdgadtags[TAG_LabelPlace].ti_Data;
+    switch (stdgadtags[TAG_LabelPlace].ti_Data & 0x1f)
+    {
+    case PLACETEXT_LEFT:
+        tags[5].ti_Data = GV_LabelPlace_Left;
+        break;
+    case PLACETEXT_ABOVE:
+        tags[5].ti_Data = GV_LabelPlace_Above;
+        break;
+    case PLACETEXT_BELOW:
+        tags[5].ti_Data = GV_LabelPlace_Below;
+        break;
+    }
+    tags[6].ti_Data = (IPTR) stdgadtags;
+
     tag = FindTagItem(GTMX_TitlePlace, taglist);
     if (tag)
     {
         switch (tag->ti_Data)
         {
         case PLACETEXT_LEFT:
-            tags[4].ti_Data = GV_LabelPlace_Left;
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Left;
             break;
         case PLACETEXT_RIGHT:
-            tags[4].ti_Data = GV_LabelPlace_Right;
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Right;
             break;
         case PLACETEXT_ABOVE:
-            tags[4].ti_Data = GV_LabelPlace_Above;
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
             break;
         case PLACETEXT_BELOW:
-            tags[4].ti_Data = GV_LabelPlace_Below;
+            stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Below;
             break;
         }
     }
-    tags[5].ti_Data = (IPTR) stdgadtags;
 
-    if (!GetTagData(GTMX_Scaled, FALSE, taglist)) {
-	stdgadtags[TAG_Width].ti_Data = MX_WIDTH;
-	height = MX_HEIGHT;
-    }
     while (labellist[labels])
 	labels++;
-    stdgadtags[TAG_Height].ti_Data = (height + tags[3].ti_Data) * labels - tags[3].ti_Data;
 
     gad = (struct Gadget *) NewObjectA(NULL, AROSMXCLASS, tags);
 
