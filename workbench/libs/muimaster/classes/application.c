@@ -329,7 +329,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	for (i = 1; i < 1000; i++)
 	{
-	    snprintf(portname, 255, "%s.%d", data->app_Base, i);
+	    snprintf(portname, 255, "%s.%ld", data->app_Base, (LONG)i);
 	    if (!find_application_by_base(cl, obj, portname))
 		break;
 	}
