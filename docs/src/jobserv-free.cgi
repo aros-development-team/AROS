@@ -14,7 +14,7 @@ $name = getUserName ($sock, $login);
 
 printf ("Content-type: text/html\n\n");
 
-debugenv(1,$argc,$argv);
+debugenv(0,$argc,$argv);
 
 $jobids="";
 
@@ -50,7 +50,7 @@ if ($jobids != "")
     $jobids = "and (" + $jobids + ")";
 }
 
-printf ("%s<P>\n", $jobids);
+/* printf ("%s<P>\n", $jobids); */
 
 $res = msqlQuery ($sock, "select jobid,comment from jobs where status = 0 " +
 	    $jobids + " order by comment");
@@ -69,7 +69,7 @@ printf ("your want to do and submit the form<P>\n");
 
 $query = msqlStoreResult ();
 
-echo ("<FORM ACTION=\"cgi-bin/jobserv.cgi\" METHOD=\"GET\">\n");
+echo ("<FORM ACTION=\"jobserv.cgi\" METHOD=\"GET\">\n");
 echo ("<TABLE>\n");
 echo ("<TR><TH>Req</TH><TH>Job</TH><TH>Req</TH><TH>Job</TH><TH>Req</TH><TH>Job</TH></TR>\n");
 
