@@ -1,0 +1,57 @@
+## version $VER: ScreenGrabber.catalog 1.0 (03.02.2005)
+## language magyar
+## codeset 0
+;
+;
+MSG_WINDOW_TITLE
+Képlopó
+; ScreenGrabber
+;
+MSG_REFRESH
+Frissítés lista
+; Refresh list
+;
+MSG_SCREEN_INFO
+Képernyõ információ
+; Screen info
+;
+MSG_SIZE
+Méret
+; Size
+;
+MSG_TITLE
+Fejléc
+; Title
+;
+MSG_DEFAULT_TITLE
+Alap fejléc
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Képlopás opciók
+; Grabbing options
+;
+MSG_DELAY
+Késleltetés (mp)
+; Delay (s)
+;
+MSG_HIDE
+Képlopó ablak elrejtése
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Mentési beállítások
+; Save options
+;
+MSG_SAVE_FILE
+Fájl
+; Save file
+;
+MSG_SCREENSHOT
+Képernyõkép
+; Screenshot
+;
+MSG_SCREEN_PARM
+%d x %d, színek=%d
+; %d x %d, depth=%d
+;
