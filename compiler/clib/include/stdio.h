@@ -14,15 +14,19 @@
 #endif
 
 #ifndef NULL
-#ifdef __cplusplus
-#define NULL 0
-#else
-#define NULL (void*)0
-#endif /* __cplusplus */
+#   ifdef __cplusplus
+#	define NULL 0
+#   else
+#	define NULL (void*)0
+#   endif /* __cplusplus */
 #endif /* NULL */
 
 #ifndef EOF
-#define EOF (-1)
+#   define EOF (-1)
+#endif
+
+#ifndef BUFSIZ
+#   define BUFSIZ 1024
 #endif
 
 typedef struct __FILE
