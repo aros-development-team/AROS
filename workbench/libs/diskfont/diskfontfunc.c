@@ -605,7 +605,7 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 	
 	if (ok)
 	{
-	    Examine(dirlock, fib);
+	    Examine(direntry->DirLock, fib);
 	    direntry->DirChanged = fib->fib_Date;
 	    fh = Open(CACHE_FILE, MODE_OLDFILE);
 	    if (fh != NULL)
