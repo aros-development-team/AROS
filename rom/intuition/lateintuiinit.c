@@ -58,9 +58,11 @@
 
     struct TagItem screenTags[] =
     {
-	{ SA_Depth, 4			},
-	{ SA_Type,  WBENCHSCREEN	},
-	{ SA_Title, (IPTR)"Workbench"   },
+	{ SA_Depth, 	4			},
+	{ SA_Type,  	WBENCHSCREEN		},
+	{ SA_Title, 	(IPTR)"Workbench"   	},
+	{ SA_Width, 	640			},
+	{ SA_Height,	480			},	
 	{ TAG_END, 0 }
     };
     
