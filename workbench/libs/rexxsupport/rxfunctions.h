@@ -9,4 +9,10 @@
 #include <exec/types.h>
 
 LONG rxsupp_allocmem(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_closeport(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_freemem(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_getarg(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_getpkt(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_openport(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_reply(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_waitpkt(struct Library *, struct RexxMsg *, UBYTE **);

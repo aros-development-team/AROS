@@ -6,12 +6,12 @@ USER_INCLUDES = -I.
 MODNAME	    := rexxsupport
 MODTYPE	    := library
 
-FILES := allocmem freemem
-FUNCS := arexxdispatch
+FILES := allocmem freemem openport closeport waitpkt getarg getpkt \
+         portcleanup reply
+FUNCS := arexxdispatch closeportrsrc
 
 USE_ROMLIB := yes
-#USE_AMIGALIB := yes
-#USE_AROSLIB := yes
+USE_AMIGALIB := yes
 
 #MM- workbench-libs-rexxsupport : setup includes linklibs workbench-libs-rexxsupport-module
 #MM
