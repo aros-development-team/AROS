@@ -545,10 +545,12 @@ int main (int argc, char ** argv)
 	goto end;
     }
 
+    cioreq.io_Message.mn_Length = sizeof(struct IOStdReq);
+    
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = (struct Library *)cioreq.io_Device;
     printf ("Opening console.device=%p (%s)\n", ConsoleDevice,
-	ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
+	ConsoleDevice && ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
 
     if (!ConsoleDevice)
     {
