@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -163,7 +163,8 @@
 
 /*********************************************************************************************/
 
-#define IPREFS_SEM_NAME "« IPrefs »"
+#define IPREFS_SEM_NAME     "« IPrefs »"
+#define DO_LOCALE_PATCHES   0
 
 struct IPrefsSem
 {
