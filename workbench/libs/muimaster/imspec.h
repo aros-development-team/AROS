@@ -9,7 +9,10 @@
 #ifndef _MUI_IMSPEC_H
 #define _MUI_IMSPEC_H
 
-struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in);
+char *zune_image_spec_duplicate(IPTR in);
+void zune_image_spec_free(char *spec);
+
+struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj);
 void zune_image_spec_parse_string (STRPTR s, struct MUI_ImageSpec **out);
 STRPTR zune_imspec_to_string (struct MUI_ImageSpec *spec);
 struct MUI_ImageSpec *zune_get_pattern_spec(LONG muiipatt);

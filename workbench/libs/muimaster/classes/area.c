@@ -248,7 +248,6 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mad_Flags = MADF_FILLAREA | MADF_SHOWME | MADF_SHOWSELSTATE;
     data->mad_HorizWeight = data->mad_VertWeight = 100;
     data->mad_InputMode = MUIV_InputMode_None;
-    data->mad_Background = (struct MUI_ImageSpec *)-1;
 
     /* parse initial taglist */
 
@@ -256,9 +255,11 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case MUIA_Background:
-		data->mad_Background = (struct MUI_ImageSpec *)tag->ti_Data;
-		break;
+	    case    MUIA_Background:
+		    data->mad_Flags |= MADF_OWNBG;
+		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
+		    break;
+
 	    case MUIA_ControlChar:
 		data->mad_ControlChar = tag->ti_Data;
 		break;
@@ -349,23 +350,14 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    if (data->mad_Background != (struct MUI_ImageSpec *)-1) /* own bg ? */
-	data->mad_Background = zune_image_spec_to_structure((ULONG)data->mad_Background);
-    else data->mad_Background = NULL; /* will be filled by parent */
-
-    if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
-	data->mad_SelBack = zune_image_spec_to_structure(MUII_SelectedBack);
-
     /* In Soliton MUIA_Selected was setted to MUIV_InputMode_RelVerify (=1) for MUIA_Input_Mode
     ** MUIV_InputMode_RelVerify which is wrong of course but MUI seems to filter this out
     ** so we have to do it also
     */
     if (data->mad_InputMode == MUIV_InputMode_RelVerify)
     {
-#ifdef MYDEBUG
     	if (data->mad_Flags & MADF_SELECTED)
 	    D(bug("MUIA_Selected was set in OM_NEW, although being in MUIV_InputMode_RelVerify\n"));
-#endif
     	data->mad_Flags &= ~MADF_SELECTED;
     }
 
@@ -405,11 +397,7 @@ static ULONG Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	mui_free(data->mad_FrameTitle);
     }
 
-    if (data->mad_Background)
-	zune_imspec_free(data->mad_Background);
-
-    if (data->mad_SelBack)
-	zune_imspec_free(data->mad_SelBack);
+    zune_image_spec_free(data->mad_BackgroundSpec); /* Safe to call this with NULL */
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -428,28 +416,33 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case MUIA_Background:
-		if (data->mad_Background)
-		{
-		    if (_flags(obj) & MADF_CANDRAW)
-			zune_imspec_hide(data->mad_Background);
+	    case    MUIA_Background:
+		    if (data->mad_Background)
+		    {
+			if (_flags(obj) & MADF_CANDRAW) zune_imspec_hide(data->mad_Background);
+			if (_flags(obj) & MADF_SETUP)
+			{
+			    zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
+			    zune_imspec_free(data->mad_Background);
+			}
+		    }
+		    zune_image_spec_free(data->mad_BackgroundSpec);
+		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
+		    data->mad_Flags |= MADF_OWNBG;
+
 		    if (_flags(obj) & MADF_SETUP)
-			zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
-		    zune_imspec_free(data->mad_Background);
-		}
-		data->mad_Background =
-		    zune_image_spec_to_structure((ULONG)tag->ti_Data);
-		if (_flags(obj) & MADF_SETUP)
-		    zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
-		if (_flags(obj) & MADF_CANDRAW)
-		{
-		    zune_imspec_set_scaled_size(data->mad_Background,
-						_width(obj), _height(obj));
-		    zune_imspec_show(data->mad_Background, obj);
-		}
-/*    		g_print("set img %p for area %p\n", data->mad_Background, obj); */
-		MUI_Redraw(obj, MADF_DRAWOBJECT);
-		break;
+		    {
+			data->mad_Background = zune_image_spec_to_structure(data->mad_BackgroundSpec,obj);
+			zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
+		    }
+
+		    if (_flags(obj) & MADF_CANDRAW)
+		    {
+			zune_imspec_set_scaled_size(data->mad_Background, _width(obj), _height(obj));
+			zune_imspec_show(data->mad_Background, obj);
+		    }
+		    MUI_Redraw(obj, MADF_DRAWOBJECT);
+		    break;
 
 	    case MUIA_ControlChar:
 		if (_flags(obj) & MADF_SETUP)
@@ -1050,11 +1043,12 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     area_update_data(data);
 
+    if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure(data->mad_BackgroundSpec,obj);
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 
-    if (data->mad_Flags & MADF_SHOWSELSTATE
-	&& data->mad_InputMode != MUIV_InputMode_None)
+    if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
     {
+	data->mad_SelBack = zune_image_spec_to_structure(MUII_SelectedBack,obj);
 	zune_imspec_setup(&data->mad_SelBack, muiRenderInfo(obj));
     }
 
@@ -1140,14 +1134,18 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     if (data->mad_ehn.ehn_Events)
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 
-    if (data->mad_Flags & MADF_SHOWSELSTATE
-	&& data->mad_InputMode != MUIV_InputMode_None)
+    if (data->mad_Flags & MADF_SHOWSELSTATE && data->mad_InputMode != MUIV_InputMode_None)
     {
 	zune_imspec_cleanup(&data->mad_SelBack, muiRenderInfo(obj));
+	zune_imspec_free(data->mad_SelBack);
+	data->mad_SelBack = NULL;
     }
 
     zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
+    zune_imspec_free(data->mad_Background);
+    data->mad_Background = NULL;
 
+ 
     muiRenderInfo(obj) = NULL;
     return TRUE;
 }
