@@ -31,7 +31,7 @@ makedirs:
 # Create the tools that are used to build AROS.
 tools : makedirs $(TOOLLIB) $(GENMF) $(CPAK) $(ARCHTOOL) \
 	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
-	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) \
+	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) $(AFSLIB) $(COPYTOAFS) \
 	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
@@ -69,6 +69,14 @@ $(ADFLIB) : $(wildcard $(TOP)/tools/adflib/*.[ch])
 $(CREATEHDFILE) : $(TOP)/tools/disktool/createhdfile.c
 	@$(ECHO) Building createhdfile...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/disktool TOP=$(TOP)
+
+$(AFSLIB) : $(wildcard $(TOP)/workbench/devs/afs/*.[ch])
+	@$(ECHO) Building afslib...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs -f Makefile.afslib TOP=$(TOP)
+
+$(COPYTOAFS) : $(TOP)/tools/copytoafs/copytoafs.c
+	@$(ECHO) Building copytoafs...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs TOP=$(TOP)
 
 $(MKFSAFFS) : $(TOP)/tools/mkfsaffs/mkfsaffs.c
 	@$(ECHO) Building mkfsaffs...
