@@ -38,10 +38,7 @@ struct Pendisplay_DATA
     LONG    	    	pen;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Pendisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Pendisplay_DATA   *data;
     struct TagItem  	    	*tag, *tags;
@@ -82,10 +79,7 @@ static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static IPTR Pendisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Pendisplay__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Pendisplay_DATA   *data;
  
@@ -98,14 +92,11 @@ static IPTR Pendisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Pendisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Pendisplay_DATA   *data;
     struct TagItem  	    	*tag, *tags;
-   BOOL    	    	    	 newcol = FALSE;
+    BOOL    	    	    	 newcol = FALSE;
     IPTR    	    	    	 retval;
     
     data = INST_DATA(cl, obj);
@@ -170,10 +161,7 @@ static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG  Pendisplay_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Pendisplay__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Pendisplay_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
@@ -204,11 +192,7 @@ static ULONG  Pendisplay_Get(struct IClass *cl, Object * obj, struct opGet *msg)
     return TRUE;
 }
 
-
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Pendisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Pendisplay__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Pendisplay_DATA *data = INST_DATA(cl,obj);
 
@@ -222,10 +206,7 @@ static IPTR Pendisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static IPTR Pendisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Pendisplay__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Pendisplay_DATA *data = INST_DATA(cl,obj);
 
@@ -238,10 +219,7 @@ static IPTR Pendisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clean
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Pendisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Pendisplay__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -255,10 +233,7 @@ static IPTR Pendisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     return 0;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Pendisplay_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Pendisplay__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Pendisplay_DATA *data = INST_DATA(cl,obj);
     LONG    	    	       color;
@@ -300,11 +275,7 @@ static IPTR Pendisplay_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
     return 0;
 }
 
-
-/**************************************************************************
- MUIM_Pendisplay_SetColormap
-**************************************************************************/
-static IPTR Pendisplay_SetColormap(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetColormap *msg)
+IPTR Pendisplay__MUIM_Pendisplay_SetColormap(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetColormap *msg)
 {
     struct MUI_PenSpec penspec;
     
@@ -314,10 +285,7 @@ static IPTR Pendisplay_SetColormap(struct IClass *cl, Object *obj, struct MUIP_P
     return 0;
 }
 
-/**************************************************************************
- MUIM_Pendisplay_SetRGB
-**************************************************************************/
-static IPTR Pendisplay_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetRGB *msg)
+IPTR Pendisplay__MUIM_Pendisplay_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetRGB *msg)
 {
     struct MUI_PenSpec penspec;
 
@@ -327,10 +295,7 @@ static IPTR Pendisplay_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Pendis
     return 0;
 }
 
-/**************************************************************************
- MUIM_Pendisplay_SetMUIPen
-**************************************************************************/
-static IPTR Pendisplay_SetMUIPen(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetMUIPen *msg)
+IPTR Pendisplay__MUIM_Pendisplay_SetMUIPen(struct IClass *cl, Object *obj, struct MUIP_Pendisplay_SetMUIPen *msg)
 {
     struct MUI_PenSpec penspec;
     
@@ -345,21 +310,19 @@ BOOPSI_DISPATCHER(IPTR, Pendisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Pendisplay_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Pendisplay_Dispose(cl, obj, msg);
-	case OM_SET: return Pendisplay_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Pendisplay_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Pendisplay_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_Cleanup: return Pendisplay_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	case MUIM_AskMinMax: return Pendisplay_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
-	case MUIM_Draw: return Pendisplay_Draw(cl, obj, (struct MUIP_Draw*)msg);
-	case MUIM_Pendisplay_SetColormap: return Pendisplay_SetColormap(cl, obj, (struct MUIP_Pendisplay_SetColormap *)msg);
-	case MUIM_Pendisplay_SetMUIPen: return Pendisplay_SetMUIPen(cl, obj, (struct MUIP_Pendisplay_SetMUIPen *)msg);
-	case MUIM_Pendisplay_SetRGB: return Pendisplay_SetRGB(cl, obj, (struct MUIP_Pendisplay_SetRGB *)msg);
-	
+	case OM_NEW: return Pendisplay__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Pendisplay__OM_DISPOSE(cl, obj, msg);
+	case OM_SET: return Pendisplay__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Pendisplay__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup: return Pendisplay__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup: return Pendisplay__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case MUIM_AskMinMax: return Pendisplay__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
+	case MUIM_Draw: return Pendisplay__MUIM_Draw(cl, obj, (struct MUIP_Draw*)msg);
+	case MUIM_Pendisplay_SetColormap: return Pendisplay__MUIM_Pendisplay_SetColormap(cl, obj, (struct MUIP_Pendisplay_SetColormap *)msg);
+	case MUIM_Pendisplay_SetMUIPen: return Pendisplay__MUIM_Pendisplay_SetMUIPen(cl, obj, (struct MUIP_Pendisplay_SetMUIPen *)msg);
+	case MUIM_Pendisplay_SetRGB: return Pendisplay__MUIM_Pendisplay_SetRGB(cl, obj, (struct MUIP_Pendisplay_SetRGB *)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Pendisplay_desc =

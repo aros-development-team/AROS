@@ -27,7 +27,7 @@
 #include "support.h"
 #include "support_classes.h"
 
-extern struct Library *MUIMasterBase;
+//extern struct Library *MUIMasterBase;
 
 struct MUI_PopaslData
 {
@@ -265,12 +265,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
     return 0;
 }
 
-
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_PopaslData   *data;
     struct TagItem  	    *tag, *tags;
@@ -281,7 +276,7 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
  
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 		MUIA_Popstring_Toggle, FALSE,
-		TAG_MORE, msg->ops_AttrList);
+		TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
@@ -320,36 +315,27 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static IPTR Popasl_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Popasl__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_PopaslData   *data = INST_DATA(cl, obj);
     if (data->asl_req) FreeAslRequest(data->asl_req);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG Popasl_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+#define STORE *(msg->opg_Storage)
+IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_PopaslData *data = INST_DATA(cl, obj);
 
-#define STORE *(msg->opg_Storage)
     switch(msg->opg_AttrID)
     {
     	case MUIA_Popasl_Active: STORE = !!data->asl_proc; return 1;
     }
     return DoSuperMethodA(cl, obj, (Msg) msg);
-#undef STORE
 }
+#undef STORE
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static ULONG Popasl_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Popasl__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_PopaslData *data = INST_DATA(cl, obj);
     if (data->asl_proc) AbortAslRequest(data->asl_req);
@@ -361,13 +347,12 @@ BOOPSI_DISPATCHER(IPTR, Popasl_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Popasl_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Popasl_Dispose(cl, obj, msg);
-	case OM_GET: return Popasl_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Cleanup: return Popasl_Cleanup(cl, obj, (struct MUIP_Cleanup*)msg);
+	case OM_NEW: return Popasl__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Popasl__OM_DISPOSE(cl, obj, msg);
+	case OM_GET: return Popasl__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Cleanup: return Popasl__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup*)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Popasl_desc =

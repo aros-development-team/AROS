@@ -41,10 +41,7 @@ struct Colorfield_DATA
     UBYTE flags;    
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Colorfield_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Colorfield_DATA   *data;
     struct TagItem  	    	*tag, *tags;
@@ -90,10 +87,7 @@ static IPTR Colorfield_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Colorfield_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Colorfield_DATA   *data;
     struct TagItem  	    	*tag, *tags;
@@ -158,10 +152,7 @@ static IPTR Colorfield_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG  Colorfield_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Colorfield__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Colorfield_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
@@ -195,11 +186,7 @@ static ULONG  Colorfield_Get(struct IClass *cl, Object * obj, struct opGet *msg)
     return TRUE;
 }
 
-
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Colorfield_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Colorfield__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
@@ -239,10 +226,7 @@ static IPTR Colorfield_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static IPTR Colorfield_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Colorfield__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
@@ -257,10 +241,7 @@ static IPTR Colorfield_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clean
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Colorfield_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Colorfield__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -274,10 +255,7 @@ static IPTR Colorfield_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     return 0;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Colorfield_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Colorfield__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
@@ -311,16 +289,15 @@ BOOPSI_DISPATCHER(IPTR, Colorfield_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Colorfield_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Colorfield_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Colorfield_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Colorfield_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_Cleanup: return Colorfield_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	case MUIM_AskMinMax: return Colorfield_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
-	case MUIM_Draw: return Colorfield_Draw(cl, obj, (struct MUIP_Draw*)msg);
+	case OM_NEW:         return Colorfield__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET:         return Colorfield__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:         return Colorfield__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:     return Colorfield__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup:   return Colorfield__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case MUIM_AskMinMax: return Colorfield__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
+	case MUIM_Draw:      return Colorfield__MUIM_Draw(cl, obj, (struct MUIP_Draw*)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Colorfield_desc =

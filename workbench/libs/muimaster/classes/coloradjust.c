@@ -199,10 +199,8 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
     NotifyAll(obj, data);    
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
     struct TagItem  	    	*tag, *tags;
@@ -360,11 +358,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-
-static IPTR Coloradjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Coloradjust_DATA  *data;
     struct Library  	    	*colorwheelbase;
@@ -384,10 +378,7 @@ static IPTR Coloradjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return retval;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
     struct TagItem  	    	*tag, *tags;
@@ -469,10 +460,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG  Coloradjust_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Coloradjust__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Coloradjust_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
@@ -499,10 +487,7 @@ static ULONG  Coloradjust_Get(struct IClass *cl, Object * obj, struct opGet *msg
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Coloradjust__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Coloradjust_DATA *data = INST_DATA(cl,obj);
 
@@ -548,10 +533,7 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Coloradjust__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Coloradjust_DATA *data = INST_DATA(cl,obj);
 
@@ -569,15 +551,14 @@ BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Coloradjust_New(cl, obj, (struct opSet *)msg);
-    	case OM_DISPOSE: return Coloradjust_Dispose(cl, obj, msg);
-	case OM_SET: return Coloradjust_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Coloradjust_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Coloradjust_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_Cleanup: return Coloradjust_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case OM_NEW:       return Coloradjust__OM_NEW(cl, obj, (struct opSet *)msg);
+    	case OM_DISPOSE:   return Coloradjust__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:       return Coloradjust__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:       return Coloradjust__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:   return Coloradjust__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup: return Coloradjust__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+        default:           return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Coloradjust_desc =

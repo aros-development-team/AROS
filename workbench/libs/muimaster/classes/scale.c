@@ -35,10 +35,8 @@ struct Scale_DATA
     LONG label_minwidth;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Scale_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR Scale__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Scale_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -67,10 +65,7 @@ static IPTR Scale_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Scale_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Scale__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Scale_DATA   *data;
     struct TagItem  	   *tag, *tags;
@@ -97,10 +92,7 @@ static IPTR Scale_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG  Scale_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Scale__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl, obj);
     ULONG *store = msg->opg_Storage;
@@ -116,11 +108,7 @@ static ULONG  Scale_Get(struct IClass *cl, Object * obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Scale__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl,obj);
 
@@ -142,10 +130,7 @@ static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Scale_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Scale__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl,obj);
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -165,10 +150,7 @@ static IPTR Scale_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     return 0;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl,obj);
     //ULONG val;
@@ -279,15 +261,14 @@ BOOPSI_DISPATCHER(IPTR, Scale_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Scale_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Scale_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Scale_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Scale_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_AskMinMax: return Scale_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
-	case MUIM_Draw: return Scale_Draw(cl, obj, (struct MUIP_Draw*)msg);
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW: return Scale__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET: return Scale__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Scale__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup: return Scale__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_AskMinMax: return Scale__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
+	case MUIM_Draw: return Scale__MUIM_Draw(cl, obj, (struct MUIP_Draw*)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
+    }    
 }
 
 const struct __MUIBuiltinClass _MUI_Scale_desc =

@@ -34,11 +34,7 @@ struct Framedisplay_DATA
     char spec[8];
 };
 
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Framedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Framedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Framedisplay_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -66,10 +62,7 @@ static IPTR Framedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Framedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Framedisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
@@ -88,10 +81,7 @@ static IPTR Framedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Framedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Framedisplay__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
@@ -105,10 +95,7 @@ static IPTR Framedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Framedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Framedisplay__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -124,10 +111,7 @@ static IPTR Framedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
     return 1;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Framedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
+IPTR Framedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
@@ -174,14 +158,13 @@ BOOPSI_DISPATCHER(IPTR, Framedisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Framedisplay_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Framedisplay_Set(cl, obj, (APTR)msg);
-	case OM_GET: return Framedisplay_Get(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Framedisplay_AskMinMax(cl,obj,(APTR)msg);
-	case MUIM_Draw: return Framedisplay_Draw(cl,obj,(APTR)msg);
+	case OM_NEW:         return Framedisplay__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET:         return Framedisplay__OM_SET(cl, obj, (APTR)msg);
+	case OM_GET:         return Framedisplay__OM_GET(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax: return Framedisplay__MUIM_AskMinMax(cl,obj,(APTR)msg);
+	case MUIM_Draw:      return Framedisplay__MUIM_Draw(cl,obj,(APTR)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Framedisplay_desc =

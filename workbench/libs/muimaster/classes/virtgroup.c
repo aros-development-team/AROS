@@ -28,10 +28,7 @@ struct Virtgroup_DATA
    int dummy;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Virtgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Virtgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     //struct Virtgroup_DATA *data;
     //int i;
@@ -44,9 +41,9 @@ BOOPSI_DISPATCHER(IPTR, Virtgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Virtgroup_New(cl, obj, (struct opSet *)msg);
+	case OM_NEW: return Virtgroup__OM_NEW(cl, obj, (struct opSet *)msg);
+        default:     return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Virtgroup_desc =

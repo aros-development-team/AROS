@@ -118,10 +118,7 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
     return 0;
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     static const char *register_labels[] = {"MUI", "Colormap", "RGB", NULL};
     static const char *lv_labels[] = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
@@ -176,10 +173,7 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-STATIC IPTR Penadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Penadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem  	     *tags,*tag;
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
@@ -201,10 +195,7 @@ STATIC IPTR Penadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Penadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Penadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
     IPTR    	    	     *store = msg->opg_Storage;
@@ -229,12 +220,11 @@ BOOPSI_DISPATCHER(IPTR, Penadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Penadjust_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Penadjust_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Penadjust_Get(cl,obj,(APTR)msg);
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW: return Penadjust__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET: return Penadjust__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Penadjust__OM_GET(cl,obj,(APTR)msg);
+        default:     return DoSuperMethodA(cl, obj, msg);
+    }    
 }
 
 const struct __MUIBuiltinClass _MUI_Penadjust_desc =
