@@ -1101,23 +1101,23 @@ if (show_region == l->VisibleRegion)
 
   OrRegionRegion(show_region,l->VisibleRegion);
   r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
+  if (r != NULL)
+  {
+      newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+      DisposeRegion(r);
 
-  newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
-  DisposeRegion(r);
+      _CopyClipRectsToClipRects(l,
+				l->ClipRect /* source */,
+				newcr /* destination */,
+				0,
+				0,
+				FALSE,
+				TRUE,
+				FALSE,
+				LayersBase);
 
-  _CopyClipRectsToClipRects(l,
-                            l->ClipRect /* source */,
-                            newcr /* destination */,
-                            0,
-			    0,
-                            FALSE,
-                            TRUE,
-                            FALSE,
-			    LayersBase);
-
-
-  l->ClipRect = newcr;
-
+      l->ClipRect = newcr;
+  }
   if (clipregion)
     InstallClipRegion(l, clipregion);
 
