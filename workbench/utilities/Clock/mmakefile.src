@@ -1,10 +1,9 @@
 #   $Id$
-#
 #   Makefile to make Clock.
 
 include $(TOP)/config/make.cfg
 
-FILES := main misc vars locale
+FILES := main locale
 
 EXEDIR := $(AROSDIR)/Utilities
 EXE := $(EXEDIR)/Clock
