@@ -309,6 +309,7 @@ esac
 
 if cmp -s "$out" "$2"; then
     echo "$2 is unchanged"
+    rm $out
 else
     echo "Replacing $2 by $out"
     if [ -e "$2" ]; then
