@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/10/12 17:45:44  SDuvan
+    Added docs, minor updates
+
     Revision 1.7  1999/09/12 01:48:58  bernie
     more public screens support
 
@@ -87,18 +90,29 @@
 
 	/* Get screen by its name */
         if ((psn = (struct PubScreenNode *)FindName(publist, name)))
-		screen = psn->psn_Screen;
+	    screen = psn->psn_Screen;
 	else
-		screen = NULL;
+	    screen = NULL;
     }
-
+    
     if (screen != NULL)
     {
+	struct PubScreenNode *ps = GetPrivScreen(screen)->pubScrNode;
+
 	//ASSERT(GetPrivScreen(screen)->pubScrNode != NULL);
 	//ASSERT(GetPrivScreen(screen)->pubScrNode->psn_VisitorCount > 0);
-
+	
 	/* Unlock screen */
-	GetPrivScreen(screen)->pubScrNode->psn_VisitorCount--;
+	ps->psn_VisitorCount--;
+
+	/* Notify screen owner if this is (was) the last window on the
+	   screen */
+	if(ps->psn_VisitorCount == 0)
+	{
+	    if(ps->psn_SigTask != NULL)
+		Signal(ps->psn_SigTask, 1 << ps->psn_SigBit);
+	}
+	
     }
 
     UnlockPubScreenList();

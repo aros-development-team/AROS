@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/10/12 17:45:44  SDuvan
+    Added docs, minor updates
+
     Revision 1.6  1999/09/12 01:48:58  bernie
     more public screens support
 
@@ -41,17 +44,48 @@
 
 /*  FUNCTION
 
+    Prevents a public screen from closing.
+    This is useful if you want to put up a visitor window on a public screen
+    and need to check some of the public screen's field first -- not locking
+    the screen may lead to the public screen not existing when your visitor
+    window is ready.
+
     INPUTS
+
+    Name   --  Name of the public screen or NULL for the default public
+               screen. The name "Workbench" refers to the Workbench screen.
 
     RESULT
 
+    A pointer to the screen or NULL if something went wrong. Failure can
+    happen for instance when the public screen is in private state or doesn't
+    exist.
+
     NOTES
 
+    You don't need to hold the lock when your visitor window is opened as
+    the pubscreen cannot be closed as long as there are visitor windows
+    on it.
+
     EXAMPLE
+
+    To open a visitor window which needs information from the screen structure
+    of the public screen to open on, do this:
+
+    if((pubscreen = LockPubScreen("PubScreentoOpenon")) != NULL)
+    {
+        ...check pubscreen's internal data...
+	OpenWindow(VisitorWindow, pubscreen);
+	UnlockPubScreen(NULL, pubscreen);
+	...use your visitor window...
+	CloseWindow(VisitorWindow);
+    }
 
     BUGS
 
     SEE ALSO
+
+    OpenWindow(), UnlockPubScreen(), GetScreenData()
 
     INTERNALS
 
@@ -67,7 +101,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 
-    if (!name)
+    if(!name)
     {
 	scr = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
 	//ASSERT(scr != NULL);
@@ -75,22 +109,22 @@
     else
     {
 	struct PubScreenNode *psn;
-
+	
 	/* Browse the public screen list */
 	if ((psn = (struct PubScreenNode *)FindName(LockPubScreenList(), name)))
 	{
-		/* Don't lock screens in private state */
-		if (!(psn->psn_Flags & PSNF_PRIVATE))
-		{
-			/* Increment screen lock count */
-			psn->psn_VisitorCount++;
-			scr = psn->psn_Screen;
-		}
+	    /* Don't lock screens in private state */
+	    if((psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE))
+	    {
+		/* Increment screen lock count */
+		psn->psn_VisitorCount++;
+		scr = psn->psn_Screen;
+	    }
 	}
-
+	
 	UnlockPubScreenList();
     }
-
+    
     return scr;
 
     AROS_LIBFUNC_EXIT

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/10/12 17:45:44  SDuvan
+    Added docs, minor updates
+
     Revision 1.6  1999/09/12 01:48:58  bernie
     more public screens support
 
@@ -22,7 +25,7 @@
 
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -41,7 +44,15 @@
 
 /*  FUNCTION
 
+    Specifies the default public screen for visitor windows to open up on.
+        The screen is used when a requested public screen is not available
+    and the FALLBACK option is enabled or when the visitor window asks for
+    the default public screen.
+
     INPUTS
+
+    name  --  The name of the public screen that should be used as default,
+              or NULL to specify the Workbench screen.
 
     RESULT
 
@@ -52,6 +63,8 @@
     BUGS
 
     SEE ALSO
+
+    OpenWindow(), OpenScreen()
 
     INTERNALS
 
