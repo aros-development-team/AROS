@@ -124,12 +124,16 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
 
 
 static const UBYTE str_slm[] = {0x32, 0x30, 0x68 }; /* Set linefeed mode    */
-static const UBYTE str_rnm[] = {0x32, 0x30, 0x6C }; /* Reset newline mode   */
+static const UBYTE str_rnm[] = {0x32, 0x30, 0x6C }; /* Reset linefeed mode   */
+static const UBYTE str_ssm[] = {0x3E, 0x31, 0x68 }; /* Set autoscroll mode */
+static const UBYTE str_rsm[] = {0x3E, 0x31, 0x6C }; /* Reset autoscroll mode */
+static const UBYTE str_swm[] = {0x3E, 0x37, 0x68 }; /* Set autowrap mode */
+static const UBYTE str_rwm[] = {0x3E, 0x37, 0x6C }; /* Reset autowrap mode */
 static const UBYTE str_dsr[] = {0x36, 0x6E };       /* device status report */
 static const UBYTE str_con[] = {' ', 'p'};    	    /* cursor visible */
 static const UBYTE str_cof[] = {'0', ' ', 'p'};     /* cursor invisible */
 
-#define NUM_SPECIAL_COMMANDS 5
+#define NUM_SPECIAL_COMMANDS 9
 static const struct special_cmd_descr
 {
     BYTE	Command;
@@ -138,7 +142,11 @@ static const struct special_cmd_descr
 } scd_tab[NUM_SPECIAL_COMMANDS] = {
 
     {C_SET_LF_MODE, 		(STRPTR)str_slm, 3 },
-    {C_RESET_NEWLINE_MODE,	(STRPTR)str_rnm, 3 },
+    {C_RESET_LF_MODE,	    	(STRPTR)str_rnm, 3 },
+    {C_SET_AUTOSCROLL_MODE, 	(STRPTR)str_ssm, 3 },
+    {C_RESET_AUTOSCROLL_MODE,	(STRPTR)str_rsm, 3 },
+    {C_SET_AUTOWRAP_MODE,   	(STRPTR)str_swm, 3 },
+    {C_RESET_AUTOWRAP_MODE, 	(STRPTR)str_rwm, 3 },
     {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 },
     {C_CURSOR_VISIBLE,		(STRPTR)str_con, 2 },
     {C_CURSOR_INVISIBLE,	(STRPTR)str_cof, 3 }
@@ -166,7 +174,7 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
     "Tab set",			/* C_H_TAB_SET,     	    	*/
     "Reverse Idx",		/* C_REVERSE_IDX,   	    	*/
     "Set LF Mode",		/* C_SET_LF_MODE,   	    	*/
-    "Reset Newline Mode",	/* C_RESET_NEWLINE_MODE,    	*/
+    "Reset LF Mode",	    	/* C_RESET_lF_MODE,    	    	*/
     "Device Status Report",	/* C_DEVICE_STATUS_REPORT,  	*/
     
     "Insert Char",		/* C_INSERT_CHAR,   	    	*/
@@ -192,6 +200,14 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
     "Cursor Invisible",		/* C_CURSOR_INVISIBLE,      	*/
     "Set Raw Events",	    	/* C_SET_RAWEVENTS, 	    	*/
     "Reset Raw Events",     	/* C_RESET_RAWEVENTS	    	*/
+    "Set Auto Wrap Mode",   	/* C_SET_AUTOWRAP_MODE	    	*/
+    "Reset Auto Wrap Mode", 	/* C_RESET_AUTOWRAP_MODE    	*/
+    "Set Auto Scroll Mode", 	/* C_SET_AUTOSCROLL_MODE    	*/
+    "Reset Auto Scroll Mode",	/* C_RESET_AUTOSCROLL_MODE  	*/
+    "Set Page Length",	    	/* C_SET_PAGE_LENGTH	    	*/
+    "Set Line Length",	    	/* C_SET_LINE_LENGTH	    	*/
+    "Set Left Offset",	    	/* C_SET_LEFT_OFFSET	    	*/
+    "Set Top Offset"	    	/* C_SET_TOP_OFFSET 	    	*/
 };
 #endif
 
@@ -392,69 +408,69 @@ static const struct Command
     
 } csi2command[] = {
 
-    { C_INSERT_CHAR		, 1 			},	/* 0x40 */
-    { C_CURSOR_UP		, 1 			},	/* 0x41 */
-    { C_CURSOR_DOWN		, 1 			},	/* 0x41 */
-    { C_CURSOR_FORWARD		, 1 			},	/* 0x43	*/
-    { C_CURSOR_BACKWARD		, 1 			},	/* 0x44 */
-    { C_CURSOR_NEXT_LINE	, 1 			},	/* 0x45 */
-    { C_CURSOR_PREV_LINE	, 1 			},	/* 0x46 */
-    { -1			, 			},  	/* 0x47 */
-    { C_CURSOR_POS		, 2 			},	/* 0x48 */
-    { C_CURSOR_HTAB		, 1			},	/* 0x49 */
+    { C_INSERT_CHAR		, 1 			},	/* 0x40 @ */
+    { C_CURSOR_UP		, 1 			},	/* 0x41 A */
+    { C_CURSOR_DOWN		, 1 			},	/* 0x42 B */
+    { C_CURSOR_FORWARD		, 1 			},	/* 0x43	C */
+    { C_CURSOR_BACKWARD		, 1 			},	/* 0x44 D */
+    { C_CURSOR_NEXT_LINE	, 1 			},	/* 0x45 E */
+    { C_CURSOR_PREV_LINE	, 1 			},	/* 0x46 F */
+    { -1			, 			},  	/* 0x47 G */
+    { C_CURSOR_POS		, 2 			},	/* 0x48 H */
+    { C_CURSOR_HTAB		, 1			},	/* 0x49 I */
     
-    { C_ERASE_IN_DISPLAY	, 0			},	/* 0x4A	*/
-    { C_ERASE_IN_LINE		, 0			},	/* 0x4B */
-    { C_INSERT_LINE		, 0			},	/* 0x4C */
-    { C_DELETE_LINE		, 0 			},	/* 0x4D */
-    { -1			, 			},  	/* 0x4E */
-    { -1			, 			},  	/* 0x4F */
-    { C_DELETE_CHAR		, 1 			},	/* 0x50 */
-    { -1			,			},  	/* 0x51 */
-    { -1			,			},  	/* 0x52 */
-    { C_SCROLL_UP		, 1			},	/* 0x53 */
-    { C_SCROLL_DOWN		, 1 			},	/* 0x54 */
-    { -1			, 			},  	/* 0x55 */
-    { -1			, 			},  	/* 0x56 */
-    { C_CURSOR_TAB_CTRL		, 1 			},	/* 0x57	*/
-    { -1			, 			},  	/* 0x58 */
-    { -1			, 			},  	/* 0x59 */
-    { C_CURSOR_BACKTAB		, 1 			},	/* 0x5A	*/
-    { -1			, 			},	/* 0x5B	*/
-    { -1			, 			},	/* 0x5C	*/
-    { -1			, 			},	/* 0x5D	*/
-    { -1			, 			},	/* 0x5E	*/
-    { -1			, 			},	/* 0x5F	*/
-    { -1			, 			},	/* 0x60	*/
-    { -1			, 			},	/* 0x61	*/
-    { -1			, 			},	/* 0x62	*/
-    { -1			, 			},	/* 0x63	*/
-    { -1			, 			},	/* 0x64	*/
-    { -1			, 			},	/* 0x65	*/
-    { -1			, 			},	/* 0x66	*/
-    { -1			, 			},	/* 0x67	*/
-    { -1			, 			},	/* 0x68	*/
-    { -1			, 			},	/* 0x69	*/
-    { -1			, 			},	/* 0x6A	*/
-    { -1			, 			},	/* 0x6B	*/
-    { -1			, 			},	/* 0x6C	*/
-    { C_SELECT_GRAPHIC_RENDITION, MAX_COMMAND_PARAMS	},	/* 0x6D */
-    { -1    	    	    	,   	    	    	},  	/* 0x6E */
-    { -1    	    	    	,   	    	    	},  	/* 0x6F */
-    { -1    	    	    	,   	    	    	},  	/* 0x70 */
-    { -1    	    	    	,   	    	    	},  	/* 0x71 */
-    { -1    	    	    	,   	    	    	},  	/* 0x72 */
-    { -1    	    	    	,   	    	    	},  	/* 0x/3 */
-    { -1    	    	    	,   	    	    	},  	/* 0x74 */
-    { -1    	    	    	,   	    	    	},  	/* 0x75 */
-    { -1    	    	    	,   	    	    	},  	/* 0x76 */
-    { -1    	    	    	,   	    	    	},  	/* 0x77 */
-    { -1    	    	    	,   	    	    	},  	/* 0x78 */
-    { -1    	    	    	,   	    	    	},  	/* 0x79 */
-    { -1    	    	    	,   	    	    	},  	/* 0x7A */
-    { C_SET_RAWEVENTS  	    	, MAX_COMMAND_PARAMS   	},  	/* 0x7B */
-    { -1    	    	    	,   	    	    	},  	/* 0x7C */
-    { C_RESET_RAWEVENTS    	, MAX_COMMAND_PARAMS   	},  	/* 0x7D */
+    { C_ERASE_IN_DISPLAY	, 0			},	/* 0x4A	J */
+    { C_ERASE_IN_LINE		, 0			},	/* 0x4B K */
+    { C_INSERT_LINE		, 0			},	/* 0x4C L */
+    { C_DELETE_LINE		, 0 			},	/* 0x4D M */
+    { -1			, 			},  	/* 0x4E N */
+    { -1			, 			},  	/* 0x4F O */
+    { C_DELETE_CHAR		, 1 			},	/* 0x50 P */
+    { -1			,			},  	/* 0x51 Q */
+    { -1			,			},  	/* 0x52 R */
+    { C_SCROLL_UP		, 1			},	/* 0x53 S */
+    { C_SCROLL_DOWN		, 1 			},	/* 0x54 T */
+    { -1			, 			},  	/* 0x55 U */
+    { -1			, 			},  	/* 0x56 V */
+    { C_CURSOR_TAB_CTRL		, 1 			},	/* 0x57	W */
+    { -1			, 			},  	/* 0x58 X */
+    { -1			, 			},  	/* 0x59 Y */
+    { C_CURSOR_BACKTAB		, 1 			},	/* 0x5A	Z */
+    { -1			, 			},	/* 0x5B	[ */
+    { -1			, 			},	/* 0x5C	\ */
+    { -1			, 			},	/* 0x5D	] */
+    { -1			, 			},	/* 0x5E	^ */
+    { -1			, 			},	/* 0x5F	_ */
+    { -1			, 			},	/* 0x60	` */
+    { -1			, 			},	/* 0x61	a */
+    { -1			, 			},	/* 0x62	b */
+    { -1			, 			},	/* 0x63	c */
+    { -1			, 			},	/* 0x64	d */
+    { -1			, 			},	/* 0x65	e */
+    { -1			, 			},	/* 0x66	f */
+    { -1			, 			},	/* 0x67	g */
+    { -1			, 			},	/* 0x68	h */
+    { -1			, 			},	/* 0x69	i */
+    { -1			, 			},	/* 0x6A	j */
+    { -1			, 			},	/* 0x6B	k */
+    { -1			, 			},	/* 0x6C	l */
+    { C_SELECT_GRAPHIC_RENDITION, MAX_COMMAND_PARAMS	},	/* 0x6D m */
+    { -1    	    	    	,   	    	    	},  	/* 0x6E n */
+    { -1    	    	    	,   	    	    	},  	/* 0x6F o */
+    { -1    	    	    	,   	    	    	},  	/* 0x70 p */
+    { -1    	    	    	,   	    	    	},  	/* 0x71 q */
+    { -1    	    	    	,   	    	    	},  	/* 0x72 r */
+    { -1    	    	    	,   	    	    	},  	/* 0x73 s */
+    { C_SET_PAGE_LENGTH	    	,   	    	    	},  	/* 0x74 t */
+    { C_SET_LINE_LENGTH    	,   	    	    	},  	/* 0x75 u */
+    { -1    	    	    	,   	    	    	},  	/* 0x76 v */
+    { -1    	    	    	,   	    	    	},  	/* 0x77 w */
+    { C_SET_LEFT_OFFSET	    	,   	    	    	},  	/* 0x78 x */
+    { C_SET_TOP_OFFSET 	    	,   	    	    	},  	/* 0x79 y */
+    { -1    	    	    	,   	    	    	},  	/* 0x7A z */
+    { C_SET_RAWEVENTS  	    	, MAX_COMMAND_PARAMS   	},  	/* 0x7B { */
+    { -1    	    	    	,   	    	    	},  	/* 0x7C | */
+    { C_RESET_RAWEVENTS    	, MAX_COMMAND_PARAMS   	},  	/* 0x7D } */
 };
 
 
@@ -547,6 +563,10 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	case 0x57:
     	case 0x5A:
 	case 0x6D:
+	case 0x74:
+	case 0x75:
+	case 0x78:
+	case 0x79:
 	case 0x7B:
 	case 0x7D:
 	{

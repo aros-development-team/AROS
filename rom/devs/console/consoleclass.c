@@ -105,7 +105,9 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 	ICU(o)->conFlags = 0UL;
 	ICU(o)->numStoredChars = 0;
 
-	
+    	SET_MODE(o, PMB_ASM); /* auto-scroll-mode ON */
+	SET_MODE(o, PMB_AWM); /* auto-wrap-mode ON */ 
+	CLEAR_MODE(o, M_LNM); /* linefeed mode = linefeed only */
     }
     ReturnPtr("Console::New", Object *, o);
     
@@ -124,12 +126,26 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 
     newx = XCCP - msg->Num;
     
-    while(newx < 0)
+    if (CHECK_MODE(o, PMB_AWM))
     {
-        Console_Up(o, 1);
-        newx += (CHAR_XMAX(o) + 1);
-    }
+    	WORD scrollcount = 0;
+	
+	while(newx < CHAR_XMIN(o))
+	{
+            newx += (CHAR_XMAX(o) + 1);
+	    scrollcount++;
+	}
+	
+	XCP = XCCP = newx;
+	
+        Console_Up(o, scrollcount);
 
+    }
+    else
+    {
+    	if (newx < CHAR_XMIN(o)) newx = CHAR_XMIN(o);
+    }
+    
     XCP = XCCP = newx; /* XCP always same as XCCP?? */
 
     D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
@@ -148,10 +164,24 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 
     newx = XCCP + msg->Num;
     
-    while(newx > CHAR_XMAX(o))
+    if (CHECK_MODE(o, PMB_AWM))
     {
-        Console_Down(o, 1);
-        newx -= (CHAR_XMAX(o) + 1);
+    	WORD scrollcount = 0;
+	
+    	while(newx > CHAR_XMAX(o))
+    	{
+            newx -= (CHAR_XMAX(o) + 1);
+	    scrollcount++;
+    	}
+	
+	XCP = XCCP = newx;
+	
+	Console_Down(o, scrollcount);
+
+    }
+    else
+    {
+    	if (newx > CHAR_XMAX(o)) newx = CHAR_XMAX(o);
     }
 
     XCP = XCCP = newx; /* XCP always same as XCCP?? */
@@ -172,15 +202,17 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
     
     if (YCCP < 0)
     {
-        WORD scrollcount = -YCCP;
-	
-	while(scrollcount--)
+    	if (CHECK_MODE(o, PMB_ASM))
 	{
-    	    UBYTE scroll_param = 1;
+    	    UBYTE scroll_param = -YCCP;
 
+    	    YCCP = YCP = 0;
 	    Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
 	}
-	YCCP = CHAR_YMAX(o);
+	else
+	{
+	    YCCP = 0;
+	}
     }
     YCP = YCCP; /* YCP always same as YCCP ?? */
     
@@ -202,15 +234,17 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
     
     if (YCCP > CHAR_YMAX(o))
     {
-        WORD scrollcount = YCCP - CHAR_YMAX(o);
-	
-	while(scrollcount--)
+    	if (CHECK_MODE(o, PMB_ASM))
 	{
-    	    UBYTE scroll_param = 1;
+    	    UBYTE scroll_param = YCCP - CHAR_YMAX(o);
 
+    	    YCCP = YCP = CHAR_YMAX(o);
 	    Console_DoCommand(o, C_SCROLL_UP, 1, &scroll_param);
 	}
-	YCCP = CHAR_YMAX(o);
+	else
+	{
+	    YCCP = CHAR_YMAX(o);
+	}
     }
     YCP = YCCP; /* YCP always same as YCCP ?? */
     
@@ -231,15 +265,33 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
     	case C_SET_LF_MODE:
 	    D(bug("Set LF mode ON\n"));
 	    /* LF==LF+CR */
-	    ICU(o)->conFlags |= CF_LF_MODE_ON;
+	    /* ICU(o)->conFlags |= CF_LF_MODE_ON ; */
+	    SET_MODE(o, M_LNM);
 	    break;
 
-    	case C_RESET_NEWLINE_MODE:
+    	case C_RESET_LF_MODE:
 	    /* LF==LF */
 	    D(bug("Set LF mode OFF\n"));
-	    ICU(o)->conFlags &= ~CF_LF_MODE_ON;
+	    /* ICU(o)->conFlags &= ~CF_LF_MODE_ON; */
+	    CLEAR_MODE(o, M_LNM);
 	    break;
-	     
+	
+	case C_SET_AUTOSCROLL_MODE:
+	    SET_MODE(o, PMB_ASM);
+	    break;
+	    
+	case C_RESET_AUTOSCROLL_MODE:
+	    CLEAR_MODE(o, PMB_ASM);
+	    break;
+	    
+	case C_SET_AUTOWRAP_MODE:
+	    SET_MODE(o, PMB_AWM);
+	    break;
+	 
+	case C_RESET_AUTOWRAP_MODE:
+	    CLEAR_MODE(o, PMB_AWM);
+	    break;
+	    
 	case C_SELECT_GRAPHIC_RENDITION:
 	    D(bug("Select graphic Rendition\n"));
 	    {
@@ -338,8 +390,8 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	    msg->Params[0] = 1;
 	    break;
 	case C_CURSOR_POS:
-	    msg->Params[0] = XCCP;
-	    msg->Params[1] = YCCP;
+	    msg->Params[0] = YCCP + 1;
+	    msg->Params[1] = XCCP + 1;
 	    break;
 
 #warning Autodocs state commands in between here, has params RKRM: Devs saye the do not
