@@ -27,6 +27,8 @@ struct timerequest *TimerIO;
 /*** Library startup and shutdown *******************************************/
 AROS_SET_LIBFUNC( Calendar_Startup, LIBBASETYPE, LIBBASE )
 {
+    AROS_SET_LIBFUNC_INIT
+    
     SysBase = LIBBASE->lh_SysBase;
     
     TimerIO    = NULL;
@@ -49,14 +51,20 @@ error:
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
     
     return FALSE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_SET_LIBFUNC( Calendar_Shutdown, LIBBASETYPE, LIBBASE )
 {
+    AROS_SET_LIBFUNC_INIT
+    
     if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
 
     return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB( Calendar_Startup, 1 );
