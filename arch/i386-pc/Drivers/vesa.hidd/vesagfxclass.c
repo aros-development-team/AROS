@@ -19,6 +19,7 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
+#include <string.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
