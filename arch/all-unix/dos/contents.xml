@@ -7,7 +7,7 @@
 
 <item>
     <file>runprocess.c</file>
-    Unix version of of the dos.library |RunProcess()|
+    Unix version of of the dos.library <code>RunProcess()</code>
 		  function.
 </item>
 </contents>

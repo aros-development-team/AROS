@@ -26,9 +26,9 @@
 		other app on another OS) (AROS_FLAVOUR_LINKLIB) ?
 
 		Note that not all flavours are available on all
-		hardwares/OS combinations. To use this |#define|,
+		hardwares/OS combinations. To use this <code>#define</code>,
 		write something like
-		|#if AROS_FLAVOUR==AROS_FLAVOUR_NATIVE|.
+		<code>#if AROS_FLAVOUR==AROS_FLAVOUR_NATIVE</code>.
 	</li>
 
 	</description>

@@ -1,7 +1,7 @@
 <contents>
 <item>
     <file>cause.c</file>
-    Unix implementation of |Cause()|.
+    Unix implementation of <code>Cause()</code>.
 
 </item>
 
@@ -13,13 +13,13 @@
 
 <item>
     <file>disable.c</file>
-    Unix implementation of |Disable()|.
+    Unix implementation of <code>Disable()</code>.
 
 </item>
 
 <item>
     <file>enable.c</file>
-    Unix implementation of |Enable()|.
+    Unix implementation of <code>Enable()</code>.
 
 </item>
 
