@@ -43,14 +43,15 @@
 /****************************************************************************************/
 
 #define NEWSTYLE_DEVICE 1
+#define ALIGN_IS_EVIL	1
 
-#define ioStd(x)  ((struct IOStdReq *)x)
-#define kbUn      ((struct KBUnit *)(ioreq->io_Unit))
+#define ioStd(x)    	((struct IOStdReq *)x)
+#define kbUn        	((struct KBUnit *)(ioreq->io_Unit))
 
-#define min(a,b)  ((a) < (b)) ? (a) : (b)
-#define ALIGN(x)  ((((x) + (__AROS_STRUCTURE_ALIGNMENT - 1)) / __AROS_STRUCTURE_ALIGNMENT) * __AROS_STRUCTURE_ALIGNMENT)
+#define min(a,b)    	((a) < (b)) ? (a) : (b)
+#define ALIGN(x)    	((((x) + (__AROS_STRUCTURE_ALIGNMENT - 1)) / __AROS_STRUCTURE_ALIGNMENT) * __AROS_STRUCTURE_ALIGNMENT)
 
-#define isQualifier(x)   ((((x) & ~KEYUPMASK) >= AKC_QUALIFIERS_FIRST) && (((x) & ~KEYUPMASK) <= AKC_QUALIFIERS_LAST))
+#define isQualifier(x)  ((((x) & ~KEYUPMASK) >= AKC_QUALIFIERS_FIRST) && (((x) & ~KEYUPMASK) <= AKC_QUALIFIERS_LAST))
 
 /* Temporary - we should make a bit vector of this to check for numeric pad keys */
 #define isNumericPad(x)  ((x) == AKC_NUM_1 || (x) == AKC_NUM_2 || \
@@ -62,6 +63,26 @@
 			  (x) == AKC_NUM_DASH   || (x) == AKC_NUM_LPAREN || \
 			  (x) == AKC_NUM_RPAREN || (x) == AKC_NUM_SLASH  || \
 			  (x) == AKC_NUM_PLUS   || (x) == AKC_NUM_TIMES)
+
+#if ALIGN_IS_EVIL
+
+#define NUM_INPUTEVENTS(bytesize) ((bytesize) / sizeof(struct InputEvent))
+#define NEXT_INPUTEVENT(event)    (((struct InputEvent *)(event)) + 1)
+
+#else
+
+/* Number of InputEvents we can store in io_Data */
+/* be careful, the io_Length might be the size of the InputEvent structure,
+   but it can be that the ALIGN() returns a larger size and then nEvents would
+   be 0.
+ */
+
+#define NUM_INPUTEVENTS(bytesize) (((bytesize) == sizeof(struct InputEvent)) ? \
+    	    	    	    	   1 : (bytesize) / ALIGN(sizeof(struct InputEvent)))
+#define NEXT_INPUTEVENT(event)	  ((struct InputEvent *)((UBYTE*)(event) + \
+    	    	    	    	   ALIGN(sizeof(struct InputEvent))))
+
+#endif /* ALIGN_IS_EVIL */
 
 /****************************************************************************************/
 
@@ -433,13 +454,15 @@ AROS_LH1(void, beginio,
 	    /* Check for reset... via keybuffer or via HIDD? */
 	    /* if(bufferkey == 0x78) ... */
 
+    	#if 0
 	    if((((IPTR)ioStd(ioreq)->io_Data) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	    {
 		D(bug("kbd: Bad address\n"));
 		ioreq->io_Error = IOERR_BADADDRESS;
 		break;
 	    }
-
+    	#endif
+	
 	    Disable(); /* !! */
 
 	    if(kbUn->kbu_readPos == KBBase->kb_writePos)
@@ -525,13 +548,10 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
        but it can be that the ALIGN() returns a larger size and then nEvents would
        be 0.
      */
-    if (sizeof(struct InputEvent) == ioStd(ioreq)->io_Length) {
-        nEvents = 1;
-    } else {
-        nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
-    }
-
-    if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
+     
+    nEvents = NUM_INPUTEVENTS(ioStd(ioreq)->io_Length);
+    
+    if(nEvents == 0)
     {
 	ioreq->io_Error = IOERR_BADLENGTH;
 	D(bug("kbd: Bad length\n"));
@@ -612,9 +632,8 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    break;
 	}
 	
-	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
-			      + ALIGN(sizeof(struct InputEvent)));
-
+    	event->ie_NextEvent = NEXT_INPUTEVENT(event);
+	
 	if(code == 0x78)
 	    KBBase->kb_ResetPhase = TRUE;
     }
