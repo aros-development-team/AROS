@@ -32,6 +32,11 @@ struct IconImage_DATA
     struct DiskObject *iid_DiskObject;
 };
 
+IPTR DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
+{
+  return DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL);
+}
+
 /*** Methods ****************************************************************/
 
 IPTR IconImage$OM_NEW
@@ -72,7 +77,14 @@ IPTR IconImage$OM_NEW
         if (diskObject == NULL) goto error;
     }
     
-    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+    self = (Object *) DoSuperNew
+    (
+        CLASS, self,
+        
+        MUIA_FillArea,        FALSE,
+        TAG_MORE,      (IPTR) message->ops_AttrList
+    );
+    
     if (self == NULL) goto error;
     
     data = INST_DATA(CLASS, self);
@@ -93,12 +105,18 @@ IPTR IconImage$MUIM_Draw
     IPTR                   rc   = DoSuperMethodA(CLASS, self, (Msg) message);
     BOOL                   selected;
     
+    DoMethod
+    (
+        self, MUIM_DrawParentBackground,  
+        _mleft(self), _mtop(self), _mwidth(self), _mheight(self), 0, 0, 0
+    );
+    
     get(self, MUIA_Selected, &selected);
     
     DrawIconState
     (
         _rp(self), data->iid_DiskObject, NULL, 
-        _left(self), _top(self), selected ? IDS_SELECTED : IDS_NORMAL, 
+        _mleft(self), _mtop(self), selected ? IDS_SELECTED : IDS_NORMAL, 
         
         ICONDRAWA_Frameless,       TRUE,
         ICONDRAWA_Borderless,      TRUE,
