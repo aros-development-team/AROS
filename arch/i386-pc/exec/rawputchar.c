@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Emit one character via raw IO
@@ -49,11 +49,15 @@ void putc(char);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
+    Disable();
+    
     /* Don't write 0 bytes */
     if (chr)
     {
 	putc(chr);
     }
 
+    Enable();
+    
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */
