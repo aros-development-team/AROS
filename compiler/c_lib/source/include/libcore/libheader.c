@@ -84,7 +84,7 @@ extern const char ALIGNED LC_BUILDNAME(Copyright) [];
 LC_LIBHEADERTYPEPTR AROS_SLIB_ENTRY(LC_BUILDNAME(InitLib),LibHeader)
 (
 	LC_LIBHEADERTYPEPTR   lh,
-	BPTR                  segList,
+	BPTR		      segList,
 	struct ExecBase     * sysBase
 );
 BPTR AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader)
@@ -187,6 +187,11 @@ void  SAVEDS STDARGS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh);
 #   define L_ExpungeLib(x)        /* eps */
 #endif
 
+#ifndef SysBase
+#   define SysBase	(LC_SYSBASE_FIELD(lh))
+#   define __LC_OWN_SYSBASE
+#endif
+
 /* -----------------------------------------------------------------------
     InitLib:
 
@@ -261,9 +266,11 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
 #endif /* NOEXPUNGE */
 
 	LC_LIB_FIELD(lh).lib_Flags &= ~LIBF_DELEXP;
+
+	return(lh);
     }
 
-    return(lh);
+    return NULL;
 }
 
 
@@ -362,6 +369,10 @@ AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
 {
     return(NULL);
 }
+
+#ifdef __LC_OWN_SYSBASE
+#   undef SysBase
+#endif
 
 #ifdef __SASC
 
