@@ -1,10 +1,13 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
+
+#include <string.h>
+#include <dos/dosextens.h>
 
 /*****************************************************************************
 
