@@ -30,6 +30,9 @@ int IoErr2errno (int ioerr)
 
         case ERROR_BROKEN_PIPE:
 	    return EPIPE;
+
+	case ERROR_OBJECT_EXISTS:
+	    return EEXIST;
     }
 
     return MAX_ERRNO+1;
