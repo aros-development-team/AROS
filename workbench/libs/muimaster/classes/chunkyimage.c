@@ -309,14 +309,8 @@ static IPTR ChunkyImage_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clea
     return retval;
 }
 
-#ifndef _AROS
-__asm IPTR ChunkyImage_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,ChunkyImage_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, ChunkyImage_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

@@ -386,14 +386,7 @@ static ULONG  Configdata_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 /*
  * The class dispatcher
  */
-#ifndef __AROS
-static __asm IPTR Configdata_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, Configdata_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

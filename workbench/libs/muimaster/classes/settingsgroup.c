@@ -72,20 +72,17 @@ static IPTR Settingsgroup_GadgetsToConfig(struct IClass *cl, Object *obj, struct
     return 0;
 }
 
-#ifndef _AROS
-__asm IPTR Settingsgroup_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Settingsgroup_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Settingsgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Settingsgroup_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets: return Settingsgroup_ConfigToGadgets(cl,obj,(APTR)msg);
-	case MUIM_Settingsgroup_GadgetsToConfig: return Settingsgroup_GadgetsToConfig(cl,obj,(APTR)msg);
+	case OM_NEW:
+	    return Settingsgroup_New(cl, obj, (struct opSet *)msg);
+	case MUIM_Settingsgroup_ConfigToGadgets:
+	    return Settingsgroup_ConfigToGadgets(cl,obj,(APTR)msg);
+	case MUIM_Settingsgroup_GadgetsToConfig:
+	    return Settingsgroup_GadgetsToConfig(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

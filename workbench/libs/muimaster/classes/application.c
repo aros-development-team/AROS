@@ -537,11 +537,8 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_GET
  */
-static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
+static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-/*----------------------------------------------------------------------------*/
-/* small macro to simplify return value storage */
-/*----------------------------------------------------------------------------*/
 #define STORE *(msg->opg_Storage)
 
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -697,7 +694,7 @@ static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct 
 /*
  *
  */
-static ULONG mIconify(struct IClass *cl, Object *obj, Msg *msg)
+static ULONG Application_Iconify(struct IClass *cl, Object *obj, Msg *msg)
 {
     /*struct MUI_ApplicationData *data = INST_DATA(cl, obj);*/
 
@@ -709,7 +706,7 @@ void _zune_window_message(struct IntuiMessage *imsg); /* from window.c */
 /*
  * MUIM_Application_InputBuffered : process all pending events
  */
-static ULONG mInputBuffered(struct IClass *cl, Object *obj,
+static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
                struct MUIP_Application_InputBuffered *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -915,7 +912,7 @@ static ULONG Application_PushMethod(struct IClass *cl, Object *obj, struct MUIP_
  * MUIM_Application_ReturnID : Tell MUI to return the given id with
  * the next call to MUIM_Application_NewInput. kinda obsolete :)
  */
-static ULONG mReturnID(struct IClass *cl, Object *obj,
+static ULONG Application_ReturnID(struct IClass *cl, Object *obj,
 	  struct MUIP_Application_ReturnID *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -940,7 +937,7 @@ static ULONG mReturnID(struct IClass *cl, Object *obj,
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static ULONG mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+static ULONG Application_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -955,7 +952,7 @@ static ULONG mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *m
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+static ULONG Application_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -972,7 +969,7 @@ static ULONG mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+static ULONG Application_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -988,7 +985,7 @@ static ULONG mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg
  * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+static ULONG Application_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1004,50 +1001,46 @@ static ULONG mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataO
 /*
  * The class dispatcher
  */
-#ifndef _AROS
-__asm IPTR Application_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, Application_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 {
-/*----------------------------------------------------------------------------*/
-/* watch out for methods we do understand                                     */
-/*----------------------------------------------------------------------------*/
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
-    case OM_NEW: return Application_New(cl, obj, (struct opSet *) msg);
-    case OM_DISPOSE: return Application_Dispose(cl, obj, msg);
-    case OM_SET: return Application_Set(cl, obj, (struct opSet *)msg);
-    case OM_GET:
-	return(mGet(cl, obj, (struct opGet *)msg));
-    case OM_ADDMEMBER: return Application_AddMember(cl, obj, (APTR)msg);
-    case OM_REMMEMBER: return Application_RemMember(cl, obj, (APTR)msg);
-    case MUIM_Application_AddInputHandler: return Application_AddInputHandler(cl, obj, (APTR)msg);
-    case MUIM_Application_RemInputHandler: return Application_RemInputHandler(cl, obj, (APTR)msg);
-    case MUIM_Application_Iconify :
-	return(mIconify(cl, obj, (APTR)msg));
-    case MUIM_Application_Input: return Application_Input(cl, obj, (APTR)msg);
-    case MUIM_Application_InputBuffered :
-	return(mInputBuffered(cl, obj, (APTR)msg));
-    case MUIM_Application_NewInput: return Application_NewInput(cl, obj, (APTR)msg);
-    case MUIM_Application_PushMethod: return Application_PushMethod(cl, obj, (APTR)msg);
-    case MUIM_Application_ReturnID :
-	return(mReturnID(cl, obj, (APTR)msg));
-
-    case MUIM_FindUData :
-	return(mFindUData(cl, obj, (APTR)msg));
-    case MUIM_GetUData :
-	return(mGetUData(cl, obj, (APTR)msg));
-    case MUIM_SetUData :
-	return(mSetUData(cl, obj, (APTR)msg));
-    case MUIM_SetUDataOnce :
-	return(mSetUDataOnce(cl, obj, (APTR)msg));
+	case OM_NEW:
+	    return Application_New(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:
+	    return Application_Dispose(cl, obj, msg);
+	case OM_SET:
+	    return Application_Set(cl, obj, (struct opSet *)msg);
+	case OM_GET:
+	    return Application_Get(cl, obj, (struct opGet *)msg);
+	case OM_ADDMEMBER:
+	    return Application_AddMember(cl, obj, (APTR)msg);
+	case OM_REMMEMBER:
+	    return Application_RemMember(cl, obj, (APTR)msg);
+	case MUIM_Application_AddInputHandler:
+	    return Application_AddInputHandler(cl, obj, (APTR)msg);
+	case MUIM_Application_RemInputHandler:
+	    return Application_RemInputHandler(cl, obj, (APTR)msg);
+	case MUIM_Application_Iconify :
+	    return Application_Iconify(cl, obj, (APTR)msg);
+	case MUIM_Application_Input:
+	    return Application_Input(cl, obj, (APTR)msg);
+	case MUIM_Application_InputBuffered :
+	    return Application_InputBuffered(cl, obj, (APTR)msg);
+	case MUIM_Application_NewInput:
+	    return Application_NewInput(cl, obj, (APTR)msg);
+	case MUIM_Application_PushMethod:
+	    return Application_PushMethod(cl, obj, (APTR)msg);
+	case MUIM_Application_ReturnID :
+	    return Application_ReturnID(cl, obj, (APTR)msg);
+	case MUIM_FindUData :
+	    return Application_FindUData(cl, obj, (APTR)msg);
+	case MUIM_GetUData :
+	    return Application_GetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUData :
+	    return Application_SetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUDataOnce :
+	    return Application_SetUDataOnce(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
