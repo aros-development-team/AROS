@@ -42,16 +42,16 @@
 	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
 
 AROS_SLIB_ENTRY(Disable,Exec):
-	call  _disable
+	call  AROS_CDEFNAME(disable)
 	pushl %eax
 	movl  8(%esp),%eax
 	incb  IDNestCnt(%eax)
 	popl  %eax
 	ret
 
-	.globl	_disable
-	.type	_disable,@function
-_disable:
+	.globl	AROS_CDEFNAME(disable)
+	.type	AROS_CDEFNAME(disable),@function
+AROS_CDEFNAME(disable):
 	pushl %eax
 	pushl %ecx
 	pushl %edx
