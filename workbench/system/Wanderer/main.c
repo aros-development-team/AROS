@@ -9,6 +9,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
+#include "locale.h"
 #include "wanderer.h"
 
 /* global variables */
@@ -16,13 +17,15 @@ Object *app;
 
 int main(void)
 {
-    app = WandererObject, End;
+    Locale_Initialize();
     
-    if (app != NULL)
+    if ((app = WandererObject, End) != NULL)
     {
 	DoMethod(app, MUIM_Application_Execute);        
 	MUI_DisposeObject(app);
     }
+    
+    Locale_Deinitialize();
     
     return 0;
 }
