@@ -60,6 +60,7 @@ Object *group;
 Object *editor_text;
 Object *filename_string;
 Object *save_button;
+Object *list2;
 
 ULONG xget(Object *obj, Tag attr)
 {
@@ -139,6 +140,19 @@ __saveds __asm void display_function(register __a0 struct Hook *h, register __a2
     }
 }
 
+__saveds __asm void display2_function(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct list_entry *entry)
+{
+    static char buf[100];
+    if (entry)
+    {
+    	sprintf(buf,"line num: %ld  id: %ld",*(strings-1),entry);
+        strings[0] = buf;
+    } else
+    {
+        strings[0] = "Number";
+    }
+}
+
 void save_function(void)
 {
     char *text = (char*)xget(editor_text, MUIA_Text_Contents);
@@ -152,6 +166,16 @@ void save_function(void)
     	Write(fh,text,strlen(text));
 	Close(fh);
     }
+}
+
+void add_function(void)
+{
+    static int id = 1;
+    DoMethod(list2,MUIM_List_InsertSingle, id++, MUIV_List_Insert_Bottom);
+}
+
+void add_child_function(void)
+{
 }
 
 /* The custom class */
@@ -220,8 +244,9 @@ void main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
     Object *popobject, *listview;
+    Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -238,6 +263,7 @@ void main(void)
     struct Hook hook_slider;
     struct Hook hook_objects;
     struct Hook hook_display;
+    struct Hook hook_display2;
 
     hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
 //    hook_standard.h_Data = (void*)getreg(REG_A4);
@@ -272,6 +298,7 @@ void main(void)
     hook_slider.h_Entry = (HOOKFUNC)slider_function;
     hook_objects.h_Entry = (HOOKFUNC)objects_function;
     hook_display.h_Entry = (HOOKFUNC)display_function;
+    hook_display2.h_Entry = (HOOKFUNC)display2_function;
 
     context_menu = MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
@@ -445,6 +472,20 @@ End,
 			    End,
 			Child, save_button = MUI_MakeObject(MUIO_Button, "Save"),
 			End,
+		    Child, VGroup,
+		    	Child, ListviewObject,
+			    MUIA_Listview_List, list2 = ListObject,
+				InputListFrame,
+			        MUIA_List_DisplayHook, &hook_display2,
+			    	End,
+			    End,
+			Child, HGroup,
+			    Child, list_add_button = MUI_MakeObject(MUIO_Button,"_Add"),
+			    Child, list_add_child_button = MUI_MakeObject(MUIO_Button,"_Add Child"),
+			    Child, list_remove_button = MUI_MakeObject(MUIO_Button,"_Remove"),
+			    Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
+			    End,
+			End,
 		    End,
 #endif
 		Child, RectangleObject,
@@ -512,6 +553,12 @@ End,
 	DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
 
 	DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, popobject, 2, MUIM_Popstring_Close, TRUE);
+
+        /* The callbacks of the buttons within the list page */
+	DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_function);
+	DoMethod(list_add_child_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_child_function);
+        DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
+	DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
