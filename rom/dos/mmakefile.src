@@ -37,20 +37,9 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
--include $(GENDIR)/rom/dos/mf.inc
-TMP_OBJS := $(addprefix $(GENDIR)/rom/dos/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
-TMP_SOBJS := $(addprefix $(GENDIR)/rom/dos/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
-ifneq ($TMP_OBJS,)
-$(TMP_OBJS) :
-	@$(ECHO) Precompiled $@ does not exists
-	@exit 1
-endif
-$(TMP_SOBJS): %.so : %.o
-	@$(CP) $< $@
-
 %build_module_macro mmake=kernel-dos \
   modname=dos modtype=library \
-  funcs=$(FUNCTIONS) files="$(FILES) $(ADDITIONAL_OBJS)" conffile=lib.conf genshlinklib=$(SHARED_DOS)
+  funcs=$(FUNCTIONS) files="$(FILES)" conffile=lib.conf genshlinklib=$(SHARED_DOS)
 
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga
