@@ -147,7 +147,7 @@ ULONG *pp;
 			Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
 		}
 		irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-		irq->h_Node.ln_Name = name;
+		irq->h_Node.ln_Name = (STRPTR)name;
 		irq->h_Code = td_floppyint;
 		irq->h_Data = (APTR)TDBase;
 		
@@ -161,7 +161,7 @@ ULONG *pp;
 			Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
 		}
 		irq->h_Node.ln_Pri=10;		/* Set the highest pri */
-		irq->h_Node.ln_Name = name;
+		irq->h_Node.ln_Name = (STRPTR)name;
 		irq->h_Code = td_floppytimer;
 		irq->h_Data = (APTR)TDBase;
 		
@@ -237,8 +237,8 @@ ULONG *pp;
 				pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
 				if (pp)
 				{
-					pp[0]="afs.handler";
-					pp[1]=name;
+					pp[0]=(ULONG)"afs.handler";
+					pp[1]=(ULONG)name;
 					pp[2]=i;
 					pp[DE_TABLESIZE+4]=DE_BOOTBLOCKS;
 					pp[DE_SIZEBLOCK+4]=128;
@@ -390,7 +390,6 @@ AROS_LH1(void, beginio,
 			ReleaseSemaphore(&TDBase->io_lock);
 			iotd->iotd_Req.io_Error=0;
 			break;
-			
 		/* Seek the drive */
 		case TD_SEEK:
 			/* Lock TDBase */
@@ -454,7 +453,6 @@ AROS_LH1(LONG, abortio,
 
 /* All procedures here are based on Intel documentation */
 
-#define TOUT	100000	/* Timeout for operations */
 #define	TOFF	50		/* after TOFF ticks drive motor is turned off */
 #define TD_DMA	2		/* Define DMA channel */
 
@@ -462,7 +460,8 @@ AROS_LH1(LONG, abortio,
 int td_waitint(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 {
 	TDBase->io_msg = &iotd->iotd_Req.io_Message;
-	TDBase->iotime = 50;	// Each IO command has 1s to complete before error occurs
+	TDBase->iotime = 150;	// Each IO command has 1s to complete before error occurs
+									// atdisk.c says 3 seconds (sheutlin)
 	Wait(1 << iotd->iotd_Req.io_Message.mn_ReplyPort->mp_SigBit);
 	if (TDBase->iotime)
 	{
@@ -473,45 +472,36 @@ int td_waitint(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 }
 
 // Send byte to drive. Returns DriveInUse error if busy, 0 otherwise
-int td_sendbyte(unsigned char byte)
+int td_sendbyte(unsigned char byte, struct TrackDiskBase *TDBase)
 {
-	int timeout;
-	unsigned char t;
 
-	timeout = 0;
+	TDBase->iotime=50;	//1s to send a command
 	do
 	{
-		t = fd_inb(FD_STATUS) & 0xc0;
-		timeout++;
-		if (timeout > TOUT)
+		if ((fd_inb(FD_STATUS) & 0xc0)==0x80)
 		{
-			return TDERR_DriveInUse;
+			fd_outb(byte, FD_DATA);
+			return 0;
 		}
-	} while (t != 0x80);
+	} while (TDBase->iotime);
+	return TDERR_DriveInUse;
 
-	fd_outb(byte, FD_DATA);
-	return 0;
 }
 
 // Get byte from drive. Returns the same as td_sendbyte
-int td_getbyte(unsigned char *byte)
+int td_getbyte(unsigned char *byte, struct TrackDiskBase *TDBase)
 {
-	int timeout;
-	unsigned char t;
 
-	timeout = 0;
+	TDBase->iotime=50;
 	do
 	{
-		t = fd_inb(FD_STATUS) & 0xc0;
-		timeout++;
-		if (timeout > TOUT)
+		if ((fd_inb(FD_STATUS) & 0xc0)==0xc0)
 		{
-			return TDERR_DriveInUse;
+			*byte = fd_inb(FD_DATA);
+			return 0;
 		}
-	} while (t != 0xc0);
-
-	*byte = fd_inb(FD_DATA);
-	return 0;
+	} while (TDBase->iotime);
+	return TDERR_DriveInUse;
 }
 
 // Send full command to drive
@@ -523,7 +513,7 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
 		int i;
 		for (i=0; (i < TDBase->comsize) && !err; i++)
 		{
-			err = td_sendbyte(TDBase->rawcom[i]);
+			err = td_sendbyte(TDBase->rawcom[i], TDBase);
 		}
 	}
 	// If there was error just reset drive
@@ -538,7 +528,7 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
 		td_dinit(TDBase);
 		// Resend command
 		for (i=0; (i < TDBase->comsize) && !err; i++)
-			err = td_sendbyte(TDBase->rawcom[i]);
+			err = td_sendbyte(TDBase->rawcom[i], TDBase);
 	}
 	return err;
 }
@@ -550,9 +540,48 @@ int td_readstatus(struct TrackDiskBase *TDBase, int num)
 	if (num > 7) num = 7;
 	for (i=0; (i < num) && !err; i++)
 	{
-		err = td_getbyte(&TDBase->result[i]);
+		err = td_getbyte(&TDBase->result[i], TDBase);
 	}
 	return err;
+}
+
+int waitUntilReady(void) {
+int i, status;
+
+	for (i=0; i < 10000; i++)
+	{
+		status = fd_inb(FD_STATUS);
+		if (status & STATUS_READY)
+			return status;
+	}
+	return -1;
+}
+
+#define MORE_OUTPUT 1
+
+int needMoreOutput(struct TrackDiskBase *TDBase) {
+int status;
+
+	if ((status=waitUntilReady())<0)
+		return -1;
+	if ((status & (STATUS_READY|STATUS_DIR|STATUS_DMA)) == STATUS_READY)
+		return MORE_OUTPUT;
+	td_readstatus(TDBase, 7);
+	return 0;
+}
+
+int td_configure(struct TrackDiskBase *TDBase) {
+
+	// Do Configure (enable FIFO and turn polling off)
+	td_sendbyte(FD_CONFIGURE, TDBase);
+	if (needMoreOutput(TDBase) == MORE_OUTPUT)
+	{
+		td_sendbyte(0, TDBase);
+		td_sendbyte(0x1a, TDBase);
+		td_sendbyte(0, TDBase);
+		return 1;
+	}
+	return 0;
 }
 
 // Initialize drive
@@ -577,11 +606,7 @@ int td_dinit(struct TrackDiskBase *TDBase)
 	TDBase->rawcom[1] = DP_SPEC1;
 	TDBase->rawcom[2] = DP_SPEC2;
 	td_sendcommand(TDBase);
-	// Do Configure (enable FIFO and turn polling off)
-	td_sendbyte(FD_CONFIGURE);
-	td_sendbyte(0);
-	td_sendbyte(0x1a);
-	td_sendbyte(0);
+	td_configure(TDBase);
 	return 0;
 }
 
@@ -686,7 +711,6 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 		}
 		CopyMem(iotd->iotd_Req.io_Data, unit->dma_buffer, iotd->iotd_Req.io_Length);
 	}
-	
 	/* Check whether we need to wait 500ms after seek */
 	wait_first = TDBase->timeout[unit_num];
 	
@@ -720,9 +744,9 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 				/* Set DMA up */
 				clear_dma_ff(TD_DMA);
 				// Should place some cache flush in future (when cache implemented)
-				set_dma_mode(TD_DMA, (mode == 'r') ? DMA_MODE_READ : DMA_MODE_WRITE);
 				set_dma_addr(TD_DMA, (ULONG)(unit->dma_buffer));
 				set_dma_count(TD_DMA, iotd->iotd_Req.io_Length);
+				set_dma_mode(TD_DMA, (mode == 'r') ? DMA_MODE_READ : DMA_MODE_WRITE);
 				enable_dma(TD_DMA);
 				/* Issue read/write command */
 				TDBase->comsize = 9;
@@ -762,7 +786,6 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 				if (!err)
 				{	
 					err = TDERR_NotSpecified;
-
 					if (TDBase->result[1] & 0x80)
 						err = TDERR_TooFewSecs;
 					else if (TDBase->result[1] & 0x20)
@@ -842,11 +865,10 @@ void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 void td_floppyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 	struct MsgPort *port;
-
 	if (TDBase->io_msg)
 	{
 		port = TDBase->io_msg->mn_ReplyPort;
-		TDBase->io_msg = (struct Message *)NULL;	// Remowe message
+		TDBase->io_msg = (struct Message *)NULL;	// Remove message
 		/* Signal task waiting for competion (if there is such) */
 		Signal(port->mp_SigTask, 1 << port->mp_SigBit);
 	}
