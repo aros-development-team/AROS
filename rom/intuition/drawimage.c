@@ -80,9 +80,6 @@
 
     /* Change RastPort to the mode I need */
     SetDrMd (rp, JAM1);
-
-    planepick  = image->PlanePick;
-    planeonoff = image->PlaneOnOff & ~planepick;
     
     /* For all images... */
     for ( ; image; image=image->NextImage)
@@ -91,25 +88,26 @@
 		image,image->NextImage,
 		image->Width,image->Height,image->Depth,image->PlanePick,image->PlaneOnOff);*/
 	
+
+	planepick  = image->PlanePick;
+        planeonoff = image->PlaneOnOff & ~planepick;
+	
+	if (planepick == 0)
+	{
+	    SetAPen(rp, planeonoff);
+	    RectFill(rp, leftOffset + image->LeftEdge,
+	    		 topOffset  + image->TopEdge,
+			 leftOffset + image->LeftEdge + image->Width  - 1,
+			 topOffset  + image->TopEdge  + image->Height - 1);
+	    
+	    continue;
+	}
+	
+	
 	/* Use x to store size of one image plane */
 	x = ((image->Width + 15) >> 4) * image->Height;
 	y = 0;
 
-#if 0
-	shift = planepick;
-
-	for (d=0; d < image->Depth; d++)
-	{
-	    while (!(shift & 1) )
-	    {
-		bits[y ++] = NULL;
-		shift >>= 1;
-	    }
-
-	    bits[y ++] = image->ImageData + d * x;
-	    shift >>= 1;
-	}
-#else
 	shift = 1;
 	
 	for(d = 0; d < image->Depth;d++)
@@ -117,7 +115,6 @@
 	    bits[d] = (planepick & shift) ? image->ImageData + (y++) * x : NULL;
 	    shift <<= 1;	
 	}
-#endif
 
 	offset	= 0;
 
@@ -136,26 +133,6 @@
 		shift = 1;
 		plane = 0;
 
-#if 0
-		for (d=0; d < image->Depth; d++)
-		{
-		    UWORD dat;
-		    
-		    while (!bits[plane])
-		    {
-			plane ++;
-			shift <<= 1;
-		    }
-
-		    dat = bits[plane][offset];
-		    dat = AROS_WORD2BE(dat);
-		    
-		    pen |= (dat & bitmask) ? shift : 0;
-
-		    plane ++;
-		    shift <<= 1;
-		}
-#else
 		for(d = 0; d < image->Depth; d++)
 		{
 		    if (planepick & shift)
@@ -173,7 +150,6 @@
 		    
 		    shift <<= 1;
 		}
-#endif
 
 /* kprintf (" x=%2d y=%2d   offset=%3d bitmask=%04x bits[]=%04x pen=%d\n"
     , x
