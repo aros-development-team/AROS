@@ -1,0 +1,45 @@
+## version $VER: ScreenGrabber.catalog 1.0 (27.01.2005)
+## language deutsch
+## codeset 0
+;
+MSG_WINDOW_TITLE
+Screen Abbild
+; ScreenGrabber
+MSG_REFRESH
+Aktualisieren
+;
+MSG_SCREEN_INFO
+Screen Info
+; Screen info
+MSG_SIZE
+Größe
+; Size
+MSG_TITLE
+Titel
+; Title
+MSG_DEFAULT_TITLE
+Standard Titel
+; Default title
+MSG_GRABBING_OPTIONS
+Abbildungs-Optionen
+; Grabbing options
+MSG_DELAY
+Zeitverzögerung (s)
+; Delay (s)
+MSG_HIDE
+dieses Fenster verstecken
+;Hide the grabber window
+MSG_SAVE_OPTIONS
+Optionen Speichern
+;Save options
+MSG_SAVE_FILE
+Datei Speichern
+;Save file
+;
+MSG_SCREENSHOT
+Abbild
+;Screenshot
+MSG_SCREEN_PARM
+%d x %d, tiefe=%d
+;%d x %d, depth=%d
+
