@@ -633,6 +633,10 @@ LONG interact(STRPTR script)
     cli->cli_FailLevel = RETURN_ERROR;
     SelectInput(cli->cli_StandardInput);
 
+    /* Reset cli_CurrentInput after the execution of the file. This
+       marks the fact that we've now entered interactive mode. */
+    cli->cli_CurrentInput = cli->cli_StandardInput;
+
     P(kprintf("Input now comes from the terminal.\n"));
     
     while(TRUE)
@@ -731,6 +735,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    {
 		goto exit;
 	    }
+
 	    cli->cli_CurrentOutput = rd->newOut;
 	    rd->oldOut = SelectOutput(rd->newOut);
 	}
@@ -1196,7 +1201,8 @@ LONG executeFile(STRPTR fileName)
 					       commands */
 	P(kprintf("Loaded script\n"));
 
-	do {
+	do
+	{
 	    struct CommandLine cl = { NULL, 0, 0 };
 
 	    if(!Redirection_init(&rd))
@@ -1223,9 +1229,9 @@ LONG executeFile(STRPTR fileName)
 
 	    VFWritef(Output(), "%T0: failed returncode %N\n", pArgs);
 	}
-    }
 
-    Close(scriptFile);
+	Close(scriptFile);
+    }
 
     return 0;			/* Temporary */
 }
