@@ -26,6 +26,7 @@ MODULES := $(foreach f,$(DEF_OBJ) $(ADDITIONAL_OBJS), $(OSMODDIR)/$(f))
 
 #MM
 kernel-boot-module: $(MODULES)
+	@$(NOP)
 
 LIBS := -L$(LIBDIR) -lamiga
 LIBLIST := amiga
@@ -44,6 +45,7 @@ else
 
 #MM
 kernel-boot-linklib : show-flags $(LIB)
+	@$(NOP)
 
 $(LIB) : $(OBJS)
 	%mklib_q

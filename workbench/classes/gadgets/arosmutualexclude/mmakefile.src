@@ -25,6 +25,7 @@ CLASS	    := $(GADGETDIR)/arosmutualexclude.gadget
 
 #MM workbench-classes-arosmutualexclude : setup includes
 workbench-classes-arosmutualexclude : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-larosmutualexclude
 

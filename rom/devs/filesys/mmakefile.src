@@ -10,6 +10,7 @@ LIB		:= $(OBJDIR)/emul_handler.a
 
 #MM
 kernel-filesys-$(ARCH)-$(CPU) : show-flags $(LIB)
+	@$(NOP)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"

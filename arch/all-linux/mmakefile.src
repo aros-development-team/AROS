@@ -64,6 +64,7 @@ $(GENINCDIR)/sigcore.h : $(TOP)/config/linux/exec/sigcore.h.src
 
 #MM
 exec-linux : $(OSGENDIR)/exec/init.o
+	@$(NOP)
 
 #MM- setup-dos-linux : setup-dos-unix
 

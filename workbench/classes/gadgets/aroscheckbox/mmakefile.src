@@ -25,6 +25,7 @@ CLASS	    := $(GADGETDIR)/aroscheckbox.gadget
 
 #MM workbench-classes-aroscheckbox : setup includes
 workbench-classes-aroscheckbox : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-laroscheckbox
 

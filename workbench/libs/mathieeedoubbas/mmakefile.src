@@ -27,6 +27,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-mathieeedoubbas : setup includes linklibs
 workbench-libs-mathieeedoubbas : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

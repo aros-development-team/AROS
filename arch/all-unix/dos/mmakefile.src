@@ -16,6 +16,7 @@ TESTS		:= runprocess
 
 #MM dos-unix : setup-dos-unix
 dos-unix : $(foreach f,$(FILES), $(OSGENDIR)/dos/$(f).o)
+	@$(NOP)
 
 #MM
 setup-dos-unix :
@@ -28,6 +29,7 @@ clean::
 	$(RM) $(TESTS)
 
 check : $(TESTS)
+	@$(NOP)
 
 runprocess : runprocess.c ../exec/stackswap.c
 	$(CC) -DTEST -DNO_MAIN $(CFLAGS) -c ../exec/stackswap.c -o ss.o

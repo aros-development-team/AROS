@@ -25,6 +25,7 @@ CLASS := $(GADGETDIR)/aroslist.class
 
 #MM workbench-classes-aroslist : setup includes
 workbench-classes-aroslist : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-laroslist
 

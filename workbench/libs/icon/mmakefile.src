@@ -27,6 +27,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-icon : setup includes linklibs
 workbench-libs-icon : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

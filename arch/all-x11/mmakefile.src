@@ -14,9 +14,11 @@ INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
 
 #MM
 graphics-x11 : $(OSGENDIR)/graphics/graphics_driver.o
+	@$(NOP)
 
 #MM
 intuition-x11 : $(OSGENDIR)/intuition/intuition_driver.o
+	@$(NOP)
 
 #MM
 setup-x11 :

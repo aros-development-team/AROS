@@ -102,6 +102,7 @@ $(LIB) : $(INITFUNC) $(ENDFUNC) $(OBJS)
 
 #MM
 kernel-layers-amiga-m68k : show-flags $(OSMODDIR)/layers.strap
+	@$(NOP)
 
 # MetaMake targets
 #MM kernel-layers : setup includes layers-$(ARCH) kernel-layers-$(ARCH)-$(CPU)

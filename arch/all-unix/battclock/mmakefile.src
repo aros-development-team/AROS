@@ -13,6 +13,7 @@ DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
 
 #MM battclock-unix : setup-battclock-unix
 battclock-unix : print-flags $(OBJS)
+	@$(NOP)
 
 print-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"

@@ -85,15 +85,18 @@ NO_FUNCTABLE := 1
 
 #MM kernel-timer-linklib : setup includes kernel-timer-$(ARCH)-$(CPU)
 kernel-timer-linklib : show-flags $(LIB)
+	@$(NOP)
 
 #MM kernel-timer-module : setup includes kernel-timer-$(ARCH)-$(CPU)
 kernel-timer-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
 #MM clean setup
 
 #MM
 includes-copy : $(foreach f, $(wildcard include/*.h), \
 		$(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
+	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@

@@ -23,6 +23,7 @@ FUNCTIONS := \
 
 #MM workbench-libs-asl : setup includes linklibs
 workbench-libs-asl : show-flags $(SLIB)
+	@$(NOP)
 
 #MM clean
 #MM setup

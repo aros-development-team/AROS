@@ -25,6 +25,7 @@ CLASS	    := $(GADGETDIR)/aroslistview.gadget
 
 #MM workbench-classes-aroslistview : setup includes
 workbench-classes-aroslistview : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-laroslistview
 

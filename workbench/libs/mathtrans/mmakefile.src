@@ -32,6 +32,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-mathtrans : setup includes linklibs
 workbench-libs-mathtrans : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

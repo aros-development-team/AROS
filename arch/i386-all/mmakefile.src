@@ -9,9 +9,11 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 
 #MM
 includes-linux-i386 : $(INCFILES) machine.i
+	@$(NOP)
 
 #MM
 includes-freebsd-i386 : $(INCFILES) machine.i
+	@$(NOP)
 
 #MM
 clean::

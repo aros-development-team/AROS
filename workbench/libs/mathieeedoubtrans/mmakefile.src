@@ -34,6 +34,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-mathieeedoubtrans : setup includes linklibs
 workbench-libs-mathieeedoubtrans : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

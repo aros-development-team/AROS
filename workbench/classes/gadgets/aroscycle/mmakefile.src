@@ -25,6 +25,7 @@ CLASS	    := $(GADGETDIR)/aroscycle.gadget
 
 #MM workbench-classes-aroscycle : setup includes
 workbench-classes-aroscycle : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-laroscycle
 

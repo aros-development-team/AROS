@@ -30,6 +30,7 @@ includes :
 
 #MM includes-copy : includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
+	@$(NOP)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@

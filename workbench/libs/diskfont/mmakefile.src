@@ -29,6 +29,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-diskfont : setup includes linklibs
 workbench-libs-diskfont : show-flags $(SLIB)
+	@$(NOP)
 
 #MM clean
 #MM setup

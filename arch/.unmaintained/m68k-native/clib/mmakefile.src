@@ -15,6 +15,7 @@ TESTS =
 
 #MM
 clib-amiga-m68k : $(foreach f,$(FILES),$(CLIBDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-clib-amiga-m68k :

@@ -48,6 +48,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-arp : setup includes linklibs
 workbench-libs-arp : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

@@ -10,6 +10,7 @@ SPECIAL_CFLAGS  := -I $(TOP)/exec
 
 #MM
 includes-amiga-m68k : $(MACHINE_H) $(DISTMACHINE_H) machine.i
+	@$(NOP)
 
 #MM
 clean::

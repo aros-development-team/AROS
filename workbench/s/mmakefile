@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM
 workbench-s : $(SDIR)/Startup-Sequence
+	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
 	$(CP) $^ $@

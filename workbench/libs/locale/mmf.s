@@ -77,7 +77,7 @@ clean ::
 	$(END_FILE).c $(LIB) $(SLIB)
 
 $(OBJDIR)/%.d : %.c
-	$mkdepend_q
+	%mkdepend_q
 
 %asm_rule "$(FUNCTIONS) $(INIT_FILE) $(FILES) $(END_FILE)"
 %ctoasm_q

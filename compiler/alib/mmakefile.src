@@ -59,6 +59,7 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM linklibs : setup includes
 linklibs : $(LIB) $(STARTUP)
+	@$(NOP)
 
 #MM
 setup :

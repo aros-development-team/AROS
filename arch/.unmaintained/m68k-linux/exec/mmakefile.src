@@ -11,6 +11,7 @@ TESTS		:=
 
 #MM
 exec-linux-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-exec-linux-m68k :

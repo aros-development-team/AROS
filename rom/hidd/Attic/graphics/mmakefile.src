@@ -28,10 +28,12 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 
 #MM hidd-graphics : setup includes linklibs hidd-graphics-$(ARCH)
 hidd-graphics : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 includes-copy : $(foreach f, $(wildcard include/*.h), \
                 $(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
+	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@
@@ -59,6 +61,7 @@ hidd-graphics-quick : hidd-graphics
 	$(NOP)
 
 Test : TestLib TestClass TestHiddClass TestSpeedExe
+	@$(NOP)
 
 TestLib : TestLib.c
 	gcc $(CFLAGS) $< -o $@ 

@@ -6,6 +6,7 @@ IMAGEFILES  := $(foreach f,$(IMAGES),$(f)0.h $(f)1.h)
 
 #MM
 demo-setup : $(IMAGEFILES)
+	@$(NOP)
 
 %.h : %.dat datfilt.awk
 	${AWK} -f datfilt.awk $<

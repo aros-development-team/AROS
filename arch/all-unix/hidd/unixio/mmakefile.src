@@ -53,6 +53,7 @@ kernel-hidd:
 
 #MM
 kernel-hidd-linklib : show-flags $(LIB)
+	@$(NOP)
 
 DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
 
@@ -62,6 +63,7 @@ $(LIB): $(OBJS)
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@

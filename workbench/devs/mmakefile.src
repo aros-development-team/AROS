@@ -12,6 +12,7 @@ DEVS := $(DEVSDIR)/ram.handler \
 
 #MM workbench-devs : setup includes
 workbench-devs : show-flags $(DEVS) $(DEVSDIR)/Mountlist
+	@$(NOP)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"

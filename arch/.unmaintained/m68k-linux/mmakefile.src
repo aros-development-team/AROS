@@ -10,6 +10,7 @@ MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 
 #MM
 includes-linux-m68k : $(INCFILES) machine.i
+	@$(NOP)
 
 #MM
 clean::

@@ -25,6 +25,7 @@ CLASS	    := $(GADGETDIR)/arospalette.gadget
 
 #MM workbench-classes-arospalette : setup includes
 workbench-classes-arospalette : show-flags $(CLASS)
+	@$(NOP)
 
 %define_libs prelibs=-larospalette
 

@@ -86,9 +86,11 @@ endif
 
 #MM kernel-mathieeesingbas-linklib : setup includes kernel-mathieeesingbas-$(ARCH)-$(CPU)
 kernel-mathieeesingbas-linklib : show-flags $(LIB)
+	@$(NOP)
 
 #MM kernel-mathieeesingbas-module : setup includes kernel-mathieeesingbas-$(ARCH)-$(CPU)
 kernel-mathieeesingbas-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
 #MM clean setup
 

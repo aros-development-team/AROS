@@ -13,6 +13,7 @@ LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
 
 #MM
 workbench-locale : setup $(LANGFILE)
+	@$(NOP)
 
 setup:
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR); else true; fi

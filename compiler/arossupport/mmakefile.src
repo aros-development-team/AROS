@@ -44,6 +44,7 @@ CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
 
 #MM linklibs : setup includes
 linklibs : show-flags $(LIB)
+	@$(NOP)
 
 #MM
 setup :
@@ -51,6 +52,7 @@ setup :
 
 #MM
 includes-copy : $(DEST_INCLUDE_FILES) $(GEN_INCLUDE_FILES)
+	@$(NOP)
 
 #MM
 clean ::

@@ -19,6 +19,7 @@ EXE := $(DESTDIR)/2View
 
 #MM demos : demos-setup
 demos : $(OBJS) $(EXE)
+	@$(NOP)
 
 #MM
 demos-setup :

@@ -10,6 +10,7 @@ TESTS		:=
 
 #MM
 clib-linux-m68k : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-clib-linux-m68k :

@@ -20,6 +20,7 @@ TESTS		:= stackswap coretest
 
 #MM exec-unix : setup-exec-unix
 exec-unix : print-flags $(OBJS)
+	@$(NOP)
 
 print-flags :
 	@echo "CFLAGS=$(CFLAGS)"
@@ -37,6 +38,7 @@ clean ::
 
 #MM
 check-exec-unix : $(TESTS)
+	@$(NOP)
 
 % : %.c
 	$(CC) -DTEST $(CFLAGS) $< -o $@

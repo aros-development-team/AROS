@@ -15,6 +15,7 @@ TESTS		:=
 
 #MM
 utility-linux-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-utility-linux-m68k :

@@ -76,6 +76,7 @@ FUNCTIONS := \
 
 #MM workbench-libs-iffparse : setup includes linklibs
 workbench-libs-iffparse : show-flags $(SLIB)
+	@$(NOP)
 
 #MM clean
 #MM setup

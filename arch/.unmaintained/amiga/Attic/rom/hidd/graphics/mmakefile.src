@@ -12,6 +12,7 @@ FUNCTIONS = GC_WritePixelDirect_Q GC_ReadPixelDirect_Q \
 
 #MM
 hidd-graphics-amiga : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-hidd-graphics-amiga-m68k :

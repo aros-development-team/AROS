@@ -6,6 +6,7 @@ DEST := $(foreach f,$(SRCS),../$(f))
 
 #MM
 setup-exec-unix-i386 : $(DEST)
+	@$(NOP)
 
 ../% : %
 	@$(CP) $< $@

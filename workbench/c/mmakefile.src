@@ -51,6 +51,7 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM workbench-c : setup includes
 workbench-c : show-flags $(EXES)
+	@$(NOP)
 
 show-flags :
 	@echo "OBJDIR=$(OBJDIR)"

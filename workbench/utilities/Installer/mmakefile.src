@@ -19,6 +19,7 @@ SCRIPT := test.script
 
 #MM utilities : setup-utilities
 utilities : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
+	@$(NOP)
 
 #MM
 setup-utilities :

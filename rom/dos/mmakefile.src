@@ -114,6 +114,7 @@ TEST_DEPS := $(foreach f,$(TEST_DEPLIBS),$(LIBDIR)/lib$(f).a)
 
 #MM
 check : setup-check $(foreach f,$(TESTS),$(EXEDIR)/$(f))
+	@$(NOP)
 
 $(TESTDIR)/% : %.c $(TEST_DEPS)
 	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBS)"
@@ -129,9 +130,11 @@ $(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
 
 #MM kernel-dos-linklib : setup includes kernel-dos-$(ARCH)-$(CPU)
 kernel-dos-linklib : show-flags $(LIB)
+	@$(NOP)
 
 #MM kernel-dos-module : setup includes kernel-dos-$(ARCH)-$(CPU)
 kernel-dos-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
 #MM clean setup
 

@@ -35,6 +35,7 @@ FUNCTIONS	:= \
 
 #MM workbench-libs-mathieeesingtrans : setup includes linklibs
 workbench-libs-mathieeesingtrans : show-flags $(SLIB)
+	@$(NOP)
 
 #MM
 setup :

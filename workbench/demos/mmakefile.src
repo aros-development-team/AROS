@@ -34,6 +34,7 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 #MM demos : setup demo-setup includes linklibs
 demos : show-flags $(EXES) $(EXEDIR)/forkbomb
+	@$(NOP)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"

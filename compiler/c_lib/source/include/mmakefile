@@ -8,6 +8,7 @@ GEN_INCLUDES	:= $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM includes-copy : setup-includes
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
+	@$(NOP)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@

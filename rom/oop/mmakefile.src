@@ -15,6 +15,7 @@ GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/oop/$(notdir $f))
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
 
 $(INCDIR)/oop/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@
@@ -101,9 +102,11 @@ endif
 
 #MM kernel-oop-linklib : setup includes kernel-oop-$(ARCH)-$(CPU)
 kernel-oop-linklib : show-flags $(LIB)
+	@$(NOP)
 
 #MM kernel-oop-module : setup includes kernel-oop-$(ARCH)-$(CPU)
 kernel-oop-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
 #MM clean setup
 

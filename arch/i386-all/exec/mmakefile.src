@@ -11,6 +11,7 @@ TESTS		:=
 
 #MM
 exec-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+	@$(NOP)
 
 #MM
 setup-exec-i386 :

@@ -12,6 +12,7 @@ GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/devices/$(notdir $f))
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
 
 $(INCDIR)/devices/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@

@@ -16,6 +16,7 @@ COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
 
 #MM workbench-locale : setup includes
 workbench-locale: $(MAKECOUNTRY) $(COUNTIFF)
+	@$(NOP)
 
 #MM
 setup :

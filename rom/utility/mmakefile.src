@@ -93,9 +93,11 @@ endif
 
 #MM kernel-utility-linklib : setup includes kernel-utility-$(ARCH)-$(CPU)
 kernel-utility-linklib : show-flags $(LIB)
+	@$(NOP)
 
 #MM kernel-utility-module : setup includes kernel-utility-$(ARCH)-$(CPU)
 kernel-utility-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
 
 #MM clean setup
 

@@ -22,6 +22,7 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM test : setup-test
 test : show-flags $(EXES)
+	@$(NOP)
 
 show-flags :
 	@echo "OBJDIR=$(OBJDIR)"

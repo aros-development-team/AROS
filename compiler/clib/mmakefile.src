@@ -126,6 +126,7 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM linklibs : setup includes clib-$(ARCH)
 linklibs : show-flags $(LIB)
+	@$(NOP)
 
 show-flags :
 	@echo "APPCFLAGS=$(APPCFLAGS)"

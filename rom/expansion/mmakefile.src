@@ -81,6 +81,7 @@ all: setup $(OSMODDIR)/expansion.library
 
 .PHONY: asm
 asm: $(foreach f,$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES),$(f).s) all
+	@$(NOP)
 
 $(OSMODDIR)/expansion.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
@@ -130,6 +131,7 @@ kernel-expansion-module : setup show-flags $(OSMODDIR)/expansion.library
 
 #MM kernel-expansion-linklib : setup includes
 kernel-expansion-linklib : setup show-flags $(LIB)
+	@$(NOP)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"

@@ -80,7 +80,7 @@
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(ECHO) "Compiling $<..."
 	@%(cmd) %(opt) -I$(OBJDIR) -c $< -o $@ 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
@@ -90,7 +90,7 @@ $(OBJDIR)/functions.c : $(TOP)/tools/cpak/cpak $(foreach f,%(functions),$(f).c)
 	@$(MV) functions.c functions.h $(OBJDIR)
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
-	%mkdepend flags="$(CFLAGS) -I$(OBJDIR)"
+	%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 %end
 
 # Same but more noisy
@@ -297,7 +297,7 @@ libdefs.h : lib.conf $(GENLIBDEF_SCRIPT)
 	@$(AWK) -f $(GENLIBDEF_SCRIPT) $< > $@
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend opt=$(MKDEPEND_FLAGS)
+	%mkdepend_q opt=$(MKDEPEND_FLAGS)
 %end
 
 %define gennames name=$(LIBNAME)
@@ -599,7 +599,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend opt=$(MKDEPEND_FLAGS)
+	%mkdepend_q opt=$(MKDEPEND_FLAGS)
 
 # Generate include files
 %genlibincludes
@@ -611,6 +611,7 @@ $(OBJDIR)/%.d : %.c
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/clib/%(name)_protos.h \
 			    $(INCDIR)/defines/%(name).h
+	@$(NOP)
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
@@ -710,7 +711,7 @@ $(LIB) : $(OBJS)
 	@$(RANLIB) $@
 
 $(OBJDIR)/functions.o : functions.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(ECHO) "Compiling $<..."
 	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
 	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
 
