@@ -30,8 +30,7 @@ $(MACHINE_H): machine.h
 	cp $< $@
 
 clean::
-	%subdirs_q "Cleaning" clean
-	$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
+	-@$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
 
 machine.i: geninc.c $(MACHINE_H)
 	@echo "CFLAGS=$(CFLAGS)"
