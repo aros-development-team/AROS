@@ -109,7 +109,7 @@ static void makewin(void)
 
     rp = win->RPort; 
 
-    bm = AllocBitMap(win->GZZWidth, win->GZZHeight, 0, 0, win->RPort->BitMap);
+    bm = AllocBitMap(win->GZZWidth, win->GZZHeight * 2, 0, 0, win->RPort->BitMap);
     if (bm)
     {
 	struct RastPort temprp;
@@ -266,13 +266,28 @@ static void action(void)
 	
 	if (bm)
 	{
-	    BltBitMapRastPort(bm, 0, 0, win->RPort, win->BorderLeft, win->BorderTop, win->GZZWidth, win->GZZHeight, 192);
+	    struct RastPort temprp;
+	    
+	    InitRastPort(&temprp);
+	    temprp.BitMap = bm;
+	    
+	    BltBitMap(bm, 0, 0, bm, 0, SCREENHEIGHT, SCREENWIDTH, SCREENHEIGHT, 192, 255, 0);
+	    
+	    WritePixelArrayAlpha(tab, 0, 0, SCREENWIDTH * sizeof(LONG), 
+			    &temprp, 0, SCREENHEIGHT, SCREENWIDTH, SCREENHEIGHT,
+			    0);
+
+	    BltBitMapRastPort(bm, 0, SCREENHEIGHT, win->RPort, win->BorderLeft, win->BorderTop, win->GZZWidth, win->GZZHeight, 192);
+	    
+	    DeinitRastPort(&temprp);
 	}
-	
-	WritePixelArrayAlpha(tab, 0, 0, SCREENWIDTH * sizeof(LONG), 
-			win->RPort, win->BorderLeft, win->BorderTop, SCREENWIDTH, SCREENHEIGHT,
-			0);
-			
+	else
+	{
+	    WritePixelArrayAlpha(tab, 0, 0, SCREENWIDTH * sizeof(LONG), 
+			    win->RPort, win->BorderLeft, win->BorderTop, SCREENWIDTH, SCREENHEIGHT,
+			    0);
+	}
+		
     	WaitPort(win->UserPort);
 	
 	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
