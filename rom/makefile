@@ -3,7 +3,12 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
+ifeq ($(FLAVOUR),native)
+# Only exec, for the moment.
+SUBDIRS=exec
+else
 SUBDIRS=exec utility dos graphics intuition devs
+endif
 
 all:
 	@for dir in $(SUBDIRS) ; do \
