@@ -103,8 +103,8 @@ static UBYTE hikeymaptypes[] =
     S, 		/* 4C */
     S, 		/* 4D */
     S, 		/* 4E */
-    S, 		/* 4F */
-    S, 		/* 50 */
+    S, 	/* 4F */
+    V|ST, 		/* 50 */
     S, 		/* 51 */
     S, 		/* 52 */
     S, 		/* 53 */
@@ -170,7 +170,7 @@ static UBYTE hikeymaptypes[] =
 #define STRING(x) (IPTR)x
 #define DEAD(x)	  (IPTR)x
 #define BYTES(b0, b1, b2, b3) \
-	(b0<<24)|(b1<<16)|(b1<<8)|(b1<<0)
+	(b3<<24)|(b2<<16)|(b1<<8)|(b0<<0)
 
 static IPTR lokeymap[] =
 {
@@ -245,6 +245,59 @@ static IPTR lokeymap[] =
     BYTES(0, 0, 0, 0),	/* 3F */
 };
 
+/* Strings for the F1 key. In a real AmigaOS keymap, these would have come after
+** the HiKeyMap, but we do it this way to avoid prototyping
+*/
+#define N_F1 	"F1"
+#define S_F1 	"S-F1"
+#define A_F1	"A-F1"
+#define SA_F1	"S-A-F1"
+#define C_F1	"C-F1"
+#define SC_F1	"S-C-F1"
+#define AC_F1	"A-C-F1"
+#define SAC_F1	"S-A-C-F1"
+
+#define F1_DS 16 /* descriptor array size */
+#define s(x) (sizeof(x) - 1) /* substract 0 terminator */
+
+UBYTE f1_descr[] =
+{
+    s(N_F1),
+    F1_DS + 0,
+    
+    s(S_F1),
+    F1_DS + s(N_F1),
+    
+    s(A_F1),
+    F1_DS + s(N_F1) + s(S_F1),
+    
+    s(SA_F1),
+    F1_DS + s(N_F1) + s(S_F1) + s(A_F1),
+    
+    s(C_F1),
+    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1),
+    
+    s(SC_F1),
+    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1),
+    
+    s(AC_F1),
+    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1) + s(SC_F1),
+    
+    s(SAC_F1),
+    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1) + s(SC_F1) + s(AC_F1),
+    
+    				'F','1',
+    'S','-',			'F','1',
+    'A','-',			'F','1',
+    'S','-','A','-',		'F','1',
+    'C','-',			'F','1',
+    'S','-','C','-',		'F','1',
+    'A','-','C','-',		'F','1',
+    'S','-','A','-','C','-',	'F','1'
+    
+};
+
+
 static IPTR hikeymap[] =
 {
     BYTES(0, 0, 0, 0),	/* 40 */
@@ -263,7 +316,7 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),	/* 4D */
     BYTES(0, 0, 0, 0),	/* 4E */
     BYTES(0, 0, 0, 0),	/* 4F */
-    BYTES(0, 0, 0, 0),	/* 50 */
+    STRING(f1_descr),	/* 50 */
     BYTES(0, 0, 0, 0),	/* 51 */
     BYTES(0, 0, 0, 0),	/* 52 */
     BYTES(0, 0, 0, 0),	/* 53 */
@@ -316,7 +369,7 @@ static IPTR hikeymap[] =
 #undef SETBITS
 
 #define SETBITS(b0, b1, b2, b3, b4, b5, b6, b7) \
-	(b0<<7)|(b1<<6)|(b2<<5)|(b3<<4)|(b4<<3)|(b5<<2)|(b6<<1)|(b7<<0)
+	(b0<<0)|(b1<<1)|(b2<<2)|(b3<<3)|(b4<<4)|(b5<<5)|(b6<<6)|(b7<<7)
 	
 static UBYTE locapsable[] =
 {
@@ -397,7 +450,8 @@ struct KeyMap def_km =
 ** X means invalid key.
 ** S means Ctrl-c alike combination (clear bits 5 and 6)
 */
-#undef U /* undefined */
+#undef X /* undefined */
+#undef S /* Ctrl-c like combo */
 #define X (-1)
 #define S (-2)
 const BYTE keymaptype_table[8][8] =
@@ -413,5 +467,27 @@ const BYTE keymaptype_table[8][8] =
 
 };
 
-#undef U
 #undef S
+
+/* index vertically: (keytype & KC_VANILLA)
+** index horizontally: KCF_xxx qualifier combination for keypress.
+** Used to get the number of the string descriptor,
+** depending on the KCF_SHIFT, KCF_ALT and KCF_CONTROL qualifiers
+** of the key pressed
+*/
+const BYTE keymapstr_table[8][8] =
+{
+    {0, X, X, X, X, X, X, X},	/* KCF_NOQUAL 			== 0 */
+    {0, 1, X, X, X, X, X, X}, 	/* KCF_SHIFT  			== 1 */
+    {0, X, 1, X, X, X, X, X}, 	/* KCF_ALT    			== 2 */
+    {0, 1, 2, 3, X, X, X, X}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
+    {0, X, X, X, 1, X, X, X}, 	/* KCF_CONTROL			== 4 */
+    {0, 1, X, X, 2, 3, X, X}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
+    {0, X, 1, X, 2, X, 3, X}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
+    {0, 1, 2, 3, 4, 5, 6, 7} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+
+};
+
+
+
+#undef X

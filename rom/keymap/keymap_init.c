@@ -9,9 +9,10 @@
 
 #define INIT AROS_SLIB_ENTRY(init,Keymap)
 
+#include <proto/exec.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
-#include <proto/exec.h>
+#include <exec/memory.h>
 #include <aros/asmcall.h>
 #include "libdefs.h"
 #include "keymap_intern.h"
@@ -59,6 +60,10 @@ static const APTR inittabl[4]=
 
 extern struct KeyMap def_km;
 
+#if DEBUG
+struct KeymapBase *DebugKeymapBase;
+#endif
+
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
@@ -66,6 +71,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
 {
     AROS_LIBFUNC_INIT
     SysBase = sysBase;
+
+#if DEBUG
+    DebugKeymapBase = LIBBASE;
+#endif
 
     LIBBASE->DefaultKeymap = &def_km;
 
@@ -79,7 +88,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	   struct LIBBASETYPE *, LIBBASE, 1, Keymap)
 {
     AROS_LIBFUNC_INIT
-
+    
     /* Keep compiler happy */
     version=0;
     
@@ -87,6 +96,33 @@ AROS_LH1(struct LIBBASETYPE *, open,
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
     LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
+    
+    /* Initialize and add the keymap.resource */
+    
+    if (!LIBBASE->KeymapResource)
+    	LIBBASE->KeymapResource = AllocMem(sizeof (struct KeyMapResource), MEMF_PUBLIC);
+    	
+    if (!LIBBASE->KeymapResource)
+    	return (NULL);
+    
+    LIBBASE->KeymapResource->kr_Node.ln_Type = NT_RESOURCE;
+    LIBBASE->KeymapResource->kr_Node.ln_Name = "keymap.resource";
+    NEWLIST( &(LIBBASE->KeymapResource->kr_List) );
+    
+    if (!LIBBASE->DefKeymapNode)
+    	LIBBASE->DefKeymapNode = AllocMem(sizeof (struct KeyMapNode), MEMF_PUBLIC);
+    if (!LIBBASE->DefKeymapNode)
+    	return (NULL);
+    	
+    /* Copy default keymap into DefKeymapNode */
+    CopyMem(&def_km, &(LIBBASE->DefKeymapNode->kn_KeyMap), sizeof (struct KeyMap));
+    
+    LIBBASE->DefKeymapNode->kn_Node.ln_Name = "default keymap";
+
+    /* The resource hasn't been added yet, so I don't have to arbitrate */    
+    AddTail( &(LIBBASE->KeymapResource->kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
+
+    AddResource(LIBBASE->KeymapResource);
     
     /* You would return NULL if the open failed. */
     return LIBBASE;
@@ -101,6 +137,9 @@ AROS_LH0(BPTR, close,
     /* I have one fewer opener. */
     if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
+    	/* Wer don't free the keymap resource, as some might use pointers to
+    	** keymaps in it
+    	*/
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
