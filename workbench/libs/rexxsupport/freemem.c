@@ -25,7 +25,7 @@ LONG rxsupp_freemem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE 
     void *mem;
   
     *argstring = NULL;
-    if (LengthArgstring(ARG1(msg)) != 4)
+    if (LengthArgstring(ARG1(msg)) != sizeof(void *))
         return ERR10_018;
   
     mem = *(void **)ARG1(msg);
