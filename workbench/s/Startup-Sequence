@@ -63,8 +63,10 @@ IPrefs
 Run <NIL: >NIL: ConClip
 
 If EXISTS SYS:Development
-    Assign INCLUDE: SYS:Development/Include
-    Assign LIB: SYS:Development/Lib
+    Assign Development: SYS:Development
+    Assign INCLUDE: Development:include
+    Assign LIB: Development:lib
+    Path ADD Development:bin
 EndIf
 
 If EXISTS C:RexxMast
