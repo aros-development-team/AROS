@@ -2,6 +2,8 @@ BEGIN {
     toc=0;
     sp=0;
     skip=0;
+    keeplf=0;
+    lastwaslf=0;
     mode="text";
 
     special_items["LONG"] = "<A HREF=\"srcs/include/exec/types.h\">LONG</A>";
@@ -14,6 +16,16 @@ BEGIN {
     special_items["QUAD"] = "<A HREF=\"srcs/include/exec/types.h\">QUAD</A>";
     special_items["UQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">UQUAD</A>";
     special_items["APTR"] = "<A HREF=\"srcs/include/exec/types.h\">APTR</A>";
+    special_items["STACKLONG"] = "<A HREF=\"srcs/include/exec/types.h\">STACKLONG</A>";
+    special_items["STACKULONG"] = "<A HREF=\"srcs/include/exec/types.h\">STACKULONG</A>";
+    special_items["STACKIPTR"] = "<A HREF=\"srcs/include/exec/types.h\">STACKIPTR</A>";
+    special_items["STACKWORD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKWORD</A>";
+    special_items["STACKUWORD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUWORD</A>";
+    special_items["STACKBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">STACKBYTE</A>";
+    special_items["STACKUBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUBYTE</A>";
+    special_items["STACKQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKQUAD</A>";
+    special_items["STACKUQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUQUAD</A>";
+    special_items["STACKFLOAT"] = "<A HREF=\"srcs/include/exec/types.h\">STACKFLOAT</A>";
 
     special_items["TagItem"] = "<A HREF=\"srcs/include/utility/tagitem.h\">TagItem</A>";
     special_items["ti_Tag"] = "<A HREF=\"srcs/include/utility/tagitem.h\">ti_Tag</A>";
@@ -94,10 +106,57 @@ BEGIN {
 	    else if (yytext=="par")
 	    {
 		if (skippar)
+		{
 		    skippar = 0;
+		    yytext="";
+		}
+		else
+		{
+		    if (!keeplf)
+		    {
+			yytext="";
+			showpar=1;
+		    }
+		    else
+		    {
+			yytext="\n";
+			lastwaslf=1;
+			skippar=0;
+		    }
+		}
+	    }
+	    else if (yytext=="label")
+	    {
+		getarg();
+		label=yytext;
 
-		yytext="";
-		showpar=1;
+		yytext="<A NAME=\""label"\">";
+	    }
+	    else if (yytext=="lref")
+	    {
+		getarg();
+		text=yytext;
+		getarg();
+		label=yytext;
+
+		found=0;
+
+		while ((getline < "html.lab") > 0)
+		{
+		    if ($1==label)
+		    {
+			file=$2;
+			found=1;
+			break;
+		    }
+		}
+
+		close ("html.lab");
+
+		if (!found)
+		    yytext="!!!! Unknown label " label " !!!!";
+		else
+		    yytext="<A HREF=\""file"#"label"\">"text"</A>";
 	    }
 	    else if (yytext=="begin")
 	    {
@@ -112,7 +171,11 @@ BEGIN {
 		}
 		else if (mode=="itemize")
 		{
-		    yytext="\n\n<DL>"
+		    yytext="\n\n<UL>"
+		}
+		else if (mode=="enumeration")
+		{
+		    yytext="\n\n<OL TYPE=1>"
 		}
 		else if (mode=="emph")
 		{
@@ -120,7 +183,9 @@ BEGIN {
 		}
 		else if (mode=="example")
 		{
-		    yytext="\n\n<PRE>";
+		    yytext="<UL><PRE>";
+		    skippar=1;
+		    keeplf=1;
 		}
 		else
 		    yytext="!!!! Unknown mode " yytext " !!!!\n";
@@ -143,13 +208,18 @@ BEGIN {
 		{
 		    yytext="\n</UL>"
 		}
+		else if (mode=="enumeration")
+		{
+		    yytext="\n\n</OL>"
+		}
 		else if (mode=="emph")
 		{
 		    yytext="</EM>\n</UL>\n";
 		}
 		else if (mode=="example")
 		{
-		    yytext="</PRE>";
+		    yytext="</PRE></UL>";
+		    keeplf=0;
 		}
 		else
 		    yytext="";
@@ -162,9 +232,19 @@ BEGIN {
 		if (mode=="description")
 		{
 		    getarg();
-		    yytext="\n<LI><B>"yytext"</B>"
+
+		    gsub(/&/,"\\&amp;",yytext);
+		    gsub(/</,"\\&lt;",yytext);
+		    gsub(/>/,"\\&gt;",yytext);
+		    gsub(/"/,"\\&quot;",yytext);
+
+		    yytext="\n<DT><B>"yytext"</B><DD>"
 		}
 		else if (mode=="itemize")
+		{
+		    yytext="\n<LI>"
+		}
+		else if (mode=="enumeration")
 		{
 		    yytext="\n<LI>"
 		}
@@ -270,12 +350,16 @@ BEGIN {
 		    if (yytext != " ")
 		    {
 			showpar=0;
-			printf ("\n\n<P>");
+			printf ("\n<P>");
 		    }
 		}
-		else if (mode=="example")
+	    }
+	    if (mode=="example")
+	    {
+		if (lastwaslf)
 		{
-		    yytext=yytext"\n    ";
+		    lastwaslf=0;
+		    gsub(/^[ \t]+/,"",yytext);
 		}
 	    }
 	}
@@ -307,6 +391,12 @@ function yylex() {
 
 	if (yyrest!="")
 	    yyrest=yyrest " ";
+
+	if (keeplf)
+	{
+	    yytext="par";
+	    return "cmd";
+	}
     }
 
     if (match(yyrest,/^\\[a-z]+/))
@@ -347,17 +437,21 @@ function yylex() {
     {
 	if (yyrest=="")
 	{
-	    do
+	    if (!keeplf)
 	    {
-		ret=getline yyrest;
-	    }
-	    while (yyrest=="" && ret>0);
+		do
+		{
+		    ret=getline yyrest;
+		}
+		while (yyrest=="" && ret>0);
 
-	    if (ret<=0)
-		return "";
+		if (ret<=0)
+		    return "";
+
+		yyrest=yyrest " ";
+	    }
 
 	    yytext="par";
-	    yyrest=yyrest " ";
 
 	    return "cmd";
 	}
