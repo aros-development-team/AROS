@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Time Locale Serial 
+ICONS     := Time Locale Serial Presets
 ICONDIR   := $(AROSDIR)/Prefs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 

@@ -3,9 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Devs Storage Locale Tools Utilities Development Libs Extras \
-             System
-ICONDIR   := $(AROSDIR)
+ICONS     := Drivers Midi Keymaps
+ICONDIR   := $(AROSDIR)/Devs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM
