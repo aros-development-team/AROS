@@ -190,20 +190,14 @@ int GetSysScreen (void)
 
 void driver_SetAPen (struct RastPort * rp, unsigned long pen)
 {
-    if (pen == (unsigned long)-1L)
-	pen = 3;
-
-    pen &= 3;
+    pen &= 3L;
 
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
 
 void driver_SetBPen (struct RastPort * rp, unsigned long pen)
 {
-    if (pen == (unsigned long)-1L)
-	pen = 3;
-
-    pen &= 3;
+    pen &= 3L;
 
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
@@ -218,8 +212,22 @@ void driver_SetDrMd (struct RastPort * rp, unsigned long mode)
 
 void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2)
 {
-    XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
-	    x1, y1, x2-x1+1, y2-y1+1);
+    if (rp->DrawMode & COMPLEMENT)
+    {
+	ULONG pen;
+
+	pen = ((ULONG)rp->FgPen) & 3L;
+
+	XSetForeground (sysDisplay, GetGC (rp), sysPlaneMask);
+
+	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
+		x1, y1, x2-x1+1, y2-y1+1);
+
+	XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
+    }
+    else
+	XFillRectangle (sysDisplay, GetXWindow (rp), GetGC (rp),
+		x1, y1, x2-x1+1, y2-y1+1);
 }
 
 #define SWAP(a,b)       { a ^= b; b ^= a; a ^= b; }
