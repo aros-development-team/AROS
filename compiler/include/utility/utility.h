@@ -2,6 +2,7 @@
 #define UTILITY_UTILITY_H
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <dos/dos.h>
 
 #define UTILITYNAME	"utility.library"
 
