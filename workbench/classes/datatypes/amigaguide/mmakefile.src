@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := amigaguideclass nodeclass file util process navigator
 
-#MM workbench-datatypes-amigaguide : includes linklibs
+#MM workbench-datatypes-amigaguide : includes linklibs \
+#MM                                  workbench-libs-rexxsyslib
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION -Iinclude
 
