@@ -21,7 +21,7 @@
 
 #define DosGetString(stringNum) \
     AROS_LC1(STRPTR, DosGetString, \
-    AROS_LCA(ULONG, stringNum, D0), \
+    AROS_LCA(LONG, stringNum, D0), \
     struct DosLibrary *, DOSBase, 163, Dos)
 
 #endif /* _DOS_PDEFS_H */
