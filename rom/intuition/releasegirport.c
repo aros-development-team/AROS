@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include <proto/graphics.h>
+#include <proto/layers.h>
 
 /*****************************************************************************
 
@@ -50,7 +51,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    FreeRastPort (rp);
-
+    if (rp)
+    {
+    	InstallClipRegion(rp->Layer,GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion);
+	
+	rp->Layer->Scroll_X = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x;
+	rp->Layer->Scroll_Y = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y;
+	
+	UnlockLayerRom(rp->Layer);
+	
+	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+	
+    	FreeRastPort (rp);
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* ReleaseGIRPort */
