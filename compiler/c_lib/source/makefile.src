@@ -5,10 +5,9 @@ TOP=../../..
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
-SUBDIRS=lib_source test_prg
+SUBDIRS=include lib_source test_prg
 else
-SUBDIRS=lib_source test_prg
-#vcpp vbcc
+SUBDIRS=include lib_source test_prg
 endif
 
 all:
