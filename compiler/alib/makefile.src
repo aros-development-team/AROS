@@ -14,15 +14,48 @@ STARTUP = $(LIBDIR)/startup.o
 
 %define_libs
 
-FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
-	creategadget createmenus createport createstdio createtask	    \
-	deleteextio deleteport deletestdio deletetask dogadgetmethod	    \
-	domethod dosupermethod drawbevelbox easyrequest fastrand	    \
-	getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry	    \
-	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
-	libdeletepool libfreepooled newlist newobject openscreentags	    \
-	openwindowtags rangerand setattrs setgadgetattrs		    \
-	setsuperattrs arosinquire opencatalog timedelay
+FILES = alib_util \
+	allocnamedobject \
+	arosinquire \
+	buildeasyrequest \
+	callhook \
+	coercemethod \
+	createextio \
+	creategadget \
+	createmenus \
+	createport \
+	createstdio \
+	createtask \
+	deleteextio \
+	deleteport \
+	deletestdio \
+	deletetask \
+	dogadgetmethod \
+	domethod \
+	dosupermethod \
+	drawbevelbox \
+	easyrequest \
+	fastrand \
+	getvisualinfo \
+	gt_getgadgetattrs \
+	gt_setgadgetattrs \
+	hookentry \
+	layoutmenuitems \
+	layoutmenus \
+	liballocpooled \
+	libcreatepool \
+	libdeletepool \
+	libfreepooled \
+	newlist \
+	newobject \
+	opencatalog \
+	openscreentags \
+	openwindowtags \
+	rangerand \
+	setattrs \
+	setgadgetattrs \
+	setsuperattrs \
+	timedelay
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
