@@ -68,6 +68,19 @@ void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
 /* gadget box in domain coords */
 void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
 		      struct Requester *req, struct IBox *box);
+
+/* gadget bounds (or box if not GMORE_BOUNDS) in screen coords */
+void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box);
+
+/* gadget bounds (or box if not GMORE_BOUNDS) relative to upper left window edge */
+void GetWinGadgetBounds(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box);
+
+/* gadget bounds (or box if not GMORE_BOUNDS)in domain coords */
+void GetDomGadgetBounds(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box);
+		      
 		      
 void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase);
 
