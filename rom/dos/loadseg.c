@@ -89,9 +89,8 @@ q        IoErr() gives additional information in that case.
 
 	if (segs)
         {
-#ifdef AROS_MODULES_DEBUG
+#if AROS_MODULES_DEBUG
             struct debug_segnode *segnode;
-
             segnode = AllocMem(sizeof(struct debug_segnode), MEMF_ANY);
 
             if (segnode)
