@@ -1206,8 +1206,15 @@ VOID MNAME(drawline)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine 
     OOP_Object *gc = msg->gc;
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
+    if (GC_LINEPAT(gc) != (UWORD)~0)
+    {
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	return;
+    }
+    
 LX11
-    if (GC_DOCLIP(gc)) {
+    if (GC_DOCLIP(gc))
+    {
     	XRectangle cr;
 	
 	cr.x = GC_CLIPX1(gc);
