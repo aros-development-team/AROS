@@ -194,8 +194,8 @@ void hidd_demo()
                 	DoIO((struct IORequest *)MyIO);
 
 //                	kprintf("SectorSize=%ld,\nTotalSectors=%ld,\nCylinders=%ld,\nCylSectors=%ld,\nHeads=%ld,\nTrackSectors=%ld,\nBufMemType=%ld,\nDeviceType=%ld,\n",\
-                                MyDG.dg_SectorSize,MyDG.dg_TotalSectors,MyDG.dg_Cylinders,\
-                                MyDG.dg_CylSectors,MyDG.dg_Heads,MyDG.dg_TrackSectors,MyDG.dg_BufMemType,MyDG.dg_DeviceType);
+//                                MyDG.dg_SectorSize,MyDG.dg_TotalSectors,MyDG.dg_Cylinders,\
+//                                MyDG.dg_CylSectors,MyDG.dg_Heads,MyDG.dg_TrackSectors,MyDG.dg_BufMemType,MyDG.dg_DeviceType);
 
                 	MyIO->iotd_Req.io_Command=CMD_READ;
                 	MyIO->iotd_Req.io_Offset=0;
@@ -205,19 +205,19 @@ void hidd_demo()
 
                 	fb = (struct fat_boot_sector *)buf;
 
-                	sprintf(TempString, "system_id  : %s\n", fb->system_id);
+                	sprintf(TempString, "system_id  : %s", fb->system_id);
                         BlackPrint(&win->WScreen->RastPort, TempString, 40);
-                 	sprintf(TempString, "fats       : %d\n", fb->fats);
+                 	sprintf(TempString, "fats       : %d", fb->fats);
                         BlackPrint(&win->WScreen->RastPort, TempString, 50);
-                	sprintf(TempString, "dir_entries: %d\n", fb->dir_entries[1]);
+                	sprintf(TempString, "dir_entries: %d", fb->dir_entries[1]);
                         BlackPrint(&win->WScreen->RastPort, TempString, 60);
-			sprintf(TempString, "sectors    : %d\n", fb->sectors[1]);
+			sprintf(TempString, "sectors    : %d", fb->sectors[1]);
                         BlackPrint(&win->WScreen->RastPort, TempString, 70);
-                	sprintf(TempString, "fat_length : %d\n", fb->fat_length);
+                	sprintf(TempString, "fat_length : %d", fb->fat_length);
                         BlackPrint(&win->WScreen->RastPort, TempString, 80);
-                	sprintf(TempString, "secs_track : %d\n", fb->secs_track);
+                	sprintf(TempString, "secs_track : %d", fb->secs_track);
                         BlackPrint(&win->WScreen->RastPort, TempString, 90);
-                	sprintf(TempString, "total_sect : %d\n", fb->total_sect);
+                	sprintf(TempString, "total_sect : %d", fb->total_sect);
                         BlackPrint(&win->WScreen->RastPort, TempString, 100);
 
                 	FreeVec(buf);
@@ -227,7 +227,7 @@ void hidd_demo()
         	DeleteMsgPort(trackport);
 	}
 
-#ifdef 0
+#if 0
 	if (IntuitionBase)
 	{
 	    ULONG i, dummy;
@@ -284,7 +284,7 @@ void hidd_demo()
 		{TAG_DONE,			 0}};
 	      win2 = OpenWindowTagList(0, tags);
 
-	      sprintf(ScreenInfo,"ScreenWidth: %d, ScreenHeight: %d\n", screen->Width, screen->Height);
+	      sprintf(ScreenInfo,"ScreenWidth: %d, ScreenHeight: %d", screen->Width, screen->Height);
 
 	      if (win2)
 	      {
@@ -327,8 +327,8 @@ void hidd_demo()
 //			  static char hex[] = "0123456789ABCDEF";
 			  char s[15];
 
-			  sprintf(s, "Mouse: %ld, %ld\n", mx, my);
-#ifdef 0			  
+			  sprintf(s, "Mouse: %ld, %ld", mx, my);
+#if 0			  
 			  s[0] = 'M';
 			  s[1] = 'o';
 			  s[2] = 'u';
