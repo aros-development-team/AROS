@@ -132,14 +132,20 @@ int memSize = 8;
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
 
+extern APTR __libc_malloc(size_t);
+extern VOID __libc_free(APTR);
+extern APTR __libc_calloc(size_t, size_t);
+extern APTR __libc_realloc(APTR mem, size_t newsize);
+
+
 static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
 {
     APTR ret;
     
     if (flags && (*flags & MEMF_CLEAR))
-        ret = calloc(1, size);
+        ret = __libc_calloc(1, size);
     else
-        ret = malloc(size);
+        ret = __libc_malloc(size);
     
     if (ret)
     {
@@ -154,7 +160,7 @@ static VOID myFree(struct MemHeaderExt *mhe, APTR mem, ULONG size)
 {
     mhe->mhe_MemHeader.mh_Free += size;
 
-    return free(mem);    
+    return __libc_free(mem);    
 }
 
 static ULONG myAvail(struct MemHeaderExt *mhe, ULONG flags)
@@ -163,6 +169,57 @@ static ULONG myAvail(struct MemHeaderExt *mhe, ULONG flags)
         return memSize << 20;
 	 
     return mhe->mhe_MemHeader.mh_Free;
+}
+
+BOOL use_hostmem = FALSE;
+
+APTR malloc(size_t size)
+{
+    if (use_hostmem)
+        return AllocVec(size, MEMF_ANY);
+
+    return __libc_malloc(size);
+}
+
+VOID free(APTR mem)
+{
+    if (use_hostmem)
+        return FreeVec(mem);
+
+    return __libc_free(mem);
+}
+
+APTR calloc(size_t n, size_t size)
+{
+    if (use_hostmem)
+        return AllocVec(size * n, MEMF_CLEAR);
+
+    return __libc_calloc(n, size);
+}
+
+
+static APTR ReAllocVec(APTR old, size_t size, ULONG flags)
+{
+    APTR new = AllocVec(size, flags);
+    
+    if (new)
+    {
+        ULONG oldsize = *(ULONG *)((char *)old - AROS_ALIGN(sizeof(ULONG)));
+	
+	memcpy(new, old, oldsize > size ? size : oldsize);
+        FreeVec(old);
+        old = new;
+    }
+    
+    return old;
+}
+
+APTR realloc(APTR mem, size_t size)
+{
+    if (use_hostmem)
+        return ReAllocVec(mem, size, MEMF_ANY);
+
+    return __libc_realloc(mem, size);
 }
 
 /*
@@ -191,7 +248,6 @@ int main(int argc, char **argv)
     struct termios t;
     int psize = 0;
     int i = 0, x;
-    BOOL use_hostmem = FALSE;
     BOOL mapSysBase  = FALSE;
 
     while (i < argc)
@@ -282,12 +338,18 @@ int main(int argc, char **argv)
     if (!use_hostmem)
     {
       /* We allocate memSize megabytes */
-      memory = malloc((memSize << 20));
+      memory = __libc_malloc((memSize << 20));
       if( !memory )
       {
 	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
 	 exit(20);
       }
+    }
+    else
+    {
+        /* The host system is going to allocate memory through AROS,
+	   allocate some more memory for it.  */
+        memSize += 8;
     }
 /*
 #endif
