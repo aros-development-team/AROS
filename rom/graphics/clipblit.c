@@ -382,9 +382,22 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
             else
 	    {
               /* this part of the layer is not hidden. */
+              /* The source bitmap is the bitmap of the rastport */
               srcBM   = srcRP->BitMap;
-              bltSrcX = xSrc + srcCR->bounds.MinX;
-              bltSrcY = ySrc + srcCR->bounds.MinY;
+              
+              /* xSrc and ySrc are relative to the rastport of the window
+                 or layer - here we have to make them absolute to the
+                 screen's rastport*/
+              
+              if (xSrc <= crX0)
+                bltSrcX = srcCR->bounds.MinX;
+              else  
+                bltSrcX = xSrc + srcCR->bounds.MinX;
+                
+              if (ySrc <= crY0)
+                bltSrcY = srcCR->bounds.MinY;
+              else
+                bltSrcY = ySrc + srcCR->bounds.MinY;
 	      /*
               kprintf("this cliprect is not hidden. I use the Rastport's bitmap\n");
               kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
@@ -426,6 +439,8 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
 	  } /* if () */
 	srcCR = srcCR -> Next;
       }
+      if (NULL == srcCR)
+        return;
     } /* if() */
     else /* no layer in the source rastport */
     {
