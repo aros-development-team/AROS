@@ -65,10 +65,19 @@ You can also upload it to xcopilot by using the target 'emu' instead fo
 'send' in the command line above.
 
 
+Current Status
+--------------
+
+The current status is that only exec multitasking works. One task draws a 
+vertical and a horizontal line onto the screen and moves them downwards
+and rightwards respectively. The idle task (!) scrolls the visible area
+pixel by pixel. To do so its priority is raised from -128 to 0 and
+task switching is 'manually' enabled in the dispatcher. 
+Tasks are currently preempted at a rate of 1Hz.
+
 
 Roadmap
 -------
-
 Here is my suggestion of a roadmap on how we could get AROS running on 
 Palm devices as fast as possible:
 
@@ -125,7 +134,8 @@ Knowledge (more or less)
   (see config file for Palm)
 
 - Do not try to build geninc. It will not create the right offsets for the 
-  crosscompilation but for i386 instead!
+  crosscompilation but for i386 instead! I wrote a c file instead with
+  minimal functions.
 
 - Fix Supervisor, Stackswap, ColdReboot (missing offsets in machine.i)
 
@@ -150,7 +160,7 @@ Knowledge (more or less)
 
 - Try to get rid of all 'int's. They are 2 bytes long with the native
   palm compiler. Once we move to the real m68k elf compiler this
-  will not be a problem anymore.
+  will not be a problem anymore. So we might not want to do it.
 
 - GCC optimization option -O3 seems to generate a little larger executable 
   than -O2.
@@ -159,5 +169,12 @@ Knowledge (more or less)
   How do you get notifications about pressed buttons?
 
 - Defined __DONT_USE_DEBUGMEM__ to make exec run on Palm
-  device. It is defined in the config file for Palm in AROS/config/.
+  device. It is defined in the config file for Palm copyied to 
+  AROS/config/.
+
+- Memory allocated by PlamOS before entering AROS needs to be aligned!
+  See boot/exec.c code!
+
+- The memory allocation function currently in use does not even allow 
+  allocation of 0x10000 bytes. It simply returns NULL then.
 
