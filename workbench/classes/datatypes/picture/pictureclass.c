@@ -305,7 +305,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
      {
       Known=TRUE;
 
-      D(bug("picture.datatype/OM_SET: Tag ID: %s\n", AttribNames[i]));
+      D(bug("picture.datatype/OM_SET: Tag ID: %s val = %d\n", AttribNames[i], ti->ti_Data));
      }
     }
 
@@ -337,7 +337,11 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
  if(msg->ops_GInfo)
  {
+#if 1
+  if (RetVal)
+#else
   if(OCLASS((Object *) g) == cl)
+#endif
   {
    rp=ObtainGIRPort(msg->ops_GInfo);
    if(rp)
@@ -348,10 +352,12 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
    }
   }
 
+#if 0 /* stegerg: ?? */
   if(msg->MethodID == OM_UPDATE)
   {
     DoMethod((Object *) g, OM_NOTIFY, msg->ops_AttrList, msg->ops_GInfo, 0);
   }
+#endif
  }
 
  return(RetVal);
@@ -570,7 +576,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
   return(0);
  }
 
-#if 0
+#if 1
  D(bug("picture.datatype/GM_RENDER: Domain: %ld %ld %ld %ld\n", domain->Left, domain->Top, domain->Width, domain->Height));
  D(bug("picture.datatype/GM_RENDER: TopVert      : %lu\n", (unsigned long) TopVert));
  D(bug("picture.datatype/GM_RENDER: TopHoriz     : %lu\n", (unsigned long) TopHoriz));
@@ -938,6 +944,16 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
   *  Wieder entsperren
   */
  ReleaseSemaphore(&si->si_Lock);
+
+#ifdef _AROS
+si->si_VertUnit = 1;
+si->si_VisVert = domain->Height;
+si->si_TotVert = Height;
+
+si->si_HorizUnit = 1;
+si->si_VisHoriz = domain->Width;
+si->si_TotHoriz = Width;
+#endif
 
  NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
 				 GA_ID, g->GadgetID,
