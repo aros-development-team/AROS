@@ -881,7 +881,8 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
 # to disappear in the so don't try to hard
 #MM %(mmake)-linklib : %(mmake)-setup setup-clib
 
-TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
+  $(BD_LIBDEFSINC$(BDID))
 ifneq ($(BD_GENINCS$(BDID)),)
 TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
   $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
