@@ -5,8 +5,11 @@ Version:  1.9
 Type:	  misc/emu
 
 New this time:
-- Better handling of Intuition Windows on X11
-- Bug fixes (as usual)
+- Real preemptive multitasking like on Amiga
+- Many files were missing in the dev distribution :-(
+- Some bugfixes
+- FreeBSD/i386 support
+- Amiga users can now participate. Read README.CVS for more info.
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -18,6 +21,7 @@ memberlist:
 	Martin Steigerwald (port to Alpha and Sparc)
 	Peter Boeckmann (coding some small functions)
 	Iain Templeton (FreeBSD port and utility.library)
+	Lennard voor den Dag (Amiga port - at last :-)
 
 and some 300 others (which are not mentioned here since they have not
 written a line of code yet).
