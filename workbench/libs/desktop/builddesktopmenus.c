@@ -1,3 +1,5 @@
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/classusr.h>
