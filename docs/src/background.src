@@ -98,6 +98,22 @@ and icon are in work right now.
 
 \largepic{A snapshot of the window of demowin}{pics/demowin.gif}
 
+This window is opened with the \shell{demowin} demo program. It opens a
+window and renders some graphics in it. You can click on the gadgets and
+the program will tell you which gadget has been pressed. If you press the
+gadget with the label "Complement", the sizes for the PropGadgets will
+change. You can press a key and the program will show you the string which
+is associated with that key. You can press the left, middle and right
+mousebutton to draw lines in the window. To exit the demo, press the Escape
+key or click on one of the "Exit" gadgets at the bottom.
+
+\largepic{A snapshot of readicon}{pics/readicon.gif}
+
+This shows the output of readicon. In the big window, you can see debugging
+and informational output of the program. The small window shows the normal
+and selected state of an icon and contains a gadget which has the icons'
+images for its normal and selected images.
+
 \section{The future}
 
 These are things which are still to do:
