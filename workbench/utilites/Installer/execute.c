@@ -84,12 +84,12 @@ void *params;
       current = current->next;
       if( current->cmd != NULL )
       {
-        execute_script( current->cmd, level + 1  );
+	execute_script( current->cmd, level + 1  );
       }
       else
       {
-        error = SCRIPTERROR;
-        traperr( "Argument in list of commands!\n", NULL );
+	error = SCRIPTERROR;
+	traperr( "Argument in list of commands!\n", NULL );
       }
     }
     free( current->parent->arg );
@@ -110,21 +110,21 @@ void *params;
     switch( cmd_type )
     {
       case _UNKNOWN	: /* Unknown command */
-                          error = SCRIPTERROR;
-                          traperr( "Unknown command <%s>!\n", current->arg );
-                          break;
+			  error = SCRIPTERROR;
+			  traperr( "Unknown command <%s>!\n", current->arg );
+			  break;
 
       case _ABORT	: /* Output all strings, execute onerrors and exit abnormally */
-                          string = collect_strings( current->next, LINEFEED, level );
-                          show_abort( string );
-                          free( string );
-                          if( preferences.transcriptstream != NULL )
-                          {
-                            Write( preferences.transcriptstream, "Aborting script.\n", 17 );
-                          }
-                          error = USERABORT;
-                          traperr( "Aborting!", NULL );
-                          break;
+			  string = collect_strings( current->next, LINEFEED, level );
+			  show_abort( string );
+			  free( string );
+			  if( preferences.transcriptstream != NULL )
+			  {
+			    Write( preferences.transcriptstream, "Aborting script.\n", 17 );
+			  }
+			  error = USERABORT;
+			  traperr( "Aborting!", NULL );
+			  break;
 
       case _AND		: /* logically AND two arguments	*/
       case _BITAND	: /* bitwise AND two arguments		*/
@@ -142,1114 +142,1114 @@ void *params;
       case _SHIFTLEFT	: /* shift 1st left by 2nd arg bits	*/
       case _SHIFTRGHT	: /* shift 1st right by 2nd arg bits	*/
       case _XOR		: /* logically XOR two arguments	*/
-                          if( current->next != NULL  && current->next->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->next->cmd != NULL )
-                            {
-                              execute_script( current->next->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            current = current->next;
-                            j = getint( current );
-                            switch( cmd_type )
-                            {
-                              case _AND :
-                                current->parent->intval = i && j;
-                                break;
-                              case _BITAND :
-                                current->parent->intval = i & j;
-                                break;
-                              case _BITOR :
-                                current->parent->intval = i | j;
-                                break;
-                              case _BITXOR :
-                                current->parent->intval = i ^ j;
-                                break;
-                              case _DIFF :
-                                current->parent->intval = ( i != j ) ? 1 : 0;
-                                break;
-                              case _DIV :
-                                if( j == 0 )
-                                {
-                                  error = BADPARAMETER;
-                                  traperr( "Division by zero!\n", NULL );
-                                }
-                                current->parent->intval = (int)( i / j );
-                                break;
-                              case _EQUAL :
-                                current->parent->intval = ( i == j ) ? 1 : 0;
-                                break;
-                              case _LESS :
-                                current->parent->intval = (i < j ) ? 1 : 0;
-                                break;
-                              case _LESSEQ :
-                                current->parent->intval = ( i <= j ) ? 1 : 0;
-                                break;
-                              case _MINUS :
-                                current->parent->intval = i - j;
-                                break;
-                              case _MORE :
-                                current->parent->intval = ( i > j ) ? 1 : 0;
-                                break;
-                              case _MOREEQ :
-                                current->parent->intval = ( i >= j ) ? 1 : 0;
-                                break;
-                              case _OR :
-                                current->parent->intval = i || j;
-                                break;
-                              case _SHIFTLEFT :
-                                current->parent->intval = i << j;
-                                break;
-                              case _SHIFTRGHT :
-                                current->parent->intval = i >> j;
-                                break;
-                              case _XOR :
-                                current->parent->intval = ( i && !j ) || ( j && !i );
-                                break;
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL  && current->next->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->next->cmd != NULL )
+			    {
+			      execute_script( current->next->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    current = current->next;
+			    j = getint( current );
+			    switch( cmd_type )
+			    {
+			      case _AND :
+				current->parent->intval = i && j;
+				break;
+			      case _BITAND :
+				current->parent->intval = i & j;
+				break;
+			      case _BITOR :
+				current->parent->intval = i | j;
+				break;
+			      case _BITXOR :
+				current->parent->intval = i ^ j;
+				break;
+			      case _DIFF :
+				current->parent->intval = ( i != j ) ? 1 : 0;
+				break;
+			      case _DIV :
+				if( j == 0 )
+				{
+				  error = BADPARAMETER;
+				  traperr( "Division by zero!\n", NULL );
+				}
+				current->parent->intval = (int)( i / j );
+				break;
+			      case _EQUAL :
+				current->parent->intval = ( i == j ) ? 1 : 0;
+				break;
+			      case _LESS :
+				current->parent->intval = (i < j ) ? 1 : 0;
+				break;
+			      case _LESSEQ :
+				current->parent->intval = ( i <= j ) ? 1 : 0;
+				break;
+			      case _MINUS :
+				current->parent->intval = i - j;
+				break;
+			      case _MORE :
+				current->parent->intval = ( i > j ) ? 1 : 0;
+				break;
+			      case _MOREEQ :
+				current->parent->intval = ( i >= j ) ? 1 : 0;
+				break;
+			      case _OR :
+				current->parent->intval = i || j;
+				break;
+			      case _SHIFTLEFT :
+				current->parent->intval = i << j;
+				break;
+			      case _SHIFTRGHT :
+				current->parent->intval = i >> j;
+				break;
+			      case _XOR :
+				current->parent->intval = ( i && !j ) || ( j && !i );
+				break;
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _CAT		: /* Return concatenated strings */
-                          string = collect_strings( current->next, 0, level );
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  string = collect_strings( current->next, 0, level );
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _COMPLETE	: /* Display how much we have done in percent */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                          }
-                          else
-                          {
-                            i = 0;
-                          }
-                          current->parent->intval = i;
-                          show_complete( i );
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			  }
+			  else
+			  {
+			    i = 0;
+			  }
+			  current->parent->intval = i;
+			  show_complete( i );
+			  break;
 
       case _DEBUG	: /* printf() all strings to shell */
-                          string = collect_strings( current->next, 0, level );
-                          if( preferences.debug == TRUE )
-                          {
-                            printf( "%s\n", string );
-                          }
-                          /* Set return value */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  string = collect_strings( current->next, 0, level );
+			  if( preferences.debug && preferences.fromcli )
+			  {
+			    printf( "%s\n", string );
+			  }
+			  /* Set return value */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _EXIT	: /* Output all strings and exit */
-                          /* print summary where app has been installed unless (quiet) is given */
-                          parameter = get_parameters( current->next, level );
-                          string = collect_strings( current->next, LINEFEED, level );
-                          show_exit( string );
-                          if( GetPL( parameter, _QUIET ).intval == 0 )
-                          {
-                            final_report();
-                          }
-                          free( string );
-                          free_parameterlist( parameter );
+			  /* print summary where app has been installed unless (quiet) is given */
+			  parameter = get_parameters( current->next, level );
+			  string = collect_strings( current->next, LINEFEED, level );
+			  show_exit( string );
+			  if( GetPL( parameter, _QUIET ).intval == 0 )
+			  {
+			    final_report();
+			  }
+			  free( string );
+			  free_parameterlist( parameter );
 #ifdef DEBUG
-                          dump_varlist();
+			  dump_varlist();
 #endif /* DEBUG */
-                          cleanup();
-                          exit(0);
-                          break;
+			  cleanup();
+			  exit(0);
+			  break;
 
       case _IF		: /* if 1st arg != 0 execute 2nd cmd else execute optional 3rd cmd */
-                          if( current->next != NULL && current->next->next != NULL )
-                          {
-                            char *stringarg = NULL;
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            if( i == 0 )
-                            {
-                              current = current->next;
-                              stringarg = current->arg;
-                            }
-                            if( current->next != NULL )
-                            {
-                              current = current->next;
-                              if( current->cmd != NULL )
-                              {
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              current->parent->intval = current->intval;
-                              if( current->arg != NULL )
-                              {
-                                current->parent->arg = strdup( current->arg );
-                                outofmem( current->parent->arg );
-                              }
-                            }
-                            else if ( stringarg )
-                            {
-                              current->parent->arg = strdup( "\"\"" );
-                              outofmem( current->parent->arg );
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL && current->next->next != NULL )
+			  {
+			    char *stringarg = NULL;
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    if( i == 0 )
+			    {
+			      current = current->next;
+			      stringarg = current->arg;
+			    }
+			    if( current->next != NULL )
+			    {
+			      current = current->next;
+			      if( current->cmd != NULL )
+			      {
+				execute_script( current->cmd, level + 1 );
+			      }
+			      current->parent->intval = current->intval;
+			      if( current->arg != NULL )
+			      {
+				current->parent->arg = strdup( current->arg );
+				outofmem( current->parent->arg );
+			      }
+			    }
+			    else if ( stringarg )
+			    {
+			      current->parent->arg = strdup( "\"\"" );
+			      outofmem( current->parent->arg );
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _IN		: /* Return (arg1) bitwise-and with bit numbers given as following args */
-                          /* Get base integer into i */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                          }
-                          /* Write the corresponding bits of i into parent */
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            j = getint( current );
-                            current->parent->intval |= i & ( 1 << j );
-                          }
-                          break;
+			  /* Get base integer into i */
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			  }
+			  /* Write the corresponding bits of i into parent */
+			  while( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    j = getint( current );
+			    current->parent->intval |= i & ( 1 << j );
+			  }
+			  break;
 
       case _BITNOT	: /* bitwise invert argument */
       case _NOT		: /* logically invert argument */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            current->parent->intval = ( cmd_type == _NOT ) ? !i : ~i;
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires one argument!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    current->parent->intval = ( cmd_type == _NOT ) ? !i : ~i;
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires one argument!\n", current->arg );
+			  }
+			  break;
 
       case _PLUS	: /* Sum up all arguments and return that value */
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            current->parent->intval += i;
-                          }
-                          break;
+			  while( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    current->parent->intval += i;
+			  }
+			  break;
 
       case _PROCEDURE	: /* Link user function to global function name-space */
-                          link_function( current->next->arg, current->next->intval );
-                          break;
+			  link_function( current->next->arg, current->next->intval );
+			  break;
 
       case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            if( i > 0 )
-                            {
-                              j = 0;
-                              for( ; i > 0 ; i-- )
-                              {
-                                if( current->next != NULL )
-                                {
-                                  current = current->next;
-                                }
-                                else
-                                {
-                                  j = 1;
-                                }
-                              }
-                              if( j == 0 )
-                              {
-                                current->parent->intval = current->intval;
-                                if( current->arg != NULL )
-                                {
-                                  current->parent->arg = strdup( current->arg );
-                                  outofmem( current->parent->arg );
-                                }
-                              }
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    if( i > 0 )
+			    {
+			      j = 0;
+			      for( ; i > 0 ; i-- )
+			      {
+				if( current->next != NULL )
+				{
+				  current = current->next;
+				}
+				else
+				{
+				  j = 1;
+				}
+			      }
+			      if( j == 0 )
+			      {
+				current->parent->intval = current->intval;
+				if( current->arg != NULL )
+				{
+				  current->parent->arg = strdup( current->arg );
+				  outofmem( current->parent->arg );
+				}
+			      }
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _SYMBOLSET	: /* assign values to variables -- allow strings and commands as variablenames */
-                          /* take odd args as names and even as values */
-                          if( current->next != NULL )
-                          {
-                          char *clip2;
-                            current = current->next;
-                            while( current != NULL && current->next != NULL )
-                            {
-                              i = current->next->intval;
-                              clip = NULL;
-                              string = NULL;
-                              if( current->cmd != NULL )
-                              {
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              if( current->arg == NULL )
-                              {
-                                /* There is no varname */
-                                error = BADPARAMETER;
-                                traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
-                              }
-                              if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
-                              {
-                                /* There is a quoted varname */
-                                /* Strip off quotes */
-                                string = strip_quotes( current->arg );
-                              }
-                              else
-                              {
-                                /* Varname is stored in variable */
-                                clip2 = get_var_arg( current->arg );
-                                if( clip2 == NULL )
-                                {
-                                  /* There is no varname */
-                                  error = BADPARAMETER;
-                                  traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
-                                }
-                                string = strdup( clip2 );
-                                outofmem( string );
-                              }
-                              if( current->next->cmd != NULL )
-                              {
-                                /* There is a command instead of a value -- execute command */
-                                execute_script( current->next->cmd, level + 1 );
-                              }
-                              if( current->next->arg != NULL )
-                              {
-                                if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
-                                {
-                                  /* Strip off quotes */
-                                  clip = strip_quotes( current->next->arg );
-                                  i = 0;
-                                }
-                                else
-                                {
-                                  /* value is a variable */
-                                  clip2 = get_var_arg( current->next->arg );
-                                  if( clip2 == NULL )
-                                  {
-                                    clip = NULL;
-                                  }
-                                  else
-                                  {
-                                    clip = strdup( clip2 );
-                                    outofmem( clip );
-                                  }
-                                  i = get_var_int( current->next->arg );
-                                }
-                              }
-                              set_variable( string, clip, i );
-                              free( string );
-                              free( clip );
-                              dummy = current;
-                              current = current->next->next;
-                            }
-                          }
-                          /* SET returns the value of the of the last assignment */
-                          if( dummy->next->arg != NULL )
-                          {
-                            if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
-                            {
-                              dummy->parent->arg = strdup( dummy->next->arg );
-                              outofmem( dummy->parent->arg );
-                            }
-                            else
-                            {
-                              clip = get_var_arg( dummy->next->arg );
-                              if( clip )
-                              {
-                                /* Add surrounding quotes to string */
-                                dummy->parent->arg = addquotes( clip );
-                              }
-                              dummy->parent->intval = get_var_int( dummy->next->arg );
-                            }
-                          }
-                          else
-                          {
-                            dummy->parent->intval = dummy->next->intval;
-                          }
-                          break;
+			  /* take odd args as names and even as values */
+			  if( current->next != NULL )
+			  {
+			  char *clip2;
+			    current = current->next;
+			    while( current != NULL && current->next != NULL )
+			    {
+			      i = current->next->intval;
+			      clip = NULL;
+			      string = NULL;
+			      if( current->cmd != NULL )
+			      {
+				execute_script( current->cmd, level + 1 );
+			      }
+			      if( current->arg == NULL )
+			      {
+				/* There is no varname */
+				error = BADPARAMETER;
+				traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
+			      }
+			      if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      {
+				/* There is a quoted varname */
+				/* Strip off quotes */
+				string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				/* Varname is stored in variable */
+				clip2 = get_var_arg( current->arg );
+				if( clip2 == NULL )
+				{
+				  /* There is no varname */
+				  error = BADPARAMETER;
+				  traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
+				}
+				string = strdup( clip2 );
+				outofmem( string );
+			      }
+			      if( current->next->cmd != NULL )
+			      {
+				/* There is a command instead of a value -- execute command */
+				execute_script( current->next->cmd, level + 1 );
+			      }
+			      if( current->next->arg != NULL )
+			      {
+				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
+				{
+				  /* Strip off quotes */
+				  clip = strip_quotes( current->next->arg );
+				  i = 0;
+				}
+				else
+				{
+				  /* value is a variable */
+				  clip2 = get_var_arg( current->next->arg );
+				  if( clip2 == NULL )
+				  {
+				    clip = NULL;
+				  }
+				  else
+				  {
+				    clip = strdup( clip2 );
+				    outofmem( clip );
+				  }
+				  i = get_var_int( current->next->arg );
+				}
+			      }
+			      set_variable( string, clip, i );
+			      free( string );
+			      free( clip );
+			      dummy = current;
+			      current = current->next->next;
+			    }
+			  }
+			  /* SET returns the value of the of the last assignment */
+			  if( dummy->next->arg != NULL )
+			  {
+			    if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
+			    {
+			      dummy->parent->arg = strdup( dummy->next->arg );
+			      outofmem( dummy->parent->arg );
+			    }
+			    else
+			    {
+			      clip = get_var_arg( dummy->next->arg );
+			      if( clip )
+			      {
+				/* Add surrounding quotes to string */
+				dummy->parent->arg = addquotes( clip );
+			      }
+			      dummy->parent->intval = get_var_int( dummy->next->arg );
+			    }
+			  }
+			  else
+			  {
+			    dummy->parent->intval = dummy->next->intval;
+			  }
+			  break;
 
       case _SYMBOLVAL	: /* return values of variables -- allow strings and commands as variablenames */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            string = NULL;
-                            clip = NULL;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg == NULL )
-                            {
-                              /* There is no varname */
-                              error = BADPARAMETER;
-                              traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
-                            }
-                            if( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE )
-                            {
-                              /* There is a quoted varname */
-                              /* Strip off quotes */
-                              string = strip_quotes( current->arg );
-                              current->parent->arg = get_var_arg( string );
-                              current->parent->intval = get_var_int( string );
-                              free( string );
-                            }
-                            else
-                            {
-                              /* Varname is stored in variable */
-                              current->parent->arg = get_var_arg( current->arg );
-                              current->parent->intval = get_var_int( current->arg );
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires one argument!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    string = NULL;
+			    clip = NULL;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg == NULL )
+			    {
+			      /* There is no varname */
+			      error = BADPARAMETER;
+			      traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
+			    }
+			    if( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE )
+			    {
+			      /* There is a quoted varname */
+			      /* Strip off quotes */
+			      string = strip_quotes( current->arg );
+			      current->parent->arg = get_var_arg( string );
+			      current->parent->intval = get_var_int( string );
+			      free( string );
+			    }
+			    else
+			    {
+			      /* Varname is stored in variable */
+			      current->parent->arg = get_var_arg( current->arg );
+			      current->parent->intval = get_var_int( current->arg );
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires one argument!\n", current->arg );
+			  }
+			  break;
 
       case _SET		: /* assign values to variables */
-                          /* take odd args as names and even as values */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            while( current != NULL && current->next != NULL )
-                            {
-                              if( current->cmd != NULL )
-                              {
-                                /* There is a command instead of a varname */
-                                error = BADPARAMETER;
-                                traperr( "<%s> expected variablename, found function instead!\n", current->parent->cmd->arg );
-                              }
-                              if( current->arg == NULL )
-                              {
-                                /* There is no varname */
-                                error = BADPARAMETER;
-                                traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
-                              }
-                              if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
-                              {
-                                /* There is a quoted varname */
-                                error = BADPARAMETER;
-                                traperr( "<%s> expected symbol, found quoted string instead!\n", current->parent->cmd->arg );
-                              }
-                              if( current->next->cmd != NULL )
-                              {
-                                /* There is a command instead of a value -- execute command */
-                                execute_script( current->next->cmd, level + 1 );
-                              }
-                              if( current->next->arg != NULL )
-                              {
-                                if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
-                                {
-                                  /* Strip off quotes */
-                                  clip = strip_quotes( current->next->arg );
-                                  set_variable( current->arg, clip, current->next->intval );
-                                  free( clip );
-                                }
-                                else
-                                {
-                                  /* value is a variable */
-                                  set_variable( current->arg, get_var_arg( current->next->arg ), get_var_int( current->next->arg ) );
-                                }
-                              }
-                              else
-                              {
-                                set_variable( current->arg, current->next->arg, current->next->intval );
-                              }
-                              dummy = current;
-                              current = current->next->next;
-                            }
-                          }
-                          /* SET returns the value of the of the last assignment */
-                          if( dummy->next->arg != NULL )
-                          {
-                            if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
-                            {
-                              dummy->parent->arg = strdup(dummy->next->arg);
-                              outofmem( dummy->parent->arg );
-                            }
-                            else
-                            {
-                              clip = get_var_arg( dummy->next->arg );
-                              if( clip )
-                              {
-                                /* Add surrounding quotes to string */
-                                dummy->parent->arg = addquotes( clip );
-                              }
-                              dummy->parent->intval = get_var_int( dummy->next->arg );
-                            }
-                          }
-                          else
-                          {
-                            dummy->parent->intval = dummy->next->intval;
-                          }
-                          break;
+			  /* take odd args as names and even as values */
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    while( current != NULL && current->next != NULL )
+			    {
+			      if( current->cmd != NULL )
+			      {
+				/* There is a command instead of a varname */
+				error = BADPARAMETER;
+				traperr( "<%s> expected variablename, found function instead!\n", current->parent->cmd->arg );
+			      }
+			      if( current->arg == NULL )
+			      {
+				/* There is no varname */
+				error = BADPARAMETER;
+				traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
+			      }
+			      if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      {
+				/* There is a quoted varname */
+				error = BADPARAMETER;
+				traperr( "<%s> expected symbol, found quoted string instead!\n", current->parent->cmd->arg );
+			      }
+			      if( current->next->cmd != NULL )
+			      {
+				/* There is a command instead of a value -- execute command */
+				execute_script( current->next->cmd, level + 1 );
+			      }
+			      if( current->next->arg != NULL )
+			      {
+				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
+				{
+				  /* Strip off quotes */
+				  clip = strip_quotes( current->next->arg );
+				  set_variable( current->arg, clip, current->next->intval );
+				  free( clip );
+				}
+				else
+				{
+				  /* value is a variable */
+				  set_variable( current->arg, get_var_arg( current->next->arg ), get_var_int( current->next->arg ) );
+				}
+			      }
+			      else
+			      {
+				set_variable( current->arg, current->next->arg, current->next->intval );
+			      }
+			      dummy = current;
+			      current = current->next->next;
+			    }
+			  }
+			  /* SET returns the value of the of the last assignment */
+			  if( dummy->next->arg != NULL )
+			  {
+			    if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
+			    {
+			      dummy->parent->arg = strdup(dummy->next->arg);
+			      outofmem( dummy->parent->arg );
+			    }
+			    else
+			    {
+			      clip = get_var_arg( dummy->next->arg );
+			      if( clip )
+			      {
+				/* Add surrounding quotes to string */
+				dummy->parent->arg = addquotes( clip );
+			      }
+			      dummy->parent->intval = get_var_int( dummy->next->arg );
+			    }
+			  }
+			  else
+			  {
+			    dummy->parent->intval = dummy->next->intval;
+			  }
+			  break;
 
       case _STRLEN	: /* Return the length of the string, 0 for integer argument */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              current->parent->intval = ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE ) ?
-                                                        strlen( current->arg ) - 2 :
-                                                        ( ( clip = get_var_arg( current->arg ) ) == NULL) ?
-                                                            0 : strlen( clip );
-                            }
-                          }
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg != NULL )
+			    {
+			      current->parent->intval = ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE ) ?
+							strlen( current->arg ) - 2 :
+							( ( clip = get_var_arg( current->arg ) ) == NULL) ?
+							    0 : strlen( clip );
+			    }
+			  }
+			  break;
 
       case _STRING	: /* Call RawDoFmt with string as format and args and return output */
 
-                          /* Prepare base string */
-                          /* Strip off quotes */
-                          clip = strip_quotes( current->arg );
+			  /* Prepare base string */
+			  /* Strip off quotes */
+			  clip = strip_quotes( current->arg );
 
-                          /* Now get arguments into typeless array (void *params) */
-                          params = (void *)malloc(sizeof(IPTR));
-                          outofmem( params );
-                          ((char **)params)[0] = NULL;
-                          mclip = NULL;
-                          i = 0;
-                          j = 0;
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              /* There is a command instead of a value -- execute command */
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
-                                outofmem( mclip );
-                                mclip[j] = strip_quotes( current->arg );
-                                ((char **)params)[i] = mclip[j];
-                                j++;
-                              }
-                              else
-                              {
-                                ((char **)params)[i] = (char *)get_variable( current->arg );
-                              }
-                            }
-                            else
-                            {
-                              ((char **)params)[i] = (char *)(current->intval);
-                            }
-                            i++;
-                            params = (void *)realloc( params, sizeof(IPTR)*(i+1) );
-                            outofmem( params );
-                          }
-                          /* Call RawDoFmt() with parameter list */
-                          /* Store that produced string as return value */
-                          string = malloc( MAXARGSIZE );
-                          outofmem( string );
-                          callbackstring = string;
-                          globalstring = callbackstring;
+			  /* Now get arguments into typeless array (void *params) */
+			  params = (void *)malloc(sizeof(IPTR));
+			  outofmem( params );
+			  ((char **)params)[0] = NULL;
+			  mclip = NULL;
+			  i = 0;
+			  j = 0;
+			  while( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      /* There is a command instead of a value -- execute command */
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+				/* Strip off quotes */
+				mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
+				outofmem( mclip );
+				mclip[j] = strip_quotes( current->arg );
+				((char **)params)[i] = mclip[j];
+				j++;
+			      }
+			      else
+			      {
+				((char **)params)[i] = (char *)get_variable( current->arg );
+			      }
+			    }
+			    else
+			    {
+			      ((char **)params)[i] = (char *)(current->intval);
+			    }
+			    i++;
+			    params = (void *)realloc( params, sizeof(IPTR)*(i+1) );
+			    outofmem( params );
+			  }
+			  /* Call RawDoFmt() with parameter list */
+			  /* Store that produced string as return value */
+			  string = malloc( MAXARGSIZE );
+			  outofmem( string );
+			  callbackstring = string;
+			  globalstring = callbackstring;
 #ifndef ADE
-                          RawDoFmt( clip, params, (VOID_FUNC)&callback, &globalstring );
+			  RawDoFmt( clip, params, (VOID_FUNC)&callback, &globalstring );
 #else /* !ADE */
-                          RawDoFmt( clip, params, &callback, &globalstring );
+			  RawDoFmt( clip, params, &callback, &globalstring );
 #endif /* !ADE */
-                          string = callbackstring;
-                          /* Free temporary space */
-                          free( clip );
-                          if( mclip )
-                          {
-                            while( j > 0 )
-                            {
-                              free( mclip[--j] );
-                            }
-                            free( mclip );
-                          }
-                          /* Add surrounding quotes to string */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  string = callbackstring;
+			  /* Free temporary space */
+			  free( clip );
+			  if( mclip )
+			  {
+			    while( j > 0 )
+			    {
+			      free( mclip[--j] );
+			    }
+			    free( mclip );
+			  }
+			  /* Add surrounding quotes to string */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _SUBSTR	: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
-                          if( current->next != NULL && current->next->next != NULL )
-                          {
-                            current = current->next;
-                            /* Get string */
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                string = strip_quotes( current->arg );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  string = strdup( clip );
-                                  outofmem( string );
-                                }
-                                else
-                                {
-                                  string = malloc( MAXARGSIZE );
-                                  outofmem( string );
-                                  sprintf( string, "%ld", get_var_int( current->arg ) );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              string = malloc( MAXARGSIZE );
-                              outofmem( string );
-                              sprintf( string, "%ld", current->intval );
-                            }
-                            current = current->next;
-                            /* Get offset */
-                            i = getint( current );
-                            slen = strlen( string ) - i;
-                            if( i < 0 )
-                            {
-                              free( string );
-                              error = BADPARAMETER;
-                              traperr( "Negative argument to <%s>!\n", current->parent->cmd->arg );
-                            }
-                            /* Get number of chars to copy */
-                            if( current->next != NULL )
-                            {
-                              current = current->next;
-                              if( current->cmd != NULL )
-                              {
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              j = getint( current );
-                              if( j < 0 )
-                              {
-                                j = 0;
-                              }
-                              slen = j;
-                            }
-                            else
-                            {
-                              j = slen;
-                            }
-                            clip = malloc( slen + 1 );
-                            outofmem( clip );
-                            strncpy( clip, ( string + i ), j );
-                            clip[j] = 0;
-                            free( string );
-                            current->parent->arg = clip;
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires at least two arguments!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL && current->next->next != NULL )
+			  {
+			    current = current->next;
+			    /* Get string */
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+				/* Strip off quotes */
+				string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				clip = get_var_arg( current->arg );
+				if( clip != NULL )
+				{
+				  string = strdup( clip );
+				  outofmem( string );
+				}
+				else
+				{
+				  string = malloc( MAXARGSIZE );
+				  outofmem( string );
+				  sprintf( string, "%ld", get_var_int( current->arg ) );
+				}
+			      }
+			    }
+			    else
+			    {
+			      string = malloc( MAXARGSIZE );
+			      outofmem( string );
+			      sprintf( string, "%ld", current->intval );
+			    }
+			    current = current->next;
+			    /* Get offset */
+			    i = getint( current );
+			    slen = strlen( string ) - i;
+			    if( i < 0 )
+			    {
+			      free( string );
+			      error = BADPARAMETER;
+			      traperr( "Negative argument to <%s>!\n", current->parent->cmd->arg );
+			    }
+			    /* Get number of chars to copy */
+			    if( current->next != NULL )
+			    {
+			      current = current->next;
+			      if( current->cmd != NULL )
+			      {
+				execute_script( current->cmd, level + 1 );
+			      }
+			      j = getint( current );
+			      if( j < 0 )
+			      {
+				j = 0;
+			      }
+			      slen = j;
+			    }
+			    else
+			    {
+			      j = slen;
+			    }
+			    clip = malloc( slen + 1 );
+			    outofmem( clip );
+			    strncpy( clip, ( string + i ), j );
+			    clip[j] = 0;
+			    free( string );
+			    current->parent->arg = clip;
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires at least two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _TIMES	: /* Multiply all arguments and return that value */
-                          if( current->next == NULL )
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "No arguments to <%s>!\n", current->arg );
-                          }
-                          current->parent->intval = 1;
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            current->parent->intval *= i;
-                          }
-                          break;
+			  if( current->next == NULL )
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "No arguments to <%s>!\n", current->arg );
+			  }
+			  current->parent->intval = 1;
+			  while( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current );
+			    current->parent->intval *= i;
+			  }
+			  break;
 
       case _TRANSCRIPT	: /* concatenate strings into logfile */
-                          string = collect_strings( current->next, 0, level );
-                          if( preferences.transcriptfile != NULL )
-                          {
-                            Write( preferences.transcriptstream, string, strlen( string ) );
-                            Write( preferences.transcriptstream, "\n", 1 );
-                          }
-                          /* Add surrounding quotes to string */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  string = collect_strings( current->next, 0, level );
+			  if( preferences.transcriptfile != NULL )
+			  {
+			    Write( preferences.transcriptstream, string, strlen( string ) );
+			    Write( preferences.transcriptstream, "\n", 1 );
+			  }
+			  /* Add surrounding quotes to string */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _UNTIL	: /* execute 2nd cmd until 1st arg != 0 */
-                          if( current->next != NULL && current->next->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->next->cmd == NULL )
-                            {
-                              /* We don't have a block, so what can we execute ??? */
-                              error = SCRIPTERROR;
-                              traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
-                            }
-                            i = 0;
-                            while( i == 0 )
-                            {
-                              /* Execute command */
-                              if( current->next->cmd != NULL )
-                              {
-                                execute_script( current->next->cmd, level + 1 );
-                              }
+			  if( current->next != NULL && current->next->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->next->cmd == NULL )
+			    {
+			      /* We don't have a block, so what can we execute ??? */
+			      error = SCRIPTERROR;
+			      traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
+			    }
+			    i = 0;
+			    while( i == 0 )
+			    {
+			      /* Execute command */
+			      if( current->next->cmd != NULL )
+			      {
+				execute_script( current->next->cmd, level + 1 );
+			      }
 
-                              /* Now check condition */
-                              if( current->cmd != NULL )
-                              {
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              i = getint( current );
+			      /* Now check condition */
+			      if( current->cmd != NULL )
+			      {
+				execute_script( current->cmd, level + 1 );
+			      }
+			      i = getint( current );
 
-                              /* condition is true -> return values and exit */
-                              if( i != 0 )
-                              {
-                                current->parent->intval = current->next->intval;
-                                if( current->next->arg != NULL )
-                                {
-                                  current->parent->arg = strdup( current->next->arg );
-                                  outofmem( current->parent->arg );
-                                }
-                              }
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			      /* condition is true -> return values and exit */
+			      if( i != 0 )
+			      {
+				current->parent->intval = current->next->intval;
+				if( current->next->arg != NULL )
+				{
+				  current->parent->arg = strdup( current->next->arg );
+				  outofmem( current->parent->arg );
+				}
+			      }
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _USER	: /* Change the current user-level -- Use only to debug scripts */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              string = NULL;
-                              if( ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
-                              {
-                                /* Strip off quotes */
-                                string = strip_quotes( current->arg );
-                                clip = string;
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                              }
-                              if( clip != NULL )
-                              {
-                                i = atol( clip );
-                                if( strcasecmp( clip, "novice" ) == 0 )
-                                  i = _NOVICE;
-                                if( strcasecmp( clip, "average" ) == 0 )
-                                  i = _AVERAGE;
-                                if( strcasecmp( clip, "expert" ) == 0 )
-                                  i = _EXPERT;
-                                free( string );
-                              }
-                              else
-                              {
-                                i = get_var_int( current->arg );
-                              }
-                            }
-                            else
-                            {
-                              i = current->intval;
-                            }
-                            if( i < _NOVICE || i > _EXPERT )
-                            {
-                              error = BADPARAMETER;
-                              traperr( "New user-level not in [Novice|Average|Expert] !\n", NULL );
-                            }
-                            else
-                            {
-                              set_variable( "@user-level", NULL, i );
-                              current->parent->intval = i;
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires one argument!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg != NULL )
+			    {
+			      string = NULL;
+			      if( ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      {
+				/* Strip off quotes */
+				string = strip_quotes( current->arg );
+				clip = string;
+			      }
+			      else
+			      {
+				clip = get_var_arg( current->arg );
+			      }
+			      if( clip != NULL )
+			      {
+				i = atol( clip );
+				if( strcasecmp( clip, "novice" ) == 0 )
+				  i = _NOVICE;
+				if( strcasecmp( clip, "average" ) == 0 )
+				  i = _AVERAGE;
+				if( strcasecmp( clip, "expert" ) == 0 )
+				  i = _EXPERT;
+				free( string );
+			      }
+			      else
+			      {
+				i = get_var_int( current->arg );
+			      }
+			    }
+			    else
+			    {
+			      i = current->intval;
+			    }
+			    if( i < _NOVICE || i > _EXPERT )
+			    {
+			      error = BADPARAMETER;
+			      traperr( "New user-level not in [Novice|Average|Expert] !\n", NULL );
+			    }
+			    else
+			    {
+			      set_variable( "@user-level", NULL, i );
+			      current->parent->intval = i;
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires one argument!\n", current->arg );
+			  }
+			  break;
 
       case _WELCOME	: /* Display strings instead of "Welcome to the <APPNAME> App installation utility" */
-                          string = collect_strings( current->next, SPACE, level );
-                          request_userlevel( string );
+			  string = collect_strings( current->next, SPACE, level );
+			  request_userlevel( string );
 
-                          /* Set return value */
-                          /* Add surrounding quotes to string */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  /* Set return value */
+			  /* Add surrounding quotes to string */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _WHILE	: /* while 1st arg != 0 execute 2nd cmd */
-                          if( current->next != NULL && current->next->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->next->cmd == NULL )
-                            {
-                              /* We don't have a block, so what can we execute ??? */
-                              error = SCRIPTERROR;
-                              traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
-                            }
-                            i = 1;
-                            while( i != 0 )
-                            {
-                              if( current->cmd != NULL )
-                              {
-                                execute_script( current->cmd, level + 1 );
-                              }
+			  if( current->next != NULL && current->next->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->next->cmd == NULL )
+			    {
+			      /* We don't have a block, so what can we execute ??? */
+			      error = SCRIPTERROR;
+			      traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
+			    }
+			    i = 1;
+			    while( i != 0 )
+			    {
+			      if( current->cmd != NULL )
+			      {
+				execute_script( current->cmd, level + 1 );
+			      }
 
-                              /* Now check condition */
-                              i = getint( current );
-                              if( i != 0 )
-                              {
-                                if( current->next->cmd != NULL )
-                                {
-                                  execute_script( current->next->cmd, level + 1 );
-                                }
-                              }
-                              else
-                              {
-                                current->parent->intval = current->next->intval;
-                                if( current->next->arg != NULL )
-                                {
-                                  current->parent->arg = strdup( current->next->arg );
-                                  outofmem( current->parent->arg );
-                                }
-                              }
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			      /* Now check condition */
+			      i = getint( current );
+			      if( i != 0 )
+			      {
+				if( current->next->cmd != NULL )
+				{
+				  execute_script( current->next->cmd, level + 1 );
+				}
+			      }
+			      else
+			      {
+				current->parent->intval = current->next->intval;
+				if( current->next->arg != NULL )
+				{
+				  current->parent->arg = strdup( current->next->arg );
+				  outofmem( current->parent->arg );
+				}
+			      }
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _MESSAGE	: /* Display strings and offer Proceed, Abort, Help */
-                          string = collect_strings( current->next, LINEFEED, level );
-                          parameter = get_parameters( current->next, level );
-                          show_message( string, parameter );
+			  string = collect_strings( current->next, LINEFEED, level );
+			  parameter = get_parameters( current->next, level );
+			  show_message( string, parameter );
 
-                          /* Set return value */
-                          /* Add surrounding quotes to string */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          free_parameterlist( parameter );
-                          break;
+			  /* Set return value */
+			  /* Add surrounding quotes to string */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  free_parameterlist( parameter );
+			  break;
 
       case _WORKING	: /* Display strings below "Working on Installation" */
-                          string = collect_strings( current->next, LINEFEED, level );
-                          show_working( string );
+			  string = collect_strings( current->next, LINEFEED, level );
+			  show_working( string );
 
-                          /* Set return value */
-                          /* Add surrounding quotes to string */
-                          current->parent->arg = addquotes( string );
-                          free( string );
-                          break;
+			  /* Set return value */
+			  /* Add surrounding quotes to string */
+			  current->parent->arg = addquotes( string );
+			  free( string );
+			  break;
 
       case _DATABASE	: /* Return information on the hardware Installer is running on */
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            clip = strip_quotes( current->arg );
-                            i = database_keyword( clip );
-                            free( clip );
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    clip = strip_quotes( current->arg );
+			    i = database_keyword( clip );
+			    free( clip );
 #warning TODO: compute return values for "database"
-                            switch( i )
-                            {
-                              case _VBLANK :
-                                clip = malloc( MAXARGSIZE );
-                                outofmem( clip );
-                                sprintf( clip, "%c%d%c", DQUOTE, SysBase->VBlankFrequency, DQUOTE );
-                                current->parent->arg = strdup( clip );
-                                outofmem( current->parent->arg );
-                                free( clip );
-                                break;
+			    switch( i )
+			    {
+			      case _VBLANK :
+				clip = malloc( MAXARGSIZE );
+				outofmem( clip );
+				sprintf( clip, "%c%d%c", DQUOTE, SysBase->VBlankFrequency, DQUOTE );
+				current->parent->arg = strdup( clip );
+				outofmem( current->parent->arg );
+				free( clip );
+				break;
 
-                              case _CPU:
-                                break;
+			      case _CPU:
+				break;
 
-                              case _GRAPHICS_MEM:
-                                break;
+			      case _GRAPHICS_MEM:
+				break;
 
-                              case _TOTAL_MEM:
-                                break;
+			      case _TOTAL_MEM:
+				break;
 
-                              case _FPU:
-                                break;
+			      case _FPU:
+				break;
 
-                              case _CHIPREV:
-                                break;
+			      case _CHIPREV:
+				break;
 
-                              default :
-                                break;
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires one argument!\n", current->arg );
-                          }
-                          break;
+			      default :
+				break;
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires one argument!\n", current->arg );
+			  }
+			  break;
 
       case _ASKBOOL	: /* Ask user for a boolean */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->intval = request_bool( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->intval = request_bool( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKNUMBER	: /* Ask user for a number */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->intval = request_number( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->intval = request_number( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKSTRING	: /* Ask user for a string */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->arg = request_string( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->arg = request_string( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKCHOICE	: /* Ask user to choose one item */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->intval = request_choice( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->intval = request_choice( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKDIR	: /* Ask user for a directory */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->arg = request_dir( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->arg = request_dir( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKDISK	: /* Ask user to insert a disk */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->arg = request_disk( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->arg = request_disk( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKFILE	: /* Ask user for a filename */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->arg = request_file( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->arg = request_file( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ASKOPTIONS	: /* Ask user to choose multiple items */
-                          parameter = get_parameters( current->next, level );
-                          current->parent->intval = request_options( parameter );
-                          free_parameterlist( parameter );
-                          break;
+			  parameter = get_parameters( current->next, level );
+			  current->parent->intval = request_options( parameter );
+			  free_parameterlist( parameter );
+			  break;
 
       case _ONERROR	: /* link onerror to preferences */
-                          current = current->next;
-                          /* reset parent of old onerror statement */
-                          dummy = preferences.onerror.cmd;
-                          while( dummy != NULL )
-                          {
-                            dummy->parent = preferences.onerrorparent;
-                            dummy = dummy->next;
-                          }
-                          /* set new onerror statement */
-                          preferences.onerror.cmd = current->cmd;
-                          preferences.onerrorparent = current;
-                          /* set new parent of new onerror statement */
-                          dummy = current->cmd;
-                          while( dummy != NULL )
-                          {
-                            dummy->parent = &(preferences.onerror);
-                            dummy = dummy->next;
-                          }
-                          break;
+			  current = current->next;
+			  /* reset parent of old onerror statement */
+			  dummy = preferences.onerror.cmd;
+			  while( dummy != NULL )
+			  {
+			    dummy->parent = preferences.onerrorparent;
+			    dummy = dummy->next;
+			  }
+			  /* set new onerror statement */
+			  preferences.onerror.cmd = current->cmd;
+			  preferences.onerrorparent = current;
+			  /* set new parent of new onerror statement */
+			  dummy = current->cmd;
+			  while( dummy != NULL )
+			  {
+			    dummy->parent = &(preferences.onerror);
+			    dummy = dummy->next;
+			  }
+			  break;
 
       case _TRAP	: /* link trap to preferences */
-                          if( current->next != NULL  && current->next->next->cmd != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current ) - 1;
-                            current = current->next;
-                            /* reset parent of old trap statement */
-                            dummy = preferences.trap[i].cmd;
-                            while( dummy != NULL )
-                            {
-                              dummy->parent = preferences.trapparent[i];
-                              dummy = dummy->next;
-                            }
-                            /* set new onerror statement */
-                            preferences.trap[i].cmd = current->cmd;
-                            preferences.trapparent[i] = current;
-                            /* set new parent of new onerror statement */
-                            dummy = current->cmd;
-                            while( dummy != NULL )
-                            {
-                              dummy->parent = &(preferences.trap[i]);
-                              dummy = dummy->next;
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires two arguments!\n", current->arg );
-                          }
-                          break;
+			  if( current->next != NULL  && current->next->next->cmd != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    i = getint( current ) - 1;
+			    current = current->next;
+			    /* reset parent of old trap statement */
+			    dummy = preferences.trap[i].cmd;
+			    while( dummy != NULL )
+			    {
+			      dummy->parent = preferences.trapparent[i];
+			      dummy = dummy->next;
+			    }
+			    /* set new onerror statement */
+			    preferences.trap[i].cmd = current->cmd;
+			    preferences.trapparent[i] = current;
+			    /* set new parent of new onerror statement */
+			    dummy = current->cmd;
+			    while( dummy != NULL )
+			    {
+			      dummy->parent = &(preferences.trap[i]);
+			      dummy = dummy->next;
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires two arguments!\n", current->arg );
+			  }
+			  break;
 
       case _RUN		: /* Execute a command line */
 #warning TODO: Check me for correctness
-                          if( current->next != NULL )
-                          {
-                          BPTR seg;
-                            parameter = get_parameters( current->next, level );
-                            if( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
-                            {
-                              string = collect_strings( current->next, SPACE, level );
-                              if( string == NULL )
-                              {
-                                error = BADPARAMETER;
-                                traperr( "<%s> requires a string parameter!\n", current->parent->cmd->arg );
-                              }
-                              for( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
-                              if( string[i] == SPACE )
-                              {
-                                string[i] = 0;
-                                clip = &(string[i+1]);
-                                j = strlen( clip );
-                              }
-                              else
-                              {
-                                clip = NULL;
-                                j = 0;
-                              }
-                              if( get_var_int("@user-level") >= GetPL( parameter, _CONFIRM ).intval )
-                              {
-                                if( ( seg = LoadSeg( string ) ) == NULL )
-                                {
-                                  /* Couldn't load file -- set @ioerr and handle trap/onerror */
-                                  i = IoErr();
+			  if( current->next != NULL )
+			  {
+			  BPTR seg;
+			    parameter = get_parameters( current->next, level );
+			    if( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+			    {
+			      string = collect_strings( current->next, SPACE, level );
+			      if( string == NULL )
+			      {
+				error = BADPARAMETER;
+				traperr( "<%s> requires a string parameter!\n", current->parent->cmd->arg );
+			      }
+			      for( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
+			      if( string[i] == SPACE )
+			      {
+				string[i] = 0;
+				clip = &(string[i+1]);
+				j = strlen( clip );
+			      }
+			      else
+			      {
+				clip = NULL;
+				j = 0;
+			      }
+			      if( get_var_int("@user-level") >= GetPL( parameter, _CONFIRM ).intval )
+			      {
+				if( ( seg = LoadSeg( string ) ) == NULL )
+				{
+				  /* Couldn't load file -- set @ioerr and handle trap/onerror */
+				  i = IoErr();
 #ifdef DEBUG
-                                  PrintFault( i, "Installer" );
+				  PrintFault( i, "Installer" );
 #endif /* DEBUG */
-                                  set_variable( "@ioerr", NULL, i );
-                                  error = DOSERROR;
-                                  traperr( "Couldn't load binary %s\n", string );
-                                }
-                                if( preferences.transcriptstream != NULL )
-                                {
-                                  Write( preferences.transcriptstream, "Started program: \"", 18 );
-                                  Write( preferences.transcriptstream, string, strlen( string ) );
-                                  Write( preferences.transcriptstream, "\"\n", 2 );
-                                }
+				  set_variable( "@ioerr", NULL, i );
+				  error = DOSERROR;
+				  traperr( "Couldn't load binary %s\n", string );
+				}
+				if( preferences.transcriptstream != NULL )
+				{
+				  Write( preferences.transcriptstream, "Started program: \"", 18 );
+				  Write( preferences.transcriptstream, string, strlen( string ) );
+				  Write( preferences.transcriptstream, "\"\n", 2 );
+				}
 #define STACKSIZE 10000
-                                current->parent->intval = RunCommand( seg, STACKSIZE, clip, j );
+				current->parent->intval = RunCommand( seg, STACKSIZE, clip, j );
 #warning FIXME: is @ioerr set if command not run?
-                                set_variable( "@ioerr", NULL, IoErr() );
-                                UnLoadSeg( seg );
-                              }
-                              free( string );
-                            }
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires arguments!\n", current->arg );
-                          }
-                          break;
+				set_variable( "@ioerr", NULL, IoErr() );
+				UnLoadSeg( seg );
+			      }
+			      free( string );
+			    }
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires arguments!\n", current->arg );
+			  }
+			  break;
 
       case _STARTUP	:
-                          if( current->next->cmd != NULL )
-                          {
-                            /* There is a command instead of a value -- execute command */
-                            execute_script( current->next->cmd, level + 1 );
-                          }
-                          if( current->next->arg != NULL )
-                          {
-                            string = strip_quotes( current->next->arg );
-                            parameter = get_parameters( current->next, level );
-                            if( request_confirm( parameter, _AVERAGE ) )
-                            {
-                              modify_userstartup( string, parameter );
-                            }
-                            free_parameterlist( parameter );
-                            free( string );
-                          }
-                          else
-                          {
-                            error = SCRIPTERROR;
-                            traperr( "<%s> requires a name-string as argument!\n", current->arg );
-                          }
-                          break;
+			  if( current->next->cmd != NULL )
+			  {
+			    /* There is a command instead of a value -- execute command */
+			    execute_script( current->next->cmd, level + 1 );
+			  }
+			  if( current->next->arg != NULL )
+			  {
+			    string = strip_quotes( current->next->arg );
+			    parameter = get_parameters( current->next, level );
+			    if( request_confirm( parameter, _AVERAGE ) )
+			    {
+			      modify_userstartup( string, parameter );
+			    }
+			    free_parameterlist( parameter );
+			    free( string );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a name-string as argument!\n", current->arg );
+			  }
+			  break;
 
       /* Here are all unimplemented commands */
       case _COPYFILES	:
@@ -1279,134 +1279,134 @@ void *params;
       case _TACKON	:
       case _TEXTFILE	:
       case _TOOLTYPE	:
-                          printf( "Unimplemented command <%s>\n", current->arg );
-                          break;
+			  printf( "Unimplemented command <%s>\n", current->arg );
+			  break;
 
       case _USERDEF	: /* User defined routine */
-                          usrproc = find_proc( current->arg );
-                          /* Set argument variables */
-                          i = 0;
-                          while( current->next != NULL && i < usrproc->argnum )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              /* There is a command instead of a value -- execute command */
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                set_variable( usrproc->arglist[i], clip, 0 );
-                                free( clip );
-                              }
-                              else
-                              {
-                                /* value is a variable */
-                                set_variable( usrproc->arglist[i], get_var_arg( current->arg ), get_var_int( current->arg ) );
-                              }
-                            }
-                            else
-                            {
-                              set_variable( usrproc->arglist[i], NULL, current->intval );
-                            }
-                            i++;
-                          }
-                          /* Execute procedure */
-                          dummy = usrproc->procbody;
-                          execute_script( dummy->cmd, level + 1 );
-                          current->parent->intval = dummy->intval;
-                          if( dummy->arg != NULL )
-                          {
-                            current->parent->arg = strdup( dummy->arg );
-                            outofmem( current->parent->arg );
-                          }
-                          break;
+			  usrproc = find_proc( current->arg );
+			  /* Set argument variables */
+			  i = 0;
+			  while( current->next != NULL && i < usrproc->argnum )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			      /* There is a command instead of a value -- execute command */
+			      execute_script( current->cmd, level + 1 );
+			    }
+			    if( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+				/* Strip off quotes */
+				clip = strip_quotes( current->arg );
+				set_variable( usrproc->arglist[i], clip, 0 );
+				free( clip );
+			      }
+			      else
+			      {
+				/* value is a variable */
+				set_variable( usrproc->arglist[i], get_var_arg( current->arg ), get_var_int( current->arg ) );
+			      }
+			    }
+			    else
+			    {
+			      set_variable( usrproc->arglist[i], NULL, current->intval );
+			    }
+			    i++;
+			  }
+			  /* Execute procedure */
+			  dummy = usrproc->procbody;
+			  execute_script( dummy->cmd, level + 1 );
+			  current->parent->intval = dummy->intval;
+			  if( dummy->arg != NULL )
+			  {
+			    current->parent->arg = strdup( dummy->arg );
+			    outofmem( current->parent->arg );
+			  }
+			  break;
 
       /* Here are all tags, first the ones which have to be executed */
       case _DELOPTS	: /* unset copying/deleting options if we are called global */
-                          /* as parameter to a function we have got an ignore=1 before */
-                          if( current->parent->ignore == 0)
-                          {
-                            /* Read in strings */
-                            parameter = malloc( sizeof( struct ParameterList ) );
-                            outofmem( parameter );
-                            collect_stringargs( current, level, parameter );
-                            /* Store data in preferences */
-                            for( i = 0 ; i < parameter->intval ; i++ )
-                            {
-                              /* These are mutually exclusive */
-                    #warning FIXME: How are (fail-)strings interpreted in "delopts" ?
-                              if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
-                              {
-                              }
-                              if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
-                              {
-                              }
-                              if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
-                              {
-                              }
+			  /* as parameter to a function we have got an ignore=1 before */
+			  if( current->parent->ignore == 0)
+			  {
+			    /* Read in strings */
+			    parameter = malloc( sizeof( struct ParameterList ) );
+			    outofmem( parameter );
+			    collect_stringargs( current, level, parameter );
+			    /* Store data in preferences */
+			    for( i = 0 ; i < parameter->intval ; i++ )
+			    {
+			      /* These are mutually exclusive */
+		    #warning FIXME: How are (fail-)strings interpreted in "delopts" ?
+			      if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+			      {
+			      }
+			      if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+			      {
+			      }
+			      if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+			      {
+			      }
 
-                              /* These may be combined in any way */
-                              if( strcasecmp( parameter->arg[i], "force" ) == 0 )
-                              {
-                                preferences.copyflags &= ~COPY_ASKUSER;
-                              }
-                              if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
-                              {
-                                preferences.copyflags &= ~COPY_ASKUSER;
-                              }
-                            }
+			      /* These may be combined in any way */
+			      if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+			      {
+				preferences.copyflags &= ~COPY_ASKUSER;
+			      }
+			      if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+			      {
+				preferences.copyflags &= ~COPY_ASKUSER;
+			      }
+			    }
 
-                            free_parameterlist( parameter );
-                          }
-                          break;
+			    free_parameterlist( parameter );
+			  }
+			  break;
 
       case _OPTIONAL	: /* set copying/deleting options if we are called global */
-                          /* as parameter to a function we have got an ignore=1 before */
-                          if( current->parent->ignore == 0)
-                          {
-                            /* Read in strings */
-                            parameter = malloc( sizeof( struct ParameterList ) );
-                            outofmem( parameter );
-                            collect_stringargs( current, level, parameter );
-                            /* Store data in preferences */
-                            for( i = 0 ; i < parameter->intval ; i++ )
-                            {
-                              /* These are mutually exclusive */
-                              if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
-                              {
-                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
-                                preferences.copyfail |= COPY_FAIL;
-                              }
-                              if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
-                              {
-                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
-                                preferences.copyfail |= COPY_NOFAIL;
-                              }
-                              if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
-                              {
-                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
-                                preferences.copyfail |= COPY_OKNODELETE;
-                              }
+			  /* as parameter to a function we have got an ignore=1 before */
+			  if( current->parent->ignore == 0)
+			  {
+			    /* Read in strings */
+			    parameter = malloc( sizeof( struct ParameterList ) );
+			    outofmem( parameter );
+			    collect_stringargs( current, level, parameter );
+			    /* Store data in preferences */
+			    for( i = 0 ; i < parameter->intval ; i++ )
+			    {
+			      /* These are mutually exclusive */
+			      if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+			      {
+				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+				preferences.copyfail |= COPY_FAIL;
+			      }
+			      if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+			      {
+				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+				preferences.copyfail |= COPY_NOFAIL;
+			      }
+			      if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+			      {
+				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+				preferences.copyfail |= COPY_OKNODELETE;
+			      }
 
-                              /* These may be combined in any way */
-                              if( strcasecmp( parameter->arg[i], "force" ) == 0 )
-                              {
-                                preferences.copyflags |= COPY_ASKUSER;
-                              }
-                              if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
-                              {
-                                preferences.copyflags |= COPY_ASKUSER;
-                              }
-                            }
+			      /* These may be combined in any way */
+			      if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+			      {
+				preferences.copyflags |= COPY_ASKUSER;
+			      }
+			      if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+			      {
+				preferences.copyflags |= COPY_ASKUSER;
+			      }
+			    }
 
-                            free_parameterlist( parameter );
-                          }
-                          break;
+			    free_parameterlist( parameter );
+			  }
+			  break;
 
 #ifdef DEBUG
       case _ALL		:
@@ -1439,22 +1439,22 @@ void *params;
       case _SOURCE	:
       case _SWAPCOLORS	:
       case _QUIET	:
-                          /* We are tags -- we don't want to be executed */
-                          current->parent->ignore = 1;
-                          break;
+			  /* We are tags -- we don't want to be executed */
+			  current->parent->ignore = 1;
+			  break;
 #endif /* DEBUG */
 
       default		:
 #ifdef DEBUG
-                          /* Hey! Where did you get this number from??? It's invalid -- must be a bug. */
-                          printf( "Unknown command ID %d called <%s>!\n", cmd_type, current->arg );
-                          cleanup();
-                          exit(-1);
+			  /* Hey! Where did you get this number from??? It's invalid -- must be a bug. */
+			  printf( "Unknown command ID %d called <%s>!\n", cmd_type, current->arg );
+			  cleanup();
+			  exit(-1);
 #else /* DEBUG */
-                          /* We are tags -- we don't want to be executed */
-                          current->parent->ignore = 1;
+			  /* We are tags -- we don't want to be executed */
+			  current->parent->ignore = 1;
 #endif /* DEBUG */
-                          break;
+			  break;
     }
   }
 }
@@ -1482,11 +1482,11 @@ int i;
     {
       if( find_proc( argument ) != NULL )
       {
-        return _USERDEF;
+	return _USERDEF;
       }
       else
       {
-        return _UNKNOWN;
+	return _UNKNOWN;
       }
     }
   }
@@ -1563,11 +1563,11 @@ char * clip;
       clip = get_var_arg( argument->arg );
       if( clip != NULL )
       {
-        i = atol( clip );
+	i = atol( clip );
       }
       else
       {
-        i = get_var_int( argument->arg );
+	i = get_var_int( argument->arg );
       }
     }
   }
@@ -1625,44 +1625,44 @@ int i;
     {
       if( current->arg != NULL )
       {
-        if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-        {
-          /* Strip off quotes */
-          clip = strip_quotes( current->arg );
-        }
-        else
-        {
-          dummy = get_var_arg( current->arg );
-          if( dummy != NULL )
-          {
-            clip = strdup( dummy );
-            outofmem( clip );
-          }
-          else
-          {
-            clip = malloc( MAXARGSIZE );
-            outofmem( clip );
-            sprintf( clip, "%ld", get_var_int( current->arg ) );
-          }
-        }
+	if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+	{
+	  /* Strip off quotes */
+	  clip = strip_quotes( current->arg );
+	}
+	else
+	{
+	  dummy = get_var_arg( current->arg );
+	  if( dummy != NULL )
+	  {
+	    clip = strdup( dummy );
+	    outofmem( clip );
+	  }
+	  else
+	  {
+	    clip = malloc( MAXARGSIZE );
+	    outofmem( clip );
+	    sprintf( clip, "%ld", get_var_int( current->arg ) );
+	  }
+	}
       }
       else
       {
-        clip = malloc( MAXARGSIZE );
-        outofmem( clip );
-        sprintf( clip, "%ld", current->intval );
+	clip = malloc( MAXARGSIZE );
+	outofmem( clip );
+	sprintf( clip, "%ld", current->intval );
       }
       i = ( string == NULL ) ? 0 : strlen( string );
       string = realloc( string, i + strlen( clip ) + 2 );
       outofmem( string );
       if( i == 0 )
       {
-        string[0] = 0;
+	string[0] = 0;
       }
       else
       {
-        string[i] = separator;
-        string[i+1] = 0;
+	string[i] = separator;
+	string[i+1] = 0;
       }
       strcat( string, clip );
       free( clip );
@@ -1732,281 +1732,281 @@ char *string, *clip;
       /* Check if we don't have a block as argument */
       if( script->cmd->arg != NULL )
       {
-        /* Check if we have a parameter as command */
-        cmd = eval_cmd( script->cmd->arg );
-        if( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
-        {
-          /* This is a parameter */
-          GetPL( pl, cmd ).used = 1;
-          if( cmd > ( _PARAMETER + NUMARGPARAMS ) )
-          {
-            /* This is a boolean parameter */
-            GetPL( pl, cmd ).intval = 1;
-          }
-          else
-          {
-            /* This parameter may have arguments */
-            switch( cmd )
-            {
-              /* Parameters with args */
-              case _APPEND	: /* $ */
-              case _CHOICES	: /* $... */
-              case _COMMAND	: /* $... */
-              case _DELOPTS	: /* $... */
-              case _DEST	: /* $ */
-              case _HELP	: /* $... */
-              case _INCLUDE	: /* $ */
-              case _NEWNAME	: /* $ */
-              case _OPTIONAL	: /* $... */
-              case _PATTERN	: /* $ */
-              case _PROMPT	: /* $... */
-              case _SETDEFAULTTOOL: /* $ */
-              case _SETTOOLTYPE	: /* $ [$] */
-              case _SOURCE	: /* $ */
-                                  collect_stringargs( current, level, &(GetPL( pl, cmd )) );
-                                  break;
+	/* Check if we have a parameter as command */
+	cmd = eval_cmd( script->cmd->arg );
+	if( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
+	{
+	  /* This is a parameter */
+	  GetPL( pl, cmd ).used = 1;
+	  if( cmd > ( _PARAMETER + NUMARGPARAMS ) )
+	  {
+	    /* This is a boolean parameter */
+	    GetPL( pl, cmd ).intval = 1;
+	  }
+	  else
+	  {
+	    /* This parameter may have arguments */
+	    switch( cmd )
+	    {
+	      /* Parameters with args */
+	      case _APPEND	: /* $ */
+	      case _CHOICES	: /* $... */
+	      case _COMMAND	: /* $... */
+	      case _DELOPTS	: /* $... */
+	      case _DEST	: /* $ */
+	      case _HELP	: /* $... */
+	      case _INCLUDE	: /* $ */
+	      case _NEWNAME	: /* $ */
+	      case _OPTIONAL	: /* $... */
+	      case _PATTERN	: /* $ */
+	      case _PROMPT	: /* $... */
+	      case _SETDEFAULTTOOL: /* $ */
+	      case _SETTOOLTYPE	: /* $ [$] */
+	      case _SOURCE	: /* $ */
+				  collect_stringargs( current, level, &(GetPL( pl, cmd )) );
+				  break;
 
-              case _CONFIRM	: /* ($->)# */
-                                  i = _EXPERT;
-                                  if( current != NULL )
-                                  {
-                                    if( current->cmd != NULL )
-                                    {
-                                      /* There is a command instead of a value -- execute command */
-                                      execute_script( current->cmd, level + 1 );
-                                    }
-                                    if( current->arg != NULL )
-                                    {
-                                      string = NULL;
-                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                      {
-                                        /* Strip off quotes */
-                                        string = strip_quotes( current->arg );
-                                        clip = string;
-                                      }
-                                      else
-                                      {
-                                        clip = get_var_arg( current->arg );
-                                      }
-                                      if( clip != NULL )
-                                      {
-                                        i = atol( clip );
-                                        if( strcasecmp( clip, "novice" ) == 0 )
-                                          i = _NOVICE;
-                                        if( strcasecmp( clip, "average" ) == 0 )
-                                          i = _AVERAGE;
-                                        if( strcasecmp( clip, "expert" ) == 0 )
-                                          i = _EXPERT;
-                                        free( string );
-                                      }
-                                      else
-                                      {
-                                        i = get_var_int( current->arg );
-                                      }
-                                    }
-                                    else
-                                    {
-                                      i = current->intval;
-                                    }
-                                  }
-                                  if( i < _NOVICE || i > _EXPERT )
-                                  {
-                                    error = BADPARAMETER;
-                                    traperr( "Userlevel out of range!\n", NULL );
-                                  }
-                                  GetPL( pl, cmd ).intval = i;
-                                  break;
+	      case _CONFIRM	: /* ($->)# */
+				  i = _EXPERT;
+				  if( current != NULL )
+				  {
+				    if( current->cmd != NULL )
+				    {
+				      /* There is a command instead of a value -- execute command */
+				      execute_script( current->cmd, level + 1 );
+				    }
+				    if( current->arg != NULL )
+				    {
+				      string = NULL;
+				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      {
+					/* Strip off quotes */
+					string = strip_quotes( current->arg );
+					clip = string;
+				      }
+				      else
+				      {
+					clip = get_var_arg( current->arg );
+				      }
+				      if( clip != NULL )
+				      {
+					i = atol( clip );
+					if( strcasecmp( clip, "novice" ) == 0 )
+					  i = _NOVICE;
+					if( strcasecmp( clip, "average" ) == 0 )
+					  i = _AVERAGE;
+					if( strcasecmp( clip, "expert" ) == 0 )
+					  i = _EXPERT;
+					free( string );
+				      }
+				      else
+				      {
+					i = get_var_int( current->arg );
+				      }
+				    }
+				    else
+				    {
+				      i = current->intval;
+				    }
+				  }
+				  if( i < _NOVICE || i > _EXPERT )
+				  {
+				    error = BADPARAMETER;
+				    traperr( "Userlevel out of range!\n", NULL );
+				  }
+				  GetPL( pl, cmd ).intval = i;
+				  break;
 
-              case _DEFAULT	: /* * */
-                                  i = 0;
-                                  string = NULL;
-                                  if( current != NULL )
-                                  {
-                                    if( current->cmd != NULL )
-                                    {
-                                      /* There is a command instead of a value -- execute command */
-                                      execute_script( current->cmd, level + 1 );
-                                    }
-                                    if( current->arg != NULL )
-                                    {
-                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                      {
-                                        /* Strip off quotes */
-                                        string = strip_quotes( current->arg );
-                                      }
-                                      else
-                                      {
-                                        clip = get_var_arg( current->arg );
-                                        if( clip != NULL )
-                                        {
-                                          string = strdup( clip );
-                                          outofmem( string );
-                                        }
-                                        else
-                                        {
-                                          i = get_var_int( current->arg );
-                                        }
-                                      }
-                                    }
-                                    else
-                                    {
-                                      i = current->intval;
-                                    }
-                                    GetPL( pl, cmd ).intval = i;
-                                    if( string != NULL )
-                                    {
-                                      /* To avoid problems with multiple definitions of default */
-                                      /* take last (this) one as true and clear previous	*/
-                                      if( GetPL( pl, cmd ).arg != NULL )
-                                      {
-                                        free( GetPL( pl, cmd ).arg[0] );
-                                      }
-                                      else
-                                      {
-                                        GetPL( pl, cmd ).arg = malloc( sizeof( char * ) );
-                                        outofmem( GetPL( pl, cmd ).arg );
-                                      }
-                                      GetPL( pl, cmd ).arg[0] = string;
-                                    }
-                                  }
-                                  else
-                                  {
-                                    error = SCRIPTERROR;
-                                    traperr( "<%s> requires one argument!\n", script->cmd->arg );
-                                  }
-                                  break;
+	      case _DEFAULT	: /* * */
+				  i = 0;
+				  string = NULL;
+				  if( current != NULL )
+				  {
+				    if( current->cmd != NULL )
+				    {
+				      /* There is a command instead of a value -- execute command */
+				      execute_script( current->cmd, level + 1 );
+				    }
+				    if( current->arg != NULL )
+				    {
+				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      {
+					/* Strip off quotes */
+					string = strip_quotes( current->arg );
+				      }
+				      else
+				      {
+					clip = get_var_arg( current->arg );
+					if( clip != NULL )
+					{
+					  string = strdup( clip );
+					  outofmem( string );
+					}
+					else
+					{
+					  i = get_var_int( current->arg );
+					}
+				      }
+				    }
+				    else
+				    {
+				      i = current->intval;
+				    }
+				    GetPL( pl, cmd ).intval = i;
+				    if( string != NULL )
+				    {
+				      /* To avoid problems with multiple definitions of default */
+				      /* take last (this) one as true and clear previous	*/
+				      if( GetPL( pl, cmd ).arg != NULL )
+				      {
+					free( GetPL( pl, cmd ).arg[0] );
+				      }
+				      else
+				      {
+					GetPL( pl, cmd ).arg = malloc( sizeof( char * ) );
+					outofmem( GetPL( pl, cmd ).arg );
+				      }
+				      GetPL( pl, cmd ).arg[0] = string;
+				    }
+				  }
+				  else
+				  {
+				    error = SCRIPTERROR;
+				    traperr( "<%s> requires one argument!\n", script->cmd->arg );
+				  }
+				  break;
 
-              case _RANGE	: /* # # */
-              case _SETPOSITION	: /* # # */
-                                  i = 0;
-                                  if( current != NULL && current->next != NULL )
-                                  {
-                                    if( current->cmd != NULL )
-                                    {
-                                      /* There is a command instead of a value -- execute command */
-                                      execute_script( current->cmd, level + 1 );
-                                    }
-                                    GetPL( pl, cmd ).intval = getint( current );
-                                    current = current->next;
-                                    if( current->cmd != NULL )
-                                    {
-                                      /* There is a command instead of a value -- execute command */
-                                      execute_script( current->cmd, level + 1 );
-                                    }
-                                    GetPL( pl, cmd ).intval2 = getint( current );
-                                  }
-                                  else
-                                  {
-                                    error = SCRIPTERROR;
-                                    traperr( "<%s> requires two arguments!\n", script->cmd->arg );
-                                  }
-                                  break;
+	      case _RANGE	: /* # # */
+	      case _SETPOSITION	: /* # # */
+				  i = 0;
+				  if( current != NULL && current->next != NULL )
+				  {
+				    if( current->cmd != NULL )
+				    {
+				      /* There is a command instead of a value -- execute command */
+				      execute_script( current->cmd, level + 1 );
+				    }
+				    GetPL( pl, cmd ).intval = getint( current );
+				    current = current->next;
+				    if( current->cmd != NULL )
+				    {
+				      /* There is a command instead of a value -- execute command */
+				      execute_script( current->cmd, level + 1 );
+				    }
+				    GetPL( pl, cmd ).intval2 = getint( current );
+				  }
+				  else
+				  {
+				    error = SCRIPTERROR;
+				    traperr( "<%s> requires two arguments!\n", script->cmd->arg );
+				  }
+				  break;
 
-              case _SETSTACK	: /* # */
-                                  i = 0;
-                                  if( current != NULL )
-                                  {
-                                    if( current->cmd != NULL )
-                                    {
-                                      /* There is a command instead of a value -- execute command */
-                                      execute_script( current->cmd, level + 1 );
-                                    }
-                                    if( current->arg != NULL )
-                                    {
-                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                      {
-                                        /* Strip off quotes */
-                                        string = strip_quotes( current->arg );
-                                        i = atol( string );
-                                        free( string );
-                                      }
-                                      else
-                                      {
-                                        clip = get_var_arg( current->arg );
-                                        if( clip != NULL )
-                                        {
-                                          i = atol( clip );
-                                        }
-                                        else
-                                        {
-                                          i = get_var_int( current->arg );
-                                        }
-                                      }
-                                    }
-                                    else
-                                    {
-                                      i = current->intval;
-                                    }
-                                    GetPL( pl, cmd ).intval = i;
-                                  }
-                                  else
-                                  {
-                                    error = SCRIPTERROR;
-                                    traperr( "<%s> requires one argument!\n", script->cmd->arg );
-                                  }
-                                  break;
+	      case _SETSTACK	: /* # */
+				  i = 0;
+				  if( current != NULL )
+				  {
+				    if( current->cmd != NULL )
+				    {
+				      /* There is a command instead of a value -- execute command */
+				      execute_script( current->cmd, level + 1 );
+				    }
+				    if( current->arg != NULL )
+				    {
+				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      {
+					/* Strip off quotes */
+					string = strip_quotes( current->arg );
+					i = atol( string );
+					free( string );
+				      }
+				      else
+				      {
+					clip = get_var_arg( current->arg );
+					if( clip != NULL )
+					{
+					  i = atol( clip );
+					}
+					else
+					{
+					  i = get_var_int( current->arg );
+					}
+				      }
+				    }
+				    else
+				    {
+				      i = current->intval;
+				    }
+				    GetPL( pl, cmd ).intval = i;
+				  }
+				  else
+				  {
+				    error = SCRIPTERROR;
+				    traperr( "<%s> requires one argument!\n", script->cmd->arg );
+				  }
+				  break;
 
 
-              default	: /* We do only collect tags -- this is a command */
-                          break;
-            }
-          }
-        }
-        else if ( cmd == _IF )
-        {
-          /* This parameter is masqueraded */
-          switch( cmd )
-          {
-            /* "Allowed" Commands (for compatibility) */
+	      default	: /* We do only collect tags -- this is a command */
+			  break;
+	    }
+	  }
+	}
+	else if ( cmd == _IF )
+	{
+	  /* This parameter is masqueraded */
+	  switch( cmd )
+	  {
+	    /* "Allowed" Commands (for compatibility) */
 
-            /* ( if ( = 1 1 ) ( command "blah" ) ) is allowed, but should be
-             * ( command ( if ( = 1 1 ) "blah" ) )
-             */
-            case _IF	: /* if 1st arg != 0 get parameter from 2nd cmd else get optional 3rd cmd parameter */
-                        if( current != NULL && current->next != NULL )
-                        {
-                          if( current->cmd != NULL )
-                          {
-                            execute_script( current->cmd, level + 1 );
-                          }
-                          i = getint( current );
-                          if( i == 0 )
-                          {
-                            current = current->next;
-                          }
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                            struct ParameterList *subpl;
-                              subpl = get_parameters( current, level + 1 );
-                              for( i = 0 ; i < NUMPARAMS ; i++ )
-                              {
-                                if( subpl[i].used == 1 )
-                                {
-                                  free_parameter( pl[i] );
-                                  pl[i].arg = subpl[i].arg;
-                                  pl[i].intval = subpl[i].intval;
-                                  pl[i].intval2 = subpl[i].intval2;
-                                  subpl[i].arg = NULL;
-                                }
-                              }
-                              free_parameterlist( subpl );
-                            }
-                          }
-                        }
-                        else
-                        {
-                          error = SCRIPTERROR;
-                          traperr( "<%s> requires two arguments!\n", script->arg );
-                        }
-                        break;
+	    /* ( if ( = 1 1 ) ( command "blah" ) ) is allowed, but should be
+	     * ( command ( if ( = 1 1 ) "blah" ) )
+	     */
+	    case _IF	: /* if 1st arg != 0 get parameter from 2nd cmd else get optional 3rd cmd parameter */
+			if( current != NULL && current->next != NULL )
+			{
+			  if( current->cmd != NULL )
+			  {
+			    execute_script( current->cmd, level + 1 );
+			  }
+			  i = getint( current );
+			  if( i == 0 )
+			  {
+			    current = current->next;
+			  }
+			  if( current->next != NULL )
+			  {
+			    current = current->next;
+			    if( current->cmd != NULL )
+			    {
+			    struct ParameterList *subpl;
+			      subpl = get_parameters( current, level + 1 );
+			      for( i = 0 ; i < NUMPARAMS ; i++ )
+			      {
+				if( subpl[i].used == 1 )
+				{
+				  free_parameter( pl[i] );
+				  pl[i].arg = subpl[i].arg;
+				  pl[i].intval = subpl[i].intval;
+				  pl[i].intval2 = subpl[i].intval2;
+				  subpl[i].arg = NULL;
+				}
+			      }
+			      free_parameterlist( subpl );
+			    }
+			  }
+			}
+			else
+			{
+			  error = SCRIPTERROR;
+			  traperr( "<%s> requires two arguments!\n", script->arg );
+			}
+			break;
 
-            default	: /* We do only collect tags -- this is a command */
-                        break;
-          }
-        }
+	    default	: /* We do only collect tags -- this is a command */
+			break;
+	  }
+	}
       }
     }
     script = script->next;
@@ -2038,26 +2038,26 @@ int j = 0;
     {
       if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
       {
-        /* Strip off quotes */
-        string = strip_quotes( current->arg );
+	/* Strip off quotes */
+	string = strip_quotes( current->arg );
       }
       else
       {
-        clip = get_var_arg( current->arg );
-        if( clip != NULL )
-        {
-          string = strdup( clip );
-          outofmem( string );
-        }
-        else
-        {
-          clip = malloc( MAXARGSIZE );
-          outofmem( clip );
-          sprintf( clip, "%ld", get_var_int( current->arg ) );
-          string = strdup( clip );
-          outofmem( string );
-          free( clip );
-        }
+	clip = get_var_arg( current->arg );
+	if( clip != NULL )
+	{
+	  string = strdup( clip );
+	  outofmem( string );
+	}
+	else
+	{
+	  clip = malloc( MAXARGSIZE );
+	  outofmem( clip );
+	  sprintf( clip, "%ld", get_var_int( current->arg ) );
+	  string = strdup( clip );
+	  outofmem( string );
+	  free( clip );
+	}
       }
     }
     else
@@ -2130,14 +2130,14 @@ int i, changed = 0, cont = 0;
     {
       if( strncasecmp( line, ";BEGIN ", 7) == 0 )
       {
-        if( strcmp( &(line[7]), string ) == 0 )
-        {
-          changed = 1;
-        }
+	if( strcmp( &(line[7]), string ) == 0 )
+	{
+	  changed = 1;
+	}
       }
       if( !changed )
       {
-        Write( tmpuserstartup, line, strlen( line ) );
+	Write( tmpuserstartup, line, strlen( line ) );
        Write( tmpuserstartup, "\n", 1 );
       }
      free( line );
@@ -2161,18 +2161,18 @@ int i, changed = 0, cont = 0;
     {
       if( !cont )
       {
-        if( strncasecmp( line, ";END ", 5) == 0 )
-        {
-          if( strcmp( &(line[5]), string ) == 0 )
-          {
-            cont = 1;
-          }
-        }
+	if( strncasecmp( line, ";END ", 5) == 0 )
+	{
+	  if( strcmp( &(line[5]), string ) == 0 )
+	  {
+	    cont = 1;
+	  }
+	}
       }
       else
       {
-        Write( tmpuserstartup, line, strlen( line ) );
-        Write( tmpuserstartup, "\n", 1 );
+	Write( tmpuserstartup, line, strlen( line ) );
+	Write( tmpuserstartup, "\n", 1 );
       }
       free( line );
     }

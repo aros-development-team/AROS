@@ -61,6 +61,7 @@ int nextarg, endoffile, count;
 
   if(argc!=0)
   { /* Invoked form Shell */
+    preferences.fromcli = TRUE;
     /* evaluate args with RDArgs(); */
     rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
     if( rda == NULL )
@@ -71,6 +72,7 @@ int nextarg, endoffile, count;
   }
   else
   { /* Invoked from Workbench */
+    preferences.fromcli = FALSE;
     IconBase = (struct IconBase *)OpenLibrary( "icon.library", 0 );
     if( !IconBase )
     {

@@ -1,6 +1,10 @@
 #ifndef _CMDLIST_H
 #define _CMDLIST_H
 
+#ifndef _EXECUTE_H
+#   include "execute.h"
+#endif
+
 struct CommandList internal_commands[] =
 {
   {"abort",		_ABORT		},

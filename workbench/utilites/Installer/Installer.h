@@ -33,11 +33,11 @@ typedef struct ScriptArg
 {
   struct  ScriptArg *next;	/* Next argument				*/
   struct  ScriptArg *parent;	/* Parent argument				*/
-  char  * arg;			/* Either string or				*/
+  char	* arg;			/* Either string or				*/
   struct  ScriptArg *cmd;	/* ptr to list of arguments			*/
 				/* set one of them to NULL			*/
   long int intval;		/* If argument is an integer *arg will get NULL	*/
-  int     ignore;		/* Parameters set this to 1 to disappear	*/
+  int	  ignore;		/* Parameters set this to 1 to disappear	*/
 
 } ScriptArg;
 
@@ -61,6 +61,7 @@ typedef struct InstallerPrefs
   ScriptArg onerror, *onerrorparent;
   ScriptArg trap[NUMERRORS], *trapparent[NUMERRORS];
   int minusrlevel, defusrlevel;
+  int fromcli;
 } InstallerPrefs;
 
 #define COPY_FAIL	1

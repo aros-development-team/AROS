@@ -260,4 +260,10 @@
 - added code for Asl FileRequester
 - added Abort,Help,Skip gadgets in some places
 
+0042
+- Abort,Help,Skip,Proceed Gadgets are always visible
+- Added item "fromcli" to struct Preferences
+- added function for freeing an array of strings
+- added GUI for Main Window (Welcome and UserLevel select)
+
 

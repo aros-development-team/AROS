@@ -10,6 +10,7 @@ extern void outofmem( void * );
 /* Internal function prototypes */
 int strtostrs ( char *, char *** );
 char *addquotes ( char * );
+void freestrlist( STRPTR * );
 
 /*
  * Break string into array of strings at LINEFEEDs
@@ -72,5 +73,20 @@ int c;
   retval[c+2] = 0;
 
 return retval;
+}
+
+/*
+ * free() array of strings
+ */
+void freestrlist( STRPTR *array )
+{
+int i=0;
+
+  while(array[i])
+  {
+    free(array[i]);
+    i++;
+  }
+  free(array);
 }
 
