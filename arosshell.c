@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:09:45  aros
+    Use the systems' stacksize
+
     Revision 1.5  1996/10/10 13:11:01  digulla
     There is no such symbol as DOSBase (Fleischer)
 
@@ -30,7 +33,7 @@ int main(void)
     segs=LoadSeg("c/shell");
     if(segs)
     {
-	RunCommand(segs,100000,"FROM S:Startup-Sequence",23);
+	RunCommand(segs,AROS_STACKSIZE,"FROM S:Startup-Sequence",23);
 	UnLoadSeg(segs);
     }
     return 0;
