@@ -950,6 +950,17 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
     glob->maxvolwidth = 0;
     dlist = LockDosList( LDF_VOLUMES | LDF_ASSIGNS | LDF_READ );
 
+    /* Add PROGDIR: assign is possible, just like reqtools_patch.lha
+       from Aminet (by Mikolaj Calusinski) does. */
+       
+    if (!(volreqflags & VREQF_NOASSIGNS))
+    {
+    	if (((struct Process *)FindTask(NULL))->pr_HomeDir)
+	{
+    	    AddEntry(glob, glob->buff, "PROGDIR:", -1, ASSIGN);
+	}
+    }
+    
     while( ( dlist = NextDosEntry( dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_READ ) ) )
     {
 #ifdef _AROS
