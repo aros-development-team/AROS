@@ -2,48 +2,9 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
-
-DEVS    := $(DEVSDIR)/trackdisk.device
-FILES	:= trackdisk_device trackdisk_hw
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libtrackdisk.a
-KOBJ    := $(KOBJSDIR)/trackdisk_device.o
-
-%define_libs
-
-#MM
-kernel-devs-pc-i386 : $(LIB)
-
-#MM
-kernel-pc-i386-trackdisk-kobj : $(KOBJ)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(KOBJ) : $(OBJS)
-	@echo Linking $@
-	@$(LD) -r -o $@ $^
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-
-$(DEVSDIR)/trackdisk.device : $(OBJDIR)/trackdisk_device.o
-	%link_q startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-trackdisk_device.s: trackdisk_device.c
-	%ctoasm_q
+%build_module_macro mmake=kernel-pc-i386-trackdisk \
+  modname=trackdisk modtype=device \
+  files=trackdisk_hw initfile=trackdisk_device \
+  conffile=lib.conf
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

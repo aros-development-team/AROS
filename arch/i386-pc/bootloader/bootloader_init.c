@@ -16,7 +16,7 @@
 #include <aros/bootloader.h>
 #include <aros/multiboot.h>
 #include "bootloader_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 1
 #include <aros/debug.h>

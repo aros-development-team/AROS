@@ -1,49 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(TOP)/rom/devs
-
-DEVS    := $(DEVSDIR)/ide.device
-FILES	:= ide ide-lowlevel
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libide.a
-AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
-KOBJ    := $(KOBJSDIR)/ide_device.o
-
-%define_libs
-
-#MM
-kernel-devs-pc-i386 : $(LIB)
-
-#MM
-kernel-pc-i386-ide-kobj : $(KOBJ)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(KOBJ) : $(OBJS)
-	@echo Linking $@
-	@$(LD) -r -o $@ $^
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(DEVSDIR)/ide.device : $(OBJDIR)/ide.o
-	%link_q startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q opt=$(AFLAGS2)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%build_module_macro mmake=kernel-pc-i386-ide \
+  modname=ide modtype=device \
+  files=ide-lowlevel initfile=ide \
+  conffile=lib.conf
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

@@ -1,21 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+FILES	    := pciclass pci_hw pciutil stubs
+
+%build_module_macro mmake=kernel-pc-i386-pci \
+  modname=pci modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes
+
 
 MY_INCLS    := $(wildcard include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-FILES	    := pci_init pciclass pci_hw pciutil functable stubs
-OBJDIR	    := $(GENDIR)/$(CURDIR)
-END_FILE    := $(OBJDIR)/endtag
-ENDFUNC     := $(END_FILE).o
-
-#MM
-kernel-pc-i386-pci-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(KOBJSDIR)/pci_hidd.o
-	@objcopy -R .note -R .comment $(KOBJSDIR)/pci_hidd.o
 
 #MM
 includes-pc-i386 : $(DEST_INC) $(GEN_INC)
@@ -31,36 +28,4 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 setup-includes :
 	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-irq.s: irq.c
-	%ctoasm_q
-	
-irq_init.s: irq_init.c
-	%ctoasm_q
-	
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
-
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

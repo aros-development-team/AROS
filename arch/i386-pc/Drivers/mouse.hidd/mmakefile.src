@@ -2,44 +2,15 @@
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I. -I../../include
+FILES	:=	mouseclass drv_usb drv_ps2 drv_com
 
-FILES	:=	mouse_init mouseclass functable drv_usb drv_ps2 drv_com
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-LIBS    :=	-L$(LIBDIR) -lhiddstubs
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM kernel-pc-i386-mouse-kobj : workbench-hidd-serial-stubs
-kernel-pc-i386-mouse-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(LIBS) \
-	    -o $(KOBJSDIR)/mouse_hidd.o
-	@objcopy -R .note -R .comment $(KOBJSDIR)/mouse_hidd.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-%libdefs_rule
-
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+USER_INCLUDES := -I../../include
+%build_module_macro mmake=kernel-pc-i386-mouse \
+  modname=mouse modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes \
+  uselibs=hiddstubs
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
+

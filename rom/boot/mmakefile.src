@@ -6,47 +6,11 @@ include $(TOP)/config/make.cfg
 # modules would go in here.
 
 #MM- kernel-boot : includes linklibs
-#MM kernel-boot-module : kernel-boot
 
 FILES := strap
 
-MOD_DIR:=$(AROS_MODULES)
-OBJDIR :=$(GENDIR)/$(CURDIR)
-
-MODULES := $(foreach f,$(FILES),$(MOD_DIR)/$(f))
-kernel-boot-module : $(MODULES)
-
-$(MOD_DIR)/% : $(OBJDIR)/%.o
-	%link_module_q objs=$(OBJDIR)/$*.o
-
-%rule_compile basename=% targetdir=$(OBJDIR)
-%rule_compile_shared basename=% targetdir=$(OBJDIR)
-
-#MM kernel-boot-linklib : kernel-boot
-LIB := $(AROSDIR)/lib/libboot.a
-SHARED := $(AROSDIR)/lib/libboot.so
-kernel-boot-linklib-quick : kernel-boot-linklib
-
-ifeq ($(SHARED_BOOT),yes)
-kernel-boot-linklib : $(SHARED)
-else
-kernel-boot-linklib : $(LIB)
-endif
-
-#MM
-kernel-boot-kobj : $(KOBJSDIR)/boot_library.o
-
-$(KOBJSDIR)/boot_library.o : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	@$(LD) -r -o $@ $^
-
-$(LIB) : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	%mklib_q from=$^
-
-$(SHARED): $(foreach f,$(FILES),$(OBJDIR)/$(f).so)
-	@$(ECHO) "Linking $(notdir $@)..."
-	@$(SHARED_LD) $(SHARED_LDFLAGS) -o $@ $^
-
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-%include_deps deps=$(DEPS)
+%build_module_macro mmake=kernel-boot \
+  modname=boot modtype=library \
+  initfile=strap
 
 %common

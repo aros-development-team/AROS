@@ -1,91 +1,41 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
-
-#OS_INCLUDES := -I$(GENINCDIR)
-
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
-
-# will be expand to LIBNAME.LIBPOST i.e. graphics.hidd
-LIBNAME     := graphics
-LIBPOST     := hidd
-DESTDIR	    := $(HIDDSDIR)
-
-OBJDIR	    := $(GENDIR)/$(CURDIR)
+#MM- workbench-hidds : workbench-graphics-hidd-kobj
+#MM- workbench-graphics-hidd : workbench-graphics-hidd-stubs
+#MM- workbench-graphics-hidd-kobj : workbench-graphics-hidd-stubs
 
 FILES       := GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
 	       pixfmt sync
-	       
-	       
-EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
 
+USER_CFLAGS      := -DAROS_USE_OOP
+%build_module_macro mmake=workbench-graphics-hidd \
+  modname=graphics modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  uselibs=hiddgraphicsstubs \
+  genfunctable=yes
 
+LIBNAME     := graphics
 STUBS       := $(LIBNAME)_stubs
 STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
 STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
-INCLUDE_FILES    := $(wildcard include/*.h)
-
-ifeq ($(FLAVOUR),native)
-DEPLIBS := $(LIBDIR)/libhiddgraphicsstubs.a
-else
-DEPLIBS := $(LIBDIR)/libhiddgraphicsstubs.a
-endif
-
-LIBS := -lhiddgraphicsstubs
-
-
-#Generate the shared object
-%genwblib
-
-
-# Allways generate module in Sys:Hidds/
-
-#MM- workbench-complete : workbench-hidds
-#MM- workbench-hidds : hidd-graphics-module
 #MM workbench-hidd-setup :
 workbench-hidd-setup : setup
 
-#MM hidd-graphics-linklib : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
-hidd-graphics-linklib : $(LIB) $(STUB_FILE)
-	@$(NOP)
-
-#MM hidd-graphics-module : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
-hidd-graphics-module : $(SLIB) $(STUB_FILE)
-
-$(LIB) $(SLIB) : $(STUB_FILE)
-
-# --- QUICK HACKS BEGIN --- 
-# These are hacks for faster execution of "mmake" and "make". Use them
-# only if you know set the setup is correct and do not add them as targets
-# in other makefiles.
-#
-# Usage: 
-#   mmake AROS.hidd-graphics-quick
-#   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/graphics mmakefile hidd-graphics-quick
-
-
-
-#MM hidd-graphics-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-graphics-module-quick : $(LIB) $(SLIB)
-	@$(NOP)
-
-#MM hidd-graphics-includes-quick : hidd-oop-$(ARCH)-$(CPU)
-hidd-graphics-includes-quick : setup-includes includes-copy 
-	$(NOP)
-
-# --- QUICK HACKS END ---
-
-# create stubs-file
+#MM
+workbench-graphics-hidd-stubs : $(STUB_FILE)
 
 $(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
 	%mklib_q from=$(STUB_OBJS)
 
-$(OBJDIR)/%.o : %.c	
+$(STUB_OBJS) : $(OBJDIR)/%.o : %.c	
 	%compile_q	
+
+
+INCLUDE_FILES    := $(wildcard include/*.h)
 
 %copy_includes path=hidd
 
