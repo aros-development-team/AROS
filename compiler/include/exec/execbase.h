@@ -104,7 +104,8 @@ struct ExecBase
     APTR           ex_MemHandler;      /* PRIVATE */
 
 /* Additional fields for AROS */
-    struct Library * DebugAROSBase;
+    struct Library      * DebugAROSBase;
+    void                * PlatformData;     /* different for all platforms */
 };
 
 /* AttnFlags */
