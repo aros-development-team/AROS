@@ -16,12 +16,12 @@ USER_INCLUDES	:= -I.
 
 
 #MM contrib-freetype-library : setup includes linklibs contrib-freetype-linklib
-contrib-freetype-library : show-flags $(SLIB)
+contrib-freetype-library : $(SLIB)
 	@$(NOP)
 
 
 #MM contrib-freetype-library-quick : 
-contrib-freetype-library-quick : show-flags $(SLIB)
+contrib-freetype-library-quick : $(SLIB)
 	
 #MM
 setup :
