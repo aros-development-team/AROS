@@ -2466,7 +2466,6 @@ char * addtocache(char * cache, char * newline, int len, FILE * fdo)
 		return NULL;
 	}
 	
-//printf("adding: %s\n",newline);
 	
 	semic = strchr(newline, ';');
 	endcomment = strstr(newline, "*/");
@@ -2533,7 +2532,39 @@ char * clear_cache(char * cache)
 	return NULL;
 }
 
+/*
+ * cut out all '\n' '\t' and ' ' at the end and
+ * beginning of a string
+ */
+void strtrim(char ** s)
+{
+	int end = strlen(*s)-1;
+	int start = 0;
+	char * newstr;
+	int end_orig = end;
+	
+	while ((start < end) && (
+	       '\t' == (*s)[start]  ||
+	       '\n' == (*s)[start]  ||
+	       ' '  == (*s)[start])) {
+		start++;
+	}
 
+	while (end > 0 && (
+	       '\t' == (*s)[end]  ||
+	       '\n' == (*s)[end]  ||
+	       ' '  == (*s)[end])) {
+		end--;
+	}
+
+	if ((end > start) && (start > 0) && (end_orig != end)) {
+		newstr = malloc(end-start+2);
+		strncpy(newstr, (*s)+start, end-start+1);
+		newstr[end-start+1] = 0;
+		free(*s);
+		*s = newstr;
+	}
+}
 
 char * getfuncname(char * s)
 {
@@ -2567,6 +2598,7 @@ char * getfuncname(char * s)
 				name = malloc(last-i+2);
 				strncpy(name, &s[i+1], last-i);
 				name[last-i]=0;
+				strtrim(&name);
 				return name;
 			}
 				
@@ -2583,21 +2615,11 @@ char * get_returntype(char * pattern, char * funcname)
 	char * ret_type;
 	len = (int)strstr(pattern, funcname) - (int)pattern;
 	
-	while (len >= 0 &&
-	       (' '  == pattern[len] ||
-		'\n' == pattern[len]   ))
-		len--;
-	len--;
-
-	while (c < len &&
-	       (' '  == pattern[c] ||
-		'\n' == pattern[c]   ))
-		c++;
-
-
 	ret_type = malloc(len-c+1);
 	strncpy(ret_type, pattern+c, len-c);
 	ret_type[len-c] = 0;
+
+	strtrim(&ret_type);
 	
 	return ret_type; 
 }
@@ -2662,6 +2684,9 @@ void get_argument(int num, int max, char * pattern, char ** type, char ** val)
 			strncpy(*val , start+c+1, i-c);
 			(*val)[i-c] = 0; 
 //printf("|%s| |%s|\n",*type,*val);
+
+			strtrim(type);
+			strtrim(val);
 			return;
 		}
 		
@@ -2720,53 +2745,59 @@ int rewrite_function(FILE * fdo,
 	}
 
 	/*
-	 * Make the entry in the defines file,
+	 * Make the entry in the defines file. Only write
+	 * those functions with offset > 4 (not init,open,close,
+	 * expunge, null)
 	 */
-	fprintf(fdefines, "#ifndef %s\n#define %s(",
-	        pd->funcname,
-	        pd->funcname);
-	i = 0;
-	while (i < pd->numargs) {
-		get_argument(i, pd->numargs,pattern, &argtype, &argval);
-		fprintf(fdefines,
-		        "%s",
-		        argval);
-		if (i < pd->numargs-1) {
-			fprintf(fdefines,",");
-		}
-		free(argtype);
-		free(argval);
+	if (pd->offset > 4) {
+		fprintf(fdefines, "#ifndef %s\n#define %s(",
+		        pd->funcname,
+		        pd->funcname);
 		
-		i++;
-	}	
+		i = 0;
+		
+		while (i < pd->numargs) {
+			get_argument(i, pd->numargs,pattern, &argtype, &argval);
+			fprintf(fdefines,
+			        "%s",
+			        argval);
+			if (i < pd->numargs-1) {
+				fprintf(fdefines,",");
+			}
+			free(argtype);
+			free(argval);
+		
+			i++;
+		}	
 	
-	fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\ \n",
-	        pd->numargs,
-	        ret_type,
-	        pd->funcname);
+		fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\ \n",
+		        pd->numargs,
+		        ret_type,
+		        pd->funcname);
 
-	i = 0;
-	while (i < pd->numargs) {
-		get_argument(i, pd->numargs,pattern, &argtype, &argval);
-		fprintf(fdefines,
-		        "\tAROS_LCA(%s,%s,%s),\\ \n",
-		        argtype,
-		        argval,
-		        m68k_registers[pd->args[i]]);
-		free(argtype);
-		free(argval);
+		i = 0;
+		while (i < pd->numargs) {
+			get_argument(i, pd->numargs,pattern, &argtype, &argval);
+			fprintf(fdefines,
+			        "\tAROS_LCA(%s,%s,%s),\\ \n",
+			        argtype,
+			        argval,
+			        m68k_registers[pd->args[i]]);
+			free(argtype);
+			free(argval);
 		
-		i++;
-	}	
+			i++;
+		}	
 
-	fprintf(fdefines,
-	        "\tstruct %s *, %s, %d, %s)\n#endif\n\n",
-	        lc->libbasetype,
-	        lc->libbase,
-	        pd->offset,
-	        lc->basename);
+		fprintf(fdefines,
+		        "\tstruct %s *, %s, %d, %s)\n#endif\n\n",
+		        lc->libbasetype,
+		        lc->libbase,
+		        pd->offset,
+		        lc->basename);
 
-	free(ret_type);
+		free(ret_type);
+	}
 	
 	return 0;
 }
@@ -2935,6 +2966,8 @@ int genarossource(int argc, char **argv)
 		fclose(fdi);
 	if (NULL != fdo)
 		fclose(fdo);
+	if (NULL != fdefines)
+		fclose(fdefines);
 
 	free_pragma_description(pd);
 	
