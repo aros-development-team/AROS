@@ -137,7 +137,6 @@ void __DisposeRegionRectangleExtChunk
 #    undef  _DisposeRegionRectangleExtChunk
 #    define _DisposeRegionRectangleExtChunk(mem) free(mem)
 
-#    undef  _NewRegionRectangleExtChunk
 #    undef  NewRegion
 #    define NewRegion()                                      \
      ({                                                      \
@@ -1336,7 +1335,7 @@ BOOL _XorRegionRegion
 
         _DoOperationBandBand
         (
-            _ClearBandBand,
+            _OrBandBand,
 	    0,
             0,
             0,
@@ -1378,7 +1377,7 @@ int main(void)
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 5; i++)
     {
         int l = i*20;
 
@@ -1386,7 +1385,7 @@ int main(void)
         _OrRectRegion(R1, &r, GfxBase);
     }
 
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 5; i++)
     {
         int u = i*20;
 
@@ -1397,6 +1396,8 @@ int main(void)
     for (i = 0; i<100000; i++)
     {
         _XorRegionRegion(R2, R1, GfxBase);
+        dumpregion(R1);
+        exit(0);
     }
 
     DisposeRegion(R2);
