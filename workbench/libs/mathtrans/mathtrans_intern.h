@@ -35,6 +35,8 @@
 #   include <exec/libraries.h>
 #endif
 
+#include <proto/mathtrans.h>
+#include <libraries/mathffp.h>
 
 extern struct ExecBase * SysBase;
 extern struct MathBase * MathBase;
