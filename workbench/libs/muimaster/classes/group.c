@@ -397,13 +397,17 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
     Object               *child;
     struct MinList       *ChildList;
 
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	DoMethodA(child, (Msg)msg);
-	if ((_flags(obj) & MADF_INVIRTUALGROUP) && (data->flags & GROUP_VIRTUAL))
-	    _flags(obj) |= MADF_INVIRTUALGROUP;
+	if ((_flags(obj) & MADF_INVIRTUALGROUP) || (data->flags & GROUP_VIRTUAL))
+	{
+	    _flags(child) |= MADF_INVIRTUALGROUP;
+	}
+	DoMethod(child, MUIM_ConnectParent, obj);
     }
     return TRUE;
 }
@@ -423,8 +427,9 @@ static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
     while ((child = NextObject(&cstate)))
     {
 	DoMethodA(child, (Msg)msg);
-	_flags(obj) &= ~MADF_INVIRTUALGROUP;
+	_flags(child) &= ~MADF_INVIRTUALGROUP;
     }
+    DoSuperMethodA(cl,obj,(Msg)msg);
     return TRUE;
 }
 
