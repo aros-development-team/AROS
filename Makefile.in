@@ -103,7 +103,8 @@ arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean
-
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean
+        
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
 	@$(RM) Makefile configure config.* make.defaults make.opts \
