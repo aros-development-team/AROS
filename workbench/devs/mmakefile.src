@@ -11,6 +11,7 @@ MODULES := \
 	pipefs.handler \
 	fdsk.device \
 	ramdrive.device \
+	zero.handler \
 #	rootfs.handler
 
 DEVS := $(foreach f,$(filter %.device,$(MODULES)),$(AROS_DEVS)/$(f))
