@@ -7,38 +7,55 @@
 
 struct Picture_Data
 {
+ /*
+  *  public entries, accessible with SET/GET
+  */
  ULONG                 Precision;
  ULONG                 ModeID;
  struct BitMapHeader   bmhd;
- struct BitMap        *bm;
+ struct BitMap        *SrcBM; /* PDTA_BitMap and PDTA_ClassBM */
+ ULONG                 SrcColRegs[768]; /* PDTA_CRegs */
+ struct BitMap        *DestBM;
+ ULONG                 DestColRegs[768]; /* PDTA_GRegs */
+ struct Screen        *DestScreen;
  struct ColorRegister  ColMap[256];
- ULONG                 CRegs[768];
- ULONG                 GRegs[768];
  UBYTE                 ColTable[256];
  UBYTE                 ColTable2[256];
  UWORD                 NumColors;
- ULONG                 Allocated;
  UWORD                 NumAlloc;
- BOOL                  Remap;
- struct Screen        *TheScreen;
- BOOL                  FreeSourceBitMap;
- Point                 Grab;
- struct BitMap        *DestBM;
- struct BitMap        *ClassBM;
- UWORD                 NumSparse;
  UBYTE                 SparseTable[256];
- LONG                  PixelFormat;                  
+ UWORD                 NumSparse;
+ Point                 Grab;
+ UWORD                 MaxDitherPens;
+ UWORD                 DitherQuality;
+ UWORD                 ScaleQuality;
+ BOOL                  FreeSource;
+ BOOL                  Remap;
+ BOOL                  UseFriendBM;
  /*
   *  private entries
   */
- UBYTE                *ChunkyBuffer;
- UWORD                PixelSize;
- UWORD                pad;
- ULONG                CBWidth;
- ULONG                CBWidthBytes;
- ULONG                CBHeight;
- BOOL                 TrueColorSrc;
- BOOL                 TrueColorDest;
- BOOL                 BitmapMode;
- BOOL                 Remapped
+ UBYTE                 *SrcBuffer;
+ ULONG                 SrcWidth;
+ ULONG                 SrcWidthBytes;
+ ULONG                 SrcHeight;
+ LONG                  SrcPixelFormat;
+ UWORD                 SrcPixelBytes;
+        
+ UWORD                 DestDepth;
+ UBYTE                 *DestBuffer;
+ ULONG                 DestWidth;
+ ULONG                 DestWidthBytes;
+ ULONG                 DestHeight;
+ LONG                  DestPixelFormat;
+ UWORD                 DestPixelBytes;
+        
+ ULONG                 ColTableXRGB[256];
+        
+ BOOL                  TrueColorSrc;
+ BOOL                  TrueColorDest;
+ BOOL                  Layouted;
+ BOOL                  KeepSrcBM;
+ BOOL                  UseBM;
+ BOOL                  UseCM;
 };

@@ -1,3 +1,35 @@
+See comment in prefs.c for Prefs settings.
+
+There is a READ/WRITEPIXELARRAY interface, that replaces the former
+SET PDTA_BitMap and GET PDTA_DestBitMap interface. If a Bitmap was SET
+(legacy interface), it gets converted to LUT8 format during layout.
+A destination BitMap is only created, if this is set by Prefs or an
+applications requests it by GET PDTA_DestBitMap.
+
+RENDER Method chooses one of these functions for diplaying:
+cgfx/WritePixelArray: Truecolor pic -> Truecolor screen
+cgfx/WriteLUTPixelArray: Colormapped pic -> Truecolor screen
+graphics/WriteChunkyPixels: Colormapped pic -> Colormapped chunky screen
+graphics/BltBitMapRastPort: Colormapped pic -> Colormapped planar screen
+The last two are choosen by Prefs.
+
+Truecolor pic -> Colormapped screen is handled during layout, with a fixed colormap
+and some simple but fast dithering algorithm (one dimensional error propagation).
+Floyd-Steinberg dithering algorithm could be used for slightly better results
+(two dimensional error propagation). Much better results could be obtained by a
+calculated colormap (e.g. median cut algorithm), but this is much slower.
+
+Internal handling:
+Colormapped data is always stored in LUT8 format, or BitMap format for legacy.
+Truecolor data is always stored in ARGB format.
+This isn't memory effective, but makes things more simple and faster. Some
+optimization could be done here.
+
+ Martin Gierich
+ gierich@gmx.de
+
+------------------------------------------------------------------
+
 This picture.datatype is a work in progress. It compiles cleanly, 
 but is far from being complete!
 See the file TODO for a detailed description of the missing pieces.
