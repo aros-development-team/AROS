@@ -13,6 +13,8 @@ struct Coloradjust_DATA
     UWORD           gradpenarray[3];
     LONG            gradpen;
     BOOL            truecolor;
+
+    EXEC_INTERFACE_DECLARE(struct ColorWheelIFace * icolorwheel);
 };
 
 #endif /* _COLORADJUST_PRIVATE_H_ */
