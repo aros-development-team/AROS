@@ -57,7 +57,7 @@ class be_val
     }
     // const my_type& operator= (const my_type& other)
     // {
-    //   data = other.data;
+    //	 data = other.data;
     // }
     const my_type& operator= (const value_type d)
     {
@@ -130,97 +130,97 @@ class be_val
     value_type data;
 };
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator+ (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) + static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator- (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) - static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator* (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) * static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator/ (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) / static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator% (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) % static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator^ (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) ^ static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator& (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) & static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator| (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) | static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator<< (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) << static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline const be_val<C> operator>> (const be_val<C>& a, const be_val<C>& b)
 {
   return be_val<C>(static_cast<C> (a) >> static_cast<C> (b));
 }
 
-template<class C> 
+template<class C>
 inline bool operator< (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) < static_cast<C> (b);
 }
 
-template<class C> 
+template<class C>
 inline bool operator> (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) > static_cast<C> (b);
 }
 
-template<class C> 
+template<class C>
 inline bool operator<= (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) <= static_cast<C> (b);
 }
 
-template<class C> 
+template<class C>
 inline bool operator>= (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) >= static_cast<C> (b);
 }
 
-template<class C> 
+template<class C>
 inline bool operator== (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) == static_cast<C> (b);
 }
 
-template<class C> 
+template<class C>
 inline bool operator!= (const be_val<C>& a, const be_val<C>& b)
 {
   return static_cast<C> (a) != static_cast<C> (b);
