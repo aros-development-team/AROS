@@ -73,10 +73,16 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     return NULL;
 }
 
+#undef SysBase
+
 void LDDemon(void)
 {
-    extern struct DosLibrary *DOSBase;
+    extern struct ExecBase * SysBase;
+    struct DosLibrary *DOSBase;
     BPTR seglist;
+
+    DOSBase = FindTask (NULL)->tc_UserData;
+
     for(;;)
     {
 	Wait(SIGF_DOS);
@@ -85,6 +91,8 @@ void LDDemon(void)
 	Signal(&DOSBase->dl_LDCaller->pr_Task,SIGF_DOS);
     }
 }
+
+#define SysBase     (DOSBase->dl_SysBase)
 
 AROS_LH2(struct Library *,OpenLibrary,
 AROS_LHA(STRPTR,libName,A1),AROS_LHA(ULONG,version,D0),

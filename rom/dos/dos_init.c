@@ -87,13 +87,14 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->dl_UtilityBase=OpenLibrary("utility.library",39);
     if(LIBBASE->dl_UtilityBase!=NULL)
     {
-	static const struct TagItem tags[]=
+	struct TagItem tags[]=
 	{
-	    { NP_Entry, (IPTR)LDDemon },
-	    { NP_Input, 0 },
-	    { NP_Output, 0 },
-	    { NP_Name, (IPTR)"lib & dev loader demon" },
-	    { TAG_END, 0 }
+	    { NP_Entry,    (IPTR)LDDemon },
+	    { NP_Input,    0 },
+	    { NP_Output,   0 },
+	    { NP_Name,	   (IPTR)"lib & dev loader demon" },
+	    { NP_UserData, (IPTR)LIBBASE },
+	    { TAG_END, }
 	};
 
 	LIBBASE->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
