@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include <exec/devices.h>
+#include <exec/memory.h>
 #include <workbench/icon.h>
 
 #include <clib/alib_protos.h>
@@ -598,7 +599,7 @@ STATIC VOID RestoreBackground( struct BitMapNode *src_bmn, struct RastPort *rp)
 //-------------------------------------
 struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 {
-	struct BitMapNode *bmn = (struct BitMapNode*)AllocMem( sizeof(struct BitMapNode), 0x10000 );
+	struct BitMapNode *bmn = (struct BitMapNode*)AllocMem( sizeof(struct BitMapNode), MEMF_CLEAR );
 	if( bmn )
 	{
 		BOOL alloc=FALSE;
@@ -871,6 +872,8 @@ VOID UndrawBitMapNode(struct BitMapNode *bmn )
 		BltBitMapRastPort( bmn->bmn_SaveBitMap,0,0,
 									rp, bmn->bmn_SaveX, bmn->bmn_SaveY, bmn->bmn_SaveWidth, bmn->bmn_SaveHeight, 0xc0 );
 	}
+	bmn->bmn_SaveWidth = 0;
+	bmn->bmn_SaveHeight = 0;
 }
 //-------------------------------------
 
