@@ -206,7 +206,7 @@ char        *getcwd(char *buf, size_t size);
 gid_t       getegid(void);
 uid_t       geteuid(void);
 gid_t       getgid(void);
-/* NOTIMPL int         getgroups(int gidsetlen, gid_t *gidset); */
+int         getgroups(int gidsetlen, gid_t *gidset);
 /* NOTIMPL char        *getlogin(void); */
 /* NOTIMPL pid_t       getpgrp(void); */
 pid_t       getpid(void);
