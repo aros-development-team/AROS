@@ -141,7 +141,7 @@ includes: include/clib/exec_protos.h \
 
 include/clib/exec_protos.h: $(wildcard $(KERNEL)/*.s $(KERNEL)/*.c exec/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Exec \
-	$(KERNEL)/*.s $(KERNEL)/*.c exec/*.c
+	config/$(KERNEL)/*.s config/$(KERNEL)/*.c exec/*.c
 
 include/clib/dos_protos.h: $(wildcard dos/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Dos \
