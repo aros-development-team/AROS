@@ -321,6 +321,36 @@ IPTR Pendisplay__MUIM_Pendisplay_SetMUIPen(struct IClass *cl, Object *obj, struc
     return 0;
 }
 
+IPTR Pendisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    STRPTR spec = NULL;
+
+    if (msg->obj == obj)
+	return MUIV_DragQuery_Refuse;
+
+    if (get(msg->obj, MUIA_Pendisplay_Spec, &spec))
+	return MUIV_DragQuery_Accept;
+
+    if (get(msg->obj, MUIA_Imagedisplay_Spec, &spec))
+    {
+	if ((NULL != spec) && (strlen(spec) > 2) && (spec[0] == '2') && (spec[1] == ':'))
+	    return MUIV_DragQuery_Accept;
+    }
+
+    return MUIV_DragQuery_Refuse;
+}
+
+IPTR Pendisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    STRPTR spec;
+
+    if (get(msg->obj, MUIA_Pendisplay_Spec, &spec))
+	set(obj, MUIA_Pendisplay_Spec, spec);
+    else if (get(msg->obj, MUIA_Imagedisplay_Spec, &spec))
+	set(obj, MUIA_Pendisplay_Spec, spec+2);
+    return 0;
+}
+
 #if ZUNE_BUILTIN_PENDISPLAY
 BOOPSI_DISPATCHER(IPTR, Pendisplay_Dispatcher, cl, obj, msg)
 {
@@ -337,6 +367,8 @@ BOOPSI_DISPATCHER(IPTR, Pendisplay_Dispatcher, cl, obj, msg)
 	case MUIM_Pendisplay_SetColormap: return Pendisplay__MUIM_Pendisplay_SetColormap(cl, obj, (struct MUIP_Pendisplay_SetColormap *)msg);
 	case MUIM_Pendisplay_SetMUIPen: return Pendisplay__MUIM_Pendisplay_SetMUIPen(cl, obj, (struct MUIP_Pendisplay_SetMUIPen *)msg);
 	case MUIM_Pendisplay_SetRGB: return Pendisplay__MUIM_Pendisplay_SetRGB(cl, obj, (struct MUIP_Pendisplay_SetRGB *)msg);
+	case MUIM_DragQuery: return Pendisplay__MUIM_DragQuery(cl, obj, (struct MUIP_DragQuery *)msg);
+	case MUIM_DragDrop: return Pendisplay__MUIM_DragDrop(cl, obj, (struct MUIP_DragDrop *)msg);
         default: return DoSuperMethodA(cl, obj, msg);
     }
 }
