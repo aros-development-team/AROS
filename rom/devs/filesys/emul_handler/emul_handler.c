@@ -58,7 +58,7 @@
 
 #ifdef __linux__
 #include <sys/vfs.h>
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || (__NetBSD__)
 #include <sys/param.h>
 #include <sys/mount.h>
 #endif
