@@ -387,7 +387,7 @@ void MyExit (int Code)
 // quick stricmp
 
 #if !defined(__amigados) && !defined(__CYGWIN32__)
-int stricmp( char *str1, char *str2 )
+int stricmp( const char *str1, const char *str2 )
 {
 int i;
 
@@ -416,9 +416,9 @@ int i;
 // quick strnicmp
 
 #if !defined(__amigados) && !defined(__CYGWIN32__)
-int strnicmp( char *str1, char *str2, int len )
+int strnicmp( const char *str1, const char *str2, size_t len )
 {
-int i;
+size_t i;
 
     for(i = 0; i < len; i++)
        {
