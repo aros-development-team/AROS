@@ -346,9 +346,8 @@ struct ReadLevel
 error:
     curr = (struct ReadLevel *)GetHead (list);
 
-#warning FIXME:
-    /* if (curr && curr->s)
-	FreeStruct (curr->s, curr->sd); */
+    if (curr && curr->s)
+	FreeStruct (curr->s, curr->sd);
 
     while ((curr = (struct ReadLevel *)RemTail (list)))
 	FreeMem (curr, sizeof (struct ReadLevel));
