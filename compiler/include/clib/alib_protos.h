@@ -103,7 +103,7 @@ AROS_UFH3(IPTR, HookEntry,
     return retval;
 #else
 #   define AROS_SLOWSTACKMETHODS_PRE(arg) return
-#   define AROS_SLOWSTACKMETHODS_ARG(arg) ((Msg)(arg))
+#   define AROS_SLOWSTACKMETHODS_ARG(arg) ((Msg)&(arg))
 #   define AROS_SLOWSTACKMETHODS_POST
 #endif /* AROS_SLOWSTACKMETHODS */
 
