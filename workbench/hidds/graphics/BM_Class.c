@@ -1464,9 +1464,7 @@ Class *init_bitmapclass(struct class_static_data *csd)
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	},
-        {(IPTR (*)())bitmap_putpixel		, moHidd_BitMap_PutPixel	},
         {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	},
-        {(IPTR (*)())bitmap_getpixel		, moHidd_BitMap_GetPixel	},
         {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	},
         {(IPTR (*)())bitmap_copybox		, moHidd_BitMap_CopyBox		},
         {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	},
