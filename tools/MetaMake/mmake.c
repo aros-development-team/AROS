@@ -1562,19 +1562,18 @@ readvars (Project * prj)
 	char line[256];
 	char * name, * value, * ptr;
 
-	fn = strdup (substvars (prj, prj->globalvarfile));
-	assert (fn);
+	fn = xstrdup (substvars (prj, prj->globalvarfile));
 	fh = fopen (fn, "r");
 
 	if (!fh && prj->genglobalvarfile)
 	{
-	    printf ("Generating %s...\n", substvars (prj, prj->globalvarfile));
+	    char * gen = xstrdup (substvars (prj, prj->genglobalvarfile));
 
-	    if (!execute (prj, prj->genglobalvarfile, "-", "-", ""))
+	    printf ("Generating %s...\n", fn);
+
+	    if (!execute (prj, gen, "-", "-", ""))
 	    {
-		error ("Error while creating globalvarfile with \"%s\"",
-		    prj->genglobalvarfile
-		);
+		error ("Error while creating \"%s\" with \"%s\"", fn, gen);
 		exit (10);
 	    }
 	    else
