@@ -320,7 +320,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 	}
     }
 
-    return MUI_EventHandlerRC_Eat;
+    return 0;
 }
 
 
