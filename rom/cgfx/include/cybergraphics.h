@@ -130,6 +130,7 @@ struct CDrawMsg {
 #endif
 
 #define SHIFT_PIXFMT( fmt ) (  ((ULONG)(fmt)) << BMB_PIXFMT_SHIFTUP )
+#define DOWNSHIFT_PIXFMT( fmt ) (  ((ULONG)(fmt)) >> BMB_PIXFMT_SHIFTUP )
 
 
 #endif /* CYBERGRAPHX_CYBERGRAPHICS_H */
