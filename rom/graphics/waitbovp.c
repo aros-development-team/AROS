@@ -16,7 +16,7 @@
 	AROS_LH1(void, WaitBOVP,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(struct ViewPort *, vp, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 182, Graphics)
