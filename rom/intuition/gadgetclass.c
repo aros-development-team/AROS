@@ -77,7 +77,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
     IPTR  tidata;
     ULONG retval = 0UL; /* set to non-zero to signal visual changes */
 
-    while ( (tag = NextTagItem(&tstate)) )
+    while ( (tag = NextTagItem((const struct TagItem **)&tstate)) )
     {
 	tidata = tag->ti_Data;
 
@@ -445,12 +445,13 @@ AROS_UFH3S(IPTR, dispatch_gadgetclass,
 	break;
 
     case GM_HITTEST:
-	if( (G(o)->Flags & GFLG_DISABLED) == 0 )
-	{
-	    retval = (IPTR)hittest_gadgetclass(cl, o, (struct gpHitTest *)msg);
-	}
+	retval = (IPTR)hittest_gadgetclass(cl, o, (struct gpHitTest *)msg);
 	break;
 
+    case GM_HELPTEST:
+        retval = GMR_HELPHIT;
+	break;
+	        
     case OM_NEW:
 	retval = DoSuperMethodA(cl, o, msg);
 
