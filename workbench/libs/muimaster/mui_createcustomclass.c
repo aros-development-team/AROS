@@ -20,11 +20,11 @@
 	AROS_LH5(struct MUI_CustomClass *, MUI_CreateCustomClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Library *, base, A0),
-	AROS_LHA(char *, supername, A1),
-	AROS_LHA(struct MUI_CustomClass *, supermcc, A2),
-	AROS_LHA(int, datasize, D0),
-	AROS_LHA(APTR, dispatcher, A3),
+	AROS_LHA(struct Library *,         base,       A0),
+	AROS_LHA(ClassID,                  supername,  A1),
+	AROS_LHA(struct MUI_CustomClass *, supermcc,   A2),
+	AROS_LHA(ULONG,                    datasize,   D0),
+	AROS_LHA(APTR,                     dispatcher, A3),
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 18, MUIMaster)
@@ -62,9 +62,10 @@
 
     if (!supermcc)
     {
-	if (!(super = MUI_GetClass(supername)))
-	    return NULL;
-    }   else super = supermcc->mcc_Class;
+        super = MUI_GetClass(supername);
+	if (!super) return NULL;
+    }
+    else super = supermcc->mcc_Class;
 
     if (!(mcc = mui_alloc_struct(struct MUI_CustomClass)))
 	return NULL;
@@ -88,7 +89,7 @@
     mcc->mcc_Module = NULL; /* _zune_class_load() will set this */
 
 #ifdef __MAXON__
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC)dispatcher;
+    cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatcher;
 #else
     cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
     cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)dispatcher;
@@ -98,5 +99,4 @@
     return mcc;
     
     AROS_LIBFUNC_EXIT
-
 } /* MUIA_CreateCustomClass */

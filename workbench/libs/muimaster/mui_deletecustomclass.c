@@ -44,11 +44,10 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *, MUIMasterBase)
 
-    if (mcc && FreeClass(mcc->mcc_Class))
+    if (mcc && MUI_FreeClass(mcc->mcc_Class))
     {
-	CloseLibrary(mcc->mcc_Module);
 	mui_free(mcc);
 	return TRUE;
     }

@@ -73,9 +73,7 @@ struct MUIMasterBase_intern
 
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
 
-    struct IClass **Classes;
-    int     ClassCount;
-    int     ClassSpace;
+    struct MinList BuiltinClasses;
     struct MinList Applications;
 };
 
