@@ -3021,7 +3021,7 @@ int rewrite_function(FILE * fdo,
 
 		if (0 != pd->offset) {	
 			fprintf(fdo,
-			        "    %s, %s, %d, %s)\n{\n",
+			        "    struct %s, %s, %d, %s)\n{\n",
 			        lc->libbasetypeptr,
 			        lc->libbase,
 			        pd->offset,
