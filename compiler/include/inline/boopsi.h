@@ -11,6 +11,34 @@
 #define BOOPSI_BASE_NAME BOOPSIBase
 #endif /* !BOOPSI_BASE_NAME */
 
+#ifdef AddClass
+#   undef AddClass
+#endif
+#ifdef DisposeObject
+#   undef DisposeObject
+#endif
+#ifdef FreeClass
+#   undef FreeClass
+#endif
+#ifdef GetAttr
+#   undef GetAttr
+#endif
+#ifdef MakeClass
+#   undef MakeClass
+#endif
+#ifdef NewObjectA
+#   undef NewObjectA
+#endif
+#ifdef NextObject
+#   undef NextObject
+#endif
+#ifdef RemoveClass
+#   undef RemoveClass
+#endif
+#ifdef SetAttrsA
+#   undef SetAttrsA
+#endif
+
 #define AddClass(classPtr) \
 	LP1NR(0x1e, AddClass, struct IClass *, classPtr, a0, \
 	, BOOPSI_BASE_NAME)

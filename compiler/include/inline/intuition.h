@@ -9,6 +9,34 @@
 #define INTUITION_BASE_NAME IntuitionBase
 #endif
 
+#ifdef AddClass
+#   undef AddClass
+#endif
+#ifdef DisposeObject
+#   undef DisposeObject
+#endif
+#ifdef FreeClass
+#   undef FreeClass
+#endif
+#ifdef GetAttr
+#   undef GetAttr
+#endif
+#ifdef MakeClass
+#   undef MakeClass
+#endif
+#ifdef NewObjectA
+#   undef NewObjectA
+#endif
+#ifdef NextObject
+#   undef NextObject
+#endif
+#ifdef RemoveClass
+#   undef RemoveClass
+#endif
+#ifdef SetAttrsA
+#   undef SetAttrsA
+#endif
+
 #define ActivateGadget(gadgets, window, requester) \
 	LP3(0x1ce, BOOL, ActivateGadget, struct Gadget *, gadgets, a0, struct Window *, window, a1, struct Requester *, requester, a2, \
 	, INTUITION_BASE_NAME)
