@@ -53,6 +53,13 @@
 
 #define REGIONS_USE_MEMPOOL 	1
 
+/* Setting BMDEPTH_COMPATIBILITY to 1 will cause bitmap->Depth
+   to be never bigger than 8. The same seems to be the case under
+   AmigaOS with CyberGraphX/Picasso96. GetBitMapAttr() OTOH will
+   actually return the real depth. */
+   
+#define BMDEPTH_COMPATIBILITY	1
+
 extern struct GfxBase * GfxBase;
 
 
