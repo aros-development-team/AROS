@@ -37,6 +37,8 @@ struct MUIP_Numeric_ValueToScale   {ULONG MethodID; LONG scalemin; LONG scalemax
 #define MUIA_Numeric_RevUpDown     (MUIB_MUI|0x004252dd) /* MUI: V11 isg BOOL   */
 #define MUIA_Numeric_Value         (MUIB_MUI|0x0042ae3a) /* MUI: V11 isg LONG   */
 
+#define MUIM_Numeric_ValueToScaleExt (MUIB_Numeric | 0x00000000) /* ZUNE only */
+struct MUIP_Numeric_ValueToScaleExt   {ULONG MethodID; LONG value; LONG scalemin; LONG scalemax;};
 
 extern const struct __MUIBuiltinClass _MUI_Numeric_desc; /* PRIV */
 
