@@ -96,7 +96,7 @@ c00007;1;hkiel;Write C:Copy
 c00008;1;laguest;Write C:CPU
 c00009;2;srittau;Write C:Date
 c00010;1;laguest;Write C:Delete
-c00011;2;digulla;Write C:Dir
+c00011;1;digulla;Write C:Dir
 c00012;2;matthias;Write C:Echo
 c00013;2;SDuvan;Write C:Else
 c00014;2;SDuvan;Write C:Endif
@@ -122,7 +122,7 @@ c00033;2;SDuvan;Write C:Prompt
 c00034;1;laguest;Write C:Protect
 c00035;2;SDuvan;Write C:Quit
 c00036;2;SDuvan;Write C:Relabel
-c00037;1;laguest;Write C:Rename
+c00037;2;laguest,SDuvan;Write C:Rename
 c00038;2;laguest;Write C:RequestChoice
 c00039;2;laguest;Write C:RequestFile
 c00040;1;matthias;Write C:Run
