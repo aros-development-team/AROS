@@ -124,7 +124,7 @@
     return FALSE;
   }
 
-  l-> Flags |= LAYERUPDATE;
+  l-> Flags |= LAYERUPDATING;
   
   return TRUE;
 
