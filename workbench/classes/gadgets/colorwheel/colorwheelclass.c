@@ -27,7 +27,7 @@
 #undef SDEBUG
 #define SDEBUG 0
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define ColorWheelBase ((struct ColorWheelBase_intern *)(cl->cl_UserData))
@@ -414,6 +414,29 @@ STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
     
     if (data->wheeldrawn && msg->gpi_IEvent)
     {
+        struct RastPort *rp;
+        WORD 		mousex = msg->gpi_Mouse.X - (data->wheelcx - data->wheelrx);
+	WORD 		mousey = msg->gpi_Mouse.Y - (data->wheelcy - data->wheelry);
+	
+	CalcWheelColor(mousex,
+		       mousey,
+		       (DOUBLE)data->wheelrx,
+		       (DOUBLE)data->wheelry, 
+		       &data->hsb.cw_Hue,
+		       &data->hsb.cw_Saturation);
+		       
+	ConvertHSBToRGB(&data->hsb, &data->rgb);
+	
+	notify_all(cl, o, msg->gpi_GInfo, TRUE, TRUE);
+	
+	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+	{
+	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
+	    ReleaseGIRPort(rp);
+	}	       
+	
+	retval = GMR_MEACTIVE;
+	
     } /* if (data->wheeldrawn && msg->gpi_IEvent) */
     
     ReturnInt("ColorWheel::GoActive", IPTR, retval);
@@ -424,13 +447,57 @@ STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
 STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
     struct ColorWheelData	*data = INST_DATA(cl, o);
-    IPTR 			retval = 0UL;
     struct InputEvent 		*ie = msg->gpi_IEvent;
+    IPTR 			retval = GMR_MEACTIVE;
     
     EnterFunc(bug("ColorWheel::HandleInput \n"));
 
-    retval = GMR_MEACTIVE;
-        
+    switch(ie->ie_Class)
+    {
+        case IECLASS_RAWMOUSE:
+	    switch(ie->ie_Code)
+	    {
+	        case SELECTUP:
+		    *msg->gpi_Termination = EG(o)->GadgetID;
+		    retval = GMR_NOREUSE | GMR_VERIFY;		    
+		    break;
+		
+		case IECODE_NOBUTTON:
+		    {
+		        struct ColorWheelHSB 	hsb = data->hsb;
+        		struct RastPort 	*rp;
+        		WORD 			mousex = msg->gpi_Mouse.X - (data->wheelcx - data->wheelrx);
+			WORD 			mousey = msg->gpi_Mouse.Y - (data->wheelcy - data->wheelry);
+
+			CalcWheelColor(mousex,
+				       mousey,
+				       (DOUBLE)data->wheelrx,
+				       (DOUBLE)data->wheelry, 
+				       &data->hsb.cw_Hue,
+				       &data->hsb.cw_Saturation);
+
+			ConvertHSBToRGB(&data->hsb, &data->rgb);
+			
+			if ((data->hsb.cw_Hue        != hsb.cw_Hue       ) ||
+			    (data->hsb.cw_Saturation != hsb.cw_Saturation))
+			{
+			    notify_all(cl, o, msg->gpi_GInfo, TRUE, TRUE);
+
+			    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+			    {
+				DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
+				ReleaseGIRPort(rp);
+			    }	       			
+			}
+		    }
+		    break; /* IECODE_NOBUTTON */
+		      
+	    } /* switch(ie->ie_Code) */
+	    
+	    break; /* IECLASS_RAWMOUSE */
+	    
+    } /* switch(ie->ie_Class) */
+    
     ReturnInt("ColorWheel::HandleInput", IPTR, retval);
 }
 

@@ -43,6 +43,8 @@
 
 #define KNOBWIDTH		7
 #define KNOBHEIGHT		7
+#define KNOBCX			3
+#define KNOBCY			3
 	
 #define BORDERWHEELSPACINGX 	4
 #define BORDERWHEELSPACINGY 	4
@@ -93,12 +95,9 @@ struct ColorWheelBase_intern
 
 /***************************************************************************************************/
 
-struct IClass * InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
+struct IClass *InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
 
 BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat);
-VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y,
-		 struct ColorWheelBase_intern *ColorWheelBase);
-
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
 		 struct ColorWheelBase_intern *ColorWheelBase);
 VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
@@ -114,13 +113,14 @@ void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
    variables storing the library base pointers	and the corresponding
    structs are equal.
    This is a hack, of course. */
+   
 typedef struct GfxBase GraphicsBase;
 typedef struct IntuitionBase IntuiBase;
 
 /***************************************************************************************************/
 
 #undef CWB
-#define CWB(b) ((struct ColorWheelBase_intern *)b)
+#define CWB(b) 		((struct ColorWheelBase_intern *)b)
 #undef UtilityBase
 #define UtilityBase 	CWB(ColorWheelBase)->utilitybase
 

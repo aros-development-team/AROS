@@ -73,8 +73,7 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
     
 /***************************************************************************************************/
 
-VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y,
-		 struct ColorWheelBase_intern *ColorWheelBase)
+STATIC VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y)
 {
     DOUBLE alpha, sat;
     
@@ -100,13 +99,10 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     WORD 			x, y, left, top, width, height;
     DOUBLE 			cx, cy;
 
-    left   = box->Left   + 1;
-    top    = box->Top    + 1;
-    width  = box->Width  - 2;
-    height = box->Height - 2;
-
-    if (width & 1) width--;
-    if (height & 1) height--;
+    left   = box->Left;
+    top    = box->Top;
+    width  = box->Width;
+    height = box->Height;
     
     cx = (DOUBLE)width  / 2.0;
     cy = (DOUBLE)height / 2.0;
@@ -225,10 +221,10 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    data->bmwidth  = box->Width;
 	    data->bmheight = box->Height;
 	    
-	    wbox.Left   = data->frame ? BORDERWHEELSPACINGX : 0;
-	    wbox.Top    = data->frame ? BORDERWHEELSPACINGY : 0;
-	    wbox.Width  = box->Width  - (data->frame ? BORDERWHEELSPACINGX * 2 : 0);
-	    wbox.Height = box->Height - (data->frame ? BORDERWHEELSPACINGY * 2 : 0);
+	    wbox.Left   = data->frame ? BORDERWHEELSPACINGX : 2;
+	    wbox.Top    = data->frame ? BORDERWHEELSPACINGY : 2;
+	    wbox.Width  = (box->Width  - (data->frame ? BORDERWHEELSPACINGX * 2 : 4)) & ~1;
+	    wbox.Height = (box->Height - (data->frame ? BORDERWHEELSPACINGY * 2 : 4)) & ~1;
 	 
 	    InitRastPort(&temprp);
 	    temprp.BitMap = data->bm;
@@ -247,12 +243,6 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 		SetAttrsA(data->frame, fitags);
 		DrawImageState(&temprp, (struct Image *)data->frame, 0, 0, IDS_NORMAL, data->dri);
             }
-	    
-	    if (CyberGfxBase && (GetBitMapAttr(data->bm, BMA_DEPTH) >= 15))
-	    {
-		TrueWheel(data, &temprp, &wbox, ColorWheelBase);
-	    } else {
-	    }
 
 	    rx = wbox.Width / 2;
 	    ry = wbox.Height / 2;
@@ -260,7 +250,16 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    cx = wbox.Left + rx;
 	    cy = wbox.Top + ry;
 
-	    rx--; ry--;
+	    data->wheelcx = cx;
+	    data->wheelcy = cy;
+	    data->wheelrx = rx;
+	    data->wheelry = ry;
+	    
+	    if (CyberGfxBase && (GetBitMapAttr(data->bm, BMA_DEPTH) >= 15))
+	    {
+		TrueWheel(data, &temprp, &wbox, ColorWheelBase);
+	    } else {
+	    }
 
 	    SetAPen(&temprp, data->dri->dri_Pens[SHADOWPEN]);
 	    DrawEllipse(&temprp, cx, cy, rx, ry);
@@ -270,10 +269,6 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    
 	    DeinitRastPort(&temprp);
 	    
-	    data->wheelcx = cx;
-	    data->wheelcy = cy;
-	    data->wheelrx = rx;
-	    data->wheelry = ry;
 	    
 	    data->wheeldrawn = TRUE;
 	    
@@ -311,12 +306,15 @@ VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *g
 			  0xC0); 
     }
     
-    CalcKnobPos(data, &x, &y, ColorWheelBase);
+    CalcKnobPos(data, &x, &y);
+    
+    if (x < KNOBCX) x = KNOBCX; else if (x > gbox->Width  - 1 - KNOBCX) x = gbox->Width  - 1 - KNOBCX;
+    if (y < KNOBCY) y = KNOBCY; else if (y > gbox->Height - 1 - KNOBCY) y = gbox->Height - 1 - KNOBCY;
     
     /* Backup */
     
-    data->knobsavex = x - 3;
-    data->knobsavey = y - 3;
+    data->knobsavex = x - KNOBCX;
+    data->knobsavey = y - KNOBCY;
     
     /* Render */
     
@@ -340,9 +338,6 @@ VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *g
     
 }
 
-/***************************************************************************************************/
-/***************************************************************************************************/
-/***************************************************************************************************/
 /***************************************************************************************************/
 
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
@@ -386,8 +381,8 @@ void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
     /* render disable pattern */
     RectFill( rport, gadbox->Left,
     		     gadbox->Top,
-		     gadbox->Left + gadbox->Width - 1,
-		     gadbox->Top + gadbox->Height -1 );
+		     gadbox->Left + gadbox->Width  - 1,
+		     gadbox->Top  + gadbox->Height - 1);
 		         
     SetAfPt ( rport, NULL, 0);
 
