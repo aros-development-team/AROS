@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1997/03/07 15:26:48  ldp
+    Fix debugging defines
+
     Revision 1.9  1997/03/07 04:27:24  ldp
     Added debugging
 
@@ -38,10 +41,10 @@
 #include <proto/exec.h>
 
 #include "exec_debug.h"
-#ifndef DEBUG_InitResident
-#   define DEBUG_InitResident 0
+#ifndef DEBUG_AllocPooled
+#   define DEBUG_AllocPooled 0
 #endif
-#if DEBUG_InitResident
+#if DEBUG_AllocPooled
 #   undef DEBUG
 #   define DEBUG 1
 #endif
