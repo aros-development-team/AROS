@@ -66,8 +66,9 @@
     AROS_LC0(void, SetSR, \
     struct ExecBase *, SysBase, 24, Exec)
 
-#define StackSwap() \
-    AROS_LC0(void, StackSwap, \
+#define StackSwap(sss) \
+    AROS_LC1(void, StackSwap, \
+    AROS_LCA(struct StackSwapStruct *, sss, A0) \
     struct ExecBase *, SysBase, 122, Exec)
 
 #define SuperState() \
@@ -407,8 +408,8 @@
 
 #define InitCode(startClass, version) \
     AROS_LC2(void, InitCode, \
-    AROS_LCA(unsigned long, startClass, D0), \
-    AROS_LCA(unsigned long, version, D1), \
+    AROS_LCA(ULONG, startClass, D0), \
+    AROS_LCA(ULONG, version, D1), \
     struct ExecBase *, SysBase, 12, Exec)
 
 #define InitResident(resident, segList) \

@@ -65,7 +65,8 @@ AROS_LP0(void, Permit,
 AROS_LP0(void, SetSR,
     struct ExecBase *, SysBase, 24, Exec)
 
-AROS_LP0(void, StackSwap,
+AROS_LP1(void, StackSwap,
+    AROS_LPA(struct StackSwapStruct *, sss, A0)
     struct ExecBase *, SysBase, 122, Exec)
 
 AROS_LP0(void, SuperState,
@@ -342,8 +343,8 @@ AROS_LP1(struct Message *, GetMsg,
     struct ExecBase *, SysBase, 62, Exec)
 
 AROS_LP2(void, InitCode,
-    AROS_LPA(unsigned long, startClass, D0),
-    AROS_LPA(unsigned long, version, D1),
+    AROS_LPA(ULONG, startClass, D0),
+    AROS_LPA(ULONG, version, D1),
     struct ExecBase *, SysBase, 12, Exec)
 
 AROS_LP2(APTR, InitResident,

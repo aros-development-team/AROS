@@ -142,6 +142,11 @@ AROS_LP2(void, RemNamedObject,
     AROS_LPA(struct Message     *, message, A1),
     struct UtilityBase *, UtilityBase, 44, Utility)
 
+AROS_LP2(QUAD, SDivMod32,
+    AROS_LPA(LONG, dividend, D0),
+    AROS_LPA(LONG, divisor, D1),
+    struct UtilityBase *, UtilityBase, 25, Utility)
+
 AROS_LP2(LONG, SMult32,
     AROS_LPA(LONG, arg1, D0),
     AROS_LPA(LONG, arg2, D1),
@@ -176,14 +181,19 @@ AROS_LP1I(UBYTE, ToUpper,
     AROS_LPA(ULONG, character, D0),
     struct UtilityBase *, UtilityBase, 29, Utility)
 
+AROS_LP2(ULONG, UDivMod32,
+    AROS_LPA(ULONG, dividend, D0),
+    AROS_LPA(ULONG, divisor, D1),
+    struct Library *, UtilityBase, 26, Utility)
+
 AROS_LP2(ULONG, UMult32,
     AROS_LPA(ULONG        , arg1, D0),
     AROS_LPA(ULONG        , arg2, D1),
     struct UtilityBase *, UtilityBase, 24, Utility)
 
 AROS_LP2(UQUAD, UMult64,
-    AROS_LPA(ULONG        , arg1, D0),
-    AROS_LPA(ULONG        , arg2, D1),
+    AROS_LPA(ULONG, arg1, D0),
+    AROS_LPA(ULONG, arg2, D1),
     struct UtilityBase *, UtilityBase, 34, Utility)
 
 AROS_LP3(ULONG, UnpackStructureTags,

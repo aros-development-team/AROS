@@ -163,6 +163,12 @@
     AROS_LCA(struct Message     *, message, A1), \
     struct UtilityBase *, UtilityBase, 44, Utility)
 
+#define SDivMod32(dividend, divisor) \
+    AROS_LC2(QUAD, SDivMod32, \
+    AROS_LCA(LONG, dividend, D0), \
+    AROS_LCA(LONG, divisor, D1), \
+    struct UtilityBase *, UtilityBase, 25, Utility)
+
 #define SMult32(arg1, arg2) \
     AROS_LC2(LONG, SMult32, \
     AROS_LCA(LONG, arg1, D0), \
@@ -204,6 +210,12 @@
     AROS_LCA(ULONG, character, D0), \
     struct UtilityBase *, UtilityBase, 29, Utility)
 
+#define UDivMod32(dividend, divisor) \
+    AROS_LC2(ULONG, UDivMod32, \
+    AROS_LCA(ULONG, dividend, D0), \
+    AROS_LCA(ULONG, divisor, D1), \
+    struct Library *, UtilityBase, 26, Utility)
+
 #define UMult32(arg1, arg2) \
     AROS_LC2(ULONG, UMult32, \
     AROS_LCA(ULONG        , arg1, D0), \
@@ -212,8 +224,8 @@
 
 #define UMult64(arg1, arg2) \
     AROS_LC2(UQUAD, UMult64, \
-    AROS_LCA(ULONG        , arg1, D0), \
-    AROS_LCA(ULONG        , arg2, D1), \
+    AROS_LCA(ULONG, arg1, D0), \
+    AROS_LCA(ULONG, arg2, D1), \
     struct UtilityBase *, UtilityBase, 34, Utility)
 
 #define UnpackStructureTags(pack, packTable, tagList) \

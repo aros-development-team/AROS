@@ -46,6 +46,10 @@ AROS_LP1(struct DiskObject *, GetDefDiskObject,
     AROS_LPA(long, type, D0),
     struct Library *, IconBase, 20, Icon)
 
+AROS_LP1(struct DiskObject *, GetDiskObject,
+    AROS_LPA(UBYTE *, name, A0),
+    struct Library *, IconBase, 13, Icon)
+
 AROS_LP1(struct DiskObject *, GetDiskObjectNew,
     AROS_LPA(UBYTE *, name, A0),
     struct Library *, IconBase, 22, Icon)
