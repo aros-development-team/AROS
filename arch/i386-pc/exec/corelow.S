@@ -140,7 +140,7 @@ restore_all:        RESTORE_REGS
                     .globl  Exec_ExitIntr
                     .type   Exec_ExitIntr,@function
 
-Exec_ExitIntr:      cmpl    $KERNEL_DS,R_ds(%esp)
+Exec_ExitIntr:      cmpw    $KERNEL_DS,R_ds(%esp)
                     je      restore_all
                     incb    (0xb8002)
                     movb    $0x1f,(0xb8003)
