@@ -13,7 +13,7 @@ LIBS = -L$(TOP)/bin/palm-m68k/AROS/lib -lexec -lutility -larossupport -larosc -l
 CC = m68k-palmos-coff-gcc
 AS = m68k-palmos-coff-as
 
-INC = -I$(TOP)/bin/palm-m68k/AROS/Include -I.
+INC = -I$(TOP)/bin/palm-m68k/AROS/Include -I. -I../
 
 
 CFLAGS = -Wall -g -O2 $(INC) $(USRINC)
