@@ -6,7 +6,7 @@
     Lang: english
 */
 
-extern void putc(char);
+#include <aros/config.h>
 
 /*****i***********************************************************************
 
@@ -49,11 +49,17 @@ extern void putc(char);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
+#if AROS_PALM_DEBUG_HACK
+    /* This requires a patched XCopilot which turns writes to
+       address 0xdddddebc into output going to Linux shell
+       through a fprintf(stderr, chr). */
+
     /* Don't write 0 bytes */
     if (chr)
     {
-//	putc(chr);
+    	*(UBYTE *)0xdddddebc = chr;
     }
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */
