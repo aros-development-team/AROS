@@ -13,8 +13,6 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 
-#include "classes/notify.h"
-
 /**************************************************************************
  check if region is entirely within given bounds
 **************************************************************************/
@@ -88,12 +86,12 @@ BOOL DestroyClasses(struct MUIMasterBase *MUIMasterBase)
 static const struct __MUIBuiltinClass *builtins[] =
 {
     &_MUI_Notify_desc,
-//    &_MUI_Family_desc,
-//    &_MUI_Application_desc,
-//    &_MUI_Window_desc,
-//    &_MUI_Area_desc,
+    &_MUI_Family_desc,
+    &_MUI_Application_desc,
+    &_MUI_Window_desc,
+    &_MUI_Area_desc,
 //    &_MUI_Rectangle_desc,
-//    &_MUI_Group_desc,
+    &_MUI_Group_desc,
 //    &_MUI_Image_desc,
 //    &_MUI_Dataspace_desc,
 //    &_MUI_Configdata_desc,

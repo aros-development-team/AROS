@@ -1,6 +1,10 @@
 #ifndef _CLASSES_FAMILY_H
 #define _CLASSES_FAMILY_H
 
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
+
 struct MUI_FamilyData
 {
     struct List childs;

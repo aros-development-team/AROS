@@ -3,6 +3,13 @@
 
 #define MUIC_Area "Area.mui"
 
+#ifndef INTUITION_INTUITION_H
+#include <intuition/intuition.h>
+#endif
+
+#ifndef GRAPHICS_GRAPHICS_H
+#include <graphics/gfx.h>
+#endif
 
 struct MUI_AreaData
 {
@@ -267,4 +274,5 @@ struct  MUIP_ConnectParentWindow    { ULONG MethodID; Object *win; struct MUI_Re
 
 void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo); /* priv */
 
+extern const struct __MUIBuiltinClass _MUI_Area_desc;
 #endif
