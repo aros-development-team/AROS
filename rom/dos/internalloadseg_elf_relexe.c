@@ -1,0 +1,467 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Code to dynamically load ELF executables
+    Lang: english
+
+    1997/12/13: Changed filename to internalloadseg_elf.c
+                Original file was created by digulla.
+*/
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <dos/dosasl.h>
+#include <proto/dos.h>
+#include <proto/arossupport.h>
+#include <aros/asmcall.h>
+#include <aros/machine.h>
+#include "dos_intern.h"
+#include "internalloadseg.h"
+#include <aros/debug.h>
+#include <string.h>
+#include <stddef.h>
+
+#define SHT_PROGBITS    1
+#define SHT_SYMTAB      2
+#define SHT_STRTAB      3
+#define SHT_RELA        4
+#define SHT_NOBITS      8
+#define SHT_REL         9
+
+#define SHT_LOOS        0x60000000
+#define SHT_AROS_REL    (SHT_LOOS)
+
+#define ET_REL          1
+#define ET_EXEC         2
+
+#define EM_386          3
+#define EM_68K          4
+
+#define R_386_NONE      0
+#define R_386_32        1
+#define R_386_PC32      2
+
+#define R_68k_NONE      0
+#define R_68K_32        1
+#define R_68K_PC32      4
+
+#define STT_OBJECT      1
+#define STT_FUNC        2
+
+#define SHN_ABS         0xfff1
+#define SHN_COMMON      0xfff2
+#define SHN_UNDEF       0
+
+#define SHF_ALLOC            (1 << 1)
+
+#define ELF32_ST_TYPE(i)    ((i) & 0x0F)
+
+#define EI_VERSION      6
+#define EV_CURRENT      1
+
+#define EI_DATA         5
+#define ELFDATA2LSB     1
+#define ELFDATA2MSB     2
+
+#define EI_CLASS        4
+#define ELFCLASS32      1
+
+#define EI_OSABI        7
+#define EI_ABIVERSION   8
+
+#define ELFOSABI_AROS   15
+
+#define ELF32_R_SYM(val)        ((val) >> 8)
+#define ELF32_R_TYPE(val)       ((val) & 0xff)
+#define ELF32_R_INFO(sym, type) (((sym) << 8) + ((type) & 0xff))
+
+
+struct elfheader
+{
+    UBYTE ident[16];
+    UWORD type;
+    UWORD machine;
+    ULONG version;
+    APTR  entry;
+    ULONG phoff;
+    ULONG shoff;
+    ULONG flags;
+    UWORD ehsize;
+    UWORD phentsize;
+    UWORD phnum;
+    UWORD shentsize;
+    UWORD shnum;
+    UWORD shstrndx;
+};
+
+struct sheader
+{
+    ULONG name;
+    ULONG type;
+    ULONG flags;
+    APTR  addr;
+    ULONG offset;
+    ULONG size;
+    ULONG link;
+    ULONG info;
+    ULONG addralign;
+    ULONG entsize;
+};
+
+struct hunk
+{
+    ULONG size;
+    BPTR  next;
+    char  data[0];
+} __attribute__((packed));
+
+#define BPTR2HUNK(bptr) ((struct hunk *)((char *)BADDR(bptr) - offsetof(struct hunk, next)))
+#define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
+
+#undef MyRead
+#undef MyAlloc
+#undef MyFree
+
+
+#define MyRead(file, buf, size)      \
+    AROS_CALL3                       \
+    (                                \
+        LONG, funcarray[0],          \
+        AROS_LCA(BPTR,   file, D1),  \
+        AROS_LCA(void *, buf,  D2),  \
+        AROS_LCA(LONG,   size, D3),  \
+        struct DosLibrary *, DOSBase \
+    )
+
+
+#define MyAlloc(size, flags)        \
+    AROS_CALL2                      \
+    (                               \
+        void *, funcarray[1],       \
+        AROS_LCA(ULONG, size,  D0), \
+        AROS_LCA(ULONG, flags, D1), \
+        struct ExecBase *, SysBase  \
+    )
+
+
+#define MyFree(addr, size)          \
+    AROS_CALL2                      \
+    (                               \
+        void, funcarray[2],         \
+        AROS_LCA(void *, addr, A1), \
+        AROS_LCA(ULONG,  size, D0), \
+        struct ExecBase *, SysBase  \
+    )
+
+static int read_block
+(
+    BPTR               file,
+    ULONG              offset,
+    APTR               buffer,
+    ULONG              size,
+    LONG              *funcarray,
+    struct DosLibrary *DOSBase
+)
+{
+    UBYTE *buf = (UBYTE *)buffer;
+    LONG   subsize;
+
+    if (Seek(file, offset, OFFSET_BEGINNING) < 0)
+        return 0;
+
+    while (size)
+    {
+        subsize = MyRead(file, buf, size);
+
+        if (subsize <= 0)
+        {
+            if (subsize == 0)
+            {
+                kprintf("[ELF Loader] Error while reading from file.\n");
+                kprintf("[ELF Loader] Offset = %ld - Size = %ld\n", offset, size);
+                SetIoErr(ERROR_BAD_HUNK);
+            }
+
+            return 0;
+        }
+
+        buf  += subsize;
+        size -= subsize;
+    }
+
+    return 1;
+}
+
+static void * load_block
+(
+    BPTR               file,
+    ULONG              offset,
+    ULONG              size,
+    LONG              *funcarray,
+    struct DosLibrary *DOSBase
+)
+{
+    void *block = MyAlloc(size, MEMF_ANY);
+    if (block)
+    {
+        kprintf("-- 2 --\n");
+        if (read_block(file, offset, block, size, funcarray, DOSBase))
+            return block;
+
+        MyFree(block, size);
+    }
+    else
+        SetIoErr(ERROR_NO_FREE_STORE);
+
+    return NULL;
+}
+
+static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
+{
+    if
+    (
+        eh->ident[0] != 0x7f ||
+        eh->ident[1] != 'E'  ||
+        eh->ident[2] != 'L'  ||
+        eh->ident[3] != 'F'
+    )
+    {
+        kprintf("[ELF Loader] Not an elf object\n");
+        SetIoErr(ERROR_NOT_EXECUTABLE);
+        return 0;
+    }
+
+    if
+    (
+        eh->ident[EI_CLASS]      != ELFCLASS32    ||
+        eh->ident[EI_VERSION]    != EV_CURRENT    ||
+        eh->ident[EI_OSABI]      != ELFOSABI_AROS ||
+        eh->ident[EI_ABIVERSION] != 0             ||
+        eh->type                 != ET_EXEC       ||
+
+        #if defined(__i386__)
+
+            eh->ident[EI_DATA] != ELFDATA2LSB ||
+            eh->machine        != EM_386
+
+        #else
+        #    error Your architecture is not supported
+        #endif
+    )
+    {
+        kprintf("[ELF Loader] Object is of wrong type\n");
+        kprintf("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32);
+        kprintf("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT);
+        kprintf("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL);
+
+        kprintf("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],
+        #if defined (__i386__)
+            ELFDATA2LSB);
+        #endif
+
+        kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
+        #if defined (__i386__)
+            EM_386);
+        #endif
+
+        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int load_hunk
+(
+    BPTR                file,
+    BPTR              **next_hunk_ptr,
+    struct sheader     *sh,
+    LONG               *funcarray,
+    struct DosLibrary  *DOSBase
+)
+{
+    struct hunk *hunk;
+
+    if (!sh->size)
+        return 1;
+
+    hunk = MyAlloc(sh->size + sizeof(struct hunk), MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+    if (hunk)
+    {
+/* 1 */        ULONG offset = sh->offset;
+
+        hunk->next = 0;
+	hunk->size = sh->size + sizeof(struct hunk);
+
+        sh->offset = sh->addr;
+        sh->addr = hunk->data;
+
+        /* Link the previous one with the new one */
+        BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
+
+        /* Update the pointer to the previous one, which is now the current one */
+        *next_hunk_ptr = HUNK2BPTR(hunk);
+
+        if (sh->type != SHT_NOBITS)
+        {
+            kprintf("-- 1 --\n");
+            return read_block(file, offset, hunk->data, sh->size, funcarray, DOSBase);
+        }
+
+        return 1;
+
+    }
+
+    SetIoErr(ERROR_NO_FREE_STORE);
+
+    return 0;
+}
+
+union aros_rel_entry
+{
+    ULONG section;
+    ULONG offset;
+    ULONG num_entries;
+};
+
+static int relocate
+(
+    struct sheader    *sh,
+    ULONG              shrel_idx,
+    struct DosLibrary *DOSBase
+)
+{
+    struct sheader *shrel   = &sh[shrel_idx];
+    struct sheader *toreloc = &sh[shrel->info];
+    
+
+    union aros_rel_entry *rel      = (struct relo *)shrel->addr;
+    char                 *section  = toreloc->addr;
+
+    int i, j, num_sections;
+    
+    kprintf("Num Sections = %d\n", rel->num_entries);
+    
+    for
+    (
+        i = 0, num_sections = (rel++)->num_entries;
+        i < num_sections;
+        i++
+    )
+    {
+        const register struct sheader *fromreloc = &sh[(rel++)->section];
+        const register ULONG addr_to_add         = fromreloc->addr - fromreloc->offset;
+        const register ULONG num_relocs          = (rel++)->num_entries;
+        
+        kprintf("Section = %d\n", rel[-2].section);
+        kprintf("Num relocs for this section = %d\n", num_relocs);
+        
+        for (j=0; j < num_relocs; j++, rel++)
+        {
+            register ULONG offset = rel->offset;
+            
+            kprintf("Reloc offset = 0x%08x\n", offset);
+            *((ULONG *)&section[offset]) += addr_to_add;
+        }
+    }
+
+    return 1;
+}
+
+BPTR InternalLoadSeg_ELF_relexe
+(
+    BPTR               file,
+    BPTR               table __unused,
+    LONG              *funcarray,
+    LONG              *stack __unused,
+    struct DosLibrary *DOSBase
+)
+{
+    struct elfheader  eh;
+    struct sheader   *sh;
+    BPTR   hunks         = 0;
+    BPTR  *next_hunk_ptr = &hunks;
+    ULONG offset = 0, i;
+
+    /* Load Elf Header and Section Headers */
+    if
+    (
+        !read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) ||
+        !check_header(&eh, DOSBase) ||
+	!(sh = load_block(file, eh.shoff, eh.shnum * eh.shentsize, funcarray, DOSBase))
+    )
+    {
+        return 0;
+    }
+
+    /* Iterate over the section headers in order to do some stuff... */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        /* Load the section in memory if needed, and make an hunk out of it */
+        if (sh[i].flags & SHF_ALLOC)
+        {
+            if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, DOSBase))
+                goto error;
+        }
+
+    }
+
+    /* Relocate the sections */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if
+        (
+            #if defined(__i386__)
+
+            sh[i].type == SHT_AROS_REL &&
+
+            #else
+            #    error Your architecture is not supported
+            #endif
+
+            /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
+            sh[sh[i].info].addr
+        )
+        {
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            if (!sh[i].addr || !relocate(sh, i, DOSBase))
+                goto error;
+
+            MyFree(sh[i].addr, sh[i].size);
+            sh[i].addr = NULL;
+        }
+    }
+
+    /* No errors */
+    
+    goto end;
+
+error:
+
+    /* There were some errors, deallocate all the allocated sections */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].addr)
+        {
+            if (sh[i].flags & SHF_ALLOC)
+                MyFree(sh[i].addr - sizeof(struct hunk), sh[i].size + sizeof(struct hunk));
+            else
+                MyFree(sh[i].addr, sh[i].size);
+        }
+    }
+
+    hunks = 0;
+
+end:
+
+    /* Free the section headers */
+    MyFree(sh, eh.shnum * eh.shentsize);
+
+    kprintf("[ELF Loader] Exiting...\n");
+
+    return hunks;
+}
+
+#undef MyRead
+#undef MyAlloc
+#undef MyFree
