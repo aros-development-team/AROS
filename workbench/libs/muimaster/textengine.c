@@ -893,3 +893,21 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 
     return 1;
 }
+
+int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
+{
+    int i,len=0;
+    struct ZTextLine *line;
+    struct ZTextChunk *chunk;
+
+    /* find the line */
+    for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ && i<y; line = (ZTextLine*)line->node.mln_Succ,i++);
+
+    if (!line->node.mln_Succ) return 0;
+
+    for (chunk = (ZTextChunk*)line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+    {
+    	len += chunk->str?(strlen(chunk->str)):0;
+    }
+    return len;
+}

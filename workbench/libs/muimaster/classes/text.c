@@ -359,6 +359,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	struct ZTextChunk *chunk;
 	int offx,len;
 
+        /* Cursor drawing should be done inside zune_text_draw() */
 	if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
 	{
             int cursor_width;
@@ -452,6 +453,60 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
 }
 
 /**************************************************************************
+ ...
+**************************************************************************/
+VOID Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
+{
+    struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
+    struct ZTextLine *line;
+    struct ZTextChunk *chunk;
+    int offx,len;
+
+    if (!code) return;
+
+    if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
+    {
+    	if (!chunk)
+    	{
+	    if ((chunk = mui_alloc_struct(struct ZTextChunk)))
+	    {
+		chunk->dripen = TEXTPEN;
+		AddTail((struct List*)&line->chunklist,(struct Node*)&chunk->node);
+	    }
+    	}
+
+    	if (chunk)
+    	{
+    	    int char_width;
+	    if (!chunk->str)
+	    {
+		if ((chunk->str = (char*)mui_alloc(2)))
+		{
+		    chunk->str[0] = code;
+		    chunk->str[1] = 0;
+		}
+	    }   else
+	    {
+	        char *newstr = (char*)mui_alloc(strlen(chunk->str)+2);
+	        if (newstr)
+	        {
+		    strncpy(newstr,chunk->str,len);
+		    newstr[len] = code;
+		    strcpy(&newstr[len+1],&chunk->str[len]);
+		    mui_free(chunk->str);
+		    chunk->str = newstr;
+	        }
+	    }
+	    data->xpos++;
+	    char_width = TextLength(_rp(obj),&code,1);
+	    chunk->cwidth += char_width;
+	    line->lwidth += char_width;
+        }
+    }
+}
+
+
+/**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
 static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_HandleEvent *msg)
@@ -464,13 +519,12 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 
     if (msg->imsg)
     {
-	ULONG cl = msg->imsg->Class;
 	UWORD code = msg->imsg->Code;
 	UWORD qual = msg->imsg->Qualifier;
 	WORD x = msg->imsg->MouseX;
 	WORD y = msg->imsg->MouseY;
 
-	switch (cl)
+	switch (msg->imsg->Class)
 	{
 	    case    IDCMP_MOUSEBUTTONS: /* set cursor and activate it */
 		    if (code == SELECTDOWN)
@@ -492,56 +546,38 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 
 	    case    IDCMP_RAWKEY:
 		    {
-			unsigned char code = ConvertKey(msg->imsg);
-			if (code)
-			{
-			    struct ZTextLine *line;
-			    struct ZTextChunk *chunk;
-			    int offx,len;
-
-			    if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
-			    {
-			    	if (!chunk)
-			    	{
-				    if ((chunk = mui_alloc_struct(struct ZTextChunk)))
+		    	switch (msg->imsg->Code)
+		    	{
+		    	    case    CURSORLEFT:
+				    if (data->xpos)
 				    {
-					chunk->dripen = TEXTPEN;
-					AddTail((struct List*)&line->chunklist,(struct Node*)&chunk->node);
+					data->xpos--;
+					redraw = 1;
 				    }
-			    	}
+				    retval = MUI_EventHandlerRC_Eat;
+				    break;
 
-			    	if (chunk)
-			    	{
-			    	    int char_width;
-				    if (!chunk->str)
+		    	    case    CURSORRIGHT:
+				    if (data->xpos < zune_text_get_line_len(data->ztext,obj,data->ypos))
 				    {
-					if ((chunk->str = (char*)mui_alloc(2)))
+					data->xpos++;
+					redraw = 1;
+				    }
+				    retval = MUI_EventHandlerRC_Eat;
+				    break;
+
+			    default:
+				    {
+					unsigned char code = ConvertKey(msg->imsg);
+					if (code)
 					{
-					    chunk->str[0] = code;
-					    chunk->str[1] = 0;
-					}
-				    }   else
-				    {
-				        char *newstr = (char*)mui_alloc(strlen(chunk->str)+2);
-				        if (newstr)
-				        {
-					    strncpy(newstr,chunk->str,len);
-					    newstr[len] = code;
-					    strcpy(&newstr[len+1],&chunk->str[len]);
-					    mui_free(chunk->str);
-					    chunk->str = newstr;
+					    Text_HandleVanillakey(cl,obj,code);
+				            redraw = 1;
+				            retval = MUI_EventHandlerRC_Eat;
 				        }
 				    }
-				    data->xpos++;
-				    char_width = TextLength(_rp(obj),&code,1);
-				    chunk->cwidth += char_width;
-				    line->lwidth += char_width;
-				    redraw = 1;
-				}
-			    }
-			    
-			    retval = MUI_EventHandlerRC_Eat;
-			}
+				    break;
+		    	}
 		    }
 	    	    break;
 	}
