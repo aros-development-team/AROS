@@ -12,7 +12,7 @@
 	AROS_LH1(void, StackSwap,
 
     SYNOPSIS
-	AROS_LHA(struct StackSwapStruct *, sss, A0)
+	AROS_LHA(struct StackSwapStruct *, sss, A0),
 
     LOCATION
 	struct ExecBase *, SysBase, 122, Exec)

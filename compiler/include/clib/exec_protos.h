@@ -66,7 +66,7 @@ AROS_LP0(void, SetSR,
     struct ExecBase *, SysBase, 24, Exec)
 
 AROS_LP1(void, StackSwap,
-    AROS_LPA(struct StackSwapStruct *, sss, A0)
+    AROS_LPA(struct StackSwapStruct *, sss, A0),
     struct ExecBase *, SysBase, 122, Exec)
 
 AROS_LP0(void, SuperState,
