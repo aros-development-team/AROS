@@ -139,12 +139,6 @@ UnlockCL;
 **  AllocMethodTable()  **
 *************************/
 
-/* Allocates and initializes the hashtable that is used 
-** to look up interface IDs.
-** We always make sure that 
-*/
-
-
 static BOOL AllocMTable(Class *cl, ULONG numNewMethods)
 {
 

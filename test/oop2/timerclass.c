@@ -50,7 +50,6 @@ VOID _Timer_Start(Class *cl, Object *o, Msg msg)
 {
     struct TimerData *data = INST_DATA(cl, o);
     gettimeofday(&(data->start_time), NULL);
-    
     return;
 }
 

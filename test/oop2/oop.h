@@ -71,7 +71,7 @@ struct MethodDescr
 /* Macros */
 
 #define NUM_METHOD_BITS 10
-#define METHOD_MASK ((1 << (NUM_METHOD_BITS + 1)) - 1)
+#define METHOD_MASK ((1 << (NUM_METHOD_BITS)) - 1)
 
 #define BASEOBJECT(obj) ((Object *)(_OBJ(obj) + 1))
 #define _OBJECT(obj) (_OBJ(obj) - 1)
