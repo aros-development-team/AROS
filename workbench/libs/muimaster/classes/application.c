@@ -17,7 +17,7 @@
 #include <proto/muimaster.h>
 #endif
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 #include "muimaster_intern.h"
