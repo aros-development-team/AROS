@@ -895,6 +895,7 @@ UX11
 	    	if (w)
 	    	{
 		    /* Make sure that no one closes the window while we work on it */
+#warning Handle race condition problem here
 /*		    w->MoreFlags |= EWFLG_DELAYCLOSE;
 */
 		    Dipxe(bug("X=%d is asocciated with Window %p\n",
