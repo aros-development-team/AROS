@@ -48,12 +48,14 @@
 static AttrBase HiddBitMapAttrBase	= 0;  
 static AttrBase HiddX11GfxAB		= 0;
 static AttrBase HiddGfxModeAttrBase	= 0;
+static AttrBase HiddGfxAttrBase		= 0;
 
 static struct ABDescr attrbases[] =
 {
-    { IID_Hidd_BitMap,  &HiddBitMapAttrBase },
-    { IID_Hidd_X11Gfx,  &HiddX11GfxAB },
-    { IID_Hidd_GfxMode, &HiddGfxModeAttrBase },
+    { IID_Hidd_BitMap,  &HiddBitMapAttrBase	},
+    { IID_Hidd_X11Gfx,  &HiddX11GfxAB		},
+    { IID_Hidd_GfxMode, &HiddGfxModeAttrBase	},
+    { IID_Hidd_Gfx,	&HiddGfxAttrBase	},
     { NULL, NULL }
 };
 
@@ -128,6 +130,10 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	struct gfx_data *data = INST_DATA(cl, o);
 	
 	D(bug("Got object from super\n"));
+ObtainSemaphore(&XSD(cl)->sema);
+	XSD(cl)->activecallback = (VOID (*)())GetTagData(aHidd_Gfx_ActiveBMCallBack, (IPTR)NULL, msg->attrList);
+	XSD(cl)->callbackdata = (APTR)GetTagData(aHidd_Gfx_ActiveBMCallBackData, (IPTR)NULL, msg->attrList);
+ReleaseSemaphore(&XSD(cl)->sema);
 	
 	data->display = XSD(cl)->display;
 	D(bug("Initing misc X11 stuff\n"));
@@ -191,6 +197,7 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     struct pHidd_Gfx_NewBitMap p;
     
     struct gfx_data *data;
+    HIDDT_StdPixFmt stdpf;
     struct TagItem tags[] =
     {
     	{ aHidd_X11Gfx_SysDisplay,	(IPTR) NULL},
@@ -210,24 +217,29 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     tags[3].ti_Data = data->colmap;
     tags[4].ti_Data = (IPTR)msg->attrList;
     
-    
-    
-
     /* Displayeable bitmap ? */
+    
+    
+    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_PixFmt_Unknown, msg->attrList);
     
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     if (displayable) {
     	p.classPtr = XSD(cl)->onbmclass;
     } else {
-	p.classPtr = XSD(cl)->offbmclass;
-    }
     
+	if (vHidd_PixFmt_Unknown == stdpf) {
+	    p.classPtr = XSD(cl)->offbmclass;
+	} else {
+	    /* Let the superclass allocate if it is a standard pixelformat */
+	    p.classPtr = NULL;
+	}
+    }
     
     /* !!! IMPORTANT !!! */
     p.classID = NULL;
+    
     p.mID = msg->mID;
     p.attrList = tags;
-    
     
     ReturnPtr("X11Gfx::NewBitMap", Object *, (Object *)DoSuperMethod(cl, o, (Msg)&p));
 }
@@ -253,9 +265,17 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 	    	DoSuperMethod(cl, o, (Msg)msg);
 		break;
 	}
-    }
-    else
-    {
+    } else if (IS_GFX_ATTR(msg->attrID, idx)) {
+    	switch (idx) {
+	    case aoHidd_Gfx_IsWindowed:
+	    	*msg->storage = (IPTR)TRUE;
+		break;
+		
+	    default:
+	    	DoSuperMethod(cl, o, (Msg)msg);
+		break;
+	}
+    } else {
     	DoSuperMethod(cl, o, (Msg)msg);
     }
     

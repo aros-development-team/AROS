@@ -399,6 +399,7 @@ D(bug("Got input from unixio\n"));
 		    if (NULL != node) {
 		    
 		    	node->xwindow = nmsg->xwindow;
+			node->bmobj   = nmsg->bmobj; 
 		    	AddTail( (struct List *)&xwindowlist, (struct Node *)node );
 			
 		    } else {
@@ -528,8 +529,22 @@ UX11
 		    
 		case FocusOut:
 		    XAutoRepeatOn(xsd->display);
+ObtainSemaphoreShared(&xsd->sema);
+		    /* Call the user supplied callback func, if supplied */
+		    if (NULL != xsd->activecallback) {
+		    	xsd->activecallback(xsd->callbackdata, node->bmobj, FALSE);
+		    }
+ReleaseSemaphore(&xsd->sema);
 		    break;
-			
+		    
+		case FocusIn:
+ObtainSemaphoreShared(&xsd->sema);
+		    /* Call the user supplied callback func, if supplied */
+		    if (NULL != xsd->activecallback) {
+		    	xsd->activecallback(xsd->callbackdata, node->bmobj, TRUE);
+		    }
+ReleaseSemaphore(&xsd->sema);
+		    break;
 
 	    	case KeyPress:
     		    XAutoRepeatOff(XSD(cl)->display);

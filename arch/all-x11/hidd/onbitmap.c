@@ -192,6 +192,7 @@ UX11
 		/* Send a message to the x11 task that the window has been created */
 		msg->notify_type = NOTY_WINCREATE;
 		msg->xwindow = DRAWABLE(data);
+		msg->bmobj = o;
 		msg->execmsg.mn_ReplyPort = port;
 		
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);

@@ -108,6 +108,7 @@ struct xwinnode
 {
     struct MinNode node;
     Window	xwindow;
+    Object	*bmobj;
     
     BOOL window_mapped;
 };
@@ -129,6 +130,7 @@ struct notify_msg {
      ULONG notify_type; /* NOTY_xxxx */
      
      Window xwindow;
+     Object *bmobj;
 };
 
 
@@ -185,6 +187,9 @@ struct x11_staticdata
     ULONG clut_mask;
     
     Atom delete_win_atom;
+
+    VOID	(*activecallback)(APTR, Object *, BOOL);
+    APTR	callbackdata;
 };
 
 
