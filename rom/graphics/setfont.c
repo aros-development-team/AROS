@@ -1,6 +1,6 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$	  $Log
 
     Desc: Graphics function SetFont()
     Lang: english
@@ -26,10 +26,14 @@
 	struct GfxBase *, GfxBase, 11, Graphics)
 
 /*  FUNCTION
+	Select a new font for rendering strings in a RastPort.
 
     INPUTS
+	rp - Change this RastPort
+	textFont - This is the new font
 
     RESULT
+	None.
 
     NOTES
 
@@ -42,8 +46,6 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -51,6 +53,11 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     driver_SetFont (rp, textFont, GfxBase);
+
+    rp->Font	   = textFont;
+    rp->TxWidth    = textFont->tf_XSize;
+    rp->TxHeight   = textFont->tf_YSize;
+    rp->TxBaseline = textFont->tf_Baseline;
 
     AROS_LIBFUNC_EXIT
 } /* SetFont */

@@ -7,6 +7,8 @@ include $(TOP)/config/make.cfg
 
 FILES = graphics_init graphics_functable
 FUNCTIONS = \
+	addfont \
+	askfont \
 	clonerastport \
 	closefont \
 	createrastport \
@@ -27,6 +29,7 @@ FUNCTIONS = \
 	polydraw \
 	readpixel \
 	rectfill \
+	remfont \
 	scrollraster \
 	setabpendrmd \
 	setapen \

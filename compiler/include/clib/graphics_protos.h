@@ -17,6 +17,15 @@ struct View;
 /*
     Prototypes
 */
+AROS_LP1(void, AddFont,
+    AROS_LPA(struct TextFont *, textFont, A1),
+    struct GfxBase *, GfxBase, 80, Graphics)
+
+AROS_LP2(void, AskFont,
+    AROS_LPA(struct RastPort *, rp, A1),
+    AROS_LPA(struct TextAttr *, textAttr, A0),
+    struct GfxBase *, GfxBase, 79, Graphics)
+
 AROS_LP1(struct RastPort *, CloneRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
     struct GfxBase *, GfxBase, 178, Graphics)
@@ -118,6 +127,10 @@ AROS_LP5(void, RectFill,
     AROS_LPA(LONG             , xMax, D2),
     AROS_LPA(LONG             , yMax, D3),
     struct GfxBase *, GfxBase, 51, Graphics)
+
+AROS_LP1(void, RemFont,
+    AROS_LPA(struct TextFont *, textFont, A1),
+    struct GfxBase *, GfxBase, 81, Graphics)
 
 AROS_LP7(void, ScrollRaster,
     AROS_LPA(struct RastPort *, rp, A1),

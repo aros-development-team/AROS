@@ -11,6 +11,17 @@
 /*
     Defines
 */
+#define AddFont(textFont) \
+    AROS_LC1(void, AddFont, \
+    AROS_LCA(struct TextFont *, textFont, A1), \
+    struct GfxBase *, GfxBase, 80, Graphics)
+
+#define AskFont(rp, textAttr) \
+    AROS_LC2(void, AskFont, \
+    AROS_LCA(struct RastPort *, rp, A1), \
+    AROS_LCA(struct TextAttr *, textAttr, A0), \
+    struct GfxBase *, GfxBase, 79, Graphics)
+
 #define CloneRastPort(rp) \
     AROS_LC1(struct RastPort *, CloneRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
@@ -132,6 +143,11 @@
     AROS_LCA(LONG             , xMax, D2), \
     AROS_LCA(LONG             , yMax, D3), \
     struct GfxBase *, GfxBase, 51, Graphics)
+
+#define RemFont(textFont) \
+    AROS_LC1(void, RemFont, \
+    AROS_LCA(struct TextFont *, textFont, A1), \
+    struct GfxBase *, GfxBase, 81, Graphics)
 
 #define ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax) \
     AROS_LC7(void, ScrollRaster, \
