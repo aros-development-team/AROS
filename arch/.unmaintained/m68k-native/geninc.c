@@ -8,6 +8,8 @@
 
 #define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
 
+ULONG BitOf(ULONG);
+
 int main (void)
 {
     printf ("# Macros\n"
@@ -71,7 +73,49 @@ int main (void)
     printf ("\tAT_DeadEnd    = 0x%08X\n", AT_DeadEnd);
     printf ("\tAN_StackProbe = 0x%08X\n", AN_StackProbe);
 
+    printf ("\n# Cache constants\n");
+    printf ("\tCACRF_EnableI       = 0x%08lx\n", CACRF_EnableI      );
+    printf ("\tCACRF_FreezeI       = 0x%08lx\n", CACRF_FreezeI      );
+    printf ("\tCACRF_ClearI        = 0x%08lx\n", CACRF_ClearI       );
+    printf ("\tCACRF_IBE           = 0x%08lx\n", CACRF_IBE          );
+    printf ("\tCACRF_EnableD       = 0x%08lx\n", CACRF_EnableD      );
+    printf ("\tCACRF_FreezeD       = 0x%08lx\n", CACRF_FreezeD      );
+    printf ("\tCACRF_ClearD        = 0x%08lx\n", CACRF_ClearD       );
+    printf ("\tCACRF_DBE           = 0x%08lx\n", CACRF_DBE          );
+    printf ("\tCACRF_WriteAllocate = 0x%08lx\n", CACRF_WriteAllocate);
+    printf ("\tCACRF_EnableE       = 0x%08lx\n", CACRF_EnableE      );
+    printf ("\tCACRF_CopyBack      = 0x%08lx\n", CACRF_CopyBack     );
+    printf ("\tDMA_Continue        = 0x%08lx\n", DMA_Continue       );
+    printf ("\tDMA_NoModify        = 0x%08lx\n", DMA_NoModify       );
+    printf ("\tDMA_ReadFromRAM     = 0x%08lx\n", DMA_ReadFromRAM    );
+
+    printf ("\tCACRB_EnableI       = %ld\n", BitOf(CACRF_EnableI      ));
+    printf ("\tCACRB_FreezeI       = %ld\n", BitOf(CACRF_FreezeI      ));
+    printf ("\tCACRB_ClearI        = %ld\n", BitOf(CACRF_ClearI       ));
+    printf ("\tCACRB_IBE           = %ld\n", BitOf(CACRF_IBE          ));
+    printf ("\tCACRB_EnableD       = %ld\n", BitOf(CACRF_EnableD      ));
+    printf ("\tCACRB_FreezeD       = %ld\n", BitOf(CACRF_FreezeD      ));
+    printf ("\tCACRB_ClearD        = %ld\n", BitOf(CACRF_ClearD       ));
+    printf ("\tCACRB_DBE           = %ld\n", BitOf(CACRF_DBE          ));
+    printf ("\tCACRB_WriteAllocate = %ld\n", BitOf(CACRF_WriteAllocate));
+    printf ("\tCACRB_EnableE       = %ld\n", BitOf(CACRF_EnableE      ));
+    printf ("\tCACRB_CopyBack      = %ld\n", BitOf(CACRF_CopyBack     ));
+    printf ("\tDMAB_Continue       = %ld\n", BitOf(DMA_Continue       ));
+    printf ("\tDMAB_NoModify       = %ld\n", BitOf(DMA_NoModify       ));
+    printf ("\tDMAB_ReadFromRAM    = %ld\n", BitOf(DMA_ReadFromRAM    ));
+
     return 0;
 }
 
+ULONG BitOf(ULONG mask)
+{
+    LONG ret = -1;
 
+    do
+    {
+	mask = mask >> 1;
+	ret++;
+    } while(mask);
+
+    return (ULONG)ret;
+}
