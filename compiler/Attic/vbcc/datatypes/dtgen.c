@@ -30,11 +30,15 @@ char *have;
 #define TYPECNT POINTER
 
 char *typen[TYPECNT+1]={"error","char","uchar","short","ushort","int","uint",
-		      "long","ulong","float","double","pointer"};
+		        "long","ulong","float","double","pointer"};
+char *ftypen[TYPECNT+1]={"error","char","unsigned char","short","unsigned short",
+                                 "int","unsigned int","long","unsigned long",
+                                 "float","double","char *"};
 
 int dt[TYPECNT+1],cnv[TYPECNT+1];
 char *nt[TYPECNT+1];
 FILE *fin,*cout,*hout;
+int crosscompiler;
 
 void *mymalloc(size_t size)
 {
@@ -175,13 +179,22 @@ main(int argc,char **argv)
   if(!hout){ printf("Could not open <%s> for output!\n",argv[2]);exit(EXIT_FAILURE);}
   cout=fopen(argv[3],"w");
   if(!hout){ printf("Could not open <%s> for output!\n",argv[3]);exit(EXIT_FAILURE);}
+  printf("Are you building a cross-compiler?\n");
+  crosscompiler=askyn();
   for(i=1;i<=TYPECNT;i++){
     fgets(spec,127,fin);
 /*     printf("Specs for z%s:\n%s\n",typen[i],spec); */
-    if(!tst(i,spec)){
-      printf("Problem! Your system does not seem to provide all of the data types\n"
-	     "this version of vbcc needs.\nWrite to volker@vb.franken.de!\n");
-      exit(EXIT_FAILURE);
+    if(!crosscompiler){
+      dt[i]=i;
+      nt[i]=ftypen[i];
+      have[i]=i;
+      cnv[i]=-1;
+    }else{
+      if(!tst(i,spec)){
+	printf("Problem! Your system does not seem to provide all of the data types\n"
+	       "this version of vbcc needs.\nWrite to volker@vb.franken.de!\n");
+	exit(EXIT_FAILURE);
+      }
     }
   }
   fprintf(hout,"\n\n/* Machine generated file. DON'T TOUCH ME! */\n\n\n");

@@ -9,6 +9,39 @@ vbcc is (c) in 1995-97 by Volker Barthelmann
 (vcu68k):  changes in the compiler frontend for unix68k
 
 
+Changes since V0.5f
+
+- added examples of stdarg.h into the codegen-docs
+- -save-fp added (cgi386)
+- bug fix: conversions int<->char and %esi etc. (cgi386)
+- warning 170 turned off by default
+- bug fix: corrected prototype for strerror() (cla68k)
+- no-builtins added (cgalpha)
+- added some builtin faunctions (cgalpha)
+- ?: now works with non-scalars
+- dtgen is easier to use when not building a cross-compiler
+- __typeof added
+- conversions of DREFOBJ sometimes generated illegal assembly on
+  alpha (cgalpha)
+
+Changes since V0.5e
+
+- cg_copyright added
+- increased default-values for unroll-size and inline-size
+- some changes for PPC (cgppc)
+- bug fix: declarations with empty identifiers were accepted
+- bug fix: read_config() read one byte too much in vc (vc)
+- bug fix: warning 226 added
+- some optimizations for Alpha (cgalpha)
+- more conservative handling of copy-propagation and structs/unions
+- better handling of alignment of compund types
+- bug fix: local_regs() generated duplicate FREEREGs if a register
+           was exchanged in free_hreg()
+- bug fix: moveq was used incorrectly sometimes (cgm68k)
+- bug fix: problems with must_convert() for m68k (cgm68k)
+- bug fix: sometimes scratch registers were reused too early with
+           a op= b
+
 Changes since V0.5d
 
 - added warnings 224 and 225

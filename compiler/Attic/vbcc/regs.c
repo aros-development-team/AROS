@@ -570,6 +570,7 @@ void insert_allocreg(struct flowgraph *fg,struct IC *p,int code,int reg)
 /*  first_ic.                                                       */
 {
     struct IC *new=mymalloc(ICS);
+    /*    printf("%s %s",code==FREEREG?"freereg":"allocreg",regnames[reg]);pric2(stdout,p);*/
     new->line=0;
     new->file=0;
     BSET(fg->regused,reg);
@@ -642,7 +643,7 @@ void free_hreg(struct flowgraph *fg,struct IC *p,int reg,int mustr)
     for(m=first->next;m&&m->code==FREEREG;m=m->next){
         if(m->q1.reg==reg){
             if(!rreg) remove_IC_fg(fg,m); else m->q1.reg=rreg;
-            if(rreg) insert_allocreg(fg,first,FREEREG,rreg);
+/*            if(rreg) insert_allocreg(fg,first,FREEREG,rreg);*/
             return;
         }
     }
@@ -897,6 +898,7 @@ void load_one_parm(int freg,int treg,struct Var *tvar,struct flowgraph *fg)
   new->file=0;
   new->code=ASSIGN;
   new->typf=tvar->vtyp->flags;
+  if((new->typf&NQ)==FLOAT||(new->typf&NQ)==DOUBLE) float_used=1;
   new->q1.flags=REG;
   new->q1.reg=freg;
   new->q2.flags=0;

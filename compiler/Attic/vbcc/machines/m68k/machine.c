@@ -9,6 +9,9 @@ static char FILE_[]=__FILE__;
 
 /*  Public data that MUST be there.                             */
 
+/* Name and copyright. */
+char cg_copyright[]="vbcc code-generator for m68k V1.1 (c) in 1995-97 by Volker Barthelmann";
+
 /*  Commandline-flags the code-generator accepts                */
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 char *g_flags_name[MAXGF]={
@@ -200,6 +203,7 @@ static int isquickkonst(union atyps *p,int t)
 /*  Returns 1 if constant is between -128 and 127.   */
 {
     zlong zl;zulong zul;
+    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE) return 0;
     eval_const(p,t);
     if(t&UNSIGNED){
         zul=ul2zul(127UL);
@@ -215,6 +219,7 @@ static int isquickkonst2(union atyps *p,int t)
 /*  Returns 1 if constant is between 1 and 8.   */
 {
     zlong zl;zulong zul;
+    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE) return 0;
     eval_const(p,t);
     if(t&UNSIGNED){
         if(zuleqto(ul2zul(0UL),vulong)) return(0);
@@ -1342,8 +1347,8 @@ int must_convert(np p,int t)
     /*  int==long   */
     if((tp==INT&&op==LONG)||(tp==LONG&&op==INT)) return(0);
 
-    if((tp==FLOAT||tp==DOUBLE)&&(op==FLOAT||op==DOUBLE)&&(p->o.flags&REG)&&p->o.reg>=17&&p->o.reg<=24)
-        return(0);
+    /*    if((tp==FLOAT||tp==DOUBLE)&&(op==FLOAT||op==DOUBLE)&&(p->o.flags&REG)&&p->o.reg>=17&&p->o.reg<=24)
+        return(0);*/
 
     return(1);
 }

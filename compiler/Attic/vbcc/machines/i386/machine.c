@@ -7,12 +7,15 @@ static char FILE_[]=__FILE__;
 
 /*  Public data that MUST be there.				*/
 
+/* Name and copyright. */
+char cg_copyright[]="vbcc code-generator for i386 V0.3 (c) in 1996-97 by Volker Barthelmann";
+
 /*  Commandline-flags the code-generator accepts		*/
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,
 		    0,0,0,0,
 		    0};
 char *g_flags_name[MAXGF]={"cpu","fpu","no-delayed-popping","const-in-data",
-			   "merge-constants","elf","longalign","use-framepointer",
+			   "merge-constants","elf","longalign","safe-fp",
 			   "g"};
 union ppi g_flags_val[MAXGF];
 
@@ -95,7 +98,7 @@ static char *dct[]={"","byte","short","long","long","long","long","long","long"}
 static pushedsize,pushorder=2;
 static int fst[8];
 static int cxl,dil,sil;
-static char *idprefix="_",*labprefix="l";
+static char *idprefix="",*labprefix="";
 
 static struct fpconstlist {
     struct fpconstlist *next;
@@ -150,7 +153,10 @@ static void probj2(FILE *f,struct obj *p,int t)
 		    fprintf(f,"%s",regnames[i+9]);
 	    }
 	}else{
-	    fprintf(f,"%s",regnames[p->reg]);
+          t&=NQ;
+          if(t==CHAR&&!(p->flags&DREFOBJ)) fprintf(f,"%%%cl",regnames[p->reg][2]);
+          else if(t==SHORT&&!(p->flags&DREFOBJ)) fprintf(f,"%%%s",regnames[p->reg]+2);
+          else fprintf(f,"%s",regnames[p->reg]);
 	}
     }
     if(p->flags&KONST){
@@ -212,7 +218,7 @@ static void fstore(FILE *f,struct obj *o,int t)
     int i;
     if((o->flags&(REG|DREFOBJ))==REG){
 	for(i=0;i<8;i++)
-	    if(fst[i]==o->reg) fst[i]=-1;
+	    if(fst[i]==o->reg) fst[i]=0;
 	fst[0]=o->reg;
     }else{
 	fprintf(f,"\tfstp%c\t",x_t[t&NQ]);probj2(f,o,t);
@@ -550,13 +556,13 @@ static int compare_objects(struct obj *o1,struct obj *o2)
     }
     return(0);
 }
-static int get_reg(FILE *f,struct IC *p)
+static int get_reg(FILE *f,struct IC *p,int type)
 {
     int i;
     /*	If we can use a register which was already used by the compiler */
     /*	or it is a sratch register then we can use it without problems. */
     for(i=1;i<=8;i++){
-	if(!regs[i]&&(regused[i]||regscratch[i])){
+	if(!regs[i]&&(regused[i]||regscratch[i])&&regok(i,type,0)){
 	    regs[i]=2;
 	    return(i);
 	}
@@ -564,7 +570,7 @@ static int get_reg(FILE *f,struct IC *p)
     /*	Otherwise we have to save this register.			*/
     /*	We may not use a register which is used in this IC.		*/
     for(i=1;i<=8;i++){
-	if(regs[i]<2
+	if(regs[i]<2&&regok(i,type,0)
 	    &&(!(p->q1.flags&REG)||p->q1.reg!=i)
 	    &&(!(p->q2.flags&REG)||p->q2.reg!=i)
 	    &&(!(p->z.flags&REG)||p->z.reg!=i) ){
@@ -582,6 +588,7 @@ static void move(FILE *f,struct obj *q,int qr,struct obj *z,int zr,int t)
 /*  Generates code to move object q (or register qr) into object z (or  */
 /*  register zr).							*/
 {
+    t&=NQ;
     if(q&&(q->flags&(REG|DREFOBJ))==REG) qr=q->reg;
     if(z&&(z->flags&(REG|DREFOBJ))==REG) zr=z->reg;
     if(qr&&zr){
@@ -597,9 +604,19 @@ static void move(FILE *f,struct obj *q,int qr,struct obj *z,int zr,int t)
 	}
     }
     fprintf(f,"\tmov%c\t",x_t[t&NQ]);
-    if(qr) fprintf(f,"%s",regnames[qr]); else probj2(f,q,t);
+    if(qr){
+      if(t==SHORT) fprintf(f,"%%%s",regnames[qr]+2);
+      else if(t==CHAR) fprintf(f,"%%%cl",regnames[qr][2]);
+      else fprintf(f,"%s",regnames[qr]);
+    }else
+      probj2(f,q,t);
     fprintf(f,",");
-    if(zr) fprintf(f,"%s",regnames[zr]); else probj2(f,z,t);
+    if(zr){
+      if(t==SHORT) fprintf(f,"%%%s",regnames[zr]+2);
+      else if(t==CHAR) fprintf(f,"%%%cl",regnames[zr][2]);
+      else fprintf(f,"%s",regnames[zr]);
+    }else
+      probj2(f,z,t);
     fprintf(f,"\n");
 }
 static long pof2(zulong x)
@@ -624,7 +641,6 @@ int init_cg(void)
 /*  once at the beginning and should return 0 in case of problems.	*/
 {
     int i;
-
     /*	Initialize some values which cannot be statically initialized	*/
     /*	because they are stored in the target's arithmetic.             */
     maxalign=l2zl(4L);
@@ -661,13 +677,11 @@ int init_cg(void)
     /*	Reserve a few registers for use by the code-generator.	    */
     /*	We only reserve the stack-pointer here. 		    */
     regsa[sp]=1;
-    /*	If we are to use a framepointer also reserve %ebp.	    */
-    if(G_FLAG_USE_FP) regsa[7]=1;
     /*	We need at least one free slot in the flaoting point stack  */
     regsa[16]=1;regscratch[16]=0;
     /*	Use l%d as labels and _%s as identifiers by default. If     */
     /*	-elf is specified we use .l%d and %s instead.		    */
-    if(G_FLAG_ELF) {labprefix=".L";idprefix="";}
+    if(G_FLAG_ELF) labprefix=".L"; else idprefix="_";
     return(1);
 }
 
@@ -689,13 +703,14 @@ int regok(int r,int t,int mode)
     if(r==0) return(0);
     t&=NQ;
     if(r>8){
-	if(t==FLOAT||t==DOUBLE) return(1);
-	    else		return(0);
+        if(g_flags[7]&USEDFLAG) return 0;
+	if(t==FLOAT||t==DOUBLE) return 1;
+	    else		return 0;
     }
-    if(t==CHAR&&(r==si||r==di||r==bp)) return(0);
-    if(t<=LONG) return(1);
-    if(t==POINTER) return(1);
-    return(0);
+    if(t==CHAR&&(r==si||r==di||r==bp)) return 0;
+    if(t<=LONG) return 1;
+    if(t==POINTER) return 1;
+    return 0;
 }
 
 int dangerous_IC(struct IC *p)
@@ -760,7 +775,7 @@ void gen_var_head(FILE *f,struct Var *v)
     if(v->storage_class==STATIC){
 	if((v->vtyp->flags&NQ)==FUNKT) return;
 	if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	if(v->clist&&constflag&&G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
+	if(v->clist&&constflag&&!G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
 	if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
 	if(section!=BSS) fprintf(f,"\t.align\t2\n%s%ld:\n",labprefix,zl2l(v->offset));
 	    else fprintf(f,"\t.lcomm\t%s%ld,",labprefix,zl2l(v->offset));
@@ -770,7 +785,7 @@ void gen_var_head(FILE *f,struct Var *v)
 	fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
 	if(v->flags&(DEFINED|TENTATIVE)){
 	    if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	    if(v->clist&&constflag&&G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
+	    if(v->clist&&constflag&&!G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
 	    if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
 	    if(section!=BSS) fprintf(f,"\t.align\t2\n%s%s:\n",idprefix,v->identifier);
 		else fprintf(f,"\t.comm\t%s%s,",idprefix,v->identifier);
@@ -893,17 +908,17 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    continue;
 	}
 	if((p->q1.flags&(DREFOBJ|REG))==DREFOBJ){
-	    reg=get_reg(f,p);
+	    reg=get_reg(f,p,LONG);
 	    move(f,&p->q1,0,0,reg,LONG);
 	    p->q1.flags|=REG;p->q1.reg=reg;
 	}
 	if((p->q2.flags&(DREFOBJ|REG))==DREFOBJ){
-	    reg=get_reg(f,p);
+	    reg=get_reg(f,p,LONG);
 	    move(f,&p->q2,0,0,reg,LONG);
 	    p->q2.flags|=REG;p->q2.reg=reg;
 	}
 	if((p->z.flags&(DREFOBJ|REG))==DREFOBJ){
-	    reg=get_reg(f,p);
+	    reg=get_reg(f,p,LONG);
 	    move(f,&p->z,0,0,reg,LONG);
 	    p->z.flags|=REG;p->z.reg=reg;
 	}
@@ -924,17 +939,11 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if((t&NU)==(UNSIGNED|LONG)||(t&NU)==POINTER) t=(UNSIGNED|INT);
 	    if((to&NQ)<=INT&&(t&NQ)<=INT){
 		if(isreg(z)) reg=p->z.reg;
-		else if(isreg(q1)) reg=p->q1.reg;
-		else reg=get_reg(f,p);
+		else if(isreg(q1)&&regok(p->q1.reg,t,0)) reg=p->q1.reg;
+		else reg=get_reg(f,p,((to&NQ)==CHAR||(t&NQ)==CHAR)?CHAR:LONG);
 		if((to&NQ)<=SHORT){
 		    fprintf(f,"\tmov%c%cl\t",(to&UNSIGNED)?'z':'s',x_t[to&NQ]);
-		    if(isreg(q1)){
-			if((to&NQ)==SHORT){
-			    fprintf(f,"%%%s",regnames[p->q1.reg]+2);
-			}else{
-			    fprintf(f,"%%%cl",regnames[p->q1.reg][2]);
-			}
-		    }else probj2(f,&p->q1,to);
+		    probj2(f,&p->q1,to);
 		    fprintf(f,",%s\n",regnames[reg]);
 		}else{
 		    move(f,&p->q1,0,0,reg,to);
@@ -975,7 +984,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 			    }
 			}
 		    }else{
-			reg=get_reg(f,p);
+			reg=get_reg(f,p,LONG);
 			if(to&UNSIGNED){
 			    fprintf(f,"\tmovz%cl\t",x_t[to&NQ]);
 			}else{
@@ -1007,7 +1016,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if((to&NQ)==FLOAT||(to&NQ)==DOUBLE){
 		if(isreg(q1)&&fst[0]==p->q1.reg){
 		    if((t&NQ)==CHAR){
-			if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
+			if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,CHAR);
 			fprintf(f,"\tsubl\t$4,%s\n\tfistl\t(%s)\n\tmovsbl\t(%s),%s\n\taddl\t$4,%s\n",regnames[sp],regnames[sp],regnames[sp],regnames[reg],regnames[sp]);
 			move(f,0,reg,&p->z,0,t);
 		    }else{
@@ -1024,7 +1033,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		}else{
 		    fload(f,&p->q1,to);
 		    if((t&NQ)==CHAR){
-			if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
+			if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,CHAR);
 			fprintf(f,"\tsubl\t$4,%s\n\tfistpl\t(%s)\n\tmovsbl\t(%s),%s\n\taddl\t$4,%s\n",regnames[sp],regnames[sp],regnames[sp],regnames[reg],regnames[sp]);
 			fpop(); move(f,0,reg,&p->z,0,t);
 		    }else{
@@ -1063,7 +1072,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		probj2(f,&p->z,t);fprintf(f,"\n");
 		continue;
 	    }
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
+	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
 	    move(f,&p->q1,0,0,reg,t);
 	    fprintf(f,"\t%s%c\t%s\n",s,x_t[t&NQ],regnames[reg]);
 	    move(f,0,reg,&p->z,0,t);
@@ -1192,7 +1201,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		}
 		if(isreg(z)) reg=p->z.reg;
 		else if(isreg(q1)) reg=p->q1.reg;
-		else reg=get_reg(f,p);
+		else reg=get_reg(f,p,t);
 		move(f,&p->q1,0,0,reg,t);
 		move(f,0,reg,&p->z,0,t);
 		continue;
@@ -1200,7 +1209,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    ierror(0);
 	}
 	if(c==ADDRESS){
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
+	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,LONG);
 	    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
 	    fprintf(f,",%s\n",regnames[reg]);
 	    move(f,0,reg,&p->z,0,POINTER);
@@ -1255,7 +1264,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    }
 	    if(!isreg(q1)){
 		if(!isreg(q2)){
-		    reg=get_reg(f,p);
+		    reg=get_reg(f,p,t);
 		    move(f,&p->q1,0,0,reg,t);
 		    p->q1.flags=REG;
 		    p->q1.reg=reg;
@@ -1348,15 +1357,20 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if(c==RSHIFT&&(t&UNSIGNED)) s="shr";
 	    if(((p->q1.flags&REG)&&p->q1.reg==cx)||((p->z.flags&REG)&&p->z.reg==cx)
 	       ||(!compare_objects(&p->q1,&p->z)&&!isreg(q1))){
-		reg=get_reg(f,p);
+              fl=regs[cx];regs[cx]=2; /* don't want cx */
+		reg=get_reg(f,p,t);
+              regs[cx]=fl;
+              if(isreg(z)&&p->z.reg==cx) fl=0;
+              if(fl){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;}
 		move(f,&p->q1,0,0,reg,t);
 		move(f,&p->q2,0,0,cx,t);
 		fprintf(f,"\t%s%c\t%%cl,%s\n",s,x_t[t&NQ],regnames[reg]);
 		move(f,0,reg,&p->z,0,t);
+              if(fl){fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
 		continue;
 	    }else{
 		if(!isreg(q2)||p->q2.reg!=cx){
-		    if(regs[cx]){fprintf(f,"\tpushl\t%s\n",regnames[cx]);fl=1;}
+		    if(regs[cx]){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;fl=1;}
 		    move(f,&p->q2,0,0,cx,t);
 		}
 		if(compare_objects(&p->q1,&p->z)){
@@ -1367,7 +1381,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		    fprintf(f,"\t%s%c\t%%cl,",s,x_t[t&NQ]);
 		    probj2(f,&p->z,t);fprintf(f,"\n");
 		}
-		if(fl) fprintf(f,"\tpopl\t%s\n",regnames[cx]);
+		if(fl) {fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
 		continue;
 	    }
 	}
@@ -1392,14 +1406,14 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		    probj2(f,&p->z,t);fprintf(f,"\n");
 		    continue;
 		}else{
-		    if(isreg(q2)) reg=p->q2.reg; else reg=get_reg(f,p);
+		    if(isreg(q2)) reg=p->q2.reg; else reg=get_reg(f,p,t);
 		    move(f,&p->q2,0,0,reg,t);
 		    fprintf(f,"\t%s%c\t%s",s,x_t[t&NQ],regnames[reg]);
 		    fprintf(f,","); probj2(f,&p->z,t);fprintf(f,"\n");
 		    continue;
 		}
 	    }
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p);
+	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
 	    move(f,&p->q1,0,0,reg,t);
 	    if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
 		eval_const(&p->q2.val,t);

@@ -52,8 +52,8 @@ int only_inline;
 struct IC *err_ic;
 long maxoptpasses=10;
 long optflags;
-long inline_size=30;
-long unroll_size=30;
+long inline_size=100;
+long unroll_size=200;
 long fp_assoc,noaliasopt;
 int fline;
 char errfname[FILENAME_MAX+1];
@@ -110,37 +110,59 @@ void freetyp(struct Typ *p)
         p=merk;
     }
 }
-zlong szof(struct Typ *t)
-/*  liefert die benoetigte Groesse eines Typs in Bytes      */
-/*  maschinenabhaengig                                      */
+zlong falign(struct Typ *t)
+/*  Liefert Alignment eines Typs. Funktioniert im Gegensatz zum  */
+/*  align[]-Array auch mit zusammengesetzten Typen.              */
 {
-    int i=t->flags,j,f;zlong size,m;
-    if((i&NQ)==POINTER) return(sizetab[POINTER]);
-    if((i&NQ)==ARRAY) return(zlmult((t->size),szof(t->next)));
-    if((i&NQ)==UNION){
+  int i,f; zlong al,alt;
+  f=t->flags&NQ;
+  al=align[f];
+  if(f<=POINTER) return al;
+  if(f==ARRAY){
+    do{ 
+      t=t->next; 
+      f=t->flags&NQ;
+    }while(f==ARRAY);
+    alt=falign(t);
+    if(zlleq(al,alt)) return alt; else return al;
+  }
+  if(f==UNION||f==STRUCT){
+    for(i=0;i<t->exact->count;i++){
+      alt=falign((*t->exact->sl)[i].styp);
+      if(!zlleq(alt,al)) al=alt;
+    }
+    return al;
+  }
+  return al;
+}
+zlong szof(struct Typ *t)
+/*  Liefert die benoetigte Groesse eines Typs in Bytes      */
+{
+    int i=t->flags&NQ,j;zlong size,m;
+    if(i<=POINTER) return sizetab[i];
+    if(i==ARRAY) return(zlmult((t->size),szof(t->next)));
+    if(i==UNION){
         for(j=0,size=l2zl(0L);j<t->exact->count;j++){
             m=szof((*t->exact->sl)[j].styp);
             if(zleqto(m,l2zl(0L))) return(l2zl(0L));
             if(!zlleq(m,size)) size=m;
         }
-        return(zlmult(zldiv(zladd(size,zlsub(align[UNION],l2zl(1L))),align[UNION]),align[UNION])); /* align */
+	m=falign(t);
+        return zlmult(zldiv(zladd(size,zlsub(m,l2zl(1L))),m),m); /* align */
     }
-    if((i&NQ)==STRUCT){
+    if(i==STRUCT){
         for(j=0,size=0;j<t->exact->count;j++){
             struct Typ *h=(*t->exact->sl)[j].styp;
-            m=szof(h);
+	    m=falign(h);
+            size=zlmult(zldiv(zladd(size,zlsub(m,l2zl(1L))),m),m);
+	    m=szof(h);
             if(zleqto(m,l2zl(0L))) return(l2zl(0L));
-            do{
-                f=h->flags&NQ;
-                h=h->next;
-            }while(f==ARRAY);
-            size=zlmult(zldiv(zladd(size,zlsub(align[f],l2zl(1L))),align[f]),align[f]);
             size=zladd(size,m);
         }
-        return(zlmult(zldiv(zladd(size,zlsub(align[STRUCT],l2zl(1L))),align[STRUCT]),align[STRUCT])); /* align */
+	m=falign(t);
+        return zlmult(zldiv(zladd(size,zlsub(m,l2zl(1L))),m),m); /* align */
     }
-    if(DEBUG&2) printf("sizeof(%d)=%ld\n",i&NQ,zl2l(sizetab[i&NQ]));
-    return(sizetab[i&NQ]);
+    return sizetab[i];
 }
 void printval(FILE *f,union atyps *p,int t,int verbose)
 /*  Gibt atyps aus                                      */

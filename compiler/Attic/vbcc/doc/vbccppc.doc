@@ -9,9 +9,9 @@ INTRODUCTION
     other machine so that it is possible to e.g. make a crosscompiler for
     a 64bit machine on a 32bit machine.
     This document only deals with the target dependant parts of the
-    DEC Alpha version.
+    PowerPC version.
 
-    This is a pre-alpha version!
+    This is a pre-alpha version! 
 
 
 LEGAL
@@ -44,34 +44,36 @@ ADDITIONAL OPTIONS FOR THIS VERSION
                 Note that on operating systems with memory protection this
                 option will disable write-protection of constant data.
 
-    -no-builtins
+    -fsub-zero
 
-                Do not replace certain builtin functions by inline code.
-                This may be useful if you use this code generator with
-                another frontend than vbcc.
-                stdarg.h will not work with -no-builtins.
+                Use fsub to load a floating-point-register with zero.
+                This is faster but requires all registers to always contain
+                valid values (i.e. no NaNs etc.) which may not be the case
+                depending on startup-code, libraries etc.
 
 
 SOME INTERNALS
 
-    The current version generates assembly output for use with the GNU
-    assembler. The generated code should work on systems with 21064,
-    21066, 21164 and higher Alpha CPUs.
+    The current version generates assembly output for use with the "pasm"
+    assembler by Frank Wille. The generated code should work on 32bit systems
+    based on a PowerPC CPU using the V.4 ABI.
 
     The register names are:
 
-        $0 through $31 for the general purpose registers and
-        $f0 through $f31 for the floating point registers	
+        r0 through r31 for the general purpose registers,
+        f0 through f31 for the floating point registers and
+        cr0 through cr7 for the condition-code registers.
 
-    The registers $0-$8, $16-$28, $f0, $f1 and $f10-$f30
-    are used as scratch registers (i.e. they can be destroyed in function
-    calls), all other registers are preserved. Of course $31 and $f31
-    cannot be used.
+    The registers r0, r3-r12, f0-f13 and cr0-cr1 are used as scratch registers
+    (i.e. they can be destroyed in function calls), all other registers are 
+    preserved. r1 is the stack-pointer and r13 is the small-data-pointer if
+    small-data-mode is used.
 
-    The first 6 function arguments which have arithmetic or pointer types
-    are passed in registers $16/$f16 through $21/$f21.
+    The first 8 function arguments which have integer or pointer types
+    are passed in registers r3 through r10 and the first 8 floating-point
+    arguments are passed in registers f1 through f8.
 
-    Integers and pointers are returned in $0, floats and doubles in $f0.
+    Integers and pointers are returned in r3, floats and doubles in f1.
     All other types are returned by passing the function the address
     of the result as a hidden argument - so when you call such a function
     without a proper declaration in scope you can expect a crash.
@@ -83,50 +85,21 @@ SOME INTERNALS
     char                8                       1
     short              16                       2
     int                32                       4
-    long               64                       8
-    all pointers       64                       8
+    long               32                       4
+    all pointers       32                       4
     float              32                       4
-    double             64                       8
-
-
-STDARG
-
-    A possible <stdarg.h> could look like this:
-
-    typedef struct {
-      char *regbase;
-      char *membase;
-      int arg;
-    } va_list;
-
-    char *__va_start(void);
-    int __va_fixargs(void);
-
-    #define va_start(vl,dummy) \
-    (vl.arg=__va_fixargs(),vl.regbase=__va_start(),vl.membase=vl.regbase+(6-vl.arg)*16)
-
-    #define va_end(vl) (vl.regbase=vl.membase=0)
-
-    #define __va_size(type) ((sizeof(type)+7)/8*8)
-    #define va_arg(vl,type) \
-     ( \
-      ((__typeof(type)&15)<=8&&++vl.arg<=6) ? \
-       ( \
-        ((__typeof(type)&15)==5||(__typeof(type)&15)==6) ? \
-          (vl.regbase+=16,*(type *)(vl.regbase-8)) \
-        : \
-          (vl.regbase+=16,*(type *)(vl.regbase-16)) \
-       ) \
-      : \
-       (vl.membase+=__va_size(type),*(type *)(vl.membase-__va_size(type))) \
-     )
+    double             64                       4
 
 
 KNOWN PROBLEMS
 
     - generated code is very poor
+    - certain type-conversions do not work
     - returning of structs/unions does not work
     - nested function calls which pass parameters on the stack will not work
+    - composite types are put on the stack rather than passed via pointer
+    - modulo does not work
+    - indication of fp-register-args with bit 6 of cr is not done
     - several other problems
 
 

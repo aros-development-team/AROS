@@ -175,9 +175,9 @@ int read_config(void)
     fclose(file);
 #endif
     count=0;p=config;
-    while(*p&&p<config+size){
+    while(p<config+size&&*p){
         count++;
-        while(*p!='\n'&&p<config+size) p++;
+        while(p<config+size&&*p!='\n') p++;
         if(*p=='\n') *p++=0;
     }
     confp=malloc(count*sizeof(char *));

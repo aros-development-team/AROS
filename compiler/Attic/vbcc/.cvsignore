@@ -1,9 +1,9 @@
 *.err
-log
-vbcc.log
+*log
 bin?
 stage?
 t*.c
 t*.asm
 tstab
 patch*
+.pure

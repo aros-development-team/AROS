@@ -519,6 +519,7 @@ EXTENSIONS
     #pragma tree <expr>             Write the parse-tree of <expr> to stdout.
                                     This is mainly intended for testing.
 
+
     Register parameters:
 
     If the parameters for certain functions should be passed in certain
@@ -541,6 +542,13 @@ EXTENSIONS
     Also note that this may force vbcc to create worse code.
 
     __reg is not recognized when ANSI/ISO mode is turned on.
+
+
+    __typeof:
+
+    __typeof is syntactically equivalent to sizeof but its result is of type
+    int and is a number representing the type of its argument.
+    This may be necessary for implementing stdarg.h.
 
 
 KNOWN PROBLEMS
@@ -611,6 +619,7 @@ CREDITS
     Uwe Klinger
     Dirk Holtwick
     Kasper Graversen
+    Jens Granseuer
     Volker Graf
     Marcus Geelnard
     Matthias Fleischer

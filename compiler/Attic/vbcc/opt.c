@@ -58,7 +58,7 @@ void recalc_offsets(struct flowgraph *fg)
             used[i]=0;
         }
         sz[i]=szof(vilist[i]->vtyp);
-        al[i]=align[vilist[i]->vtyp->flags&NQ]; /*  noch fuer Arrays aendern */
+        al[i]=falign(vilist[i]->vtyp);
         eqto[i]=-1;
     }
     b=0;

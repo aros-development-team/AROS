@@ -58,6 +58,12 @@ ADDITIONAL OPTIONS FOR THIS VERSION
                 This may simplify debugging and very slightly reduce the
                 stack size needed by the compiled program.
 
+    -safe-fp
+
+                Do not use the floating-point-stack for register variables.
+                At the moment this is necessary as vbcci386 still has problems
+                in some cases otherwise.
+
 
 SOME INTERNALS
 
@@ -99,6 +105,18 @@ SOME INTERNALS
     all pointers       32                       2(4)
     float              32                       2(4)
     double             64                       2(4)
+
+
+STDARG
+
+    A possible <stdarg.h> could look like this:
+
+    typedef unsigned char *va_list;
+
+    #define va_start(ap, lastarg) ((ap) = (va_list)(&lastarg + 1))
+    #define va_arg(ap, type) ((ap) += \
+      (sizeof(type)<sizeof(int)?sizeof(int):sizeof(type)), ((type *)(ap))[-1])
+    #define va_end(ap) ((ap) = 0L)
 
 
 KNOWN PROBLEMS

@@ -136,7 +136,8 @@ extern struct Var *return_var;
 extern struct Typ *return_typ;
 extern zlong local_offset[MAXN];
 
-extern void scratch_var(struct obj *,int),get_scratch(struct obj *,int,int);
+extern void scratch_var(struct obj *,int,struct Typ *);
+extern void get_scratch(struct obj *,int,int,struct Typ *);
 extern struct obj gen_cond(int,int,int);
 
 #define MAXCF 30

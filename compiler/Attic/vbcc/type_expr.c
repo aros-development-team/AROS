@@ -472,7 +472,7 @@ int type_expression2(np p)
             }
         }
         if(from<=LONG&&to<=LONG&&!zlleq(sizetab[from],sizetab[to])&&p->left->flags!=CEXPR) error(166);
-        if(to==POINTER&&from==POINTER&&!zlleq(align[p->ntyp->next->flags&NQ],align[p->left->ntyp->next->flags&NQ]))
+        if(to==POINTER&&from==POINTER&&!zlleq(falign(p->ntyp->next),falign(p->left->ntyp->next)))
             error(167);
         if(p->left->flags==CEXPR){
             eval_constn(p->left);
@@ -603,7 +603,7 @@ int type_expression2(np p)
     }
     if(f==DSTRUCT){
     /*  hier kann man bei unions einiges schneller/einfacher machen */
-        int i=0,f;struct Typ *t,*h;np new;zlong offset=l2zl(0L),al;
+        int i=0,f;struct Typ *t;np new;zlong offset=l2zl(0L),al;
         if((p->left->ntyp->flags&NQ)!=STRUCT&&(p->left->ntyp->flags&NQ)!=UNION)
             {error(8);return(0);}
         if(type_uncomplete(p->left->ntyp)){error(11);return(0);}
@@ -611,12 +611,7 @@ int type_expression2(np p)
             {ierror(0);return(0);}
         while(i<p->left->ntyp->exact->count&&strcmp((*p->left->ntyp->exact->sl)[i].identifier,p->right->identifier)){
             t=(*p->left->ntyp->exact->sl)[i].styp;
-            h=t;
-            do{
-                f=h->flags&NQ;
-                h=h->next;
-            }while(f==ARRAY);
-            al=align[f];
+	    al=falign(t);
             offset=zlmult(zldiv(zladd(offset,zlsub(al,l2zl(1L))),al),al);
             offset=zladd(offset,szof(t));
             i++;
@@ -624,12 +619,7 @@ int type_expression2(np p)
         if(i>=p->left->ntyp->exact->count) {error(23,p->right->identifier);return(0);}
 
         t=(*p->left->ntyp->exact->sl)[i].styp;
-        h=t;
-        do{
-            f=h->flags&NQ;
-            h=h->next;
-        }while(f==ARRAY);
-        al=align[f];
+        al=falign(t);
         offset=zlmult(zldiv(zladd(offset,zlsub(al,l2zl(1L))),al),al);
         if((p->left->ntyp->flags&NQ)==UNION) offset=l2zl(0L);
         p->flags=CONTENT;if(p->ntyp) {freetyp(p->ntyp);p->ntyp=0;}

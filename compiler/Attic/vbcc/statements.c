@@ -202,7 +202,7 @@ void switch_statement(void)
                     new->q1=tree->o;
                     new->q2.flags=0;
                     new->q2.val.vlong=sizetab[m2&NQ];
-                    get_scratch(&new->z,m2,0);
+                    get_scratch(&new->z,m2,0,0);
                     new->typf=m2;
                     tree->o=new->z;
                     add_IC(new);
@@ -361,7 +361,7 @@ void while_statement(void)
 /*  bearbeitet while_statement                                  */
 {
     np tree;int lloop,lin,lout,cm,cexpr,contm,breakm;
-    struct IC *new;
+    struct IC *new,*mic; int line;char *file;
     killsp();
     if(*s=='(') {s++;killsp();} else error(151);
     tree=expression();
@@ -414,12 +414,14 @@ void while_statement(void)
         new->typf=lout;
         add_IC(new);
     }else gen_label(lloop);
+    line=last_ic->line;file=last_ic->file;
     cm=nocode;break_label=lout;
     if(cexpr==1) nocode=1;
     currentpri*=looppri;
     killsp();
     if(*s==')') {s++;killsp();} else error(59);
     statement();
+    mic=last_ic;
     nocode=cm;cont_label=contm;break_label=breakm;
     if(!cexpr||tree->sidefx) gen_label(lin);
     if(tree&&cexpr>=0){
@@ -447,6 +449,9 @@ void while_statement(void)
         }
     }
     if(tree) free_expression(tree);
+    for(mic=mic->next;mic;mic=mic->next){
+      mic->line=line;mic->file=file;
+    }
     gen_label(lout);
     currentpri/=looppri;
     cr();
@@ -455,7 +460,7 @@ void for_statement(void)
 /*  bearbeitet for_statement                                    */
 {
     np tree1=0,tree2=0,tree3=0;int lloop,lin,lout,cm,cexpr,contm,breakm;
-    struct IC *new;
+    struct IC *new,*mic;int line;char *file;
     killsp();
     if(*s=='(') {s++;killsp();} else error(59);
     if(*s!=';') tree1=expression();
@@ -532,10 +537,12 @@ void for_statement(void)
         new->typf=lout;
         add_IC(new);
     }else gen_label(lloop);
+    line=last_ic->line;file=last_ic->file;
     cm=nocode;
     if(cexpr==1) nocode=1;
     currentpri*=looppri;
     statement();
+    mic=last_ic;
     nocode=cm;
     gen_label(cont_label);
     cont_label=contm;break_label=breakm;
@@ -580,6 +587,9 @@ void for_statement(void)
         add_IC(new);
     }
     if(tree2) free_expression(tree2);
+    for(mic=mic->next;mic;mic=mic->next){
+      mic->line=line;mic->file=file;
+    }
     gen_label(lout);
     currentpri/=looppri;
     cr();

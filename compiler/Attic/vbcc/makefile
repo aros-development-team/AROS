@@ -118,11 +118,16 @@ mbasic	 = $(OBJDIR)/supp.o $(OBJDIR)/mbasic.o $(OBJDIR)/dt.o \
 	   $(OBJDIR)/flow.o $(OBJDIR)/cse.o $(OBJDIR)/cp.o $(OBJDIR)/loop.o \
 	   $(OBJDIR)/alias.o $(OBJDIR)/machine.o
 
+vscobjects = $(OBJDIR)/vsc.o $(OBJDIR)/schedule.o
+
 $(BINDIR)/vbcc$(TARGET): $(fobjects)
 	$(CC) $(LDFLAGS) $(fobjects) -o $(BINDIR)/vbcc$(TARGET)
 
 $(BINDIR)/vbccs$(TARGET): $(sobjects)
 	$(CC) $(LDFLAGS) $(sobjects) -o $(BINDIR)/vbccs$(TARGET)
+
+bin/vsc$(TARGET): $(vscobjects)
+	$(CC) $(LDFLAGS) $(vscobjects) -o bin/vsc$(TARGET)
 
 $(BINDIR)/tasm$(TARGET): $(tasm)
 	$(CC) $(LDFLAGS) $(tasm) -o $(BINDIR)/tasm$(TARGET)
@@ -210,5 +215,11 @@ $(OBJDIR)/opts.o: opt.c opt.h supp.h $(OBJDIR)/machine.h dt.h
 
 $(OBJDIR)/regss.o: regs.c opt.h supp.h $(OBJDIR)/machine.h dt.h
 	$(CC) $(CFLAGS) -c -DNO_OPTIMIZER regs.c -o $(OBJDIR)/regss.o
+
+$(OBJDIR)/vsc.o: vsc/vsc.h vsc/vsc.c $(OBJDIR)/schedule.h
+	$(CC) -c vsc/vsc.c -o $(OBJDIR)/vsc.o -I$(OBJDIR)
+
+$(OBJDIR)/schedule.o: vsc/vsc.h $(OBJDIR)/schedule.h $(OBJDIR)/schedule.c
+	$(CC) -c $(OBJDIR)/schedule.c -o $(OBJDIR)/schedule.o -I$(OBJDIR) -Ivsc
 
 

@@ -1,0 +1,60 @@
+vbcc - C compiler (c) in 1995-97 by Volker Barthelmann
+
+
+INTRODUCTION
+
+    vbcc is a free portable and retargetable ANSI C compiler.
+    It is split into a target independant and a target dependant part and
+    supports emulating datatypes of the target machine on any other machine
+    so that it is possible to e.g. make a crosscompiler for a 64bit machine
+    on a 32bit machine.
+
+    This document only deals with building vbcc from the source.
+    Be sure to read all the documents in the doc directory for your machine.
+
+
+LEGAL
+
+    vbcc is (c) in 1995-97 by Volker Barthelmann. The builtin preprocessor
+    (consisting of the files preproc.c and vbpp.h) is written and (c) by
+    Thorsten Schaaps. All other code is (c) by Volker Barthelmann.
+    vbcc may be freely redistributed as long as no modifications are made
+    and nothing is charged for it.
+    Non-commercial usage of vbcc is allowed without any restrictions.
+    Commercial usage needs my written consent.
+
+    Sending me money, gifts, postcards etc. would of course be very nice
+    and may encourage further development of vbcc, but is not legally or
+    morally necessary to use vbcc.
+
+
+DIRECTORY-STRUCTURE
+
+    The vbcc-directory contains the following important files and
+    directories:
+
+    vbcc/                   The main directory.
+    vbcc/Makefile           The Makefile used to build vbcc.
+    vbcc/frontend/          Directory containing the source to vc.
+    vbcc/vcpp/              Directory containing source to vcpp.
+    vbcc/vsc/               Directory containing source to vsc.
+    vbcc/machines/target/   Directory for <target>.              
+    vbcc/bin/               Directory the executables will be placed.
+
+    All compiling is done from the main directory.
+    The preprocessor vcpp and the frontend vc are not target-dependant
+    and therefore only one version of them is created.
+
+    Every available target has at least one subdirectory with its name in
+    vbcc/ and contains at least the files machine.h, machine.c and 
+    machine.dt. Target-specific object-files will also be stored in that
+    directory.
+
+    The executables will be placed in vbcc/bin/. The main compiler will
+    be called vbcc<target>.
+
+
+DATATYPES
+
+        
+

@@ -614,6 +614,11 @@ declarations.
 
 The following variables and functions must be provided by machine.c.
 
+NAME AND COPYRIGHT
+
+    The codegenerater must define a zero-terminated character array
+    containing name and copyright-notice of the code-generator.
+
 COMMANDLINE OPTIONS
 
     You can use code generator specific commandline options.

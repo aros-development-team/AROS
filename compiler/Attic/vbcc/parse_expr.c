@@ -325,95 +325,110 @@ np cast_expression(void)
 np unary_expression(void)
 /*  Erledigt !,~,++,--,+,-,*,&,sizeof                       */
 {
-    np new;char *merk=s,buff[MAXI];int done=0;
-    killsp();
-    if((*s!='s'&&*s!='+'&&*s!='-'&&*s!='&'&&*s!='*'&&*s!='~'&&*s!='!')||*(s+1)=='=') return(postfix_expression());
-    if(*s=='s'){
-        merk=s;cpbez(buff,0);s=merk;
-        if(strcmp("sizeof",buff)) return(postfix_expression());
-        else{
-            s+=6;killsp();
-            new=mymalloc(NODES);
-            new->flags=CEXPR;
-            new->ntyp=mymalloc(TYPS);
-            new->ntyp->flags=UNSIGNED|LONG;
-            new->ntyp->next=0;
-            new->right=0;
-            new->left=0;
-            if(*s=='('&&declaration(1)){
-                struct Typ *t;
-                s++;killsp();
-                merk=ident;ident=buff;
-                t=declarator(declaration_specifiers());
-                if(type_uncomplete(t)) error(176);
-                ident=merk;
-                new->val.vulong=zl2zul(szof(t));
-                freetyp(t);
-                killsp();
-                if(*s!=')') error(59); else s++;
-            }else{
-                np tree;
-                killsp();
-                tree=unary_expression();
-                if(!tree||!type_expression(tree)){
-                    new->val.vulong=zl2zul(l2zl(0L));
-                    error(73);
-                }else{
-                    if(type_uncomplete(tree->ntyp)) error(176);
-                    new->val.vulong=zl2zul(szof(tree->ntyp));
-                }
-                if(tree) free_expression(tree);killsp();
-            }
-            return(new);
-        }
+  np new;char *merk=s,buff[MAXI];int done=0;
+  killsp();
+  if((*s!='s'&&*s!='_'&&*s!='+'&&*s!='-'&&*s!='&'&&*s!='*'&&*s!='~'&&*s!='!')||*(s+1)=='=') return(postfix_expression());
+  if(*s=='s'||*s=='_'){
+    int fszof;
+    merk=s;cpbez(buff,0);s=merk;
+    if(strcmp("sizeof",buff)&&strcmp("__typeof",buff)) return(postfix_expression());
+    else{
+      if(*buff=='s') fszof=1; else fszof=0;
+      s+=strlen(buff);
+      killsp();
+      new=mymalloc(NODES);
+      new->flags=CEXPR;
+      new->ntyp=mymalloc(TYPS);
+      if(fszof) new->ntyp->flags=UNSIGNED|LONG;
+        else   new->ntyp->flags=INT;
+      new->ntyp->next=0;
+      new->right=0;
+      new->left=0;
+      if(*s=='('&&declaration(1)){
+	struct Typ *t;
+	s++;killsp();
+	merk=ident;ident=buff;
+	t=declarator(declaration_specifiers());
+	if(type_uncomplete(t)) error(176);
+	ident=merk;
+	if(fszof)
+	  new->val.vulong=zl2zul(szof(t));
+	else
+	  new->val.vint=zl2zi(l2zl(t->flags));
+	freetyp(t);
+	killsp();
+	if(*s!=')') error(59); else s++;
+      }else{
+	np tree;
+	killsp();
+	tree=unary_expression();
+	if(!tree||!type_expression(tree)){
+	  if(fszof){
+	    new->val.vulong=zl2zul(l2zl(0L));
+	    error(73);
+	  }else{
+	    new->val.vint=zl2zi(l2zl(-1L));
+	  }
+	}else{
+	  if(fszof){
+	    if(type_uncomplete(tree->ntyp)) error(176);
+	    new->val.vulong=zl2zul(szof(tree->ntyp));
+	  }else{
+	    new->val.vint=zl2zi(l2zl(tree->ntyp->flags));
+	  }
+	}
+	if(tree) free_expression(tree);killsp();
+      }
+      return(new);
     }
-    new=mymalloc(NODES);
-    new->right=0;
-    new->ntyp=0;
-    if(*s=='+'&&!done)
-        if(*(s+1)=='+'){
-            s+=2;done=1;
-            new->left=unary_expression();
-            new->flags=PREINC;
-        }else{
-            s++;free(new);
-            return(cast_expression());
-        }
-    if(*s=='-'&&!done){
-        done=1;
-        if(*(s+1)=='-'){
-            s+=2;
-            new->left=unary_expression();
-            new->flags=PREDEC;
-        }else{
-            s++;
-            new->left=cast_expression();
-            new->flags=MINUS;
-        }
+  }
+  new=mymalloc(NODES);
+  new->right=0;
+  new->ntyp=0;
+  if(*s=='+'&&!done)
+    if(*(s+1)=='+'){
+      s+=2;done=1;
+      new->left=unary_expression();
+      new->flags=PREINC;
+    }else{
+      s++;free(new);
+      return(cast_expression());
     }
-    if(*s=='&'&&!done){
-        s++;done=1;
-        new->left=cast_expression();
-        new->flags=ADDRESS;
+  if(*s=='-'&&!done){
+    done=1;
+    if(*(s+1)=='-'){
+      s+=2;
+      new->left=unary_expression();
+      new->flags=PREDEC;
+    }else{
+      s++;
+      new->left=cast_expression();
+      new->flags=MINUS;
     }
-    if(*s=='*'&&!done){
-        s++;done=1;
-        new->left=cast_expression();
-        new->flags=CONTENT;
-    }
-    if(*s=='~'&&!done){
-        s++;done=1;
-        new->left=cast_expression();
-        new->flags=KOMPLEMENT;
-    }
-    if(*s=='!'&&!done){
-        s++;done=1;
-        new->left=cast_expression();
-        new->flags=NEGATION;
-    }
-    new->right=0;
-    new->ntyp=0;
-    return(new);
+  }
+  if(*s=='&'&&!done){
+    s++;done=1;
+    new->left=cast_expression();
+    new->flags=ADDRESS;
+  }
+  if(*s=='*'&&!done){
+    s++;done=1;
+    new->left=cast_expression();
+    new->flags=CONTENT;
+  }
+  if(*s=='~'&&!done){
+    s++;done=1;
+    new->left=cast_expression();
+    new->flags=KOMPLEMENT;
+  }
+  if(*s=='!'&&!done){
+    s++;done=1;
+    new->left=cast_expression();
+    new->flags=NEGATION;
+  }
+  new->right=0;
+  new->ntyp=0;
+  return(new);
 }
 np postfix_expression(void)
 /*  Erledigt [],(),.,->,++,--                                   */

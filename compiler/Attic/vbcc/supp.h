@@ -348,6 +348,8 @@ extern zlong t_min[];
 extern zulong t_max[];
 extern zlong char_bit;
 
+extern char cg_copyright[];
+
 extern int goto_used;
 extern int ic_count;
 extern int only_inline;
@@ -385,6 +387,7 @@ extern void prd(FILE *,struct Typ *);
 extern void freetyp(struct Typ *);
 extern struct Typ *clone_typ(struct Typ *);
 extern zlong szof(struct Typ *);
+extern zlong falign(struct Typ *);
 extern void eval_const(union atyps *,int);
 
 extern void optimize(long, struct Var *);

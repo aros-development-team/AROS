@@ -197,40 +197,44 @@ void print_cp(unsigned char *cp)
 int cprop(struct obj *o,int target,zlong size)
 /*  ersetzt gegebenenfalls  Kopien, noch aendern, so dass Pointer in DREFOBJS ersetzt werden wie bei target */
 {
-    struct IC *p,*f=0;int i;struct Var *old;
-    old=o->v;
-    i=old->index;
-    if(!target&&(o->flags&DREFOBJ)) i+=vcount-rcount;
-    if(i<0||i>=vcount) ierror(0);
-    memcpy(tmp,cp_act,csize);
-    bvintersect(tmp,copies[i],csize);
-    /*  waehrend diesem Durchlauf geaenderte Kopieranweisungen lieber nicht */
-    /*  beachten                                                            */
-    bvdiff(tmp,cp_dest,csize);
-    for(i=0;i<ccount;i++){
-        if(BTST(tmp,i)){
-            p=clist[i];
-            if((zleqto(size,l2zl(0L))||zleqto(size,p->q2.val.vlong))&&p->z.v==o->v&&p->q1.v!=o->v&&zleqto(p->z.val.vlong,o->val.vlong)){
-                if(((o->flags&DREFOBJ)&&!(p->q1.flags&DREFOBJ))||!(p->q1.flags&DREFOBJ)){
-                    if(DEBUG&1024){ printf("can replace <%s> by copy:\n",o->v->identifier);pric2(stdout,clist[i]);}
-                    *o=p->q1;
-                    if(target){
-                        o->flags|=DREFOBJ;
-                        if((o->flags&(VARADR|DREFOBJ))==(VARADR|DREFOBJ))
-                            o->flags&=~(VARADR|DREFOBJ);
-                        /*  Wenn eine Variable, dadurch zu einer DREF-Variable  */
-                        /*  wird, muss num_vars spaeter erneut gemacht werden   */
-                        if(o->v->index>=rcount){
-                            update_alias(old,o->v);
-                            return(2);
-                        }
-                    }
-                    return(1);
-                }
-            }
-        }
+  struct IC *p,*f=0;int i;struct Var *old;
+  old=o->v;
+  i=old->index;
+  if(!target&&(o->flags&DREFOBJ)) i+=vcount-rcount;
+  if(i<0||i>=vcount) ierror(0);
+  memcpy(tmp,cp_act,csize);
+  bvintersect(tmp,copies[i],csize);
+  /*  waehrend diesem Durchlauf geaenderte Kopieranweisungen lieber nicht */
+  /*  beachten                                                            */
+  bvdiff(tmp,cp_dest,csize);
+  for(i=0;i<ccount;i++){
+    if(BTST(tmp,i)){
+      p=clist[i];
+      if(p->z.v==o->v
+	 &&(zleqto(size,l2zl(0L))||zleqto(size,p->q2.val.vlong))
+	 &&p->q1.v!=o->v&&zleqto(p->z.val.vlong,o->val.vlong)
+	 &&((o->v->vtyp->flags&NQ)<=POINTER||(p->typf&NQ)==(o->v->vtyp->flags&NQ))
+	 ){
+	if(((o->flags&DREFOBJ)&&!(p->q1.flags&DREFOBJ))||!(p->q1.flags&DREFOBJ)){
+	  if(DEBUG&1024){ printf("can replace <%s> by copy:\n",o->v->identifier);pric2(stdout,clist[i]);}
+	  *o=p->q1;
+	  if(target){
+	    o->flags|=DREFOBJ;
+	    if((o->flags&(VARADR|DREFOBJ))==(VARADR|DREFOBJ))
+	      o->flags&=~(VARADR|DREFOBJ);
+	    /*  Wenn eine Variable, dadurch zu einer DREF-Variable  */
+	    /*  wird, muss num_vars spaeter erneut gemacht werden   */
+	    if(o->v->index>=rcount){
+	      update_alias(old,o->v);
+	      return(2);
+	    }
+	  }
+	  return(1);
+	}
+      }
     }
-    return(0);
+  }
+  return(0);
 }
 int copy_propagation(struct flowgraph *fg,int global)
 /*  gibt Kopien weiter  */

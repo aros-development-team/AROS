@@ -646,15 +646,14 @@ struct Var *add_tmp_var(struct Typ *t)
     return add_var(empty,t,AUTO,0);
 }
 struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct const_list *clist)
-/*  Fuegt eine Variable mit Typ in die var_list ein             */
-/*  maschinenspezifisches und Codegeneration fehlen noch        */
-/*  Alignment maschinenabhaengig                                */
+/*  Fuegt eine Variable mit Typ in die var_list ein.            */
 /*  In der storage_class werden die Flags PARAMETER und evtl.   */
 /*  OLDSTYLE und REGPARM erkannt.                               */
 {
     struct Var *new;int f;
     struct struct_declaration *sd;
     static zlong paroffset;
+    zlong al;
     /*if(*identifier==0) return;*/ /* sollte woanders bemaekelt werden */
     if(DEBUG&2) printf("add_var(): %s\n",identifier);
     if((t->flags&NQ)==FUNKT&&((t->next->flags&NQ)==ARRAY||(t->next->flags&NQ)==FUNKT))
@@ -699,7 +698,8 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
                 new->offset=local_offset[nesting];
             }
         }
-        new->offset=zlmult(zldiv(zladd(new->offset,zlsub(align[f],l2zl(1L))),align[f]),align[f]);
+	al=falign(t);
+        new->offset=zlmult(zldiv(zladd(new->offset,zlsub(al,l2zl(1L))),al),al);
         if(storage_class&PARAMETER){
             if(f>=CHAR&&f<=SHORT){
             /*  Integer-Erweiterungen fuer alle Funktionsparameter  */
@@ -851,25 +851,33 @@ void var_declaration(void)
         if((t->flags&NQ)!=FUNKT) isfunc=0;
             else {isfunc=1;if(storage_class!=STATIC) storage_class=EXTERN;}
         ident=imerk;                    /* nicht unbedingt noetig ?         */
+	if(!*vident){
+	  free(ts);free(t);
+	  error(36);return;
+	}
         v=find_var(vident,oldnesting);
         if(v){
             had_decl=1;
-            if(nesting>0&&(v->flags&DEFINED)&&!extern_flag&&!isfunc){
+	    if(storage_class==TYPEDEF){
+	      error(226,v->identifier);
+	    }else{
+	      if(nesting>0&&(v->flags&DEFINED)&&!extern_flag&&!isfunc){
                 error(27,vident);
-            }else{
+	      }else{
                 if(t&&v->vtyp&&!compare_pointers(v->vtyp,t,255)){
-                    error(68,vident);
+		  error(68,vident);
                 }
                 if((storage_class!=v->storage_class&&!extern_flag)||hard_reg!=v->reg)
-                    error(28,v->identifier);
+		  error(28,v->identifier);
                 if(!isfunc&&!extern_flag) v->flags|=TENTATIVE;
-            }
-            if(!isfunc){
+	      }
+	      if(!isfunc){
                 v->vtyp=t;
-            }else{
+	      }else{
                 om=v->vtyp;
                 if(t->exact->count>0) {old=v->vtyp;v->vtyp=t;}
-            }
+	      }
+	    }
         }else{
             had_decl=0;
             if(isfunc&&*s!=','&&*s!=';'&&*s!=')'&&*s!='='&&nesting>0) nesting--;
@@ -1238,7 +1246,7 @@ void gen_vars(struct Var *v)
     int mode,al;struct Var *p;
     if(errors!=0||(c_flags[5]&USEDFLAG)) return;
     for(mode=0;mode<3;mode++){
-        for(al=maxalign;al>=1;al--){
+        for(al=zl2l(maxalign);al>=1;al--){
             int i,flag;
             for(i=1,flag=0;i<NQ;i++) if(align[i]==al) flag=1;
             if(!flag) continue;
@@ -1248,11 +1256,7 @@ void gen_vars(struct Var *v)
                 if(p->storage_class==STATIC||p->storage_class==EXTERN){
                     if(!(p->flags&GENERATED)){
                         if(p->storage_class==EXTERN&&!(p->flags&(USEDASSOURCE|USEDASDEST))&&!(p->flags&(TENTATIVE|DEFINED))) continue;
-                        if((p->vtyp->flags&NQ)!=ARRAY){
-                            if(align[p->vtyp->flags&NQ]!=al) continue;
-                        }else{
-                            if(align[p->vtyp->next->flags&NQ]!=al) continue;
-                        }
+			if(zl2l(falign(p->vtyp))!=al) continue;
                         /*  erst konstante initialisierte Daten */
                         if(mode==0){
                             if(!p->clist) continue;
@@ -1308,17 +1312,12 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
         return;
     }
     if((t->flags&NQ)==STRUCT){
-        zlong al;int fl;struct Typ *st,*h;
+        zlong al;int fl;struct Typ *st;
         sz=l2zl(0L);
         for(i=0;i<t->exact->count&&cl;i++){
             if(!cl->other){ierror(0);return;}
             st=(*t->exact->sl)[i].styp;
-            h=st;
-            do{
-                fl=h->flags&NQ;
-                h=h->next;
-            }while(fl==ARRAY);
-            al=align[fl];
+            al=falign(st);
             if(!zleqto(zlmod(sz,al),l2zl(0L))){
                 gen_ds(f,zlsub(al,zlmod(sz,al)),0);
                 sz=zladd(sz,zlsub(al,zlmod(sz,al)));
@@ -1334,12 +1333,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
         }
         for(;i<t->exact->count;i++){
             st=(*t->exact->sl)[i].styp;
-            h=st;
-            do{
-                fl=h->flags&NQ;
-                h=h->next;
-            }while(fl==ARRAY);
-            al=align[fl];
+            al=falign(st);
             if(!zleqto(zlmod(sz,al),l2zl(0L))){
                 gen_ds(f,zlsub(al,zlmod(sz,al)),0);
                 sz+=zladd(sz,zlsub(al,zlmod(sz,al)));
@@ -1347,7 +1341,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
             gen_ds(f,szof((*t->exact->sl)[i].styp),(*t->exact->sl)[i].styp);
             sz=zladd(sz,szof(st));
         }
-        al=align[STRUCT];
+        al=falign(t);
         if(!zleqto(zlmod(sz,al),l2zl(0L)))
             gen_ds(f,zlsub(al,zlmod(sz,al)),0);
         return;

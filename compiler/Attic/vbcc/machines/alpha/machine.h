@@ -6,9 +6,10 @@
 /*  addressing-modes.                                               */
 /*  Not used in this code-generrator.                               */
 struct AddressingMode{
-    int flags;
-    int base;
-    long offset;
+  int flags;
+  int base;
+  int align;
+  long offset;
 };
 
 /*  The number of registers of the target machine.                  */

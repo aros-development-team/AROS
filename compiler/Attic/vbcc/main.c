@@ -147,7 +147,10 @@ int main(int argc,char *argv[])
 	    if(!flag){error(5,argv[i]);}
 	}
     }
-    if(!(c_flags[6]&USEDFLAG)) printf(copyright);
+    if(!(c_flags[6]&USEDFLAG)){
+      printf("%s\n",copyright);
+      printf("%s\n",cg_copyright);
+    }
     if(!(c_flags[17]&USEDFLAG)) pp_init();
     if(!(c_flags[8]&USEDFLAG)) c_flags_val[8].l=10; /* max. Fehlerzahl */
     if(c_flags[22]&USEDFLAG) c_flags[7]|=USEDFLAG;   /*  iso=ansi */

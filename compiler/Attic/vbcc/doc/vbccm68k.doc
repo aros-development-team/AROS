@@ -266,6 +266,16 @@ MATH
     the proper math library (see vclib.doc).
 
 
+STDARG
+
+    A possible <stdarg,h> could look like this:
+
+    typedef unsigned char *va_list;
+
+    #define va_start(ap, lastarg) ((ap) = (va_list)(&lastarg + 1))
+    #define va_arg(ap, type) ((ap) += \
+      (sizeof(type)<sizeof(int)?sizeof(int):sizeof(type)), ((type *)(ap))[-1])
+    #define va_end(ap) ((ap) = 0L)
 
 
 KNOWN PROBLEMS

@@ -51,6 +51,10 @@ struct AddressingMode{
 /*  Parameters are sometimes passed in registers without __reg.     */
 #define HAVE_REGPARMS 1
 
+/*  Parameters on the stack should be pushed in order rather than   */
+/*  in reverse order.                                               */
+#define ORDERED_PUSH 1
+
 /*  Structure for reg_parm().                                       */
 struct reg_handle{
     unsigned long gregs;

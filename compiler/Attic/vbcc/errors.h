@@ -170,7 +170,7 @@
 "pointer cast may cause alignment problems",WARNING|DONTWARN,
 "no declaration of global variable <%s> before definition",WARNING|DONTWARN,
 "'extern' inside function",WARNING|DONTWARN,
-"dead assignment to <%s%s> eliminated",WARNING|INFUNC|INIC,         /*  170 */
+"dead assignment to <%s%s> eliminated",WARNING|INFUNC|INIC|DONTWARN,/*  170 */
 "var <%s> is used before defined",WARNING|INFUNC,
 "would need more than %ld optimizer passes for best results",WARNING|INFUNC,
 "function <%s> has no return statement",WARNING|INFUNC,
@@ -226,3 +226,5 @@
 "be careful with priorities of <</>> vs. +/-",WARNING,
 "adress of auto variable returned",WARNING,
 "void function returns a void expression",WARNING,                  /*  225 */
+"redeclaration of typedef <%s>",WARNING|ANSIV,
+
