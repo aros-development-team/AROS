@@ -60,6 +60,9 @@
     BOOL    preserveOldIconImages = TRUE;  // FIXME: not implemented
     
 #   define SET_ERRORCODE(value) (errorCode != NULL ? *errorCode = (value) : (value))
+
+    /* Check input parameters ----------------------------------------------*/
+    if (icon == NULL) return FALSE;
     
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -137,7 +140,7 @@
             CloseDefaultIcon(file);
         }
     }
-    else
+    else if (name != NULL)
     {
         BPTR file = OpenIcon(name, MODE_NEWFILE);
         
