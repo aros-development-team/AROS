@@ -25,7 +25,7 @@
 #ifndef 	UTILITY_HOOKS_H
 #	include <utility/hooks.h>
 #endif
-
+#include <aros/libcall.h>
 
 
 /**************/
