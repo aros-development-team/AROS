@@ -8,14 +8,15 @@ APPNAME = "Exec test"
 APPID = "STB3"
 
 OBJS = $(TARGET).o palmgfx.o
-LIBS = $(TOP)/bin/palm-m68k/AROS/lib/startup.o -L$(TOP)/bin/palm-m68k/AROS/lib -lexec -larossupport -larosc -L./ -lgcc1
+#LIBS = $(TOP)/bin/palm-m68k/AROS/lib/startup.o 
+LIBS = -L$(LIBDIR) -lexec -larossupport -larosc -lautoinit -lgcc1 
 
 CC = m68k-linux-gcc
 AS = m68k-linux-as
 
 INC = -I $(AROS_INCLUDES)
 
-CFLAGS = -Wall -O0 $(INC) $(USRINC) -mc68000
+CFLAGS = -Wall -O2 $(INC) $(USRINC) -mc68000 -Wl,-dp
 
 OBJRES = m68k-linux-obj-res
 NM = m68k-linux-nm
