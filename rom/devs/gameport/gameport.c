@@ -117,9 +117,6 @@ static void *const functable[] =
     (void *)-1
 };
 
-
-static OOP_AttrBase HiddMouseAB = 0;
-
 /****************************************************************************************/
 
 #if NEWSTYLE_DEVICE

@@ -52,8 +52,11 @@ struct GameportBase
     struct Library 		*gp_OOPBase;
     
     UBYTE   			gp_cTypes[GP_NUNITS];
+
+    OOP_AttrBase                HiddMouseAB_;
 };
 
+#define HiddMouseAB (GPBase->HiddMouseAB_)
 
 typedef struct GPUnit
 {
