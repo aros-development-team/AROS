@@ -19,6 +19,8 @@
 
 #include <devices/keyboard.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
 #include <aros/core.h>
 #include <asm/registers.h>
 
@@ -30,7 +32,7 @@
 #include "etask.h"
 
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
-extern void switch_to_user_mode(void *, ULONG *, ULONG *);
+extern void switch_to_user_mode(void *, ULONG *);
 extern void main_init_cont(void);
 
 
@@ -148,12 +150,12 @@ void processor_init(void)
 }
 
 /************************************************************************************/
-
+extern ULONG initial_ssp;
 
 void main_init(void * memory, ULONG memSize)
 {
 	struct ExecBase *SysBase = NULL;
-	ULONG * m68k_USP, * m68k_SSP;
+	ULONG * m68k_USP;
 	struct MemHeader *mh = NULL;
 	UWORD * ranges[] = {0x10c00000 , 0x10c00000 + 1024 * 1024,
 	                    -1};
@@ -204,15 +206,17 @@ void main_init(void * memory, ULONG memSize)
 	}
 	m68k_USP = (ULONG *)(((ULONG)m68k_USP) + AROS_STACKSIZE);
 
-	SysBase->ResModules=Exec_RomTagScanner(SysBase, ranges);
-	
 	/*
-	 * Get some memory for the SSP. 
+	 * Allocate memory for the SSP. The SSP is already set
+	 * but I need to AllocAbs() it so nobody else will step on this
+	 * memory.
 	 */
-	if (NULL == (m68k_SSP =(ULONG *)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
-		do {} while(1);
+	if (NULL == AllocAbs(AROS_STACKSIZE, initial_ssp+sizeof(ULONG)-AROS_STACKSIZE)) {
+		D(bug("Alloc for SSP failed!\n"));
 	}
-	m68k_SSP = (ULONG *)(((ULONG)m68k_SSP) + AROS_STACKSIZE);
+	D(bug("SSP: %x\n",initial_ssp));
+
+	SysBase->ResModules=Exec_RomTagScanner(SysBase, ranges);
 
 	/*
 	 * Init the core
@@ -224,7 +228,7 @@ void main_init(void * memory, ULONG memSize)
 	 * so let me switch into user mode and continue there.
 	 * The user mode function will then call main_init_cont.
 	 */
-	switch_to_user_mode(main_init_cont, m68k_SSP, m68k_USP);
+	switch_to_user_mode(main_init_cont, m68k_USP);
 }
 
 /*
@@ -232,8 +236,7 @@ void main_init(void * memory, ULONG memSize)
  */
 void main_init_cont(void)
 {
-	struct ExecBase * SysBase;
-	SysBase = (struct ExecBase *)(*(ULONG *)0x04);
+	AROS_GET_SYSBASE
 	InitCode(RTF_SINGLETASK, 0);
 
 	/*
