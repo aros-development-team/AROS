@@ -17,7 +17,6 @@
 #include <utility/utility.h>
 #include <hardware/intbits.h>
 
-//#include <asm/ptrace.h>
 #include <exec/ptrace.h>
 #include <asm/irq.h>
 
@@ -105,7 +104,9 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 	struct IntVector *iv = irq->h_Data;
 
+#if 0
 	AROS_GET_SYSBASE;
+#endif
 	if (iv->iv_Code)
 	{
 		/*  Call it. I call with all these parameters for a reason.
@@ -124,7 +125,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 			I must supply them here. Obviously I will dummy some of these
 			though.
 		*/
-//D(bug("timer_interrupt: Calling iv->iv_Code = %p\n",iv->iv_Code));
 		AROS_UFC5(void, iv->iv_Code,
 		  AROS_UFCA(ULONG, 0, D1),
 		  AROS_UFCA(ULONG, 0, A0),
@@ -175,7 +175,6 @@ HIDDT_IRQ_Id translation_table[] = {
 void global_server(int cpl, void *_isd, struct pt_regs *regs)
 {
 	struct irq_staticdata * isd = (struct irq_staticdata *)_isd;
-//D(bug("In global_server for cpl %d\n",cpl));
 	if (cpl >= 0 && cpl <= 15) {
 		HIDDT_IRQ_Id          id;
 		HIDDT_IRQ_HwInfo      hwinfo;
