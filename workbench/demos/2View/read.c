@@ -84,7 +84,7 @@ int ReadILBM (struct IFFHandle * iff,
 {
     struct RastPort * rp = window->RPort;
     BYTE * planes[MAX_PLANES];
-    int t,x,bit,byte,row,pen;
+    int t,x,bit,byte,row,pen,lastpen;
 
     printf ("ReadILBM iff=%p win=%p Size=%ldx%ld Depth=%d %s%s\n",
 	iff, window, Width, Height, Depth,
@@ -116,6 +116,10 @@ int ReadILBM (struct IFFHandle * iff,
 
 	/* printf ("row %d, %08lx\n", row, *(ULONG*)planes[0]); */
 
+	lastpen = -1;
+
+	Move (rp, 0, row);
+
 	for (x=0; x<Width; x++)
 	{
 	    bit = 0x80 >> (x & 7);
@@ -125,9 +129,22 @@ int ReadILBM (struct IFFHandle * iff,
 		if (planes[t][byte] & bit)
 		    pen |= 1L << t;
 
-	    SetAPen (rp, pen);
-	    WritePixel (rp, x, row);
+	    if (lastpen == -1)
+		lastpen = pen;
+
+	    /* SetAPen (rp, pen);
+	    WritePixel (rp, x, row); */
+
+	    if (lastpen != pen)
+	    {
+		SetAPen (rp, lastpen);
+		Draw (rp, x+1, row);
+		lastpen = pen;
+	    }
 	}
+
+	SetAPen (rp, pen);
+	Draw (rp, Width, row);
     }
 
     return TRUE;
