@@ -12,6 +12,6 @@ for file in "$@" ; do
     echo "</code>" >> "$tmp"
     echo "</doc>" >> "$tmp"
 
-    hpp "$tmp" | sed -f ctolatex.filter > "$tex"
+    hpp -set format=./format "$tmp" | sed -f ctolatex.filter > "$tex"
     rm "$tmp"
 done

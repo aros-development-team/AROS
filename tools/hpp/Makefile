@@ -4,6 +4,9 @@ CC	 = gcc
 CFLAGS	 = -g -Wall -O -I.. -DHAVE_VSNPRINTF
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
+FORMAT	 = ./format
+HPP	 = ./hpp
+HPPFLAGS = -set format=$(FORMAT)
 
 OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o func.o
 
@@ -29,21 +32,21 @@ exprtest : test_expr.o $(DEPLIBS)
 test_%.o : %.c
 	$(CC) -DTEST $(CFLAGS) -c $< -o $@
 
-test : ctest.html background.html background.ps ctest.ps AddHead.c lists.c \
-	lists.html
+test : all ctest.html background.html background.ps ctest.ps AddHead.c \
+	lists.c lists.html
 
 %.html : srcs/%.src
-	hpp tohtml.inc $< > $@
+	$(HPP) $(HPPFLAGS) tohtml.inc $< > $@
 
 lists.html : srcs/lists.src hpp
-	hpp -set functiontmpl=amigafunc.tmpl tohtml.inc $< -o $@
+	$(HPP) $(HPPFLAGS) -set functiontmpl=amigafunc.tmpl tohtml.inc $< -o $@
 
 AddHead.c : srcs/lists.src toc.inc ssrc.tmpl hpp
-	hpp -set functiontmpl=ssrc.tmpl toc.inc $< -o $@
+	$(HPP) $(HPPFLAGS) -set functiontmpl=ssrc.tmpl toc.inc $< -o $@
 
 lists.c : srcs/lists.src toc.inc msrc.tmpl hpp
 	-rm lists.h
-	hpp -set functiontmpl=msrc.tmpl toc.inc $< -o $@
+	$(HPP) $(HPPFLAGS) -set functiontmpl=msrc.tmpl toc.inc $< -o $@
 	sed -f toc.filter lists.h > lists.tmp
 	mv lists.tmp lists.h
 
@@ -57,7 +60,7 @@ ctest.tex : srcs/ctest.c ctolatex tolatex.inc hpp ctolatex.filter
 	ctohtml $< > $@
 
 %.tex : srcs/%.src hpp tolatex.inc
-	hpp tolatex.inc $< > $@
+	$(HPP) $(HPPFLAGS) tolatex.inc $< > $@
 
 %.dvi : %.tex
 	latex $<
@@ -71,7 +74,7 @@ ctest.tex : srcs/ctest.c ctolatex tolatex.inc hpp ctolatex.filter
 	cd ../toollib ; make
 
 clean :
-	rm -f *.o format hpp htmlparsetest *.html *.bak *.log *.tex *.aux \
+	rm -f *.o $(FORMAT) $(HPP) htmlparsetest *.html *.bak *.log *.tex *.aux \
 		*.ps *.cb lists.[ch]
 
 depend :

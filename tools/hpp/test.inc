@@ -22,17 +22,17 @@
 /DEF>
 
 <BDEF NAME="code" OPTION="type"><
-    FILTER CMD="format -type $type -outformat $outputFormat $infilename"
+    FILTER CMD="$format -type $type -outformat $outputFormat $infilename"
 	InputFile ProcessOutput><
 /BDEF>
 
 <BDEF NAME="ecode" OPTION="type"><
-    FILTER CMD="format -type $type -outformat $outputFormat $infilename"
+    FILTER CMD="$format -type $type -outformat $outputFormat $infilename"
 	ExpandInput InputFile ProcessOutput><
 /BDEF>
 
 <BDEF NAME="eppcode" OPTION="type"><
-    FILTER CMD="format -type $type -outformat $outputFormat $infilename"
+    FILTER CMD="$format -type $type -outformat $outputFormat $infilename"
 	ExpandInput ProcessInput InputFile ProcessOutput><
 /BDEF>
 

@@ -12,6 +12,6 @@ for file in "$@" ; do
     echo "</code>" >> "$tmp"
     echo "</doc>" >> "$tmp"
 
-    hpp "$tmp" > "$html"
+    hpp -set format=./format "$tmp" > "$html"
     rm "$tmp"
 done
