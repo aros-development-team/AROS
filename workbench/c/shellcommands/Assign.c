@@ -343,6 +343,11 @@ static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	}
 	
 	FreeVec(buf);
+
+        if (IoErr() != ERROR_LINE_TOO_LONG)
+        {
+            break;
+        }
     }
     
     return NULL;
@@ -364,7 +369,7 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
     /* Correct assign name construction? The rule is that the device name
        should end with a colon at the same time as no other colon may be
        in the name. */
-    if (colon == NULL || colon[1] != 0)
+    if ((colon == NULL) || (colon == name) || (colon[1] != 0))
     {
 	VPrintf("Invalid device name %s\n", (IPTR *)&name);
 	
@@ -375,14 +380,14 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 
     /* This is a little bit messy... We first remove the 'name' assign
        and later in the loop the target assigns. */
-    if(*target == NULL || remove)
+    if(target == NULL || *target == NULL || remove)
     {
 	removeAssign(DOSBase, name);
     }
 
     // The Loop over multiple targets starts here
 
-    for (i = 0; target[i] != NULL; i++)
+    if (target) for (i = 0; target[i] != NULL; i++)
     {
 	if (!(path || defer || dismount))
 	{
@@ -399,6 +404,7 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 	if (remove)
 	{
 	    removeAssign(DOSBase, target[i]);
+	    UnLock(lock);
 	}
 	else if(dismount)
 	{
@@ -446,6 +452,9 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 		UnLock(lock);
 		error = RETURN_FAIL;
 	    }
+
+            /* If there are several targets, the next ones have to be added. */
+            add = TRUE;
 	}
 	
 	/* We break as soon as we get a serious error */
