@@ -1894,7 +1894,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 	cd $(%(mmake)-%(subpackage)-package-dir) && \
 	tar --remove-files -cvf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar * && \
         mkdir -p "%(prefix)" && \
-        tar -xvf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar -C "%(prefix)"/ && \
+        tar -xf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar -C "%(prefix)"/ && \
         bzip2 -9 -f $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar && \
         cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase)
 
