@@ -103,6 +103,8 @@ struct  MUIP_WriteString                    { ULONG MethodID; char *str; char *m
 #define MUIA_UserData                       0x80420313 /* V4  isg ULONG             */
 #define MUIA_Version                        0x80422301 /* V4  ..g LONG              */
 
+#define _parent(obj)    (muiNotifyData(obj)->mnd_ParentObject) /* Shortcut */
+
 extern const struct __MUIBuiltinClass _MUI_Notify_desc; /* PRIV */
 
 #endif

@@ -25,7 +25,9 @@
 #define AROS_LIBBASE_EXT_DECL(a,b) extern a b;
 #define AROS_LIBFUNC_EXIT
 
-typedef  unsigned long IPTR;
+typedef unsigned long IPTR;
+typedef long STACKLONG;
+typedef unsigned long STACKULONG;
 
 #endif
 
@@ -88,5 +90,15 @@ struct __MUIBuiltinClass {
         AROS_UFPA(Msg     , msg, A1));
 };
 #endif
+
+#define _between(a,x,b) ((x)>=(a) && (x)<=(b))
+#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
+                          && _between(_mtop(obj) ,(y),_mbottom(obj)))
+
+/* add mask in flags if tag is true, else sub mask */
+#define _handle_bool_tag(flags, tag, mask) \
+((tag) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
+
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 #endif /* MUIMASTER_INTERN_H */
