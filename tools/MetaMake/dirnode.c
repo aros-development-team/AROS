@@ -35,6 +35,9 @@ Boston, MA 02111-1307, USA.  */
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
 #endif
+#ifndef PATH_MAX
+#include <limits.h>
+#endif
 
 #include "dirnode.h"
 #include "mem.h"
