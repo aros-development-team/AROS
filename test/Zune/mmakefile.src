@@ -1,27 +1,33 @@
-#   $Id$
+# $Id$
 #
-#   Makefile for MUI test programs
+# Makefile for Zune test programs
 
 include $(TOP)/config/make.cfg
+include ../make.cfg
 
 FILES	:= test
 
-EXEDIR := $(AROSDIR)/MUITest
+EXEDIR := $(ZUNEDIR)/Tests
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 USER_INCLUDES := -I../libs/muimaster
 
 USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MUILIB := yes
-USE_AROSLIB := yes
+USE_AMIGALIB    := yes
+USE_MUILIB      := yes
+USE_AROSLIB     := yes
 
-#MM mui-test :includes linklibs
+#MM contrib-zune-test : includes linklibs
 
-%make_prog_setup mmake=mui-test
+%make_prog_setup mmake=contrib-zune-test
 
-mui-test : setup $(EXES)
+contrib-zune-test : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
+
+#MM setup
+setup ::
+	%mkdirs_q $(ZUNEDIR)
+	%mkdirs_q $(ZUNEDIR)/Tests
 
 %common
 %include_deps
