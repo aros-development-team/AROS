@@ -21,6 +21,7 @@ FUNCTIONS = \
 	drawborder \
 	drawimage \
 	drawimagestate \
+	easyrequestargs \
 	endrefresh \
 	eraseimage \
 	freeclass \

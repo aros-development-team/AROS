@@ -151,6 +151,20 @@ AROS_LP6(void, DrawImageState,
     AROS_LCA(struct DrawInfo *, drawInfo,   A2), \
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
+AROS_LP4(LONG, EasyRequestArgs,
+    AROS_LPA(struct Window     *, window, A0),
+    AROS_LPA(struct EasyStruct *, easyStruct, A1),
+    AROS_LPA(ULONG             *, idcmpPtr, A2),
+    AROS_LPA(APTR               , args, A3),
+    struct IntuitionBase *, IntuitionBase, 98, Intuition)
+#define EasyRequestArgs(window, easyStruct, idcmpPtr, args) \
+    AROS_LC4(LONG, EasyRequestArgs, \
+    AROS_LCA(struct Window     *, window, A0), \
+    AROS_LCA(struct EasyStruct *, easyStruct, A1), \
+    AROS_LCA(ULONG             *, idcmpPtr, A2), \
+    AROS_LCA(APTR               , args, A3), \
+    struct IntuitionBase *, IntuitionBase, 98, Intuition)
+
 AROS_LP2(void, EndRefresh,
     AROS_LPA(struct Window *, window, A0),
     AROS_LPA(BOOL           , complete, D0),
