@@ -149,7 +149,7 @@ case "$host_os" in
 
 	dnl Need to override this here, it's just too hard later.
         dnl This shouldn't be here at all...
-	aros_target_cc_includes="/usr/include"
+	dnl aros_target_cc_includes="/usr/include"
 
 	dnl FreeBSD 5.x has changed the default object format.
         dnl The double [[]] is necessary to get around m4's quoting rules.
@@ -827,6 +827,7 @@ esac
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
+aros_gendir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
@@ -946,7 +947,33 @@ AC_ARG_ENABLE(includes,
 dnl find out about the target cc's include path
 AC_MSG_CHECKING([for the target compiler's include path])
 if test "$aros_target_cc_includes" = "" ; then
+    #try to guess where the directory is
     aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
+    if ! test -d $aros_target_cc_includes; then
+        #the directory doesn't exist, we need to do some more work
+        aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
+	
+	#these are the headers we're looling for
+	headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+	         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+		 zutil.h"
+
+        dirs=
+	for h in $headers; do
+	    #which other headers each of the above headers needs?
+	    deps=$(echo "#include <$h>" | \
+	           $aros_host_cc -E -M - 2>/dev/null | \
+		   sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
+	    
+            #copy all the needed headers to a directory beneath gendir
+	    for d in $deps; do
+	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
+		                                sed -n "s,^.*/include\(/.\+\)\+,\1,p")
+		mkdir -p $dir
+		cp $d $dir
+	    done
+	done	    
+    fi
 fi
 AC_MSG_RESULT($aros_target_cc_includes)
 
