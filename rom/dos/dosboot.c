@@ -195,7 +195,13 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
 	AddDosEntry((struct DosList *)bn->bn_DeviceNode);
 #else
-	mount((struct DeviceNode *)bn->bn_DeviceNode);
+    	/* Try to mount the filesystem. If it fails, remove the BootNode 
+	   from the list so DOS doesn't try to boot from it later. */ 
+
+	if( !mount( (struct DeviceNode *) bn->bn_DeviceNode ) )
+	{
+	    REMOVE( bn );
+	}
 #endif
     }
 
@@ -209,12 +215,13 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
     CloseLibrary((struct Library*)ExpansionBase);
 }
 
-void mount(struct DeviceNode *dn)
+BOOL mount( struct DeviceNode *dn ) 
 {
     struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
-    struct IOFileSys *iofs;
-    struct MsgPort *mp = CreateMsgPort();
-
+    struct IOFileSys         *iofs;
+    struct MsgPort           *mp = CreateMsgPort();
+    BOOL                      rc = FALSE;
+    
     if (mp != NULL)
     {
 	iofs = (struct IOFileSys *)CreateIORequest(mp,
@@ -231,7 +238,8 @@ void mount(struct DeviceNode *dn)
 		{
 		    dn->dn_Unit = iofs->IOFS.io_Unit;
 		    dn->dn_Device = iofs->IOFS.io_Device;
-		    //do not close filesys !!!
+		    /* Do not close filesys !!! */
+		    rc = TRUE;
 		}
 	    }
 
@@ -248,4 +256,6 @@ void mount(struct DeviceNode *dn)
     {
 	Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
+    
+    return rc;
 }
