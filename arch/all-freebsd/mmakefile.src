@@ -1,16 +1,12 @@
 # $Id$ 
 include $(TOP)/config/make.cfg
 
-#MM- kernel-freebsd : \
-#MM    kernel-unix
+#MM- setup-freebsd : setup-exec-freebsd 
 
-#MM- check : check-exec-unix
+#MM- kernel-freebsd : kernel-unix
 
-#MM- includes-freebsd-i386 : includes-copy
-
+%rule_archalias mainmmake=kernel-exec arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-dos arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=freebsd alias=unix
-
-#MM- workbench-freebsd : workbench-unix
 
 %common
