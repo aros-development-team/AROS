@@ -80,6 +80,13 @@
 
     HISTORY
 
+        08.04.97    laguest    Corrected the pointer arithmetic error,
+                               from (*FromFiles)++ to *(Fromfiles++)
+
+        28.03.97    srittau    Fixes as discussed on mailing-list
+
+        19.03.97    laguest    Initial inclusion to the CVS repository
+
 ******************************************************************************/
 
 #include <proto/dos.h>
@@ -262,7 +269,7 @@ int main(int argc, char *argv[])
 
                 MatchEnd(apath);
 
-                (*FromFiles)++;
+                *(FromFiles++);
             }
         }    
 
