@@ -120,7 +120,8 @@ static void readsectionconfig(void)
 	    const char *names[] = 
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
-                "version", "date", "libcall", "forcebase", "superclass" 
+                "version", "date", "libcall", "forcebase", "superclass",
+		"residentpri"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -216,6 +217,20 @@ static void readsectionconfig(void)
             case 9: /* superclass */
                 superclass = strdup(s);
                 break;
+		
+	    case 10: /* residentpri */
+		{
+		    int count;
+		    char dummy;
+		    
+		    count = sscanf(s, "%d%c", &residentpri, &dummy);
+		    if (count != 1 ||
+			residentpri < -128 || residentpri > 127
+		    )
+		    {
+			exitfileerror(20, "residentpri number format error\n");
+		    }
+		}
 	    }
 	}
 	else /* Line starts with ## */
