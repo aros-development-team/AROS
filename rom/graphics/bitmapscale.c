@@ -255,7 +255,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
     /* first of all lets allocate DestHeight words of memory so we can
        precalculate which original line goes to which destination lines */
 
-    if (NULL ==(LinePattern = (UWORD *) AllocMem(2*bitScaleArgs ->bsa_DestHeight, 0)))
+    if (NULL ==(LinePattern = (UWORD *) AllocMem(sizeof(UWORD)*bitScaleArgs ->bsa_DestHeight, 0)))
       return;
 
     {
@@ -424,7 +424,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
     }
 
     /* let's get rid of the allocated memory */
-    FreeMem(LinePattern, bitScaleArgs -> bsa_DestHeight);
+    FreeMem(LinePattern, sizeof(UWORD) * bitScaleArgs -> bsa_DestHeight);
 
     #undef DEF_USIZE 
     #undef DEF_SIZE
