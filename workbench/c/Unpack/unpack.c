@@ -36,8 +36,8 @@ AROS_SH2
     if( SHArg(FILE) == NULL ) goto cleanup;
     if( SHArg(TO) == NULL ) goto cleanup;
 
-    IntuitionBase = OpenLibrary( "intuition.library", 0 );
-    GfxBase = OpenLibrary( "graphics.library", 0 );
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 0 );
+    GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 0 );
     
     //Printf( "%s, %s\n", SHArg(FILE), SHArg(TO) );
     
