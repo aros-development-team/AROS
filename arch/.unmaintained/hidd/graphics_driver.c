@@ -60,6 +60,8 @@
 
 #define RPF_DRIVER_INITED (1L << 15)
 
+#warning All set drawing attribute/Render code should be semaphore protected to avoid race conditions on the drawing attrs
+
 struct shared_driverdata
 {
     Object *gfxhidd;
@@ -351,8 +353,8 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 {
     struct gfx_driverdata *dd;
 
-    EnterFunc(bug("driver_SetAPen(rp=%p, pen=%d)\n", rp, pen));
-    if (!CorrectDriverData (rp, GfxBase))
+/*    EnterFunc(bug("driver_SetAPen(rp=%p, pen=%d)\n", rp, pen));
+*/    if (!CorrectDriverData (rp, GfxBase))
     	return;
 
     dd = GetDriverData(rp);
@@ -366,7 +368,9 @@ void driver_SetAPen (struct RastPort * rp, ULONG pen,
 	SetAttrs( dd->dd_GC, col_tags );
 	
     }
-    ReturnVoid("driver_SetAPen");
+    return;
+/*    ReturnVoid("driver_SetAPen");
+*/
 }
 
 void driver_SetBPen (struct RastPort * rp, ULONG pen,
@@ -513,7 +517,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		else
 		{
 		    /* Render into offscreen cliprect bitmap */
-		    
+#warning TODO		    
 		    
 		}
 	    }
@@ -616,8 +620,8 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 		    BltBitMap(srcBitMap
 		    	, xSrc, ySrc
 			, CR->BitMap
-		    	, intersect.MinX
-			, intersect.MinY
+		    	, intersect.MinX - CR->bounds.MinX
+			, intersect.MinY - CR->bounds.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
 			, minterm, 0xFF, NULL
@@ -1785,46 +1789,140 @@ static ULONG getbitmappixel(struct BitMap *bm
     return pen;
 }
 
+
+struct blit_info
+{
+    struct BitMap *bitmap;
+    ULONG minterm;
+    ULONG planemask;
+    UBYTE bmdepth;
+    ULONG bmwidth;
+    
+};
+
+#define BI(x) ((struct blit_info *)x)
+static VOID bitmap_to_buf(APTR src_info, LONG x_src, LONG y_src, LONG width, LONG height, ULONG *bufptr)
+{
+
+    LONG y;
+    
+    /* Fill buffer with pixels from bitmap */
+    for (y = 0; y < height; y ++)
+    {
+	LONG x;
+	    
+	for (x = 0; x < width; x ++)
+	{
+	    
+	    *bufptr ++ = getbitmappixel(BI(src_info)->bitmap
+		, x + x_src
+		, y + y_src
+		, BI(src_info)->bmdepth
+		, BI(src_info)->planemask);
+			
+
+	}
 	
-static VOID amiga2hidd_fast(struct BitMap *src_bm
+    }
+
+}
+
+
+static VOID buf_to_bitmap(APTR dest_info, LONG x_dest, LONG y_dest, ULONG width, ULONG height, ULONG *bufptr)
+{
+
+    /*  Write pixels to the bitmap */
+	
+    /* Optimize bitmap copy */
+	
+    if (BI(dest_info)->minterm ==  0x00C0)
+    {
+	LONG y;
+	for (y = 0; y < height; y ++)
+	{
+	    LONG x;
+	    for (x = 0; x < width; x ++)
+	    {
+
+		setbitmappixel(BI(dest_info)->bitmap
+		    	, x + x_dest
+			, y + y_dest
+			, *bufptr ++, BI(dest_info)->bmdepth, BI(dest_info)->planemask
+		);
+
+
+	    }
+		
+	}
+
+    }
+    else
+    {
+	LONG y;
+	    
+	for (y = 0; y < height; y ++)
+	{
+	    LONG x;
+		
+	    for (x = 0; x < width; x ++)
+	    {
+		ULONG src = *bufptr ++ , dest = 0;
+		ULONG minterm = BI(dest_info)->minterm;
+
+		/* Set the pixel using correct minterm */
+
+		dest = getbitmappixel(BI(dest_info)->bitmap
+			, x + x_dest
+			, y + y_dest
+			, BI(dest_info)->bmdepth
+			, BI(dest_info)->planemask
+		);
+
+		if (minterm & 0x0010) dest  = ~src & ~dest;
+		if (minterm & 0x0020) dest |= ~src & dest;
+		if (minterm & 0x0040) dest |=  src & ~dest;
+		if (minterm & 0x0080) dest |= src & dest;
+		    
+		setbitmappixel(BI(dest_info)->bitmap
+			, x + x_dest
+			, y + y_dest
+			, dest, BI(dest_info)->bmdepth
+			, BI(dest_info)->planemask
+		);
+
+	    }
+		
+	}
+	    
+    }
+    return;
+
+}
+
+/* General functions for mving blocks of data to or from HIDDs, be it pixelarrays
+  or bitmaps. They use a callback-function to get data from amiga/put data to amiga bitmaps/pixelarrays
+  
+*/	
+static VOID amiga2hidd_fast(APTR src_info
 	, LONG x_src , LONG	y_src
 	, Object 	*hidd_bm
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
-	, ULONG minterm
-	, ULONG plane_mask
+	, VOID (*fillbuf_hook)()
 )
 {
 #define NUMPIX 2000 /* We can chunky2bitmap-convert 1000 pixels before writing pixarray */
 #define DEPTH 8
     
-    UBYTE src_depth;
-    ULONG src_width;
     
     ULONG temp_buf[NUMPIX];
     ULONG tocopy_w,
     	  tocopy_h;
 	  
-    ULONG pixels_left_to_process = xsize * ysize;
+    LONG pixels_left_to_process = xsize * ysize;
 	  
-    ULONG bytes_per_row;
     LONG current_x, current_y, next_x, next_y;
-    
-    struct TagItem bm_tags[] =
-    {
-    	{aHidd_BitMap_DrawMode, 0UL },
-	{TAG_DONE, 0UL}
-    };
-    
-    /* Set the GC drawmode according to minterm */
-    bm_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
-    SetAttrs(hidd_bm, bm_tags);
-    
-    src_depth = GetBitMapAttr(src_bm, BMA_DEPTH);
-    src_width = GetBitMapAttr(src_bm, BMA_WIDTH);
-    
-    
-    bytes_per_row = WIDTH_TO_BYTES(src_width);
+
     
     next_x = 0;
     next_y = 0;
@@ -1832,9 +1930,7 @@ static VOID amiga2hidd_fast(struct BitMap *src_bm
     while (pixels_left_to_process)
     {
 
-	/* Get some more pixels from the HIDD*/
-	ULONG *bufptr = temp_buf;
-	LONG y;
+	/* Get some more pixels from the HIDD */
 
 	current_x = next_x;
 	current_y = next_y;
@@ -1842,7 +1938,7 @@ static VOID amiga2hidd_fast(struct BitMap *src_bm
 	if (NUMPIX < xsize)
 	{
 	   /* buffer cant hold a single horizontal line, and must 
-	      divide each line into copies */
+	      divide each line into several copy-operations */
 	    tocopy_w = xsize - current_x;
 	    if (tocopy_w > NUMPIX)
 	    {
@@ -1860,7 +1956,7 @@ static VOID amiga2hidd_fast(struct BitMap *src_bm
     	}
 	else /* We can copy one or several whole horizontal lines at a time */
 	{
-	    tocopy_h = MIN(NUMPIX / xsize, ysize);
+	    tocopy_h = MIN(NUMPIX / xsize, ysize - current_y);
 
 	    tocopy_w = xsize;
 
@@ -1869,30 +1965,24 @@ static VOID amiga2hidd_fast(struct BitMap *src_bm
 	    
 	
 	}
-	
-	/* Fill buffer with pixels from bitmap */
-    	for (y = current_y; y < tocopy_h; y ++)
-	{
-	    LONG x;
-	    
-	    for (x = current_x; x < tocopy_w; x ++)
-	    {
-	    
-		*bufptr ++ = getbitmappixel(src_bm
-			, x + x_src
-			, y + y_src
-			, src_depth, plane_mask);
-			
-		pixels_left_to_process --;
 
-	    }
 
-	}
+	/* Get data */
+	fillbuf_hook(src_info
+		, current_x + x_src
+		, current_y + y_src
+		, tocopy_w, tocopy_h
+		, temp_buf
+	);
 	
+	/* Put it to the HIDD */
 	HIDD_BM_PutBox(hidd_bm
 		, temp_buf
-		, x_dest + current_x, y_dest + current_y
+		, x_dest + current_x
+		, y_dest + current_y
 		, tocopy_w, tocopy_h);
+
+	pixels_left_to_process -= (tocopy_w * tocopy_h);
 	
 	
     } /* while (pixels left to copy) */
@@ -1904,37 +1994,24 @@ static VOID amiga2hidd_fast(struct BitMap *src_bm
 
 static VOID hidd2amiga_fast(Object *hidd_bm
 	, LONG x_src , LONG y_src
-	, struct BitMap *dst_bm
+	, APTR dest_info
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
-	, ULONG minterm
-	, ULONG plane_mask
+	, VOID (*putbuf_hook)()
 )
 {
 
-    UBYTE dst_depth;
-    UBYTE dst_width;
     ULONG temp_buf[NUMPIX];
     ULONG tocopy_w, tocopy_h;
     
-    ULONG pixels_left_to_process = xsize * ysize;
-    ULONG bytes_per_row;
+    LONG pixels_left_to_process = xsize * ysize;
     ULONG current_x, current_y, next_x, next_y;
-    
-    
-    dst_depth = GetBitMapAttr(dst_bm, BMA_DEPTH);
-    dst_width = GetBitMapAttr(dst_bm, BMA_WIDTH);
-    
-    bytes_per_row = WIDTH_TO_BYTES(dst_width);
     
     next_x = 0;
     next_y = 0;
-    
 
     while (pixels_left_to_process)
     {
-	/* Get some more pixels from the HIDD */
-    	ULONG *bufptr = temp_buf;
 	
 	current_x = next_x;
 	current_y = next_y;
@@ -1961,7 +2038,7 @@ static VOID hidd2amiga_fast(Object *hidd_bm
     	}
     	else
     	{
-	    tocopy_h = MIN(NUMPIX / xsize, ysize);
+	    tocopy_h = MIN(NUMPIX / xsize, ysize - current_y);
 	    tocopy_w = xsize;
 
 	    next_x = 0;
@@ -1970,6 +2047,7 @@ static VOID hidd2amiga_fast(Object *hidd_bm
     	}
 	
 	
+	/* Get some more pixels from the HIDD */
 	HIDD_BM_GetBox(hidd_bm
 		, temp_buf
 		, x_src + current_x
@@ -1977,67 +2055,15 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 		, tocopy_w, tocopy_h);
 
 
-	/*  Write pixels to the bitmap */
+	/*  Write pixels to the destination */
+	putbuf_hook(dest_info
+		, current_x + x_dest
+		, current_y + y_dest
+		, tocopy_w, tocopy_h
+		, temp_buf
+	);
 	
-	/* Optimize bitmap copy */
-	
-	if (minterm ==  0x00C0)
-	{
-	    LONG y;
-	    for (y = current_y; y < tocopy_h; y ++)
-	    {
-	        LONG x;
-		for (x = current_x; x < tocopy_w; x ++)
-		{
-
-		    setbitmappixel(dst_bm
-		    	, x + x_dest
-			, y + y_dest
-			, *bufptr ++, dst_depth, plane_mask);
-
-
-	    	    pixels_left_to_process --;
-		}
-		
-	    }
-
-	}
-	else
-	{
-	    LONG y;
-	    
-	    for (y = current_y; y < tocopy_h; y ++)
-	    {
-		LONG x;
-		
-		for (x = current_x; x < tocopy_w; x ++)
-		{
-		    ULONG src = *bufptr ++ , dest = 0;
-		    /* Set the pixel using correct minterm */
-
-
-
-		    dest = getbitmappixel(dst_bm
-			, x + x_dest
-			, y + y_dest
-			, dst_depth, plane_mask);
-
-		    if (minterm & 0x0010) dest  = ~src & ~dest;
-		    if (minterm & 0x0020) dest |= ~src & dest;
-		    if (minterm & 0x0040) dest |=  src & ~dest;
-		    if (minterm & 0x0080) dest |= src & dest;
-		    
-		    setbitmappixel(dst_bm
-			, x + x_dest
-			, y + y_dest
-			, dest, dst_depth, plane_mask);
-	    	    pixels_left_to_process --;
-
-		}
-		
-	    }
-	    
-	}
+	pixels_left_to_process -= (tocopy_w * tocopy_h);
 
     }
     
@@ -2284,17 +2310,26 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		    
 		    break;
 		    
-		default:
+		default: {
 /* kprintf("copy HIDD to Amiga:\n");
-*/		    hidd2amiga_fast( BM_OBJ(srcBitMap)
+*/
+		    struct blit_info bi;
+		    bi.bitmap	 = destBitMap;
+		    bi.minterm	 = minterm;
+		    bi.planemask = mask;
+		    
+		    bi.bmdepth	= GetBitMapAttr(destBitMap, BMA_DEPTH);
+		    bi.bmwidth	= GetBitMapAttr(destBitMap, BMA_WIDTH);
+		    
+		    hidd2amiga_fast( BM_OBJ(srcBitMap)
 		    	, xSrc, ySrc
-			, destBitMap
+			, (APTR) &bi
 			, xDest, yDest
 			, xSize, ySize
-			, minterm, mask);
+			, buf_to_bitmap
+		    );
 			
-			
-		    break;
+		    break; }
 		
 	    } /* switch (minterm) */
 	    
@@ -2338,17 +2373,26 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		    { aHidd_BitMap_DrawMode,	0UL},
 		    { TAG_DONE, 0UL}
 		};
-		    
+		
+		struct blit_info bi;
 		drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
 		SetAttrs(dst_bm, drmd_tags);
 
 /* kprintf("copy Amiga to HIDD\n"); 
-*/	    	amiga2hidd_fast(srcBitMap
+*/
+		bi.bitmap	= srcBitMap;
+		bi.minterm	= minterm;
+		bi.planemask	= mask;
+		
+		bi.bmdepth	= GetBitMapAttr(srcBitMap, BMA_DEPTH);
+		bi.bmwidth	= GetBitMapAttr(srcBitMap, BMA_WIDTH);
+
+	    	amiga2hidd_fast( (APTR) &bi
 			, xSrc, ySrc
 			, dst_bm
 			, xDest, yDest
 			, xSize, ySize
-			, minterm, mask
+			, bitmap_to_buf
 		);
 			
 			
@@ -2414,30 +2458,360 @@ void driver_SetRGB4 (struct ViewPort * vp, ULONG color,
 }
 
 
+/* Hook for moving data from pixelarray to chunky format buffer */
+static VOID pixarray_to_buf(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+{
+    UBYTE * pixarray = (UBYTE *)src_info;
+    ULONG numpix = width * height;
+    ULONG i;
+    
+    /* Get the pointer to the element we're currently working on */
+    pixarray = &(pixarray[(y_src * width) + x_src]);
+    
+    for (i = 0; i < numpix; i ++)
+    {
+    	*bufptr ++ = (ULONG)*pixarray ++;
+    }
+    return;
+}
+
+static VOID buf_to_pixarray(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+{
+    UBYTE * pixarray = (UBYTE *)src_info;
+    ULONG numpix = width * height;
+    ULONG i;
+    
+    /* Get the pointer to the element we're currently working on */
+    pixarray = &(pixarray[(y_src * width) + x_src]);
+    
+    for (i = 0; i < numpix; i ++)
+    {
+    	*pixarray ++ = (UBYTE)*bufptr ++;
+    }
+    return;
+}
+
+
+		
 LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	    ULONG ystart, ULONG xstop, ULONG ystop, UBYTE * array,
 	    struct RastPort * temprp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata *dd;
+    struct BitMap *bm = rp->BitMap;
+    struct Layer *L = rp->Layer;
+    ULONG array_width, array_height;
+    
+    LONG pixwritten = 0;
+    
+    EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
+    	rp, xstart, ystart, xstop, ystop));
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
 	
     dd = GetDriverData(rp);
     
-    return 0;
+    array_width  = xstop - xstart + 1;
+    array_height = ystop - ystart + 1;
+    
+    
+    if (NULL == L)
+    {
+    	struct TagItem bm_tags[] =
+	{
+	    { aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+	    { TAG_DONE, 0}
+	};
+        /* No layer, probably a screen */
+	
+	/* Just put the pixelarray directly onto the HIDD */
+	
+	SetAttrs(BM_OBJ(bm), bm_tags);
+	
+	amiga2hidd_fast((APTR)array
+		, 0, 0
+		, BM_OBJ(bm)
+		, xstart, ystart
+		, array_width, array_height
+		, pixarray_to_buf
+	);
+	pixwritten += array_width * array_height;
+	
+    }
+    else
+    {
+    	/* Window rastport, we need to clip th operation */
+	
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toread, intersect;
+	
+	toread.MinX = xstart + xrel;
+	toread.MinY = ystart + yrel;
+	toread.MaxX = xstop  + xrel;
+	toread.MaxY = ystop  + yrel;
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toread, &intersect))
+	    {
+	        ULONG inter_width  = intersect.MaxX - intersect.MinX + 1;
+		ULONG inter_height = intersect.MaxY - intersect.MinY + 1;
+		LONG array_rel_x = intersect.MinX - toread.MinX;
+		LONG array_rel_y = intersect.MinY - toread.MinY;
+		
+	        if (NULL == CR->lobs)
+		{
+		    struct TagItem bm_tags[] =
+		    {
+			{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+			{ TAG_DONE, 0}
+		    };
+		    
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    /* Write to the HIDD */
+	
+		    SetAttrs(BM_OBJ(bm), bm_tags);
+	
+		    amiga2hidd_fast((APTR)array
+			, array_rel_x
+			, array_rel_y
+			, BM_OBJ(bm)
+			, intersect.MinX, intersect.MinY
+			, inter_width, inter_height
+			, pixarray_to_buf
+		    );
+		}
+		else
+		{
+		    /* This is the tricky one: render into offscreen cliprect bitmap */
+		    UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
+		    
+		    LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX;
+		    LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
+		    
+		    UBYTE *array_ptr	= array + (array_rel_y * array_width) + array_rel_x;
+		    
+		    ULONG modulo = array_width - inter_width;
+		    
+		    LONG y;
+		    
+		    for (y = 0; y < inter_height; y ++)
+		    {
+		    	LONG x;
+		    	for (x = 0; x < inter_width; x ++)
+			{
+			    setbitmappixel(CR->BitMap
+			    	, cr_rel_x + x
+				, cr_rel_y + y
+				
+				, *array_ptr ++
+				, depth
+				, 0xFF /* All planes */
+			    );
+			}
+			array_ptr += modulo;
+		    }
+		    
+		} /* if (intersecton inside hidden cliprect) */
+		
+	        pixwritten += inter_width * inter_height;
+
+		
+	    } /* if (cliprect intersects with area we want to draw to) */
+	    
+	    CR = CR->Next;
+	} /* while (cliprects to examine) */
+	
+    } /* if (not screen rastport) */
+	
+    ReturnInt("driver_WritePixelArray8", LONG, pixwritten);
     
 } /* driver_WritePixelArray8 */
 
 
-static VOID do_template_pixarray(PLANEPTR source, LONG x_src, LONG src_modulo,
-	struct RastPort *dest_rp, LONG x_dest, LONG y_dest, LONG xsize, LONG ysize)
+LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
+	    ULONG ystart, ULONG xstop, ULONG ystop, UBYTE * array,
+	    struct RastPort * temprp, struct GfxBase * GfxBase)
 {
-    return;
+    struct gfx_driverdata *dd;
+    struct BitMap *bm = rp->BitMap;
+    struct Layer *L = rp->Layer;
+    ULONG array_width, array_height;
+    
+    LONG pixread = 0;
+    
+    EnterFunc(bug("driver_ReadPixelArray8(%p, %d, %d, %d, %d)\n",
+    	rp, xstart, ystart, xstop, ystop));
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    dd = GetDriverData(rp);
+    
+    array_width  = xstop - xstart + 1;
+    array_height = ystop - ystart + 1;
+    
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	
+	/* Just get the pixelarray directly from the HIDD */
+	
+	hidd2amiga_fast(BM_OBJ(bm)
+		, xstart, ystart
+		, (APTR)array
+		, 0, 0
+		, array_width, array_height
+		, buf_to_pixarray
+	);
+	pixread += array_width * array_height;
+	
+    }
+    else
+    {
+    	/* Window rastport, we need to clip th operation */
+	
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toread, intersect;
+	
+	toread.MinX = xstart + xrel;
+	toread.MinY = ystart + yrel;
+	toread.MaxX = xstop  + xrel;
+	toread.MaxY = ystop  + yrel;
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toread, &intersect))
+	    {
+	        ULONG inter_width  = intersect.MaxX - intersect.MinX + 1;
+		ULONG inter_height = intersect.MaxY - intersect.MinY + 1;
+		LONG array_rel_x = intersect.MinX - toread.MinX;
+		LONG array_rel_y = intersect.MinY - toread.MinY;
+		
+	        if (NULL == CR->lobs)
+		{
+		    
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    /* Read from the HIDD */
+	
+		    amiga2hidd_fast(BM_OBJ(bm)
+			, intersect.MinX, intersect.MinY
+			, (APTR)array
+			, array_rel_x
+			, array_rel_y
+			, inter_width, inter_height
+			, pixarray_to_buf
+		    );
+		}
+		else
+		{
+		    /* This is the tricky one: render into offscreen cliprect bitmap */
+		    UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
+		    LONG cr_rel_x = intersect.MinX - CR->bounds.MinX;
+		    LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
+		    
+		    LONG y;
+		    UBYTE *array_ptr = array + (array_rel_y * array_width) + array_rel_x;
+		    ULONG modulo = array_width - inter_width;
+		    
+		    for (y = 0; y < inter_height; y ++)
+		    {
+		    	LONG x;
+		    	for (x = 0; x < inter_width; x ++)
+			{
+			    *array_ptr ++ = getbitmappixel(CR->BitMap
+			    	, cr_rel_x + x
+				, cr_rel_y + y
+				, depth
+				, 0xFF /* All planes */
+			    );
+			}
+			array_ptr += modulo;
+			
+		    }
+		    
+		} /* if (intersecton inside hidden cliprect) */
+		
+	        pixread += inter_width * inter_height;
+
+		
+	    } /* if (cliprect intersects with area we want to draw to) */
+	    
+	    CR = CR->Next;
+	} /* while (cliprects to examine) */
+	
+    } /* if (not screen rastport) */
+	
+    ReturnInt("driver_ReadPixelArray8", LONG, pixread);
+    
+} /* driver_WritePixelArray8 */
+
+
+struct blt_template_info
+{
+    PLANEPTR plane;
+    UWORD drawmode;
+    ULONG modulo;
+    
+};
+
+#define BTI(x) ((struct blt_template_info *)x)
+
+static VOID template_to_buf(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+{
+    UBYTE *planeptr = BTI(src_info)->plane;
+    ULONG modulo   = BTI(src_info)->modulo;
+    
+    LONG y;
+    
+    /* Get to the current y-position */
+    for (y = 0; y < y_src; y ++)
+    	planeptr += modulo;
+    
+    /* Find correct byte */
+    planeptr += (x_src >> 3);
+    
+    for (y = 0; y < height; y ++)
+    {
+    	LONG x;
+	for (x = x_src; x < width; x ++)
+	{
+	    /* Get a bit from the bitmap */
+	}
+    }
 }
 
+#warning TODO
 /* !!! Note: The functionality of BltTemplate() is a candidate for beeing
-   moved into the HIDDs, because I think many gfx cards can do this in HW.
+   moved into the HIDDs, because most gfx cards can do color expansion in HW.
 */
 
 VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
@@ -2447,6 +2821,10 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     struct Layer *L = destRP->Layer;
     struct BitMap *bm = destRP->BitMap;
     ULONG width, height;
+
+    struct blt_template_info bti;
+    bti.drawmode = GetDrMd(destRP);
+    bti.plane = source;
     
     EnterFunc(bug("driver_BltTemplate(%d %d %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
@@ -2463,12 +2841,13 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     {
         /* No layer, probably a screen */
 	
-	/* Just create a pixelarray  of the data and write it to the destination bitmap */
-	do_template_pixarray(source
-		, xSrc, srcMod
-		, destRP
+	/* Just create a pixelarray  of the data and write it to the destination HIDD */
+	amiga2hidd_fast( (APTR) &bti
+		, xSrc, 0
+		, BM_OBJ(bm)
 		, xDest, yDest
 		, xSize, ySize
+		, template_to_buf
 	);
 	
     }
