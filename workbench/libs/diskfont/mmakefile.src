@@ -1,15 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-ifeq ($(TARGET_ARCH),morphos)
-OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-MOSLIB			:= /ade/morphos/lib
-FORCE_DEPLIBS 	:=
-FORCE_LIBS 		:= $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a $(MOSLIB)/libstring.a \
-				  $(MOSLIB)/libmath.a $(MOSLIB)/libc.a $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
-TARGET_CFLAGS	:= -O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__
-endif
-
 FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \
 	    dosstreamhook diskfont_io bullet basicfuncs
 

@@ -1,8 +1,6 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-#OS_INCLUDES := -I$(GENINCDIR)
-
 MY_INCLS    := $(wildcard include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))

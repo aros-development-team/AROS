@@ -1,12 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-ifeq ($(TARGET_ARCH),morphos)
-OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-FORCE_DEPLIBS 	:=
-FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libamiga.a
-endif
-
 FILES :=    basicfuncs bufferingfuncs clipboardfuncs collectionhooks \
 	    prophooks stophook dosstreamhandler
 

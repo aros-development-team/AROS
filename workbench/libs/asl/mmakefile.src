@@ -1,13 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-ifeq ($(TARGET_ARCH),morphos)
-OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-FORCE_DEPLIBS 	:=
-FORCE_LIBS 		:= /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libstringio.a /ade/morphos/lib/libamiga.a /ade/morphos/lib/libc.a /GG/morphos/lib/libmath.a
-TARGET_CFLAGS	:= -O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__
-endif
-
 FILES := basicfuncs specialreq \
 	 filereqhooks filereqsupport \
 	 modereqhooks modereqsupport \

@@ -3,16 +3,6 @@
 
 include $(TOP)/config/make.cfg
 
-ifeq ($(TARGET_ARCH),morphos)
-OS_INCLUDES   := -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc \
-                 -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-MOSLIB        := /ade/morphos/lib
-FORCE_DEPLIBS :=
-FORCE_LIBS    := $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a \
-                 $(MOSLIB)/libstring.a $(MOSLIB)/libmath.a $(MOSLIB)/libc.a \
-                 $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
-endif
-
 FILES := support support_builtin diskobjio diskobj35io diskobjPNGio identify
 
 FUNCS := \

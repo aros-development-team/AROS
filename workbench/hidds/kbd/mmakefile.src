@@ -1,8 +1,6 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-#OS_INCLUDES := -I$(GENINCDIR)
-
 INCLUDE_FILES := $(wildcard include/*.h)
 
 %copy_includes path=hidd

@@ -16,8 +16,10 @@ FILES := funcs
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
     uselibs="amiga rom m hiddstubs"
 
-%rule_compile basename=funcs targetdir=$(GENDIR)/$(CURDIR) compiler=host
+%rule_compile basename=funcs targetdir=$(GENDIR)/$(CURDIR) \
+    compiler=host cflags="$(CFLAGS) -I$(AROS_INCLUDES) -D__AROS__"
 
-%rule_ref basename=funcs cflags="$(strip $(CFLAGS))" targetdir=$(GENDIR)/$(CURDIR) compiler=host
+%rule_ref basename=funcs cflags="$(strip $(CFLAGS)) -I$(GENINCDIR)" \
+    targetdir=$(GENDIR)/$(CURDIR) compiler=host
 
 %common

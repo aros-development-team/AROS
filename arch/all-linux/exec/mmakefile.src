@@ -8,7 +8,7 @@ $(GENINCDIR)/sigcore.h : sigcore.h.src
 	%mkdirs_q $(GENINCDIR)
 	$(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
 
-OS_INCLUDES := -I$(SYS_INCLUDES) -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_INCLUDES := -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=linux \
   files=init compiler=host

@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES		:= longjmp setjmp
 CLIBDIR 	:= $(GENDIR)/compiler/clib
-SPECIAL_CFLAGS	:= -I$(TOP)/compiler/clib -I..
+USER_CFLAGS	:= -I$(TOP)/compiler/clib -I..
 CFLAGS2 	:= $(CFLAGS)
 AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=
