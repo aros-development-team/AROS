@@ -61,7 +61,7 @@ struct ReadLevel
 	ReadFloat(), ReadString(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
-    HISTORY:
+    HISTORY
 	14.09.93    ada created
 
 ******************************************************************************/

@@ -157,7 +157,7 @@
     SEE ALSO
 	GetMsgFromStack()
 
-    HISTORY:
+    HISTORY
 	22.11.96 digulla created
 
 ******************************************************************************/
@@ -333,7 +333,7 @@
     SEE ALSO
 	GetTagsFromStack()
 
-    HISTORY:
+    HISTORY
 	22.11.96 digulla created
 
 ******************************************************************************/

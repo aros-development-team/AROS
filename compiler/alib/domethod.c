@@ -45,7 +45,7 @@
 	"Basic Object-Oriented Programming System for Intuition" und das
 	"boopsi Class Reference" Dokument.
 
-    HISTORY:
+    HISTORY
 	14.09.93    ada created
 
 ******************************************************************************/

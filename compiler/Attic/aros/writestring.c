@@ -43,7 +43,7 @@
 	ReadDouble(), ReadString(), WriteWord(), WriteLong(), WriteFloat(),
 	WriteDouble()
 
-    HISTORY:
+    HISTORY
 	27.11.96    ada created
 
 ******************************************************************************/
