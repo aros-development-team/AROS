@@ -9,8 +9,7 @@ FILES = \
 
 OBJDIR= $(GENDIR)/compiler/clib
 
-SPECIAL_CFLAGS= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
-CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
+CFLAGS2 = $(CFLAGS) -I..
 AFLAGS2 = $(AFLAGS) -I..
 
 TESTS=
@@ -19,7 +18,7 @@ all: $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
 
 setup:
 	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 
 clean::
 	$(RM) $(TESTS)
