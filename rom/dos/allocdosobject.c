@@ -93,7 +93,7 @@
         return &((struct StandardPacket *)mem)->sp_Pkt;
 
     case DOS_EXALLCONTROL:
-	mem = AllocMem(sizeof(struct ExAllControl), MEMF_CLEAR);
+	mem = AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
 
 	if(mem == NULL)
 	    SetIoErr(ERROR_NO_FREE_STORE);

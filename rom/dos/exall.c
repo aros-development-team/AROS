@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include "dos_intern.h"
 #include <aros/asmcall.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -122,7 +123,11 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys iofs;
 
-    if (control->eac_MatchString || control->eac_MatchFunc)
+    /* If fib != NULL it means we've already been called and found out that
+       we needed to emulate ExAll, thus don't waste time sending messages to the
+       handler.  */
+    if (((struct InternalExAllControl *)control)->fib != NULL ||
+          control->eac_MatchString || control->eac_MatchFunc)
     {
     	#warning "Hack because of problem with our filesystem API regarding"
 	#warning "ExAll handling. Filesystems don't get passed matchstring/matchfunc"
@@ -156,143 +161,177 @@
 	iofs.io_DosError == ERROR_ACTION_NOT_KNOWN
     )
     {
-
 	/* Try to emulate it */
-	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-
 	STRPTR end  = (STRPTR)buffer + size;
 	STRPTR next;
 
 	struct ExAllData *last = buffer, *curr = buffer;
+	
+	struct InternalExAllControl *icontrol = (struct InternalExAllControl *)control;
 
-	control->eac_Entries = 0;
-	if
-	(
-	    control->eac_LastKey  == 0 &&
-	    fib                        &&
-	    Examine(lock, fib)         &&
-	    fib->fib_DirEntryType <= 0
-	)
+ 	static const ULONG sizes[]=
 	{
- 	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+    	    0,
+    	    offsetof(struct ExAllData,ed_Type),
+    	    offsetof(struct ExAllData,ed_Size),
+    	    offsetof(struct ExAllData,ed_Prot),
+  	    offsetof(struct ExAllData,ed_Days),
+	    offsetof(struct ExAllData,ed_Comment),
+    	    offsetof(struct ExAllData,ed_OwnerUID),
+    	    sizeof(struct ExAllData)
+	};
+	
+	/* No errors for now.  */
+        iofs.io_DosError = 0;
+	
+	/* Allocate the FIB structure, if not allocated yet. It will be deallocated
+	   by DeleteDosObject().  */
+	if (!icontrol->fib)
+	{
+	    icontrol->fib = AllocDosObject(DOS_FIB, NULL);
+	    if (!icontrol->fib)
+	    {
+	        iofs.io_DosError == IoErr();
+	        goto end;
+	    }
 	}
+
+	/* If LastKey == 0 it means this is the first time we're getting called,
+	   in which case we need to initialize the FIB structure and a few other things. 
+	   A "nice" side effect of this, is that if one wants to restart the scanning, 
+	   he/she just has to set LastKey to 0.  */
+	if (control->eac_LastKey == 0)
+	{
+	    control->eac_Entries = 0;
+	    
+	    if (!Examine(lock, icontrol->fib))
+	    {
+	        iofs.io_DosError == IoErr();
+		goto end;
+	    }
+	    if (icontrol->fib->fib_DirEntryType <= 0)
+	    {
+       	        iofs.io_DosError = ERROR_OBJECT_WRONG_TYPE;
+		goto end;
+	    }
+	}
+	
+	/* Macro used when the data doesn't fit in the provided buffer.
+	   In case not even one element fit in the buffer, return a buffer
+	   overflow error, so that the user knows he/she has to increase the
+	   buffer.  */
+	#define ReturnOverflow()                               \
+	do {                                                   \
+	    if (last == curr)                                  \
+		iofs.io_DosError = ERROR_BUFFER_OVERFLOW;      \
+   	                                                       \
+	    icontrol->fib->fib_DiskKey = control->eac_LastKey; \
+	    goto end;                                          \
+	} while (0)
+
+	/* Copy a string pointer by _source into the buffer provided
+	   to the ExAll function. This macro gracefully handles buffer
+	   overflows.  */
+	#define CopyStringSafe(_source)     \
+	do {                                \
+	    STRPTR source = _source;        \
+	                                    \
+	    for (;;)                        \
+	    {                               \
+		if (next >= end)            \
+		    ReturnOverflow();       \
+		if (!(*next++ = *source++)) \
+	           break;                   \
+	        }                           \
+	    } while (0)
+
+	    
+	if (data > ED_OWNER)
+	    /* We don't have that many fields to fill in... */
+	    iofs.io_DosError = ERROR_BAD_NUMBER;
 	else
 	{
- 	    static const ULONG sizes[]=
-	    {
-    	        0,
-    		offsetof(struct ExAllData,ed_Type),
-    		offsetof(struct ExAllData,ed_Size),
-    		offsetof(struct ExAllData,ed_Prot),
-  		offsetof(struct ExAllData,ed_Days),
-		offsetof(struct ExAllData,ed_Comment),
-    		offsetof(struct ExAllData,ed_OwnerUID),
-    		sizeof(struct ExAllData)
-	    };
+	    while (ExNext(lock, icontrol->fib))
+	    {    
+	        /* Try to match the filename, if required.  */
+		if (control->eac_MatchString &&
+		    !MatchPatternNoCase(control->eac_MatchString,
+			                icontrol->fib->fib_FileName))
+		    continue;
 
-	    #define ReturnOverflow()                         \
-	    {                                                \
-       		if (last == buffer)                          \
-		    SetIoErr(ERROR_BUFFER_OVERFLOW);         \
-		goto end;                                    \
+		next = (STRPTR)curr + sizes[data];
+
+		/* Oops, the buffer is full.  */
+		if (next > end)
+		    ReturnOverflow();
+
+		/* Switch over the requested fields and fill them as appropriate.  */
+ 	        switch(data)
+    		{
+    		    case ED_OWNER:
+			curr->ed_OwnerUID = icontrol->fib->fib_OwnerUID;
+			curr->ed_OwnerGID = icontrol->fib->fib_OwnerGID;
+
+			/* Fall through */
+    		    case ED_COMMENT:
+			curr->ed_Comment = next;
+			CopyStringSafe(icontrol->fib->fib_Comment);
+
+			/* Fall through */
+    		    case ED_DATE:
+			curr->ed_Days  = icontrol->fib->fib_Date.ds_Days;
+			curr->ed_Mins  = icontrol->fib->fib_Date.ds_Minute;
+			curr->ed_Ticks = icontrol->fib->fib_Date.ds_Tick;
+
+			/* Fall through */
+    		    case ED_PROTECTION:
+			curr->ed_Prot = icontrol->fib->fib_Protection;
+
+			/* Fall through */
+    		    case ED_SIZE:
+			curr->ed_Size = icontrol->fib->fib_Size;
+
+			/* Fall through */
+    		    case ED_TYPE:
+			curr->ed_Type = icontrol->fib->fib_DirEntryType;
+
+			/* Fall through */
+    		    case ED_NAME:
+			curr->ed_Name = next;
+			CopyStringSafe(icontrol->fib->fib_FileName);
+
+			/* Fall through */
+		    case 0:
+			curr->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
+		}
+
+		/* Record the latest DiskKey into LastKey so that we can roll back to it
+		   in case of a buffer overflow and when getting called again.  */	   
+                control->eac_LastKey = icontrol->fib->fib_DiskKey;
+		    
+		/* Do some more matching... */
+		if (control->eac_MatchFunc &&
+		    !AROS_UFC3(LONG, control->eac_MatchFunc,
+			       AROS_UFCA(struct Hook *, control->eac_MatchFunc, A0),
+			       AROS_UFCA(struct ExAllData *, curr, A2),
+			       AROS_UFCA(LONG *, &data, A1)))
+		    continue;
+		    
+		/* Finally go to the next entry in the buffer.  */
+		last = curr;
+		curr = curr->ed_Next;
+	 	control->eac_Entries++;
 	    }
-
-	    #define CopyStringSafe(_source)              \
-	    {                                            \
-		STRPTR source = _source;                 \
-							 \
-		for (;;)                                 \
-	    	{                                        \
-		    if (next >= end)                     \
-			ReturnOverflow();                \
-		    if (!(*next++ = *source++))          \
-		    	 break;                          \
-	        }                                        \
-	    }
-
-	    if (data > ED_OWNER)
-	        SetIoErr(ERROR_BAD_NUMBER);
-	    else
-	    {
-	    	if (control->eac_LastKey)
-	            fib->fib_DiskKey = control->eac_LastKey;
-
-	    	while (ExNext(lock, fib))
-	    	{
-		    if (control->eac_MatchString &&
-			!MatchPatternNoCase(control->eac_MatchString, fib->fib_FileName))
-			continue;
-
-		    next = (STRPTR)curr + sizes[data];
-
-		    if (next>end)
-		        ReturnOverflow();
-
-		    switch(data)
-    		    {
-    		    	case ED_OWNER:
-			    curr->ed_OwnerUID = fib->fib_OwnerUID;
-			    curr->ed_OwnerGID = fib->fib_OwnerGID;
-
-			    /* Fall through */
-    		        case ED_COMMENT:
-			    curr->ed_Comment = next;
-			    CopyStringSafe(fib->fib_Comment);
-
-			    /* Fall through */
-    		        case ED_DATE:
-			    curr->ed_Days  = fib->fib_Date.ds_Days;
-			    curr->ed_Mins  = fib->fib_Date.ds_Minute;
-			    curr->ed_Ticks = fib->fib_Date.ds_Tick;
-
-			    /* Fall through */
-    		    	case ED_PROTECTION:
-			    curr->ed_Prot = fib->fib_Protection;
-
-			    /* Fall through */
-    		        case ED_SIZE:
-			    curr->ed_Size = fib->fib_Size;
-
-			    /* Fall through */
-    		    	case ED_TYPE:
-			    curr->ed_Type = fib->fib_DirEntryType;
-
-			    /* Fall through */
-    		    	case ED_NAME:
-			    curr->ed_Name = next;
-			    CopyStringSafe(fib->fib_FileName);
-
-			    /* Fall through */
-		    	case 0:
-			    curr->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
-		    }
-
-		    if (control->eac_MatchFunc &&
-			!AROS_UFC3(LONG, control->eac_MatchFunc,
-				   AROS_UFCA(struct Hook *, control->eac_MatchFunc, A0),
-				   AROS_UFCA(struct ExAllData *, curr, A2),
-				   AROS_UFCA(LONG *, &data, A1)))
-			continue;
-
-		    last = curr;
-		    curr = curr->ed_Next;
-	 	    control->eac_Entries++;
-	        }
-	    }
+	    iofs.io_DosError = IoErr();
 	}
 end:
+        /* This is the last one, after it there's nothing.  */
 	last->ed_Next = NULL;
-        control->eac_LastKey = fib->fib_DiskKey;
-
-	if (fib)
-	    FreeDosObject(DOS_FIB, fib);
-
-        return IoErr()?DOSFALSE:DOSTRUE;
     }
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);
-    return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
-
+    return (iofs.io_DosError == 0) ? DOSTRUE : DOSFALSE;
+  
     AROS_LIBFUNC_EXIT
 } /* ExAll */
