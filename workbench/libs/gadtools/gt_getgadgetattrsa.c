@@ -56,8 +56,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
     
-    LONG 		count = 0;
-    struct TagItem 	*tag, *mytags = taglist;
+    LONG                  count = 0;
+    struct TagItem 	     *tag;
+    const struct TagItem *mytags = taglist;
 
     if (gad == NULL || taglist == NULL)
         return 0L;
