@@ -93,8 +93,8 @@ $(OSMODDIR)/layers.strap : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 endif
 
 # Collect all (asm-)functions in a linklib for fast linking:
-$(LIB) : $(OBJS)
-	%mklib_q
+$(LIB) : functions.h
+	%mklib_f
 	@$(RM) $(RMLIB)
 
 #MM
