@@ -118,8 +118,8 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
 	if (disabled)
 	{
 	    const static UWORD pattern[] = {
-		0x5555,
-		0xaaaa,
+		0x8888,
+		0x2222,
 	    };
 	    LONG fg = muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW];
 	    SetDrMd(_rp(obj), JAM1);
