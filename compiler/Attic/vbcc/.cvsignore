@@ -3,3 +3,7 @@ log
 vbcc.log
 bin?
 stage?
+t*.c
+t*.asm
+tstab
+patch*
