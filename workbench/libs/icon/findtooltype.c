@@ -14,8 +14,8 @@
 	AROS_LH2(UBYTE *, FindToolType,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE **, toolTypeArray, A0),
-	AROS_LHA(UBYTE  *, typeName, A1),
+	AROS_LHA(CONST STRPTR *, toolTypeArray, A0),
+	AROS_LHA(CONST STRPTR,   typeName,      A1),
 
 /*  LOCATION */
 	struct Library *, IconBase, 16, Icon)
