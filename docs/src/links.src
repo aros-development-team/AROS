@@ -74,7 +74,7 @@ and the source of the beta as
 \end{itemize}
 
 \item AROS in
-\link{Germany}{http://www.lake.de/home/lake/home/} (Main site)
+\link {Germany}{http://aros.fh-konstanz.de:8080/aros/} (Main site)
 and
 \link{Sweden}{http://www.lysator.liu.se/amiga/aros/} (Mirror)
 
@@ -101,7 +101,16 @@ attempt
 {http://www.informatik.tu-muenchen.de/~stieber/AmigaOS-Speicherschutz}
 *New*, Only in German.
 
+\item \label{ADE}\link{ADE - Amiga Development Environment *New*}
+{http://www.ninemoons.com/ADE/ADE.html} on
+\link{Cronus}{http://www.ninemoons.com/}
+
 \section{Less Related}
+
+\item \label{ADN}\link{Amiga Developer Network *New*}
+{http://www.amiga.org/developer/} on
+\link{World-Wide Amiga Online!}
+{http://www.amiga.org/}
 
 \item \link{Amiga Web Directory}{http://www.cucug.org/amiga.html} -
 Various Amiga related informations: News, Links, Mags, Docs
@@ -123,6 +132,8 @@ Various Amiga related informations: News, Links, Mags, Docs
 
 \item \link{Another AmigaOS}{http://www.prodad.de/}
 *New*
+
+\item \link{Aaron Digulla's Homepage}{http://www.lake.de/home/lake/home/}
 
 \end{itemize}
 
