@@ -95,8 +95,8 @@ static UBYTE hikeymaptypes[] =
     V,	/* 42 */
     V,	/* 43 */
     V,	/* 44 */
-    NOP,/* 45 LSHIFT*/
-    NOP,/* 46 RSHIFT */
+    V,  /* 45 ESCAPE */
+    V,  /* 46 DEL  */
     V,	/* 47 */
     V,	/* 48 */
     V,	/* 49 */
@@ -304,12 +304,12 @@ UBYTE f1_descr[] =
 static IPTR hikeymap[] =
 {
     BYTES(' ', ' ', ' ', ' '),	/* 40 */
-    BYTES(0, 0, 0, 0),	/* 41 */
+    BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
     BYTES(0, 0, 0, 0),	/* 42 */
-    BYTES(0, 0, 0, 0),	/* 43 */
-    BYTES(0, 0, 0, 0),	/* 44 */
-    BYTES(0, 0, 0, 0),	/* 45 */
-    BYTES(0, 0, 0, 0),	/* 46 */
+    BYTES(13, 13, 13, 13),	/* 43 ENTER */
+    BYTES(13, 13, 13, 13),	/* 44 RETURN */
+    BYTES(27, 27, 27, 27),	/* 45 ESCAPE */
+    BYTES(127, 127, 127, 127),	/* 46 DEL */
     BYTES(0, 0, 0, 0),	/* 47 */
     BYTES(0, 0, 0, 0),	/* 48 */
     BYTES(0, 0, 0, 0),	/* 49 */
