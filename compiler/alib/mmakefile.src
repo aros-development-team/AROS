@@ -112,7 +112,6 @@ FILES	:= \
 #MM linklibs-startup : includes
 
 %make_linklib_setup mmake=linklibs-amiga
-%make_vpath
 
 # The rules to build the startup code.
 
