@@ -23,11 +23,9 @@ ULIBNAME := Mathieeesingtrans
 #
 # END_DESC{localmakevar}
 
-FILES := \
-	intern_ieeespisodd \
-	intern_ieeespld
+FILES = functable intern_ieeespisodd intern_ieeespld
 
-FUNCTIONS := \
+FUNCTIONS = \
 	ieeespacos \
 	ieeespasin \
 	ieeespcos \
@@ -45,9 +43,9 @@ FUNCTIONS := \
 	ieeesptan \
 	ieeesptieee 
 
-%define_libs postlibs="-lamiga -lmathieeesingtrans"
+%define_libs prelibs=-l$(LIBNAME)
 
-%genlib
+%genlib_old
 
 #MM workbench-libs-mathieeesptrans : setup includes linklibs
 workbench-libs-mathieeesptrans : show-flags $(SLIB)
