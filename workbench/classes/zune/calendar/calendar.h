@@ -11,14 +11,17 @@
 /*** Name *******************************************************************/
 #define MUIC_Calendar           "Calendar.mcc"
 
+/*** Identifier base ********************************************************/
+#define MUIB_Calendar           (MUIB_AROS | 0x00000100)
+
 /*** Attributes *************************************************************/
-#define MUIA_Calendar_Date	(TAG_USER | (0xA303 << 16) | 0x0001)
-#define MUIA_Calendar_MonthDay 	(TAG_USER | (0xA303 << 16) | 0x0002)
-#define MUIA_Calendar_MonthDay0	(TAG_USER | (0xA303 << 16) | 0x0003)
-#define MUIA_Calendar_Month 	(TAG_USER | (0xA303 << 16) | 0x0004)
-#define MUIA_Calendar_Month0 	(TAG_USER | (0xA303 << 16) | 0x0005)
-#define MUIA_Calendar_Year  	(TAG_USER | (0xA303 << 16) | 0x0006)
-#define MUIA_Calendar_DayLabels (TAG_USER | (0xA303 << 16) | 0x0007)
+#define MUIA_Calendar_Date	(MUIB_Calendar | 0x00000000)
+#define MUIA_Calendar_MonthDay 	(MUIB_Calendar | 0x00000001)
+#define MUIA_Calendar_MonthDay0	(MUIB_Calendar | 0x00000002)
+#define MUIA_Calendar_Month 	(MUIB_Calendar | 0x00000003)
+#define MUIA_Calendar_Month0 	(MUIB_Calendar | 0x00000004)
+#define MUIA_Calendar_Year  	(MUIB_Calendar | 0x00000005)
+#define MUIA_Calendar_DayLabels (MUIB_Calendar | 0x00000006)
 
 /*** Macros *****************************************************************/
 #define CalendarObject MUIOBJMACRO_START(MUIC_Calendar)
