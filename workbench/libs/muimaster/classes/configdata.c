@@ -43,13 +43,13 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 
 	    if (!OpenIFF(iff, IFFF_READ))
 	    {
-		StopChunk( iff, 'PREF', 'MUIC');
+		StopChunk( iff, MAKE_ID('P','R','E','F'), MAKE_ID('M','U','I','C'));
 
 		while (!ParseIFF(iff, IFFPARSE_SCAN))
 		{
 		    struct ContextNode *cn;
 		    if (!(cn = CurrentChunk(iff))) continue;
-		    if (cn->cn_ID == 'MUIC') DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
+		    if (cn->cn_ID == MAKE_ID('M','U','I','C')) DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
 		}
 
 		CloseIFF(iff);
