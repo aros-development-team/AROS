@@ -7,13 +7,15 @@ LIBS	 = -L../toollib -ltoollib
 
 OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o
 
+FOBJS	 = format.o db.o var.o
+
 all : hpp format
 
 hpp : $(OBJS) $(DEPLIBS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS)
 
-format : format.o
-	$(CC) $(CFLAGS) $< -o $@ $(LIBS)
+format : $(FOBJS)
+	$(CC) $(CFLAGS) $(FOBJS) -o $@ $(LIBS)
 
 htmlparsetest : test_parse_html.o $(DEPLIBS)
 	$(CC) $(CFLAGS) test_parse_html.o -o $@ $(LIBS)
