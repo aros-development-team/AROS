@@ -75,9 +75,9 @@ void UpdateDisp(struct Gadget 		*gad,
 		struct IntuitionBase	*IntuitionBase)
 {
    
-    WORD biggest_valid_disppos;
+/*    WORD biggest_valid_disppos; */
     /* dispcount of the charcter at end of a string */
-    UWORD end_dispcount;
+/*    UWORD end_dispcount; */
     struct TextExtent te;
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
     STRPTR dispstr;
