@@ -346,7 +346,7 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    LockLayerRom(rp->Layer);
 
 	    old_scroll_x = rp->Layer->Scroll_X;
-	    old_scroll_x = rp->Layer->Scroll_Y;
+	    old_scroll_y = rp->Layer->Scroll_Y;
 	    
 	    rp->Layer->Scroll_X = 0;
 	    rp->Layer->Scroll_Y = 0;
