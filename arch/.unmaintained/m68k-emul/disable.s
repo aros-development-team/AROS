@@ -43,25 +43,29 @@
 
 AROS_SLIB_ENTRY(Disable,Exec):
 	bsr.w	AROS_CDEFNAME(disable)
-	linkw	%fp,#0
-	move.l	%a2,-(%sp)
+	move.l	%a6,-(%sp)
+	
 	/* Get SysBase */
-	move.l	8(%fp),%a2
+	move.l	8(%sp),%a6
+	
 	/* increment nesting count and return */
-	addq.b	#1,IDNestCnt(%a2)
-	move.l	-4(%fp),%a2
-	unlk	%fp
+	addq.b	#1,IDNestCnt(%a6)
+	move.l	(%sp)+,%a6
 	rts
 
 	.globl	AROS_CDEFNAME(disable)
 	.type	AROS_CDEFNAME(disable),@function
 AROS_CDEFNAME(disable):
-	linkw	%fp,#0
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+
 	move.l	#-1,-(%sp)
 	clr.l	-(%sp)
 	pea	4(%sp)
 	clr.l	-(%sp)
 	jbsr	AROS_CSYMNAME(sigprocmask)
-	unlk	%fp
+	addq.w	#8,%sp
+	addq.w	#8,%sp
+
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
