@@ -9,6 +9,8 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
+#include <aros/debug.h>
 #include <proto/exec.h>
 
 void Exec_Permit_Supervisor();
@@ -70,7 +72,9 @@ void Exec_Permit_Supervisor();
 	should allow it.
     */
 
-    if(    ( --SysBase->TDNestCnt < 0 )
+    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
+    
+    if(    ( SysBase->TDNestCnt < 0 )
 	&& ( SysBase->IDNestCnt < 0 )
 	&& ( SysBase->AttnResched & 0x80 ) )
     {
@@ -82,5 +86,6 @@ void Exec_Permit_Supervisor();
 
 	Supervisor(Exec_Permit_Supervisor);
     }
+    
     AROS_LIBFUNC_EXIT
 } /* Permit() */
