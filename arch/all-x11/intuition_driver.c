@@ -133,6 +133,7 @@ keytable[] =
     {XK_KP_7,		0x3d, IEQUALIFIER_NUMERICPAD, "7",      "7",0 },
     {XK_KP_8,		0x3e, IEQUALIFIER_NUMERICPAD, "8",      "8",0 },
     {XK_KP_9,		0x3f, IEQUALIFIER_NUMERICPAD, "9",      "9",0 },
+    
     {XK_F1,		0x50, 0,		      "\2330~", "\23310~",0 },
     {XK_F2,		0x51, 0,		      "\2331~", "\23311~",0 },
     {XK_F3,		0x52, 0,		      "\2332~", "\23312~",0 },
@@ -143,6 +144,61 @@ keytable[] =
     {XK_F8,		0x57, 0,		      "\2337~", "\23317~",0 },
     {XK_F9,		0x58, 0,		      "\2338~", "\23318~",0 },
     {XK_F10,		0x59, 0,		      "\2339~", "\23319~",0 },
+    
+    {XK_A,		0x20, 0,},
+    {XK_B,		0x35, 0,},
+    {XK_C,		0x33, 0,},
+    {XK_D,		0x22, 0,},
+    {XK_E,		0x12, 0,},
+    {XK_F,		0x23, 0,},
+    {XK_G,		0x24, 0,},
+    {XK_H,		0x25, 0,},
+    {XK_I,		0x17, 0,},
+    {XK_J,		0x26, 0,},
+    {XK_K,		0x27, 0,},
+    {XK_L,		0x28, 0,},
+    {XK_M,		0x37, 0,},
+    {XK_N,		0x36, 0,},
+    {XK_O,		0x18, 0,},
+    {XK_P,		0x19, 0,},
+    {XK_Q,		0x10, 0,},
+    {XK_R,		0x13, 0,},
+    {XK_S,		0x21, 0,},
+    {XK_T,		0x14, 0,},
+    {XK_U,		0x16, 0,},
+    {XK_V,		0x34, 0,},
+    {XK_W,		0x11, 0,},
+    {XK_X,		0x32, 0,},
+    {XK_Y,		0x15, 0,},
+    {XK_Z,		0x31, 0,},
+    
+    {XK_a,		0x20, 0,},
+    {XK_b,		0x35, 0,},
+    {XK_c,		0x33, 0,},
+    {XK_d,		0x22, 0,},
+    {XK_e,		0x12, 0,},
+    {XK_f,		0x23, 0,},
+    {XK_g,		0x24, 0,},
+    {XK_h,		0x25, 0,},
+    {XK_i,		0x17, 0,},
+    {XK_j,		0x26, 0,},
+    {XK_k,		0x27, 0,},
+    {XK_l,		0x28, 0,},
+    {XK_m,		0x37, 0,},
+    {XK_n,		0x36, 0,},
+    {XK_o,		0x18, 0,},
+    {XK_p,		0x19, 0,},
+    {XK_q,		0x10, 0,},
+    {XK_r,		0x13, 0,},
+    {XK_s,		0x21, 0,},
+    {XK_t,		0x14, 0,},
+    {XK_u,		0x16, 0,},
+    {XK_v,		0x34, 0,},
+    {XK_w,		0x11, 0,},
+    {XK_x,		0x32, 0,},
+    {XK_y,		0x15, 0,},
+    {XK_z,		0x31, 0,},
+    
     {0, -1, 0, },
 };
 
@@ -488,7 +544,7 @@ LX11
 UX11
     for (t=0; keytable[t].amiga != -1; t++)
     {
-	if (ks == keytable[t].keycode)
+	if (ks == keytable[t].keysym)
 	{
 	    result |= (keytable[t].amiga_qual << 16) | keytable[t].amiga;
 	    return (result);
@@ -682,7 +738,7 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
     	
     if ( 0 != OpenDevice("input.device", -1, (struct IORequest *)inputio, 0))
-    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    	Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
     	
     unixio = (HIDD)NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
     if (!unixio)
@@ -693,11 +749,9 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     inputio->io_Data    = (APTR)ie;
     inputio->io_Length  = sizeof (struct InputEvent);
 
-    D(bug("xe: Going into infinite loop\n"));
     
     for (;;)
     {
-    	D(bug("xe: Inside infinite loop\n"));
     
 	ie->ie_Class = 0;
 
@@ -710,7 +764,6 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
 	    ret = DoMethod ((Object *)unixio, HIDDM_WaitForIO,
 			ConnectionNumber (sysDisplay), HIDDV_UnixIO_Read);
 			
-	    D(bug("xe: Returned from domethod\n"));
 
 	    Dipxe(bug("iWE: Got input %ld\n", ret));
 
@@ -875,8 +928,11 @@ UX11
 
 		    ie->ie_Class = IECLASS_RAWKEY;
 		    result = XKeyToAmigaCode(xk);
-		    ie->ie_Code = xk->keycode;
+		    ie->ie_Code = result & 0x0000FFFF;
 		    ie->ie_Qualifier = result >> 16;
+		    
+		    D(bug("xe: keypress: code=%04x, qual=%04x\n",
+		    	ie->ie_Code, ie->ie_Qualifier));
 		    break; }
 
 	    	case KeyRelease: {
@@ -885,7 +941,7 @@ UX11
 
 		    ie->ie_Class = IECLASS_RAWKEY;
 		    result = XKeyToAmigaCode(xk);
-		    ie->ie_Code = xk->keycode | 0x8000;
+		    ie->ie_Code = (result & 0x0000FFFF) | 0x80;
 		    ie->ie_Qualifier = result >> 16;
 		    break; }
 
@@ -927,8 +983,9 @@ UX11
     	} /* Until there is an event for AROS  */
     	
     	/* Send the event to input device for processing */
-	D(bug("Sending event to id\n"));
+    	D(bug("xe: Sending event of class %d\n", ie->ie_Class));
     	DoIO((struct IORequest *)inputio);
+    	D(bug("xe: Event sent\n"));
     	
     } /* Forever */
 
