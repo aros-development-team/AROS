@@ -737,11 +737,13 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height + 1;
 	_addtop(obj) = data->mad_TitleText->height + 1;
 
+#if 0
 	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    _subheight(obj) += 1;
 	    _addtop(obj) += 1;
 	}
+#endif
     }
 
     msg->MinMaxInfo->MinHeight = _subheight(obj);
@@ -942,10 +944,11 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    int width, height;
 
 	    width = data->mad_TitleText->width;
-	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
-		width += 1;
+/*  	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D) */
+/*  		width += 1; */
 
 	    x = _mleft(obj) + (_mwidth(obj) - width) / 2;
+
             switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
 		case GROUP_TITLE_POSITION_ABOVE:
@@ -960,14 +963,21 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		    break;
 	    }
 
-            if (x < _mleft(obj) + 2) x = _mleft(obj) + 2;
+            if (x < _mleft(obj) + 2)
+		x = _mleft(obj) + 2;
 
 	    if ((region = NewRegion()))
 	    {
 	    	struct Rectangle rect;
+		int maxx;
+
+		maxx = x + width + 1;
+		if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color
+		    != GROUP_TITLE_COLOR_3D)
+		    maxx--;
 	    	rect.MinX = x - 2;
 	    	rect.MinY = _top(obj);
-	    	rect.MaxX = MIN(_mright(obj),x + width + 3);
+	    	rect.MaxX = MIN(_mright(obj), maxx);
 	    	rect.MaxY = rect.MinY + data->mad_TitleText->height - 1; // frame is not thick enough anywhy
 		OrRectRegion(region,&rect);
 
@@ -993,7 +1003,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
             /* TODO: sba if a TextFit() for zune text is available one could disable the clipping */
 	    textdrawclip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj) + 2, _top(obj),
-					   _mwidth(obj) - 4, data->mad_TitleText->height);
+					   _mwidth(obj) - 4, data->mad_TitleText->height + 1);
 
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
@@ -1009,7 +1019,6 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		{
 		    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		}
-		x++;
 		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
 	    }
 
