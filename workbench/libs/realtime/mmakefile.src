@@ -1,23 +1,47 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+USER_INCLUDES = -I. -I..
 
 LIBNAME 	:= realtime
-ULIBNAME	:= Realtime
+ULIBNAME	:= RealTime
 
-FILES		:= 
+# BEGIN_DESC{makefile}
+# This is the makefile for realtime.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
 
-FUNCTIONS	:= \
-	lockrealtime
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
 
+FILES := functable
+
+FUNCTIONS := createplayera \
+	     deleteplayer \
+	     externalsync \
+	     findconductor \
+	     getplayerattrsa \
+	     lockrealtime \
+	     nextconductor \
+	     setconductorstate \
+	     setplayerattrsa \
+	     unlockrealtime
 
 %define_libs prelibs=-l$(LIBNAME)
 
 %genlib_cpak
 
 #MM workbench-libs-realtime : setup includes linklibs
-workbench-libs-realtime : $(SLIB)
+workbench-libs-realtime : show-flags $(SLIB)
 	@$(NOP)
 
 #MM
@@ -29,11 +53,5 @@ clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
 	$(END_FILE).c $(LIB) $(SLIB)
 
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

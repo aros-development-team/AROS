@@ -1,42 +1,55 @@
-/*
-    (C) 1995-97 AROS - The Amiga Research OS
-    $Id$
-    $Log$
-    Revision 1.1  2000/03/18 18:27:47  bergers
-    Empty libraries. None of the functions have been implemented, yet, but I hope that someone will do it. :-)
+#ifndef REALTIME_INTERN_H
+#define REALTIME_INTERN_H
 
-
-
-    Desc: Internal header file for realtime library
-    Lang: english
-*/
-#ifndef __REALTIME_INTERN_H__
-#define __REALTIME_INTERN_H__
-
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
+#ifndef   LIBRARIES_REALTIME_H
+#include <libraries/realtime.h>
 #endif
 
-#include <aros/debug.h>
+#ifndef   EXEC_TYPES_H
+#include <exec/types.h>
+#endif
 
-extern struct ExecBase * SysBase;
+#ifndef   EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
 
-struct RealtimeBase
+#ifndef   EXEC_LIBRARIES_H
+#include <exec/libraries.h>
+#endif
+
+#ifndef   EXEC_SEMAPHORES_H
+#include <exec/semaphores.h>
+#endif
+
+
+#define  GPB(x)  ((struct internal_RealTimeBase *)x)
+
+/* Note that all fields are READ ONLY! */
+
+struct internal_RealTimeBase
 {
-    struct Library   	LibNode;
-    BPTR	     	wb_SegList;
-    struct ExecBase  *	wb_SysBase;
+    struct Library   rtb_LibNode;
+    UBYTE            rtb_Reserved0[2];
+    
+    ULONG            rtb_Time;
+    ULONG            rtb_TimeFrac;
+    UWORD            rtb_Reserved1;
+    WORD             rtb_TickErr;
+
+    BPTR             rtb_SegList;
+    struct ExecBase *rtb_SysBase;
+    struct Library  *rtb_UtilityBase;
+
+    struct SignalSemaphore rtb_Locks[RT_MAXLOCK];
+
+    struct MinList   rtb_ConductorList;
 };
 
-/*
- * Defintion of internal structures.
- */
+#define  UtilityBase  (GPB(RTBase)->rtb_UtilityBase)
+#define  SysBase      (GPB(RTBase)->rtb_SysBase)
 
-#endif /* __REALTIME_INTERN_H__  */
+#define expunge() \
+AROS_LC0(BPTR, expunge, struct RealTimeBase *, RTBase, 3, RealTime)
+
+#endif /* REALTIME_INTERN_H */
 
