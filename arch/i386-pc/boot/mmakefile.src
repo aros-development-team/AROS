@@ -12,7 +12,7 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
 BOOT_C := \
-	Alias assign avail cd Copy date delete dir echo execute FailAt \
+	Alias assign avail cd Copy date delete dir Echo execute FailAt \
 	Info install List makedir mount newshell path Prompt Protect Relabel rename \
 	run Set Setenv shell Stack type
 BOOT_Gadgets := \
