@@ -81,17 +81,12 @@ static const struct Resident *romtagList[] =
 {
 	&Expansion_resident,            /* SingleTask,  110  */
 	&Exec_resident,                 /* SingleTask,  105  */
-#if 1
 	&Utility_resident,              /* ColdStart,   103  */
 	&Aros_resident,                 /* ColdStart,   102  */
 	&Mathieeesingbas_resident,      /* ColdStart,   101  */
 	&OOP_resident,                  /* ColdStart,   94	 */
 	&HIDD_resident,                 /* ColdStart,   92	 */
-#endif
-#if 0
-	&irqHidd_resident,              /* ColdStart,   90	 */
-#endif
-#if 1
+//	&irqHidd_resident,              /* ColdStart,   90	 */
 	&Graphics_resident,             /* ColdStart,   65	 */
 	&Layers_resident,               /* ColdStart,   60	 */
 	&Timer_resident,                /* ColdStart,   50	 */
@@ -105,26 +100,18 @@ static const struct Resident *romtagList[] =
 //	&hiddgraphics_resident,		/* ColdStart,   9	 */
 //	&vgaHidd_resident,		/* ColdStart,   9	 */
 //	&hiddserial_resident,		/* ColdStart,   9	 */
-
-//Crashes system when not enough memory in system - due to task
 	&Console_resident,              /* ColdStart,   5	 */
 	&Workbench_resident,		/* ColdStart,  -120	 */
 	&Mathffp_resident,		/* ColdStart,  -120	 */
-
-#endif
 	/*
 	  NOTE: You must not put anything between these two; the code which
 	  initialized boot_resident will directly call Dos_resident and
 	  anything between the two will be skipped.
 	*/
-#if 1
 	&boot_resident,			    /* ColdStart,  -50	 */
 	&Dos_resident,			    /* None,	   -120  */
-#endif
-#if 0
-	&LDDemon_resident,		    /* AfterDOS,   -125  */
-	&con_handler_resident,		    /* AfterDOS,   -126  */
-#endif
+//	&LDDemon_resident,		    /* AfterDOS,   -125  */
+//	&con_handler_resident,		    /* AfterDOS,   -126  */
 	NULL
 };
 
