@@ -93,8 +93,10 @@
 	}
 
         /* look for a sequence like "E+10" or "e-22" */
-	if(tolower(*str ++) == 'e')
+	if(tolower(*str) == 'e')
 	{
+            str++;
+        
 	    if (*str == '+' || *str == '-')
 	        c2 = *str ++;
 
