@@ -28,7 +28,8 @@ make-dirs :
 
 copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk \
 	$(SCRIPTDIR)/moveifchanged \
-	$(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk \
+	$(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/genpclib.awk \
+	$(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/genpdefines.awk \
 	$(SCRIPTDIR)/genfd.awk $(SCRIPTDIR)/geninline.awk
 
 $(SCRIPTDIR)/% : %

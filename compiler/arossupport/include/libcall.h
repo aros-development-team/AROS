@@ -1717,6 +1717,41 @@ typedef unsigned long (*ULONG_FUNC)();
 #   define AROS_LIBBASE_EXT_DECL(a,b)
 #endif
 
+/* Tagging of private functions, so that they can be distinguished from
+   official ones. But they have to compile the same way, so: */
+#define AROS_PLH0(t,n,bt,bn,o,s) \
+	AROS_LH0(t,n,bt,bn,o,s)
+#define AROS_PLH1(t,n,a1,bt,bn,o,s) \
+	AROS_LH1(t,n,a1,bt,bn,o,s)
+#define AROS_PLH2(t,n,a1,a2,bt,bn,o,s) \
+	AROS_LH2(t,n,a1,a2,bt,bn,o,s)
+#define AROS_PLH3(t,n,a1,a2,a3,bt,bn,o,s) \
+	AROS_LH3(t,n,a1,a2,a3,bt,bn,o,s)
+#define AROS_PLH4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+	AROS_LH4(t,n,a1,a2,a3,a4,bt,bn,o,s)
+#define AROS_PLH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+	AROS_LH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
+#define AROS_PLH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+	AROS_LH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
+#define AROS_PLH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+	AROS_LH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
+#define AROS_PLH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+	AROS_LH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
+#define AROS_PLH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+	AROS_LH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+#define AROS_PLH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+	AROS_LH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_PLH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+	AROS_LH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#define AROS_PLH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
+	AROS_LH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
+#define AROS_PLH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
+	AROS_LH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
+#define AROS_PLH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
+	AROS_LH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
+#define AROS_PLH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
+	AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+
 /******************************************************************************
 *****  ENDE aros/libcall.h
 ******************************************************************************/
