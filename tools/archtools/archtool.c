@@ -138,14 +138,13 @@ int num,len;
     if(len)
     {
       num++;
-      array = realloc( array, num * sizeof(char *) );
+      array = realloc( array, (num+1) * sizeof(char *) );
       array[num-1] = malloc( (len+1) * sizeof(char) );
       strncpy( array[num-1], word, len );
       array[num-1][len] = 0;
       word = &word[len];
     }
   }
-  array = realloc( array, (num+1) * sizeof(char *) );
   array[num] = NULL;
 
   *outarray = array;
@@ -1463,11 +1462,11 @@ int numparams = 0;
           name[0] = strdup(words[num-1]);
           type = realloc( type, sizeof(char *) );
           len = 0;
+          for( i=1 ; i < num-1 ; i++ )
+            len += (strlen(words[i])+1);
+          type[0] = malloc( len * sizeof(char) );
+          strcpy( type[0], words[1]);
           for( i=2 ; i < num-1 ; i++ )
-            len += strlen(words[i]);
-          type[0] = malloc( (len+num-3) * sizeof(char) );
-          strcpy( type[0], words[2]);
-          for( i=3 ; i < num-1 ; i++ )
           {
             strcat( type[0], " " );
             strcat( type[0], words[i] );
@@ -1508,15 +1507,20 @@ int numparams = 0;
         name[numparams] = strdup(words[num-1-numregs]);
         type = realloc( type, (numparams+1)*sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for ( i = 1 ; i < num-2 ; i++ )
           len += strlen(words[i]);
         type[numparams] = malloc( (len+num-3) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for ( i = 2 ; i < num-2 ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
+        do
+        {
+          free ( line );
+          line = get_line( fd );
+        } while ( strncmp(line,"#/Parameter",11)!=0 );
       }
       else if( strcmp(word,"Inputs")==0 && in_autodoc )
         fprintf( fdo, "\nINPUTS\n" );
@@ -1947,6 +1951,8 @@ int firstlvo;
   }
   fprintf( fdo, "\n/* Defines */\n" );
   
+  macro[0] = strdup("LC");
+  macro[1] = strdup("LCA");
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -1970,6 +1976,17 @@ int firstlvo;
         in_code = 1;
       else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
+      else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
+      {
+        num = get_words ( line, &words );
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          free ( macro[0] );
+          free ( macro[1] );
+          macro[0] = strdup("LCQUAD");
+          macro[1] = strdup("LCAQUAD");
+        }
+      }
       else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
@@ -1977,26 +1994,15 @@ int firstlvo;
         name[0] = strdup(words[num-1]);
         type = realloc( type, sizeof(char *) );
         len = 0;
+        for( i=1 ; i < num-1 ; i++ )
+          len += (strlen(words[i])+1);
+        type[0] = malloc( len * sizeof(char) );
+        strcpy( type[0], words[1]);
         for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
         {
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
-        if(strcmp(words[1],"LHAQUAD")==0)
-        {
-          macro[0] = strdup("LCQUAD");
-          macro[1] = strdup("LCAQUAD");
-        }
-        else
-        {
-          macro[0] = strdup("LC");
-          macro[1] = strdup("LCA");
-        }
-        numregs = 1;
         numparams = 0;
         in_function = 1;
       }
@@ -2025,8 +2031,6 @@ int firstlvo;
         free(name);
         free(type);
         free(reg);
-        free(macro[0]);
-        free(macro[1]);
         name = NULL;
         type = NULL;
         reg = NULL;
@@ -2069,6 +2073,11 @@ int firstlvo;
           strcat( reg[numparams], ", " );
           strcat( reg[numparams], words[num-i] );
         }
+        do
+        {
+          free ( line );
+          line = get_line( fd );
+        } while ( strncmp(line,"#/Parameter",11)!=0 );
       }
     }
 
@@ -2081,6 +2090,8 @@ int firstlvo;
   free(newname);
   free(filename);
   free(lc);
+  free(macro[0]);
+  free(macro[1]);
 
 return 0;
 }
@@ -2189,6 +2200,8 @@ int firstlvo;
   }
   fprintf( fdo, "\n/* Prototypes */\n" );
   
+  macro[0] = strdup("LP");
+  macro[1] = strdup("LPA");
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -2212,6 +2225,18 @@ int firstlvo;
         in_code = 1;
       else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
+      else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
+      {
+        num = get_words ( line, &words );
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          free ( macro[0] );
+          free ( macro[1] );
+          macro[0] = strdup("LPQUAD");
+          macro[1] = strdup("LPAQUAD");
+          numregs = 2;
+        }
+      }
       else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
@@ -2219,26 +2244,14 @@ int firstlvo;
         name[0] = strdup(words[num-1]);
         type = realloc( type, sizeof(char *) );
         len = 0;
+        for( i=1 ; i < num-1 ; i++ )
+          len += (strlen(words[i])+1);
+        type[0] = malloc( len * sizeof(char) );
+        strcpy( type[0], words[1]);
         for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
         {
           strcat( type[0], " " );
           strcat( type[0], words[i] );
-        }
-        if(strcmp(words[1],"LHAQUAD")==0)
-        {
-          macro[0] = strdup("LPQUAD");
-          macro[1] = strdup("LPAQUAD");
-          numregs = 2;
-        }
-        else
-        {
-          macro[0] = strdup("LP");
-          macro[1] = strdup("LPA");
-          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -2263,8 +2276,6 @@ int firstlvo;
         free(name);
         free(type);
         free(reg);
-        free(macro[0]);
-        free(macro[1]);
         name = NULL;
         type = NULL;
         reg = NULL;
@@ -2307,6 +2318,11 @@ int firstlvo;
           strcat( reg[numparams], ", " );
           strcat( reg[numparams], words[num-i] );
         }
+        do
+        {
+          free ( line );
+          line = get_line( fd );
+        } while ( strncmp(line,"#/Parameter",11)!=0 );
       }
     }
 
@@ -2319,6 +2335,8 @@ int firstlvo;
   free(lc);
   free(newname);
   free(filename);
+  free(macro[0]);
+  free(macro[1]);
 
 return 0;
 }
@@ -3463,6 +3481,14 @@ int firstlvo;
         in_code = 1;
       else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
+      else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
+      {
+        num = get_words ( line, &words );
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          numregs = 2;
+        }
+      }
       else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
@@ -3470,22 +3496,14 @@ int firstlvo;
         name[0] = strdup(words[num-1]);
         type = realloc( type, sizeof(char *) );
         len = 0;
+        for( i=1 ; i < num-1 ; i++ )
+          len += (strlen(words[i])+1);
+        type[0] = malloc( len * sizeof(char) );
+        strcpy( type[0], words[1]);
         for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
         {
           strcat( type[0], " " );
           strcat( type[0], words[i] );
-        }
-        if(strcmp(words[1],"LHAQUAD")==0)
-        {
-          numregs = 2;
-        }
-        else
-        {
-          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -3589,6 +3607,11 @@ int firstlvo;
           strcat( reg[numparams], words[num-i] );
         }
         strlower(reg[numparams]);
+        do
+        {
+          free ( line );
+          line = get_line( fd );
+        } while ( strncmp(line,"#/Parameter",11)!=0 );
       }
     }
 
@@ -3810,6 +3833,10 @@ int firstlvo;
   fprintf( fdo[1], "\n/* Defines */\n" );
   fprintf( fdo[3], "\n/* Prototypes */\n" );
   
+  macro[0] = strdup("LP");
+  macro[1] = strdup("LPA");
+  macro[2] = strdup("LC");
+  macro[3] = strdup("LCA");
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -3833,37 +3860,37 @@ int firstlvo;
         in_code = 1;
       else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Options")==0 && in_function && !in_code && !in_autodoc )
       {
-        num = get_words(line,&words);
-        name = realloc( name, sizeof(char *) );
-        name[0] = strdup(words[num-1]);
-        type = realloc( type, sizeof(char *) );
-        len = 0;
-        for( i=2 ; i < num-1 ; i++ )
-          len += strlen(words[i]);
-        type[0] = malloc( (len+num-3) * sizeof(char) );
-        strcpy( type[0], words[2]);
-        for( i=3 ; i < num-1 ; i++ )
-        {
-          strcat( type[0], " " );
-          strcat( type[0], words[i] );
-        }
+        num = get_words ( line, &words );
         if(strcmp(words[1],"LHAQUAD")==0)
         {
+          free ( macro[0] );
+          free ( macro[1] );
+          free ( macro[2] );
+          free ( macro[3] );
           macro[0] = strdup("LPQUAD");
           macro[1] = strdup("LPAQUAD");
           macro[2] = strdup("LCQUAD");
           macro[3] = strdup("LCAQUAD");
           numregs = 2;
         }
-        else
+      }
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      {
+        num = get_words ( line, &words );
+        name = realloc( name, sizeof(char *) );
+        name[0] = strdup(words[num-1]);
+        type = realloc( type, sizeof(char *) );
+        len = 0;
+        for( i=1 ; i < num-1 ; i++ )
+          len += (strlen(words[i])+1);
+        type[0] = malloc( len * sizeof(char) );
+        strcpy( type[0], words[1]);
+        for( i=2 ; i < num-1 ; i++ )
         {
-          macro[0] = strdup("LP");
-          macro[1] = strdup("LPA");
-          macro[2] = strdup("LC");
-          macro[3] = strdup("LCA");
-          numregs = 1;
+          strcat( type[0], " " );
+          strcat( type[0], words[i] );
         }
         numparams = 0;
         in_function = 1;
@@ -3940,8 +3967,6 @@ int firstlvo;
         free(name);
         free(type);
         free(reg);
-        for(i=0;i<4;i++)
-          free(macro[i]);
         name = NULL;
         type = NULL;
         reg = NULL;
@@ -3983,6 +4008,11 @@ int firstlvo;
           strcat( reg[numparams], ", " );
           strcat( reg[numparams], words[num-i] );
         }
+        do
+        {
+          free ( line );
+          line = get_line( fd );
+        } while ( strncmp(line,"#/Parameter",11)!=0 );
       }
     }
 
@@ -4001,6 +4031,8 @@ int firstlvo;
     free(filename[i]);
   }
   free(lc);
+  for(i=0;i<4;i++)
+    free(macro[i]);
 
 return 0;
 }
