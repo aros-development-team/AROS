@@ -31,7 +31,7 @@ $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
 	@$(CHECKUDS) $@
 
 $(DESTDIR)/$(SCRIPT) :
-	cp $(SCRIPT) $(DESTDIR)
+	$(CP) $(SCRIPT) $(DESTDIR)
 
 #MM
 clean-utilities :

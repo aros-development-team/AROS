@@ -23,6 +23,7 @@ char *strip_quotes( char * );
 #ifndef LINUX
 static void callback( char, char ** );
 #endif /* !LINUX */
+int getint( ScriptArg * );
 
 void execute_script( ScriptArg *commands, int level )
 {
@@ -120,6 +121,8 @@ void *params;
       case _MORE	: /* returns 1 if 1st > 2nd else 0	*/
       case _MOREEQ	: /* returns 1 if 1st >= 2nd else 0	*/
       case _OR		: /* logically OR two arguments		*/
+      case _SHIFTLEFT	: /* shift 1st left by 2nd arg bits	*/
+      case _SHIFTRGHT	: /* shift 1st right by 2nd arg bits	*/
       case _XOR		: /* logically XOR two arguments	*/
                           if( current->next != NULL  && current->next->next != NULL )
                           {
@@ -132,43 +135,9 @@ void *params;
                             {
                               execute_script( current->next->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                i = atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                i = get_var_int( current->arg );
-                              }
-                            }
-                            else
-                            {
-                              i = current->intval;
-                            }
+                            i = getint( current );
                             current = current->next;
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                j = atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                j = get_var_int( current->arg );
-                              }
-                            }
-                            else
-                            {
-                              j = current->intval;
-                            }
+                            j = getint( current );
                             switch( cmd_type )
                             {
                               case _AND :
@@ -215,6 +184,12 @@ void *params;
                                 break;
                               case _OR :
                                 current->parent->intval = i || j;
+                                break;
+                              case _SHIFTLEFT :
+                                current->parent->intval = i << j;
+                                break;
+                              case _SHIFTRGHT :
+                                current->parent->intval = i >> j;
                                 break;
                               case _XOR :
                                 current->parent->intval = ( i && !j ) || ( j && !i );
@@ -400,29 +375,7 @@ void *params;
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                i = atoi( current->arg );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip == NULL )
-                                {
-                                  i = get_var_int( current->arg );
-                                }
-                                else
-                                {
-                                  i = atoi( clip );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              i = current->intval;
-                            }
+                            i = getint( current );
                             if( i == 0 )
                             {
                               current = current->next;
@@ -455,6 +408,33 @@ void *params;
                           }
                           break;
 
+      case _IN		: /* Sum up all arguments and return that value */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          /* Get base integer into i */
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            i = getint( current );
+                          }
+                          /* Write the corresponding bits of i into parent */
+                          while( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            j = getint( current );
+                            current->parent->intval |= i & ( 1 << j );
+                          }
+                          break;
+
       case _BITNOT	: /* bitwise invert argument */
       case _NOT		: /* logically invert argument */
                           if( current->next != NULL )
@@ -464,31 +444,7 @@ void *params;
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                clip = strip_quotes( current->arg );
-                                i = atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip == NULL )
-                                {
-                                  i = get_var_int( current->arg );
-                                }
-                                else
-                                {
-                                  i = atoi( clip );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              i = current->intval;
-                            }
+                            i = getint( current );
                             current->parent->intval = ( cmd_type == _NOT ) ? !i : ~i;
                           }
                           else
@@ -511,32 +467,8 @@ void *params;
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                current->parent->intval += atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  current->parent->intval += atoi( clip );
-                                }
-                                else
-                                {
-                                  current->parent->intval += get_var_int( current->arg );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              current->parent->intval += current->intval;
-                            }
+                            i = getint( current );
+                            current->parent->intval += i;
                           }
                           free( current->parent->arg );
                           current->parent->arg = NULL;
@@ -649,29 +581,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                i = atoi( current->arg );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip == NULL )
-                                {
-                                  i = get_var_int( current->arg );
-                                }
-                                else
-                                {
-                                  i = atoi( clip );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              i = current->intval;
-                            }
+                            i = getint( current );
                             if( i > 0 )
                             {
                               j = 0;
@@ -801,34 +711,34 @@ printf( "\n" );
                           /* Call RawDoFmt() with parameter list */
                           /* Store that produced string as return value */
                           free( current->parent->arg );
-#warning FIXME: Use RawDoFmt()
 #ifndef LINUX
                           current->parent->arg = malloc( MAXARGSIZE );
                           if( current->parent->arg == NULL )
                           {
                             end_malloc();
                           }
+                          string = current->parent->arg;
                           RawDoFmt( clip, params, (VOID_FUNC)&callback, &(current->parent->arg) );
-                          printf( "%s\n", current->parent->arg );
-                          printf( "---\n" );
+                          current->parent->arg = string;
+#ifdef DEBUG
+                          printf( "String = <%s>\n", current->parent->arg );
+#endif
 #else /* !LINUX */
-                          current->parent->arg = malloc( MAXARGSIZE );
+                          current->parent->arg = malloc( strlen( clip ) );
                           if( current->parent->arg == NULL )
                           {
                             end_malloc();
                           }
-                          printf( clip, *((char**)params), *((char**)params+1), *((char**)params+2), *((char**)params+3), *((char**)params+4) );
-                          printf( "---\n" );
-                          sprintf( current->parent->arg, clip, *((char**)params), *((char**)params+1), *((char**)params+2), *((char**)params+3), *((char**)params+4) );
+                          strcpy( current->parent->arg, clip );
 #endif /* !LINUX */
                           /* Free temporary space */
                           free( clip );
                           if( mclip )
                           {
-                            do
+                            while( j > 0 )
                             {
                               free( mclip[--j] );
-                            } while ( j != 0 );
+                            }
                             free( mclip );
                           }
 
@@ -845,7 +755,6 @@ printf( "\n" );
                           clip[slen+2] = 0;
                           free( current->parent->arg );
                           current->parent->arg = clip;
-
                           current->parent->intval = 0;
 
                           break;
@@ -865,32 +774,8 @@ printf( "\n" );
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                current->parent->intval *= atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  current->parent->intval *= atoi( clip );
-                                }
-                                else
-                                {
-                                  current->parent->intval *= get_var_int( current->arg );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              current->parent->intval *= current->intval;
-                            }
+                            i = getint( current );
+                            current->parent->intval *= i;
                           }
                           free( current->parent->arg );
                           current->parent->arg = NULL;
@@ -961,29 +846,8 @@ printf( "\n" );
                               {
                                 execute_script( current->cmd, level + 1 );
                               }
-                              if( current->arg != NULL )
-                              {
-                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                {
-                                  i = atoi( current->arg );
-                                }
-                                else
-                                {
-                                  clip = get_var_arg( current->arg );
-                                  if( clip == NULL )
-                                  {
-                                    i = get_var_int( current->arg );
-                                  }
-                                  else
-                                  {
-                                    i = atoi( clip );
-                                  }
-                                }
-                              }
-                              else
-                              {
-                                i = current->intval;
-                              }
+                              i = getint( current );
+
                               /* condition is true -> return values and exit */
                               if( i != 0 )
                               {
@@ -1066,29 +930,9 @@ printf( "\n" );
                               {
                                 execute_script( current->cmd, level + 1 );
                               }
-                              if( current->arg != NULL )
-                              {
-                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                {
-                                  i = atoi( current->arg );
-                                }
-                                else
-                                {
-                                  clip = get_var_arg( current->arg );
-                                  if( clip == NULL )
-                                  {
-                                    i = get_var_int( current->arg );
-                                  }
-                                  else
-                                  {
-                                    i = atoi( clip );
-                                  }
-                                }
-                              }
-                              else
-                              {
-                                i = current->intval;
-                              }
+
+                              /* Now check condition */
+                              i = getint( current );
                               if( i != 0 )
                               {
                                 if( current->next->cmd != NULL )
@@ -1188,12 +1032,14 @@ int i;
   }
 }
 
+
 #ifndef LINUX
 static void callback( char chr, char ** data )
 {
   *(*data)++ = chr;
 }
 #endif /* !LINUX */
+
 
 char *strip_quotes( char *string )
 {
@@ -1210,6 +1056,42 @@ char *clip;
   clip[slen-2] = 0;
 
 return clip;
+}
+
+
+int getint( ScriptArg *argument )
+{
+int i;
+char * clip;
+
+  if( argument->arg != NULL )
+  {
+    if( (argument->arg)[0] == SQUOTE || (argument->arg)[0] == DQUOTE )
+    {
+      /* Strip off quotes */
+      clip = strip_quotes( argument->arg );
+      i = atoi( clip );
+      free( clip );
+    }
+    else
+    {
+      clip = get_var_arg( argument->arg );
+      if( clip != NULL )
+      {
+        i = atoi( clip );
+      }
+      else
+      {
+        i = get_var_int( argument->arg );
+      }
+    }
+  }
+  else
+  {
+    i = argument->intval;
+  }
+
+return i;
 }
 
 

@@ -102,4 +102,10 @@
 - added return value for blocks
 - implemented "while" "until"
 
+0020
+- RawDoFmt() works now!
+- added "shiftleft" and "shiftrght" to "and"
+- Implemented "in"
+- Optimized item to integer conversion
+
 
