@@ -924,6 +924,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     {
     	{GA_Disabled,		FALSE},
     	{GA_Immediate,		FALSE},
+	{GA_RelVerify,          TRUE},
     	{GA_TabCycle,		FALSE},
     	{GTST_String,		(IPTR)NULL},
     	{GTST_MaxChars,		64UL},		/* Georg Steger: Maxon Hothelp says so */ 
@@ -947,21 +948,22 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	{
     	case GA_Disabled:		tags[0].ti_Data = tidata; break;
     	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
-    	case GA_TabCycle:		tags[2].ti_Data	= tidata; break;
-    	case GTST_String:		tags[3].ti_Data	= tidata; break;
-    	case GTST_MaxChars:		tags[4].ti_Data	= tidata; break;
-    	case GTST_EditHook:		tags[5].ti_Data	= tidata; break;
-    	case STRINGA_ExitHelp:		tags[6].ti_Data	= tidata; break;
-    	case STRINGA_Justification:	tags[7].ti_Data	= tidata; break;
-    	case STRINGA_ReplaceMode:	tags[8].ti_Data	= tidata; break;
+	case GA_RelVerify:        	tags[2].ti_Data = tidata; break;
+    	case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
+    	case GTST_String:		tags[4].ti_Data	= tidata; break;
+    	case GTST_MaxChars:		tags[5].ti_Data	= tidata; break;
+    	case GTST_EditHook:		tags[6].ti_Data	= tidata; break;
+    	case STRINGA_ExitHelp:		tags[7].ti_Data	= tidata; break;
+    	case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
+    	case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
     	}
     	
     } /* while (iterate taglist) */
     
     if (tattr) /* Text Attr supplied ? */
-	tags[9].ti_Data = (IPTR)tattr; 
+	tags[10].ti_Data = (IPTR)tattr; 
     else
-    	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
+    	tags[10].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 	
     /* if there is a bounding box the label position
        will be calculated based on this box and not
@@ -980,7 +982,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
     FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
 
-    tags[12].ti_Data = (IPTR)stdgadtags;
+    tags[13].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
