@@ -336,6 +336,7 @@ int init_gui(void)
 		    Child, VGroup,
 	                TextFrame,
 			InnerSpacing(4,4),
+	                MUIA_Background, MUII_PageBack,
 			Child, main_page_group = VGroup,
 			    Child, main_page_group_displayed = main_page_space = HVSpace,
 			    End,
@@ -361,6 +362,7 @@ int init_gui(void)
 	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_use_pressed);
 //	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
 	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_AboutMUI, main_wnd);
 
 	for (i=0;main_page_entries[i].name;i++)
 	{
