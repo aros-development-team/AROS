@@ -530,21 +530,22 @@ void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
 {
-    struct Task *task = (struct Task *)tid;
+    struct Task *task   = (struct Task *)tid;
+    struct Task *parent = (struct Task *)(GetETask(task)->et_Parent);
 
     // Parent may now run again
-    ((struct Task *)(GetETask(task)->et_Parent))->tc_State = TS_READY;
+    parent->tc_State = TS_READY;
 
     kprintf("Setting parent task %p (called %s) to TS_READY\n",
-	    ((struct Task *)(GetETask(task)->et_Parent)),
-	    task->tc_Node.ln_Name);
+	    parent,
+	    parent->tc_Node.ln_Name);
 
     // This is OK to do as we know that the parent is blocked
     Forbid();
-    Remove((struct Node *)(GetETask(task)->et_Parent));
+    Remove(&(parent->tc_Node));
     Permit();
 
-    Reschedule(((struct Task *)(GetETask(task)->et_Parent)));
+    Reschedule(parent);
     Switch();
 }
 
