@@ -57,8 +57,7 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * _l, * lparent;
-  struct Region rtmp, r;
-  rtmp.RegionRectangle = NULL;
+  struct Region r;
   r.RegionRectangle = NULL;
 
   if (l->visible == visible)
@@ -67,9 +66,6 @@
   LockLayers(l->LayerInfo);
 
   l->visible = visible;
-  
-  _SetRegion(l->shape, &rtmp);
-  AndRegionRegion(l->parent->shape, &rtmp);
   
   if (TRUE == visible)
   {
@@ -81,9 +77,11 @@
     _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(_l) && DO_OVERLAP(&rtmp.bounds, &_l->shape->bounds))
-        _BackupPartsOfLayer(_l, &rtmp, 0, FALSE, LayersBase);
-      
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds))
+        _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+      else
+        ClearRegionRegion(l->visibleshape, _l->VisibleRegion);
+        
       if (_l == lparent)
       {
         if (IS_VISIBLE(_l) || (NULL == lparent->parent))
@@ -96,23 +94,33 @@
     
     /*
      * For the layer to become visible I must recalculate its
-     * visible area.
+     * visible area. Search the first visible layer in front of
+     * it and used that one's VisbleRegion minus its visibleshape.
      */
     ClearRegion(l->VisibleRegion);
-    if (l->front)
+    _l = l->front;
+    while (1)
     {
-      _SetRegion(l->front->VisibleRegion, &r);
-      _SetRegion(l->front->shape, &rtmp);
-      AndRegionRegion(l->front->parent->shape, &rtmp);
-      ClearRegionRegion(&rtmp, &r);
+      if (NULL == _l)
+      {
+        /*
+         * It's like the top layer since all others are invisible
+         */
+        _SetRegion(l->LayerInfo->check_lp->shape, &r);
+        break;
+      }
+
+      if (IS_VISIBLE(_l))
+      {
+        _SetRegion(_l->VisibleRegion, &r);
+        ClearRegionRegion(_l->visibleshape, &r);
+        break;
+      }
+        
+      _l = _l->front;
+        
     }
-    else
-    {
-      /*
-       * This is the frontmost layer...
-       */
-      _SetRegion(l->LayerInfo->check_lp->shape, &r);
-    }
+      
     /*
      * Let me show the layer in its full beauty...
      */
@@ -131,21 +139,26 @@
        * Since the Damagelist is relative to the layer I have to make
        * some adjustments to the coordinates here.
        */
-      _TranslateRect(&l->DamageList->bounds,-l->bounds.MinX,-l->bounds.MinY);
+      _TranslateRect(&l->DamageList->bounds,
+                     -l->bounds.MinX,
+                     -l->bounds.MinY);
       l->Flags |= LAYERREFRESH;
     }
   }
   else
   {
-    struct Region r, clearr;
-    r.RegionRectangle = NULL; // min. initialization
-    _SetRegion(l->VisibleRegion, &r);
-    
-    clearr.RegionRectangle = NULL; // min. initialization
-    _SetRegion(l->shape, &clearr);
     /*
      * Make the layer invisible
      */
+    struct Region clearr;
+    clearr.RegionRectangle = NULL; // min. initialization
+
+    l->Flags &= ~LAYERREFRESH;
+    ClearRegion(l->DamageList);
+
+    _SetRegion(l->VisibleRegion, &r);
+    
+    _SetRegion(l->visibleshape, &clearr);
     _BackupPartsOfLayer(l, &clearr, 0, FALSE, LayersBase);
     
     /*
@@ -156,7 +169,7 @@
     _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->visibleshape->bounds))
       {
         ClearRegion(_l->VisibleRegion);
         _ShowPartsOfLayer(_l, &r, LayersBase);
@@ -181,14 +194,10 @@
        * layer behind this one.
        */
       if (IS_VISIBLE(_l))
-      {
-        _SetRegion(_l->shape, &rtmp);
-        AndRegionRegion(_l->parent->shape, &rtmp);
-        ClearRegionRegion(&rtmp, &r);
-      }
+        ClearRegionRegion(_l->visibleshape, &r);
+
       _l = _l->back;
     }
-    ClearRegion(&r);
   
     if (!IS_EMPTYREGION(&clearr))
     {
@@ -197,12 +206,11 @@
         _BackFillRegion(lparent, &clearr, FALSE);
     }
 
-    l->Flags &= ~LAYERREFRESH;
-    ClearRegion(l->DamageList);
+    
     ClearRegion(&clearr);
   }
 
-  ClearRegion(&rtmp);
+  ClearRegion(&r);
   UnlockLayers(l->LayerInfo);
 
   return TRUE;

@@ -86,49 +86,56 @@
   
   /* First create newshape with 0,0 origin, because l->shaperegion is in layer coords */
   
-  newshape = NewRectRegion(0, 0, l->bounds.MaxX - l->bounds.MinX + dw, l->bounds.MaxY - l->bounds.MinY + dh);
+  newshape = NewRectRegion(0, 
+                           0, 
+                           l->bounds.MaxX - l->bounds.MinX + dw, 
+                           l->bounds.MaxY - l->bounds.MinY + dh);
   if (l->shaperegion)
-  {
     AndRegionRegion(l->shaperegion, newshape);
-  }
   
   /* Now make newshape relative to old(!!) layer screen coords */
-  _TranslateRect(&newshape->bounds, l->bounds.MinX, l->bounds.MinY);
+  _TranslateRect(&newshape->bounds, l->bounds.MinX+dx, l->bounds.MinY+dy);
   
   /* rectw and recth are now only needed for backfilling if layer got bigger -> see end of func */
   
   if (dw > 0)
   {
-    rectw.MinX = l->bounds.MaxX+1;
-    rectw.MinY = l->bounds.MinY;
-    rectw.MaxX = rectw.MinX + dw - 1;
-    rectw.MaxY = l->bounds.MaxY+dh;
+    rectw.MinX = dx+l->bounds.MaxX+1;
+    rectw.MinY = dy+l->bounds.MinY;
+    rectw.MaxX = dx+rectw.MinX + dw - 1;
+    rectw.MaxY = dy+l->bounds.MaxY+dh;
   }
 
   if (dh > 0)
   {
-    recth.MinX = l->bounds.MinX;
-    recth.MinY = l->bounds.MaxY + 1;
-    recth.MaxX = l->bounds.MaxX+dw;
-    recth.MaxY = recth.MinY + dh - 1;
-  }
-
-  if (dx || dy)
-  {
-    _TranslateRect(&newshape->bounds, dx, dy);
-    _TranslateRect(&rectw, dx, dy);
-    _TranslateRect(&recth, dx, dy);
+    recth.MinX = dx+l->bounds.MinX;
+    recth.MinY = dy+l->bounds.MaxY + 1;
+    recth.MaxX = dx+l->bounds.MaxX+dw;
+    recth.MaxY = dy+recth.MinY + dh - 1;
   }
 
   _SetRegion(newshape, &cutnewshape);
-  AndRegionRegion(l->parent->shape, &cutnewshape);
+  AndRegionRegion(l->parent->visibleshape, &cutnewshape);
 
   first = GetFirstFamilyMember(l);
   /*
-   * Must make a copy of the VisibleRegion of l here
+   * Must make a copy of the VisibleRegion of the first visible layer here
    * and NOT later!
    */
-  _SetRegion(first->VisibleRegion, &r);
+  _l = first;
+  while (1)
+  {
+    if (IS_VISIBLE(_l))
+    {
+      _SetRegion(_l->VisibleRegion, &r);
+      break;
+    }
+    
+    if (l == _l)
+      break;
+      
+    _l = _l->back;
+  }
 //kprintf("%s called for layer %p, first = %p!\n",__FUNCTION__,l,first);
   
   /*
@@ -163,12 +170,17 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
     _l = _l->back;
   }
 
+   _SetRegion(&cutnewshape, l->visibleshape);
+  ClearRegion(&cutnewshape);
+
   /*
    * Now I need to move the layer and all its familiy to the new 
    * location.
    */
-  _l = first;
   oldshape = l->shape;
+  l->shape = newshape;
+
+  _l = l;
  
   while (1)
   {
@@ -179,7 +191,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
         __FUNCTION__);
 #endif    
 
-    if (IS_VISIBLE(_l))
+    if (1/* IS_VISIBLE(_l) */)
     {
       ClearRegion(_l->VisibleRegion);
       _BackupPartsOfLayer(_l, _l->shape, dx, TRUE, LayersBase);
@@ -187,8 +199,8 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     /*
      * Effectively move the layer...
      */
-     
     _TranslateRect(&_l->bounds, dx, dy);
+     
 
     /*
      * ...and also its cliprects.
@@ -207,55 +219,38 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
       cr = cr->Next;
     }
     
-    if (_l == l)
+    if (l != _l)   
     {
+      _TranslateRect(&_l->shape->bounds, dx, dy);
+
       /*
-       * Resize the bounds!
+       * Also calculate the visible shape!
        */
-      l->bounds.MaxX += dw;
-      l->bounds.MaxY += dh;
-      l->Width  += dw;
-      l->Height += dh;
-      break;
+      _SetRegion(_l->shape, _l->visibleshape);
+      AndRegionRegion(_l->parent->visibleshape, _l->visibleshape);
     }
-    
-    _TranslateRect(&_l->shape->bounds, dx, dy);
+
+    if (_l == first)
+      break;
       
-    _l = _l->back;
+    _l = _l->front;
   }
 
-  _SetRegion(&cutnewshape, l->visibleshape);
-  ClearRegion(&cutnewshape);
+  l->bounds.MaxX += dw;
+  l->bounds.MaxY += dh;
+  l->Width  += dw;
+  l->Height += dh;
+
 
   /* 
    * Now make them visible again.
    */
   _l = first;
-  l->shape = newshape;
+
   while (1)
   {
-    if (_l == l)
+    if (IS_VISIBLE(_l))
     {
-      if (IS_VISIBLE(l))
-      {
-#if 0
-kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
-        __FUNCTION__);
-#endif
-        ClearRegion(l->VisibleRegion);
-        _ShowPartsOfLayer(l, &r, LayersBase);
-      }
-      break;
-    }
-    else if (IS_VISIBLE(_l))
-    {
-      /*
-       * I must recalcualte the visible shape of
-       * every child layer here if the layer's size
-       * has changed. 
-       */
-      _SetRegion(_l->shape, _l->visibleshape);
-      AndRegionRegion(_l->parent->visibleshape, _l->visibleshape);
 #if 0
 kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
         __FUNCTION__);
@@ -263,8 +258,14 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
       ClearRegion(_l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
       
+      if (l == _l)
+        break;
+      
       ClearRegionRegion(_l->visibleshape, &r);
     }
+
+    if (l == _l)
+      break;
       
     _l = _l->back;
   }
@@ -286,7 +287,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
 #endif
     if (IS_VISIBLE(_l) && 
-       (/* DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) || */
+       (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) || 
           DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
     {
       ClearRegion(_l->VisibleRegion);
@@ -342,6 +343,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     ClearRegion(&r);
     if (dw > 0)
       OrRectRegion(&r, &rectw);
+    
     if (dh > 0)
       OrRectRegion(&r, &recth);
     _BackFillRegion(l, &r, TRUE);

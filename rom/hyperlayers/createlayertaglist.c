@@ -239,7 +239,13 @@
 
     l->parent = parent;
 
+    if (parent)
+      l->nesting = parent->nesting+1;
+    else
+      l->nesting = 0;
+
     LockLayers(li);
+
     
     /*
      * If neither a layer in front or behind is
@@ -247,21 +253,47 @@
      * the priority and insert it there. I
      * determine behind or infrontof here!
      */
-    if (!infrontof && !behind)
+    if (NULL != li->top_layer)
     {
-      infrontof = li->top_layer;
-      while (infrontof && infrontof->priority > priority)
+      if (!infrontof && !behind)
       {
-        if (NULL == infrontof->back)
+        int end = FALSE;
+        struct Layer * lastgood;
+        infrontof = parent;
+ 
+        do
         {
-          behind = infrontof;
-          infrontof = NULL;
-          break;
+          lastgood = infrontof;
+          infrontof = infrontof->front;
+          if (NULL == infrontof)
+          {
+            infrontof = lastgood;
+            break;
+          }
+          if (infrontof->parent != l->parent)
+          {
+            infrontof = lastgood;
+            break;
+          }
+          while (infrontof->nesting >= l->nesting)
+          {
+            lastgood = infrontof;
+            infrontof = infrontof->front;
+            if (NULL == infrontof || 
+                infrontof->priority > l->priority)
+            {
+              infrontof = lastgood;
+              end = TRUE;
+              break;
+            }
+          }
+          
+          
         }
-        infrontof = infrontof->back;
+        while (FALSE == end);
+      
       }
     }
-    
 
     if (infrontof || (NULL == behind))
     {
@@ -293,12 +325,11 @@
       behind->back = l;
     }
 
-    if (parent)
-      l->nesting = parent->nesting+1;
-    else
-      l->nesting = 0;
     
     
+    _SetRegion(l->shape, l->visibleshape);
+    if (l->parent)
+      AndRegionRegion(l->parent->shape, l->visibleshape);
 
 
     if (IS_VISIBLE(l))
@@ -323,8 +354,6 @@
       else
         _SetRegion(li->check_lp->shape, l->VisibleRegion);
      
-      _SetRegion(l->shape, l->visibleshape);
-      AndRegionRegion(l->parent->shape, l->visibleshape);
      
       /*
        * First tell all layers behind this layer to
