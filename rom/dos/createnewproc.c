@@ -494,95 +494,6 @@ error:
 
 
 
-static void KillCurrentProcess(void)
-{
-    /* I need the global here because there is no local way to get it */
-    extern struct DosLibrary * DOSBase;
-    struct Process *me = (struct Process *)FindTask(NULL);
-
-    /* Call user defined exit function before shutting down. */
-    if (me->pr_ExitCode != NULL)
-    {
-	me->pr_ExitCode(me->pr_ExitData);
-    }
-
-    P(kprintf("Deleting local variables\n"));
-
-    /* Clean up */
-    freeLocalVars(me, DOSBase);
-
-    P(kprintf("Closing input stream\n"));
-
-    if (me->pr_Flags & PRF_CLOSEINPUT)
-    {
-	Close(me->pr_CIS);
-    }
-
-    P(kprintf("Closing output stream\n"));
-
-    if (me->pr_Flags & PRF_CLOSEOUTPUT)
-    {
-	Close(me->pr_COS);
-    }
-
-    P(kprintf("Closing error stream\n"));
-
-    if (me->pr_Flags & PRF_CLOSEERROR)
-    {
-	Close(me->pr_CES);
-    }
-
-    P(kprintf("Freeing arguments\n"));
-
-    if (me->pr_Flags & PRF_FREEARGS)
-    {
-	FreeVec(me->pr_Arguments);
-    }
-
-    P(kprintf("Unloading segment\n"));
-
-    if (me->pr_Flags & PRF_FREESEGLIST)
-    {
-	UnLoadSeg(me->pr_SegList);
-    }
-
-    P(kprintf("Unlocking current dir\n"));
-
-    if (me->pr_Flags & PRF_FREECURRDIR)
-    {
-	UnLock(me->pr_CurrentDir);
-    }
-
-    P(kprintf("Unlocking home dir\n"));
-    UnLock(me->pr_HomeDir);
-
-    P(kprintf("Freeing cli structure\n"));
-
-    if (me->pr_Flags & PRF_FREECLI)
-    {
-	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
-    }
-
-    /* To implement NP_Synchronous and NP_NotifyOnDeath I need Child***()
-       here */
-
-    // if(me->pr_Flags & PRF_NOTIFYONDEATH)
-    //     Signal(GetETask(me)->iet_Parent, SIGF_CHILD);
-
-    if (me->pr_Flags & PRF_SYNCHRONOUS)
-    {
-	P(kprintf("Calling ChildFree()\n"));
-
-	// ChildStatus(me);
-	internal_ChildFree(me, DOSBase);
-    }
-
-    removefromrootnode(me, DOSBase);
-
-    RemTask(NULL);
-    
-    CloseLibrary((struct Library * )DOSBase);
-}
 
 
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
@@ -678,3 +589,109 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 
     return TRUE;
 }
+
+#ifdef AROS_CREATE_ROM
+# ifdef SysBase 
+#  undef SysBase
+# endif
+#endif
+
+static void KillCurrentProcess(void)
+{
+    struct Process *me;
+#ifdef AROS_CREATE_ROM
+    AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
+#else
+    /* I need the global here because there is no local way to get it */
+    extern struct DosLibrary * DOSBase;
+#endif
+    me = (struct Process *)FindTask(NULL);
+
+    /* Call user defined exit function before shutting down. */
+    if (me->pr_ExitCode != NULL)
+    {
+	me->pr_ExitCode(me->pr_ExitData);
+    }
+
+    P(kprintf("Deleting local variables\n"));
+
+    /* Clean up */
+    freeLocalVars(me, DOSBase);
+
+    P(kprintf("Closing input stream\n"));
+
+    if (me->pr_Flags & PRF_CLOSEINPUT)
+    {
+	Close(me->pr_CIS);
+    }
+
+    P(kprintf("Closing output stream\n"));
+
+    if (me->pr_Flags & PRF_CLOSEOUTPUT)
+    {
+	Close(me->pr_COS);
+    }
+
+    P(kprintf("Closing error stream\n"));
+
+    if (me->pr_Flags & PRF_CLOSEERROR)
+    {
+	Close(me->pr_CES);
+    }
+
+    P(kprintf("Freeing arguments\n"));
+
+    if (me->pr_Flags & PRF_FREEARGS)
+    {
+	FreeVec(me->pr_Arguments);
+    }
+
+    P(kprintf("Unloading segment\n"));
+
+    if (me->pr_Flags & PRF_FREESEGLIST)
+    {
+	UnLoadSeg(me->pr_SegList);
+    }
+
+    P(kprintf("Unlocking current dir\n"));
+
+    if (me->pr_Flags & PRF_FREECURRDIR)
+    {
+	UnLock(me->pr_CurrentDir);
+    }
+
+    P(kprintf("Unlocking home dir\n"));
+    UnLock(me->pr_HomeDir);
+
+    P(kprintf("Freeing cli structure\n"));
+
+    if (me->pr_Flags & PRF_FREECLI)
+    {
+	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
+    }
+
+    /* To implement NP_Synchronous and NP_NotifyOnDeath I need Child***()
+       here */
+
+    // if(me->pr_Flags & PRF_NOTIFYONDEATH)
+    //     Signal(GetETask(me)->iet_Parent, SIGF_CHILD);
+
+    if (me->pr_Flags & PRF_SYNCHRONOUS)
+    {
+	P(kprintf("Calling ChildFree()\n"));
+
+	// ChildStatus(me);
+	internal_ChildFree(me, DOSBase);
+    }
+
+    removefromrootnode(me, DOSBase);
+
+    RemTask(NULL);
+    
+    CloseLibrary((struct Library * )DOSBase);
+}
+
+#ifdef AROS_CREATE_ROM
+#define SysBase (DOSBase->dl_SysBase)
+#endif
