@@ -46,20 +46,20 @@ clean ::
 
 #MM
 setup :
-	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
-	@if [ ! -d $(BOOTGENDIR) ]; then $(MKDIR) $(BOOTGENDIR) ; else true ; fi
-	@if [ ! -d $(TOOLDIR) ]; then $(MKDIR) $(TOOLDIR) ; else true ; fi
-	@if [ ! -d $(TOOLGENDIR) ]; then $(MKDIR) $(TOOLGENDIR) ; else true ; fi
+	@$(IF) [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
+	@$(IF) [ ! -d $(BOOTGENDIR) ]; then $(MKDIR) $(BOOTGENDIR) ; else true ; fi
+	@$(IF) [ ! -d $(TOOLDIR) ]; then $(MKDIR) $(TOOLDIR) ; else true ; fi
+	@$(IF) [ ! -d $(TOOLGENDIR) ]; then $(MKDIR) $(TOOLGENDIR) ; else true ; fi
 
 $(BOOTGENDIR)/%.o: %.c
 	@$(ECHO) "Compiling $<..."
 	@$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
+	@$(IF) [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
 $(TOOLGENDIR)/%.o: %.c
 	@$(ECHO) "Compiling $<..."
 	@$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
+	@$(IF) [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
 $(BINDIR)/arosboot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 	@$(ECHO) "Building $@..."
@@ -80,14 +80,16 @@ $(TOOLDIR)/%: $(TOOLGENDIR)/%.o
 	@$(STRIP) $@
 
 $(BOOTGENDIR)/%.d: %.c
-	@$(ECHO) "Makedepend $<..."
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
 
 $(TOOLGENDIR)/%.d: %.c
-	@$(ECHO) "Makedepend $<..."
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
+
+#	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 # Don't try to include dependency files if we're cleaning or setting up.
 ifneq ("$(TARGET)","clean")
