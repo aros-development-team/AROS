@@ -171,13 +171,13 @@ void DoWindow (struct DiskObject * dobj)
 
     if (!GfxBase)
     {
-	printf ("Couldn't open %s\n", GRAPHICSNAME);
+	fprintf (stderr, "Couldn't open %s\n", GRAPHICSNAME);
 	goto end;
     }
 
     if (!IntuitionBase)
     {
-	bug ("Couldn't open intuition.library\n");
+	fprintf (stderr, "Couldn't open intuition.library\n");
 	goto end;
     }
 
@@ -195,7 +195,6 @@ void DoWindow (struct DiskObject * dobj)
 	, WA_Gadgets,	    &dobj->do_Gadget
 	, TAG_END
     );
-    D(bug("OpenWindow win=%p\n", win));
 
     if (!win)
 	goto end;
@@ -208,7 +207,6 @@ void DoWindow (struct DiskObject * dobj)
     cont = 1;
 
     printf ("Press a key to exit\n");
-    Flush (Output ());
 
     while (cont)
     {
@@ -234,10 +232,7 @@ void DoWindow (struct DiskObject * dobj)
 
 end:
     if (win)
-    {
-	D(bug("CloseWindow (%p)\n", win));
 	CloseWindow (win);
-    }
 
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
@@ -266,7 +261,7 @@ int main (int argc, char ** argv)
     {
 	if (!(icon = Open (arg, MODE_OLDFILE)) )
 	{
-	    printf ("Cannot open file %s for reading: ", arg);
+	    fprintf (stderr, "Cannot open file %s for reading: ", arg);
 	    PrintFault (IoErr(), "");
 	    rc = 10;
 	}
@@ -274,7 +269,7 @@ int main (int argc, char ** argv)
 	{
 	    if (!ReadStruct (icon, (APTR *)&dobj, IconDesc))
 	    {
-		printf ("Error reading file %s: ", arg);
+		fprintf (stderr, "Error reading file %s: ", arg);
 		PrintFault (IoErr(), "");
 		rc = 10;
 	    }

@@ -26,12 +26,13 @@
 #include <graphics/rastport.h>
 #include <graphics/gfxmacros.h>
 #include <ctype.h>
+#include <stdio.h>
 #include <aros/rt.h>
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 
-#if 1
+#if 0
 #   define D(x)    x
 #else
 #   define D(x)     /* eps */
@@ -521,35 +522,30 @@ int main (int argc, char ** argv)
     int cont, draw;
     int prop;
 
-    bug("Welcome to the window demo of AROS\n");
+    printf ("Welcome to the window demo of AROS\n");
 
     GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
 
     if (!GfxBase)
     {
-	bug ("Couldn't open %s\n", GRAPHICSNAME);
+	fprintf (stderr, "Couldn't open %s\n", GRAPHICSNAME);
 	goto end;
     }
 
     if (!IntuitionBase)
     {
-	bug ("Couldn't open intuition.library\n");
+	fprintf (stderr, "Couldn't open intuition.library\n");
 	goto end;
     }
 
-    D(bug("main=%p Refresh=%p\n"
-	, main
-	, Refresh
-    ));
-
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = (struct Library *)cioreq.io_Device;
-    bug ("Opening console.device=%p\n", ConsoleDevice);
+    /* printf ("Opening console.device=%p\n", ConsoleDevice); */
 
     if (!ConsoleDevice)
     {
-	D(bug("Couldn't open console\n"));
+	fprintf (stderr, "Couldn't open console\n");
 	return 10;
     }
 
@@ -588,11 +584,11 @@ int main (int argc, char ** argv)
 	, WA_Gadgets,	    &ExitGadget
 	, TAG_END
     );
-    D(bug("OpenWindow win=%p\n", win));
+    D(printf("OpenWindow win=%p\n", win));
 
     if (!win)
     {
-	D(bug("Couldn't open window\n"));
+	fprintf (stderr, "Couldn't open window\n");
 	return 10;
     }
 
@@ -602,10 +598,10 @@ int main (int argc, char ** argv)
     DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
 
     if (!gadget)
-	bug("Warning: Couldn't create gadget\n");
+	printf ("Warning: Couldn't create gadget\n");
 
     if (!frame)
-	bug("Warning: Couldn't create frame\n");
+	printf ("Warning: Couldn't create frame\n");
 
     cont = 1;
     draw = 0;
@@ -628,7 +624,7 @@ int main (int argc, char ** argv)
 
 		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
-		bug ("Key %s %3ld + Qual %08lx=\""
+		printf ("Key %s %3ld + Qual %08lx=\""
 		    , (im->Code & 0x8000) ? "up  " : "down"
 		    , (LONG)(im->Code & 0xFF)
 		    , (LONG)im->Qualifier
@@ -636,7 +632,7 @@ int main (int argc, char ** argv)
 
 		if (len < 0)
 		{
-		    bug ("\" (buffer too short)");
+		    printf ("\" (buffer too short)");
 		    break;
 		}
 
@@ -647,34 +643,34 @@ int main (int argc, char ** argv)
 			switch (buf[t])
 			{
 			case '\n':
-			    bug ("\\n");
+			    printf ("\\n");
 			    break;
 
 			case '\t':
-			    bug ("\\t");
+			    printf ("\\t");
 			    break;
 
 			case '\b':
-			    bug ("\\b");
+			    printf ("\\b");
 			    break;
 
 			case '\r':
-			    bug ("\\r");
+			    printf ("\\r");
 			    break;
 
 			case 0x1B:
-			    bug ("^[");
+			    printf ("^[");
 			    break;
 
 			default:
-			    bug ("\\x%02x", buf[t]);
+			    printf ("\\x%02x", buf[t]);
 			    break;
 			} /* switch */
 		    }
 		    else
-			bug ("%c", buf[t]);
+			putc (buf[t], stdout);
 		}
-		bug ("\"\n");
+		printf ("\"\n");
 
 		if (*buf == '\x1b' && len == 1)
 		{
@@ -728,7 +724,7 @@ int main (int argc, char ** argv)
 		break;
 
 	    case IDCMP_REFRESHWINDOW:
-		bug ("REFRESHWINDOW\n");
+		printf ("REFRESHWINDOW\n");
 		BeginRefresh (win);
 		Refresh (rp);
 		EndRefresh (win, TRUE);
@@ -740,7 +736,7 @@ int main (int argc, char ** argv)
 
 		gadget = (struct Gadget *)im->IAddress;
 
-		bug ("User pressed gadget %ld\n", gadget->GadgetID);
+		printf ("User pressed gadget %d\n", gadget->GadgetID);
 
 		switch (gadget->GadgetID)
 		{
@@ -869,7 +865,7 @@ int main (int argc, char ** argv)
 
 		gadget = (struct Gadget *)im->IAddress;
 
-		bug ("User released gadget %ld\n", gadget->GadgetID);
+		printf ("User released gadget %d\n", gadget->GadgetID);
 
 		if (gadget->GadgetID == 1)
 		    cont = 0;
@@ -934,8 +930,6 @@ int main (int argc, char ** argv)
 		break; }
 
 	    } /* switch */
-
-	    Flush (Output ());
 
 	    ReplyMsg ((struct Message *)im);
 	}
