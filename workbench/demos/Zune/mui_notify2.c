@@ -5,27 +5,18 @@
  */
 
 #include <exec/types.h>
-#ifdef _AROS
-#define AMIGA
-#endif
 
-#ifdef AMIGA
-#include <libraries/mui.h>
+//#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
-#else
-#include <zune/zune.h>
-#endif
 #include <stdio.h>
 
-#ifdef AMIGA
-struct IntuitionBase *IntuitionBase;
+#include <mui.h>
+
 struct Library       *MUIMasterBase;
-struct UtilityBase   *UtilityBase;
-#endif
 
 #ifndef TAGBASE
 #define TAGBASE (TAG_USER | (9853 << 16))
@@ -376,12 +367,8 @@ int main (void)
     struct MUI_CustomClass *extendedTestClass;
     int result = 0;
 
-#ifdef AMIGA
     MUIMasterBase = OpenLibrary("muimaster.library", 0);
     if (MUIMasterBase == NULL) return 20;
-    IntuitionBase = OpenLibrary("intuition.library", 36);
-    UtilityBase = OpenLibrary("utility.library", 0);
-#endif
 
     testClass = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,
 				      sizeof(struct TestData),
@@ -435,11 +422,7 @@ int main (void)
 
 error:
 
-#ifdef AMIGA
-    CloseLibrary(UtilityBase);
-    CloseLibrary(IntuitionBase);
     CloseLibrary(MUIMasterBase);
-#endif
 
     return result;
 }

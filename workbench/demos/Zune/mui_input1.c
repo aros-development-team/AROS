@@ -1,20 +1,18 @@
 #include <exec/types.h>
-#ifdef _AROS
-#define AMIGA
-#endif
-
-#ifdef AMIGA
-#include <libraries/mui.h>
+//#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <clib/alib_protos.h>
 #include <stdio.h>
-#else
-#include <zune/zune.h>
-#endif
 
-#ifdef _AROS
+#include <mui.h>
+#include <priv/muio.h>      /* FIXME: It can't be meant to work like this... */
+#include <priv/Rectangle.h> /* --"-- */
+#include <priv/macros.h>    /* --"-- */
+
+struct Library       *MUIMasterBase;
+
 #warning FIXME: what is the solution for this?
 Object *MUI_NewObject(char const *className, ULONG tag1, ...)
 {
@@ -29,11 +27,6 @@ Object *MUI_MakeObject(long type, ULONG tag1, ...)
     retval = MUI_MakeObjectA(type, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 }
-#endif
-
-#ifdef AMIGA
-struct IntuitionBase *IntuitionBase;
-struct Library       *MUIMasterBase;
 
 #define _U(s) (s)
 
@@ -64,7 +57,6 @@ ChainedCheckmark (STRPTR label)
     return obj;
 }
 
-#endif
 
 int main (int argc, char **argv)
 {
@@ -74,13 +66,8 @@ int main (int argc, char **argv)
     Object *radio2;
     int result = 0;
 
-#ifdef AMIGA
     MUIMasterBase = OpenLibrary("muimaster.library", 0);
     if (MUIMasterBase == NULL) return 20;
-    IntuitionBase = OpenLibrary("intuition.library", 36);
-#else
-    MUI_Init(&argc, &argv);
-#endif
 
     app = ApplicationObject,
 	SubWindow, mainWin = WindowObject,
@@ -166,13 +153,11 @@ kprintf("*** main loop...\n");
 	while (DoMethod(app, MUIM_Application_NewInput, _U(&sigs))
 	       != MUIV_Application_ReturnID_Quit)
 	{
-#ifdef AMIGA
 	    if (sigs)
 	    {
 	        sigs = Wait(sigs | SIGBREAKF_CTRL_C);
 	        if (sigs & SIGBREAKF_CTRL_C) break;
 	    }
-#endif
 	}
     }
 
@@ -183,10 +168,7 @@ kprintf("*** dispose app...\n");
 
 error:
 
-#ifdef AMIGA
-    CloseLibrary(IntuitionBase);
     CloseLibrary(MUIMasterBase);
-#endif
 
     return result;
 }
