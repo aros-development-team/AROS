@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Makes a class publically available.
@@ -33,13 +33,14 @@
 	None.
 
     NOTES
-
+	Do not use this function for private classes.
+    
     EXAMPLE
+
+    BUGS
 	There is no protection against creating multiple classes with
 	the same name yet. The operation of the system is undefined
 	in this case.
-
-    BUGS
 
     SEE ALSO
 	MakeClass(), FreeClass(), RemoveClass(), "Basic Object-Oriented
@@ -58,9 +59,8 @@
 
     ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
     AddTail (PublicClassList, (struct Node *)classPtr);
-    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
-
     classPtr->cl_Flags |= CLF_INLIST;
+    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
 
     AROS_LIBFUNC_EXIT
 } /* AddClass */
