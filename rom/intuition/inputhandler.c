@@ -304,6 +304,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    ptr       = "NEWSIZE";
 	    im->Class = IDCMP_NEWSIZE;
 
+	    /* Change width of dragbar gadget */
+
+
 	    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
 	    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
 	    break;
@@ -1350,6 +1353,26 @@ kprintf("Sizing layer\n");
                      /* and redraw the window frame */
                      RefreshWindowFrame(targetwindow);
 
+		     /* Change width of dragbar gadget */
+
+
+		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		     DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+
+		     /* Send IDCMP_NEWSIZE to resized window */
+                     {
+		    	struct IntuiMessage *imsg;
+			imsg = alloc_intuimessage(IntuitionBase);
+			if (!imsg)
+			{
+			    /* Ouch, we're in BIG trouble */
+			    Alert(AT_DeadEnd|AN_Intuition|AG_NoMemory);
+			}
+			imsg->Class = IDCMP_NEWSIZE;
+
+			send_intuimessage(imsg, targetwindow, IntuitionBase);
+                     }
+
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
 kprintf("Sizing done\n");		
                 break; }
@@ -1392,6 +1415,25 @@ kprintf("Sizing done\n");
                      w->ZipWidth    = OldWidth;
                      w->ZipHeight   = OldHeight;
                     
+		     /* Change width of dragbar gadget */
+
+
+		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		     DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+
+		     /* Send IDCMP_CHANGEWINDOW to resized window */
+                     {
+		    	struct IntuiMessage *imsg;
+			imsg = alloc_intuimessage(IntuitionBase);
+			if (!imsg)
+			{
+			    /* Ouch, we're in BIG trouble */
+			    Alert(AT_DeadEnd|AN_Intuition|AG_NoMemory);
+			}
+			imsg->Class = IDCMP_CHANGEWINDOW;
+
+			send_intuimessage(imsg, targetwindow, IntuitionBase);
+                     }
                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
@@ -1425,7 +1467,26 @@ kprintf("Sizing done\n");
 		     	, msg->left, msg->top
 			, msg->width, msg->height
 		     );
-		    
+
+		     /* Change width of dragbar gadget */
+
+
+		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		     DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+
+		     /* Send IDCMP_CHANGEWINDOW to resized window */
+                     {
+		    	struct IntuiMessage *imsg;
+			imsg = alloc_intuimessage(IntuitionBase);
+			if (!imsg)
+			{
+			    /* Ouch, we're in BIG trouble */
+			    Alert(AT_DeadEnd|AN_Intuition|AG_NoMemory);
+			}
+			imsg->Class = IDCMP_CHANGEWINDOW;
+
+			send_intuimessage(imsg, targetwindow, IntuitionBase);
+                     }
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
 		    
 		    break; }
