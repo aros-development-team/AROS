@@ -11,3 +11,4 @@ make.opts
 mmake
 mmake.cache
 mmake.config
+*.log
