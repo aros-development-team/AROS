@@ -689,23 +689,23 @@ int _CopyClipRectsToClipRects(struct Layer * l,
            */
           if (IS_SIMPLEREFRESH(l) && FALSE == backupmode && NULL == _cr->BitMap)
           {
-            struct Rectangle rect;
-            rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                        oldcr->bounds.MinX :
-                          _cr->bounds.MinX;
-            rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                        oldcr->bounds.MinY :
-                          _cr->bounds.MinY;
-            rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                        oldcr->bounds.MaxX :
-                          _cr->bounds.MaxX;
-            rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                        oldcr->bounds.MaxY :
-                          _cr->bounds.MaxY;
-            
-            _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             if (FALSE == addtodamagelist)
             {
+              struct Rectangle rect;
+              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
+                          oldcr->bounds.MinX :
+                            _cr->bounds.MinX;
+              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
+                          oldcr->bounds.MinY :
+                            _cr->bounds.MinY;
+              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
+                          oldcr->bounds.MaxX :
+                            _cr->bounds.MaxX;
+              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
+                          oldcr->bounds.MaxY :
+                            _cr->bounds.MaxY;
+            
+              _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             
               ClearRectRegion(l->DamageList, &rect);
 #if 0
@@ -743,23 +743,23 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
           }
           else if (IS_SIMPLEREFRESH(l) && TRUE == backupmode && NULL  != oldcr->lobs)
           {
-            struct Rectangle rect;
-            rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                        oldcr->bounds.MinX :
-                          _cr->bounds.MinX;
-            rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                        oldcr->bounds.MinY :
-                          _cr->bounds.MinY;
-            rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                        oldcr->bounds.MaxX :
-                          _cr->bounds.MaxX;
-            rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                        oldcr->bounds.MaxY :
-                          _cr->bounds.MaxY;
-            
-            _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             if (TRUE == addtodamagelist)
             {
+              struct Rectangle rect;
+              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
+                          oldcr->bounds.MinX :
+                            _cr->bounds.MinX;
+              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
+                          oldcr->bounds.MinY :
+                            _cr->bounds.MinY;
+              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
+                          oldcr->bounds.MaxX :
+                            _cr->bounds.MaxX;
+              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
+                          oldcr->bounds.MaxY :
+                            _cr->bounds.MaxY;
+            
+              _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             
               OrRectRegion(l->DamageList, &rect);
 #if 0
@@ -958,29 +958,30 @@ kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
               (NULL != oldcr->lobs) && 
               (NULL == oldcr->BitMap))
           {
-            struct Rectangle rect;
-            rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                        oldcr->bounds.MinX :
-                          _cr->bounds.MinX;
-            rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                        oldcr->bounds.MinY :
-                          _cr->bounds.MinY;
-            rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                        oldcr->bounds.MaxX :
-                          _cr->bounds.MaxX;
-            rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                        oldcr->bounds.MaxY :
-                          _cr->bounds.MaxY;
-            
-            _CallLayerHook(l->BackFill,
-                           l->rp,
-                           l,
-                           &rect,
-                           rect.MinX,
-                           rect.MinY);
-            _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             if (NULL != oldcr->lobs && NULL == oldcr->BitMap)
-               OrRectRegion(l->DamageList, &rect);
+            {
+              struct Rectangle rect;
+              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
+                          oldcr->bounds.MinX :
+                            _cr->bounds.MinX;
+              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
+                          oldcr->bounds.MinY :
+                            _cr->bounds.MinY;
+              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
+                          oldcr->bounds.MaxX :
+                            _cr->bounds.MaxX;
+              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
+                          oldcr->bounds.MaxY :
+                            _cr->bounds.MaxY;
+            
+              _CallLayerHook(l->BackFill,
+                             l->rp,
+                             l,
+                             &rect,
+                             rect.MinX,
+                             rect.MinY);
+              _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
+              OrRectRegion(l->DamageList, &rect);
 #if 0
 kprintf("Adding: %d\n",addtodamagelist);
 kprintf("%s: Adding %d/%d-%d/%d to damagelist!\t",
@@ -1012,6 +1013,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
         _cr->bounds.MaxY
         );
 #endif
+            }
           }
           else
           {
@@ -1162,6 +1164,37 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
   } /* for all old cliprects */
 
   CHECKDAMAGELIST(l);
+
+  /*
+   * If this is a simple refresh layer and I am not in
+   * backup mode and I am not adding to the damagelist
+   * the I must call the backfillhook for the
+   * area of the damage list of a simple refresh layer
+   */
+  if (IS_SIMPLEREFRESH(l) && 
+      (l->Flags & LAYERREFRESH) &&
+      FALSE == backupmode &&
+      FALSE == addtodamagelist)
+  {
+    struct Region * dr = l->DamageList;
+    struct RegionRectangle * rr = dr->RegionRectangle;
+    while (rr)
+    {
+      _TranslateRect(&rr->bounds, 
+                     dr->bounds.MinX + l->bounds.MinX,
+                     dr->bounds.MinY + l->bounds.MinY);
+      _CallLayerHook(l->BackFill,
+                     l->rp,
+                     l,
+                     &rr->bounds,
+                     rr->bounds.MinX,
+                     rr->bounds.MinY);
+      _TranslateRect(&rr->bounds, 
+                     -dr->bounds.MinX-l->bounds.MinX,
+                     -dr->bounds.MinY-l->bounds.MinY);
+      rr = rr->Next;
+    }    
+  }
 
   return TRUE;
 }
@@ -1413,8 +1446,8 @@ void _BackFillRegion(struct Layer * l,
         _TranslateRect(&rect, 
                        r->bounds.MinX - l->bounds.MinX,
                        r->bounds.MinY - l->bounds.MinY);
-#if 0
-kprintf("%s: Adding %d/%d-%d/%d to damagelist!\t",
+#if 1
+kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
         __FUNCTION__,
         rect.MinX,
         rect.MinY,
