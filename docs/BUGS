@@ -50,4 +50,12 @@ is called with ThisTask()->pr_CurrentDir.
 #3  0x8057159 in _Dos_DupLock (lock=33697770, DOSBase=0x806baa0)
     at duplock.c:112
 
+BUG000006
+klaus21@t-online.de
+"mount devs:ram.handler RAM:" does nothing. Afterwards, no RAM: or RAM::
+is available and no error is printed.
+
+BUG000006
+klaus21@t-online.de
+"dir :" does nothing.
 
