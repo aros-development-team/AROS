@@ -30,6 +30,8 @@
 #include "pictureclass.h"
 #include "colorhandling.h"
 
+static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, UWORD srcpixelbytes, ULONG xscale );
+static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp );
 static UBYTE * AllocLineBuffer( long width, long height, int pixelbytes );
 static void CopyColTable( struct Picture_Data *pd );
 static BOOL RemapCM2CM( struct Picture_Data *pd );
@@ -90,16 +92,23 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
     CopyColTable( pd );
     InitRastPort( &DestRP );
     DestRP.BitMap = pd->DestBM;
-    success = WritePixelArray( pd->SrcBuffer,
-				0,
-				0,
-				pd->SrcWidthBytes,
-				&DestRP,
-				0,
-				0,
-				pd->SrcWidth,
-				pd->SrcHeight,
-				pd->SrcPixelFormat);
+    if( !pd->Scale )
+    {
+	success = WritePixelArray(  pd->SrcBuffer,		// src buffer
+				    0,				// src x
+				    0,				// src y
+				    pd->SrcWidthBytes,		// src mod
+				    &DestRP,			// rastport
+				    0,				// dest x
+				    0,				// dest y
+				    pd->SrcWidth,		// width
+				    pd->SrcHeight,		// height
+				    pd->SrcPixelFormat);	// src format
+    }
+    else
+    {
+	success = ScaleArraySimple( pd, DestRP );
+    }
 #ifdef __AROS__
     DeinitRastPort( &DestRP );
 #endif
@@ -115,17 +124,24 @@ BOOL ConvertCM2TC( struct Picture_Data *pd )
     CopyColTable( pd );
     InitRastPort( &DestRP );
     DestRP.BitMap = pd->DestBM;
-    success = WriteLUTPixelArray( pd->SrcBuffer,
-				    0,
-				    0,
-				    pd->SrcWidthBytes,
-				    &DestRP,
-				    pd->ColTableXRGB,
-				    0,
-				    0,
-				    pd->SrcWidth,
-				    pd->SrcHeight,
-				    CTABFMT_XRGB8 );
+    if( !pd->Scale )
+    {
+	success = WriteLUTPixelArray(   pd->SrcBuffer,	// src buffer
+					0,			// src x
+					0,			// src y
+					pd->SrcWidthBytes,	// src mod
+					&DestRP,		// rastport
+					pd->ColTableXRGB,	// coltable
+					0,			// dest x
+					0,			// dest y
+					pd->SrcWidth,	// width
+					pd->SrcHeight,	// height
+					CTABFMT_XRGB8 );	// coltable format
+    }
+    else
+    {
+	success = ScaleArraySimple( pd, DestRP );
+    }
 #ifdef __AROS__
     DeinitRastPort( &DestRP );
 #endif
@@ -137,7 +153,7 @@ BOOL ConvertCM2CM( struct Picture_Data *pd )
     struct RastPort DestRP;
     BOOL success;
 
-    if( pd->Remap )
+    if( pd->Remap || pd->Scale )
     {
 	D(bug("picture.datatype/ConvertCM2CM: Colormapped source, Colormapped dest, remapping pens\n"));
 	success = RemapCM2CM( pd );
@@ -170,6 +186,137 @@ BOOL ConvertTC2CM( struct Picture_Data *pd )
     D(bug("picture.datatype/ConvertCM2CM: Truecolor source, Colormapped dest, decreasing depth and remapping\n"));
     success = RemapTC2CM( pd );
     return success;
+}
+
+/**************************************************************************************************/
+
+static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, UWORD srcpixelbytes, ULONG xscale )
+{
+    unsigned int srcx, destx, srcxinc;
+    ULONG srcxpos;
+    UBYTE r, g, b, a;
+    UBYTE *srcxpixel;
+
+    a = 0;
+    srcx = 0;
+    srcxinc = 1;
+    srcxpos = 0;
+    if( srcpixelbytes == 1 )
+	{
+	destx = destwidth;
+	while( destx-- )
+	{
+	    if( srcxinc )
+		a = *srcxptr;
+	    srcxpos += xscale;
+	    srcxinc = srcxpos >> 16;
+	    srcxpos &= 0xffff;
+	    // D(bug("picture.datatxpe/TC2TC Scale: srcx %d destx %d srcxpos %06lx srcxinc %d\n", srcx, destx, srcxpos, srcxinc));
+	    *destxptr++ = a;
+	    if( srcxinc )
+	    {
+		srcxptr += srcxinc;
+	    }
+	}
+    }
+    else
+    {
+	destx = destwidth;
+	while( destx-- )
+	{
+	    if( srcxinc )
+	    {
+		srcxpixel = srcxptr;
+		if( srcpixelbytes == 4 )
+		    a = *srcxpixel++;
+		r = *srcxpixel++;
+		g = *srcxpixel++;
+		b = *srcxpixel++;
+	    }
+	    srcxpos += xscale;
+	    srcxinc = srcxpos >> 16;
+	    srcxpos &= 0xffff;
+	    // D(bug("picture.datatxpe/TC2TC Scale: srcx %d destx %d srcxpos %06lx srcxinc %d\n", srcx, destx, srcxpos, srcxinc));
+	    *destxptr++ = a;
+	    *destxptr++ = r;
+	    *destxptr++ = g;
+	    *destxptr++ = b;
+	    if( srcxinc )
+	    {
+		if( srcxinc == 1 )
+		    srcxptr += srcpixelbytes;
+		else if( srcpixelbytes == 4 )
+		    srcxptr += srcxinc<<2;
+		else
+		    srcxptr += (srcxinc<<2) - srcxinc;
+	    }
+	}
+    }
+}
+
+static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
+{
+    unsigned int srcy, desty, srcyinc;
+    ULONG srcypos, pixelformat, success;
+    UWORD srcpixelbytes;
+    ULONG destwidth, destwidthbytes;
+    UBYTE *srcyptr, *destline;
+
+    destwidth = pd->DestWidth;
+    destwidthbytes = MOD16( pd->DestWidth << 2 );
+    pixelformat = pd->SrcPixelFormat;
+    srcpixelbytes = pd->SrcPixelBytes;
+    destline = AllocLineBuffer( destwidth * 4, 1, srcpixelbytes );
+    if( !destline )
+	return FALSE;
+    srcy = 0;
+    srcyinc = 1;
+    srcypos = 0;
+    srcyptr = pd->SrcBuffer;
+    for( desty=0; desty<pd->DestHeight; desty++ )
+    {
+	if( srcyinc )	// incremented source line after last line scaling ?
+	    ScaleLineSimple( srcyptr, destline, destwidth, srcpixelbytes, pd->XScale );
+	srcypos += pd->YScale;
+	srcyinc = (srcypos >> 16) - srcy;
+	// D(bug("picture.datatype/TC2TC Scale: srcy %d desty %d srcypos %06lx srcyinc %d\n", srcy, desty, srcypos, srcyinc));
+	if( pixelformat == PBPAFMT_LUT8 )
+	{
+	    success = WriteLUTPixelArray(   destline,		// src buffer
+					    0,			// src x
+					    0,			// src y
+					    destwidth,		// src mod
+					    &rp,		// rastport
+					    pd->ColTableXRGB,	// coltable
+					    0,			// dest x
+					    desty,		// dest y
+					    destwidth,		// width
+					    1,			// height
+					    CTABFMT_XRGB8 );	// coltable format
+	}
+	else
+	{
+	    success = WritePixelArray(	destline,		// src buffer
+					0,			// src x
+					0,			// src y
+					destwidth,		// src mod
+					&rp,			// rastport
+					0,			// dest x
+					desty,			// dest y
+					destwidth,		// width
+					1,			// height
+					RECTFMT_ARGB);		// src format
+	}
+	if( !success ) return FALSE;
+	if( srcyinc )
+	{
+	    if( srcyinc == 1 )	srcyptr += pd->SrcWidthBytes;
+	    else		srcyptr += pd->SrcWidthBytes * srcyinc;
+	    srcy += srcyinc;
+	}
+    }
+    FreeVec( destline );
+    return TRUE;
 }
 
 /**************************************************************************************************/
@@ -207,11 +354,11 @@ static UBYTE * AllocLineBuffer( long width, long height, int pixelbytes )
     return buffer;
 }
 
-BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth )
+BOOL AllocDestBM( struct Picture_Data *pd )
 {
-    pd->DestBM = AllocBitMap( width,
-			      height,
-			      depth,
+    pd->DestBM = AllocBitMap( pd->DestWidth,
+			      pd->DestHeight,
+			      pd->DestDepth,
 			      BMF_MINPLANES,
 			      pd->UseFriendBM ? pd->DestScreen->RastPort.BitMap : NULL );
     if( !pd->DestBM )
@@ -221,9 +368,6 @@ BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth )
     }
     D(bug("picture.datatype/AllocDestBM: DestBM allocated: Flags %ld Width %ld Height %ld Depth %ld\n", (long)GetBitMapAttr(pd->DestBM, BMA_FLAGS),
 	(long)GetBitMapAttr(pd->DestBM, BMA_WIDTH), (long)GetBitMapAttr(pd->DestBM, BMA_HEIGHT), (long)GetBitMapAttr(pd->DestBM, BMA_DEPTH)));
-    pd->DestWidth = width;
-    pd->DestHeight = height;
-    pd->DestDepth = depth;
     return TRUE;
 }
 
@@ -415,8 +559,11 @@ BOOL ConvertChunky2Bitmap( struct Picture_Data *pd )
 
 BOOL CreateMaskPlane( struct Picture_Data *pd )
 {
-    if( !pd->SrcBuffer || !pd->DestBM || pd->SrcPixelBytes != 1 )
+    if( !pd->SrcBuffer || !pd->DestBM || pd->SrcPixelBytes != 1 || pd->Scale)
+    {
+	D(bug("picture.datatype/CreateMask: Wrong conditions to create a mask !\n"));
 	return FALSE;
+    }
     if( !pd->MaskPlane && pd->bmhd.bmh_Masking == mskHasTransparentColor )
     {
 	int x, y;
@@ -470,15 +617,11 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 
 static BOOL RemapTC2CM( struct Picture_Data *pd )
 {
-    ULONG width, height;
     unsigned int DestNumColors;
     int i, j, k;
     int srccnt, destcnt, index;
     ULONG *srccolregs, *destcolregs;
     ULONG Col7, Col3;
-
-    width = pd->SrcWidth;
-    height = pd->SrcHeight;
 
     pd->NumSparse = pd->NumColors = 256;
     DestNumColors = 1<<pd->DestDepth;
@@ -520,19 +663,32 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
      */
     {
 	struct RastPort DestRP;
-	ULONG x, y;
-	UBYTE *linebuf;
-	UBYTE *thislinebuf;
+	ULONG x, srcy, srcyinc, srcypos;
+	ULONG desty;
+	UBYTE *srcline, *destline, *thissrc, *thisdest;
+
 	UBYTE *srcbuf = pd->SrcBuffer;
-	ULONG srcwidthadd = pd->SrcWidthBytes - pd->SrcWidth * pd->SrcPixelBytes;
+	ULONG srcwidth = pd->SrcWidth;
+	ULONG destwidth = pd->DestWidth;
 	UBYTE *sparsetable = pd->SparseTable;
 	BOOL argb = pd->SrcPixelFormat==PBPAFMT_ARGB;
+	BOOL scale = pd->Scale;
 
-	linebuf = AllocLineBuffer( width, height, 1 );
-	if( !linebuf )
+	srcline = AllocLineBuffer( MAX(srcwidth, destwidth) * 4, 1, 1 );
+	if( !srcline )
 	    return FALSE;
+	if( scale )
+	    destline = AllocLineBuffer( destwidth, 1, 1 );
+	else
+	    destline = srcline;
+	if( !destline )
+	    return FALSE;
+
 	InitRastPort( &DestRP );
 	DestRP.BitMap = pd->DestBM;
+	srcy = 0;
+	srcyinc = 1;
+	srcypos = 0;
 	if( pd->DitherQuality )
 	{
 	    int rval, gval, bval;
@@ -544,74 +700,117 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
 	    D(bug("picture.datatype/RemapTC2CM: remapping buffer with dither of %d\n", (int)pd->DitherQuality));
 	    feedback = 4 - pd->DitherQuality;
 	    destcolregs = pd->DestColRegs;
-	    for( y=0; y<height; y++ )
+	    for( desty=0; desty<pd->DestHeight; desty++ )
 	    {
-		thislinebuf = linebuf;
-		rerr = gerr = berr = 0;
-		for( x=0; x<width; x++ )
+		if( srcyinc )	// incremented source line after last line scaling ?
 		{
-		    if( argb )
-			srcbuf++; // skip alpha
-		    if( feedback )
+		    if( scale )
 		    {
-			rerr >>= feedback;
-			gerr >>= feedback;
-			berr >>= feedback;
+			ScaleLineSimple( srcbuf, srcline, destwidth, pd->SrcPixelBytes, pd->XScale );
+			argb = TRUE;
+			thissrc = srcline;
 		    }
-		    rerr += (*srcbuf++);
-		    gerr += (*srcbuf++);
-		    berr += (*srcbuf++);
-		    rval = CLIP( rerr );
-		    gval = CLIP( gerr );
-		    bval = CLIP( berr );
-		    index = (rval>>2 & 0x38) | (gval>>5 & 0x07) | (bval & 0xc0);
-		    destindex = sparsetable[index];
-		    *thislinebuf++ = destindex;
-		    colregs = destcolregs + destindex*3;
-		    rerr -= (*colregs++)>>24;
-		    gerr -= (*colregs++)>>24;
-		    berr -= (*colregs)>>24;
+		    else
+		    {
+			thissrc = srcbuf;
+		    }
+		    thisdest = destline;
+		    rerr = gerr = berr = 0;
+		    x = destwidth;
+		    while( x-- )
+		    {
+			if( argb )
+			    thissrc++; // skip alpha
+			if( feedback )
+			{
+			    rerr >>= feedback;
+			    gerr >>= feedback;
+			    berr >>= feedback;
+			}
+			rerr += (*thissrc++);
+			gerr += (*thissrc++);
+			berr += (*thissrc++);
+			rval = CLIP( rerr );
+			gval = CLIP( gerr );
+			bval = CLIP( berr );
+			index = (rval>>2 & 0x38) | (gval>>5 & 0x07) | (bval & 0xc0);
+			destindex = sparsetable[index];
+			*thisdest++ = destindex;
+			colregs = destcolregs + destindex*3;
+			rerr -= (*colregs++)>>24;
+			gerr -= (*colregs++)>>24;
+			berr -= (*colregs)>>24;
+		    }
+		}
+		if( scale )
+		{
+		    srcypos += pd->YScale;
+		    srcyinc = (srcypos >> 16) - srcy;
 		}
 		WriteChunkyPixels( &DestRP,
 				    0,
-				    y,
-				    width-1,
-				    y,
-				    linebuf,
-				    width );
-		srcbuf += srcwidthadd;
+				    desty,
+				    destwidth-1,
+				    desty,
+				    destline,
+				    destwidth );
+		if( srcyinc )
+		{
+		    if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
+		    else		srcbuf += pd->SrcWidthBytes * srcyinc;
+		    srcy += srcyinc;
+		}
 	    }
 	}
 	else
 	{
 	    D(bug("picture.datatype/RemapTC2CM: remapping buffer without dithering\n"));
-	    for( y=0; y<height; y++ )
+	    for( desty=0; desty<pd->DestHeight; desty++ )
 	    {
-		thislinebuf = linebuf;
-		for( x=0; x<width; x++ )
+		if( srcyinc )	// incremented source line after last line scaling ?
 		{
-		    if( argb )
-			srcbuf++; // skip alpha
-		    index  = (*srcbuf++)>>2 & 0x38; // red
-		    index |= (*srcbuf++)>>5 & 0x07; // green
-		    index |= (*srcbuf++)    & 0xc0; // blue
-		    
-		    *thislinebuf++ = sparsetable[index];
+		    thissrc = srcbuf;
+		    thisdest = srcline;
+		    x = srcwidth;
+		    while( x-- )
+		    {
+			if( argb )
+			    thissrc++; // skip alpha
+			index  = (*thissrc++)>>2 & 0x38; // red
+			index |= (*thissrc++)>>5 & 0x07; // green
+			index |= (*thissrc++)    & 0xc0; // blue
+			
+			*thisdest++ = sparsetable[index];
+		    }
+		    if( scale )
+			ScaleLineSimple( srcline, destline, destwidth, 1, pd->XScale );
+		}
+		if( scale )
+		{
+		    srcypos += pd->YScale;
+		    srcyinc = (srcypos >> 16) - srcy;
 		}
 		WriteChunkyPixels( &DestRP,
 				    0,
-				    y,
-				    width-1,
-				    y,
-				    linebuf,
-				    width );
-		srcbuf += srcwidthadd;
+				    desty,
+				    destwidth-1,
+				    desty,
+				    destline,
+				    destwidth );
+		if( srcyinc )
+		{
+		    if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
+		    else		srcbuf += pd->SrcWidthBytes * srcyinc;
+		    srcy += srcyinc;
+		}
 	    }
 	}
     #ifdef __AROS__
 	DeinitRastPort( &DestRP );
     #endif
-	FreeVec( (void *) linebuf );
+	FreeVec( (void *) srcline );
+	if( scale )
+	    FreeVec( (void *) destline );
     }
     return TRUE;
 }
@@ -709,38 +908,70 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     D(bug("picture.datatype/RemapCM2CM: remapping buffer to new pens\n"));
     { 
 	struct RastPort DestRP;
+	ULONG x, srcy, srcyinc, srcypos;
+	ULONG desty;
+	UBYTE *srcline, *destline, *thissrc, *thisdest;
+
 	UBYTE *srcbuf = pd->SrcBuffer;
-	ULONG srcwidthadd = pd->SrcWidthBytes - pd->SrcWidth * pd->SrcPixelBytes;
+	ULONG srcwidth = pd->SrcWidth;
+	ULONG destwidth = pd->DestWidth;
+	BOOL scale = pd->Scale;
 	UBYTE *sparsetable = pd->SparseTable;
-	UBYTE *linebuf;
-	UBYTE *thislinebuf;
-	long x, y;
  
-	linebuf = AllocLineBuffer( width, height, 1 );
-	if( !linebuf )
+	srcline = AllocLineBuffer( srcwidth, 1, 1 );
+	if( !srcline )
 	    return FALSE;
+	if( scale )
+	    destline = AllocLineBuffer( destwidth, 1, 1 );
+	else
+	    destline = srcline;
+	if( !destline )
+	    return FALSE;
+
 	InitRastPort( &DestRP );
 	DestRP.BitMap = pd->DestBM;
-	for( y=0; y<height; y++ )
+	srcy = 0;
+	srcyinc = 1;
+	srcypos = 0;
+	for( desty=0; desty<pd->DestHeight; desty++ )
 	{
-	    thislinebuf = linebuf;
-	    for( x=0; x<width; x++ )
+	    if( srcyinc )	// incremented source line after last line scaling ?
 	    {
-		*thislinebuf++ = sparsetable[*srcbuf++];
+		thissrc = srcbuf;
+		thisdest = srcline;
+		x = srcwidth;
+		while( x-- )
+		{
+		    *thisdest++ = sparsetable[*thissrc++];
+		}
+		if( scale )
+		    ScaleLineSimple( srcline, destline, destwidth, 1, pd->XScale );
+	    }
+	    if( scale )
+	    {
+		srcypos += pd->YScale;
+		srcyinc = (srcypos >> 16) - srcy;
 	    }
 	    WriteChunkyPixels( &DestRP,
 				0,
-				y,
-				width-1,
-				y,
-				linebuf,
-				width );
-	    srcbuf += srcwidthadd;
+				desty,
+				destwidth-1,
+				desty,
+				destline,
+				destwidth );
+	    if( srcyinc )
+	    {
+		if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
+		else		srcbuf += pd->SrcWidthBytes * srcyinc;
+		srcy += srcyinc;
+	    }
 	}
 #ifdef __AROS__
 	DeinitRastPort( &DestRP );
 #endif
-	FreeVec( (void *) linebuf );
+	FreeVec( (void *) srcline );
+	if( scale )
+	    FreeVec( (void *) destline );
     }
 
     return TRUE;
@@ -848,72 +1079,3 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
 }
 
 /**************************************************************************************************/
-/* unused functions */
-
-#if 0
-unsigned int *MakeARGB(unsigned long *ColRegs, unsigned int Count)
-{
- unsigned int *ARGB;
- register unsigned int i;
-
- ARGB=NULL;
-
- if(!(ColRegs && Count))
- {
-  return(NULL);
- }
-
- ARGB=AllocVec(Count*sizeof(unsigned int), MEMF_ANY | MEMF_CLEAR);
- if(!ARGB)
- {
-  return(NULL);
- }
-
- for(i=0; i<Count; i++)
- {
-  ARGB[i]  = ((*(ColRegs++)) & 0xFF000000) >>  8;
-  ARGB[i] |= ((*(ColRegs++)) & 0xFF000000) >> 16;
-  ARGB[i] |= ((*(ColRegs++)) & 0xFF000000) >> 24;
- }
-
- return(ARGB);
-}
-
-unsigned int CountColors(unsigned int *ARGB, unsigned int Count)
-{
- unsigned int NumColors;
- register unsigned int i, j;
-
- NumColors=0;
-
- if(!(ARGB && Count))
- {
-  return(0);
- }
-
- for(i=0; i<Count; i++)
- {
-  /*
-   *  We assume that it is a new color.
-   */
-
-  NumColors++;
-
-  for(j=0; j<i; j++)
-  {
-   if(ARGB[j]==ARGB[i])
-   {
-    /*
-     *  Oops, it isn't a new color.
-     */
-
-    NumColors--;
-
-    break;
-   }
-  }
- }
-
- return(NumColors);
-}
-#endif

@@ -64,7 +64,9 @@ ISG BOOL                  DestMode
 #include "colorhandling.h"
 
 #include "methods.h"
-#define PDTA_ScaleQuality 12345
+
+#define DGS(x) D(x)
+//#define DGS(x)
 
 /**************************************************************************************************/
 
@@ -85,13 +87,15 @@ const IPTR SupportedMethods[] =
     DTM_PROCLAYOUT,
     DTM_ASYNCLAYOUT,
     DTM_FRAMEBOX,
-    DTM_SELECT,
-    DTM_CLEARSELECTED,
-    DTM_COPY,
-    DTM_PRINT,
-    DTM_WRITE,
+//    DTM_SELECT,
+//    DTM_CLEARSELECTED,
+//    DTM_COPY,
+//    DTM_PRINT,
+//    DTM_WRITE,
 
     PDTM_WRITEPIXELARRAY,
+//    PDTM_READPIXELARRAY,
+    PDTM_SCALE,
 
     (~0)
 };
@@ -155,6 +159,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
     pd->SrcPixelFormat = -1;
     pd->DitherQuality = 4;
     pd->UseFriendBM = 1;
+    pd->DestMode = 1;	/* needs to be changed to FALSE after Multiview adaption */
 
     /* Prefs overrides default, but application overrides Prefs */
     ReadPrefs(pd);
@@ -164,27 +169,33 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
         switch (ti->ti_Tag)
         {
             case OBP_Precision:
-                pd->Precision = ti->ti_Data;
-                D(bug("picture.datatype/OM_NEW: Tag ID OBP_Precision: %ld\n", (long)pd->Precision));
+                pd->Precision = (ULONG) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_NEW: Tag ID OBP_Precision: %ld\n", (long)pd->Precision));
                 break;
 
             case PDTA_Remap:
-                pd->Remap = ti->ti_Data;
-                D(bug("picture.datatype/OM_NEW: Tag ID PDTA_Remap: %ld\n", (long)pd->Remap));
+                pd->Remap = (BOOL) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_NEW: Tag ID PDTA_Remap: %ld\n", (long)pd->Remap));
                 break;
 
             case PDTA_NumSparse:
-                pd->NumSparse = ti->ti_Data;
-                D(bug("picture.datatype/OM_NEW: Tag ID PDTA_NumSparse: %ld\n", (long)pd->NumSparse));
+                pd->NumSparse = (UWORD) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_NEW: Tag ID PDTA_NumSparse: %ld\n", (long)pd->NumSparse));
                 break;
 
             case PDTA_SparseTable:
-                D(bug("picture.datatype/OM_NEW: Tag ID PDTA_SparseTable\n"));
+                DGS(bug("picture.datatype/OM_NEW: Tag ID PDTA_SparseTable\n"));
                 if(!(pd->NumSparse && ti->ti_Data))
                 {
                     break;
                 }
                 CopyMem((APTR) ti->ti_Data, (APTR) pd->SparseTable, pd->NumSparse);
+                break;
+
+            case PDTA_DelayRead:
+            	if(!pd->NoDelay)
+                    pd->DelayRead = (BOOL) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_NEW: Tag ID PDTA_DelayRead: %ld\n", (long)pd->DelayRead));
                 break;
         }
     }
@@ -236,33 +247,33 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
         switch (ti->ti_Tag)
         {
             case PDTA_ModeID:
-                pd->ModeID = ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_ModeID: 0x%lx\n", (long)pd->ModeID));
+                pd->ModeID = (ULONG) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_ModeID: 0x%lx\n", (long)pd->ModeID));
                 break;
 
             case PDTA_ClassBitMap:
                 pd->KeepSrcBM = TRUE;
-	        D(bug("picture.datatype/OM_GET: Tag PDTA_ClassBitMap: Handled as PDTA_BitMap\n"));
+	        DGS(bug("picture.datatype/OM_GET: Tag PDTA_ClassBitMap: Handled as PDTA_BitMap\n"));
             case PDTA_BitMap:
                 pd->SrcBM = (struct BitMap *) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
                 break;
 
             case PDTA_Screen:
                 pd->DestScreen = (struct Screen *) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_Screen: 0x%lx\n", (long)pd->DestScreen));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_Screen: 0x%lx\n", (long)pd->DestScreen));
                 break;
 
             case PDTA_NumColors:
-                pd->NumColors = ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_NumColors: %ld\n", (long)pd->NumColors));
+                pd->NumColors = (UWORD) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_NumColors: %ld\n", (long)pd->NumColors));
                 break;
 
             case PDTA_Grab:
             {
                 Point *ThePoint;
 
-                D(bug("picture.datatype/OM_SET: Tag PDTA_Grab\n"));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_Grab\n"));
                 ThePoint = (Point *) ti->ti_Data;
                 if(!ThePoint)
                 {
@@ -274,37 +285,42 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             }
 
 	    case PDTA_SourceMode:
-                D(bug("picture.datatype/OM_SET: Tag PDTA_SourceMode (ignored): %ld\n", (long)ti->ti_Data));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_SourceMode (ignored): %ld\n", (long)ti->ti_Data));
 	        break;
 
 	    case PDTA_DestMode:
 		pd->DestMode = (BOOL) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_DestMode: %ld\n", (long)pd->DestMode));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_DestMode: %ld\n", (long)pd->DestMode));
 	        break;
 
             case PDTA_FreeSourceBitMap:
                 pd->FreeSource = (BOOL) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_FreeSourceBitMap: %ld\n", (long)pd->FreeSource));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_FreeSourceBitMap: %ld\n", (long)pd->FreeSource));
                 break;
 
 	    case PDTA_UseFriendBitMap:
                 pd->UseFriendBM = (BOOL) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_UseFriendBitMap: %ld\n", (long)pd->UseFriendBM));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_UseFriendBitMap: %ld\n", (long)pd->UseFriendBM));
 	        break;
 
 	    case PDTA_MaxDitherPens:
                 pd->MaxDitherPens = (UWORD) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_MaxDitherPens: %ld\n", (long)pd->MaxDitherPens));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_MaxDitherPens: %ld\n", (long)pd->MaxDitherPens));
 	        break;
 
 	    case PDTA_DitherQuality:
                 pd->DitherQuality = (UWORD) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_DitherQuality: %ld\n", (long)pd->DitherQuality));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_DitherQuality: %ld\n", (long)pd->DitherQuality));
 	        break;
 
 	    case PDTA_ScaleQuality:
                 pd->ScaleQuality = (UWORD) ti->ti_Data;
-                D(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
+	        break;
+
+	    case PDTA_DelayedRead:
+                pd->DelayedRead = (BOOL) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_SET: Tag PDTA_DelayedRead: %ld\n", (long)pd->DelayedRead));
 	        break;
 
 #ifdef MYDEBUG
@@ -321,13 +337,13 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
               {
                Known=TRUE;
 
-               D(bug("picture.datatype/OM_SET: Tag %s: 0x%lx (%ld)\n", AttribNames[i], (long)ti->ti_Data, (long)ti->ti_Data));
+               DGS(bug("picture.datatype/OM_SET: Tag %s: 0x%lx (%ld)\n", AttribNames[i], (long)ti->ti_Data, (long)ti->ti_Data));
               }
              }
 
              if(!Known)
              {
-              D(bug("picture.datatype/OM_SET: Tag ID 0x%lx: 0x%lx\n", (long)ti->ti_Tag, (long)ti->ti_Data));
+              DGS(bug("picture.datatype/OM_SET: Tag ID 0x%lx: 0x%lx\n", (long)ti->ti_Tag, (long)ti->ti_Data));
              }
             }
 #endif /* MYDEBUG */
@@ -385,116 +401,121 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case PDTA_ModeID:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ModeID: 0x%lx\n", (long)pd->ModeID));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ModeID: 0x%lx\n", (long)pd->ModeID));
 	    *(msg->opg_Storage)=pd->ModeID;
 	    break;
 
 	case PDTA_BitMapHeader:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_BitMapHeader: 0x%lx\n", (long)&pd->bmhd));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_BitMapHeader: 0x%lx\n", (long)&pd->bmhd));
 	    *(msg->opg_Storage)=(ULONG) &pd->bmhd;
 	    break;
 
 	case PDTA_ClassBitMap:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ClassBitMap: Handled as PDTA_BitMap\n"));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ClassBitMap: Handled as PDTA_BitMap\n"));
 	case PDTA_BitMap:
 	    if( !pd->SrcBM )
 		ConvertChunky2Bitmap( pd );
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
 	    *(msg->opg_Storage)=(ULONG) pd->SrcBM;
 	    break;
 
 	case PDTA_DestBitMap:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
 	    *(msg->opg_Storage)=(ULONG) pd->DestBM;
 	    break;
 
 	case PDTA_MaskPlane:
 	    CreateMaskPlane( pd );
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_MaskPlane: 0x%lx\n", (long)pd->MaskPlane));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_MaskPlane: 0x%lx\n", (long)pd->MaskPlane));
 	    *(msg->opg_Storage)=(ULONG) pd->MaskPlane;
 	    break;
 
 	case PDTA_Screen:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_Screen: 0x%lx\n", (long)pd->DestScreen));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_Screen: 0x%lx\n", (long)pd->DestScreen));
 	    *(msg->opg_Storage)=(ULONG) pd->DestScreen;
 	    break;
 
 	case PDTA_ColorRegisters:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorRegisters: 0x%lx\n", (long)&pd->ColMap));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorRegisters: 0x%lx\n", (long)&pd->ColMap));
 	    *(msg->opg_Storage)=(ULONG) &pd->ColMap;
 	    break;
 
 	case PDTA_CRegs:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_CRegs: 0x%lx\n", (long)&pd->SrcColRegs));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_CRegs: 0x%lx\n", (long)&pd->SrcColRegs));
 	    *(msg->opg_Storage)=(ULONG) &pd->SrcColRegs;
 	    break;
 
 	case PDTA_GRegs:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_GRegs: 0x%lx\n", (long)&pd->DestColRegs));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_GRegs: 0x%lx\n", (long)&pd->DestColRegs));
 	    *(msg->opg_Storage)=(ULONG) &pd->DestColRegs;
 	    break;
 
 	case PDTA_AllocatedPens:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_AllocatedPens: Handled by PDTA_ColorTable2\n"));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_AllocatedPens: Handled by PDTA_ColorTable2\n"));
 	case PDTA_ColorTable2:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: Handled by PDTA_ColorTable\n"));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: Handled by PDTA_ColorTable\n"));
 	case PDTA_ColorTable:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
 	    *(msg->opg_Storage)=(ULONG) &pd->ColTable;
 	    break;
 
 	case PDTA_NumColors:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_NumColors: %ld\n", (long)pd->NumColors));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_NumColors: %ld\n", (long)pd->NumColors));
 	    *(msg->opg_Storage)=(ULONG) pd->NumColors;
 	    break;
 
 	case PDTA_NumAlloc:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_NumAlloc: %ld\n", (long)pd->NumAlloc));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_NumAlloc: %ld\n", (long)pd->NumAlloc));
 	    *(msg->opg_Storage)=(ULONG) pd->NumAlloc;
 	    break;
 
 	case PDTA_Grab:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_Grab: 0x%lx\n", (long)&pd->Grab));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_Grab: 0x%lx\n", (long)&pd->Grab));
 	    *(msg->opg_Storage)=(ULONG) &pd->Grab;
 	    break;
 
 	case PDTA_SourceMode:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_SourceMode: 0x%lx\n", (long)PMODE_V43));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_SourceMode: 0x%lx\n", (long)PMODE_V43));
 	    *(msg->opg_Storage)=(ULONG) PMODE_V43;
 	    break;
 
 	case PDTA_DestMode:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestMode: 0x%lx\n", (long)pd->DestMode));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DestMode: 0x%lx\n", (long)pd->DestMode));
 	    *(msg->opg_Storage)=(ULONG) pd->DestMode;
 	    break;
 
 	case PDTA_FreeSourceBitMap:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_FreeSourceBitMap: 0x%lx\n", (long)pd->FreeSource));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_FreeSourceBitMap: 0x%lx\n", (long)pd->FreeSource));
 	    *(msg->opg_Storage)=(ULONG) pd->FreeSource;
 	    break;
 
 	case PDTA_UseFriendBitMap:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_UseFriendBitMap: 0x%lx\n", (long)pd->UseFriendBM));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_UseFriendBitMap: 0x%lx\n", (long)pd->UseFriendBM));
 	    *(msg->opg_Storage)=(ULONG) pd->UseFriendBM;
 	    break;
 
 	case PDTA_MaxDitherPens:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_MaxDitherPens: 0x%lx\n", (long)pd->MaxDitherPens));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_MaxDitherPens: 0x%lx\n", (long)pd->MaxDitherPens));
 	    *(msg->opg_Storage)=(ULONG) pd->MaxDitherPens;
 	    break;
 
 	case PDTA_DitherQuality:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_DitherQuality: 0x%lx\n", (long)pd->DitherQuality));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DitherQuality: 0x%lx\n", (long)pd->DitherQuality));
 	    *(msg->opg_Storage)=(ULONG) pd->DitherQuality;
 	    break;
 
 	case PDTA_ScaleQuality:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ScaleQuality: 0x%lx\n", (long)pd->ScaleQuality));
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ScaleQuality: 0x%lx\n", (long)pd->ScaleQuality));
 	    *(msg->opg_Storage)=(ULONG) pd->ScaleQuality;
 	    break;
 
+	case PDTA_DelayedRead:
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DelayedRead: 0x%lx\n", (long)pd->DelayedRead));
+	    *(msg->opg_Storage)=(ULONG) pd->DelayedRead;
+	    break;
+
 	case DTA_Methods:
-	    D(bug("picture.datatype/OM_GET: Tag DTA_Methods: 0x%lx\n", (long)SupportedMethods));
+	    DGS(bug("picture.datatype/OM_GET: Tag DTA_Methods: 0x%lx\n", (long)SupportedMethods));
 	    *(msg->opg_Storage)=(ULONG) SupportedMethods;
 	    break;
 
@@ -513,13 +534,13 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	     {
 	      Known=TRUE;
 
-	      D(bug("picture.datatype/OM_GET: Tag ID: %s\n", AttribNames[i]));
+	      DGS(bug("picture.datatype/OM_GET: Tag ID: %s\n", AttribNames[i]));
 	     }
 	    }
 
 	    if(!Known)
 	    {
-	     D(bug("picture.datatype/OM_GET: Tag ID: 0x%lx\n", msg->opg_AttrID));
+	     DGS(bug("picture.datatype/OM_GET: Tag ID: 0x%lx\n", msg->opg_AttrID));
 	    }
 #endif /* MYDEBUG */
 
@@ -801,7 +822,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
         if( pd->DestDepth > 8 )
 	{
             pd->TrueColorDest = TRUE;
-	    if( pd->UseCM )
+	    if( !pd->DestMode )
 	    {
 		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Forcing colormapped dest depth of 8 instead of %ld\n", (long)pd->DestDepth));
 		pd->DestDepth = 8;
@@ -812,15 +833,22 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	{
             pd->TrueColorDest = FALSE;
 	}
-        D(bug("picture.datatype/DTM_ASYNCLAYOUT: Destination Depth %ld\n", (long)pd->DestDepth));
 
+	/* allocate destination Bitmap */
 	FreeDest( pd );
-	if( !AllocDestBM( pd, SrcWidth, SrcHeight, pd->DestDepth ) )
+	if( !pd->Scale )
+	{
+	    pd->DestWidth = SrcWidth;
+	    pd->DestHeight = SrcHeight;
+	}
+	D(bug("picture.datatype/DTM_ASYNCLAYOUT: Destination Width %ld Height %ld Depth %ld\n", pd->DestWidth, pd->DestHeight, (long)pd->DestDepth));
+	if( !AllocDestBM( pd ) )
 	{
 	    ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
 	    return FALSE;
 	}
 
+	/* remap picture depending on the source/dest color case */
 	if( pd->TrueColorSrc )
         {
             if( !pd->SrcBuffer )
@@ -857,11 +885,15 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
                 success = ConvertCM2CM( pd );
             }
         } /* else(pd->TrueColorSrc) */
+	
+	/* free source, if asked */
 	if( pd->FreeSource )
 	{
 	    CreateMaskPlane( pd );
 	    FreeSource( pd );
 	}
+	
+	/* layout done */
         pd->Layouted = TRUE;
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Initial layout done\n"));
     } /* if(msg->gpl_Initial) */
@@ -926,13 +958,13 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
-    struct DTSpecialInfo *si;
+//    struct DTSpecialInfo *si;
 
     int pixelformat;
     int pixelbytes;
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
-    si = (struct DTSpecialInfo *) g->SpecialInfo;
+//    si = (struct DTSpecialInfo *) g->SpecialInfo;
 
     /* Do some checks first */
     pixelformat = (long)msg->pbpa_PixelFormat;
@@ -1040,6 +1072,43 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 
 /**************************************************************************************************/
 
+STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
+{
+    struct Picture_Data *pd;
+    ULONG xscale, yscale;
+
+    pd = (struct Picture_Data *) INST_DATA(cl, g);
+
+    D(bug("- method %08lx newwidth %ld newheight %ld flags %08lx\n", msg->MethodID, msg->ps_NewWidth, msg->ps_NewHeight, msg->ps_Flags));
+    pd->DestWidth = msg->ps_NewWidth;
+    pd->DestHeight = msg->ps_NewHeight;
+    if( pd->SrcWidth == pd->DestWidth && pd->SrcHeight == pd->DestHeight )
+	pd->Scale = FALSE;
+    else
+	pd->Scale = TRUE;
+
+    xscale = (pd->SrcWidth << 16) / pd->DestWidth;
+    yscale = (pd->SrcHeight << 16) / pd->DestHeight;
+    if( msg->ps_Flags & PScale_KeepAspect )
+    {
+	xscale = yscale = MAX(xscale, yscale);
+	pd->DestWidth = (pd->SrcWidth << 16) / xscale;
+	pd->DestHeight = (pd->SrcHeight << 16) / yscale;
+    }
+    pd->XScale = xscale;
+    pd->YScale = yscale;
+    D(bug("srcwidth %ld srcheight %ld destwidth %ld destheight %ld xscale %06lx yscale %06lx\n", pd->SrcWidth, pd->SrcHeight, pd->DestWidth, pd->DestHeight, pd->XScale, pd->YScale));
+    
+    SetDTAttrs((Object *) g, NULL, NULL,
+			DTA_NominalHoriz, pd->DestWidth,
+			DTA_NominalVert , pd->DestHeight,
+			TAG_DONE);
+
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
 STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
     struct Picture_Data *pd;
@@ -1107,7 +1176,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
 
         case OM_GET:
         {
-            // D(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
+            // DGS(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
             RetVal=(IPTR) DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
             break;
         }
@@ -1115,7 +1184,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         case OM_SET:
         case OM_UPDATE:
         {
-            D(bug("picture.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
+            DGS(bug("picture.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
             RetVal=(IPTR) DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
             break;
         }
@@ -1182,6 +1251,13 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         {
             // D(bug("picture.datatype/DT_Dispatcher: Method PDTM_WRITEPIXELARRAY\n"));
             RetVal=(IPTR) PDT_WritePixelArray(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
+            break;
+        }
+
+        case PDTM_SCALE:
+        {
+            D(bug("picture.datatype/DT_Dispatcher: Method PDTM_SCALE\n"));
+            RetVal=(IPTR) PDT_Scale(cl, (struct Gadget *) o, (struct pdtScale *) msg);
             break;
         }
 

@@ -34,7 +34,7 @@ methods:
     DTM_WRITE                   missing
     PDTM_WRITEPIXELARRAY        OK
     PDTM_READPIXELARRAY         missing
-    PDTM_SCALE                  missing
+    PDTM_SCALE                  in progress
 
 The following attributes must be supported:
     OBP_Precision         (I)   OK
@@ -65,3 +65,5 @@ The following attributes must be supported:
     PDTA_DitherQuality    (ISG) OK ?
     PDTA_AllocatedPens    (G)   OK ?
     PDTA_ScaleQuality     (ISG) OK, but not used internally
+    PDTA_DelayRead        (I)   OK ?
+    PDTA_DelayedRead      (SG)  OK ? (Set only by subclass)
