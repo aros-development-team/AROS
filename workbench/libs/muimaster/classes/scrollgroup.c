@@ -23,6 +23,9 @@ struct MUI_ScrollgroupData
 #ifndef _AROS
 __asm ULONG Scrollgroup_Function(register __a0 struct Hook *hook, register __a1 void **msg)
 #else
+AROS_UFH2(ULONG,Scrollgroup_Function,
+	AROS_UFHA(struct Hook *, hook,  A0),
+	AROS_UFHA(void **, msg,  A1))
 #endif
 {
     struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
@@ -46,7 +49,7 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ScrollgroupData *data;
     struct TagItem *tags,*tag;
     Object *contents = (Object*)GetTagData(MUIA_Scrollgroup_Contents, NULL, msg->ops_AttrList);
-    Object *vert, *horiz, *button;
+    Object *vert,*horiz, *button;
 
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Group_Horiz, FALSE,
