@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* Some POSIX includes */
 #include <sys/types.h>
 #include <sys/stat.h>

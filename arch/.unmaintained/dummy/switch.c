@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/execbase.h>
 #include <clib/exec_protos.h>
 #include <machine.h>

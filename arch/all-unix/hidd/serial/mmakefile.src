@@ -138,10 +138,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-		@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) $(CFLAGS) $< -o $@
-
+	%mkdepend_q
 
 # Include these files but only if the current target is neither
 # setup nor clean.
