@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -51,11 +53,12 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    assert (node);
+
     /*
 	Unfortunately, there is no (quick) check that the node
 	is in a list.
     */
+    ASSERT(node != NULL);
 
     /*
 	Just bend the pointers around the node, ie. we make our

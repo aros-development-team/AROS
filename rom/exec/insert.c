@@ -5,7 +5,7 @@
     Desc: Insert a node into a list.
     Lang: english
 */
-#include <assert.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -59,8 +59,9 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    assert (node);
-    assert (list);
+
+    ASSERT(list != NULL);
+    ASSERT(node != NULL);
 
     /* If we have a node to insert behind... */
     if (pred)

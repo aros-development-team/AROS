@@ -7,7 +7,7 @@
 */
 #include <exec/lists.h>
 #include <proto/exec.h>
-#include <assert.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -67,8 +67,8 @@
 
     struct Node * next;
 
-    assert (list);
-    assert (node);
+    ASSERT(list != NULL);
+    ASSERT(node != NULL);
 
     /* Look through the list */
     ForeachNode (list, next)

@@ -6,7 +6,7 @@
     Lang: english
 */
 
-/* I want the macros */
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -55,11 +55,11 @@
     AROS_LIBFUNC_INIT
     struct Node * node;
 
-    assert (list);
     /*
 	Unfortunately, there is no (quick) check that the node
 	is in a list.
     */
+    ASSERT(list != NULL);
 
     /* Get the last node of the list */
     if ( (node = GetTail (list)) )
