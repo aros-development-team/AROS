@@ -1022,9 +1022,6 @@ $(LIB) : $(OBJS)
 	@$(AR) $@ $(OBJS)
 	@$(RANLIB) $@
 
-$(OBJDIR)/functions.o : functions.c
-%compile_q
-
 functions.c : mmakefile.src $(foreach f,$(FUNCTIONS),$(f).c)
 	@$(CPAK) $(FUNCTIONS)
 
@@ -1050,9 +1047,7 @@ $(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+%libdefs_rule
 
 $(OBJDIR)/%.d : %.c
 %mkdepend_q opt=$(MKDEPEND_FLAGS)
