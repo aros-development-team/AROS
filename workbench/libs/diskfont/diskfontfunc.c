@@ -140,7 +140,7 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
     if (retval->ContentsID == OFCH_ID)
     {
          int ind = retval->Numentries;
-         
+
          retval->Numentries++;
          retval->SupportedStyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
          retval->FontStyle = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
@@ -458,6 +458,8 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, struct FileHandle *fh, s
 		strcpy(fe->FileName, fe2.FileName);
 		fe->FileChanged = fe2.FileChanged;
 		fe->ContentsID = fe2.ContentsID;
+		fe->SupportedStyles = fe2.SupportedStyles;
+		fe->FontStyle = fe2.FontStyle;
 		fe->Numentries = fe2.Numentries;
 		fe->Attrs = (struct TTextAttr *)(fe->FileName + strlen(fe2.FileName)+1);
 
@@ -1119,7 +1121,7 @@ VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase
 	{
 	    df_data->u.FontsData.RememberFileEntry = df_data->u.FontsData.PrevFileEntry;
 	    df_data->u.FontsData.RememberIndex = df_data->u.FontsData.RememberFileEntry->Numentries-1;
-	    if (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID
+	    if (df_data->u.FontsData.RememberFileEntry->ContentsID == OFCH_ID
 		&& df_data->ReqAttr == NULL
 	       )
 	    {
@@ -1171,33 +1173,8 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 	    if (rementry->ContentsID == OFCH_ID
 		&& df_data->u.FontsData.RememberIndex == rementry->Numentries - 1)
 	    {
-		UBYTE SupportedStyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
-
 		/* It is the TAttr generated for best matching */
 		RememberAttr = &rementry->Attrs[df_data->u.FontsData.RememberIndex];
-		RememberAttr->tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
-		RememberAttr->tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
-
-		RememberAttr->tta_Tags = NULL;
-		if (df_data->ReqAttr->tta_Style & FSF_TAGGED)
-		{
-		    RememberAttr->tta_Style |= FSF_TAGGED;
-		    RememberAttr->tta_Tags = df_data->ReqAttr->tta_Tags;
-		}
-			
-		if ((df_data->ReqAttr->tta_Style & FSF_BOLD)
-		    && !(RememberAttr->tta_Style & FSF_BOLD)
-		    && (SupportedStyles & FSF_BOLD))
-		{
-		    RememberAttr->tta_Style |= FSF_BOLD;
-		}
-			
-		if ((df_data->ReqAttr->tta_Style & FSF_ITALIC)
-		    && !(RememberAttr->tta_Style & FSF_ITALIC)
-		    && (SupportedStyles & FSF_ITALIC))
-		{
-		    RememberAttr->tta_Style |= FSF_ITALIC;
-		}
 	    }
 	    else
 		RememberAttr = &fdh->TAttrArray[df_data->u.FontsData.RememberIndex];
