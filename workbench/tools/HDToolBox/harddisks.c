@@ -82,18 +82,18 @@ int i;
 								if (node->root_partition.ph)
 								{
 									AddTail(&parent->list, &node->root_partition.listnode.ln);
-									GetPartitionAttrsA
-									(
-										node->root_partition.ph,
-										PT_DOSENVEC,
-										&node->root_partition.de,
-										TAG_DONE
-									);
 									if (findPartitionTable(&node->root_partition))
 									{
 										findPartitions(&node->root_partition.listnode, &node->root_partition);
 										node->root_partition.listnode.flags |= LNF_Listable;
 									}
+									GetPartitionAttrsA
+									(
+										node->root_partition.ph,
+										PT_GEOMETRY, &node->root_partition.dg,
+										PT_DOSENVEC, &node->root_partition.de,
+										TAG_DONE
+									);
 									continue;
 								}
 							}
