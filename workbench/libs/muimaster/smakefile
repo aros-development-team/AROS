@@ -49,7 +49,7 @@ CLASSESOBJS= \
   objs/classes/window.o \
   objs/classes/text.o
 
-all: dirs all.gst muimaster.lib test
+all: dirs all.gst test
 
 dirs:
   execute  <<
@@ -209,7 +209,7 @@ test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 <
 
-demos: 
+demos: muimaster.lib
   smake -f //demos/smakefile
 
 clean:
