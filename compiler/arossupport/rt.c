@@ -527,18 +527,12 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 /*  FUNCTION
 	Stops tracing of a resource. The arguments after
-	line depend on the type of resource to be traced:
-
-	RTT_ALLOCMEM:	  APTR		memPtr,
-			ULONG	      size)
+	line depend on the type of resource to be traced.
 
     INPUTS
 	rtt - Type of the resource
 	file - The file RT_IntAdd was called it
 	line - The line of the file
-	task - The task to be added
-	memPtr - Pointer to a piece of memory to be tracked
-	size - The size of the memory beginning at memPtr
 
     RESULT
 	none
@@ -577,15 +571,12 @@ RTDesc const * RT_Resources[RTT_MAX];
 	args
     );
 
-    if (ret == RT_SEARCH_FOUND && !(rt->Flags & RTNF_DONT_FREE))
+    if (ret == RT_SEARCH_FOUND && rt && !(rt->Flags & RTNF_DONT_FREE))
     {
-	if (rt)
-	{
-	    ret = (*(GetRTFreeFunc(rtt))) (rtd, rt);
+	ret = (*(GetRTFreeFunc(rtt))) (rtd, rt);
 
-	    Remove ((struct Node *)rt);
-	    FreeMem (rt, GetRTSize(rtt));
-	}
+	Remove ((struct Node *)rt);
+	FreeMem (rt, GetRTSize(rtt));
     }
     else
     {
