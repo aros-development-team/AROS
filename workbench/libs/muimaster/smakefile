@@ -12,6 +12,7 @@ SUPPORTOBJS = \
   objs/menu.o \
   objs/penspec.o \
   objs/support.o \
+  objs/support_amigaos.o \
   objs/support_classes.o \
   objs/textengine.o
 
@@ -165,6 +166,9 @@ objs/menu.o: menu.c
 
 objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
+
+objs/support_amigaos.o: support_amigaos.c
+  sc $(CFLAGS) support_amigaos.c objname=$@
 
 objs/support_classes.o: support_classes.c
   sc $(CFLAGS) support_classes.c objname=$@
