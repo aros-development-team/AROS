@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +9,7 @@
 #define MUIC_Scrollbar "Scrollbar.mui"
 
 /* Scrollbar attributes */
-#define MUIA_Scrollbar_Type  (TAG_USER|0x0042fb6b) /* V11 i.. LONG */
+#define MUIA_Scrollbar_Type  (MUIB_MUI|0x0042fb6b) /* V11 i.. LONG */
 
 enum
 {

@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2003, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -9,23 +9,19 @@
 #ifndef _MUI_CLASSES_WINDOW_H
 #define _MUI_CLASSES_WINDOW_H
 
-#ifndef METHOD_USER
-#define METHOD_USER TAG_USER
-#endif
-
 #define MUIC_Window "Window.mui"
 
 /* Window methods */
-#define MUIM_Window_ActionIconify   (METHOD_USER|0x00422cc0) /* MUI: V18 undoc*/
-#define MUIM_Window_AddEventHandler (METHOD_USER|0x004203b7) /* MUI: V16 */
-#define MUIM_Window_Cleanup         (METHOD_USER|0x0042ab26) /* MUI: V18 undoc */ /* For custom classes only */
-#define MUIM_Window_RemEventHandler (METHOD_USER|0x0042679e) /* MUI: V16 */
-#define MUIM_Window_ScreenToBack    (METHOD_USER|0x0042913d) /* MUI: V4  */
-#define MUIM_Window_ScreenToFront   (METHOD_USER|0x004227a4) /* MUI: V4  */
-#define MUIM_Window_Setup           (METHOD_USER|0x0042c34c) /* MUI: V18 undoc */ /* For custom Classes only */
-#define MUIM_Window_Snapshot        (METHOD_USER|0x0042945e) /* MUI: V11 */
-#define MUIM_Window_ToBack          (METHOD_USER|0x0042152e) /* MUI: V4  */
-#define MUIM_Window_ToFront         (METHOD_USER|0x0042554f) /* MUI: V4  */
+#define MUIM_Window_ActionIconify   (MUIB_MUI|0x00422cc0) /* MUI: V18 undoc*/
+#define MUIM_Window_AddEventHandler (MUIB_MUI|0x004203b7) /* MUI: V16 */
+#define MUIM_Window_Cleanup         (MUIB_MUI|0x0042ab26) /* MUI: V18 undoc */ /* For custom classes only */
+#define MUIM_Window_RemEventHandler (MUIB_MUI|0x0042679e) /* MUI: V16 */
+#define MUIM_Window_ScreenToBack    (MUIB_MUI|0x0042913d) /* MUI: V4  */
+#define MUIM_Window_ScreenToFront   (MUIB_MUI|0x004227a4) /* MUI: V4  */
+#define MUIM_Window_Setup           (MUIB_MUI|0x0042c34c) /* MUI: V18 undoc */ /* For custom Classes only */
+#define MUIM_Window_Snapshot        (MUIB_MUI|0x0042945e) /* MUI: V11 */
+#define MUIM_Window_ToBack          (MUIB_MUI|0x0042152e) /* MUI: V4  */
+#define MUIM_Window_ToFront         (MUIB_MUI|0x0042554f) /* MUI: V4  */
 struct MUIP_Window_ActionIconify    {ULONG MethodID;};
 struct MUIP_Window_AddEventHandler  {ULONG MethodID; struct MUI_EventHandlerNode *ehnode;};
 struct MUIP_Window_Cleanup          {ULONG MethodID;};
@@ -38,63 +34,63 @@ struct MUIP_Window_ToBack           {ULONG MethodID;};
 struct MUIP_Window_ToFront          {ULONG MethodID;};
 
 /* Window attributes */
-#define MUIA_Window_Activate                (TAG_USER|0x00428d2f) /* MUI: V4  isg BOOL                */
-#define MUIA_Window_ActiveObject            (TAG_USER|0x00427925) /* MUI: V4  .sg Object *            */
-#define MUIA_Window_AltHeight               (TAG_USER|0x0042cce3) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_AltLeftEdge             (TAG_USER|0x00422d65) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_AltTopEdge              (TAG_USER|0x0042e99b) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_AltWidth                (TAG_USER|0x004260f4) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_AppWindow               (TAG_USER|0x004280cf) /* MUI: V5  i.. BOOL                */
-#define MUIA_Window_Backdrop                (TAG_USER|0x0042c0bb) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_Borderless              (TAG_USER|0x00429b79) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_CloseGadget             (TAG_USER|0x0042a110) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_CloseRequest            (TAG_USER|0x0042e86e) /* MUI: V4  ..g BOOL                */
-#define MUIA_Window_DefaultObject           (TAG_USER|0x004294d7) /* MUI: V4  isg Object *            */
-#define MUIA_Window_DepthGadget             (TAG_USER|0x00421923) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_DisableKeys             (TAG_USER|0x00424c36) /* MUI: V15 isg ULONG               */ /* undoc */
-#define MUIA_Window_DragBar                 (TAG_USER|0x0042045d) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_EraseArea               (TAG_USER|0x0042123a) /* Zune only i.. BOOL (default: TRUE) */
-#define MUIA_Window_FancyDrawing            (TAG_USER|0x0042bd0e) /* MUI: V8  isg BOOL                */
-#define MUIA_Window_Height                  (TAG_USER|0x00425846) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_ID                      (TAG_USER|0x004201bd) /* MUI: V4  isg ULONG               */
-#define MUIA_Window_InputEvent              (TAG_USER|0x004247d8) /* MUI: V4  ..g struct InputEvent * */
-#define MUIA_Window_IsSubWindow             (TAG_USER|0x0042b5aa) /* MUI: V4  isg BOOL                */
-#define MUIA_Window_LeftEdge                (TAG_USER|0x00426c65) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_MenuAction              (TAG_USER|0x00427521) /* MUI: V8  isg ULONG               */
-#define MUIA_Window_Menustrip               (TAG_USER|0x0042855e) /* MUI: V8  i.g Object *            */
-#define MUIA_Window_MouseObject             (TAG_USER|0x0042bf9b) /* MUI: V10 ..g Object *            */
-#define MUIA_Window_NeedsMouseObject        (TAG_USER|0x0042372a) /* MUI: V10 i.. BOOL                */
-#define MUIA_Window_NoMenus                 (TAG_USER|0x00429df5) /* MUI: V4  is. BOOL                */
-#define MUIA_Window_Open                    (TAG_USER|0x00428aa0) /* MUI: V4  .sg BOOL                */
-#define MUIA_Window_PublicScreen            (TAG_USER|0x004278e4) /* MUI: V6  isg STRPTR              */
-#define MUIA_Window_RefWindow               (TAG_USER|0x004201f4) /* MUI: V4  is. Object *            */
-#define MUIA_Window_RootObject              (TAG_USER|0x0042cba5) /* MUI: V4  isg Object *            */
-#define MUIA_Window_Screen                  (TAG_USER|0x0042df4f) /* MUI: V4  isg struct Screen *     */
-#define MUIA_Window_ScreenTitle             (TAG_USER|0x004234b0) /* MUI: V5  isg STRPTR              */
-#define MUIA_Window_SizeGadget              (TAG_USER|0x0042e33d) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_SizeRight               (TAG_USER|0x00424780) /* MUI: V4  i.. BOOL                */
-#define MUIA_Window_Sleep                   (TAG_USER|0x0042e7db) /* MUI: V4  .sg BOOL                */
-#define MUIA_Window_Title                   (TAG_USER|0x0042ad3d) /* MUI: V4  isg STRPTR              */
-#define MUIA_Window_TopEdge                 (TAG_USER|0x00427c66) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_UseBottomBorderScroller (TAG_USER|0x00424e79) /* MUI: V13 isg BOOL                */
-#define MUIA_Window_UseLeftBorderScroller   (TAG_USER|0x0042433e) /* MUI: V13 isg BOOL                */
-#define MUIA_Window_UseRightBorderScroller  (TAG_USER|0x0042c05e) /* MUI: V13 isg BOOL                */
-#define MUIA_Window_Width                   (TAG_USER|0x0042dcae) /* MUI: V4  i.g LONG                */
-#define MUIA_Window_Window                  (TAG_USER|0x00426a42) /* MUI: V4  ..g struct Window *     */
+#define MUIA_Window_Activate                (MUIB_MUI|0x00428d2f) /* MUI: V4  isg BOOL                */
+#define MUIA_Window_ActiveObject            (MUIB_MUI|0x00427925) /* MUI: V4  .sg Object *            */
+#define MUIA_Window_AltHeight               (MUIB_MUI|0x0042cce3) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_AltLeftEdge             (MUIB_MUI|0x00422d65) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_AltTopEdge              (MUIB_MUI|0x0042e99b) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_AltWidth                (MUIB_MUI|0x004260f4) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_AppWindow               (MUIB_MUI|0x004280cf) /* MUI: V5  i.. BOOL                */
+#define MUIA_Window_Backdrop                (MUIB_MUI|0x0042c0bb) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_Borderless              (MUIB_MUI|0x00429b79) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_CloseGadget             (MUIB_MUI|0x0042a110) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_CloseRequest            (MUIB_MUI|0x0042e86e) /* MUI: V4  ..g BOOL                */
+#define MUIA_Window_DefaultObject           (MUIB_MUI|0x004294d7) /* MUI: V4  isg Object *            */
+#define MUIA_Window_DepthGadget             (MUIB_MUI|0x00421923) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_DisableKeys             (MUIB_MUI|0x00424c36) /* MUI: V15 isg ULONG               */ /* undoc */
+#define MUIA_Window_DragBar                 (MUIB_MUI|0x0042045d) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_EraseArea               (MUIB_MUI|0x0042123a) /* Zune only i.. BOOL (default: TRUE) */
+#define MUIA_Window_FancyDrawing            (MUIB_MUI|0x0042bd0e) /* MUI: V8  isg BOOL                */
+#define MUIA_Window_Height                  (MUIB_MUI|0x00425846) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_ID                      (MUIB_MUI|0x004201bd) /* MUI: V4  isg ULONG               */
+#define MUIA_Window_InputEvent              (MUIB_MUI|0x004247d8) /* MUI: V4  ..g struct InputEvent * */
+#define MUIA_Window_IsSubWindow             (MUIB_MUI|0x0042b5aa) /* MUI: V4  isg BOOL                */
+#define MUIA_Window_LeftEdge                (MUIB_MUI|0x00426c65) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_MenuAction              (MUIB_MUI|0x00427521) /* MUI: V8  isg ULONG               */
+#define MUIA_Window_Menustrip               (MUIB_MUI|0x0042855e) /* MUI: V8  i.g Object *            */
+#define MUIA_Window_MouseObject             (MUIB_MUI|0x0042bf9b) /* MUI: V10 ..g Object *            */
+#define MUIA_Window_NeedsMouseObject        (MUIB_MUI|0x0042372a) /* MUI: V10 i.. BOOL                */
+#define MUIA_Window_NoMenus                 (MUIB_MUI|0x00429df5) /* MUI: V4  is. BOOL                */
+#define MUIA_Window_Open                    (MUIB_MUI|0x00428aa0) /* MUI: V4  .sg BOOL                */
+#define MUIA_Window_PublicScreen            (MUIB_MUI|0x004278e4) /* MUI: V6  isg STRPTR              */
+#define MUIA_Window_RefWindow               (MUIB_MUI|0x004201f4) /* MUI: V4  is. Object *            */
+#define MUIA_Window_RootObject              (MUIB_MUI|0x0042cba5) /* MUI: V4  isg Object *            */
+#define MUIA_Window_Screen                  (MUIB_MUI|0x0042df4f) /* MUI: V4  isg struct Screen *     */
+#define MUIA_Window_ScreenTitle             (MUIB_MUI|0x004234b0) /* MUI: V5  isg STRPTR              */
+#define MUIA_Window_SizeGadget              (MUIB_MUI|0x0042e33d) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_SizeRight               (MUIB_MUI|0x00424780) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_Sleep                   (MUIB_MUI|0x0042e7db) /* MUI: V4  .sg BOOL                */
+#define MUIA_Window_Title                   (MUIB_MUI|0x0042ad3d) /* MUI: V4  isg STRPTR              */
+#define MUIA_Window_TopEdge                 (MUIB_MUI|0x00427c66) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_UseBottomBorderScroller (MUIB_MUI|0x00424e79) /* MUI: V13 isg BOOL                */
+#define MUIA_Window_UseLeftBorderScroller   (MUIB_MUI|0x0042433e) /* MUI: V13 isg BOOL                */
+#define MUIA_Window_UseRightBorderScroller  (MUIB_MUI|0x0042c05e) /* MUI: V13 isg BOOL                */
+#define MUIA_Window_Width                   (MUIB_MUI|0x0042dcae) /* MUI: V4  i.g LONG                */
+#define MUIA_Window_Window                  (MUIB_MUI|0x00426a42) /* MUI: V4  ..g struct Window *     */
 
 /* Obsolette stuff */
 #ifdef MUI_OBSOLETE
-#define MUIM_Window_GetMenuCheck    (METHOD_USER|0x00420414) /* MUI: V4  */
-#define MUIM_Window_GetMenuState    (METHOD_USER|0x00420d2f) /* MUI: V4  */
-#define MUIM_Window_SetCycleChain   (METHOD_USER|0x00426510) /* MUI: V4  */
-#define MUIM_Window_SetMenuCheck    (METHOD_USER|0x00422243) /* MUI: V4  */
-#define MUIM_Window_SetMenuState    (METHOD_USER|0x00422b5e) /* MUI: V4  */
+#define MUIM_Window_GetMenuCheck    (MUIB_MUI|0x00420414) /* MUI: V4  */
+#define MUIM_Window_GetMenuState    (MUIB_MUI|0x00420d2f) /* MUI: V4  */
+#define MUIM_Window_SetCycleChain   (MUIB_MUI|0x00426510) /* MUI: V4  */
+#define MUIM_Window_SetMenuCheck    (MUIB_MUI|0x00422243) /* MUI: V4  */
+#define MUIM_Window_SetMenuState    (MUIB_MUI|0x00422b5e) /* MUI: V4  */
 struct  MUIP_Window_GetMenuCheck    {ULONG MethodID; ULONG MenuID;};
 struct  MUIP_Window_GetMenuState    {ULONG MethodID; ULONG MenuID;};
 struct  MUIP_Window_SetCycleChain   {ULONG MethodID; Object *obj[1];};
 struct  MUIP_Window_SetMenuCheck    {ULONG MethodID; ULONG MenuID; LONG stat;};
 struct  MUIP_Window_SetMenuState    {ULONG MethodID; ULONG MenuID; LONG stat;};
-#define MUIA_Window_Menu            (TAG_USER|0x0042db94) /* MUI: V4  i.. struct NewMenu * */
+#define MUIA_Window_Menu            (MUIB_MUI|0x0042db94) /* MUI: V4  i.. struct NewMenu * */
 #define MUIV_Window_Menu_NoMenu     (-1)
 #endif /* MUI_OBSOLETE */
 
@@ -211,16 +207,16 @@ struct MUI_EventHandlerNode
 /* The folloing stuff is new for Zune, Private stuff might be changed in the future */
 
 
-#define MUIA_Window_NoBorder	           (TAG_USER|0x10429b79)
-#define MUIA_Window_WandererBackdrop	   (TAG_USER|0x10425c24)
+#define MUIA_Window_NoBorder	           (MUIB_MUI|0x10429b79)
+#define MUIA_Window_WandererBackdrop	   (MUIB_MUI|0x10425c24)
 
-#define MUIM_Window_AddControlCharHandler  (METHOD_USER|0x1042c34d) /* Zune: V1, PRIV don't use it! */
-#define MUIM_Window_AllocGadgetID          (METHOD_USER|0x1042c350) /* Zune: V1 - allocate a GadgetID for BOOPSI gadgets */
-#define MUIM_Window_DrawBackground         (METHOD_USER|0x1042c352) /* Zune: V1 - like MUIM_DrawBackground but PRIV */
-#define MUIM_Window_DragObject             (METHOD_USER|0x1042c34f) /* Zune: V1, PRIV don't use it! */
-#define MUIM_Window_FreeGadgetID           (METHOD_USER|0x1042c351) /* Zune: V1 - free the GadgetID for BOOPSI gadgets */
-#define MUIM_Window_RecalcDisplay          (METHOD_USER|0x10429abc) /* Zune: V1, PRIV don't use it! */
-#define MUIM_Window_RemControlCharHandler  (METHOD_USER|0x1042c34e) /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_AddControlCharHandler  (MUIB_MUI|0x1042c34d) /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_AllocGadgetID          (MUIB_MUI|0x1042c350) /* Zune: V1 - allocate a GadgetID for BOOPSI gadgets */
+#define MUIM_Window_DrawBackground         (MUIB_MUI|0x1042c352) /* Zune: V1 - like MUIM_DrawBackground but PRIV */
+#define MUIM_Window_DragObject             (MUIB_MUI|0x1042c34f) /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_FreeGadgetID           (MUIB_MUI|0x1042c351) /* Zune: V1 - free the GadgetID for BOOPSI gadgets */
+#define MUIM_Window_RecalcDisplay          (MUIB_MUI|0x10429abc) /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_RemControlCharHandler  (MUIB_MUI|0x1042c34e) /* Zune: V1, PRIV don't use it! */
 struct  MUIP_Window_AddControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
 struct  MUIP_Window_AllocGadgetID { ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
 struct  MUIP_Window_DrawBackground { ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};

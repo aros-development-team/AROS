@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,8 +9,8 @@
 #define MUIC_Cycle "Cycle.mui"
 
 /* Cycle attributes */
-#define MUIA_Cycle_Active  (TAG_USER|0x00421788) /* MUI:V4  isg LONG      */
-#define MUIA_Cycle_Entries (TAG_USER|0x00420629) /* MUI:V4  i.. STRPTR    */
+#define MUIA_Cycle_Active  (MUIB_MUI|0x00421788) /* MUI:V4  isg LONG      */
+#define MUIA_Cycle_Entries (MUIB_MUI|0x00420629) /* MUI:V4  i.. STRPTR    */
 
 enum
 {

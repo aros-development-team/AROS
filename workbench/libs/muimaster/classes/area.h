@@ -24,37 +24,33 @@
 /* Classname */
 #define MUIC_Area "Area.mui"
 
-#ifndef METHOD_USER
-#define METHOD_USER TAG_USER
-#endif
-
 /* Area methods */
-#define MUIM_AskMinMax              (METHOD_USER|0x00423874) /* MUI: V4  */ /* For Custom Classes only */ 
-#define MUIM_Cleanup                (METHOD_USER|0x0042d985) /* MUI: V4  */ /* For Custom Classes only */
-#define MUIM_ContextMenuBuild       (METHOD_USER|0x00429d2e) /* MUI: V11 */
-#define MUIM_ContextMenuChoice      (METHOD_USER|0x00420f0e) /* MUI: V11 */
-#define MUIM_CreateBubble	    (METHOD_USER|0x00421c41) /* MUI: V18 */
-#define MUIM_CreateDragImage	    (METHOD_USER|0x0042eb6f) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
-#define MUIM_CreateShortHelp        (METHOD_USER|0x00428e93) /* MUI: V11 */
-#define MUIM_CustomBackfill	    (METHOD_USER|0x00428d73) /* Undoc */
-#define MUIM_DeleteBubble	    (METHOD_USER|0x004211af) /* MUI: V18 */
-#define MUIM_DeleteDragImage	    (METHOD_USER|0x00423037) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
-#define MUIM_DeleteShortHelp        (METHOD_USER|0x0042d35a) /* MUI: V11 */
-#define MUIM_DoDrag		    (METHOD_USER|0x004216bb) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
-#define MUIM_DragBegin	            (METHOD_USER|0x0042c03a) /* MUI: V11 */
-#define MUIM_DragDrop	            (METHOD_USER|0x0042c555) /* MUI: V11 */
-#define MUIM_DragFinish	    (METHOD_USER|0x004251f0) /* MUI: V11 */
-#define MUIM_DragQuery	            (METHOD_USER|0x00420261) /* MUI: V11 */
-#define MUIM_DragReport	    (METHOD_USER|0x0042edad) /* MUI: V11 */
-#define MUIM_Draw		    (METHOD_USER|0x00426f3f) /* MUI: V4  */ /* For Custom Classes only */ 
-#define MUIM_DrawBackground	    (METHOD_USER|0x004238ca) /* MUI: V11 */
-#define MUIM_GoActive		    (METHOD_USER|0x0042491a) /* Undoc */
-#define MUIM_GoInactive	    (METHOD_USER|0x00422c0c) /* Undoc */
-#define MUIM_HandleEvent	    (METHOD_USER|0x00426d66) /* MUI: V16 */ /* For Custom Classes only */ 
-#define MUIM_HandleInput	    (METHOD_USER|0x00422a1a) /* MUI: V4  */ /* For Custom Classes only */ 
-#define MUIM_Hide		    (METHOD_USER|0x0042f20f) /* MUI: V4  */ /* For Custom Classes only */ 
-#define MUIM_Setup		    (METHOD_USER|0x00428354) /* MUI: V4  */ /* For Custom Classes only */ 
-#define MUIM_Show		    (METHOD_USER|0x0042cc84) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_AskMinMax              (MUIB_MUI|0x00423874) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_Cleanup                (MUIB_MUI|0x0042d985) /* MUI: V4  */ /* For Custom Classes only */
+#define MUIM_ContextMenuBuild       (MUIB_MUI|0x00429d2e) /* MUI: V11 */
+#define MUIM_ContextMenuChoice      (MUIB_MUI|0x00420f0e) /* MUI: V11 */
+#define MUIM_CreateBubble	    (MUIB_MUI|0x00421c41) /* MUI: V18 */
+#define MUIM_CreateDragImage	    (MUIB_MUI|0x0042eb6f) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
+#define MUIM_CreateShortHelp        (MUIB_MUI|0x00428e93) /* MUI: V11 */
+#define MUIM_CustomBackfill	    (MUIB_MUI|0x00428d73) /* Undoc */
+#define MUIM_DeleteBubble	    (MUIB_MUI|0x004211af) /* MUI: V18 */
+#define MUIM_DeleteDragImage	    (MUIB_MUI|0x00423037) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
+#define MUIM_DeleteShortHelp        (MUIB_MUI|0x0042d35a) /* MUI: V11 */
+#define MUIM_DoDrag		    (MUIB_MUI|0x004216bb) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
+#define MUIM_DragBegin	            (MUIB_MUI|0x0042c03a) /* MUI: V11 */
+#define MUIM_DragDrop	            (MUIB_MUI|0x0042c555) /* MUI: V11 */
+#define MUIM_DragFinish	    (MUIB_MUI|0x004251f0) /* MUI: V11 */
+#define MUIM_DragQuery	            (MUIB_MUI|0x00420261) /* MUI: V11 */
+#define MUIM_DragReport	    (MUIB_MUI|0x0042edad) /* MUI: V11 */
+#define MUIM_Draw		    (MUIB_MUI|0x00426f3f) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_DrawBackground	    (MUIB_MUI|0x004238ca) /* MUI: V11 */
+#define MUIM_GoActive		    (MUIB_MUI|0x0042491a) /* Undoc */
+#define MUIM_GoInactive	    (MUIB_MUI|0x00422c0c) /* Undoc */
+#define MUIM_HandleEvent	    (MUIB_MUI|0x00426d66) /* MUI: V16 */ /* For Custom Classes only */ 
+#define MUIM_HandleInput	    (MUIB_MUI|0x00422a1a) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_Hide		    (MUIB_MUI|0x0042f20f) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_Setup		    (MUIB_MUI|0x00428354) /* MUI: V4  */ /* For Custom Classes only */ 
+#define MUIM_Show		    (MUIB_MUI|0x0042cc84) /* MUI: V4  */ /* For Custom Classes only */ 
 struct MUIP_AskMinMax		    {ULONG MethodID; struct MUI_MinMax *MinMaxInfo;};
 struct MUIP_Cleanup		    {ULONG MethodID;};
 struct MUIP_ContextMenuBuild	    {ULONG MethodID; LONG mx; LONG my;};
@@ -93,55 +89,55 @@ struct MUI_DragImage
 };
 
 /* Area attributes */
-#define MUIA_Background		(TAG_USER|0x0042545b) /* MUI: V4  is. LONG              */
-#define MUIA_BottomEdge		(TAG_USER|0x0042e552) /* MUI: V4  ..g LONG              */
-#define MUIA_ContextMenu		(TAG_USER|0x0042b704) /* MUI: V11 isg Object *          */
-#define MUIA_ContextMenuTrigger	(TAG_USER|0x0042a2c1) /* MUI: V11 ..g Object *          */
-#define MUIA_ControlChar        	(TAG_USER|0x0042120b) /* MUI: V4  isg char              */
-#define MUIA_CustomBackfill		(TAG_USER|0x00420a63) /* undoc    i..                   */
-#define MUIA_CycleChain         	(TAG_USER|0x00421ce7) /* MUI: V11 isg LONG              */
-#define MUIA_Disabled           	(TAG_USER|0x00423661) /* MUI: V4  isg BOOL              */
-#define MUIA_Draggable          	(TAG_USER|0x00420b6e) /* MUI: V11 isg BOOL              */
-#define MUIA_Dropable           	(TAG_USER|0x0042fbce) /* MUI: V11 isg BOOL              */
-#define MUIA_FillArea           	(TAG_USER|0x004294a3) /* MUI: V4  is. BOOL              */
-#define MUIA_FixHeight          	(TAG_USER|0x0042a92b) /* MUI: V4  i.. LONG              */
-#define MUIA_FixHeightTxt       	(TAG_USER|0x004276f2) /* MUI: V4  i.. STRPTR            */
-#define MUIA_FixWidth           	(TAG_USER|0x0042a3f1) /* MUI: V4  i.. LONG              */
-#define MUIA_FixWidthTxt        	(TAG_USER|0x0042d044) /* MUI: V4  i.. STRPTR            */
-#define MUIA_Font               	(TAG_USER|0x0042be50) /* MUI: V4  i.g struct TextFont * */
-#define MUIA_Frame              	(TAG_USER|0x0042ac64) /* MUI: V4  i.. LONG              */
-#define MUIA_FramePhantomHoriz  	(TAG_USER|0x0042ed76) /* MUI: V4  i.. BOOL              */
-#define MUIA_FrameTitle         	(TAG_USER|0x0042d1c7) /* MUI: V4  i.. STRPTR            */
-#define MUIA_Height             	(TAG_USER|0x00423237) /* MUI: V4  ..g LONG              */
-#define MUIA_HorizDisappear     	(TAG_USER|0x00429615) /* MUI: V11 isg LONG              */
-#define MUIA_HorizWeight        	(TAG_USER|0x00426db9) /* MUI: V4  isg WORD              */
-#define MUIA_InnerBottom        	(TAG_USER|0x0042f2c0) /* MUI: V4  i.g LONG              */
-#define MUIA_InnerLeft          	(TAG_USER|0x004228f8) /* MUI: V4  i.g LONG              */
-#define MUIA_InnerRight         	(TAG_USER|0x004297ff) /* MUI: V4  i.g LONG              */
-#define MUIA_InnerTop           	(TAG_USER|0x00421eb6) /* MUI: V4  i.g LONG              */
-#define MUIA_InputMode          	(TAG_USER|0x0042fb04) /* MUI: V4  i.. LONG              */
-#define MUIA_LeftEdge           	(TAG_USER|0x0042bec6) /* MUI: V4  ..g LONG              */
-#define MUIA_MaxHeight          	(TAG_USER|0x004293e4) /* MUI: V11 i.. LONG              */
-#define MUIA_MaxWidth           	(TAG_USER|0x0042f112) /* MUI: V11 i.. LONG              */
-#define MUIA_Pressed            	(TAG_USER|0x00423535) /* MUI: V4  ..g BOOL              */
-#define MUIA_RightEdge          	(TAG_USER|0x0042ba82) /* MUI: V4  ..g LONG              */
-#define MUIA_Selected           	(TAG_USER|0x0042654b) /* MUI: V4  isg BOOL              */
-#define MUIA_ShortHelp          	(TAG_USER|0x00428fe3) /* MUI: V11 isg STRPTR            */
-#define MUIA_ShowMe             	(TAG_USER|0x00429ba8) /* MUI: V4  isg BOOL              */
-#define MUIA_ShowSelState       	(TAG_USER|0x0042caac) /* MUI: V4  i.. BOOL              */
-#define MUIA_Timer              	(TAG_USER|0x00426435) /* MUI: V4  ..g LONG              */
-#define MUIA_TopEdge            	(TAG_USER|0x0042509b) /* MUI: V4  ..g LONG              */
-#define MUIA_VertDisappear      	(TAG_USER|0x0042d12f) /* MUI: V11 isg LONG              */
-#define MUIA_VertWeight         	(TAG_USER|0x004298d0) /* MUI: V4  isg WORD              */
-#define MUIA_Weight             	(TAG_USER|0x00421d1f) /* MUI: V4  i.. WORD              */
-#define MUIA_Width              	(TAG_USER|0x0042b59c) /* MUI: V4  ..g LONG              */
-#define MUIA_Window             	(TAG_USER|0x00421591) /* MUI: V4  ..g struct Window *   */
-#define MUIA_WindowObject       	(TAG_USER|0x0042669e) /* MUI: V4  ..g Object *          */
+#define MUIA_Background		(MUIB_MUI|0x0042545b) /* MUI: V4  is. LONG              */
+#define MUIA_BottomEdge		(MUIB_MUI|0x0042e552) /* MUI: V4  ..g LONG              */
+#define MUIA_ContextMenu		(MUIB_MUI|0x0042b704) /* MUI: V11 isg Object *          */
+#define MUIA_ContextMenuTrigger	(MUIB_MUI|0x0042a2c1) /* MUI: V11 ..g Object *          */
+#define MUIA_ControlChar        	(MUIB_MUI|0x0042120b) /* MUI: V4  isg char              */
+#define MUIA_CustomBackfill		(MUIB_MUI|0x00420a63) /* undoc    i..                   */
+#define MUIA_CycleChain         	(MUIB_MUI|0x00421ce7) /* MUI: V11 isg LONG              */
+#define MUIA_Disabled           	(MUIB_MUI|0x00423661) /* MUI: V4  isg BOOL              */
+#define MUIA_Draggable          	(MUIB_MUI|0x00420b6e) /* MUI: V11 isg BOOL              */
+#define MUIA_Dropable           	(MUIB_MUI|0x0042fbce) /* MUI: V11 isg BOOL              */
+#define MUIA_FillArea           	(MUIB_MUI|0x004294a3) /* MUI: V4  is. BOOL              */
+#define MUIA_FixHeight          	(MUIB_MUI|0x0042a92b) /* MUI: V4  i.. LONG              */
+#define MUIA_FixHeightTxt       	(MUIB_MUI|0x004276f2) /* MUI: V4  i.. STRPTR            */
+#define MUIA_FixWidth           	(MUIB_MUI|0x0042a3f1) /* MUI: V4  i.. LONG              */
+#define MUIA_FixWidthTxt        	(MUIB_MUI|0x0042d044) /* MUI: V4  i.. STRPTR            */
+#define MUIA_Font               	(MUIB_MUI|0x0042be50) /* MUI: V4  i.g struct TextFont * */
+#define MUIA_Frame              	(MUIB_MUI|0x0042ac64) /* MUI: V4  i.. LONG              */
+#define MUIA_FramePhantomHoriz  	(MUIB_MUI|0x0042ed76) /* MUI: V4  i.. BOOL              */
+#define MUIA_FrameTitle         	(MUIB_MUI|0x0042d1c7) /* MUI: V4  i.. STRPTR            */
+#define MUIA_Height             	(MUIB_MUI|0x00423237) /* MUI: V4  ..g LONG              */
+#define MUIA_HorizDisappear     	(MUIB_MUI|0x00429615) /* MUI: V11 isg LONG              */
+#define MUIA_HorizWeight        	(MUIB_MUI|0x00426db9) /* MUI: V4  isg WORD              */
+#define MUIA_InnerBottom        	(MUIB_MUI|0x0042f2c0) /* MUI: V4  i.g LONG              */
+#define MUIA_InnerLeft          	(MUIB_MUI|0x004228f8) /* MUI: V4  i.g LONG              */
+#define MUIA_InnerRight         	(MUIB_MUI|0x004297ff) /* MUI: V4  i.g LONG              */
+#define MUIA_InnerTop           	(MUIB_MUI|0x00421eb6) /* MUI: V4  i.g LONG              */
+#define MUIA_InputMode          	(MUIB_MUI|0x0042fb04) /* MUI: V4  i.. LONG              */
+#define MUIA_LeftEdge           	(MUIB_MUI|0x0042bec6) /* MUI: V4  ..g LONG              */
+#define MUIA_MaxHeight          	(MUIB_MUI|0x004293e4) /* MUI: V11 i.. LONG              */
+#define MUIA_MaxWidth           	(MUIB_MUI|0x0042f112) /* MUI: V11 i.. LONG              */
+#define MUIA_Pressed            	(MUIB_MUI|0x00423535) /* MUI: V4  ..g BOOL              */
+#define MUIA_RightEdge          	(MUIB_MUI|0x0042ba82) /* MUI: V4  ..g LONG              */
+#define MUIA_Selected           	(MUIB_MUI|0x0042654b) /* MUI: V4  isg BOOL              */
+#define MUIA_ShortHelp          	(MUIB_MUI|0x00428fe3) /* MUI: V11 isg STRPTR            */
+#define MUIA_ShowMe             	(MUIB_MUI|0x00429ba8) /* MUI: V4  isg BOOL              */
+#define MUIA_ShowSelState       	(MUIB_MUI|0x0042caac) /* MUI: V4  i.. BOOL              */
+#define MUIA_Timer              	(MUIB_MUI|0x00426435) /* MUI: V4  ..g LONG              */
+#define MUIA_TopEdge            	(MUIB_MUI|0x0042509b) /* MUI: V4  ..g LONG              */
+#define MUIA_VertDisappear      	(MUIB_MUI|0x0042d12f) /* MUI: V11 isg LONG              */
+#define MUIA_VertWeight         	(MUIB_MUI|0x004298d0) /* MUI: V4  isg WORD              */
+#define MUIA_Weight             	(MUIB_MUI|0x00421d1f) /* MUI: V4  i.. WORD              */
+#define MUIA_Width              	(MUIB_MUI|0x0042b59c) /* MUI: V4  ..g LONG              */
+#define MUIA_Window             	(MUIB_MUI|0x00421591) /* MUI: V4  ..g struct Window *   */
+#define MUIA_WindowObject       	(MUIB_MUI|0x0042669e) /* MUI: V4  ..g Object *          */
 
-#define MUIA_NestedDisabled           	(TAG_USER|0x0045cb11) /* Zune 20030530  isg BOOL        */
+#define MUIA_NestedDisabled           	(MUIB_MUI|0x0045cb11) /* Zune 20030530  isg BOOL        */
 
 #ifdef MUI_OBSOLETE	 		
-#define MUIA_ExportID (TAG_USER|0x0042d76e) /* V4  isg ULONG */
+#define MUIA_ExportID (MUIB_MUI|0x0042d76e) /* V4  isg ULONG */
 #endif /* MUI_OBSOLETE */		
 
 struct MUI_ImageSpec_intern;
@@ -274,14 +270,14 @@ enum {
 
 
 /* The following stuff is Zune only and can is used by some zune subclasses */
-#define MUIM_Layout                 (TAG_USER|0x10429abb)
-#define MUIM_DrawParentBackground	(TAG_USER|0x10429abc)
+#define MUIM_Layout                 (MUIB_MUI|0x10429abb)
+#define MUIM_DrawParentBackground	(MUIB_MUI|0x10429abc)
 struct  MUIP_Layout                 {ULONG MethodID;};
 struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 
 /* The following is considered as private and Zune only! */
-#define MUIM_DragQueryExtended	    (METHOD_USER|0x10092033) /* PRIV - returns a object or NULL */
-#define MUIM_Timer		    (METHOD_USER|0x10092032) /* PRIV */
+#define MUIM_DragQueryExtended	    (MUIB_MUI|0x10092033) /* PRIV - returns a object or NULL */
+#define MUIM_Timer		    (MUIB_MUI|0x10092032) /* PRIV */
 
 struct  MUIP_DragQueryExtended	    {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
 struct  MUIP_Timer 		    {ULONG MethodID; }; /* PRIV */
