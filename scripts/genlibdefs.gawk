@@ -75,6 +75,8 @@ END {
 	libbasetype=basename"Base";
 
     print "#define LIBNAME      \""libname".library\""
+    print "#define DEVNAME      \""libname".device\""
+    print "#define RESNAME      \""libname".resource\""
     print "#define LIBBASE      "libbase
     print "#define LIBBASETYPE  "libbasetype
     print "#define LIBVERSION   "version
