@@ -1806,50 +1806,6 @@ $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
 %end
 
 #------------------------------------------------------------------------------
-# Do the early stuff needed for compiling. This must be run before you
-# do make_vpath otherwise any rules defined in the included makefiles will
-# be invalid.
-
-%define make_linklib_setup mmake=/A
-.PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
-#MM
-%(mmake)-quick : %(mmake)
-#MM
-%(mmake)-clean : clean
-
-%make_common_setup
-
-%end
-
-#------------------------------------------------------------------------------
-# Generate a link library from a collection of files.
-#
-
-%define make_linklib dflags=$(CFLAGS) mmake=linklibs-$(LIB)
-OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS := $(DEPS) $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
-%(mmake): setup $(LIBDIR)/lib$(LIB).a
-	@$(NOP)
-
-$(LIBDIR)/lib$(LIB).a : $(OBJS)
-	%mklib_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q flags=%(dflags)
-
-setup ::
-	%mkdirs_q $(OBJDIR) $(LIBDIR)
-
-clean ::
-	-@$(RM) $(OBJDIR)
-
-%end
-
-#------------------------------------------------------------------------------
 # Standard Binary Commands, such as you would find in C:, SYS:Tools/, etc.
 # This assumes a one to one mapping between source code and executable. If
 # you have a program that has multiple source files, it will need to be in
