@@ -39,8 +39,8 @@ Think of a good password and use <filename>crypt</filename>
 to encode it, like this:</p>
 
 <example>
-<line><shell>&gt; </shell><user>make crypt</user></line>
-<line><shell>&gt; </shell><user>crypt my_password</user></line>
+<line><prompt/><user>make crypt</user></line>
+<line><prompt/><user>crypt my_password</user></line>
 <line><shell>Encrypting my_password: cbEVHg0j9uNRs</shell></line>
 </example>
 
@@ -67,9 +67,9 @@ your password with <filename>crypt</filename> out of the
 archive from AmiNET (in <filename>dev/misc</filename>) like this:</p>
 
 <example>
-<line><shell>&gt; </shell><user>run amitcp:amitcp</user></line>
+<line><prompt/><user>run amitcp:amitcp</user></line>
 <line><shell>[CLI 8]</shell></line>
-<line><shell>&gt; </shell><user>crypt my_password</user></line>
+<line><prompt/><user>crypt my_password</user></line>
 <line><shell>Encrypting my_password: cbEVHg0j9uNRs</shell></line>
 </example>
 
@@ -118,13 +118,13 @@ you haven't already done so.</p>
 use the CVS command <shell>login</shell>:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs -d :pserver:&lt;user&gt;@cvs.aros.org:/home/cvs/aros login</user></line>
+<line><prompt/><user>cvs -d :pserver:&lt;user&gt;@cvs.aros.org:/home/cvs/aros login</user></line>
 </example>
 
 <p>where <shell>user</shell> is your login, eg. digulla:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros login</user></line>
+<line><prompt/><user>cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros login</user></line>
 </example>
 
 <p>On the Amiga, you must <shell>setenv HOME</shell> to a directory (eg.
@@ -152,13 +152,13 @@ the argument to the <shell>-d</shell> option in the environment
 variable <shell>CVSROOT</shell>. Use</p>
 
 <example>
-<line><shell>&gt; </shell><user>setenv CVSROOT :pserver:user@cvs.aros.org:/home/cvs/aros</user></line>
+<line><prompt/><user>setenv CVSROOT :pserver:user@cvs.aros.org:/home/cvs/aros</user></line>
 </example>
 
 <p>on Amiga or if you have a C shell (csh) and</p>
 
 <example>
-<line><shell>&gt; </shell><user>export CVSROOT=:pserver:<user>user</user>@cvs.aros.org:/home/cvs/aros</user></line>
+<line><prompt/><user>export CVSROOT=:pserver:<user>user</user>@cvs.aros.org:/home/cvs/aros</user></line>
 </example>
 
 <p>for Bourne/Korn shells (bash, ksh). <strong>Don't forget to replace
@@ -184,7 +184,7 @@ your sources or commit the changes you made.</p>
 <p>Use the CVS checkout command for this:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs checkout AROS</user></line>
+<line><prompt/><user>cvs checkout AROS</user></line>
 </example>
 
 <p>This will create a
@@ -198,7 +198,7 @@ related to the core source (for example contributed source code,
 screenshots, etc). You can get a list of all extra parts with</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs checkout -c</user></line>
+<line><prompt/><user>cvs checkout -c</user></line>
 </example>
 
 <p>To checkout one of the extra parts, just do a <shell>cvs checkout</shell>
@@ -207,7 +207,7 @@ MetaMake would not find it and you would have to <shell>cvs update</shell>
 it separately):</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs checkout Quake</user></line>
+<line><prompt/><user>cvs checkout Quake</user></line>
 </example>
 
 <p>To get a copy of the game Quake into the directory 
@@ -224,7 +224,7 @@ games).</p>
 CVS update command. Change to the AROS directory and do this:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs update</user></line>
+<line><prompt/><user>cvs update</user></line>
 </example>
 
 <p>This should merge any changes that other users have made into your
@@ -247,7 +247,7 @@ made, fix the problems and then commit.</p>
 work with the other guys. To do this, use the CVS commit command:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs commit</user></line>
+<line><prompt/><user>cvs commit</user></line>
 </example>
 
 <p>You can specify a list of files after the <shell>commit</shell> or just do that in
@@ -262,13 +262,13 @@ problems.</p>
 <p>You can also add new files or directories with the CVS add command:</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs add file.c</user></line>
+<line><prompt/><user>cvs add file.c</user></line>
 </example>
 
 <p>or</p>
 
 <example>
-<line><shell>&gt; </shell><user>cvs add dir</user></line>
+<line><prompt/><user>cvs add dir</user></line>
 </example>
 
 <p>Note that <shell>cvs add dir/file</shell> doesn't work. You can only add
@@ -313,8 +313,8 @@ probably best <strong>not</strong> to use the CVS tree for this)</li>
 <li>Enter the new directory and run the import command:
 
 <example>
-<line><shell>&gt; </shell><user>cd name-1.2.3</user></line>
-<line><shell>&gt; </shell><user>cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros import -m "Explanation" contrib/name VENDOR NAME_1_2_3</user></line>
+<line><prompt/><user>cd name-1.2.3</user></line>
+<line><prompt/><user>cvs -d :pserver:digulla@cvs.aros.org:/home/cvs/aros import -m "Explanation" contrib/name VENDOR NAME_1_2_3</user></line>
 </example>
 
 <p>All files (except some file like <filename>*.bak</filename>
