@@ -3,7 +3,9 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname
+FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
+	loadseg_aout
+
 FUNCTIONS = \
 	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
 	allocdosobject assignadd assignlate	       \
@@ -45,7 +47,7 @@ clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	$(CC) -DDEBUG $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
