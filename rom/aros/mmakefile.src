@@ -51,9 +51,6 @@ DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-#MM kernel-aros-amiga-m68k :
-kernel-aros-amiga-m68k : $(OSMODDIR)/aros.library
-
 # The options for the linker
 LIBS := -L$(LIBDIR) -laros
 
@@ -70,14 +67,11 @@ ENDFUNC := $(OBJDIR)/$(END_FILE).o
 $(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) aroslib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.err
-	@if $(TEST) ! -s aroslib.err; then rm aroslib.err ; else true ; fi
-	@strip $@
+	@$(IF) $(TEST) ! -s aroslib.err; then rm aroslib.err ; else true ; fi
+	@$(STRIP) $@
 
 # ***** Not Native ***************
 else
-
-#MM kernel-aros-linux-$(CPU) :
-kernel-aros-linux-$(CPU) : show-flags $(LIB)
 
 OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
@@ -87,6 +81,12 @@ endif
 $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
+
+#MM
+kernel-aros-amiga-m68k : $(OSMODDIR)/aros.library
+
+#MM
+kernel-aros-linux-$(CPU) : show-flags $(LIB)
 
 # MetaMake targets
 #MM kernel-aros : setup includes kernel-aros-$(ARCH)-$(CPU)
