@@ -46,6 +46,7 @@ CLASSESOBJS= \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
   objs/classes/family.o \
+  objs/classes/gauge.o \
   objs/classes/group.o \
   objs/classes/list.o \
   objs/classes/menuitem.o \
@@ -206,6 +207,9 @@ objs/classes/dataspace.o: classes/dataspace.c
 
 objs/classes/family.o: classes/family.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
+
+objs/classes/gauge.o: classes/gauge.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/gauge.c objname=$@
 
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
