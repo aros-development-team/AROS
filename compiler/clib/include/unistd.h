@@ -37,6 +37,7 @@ ssize_t read (int fd, void * buf, size_t count);
 int truncate(const char *path, off_t length);
 int ftruncate(int fd, off_t length);
 int unlink(const char *pathname);
+unsigned int sleep(unsigned int);
 void usleep(unsigned long usec);
 ssize_t write (int fd, const void * buf, size_t count);
 

@@ -23,6 +23,7 @@
 #include <aros/debug.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define CATCOMP_NUMBERS
 #define CATCOMP_STRINGS

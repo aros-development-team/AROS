@@ -28,6 +28,8 @@
 #endif
 #include <aros/macros.h>
 
+#include <string.h>
+
 #define BOOT_CHECK 0
 
 int boot_entry()

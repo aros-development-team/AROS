@@ -21,6 +21,7 @@
 #include <proto/alib.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <proto/arossupport.h>
 
 #include "../graphics/intregions.h"
 #include "layers_intern.h"

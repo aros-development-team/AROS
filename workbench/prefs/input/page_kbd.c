@@ -11,6 +11,7 @@
 #include "global.h"
 #include <aros/asmcall.h>
 #include <stdio.h>
+#include <string.h>
 
 /*********************************************************************************************/
 

@@ -1,3 +1,5 @@
+#include <string.h>
+#include <stdio.h>
 #include <proto/dos.h>
 #include "setup.h"
 

@@ -20,6 +20,7 @@
 #include <signal.h>
 #define timeval sys_timeval
 #include <sys/time.h>
+#include <stdlib.h>
 #undef timeval
 
 #include <proto/exec.h>

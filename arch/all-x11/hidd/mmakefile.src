@@ -17,6 +17,8 @@ ifneq ("$(HOST_ARCH)","linux")
 USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
 endif
 
+OS_INCLUDES := -I$(GENINCDIR)
+
 X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
 
 FILES	   := x11 support x11gfx onbitmap offbitmap x11_init support x11kbd x11mouse

@@ -27,6 +27,7 @@
 #include <proto/layers.h>
 
 #include <string.h> /* memset() */
+#include <stdlib.h>
 
 #define SDEBUG 0
 #define DEBUG 0

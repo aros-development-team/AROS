@@ -18,6 +18,7 @@
 #   include <oop/oop.h>
 #endif
 
+#define timeval sys_timeval
 #ifndef _XLIB_H_
 #   include <X11/Xlib.h>
 #endif
@@ -25,6 +26,7 @@
 #ifndef _XUTIL_H
 #   include <X11/Xutil.h>
 #endif
+#undef timeval
 
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>

@@ -9,6 +9,8 @@
 #include <graphics/rastport.h>
 #include "gfxfuncsupport.h"
 
+void DeinitDriverData(struct RastPort *, struct GfxBase *);
+
 /*****************************************************************************
 
     NAME */

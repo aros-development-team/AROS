@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <string.h>
+
 #include <hidd/graphics.h>
 #include "graphics_intern.h"
 #include <aros/machine.h>

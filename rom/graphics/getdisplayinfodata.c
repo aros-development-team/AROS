@@ -8,6 +8,7 @@
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
 #include "dispinfo.h"
+#include <stdio.h>
 
 struct size_check
 {

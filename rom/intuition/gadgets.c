@@ -8,6 +8,8 @@
 
 /**********************************************************************************************/
 
+#include <string.h>
+
 #include "intuition_intern.h"
 #include "gadgets.h"
 #include <exec/types.h>

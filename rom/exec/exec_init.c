@@ -30,7 +30,9 @@
 
 #define timeval sys_timeval
 #include <sigcore.h>
+#include <stdlib.h>
 #undef timeval
+
 
 #include "exec_private.h"
 #include "exec_util.h"

@@ -11,6 +11,8 @@
 /*****************************************************************************
 
     NAME */
+#include <string.h>
+
 #include <proto/exec.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
