@@ -54,4 +54,7 @@ struct Picture_Data
     BOOL                  Layouted;
     BOOL                  KeepSrcBM;
     BOOL                  UseCM;
+    
+    LONG    	    	  ClickX;
+    LONG    	    	  ClickY;
 };
