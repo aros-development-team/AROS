@@ -16,12 +16,7 @@ DIRS :=	$(INCDIR) $(GENINCDIR) \
 MACHINE_H := $(GENINCDIR)/aros/machine.h
 
 #MM
-includes-ppc : setup-includes $(INCFILES)
-	@$(NOP)
-
-#MM
 includes-copy-ppc : setup-includes $(INCFILES) $(GENINCDIR)/sigcore.h
-	@$(NOP)
 
 setup-includes :
 	@$(FOR) dir in $(DIRS) ; do \
