@@ -294,7 +294,6 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
         S_DOT1,
         S_DOT2,
         S_SLASH,
-        S_COLUMN
     } state = S_START0;
 
     int run = 1;
@@ -312,9 +311,14 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 	switch (state)
 	{
 	    case S_START0:
-	        if (ch == ':')
-		    state = S_COLUMN;
+	        if (ch == '.')
+		    state = S_DOT1;
 		else
+		{
+		    state = S_START;
+		    continue;
+		}
+		break;
 	    case S_START:
 	        if (ch == '/')
 		{
@@ -322,8 +326,11 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 		    state = S_SLASH;
 		}
 		else
-	        if (ch == '.')
-		    state = S_DOT1;
+	        if (ch == ':')
+		{
+		    dir_sep = ':';
+		    state = S_SLASH;
+		}
 		else
 		if (ch == '\0')
 		    run = 0;
@@ -349,7 +356,6 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 		    buf[0] = '.';
 		    buf[1] = ch;
 		    buf += 2;
-
 		    state = S_START;
 		}
 
@@ -373,7 +379,6 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 		    buf[1] = '.';
 		    buf[2] = ch;
 		    buf += 3;
-
 		    state = S_START;
 		}
 
@@ -391,18 +396,12 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 		    if (dir_sep != '\0')
 		        buf++[0] = dir_sep;
 
-		    state = S_START;
+  	            state = S_START0;
 
 		    continue;
 		}
 
 		break;
-
-	    case S_COLUMN:
-	        dir_sep = ':';
-		state = S_SLASH;
-
-		continue;
 	}
 
 	path++;
