@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include <aros/debug.h>
 
 char *program_name;
 void nonfatal(const char *msg, const char *errorstr)
@@ -33,14 +34,16 @@ void set_compiler_path(void)
         if (compiler_path && path)
 	{
             char *new_path;
+	    size_t compiler_path_len = strlen(compiler_path);
+	    size_t path_len          = strlen(path);
 
-            new_path = malloc(5 + strlen(compiler_path) + 1 + strlen(path) + 1);
+            new_path = malloc(5 + compiler_path_len + 1 + path_len + 1);
             if (new_path)
             {
-                strcat(new_path, "PATH=");
-                strcat(new_path, compiler_path);
-                strcat(new_path, ":");
-                strcat(new_path, path);
+                memcpy(new_path, "PATH=", 5);
+                memcpy(new_path + 5, compiler_path, compiler_path_len);
+                memcpy(new_path + 5 + compiler_path_len, ":", 1);
+                memcpy(new_path + 5 + compiler_path_len + 1, path, path_len + 1);
 
 	        if (putenv(new_path) == 0)
 		    path_set = 1;
