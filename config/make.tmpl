@@ -531,11 +531,11 @@ endif
 #MM
 %(mmake)-setup : setup-module$(BDID)
 
+ifeq ($(TARGET),%(mmake)) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
 endif
 
-ifeq ($(TARGET),%(mmake)) # Avoid conflicting wildcard rules
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags="-I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))"
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
@@ -704,11 +704,11 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
   $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
   $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp
 
+ifeq ($(TARGET),%(mmake)) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
-vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
 
-ifeq ($(TARGET),%(mmake)) # Avoid conflicting wildcard rules
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_compile basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
@@ -807,8 +807,10 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
 
 #MM %(mmake)-linklib : %(mmake) %(mmake)-setup
 
-%build_linklib mmake=%(mmake)-linklib libname=partition \
-  files="$(BD_INITFILE$(BDID)) $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID)) $(BD_ENDFILE$(BDID))"
+%(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).a
+
+%rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
+  objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
 
 %end
 #------------------------------------------------------------------------------
@@ -856,10 +858,6 @@ BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
 
 .PHONY : setup-linklib$(BDID)
 
-ifneq ($(dir $(BD_FILES$(BDID))),./)
-vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
-endif
-
 #MM %(mmake) : %(mmake)-setup
 
 %(mmake) : $(BD_LINKLIB$(BDID))
@@ -875,6 +873,10 @@ endif
 	       setuptarget=setup-linklib$(BDID)
 
 ifeq ($(TARGET),%(mmake))
+ifneq ($(dir $(BD_FILES$(BDID))),./)
+vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+endif
+
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
