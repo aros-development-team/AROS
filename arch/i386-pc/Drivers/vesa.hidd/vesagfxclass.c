@@ -211,11 +211,94 @@ STATIC OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     ReturnPtr("VesaGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
+static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+{
+    unsigned char *src = 0, *dest = 0;
+    ULONG mode;
+
+    mode = GC_DRMD(msg->gc);
+
+    OOP_GetAttr(msg->src,  aHidd_VesaGfxBitMap_Drawable, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_VesaGfxBitMap_Drawable, (IPTR *)&dest);
+
+    if (!dest || !src ||
+    	((mode != vHidd_GC_DrawMode_Copy)))
+    {
+	/* The source and/or destination object is no VesaGfx bitmap, onscreen nor offscreen.
+	   Or drawmode is not one of those we accelerate. Let the superclass do the
+	   copying in a more general way
+	*/
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	return;
+	
+    }
+
+    {
+    	struct BitmapData *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        struct BitmapData *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+
+        switch(mode)
+	{
+	    case vHidd_GC_DrawMode_Copy:
+	    	switch(data->bytesperpix)
+		{
+		    case 1:
+	    		HIDD_BM_CopyMemBox8(msg->dest,
+		    	    		    data->VideoData,
+					    msg->srcX,
+					    msg->srcY,
+					    ddata->VideoData,
+					    msg->destX,
+					    msg->destY,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    ddata->bytesperline);
+			break;
+
+		    case 2:
+	    		HIDD_BM_CopyMemBox16(msg->dest,
+		    	    		    data->VideoData,
+					    msg->srcX,
+					    msg->srcY,
+					    ddata->VideoData,
+					    msg->destX,
+					    msg->destY,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    ddata->bytesperline);
+			break;
+			
+		    case 4:
+	    		HIDD_BM_CopyMemBox32(msg->dest,
+		    	    		    data->VideoData,
+					    msg->srcX,
+					    msg->srcY,
+					    ddata->VideoData,
+					    msg->destX,
+					    msg->destY,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    ddata->bytesperline);
+			break;
+		    	
+	    	} /* switch(data->bytesperpix) */
+    	    	break;
+		
+    	} /* switch(mode) */
+	
+    } /**/
+
+}
+
+
 #undef XSD
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VESAGFX_METHODS 1
+#define NUM_VESAGFX_METHODS 2
 
 OOP_Class *init_vesagfxclass(struct VesaGfx_staticdata *xsd)
 {
@@ -230,6 +313,7 @@ OOP_Class *init_vesagfxclass(struct VesaGfx_staticdata *xsd)
     struct OOP_MethodDescr vesagfxhidd_descr[NUM_VESAGFX_METHODS + 1] = 
     {
 	{(IPTR (*)())gfxhidd_newbitmap,        moHidd_Gfx_NewBitMap},
+	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
 	{NULL, 0UL}
     };
     struct OOP_InterfaceDescr ifdescr[] =

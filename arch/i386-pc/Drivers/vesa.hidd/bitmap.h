@@ -50,6 +50,7 @@ struct BitmapData {
 	ULONG width;      /* Width of bitmap */
 	ULONG height;		/* Height of bitmap */
 	UBYTE bytesperpix;
+	ULONG bytesperline;
 	ULONG cmap[16];   /* ColorMap */
 	BYTE bpp;         /* 8 -> chunky; planar otherwise */
 	BYTE disp;        /* !=0 - displayable */

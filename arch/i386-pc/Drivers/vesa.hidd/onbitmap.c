@@ -89,6 +89,7 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	    multi = 2;
 	data->bytesperpix = multi;
 	data->data = &XSD(cl)->data;
+	data->bytesperline = data->data->bytesperline;
 	data->mouse = &XSD(cl)->mouse;
 	data->VideoData = data->data->framebuffer;
 	/* We should be able to get modeID from the bitmap */
