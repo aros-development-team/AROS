@@ -30,13 +30,9 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 
     for (pathptr = searchpaths; *pathptr; pathptr++)
     {
-#ifdef __AROS__	    
 	snprintf(s, 255, *pathptr, classname);
-#else
-#warning "snprintf() not used on Amiga"
-	sprintf(s, *pathptr, classname);
-#endif
-	if ((mcclib = OpenLibrary(s, 0)))
+	
+        if ((mcclib = OpenLibrary(s, 0)))
 	{
 	    /* call MCC_Query(0) */
 	
