@@ -51,22 +51,25 @@ extern APTR __startup_mempool;
 
 ******************************************************************************/
 {
-    GETUSER;
-
-    UBYTE * mem;
-    size_t size;
-
-    ObtainSemaphore(&__startup_memsem);
+    struct memheader
+    {
+        struct SignalSemaphore *memsem;
+        APTR                    mempool;
+        size_t                  memsize;
+    };
 
     if (memory)
     {
-	mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
-	size = *((size_t *)mem) + AROS_ALIGN(sizeof(size_t));
+    	struct memheader       *mh     = (struct memheader *)(((UBYTE *)memory) - AROS_ALIGN(sizeof(struct memheader)));
+	struct SignalSemaphore *memsem;
 
-	FreePooled (__startup_mempool, mem, size);
+	ObtainSemaphore(mh->memsem);
+
+	memsem = mh->memsem;
+
+	FreePooled (mh->mempool, mh, mh->memsize + AROS_ALIGN(sizeof(struct memheader)));
+        ReleaseSemaphore(memsem);
     }
 
-    ReleaseSemaphore(&__startup_memsem);
-    
 } /* free */
 
