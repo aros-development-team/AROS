@@ -71,7 +71,7 @@
 	    if (((struct InternalExAllControl *)ptr)->fib)
 	        FreeDosObject(DOS_FIB, ((struct InternalExAllControl *)ptr)->fib);
 	    
-	    FreeMem(ptr, sizeof(struct ExAllControl));
+	    FreeMem(ptr, sizeof(struct InternalExAllControl));
 	    break;
 	    
 	case DOS_CLI:
