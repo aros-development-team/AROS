@@ -5,6 +5,7 @@
     Desc: loader for AmigaDOS hunk files.
     Lang: english
 */
+#include <exec/execbase.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dosasl.h>
