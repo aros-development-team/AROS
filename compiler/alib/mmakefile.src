@@ -117,8 +117,8 @@ FILES	:= \
 
 
 #MM- linklibs: linklibs-amiga linklibs-startup
-#MM linklibs-amiga : includes
-#MM linklibs-startup : includes
+#MM linklibs-amiga : includes includes-copy
+#MM linklibs-startup : includes includes-copy
 
 %build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
 
