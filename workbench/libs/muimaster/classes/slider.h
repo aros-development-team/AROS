@@ -1,23 +1,6 @@
 #ifndef _MUI_CLASSES_SLIDER_H
 #define _MUI_CLASSES_SLIDER_H
 
-struct MUI_SliderData
-{
-    ULONG flags;
-    struct MUI_EventHandlerNode ehn;
-    struct ZuneFrameGfx *knob_frame;
-    LONG val_width;
-    LONG knob_width;
-    LONG state; /* When using mouse */
-    LONG knob_click,clickx,clicky;
-};
-
-
-enum slider_flags {
-    SLIDER_HORIZ = (1<<0),
-    SLIDER_QUIET = (1<<1),
-};
-
 #ifdef _DCC
 extern char MUIC_Slider[];
 #else
