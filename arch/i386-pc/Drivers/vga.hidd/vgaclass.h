@@ -12,7 +12,13 @@
 #include <exec/types.h>
 #include <exec/nodes.h>
 
+#define only640 1
+
+#ifdef only640
+#define NUM_MODES 1
+#else
 #define NUM_MODES 3
+#endif
 
 struct vgaModeDesc
 {
