@@ -1,0 +1,272 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+
+OS_INCLUDES	:= -I$(GENINCDIR)
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+INCFILES	:= $(GENINCDIR)/aros/machine.h \
+		   $(INCDIR)/aros/machine.h \
+		   $(INCDIR)/sigcore.h \
+		   $(INCDIR)/registers.h \
+		   $(GENINCDIR)/registers.h \
+		   $(INCDIR)/gfx.h \
+		   $(GENINCDIR)/gfx.h
+
+
+	   
+##MM- AROS-pp-native : setup setup-native includes compiler kernel boot-native \
+##MM	    create-mf-inc-again kernel-link-native binary-pp-native-m68000 \
+##MM	    workbench-pp-native-m68000 demos contrib-pp-native-m68000
+
+
+#MM- AROS-pp-native-1 : setup
+
+
+#MM- AROS-pp-native : \
+#MM	setup-pp-native \
+#MM	includes \
+#MM	includes-pp-native-m68000 \
+#MM	compiler-nofpu \
+#MM	kernel \
+#MM	boot-pp-native
+
+
+#Instead of the target 'compiler' I need to make the traget compiler-nofpu
+#MM- compiler-nofpu : setup includes \
+#MM	linklibs-amiga \
+#MM	linklibs-arosm-m68000 \
+#MM	linklibs-arosz \
+#MM	linklibs-arossupport \
+#MM	linklibs-autoinit \
+#MM	linklibs-arosc \
+#MM	linklibs-coolimages  \
+#MM	linklibs-gcc1-m68000
+
+
+#MM create-mf-inc-again
+create-mf-inc-again :
+	@$(MAKE) -f $(TOP)/config/mmakefile setup
+
+
+# Kernel
+#MM- kernel-pp-native :                    \
+#MM	kernel-exec-pp-native              \
+#MM	kernel-expansion-linklib      \
+#MM	kernel-expansion-pp-native-m68000  \
+#MM	kernel-utility-linklib        \
+#MM	kernel-aros-linklib           \
+#MM	kernel-oop-native-i386 kernel-oop-linklib            \
+#MM	kernel-hidd-linklib           \
+#MM	kernel-mathieeesingbas-linklib\
+#MM	kernel-timer-linklib          \
+#MM	kernel-misc-linklib kernel-misc-pp-native-m68000 \
+#MM	kernel-battclock-pp-native         \
+#MM	kernel-boot-linklib-quick     \
+#MM	kernel-dos-pp-native               \
+#MM	kernel-graphics-linklib       \
+#MM	graphics-gfxhidd              \
+#MM	kernel-graphics-pp-native-m68000   \
+#MM	kernel-layers-linklib         \
+#MM	kernel-intuition-pp-native         \
+#MM	kernel-mathffp-linklib        \
+#MM	kernel-workbench-linklib      \
+#MM	kernel-keymap-linklib         \
+#MM	kernel-keyboard-linklib       \
+#MM	kernel-gameport-linklib kernel-input-linklib kernel-console-linklib
+
+
+## kernel-boot-linklib seems broken
+
+##MM kernel-devs = gamport+input+console
+##MM	    kernel-boot-linklib \
+##MM	    kernel-devs \
+##MM	    kernel-keymap-linklib \
+##MM		kernel-filesys-pp-native-m68000 \
+##MM		Drivers-irq \
+##MM		Drivers-kbd \
+##MM		Drivers-pp-native
+
+
+# Setup
+#MM- setup-pp-native : setup-exec-$(ARCH)-$(CPU) \
+#MM	setup-mlib-$(ARCH)-$(CPU) \
+#MM	setup-clib-$(ARCH)-$(CPU) \
+#MM	setup-dos-native-$(ARCH)
+
+
+# MM		setup-intuition-$(CPU) \
+# MM		setup-battclock-$(CPU) \
+# MM		setup-dos-$(CPU)
+
+# Setup includes
+#MM- includes-pp-native : includes-copy includes-$(CPU)
+
+# Setup bootsector and kernel startup code
+#MM- boot-pp-native : boot-$(CPU)
+
+# Setup the CLIB metatargets...
+#MM- setup-clib-pp-native : setup-clib-pp-native-$(CPU)
+
+#MM- clib-pp-native : clib-$(CPU)
+
+#MM- alib-pp-native : alib-$(CPU)
+
+#MM- kernel-exec-pp-native : exec-$(ARCH)-$(CPU) kernel-exec-linklib
+
+#MM- kernel-intuition-pp-native : intuition-$(GFXSYSTEM) \
+#MM	intuition-$(CPU) kernel-intuition-linklib
+
+#MM- kernel-battclock-pp-native : battclock-$(CPU) kernel-battclock-linklib
+
+#MM- kernel-dos-pp-native : dos-native-pp-native kernel-dos-linklib
+
+# Setup libraries
+#MM kernel-exec-pp-native-m68000 :
+kernel-exec-pp-native-m68000 :
+	%add_objects rom/boot/libexec
+
+#MM kernel-aros-pp-native-m68000 :
+kernel-aros-pp-native-m68000 :
+	%add_objects rom/boot/libaros
+
+#MM kernel-keymap-pp-native-m68000 :
+kernel-keymap-pp-native-m68000 :
+	%add_objects rom/boot/libkeymap
+
+#MM kernel-mathffp-pp-native-m68000 :
+kernel-mathffp-pp-native-m68000 :
+	%add_objects rom/boot/libmathffp
+
+#MM kernel-mathieeesingbas-pp-native-m68000 :
+kernel-mathieeesingbas-pp-native-m68000 :
+	%add_objects rom/boot/libmathieeesingbas
+
+#MM kernel-expansion-pp-native-m68000 :
+kernel-expansion-pp-native-m68000 :
+	%add_objects rom/boot/libexpansion
+
+#MM kernel-oop-pp-native-m68000 :
+kernel-oop-pp-native-m68000 :
+	%add_objects rom/boot/liboop
+
+#MM kernel-layers-pp-native-m68000 :
+kernel-layers-pp-native-m68000 :
+	%add_objects rom/boot/liblayers
+
+#MM kernel-workbench-pp-native-m68000 :
+kernel-workbench-pp-native-m68000 :
+	%add_objects rom/boot/libworkbench
+
+#MM kernel-hidd-pp-native-m68000 :
+kernel-hidd-pp-native-m68000 :
+	%add_objects rom/boot/libhiddclass
+
+#MM kernel-utility-pp-native-m68000 :
+kernel-utility-pp-native-m68000 :
+	%add_objects rom/boot/libutility
+
+#MM kernel-dos-pp-native-m68000 :
+kernel-dos-pp-native-m68000 :
+	%add_objects rom/boot/libdos
+
+#MM kernel-boot-pp-native-m68000 :
+kernel-boot-pp-native-m68000 :
+	%add_objects rom/boot/libboot
+
+#MM kernel-timer-pp-native-m68000 :
+kernel-timer-pp-native-m68000 :
+	%add_objects rom/boot/libtimer
+
+#MM kernel-battclock-pp-native-m68000 :
+kernel-battclock-pp-native-m68000 :
+	%add_objects rom/boot/libbattclock
+
+#MM kernel-misc-pp-native-m68000 :
+kernel-misc-pp-native-m68000 :
+	%add_objects rom/boot/libmisc
+
+#MM kernel-cgfx-pp-native-m68000 :
+kernel-cgfx-pp-native-m68000 :
+	%add_objects rom/boot/libcybergraphics
+
+#MM kernel-graphics-pp-native-m68000 :
+kernel-graphics-pp-native-m68000 :
+	%add_objects rom/boot/libgraphics
+	%add_objects rom/boot/libhiddgraphicsstubs
+
+#MM kernel-intuition-pp-native-m68000 :
+kernel-intuition-pp-native-m68000 :
+	%add_objects rom/boot/libintuition
+
+#MM kernel-filesys-pp-native-m68000 :
+kernel-filesys-pp-native-m68000 :
+	%add_objects rom/boot/libcon_handler
+
+#MM kernel-devs-pp-native-m68000 :
+kernel-devs-pp-native-m68000 :
+	%add_objects rom/boot/libgameport
+	%add_objects rom/boot/libinput
+	%add_objects rom/boot/libkeyboard
+	%add_objects rom/boot/libconsole
+	%add_objects rom/boot/libtrackdisk
+	%add_objects rom/boot/libide
+	%add_objects rom/boot/libafs
+
+#MM
+includes-pp-native-m68000 : $(INCFILES)
+	@$(NOP)
+
+#MM
+binary-pp-native-m68000 : build
+	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
+	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
+
+#MM- contrib-pp-native-m68000 : contrib-complete
+
+#MM- workbench-pp-native-m68000 : workbench-complete workbench
+
+#MM
+includes-copy : $(GENINCDIR)/sigcore.h
+	@$(NOP)
+
+#MM
+clean ::
+	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS)
+
+$(INCDIR)/aros/%.h : %.h
+	%mkdirs_q $(INCDIR)/aros
+	$(CP) $< $@
+
+$(INCDIR)/asm/%.h : %.h
+	%mkdirs_q $(INCDIR)/asm
+	$(CP) $< $@
+
+$(INCDIR)/exec/%.h : %.h
+	%mkdirs_q $(INCDIR)/exec
+	$(CP) $< $@
+
+$(INCDIR)/%.h : %.h
+	%mkdirs_q $(INCDIR)
+	$(CP) $< $@
+
+$(GENINCDIR)/aros/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/asm/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/asm
+	$(CP) $< $@
+
+$(GENINCDIR)/exec/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/exec
+	$(CP) $< $@
+
+$(GENINCDIR)/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+build: build.c $(GENINCDIR)/aros/boot.h
+	@$(HOST_CC) $(CFLAGS) -D__BFD__ -o build $<
+
+# %include_deps
+%common

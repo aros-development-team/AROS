@@ -1,0 +1,3 @@
+mmake .AROS-pp-native-1
+sh copy.elf
+mmake .AROS-pp-native
