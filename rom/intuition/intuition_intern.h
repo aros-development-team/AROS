@@ -69,6 +69,8 @@
 
 #define USE_LOCKLAYERINFO_AS_REFRESHLOCK 1
 
+#define SINGLE_SETPOINTERPOS_PER_EVENTLOOP 1
+
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
    will be restored only when ReleaseGIRPort is
