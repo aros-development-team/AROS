@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function CloseWorkBench()
@@ -53,53 +53,71 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    BOOL retval = FALSE;
+    struct Screen *wbscreen;
+    BOOL    	   retval = TRUE;
 
-#warning There should be some semaphore to protect this. But not the PubScreen semaphore!
-#warning Because we send a msg to Workbench task and wait for a reply!
-#warning Workbench task might then do something which needs PubScreen semaphore! Deadlock danger!
-
-    /* If there is a Workbench process running, tell it to close it's windows. */
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL ) {
-        struct MsgPort      replymp;
-        struct IntuiMessage imsg;
-
-        /* Setup our reply port. By doing this manually, we can use SIGB_SINGLE
-         * and thus avoid allocating a signal (which may fail). */
-        memset( &replymp, 0, sizeof( replymp ) );
-
-        replymp.mp_Node.ln_Type = NT_MSGPORT;
-        replymp.mp_Flags        = PA_SIGNAL;
-        replymp.mp_SigBit       = SIGB_SINGLE;
-        replymp.mp_SigTask      = FindTask( NULL );
-        NEWLIST( &replymp.mp_MsgList );
-
-        /* Setup our message */
-    	imsg.ExecMessage.mn_ReplyPort = &replymp;	
-        imsg.Class = IDCMP_WBENCHMESSAGE;
-        imsg.Code  = WBENCHCLOSE;
-
-    	SetSignal(0, SIGF_SINGLE);
-	
-        /* Sends it to the handler and wait for the reply */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
-        WaitPort( &replymp );
-
-        /* After leaving this block imsg and repymp will be automagically freed,
-         * so we don't have to deallocate them ourselves. */
-    }
-
-    /* Try to close the Workbench screen, if there is any. */
-    if( GetPrivIBase(IntuitionBase)->WorkBench != NULL )
+    LockPubScreenList();
+ 
+    wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
+ 
+    if (!wbscreen)
     {
-        if( CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench ) == TRUE )
+    	retval = FALSE;
+    }
+    else if (GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount != 0)
+    {
+    	retval = FALSE;
+    }
+    
+    UnlockPubScreenList();
+    
+    if (!retval) return FALSE;
+    
+    /* If there is a Workbench process running, tell it to close it's windows. */
+
+    /* Don't call this function while pub screen list is locked! */
+    TellWBTaskToCloseWindows(IntuitionBase);
+    
+    LockPubScreenList();
+    
+    wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
+    
+    /* Try to close the Workbench screen, if there is any. */
+    if( wbscreen != NULL )
+    {
+        if( CloseScreen( wbscreen ) == TRUE )
 	{
             GetPrivIBase(IntuitionBase)->WorkBench = NULL;
-            retval = TRUE;
         }
+	else
+	{
+	    /* Grrr ... closing screen failed. I inc psn_VisitorCount by hand here,
+	       to avoid that someone else can kill it, because I must tell Workbench
+	       task that it shall open its windows again */
+	       
+            GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount++;
+	    retval = FALSE;	    
+	}
+    }
+    else
+    {
+    	retval = FALSE;
+    }
+    UnlockPubScreenList();
+
+    if (wbscreen && (retval == FALSE))
+    {
+    	/* Don't call this function while pub screen list is locked! */
+    	TellWBTaskToOpenWindows(IntuitionBase);
+	
+	/* Fix psn_VisitorCount which was increased above */
+	LockPubScreenList();
+        GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount--;
+	UnlockPubScreenList();
     }
     
     return retval;
 
     AROS_LIBFUNC_EXIT
+    
 } /* CloseWorkBench */

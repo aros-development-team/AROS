@@ -472,6 +472,11 @@ extern void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD
 extern void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
 extern void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
 
+/* wbtasktalk protos */
+
+void TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase);
+void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase);
+
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase); 
@@ -487,6 +492,7 @@ extern BOOL AllocAndSendIntuiActionMsg(UWORD code, struct Window *win, struct In
 
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
+
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,

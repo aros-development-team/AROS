@@ -15,7 +15,7 @@
 
     NAME */
 
-    AROS_LH0(ULONG, OpenWorkBench,
+    AROS_LH0(IPTR, OpenWorkBench,
 
 /*  SYNOPSIS */
 
@@ -53,74 +53,81 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning There should be some semaphore to protect this. But not the PubScreen semaphore!
-#warning Because we send a msg to Workbench task and wait for a reply!
-#warning Workbench task might then do something which needs PubScreen semaphore! Deadlock danger!
-       
-    /* Open the Workbench screen if we don't have one. */
-    if( GetPrivIBase(IntuitionBase)->WorkBench == NULL ) {
-        UWORD pens[] = { ~0 };
-
-        struct Screen *screen = NULL;
-
-        struct TagItem screenTags[] = {
+    struct Screen *wbscreen;
+    
+    LockPubScreenList();
+    
+    wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
+    if (wbscreen)
+    {
+    	UnlockPubScreenList();
+	
+	return (IPTR)wbscreen;
+    }
+    else
+    {
+    	/* Open the Workbench screen if we don't have one. */
+    	UWORD pens[] = { ~0 };
+        struct TagItem screenTags[] =
+	{
             { SA_Depth      , AROS_DEFAULT_WBDEPTH  	},
             { SA_Type       , WBENCHSCREEN          	},
             { SA_Title      , (IPTR)"Workbench Screen"  },
             { SA_Width      , AROS_DEFAULT_WBWIDTH  	},
             { SA_Height     , AROS_DEFAULT_WBHEIGHT 	},
             { SA_PubName    , (IPTR)"Workbench"     	},
-            { SA_Pens       , (IPTR) pens           	},
+	    { SA_Pens	    , (IPTR)pens    	    	},
             { SA_SharePens  , TRUE                  	},
 	    { SA_SysFont    , 1     	    	    	},
             { TAG_END       , 0                     	}
         };
 
-        screen = OpenScreenTagList( NULL, screenTags );
+        wbscreen = OpenScreenTagList( NULL, screenTags );
 
-        if( screen ) {
-            GetPrivIBase(IntuitionBase)->WorkBench = screen;
+        if( !wbscreen )
+	{
+	    UnlockPubScreenList();
+	    
+	    return 0;
+	    
+	}
+        
+	GetPrivIBase(IntuitionBase)->WorkBench = wbscreen;
 
-            /* Make the screen public. */
-            PubScreenStatus( screen, 0 );
+        /* Make the screen public. */
+        PubScreenStatus( wbscreen, 0 );
 
-        } else {
-            /* Maybe we should have a Alert() here? */
-            return NULL;
-        }
     }
 
-    /* Tell the Workbench process to open it's windows, if there is one. */
-    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL ) {
-        struct MsgPort      replymp;
-        struct IntuiMessage imsg;
-
-        /* Setup our reply port. By doing this manually, we can use SIGB_SINGLE
-         * and thus avoid allocating a signal (which may fail).*/
-        memset( &replymp, 0, sizeof( replymp ) );
-
-        replymp.mp_Node.ln_Type = NT_MSGPORT;
-        replymp.mp_Flags        = PA_SIGNAL;
-        replymp.mp_SigBit       = SIGB_SINGLE;
-        replymp.mp_SigTask      = FindTask( NULL );
-        NEWLIST( &replymp.mp_MsgList );
-
-        /* Setup our message. */
-    	imsg.ExecMessage.mn_ReplyPort = &replymp;	
-        imsg.Class = IDCMP_WBENCHMESSAGE;
-        imsg.Code  = WBENCHOPEN;
-
-    	SetSignal(0, SIGF_SINGLE);
-
-        /* Sends it to the handler and wait for the reply. */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
-        WaitPort( &replymp );
-
-        /* After leaving this block imsg and repymp will be automagically freed,
-         * so we don't have to deallocate them ourselves. */
-    }
-
-    return (ULONG) GetPrivIBase(IntuitionBase)->WorkBench;
+    /* We have opened the Workbench Screen. Now  tell the Workbench process
+       to open it's windows, if there is one. We still do have the pub screen
+       list locked. But while sending the Message to the Workbench task we
+       must unlock the semaphore, otherwise there can be deadlocks if the
+       Workbench task itself does something which locks the pub screen list.
+       
+       But if we unlock the pub screen list, then some other task could try
+       to close the Workbench screen in the meantime. The trick to solve
+       this problem is to increase the psn_VisitorCount of the Workbench
+       screen here, before unlocking the pub screen list. This way the
+       Workbench screen cannot go away. */
+    
+    GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount++;
+    
+    UnlockPubScreenList();
+    
+    /* Don't call this function while pub screen list is locked! */
+    TellWBTaskToOpenWindows(IntuitionBase);
+    
+    /* Now fix the psn_VisitorCount we have increased by one, above. It's probably
+       better to do this by hand, instead of calling UnlockPubScreen, because Un-
+       lockPubScreen can send signal to psn_SigTask. */
+       
+    LockPubScreenList();
+    GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount--;
+    UnlockPubScreenList();
+    
+    return (IPTR)wbscreen;
 
     AROS_LIBFUNC_EXIT
+    
 } /* OpenWorkBench */
