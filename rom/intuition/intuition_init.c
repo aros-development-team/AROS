@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/23 17:24:11  digulla
+    Opening intuition.library called intui_init() instead of intui_open(). Ooops.
+
     Revision 1.1  1996/08/13 15:37:26  digulla
     First function for intuition.library
 
@@ -91,7 +94,7 @@ __AROS_LH1(struct IntuitionBase *, open,
 	    return NULL;
     }
 
-    if (!intui_init (IntuitionBase))
+    if (!intui_open (IntuitionBase))
 	return NULL;
 
     /* I have one more opener. */
