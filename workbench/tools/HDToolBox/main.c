@@ -118,6 +118,8 @@ ULONG initEnv(char *device) {
 void uninitEnv() {
 	if (mainwin)
 		CloseWindow(mainwin);
+	if (dglist)
+		freeGadgets(dglist);
 	if (pcpglist)
 		freeGadgets(pcpglist);
 	if (mainglist)
