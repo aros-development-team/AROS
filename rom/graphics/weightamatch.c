@@ -57,51 +57,55 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    WORD matchweight = 0;
-
+    WORD matchweight = MAXFONTMATCHWEIGHT;
     WORD sizematch = 0; /* for temporary keeping data */
-	
-    /* Use words because of abs() */
-    WORD reqsize, targetsize;
     UWORD sizediff;
 	
-    UBYTE comparedflags, comparedstyle;
-	
-
     /* Compare font flags */
-	
-    /* We get bits set to 1 where flags are equal (both set or both cleared */
-    comparedflags = ~(reqTextAttr->ta_Flags ^ targetTextAttr->ta_Flags);
 
-    matchweight  = (comparedflags & FPF_PROPORTIONAL	) ? 1 : 0;
-    matchweight |= (comparedflags & FPF_TALLDOT		) ? 1 << 1 : 0;
-    matchweight |= (comparedflags & FPF_WIDEDOT		) ? 1 << 2 : 0;
-	
+    /* No match if req is designed and target not */
+    if ((reqTextAttr->ta_Flags & FPF_DESIGNED) && ! (targetTextAttr->ta_Flags & (FPF_DESIGNED | FPF_DISKFONT)))
+	return 0;
+    
+    /* No match if REVPATH is not the same, ignore other flags */
+    if ((reqTextAttr->ta_Flags ^ targetTextAttr->ta_Flags) & FPF_REVPATH)
+	return 0;
+
+    
     /* Compare font style */
-    comparedstyle = ~(reqTextAttr->ta_Style ^ targetTextAttr->ta_Style);
+    if ((reqTextAttr->ta_Style & FSF_UNDERLINED) && !(targetTextAttr->ta_Style & FSF_UNDERLINED))
+	matchweight &= ~(1<<2);
+    if (!(reqTextAttr->ta_Style & FSF_UNDERLINED) && (targetTextAttr->ta_Style & FSF_UNDERLINED))
+	matchweight &= ~(1<<11);
+    
+    if ((reqTextAttr->ta_Style & FSF_BOLD) && !(targetTextAttr->ta_Style & FSF_BOLD))
+	matchweight &= ~(1<<3);
+    if (!(reqTextAttr->ta_Style & FSF_BOLD) && (targetTextAttr->ta_Style & FSF_BOLD))
+	matchweight &= ~(1<<9);
+    
+    if ((reqTextAttr->ta_Style & FSF_ITALIC) && !(targetTextAttr->ta_Style & FSF_ITALIC))
+	matchweight &= ~(1<<4);
+    if (!(reqTextAttr->ta_Style & FSF_ITALIC) && (targetTextAttr->ta_Style & FSF_ITALIC))
+	matchweight &= ~(1<<10);
 
-    matchweight |= (comparedstyle & FSF_EXTENDED	) ? 1 << 3 : 0;
-    matchweight |= (comparedstyle & FSF_BOLD		) ? 1 << 4 : 0;
-    matchweight |= (comparedstyle & FSF_UNDERLINED	) ? 1 << 5 : 0;
-    matchweight |= (comparedstyle & FSF_ITALIC		) ? 1 << 6 : 0;
-    matchweight |= (comparedstyle & FSF_COLORFONT	) ? 1 << 7 : 0;
+    /* Now subtract a value depending on the size difference */
+    
+    sizediff = abs((WORD)reqTextAttr->ta_YSize - (WORD)targetTextAttr->ta_YSize);
 	
-    /* We now have 7 bits for determinig size match */
-	
-    reqsize = reqTextAttr->ta_YSize;
-    targetsize = targetTextAttr->ta_YSize;
-	
-    sizediff = abs(reqsize - targetsize);
-	
-    if (sizediff > 127)
-	sizematch = 0;
+    if (sizediff > 511)
+	return 0;
+
+    if (reqTextAttr->ta_YSize < targetTextAttr->ta_YSize)
+	sizematch = sizediff << 7;
     else
-	sizematch = 127 - sizediff;
+	sizematch = sizediff << 5;
+    
+    if (sizematch > matchweight)
+	matchweight = 0;
+    else
+	matchweight -= sizematch;
 	
-    /* Size is most significant in the matching */ 
-    matchweight |= sizematch << 8;
-	
-    return (matchweight);	  
-  
+    return matchweight;
+
     AROS_LIBFUNC_EXIT
 } /* WeighTAMatch */
