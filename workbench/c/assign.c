@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define ENABLE_RT 1
+
 #include <stdio.h>
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -16,7 +18,9 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: assign 41.2 (4.7.1997)\n";
+#include <aros/rt.h>
+
+static const char version[] = "$VER: assign 41.3 (4.7.1997)\n";
 
 void dolist()
 {
@@ -24,38 +28,38 @@ void dolist()
     int count;
 
     dlist = LockDosList(LDF_VOLUMES|LDF_ASSIGNS|LDF_DEVICES|LDF_READ);
-    printf("Volumes:\n");
+    VPrintf("Volumes:\n", NULL);
     curlist = dlist;
     while ((curlist = NextDosEntry(curlist, LDF_VOLUMES)))
     {
-        printf("%s\n", curlist->dol_DevName);
+        VPrintf("%s\n", (IPTR *)&(curlist->dol_DevName));
 	/* !!! mounted !!! */
     }
-    printf("\nDirectories:\n");
+    VPrintf("\nDirectories:\n", NULL);
     curlist = dlist;
     while ((curlist = NextDosEntry(curlist, LDF_ASSIGNS)))
     {
-        printf(curlist->dol_DevName);
+        VPrintf(curlist->dol_DevName, NULL);
 	for (count=15-strlen(curlist->dol_DevName); count>0; count--)
-	    printf(" ");
-	printf("\n"); /* !!! print directory !!! */
+	    VPrintf(" ", NULL);
+	VPrintf("\n", NULL); /* !!! print directory !!! */
     }
     /* !!! late/nonbinding !!! */
-    printf("\nDevices:\n");
+    VPrintf("\nDevices:\n", NULL);
     count = 0;
     curlist = dlist;
     while ((curlist = NextDosEntry(curlist, LDF_DEVICES)))
     {
-        printf("%s ", curlist->dol_DevName);
+        VPrintf("%s ", (IPTR *)&(curlist->dol_DevName));
 	count++;
 	if (count == 5)
 	{
-	    printf("\n");
+	    VPrintf("\n", NULL);
 	    count = 0;
 	}
     }
     if (count < 5)
-        printf("\n");
+        VPrintf("\n", NULL);
     UnLockDosList(LDF_VOLUMES|LDF_ASSIGNS|LDF_DEVICES|LDF_READ);
 }
 
@@ -86,6 +90,8 @@ int main (int argc, char ** argv)
     struct RDArgs *rda;
     int error=RETURN_OK;
 
+    RT_Init();
+
     rda=ReadArgs("NAME,TARGET,LIST/S",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
@@ -98,5 +104,6 @@ int main (int argc, char ** argv)
 	error=RETURN_FAIL;
     if(error)
 	PrintFault(IoErr(),"Assign");
+    RT_Exit();
     return error;
 }

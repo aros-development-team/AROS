@@ -29,7 +29,7 @@ int main()
         {
             lasterror = cli->cli_Result2;
             if (lasterror == 0)
-                printf("The last command did not set a return-value\n");
+                VPrintf("The last command did not set a return-value\n", NULL);
             else
             {
                 PrintFault(lasterror, "The last command failed, reason");

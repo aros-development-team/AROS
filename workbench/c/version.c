@@ -23,7 +23,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: version 41.1 (19.6.1997)\n";
+static const char version[] = "$VER: version 41.2 (4.7.1997)\n";
 
 #define ERROR_HEADER "Version"
 
@@ -310,7 +310,7 @@ int makefilever(STRPTR name)
 		}
 	    } else
 	    {
-		printf("No version information found\n");
+		VPrintf("No version information found\n", NULL);
 		error = RETURN_ERROR;
 	    }
 	} else
@@ -417,13 +417,17 @@ void freeverstring()
 /* print only the short version string */
 void printparsedstring()
 {
-    printf("%s %d.%d\n", parsedver.name, parsedver.version, parsedver.revision);
+    IPTR args[3];
+    args[0] = (IPTR)parsedver.name;
+    args[1] = (IPTR)parsedver.version;
+    args[2] = (IPTR)parsedver.revision;
+    VPrintf("%s %d.%d\n", args);
 }
 
 /* print the full version string */
 void printstring()
 {
-    printf("%s\n", verbuffer);
+    VPrintf("%s\n", (IPTR *)&verbuffer);
 }
 
 /******************************* main program ****************************/

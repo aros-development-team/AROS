@@ -13,7 +13,7 @@
 #include <dos/dos.h>
 #include <proto/utility.h>
 
-static const char version[] = "$VER: ask 41.2 (28.2.1997)\n";
+static const char version[] = "$VER: ask 41.3 (4.7.1997)\n";
 
 static struct UtilityBase *UtilityBase;
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
             int ready = 0;
             while (ready == 0)
             {
-	        printf("%s ", args[0]);
+	        VPrintf("%s ", (IPTR *)&args[0]);
                 if (FGets(Input(), buffer, 100) == (STRPTR)buffer)
 	        {
                     char * tmpbuf;

@@ -15,7 +15,7 @@
 #include <dos/datetime.h>
 #include <devices/timer.h>
 
-static const char version[] = "$VER: date 41.2 (5.3.1997)\n";
+static const char version[] = "$VER: date 41.3 (4.7.1997)\n";
 
 #define ARG_STRING "DAY,DATE,TIME,TO=VER/K"
 #define ARG_DAY 0
@@ -34,12 +34,12 @@ int setdate(STRPTR day, STRPTR date, STRPTR time)
     if (timererror == 0)
     {
         /* !!! */
-        printf("Function not implemented, yet\n");
+        VPrintf("Function not implemented, yet\n", NULL);
         error = RETURN_FAIL;
         CloseDevice((struct IORequest *)&timerreq);
     } else
     {
-        printf("Date: Error opening timer.device\n");
+        VPrintf("Date: Error opening timer.device\n", NULL);
         error = RETURN_FAIL;
     }
 
