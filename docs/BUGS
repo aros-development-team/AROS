@@ -4,3 +4,32 @@ assign DEVS: devs -> ok
 list devs: -> ok
 list devs:nil.handler -> "List: Object is of wrong type"
 
+BUG000002
+digulla@wi-pc44.fh-konstanz.de
+Workbench:> echo > test "Test"
+Couldn't run command: Object not found
+Workbench:> echo Test
+Test
+Workbench:>
+
+BUG000003
+klaus21@t-online.de
+exec.library/RemTail() crashes on an empty list. It should return NULL.
+I wouldn't be too surprised if RemHead() crashes, too. ('Crash' means:
+Segmentation fault.)
+
+BUG000004
+klaus21@t-online.de
+The DosList structure found in AROS:include/dos/dosextens.h isn't
+compatible
+to the original (Amiga) one. The biggest problem: dol_Name is a STRPTR,
+but
+it should be a BSTR.
+(I wrote a program to show the currently mounted devices, and it took me
+some
+time to find out why I got those silly segfaults. BTW, the first
+DosList-entry has
+the name "(Null)", is this the list-head or does it have any special
+meaning (i.e.,
+is it a real device?)
+
