@@ -12,17 +12,16 @@ USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
-#MM workbench-c-wanderer-browse : includes linklibs
+#MM workbench-c-wanderer-browse : workbench-c-wanderer-browse-setup includes linklibs
 
 %make_prog_setup mmake=workbench-c-wanderer-browse
 
-workbench-c-wanderer-browse : setup $(EXE)
+workbench-c-wanderer-browse : $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE) 
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM workbench-c-wanderer-browse-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-c-wanderer-browse-setup
 
 %common
 %include_deps

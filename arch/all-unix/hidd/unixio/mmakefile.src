@@ -48,7 +48,7 @@ OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDI
 # ****** END Not-Native
 endif
 
-#MM- kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
+#MM- kernel-hidd : includes kernel-hidd-$(ARCH)-$(CPU)
 
 #MM
 kernel-hidd-unix : $(LIB)

@@ -5,5 +5,3 @@ include $(TOP)/config/make.cfg
 #MM- kernel-link-linux-i386 : kernel-link-emul
 
 #MM- workbench-linux-i386 : workbench-linux
-
-#MM- setup-linux-i386 : setup-linux

@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-prep-ppc : AROS-ppc general-setup-prep-ppc kernel-prep-ppc
 
-#MM- general-setup-prep-ppc: setup setup-ppc includes
+#MM- general-setup-prep-ppc: setup-ppc includes
 
 #MM- setup-ppc: setup-prep-ppc
 

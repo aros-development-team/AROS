@@ -40,7 +40,7 @@ FUNCS := \
     dodesktopoperation \
     builddesktopmenus
 
-#MM- workbench-libs-desktop : setup includes linklibs
+#MM- workbench-libs-desktop : includes linklibs
 
 %build_module_macro mmake=workbench-libs-desktop \
  modname=desktop modtype=library funcs=$(FUNCS) files=$(FILES) \

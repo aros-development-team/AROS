@@ -20,7 +20,7 @@ FILES :=
 endif
 
 #MM- workbench-fs-complete : workbench-fs-afs
-#MM- workbench-fs-afs : setup includes linklibs
+#MM- workbench-fs-afs : includes linklibs
 
 USER_CFLAGS := -DDEBUG=0
 

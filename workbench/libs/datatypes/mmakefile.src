@@ -38,7 +38,7 @@ INCLUDE_FILES := $(wildcard include/*.h)
 USE_ROMLIB := yes
 USE_AMIGALIB := yes
 
-#MM- workbench-libs-datatypes : setup includes linklibs
+#MM- workbench-libs-datatypes : includes linklibs
 
 %build_module_macro mmake=workbench-libs-datatypes modname=datatypes \
   modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \

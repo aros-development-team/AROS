@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := textclass libfunc support
 FUNCS := obtainengine
 
-#MM workbench-datatypes-text : setup includes linklibs
+#MM workbench-datatypes-text : includes linklibs
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE
 

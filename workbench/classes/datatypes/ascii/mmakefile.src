@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := asciiclass libfunc
 FUNCS := obtainengine
 
-#MM workbench-datatypes-ascii : setup includes linklibs
+#MM workbench-datatypes-ascii : includes linklibs
 
 %build_module_macro mmake=workbench-datatypes-ascii modname=ascii \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \

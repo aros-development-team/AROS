@@ -11,16 +11,15 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 
 #MM- workbench-devs-complete : workbench-devs-midi
-#MM workbench-devs-midi : setup includes linklibs
+#MM workbench-devs-midi : workbench-devs-midi-setup includes linklibs 
 workbench-devs-midi: $(EXE)
 	@$(NOP)
 
 %make_prog_setup mmake=debugdriver
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
-#MM
-setup ::
-	%mkdirs_q $(DEVSDIR)/Midi
+#MM workbench-devs-midi-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-devs-midi-setup
 
 %common
 %include_deps

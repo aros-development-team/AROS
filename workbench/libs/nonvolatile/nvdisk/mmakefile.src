@@ -8,7 +8,7 @@ FUNCS := meminfo \
 	 deletedata \
 	 getitemlist
 
-#MM- workbench-libs-nvdisk : setup includes linklibs
+#MM- workbench-libs-nvdisk : includes linklibs
 
 %build_module_macro mmake=workbench-libs-nvdisk modname=nvdisk \
   modtype=library funcs=$(FUNCS) uselibs=rom conffile=lib.conf

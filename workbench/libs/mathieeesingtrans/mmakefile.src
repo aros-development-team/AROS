@@ -26,7 +26,7 @@ FUNCS := \
     ieeesptanh \
     ieeesptieee
 
-#MM- workbench-libs-mathieeesingtrans : setup includes
+#MM- workbench-libs-mathieeesingtrans : includes
 
 %build_module_macro mmake=workbench-libs-mathieeesingtrans \
   modname=mathieeesingtrans modtype=library \

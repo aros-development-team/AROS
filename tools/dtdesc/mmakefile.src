@@ -7,7 +7,7 @@ EXES := $(AROSDIR)/Build/Tools/createdtdesc \
 USE_CLIB_SHARED := yes
 PRELIBS := $(PRELIBS) -lc_iff
 
-#MM- build-tools : setup linklibs build-tools-dtdesc
+#MM- build-tools : linklibs build-tools-dtdesc
 
 %make_prog_setup mmake=build-tools-dtdesc
 

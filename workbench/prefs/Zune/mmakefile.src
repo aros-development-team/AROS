@@ -16,17 +16,16 @@ USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
 #MM- workbench-prefs : workbench-prefs-zune
-#MM workbench-prefs-zune : includes linklibs
+#MM workbench-prefs-zune : workbench-prefs-zune-setup includes linklibs
 
 %make_prog_setup mmake=workbench-prefs-zune
 
-workbench-prefs-zune : setup $(EXE)
+workbench-prefs-zune : $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM workbench-prefs-zune-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-prefs-zune-setup
 
 %common
 %include_deps

@@ -16,10 +16,6 @@ LIB		:= $(SLIBDIR)/example.library
 clean :
 	$(RM) *.o $(LIB)
 
-#MM setup : setup-clib
-setup :
-	@$(NOP)
-
 #MM
 setup-clib : make-dirs copy-scripts
 

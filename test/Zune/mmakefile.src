@@ -14,17 +14,16 @@ USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
-#MM test-zune : includes linklibs
+#MM test-zune : test-zune-setup includes linklibs
 
 %make_prog_setup mmake=test-zune
 
-test-zune : setup $(EXES)
+test-zune : $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM test-zune-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=test-zune-setup
 
 %common
 %include_deps

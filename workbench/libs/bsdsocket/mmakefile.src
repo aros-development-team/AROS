@@ -49,7 +49,7 @@ FUNCS := \
     vsyslog \
     waitselect
 
-#MM- workbench-libs-bsdsocket : setup includes linklibs
+#MM- workbench-libs-bsdsocket : includes linklibs
 
 %build_module_macro mmake=workbench-libs-bsdsocket modname=bsdsocket \
   modtype=library funcs=$(FUNCS) conffile=lib.conf

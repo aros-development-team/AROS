@@ -35,9 +35,8 @@ LIBS = -L$(LIBDIR) -larosc
 
 .PHONY: all clean setup
 
-#MM
+#MM arosboot : arosboot-setup
 arosboot : $(BINDIR)/arosboot $(BINDIR)/arosboot.config $(BINDIR)/arosboot.doc $(TOOLS)
-	@$(NOP)
 
 #MM
 clean ::
@@ -45,7 +44,7 @@ clean ::
 	-rm -f $(TOOLS)
 
 #MM
-setup :
+arosboot-setup :
 	@$(IF) [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
 	@$(IF) [ ! -d $(BOOTGENDIR) ]; then $(MKDIR) $(BOOTGENDIR) ; else true ; fi
 	@$(IF) [ ! -d $(TOOLDIR) ]; then $(MKDIR) $(TOOLDIR) ; else true ; fi

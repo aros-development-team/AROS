@@ -2,9 +2,9 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel : kernel-exec-kobj
-#MM kernel-exec-linklib : setup includes kernel-exec-$(ARCH)-$(CPU)
-#MM kernel-exec-module : setup includes kernel-exec-$(ARCH)-$(CPU)
-#MM kernel-exec-kobj : setup includes kernel-exec-$(ARCH)-$(CPU)
+#MM kernel-exec-linklib : includes kernel-exec-$(ARCH)-$(CPU)
+#MM kernel-exec-module : includes kernel-exec-$(ARCH)-$(CPU)
+#MM kernel-exec-kobj : includes kernel-exec-$(ARCH)-$(CPU)
 
 ALL_FUNCTIONS	:= \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \

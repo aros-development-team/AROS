@@ -36,7 +36,7 @@ USER_INCLUDES := -I. -I../main
 USE_CLIB := yes
 
 #MM- test: test-jpeg
-#MM test-jpeg : includes linklibs
+#MM test-jpeg : includes linklibs test-jpeg-setup
 
 %make_prog_setup mmake=test-jpeg
 
@@ -62,9 +62,8 @@ FILES := $(FILES4)
 FILES := $(FILES5)
 %make_prog_multi dir=$(EXEDIR) target=$(EXE5)
 
-#MM setup
-setup ::
-	%mkdir_q $(EXEDIR)
+#MM test-jpeg-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=test-jpeg-setup
 	
 %common
 %include_deps

@@ -18,13 +18,12 @@ FILES := \
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM workbench-libs-freetype-graph : setup includes linklibs
+#MM workbench-libs-freetype-graph : workbench-libs-freetype-graph-setup includes linklibs
 workbench-libs-freetype-graph : $(LIB)
 	@$(NOP)
 
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(OBJDIR)/aros
+#MM workbench-libs-freetype-graph-setup
+%rule_makedirs dirs="$(OBJDIR) $(OBJDIR)/aros" setuptarget=workbench-libs-freetype-graph-setup
 
 #MM
 clean ::

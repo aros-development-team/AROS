@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := pictureclass libfunc colorhandling prefs
 FUNCS := obtainengine
 
-#MM workbench-datatypes-picture : setup includes linklibs
+#MM workbench-datatypes-picture : includes linklibs
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
 

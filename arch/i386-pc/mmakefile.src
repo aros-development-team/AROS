@@ -10,7 +10,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 \
 #MM	    config-i386-native-boot-grub bootdisk-pc-i386
 
-#MM- general-setup-pc-i386: setup setup-pc-i386 includes compiler
+#MM- general-setup-pc-i386: setup-pc-i386 includes compiler
 
 #MM- kernel-pc-i386 : general-setup-pc-i386
 

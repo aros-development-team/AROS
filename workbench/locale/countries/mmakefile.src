@@ -14,7 +14,7 @@ COUNTIFF     := $(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
 USER_DEFINES := -D_EURO
 
 #MM- workbench-locale : workbench-locale-countries
-#MM workbench-locale-countries : setup includes
+#MM workbench-locale-countries : workbench-locale-countries-setup includes
 
 workbench-locale-countries: $(MAKECOUNTRY) $(COUNTIFF)
 
@@ -35,9 +35,8 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(AROS_LOCALE) $(COUNTRYDIR)
+#MM workbench-locale-countries-setup : workbench-locale-setup
+%rule_makedirs dirs="$(OBJDIR) $(COUNTRYDIR)" setuptarget=workbench-locale-countries-setup
 
 #MM
 clean ::

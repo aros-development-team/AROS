@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := binaryclass libfunc
 FUNCS := obtainengine
 
-#MM workbench-datatypes-binary : setup includes linklibs
+#MM workbench-datatypes-binary : includes linklibs
 
 %build_module_macro mmake=workbench-datatypes-binary modname=binary \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \

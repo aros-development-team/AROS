@@ -44,7 +44,7 @@ FUNCS := \
 	upfrontlayer \
 	whichlayer
 
-#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
+#MM kernel-layers-linklib : includes kernel-layers-$(ARCH)-$(CPU)
 
 %build_module_macro mmake=kernel-layers \
   modname=layers modtype=library \

@@ -21,7 +21,7 @@ FUNCS	:=  opendiskfont	\
 	    disposefontcontents \
 	    newscaleddiskfont
 
-#MM- workbench-libs-diskfont : setup includes linklibs
+#MM- workbench-libs-diskfont : includes linklibs
 
 %build_module_macro mmake=workbench-libs-diskfont modname=diskfont \
   modtype=library funcs=$(FUNCS) files=$(FILES) \

@@ -7,7 +7,7 @@ FILES := jpegclass libfunc
 FUNCS := obtainengine
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
-#MM workbench-datatypes-jpg : setup includes linklibs linklibs-jpg
+#MM workbench-datatypes-jpg : includes linklibs linklibs-jpg
 
 %build_module_macro mmake=workbench-datatypes-jpeg modname=jpeg \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \

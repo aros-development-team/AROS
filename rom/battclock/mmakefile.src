@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-battclock : setup includes kernel-battclock-$(ARCH)-$(CPU)
-#MM kernel-battclock-linklib : setup includes kernel-battclock-$(ARCH)-$(CPU)
+#MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
+#MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
 
 FUNCTIONS := readbattclock resetbattclock writebattclock
 

@@ -282,7 +282,7 @@ CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h) \
                  $(foreach f, $(EXTCLASSES), classes/$(f).h)
 FILES         := $(FILES) $(CLASSFILES)
 
-#MM- workbench-libs-muimaster : setup includes linklibs
+#MM- workbench-libs-muimaster : includes linklibs
 
 %build_module_macro mmake=workbench-libs-muimaster modname=muimaster \
   modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui amiga arosc m" \
