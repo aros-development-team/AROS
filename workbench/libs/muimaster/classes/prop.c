@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +22,7 @@
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PropData
+struct Prop_DATA
 {
     ULONG entries;
     ULONG first;
@@ -38,12 +36,10 @@ struct MUI_PropData
     struct MUI_EventHandlerNode ehn;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PropData *data;
+    struct Prop_DATA *data;
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL, TAG_MORE, (IPTR) msg->ops_AttrList);
@@ -95,22 +91,16 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Prop_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Prop__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    //struct MUI_PropData *data = INST_DATA(cl, obj);
+    //struct Prop_DATA *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static ULONG Prop_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     int refresh = 0;
     int only_trigger = 0;
 
@@ -162,14 +152,10 @@ static ULONG Prop_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-
-/**************************************************************************
- OM_GET
-**************************************************************************/
 #define STORE *(msg->opg_Storage)
-static ULONG Prop_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
     	case    MUIA_Prop_First:
@@ -192,12 +178,9 @@ static ULONG Prop_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static ULONG Prop_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Prop__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
 
     /*
     ** let our superclass first fill in what it thinks about sizes.
@@ -231,12 +214,9 @@ static ULONG Prop_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
    return TRUE;
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Prop__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     if (!rc) return 0;
 
@@ -250,12 +230,9 @@ static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static ULONG Prop_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Prop__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     if (!data->usewinborder)
     {
 	DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
@@ -264,12 +241,9 @@ static ULONG Prop_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!data->usewinborder)
@@ -346,12 +320,9 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     return rc;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static ULONG Prop_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Prop__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
 
     /* No drawings if own border */
     if (data->usewinborder) return 0;
@@ -363,12 +334,9 @@ static ULONG Prop_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static ULONG Prop_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Prop__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     if (data->prop_object)
     {
     	if (!data->usewinborder)
@@ -385,12 +353,9 @@ static ULONG Prop_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
-static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     if (msg->imsg)
     {
     	if (msg->imsg->Class == IDCMP_IDCMPUPDATE)
@@ -414,24 +379,18 @@ static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
     return 0;
 }
 
-/**************************************************************************
- MUIM_Prop_Increase
-**************************************************************************/
-static ULONG Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Increase *msg)
+IPTR Prop__MUIM_Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Increase *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
     LONG newfirst = data->first + msg->amount * data->deltafactor;
     if (newfirst + data->visible > data->entries) newfirst = data->entries - data->visible;
     if (newfirst != data->first) set(obj,MUIA_Prop_First,newfirst);
     return 1;
 }
 
-/**************************************************************************
- MUIM_Prop_Decrease
-**************************************************************************/
-static ULONG Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decrease *msg)
+IPTR Prop__MUIM_Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decrease *msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
+    struct Prop_DATA *data = INST_DATA(cl, obj);
 
     /* We cannot decrease if if are on the top */
     if (!data->first) return 1;
@@ -446,31 +405,28 @@ BOOPSI_DISPATCHER(IPTR, Prop_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Prop_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Prop_Dispose(cl, obj, msg);
-	case OM_GET: return Prop_Get(cl, obj, (struct opGet *)msg);
-	case OM_SET: return Prop_Set(cl, obj, (struct opSet *)msg);
-	case MUIM_Setup: return Prop_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Prop_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show: return Prop_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide: return Prop_Hide(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Prop_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Prop_Draw(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Prop_HandleEvent(cl, obj, (APTR)msg);
-	case MUIM_Prop_Decrease: return Prop_Decrease(cl, obj, (APTR)msg);
-	case MUIM_Prop_Increase: return Prop_Increase(cl, obj, (APTR)msg);
+	case OM_NEW:             return Prop__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:         return Prop__OM_DISPOSE(cl, obj, msg);
+	case OM_GET:             return Prop__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_SET:             return Prop__OM_SET(cl, obj, (struct opSet *)msg);
+	case MUIM_Setup:         return Prop__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:       return Prop__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show:          return Prop__MUIM_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide:          return Prop__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax:     return Prop__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:          return Prop__MUIM_Draw(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent:   return Prop__MUIM_HandleEvent(cl, obj, (APTR)msg);
+	case MUIM_Prop_Decrease: return Prop__MUIM_Prop_Decrease(cl, obj, (APTR)msg);
+	case MUIM_Prop_Increase: return Prop__MUIM_Prop_Increase(cl, obj, (APTR)msg);
+        default:                 return DoSuperMethodA(cl, obj, msg);
 
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Prop_desc = { 
+const struct __MUIBuiltinClass _MUI_Prop_desc =
+{ 
     MUIC_Prop, 
     MUIC_Area, 
-    sizeof(struct MUI_PropData), 
+    sizeof(struct Prop_DATA), 
     (void*)Prop_Dispatcher 
 };
