@@ -35,7 +35,7 @@
 
 /****************************************************************************************/
 
-STRPTR OTAG_MakeFileName(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+STRPTR OTAG_MakeFileName(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     STRPTR  retval;
     LONG    l;
@@ -68,7 +68,7 @@ VOID OTAG_FreeFileName(STRPTR filename, struct DiskfontBase_intern *DiskfontBase
 
 /****************************************************************************************/
 
-struct OTagList *OTAG_GetFile(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FileInfoBlock    *fib;
     struct OTagList	    *otaglist;

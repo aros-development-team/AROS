@@ -76,7 +76,7 @@ SKIPPTR(ptr);
 
 /****************************************************************************************/
 
-struct DiskFontHeader *ConvDiskFont(BPTR seglist, STRPTR fontname,
+struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     	    	    	      struct DiskfontBase_intern *DiskfontBase)
 {
     UWORD count, numchars;
@@ -102,6 +102,8 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, STRPTR fontname,
     BPTR    fontsegment = NULL;
     BOOL    fontextended = FALSE;
     
+    CONST_STRPTR filepart;
+
     EnterFunc(bug("ConvDiskFont(seglist=%p, fontname=%s)\n", seglist, fontname));		
 
     /* Clear temporary diskfontheader struct */
@@ -297,11 +299,11 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, STRPTR fontname,
 
     /* ----------------------- */
     /* Add fontname */
-    
-    i = strlen(FilePart(fontname)) + 1;
+    filepart = FilePart(fontname);
+    i = strlen(filepart) + 1;
     if (i >= sizeof(dfh->dfh_Name)) i = sizeof(dfh->dfh_Name) - 1;
     
-    CopyMem(FilePart(fontname), dfh->dfh_Name, i);
+    CopyMem((STRPTR) filepart, dfh->dfh_Name, i);
     
     tf->tf_Message.mn_Node.ln_Name = dfh->dfh_Name;
     dfh->dfh_DF.ln_Name = dfh->dfh_Name;
@@ -481,7 +483,7 @@ void DisposeConvDiskFont(struct DiskFontHeader *dfh,
 
 struct TextFont *ReadDiskFont(
 	struct TTextAttr *reqattr,
-	STRPTR realfontname,
+	CONST_STRPTR realfontname,
 	struct DiskfontBase_intern *DiskfontBase)
 {	
     struct DiskFontHeader *dfh = NULL;

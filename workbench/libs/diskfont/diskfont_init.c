@@ -165,6 +165,10 @@ AROS_UFH3(struct DiskfontBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
 
     NEWLIST(&LIBBASE->diskfontlist);
 
+#ifdef __MORPHOS__
+    LIBBASE->library.lib_Revision = REVISION_NUMBER;
+#endif
+
     /* You would return NULL here if the init failed. */
     return LIBBASE;
 
@@ -189,51 +193,75 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	at the same time. Take care.
     */
 
-    /* Hook descriptions */
-    struct AFHookDescr hdescrdef[] =
-    {
-	{AFF_MEMORY	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(MemoryFontFunc)	 , 0L, 0L}},
-	{AFF_DISK	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(DiskFontFunc)	 , 0L, 0L}}
-    };
-
-	UWORD idx;
-
     /* Keep compiler happy */
-    version = 0;
+    (void) version;
 
     D(bug("Inside openfunc\n"));
-
-    if (!DOSBase)
-	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-    if (!DOSBase)
-	return(NULL);
-
-    if (!GfxBase)
-    GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    if (!GfxBase)
-	return(NULL);
-
-    if (!UtilityBase)
-	UtilityBase = OpenLibrary("utility.library", 37);
-    if (!UtilityBase)
-	return(NULL);
-
-    /* Insert the fonthooks into the DiskfontBase */
-
-    for (idx = 0; idx < NUMFONTHOOKS; idx ++)
-    {
-	LIBBASE->hdescr[idx] = hdescrdef[idx];
-    }
-
-    LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
-    LIBBASE->dsh.h_Data = DOSBase;
 
     /* I have one more opener. */
 #if ALWAYS_ZERO_LIBCOUNT
     LIBBASE->realopencount++;
+    if (LIBBASE->realopencount == 1)
 #else
     LIBBASE->library.lib_OpenCnt++;
+    if (LIBBASE->library.lib_OpenCnt == 1)
 #endif
+    {
+    /* Hook descriptions */
+	static const struct AFHookDescr hdescrdef[] =
+	{
+	    {AFF_MEMORY	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(MemoryFontFunc)	 , 0L, 0L}},
+	    {AFF_DISK	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(DiskFontFunc)	 , 0L, 0L}}
+	};
+	UWORD idx;
+
+
+	if (!DOSBase)
+	    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+	if (!DOSBase)
+	{
+#if ALWAYS_ZERO_LIBCOUNT
+	    LIBBASE->realopencount--;
+#else
+	    LIBBASE->library.lib_OpenCnt--;
+#endif
+	    return NULL;
+	}
+
+	if (!GfxBase)
+	    GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+	if (!GfxBase)
+	{
+#if ALWAYS_ZERO_LIBCOUNT
+	    LIBBASE->realopencount--;
+#else
+	    LIBBASE->library.lib_OpenCnt--;
+#endif
+	    return NULL;
+	}
+
+	if (!UtilityBase)
+	    UtilityBase = OpenLibrary("utility.library", 37);
+	if (!UtilityBase)
+	{
+#if ALWAYS_ZERO_LIBCOUNT
+	    LIBBASE->realopencount--;
+#else
+	    LIBBASE->library.lib_OpenCnt--;
+#endif
+	    return NULL;
+	}
+
+    /* Insert the fonthooks into the DiskfontBase */
+
+	for (idx = 0; idx < NUMFONTHOOKS; idx ++)
+	{
+	    LIBBASE->hdescr[idx] = hdescrdef[idx];
+	}
+
+	LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
+	LIBBASE->dsh.h_Data = DOSBase;
+    }
 
     LIBBASE->library.lib_Flags&=~LIBF_DELEXP;
 
@@ -296,13 +324,13 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 	    if (!(dfh->dfh_TF.tf_Flags & FPF_REMOVED))
 	    {
 		/* Unlink from GfxBase->TextFonts */
-		Remove(&dfh->dfh_TF.tf_Message.mn_Node);
+		REMOVE(&dfh->dfh_TF.tf_Message.mn_Node);
 
 		StripFont(&dfh->dfh_TF);
 
 		/* Unlink from DiskfontBase->diskfontlist */
 
-		Remove(&dfh->dfh_DF);
+		REMOVE(&dfh->dfh_DF);
 
 		UnLoadSeg(dfh->dfh_Segment);
 	    }
@@ -334,7 +362,9 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
     DOSBase = NULL;
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&LIBBASE->library.lib_Node);
+    Forbid();
+    REMOVE(&LIBBASE->library.lib_Node);
+    Permit();
 
     /* Get returncode here - FreeMem() will destroy the field. */
     ret=LIBBASE->seglist;

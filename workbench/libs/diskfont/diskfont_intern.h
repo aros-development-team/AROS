@@ -88,10 +88,19 @@
 #define FHC_ODF_OPENFONT	7
 
 /* ID for cache-file */
+#ifdef __MORPHOS__
+#define CACHE_IDSTR "MORPHOS_FC"
+#else
 #define CACHE_IDSTR "AROS_FC"
+#endif
 
 /* Path to the cachefile */
+#ifdef __MORPHOS__
+#define CACHE_FILE      "FONTS:_fontcache"
+#else
 #define CACHE_FILE "FONTS:cachefile"
+#endif
+#define PROGDIRFONTSDIR "PROGDIR:Fonts/"
 #define FONTSDIR "FONTS:"
 
 /* Structure for storing TAvailFonts elements */
@@ -236,13 +245,13 @@ VOID  UpdatePointers	(UBYTE *, ULONG, struct MinList *, struct DiskfontBase_inte
 
 /* diskfont_io.c */
 
-struct DiskFontHeader *ConvDiskFont(BPTR, STRPTR, struct DiskfontBase_intern *);
+struct DiskFontHeader *ConvDiskFont(BPTR, CONST_STRPTR, struct DiskfontBase_intern *);
 void DisposeConvDiskFont(struct DiskFontHeader *, struct DiskfontBase_intern *);
-struct TextFont *ReadDiskFont(struct TTextAttr *, STRPTR, struct DiskfontBase_intern *);
+struct TextFont *ReadDiskFont(struct TTextAttr *, CONST_STRPTR, struct DiskfontBase_intern *);
 
 /* af_fontdescr_io.c */
 
-struct FontDescrHeader *ReadFontDescr(STRPTR,  struct DiskfontBase_intern *);
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR, BOOL, struct DiskfontBase_intern *);
 VOID FreeFontDescr(struct FontDescrHeader *, struct DiskfontBase_intern *);
 
 /* af_fontcache_io.c */
@@ -269,9 +278,9 @@ AROS_UFP3(LONG, dosstreamhook,
 
 /* bullet.c */
 
-STRPTR OTAG_MakeFileName(STRPTR, struct DiskfontBase_intern *);
+STRPTR OTAG_MakeFileName(CONST_STRPTR, struct DiskfontBase_intern *);
 VOID OTAG_FreeFileName(STRPTR, struct DiskfontBase_intern *);
-struct OTagList *OTAG_GetFile(STRPTR, struct DiskfontBase_intern *);
+struct OTagList *OTAG_GetFile(CONST_STRPTR, struct DiskfontBase_intern *);
 VOID OTAG_KillFile(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetFontStyle(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetSupportedStyles(struct OTagList *, struct DiskfontBase_intern *);

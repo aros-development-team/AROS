@@ -39,6 +39,7 @@ struct DirEntry
     struct MinNode  	Node;
     struct FileEntry	*FileList;
     BPTR    	    	DirLock;
+    BOOL		ProgdirFlag;
 };
 
 struct DFHData /*DiskFontHookData */
@@ -54,6 +55,12 @@ struct DFHData /*DiskFontHookData */
     struct DirEntry 	    	*CurrentDirEntry;
     struct FileEntry		*CurrentFileEntry;
     STRPTR  	    	    	CurrentFontDescrName;
+};
+
+struct FontPath
+{
+	CONST_STRPTR	Path;
+	BOOL		ProgdirFlag;
 };
 
 /****************************************************************************************/
@@ -189,7 +196,7 @@ STATIC BOOL LoadNext(struct DFHData *dfhd, struct DiskfontBase_intern *DiskfontB
 	{
 	    CurrentDir(dfhd->CurrentDirEntry->DirLock);
 	    	    
-     	    if ((dfhd->CurrentFDH = ReadFontDescr(curfile->FileName, DFB(DiskfontBase))) != 0 )
+     	    if ((dfhd->CurrentFDH = ReadFontDescr(curfile->FileName, dfhd->CurrentDirEntry->ProgdirFlag, DFB(DiskfontBase))) != 0 )
        	    {
 	    	dfhd->CurrentFontDescrName = curfile->FileName;
 		
@@ -278,6 +285,48 @@ STATIC struct DFHData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
 	dfhd->OldDirLock = CurrentDir(0);
 	CurrentDir(dfhd->OldDirLock);
 	
+#ifdef PROGDIRFONTSDIR
+	do
+	{
+	    struct Process *Self;
+	    APTR oldwinptr;
+	    struct DirEntry *direntry;
+
+	    if (!GetProgramDir())
+		break;
+
+	    direntry = AllocVec(sizeof(struct DirEntry), MEMF_ANY | MEMF_CLEAR);
+	    if (!direntry) break;
+
+	    Self = (struct Process *) FindTask(NULL);
+	    oldwinptr          = Self->pr_WindowPtr;
+	    Self->pr_WindowPtr = (APTR) -1;
+	    direntry->DirLock  = Lock(PROGDIRFONTSDIR, ACCESS_READ);
+	    Self->pr_WindowPtr = oldwinptr;
+
+	    D(bug("AllocResources: PROGDIR:Fonts DirLock = 0x%lx\n", direntry->DirLock));
+
+	    if (!direntry->DirLock)
+	    {
+		FreeVec(direntry);
+		break;
+	    }
+
+	    if (!(direntry->FileList = GetFileList(direntry->DirLock, DFB(DiskfontBase))))
+	    {
+		UnLock(direntry->DirLock);
+		FreeVec(direntry);
+		break;
+	    }
+
+	    direntry->ProgdirFlag = TRUE;
+
+	    D(bug("AllocResources: addtail direntry 0x%lx\n", direntry));
+	    ADDTAIL((struct List *)&dfhd->DirList, (struct Node *)direntry);
+
+	} while (0);
+#endif
+
 	for(;;)
 	{
 	    dp = GetDeviceProc(FONTSDIR, dp);
@@ -301,7 +350,9 @@ STATIC struct DFHData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
 		    break;
 		}
 		
-		AddTail((struct List *)&dfhd->DirList, (struct Node *)direntry);
+		//direntry->ProgdirFlag = FALSE;
+
+		ADDTAIL((struct List *)&dfhd->DirList, (struct Node *)direntry);
 		
 	    } /* if (dp) */
 	    else
@@ -358,6 +409,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             
             if (!(fhc->fhc_UserData = dfhd = AllocResources( DFB(DiskfontBase) )))
 	    {
+		D(bug("DiskFontFunc: can't alloc resources\n"));
             	retval = FALSE;
 	    }
             else
@@ -447,10 +499,48 @@ AROS_UFH3(IPTR, DiskFontFunc,
             ds = fhc->fhc_UserData;
             retval = FALSE;
             
+#if 1
+	    if ((fib = AllocDosObject(DOS_FIB,NULL)))
+	    {
+		struct DevProc *devproc = NULL, *dp = NULL;
+		struct DateStamp date = {0};
+
+		do
+		{
+		    dp = GetDeviceProc(FONTSDIR, dp);
+		    if (!dp)
+			break;
+
+		    if (!devproc)
+			devproc = dp;
+
+		    if (Examine(dp->dvp_Lock, fib))
+		    {
+			if (CompareDates(&date, &fib->fib_Date) > 0)
+			{
+			    date = fib->fib_Date;
+
+			    retval = TRUE;
+			}
+		    }
             
-            if ((lock = Lock(FONTSDIR, SHARED_LOCK)) != 0)
+		}
+		while (dp->dvp_Flags & DVPF_ASSIGN);
+
+		FreeDeviceProc(devproc);
+	    
+		FreeDosObject(DOS_FIB, fib);
+
+		if (retval)
             {
-                if ((fib = AllocDosObject(DOS_FIB,NULL)) != 0)
+		    *ds = date;
+		}
+	    }
+#else
+#warning "FIXME: scan all parts of multiassign and find the one with latest changedate"
+            if ((lock = Lock(FONTSDIR, SHARED_LOCK)))
+            {
+                if ((fib = AllocDosObject(DOS_FIB,NULL)))
                 {
                     if (Examine(lock,fib))
                     {
@@ -463,6 +553,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
                 }
                 UnLock(lock);
             }
+#endif
             break;
 		
 	case FHC_ODF_INIT:
@@ -472,32 +563,76 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    {
 		fhc->fhc_UserData = dfhd;
 
-		filename = AllocVec(
-		    sizeof (FONTSDIR) + strlen(fhc->fhc_ReqAttr->tta_Name) + 1,
-		    MEMF_ANY);
-		if (filename)
+		D(bug("DiskFontFunc: FilePart %s fontname %s\n",
+			FilePart(fhc->fhc_ReqAttr->tta_Name),
+			fhc->fhc_ReqAttr->tta_Name));
+
+		if (FilePart(fhc->fhc_ReqAttr->tta_Name) != fhc->fhc_ReqAttr->tta_Name)
 		{
-		    if (FilePart(fhc->fhc_ReqAttr->tta_Name) == fhc->fhc_ReqAttr->tta_Name)
+		    D(bug("DiskFontFunc: wrong names\n"));
+		    dfhd->CurrentFDH = ReadFontDescr(fhc->fhc_ReqAttr->tta_Name, FALSE, DFB(DiskfontBase));
+		    D(bug("DiskFontFunc: FDH 0x%lx\n",dfhd->CurrentFDH));
+		}
+		else
+		{
+#ifdef PROGDIRFONTSDIR
+		    filename = AllocVec(
+			sizeof (PROGDIRFONTSDIR) + strlen(fhc->fhc_ReqAttr->tta_Name) + 1,
+			MEMF_ANY);
+#else
+		    filename = AllocVec(
+		        sizeof (FONTSDIR) + strlen(fhc->fhc_ReqAttr->tta_Name) + 1,
+			MEMF_ANY);
+#endif
+		    if (filename)
 		    {
-		    	strcpy(filename, FONTSDIR);
+
+			const struct FontPath fontpaths[] =
+			{
+#ifdef PROGDIRFONTSDIR
+			    {PROGDIRFONTSDIR, TRUE},		/* MUST BE THE FIRST ONE ! */
+#endif
+			    {FONTSDIR,        FALSE}
+			};
+#ifdef PROGDIRFONTSDIR
+			int index = GetProgramDir() ? 0 : 1;
+#else
+			int index = 0;
+#endif
+			for (;
+			     index < (sizeof(fontpaths) / sizeof(fontpaths[0]));
+			     index++)
+			{
+			    strcpy(filename, fontpaths[index].Path);
+			    strcat(filename, fhc->fhc_ReqAttr->tta_Name);
+
+			    D(bug("DiskFontFunc: try reading font \"%s\"\n", filename));
+
+			    dfhd->CurrentFDH = ReadFontDescr(filename, fontpaths[index].ProgdirFlag, DFB(DiskfontBase));
+
+			    if (dfhd->CurrentFDH)
+			    {
+				D(bug("DiskFontFunc: FDH 0x%lx found\n",dfhd->CurrentFDH));
+				break;
+			    }
+			}
+
+			FreeVec(filename);
 		    }
 		    else
 		    {
-		    	filename[0] = 0;
-		    }
-		    strcat(filename, fhc->fhc_ReqAttr->tta_Name);
-
-
-		    dfhd->CurrentFDH = ReadFontDescr(filename, DFB(DiskfontBase));
-
-		    FreeVec(filename);
-		    if (dfhd->CurrentFDH)
-		    {
-			dfhd->TTextAttrIndex = 0;
-			retval = FH_SUCCESS;
-			break;
+			D(bug("DiskFontFunc: can't alloc filename\n"));
 		    }
 		}
+
+		if (dfhd->CurrentFDH)
+		{
+		    D(bug("DiskFontFunc: success\n"));
+		    dfhd->TTextAttrIndex = 0;
+		    retval = FH_SUCCESS;
+		    break;
+		}
+
 		FreeMem(dfhd, sizeof (struct DFHData));
 	    }
 	    retval = FALSE;
@@ -626,7 +761,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
     	    	    /* Paranoia check */
     	    	    if (dfh->dfh_FileID == DFH_ID)
 		    {
-		    	AddTail(&DiskfontBase->diskfontlist, &dfh->dfh_DF);
+		    	ADDTAIL(&DiskfontBase->diskfontlist, &dfh->dfh_DF);
 		    }
 		}
 		Permit();

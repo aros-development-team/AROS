@@ -220,7 +220,7 @@ BOOL ScanFontInfo
 			    break;
 			}
 
-        		strcpy(destattr->tta_Name, srcattr->tta_Name);
+        		memcpy(destattr->tta_Name, srcattr->tta_Name, finode->NameLength);
         	    }
 
         	    /* Likewise with tags */
