@@ -23,7 +23,8 @@ BEGIN {
 	my $prototype = $params{'prototype'};
 	my $sfd       = $self->{SFD};
 
-	if ($prototype->{type} eq 'function' ||
+	if ($prototype->{type} eq 'function'  ||
+	    $prototype->{type} eq 'cfunction' ||
 	    $prototype->{type} eq 'varargs') {
 	    printf "	((struct $sfd->{BaseName}IFace *)___base)->$prototype->{funcname}(";
 	}
