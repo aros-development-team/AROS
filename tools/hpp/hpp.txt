@@ -84,7 +84,7 @@ This will be passed to exampleblock in body.
 </exampleblock>
 
 ------------------------------------------------------------------------------
-<EDEF NAME=name [OPTION=string] [BEGIN=text] [END=text]>
+<EDEF NAME=name [OPTION=string [DEFAULT=value]] [BEGIN=text] [END=text]>
 
 This defines an environment. If you define an environment with the same
 name as a block or a macro, then the environment will be used if <name...>
