@@ -18,6 +18,7 @@ CLASSES   := application \
 	     prop \
 	     rectangle \
 	     register \
+	     semaphore \
 	     scrollbar \
 	     scrollbutton \
 	     scrollgroup \
