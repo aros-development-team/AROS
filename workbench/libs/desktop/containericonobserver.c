@@ -53,7 +53,8 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     BYTE            terminator;
     struct NewMenu *menuDat;
     Object         *desktop = NULL;
-
+    STRPTR          title = NULL;
+    
     data = (struct ContainerIconObserverClassData *) INST_DATA(cl, obj);
     retval = DoSuperMethodA(cl, obj, msg);
 
@@ -71,11 +72,13 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
         strcpy(newDir, directory);
         strcat(newDir, name);
         strcat(newDir, "/");
+        title = name;
     }
     else
     {
         strcpy(newDir, name);
         strcat(newDir, ":");
+        title = newDir;
     }
 
     horiz = PropObject,
@@ -118,13 +121,14 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     dirWindow = WindowObject,
         MUIA_Window_Width, 300,
         MUIA_Window_Height, 300,
-        MUIA_Window_Menustrip, strip =
-        MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+        MUIA_Window_Title,  title,
+        MUIA_Window_Menustrip, strip = MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
         MUIA_Window_UseBottomBorderScroller, TRUE,
-        MUIA_Window_UseRightBorderScroller, TRUE, MUIA_Window_EraseArea,
-        FALSE, WindowContents, iconcontainer,
-    // End,
-        End;
+        MUIA_Window_UseRightBorderScroller,  TRUE,
+        MUIA_Window_EraseArea,               FALSE,
+        
+        WindowContents, iconcontainer,
+    End;
 
     DoMethod(_app(_presentation(obj)), OM_ADDMEMBER, dirWindow);
 
