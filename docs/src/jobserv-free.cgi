@@ -12,9 +12,48 @@ if ($sock < 0)
 $login = getenv ("REMOTE_USER");
 $name = getUserName ($sock, $login);
 
-echo ("Content-type: text/html\n\n");
+printf ("Content-type: text/html\n\n");
 
-$res = msqlQuery ($sock, "select jobid,comment from jobs where status = 0 order by comment");
+debugenv(1,$argc,$argv);
+
+$jobids="";
+
+$query_string = getenv ("QUERY_STRING");
+
+if ($query_string != "")
+{
+    $args = split ($query_string, "&");
+
+    if (# $args > 0)
+    {
+	$query_string = "";
+
+	$t = 0;
+
+	while ($t < #$args)
+	{
+	    $area = split ($args[$t], "=");
+	    $t = $t + 1;
+
+	    if ($jobids != "")
+	    {
+		$jobids = $jobids + " or ";
+	    }
+
+	    $jobids = $jobids + "jobid like '" + $area[1] + "%'";
+	}
+    }
+}
+
+if ($jobids != "")
+{
+    $jobids = "and (" + $jobids + ")";
+}
+
+printf ("%s<P>\n", $jobids);
+
+$res = msqlQuery ($sock, "select jobid,comment from jobs where status = 0 " +
+	    $jobids + " order by comment");
 
 if ($res < 0)
 {
