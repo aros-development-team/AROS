@@ -5,6 +5,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/11/18 09:23:56  aros
+    Fixed typo (missing U)
+
     Revision 1.2  1996/10/14 11:16:25  digulla
     Protect all typedefs with #define __typedef_*
 
@@ -36,9 +39,9 @@ typedef void *		    APTR;   /* memory pointer */
 #ifndef __typedef_IPTR
 #   define __typedef_IPTR
 #   ifdef AROS_IPTR_TYPE
-        typedef AROS_IPTR_TYPE		    IPTR;
+	typedef AROS_IPTR_TYPE		    IPTR;
 #   else
-        typedef unsigned long		    IPTR;
+	typedef unsigned long		    IPTR;
 #   endif
 #endif
 
@@ -65,7 +68,7 @@ typedef   signed long long	    QUAD;   /* signed 64-bit value */
 typedef unsigned long long	    UQUAD;  /* unsigned 64-bit-value */
 #else
 typedef struct {  LONG high, low }  QUAD;   /* signed 64-bit value */
-typedef struct { ULONG high, low }  QUAD;   /* unsigned 64-bit value */
+typedef struct { ULONG high, low }  UQUAD;  /* unsigned 64-bit value */
 #endif /* __GNUC__ */
 #endif /* AROS_64BIT_TYPE */
 #endif
