@@ -1,0 +1,64 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Autodoc for the Root interface.
+    Lang: english
+*/
+
+Methods:
+
+NAME
+	M_Root_New
+	
+SYNOPSIS
+	See NewObjectA() doc.
+
+FUNCTION
+	Creates a new object of some class. Class users should use
+	NewObjectA() to create an object.
+	
+----------------------
+
+NAME
+	M_Root_Dispose
+	
+SYNOPSIS
+	See DisposeObject() doc.
+	
+FUNCTION
+	Used internally to dispose of an object previously
+	created using the M_Root_New method.			
+		
+
+----------------------
+
+NAME
+	M_Root_Set
+	
+SYNOPSIS
+	VOID Set(Object *object, ULONG attrID, IPTR val);
+
+FUNCTION
+	Set an attribute of an object.
+
+EXAMPLE
+	Set(hidd, HIDDA_Producer, "Acme Inc.");
+		
+----------------------
+NAME
+	M_Root_Get
+
+SYNOPSIS
+	VOID Get(Object *object, ULONG attrID, IPTR *storage);
+	
+FUNCTION
+	Get the value for an object attribute.
+	The attribute value will be stored in *storage.
+	
+EXAMPLE
+	..
+	ULONG num_members;
+	
+	Get(list, A_List_NumMembers, &num_members);
+
