@@ -542,6 +542,13 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 
 	    Close(fh);
 
+#warning CHECKME
+#if 0
+	    /* This part is disabled because in emul_handler on UNIX the date
+	     * of a parent directory is changed only when a file is added or
+	     * removed from the directory
+	     */
+	    
 	    /* If dates are the same return the direntry as is */
 	    if (ok && CompareDates(&direntry->DirChanged, &fib->fib_Date) == 0)
 	    {
@@ -551,6 +558,7 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 		CurrentDir(olddir);
 		ReturnPtr("ReadDirEntry", struct DirEntry *, direntry);
 	    }
+#endif
 	}
     }
     else
