@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.33  2000/12/19 14:24:02  bergers
+    Bugfix in unlinking childwindows.
+
     Revision 1.32  2000/12/16 17:20:42  bergers
     Reintroduced child windows.
 
@@ -224,17 +227,22 @@ void LateCloseWindow(struct MsgPort *userport,
         cw = _cw;
       }
       
-       /*
-        * Does this window have a parent?
-        */
-      if (window->parent)
-      {
-        if (window->parent->firstchild == window)
-        {
-          window->parent->firstchild = window->nextchild;
-          window->nextchild->prevchild = NULL;
-        }
-      }
+    }
+    
+    if (IS_CHILD(window))
+    {
+      /*
+       * Unlink the window from its parent or
+       * out of the list of child windows.
+       */
+      if (window->parent->firstchild == window)
+        window->parent->firstchild = window->nextchild;
+      else
+        window->prevchild->nextchild = window->nextchild;
+
+      if (window->nextchild)
+        window->nextchild->prevchild = window->prevchild;
+         
     }
 
     msg = IW(window)->closeMessage;
