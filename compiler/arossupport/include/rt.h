@@ -1,10 +1,14 @@
-/* This file can be included more than once */
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
-    Resource Tracking
+    (C) 1995-98 AROS - The Amiga Replacement OS
+    $Id$
 
+    Desc: Resource Tracking
+    Lang: english
+
+    This file can be included more than once
 */
-/* FIXME: */
+
+/* Resource Tracking currently disabled on native platforms */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #   undef ENABLE_RT
 #endif
