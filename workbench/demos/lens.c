@@ -50,12 +50,13 @@ static void Cleanup(char *msg)
 	rc = RETURN_OK;
     }
 
+    if (scalebitmap) FreeBitMap(scalebitmap);
+
     if (win) CloseWindow(win);
 
     if (dri) FreeScreenDrawInfo(scr,dri);
     UnlockPubScreen(0,scr);
 
-    if (scalebitmap) FreeBitMap(scalebitmap);
 
     if (LayersBase) CloseLibrary(LayersBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
