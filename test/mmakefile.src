@@ -20,7 +20,8 @@ FILES := amigademo \
 	signaltest \
 	tasktest \
 	tasktest2 \
-	ExNext
+	ExNext \
+	taskswitchbench 
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
