@@ -48,6 +48,15 @@ static void SIGHANDLER (int sig)
 }   
 #endif /* __NetBSD__ */
 
+#ifdef __OpenBSD__
+static void sighandler (int sig, sigcontext_t * sc);
+        
+static void SIGHANDLER (int sig)
+{       
+    sighandler (sig, (sigcontext_t *)(&sig+2));
+}   
+#endif /* __OpenBSD__ */
+
 #if 0
 static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase);
 #endif

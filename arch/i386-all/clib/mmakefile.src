@@ -21,6 +21,10 @@ clib-netbsd-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 	@$(NOP)
 
 #MM
+clib-openbsd-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+	@$(NOP)
+
+#MM
 clib-cygwin-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 	@$(NOP)
 
@@ -36,6 +40,11 @@ setup-clib-freebsd-i386 :
 
 #MM
 setup-clib-netbsd-i386 :
+	%mkdirs_q $(CLIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+
+#MM
+setup-clib-openbsd-i386 :
 	%mkdirs_q $(CLIBDIR)
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 

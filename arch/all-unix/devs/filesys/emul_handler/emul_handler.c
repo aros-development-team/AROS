@@ -58,7 +58,7 @@
 
 #if defined(__linux__) || defined(__CYGWIN32__)
 #include <sys/vfs.h>
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/mount.h>
 #endif

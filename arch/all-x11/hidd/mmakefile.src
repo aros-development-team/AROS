@@ -6,17 +6,14 @@ include $(TOP)/config/make.cfg
 # and there doesn't seem to be a template for handling thiscase
 # so I write the file manually.
 
-ifneq ("$(ARCH)","netbsd")
-ifeq ("$(ARCH)","freebsd")
+ISBSD := ($strip ($find freebsd, $(ARCH)) ($find netbsd, $(ARCH)) ($find openbsd, $(ARCH)))
+
+ifneq ("$(ISBSD)","")
 USER_INCLUDES := -I. -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
 XSHM_INCLUDES := -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
 else
 USER_INCLUDES := -I.
 XSHM_INCLUDES := -I$(SYS_INCLUDES)
-endif
-else
-USER_INCLUDES := -I. -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
-XSHM_INCLUDES := -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
 endif
 
 X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
