@@ -1,0 +1,20 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__
+
+LIBNAME := nvidia
+
+FILES	:= nvidiaclass nvhardware nvidiabitmap
+
+#unused MM- kernel-objs: kernel-pci-kobj
+
+%build_module_macro mmake=kernel-hidd-nvidia \
+    modname=nvidia modtype=hidd \
+    files="$(FILES)" \
+    conffile=lib.conf genfunctable=yes \
+    uselibs="rom amiga"
+
+%common
