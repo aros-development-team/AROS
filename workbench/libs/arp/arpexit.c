@@ -75,7 +75,8 @@
   {
     ((struct Process *) ThisTask) -> pr_Result2 = fault;
   }  
-  
+
+#warning FIXME:
   /* exit(ReturnCode); FIXME */
   
   AROS_LIBFUNC_EXIT

@@ -424,10 +424,11 @@ AROS_LH1(void, beginio,
 	    break;
 	    
 	case FSA_WAIT_CHAR:
+#warning FIXME:
 	    /* We could manually wait for a character to arrive, but this is
 	       currently not implemented. FIXME */
 	case FSA_FILE_MODE:
-	    /* FIXME: not supported yet */
+#warning FIXME: not supported yet
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
 

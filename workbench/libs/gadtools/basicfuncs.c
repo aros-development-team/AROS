@@ -109,6 +109,7 @@ struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
 	if (font)
 	{
 	    SetFont(rport, font);
+#warning FIXME:
 	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;

@@ -116,7 +116,8 @@ long __gmtoffset;
     if (tz)
     {
 	tz->tz_minuteswest = __gmtoffset;
-	tz->tz_dsttime	   = DST_NONE; /* TODO */
+#warning TODO: set tz->tz_dsttime
+	tz->tz_dsttime	   = DST_NONE;
     }
 
     return 0;

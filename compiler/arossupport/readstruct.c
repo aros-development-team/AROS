@@ -344,6 +344,7 @@ struct ReadLevel
 error:
     curr = GetHead (list);
 
+#warning TODO:
     /* TODO
     if (curr && curr->s)
 	FreeStruct (curr->s, curr->sd); */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/09/12 20:20:08  hkiel
+    converted TODO/FIXME comments to #warnings
+
     Revision 1.4  1997/01/27 00:36:41  ldp
     Polish
 
@@ -124,7 +127,7 @@
 	case SA_BackChild:
 	case SA_LikeWorkbench:
 	case SA_MinimizeISG:
-	    /* TODO */
+#warning TODO: Missing SA_ Tags
 	    break;
 	}
     }

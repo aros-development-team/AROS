@@ -258,7 +258,7 @@ int intui_init (struct IntuitionBase * IntuitionBase)
     XSetErrorHandler (MyErrorHandler);
     XSetIOErrorHandler (MySysErrorHandler);
 
-    /* TODO this is a hack */
+#warning FIXME: this is a hack
     IntuiBase = IntuitionBase;
 
     return True;
@@ -407,7 +407,7 @@ int intui_OpenWindow (struct Window * w,
     winattr.event_mask |= StructureNotifyMask;
     Diow(bug("Set newsize notify\n"));
 
-    /* TODO IDCMP_SIZEVERIFY IDCMP_DELTAMOVE */
+#warning TODO: IDCMP_SIZEVERIFY IDCMP_DELTAMOVE
     winattr.cursor = sysCursor;
     winattr.save_under = True;
     winattr.background_pixel = sysCMap[0];

@@ -41,10 +41,10 @@ extern LONG __startup_error;
 
     970314 ldp: It will now work because of the asm-stub above.
 
-    TODO: reset and initialise the FPU.
-          handle WBStartup message
-          resident startup
 */
+#warning TODO: reset and initialize the FPU
+#warning TODO: handle WBStartup message
+#warning TODO: resident startup
 AROS_UFH3(LONG, entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),

@@ -265,7 +265,7 @@ AROS_LH1(void, beginio,
 
     case KBD_READEVENT:
 
-	/* TODO */
+#warning TODO: Check for reset
 	/* Check for reset... via keybuffer or via HIDD? */
 
 

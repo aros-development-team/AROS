@@ -27,6 +27,7 @@ void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
     rport->AreaPtrn = disabledpattern;
     rport->AreaPtSz = 1;
     RectFill(rport, left, top, left+width-1, top+height-1);
+#warning FIXME: drawdisabledpattern
     /*FIXME    for (y=0; y<(height-1); y++)
     {
         for (x=0; x<(width-1); x++)
@@ -65,6 +66,7 @@ struct TextFont *preparefont(struct CBBase_intern *AROSCheckboxBase,
 	if (font)
 	{
 	    SetFont(rport, font);
+#warning FIXME:
 	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;

@@ -44,6 +44,7 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 	if (font)
 	{
 	    SetFont(rport, font);
+#warning FIXME:
 	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;

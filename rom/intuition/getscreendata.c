@@ -70,7 +70,8 @@
 
     if (type == WBENCHSCREEN)
 	screen = GetPrivIBase(IntuitionBase)->WorkBench;
-    else if (type != CUSTOMSCREEN) /* TODO */
+    else if (type != CUSTOMSCREEN)
+#warning TODO:
 	screen = NULL;
 
     if (screen)

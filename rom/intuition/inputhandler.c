@@ -581,7 +581,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		{
 		    if (msg->Class == IDCMP_MOUSEMOVE)
 		    {
-			/* TODO allow a number of such messages */
+#warning TODO: allow a number of such messages
 			break;
 		    }
 

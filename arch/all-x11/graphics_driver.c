@@ -1209,7 +1209,7 @@ UX11
 
 void driver_WaitTOF (struct GfxBase * GfxBase)
 {
-    /* TODO */
+#warning TODO: Write x11/driver_WaitTOF
 }
 
 void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,

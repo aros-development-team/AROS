@@ -125,7 +125,7 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 	   
     } /* forever */
     
-#warning FIXME:Do cleanup here
+#warning FIXME: Do cleanup here
     /* Should do some cleanup here */
     
 }

@@ -330,6 +330,7 @@ struct TextFont *PrepareFont(struct RastPort *rport, struct IntuiText *itext,
 	if (font)
 	{
 	    SetFont(rport, font);
+#warning FIXME:
 	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;

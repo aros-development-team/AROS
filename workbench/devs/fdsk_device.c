@@ -407,6 +407,7 @@ AROS_UFH2(void,putchr,
 #undef SysBase
 #endif
 
+#warning FIXME: This won't work for normal AmigaOS
 /* TODO: This won't work for normal AmigaOS since you can't expect SysBase in A6 */
 AROS_LH0(LONG,entry,struct ExecBase *,SysBase,,)
 {

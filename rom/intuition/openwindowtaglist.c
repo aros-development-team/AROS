@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1998/09/12 20:20:08  hkiel
+    converted TODO/FIXME comments to #warnings
+
     Revision 1.5  1997/01/27 00:36:42  ldp
     Polish
 
@@ -181,7 +184,7 @@
 	case WA_HelpGroup:
 	case WA_HelpGroupWindow:
 	case WA_TabletMessages:
-	    /* TODO */
+#warning TODO: Missing WA_ Tags
 	    break;
 	} /* switch Tag */
     }

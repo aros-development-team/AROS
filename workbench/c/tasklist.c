@@ -45,7 +45,7 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
     s1=task->tc_Node.ln_Name;
     if(task->tc_Node.ln_Type==NT_PROCESS&&((struct Process *)task)->pr_CLI)
     {
-        /* TODO: Use cli_CommandName field for the name */
+#warning TODO: Use cli_CommandName field for the name
         (*t)->type=-1;
     }
     if(s1!=NULL)

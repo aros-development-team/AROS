@@ -172,7 +172,7 @@ int copy_files(STRPTR *source, STRPTR dest)
     if(dest[1])
         multiple_sources = TRUE;
     else {
-        /* FIXME: pattern matching */
+#warning FIXME: pattern matching
     }
 
     if(multiple_sources && !dest_is_dir) {
@@ -184,7 +184,7 @@ int copy_files(STRPTR *source, STRPTR dest)
         unsigned int pos = 0;
         STRPTR dest_name = NULL;
         while(source[pos] && result == RETURN_OK) {
-            /* FIXME: pattern matching */
+#warning FIXME: pattern matching
             dest_name = make_dest_name(source[pos], dest);
             if(dest_name) {
                 result = copy_file(source[pos], dest_name);

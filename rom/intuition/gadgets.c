@@ -21,8 +21,8 @@
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
 
-/* print the label of a gadget object
-   FIXME: Has to be reworked! */
+/* print the label of a gadget object */
+#warning FIXME: printgadgetlabel() has to be reworked!
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 {
     struct RastPort *rp = msg->gpr_RPort;

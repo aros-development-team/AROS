@@ -200,8 +200,8 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 
 STATIC VOID list_dispose(Class *cl, Object *o, Msg msg)
 {
-    /* TODO: Call destructhook too */
-	    
+#warning TODO: Call destructhook too
+
     struct ListData *data;
     struct ListEntry *entry, *next;
 	    

@@ -231,6 +231,7 @@ int start(void)
 	ANS:  Yep.
     */
 
+#warning TODO: Rework
     /* TODO: Rework this logic so a particular vector isn't patched more than
        once. SetFunction() calls CacheClearU(), so putting the routine address
        directly in the vector+2, and manually clearing of the cache (not with

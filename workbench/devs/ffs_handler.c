@@ -1034,7 +1034,7 @@ static LONG create_object
             block->data->fb_type    =EC(BT_STRUCT);
             block->data->fb_own     =EC(*blocknr);
             block->data->fb_protect =EC(protect^0xf);
-            /* TODO: set creation date */
+#warning TODO: set creation date
             block->data->fb_nexthash=next;
             block->data->fb_parent  =EC(pnum);
             block->data->fb_sectype =EC(type);
@@ -1177,7 +1177,7 @@ static LONG free_lock(struct ffsbase *ffsbase, struct fh *fh)
 {
     Remove((struct Node *)fh);
     FreeMem(fh,sizeof(struct fh));
-    /* TODO: Dismount removed and unused disk */
+#warning TODO: Dismount removed and unused disk
     return 0;
 }
 

@@ -175,7 +175,7 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 
 int makedatefromstring(char *buffer)
 {
-    /* FIXME: not implemented, yet */
+#warning FIXME: not implemented, yet
     return(RETURN_OK);
 }
 
@@ -285,7 +285,7 @@ int makedatafromstring(char *buffer)
    was not found. */
 int makeresidentver(STRPTR name)
 {
-    /* FIXME: not implemented */
+#warning FIXME: not implemented
     SetIoErr(ERROR_NOT_IMPLEMENTED);
     return(-1);
 }
@@ -353,7 +353,8 @@ int makekickver()
     /* Fill in struct parsedver. */
     parsedver.version  = SysBase->LibNode.lib_Version;
     parsedver.revision = SysBase->LibNode.lib_Revision;
-    parsedver.days = 0L; /* FIXME: should be the real date */
+#warning FIXME: Should be the real date
+    parsedver.days = 0L;
 #define KICKSTRLEN 10
     parsedver.name = AllocVec(KICKSTRLEN, MEMF_ANY);
     if (parsedver.name == NULL)

@@ -25,7 +25,7 @@ int main (int argc, char ** argv)
 
     if(rda!=NULL)
     {
-        /* FIXME: pattern matching */
+#warning FIXME: pattern matching
 	if (!DeleteFile(args[0]))
 	    error = RETURN_ERROR;
 

@@ -143,7 +143,7 @@ struct SysIData
 
 /* Some handy drawing functions */
 
-/* FIXME: Draw lines that are broader than 1 pixel */
+#warning FIXME: Draw lines that are broader than 1 pixel
 void draw_thick_line(Class *cl, struct RastPort *rport,
                      LONG x1, LONG y1, LONG x2, LONG y2,
                      UWORD thickness)
@@ -208,17 +208,17 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             case SDEPTHIMAGE:
             case MENUCHECK:
             case AMIGAKEY:
-                /* FIXME */
+#warning FIXME: Missing Tags
             default:
                 unsupported = TRUE;
                 break;
             }
 	    break;
 	case SYSIA_ReferenceFont:
-	    /* FIXME */
+#warning FIXME: Missing Tag
 	    break;
 	case SYSIA_Size:
-	    /* FIXME */
+#warning FIXME: Missing Tag
 	    break;
 	}
     }

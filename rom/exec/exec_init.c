@@ -61,7 +61,7 @@ static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
 
-/* FIXME: This is public to allow PrepareExecBase() to work */
+#warning FIXME: This is public to allow PrepareExecBase() to work
 struct AROSSupportBase AROSSupportBase;
 struct ExecBase *SysBase;
 
@@ -170,7 +170,7 @@ void idleTask(struct ExecBase *SysBase)
 	/* Test if there are any other tasks in the ready queue */
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{
-	    /* TODO Doesn't work, yet Reschedule(FindTask(NULL)); */
+#warning TODO: Doesn't work, yet Reschedule(FindTask(NULL));
 	    Disable ();
 	    idle->tc_State = TS_READY;
 	    AddTail (&SysBase->TaskReady, &idle->tc_Node);
@@ -197,7 +197,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 {
     AROS_LIBFUNC_INIT
 
-/* FIXME hack to avoid crash in timer_init.c:118 */
+#warning FIXME: hack to avoid crash in timer_init.c:118
 SysBase->VBlankFrequency = 50;
 
     /* We have been entered by a call to InitCode(RTF_SINGLETASK,0); */

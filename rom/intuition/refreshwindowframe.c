@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/09/12 20:20:09  hkiel
+    converted TODO/FIXME comments to #warnings
+
     Revision 1.4  1997/01/27 00:36:43  ldp
     Polish
 
@@ -57,8 +60,12 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    extern void aros_print_not_implemented (char *);
 
-    return; /* TODO */
+#warning TODO: Write intuition/RefreshWindowFrame()
+    aros_print_not_implemented ("RefreshWindowFrame");
+
+    return;
 
     AROS_LIBFUNC_EXIT
 } /* RefreshWindowFrame */

@@ -57,7 +57,8 @@
 
 	break;
 
-    case 0: /* TODO flush all output streams */
+    case 0:
+#warning TODO: flush all output streams
     case 2:
 	fh = Output ();
 

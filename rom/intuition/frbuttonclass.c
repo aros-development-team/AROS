@@ -56,6 +56,7 @@
 void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
+#warning FIXME:
     /* FIXME: if ( DoSuperMethodA(cl, o, (Msg *)msg) != 0)
     { */
 	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
