@@ -144,7 +144,7 @@ freevarlist (List * l)
 char **
 getargs (const char * line, int * argc, List * vars)
 {
-    static char * argv[64];
+    static char * argv[256];
     static char * buffer = NULL;
     char * src;
     int arg;
@@ -173,7 +173,7 @@ getargs (const char * line, int * argc, List * vars)
 	if (!*src)
 	    break;
 
-	assert (arg < 63);
+	assert (arg < 255);
 	argv[arg++] = src;
 
 	if (*src == '"')

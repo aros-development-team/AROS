@@ -42,7 +42,7 @@ Boston, MA 02111-1307, USA.  */
 #include "mmake.h"
 
 #define MAJOR		0L
-#define MINOR		8L
+#define MINOR		9L
 #define REVISION	0L
 #define ID		((MAJOR << 24) | (MINOR << 16) | REVISION)
 #define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))
@@ -449,11 +449,27 @@ buildtargetlist (Cache_priv * cache, DirNode * node)
     MakefileTarget * mftarget;
     DirNode * subdir;
     Target * target;
+    Node * n;
     
     ForeachNode (&node->makefiles, makefile)
     {
 	ForeachNode (&makefile->targets, mftarget)
 	{
+	    if (strchr (mftarget->node.name, '$') != NULL)
+	    {
+		char * s = substvars(&cache->project->vars, mftarget->node.name);
+		SETSTR (mftarget->node.name, s);
+	    }
+
+	    ForeachNode (&mftarget->deps, n)
+	    {
+		if (strchr (n->name, '$') != NULL)
+		{
+		    char * s = substvars(&cache->project->vars, n->name);
+		    SETSTR (n->name, s);
+		}
+	    }
+	    
 	    target = FindNode (&cache->publicpart.targets, mftarget->node.name);
 	    
 	    if (target ==  NULL)
@@ -563,6 +579,8 @@ activatecache (Project *prj)
 	printf ("Makefile and target tree for project %s\n", prj->node.name);
 	printdirnodemftarget (cache->topdir);
     }
+ 
+    writecache (cache);
     
     printf ("Collecting targets...\n");
     buildtargetlist (cache, cache->topdir);
@@ -571,8 +589,6 @@ activatecache (Project *prj)
 	printf ("Targetlist of project %s\n", prj->node.name);
 	printtargetlist (&cache->publicpart.targets);
     }
-
-    writecache (cache);
     
     return (Cache *)cache;
 }

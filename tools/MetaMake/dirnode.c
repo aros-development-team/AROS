@@ -474,10 +474,6 @@ printf ("found #MM in %s\n", makefile->name);
 		    else
 			flags &= ~FLAG_VIRTUAL;
 		    
-		    ptr = substvars (vars, ptr);
-
-		    /* Must be *after* substvars() or empty target lines
-		       will cause problems. */
 		    while (isspace (*ptr))
 			ptr ++;
 
@@ -487,14 +483,14 @@ printf ("found #MM in %s\n", makefile->name);
 			char ** targets;
 			fgets (line, linelen, fh);
 			lineno ++;
-			ptr = substvars (vars, line);
 
+			ptr = line;
 			while (*ptr != ':' && *ptr)
 			    ptr ++;
 
 			*ptr = 0;
 
-			targets = getargs (line, &count, vars);
+			targets = getargs (line, &count, NULL);
 
 			if (count != 0)
 			{
@@ -524,7 +520,7 @@ printf ("found #MM in %s\n", makefile->name);
 			if (*ptr2)
 			    *ptr2 ++ = 0;
 
-			tptr = getargs (ptr, &count, vars);
+			tptr = getargs (ptr, &count, NULL);
 			
 			for (t = 0; t < count; t++)
 			{
@@ -532,7 +528,7 @@ printf ("found #MM in %s\n", makefile->name);
 			    AddTail (&newtargets, mftarget);
 			}
 			
-			tptr = getargs (ptr2, &count, vars);
+			tptr = getargs (ptr2, &count, NULL);
 			for (t = 0; t < count; t++)
 			{
 			    ForeachNode (&newtargets, mftarget)
