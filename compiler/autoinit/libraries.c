@@ -9,11 +9,57 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <aros/symbolsets.h>
-
-static void __showerror_fake(int code, char *title, char *format, ...) {};
-void (*__showerrorptr)(int code, char *title, char *format, ...) __attribute__((weak)) = &__showerror_fake;
+#include <intuition/intuition.h>
+#include <dos/dosextens.h>
+#include <proto/intuition.h>
+#include <proto/dos.h>
+#include <stdarg.h>
 
 DEFINESET(LIBS);
+
+int __forceerrorrequester __attribute__((weak)) = 0;
+
+int __includelibrarieshandling;
+
+void __showerror(int code, char *title, char *format, ...)
+{
+    struct Process *me = (struct Process *)FindTask(0);
+
+    va_list args;
+    va_start(args, format);
+
+
+    if (me->pr_CLI && !__forceerrorrequester)
+    {
+	if (DOSBase)
+	{
+	    PutStr(title);
+	    PutStr(": ");
+	    VPrintf(format, args);
+	    PutStr("\n");
+        }
+    }
+    else
+    {
+     	if (IntuitionBase)
+	{
+    	    struct EasyStruct es =
+    	    {
+		sizeof(struct EasyStruct),
+		0,
+		title,
+		format,
+		"Exit"
+	    };
+
+	    EasyRequestArgs(NULL, &es, NULL, (APTR)args);
+	}
+    }
+
+    if (!IoErr()) SetIoErr(code);
+
+    va_end(args);
+}
 
 int set_open_libraries(void)
 {
@@ -26,7 +72,7 @@ int set_open_libraries(void)
 	*(set[n]->baseptr) = OpenLibrary(set[n]->name, *set[n]->versionptr);
 	if (!*(set[n]->baseptr))
 	{
-	    __showerrorptr(ERROR_INVALID_RESIDENT_LIBRARY,
+	    __showerror(ERROR_INVALID_RESIDENT_LIBRARY,
 	                "Library error",
 	                "Couldn't open version %ld of library \"%s\".",
 		        *set[n]->versionptr, set[n]->name);
@@ -38,7 +84,7 @@ int set_open_libraries(void)
 	    int ret = set[n]->postopenfunc();
 	    if (ret)
 	    {
-	    	__showerrorptr(ERROR_INVALID_RESIDENT_LIBRARY,
+	    	__showerror(ERROR_INVALID_RESIDENT_LIBRARY,
 		            "Library error",
 	                    "Couldn't initialize library \"%s\".",
 		            set[n]->name);

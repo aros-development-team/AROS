@@ -6,8 +6,10 @@ include $(TOP)/config/make.cfg
 
 LIB	:= autoinit
 
+# libraries_nolibs must come BEFORE than libraries
+
 FILES	:= \
-	__showerror \
+	libraries_nolibs \
 	asl \
 	arosc \
 	commandline \
@@ -22,6 +24,8 @@ FILES	:= \
 	libraries \
 	locale \
 	utility
+
+
 
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes
