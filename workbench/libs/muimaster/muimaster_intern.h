@@ -154,7 +154,7 @@ struct MUIMasterBase_intern
 #undef DataTypesBase
 #define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
 */
-#else
+#else /* ! _AROS */
 
 #undef SysBase
 #define SysBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->sysbase)
@@ -207,12 +207,6 @@ struct MUIMasterBase_intern
 #include "compiler.h"
 #endif
 
-#endif
-
-/****************************************************************************************/
-
-#ifndef __ZUNE_PREFS_H__
-#include "prefs.h"
-#endif
+#endif /* ! _AROS */
 
 #endif /* MUIMASTER_INTERN_H */
