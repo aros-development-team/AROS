@@ -70,5 +70,4 @@
 
 #define bug	 kprintf
 
-
 #endif /* AROS_DEBUG_H */
