@@ -1,5 +1,5 @@
-#ifndef X11GFX_INTERN_H
-#define X11GFX_INTERN_H
+#ifndef LINUX_INTERN_H
+#define LINUX_INTERN_H
 /*
     (C) 1997 AROS - The Amiga Research OS
     $Id$
@@ -99,4 +99,4 @@ VOID cleanup_kbd(struct linux_staticdata *lsd);
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct linux_base *, LIBBASE, 3, Linux)
 
-#endif /* X11GFX_INTERN_H */
+#endif /* LINUX_INTERN_H */
