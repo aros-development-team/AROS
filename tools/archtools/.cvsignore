@@ -1,16 +1,1 @@
-archivetool
-*.adoc
-functable.c
-spmerged.arch
-sp.arch
-spadd.c
-spdiv.c
-spmul.c
-spneg.c
-spsub.c
-spsquare.c
-spbase.c
-clib
-defines
-proto
-archtool
+mmakefile

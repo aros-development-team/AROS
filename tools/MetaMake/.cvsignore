@@ -13,3 +13,4 @@ config.status
 aclocal.m4
 .deps
 .pure
+mmakefile
