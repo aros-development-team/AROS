@@ -8,6 +8,7 @@
 #include <aros/arosbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <aros/system.h>
 #include <proto/exec.h>
 #include <proto/aros.h>
