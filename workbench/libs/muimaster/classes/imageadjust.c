@@ -350,6 +350,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
+		MUIA_Dropable, FALSE,
 	        End),
 	    Child, (IPTR)(bitmap_popasl = PopaslObject,
 	        MUIA_Popstring_String, (IPTR)(bitmap_string = StringObject,
@@ -404,6 +405,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
+		MUIA_Dropable, FALSE,
 	        End),
 	    End;
     }
