@@ -1,0 +1,24 @@
+# $Id$
+TOP=../../..
+
+include $(TOP)/config/make.cfg
+
+SPECIAL_AFLAGS = -I../
+CLIBDIR=$(GENDIR)/clib
+OBJDIR=$(OSGENDIR)/layers
+
+FILES = basicasmfuncs
+
+all: setup $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+
+setup :
+	%mkdirs_q $(OBJDIR) $(OSGENDIR)
+	%add_objects $(foreach f,$(FILES), rom/layers/$(f))
+
+clean::
+	$(RM) $(TESTS)
+
+$(OBJDIR)/%.o: %.s ../machine.i
+	%assemble_q
+
+%common
