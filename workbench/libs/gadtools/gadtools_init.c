@@ -132,7 +132,8 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     
     InitSemaphore(&LIBBASE->bevelsema);
     LIBBASE->bevel = NULL;
-
+    InitSemaphore(&LIBBASE->classsema);
+    
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
