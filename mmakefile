@@ -66,6 +66,11 @@ DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
 else
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
 endif
+ifeq ("$(SHARED_MATHIEEESINGBAS)","yes")
+DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so
+else
+DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
+endif
 ifeq ("$(SHARED_BOOPSI)","yes")
 DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
 else
