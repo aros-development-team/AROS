@@ -4,12 +4,15 @@
     $Id$
 */
 
-#include <proto/layers.h>
-#include <proto/graphics.h>
-//#include <proto/cybergraphics.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/rpattr.h>
 #include <cybergraphx/cybergraphics.h>
+
+#include <proto/layers.h>
+#include <proto/graphics.h>
+#include <proto/layers.h>
+
+#include <string.h>
 
 #include "inputhandler_actions.h"
 #include "intuition_intern.h"
