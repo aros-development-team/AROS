@@ -257,7 +257,7 @@ AROS_LH2(struct rambase *, init,
 
 			    FreeMem(semaphore,sizeof(struct SignalSemaphore));
 			}
-			FreeMem(stack,2048);
+			FreeMem(stack,AROS_STACKSIZE);
 		    }
 		    FreeMem(task,sizeof(struct Task));
 		}
@@ -405,7 +405,7 @@ AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
     /* Kill device task and free all resources */
     RemTask(rambase->port->mp_SigTask);
     FreeMem(rambase->sigsem,sizeof(struct SignalSemaphore));
-    FreeMem(((struct Task *)rambase->port->mp_SigTask)->tc_SPLower,2048);
+    FreeMem(((struct Task *)rambase->port->mp_SigTask)->tc_SPLower,AROS_STACKSIZE);
     FreeMem(rambase->port->mp_SigTask,sizeof(struct Task));
     FreeMem(rambase->port,sizeof(struct MsgPort));
     CloseLibrary((struct Library *)rambase->utilitybase);
@@ -871,6 +871,10 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle, STRPT
 		error=lock(dir,mode);
 		if(!error)
 		{
+		    /* stegerg */
+		    if (mode & FMF_CLEAR) shrinkfile(rambase, dir, 0);		    
+		    /* end stegerg */
+		    
 		    fh->node=dir;
 		    *handle=fh;
 		    return 0;
@@ -1131,6 +1135,7 @@ static LONG delete_object(struct rambase *rambase, struct filehandle *filehandle
 {
     struct dnode *file=filehandle->node;
     LONG error;
+
     error=findname(rambase,&name,&file);
     if(error)
 	return error;
@@ -1138,7 +1143,7 @@ static LONG delete_object(struct rambase *rambase, struct filehandle *filehandle
 	return ERROR_OBJECT_WRONG_TYPE;
     if(file->usecount)
 	return ERROR_OBJECT_IN_USE;
-    if(!(file->protect&FIBF_DELETE))
+    if(file->protect&FIBF_DELETE)
 	return ERROR_DELETE_PROTECTED;
     if(file->type==ST_USERDIR&&file->list.mlh_Head->mln_Succ!=NULL)
 	return ERROR_DIRECTORY_NOT_EMPTY;
