@@ -55,8 +55,8 @@ CLASSESOBJS= \
   objs/classes/boopsi.o \
   objs/classes/chunkyimage.o \
   objs/classes/configdata.o \
-	objs/classes/coloradjust.o \
-	objs/classes/colorfield.o \
+  objs/classes/coloradjust.o \
+  objs/classes/colorfield.o \
   objs/classes/crawling.o \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
@@ -71,6 +71,7 @@ CLASSESOBJS= \
   objs/classes/image.o \
   objs/classes/imageadjust.o \
   objs/classes/imagedisplay.o \
+  objs/classes/knob.o \
   objs/classes/levelmeter.o \
   objs/classes/list.o \
   objs/classes/listview.o \
@@ -363,6 +364,9 @@ objs/classes/imageadjust.o: classes/imageadjust.c
 
 objs/classes/imagedisplay.o: classes/imagedisplay.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/imagedisplay.c objname=$@
+
+objs/classes/knob.o: classes/knob.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/knob.c objname=$@
 
 objs/classes/levelmeter.o: classes/levelmeter.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/levelmeter.c objname=$@

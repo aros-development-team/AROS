@@ -593,6 +593,10 @@ struct MUI_RGBcolor
 #include "classes/levelmeter.h"
 #endif
 
+#ifndef _MUI_CLASSES_KNOB_H
+#include "classes/knob.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
