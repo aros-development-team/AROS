@@ -127,6 +127,16 @@ do                                                        \
     __n->ln_Pred->ln_Pred ? __n->ln_Pred : (struct Node *)0; \
 })
 
+#define REMHEAD(_l)                         \
+({                                          \
+    struct List *__l = (struct List *)(_l); \
+                                            \
+     __l->lh_Head->ln_Succ    ?             \
+        REMOVE(__l->lh_Head) :              \
+        (struct Node *)0                    \
+    ;                                       \
+})
+
 #define REMTAIL(_l)                         \
 ({                                          \
     struct List *__l = (struct List *)(_l); \
