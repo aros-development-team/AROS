@@ -42,10 +42,10 @@ char filename[50];
         while(count==1)
         {
             count=read(fd,fbuf,1);
-            if(fbuf[0]=='#')
+            if(fbuf[0]=='#' && count==1)
             {
                 count=read(fd,&fbuf[1],8);
-                fbuf[9]=0;
+                fbuf[count+1]=0;
                 if(strcmp(fbuf,"#include ")==0)
                 {
                     current=malloc(sizeof(struct inclist));
@@ -80,8 +80,9 @@ char filename[50];
                         write(fdo,&incname[0],1);
                 }
                 else
-                    write(fdo,fbuf,9);
-                count=1;
+                    write(fdo,fbuf,count+1);
+                if(count>0)
+		    count=1;
             }
             else
                 write(fdo,fbuf,1);
