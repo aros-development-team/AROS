@@ -32,10 +32,10 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define SQR(x) 	((x) * (x))
-#define CW_PI 	3.1415926535
+#define SQR(x) 			((x) * (x))
+#define CW_PI 			3.1415926535
 
-#define USE_WRITEPIXELARRAY 1
+#define USE_WRITEPIXELARRAY 	1
 
 /***************************************************************************************************/
 
@@ -73,6 +73,24 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
     
 /***************************************************************************************************/
 
+VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y,
+		 struct ColorWheelBase_intern *ColorWheelBase)
+{
+    DOUBLE alpha, sat;
+    
+    alpha = (DOUBLE)data->hsb.cw_Hue  / (DOUBLE) 0xFFFFFFFF;
+    alpha *= CW_PI * 2.0;
+    alpha -= CW_PI / 2.0;
+        
+    sat = (DOUBLE)data->hsb.cw_Saturation / (DOUBLE) 0xFFFFFFFF;
+    
+    *x = data->wheelcx + (WORD) ((DOUBLE)data->wheelrx * sat * cos(alpha));
+    *y = data->wheelcy + (WORD) ((DOUBLE)data->wheelry * sat * sin(alpha));
+    
+}
+                                                                         
+/***************************************************************************************************/
+
 STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
 		      struct ColorWheelBase_intern *ColorWheelBase)
 {
@@ -96,8 +114,13 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     hsb.cw_Brightness = 0xFFFFFFFF;
     
 #if USE_WRITEPIXELARRAY
-    if (data->rgblinebuffer) FreeVec(data->rgblinebuffer);
-    data->rgblinebuffer = AllocVec(width * sizeof(LONG), MEMF_ANY);
+    if (!data->rgblinebuffer || data->rgblinebuffer_size < width)
+    {
+        if (data->rgblinebuffer) FreeVec(data->rgblinebuffer);
+	
+	data->rgblinebuffer = AllocVec(width * sizeof(LONG), MEMF_ANY);
+	data->rgblinebuffer_size = width;
+    }
 #endif
 
     if (data->rgblinebuffer)
@@ -172,35 +195,151 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
 		 struct ColorWheelBase_intern *ColorWheelBase)
 {
-    WORD cx, cy, rx, ry;
+    struct IBox 	wbox;
+    struct RastPort	temprp;
+    WORD 		cx, cy, rx, ry;
     
-    if ((box->Width < 8) || (box->Height < 8)) return;
+    cx = data->frame ? BORDERWHEELSPACINGX * 4 : BORDERWHEELSPACINGX * 2;
+    cy = data->frame ? BORDERWHEELSPACINGY * 4 : BORDERWHEELSPACINGY * 2;
     
-    SetDrMd(rp, JAM1);
+    data->wheeldrawn = FALSE;
     
-    if (CyberGfxBase && (GetBitMapAttr(rp->BitMap, BMA_DEPTH) >= 15))
+    if ( (box->Width < cx) || (box->Height < cy) ) return;
+    
+    if (!data->bm || (box->Width != data->bmwidth) || (box->Height != data->bmheight))
     {
-	TrueWheel(data, rp, box, ColorWheelBase);
-    } else {
+        if (data->bm)
+	{
+	    WaitBlit();
+	    FreeBitMap(data->bm);
+	}
+	
+        data->bm = AllocBitMap(box->Width,
+			       box->Height,
+			       GetBitMapAttr(rp->BitMap, BMA_DEPTH),
+			       BMF_MINPLANES | BMF_CLEAR,
+			       rp->BitMap);
+
+	if (data->bm)
+	{
+	    data->bmwidth  = box->Width;
+	    data->bmheight = box->Height;
+	    
+	    wbox.Left   = data->frame ? BORDERWHEELSPACINGX : 0;
+	    wbox.Top    = data->frame ? BORDERWHEELSPACINGY : 0;
+	    wbox.Width  = box->Width  - (data->frame ? BORDERWHEELSPACINGX * 2 : 0);
+	    wbox.Height = box->Height - (data->frame ? BORDERWHEELSPACINGY * 2 : 0);
+	 
+	    InitRastPort(&temprp);
+	    temprp.BitMap = data->bm;
+	       
+	    SetDrMd(&temprp, JAM1);
+
+	    if (data->frame)
+	    {
+		struct TagItem fitags[] =
+		{
+		    {IA_Width	, box->Width	},
+		    {IA_Height	, box->Height	},
+		    {TAG_DONE			}
+		};
+		
+		SetAttrsA(data->frame, fitags);
+		DrawImageState(&temprp, (struct Image *)data->frame, 0, 0, IDS_NORMAL, data->dri);
+            }
+	    
+	    if (CyberGfxBase && (GetBitMapAttr(data->bm, BMA_DEPTH) >= 15))
+	    {
+		TrueWheel(data, &temprp, &wbox, ColorWheelBase);
+	    } else {
+	    }
+
+	    rx = wbox.Width / 2;
+	    ry = wbox.Height / 2;
+
+	    cx = wbox.Left + rx;
+	    cy = wbox.Top + ry;
+
+	    rx--; ry--;
+
+	    SetAPen(&temprp, data->dri->dri_Pens[SHADOWPEN]);
+	    DrawEllipse(&temprp, cx, cy, rx, ry);
+	    DrawEllipse(&temprp, cx, cy, rx - 1, ry);
+	    DrawEllipse(&temprp, cx, cy, rx, ry - 1);
+	    DrawEllipse(&temprp, cx, cy, rx - 1, ry - 1);
+	    
+	    DeinitRastPort(&temprp);
+	    
+	    data->wheelcx = cx;
+	    data->wheelcy = cy;
+	    data->wheelrx = rx;
+	    data->wheelry = ry;
+	    
+	    data->wheeldrawn = TRUE;
+	    
+	} /* if (data->bm) */
+		
+    } /* if (!data->bm || (box->Width != data->bmwidth) || (box->Height != data->bmheight)) */
+    
+    if (data->bm)
+    {
+        BltBitMapRastPort(data->bm, 0, 0, rp, box->Left, box->Top, box->Width, box->Height, 0xC0);
     }
     
-    rx = box->Width / 2;
-    ry = box->Height / 2;
-    
-    cx = box->Left + rx;
-    cy = box->Top + ry;
-    
-    rx--; ry--;
-        
-    SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
-    DrawEllipse(rp, cx, cy, rx, ry);
-    DrawEllipse(rp, cx, cy, rx - 1, ry);
-    DrawEllipse(rp, cx, cy, rx, ry - 1);
-    DrawEllipse(rp, cx, cy, rx - 1, ry - 1);
-     
 }
 
 /***************************************************************************************************/
+
+VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
+		struct ColorWheelBase_intern *ColorWheelBase)
+{
+    WORD x, y;
+    
+    if (!data->wheeldrawn) return;
+    
+    if (update)
+    {
+        /* Restore */
+	
+        BltBitMapRastPort(data->bm,
+			  data->knobsavex, data->knobsavey,
+			  rp,
+			  data->knobsavex + gbox->Left,
+			  data->knobsavey + gbox->Top,
+			  KNOBWIDTH,
+			  KNOBHEIGHT,
+			  0xC0); 
+    }
+    
+    CalcKnobPos(data, &x, &y, ColorWheelBase);
+    
+    /* Backup */
+    
+    data->knobsavex = x - 3;
+    data->knobsavey = y - 3;
+    
+    /* Render */
+    
+    x += gbox->Left;
+    y += gbox->Top;
+    
+    SetDrMd(rp, JAM1);    
+    
+    SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
+    
+    RectFill(rp, x - 3, y - 1, x - 3, y + 1);
+    RectFill(rp, x - 2, y - 2, x - 2, y + 2);
+    RectFill(rp, x - 1, y - 3, x + 1, y + 3);
+    RectFill(rp, x + 2, y - 2, x + 2, y + 2);
+    RectFill(rp, x + 3, y - 1, x + 3, y + 1);
+    
+    SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
+    
+    RectFill(rp, x - 1, y, x + 1, y);
+    RectFill(rp, x, y - 1, x, y + 1);
+    
+}
+
 /***************************************************************************************************/
 /***************************************************************************************************/
 /***************************************************************************************************/

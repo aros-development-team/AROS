@@ -24,6 +24,9 @@
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
+#ifndef GADGETS_COLORWHEEL_H
+#   include <gadgets/colorwheel.h>
+#endif
 
 #ifndef AROS_DEBUG_H
 #include <aros/debug.h>
@@ -33,19 +36,43 @@
 
 /***************************************************************************************************/
 
-#define SysBase (((struct LibHeader *) ColorWheelBase)->lh_SysBase)
+#define SysBase 		(((struct LibHeader *) ColorWheelBase)->lh_SysBase)
 
 #undef 	EG
-#define EG(o) ((struct ExtGadget *)o)
+#define EG(o) 			((struct ExtGadget *)o)
+
+#define KNOBWIDTH		7
+#define KNOBHEIGHT		7
+	
+#define BORDERWHEELSPACINGX 	4
+#define BORDERWHEELSPACINGY 	4
 
 /***************************************************************************************************/
 
 struct ColorWheelData
 {
-    struct Screen		*scr;
+    struct ColorWheelHSB	hsb;			/* ISGNU	*/
+    struct ColorWheelRGB	rgb;			/* ISGNU	*/ 
+    struct Screen		*scr;			/* I 		*/
+    Object			*gradobj;		/* IS 		*/
+    STRPTR			abbrv;			/* I 		*/
+    UWORD			*donation;		/* I 		*/
+    UWORD			maxpens;		/* I 		*/
+    
     struct DrawInfo		*dri;
+    struct BitMap		*bm;
+    Object			*frame;
     LONG			*rgblinebuffer;
-    WORD 			dummy;
+    WORD 			rgblinebuffer_size;
+    WORD			bmwidth;
+    WORD			bmheight;
+    WORD			wheelcx;
+    WORD			wheelcy;
+    WORD			wheelrx;
+    WORD			wheelry;
+    WORD			knobsavex;
+    WORD			knobsavey;
+    BYTE			wheeldrawn;
 };
 
 
@@ -69,9 +96,13 @@ struct ColorWheelBase_intern
 struct IClass * InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
 
 BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat);
-VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
+VOID CalcKnobPos(struct ColorWheelData *data, WORD *x, WORD *y,
 		 struct ColorWheelBase_intern *ColorWheelBase);
 
+VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
+		 struct ColorWheelBase_intern *ColorWheelBase);
+VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
+		struct ColorWheelBase_intern *ColorWheelBase);
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct ColorWheelBase_intern *ColorWheelBase);
