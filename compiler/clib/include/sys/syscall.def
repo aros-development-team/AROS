@@ -198,3 +198,6 @@ SYSTEM_CALL (fork)
 SYSTEM_CALL (wait)
 SYSTEM_CALL (setuid)
 SYSTEM_CALL (setgid)
+SYSTEM_CALL (getw)
+SYSTEM_CALL (putw)
+

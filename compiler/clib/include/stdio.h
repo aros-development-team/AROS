@@ -188,8 +188,8 @@ void    setlinebuf(FILE *stream);
 #endif
 
 #if __BSD_VISIBLE || __XSI_VISIBLE > 0 && __XSI_VISIBLE < 600
-/* NOTIMPL int      getw(FILE *); */
-/* NOTIMPL int      putw(int, FILE *); */
+int      getw(FILE *stream);
+int      putw(int word, FILE *stream);
 #endif
 
 __END_DECLS
