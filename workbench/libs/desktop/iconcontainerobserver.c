@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -46,6 +50,7 @@ IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		data->directory=directory;
+		// this is unlocked by the scanner worker
 		data->dirLock=Lock(directory, ACCESS_READ);
 	}
 
@@ -65,9 +70,7 @@ IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
 		switch(tag->ti_Tag)
 		{
 			case ICOA_Directory:
-				UnLock(data->dirLock);
 				data->directory=(UBYTE*)tag->ti_Data;
-				data->dirLock=Lock(data->directory, ACCESS_READ);
 				break;
 			case OA_InTree:
 			{
@@ -147,8 +150,6 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		iconTags[4].ti_Tag=TAG_END;
 		iconTags[4].ti_Data=0;
 
-//kprintf("Creating : %d\n", msg->wsr_ResultsArray[i].sr_DiskObject->do_Type);
-
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
 			case WBDISK:
@@ -179,8 +180,12 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 		newIcon=CreateDesktopObjectA(kind, iconTags);
 
+		FreeVec(iconTags);
+
 		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
 	}
+
+	FreeVec(msg->wsr_ResultsArray);
 
 
 	return retval;

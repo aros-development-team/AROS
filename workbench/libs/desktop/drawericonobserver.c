@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -6,6 +10,7 @@
 #include <exec/memory.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <libraries/gadtools.h>
 #include <libraries/mui.h>
 #include <libraries/desktop.h>
 
@@ -96,9 +101,16 @@ IPTR drawerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 	UBYTE *name, *directory;
 	struct TagItem *icTags;
 	UBYTE *newDir;
-	Object *horiz, *vert, *dirWindow, *iconcontainer;
-
+	Object *horiz, *vert, *dirWindow, *iconcontainer, *strip;
 	struct DrawerIconObserverClassData *data;
+	struct NewMenu menuDat[]=
+	{
+		{NM_TITLE, "AROS", 0,0,0,(APTR)1},
+		{NM_ITEM, "Quit", "Q",0,0,(APTR)2},
+		{NM_TITLE, "Icon", 0,0,0,(APTR)30},
+		{NM_ITEM, "Open...", "O",0,0,(APTR)31},
+		{NM_END, NULL, 0,0,0,(APTR)0}
+	};
 
 	data=(struct DrawerIconObserverClassData*)INST_DATA(cl, obj);
 	retval=DoSuperMethodA(cl, obj, msg);
@@ -144,6 +156,8 @@ IPTR drawerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 		MUIA_Window_UseBottomBorderScroller, TRUE,
 		MUIA_Window_UseRightBorderScroller, TRUE,
 		MUIA_Window_EraseArea, FALSE,
+//		MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+		MUIA_Window_Title, newDir,
 		WindowContents, iconcontainer,
 //		End,
 	End;

@@ -1,8 +1,13 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <libraries/mui.h>
@@ -40,6 +45,7 @@ IPTR observerNew(Class *cl, Object *obj, struct opSet *msg)
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		data->presentation=presentation;
+		NewList((struct List*)&data->freeList);
 
 		DoMethod(presentation, MUIM_Notify, PA_InTree, MUIV_EveryTime, obj, 3, MUIM_Set, OA_InTree, TRUE);
 	}
@@ -88,8 +94,35 @@ IPTR observerGet(Class *cl, Object *obj, struct opGet *msg)
 IPTR observerDispose(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
+	struct ObserverClassData *data;
+	struct FreeNode *fn;
+
+	data=(struct ObserverClassData*)INST_DATA(cl, obj);
+
+	fn=(struct FreeNode*)RemHead((struct List*)&data->freeList);
+	while(fn)
+	{
+		FreeVec(fn->f_mem);
+		FreeVec(fn);
+	}
 
 	retval=DoSuperMethodA(cl, obj, msg);
+
+	return retval;
+}
+
+IPTR observerFreeListAdd(Class *cl, Object *obj, struct ObsFreeListAddMsg *msg)
+{
+	IPTR retval=0;
+	struct FreeNode *fn;
+	struct ObserverClassData *data;
+
+	data=(struct ObserverClassData*)INST_DATA(cl, obj);
+
+	fn=AllocVec(sizeof(struct FreeNode), MEMF_ANY);
+	fn->f_mem=msg->free;
+
+	AddTail((struct List*)&data->freeList, (struct Node*)fn);
 
 	return retval;
 }
@@ -114,6 +147,9 @@ AROS_UFH3(IPTR, observerDispatcher,
 			break;
 		case OM_DISPOSE:
 			retval=observerDispose(cl, obj, msg);
+			break;
+		case OM_FreeList_Add:
+			retval=observerFreeListAdd(cl, obj, (struct ObsFreeListAddMsg*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -215,6 +219,7 @@ ULONG desktopHandler(void)
 						wmn=findWorkedMessage(&workingMessages, wsr->wsr_WMessage.w_ID);
 
 						DoMethod(((struct HandlerScanRequest*)wmn->wm_Working)->hsr_Application, MUIM_Application_PushMethod, ((struct HandlerScanRequest*)wmn->wm_Working)->hsr_CallBack, 3, ICOM_AddIcons, wsr->wsr_Results, wsr->wsr_ResultsArray);
+						DoMethod(((struct HandlerScanRequest*)wmn->wm_Working)->hsr_Application, MUIM_Application_PushMethod, ((struct HandlerScanRequest*)wmn->wm_Working)->hsr_CallBack, 2, OM_FreeList_Add, wsr->wsr_ExAllBuffer);
 
 						if(wsr->wsr_More)
 						{
@@ -226,6 +231,9 @@ ULONG desktopHandler(void)
 							Remove((struct Node*)wmn);
 							ReplyMsg((struct Message*)wmn->wm_Working);
 						}
+
+						FreeVec(wsr);
+
 						break;
 					}
 				}
