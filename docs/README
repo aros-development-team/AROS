@@ -14,16 +14,12 @@ HOW TO USE THIS
 
 There are two archives:
 
-    AROSdev-$x.$y.lha
-    AROS-$a-$b-$x.$y.lha
+    AROSdev.lha
+    AROS-$a-$b.lha
 
-$x is the major and $y is the minor release, $a is the system and $b is
-the CPU this archive is for, ie.
-
-    AROS-linux-i386-1.10b.lha
-
-Is the binary archive for linux with Intel CPU (386 and above). The version is
-1.10 and it's a beta.
+$a is the system and $b is the CPU this archive is for, ie.
+AROS-linux-i386.lha is the binary archive for linux with Intel CPU (386 and
+above), AROS-amiga.lha is the Amiga binary.
 
 If you are not involved with developing AROS but want to try it out or
 (even better) want to write apps for AROS, get the binary archive. It
