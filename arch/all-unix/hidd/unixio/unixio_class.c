@@ -15,6 +15,9 @@
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/alerts.h>
+#include <exec/tasks.h>
+#include <exec/ports.h>
+#include <exec/nodes.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <hidd/unixio.h>
@@ -158,13 +161,13 @@ static void WaitForIO (void)
     {
         if (IsListEmpty (&waitList))
 	{
-	    D(bug("wfio: Waiting for message\n"));
+	    D(bug("wfio: Waiting for message for task %x\n",ud->ud_WaitForIO));
 	    WaitPort (ud->ud_Port);
 	    D(bug("wfio: Got messages\n"));
 	}
         else
 	{
-	    D(bug("wfio: Waiting for message or signal\n"));
+	    D(bug("wfio: Waiting for message or signal for task %x\n",ud->ud_WaitForIO));
 	    rmask = Wait ((ULONG) 1 << ud->ud_Port -> mp_SigBit | SIGBREAKF_CTRL_C);
 	    if (rmask & SIGBREAKF_CTRL_C)
 	    {
@@ -261,7 +264,10 @@ static void WaitForIO (void)
 		{
 		    msg->result = 0;
 reply:
-		    D(bug("wfio: Reply: fd=%ld res=%ld\n", msg->fd, msg->result));		    
+		    D(bug("wfio: Reply: fd=%ld res=%ld replying to task %x on port %x\n", msg->fd, msg->result, ((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort));
+/*
+kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x\n",((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort);
+*/
 		    Remove ((struct Node *)msg);
 		    flags = fcntl (msg->fd, F_GETFL);
 		    fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
@@ -290,6 +296,7 @@ static Object *unixio_new(Class *cl, Object *o, struct pRoot_New *msg)
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
     o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
+
     if (o)
     {
 	struct UnixIOData *id;
@@ -301,9 +308,14 @@ static Object *unixio_new(Class *cl, Object *o, struct pRoot_New *msg)
 	id->uio_ReplyPort = CreatePort (NULL, 0);
 	if (id->uio_ReplyPort)
 	{
-	    D(bug("Port created\n"));
+/*
+kprintf("\tUnixIO::New(): Task %s (%x) Replyport: %x\n",FindTask(NULL)->tc_Node.ln_Name,FindTask(NULL),id->uio_ReplyPort);
+*/
+	    D(bug("Port created at %x\n",id->uio_ReplyPort));
 	    ReturnPtr("UnixIO::New", Object *, o);
     	}
+
+
 	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	CoerceMethod(cl, o, (Msg)&dispose_mid);
     }
@@ -331,10 +343,10 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
     IPTR retval = 0UL;
     struct UnixIOData *id = INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
-    struct MsgPort * port = id -> uio_ReplyPort;
+    struct MsgPort  * port = CreatePort(NULL, 0);//= id -> uio_ReplyPort;
     struct uio_data *ud = (struct uio_data *)cl->UserData;
 
-    if (umsg && port)
+    if (umsg  && port)
     {
 	port->mp_Flags = PA_SIGNAL;
 	port->mp_SigTask = FindTask (NULL);
@@ -345,10 +357,16 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
 	umsg->callback = ((struct uioMsg *)msg)->um_CallBack;
 	umsg->callbackdata = ((struct uioMsg *)msg)->um_CallBackData;
 
-	D(bug("Sending msg fd=%ld mode=%ld\n", umsg->fd, umsg->mode));
+	D(bug("Sending msg fd=%ld mode=%ld to port %x\n", umsg->fd, umsg->mode, ud->ud_Port));
+
+/*
+kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_Node.ln_Name,FindTask(NULL),port);
+*/
 	PutMsg (ud->ud_Port, (struct Message *)umsg);
 	WaitPort (port);
 	GetMsg (port);
+
+DeletePort(port);
 
 	D(bug("Get msg fd=%ld mode=%ld res=%ld\n", umsg->fd, umsg->mode, umsg->result));
 	retval = umsg->result;
