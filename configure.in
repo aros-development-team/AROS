@@ -513,6 +513,19 @@ else
 fi
 AC_MSG_RESULT($withval)
 
+
+#-----------------------------------------------------------------------------
+AC_MSG_CHECKING([what target variant to enable])
+AC_ARG_ENABLE(target_variant,AC_HELP_STRING([--enable-target-variant=NAME],[Enable a specific target variant. (default=none)]),target_variant=$enableval,target_variant="none")
+if test "$target_variant" = "none"; then
+    aros_target_variant=""
+    aros_target_suffix=""
+else
+    aros_target_variant="$target_variant"
+    aros_target_suffix="-$target_variant"
+fi
+AC_MSG_RESULT($enableval)
+
 #-----------------------------------------------------------------------------
 
 # This is the target configuration switch.
@@ -799,13 +812,12 @@ case "$target_os" in
 	;;
 esac
 
-
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
-aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
-aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
+aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Include/aros"
+aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
-aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/scripts"
+aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
 
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
@@ -813,7 +825,7 @@ aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/scripts"
 # AROS_TOOL_CC(TARGET_AS,$aros_target_as)
 # AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
 
-TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc"
+TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
 TARGET_AS=$TARGET_CC
 STATIC_LD=$TARGET_CC
 
@@ -982,6 +994,8 @@ AC_SUBST(aros_host_lib_suffix)
 # Target Related
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)
+AC_SUBST(aros_target_variant)
+AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cc_includes)
@@ -1124,10 +1138,11 @@ fi
 AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 
 AC_CONFIG_COMMANDS([compiler_executable],
-    [chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc],
+    [chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc],
     [aros_tools_dir=${aros_tools_dir}
      aros_target_cpu=${aros_target_cpu}
-     aros_target_arch=${aros_target_arch}]
+     aros_target_arch=${aros_target_arch}
+     aros_target_suffix=${aros_target_suffix}]
 )
 AC_CONFIG_COMMANDS([genshared_executable],
     [chmod a+x ${aros_scripts_dir}/genshared],
@@ -1147,7 +1162,7 @@ AC_CONFIG_FILES(
     mmake.config
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
-    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
     ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
 )

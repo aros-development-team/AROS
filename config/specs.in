@@ -2,19 +2,19 @@
 %(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %(aros_include)
 
 *aros_include:
--nostdinc %{!nostdinc:-isystem @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include -isystem @aros_target_cc_includes@}
+-nostdinc %{!nostdinc:-isystem @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Include -isystem @aros_target_cc_includes@}
 
 *endfile:
 -lautoinit
 
 *link:
--m @aros_object_format@ -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
+-m @aros_object_format@ -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/lib
 
 *lib:
 -lamiga -larossupport -larosc -lm
 
 *startfile:
-%{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o}  @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o %{nix:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/nixmain.o}
+%{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/lib/detach.o}  @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/lib/startup.o %{nix:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/lib/nixmain.o}
 
 *predefines:
 -D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__
