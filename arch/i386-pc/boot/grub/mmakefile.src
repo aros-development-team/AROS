@@ -7,7 +7,7 @@ contrib-grub: setup grub-build grub-copy
 
 .PHONY: grub-build
 grub-build: Makefile
-	make
+	$(MAKE)
 
 grub-copy: $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
 
