@@ -1,45 +1,46 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Delete a file.
+    POSIX function rmdir().
 */
 
-#include <stdio.h>
+#define remove remove
+
+#include <proto/dos.h>
+#include "__errno.h"
 
 /*****************************************************************************
 
     NAME */
-#include <unistd.h>
+#include <stdio.h>
 
-	int unlink (
+	int rmdir(
 
 /*  SYNOPSIS */
 	const char * pathname)
 
 /*  FUNCTION
-	Delete a file from disk.
+	Deletes an empty directory.
 
     INPUTS
-	pathname - Complete path to the file
+	pathname - Complete path to the directory.
 
     RESULT
 	0 on success and -1 on error. In case of an error, errno is set.
-
+	
     NOTES
-    	Identical to remove
 
     EXAMPLE
-	// Delete the file xyz in the current directory
-	unlink ("xyz");
 
     BUGS
 
     SEE ALSO
+    	unlink(), remove()
 
     INTERNALS
 
 ******************************************************************************/
 {
     return remove(pathname);
-} /* unlink */
+} /* rmdir() */

@@ -157,6 +157,8 @@ SHARED	:= \
 	getfsstat \
         getpid \
 	gettimeofday \
+        getuid \
+        geteuid \
 	gmtime \
 	isatty \
 	isinf \
@@ -195,6 +197,7 @@ SHARED	:= \
 	rename \
 	rewind \
 	rewinddir \
+        rmdir \
 	scanf \
 	seed48 \
 	seekdir \
