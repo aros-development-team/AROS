@@ -65,7 +65,7 @@ BEGIN {
 		gsub(/^.*\//,"",lib); # Strip off all leading dirs
 
 		# The filename of the resulting HTML file
-		out=CURDIR "/../html/autodocs/" bn ".html";
+		out=DESTDIR"/autodocs/" bn ".html";
 		#out="/dev/stdout";
 
 		location=0; # The field LOCATION hasn't been read yet
@@ -174,7 +174,7 @@ BEGIN {
 			hfile=substr(line,RSTART+1,RLENGTH-2);
 			link="srcs/include/" hfile;
 
-			if (exists("../html/" link))
+			if (exists(DESTDIR "/" link))
 			    line="<A HREF=\"../"link"\">"hfile"</A>";
 			else
 			    line=hfile;
@@ -461,7 +461,7 @@ BEGIN {
 				link=substr(rest,RSTART,RLENGTH-2);
 				rest=substr(rest,RSTART+RLENGTH);
 
-				lfile="../html/autodocs/" tolower(link) ".html";
+				lfile=DESTDIR"/autodocs/" tolower(link) ".html";
 
 				if (link in special_item)
 				    line = line special_item[link];

@@ -5,9 +5,7 @@
 # are HTML pages are regenerated.
 #
 
-TOP="$1"
-CURDIR="$2"
-shift ; shift
+# The following env variables must be set: TOP DESTDIR DOCGENDIR CURDIR
 
 len=`echo $TOP | wc -c`
 len=`expr $len + 1`
@@ -16,14 +14,22 @@ cd="`pwd`"
 cd "$TOP"
 dot=0
 
+if [ -z "$DONOTSLEEP" ]; then
+    # Work around bug in inetd: When a client connects twice per second
+    # to a CVS server, then inetd blocks (server might be looping) :-(
+    SLEEP="sleep 2"
+else
+    SLEEP="true"
+fi
+
 for src in $* ; do
     dir="`echo $src | cut "-c$len-"`"
     dir="`dirname $dir`"
     name="`basename $src`"
     bname="`echo $name | cut -d. -f1`"
-    html="$CURDIR/../html/autodocs/$bname.html"
-    log="$CURDIR/gen/$bname.log"
-    ehtml="$CURDIR/gen/$bname.empty"
+    html="$DESTDIR/autodocs/$bname.html"
+    log="$DOCGENDIR/$bname.log"
+    ehtml="$DOCGENDIR/$bname.empty"
     src="$dir/$name"
 
 # echo "Checking $html"
@@ -47,11 +53,12 @@ for src in $* ; do
 	if [ ! -e "$log" -o "$src" -nt "$log" ]; then
 	    echo "Regenerating $log"
 	    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
-	    sleep 2
+	    $SLEEP
 	fi
 	touch "$log"
 	echo "Regenerating $html"
-	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$log"
+	gawk -f "$CURDIR/adoc2html.gawk" --assign "DESTDIR=$DESTDIR" \
+		"$src" "$log"
 	if [ ! -e "$html" ]; then
 	    touch "$ehtml"
 	fi
