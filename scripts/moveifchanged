@@ -9,7 +9,7 @@ if cmp -s "$1" "$2"; then
     echo "$2 is unchanged"
 else
     echo "Replacing $2 by $1"
-    if [ -e "$2" ]; then
+    if [ -f "$2" ]; then
 	mv "$2" "$2.bak"
     fi
     mv "$1" "$2"
