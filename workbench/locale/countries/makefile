@@ -9,7 +9,7 @@ COUNTDIR=$(LOCALEDIR)/Countries
 DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
 
-COUNTRIES=australia great_britain
+COUNTRIES=australia germany great_britain
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTDIR)/$(f).country)
 
