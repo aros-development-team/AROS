@@ -9,17 +9,17 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/intuition.h>
 #include <exec/types.h>
 #include <intuition/intuition.h>
+#include <proto/intuition.h>
 
 	AROS_LH4(LONG, EasyRequestArgs,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window     *, Window, A0),
+	AROS_LHA(struct Window     *, window, A0),
 	AROS_LHA(struct EasyStruct *, easyStruct, A1),
 	AROS_LHA(ULONG             *, IDCMP_ptr, A2),
-	AROS_LHA(APTR               , ArgList, A3),
+	AROS_LHA(APTR               , argList, A3),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 98, Intuition)
@@ -31,14 +31,14 @@
 
     INPUTS
 	Window - A reference window. If NULL, the requester opens on
-	         the default public screen.
+		 the default public screen.
 	easyStruct - The EasyStruct structure (<intuition/intuition.h>),
-	             which describes the requester.
+		     which describes the requester.
 	IDCMP_Ptr - Pointer to IDCMP flags, which satisfy the requester,
-	            too. This is useful for requesters, which want to
-	            listen to disk changes, etc. The contents of this
-	            pointer is set to the IDCMP flag, which caused the
-	            requester to close. This pointer may be NULL.
+		    too. This is useful for requesters, which want to
+		    listen to disk changes, etc. The contents of this
+		    pointer is set to the IDCMP flag, which caused the
+		    requester to close. This pointer may be NULL.
 	ArgList - The arguments for easyStruct->es_TextFormat.
 
     RESULT
@@ -69,10 +69,10 @@
     LONG result;
     struct Window *req;
 
-    req = BuildEasyRequestArgs(Window, easyStruct, 
-	    IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, ArgList);
+    req = BuildEasyRequestArgs(window, easyStruct,
+	    IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, argList);
     if (!req)
-        return 0L;
+	return 0L;
 
     while ((result = SysReqHandler(req, IDCMP_ptr, TRUE)) == -2);
 

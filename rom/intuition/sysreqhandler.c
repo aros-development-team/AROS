@@ -19,7 +19,7 @@
 	AROS_LH3(LONG, SysReqHandler,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window  *, Window, A0),
+	AROS_LHA(struct Window  *, window, A0),
 	AROS_LHA(ULONG   *,        IDCMPFlagsPtr, A1),
 	AROS_LHA(BOOL            , WaitInput, D0),
 
@@ -37,15 +37,15 @@
 
     INPUTS
 	Window - The window pointer returned by either BuildSysRequest() or
-	         BuildEasyRequestArgs().
+		 BuildEasyRequestArgs().
 	IDCMPFlagsPtr - Pointer to a ULONG to store the IDCMP flag that was
-	                received by the window. This will be set if you
-		        provided additional IDCMP flags to BuildSysRequest() or
-		        BuildEasyRequest(). You may set this to NULL. You must
-		        initialize the pointed to ULONG every time you call
-		        SysReqHandler().
+			received by the window. This will be set if you
+			provided additional IDCMP flags to BuildSysRequest() or
+			BuildEasyRequest(). You may set this to NULL. You must
+			initialize the pointed to ULONG every time you call
+			SysReqHandler().
 	WaitInput - Set this to TRUE, if you want this function to wait for
-	            the next IDCMP request, if there is none at the moment
+		    the next IDCMP request, if there is none at the moment
 		    the function is called.
 
     RESULT
@@ -80,30 +80,30 @@
     struct IntuiMessage *msg;
 
     if (WaitInput)
-        WaitPort(Window->UserPort);
+	WaitPort(window->UserPort);
     while (result == -3)
     {
-        msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
-        if (msg)
-        {
-            switch (msg->Class)
-            {
-            case IDCMP_GADGETUP:
-                result = ((struct Gadget *)msg->IAddress)->GadgetID;
-                break;
-            default:
-                if (msg->Class |
-		    ((struct EasyRequestUserData *)Window->UserData)->IDCMP)
-                {
-                    if (IDCMPFlagsPtr)
-                        *IDCMPFlagsPtr |= msg->Class;
-                    result = -1;
-                }
-                break;
-            }
-            ReplyMsg((struct Message *)msg);
-        } else
-            result = -2;
+	msg = (struct IntuiMessage *)GetMsg(window->UserPort);
+	if (msg)
+	{
+	    switch (msg->Class)
+	    {
+	    case IDCMP_GADGETUP:
+		result = ((struct Gadget *)msg->IAddress)->GadgetID;
+		break;
+	    default:
+		if (msg->Class |
+		    ((struct EasyRequestUserData *)window->UserData)->IDCMP)
+		{
+		    if (IDCMPFlagsPtr)
+			*IDCMPFlagsPtr |= msg->Class;
+		    result = -1;
+		}
+		break;
+	    }
+	    ReplyMsg((struct Message *)msg);
+	} else
+	    result = -2;
     }
 
     return result;

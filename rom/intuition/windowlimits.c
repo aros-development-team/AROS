@@ -19,7 +19,7 @@ void aros_print_not_implemented (char * name);
 	AROS_LH5(BOOL, WindowLimits,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, Window, A0),
+	AROS_LHA(struct Window *, window, A0),
 	AROS_LHA(WORD,            MinWidth, D0),
 	AROS_LHA(WORD,            MinHeight, D1),
 	AROS_LHA(UWORD,           MaxWidth, D2),

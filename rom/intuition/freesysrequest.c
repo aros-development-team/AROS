@@ -19,7 +19,7 @@
 	AROS_LH1(void, FreeSysRequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, Window, A0),
+	AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 62, Intuition)
@@ -56,15 +56,15 @@
     struct Gadget *gadgets;
     STRPTR *gadgetlabels;
 
-    if ((Window == NULL) || (Window == (void *)1L))
-        return;
+    if ((window == NULL) || (window == (void *)1L))
+	return;
 
-    scr = Window->WScreen;
-    gadgets = Window->FirstGadget;
-    gadgetlabels = ((struct EasyRequestUserData *)Window->UserData)->GadgetLabels;
+    scr = window->WScreen;
+    gadgets = window->FirstGadget;
+    gadgetlabels = ((struct EasyRequestUserData *)window->UserData)->GadgetLabels;
 
-    FreeVec(Window->UserData);
-    CloseWindow(Window);
+    FreeVec(window->UserData);
+    CloseWindow(window);
     easyrequest_freegadgets(gadgets);
     easyrequest_freelabels(gadgetlabels);
     UnlockPubScreen(NULL, scr);
