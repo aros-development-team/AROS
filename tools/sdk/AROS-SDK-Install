@@ -1,0 +1,196 @@
+#!/bin/sh
+
+echo Searching for a suitable compiler...
+cc=gcc
+
+while true; do
+    echo -en "Trying \\033[1m$cc\\033[0;39m... "
+    cc=`which $cc 2>/dev/null`
+
+    if test "$cc" != ""; then
+        cc_cpu=`$cc -dumpmachine 2>/dev/null | cut -f1 -d-`
+    else
+        cc_cpu=
+    fi
+
+    case $cc_cpu in
+        i?86)
+	    echo -e "\\033[1;32mOK.\\033[0;39m"
+	    cc_cpu=i386
+	    break
+	    ;;
+	*)
+	    echo -e "\\033[1;31mFAILED.\\033[0;39m"
+	    read -p "Provide the path to a suitable compiler: " cc
+    esac
+done
+
+echo Checking where the compiler stores its own include files...
+cc_os=`$cc -dumpmachine 2>/dev/null | cut -f2- -d-`
+if echo $cc_os | grep freebsd >/dev/null; then
+    cc_include=/usr/include
+else
+    cc_include=`dirname \`$cc -print-libgcc-file-name\``/include
+fi
+echo -e "\\033[1m$cc_include\\033[0;39m"
+
+echo Searching for a suitable linker...
+ld=ld
+
+while true; do
+    echo -en "Trying \\033[1m$ld\\033[0;39m... "
+    ld=`which $ld 2>/dev/null`
+
+    if test "$ld" != ""; then
+        ld_emu_all=`$ld -V 2>/dev/null`
+    else
+        ld_emu_all=
+    fi
+
+    for ld_emu in $ld_emu_all; do
+        case $ld_emu in
+            elf_i386)
+	        echo -e "\\033[1;32mOK.\\033[0;39m"
+		break 2
+	        ;;
+        esac
+    done
+
+    echo -e "\\033[1;31mFAILED.\\033[0;39m"
+    read -p "Provide the path to a suitable linker: " ld
+done
+
+tools_list="nm ar objcopy objdump objcopy strip"
+
+for tool1 in $tools_list; do
+    echo Searching for a suitable "'$tool1'"...
+    tool=$tool1
+    while true; do
+        echo -en "Trying \\033[1m$tool\\033[0;39m... "
+        tool=`which $tool 2>/dev/null`
+
+        if test "$tool" != ""; then
+            tool_targets_list=`$tool --help 2>&1 | grep "$tool: supported targets"`
+        else
+            tool_targets_list=
+        fi
+
+        for tool_target in $tool_targets_list; do
+            case $tool_target in
+                elf32-i386)
+	            echo -e "\\033[1;32mOK.\\033[0;39m"
+
+		    export $tool1=$tool
+		    export ${tool1}_target=$tool_target
+		    break 2
+	        ;;
+            esac
+        done
+
+        echo -e "\\033[1;31mFAILED.\\033[0;39m"
+        read -p "Provide the path to a suitable '$tool1': " tool
+    done
+done
+
+aros_sdk_path=/usr/local/aros-sdk
+
+while true; do
+    echo -en "Directory in which to install the AROS SDK [\\033[1m${aros_sdk_path}\\033[0;39m]: "
+    read aros_sdk_path_tmp
+
+    if test "$aros_sdk_path_tmp" != ""; then
+        aros_sdk_path=aros_sdk_path_tmp
+    fi
+
+    while true; do
+        if ! test -a $aros_sdk_path; then
+            echo -en "The directory \\033[1m$aros_sdk_path\\033[0;39m does not exist, "
+	    echo -en "create it [\\033[1myes\\033[0;39m]? "
+            read answer
+
+            if test "$answer" = "yes" -o "$answer" = ""; then
+                break 2
+            fi
+
+            if test "$answer" = "no"; then
+                break 1
+            fi
+	else
+	    if ! test -d $aros_sdk_path; then
+	        echo -e "\\033[1m$aros_sdk_path\\033[0;39m already exists but it's not a directory."
+	        echo -e "Chose a new name or delete the existing \\033[1m$aros_sdk_path\\033[0;39m"
+	        break 1
+	    else
+	        break 2
+	    fi
+	fi
+    done
+done
+
+echo Making directories...
+all_dirs="$aros_sdk_path/${cc_cpu}-aros/include $aros_sdk_path/bin $aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib $aros_sdk_path/${cc_cpu}-aros/bin"
+
+for dir in $all_dirs; do
+    if ! test -d $dir; then
+        mkdir -p $dir;
+    fi
+done
+
+if ! make -s -C tools/collect-aros \
+    COLLECT-AROS=$aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib/collect-aros; then
+    exit 1;
+fi
+
+echo Building scripts...
+sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld_emu@,$ld_emu,g; s,@cc_include@,$cc_include,g; s,@cc_cpu@,$cc_cpu,g" scripts/specs.in > $aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib/specs
+
+sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g; s,@strip@,$strip,g" scripts/aros-gcc.in >  $aros_sdk_path/${cc_cpu}-aros/bin/gcc
+chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/gcc
+
+sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g" scripts/aros-ld.in >  $aros_sdk_path/${cc_cpu}-aros/bin/ld
+chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/ld
+
+sed "s,@strip@,$strip,g" scripts/aros-strip.in > $aros_sdk_path/${cc_cpu}-aros/bin/strip
+chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/strip
+
+cat <<EOF > AROS-SDK-Uninstall
+#!/bin/sh
+echo -e "\\033[1;31mATTENTION!\\033[0;39m The AROS SDK is about to be uninstalled."
+
+while true; do
+    echo -en "Do you really want to proceed [\\033[1mno\\033[0;39m]? "
+    read answer
+
+    if test "\$answer" = "yes"; then
+        echo Unistalling the AROS SDK...
+        rm -Rf $aros_sdk_path/${cc_cpu}-aros $aros_sdk_path/bin/i386-aros-* \$0
+        break
+    fi
+
+    if test "\$answer" = "no" -o "\$answer" = ""; then
+        echo Nothing done
+        break;
+    fi
+done
+EOF
+
+chmod a+x AROS-SDK-Uninstall
+
+echo Copying files...
+ln -sf $ar      $aros_sdk_path/${cc_cpu}-aros/bin/ar
+ln -sf $nm      $aros_sdk_path/${cc_cpu}-aros/bin/nm
+ln -sf $objcopy $aros_sdk_path/${cc_cpu}-aros/bin/objcopy
+ln -sf $objdump $aros_sdk_path/${cc_cpu}-aros/bin/objdump
+
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/gcc     $aros_sdk_path/bin/${cc_cpu}-aros-gcc
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/ld      $aros_sdk_path/bin/${cc_cpu}-aros-ld
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/ar      $aros_sdk_path/bin/${cc_cpu}-aros-ar
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/nm      $aros_sdk_path/bin/${cc_cpu}-aros-nm
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/objcopy $aros_sdk_path/bin/${cc_cpu}-aros-objcopy
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/objdump $aros_sdk_path/bin/${cc_cpu}-aros-objdump
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/strip   $aros_sdk_path/bin/${cc_cpu}-aros-strip
+
+cp -a $cc_cpu/lib/*     $aros_sdk_path/${cc_cpu}-aros/lib/
+cp -a $cc_cpu/include/* $aros_sdk_path/${cc_cpu}-aros/include/
+
+echo -e "\nEverything done. Remember to add \\033[1m$aros_sdk_path/bin\\033[0;39m to your \\033[1mPATH\\033[0;39m environment variable before using the AROS SDK."
