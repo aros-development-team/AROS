@@ -78,8 +78,8 @@ static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
 //    setstring(data->text_font_string,FindConfig(MUICFG_Buttons_Font));
-    set(data->text_background_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Buttons_Background));
-    set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Buttons_SelBackground));
+    set(data->text_background_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Button));
+    set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,FindConfig(MUICFG_Background_Selected));
     return 1;    
 }
 
@@ -97,10 +97,10 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
     AddConfigStr(str,MUICFG_Font_Big);*/
 
     str = (char*)xget(data->text_background_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Buttons_Background);
+    AddConfigStr(str,MUICFG_Background_Button);
 
     str = (char*)xget(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigStr(str,MUICFG_Buttons_SelBackground);
+    AddConfigStr(str,MUICFG_Background_Selected);
 
     return TRUE;
 }
