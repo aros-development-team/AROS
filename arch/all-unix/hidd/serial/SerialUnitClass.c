@@ -474,6 +474,9 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
         data->parity = FALSE;
       break;
       
+      case TAG_SKIP:
+      break;
+      
       default: 
         valid = FALSE;
     }
