@@ -125,10 +125,10 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
 	{
 
-	    STRPTR *argArray  = SHArg();
+	    STRPTR *argArray  = SHArg( );
 	    STRPTR *argArray2 = argArray;
 
-	    if(SHArg())		/* Multiple arguments... */
+	    if(SHArg( ))		/* Multiple arguments... */
 	    {
 		int i = 0;
 
