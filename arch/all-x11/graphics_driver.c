@@ -1529,8 +1529,11 @@ UX11
 LX11
     if (!XAllocColor (sysDisplay, cm, &xc))
     {
-	fprintf (stderr, "Couldn't allocate color %s\n",
-		sysColName[color]);
+      fprintf (stderr, "Couldn't allocate color");
+      if (color <=15)    
+	fprintf (stderr, "%s\n",sysColName[color]);
+      else
+        fprintf (stderr, "\n");
 
 	sysCMap[color] = !(color & 1) ?
 		WhitePixel(sysDisplay, sysScreen) :
