@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 DEST	:= $(HOME)/www/www.aros.org/www/
 #DEST	 := ../html.test/
-AROS_SIZE := $(HOME)/www/www.aros.org/tmp/aros.size
+SIZEDIR := $(HOME)/www/www.aros.org/tmp/
 JOBDEST := $(ARCHDIR)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
 LITE	:= /usr/local/Hughes/bin/lite
@@ -225,15 +225,24 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 includes : $(DOCGENDIR)/devlist.inc \
 	$(DOCGENDIR)/contents.inc \
 	$(DOCGENDIR)/status.inc \
-	$(DEST)progress.gif
+	$(DEST)progress.png \
+	$(DEST)contrib.png
 
-$(DEST)progress.gif : size2plot.in $(AROS_SIZE)
+$(DEST)progress.png : size2plot.in $(SIZEDIR)/aros.size
 	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
-	    -e "s;@AROS-SIZE@;$(AROS_SIZE);" \
+	    -e "s;@SIZEFILE@;$(SIZEDIR)/aros.size;" \
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
 	$(GNUPLOT) $(DOCGENDIR)/size2plot.gp
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
-	$(CONVERT) $(DOCGENDIR)/plot.pbm $(DEST)progress.png
+	$(CONVERT) $(DOCGENDIR)/plot.pbm $(basename $@).jpg
+
+$(DEST)contrib.png : size2plot.in $(SIZEDIR)/contrib.size
+	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
+	    -e "s;@SIZEFILE@;$(SIZEDIR)/contrib.size;" \
+	    size2plot.in > $(DOCGENDIR)/size2plot.gp
+	$(GNUPLOT) $(DOCGENDIR)/size2plot.gp
+	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
+	$(CONVERT) $(DOCGENDIR)/plot.pbm $(basename $@).jpg
 
 $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
