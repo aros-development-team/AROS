@@ -131,7 +131,7 @@ __asm VOID MUI_RejectIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
 __asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d0 LONG pen);
 __asm VOID MUI_RemoveClipping(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle);
 __asm VOID MUI_RemoveClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle);
-__asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register __d2 LONGBITS flags, register __a0 char *title, register __a1 char *gadgets, register __a2 char *format, register __a3 APTR params);
+__asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register __d2 LONGBITS flags, register __a0 CONST_STRPTR title, register __a1 CONST_STRPTR gadgets, register __a2 CONST_STRPTR format, register __a3 APTR params);
 __asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags);
 __asm LONG MUI_SetError(register __d0 LONG num);
 
