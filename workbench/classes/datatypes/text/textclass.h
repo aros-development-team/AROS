@@ -1,75 +1,69 @@
-#define DTTM_GET_STRING     0x20000
-#define DTTM_SEARCH_NEXT    0x20001
-#define DTTM_SEARCH_PREV    0x20002
-
-struct dttGetString
-{
-  ULONG MethodID;
-  struct GadgetInfo dttgs_GInfo;
-/*  LONG dttgs_SearchMethod;*/
-};
-
-struct dttSearchText
-{
-   ULONG MethodID;
-   struct GadgetInfo *dttst_GInfo;
-   STRPTR dttst_Text;
-   LONG dttst_TextLen;
-};
 
 struct Text_Data
 {
-    LONG 		left, top;		/* Offsets of the gadget 			*/
-    LONG 		width, height;		/* Dimensions of the gadget			*/
-
-    struct Screen 	*screen;		/* Screen on which the gadget lies 		*/
-    struct DrawInfo 	*drinfo;		/* Resulting from screen			*/
+    LONG 	left, top;		/* Offsets of the gadget 			*/
+    LONG 	width, height;		/* Dimensions of the gadget			*/
+    LONG	fillpen, filltextpen;	/* pens for marking */
 
 #ifndef COMPILE_DATATYPE
+    struct Screen 	*screen;	/* Screen on which the gadget lies 		*/
+    struct DrawInfo 	*drinfo;	/* Resulting from screen			*/
+
     struct RastPort 	*rp;
-    APTR 		line_pool;
+    APTR 	line_pool;
 #else
-    LONG 		update_type;
-    LONG 		update_arg;
-    LONG 		mouse_pressed;
+    LONG 	update_type;
+    LONG 	update_arg;
+    LONG 	mouse_pressed;
+    LONG	redraw;
 #endif
 
     STRPTR 		title;
     UBYTE 		*buffer_allocated;
     ULONG 		buffer_allocated_len;
-    struct List 	line_list;		/* double linked list of the lines		*/
-    
+    struct List 	line_list;	/* double linked list of the lines		*/
+    char *word_delim;
+    LONG word_wrap;
+
     struct TextFont 	*font;
     struct TextAttr 	attr;
 
-    LONG 		horiz_visible;
-    LONG 		vert_visible;
+    LONG 	horiz_visible;
+    LONG 	vert_visible;
 
-    LONG 		vert_top;
-    LONG 		horiz_top;
+    LONG 	vert_top;
+    LONG 	horiz_top;
 
-    LONG 		vert_diff;		/* For optimized Scrolling			*/
-    LONG 		use_vert_diff;
-    LONG 		horiz_diff;
-    LONG 		use_horiz_diff;
+    LONG	horiz_unit;
+    LONG	vert_unit;
 
-    LONG 		oldmarkactivation;
-    LONG 		mark_x1;
-    LONG 		mark_x2;
-    LONG 		mark_y1;
-    LONG 		mark_y2;
-    struct Line 	*mark_line1;
-    struct Line 	*mark_line2;
-    LONG 		pressed;
+    LONG 	vert_diff;		/* For optimized Scrolling			*/
+    LONG 	use_vert_diff;
+    LONG 	horiz_diff;
+    LONG 	use_horiz_diff;
 
-    LONG 		doubleclick;		/* 1 if doubleclicked, 2 if trippleclicked 	*/
-    LONG 		lastsecs;		/* For Doubleclick check			*/
-    LONG 		lastmics;
+    LONG 	mark_x1;
+    LONG 	mark_x2;
+    LONG 	mark_y1;
+    LONG 	mark_y2;
+    struct Line *mark_line1;
+    struct Line *mark_line2;
+    LONG 	pressed;
+    LONG 	copy_text;		/* if mb is released, copy the text into the clipboard */
 
-    char		search_buffer[128];
-    struct Process	*search_proc;
-    struct dttGetString msg;
+    LONG 	doubleclick;		/* 1 if doubleclicked, 2 if trippleclicked 	*/
+    LONG 	lastsecs;		/* For Doubleclick check			*/
+    LONG 	lastmics;
+
+    struct	TextExtent te;
+    struct	RastPort font_rp;
+
+    char	search_buffer[128];
+    struct Process	*search_proc;	/* the search requester process */
+    struct GadgetInfo	search_ginfo;	/* for the search process */
     int		search_line;
+    int		search_pos;		/* x position */
+    int		search_case;
 };
 
 
