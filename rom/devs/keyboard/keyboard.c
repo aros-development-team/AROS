@@ -120,7 +120,7 @@ static void *const functable[] =
 static AttrBase HiddKbdAB = 0;
 
 VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
-AROS_UFP3(VOID, sendQueuedEvents,
+AROS_UFP3(VOID, kbdSendQueuedEvents,
     AROS_UFPA(struct KeyboardBase *, KBBase, A1),
     AROS_UFPA(APTR, thisfunc, A1),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
@@ -215,7 +215,7 @@ AROS_LH3(void, open,
     KBBase->kb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
     KBBase->kb_Interrupt.is_Node.ln_Pri = 0;
     KBBase->kb_Interrupt.is_Data = (APTR)KBBase;
-    KBBase->kb_Interrupt.is_Code = sendQueuedEvents;
+    KBBase->kb_Interrupt.is_Code = kbdSendQueuedEvents;
 	
 /******* nlorentz: End of stuff added by me ********/
 
@@ -635,7 +635,7 @@ D(bug("doing software irq\n"));
 /* Software interrupt to be called when keys are received */
 
 #undef SysBase
-AROS_UFH3(VOID, sendQueuedEvents,
+AROS_UFH3(VOID, kbdSendQueuedEvents,
     AROS_UFHA(struct KeyboardBase *, KBBase, A1),
     AROS_UFHA(APTR, thisfunc, A1),
     AROS_UFHA(struct ExecBase *, SysBase, A6))

@@ -106,7 +106,7 @@ static AttrBase HiddMouseAB = 0;
 
 static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase, struct pHidd_Mouse_Event *ev);
-AROS_UFP3(static VOID, sendQueuedEvents,
+AROS_UFP3S(VOID, gpSendQueuedEvents,
     AROS_UFPA(struct GameportBase *, GPBase, A1),
     AROS_UFPA(APTR, thisfunc, A1),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
@@ -209,7 +209,7 @@ AROS_LH3(void, open,
     GPBase->gp_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
     GPBase->gp_Interrupt.is_Node.ln_Pri = 0;
     GPBase->gp_Interrupt.is_Data = (APTR)GPBase;
-    GPBase->gp_Interrupt.is_Code = sendQueuedEvents;
+    GPBase->gp_Interrupt.is_Code = gpSendQueuedEvents;
 	
 /******* nlorentz: End of stuff added by me ********/
 
@@ -451,7 +451,7 @@ D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type
 /* nlorentz: Software interrupt to be called when keys are received
 Copied and pasted from the function above */
 #undef SysBase
-AROS_UFH3(static VOID, sendQueuedEvents,
+AROS_UFH3S(VOID, gpSendQueuedEvents,
     AROS_UFHA(struct GameportBase *, GPBase, A1),
     AROS_UFHA(APTR, thisfunc, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
