@@ -30,7 +30,8 @@ XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBY
 VOID free_ximage(XImage *image);
 
 
-#define USE_X11_DRAWFUNCS  1
+#define USE_X11_DRAWFUNCS  	1
+#define X11SOFTMOUSE		0
 
 /* Private Attrs and methods for the X11Gfx Hidd */
 

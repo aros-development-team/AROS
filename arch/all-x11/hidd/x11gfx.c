@@ -397,7 +397,11 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 		
 	    case aoHidd_Gfx_SupportsHWCursor:
+#if X11SOFTMOUSE
 	    	*msg->storage = (IPTR)FALSE;
+#else
+	    	*msg->storage = (IPTR)TRUE;
+#endif
 		break;
 		
 	    default:

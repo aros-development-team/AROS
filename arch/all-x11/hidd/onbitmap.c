@@ -285,8 +285,9 @@ LX11
 UX11		
 	    	if (data->gc) {
 		    ok = TRUE;
+#if X11SOFTMOUSE
 		    init_empty_cursor(DRAWABLE(data), data->gc, XSD(cl));
-	    
+#endif	    
 		}	    
 		else
 		    ok = FALSE;
