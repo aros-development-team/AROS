@@ -10,6 +10,9 @@
 /*********************************************************************
 
     NAME */
+
+#include <string.h>
+
 #include <exec/types.h>
 #include <proto/gadtools.h>
 #include <intuition/intuition.h>

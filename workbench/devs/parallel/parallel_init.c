@@ -3,12 +3,14 @@
     $Id$
 
     Desc: Parallel device
-    Lang: english
+    Lang: English
 */
 
 /****************************************************************************************/
 
 #define AROS_ALMOST_COMPATIBLE 1
+
+#include <string.h>
 
 #include <exec/resident.h>
 #include <exec/interrupts.h>

@@ -10,6 +10,8 @@
 
 #define AROS_ALMOST_COMPATIBLE 1
 
+#include <string.h>
+
 #include <exec/resident.h>
 #include <exec/interrupts.h>
 #include <exec/semaphores.h>

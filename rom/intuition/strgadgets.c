@@ -18,6 +18,7 @@
 #include <aros/asmcall.h>
 #include <stdlib.h> /* atol() */
 #include <stdio.h>  /* snprintf() */
+#include <string.h>
 #include "intuition_intern.h"
 #include "strgadgets.h"
 
