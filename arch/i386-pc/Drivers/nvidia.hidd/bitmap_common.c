@@ -12,6 +12,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#warning this prototype should be in a header
+
+void new_fillRect(struct nv_staticdata *nsd,
+		int x1, int y1, int x2, int y2, int color, int rop);
+
 /*********  BitMap::Clear()  *************************************/
 static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
