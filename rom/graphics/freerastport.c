@@ -21,7 +21,7 @@
 	AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 179, Graphics)
+	struct GfxBase *, GfxBase, 180, Graphics)
 
 /*  FUNCTION
 	This frees a RastPort obtained with CloneRastPort() or
@@ -55,7 +55,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_FreeRastPort (rp, GfxBase);
+    DeinitRastPort (rp);
 
     FreeMem (rp, sizeof (struct RastPort));
 
