@@ -10,7 +10,7 @@
 
 static jmp_buf env;
 
-#define DEBUG 0
+#define DEBUG 1
 
 #ifdef TEST
 /*******************************************************
@@ -162,7 +162,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 	newSP -= t; /* Make room for t elements */
 
-    #if AROS_STACK_DEBUG
+    #if AROS_STACK_DEBUG && 0
         
 	{
 	    UBYTE *startfill = sss->stk_Lower;

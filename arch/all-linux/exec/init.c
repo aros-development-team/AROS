@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	int size = psize/sizeof(ULONG);
 	memory = (UBYTE *)((ULONG)space + psize);
 	while(--size)
-	    *((ULONG *)space)++ = 0xDEADBEEF;
+	    ((ULONG *)space)[size] = 0xDEADBEEF;
       }
       else
       {
