@@ -286,7 +286,7 @@ void viewPartitionData
 		struct PartitionNode *pn
 	)
 {
-UBYTE str[16];
+char str[16];
 ULONG size;
 ULONG disabled = pn ? FALSE : TRUE;
 
@@ -458,31 +458,28 @@ struct PartitionNode *pn;
 			}
 			else
 			{
-				if (pn->flags & PNF_NEW_TABLE)
-				{
-					addPartitionTable(pn);
-				}
-				else if (pn->flags & PNF_DEL_TABLE)
-				{
-				struct PartitionTableNode *table;
+				SetPartitionAttrsA
+				(
+					pn->ph,
+					PT_TYPE, &pn->type,
+					PT_NAME, pn->ln.ln_Name,
+					TAG_DONE
+				);
+				changed = TRUE;
+			}
+			if (pn->flags & PNF_NEW_TABLE)
+			{
+				addPartitionTable(pn);
+			}
+			else if (pn->flags & PNF_DEL_TABLE)
+			{
+			struct PartitionTableNode *table;
 
-					table = findPTPH(pn->ph);
-					if (table)
-					{
-						Remove(&table->ln);
-						freePartitionTable(table);
-					}
-				}
-				else
+				table = findPTPH(pn->ph);
+				if (table)
 				{
-					SetPartitionAttrsA
-					(
-						pn->ph,
-						PT_TYPE, &pn->type,
-						PT_NAME, pn->ln.ln_Name,
-						TAG_DONE
-					);
-					changed = TRUE;
+					Remove(&table->ln);
+					freePartitionTable(table);
 				}
 			}
 			if (pn->flags & PNF_FLAGS_CHANGED)
@@ -749,7 +746,9 @@ ULONG pos;
 		pn->ln.ln_Name = AllocVec(100, MEMF_PUBLIC | MEMF_CLEAR);
 		if (pn->ln.ln_Name)
 		{
+			pn->root = table;
 			pn->pos = pos;
+			CopyMem(&table->defaulttype, &pn->type, sizeof(struct PartitionType));
 			pn->ln.ln_Pri = table->maxpartitions-1-pos;
 			CopyMem(de, &pn->de, sizeof(struct DosEnvec));
 			pn->de.de_TableSize = DE_DOSTYPE;
@@ -769,9 +768,7 @@ ULONG pos;
 			);
 			viewPartitionData(mainwin, table, pn);
 			pn->flags |= PNF_CHANGED | PNF_ADDED;
-			pn->root = table;
 			return pn;
-			FreeVec(pn->ln.ln_Name);
 		}
 		FreeMem(pn, sizeof(struct PartitionNode));
 	}
