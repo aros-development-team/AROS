@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  2000/11/18 12:21:37  SDuvan
+    Simplified
+
     Revision 1.5  1998/10/20 16:44:34  hkiel
     Amiga Research OS
 
@@ -72,24 +75,19 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
-
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_EXAMINE_ALL_END;
-    iofs->IOFS.io_Flags  =0;
+    InitIOFS(&iofs, FSA_EXAMINE_ALL_END, DOSBase);
+
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
 
     /* Send the request. May not fail. */
-    DoIO(&iofs->IOFS);
+    DoIO(&iofs.IOFS);
+
     AROS_LIBFUNC_EXIT
 } /* ExAllEnd */
