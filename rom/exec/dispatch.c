@@ -12,6 +12,7 @@
 #include <exec/execbase.h>
 #include <exec/alerts.h>
 
+#include <proto/arossupport.h>
 #include <aros/asmcall.h>
 
 /*****i***********************************************************************
