@@ -840,9 +840,11 @@ aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
 
-# If we are running our own version of the gcc front-end, need to add it to
-# the ccache path, otherwise it will not be cached. Otherwise the compiler
-# will be in the path, and we do not have to do this...
+# aros_cc_pre is a variable that is added to the front of the compiler name
+# in the generated aros-gcc shell script. We need this to enable the cache
+# to work across cleaned builds. Also, support DISTCC using the correct
+# environment variable.
+#
 
 if test "x${DISTCC}" != "x" ; then
     if test "x${CCACHE}" != "x" ; then
@@ -852,17 +854,19 @@ if test "x${DISTCC}" != "x" ; then
     fi
 else
     if test "x${CCACHE}" != "x" ; then
-        aros_cc_pre="env CCACHE_PATH=${TOPDIR}/${aros_tools_dir} ${CCACHE} "
+        aros_cc_pre="${CCACHE} "
     fi
 fi
 
-TARGET_CC="${aros_cc_pre}${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
+TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
 TARGET_AS=$TARGET_CC
 STATIC_LD=$TARGET_CC
 
 AC_SUBST(TARGET_CC)
 AC_SUBST(TARGET_AS)
 AC_SUBST(STATIC_LD)
+
+AC_SUBST(aros_cc_pre)
 
 AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
 AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
