@@ -22,10 +22,10 @@
 #include "rtfuncs.h"
 
 #define VERSION 39
-#define REVISION 3
+#define REVISION 4
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.3 (05.11.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.4 (17.01.2002)\r\n"
 
 /****************************************************************************************/
 
@@ -33,7 +33,7 @@ extern const char name[];
 extern const char version[];
 extern const APTR inittable[4];
 extern void *const functable[];
-extern struct IntReqToolsBase *libinit();
+extern struct ReqToolsBase *libinit();
 extern const char libend;
 
 /****************************************************************************************/
@@ -66,7 +66,7 @@ const char version[] = VERSION_STRING;
 
 const APTR inittable[4] =
 {
-    (APTR)sizeof(struct IntReqToolsBase),
+    (APTR)sizeof(struct ReqToolsBase),
     (APTR)functable,
     NULL,
     (APTR)&libinit
@@ -80,11 +80,11 @@ const APTR inittable[4] =
 
 /****************************************************************************************/
 
-struct IntReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct IntReqToolsBase *, RTBase),
+struct ReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct ReqToolsBase *, RTBase),
     	    	    	    	    	    REGPARAM(a0, BPTR, segList))
 {
-    ReqToolsBase = (struct ReqToolsBase *)RTBase;
-    RTBase->rt_SysBase = SysBase = *(struct ExecBase **)4L;
+    ReqToolsBase = RTBase;
+    SysBase = *(struct ExecBase **)4L;
     
     ReqToolsBase->LibNode.lib_Node.ln_Type  = NT_LIBRARY;
     ReqToolsBase->LibNode.lib_Node.ln_Name  = (char *)name;
@@ -93,7 +93,7 @@ struct IntReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct IntReqToolsBase 
     ReqToolsBase->LibNode.lib_Revision      = REVISION;
     ReqToolsBase->LibNode.lib_IdString      = (char *)&version[6];
     
-    return (struct IntReqToolsBase *)RTFuncs_Init(&RTBase->rt, segList);
+    return RTFuncs_Init(RTBase, segList);
 }
 
 /****************************************************************************************/
@@ -157,10 +157,10 @@ static ULONG CheckStack_GetString(UBYTE *stringbuff,
    
 #define sp ((IPTR)(&sss))
 
-    struct MyStackSwapStruct 	sss;
-    struct MyStackSwapStruct 	*sssptr asm("a3") = &sss;
-    struct Task     	    	*me = FindTask(NULL);
-    ULONG   	    	    	retval asm("d5") = 0;
+    struct MyStackSwapStruct 	    	sss;
+    register struct MyStackSwapStruct 	*sssptr = &sss;
+    struct Task     	    	    	*me = FindTask(NULL);
+    register ULONG   	       	    	retval = 0;
     
     if ((sp <= (IPTR)me->tc_SPLower) ||
         (sp >= (IPTR)me->tc_SPUpper) ||
