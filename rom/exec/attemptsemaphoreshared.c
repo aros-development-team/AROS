@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Try to lock a semaphore shared.
@@ -75,12 +75,12 @@
     if( sigSem->ss_QueueCount == 0 )
     {
 	/* The semaphore wasn't owned. We can now own it */
-	sigSem->ss_Owner = me;
+	sigSem->ss_Owner = NULL;
 	sigSem->ss_NestCount++;
     }
-    else if( sigSem->ss_Owner == me )
+    else if( ( sigSem->ss_Owner == me ) || ( sigSem->ss_Owner == NULL ) )
     {
-	/* The semaphore was owned by me, just increase the nest count */
+	/* The semaphore was owned by me or is shared, just increase the nest count */
 	sigSem->ss_NestCount++;
     }
     else
