@@ -14,10 +14,6 @@
 #include "camd_intern.h"
 
 
-#undef SysBase
-#undef DOSBase
-#undef DosBase
-
 struct DriverData *driverdatatemp=NULL;
 
 SAVEDS void ReceiverFunc(void){
@@ -51,9 +47,6 @@ SAVEDS void ReceiverFunc(void){
 	driverdata->isReceiverProcessAlive=0;
 
 }
-
-
-#  define SysBase		(((struct CamdBase_intern *)CamdBase)->sysbase)
 
 
 /* CL_Linkages must be locked first (exclusive). */

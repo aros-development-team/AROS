@@ -43,9 +43,16 @@ FUNCS := \
     goodputmidi \
     midi2driver
 
-#MM- workbench-libs-camd : includes linklibs
+#MM workbench-libs-camd-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
 
-%build_module_macro mmake=workbench-libs-camd modname=camd modtype=library \
-  funcs=$(FUNCS) files=$(FILES) uselibs=amiga conffile=lib.conf
+#MM- workbench-libs-camd : linklibs
+
+%build_module mmake=workbench-libs-camd \
+    modname=camd modtype=library \
+    files="$(FUNCS) $(FILES) camd_init" uselibs=amiga
 
 %common

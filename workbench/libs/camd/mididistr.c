@@ -13,9 +13,6 @@
 
 #include "camd_intern.h"
 
-#undef SysBase
-#undef UtilityBase
-
 
 void PutMidi2Link(
 	struct MidiLink *midilink,

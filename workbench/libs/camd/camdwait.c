@@ -12,9 +12,6 @@
 
 #include "camd_intern.h"
 
-#undef SysBase
-#undef DOSBase
-
 #  undef DEBUG
 #  define DEBUG 1
 #  include AROS_DEBUG_H_FILE
