@@ -24,10 +24,21 @@ FILES = calcchecksum kprintf nastyfreemem \
 	writestruct \
 	writeword
 
+INCLUDE_FILES = $(wildcard include/*.h)
+DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
+
 all: setup $(LIBDIR)/libaros.a
 
-setup :
+setup : make-dirs os-include
+
+os-include: $(DEST_INCLUDE_FILES)
+
+$(INCDIR)/aros/%.h: include/%.h
+	$(CP) $< $@
+
+make-dirs :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
 
 clean:
 	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libaros.a
