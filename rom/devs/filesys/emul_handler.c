@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.13  1996/10/21 20:57:50  aros
+    ADE doesn't need to have the patch for timeval.
+
     Revision 1.12  1996/10/14 02:38:39  iaint
     FreeBSD patch no longer needed.
 
@@ -42,7 +45,10 @@
     Desc:
     Lang:
 */
+#include <aros/system.h>
+#ifndef _AMIGA  /* ADE <sys/time.h> has provisions for this */
 #define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
+#endif /* _AMIGA */
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
