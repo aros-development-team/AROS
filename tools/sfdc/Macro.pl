@@ -156,21 +156,21 @@ BEGIN {
 	    if ($$classes{'target'} eq 'morphos') {
 		# Skip jmp instruction (is m68k ILLEGAL in MorphOS)
 		my $o = $$prototype{'bias'} - 2;
-		print "	    *((ULONG*) (((char*) $self->{BASE}) - $o));\\\n";
+		print "	    *((ULONG*) (((char*) (___base)) - $o));\\\n";
 	    }
 	    elsif ($classes->{target} eq 'aros') {
 		my $o = $$prototype{'bias'} / 6;
-		print "	    __AROS_GETVECADDR($self->{BASE}, $o);\\\n";
+		print "	    __AROS_GETVECADDR((___base), $o);\\\n";
 	    }
 	    else {
 		my $o = $$prototype{'bias'};
-		print "	    (((char*) $self->{BASE}) - $o);\\\n";
+		print "	    (((char*) (___base)) - $o);\\\n";
 	    }
 
 	    print "	  (*_func)(";
 
 	    if (!$prototype->{nb}) {
-		print "($self->{BASE})";
+		print "(___base)";
 		print ", " unless $prototype->{numargs} == 0;
 	    }
 	}
