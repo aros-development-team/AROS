@@ -36,6 +36,8 @@
 #include "compilerspecific.h"
 #include "debug.h"
 
+#include "methods.h"
+
 /**************************************************************************************************/
 
 static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
@@ -55,6 +57,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  long *ColRegs;
  unsigned int i, j, k, Counter;
  unsigned int Col7, Col3;
+ struct Screen *scr;
  struct BitMap *bm;
  struct RastPort rp;
 
@@ -243,14 +246,36 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: ColMap and ColRegs set\n"));
 
- bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, NULL);
- if(!bm)
+ /*
+  *  Workaround for AROS' WriteChunkyPixels() quirk
+  */
+
+ scr=LockPubScreen(NULL);
+ if(!scr)
  {
-  D(bug("ppm.datatype/OM_NEW: AllocBitMap failed\n"));
+  D(bug("ppm.datatype/OM_NEW: Screen missing\n"));
 
   CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
   return(0);
  }
+
+ D(bug("ppm.datatype/OM_NEW: Screen 0x%lx\n", (unsigned long) scr));
+
+ bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, scr->RastPort.BitMap);
+#if 0
+ bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, NULL);
+#endif /* 0 */
+ if(!bm)
+ {
+  D(bug("ppm.datatype/OM_NEW: AllocBitMap failed\n"));
+
+  UnlockPubScreen(NULL, scr);
+
+  CoerceMethod(cl, (Object *) RetVal, OM_DISPOSE);
+  return(0);
+ }
+
+ UnlockPubScreen(NULL, scr);
 
  InitRastPort(&rp);
  rp.BitMap=bm;
@@ -359,9 +384,18 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 #endif
     IPTR retval;
 
+#ifdef MYDEBUG
+    register int i;
+    int Known;
+
+    Known=FALSE;
+#endif /* MYDEBUG */
+
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
+#if 0
     D(bug("ppm.datatype/DT_Dispatcher: Reached\n"));
+#endif /* 0 */
 
     switch(msg->MethodID)
     {
@@ -374,14 +408,68 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
 	default:
 
+#ifdef MYDEBUG
+	for(i=0; i<NumMethods; i++)
+	{
+	 if(msg->MethodID==KnownMethods[i])
+	 {
+	  Known=TRUE;
+
+	  D(bug("ppm.datatype/DT_Dispatcher: Method %s\n", MethodNames[i]));
+	 }
+	}
+
+	if(!Known)
+	{
+	 D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx\n", (unsigned long) msg->MethodID));
+	}
+
+	if(msg->MethodID==OM_NOTIFY)
+	{
+	 struct opUpdate *opUp;
+	 struct TagItem *tl;
+	 struct TagItem *ti;
+
+	 opUp=(struct opUpdate *) msg;
+
+	 tl=opUp->opu_AttrList;
+
+	 Known=FALSE;
+
+	 while(ti=NextTagItem(&tl))
+	 {
+	  for(i=0; i<NumAttribs; i++)
+	  {
+	   if(ti->ti_Tag==KnownAttribs[i])
+	   {
+	    Known=TRUE;
+
+	    D(bug("ppm.datatype/OM_NOTIFY: %s %ld\n", AttribNames[i], ti->ti_Data));
+	   }
+	  }
+
+	  if(!Known)
+	  {
+	   D(bug("ppm.datatype/OM_NOTIFY: 0x%lx %ld\n", ti->ti_Tag, ti->ti_Data));
+	  }
+	 }
+	}
+
+
+#endif /* MYDEBUG */
+
+#if 0
 	    D(bug("ppm.datatype/DT_Dispatcher: Method 0x%lx %lu\n", (unsigned long) msg->MethodID, (unsigned long) msg->MethodID));
+#endif /* 0 */
 
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
 
     } /* switch(msg->MethodID) */
 
+#if 0
     D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
+#endif /* 0 */
 
     return retval;
 #ifdef _AROS
