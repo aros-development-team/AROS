@@ -23,14 +23,25 @@
 #endif
 
 #include "mui.h"
-#include "support.h"
+
+#include "datatypescache.h"
 #include "imspec.h"
+#include "support.h"
 
 #include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;
 
 static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
 
 #if 0
 /*
@@ -1690,6 +1701,9 @@ struct MUI_ImageSpec
 
     ULONG r,g,b;
     LONG color;
+
+    char *filename;
+    struct dt_node *dt;
 };
 
 
@@ -1764,6 +1778,18 @@ static struct MUI_ImageSpec *get_color_image_spec(ULONG r, ULONG g, ULONG b)
     return NULL;
 }
 
+static struct MUI_ImageSpec *get_bitmap_image_spec(char *filename)
+{
+    struct MUI_ImageSpec *spec;
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    {
+	spec->type = IST_BITMAP;
+	spec->filename = StrDup(filename);
+	return spec;
+    }
+    return NULL;
+}
+
 struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 {
     char *s;
@@ -1778,24 +1804,37 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 
     switch (*s)
     {
-	case '0':
-             {
-             	LONG pat;
-             	StrToLong(s+2,&pat);
-             	return get_pattern_image_spec(pat);
-             }
+	case	'0':
+		{
+		    LONG pat;
+             	    StrToLong(s+2,&pat);
+             	    return get_pattern_image_spec(pat);
+		}
 
-	case '2':
-	     {
-	     	ULONG r,g,b;
-	     	s += 2;
-	     	r = strtoul(s,&s, 16);
-	     	s++;
-	     	g = strtoul(s,&s, 16);
-	     	s++;
-	     	b = strtoul(s,&s, 16);
-	     	return get_color_image_spec(r,g,b);
-	     }
+	case	'2':
+		{
+		    ULONG r,g,b;
+	     	    s += 2;
+		    r = strtoul(s,&s, 16);
+		    s++;
+		    g = strtoul(s,&s, 16);
+		    s++;
+		    b = strtoul(s,&s, 16);
+		    return get_color_image_spec(r,g,b);
+		}
+
+	case	'5':
+		return get_bitmap_image_spec(s+2);
+
+	case    '6':
+		{
+		    LONG img;
+             	    StrToLong(s+2,&img);
+
+		    if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
+			return zune_imspec_copy(__zprefs.images[img]);
+	        }
+	        break;
     }
     return NULL;
 }
@@ -1823,6 +1862,11 @@ void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 	case	IST_COLOR:
 		(*spec)->color = ObtainBestPenA(mri->mri_Screen->ViewPort.ColorMap, (*spec)->r, (*spec)->g, (*spec)->b, NULL);
 		break;
+
+	case	IST_BITMAP:
+		if ((*spec)->filename)
+		    (*spec)->dt = dt_load_picture((*spec)->filename,mri->mri_Screen);
+		break;
     }
 }
 
@@ -1833,7 +1877,18 @@ void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri
     {
 	case	IST_COLOR:
 		if ((*spec)->color != -1)
+		{
 		    ReleasePen(mri->mri_Screen->ViewPort.ColorMap, (*spec)->color);
+		    (*spec)->color = -1;
+		}
+		break;
+
+	case	IST_BITMAP:
+		if ((*spec)->dt)
+		{
+		    dt_dispose_picture((*spec)->dt);
+		    (*spec)->dt = NULL;
+		}
 		break;
     }
 }
@@ -1891,6 +1946,11 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 		    SetAPen(mri->mri_RastPort, pen);
 		    RectFill(mri->mri_RastPort, left, top, right, bottom);
 		}
+		break;
+
+	case	IST_BITMAP:
+		if (img->dt)
+		    dt_put_on_rastport_tiled(img->dt, mri->mri_RastPort, left, top, right, bottom, xoffset, yoffset);
 		break;
     }
 }
