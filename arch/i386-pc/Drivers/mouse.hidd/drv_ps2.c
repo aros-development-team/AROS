@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#include "../../speaker.h"
+#include <asm/speaker.h>
 #undef inb
 #undef outb
 

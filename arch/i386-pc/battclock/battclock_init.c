@@ -37,7 +37,7 @@ int Battclock_entry(void)
     return -1;
 }
 
-const struct Resident Battclock_resident =
+const struct Resident Battclock_resident __attribute__((section(".text"))) =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Battclock_resident,
