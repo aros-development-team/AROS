@@ -1010,7 +1010,7 @@ kprintf ("ProcessIcon35\n");
 	    break;
 
     	case SDV_SPECIALMODE_WRITE:
-	    WriteIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+	    retval = WriteIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
     	    break;	    
 
     }
