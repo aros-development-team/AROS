@@ -70,7 +70,7 @@
   *  Alias [] support
   *  Break support (and SetSignal(0L) before execution) -- CreateNewProc()?
   *  Script file execution capabilities (if script bit set)
-  *  > Setenv Var $Var   
+  *  > Setenv Var $Var
      > $Var
      is not a good idea...
   *  $ must be taken care of differently than it is now so that things
@@ -113,8 +113,8 @@ static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
 #define SET_HOMEDIR 1
 
-#define  P(x)		/* Debug macro */
-#define  P2(x) 		/* Debug macro */
+#define  P(x)	x	/* Debug macro */
+#define  P2(x) 	x	/* Debug macro */
 
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
@@ -379,7 +379,7 @@ BOOL Redirection_init(struct Redirection *rd);
  *
  * Input:    BPTR lock  --  a lock on the directory
  *
- * Notes:    This will set the current directory name via 
+ * Notes:    This will set the current directory name via
  *           SetCurrentDirName() eventhough this is not used later.
  *
  * Output:   --
@@ -501,7 +501,7 @@ static void setPath(BPTR lock)
 static void printCliNum(void)
 {
     IPTR   args[1] = { (IPTR)(PROCESS(FindTask(NULL))->pr_TaskNum) };
-    
+
     VFPrintf(Output(), "%ld", args);
 }
 
@@ -578,7 +578,7 @@ static void changeSignalTo(BPTR filehandle, struct Task *task)
 	iofs.io_Union.io_CHANGE_SIGNAL.io_Task = task;
 
 	DoIO(&iofs.IOFS);
-	
+
     }    
 }
 
@@ -588,7 +588,9 @@ enum { ARG_FROM = 0, ARG_COMMAND, NOOFARGS };
 
 struct RDArgs *rda;
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
@@ -619,7 +621,7 @@ int main(int argc, char **argv)
 		struct CommandLine cl = {(STRPTR)args[ARG_COMMAND],
 					 strlen((STRPTR)args[ARG_COMMAND]),
 					 0};
-		
+
 		if(Redirection_init(&rd))
 		{			
 		    cli->cli_Interactive = DOSFALSE;
@@ -688,7 +690,7 @@ LONG interact(STRPTR script)
     cli->cli_CurrentInput = cli->cli_StandardInput;
 
     P(kprintf("Input now comes from the terminal.\n"));
-    
+
     do
     {
 	struct CommandLine cl = { NULL, 0, 0 };
@@ -884,7 +886,7 @@ exit:
 BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		 struct Redirection *rd)
 {
-    
+
 #define item       cs->CS_Buffer[cs->CS_CurChr]
 #define from       cs->CS_Buffer
 #define advance(x) cs->CS_CurChr += x;
@@ -904,11 +906,11 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    appendString(filtered, temp, 1);
 	    advance(1);
 	}
-	
+
 	/* Are we done yet? */
 	if(item == '\n' || item == ';' || item == '\0')
 	    break;
-	
+
 	if(item == '<')
 	{
 	    /* Prevent command lines like "Prompt> <Olle type" */
@@ -960,7 +962,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		    return FALSE;
 
 		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
-		
+
 		P(kprintf("Found output redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
@@ -982,8 +984,12 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    if(result == ITEM_ERROR || ITEM_NOTHING)
 		return FALSE;
 
-	    if(GetVar(avBuffer, varBuffer, sizeof(varBuffer),
-		      GVF_GLOBAL_ONLY | LV_VAR) != -1)
+	    if
+	    (
+	        (GetVar(avBuffer, varBuffer, sizeof(varBuffer),
+		       GVF_GLOBAL_ONLY | LV_VAR) != -1) &&
+		!(varBuffer[0] == '$' && !strcmp(varBuffer+1, avBuffer))
+            )
 	    {
 		struct CSource varCs = { varBuffer, sizeof(varBuffer), 0 };
 
@@ -1024,7 +1030,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		    /* The Amiga shell has severe problems when using
 		       redirections in embedded commands so here, the
 		       semantics differ somewhat. Unix shells seems to be
-		       a little bit sloppy with this, too. 
+		       a little bit sloppy with this, too.
 		           If you really wanted to, you could track down
 		       uses of > and >> and make them work inside ` `, too,
 		       but this seems to be rather much work for little gain. 
@@ -1336,7 +1342,7 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 	struct Segment *residentSeg = (struct Segment *)BADDR(commandSeg);
 
 	Forbid();
- 
+
 	/* Decrease usecount */
 	if(residentSeg->seg_UC > 0)
 	    residentSeg->seg_UC--;
@@ -1432,7 +1438,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	        ss->oldHomeDir = SetProgramDir(lock);
 	        ss->homeDirChanged = TRUE;
 	    }
-	    Close(fh);	    
+	    Close(fh);
 	}
 #endif	
     }
@@ -1644,3 +1650,11 @@ void Redirection_release(struct Redirection *rd)
 
     releaseFiles(rd);
 }
+
+#include <aros/symbolsets.h>
+
+void shell_exit_check(void)
+{
+    kprintf("Sto uscendoooo\n");
+}
+ADD2EXIT(shell_exit_check, 0);
