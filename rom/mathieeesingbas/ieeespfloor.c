@@ -43,41 +43,42 @@ AROS_LH1(float, IEEESPFloor,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Mask = 0x80000000;
+    LONG Mask = 0x80000000;
 
-  if (0x7f880000 == y)
-        return y;
+    if (0x7f880000 == y) return y;
 
-  if ((y & IEEESPExponent_Mask)  < 0x3f800000)
-  {
-    if (y < 0) /* negative sign? */
+    if ((y & IEEESPExponent_Mask)  < 0x3f800000)
     {
-      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0xbf800000; /* -1 */
+        if (y < 0) /* negative sign? */
+        {
+            SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0xbf800000; /* -1 */
+        }
+        else
+        {
+            SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0;
+        }
     }
-    else
+    
+    /* |fnum| >= 1 */
+    Mask >>= ((y & IEEESPExponent_Mask) >> 23) - 0x77;
+    
+    /* y is negative */
+    if (y < 0)
     {
-      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0;
+        /* is there anything behind the decimal dot? */
+        if (0 != (y & (~Mask)) )
+        {
+            y    = IEEESPAdd(y, 0xbf800000 ); /* fnum = fnum -1; */
+            Mask = 0x80000000;
+            Mask >>= ((y & IEEESPExponent_Mask) >> 23) - 0x77;
+        }
     }
-  }
-  /* |fnum| >= 1 */
-  Mask >>= ((y & IEEESPExponent_Mask) >> 23) - 0x77;
-
-  /* y is negative */
-  if (y < 0)
-  /* is there anything behind the decimal dot? */
-    if (0 != (y & (~Mask)) )
-    {
-      y    = IEEESPAdd(y, 0xbf800000 ); /* fnum = fnum -1; */
-      Mask = 0x80000000;
-      Mask >>= ((y & IEEESPExponent_Mask) >> 23) - 0x77;
-    }
-
-  if(y < 0)
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-
-  return y & Mask;
+    
+    if(y < 0) SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    
+    return y & Mask;
 
     AROS_LIBFUNC_EXIT
 }

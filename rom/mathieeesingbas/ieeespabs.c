@@ -41,14 +41,17 @@ AROS_LH1(float, IEEESPAbs,
     AROS_LIBFUNC_INIT
     
     if (0 == y)
-      /* value is 0 -> set the Zero Flag */
-      SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    {
+        /* value is 0 -> set the Zero Flag */
+        SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    }
     else
     {
-      /* set the sign-bit to zero */
-      y &= (IEEESPMantisse_Mask | IEEESPExponent_Mask);
-      SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+        /* set the sign-bit to zero */
+        y &= (IEEESPMantisse_Mask | IEEESPExponent_Mask);
+        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
+    
     return y;
     
     AROS_LIBFUNC_EXIT

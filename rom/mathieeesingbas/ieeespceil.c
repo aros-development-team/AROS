@@ -39,15 +39,12 @@ AROS_LH1(float, IEEESPCeil,
 {
     AROS_LIBFUNC_INIT
     
-  if (y == 0x7f880000)
-    return y;
-
-  /* Ceil(y) = -Floor(-y); */
-  y = IEEESPFloor(y ^ IEEESPSign_Mask);
-  if (y == 0)
-    return 0;
-  else
-    return (y ^ IEEESPSign_Mask);
+    if (y == 0x7f880000) return y;
+    
+    /* Ceil(y) = -Floor(-y); */
+    y = IEEESPFloor(y ^ IEEESPSign_Mask);
+    if (y == 0) return 0;
+    else        return (y ^ IEEESPSign_Mask);
 
     AROS_LIBFUNC_EXIT
 }
