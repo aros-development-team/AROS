@@ -13,6 +13,8 @@
 /* Penadjust attributes */
 #define MUIA_Penadjust_PSIMode        (TAG_USER|0x00421cbb) /* MUI: V11  i.. BOOL       */
 
+#define MUIA_Penadjust_Spec 	      (TAG_USER|0x0062339b) /* PRIV */
+
 extern const struct __MUIBuiltinClass _MUI_Penadjust_desc; /* PRIV */
 
 #endif

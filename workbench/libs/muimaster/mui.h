@@ -540,10 +540,6 @@ struct MUI_RGBcolor
 #include "classes/coloradjust.h"
 #endif
 
-#ifndef _MUI_CLASSES_PENDISPLAY_H
-#include "classes/pendisplay.h"
-#endif
-
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/

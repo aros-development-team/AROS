@@ -32,6 +32,7 @@ CLASSES := \
     menuitem \
     notify \
     numeric \
+    penadjust \
     pendisplay \
     popasl \
     popimage \
