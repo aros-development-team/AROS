@@ -375,13 +375,15 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
     csd = lh->hd_csd = AllocMem(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
     if(csd)
     {
+    	D(bug("Got CSD\n"));
         NEWLIST(&csd->hiddList);
         InitSemaphore(&csd->listLock);
 
         alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
-        OOPBase = OpenLibrary("oop.library", 0);
+        OOPBase = OpenLibrary(AROSOOP_NAME, 0);
         if(OOPBase)
         {
+	    D(bug("Got OOPBase\n"));
             UtilityBase = OpenLibrary("utility.library", 0);
             if(UtilityBase)
             {
@@ -398,15 +400,19 @@ ULONG init_hiddclass(struct IntHIDDClassBase *lh)
                     {TAG_DONE, 0UL}
                 };
 
+	    	D(bug("Got UtilityBase\n"));
+
                 alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
                 cl = csd->hiddclass = NewObject(NULL, CLID_HiddMeta, tags);
                 if(cl)
                 {
+		    D(bug("Class created\n"));
                     cl->UserData = csd;
 
                     HiddAttrBase = ObtainAttrBase(IID_Hidd);
                     if(HiddAttrBase)
                     {
+		    	D(bug("Got HiddAttrBase\n"));
                         AddClass(cl);
                         ok = 1;
                     } /* if(HiddAttrBase) */
