@@ -43,7 +43,7 @@ struct DosEnvec
     IPTR de_LowCyl;         /* First cylinder. */
     IPTR de_HighCyl;        /* Last cylinder. */
     IPTR de_NumBuffers;     /* Number of buffers for drive. */
-    IPTR de_BufMemTypes;    /* Type of memory for buffers. See <exec/memory.h>.
+    IPTR de_BufMemType;     /* Type of memory for buffers. See <exec/memory.h>.
                             */
     IPTR de_MaxTransfer;    /* How many bytes may be transferred together? */
     IPTR de_Mask;           /* Memory address mask for DMA devices. */
