@@ -19,6 +19,8 @@ execute ./build html
 
 cd      $BUILD_BASE/bin/documentation
 move    html $PACKAGE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 archive $ARCHIVE $PACKAGE
 
 cd      $ROOT
