@@ -575,7 +575,7 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FOUserData *udata = (struct FOUserData *)ld->ld_UserData;
 
-    D(bug("FOGadCleanup(ld=%p)\n", ld));
+    EnterFunc(bug("FOGadCleanup(ld=%p)\n", ld));
 
     if (udata->NameList)
 	DisposeObject(udata->NameList);

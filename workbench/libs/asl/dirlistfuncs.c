@@ -16,12 +16,13 @@
 #include <gadgets/aroslistview.h>
 #include <stdio.h>
 #include <string.h>
+#include <clib/macros.h>
+
 #include "asl_intern.h"
 #include "dirlist.h"
 
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+#define SDEBUG 0
+#define DEBUG 0
 
 #include <aros/debug.h>
 
@@ -60,24 +61,30 @@ AROS_UFH3(APTR, FileConstructHook,
 {
     struct ExAllData *new_ead;
     
-    D(bug("ConstructHook: %s\n", ead->ed_Name));
+    EnterFunc(bug("ConstructHook: %s\n", ead->ed_Name));
     
     new_ead = AllocPooled(pool, sizeof (struct ExAllData));
     if (!new_ead)
     	goto failure;
 
     new_ead->ed_Name	= NULL;
-    ead->ed_Comment	= NULL;
+    new_ead->ed_Comment	= NULL;
     
+    /* We allways have a file name ...*/
     if (!(new_ead->ed_Name = AllocPooled(pool, strlen(ead->ed_Name) + 1)))
     	goto failure;
-    	
-    if (!(new_ead->ed_Comment = AllocPooled(pool, strlen(ead->ed_Comment) + 1)))
-    	goto failure;
+
+    
+    /* ... but not allways a file comment */
+    if (ead->ed_Comment)
+    {
+	if (!(new_ead->ed_Comment = AllocPooled(pool, strlen(ead->ed_Comment) + 1)))
+	    goto failure;
+    	strcpy(new_ead->ed_Comment,	ead->ed_Comment);
+    }
     
 			
     strcpy(new_ead->ed_Name,	ead->ed_Name);
-    strcpy(new_ead->ed_Comment,	ead->ed_Comment);
 
 						
     /* Set the other fields */
@@ -88,9 +95,10 @@ AROS_UFH3(APTR, FileConstructHook,
     new_ead->ed_Mins	= ead->ed_Mins;
     new_ead->ed_Ticks	= ead->ed_Ticks;
 
-    return (new_ead);
+    ReturnPtr ("ConstructHook", struct ExAllData *, new_ead);
     
 failure:
+D(bug("failure\n"));
     if (new_ead)
     {
     	if (new_ead->ed_Name);
@@ -101,7 +109,7 @@ failure:
     
     	FreePooled(pool, new_ead, sizeof (struct ExAllData));
     }
-    return (NULL);
+    ReturnPtr ("ConstructHook", struct ExAllData *, NULL);
 }
 
 /***********************
@@ -143,6 +151,8 @@ BOOL GetDir(STRPTR path, Object *list, struct AslBase_intern *AslBase)
 
     /* Buffer to put ExAll() file in */
     UBYTE buffer[4096];
+    
+    EnterFunc(bug("GetDir(path=%s, AslBase=%p\n", path, AslBase));
 	
     lock = Lock(path, ACCESS_READ);
     if (!lock)
@@ -206,44 +216,6 @@ BOOL GetDir(STRPTR path, Object *list, struct AslBase_intern *AslBase)
     ReturnBool ("GetDir", success);		
 }
 
-/****************
-**  AddToPath  **
-*****************/
-BOOL AddToPath(		STRPTR			path2add,
-			STRPTR			*bufptr,
-			ULONG			*lptr,
-			struct AslBase_intern	*AslBase)
-{
-#undef SIZEINCREASE
-#define SIZEINCREASE 100
-
-    if (!*bufptr)
-    {
-    	*bufptr = AllocMem(SIZEINCREASE, MEMF_ANY);
-    	if (!*bufptr)
-    	    return (FALSE);
-    	    
-    	**bufptr = 0; /* null-terminate */
-    	*lptr = SIZEINCREASE;
-    }
-    
-    while (!AddPart(*bufptr, path2add, *lptr))
-    {
-    	STRPTR newbuf;
-    	
-    	newbuf = AllocMem(*lptr + SIZEINCREASE, MEMF_ANY);
-    	if (!newbuf)
-    	    return (FALSE);
-    	  
-    	strcpy(newbuf, *bufptr);
-    	FreeMem(*bufptr, *lptr);
-    	
-    	*lptr += SIZEINCREASE;
-    }
-    
-    return (TRUE);
-    
-}
 
 /*********************
 **  UpdateFileList  **
@@ -251,7 +223,6 @@ BOOL AddToPath(		STRPTR			path2add,
 BOOL UpdateFileList(	Class			*cl,
 			Object			*dirlist,
 		  	struct GadgetInfo	*ginfo,
-		    	STRPTR			pathadd,
 		   	struct AslBase_intern	*AslBase)
 {
     struct opSet set_msg;
@@ -264,16 +235,15 @@ BOOL UpdateFileList(	Class			*cl,
     	{ TAG_END }
     };
     struct DirListData *data = (struct DirListData *)INST_DATA(cl, dirlist);
-    if (!AddToPath(pathadd, 
-		&(data->dld_CurPath),
-		&(data->dld_PathBufSize),
-		ASLB(AslBase)))
-	return (FALSE);
+    
+    EnterFunc(bug("UpdateFileList(dirlist=%p, ginfo=%p, AslBase=%p)\n"
+    		, dirlist, ginfo, AslBase));
+
 
     DoMethod(data->dld_FileList, AROSM_List_Clear);
 
-    if (!GetDir(data->dld_CurPath, data->dld_FileList, ASLB(AslBase)))
-	return (FALSE);
+    if (!GetDir(path_string(data->dld_CurPath), data->dld_FileList, ASLB(AslBase)))
+	ReturnBool("UpdateFileList", FALSE);
 
     set_msg.MethodID = OM_SET;
     set_msg.ops_GInfo 	= ginfo;
@@ -299,7 +269,7 @@ BOOL UpdateFileList(	Class			*cl,
 
     data->dld_Flags |= DLFLG_FILELIST;
     
-    return (TRUE);
+    ReturnBool ("UpdateFileList", TRUE);
 }		    
 
 
@@ -404,4 +374,123 @@ BOOL GetVolumes(Object *list, struct AslBase_intern *AslBase)
     
     UnLockDosList(LDF_ALL);
     return (success);
+}
+
+
+/**************** Path handling functions *********************/
+
+#define SIZEINCREASE 100
+
+struct path *path_init(STRPTR initval, struct AslBase_intern *AslBase)
+{
+    struct path *path;
+    if (!initval)
+    	initval = "SYS:"; /* default value */
+    
+    path = AllocMem( sizeof (*path) , MEMF_ANY|MEMF_CLEAR);
+    if (path)
+    {
+	if (path_set(path, initval, AslBase))
+	{
+	        return path;
+	}
+	
+	FreeMem(path, sizeof (*path));
+    }
+    return NULL;
+}
+
+BOOL path_set(struct path *path, STRPTR val, struct AslBase_intern *AslBase)
+{
+    ULONG len;
+    ULONG alloclen = 0;
+    
+    BOOL ok;
+    
+    len = strlen(val) + 1;
+    if (!path->buf)
+    	alloclen = MAX(len, SIZEINCREASE);
+    else
+    {
+        if (len > path->buflen)
+	    alloclen = len;
+    }
+    
+    if (alloclen) /* Allocate more mem ? */
+    {
+        /* Allocate new space first, if it fails
+           we can keep th old one 
+	*/
+	STRPTR newbuf;
+	
+	newbuf = AllocMem(alloclen, MEMF_ANY);
+	if (newbuf)
+	{
+	    if (path->buf)
+		FreeMem(path->buf, path->buflen);
+	    
+	    path->buf = newbuf;
+	    path->buflen = alloclen;
+	    ok = TRUE;
+	}
+	else
+	    ok = FALSE;
+    }
+    else
+        ok = TRUE;
+    
+    if (ok)
+    	strcpy(path->buf, val);
+    
+    return ok;
+}
+
+BOOL path_add(struct path *path, STRPTR toadd, struct AslBase_intern *AslBase)
+{
+    struct path *backup;
+    STRPTR newbuf = NULL;
+    
+    backup = path_init(path->buf, AslBase);
+    if (!backup)
+    	return FALSE;
+    
+
+    while (!AddPart(path->buf, toadd, path->buflen))
+    {
+        ULONG oldlen = path->buflen;
+	path->buflen += SIZEINCREASE;
+	
+    	newbuf = AllocMem(path->buflen, MEMF_ANY);
+    	if (!newbuf)
+	{
+	    /* Ran out of mem */
+	    path->buf	 = backup->buf;
+	    path->buflen = backup->buflen;
+	    
+	    return FALSE;
+	}
+	
+        FreeMem(path->buf, oldlen);
+	path->buf = newbuf;
+    	strcpy(path->buf, backup->buf);
+	
+    }
+    
+    return TRUE;
+    
+}
+
+VOID path_cleanup(struct path *path, struct AslBase_intern *AslBase)
+{
+    if (path->buf)
+    	FreeMem(path->buf, path->buflen);
+	
+    FreeMem(path, sizeof (*path));
+    
+    return;
+    
+}
+STRPTR path_string(struct path *path)
+{
+    return path->buf;
 }

@@ -31,9 +31,8 @@
 #include "asl_intern.h"
 #include "layout.h"
 
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+#define SDEBUG 0
+#define DEBUG 0
 
 #include <aros/debug.h>
 
@@ -562,7 +561,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
     BOOL terminated = FALSE;
 
-    D(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
+    EnterFunc(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
     port = ld->ld_Window->UserPort;
 
     while (!terminated)
@@ -587,8 +586,6 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		    break;
 
 		case IDCMP_REFRESHWINDOW:
-		    if (1)
-			break;
 
 		    win = ld->ld_Window;
 		    glist =  ld->ld_GList;

@@ -19,9 +19,9 @@
 #include "dirlist.h"
 #include "asl_intern.h"
 
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+
+#define SDEBUG 0
+#define DEBUG 0
 
 #include <aros/debug.h>
 
@@ -33,17 +33,28 @@ STATIC IPTR dirlist_set(struct IClass *cl, Object *o, struct opSet *msg)
     struct TagItem *tag, *tstate;
     IPTR retval = 0UL;
     struct DirListData *data = (struct DirListData *)INST_DATA(cl, o);
+    IPTR tidata;
+    
+    EnterFunc(bug("Dirlist::Set(msg=%p)\n", msg));
      
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tstate)) != NULL);
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-    	IPTR tidata = tag->ti_Data;
-    	
+	
+	tidata = tag->ti_Data;
+	
     	switch (tag->ti_Tag)
     	{
     	    case AROSA_DirList_Path:
-    	    	data->dld_CurPath[0] = 0;
-    	    	UpdateFileList(cl, o, msg->ops_GInfo, (STRPTR)tidata, ASLB(AslBase));
+	        /* Just forget the old path, we should now use
+	  	   a completely new one.
+		*/
+		D(bug("Setting path\n"));
+		if (path_set(data->dld_CurPath, (STRPTR)tidata, ASLB(AslBase)) )
+		{
+    	    	    UpdateFileList(cl, o, msg->ops_GInfo, ASLB(AslBase));
+		    data->dld_Flags |= DLFLG_FILELISTREAD;
+		}
     	    	retval = 1UL;
     	    	break;
     	
@@ -53,7 +64,7 @@ STATIC IPTR dirlist_set(struct IClass *cl, Object *o, struct opSet *msg)
     	}
     }
 
-    return (retval);
+    ReturnPtr ("DirList::Set", IPTR, retval);
 }
 
 /*********************
@@ -95,17 +106,24 @@ STATIC Object *dirlist_new(struct IClass *cl, Object *o, struct opSet *msg)
     	{TAG_MORE, 			(IPTR)msg->ops_AttrList}
     };
     
+    EnterFunc(bug("Dirlist::New()\n"));
+    
     ops.MethodID	= OM_NEW;
     ops.ops_AttrList	= tags;
     ops.ops_GInfo	= NULL; 
 
     o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
     if (!o)
-        return (NULL);
+        ReturnPtr ("Dirlist::New", Object *, NULL);
 
+    D(bug("Returned from super\n"));
     data = (struct DirListData *)INST_DATA(cl, o);
     
     memset(data, 0, sizeof (struct DirListData));
+    
+    data->dld_CurPath = path_init("Sys:", ASLB(AslBase));
+    if (!data->dld_CurPath)
+    	goto failure;
 
     /* Create a empty files and volumes list objects */
     data->dld_FileList = NewObject(NULL, AROSLISTCLASS,
@@ -114,6 +132,8 @@ STATIC Object *dirlist_new(struct IClass *cl, Object *o, struct opSet *msg)
     	TAG_END);
     if (!data->dld_FileList)
     	goto failure;
+	
+    D(bug("Got filellist object\n"));
 
     data->dld_VolumesList = NewObject(NULL, AROSLISTCLASS,
     	AROSA_List_ConstructHook, &(GetSDLD(cl)->sd_VolConstructHook),
@@ -121,36 +141,35 @@ STATIC Object *dirlist_new(struct IClass *cl, Object *o, struct opSet *msg)
     	TAG_END);
     if (!data->dld_VolumesList)
     	goto failure;
+	
+    D(bug("Got volumeslist object\n"));
 
+    /* We default to view the filelist */
     data->dld_Flags |= DLFLG_FILELIST;
     
     SetSuperAttrs(cl, o, AROSA_Listview_List, data->dld_FileList, TAG_END);
 
     /* Get the volumes list */
+    D(bug("Getting volumes\n"));
     if (!GetVolumes(data->dld_VolumesList, ASLB(AslBase)))
     	goto failure;
+	
+    D(bug("Got'em\n"));
     	    	
     dirlist_set(cl, o, msg);
-    
-    /* Current path set ? If not set a default one */
-    if (!data->dld_CurPath)
-    {
-    	if (!AddToPath("Sys:",
-    		&(data->dld_CurPath),
-    		&(data->dld_PathBufSize),
-    		AslBase))
-    	    goto failure;
 
-    	/* Insert into file list */
+    if ( !(data->dld_Flags & DLFLG_FILELISTREAD) )
+    {
+	if (!GetDir(path_string(data->dld_CurPath), data->dld_FileList, ASLB(AslBase)))
+	    goto failure;
+
     }
-    if (!GetDir(data->dld_CurPath, data->dld_FileList, ASLB(AslBase)))
-	goto failure;
-    
-    return (o);
+    ReturnPtr("Dirlist::New", Object *, o);
      	
 failure:
-    DisposeObject(o);
-    return (NULL);
+    D(bug("faliure\n"));
+    CoerceMethod(cl, o, OM_DISPOSE);
+    ReturnPtr("Dirlist::New", Object *, NULL);
 }
 
 /*************************
@@ -160,15 +179,15 @@ failure:
 STATIC VOID dirlist_dispose(struct IClass *cl, Object *o, Msg msg)
 {
     struct DirListData *data = INST_DATA(cl, o);
-    
-    if (data->dld_CurPath)
-    	FreeMem(data->dld_CurPath, data->dld_PathBufSize);
     	
     if (data->dld_FileList)
     	DisposeObject(data->dld_FileList);
 
     if (data->dld_VolumesList)
     	DisposeObject(data->dld_VolumesList);
+
+    if (data->dld_CurPath)
+    	path_cleanup(data->dld_CurPath, ASLB(AslBase));
     	
     DoSuperMethodA(cl, o, msg);
     
@@ -193,8 +212,9 @@ STATIC VOID dirlist_singleclick(Class *cl, Object *o, struct AROSP_Listview_Sing
 
     	DoMethod(data->dld_VolumesList, AROSM_List_GetEntry, msg->Position, &vi);
 		
-	data->dld_CurPath[0] = 0;
-        UpdateFileList(cl, o, msg->GInfo, vi->vi_Name, ASLB(AslBase));
+	
+	if (path_set(data->dld_CurPath, vi->vi_Name, ASLB(AslBase)))
+	    UpdateFileList(cl, o, msg->GInfo, ASLB(AslBase));
 
 
     } /* if (volume list is shown) */
@@ -221,8 +241,8 @@ STATIC VOID dirlist_doubleclick(Class *cl,
 
 	if (ead->ed_Type > 0)
 	{
-	
-	    UpdateFileList(cl, o, msg->GInfo, ead->ed_Name, ASLB(AslBase));
+	    if (path_add(data->dld_CurPath, ead->ed_Name, ASLB(AslBase)))
+		UpdateFileList(cl, o, msg->GInfo, ASLB(AslBase));
 
 	} /* if (Clicked entry is a directory) */
     } /* if (filelist is currently shown) */
@@ -283,7 +303,9 @@ VOID dirlist_showvolumes(Class *cl, Object *o, struct AROSP_DirList_ShowVolumes 
 ****************************/
 VOID dirlist_showparent(Class *cl, Object *o, struct AROSP_DirList_ShowParent *msg)
 {
-    UpdateFileList(cl, o, msg->GInfo, "/", AslBase);
+    struct DirListData *data = INST_DATA(cl, o);
+    if (path_add(data->dld_CurPath, "/", ASLB(AslBase)))
+	UpdateFileList(cl, o, msg->GInfo, AslBase);
 
     return;
 }

@@ -45,10 +45,16 @@ struct StaticDirListData
     
 };
 
+
+struct path 
+{
+    STRPTR buf;
+    ULONG buflen;
+};
+
 struct DirListData
 {
-    STRPTR	dld_CurPath;
-    ULONG	dld_PathBufSize;
+    struct path *dld_CurPath;
     
     Object	*dld_FileList;
     Object	*dld_VolumesList;
@@ -57,8 +63,13 @@ struct DirListData
     
 };
 
+
+
 /* Is currently volumes or files shown in the listview ? */
 #define DLFLG_FILELIST (1 << 0)
+
+/* Tells whether a filelist has been read */
+#define DLFLG_FILELISTREAD (2 << 0)
 
 
 #define GetSDLD(cl) \
@@ -66,7 +77,7 @@ struct DirListData
 
 
 BOOL AddToPath(STRPTR, STRPTR *, ULONG *, struct AslBase_intern *);
-BOOL UpdateFileList(Class *cl, Object *, struct GadgetInfo *, STRPTR, struct AslBase_intern *);
+BOOL UpdateFileList(Class *cl, Object *, struct GadgetInfo *, struct AslBase_intern *);
 BOOL GetDir(STRPTR, Object *, struct AslBase_intern *);
 BOOL GetVolumes(Object *, struct AslBase_intern *);
 
@@ -105,6 +116,11 @@ AROS_UFP3(VOID, FileDestructHook,
 );
 
 
+struct path *path_init(STRPTR initval, struct AslBase_intern *AslBase);
+BOOL path_set(struct path *path, STRPTR val, struct AslBase_intern *AslBase);
+BOOL path_add(struct path *path, STRPTR toadd, struct AslBase_intern *AslBase);
+VOID path_cleanup(struct path *path, struct AslBase_intern *AslBase);
+STRPTR path_string(struct path *path);
 
 
 

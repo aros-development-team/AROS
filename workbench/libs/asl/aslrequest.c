@@ -19,9 +19,10 @@ struct LayoutData *AllocCommon(ULONG, struct IntReq *, APTR, struct AslBase_inte
 VOID FreeCommon(struct LayoutData *, struct AslBase_intern *);
 BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_intern *);
 
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+
+#define SDEBUG 0
+#define DEBUG 0
+
 
 #  include <aros/debug.h>
 

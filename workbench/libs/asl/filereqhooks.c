@@ -25,11 +25,8 @@
 #include "layout.h"
 #include "dirlist.h"
 
-#undef TURN_OFF_DEBUG
-
-#ifndef TURN_OFF_DEBUG
-#define DEBUG 1
-#endif
+#define SDEBUG 0
+#define DEBUG 0
 
 #include <aros/debug.h>
 
@@ -70,7 +67,7 @@ AROS_UFH3(VOID, FRTagHook,
 
     struct IntFileReq *ifreq;
 
-    D(bug("FRTagHook(hook=%p, pta=%p)\n", hook, pta));
+    EnterFunc(bug("FRTagHook(hook=%p, pta=%p)\n", hook, pta));
 
     ifreq = (struct IntFileReq *)pta->pta_IntReq;
 
@@ -246,7 +243,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 
 
-    D(bug("FRGadInit(ld=%p)\n", ld));
+    EnterFunc(bug("FRGadInit(ld=%p)\n", ld));
 
     udata = ld->ld_UserData;
     ifreq = (struct IntFileReq *)ld->ld_IntReq;
@@ -255,13 +252,15 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     if (!udata->DirListClass)
 	goto failure;
 
+    D(bug("Dirlist class created\n"));	
+
     udata->DirList = NewObject(udata->DirListClass, NULL,
 		GA_ID,				ID_DIRLIST,
 		GA_Immediate,			TRUE,
 		AROSA_DirList_Path,		ifreq->ifr_Drawer,
 
-//		AROSA_Listview_MultiSelect,	TRUE,
-		TAG_END);
+/*		AROSA_Listview_MultiSelect,	TRUE, */
+		TAG_DONE);
 
     if (!udata->DirList)
 	goto failure;
@@ -270,6 +269,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ld->ld_GList = (struct Gadget *)udata->DirList;
 
     D(bug("DirList created: %p\n", udata->DirList));
+    
 
     udata->Prop = NewObject(NULL, PROPGCLASS,
 				GA_Previous,	udata->DirList,
@@ -346,23 +346,29 @@ D(bug("CancelBut created\n"));
 					NUMBUTS,
 					&(ld->ld_DummyRP),
 					ASLB(AslBase));
+D(bug("Got biggest textlength\n"));					
+    D(bug("screen=%p\nscreen font=%p\n, ld font=%p\n"
+    	, ld->ld_Screen, ld->ld_Screen->Font, ld->ld_Font));
     udata->ButHeight = ld->ld_Font->tf_YSize + 6;
 
 
     /* The bottom buttonrow's widths are most significant
     ** to the window's minimal width
     */
+    
 
     ld->ld_MinWidth =  ld->ld_Screen->WBorLeft + ld->ld_Screen->WBorRight
 		     + MIN_SPACING * (NUMBUTS + 1)
 		     + udata->ButWidth * NUMBUTS;
 
-    ld->ld_MinHeight = ld->ld_Screen->WBorTop + ld->ld_Screen->Font->ta_YSize + 1
+    ld->ld_MinHeight = ld->ld_Screen->WBorTop + ld->ld_Font->tf_YSize + 1
 		  + MIN_SPACING * 3
 		  + udata->ButHeight * 3;
 
     ReturnBool ("FRGadInit", TRUE);
 failure:
+
+D(bug("failure\n"));
 
     FRGadCleanup(ld, ASLB(AslBase));
 
@@ -392,7 +398,7 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{TAG_END}};
 
 
-    D(bug("FRGadLayout(ld=%p)\n", ld));
+    EnterFunc(bug("FRGadLayout(ld=%p)\n", ld));
 
     udata   = (struct FRUserData *)ld->ld_UserData;
     win     = ld->ld_Window;
@@ -473,9 +479,10 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
     struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;
 
 
+EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
+
     imsg = ld->ld_Event;
 
-D(bug("FRHandleEvents: Class: %d\n", imsg->Class));
 
     switch (imsg->Class)
     {
@@ -512,7 +519,7 @@ D(bug("GADGETUP! gadgetid=%d\n", ((struct Gadget *)imsg->IAddress)->GadgetID));
 
     } /* switch (imsg->Class) */
 
-    return (retval);
+    ReturnInt ("FRHandleEvents", ULONG, retval);
 }
 
 /*******************
@@ -522,7 +529,7 @@ STATIC VOID FRGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FRUserData *udata;
 
-    D(bug("FRGadCleanup(ld=%p)\n", ld));
+    EnterFunc(bug("FRGadCleanup(ld=%p)\n", ld));
     udata = (struct FRUserData *)ld->ld_UserData;
 
     if (udata->DirList)
