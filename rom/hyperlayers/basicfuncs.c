@@ -211,7 +211,7 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
   DisposeRegion(l->shape);
   DisposeRegion(l->visibleshape);
   
-  FreeMem(l, sizeof(struct Layer));
+  FreeMem(l, sizeof(struct IntLayer));
 }
 
 
