@@ -37,9 +37,9 @@ for direntry in $from/* ; do
 	fi
     else
 	if echo "$entry" | grep -q -e "$filter"; then
-	    echo "Link $from/$entry to $to/$entry"
+	    #echo "Link $from/$entry to $to/$entry"
 	    rm -f $to/$entry
-	    ln -s $from/$entry $to/$entry
+	    ln $from/$entry $to/$entry
 	fi
     fi
 done
