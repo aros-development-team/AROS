@@ -99,38 +99,38 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHAQUAD(a1),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHAQUAD(a1),\
     __AROS_LHAQUAD(a2),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH3(t,n,a1,a2,a3,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
     __AROS_LHA(a4),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -138,7 +138,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a3),\
     __AROS_LHA(a4),\
     __AROS_LHA(a5),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -147,7 +147,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a4),\
     __AROS_LHA(a5),\
     __AROS_LHA(a6),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -157,7 +157,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a5),\
     __AROS_LHA(a6),\
     __AROS_LHA(a7),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -168,7 +168,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a6),\
     __AROS_LHA(a7),\
     __AROS_LHA(a8),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -180,7 +180,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a7),\
     __AROS_LHA(a8),\
     __AROS_LHA(a9),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -193,7 +193,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a8),\
     __AROS_LHA(a9),\
     __AROS_LHA(a10),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -207,7 +207,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a9),\
     __AROS_LHA(a10),\
     __AROS_LHA(a11),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -222,7 +222,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a10),\
     __AROS_LHA(a11),\
     __AROS_LHA(a12),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -238,7 +238,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a11),\
     __AROS_LHA(a12),\
     __AROS_LHA(a13),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -255,7 +255,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a12),\
     __AROS_LHA(a13),\
     __AROS_LHA(a14),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -273,33 +273,33 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a13),\
     __AROS_LHA(a14),\
     __AROS_LHA(a15),\
-    __AROS_LH_BASE(bt,bn))
+    __AROS_LH_BASE(bt,bn)) {
 
 /* Library functions which don't need the libbase */
 #define AROS_LH0I(t,n,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(void)
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(void) {
 #define AROS_LH1I(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1)\
-    )
+    ) {
 #define AROS_LH2I(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2)\
-    )
+    ) {
 #define AROS_LH3I(t,n,a1,a2,a3,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3)\
-    )
+    ) {
 #define AROS_LH4I(t,n,a1,a2,a3,a4,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
     __AROS_LHA(a4)\
-    )
+    ) {
 #define AROS_LH5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -307,7 +307,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a3),\
     __AROS_LHA(a4),\
     __AROS_LHA(a5)\
-    )
+    ) {
 #define AROS_LH6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -316,7 +316,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a4),\
     __AROS_LHA(a5),\
     __AROS_LHA(a6)\
-    )
+    ) {
 #define AROS_LH7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -326,7 +326,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a5),\
     __AROS_LHA(a6),\
     __AROS_LHA(a7)\
-    )
+    ) {
 #define AROS_LH8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -337,7 +337,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a6),\
     __AROS_LHA(a7),\
     __AROS_LHA(a8)\
-    )
+    ) {
 #define AROS_LH9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -349,7 +349,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a7),\
     __AROS_LHA(a8),\
     __AROS_LHA(a9)\
-    )
+    ) {
 #define AROS_LH10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -362,7 +362,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a8),\
     __AROS_LHA(a9),\
     __AROS_LHA(a10)\
-    )
+    ) {
 #define AROS_LH11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -376,7 +376,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a9),\
     __AROS_LHA(a10),\
     __AROS_LHA(a11)\
-    )
+    ) {
 #define AROS_LH12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -391,7 +391,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a10),\
     __AROS_LHA(a11),\
     __AROS_LHA(a12)\
-    )
+    ) {
 #define AROS_LH13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -407,7 +407,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a11),\
     __AROS_LHA(a12),\
     __AROS_LHA(a13)\
-    )
+    ) {
 #define AROS_LH14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -424,7 +424,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a12),\
     __AROS_LHA(a13),\
     __AROS_LHA(a14)\
-    )
+    ) {
 #define AROS_LH15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
@@ -442,7 +442,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a13),\
     __AROS_LHA(a14),\
     __AROS_LHA(a15)\
-    )
+    ) {
 
 /* Call a library function which requires the libbase */
 #define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
@@ -1711,7 +1711,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #   define AROS_LIBFUNC_INIT {
 #endif
 #ifndef AROS_LIBFUNC_EXIT
-#   define AROS_LIBFUNC_EXIT }
+#   define AROS_LIBFUNC_EXIT }}
 #endif
 #ifndef AROS_LIBBASE_EXT_DECL
 #   define AROS_LIBBASE_EXT_DECL(a,b)
