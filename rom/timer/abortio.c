@@ -77,13 +77,16 @@
  	    What we do is add the time remaining for the first request
 	    to the second request.
 	*/
+	
+	#if 0 /* stegerg: ??? */
 	tr = (struct timerequest *)timereq->tr_node.io_Message.mn_Node.ln_Succ;
 	if( tr && tr->tr_node.io_Message.mn_Node.ln_Succ != 0 )
 	{
 		tr->tr_time.tv_secs += timereq->tr_time.tv_secs;
 		tr->tr_time.tv_micro += timereq->tr_time.tv_micro;
 	}
-
+	#endif
+	
 	/*
 	    XXX: If this is the first in the list, we have to resend
 	    XXX  the wait request. I can't do that from here yet.
@@ -97,6 +100,7 @@
 	ret = 0;
     }
     Enable();
+
 
     return ret;
 
