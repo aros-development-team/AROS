@@ -686,7 +686,9 @@ void intui_ProcessEvents (void)
 	    iw = (struct IntWindow *)w;
 
 	    if (!im)
+	    {
 		im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
+	    }
 
 	    im->Class	    = 0L;
 	    im->IDCMPWindow = w;
@@ -1263,7 +1265,7 @@ void intui_ProcessEvents (void)
 		else
 		    im->Class = 0;
 	    }
-	}
+	} /* while */
 
 	if (im)
 	{

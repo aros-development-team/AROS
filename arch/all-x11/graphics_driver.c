@@ -674,6 +674,20 @@ int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
     XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
     SetGC (newRP, gc);
 
+    if (oldRP->BitMap)
+    {
+	newRP->BitMap = AllocMem (sizeof (struct BitMap), MEMF_CLEAR|MEMF_ANY);
+
+	if (!newRP->BitMap)
+	{
+	    XFreeGC (sysDisplay, gc);
+
+	    return FALSE;
+	}
+
+	CopyMem (oldRP->BitMap, newRP->BitMap, sizeof (struct BitMap));
+    }
+
     return TRUE;
 }
 
