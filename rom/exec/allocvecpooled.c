@@ -20,7 +20,6 @@ AROS_LH2(APTR, AllocVecPooled,
     
     IPTR *memory;
     
-    bug("exec/AllocVecPooled: %p, %d\n", pool, size);
     if (pool == NULL) return NULL;
     
     size   += sizeof(IPTR);
