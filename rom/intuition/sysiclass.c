@@ -623,8 +623,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
 	WORD right, bottom, x, y;
 	
-	
-	bug("************* size image draw **************\n");
 	bg = getbgpen(msg->imp_State, pens);
 	
 	/* Clear background into correct color */
