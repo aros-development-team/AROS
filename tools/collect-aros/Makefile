@@ -12,6 +12,7 @@ HOST_STRIP  ?= strip
 MECHO	    ?= echo
 GENSETS	    ?= gensets
 HOST_CFLAGS ?= $(USER_CFLAGS)
+COLLECT-AROS ?= collect-aros
 
 all : getlinkername collect-aros.h $(COLLECT-AROS)
 
