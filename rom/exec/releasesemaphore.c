@@ -10,8 +10,9 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-#define CHECK_INITSEM 1
-
+#define CHECK_INITSEM 	1
+#define CHECK_TASK	0 /* it seems to be legal to call ObtainSemaphore in one task and ReleaseSemaphore in another */
+			    
 /*****************************************************************************/
 #ifndef UseExecstubs
 
@@ -84,6 +85,8 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 	    semaphore, or not. If we are not, make sure that the
 	    correct Task is calling ReleaseSemaphore()
 	*/
+	
+	#if CHECK_TASK
 	if( sigSem->ss_Owner != NULL && sigSem->ss_Owner != FindTask(NULL) )
 	{
 	    /*
@@ -92,6 +95,8 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 	    */
 	    Alert( AN_SemCorrupt );
 	}
+	#endif
+	
 	/*
 	    Do not try and wake anything unless there are a number
 	    of tasks waiting. We do both the tests, this is another
