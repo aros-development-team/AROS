@@ -43,17 +43,18 @@ price, it's a bargain.
 won't do it).
 
 3) GNU make 3.74 or better - A real make is neccessary and this is
-one.
+one (use "make --version" to find out which you have).
 
 4) GCC 2.7.0 or better (2.7.2 is recommended because of the magnitude
-of bugs fixed).
+of bugs fixed) (use "gcc --verion" to find out which you have).
 
-5) GAS/as from binutils 2.6 or better
+5) GAS/as 2.7 or better.
 
 6) GDB, the GNU debugger. It is no great help in our project because we do
 nasty things with the stack, but better than nothing anyway.
 
-7) GAWK to generate a couple of files.
+7) GAWK to generate a couple of files (I have 3.0.0, but any version should
+work).
 
 There are a couple of files and directories below AROS and here is
 a short overview of what they are and what you can do with them.
@@ -206,6 +207,16 @@ i386-emul/ - Linux version of the kernel. It consists mainly of a bunch
 
 	makefile - This is a good example of how sub-makefiles for AROS
 		should look like.
+
+include/ - This directory contains all AROS specific includes as well as all
+	Amiga includes which have been modified for AROS. Note that these
+	files are searched *before* the files in amiga/include/. Most people
+	will notice this when they compile some program which uses a function
+	which has not yet been implemented in AROS. The compiler will complain
+	about a function without a prototype despite the fact that it is
+	in amiga/include/clib/*_protos.h. That's because it doesn't look there
+	and if you ever get an error like this, have a look into include
+	first.
 
 intuition/ - Sourcecode for the intuition.library. See dos/ for more
 	information.
