@@ -57,7 +57,8 @@ struct MUI_RegisterData
     WORD    	    	    	oldactive;
     WORD    	    	     	left;
     WORD    	    	     	top;
-    WORD    	    	     	min_width;
+    WORD    	    	     	min_width;       /* object min width required */
+    WORD    	    	     	def_width;       /* object def width required */
     WORD    	    	     	tab_height;      /* title height */
     WORD    	    	     	framewidth;
     WORD    	    	     	frameheight;
@@ -386,6 +387,31 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 	data->items[i].y2 = data->tab_height - 1;
     }
 
+    data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
+/*      D(bug("Register_AskMinMax : data->total_hspacing = %d\n", data->total_hspacing)); */
+
+    data->min_width = data->total_hspacing * 3;
+    data->def_width = data->total_hspacing;
+
+    if (!(muiGlobalInfo(obj)->mgi_Prefs->register_truncate_titles))
+    {
+	struct RastPort temprp;
+	int i;
+	WORD textpixmax;
+
+	InitRastPort(&temprp);
+	SetFont(&temprp, _font(obj));
+
+	textpixmax = 0;
+	for(i = 0; i < data->numitems; i++)
+	{
+	    WORD textpix = TextLength(&temprp, data->items[i].text, data->items[i].textlen);
+	    textpixmax = MAX(textpix, textpixmax);
+	}
+	data->def_width += (textpixmax + TEXTSPACING + 1) * data->numitems;
+	data->def_width = MAX(data->min_width, data->def_width);
+    }
+
     muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
     muiAreaData(obj)->mad_HardITop   	= data->tab_height + REGISTER_FRAMEY;
     muiAreaData(obj)->mad_HardIRight  	= REGISTER_FRAMEX;
@@ -415,45 +441,19 @@ static ULONG Register_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
 static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    WORD minwidth;
-    WORD defwidth;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
     D(bug("Register_AskMinMax1 : %ld, %ld, %ld\n",
 	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
    
-    data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
-/*      D(bug("Register_AskMinMax : data->total_hspacing = %d\n", data->total_hspacing)); */
-
-    minwidth = data->total_hspacing * 3;
-    defwidth = data->total_hspacing;
-
-    if (!(muiGlobalInfo(obj)->mgi_Prefs->register_truncate_titles))
-    {
-	struct RastPort temprp;
-	int i;
-	WORD textpixmax;
-
-	InitRastPort(&temprp);
-	SetFont(&temprp, _font(obj));
-
-	textpixmax = 0;
-	for(i = 0; i < data->numitems; i++)
-	{
-	    WORD textpix = TextLength(&temprp, data->items[i].text, data->items[i].textlen);
-	    textpixmax = MAX(textpix, textpixmax);
-	}
-	defwidth += (textpixmax + TEXTSPACING + 1) * data->numitems;
-	defwidth = MAX(minwidth, defwidth);
-    }
 
     D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d, mymin=%d, mydef=%d\n",
 	  data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth,
-	  minwidth, defwidth));
+	  data->min_width, data->def_width));
 
-    msg->MinMaxInfo->MinWidth = MAX(msg->MinMaxInfo->MinWidth, minwidth);
-    msg->MinMaxInfo->MaxWidth = MAX(msg->MinMaxInfo->MaxWidth, defwidth);
-    msg->MinMaxInfo->DefWidth = MAX(msg->MinMaxInfo->DefWidth, defwidth);
+    msg->MinMaxInfo->MinWidth = MAX(msg->MinMaxInfo->MinWidth, data->min_width);
+    msg->MinMaxInfo->MaxWidth = MAX(msg->MinMaxInfo->MaxWidth, data->def_width);
+    msg->MinMaxInfo->DefWidth = MAX(msg->MinMaxInfo->DefWidth, data->def_width);
 
     msg->MinMaxInfo->MinHeight += data->tab_height;
     msg->MinMaxInfo->MaxHeight += data->tab_height;
