@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/21 14:20:53  digulla
+    Deleted empty line
+
     Revision 1.1  1996/09/17 16:18:17  digulla
     A new function
 
@@ -74,7 +77,6 @@
     BOOL    autoAdjust	= FALSE;
     ULONG   innerWidth	= ~0L;
     ULONG   innerHeight = ~0L;
-
 
     if (newWindow)
 	CopyMem (newWindow, &nw, sizeof (struct NewWindow));
