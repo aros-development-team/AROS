@@ -53,7 +53,11 @@
 
 ******************************************************************************/
 {
-    ULONG   value;
+    union
+    {
+        ULONG   ulong_val;
+        float   float_val;
+    } value;
     LONG    c;
     UBYTE * ptr;
 
@@ -76,7 +80,7 @@
     READ_ONE_BYTE;
     READ_ONE_BYTE;
 
-    *dataptr = *(FLOAT *)&value;
+    *dataptr = value.float_val;
 
     return TRUE;
 } /* ReadFloat */
