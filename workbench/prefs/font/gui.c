@@ -133,6 +133,8 @@ IPTR FPWindow$OM_NEW
             End,
         End,
     End;
+
+    if (tags[2].ti_Data == NULL) goto error;
     
     tags[3].ti_Data = (IPTR) ColGroup(2),
         Child, Label2(MSG(MSG_ICONS)),
@@ -160,11 +162,13 @@ IPTR FPWindow$OM_NEW
             MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
         End,
     End;
+    
+    if (tags[3].ti_Data == NULL) goto error;
         
     message->ops_AttrList = tags;
           
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
-    if (self == NULL) return FALSE;
+    if (self == NULL) goto error;
     
     FontPrefs2FontString(buffer, BUFFERSIZE, fontPrefs[FP_WBFONT]);
     SetAttrs(iconsString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
@@ -181,6 +185,12 @@ IPTR FPWindow$OM_NEW
     data->fpwd_ScreenString = screenString;
     
     return (IPTR) self;
+    
+error:
+    if (tags[2].ti_Data != NULL) MUI_DisposeObject(tags[2].ti_Data);
+    if (tags[3].ti_Data != NULL) MUI_DisposeObject(tags[3].ti_Data);
+
+    return NULL;
 }
 
 IPTR FPWindow$MUIM_PreferencesWindow_Test
