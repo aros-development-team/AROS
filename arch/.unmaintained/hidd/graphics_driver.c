@@ -145,6 +145,7 @@ static LONG pix_write(APTR pr_data
 	, LONG x, LONG y
 	, struct GfxBase *GfxBase);
 
+#if 0
 static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddGCAttrBase		= 0;
 static AttrBase HiddGfxModeAttrBase	= 0;
@@ -162,6 +163,25 @@ static struct ABDescr attrbases[] = {
     { NULL, 0UL }
 };
 
+#else
+AttrBase HiddBitMapAttrBase	= 0;
+AttrBase HiddGCAttrBase		= 0;
+AttrBase HiddGfxModeAttrBase	= 0;
+AttrBase HiddPixFmtAttrBase	= 0; 
+AttrBase HiddPlanarBMAttrBase	= 0; 
+AttrBase HiddGfxAttrBase	= 0; 
+
+struct ABDescr attrbases[] = {
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,		&HiddGCAttrBase		},
+    { IID_Hidd_GfxMode,		&HiddGfxModeAttrBase	},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+    { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
+    { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
+    { NULL, 0UL }
+};
+
+#endif
 #define PIXELBUF_SIZE 200000
 #define NUMPIX (PIXELBUF_SIZE / 4)
 
@@ -403,10 +423,9 @@ void driver_expunge (struct GfxBase * GfxBase)
 	
 	if (SDD(GfxBase)->activescreen_inited)
 	    cleanup_activescreen_stuff(GfxBase);
-#if 0	
+
 	if (SDD(GfxBase)->dispinfo_db)
-	    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db);
-#endif
+	    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
 	    
 	if (SDD(GfxBase)->queried_modes)
 	    HIDD_Gfx_ReleaseGfxModes(SDD(GfxBase)->gfxhidd,
@@ -478,11 +497,10 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		SDD(GfxBase)->queried_modes = HIDD_Gfx_QueryGfxModes(SDD(GfxBase)->gfxhidd, qgm_tags);
 		if (NULL != SDD(GfxBase)->queried_modes) {
 		
-#if 0    
 		    /* Move the modes into the displayinfo DB */
 		    SDD(GfxBase)->dispinfo_db = build_dispinfo_db(SDD(GfxBase)->queried_modes, GfxBase);
 		    if (NULL != SDD(GfxBase)->dispinfo_db) {
-#endif
+
 	            	SDD(GfxBase)->activescreen_inited = init_activescreen_stuff(GfxBase);
 kprintf("ACTIVE_SCREEN_INITED: %d\n", SDD(GfxBase)->activescreen_inited);
 		    	if (SDD(GfxBase)->activescreen_inited) {
@@ -490,11 +508,10 @@ kprintf("ACTIVE_SCREEN_INITED: %d\n", SDD(GfxBase)->activescreen_inited);
 			    ReturnBool("driver_LateGfxInit", TRUE);
 		    	}
 
-#if 0			
-			destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db);
+			destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
 			SDD(GfxBase)->dispinfo_db = NULL;
 		    }
-#endif
+		    
 		    HIDD_Gfx_ReleaseGfxModes(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->queried_modes);
 	    	    SDD(GfxBase)->queried_modes = NULL;
 		}
@@ -2594,8 +2611,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     struct BitMap * nbm;
     
     
-    EnterFunc(bug("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
-    	sizex, sizey, depth, flags, friend));
+    kprintf("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
+    	sizex, sizey, depth, flags, friend);
 
     nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
     if (nbm)
@@ -2614,7 +2631,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		{ aHidd_BitMap_StdPixFmt,	0	},	/* 5 */
 		{ TAG_DONE, 0 }
 	    };
-	    
+
+kprintf("bitmap struct allocated\n");	    
 	    /* Insert supplied values */
 	    bm_tags[0].ti_Data = sizex;
 	    bm_tags[1].ti_Data = sizey;
@@ -2643,6 +2661,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    /* Create HIDD bitmap object */
 	    if (gfxhidd)
 	    {
+kprintf("Creating HIDD bitmap\n");	    
 		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
 		if (NULL != bm_obj)
 		{
@@ -2650,6 +2669,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    Object *pf;
 		    Object *colmap;
 		    ULONG graphtype;
+
+kprintf("HIDD bitmap created\n");		    
 		    
 		    /* 	It is possible that the HIDD had to allocate
 		   	a larger depth than that supplied, so
@@ -2683,11 +2704,11 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		        /* Allcoate a pixtab */
 			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
 			if (NULL != HIDD_BM_PIXTAB(nbm)) {
-			
 			    /* Set this palette to all black by default */
 			    
 			    HIDDT_Color col;
 			    ULONG i;
+kprintf("Pixtab allocated\n");			
 			
 			    col.red     = 0;
 			    col.green   = 0;
@@ -3432,11 +3453,13 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    
    if (vHidd_GT_Palette == graphtype || vHidd_GT_TrueColor == graphtype) {
    	HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, color, 1);
+
+/*
 kprintf("SetRGB32: col %d (%x %x %x %x) mapped to %x\n"
 		, color
 		, hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
 		, hidd_col.pixval);
-		
+*/		
 	HIDD_BM_PIXTAB(bm)[color] = hidd_col.pixval;
    }
 	
