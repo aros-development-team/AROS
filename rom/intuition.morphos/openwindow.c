@@ -930,6 +930,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     w->Title = nw.Title;
 
+
 #if 1
 
     /* Use safe OpenFont.. - Piru
@@ -1175,7 +1176,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     }
 #endif
 
-    LockLayers(&w->WScreen->LayerInfo);
+//    LockLayers(&w->WScreen->LayerInfo);
 
     /* A GimmeZeroZero window??? */
     if (w->Flags & WFLG_GIMMEZEROZERO)
@@ -1232,7 +1233,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         if (NULL == L)
         {
             msg->success = FALSE;
-            UnlockLayers(&w->WScreen->LayerInfo);
+//            UnlockLayers(&w->WScreen->LayerInfo);
             ReturnVoid("intui_OpenWindow(No GimmeZeroZero layer)");
         }
 
@@ -1279,7 +1280,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         {
             DeleteLayer(0, L);
             msg->success = FALSE;
-            UnlockLayers(&w->WScreen->LayerInfo);
+//            UnlockLayers(&w->WScreen->LayerInfo);
             ReturnVoid("intui_OpenWindow(No window layer)");
         }
 
@@ -1354,6 +1355,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                have different fonts etc.
             */
             w->BorderRPort = AllocMem(sizeof(struct RastPort), MEMF_ANY);
+
             if (w->BorderRPort)
             {
                 InitRastPort(w->BorderRPort);
@@ -1365,7 +1367,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                 /* no memory for RastPort! Simply close the window */
                 intui_CloseWindow(w, IntuitionBase);
                 msg->success = FALSE;
-                UnlockLayers(&w->WScreen->LayerInfo);
+//                UnlockLayers(&w->WScreen->LayerInfo);
                 ReturnVoid("intui_OpenWindow(No BorderRPort)");
             }
         }
@@ -1413,7 +1415,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         CheckLayers(w->WScreen,IntuitionBase);
 
-        UnlockLayers(&w->WScreen->LayerInfo);
+//        UnlockLayers(&w->WScreen->LayerInfo);
 
 #ifndef __MORPHOS__
         w->WLayer->Window = (APTR)w;
@@ -1425,7 +1427,9 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         if (CreateWinSysGadgets(w, IntuitionBase))
         {
-            LONG lock = LockIBase (0);
+            LONG lock;
+	    
+	    lock = LockIBase (0);
 
             /* insert new window into parent/descendant list
             **
@@ -1445,7 +1449,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             **   descendant win abc
             */
 
-#ifndef TIMEVALWINDOWACTIVATION
+#if 1
 
             struct Window *parent, *descendant_of_parent;
 
@@ -1492,7 +1496,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
     } /* if (layer created) */
 
-    UnlockLayers(&w->WScreen->LayerInfo);
+//    UnlockLayers(&w->WScreen->LayerInfo);
 
 
     D(bug("int_openwindow(General failure)"));
