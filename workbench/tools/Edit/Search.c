@@ -477,7 +477,12 @@ void ReplaceAllPat( Project p )
 		WORD   nbrep;
 		STRPTR occur;
 		STRPTR _find_, _replace_;
-	}	args;
+	}
+#ifdef _AROS
+    	__attribute__((packed))
+#endif
+	args;
+
 	WORD  	replen;
 	LINE  	*edited = p->edited;
 	LONG  	nbl     = p->nbl;
