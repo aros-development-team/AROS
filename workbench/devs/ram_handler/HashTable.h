@@ -1,6 +1,13 @@
-
 #ifndef  _HASHTABLE_H
 #define  _HASHTABLE_H
+
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: English
+*/
 
 struct rambase;
 
