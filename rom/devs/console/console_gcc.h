@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -55,6 +55,7 @@ struct ConsoleBase;
 #define CP_Y(o) (GFX_Y(o, CU(o)->cu_YCCP))
 
 /* Macros that convert from char to gfx coords */
+
 #define GFX_X(o, x) (CU(o)->cu_XROrigin + ((x) * CU(o)->cu_XRSize))
 #define GFX_Y(o, y) (CU(o)->cu_YROrigin + ((y) * CU(o)->cu_YRSize))
 
@@ -64,7 +65,11 @@ struct ConsoleBase;
 #define GFX_XMAX(o) ((GFX_X((o), CHAR_XMAX(o) + 1)) - 1)
 #define GFX_YMAX(o) ((GFX_Y((o), CHAR_YMAX(o) + 1)) - 1)
 
+/* Macros to set/reset/check rawevents */
 
+#define SET_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] |= (1 << ((which) & 7)))
+#define RESET_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] &= ~(1 << ((which) & 7)))
+#define CHECK_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] & (1 << ((which) & 7)))
 
 #define CONSOLECLASSPTR		(ConsoleDevice->consoleClass)
 #define STDCONCLASSPTR		(ConsoleDevice->stdConClass)
@@ -129,6 +134,9 @@ enum
     
     C_CURSOR_VISIBLE,
     C_CURSOR_INVISIBLE,
+    
+    C_SET_RAWEVENTS,
+    C_RESET_RAWEVENTS,
     
     NUM_CONSOLE_COMMANDS
 };
