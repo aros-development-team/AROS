@@ -105,13 +105,13 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
 	    DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
 
-	    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
+	    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 5,
 		     MUIM_Application_PushMethod, (IPTR)obj, 2,
 		     MUIM_Poppen_CloseWindow, TRUE);
-	    DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
+	    DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 5,
 		     MUIM_Application_PushMethod, (IPTR)obj, 2,
 		     MUIM_Poppen_CloseWindow, FALSE);
-	    DoMethod(data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)_app(obj), 6,
+	    DoMethod(data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)_app(obj), 5,
 		     MUIM_Application_PushMethod, (IPTR)obj, 2,
 		     MUIM_Poppen_CloseWindow, FALSE);
 	}
