@@ -70,7 +70,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  return NULL
+  return NULL;
 
   AROS_LIBFUNC_EXIT
 } /* ChangeLayerShape */
