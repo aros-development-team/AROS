@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/09/13 17:36:37  digulla
+    Use IPTR
+
     Revision 1.2  1996/09/12 14:52:47  digulla
     Better way to separate public and private parts of the library base
 
@@ -48,7 +51,7 @@
 	tagList =  AllocateTagItems( 4 );
 
 	tagList[0].ti_Tag  = NA_Name;
-	tagList[0].ti_Data = (ULONG)"A list of tags";
+	tagList[0].ti_Data = (IPTR)"A list of tags";
 	tagList[3].ti_Tag  = TAG_DONE;
 
 	\* Do what you want with your TagList here ... *\
