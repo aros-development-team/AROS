@@ -25,10 +25,10 @@
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
+#   define IMSPEC_EXTERNAL_PREFIX "IMAGES:Zune/"
 #else
 #   include "support_amigaos.h"
 #endif 
-
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
 #define mui_alloc_struct(x) ((x *)AllocVec(sizeof(x),MEMF_CLEAR))
