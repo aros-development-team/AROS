@@ -12,6 +12,7 @@
 #include <exec/libraries.h>
 #include <aros/libcall.h>
 #include <intuition/intuition.h>
+#include "general.h"
 #include "reqtools_intern.h"
 #include "rtfuncs.h"
 
