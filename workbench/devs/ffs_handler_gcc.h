@@ -1,27 +1,11 @@
-/*
-    (C) 1995-96 AROS - The Amiga Research OS
-    $Id$
-    $Log$
-    Revision 1.4  2000/10/11 17:18:47  stegerg
-    fixed a bug in (disk-block) protection bit handling.
-    source cleanup. added some debug output.
-
-    Revision 1.3  1998/10/20 16:47:25  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1998/08/19 18:08:37  bernie
-    changed module definition to FFS_HANDLER_GCC_H
-
-    Revision 1.1  1996/11/14 08:53:30  aros
-    First attempt for a real fastfilesystem
-    (only directoryscans for now)
-
-
-    Desc:
-    Lang:
-*/
 #ifndef FFS_HANDLER_GCC_H
 #define FFS_HANDLER_GCC_H
+
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
