@@ -128,7 +128,7 @@ extern int __vcscan (void * data, int (*getc)(void *),
 #define getchar()   getc(stdin)
 
 #ifndef _CLIB_KERNEL_
-    static int __inline__ putchar(int c)
+    static __inline__ int putchar(int c)
     {
         return putc(c, stdout);
     }
