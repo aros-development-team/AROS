@@ -10,17 +10,44 @@
 #define stringify(x) _stringify(x)
 
 #if DEBUG
-#    define DECLARE_SysBase extern struct ExecBase *_SysBase asm (stringify(AROS_ASMSYMNAME(SysBase)));
-#    define DEFINE_SysBase struct ExecBase *_SysBase asm (stringify(AROS_ASMSYMNAME(SysBase)));
-#    define ASSIGN_SysBase _SysBase = SysBase;
-#else
-#    define DECLARE_SysBase
-#    define DEFINE_SysBase
-#    define ASSIGN_SysBase
+#    undef  SH_GLOBAL_SYSBASE
+#    define SH_GLOBAL_SYSBASE 1
 #endif
 
 
+#if SH_GLOBAL_SYSBASE
+#    define DECLARE_SysBase_global extern struct ExecBase *SysBase
+#    define DEFINE_SysBase_global struct ExecBase *SysBase
+#    define DEFINE_SysBase_local
+#    define main_SysBase_arg
+#else
+#    define DECLARE_SysBase_global
+#    define DEFINE_SysBase_local struct ExecBase *SysBase
+#    define DEFINE_SysBase_global
+#endif
+
+
+#if SH_GLOBAL_DOSBASE
+#    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase
+#    define DEFINE_DOSBase_global struct DosLibrary *DOSBase
+#    define DEFINE_DOSBase_local
+#    define main_DOSBase_arg
+#else
+#    define DECLARE_DOSBase_global
+#    define DEFINE_DOSBase_local struct DosLibrary *DOSBase
+#    define DEFINE_DOSBase_global
+#    define main_DOSBase_arg ,DOSBase
+#endif
+
+#define CALL_main(name) name##_main(__shargs, argstr, SysBase, DOSBase)
+#define DECLARE_main(name)                                    \
+    static ULONG name##_main(IPTR *__shargs, char * __argstr, \
+			     struct ExecBase *SysBase,        \
+			     struct DosLibrary *DOSBase)
+#define DEFINE_main(name) DECLARE_main(name)
+
 #define SHArg(name) (*(SHA_##name##_type *)&__shargs[SHA_##name])
+#define SHArgLine() __argstr
 
 #define __SHA_ENUM(type, abbr, name, modf, def, help) SHA_##name
 #define __SHA_DEF(type, abbr, name, modf, def, help) (IPTR)(def)
@@ -31,26 +58,28 @@
 
 
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
-static ULONG name##_main(IPTR *, struct ExecBase *SysBase,     \
-                         struct DosLibrary *);                 \
-DECLARE_SysBase                                                \
+DECLARE_main(name);                                            \
+DECLARE_SysBase_global;                                        \
+DECLARE_DOSBase_global;                                        \
                                                                \
 AROS_UFH3(LONG, entry,                                         \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
-    AROS_UFHA(struct ExecBase *,SysBase,A6)                    \
+    AROS_UFHA(struct ExecBase *,sysBase,A6)                    \
 )                                                              \
 {                                                              \
     AROS_USERFUNC_INIT                                         \
 							       \
-    ASSIGN_SysBase                                             \
-							       \
+    DEFINE_SysBase_local;                                      \
+    DEFINE_DOSBase_local;                                      \
+                                                               \
     LONG __retcode = RETURN_FAIL;                              \
     IPTR __shargs[numargs] = defl;                             \
     struct RDArgs *__rda  = NULL;                              \
     struct RDArgs *__rda2 = NULL;                              \
-    struct DosLibrary *DOSBase =                               \
-        (struct DosLibrary *) OpenLibrary(DOSNAME, 37);        \
+							       \
+    SysBase = sysBase;                                         \
+    DOSBase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);  \
                                                                \
     if (!DOSBase)                                              \
     {                                                          \
@@ -77,7 +106,7 @@ AROS_UFH3(LONG, entry,                                         \
 	goto __exit;                                           \
     }                                                          \
 							       \
-    __retcode = name##_main(__shargs, SysBase, DOSBase);       \
+    __retcode = CALL_main(name);                               \
     							       \
 __exit:                                                        \
     if (__rda) FreeArgs(__rda);                                \
@@ -89,16 +118,16 @@ __exit:                                                        \
     AROS_USERFUNC_EXIT                                         \
 }                                                              \
                                                                \
-DEFINE_SysBase                                                 \
+DEFINE_SysBase_global;                                         \
+DEFINE_DOSBase_global;                                         \
 							       \
 static UBYTE name##_version[] = "$VER: "                       \
                                  stringify(name) " "           \
 		                 stringify(version) " "        \
 				 "(" __DATE__ ")\n";           \
-                                                                     \
-static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
-                         struct DosLibrary *DOSBase)                 \
-{                                                                    \
+                                                               \
+DEFINE_main(name)                                              \
+{
 
 #define AROS_SHCOMMAND_INIT
 

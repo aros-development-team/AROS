@@ -29,7 +29,6 @@ FILES	:= \
 	MakeDir \
 	MakeLink \
 	Mount \
-	NewShell \
 	Protect \
 	Relabel \
 	Rename \
@@ -43,7 +42,6 @@ FILES	:= \
 	SetDefaultFont \
 	SetKeyboard \
 	SetLocale \
-	Shell \
 	Sort \
 	StackSnoop \
 	TaskList \

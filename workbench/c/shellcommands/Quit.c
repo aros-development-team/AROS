@@ -58,15 +58,16 @@ AROS_SHA(LONG *, ,RC,/N,NULL))
     AROS_SHCOMMAND_INIT
 
     struct CommandLineInterface *cli = Cli();
-    int            retval = RETURN_OK;
+    int retval = RETURN_OK;
 
-    if(cli != NULL && cli->cli_CurrentInput != cli->cli_StandardInput)
+    if(cli && !cli->cli_Interactive)
     {
-        if(SHArg(RC) != NULL)
+
+	if(SHArg(RC) != NULL)
 	    retval = (int)*SHArg(RC);
 
-	    /* Make sure the script reaches EOF */
-	    Seek(cli->cli_CurrentInput, 0, OFFSET_END);
+	Close(cli->cli_CurrentInput);
+	cli->cli_CurrentInput = NULL;
     }
     else
     {

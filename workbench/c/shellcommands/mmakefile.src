@@ -11,6 +11,7 @@ FILES	:= \
     CD \
     Echo \
     Else \
+    EndCli \
     EndIf \
     EndSkip \
     Execute \
@@ -20,6 +21,7 @@ FILES	:= \
     Getenv \
     If \
     Lab \
+    NewShell \
     Path \
     Prompt \
     Quit \
@@ -27,6 +29,7 @@ FILES	:= \
     Run \
     Set \
     Setenv \
+    Shell \
     Skip \
     Stack \
     Status \
