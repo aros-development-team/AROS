@@ -315,11 +315,13 @@ The error was that the old window frame was not erased when the window
 became larger. 
 
 
-BUG000046
+BUG000046 fixed
 bergers@aros.org
 When starting more than one "mxgads" by "run mxgads" and when letting the
 windows stack on top of each other the new window looses its display.
 
+The bug was a coordinate manupilation error
+in driver_EraseRect().
 
 BUG000047 fixed
 bergers@aros.org
