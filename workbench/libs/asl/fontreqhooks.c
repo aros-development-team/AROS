@@ -18,8 +18,8 @@
 #include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
-#
 #include <graphics/gfx.h>
+#include <devices/rawkeycodes.h>
 #include <libraries/gadtools.h>
 #include <workbench/startup.h>
 #include <string.h>
@@ -772,11 +772,35 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    switch (imsg->Code)
 	    {
 	        case CURSORUP:
-   		    FOChangeActiveFont(ld, -1, imsg->Qualifier, FALSE, AslBase);
+		    FOChangeActiveFont(ld, -1, imsg->Qualifier, FALSE, AslBase);
 		    break;
 		    
+		case RAWKEY_PAGEUP:
+		    FOChangeActiveFont(ld, -1, IEQUALIFIER_LSHIFT, FALSE, AslBase);
+		    break;
+		    
+		case RAWKEY_HOME:
+		    FOChangeActiveFont(ld, -1, IEQUALIFIER_LALT, FALSE, AslBase);
+		    break;
+		    
+		case RAWKEY_NM_WHEEL_UP:
+		    FOChangeActiveFont(ld, -3, imsg->Qualifier, FALSE, AslBase);
+		    break;
+		
 		case CURSORDOWN:
 		    FOChangeActiveFont(ld, 1, imsg->Qualifier, FALSE, AslBase);
+		    break;
+		    
+		case RAWKEY_PAGEDOWN:
+		    FOChangeActiveFont(ld, 1, IEQUALIFIER_LSHIFT, FALSE, AslBase);
+		    break;
+		    
+		case RAWKEY_END:
+		    FOChangeActiveFont(ld, 1, IEQUALIFIER_LALT, FALSE, AslBase);
+		    break;
+		    
+		case RAWKEY_NM_WHEEL_DOWN:
+		    FOChangeActiveFont(ld, 3, imsg->Qualifier, FALSE, AslBase);
 		    break;
 	    }
 	    break;

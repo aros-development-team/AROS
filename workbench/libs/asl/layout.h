@@ -94,6 +94,7 @@ struct AslBase_intern;
 
 #define STRINGCODE_CURSORUP	1
 #define STRINGCODE_CURSORDOWN	2
+#define STRINGCODE_NOP	    	3
 
 /*****************************************************************************************/
 
