@@ -32,13 +32,16 @@
 #ifndef DOS_DOSTAGS_H
 #   include <dos/dostags.h>
 #endif
-#include <proto/dos.h>
 #ifndef UTILITY_UTILITY_H
 #   include <utility/utility.h>
 #endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
+
+#include <proto/intuition.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 #include <aros/debug.h>
 
@@ -51,22 +54,28 @@
 struct WorkbenchBase {
     struct Library     LibNode;
     BPTR               wb_SegList;
+
     struct ExecBase   *wb_SysBase;
     struct Library    *wb_DOSBase;
     struct Library    *wb_UtilityBase;
-    struct MsgPort    *wb_HandlerPort;     /* The Workbench Handler's message port. */
+    struct Library    *wb_IntuitionBase;
+
+    struct MsgPort    *wb_HandlerPort;       /* The Workbench Handler's message port. */
+    struct MsgPort    *wb_AppPort;           /* The Workbench App's message port. */
 
     struct List        wb_AppWindows;
     struct List        wb_AppIcons;
     struct List        wb_AppMenuItems;
 
-    struct List        wb_Listeners;       /* List of MsgPorts to sends notification
-                                            * messages to. */
+    struct List        wb_HiddenDevices;     /* List of devices that Workbench will not show. */
+    ULONG              wb_DefaultStackSize;
+    ULONG              wb_TypeRestartTime;
 };
 
-#define SysBase     (WorkbenchBase->wb_SysBase)
-#define UtilityBase ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
-#define DOSBase     ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
+#define SysBase         (WorkbenchBase->wb_SysBase)
+#define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
+#define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_UtilityBase))
+#define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
 
 /*
  * Defintion of internal structures.
@@ -102,7 +111,6 @@ struct AppIcon {
 #define WBAPPICONF_SupportsEmptyTrash      (1<<11)
 #define WBAPPICONF_PropagatePosition       (1<<12)
 #define WBAPPICONF_NotifySelectState       (1<<13)
-
 
 struct AppWindow {
     struct Node     aw_Node;
