@@ -151,16 +151,16 @@ do                                        \
     }
 #endif
 
-#define REMTAIL(_l)                       \
-({                                        \
-    struct List *__l = (struct List *)_l;   \
-    struct Node *__n;                       \
+#define REMTAIL(_l)                           \
+({                                            \
+    struct List *__l = (struct List *)_l;     \
+    struct Node *__n;                         \
     if ((__n=GetTail(__l)))                   \
-    {                                     \
+    {                                         \
         __n->ln_Pred->ln_Succ = __n->ln_Succ; \
         __n->ln_Succ->ln_Pred = __n->ln_Pred; \
-    }                                     \
-    n;                                    \
+    }                                         \
+    __n;                                      \
 })
 
 
