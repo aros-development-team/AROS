@@ -24,7 +24,7 @@ struct TypeWrapper<UWORD>
 {
     enum { isSigned = false };
 
-    UWORD operator ()(const UWORD v) const
+    UWORD bswap(const UWORD v) const
     {
         return AROS_SWAP_BYTES_WORD(v);
     }
@@ -40,7 +40,7 @@ struct TypeWrapper<WORD>
 {
     enum { isSigned = true };
 
-    WORD operator ()(const WORD v) const
+    WORD bswap(const WORD v) const
     {
         return AROS_SWAP_BYTES_WORD(v);
     }
@@ -56,7 +56,7 @@ struct TypeWrapper<ULONG>
 {
     enum { isSigned = false };
     
-    ULONG operator ()(const ULONG v) const
+    ULONG bswap(const ULONG v) const
     {
         return AROS_SWAP_BYTES_LONG(v);
     }
@@ -72,7 +72,7 @@ struct TypeWrapper<LONG>
 {
     enum { isSigned = true };
 
-    LONG operator ()(const LONG v) const
+    LONG bswap(const LONG v) const
     {
        return AROS_SWAP_BYTES_LONG(v);
     }
@@ -88,7 +88,7 @@ struct TypeWrapper<UQUAD>
 {
     enum { isSigned = false };
     
-    const UQUAD operator ()(const UQUAD v) const
+    const UQUAD bswap(const UQUAD v) const
     {
         return AROS_SWAP_BYTES_QUAD(v);
     }
@@ -104,7 +104,7 @@ struct TypeWrapper<QUAD>
 {
     enum { isSigned = true };
     
-    const QUAD operator ()(const QUAD v) const
+    const QUAD bswap(const QUAD v) const
     {
         return AROS_SWAP_BYTES_QUAD(v);
     }
@@ -121,7 +121,7 @@ struct TypeWrapperPtr;
 template <typename T>
 struct TypeWrapperPtr<T, sizeof(ULONG)>
 {
-    T *operator()(const T *v) const
+    T *bswap(const T *v) const
     {
         return (T *)AROS_SWAP_BYTES_LONG((ULONG)v);
     }                
@@ -130,7 +130,7 @@ struct TypeWrapperPtr<T, sizeof(ULONG)>
 template <typename T>
 struct TypeWrapperPtr<T, sizeof(UQUAD)>
 {
-    T *operator()(const T *v) const
+    T *bswap(const T *v) const
     {
         return (T *)AROS_SWAP_BYTES_QUAD((UQUAD)v);
     }                
@@ -151,7 +151,7 @@ struct TypeWrapper<T *> : TypeWrapperPtr<T, sizeof(T *)>
    TypeWrapper<T *> inherits from TypeWrapperPtr<T, sizeof(T *)>.
    
    Is this a bug or a feature?!  */
-#include <swappedtype.hpp>
+#include <aros/c++/swappedtype.hpp>
 
 
 /* Some useful types, in their big and little endian version.
