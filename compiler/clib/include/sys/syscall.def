@@ -200,4 +200,5 @@ SYSTEM_CALL (setuid)
 SYSTEM_CALL (setgid)
 SYSTEM_CALL (getw)
 SYSTEM_CALL (putw)
+SYSTEM_CALL (getloadavg)
 
