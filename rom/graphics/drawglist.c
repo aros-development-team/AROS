@@ -106,34 +106,20 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *, struct Gfx
 			    NULL != CurVSprite->VSBob) {
 
 
-#ifdef BLTRASTPORTBITMAP_EXISTS
-				BltRastPortBitMap(rp,
-		                        	  CurVSprite->X,
-		                        	  CurVSprite->Y,
-		                        	  &bm,
-		                        	  0,
-		                        	  0,
-		                        	  CurVSprite->Width,
-		                        	  CurVSprite->Height,
-		                        	  0x0c0);
-#else
-#warning Since BltRastPortBitMap (or something similar) does not exist I need to use ClipBlit here which is pretty ugly.
 				_ValidateIntVSprite(CurVSprite->IntVSprite,
 				                    rp,
 				                    FALSE,
 				                    GfxBase);
-				rp_bm.BitMap = CurVSprite->IntVSprite->SaveBuffer;
+				BltRastPortBitMap(rp,
+		                        	  CurVSprite->X,
+		                        	  CurVSprite->Y,
+		                        	  CurVSprite->IntVSprite->SaveBuffer,
+		                        	  0,
+		                        	  0,
+		                        	  CurVSprite->Width << 4,
+		                        	  CurVSprite->Height,
+		                        	  0x0c0);
 
-				ClipBlit(rp,
-				       	 CurVSprite->X,
-				         CurVSprite->Y,
-					 &rp_bm,
-					 0,
-					 0,
-					 CurVSprite->Width << 4,
-					 CurVSprite->Height,
-					 0x0c0);
-#endif
 				CurVSprite->Flags |= BACKSAVED;
 			}
 			else kprintf("NOT SAVING BACKGROUND!\n");

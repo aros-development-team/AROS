@@ -83,6 +83,7 @@ FUNCTIONS := \
 	bltclear \
 	bltmaskbitmaprastport \
 	bltpattern \
+	bltrastportbitmap \
 	blttemplate \
 	calcivg \
 	cbump \
