@@ -69,6 +69,7 @@
     struct Window * w;
     struct RastPort * rp;
     ULONG lock;
+    BOOL driver_init_done = FALSE;
 
     D(bug("OpenWindow (%p = { Left=%d Top=%d Width=%d Height=%d })\n"
 	, newWindow
@@ -79,20 +80,44 @@
     ));
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
+    
+/* nlorentz: For now, creating a rastport becomes the responiibility of
+   intui_OpenWindow(). This is because intui_OpenWindow() in
+   config/hidd/intuition_driver.c must call CreateUpfrontLayer(),
+   and that will create a rastport for the layer/window, and we don't
+   want two rastports pr. window.
+   Alternatively we may create a layers_driver.c driver for layers,
+   and then call CreateUpfrontLayer() here from openwindow.
+   For the Amiga window<-->X11 window stuff, the layers driver
+   would just allocate a layer struct, a rastport and
+   put the rasport into layer->RastPort, so we
+   could get it inside this routine and put it into
+   window->RPort;.
+   
+   
     rp = CreateRastPort ();
+*/    
 
-    if (!w || !rp)
+    if (!w /* || !rp */)
 	goto failexit;
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
 	goto failexit;
 
+    D(bug("modified IDCMP\n"));
+
     w->LeftEdge    = newWindow->LeftEdge;
     w->TopEdge	   = newWindow->TopEdge;
     w->Width	   = newWindow->Width;
     w->Height	   = newWindow->Height;
-    w->RPort	   = rp;
+
+/*    w->RPort	   = rp; */
+
     w->FirstGadget = newWindow->FirstGadget;
+
+    D(bug("Window dims: (%d, %d, %d, %d)\n"
+    	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
+	
 
     if (newWindow->DetailPen == 0xFF) newWindow->DetailPen = 1;
     if (newWindow->BlockPen  == 0xFF) newWindow->BlockPen = 0;
@@ -117,16 +142,29 @@
     if (!intui_OpenWindow (w, IntuitionBase))
 	goto failexit;
 
+
+/* nlorentz: The driver has in some way or another allocated a rstport for us,
+   which now is ready for us to use. */
+   driver_init_done = TRUE;
+   rp = w->RPort;
+
+    D(bug("called driver, rp=%p\n", rp));
     if (w->WScreen->Font)
 	SetFont (rp, ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font);
     else
 	SetFont (rp, GfxBase->DefaultFont);
 
+    D(bug("set fonts\n"));
+
     SetAPen (rp, newWindow->DetailPen);
     SetBPen (rp, newWindow->BlockPen);
     SetDrMd (rp, JAM2);
 
+    D(bug("set pens\n"));
+
     SetWindowTitles (w, newWindow->Title, (STRPTR)-1);
+
+    D(bug("set title\n"));
 
     lock = LockIBase (0);
 
@@ -152,14 +190,26 @@ w->RPort->BitMap->Flags |= BMF_AROS_OLDWINDOW;
     goto exit;
 
 failexit:
+    D(bug("fail\n"));
+
     ModifyIDCMP (w, 0L);
+    D(bug("idcmp\n"));
+
+/* nlorentz: Freeing the rasport is now intui_CloseWindow()'s task.
 
     if (rp)
+    {
 	FreeRastPort (rp);
-
+    }
+*/
+    if (driver_init_done)
+    	intui_CloseWindow(w, IntuitionBase);
+	    
     if (w)
     {
+    D(bug("freeing window\n"));
 	FreeMem (w, intui_GetWindowSize ());
+    D(bug("freed window\n"));
 
 	w = NULL;
     }
