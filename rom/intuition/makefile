@@ -3,10 +3,11 @@ TOP=..
 
 SPECIAL_CFLAGS = -I/usr/include
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
-FILES = intuition_init intuition_functable intui_x11 gadgets \
-	boolgadgets propgadgets imageclass
+FILES = intuition_init intuition_functable intuition_driver gadgets \
+	boolgadgets propgadgets boopsigadgets \
+	imageclass frameiclass
 FUNCTIONS = \
 	activatewindow \
 	addclass \
@@ -16,6 +17,7 @@ FUNCTIONS = \
 	closescreen \
 	closewindow \
 	disposeobject \
+	dogadgetmethoda \
 	drawborder \
 	drawimage \
 	drawimagestate \
@@ -34,6 +36,7 @@ FUNCTIONS = \
 	modifyprop \
 	newmodifyprop \
 	newobjecta \
+	obtaingirport \
 	openscreen \
 	openscreentaglist \
 	openwindow \
@@ -43,6 +46,7 @@ FUNCTIONS = \
 	refreshgadgets \
 	refreshglist \
 	refreshwindowframe \
+	releasegirport \
 	removeclass \
 	setattrsa \
 	setdefaultpubscreen \
