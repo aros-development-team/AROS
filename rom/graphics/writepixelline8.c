@@ -12,15 +12,18 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	LONG WritePixelLine8 (
+	AROS_LH6 (LONG, WritePixelLine8,
 
 /*  SYNOPSIS */
-	struct RastPort * rp,
-	ULONG             xstart,
-	ULONG             ystart,
-	ULONG             width,
-	UBYTE           * array,
-	struct RastPort * tempRP)
+	AROS_LHA(struct RastPort *	, rp		, A0),
+	AROS_LHA(ULONG			, xstart	, D0),
+	AROS_LHA(ULONG			, ystart	, D1),
+	AROS_LHA(ULONG			, width		, D2),
+	AROS_LHA(UBYTE *		, array		, A2),
+	AROS_LHA(struct RastPort * 	, tempRP	, A1),
+
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 129, Graphics)
 
 /*  FUNCTION
 
