@@ -52,7 +52,7 @@
 
     INTERNALS
 
-    The prompt support is not using SetCurrentDirName() as this function
+    The prompt	 support is not using SetCurrentDirName() as this function
     has improper limitations. More or less the same goes for GetProgramName().
 
     HISTORY
@@ -596,7 +596,6 @@ int main(void)
 	    if(Redirection_init(&rd))
 	    {
 		cli->cli_Interactive = DOSFALSE;
-		cli->cli_Background  = DOSTRUE;
 		P(kprintf("Running command %s\n",
 		          (STRPTR)args[ARG_COMMAND]));
 		error = checkLine(&rd, &cl);
@@ -640,11 +639,10 @@ LONG interact(STRPTR script)
     LONG  error = 0;
     BOOL  moreLeft = FALSE;
 
-    if (stricmp(script, "S:Startup-Sequence") != 0)
+    if (cliNumber != 1)
     	printFlush("New Shell process %ld\n", cliNumber);
 
     cli->cli_Interactive = DOSTRUE;
-    cli->cli_Background  = DOSFALSE;
 
     P(kprintf("Calling executeFile()\n"));
 
@@ -1347,7 +1345,7 @@ LONG executeFile(STRPTR fileName)
     {
 	BOOL               moreLeft; /* Script ended? */
 	BOOL	    	   breakD;   /* User hit CTRL D? */
-	
+
 	struct Redirection rd;
 
 	cli->cli_CurrentInput = scriptFile; /* Set current input for script
@@ -1355,7 +1353,7 @@ LONG executeFile(STRPTR fileName)
 	P(kprintf("Loaded script\n"));
 
     	SetSignal(0, SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F);
-	
+
 	do
 	{
 	    struct CommandLine cl = { NULL, 0, 0 };
@@ -1374,7 +1372,7 @@ LONG executeFile(STRPTR fileName)
     	    breakD = CheckSignal(SIGBREAKF_CTRL_D);
 
 	} while(moreLeft && !breakD && (cli->cli_ReturnCode < cli->cli_FailLevel));
-	
+
 	/* Was there an error encountered in the script file that had a
 	   higher fail code than what was specified with FailAt? */
 	if(cli->cli_ReturnCode >= cli->cli_FailLevel)
@@ -1464,7 +1462,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	if(residentSeg != NULL)
 	{
 	    /* Can we use this command? */
-	    if(residentSeg->seg_UC !=  CMD_DISABLED)
+	    if(residentSeg->seg_UC == CMD_INTERNAL || residentSeg->seg_UC >= 0)
 	    {
 		if(residentSeg->seg_UC >= 0)
 		    residentSeg->seg_UC++;
