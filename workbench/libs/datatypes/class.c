@@ -347,8 +347,10 @@ AROS_UFH3(IPTR, Dispatcher,
 				    break;
 				    
 				default:
+kprintf("datatypes.library: calling NewOpen\n");
 				    if((newdto->dto_Handle = (APTR)NewOpen((struct Library *)DataTypesBase, newdto->dto_Name, DTST_FILE, 0)))
 					Success = TRUE;
+kprintf("datatypes.library: calling NewOpen success = %d\n",Success);
 				    
 				    UnLock((BPTR)handle);
 				    break;
@@ -373,6 +375,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		else
 		    CoerceMethod(class, (Object *)newobject, OM_DISPOSE);
 	    }
+kprintf("datatypes.library: OM_NEW: returning %x handle = %x\n", retval, newdto->dto_Handle);
 	    break;
 	} /* case OM_NEW: */
 
@@ -390,6 +393,7 @@ AROS_UFH3(IPTR, Dispatcher,
 	break;
 	
     case OM_GET:
+kprintf("datatypes.library OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID);
 	{
 	    IPTR *store = ((struct opGet *)msg)->opg_Storage;
 	    retval = 1;
@@ -411,7 +415,9 @@ AROS_UFH3(IPTR, Dispatcher,
 		
 	    case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
 	    case DTA_SourceType:    *store = dto->dto_SourceType;      break;
-	    case DTA_Handle:        *store = (IPTR)dto->dto_Handle;   break;
+	    case DTA_Handle:
+kprintf("datatypes.library OM_GET DTA_Handle: = %x\n", dto->dto_Handle);
+	            *store = (IPTR)dto->dto_Handle;   break;
 	    case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
 	    case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
 		

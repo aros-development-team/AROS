@@ -85,9 +85,13 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
     BPTR returnfh = NULL;
     //    struct XpkFib *xpkfib=NULL;
     BPTR dosfile;
+
+kprintf("datatypes.library/NewOpen: name = %s\n", name);
 	
     if((dosfile = Open(name, MODE_OLDFILE)))
     {
+kprintf("datatypes.library/NewOpen: open okay\n");
+
 	returnfh = dosfile;
 
 #if 0
