@@ -96,7 +96,7 @@ extern void Exec_Switch();
 	Enqueue(&SysBase->TaskWait,&me->tc_Node);
 
 	/* And switch to the next ready task. */
-	Supervisor(Exec_Switch);
+	Supervisor(__AROS_GETVECADDR(SysBase,9));
 
 //	Reschedule(me);
 
