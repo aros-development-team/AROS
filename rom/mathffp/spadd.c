@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/09/16 23:00:46  bergers
+    Added the missing AROS_LIBFUNC_INITs and EXITs
+
     Revision 1.3  1997/07/21 20:56:40  bergers
     *** empty log message ***
 
@@ -92,6 +95,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Res;
   ULONG Mant1, Mant2;
   char Shift;
@@ -188,5 +192,6 @@
 
   Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPAdd */
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/09/16 23:00:46  bergers
+    Added the missing AROS_LIBFUNC_INITs and EXITs
+
     Revision 1.2  1997/06/25 21:36:44  bergers
     *** empty log message ***
 
@@ -65,9 +68,11 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
+
   /* Ceil(y) = -Floor(-y) */
   y = SPFloor(y ^ FFPSign_Mask);
   return (y ^ FFPSign_Mask);
-
+AROS_LIBFUNC_EXIT
 } /* SPCeil */
 
