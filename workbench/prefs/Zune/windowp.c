@@ -30,6 +30,9 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_WindowPData
 {
+    Object *positions_cycle;
+    Object *refresh_cycle;
+    Object *redraw_cycle;
     Object *font_normal_string;
     Object *font_tiny_string;
     Object *font_big_string;
@@ -75,19 +78,18 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, HGroup,
 	   Child, VGroup,
 	       Child, VGroup,
-/*  		   Child, VSpace(0), */
+                   GroupFrameT("Control"),
+		   Child, VSpace(0),
 		   Child, ColGroup(2),
 		      MUIA_Group_VertSpacing, 2,
-                      GroupFrameT("Control"),
-		      MUIA_Disabled, TRUE,
 		      Child, Label("Positions:"),
-		      Child, MakeCycle("Positions:", positions_labels),
+		      Child, d.positions_cycle = MakeCycle("Positions:", positions_labels),
 		      Child, Label("Refresh:"),
-		      Child, MakeCycle("Refresh:", refresh_labels),
+		      Child, d.refresh_cycle = MakeCycle("Refresh:", refresh_labels),
 		      Child, Label("Redraw:"),
-		      Child, MakeCycle("Redraw:", redraw_labels),
+		      Child, d.redraw_cycle = MakeCycle("Redraw:", redraw_labels),
 		      End,
-/*  		   Child, VSpace(0), */
+		   Child, VSpace(0),
 		   End,
    	       Child, VGroup,
    		   GroupFrameT("Fonts"),
@@ -160,6 +162,9 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     *data = d;
 
+    set(data->refresh_cycle, MUIA_Disabled, TRUE);
+    set(data->positions_cycle, MUIA_Disabled, TRUE);
+
     return (IPTR)obj;
 }
 
@@ -197,6 +202,11 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj,
     setslider(data->spacing_bottom_slider,
 	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		       MUICFG_Window_Spacing_Bottom));
+
+/* Cycles */
+    setcycle(data->redraw_cycle,
+	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		      MUICFG_Window_Redraw));
 
     return 1;    
 }
@@ -237,6 +247,9 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Bottom,
 	     xget(data->spacing_bottom_slider, MUIA_Numeric_Value));
 
+/* Cycles */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Redraw,
+	     xget(data->redraw_cycle, MUIA_Cycle_Active));
     return TRUE;
 }
 

@@ -42,6 +42,11 @@ typedef enum WindowPosition {
     WINDOW_POSITION_SAVE_ON_EXIT,
 } WindowPosition;
 
+typedef enum WindowRedraw {
+    WINDOW_REDRAW_WITHOUT_CLEAR,
+    WINDOW_REDRAW_WITH_CLEAR
+} WindowRedraw;
+
 typedef enum DNDLook {
     DND_LOOK_ALWAYS_SOLID,
     DND_LOOK_GHOSTED_ON_BOX,
@@ -110,6 +115,7 @@ struct ZunePrefsNew
 
     /* Windows */
     WindowPosition  window_position;
+    WindowRedraw  window_redraw;
     WORD     window_inner_left;
     WORD     window_inner_right;
     WORD     window_inner_top;
