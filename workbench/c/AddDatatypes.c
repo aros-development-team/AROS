@@ -475,30 +475,38 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
     {
 	if(!__FindNameNoCase(sv, &dtl->dtl_BinaryList, "binary"))
 	{
-	    CreateBasicType(sv, &dtl->dtl_BinaryList, &dtl->dtl_SortedList,
-			    "binary", DTF_BINARY, 
-			    ID_BINARY, GID_SYSTEM);
+	    CreateBasicType
+            (
+                sv, &dtl->dtl_BinaryList, &dtl->dtl_SortedList,
+                "binary", DTF_BINARY, ID_BINARY, GID_SYSTEM
+            );
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_ASCIIList, "ascii"))
 	{
-	    CreateBasicType(sv, &dtl->dtl_ASCIIList,  &dtl->dtl_SortedList,
-			    "ascii", DTF_ASCII,
-			    ID_ASCII, GID_TEXT);
+	    CreateBasicType
+            (
+                sv, &dtl->dtl_ASCIIList,  &dtl->dtl_SortedList,
+                "ascii", DTF_ASCII, ID_ASCII, GID_TEXT
+            );
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_IFFList, "iff"))
 	{
-	    CreateBasicType(sv, &dtl->dtl_IFFList, &dtl->dtl_SortedList,
-			    "iff", DTF_IFF,
-			    ID_IFF, GID_SYSTEM);
+	    CreateBasicType
+            (
+                sv, &dtl->dtl_IFFList, &dtl->dtl_SortedList,
+                "iff", DTF_IFF, ID_IFF, GID_SYSTEM
+            );
 	}
 
 	if(!__FindNameNoCase(sv, &dtl->dtl_MiscList, "directory"))
 	{
-	    CreateBasicType(sv, &dtl->dtl_MiscList, &dtl->dtl_SortedList,
-			    "directory", DTF_MISC, 
-			    ID_DIRECTORY, GID_SYSTEM);
+	    CreateBasicType
+            (
+                sv, &dtl->dtl_MiscList, &dtl->dtl_SortedList,
+                "directory", DTF_MISC, ID_DIRECTORY, GID_SYSTEM
+            );
 	}
     }
     
