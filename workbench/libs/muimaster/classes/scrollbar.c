@@ -44,14 +44,14 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (!usewinborder)
     {
-	but = ImageObject, MUIA_Background, MUII_BACKGROUND, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowLeft:MUII_ArrowUp, End;
+	but = ImageObject, MUIA_Background, MUII_ButtonBack, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowLeft:MUII_ArrowUp, End;
 	if (but)
 	{
 	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Decrease, 1);
 	    DoMethod(obj, OM_ADDMEMBER, (IPTR)but);
         }
 
-	but = ImageObject, MUIA_Background, MUII_BACKGROUND, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowRight:MUII_ArrowDown, End;
+	but = ImageObject, MUIA_Background, MUII_ButtonBack, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowRight:MUII_ArrowDown, End;
 	if (but)
 	{
 	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Increase, 1);
