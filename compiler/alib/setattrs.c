@@ -9,14 +9,14 @@
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"
 
-extern struct IntuitionBase * IntuitionBase;
+extern struct Library * BOOPSIBase;
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
 #define NO_INLINE_STDARG /* turn off inline def */
-#include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	IPTR SetAttrs (
 
@@ -62,6 +62,6 @@ extern struct IntuitionBase * IntuitionBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = oldSetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = SetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* SetAttrs */
