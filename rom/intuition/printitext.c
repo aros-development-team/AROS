@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1998/08/16 18:48:34  nlorentz
+    Bugfix: Now renders text so that TopEdge is top of character cell
+
     Revision 1.9  1998/02/12 16:19:45  turrican
     Fix uninitialized variable warnings
 
@@ -121,7 +124,7 @@
 	/* Move to initial position */
 	Move (rp
 	    , iText->LeftEdge + leftOffset
-	    , iText->TopEdge + topOffset
+	    , iText->TopEdge + topOffset + rp->Font->tf_Baseline
 	);
 	Text (rp, iText->IText, strlen (iText->IText));
 
