@@ -150,8 +150,7 @@ BOOL NamesToList
 }
 
 /*** Methods ****************************************************************/
-
-IPTR AboutWindow__OM_NEW
+Object *AboutWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -301,17 +300,17 @@ IPTR AboutWindow__OM_NEW
             End,
             Child, (IPTR) versionObject = TextObject,
                 MUIA_Text_PreParse, (IPTR) MUIX_C,
-                MUIA_Text_Contents, NULL,
+                MUIA_Text_Contents, (IPTR) NULL,
             End,
             Child, (IPTR) copyrightObject = TextObject,
                 MUIA_Text_PreParse, (IPTR) MUIX_C,
-                MUIA_Text_Contents, NULL,
+                MUIA_Text_Contents, (IPTR) NULL,
             End,
             Child, (IPTR) descriptionGroup = VGroup,
                 Child, (IPTR) VSpace(6),
                 Child, (IPTR) descriptionObject = TextObject,
                     MUIA_Text_PreParse, (IPTR) MUIX_I MUIX_C,
-                    MUIA_Text_Contents, NULL,
+                    MUIA_Text_Contents, (IPTR) NULL,
                 End,
             End,
             Child, (IPTR) VSpace(6),
@@ -361,7 +360,7 @@ IPTR AboutWindow__OM_NEW
         (IPTR) self, 2, MUIA_Window_Open, FALSE
     );
         
-    return (IPTR) self;
+    return self;
     
 error:
     if (catalog != NULL) CloseCatalog(catalog);
@@ -377,10 +376,8 @@ IPTR AboutWindow__MUIM_Window_Setup
     struct AboutWindow_DATA *data    = INST_DATA(CLASS, self);
     struct Catalog          *catalog = data->awd_Catalog;
     STRPTR                   string  = NULL;
-    IPTR                     rc      = NULL;
     
-    rc = DoSuperMethodA(CLASS, self, message);
-    if (rc == NULL) return rc;
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     /*= Setup window title =================================================*/
     {
@@ -583,7 +580,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     if (data->awd_Copyright == IGNORE) data->awd_Copyright = NULL;
     if (data->awd_Description == IGNORE) data->awd_Description = NULL;
     
-    return (IPTR) rc;
+    return TRUE;
 }
 
 IPTR AboutWindow__OM_DISPOSE
