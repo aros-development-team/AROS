@@ -26,7 +26,7 @@ void writeautoinit(void)
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
-	    "ADD2LIBS(\"%s.library\",%u, LIBSET_USER_PRI, %s*, %s, NULL, NULL);\n",
+	    "ADD2LIBS(\"%s.library\",%u, %s*, %s);\n",
 	    modulename, modulename, majorversion, libbasetypeextern, libbase);
     if (forcelist!=NULL)
     {
