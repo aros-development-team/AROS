@@ -13,7 +13,7 @@
 #   include <aros/system.h>
 #endif
 
-/* Convert a word or long to big endian on the current hardware */
+/* Convert a word or long to big endian and vice versa on the current hardware */
 #if AROS_BIG_ENDIAN
 #   define AROS_WORD2BE(w)     (w)
 #   define AROS_LONG2BE(l)     (l)
@@ -30,6 +30,25 @@
 	)
 #   define AROS_BE2WORD(w)     AROS_WORD2BE(w)
 #   define AROS_BE2LONG(l)     AROS_LONG2BE(l)
+#endif
+
+/* Convert a word or long to little endian and vice versa on the current hardware */
+#if AROS_BIG_ENDIAN
+#   define AROS_WORD2LE(w)     ((((w) >> 8) & 0x00FF) | (((w) & 0x00FF) << 8))
+#   define AROS_LONG2LE(l)     \
+	(                                  \
+	    ((((unsigned long)(l)) >> 24) & 0x000000FFUL) | \
+	    ((((unsigned long)(l)) >>  8) & 0x0000FF00UL) | \
+	    ((((unsigned long)(l)) <<  8) & 0x00FF0000UL) | \
+	    ((((unsigned long)(l)) << 24) & 0xFF000000UL)   \
+	)
+#   define AROS_LE2WORD(w)     AROS_WORD2LE(w)
+#   define AROS_LE2LONG(l)     AROS_LONG2LE(l)
+#else
+#    define AROS_WORD2LE(w)    (w)
+#    define AROS_LONG2LE(l)    (l)
+#    define AROS_LE2WORD(w)    (w)
+#    define AROS_LE2LONG(l)    (l)
 #endif
 
 /* Return the least set bit, ie. 0xFF00 will return 0x0100 */
