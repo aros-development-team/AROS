@@ -1,5 +1,5 @@
 BEGIN {
-    file="jobserv-query.lite 'select jobid,status from jobs order by jobid'";
+    file="./jobserv-query.lite 'select jobid,status from jobs order by jobid'";
 
     file | getline cnt;
     pos = 0;

@@ -19,7 +19,7 @@ AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 
 INCLUDE_SRCS := $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
-SRC2HTML := src2html --html --output=index.html --keywords=keywords.db \
+SRC2HTML := ./src2html --html --output=index.html --keywords=keywords.db \
 	    --files=files.db main.src
 
 #MM docs : setup-docs
@@ -248,17 +248,17 @@ status.inc :
 	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
 
 jobserv-free.inc :
-	jobserv-showfree.cgi > $@.new
+	./jobserv-showfree.cgi > $@.new
 	@$(MIC) $@.new $@
 	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
 
 jobserv-work.inc :
-	jobserv-showwork.cgi > $@.new
+	./jobserv-showwork.cgi > $@.new
 	@$(MIC) $@.new $@
 	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
 
 jobserv-done.inc :
-	jobserv-showdone.cgi > $@.new
+	./jobserv-showdone.cgi > $@.new
 	@$(MIC) $@.new $@
 	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
 
