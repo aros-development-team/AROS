@@ -353,6 +353,18 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    data->app_Active = tag->ti_Data ? TRUE : FALSE;
 	    break;
 	    
+	case MUIA_Application_UsedClasses:
+	{
+	    STRPTR *list = (STRPTR *)tag->ti_Data;
+	    if (!list) break;
+	    while (*list)
+	    {
+		struct IClass *icl = MUI_GetClass(*list);
+		if (icl)
+		    MUI_FreeClass(icl);
+		++list;
+	    }
+	}
 	}
     }
 
