@@ -9,7 +9,7 @@ MODTYPE := library
 USER_INCLUDES := -I.
 
 FILES := 
-FUNCS := arosinquirea mutex 
+FUNCS := arosinquirea
 
 MAKE_SHLIB := $(SHARED_AROS)
 
