@@ -46,8 +46,8 @@
 #define  OT_TextKernPair    	(OT_Level0 | OT_Indirect | 0x22)
 #define  OT_DesignKernPair  	(OT_Level0 | OT_Indirect | 0x23)
 #define  OT_UnderLined		(OT_Level0 | 0x24)
-
 #define  OT_StrikeThrough	(OT_Level0 | 0x25)
+#define  OT_GlyphMap8Bits   	(OT_Level0 | OT_Indirect | 0x50)
 
 #define  OTUL_None		0
 #define  OTUL_Solid		1
