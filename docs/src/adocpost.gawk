@@ -35,13 +35,13 @@ BEGIN {
 	{
 	    if (first)
 	    {
-		print "<DT><A NAME=\"bylib\"></A><FONT SIZE=\"+2\"><B>A.2 Reference by library</B></FONT><DD><DL>"
-		dl++;
+		print "<DT><A NAME=\"bylib\"></A><FONT SIZE=\"+2\"><B>A.2 Reference by library</B></FONT><DD>"
+		#dl++;
 		first=0;
 		cnt=1;
 	    }
 
-	    print "<FONT SIZE=\"+1\">"
+	    #print "<FONT SIZE=\"+1\">"
 
 	    if ($2=="Utility functions")
 		print "<A HREF=\"#util\">"
@@ -57,10 +57,12 @@ BEGIN {
 	    for (t=1; t<=length(initials); t++)
 	    {
 		c=substr(initials,t,1);
-		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
+		#print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
+		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=\"-1\"><B>"c"</B></FONT></A> "
 	    }
 
-	    print ")</FONT><BR>"
+	    #print ")</FONT><BR>"
+	    print ")<BR>"
 
 	    lib="";
 	    char="";
@@ -100,14 +102,16 @@ BEGIN {
 		else
 		    print "<A NAME=\"lib"lib"\"></A>"
 
-		print "<FONT SIZE=\"+1\"><B>A.2."cnt " " $1"</B></FONT><DD>"
+		#print "<FONT SIZE=\"+1\"><B>A.2."cnt " " $1"</B></FONT><DD>"
+		print "<B>A.2."cnt " " $1"</B><DD>"
 		cnt ++;
 
 		initials=libini[lib];
 		for (t=1; t<=length(initials); t++)
 		{
 		    c=substr(initials,t,1);
-		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
+		    #print "<A HREF=\"#lib"lib c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
+		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=\"-1\"><B>"c"</B></FONT></A> "
 		}
 
 		print "<P><DL>"

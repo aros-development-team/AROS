@@ -43,6 +43,8 @@ BEGIN {
     # the the EXAMPLES section.
     fnr=0;
 
+    locstring=" ";
+
     # Read the file line by line
     while ((getline < file) > 0)
     {
@@ -70,7 +72,7 @@ BEGIN {
 
 		# Emit the header
 		print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
-		print "<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
+		print "<CENTER><P>(C) 1998 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
 
 		# Next mode
 		mode="field";
@@ -98,26 +100,13 @@ BEGIN {
 		newfield=="NOTES" || newfield=="EXAMPLE" || newfield=="BUGS" ||
 		newfield=="SEE" || newfield=="INTERNALS" || newfield=="HISTORY")
 	    {
-		# The last field was an example ? Then it might be
-		# neccessary to close a pending <PRE>.
-		if (lastfield=="EXAMPLE")
-		{
-		    if (example_is=="here" || example_is=="example")
-			printf ("</PRE>") >> out;
-		}
-		else if (lastfield=="INPUTS" || lastfield=="HISTORY")
-		{
-		    # If the last field as a list, then we must
-		    # close that, too.
-		    print "</DL>\n" >> out;
-		}
-
-		# To get a nice format, we stuff every field in a HTML
-		# list.
-		if (lastfield!="")
-		    print "</DL>\n" >> out;
-
 		mode="field"; # Obsolete ?
+
+		if (field=="EXAMPLE" && example_is="here")
+		{
+		    sub(/[ \t]*\n$/,"</PRE>",example);
+		}
+
 		# Store the name of the field so we know how to
 		# terminate it correctly when we encounter the
 		# next one.
@@ -131,14 +120,6 @@ BEGIN {
 		# Store the name of the current field
 		field=newfield;
 
-		# Emit the header of the field. This includes special
-		# code for SEE ALSO (that's two words. The code
-		# above can handle only the first).
-		if (newfield=="SEE")
-		    print "<DL>\n<DT>SEE ALSO\n<DD>" >> out;
-		else
-		    print "<DL>\n<DT>"newfield"\n<DD>" >> out;
-
 		# Special handling for certain fields.
 		if (field=="EXAMPLE")
 		{
@@ -146,33 +127,9 @@ BEGIN {
 		    # kind of example in this file
 		    example_is="";
 		}
-		else if (field=="INPUTS" || field=="HISTORY")
-		{
-		    # These fields are lists
-		    print "<DL COMPACT>\n" >> out;
-		}
 	    }
 	    else if (match($0,/^.\*\*\*\*\*+\/?$/)) # Is this the end ?
 	    {
-		# The last field was an example ? Then it might be
-		# neccessary to close a pending <PRE>.
-		if (lastfield=="EXAMPLE")
-		{
-		    if (example_is=="here" || example_is=="example")
-			printf ("</PRE>") >> out;
-		}
-		else if (lastfield=="INPUTS" || lastfield=="HISTORY")
-		{
-		    # If the last field as a list, then we must
-		    # close that, too.
-		    print "</DL>\n" >> out;
-		}
-
-		# To get a nice format, we stuff every field in a HTML
-		# list.
-		if (lastfield!="")
-		    print "</DL>\n" >> out;
-
 		# New mode: Process the footer next (the header is
 		# complete)
 		mode="footer";
@@ -194,9 +151,11 @@ BEGIN {
 			gsub(/,[ \t]/,",",line);
 			if (split(line,a,",")==3)
 			{
-			    gsub(/AROS_(L|UF)H.*[(]/,"",a[1]);
-			    gsub(/[ \t]*[(][ \t]*/,"",a[1]);
-			    print prefix a[1] " " a[2] "()<BR>" >> out;
+			    gsub(/AROS_(L|UF)H.[(]/,"",type);
+			    split(a[1],fb,"(");
+			    split(fb[2],ft,",");
+			    gsub(/[ \t]*[(][ \t]/,"",type);
+			    ftype=ft[1];
 			    fname=a[2];
 			}
 			else
@@ -206,7 +165,7 @@ BEGIN {
 			    type=fname;
 			    gsub(/^.*[ \t]+/,"",fname);
 			    gsub(/[ \t]+[^ \t]+$/,"",type);
-			    print prefix type " " fname "()<BR>" >> out;
+			    ftype=type;
 			}
 		    }
 		    else if (match(line,"#include"))
@@ -219,8 +178,7 @@ BEGIN {
 			    line="<A HREF=\"../"link"\">"hfile"</A>";
 			else
 			    line=hfile;
-
-			print prefix "#include &lt;"line"&gt;<BR>" >> out;
+			hfiles=hfiles prefix "#include &lt;" line "&gt;<BR>\n";
 		    }
 		}
 		else if (field=="SYNOPSIS")
@@ -230,7 +188,18 @@ BEGIN {
 		    gsub(/,[ \t]/,",",line);
 
 		    split(line,a,",");
-		    print "<TT>"a[1]" "a[2]"</TT><BR>" >> out;
+		    if( a[1] != "" )
+		    {
+			synopsis=synopsis prefix "<TT>"a[1]" "a[2]"</TT><BR>";
+			if(par)
+			{
+			    par=par " , " a[2];
+			}
+			else
+			{
+			    par=a[2];
+			}
+		    }
 		}
 		else if (field=="LOCATION")
 		{
@@ -240,7 +209,7 @@ BEGIN {
 			gsub(/,[ \t]/,",",line);
 
 			split(line,a,",");
-			print "In " a[2] " at offset " a[3] >> out;
+			locstring="In " a[2] " at offset " a[3];
 			lib=a[2];
 			location=1;
 		    }
@@ -249,7 +218,7 @@ BEGIN {
 		{
 		    if (match(line,/[ \t]*([a-zA-Z_]+,[ \t]*)*[a-zA-Z_]+[ \t]*-/))
 		    {
-			print "<DT>"substr(line,RSTART,RLENGTH-1) >> out;
+			inputs=inputs prefix "<DT>"substr(line,RSTART,RLENGTH-1) ;
 
 			line=substr(line,RSTART+RLENGTH);
 			gsub(/&/,"\\&amp;",line);
@@ -257,7 +226,7 @@ BEGIN {
 			gsub(/>/,"\\&gt;",line);
 			gsub(/"/,"\\&quot;",line);
 
-			print "<DD>"line >> out;
+			inputs=inputs prefix "<DD>"line;
 		    }
 		    else
 		    {
@@ -266,23 +235,24 @@ BEGIN {
 			gsub(/>/,"\\&gt;",line);
 			gsub(/"/,"\\&quot;",line);
 
-			print line >> out;
+			inputs=inputs prefix line;
 		    }
 
-		    #if (line=="" && !first)
-		    #	 print "<P>\n" >> out;
-		    #else
-		    #	 print line >> out;
-		    #
-		    #first=0;
+		    if (line=="" && !first)
+			 inputs=inputs prefix "<P>\n";
+		    else
+			 inputs=inputs prefix line;
+
+		    first=0;
 		}
 		else if (field=="FUNCTION" || field=="RESULT" ||
 		    field=="NOTES" || field=="BUGS" || field=="INTERNALS")
 		{
 		    if (line=="" && !first)
-			print "<P>\n" >> out;
+			line="<P>\n";
 		    else
 		    {
+
 			gsub(/&/,"\\&amp;",line);
 			gsub(/</,"\\&lt;",line);
 			gsub(/>/,"\\&gt;",line);
@@ -358,9 +328,28 @@ BEGIN {
 			    sp --;
 			    env = stack[sp];
 			}
-
-			print line >> out;
 		    }
+
+			if (field=="FUNCTION")
+			{
+			    functionstr=functionstr prefix line;
+			}
+			else if (field=="RESULT")
+			{
+			    resultstr=resultstr prefix line;
+			}
+			else if (field=="NOTES")
+			{
+			    notesstr=notesstr prefix line;
+			}
+			else if(field=="BUGS")
+			{
+			    bugsstr=bugsstr prefix line;
+			}
+			else if(field=="INTERNALS")
+			{
+			    internals=internals prefix line;
+			}
 
 		    first=0;
 		}
@@ -370,7 +359,6 @@ BEGIN {
 		    {
 			if (match (line,/#[ \t]*ifdef[ \t]+EXAMPLE/))
 			{
-			    printf ("<PRE>")>>out;
 			    example_is = "example";
 			    ifdeflevel = 0;
 			    skip = 1;
@@ -381,7 +369,7 @@ BEGIN {
 			    sub(/^.*See[ \t]+/,"",example_is);
 			    sub(/[ \t]*[(][)].*$/,"",example_is);
 			    fn = tolower(example_is) ".html";
-			    print "See <A HREF=\""fn"\">"example_is"()</A>">>out;
+			    example=example "\nSee <A HREF=\""fn"\">"example_is"()</A>";
 			    skip=1;
 			}
 			else if (match (line,/See[ \t]below/))
@@ -391,7 +379,7 @@ BEGIN {
 			    state = "skip";
 			    ifdeflevel = 0;
 
-			    printf ("<PRE>")>>out;
+			    example=example "<PRE>";
 			    while ((getline line < file) > 0)
 			    {
 				if (state=="skip")
@@ -414,10 +402,10 @@ BEGIN {
 					    ifdeflevel --;
 				    }
 
-				    print line >> out;
+				    example=example line "\n";
 				}
 			    }
-			    printf ("</PRE>")>>out;
+			    sub(/[ \t]*\n$/,"</PRE>",example);
 
 			    close (file);
 
@@ -429,7 +417,7 @@ BEGIN {
 			else
 			{
 			    example_is="here";
-			    printf ("<PRE>")>>out;
+			    example=example "<PRE>";
 			}
 
 			first = 0;
@@ -456,7 +444,7 @@ BEGIN {
 			gsub(/>/,"\\&gt;",line);
 			gsub(/"/,"\\&quot;",line);
 
-			print line >> out;
+			example=example line "\n";
 		    }
 		    else
 			skip --;
@@ -505,15 +493,15 @@ BEGIN {
 			    }
 			}
 
-			print line >> out;
+			see=see prefix line;
 		    }
 		}
 		else if (field=="HISTORY")
 		{
 		    if (first)
 		    {
-			while ((getline < cvslog) > 0)
-			    print >> out;
+			while ((getline line < cvslog) > 0)
+			    hist=hist prefix line "\n";
 
 			close (cvslog);
 
@@ -521,17 +509,35 @@ BEGIN {
 		    }
 		}
 		else
-		    print line >> out;
+		    hist=hist line;
 	    }
 	}
 	else if (mode=="footer")
 	{
+
 	}
     }
 
     # Anything written to this file ?
     if (out!="")
     {
+	# Then emit the autodoc
+	print "<DL>\n<DT>NAME\n<DD>" hfiles "<BR>\n" ftype " " fname " (" par ")<P>\n" >> out;
+	if (location)
+	{
+	    print "<DT>LOCATION<DD>" locstring "<P>\n" >> out;
+	}
+	print "<DT>SYNOPSIS<DD>" synopsis "<P>\n" >> out;
+	print "<DT>FUNCTION<DD>" functionstr "<P>\n" >> out;
+	print "<DT>INPUTS<DD><DL COMPACT>" inputs "\n</DL>" >> out;
+	print "<DT>RESULT<DD>" resultstr "<P>\n" >> out;
+	print "<DT>EXAMPLE<DD>" example >> out;
+	print "<DT>SEE ALSO<DD>" see "<P>\n" >> out;
+	print "<DT>NOTES<DD>" notesstr "<P>\n" >> out;
+	print "<DT>BUGS<DD>" bugsstr "<P>\n" >> out;
+	print "<DT>INTERNALS<DD>" internals "<P>\n" >> out;
+	print "<DT>HISTORY<DD><DL COMPACT>" hist "\n</DL>" >> out;
+
 	# Then emit the footer
 	print "</BODY></HTML>" >> out;
     }
