@@ -16,7 +16,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#include <proto/alib.h>
+#include <clib/alib_protos.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <exec/lists.h>
@@ -25,17 +25,8 @@
 #include "clipboard_intern.h"
 #define DEBUG 0
 #include <aros/debug.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#ifdef    __GNUC__
-#include  "clipboard_gcc.h"
-#endif
-
-#ifdef __MORPHOS__
-    unsigned long __abox__ = 1;
-#endif
 
 #include LC_LIBDEFS_FILE
 
@@ -45,9 +36,9 @@
 #endif
 
 #define ioClip(x)	((struct IOClipReq *)x)
-#define min(x,y)	(((x) < (y)) ? (x) : (y))
-
 #define CBUn		(((struct ClipboardUnit *)ioreq->io_Unit))
+
+#define WRITEBUFSIZE    4096
 
 /****************************************************************************************/
 
@@ -91,7 +82,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CBBase)
 
 /****************************************************************************************/
 #ifndef __MORPHOS__
-/*this trick can't work with MorphOS since we can't rely on varargs to be a linear stream*/
 
 /* Putchar procedure needed by RawDoFmt() */
 
@@ -106,11 +96,17 @@ AROS_UFH2(void, putchr,
 
 /****************************************************************************************/
 
-void cb_sprintf(struct ClipboardBase *CBBase, UBYTE *buffer,
-		UBYTE *format, ...)
-{
-    RawDoFmt(format, &format+1, (VOID_FUNC)AROS_ASMSYMNAME(putchr), &buffer);
-}
+#define cb_sprintf(CBBase, buffer, format, ...) \
+({ ULONG _args[]={__VA_ARGS__}; APTR bufptr = buffer; RawDoFmt(format, _args, (VOID_FUNC)AROS_ASMSYMNAME(putchr), &bufptr); })
+
+#else
+
+/* NOTE: Use 68k putch so that we don't bork with 68k localelib - Piru */
+static const UWORD putch[] = {0x16c0, 0x4e75};
+
+#define cb_sprintf(CBBase, buffer, format, ...) \
+({ ULONG _args[]={__VA_ARGS__}; RawDoFmt(format, _args, (void (*)(void)) putch, buffer); })
+
 #endif
 
 
@@ -125,7 +121,7 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 {
     AROS_SET_DEVFUNC_INIT
 
-    BPTR   tempLock = NULL, tempLock2 = NULL, tempLock3 = NULL;
+    BPTR   tempLock = 0;
     BOOL   found = FALSE;	   /* Does the unit already exist? */
     struct Node *tempNode;	   /* Temporary variable used to see if a unit
 				      already exists */
@@ -151,20 +147,24 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 
     ObtainSemaphore(&CBBase->cb_SignalSemaphore);
 
-    if(CBBase->cb_DosBase == NULL)
+    if (!CBBase->cb_DosBase)
+    {
 	CBBase->cb_DosBase = OpenLibrary("dos.library", 39);
+    }
 
-    if(CBBase->cb_DosBase == NULL)
+    if (!CBBase->cb_DosBase)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 	return FALSE;
     }
 
-    if(CBBase->cb_UtilityBase == NULL)
+    if (!CBBase->cb_UtilityBase)
+    {
 	CBBase->cb_UtilityBase = OpenLibrary("utility.library", 39);
+    }
 
-    if(CBBase->cb_UtilityBase == NULL)
+    if (!CBBase->cb_UtilityBase)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	CloseLibrary(CBBase->cb_DosBase);
@@ -178,14 +178,14 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     {
 	D(bug("clipboard.device/Checking for CLIPS:\n"));
 
-	if((tempLock = Lock("CLIPS:", ACCESS_READ)) == NULL)
+	if (!(tempLock = Lock("CLIPS:", ACCESS_READ)))
 	{
 	    /* CLIPS: is not assigned - revert to ram:Clipboards */
 
 	    D(bug("clipboard.device/CLIPS: not found\n"));
 	    D(bug("clipboard.device/Checking for ram:\n"));
 
-	    if((tempLock2 = Lock("ram:", ACCESS_READ)) == NULL)
+	    if (!(tempLock = Lock("ram:", ACCESS_READ)))
 	    {
 		D(bug("clipboard.device/ram: Not found."));
 		ioreq->io_Error = IOERR_OPENFAIL;
@@ -195,10 +195,10 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 		D(bug("clipboard.device/Found ram:\n"));
 		D(bug("clipboard.device/Checking for ram:clipboards\n"));
 
-		if((tempLock3 = Lock("ram:clipboards", ACCESS_READ)) == NULL)
+		if (!(tempLock = Lock("ram:clipboards", ACCESS_READ)))
 		{
 		    D(bug("clipboard.device/Not found -- creating ram:Clipboards.\n"));
-		    if(CreateDir("ram:clipboards") == NULL)
+		    if (!(tempLock = CreateDir("ram:clipboards")))
 		    {
 			D(bug("clipboard.device/can't create clipboards file\n"));
 			ioreq->io_Error = IOERR_OPENFAIL;
@@ -213,12 +213,10 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 	    CBBase->cb_ClipDir = "CLIPS:";
 	}
 
-	/* Release all the locks we have made */
+	/* Release the possible lock we have made */
 	UnLock(tempLock);
-	UnLock(tempLock2);
-	UnLock(tempLock3);
 
-	if(ioreq->io_Error != 0)
+	if (ioreq->io_Error)
 	{
 	    CloseLibrary(CBBase->cb_DosBase);
 	    CloseLibrary(CBBase->cb_UtilityBase);
@@ -240,8 +238,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 
     if(found == FALSE)
     {
-	struct MsgPort *replyPort;
-
 	D(bug("clipboard.device/Building unit...\n"));
 
 	if ((ioreq->io_Unit = (struct Unit *)AllocMem(sizeof(struct ClipboardUnit),
@@ -249,81 +245,45 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 	{
 	    CBUn->cu_UnitNum = unitnum;
 	    CBUn->cu_Node.ln_Type = unitnum;
-	    CBUn->cu_PostID = 1;             /* Make sure PostID != ClipID. */
-	    CBUn->cu_WriteID = 2;            /* Make sure WriteID != ClipID and != PostID too. */
+	    CBUn->cu_PostID = 0;
+	    CBUn->cu_WriteID = 0;
 
+	    NEWLIST((struct List*) &CBUn->cu_PostRequesters);
 	    InitSemaphore(&CBUn->cu_UnitLock);
 
 	    /* Construct clipboard unit filename. */
-	    if ((CBUn->cu_clipFilename = AllocMem(CBUN_FILENAMELEN, MEMF_ANY)))
+	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", (ULONG) CBBase->cb_ClipDir,
+		       unitnum);
+
+	    CBUn->cu_Satisfy.sm_Unit = unitnum;
+		
+	    /* Initialization is done, and everything went OK. Add unit to the
+	       list of clipboard units. */
+	    ADDHEAD((struct List *)&CBBase->cb_UnitList, (struct Node *)CBUn);
+
+	    /* Check if there is already a clipboard file for this unit existing.
+	       If yes, then set WriteID to 1 so that CMD_READing works, and
+	       also setup clipSize */
+
+	    if ((CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE)))
 	    {
-#ifdef __MORPHOS__
-		sprintf(CBUn->cu_clipFilename, "%s%u", CBBase->cb_ClipDir,
-			unitnum);
-#else
-		cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%u", CBBase->cb_ClipDir,
-			   unitnum);
-#endif
-
-		/* Create the replyport for satisfy messages. Note that SIGB_SINGLE
-		   is used as the signal as we can't use CreateMsgPort() as it
-		   requires that a signal bit in the calling task is free.
-		   There should, ideally, be a function internal_CreateMsgPort()
-		   which takes a signal number as input and creates a message port,
-		   and this function should be used by both this routine and
-		   the real CreateMsgPort() */
-
-		if ((replyPort = (struct MsgPort *)AllocMem(sizeof(struct MsgPort),
-				       MEMF_PUBLIC | MEMF_CLEAR)))
+		if (Seek(CBUn->cu_clipFile, 0, OFFSET_END) != -1)
 		{
-		    replyPort->mp_SigBit = SIGB_SINGLE;
-		    replyPort->mp_MsgList.lh_Head = (struct Node *)&replyPort->mp_MsgList.lh_Tail;
-		    replyPort->mp_MsgList.lh_TailPred = (struct Node *)&replyPort->mp_MsgList.lh_Head;
+		    CBUn->cu_clipSize = Seek(CBUn->cu_clipFile, 0, OFFSET_BEGINNING);
 
-		    replyPort->mp_Flags = PA_SIGNAL;
-		    replyPort->mp_Node.ln_Type = NT_MSGPORT;
-
-		    CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort = replyPort;
-
-		    /* Initialization is done, and everything went OK. Add unit to the
-		       list of clipboard units. */
-		    Insert((struct List *)&CBBase->cb_UnitList, (struct Node *)CBUn, NULL);
-
-		    /* Check if there is already a clipboard file for this unit existing.
-		       If yes, then set WriteID to 1 so that CMD_READing works, and
-		       also setup clipSize */
-
-		    if ((CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE)))
+		    D(bug("clipboard.device/ <%s> clipsize %ld\n",CBUn->cu_clipFilename,CBUn->cu_clipSize));
+		    if (CBUn->cu_clipSize != (ULONG)-1)
 		    {
-			if (Seek(CBUn->cu_clipFile, 0, OFFSET_END) != -1)
-			{
-			    CBUn->cu_clipSize = Seek(CBUn->cu_clipFile, 0, OFFSET_BEGINNING);
-
-			    D(bug("clipboard.device/ <%s> clipsize %ld\n",CBUn->cu_clipFilename,CBUn->cu_clipSize));
-			    if (CBUn->cu_clipSize != (ULONG)-1)
-			    {
-				D(bug("clipboard.device/ WriteID set\n"));
-				CBUn->cu_WriteID = 1;
-			    }
-			}
-			Close(CBUn->cu_clipFile);
-			CBUn->cu_clipFile = 0;
-		    }
-		    else
-		    {
-			D(bug("clipboard.device/no <%s> file\n",CBUn->cu_clipFilename));
+			D(bug("clipboard.device/ WriteID set\n"));
+			    CBUn->cu_WriteID = 1;
 		    }
 		}
-		else
-		{
-		    D(bug("clipboard.device/Couldn't alloc replyport\n"));
-		    ioreq->io_Error = IOERR_OPENFAIL;
-		}
+		Close(CBUn->cu_clipFile);
+		CBUn->cu_clipFile = 0;
 	    }
 	    else
 	    {
-		D(bug("clipboard.device/Couldn't alloc filename\n"));
-		ioreq->io_Error = IOERR_OPENFAIL;
+		D(bug("clipboard.device/no <%s> file\n",CBUn->cu_clipFilename));
 	    }
 	}
 	else
@@ -335,26 +295,16 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     }
     else
     {
-	ioreq->io_Unit = (void *) tempNode;
+	ioreq->io_Unit = (struct Unit *)tempNode;
     }
 
     if ((ioreq->io_Error == 0) && CBUn)
     {
-    	CBUn->cu_OpenCnt++;
+        CBUn->cu_OpenCnt++;
     }
     else if (CBUn && (found == FALSE))
     {
-    	if (CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort)
-	{
-	    FreeMem(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort, sizeof(struct MsgPort));
-	}
-	
-	if (CBUn->cu_clipFilename)
-	{
-	    FreeMem(CBUn->cu_clipFilename, CBUN_FILENAMELEN);
-	}
-
-	FreeMem(CBUn, sizeof(struct ClipboardUnit));
+        FreeMem(CBUn, sizeof(struct ClipboardUnit));
     }
     
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
@@ -375,6 +325,9 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
 
     D(bug("clipboard.device/close:ioreq 0x%lx\n",ioreq));
 
+    /* Let any following attemps to use the device crash hard. */
+    ioreq->io_Device = (struct Device *)-1;
+
     ObtainSemaphore(&CBBase->cb_SignalSemaphore);
 
     CBUn->cu_OpenCnt--;
@@ -384,10 +337,11 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     if(CBUn->cu_OpenCnt == 0)
     {
 	D(bug("clipboard.device/close: removeunit\n",ioreq));
-	Remove((struct Node *)ioreq->io_Unit);
-    	FreeMem(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort, sizeof(struct MsgPort));
-	FreeMem(CBUn->cu_clipFilename, CBUN_FILENAMELEN);
+	REMOVE((struct Node *)ioreq->io_Unit);
 	FreeMem(ioreq->io_Unit, sizeof(struct ClipboardUnit));
+
+	/* Let any following attemps to use the device crash hard. */
+	ioreq->io_Unit = (struct Unit *) -1;
     }
 
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
@@ -466,12 +420,12 @@ AROS_LH1(void, beginio,
 	    switch(ioClip(ioreq)->io_Length)
 	    {
 	    case 0:
-		Remove((struct Node *)(ioClip(ioreq)->io_Data));
+		REMOVE((struct Node *)(ioClip(ioreq)->io_Data));
 		break;
 
 	    case 1:
-		Insert((struct List *)&CBBase->cb_HookList,
-		       (struct Node *)ioClip(ioreq)->io_Data, NULL);
+		ADDHEAD((struct List *)&CBBase->cb_HookList,
+		       (struct Node *)ioClip(ioreq)->io_Data);
 		break;
 
 	    default:
@@ -481,7 +435,6 @@ AROS_LH1(void, beginio,
 	    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 	    break;
 
-
 	case CMD_WRITE:
 
 	    D(bug("clipboard.device/Command: CMD_WRITE\n"));
@@ -490,78 +443,95 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case CMD_READ:
-
 	    D(bug("clipboard.device/Command: CMD_READ\n"));
 
 	    /* Get new ID if this is the beginning of a read operation */
 	    if(ioClip(ioreq)->io_ClipID == 0)
 	    {
-		D(bug("clipboard.device/CMD_READ: Trying to get unit lock. Calling ObtainSemaphore.\n"));
-
+		D(bug("clipboard.device/CMD_READ: Trying to get unit lock. Calling ObtainSemaphore [me=%08lx].\n", FindTask(NULL)));
+		
 		ObtainSemaphore(&CBUn->cu_UnitLock);
+	    
+		D(bug("clipboard.device/CMD_READ: Got unit lock.\n"));
+
+		/* If the last write was actually a POST, we must tell
+		   the POSTer to WRITE the clip immediately, and we
+		   will wait until he have done so. Then we check
+		   again in case somebody managed to sneek in a
+		   CBD_POST after the CMD_UPDATE. */
+
+		while(CBUn->cu_WriteID != 0 &&
+		      CBUn->cu_WriteID == CBUn->cu_PostID)
+		{
+		    struct PostRequest pr = {
+			{ NULL, NULL },
+			FindTask(NULL)
+		    };
+		    
+		    /* Make sure we are signalled. */
+		    AddTail((struct List*) &CBUn->cu_PostRequesters,
+			    (struct Node*) &pr);
+		    
+		    /* A poster reading will deadlock that process
+		     * until somebody else writes to the
+		     * clipboard. AmigaOS behaves exactly the same so
+		     * it's ok. It's just plain stupid anyway. */
+		    
+		    if (CBUn->cu_PostPort)
+		    {
+			D(bug("clipboard.device/Command: CMD_READ..notify PostPort 0x%lx\n",
+			      CBUn->cu_PostPort));
+
+			CBUn->cu_Satisfy.sm_ClipID = CBUn->cu_PostID;
+			PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
+			CBUn->cu_PostPort = NULL;
+		    }
+		    else
+		    {
+			D(bug("clipboard.device/Command: no PostPort [me=%08lx]\n", FindTask(NULL)));
+		    }
+
+		    Forbid();
+		    ReleaseSemaphore(&CBUn->cu_UnitLock);
+		    SetSignal(0, SIGF_SINGLE);
+		    Wait(SIGF_SINGLE);
+		    Permit();
+		    D(bug("Got SIGF_SINGLE [me=%08lx]\n",FindTask(NULL)));
+		    ObtainSemaphore(&CBUn->cu_UnitLock);
+		    D(bug("Got semaphore[me=%08lx]\n",FindTask(NULL)));
+
+		    if(pr.pr_Link.mln_Succ->mln_Succ != NULL)
+		    {
+			/* Wake up next reader */
+			Signal(((struct PostRequest*) pr.pr_Link.mln_Succ)->pr_Waiter, SIGF_SINGLE);
+		    }
+
+		    Remove((struct Node*) &pr);
+		}
+
 		CBUn->cu_ReadID++;
 		ioClip(ioreq)->io_ClipID = CBUn->cu_ReadID;
-
-		D(bug("clipboard.device/CMD_READ: Got unit lock.\n"));
 
 		CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE);
 
 		if(!CBUn->cu_clipFile)
 		{
+		    D(bug("clipboard.device/CMD_READ: No clip file. Calling ReleaseSemaphore [me=%08lx]\n", FindTask(NULL)));
 		    ReleaseSemaphore(&CBUn->cu_UnitLock);
 		    ioClip(ioreq)->io_ClipID = -1;
 		    ioClip(ioreq)->io_Actual = 0;
-		    ioClip(ioreq)->io_Error = IOERR_ABORTED;
+//		    ioClip(ioreq)->io_Error = IOERR_ABORTED;
 		    break;
 		}
 	    }
 	    else if(ioClip(ioreq)->io_ClipID != CBUn->cu_ReadID)
 	    {
+		D(bug("clipboard.device/CMD_READ: Invalid clip id.\n"));
 		ioClip(ioreq)->io_Actual = 0;
-		ioClip(ioreq)->io_Error = IOERR_ABORTED;
+//		ioClip(ioreq)->io_Error = IOERR_ABORTED;
 		break;
 	    }
-
-	    /* If the last write was actually a POST, we must tell the POSTer to
-	       WRITE the clip immediately, and we will wait until he have done
-	       so.*/
-
-	    if(CBUn->cu_WriteID == CBUn->cu_PostID)
-	    {
-		struct Task *me = FindTask(NULL);
-
-		/* If it's the poster reading, we would get a deadlock... The
-		   poster should not read if the posted clip may be the active
-		   one. That is, he should always check if the posted clip is
-		   active using CMD_CURRENTREADID. */
-
-		if(CBUn->cu_Poster == me)
-		{
-		    ReleaseSemaphore(&CBUn->cu_UnitLock);
-		    ioClip(ioreq)->io_ClipID = -1;
-		    ioClip(ioreq)->io_Actual = 0;
-		    ioClip(ioreq)->io_Error = IOERR_ABORTED;
-		    break;
-		}
-
-
-		if (CBUn->cu_PostPort)
-		{
-		    D(bug("clipboard.device/Command: CMD_READ..notify PostPort 0x%lx\n",
-			CBUn->cu_PostPort));
-
-		    /* Make sure WE are signalled. */
-		    CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort->mp_SigTask = me;
-
-		    PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
-		    WaitPort(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort);
-		}
-		else
-		{
-		    D(bug("clipboard.device/Command: no PostPort\n"));
-		}
-	    }
-
+	    D(bug("Jag kom hit\n"));
 	    readCb(ioreq, CBBase);
 
 	    break;
@@ -575,21 +545,70 @@ AROS_LH1(void, beginio,
 
 
 	case CBD_POST:
-	    D(bug("clipboard.device/Command: CBD_POST\n"));
+	    D(bug("clipboard.device/Command: CBD_POST [me=%08lx]\n", FindTask(NULL)));
 	    ObtainSemaphore(&CBUn->cu_UnitLock);
 
 	    CBUn->cu_WriteID++;
 	    CBUn->cu_PostID = CBUn->cu_WriteID;
 	    CBUn->cu_PostPort = (struct MsgPort *)ioClip(ioreq)->io_Data;
-	    CBUn->cu_Poster = FindTask(NULL);
+
+	    ioClip(ioreq)->io_ClipID = CBUn->cu_PostID;
 
 	    ReleaseSemaphore(&CBUn->cu_UnitLock);
+
+	    D(bug("clipboard.device/CBD_POST: Calling monitoring hooks\n"));
+
+	    /* Call monitoring hooks. */
+	    ObtainSemaphore(&CBBase->cb_SignalSemaphore);
+	    {
+	      struct Node        *tnode;
+	      struct ClipHookMsg  chmsg;
+
+	      chmsg.chm_Type = 0;
+	      chmsg.chm_ChangeCmd = CBD_POST;
+	      chmsg.chm_ClipID = CBUn->cu_PostID;
+
+	      ForeachNode(&CBBase->cb_HookList, tnode)
+	      {
+		D(bug("Calling hook %08x\n",tnode));
+		CallHookA((struct Hook *)tnode, CBUn, &chmsg);
+	      }
+	      D(bug("Done\n"));
+	    }
+	    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
+
+	    D(bug("clipboard.device/CBD_POST: Called monitoring hooks\n"));		    
+
+#if 0
+	    // This does not seem to be robust enough; it can lead to
+	    // a ping-pong effect. Never mind then.
+	    
+	    ObtainSemaphore(&CBUn->cu_UnitLock);
+
+	    if(!IsListEmpty((struct List*) &CBUn->cu_PostRequesters))
+	    {
+	      /* Normally, this can never happen. However, if an app
+	         deadlocked by posting and then reading, try to make
+	         this CBD_POST turn into a CMD_WRITE immediately. */
+
+	      D(bug("clipboard.device/Command: CMD_POST..notify PostPort 0x%lx\n",
+		    CBUn->cu_PostPort));
+
+	      CBUn->cu_Satisfy.sm_ClipID = CBUn->cu_PostID;
+	      PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
+	      CBUn->cu_PostPort = NULL;
+	    }
+	    
+	    ReleaseSemaphore(&CBUn->cu_UnitLock);
+#endif
 	    break;
 
 
 	case CBD_CURRENTREADID:
 	    D(bug("clipboard.device/Command: CBD_CURRENTREADID\n"));
-	    ioClip(ioreq)->io_ClipID = CBUn->cu_PostID;
+	    ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
+	    /* Was PostID. Note that AmigaOS really has a ReadID
+	       counter that is *almost* always the same as WriteID. */
 	    break;
 
 
@@ -608,7 +627,9 @@ AROS_LH1(void, beginio,
 
     /* If the quick bit is not set, send the message to the port */
     if(!(ioreq->io_Flags & IOF_QUICK))
+    {
 	ReplyMsg(&ioreq->io_Message);
+    }
 
     AROS_LIBFUNC_EXIT
 }
@@ -620,6 +641,10 @@ AROS_LH1(LONG, abortio,
 	  struct ClipboardBase *, CBBase, 6, Clipboard)
 {
     AROS_LIBFUNC_INIT
+
+    /* Keep compiler happy */
+    (void) ioreq;
+    (void) CBBase;
 
     D(bug("clipboard.device/abortio: ioreq 0x%lx\n",ioreq));
     /* Nothing to abort */
@@ -635,11 +660,11 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     /* Is there anything to be read? */
     if(CBUn->cu_WriteID == 0)
     {
-	D(bug("clipboard.device/readcb: nothing to read. setting IOERR_ABORTED as error\n"));
+	D(bug("clipboard.device/readcb: nothing to read. setting IOERR_ABORTED as error and releasing semaphore [me=%08lx]\n", FindTask(NULL)));
 	Close(CBUn->cu_clipFile);
 	CBUn->cu_clipFile = 0;
 	ReleaseSemaphore(&CBUn->cu_UnitLock);
-	ioClip(ioreq)->io_Error = IOERR_ABORTED;
+//	ioClip(ioreq)->io_Error = IOERR_ABORTED;
 	ioClip(ioreq)->io_Actual = 0;
 	ioClip(ioreq)->io_ClipID = -1;
 	return;
@@ -647,7 +672,7 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
     if(ioClip(ioreq)->io_Offset >= CBUn->cu_clipSize)
     {
-	D(bug("clipboard.device/readCb: detected \"end of file\". Closing clipfile and releasing semaphore\n"));
+	D(bug("clipboard.device/readCb: detected \"end of file\". Closing clipfile and releasing semaphore [me=%08lx]\n", FindTask(NULL)));
 	Close(CBUn->cu_clipFile);
 	CBUn->cu_clipFile = 0;
 	ReleaseSemaphore(&CBUn->cu_UnitLock);
@@ -656,7 +681,7 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	return;
     }
 
-    if (ioClip(ioreq)->io_Data == NULL)
+    if (!ioClip(ioreq)->io_Data)
     {
 	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Length;
 	ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
@@ -688,6 +713,7 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	{
 	    Close(CBUn->cu_clipFile);
 	    CBUn->cu_clipFile = 0;
+	    D(bug("clipboard.device/readCb: io_Actual=0. Calling ReleaseSemaphore [me=%08lx]\n", FindTask(NULL)));
 	    ReleaseSemaphore(&CBUn->cu_UnitLock);
 	    ioClip(ioreq)->io_ClipID = -1;
 	}
@@ -698,58 +724,50 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
-    if(ioClip(ioreq)->io_ClipID == CBUn->cu_WriteID)
-    {
-	/* Continue the previous write */
-    }
-    else if(ioClip(ioreq)->io_ClipID == 0)
+    D(bug("clipboard.device/writeCb: Trying to get unit lock. Calling ObtainSemaphore [me=%08lx]\n", FindTask(NULL)));
+    ObtainSemaphore(&CBUn->cu_UnitLock);
+    D(bug("clipboard.device/writeCb: Got unit lock.\n"));
+
+    if(ioClip(ioreq)->io_ClipID == 0 ||
+       ioClip(ioreq)->io_ClipID == CBUn->cu_PostID)
     {
 	/* A new write begins... */
 
 	CBUn->cu_clipSize = 0;
 
-	CBUn->cu_WriteID++;
-	ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
-
-	D(bug("clipboard.device/writeCb: Trying to get unit lock. Calling ObtainSemaphore\n"));
-	ObtainSemaphore(&CBUn->cu_UnitLock);
-	D(bug("clipboard.device/writeCb: Got unit lock.\n"));
-
-	if((CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_NEWFILE)) == NULL)
+        if(ioClip(ioreq)->io_ClipID == 0)
 	{
-	    D(bug("clipboard.device/writeCb: Opening clipfile in MODE_NEWFILE failed. Releasing Semaphore\n"));
+	    CBUn->cu_WriteID++;
+	    ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
+	}
+
+	/* No more POST writes accepted */
+	CBUn->cu_PostID = 0;
+
+	if (!(CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_NEWFILE)))
+	{
+	    D(bug("clipboard.device/writeCb: Opening clipfile in MODE_NEWFILE failed. Releasing Semaphore [me=%08lx]\n", FindTask(NULL)));
 	    ReleaseSemaphore(&CBUn->cu_UnitLock);
 	    ioClip(ioreq)->io_Error = IOERR_ABORTED;
 	    ioClip(ioreq)->io_Actual = 0;
+	    ioClip(ioreq)->io_ClipID = -1;
 	    return;
 	}
 
 	D(bug("clipboard.device/writeCb: Opened file %s\n", CBUn->cu_clipFilename));
     }
-    else if(ioClip(ioreq)->io_ClipID == CBUn->cu_PostID)
+    else if(ioClip(ioreq)->io_ClipID == CBUn->cu_WriteID)
     {
-	/* If this is the poster writing, we will not obtain the
-	   semaphore as it's being kept by the current reader.
-	   Instead, we don't give a damn about any semaphores and
-	   continue the operation anyway. This may be done as it's
-	   the reader who has called us, and he (clipboard.
-	   device) made sure it is OK to change things in the
-	   clipboard unit. */
-
-	CBUn->cu_clipSize = 0;
-
-	if((CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_NEWFILE)) == NULL)
-	{
-	    D(bug("clipboard.device/writeCb: Opening clipfile in MODE_NEWFILE failed. Releasing Semaphore\n"));
-	    ioClip(ioreq)->io_Error = IOERR_ABORTED;
-	    ioClip(ioreq)->io_Actual = 0;
-	    return;
-	}
-
-	D(bug("clipboard.device/writeCb: Opened file %s\n", CBUn->cu_clipFilename));
+        D(bug("We already have the semaphore. [me=%08lx]\n", FindTask(NULL)));
+	ReleaseSemaphore(&CBUn->cu_UnitLock);
+	
+	/* Continue the previous write */
     }
     else
     {
+        D(bug("Invalid ClipID. Releasing Semaphore [me=%08lx]\n", FindTask(NULL)));
+	ReleaseSemaphore(&CBUn->cu_UnitLock);
+	
 	/* Error */
 	ioClip(ioreq)->io_Error = IOERR_ABORTED;
 	ioClip(ioreq)->io_Actual = 0;
@@ -760,16 +778,17 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     if(ioClip(ioreq)->io_Offset > CBUn->cu_clipSize)
     {
 	ULONG len = ioClip(ioreq)->io_Offset - CBUn->cu_clipSize;
-	UBYTE *buf = AllocVec(len > 1024 ? 1024 : len, MEMF_CLEAR | MEMF_PUBLIC);
-	if(buf)
+	ULONG buflen = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
+	UBYTE *buf = AllocMem(buflen, MEMF_CLEAR | MEMF_PUBLIC);
+	if (buf)
 	{
 	    while(len)
 	    {
-		ULONG size = len > 1024 ? 1024 : len;
+		ULONG size = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
 		Write(CBUn->cu_clipFile, buf, size);
 		len -= size;
 	    }
-	    FreeVec(buf);
+	    FreeMem(buf, buflen);
 	}
     }
 
@@ -792,20 +811,19 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	D(bug("clipboard.device/writeCb: write failed\n"));
 	Close(CBUn->cu_clipFile);
 	CBUn->cu_clipFile = 0;
-	if(ioClip(ioreq)->io_ClipID != CBUn->cu_PostID)
-	{
-	    D(bug("clipboard.device/writeCb: releasing semaphore\n"));
-	    ReleaseSemaphore(&CBUn->cu_UnitLock);
-	}
+	D(bug("clipboard.device/writeCb: releasing semaphore [me=%08lx]\n", FindTask(NULL)));
+	ReleaseSemaphore(&CBUn->cu_UnitLock);
 	ioClip(ioreq)->io_Error = IOERR_ABORTED;
 	ioClip(ioreq)->io_Actual = 0;
 	ioClip(ioreq)->io_ClipID = -1;
     }
-
-    ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
-    if(ioClip(ioreq)->io_Offset > CBUn->cu_clipSize)
+    else
     {
-	CBUn->cu_clipSize = ioClip(ioreq)->io_Offset;
+	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
+	if(ioClip(ioreq)->io_Offset > CBUn->cu_clipSize)
+	{
+	    CBUn->cu_clipSize = ioClip(ioreq)->io_Offset;
+	}
     }
 }
 
@@ -813,50 +831,56 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
-    D(bug("clipboard.device/updateCb: Closing ClipFile\n"));
-
-    Close(CBUn->cu_clipFile);
-    CBUn->cu_clipFile = 0;
-
-    D(bug("clipboard.device/updateCb: Calling monitoring hooks\n"));
-
-    /* If it is the POSTer that indicates he is done, we don't
-       release the semaphore as, in case, the semaphore was
-       never locked because it was originally locked by the
-       reader wanting the (to be) posted clip. As we couldn't
-       release the semaphore then as another task then could have
-       started to write something to the clipboard, we just do
-       nothing. */
-
-    if(CBUn->cu_PostID != ioClip(ioreq)->io_ClipID &&
+    if(CBUn->cu_WriteID != 0 &&
        CBUn->cu_WriteID == ioClip(ioreq)->io_ClipID)
     {
-	D(bug("clipboard.device/updateCb: calling ReleaseSemaphore\n"));
+	D(bug("clipboard.device/updateCb: Closing ClipFile\n"));
+
+	Close(CBUn->cu_clipFile);
+	CBUn->cu_clipFile = 0;
+	
+	if(CBUn->cu_PostRequesters.mlh_Head->mln_Succ != NULL)
+	{
+	    /* Wake up first reader */
+	    D(bug("clipboard.device/updateCb: Waking up %08lx\n", ((struct PostRequest*) CBUn->cu_PostRequesters.mlh_Head)->pr_Waiter));
+	    Signal(((struct PostRequest*) CBUn->cu_PostRequesters.mlh_Head)->pr_Waiter, SIGF_SINGLE);
+	}
+	D(bug("clipboard.device/updateCb: calling ReleaseSemaphore [me=%08lx]\n", FindTask(NULL)));
 
 	ReleaseSemaphore(&CBUn->cu_UnitLock);
-    }
 
-    /* Call monitoring hooks. */
-    ObtainSemaphore(&CBBase->cb_SignalSemaphore);
-    {
-	struct Node        *tnode;
-	struct ClipHookMsg  chmsg;
+	D(bug("clipboard.device/updateCb: Calling monitoring hooks\n"));
 
-	chmsg.chm_Type = 0;
-	chmsg.chm_ClipID = ioClip(ioreq)->io_ClipID;
-
-	ForeachNode(&CBBase->cb_HookList, tnode)
+	/* Call monitoring hooks. */
+	ObtainSemaphore(&CBBase->cb_SignalSemaphore);
 	{
-	    CallHookA((struct Hook *)tnode, CBUn, &chmsg);
-	}
-    }
-    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
+	    struct Node        *tnode;
+	    struct ClipHookMsg  chmsg;
 
-    D(bug("clipboard.device/updateCb: Called monitoring hooks\n"));
+	    chmsg.chm_Type = 0;
+	    chmsg.chm_ChangeCmd = CMD_UPDATE;
+	    chmsg.chm_ClipID = ioClip(ioreq)->io_ClipID;
+
+	    ForeachNode(&CBBase->cb_HookList, tnode)
+	    {
+	      D(bug("Calling hook %08x\n",tnode));
+	        CallHookA((struct Hook *)tnode, CBUn, &chmsg);
+	    }
+	    D(bug("Done\n"));
+	}
+	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
+
+	D(bug("clipboard.device/updateCb: Called monitoring hooks\n"));
+    }
+    else
+    {
+	ioClip(ioreq)->io_Error = IOERR_ABORTED;
+	ioClip(ioreq)->io_Actual = 0;
+    }
 
     ioClip(ioreq)->io_ClipID = -1;
 
-    D(bug("clipboard.device/updateCb: end of function\n"));
+    D(bug("clipboard.device/updateCb: end of function [me=%08lx]\n", FindTask(NULL)));
 
 }
 

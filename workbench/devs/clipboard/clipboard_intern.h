@@ -15,6 +15,10 @@
 #include <dos/bptr.h>
 #endif
 
+#ifndef __MORPHOS__
+# pragma pack(2)
+#endif
+
 struct ClipboardBase
 {
     struct Device      cb_device;
@@ -33,9 +37,15 @@ struct ClipboardBase
 };
 
 
-#define  CBUN_FILENAMELEN   sizeof("DEVS:Clipboards/255")
+#define  CBUN_FILENAMELEN   28
 
-typedef struct ClipboardUnit
+struct PostRequest
+{
+    struct MinNode  pr_Link;
+    struct Task    *pr_Waiter;
+};
+
+struct ClipboardUnit
 {
     struct Node  cu_Node;                   /* These two fields MUST be  */
     ULONG        cu_UnitNum;                /* first and in this order in */
@@ -50,23 +60,21 @@ typedef struct ClipboardUnit
     LONG      cu_PostID;
     UWORD     cu_OpenCnt;
     BPTR      cu_clipFile;
-    STRPTR    cu_clipFilename;              /* CLIPS:un or Devs:Clipboards/un
-					       where un is the unit number. */
+    UBYTE     cu_clipFilename[CBUN_FILENAMELEN]; /* CLIPS:un or Devs:Clipboards/un
+						    where un is the unit number. */
     ULONG     cu_clipSize;
 
     struct SatisfyMsg       cu_Satisfy;
     struct MsgPort         *cu_PostPort;    /* Port to post message to when a
 					       POST needs to be satisfied */
-    struct Task            *cu_Poster;      /* Task that made the last
-					       CMD_POST. Used to avoid deadlock
-					       for "stupid" users. */
+    struct MinList          cu_PostRequesters;
     struct SignalSemaphore  cu_UnitLock;
 
-} ClipboardUnit;
+};
 
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
+#ifndef __MORPHOS__
+# pragma pack()
+#endif
 
 #ifdef SysBase
 #undef SysBase
