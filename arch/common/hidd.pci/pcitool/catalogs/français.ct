@@ -1,0 +1,157 @@
+## version $VER: pcitool.catalog 1.1 (6.2.2004)
+## language français
+## codeset 0
+;
+;
+MSG_TITLE
+Outil PCI
+; PCI Tool
+;
+MSG_WINTITLE
+PCITool
+; PCI Tool
+;
+MSG_DESCRIPTION
+Outil de gestion du bus PCI
+; PCI querying and managment
+;
+MSG_ERROR_LOCALE
+Impossible d'ouvrir la locale
+; Can't open locale
+;
+MSG_ERROR_OK
+Ok
+; Ok
+;
+MSG_ERROR_HEADER
+ERREUR
+; ERROR
+;
+MSG_DRIVER_INFO
+Info du pilote :
+;Driver info:
+;
+MSG_DRIVER_NAME
+Nom du pilote :
+;Driver name:
+;
+MSG_DIRECT_BUS
+Bus direct :
+;Direct bus:
+;
+MSG_HARDWARE_INFO
+Info matériel :
+;Hardware info:
+;
+MSG_PCI_DEVICE_INFO
+Info du périphérique PCI :
+;PCI device info:
+;
+MSG_DEVICE_DESCRIPTION
+Description :
+;Description:
+;
+MSG_VENDORNAME
+Nom du constructeur :
+;VendorID:
+;
+MSG_PRODUCTNAME
+Nom du produit :
+;ProductID:
+;
+MSG_VENDORID
+n° constructeur :
+;VendorID:
+;
+MSG_PRODUCTID
+n° de produit :
+;ProductID:
+;
+MSG_REVISIONID
+n° de version :
+;RevisionID:
+;
+MSG_INTERFACE
+Interface :
+;Interface:
+;
+MSG_CLASS
+Classe :
+;Class:
+;
+MSG_SUBCLASS
+Sous classe :
+;Subclass:
+;
+MSG_IRQ
+IRQ :
+;IRQ:
+;
+MSG_ROM_BASE
+Base de la ROM :
+;ROM Base
+;
+MSG_ROM_SIZE
+Taille de la ROM :
+;ROM Size:
+;
+MSG_BRIDGE
+Ce pont gère le bus %d (ISA%s permis, VGA%s permis)
+;Bridge handles bus %d (ISA %senabled, VGA %senabled)
+;
+MSG_MEMORY_RANGE
+L'espace mémoire va de %08x à %08x
+;Memory ranges from %08x to %08x
+;
+MSG_PREFETCHABLE_MEMORY
+Mémoire en prélecture de %08x à %08x
+;Prefetchable ranges memory from %08x to %08x
+;
+MSG_IO_RANGE
+E/S de %04x à %04x
+;IO ranges from %04x to %04x
+;
+MSG_IO_MSG
+E/S : %s, MEM : %s, Maître: %s, PaletteSnoop: %s, Capable de 66MHz: %s
+;IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;
+MSG_IO
+E/S
+;I/O
+;
+MSG_MEMORY
+Mémoire
+;Memory
+;
+MSG_PREFETCHABLE
+Mémoire en prélecture
+;Prefetchable
+;
+MSG_YES
+oui
+;yes
+;
+MSG_NO
+non
+;no
+;
+MSG_NA
+N/A
+;N/A
+;
+MSG_NOT
+ non
+;not
+;
+MSG_SIZE4
+%s%s à 0x04x (taille 0x%04x)
+;%s%s at 0x%04x (size 0x%04x)
+;
+MSG_SIZE8
+%s%s à 0x08x (taille 0x%08x)
+;%s%s at 0x%08x (size 0x%08x)
+;
+MSG_UNUSED
+inutilisé
+;--unused--
+;
