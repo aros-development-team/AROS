@@ -181,11 +181,13 @@ SHARED	:= \
         kill \
 	labs \
 	lcong48 \
+	link \
 	localtime \
 	lrand48 \
 	lseek \
 	malloc \
 	mkdir \
+	mknod \
         mkstemp \
 	mktemp \
 	mktime \
@@ -255,6 +257,7 @@ SHARED	:= \
 	strtoll \
 	strtoul \
 	strtoull \
+	symlink \
 	system \
 	telldir \
 	time	 \
