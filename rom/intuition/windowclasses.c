@@ -12,6 +12,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/layers.h>
 
 #include <intuition/classes.h>
 #include <intuition/gadgetclass.h>
@@ -25,8 +26,8 @@
 
 #undef SDEBUG
 #undef DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -51,6 +52,25 @@ const ULONG gtyp2image[] =
     CLOSEIMAGE		/* GTYP_CLOSE		*/
 };
 
+struct dragbar_data
+{
+     /* Current left- and topedge of moving window. Ie when the user releases
+     the LMB after a windowdrag, the window's new coords will be (curleft, curtop)
+     */
+     
+     LONG curleft;
+     LONG curtop;
+     
+     /* The current x and y coordinates relative to curleft/curtop */
+     LONG mousex;
+     LONG mousey;
+     
+     BOOL isrendered;
+     
+     /* Rastport to use during update */
+     struct RastPort *rp;
+     
+};
 static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 {
     EnterFunc(bug("DragBar::Render()\n"));
@@ -130,50 +150,190 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 
 static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
-    struct GadgetInfo *gi = ((struct gpInput *)msg)->gpi_GInfo;
+    
     IPTR retval = GMR_NOREUSE;
-
-    if (gi)
+    
+    struct InputEvent *ie = msg->gpi_IEvent;
+    
+    if (ie)
     {
-	struct RastPort *rp = ObtainGIRPort(gi);
-	if (rp)
-	{
-	    EG(o)->Flags |= GFLG_SELECTED;
+    	/* The gadget was activated via mouse input */
+	struct dragbar_data *data;
+	struct Window *w;
 
-	    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
-	    ReleaseGIRPort(rp);
-
-
-	    retval = GMR_MEACTIVE;
-	    
-	}
+	/* There is no point in rerendering ourseleves her, as this
+	   is done by a call to RefreshWindowFrame() in the intuition inputhandler
+	*/
+    
+	w = msg->gpi_GInfo->gi_Window;
+    
+	data = INST_DATA(cl, o);
+	data->curleft = w->LeftEdge;
+	data->curtop  = w->TopEdge;
+    
+	data->mousex = ie->ie_X - data->curleft;
+	data->mousey = ie->ie_Y - data->curtop;
 	
+	data->rp = &w->WScreen->RastPort;
+	
+#warning Maybe should clone rastport. Also should lock all layers		    
+	
+	data->isrendered = FALSE;
+	
+	retval = GMR_MEACTIVE;
     }
+
     return retval;
     
     
 }
+
+
 static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
-    IPTR retval = GMR_MEACTIVE;
+    IPTR retval = GMR_NOREUSE;
     struct GadgetInfo *gi = msg->gpi_GInfo;
     
     if (gi)
     {
 	struct InputEvent *ie = msg->gpi_IEvent;
-	 
+	struct dragbar_data *data = INST_DATA(cl, o);
+	struct Window *w = msg->gpi_GInfo->gi_Window;
+	
 	switch (ie->ie_Class)
 	{
 	case IECLASS_RAWMOUSE:
 	    switch (ie->ie_Code)
 	    {
 	    case SELECTUP:
+	    
+	        /* Clear last drawn frame */
+		
+		if (data->curleft != w->LeftEdge || data->curtop != w->TopEdge)
+		{
+		    
+		    if (data->isrendered)
+		    {
+
+			SetDrMd(data->rp, COMPLEMENT);
+			/* Erase old frame */
+			drawrect(data->rp
+				, data->curleft
+				, data->curtop
+				, data->curleft + w->Width  - 1
+				, data->curtop  + w->Height - 1
+				, IntuitionBase
+			);
+			
+		    }
+	    
+		
+		    /* OK, user released mouse. Put window into new position */
+		    MoveLayer(0L, w->WLayer
+			, data->curleft - w->LeftEdge	/* dx */
+			, data->curtop  - w->TopEdge	/* dy */
+		    );
+		
+		
+		    /* Update window coordinates */
+		    w->LeftEdge = data->curleft;
+		    w->TopEdge  = data->curtop;
+			
+		}
+		    
+		
+		retval = GMR_NOREUSE;
 		break;
 		    
-		    
+
+	    case IECODE_NOBUTTON: {
+	    	struct Screen *scr = w->WScreen;
+		LONG new_left;
+		LONG new_top;
+		
 	    
+	    	/* Can we move to the new position, or is window at edge of display ? */
+		new_left = ie->ie_X - data->mousex;
+		new_top  = ie->ie_Y - data->mousey;
+		
+		if (new_left < 0)
+		{
+		    data->mousex += new_left;
+		    new_left = 0;
+		}
+		
+		if (new_top < 0)
+		{
+		    data->mousey += new_top;
+		    new_top = 0;
+		}
+		
+		if (new_left + w->Width > scr->Width)
+		{
+		    LONG correct_left;
+		    correct_left = scr->Width - w->Width; /* align to screen border */
+		    data->mousex += new_left - correct_left;
+		    new_left = correct_left;
+		}
+		if (new_top + w->Height > scr->Height)
+		{
+		    LONG correct_top;
+		    correct_top = scr->Height - w->Height; /* align to screen border */
+		    data->mousey += new_top - correct_top;
+		    new_top = correct_top;
+		}
+		
+	    
+		if (data->curleft != new_left || data->curtop != new_top)
+		{
+		    SetDrMd(data->rp, COMPLEMENT);
+
+
+
+	    	    if (data->isrendered)
+		    {
+			/* Erase old frame */
+			drawrect(data->rp
+				, data->curleft
+				, data->curtop
+				, data->curleft + w->Width  - 1
+				, data->curtop  + w->Height - 1
+				, IntuitionBase
+			);
+			
+		    }
+		
+		    data->curleft = new_left;
+		    data->curtop  = new_top;
+		     
+		    /* Rerender the window frame */
+		    
+		    drawrect(data->rp
+				, data->curleft
+				, data->curtop
+				, data->curleft + w->Width  - 1
+				, data->curtop  + w->Height - 1
+				, IntuitionBase
+		    );
+		    
+		    data->isrendered = TRUE;
+		
+		     
+		}
+		
+		retval = GMR_MEACTIVE;
+		
+		break; }
+	    	
+	    
+	    
+	    
+	    default:
+	    	retval = GMR_REUSE;
+		break;
 	    
 	    } /* switch (ie->ie_Code) */
+	    
 	    
 	} /* switch (ie->ie_Class) */
 	
@@ -229,7 +389,10 @@ struct tbb_data
 {
     Object *image;
 };
-/* This class handles all buttons in titlebar, ie. Close, depth & zoom gadgets */
+/* This class handles all buttons in titlebar, ie. Close, depth & zoom gadgets.
+ Note: I could put these in separate subclasses, but thhey have
+ so much in common, that I just have them in the same class
+*/
 
 static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 {
@@ -335,6 +498,83 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
     return;
 }
 
+
+static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
+{
+    IPTR retval;
+    
+    /* Let the buttong superclass handle the input for us */
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    
+    /* Now, what exactly did the user do ? */
+    if (retval != GMR_MEACTIVE)
+    {
+    	/* Button no longer active. But was the users button release inside the gadget ?. */
+	if (retval & GMR_VERIFY)
+	{
+	    /* The mousebutton release was inside gadget.
+	    Now perform the button's action */
+	    
+	    
+	    switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK)
+	    {
+		case GTYP_CLOSE: {
+		    struct IntuiMessage *imsg;
+		    
+		    
+		    /* Send an IDCMP_CLOSEWINDOW message to the application */
+		    /* Get an empty intuimessage */
+		    imsg = get_intuimessage(msg->gpi_GInfo->gi_Window, IntuitionBase);
+		    if (imsg)
+		    {
+			/* Fill it in */
+			imsg->Class	= IDCMP_CLOSEWINDOW;
+			imsg->Code	= 0;
+			imsg->Qualifier = 0;
+			imsg->IAddress	= 0;
+			imsg->MouseX	= 0;
+			imsg->MouseY	= 0;
+			imsg->Seconds	= 0;
+			imsg->Micros	= 0;
+			
+			/* And send it to the application */
+			send_intuimessage(imsg, msg->gpi_GInfo->gi_Window, IntuitionBase);
+			
+		    }
+		    
+		    break; }
+		    
+		case GTYP_WDEPTH: {
+		    struct Window *w = msg->gpi_GInfo->gi_Window;
+		    
+		    
+#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?		
+
+		    if (NULL == w->WLayer->front)
+		    {
+		    	/* Send window to back */
+			BehindLayer(0L, w->WLayer);
+		    }
+		    else
+		    {
+		    	/* Send window to front */
+			UpfrontLayer(0L, w->WLayer);
+		    }
+		    
+		    break; }
+		
+	    }
+	    
+	    
+	} /* if (verified button press) */
+	
+    } /* if (gadget no longer active) */
+    
+    return retval;
+    
+}
+
+
 AROS_UFH3S(IPTR, dispatch_tbbclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -364,10 +604,9 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
 	case GM_DOMAIN:
 	    break;
 	    
-	case GM_GOACTIVE:
-	    break;
-	    
+
 	case GM_HANDLEINPUT:
+	    retval = tbb_handleinput(cl, o , (struct gpInput *)msg);
 	    break;
 	    
 	    
@@ -389,7 +628,7 @@ struct IClass *InitDragBarClass (struct IntuitionBase * IntuitionBase)
 
     /* This is the code to make the dragbarclass...
     */
-    if ( (cl = MakeClass(NULL, GADGETCLASS, NULL, 0, 0)) )
+    if ( (cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof (struct dragbar_data), 0)) )
     {
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_dragbarclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
@@ -407,7 +646,7 @@ struct IClass *InitTitleBarButClass (struct IntuitionBase * IntuitionBase)
 
     /* This is the code to make the tbbclass...
     */
-    if ( (cl = MakeClass(NULL, BUTTONGCLASS, NULL, 0, 0)) )
+    if ( (cl = MakeClass(NULL, BUTTONGCLASS, NULL, sizeof (struct tbb_data), 0)) )
     {
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_tbbclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
