@@ -53,11 +53,7 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 
 /************************************************************************/
 
-
-#define HIDDPATH "SYS:Hidds/"
 #define BUFSIZE 100
-
-#define HIDDPREFSFILE "SYS:S/hidd.prefs"
 
 /* We don't link with c library so I must implement this separately */
 #define isblank(c) \
