@@ -247,23 +247,39 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 
 	if (LIBBASE->arosmxbase)
 	    CloseLibrary(LIBBASE->arosmxbase);
+        LIBBASE->arosmxbase = NULL;
+
 	if (LIBBASE->aroscybase)
 	    CloseLibrary(LIBBASE->aroscybase);
+        LIBBASE->aroscybase = NULL;
+
 	if (LIBBASE->aroscbbase)
 	    CloseLibrary(LIBBASE->aroscbbase);
+        LIBBASE->aroscbbase = NULL;
+
 	if (LIBBASE->arospabase)
 	    CloseLibrary(LIBBASE->arospabase);
+        LIBBASE->arospabase = NULL;
 	    
 	if (BOOPSIBase)
 	    CloseLibrary(BOOPSIBase);
+        BOOPSIBase = NULL;
+
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
+        UtilityBase = NULL;
+
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
+        GfxBase = NULL;
+
 	if (DOSBase)
 	    CloseLibrary(DOSBase);
+        DOSBase = NULL;
+
 	if (IntuitionBase)
 	    CloseLibrary((struct Library *)IntuitionBase);
+        IntuitionBase = NULL;
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
