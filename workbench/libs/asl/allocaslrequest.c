@@ -21,6 +21,7 @@
 #include <libraries/asl.h>
 #include <utility/tagitem.h>
 
+
 	AROS_LH2(APTR, AllocAslRequest,
 
 /*  SYNOPSIS */

@@ -48,6 +48,12 @@
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
+#include <aros/libcall.h>
+
+#ifdef __MORPHOS__
+#pragma pack(2)
+#endif
+
 
 /*****************************************************************************************/
 
@@ -437,5 +443,22 @@ typedef struct IntuitionBase IntuiBase;
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct AslBase_intern *, AslBase, 3, Asl)
+
+#ifdef __MORPHOS__
+#define DeinitRastPort(x) ((void)0)
+
+#define DoMethod(MyObject, tags...) \
+	({ULONG _tags[] = { tags }; DoMethodA((MyObject), (APTR)_tags);})
+
+#define CoerceMethod(MyClass, MyObject, tags...) \
+	({ULONG _tags[] = { tags }; CoerceMethodA((MyClass), (MyObject), (APTR)_tags);})
+
+#define DoSuperMethod(MyClass, MyObject, tags...) \
+	({ULONG _tags[] = { tags }; DoSuperMethodA((MyClass), (MyObject), (APTR)_tags);})
+
+
+#pragma pack()
+
+#endif /*MorphOS*/
 
 #endif /* ASL_INTERN_H */

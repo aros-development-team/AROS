@@ -11,6 +11,7 @@
     NAME */
 #include <proto/asl.h>
 #include "asl_intern.h"
+#include <aros/libcall.h>
 
 	AROS_LH0(struct FileRequester *, AllocFileRequest,
 

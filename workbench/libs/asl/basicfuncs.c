@@ -533,7 +533,7 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     BOOL 		success = FALSE;
 
-    struct TextAttr 	topaz8 = {"topaz.font", 8, 0, 0 };
+    static struct TextAttr 	   topaz8 = {"topaz.font", 8, 0, 0 };
 
     /* Default to satisfy GCC */
     usedattr = &topaz8;
@@ -950,7 +950,7 @@ char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBas
     
     /* Create the text */
 
-    RawDoFmt("%ld", &value, (VOID_FUNC)puttostr, &str);
+    RawDoFmt("%ld", &value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 
     len = strlen(buffer) + 1;
     
@@ -1039,5 +1039,6 @@ AROS_UFH3(ULONG, StringEditFunc,
 
     AROS_USERFUNC_EXIT
 }
+
 
 /*****************************************************************************************/
