@@ -8,7 +8,6 @@
 
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <exec_pdefs.h>
 
 #define DEBUG 0
 #include <aros/debug.h>

@@ -8,7 +8,6 @@
 
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <exec_pdefs.h>
 
 AROS_LH0(void, Switch,
     struct ExecBase *, SysBase, 9, Exec)
