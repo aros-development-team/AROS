@@ -84,7 +84,7 @@ static ULONG eraserect_render(APTR err_data, LONG srcx, LONG srcy,
     
     EnterFunc(bug("EraseRect(%d, %d, %d, %d)\n", x1, y1, x2, y2));
 
-    if (!CorrectDriverData(rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	ReturnVoid("EraseRect(No driverdata)");
 	
     errd.origrp = rp;
@@ -100,6 +100,8 @@ static ULONG eraserect_render(APTR err_data, LONG srcx, LONG srcy,
     if (NULL != errd.fakerp)
     	FreeRastPort(errd.fakerp);
    
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     ReturnVoid("EraseRect");
 
     AROS_LIBFUNC_EXIT
@@ -114,7 +116,7 @@ static void calllayerhook(struct Hook *h, struct RastPort *rp,
     struct BitMap   *bm = rp->BitMap;
     OOP_Object      *gc;
     
-    if (!CorrectDriverData(rp, GfxBase)) 
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase)) 
     	return;
 		
     gc = GetDriverData(rp)->dd_GC;
@@ -170,6 +172,8 @@ static void calllayerhook(struct Hook *h, struct RastPort *rp,
 	    AROS_UFCA(struct layerhookmsg *, msg, A1)
 	);
     }
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
 }
 
 /****************************************************************************************/

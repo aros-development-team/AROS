@@ -93,14 +93,17 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 
     if ((xSize < 1) || (ySize < 1)) return;
     
-    if (!CorrectDriverData(destRP, GfxBase))
+    if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
     	return;
 
     brd.minterm	= minterm;
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)
+    {
+    	RELEASE_DRIVERDATA(destRP, GfxBase);
     	return;
-
+    }
+    
     brd.srcbm = srcBitMap;
     brd.mask  = bltMask;
 
@@ -136,6 +139,8 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     gc_tags[0].ti_Data = old_drmd;
     OOP_SetAttrs(gc, gc_tags);
 
+    RELEASE_DRIVERDATA(destRP, GfxBase);
+    
     ReturnVoid("BltBitMapRastPort");
     
     AROS_LIBFUNC_EXIT

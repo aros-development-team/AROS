@@ -57,7 +57,7 @@
     };
     struct gfx_driverdata *dd;
     
-    if (CorrectDriverData (rp, GfxBase))
+    if (OBTAIN_DRIVERDATA(rp, GfxBase))
     {	
 	if (drawMode & JAM2)
 	{
@@ -79,6 +79,7 @@
 	{
     	    OOP_SetAttrs(dd->dd_GC, drmd_tags);
 	}
+	RELEASE_DRIVERDATA(rp, GfxBase);
     }
 
     rp->DrawMode = drawMode;

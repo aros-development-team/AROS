@@ -43,9 +43,13 @@ do                                                                             \
 
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
 
-
+#if 0
+#define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_PIXTAB(bitmap)) ? (pen) :  \
+    	    	    	       HIDD_BM_PIXTAB(bitmap)[pen])
+#else
 #define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_COLMAP(bitmap)) ? (pen) :  \
     	    	    	       HIDD_CM_GetPixel(HIDD_BM_COLMAP(bitmap), pen))
+#endif
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\
@@ -113,12 +117,16 @@ struct render_special_info
 
 struct gfx_driverdata
 {
+#if 0
     UWORD	    * dd_AreaPtrn;	/* Amiga current AreaPtrn	*/
     BYTE	      dd_AreaPtSz;	/* Amiga AreaPtSz		*/
     UWORD	      dd_LinePtrn;	/* Amiga current LinePtrn	*/
+#endif
+    struct MinNode    dd_Node;
     OOP_Object	    * dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
-    
+    WORD    	      dd_LockCount;
+    BOOL    	      dd_NoAutoKill;
 };
 
 /* for template_to_buf */

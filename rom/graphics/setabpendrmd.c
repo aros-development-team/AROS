@@ -62,7 +62,7 @@
 
     struct gfx_driverdata *dd;
     
-    if (CorrectDriverData(rp, GfxBase))
+    if (OBTAIN_DRIVERDATA(rp, GfxBase))
     {
 
 	dd = GetDriverData(rp);
@@ -97,7 +97,9 @@
 
 	}
 
-    } /* if (CorrectDriverData (rp, GfxBase)) */
+    	RELEASE_DRIVERDATA(rp, GfxBase);
+	
+    } /* if (OBTAIN_DRIVERDATA(rp, GfxBase)) */
     
     /* Do it after the driver to allow it to inspect the previous value */
     rp->FgPen = apen;

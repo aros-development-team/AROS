@@ -53,13 +53,29 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    struct RastPort * newRP;
 
+    struct RastPort * newRP;
+    BOOL    	      ok = FALSE;
+    
     newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (newRP)
     {
-	if (!InitRastPort (newRP))
+	if (InitRastPort(newRP))
+	{
+	    if (OBTAIN_DRIVERDATA(newRP, GfxBase))
+	    {
+	    	struct gfx_driverdata *dd = GetDriverData(newRP);
+	    
+	    	dd->dd_NoAutoKill = TRUE;
+	    	
+	    	RELEASE_DRIVERDATA(newRP, GfxBase);
+		
+		ok = TRUE;
+	    }
+	}
+	   
+	if (!ok)
 	{
 	    FreeMem (newRP, sizeof (struct RastPort));
 	    newRP = NULL;

@@ -66,19 +66,25 @@
     {
 	CopyMem (rp, newRP, sizeof (struct RastPort));
 
-	if (!CorrectDriverData(newRP,  GfxBase))
+	if (!OBTAIN_DRIVERDATA(newRP,  GfxBase))
 	{
 	    FreeMem (newRP, sizeof (struct RastPort));
 	    newRP = NULL;
 	}
 	else
 	{
+	    struct gfx_driverdata *dd = GetDriverData(newRP);
+	    
+	    dd->dd_NoAutoKill = TRUE;
+	    
 	    /* copy rastports attributes */
 	    SetFont(newRP, rp->Font);
 	    SetABPenDrMd(newRP, GetAPen(rp), GetBPen(rp), GetDrMd(rp));
 	    Move(newRP, rp->cp_x, rp->cp_y);
 
-	    #warning Some attributes not copied    
+	    #warning Some attributes not copied 
+	    
+	    RELEASE_DRIVERDATA(newRP, GfxBase);   
  	}
     }
 

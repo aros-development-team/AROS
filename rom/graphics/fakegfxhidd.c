@@ -232,9 +232,6 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 	    /*	This is an exclusive lock - awaken first node */
 	    else
 	    {
-		/* Save typing */
-		struct SemaphoreMessage *sm = (struct SemaphoreMessage *)sr;
-
 		/* Only awaken the first of the nodes */
 		Remove((struct Node *)sr);
 		sigSem->ss_NestCount++;
