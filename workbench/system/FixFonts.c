@@ -4,6 +4,7 @@
  ** A recompile of the CBM fixfonts program                     **
  **                                                             **
  ** Version 40.2 vom 16.01.1999 © THOR-Software, Thomas Richter **
+ ** Changes to compile with AROS - Henning Kiel, hkiel@aros.org **
  *****************************************************************/
 
 ///Includes
@@ -17,13 +18,22 @@
 
 #include <diskfont/diskfont.h>
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/diskfont_protos.h>
+/* start of AROS changes */
+//#include <clib/exec_protos.h>
+//#include <clib/dos_protos.h>
+//#include <clib/diskfont_protos.h>
 
-#include <pragmas/exec_sysbase_pragmas.h>
-#include <pragmas/dos_pragmas.h>
-#include <pragmas/diskfont_pragmas.h>
+//#include <pragmas/exec_sysbase_pragmas.h>
+//#include <pragmas/dos_pragmas.h>
+//#include <pragmas/diskfont_pragmas.h>
+
+#define __asm    /* */
+#define __saveds /* */
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/diskfont.h>
+/* end of AROS changes */
 
 #include <string.h>
 ///
@@ -36,7 +46,7 @@ char version[]="$VER: FixFonts 40.2 (16.9.99) (c) THOR";
 ///main
 long __asm __saveds main(void)
 {
-struct ExecBase *SysBase;
+//struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct Library *DiskfontBase;
 struct Message *wbstartup;
@@ -57,7 +67,7 @@ char *buffer;
 ULONG bufsize=4096L;
 
 
-        SysBase=*((struct ExecBase **)(4L));
+//        SysBase=*((struct ExecBase **)(4L));
         proc=(struct Process *)FindTask(NULL);
 
         if (proc->pr_CLI==NULL) {
@@ -66,16 +76,16 @@ ULONG bufsize=4096L;
         } else  wbstartup=NULL;
 
 
-        if (DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39L)) {
-         if (DiskfontBase=OpenLibrary("diskfont.library",34L)) {
-          if (buffer=AllocMem(bufsize,MEMF_PUBLIC)) {
-           if (exall=AllocDosObject(DOS_EXALLCONTROL,TAG_DONE)) {
+        if ((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39L))) {
+         if ((DiskfontBase=OpenLibrary("diskfont.library",34L))) {
+          if ((buffer=AllocMem(bufsize,MEMF_PUBLIC))) {
+           if ((exall=AllocDosObject(DOS_EXALLCONTROL,TAG_DONE))) {
 
             /* Set return code to fine */
             rc=0;
             do {
 
-             if (devproc=GetDeviceProc("FONTS:",devproc)) {
+             if ((devproc=GetDeviceProc("FONTS:",devproc))) {
 
               /* User abort? */
               if (CheckSignal(SIGBREAKF_CTRL_C)) {
@@ -84,7 +94,7 @@ ULONG bufsize=4096L;
               }
 
               exall->eac_LastKey=0L;
-              if (lock=DupLock(devproc->dvp_Lock)) {
+              if ((lock=DupLock(devproc->dvp_Lock))) {
                oldlock=CurrentDir(lock);
                do {
                 ead=(struct ExAllData *)buffer;
