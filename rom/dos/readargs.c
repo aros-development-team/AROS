@@ -160,7 +160,7 @@
     }
     else
     {
-	lcs.CS_Buffer=me->pr_Arguments;
+	lcs.CS_Buffer=(me->pr_Arguments ? me->pr_Arguments : (UBYTE*)"");
 	s1=lcs.CS_Buffer;
 	while(*s1++)
 	    ;
