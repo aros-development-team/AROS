@@ -120,7 +120,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     static const char *labels[] = {"Pattern","Vector", "Color", "Bitmap", "External",NULL};
     Object *pattern_group;
     Object *bitmap_string;
-    char *spec;
+    char *spec=NULL;
     int i;
 
     obj = (Object *)DoSuperNew(cl, obj,
