@@ -11,6 +11,9 @@
 #include <proto/muimaster.h>
 #endif
 
+#include <string.h>
+#include <stdlib.h>
+
 #include "mui.h"
 #include "muimaster_intern.h"
 
@@ -54,27 +57,70 @@ __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    LONG retval = -1;
+    
     if (!spec || !mri || !mri->mri_Colormap) return -1;
 
-    switch (spec->ps_penType)
+    switch(spec->ps_buf[0])
     {
-	case PST_MUI:
-	    if (spec->ps_mui < 0 || spec->ps_mui >= MPEN_COUNT) return -1;
-	    return mri->mri_Pens[spec->ps_mui];
-
+    	case PST_MUI:
+	    {
+	    	LONG pen;
+		
+		StrToLong(spec->ps_buf + 1, &pen);
+		
+		if ((pen >= 0) && (pen < MPEN_COUNT))
+		{
+		    retval = mri->mri_Pens[pen];
+		}
+    	    }
+	    break;
+	    
 	case PST_CMAP:
-	    return (LONG)spec->ps_cmap;
+	    {
+	    	LONG pen;
+		
+		StrToLong(spec->ps_buf + 1, &pen);
+		
+		if (pen < 0) pen = mri->mri_Colormap->Count + pen;
+		if ((pen >= 0) && (pen < mri->mri_Colormap->Count))
+		{
+		    retval = pen;
+		}
+	    }
 	    break;
-
-	case PST_RGB:
-	    spec->ps_rgbColor.pixel = ObtainBestPenA(mri->mri_Colormap,
-			spec->ps_rgbColor.red   << 16,
-			spec->ps_rgbColor.green << 16,
-			spec->ps_rgbColor.blue  << 16, NULL);
-	    return spec->ps_rgbColor.pixel;
+	    
+    	case PST_RGB:
+	    {
+	    	struct TagItem obp_tags[] =
+		{
+		    { OBP_FailIfBad, FALSE  },
+		    { TAG_DONE	    	    }
+		};
+		STRPTR s = spec->ps_buf + 1;
+	    	ULONG r, g, b;
+		
+		r = strtoul(s, (char **)&s, 16);
+		s++;
+		g = strtoul(s, (char **)&s, 16);
+		s++;
+		b = strtoul(s, (char **)&s, 16);
+		
+		retval = ObtainBestPenA(mri->mri_Colormap, r, g, b, obp_tags);
+			
+		if (retval != -1)
+		{
+		    /* flag to indicate that ReleasePen() needs to be called
+		       in MUI_ReleasePen() */
+		       
+		    retval |= 0x10000;
+		}
+	    }
 	    break;
-    }
-    return -1;
+	    	    
+    } /* switch(spec->ps_buf[0]) */
+    
+    return retval;
 
     AROS_LIBFUNC_EXIT
 
