@@ -5,7 +5,8 @@ EXEDIR := $(BINDIR)/test
 
 %define_libs
 
-FILES := amigademo \
+FILES := amiga2date \
+	amigademo \
 	dosvartest \
 	exceptiontest \
 	fileseek \
