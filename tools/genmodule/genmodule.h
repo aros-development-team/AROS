@@ -13,6 +13,7 @@ struct arglist {
     struct arglist *next;
     char *type;
     char *name;
+    char *reg;
 };
 
 struct functionlist {
@@ -39,6 +40,8 @@ extern char *conffile, *gendir, *genincdir, *reffile;
 /* global variables that store the configuration of the module */
 enum modtype { UNSPECIFIED, LIBRARY };
 extern enum modtype modtype;
+enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
+extern enum libcall libcall;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, *libbasetypeextern, *datestring;
 extern unsigned int majorversion, minorversion, firstlvo;
@@ -62,3 +65,5 @@ void writeinclibdefs(void);
 void writefunctable(void);
 void writestart(void);
 void writeend(void);
+void writeautoinit(void);
+void writestubs(void);
