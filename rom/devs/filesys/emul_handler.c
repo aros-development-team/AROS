@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Filesystem that accesses an underlying unix filesystem.
@@ -116,7 +116,7 @@ static void *const functable[]=
 
 static const UBYTE datatable=0;
 
-/* Make an AROS filenumber out of an unix filenumber. */
+/* Make an AROS error-code out of an unix error-code. */
 LONG u2a[][2]=
 {
   { ENOMEM, ERROR_NO_FREE_STORE },
@@ -126,6 +126,10 @@ LONG u2a[][2]=
   { ENOTDIR, ERROR_DIR_NOT_FOUND },
   { ENOSPC, ERROR_DISK_FULL },
   { ENOTEMPTY, ERROR_DIRECTORY_NOT_EMPTY },
+  { EISDIR, ERROR_OBJECT_WRONG_TYPE },
+  { ETXTBSY, ERROR_OBJECT_IN_USE },
+  { ENAMETOOLONG, ERROR_OBJECT_TOO_LARGE },
+  { EROFS, ERROR_WRITE_PROTECTED },
   { 0, ERROR_UNKNOWN }
 };
 
