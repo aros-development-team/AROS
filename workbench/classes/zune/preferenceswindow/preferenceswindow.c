@@ -95,21 +95,15 @@ Object *ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
             MUIA_ControlChar : 
             TAG_IGNORE,              controlChar,
             
-            Child, VGroup,
-                MUIA_Group_VertSpacing, 0,
-                Child, ImageObject,
-                    MUIA_Image_Spec, (IPTR) imageSpec,
-                End,
+            Child, ImageObject,
+                MUIA_Image_Spec, (IPTR) imageSpec,
             End,
             Child, HSpace(4),
-            Child, VGroup,
-                MUIA_Group_VertSpacing, 0,
-                Child, TextObject,
-                    MUIA_Font,                  MUIV_Font_Button,
-                    MUIA_Text_HiCharIdx, (IPTR) '_',
-                    MUIA_Text_Contents,  (IPTR) label,
-                    MUIA_Text_PreParse,  (IPTR) "\33c",
-                End,
+            Child, TextObject,
+                MUIA_Font,                  MUIV_Font_Button,
+                MUIA_Text_HiCharIdx, (IPTR) '_',
+                MUIA_Text_Contents,  (IPTR) label,
+                MUIA_Text_PreParse,  (IPTR) "\33c",
             End,
         End;    
         
