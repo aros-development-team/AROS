@@ -106,7 +106,7 @@
 
     if(failedObtain > 0)
     {
-	ss = sigSem->lh_Head;
+	ss = (struct SignalSemaphore *)sigSem->lh_Head;
 
 	while(ss->ss_Link.ln_Succ != NULL)
 	{
@@ -122,7 +122,7 @@
 	    else
 	    {
 		/* We got it, go on to the next one */
-		ss = ss->ss_Link.ln_Succ;
+		ss = (struct SignalSemaphore *)ss->ss_Link.ln_Succ;
 		failedObtain--;
 	    }
 	}
