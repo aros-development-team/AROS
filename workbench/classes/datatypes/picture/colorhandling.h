@@ -20,6 +20,7 @@ void ConvertTC2TC( struct Picture_Data *pd );
 void ConvertCM2TC( struct Picture_Data *pd );
 void ConvertCM2CM( struct Picture_Data *pd );
 void ConvertTC2CM( struct Picture_Data *pd );
+void CreateDestBM( struct Picture_Data *pd );
 
 #if 0
 unsigned int *MakeARGB(unsigned long *ColRegs, unsigned int Count);

@@ -60,7 +60,6 @@ I.. BOOL                  Remap;
 #include "pictureclass.h"
 #include "prefs.h"
 #include "colorhandling.h"
-// #include "colorhandling.h"
 
 #include "methods.h"
 #define PDTA_ScaleQuality 12345
@@ -400,6 +399,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    break;
 
 	case PDTA_DestBitMap:
+	    CreateDestBM( pd );
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
 	    *(msg->opg_Storage)=(ULONG) pd->DestBM;
 	    break;
@@ -699,10 +699,6 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     struct DTSpecialInfo *si;
     ULONG SrcWidth, SrcHeight;
     unsigned int SrcDepth;
-    struct IBox *domain;
-    IPTR Width, Height;
-    STRPTR Title;
-
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
     si = (struct DTSpecialInfo *) g->SpecialInfo;
@@ -787,46 +783,51 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
 
-    /*
-     *  Attribute holen
-     */
-    if(!(GetDTAttrs((Object *) g, DTA_Domain, (IPTR) &domain,
-   			       DTA_ObjName, (IPTR) &Title,
-   			       DTA_NominalHoriz, &Width,
-   			       DTA_NominalVert, &Height,
-   			       TAG_DONE) == 4))
     {
-        return FALSE;
-    }
-
+	struct IBox *domain;
+	IPTR Width, Height;
+	STRPTR Title;
+    
+	/*
+	 *  Attribute holen
+	 */
+	if(!(GetDTAttrs((Object *) g, DTA_Domain, (IPTR) &domain,
+				   DTA_ObjName, (IPTR) &Title,
+				   DTA_NominalHoriz, &Width,
+				   DTA_NominalVert, &Height,
+				   TAG_DONE) == 4))
+	{
+	    return FALSE;
+	}
+    
 #ifdef __AROS__
-    si->si_VertUnit = 1;
-    si->si_VisVert = domain->Height;
-    si->si_TotVert = Height;
-
-    si->si_HorizUnit = 1;
-    si->si_VisHoriz = domain->Width;
-    si->si_TotHoriz = Width;
+	si->si_VertUnit = 1;
+	si->si_VisVert = domain->Height;
+	si->si_TotVert = Height;
+    
+	si->si_HorizUnit = 1;
+	si->si_VisHoriz = domain->Width;
+	si->si_TotHoriz = Width;
 #endif
-
-    NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
-   				 GA_ID, g->GadgetID,
-
-   				 DTA_VisibleVert, domain->Height,
-   				 DTA_TotalVert, Height,
-   				 DTA_NominalVert, Height,
-   				 DTA_VertUnit, 1,
-
-   				 DTA_VisibleHoriz, domain->Width,
-   				 DTA_TotalHoriz, Width,
-   				 DTA_NominalHoriz, Width,
-   				 DTA_HorizUnit, 1,
-
-   				 DTA_Title, (IPTR) Title,
-   				 DTA_Busy, TRUE,
-   				 DTA_Sync, TRUE,
-   				 TAG_DONE);
-
+    
+	NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
+				     GA_ID, g->GadgetID,
+    
+				     DTA_VisibleVert, domain->Height,
+				     DTA_TotalVert, Height,
+				     DTA_NominalVert, Height,
+				     DTA_VertUnit, 1,
+    
+				     DTA_VisibleHoriz, domain->Width,
+				     DTA_TotalHoriz, Width,
+				     DTA_NominalHoriz, Width,
+				     DTA_HorizUnit, 1,
+    
+				     DTA_Title, (IPTR) Title,
+				     DTA_Busy, TRUE,
+				     DTA_Sync, TRUE,
+				     TAG_DONE);
+    }
     return TRUE;
 }
 
