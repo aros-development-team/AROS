@@ -137,7 +137,7 @@ UQUAD offset;
 		else
 		{
 			volume->moff_time=100;
-			AddIntServer(INTB_VERTB, &volume->vbl_int);
+			//AddIntServer(INTB_VERTB, &volume->vbl_int);
 		}
 	}
 	return retval;
