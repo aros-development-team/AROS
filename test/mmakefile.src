@@ -48,6 +48,7 @@ FILES := amiga2date \
 	enqueue \
 	semtorture \
 	obtainpentest \
+	readpixelarray \
 	writepixelarray \
 	rawtest \
 	camdtree \
