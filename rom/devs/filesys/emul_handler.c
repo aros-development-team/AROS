@@ -258,6 +258,29 @@ static LONG makefilename(struct emulbase *emulbase,
 }
 
 
+/* Free a filehandle */
+static LONG free_lock(struct filehandle *current)
+{
+    switch(current->type)
+    {
+	case FHD_FILE:
+	    if(current->fd!=STDIN_FILENO&&current->fd!=STDOUT_FILENO&&
+	       current->fd!=STDERR_FILENO)
+	    {
+		close(current->fd);
+		free(current->name);
+	    }
+	    break;
+	case FHD_DIRECTORY:
+	    closedir((DIR *)current->fd);
+	    free(current->name);
+	    break;
+    }
+    free(current);
+    return 0;
+}
+
+
 static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode)
 {
     LONG ret = 0;
@@ -438,27 +461,6 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
     return ret;
 }
 
-
-static LONG free_lock(struct filehandle *current)
-{
-    switch(current->type)
-    {
-	case FHD_FILE:
-	    if(current->fd!=STDIN_FILENO&&current->fd!=STDOUT_FILENO&&
-	       current->fd!=STDERR_FILENO)
-	    {
-		close(current->fd);
-		free(current->name);
-	    }
-	    break;
-	case FHD_DIRECTORY:
-	    closedir((DIR *)current->fd);
-	    free(current->name);
-	    break;
-    }
-    free(current);
-    return 0;
-}
 
 static LONG startup(struct emulbase *emulbase)
 {
@@ -675,12 +677,12 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 }
 
 
-static LONG create_hardlink(struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
+static LONG create_hardlink(struct emulbase *emulbase,
+                            struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
 {
     LONG error=0L;
     struct filehandle *fh;
 
-    link();
     fh = malloc(sizeof(struct filehandle));
     if (!fh)
     {
@@ -966,7 +968,8 @@ AROS_LH1(void, beginio,
 	    break;
 
         case FSA_CREATE_HARDLINK:
-            error = create_hardlink((struct filehandle **)&iofs->IOFS.io_Unit,
+            error = create_hardlink(emulbase,
+                                    (struct filehandle **)&iofs->IOFS.io_Unit,
                                     iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
                                     (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
             break;
