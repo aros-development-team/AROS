@@ -202,4 +202,22 @@ struct DosPacket {
 #define dp_Status2 dp_Res2
 #define dp_BufAddr dp_Arg1
 
+/*
+    Structure of the Dos resident list. Do NOT allocate it, use
+    AddSegment(), and have a loot at the autodocs!
+*/
+
+struct Segment
+{
+    BPTR seg_Next;
+    LONG seg_UC;
+    BPTR seg_Seg;
+    UBYTE seg_Name[4]; /* actually the first 4 chars of BSTR name */
+};
+
+#define CMD_SYSTEM	-1
+#define CMD_INTERNAL	-2
+#define CMD_DISABLED	-999
+
+
 #endif
