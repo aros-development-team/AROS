@@ -1,0 +1,81 @@
+#!/bin/bashx
+
+export PURIFYPATH=$HOME/Purify
+
+debug=0
+
+mode="link"
+args=""
+objs=""
+cflags=""
+cpu=`uname -m`
+
+#echo "$@"
+
+while [ $# -ne 0 ] ; do
+    case "$1" in
+	--debug ) debug=1 ; shift
+	;;
+	-g | cc | gcc | -Wall ) shift
+	;;
+	-o ) dest="$2" ; shift ; shift
+	;;
+	-c ) mode="compile" ; shift
+	;;
+	-I ) cflags="$cflags $1 $2" ; shift ; shift
+	;;
+	-I* ) cflags="$cflags $1" ; shift
+	;;
+	-W ) cflags="$cflags $1 $2" ; shift ; shift
+	;;
+	-W* ) cflags="$cflags $1" ; shift
+	;;
+	-f ) cflags="$cflags $1 $2" ; shift ; shift
+	;;
+	-f* ) cflags="$cflags $1" ; shift
+	;;
+	*.c ) csrcs="$csrcs $1" ; shift
+	;;
+	* ) args="$args $1" ; shift
+	;;
+    esac
+done
+
+if [ $debug -ne 0 ]; then
+    echo "dest=$dest"
+    echo "mode=$mode"
+    echo "args=$args"
+fi
+
+for cfile in $csrcs ; do
+    name=tmp/`basename $cfile .c`
+
+    if [ $debug -ne 0 ]; then
+	echo cc -Wall -g -S $cflags "$cfile" -o "$name".S
+    fi
+    cc -Wall -g -S $cflags "$cfile" -o "$name".S
+
+    if [ $debug -ne 0 ]; then
+	echo gawk -f $PURIFYPATH/purify.gawk --assign cpu=$cpu --assign out="$name"_pure.S "$name.S"
+    fi
+    gawk -f $PURIFYPATH/purify.gawk --assign cpu=$cpu --assign out="$name"_pure.S "$name.S"
+
+    if [ $debug -ne 0 ]; then
+	echo cc -c "$name"_pure.S -o "$name".o
+    fi
+    cc -c "$name"_pure.S -o "$name".o
+
+    objs="$objs $name.o"
+done
+
+case $mode in
+    link )
+	if [ $debug -ne 0 ]; then
+	    echo cc -g $PURIFYPATH/pbd.o $args $objs $PURIFYPATH/ped.o -o $dest -L$PURIFYPATH -lpurify -lc
+	fi
+	cc -g $PURIFYPATH/pbd.o $args $objs $PURIFYPATH/ped.o -o $dest -L$PURIFYPATH -lpurify -lc
+	;;
+    compile )
+	mv $objs $dest
+	;;
+esac
