@@ -120,7 +120,7 @@ lines to your code. They should be the first thing seen by the compiler:
 \begin{example}
 #define ENABLE_RT  1
 #include <aros/rt.h>
-\begin{example}
+\end{example}
 
 If you replace
 the |1| by |0|, then RT will be silently disabled.
@@ -131,7 +131,7 @@ the |1| by |0|, then RT will be silently disabled.
 
 \item Recompile.
 
-\end{example}
+\end{enumeration}
 
 The advantages are that you will get errors if you try to access
 resources which you didn't allocate and that you will get a list
