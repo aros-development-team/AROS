@@ -42,7 +42,7 @@ struct JumpVec
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-(n*LIB_VECTSIZE)))
+#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-((n)*LIB_VECTSIZE)))
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
@@ -117,4 +117,29 @@ extern void _aros_not_implemented (char *);
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
 
+#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
+({\
+    long _n1 = (long)(n1);\
+    long _n2 = (long)(n2);\
+    long _n3 = (long)(n3);\
+    long _re;\
+    __asm__ __volatile__(\
+	"movl	%5,%%eax\n\t"\
+	"pushl	%%eax\n\t"\
+	"movl	%4,%%eax\n\t"\
+	"pushl	%%eax\n\t"\
+	"movl   %3,%%eax\n\t"\
+	"pushl	%%eax\n\t"\
+	"movl	%%esp,%1\n\t"\
+	"movl	%2,%%eax\n\t"\
+	"call	*%%eax\n\t"\
+	"lea	12(%%esp),%%esp\n\t"\
+	"movl	%%eax,%0"\
+	: "=g"(_re), "=m"(*(APTR *)p)\
+	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "cc", "memory");\
+    (t)_re;\
+})
+#define AROS_UFC3R(t,n,a1,a2,a3,p) __UFC3R(t,n,a1,a2,a3,p)
+	
 #endif /* AROS_MACHINE_H */
