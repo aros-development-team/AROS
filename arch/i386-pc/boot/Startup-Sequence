@@ -1,44 +1,55 @@
+;
+; $Id$
+;
+
+; $VER: AROS Startup-Sequence for native-i386 0.0 (2001-09-02)
+
+;SetPatch QUIET
+
 ;SetClock LOAD
 
-;Mount RAM:
-;Mount NIL:
+Mount RAM:
+Mount NIL:
+;Mount PIPEFS:
 
-;Makedir RAM:T RAM:ENV RAM:Clipboards
+;Version >NIL:
+FailAt 21
 
-;Assign T: RAM:T
-;Assign ENV: RAM:ENV
-;Assign CLIPS: RAM:Clipboards
-;Assign LOCALE: SYS:Locale
-Assign LIBS: SYS:Classes ADD
-;Assign FONTS: SYS:Fonts
-;Assign HELP: SYS:Help
+MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
 
-;AddDatatypes REFRESH
+Assign ENV:     RAM:ENV
+Assign T:       RAM:T
+Assign CLIPS:   RAM:Clipboards
+Assign KEYMAPS: DEVS:Keymaps
+Assign LOCALE:  SYS:Locale
+Assign LIBS:    SYS:Classes ADD
+;Assign FONTS:   SYS:Fonts
+;Assign HELP:    LOCALE:Help DEFER
+;Assign PRINTERS: DEVS:Printers
 
-;Path SYS:Utilities SYS:System SYS:Prefs SYS:Tools SYS:Tools/Commodities SYS:Demos ADD QUIET
+Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
-; Call FixFonts if it was never called before
-;If NOT EXISTS SYS:Fonts/_fixfonts_called
-;  echo "Executing FixFonts"
-;  FixFonts
-;  echo "blah" >SYS:Fonts/_fixfonts_called
-;EndIf
+;Mount DEVS:DOSDrivers/~(#?.info)
 
-;SetDefaultFont ttcourier 14
-;SetDefaultFont arial 13 SCREEN
+; Activate selected gfx.hidd(s)
 
-; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
+;SetEnv Workbench $Workbench
+;SetEnv Kickstart $Kickstart
 
-;Prompt "%N.%S> "
-Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
+AddDatatypes REFRESH QUIET
+;IPrefs
+;Run <NIL: >NIL: ConClip
 
-; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
-; to /dev/fd0 (you'll need access rights on the device later -
-; on most systems this will work only if you are root) then uncomment
-; the last two lines below.
-;
-; Ordinary users can use fdsk.device both on their Amiga and their
-; linux box to mount disc images.
+Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
-;Assign FDSK: SYS:DiskImages
-;Mount AFD0:
+If EXISTS S:User-Startup
+  Execute S:User-Startup
+EndIf
+
+;LoadWB
+;NewShell CON:0/30/640/300/AROS-Shell/CLOSE
+;NewShell CON:160/300/640/300/AROS-Shell/CLOSE
+
+Execute S:Shell-Startup
+
+;EndCLI
