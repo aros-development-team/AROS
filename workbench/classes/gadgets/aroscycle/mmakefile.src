@@ -13,7 +13,7 @@ FILES := cycleclass support
 %genwblib
 
 #MM workbench-classes-aroscycle : workbench-classes-setup includes
-workbench-classes-aroscycle : show-flags $(SLIB)
+workbench-classes-aroscycle : $(SLIB)
 	@$(NOP)
 
 

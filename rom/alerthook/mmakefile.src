@@ -21,7 +21,7 @@ ALL_FILES := $(FILES)
 OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
 #MM kernel-alerthook-module : setup includes
-kernel-alerthook-module : show-flags $(OSMODDIR)/alert.hook
+kernel-alerthook-module : $(OSMODDIR)/alert.hook
 	@$(NOP)
 
 $(OSMODDIR)/alert.hook : $(OBJS)
@@ -33,9 +33,6 @@ $(OSMODDIR)/alert.hook : $(OBJS)
 #MM
 setup :
 	%mkdirs_q $(OSGENDIR) $(OBJDIR)
-
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 clean ::

@@ -11,11 +11,8 @@ KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(KEYMAPDIR)/$(f))
 CFLAGS := $(INCLUDES) -nostartfiles -nostdlib -Xlinker -i
 
 #MM workbench-devs-keymaps : setup includes keymapobjs
-workbench-devs-keymaps : show-flags keymapobjs
+workbench-devs-keymaps : keymapobjs
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

@@ -62,7 +62,7 @@ FUNCTIONS := activatecxobj \
 %genlib_cpak
 
 #MM workbench-libs-commodities : setup includes linklibs
-workbench-libs-commodities : show-flags $(SLIB)
+workbench-libs-commodities : $(SLIB)
 	@$(NOP)
 
 #MM

@@ -22,7 +22,7 @@ FUNCTIONS := \
 %genlib_cpak
 
 #MM workbench-libs-asl : setup includes linklibs
-workbench-libs-asl : show-flags $(SLIB)
+workbench-libs-asl : $(SLIB)
 	@$(NOP)
 
 #MM

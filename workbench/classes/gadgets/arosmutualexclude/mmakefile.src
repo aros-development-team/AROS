@@ -13,7 +13,7 @@ DESTDIR := $(GADGETDIR)
 %genwblib
 
 #MM workbench-classes-arosmutualexclude : workbench-classes-setup includes
-workbench-classes-arosmutualexclude : show-flags $(SLIB)
+workbench-classes-arosmutualexclude : $(SLIB)
 	@$(NOP)
 
 #MM workbench-classes-setup

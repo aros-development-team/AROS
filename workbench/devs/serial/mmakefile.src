@@ -12,7 +12,7 @@ OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 LIBS    := $(LIBS) -lhiddserialstubs
 
 #MM workbench-devs : setup includes linklibs workbench-devs-$(ARCH)-$(CPU) hidd-serial-module
-workbench-devs : show-flags $(OBJDIR)/$(INIT).o $(OBJS) $(DEVS)
+workbench-devs : $(OBJDIR)/$(INIT).o $(OBJS) $(DEVS)
 	@$(NOP)
 
 #MM
@@ -22,9 +22,6 @@ clean ::
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(DEVSDIR)
-
-show-flags:
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 $(DEVSDIR)/serial.device : $(OBJS)
 	%link_q startup=$(OBJDIR)/$(INIT).o $(OBJS)

@@ -27,17 +27,12 @@ OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES) $(TOOL),$(OBJDIR)/$(f).d)
 
 #MM test-hidd-graphics : setup includes
-test-hidd-graphics : show-flags $(EXES)
+test-hidd-graphics : $(EXES)
 	@$(NOP)
 
 #MM test-hidd-graphics-quick : 
-test-hidd-graphics-quick : show-flags $(EXES)
+test-hidd-graphics-quick : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "OBJDIR=$(OBJDIR)"
-	@$(ECHO) "EXEDIR=$(EXEDIR)"
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

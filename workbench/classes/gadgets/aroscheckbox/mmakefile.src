@@ -13,7 +13,7 @@ FILES := checkboxclass support
 %genwblib
 
 #MM workbench-classes-aroscheckbox : workbench-classes-setup includes
-workbench-classes-aroscheckbox : show-flags $(SLIB)
+workbench-classes-aroscheckbox : $(SLIB)
 	@$(NOP)
 
 

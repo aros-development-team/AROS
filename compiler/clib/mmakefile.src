@@ -122,11 +122,8 @@ OBJS := $(foreach f,$(FILES) $(ASMFILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM linklibs : setup includes clib-$(ARCH)
-linklibs : show-flags $(LIB)
+linklibs : $(LIB)
 	@$(NOP)
-
-show-flags :
-	@echo "APPCFLAGS=$(APPCFLAGS)"
 
 #MM
 setup :

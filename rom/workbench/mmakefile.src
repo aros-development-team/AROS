@@ -93,15 +93,15 @@ endif
 
 
 #MM kernel-workbench-linklib : setup includes kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-linklib : show-flags $(LIB)
+kernel-workbench-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-workbench-module : setup includes kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-workbench-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM kernel-workbench-module-quick : kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-workbench-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

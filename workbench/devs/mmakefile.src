@@ -11,11 +11,8 @@ DEVS := $(DEVSDIR)/ram.handler \
 	$(DEVSDIR)/fdsk.device
 
 #MM workbench-devs : setup includes
-workbench-devs : show-flags $(DEVS) $(DEVSDIR)/Mountlist
+workbench-devs : $(DEVS) $(DEVSDIR)/Mountlist
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

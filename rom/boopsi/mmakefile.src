@@ -80,11 +80,11 @@ endif
 %genromlib_f
 
 #MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
-kernel-boopsi-linklib : show-flags $(LIB)
+kernel-boopsi-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-boopsi-module : setup includes kernel-boopsi-$(ARCH)-$(CPU)
-kernel-boopsi-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-boopsi-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

@@ -120,15 +120,15 @@ endif
 %genromlib_f
 
 #MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-linklib : show-flags $(LIB)
+kernel-layers-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-layers-module : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-layers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM kernel-layers-module-quick : kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-layers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

@@ -130,11 +130,11 @@ $(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
 	$(RM) $(TESTOBJDIR)/ss.o
 
 #MM kernel-dos-linklib : setup includes kernel-dos-$(ARCH)-$(CPU)
-kernel-dos-linklib : show-flags $(LIB)
+kernel-dos-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-dos-module : setup includes kernel-dos-$(ARCH)-$(CPU)
-kernel-dos-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-dos-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

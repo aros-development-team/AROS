@@ -30,13 +30,8 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 #MM test : setup-test
-test : show-flags $(EXES)
+test : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@echo "OBJDIR=$(OBJDIR)"
-	@echo "EXEDIR=$(EXEDIR)"
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 setup-test :

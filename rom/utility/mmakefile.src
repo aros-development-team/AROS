@@ -92,11 +92,11 @@ endif
 %genromlib_f
 
 #MM kernel-utility-linklib : setup includes kernel-utility-$(ARCH)-$(CPU)
-kernel-utility-linklib : show-flags $(LIB)
+kernel-utility-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-utility-module : setup includes kernel-utility-$(ARCH)-$(CPU)
-kernel-utility-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-utility-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

@@ -51,11 +51,11 @@ LIBS := -lhiddgraphicsstubs
 workbench-hidd-setup : setup
 
 #MM hidd-graphics-linklib : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
-hidd-graphics-linklib : show-flags $(LIB) $(STUB_FILE)
+hidd-graphics-linklib : $(LIB) $(STUB_FILE)
 	@$(NOP)
 
 #MM hidd-graphics-module : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
-hidd-graphics-module : show-flags $(SLIB) $(STUB_FILE)
+hidd-graphics-module : $(SLIB) $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -69,7 +69,7 @@ hidd-graphics-module : show-flags $(SLIB) $(STUB_FILE)
 
 
 #MM hidd-graphics-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-graphics-module-quick : show-flags $(LIB) $(SLIB)
+hidd-graphics-module-quick : $(LIB) $(SLIB)
 	@$(NOP)
 
 #MM hidd-graphics-includes-quick : hidd-oop-$(ARCH)-$(CPU)

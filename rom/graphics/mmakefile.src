@@ -227,11 +227,11 @@ endif
 %genromlib_f
 
 #MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)
-kernel-graphics-linklib : show-flags $(LIB)
+kernel-graphics-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-graphics-module : setup includes kernel-graphics-$(ARCH)
-kernel-graphics-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-graphics-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

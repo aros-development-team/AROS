@@ -81,11 +81,11 @@ endif
 %genromlib_arch
 
 #MM kernel-mathffp-linklib : setup includes kernel-mathffp-$(ARCH)-$(CPU)
-kernel-mathffp-linklib : show-flags $(LIB)
+kernel-mathffp-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-mathffp-module : setup includes kernel-mathffp-$(ARCH)-$(CPU)
-kernel-mathffp-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-mathffp-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

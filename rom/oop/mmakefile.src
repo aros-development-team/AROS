@@ -114,11 +114,11 @@ $(GENINCDIR)/oop/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@
 
 #MM kernel-oop-linklib : setup includes kernel-oop-$(ARCH)-$(CPU)
-kernel-oop-linklib : show-flags $(LIB)
+kernel-oop-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-oop-module : setup includes kernel-oop-$(ARCH)-$(CPU)
-kernel-oop-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-oop-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 
@@ -132,7 +132,7 @@ kernel-oop-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 #   make -f TOP=/dh1/AROS CURDIR=rom/oop mmakefile kernel-oop-module-quick
 
 #MM kernel-oop-module-quick : kernel-oop-$(ARCH)-$(CPU)
-kernel-oop-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-oop-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM kernel-oop-includes-quick : hidd-oop-$(ARCH)-$(CPU)
@@ -140,7 +140,7 @@ kernel-oop-includes-quick : setup-includes includes-generate includes-copy
 	$(NOP)
 
 #MM kernel-oop-linklib-quick : kernel-oop-$(ARCH)-$(CPU)
-kernel-oop-linklib-quick : show-flags $(LIB)
+kernel-oop-linklib-quick : $(LIB)
 	@$(NOP)
 
 # --- QUICK HACKS END ---

@@ -45,7 +45,7 @@ else
 # emulated/linklib has modules collected into a linklib
 
 #MM
-kernel-boot-linklib : show-flags $(LIB)
+kernel-boot-linklib : $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)
@@ -69,9 +69,6 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
-
-show-flags:
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 %common
 %include_deps

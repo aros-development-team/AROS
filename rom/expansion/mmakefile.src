@@ -59,11 +59,11 @@ DEPLIBS :=
 endif
 
 #MM kernel-expansion-linklib : setup includes
-kernel-expansion-linklib : setup show-flags $(LIB)
+kernel-expansion-linklib : setup $(LIB)
 	@$(NOP)
 
 #MM kernel-expansion-module : setup includes
-kernel-expansion-module : setup show-flags $(OSMODDIR)/expansion.library
+kernel-expansion-module : setup $(OSMODDIR)/expansion.library
 
 %genromlib_finline
 

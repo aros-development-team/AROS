@@ -47,7 +47,7 @@ FUNCTIONS	:= \
 %genlib_cpak
 
 #MM workbench-libs-arp : setup includes linklibs
-workbench-libs-arp : show-flags $(SLIB)
+workbench-libs-arp : $(SLIB)
 	@$(NOP)
 
 #MM

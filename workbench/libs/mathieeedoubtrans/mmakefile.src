@@ -19,7 +19,7 @@ ARCHIVE		:= mathieeedoubtrans.arch
 %genlib_arch
 
 #MM workbench-libs-mathieeedoubtrans : setup includes linklibs
-workbench-libs-mathieeedoubtrans : show-flags $(SLIB)
+workbench-libs-mathieeedoubtrans : $(SLIB)
 	@$(NOP)
 
 #MM

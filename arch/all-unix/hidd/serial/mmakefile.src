@@ -108,9 +108,6 @@ $(LIB) : $(OBJS)
 	@$(AR) $@ $?
 	@$(RANLIB) $@
 
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
 setup :
 	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
 	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
@@ -168,11 +165,11 @@ endif
 
 	
 #MM hidd-serial-linklib : setup includes hidd-serial-$(ARCH)-$(CPU)
-hidd-serial-linklib : show-flags $(LIB) $(STUB_FILE) setup
+hidd-serial-linklib : $(LIB) $(STUB_FILE) setup
 	@$(NOP)
 
 #MM hidd-serial-module : setup includes hidd-serial-$(ARCH)-$(CPU)
-hidd-serial-module : show-flags $(SLIB) $(STUB_FILE)
+hidd-serial-module : $(SLIB) $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -186,7 +183,7 @@ hidd-serial-module : show-flags $(SLIB) $(STUB_FILE)
 
 
 #MM hidd-serial-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-serial-module-quick : show-flags $(LIB) $(SLIB)
+hidd-serial-module-quick : $(LIB) $(SLIB)
 	@$(NOP)
 
 #MM hidd-serial-includes-quick : hidd-oop-$(ARCH)-$(CPU)

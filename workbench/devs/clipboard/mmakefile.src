@@ -19,7 +19,7 @@ $(LIB) : $(OBJS)
 
 
 #MM workbench-devs : workbench-devs-$(ARCH)-$(CPU)
-workbench-devs : show-flags $(DEVS)
+workbench-devs : $(DEVS)
 
 #MM
 clean ::
@@ -28,9 +28,6 @@ clean ::
 #MM
 setup :
 	%mkdirs_q $(OBJDIR)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 $(DEVSDIR)/clipboard.device : $(OBJDIR)/clipboard.o
 	%link_q startup=

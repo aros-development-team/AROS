@@ -32,7 +32,7 @@ FUNCTIONS	:= \
 %genlib_cpak
 
 #MM workbench-libs-gadtools : setup includes linklibs
-workbench-libs-gadtools : show-flags $(SLIB)
+workbench-libs-gadtools : $(SLIB)
 	@$(NOP)
 
 #MM

@@ -86,11 +86,11 @@ endif
 %genromlib_f
 
 #MM kernel-keymap-linklib : setup includes kernel-keymap-$(ARCH)-$(CPU)
-kernel-keymap-linklib : show-flags $(LIB)
+kernel-keymap-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-keymap-module : setup includes kernel-keymap-$(ARCH)-$(CPU)
-kernel-keymap-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-keymap-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

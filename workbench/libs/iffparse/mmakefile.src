@@ -74,7 +74,7 @@ FUNCTIONS := \
 %genlib_cpak
 
 #MM workbench-libs-iffparse : setup includes linklibs
-workbench-libs-iffparse : show-flags $(SLIB)
+workbench-libs-iffparse : $(SLIB)
 	@$(NOP)
 
 #MM

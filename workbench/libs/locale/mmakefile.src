@@ -65,10 +65,10 @@ endif
 %genlib_cpak
 
 #MM workbench-libs-locale : setup includes linklibs
-workbench-libs-locale : show-flags $(SLIB)
+workbench-libs-locale : $(SLIB)
 
 #MM workbench-libs-locale-quick:
-workbench-libs-locale-quick : show-flags $(SLIB)
+workbench-libs-locale-quick : $(SLIB)
 
 #MM
 setup :

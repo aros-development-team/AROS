@@ -43,11 +43,8 @@ demos-quick : demos
 	@$(NOP)
 	
 #MM demos : setup demo-setup includes linklibs
-demos : show-flags $(EXES) $(EXEDIR)/forkbomb
+demos : $(EXES) $(EXEDIR)/forkbomb
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

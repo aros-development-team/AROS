@@ -94,11 +94,11 @@ DEPLIBS :=
 endif
 
 #MM kernel-exec-linklib : setup includes kernel-exec-$(ARCH)-$(CPU)
-kernel-exec-linklib : show-flags $(LIB)
+kernel-exec-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-exec-module : setup includes kernel-exec-$(ARCH)-$(CPU)
-kernel-exec-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-exec-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 # The all powerful ROM library generating stuff...

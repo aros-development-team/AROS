@@ -75,11 +75,11 @@ endif
 %genromlib_f
 
 #MM kernel-aros-linklib : setup includes kernel-aros-$(ARCH)-$(CPU)
-kernel-aros-linklib : show-flags $(LIB)
+kernel-aros-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-aros-module : setup includes kernel-aros-$(ARCH)-$(CPU)
-kernel-aros-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-aros-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

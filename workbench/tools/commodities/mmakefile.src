@@ -18,11 +18,8 @@ commodities-quick : commodities
 	@$(NOP)
 	
 #MM commodities : setup cx-setup includes linklibs
-commodities : show-flags $(EXES)
+commodities : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

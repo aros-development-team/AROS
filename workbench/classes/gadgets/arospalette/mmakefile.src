@@ -15,7 +15,7 @@ FILES := paletteclass support
 %genwblib
 
 #MM workbench-classes-arospalette : workbench-classes-setup includes
-workbench-classes-arospalette : show-flags $(SLIB)
+workbench-classes-arospalette : $(SLIB)
 	@$(NOP)
 
 #MM workbench-classes-setup

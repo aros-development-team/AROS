@@ -13,7 +13,7 @@ FILES	:= listclass helpfuncs
 %genwblib
 
 #MM workbench-classes-aroslist : workbench-classes-setup includes
-workbench-classes-aroslist : show-flags $(SLIB)
+workbench-classes-aroslist : $(SLIB)
 	@$(NOP)
 
 

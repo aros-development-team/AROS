@@ -9,11 +9,8 @@ DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 LIB		:= $(OBJDIR)/emul_handler.a
 
 #MM
-kernel-filesys-$(ARCH)-$(CPU) : show-flags $(LIB)
+kernel-filesys-$(ARCH)-$(CPU) : $(LIB)
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM kernel-filesys : setup includes kernel-filesys-$(ARCH)-$(CPU)
 kernel-filesys :

@@ -106,11 +106,11 @@ setup-includes :
 #MM clean setup
 
 #MM kernel-misc-linklib : setup includes
-kernel-misc-linklib : show-flags $(LIB)
+kernel-misc-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-misc-module : setup includes
-kernel-misc-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-misc-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 

@@ -84,11 +84,11 @@ NO_FUNCTABLE := 1
 %genromlib_f
 
 #MM kernel-timer-linklib : setup includes kernel-timer-$(ARCH)-$(CPU)
-kernel-timer-linklib : show-flags $(LIB)
+kernel-timer-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-timer-module : setup includes kernel-timer-$(ARCH)-$(CPU)
-kernel-timer-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-timer-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

@@ -26,7 +26,7 @@ FUNCTIONS	:= \
 %genlib_cpak
 
 #MM workbench-libs-icon : setup includes linklibs
-workbench-libs-icon : show-flags $(SLIB)
+workbench-libs-icon : $(SLIB)
 	@$(NOP)
 
 #MM

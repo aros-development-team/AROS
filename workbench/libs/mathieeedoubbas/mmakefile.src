@@ -15,7 +15,7 @@ ARCHIVE		:= mathieeedoubbas.arch
 %genlib_arch
 
 #MM workbench-libs-mathieeedoubbas : setup includes linklibs
-workbench-libs-mathieeedoubbas : show-flags $(SLIB)
+workbench-libs-mathieeedoubbas : $(SLIB)
 	@$(NOP)
 
 #MM

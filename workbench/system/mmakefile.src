@@ -34,11 +34,8 @@ workbench-system-quick : workbench-system
 	@$(NOP)
 	
 #MM workbench-system : setup workbench-system-setup includes linklibs
-workbench-system : show-flags $(EXES)
+workbench-system : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :

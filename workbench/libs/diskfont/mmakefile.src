@@ -28,7 +28,7 @@ FUNCTIONS	:= \
 %genlib_cpak
 
 #MM workbench-libs-diskfont : setup includes linklibs
-workbench-libs-diskfont : show-flags $(SLIB)
+workbench-libs-diskfont : $(SLIB)
 	@$(NOP)
 
 #MM

@@ -108,9 +108,6 @@ $(LIB) : $(OBJS)
 	@$(AR) $@ $?
 	@$(RANLIB) $@
 
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
 setup :
 	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
 	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
@@ -168,11 +165,11 @@ endif
 
 	
 #MM hidd-parallel-linklib : setup includes hidd-parallel-$(ARCH)-$(CPU)
-hidd-parallel-linklib : show-flags $(LIB) $(STUB_FILE) setup
+hidd-parallel-linklib : $(LIB) $(STUB_FILE) setup
 	@$(NOP)
 
 #MM hidd-parallel-module : setup includes hidd-parallel-$(ARCH)-$(CPU)
-hidd-parallel-module : show-flags $(SLIB) $(STUB_FILE)
+hidd-parallel-module : $(SLIB) $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -186,7 +183,7 @@ hidd-parallel-module : show-flags $(SLIB) $(STUB_FILE)
 
 
 #MM hidd-parallel-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-parallel-module-quick : show-flags $(LIB) $(SLIB)
+hidd-parallel-module-quick : $(LIB) $(SLIB)
 	@$(NOP)
 
 #MM hidd-parallel-includes-quick : hidd-oop-$(ARCH)-$(CPU)

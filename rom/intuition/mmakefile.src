@@ -210,11 +210,11 @@ endif
 %genromlib_f
 
 #MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)-$(CPU)
-kernel-intuition-linklib : show-flags $(LIB)
+kernel-intuition-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-intuition-module : setup includes kernel-intuition-$(ARCH)-$(CPU)
-kernel-intuition-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-intuition-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

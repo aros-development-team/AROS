@@ -34,11 +34,8 @@ tools-quick : tools
 	@$(NOP)
 	
 #MM workbench-tools : setup-workbench-tools includes linklibs commodities
-workbench-tools : show-flags $(EXES)
+workbench-tools : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup-workbench-tools :

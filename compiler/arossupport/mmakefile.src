@@ -43,7 +43,7 @@ CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
 
 
 #MM linklibs : setup includes
-linklibs : show-flags $(LIB)
+linklibs : $(LIB)
 	@$(NOP)
 
 #MM
@@ -67,9 +67,6 @@ $(GENINCDIR)/aros/%.h: include/%.h
 
 $(LIB) : $(OBJS)
 	%mklib_q
-
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
 
 # These files need special CFLAGS
 $(OBJDIR)/kprintf.o : kprintf.c

@@ -44,7 +44,7 @@ FUNCTIONS :=	rtclosewindowsafely \
 %genlib_cpak
 
 #MM workbench-libs-reqtools : setup includes linklibs
-workbench-libs-reqtools : show-flags $(SLIB)
+workbench-libs-reqtools : $(SLIB)
 	@$(NOP)
 
 #MM

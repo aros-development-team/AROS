@@ -84,11 +84,11 @@ NO_FUNCTABLE := 1
 %genromlib_f
 
 #MM kernel-battclock-linklib : setup includes kernel-battclock-$(ARCH)-$(CPU)
-kernel-battclock-linklib : show-flags $(LIB)
+kernel-battclock-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-battclock-module : setup includes kernel-battclock-$(ARCH)-$(CPU)
-kernel-battclock-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
+kernel-battclock-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup

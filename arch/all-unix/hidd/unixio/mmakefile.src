@@ -52,7 +52,7 @@ kernel-hidd:
 	@$(NOP)
 
 #MM
-kernel-hidd-linklib : show-flags $(LIB)
+kernel-hidd-linklib : $(LIB)
 	@$(NOP)
 
 DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
@@ -90,9 +90,6 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 %common
 %include_deps

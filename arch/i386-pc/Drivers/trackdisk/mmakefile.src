@@ -26,10 +26,6 @@ setup :
 	%mkdirs_q $(OSGENDIR)
 
 
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
-
 $(DEVSDIR)/trackdisk.device : $(OSGENDIR)/trackdisk.o
 	%link_q startup=
 

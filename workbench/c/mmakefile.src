@@ -74,13 +74,8 @@ DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 #MM- workbench-complete : workbench-c
 #MM- workbench-c : setup-workbench-c includes workbench-c-quick
 #MM workbench-c-quick :
-workbench-c-quick : show-flags $(EXES)
+workbench-c-quick : $(EXES)
 	@$(NOP)
-
-show-flags :
-	@echo "OBJDIR=$(OBJDIR)"
-	@echo "EXEDIR=$(EXEDIR)"
-	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
 setup-workbench-c :

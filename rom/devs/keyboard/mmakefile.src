@@ -18,7 +18,7 @@ $(LIB) : $(OBJS)
 	%mklib_q
 
 #MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-kernel-devs : show-flags $(DEVS)
+kernel-devs : $(DEVS)
 
 #MM
 clean ::
@@ -27,11 +27,6 @@ clean ::
 #MM
 setup :
 	%mkdirs_q $(OSGENDIR)
-
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
 
 $(DEVSDIR)/keyboard.device : $(OSGENDIR)/keyboard.o
 	%link_q startup=

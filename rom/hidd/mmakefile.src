@@ -66,11 +66,11 @@ else
 endif
 
 #MM kernel-hidd-linklib : setup includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-linklib : show-flags $(LIB)
+kernel-hidd-linklib : $(LIB)
 	@$(NOP)
 
 #MM kernel-hidd-module : setup includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-module : show-flags $(HIDDSDIR)/$(OSMODULE)
+kernel-hidd-module : $(HIDDSDIR)/$(OSMODULE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -82,7 +82,7 @@ kernel-hidd-module : show-flags $(HIDDSDIR)/$(OSMODULE)
 #   make -f mmakefile TOP=/dh1/AROS CURDIR=rom/hidd kernel-hidd-module-quick
 
 #MM kernel-hidd-module-quick : kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-module-quick : show-flags $(LIB) $(HIDDSDIR)/$(OSMODULE)
+kernel-hidd-module-quick : $(LIB) $(HIDDSDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM kernel-hidd-includes-quick : kernel-hidd-$(ARCH)-$(CPU)
@@ -139,9 +139,6 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 %common
 %include_deps
