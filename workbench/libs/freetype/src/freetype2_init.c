@@ -15,24 +15,26 @@
 #include <proto/exec.h>
 #include <proto/alib.h>
 
+#include <aros/symbolsets.h>
+#include LC_LIBDEFS_FILE
+
 struct Library *aroscbase;
 struct ExecBase *SysBase;
 
-ULONG SAVEDS STDARGS FreeType2_L_InitLib (struct LibHeader *Freetype2Base)
+AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
-    D(bug("Inside Init func of freetype2.library\n"));
-
-    SysBase = Freetype2Base->lh_SysBase;
+    SysBase = LIBBASE->lh_SysBase;
     
     if (!(aroscbase = OpenLibrary("arosc.library",41)))
         return FALSE;
-  
+
     return TRUE;
 }
 
-void  SAVEDS STDARGS FreeType2_L_ExpungeLib(struct LibHeader *Freetype2Base)
+AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
 {
-    D(bug("Inside Expunge func of freetype2.library\n"));
-
     CloseLibrary(aroscbase);
 }
+
+ADD2INITLIB(InitData, 0);
+ADD2EXPUNGELIB(CleanUp, 0);
