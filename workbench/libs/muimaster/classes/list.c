@@ -1007,7 +1007,6 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int col,x1,x2;
-    //struct ListEntry *entry = data->entries[entry_pos];
 
     /* To be surem we don't draw anything if there is no title */
     if (entry_pos == ENTRY_TITLE && !data->title) return;
@@ -1018,13 +1017,16 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
     for (col = 0; col < data->columns; col++)
     {
 	ZText *text;
-	x2 = x1 + data->ci[col].entries_width;
-
-	if (col == data->treecolumn) x1 += data->entries[entry_pos]->parents * data->parent_space;
-
+        x2 = x1 + data->ci[col].entries_width;
+	
+        if (entry_pos != ENTRY_TITLE && col == data->treecolumn)
+        {
+            x1 += data->entries[entry_pos]->parents * data->parent_space;
+        }
+        
 	if ((text = zune_text_new(data->preparses[col], data->strings[col], ZTEXT_ARG_NONE, NULL)))
 	{
-	    /* Could be made simpler, as we don't need really the bounds */
+            /* Could be made simpler, as we don't really need the bounds */
 	    zune_text_get_bounds(text, obj);
 	    SetAPen(_rp(obj), muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW]);
 	    zune_text_draw(text, obj, x1, x2, y); /* totally wrong! */
