@@ -27,9 +27,9 @@
 #include "support.h"
 #include "support_classes.h"
 
-//extern struct Library *MUIMasterBase;
+extern struct Library *MUIMasterBase;
 
-struct MUI_PopaslData
+struct Popasl_DATA
 {
     int type;
     APTR asl_req;
@@ -83,7 +83,7 @@ SAVEDS static LONG Asl_Entry(void)
 static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
 {
     char *buf = NULL;
-    struct MUI_PopaslData *data = (struct MUI_PopaslData *)hook->h_Data;
+    struct Popasl_DATA *data = (struct Popasl_DATA *)hook->h_Data;
     struct Asl_Startup *startup;
     Object *string = (Object*)msg[0];
     struct MsgPort *msg_port;
@@ -198,7 +198,7 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
 
 static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 {
-    struct MUI_PopaslData *data= (struct MUI_PopaslData *)hook->h_Data;
+    struct Popasl_DATA *data= (struct Popasl_DATA *)hook->h_Data;
     Object *string = (Object*)msg[0];
     LONG suc = (LONG)msg[1];
 
@@ -267,7 +267,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 
 IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PopaslData   *data;
+    struct Popasl_DATA   *data;
     struct TagItem  	    *tag, *tags;
     ULONG asl_type = GetTagData(MUIA_Popasl_Type,ASL_FileRequest,msg->ops_AttrList);
     APTR asl_req;
@@ -317,7 +317,7 @@ IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 IPTR Popasl__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PopaslData   *data = INST_DATA(cl, obj);
+    struct Popasl_DATA   *data = INST_DATA(cl, obj);
     if (data->asl_req) FreeAslRequest(data->asl_req);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -325,7 +325,7 @@ IPTR Popasl__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 #define STORE *(msg->opg_Storage)
 IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_PopaslData *data = INST_DATA(cl, obj);
+    struct Popasl_DATA *data = INST_DATA(cl, obj);
 
     switch(msg->opg_AttrID)
     {
@@ -337,7 +337,7 @@ IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 IPTR Popasl__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_PopaslData *data = INST_DATA(cl, obj);
+    struct Popasl_DATA *data = INST_DATA(cl, obj);
     if (data->asl_proc) AbortAslRequest(data->asl_req);
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -359,7 +359,7 @@ const struct __MUIBuiltinClass _MUI_Popasl_desc =
 { 
     MUIC_Popasl,
     MUIC_Popstring, 
-    sizeof(struct MUI_PopaslData), 
+    sizeof(struct Popasl_DATA), 
     (void*)Popasl_Dispatcher 
 };
 #endif /* ZUNE_BUILTIN_POPASL */
