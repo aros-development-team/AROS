@@ -4,4 +4,6 @@ libdefs.h
 mmakefile
 *.bak
 *.info
-
+SCOPTIONS
+test
+*.o

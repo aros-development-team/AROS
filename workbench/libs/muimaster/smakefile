@@ -1,4 +1,5 @@
 CFLAGS = NOVERS
+LIBCODE =
 
 LIBOBJS = \
   objs/mui_addclipping.o\
@@ -30,7 +31,7 @@ LIBOBJS = \
 CLASSESOBJS= \
   objs/classes/notify.o
 
-all: dirs objs/support.o $(LIBOBJS) $(CLASSESOBJS)
+all: dirs objs/support.o $(LIBOBJS) $(CLASSESOBJS) test
 
 dirs:
   execute  <<
@@ -47,83 +48,91 @@ objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
 
 objs/mui_addclipping.o: mui_addclipping.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_addclipping.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_addclipping.c objname=$@
 
 objs/mui_addclipregion.o: mui_addclipregion.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_addclipregion.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_addclipregion.c objname=$@
 
 objs/mui_allocaslrequest.o: mui_allocaslrequest.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_allocaslrequest.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_allocaslrequest.c objname=$@
 
 objs/mui_aslrequest.o: mui_aslrequest.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_aslrequest.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_aslrequest.c objname=$@
 
 objs/mui_beginrefresh.o: mui_beginrefresh.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_beginrefresh.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_beginrefresh.c objname=$@
 
 objs/mui_createcustomclass.o: mui_createcustomclass.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_createcustomclass.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_createcustomclass.c objname=$@
 
 objs/mui_deletecustomclass.o: mui_deletecustomclass.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_deletecustomclass.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_deletecustomclass.c objname=$@
 
 objs/mui_disposeobject.o: mui_disposeobject.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_disposeobject.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_disposeobject.c objname=$@
 
 objs/mui_endrefresh.o: mui_endrefresh.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_endrefresh.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_endrefresh.c objname=$@
 
 objs/mui_error.o: mui_error.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_error.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_error.c objname=$@
 
 objs/mui_freeaslrequest.o: mui_freeaslrequest.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_freeaslrequest.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_freeaslrequest.c objname=$@
 
 objs/mui_freeclass.o: mui_freeclass.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_freeclass.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_freeclass.c objname=$@
 
 objs/mui_getclass.o: mui_getclass.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_getclass.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_getclass.c objname=$@
 
 objs/mui_layout.o: mui_layout.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_layout.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_layout.c objname=$@
 
 objs/mui_makeobject.o: mui_makeobject.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_makeobject.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_makeobject.c objname=$@
 
 objs/mui_newobject.o: mui_newobject.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_newobject.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_newobject.c objname=$@
 
 objs/mui_obtainpen.o: mui_obtainpen.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_obtainpen.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_obtainpen.c objname=$@
 
 objs/mui_redraw.o: mui_redraw.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_redraw.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_redraw.c objname=$@
 
 objs/mui_rejectidcmp.o: mui_rejectidcmp.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_rejectidcmp.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_rejectidcmp.c objname=$@
 
 objs/mui_releasepen.o: mui_releasepen.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_releasepen.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_releasepen.c objname=$@
 
 objs/mui_removeclipping.o: mui_removeclipping.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_removeclipping.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_removeclipping.c objname=$@
 
 objs/mui_removeclipregion.o: mui_removeclipregion.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_removeclipregion.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_removeclipregion.c objname=$@
 
 objs/mui_request.o: mui_request.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_request.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_request.c objname=$@
 
 objs/mui_requestidcmp.o: mui_requestidcmp.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_requestidcmp.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_requestidcmp.c objname=$@
 
 objs/mui_seterror.o: mui_seterror.c
-  sc $(CFLAGS) $(LIBSDIRS) libcode mui_seterror.c objname=$@
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_seterror.c objname=$@
 
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
 
+objs/test.o: test.c
+  sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
+
+test: objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
+  sc link to test with <<
+objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
+<
 
 clean:
   -delete objs all
+  -delete test
