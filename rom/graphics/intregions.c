@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Code for various operations on Regions and Rectangles
@@ -39,23 +39,6 @@ BOOL andrectrect(const struct Rectangle* a, const struct Rectangle* b, struct Re
     return FALSE;
 } /* andrectrect() */
 
-
-
-/* free all memory allocated by the RegionRectangles
- * linked to rr, including rr
- */
-void disposerrects(struct RegionRectangle* rr)
-{
-    struct RegionRectangle* rr2;
-
-    for (; rr; rr = rr2) {
-	rr2 = rr->Next;
-	FreeMem(rr, sizeof(struct RegionRectangle));
-    }
-}  /* disposerects() */
-
-
-
 /* clears from rect the area that overlaps with clearrect
  * and returns the remaining RegionRectangles in *erg
  */
@@ -67,7 +50,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 
     if (overlap(*clearrect, *rect)) { /* overlap? */
 	if (rect->MinY < clearrect->MinY) {  /* upper */
-	    first = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR);
+	    first = NewRegionRectangle();
 	    if (!first)
 		return FALSE;
 	    first->bounds.MinX = rect->MinX;
@@ -76,9 +59,9 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 	    first->bounds.MaxY = clearrect->MinY - 1;
 	}
 	if (rect->MaxY > clearrect->MaxY) {  /* lower */
-	    new = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR);
+	    new = NewRegionRectangle();
 	    if (!new && first) {
-		disposerrects(first);
+		DisposeRegionRectangleList(first);
 		return FALSE;
 	    }
 	    new->bounds.MinX = rect->MinX;
@@ -92,9 +75,9 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 	    first = new;
 	}
 	if (rect->MinX < clearrect->MinX) {  /* left */
-	    new = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR);
+	    new = NewRegionRectangle();
 	    if (!new && first) {
-		disposerrects(first);
+		DisposeRegionRectangleList(first);
 		return FALSE;
 	    }
 	    new->bounds.MinX = rect->MinX;
@@ -108,9 +91,9 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 	    first = new;
 	}
 	if (rect->MaxX > clearrect->MaxX) {  /* right */
-	    new = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR);
+	    new = NewRegionRectangle();
 	    if (!new && first) {
-		disposerrects(first);
+		DisposeRegionRectangleList(first);
 		return FALSE;
 	    }
 	    new->bounds.MinX = clearrect->MaxX+1;
@@ -126,7 +109,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     } else {
       /* no overlap, just take the given 'rect'
        */
-      first = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR);
+      first = NewRegionRectangle();
       if (!first)
 	return FALSE;
       first->bounds = *rect;
@@ -144,83 +127,30 @@ struct RegionRectangle* copyrrects(struct RegionRectangle* src)
 {
     struct RegionRectangle* nrects, *cur, *last, *rr;
 
-    nrects = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY);
+    nrects = NewRegionRectangle();
     if (!nrects)
 	return NULL;
     nrects->Prev = NULL;
+    nrects->Next = NULL; /* !!! in case allocation fails disposerects is called and this must be valid! */
     nrects->bounds = src->bounds;
 
     last = nrects;
 
     for (rr = src->Next; rr; rr = rr->Next) {
-	if (!(cur = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY))) {
-	    disposerrects(nrects);
+	if (!(cur = NewRegionRectangle())) {
+	    DisposeRegionRectangleList(nrects);
 	    return NULL;
 	}
 	cur->bounds = rr->bounds;
 	last->Next = cur;
 	cur->Prev = last;
+	cur->Next = NULL; /* !!! in case allocation fails disposerects is called and this must be valid! */
 	last = cur;
     }
     last->Next = NULL;
 
     return nrects;
 }  /* copyrrects() */
-
-
-
-/* return a pointer to a copy of the given Region
- */
-struct Region* copyregion(struct Region* r, struct GfxBase* GfxBase)
-{
-    struct Region* nreg;
-    if ((nreg = NewRegion())) {
-	nreg->bounds = r->bounds;
-	if (r->RegionRectangle) {
-	    if ((nreg->RegionRectangle = copyrrects(r->RegionRectangle))) {
-		return nreg;
-	    }
-	    DisposeRegion(nreg);
-	} else {
-	    return nreg;
-	}
-    }
-    return NULL;
-}  /* copyregion() */
-
-
-
-/* clear Region r2 from Region r1
- * return FALSE if not enough memory was available, else TRUE
- */
-BOOL clearregionregion(struct Region* r1, struct Region* r2, struct GfxBase* GfxBase)
-{
-    if (r1->RegionRectangle && r2->RegionRectangle &&
-	overlap(r1->bounds, r2->bounds)) {
-
-	struct RegionRectangle* rr;
-	struct RegionRectangle* backup;
-	struct Rectangle clearrect;
-
-	if (!(backup = copyrrects(r1->RegionRectangle)))
-	    return FALSE;
-
-	for (rr = r2->RegionRectangle; rr; rr = rr->Next) {
-            clearrect.MinX = rr->bounds.MinX + r2->bounds.MinX;
-	    clearrect.MinY = rr->bounds.MinY + r2->bounds.MinY;
-	    clearrect.MaxX = rr->bounds.MaxX + r2->bounds.MinX;
-	    clearrect.MaxY = rr->bounds.MaxY + r2->bounds.MinY;
-	    if (!ClearRectRegion(r1, &clearrect)) {
-		disposerrects(r1->RegionRectangle);
-		r1->RegionRectangle = backup;
-		return FALSE;
-	    }
-	}
-	/* the backup is not needed anymore in this case */
-	disposerrects(backup);
-    }
-    return TRUE;
-}
 
 
 
