@@ -5,14 +5,22 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: ANSI-C header file unistd.h
+    Desc: ANSI-C header file setjmp.h
     Lang: english
 */
 
-typedef struct _jmp_buf
+#ifdef __mc68000__
+#define _JMPLEN 12
+
+#elif i386
+#define _JMPLEN 7
+
+#endif
+
+typedef struct jmp_buf
 {
     unsigned long retaddr;
-    unsigned long regs[7];
+    unsigned long regs[_JMPLEN];
 } jmp_buf[1];
 
 /* Prototypes */
