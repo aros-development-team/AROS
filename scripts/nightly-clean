@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+# Script that runs from cron once every day on the SourceForge shell server
+# and cleans the uploads directory.
+
+cd /home/groups/a/ar/aros/uploads/nightly
+rm -rf *
