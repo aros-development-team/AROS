@@ -52,13 +52,19 @@ int main (int argc, char ** argv)
 	    {
 		RunCommand(shell,4096,buf,s3-buf);
 		UnLoadSeg(shell);
-	    }
+	    } else
+                error=RETURN_FAIL;
 	    FreeVec(buf);
-	}
+	} else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            error=RETURN_FAIL;
+        }
 	FreeArgs(rda);
     }else
 	error=RETURN_FAIL;
+
     if(error)
-	PrintFault(IoErr(),"Run");
+	PrintFault(IoErr(), NULL);
     return error;
 }
