@@ -12,6 +12,9 @@
 #include "etask.h"
 #include "exec_util.h"
 
+#error "PrepareContext() has been changed. Additional tagList param, etc."
+#error "This one here needs to be rewritten!"
+
 /*****************************************************************************
 
     NAME */
