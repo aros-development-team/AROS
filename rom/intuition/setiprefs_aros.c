@@ -63,6 +63,9 @@ AROS_LH3(ULONG, SetIPrefs,
             break;
         
 	case IPREFS_TYPE_SCREENMODE:
+	{
+	    struct IScreenModePrefs old_prefs;
+	    
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE\n"));
             if (length > sizeof(struct IScreenModePrefs))
                 length = sizeof(struct IScreenModePrefs);
@@ -70,8 +73,9 @@ AROS_LH3(ULONG, SetIPrefs,
 	    if (memcmp(&GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
 	               sizeof(struct IScreenModePrefs)) == 0)
 	        break;
-		
-            CopyMem(data, &GetPrivIBase(IntuitionBase)->ScreenModePrefs, length);
+	    
+	    old_prefs = GetPrivIBase(IntuitionBase)->ScreenModePrefs;
+	    GetPrivIBase(IntuitionBase)->ScreenModePrefs = *(struct IScreenModePrefs *)data;
 	    
 	    if (GetPrivIBase(IntuitionBase)->WorkBench)
 	    {
@@ -95,13 +99,22 @@ AROS_LH3(ULONG, SetIPrefs,
 		}
 		
 		if (closed)
+		    #warning FIXME: handle the error condition!
+		    /* What to do if OpenWorkBench() fails? Try until it succeeds?
+		       Try for a finite amount of times? Don't try and do nothing 
+		       at all? */
 		    OpenWorkBench();
+		else
+		{
+                    GetPrivIBase(IntuitionBase)->ScreenModePrefs = old_prefs;
+		    Result = FALSE;
+		}
 		
-		return TRUE;
 	    }
 	    
             break;
-	    
+	}
+	
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
             Result = FALSE;
