@@ -31,16 +31,16 @@
 struct HandlerContext
 {
     /* Ports and signals ---------------------------------------------------*/
-    struct MsgPort *hc_CommandPort;          /* Command messages from the library */
-    ULONG           hc_CommandSignal;        /* Signal bit field for the above */
-    struct MsgPort *hc_StartupReplyPort;     /* Replies to startup messages */
-    ULONG           hc_StartupReplySignal;   /* Signal bit field for the above */
-    struct MsgPort *hc_WorkbenchReplyPort;   /* Replies to messages sent to the workbench application */
-    ULONG           hc_WorkbenchReplySignal; /* Signal bit field for the above */
-    struct MsgPort *hc_IntuitionPort;        /* Messages from Intuition */
-    ULONG           hc_IntuitionSignal;      /* Signal bit field for the above */
+    struct MsgPort *hc_CommandPort;        /* Command messages from the library */
+    ULONG           hc_CommandSignal;      /* Signal bit field for the above */
+    struct MsgPort *hc_StartupReplyPort;   /* Replies to startup messages */
+    ULONG           hc_StartupReplySignal; /* Signal bit field for the above */
+    struct MsgPort *hc_RelayReplyPort;     /* Replies to messages sent to the workbench application */
+    ULONG           hc_RelayReplySignal;   /* Signal bit field for the above */
+    struct MsgPort *hc_IntuitionPort;      /* Messages from Intuition */
+    ULONG           hc_IntuitionSignal;    /* Signal bit field for the above */
     
-    ULONG           hc_Signals;              /* Mask from all signals above */
+    ULONG           hc_Signals;            /* Mask from all signals above */
 };
 
 
@@ -49,12 +49,16 @@ static BOOL __Initialize_WB(struct HandlerContext *hc, struct WorkbenchBase *Wor
 static VOID __Deinitialize_WB(struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
 
 static VOID __HandleLaunch_WB(struct WBCommandMessage *message, struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
+static VOID __HandleRelay_WB(struct WBCommandMessage *message, struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
+static VOID __HandleIntuition_WB(struct IntuiMessage *message, struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
 
 /*** Macros *****************************************************************/
-#define Initialize()   (__Initialize_WB(hc, WorkbenchBase))
-#define Deinitialize() (__Deinitialize_WB(hc, WorkbenchBase))
+#define Initialize()             (__Initialize_WB(hc, WorkbenchBase))
+#define Deinitialize()           (__Deinitialize_WB(hc, WorkbenchBase))
 
-#define HandleLaunch(message) (__HandleLaunch_WB((message), hc, WorkbenchBase))
+#define HandleLaunch(message)    (__HandleLaunch_WB((message), hc, WorkbenchBase))
+#define HandleRelay(message)     (__HandleRelay_WB((message), hc, WorkbenchBase))
+#define HandleIntuition(message) (__HandleIntuition_WB((message), hc, WorkbenchBase))
 
 /*** Entry point ************************************************************/
 #undef SysBase
@@ -102,7 +106,7 @@ AROS_UFH3
                         
                     case WBCM_TYPE_RELAY:
                         D(bug("Workbench Handler: Got WBCM_Relay message\n"));
-                        // FIXME: HandleRelay(message);
+                        HandleRelay(message);
                         break;
                 }
                 
@@ -116,7 +120,7 @@ AROS_UFH3
         {
             struct WBStartup *message;
             
-            D(bug("Workbench Handler: Got message(s) at startup port\n"));
+            D(bug("Workbench Handler: Got message(s) at startup reply port\n"));
             
             while ((message = WBS(GetMsg(hc->hc_StartupReplyPort))) != NULL)
             {
@@ -136,6 +140,29 @@ AROS_UFH3
             }
         }
         
+        /*== Message replies from the workbench application ================*/
+        if (signals & hc->hc_RelayReplySignal)
+        {
+            struct WBHandlerMessage *message;
+            
+            D(bug("Workbench Handler: Got message(s) at relay reply port\n"));
+            
+            while ((message = WBHM(GetMsg(hc->hc_RelayReplyPort))) != NULL)
+            {
+                if (message->wbhm_Message.mn_Node.ln_Type == NT_REPLYMSG)
+                {
+                    D(bug("Workbench Handler: Deallocating WBHandlerMessage\n"));
+                    DestroyWBHM(message);
+                }
+                else
+                {
+                    /* FIXME: comment ;-) */
+                    ReplyMsg((struct Message *) message);
+                }
+            }
+            
+        }
+        
         /*== Messages from Intuition =======================================*/
         if (signals & hc->hc_IntuitionSignal)
         {
@@ -145,10 +172,7 @@ AROS_UFH3
             
             while ((message = (struct IntuiMessage *) GetMsg(hc->hc_IntuitionPort)))
             {
-                // FIXME: do something with it
-                
-                /* Reply the message */
-                ReplyMsg((struct Message *) message);
+                HandleIntuition(message); /* takes care of replying */
             }
         }
     }
@@ -171,7 +195,7 @@ static BOOL __Initialize_WB
     if
     (
            (hc->hc_StartupReplyPort   = CreateMsgPort()) != NULL
-        && (hc->hc_WorkbenchReplyPort = CreateMsgPort()) != NULL
+        && (hc->hc_RelayReplyPort = CreateMsgPort()) != NULL
         && (hc->hc_IntuitionPort      = CreateMsgPort()) != NULL
     )
     {
@@ -179,14 +203,14 @@ static BOOL __Initialize_WB
         hc->hc_CommandPort   = &(WorkbenchBase->wb_HandlerPort);
         
         /* Calculate and store signal flags --------------------------------*/
-        hc->hc_CommandSignal        = 1UL << hc->hc_CommandPort->mp_SigBit;
-        hc->hc_StartupReplySignal   = 1UL << hc->hc_StartupReplyPort->mp_SigBit;
-        hc->hc_WorkbenchReplySignal = 1UL << hc->hc_WorkbenchReplyPort->mp_SigBit;
-        hc->hc_IntuitionSignal      = 1UL << hc->hc_IntuitionPort->mp_SigBit;
+        hc->hc_CommandSignal      = 1UL << hc->hc_CommandPort->mp_SigBit;
+        hc->hc_StartupReplySignal = 1UL << hc->hc_StartupReplyPort->mp_SigBit;
+        hc->hc_RelayReplySignal   = 1UL << hc->hc_RelayReplyPort->mp_SigBit;
+        hc->hc_IntuitionSignal    = 1UL << hc->hc_IntuitionPort->mp_SigBit;
         
         hc->hc_Signals = hc->hc_CommandSignal
                        | hc->hc_StartupReplySignal
-                       | hc->hc_WorkbenchReplySignal
+                       | hc->hc_RelayReplySignal
                        | hc->hc_IntuitionSignal;
                        
         /* We're now ready to accept messages ------------------------------*/
@@ -223,9 +247,9 @@ static VOID __Deinitialize_WB
     
     /* Deallocate message ports --------------------------------------------*/
     // FIXME: should we get & deallocate all queued messages?
-    if (hc->hc_IntuitionPort != NULL)      DeleteMsgPort(hc->hc_IntuitionPort);
-    if (hc->hc_WorkbenchReplyPort != NULL) DeleteMsgPort(hc->hc_WorkbenchReplyPort);
-    if (hc->hc_StartupReplyPort != NULL)   DeleteMsgPort(hc->hc_StartupReplyPort);
+    if (hc->hc_IntuitionPort != NULL)    DeleteMsgPort(hc->hc_IntuitionPort);
+    if (hc->hc_RelayReplyPort != NULL)   DeleteMsgPort(hc->hc_RelayReplyPort);
+    if (hc->hc_StartupReplyPort != NULL) DeleteMsgPort(hc->hc_StartupReplyPort);
 }
 
 static VOID __HandleLaunch_WB
@@ -291,4 +315,41 @@ static VOID __HandleLaunch_WB
     
     /* Restore current directory */
     CurrentDir(cd);
+}
+
+static VOID __HandleRelay_WB
+(
+    struct WBCommandMessage *message,
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    struct WBHandlerMessage *relaymsg = message->wbcm_Data.Relay.Message;
+    
+    D(bug("Workbench Handler: HandleRelay: Relaying message to workbench application\n"));
+    D(bug("Workbench Handler: HandleRelay: destination port %p\n", WorkbenchBase->wb_WorkbenchPort));
+    relaymsg->wbhm_Message.mn_ReplyPort = hc->hc_RelayReplyPort;
+    PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) relaymsg);
+}
+
+static void __HandleIntuition_WB
+(
+    struct IntuiMessage *message,
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    struct WBHandlerMessage *handlermsg;
+    
+    if (message->Class = IDCMP_WBENCHMESSAGE)
+    {
+        if      (message->Code == WBENCHOPEN)  handlermsg = CreateWBHM(WBHM_TYPE_SHOW);
+        else if (message->Code == WBENCHCLOSE) handlermsg = CreateWBHM(WBHM_TYPE_HIDE);
+        else                                   handlermsg = NULL;
+        
+        if (handlermsg != NULL)
+        {
+            PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) handlermsg);
+        }
+    }
+    
+    ReplyMsg((struct Message *) message); // FIXME: shouldn't reply right away in case of WBENCHCLOSE ?
 }
