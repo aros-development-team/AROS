@@ -1,3 +1,0 @@
-setjmp.s - clib setjmp() function
-
-longjmp.s - clib longjmp() function

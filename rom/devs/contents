@@ -1,3 +1,0 @@
-filesys/ -A starting filesystem which uses the Linux
-	filesystem to emulate a \filename{SYS:}.
-

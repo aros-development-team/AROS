@@ -1,5 +1,0 @@
-initcore.c - Non-functional initialisation of exec signal handling core
-	This will be replaced with true trap and interrupt handlers.
-
-*.s - asm version of exec.library functions
-

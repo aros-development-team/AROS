@@ -1,9 +1,0 @@
-purify - A small script which can be put in front of the C
-	compiler like this:
-
-\begin{example}
-purify cc ...
-\end{example}
-
-	It will modify some options to purify the code.
-
