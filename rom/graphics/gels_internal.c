@@ -13,6 +13,9 @@
 #include "gels_internal.h"
 #include "graphics_intern.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, 
                                       struct RastPort * rp,
                                       struct GfxBase * GfxBase)
@@ -176,9 +179,11 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 {
 	/*
 	 * If the bob has not been drawn, yet, then don't do anything.
-	 * 
+	 * If the bob has already been cleared, then also leave here!
+	 * It does happen that this routine gets called for 
+	 * a sprite that has been cleared already.
 	 */
-	if (0 != (CurVSprite->VSBob->Flags & BWAITING)) {
+	if (0 != (CurVSprite->VSBob->Flags & (BWAITING|BOBNIX))) {
 		CurVSprite->VSBob->Flags &= ~BWAITING;
 		return;
 	}
@@ -226,6 +231,9 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 			          CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
 			          CurVSprite->OldY +   CurVSprite->Height	- 1);
 		}
-
+		/*
+		 * Mark the BOB as cleared.
+		 */
+		CurVSprite->VSBob->Flags |= BOBNIX;
 	} /* if (0 == (CurVSprite->Flags & SAVEBOB)) */
 }
