@@ -25,8 +25,6 @@
 #include "locale.h"
 #include "prefs.h"
 
-extern struct FontPrefs *fp_Current[3]; // prefs.c
-
 #define BUFFERSIZE 512
 
 /*** Instance data **********************************************************/
@@ -78,23 +76,45 @@ BOOL FontString2FontPrefs(struct FontPrefs *fp, CONST_STRPTR buffer)
     return TRUE;
 }
 
-BOOL Gadgets2FontPrefs(struct FontPrefs **fps, struct FPWindow_DATA *data)
+BOOL Gadgets2FontPrefs
+(
+    struct FontPrefs *fp[FP_COUNT], struct FPWindow_DATA *data
+)
 {
     STRPTR str = NULL;
     
     // FIXME: error checking
     get(data->fpwd_IconsString, MUIA_Text_Contents, &str);
-    FontString2FontPrefs(fps[FP_WBFONT], str);
+    FontString2FontPrefs(fp[FP_WBFONT], str);
     
     get(data->fpwd_SystemString, MUIA_Text_Contents, &str);
-    FontString2FontPrefs(fps[FP_SYSFONT], str);
+    FontString2FontPrefs(fp[FP_SYSFONT], str);
     
     get(data->fpwd_ScreenString, MUIA_Text_Contents, &str);
-    FontString2FontPrefs(fps[FP_SCREENFONT], str);
+    FontString2FontPrefs(fp[FP_SCREENFONT], str);
     
     return TRUE;
 }
 
+BOOL FontPrefs2Gadgets
+(
+    struct FPWindow_DATA *data, struct FontPrefs *fp[FP_COUNT]
+)
+{
+    TEXT buffer[FONTNAMESIZE + 8];
+     
+    // FIXME: error checking
+    FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_WBFONT]);
+    set(data->fpwd_IconsString, MUIA_Text_Contents, buffer);
+    
+    FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_SYSFONT]);
+    set(data->fpwd_SystemString, MUIA_Text_Contents, buffer);
+    
+    FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_SCREENFONT]);
+    set(data->fpwd_ScreenString, MUIA_Text_Contents, buffer);
+    
+    return TRUE;
+}
 
 /*** Methods ****************************************************************/
 IPTR FPWindow$OM_NEW
@@ -200,6 +220,9 @@ IPTR FPWindow$MUIM_PreferencesWindow_Test
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
+    Gadgets2FontPrefs(fp_Current, data);
+    FP_Test(); /* FIXME: check error? */
+    
     return NULL;
 }
 
@@ -209,6 +232,9 @@ IPTR FPWindow$MUIM_PreferencesWindow_Revert
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
+    
+    FP_Revert(); /* FIXME: check error? */
+    FontPrefs2Gadgets(data, fp_Current);
     
     return NULL;
 }
@@ -221,7 +247,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
     Gadgets2FontPrefs(fp_Current, data);
-    FP_Save(); /* FIXME: check error */
+    FP_Save(); /* FIXME: check error? */
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -237,7 +263,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
     
     Gadgets2FontPrefs(fp_Current, data);
-    FP_Use(); /* FIXME: check error */
+    FP_Use(); /* FIXME: check error? */
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -251,6 +277,8 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
 )
 {
     struct FPWindow_DATA *data = INST_DATA(CLASS, self);
+    
+    FP_Cancel(); /* FIXME: check error? */
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
