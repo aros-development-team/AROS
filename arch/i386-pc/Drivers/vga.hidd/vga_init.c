@@ -67,6 +67,8 @@ static struct ABDescr abd[] = {
 	{ NULL, NULL }
 };
 
+static VOID freeclasses(struct vga_staticdata *xsd);
+
 static BOOL initclasses(struct vga_staticdata *xsd)
 {
 
