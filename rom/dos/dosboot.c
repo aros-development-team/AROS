@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    Id: dosboot.c,v 1.16 2001/08/26 02:27:00 falemagn Exp $
+    $Id$
 
     Desc: Start up the ol' Dos boot process.
     Lang: english 
