@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  1999/05/10 19:10:21  hkiel
+    Always return the number of (complete) blocks read.
+
     Revision 1.3  1998/10/20 16:44:38  hkiel
     Amiga Research OS
 
@@ -42,8 +45,9 @@
 	number - The number of blocks
 
     RESULT
-	The number of blocks written to the file or EOF on error. IoErr()
-	gives additional information in case of an error.
+	The number of blocks read from the file or 0 on EOF.
+	This function may return less than the requested number of blocks
+	IoErr() gives additional information in case of an error.
 
     NOTES
 
@@ -79,12 +83,16 @@
 	    c = FGetC (fh);
 
 	    if (c < 0)
-		return EOF;
+		goto finish;
 
 	    *ptr ++ = c;
 	}
     }
-
+finish:
+    if( read==0 && len==blocklen )
+    {
+        return EOF;
+    }
     return read;
     AROS_LIBFUNC_EXIT
 } /* FRead */
