@@ -222,7 +222,6 @@
     if (0 != (l->Flags & LAYERSUPER) && (dw < 0 || dh < 0))
     {
       struct BitMap * bm = l->rp->BitMap;
-kprintf("msl: making backups!\n");
       CR = l_tmp->ClipRect;
       while (NULL != CR)
       {

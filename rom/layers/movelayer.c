@@ -31,6 +31,8 @@
 
 /*  FUNCTION
         Move the layer to a specified position in the bitmap.
+        Parts of simple layers that become visible are added to
+        the damage list and a refresh is triggered.
 
     INPUTS
         dummy - unused
@@ -47,7 +49,6 @@
     EXAMPLE
 
     BUGS
-        No support for simple layers.
 
     SEE ALSO
 

@@ -40,8 +40,6 @@
     EXAMPLE
 
     BUGS
-      No call to any refresh functions of any layers.
-      No support for simple layers!!!
 
     SEE ALSO
 

@@ -28,6 +28,9 @@
 /*  FUNCTION
         Resizes the given layer by adding dx to its width and dy
         to its height.
+        If parts of simple layers become visible those parts are
+        added to the damage list and a refhresh is triggered for
+        those layers. 
 
     INPUTS
         l    - pointer to layer to be resized
@@ -43,7 +46,6 @@
     EXAMPLE
 
     BUGS
-      No support for superbitmap / simple layer.
 
     SEE ALSO
 

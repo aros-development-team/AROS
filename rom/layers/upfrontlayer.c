@@ -27,10 +27,18 @@
 	struct LayersBase *, LayersBase, 8, Layers)
 
 /*  FUNCTION
+        Brings a layer to the front. If this layer is a backdrop layer
+        it is brought in front of all backdrop layers and behind the
+        last non-backdrop layer. By clearing the BACKDROP flag of a layer
+        a backdrop layer can be brought in front of all other layers.
 
     INPUTS
+        dummy - unused
+        L     - pointer to layer
 
     RESULT
+        TRUE  - layer was moved
+        FALSE - layer could not be moved (probably out of memory)
 
     NOTES
 
@@ -39,6 +47,8 @@
     BUGS
 
     SEE ALSO
+        CreateUpfrontLayer() CreateUpfrontHookLayer() BehindLayer()
+        CreateBehindLayer() CreateBehindHookLayer()
 
     INTERNALS
 
@@ -122,30 +132,61 @@
   while (NULL != CR_old)
   {
     struct ClipRect * _CR_old = CR_old->Next;
+    /* treat simple layer separately */
     if (NULL != CR_old->lobs)
     {
-      /* 
-         This ClipRect was hidden before, but not any more, so let's
-         show what we have there. 
-      */
-      BltBitMap(
-        CR_old->BitMap,
-        CR_old->bounds.MinX & 0x0f,
-        0,
-        L->rp->BitMap,
-        CR_old->bounds.MinX,
-        CR_old->bounds.MinY, 
-        CR_old->bounds.MaxX - CR_old->bounds.MinX + 1,
-        CR_old->bounds.MaxY - CR_old->bounds.MinY + 1,
-        0x0c0, /* copy */
-        0xff,
-        NULL
-      );
-      FreeBitMap(CR_old->BitMap);
+      if (0 == (L->Flags & LAYERSIMPLE))
+      {
+        /* 
+           This ClipRect was hidden before, but not any more, so let's
+           show what we have there. 
+        */
+        if (0 == (L->Flags & LAYERSUPER))
+        {
+          /* no superbitmap */
+          BltBitMap(
+            CR_old->BitMap,
+            CR_old->bounds.MinX & 0x0f,
+            0,
+            L->rp->BitMap,
+            CR_old->bounds.MinX,
+            CR_old->bounds.MinY, 
+            CR_old->bounds.MaxX - CR_old->bounds.MinX + 1,
+            CR_old->bounds.MaxY - CR_old->bounds.MinY + 1,
+            0x0c0, /* copy */
+            0xff,
+            NULL
+          );
+          FreeBitMap(CR_old->BitMap);
+        }
+        else
+        {
+          /* with superbitmap */
+          BltBitMap(
+            L->SuperBitMap,
+            CR_old->bounds.MinX - L->bounds.MinX + L->Scroll_X,
+            CR_old->bounds.MinY - L->bounds.MinY + L->Scroll_Y,
+            L->rp->BitMap,
+            CR_old->bounds.MinX,
+            CR_old->bounds.MinY, 
+            CR_old->bounds.MaxX - CR_old->bounds.MinX + 1,
+            CR_old->bounds.MaxY - CR_old->bounds.MinY + 1,
+            0x0c0, /* copy */
+            0xff,
+            NULL
+          );
+        } /* else (superbitmapped layer) */
+      }
+      else
+      {
+        /* a simple layer */
+        OrRectRegion(L->DamageList, &CR_old->bounds);
+        L->Flags |= LAYERREFRESH;
+      }
     }
     FreeMem(CR_old, sizeof(struct ClipRect));
     CR_old = _CR_old;
-  }    
+  } /* while () */    
 
   /*
      To keep consistency of the layers' cliprects I have to split the
