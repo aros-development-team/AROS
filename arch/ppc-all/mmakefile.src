@@ -17,8 +17,8 @@ include $(TOP)/config/make.cfg
 #MM	kernel-ppc			\
 #MM	kernel-link-prep-ppc
 
-//#MM- kernel-ppc :		\
-//#MM	kernel-exec-linklib
+## #MM- kernel-ppc :		\
+## #MM	kernel-exec-linklib
 
 #
 # Setup
