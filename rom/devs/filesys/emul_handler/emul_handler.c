@@ -1729,15 +1729,15 @@ AROS_LH1(void, beginio,
 	}
 	
     case FSA_SET_FILE_SIZE:
-#warning FIXME:
+#warning FIXME: Implement FSA_SET_FILE_SIZE
 	/* We could manually change the size, but this is currently not
 	   implemented. FIXME */
     case FSA_WAIT_CHAR:
-#warning FIXME:
+#warning FIXME: Implement FSA_WAIT_CHAR
 	/* We could manually wait for a character to arrive, but this is
 	   currently not implemented. FIXME */
     case FSA_FILE_MODE:
-#warning FIXME: not supported yet
+#warning FIXME: Implement FSA_FILE_MODE
 	error=ERROR_ACTION_NOT_KNOWN;
 	break;
 
