@@ -145,7 +145,22 @@ int main(int argc, char **argv)
 
     while (i < argc)
     {
-      if (!strcmp(argv[i], "--memsize"))
+      if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+      {
+        printf("AROS for Linux\n");
+        printf("usage: %s [options]\n",argv[0]);
+        printf(" -h                 show this page\n");
+        printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
+        printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
+        printf("                     found there in big endian format\n");
+        printf(" --help             same as '-h'\n");
+        printf(" --memsize <size>   same as '-m <size>'\n");
+        printf(" --mapsysbase       same as '-M'\n");
+        printf("\nPlease report bugs to the AROS development team. http://www.aros.org\n");
+        return 0;
+      }
+      else
+      if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
       {
         i++;
         x = 0;
@@ -154,12 +169,11 @@ int main(int argc, char **argv)
         {
           memSize = memSize * 10 + (argv[i])[x] - '0';
           x++;
-printf("%d\n",x);
         }
         i++;
       }
       else
-      if (!strcmp(argv[i], "--mapsysbase"))
+      if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
       {
         mapSysBase = TRUE;
         i++;
