@@ -229,7 +229,6 @@ print "Working on " part_name "..."
 		    printf ("/*\n") > file;
 		    print "    (C) 1995-96 AROS - The Amiga Replacement OS" >> file
 		    printf ("    %sId$\n", "$") >> file;
-		    printf ("    %sLog$\n", "$") >> file;
 		    printf ("\n") >> file;
 		    printf ("    Desc:\n") >> file;
 		    printf ("    Lang: english\n") >> file;
@@ -332,6 +331,8 @@ print "Working on " part_name "..."
 		    print "    AROS_LIBFUNC_INIT">>file;
 		    if (Base!="")
 			print "    AROS_LIBBASE_EXT_DECL(struct "struct_name" *,"Base")">>file;
+		    print "    extern void aros_print_not_implemented (char *);\n">>file;
+		    print "    aros_print_not_implemented (\"" fname "\");\n">>file;
 		    print "    AROS_LIBFUNC_EXIT">>file;
 		    print "} /* " fname " */">>file;
 		    fclose (file);
