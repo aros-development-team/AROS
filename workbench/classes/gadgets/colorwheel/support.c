@@ -21,6 +21,7 @@
 #include <intuition/intuition.h>
 #include <cybergraphx/cybergraphics.h>
 #include <gadgets/colorwheel.h>
+#include <aros/machine.h>
 
 #include <math.h>
 
@@ -43,7 +44,7 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
 {
     DOUBLE d, r, rx, ry, l, h, s;
 
-#if 1
+#if 0
     /* Should also work with not perfect (cy == cy) circle */
     
     rx = (DOUBLE) cx - x;
@@ -149,10 +150,17 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 	ULONG backcol;
 	
 	GetRGB32(data->scr->ViewPort.ColorMap, 0, 1, backrgb);
-	
+
+#if AROS_BIG_ENDIAN
 	backcol = ((backrgb[0] >>  8) & 0xFF0000) |
 		  ((backrgb[1] >> 16) & 0x00FF00) |
 		  ((backrgb[2] >> 24) & 0x0000FF);
+#else
+
+	backcol = ((backrgb[0] >> 16) & 0x0000FF00) |
+		  ((backrgb[1] >> 8 ) & 0x00FF0000) |
+		  ((backrgb[2] >> 0 ) & 0xFF000000);
+#endif
 		  
 	for(y = 0; y < height; y++)
 	{
@@ -161,10 +169,15 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 		if (CalcWheelColor(x, y, cx, cy, &hsb.cw_Hue, &hsb.cw_Saturation))
 		{
 	            ConvertHSBToRGB(&hsb, &rgb);
+#if AROS_BIG_ENDIAN		    
 		    col = ((rgb.cw_Red   >>  8) & 0xFF0000) |
 			  ((rgb.cw_Green >> 16) & 0x00FF00) |
 			  ((rgb.cw_Blue  >> 24) & 0x0000FF);
-
+#else
+		    col = ((rgb.cw_Red   >> 16) & 0x0000FF00) |
+			  ((rgb.cw_Green >> 8 ) & 0x00FF0000) |
+			  ((rgb.cw_Blue  >> 0 ) & 0xFF000000);
+#endif
 		    data->rgblinebuffer[x] = col;
 		} else {
 		    data->rgblinebuffer[x] = backcol;
@@ -172,7 +185,7 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 		
 	    } /* for(x = 0; x < width; x++) */
 	    
-	    
+// kprintf("WRITING PIXEL ARRAY\n");	    
 	    WritePixelArray(data->rgblinebuffer,
 	    		    0,
 			    0,
@@ -200,6 +213,7 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
 			  ((rgb.cw_Green >> 16) & 0x00FF00) |
 			  ((rgb.cw_Blue  >> 24) & 0x0000FF);
 
+*((ULONG *)0) = 0;
 		    WriteRGBPixel(rp, left + x, top + y, col);
 		}
 		
@@ -302,7 +316,8 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
         data->wheeldrawn = TRUE;
         BltBitMapRastPort(data->bm, 0, 0, rp, box->Left, box->Top, box->Width, box->Height, 0xC0);
     }
-    
+    rx = box->Width / 2;
+    ry = box->Height / 2;
 }
 
 /***************************************************************************************************/
