@@ -13,7 +13,8 @@ FUNCS := \
 	 lockrexxbase \
 	 unlockrexxbase
 
-##MM- workbench-libs-rexxsyslib : includes linklibs
+#MM- workbench-libs-rexxsyslib-includes : includes linklibs
+#MM- workbench-libs-rexxsyslib : includes linklibs
 
 TODO: At the moment sprintf needs the mat library
 %build_module mmake=workbench-libs-rexxsyslib \
