@@ -123,6 +123,19 @@ Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, .
     return obj;
 }
 
+int VARARGS68K SPrintf(char *buf, const char *fmt, ...)
+{
+    va_list argptr;
+    APTR args;
+
+    va_startlinear(argptr, fmt);
+    args = va_getlinearva(argptr, APTR);
+    RawDoFmt((STRPTR)fmt, args, NULL, buf);
+    va_end(argptr);
+
+    return (int)strlen(buf);
+}
+
 
 #endif
 
