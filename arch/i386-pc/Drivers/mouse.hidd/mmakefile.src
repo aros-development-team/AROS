@@ -1,0 +1,46 @@
+# $Id:
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+FILES	:=	mouse_init mouseclass functable endtag
+OBJDIR	:=	$(GENDIR)/$(CURDIR)
+
+#MM Drivers-native : 
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	%add_objects rom/boot/hidd.bus.mouse
+	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	    -o $(OSGENDIR)/boot/hidd.bus.mouse.o
+	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.bus.mouse.o
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) libdefs.h endtag.c *.err
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+$(OBJDIR)/%.o : %.S
+	%assemble_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+libdefs.h : lib.conf
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -c
+	
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+
+%mkfunctable_arch
+
+endtag.c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+%common
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
