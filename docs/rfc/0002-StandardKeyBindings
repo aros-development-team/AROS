@@ -9,7 +9,6 @@ o Added key bindings for switching screens and windows, inspired by the
   ones in AmigaOS. 
   
 Open issues:
-o For switching screens, does AmigaOS use RAMIGA+M or LAMIGA+M?
 o What should we call the "AMIGA"/"META" keys? Calling them "META" 
   is more platform independant, but "AMIGA" is more, well, amigaish. 
   Or perhaps we should call them "AROS"? ;-)
@@ -49,8 +48,8 @@ The following key bindings have been decided upon:
     CTRL+TAB        = Select next gadget              (1)
     TAB             = Select next gadget              (2)
     CTRL+SPACE      = Completion; show next match     (3)
-    RAMIGA+M        = Switch to next screen
-    RAMIGA+N        = Switch to next window
+    LAMIGA+M        = Switch to next screen
+    LAMIGA+N        = Switch to next window
     
 (1) These key bindings must always work, and thus it is not allowed for
     a gadget or application to intercept these input events.
