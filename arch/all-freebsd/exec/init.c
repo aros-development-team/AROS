@@ -28,31 +28,34 @@
 char *malloc_options;
 
 extern const struct Resident
-    Expansion_resident,
+    Expansion_ROMTag,
     Exec_resident,
-    Utility_resident,
-    Mathieeesingbas_resident,
-    Aros_resident,
-    OOP_resident,
+    Utility_ROMTag,
+    Aros_ROMTag,
+/*    BOOPSI_resident,*/
+    OOP_ROMTag,
     HIDD_resident,
     UnixIO_resident,
-    Graphics_resident,
-    Layers_resident,
+    Graphics_ROMTag,
+    Layers_ROMTag,
     Timer_resident,
     Battclock_resident,
     Keyboard_resident,
     Gameport_resident,
-    Keymap_resident,
+    Keymap_ROMTag,
     Input_resident,
-    Intuition_resident,
+    Intuition_ROMTag,
     X11Hidd_resident,
-    Cybergraphics_resident,
+    Cybergraphics_ROMTag,
     Console_resident,
-    Mathffp_resident,
-    Workbench_resident,
-    Dos_resident,
+    Mathffp_ROMTag,
+    Mathieeesingbas_ROMTag,
+    Workbench_ROMTag,
+    Dos_ROMTag,
     LDDemon_resident,
     emul_handler_resident,
+    hiddserial_resident,
+    hiddparallel_resident,
     boot_resident,
     con_handler_resident,
     nil_handler_resident,
@@ -63,39 +66,47 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_resident,                    /* SingleTask,  110  */
-    &Exec_resident,                         /* SingleTask,  105  */
-    &Utility_resident,                      /* ColdStart,   103  */
-    &Mathieeesingbas_resident,              /* ColdStart,   101  */
-    &Aros_resident,			    /* ColdStart,   102  */
-    &Mathieeesingbas_resident,              /* ColdStart,   101  */
+    &Expansion_ROMTag,		    /* SingleTask,  110  */
+    &Exec_resident,			    /* SingleTask,  105  */
+    &Utility_ROMTag,			    /* ColdStart,   103  */
+    &Aros_ROMTag,			    /* ColdStart,   102  */
+    &Mathieeesingbas_ROMTag,              /* ColdStart,   101  */
 #if 0
-    &BOOPSI_resident,                       /* ColdStart,   95   */
+    &BOOPSI_resident,			    /* ColdStart,   95	 */
 #endif
-    &OOP_resident,			    /* ColdStart,   ??	 */
-    &HIDD_resident,			    /* ColdStart,   92   */
-    &UnixIO_resident,			    /* ColdStart,   91   */
-    &Graphics_resident,                     /* ColdStart,   65   */
-    &Layers_resident,			    /* ColdStart,   60   */
-    &Timer_resident,			    /* ColdStart,   50   */
-    &Battclock_resident,		    /* ColdStart,   45   */
+    &OOP_ROMTag,			    /* ColdStart,   94	 */
+    &HIDD_resident,			    /* ColdStart,   92	 */
+    &UnixIO_resident,			    /* ColdStart,   91	 */
+    &Graphics_ROMTag, 		    /* ColdStart,   65	 */
+    &Layers_ROMTag,			    /* ColdStart,   60   */
+    &Timer_resident,			    /* ColdStart,   50	 */
+    &Battclock_resident,		    /* ColdStart,   45	 */
     &Keyboard_resident,			    /* ColdStart,   44	 */
     &Gameport_resident,			    /* ColdStart,   43	 */
-    &Keymap_resident,			    /* ColdStart,   40   */
-    &Input_resident,			    /* ColdStart,   30   */
-    &Intuition_resident,                    /* ColdStart,   10   */
+    &Keymap_ROMTag,			    /* ColdStart,   40	 */
+    &Input_resident,			    /* ColdStart,   30	 */
+    &Intuition_ROMTag,		    /* ColdStart,   10	 */
     &X11Hidd_resident,			    /* ColdStart,   9	 */
-    &Cybergraphics_resident,		    /* ColdStart,   8	 */
-    &Console_resident,                      /* ColdStart,   5    */
-    &emul_handler_resident,                 /* ColdStart,   0    */
-    &Workbench_resident,		    /* AfterDOS,   -120  */
-    &Mathffp_resident,			    /* ColdStart,  -120  */
-    &boot_resident,                       /* ColdStart,  -50   */
-    &Dos_resident,                          /* None,       -120  */
+    &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
+    &Console_resident,			    /* ColdStart,   5	 */
+    &emul_handler_resident,		    /* ColdStart,   0	 */
+    &hiddserial_resident,   	    	    /* ColdStart,   0    */
+    &hiddparallel_resident,   	    	    /* ColdStart,   0    */
+    &Workbench_ROMTag,		    /* ColdStart,  -120  */
+    &Mathffp_ROMTag,			    /* ColdStart,  -120  */
+
+    /*
+	NOTE: You must not put anything between these two; the code
+        which initialized boot_resident will directly call
+        Dos_resident and anything between the two will be skipped.
+    */
+    &boot_resident,			    /* ColdStart,  -50	 */
+    &Dos_ROMTag,			    /* None,	   -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
     &con_handler_resident,		    /* AfterDOS,   -126  */
-    &nil_handler_resident,		    /* AfterDOS,   -126  */
-    &ram_handler_resident,		    /* AfterDOS,   -126  */
+    &nil_handler_resident,		    /* AfterDOS,   -127	 */
+    &ram_handler_resident,		    /* AfterDOS,   -128	 */
+
     NULL
 };
 
@@ -129,7 +140,48 @@ int main(int argc, char **argv)
 
     struct ExecBase *SysBase;
     struct termios t;
-
+    int psize = 0;
+    int i = 0, x;
+    BOOL mapSysBase = FALSE;
+    
+    while (i < argc)
+    {
+      if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+      {
+        printf("AROS for FreeBSD\n");
+        printf("usage: %s [options]\n",argv[0]);
+        printf(" -h                 show this page\n");
+        printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
+        printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
+        printf("                     found there in big endian format\n");
+        printf(" --help             same as '-h'\n");
+        printf(" --memsize <size>   same as '-m <size>'\n");
+        printf(" --mapsysbase       same as '-M'\n");
+        printf("\nPlease report bugs to the AROS development team. http://www.aros.org\n");
+        return 0;
+      }
+      else
+      if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
+      {
+        i++;
+        x = 0;
+        memSize = 0;
+        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+        {
+          memSize = memSize * 10 + (argv[i])[x] - '0';
+          x++;
+        }
+        i++;
+      }
+      else
+      if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
+      {
+        mapSysBase = TRUE;
+        i++;
+      }
+      else
+        i++;
+    }
     /*
     First up, set up the memory.
 
