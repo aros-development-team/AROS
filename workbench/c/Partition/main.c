@@ -19,18 +19,16 @@
 
 #include "args.h"
 
+
+/*** Prototypes *************************************************************/
+struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit);
+struct PartitionHandle *CreateMBRPartition(struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl);
+struct PartitionHandle *CreateRDBPartition(struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl, CONST_STRPTR name, BOOL bootable);
+
+/*** Functions **************************************************************/
 int main(void)
 {
-    struct PartitionHandle *root    = NULL, /* root partition */
-                           *mbrp    = NULL, /* MBR partition */
-                           *rdbp    = NULL; /* RDB partition */
-    struct PartitionType    mbrtype = {{0x30},  1},
-                            rdbtype = {"DOS\1", 4};
-    struct DosEnvec         tableDE,
-                            partitionDE;
-    struct DriveGeometry    tableDG;
-    LONG                    rc;
-    LONG                    reserved = 0;
+    struct PartitionHandle *root   = NULL;
     TEXT                    choice = 'N';
     
     if (!ReadArguments()) return RETURN_FAIL;
@@ -61,114 +59,82 @@ int main(void)
         Printf("Partitioning drive...");
         Flush(Output());
     }
-
-    memset(&tableDG, 0, sizeof(struct DriveGeometry));
     
-    /* Step 1: Destroy the existing partitiontable, if any exists */
-    root = OpenRootPartition("ide.device", 0);
-    DestroyPartitionTable(root);
-    CloseRootPartition(root);
-    
-    /* Step 2: Create a root MBR partition table */
-    root = OpenRootPartition("ide.device", 0);
-    rc = CreatePartitionTable(root, PHPTT_MBR);
-    if (rc != 0)
+    if ((root = CreateRootTable("ide.device", 0)) != NULL)
     {
-        PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
-        return RETURN_FAIL; /* FIXME: take care of allocated resources... */
-    }
-    
-    /* Step 3: Create a partition in the MBR table */
-    memset(&tableDE, 0, sizeof(struct DosEnvec));
-    memset(&partitionDE, 0, sizeof(struct DosEnvec));
-    
-    GetPartitionAttrsTags
-    (
-        root, 
+        CONST ULONG          TABLESIZE = 5 * 1024 * 1024;      
+        CONST ULONG          DH0SIZE   = 1 * 1024 * 1024;
+        struct DriveGeometry rootDG    = {0};
+        ULONG                rootSize; /* Size in kB */
         
-        PT_DOSENVEC, (IPTR) &tableDE, 
-        PT_GEOMETRY, (IPTR) &tableDG,
+        GetPartitionAttrsTags(root, PT_GEOMETRY, (IPTR) &rootDG, TAG_DONE);
+        rootSize = (rootDG.dg_TotalSectors / 1024) * rootDG.dg_SectorSize;
         
-        TAG_DONE
-    );
-    GetPartitionTableAttrsTags(root, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
-    
-    CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
-    
-    partitionDE.de_SizeBlock      = tableDG.dg_SectorSize >> 2;
-    partitionDE.de_Reserved       = 2;
-    partitionDE.de_HighCyl        = tableDE.de_HighCyl;
-    partitionDE.de_LowCyl         = reserved 
-                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
-                                  + 1;
-    
-    mbrp = AddPartitionTags
-    (
-        root,
-        
-        PT_DOSENVEC, (IPTR) &partitionDE,
-        PT_TYPE,     (IPTR) &mbrtype,
-        PT_POSITION,        0,
-        PT_ACTIVE,          TRUE,
-        
-        TAG_DONE
-    );
-    
-    /* Step 4: Create RDB partition table inside MBR partition */
-    rc = CreatePartitionTable(mbrp, PHPTT_RDB);
-    if (rc != 0)
-    {
-        PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
-        return RETURN_FAIL; /* FIXME: take care of allocated resources... */
-    }
-    
-    /* Step 5: Create a partition in the RDB table */
-    memset(&tableDE, 0, sizeof(struct DosEnvec));
-    memset(&partitionDE, 0, sizeof(struct DosEnvec));
-    
-    GetPartitionAttrsTags
-    (
-        mbrp, 
-        
-        PT_DOSENVEC, (IPTR) &tableDE, 
-        PT_GEOMETRY, (IPTR) &tableDG,
-        
-        TAG_DONE
-    );
-    GetPartitionTableAttrsTags(mbrp, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
-    
-    CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
-    
-    partitionDE.de_SizeBlock      = tableDG.dg_SectorSize >> 2;
-    partitionDE.de_Surfaces       = tableDG.dg_Heads;
-    partitionDE.de_BlocksPerTrack = tableDG.dg_TrackSectors;
-    partitionDE.de_BufMemType     = tableDG.dg_BufMemType;
-    partitionDE.de_TableSize      = DE_DOSTYPE;
-    partitionDE.de_Reserved       = 2;
-    partitionDE.de_HighCyl        = tableDE.de_HighCyl;
-    partitionDE.de_LowCyl         = reserved 
-                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
-                                  + 1;
-    partitionDE.de_NumBuffers     = 100;
-    partitionDE.de_MaxTransfer    = 0xFFFFFF;
-    partitionDE.de_Mask           = 0xFFFFFFFE;
+        /* See if the partition is 5 GB or larger */
+        if (rootSize >= TABLESIZE)
+        {
+            /* 
+                Only use the first 5 GB, first creating a 1 GB system
+                partition (DH0) and then a 4 GB user partition (DH1).
+            */
             
-    rdbp = AddPartitionTags
-    (
-        mbrp,
-        
-        PT_DOSENVEC, (IPTR) &partitionDE,
-        PT_TYPE,     (IPTR) &rdbtype,
-        PT_NAME,     (IPTR) "DH0",
-        PT_BOOTABLE,        TRUE,
-        PT_AUTOMOUNT,       TRUE,
-        
-        TAG_DONE
-    );
+            struct PartitionHandle *mbrp    = NULL, /* MBR partition */
+                                   *rdbp0   = NULL, /* First RDB partition */
+                                   *rdbp1   = NULL; /* Second RDB partition */
+            
+            ULONG                   cylSize      = rootSize / rootDG.dg_Cylinders,
+                                    mbrhighcyl   = (TABLESIZE / cylSize) - 1,
+                                    rdbp0highcyl = (DH0SIZE / cylSize) - 1,
+                                    rdbp1lowcyl  = rdbp0highcyl + 1,
+                                    rdbp1highcyl = mbrhighcyl;
+            
+            /* Create a partition in the MBR table */
+            mbrp = CreateMBRPartition(root, 0, mbrhighcyl);
+            
+            /* Create RDB partition table inside MBR partition */
+            if (CreatePartitionTable(mbrp, PHPTT_RDB) != 0)
+            {
+                PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
+                return RETURN_FAIL; /* FIXME: take care of allocated resources... */
+            }
+            
+            /* Create a partition in the RDB table */
+            rdbp0 = CreateRDBPartition(mbrp, 0, rdbp0highcyl, "DH0", TRUE); // FIXME: error check
+            rdbp1 = CreateRDBPartition(mbrp, rdbp1lowcyl, rdbp1highcyl, "DH1", FALSE); // FIXME: error check
+            
+            /* Save to disk and deallocate */
+            WritePartitionTable(mbrp);
+            ClosePartitionTable(mbrp);
+        }
+        else
+        {
+            /* 
+                Use the entire partition.
+            */
+            
+            struct PartitionHandle *mbrp = NULL, /* MBR partition */
+                                   *rdbp = NULL; /* RDB partition */
+            
+            /* Create a partition in the MBR table */
+            mbrp = CreateMBRPartition(root, 0, 0);
+            
+            /* Create RDB partition table inside MBR partition */
+            if (CreatePartitionTable(mbrp, PHPTT_RDB) != 0)
+            {
+                PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
+                return RETURN_FAIL; /* FIXME: take care of allocated resources... */
+            }
+            
+            /* Create a partition in the RDB table */
+            rdbp = CreateRDBPartition(mbrp, 0, 0, "DH0", TRUE); // FIXME: error check
+            
+            /* Save to disk and deallocate */
+            WritePartitionTable(mbrp);
+            ClosePartitionTable(mbrp);
+        }
+    }
     
-    /* Step 6: Save to disk and deallocate */
-    WritePartitionTable(mbrp);
-    ClosePartitionTable(mbrp);
+    /* Save to disk and deallocate */
     WritePartitionTable(root);
     ClosePartitionTable(root);
     CloseRootPartition(root);
@@ -176,4 +142,158 @@ int main(void)
     if (!ARG(QUIET)) Printf("done\n");
         
     return RETURN_OK;
+}
+
+struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit)
+{
+    struct PartitionHandle *root;
+    
+    if ((root = OpenRootPartition(device, unit)) != NULL)
+    {
+        /* Destroy the existing partitiontable, if any exists */
+        DestroyPartitionTable(root);
+        
+        /* Create a root MBR partition table */
+        if (CreatePartitionTable(root, PHPTT_MBR) != 0)       
+        {
+            PutStr("*** ERROR: Creating partition table failed.\n");
+            CloseRootPartition(root);
+            root = NULL;
+        }
+    }
+    else
+    {
+        PutStr("*** Could not open root partition!\n");
+    }
+    
+    return root;
+}
+
+struct PartitionHandle *CreateMBRPartition
+(
+    struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl
+)
+{
+    struct DriveGeometry    parentDG    = {0};
+    struct DosEnvec         parentDE    = {0},
+                            partitionDE = {0};
+    struct PartitionType    type        = {{0x30},  1}; /* AROS RDB */
+    struct PartitionHandle *partition;
+    
+    GetPartitionAttrsTags
+    (
+        parent, 
+        
+        PT_DOSENVEC, (IPTR) &parentDE, 
+        PT_GEOMETRY, (IPTR) &parentDG,
+        
+        TAG_DONE
+    );
+    
+    if (lowcyl == 0)
+    {
+        ULONG reserved;
+        
+        GetPartitionTableAttrsTags
+        (
+            parent, PTT_RESERVED, (IPTR) &reserved, TAG_DONE
+        );
+        
+        lowcyl = reserved / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
+    }
+    
+    if (highcyl == 0)
+    {
+        highcyl = parentDE.de_HighCyl;
+    }
+    
+    CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
+    
+    partitionDE.de_SizeBlock = parentDG.dg_SectorSize >> 2;
+    partitionDE.de_Reserved  = 2;
+    partitionDE.de_HighCyl   = highcyl;
+    partitionDE.de_LowCyl    = lowcyl;
+    
+    partition = AddPartitionTags
+    (
+        parent,
+        
+        PT_DOSENVEC, (IPTR) &partitionDE,
+        PT_TYPE,     (IPTR) &type,
+        PT_POSITION,        0,
+        PT_ACTIVE,          TRUE,
+        
+        TAG_DONE
+    );
+    
+    return partition;
+}
+
+struct PartitionHandle *CreateRDBPartition
+(
+    struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl,
+    CONST_STRPTR name, BOOL bootable
+)
+{
+    struct DriveGeometry    parentDG    = {0};
+    struct DosEnvec         parentDE    = {0},
+                            partitionDE = {0};
+    struct PartitionType    type        = {"DOS\1", 4};
+    struct PartitionHandle *partition;
+        
+    GetPartitionAttrsTags
+    (
+        parent, 
+        
+        PT_DOSENVEC, (IPTR) &parentDE, 
+        PT_GEOMETRY, (IPTR) &parentDG,
+        
+        TAG_DONE
+    );
+    
+    if (lowcyl == 0)
+    {
+        ULONG reserved;
+        
+        GetPartitionTableAttrsTags
+        (
+            parent, PTT_RESERVED, (IPTR) &reserved, TAG_DONE
+        );
+        
+        lowcyl = reserved / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
+    }
+    
+    if (highcyl == 0)
+    {
+        highcyl = parentDE.de_HighCyl;
+    }
+    
+    CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
+    
+    partitionDE.de_SizeBlock      = parentDG.dg_SectorSize >> 2;
+    partitionDE.de_Surfaces       = parentDG.dg_Heads;
+    partitionDE.de_BlocksPerTrack = parentDG.dg_TrackSectors;
+    partitionDE.de_BufMemType     = parentDG.dg_BufMemType;
+    partitionDE.de_TableSize      = DE_DOSTYPE;
+    partitionDE.de_Reserved       = 2;
+    partitionDE.de_HighCyl        = highcyl;
+    partitionDE.de_LowCyl         = lowcyl;
+    partitionDE.de_NumBuffers     = 100;
+    partitionDE.de_MaxTransfer    = 0xFFFFFF;
+    partitionDE.de_Mask           = 0xFFFFFFFE;
+            
+    partition = AddPartitionTags
+    (
+        parent,
+        
+        PT_DOSENVEC, (IPTR) &partitionDE,
+        PT_TYPE,     (IPTR) &type,
+        PT_NAME,     (IPTR) name,
+        PT_BOOTABLE,        bootable,
+        PT_AUTOMOUNT,       TRUE,
+        
+        TAG_DONE
+    );
+    
+    return partition;
 }
