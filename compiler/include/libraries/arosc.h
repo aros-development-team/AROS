@@ -49,6 +49,9 @@ struct AroscUserData
     unsigned short int *const ctype_b;
     int *const ctype_toupper;
     int *const ctype_tolower;
+
+    /*more stuff*/
+    struct MinList atexit_list;
 };
 
 extern struct Library *aroscbase;
@@ -82,6 +85,7 @@ extern struct Library *aroscbase;
 #define __startup_mempool   ((APTR)           (clib_userdata->startup_mempool))
 #define __startup_datestamp                   (clib_userdata->startup_datestamp)
 #define __stdfiles                            (clib_userdata->stdfiles)
+#define __atexit_list                         (clib_userdata->atexit_list)
 
 #else
 
