@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define ARG_TEMPLATE "FONTNAME/A,FONTSIZE/N/A,XDPI/N,YDPI/N,BOLD/S,ITALIC/S,SHOW/S"
 #define ARG_NAME 0
