@@ -33,7 +33,7 @@ int pipe(int *pipedes)
     }
 
     pipedes[0] =  open("PIPEFS://unnamedpipe//", O_RDONLY|O_NONBLOCK);
-    if (pipedes[0])
+    if (pipedes[0] != -1)
     {
 	fdesc *desc = __getfdesc(pipedes[0]);
         BPTR olddir = CurrentDir(desc->fh);
@@ -41,7 +41,7 @@ int pipe(int *pipedes)
 	if
 	(
 	    clear_nonblock_flag(pipedes[0]) != -1 &&
-       	    (pipedes[1] = open("", O_WRONLY))
+       	    ((pipedes[1] = open("", O_WRONLY)) != -1)
 	)
 	{
       	    CurrentDir(olddir);
