@@ -46,6 +46,7 @@ FUNCTIONS := \
 	allocdbufinfo \
 	allocraster \
 	allocspritedataa \
+	andrectrect \
 	andrectregion \
 	andregionregion \
 	animate \
@@ -150,6 +151,7 @@ FUNCTIONS := \
 	move \
 	movesprite \
 	mrgcop \
+	newrectregion \
 	newregion \
 	newregionrectangle \
 	nextdisplayinfo \
