@@ -12,3 +12,4 @@ delete ppc_boot ppc_boot.s ppc_boot.o
 assign ade: dh1:gg
 assign gg: dh1:gg
 gcc -o bootstrap -I. -I/empty/linux-2.1.42/include -I/dh1/powerup/ppc-dev/include -Iinclude: -m68030 -noixemul bootstrap.c linuxboot.c
+

@@ -571,3 +571,4 @@ static __inline void disable_mmu(void)
 			      "addql #4,sp");
     }
 }
+

@@ -147,3 +147,4 @@ static __inline void DeleteMsgPort(struct MsgPort *port)
 		      : "r" (a6), "r" (a0)
 		      : "a0","a1","d0","d1", "memory");
 }
+
