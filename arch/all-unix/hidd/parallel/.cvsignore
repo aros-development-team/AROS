@@ -3,3 +3,4 @@ functable.c
 parallel_end.c
 parallellib.map
 mmakefile
+*.err
