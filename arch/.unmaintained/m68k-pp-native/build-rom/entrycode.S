@@ -3,7 +3,8 @@
 	// For the following structur have a look at the POSE source
 	// code SrcShared/Palm/Platform/Core/System/IncsPrv/MemoryPrv.h
 
-init_ssp:
+	.globl initial_ssp
+initial_ssp:
 	.dc.l  0xfffc                 // initial value for SSP
 	.dc.l  hardware_reset_init_1  // where the startup code is at.
 	.dc.l  0xfeedbeef             // signature
@@ -70,7 +71,8 @@ hardware_reset_init_2:
 
 	.globl software_reset
 	.align 8
+
 software_reset:
-	lea    init_ssp,%a0
+	lea    initial_ssp,%a0
 	move.l (%a0),%ssp
 	jmp    aros_reset
