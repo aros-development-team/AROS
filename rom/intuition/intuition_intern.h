@@ -142,6 +142,8 @@ struct IntScreen
     /* Private fields */
     struct DrawInfo 		DInfo;
     struct TextAttr 		textattr;
+    struct SignalSemaphore	RefreshLock; /* to avoid refreshing trouble when apps
+    						and Intuition try to do it at the same time */
     UWORD  			Pens[NUMDRIPENS];
     struct PubScreenNode 	* pubScrNode;
     Object 			* depthgadget;
