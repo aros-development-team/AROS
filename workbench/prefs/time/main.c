@@ -71,7 +71,7 @@ static IPTR                 	args[NUM_ARGS];
 static STRPTR monthlabels[] =
 {
     "January",
-    "Frebruary",
+    "February",
     "March",
     "April",
     "May",
