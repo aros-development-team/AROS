@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -570,11 +568,19 @@ STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
         
         switch (wbhm->wbhm_Type)
         {
+            case WBHM_TYPE_SHOW:
+                #warning WBHM_TYPE_SHOW not supported
+                break;
+            
+            case WBHM_TYPE_HIDE:
+                #warning WBHM_TYPE_HIDE not supported
+                break;
+                
             case WBHM_TYPE_UPDATE:
                 D(bug("Wanderer: WBHM_TYPE_UPDATE\n"));
                 {
-                    STRPTR name   = wbhm->wbhm_Data.Update.Name;
-                    ULONG  length;
+                    CONST_STRPTR name = wbhm->wbhm_Data.Update.Name;
+                    ULONG        length;
                     
                     switch (wbhm->wbhm_Data.Update.Type)
                     {
@@ -608,7 +614,7 @@ STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
                                     && strlen(child_drawer) == length
                                 )
                                 {
-                                    Object *iconlist = XGET(child, MUIA_IconWindow_IconList);
+                                    Object *iconlist = (Object *) XGET(child, MUIA_IconWindow_IconList);
                                     
                                     D(bug("Wanderer: Drawer found: %s!\n", child_drawer));
                                     
@@ -630,7 +636,7 @@ STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
                 {
                     Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
                     Object *child;
-                    char *buf = wbhm->wbhm_Data.Open.Name;
+                    CONST_STRPTR buf = wbhm->wbhm_Data.Open.Name;
                     
                     while ((child = NextObject(&cstate)))
                     {
