@@ -1245,9 +1245,9 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
 
     xleft  = x1 + L->bounds.MinX + xCorr1;
-    xright = x2 + L->bounds.MinX - xCorr2; /* stegerg: was + xCorr2; */
+    xright = x2 + L->bounds.MinX + xCorr2;
     yup    = y1 + L->bounds.MinY + yCorr1;
-    ydown  = y2 + L->bounds.MinY - yCorr2; /* stegerg: was + yCorr2; */
+    ydown  = y2 + L->bounds.MinY + yCorr2;
 
     /* First read all data out of the source area */    
     while (NULL != CR)
