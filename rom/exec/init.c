@@ -2,15 +2,20 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/08/28 17:57:37  digulla
+    Doesn't call intui_ProcessXEvents() andmore but signals the input.device.
+    This will change in the future but as long as we don't have real multitasking,
+    there is no other way to do it.
+
     Revision 1.6  1996/08/23 17:12:28  digulla
     Added several new aros specific includes
     We have now a console.device
     The memory is allocated now and not part of the BSS so illegal accesses show
-    	up earlier now.
+	up earlier now.
     New global variable: AROSBase. Can be accesses from anywhere via
-    	SysBase->DebugData for now. Will be used for RT and Purify.
+	SysBase->DebugData for now. Will be used for RT and Purify.
     AROSBase.StdOut is a FILE*-handle for use in kprintf() but that doesn't
-    	seem to work in all cases
+	seem to work in all cases
 
     Revision 1.5  1996/08/15 13:21:06  digulla
     A couple of comments
@@ -82,11 +87,14 @@ void intui_ProcessXEvents (void);
 
 static void idleTask (void)
 {
+    extern struct Task * inputDevice;
+
     /* If the idle task ever gets CPU time the emulation is finished */
 /* exit(returncode); */
     while (1)
     {
-	intui_ProcessXEvents ();
+	/* Let input.device live */
+	Signal (inputDevice, SIGBREAKF_CTRL_F);
 
 	Switch (); /* Rescedule */
     }
