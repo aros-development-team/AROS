@@ -44,7 +44,7 @@ The source is 6.5MB right now.
     and timer.
 \item New CLI tools
 \item Andreas Kleinert's CLib integrated
-\item A new standard: HIDD - Hardware Independend Device Driver. First
+\item A new standard: HIDD - Hardware Independent Device Driver. First
     HIDDs are available.
 \item AROS has its own build tool now: MetaMake
 \item AROS runs now on Linux/m68k. First Amiga programs can be run.

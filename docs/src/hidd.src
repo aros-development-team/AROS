@@ -1,5 +1,5 @@
 \begin{new}{6.8.1997}
-\chapter{Hardware Independend Device Driver - HIDD}
+\chapter{Hardware Independent Device Driver - HIDD}
 
 \section{Introduction}
 
@@ -342,7 +342,8 @@ lost.
 GUI on this screen.
 
 \item{HIDDA_AppMsgPort,struct MsgPort *,ISG} When the HIDD CP has its own
-GUI, this GUI runs independend of the application. You can supply a message
+GUI, this GUI runs independent of the application. You can supply a
+message
 port to synchronise your application with the GUI of the HIDD CP. Some HIDD
 CPs will also use this to talk to the application.
 
