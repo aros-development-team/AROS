@@ -3987,8 +3987,9 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		}
 		else
 		{
-		    fakeRP = CreateRastPort();
-		    if (!fakeRP)
+		    if (NULL == fakeRP)
+			fakeRP = CreateRastPort();
+		    if (NULL == fakeRP)
 		    	continue;
 		    
 		    rp->BitMap = CR->BitMap;
@@ -4005,9 +4006,11 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    }
 	    CR = CR->Next;
 	    
-	    if (fakeRP)
-	    	FreeRastPort(fakeRP);
 	}
+	
+	if (NULL != fakeRP)
+	    FreeRastPort(fakeRP);
+	    
 	UnlockLayerRom( L );
 	
 
