@@ -59,13 +59,13 @@ SHARED_LD	:= $(CROSSCOMPILE)gcc
 KERNEL_LD	:= $(CROSSCOMPILE)gcc
 GENMAP		:= -Wl,-Map -Xlinker
 
-TARGET_CFLAGS	:= -Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -D__string_h -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -fomit-frame-pointer
+TARGET_CFLAGS	:= -Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -fomit-frame-pointer -DAROS_DEFAULT_WBDEPTH=1 -DAROS_DEFAULT_WBWIDTH=160 -DAROS_DEFAULT_WBHEIGHT=160 -DCREATE_ROM
 TARGET_AFLAGS	:= -Wall -x assembler-with-cpp -mc68000 --short-branchs
 TARGET_LDFLAGS	:= -nostartfiles -nostdlib -Wl,-r
 STATIC_CFLAGS	:= -Wa,-mc68000
 STATIC_AFLAGS	:= -mc68000
 STATIC_LDFLAGS	:= 
-SHARED_CFLAGS	:= -fPIC
+SHARED_CFLAGS	:=
 SHARED_AFLAGS	:= 
 SHARED_LDFLAGS	:= -Wl,-rpath,./lib -shared
 KERNEL_LDFLAGS	:= -Wl,-rpath,./lib
@@ -79,7 +79,7 @@ GUI_LIBFLAGS	:= -lX11 -lXext
 GUI_INCDIR	:= /usr/X11R6/include
 GUI_CFLAGS	:= -I /usr/X11R6/include
 
-AR		:= $(CROSSCOMPILE)ar cr
+AR		:= $(CROSSCOMPILE)ar cru
 RANLIB		:= $(CROSSCOMPILE)ranlib 
 NM		:= $(CROSSCOMPILE)nm -ul
 STRIP		:= /bin/true 
@@ -114,5 +114,5 @@ ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
 MKDEPEND	:= $(TOP)/scripts/mkdep
 TOOLDIR		:= $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
 GENMF		:= $(TOOLDIR)/genmf
-SHARED_CFLAGS := -fPIC
+SHARED_CFLAGS :=
 SHARED_AR := gcc -Wl,-rpath,./lib -shared -o
