@@ -78,7 +78,7 @@ int main(void)
 {
     double elapsed = 0;
 
-    /* 
+    /*
        Since I'm SO lazy, I'm using processes here, even if tasks would work too, 'cause 
        it's easier to create processes than tasks...
 
@@ -110,10 +110,12 @@ int main(void)
     (
         "Elapsed time:               %f seconds\n"
         "Number of context switches: %ld\n"
-        "Context switch time:        <= %f seconds\n",
+        "Signal roundtrip time:      %.8f\n"
+        "Context switch time:     <= %.8f seconds\n",
         elapsed,
-        counter,
-        elapsed / (double)counter
+        counter * 2,
+        elapsed / (double)counter,
+        elapsed / (double)(counter * 2)
     );
 
     return 0;
