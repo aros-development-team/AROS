@@ -11,6 +11,7 @@ CLASSES   := application \
 	     boopsi \
 	     family \
 	     group \
+	     menuitem \
 	     notify \
 	     numeric \
 	     prop \
