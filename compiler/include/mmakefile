@@ -26,12 +26,21 @@ INCSUBDIRS :=	aros \
 		workbench
 
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
+INCLUDES      := $(filter-out rexx/rexxcall-%.h,$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM- includes : setup-includes includes-$(ARCH)-$(CPU)
 #MM includes-copy : includes-copy-$(ARCH)-$(CPU) includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
+
+ifeq ($(TARGET_CPU),m68k)
+$(INCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
+	@$(CP) $< $@
+
+$(GENINCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
+	@$(CP) $< $@
+endif
 
 $(INCDIR)/%.h : %.h
 	@$(CP) $< $@
