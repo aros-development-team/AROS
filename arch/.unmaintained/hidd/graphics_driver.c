@@ -3082,7 +3082,8 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 		
 	    	pen = getbitmappixel(dest
 			, x + x_dest
-			, y + y_dest, dest_depth
+			, y + y_dest
+			, dest_depth
 			, 0xFF
 		);
 		
@@ -3095,8 +3096,8 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 		setbitmappixel(dest
 			, x + x_dest
 			, y + y_dest
-			, dest_depth, 0xFF
 			, pen
+			, dest_depth, 0xFF
 		);
 	    }
 
