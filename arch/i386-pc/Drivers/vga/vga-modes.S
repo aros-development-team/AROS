@@ -324,6 +324,7 @@ __pc_lop:		movb	(%esi),%al
 
 __pc_2:			movl	$0,c_x
 			incl	c_y
+
 			cmpl	$39,c_y
 			jb	__pc_1
 			
