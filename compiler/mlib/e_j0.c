@@ -1,15 +1,18 @@
-
-/* @(#)e_j0.c 1.3 95/01/18 */
+/* @(#)e_j0.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j0.c,v 1.5 1999/08/28 00:06:32 peter Exp $";
+#endif
 
 /* __ieee754_j0(x), __ieee754_y0(x)
  * Bessel function of the first and second kinds of order zero.
@@ -30,20 +33,20 @@
  * 	   (To avoid cancellation, use
  *		sin(x) +- cos(x) = -cos(2x)/(sin(x) -+ cos(x))
  * 	    to compute the worse one.)
- *	   
+ *
  *	3 Special cases
  *		j0(nan)= nan
  *		j0(0) = 1
  *		j0(inf) = 0
- *		
+ *
  * Method -- y0(x):
  *	1. For x<2.
- *	   Since 
+ *	   Since
  *		y0(x) = 2/pi*(j0(x)*(ln(x/2)+Euler) + x^2/4 - ...)
  *	   therefore y0(x)-2/pi*j0(x)*ln(x) is an even function.
  *	   We use the following function to approximate y0,
  *		y0(x) = U(z)/V(z) + (2/pi)*(j0(x)*ln(x)), z= x^2
- *	   where 
+ *	   where
  *		U(z) = u00 + u01*z + ... + u06*z^6
  *		V(z) = 1  + v01*z + ... + v04*z^4
  *	   with absolute approximation error bounded by 2**-72.
@@ -56,7 +59,8 @@
  *	3. Special cases: y0(0)=-inf, y0(x<0)=NaN, y0(inf)=0.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static double pzero(double), qzero(double);
@@ -65,9 +69,9 @@ static double pzero(), qzero();
 #endif
 
 #ifdef __STDC__
-static const double 
+static const double
 #else
-static double 
+static double
 #endif
 huge 	= 1e300,
 one	= 1.0,
@@ -83,19 +87,23 @@ S02  =  1.16926784663337450260e-04, /* 0x3F1EA6D2, 0xDD57DBF4 */
 S03  =  5.13546550207318111446e-07, /* 0x3EA13B54, 0xCE84D5A9 */
 S04  =  1.16614003333790000205e-09; /* 0x3E1408BC, 0xF4745D8F */
 
+#ifdef __STDC__
+static const double zero = 0.0;
+#else
 static double zero = 0.0;
+#endif
 
 #ifdef __STDC__
-	double __ieee754_j0(double x) 
+	double __ieee754_j0(double x)
 #else
-	double __ieee754_j0(x) 
+	double __ieee754_j0(x)
 	double x;
 #endif
 {
 	double z, s,c,ss,cc,r,u,v;
-	int hx,ix;
+	int32_t hx,ix;
 
-	hx = __HI(x);
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) return one/(x*x);
 	x = fabs(x);
@@ -155,20 +163,19 @@ v03  =  2.59150851840457805467e-07, /* 0x3E91642D, 0x7FF202FD */
 v04  =  4.41110311332675467403e-10; /* 0x3DFE5018, 0x3BD6D9EF */
 
 #ifdef __STDC__
-	double __ieee754_y0(double x) 
+	double __ieee754_y0(double x)
 #else
-	double __ieee754_y0(x) 
+	double __ieee754_y0(x)
 	double x;
 #endif
 {
 	double z, s,c,ss,cc,u,v;
-	int hx,ix,lx;
+	int32_t hx,ix,lx;
 
-        hx = __HI(x);
+	EXTRACT_WORDS(hx,lx,x);
         ix = 0x7fffffff&hx;
-        lx = __LO(x);
     /* Y0(NaN) is NaN, y0(-inf) is Nan, y0(inf) is 0  */
-	if(ix>=0x7ff00000) return  one/(x+x*x); 
+	if(ix>=0x7ff00000) return  one/(x+x*x);
         if((ix|lx)==0) return -one/zero;
         if(hx<0) return zero/zero;
         if(ix >= 0x40000000) {  /* |x| >= 2.0 */
@@ -330,8 +337,9 @@ static double pS2[5] = {
 	double *p,*q;
 #endif
 	double z,r,s;
-	int ix;
-	ix = 0x7fffffff&__HI(x);
+	int32_t ix;
+	GET_HIGH_WORD(ix,x);
+	ix &= 0x7fffffff;
 	if(ix>=0x40200000)     {p = pR8; q= pS8;}
 	else if(ix>=0x40122E8B){p = pR5; q= pS5;}
 	else if(ix>=0x4006DB6D){p = pR3; q= pS3;}
@@ -341,7 +349,7 @@ static double pS2[5] = {
 	s = one+z*(q[0]+z*(q[1]+z*(q[2]+z*(q[3]+z*q[4]))));
 	return one+ r/s;
 }
-		
+
 
 /* For x >= 8, the asymptotic expansions of qzero is
  *	-1/8 s + 75/1024 s^3 - ..., where s = 1/x.
@@ -465,8 +473,9 @@ static double qS2[6] = {
 	double *p,*q;
 #endif
 	double s,r,z;
-	int ix;
-	ix = 0x7fffffff&__HI(x);
+	int32_t ix;
+	GET_HIGH_WORD(ix,x);
+	ix &= 0x7fffffff;
 	if(ix>=0x40200000)     {p = qR8; q= qS8;}
 	else if(ix>=0x40122E8B){p = qR5; q= qS5;}
 	else if(ix>=0x4006DB6D){p = qR3; q= qS3;}

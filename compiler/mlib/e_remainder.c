@@ -1,26 +1,30 @@
-
-/* @(#)e_remainder.c 1.3 95/01/18 */
+/* @(#)e_remainder.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_remainder.c,v 1.6 1999/08/28 00:06:38 peter Exp $";
+#endif
+
 /* __ieee754_remainder(x,p)
- * Return :                  
- * 	returns  x REM p  =  x - [x/p]*p as if in infinite 
- * 	precise arithmetic, where [x/p] is the (infinite bit) 
+ * Return :
+ * 	returns  x REM p  =  x - [x/p]*p as if in infinite
+ * 	precise arithmetic, where [x/p] is the (infinite bit)
  *	integer nearest x/p (in half way case choose the even one).
- * Method : 
+ * Method :
  *	Based on fmod() return x-[x/p]chopped*p exactlp.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static const double zero = 0.0;
@@ -30,20 +34,18 @@ static double zero = 0.0;
 
 
 #ifdef __STDC__
-	double __ieee754_remainder(double x, double p)
+	double __generic___ieee754_remainder(double x, double p)
 #else
-	double __ieee754_remainder(x,p)
+	double __generic___ieee754_remainder(x,p)
 	double x,p;
 #endif
 {
-	int hx,hp;
-	unsigned sx,lx,lp;
+	int32_t hx,hp;
+	uint32_t sx,lx,lp;
 	double p_half;
 
-	hx = __HI(x);		/* high word of x */
-	lx = __LO(x);		/* low  word of x */
-	hp = __HI(p);		/* high word of p */
-	lp = __LO(p);		/* low  word of p */
+	EXTRACT_WORDS(hx,lx,x);
+	EXTRACT_WORDS(hp,lp,p);
 	sx = hx&0x80000000;
 	hp &= 0x7fffffff;
 	hx &= 0x7fffffff;
@@ -72,6 +74,7 @@ static double zero = 0.0;
 		if(x>=p_half) x -= p;
 	    }
 	}
-	__HI(x) ^= sx;
+	GET_HIGH_WORD(hx,x);
+	SET_HIGH_WORD(x,hx^sx);
 	return x;
 }

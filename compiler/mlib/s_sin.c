@@ -1,15 +1,18 @@
-
-/* @(#)s_sin.c 1.3 95/01/18 */
+/* @(#)s_sin.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.6 1999/08/28 00:06:55 peter Exp $";
+#endif
 
 /* sin(x)
  * Return sine function of x.
@@ -20,8 +23,8 @@
  *	__ieee754_rem_pio2	... argument reduction routine
  *
  * Method.
- *      Let S,C and T denote the sin, cos and tan respectively on 
- *	[-PI/4, +PI/4]. Reduce the argument x to y1+y2 = x-k*pi/2 
+ *      Let S,C and T denote the sin, cos and tan respectively on
+ *	[-PI/4, +PI/4]. Reduce the argument x to y1+y2 = x-k*pi/2
  *	in [-pi/4 , +pi/4], and let n = k mod 4.
  *	We have
  *
@@ -39,23 +42,24 @@
  *      trig(NaN)    is that NaN;
  *
  * Accuracy:
- *	TRIG(x) returns trig(x) nearly rounded 
+ *	TRIG(x) returns trig(x) nearly rounded
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
-	double sin(double x)
+	double __generic_sin(double x)
 #else
-	double sin(x)
+	double __generic_sin(x)
 	double x;
 #endif
 {
 	double y[2],z=0.0;
-	int n, ix;
+	int32_t n, ix;
 
     /* High word of x. */
-	ix = __HI(x);
+	GET_HIGH_WORD(ix,x);
 
     /* |x| ~< pi/4 */
 	ix &= 0x7fffffff;

@@ -1,26 +1,29 @@
-
-/* @(#)e_sinh.c 1.3 95/01/18 */
+/* @(#)e_sinh.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sinh.c,v 1.6 1999/08/28 00:06:39 peter Exp $";
+#endif
+
 /* __ieee754_sinh(x)
- * Method : 
+ * Method :
  * mathematically sinh(x) if defined to be (exp(x)-exp(-x))/2
- *	1. Replace x by |x| (sinh(-x) = -sinh(x)). 
- *	2. 
+ *	1. Replace x by |x| (sinh(-x) = -sinh(x)).
+ *	2.
  *		                                    E + E/(E+1)
  *	    0        <= x <= 22     :  sinh(x) := --------------, E=expm1(x)
  *			       			        2
  *
- *	    22       <= x <= lnovft :  sinh(x) := exp(x)/2 
+ *	    22       <= x <= lnovft :  sinh(x) := exp(x)/2
  *	    lnovft   <= x <= ln2ovft:  sinh(x) := exp(x/2)/2 * exp(x/2)
  *	    ln2ovft  <  x	    :  sinh(x) := x*shuge (overflow)
  *
@@ -29,7 +32,8 @@
  *	only sinh(0)=0 is exact for finite x.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
 static const double one = 1.0, shuge = 1.0e307;
@@ -43,17 +47,17 @@ static double one = 1.0, shuge = 1.0e307;
 	double __ieee754_sinh(x)
 	double x;
 #endif
-{	
+{
 	double t,w,h;
-	int ix,jx;
-	unsigned lx;
+	int32_t ix,jx;
+	uint32_t lx;
 
     /* High word of |x|. */
-	jx = __HI(x);
+	GET_HIGH_WORD(jx,x);
 	ix = jx&0x7fffffff;
 
     /* x is INF or NaN */
-	if(ix>=0x7ff00000) return x+x;	
+	if(ix>=0x7ff00000) return x+x;
 
 	h = 0.5;
 	if (jx<0) h = -h;
@@ -70,8 +74,8 @@ static double one = 1.0, shuge = 1.0e307;
 	if (ix < 0x40862E42)  return h*__ieee754_exp(fabs(x));
 
     /* |x| in [log(maxdouble), overflowthresold] */
-	lx = *( (((*(unsigned*)&one)>>29)) + (unsigned*)&x);
-	if (ix<0x408633CE || ((ix==0x408633ce)&&(lx<=(unsigned)0x8fb9f87d))) {
+	GET_LOW_WORD(lx,x);
+	if (ix<0x408633CE || ((ix==0x408633ce)&&(lx<=(uint32_t)0x8fb9f87d))) {
 	    w = __ieee754_exp(0.5*fabs(x));
 	    t = h*w;
 	    return t*w;

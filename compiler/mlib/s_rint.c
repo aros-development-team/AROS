@@ -1,15 +1,18 @@
-
-/* @(#)s_rint.c 1.3 95/01/18 */
+/* @(#)s_rint.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rint.c,v 1.7 1999/08/28 00:06:54 peter Exp $";
+#endif
 
 /*
  * rint(x)
@@ -21,12 +24,20 @@
  *	Inexact flag raised if x not equal to rint(x).
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
+/*
+ * TWO23 is long double instead of double to avoid a bug in gcc.  Without
+ * this, gcc thinks that TWO23[sx]+x and w-TWO23[sx] already have double
+ * precision and doesn't clip them to double precision when they are
+ * assigned and returned.  Use long double even in the !__STDC__ case in
+ * case this is compiled with gcc -traditional.
+ */
 #ifdef __STDC__
-static const double
+static const long double
 #else
-static double 
+static long double
 #endif
 TWO52[2]={
   4.50359962737049600000e+15, /* 0x43300000, 0x00000000 */
@@ -34,30 +45,29 @@ TWO52[2]={
 };
 
 #ifdef __STDC__
-	double rint(double x)
+	double __generic_rint(double x)
 #else
-	double rint(x)
+	double __generic_rint(x)
 	double x;
 #endif
 {
-	int i0,j0,sx;
-	unsigned i,i1;
+	int32_t i0,j0,sx;
+	uint32_t i,i1;
 	double w,t;
-	i0 =  __HI(x);
+	EXTRACT_WORDS(i0,i1,x);
 	sx = (i0>>31)&1;
-	i1 =  __LO(x);
 	j0 = ((i0>>20)&0x7ff)-0x3ff;
 	if(j0<20) {
-	    if(j0<0) { 	
+	    if(j0<0) {
 		if(((i0&0x7fffffff)|i1)==0) return x;
 		i1 |= (i0&0x0fffff);
 		i0 &= 0xfffe0000;
 		i0 |= ((i1|-i1)>>12)&0x80000;
-		__HI(x)=i0;
+		SET_HIGH_WORD(x,i0);
 	        w = TWO52[sx]+x;
 	        t =  w-TWO52[sx];
-	        i0 = __HI(t);
-	        __HI(t) = (i0&0x7fffffff)|(sx<<31);
+		GET_HIGH_WORD(i0,t);
+		SET_HIGH_WORD(t,(i0&0x7fffffff)|(sx<<31));
 	        return t;
 	    } else {
 		i = (0x000fffff)>>j0;
@@ -72,13 +82,12 @@ TWO52[2]={
 	    if(j0==0x400) return x+x;	/* inf or NaN */
 	    else return x;		/* x is integral */
 	} else {
-	    i = ((unsigned)(0xffffffff))>>(j0-20);
+	    i = ((uint32_t)(0xffffffff))>>(j0-20);
 	    if((i1&i)==0) return x;	/* x is integral */
 	    i>>=1;
 	    if((i1&i)!=0) i1 = (i1&(~i))|((0x40000000)>>(j0-20));
 	}
-	__HI(x) = i0;
-	__LO(x) = i1;
+	INSERT_WORDS(x,i0,i1);
 	w = TWO52[sx]+x;
 	return w-TWO52[sx];
 }

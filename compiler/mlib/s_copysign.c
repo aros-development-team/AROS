@@ -1,15 +1,18 @@
-
-/* @(#)s_copysign.c 1.3 95/01/18 */
+/* @(#)s_copysign.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
+
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.6 1999/08/28 00:06:45 peter Exp $";
+#endif
 
 /*
  * copysign(double x, double y)
@@ -17,15 +20,19 @@
  * with the sign bit of y.
  */
 
-#include "fdlibm.h"
+#include "math.h"
+#include "math_private.h"
 
 #ifdef __STDC__
-	double copysign(double x, double y)
+	double __generic_copysign(double x, double y)
 #else
-	double copysign(x,y)
+	double __generic_copysign(x,y)
 	double x,y;
 #endif
 {
-	__HI(x) = (__HI(x)&0x7fffffff)|(__HI(y)&0x80000000);
+	uint32_t hx,hy;
+	GET_HIGH_WORD(hx,x);
+	GET_HIGH_WORD(hy,y);
+	SET_HIGH_WORD(x,(hx&0x7fffffff)|(hy&0x80000000));
         return x;
 }
