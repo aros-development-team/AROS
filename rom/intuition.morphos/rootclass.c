@@ -4,19 +4,15 @@
     $Id$
 */
 
+#include <aros/asmcall.h>
+#include <aros/atomic.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/alib.h>
-//#include <proto/arossupport.h>
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif
-#ifndef UTILITY_HOOKS_H
-#   include <utility/hooks.h>
-#endif
+#include <intuition/classes.h>
+#include <utility/hooks.h>
 #include <utility/utility.h>
-#include <aros/asmcall.h>
 #include "intuition_intern.h"
 
 #define IntuitionBase   (GetPrivIBase(cl->cl_UserData))
@@ -74,19 +70,17 @@ AROS_UFH3(IPTR, rootDispatcher,
 
         /* Get memory. The objects shows how much is needed.
            (The object is not an object, it is a class pointer!) */
-        o = (Object *) AllocMem (objcl->cl_InstOffset +
-                                 objcl->cl_InstSize +
-                                 sizeof (struct _Object),
-                                 MEMF_ANY|MEMF_CLEAR);
+        o = (Object *) AllocMem
+        (
+            objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object),
+            MEMF_ANY | MEMF_CLEAR
+        );
 
         if (o)
         {
             _OBJ(o)->o_Class = objcl;
             
-            #warning "Use atomic macro for this once we have some"
-            Forbid();
-            objcl->cl_ObjectCount++;
-            Permit();
+            AROS_ATOMIC_INCL(objcl->cl_ObjectCount);
             
             retval = (IPTR) BASEOBJECT(o);
         }
@@ -96,12 +90,14 @@ AROS_UFH3(IPTR, rootDispatcher,
         /* Free memory. Caller is responsible that everything else
            is already cleared! */
         objcl = OCLASS(o);
-        #warning "Use atomic macro for this once we have some"
-        Forbid();
-        OCLASS(o)->cl_ObjectCount--;
-        Permit();
-        FreeMem (_OBJECT(o),
-                 objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object));
+        
+        AROS_ATOMIC_DECL(OCLASS(o)->cl_ObjectCount);
+        
+        FreeMem
+        (
+            _OBJECT(o), 
+            objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object)
+        );
         break;
 
     case OM_ADDTAIL:
