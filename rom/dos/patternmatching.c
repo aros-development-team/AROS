@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Pattern matching and parsing functionality
@@ -598,6 +598,7 @@ LONG patternParse(STRPTR Source, STRPTR Dest, LONG DestLength, BOOL useCase,
 	case '\'':
 	    switch(*Source)
 	    {
+	    case '#':
 	    case '*':
 	    case '?':
 	    case '(':
