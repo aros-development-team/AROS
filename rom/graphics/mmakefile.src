@@ -44,6 +44,7 @@ FUNCTIONS := \
 	allocbitmap \
 	allocdbufinfo \
 	allocraster \
+	allocspritedataa \
 	andrectregion \
 	andregionregion \
 	animate \
@@ -63,7 +64,11 @@ FUNCTIONS := \
 	bltmaskbitmaprastport \
 	bltpattern \
 	blttemplate \
+	calcivg \
+	cbump \
+	changeextspritea \
 	changesprite \
+	changevpbitmap \
 	cleareol \
 	clearrectregion \
 	clearregion \
@@ -72,19 +77,20 @@ FUNCTIONS := \
 	clonerastport \
 	closefont \
 	closemonitor \
-	cbump \
 	cmove \
+	coercemode \
 	copysbitmap \
 	createrastport \
 	cwait \
 	deinitrastport \
 	disownblitter \
 	disposeregion \
+	docollision \
 	draw \
 	drawellipse \
 	drawglist \
-	extendfont \
 	eraserect \
+	extendfont \
 	findcolor \
 	finddisplayinfo \
 	flood \
@@ -98,6 +104,7 @@ FUNCTIONS := \
 	freeraster \
 	freerastport \
 	freesprite \
+	freespritedata \
 	freevportcoplists \
 	getapen \
 	getbitmapattr \
@@ -105,11 +112,12 @@ FUNCTIONS := \
 	getcolormap \
 	getdisplayinfodata \
 	getdrmd \
+	getextspritea \
 	getgbuffers \
+	getoutlinepen \
 	getrgb32 \
 	getrgb4 \
 	getrpattrsa \
-	getoutlinepen \
 	getsprite \
 	getvpmodeid \
 	gfxassociate \
@@ -121,10 +129,10 @@ FUNCTIONS := \
 	initgels \
 	initgmasks \
 	initmasks \
-	initview \
-	initvport \
 	initrastport \
 	inittmpras \
+	initview \
+	initvport \
 	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
@@ -137,16 +145,16 @@ FUNCTIONS := \
 	mrgcop \
 	newregion \
 	nextdisplayinfo \
-	obtainpen \
 	obtainbestpena \
+	obtainpen \
 	openfont \
 	openmonitor \
 	orrectregion \
 	orregionregion \
 	ownblitter \
+	polydraw \
 	qblit \
 	qbsblit \
-	polydraw \
 	readpixel \
 	readpixelarray8 \
 	readpixelline8 \
@@ -162,6 +170,7 @@ FUNCTIONS := \
 	setabpendrmd \
 	setapen \
 	setbpen \
+	setchiprev \
 	setcollision \
 	setdrmd \
 	setfont \
@@ -185,6 +194,7 @@ FUNCTIONS := \
 	ucopperlistinit \
 	unlocklayerrom \
 	vbeampos \
+	videocontrol \
 	waitblit \
 	waitbovp \
 	waittof \
