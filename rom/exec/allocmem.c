@@ -13,6 +13,7 @@
 #include <aros/machine.h>
 #include <aros/macros.h>
 #include <aros/config.h>
+#include <aros/arossupportbase.h>
 #include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -95,7 +96,7 @@
        matches allocmem size or not.
     */
 
-    byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
+    byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
 #endif /* AROS_MUNGWALL_DEBUG */
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
@@ -291,13 +292,36 @@ end:
 #if AROS_MUNGWALL_DEBUG
     if (res)
     {
-        /* Save orig byteSize before wall (there is one MemChunk room before wall for such
-	 * stuff (see above).
-	 */
-	*(ULONG *)res = origSize;
+    	struct MungwallHeader *header;
+	struct List 	      *allocmemlist;
+	
+        /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
+	   bytes before wall for such stuff (see above).
+	*/
+	
+	header = (struct MungwallHeader *)res;
+	
+	header->mwh_magicid = MUNGWALL_HEADER_ID;
+	header->mwh_allocsize = origSize;
 
+    	allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
+    	
+	/* Check whether list has been initialized. AllocMem() might have been
+	   called before PrepareAROSSupportBase() which is responsible for
+	   initialization of AllocMemList */
+	   
+	if (allocmemlist->lh_Head && allocmemlist->lh_TailPred)
+	{	
+    	    AddHead(allocmemlist, (struct Node *)&header->mwh_node);
+	}
+	else
+	{
+	    header->mwh_node.mln_Pred = (struct MinNode *)0x44332211;
+	    header->mwh_node.mln_Succ = (struct MinNode *)0xCCBBAA99;
+	}
+	
 	/* Skip to the start of the pre-wall */
-        res += MEMCHUNK_TOTAL;
+        res += MUNGWALLHEADER_SIZE;
 
 	/* Initialize pre-wall */
 	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
