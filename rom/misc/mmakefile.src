@@ -1,22 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := misc
-MODTYPE := resource
-USE_FUNCTABLE := no
-
-USER_CFLAGS := -I.
-
-FILES :=
 FUNCS := allocmiscresource freemiscresource
 
-MAKE_SHLIB := $(SHARED_MISC)
-
 #MM- kernel-misc : includes linklibs
-%make_module_setup mmake=kernel-misc
-%make_module_cpak
-%make_module mmake=kernel-misc
-%make_lib_includes
+
+%build_module_macro mmake=kernel-misc \
+  modname=misc modtype=resource \
+  funcs=$(FUNCS) \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_MISC)
 
 %common
-%include_deps

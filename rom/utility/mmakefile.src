@@ -13,6 +13,9 @@ FUNCTIONS := \
 	taginarray tolower toupper udivmod32 umult32 umult64 \
 	unpackstructuretags
 
+#MM kernel-utility : kernel-utility-$(ARCH)-$(CPU)
+#MM kernel-utility-linklib : kernel-utility-$(ARCH)-$(CPU)
+
 %build_module_macro mmake=kernel-utility \
   modname=utility modtype=library \
   funcs=$(FUNCTIONS) files=$(FILES) \

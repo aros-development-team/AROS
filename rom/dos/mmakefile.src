@@ -37,6 +37,9 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
+#MM kernel-dos-linklib : kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos : kernel-dos-$(ARCH)-$(CPU)
+
 %build_module_macro mmake=kernel-dos \
   modname=dos modtype=library \
   funcs=$(FUNCTIONS) files="$(FILES)" conffile=lib.conf genshlinklib=$(SHARED_DOS)
