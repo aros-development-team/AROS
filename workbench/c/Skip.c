@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 		{
 		    ReadItem(buffer, sizeof(buffer), NULL);
 		    
-		    if(FindArg(args[ARG_LABEL], buffer) == 0)
+		    if(FindArg((STRPTR)args[ARG_LABEL], buffer) == 0)
 		    {
 			quit = TRUE;
 			labelFound = TRUE;
