@@ -13,6 +13,8 @@ DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 
 FILES = \
 	__assert \
+	__getfilenode4fd \
+	__ioerr2errno \
 	__stdio \
 	__vcformat \
 	abs \
@@ -23,6 +25,8 @@ FILES = \
 	bzero \
 	calloc \
 	ctype \
+	close \
+	creat \
 	errno \
 	feof \
 	fflush \
@@ -38,10 +42,12 @@ FILES = \
 	memcpy \
 	memmove \
 	memset \
+	open \
 	printf \
 	puts \
 	qsort \
 	rand \
+	read \
 	realloc \
 	snprintf \
 	sprintf \
@@ -68,7 +74,8 @@ FILES = \
 	vfprintf \
 	vprintf \
 	vsnprintf \
-	vsprintf
+	vsprintf \
+	write
 
 all: setup update-includes $(LIBDIR)/libarosc.a
 

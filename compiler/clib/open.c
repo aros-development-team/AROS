@@ -5,12 +5,20 @@
     Desc: ANSI C function open()
     Lang: english
 */
+#include <exec/memory.h>
+#include <dos/dos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <errno.h>
+#include "__errno.h"
+#include "__stdio.h"
+
+static int __stdio_fd = 4;
 
 /*****************************************************************************
 
     NAME */
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 	int open (
@@ -67,6 +75,8 @@
 	The flag O_EXCL is not very reliable if the file resides on a NFS
 	filesystem.
 
+	Most flags are not supported right now.
+
     SEE ALSO
 	close(), read(), write(), fopen()
 
@@ -107,14 +117,19 @@
 
     }
 
-    if (!(fh = Open (pathname, openmode)) )
+    if (!(fh = Open ((char *)pathname, openmode)) )
     {
 	FreeMem (fn, sizeof (FILENODE));
 
-	SetErrno (IoErr ());
+	errno = IoErr2errno (IoErr ());
 	return -1;
     }
 
     fn->File.fh = (void *)fh;
+    fn->fd = __stdio_fd ++;
+
+    AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
+
+    return fn->fd;
 } /* open */
 

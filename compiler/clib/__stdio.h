@@ -18,4 +18,9 @@ typedef struct __FILENODE
     FILE File;
 } FILENODE;
 
+extern struct MinList __stdio_files;
+
+/* Prototypes */
+FILENODE * GetFilenode4fd (int fd);
+
 #endif /* ___STDIO_H */

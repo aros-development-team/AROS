@@ -52,19 +52,12 @@
     switch ((IPTR)stream)
     {
     case 1: /* Stdin */
-	c = FGetC (Input());
-	break;
+	return FGetC (Input());
 
     case 2: /* Stdout */
+    case 3: /* Stderr */
 	errno = EINVAL;
 	return EOF;
-
-    case 3: {
-	struct Process *me=(struct Process *)FindTask(NULL);
-
-	c = FGetC (me->pr_CES ? me->pr_CES : me->pr_COS);
-
-	break; }
 
     default:
 	c = FGetC ((BPTR)stream->fh);
