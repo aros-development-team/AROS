@@ -45,5 +45,15 @@ test : src2html
 depend :
 	makedepend -- $(CFLAGS) -- $(SRCS)
 
-# DO NOT DELETE
+.PRECIOUS : gram.c gram.h
 
+# DO NOT DELETE
+gram.o: error.h emit.h util.h 
+scan.o: util.h
+emit.o: -linux/2.7.2.1/include/stdarg.h hash.h error.h
+emit.o: exec.h util.h
+emit_html.o: gram.h emit.h 
+varstr.o: varstr.h 
+hash.o: hash.h 
+util.o: util.h 
+exec.o: exec.h error.h 
