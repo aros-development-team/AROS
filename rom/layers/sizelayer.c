@@ -116,6 +116,13 @@
       l->front->back = l_tmp;
 
     l->front = l_tmp;
+
+    /* 
+    ** For all layers install the regular cliprects and remove
+    ** the installe clipregion cliprects 
+    */
+    UninstallClipRegionClipRects(LI);
+
     /* copy important data to the temporary layer. this list might be 
        shrinkable
        depending on what data deletelayer() needs later on */
@@ -138,7 +145,6 @@
        have to change this pointer to l_tmp, so that everything still
        works fine later, especially the DeleteLayer() */
 
-    UninstallClipRegionClipRects(LI);
 
     l_behind = l_tmp->back;
     while (NULL != l_behind)

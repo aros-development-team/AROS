@@ -813,7 +813,8 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
                                    struct ClipRect * destCR)
 {
   struct ClipRect * sCR = srcCR;
-  
+
+  /* if it's a SUPERBITMAP layer then just free the cliprects */  
   if (LAYERSMART != (L->Flags & (LAYERSMART|LAYERSUPER)))
   {
     _FreeClipRectListBM(L, L->ClipRect);
@@ -938,6 +939,10 @@ void UninstallClipRegionClipRects(struct Layer_Info * LI)
     if (NULL != L->ClipRegion && NULL != L->_cliprects)
     {
       CopyAndFreeClipRectsClipRects(L, L->ClipRect, L->_cliprects);
+      /* 
+      ** make the regular (not clipped cliprects) cliprects the
+      ** actual cliprects.
+      */
       L->ClipRect = L->_cliprects;
       L->_cliprects = NULL;
     }
