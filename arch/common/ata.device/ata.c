@@ -543,7 +543,7 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 		else
 		    cmd_Invalid(io, LIBBASE);
 	    }
-	    else if (io->io_Command >= NSCMD_TD_READ64 && io->io_Command <= NSCMD_TD_READ64)
+	    else if (io->io_Command >= NSCMD_TD_READ64 && io->io_Command <= NSCMD_TD_FORMAT64)
 	    {
 		if (map64[io->io_Command - NSCMD_TD_READ64]) 
 		    map64[io->io_Command - NSCMD_TD_READ64](io, LIBBASE);
