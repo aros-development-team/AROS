@@ -33,7 +33,7 @@ struct IconImage_DATA
 };
 
 /*** Methods ****************************************************************/
-IPTR IconImage$OM_NEW
+IPTR IconImage__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -90,7 +90,7 @@ error:
     return NULL;
 }
 
-IPTR IconImage$MUIM_Draw
+IPTR IconImage__MUIM_Draw
 (
     Class *CLASS, Object *self, struct MUIP_Draw *message
 )
@@ -121,7 +121,7 @@ IPTR IconImage$MUIM_Draw
     return rc;
 }
 
-IPTR IconImage$MUIM_AskMinMax
+IPTR IconImage__MUIM_AskMinMax
 (
     Class *CLASS, Object *self, struct MUIP_AskMinMax *message
 )

@@ -191,7 +191,7 @@ STRPTR Names2Text(struct Catalog *catalog, struct TagItem *tags)
 
 /*** Methods ****************************************************************/
 
-IPTR AboutWindow$OM_NEW
+IPTR AboutWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -413,7 +413,7 @@ error:
     return NULL;
 }
 
-IPTR AboutWindow$MUIM_Window_Setup
+IPTR AboutWindow__MUIM_Window_Setup
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -631,7 +631,7 @@ IPTR AboutWindow$MUIM_Window_Setup
     return rc;
 }
 
-IPTR AboutWindow$OM_DISPOSE
+IPTR AboutWindow__OM_DISPOSE
 (
     Class *CLASS, Object *self, Msg message 
 )

@@ -897,7 +897,7 @@ static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
     MUI_DisposeObject(aboutwin);
 }
 
-IPTR Aboutmui$OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
     struct TagItem  	    *tag, *tags;
