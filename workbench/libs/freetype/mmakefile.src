@@ -47,6 +47,21 @@ makeconfigmk :
 	@$(ECHO) -e "\t\$$(FT_LIBRARIAN) \$$@ \$$(OBJECTS_LIST)" 	>> config.mk
 	@$(ECHO) "endif" 						>> config.mk
 
+
+INCNAMES	:= freetype.h fterrors.h ftsystem.h ftimage.h
+DEST_INCLUDES	:= $(foreach f,$(INCNAMES),$(INCDIR)/$(f))
+GEN_INCLUDES	:= $(foreach f,$(INCNAMES),$(GENINCDIR)/$(f))
+
+#MM
+includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
+	@$(NOP)
+
+$(INCDIR)/%.h : include/%.h
+	@$(CP) $< $@
+
+$(GENINCDIR)/%.h : include/%.h
+	@$(CP) $< $@
+	
 #MM
 contrib-freetype-linklib-clean :
 	$(MAKE) TOP=. clean
