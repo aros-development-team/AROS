@@ -1,19 +1,33 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/types.h>
 
+#include <sys/stat.h>
+#include <sys/time.h>
+
+#include <assert.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <setjmp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <utime.h>
+
+#include <ioerr2errno.h>    /* FIXME: Should this really be public? */
+#include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */
+
+#include "arosc_init.h"
+
 extern struct aroscbase *AROS_SLIB_ENTRY(open,arosc)();
 extern BPTR AROS_SLIB_ENTRY(close,arosc)();
 extern BPTR AROS_SLIB_ENTRY(expunge,arosc)();
 extern int AROS_SLIB_ENTRY(null,arosc)();
-
-#define SYSTEM_CALL(name) extern int name ();
-#include <sys/syscall.def>
-#undef SYSTEM_CALL
-
 
 void *const arosc_functable[]=
 {
