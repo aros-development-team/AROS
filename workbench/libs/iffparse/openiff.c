@@ -121,7 +121,7 @@
 		/* Fail. We should send CLEANUP to the stream */
 		cmd.sc_Command = IFFCMD_CLEANUP;
 
-		CallHookPkt
+		err = CallHookPkt
 		(
 		    GetIntIH(iff)->iff_StreamHandler,
 		    iff,
