@@ -68,31 +68,32 @@ void Refresh (struct RastPort * rp)
     len = 150;
     x = 340;
     y = 150;
-    xy[0] = x; xy[1] = y;
-    xy[2] = x; xy[3] = y+len;
-    xy[4] = x+len; xy[5] = y+len;
-    xy[6] = x; xy[7] = y;
-    PolyDraw (rp, 4, xy);
+
+    xy[0] = x; xy[1] = y+len;
+    xy[2] = x+len; xy[3] = y+len;
+    xy[4] = x; xy[5] = y;
+    Move(rp,x,y);
+    PolyDraw (rp, 3, xy);
 
     SetDrPt (rp, 0xAAAA);
     x += 10;
     y += 20;
     len -= 30;
-    xy[0] = x; xy[1] = y;
-    xy[2] = x; xy[3] = y+len;
-    xy[4] = x+len; xy[5] = y+len;
-    xy[6] = x; xy[7] = y;
-    PolyDraw (rp, 4, xy);
+    xy[0] = x; xy[1] = y+len;
+    xy[2] = x+len; xy[3] = y+len;
+    xy[4] = x; xy[5] = y;
+    Move(rp,x,y);
+    PolyDraw (rp, 3, xy);
 
     SetDrPt (rp, 0x3333);
     x += 10;
     y += 20;
     len -= 30;
-    xy[0] = x; xy[1] = y;
-    xy[2] = x; xy[3] = y+len;
-    xy[4] = x+len; xy[5] = y+len;
-    xy[6] = x; xy[7] = y;
-    PolyDraw (rp, 4, xy);
+    xy[0] = x; xy[1] = y+len;
+    xy[2] = x+len; xy[3] = y+len;
+    xy[4] = x; xy[5] = y;
+    Move(rp,x,y);
+    PolyDraw (rp, 3, xy);
 
     SetDrPt (rp, 0xF731);
     x += 10;
