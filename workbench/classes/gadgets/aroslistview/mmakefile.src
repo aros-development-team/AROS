@@ -1,60 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I..
+USER_INCLUDES = -I.
 
-# This should maube be set in $(TOP)/config/make.cfg instead
-GADGETDIR=$(BINDIR)/Classes/Gadgets
+LIBNAME := aroslistview
+LIBPOST := gadget
 
-# Main function for aroslistview.gadget. Need this apart as an anchor for the link:
-INIT_FILE = aroslistview_init
+FILES := listviewclass helpfuncs
 
-FILES = aroslistview_functable listviewclass helpfuncs
+DESTDIR := $(GADGETDIR)
 
-# Guarantee that this will go at the end of the file:
-END_FILE    := aroslistview_endtag
-FUNCTIONS   :=
-OBJDIR	    := $(GENDIR)/$(CURDIR)
-OBJS	    := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-
-# The init and endskip object filenames
-INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC     := $(OBJDIR)/$(END_FILE).o
-
-CLASS	    := $(GADGETDIR)/aroslistview.gadget
-
-#MM workbench-classes-aroslistview : setup includes
-workbench-classes-aroslistview : show-flags $(CLASS)
-	@$(NOP)
-
-%define_libs prelibs=-laroslistview
-
-# The filename of the linklib
-LIB := $(LIBDIR)/libaroslistview.a
-
-$(CLASS) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
-	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) aroslistviewlib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslistviewlib.err
-	%checkuds
-	@$(IF) $(TEST) ! -s aroslistviewlib.err ; then $(RM) aroslistviewlib.err ; else $(NOP) ; fi
-	@$(STRIP) $@
-
-# Collect all functions in a linklib for fast linking:
-$(LIB) : $(OBJS)
-	@$(ECHO) "Adding functions to $(notdir $@) ..."
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-
-show-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(GADGETDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
@@ -67,22 +22,15 @@ $(OBJDIR)/helpfuncs.o : helpfuncs.c
 	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
 endif
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
 
-aroslistview_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
-	    $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q AROSListview
+%genwblib
 
-aroslistview_endtag.c : $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q AROSListview
+#MM workbench-classes-aroslistview : setup includes
+workbench-classes-aroslistview : show-flags $(SLIB)
+	@$(NOP)
 
-$(OBJDIR)/aroslistview_init.o : libdefs.h
+#MM setup
+#MM clean
 
-%libdefs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

@@ -1,6 +1,5 @@
-makefile
-aroslist_endtag.c
-aroslist_functable.c
+aroslist_end.c
+functable.c
 libdefs.h
 mmakefile
 *.err

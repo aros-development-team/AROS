@@ -1,5 +1,5 @@
-aroscycle_functable.c
-aroscycle_endtag.c
+functable.c
+aroscycle_end.c
 libdefs.h
 mmakefile
 *.err
