@@ -1730,6 +1730,8 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
     EnterFunc(bug("BitMap::PutImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
 
     bpp = getpixfmtbpp(cl, o, msg->pixFmt);
     if (-1 == bpp)
@@ -1857,6 +1859,9 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 
     EnterFunc(bug("BitMap::PutAlphaImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
+
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
 
     buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
     if (buf)
@@ -2014,7 +2019,9 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
     EnterFunc(bug("BitMap::PutAlphaTemplate(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
-    
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
     HIDD_BM_UnmapPixel(o, GC_FG(gc), &color);
 
     a_red   = color.red >> 8;
@@ -2255,6 +2262,9 @@ static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
 
     EnterFunc(bug("BitMap::PutImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
+
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
 
     linebuf = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
 
