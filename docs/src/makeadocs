@@ -23,11 +23,19 @@ for src in $* ; do
     bname="`echo $name | cut -d. -f1`"
     html="$CURDIR/../html/autodocs/$bname.html"
     log="$CURDIR/gen/$bname.log"
+    ehtml="$CURDIR/gen/$bname.empty"
     src="$dir/$name"
 
 # echo "Checking $html"
 # echo "Src=$src"
-    if [ ! -e "$html" -o "$src" -nt "$html" ]; then
+    regen=0
+    if [ ! -e "$html" -a ! -e "$ehtml" ]; then
+	regen=1
+    fi
+    if [ "$src" -nt "$html" ]; then
+	regen=1
+    fi
+    if [ $regen -eq 1 ]; then
 	if [ $dot -ne 0 ]; then
 	    echo
 	    dot=0
@@ -43,6 +51,9 @@ for src in $* ; do
 	touch "$log"
 	echo "Regenerating $html"
 	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$log"
+	if [ ! -e "$html" ]; then
+	    touch "$ehtml"
+	fi
     else
 	echo -n "."
 	dot=1
