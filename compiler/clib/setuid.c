@@ -5,6 +5,8 @@
     POSIX function setuid().
 */
 
+#include <aros/debug.h>
+
 #include <sys/types.h>
 
 /*****************************************************************************
@@ -35,6 +37,8 @@
 
 ******************************************************************************/
 {
-#warning Implement setuid() properly
+#   warning Implement setuid()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return 0;
 } /* setuid() */

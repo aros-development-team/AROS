@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <grp.h>
 
 struct group *getgrnam(const char *name)
 {
-    #warning Implement getgrnam()
-    
+#   warning Implement getgrnam()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return NULL;
 }

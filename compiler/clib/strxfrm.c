@@ -5,6 +5,8 @@
     ANSI C function strcoll().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -50,9 +52,10 @@
 
 ******************************************************************************/
 {
-    #warning implement strxfrm() properly
+#   warning Implement strxfrm() properly
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    
     size_t srclen = strlen(src);
-
     strncpy(dst, src, n);
 
     return srclen;

@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <pwd.h>
 
 void endpwent()
 {
-    #warning Implement endpwent()
+#   warning Implement endpwent()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return;
 }

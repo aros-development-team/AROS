@@ -5,6 +5,8 @@
     ANSI C function sigsuspend().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -34,8 +36,8 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigsuspend()
+#   warning Implement sigsuspend()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
-    return -1; /* return failure */
-
+    return -1;
 } /* sigsuspend */

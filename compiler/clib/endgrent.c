@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <grp.h>
 
 void endgrent()
 {
-    #warning Implement endgrent()
-    
+#   warning Implement endgrent()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return;
 }

@@ -5,6 +5,8 @@
     ANSI C function strcoll().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -40,8 +42,9 @@
 
 ******************************************************************************/
 {
-    #warning implement strcoll() properly
-    
+#   warning Implement strcoll() properly
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return strcmp(str1, str2);
 } /* strcoll */
 

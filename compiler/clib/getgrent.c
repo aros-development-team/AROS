@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <grp.h>
 
 struct group *getgrent()
 {
-    #warning Implement getgrent()
-    
+#   warning Implement getgrent()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return NULL;
 }

@@ -5,6 +5,8 @@
     ANSI C function sigprocmask().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -36,8 +38,8 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigprocmask()
-
-    return -1; /* return failure */
-
+#   warning Implement sigprocmask()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    
+    return -1;
 } /* sigprocmask */
