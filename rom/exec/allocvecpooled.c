@@ -7,8 +7,6 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
-
-#define DEBUG 1
 #include <aros/debug.h>
 
 AROS_LH2(APTR, AllocVecPooled,
