@@ -1,3 +1,9 @@
+#include <graphics/text.h>
+#include <graphics/rastport.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/cghooks.h>
+#include <intuition/classusr.h>
+
 #ifndef LNF_MARKED
 #define LNF_MARKED  (1<<15)
 #endif

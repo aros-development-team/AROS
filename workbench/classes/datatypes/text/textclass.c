@@ -29,9 +29,7 @@
 #include <proto/iffparse.h>
 #include <proto/layers.h>
 
-#if defined(__AROS__) && !defined(__MORPHOS__)
-#include LC_LIBDEFS_FILE
-#else
+#if !defined(__AROS__) || defined(__MORPHOS__)
 #include "libdefs.h"
 #endif
 
