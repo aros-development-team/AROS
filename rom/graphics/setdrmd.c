@@ -18,8 +18,8 @@ void driver_SetDrMd (struct RastPort *, ULONG);
 	__AROS_LH2(void, SetDrMd,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(unsigned long    , drawMode, D0),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(unsigned long    , drawMode, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 59, Graphics)

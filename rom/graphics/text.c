@@ -18,9 +18,9 @@ LONG driver_Text (struct RastPort *, STRPTR, ULONG);
 	__AROS_LH3(LONG, Text,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(STRPTR           , string, A0),
-	__AROS_LA(unsigned long    , count, D0),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(STRPTR           , string, A0),
+	__AROS_LHA(unsigned long    , count, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 10, Graphics)

@@ -1,13 +1,13 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$	$Log
     Desc:
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/text.h>
 
-void driver_CloseFont (struct TextFont *);
+void driver_CloseFont (struct TextFont *, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -18,7 +18,7 @@ void driver_CloseFont (struct TextFont *);
 	__AROS_LH1(void, CloseFont,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct TextFont *, textFont, A1),
+	__AROS_LHA(struct TextFont *, textFont, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 13, Graphics)
@@ -48,7 +48,7 @@ void driver_CloseFont (struct TextFont *);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_CloseFont (textFont);
+    driver_CloseFont (textFont, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* CloseFont */

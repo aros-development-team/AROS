@@ -18,8 +18,8 @@ extern void driver_SetBPen (struct RastPort *, ULONG);
 	__AROS_LH2(void, SetBPen,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(unsigned long    , pen, D0),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(unsigned long    , pen, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 58, Graphics)

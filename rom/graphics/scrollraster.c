@@ -7,7 +7,8 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-extern driver_ScrollRaster (struct RastPort *, long, long, long, long, long, long);
+extern driver_ScrollRaster (struct RastPort *, long, long, long, long, long,
+	long, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -18,13 +19,13 @@ extern driver_ScrollRaster (struct RastPort *, long, long, long, long, long, lon
 	__AROS_LH7(void, ScrollRaster,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(long             , dx, D0),
-	__AROS_LA(long             , dy, D1),
-	__AROS_LA(long             , xMin, D2),
-	__AROS_LA(long             , yMin, D3),
-	__AROS_LA(long             , xMax, D4),
-	__AROS_LA(long             , yMax, D5),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(long             , dx, D0),
+	__AROS_LHA(long             , dy, D1),
+	__AROS_LHA(long             , xMin, D2),
+	__AROS_LHA(long             , yMin, D3),
+	__AROS_LHA(long             , xMax, D4),
+	__AROS_LHA(long             , yMax, D5),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 66, Graphics)
@@ -54,7 +55,7 @@ extern driver_ScrollRaster (struct RastPort *, long, long, long, long, long, lon
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_ScrollRaster (rp, dx, dy, xMin, yMin, xMax, yMax);
+    driver_ScrollRaster (rp, dx, dy, xMin, yMin, xMax, yMax, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* ScrollRaster */

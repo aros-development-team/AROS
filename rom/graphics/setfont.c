@@ -20,8 +20,8 @@ LONG driver_SetFont (struct RastPort *, struct TextFont *);
 	__AROS_LH2(LONG, SetFont,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(struct TextFont *, textFont, A0),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(struct TextFont *, textFont, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 11, Graphics)

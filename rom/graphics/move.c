@@ -18,9 +18,9 @@ void driver_Move (struct RastPort *, long, long);
 	__AROS_LH3(void, Move,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(long             , x, D0),
-	__AROS_LA(long             , y, D1),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(long             , x, D0),
+	__AROS_LHA(long             , y, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 40, Graphics)

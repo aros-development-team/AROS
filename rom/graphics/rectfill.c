@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-extern void driver_RectFill (truct RastPort *, long, long, long, long);
+extern void driver_RectFill (struct RastPort *, long, long, long, long);
 
 /*****************************************************************************
 
@@ -18,11 +18,11 @@ extern void driver_RectFill (truct RastPort *, long, long, long, long);
 	__AROS_LH5(void, RectFill,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct RastPort *, rp, A1),
-	__AROS_LA(long             , xMin, D0),
-	__AROS_LA(long             , yMin, D1),
-	__AROS_LA(long             , xMax, D2),
-	__AROS_LA(long             , yMax, D3),
+	__AROS_LHA(struct RastPort *, rp, A1),
+	__AROS_LHA(long             , xMin, D0),
+	__AROS_LHA(long             , yMin, D1),
+	__AROS_LHA(long             , xMax, D2),
+	__AROS_LHA(long             , yMax, D3),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 51, Graphics)

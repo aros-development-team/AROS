@@ -7,7 +7,8 @@
 #include "graphics_intern.h"
 #include <graphics/text.h>
 
-extern struct TextFont * driver_OpenFont (struct TextAttr *);
+extern struct TextFont * driver_OpenFont (struct TextAttr *,
+	struct GfxBase *);
 
 /*****************************************************************************
 
@@ -18,7 +19,7 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *);
 	__AROS_LH1(struct TextFont *, OpenFont,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct TextAttr *, textAttr, A0),
+	__AROS_LHA(struct TextAttr *, textAttr, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 12, Graphics)
@@ -48,7 +49,7 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_OpenFont (textAttr);
+    return driver_OpenFont (textAttr, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* OpenFont */
