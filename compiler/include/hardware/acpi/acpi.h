@@ -18,6 +18,9 @@
 #   include <utility/hooks.h>
 #endif
 
+#include <hardware/cpu/cpu.h>
+#include <hardware/pic/pic.h>
+
 #define     MAX_ACPI_TABLES                 32
 
 /********** ACPI DEFINITIONS ****************/
@@ -431,6 +434,7 @@ struct ACPIBase
     struct  ExecBase                        *ACPIB_SysBase;
     struct  UtilityBase                     *ACPIB_UtilBase;
     struct  CPUBase                         *ACPIB_CPUBase;
+    struct  PICBase                         *ACPIB_PICBase;
 
     struct GenericAPIC                      *ACPIB_GenericAPIC;         /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
 
@@ -445,12 +449,6 @@ struct ACPIBase
 
     int                                     ACPIB_ACPI_Disabled;
     int                                     ACPIB_ACPI_IRQ;
-
-    int                                     ACPIB_ACPI_IOAPIC;
-
-    int                                     ACPIB_ACPI_LAPIC;
-    APTR                                    ACPIB_ACPI_LAPIC_addr;              /* Local APIC address */
-/*..*/
 
     int                                     ACPIB_ACPI_HT;
 
