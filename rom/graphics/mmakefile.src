@@ -35,7 +35,7 @@ LIBNAME  := graphics
 ULIBNAME := Graphics
 
 OSMODULE  := graphics.library
-FILES	  := intregions graphics_misc
+FILES	  := intregions graphics_misc areafill
 FUNCTIONS := \
 	addanimob \
 	addbob \
