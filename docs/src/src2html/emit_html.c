@@ -164,13 +164,13 @@ static void checkbreak (void)
 static void emit_html_toc (void)
 {
     FILE * fh;
-    char line[256], title[256], filename[256], datestr[64];
+    char   line[256], title[256], filename[256], datestr[64];
     int    typ;
     int    label;
     char   num[32];
     time_t mod;
     struct tm tm;
-    int    level = 0;
+    int    s = 0, ss = 0;
 
     fh = fopen (oldtocname, "r");
 
@@ -179,7 +179,6 @@ static void emit_html_toc (void)
 
     emit_par ();
     emit_special ("<UL>\n\n");
-    level ++;
 
     while (fgets (line, sizeof(line), fh))
     {
@@ -198,54 +197,61 @@ static void emit_html_toc (void)
 	switch (typ)
 	{
 	case 1: /* Appendix */
-	    while (level > 1)
+	    if (s)
 	    {
 		emit_special ("</UL>\n");
-		level --;
 	    }
-	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></H1>\n<UL>\n",
+	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Appendix %s %s (%s)</A></H1>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    level ++;
+	    s = 0;
 	    break;
 
 	case 2: /* Chapter */
-	    while (level > 1)
+	    if (s)
 	    {
 		emit_special ("</UL>\n");
-		level --;
 	    }
-	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></H1>\n<UL>\n",
+	    emit_special ("<LI><H1><A HREF=\"%s#%d\">Chapter %s %s (%s)</A></H1>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    level ++;
+	    s = 0;
 	    break;
 
 	case 3: /* Section */
-	    while (level > 2)
+	    if (!s)
+	    {
+		emit_special ("<UL>\n");
+	    }
+	    s++;
+	    if (ss)
 	    {
 		emit_special ("</UL>\n");
-		level --;
 	    }
-	    emit_special ("<LI><H2><A HREF=\"%s#%d\">%s %s (%s)</A></H2>\n<UL>\n",
+	    emit_special ("<LI><H2><A HREF=\"%s#%d\">%s %s (%s)</A></H2>\n",
 		filename,
 		label,
 		num,
 		title,
 		datestr
 	    );
-	    level ++;
+	    ss = 0;
 	    break;
 
 	case 4: /* Subsection */
+	    if (!ss)
+	    {
+		emit_special ("<UL>\n");
+	    }
+	    ss++;
 	    emit_special ("<LI><H3><A HREF=\"%s#%d\">%s %s (%s)</A></H3>\n\n",
 		filename,
 		label,
@@ -257,11 +263,13 @@ static void emit_html_toc (void)
 	}
     }
 
-    while (level > 0)
-    {
+    if (ss)
 	emit_special ("</UL>\n");
-	level --;
-    }
+
+    if (s)
+	emit_special ("</UL>\n");
+
+    emit_special ("</UL>\n");
 
     fclose (fh);
 
@@ -376,7 +384,7 @@ void emit_html (int token, va_list args)
 		isnewtext ? " *New*" : "");
 
 	    emit_html_string_ws (text);
-	    if (isnewtext) emit_html_string_ws (" *New*");
+	    if (isnewtext) emit_html_string (" *New*");
 	    printf ("%s\n", text);
 	    emit_special ("</A></H1>");
 	    emit_par ();
@@ -412,7 +420,7 @@ void emit_html (int token, va_list args)
 
 	    emit_special (".%d ", section);
 	    emit_html_string_ws (text);
-	    if (isnewtext) emit_html_string_ws (" *New*");
+	    if (isnewtext) emit_html_string (" *New*");
 	    emit_special ("</A></H2>\n\n");
 	    emit_par ();
 	    labelcount ++;
@@ -445,7 +453,7 @@ void emit_html (int token, va_list args)
 
 	    emit_special (".%d.%d ", section, subsection);
 	    emit_html_string_ws (text);
-	    if (isnewtext) emit_html_string_ws (" *New*");
+	    if (isnewtext) emit_html_string (" *New*");
 	    emit_special ("</A></H3>\n\n");
 	    emit_par ();
 	    labelcount ++;
