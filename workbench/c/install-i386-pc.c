@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 
 #include <stdio.h>
 #include <string.h>
@@ -617,54 +616,83 @@ LONG left;
 	return 0;
 }
 
-void writeKernelPath(BPTR fh, STRPTR kernelpath, UBYTE *buffer, BOOL isRDB) {
-LONG offset=0;
-LONG len;
-UBYTE *pos;
-
-kprintf("store kernel path\n");
-	Seek(fh, 0, OFFSET_BEGINNING);
-	do
-	{
-		len = Read(fh, buffer, 512);
-		if (len>0)
-		{
-#warning "FIXME: ID may be split into two parts (this block + next block)"
-			pos = memstr(buffer, "AROS_PRESET_MENU", len);
-			if (pos)
-			{
-				offset += (LONG)(pos-buffer);
-				if (Seek(fh, offset, OFFSET_BEGINNING) != -1)
-				{
-					if (Read(fh, buffer, 512) == 512)
-					{
-						pos = memstr(buffer, "kernel", len);
-						if (pos)
-						{
-							copyRootPath(pos+7, kernelpath, isRDB);
-kprintf("path is %s\n", pos);
-							if (Seek(fh, -512, OFFSET_CURRENT) != -1)
-								Write(fh, buffer, 512);
-							else
-								PrintFault(IoErr(), kernelpath);
-						}
-						else
-							printf("Error in preset menu\n");
-					}
-					else
-						printf("%s: Read Error\n", kernelpath);
-				}
-				else
-					PrintFault(IoErr(), kernelpath);
-				break;
-			}
-			offset += len;
-		}
-	} while (len>0);
-	if (len == -1)
-		printf("%s: Read Error\n", kernelpath);
-	else if (len==0)
-		printf("%s: ID not found!?\n", kernelpath);
+BOOL setupMenu(BPTR fh)
+{
+    LONG    length   = 0;
+    LONG    read     = 0;
+    UBYTE  *buffer   = NULL;
+    UBYTE  *start    = NULL;
+    UBYTE  *stop     = NULL;
+    UBYTE  *position = NULL;
+    STRPTR  line     = 
+        "timeout 0\n"
+        "default 0\n"
+        "\n"
+        "title AROS HD\n"
+        "root (hd0)\n"
+        "configfile /dh0/boot/grub/menu.lst\n";
+    
+    /* Get the filesize and reset the position */
+    Seek(fh, 0, OFFSET_END);
+    length = Seek(fh, 0, OFFSET_BEGINNING);
+    
+    /* Allocate memory for file data */
+    buffer = AllocVec(length, MEMF_ANY);
+    if (buffer == NULL) goto error;
+    
+    /* Read in the entire file */
+    read = Read(fh, buffer, length);
+    if (read < length)
+    {
+        printf("ERROR: Could not read entire file.\n");
+        goto error;
+    }
+    
+    /* Find begin marker */
+    start = memstr(buffer, "# [B] (DO NOT REMOVE THIS LINE!)", length);
+    if (start == NULL)
+    {
+        printf("ERROR: Could not find start marker!?\n");
+        goto error;
+    }
+    start += strlen("# [B] (DO NOT REMOVE THIS LINE!)") + 2;
+    
+    /* Find end marker */
+    stop = memstr(buffer, "# [E] (DO NOT REMOVE THIS LINE!)", length);
+    if (stop == NULL)
+    {
+        printf("ERROR: Could not find stop marker!?\n");
+        goto error;
+    }
+    
+    /* Check if there is enough space */
+    if ((stop - start) < strlen(line))
+    {
+        printf("ERROR: Not enough space to setup menu.\n");
+        goto error;
+    }
+    
+    /* Write the new menu config */
+    strlcpy(start, line, stop - start - 1);
+    
+    /* Blank the rest */
+    for (position = start + strlen(line); position < stop; position++)
+    {
+        *position = '\n';
+    }
+    
+    /* Write the new file out */
+    Seek(fh, 0, OFFSET_BEGINNING);
+    Write(fh, buffer, length);
+    
+    FreeVec(buffer);
+    
+    return TRUE;
+    
+error:
+    if (buffer != NULL) FreeVec(buffer);
+    
+    return FALSE;
 }
 
 BOOL writeStage2
@@ -702,7 +730,7 @@ char *menuname;
 				{
 					if (Write(fh, buffer, 512) == 512)
 					{
-						writeKernelPath(fh,kernelpath,buffer,volume->flags&VF_IS_RDB);
+						setupMenu(fh);
 						retval = TRUE;
 					}
 					else
@@ -858,7 +886,7 @@ ULONG block;
 
 int main(int argc, char **argv) {
 char *template =
-	"DEVICE/K/A,"
+	"DEVICE/A,"
 	"UNIT/N/K/A,"
 	"PARTITIONNUMBER=PN/K/N,"
 	"GRUB/K/A,"
