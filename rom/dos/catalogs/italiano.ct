@@ -1,3 +1,7 @@
+## version $VER: dos.catalog 1.0 (02.02.2005)
+## codeset 0
+## language italiano
+;
 MSG_ERROR_NO_FREE_STORE
 memoria insufficiente
 ;
@@ -143,8 +147,8 @@ MSG_ERROR_NOT_EXECUTABLE
 file non eseguibile
 ;
 MSG_STRING_INSERT_VOLUME
-Prego inserire volume\n
-%s\n
+Prego inserire volume\n\
+%s\n\
 in un drive qualsiasi
 ;
 MSG_STRING_VOLUME_FULL

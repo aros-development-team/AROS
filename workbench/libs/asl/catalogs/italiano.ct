@@ -47,8 +47,8 @@ Cancellare file
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Attenzione: i dati cancellati non si possono recuperare.
-Procedere nell'eliminazione di %s ?
+Attenzione: i dati cancellati non si possono recuperare.\n\
+Procedere nell'eliminazione di\n%s ?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
