@@ -10,7 +10,7 @@ TESTS		:=
 FILES		:= \
 	disable enable switch preparecontext coldreboot stackswap \
 	rawputchar initresident addtask cause dispatch debug supervisor reschedule \
-	permit wait remtask settaskpri signal setexcept
+	permit wait remtask settaskpri signal setexcept superstate userstate
 	
 COREFILES	:= \
 	core corelow traps execstubs getcpu screen hidds serialrawio
