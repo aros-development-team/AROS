@@ -22,7 +22,7 @@ class FAQ:
 	    os.path.walk (dir, self.processDir, None)
 
     def processDir (self, dummy, dirname, items):
-	print 'dirname:',dirname
+	#print 'dirname:',dirname
 	try:
 	    # Skip CVS dirs
 	    pos = items.index ('CVS')
@@ -32,7 +32,7 @@ class FAQ:
 
 	items.sort ()
 	for item in items:
-	    print item
+	    #print item
 	    path = os.path.join (dirname, item)
 	    if os.path.isfile (path):
 		self.items.append (Item (path))
