@@ -24,14 +24,8 @@ typedef struct ZTextChunk {
     Object               *obj; /* Area subclass, see List_CreateImage */
     LONG                  dripen;
     UBYTE                 style;
-
-    UBYTE                 longer_underline;
-
-    WORD                  deltabearing; /* width bearing - right bearing */
     WORD                  cwidth;
     WORD                  cheight;
-    WORD                  lbearing;
-    WORD                  lbear2;
 } ZTextChunk;
 
 typedef struct ZTextLine {
