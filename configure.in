@@ -285,7 +285,7 @@ dnl particular target.
     aros_shared_ld="$aros_host_ld"
     aros_static_ld="$aros_host_ld"
     aros_kernel_ld="$aros_host_ld"
-
+    
     aros_target_mkdep="$aros_host_mkdep"
     aros_target_incl_def="$aros_host_incl"
 #else
@@ -575,9 +575,17 @@ case "$target_os" in
 esac
 
 
+aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
+aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
+aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
+aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
+
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
-AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
+# AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
+TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc"
+AC_SUBST(TARGET_CC)
 AROS_TOOL_CC(TARGET_AS,$aros_target_as)
 AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
 AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
@@ -896,12 +904,6 @@ else
 	aros_gui_ccflags=""
     fi
 fi
-
-aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
-aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
-aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
-aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 
 if test ! -d ${aros_inc_dir} ; then
     ${MKDIR} ${aros_inc_dir}
