@@ -47,6 +47,9 @@ link-pics :
 	@if [ ! -L $(DEST)/pics ]; then \
 	    ln -sf ../src/pics $(DEST)/pics ; else true ; \
 	fi
+	@if [ ! -L $(DEST)/other ]; then \
+	    ln -sf ../other $(DEST)/other ; else true ; \
+	fi
 
 dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
 	$(JOBDEST)cgi-bin/dist.src \
