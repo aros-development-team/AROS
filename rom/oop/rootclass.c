@@ -535,6 +535,13 @@ static VOID root_dispose(Class *root_cl, Object *o, Msg msg)
     ReturnVoid("Root::Dispose");
 }
 
+static VOID root_get(Class *root_cl, Object *p, struct pRoot_Get *msg)
+{
+    *msg->storage = 0UL;
+    kprintf("!!! Get() METHOD REACHED ROOTCLASS !!!\n");
+    return;
+}
+
 #undef OOPBase
 
 /**********************
@@ -578,11 +585,14 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     
     /* Initialize methodtable */
     
-    rco->inst.rootif[moRoot_New].MethodFunc		= (IPTR (*)())root_new;
+    rco->inst.rootif[moRoot_New].MethodFunc	= (IPTR (*)())root_new;
     rco->inst.rootif[moRoot_New].mClass		= rootclass;
     
     rco->inst.rootif[moRoot_Dispose].MethodFunc	= (IPTR (*)())root_dispose;
-    rco->inst.rootif[moRoot_Dispose].mClass 		= rootclass;
+    rco->inst.rootif[moRoot_Dispose].mClass	= rootclass;
+
+    rco->inst.rootif[moRoot_Get].MethodFunc	= (IPTR (*)())root_get;
+    rco->inst.rootif[moRoot_Get].mClass 	= rootclass;
 
     /* Important: IID_Root interface ID MUST be the first one
        initialized, so that it gets the value 0UL. This is
