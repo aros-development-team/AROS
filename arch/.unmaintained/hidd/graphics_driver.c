@@ -737,10 +737,18 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
 {
   BOOL allocatedTmpRas = FALSE;
-  BYTE * RasPtr;
+  LONG xCorr1, xCorr2, yCorr1, yCorr2, absdx, absdy, xBlockSize, yBlockSize;
+  struct BitMap * bm;
+  struct Layer * L = rp->Layer;
   
   if (!CorrectDriverData (rp, GfxBase))
     return FALSE;
+    
+  if (0 == dx && 0 == dy)
+    return TRUE;
+  
+  xBlockSize = x2 - x1 + 1 - dx;  
+  yBlockSize = y2 - y1 + 1 - dy;
   /* 
     It is assumed that (x1,y1)-(x2,y2) describe a valid rectangle
     within the rastport. So any corrections have to be done by
@@ -756,50 +764,252 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     All cases need a TmpRas. If it's not there it will be allocated by
     this function.
   */
+  
+  bm = AllocBitMap(xBlockSize,
+                   yBlockSize,
+                   GetBitMapAttr(rp->BitMap,BMA_DEPTH),
+                   0,
+                   rp->BitMap);
+  if (NULL == bm)
+    return FALSE;
 
-  if (NULL == rp->TmpRas)
+  if (dx < 0) 
   {
-    RasPtr = AllocRaster(x2-x1+1,y2-y1+1);
-    
-    /* I won't do anything here if I couldn't get the Raster */
-    if (NULL == RasPtr)
-      return FALSE;
-    
-    allocatedTmpRas = TRUE;
+    /* move it to the right */
+    xCorr1 = 0;
+    xCorr2 = dx;
   }
   else
   {
-    RasPtr = rp->TmpRas->RasPtr;
+    /* move it to the left */
+    xCorr1 = dx;
+    xCorr2 = 0;
+  }
+  
+  if (dy < 0)
+  {
+    /* move it down */
+    yCorr1 = 0;
+    yCorr2 = dy;
+  }
+  else
+  {
+    /* move it up */
+    yCorr1 = dy;
+    yCorr2 = 0;
   }
   
   /* must not change x2,x1,y2,y1 here!!! */
   /* scroll the stuff */
 
-  if (NULL == rp->Layer)
+  if (NULL == L)
   {
-    /* rastport w/o layer. */
-    struct BitMap * bm = rp->BitMap;
-    BYTE plane = 0;
-    BYTE total_planes = GetBitMapAttr(bm, BMA_DEPTH);
-    LONG Mask = 0x01;
-    while (plane < total_planes)
-    {
-      
-
-      /* Next Bitplane */
-      Mask <<=1; 
-      plane++;
-    }     
+    /* no layer, so this is a screen */
+    /* 
+       I am copying all the data into the temporary bitmap and then
+       copy them back to the old location
+    */
+    BltBitMap(rp->BitMap,
+              x1+xCorr1,
+              y1+yCorr1,
+              bm,
+              0,
+              0,
+              xBlockSize,
+              yBlockSize,
+              0x0c0, /* copy */
+              0xff,
+              NULL );        
+    
+    /* copy it to the new location */
+    BltBitMap(bm,
+              0,
+              0,
+              rp->BitMap,
+              x1+xCorr1,
+              y1+yCorr2,
+              xBlockSize,
+              yBlockSize,
+              0x0c0,
+              0x0ff,
+              NULL );
+    /* no need to worry bout damage lists here */
   }
   else
   {
-    /* rastport with layer */
+    LONG xleft, xright, yup, ydown;
+    /* rastport with layer - yuk! */
+    /* 
+       I will walk through all the layer's cliprects and copy the
+       necessary parts to the temporary bitmap and if it's a simple
+       layer I will also collect those parts that come out of a 
+       hidden cliprect and add them to a region. Then I will manipulate
+       the region and move it by (dx,dy) towards (0,0) and then 
+       subtract all areas within the rectangle that are in hidden
+       cliprects when copying the data back into the layer's cliprects. 
+       The result of this will be a region corresponding to the damage 
+       created by scrolling areas that were hidden into visible areas.
+       I will add this region to the damage list and set the 
+       LAYERREFRESH flag.
+    */
+    struct ClipRect * CR = L->ClipRect;
+    struct Region * R;
+    struct Rectangle Rect;
+     
+    if (0 != (L->Flags & LAYERSIMPLE))
+    {
+      R = NewRegion();
+      if (NULL == R)
+        goto failexit;
+    }  
     
+    /* adapt x1,x2,y1,y2 to the cliprect coordinates */
+
+    /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
+
+    xleft  = x1 + L->bounds.MinX + xCorr1;
+    xright = x2 + L->bounds.MinX - xCorr2;
+    yup    = y1 + L->bounds.MinY + yCorr1;
+    ydown  = y2 + L->bounds.MinY - yCorr2;
+    
+    /* First read all data out of the source area */    
+    while (NULL != CR)
+    {
+      /* Is this a CR to be concerned about at all??? */
+      if (!(CR->bounds.MinX > xright ||
+            CR->bounds.MaxX < xleft  ||
+            CR->bounds.MinY > ydown  ||
+            CR->bounds.MaxY < yup))
+      {
+        /* that is one to be at least partly concerned about */
+        /* 
+           first determine the area to copy out of this cliprect
+           into the destination bitmap
+        */
+        if (CR->bounds.MinX > xleft)
+          Rect.MinX = CR->bounds.MinX;
+        else
+          Rect.MinX = xleft;
+          
+        if (CR->bounds.MaxX < xright)
+          Rect.MaxX = CR->bounds.MaxX;
+        else
+          Rect.MaxX = xright;
+          
+        if (CR->bounds.MinY > yup)
+          Rect.MinY = CR->bounds.MinY;
+        else
+          Rect.MinY = yup;
+          
+        if (CR->bounds.MaxY < ydown)
+          Rect.MaxY = CR->bounds.MaxY;
+        else
+          Rect.MaxY = ydown;
+          
+        /* If this cliprect is hidden and belongs to a simple layer then
+           I add the Rect to the Region, otherwise I do a blit into the
+           temporary bitmap instead 
+        */
+        if (NULL != CR->lobs && 0 != (L->Flags & LAYERSIMPLE))
+        {
+          if (FALSE == OrRectRegion(R, &Rect))
+          {
+            /* there's still time to undo this operation */
+            DisposeRegion(R);
+            goto failexit;
+          }
+          /* also clear that area in the destination bitmap */
+          BltBitMap(bm,
+                    0,
+                    0,
+                    bm,
+                    Rect.MinX - xleft,
+                    Rect.MinY - yup,
+                    Rect.MaxX - Rect.MinX + 1,
+                    Rect.MaxY - Rect.MinY + 1,
+                    0x000, /* clear */
+                    0xff,
+                    NULL);
+        }
+        else
+        {
+          /* Do the blit into the temporary bitmap */
+          /* several cases:
+             - non hidden area of superbitmap layer, simple layer, smart layer
+                -> can all be treated equally
+             - hidden area of a superbitmap layer
+             - hidden area of simple layer 
+          */
+          if (NULL != CR->lobs)
+          {
+            /* Hidden */
+            if (0 == (L->Flags & LAYERSUPER))
+            {
+              /* a smart layer */
+              BltBitMap(CR->BitMap,
+                        Rect.MinX - CR->bounds.MinX + CR->bounds.MinX & 0x0F,
+                        Rect.MinY - CR->bounds.MinY,
+                        bm,
+                        Rect.MinX - xleft,
+                        Rect.MinY - yup,
+                        Rect.MaxX-Rect.MinX+1,
+                        Rect.MaxY-Rect.MinY+1,
+                        0x0c0,
+                        0xFF,
+                        NULL);
+            }
+            else
+            {
+              /* a superbitmap layer */
+              BltBitMap(CR->BitMap,
+                        Rect.MinX - CR->bounds.MinX + L->Scroll_X,
+                        Rect.MinY - CR->bounds.MinY,
+                        bm,
+                        Rect.MinX - xleft,
+                        Rect.MinY - yup,
+                        Rect.MaxX-Rect.MinX+1,
+                        Rect.MaxY-Rect.MinY+1,
+                        0x0c0,
+                        0xFF,
+                        NULL);
+            } /* if .. else .. */
+          }
+          else
+          {
+            /* copy it out of the rastport's bitmap */
+            BltBitMap(rp->BitMap,
+                      Rect.MinX,
+                      Rect.MinY,
+                      bm,
+                      Rect.MinX - xleft,
+                      Rect.MinY - yup,
+                      Rect.MaxX - Rect.MinX + 1,
+                      Rect.MaxY - Rect.MinY + 1,
+                      0x0c0,
+                      0xff,
+                      NULL);            
+          } /* if .. else  .. */
+        } /* if .. else .. */
+      } /* if (ClipRect is to be considered at all) */  
+      
+      CR = CR->Next;
+    } /* while */
+    
+    /* now copy from the bitmap bm into the destination */
+    CR = L->ClipRect;
+    while (NULL != CR)
+    {
+      CR = CR->Next;
+    }
+    
+    
+    if (0 != (L->Flags & LAYERSIMPLE))
+      DisposeRegion(R);
+     
   }  
-  
-  /* did I allocate the TmpRas? */
-  if (TRUE == allocatedTmpRas)
-    FreeRaster(RasPtr, x2-x1+1, y2-y1+1);
+
+failexit:
+  FreeBitMap(bm);  
   
   return TRUE;
   
