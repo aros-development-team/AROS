@@ -29,6 +29,8 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
 #endif /* TEST */
 
+#include <string.h>
+
 #define SysBase	    (DOSBase->dl_SysBase)
 
 /**************************************************************************
@@ -87,11 +89,15 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
     /* Compute argsize automatically */
     if (argsize == -1)
+    {
 	argsize = strlen(argptr);
+    }
 
     /* Copy stack + locals + regs + everything */
-    while( oldSP != (APTR *)&ret )
+    while ( oldSP != (APTR *)&ret )
+    {
 	*--sp = *oldSP--;
+    }
 
     sss->stk_Pointer = sp;
 
@@ -174,10 +180,14 @@ int main (int argc, char ** argv)
     printf ("Stack=%p\n", &ret);
     printf ("RunProcess=%d\n",ret);
 
-    if( len == ret )
+    if (len == ret)
+    {
 	printf("Test ok.\n");
+    }
     else
+    {
 	printf("Test failed.\n");
+    }
 
     return 0;
 }
