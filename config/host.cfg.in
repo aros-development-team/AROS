@@ -33,7 +33,6 @@ ECHO		:= @ECHO@
 MKDIR		:= @MKDIR@
 TOUCH		:= @TOUCH@
 PYTHON		:= @PYTHON@
-GNUPLOT		:= @GNUPLOT@
 NOP		:= @NOP@
 FOR		:= @FOR@
 IF		:= @IF@
