@@ -1565,6 +1565,8 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     LONG labelplace = GV_LabelPlace_Left;
     struct DrawInfo *dri;
     struct TextAttr *tattr = NULL;
+    LONG gadgetkind = STRING_KIND;
+    
     IPTR retval = 0UL;
 
     EnterFunc(bug("String::SetNew()\n"));
@@ -1573,12 +1575,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     {
 	struct StringData *data = INST_DATA(cl,o);
 
-        if (data->gadgetkind == STRING_KIND)
-	{
-	    tags[1].ti_Tag = TAG_IGNORE;
-	} else {
-	    tags[0].ti_Tag = TAG_IGNORE;
-	}
+        gadgetkind = data->gadgetkind;
     }
        
     tstate = msg->ops_AttrList;
@@ -1589,18 +1586,8 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	switch (tag->ti_Tag)
     	{
 	    case GTA_GadgetKind:
-	    {
-	    	struct StringData *data = INST_DATA(cl,o);
-		
-		data->gadgetkind = tidata;
-		if (tidata == STRING_KIND)
-		{
-		    tags[1].ti_Tag = TAG_IGNORE;
-		} else {
-		    tags[0].ti_Tag = TAG_IGNORE;
-		}
-	    }
-	    break;
+		gadgetkind = tidata;
+	        break;
 	    
     	    case GTST_String:
 	    	tags[0].ti_Data = tidata;
@@ -1633,9 +1620,16 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     }
     
     tags[4].ti_Data = (IPTR)msg->ops_AttrList;
+
+    if (gadgetkind == STRING_KIND)
+    {
+        tags[1].ti_Tag = TAG_IGNORE;
+    } else {
+        tags[0].ti_Tag = TAG_IGNORE;
+    }
     
     retval = DoSuperMethod(cl, o, msg->MethodID, tags, msg->ops_GInfo);
-    
+   
     D(bug("Returned from supermethod: %p\n", retval));
     
     if ((msg->MethodID == OM_NEW) && (retval != 0UL))
@@ -1662,6 +1656,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	D(bug("Creating frame image"));
     	
     	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+
     	D(bug("Created frame image: %p", data->frame));
     	if (!data->frame)
     	{
@@ -1679,10 +1674,10 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    	struct TagItem sftags[] = {{STRINGA_Font, (IPTR)NULL}, {TAG_DONE, }};
     	    	
     	    	sftags[0].ti_Data = (IPTR)data->font;
+
     	    	DoSuperMethod(cl, (Object *)retval, OM_SET, sftags, NULL);
     	    }
     	}
-
     }
     
     ReturnPtr ("String::SetNew", IPTR, retval);
