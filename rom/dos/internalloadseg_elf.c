@@ -48,10 +48,6 @@
 #define R_68K_32        1
 #define R_68K_PC32      4
 
-#define LO(x)	(x) & 0xFFFF
-#define HI(x)	((x) >> 16) & 0xFFFF
-#define HA(x)	(((x) >> 16) + ((x) & 0x8000 ? 1 : 0)) & 0xFFFF
-
 #define R_PPC_NONE      0
 #define R_PPC_ADDR32    1
 #define R_PPC_ADDR16_LO 4
@@ -476,19 +472,28 @@ static int relocate
                 break;
 	
 	    case R_PPC_ADDR16_LO:
-		*p = LO(s + rel->addend);
+		{
+		    unsigned short *c = (unsigned short *) p;
+		    *c = (s + rel->addend) & 0xffff;
+		}
 		break;
 	    
 	    case R_PPC_ADDR16_HA:
-		*p = HA(s + rel->addend);
+		{
+		    unsigned short *c = (unsigned short *) p;
+		    *c = (s + rel->addend) >> 16;
+		    if ((*c & 0x8000) != 0)
+			(*c)++;
+		}
 		break;
 	    
 	    case R_PPC_REL24:
-                *p = (s + rel->addend - *p) >> 2;
+		*p &= ~0x3fffffc;
+                *p |= (s + rel->addend - (ULONG) p) & 0x3fffffc;
                 break;
 
 	    case R_PPC_REL32:
-		*p = s + rel->addend - *p;
+		*p = s + rel->addend - (ULONG) p;
 		break;
 	    
             case R_PPC_NONE:
