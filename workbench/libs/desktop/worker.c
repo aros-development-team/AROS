@@ -40,18 +40,20 @@ void scan(struct ScannerWorkerContext *swc)
     BPTR            fileLock;
     struct FileInfoBlock *fib;
     ULONG           commentSize;
-    struct TagItem  adoTags[] = { {TAG_END, 0} };
 
-    swc->swc_More =
-        ExAll(swc->swc_DirLock, (struct ExAllData *) swc->swc_Buffer,
-              SCAN_BUFFER, ED_OWNER, swc->swc_EAC);
+    swc->swc_More = ExAll
+    (
+        swc->swc_DirLock, (struct ExAllData *) swc->swc_Buffer,
+        SCAN_BUFFER, ED_OWNER, swc->swc_EAC
+    );
 
     if (swc->swc_EAC->eac_Entries)
     {
         ead = swc->swc_Buffer;
-        sr = (struct SingleResult *) AllocVec(swc->swc_EAC->eac_Entries *
-                                              sizeof(struct SingleResult),
-                                              MEMF_ANY);
+        sr = (struct SingleResult *) AllocVec
+        (
+            swc->swc_EAC->eac_Entries * sizeof(struct SingleResult), MEMF_ANY
+        );
         for (i = 0; i < swc->swc_EAC->eac_Entries; i++)
         {
             ULONG length = strlen(swc->swc_DirName) + 1 /* strlen("/") */ 
@@ -73,7 +75,7 @@ void scan(struct ScannerWorkerContext *swc)
             fileLock = Lock(fullPath, ACCESS_READ);
             if (fileLock)
             {
-                fib = AllocDosObject(DOS_FIB, adoTags);
+                fib = AllocDosObject(DOS_FIB, NULL);
                 if (fib)
                 {
                     if (Examine(fileLock, fib))
@@ -268,19 +270,21 @@ struct MsgPort *startScannerWorker(ULONG id, BPTR dirLock,
 {
     struct Process *process;
     struct ScannerWorkerMessage *msg;
-    struct TagItem  procTags[] = {
-        {NP_Entry, workerEntry},
-        {NP_StackSize, 8192},
-        {NP_Name, (IPTR) "Worker_Scanner"},
-        {TAG_DONE, 0}
-    };
+    
+    process = CreateNewProcTags
+    (
+        NP_Entry,     (IPTR) workerEntry,
+        NP_Name,      (IPTR) "Worker_Scanner",
+        NP_StackSize,        8192,
+        TAG_DONE
+    );
+    
+    if (process == NULL) return NULL;
 
-    process = CreateNewProc(procTags);
-    if (!process)
-        return NULL;
-
-    msg =
-        createWorkerScanMessage(WM_START, WA_SCANNER, id, replyPort, dirLock);
+    msg = createWorkerScanMessage
+    (
+        WM_START, WA_SCANNER, id, replyPort, dirLock
+    );
 
     PutMsg(&process->pr_MsgPort, (struct Message *) msg);
 
