@@ -22,4 +22,6 @@ extern char MUIC_Image[];
 #define MUIA_Image_Spec                     0x804233d5 /* V4  i.. char *            */
 #define MUIA_Image_State                    0x8042a3ad /* V4  is. LONG              */
 
+extern const struct __MUIBuiltinClass _MUI_Image_desc;
+
 #endif
