@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/03 20:20:55  digulla
+    Tried to add multitasking but that doesn't work right now
+
     Revision 1.2  1996/08/01 17:41:25  digulla
     Added standard header for all files
 
@@ -20,6 +23,8 @@
 #include "memory.h"
 #include "machine.h"
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -43,10 +48,10 @@ struct ExecBase *SysBase;
 
 static int returncode=20;
 
-static void idle(void)
+static void idleTask (void)
 {
     /* If the idle task ever gets CPU time the emulation is finished */
-    exit(returncode);
+/* exit(returncode); */
 }
 
 int submain(int argc,char *argv[]);
@@ -58,6 +63,13 @@ static void boot(void)
 {
     returncode=submain(gargc,gargv);
     RemTask(NULL);
+}
+
+static void timer (int dummy)
+{
+    signal (SIGALRM, timer);
+    alarm (1);
+    Switch ();
 }
 
 static APTR allocmem(ULONG size)
@@ -184,12 +196,12 @@ int main(int argc,char *argv[])
 #else
 	t->tc_SPReg=(UBYTE *)t->tc_SPLower-SP_OFFSET;
 #endif
-	AddTask(t,&idle,NULL);
+	AddTask(t,&idleTask,NULL);
     }
     Enable();
     Permit();
 
-    AddLibrary((struct Library *)InitResident((struct Resident *)&Utility_resident,0));    
+    AddLibrary((struct Library *)InitResident((struct Resident *)&Utility_resident,0));
     AddLibrary((struct Library *)InitResident((struct Resident *)&Dos_resident,0));
 
     {
@@ -200,15 +212,15 @@ int main(int argc,char *argv[])
 	    struct Unit *stdout;
 	    struct Unit *stderr;
 	};
-	
-        struct emulbase *emulbase;
-        
-    	struct TagItem fhtags[]=
-    	{ { TAG_END, 0 } };
-    	
-        struct FileHandle *stdin=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
-        struct FileHandle *stdout=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
-        
+
+	struct emulbase *emulbase;
+
+	struct TagItem fhtags[]=
+	{ { TAG_END, 0 } };
+
+	struct FileHandle *stdin=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
+	struct FileHandle *stdout=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
+
 	struct TagItem bootprocess[]=
 	{
 	    { NP_Entry, (ULONG)boot },
@@ -219,7 +231,7 @@ int main(int argc,char *argv[])
 	    { NP_Cli, 1 },
 	    { TAG_END, 0 }
 	};
-	
+
 	emulbase=(struct emulbase *)InitResident((struct Resident *)&emul_handler_resident,0);
 	AddDevice(&emulbase->device);
 
@@ -229,10 +241,15 @@ int main(int argc,char *argv[])
 	AssignLock("Devs",Lock("SYS:devs",SHARED_LOCK));
 
 	stdin->fh_Device=&emulbase->device;
-	stdin->fh_Unit  =emulbase->stdin;
+	stdin->fh_Unit	=emulbase->stdin;
 	stdout->fh_Device=&emulbase->device;
 	stdout->fh_Unit  =emulbase->stdout;
-        CreateNewProc(bootprocess);
+
+	/* Start Multitasking (not yet) * /
+	signal (SIGALRM, timer);
+	alarm (1); */
+
+	CreateNewProc(bootprocess);
     }
     RemTask(NULL);
 
