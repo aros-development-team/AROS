@@ -601,36 +601,24 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    struct TagItem cycle_tags[] =
 	    {
-	        {GA_Previous		, (IPTR)gad					 },
-		{GA_ID			, ID_COLORS					 },
-		{ASLCY_Labels		, 0/*(IPTR)udata->Colorarray*/			 },
-		{ASLCY_Active		, 0/*ismreq->ism_DisplayDepth - ismreq->ism_MinDepth*/	 },
-		{GA_RelBottom		, y						 },
-		{GA_Left		, x						 },
-		{GA_RelWidth		, w						 },
-		{GA_Height		, udata->ButHeight				 },
-		{GA_RelVerify		, TRUE						 },
-		{GA_UserData		, (IPTR)ld					 },
-		{TAG_DONE								 }
+	        {GA_Previous		, (IPTR)gad		},
+		{GA_ID			, ID_COLORS		},
+		{ASLCY_Labels		, 0			},
+		{ASLCY_Active		, 0			},
+		{GA_RelBottom		, y			},
+		{GA_Left		, x			},
+		{GA_RelWidth		, w			},
+		{GA_Height		, udata->ButHeight	},
+		{GA_RelVerify		, TRUE			},
+		{GA_UserData		, (IPTR)ld		},
+		{TAG_DONE					}
 		
 	    };
 
 	    /* Make Colors gadget */
 	    
 	    if (ismreq->ism_Flags & ISMF_DODEPTH)
-	    {
-	        STRPTR *array = udata->Colorarray;
-		STRPTR text = udata->Colortext;
-		
-		for(i = ismreq->ism_MinDepth; i <= ismreq->ism_MaxDepth; i++)
-		{
-		    sprintf(text, "%ld", 1L << i);
-		    *array++ = text;
-		    
-		    text += strlen(text) + 1;
-		}
-		*array++ = NULL;
-		
+	    {		
 		i = CYCLEEXTRAWIDTH + TextLength(&ld->ld_DummyRP, "16777216", 8);
 		if (i > maxcyclewidth) maxcyclewidth = i;
 			
@@ -746,7 +734,6 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 {
     struct IntuiMessage 	*imsg = ld->ld_Event;
     struct SMUserData 		*udata = (struct SMUserData *)ld->ld_UserData;
-    struct IntSMReq 		*ismreq = (struct IntSMReq *)ld->ld_IntReq;
     WORD 			gadid;
     ULONG 			retval = GHRET_OK;
 
@@ -809,7 +796,7 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 			if ((dispmode = (struct DisplayMode *)FindListNode(&udata->ListviewList, (WORD)active)))
 			{
-			    SMActivateMode(ld, active, AslBase);
+			    SMActivateMode(ld, active, 0, AslBase);
 			
 			    if (imsg->Code) /* TRUE if double clicked */
 			    {
@@ -1001,7 +988,7 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     SMFixValues(ld, dispmode, &width, 0, 0, AslBase);    
     
     ismreq->ism_DisplayWidth = 
-    req->sm_DisplayWidth    = width;
+    req->sm_DisplayWidth     = width;
     
     /* Height */
     
@@ -1015,8 +1002,16 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     SMFixValues(ld, dispmode, 0, &height, 0, AslBase);
     
     ismreq->ism_DisplayHeight =
-    req->sm_DisplayHeight   = height;
-        
+    req->sm_DisplayHeight     = height;
+    
+    /* Depth */
+    
+    if (ismreq->ism_Flags & ISMF_DODEPTH)
+    {
+        ismreq->ism_DisplayDepth = SMGetDepth(ld, 0, AslBase);
+    }
+    req->sm_DisplayDepth = ismreq->ism_DisplayDepth;
+      
     /* AutoScroll */
     if (ismreq->ism_Flags & ISMF_DOAUTOSCROLL)
     {

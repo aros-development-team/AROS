@@ -77,17 +77,28 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 			diminfo.MaxDepth);
 		D(bug("SMGetModes: No NameInfo. Making by hand. Name = \"%s\"\n", name));
 	    }
+
+	    if ((dispinfo.PropertyFlags   & ismreq->ism_PropertyMask) !=
+	        (ismreq->ism_PropertyFlags & ismreq->ism_PropertyMask)) continue;
 	    
 	    if (diminfo.MaxDepth < ismreq->ism_MinDepth) continue;
+	    if (diminfo.MaxDepth > 8)
+	    {
+	        if (ismreq->ism_MaxDepth < diminfo.MaxDepth) continue;
+	    }
+	    else
+	    {
+	        if (dispinfo.PropertyFlags & (DIPF_IS_HAM | DIPF_IS_EXTRAHALFBRITE))
+		{
+		    if (ismreq->ism_MaxDepth < 6) continue;
+		}
+	    }
 	    
 	    if ((diminfo.MinRasterWidth  > ismreq->ism_MaxWidth ) ||
 	        (diminfo.MaxRasterWidth  < ismreq->ism_MinWidth ) ||
 		(diminfo.MinRasterHeight > ismreq->ism_MaxHeight) ||
 		(diminfo.MaxRasterHeight < ismreq->ism_MinHeight)) continue;
-		
-	    if ((dispinfo.PropertyFlags   & ismreq->ism_PropertyMask) !=
-	        (ismreq->ism_PropertyFlags & ismreq->ism_PropertyMask)) continue;
-	
+			
 	    if (ismreq->ism_FilterFunc)
 	    {
 		if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
@@ -166,7 +177,7 @@ void SMChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
     if (((LONG)active) < 0) active = 0;
     if (active >= total) active = total - 1;
     
-    SMActivateMode(ld, active, AslBase);
+    SMActivateMode(ld, active, 0, AslBase);
     
 }
 
@@ -283,7 +294,7 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 
 /*****************************************************************************************/
 
-void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *AslBase)
+void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
     struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
@@ -295,7 +306,7 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 	{ASLLV_MakeVisible	, 0		},
 	{TAG_DONE				}
     };
-    LONG		width, height, depth;
+    LONG		width, height;
     
     dispmode = (struct DisplayMode *)FindListNode(&udata->ListviewList, which);
     
@@ -314,12 +325,15 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     {   
         STRPTR	*array = udata->Colorarray;
 	STRPTR 	text = udata->Colortext;
-	WORD	i, min, max;
+	WORD	i = 0, min, max, bestmatch;
 	
-	set_tags[0].ti_Tag = ASLCY_Labels;
+	set_tags[0].ti_Tag  = ASLCY_Labels;
 	set_tags[0].ti_Data = 0;
-	set_tags[1].ti_Tag = TAG_DONE;
+	set_tags[1].ti_Tag  = ASLCY_Active;
+	set_tags[2].ti_Data = 0;
 
+        if (depth == 0) depth = SMGetDepth(ld, 0, AslBase);
+	
 	if (ld->ld_Window)
 	{
             SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
@@ -331,20 +345,45 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 	{
 	    sprintf(text, "%ld", 1L << dispmode->dm_DimensionInfo.MaxDepth);
 	    *array++ = text;
+	    
+	    udata->ColorDepth[0]     =
+	    udata->RealColorDepth[0] = dispmode->dm_DimensionInfo.MaxDepth;
+	    
+	    udata->NumColorEntries = 1;
+	    
 	}
 	else if (dispmode->dm_PropertyFlags & DIPF_IS_EXTRAHALFBRITE)
 	{
 	    *array++ = "64";
+
+	    udata->ColorDepth[0]     =
+	    udata->RealColorDepth[0] = 6;
+	    
+	    udata->NumColorEntries = 1;	    
 	}
 	else if (dispmode->dm_PropertyFlags & DIPF_IS_HAM)
 	{
-	    if (dispmode->dm_DimensionInfo.MaxDepth >= 6)
+	    udata->NumColorEntries = 0;
+	    
+	    if (ismreq->ism_MinDepth <= 6)
 	    {
-	        *array++ = "4096";
-            }
-	    if (dispmode->dm_DimensionInfo.MaxDepth >= 8)
+		*array++ = "4096";
+		
+		udata->ColorDepth[udata->NumColorEntries]     = 6;
+		udata->RealColorDepth[udata->NumColorEntries] = 12;
+		
+		udata->NumColorEntries++;
+	    }
+	    
+	    if ((dispmode->dm_DimensionInfo.MaxDepth == 8) &&
+	        (ismreq->ism_MaxDepth >= 8))
 	    {
 	        *array++ = "16777216";
+		
+		udata->ColorDepth[udata->NumColorEntries]     = 8;
+		udata->RealColorDepth[udata->NumColorEntries] = 24;
+		
+		udata->NumColorEntries++;
 	    }
 	}
 	else
@@ -361,14 +400,34 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 	        sprintf(text, "%ld", 1L << i);
 		*array++ = text;
 		
+		udata->ColorDepth[i - min]     =
+		udata->RealColorDepth[i - min] = i;
+		
 		text += strlen(text) + 1;
 	    }
+	    
+	    udata->NumColorEntries = max - min + 1;
 	    
 	}
 	
 	*array++ = NULL;
 	
 	set_tags[0].ti_Data = (IPTR)udata->Colorarray;
+	
+	bestmatch = 1000;
+	for(i = 0; i < udata->NumColorEntries; i++)
+	{
+	    WORD match = depth - udata->ColorDepth[i];
+	    
+	    if (match < 0) match = -match;
+	    
+	    if (match < bestmatch)
+	    {
+	        bestmatch = match;
+		set_tags[1].ti_Data = i;
+	    }
+	}
+	
 	if (ld->ld_Window)
 	{
             SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
@@ -396,7 +455,6 @@ void SMRestore(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
     struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
     struct DisplayMode	*dispmode;
-    struct Rectangle	*rect;
     LONG		i = 0, active = 0;
     LONG		width = ismreq->ism_DisplayWidth;
     LONG		height = ismreq->ism_DisplayHeight;
@@ -423,7 +481,7 @@ void SMRestore(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	i++;
     }
     
-    SMActivateMode(ld, active, AslBase);
+    SMActivateMode(ld, active, ismreq->ism_DisplayDepth, AslBase);
 
     dispmode = SMGetActiveMode(ld, AslBase);    
     ASSERT_VALID_PTR(dispmode);
@@ -469,6 +527,22 @@ LONG SMGetHeight(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
+LONG SMGetDepth(struct LayoutData *ld, LONG *realdepth, struct AslBase_intern *AslBase)
+{
+    struct SMUserData   *udata = (struct SMUserData *)ld->ld_UserData;  
+    IPTR		active;
+    
+    ASSERT(udata->DepthGadget);
+    
+    GetAttr(ASLCY_Active, udata->DepthGadget, &active);
+    
+    if (realdepth) *realdepth = udata->RealColorDepth[active];
+    
+    return udata->ColorDepth[active];
+}
+
+/*****************************************************************************************/
+
 BOOL SMGetAutoScroll(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct SMUserData   *udata = (struct SMUserData *)ld->ld_UserData;  
@@ -479,6 +553,28 @@ BOOL SMGetAutoScroll(struct LayoutData *ld, struct AslBase_intern *AslBase)
     GetAttr(ASLCY_Active, udata->AutoScrollGadget, &active);
     
     return active ? TRUE : FALSE;
+}
+
+/*****************************************************************************************/
+
+void SMSetDepth(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase)
+{
+    struct SMUserData   *udata = (struct SMUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCY_Active	, id		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->DepthGadget);
+    
+    if (ld->ld_Window)
+    {
+        SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
+    } else {
+        SetAttrsA(udata->DepthGadget, set_tags);
+    }
+    
 }
 
 /*****************************************************************************************/
@@ -633,10 +729,7 @@ void SMClosePropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase
 /*****************************************************************************************/
 
 ULONG SMHandlePropertyEvents(struct LayoutData *ld, struct IntuiMessage *imsg, struct AslBase_intern *AslBase)
-{
-    struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
-    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
- 
+{ 
     switch(imsg->Class)
     {
         case IDCMP_VANILLAKEY:

@@ -59,6 +59,9 @@ struct SMUserData
     UWORD 			ButHeight;    
     STRPTR			Colorarray[33];
     UBYTE			Colortext[150];
+    UBYTE			ColorDepth[32];
+    UBYTE			RealColorDepth[32];
+    UBYTE			NumColorEntries;
     UBYTE 			Flags;
 	
 };
