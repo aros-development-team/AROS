@@ -596,14 +596,6 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
      */
     for (arg = 0; arg < numargs; arg++)
     {
-        /* clear /S default */
-        if ( (flags[arg] & SWITCH) && NULL != array[arg])
-        {
-            kprintf("WARNING: ReadArgs, switch default (arg %d) set\n", arg);
-
-            array[arg] = NULL;
-        }
-
         /* Just for the arguments given. */
         if (argbuf[arg] != NULL)
         {
