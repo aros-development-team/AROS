@@ -870,7 +870,8 @@ endif
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
 %rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-	      cflags="-I$(dir $(GENMODULE))/genmod_inc -I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))"
+	      cflags="-I$(dir $(GENMODULE))/genmod_inc -I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))" \
+	      compiler=%(compiler)
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
