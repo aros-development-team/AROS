@@ -728,9 +728,11 @@ void LineInTmpRas(struct RastPort  * rp,
   if ((xright - xleft) <= 16)
     goto fillright;
 
+/*
 if (xleft & 0x0f)
   kprintf("Error!!! %d\n",xleft);
-    
+*/
+   
   /* fill the middle with 0xffff's */
   while ((xleft + 15) < xright)
   {

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function AddVSprite()
@@ -77,8 +77,6 @@
     vs -> NextVSprite = CurVSprite -> NextVSprite;
     vs -> PrevVSprite = CurVSprite;
     CurVSprite -> NextVSprite = vs;
-
-    kprintf("\n\n======== added bob: prev = %x  next = %x\n\n", vs->PrevVSprite, vs->NextVSprite);
 
     AROS_LIBFUNC_EXIT
     
