@@ -85,68 +85,68 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         
         MUIA_Group_Horiz, FALSE,
         
-        Child, HGroup,
+        Child, (IPTR) HGroup,
             MUIA_VertWeight, 800,
-            Child, HGroup,
+            Child, (IPTR) HGroup,
                 GroupFrameT("Container Design"),
-                Child, HGroup,
+                Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, VGroup,
+                    Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, d.container_background_popimage = MakeBackgroundPopimage(),
-                        Child, CLabel("Background"),
+                        Child, (IPTR) d.container_background_popimage = MakeBackgroundPopimage(),
+                        Child, (IPTR) CLabel("Background"),
                     End, /* VGroup BG */
-                    Child, VGroup,
+                    Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, d.container_popframe = MakePopframe(),
-                        Child, CLabel("Frame"),
+                        Child, (IPTR) d.container_popframe = MakePopframe(),
+                        Child, (IPTR) CLabel("Frame"),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
             End, /* HGroup Container Design */
-            Child, VGroup,
+            Child, (IPTR) VGroup,
                 GroupFrameT("Knob Design"),
-                Child, HGroup,
+                Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, VGroup,
+                    Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, d.knob_background_popimage = MakeBackgroundPopimage(),
-                        Child, CLabel("Background"),
+                        Child, (IPTR) d.knob_background_popimage = MakeBackgroundPopimage(),
+                        Child, (IPTR) CLabel("Background"),
                     End, /* VGroup BG */
-                    Child, VGroup,
+                    Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, d.knob_popframe = MakePopframe(),
-                        Child, CLabel("Frame"),
+                        Child, (IPTR) d.knob_popframe = MakePopframe(),
+                        Child, (IPTR) CLabel("Frame"),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
-                Child, HGroup,
-                    Child, Label2("Font:"),
-                    Child, PopaslObject,
+                Child, (IPTR) HGroup,
+                    Child, (IPTR) Label2("Font:"),
+                    Child, (IPTR) PopaslObject,
                         MUIA_Popasl_Type, ASL_FontRequest,
-                        MUIA_Popstring_String, d.knob_font_string = StringObject,
+                        MUIA_Popstring_String, (IPTR) d.knob_font_string = StringObject,
                             StringFrame, 
                             MUIA_CycleChain, 1,
                         End,
-                        MUIA_Popstring_Button, PopButton(MUII_PopUp),
+                        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
                     End,
                 End, /* HGroup font */
             End, /* VGroup Knob Design */
         End, /* HGroup Container/Knob design */
         
-        Child, VGroup,
+        Child, (IPTR) VGroup,
             GroupFrameT("Example Sliders"),
-            Child, VSpace(0),
-            Child, HGroup,
-                Child, VGroup,
-                    Child, MakeSmallHorizSlider(),
-                    Child, MakeBigHorizSlider(),
+            Child, (IPTR) VSpace(0),
+            Child, (IPTR) HGroup,
+                Child, (IPTR) VGroup,
+                    Child, (IPTR) MakeSmallHorizSlider(),
+                    Child, (IPTR) MakeBigHorizSlider(),
                 End, /* VGroup horiz sliders */
-                Child, MakeSmallVertSlider(),
-                Child, MakeBigVertSlider(),
+                Child, (IPTR) MakeSmallVertSlider(),
+                Child, (IPTR) MakeBigVertSlider(),
             End, /* HGroup */
-            Child, HVSpace,
+            Child, (IPTR) HVSpace,
         End, /* VGroup Slider examples */
         
-        TAG_MORE, msg->ops_AttrList
+        TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
     if (!obj) return FALSE;
