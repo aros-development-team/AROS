@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#include <aros/system.h>
+#include <aros/systypes.h>
 
 #ifdef	_AROS_PID_T_
 typedef _AROS_PID_T_	pid_t;
