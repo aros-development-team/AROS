@@ -6,10 +6,10 @@
 #include "baseredef.h"
 
 void showPtrArgsText(struct afsbase *afsbase, char *string, ULONG *args) {
-struct EasyStruct es[]={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
+struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 
-	es->es_TextFormat=string;
-	EasyRequestArgs(0,es,0,args);
+	es.es_TextFormat=string;
+	EasyRequestArgs(0,&es,0,args);
 }
 
 void showText(struct afsbase *afsbase, char *string, ...) {
@@ -18,7 +18,7 @@ void showText(struct afsbase *afsbase, char *string, ...) {
 }
 
 void showError(struct afsbase *afsbase, ULONG error, ...) {
-char *texts={0,
+char *texts[]={0,
 				"No ioport",
 				"No device",
 				"Couldn't add disk as dosentry",

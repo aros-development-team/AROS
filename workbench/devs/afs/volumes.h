@@ -28,6 +28,14 @@ struct Volume {
 	ULONG dostype;
 	ULONG bitmapblockpointers[25];
 	ULONG bitmapextensionblock;
+
+	struct BlockCache *bitmapblock;	// last bitmap block used for marking
+	ULONG bstartblock;						// first block marked in "bitmapblock"
+	// the following vars are not really used yet
+	ULONG lastextensionblock;			// last used extensionblock (0=volume->bitmapblocks)
+	ULONG lastposition;					// last position in extensionblock
+	ULONG lastaccess;					// last marked block
+
 	UWORD bootblocks;
 	UBYTE flags;
 };

@@ -69,8 +69,8 @@ ULONG retval;
 	volume->iorequest->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
 	volume->iorequest->iotd_Req.io_Data=mem;
 	volume->iorequest->iotd_Req.io_Offset=(start+volume->startblock)*BLOCK_SIZE(volume);	// bootblock is first disk on device and we always get offsets from start
-	DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
-	if ((retval=(ULONG)volume->iorequest->iotd_Req.io_Error))
+	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+	if (retval)
 		showError(afsbase, ERR_READWRITE);
 	if (volume->istrackdisk)
 		sendDeviceCmd(afsbase, volume,ETD_MOTOR);
