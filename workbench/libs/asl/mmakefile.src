@@ -6,7 +6,7 @@ USER_INCLUDES := -I. -I..
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 FORCE_DEPLIBS 	:=
-FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libamiga.a
+FORCE_LIBS 		:= /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libstringio.a /ade/morphos/lib/libamiga.a /ade/morphos/lib/libc.a /GG/morphos/lib/libmath.a
 endif
 
 MODNAME 	:= asl
