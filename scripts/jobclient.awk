@@ -21,7 +21,10 @@ BEGIN {
 	    {
 		gsub(text,"\n","\n# ");
 		print "# " text;
-		print "req " id "\ndone " id;
+		if (status=="FREE")
+		    print "req " id;
+		if (status=="WORK" || status=="FREE")
+		    print "done " id;
 		break;
 	    }
 	}

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/11/28 10:40:30  aros
+    A couple of new functions in amiga.lib
+
+    Easier code to handle stacktags and stackmethods.
+
     Revision 1.4  1996/11/25 10:53:18  aros
     Allow stacktags on special CPUs
 
@@ -58,26 +63,7 @@ extern struct IntuitionBase * IntuitionBase;
 
 *****************************************************************************/
 {
-#ifdef AROS_SLOWSTACKTAGS
-    ULONG	     retval;
-    va_list	     args;
-    struct TagItem * tags;
-
-    va_start (args, tag1);
-
-    if ((tags = GetTagsFromStack (tag1, args)))
-    {
-	retval = OpenWindowTagList (newWindow, tags);
-
-	FreeTagsFromStack (tags);
-    }
-    else
-	retval = 0L; /* fail :-/ */
-
-    va_end (args);
-
-    return retval;
-#else
-    return OpenWindowTagList (newWindow, (struct TagItem *)&tag1);
-#endif
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    OpenWindowTagList (newWindow, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AROS_SLOWSTACKTAGS_POST
 } /* OpenWindowTags */

@@ -13,6 +13,9 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifdef AROS_SLOWSTACKTAGS
+#   include <stdarg.h>
+#endif
 
 typedef STACKULONG Tag;
 
@@ -45,5 +48,37 @@ struct TagItem
 /* Mapping types for MapTags() */
 #define MAP_REMOVE_NOT_FOUND 0	/* remove tags that aren't in mapList */
 #define MAP_KEEP_NOT_FOUND   1	/* keep tags that aren't in mapList   */
+
+/*
+    Some macros to make it easier to write functions which operate on
+    stacktags on every CPU/compiler/hardware.
+*/
+#ifdef AROS_SLOWSTACKTAGS
+#   define AROS_SLOWSTACKTAGS_PRE(arg)                  \
+	ULONG		 retval;			\
+	va_list 	 args;				\
+	struct TagItem * tags;				\
+							\
+	va_start (args, arg);                           \
+							\
+	if ((tags = GetTagsFromStack (arg, args)))      \
+	{						\
+	    retval =
+#   define AROS_SLOWSTACKTAGS_ARG(arg) tags
+#   define AROS_SLOWSTACKTAGS_POST			\
+	    FreeTagsFromStack (tags);                   \
+	}						\
+	else						\
+	    retval = 0L; /* fail :-/ */ 		\
+							\
+	va_end (args);                                  \
+							\
+	return retval;
+#else
+#   define AROS_SLOWSTACKTAGS_PRE(arg) return
+#   define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
+#   define AROS_SLOWSTACKTAGS_POST
+#endif
+
 
 #endif /* UTILITY_TAGITEM_H */

@@ -11,6 +11,8 @@
 /******************************************************************************
 
     NAME */
+#include <clib/alib_protos.h>
+
 	IPTR DoMethodA (
 
 /*  SYNOPSIS */
@@ -53,30 +55,13 @@
     return (CallHookPkt ((struct Hook *)OCLASS(obj), obj, message));
 } /* DoMethodA */
 
-
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
-#ifdef AROS_SLOWSTACKMETHODS
-    ULONG   retval;
-    va_list args;
-    Msg     msg;
-
-    va_start (args, MethodID);
-
-    if ((msg = GetMsgFromStack (MethodID, args)))
-    {
-	retval = CallHookPkt ((struct Hook *)OCLASS(obj), obj, msg);
-
-	FreeMsgFromStack (msg);
-    }
-    else
-	retval = 0L; /* fail :-/ */
-
-    va_end (args);
-
-    return retval;
-#else
-    return CallHookPkt ((struct Hook *)OCLASS(obj), obj, (Msg)&MethodID);
-#endif
+    AROS_SLOWSTACKMETHODS_PRE(MethodID)
+    CallHookPkt ((struct Hook *)OCLASS(obj)
+	, obj
+	, AROS_SLOWSTACKMETHODS_ARG(MethodID)
+    );
+    AROS_SLOWSTACKMETHODS_POST
 } /* DoMethod */
 

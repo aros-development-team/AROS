@@ -10,6 +10,7 @@
 #   include <intuition/classusr.h>
 #endif
 #include "alib_intern.h"
+#include <clib/alib_protos.h>
 
 extern struct IntuitionBase * IntuitionBase;
 
@@ -61,26 +62,11 @@ extern struct IntuitionBase * IntuitionBase;
 
 *****************************************************************************/
 {
-#ifdef AROS_SLOWSTACKMETHODS
-    ULONG   retval;
-    va_list args;
-    Msg     msg;
-
-    va_start (args, methodId);
-
-    if ((msg = GetMsgFromStack (methodId, args)))
-    {
-	retval = DoGadgetMethodA (gad, win, req, msg);
-
-	FreeMsgFromStack (msg);
-    }
-    else
-	retval = 0L; /* fail :-/ */
-
-    va_end (args);
-
-    return retval;
-#else
-    return DoGadgetMethodA (gad, win, req, (Msg)&methodId);
-#endif
+    AROS_SLOWSTACKMETHODS_PRE(methodId)
+    DoGadgetMethodA (gad
+	, win
+	, req
+	, AROS_SLOWSTACKMETHODS_ARG(methodId)
+    );
+    AROS_SLOWSTACKMETHODS_POST
 } /* DoGadgetMethod */

@@ -50,7 +50,11 @@
 
 ******************************************************************************/
 {
-    return ((*(hook->h_Entry)) (hook, object, paramPacket));
+    return AROS_UFC3(IPTR, hook->h_Entry,
+	AROS_UFHA(struct Hook *, hook,        A0),
+	AROS_UFHA(APTR,          object,      A2),
+	AROS_UFHA(APTR,          paramPacket, A1)
+    );
 }
 
 #ifdef AROS_SLOWSTACKMETHODS

@@ -17,31 +17,18 @@
 #ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
 #endif
-#ifdef AROS_SLOWSTACKTAGS
-#   include <stdarg.h>
-#   ifndef UTILITY_TAGITEM_H
-#	include <utility/tagitem.h>
-#   endif
-#endif
-#ifdef AROS_SLOWSTACKMETHODS
-#   ifndef AROS_SLOWSTACKTAGS
-#	include <stdarg.h>
-#   endif
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
 #endif
 
-ULONG CallHookPkt (struct Hook * hook, APTR object, APTR paramPacket);
+IPTR CallHookPkt (struct Hook * hook, APTR object, APTR paramPacket);
 #ifndef AROS_SLOWCALLHOOKPKT
-#   define CallHookPkt(h,o,p)   ((*(((struct Hook *)(h))->h_Entry)) (((struct Hook *)(h)), ((APTR)(o)), ((APTR)(p))))
+#   define CallHookPkt(h,o,p)                                   \
+	    AROS_UFC3(IPTR, (((struct Hook *)(h))->h_Entry),    \
+		AROS_UFHA(struct Hook *, h, A0),                \
+		AROS_UFHA(APTR,          o, A2),                \
+		AROS_UFHA(APTR,          p, A1)                 \
+	    )
 #endif
-
-#ifdef AROS_SLOWSTACKMETHODS
-    Msg  GetMsgFromStack  (ULONG MethodID, va_list args);
-    void FreeMsgFromStack (Msg msg);
-#endif /* AROS_SLOWSTACKMETHODS */
-
-#ifdef AROS_SLOWSTACKTAGS
-    struct TagItem * GetTagsFromStack  (ULONG firstTag, va_list args);
-    void	     FreeTagsFromStack (struct TagItem * tags);
-#endif /* AROS_SLOWSTACKTAGS */
 
 #endif /* _ALIB_INTERN_H */

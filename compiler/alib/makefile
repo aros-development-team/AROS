@@ -15,7 +15,7 @@ FILES=alib_util newobject setattrs openwindowtags openscreentags \
 	dogadgetmethod domethod dosupermethod readbyte readword \
 	readlong readfloat readdouble readstring readstruct writebyte \
 	writeword writelong writefloat writedouble writestring \
-	writestruct
+	writestruct coercemethod callhook newlist hookentry
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 

@@ -2,22 +2,27 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: amiga.lib function DeletePort()
     Lang: english
 */
-/* Local prototypes */
+#include <clib/exec_protos.h>
 
 /*****************************************************************************
 
     NAME */
+	void DeletePort (
 
 /*  SYNOPSIS */
+	struct MsgPort * mp)
 
 /*  FUNCTION
+	Free a message port created by CreatePort()
 
     INPUTS
+	mp - The result of CreatePort()
 
     RESULT
+	None.
 
     NOTES
 
@@ -26,6 +31,7 @@
     BUGS
 
     SEE ALSO
+	CreatePort(), CreateMsgPort(), DeleteMsgPort()
 
     INTERNALS
 
@@ -33,5 +39,6 @@
 
 ******************************************************************************/
 {
-} /* */
+    DeleteMsgPort (mp);
+} /* DeletePort */
 

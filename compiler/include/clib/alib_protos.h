@@ -23,6 +23,20 @@
 #ifndef  DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+#ifdef AROS_SLOWSTACKTAGS
+#   include <stdarg.h>
+#   ifndef UTILITY_TAGITEM_H
+#	include <utility/tagitem.h>
+#   endif
+#endif
+#ifdef AROS_SLOWSTACKMETHODS
+#   ifndef AROS_SLOWSTACKTAGS
+#	include <stdarg.h>
+#   endif
+#endif
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
+#endif
 
 /*
     Prototypes
@@ -33,6 +47,8 @@ ULONG DoGadgetMethod (struct Gadget * gad, struct Window * win,
 		    struct Requester * req, ULONG MethodID, ...);
 ULONG DoSuperMethodA (Class  * cl, Object * obj, Msg message);
 ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+ULONG CoerceMethodA (Class * cl, Object * obj, Msg msg);
 void SetAttrs (Object * obj, ULONG tag1, ...);
 APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 
@@ -54,5 +70,46 @@ BOOL WriteDouble (BPTR fh, DOUBLE data);
 BOOL WriteString (BPTR fh, STRPTR data);
 BOOL WriteStruct (BPTR fh, IPTR * desc, APTR data);
 void FreeStruct (APTR s, IPTR * desc);
+
+AROS_UFH3(IPTR, HookEntry,
+    AROS_UFHA(struct Hook *, hook,  A0),
+    AROS_UFHA(APTR,          obj,   A2),
+    AROS_UFHA(APTR,          param, A1)
+);
+
+#ifdef AROS_SLOWSTACKMETHODS
+    Msg  GetMsgFromStack  (ULONG MethodID, va_list args);
+    void FreeMsgFromStack (Msg msg);
+
+#   define AROS_SLOWSTACKMETHODS_PRE(arg)       \
+    ULONG   retval;				\
+    va_list args;				\
+    Msg     msg;				\
+						\
+    va_start (args, arg);                       \
+						\
+    if ((msg = GetMsgFromStack (arg, args)))    \
+    {						\
+	retval =
+#   define AROS_SLOWSTACKMETHODS_ARG(arg) msg
+#   define AROS_SLOWSTACKMETHODS_POST		\
+	FreeMsgFromStack (msg);                 \
+    }						\
+    else					\
+	retval = 0L; /* fail :-/ */		\
+						\
+    va_end (args);                              \
+						\
+    return retval;
+#else
+#   define AROS_SLOWSTACKMETHODS_PRE(arg) return
+#   define AROS_SLOWSTACKMETHODS_ARG(arg) ((Msg)(arg))
+#   define AROS_SLOWSTACKMETHODS_POST
+#endif /* AROS_SLOWSTACKMETHODS */
+
+#ifdef AROS_SLOWSTACKTAGS
+    struct TagItem * GetTagsFromStack  (ULONG firstTag, va_list args);
+    void	     FreeTagsFromStack (struct TagItem * tags);
+#endif /* AROS_SLOWSTACKTAGS */
 
 #endif /* CLIB_ALIB_PROTOS_H */
