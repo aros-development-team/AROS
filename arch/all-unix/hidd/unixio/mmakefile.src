@@ -80,7 +80,7 @@ clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
 $(OBJDIR)/%.o : %.c
-	%compile_q 
+	%compile_q cmd=$(HOST_CC)
 
 %asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
 

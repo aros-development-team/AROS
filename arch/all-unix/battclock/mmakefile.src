@@ -32,7 +32,7 @@ $(OBJDIR)/%.o : %.s
 	%assemble_q
 
 $(OBJDIR)/%.o : %.c
-	%compile_q
+	%compile_q cmd=$(HOST_CC)
 
 $(OBJDIR)/%.d : %.c $(MACHINE_H)
 	%mkdepend_q

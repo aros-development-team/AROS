@@ -37,7 +37,7 @@ runprocess : runprocess.c ../exec/stackswap.c
 	$(RM) ss.o
 
 $(OSGENDIR)/dos/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
+	%compile_q cmd=$(HOST_CC) opt=$(CFLAGS2)
 
 $(OSGENDIR)/dos/%.d : %.c $(MACHINE_H)
 	%mkdepend_q
