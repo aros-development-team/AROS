@@ -25,8 +25,14 @@
 /****************************************************************************************/
 
 #ifndef _AROS
+
+#ifdef __SASC
 #pragma libcall ReqToolsBase rtLockPrefs a8 00
 #pragma libcall ReqToolsBase rtUnlockPrefs ae 00
+#else
+#warning You might have to fix rtLockPrefs/rtUnlockPrefs for your compiler
+#endif
+
 #endif
 
 /****************************************************************************************/

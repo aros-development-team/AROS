@@ -33,27 +33,6 @@ struct IntReqToolsBase
     struct IORequest 	rt_cdevio;   /* For communication with console.device */
 };
 
-
-struct rtWindowLock
-{
-    struct Requester     rtwl_Requester;
-    LONG                 rtwl_Magic;
-    struct rtWindowLock *rtwl_RequesterPtr;
-    ULONG                rtwl_LockCount;
-    BOOL                 rtwl_ReqInstalled;
-
-    /* To save window parameters */
-    APTR                 rtwl_Pointer;
-    BYTE                 rtwl_PtrHeight;
-    BYTE                 rtwl_PtrWidth;
-    BYTE                 rtwl_XOffset;
-    BYTE                 rtwl_YOffset;
-    WORD                 rtwl_MinWidth;
-    WORD                 rtwl_MaxWidth;
-    WORD                 rtwl_MinHeight;
-    WORD                 rtwl_MaxHeight;
-};
-
 /****************************************************************************************/
 
 /* filereqalloc.c */

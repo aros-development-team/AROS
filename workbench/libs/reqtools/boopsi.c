@@ -6,8 +6,6 @@
 #include <intuition/intuition.h>
 #ifdef _AROS
 #include <aros/asmcall.h>
-#else
-#define IPTR ULONG
 #endif
 
 #include "filereq.h"

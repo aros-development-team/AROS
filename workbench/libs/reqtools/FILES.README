@@ -16,6 +16,7 @@ reqtools.asm
 rtfuncs.asm
 boopsigads.i
 reqtools_rev.i
+compilerspecific.h
 
 ----------------------------------------------------------------------------
 New .c and .h files containing ASM functions converted to C for AROS:
@@ -48,8 +49,8 @@ AROS main library setup/init code (~ reqtools.asm + rtfuncs.asm):
 reqtools_init.c
 reqtools_intern.h
 
-One .c file for each ReqTools library function. Most of this just
-call the real functions in other .c files. 
+One .c file for each ReqTools library function. Most of these just
+call the real functions in one of the other .c files. 
 
 rtallocrequesta.c
 rtchangereqattra.c

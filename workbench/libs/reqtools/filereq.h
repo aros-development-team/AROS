@@ -38,7 +38,7 @@
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 
-#ifndef _AROS
+#if !defined(_AROS) && !defined(__GNUC__)
 #include <pragmas/reqtools_pragmas.h>
 #endif
 
@@ -60,7 +60,15 @@
 #define ThisProcess()		( ( struct Process * ) FindTask( NULL ) )
 
 #ifndef _AROS
+
+#ifdef __SASC
 #pragma libcall DOSBase DoPkt1 f0 32103
+#else
+
+#warning Fix DoPkt1 macro for your compiler
+
+#endif
+
 #endif
 
 #define D_S(type,name)	UBYTE a_##name[ sizeof( type ) + 3 ]; \
@@ -72,7 +80,7 @@ extern APTR ASM Dofmt (ASM_REGPARAM(a3, char *,), ASM_REGPARAM(a0, char *,), ASM
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 extern void SetWinTitleFlash (ASM_REGPARAM(a0, struct Window *,), ASM_REGPARAM(a1, char *,));
 extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
-extern ULONG CallHook (struct Hook *, APTR,...);
+/*extern ULONG CallHook (struct Hook *, APTR,...);*/
 extern void ASM StrCat (ASM_REGPARAM(a0, char *,), ASM_REGPARAM(a1, char *,));
 extern void ShortDelay (void);
 
@@ -116,7 +124,7 @@ extern struct IntuitionBase	*IntuitionBase;
 extern struct GfxBase		*GfxBase;
 extern struct Library		*LayersBase;
 extern struct ReqToolsBase	*ReqToolsBase;
-#ifdef _AROS
+#if defined(_AROS) || defined(__GNUC__)
 extern struct UtilityBase	*UtilityBase;
 #else
 extern struct Library		*UtilityBase;

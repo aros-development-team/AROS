@@ -5,7 +5,7 @@
 *                                 (c) Nico François 1991-1994 *
 **************************************************************/
 
-#include <proto/workbench.h>
+#include <proto/wb.h>
 
 #include "filereq.h"
 
