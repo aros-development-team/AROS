@@ -385,11 +385,7 @@ AROS_LH1(void, beginio,
 	    case TD_PROTSTATUS:
 	    case TD_REMCHANGEINT:
 	    case TD_GETGEOMETRY:
-		if (TD_PerformIO(iotd,TDBase))
-		{
-		    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-		    ReplyMsg(&iotd->iotd_Req.io_Message);
-		}
+		TD_PerformIO(iotd,TDBase);
 		return;
 	    case CMD_CLEAR:
 	    case CMD_READ:
@@ -399,13 +395,10 @@ AROS_LH1(void, beginio,
 		/* Forward to devicetask */
 		PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
 		/* Not done quick */
-		iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
 		iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 		return;
 	    default:
 		iotd->iotd_Req.io_Error = IOERR_NOCMD;
-		iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-		ReplyMsg(&iotd->iotd_Req.io_Message);
 		return;
 	}
     }
@@ -414,7 +407,6 @@ AROS_LH1(void, beginio,
 	/* Forward to devicetask */
 	PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
 	/* Not done quick */
-	iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
 	iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 	return;
     }
@@ -578,7 +570,7 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 	AddTask(&t->td_Task, &TD_DevTask, NULL);
 
 	/* Wait until started */
-	Wait(SIGBREAKB_CTRL_F);
+	Wait(SIGBREAKF_CTRL_F);
 
 	D(bug("OK\n"));
 
@@ -632,7 +624,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     tisig = 1L << tdb->td_TimerMP->mp_SigBit;
 
     /* Reply to startup message */
-    Signal(td->td_Task.tc_UserData,SIGBREAKB_CTRL_F);
+    Signal(td->td_Task.tc_UserData,SIGBREAKF_CTRL_F);
 
     tdb->td_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
     tdb->td_TimerIO->tr_time.tv_secs = 2;
@@ -716,6 +708,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 	    }
 
 	    /* Reload the timer again */
+	    GetMsg(tdb->td_TimerMP);
 	    tdb->td_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
 	    tdb->td_TimerIO->tr_time.tv_secs = 2;
 	    tdb->td_TimerIO->tr_time.tv_micro = 500000;
