@@ -336,7 +336,7 @@ static ULONG valid_baudrates[] =
   38400,
   57600,
   115200,
-  -1
+  ~0
 };
 
 /*** unused due to cfsetspeed ***
@@ -375,7 +375,7 @@ ULONG serialunit_setbaudrate(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUn
   {
     int i = 0;
     D(bug("Trying to adjust the baudrate to %d\n",msg->baudrate));
-    while (FALSE == valid && -1 != valid_baudrates[i])
+    while (FALSE == valid && ~0 != valid_baudrates[i])
     {
       if (msg->baudrate == valid_baudrates[i])
       {
@@ -406,7 +406,7 @@ static UBYTE valid_datalengths[] =
   6,
   7,
   8,
-  -1
+  ~0
 };
 
 static UBYTE unix_datalengths[] =
@@ -434,7 +434,7 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
         {
           int j = 0;
           BOOL found = FALSE;
-          while (-1 != (BYTE)valid_datalengths[j])
+          while (~0 != valid_datalengths[j])
           {
             if ((UBYTE)tags[i].ti_Data == valid_datalengths[j])
             {

@@ -277,7 +277,7 @@ static ULONG valid_baudrates[] =
 {
   2 | LIMIT_LOWER_BOUND,
   115200 | LIMIT_UPPER_BOUND,
-  -1
+  ~0
 };
 
 
@@ -300,7 +300,7 @@ static UBYTE valid_datalengths[] =
   6,
   7,
   8,
-  -1
+  ~0
 };
 
 /******* SerialUnit::SetParameters() **********************************/
