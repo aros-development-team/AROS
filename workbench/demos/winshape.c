@@ -4,6 +4,8 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
+#include <aros/debug.h>
 
 #include <stdio.h>
 
@@ -14,11 +16,13 @@
 
 struct IntuitionBase 	*IntuitionBase;
 struct GfxBase      	*GfxBase;
+struct Library	    	*LayersBase;
 struct Screen	    	*scr;
 struct DrawInfo     	*dri;
 struct Window	    	*win;
 struct RastPort     	*rp;
 struct Region	    	*shape;
+WORD	    	    	actshape;
 
 static void cleanup(char *msg)
 {
@@ -31,6 +35,7 @@ static void cleanup(char *msg)
     if (dri) FreeScreenDrawInfo(scr, dri);
     if (scr) UnlockPubScreen(0, scr);
     
+    if (LayersBase) CloseLibrary(LayersBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
     
@@ -48,6 +53,11 @@ static void openlibs(void)
     {
     	cleanup("Can't open graphics.library!");
     }
+    
+    if (!(LayersBase = OpenLibrary("layers.library", 39)))
+    {
+    	cleanup("Can't open layers.library!");
+    }
    
 }
 
@@ -61,6 +71,10 @@ static void makeshape(void)
 {
     struct Rectangle rect;
     
+#if 1
+    if (!(shape = NewRectRegion(0, 0, WINWIDTH - 1, scr->WBorTop + scr->Font->ta_YSize + 1 - 1)))
+    	cleanup("Can't create region!\n");
+#else
     if (!(shape = NewRegion())) cleanup("Can't create region!\n");
     
     rect.MinX = 0;
@@ -69,6 +83,7 @@ static void makeshape(void)
     rect.MaxY = scr->WBorTop + scr->Font->ta_YSize + 1 - 1;
     
     if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n");
+#endif
     
     rect.MinX = WINCX - 20;
     rect.MinY = 20;
@@ -91,22 +106,21 @@ static void makewin(void)
     UWORD pattern[] = {0x5555, 0xAAAA};
     struct TagItem win_tags[] =
     {
-    	{WA_Left    	, 0	    	    	    	    },
-	{WA_Top     	, 0	    	    	    	    },
-	{WA_Width   	, WINWIDTH  	    	    	    },
-	{WA_Height  	, WINHEIGHT 	    	    	    },
-	{WA_Title   	, (IPTR)"Irregular shaped window"   },
-	{WA_CloseGadget , TRUE	    	    	    	    },
-	{WA_DepthGadget , TRUE	    	    	    	    },
-	{WA_DragBar 	, TRUE	    	    	    	    },
-	{WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
-	{WA_Activate	, TRUE	    	    	    	    },
-	{WA_Shape   	, (IPTR)shape	    	    	    },
-	{TAG_DONE   	    	    	    	    	    }
+    	{WA_Left    	, 0	    	    	    	    	},
+	{WA_Top     	, 0	    	    	    	    	},
+	{WA_Width   	, WINWIDTH  	    	    	    	},
+	{WA_Height  	, WINHEIGHT 	    	    	    	},
+	{WA_Title   	, (IPTR)"Irregular shaped window"   	},
+	{WA_CloseGadget , TRUE	    	    	    	    	},
+	{WA_DepthGadget , TRUE	    	    	    	    	},
+	{WA_DragBar 	, TRUE	    	    	    	    	},
+	{WA_IDCMP   	, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY  },
+	{WA_Activate	, TRUE	    	    	    	    	},
+	{WA_Shape   	, (IPTR)shape	    	    	    	},
+	{TAG_DONE   	    	    	    	    	    	}
     };
     
     win = OpenWindowTagList(0, win_tags);
-    if (win) shape = 0;
     if (!win) cleanup("Can't create window!");    
     
     rp = win->RPort;
@@ -115,7 +129,10 @@ static void makewin(void)
     SetDrMd(rp, JAM2);
     
     SetAfPt(rp, pattern, 1);
-    RectFill(rp, 0, 20, WINWIDTH - 1, WINHEIGHT - 1);
+    RectFill(rp, win->BorderLeft,
+    	    	 win->BorderTop,
+		 WINWIDTH - 1 - win->BorderRight,
+		 WINHEIGHT - 1 - win->BorderBottom);
     SetAfPt(rp, 0, 0);
     
     SetAPen(rp, dri->dri_Pens[SHINEPEN]);
@@ -137,7 +154,28 @@ static void makewin(void)
 
 static void handleall(void)
 {
-    WaitPort(win->UserPort);
+    struct IntuiMessage *imsg;
+    BOOL quitme = FALSE;
+    
+    while(!quitme)
+    {
+    	WaitPort(win->UserPort);
+	while ((imsg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	{
+	    switch (imsg->Class)
+	    {
+	    	case IDCMP_CLOSEWINDOW: 
+		    quitme = TRUE;
+		    break;
+	    	
+		case IDCMP_VANILLAKEY:
+		    actshape = 1 - actshape;
+		    ChangeLayerShape(win->WLayer, (actshape ? NULL : shape), NULL);
+		    break;
+	    }
+	    ReplyMsg((struct Message *)imsg);
+	}
+    }
 }
 
 int main(void)
