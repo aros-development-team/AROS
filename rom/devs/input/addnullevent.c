@@ -53,4 +53,4 @@
     }
 
     AROS_LIBFUNC_EXIT
-} /* PeekQualifier */
+} /* AddNullEvent */
