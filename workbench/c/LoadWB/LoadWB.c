@@ -55,6 +55,7 @@
 #include <proto/workbench.h>
 #include <proto/gadtools.h>
 #include <proto/dos.h>
+#include <proto/alib.h>
 
 #include <stdlib.h>
 
@@ -138,7 +139,6 @@ int InitWB()
     LayoutMenusA(menus, vi, NULL);
     SetMenuStrip(wbwindow, menus);
     OffMenu(wbwindow, FULLMENUNUM(0,0,NOSUB));
-    OffMenu(wbwindow, FULLMENUNUM(0,1,NOSUB));
 
     return TRUE;
 }
@@ -264,13 +264,6 @@ kprintf("LoadWB.HandleAll\n");
 
 	if (sigs & notifysig) HandleNotify();
     }
-}
-
-/*********************************************************************************************/
-
-void ExecuteCommand()
-{
-kprintf("LoadWB.ExecuteCommand\n");
 }
 
 /*********************************************************************************************/
