@@ -1,7 +1,6 @@
 #ifndef ZUNE_PREFERENCESWINDOW_H
 #define ZUNE_PREFERENCESWINDOW_H
 
-#define MUIMASTER_YES_INLINE_STDARG
 #include <libraries/mui.h>
 
 /*** Name *******************************************************************/
