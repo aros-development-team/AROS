@@ -46,6 +46,7 @@
 static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 
+
 enum {
     DRAGBAR = 0,
     CLOSEGAD,
@@ -133,7 +134,8 @@ int intui_GetWindowSize (void)
 
 #define TITLEBAR_HEIGHT 14
 int intui_OpenWindow (struct Window * w,
-	struct IntuitionBase * IntuitionBase)
+	struct IntuitionBase * IntuitionBase,
+	struct BitMap        * SuperBitMap)
 {
     /* Create a layer for the window */
     LONG layerflags = 0;
@@ -146,18 +148,32 @@ int intui_OpenWindow (struct Window * w,
     /* Just insert some default values, should be taken from
        w->WScreen->WBorxxxx */
     
-    if (0 != (w->Flags & WFLG_BACKDROP))   
-      layerflags = LAYERBACKDROP;
+    /* Set the layer's flags accorind to the flags of the
+    ** window
+    */
     
-    w->WLayer = CreateUpfrontLayer( &w->WScreen->LayerInfo
+    /* refresh type */
+    if (0 != (w->Flags & WFLG_SIMPLE_REFRESH))
+      layerflags |= LAYERSIMPLE;
+    else
+      if (0!= (w->Flags & WFLG_SUPER_BITMAP))
+        layerflags |= (LAYERSMART|LAYERSUPER);
+      else
+        layerflags |= LAYERSMART;
+        
+    if (0 != (w->Flags & WFLG_BACKDROP))   
+      layerflags |= LAYERBACKDROP;
+
+    w->WLayer = CreateUpfrontHookLayer( 
+                &w->WScreen->LayerInfo
 		, w->WScreen->RastPort.BitMap
 		, w->LeftEdge
 		, w->TopEdge
 		, w->LeftEdge + w->Width
 		, w->TopEdge  + w->Height
 		, layerflags
-		, NULL);
-    
+		, LAYERS_NOBACKFILL
+		, SuperBitMap);
 
     D(bug("Layer created: %p\n", w->WLayer));
     D(bug("Window created: %p\n", w));
@@ -287,6 +303,7 @@ struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBas
     D(bug("screen: %p\n", scr));
 
     /* What layer ? */
+    D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
     l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
     if (!l)
     {
@@ -303,6 +320,7 @@ struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBas
     return new_w;
     
 }
+
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 	LONG size, struct KeyMap * km)
 {
@@ -345,7 +363,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	
 	
 	
-	/* Now find out what gadgets the window want */
+	/* Now find out what gadgets the window wants */
 	if (    w->Flags & WFLG_CLOSEGADGET 
 	     || w->Flags & WFLG_DEPTHGADGET
 	     || w->Flags & WFLG_HASZOOM
