@@ -15,3 +15,6 @@ thread
 thread.c
 make.opts
 errors
+configure.scan
+TODO
+mmake
