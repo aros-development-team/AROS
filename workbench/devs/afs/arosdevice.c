@@ -16,85 +16,24 @@
 #include <dos/dos.h>
 
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <aros/debug.h>
 
 #include "os.h"
 #include "afshandler.h"
 #include "volumes.h"
 
-extern const char name[];
-extern const char version[];
-extern const APTR inittab[4];
-extern void *const afsfunctable[];
-extern const UBYTE afsdatatable;
-extern struct AFSBase *AROS_SLIB_ENTRY(init,afsdev)();
-extern void AROS_SLIB_ENTRY(open,afsdev)();
-extern BPTR AROS_SLIB_ENTRY(close,afsdev)();
-extern BPTR AROS_SLIB_ENTRY(expunge,afsdev)();
-extern int AROS_SLIB_ENTRY(null,afsdev)();
-extern void AROS_SLIB_ENTRY(beginio,afsdev)();
-extern LONG AROS_SLIB_ENTRY(abortio,afsdev)();
+#include LC_LIBDEFS_FILE
+
 extern void AFS_work();
-extern const char afshandlerend;
 
-int AFS_entry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, afsbase)
 {
-	/* If the device was executed by accident return error code. */
-	return -1;
-}
-
-const struct Resident AFS_resident=
-{
-	RTC_MATCHWORD,
-	(struct Resident *)&AFS_resident,
-	(APTR)&afshandlerend,
-	RTF_COLDSTART | RTF_AFTERDOS | RTF_AUTOINIT,
-	41,
-	NT_DEVICE,
-	-122,
-	(char *)name,
-	(char *)&version[6],
-	(ULONG *)inittab
-};
-
-static const char name[]="afs.handler";
-static const char version[]="$VER: afs-handler 41.0 (2001-01-17)\n";
-
-static const APTR inittab[4]=
-{
-	(APTR)sizeof(struct AFSBase),
-	(APTR)afsfunctable,
-	(APTR)&afsdatatable,
-	&AROS_SLIB_ENTRY(init,afsdev)
-};
-
-void *const afsfunctable[]=
-{
-	&AROS_SLIB_ENTRY(open,afsdev),
-	&AROS_SLIB_ENTRY(close,afsdev),
-	&AROS_SLIB_ENTRY(expunge,afsdev),
-	&AROS_SLIB_ENTRY(null,afsdev),
-	&AROS_SLIB_ENTRY(beginio,afsdev),
-	&AROS_SLIB_ENTRY(abortio,afsdev),
-	(void *)-1
-};
-
-const UBYTE afsdatatable = 0;
-
-AROS_UFH3(struct AFSBase *, AROS_SLIB_ENTRY(init,afsdev),
- AROS_UFHA(struct AFSBase *, afsbase, D0),
- AROS_UFHA(BPTR,             segList, A0),
- AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
-{
-	AROS_USERFUNC_INIT
+	AROS_SET_LIBFUNC_INIT
 
 	struct Task *task;
 	APTR stack;
 
-	afsbase->seglist = segList;
-	afsbase->sysbase = SysBase;
 	afsbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",39);
 	if (afsbase->dosbase != NULL)
 	{
@@ -134,7 +73,7 @@ AROS_UFH3(struct AFSBase *, AROS_SLIB_ENTRY(init,afsdev),
 					task->tc_SPReg = (BYTE *)task->tc_SPLower+SP_OFFSET;
    	    	    	    	    #endif
 					if (NewAddTask(task,AFS_work,NULL,tags) != NULL)
-						return afsbase;
+						return TRUE;
 					FreeMem(stack, AROS_STACKSIZE);
 				}
 				FreeMem(task, sizeof(struct Task));
@@ -143,25 +82,24 @@ AROS_UFH3(struct AFSBase *, AROS_SLIB_ENTRY(init,afsdev),
 		}
 		CloseLibrary((struct Library *)afsbase->dosbase);
 	}
-	return NULL;
-	AROS_USERFUNC_EXIT
+	return FALSE;
+	AROS_SET_LIBFUNC_EXIT
 }
 
 #include "baseredef.h"
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-           struct AFSBase *, afsbase, 1,afsdev)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, afsbase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-	AROS_LIBFUNC_INIT
+	AROS_SET_DEVFUNC_INIT
 #if 0
 	struct Volume *volume;
 #endif
 
-	unitnum = flags = 0;
-	afsbase->device.dd_Library.lib_OpenCnt++;
 	afsbase->rport.mp_SigTask=FindTask(NULL);
 #if 0
 	volume = initVolume
@@ -192,50 +130,35 @@ AROS_LH3(void, open,
 	{
 		AddTail(&afsbase->device_list, &(((struct AfsHandle *)iofs->IOFS.io_Unit)->volume->ln));
 		iofs->IOFS.io_Device = &afsbase->device;
-		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 		iofs->IOFS.io_Error = 0;
-		return;
+		return TRUE;
 	}
 #endif
-	afsbase->device.dd_Library.lib_OpenCnt--;
 	iofs->IOFS.io_Error = IOERR_OPENFAIL;
-	AROS_LIBFUNC_EXIT	
+	return FALSE;
+	AROS_SET_DEVFUNC_EXIT	
 }
 
-AROS_LH0(BPTR, expunge, struct AFSBase *, afsbase, 3, afsdev)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, afsbase)
 {
-	AROS_LIBFUNC_INIT
+	AROS_SET_LIBFUNC_INIT
 
-	BPTR retval;
-
-	if (afsbase->device.dd_Library.lib_OpenCnt != 0)
-	{
-		afsbase->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-		return 0;
-	}
 	RemTask(afsbase->port.mp_SigTask);
 	FreeMem(((struct Task *)afsbase->port.mp_SigTask)->tc_SPLower,AROS_STACKSIZE);
 	FreeMem(afsbase->port.mp_SigTask, sizeof(struct Task));
 	CloseLibrary((struct Library *)IntuitionBase);
 	CloseLibrary((struct Library *)DOSBase);
-	Remove(&afsbase->device.dd_Library.lib_Node);
-	retval = afsbase->seglist;
-	FreeMem
-	(
-		(char *)afsbase-afsbase->device.dd_Library.lib_NegSize,
-			afsbase->device.dd_Library.lib_NegSize+
-			afsbase->device.dd_Library.lib_PosSize
-	);
-	return retval;
+	return TRUE;
 
-	AROS_LIBFUNC_EXIT
+	AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-      struct AFSBase *, afsbase, 2, afsdev)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, afsbase,
+		      struct IOFileSys, iofs
+)
 {
-	AROS_LIBFUNC_INIT
+	AROS_SET_DEVFUNC_INIT
 	struct Volume *volume;
 
 	afsbase->rport.mp_SigTask = FindTask(NULL);
@@ -251,35 +174,24 @@ AROS_LH1(BPTR, close,
 	{
 		Remove(&volume->ln);
 		uninitVolume(afsbase, volume);
-		iofs->IOFS.io_Device=(struct Device *)-1;
-		if (--afsbase->device.dd_Library.lib_OpenCnt == 0)
-		{
-			/* Delayed expunge pending? */
-			if (afsbase->device.dd_Library.lib_Flags & LIBF_DELEXP)
-			{
-				/* Then expunge the device */
-				return expunge();
-			}
-		}
+		return TRUE;
 	}
 	else
 	{
 		iofs->IOFS.io_Error = ERROR_OBJECT_IN_USE;
+		return FALSE;
 	}
-	return 0;
-	AROS_LIBFUNC_EXIT
+	AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct AFSBase *, afsbase, 4, afsdev)
-{
-	AROS_LIBFUNC_INIT
-	return 0;
-	AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge),0)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct AFSBase *, afsbase, 5, afsdev)
+           struct AFSBase *, afsbase, 5, Afs)
 {
 	AROS_LIBFUNC_INIT
 	/* WaitIO will look into this */
@@ -293,11 +205,9 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct AFSBase *, afsbase, 6, afsdev)
+           struct AFSBase *, afsbase, 6, Afs)
 {
 	AROS_LIBFUNC_INIT
 	return 0;
 	AROS_LIBFUNC_EXIT
 }
-
-static const char afshandlerend = 0;

@@ -23,6 +23,4 @@ struct AFSBase
 	struct List device_list;	/* list of mounted devices (struct Volume) */
 };
 
-#define expunge() AROS_LC0(BPTR, expunge, struct AFSBase *, afsbase, 3, afs)
-
 #endif
