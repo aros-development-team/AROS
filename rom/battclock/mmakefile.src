@@ -6,10 +6,6 @@ include $(TOP)/config/make.cfg
 
 FUNCTIONS := readbattclock resetbattclock writebattclock
 
-%build_module_macro mmake=kernel-battclock \
-  modname=battclock modtype=resource \
-  funcs=$(FUNCTIONS) \
-  conffile=lib.conf \
-  genincludes=yes
-
-%common
+%build_module mmake=kernel-battclock \
+    modname=battclock modtype=resource \
+    files="battclock_init $(FUNCTIONS)"
