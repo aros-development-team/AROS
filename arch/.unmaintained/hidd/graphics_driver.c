@@ -4473,13 +4473,13 @@ ULOCK_HIDD(bm);
 		    	    continue;
 		    
 		    	fakeRP->BitMap = CR->BitMap;
-		    
+
 		    	msg.MinX = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	msg.MinY = intersect.MinY - CR->bounds.MinY;
 		    	msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
 		    	msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
 		    
-		    	calllayerhook(L->BackFill, rp, &msg);
+		    	calllayerhook(L->BackFill, fakeRP /* rp */, &msg);
 			
 		    }
 

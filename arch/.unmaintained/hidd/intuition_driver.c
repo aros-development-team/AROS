@@ -203,7 +203,10 @@ int intui_OpenWindow (struct Window * w,
 				      
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
-       
+     
+      /* This layer belongs to a window */
+      L->Window = (APTR)w;
+     
       w->GZZWidth = w->Width  - w->BorderLeft - w->BorderRight;
       w->GZZHeight= w->Height - w->BorderTop  - w->BorderBottom;
 
@@ -404,26 +407,33 @@ void intui_RefreshWindowFrame(struct Window *w)
     ReturnVoid("intui_RefreshWindowFrame");
 }
 
-void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
+    BOOL success;
     if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
     {
-      MoveSizeLayer(window->BorderRPort->Layer,
-    		   (x - window->TopEdge),
-    		   (y - window->LeftEdge),
-    		   (width - window->Width),
-    		   (height - window->Height) );
-      RefreshWindowFrame(window);
+      success = MoveSizeLayer(window->BorderRPort->Layer,
+    		              x - window->LeftEdge,
+    		              y - window->TopEdge,
+    		              width - window->Width,
+                              height - window->Height );
+      if (FALSE == success)
+        return FALSE;
      
       window->GZZWidth  += (width - window->Width);
       window->GZZHeight += (height - window->Height);                
     }
-    MoveSizeLayer(window->WLayer,
-    		  (x - window->TopEdge),
-    		  (y - window->LeftEdge),
-    		  (width - window->Width),
-    		  (height - window->Height) );
+    success = MoveSizeLayer(window->WLayer,
+    	                    x - window->LeftEdge,
+    		            y - window->TopEdge,
+                            width - window->Width,
+                            height - window->Height );
+    if (FALSE == success)
+    {
+#warn FIXME: If this fails, then the MoveSizeLayer() above must be undone.
+        return FALSE;
+    }
 
     window->LeftEdge= x;
     window->TopEdge = y;
@@ -431,6 +441,8 @@ void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     window->Height  = height;
 
     RefreshWindowFrame(window);
+
+    return TRUE;
 }
 
 
@@ -771,7 +783,6 @@ void windowneedsrefresh(struct Window * w,
 
   if (NULL == w->UserPort)
     return;
-  
   
   /* Refresh the window's gadgetry */
 kprintf("REFRESHING WINDOW GADGETS\n");
