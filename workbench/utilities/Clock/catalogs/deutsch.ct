@@ -1,0 +1,85 @@
+## version $VER: clock.catalog 1.0 (16.10.2002)
+## codeset 0
+## language deutsch
+;
+MSG_CANT_OPEN_LIB
+Kann %s V%ld nicht öffnen!\n
+; Can't open %s V%ld!\n
+;
+;
+MSG_CANT_LOCK_SCR
+Kann public Screen nicht locken!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Kann DrawInfo nicht ermitteln!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Kann VisualInfo nicht ermitteln!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Kann Gadgets nicht erzeugen!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Kann Menus nicht erzeugen!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Kann Fenster nicht erzeugen!
+; Can't create window!
+;
+MSG_WINTITLE
+Uhr
+; Clock
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_ANALOG
+A\0Analog
+; A\0Analog
+;
+MSG_MEN_PROJECT_DIGITAL
+D\0Digital
+; D\0Digital
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Beenden
+; Q\0Quit
+;
+MSG_MEN_SETTINGS
+Einstellungen
+; Settings
+;
+MSG_MEN_SETTINGS_DATE
+ \0Datum
+;  \0Date
+;
+MSG_MEN_SETTINGS_SECONDS
+ \0Sekunden
+;  \0Seconds
+;
+MSG_MEN_SETTINGS_DIGITALFORMAT
+ \0Digital-Format
+; \0Digital Format
+;
+MSG_MEN_SETTINGS_ALARM
+W\0Wecker
+; M\0Alarm
+;
+MSG_MEN_SETTINGS_SETALARM
+ \0Wecker stellen ...
+; \0Set Alarm...
+;
+MSG_MEN_SETTINGS_SAVE
+ \0Einstellungen speichern
+; \0Save Settings
+;

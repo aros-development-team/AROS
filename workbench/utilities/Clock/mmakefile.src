@@ -1,0 +1,26 @@
+#   $Id$
+#
+#   Makefile to make Clock.
+
+include $(TOP)/config/make.cfg
+
+FILES := main misc vars locale
+
+EXEDIR := $(AROSDIR)/Utilities
+EXE := $(EXEDIR)/Clock
+
+USE_AROSLIB := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
+
+#MM workbench-utilities : includes linklibs setup-clock-catalogs
+
+%make_prog_setup mmake=workbench-utilities
+
+workbench-utilities : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
