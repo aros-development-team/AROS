@@ -87,7 +87,7 @@ void * memccpy (void * restrict dest, const void * restrict src,
 		    int c, size_t n);
 
 int bcmp (const void * s1, const void * s2, int n);
-void bcopy (const void * src, void * dst, int n);
+void bcopy (const void * src, void * dst, size_t n);
 void bzero (void * src, int n);
 
 /* Macros */
