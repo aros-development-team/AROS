@@ -22,7 +22,9 @@
 #else
 #    undef kprintf
 #    define kprintf(...) (void)0
+# ifndef __MORPHOS__
      typedef ULONG IPTR;
+# endif
 #endif
      
 
@@ -51,6 +53,17 @@ UBYTE version[] = "$VER: Blanker 0.9 (02.10.2002)";
 
 #include "strings.h"
 
+#ifdef __MORPHOS__
+static void BlankerAction(void);
+
+static struct EmulLibEntry BlankerActionEntry =
+{
+   TRAP_LIB,
+   0,
+   (void (*)(void))BlankerAction
+};
+#endif
+
 static struct NewBroker nb =
 {
    NB_VERSION,
@@ -60,7 +73,7 @@ static struct NewBroker nb =
    NBU_NOTIFY | NBU_UNIQUE, 
    0,
    0,
-   NULL,                             
+   NULL,
    0 
 };
 
@@ -80,7 +93,9 @@ libTable[] =
     { NULL  	    	    	    	    	  }
 };
 
+#ifdef __AROS__
 struct LocaleBase   	*LocaleBase    = NULL;
+#endif
 struct Library      	*GadToolsBase  = NULL;
 struct Library      	*CxBase        = NULL;
 struct IntuitionBase 	*IntuitionBase = NULL;
@@ -280,8 +295,16 @@ static void GetArguments(void)
 
 /************************************************************************************/
 
+#ifdef __MORPHOS__
+static void BlankerAction(void)
+#else
 static void BlankerAction(CxMsg *msg,CxObj *obj)
+#endif
 {
+#ifdef __MORPHOS__
+    CxMsg *msg = (CxMsg *)REG_A0;
+    CxObj *obj = (CxObj *)REG_A1;
+#endif
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
     static ULONG       timecounter = 0;
 
@@ -340,7 +363,11 @@ static void InitCX(void)
         Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
     }
     
+#ifdef __MORPHOS__
+    if (!(cxcust = CxCustom(&BlankerActionEntry, 0)))
+#else
     if (!(cxcust = CxCustom(BlankerAction, 0)))
+#endif
     {
         Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
     }
