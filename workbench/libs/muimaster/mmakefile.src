@@ -2,13 +2,21 @@
 
 include $(TOP)/config/make.cfg
 
-MAKE_BUILTIN_ABOUTMUI := no
-MAKE_BUILTIN_BOOPSI   := yes
-MAKE_BUILTIN_GAUGE    := yes
-MAKE_BUILTIN_POPASL   := yes
-MAKE_BUILTIN_POPFRAME := yes
-MAKE_BUILTIN_POPIMAGE := yes
-MAKE_BUILTIN_POPPEN   := yes
+MAKE_BUILTIN_ABOUTMUI     := no
+MAKE_BUILTIN_BOOPSI       := yes
+MAKE_BUILTIN_COLORADJUST  := yes
+MAKE_BUILTIN_COLORFIELD   := yes
+MAKE_BUILTIN_FRAMEADJUST  := yes
+MAKE_BUILTIN_FRAMEDISPLAY := yes
+MAKE_BUILTIN_GAUGE        := yes
+MAKE_BUILTIN_IMAGEADJUST  := yes
+MAKE_BUILTIN_IMAGEDISPLAY := yes
+MAKE_BUILTIN_PENADJUST    := yes
+MAKE_BUILTIN_PENDISPLAY   := yes
+MAKE_BUILTIN_POPASL       := yes
+MAKE_BUILTIN_POPFRAME     := yes
+MAKE_BUILTIN_POPIMAGE     := yes
+MAKE_BUILTIN_POPPEN       := yes
 
 CLASSES := \
     application \
@@ -17,28 +25,20 @@ CLASSES := \
     bitmap \
     bodychunk \
     chunkyimage \
-    coloradjust \
-    colorfield \
     configdata \
     cycle \
     dataspace \
     family \
-    frameadjust \
-    framedisplay \
     group \
     iconlist \
     iconlistview \
     image \
-    imageadjust \
-    imagedisplay \
     list \
     listview \
     mccprefs \
     menuitem \
     notify \
     numeric \
-    penadjust \
-    pendisplay \
     popobject \
     popstring \
     prop \
@@ -114,11 +114,67 @@ else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_BOOPSI=0
 endif
 
+ifeq ($(MAKE_BUILTIN_COLORADJUST),yes)
+    CLASSES     := $(CLASSES) coloradjust
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_COLORADJUST=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_COLORADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_COLORFIELD),yes)
+    CLASSES     := $(CLASSES) colorfield
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_COLORFIELD=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_COLORFIELD=0
+endif
+
+ifeq ($(MAKE_BUILTIN_FRAMEADJUST),yes)
+    CLASSES     := $(CLASSES) frameadjust
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_FRAMEDISPLAY),yes)
+    CLASSES     := $(CLASSES) framedisplay
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=0
+endif
+
 ifeq ($(MAKE_BUILTIN_GAUGE),yes)
     CLASSES     := $(CLASSES) gauge
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=1
 else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_IMAGEADJUST),yes)
+    CLASSES     := $(CLASSES) imageadjust
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_IMAGEDISPLAY),yes)
+    CLASSES     := $(CLASSES) imagedisplay
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PENADJUST),yes)
+    CLASSES     := $(CLASSES) penadjust
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PENEADJUST=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PENADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PENDISPLAY),yes)
+    CLASSES     := $(CLASSES) pendisplay
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PENDISPLAY=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PENDISPLAY=0
 endif
 
 ifeq ($(MAKE_BUILTIN_POPASL),yes)

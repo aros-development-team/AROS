@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -23,6 +23,7 @@
 #include "muimaster_intern.h"
 #include "textengine.h"
 #include "support.h"
+#include "support_classes.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -33,7 +34,7 @@ extern struct Library *MUIMasterBase;
 #define FLAG_PEN_ALLOCATED  2
 #define FLAG_NO_PEN 	    4
 
-struct MUI_ColorfieldData
+struct Colorfield_DATA
 {
     ULONG rgb[3];
     UBYTE pen;
@@ -45,7 +46,7 @@ struct MUI_ColorfieldData
 **************************************************************************/
 static IPTR Colorfield_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ColorfieldData   *data;
+    struct Colorfield_DATA   *data;
     struct TagItem  	    	*tag, *tags;
     ULONG   	    	    	*rgb;
     
@@ -94,7 +95,7 @@ static IPTR Colorfield_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Colorfield_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ColorfieldData   *data;
+    struct Colorfield_DATA   *data;
     struct TagItem  	    	*tag, *tags;
     ULONG   	    	    	*rgb;
     BOOL    	    	    	 newcol = FALSE;
@@ -162,7 +163,7 @@ static IPTR Colorfield_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG  Colorfield_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
-    struct MUI_ColorfieldData *data  = INST_DATA(cl, obj);
+    struct Colorfield_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
 
     switch (msg->opg_AttrID)
@@ -200,7 +201,7 @@ static ULONG  Colorfield_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Colorfield_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_ColorfieldData *data = INST_DATA(cl,obj);
+    struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
@@ -243,7 +244,7 @@ static IPTR Colorfield_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 **************************************************************************/
 static IPTR Colorfield_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_ColorfieldData *data = INST_DATA(cl,obj);
+    struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
     if (data->flags & FLAG_PEN_ALLOCATED)
     {
@@ -278,7 +279,7 @@ static IPTR Colorfield_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 **************************************************************************/
 static IPTR Colorfield_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_ColorfieldData *data = INST_DATA(cl,obj);
+    struct Colorfield_DATA *data = INST_DATA(cl,obj);
 
     DoSuperMethodA(cl,obj,(Msg)msg);
     
@@ -305,7 +306,7 @@ static IPTR Colorfield_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
     return 0;
 }
 
-
+#if ZUNE_BUILTIN_COLORFIELD
 BOOPSI_DISPATCHER(IPTR, Colorfield_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -322,13 +323,11 @@ BOOPSI_DISPATCHER(IPTR, Colorfield_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Colorfield_desc = { 
+const struct __MUIBuiltinClass _MUI_Colorfield_desc =
+{ 
     MUIC_Colorfield, 
     MUIC_Area, 
-    sizeof(struct MUI_ColorfieldData), 
+    sizeof(struct Colorfield_DATA), 
     (void*)Colorfield_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_COLORFIELD */

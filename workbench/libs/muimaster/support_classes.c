@@ -116,7 +116,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     ZUNE_GAUGE_DESC
     ZUNE_ABOUTMUI_DESC
     &_MUI_Settingsgroup_desc,
-    &_MUI_Imageadjust_desc,
+    ZUNE_IMAGEADJUST_DESC
     ZUNE_POPIMAGE_DESC
     &_MUI_Scale_desc,
     &_MUI_Radio_desc,
@@ -125,16 +125,16 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_IconVolumeList_desc,
     &_MUI_IconListview_desc,
     &_MUI_Balance_desc,
-    &_MUI_Colorfield_desc,
-    &_MUI_Coloradjust_desc,
-    &_MUI_Imagedisplay_desc,
-    &_MUI_Pendisplay_desc,
-    &_MUI_Penadjust_desc,
+    ZUNE_COLORFIELD_DESC
+    ZUNE_COLORADJUST_DESC
+    ZUNE_IMAGEDISPLAY_DESC
+    ZUNE_PENDISPLAY_DESC
+    ZUNE_PENADJUST_DESC
     ZUNE_POPPEN_DESC
     &_MUI_Mccprefs_desc,
-    &_MUI_Framedisplay_desc,
+    ZUNE_FRAMEDISPLAY_DESC
     ZUNE_POPFRAME_DESC
-    &_MUI_Frameadjust_desc
+    ZUNE_FRAMEADJUST_DESC
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)

@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,10 +26,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ImageadjustData
+struct Imageadjust_DATA
 {
     Object *bitmap_string;
     Object *bitmap_image;
@@ -55,7 +56,7 @@ struct MUI_ImageadjustData
 
 static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
-    struct MUI_ImageadjustData *data = *(struct MUI_ImageadjustData **)msg;
+    struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
     char buf[255];
     STRPTR name;
     
@@ -70,7 +71,7 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 
 static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
-    struct MUI_ImageadjustData *data = (struct MUI_ImageadjustData *)hook->h_Data;
+    struct Imageadjust_DATA *data = (struct Imageadjust_DATA *)hook->h_Data;
     int new_selected = (int)msg[0];
 
     if (data->last_pattern_selected != -1)
@@ -81,7 +82,7 @@ static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
 
 static VOID Vector_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
-    struct MUI_ImageadjustData *data = (struct MUI_ImageadjustData *)hook->h_Data;
+    struct Imageadjust_DATA *data = (struct Imageadjust_DATA *)hook->h_Data;
     int new_selected = (int)msg[0];
 
     if (data->last_vector_selected != -1)
@@ -176,7 +177,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 /**************************************************************************
  ...
 **************************************************************************/
-STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *data, char *spec)
+STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data, char *spec)
 {
     char *s;
     if (!spec) spec = "0:128";
@@ -257,7 +258,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 **************************************************************************/
 static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ImageadjustData   *data;
+    struct Imageadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
     static const char *labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", NULL};
     static const char *labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
@@ -455,7 +456,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 STATIC IPTR Imageadjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 
     if (data->imagespec) FreeVec(data->imagespec);
 
@@ -469,7 +470,7 @@ STATIC IPTR Imageadjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
 STATIC IPTR Imageadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
-    struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -489,7 +490,7 @@ STATIC IPTR Imageadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    struct Imageadjust_DATA *data = INST_DATA(cl, obj);
     struct pages {
 	LONG type;
 	LONG pos[5];
@@ -594,13 +595,13 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    struct Imageadjust_DATA *data = INST_DATA(cl, obj);
     DoMethod(data->external_list,MUIM_List_Clear);
     AddDirectory(data->external_list,"MUI:Images",-1);
     return 0;
 }
 
-
+#if ZUNE_BUILTIN_IMAGEADJUST
 BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -616,13 +617,11 @@ BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Imageadjust_desc = { 
+const struct __MUIBuiltinClass _MUI_Imageadjust_desc =
+{ 
     MUIC_Imageadjust, 
     MUIC_Register,
-    sizeof(struct MUI_ImageadjustData), 
+    sizeof(struct Imageadjust_DATA), 
     (void*)Imageadjust_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_IMAGEADJUST */

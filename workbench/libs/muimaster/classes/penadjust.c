@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,11 +26,12 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 #include "penspec.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PenadjustData
+struct Penadjust_DATA
 {
     struct MUI_PenSpec      	penspec;
     struct MUI_PenSpec_intern	intpenspec;
@@ -39,7 +40,7 @@ struct MUI_PenadjustData
     Object  	    	    	*coloradjobj;
 };
 
-static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
+static void UpdateState(Object *obj, struct Penadjust_DATA *data)
 {  
     zune_pen_spec_to_intern(&data->penspec, &data->intpenspec);
 
@@ -62,7 +63,7 @@ static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
     }  
 }
 
-static void UpdatePenspec(Object *obj, struct MUI_PenadjustData *data)
+static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 {
     IPTR    	    	      val;
 
@@ -126,7 +127,7 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     static const char *lv_labels[] = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
     static const struct Hook          muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
 
-    struct MUI_PenadjustData   *data;
+    struct Penadjust_DATA   *data;
     struct TagItem  	       *tag, *tags;
     Object  	    	       *listobj, *sliderobj, *coloradjobj;
 
@@ -181,7 +182,7 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 STATIC IPTR Penadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem  	     *tags,*tag;
-    struct MUI_PenadjustData *data = INST_DATA(cl, obj);
+    struct Penadjust_DATA *data = INST_DATA(cl, obj);
     BOOL    	    	      update = FALSE;
     
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -205,7 +206,7 @@ STATIC IPTR Penadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Penadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_PenadjustData *data = INST_DATA(cl, obj);
+    struct Penadjust_DATA *data = INST_DATA(cl, obj);
     IPTR    	    	     *store = msg->opg_Storage;
 
     switch(msg->opg_AttrID)
@@ -223,7 +224,7 @@ static IPTR Penadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return TRUE;
 }
 
-
+#if ZUNE_BUILTIN_PENADJUST
 BOOPSI_DISPATCHER(IPTR, Penadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -236,13 +237,11 @@ BOOPSI_DISPATCHER(IPTR, Penadjust_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Penadjust_desc = { 
+const struct __MUIBuiltinClass _MUI_Penadjust_desc =
+{ 
     MUIC_Penadjust, 
     MUIC_Register,
-    sizeof(struct MUI_PenadjustData), 
+    sizeof(struct Penadjust_DATA), 
     (void*)Penadjust_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_PENADJUST */

@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -24,11 +24,12 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 #include "imspec.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ImagedisplayData
+struct Imagedisplay_DATA
 {
     char *spec;
     struct MUI_ImageSpec_intern *img;
@@ -46,7 +47,7 @@ struct MUI_ImagedisplayData
 **************************************************************************/
 static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ImagedisplayData   *data;
+    struct Imagedisplay_DATA   *data;
     struct TagItem  	    *tag, *tags;
     
     D(bug("Imagedisplay_New starts\n"));
@@ -102,7 +103,7 @@ static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Imagedisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     zune_image_spec_free(data->spec);
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -114,7 +115,7 @@ static IPTR Imagedisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Imagedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -151,7 +152,7 @@ static IPTR Imagedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Imagedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
 	case MUIA_Imagedisplay_Spec:
@@ -167,7 +168,7 @@ static IPTR Imagedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Imagedisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return NULL;
@@ -182,7 +183,7 @@ static IPTR Imagedisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup
 **************************************************************************/
 static IPTR Imagedisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     if (data->spec)
 	zune_imspec_cleanup(data->img);
@@ -213,7 +214,7 @@ static IPTR Imagedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
 **************************************************************************/
 static IPTR Imagedisplay_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -227,7 +228,7 @@ static IPTR Imagedisplay_Show(struct IClass *cl, Object *obj, struct MUIP_Show *
 **************************************************************************/
 static IPTR Imagedisplay_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     if (data->img)
 	zune_imspec_hide(data->img);
@@ -240,7 +241,7 @@ static IPTR Imagedisplay_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *m
 **************************************************************************/
 static IPTR Imagedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
-    struct MUI_ImagedisplayData *data = INST_DATA(cl, obj);
+    struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -290,7 +291,7 @@ static IPTR Imagedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *m
     return 1;
 }
 
-
+#if ZUNE_BUILTIN_IMAGEDISPLAY
 BOOPSI_DISPATCHER(IPTR, Imagedisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -310,13 +311,11 @@ BOOPSI_DISPATCHER(IPTR, Imagedisplay_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Imagedisplay_desc = { 
+const struct __MUIBuiltinClass _MUI_Imagedisplay_desc =
+{ 
     MUIC_Imagedisplay, 
     MUIC_Area, 
-    sizeof(struct MUI_ImagedisplayData), 
+    sizeof(struct Imagedisplay_DATA), 
     (void*)Imagedisplay_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_IMAGEDISPLAY */
