@@ -62,7 +62,7 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: AROS exec.strap 1.2 (2.2.97)";
+const char version[] = "$VER: AROS exec.strap 41.3 (9.2.97)";
 
 int start(void)
 {
@@ -75,7 +75,8 @@ int start(void)
     if (!(*ciapra & CIAF_GAMEPORT0))
     {
 	/* If left mouse button pressed: don't start this time */
-	/* DEBUGGING FEATURE: will probably be removed */
+	/* DEBUGGING FEATURE: will probably be removed, because it won't
+	   stop other AROS modules from being loaded. */
 	return 0;
     }
 
@@ -100,6 +101,8 @@ int start(void)
     /* Produces very strange code. "c:version" prints
        "Kickstart 39.106. Could not find version information for ''" and fails:
     */
+    /* Appears to generate correct code if compiled for 68000, and strange code
+       if compiled for 68020+ */
     SetFunc( 70, SetFunction);
 #endif
 
