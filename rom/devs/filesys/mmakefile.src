@@ -20,7 +20,7 @@ setup :
 
 #MM
 clean ::
-	-$(RM) $(OBJDIR)
+	-$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o : %.c
 	%compile_q

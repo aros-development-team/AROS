@@ -22,7 +22,7 @@ setup :
 
 #MM
 clean ::
-	-$(RM) $(DEVSDIR)
+	-$(RM) $(DEVSDIR) *.err
 
 $(DEVSDIR)/Mountlist : Mountlist
 	$(CP) $< $@

@@ -134,7 +134,7 @@ setup :
 	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
-clean::
+clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c

@@ -33,7 +33,7 @@ setup-exec-unix :
 
 #MM
 clean ::
-	$(RM) $(TESTS) $(OBJS) $(OBJDIR)
+	$(RM) $(TESTS) $(OBJS) $(OBJDIR) *.err
 
 #MM
 check-exec-unix : $(TESTS)
