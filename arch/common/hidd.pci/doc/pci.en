@@ -132,10 +132,10 @@ PCI devices on hosted AROS on Linux). Depending on the DirectBus property,
 some methods may or should be used.
 
 While working with not DirectBus PCI driver, the HIDD_PCIDriver_MapPCI and
-HIDD_PCIDriver_UnMapPCI methods may be used to access memory ranges of PCI
+HIDD_PCIDriver_UnmapPCI methods may be used to access memory ranges of PCI
 device. The first method tries to map PCI memory space to CPU memory space
 (using for example mmap on /dev/mem in case of Linux) so that the given PCI
-memory range may be accessed. UnMapPCI method frees mapping created previously
+memory range may be accessed. UnmapPCI method frees mapping created previously
 with this method.
 
 Additionally, in case of not DirectBus PCI driver, AllocPCIMem and FreePCIMem
@@ -174,7 +174,7 @@ doesn't have to. As all methods are virtual, superclass will do the magic (it
 will use ReadConfigLong and WriteConfigLong methods to access words and bytes
 in both read and write mode).
 
-Additionally , the MapPCI/UnMapPCI and CPUtoPCI/PCItoCPU may require 
+Additionally , the MapPCI/UnmapPCI and CPUtoPCI/PCItoCPU may require 
 rewriting (default is that in case of indirect bus they return
 0xffffffff always and in case of direct bus they return the same address as 
 given).

@@ -115,12 +115,12 @@ APTR HIDD_PCIDriver_MapPCI(OOP_Object *obj, APTR address, ULONG length)
     return OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
-VOID HIDD_PCIDriver_UnMapPCI(OOP_Object *obj, APTR address, ULONG length)
+VOID HIDD_PCIDriver_UnmapPCI(OOP_Object *obj, APTR address, ULONG length)
 {
     STATIC_MID;
-    struct pHidd_PCIDriver_UnMapPCI p;
+    struct pHidd_PCIDriver_UnmapPCI p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_UnMapPCI);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_UnmapPCI);
 
     p.mID = mid;
     p.CPUAddress = address;
