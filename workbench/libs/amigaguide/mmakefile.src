@@ -23,7 +23,8 @@ FUNCS := \
 
 #MM- workbench-libs-amigaguide : includes linklibs
 
-%build_module_macro mmake=workbench-libs-amigaguide modname=amigaguide \
-  modtype=library funcs=$(FUNCS) conffile=lib.conf
+%build_module mmake=workbench-libs-amigaguide \
+    modname=amigaguide modtype=library \
+    files=$(FUNCS)
 
 %common
