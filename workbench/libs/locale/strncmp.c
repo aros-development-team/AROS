@@ -92,11 +92,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[16],
-	AROS_UFCA(STRPTR, string1, A1),
-	AROS_UFCA(STRPTR, string2, A2),
-	AROS_UFCA(ULONG, length, D0),
-	AROS_UFCA(ULONG, type, D1));
+    return AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[16],
+	AROS_LCA(STRPTR, string1, A1),
+	AROS_LCA(STRPTR, string2, A2),
+	AROS_LCA(ULONG, length, D0),
+	AROS_LCA(ULONG, type, D1),
+        struct LocaleBase *, LocaleBase);
 
     AROS_LIBFUNC_EXIT
 } /* StrnCmp */
