@@ -804,14 +804,17 @@ static LONG examine_next(struct filehandle *fh,
      Amiga progs wouldn't know how to treat '.' and '..', i.e. they
      might want to scan recursively the directory and end up scanning
      ./././ etc. */
-
+#undef kprintf
   do
   {
     dir = readdir(ReadDIR);
+    if (NULL == dir)
+      return ERROR_NO_MORE_ENTRIES;  
+
   }  
   while ( 0 == strcmp(dir->d_name,"." ) || 
           0 == strcmp(dir->d_name,"..")     ); 
-  
+
   
   name = (STRPTR)malloc(strlen(pathname)+strlen(dir->d_name)+2);
   
