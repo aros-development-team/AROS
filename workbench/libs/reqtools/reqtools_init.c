@@ -13,17 +13,22 @@
 #include "reqtools_intern.h"
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <devices/conunit.h>
 #include <utility/utility.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <intuition/classes.h>
+#include <libraries/reqtools.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
+#include <aros/macros.h>
 
 #include "initstruct.h"
 #include <stddef.h>
+#include <string.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -228,12 +233,67 @@ AROS_LH1(struct IntReqToolsBase *, open,
     
     /* Keep compiler happy */
     version = 0;
+
+    D(bug("reqtools.library: Inside libopen func\n"));
     
     if (DOSBase == NULL)
-        DOSBase = RTBase->rt.rt_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-    if (DOSBase == NULL)
-        return NULL;
+    {
+        UBYTE configbuffer[RTPREFS_SIZE];
 	
+        DOSBase = RTBase->rt.rt_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+        if (DOSBase == NULL)
+            return NULL;
+
+	    
+	/* Read config file */
+	
+        D(bug("reqtools.library: Inside libopen func. Reading config file\n"));
+	
+	memset(configbuffer, 0, sizeof(configbuffer));
+	
+	if (GetVar("ReqTools.prefs",
+		   configbuffer,
+		   sizeof(configbuffer),
+		   GVF_BINARY_VAR | GVF_GLOBAL_ONLY | LV_VAR | GVF_DONT_NULL_TERM) == RTPREFS_SIZE)
+	{
+	    UBYTE *configptr = configbuffer;
+	    ULONG val;
+	    WORD  i;
+
+	    D(bug("reqtools.library: Inside libopen func. Configfile loaded successfully\n"));
+	    
+#define READ_ULONG 	*((ULONG *)configptr)++
+#define READ_UWORD 	*((UWORD *)configptr)++
+#define RTPREFS 	(RTBase->rt.ReqToolsPrefs)
+
+	    val = READ_ULONG;
+	    RTPREFS.Flags = AROS_LONG2BE(val);
+
+	    for(i = 0;i < RTPREF_NR_OF_REQ; i++)
+	    {
+		val = READ_ULONG;
+		RTPREFS.ReqDefaults[i].Size = AROS_LONG2BE(val);
+
+		val = READ_ULONG;
+		RTPREFS.ReqDefaults[i].ReqPos = AROS_LONG2BE(val);
+
+		val = READ_UWORD;
+		RTPREFS.ReqDefaults[i].LeftOffset = AROS_WORD2BE(val);
+
+		val = READ_UWORD;
+		RTPREFS.ReqDefaults[i].TopOffset = AROS_WORD2BE(val);
+
+		val = READ_UWORD;
+		RTPREFS.ReqDefaults[i].MinEntries = AROS_WORD2BE(val);
+
+		val = READ_UWORD;
+		RTPREFS.ReqDefaults[i].MaxEntries = AROS_WORD2BE(val);	    
+	    }
+	    	
+	}
+	
+    } /* if (DOSBase == NULL) */
+    
     if(IntuitionBase == NULL)
 	IntuitionBase = RTBase->rt.rt_IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if(IntuitionBase == NULL)
