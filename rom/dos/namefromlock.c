@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Retrieve thew full pathname from a lock.
@@ -194,6 +194,8 @@
      
     /* All done. */
     me->pr_Result2=error;
-    return !error;
+    
+    return error ? DOSFALSE : DOSTRUE;
+    
     AROS_LIBFUNC_EXIT
 } /* NameFromLock */
