@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write libdefs.h. Part of genmodule.
@@ -47,7 +47,7 @@ void writeinclibdefs(struct config *cfg)
         "#define LIBBASE          %s\n"
         "#define LIBBASETYPE      %s\n"
         "#define LIBBASETYPEPTR   %s *\n"
-        "#define NAME_STRING      \"%s.%s\"\n"
+        "#define MOD_NAME_STRING  \"%s.%s\"\n"
         "#define VERSION_NUMBER   %u\n"
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"

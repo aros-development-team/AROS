@@ -355,13 +355,10 @@ static int parsemacroname(char *name,
 {
     if
     (
-        cfg->libcall == REGISTERMACRO && 
-	(
-	    strncmp(name, "AROS_LH_", 8)    == 0 || 
-	    strncmp(name, "AROS_PLH_", 9)   == 0 || 
-	    strncmp(name, "AROS_NTLH_", 10) == 0
-        ) 
-    ) 
+        strncmp(name, "AROS_LH_", 8)    == 0
+        || strncmp(name, "AROS_PLH_", 9)   == 0
+        || strncmp(name, "AROS_NTLH_", 10) == 0
+    )
     {
 	struct functionhead *funclistit, *func;
 	char *begin, *end, *funcname;
@@ -448,9 +445,6 @@ static int parsefunctionname(char *name,
 {
     struct conffuncinfo *conffuncit;
     
-    if (cfg->libcall == REGISTERMACRO)
-	return 0;
-    
     for (conffuncit = cfg->conffunclist;
 	 conffuncit!=NULL && strcmp(conffuncit->name, name)!=0;
 	 conffuncit = conffuncit->next
@@ -464,7 +458,7 @@ static int parsefunctionname(char *name,
     {
 	struct functionhead *func, *funclistit;
 
-	func = newfunctionhead(name, cfg->libcall);
+	func = newfunctionhead(name, conffuncit->regcount < 0 ? STACK : REGISTER);
 	func->lvo      = conffuncit->lvo;
 	func->novararg = 1;
 	func->priv     = 0;

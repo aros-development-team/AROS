@@ -29,6 +29,7 @@ void writestart(struct config *cfg, struct functions *functions)
 	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
     );
+
     if (cfg->modtype == DEVICE)
     {
 	fprintf(out,
@@ -44,11 +45,19 @@ void writestart(struct config *cfg, struct functions *functions)
 	    "#include <aros/asmcall.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "#include <dos/dos.h>\n"
-	    "#include <proto/exec.h>\n"
 	    "\n"
 	    "#include \"%s_libdefs.h\"\n"
 	    "\n",
 	    cfg->modulename
+    );
+
+    for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
+	fprintf(out, "%s\n", linelistit->s);
+
+    fprintf(out,
+	    "\n"
+	    "#include <proto/exec.h>\n"
+	    "\n"
     );
     if (!(cfg->options & OPTION_NORESIDENT))
     {
@@ -194,7 +203,7 @@ void writestart(struct config *cfg, struct functions *functions)
 		"    (ULONG) 0\n"
 		"};\n"
 		"\n"
-		"const char GM_UNIQUENAME(LibName)[] = NAME_STRING;\n"
+		"const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
 		"const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
 		"const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
 		"\n"
@@ -510,12 +519,6 @@ void writestart(struct config *cfg, struct functions *functions)
 		"DEFINESET(CLOSEDEV)\n"
 		"\n"
 	);
-    }
-
-    if (cfg->libcall == REGISTER)
-    {
-	for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	    fprintf(out, "%s\n", linelistit->s);
     }
     
     for (funclistit = functions->funclist; funclistit != NULL; funclistit = funclistit->next)

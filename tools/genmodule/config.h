@@ -12,7 +12,6 @@
 
 enum command { CMD_UNSPECIFIED, DUMMY, NORMAL, LIBDEFS };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE };
-enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
                  BIT_DUPBASE
 };
@@ -30,6 +29,10 @@ struct conffuncinfo {
     unsigned int lvo;
     struct stringlist *regs;
     int regcount;
+    /* regcount <  0 => stack based calling
+     * regcount == 0 => register based calling, 0 arguments, libbase in A6
+     * regcount >  0 => register based calling, regcount argument,s libbase in A6
+     */
     struct stringlist *aliases;
 };
 
@@ -56,9 +59,6 @@ struct config
     
     /* Where are the sysbase and seglist fields in the libbase ? */
     char *sysbase_field, *seglist_field, *rootbase_field;
-
-    /* How are the module functions defined */
-    enum libcall libcall;
 
     /* Some additional options, see optionsflags enum above */
     int options;
