@@ -121,7 +121,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return FALSE;
 
-    data->knob_frame = zune_zframe_get(&__zprefs.frames[MUIV_Frame_Knob]);
+    data->knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
 
     InitRastPort(&rp);
     SetFont(&rp,_font(obj));

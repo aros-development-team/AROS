@@ -220,7 +220,7 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 	msg->MinMaxInfo->MinWidth  += data->ztext->width;
 	msg->MinMaxInfo->MinHeight += data->ztext->height;
 	D(bug("rect: minheight %ld\n",data->ztext->height));
-	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
+	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    msg->MinMaxInfo->MinWidth  += 1;
 	    msg->MinMaxInfo->MinHeight += 1;
@@ -289,7 +289,7 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
         D(bug("muimaster.library/rectangle.c: Draw Rectangle Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
+	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    tw = data->ztext->width + 1;
 	    th = data->ztext->height + 1;
@@ -320,7 +320,7 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	}
 	else /* black or white */
 	{
-	    if (__zprefs.group_title_color == GROUP_TITLE_COLOR_WHITE)
+	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_WHITE)
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	    
 	    tw = data->ztext->width;

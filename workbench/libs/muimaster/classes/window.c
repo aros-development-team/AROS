@@ -134,9 +134,10 @@ struct __dummyXFC3__
 /** Public functions                                                       **/
 /****************************************************************************/
 
-static BOOL SetupRenderInfo(struct MUI_RenderInfo *mri)
+static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
 {
     int i;
+    struct ZunePrefsNew *prefs = muiGlobalInfo(obj)->mgi_Prefs;
 
     if (!(mri->mri_Screen = LockPubScreen(NULL))) return FALSE;
     if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
@@ -158,7 +159,7 @@ static BOOL SetupRenderInfo(struct MUI_RenderInfo *mri)
 
    
     for (i=0;i<MPEN_COUNT;i++)
-	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, __zprefs.muipens[i].red, __zprefs.muipens[i].green, __zprefs.muipens[i].blue, NULL);
+	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
     mri->mri_Pens = mri->mri_PensStorage;
     return TRUE;
 }
@@ -749,7 +750,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 	for (muikey=MUIKEY_COUNT-1;muikey >= 0;muikey--) /* 0 == MUIKEY_PRESS */
 	{
-	    if (__zprefs.muikeys[muikey].ix_well && MatchIX(&ievent,&__zprefs.muikeys[muikey].ix))
+	    if (muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well && MatchIX(&ievent,&muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix))
 		break;
 	}
 	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX)) muikey = MUIKEY_RELEASE;
@@ -1431,7 +1432,7 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
  * Called before window is opened or resized. It determines its bounds,
  * so you can call window_select_dimensions() to find the final dims.
  */
-static void window_minmax (struct MUI_WindowData *data)
+static void window_minmax(Object *obj, struct MUI_WindowData *data)
 {
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (ULONG)&data->wd_MinMax);
@@ -1445,10 +1446,10 @@ static void window_minmax (struct MUI_WindowData *data)
 	data->wd_innerBottom = 0;
     }   else
     {
-	data->wd_innerLeft   = __zprefs.window_inner_left;
-	data->wd_innerRight  = __zprefs.window_inner_right;
-	data->wd_innerTop    = __zprefs.window_inner_top;
-	data->wd_innerBottom = __zprefs.window_inner_bottom;
+	data->wd_innerLeft   = muiGlobalInfo(obj)->mgi_Prefs->window_inner_left;
+	data->wd_innerRight  = muiGlobalInfo(obj)->mgi_Prefs->window_inner_right;
+	data->wd_innerTop    = muiGlobalInfo(obj)->mgi_Prefs->window_inner_top;
+	data->wd_innerBottom = muiGlobalInfo(obj)->mgi_Prefs->window_inner_bottom;
     }
 
     data->wd_MinMax.MinWidth += data->wd_innerLeft + data->wd_innerRight;
@@ -1457,12 +1458,6 @@ static void window_minmax (struct MUI_WindowData *data)
     data->wd_MinMax.MinHeight += data->wd_innerTop + data->wd_innerBottom;
     data->wd_MinMax.MaxHeight += data->wd_innerTop + data->wd_innerBottom;
     data->wd_MinMax.DefHeight += data->wd_innerTop + data->wd_innerBottom;
-
-/*      g_print("Window minmax: min=%dx%d, max=%dx%d, def=%dx%d\n (%dx%d)", */
-/*  	    data->wd_MinMax.MinWidth, data->wd_MinMax.MinHeight, */
-/*  	    data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight, */
-/*  	    data->wd_MinMax.DefWidth, data->wd_MinMax.DefHeight, */
-/*  	    data->wd_Width, data->wd_Height); */
 }
 
 /*
@@ -1473,8 +1468,6 @@ static void window_minmax (struct MUI_WindowData *data)
 static void window_show (struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
-
-/*      int i; */
 
     _left(data->wd_RootObject) = data->wd_innerLeft + win->BorderLeft;
     _top(data->wd_RootObject)  = data->wd_innerTop  + win->BorderTop;
@@ -1487,9 +1480,6 @@ static void window_show (struct MUI_WindowData *data)
 
     ShowRenderInfo(&data->wd_RenderInfo);
 
-/*  g_print("SHOW\n"); */
-/*      for (i = 0; i < MUII_Count; i++) */
-/*  	zune_imspec_show(__zprefs.images[i], NULL); */
     DoMethod(data->wd_RootObject, MUIM_Show);
 }
 
@@ -1500,9 +1490,9 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     if (!data->wd_RootObject)
 	return FALSE;
 
-/*  g_print("SETUP\n"); */
     if (!DoMethod(obj, MUIM_Window_Setup))
 	return FALSE;
+
     /* I got display info, so calculate your display dependant data */
     if (!DoSetupMethod(data->wd_RootObject, &data->wd_RenderInfo))
     {
@@ -1517,7 +1507,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     _subheight(data->wd_RootObject) = 0;
 
     /* inquire about sizes */
-    window_minmax(data);
+    window_minmax(obj,data);
     window_select_dimensions(data);
 
     data->wd_UserPort = muiGlobalInfo(obj)->mgi_UserPort;
@@ -1591,12 +1581,11 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
     DoMethod(data->wd_RootObject, MUIM_Hide);
-/*      for (i = 0; i < MUII_Count; i++) */
-/*  	zune_imspec_hide(__zprefs.images[i]); */
+
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* inquire about sizes */
-    window_minmax(data);
+    window_minmax(obj,data);
     /* resize window ? */
     window_select_dimensions(data);
     _zune_window_resize(data);
@@ -1645,7 +1634,7 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     char *background_spec;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    if (!SetupRenderInfo(&data->wd_RenderInfo))
+    if (!SetupRenderInfo(obj, &data->wd_RenderInfo))
 	return FALSE;
 
     DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, &background_spec);

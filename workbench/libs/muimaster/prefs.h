@@ -167,6 +167,26 @@ struct ZunePrefsNew
 {
     char *fonts[-MUIV_Font_NegCount];
     char *imagespecs[MUII_Count];
+    struct MUI_FrameSpec frames[MUIV_Frame_Count];
+
+    /* Groups */
+    GroupTitlePosition group_title_position;
+    GroupTitleColor    group_title_color;
+    WORD     group_hspacing;
+    WORD     group_vspacing;
+
+    /* Windows */
+    WindowPosition  window_position;
+    WORD     window_inner_left;
+    WORD     window_inner_right;
+    WORD     window_inner_top;
+    WORD     window_inner_bottom;
+
+    /* MUI Pens */
+    struct { int red; int green; int blue; } muipens[MPEN_COUNT];
+
+    /* MUI Keys */
+    ZuneKeySpec muikeys[MUIKEY_COUNT];
 };
 
 #endif
