@@ -57,6 +57,8 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * _l, * lparent;
+  struct Region rtmp;
+  rtmp.RegionRectangle = NULL;
 
   if (l->visible == visible)
     return TRUE;
@@ -95,7 +97,9 @@
     if (l->front)
     {
       _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
-      ClearRegionRegion(l->front->shape, l->VisibleRegion);
+      _SetRegion(l->front->shape, &rtmp);
+      AndRegionRegion(l->front->parent->shape, &rtmp);
+      ClearRegionRegion(&rtmp, l->VisibleRegion);
     }
     else
     {
@@ -155,8 +159,11 @@
        * layer behind this one.
        */
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->shape, &r);
-      
+      {
+        _SetRegion(_l->shape, &rtmp);
+        AndRegionRegion(_l->parent->shape, &rtmp);
+        ClearRegionRegion(&rtmp, &r);
+      }
       _l = _l->back;
     }
     ClearRegion(&r);
@@ -171,6 +178,7 @@
     ClearRegion(&clearr);
   }
 
+  ClearRegion(&rtmp);
   UnlockLayers(l->LayerInfo);
 
   return TRUE;
