@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
 #include <graphics/rastport.h>
@@ -411,6 +412,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
     struct ETextFont * tf;
     XFontStruct      * xfs;
     int t;
+    char * name;
 
     if (!ta->ta_Name)
 	return NULL;
@@ -423,7 +425,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
     for (t=0; t<sizeof(AROSFontTable)/sizeof(AROSFontTable[0]); t++)
     {
 	if (AROSFontTable[t].ta.ta_YSize == ta->ta_YSize
-	    && !STRICMP (AROSFontTable[t].ta.ta_Name, ta->ta_Name)
+	    && !strcasecmp (AROSFontTable[t].ta.ta_Name, ta->ta_Name)
 	)
 	{
 	    xfs = XLoadQueryFont (sysDisplay, AROSFontTable[t].name);
@@ -439,7 +441,19 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
     tf->etf_XFS = *xfs;
 
-    tf->etf_Font.tf_Message.mn_Node.ln_Name = StrDup (ta->ta_Name);
+    t = strlen (ta->ta_Name);
+
+    name = AllocVec (t+1, MEMF_ANY);
+
+    if (name)
+	strcpy (name, ta->ta_Name);
+    else
+    {
+	FreeMem (tf, sizeof (struct ETextFont));
+	return (NULL);
+    }
+
+    tf->etf_Font.tf_Message.mn_Node.ln_Name = name;
     tf->etf_Font.tf_YSize = tf->etf_XFS.max_bounds.ascent +
 		    tf->etf_XFS.max_bounds.descent;
     tf->etf_Font.tf_XSize = tf->etf_XFS.max_bounds.rbearing -
