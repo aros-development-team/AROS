@@ -309,34 +309,34 @@ BOOL ScanDosList(STRPTR *filter)
 	    
 	    while(*p)
 		strray[i++] = *p++;
-	    
+
 	    while(i < MAX_MULTIARGS)
 		strray[i++] = NULL;
 	}
 	else
 	    return FALSE;
     }
-    
+
     /* lock list of devices & vols */
     dl = ndl = LockDosList(LDF_ASSIGNS | LDF_VOLUMES | LDF_DEVICES | LDF_READ);
-    
+
     if(strray != NULL)
     {
 	STRPTR *p = strray;
-	
+
 	while(*p)
 	    p++;
-	
+
 	while((ndl = NextDosEntry(ndl, LDF_ASSIGNS | LDF_VOLUMES | LDF_READ)) != NULL)
 	{
 	    TEXT    name[108];
 	    STRPTR  taskName;
-	    
+
 	    __sprintf(name, "%s:", ndl->dol_DevName);
-	    
+
 	    if((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
 		continue;
-	    
+
 	    switch(ndl->dol_Type)
 	    {
 	    case DLT_VOLUME:
@@ -344,7 +344,7 @@ BOOL ScanDosList(STRPTR *filter)
 
 		D(bug("Found volume %s\n", taskName));
 		break;
-		
+
 	    case DLT_DIRECTORY:
 		{
 		    struct AssignList *al = ndl->dol_misc.dol_assign.dol_List;
@@ -372,14 +372,14 @@ BOOL ScanDosList(STRPTR *filter)
     ndl = dl;
     
     while((ndl = NextDosEntry(ndl, LDF_VOLUMES | LDF_DEVICES | LDF_READ)) != NULL)
-    {		  
+    {
 	UBYTE  len = 0;
 	UBYTE  type = ndl->dol_Type;
 	UBYTE  name[108];
-		
+
 	//	if(((type == DLT_DEVICE))) //  && (!ndl->dol_Task) TODO Check this!
 	//	    continue;
-	
+
 	__sprintf(name, "%s:", ndl->dol_DevName);
 
 	D(bug("Found name %s\n", ndl->dol_DevName));

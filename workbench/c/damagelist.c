@@ -20,8 +20,7 @@
 #define ARG_RECTFILL 2
 #define NUM_ARGS     3
 
-struct IntuitionBase *IntuitionBase = NULL;
-struct GfxBase *GfxBase = NULL;
+extern struct IntuitionBase *IntuitionBase;
 
 static struct Screen *scr;
 static struct Window *win;
@@ -44,23 +43,7 @@ static void Cleanup(char *msg)
     
     if (MyArgs) FreeArgs(MyArgs);
     
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-    
     exit(rc);
-}
-
-static void OpenLibs(void)
-{
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0)))
-    {
-    	Cleanup("Can´t open intuition.library!");
-    }
-    
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0)))
-    {
-    	Cleanup("Can´t open graphics.library!");
-    }
 }
 
 static void GetArguments(void)
@@ -85,13 +68,12 @@ static void Action(void)
     Delay(3*50);
 
     win = IntuitionBase->ActiveWindow;
-    scr = win->WScreen;
-    
     if (!win) Cleanup("No active window!");
-    
-    
+
+    scr = win->WScreen;
+
     lay = win->WLayer;
-    
+
     dr = lay->DamageList;
     if (!dr) Cleanup("Layer does not have a damagelist!");
     rr = dr->RegionRectangle;
@@ -179,7 +161,6 @@ static void Action(void)
 
 int main(void)
 {
-    OpenLibs();
     GetArguments();
     Action();
     Cleanup(0);

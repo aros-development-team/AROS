@@ -312,9 +312,6 @@ struct LayerHookMsg
 
 /****************************************************************************************/
 
-struct IntuitionBase 	*IntuitionBase;
-struct GfxBase      	*GfxBase;
-struct Library	    	*LayersBase;
 struct Library      	*CyberGfxBase;
 
 /****************************************************************************************/
@@ -344,45 +341,29 @@ static void cleanup(char *msg)
 	    ReleasePen(cm, i);
 	}
     }
-    
+
     if (patternbm)
     {
     	WaitBlit();
 	FreeBitMap(patternbm);
     }
-    
+
     if (scr) UnlockPubScreen(NULL, scr);
-    
+
     if (chunkydata) FreeVec(chunkydata);
-    
+
     if (CyberGfxBase) CloseLibrary(CyberGfxBase);
-    if (LayersBase) CloseLibrary(LayersBase);
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase),
-    
+
     exit(0);
 }
 
 /****************************************************************************************/
 
+/* V40, because of WriteChunkyPixels */
+int GfxBase_version = 40;
+
 static void openlibs(void)
 {
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
-    {
-    	cleanup("Can't open intuition.library V39!");
-    }
-    
-    /* V40, because of WriteChunkyPixels */
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 40)))
-    {
-    	cleanup("Can't open graphics.library V40!");
-    }
-    
-    if (!(LayersBase = OpenLibrary("layers.library", 39)))
-    {
-    	cleanup("Can't open layers.library V39!");
-    }
-    
     CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
 }
 

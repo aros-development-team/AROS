@@ -91,8 +91,6 @@
 
 static const char version[] = "$VER: dir 41.12 (27.11.2000)\n";
 
-struct UtilityBase *UtilityBase;
-
 struct table
 {
     char **entries;
@@ -271,79 +269,72 @@ int main(int argc, char **argv)
 			      (IPTR)FALSE,
 			      (IPTR)FALSE,
                               (IPTR)FALSE };
-    
+
     LONG  error = RETURN_FAIL;
-    
-    UtilityBase = (struct UtilityBase *)OpenLibrary(UTILITYNAME, 39);
-    
-    if (UtilityBase != NULL)
+
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+
+    if (rda != NULL)
     {
-	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-	
-	if (rda != NULL)
+	STRPTR dir = (STRPTR)args[ARG_DIR];
+	STRPTR opt = (STRPTR)args[ARG_OPT];
+	BOOL   all = (BOOL)args[ARG_ALL];
+	BOOL   dirs = (BOOL)args[ARG_DIRS];
+	BOOL   files = (BOOL)args[ARG_FILES];
+	BOOL   inter = (BOOL)args[ARG_INTER];
+
+	/* Convert the OPT arguments (if any) into the regular switches */
+	if (opt != NULL)
 	{
-	    STRPTR dir = (STRPTR)args[ARG_DIR];
-	    STRPTR opt = (STRPTR)args[ARG_OPT];
-	    BOOL   all = (BOOL)args[ARG_ALL];
-	    BOOL   dirs = (BOOL)args[ARG_DIRS];
-	    BOOL   files = (BOOL)args[ARG_FILES];
-	    BOOL   inter = (BOOL)args[ARG_INTER];
-	    
-	    /* Convert the OPT arguments (if any) into the regular switches */
-	    if (opt != NULL)
+	    while (*opt != NULL)
 	    {
-		while (*opt != NULL)
+		switch (ToUpper(*opt))
 		{
-		    switch (ToUpper(*opt))
-		    {
-		    case 'D':
-			dirs = TRUE;
-			break;
+		case 'D':
+		    dirs = TRUE;
+		    break;
 
-		    case 'F':
-			files = TRUE;
-			break;
+		case 'F':
+		    files = TRUE;
+		    break;
 
-		    case 'A':
-			all = TRUE;
-			break;
+		case 'A':
+		    all = TRUE;
+		    break;
 
-		    case 'I':
-			inter = TRUE;
-			break;
+		case 'I':
+		    inter = TRUE;
+		    break;
 
-		    default:
-			printf("%c option ignored\n", *opt);
-			break;
-		    }
-
-		    opt++;
+		default:
+		    printf("%c option ignored\n", *opt);
+		    break;
 		}
-	    }
 
-	    if(dir == NULL)
-	    {
-		dir = "";
+	        opt++;
 	    }
-
-	    if(!files && !dirs)
-	    {
-		files = TRUE;
-		dirs  = TRUE;
-	    }
-
-	    error = doPatternDir(dir, all, dirs, files, inter);
-	    
-	    FreeArgs(rda);
 	}
+
+	if(dir == NULL)
+	{
+	    dir = "";
+	}
+
+	if(!files && !dirs)
+	{
+	    files = TRUE;
+	    dirs  = TRUE;
+	}
+
+	error = doPatternDir(dir, all, dirs, files, inter);
+
+	FreeArgs(rda);
     }
 
     if (error != RETURN_OK)
     {
 	PrintFault(IoErr(), NULL);
     }
-    
-    CloseLibrary((struct Library *)UtilityBase);
 
     return error;
 }

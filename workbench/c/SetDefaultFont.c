@@ -30,7 +30,7 @@
 	FONTSIZE  --  the size of the font
     	SCREEN    --  if specified set the default screen font otherwise
 	              set the default system font.
-		      
+
     RESULT
 
     NOTES
@@ -77,10 +77,6 @@ enum
     NOOFARGS
 };
 
-struct GfxBase      	*GfxBase;
-struct IntuitionBase 	*IntuitionBase;
-struct Library      	*DiskfontBase;
-
 static struct RDArgs 	*myargs;
 static IPTR 	    	args[NOOFARGS];
 static char 	    	s[256];
@@ -100,41 +96,12 @@ static void Cleanup(char *msg, WORD rc)
 	FreeArgs(myargs);
     }
 
-    if (DiskfontBase)
-    {
-    	CloseLibrary(DiskfontBase);
-    }
-    
-    if (IntuitionBase)
-    {
-    	CloseLibrary((struct Library *)IntuitionBase);
-    }
-    
-    if (GfxBase)
-    {
-    	CloseLibrary((struct Library *)GfxBase);
-    }
-    
     exit(rc);
 }
 
-static void OpenLibs(void)
-{
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0)))
-    {
-    	Cleanup("Can't open graphics.library!", RETURN_FAIL);
-    }
-
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
-    {
-    	Cleanup("Can't open intuition.library!", RETURN_FAIL);
-    }
-    
-    if (!(DiskfontBase = OpenLibrary("diskfont.library", 0)))
-    {
-    	Cleanup("Can´t open diskfont.library!", RETURN_FAIL);
-    }
-}
+int GfxBase_version = 0;
+int IntuitionBase_version = 0;
+int DiskFontBase_version = 0;
 
 static void GetArguments(void)
 {
@@ -188,7 +155,6 @@ static void Action(void)
 
 int main(void)
 {
-    OpenLibs();
     GetArguments();    
     Action();
     Cleanup(0, RETURN_OK);
