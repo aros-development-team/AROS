@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef MUIMASTER_INTERN_H
 #define MUIMASTER_INTERN_H
 

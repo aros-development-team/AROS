@@ -1,13 +1,12 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _MUIMASTER_PRIVATE_H
 #define _MUIMASTER_PRIVATE_H
-
-/*
-    (C) 1995-2000 AROS - The Amiga Research OS
-    $Id$
-
-    Desc: Private prototypes for muimaster.library
-    Lang: english
-*/
 
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>

@@ -1,13 +1,12 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _MUIMASTER_PINLINE_H
 #define _MUIMASTER_PINLINE_H
-
-/*
-    (C) 1995-2000 AROS - The Amiga Research OS
-    $Id$
-
-    Desc: Private m68k inlines for muimaster.library
-    Lang: english
-*/
 
 #ifndef __INLINE_MACROS_H
 #include <inline/macros.h>

@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
     $Id$
-
-    Desc: MUIMaster initialization code.
-    Lang: English.
 */
-
 
 #include <exec/types.h>
 #include <intuition/intuition.h>
