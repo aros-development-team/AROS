@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/02 18:12:03  digulla
+    Draw text after border for IMAGE and BORDER gadgets and before for HCOMP-type
+    	gadgets (The text of IMAGE-Gadgets was not visible)
+
     Revision 1.3  1996/08/29 13:57:38  digulla
     Commented
     Moved common code from driver to Intuition
@@ -190,9 +194,8 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 	    continue;
 
 	SetDrMd (window->RPort, JAM1);
-	SetAPen (window->RPort, 0);
 
-	RectFill (window->RPort
+	EraseRect (window->RPort
 	    , left
 	    , top
 	    , left + width - 1
@@ -202,6 +205,20 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 	switch (gadgets->GadgetType & GTYP_GTYPEMASK)
 	{
 	case GTYP_BOOLGADGET:
+	    switch (gadgets->Flags & GFLG_GADGHIGHBITS)
+	    {
+	    case GFLG_GADGHIMAGE:
+		render = GETRENDER(gadgets);
+		RENDERGADGET(window,gadgets,render);
+		break;
+
+	    case GFLG_GADGHNONE:
+		render = gadgets->GadgetRender;
+		RENDERGADGET(window,gadgets,render);
+		break;
+
+	    } /* switch GadgetHighlightMethod */
+
 	    if (gadgets->GadgetText)
 	    {
 		switch (gadgets->Flags & GFLG_LABELMASK)
@@ -243,10 +260,11 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 		    );
 		    break;
 		}
-	    }
+	    } /* GadgetText */
+
 	    switch (gadgets->Flags & GFLG_GADGHIGHBITS)
 	    {
-	    case GFLG_GADGHCOMP: {
+	    case GFLG_GADGHCOMP:
 		render = gadgets->GadgetRender;
 		RENDERGADGET(window,gadgets,render);
 
@@ -262,16 +280,6 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 		    );
 		}
 
-		break; }
-
-	    case GFLG_GADGHIMAGE:
-		render = GETRENDER(gadgets);
-		RENDERGADGET(window,gadgets,render);
-		break;
-
-	    case GFLG_GADGHNONE:
-		render = gadgets->GadgetRender;
-		RENDERGADGET(window,gadgets,render);
 		break;
 
 	    case GFLG_GADGHBOX:
@@ -282,7 +290,7 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 		{
 		    SetDrMd (window->RPort, COMPLEMENT);
 
-	#define BOXWIDTH 5
+#define BOXWIDTH 5
 		    RectFill (window->RPort
 			, left
 			, top
@@ -302,8 +310,7 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 		}
 
 		break;
-
-	    } /* switch GadgetHighlightMethod */
+	    } /* Highlight after contents have been drawn */
 
 	    break; /* BOOLGADGET */
 
