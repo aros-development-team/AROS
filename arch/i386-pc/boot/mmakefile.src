@@ -13,7 +13,7 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 
 BOOT_FILES := \
 	C/Mount C/Shell \
-	Devs/Mountlist Devs/nil.handler Devs/ram.handler\
+	Devs/Mountlist Devs/ram.handler\
 	S/Startup-Sequence S/hidd.prefs \
 	contrib/aminet/untgz \
 	boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
