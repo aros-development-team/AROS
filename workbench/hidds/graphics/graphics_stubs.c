@@ -621,6 +621,32 @@ VOID     HIDD_BM_PutImage  (OOP_Object *obj
 
 /***************************************************************/
 
+VOID     HIDD_BM_PutAlphaImage  (OOP_Object *obj
+	, OOP_Object *gc
+	, UBYTE *pixels
+	, ULONG modulo
+	, WORD x, WORD y
+	, WORD width, WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutAlphaImage p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutAlphaImage);
+        
+    p.mID    = mid;
+    p.gc     = gc;
+    p.pixels = pixels;
+    p.modulo = modulo;
+    p.x = x;
+    p.y = y;
+    p.width  = width;
+    p.height = height;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+/***************************************************************/
+
 VOID	 HIDD_BM_BlitColorExpansion	 (OOP_Object *obj, OOP_Object *gc, OOP_Object *srcBitMap, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height)
 {
     STATIC_MID;

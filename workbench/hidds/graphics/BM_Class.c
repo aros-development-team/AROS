@@ -1838,6 +1838,153 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_PutAlphaImage *msg)
+{
+    WORD    	    	    x, y;
+    ULONG   	    	    *pixarray = (ULONG *)msg->pixels;
+    ULONG    	    	    *buf;
+    struct HIDDBitMapData   *data;
+    
+    data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("BitMap::PutAlphaImage(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+
+    buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
+    if (buf)
+    {
+    	for(y = msg->y; y < msg->y + msg->height; y++)
+	{
+	    HIDD_BM_GetImage(o,
+	    	    	     (UBYTE *)buf,
+			     0,
+			     msg->x,
+			     y,
+			     msg->width,
+			     1,
+			     vHidd_StdPixFmt_ARGB32);
+			     
+	    for(x = 0; x < msg->width; x++)
+	    {
+	    	ULONG	    destpix;
+		ULONG	    srcpix;
+		LONG 	    src_red, src_green, src_blue, src_alpha;
+		LONG	    dst_red, dst_green, dst_blue;
+		
+    	    	srcpix = *pixarray++;
+    	    #if AROS_BIG_ENDIAN		
+		src_red   = (srcpix & 0x00FF0000) >> 16;
+		src_green = (srcpix & 0x0000FF00) >> 8;
+		src_blue  = (srcpix & 0x000000FF);
+		src_alpha = (srcpix & 0xFF000000) >> 24;
+	    #else
+		src_red   = (srcpix & 0x0000FF00) >> 8;
+		src_green = (srcpix & 0x00FF0000) >> 16;
+		src_blue  = (srcpix & 0xFF000000) >> 24;
+		src_alpha = (srcpix & 0x000000FF);
+	    #endif
+		
+		destpix = buf[x];
+    	    #if AROS_BIG_ENDIAN		
+		dst_red   = (destpix & 0x00FF0000) >> 16;
+		dst_green = (destpix & 0x0000FF00) >> 8;
+		dst_blue  = (destpix & 0x000000FF);
+		dst_alpha = (destpix & 0xFF000000) >> 24;
+	    #else
+		dst_red   = (destpix & 0x0000FF00) >> 8;
+		dst_green = (destpix & 0x00FF0000) >> 16;
+		dst_blue  = (destpix & 0xFF000000) >> 24;
+	    #endif
+		
+		dst_red   += ((src_red - dst_red) * src_alpha) / 256;
+		dst_green += ((src_green - dst_green) * src_alpha) / 256;
+		dst_blue  += ((src_blue - dst_blue) * src_alpha) / 256;
+		
+    	    #if AROS_BIG_ENDIAN
+	    	destpix &= 0xFF000000;
+		destpix |= (dst_red << 16) + (dst_green << 8) + (dst_blue);
+    	    #else
+	    	destpix &= 0x000000FF;
+		destpix |= (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+	    #endif
+	    		
+		buf[x] = destpix;
+		
+	    } /* for(x = 0; x < msg->width; x++) */
+    	
+	    HIDD_BM_PutImage(o,
+	    	    	     msg->gc,
+			     (UBYTE *)buf,
+			     0,
+			     msg->x,
+			     y,
+			     msg->width,
+			     1,
+			     vHidd_StdPixFmt_ARGB32);
+			     
+	    ((UBYTE *)pixarray) += (msg->modulo - msg->width * 4);
+
+	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+	
+    	FreeVec(buf);
+	
+    } /* if (buf) */
+    else
+    {
+    	for(y = msg->y; y < msg->y + msg->height; y++)
+	{
+	    for(x = msg->x; x < msg->x + msg->width; x++)
+	    {
+	    	HIDDT_Pixel destpix;
+		HIDDT_Color col;
+		ULONG	    srcpix;
+		LONG 	    src_red, src_green, src_blue, src_alpha;
+		LONG	    dst_red, dst_green, dst_blue;
+		
+	    	destpix = HIDD_BM_GetPixel(o, x, y);
+		HIDD_BM_UnmapPixel(o, destpix, &col);
+		
+    	    	srcpix = *pixarray++;
+    	    #if AROS_BIG_ENDIAN		
+		src_red   = (srcpix & 0x00FF0000) >> 16;
+		src_green = (srcpix & 0x0000FF00) >> 8;
+		src_blue  = (srcpix & 0x000000FF);
+		src_alpha = (srcpix & 0xFF000000) >> 24;
+	    #else
+		src_red   = (srcpix & 0x0000FF00) >> 8;
+		src_green = (srcpix & 0x00FF0000) >> 16;
+		src_blue  = (srcpix & 0xFF000000) >> 24;
+		src_alpha = (srcpix & 0x000000FF);
+	    #endif
+		
+		dst_red   = col.red   >> 8;
+		dst_green = col.green >> 8;
+		dst_blue  = col.blue  >> 8;
+		
+		dst_red   += ((src_red - dst_red) * src_alpha) / 256;
+		dst_green += ((src_green - dst_green) * src_alpha) / 256;
+		dst_blue  += ((src_blue - dst_blue) * src_alpha) / 256;
+		
+		col.red   = dst_red << 8;
+		col.green = dst_green << 8;
+		col.blue  = dst_blue << 8;
+		
+		HIDD_BM_PutPixel(o, x, y, HIDD_BM_MapColor(o, &col));
+		
+	    } /* for(x = msg->x; x < msg->x + msg->width; x++) */
+	    
+	    ((UBYTE *)pixarray) += (msg->modulo - msg->width * 4);
+	    
+	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+	
+    }
+
+    ReturnVoid("BitMap::PutAlphaImage");
+}
+
+/****************************************************************************************/
+
 static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
     	    	    	    struct pHidd_BitMap_PutImageLUT *msg)
 {
@@ -2130,7 +2277,7 @@ static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 /*    EnterFunc(bug("BitMap::Set()\n"));
 */
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {
@@ -2432,7 +2579,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  45
+#define NUM_BITMAP_METHODS  46
 
 /****************************************************************************************/
 
@@ -2463,6 +2610,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	    },
         {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		    },
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())bitmap_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
 	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())bitmap_getimagelut		, moHidd_BitMap_GetImageLUT	    },
