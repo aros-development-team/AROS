@@ -41,9 +41,16 @@
 	.globl	AROS_SLIB_ENTRY(Forbid,Exec)
 	.type	AROS_SLIB_ENTRY(Forbid,Exec),@function
 AROS_SLIB_ENTRY(Forbid,Exec):
-	linkw	%fp,#0
-	move.l	8(%fp),%a1
-	addq.b	#1,TDNestCnt(%a1)
-	unlk	%fp
+	/* Preserve all registers */
+	move.l	%a6,-(%sp)
+
+	/* Get SysBase */
+	move.l	8(%sp),%a6
+
+	/* Increase nesting count */
+	addq.b	#1,TDNestCnt(%a6)
+
+	/* All done */
+	move.l	(%sp)+,%a6
 	rts
 
