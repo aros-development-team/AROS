@@ -511,7 +511,7 @@ static int __ctype_init(void)
     __ctype_toupper = &__ctype_toupper_array[128];
     __ctype_tolower = &__ctype_tolower_array[128];
 
-    return 0;
+    return 1;
 }
 
 ADD2INIT(__ctype_init, 20);

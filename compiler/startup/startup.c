@@ -87,35 +87,28 @@ AROS_UFH3(static LONG, __startup_entry,
         __argc = 0;
     }
 
-    if (!setjmp(__aros_startup.as_startup_jmp_buf))
+    if (setjmp(__aros_startup.as_startup_jmp_buf) == 0)
     {
-        if
-        (
-            !(__aros_startup.as_startup_error = set_open_libraries()) &&
-            !(__aros_startup.as_startup_error = set_call_funcs(SETNAME(INIT), 1))
-        )
+        if (set_open_libraries() &&  set_call_funcs(SETNAME(INIT), 1, 1))
         {
-            /* ctors get called in inverse order than init funcs */
-            set_call_funcs(SETNAME(CTORS), -1);
+            /* ctors/dtors get called in inverse order than init funcs */
+            set_call_funcs(SETNAME(CTORS), -1, 0);
 
 	    /* Invoke the main function. A weak symbol is used as function name so that
 	       it can be overridden (for *nix stuff, for instance).  */
 
-	    __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
+            __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
         }
-
+	else
+	{
+	    __aros_startup.as_startup_error = RETURN_FAIL;
+	}
     }
-
-    /* dtors get called in inverse order than exit funcs */
-    {
-        int n = 1;
-
-        while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
-    }
-
-    set_call_funcs(SETNAME(EXIT), -1);
+    
+    set_call_funcs(SETNAME(DTORS), 1, 0);
+    set_call_funcs(SETNAME(EXIT), -1, 0);
     set_close_libraries();
-
+    
     /* Reply startup message to Workbench */
     if (WBenchMsg)
     {
@@ -133,9 +126,8 @@ AROS_UFH3(static LONG, __startup_entry,
 /* if the programmer hasn't defined a symbol with the name __nocommandline
    then the code to handle the commandline will be included from the autoinit.lib
 */
-//extern void __nocommandline(void);
 extern int __nocommandline;
-static void *__importcommandline __attribute__((unused)) = &__nocommandline;
+asm(".set __importcommandline, __nocommandline");
 
 /* pass these values to the command line handling function */
 char *__argstr;

@@ -13,7 +13,7 @@ void set_close_libraries(void) __attribute__ ((weak));
 
 int set_open_libraries(void)
 {
-    return 0;
+    return 1;
 }
 
 void set_close_libraries(void)

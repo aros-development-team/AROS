@@ -6,28 +6,24 @@
     Lang: english
 */
 
-typedef int (*fptr)(void);
+#include <aros/symbolsets.h>
 
-int set_call_funcs(fptr list[], int order)
+int set_call_funcs(const void *set[], int direction, int test_fail)
 {
-    int n;
+    int pos, (*func)(void);
 
-    if (order>=0)
+    ForeachElementInSet(set, direction, pos, func)
     {
-	int ret;
-
-	n = 1;
-	while(list[n])
-	    if ((ret = list[n++]())) return ret;
+        if (test_fail)
+	{
+	    if (!(*func)())
+	        return 0;
+	}
+	else
+	{
+	    (void)(*func)();
+	}
     }
-    else
-    {
-	n = ((int *)list)[0];
-
-	while (n)
-	    (void)list[n--]();
-    }
-
-    return 0;
+    
+    return 1;
 }
-

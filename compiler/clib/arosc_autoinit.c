@@ -11,7 +11,7 @@
 
 static AROS_SET_LIBFUNC(__arosc_libopen, struct Library *, aroscbase)
 {
-    return !arosc_internalinit();
+    return arosc_internalinit();
 }
 
 static AROS_SET_LIBFUNC(__arosc_libclose, struct Library *, aroscbase)

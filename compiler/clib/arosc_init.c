@@ -96,8 +96,12 @@ AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
 
     aroscbase->seglist=segList;
 
-    if (set_open_libraries())
-        return NULL;
+    if (!set_open_libraries())
+    {
+        set_close_libraries();
+        
+	return NULL;
+    }
 
     /* You would return NULL here if the init failed. */
     return aroscbase;
@@ -119,15 +123,19 @@ AROS_LH1(struct aroscbase *, open,
     /* Keep compiler happy */
     version=0;
 
+    if (!arosc_internalinit())
+    {
+        arosc_internalexit();
+        return NULL;
+    }
+
     /* I have one more opener. */
     aroscbase->library.lib_OpenCnt++;
     aroscbase->library.lib_Flags &= ~LIBF_DELEXP;
-
-    if (arosc_internalinit())
-        aroscbase = NULL;
-
+    
     /* You would return NULL if the open failed. */
     return aroscbase;
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -199,7 +207,7 @@ int arosc_internalinit(void)
 {
     struct arosc_privdata *oldprivdata, *privdata;
     struct Process *me = (struct Process *)FindTask(NULL);
-    int err = 0;
+    int res = 1;
 
     privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
@@ -226,13 +234,13 @@ int arosc_internalinit(void)
 
 	GetIntETask(me)->iet_acpd = privdata;
 
-        err = set_call_funcs(SETNAME(INIT), 1);
+        res = set_call_funcs(SETNAME(INIT), 1, 1);
     }
 
     D(bug("arosc_internalinit(): acpd_usercount++\n"));
     privdata->acpd_usercount++;
 
-    return err;
+    return res;
 }
 
 int arosc_internalexit(void)
@@ -245,7 +253,7 @@ int arosc_internalexit(void)
     ASSERT_VALID_PTR(privdata);
     if (privdata && --privdata->acpd_usercount == 0)
     {
-        set_call_funcs(SETNAME(EXIT), -1);
+        set_call_funcs(SETNAME(EXIT), -1, 0);
 
         /*restore the old value */
         GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;

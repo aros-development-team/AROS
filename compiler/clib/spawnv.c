@@ -7,6 +7,7 @@
 
 #include <proto/dos.h>
 #include <errno.h>
+#include <aros/debug.h>
 
 #include "__upath.h"
 #include "__spawnv.h"
@@ -91,5 +92,10 @@
     if (!apath)
         return -1;
 
-    return __spawnv(mode, LoadSeg(apath), argv);
+    kprintf("----> spawning %s\n", apath);
+    int ret = __spawnv(mode, LoadSeg(apath), argv);
+    kprintf("<---- spawned\n");
+
+
+    return ret;
 }

@@ -19,7 +19,7 @@ int __init_atexit(void)
 {
     NEWLIST((struct List *)&__atexit_list);
 
-    return 0;
+    return 1;
 }
 
 void __exit_atexit(void)

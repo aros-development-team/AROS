@@ -71,7 +71,7 @@
 int __init_clock(void)
 {
     DateStamp(&__startup_datestamp);
-    return 0;
+    return 1;
 }
 
 ADD2INIT(__init_clock, 20);

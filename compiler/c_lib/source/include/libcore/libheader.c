@@ -284,11 +284,11 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 #ifdef AROS_LC_SETFUNCS
     SysBase = sysBase;
 
-    ok = !set_open_libraries() && !set_call_funcs(SETNAME(INIT), 1);
+    ok = set_open_libraries() && set_call_funcs(SETNAME(INIT), 1, 1);
     if ( ok )
     {
 	/* ctors get called in inverse order than init funcs */
-	set_call_funcs(SETNAME(CTORS), -1);
+	set_call_funcs(SETNAME(CTORS), -1, 0);
 
 	ok = set_call_libfuncs(SETNAME(INITLIB),1,lh);
     }
@@ -303,12 +303,8 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 
 #ifdef AROS_LC_SETFUNCS
 	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
-	{
-	    int n = 1;
-
-	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
-	}
-	set_call_funcs(SETNAME(EXIT), -1);
+	set_call_funcs(SETNAME(DTORS), 1, 0);
+	set_call_funcs(SETNAME(EXIT), -1, 0);
 	set_close_libraries();
 #endif
 
@@ -450,7 +446,12 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 #ifndef NOEXPUNGE
     BPTR seglist;
 
-    if(!LC_LIB_FIELD(lh).lib_OpenCnt)
+    if (
+#ifdef AROS_LC_PRE_EXPUNGELIB
+    AROS_LC_PRE_EXPUNGELIB(lh) &&
+#endif
+
+    !LC_LIB_FIELD(lh).lib_OpenCnt)
     {
 	ULONG negsize, possize, fullsize;
 	UBYTE *negptr = (UBYTE *)lh;
@@ -463,12 +464,8 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 
 # ifdef AROS_LC_SETFUNCS
 	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
-	{
-	    int n = 1;
-
-	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
-	}
-	set_call_funcs(SETNAME(EXIT), -1);
+	set_call_funcs(SETNAME(DTORS), 1, 0);
+	set_call_funcs(SETNAME(EXIT), -1, 0);
 	set_close_libraries();
 #endif
 
@@ -490,7 +487,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
-    
+
     AROS_LIBFUNC_EXIT
 }
 

@@ -39,10 +39,10 @@ int name ## _Initialize(void)                                         \
 	    "Could not create Zune custom class `" #name "'."         \
 	);                                                            \
                                                                       \
-	return RETURN_FAIL;                                           \
+	return 0;                                                     \
     }                                                                 \
                                                                       \
-    return RETURN_OK;                                                 \
+    return 1;                                                         \
 }                                                                     \
                                                                       \
 void name ## _Deinitialize(void);                                     \

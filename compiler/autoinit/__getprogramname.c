@@ -48,6 +48,7 @@ char *__getprogramname(void)
 {
     char *name   = NULL;
 
+    /* Have we been started from WB? */
     if (WBenchMsg && WBenchMsg->sm_NumArgs)
     {
         name = StrDup(WBenchMsg->sm_ArgList[0].wa_Name);
@@ -55,7 +56,8 @@ char *__getprogramname(void)
         if (!name)
 	    SetIoErr(ERROR_NO_FREE_STORE);
     }
-    else
+    /* Otherwise, is this a cli process? */
+    else if (0 && Cli() != NULL)
     {
         LONG  namlen = 64;
         int   done   = 0;
@@ -82,6 +84,11 @@ char *__getprogramname(void)
 	        done = 1;
         } while (!done);
 
+    }
+    /* The last resort: use the Task's name.  */
+    else
+    {
+        name = StrDup(FindTask(NULL)->tc_Node.ln_Name);
     }
 
     return name;

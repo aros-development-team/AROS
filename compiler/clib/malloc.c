@@ -10,6 +10,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -70,14 +71,15 @@
 int __init_memstuff(void)
 {
     AROS_GET_SYSBASE_OK
+
     __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 4096L, 2000L);
 
     if (!__startup_mempool)
     {
-	return RETURN_FAIL;
+	return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 
