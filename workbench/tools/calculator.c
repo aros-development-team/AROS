@@ -8,6 +8,7 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <proto/locale.h>
+#include <proto/alib.h>
 
 #include <stdio.h>
 #include <string.h>

@@ -34,7 +34,7 @@ tools-quick : tools
 	@$(NOP)
 	
 #MM tools : setup tools-setup includes linklibs
-tools : show-flags $(EXES) $(EXEDIR)/forkbomb
+tools : show-flags $(EXES)
 	@$(NOP)
 
 show-flags :
@@ -51,12 +51,6 @@ clean ::
 $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
-$(EXEDIR)/librarytest : $(OBJDIR)/librarytest.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/librarytest.o : librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
-	%compile_q opt=$(APPCFLAGS)
-
 $(EXEDIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
 	%link_q
 
@@ -64,9 +58,6 @@ $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(APPCFLAGS)
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-$(OBJDIR)/librarytest.d : librarytest.c
 	%mkdepend_q
 
 %common
