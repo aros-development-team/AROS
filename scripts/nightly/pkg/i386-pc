@@ -5,7 +5,6 @@ source $SP/setup
 
 printi "Creating AROS/i386-pc binary packages..."
 
-setl    $ARCHIVE_BASE/$BASENAME-i386-pc.log
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS    $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
@@ -51,4 +50,3 @@ fi
 
 cd      $ROOT
 delete  $BUILD_BASE/AROS
-resetl

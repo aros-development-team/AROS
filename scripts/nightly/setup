@@ -20,7 +20,8 @@ ARCHIVE_ROOT=$ROOT/Archive
 ARCHIVE_BASE=$ARCHIVE_ROOT/$VERSION
 
 # Setup log paths
-LOG_ALL=$ARCHIVE_BASE/$BASENAME.log
+LOG_BASE=$ARCHIVE_BASE/$CFG_NAME
+LOG_ALL=$LOG_BASE/all.log
 LOG_THIS=/dev/null
 
 # Figure out the host platform
@@ -61,7 +62,8 @@ if [[ $1 == "initial" ]]; then
     rm -rf $BUILD_BASE $ARCHIVE_BASE
     mkdir -p $BUILD_ROOT $BUILD_BASE
     mkdir -p $ARCHIVE_ROOT $ARCHIVE_BASE
-
+    mkdir -p $LOG_BASE
+    
     if [ ! -f $LOG_ALL ]; then
         touch $LOG_ALL
     fi
