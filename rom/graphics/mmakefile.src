@@ -92,6 +92,7 @@ FUNCTIONS := \
 	gfxnew \
 	initarea \
 	initgels \
+	initgfxhidd \
 	initgmasks \
 	initmasks \
 	initview \
