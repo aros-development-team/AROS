@@ -67,6 +67,8 @@ Quit Q
 #include <libraries/gadtools.h>
 #include <libraries/commodities.h>
 #include <libraries/mui.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
 #include <devices/inputevent.h>
 #include <aros/asmcall.h>
 
@@ -78,6 +80,7 @@ Quit Q
 #include <proto/layers.h>
 #include <proto/commodities.h>
 #include <proto/alib.h>
+#include <proto/icon.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,6 +127,7 @@ Quit Q
 #define RETURNID_STRINGACK  3
 #define RETURNID_LVACK	    4
 #define RETURNID_CMDACK     5
+#define RETURNID_SAVE	    6
 
 /*********************************************************************************************/
 
@@ -154,6 +158,7 @@ static struct Hook   	 broker_hook;
 static struct MsgPort 	*brokermp;
 static struct Catalog 	*catalog;
 static struct RDArgs 	*myargs;
+static struct WBStartup *wbstartup;
 static LONG 	     	 prog_exitcode;
 static UBYTE	       **wbargs;
 static IPTR 	      	 args[NUM_ARGS];
@@ -331,6 +336,7 @@ void GetArguments(int argc, char **argv)
     }
     else
     {
+    	wbstartup = (struct WBStartup *)argv;
     	wbargs = ArgArrayInit(argc, (UBYTE **)argv);
 	
 	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
@@ -496,8 +502,6 @@ static void MakeGUI(void)
 	
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
     
-    set(wnd, MUIA_Window_Open, TRUE);
-
     get(app, MUIA_Application_Broker, &broker);  
     get(app, MUIA_Application_BrokerPort, &brokermp);  
     
@@ -533,6 +537,7 @@ static void MakeGUI(void)
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_SAVE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
     
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)cmdpage, 3, MUIM_Set, MUIA_Group_ActivePage, MUIV_TriggerValue);
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
@@ -862,6 +867,341 @@ void HandleAction(void)
 
 /*********************************************************************************************/
 
+#define QUOTE_START 0xAB
+#define QUOTE_END   0xBB
+
+/*********************************************************************************************/
+
+UBYTE *BuildToolType(struct KeyInfo *ki)
+{
+    static UBYTE  ttstring[500];
+    UBYTE   	 *param1 = "";
+    UBYTE   	 *param2 = "";
+
+    switch(ki->action)
+    {
+    	case ACTION_CYCLE_WIN:
+	    param1 = "CYCLE";
+	    break;
+	    
+	case ACTION_CYCLE_SCR:
+	    param1 = "CYCLESCREEN";
+	    break;
+	    
+	case ACTION_ENLARGE_WIN:
+	    param1 = "MAKEBIG";
+	    break;
+	    
+	case ACTION_SHRINK_WIN:
+	    param1 = "MAKESMALL";
+	    break;
+	    
+	case ACTION_TOGGLE_WIN:
+	    param1 = "ZIPWINDOW";
+	    break;
+	    
+	case ACTION_INSERT_TEXT:
+	    param1 = "INSERT ";
+	    param2 = ki->param;
+	    break;
+	    
+	case ACTION_RUN_PROG:
+	    param1 = "RUN ";
+	    param2 = ki->param;
+	    break;
+	    
+	case ACTION_RUN_AREXX:
+	    param1 = "AREXX ";
+    	    param2 = ki->param;
+	    break;
+	       
+    }
+    
+    snprintf(ttstring, sizeof(ttstring), "%c%s%c %s%s",
+    	     QUOTE_START,
+	     ki->descr,
+	     QUOTE_END,
+	     param1,
+	     param2);
+	     
+    return ttstring;
+}
+
+/*********************************************************************************************/
+
+UBYTE **BuildToolTypes(UBYTE **src_ttypes)
+{
+    APTR     pool = CreatePool(MEMF_CLEAR, 200, 200);
+    Object  *listobj = list;
+    UBYTE   *tt;
+    WORD     list_index = 0, num_ttypes = 0, alloc_ttypes = 10;
+    
+    UBYTE **dst_ttypes;
+    
+    if (!pool) return NULL;
+    
+    dst_ttypes = AllocPooled(pool, (alloc_ttypes + 2) * sizeof(UBYTE *));
+    if (!dst_ttypes)
+    {
+    	DeletePool(pool);
+	return NULL;
+    }
+    
+    /* Put together final tooltypes list based on old tooltypes and
+       new tooltypes all in one loop */
+       
+    for(;;)
+    {
+    	tt = NULL;
+	
+    	if (listobj)
+	{
+	    /* New tooltypes */
+	    
+    	    struct KeyInfo *ki = NULL;
+
+    	    DoMethod(listobj, MUIM_List_GetEntry, list_index, (IPTR)&ki);
+    	    list_index++;
+
+	    if (ki)
+	    {
+	    	tt = BuildToolType(ki);
+	    }
+	    else
+	    {
+	    	listobj = NULL;
+	    }	    
+	}
+	
+	if (!listobj)
+	{
+	    /* Old tooltypes */
+	    
+	    if (src_ttypes) tt = *src_ttypes++;
+	    if (!tt) break; /* Done. Skip out of "for(;;)" loop */
+
+    	    if (tt[0] == QUOTE_START) continue; /* skip tooltype containing old settings */
+	}
+	
+	if (!tt) break; /* Paranoia. Should not happen. */
+	
+	if (num_ttypes >= alloc_ttypes)
+	{
+	    UBYTE **new_dst_ttypes = AllocPooled(pool, (alloc_ttypes + 10 + 2) * sizeof(UBYTE *));
+	    
+	    if (!new_dst_ttypes)
+	    {
+	    	DeletePool(pool);
+		return NULL;
+	    }
+	    
+	    CopyMem(dst_ttypes + 1, new_dst_ttypes + 1, alloc_ttypes * sizeof(UBYTE *));
+	    dst_ttypes = new_dst_ttypes;
+	    alloc_ttypes += 10;
+	}
+	
+	dst_ttypes[num_ttypes + 1] = AllocPooled(pool, strlen(tt) + 1);
+	if (!dst_ttypes[num_ttypes + 1])
+	{
+    	    DeletePool(pool);
+    	    return NULL;
+	}
+	
+	CopyMem(tt, dst_ttypes[num_ttypes + 1], strlen(tt) + 1);
+	num_ttypes++;
+	
+    }
+    
+    dst_ttypes[0] = (APTR)pool;
+    
+    return dst_ttypes + 1;
+    
+}
+
+/*********************************************************************************************/
+
+void FreeToolTypes(UBYTE **ttypes)
+{
+    if (ttypes)
+    {
+    	DeletePool((APTR)ttypes[-1]);
+    }
+}
+
+/*********************************************************************************************/
+
+struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
+{
+    struct DiskObject *progicon;
+    
+    if (wbstartup)
+    {
+    	BPTR olddir;
+	
+	*icondir = wbstartup->sm_ArgList[0].wa_Lock;
+	
+	olddir = CurrentDir(*icondir);	
+    	progicon = GetDiskObject(wbstartup->sm_ArgList[0].wa_Name);		
+	CurrentDir(olddir);
+
+	strncpy(iconname, wbstartup->sm_ArgList[0].wa_Name, 255);
+    }
+    else
+    {	
+	if (GetProgramName(iconname, 255))
+	{
+    	    BPTR olddir;
+	    
+	    *icondir = GetProgramDir();
+	    
+	    olddir = CurrentDir(*icondir);
+    	    progicon = GetDiskObject(iconname);	    
+	    CurrentDir(olddir);
+	}	    
+    }
+    
+    return progicon;
+}
+
+/*********************************************************************************************/
+
+void SaveSettings(void)
+{
+    struct DiskObject 	 *progicon;
+    UBYTE   	    	**ttypes, **old_ttypes;
+    UBYTE   	    	  iconname[256];
+    BPTR    	    	  icondir = NULL;
+
+    progicon = LoadProgIcon(&icondir, iconname);
+        
+    if (!progicon) return;
+
+    old_ttypes = (UBYTE **)progicon->do_ToolTypes;
+    if ((ttypes = BuildToolTypes(old_ttypes)))
+    {
+    	BPTR olddir;
+	
+#if 0 /* DEBUG */
+    	UBYTE *tt, **ttypes_copy = ttypes;
+
+	while((tt = *ttypes_copy++))
+	{
+	    kprintf("TT: %s\n", tt);
+	}
+#endif
+
+    	olddir = CurrentDir(icondir);
+		
+    	progicon->do_ToolTypes = ttypes;
+	PutDiskObject(iconname, progicon);
+	progicon->do_ToolTypes = old_ttypes;
+	
+	CurrentDir(olddir);
+		
+    	FreeToolTypes(ttypes);
+    }
+    
+    FreeDiskObject(progicon);
+    
+}
+
+/*********************************************************************************************/
+
+void LoadSettings(void)
+{
+    struct DiskObject *progicon;
+    UBYTE   	       iconname[256];
+    BPTR    	       icondir = NULL;
+    UBYTE   	      **ttypes, *tt;
+    
+    progicon = LoadProgIcon(&icondir, iconname);
+    if (!progicon) return;
+
+    if ((ttypes = (UBYTE **)progicon->do_ToolTypes))
+    {
+    	while((tt = *ttypes++))
+	{
+	    struct KeyInfo   ki = {0};
+	    UBYTE   	    *quote_end;
+	    
+	    ki.action = 0xFF;
+
+	    if ((tt[0] == QUOTE_START) && ((quote_end = strchr(tt, (char)QUOTE_END))))
+	    {
+	    	WORD len = quote_end - tt - 1;
+
+		if (len >= sizeof(ki.descr)) continue;
+		if (quote_end[1] != ' ') continue;
+
+	    	strncpy(ki.descr, tt + 1, len);
+    	    		
+	    	if (strncmp(quote_end + 2, "CYCLE", 5 + 1) == 0)
+		{
+		    ki.action = ACTION_CYCLE_WIN;
+		}
+		else if (strncmp(quote_end + 2, "CYCLESCREEN", 11 + 1) == 0)
+		{
+		    ki.action = ACTION_CYCLE_SCR;
+		}
+		else if (strncmp(quote_end + 2, "MAKEBIG", 7 + 1) == 0)
+		{
+		    ki.action = ACTION_ENLARGE_WIN;
+		}
+		else if (strncmp(quote_end + 2, "MAKESMALL", 9 + 1) == 0)
+		{
+		    ki.action = ACTION_SHRINK_WIN;
+		}
+		else if (strncmp(quote_end + 2, "ZIPWINDOW", 9 + 1) == 0)
+		{
+		    ki.action = ACTION_TOGGLE_WIN;
+		}
+		else if (strncmp(quote_end + 2, "INSERT ", 7) == 0)
+		{
+		    ki.action = ACTION_INSERT_TEXT;
+		    strncpy(ki.param, quote_end + 2 + 7, sizeof(ki.param) - 1);
+		    
+		}
+		else if (strncmp(quote_end + 2, "RUN ", 4) == 0)
+		{
+		    ki.action = ACTION_RUN_PROG;
+		    strncpy(ki.param, quote_end + 2 + 4, sizeof(ki.param) - 1);
+		}
+		else if (strncmp(quote_end + 2, "AREXX ", 6) == 0)
+		{
+		    ki.action = ACTION_RUN_AREXX;
+		    strncpy(ki.param, quote_end + 2 + 6, sizeof(ki.param) - 1);
+		}
+		
+		if (ki.action != 0xFF)
+		{
+    	    	    DoMethod(list, MUIM_List_InsertSingle, (IPTR)&ki, MUIV_List_Insert_Bottom);
+		}
+		
+	    } /* if ((tt[0] == QUOTE_START) && ((quote_end = strchr(tt, QUOTE_END)))) */
+	    
+	} /* while((tt = *ttypes++)) */
+	
+	{
+	    LONG index;
+	    
+	    for(index = 0; ; index++)
+	    {
+	    	struct KeyInfo *ki = NULL;
+		
+		DoMethod(list, MUIM_List_GetEntry, index, (IPTR)&ki);
+		if (!ki) break;
+		
+		RethinkKey(ki);
+	    }
+	}
+
+    } /* if ((ttypes = (UBYTE **)progicon->do_ToolTypes)) */
+    
+    FreeDiskObject(progicon);
+}
+
+/*********************************************************************************************/
+
 void HandleAll(void)
 {
     ULONG sigs = 0;
@@ -896,6 +1236,10 @@ void HandleAll(void)
 	    case RETURNID_CMDACK:
 	    	CmdToKey();
 		break;
+		
+	    case RETURNID_SAVE:
+    	    	SaveSettings();
+		break;
 	}
 	
 	if (sigs)
@@ -922,6 +1266,7 @@ int main(int argc, char **argv)
     InitCX();
     InitMenus();
     MakeGUI();
+    LoadSettings();
     HandleAll();       
     Cleanup(NULL);
     
