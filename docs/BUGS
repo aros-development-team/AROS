@@ -257,9 +257,11 @@ srittau@aros.org
 Resource Tracking is disabled on native platforms. See file
 compiler/arossupport/include/rt.h
 
-BUG000038 (fixed for layers.library)
+BUG000038 fixed
 bergers@aros.org
 We seem to have a serious memory leak problem with just about all programs.
+The problem was in the layers library when getting the rastport and in
+clipblit the region wasn't freed.
 
 BUG000039 fixed
 nlorentz@online.no
@@ -299,3 +301,36 @@ I think the graphics_driver functions that need locking should
 maybe be reworked so they have only one exitpont (ie. return),
 thus reducing the risk for such bugs, and it would also make
 them less difficult to understand.
+
+BUG000044
+bergers@aros.org
+Only one screen seems to get the focus. If there are more screens than one
+only the one that was opened latest gets correct input events.
+
+BUG000045
+bergers@aros.org
+Games/Mine resizes the window. The old windowborder doesn't get erased,
+though.
+
+BUG000046
+bergers@aros.org
+When starting more than one "mxgads" by "run mxgads" and when letting the
+windows stack on top of each other the new window looses its display.
+
+BUG000047
+bergers@aros.org
+The window in "window" sometimes jumps when calling ChangeWindowBox() for
+the first time. When it doesn't jump you cannot close the window with the
+gadget. The gadget is assumed to be at the place where it would be if the
+window had "jumped".
+
+BUG000048
+bergers@aros.org
+When the window is enlarged via ChangeWindowBox() the enlarged area is not
+cleared, it's black.
+
+BUG000049
+bergers@aros.org
+Running multiple "window"s at the same time leads to flickering on the
+whole screen.
+
