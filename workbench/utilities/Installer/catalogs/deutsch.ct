@@ -3,16 +3,16 @@
 ## codeset 0
 ;
 MSG_OK
-OK
+Ok
 ;
 MSG_CANCEL
-Abbruch
+Abbrechen
 ;
 MSG_MESSAGE
-Nachricht
+Mitteilung
 ;
 MSG_PROMPT
-Frage
+Eingabeaufforderung
 ;
 MSG_YES
 Ja

@@ -15,10 +15,10 @@ MSG_NEWEMPTYFILE
 Neu
 ;
 MSG_OPENNEWFILE
-Öffne Datei...
+Öffnen...
 ;
 MSG_LOADINPRJ
-Lade Date...
+Laden...
 ;
 MSG_SAVEFILE
 Speichern
@@ -27,7 +27,7 @@ MSG_SAVEFILEAS
 Speichern als...
 ;
 MSG_SAVECHANGES
-Speichere Änderungen
+Änderungen speichern
 ;
 MSG_PRINTFILE
 Drucken
@@ -57,10 +57,10 @@ MSG_MARK
 Markieren
 ;
 MSG_MARKCOLUMN
-Markieren Spalte
+Spalte Markieren
 ;
 MSG_SELECTALL
-Markiere alles
+Alles auswählen
 ;
 MSG_DELLINE
 Zeile löschen
@@ -72,7 +72,7 @@ MSG_INDENT
 Einrücken
 ;
 MSG_UNINDENT
-Einrückung aufheben
+Ausrücken
 ;
 MSG_UPPERCASE
 Großschreibung
@@ -87,10 +87,10 @@ MSG_INSERTFILE
 Datei einfügen...
 ;
 MSG_UNDO
-Zurücknehmen (Undo)
+Rückgängig
 ;
 MSG_REDO
-Wiederherstellen (Redo)
+Wiederherstellen
 ;
 MSG_SEARCHTITLE
 Suchen
@@ -157,31 +157,31 @@ MSG_ENVTITLE
 Einstellungen
 ;
 MSG_SCRMODE
-Bildschirm Auflösung...
+Bildschirmmodus...
 ;
 MSG_FONTS
-Schriftart...
+Schriftarten...
 ;
 MSG_PREFS
-Haupt Einstellungen...
+Allgemeine Einstellungen...
 ;
 MSG_LOADPREFS
-Lade Einstellung...
+Einstellungen laden...
 ;
 MSG_SAVEPREFS
-Speichere Einstellung
+Einstellungen speichern
 ;
 MSG_SAVEPREFSAS
-Speichere Einstellung als...
+Einstellungen speichern als...
 ;
 ERR_BADOS
-Installiere OS v2.0 or höher.
+AmigaOS v2.0 oder neuer wird benötigt.
 ;
 ERR_NOASLREQ
 Kann ASL-Requester nicht öffnen!
 ;
 ERR_NOMEM
-Nicht genügend Speicher vorhanden!
+Speichermangel!
 ;
 ERR_NOGUI
 Hauptfenster konnte nicht geöffnet werden!
@@ -190,22 +190,22 @@ ERR_NONAME
 Unbenannt
 ;
 ERR_WRITECLIP
-Clipboard konnte nicht beschrieben werden!
+Fehler beim Schreiben in die Zwischenablage!
 ;
 ERR_OPENCLIP
-Clipboard konnte nicht geöffnet werden!
+Zwischenablage konnte nicht geöffnet werden!
 ;
 ERR_LOADFILE
 Datei konnte nicht geöffnet werden!
 ;
 ERR_NOTXTINCLIP
-Clipboard beinhaltet keinen Text
+Zwischenablage enthält keinen Text!
 ;
 ERR_WRONG_TYPE
 Objekt ist ein Verzeichnis!
 ;
 ERR_READCLIP
-Speicherkapazität ist zu klein, Text ist unvollständig!
+Text aus Zwischenablage konnte nicht komplett gelesen werden. Wahrscheinlicher Grund ist Speichermangel.
 ;
 ERR_NOBRACKET
 Keine Klammer unter Cursor!
@@ -214,22 +214,22 @@ ERR_NOT_FOUND
 Muster '%s' nicht gefunden
 ;
 ERR_LOADFONT
-Konnte gewählten Schriftsatz nicht öffnen!
+Gewählter Zeichensatz konnte nicht geöffnet werden!
 ;
 ERR_NOPREFEDITOR
-Kann Einstellungs Editor nicht finden!
+Voreinstellungsprogramm konnte nicht gefunden werden!
 ;
 ERR_BADPREFSFILE
-Fehlerhaftes Einstellungs Datei Format.
+Einstellungsdatei hat ein ungültiges Format.
 ;
 ERR_FILEMODIFIED
 %s wurde geändert.\nSoll die Datei wirklich geschlossen werden?
 ;
 ERR_SLC
-Speichern|Schließen|Abbruch
+Speichern|Schließen|Abbrechen
 ;
 ERR_NOSEARCHTEXT
-Kein Text, wonach gesucht werden könnte!
+Kein Suchtext angegeben!
 ;
 ERR_FILEEXISTS
 Diese Datei existiert bereits. Soll sie überschrieben werden?
@@ -238,7 +238,7 @@ ERR_OC
 Ja|Nein
 ;
 WARN_RECORD
-Makro Aufnahme gestartet
+Makroaufnahme starten
 ;
 WARN_RECORDED
 Makro aufgenommen
@@ -262,7 +262,7 @@ Datei : %s\n\
 Länge : %ld %s, %ld %s.\n
 ;
 MSG_CONTINUE
-Schließen
+Weiter
 ;
 MSG_BYTE
 Byte
