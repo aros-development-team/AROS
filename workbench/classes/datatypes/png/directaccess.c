@@ -5,6 +5,7 @@
 
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <proto/png.h>
 #include <datatypes/pictureclass.h>
 
 #include <png.h>
@@ -88,8 +89,10 @@ AROS_LH1(LONG, PNG_CheckSig,
 
 /***************************************************************************************************/
 
-AROS_LH2(APTR, PNG_LoadImage,
-    AROS_LHA(STRPTR, name, A0),
+AROS_LH4(APTR, PNG_LoadImageFH,
+    AROS_LHA(BPTR, fh, A0),
+    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(APTR *,  chunkstore, A2),
     AROS_LHA(BOOL, makeARGB, D0),
     struct Library *, PNGBase, 7, PNG)
 {
@@ -99,12 +102,10 @@ AROS_LH2(APTR, PNG_LoadImage,
     struct PNGStuff   png;
     struct PNGHandle *pnghandle = NULL;
     APTR    	      buffer = NULL;
-    BPTR    	      fh;
     UBYTE   	      header[8];
     APTR    	      retval = 0;
     BOOL    	      ok = TRUE;
     
-    fh = Open(name, MODE_OLDFILE);
     if (!fh) return NULL;
     
     if (Read(fh, header, sizeof(header)) != sizeof(header)) ok = FALSE;
@@ -149,6 +150,7 @@ AROS_LH2(APTR, PNG_LoadImage,
     {
     	png_set_read_fn(png.png_ptr, fh, my_read_fn);
     	png_set_sig_bytes(png.png_ptr, sizeof(header));
+	
     }
     
     if (ok)
@@ -163,7 +165,32 @@ AROS_LH2(APTR, PNG_LoadImage,
     
     if (ok)
     {
+	if (chunkstoread)
+	{
+	    int i;
+
+    	    /* CHECKME:
+	    
+	       Do this first, because it doesn't work otherwise. Maybe
+	       a bug in libpng. The problem is that libpng/pngrutil.c
+	       in png_handle_unknown() checks PNG_FLAG_KEEP_UNKNOWN_CHUNKS
+	       flag. But this flag is set only when num_chunks param passed
+	       to png_set_keep_unknown_chunks() is 0.
+	       
+	    */
+	       
+	    png_set_keep_unknown_chunks(png.png_ptr, 3, 0, 0);
+	    
+	    for(i = 0; chunkstoread[i]; i++)
+	    {
+kprintf("** Calling png_set_keep_unknown chunks(%s)\n", chunkstoread[i]);
+	    	png_set_keep_unknown_chunks(png.png_ptr, 3, chunkstoread[i], 1);	    	
+	    }
+	    	    	  				    
+	}
+
 	png_read_info(png.png_ptr, png.png_info_ptr);
+
 	png_get_IHDR(png.png_ptr, png.png_info_ptr,
     	    	     &png.png_width, &png.png_height, &png.png_bits,
 		     &png.png_type, &png.png_lace, NULL, NULL);
@@ -310,9 +337,58 @@ AROS_LH2(APTR, PNG_LoadImage,
 
     	    png_read_end(png.png_ptr, png.png_end_info_ptr);
 
+    	    if (chunkstore && chunkstoread)
+	    {
+	    	png_unknown_chunkp entries;
+		png_infop info;
+		
+		int infoloop;
+		
+		info = png.png_info_ptr;
+		
+		for(infoloop = 0; infoloop < 2; infoloop++)
+		{
+		    int numchunks = png_get_unknown_chunks(png.png_ptr, info, &entries);
+kprintf("png_get_unknown_chunks(%x) %d\n", info, numchunks);
+
+		    while(numchunks--)
+		    {
+		    	int i;
+			
+			for(i = 0; chunkstoread[i]; i++)
+			{
+			    if (chunkstore[i]) continue;
+			    
+		    	    if (memcmp(entries->name, chunkstoread[i], 4) == 0)
+			    {
+			    	png_unknown_chunkp p;
+				
+    	    	    	    	chunkstore[i] = AllocVec(sizeof(*p) + entries->size, MEMF_ANY);
+				if (!chunkstore[i]) png_error(png.png_ptr, "Out of memory!");
+				
+				p = (png_unknown_chunkp)chunkstore[i];
+				
+				*p = *entries;
+				p->data = (png_byte *)(p + 1);
+				memcpy(p->data, entries->data, entries->size);
+				break;
+			    }
+
+			} /* for(i = 0; chunkstoread[i]; i++) */
+
+			entries++;
+			
+		    } /* while(numchunks--) */
+		    
+		    info = png.png_end_info_ptr;
+		    
+		} /* for(infoloop = 0, infoloop < 2; infoloop++) */
+		
+	    } /* if (chunkstore && chunkstoread) */
+
     	    pnghandle->pal = 0;
 	    pnghandle->stuff = png;
-	    
+	    	    
 	    /* We're done :-) */
 	    
     	    retval = pnghandle;
@@ -331,14 +407,38 @@ AROS_LH2(APTR, PNG_LoadImage,
     {
     	if (pnghandle) FreeVec(pnghandle);
     }
-    
-    Close(fh);
 	    
     return retval;
     
     AROS_LIBFUNC_EXIT
 }
+
+/***************************************************************************************************/
+
+AROS_LH4(APTR, PNG_LoadImage,
+    AROS_LHA(STRPTR, name, A0),
+    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(APTR *,  chunkstore, A2),
+    AROS_LHA(BOOL, makeARGB, D0),
+    struct Library *, PNGBase, 8, PNG)
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+    
+    BPTR    	      fh;
+    APTR    	      retval = 0;
+    
+    if ((fh = Open(name, MODE_OLDFILE)))
+    {
+    	retval = PNG_LoadImageFH(fh, chunkstoread, chunkstore, makeARGB);
+	Close(fh);
+    }
    
+    return retval;
+    
+    AROS_LIBFUNC_EXIT
+}
+    
 /***************************************************************************************************/
 
 AROS_LH5(void, PNG_GetImageInfo,
@@ -347,7 +447,7 @@ AROS_LH5(void, PNG_GetImageInfo,
     AROS_LHA(LONG *, heightptr, A2),
     AROS_LHA(LONG *, depthptr, A3),
     AROS_LHA(LONG *, typeptr, A4),
-    struct Library *, PNGBase, 8, PNG)
+    struct Library *, PNGBase, 9, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -370,7 +470,7 @@ AROS_LH3(void, PNG_GetImageData,
     AROS_LHA(APTR, pnghandle, A0),
     AROS_LHA(APTR *, gfxdataptr, A1),
     AROS_LHA(APTR *, paldataptr, A2),
-    struct Library *, PNGBase, 9, PNG)
+    struct Library *, PNGBase, 10, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -389,7 +489,7 @@ AROS_LH3(void, PNG_GetImageData,
 
 AROS_LH1(void, PNG_FreeImage,
     AROS_LHA(APTR, pnghandle, A0),
-    struct Library *, PNGBase, 10, PNG)
+    struct Library *, PNGBase, 11, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -401,3 +501,34 @@ AROS_LH1(void, PNG_FreeImage,
      
 /***************************************************************************************************/
 
+AROS_LH1(void, PNG_FreeChunk,
+    AROS_LHA(APTR, chunk, A0),
+    struct Library *, PNGBase, 12, PNG)
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+
+    if (chunk) FreeVec(chunk);
+    
+    AROS_LIBFUNC_EXIT
+}
+ 
+/***************************************************************************************************/
+
+AROS_LH3(void, PNG_GetChunkInfo,
+    AROS_LHA(APTR, chunk, A0),
+    AROS_LHA(APTR *, dataptr, A1),
+    AROS_LHA(ULONG *, sizeptr, A2),
+    struct Library *, PNGBase, 13, PNG)
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+
+    png_unknown_chunkp p = (png_unknown_chunkp)chunk;
+    if (dataptr) *dataptr = p->data;
+    if (sizeptr) *sizeptr = p->size;
+    
+    AROS_LIBFUNC_EXIT
+}
+ 
+/***************************************************************************************************/
