@@ -17,7 +17,7 @@
 	AROS_LH2(void, AddBob,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Bob *, Bob, A0),
+	AROS_LHA(struct Bob *, bob, A0),
 	AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
@@ -25,12 +25,12 @@
 
 /*  FUNCTION
 	The Bob is linked into the current gel list via AddVSprite.
-        The Bob's flags are set up.
+	The Bob's flags are set up.
 
     INPUTS
 	Bob = pointer to Bob to be added to gel list
 	rp  = pointer to RastPort that has an initilized GelsInfo linked
-              to it (see InitGels()).
+	      to it (see InitGels()).
 
     RESULT
 
@@ -52,8 +52,8 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  Bob -> Flags &= 0x00FF;
-  AddVSprite(Bob -> BobVSprite, rp);
+  bob->Flags &= 0x00FF;
+  AddVSprite (bob->BobVSprite, rp);
 
   AROS_LIBFUNC_EXIT
 } /* AddBob */

@@ -15,16 +15,15 @@
 
 struct View;
 /* Prototypes */
-
 AROS_LP3(void, AddAnimOb,
-	AROS_LPA(struct AnimOb *  , anOb,  A0),
+	AROS_LPA(struct AnimOb *, anOb, A0),
 	AROS_LPA(struct AnimOb ** , anKey, A1),
-	AROS_LPA(struct RastPort *, rp ,   A2),
+	AROS_LPA(struct RastPort *, rp, A2),
 	struct GfxBase *, GfxBase, 26, Graphics)
 
 AROS_LP2(void, AddBob,
-	AROS_LPA(struct Bob *     , Bob, A0),
-	AROS_LPA(struct RastPort *, rp , A1),
+	AROS_LPA(struct Bob *, bob, A0),
+	AROS_LPA(struct RastPort *, rp, A1),
 	struct GfxBase *, GfxBase, 16, Graphics)
 
 AROS_LP1(void, AddFont,
@@ -49,29 +48,20 @@ AROS_LP2(PLANEPTR, AllocRaster,
 	AROS_LPA(ULONG          , height, D1),
 	struct GfxBase *, GfxBase, 82, Graphics)
 
-AROS_LP2(struct ExtSprite *, AllocSpriteDataA,
-	AROS_LPA(struct BitMap * , bitmap , A2),
-	AROS_LPA(struct TagItem *, taglist, A1),
-	struct GfxBase *, GfxBase, 170, Graphics)
-
 AROS_LP2(void, AndRectRegion,
 	AROS_LPA(struct Region    *, region, A0),
 	AROS_LPA(struct Rectangle *, rectangle, A1),
 	struct GfxBase *, GfxBase, 84, Graphics)
 
 AROS_LP2(void, Animate,
-	AROS_LPA(struct AnimOb ** , anKey, A0),
-	AROS_LPA(struct RastPort *, rp   , A1),
+	AROS_LPA(struct AnimOb **, anKey, A0),
+	AROS_LPA(struct RastPort *, rp, A1),
 	struct GfxBase *, GfxBase, 27, Graphics)
 
 AROS_LP2(void, AskFont,
 	AROS_LPA(struct RastPort *, rp, A1),
 	AROS_LPA(struct TextAttr *, textAttr, A0),
 	struct GfxBase *, GfxBase, 79, Graphics)
-
-AROS_LP1(void, BitMapScale,
-	AROS_LPA(struct BitScaleArgs *, bitScaleArgs, A0),
-	struct GfxBase *, GfxBase, 113, Graphics)
 
 AROS_LP11(LONG, BltBitMap,
 	AROS_LPA(struct BitMap *, srcBitMap, A0),
@@ -86,12 +76,6 @@ AROS_LP11(LONG, BltBitMap,
 	AROS_LPA(ULONG          , mask, D7),
 	AROS_LPA(PLANEPTR       , tempA, A2),
 	struct GfxBase *, GfxBase, 5, Graphics)
-
-AROS_LP3(void, BltClear,
-	AROS_LPA(void *, memblock , A1),
-	AROS_LPA(ULONG , bytecount, D0),
-	AROS_LPA(ULONG , flags    , D1),
-	struct GfxBase *, GfxBase, 50, Graphics)
 
 AROS_LP2(BOOL, ClearRectRegion,
 	AROS_LPA(struct Region    *, region   , A0),
@@ -135,6 +119,11 @@ AROS_LP5(void, DrawEllipse,
 	AROS_LPA(LONG             , b, D3),
 	struct GfxBase *, GfxBase, 30, Graphics)
 
+AROS_LP2(ULONG, ExtendFont,
+	AROS_LPA(struct TextFont *, font, A0),
+	AROS_LPA(struct TagItem  *, fontTags, A1),
+	struct GfxBase *, GfxBase, 136, Graphics)
+
 AROS_LP5(void, EraseRect,
 	AROS_LPA(struct RastPort *, rp, A1),
 	AROS_LPA(LONG             , xMin, D0),
@@ -143,23 +132,14 @@ AROS_LP5(void, EraseRect,
 	AROS_LPA(LONG             , yMax, D3),
 	struct GfxBase *, GfxBase, 135, Graphics)
 
-AROS_LP2(ULONG, ExtendFont,
-	AROS_LPA(struct TextFont *, font, A0),
-	AROS_LPA(struct TagItem  *, fontTags, A1),
-	struct GfxBase *, GfxBase, 136, Graphics)
-
 AROS_LP1(void, FreeBitMap,
 	AROS_LPA(struct BitMap *, bm, A0),
 	struct GfxBase *, GfxBase, 154, Graphics)
 
-AROS_LP1(void, FreeColorMap,
-	AROS_LPA(struct ColorMap *, colormap, A0),
-	struct GfxBase *, GfxBase, 96, Graphics)
-
 AROS_LP3(void, FreeGBuffers,
-	AROS_LPA(struct AnimOb *  , anOb, A0),
-	AROS_LPA(struct RastPort *, rp  , A1),
-	AROS_LPA(BOOL             , db  , D0),
+	AROS_LPA(struct AnimOb *, anOb, A0),
+	AROS_LPA(struct RastPort *, rp, A1),
+	AROS_LPA(BOOL , db, D0),
 	struct GfxBase *, GfxBase, 100, Graphics)
 
 AROS_LP3(void, FreeRaster,
@@ -171,14 +151,6 @@ AROS_LP3(void, FreeRaster,
 AROS_LP1(void, FreeRastPort,
 	AROS_LPA(struct RastPort *, rp, A1),
 	struct GfxBase *, GfxBase, 180, Graphics)
-
-AROS_LP1(void, FreeSprite,
-	AROS_LPA(WORD, pick, D0),
-	struct GfxBase *, GfxBase, 69, Graphics)
-
-AROS_LP1(void, FreeSpriteData,
-	AROS_LPA(struct ExtSprite *, extsp, A2),
-	struct GfxBase *, GfxBase, 172, Graphics)
 
 AROS_LP1(ULONG, GetAPen,
 	AROS_LPA(struct RastPort *, rp, A0),
@@ -193,33 +165,19 @@ AROS_LP1(ULONG, GetBPen,
 	AROS_LPA(struct RastPort *, rp, A0),
 	struct GfxBase *, GfxBase, 144, Graphics)
 
-AROS_LP1(struct ColorMap *, GetColorMap,
-	AROS_LPA(ULONG, entries, D0),
-	struct GfxBase *, GfxBase, 95, Graphics)
-
 AROS_LP1(ULONG, GetDrMd,
 	AROS_LPA(struct RastPort *, rp, A0),
 	struct GfxBase *, GfxBase, 145, Graphics)
 
-AROS_LP2(BOOL, GetExtSpriteA,
-	AROS_LPA(struct ExtSprite *, sprite, A2),
-	AROS_LPA(struct TagItem   *, tags  , A1),
-	struct GfxBase *, GfxBase, 155, Graphics)
-
 AROS_LP3(BOOL, GetGBuffers,
-	AROS_LPA(struct AnimOb *  , anOb, A0),
-	AROS_LPA(struct RastPort *, rp  , A1),
-	AROS_LPA(BOOL             , db  , D0),
+	AROS_LPA(struct AnimOb *, anOb, A0),
+	AROS_LPA(struct RastPort *, rp, A1),
+	AROS_LPA(BOOL , db, D0),
 	struct GfxBase *, GfxBase, 28, Graphics)
 
 AROS_LP1(ULONG, GetOutlinePen,
 	AROS_LPA(struct RastPort *, rp, A0),
 	struct GfxBase *, GfxBase, 146, Graphics)
-
-AROS_LP2(void, GetSprite,
-	AROS_LPA(struct SimpleSprite *, sprite, A0),
-	AROS_LPA(WORD                 , pick  , D0),
-	struct GfxBase *, GfxBase, 68, Graphics)
 
 AROS_LP2( void , GfxAssociate,
 	AROS_LPA( void *, pointer, A0),
@@ -238,12 +196,6 @@ AROS_LP1(struct ExtendedNode *, GfxNew,
 	AROS_LPA( ULONG, node_type, D0),
 	struct GfxBase *, GfxBase, 110, Graphics)
 
-AROS_LP3(void, InitArea,
-	AROS_LPA(struct AreaInfo *, areainfo,   A0),
-	AROS_LPA(void *           , buffer,     A1),
-	AROS_LPA(SHORT            , maxvectors, D0),
-	struct GfxBase *, GfxBase, 47, Graphics)
-
 AROS_LP3(void, InitGels,
 	AROS_LPA(struct VSprite *, head, A0),
 	AROS_LPA(struct VSprite *, tail, A1),
@@ -258,10 +210,6 @@ AROS_LP1(void, InitMasks,
 	AROS_LPA(struct VSprite *, vs, A0),
 	struct GfxBase *, GfxBase, 21, Graphics)
 
-AROS_LP1(BOOL, InitRastPort,
-	AROS_LPA(struct RastPort *, rp, A1),
-	struct GfxBase *, GfxBase, 33, Graphics)
-
 AROS_LP1(void, InitView,
 	AROS_LPA(struct View *, view, A1),
 	struct GfxBase *, GfxBase, 60, Graphics)
@@ -269,6 +217,10 @@ AROS_LP1(void, InitView,
 AROS_LP1(void, InitVPort,
 	AROS_LPA(struct ViewPort *, vp, A0),
 	struct GfxBase *, GfxBase, 34, Graphics)
+
+AROS_LP1(BOOL, InitRastPort,
+	AROS_LPA(struct RastPort *, rp, A1),
+	struct GfxBase *, GfxBase, 33, Graphics)
 
 AROS_LP2(void, LoadRGB32,
 	AROS_LPA(struct ViewPort *, vp, A0),
@@ -355,9 +307,9 @@ AROS_LP2(void, SetBPen,
 	struct GfxBase *, GfxBase, 58, Graphics)
 
 AROS_LP3(void, SetCollision,
-	AROS_LPA(ULONG            , num          , D0),
-	AROS_LPA(void             , (* routine)(), A0),
-	AROS_LPA(struct GelsInfo *, GInfo        , A1),
+	AROS_LPA(ULONG            , num    , D0),
+	AROS_LPA(VOID_FUNC        , routine, A0),
+	AROS_LPA(struct GelsInfo *, GInfo  , A1),
 	struct GfxBase *, GfxBase, 24, Graphics)
 
 AROS_LP2(void, SetDrMd,
@@ -369,11 +321,6 @@ AROS_LP2(void, SetFont,
 	AROS_LPA(struct RastPort *, rp, A1),
 	AROS_LPA(struct TextFont *, textFont, A0),
 	struct GfxBase *, GfxBase, 11, Graphics)
-
-AROS_LP2(void, SetMaxPen,
-	AROS_LPA(struct RastPort *, rp     ,   A0),
-	AROS_LPA(ULONG            , maxpenk, D0),
-	struct GfxBase *, GfxBase, 165, Graphics)
 
 AROS_LP2(ULONG, SetOutlinePen,
 	AROS_LPA(struct RastPort *, rp, A0),
