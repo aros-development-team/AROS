@@ -127,8 +127,11 @@ IPTR Pendisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Pendisplay_Spec:
-	    	data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
-		newcol = TRUE;
+		if (tag->ti_Data)
+		{
+		    data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
+		    newcol = TRUE;
+		}
 		break;
 
 		
