@@ -28,7 +28,9 @@ void main(void)
       {
         struct RastPort * rp = TheDude->RPort;
         struct TmpRas tmpras;
+        struct IntuiMessage * Msg;
         UWORD areabuffer[250];
+        char c;
         struct AreaInfo myAreaInfo;
         InitArea(&myAreaInfo, &areabuffer[0], 50);
         rp->AreaInfo = &myAreaInfo;
@@ -64,8 +66,34 @@ void main(void)
         SetAPen(rp, 1);
         Flood(rp,0,50,50);
 */
-                
-        Wait(1 << TheDude->UserPort->mp_SigBit);
+/*        
+        ScrollRaster(&IntuitionBase->ActiveScreen->RastPort,
+                     -1,
+                     -1,
+                     10,
+                     10,
+                     100,
+                     100);
+*/
+        printf("press a key and hit return!");
+        scanf("%c",&c);
+        ScrollRaster(rp,
+                     -10,
+                     -10,
+                     10,
+                     10,
+                     100,
+                     100);
+
+    
+        while (TRUE)
+        {               
+          WaitPort(TheDude->UserPort);
+          Msg = (struct IntuiMessage *)GetMsg(TheDude->UserPort);
+          if (IDCMP_CLOSEWINDOW == Msg->Class)
+            break;
+          ReplyMsg((struct Message *)Msg);
+        }
         CloseWindow(TheDude);
       }
       CloseLibrary((struct Library *)IntuitionBase);
@@ -73,4 +101,3 @@ void main(void)
     CloseLibrary((struct Library *)GfxBase);
   }
 }
-
