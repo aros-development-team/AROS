@@ -12,6 +12,7 @@ void writeinclibdefs(void)
     char line[1024];
     char *suffix;
     struct linelist *linelistit;
+    char *residentflags;
     
     snprintf(line, 1023, "%s/%s_libdefs.h", gendir, modulename);
     out = fopen(line, "w");
@@ -41,6 +42,15 @@ void writeinclibdefs(void)
             exit(20);
     }
     
+    if (residentpri >= 105)
+	residentflags = "RTF_AUTOINIT|RTF_SINGLETASK";
+    else if (residentpri >= -50)
+	residentflags = "RTF_AUTOINIT|RTF_COLDSTART";
+    else if (residentpri < -120)
+	residentflags = "RTF_AUTOINIT|RTF_AFTERDOS";
+    else
+	residentflags = "RTF_AUTOINIT";
+
     fprintf
     (
         out,
@@ -65,6 +75,8 @@ void writeinclibdefs(void)
         "#define LC_NO_OPENLIB\n"
         "#define LC_NO_CLOSELIB\n"
         "#define LC_NO_EXPUNGELIB\n"
+        "#define LC_RESIDENTFLAGS %s\n"
+	"#define LC_RESIDENTPRI   %d\n"
         "#endif /* _%s_LIBDEFS_H */\n",
         modulename, suffix,
         basename, basename,
@@ -73,6 +85,7 @@ void writeinclibdefs(void)
         basename, basename,
         modulename, majorversion, minorversion, datestring,
         modulename, modulename,
+        residentflags, residentpri,
         modulenameupper
     );
 

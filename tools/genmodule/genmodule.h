@@ -62,6 +62,7 @@ extern enum libcall libcall;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, 
             *libbasetypeextern, *datestring, *superclass;
+extern int residentpri;
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *cdefprivatelines, *protolines;
 
