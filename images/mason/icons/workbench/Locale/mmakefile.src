@@ -1,0 +1,22 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS   := Help 
+ICONDIR := $(AROS_LOCALE)
+
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+
+#MM- masonicons : masonworkbenchicons
+
+#MM
+masonworkbenchicons : setup $(ICONFILES)
+	@$(NOP)
+	
+$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
+	%makeicon2
+
+setup :
+	%mkdirs_q $(AROSDIR)
+
+
