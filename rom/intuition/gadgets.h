@@ -68,5 +68,8 @@ void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
 /* gadget box in domain coords */
 void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
 		      struct Requester *req, struct IBox *box);
+		      
+void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase);
+
 #endif /* _GADGETS_H_ */
 
