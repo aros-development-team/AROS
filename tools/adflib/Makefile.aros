@@ -44,7 +44,7 @@ $(OBJDIR)/%.o : %.c $(OBJDIR)/defendian.h
 	@$(MECHO) "Compiling adflib/$(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
 
-$(OBJDIR)/%.d : %.c
+$(OBJDIR)/%.d : %.c $(OBJDIR)/defendian.h
 	@$(MECHO) Finding dependencies for $<...
 	@$(MKDIR) -p $(dir $@)
 	@$(HOST_CC) $(HOST_CFLAGS) -M $< > $@
