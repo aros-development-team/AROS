@@ -10,6 +10,7 @@
 */
 
 #include <sys/arosc.h>
+#include <sys/cdefs.h>
 
 #define _ISupper    0x0001  /* UPPERCASE */
 #define _ISlower    0x0002  /* lowercase */
@@ -34,44 +35,28 @@
 #define isascii(c)      (((c) & ~0x7F) == 0)
 #define toascii(c)      ((c) & 0x7F)
 
-#define _isupper(c)     _istype(c,_ISupper)
-#define _islower(c)     _istype(c,_ISlower)
-#define _isalpha(c)     _istype(c,_ISalpha)
-#define _isdigit(c)     _istype(c,_ISdigit)
-#define _isxdigit(c)    _istype(c,_ISxdigit)
-#define _isspace(c)     _istype(c,_ISspace)
-#define _isprint(c)     _istype(c,_ISprint)
-#define _isgraph(c)     _istype(c,_ISgraph)
-#define _isblank(c)	_istype(c,_ISblank)
-#define _iscntrl(c)     _istype(c,_IScntrl)
-#define _ispunct(c)     _istype(c,_ISpunct)
-#define _isalnum(c)     _istype(c,_ISalnum)
-#define _iscsym(c)	(isalnum(c) || (((c) & 127) == 0x5F))	/* SAS C */
-#define _iscsymf(c)	(isalpha(c) || (((c) & 127) == 0x5F)) 	/* SAS C */
+#define __ctype_make_func(__name__, __body__)    \
+__BEGIN_DECLS                          \
+static __inline__ int __name__(int c); \
+__END_DECLS                            \
+static __inline__ int __name__(int c)  \
+{ return __body__; }
 
-#define _toupper(c)      (__ctype_toupper[(int)(c)])
-#define _tolower(c)      (__ctype_tolower[(int)(c)])
-
-#define __ctype_make_func(__name__)                         \
-static __inline__ typeof(_ ## __name__(0)) __name__(int c); \
-static __inline__ typeof(_ ## __name__(0)) __name__(int c)  \
-{ return _ ## __name__(c); }
-
-__ctype_make_func(isupper)
-__ctype_make_func(islower)
-__ctype_make_func(isalpha)
-__ctype_make_func(isdigit)
-__ctype_make_func(isxdigit)
-__ctype_make_func(isspace)
-__ctype_make_func(isprint)
-__ctype_make_func(isgraph)
-__ctype_make_func(isblank)
-__ctype_make_func(iscntrl)
-__ctype_make_func(ispunct)
-__ctype_make_func(isalnum)
-__ctype_make_func(iscsym)
-__ctype_make_func(iscsymf)
-__ctype_make_func(toupper)
-__ctype_make_func(tolower)
+__ctype_make_func(isupper,  _istype(c,_ISupper))
+__ctype_make_func(islower,  _istype(c,_ISlower))
+__ctype_make_func(isalpha,  _istype(c,_ISalpha))
+__ctype_make_func(isdigit,  _istype(c,_ISdigit))
+__ctype_make_func(isxdigit, _istype(c,_ISxdigit))
+__ctype_make_func(isspace,  _istype(c,_ISspace))
+__ctype_make_func(isprint,  _istype(c,_ISprint))
+__ctype_make_func(isgraph,  _istype(c,_ISgraph))
+__ctype_make_func(isblank,  _istype(c,_ISblank))
+__ctype_make_func(iscntrl,  _istype(c,_IScntrl))
+__ctype_make_func(ispunct,  _istype(c,_ISpunct))
+__ctype_make_func(isalnum,  _istype(c,_ISalnum))
+__ctype_make_func(iscsym,   isalnum(c) || (c & 127) == 0x5F)
+__ctype_make_func(iscsymf,  isalpha(c) || (c & 127) == 0x5F)
+__ctype_make_func(toupper,  __ctype_toupper[c])
+__ctype_make_func(tolower,  __ctype_tolower[c])
 
 #endif /* _CTYPE_H_ */
