@@ -183,50 +183,59 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	/* For all planes */
 	for (plane=0; plane<depth; plane ++)
 	{
-	    /* Copy this plane ? */
-	    if ((1L << plane) & mask)
+	    /* Don't do anything if destination planeptr is NULL (means treat like
+	       a plane with all zeros) or -1 (means treat like a plane with all ones) */
+	       
+	    if ((destBitMap->Planes[plane] != NULL) && (destBitMap->Planes[plane] != (PLANEPTR)-1))
 	    {
-#warning FIXME: add support for NULL and -1 plane pointers
-
-		planecnt ++; /* count it */
-
-		for (y=0; y<ySize; y++)
+		/* Copy this plane ? */
+		if ((1L << plane) & mask)
 		{
-		    src  =  srcBitMap->Planes[plane] + (y+ySrc) * srcBitMap->BytesPerRow;
-		    dest = destBitMap->Planes[plane] + (y+yDest)*destBitMap->BytesPerRow;
 
-                    /*
-                       If the source address is less or equal to
-                       the destination address 
-                     */
-		    if ((src <= dest && src+srcBitMap->BytesPerRow > dest)
-			|| (dest <= src && dest+destBitMap->BytesPerRow > src)
-		    )
-	            {
-			if (!temp)
-			{
-			    if (tempA)
-				temp = tempA;
-			    else
-				temp = AllocMem (srcBitMap->BytesPerRow, MEMF_ANY);
+		    planecnt ++; /* count it */
 
+		    for (y=0; y<ySize; y++)
+		    {
+			src  =  srcBitMap->Planes[plane] + (y+ySrc) * srcBitMap->BytesPerRow;
+			dest = destBitMap->Planes[plane] + (y+yDest)*destBitMap->BytesPerRow;
+
+                	/*
+                	   If the source address is less or equal to
+                	   the destination address 
+                	 */
+			if ((src <= dest && src+srcBitMap->BytesPerRow > dest)
+			    || (dest <= src && dest+destBitMap->BytesPerRow > src)
+			)
+	        	{
 			    if (!temp)
-				return 0;
+			    {
+				if (tempA)
+				    temp = tempA;
+				else
+				    temp = AllocMem (srcBitMap->BytesPerRow, MEMF_ANY);
+
+				if (!temp)
+				    return 0;
+			    }
+
+			    memmove (temp, src, srcBitMap->BytesPerRow);
+
+			    for (x=0; x<xSize; x++)
+				copyonepixel (temp, x+xSrc, dest, x+xDest, minterm);
+			}
+			else
+			{
+			    for (x=0; x<xSize; x++)
+				copyonepixel (src, x+xSrc, dest, x+xDest, minterm);
 			}
 
-			memmove (temp, src, srcBitMap->BytesPerRow);
+		    } /* for (y=0; y<ySize; y++) */
 
-			for (x=0; x<xSize; x++)
-			    copyonepixel (temp, x+xSrc, dest, x+xDest, minterm);
-		    }
-		    else
-		    {
-			for (x=0; x<xSize; x++)
-			    copyonepixel (src, x+xSrc, dest, x+xDest, minterm);
-		    }
-		}
-	    }
-	}
+		} /* if ((1L << plane) & mask) */
+	    
+	    } /* if dest plane != NULL and dest plane != -1 */
+	    
+	} /* for (plane=0; plane<depth; plane ++) */
 
 	if (temp && !tempA)
 	    FreeMem (temp, srcBitMap->BytesPerRow);
@@ -245,10 +254,19 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
     UBYTE dBit;
     BOOL set;
 
-    sByte = xsrc >> 3;
-    sBit = 1L << (7 - (xsrc & 0x07));
-    sSet = (src[sByte] & sBit) != 0;
-
+    if (src == NULL)
+    {
+        sSet = FALSE;
+    } else if (src == (PLANEPTR)-1)
+    {
+        sSet = TRUE;
+    } else {
+	sByte = xsrc >> 3;
+	sBit = 1L << (7 - (xsrc & 0x07));
+	sSet = (src[sByte] & sBit) != 0;
+    }
+    
+    /* dest PLANEPTR here will never be NULL or -1 */
     dByte = xdest >> 3;
     dBit = 1L << (7 - (xdest & 0x07));
     dSet = (dest[dByte] & dBit) != 0;
