@@ -4,6 +4,8 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/dos.h>
+#include <dos/rdargs.h>
 
 #include <stdio.h>
 
@@ -86,7 +88,7 @@ static void makeshape(void)
 
 }
 
-static struct Window * makeparentwin(void)
+static struct Window * makeparentwin(ULONG visible)
 {
     struct Window * win;
     struct TagItem win_tags[] =
@@ -101,6 +103,8 @@ static struct Window * makeparentwin(void)
 	{WA_DragBar 	, TRUE	    	    	    	    },
 	{WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
 	{WA_Activate	, TRUE	    	    	    	    },
+	{WA_Visible     , visible                           },
+	{TAG_DONE                                           }
     };
 
     win = OpenWindowTagList(0, win_tags);
@@ -160,18 +164,27 @@ static void handleall(struct Window * w)
     WaitPort(w->UserPort);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+    STRPTR args[1] = {(STRPTR)TRUE};
+    struct RDArgs * rda;
     struct Window * w;
-    openlibs();
-    getvisual();
-    makeshape();
-    w = makeparentwin();
-    if (w)
+    
+    rda = ReadArgs("INVISIBLE/S", (IPTR *)args, NULL);
+    printf("%d\n",(ULONG)args[0]);
+    if (rda)
     {
-      makewin(w);
-      handleall(w);
+      openlibs();
+      getvisual();
+      makeshape();
+      w = makeparentwin((ULONG)args[0]);
+      if (w)
+      {
+        makewin(w);
+        handleall(w);
+      }
+      cleanup(0,w);
+      FreeArgs(rda);
     }
-    cleanup(0,w);
     return 0;
 }
