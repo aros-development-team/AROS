@@ -1,3 +1,9 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
 
 #ifndef LIBRARIES_MUI_H
 #define LIBRARIES_MUI_H
