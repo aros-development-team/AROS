@@ -94,6 +94,9 @@ enum
     MEN_WANDERER_GUISETTINGS,
     MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
+    MEN_ICON_OPEN,
+    MEN_ICON_INFORMATION,
+    MEN_ICON_DELETE,
 };
 
 static struct NewMenu nm[] =
@@ -130,16 +133,16 @@ static struct NewMenu nm[] =
       {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "Open", "O"},
+    {NM_ITEM,  "Open", "O", NULL, NULL, (void*) MEN_ICON_OPEN},
     {NM_ITEM,  "Close","C" },
     {NM_ITEM,  "Rename...", "R"},
-    {NM_ITEM,  "Information...", "I" },
+    {NM_ITEM,  "Information...", "I", NULL, NULL, (void*) MEN_ICON_INFORMATION},
     {NM_ITEM,  "Snapshot", "S" },
     {NM_ITEM,  "Unsnapshot", "U" },
     {NM_ITEM,  "Leave Out", "L" },
     {NM_ITEM,  "Put Away", "P" },
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM,  "Delete..." },
+    {NM_ITEM,  "Delete...", NULL, NULL, NULL, (void*) MEN_ICON_DELETE},
     {NM_ITEM,  "Format Disk..." },
     {NM_ITEM,  "Empty Trash..." },
 
@@ -688,6 +691,134 @@ void wanderer_backdrop(Object **pstrip)
     }
 }
 
+void icon_open()
+{
+    struct List *windowList = NULL;
+    
+    if (GET(app, MUIA_Application_WindowList, (IPTR *) &windowList))
+    {
+        Object *lstate = (Object *) windowList->lh_Head;
+        Object *window = NULL;
+        
+        while ((window = NextObject(&lstate)) != NULL)
+        {
+            if
+            (
+                   XGET(window, MUIA_UserData) 
+                && XGET(window, MUIA_Window_Activate)
+            )
+            {
+                DoMethod(window, MUIM_IconWindow_DoubleClicked);
+                break;
+            }
+        }
+    }
+}
+
+void icon_information()
+{
+    struct List *windowList = NULL;
+        
+    if (GET(app, MUIA_Application_WindowList, (IPTR *) &windowList))
+    {
+        Object *lstate = (Object *) windowList->lh_Head;
+        Object *window = NULL;
+        
+        while ((window = NextObject(&lstate)) != NULL)
+        {
+            if
+            (
+                   XGET(window, MUIA_UserData) 
+                && XGET(window, MUIA_Window_Activate)
+            )
+            {
+                Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+                struct IconList_Entry *entry   = (void*) MUIV_IconList_NextSelected_Start;
+                kprintf("*** found active window\n");
+                
+                do
+                {
+                    DoMethod(iconList, MUIM_IconList_NextSelected, &entry);
+                    if ((int)entry == MUIV_IconList_NextSelected_End) break;
+                    kprintf("*** selected: %s\n", entry->filename);
+                    
+                    {
+                        BPTR lock   = Lock(entry->filename, ACCESS_READ);
+                        BPTR parent = ParentDir(lock);
+                        
+                        OpenWorkbenchObject
+                        (
+                            "SYS:System/Wanderer/Info",
+                            WBOPENA_ArgLock, parent,
+                            WBOPENA_ArgName, FilePart(entry->filename),
+                            TAG_DONE
+                        );
+                        
+                        kprintf("*** selected: %s\n", entry->filename);
+                    
+                        UnLock(parent);
+                        UnLock(lock);
+                    }
+                } while (TRUE);
+                
+                break;
+            }
+        }
+    }
+}
+
+void icon_delete(void)
+{
+    struct List *windowList = NULL;
+        
+    if (GET(app, MUIA_Application_WindowList, (IPTR *) &windowList))
+    {
+        Object *lstate = (Object *) windowList->lh_Head;
+        Object *window = NULL;
+        
+        while ((window = NextObject(&lstate)) != NULL)
+        {
+            if
+            (
+                   XGET(window, MUIA_UserData) 
+                && XGET(window, MUIA_Window_Activate)
+            )
+            {
+                Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+                struct IconList_Entry *entry   = (void*) MUIV_IconList_NextSelected_Start;
+                kprintf("*** found active window\n");
+                
+                do
+                {
+                    DoMethod(iconList, MUIM_IconList_NextSelected, &entry);
+                    if ((int)entry == MUIV_IconList_NextSelected_End) break;
+                    kprintf("*** selected: %s\n", entry->filename);
+                    
+                    {
+                        BPTR lock   = Lock(entry->filename, ACCESS_READ);
+                        BPTR parent = ParentDir(lock);
+                        UnLock(lock);
+                        
+                        OpenWorkbenchObject
+                        (
+                            "SYS:System/Wanderer/Delete",
+                            WBOPENA_ArgLock, parent,
+                            WBOPENA_ArgName, FilePart(entry->filename),
+                            TAG_DONE
+                        );
+                        
+                        kprintf("*** selected: %s\n", entry->filename);
+                    
+                        UnLock(parent);
+                    }
+                } while (TRUE);
+                
+                break;
+            }
+        }
+    }
+}
+
 void wanderer_guisettings(void)
 {
     DoMethod(app, MUIM_Application_OpenConfigWindow);
@@ -718,7 +849,10 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     DoMenuNotify(strip,MEN_WANDERER_GUISETTINGS,wanderer_guisettings,NULL);
     DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
     DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
-
+    DoMenuNotify(strip,MEN_ICON_OPEN,icon_open,NULL);
+    DoMenuNotify(strip,MEN_ICON_INFORMATION,icon_information,NULL);
+    DoMenuNotify(strip,MEN_ICON_DELETE,icon_delete,NULL);
+    
     if ((item = FindMenuitem(strip,MEN_WANDERER_BACKDROP)))
     {
 	DoMethod(item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 7, MUIM_Application_PushMethod, app, 4, MUIM_CallHook, &hook_standard, wanderer_backdrop, strip);
