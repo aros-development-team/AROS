@@ -11,27 +11,12 @@ FILES		:= \
 	intern_ieeedpld \
 	ieeedptrans_fpu
 
-FUNCTIONS	:= \
-	ieeedpacos \
-	ieeedpasin \
-	ieeedpatan \
-	ieeedpcos \
-	ieeedpcosh \
-	ieeedpexp \
-	ieeedpfieee \
-	ieeedplog \
-	ieeedplog10 \
-	ieeedppow \
-	ieeedpsin \
-	ieeedpsincos \
-	ieeedpsinh \
-	ieeedpsqrt \
-	ieeedptanh \
-	ieeedptieee 
+ARCHIVE		:= mathieeedoubtrans.arch
+
 
 %define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
 
-%genlib_cpak
+%genlib_arch
 
 #MM workbench-libs-mathieeedoubtrans : setup includes linklibs
 workbench-libs-mathieeedoubtrans : show-flags $(SLIB)

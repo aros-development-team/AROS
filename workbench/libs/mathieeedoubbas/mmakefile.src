@@ -7,23 +7,11 @@ LIBNAME 	:= mathieeedoubbas
 ULIBNAME	:= MathIeeeDoubBas
 
 FILES		:= ieeedpbas_fpu
-FUNCTIONS	:= \
-	ieeedpabs \
-	ieeedpadd \
-	ieeedpceil \
-	ieeedpcmp \
-	ieeedpdiv \
-	ieeedpfix \
-	ieeedpfloor \
-	ieeedpflt \
-	ieeedpmul \
-	ieeedpneg \
-	ieeedpsub \
-	ieeedptst
+ARCHIVE		:= mathieeedoubbas.arch
 
 %define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
 
-%genlib_cpak
+%genlib_arch
 
 #MM workbench-libs-mathieeedoubbas : setup includes linklibs
 workbench-libs-mathieeedoubbas : show-flags $(SLIB)
