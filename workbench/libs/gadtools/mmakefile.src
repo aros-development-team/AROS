@@ -37,5 +37,16 @@ workbench-libs-gadtools : show-flags $(SLIB)
 #MM clean
 #MM setup
 
+# (bernie) this hack disables optimization on classes.c to fix a problem in the
+# current Amiga version of gcc and egcs. Using inline asm macros to perform
+# shared library calls sometimes leads the optimizer to a dead-end situation
+# where one of the registers involved in the inline asm macro gets spilled on
+# the frame.
+#
+ifeq ($(ARCH),amiga)
+$(OBJDIR)/classes.o : classes.c
+	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
+endif
+
 %common
 %include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
