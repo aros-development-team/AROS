@@ -116,3 +116,28 @@ AFD3:
 	Reserved	= 2
 #
 
+/* Entry for a ramdrive disk */
+RAD:
+	FileSystem	= afs.handler
+	Device		= ramdrive.device
+	Unit		= 0
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
+
+/* Entry for a ramdrive disk */
+RAD2:
+	FileSystem	= afs.handler
+	Device		= ramdrive.device
+	Unit		= 1
+	BlockSize	= 512
+	Surfaces	= 2
+	BlocksPerTrack	= 11
+	LowCyl		= 0
+	HighCyl		= 79
+	Reserved	= 2
+#
