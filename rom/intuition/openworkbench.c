@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function OpenWorkBench()
@@ -53,6 +53,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+#warning There should be some semaphore to protect this. But not the PubScreen semaphore!
+#warning Because we send a msg to Workbench task and wait for a reply!
+#warning Workbench task might then do something which needs PubScreen semaphore! Deadlock danger!
+       
     /* Open the Workbench screen if we don't have one. */
     if( GetPrivIBase(IntuitionBase)->WorkBench == NULL ) {
         UWORD pens[] = { ~0 };
@@ -79,8 +83,6 @@
             /* Make the screen public. */
             PubScreenStatus( screen, 0 );
 
-            /* Make the screen the default one. */
-            SetDefaultPubScreen( NULL );
         } else {
             /* Maybe we should have a Alert() here? */
             return NULL;
