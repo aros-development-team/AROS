@@ -12,12 +12,17 @@ LIBS = -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
 
-LANGUAGES=piglatin deutsch francais espanol nederlands polski
+LANGUAGES = piglatin deutsch francais espanol nederlands polski italiano \
+	    dansk norsk svenska
 
 LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
 
-#MM
+#MM workbench-locale : setup
 workbench-locale : setup $(LANGFILE)
+	@$(NOP)
+
+#MM workbench-locale-quick :
+workbench-locale-quick : $(LANGFILE)
 	@$(NOP)
 
 setup:

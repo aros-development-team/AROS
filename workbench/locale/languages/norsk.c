@@ -1,12 +1,12 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: deutsch.language description file.
+    Desc: norsk.language description file.
     Lang: english
 */
 
-/*  Language file for the German language. */
+/*  Language file for the norsk language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -19,10 +19,10 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "deutsch"   /* String version of above */
+#define LANGSTR     "norsk"   /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: deutsch.language 41.0 (08.01.1998)"
+#define LANGTAG     "\0$VER: norsk.language 41.0 (03.02.2001)"
 
 STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
 
@@ -31,8 +31,8 @@ STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for German character type/conversion */
-extern const STRPTR __german_strings[];
+/* Arrays for Italian character type/conversion */
+extern const STRPTR __norsk_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -225,7 +225,7 @@ AROS_LH1(STRPTR, getlangstring,
 	kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __german_strings[id];
+	return __norsk_strings[id];
     else
 	return NULL;
 
@@ -262,7 +262,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-static const STRPTR __german_strings[] =
+static const STRPTR __norsk_strings[] =
 {
     /* A blank string */
     "",
@@ -274,27 +274,27 @@ static const STRPTR __german_strings[] =
 
 #warning: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag",
-    "Freitag", "Samstag",
+    "Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag",
+    "Fredag", "Lørdag",
 
     /* Abbreviated days of the week */
-    "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa",
+    "Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør",
 
     /* Months of the year */
-    "Januar", "Februar", "März",
+    "Januar", "Februar", "Mars",
     "April", "Mai", "Juni",
     "Juli", "August", "September",
-    "Oktober", "November", "Dezember",
+    "Oktober", "November", "Desember",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+    "Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
+    "Jul", "Aug", "Sep", "Okt", "Nov", "Des",
 
     "Ja", /* Yes, affirmative response */
-    "Nein", /* No/negative response */
+    "Nei", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Vorm.", "Nachm.",
+    "AM", "PM",
 
     /* Soft and hard hyphens */
     "-", "-",
@@ -308,7 +308,7 @@ static const STRPTR __german_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Gestern", "Heute", "Morgen", "Zukunft"
+    "I går", "I dag", "I morgen", "Fremtid"
 };
 
 /* This is the end of ROMtag marker. */
