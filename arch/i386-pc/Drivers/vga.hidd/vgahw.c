@@ -179,10 +179,12 @@ int vgaBlankScreen(int on)
 ** vgaRestore --
 **      restore a video mode
 */
-void vgaRestore(struct vgaHWRec *restore)
+void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
 {
     int i,tmp;
 
+    if (!onlyDac)
+    {
     tmp = inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
     outb(0x3C0, 0x00);			/* Enables pallete access */
 
@@ -190,7 +192,7 @@ void vgaRestore(struct vgaHWRec *restore)
     outb(0x3C2, restore->MiscOutReg);
 
     for (i=1; i<5;  i++) outw(0x3C4, (restore->Sequencer[i] << 8) | i);
-  
+
     /* Ensure CRTC registers 0-7 are unlocked by clearing bit 7 or CRTC[17] */
 
     outw(vgaIOBase + 4, ((restore->CRTC[17] & 0x7F) << 8) | 17);
@@ -203,18 +205,23 @@ void vgaRestore(struct vgaHWRec *restore)
 	tmp = inb(vgaIOBase + 0x0A);
 	outb(0x3C0,i); outb(0x3C0, restore->Attribute[i]);
     }
-  
+
     outb(0x3C6,0xFF);
     outb(0x3C8,0x00);
+    }
+
     for (i=0; i<768; i++)
     {
 	outb(0x3C9, restore->DAC[i]);
 	DACDelay;
     }
 
+    if (!onlyDac)
+    {
     /* Turn on PAS bit */
     tmp = inb(vgaIOBase + 0x0A);
     outb(0x3C0, 0x20);
+    }
 }
 
 /****************************************************************************************/

@@ -15,7 +15,7 @@
 #define ONLY640 1
 
 #ifdef ONLY640
-#define NUM_MODES 1
+#define NUM_MODES 2
 #else
 #define NUM_MODES 3
 #endif

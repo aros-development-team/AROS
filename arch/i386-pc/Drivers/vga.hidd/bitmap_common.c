@@ -2,7 +2,7 @@
     Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: 
+    Desc:
     Lang: English.
 */
 
@@ -11,6 +11,7 @@
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
+
 
 /*********  BitMap::Clear()  *************************************/
 static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
@@ -102,7 +103,7 @@ static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
     HIDDT_Pixel blue	= msg->color->blue >> 8;
 
     HIDDT_Pixel color = red | (green << 8) | (blue << 16);
-    
+
     i = 0;
     f = 1;
 
@@ -116,11 +117,13 @@ static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 		data->cmap[i] -= 0x01000000;
 	    }
 	}
-	else i++;	    
+	else i++;
     } while (f && (i<16));
 }
 
 #endif
+
+void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
 
 static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -170,7 +173,7 @@ static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
     /* Restore palette if OnBitmap */
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaRestore(data->Regs);
+    vgaRestore(data->Regs, TRUE);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 
