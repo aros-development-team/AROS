@@ -128,7 +128,7 @@ clib00012;2;hkiel;Write atol
 clib00013;2;hkiel;Write bcopy
 clib00014;2;hkiel;Write bsearch
 clib00015;2;hkiel;Write bzero
-clib00016;1;stegerg;Write calloc
+clib00016;2;stegerg;Write calloc
 clib00017;2;falemagn;Write clearerr
 clib00018;2;falemagn;Write clock
 clib00019;2;falemagn;Write close
@@ -236,16 +236,44 @@ clib00118;2;falemagn;Write truncate
 clib00119;2;falemagn;Write ftruncate
 clib00120;2;falemagn;Write fileno
 clib00121;2;hkiel;Write getcwd
-clib00122;2;hkiel;setbuf
-clib00123;2;hkiel;setlinebuf
-clib00124;0;hkiel;setvbuf
-clib00125;2;hkiel;system
+clib00122;2;hkiel;Write setbuf
+clib00123;2;hkiel;Write setlinebuf
+clib00124;2;falemagn;Write setvbuf
+clib00125;2;hkiel;Write system
 clib00126;2;stegerg;Write stpcpy
 clib00127;2;chodorowski;Write stpblk
 clib00128;2;chodorowski;Write stpbrk
 clib00129;2;chodorowski;Write stpchr
 clib00130;2;chodorowski;Write sleep
 clib00131;2;chodorowski;Write chdir
+clib00132;2;chodorowski;Write atexit
+clib00133;2;hkiel;Write bcmp
+clib00134;2;chodorowski;Write chmod
+clib00135;2;falemagn;Write closedir
+clib00136;2;falemagn;Write dup
+clib00137;2;falemagn;Write dup2
+clib00138;2;verhaegs;Write fcntl
+clib00139;2;falemagn;Write freopen
+clib00140;2;hkiel;Write fsetpos
+clib00141;2;SDuvan;Write fstat
+clib00142;2;chodorowski;Write isatty
+clib00143;2;falemagn;Write lseek
+clib00144;2;verhaegs;Write mktime
+clib00145;2;falemagn;Write opendir
+clib00146;2;falemagn;Write pipe
+clib00147;2;iaint;Write putchar
+clib00148;2;falemagn;Write putenv
+clib00149;2;falemagn;Write random
+clib00150;2;falemagn;Write readdir
+clib00151;2;falemagn;Write rewinddir
+clib00152;2;falemagn;Write seekdir
+clib00153;2;falemagn;Write stat
+clib00154;2;falemagn;Write strftime
+clib00155;2;falemagn;Write telldir
+clib00156;2;falemagn;Write umask
+clib00157;2;falemagn;Write unsetenv
+clib00158;2;falemagn;Write utime
+clib00159;2;falemagn;Write utimes
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
