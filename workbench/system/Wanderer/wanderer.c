@@ -307,10 +307,13 @@ void wanderer_quit(void)
 	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
-AROS_UFH3(void, hook_func_action,
+AROS_UFH3
+(
+    void, hook_func_action,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1))
+    AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1)
+)
 {
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
@@ -325,7 +328,8 @@ AROS_UFH3(void, hook_func_action,
 	{
 	    strcpy(buf,ent->label);
 	    strcat(buf,":");
-	} else
+	} 
+        else
 	{
 	    strcpy(buf,ent->filename);
 	}
@@ -358,7 +362,7 @@ AROS_UFH3(void, hook_func_action,
 	    {
 		/* Check if the window for this drawer is already opened */
 		Object *menustrip;
-
+                bug("*** Wanderer: opening iconwindow with drawer = %s\n", buf);
 		/* Create a new icon drawer window with the correct drawer being set */
 		drawerwnd = IconWindowObject,
 		    MUIA_UserData, 1,
@@ -526,15 +530,17 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 /*** Instance Data **********************************************************/
 struct Wanderer_DATA
 {
-    Object *wd_Prefs;
+    Object                      *wd_Prefs;
 
-    struct MUI_InputHandlerNode timer_ihn;
-    struct MUI_InputHandlerNode notify_ihn;
-    struct MsgPort *notify_port;
+    struct MUI_InputHandlerNode  wd_TimerIHN;
+    
+    struct MsgPort              *wd_CommandPort;
+    struct MUI_InputHandlerNode  wd_CommandIHN;
     
     struct NotifyRequest         pnr;
-    struct MsgPort              *pnotify_port;
-    struct MUI_InputHandlerNode  pnotify_ihn;
+    
+    struct MsgPort              *wd_NotifyPort;
+    struct MUI_InputHandlerNode  wd_NotifyIHN;
 };
 
 /*** Macros *****************************************************************/
@@ -569,55 +575,60 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_INST_DATA;
         
+        /*-- Setup hooks structures ----------------------------------------*/
         hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
         hook_action.h_Entry   = (HOOKFUNC) hook_func_action;
-
-        if (!(data->notify_port = CreateMsgPort()))
-        {
-            CoerceMethod(CLASS, self, OM_DISPOSE);
-            return NULL;
-        }
-        D(bug("Wanderer: notify port: %p\n", data->notify_port));
-    
-        if ((data->pnotify_port = CreateMsgPort()) == NULL)
+        
+        // ---
+        if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
         {
             CoerceMethod(CLASS, self, OM_DISPOSE);
             return NULL;
         }
     
-        RegisterWorkbench(data->notify_port);
+        if ((data->wd_NotifyPort = CreateMsgPort()) == NULL)
+        {
+            CoerceMethod(CLASS, self, OM_DISPOSE);
+            return NULL;
+        }
     
-        /* Setup three input handlers */
-    
-        /* The first one is invoked every time we get a message from the Notify Port */
-        data->notify_ihn.ihn_Signals = 1UL<<data->notify_port->mp_SigBit;
-        bug("Wanderer: notify signal %ld\n", data->notify_ihn.ihn_Signals);
-        data->notify_ihn.ihn_Object = self;
-        data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleCommand;
-        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->notify_ihn);
-    
-    
-        /* The second one is a timer handler */
-        data->timer_ihn.ihn_Flags = MUIIHNF_TIMER;
-        /* called every second (this is only for timer input handlers) */
-        data->timer_ihn.ihn_Millis = 3000;
-        /* The following method of the given should be called if the
-         * event happens */
-        data->timer_ihn.ihn_Object = self;
-        data->timer_ihn.ihn_Method = MUIM_Wanderer_HandleTimer;
-    
-        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->timer_ihn);
-    
-        /* third one for prefs change notifies */
-        data->pnotify_ihn.ihn_Signals = 1UL<<data->pnotify_port->mp_SigBit;
-        bug("Wanderer: pnotify signal %ld\n", data->pnotify_ihn.ihn_Signals);
-        data->pnotify_ihn.ihn_Object = self;
-        data->pnotify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
-        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->pnotify_ihn);
-    
+        RegisterWorkbench(data->wd_CommandPort);
+        
+        /* Setup command port handler --------------------------------------*/ 
+        data->wd_CommandIHN.ihn_Signals = 1UL << data->wd_CommandPort->mp_SigBit;
+        data->wd_CommandIHN.ihn_Object  = self;
+        data->wd_CommandIHN.ihn_Method  = MUIM_Wanderer_HandleCommand;
+        
+        DoMethod
+        (
+            self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_CommandIHN
+        );
+        
+        /* Setup timer handler ---------------------------------------------*/
+        data->wd_TimerIHN.ihn_Flags  = MUIIHNF_TIMER;
+        data->wd_TimerIHN.ihn_Millis = 3000;
+        data->wd_TimerIHN.ihn_Object = self;
+        data->wd_TimerIHN.ihn_Method = MUIM_Wanderer_HandleTimer;
+        
+        DoMethod
+        (
+            self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_TimerIHN
+        );
+        
+        /* Setup filesystem notification handler ---------------------------*/
+        data->wd_NotifyIHN.ihn_Signals = 1UL << data->wd_NotifyPort->mp_SigBit;
+        data->wd_NotifyIHN.ihn_Object  = self;
+        data->wd_NotifyIHN.ihn_Method  = MUIM_Wanderer_HandleNotify;
+        
+        DoMethod
+        (
+            self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_NotifyIHN
+        );
+        
+        /* Setup notification on prefs file --------------------------------*/
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
         data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
-        data->pnr.nr_stuff.nr_Msg.nr_Port = data->pnotify_port;
+        data->pnr.nr_stuff.nr_Msg.nr_Port = data->wd_NotifyPort;
         
         if (StartNotify(&data->pnr))
         {
@@ -638,22 +649,25 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
     
-    if (data->notify_port)
+    if (data->wd_CommandPort)
     {
 	/*
             They only have been added if the creation of the msg port was
 	    successful
         */
-	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->timer_ihn);
-	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->notify_ihn);
-        DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->pnotify_ihn);
+	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_TimerIHN);
+	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_CommandIHN);
+        DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_NotifyIHN);
 	
-        UnregisterWorkbench(data->notify_port);
+        UnregisterWorkbench(data->wd_CommandPort);
 	
         EndNotify(&data->pnr);
-        DeleteMsgPort(data->pnotify_port);
-        DeleteMsgPort(data->notify_port);
-	data->notify_port = NULL;
+        
+        DeleteMsgPort(data->wd_NotifyPort);
+        data->wd_NotifyPort = NULL;
+        
+        DeleteMsgPort(data->wd_CommandPort);
+	data->wd_CommandPort = NULL;
         
         DisposeObject(data->wd_Prefs);
     }
@@ -706,7 +720,7 @@ IPTR Wanderer__MUIM_Application_Execute
     Class *CLASS, Object *self, Msg message 
 )
 {
-    SETUP_INST_DATA;
+    // SETUP_INST_DATA;
     
     DoMethod
     (
@@ -752,7 +766,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
     
     D(bug("Wanderer: Recieved signal at notify port\n"));
     
-    while ((wbhm = WBHM(GetMsg(data->notify_port))) != NULL)
+    while ((wbhm = WBHM(GetMsg(data->wd_CommandPort))) != NULL)
     {
         D(bug("Wanderer: Recieved message from handler, type = %ld\n", wbhm->wbhm_Type));
         
@@ -905,7 +919,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     
     D(bug("Wanderer: got prefs change notify!\n"));
     
-    while ((notifyMessage = GetMsg(data->pnotify_port)) != NULL)
+    while ((notifyMessage = GetMsg(data->wd_NotifyPort)) != NULL)
     {
         ReplyMsg(notifyMessage);
     }
