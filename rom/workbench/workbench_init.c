@@ -45,13 +45,15 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     NEWLIST(&(WorkbenchBase->wb_HiddenDevices));
 
     /* Initialize our semaphore. */
-    InitSemaphore(&(WorkbenchBase->wb_Semaphore));
-
+    InitSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
+    
     return TRUE;
 } /* L_InitLib */
 
 ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 {
+    ObtainSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
+
     if (!(WorkbenchBase->wb_LibsOpened))
     {
         if (!(WorkbenchBase->wb_UtilityBase = OpenLibrary(UTILITYNAME, 37L)))
@@ -59,7 +61,7 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
             D(bug("Workbench: Failed to open utility.library!\n"));
             return FALSE;
         }
-
+        
         if (!(WorkbenchBase->wb_IntuitionBase = OpenLibrary(INTUITIONNAME, 37L)))
         {
             D(bug("Workbench: Failed to open intuition.library!\n"));
@@ -74,6 +76,8 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 
         WorkbenchBase->wb_LibsOpened = TRUE;
     }
+
+    ReleaseSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
     return TRUE;
 } /* L_OpenLib */

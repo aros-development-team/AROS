@@ -74,7 +74,7 @@ struct WorkbenchBase {
     ULONG                   wb_DefaultStackSize;
     ULONG                   wb_TypeRestartTime;
 
-    struct SignalSemaphore  wb_Semaphore;         /* Semaphore for locking WorkbenchBase. */
+    struct SignalSemaphore  wb_InitializationSemaphore; /* Semaphore for single-tasking library initializtion. */
 
     BOOL                    wb_LibsOpened;        /* Are the libraries opened? */
 };
@@ -83,10 +83,6 @@ struct WorkbenchBase {
 #define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
 #define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_IntuitionBase))
 #define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
-
-/* Quick macros for obtaining and releasing the semaphore. */
-#define LockWorkbench()   (ObtainSemaphore( &(WorkbenchBase->wb_Semaphore) ))
-#define UnlockWorkbench() (ReleaseSemaphore( &(WorkbenchBase->wb_Semaphore) ))
 
 /*
  * Defintion of internal structures.
