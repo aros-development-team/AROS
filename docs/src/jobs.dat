@@ -530,8 +530,8 @@ dos00134;2;matthias;Write FreeArgs
 dos00135;2;helios;Write FilePart
 dos00136;2;digulla;Write PathPart
 dos00137;2;iaint;Write AddPart
-dos00138;0;digulla;Write StartNotify
-dos00139;0;digulla;Write EndNotify
+dos00138;2;SDuvan;Write StartNotify
+dos00139;2;SDuvan;Write EndNotify
 dos00140;2;bergers;Write SetVar
 dos00141;2;bergers;Write GetVar
 dos00142;2;bergers;Write DeleteVar
