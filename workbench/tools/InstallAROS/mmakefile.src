@@ -1,0 +1,26 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := main
+EXEDIR  := $(AROS_TOOLS)
+EXE     := $(EXEDIR)/InstallAROS
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+USE_MUILIB      := yes
+
+#MM- workbench-tools : workbench-tools-installaros
+#MM workbench-tools-installaros
+
+%make_prog_setup mmake=workbench-tools-installaros
+
+workbench-tools-installaros : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
