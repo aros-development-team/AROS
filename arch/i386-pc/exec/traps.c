@@ -4,7 +4,7 @@
 
 asmlinkage void divide_error(void);
 
-struct { long long a; } *idt_base;
+static const struct { long long a; } *idt_base = (struct { long long a; } *)0x100;
 
 #define _set_gate(gate_addr,type,dpl,addr) \
 do { \
@@ -28,12 +28,5 @@ void set_intr_gate(unsigned int n, void *addr)
 void set_system_gate(unsigned int n, void *addr)
 {
 	_set_gate(idt_base+n,14,3,addr);
-}
-
-asmlinkage void system_call(struct pt_regs);
-
-void Init_Traps()
-{
-	set_system_gate(0x80, system_call);
 }
 

@@ -42,7 +42,7 @@
  
 ******************************************************************************/
 
-#include "machine.i"
+#include "include/machine.i"
 
 	.text
 	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)

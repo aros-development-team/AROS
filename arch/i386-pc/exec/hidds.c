@@ -25,9 +25,6 @@
 #include <hidd/hidd.h>
 #include <hidd/serial.h>
 
-#include "../speaker.h"
-#include "msdos_di.h"
- 
 #define ioStd(x) ((struct IOStdReq *)x)
 
 void hidd_demo()
@@ -58,6 +55,7 @@ void hidd_demo()
 			    
 	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
 	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+kprintf("ibase = %lx\n", IntuitionBase);
 	        if (IntuitionBase)
 	        {
 	    	    if (LateIntuiInit(NULL))
@@ -167,70 +165,6 @@ void hidd_demo()
 	    MoveWindow(win,0,-1);
 	    y--;
 	  }
-	}
-#endif
-
-#if !AROS_BOCHS_HACK
-
-	if(win)
-	{
-        	struct DriveGeometry MyDG;
-        	struct IOExtTD *MyIO;
-        	struct MsgPort *trackport;
-        	struct fat_boot_sector *fb;
-        	UBYTE *buf;
-
-        	trackport=CreateMsgPort();
-
-        	MyIO = (struct IOExtTD *)CreateExtIO(trackport, sizeof(struct IOExtTD));
-
-        	if (OpenDevice("trackdisk.device", 0, (struct IORequest*)MyIO,0))
-        	{
-			BlackPrint(&win->WScreen->RastPort, "Can't open trackdisk.device unit 0 !", 40);
-        	}
-        	else
-        	{
-			char TempString[60];
-
-                	buf = AllocVec (2 * 512, MEMF_CHIP);
-
-                	MyIO->iotd_Req.io_Command=TD_GETGEOMETRY;
-                	MyIO->iotd_Req.io_Data= &MyDG;
-                	MyIO->iotd_Req.io_Length=sizeof(struct DriveGeometry);
-                	DoIO((struct IORequest *)MyIO);
-
-//                	kprintf("SectorSize=%ld,\nTotalSectors=%ld,\nCylinders=%ld,\nCylSectors=%ld,\nHeads=%ld,\nTrackSectors=%ld,\nBufMemType=%ld,\nDeviceType=%ld,\n",\
-//                                MyDG.dg_SectorSize,MyDG.dg_TotalSectors,MyDG.dg_Cylinders,\
-//                                MyDG.dg_CylSectors,MyDG.dg_Heads,MyDG.dg_TrackSectors,MyDG.dg_BufMemType,MyDG.dg_DeviceType);
-
-                	MyIO->iotd_Req.io_Command=CMD_READ;
-                	MyIO->iotd_Req.io_Offset=0;
-                	MyIO->iotd_Req.io_Data= buf;
-                	MyIO->iotd_Req.io_Length=512;
-                	DoIO((struct IORequest *)MyIO);
-
-                	fb = (struct fat_boot_sector *)buf;
-
-                	sprintf(TempString, "system_id  : %s", fb->system_id);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 40);
-                 	sprintf(TempString, "fats       : %d", fb->fats);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 50);
-                	sprintf(TempString, "dir_entries: %d", fb->dir_entries[1]);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 60);
-			sprintf(TempString, "sectors    : %d", fb->sectors[1]);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 70);
-                	sprintf(TempString, "fat_length : %d", fb->fat_length);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 80);
-                	sprintf(TempString, "secs_track : %d", fb->secs_track);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 90);
-                	sprintf(TempString, "total_sect : %d", fb->total_sect);
-                        BlackPrint(&win->WScreen->RastPort, TempString, 100);
-
-                	FreeVec(buf);
-        	}
-        	CloseDevice((struct IORequest *)MyIO);
-        	DeleteExtIO((struct IORequest *)MyIO);
-        	DeleteMsgPort(trackport);
 	}
 #endif
 

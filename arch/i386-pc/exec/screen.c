@@ -11,7 +11,7 @@ struct scr
 	unsigned char attr;
 };
 
-struct scr	*view = (struct scr *)0xb8000;
+static struct scr *view = (struct scr *)0xb8000;
 
 void clr()
 {
@@ -19,7 +19,7 @@ void clr()
 	for (i=0; i<80*25; i++)
 	{
 		view[i].sign = ' ';
-		view[i].attr = 15 + 1*16;
+		view[i].attr = 7;
 	}
 	x=0;
 	y=0;
@@ -58,13 +58,11 @@ void Putc(char chr)
 	}
 }
 
-#define RawPutChar(c) (putc(c))
-
-void RawPutChars(char *chr, int lim)
+void scr_RawPutChars(char *chr, int lim)
 {
 	int i;
 	
 	for (i=0; i<lim; i++)
-		RawPutChar(*chr++);
+		Putc(*chr++);
 }
 
