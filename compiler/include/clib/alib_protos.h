@@ -2,10 +2,11 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-**	$VER: alib_protos.h 1.0 (26.10.95)
-**
-**	C prototypes for things in amiga.lib.
-**
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Prototypes for amiga.lib
+    Lang: english
 */
 
 #ifndef  EXEC_TYPES_H

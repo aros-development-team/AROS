@@ -1,6 +1,14 @@
 #ifndef CLIB_INTUITION_PROTOS_H
 #define CLIB_INTUITION_PROTOS_H
 
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Prototypes for intuition.library
+    Lang: english
+*/
+
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif

@@ -2,10 +2,11 @@
 #define  CLIB_AROS_PROTOS_H
 
 /*
-**	$VER: aros_protos.h 1.0 (26.10.95)
-**
-**	C prototypes. For use with 32 bit integers only.
-**
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Prototypes for aros.lib
+    Lang: english
 */
 
 #ifndef  EXEC_TYPES_H
