@@ -25,7 +25,7 @@ extern struct Library *MUIMasterBase;
 struct Prop_DATA
 {
     ULONG entries;
-    ULONG first;
+    LONG first;
     ULONG visible;
     LONG deltafactor;
     LONG gadgetid;
@@ -78,6 +78,11 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 	}
     }
+
+    if (data->first < 0)
+	data->first = 0;
+    if (data->visible > data->entries)
+	data->visible = data->entries;
 
     data->ehn.ehn_Events   = IDCMP_IDCMPUPDATE;
     data->ehn.ehn_Priority = 0;
@@ -135,6 +140,11 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 	}
     }
+
+    if (data->first < 0)
+	data->first = 0;
+    if (data->visible > data->entries)
+	data->visible = data->entries;
 
     if (data->prop_object && refresh && !only_trigger)
     {
@@ -372,6 +382,8 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 	    if (!tag) return 0;
 	    if (tag->ti_Data == data->first) return 0;
 	    data->first = tag->ti_Data;
+	    if (data->first < 0)
+		data->first = 0;
 	    SetAttrs(obj, MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE, TAG_DONE);
 	}
     }
@@ -382,21 +394,32 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 IPTR Prop__MUIM_Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Increase *msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
-    LONG newfirst = data->first + msg->amount * data->deltafactor;
-    if (newfirst + data->visible > data->entries) newfirst = data->entries - data->visible;
-    if (newfirst != data->first) set(obj,MUIA_Prop_First,newfirst);
+    LONG newfirst;
+
+    newfirst = data->first + msg->amount * data->deltafactor;
+
+    if (newfirst + data->visible > data->entries)
+	newfirst = data->entries - data->visible;
+    if (newfirst != data->first)
+	set(obj, MUIA_Prop_First, newfirst);
     return 1;
 }
 
 IPTR Prop__MUIM_Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decrease *msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
+    LONG newfirst;
 
     /* We cannot decrease if if are on the top */
-    if (!data->first) return 1;
+    if (data->first <= 0)
+	return 1;
 
-    if (data->first < msg->amount * data->deltafactor  && data->first != 0) set(obj,MUIA_Prop_First,0);
-    else set(obj,MUIA_Prop_First,data->first - msg->amount * data->deltafactor);
+    newfirst = data->first - msg->amount * data->deltafactor;
+
+    if (newfirst < 0)
+	set(obj, MUIA_Prop_First, 0);
+    else if (newfirst != data->first)
+	set(obj, MUIA_Prop_First, newfirst);
     return 1;
 }
 
