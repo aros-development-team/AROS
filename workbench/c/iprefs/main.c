@@ -225,7 +225,7 @@ static void KillNotifications(void)
 
 /*********************************************************************************************/
 
-static void InstallPatches(void)
+static void PreparePatches(void)
 {
     struct IPrefsSem 	   *sem;
     BOOL    	    	   created_sem = FALSE;
@@ -249,13 +249,7 @@ static void InstallPatches(void)
     
     if (created_sem)
     {
-    	Install_RawDoFmtPatch();
-	Install_StrnicmpPatch();
-	Install_StricmpPatch();
-	Install_ToLowerPatch();
-	Install_ToUpperPatch();
-	
-    	patches_installed = TRUE;
+    	InstallPatches();
     }
     else
     {
@@ -301,7 +295,7 @@ int main(void)
     OpenLibs();
     GetENVName();
     StartNotifications();
-    InstallPatches();
+    PreparePatches();
     HandleAll();
     Cleanup(NULL);
     
