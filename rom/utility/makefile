@@ -28,6 +28,9 @@ INIT_FILE = utility_init
 
 FILES = utility_functable getnamespace intfindnamedobj
 
+# Guarantee that this will go at the end of the file:
+END_FILE = utility_endtag
+
 # ***** Not Native ***************
 else
 
@@ -83,17 +86,20 @@ ifeq ($(FLAVOUR),native)
 
 LIBS = -L$(LIBDIR) -lutility -larosc
 LIB=$(LIBDIR)/libutility.a
+LIBLIST = utility arosc
+LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
 
 all: setup $(OSMODDIR)/utility.library
 
 .PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE),$(f).s) all
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE),$(f).s) all
 
-$(OSMODDIR)/utility.library: $(LIB) $(INITFUNC) $(OBJS) $(LIBDIR)/libarosc.a
+$(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee utilitylib.map
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.map
 	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
 	@strip $@
 
@@ -153,5 +159,5 @@ $(OBJDIR)/%.d: %.c
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
 endif

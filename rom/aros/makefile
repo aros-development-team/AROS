@@ -28,6 +28,9 @@ INIT_FILE = aros_init
 
 FILES = aros_functable
 
+# Guarantee that this will go at the end of the file:
+END_FILE = aros_endtag
+
 # ***** Not Native ***************
 else
 
@@ -74,19 +77,20 @@ OBJDIR=$(OSGENDIR)/aros
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-LIBS = -L$(LIBDIR) -laros -larossupport -larosc
+LIBS = -L$(LIBDIR) -laros
 LIB=$(LIBDIR)/libaros.a
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
 
 all: setup $(OSMODDIR)/aros.library
 
 .PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE),$(f).s) all
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE),$(f).s) all
 
-$(OSMODDIR)/aros.library: $(LIB) $(INITFUNC) $(OBJS) $(LIBDIR)/libarosc.a
+$(OSMODDIR)/aros.library: $(LIB) $(INITFUNC) $(OBJS) $(ENDFUNC) $(LIBDIR)/libarosc.a
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee aroslib.map
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.map
 	@if test ! -s aroslib.map; then rm aroslib.map ; else true ; fi
 	@strip $@
 
@@ -146,5 +150,5 @@ $(OBJDIR)/%.d: %.c
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
 endif
