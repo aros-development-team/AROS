@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/17 16:43:00  digulla
+    Use general startup code
+
     Revision 1.5  1996/09/13 17:52:10  digulla
     Use IPTR
 
@@ -23,33 +26,7 @@
 #include <clib/dos_protos.h>
 #include <utility/tagitem.h>
 
-/* Don't define symbols before the entry point. */
-extern struct ExecBase *SysBase;
-extern struct DosLibrary *DOSBase;
-extern const char dosname[];
-static LONG tinymain(void);
-
-__AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
-{
-    __AROS_FUNC_INIT
-    LONG error=RETURN_FAIL;
-
-    SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary((STRPTR)dosname,39);
-    if(DOSBase!=NULL)
-    {
-	error=tinymain();
-	CloseLibrary((struct Library *)DOSBase);
-    }
-    return error;
-    __AROS_FUNC_EXIT
-}
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-const char dosname[]="dos.library";
-
-static LONG tinymain(void)
+int main (int argc, char ** arvg)
 {
     char *args[1]={ 0 };
     struct RDArgs *rda;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/17 16:43:00  digulla
+    Use general startup code
+
     Revision 1.3  1996/09/12 14:48:55  digulla
     Tests why it didn´t work
 
@@ -16,42 +19,35 @@
 #include <clib/aros_protos.h>
 #include "dummylib_gcc.h"
 
-CALLENTRY /* Before the first symbol */
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-
-LONG entry(struct ExecBase *sysbase)
+int main (int argc, char ** argv)
 {
-    SysBase=sysbase;
+    int a=1,b=2,c=0,d=0;
+    struct dummybase *dummybase;
 
-    DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
+    dummybase=(struct dummybase *)OpenLibrary("dummy.library",0);
 
-    if(DOSBase!=NULL)
+    if(dummybase!=NULL)
     {
-	int a=1,b=2,c=0,d=0;
-	struct dummybase *dummybase;
+	ULONG vec[3];
 
-	dummybase=(struct dummybase *)OpenLibrary("dummy.library",0);
+	c=add(a,b);
 
-	if(dummybase!=NULL)
-	{
-	    ULONG vec[3];
-	    c=add(a,b);
-	    d=asl(a,b);
-	    vec[0]=a;
-	    vec[1]=b;
-	    vec[2]=c;
-	    VPrintf("%ld+%ld=%ld\n",vec);
-	    vec[0]=a;
-	    vec[1]=b;
-	    vec[2]=d;
-	    VPrintf("%ld<<%ld=%ld\n",vec);
-	    Flush (Output ());
+	d=asl(a,b);
 
-	    CloseLibrary((struct Library *)dummybase);
-	}
-	CloseLibrary((struct Library *)DOSBase);
+	vec[0]=a;
+	vec[1]=b;
+	vec[2]=c;
+	VPrintf("%ld+%ld=%ld\n",vec);
+
+	vec[0]=a;
+	vec[1]=b;
+	vec[2]=d;
+	VPrintf("%ld<<%ld=%ld\n",vec);
+
+	Flush (Output ());
+
+	CloseLibrary((struct Library *)dummybase);
     }
+
     return 0;
 }

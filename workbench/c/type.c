@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/17 16:43:01  digulla
+    Use general startup code
+
     Revision 1.4  1996/09/13 17:52:11  digulla
     Use IPTR
 
@@ -19,26 +22,6 @@
 #include <clib/exec_protos.h>
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
-
-CALLENTRY /* Before the first symbol */
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-
-static LONG tinymain(void);
-
-LONG entry(struct ExecBase *sysbase)
-{
-    LONG error=RETURN_FAIL;
-    SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
-    if(DOSBase!=NULL)
-    {
-	error=tinymain();
-	CloseLibrary((struct Library *)DOSBase);
-    }
-    return error;
-}
 
 #define BUFSIZE 8192
 
@@ -264,7 +247,7 @@ LONG dumpfile(struct file *in, struct file *out)
 	}
 }
 
-LONG tinymain(void)
+int main (int argc, char ** argv)
 {
     IPTR args[5]={ 0, 0, 0, 0, 0 };
     struct RDArgs *rda;

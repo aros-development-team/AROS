@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/17 16:42:59  digulla
+    Use general startup code
+
     Revision 1.6  1996/09/13 17:52:10  digulla
     Use IPTR
 
@@ -22,34 +25,7 @@
 #include <utility/utility.h>
 #include <stdlib.h>
 
-/* Don't define symbols before the entry point. */
-extern struct ExecBase *SysBase;
-extern struct DosLibrary *DOSBase;
-extern struct UtilityBase *UtilityBase;
-extern const char dosname[];
-static LONG tinymain(void);
-
-__AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
-{
-    __AROS_FUNC_INIT
-    LONG error=RETURN_FAIL;
-
-    SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary((STRPTR)dosname,39);
-    UtilityBase=(struct UtilityBase *)OpenLibrary(UTILITYNAME,39);
-    if(DOSBase!=NULL && UtilityBase != NULL)
-    {
-	error=tinymain();
-	CloseLibrary((struct Library *)DOSBase);
-    }
-    return error;
-    __AROS_FUNC_EXIT
-}
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
 struct UtilityBase *UtilityBase;
-const char dosname[]="dos.library";
 
 struct table
 {
@@ -269,10 +245,15 @@ static LONG do_dir (void)
     return error;
 }
 
-static LONG tinymain(void)
+int main (int argc, char ** argv)
 {
     struct RDArgs *rda;
     LONG error=0;
+
+    UtilityBase=(struct UtilityBase *)OpenLibrary(UTILITYNAME,39);
+
+    if (!UtilityBase)
+	return RETURN_ERROR;
 
     rda=ReadArgs("Dir,OPT/K,ALL/S",(IPTR *)&args,NULL);
     if(rda!=NULL)
@@ -286,11 +267,9 @@ static LONG tinymain(void)
 	error=RETURN_FAIL;
     if(error)
 	PrintFault(IoErr(),"List");
+
+    CloseLibrary((struct Library *)UtilityBase);
+
     return error;
 }
 
-#ifdef NO_LINK
-#include "strcpy.c"
-#include "strlen.c"
-#include "qsort.c"
-#endif

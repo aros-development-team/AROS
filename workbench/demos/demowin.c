@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.10  1996/09/17 16:08:53  digulla
+    Revision 1.11  1996/09/17 16:42:59  digulla
+    Use general startup code
+
+    Revision 1.10  1996/09/17 16:08:53	digulla
     Better formatting
 
     Revision 1.9  1996/09/11 16:50:25  digulla
@@ -77,55 +80,9 @@
 #endif
 #define bug	kprintf
 
-/* Don't define symbols before the entry point. */
-extern struct ExecBase *SysBase;
-extern struct DosLibrary *DOSBase;
-extern struct IntuitionBase *IntuitionBase;
-extern struct GfxBase *GfxBase;
-extern struct Library *ConsoleDevice;
-extern const char dosname[];
-static LONG tinymain(void);
-
-__AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
-{
-    __AROS_FUNC_INIT
-    LONG error=RETURN_FAIL;
-
-    SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary((STRPTR)dosname,39);
-    GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
-    IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
-
-    if (DOSBase && GfxBase && IntuitionBase)
-    {
-	error=tinymain ();
-    }
-    else
-    {
-	D(bug("Counldn't open library\n"));
-    }
-
-    if (DOSBase)
-	CloseLibrary ((struct Library *)DOSBase);
-
-    if (GfxBase)
-	CloseLibrary ((struct Library *)GfxBase);
-
-    if (IntuitionBase)
-	CloseLibrary ((struct Library *)IntuitionBase);
-
-    D(bug("return %d\n", error));
-
-    return error;
-    __AROS_FUNC_EXIT
-}
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-struct GfxBase *GfxBase;
-struct IntuitionBase *IntuitionBase;
 struct Library *ConsoleDevice;
-const char dosname[]="dos.library";
+struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBase;
 
 void Refresh (struct RastPort * rp)
 {
@@ -428,7 +385,7 @@ ExitGadget =
     NULL /* UserData */
 };
 
-static LONG tinymain(void)
+int main (int argc, char ** argv)
 {
     struct NewWindow nw;
     struct Window * win;
@@ -446,10 +403,15 @@ static LONG tinymain(void)
 
     bug("Welcome to the window demo of AROS\n");
 
-    D(bug("main=%p Refresh=%p entry=%p\n"
-	, tinymain
+    GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
+    IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
+
+    if (!GfxBase || !IntuitionBase)
+	goto end;
+
+    D(bug("main=%p Refresh=%p\n"
+	, main
 	, Refresh
-	, __AROS_SLIB_ENTRY(entry,)
     ));
 
     nw.LeftEdge = 100;
@@ -711,6 +673,13 @@ static LONG tinymain(void)
 
     D(bug("CloseWindow (%p)\n", win));
     CloseWindow (win);
+
+end:
+    if (GfxBase)
+	CloseLibrary ((struct Library *)GfxBase);
+
+    if (IntuitionBase)
+	CloseLibrary ((struct Library *)IntuitionBase);
 
     return 0;
 }

@@ -1,11 +1,14 @@
 TOP=..
 
+SPECIAL_CFLAGS = -D__AROS
+
 include $(TOP)/make.cfg
 
 #CC=$(PURIFY) $(SYS_CC)
 
 OBJDIR = $(GENDIR)/exe
-LIBS = -L$(LIBDIR) -laros
+LIBS = -L$(LIBDIR) -lamiga -laros
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = helloworld \
 	newshell \
@@ -25,11 +28,13 @@ FILES = helloworld \
 	assign \
 	delete \
 	makedir \
-	mount
+	mount \
+	simpleimage \
+	intuitext
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
-all: setup $(EXES) $(EXEDIR)/forkbomb
+all: setup $(EXES) $(EXEDIR)/forkbomb $(OBJDIR)/startup.o
 
 setup :
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; fi
@@ -41,17 +46,17 @@ clean:
 $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
-$(EXEDIR)/dir: $(OBJDIR)/dir.o $(LIBDIR)/libaros.a
-	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
+$(EXEDIR)/dir: $(OBJDIR)/dir.o $(DEPLIBS)
+	$(CC) $(ILDFLAGS) $(OBJDIR)/startup.o $< -o $@ $(LIBS)
 
-$(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o
-	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
+$(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
+	$(CC) $(ILDFLAGS) $(OBJDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
 	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
 
-$(EXEDIR)/%: $(OBJDIR)/%.o
-	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
+$(EXEDIR)/%: $(OBJDIR)/%.o $(OBJDIR)/startup.o $(DEPLIBS)
+	$(CC) $(ILDFLAGS) $(OBJDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -68,5 +73,5 @@ $(OBJDIR)/librarytest.d: librarytest.c
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -I $(TOP)/libs -- $^
 
-include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+include $(foreach f,$(FILES),$(OBJDIR)/$(f).d) $(OBJDIR)/startup.d
 

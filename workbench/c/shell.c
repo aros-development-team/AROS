@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/17 16:43:01  digulla
+    Use general startup code
+
     Revision 1.7  1996/09/17 16:09:34  digulla
     Another failure to make SIGALRM work :(
 
@@ -31,26 +34,6 @@
 #include <dos/rdargs.h>
 #include <clib/dos_protos.h>
 #include <utility/tagitem.h>
-
-CALLENTRY /* Before the first symbol */
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-
-static void tinymain(void);
-
-LONG entry(struct ExecBase *sysbase)
-{
-    SysBase=sysbase;
-    DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
-    if(DOSBase!=NULL)
-    {
-	if(Input())
-	    tinymain();
-	CloseLibrary((struct Library *)DOSBase);
-    }
-    return 0;
-}
 
 static void printpath(void)
 {
@@ -335,7 +318,7 @@ int executefile(STRPTR name)
     return error;
 }
 
-static void tinymain(void)
+int main (int argc, char ** argv)
 {
     struct RDArgs *rda;
     STRPTR args[2]={ "S:Shell-Startup", NULL };
@@ -367,4 +350,6 @@ static void tinymain(void)
 	}
 	FreeArgs(rda);
     }
+
+    return 0;
 }
