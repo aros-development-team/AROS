@@ -12,8 +12,8 @@ set grid
 set terminal pbm small color
 set size 1,0.5
 set output "@DOCGENDIR@/plot.pbm"
-set xrange ["01.11.1999":]
-set xtics nomirror "01.03.1999", 1209600
+set xrange ["01.12.1999":]
+set xtics nomirror "01.12.1999", 1209600
 #set ytics nomirror 28.0, 1.0
 set nomxtics
-plot '@AROS-SIZE@' using 1:($2/1024) title "" with lines
+plot '@SIZEFILE@' using 1:($2/1024) title "" with lines
