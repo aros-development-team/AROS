@@ -446,21 +446,43 @@ BOOL __WB_BuildArguments
                     break;
                     
                 case WBOPENA_ArgName:
-                    if (lastLock != NULL)
                     {
                         STRPTR name = (STRPTR) tag->ti_Data;
                         
-                        /* Duplicate the lock and the name */
-                        if
-                        (
-                               (args[i].wa_Lock = DupLock(lastLock)) == NULL
-                            || (args[i].wa_Name = StrDup(name))      == NULL
-                        )
+                        /* Duplicate the lock */
+                        if (lastLock != NULL)
                         {
-                            D(bug("workbench.library: WB_BuildArguments: Failed to duplicate lock or string\n"));
-                            error = TRUE;
-                            break;
+                            args[i].wa_Lock = DupLock(lastLock);
+                            
+                            if (args[i].wa_Lock == NULL)
+                            {
+                                D(bug("workbench.library: WB_BuildArguments: Failed to duplicate lock!\n"));
+                                error = TRUE;
+                                break;
+                            }
                         }
+                        else
+                        {
+                            args[i].wa_Lock = NULL;
+                        }
+                        
+                        /* Duplicate the name */
+                        if (name != NULL)
+                        {
+                            args[i].wa_Name = StrDup(name);
+                            
+                            if (args[i].wa_Name == NULL)
+                            {
+                                D(bug("workbench.library: WB_BuildArguments: Failed to duplicate string!\n"));
+                                error = TRUE;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            args[i].wa_Name = NULL;
+                        }
+                        
                         i++;
                     }
                     break;
