@@ -21,7 +21,7 @@ int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
     LONG            rc = RETURN_FAIL;
 
     BPTR sseq = Open("S:Startup-Sequence", FMF_READ);
-    BPTR cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
+    BPTR cis  = Open("CON:103/20///Boot Shell/AUTO", FMF_READ);
 
     if (cis)
     {
