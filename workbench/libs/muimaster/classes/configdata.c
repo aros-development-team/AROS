@@ -18,7 +18,7 @@
 #include <proto/dos.h>
 #include <proto/commodities.h>
 
-#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #include "muimaster_intern.h"
