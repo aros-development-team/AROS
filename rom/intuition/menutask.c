@@ -503,7 +503,13 @@ static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD item
     {
 	struct MenuItem *checkitem = (itemtype == ITEM_ITEM) ? mhd->activemenu->FirstItem :
 							       mhd->activeitem->SubItem;
+	BOOL toggle_hi = FALSE;
 	WORD i;
+
+	if ((item->Flags & HIGHITEM) &&
+	    ((item->Flags & HIGHFLAGS) == HIGHBOX)) toggle_hi = TRUE;
+
+	if (toggle_hi) HighlightItem(item, itemtype, mhd, IntuitionBase);				
 
 	for(i = 0; (i < 32) && checkitem; i++, checkitem = checkitem->NextItem)
 	{
@@ -514,7 +520,10 @@ static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD item
 		RenderCheckMark(checkitem, itemtype, mhd, IntuitionBase);
 	    }
 	}
-    }	
+
+	if (toggle_hi) HighlightItem(item, itemtype, mhd, IntuitionBase);
+	
+    } /* if (item->MutualExclude) */
 }
 
 /**************************************************************************************************/
