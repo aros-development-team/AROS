@@ -161,6 +161,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->GreenBits = compute_numbits(greenmask);
 	    di->BlueBits  = compute_numbits(bluemask);
 	    
+	    di->Resolution.x = 22;
+	    di->Resolution.y = 22;
+	    
 /*	    
 	    di->Resolution.x = ?;
 	    di->Resolution.y = ?;
