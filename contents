@@ -8,16 +8,6 @@ INSTALL - A short description on how to compile AROS the first time
 
 README - A readme with a short introduction about AROS
 
-amiga/ - This is the directory where you can (and should) put things which
-	are copyrighted by someone and thus now part of the archive; right
-	now this means only the amiga header files which you get along with
-	your C-Compiler (eg. DICE, SAS/C, StormC++, Maxon C++) or from the
-	Amiga Developer CD 1.1 (recommended since it's the most simple and
-	inexpensive way to get them). The CD is available at your local
-	dealer or by mail order. Just put the includes into a subdir
-	\filename{include/} below this directory and AROS will find them
-	there.
-
 apps/ - This directory contains the source for applications for AROS.
 	Applications are programs and packages which are not in the basic
 	installation which is in \filename{workbench/}.
