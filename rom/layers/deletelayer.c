@@ -30,10 +30,18 @@
 	struct LayersBase *, LayersBase, 15, Layers)
 
 /*  FUNCTION
+        Deletes the layer. Other layers that were hidden (partially)
+        will become visible. If parts of a simple layer become
+        visible those parts are added to the damagelist of the
+        layer and the LAYERREFRESH flags is set.
 
     INPUTS
+        dummy - nothing special
+        LD    - layer to be deleted
 
     RESULT
+        TRUE  - layer was successfully deleted
+        FALSE - layer could not be delete (out of memory) 
 
     NOTES  
 
@@ -255,7 +263,7 @@
 	      {
                 /* with SuperBitMap */
                 BltBitMap(
-                  L_behind->SuperBitMap,
+                  CR->BitMap,
                   CR->bounds.MinX - L_behind->bounds.MinX + L_behind->Scroll_X,
                   CR->bounds.MinY - L_behind->bounds.MinY + L_behind->Scroll_Y,
                   LD->rp->BitMap,
@@ -265,8 +273,8 @@
                   CR->bounds.MaxY - CR->bounds.MinY + 1,
                   0x0c0, /* copy */
                   0xff,
-                  NULL
-                 );              
+                  NULL);
+                CR->BitMap = NULL; /* as this part is visible now. */              
 	      }
 	    }
 	    else
@@ -274,6 +282,19 @@
 	      OrRectRegion(L_behind->DamageList, &CR->bounds);
 	      /* this layer needs a refresh in that area */
 	      L_behind->Flags |= LAYERREFRESH;
+	      
+	      /* I also clear this area */
+	      BltBitMap(L_behind->rp->BitMap,
+	                0,
+	                0,
+	                L_behind->rp->BitMap,
+	                CR->bounds.MinX,
+	                CR->bounds.MinY,
+	                CR->bounds.MaxX - CR->bounds.MinX + 1,
+	                CR->bounds.MaxY - CR->bounds.MinY + 1,
+	                0x000,
+	                0xff,
+	                NULL);
 	    }
             /* 
                clear the lobs entry and BitMap entry 
