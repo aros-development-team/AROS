@@ -335,9 +335,9 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 		)
 	    )
 	    {
-		kprintf ("    Symbol %s loaded at %p\n"
-		    , &strtab[symtab[i].name]
+		kprintf ("    Symbol at %p: %s\n"
 		    , hunks[symtab[i].shindex].memory + symtab[i].value
+		    , &strtab[symtab[i].name]
 		);
 	    }
 	}
@@ -360,10 +360,10 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 	    if (strtab)
 	    {
-		kprintf ("    Loading section %-10s at %p ... %p\n"
-		    , &shstrtab[sh->name]
+		kprintf ("    Section at %p ... %p: %s\n"
 		    , loaded
 		    , loaded + sh->size - 1
+		    , &shstrtab[sh->name]
 		);
 	    }
 
