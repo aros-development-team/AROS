@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Allocate a signal
@@ -25,10 +25,12 @@
 /*  FUNCTION
 	Allocate a given signal out of the current task's pool of signals.
 	Every task has a set of signals to communicate with other tasks.
-	Half of them are reserved for the system and half of them is
+	Half of them are reserved for the system and half of them are
 	free for general use. Some of the reserved signals (e.g.
 	SIGBREAKF_CTRL_C) have a defined behaviour and may be used by user
 	code, however.
+
+	You must not allocate or free signals from exception handlers.
 
     INPUTS
 	signalNum - Number of the signal to allocate or -1 if any signal
@@ -55,22 +57,15 @@
     AROS_LIBFUNC_INIT
 
     struct Task *ThisTask;
-    ULONG *mask;
+    ULONG mask;
     ULONG mask1;
 
-    /* Protect signal mask against possible task exceptions. */
-    Forbid();
-
     ThisTask = FindTask(NULL);
+    mask = ThisTask->tc_SigAlloc;
 
-    /* Get pointer to mask of allocated signal */
-    mask=&ThisTask->tc_SigAlloc;
-
-    /* Get signal */
-    if(signalNum<0)
+    /* Will any signal do? */
+    if(signalNum < 0)
     {
-	/* Any signal will do. */
-
 	/*
 	 * To get the last nonzero bit in a number I use a&~a+1:
 	 * Given a number that ends with a row of zeros  xxxx1000
@@ -82,42 +77,42 @@
 	 *
 	 * And to get the last zero bit I finally use ~a&-~a.
 	 */
-	mask1=~*mask&-~*mask;
+	mask1 = ~mask & - ~mask;
 
-	/* Got a bit? */
-	if(mask1)
-	{
-	    /* Allocate and reset the bit */
-	    *mask|=mask1;
-	    ThisTask->tc_SigRecvd  &= ~mask1;
-	    ThisTask->tc_SigExcept &= ~mask1;
-	    ThisTask->tc_SigWait   &= ~mask1;
+	/* Is the bit already allocated? */
+	if(mask1 == 0)
+	    return -1;
 
-	    /* And get the bit number */
-	    signalNum=(mask1&0xffff0000?16:0)+(mask1&0xff00ff00?8:0)+
-		      (mask1&0xf0f0f0f0? 4:0)+(mask1&0xcccccccc?2:0)+
-		      (mask1&0xaaaaaaaa? 1:0);
-	}
-    }else
+	/* And get the bit number */
+	signalNum=(mask1&0xffff0000?16:0)+(mask1&0xff00ff00?8:0)+
+		  (mask1&0xf0f0f0f0? 4:0)+(mask1&0xcccccccc?2:0)+
+		  (mask1&0xaaaaaaaa? 1:0);
+    }
+    else
     {
-	/* Get a specific signal */
-	mask1=1<<signalNum;
+	mask1 = 1L << signalNum;
 
-	/* Check if signal is free */
-	if(*mask&mask1)
-	    /* No. Return */
-	    signalNum=-1;
-	else
-	{
-	    /* It is free. Allocate and reset it. */
-	    *mask|=mask1;
-	    ThisTask->tc_SigRecvd  &= ~mask1;
-	    ThisTask->tc_SigExcept &= ~mask1;
-	    ThisTask->tc_SigWait   &= ~mask1;
-	}
+	/* If signal bit is already allocated, return. */
+	if(ThisTask->tc_SigAlloc & mask1)
+	    return -1;
     }
 
-    Permit();
+    /*
+     *	I shouldn't need to disable around changing the signal masks
+     *	because the only thing allowed to change the mask of allocated,
+     *	excepting and waiting signals is the task itself. On the other
+     *	hand, I need to use Disable around the received signals because it
+     *	can be modified by interrupts, and I cannot rely upon the below
+     *	being atomic.
+     */
+
+    ThisTask->tc_SigAlloc  |=  mask1;
+    ThisTask->tc_SigExcept &= ~mask1;
+    ThisTask->tc_SigWait   &= ~mask1;
+
+    Disable();
+    ThisTask->tc_SigRecvd  &= ~mask1;
+    Enable();
 
     return signalNum;
     AROS_LIBFUNC_EXIT
