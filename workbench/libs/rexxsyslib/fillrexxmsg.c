@@ -92,7 +92,7 @@
 	    if (msgptr->rm_Args[i] == NULL) args[i] = NULL;
 	    else
 	    {
-		args[i] = (STRPTR)CreateArgstring(msgptr->rm_Args[i], strlen(msgptr->rm_Args[i]));
+		args[i] = (STRPTR)CreateArgstring(RXARG(msgptr,i), strlen(RXARG(msgptr,i)));
 	    
 		/* Clean up if error in CreateArgstring */
 		if (args[i] == NULL)

@@ -54,7 +54,7 @@
     {
 	if (msgptr->rm_Args[i] != NULL)
 	{
-	    DeleteArgstring(msgptr->rm_Args[i]);
+	    DeleteArgstring(RXARG(msgptr,i));
 	    msgptr->rm_Args[i] = NULL;
 	}
     }
