@@ -15,7 +15,6 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/timer.h>
-#include <proto/muimaster.h>
 
 #include <string.h>
 #include <stdio.h>

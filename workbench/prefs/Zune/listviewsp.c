@@ -18,7 +18,6 @@
 #ifdef __AROS__
 #include <proto/alib.h>
 #include <proto/intuition.h>
-#include <proto/muimaster.h>
 #endif
 
 #include "zunestuff.h"

@@ -9,7 +9,6 @@
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/muimaster.h>
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>

@@ -12,7 +12,6 @@
 #include <dos/dos.h>
 
 #include <proto/intuition.h>
-#include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
 #include <proto/dos.h>

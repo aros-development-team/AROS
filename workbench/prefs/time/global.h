@@ -119,11 +119,6 @@
 #include <proto/alib.h>
 #endif
 
-
-#ifndef PROTO_MUIMASTER_H
-#include <proto/muimaster.h>
-#endif
-
 #ifndef PROTO_TIMER_H
 #include <proto/timer.h>
 #endif

@@ -5,11 +5,11 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <libraries/mui.h>
 #include <libraries/asl.h>
 #include <prefs/font.h>
 
 #include <proto/dos.h>
-#include <proto/muimaster.h>
 
 #include <string.h>
 

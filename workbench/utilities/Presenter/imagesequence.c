@@ -6,7 +6,6 @@
 #include <libraries/mui.h>
 
 #include <proto/intuition.h>
-#include <proto/muimaster.h>
 
 #include <string.h>
 #include <stdio.h>
