@@ -12,9 +12,9 @@ LIBS = -L$(LIBDIR) -larosc
 FILES = execstrap_res execstrap_init execstrap_end
 
 FUNCTIONS = \
-	initstruct makelibrary makefunctions initresident \
+	initstruct makelibrary makefunctions findresident initresident \
 	setintvector addintserver remintserver \
-	allocmem freemem availmem typeofmem \
+	allocmem freemem availmem allocentry freeentry typeofmem \
 	addmemlist addmemhandler remmemhandler \
 	insert addhead addtail remove remhead remtail enqueue findname \
 	setsignal allocsignal freesignal \
@@ -33,7 +33,7 @@ FUNCTIONS = \
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
-ASMFUNCTIONS = forbid disable getcc cacheclearu
+ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
 else
 LIBS =
@@ -90,14 +90,15 @@ all: setup \
 	$(foreach f,$(FUNCTIONS),$(f).s) \
 	$(SLIBDIR)/exec.strap
 
-$(SLIBDIR)/exec.strap:
+$(SLIBDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+		       $(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
 	$(CC) $(ILDFLAGS) \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(LIBS) \
-	-o $@ 2>&1|tee exec.strap.err
-	@if test ! -s exec.strap.err; then rm exec.strap.err ; else true ; fi
+	$(LIBS) -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 	@strip $@
 else
 all: setup \
@@ -119,8 +120,7 @@ ifeq ($(FLAVOUR),native)
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
 %.s: %.c
-	$(CC) -S $(CFLAGS) $< -c -o $@ 2>&1|tee $*.errs
-	@if test ! -s $*.errs; then rm $*.errs ; else true ; fi
+	$(CC) -S $(CFLAGS) $< -c -o $@
 endif
 
 $(OSGENDIR)/%.d: %.c
@@ -129,14 +129,6 @@ $(OSGENDIR)/%.d: %.c
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
-ifeq ($(FLAVOUR),native)
-# Dependencies for exec.strap:
-$(SLIBDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-		       $(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
-endif
-
-# Other dependencies:
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
 
