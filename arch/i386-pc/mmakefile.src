@@ -29,7 +29,6 @@ create-mf-inc-again :
 #MM	    kernel-dos-native \
 #MM	    kernel-boot-linklib \
 #MM	    kernel-aros-linklib \
-#MM	    kernel-boopsi-linklib \
 #MM	    kernel-oop-linklib \
 #MM	    kernel-hidd-linklib \
 #MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-native-i386 \
@@ -102,10 +101,6 @@ kernel-mathieeesingbas-native-i386 :
 #MM kernel-expansion-native-i386 :
 kernel-expansion-native-i386 :
 	%add_objects rom/boot/libexpansion
-
-#MM kernel-boopsi-native-i386 :
-kernel-boopsi-native-i386 :
-	%add_objects rom/boot/libboopsi
 
 #MM kernel-oop-native-i386 :
 kernel-oop-native-i386 :

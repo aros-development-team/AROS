@@ -24,7 +24,6 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec \
 #MM	    kernel-devs \
 #MM	    kernel-expansion-linklib \
 #MM	    kernel-filesys \
-#MM	    kernel-boopsi-linklib \
 #MM	    kernel-hidd-cygwin \
 #MM	    kernel-timer-linklib \
 #MM	    kernel-battclock-cygwin \

@@ -73,11 +73,11 @@ else
 DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
 endif
 
-ifeq ("$(SHARED_BOOPSI)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so$(HOST_LIB_SUFFIX)
-else
-DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
-endif
+# ifeq ("$(SHARED_BOOPSI)","yes")
+# DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so$(HOST_LIB_SUFFIX)
+# else
+# DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
+# endif
 
 ifeq ("$(SHARED_WORKBENCH)","yes")
 DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so$(HOST_LIB_SUFFIX)
@@ -151,7 +151,6 @@ DEP_LIBS = \
 	$(DEPLIB_LAYERS) \
 	$(DEPLIB_GRAPHICS) \
 	$(DEPLIB_MATHFFP) \
-	$(DEPLIB_BOOPSI) \
 	$(DEPLIB_OOP) \
 	$(DEPLIB_HIDDCLASS) \
 	$(DEPLIB_UNIXIOCLASS) \
@@ -168,13 +167,19 @@ DEP_LIBS = \
 	$(LIBDIR)/libgameport.a \
 	$(DEPLIB_AROS)
 
+# above removed: $(DEPLIB_BOOPSI) \
+
+
+
 LIBS =	-L$(LIBDIR) $(GENDIR)/filesys/emul_handler.o \
 	-lexec -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
-	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
+	-lhiddclass -lunixiocl -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-larossupport -lamiga -linput -lkeymap -loop -lx11cl \
 	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon_handler \
 	-lcybergraphics
+
+# above removed: -lboopsi
 
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) -Dmain=submain $< $(LIBS) \

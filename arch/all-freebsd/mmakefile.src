@@ -10,7 +10,7 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM 	demos games shell
 
 #MM- kernel-freebsd : \
-#MM	kernel-aros-linklib kernel-battclock-freebsd kernel-boopsi-linklib \
+#MM	kernel-aros-linklib kernel-battclock-freebsd \
 #MM	kernel-boot-linklib kernel-devs \
 #MM	kernel-dos-freebsd kernel-exec-freebsd \
 #MM	kernel-expansion-linklib kernel-filesys kernel-hidd-freebsd \

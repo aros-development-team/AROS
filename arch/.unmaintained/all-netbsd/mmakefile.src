@@ -10,7 +10,7 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM 	demos games shell
 
 #MM- kernel-netbsd : \
-#MM	kernel-aros-linklib kernel-battclock-netbsd kernel-boopsi-linklib \
+#MM	kernel-aros-linklib kernel-battclock-netbsd \
 #MM	kernel-boot-linklib kernel-devs \
 #MM	kernel-dos-netbsd kernel-exec-netbsd \
 #MM	kernel-expansion-linklib kernel-filesys kernel-hidd-netbsd \
