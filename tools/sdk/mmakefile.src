@@ -10,7 +10,7 @@ SDKTOOLDIR := $(AROSDIR)/../AROS-SDK/tools
 
 #MM sdk : sdk-setup includes linklibs
 sdk:
-	$(CP) -a $(INCDIR)/* $(SDKINCDIR)
+	$(CP) -a $(AROS_INCLUDES)/* $(SDKINCDIR)
 	$(CP) -a $(LIBDIR)/* $(SDKLIBDIR)
 	$(CP) -a $(TOP)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
 	$(CP) -a scripts $(SDKDIR)
