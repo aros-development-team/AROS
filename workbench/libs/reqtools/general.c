@@ -173,13 +173,14 @@ struct Screen *REGARGS LockPubScreenByAddr (struct Screen *scr)
 
     pubscreenlist = LockPubScreenList();
     pubscreennode = (struct PubScreenNode *) pubscreenlist->lh_Head;
-    while ((pubscreennode = (struct PubScreenNode *) pubscreennode->psn_Node.ln_Succ))
+    while (pubscreennode->psn_Node.ln_Succ)
     {
 	if (pubscreennode->psn_Screen == scr)
 	{
 	    strcpy(pubscreenname, pubscreennode->psn_Node.ln_Name);
 	    break;
 	}
+	pubscreennode = (struct PubScreenNode *) pubscreennode->psn_Node.ln_Succ;
     }
     UnlockPubScreenList();
 
@@ -217,7 +218,7 @@ struct Screen *REGARGS GetReqScreen (
     }
     
     nw->Type = CUSTOMSCREEN;
-    if (scr)
+    if (scr && !win)
     {
 	struct Screen *pubscr;
 
@@ -226,7 +227,6 @@ struct Screen *REGARGS GetReqScreen (
 	{
 	    scr = pubscr;
 	    nw->Type = PUBLICSCREEN;
-	    win = NULL;
 	}
 	/* FIXME: probably should do something smart if the locking fail.
 	   RT_Screen is more than dangerous if you ask me... - Piru */

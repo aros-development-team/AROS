@@ -22,10 +22,10 @@
 #include "rtfuncs.h"
 
 #define VERSION 39
-#define REVISION 2
+#define REVISION 3
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.2 (10.08.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.3 (05.11.2001)\r\n"
 
 /****************************************************************************************/
 
