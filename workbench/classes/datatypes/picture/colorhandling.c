@@ -153,7 +153,7 @@ BOOL ConvertCM2CM( struct Picture_Data *pd )
     struct RastPort DestRP;
     BOOL success;
 
-    if( pd->Remap || pd->Scale )
+    if( pd->Remap )
     {
 	D(bug("picture.datatype/ConvertCM2CM: Colormapped source, Colormapped dest, remapping pens\n"));
 	success = RemapCM2CM( pd );
@@ -194,7 +194,7 @@ static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, U
 {
     unsigned int srcx, destx, srcxinc;
     ULONG srcxpos;
-    UBYTE r, g, b, a;
+    UBYTE r=0, g=0, b=0, a;
     UBYTE *srcxpixel;
 
     a = 0;
@@ -360,7 +360,7 @@ BOOL AllocDestBM( struct Picture_Data *pd )
 			      pd->DestHeight,
 			      pd->DestDepth,
 			      BMF_MINPLANES,
-			      pd->UseFriendBM ? pd->DestScreen->RastPort.BitMap : NULL );
+			      (pd->UseFriendBM && pd->DestScreen) ? pd->DestScreen->RastPort.BitMap : NULL );
     if( !pd->DestBM )
     {
 	D(bug("picture.datatype/AllocDestBM: DestBitmap allocation failed !\n"));

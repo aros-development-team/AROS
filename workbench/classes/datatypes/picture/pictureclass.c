@@ -63,7 +63,9 @@ ISG BOOL                  DestMode
 #include "prefs.h"
 #include "colorhandling.h"
 
+#ifdef MYDEBUG
 #include "methods.h"
+#endif
 
 #define DGS(x) D(x)
 //#define DGS(x)
@@ -87,6 +89,11 @@ const IPTR SupportedMethods[] =
     DTM_PROCLAYOUT,
     DTM_ASYNCLAYOUT,
     DTM_FRAMEBOX,
+
+    DTM_OBTAINDRAWINFO,
+    DTM_DRAW,
+    DTM_RELEASEDRAWINFO,
+
 //    DTM_SELECT,
 //    DTM_CLEARSELECTED,
 //    DTM_COPY,
@@ -559,11 +566,12 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
     struct DTSpecialInfo *si;
 
     struct IBox *domain;
-    IPTR TopVert, TopHoriz, NominalWidth, NominalHeight;
+    IPTR TopVert, TopHoriz;
 
     long SrcX, SrcY, DestX, DestY, SizeX, SizeY;
 
-    pd=(struct Picture_Data *) INST_DATA(cl, g);
+    pd = (struct Picture_Data *) INST_DATA(cl, g);
+    si = (struct DTSpecialInfo *) g->SpecialInfo;
 
     if(!pd->Layouted)
     {
@@ -571,7 +579,6 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
         return FALSE;
     }
 
-    si=(struct DTSpecialInfo *) g->SpecialInfo;
     if(si->si_Flags & DTSIF_LAYOUT)
     {
         D(bug("picture.datatype/GM_RENDER: In layout process !\n"));
@@ -581,32 +588,27 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
     if(!(GetDTAttrs((Object *) g, DTA_Domain,    (IPTR) &domain,
    			       DTA_TopHoriz,     (IPTR) &TopHoriz,
    			       DTA_TopVert,      (IPTR) &TopVert,
-   			       DTA_NominalHoriz, (IPTR) &NominalWidth,
-   			       DTA_NominalVert,  (IPTR) &NominalHeight,
-   			       TAG_DONE) == 5))
+   			       TAG_DONE) == 3))
     {
         D(bug("picture.datatype/GM_RENDER: Couldn't get dimensions\n"));
         return FALSE;
     }
 
-    D(bug("picture.datatype/GM_RENDER: Domain: left %ld top %ld width %ld height %ld\n", domain->Left, domain->Top, domain->Width, domain->Height));
-    D(bug("picture.datatype/GM_RENDER: TopHoriz %ld TopVert %ld Width %ld Height %ld\n", (long)TopHoriz, (long)TopVert, (long)NominalWidth, (long)NominalHeight));
-
-#if 0
     ObtainSemaphore(&(si->si_Lock));
-#endif
-
-    SrcX = TopHoriz;
-    SrcY = TopVert;
-    DestX = domain->Left;
-    DestY = domain->Top;
-
-    SizeX = MIN(NominalWidth - TopHoriz, domain->Width);
-    SizeY = MIN(NominalHeight - TopVert, domain->Height);
-    D(bug("picture.datatype/GM_RENDER: Size X %ld Y %ld\n", SizeX, SizeY));
+    D(bug("picture.datatype/GM_RENDER: Domain: left %ld top %ld width %ld height %ld\n", domain->Left, domain->Top, domain->Width, domain->Height));
+    D(bug("picture.datatype/GM_RENDER: TopHoriz %ld TopVert %ld Width %ld Height %ld\n", (long)TopHoriz, (long)TopVert, (long)pd->DestWidth, (long)pd->DestHeight));
 
     if( pd->DestBM )
     {
+	SrcX = MIN( TopHoriz, pd->DestWidth );
+	SrcY = MIN( TopVert, pd->DestHeight );
+	DestX = domain->Left;
+	DestY = domain->Top;
+	SizeX = MIN( pd->DestWidth - SrcX, domain->Width );
+	SizeY = MIN( pd->DestHeight - SrcY, domain->Height );
+	D(bug("picture.datatype/GM_RENDER: SizeX/Y %ld/%ld\n SrcX/Y %ld/%ld DestX/Y %ld/%ld\n",
+	    SizeX, SizeY, SrcX, SrcY, DestX, DestY));
+
         BltBitMapRastPort( pd->DestBM,
                           SrcX,
                           SrcY,
@@ -622,10 +624,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
         D(bug("picture.datatype/GM_RENDER: No destination picture present !\n"));
         return FALSE;
     }
-
-#if 0
     ReleaseSemaphore(&(si->si_Lock));
-#endif
 
     return TRUE;
 }
@@ -796,7 +795,8 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     SrcHeight = pd->bmhd.bmh_Height;
     SrcDepth = pd->bmhd.bmh_Depth;
     D(bug("picture.datatype/DTM_ASYNCLAYOUT: Source Width %ld Height %ld Depth %ld\n", SrcWidth, SrcHeight, (long)SrcDepth));
-    D(bug("picture.datatype/DTM_ASYNCLAYOUT: Masking %d Transparent %d Initial %d\n", (int)pd->bmhd.bmh_Masking, (int)pd->bmhd.bmh_Transparent, (int)msg->gpl_Initial));
+    D(bug("picture.datatype/DTM_ASYNCLAYOUT: Masking %d Transparent %d Initial %d Layouted %d\n", (int)pd->bmhd.bmh_Masking, (int)pd->bmhd.bmh_Transparent, (int)msg->gpl_Initial, (int)pd->Layouted));
+
     if( !SrcWidth || !SrcHeight || !SrcDepth )
     {
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Neccessary fields in BitMapHeader not set !\n"));
@@ -814,12 +814,39 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     success = TRUE;
     if( msg->gpl_Initial | !pd->Layouted )   /* we need to do it just once at startup or after scaling */
     {
-        /* determine destination screen depth */
-        if( !pd->DestScreen )
-        {
-            pd->DestScreen = msg->gpl_GInfo->gi_Screen;
-        }
-        pd->DestDepth = GetBitMapAttr( pd->DestScreen->RastPort.BitMap, BMA_DEPTH );
+	if( pd->Remap )
+	{
+	    /* determine destination screen depth */
+	    if( !pd->DestScreen )
+	    {
+		pd->DestScreen = msg->gpl_GInfo->gi_Screen;
+	    }
+	    if( !pd->DestScreen )
+	    {
+		D(bug("picture.datatype/DTM_ASYNCLAYOUT: No screen given !\n"));
+		ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
+		return FALSE;
+	    }
+	    pd->DestDepth = GetBitMapAttr( pd->DestScreen->RastPort.BitMap, BMA_DEPTH );
+	}
+	else
+	{
+	    if( pd->SrcDepth > 8 )
+	    {
+		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Remap=FALSE option only for colormapped source !\n"));
+		ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
+		return FALSE;
+	    }
+	    if( pd->Scale )
+	    {
+		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Scaling doesn't work with Remap=FALSE !\n"));
+		ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
+		return FALSE;
+	    }
+	    pd->DestScreen = NULL;
+	    pd->DestDepth = SrcDepth;
+	}
+
         if( pd->DestDepth > 8 )
 	{
             pd->TrueColorDest = TRUE;
@@ -845,6 +872,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	D(bug("picture.datatype/DTM_ASYNCLAYOUT: Destination Width %ld Height %ld Depth %ld\n", pd->DestWidth, pd->DestHeight, (long)pd->DestDepth));
 	if( !AllocDestBM( pd ) )
 	{
+            D(bug("picture.datatype/DTM_ASYNCLAYOUT: Didn't get dest BM !\n"));
 	    ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
 	    return FALSE;
 	}
@@ -897,7 +925,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	/* layout done */
         pd->Layouted = TRUE;
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Initial layout done\n"));
-    } /* if(msg->gpl_Initial) */
+    } /* if( msg->gpl_Initial | !pd->Layouted ) */
 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
     if( !success )
@@ -912,7 +940,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	STRPTR Title;
     
 	/*
-	 *  Attribute holen
+	 *  get attributes
 	 */
 	if(!(GetDTAttrs((Object *) g, DTA_Domain, (IPTR) &domain,
 				   DTA_ObjName, (IPTR) &Title,
@@ -950,6 +978,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 				     DTA_Busy, TRUE,
 				     DTA_Sync, TRUE,
 				     TAG_DONE);
+        D(bug("picture.datatype/DTM_ASYNCLAYOUT: NotifyAttrChanges done, Layouted %d\n", (int)pd->Layouted));
     }
     return TRUE;
 }
@@ -959,13 +988,11 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
-//    struct DTSpecialInfo *si;
 
     int pixelformat;
     int pixelbytes;
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
-//    si = (struct DTSpecialInfo *) g->SpecialInfo;
 
     /* Do some checks first */
     pixelformat = (long)msg->pbpa_PixelFormat;
@@ -1069,6 +1096,8 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 	    deststart += destmod;
 	}
     }
+
+    pd->Layouted = FALSE;	/* re-layout required */
     return TRUE;
 }
 
@@ -1090,14 +1119,11 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
 	return FALSE;
     }
     pixelformat = (long)msg->pbpa_PixelFormat;
-    if ( pixelformat != pd->SrcPixelFormat )	/* This also checks for pd->SrcBuffer */
+    D(bug("picture.datatype/DTM_READPIXELARRAY: Source/Dest Pixelformat %d / %ld\n", pixelformat, pd->SrcPixelFormat));
+
+    if ( pixelformat == pd->SrcPixelFormat )
     {
-        D(bug("picture.datatype/DTM_READPIXELARRAY: Source/Dest Pixelformat mismatch: %d <-> %ld (not yet supported)\n", pixelformat, pd->SrcPixelFormat));
-	return FALSE;
-    }
-    
-    /* Copy picture data */
-    {
+	/* Copy picture data, as source pixmode = dest pixmode */
         long line, lines;
         APTR srcstart;
         APTR deststart;
@@ -1123,6 +1149,68 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
 	    deststart += destmod;
 	}
     }
+    else if ( pixelformat == PBPAFMT_RGB || pixelformat == PBPAFMT_RGBA || pixelformat == PBPAFMT_ARGB )
+    {
+	/* Copy picture data pixel by pixel (this is not fast, but compatible :-) */
+	UBYTE r=0, g=0, b=0, a;
+        long line, x, col;
+	int srcpixelformat;
+        APTR srcstart;
+	UBYTE *srcptr;
+        APTR deststart;
+	UBYTE *destptr;
+        long srcmod, destmod;
+	ULONG * colregs;
+
+        /* Now copy the new source data to the ChunkyBuffer line by line */
+	srcpixelformat = pd->SrcPixelFormat;
+        srcmod = pd->SrcWidthBytes;
+        srcstart = pd->SrcBuffer + msg->pbpa_Left * pd->SrcPixelBytes + msg->pbpa_Top * srcmod;
+        destmod = msg->pbpa_PixelArrayMod;
+        deststart = msg->pbpa_PixelData;
+	colregs = pd->SrcColRegs;
+
+	a = 0;
+	for( line=0; line<msg->pbpa_Height; line++ )
+	{
+	    srcptr = srcstart;
+	    destptr = deststart;
+	    for( x=0; x<pd->SrcWidth; x++ )
+	    {
+		switch( srcpixelformat )
+		{
+		    case PBPAFMT_GREY8:
+		    case PBPAFMT_LUT8:
+			col = 3 * (*srcptr++);
+			r = colregs[col++] >> 24;
+			g = colregs[col++] >> 24;
+			b = colregs[col] >> 24;
+			break;
+		    case PBPAFMT_ARGB:
+			a = *srcptr++;
+		    case PBPAFMT_RGB:
+			r = *srcptr++;
+			g = *srcptr++;
+			b = *srcptr++;
+			break;
+		}
+		if( pixelformat == PBPAFMT_ARGB )
+		    *destptr++ = a;
+		*destptr++ = r;
+		*destptr++ = g;
+		*destptr++ = b;
+		if( pixelformat == PBPAFMT_RGBA )
+		    *destptr++ = a;
+	    }
+	    srcstart += srcmod;
+	    deststart += destmod;
+	}
+    }
+    else
+    {
+        D(bug("picture.datatype/DTM_READPIXELARRAY: Source/Dest Pixelformat mismatch (not yet supported)\n"));
+	return FALSE;
+    }
     return TRUE;
 }
 
@@ -1132,10 +1220,14 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 {
     struct Picture_Data *pd;
     ULONG xscale, yscale;
+    struct DTSpecialInfo *si;
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
+    si = (struct DTSpecialInfo *) g->SpecialInfo;
 
-    D(bug("- method %08lx newwidth %ld newheight %ld flags %08lx\n", msg->MethodID, msg->ps_NewWidth, msg->ps_NewHeight, msg->ps_Flags));
+    ObtainSemaphore( &(si->si_Lock) );	/* lock object data */
+    D(bug("picture.datatype/PDTM_SCALE: newwidth %ld newheight %ld flags %08lx\n", msg->ps_NewWidth, msg->ps_NewHeight, msg->ps_Flags));
+
     pd->DestWidth = msg->ps_NewWidth;
     pd->DestHeight = msg->ps_NewHeight;
     if( pd->SrcWidth == pd->DestWidth && pd->SrcHeight == pd->DestHeight )
@@ -1153,7 +1245,7 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
     }
     pd->XScale = xscale;
     pd->YScale = yscale;
-    D(bug("srcwidth %ld srcheight %ld destwidth %ld destheight %ld xscale %06lx yscale %06lx\n", pd->SrcWidth, pd->SrcHeight, pd->DestWidth, pd->DestHeight, pd->XScale, pd->YScale));
+    D(bug("picture.datatype/PDTM_SCALE: srcwidth %ld srcheight %ld destwidth %ld destheight %ld xscale %06lx yscale %06lx\n", pd->SrcWidth, pd->SrcHeight, pd->DestWidth, pd->DestHeight, pd->XScale, pd->YScale));
     
     SetDTAttrs((Object *) g, NULL, NULL,
 			DTA_NominalHoriz, pd->DestWidth,
@@ -1161,6 +1253,7 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 			TAG_DONE);
     pd->Layouted = FALSE;	/* re-layout required */
 
+    ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
     return TRUE;
 }
 
@@ -1195,6 +1288,90 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
     }
 
     return(RetVal);
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+{
+    struct Picture_Data *pd;
+    IPTR RetVal;
+
+    pd = (struct Picture_Data *) INST_DATA(cl, g);
+
+    RetVal = FALSE;
+
+    if( !pd->UseAsImage )
+    {
+    	RetVal = DoMethod( (Object *)g, DTM_PROCLAYOUT, NULL, 1L );
+    	if( RetVal )
+	{
+    	    pd->UseAsImage = TRUE;
+            D(bug("picture.datatype/DTM_OBTAINDRAWINFO: Switched to image mode\n"));
+        }
+    }
+
+    return RetVal;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
+{
+    struct Picture_Data *pd;
+    IPTR RetVal;
+
+    pd=(struct Picture_Data *) INST_DATA(cl, g);
+
+    RetVal = FALSE;
+
+    if( pd->UseAsImage && pd->DestBM )
+    {
+    long SrcX, SrcY, DestX, DestY, SizeX, SizeY;
+
+	SrcX = MIN( msg->dtd_TopHoriz, pd->DestWidth );
+	SrcY = MIN( msg->dtd_TopVert, pd->DestHeight );
+	DestX = msg->dtd_Left;
+	DestY = msg->dtd_Top;
+	SizeX = MIN( pd->DestWidth - SrcX, msg->dtd_Width );
+	SizeY = MIN( pd->DestHeight - SrcY, msg->dtd_Height );
+	D(bug("picture.datatype/DTM_DRAW: SizeX/Y %ld/%ld SrcX/Y %ld/%ld DestX/Y %ld/%ld\n",
+	    SizeX, SizeY, SrcX, SrcY, DestX, DestY));
+
+        BltBitMapRastPort( pd->DestBM,
+                          SrcX,
+                          SrcY,
+                          msg->dtd_RPort,
+                          DestX,
+                          DestY,
+                          SizeX,
+                          SizeY,
+                          0xC0);
+        D(bug("picture.datatype/DTM_DRAW: Switched to image mode\n"));
+        RetVal = TRUE;
+    }
+
+    return RetVal;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_ReleaseDrawInfo(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
+{
+    struct Picture_Data *pd;
+    IPTR RetVal;
+
+    pd = (struct Picture_Data *) INST_DATA(cl, g);
+
+    RetVal = FALSE;
+
+    if( pd->UseAsImage )
+    {
+	pd->UseAsImage = FALSE;
+	RetVal = TRUE;
+    }
+
+    return RetVal;
 }
 
 /**************************************************************************************************/
@@ -1301,6 +1478,27 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_FRAMEBOX\n"));
             RetVal=(IPTR) DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
+            break;
+        }
+
+        case DTM_OBTAINDRAWINFO:
+        {
+            D(bug("picture.datatype/DT_Dispatcher: Method DTM_OBTAINDRAWINFO\n"));
+            RetVal=(IPTR) DT_ObtainDrawInfo(cl, (struct Gadget *) o, (struct opSet *) msg);
+            break;
+        }
+
+        case DTM_DRAW:
+        {
+            D(bug("picture.datatype/DT_Dispatcher: Method DTM_DRAW\n"));
+            RetVal=(IPTR) DT_Draw(cl, (struct Gadget *) o, (struct dtDraw *) msg);
+            break;
+        }
+
+        case DTM_RELEASEDRAWINFO:
+        {
+            D(bug("picture.datatype/DT_Dispatcher: Method DTM_RELEASEDRAWINFO\n"));
+            RetVal=(IPTR) DT_ReleaseDrawInfo(cl, (struct Gadget *) o, (struct dtReleaseDrawInfo *) msg);
             break;
         }
 

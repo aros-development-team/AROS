@@ -55,6 +55,7 @@ struct Picture_Data
     BOOL		  TrueColorSrc;
     BOOL		  TrueColorDest;
     BOOL		  Layouted;
+    BOOL		  UseAsImage;
     BOOL		  KeepSrcBM;
     BOOL		  NoDelay;
 
