@@ -17,6 +17,7 @@ $(OBJDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
-	    $(OBJDIR)/strlen.o $(OBJDIR)/strcpy.o $(OBJDIR)/qsort.o
+	    $(OBJDIR)/strlen.o $(OBJDIR)/strcpy.o $(OBJDIR)/qsort.o \
+	    $(OBJDIR)/kprintf.o
 	$(AR) $@ $^
 
