@@ -42,8 +42,9 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
 struct x11kbd_data
 {
-    VOID (*kbd_callback)(APTR, UWORD);
-    APTR callbackdata;
+    VOID  (*kbd_callback)(APTR, UWORD);
+    APTR    callbackdata;
+    UWORD   prev_keycode;
 };
 
 static OOP_AttrBase HiddKbdAB;
@@ -532,6 +533,7 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
+	data->prev_keycode = 0xFFFF;
 	
 	ObtainSemaphore( &XSD(cl)->sema);
 	XSD(cl)->kbdhidd = o;
@@ -547,21 +549,26 @@ static VOID x11kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Kbd
 {
     struct x11kbd_data  *data;    
     XKeyEvent 	    	*xk;
-
+    UWORD   	    	 keycode;
+    
     EnterFunc(bug("x11kbd_handleevent()\n"));
     
-    xk = &(msg->event->xkey);
     data = OOP_INST_DATA(cl, o);
-    if (msg->event->type == KeyPress)
+    xk = &(msg->event->xkey);
+    
+    keycode = (UWORD)xkey2hidd(xk, XSD(cl));
+    
+    if (msg->event->type == KeyRelease)
     {
-	data->kbd_callback(data->callbackdata, (UWORD)xkey2hidd(xk, XSD(cl)));
-		
-    }
-    else if (msg->event->type == KeyRelease)
-    {
-	data->kbd_callback(data->callbackdata, (UWORD)xkey2hidd(xk, XSD(cl)) | IECODE_UP_PREFIX);
+	keycode |= IECODE_UP_PREFIX;    	
     }
     
+    if (keycode != data->prev_keycode)
+    {
+    	data->kbd_callback(data->callbackdata, keycode);
+	data->prev_keycode = keycode;
+    }
+
     ReturnVoid("X11Kbd::HandleEvent");
 }
 
