@@ -839,14 +839,18 @@ AROS_UFH3(void, hook_func_action,
 		    DoMethod(drawerwnd, MUIM_IconWindow_Open);
 		}
 	    }
-	} else if (ent->type == ST_FILE)
+	} 
+        else if (ent->type == ST_FILE)
 	{
-	    static char buf[1024];
-	    strncpy(buf,ent->filename,1023);
-	    buf[1023] = 0;
-	    /* truncate the path */
-	    PathPart(buf)[0] = 0;
-	    execute_open_with_command(buf, FilePart(ent->filename));
+            if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
+            {
+                static char buf[1024];
+                strncpy(buf,ent->filename,1023);
+                buf[1023] = 0;
+                /* truncate the path */
+                PathPart(buf)[0] = 0;
+                execute_open_with_command(buf, FilePart(ent->filename));
+            }
 	}
     } else
     if (msg->type == ICONWINDOW_ACTION_CLICK)
