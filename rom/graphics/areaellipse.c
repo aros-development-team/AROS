@@ -35,8 +35,8 @@
 	     the previously initilized AreaInfo structure.
 	cx - x coordinate of the centerpoint relative to rastport
 	cy - y coordinate of the centerpoint relative to rastport
-	x  - horizontal radius of the ellipse (> 0)
-	y  - vertical radius of the ellipse (> 0)
+	a  - horizontal radius of the ellipse (> 0)
+	b  - vertical radius of the ellipse (> 0)
 
     RESULT
 	error -  0 for success
@@ -74,8 +74,8 @@
       areainfo->VctrPtr[1] = cy;
       areainfo->FlagPtr[0] = 0x83;
 
-      areainfo->VctrPtr[2] = cx+a;
-      areainfo->VctrPtr[3] = cy+b;
+      areainfo->VctrPtr[2] = a;
+      areainfo->VctrPtr[3] = b;
       areainfo->FlagPtr[1] = 0x0;
 
       areainfo->VctrPtr    = &areainfo->VctrPtr[4];
@@ -110,13 +110,13 @@
       /* still enough storage area?? */
       if (areainfo->Count + 1 < areainfo->MaxCount)
       {
-        areainfo->VctrPtr[0] = -a+cx;
-        areainfo->VctrPtr[1] = -b+cy;
+        areainfo->VctrPtr[0] = cx;
+        areainfo->VctrPtr[1] = cy;
         areainfo->FlagPtr[0] = 0x83;
 
-        areainfo->VctrPtr[2] = cx+a;
-        areainfo->VctrPtr[3] = cy+b;
-        areainfo->FlagPtr[1] = 0x02;
+        areainfo->VctrPtr[2] = a;
+        areainfo->VctrPtr[3] = b;
+        areainfo->FlagPtr[1] = 0x00;
 
         areainfo->VctrPtr    = &areainfo->VctrPtr[4];
         areainfo->FlagPtr    = &areainfo->FlagPtr[2];
