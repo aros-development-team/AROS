@@ -807,6 +807,7 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 
     if (!msg->entry) return NULL;
     ent = *msg->entry;
+
     if (((IPTR)ent) == MUIV_IconList_NextSelected_Start)
     {
 	if (!(node = data->last_selected))
@@ -819,10 +820,9 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 	return 0;
     }
 
-
     node = List_First(&data->icon_list); /* not really necessary but it avoids compiler warnings */
 
-    node = (struct IconEntry*)((char*)ent) - ((char*)(&node->entry) - (char*)node);
+    node = (struct IconEntry*)(((char*)ent) - ((char*)(&node->entry) - (char*)node));
     node = Node_Next(node);
 
     while (node)
@@ -968,6 +968,7 @@ static ULONG IconList_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
 	node = Node_Next(node);
     }
     data->first_selected = NULL;
+    data->last_selected = NULL;
     return 1;
 }
 
