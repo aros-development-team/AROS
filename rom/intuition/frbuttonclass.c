@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: AROS frbuttonclass implementation
@@ -56,7 +56,7 @@
 void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
-    /* !!!    if ( DoSuperMethodA(cl, o, (Msg *)msg) != 0)
+    /* FIXME: if ( DoSuperMethodA(cl, o, (Msg *)msg) != 0)
     { */
 	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
 	struct RastPort *rp = msg->gpr_RPort;
@@ -156,7 +156,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 		container.Left + container.Width - 1,
 		container.Top + container.Height - 1 );
 	}
-	/* } !!! */
+	/* } FIXME */
 }
 
 /****************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Implementation of SYSICLASS
@@ -121,20 +121,6 @@ UWORD ArrowRight1Data[] =
     0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
 };
 
-ULONG CheckData[] =
-{ 0x00000000,
-  0x00000000,
-  0x000000d0,
-  0x00000180,
-  0x00000300,
-  0x00068600,
-  0x0001cc00,
-  0x0000f100,
-  0x00007000,
-  0x00000000,
-  0x00000000
-};
-
 /****************************************************************************/
 
 /* Some handy transparent base class object casting defines.
@@ -152,6 +138,19 @@ struct SysIData
     struct DrawInfo *dri;
     struct Image *frame;
 };
+
+/****************************************************************************/
+
+/* Some handy drawing functions */
+
+/* FIXME: Draw lines that are broader than 1 pixel */
+void draw_thick_line(Class *cl, struct RastPort *rport,
+                     LONG x1, LONG y1, LONG x2, LONG y2,
+                     UWORD thickness)
+{
+    Move(rport, x1, y1);
+    Draw(rport, x2, y2);
+}
 
 /****************************************************************************/
 
@@ -202,23 +201,24 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             case MXIMAGE:
                 break;
 
-/*            case DEPTHIMAGE:
+            case DEPTHIMAGE:
             case ZOOMIMAGE:
             case SIZEIMAGE:
             case CLOSEIMAGE:
             case SDEPTHIMAGE:
             case MENUCHECK:
-            case AMIGAKEY:*/
+            case AMIGAKEY:
+                /* FIXME */
             default:
                 unsupported = TRUE;
                 break;
             }
 	    break;
 	case SYSIA_ReferenceFont:
-	    /* !!! */
+	    /* FIXME */
 	    break;
 	case SYSIA_Size:
-	    /* !!! */
+	    /* FIXME */
 	    break;
 	}
     }
@@ -264,7 +264,7 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         if (!data->frame)
         {
             CoerceMethod(cl, obj, OM_DISPOSE);
-            obj = NULL;
+            return NULL;
         }
         break;
     }
@@ -274,12 +274,11 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     case UPIMAGE:
     case RIGHTIMAGE:
     case DOWNIMAGE:
-    break;
+        break;
     
     default:
         CoerceMethod(cl, obj, OM_DISPOSE);
-        obj = NULL;
-        break;
+        return NULL;
     }
 
     return obj;
@@ -309,23 +308,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         /* Draw checkmark (only if image is in selected state) */
         if (msg->imp_State == IDS_SELECTED)
         {
-            int x, y;
-
             SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
        	    SetDrMd(rport, JAM1);
 
-            for (y=0; y<height; y++)
-            {
-                for (x=0; x<width; x++)
-                {
-                    WORD currentx = x * 26 / width, currenty = y * 11 / height;
-                    if ((CheckData[currenty] & (2<<(25-currentx))))
-                    {
-                        Move(rport, left + currentx, top + currenty);
-                        Draw(rport, left + currentx, top + currenty);
-                    }
-                }
-            }
+            draw_thick_line(cl, rport, left + width/4, top + height/2, left + width/2, top + width*3/4, 2);
+            draw_thick_line(cl, rport, left + width/2, top + height/4*3, left + width/4*3, top + height/4, 3);
+            Move(rport, left + width/4*3, top + height/4);
+            Draw(rport, left + width/8*7, top + height/4);
+
         }
         break;
     }
