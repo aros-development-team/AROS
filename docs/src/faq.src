@@ -97,6 +97,16 @@ AROS, but what counts here is the intention of the law: It's ok to write a
 software which is compatible to some other software. Therefore we believe
 that AROS is protected by the law.
 
+\begin{new}{7.1.1997}
+Patents and header files are a different issue, though. We can use patented
+algorithms (eg. screen dragging or getting a menu when you press the
+right mousebutton) in Europe but this must not be imported into the US.
+Header files on the other hand must be compatible but "as different as
+possible" from the orignal.
+
+Therefore to avoid any trouble we applied for an official Ok by Amiga Int.
+\end{new}
+
 \section{How compatible is AROS ?}
 
 Most compatible. We expect that AROS will run existing software on the
@@ -227,11 +237,43 @@ want, it's just that we can't.
 
 \section{What does Amiga International say about AROS ?}
 
-Short: Nothing. Long: We tried to get in contact with AI twice by EMail but
-got nothing back. Aaron Digulla will attend at the
-\link{IPISA}{http://www.bhuman.it/ipisa/} in Milano in November and maybe
-Petro Tyschtschenko will be there as well so we can meet him personally.
+\begin{new}{1.7.1997}
+Short: They are not sure if they like it.
+Long: We are now in contact with both Amiga Int (Petro Tyschtschenko) and
+Amiga Inc (Jeff Schindler). Aaron Digulla had a long talk to both
+Petro Tyschtschenko and Jeff Schindler at the Computer '97 in Cologne
+in November 1997. Petro Tyschtschenkos' point was that he doesn't really
+like it because he can't oversee all possible implications. From his side,
+we could simply buy a license and then there would be a contract and that
+would allow us to continue - if we had any money. But on the other hand,
+he saw the potential of AROS and proposed that we talked to Jeff Schindler.
+He should have a look at our project from a more technical point of view
+and if he thinks our knowledge and sources are valuable enough, we can
+get a license in exchange for knowledge and sources. Thus Aaron Digulla
+met Mr. Schindler and presented the project to him. Mr. Schindler seemed to
+be very interested and he promised that a decision would be made soon.
 
+To understand the full complexity of the situation better, here are
+some explanations: First of all, we'd like to say that we fully understand
+and agree to AI's point. They are treatings us fair from what we can
+tell. The talks were in a kind and friendly atmosphere and the AROS
+team agreed before this that we would stop the project without any fuss
+if AI asked for it but we also agreed that our project could help the
+Amiga so much that it would be worth to try to continue it.
+
+Secondly, we must have a license if we want to continue the project. This
+is necessary in order to protect us from any legal hassle (eg. illegal use
+of trademarked names, patents and header files; it might be arguable if
+we make illegal use of any of them but you can get that some lawyer will
+find a way to sue us). Since we don't have any actual money, we can't pay
+for a license and Amiga Int. can't give it away for nothing (if they
+did, then all the firms who pay for their license would be very upset).
+
+But all is not lost even if we can't get a license. As of yet, we have
+developed some extensions to the AmigaOS (HIDDs, RT and Purify) which
+we can develop further. It would just be a pity if several man years
+of work would be lost in a situation where there Amiga needs every
+support it can get.
 \end{new}
 
 \begin{new}{12.9.1997}
@@ -256,7 +298,7 @@ The language is german for now.
 There is also a list for developers, but that list is private. Ask
 me if you want to be added to it.
 
-To add yourself to any of these lists, write an EMail to
+To add yourself to any of the open lists, write an EMail to
 \shell{<listname>-request@aros.fh-konstanz.de} (replace \shell{<listname>}
 with the name of the list) with \shell{SUBSCRIBE <youremail>} in the body
 (the subject is ignored), for example, \shell{SUBSCRIBE
@@ -265,4 +307,3 @@ the subscribe must match your local address (ie. where the mail comes
 from). This is to protect you from beeing added by someone else.
 
 \end{new}
-
