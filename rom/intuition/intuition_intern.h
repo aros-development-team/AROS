@@ -133,6 +133,7 @@ struct IntScreen
     struct TextAttr textattr;
     UWORD  Pens[NUMDRIPENS];
     struct PubScreenNode *pubScrNode;
+    Object *depthgadget;
     UWORD  SpecialFlags;
 };
 
@@ -224,15 +225,20 @@ extern struct IntuitionBase * IntuitionBase;
 	    GTYP_GZZGADGET */
 	    
 #define IS_BORDER_GADGET(gad) \
-	(((gad->GadgetType) & GTYP_GZZGADGET) \
+	((((gad)->GadgetType) & GTYP_GZZGADGET) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
 	
 /*#define IS_BORDER_GADGET(gad) \
 	(((gad->GadgetType) & GTYP_SYSGADGET) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */
 
+#define IS_SCREEN_GADGET(gad) ((gad)->GadgetType & GTYP_SCRGADGET)
+
 #define SET_GI_RPORT(gi, w, gad)	\
-	(gi)->gi_RastPort = (IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : (w)->RPort)
+	(gi)->gi_RastPort = (IS_SCREEN_GADGET(gad) ? \
+				((gi)->gi_Screen->BarLayer ? (gi)->gi_Screen->BarLayer->rp : NULL) : \
+				(IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : (w)->RPort) \
+			    )
 
 
 
@@ -268,6 +274,10 @@ extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2); 
 extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
+extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
+extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
+
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,
