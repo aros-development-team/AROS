@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Loader for shared libraries and devices.
-    Lang: english
+    Loader for shared libraries and devices.
 */
 
 #include <exec/execbase.h>
@@ -786,7 +785,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
  AROS_UFHA(struct ExecBase *,  sysBase, A6)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     AROS_GET_SYSBASE
 
     struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
@@ -864,5 +863,5 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 
     return 0;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }

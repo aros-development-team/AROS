@@ -167,7 +167,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
          )
 #endif
     {
-        AROS_LIBFUNC_INIT
+        AROS_USERFUNC_INIT
         SysBase = sysBase;
 
         DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));
@@ -346,8 +346,9 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         DEBUG_INIT(dprintf("LIB_Init: done\n"));
         /* You would return NULL if the init failed */
         return LIBBASE;
-        AROS_LIBFUNC_EXIT
-    }
+        
+        AROS_USERFUNC_EXIT
+}
 
     /****************************************************************************************/
 
