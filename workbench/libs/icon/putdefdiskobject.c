@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include "icon_intern.h"
 
 /*****************************************************************************
@@ -15,7 +13,7 @@
 	AROS_LH1(BOOL, PutDefDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DiskObject *, diskObject, A0),
+	AROS_LHA(struct DiskObject *, icon, A0),
 
 /*  LOCATION */
 	struct Library *, IconBase, 21, Icon)
@@ -41,16 +39,18 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-    UBYTE definfoname[MAX_DEFICON_FILEPATH];
-
-    GetDefIconName (diskObject->do_Type, definfoname);
-
-    return PutDiskObject (definfoname,diskObject);
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
+    
+    return PutIconTags
+    (
+        NULL, NULL,
+        ICONPUTA_PutDefaultType,  icon->do_Type,
+        ICONPUTA_NotifyWorkbench, TRUE,
+        TAG_DONE
+    );
+    
     AROS_LIBFUNC_EXIT
-} /* PutDefDiskObject */
+} /* PutDefDiskObject() */
