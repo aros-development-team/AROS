@@ -194,7 +194,7 @@ c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
 c/unsetenv;2;laguest;Write C:UnSetEnv
 c/version;1;srittau;Write Version
-c/wait;1;digulla;Write C:Wait
+c/wait;0;digulla;Write C:Wait
 c/which;1;SDuvan;Write Which
 colorwheel00000;0;digulla;Write ConvertHSBToRGB
 colorwheel00001;0;digulla;Write ConvertRGBToHSB
