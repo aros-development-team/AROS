@@ -1428,7 +1428,10 @@ static IPTR Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 
     get(_win(obj), MUIA_Window_ActiveObject, (IPTR *)&activeobj);
     if (obj == activeobj)
+    {
+	set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
+    }
 
     zune_imspec_hide(data->mad_Background);
     if (data->mad_Flags & MADF_SHOWSELSTATE
