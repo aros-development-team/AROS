@@ -1066,10 +1066,11 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
 static void ActivateObject (struct MUI_WindowData *data)
 {
-    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
-	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
-    else
-	data->wd_ActiveObject = NULL;
+    //bug("Window::ActivateObject (dummy) %08lx\n", data->wd_ActiveObject);
+//    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+//	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+//    else
+//	data->wd_ActiveObject = NULL;
 }
 
 /**************/
@@ -1703,6 +1704,8 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	active_object = data->wd_ActiveObject;
 	get(active_object, MUIA_Disabled, &disabled);
     }
+    else
+	data->wd_ActiveObject = NULL;
 
     /* try ActiveObject */
     if ((active_object != NULL) && !disabled)
@@ -1723,19 +1726,20 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	    if (res & MUI_EventHandlerRC_Eat) return;
 	}
 #endif
+	D(bug("HandleRawkey: try active object (%08lx) handlers\n", active_object));
+
 	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
 	    if ((ehn->ehn_Object == active_object)
 		&& ((ehn->ehn_Events & IDCMP_RAWKEY)
-		    || ((muikey != MUIKEY_NONE)
-			&& (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS))))
+		    || (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)))
 	    {
-		D(bug("HandleRawkey: invoking on %p (ehn=%p) event=%p muikey=%p\n",
+		D(bug("HandleRawkey: (active) invoking on %p (ehn=%p) event=%p muikey=%p\n",
 		      ehn->ehn_Object, ehn, event, muikey));
 		res = InvokeEventHandler(ehn, event, muikey);
-		D(bug("HandleRawkey: got res=%d\n", res));
+		D(bug("HandleRawkey: (active) got res=%d\n", res));
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 
@@ -1751,16 +1755,22 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	{
 	    Object *current_obj = active_object;
 
+	    D(bug("HandleRawkey: try active object parents handlers\n"));
 	    while (current_obj != NULL)
 	    {
 		for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 		{
 		    ehn = (struct MUI_EventHandlerNode *)mn;
 
-		    if ((ehn->ehn_Object == current_obj) &&
-			(ehn->ehn_Events & IDCMP_RAWKEY))
+		    if ((ehn->ehn_Object == current_obj)
+			 && ((ehn->ehn_Events & IDCMP_RAWKEY)
+			     || (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)))
 		    {
+			//D(bug("HandleRawkey: (active parents) invoking on %p (ehn=%p) "
+			//"event=%p muikey=%p\n",
+			//ehn->ehn_Object, ehn, event, muikey));
 			res = InvokeEventHandler(ehn, event, muikey);
+			//D(bug("HandleRawkey: (active parents) got res=%d\n", res));
 			if (res & MUI_EventHandlerRC_Eat)
 			    return;
 
@@ -1775,6 +1785,8 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
 
     } /* if (active_object && !disabled) */
+
+    D(bug("HandleRawkey: try default object handlers\n"));
 
     /* try DefaultObject */
     if (data->wd_DefaultObject != NULL)
@@ -1795,15 +1807,45 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
 	    if ((ehn->ehn_Object == data->wd_DefaultObject) 
-		&& (ehn->ehn_Events & IDCMP_RAWKEY))
+		&& ((ehn->ehn_Events & IDCMP_RAWKEY)
+		    || (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)))
 	    {
+		//D(bug("HandleRawkey: (default) invoking on %p (ehn=%p) event=%p muikey=%p\n",
+		//ehn->ehn_Object, ehn, event, muikey));
 		res = InvokeEventHandler(ehn, event, muikey);
+		//D(bug("HandleRawkey: (default) got res=%d\n", res));
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 	    }
 	}
 
     } /* if ... default object */
+
+    D(bug("HandleRawkey: try other handlers\n"));
+
+    // try other handlers
+    for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+	ehn = (struct MUI_EventHandlerNode *)mn;
+
+	// skip Active and Default object as they have already been
+	// handled
+	if (ehn->ehn_Object == data->wd_ActiveObject
+	    || ehn->ehn_Object == data->wd_DefaultObject)
+	    continue;
+
+	if (ehn->ehn_Events & IDCMP_RAWKEY)
+	{
+	    //D(bug("HandleRawkey: (others) invoking on %p (ehn=%p) event=%p muikey=%p\n",
+	    //ehn->ehn_Object, ehn, event, muikey));
+	    res = InvokeEventHandler(ehn, event, muikey);
+	    //D(bug("HandleRawkey: (others) got res=%d\n", res));
+	    if (res & MUI_EventHandlerRC_Eat)
+		return;
+	}
+    } /* for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) */
+
+    D(bug("HandleRawkey: try control chars handlers\n"));
 
     /* try Control Chars */
     if (key)
@@ -1849,6 +1891,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     if ((muikey != MUIKEY_NONE)
 	&& !(data->wd_DisabledKeys & (1<<muikey)))
     {
+	D(bug("HandleRawkey: try MUIKEY on window\n"));
 	/* nobody has eaten the message so we can try ourself */
 	switch (muikey)
 	{
@@ -2122,8 +2165,7 @@ Basically, it will:
 **************************************************************************/
 static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newval)
 {
-    struct ObjNode *old_activenode;
-    Object *old_active;
+    struct ObjNode *old_activenode = NULL;
 
     ASSERT_VALID_PTR(data);
     ASSERT_VALID_PTR(obj);
@@ -2131,14 +2173,18 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
     D(bug("MUIC_Window:SetActiveObject(data, obj, %08lx) Active=%p\n",
 	  newval, data->wd_ActiveObject));
 
-    if ((IPTR)data->wd_ActiveObject == newval)
-	return;
+    if ((data->wd_ActiveObject != NULL)
+	&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
+		     (IPTR)data->wd_ActiveObject) != NULL))
+    {
+	if ((IPTR)data->wd_ActiveObject == newval)
+	    return;
+	old_activenode = FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject);
+	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
+	    DoMethod(data->wd_ActiveObject, MUIM_GoInactive);
+    }
 
-    old_active = data->wd_ActiveObject;
-    old_activenode = FindObjNode(&data->wd_CycleChain, old_active);
     data->wd_ActiveObject = NULL;
-    if ((old_activenode != NULL) && (_flags(old_active) & MADF_CANDRAW))
-	DoMethod(old_active, MUIM_GoInactive);
 
     switch (newval)
     {
@@ -2167,7 +2213,9 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
     }
 
     if (data->wd_ActiveObject != NULL
-	&& FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+	&& DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
+		    (IPTR)data->wd_ActiveObject)
+	&& (_flags(data->wd_ActiveObject) & MADF_CANDRAW))
 	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
 }
 
@@ -3069,7 +3117,7 @@ static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/window.c: Add Eventhandler %p\n", msg->ehnode));
+    //D(bug("muimaster.library/window.c: Add Eventhandler %p\n", msg->ehnode));
 
 #ifdef __AROS__
     msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
@@ -3087,7 +3135,7 @@ static IPTR Window_RemEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/window.c: Rem Eventhandler %p\n", msg->ehnode));
+    //D(bug("muimaster.library/window.c: Rem Eventhandler %p\n", msg->ehnode));
 
     Remove((struct Node *)msg->ehnode);
     ChangeEvents(data, GetDefaultEvents());
