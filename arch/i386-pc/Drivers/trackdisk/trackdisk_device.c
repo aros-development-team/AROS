@@ -469,8 +469,9 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_FORMAT:
-	    D(bug("TD_FORMAT not done yet!\n"));
-	    iotd->iotd_Req.io_Error = IOERR_NOCMD;
+	    tdu->tdu_Busy = TRUE;
+	    iotd->iotd_Req.io_Error = td_format(iotd,tdb);
+	    tdu->tdu_Busy = FALSE;
 	    break;
 	case TD_MOTOR:
 	    iotd->iotd_Req.io_Error=0;

@@ -22,6 +22,7 @@ int td_rseek(UBYTE , UBYTE , UBYTE , struct TrackDiskBase *);
 int td_read(struct IOExtTD *, struct TrackDiskBase *);
 int td_write(struct IOExtTD *, struct TrackDiskBase *);
 int td_update(struct TDU *, struct TrackDiskBase *);
+int td_format(struct IOExtTD *, struct TrackDiskBase *);
 int td_waitint(struct TrackDiskBase *,UBYTE,BOOL);
 UBYTE td_getDiskChange(void);
 

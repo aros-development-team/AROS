@@ -521,7 +521,7 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
     ULONG size;
     int err;		// Error
 
-   if (unit->tdu_DiskIn == TDU_NODISK)
+    if (unit->tdu_DiskIn == TDU_NODISK)
     {
 	return TDERR_DiskChanged;
     }
@@ -570,4 +570,75 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 	    hd=1;
     }
     return 0;
+}
+
+/*
+ * Format a track
+ * Could probable need a lot more errorchecking/handling,
+ * but atleast it works.
+ */
+int td_format(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
+{
+    struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
+    UBYTE *dmabuf;
+    int cyl, hd, sec;
+    int i,off;
+    int err;		// Error
+
+    /* Start motor */
+    td_motoron(unit->tdu_UnitNum,tdb,TRUE);
+    /* Set datarate */
+    outb(0,FDC_DSR);
+
+    /* Calculate CHS style address */
+    sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
+    cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
+    sec %= 2*DP_SECTORS;	// sector on track (on both sides)
+    hd = sec / DP_SECTORS;	// head number
+
+    /* Then go to the correct track */
+    err = td_recalibrate(unit->tdu_UnitNum,0,(cyl*DP_SECTORS)<<1,tdb);
+    if (err)
+	return err;
+
+    /* We start by filling the DMA buffer with values needed */
+    dmabuf = (UBYTE *)unit->td_DMABuffer;
+    off=0;
+    for (i=1;i<=DP_SECTORS;i++)
+    {
+	dmabuf[off++] = (UBYTE)cyl;
+	dmabuf[off++] = hd;
+	dmabuf[off++] = i;
+	dmabuf[off++] = 2;
+    }
+
+    /* Set DMA up */
+    clear_dma_ff(TD_DMA);
+    // Should place some cache flush in future (when cache implemented)
+    set_dma_addr(TD_DMA, (ULONG)(unit->td_DMABuffer));
+    set_dma_count(TD_DMA, 4*DP_SECTORS);
+    set_dma_mode(TD_DMA, DMA_MODE_WRITE);
+    enable_dma(TD_DMA);
+    /* Issue format command */
+    tdb->td_comsize = 6;
+    tdb->td_rawcom[0] = FD_FORMAT;
+    tdb->td_rawcom[1] = unit->tdu_UnitNum | (hd << 2);
+    tdb->td_rawcom[2] = DP_SSIZE;
+    tdb->td_rawcom[3] = DP_SECTORS;
+    tdb->td_rawcom[4] = DP_GAP2;
+    tdb->td_rawcom[5] = 0;
+    /* Command prepared, now send it */
+    td_sendcommand(tdb);
+    /* Wait for end phase */
+    err = td_waitint(tdb,7,FALSE);
+    if (!err)
+    {
+	/* Check if everything went OK */
+	if (!(tdb->td_result[0] & 0xc0))
+	{
+	    /* We are fine, now write that data! */
+	    return td_write(iotd,tdb);
+	}
+    }
+    return TDERR_NotSpecified;
 }
