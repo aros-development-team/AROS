@@ -6,7 +6,7 @@
     $Id$
 
     Desc: LibBase and some important structures
-    Lang: english
+    Lang: English
 */
 #ifndef AROS_CONFIG_H
 #   include <aros/config.h>
@@ -342,7 +342,7 @@ struct FileHandle
     /* SDuvan: Added this and removed the #if below. This field allows us
                to emulate packets -- specifically it makes it possible
 	       to implement the ***Pkt() functions */
-    //    APTR            fh_CompatibilityHack;
+    struct FileHandle *fh_CompatibilityHack;
 
       /* A private pointer to a device specific filehandle structure. See
          <dos/filesystems.h> for more information. */
@@ -352,7 +352,7 @@ struct FileHandle
 #endif
 };
 
-#define  fh_Arg1  fh_Unit      // fh_CompatibilityHack
+#define  fh_Arg1  fh_CompatibilityHack
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
 #define FHF_WRITE (~0UL/2+1)
