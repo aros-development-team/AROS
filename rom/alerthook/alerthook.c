@@ -58,7 +58,7 @@ const struct Resident resident =
 };
 
 const UBYTE name[] = "alert.hook\r\n";
-const UBYTE version[] = "$VER: alert.hook 41.7 (29.3.1997)";
+const UBYTE version[] = "$VER: alert.hook 41.7 (2.4.1997)";
 UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
 UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
 UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
@@ -563,5 +563,4 @@ STRPTR getGuruString(ULONG alertnum, STRPTR buf)
     return buf;
 }
 
-const char end;
-
+const char end = 0;
