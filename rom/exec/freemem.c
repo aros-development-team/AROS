@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/08/15 14:42:15  digulla
+    Added comment
+
     Revision 1.5  1996/08/15 13:19:02  digulla
     First attempt to purge memory after free to make code crash which accesses
     memory after a free but just that happens in RemTask().
@@ -221,6 +224,8 @@ void PurgeChunk (ULONG *, ULONG);
 } /* FreeMem */
 
 
+/* Don't use #if on this one since it may be used by some other routine, too.
+    It's not static by design. */
 void PurgeChunk (ULONG * ptr, ULONG size)
 {
     while (size >= sizeof (ULONG))
