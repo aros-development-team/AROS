@@ -2,6 +2,8 @@
 #ifndef ICONOBSERVERCLASS_H
 #define ICONOBSERVERCLASS_H
 
+#include "observer.h"
+
 #define IO_Base TAG_USER+2100
 
 #define IOM_Execute   IO_Base+1
@@ -18,6 +20,7 @@ struct IconObserverClassData
 struct __dummyIconObsData__
 {
     struct MUI_NotifyData mnd;
+	struct ObserverClassData ocd;
     struct IconObserverClassData icd;
 };
 

@@ -547,7 +547,6 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 				MUI_Redraw(obj, MADF_DRAWUPDATE);
 				break;
 			case ICA_JustSelected:
-kprintf("justselected\n");
 				data->justSelected=tag->ti_Data;
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;

@@ -101,7 +101,6 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
 					retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 			case IA_Executed:
-				kprintf("IconClass/IA_Executed\n");
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 			case IA_Directory:
@@ -212,7 +211,6 @@ IPTR iconHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
 								SetAttrs(obj, IA_Executed, TRUE, TAG_END);
 							else
 							{
-								kprintf("setting selected\n");
 								SetAttrs(obj, IA_Selected, TRUE, TAG_END);
 								data->lastClickSecs=nowSeconds;
 								data->lastClickMicros=nowMicros;
@@ -223,16 +221,19 @@ IPTR iconHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
 							CurrentTime(&data->lastClickSecs, &data->lastClickMicros);
 							if(!(qualifiers & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 								DoMethod(_parent(obj), ICM_UnselectAll);
-							kprintf("setting selected\n");
 							SetAttrs(obj, IA_Selected, TRUE, TAG_END);
 						}
 					}
-
 				}
 				break;
 			}
+			default:
+				retval=DoSuperMethodA(cl, obj, msg);
+				break;
 		}
 	}
+
+	return retval;
 }
 
 IPTR iconSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
@@ -242,6 +243,27 @@ IPTR iconSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 	DoSuperMethodA(cl, obj, msg);
 
 	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
+
+	return retval;
+}
+
+/* MUI is braindead sometimes... some notifies on attributes that are specific to
+   iconclass must not be forwarded on the object's members.  Unfortunately,
+   iconclass is a group (for now), and MUIA_Group_Forward only works for OM_SET.
+   Intercept the relevant attributes here, and
+   forward them on to the icon's image object.  Ugly hack, this one. */
+
+IPTR iconNotify(Class *cl, Object *obj, struct MUIP_Notify *msg)
+{
+	IPTR retval=1;
+	struct IconClassData *data;
+
+	data=(struct IconClassData*)INST_DATA(cl, obj);
+
+	if(msg->TrigAttr==IA_Executed || msg->TrigAttr==IA_Selected || msg->TrigAttr==IA_Directory)
+		DoMethodA(data->imagePart, msg);
+	else
+		retval=DoSuperMethodA(cl, obj, msg);
 
 	return retval;
 }
@@ -275,6 +297,9 @@ AROS_UFH3(IPTR, iconDispatcher,
 			break;
 		case MUIM_Setup:
 			retval=iconSetup(cl, obj, (struct MUIP_Setup*)msg);
+			break;
+		case MUIM_Notify:
+			retval=iconNotify(cl, obj, (struct MUIP_Notify*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

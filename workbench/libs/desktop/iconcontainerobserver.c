@@ -20,6 +20,7 @@
 #include "iconcontainerobserver.h"
 #include "presentation.h"
 #include "iconcontainerclass.h"
+#include "iconobserver.h"
 #include "observer.h"
 #include "iconclass.h"
 
@@ -76,6 +77,7 @@ IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
 				PutMsg(DesktopBase->db_HandlerPort, (struct Message*)hsr);
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				DoMethod(_presentation(obj), MUIM_KillNotify, PA_InTree);
+
 				break;
 			}
 			default:
@@ -132,15 +134,20 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(4*sizeof(struct TagItem), MEMF_ANY);
+		iconTags=AllocVec(5*sizeof(struct TagItem), MEMF_ANY);
+
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
 		iconTags[1].ti_Tag=IA_Label;
 		iconTags[1].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
-		iconTags[2].ti_Tag=IA_Directory;
-		iconTags[2].ti_Data=data->directory;
-		iconTags[3].ti_Tag=TAG_END;
-		iconTags[3].ti_Data=0;
+		iconTags[2].ti_Tag=IOA_Name;
+		iconTags[2].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
+		iconTags[3].ti_Tag=IOA_Directory;
+		iconTags[3].ti_Data=data->directory;
+		iconTags[4].ti_Tag=TAG_END;
+		iconTags[4].ti_Data=0;
+
+//kprintf("Creating : %d\n", msg->wsr_ResultsArray[i].sr_DiskObject->do_Type);
 
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
@@ -174,6 +181,7 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
 	}
+
 
 	return retval;
 }

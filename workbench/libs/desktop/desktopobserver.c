@@ -132,6 +132,7 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 	Object *newIcon;
 	struct TagItem *iconTags;
 	ULONG kind;
+//	struct DesktopObserverClassData *data;
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
@@ -140,6 +141,8 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
 		iconTags[1].ti_Tag=IA_Label;
 		iconTags[1].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
+//		iconTags[2].ti_Tag=IA_Directory;
+//		iconTags[2].ti_Data=data->directory;
 		iconTags[2].ti_Tag=TAG_END;
 		iconTags[2].ti_Data=0;
 

@@ -94,40 +94,66 @@ IPTR drawerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
 	UBYTE *name, *directory;
-	struct TagItem *tags;
+	struct TagItem *icTags;
 	UBYTE *newDir;
+	Object *horiz, *vert, *dirWindow, *iconcontainer;
 
 	struct DrawerIconObserverClassData *data;
 
 	data=(struct DrawerIconObserverClassData*)INST_DATA(cl, obj);
 	retval=DoSuperMethodA(cl, obj, msg);
 
-kprintf("do/e1\n");
-
-
 	name=_name(obj);
 	directory=_directory(obj);
 
-kprintf("do/e2\n");
-
 	newDir=AllocVec(strlen(name)+strlen(directory)+2, MEMF_ANY);
 	strcpy(newDir, directory);
-	strcat(newDir, "/");
+	if(directory[strlen(directory)-1]!=':')
+		strcat(newDir, "/");
 	strcat(newDir, name);
 
-kprintf("do/e3\n");
+	horiz=PropObject,
+		MUIA_Prop_Horiz, TRUE,
+		MUIA_Prop_Entries, 0,
+		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Bottom,
+		End;
+	vert=PropObject,
+		MUIA_Prop_Horiz, FALSE,
+		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
+		End;
 
-	tags=AllocVec(sizeof(struct TagItem)*2, MEMF_ANY);
-	tags[0].ti_Tag=ICOA_Directory;
-	tags[0].ti_Data=newDir;
-	tags[1].ti_Tag=TAG_END;
-	tags[1].ti_Data=0;
+	icTags=AllocVec(sizeof(struct TagItem)*5, MEMF_ANY);
+	icTags[0].ti_Tag=MUIA_FillArea;
+	icTags[0].ti_Data=FALSE;
+	icTags[1].ti_Tag=ICOA_Directory;
+	icTags[1].ti_Data=newDir;
+	icTags[2].ti_Tag=ICA_VertScroller;
+	icTags[2].ti_Data=vert;
+	icTags[3].ti_Tag=ICA_HorizScroller;
+	icTags[3].ti_Data=horiz;
+	icTags[4].ti_Tag=TAG_END;
+	icTags[4].ti_Data=0;
 
-kprintf("do/e4\n");
+	iconcontainer=CreateDesktopObjectA(CDO_IconContainer, icTags);
 
-	CreateDesktopObjectA(CDO_DirectoryWindow, tags);
+// TEMPORARY!!!!! Use CreateDesktopObjectA(CDO_Window.....) instead!
+	dirWindow=WindowObject,
+		MUIA_Window_Width, 300,
+		MUIA_Window_Height, 140,
+//		MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+		MUIA_Window_UseBottomBorderScroller, TRUE,
+		MUIA_Window_UseRightBorderScroller, TRUE,
+		MUIA_Window_EraseArea, FALSE,
+		WindowContents, iconcontainer,
+//		End,
+	End;
 
-kprintf("do/e5\n");
+	DoMethod(_app(_presentation(obj)), OM_ADDMEMBER, dirWindow);
+	DoMethod(dirWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, dirWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+	DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
+	DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToHoriz, MUIV_TriggerValue);
+
+	SetAttrs(dirWindow, MUIA_Window_Open, TRUE, TAG_END);
 
 	retval=1;
 

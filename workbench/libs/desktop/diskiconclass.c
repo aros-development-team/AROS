@@ -104,6 +104,8 @@ AROS_UFH3(IPTR, diskIconDispatcher,
 		case OM_DISPOSE:
 			retval=diskIconDispose(cl, obj, msg);
 			break;
+		case MUIM_Notify:
+			kprintf("DiskObserver/Notify\n");
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);
 			break;

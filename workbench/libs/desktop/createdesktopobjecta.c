@@ -93,15 +93,14 @@
 			obsTags=AllocVec(sizeof(struct TagItem)*3, MEMF_ANY);
 			findTag=FindTagItem(IA_Label, tags);
 
+			newObject=NewObjectA(DiskIcon->mcc_Class, NULL, tags);
+
 			obsTags[0].ti_Tag=IOA_Name;
 			obsTags[0].ti_Data=findTag->ti_Data;
-			kprintf("CreateDesktopObject: IOA_Name: %s\n", findTag->ti_Data);
 			obsTags[1].ti_Tag=OA_Presentation;
 			obsTags[1].ti_Data=newObject;
 			obsTags[2].ti_Tag=TAG_END;
 			obsTags[2].ti_Data=0;
-
-			newObject=NewObjectA(DiskIcon->mcc_Class, NULL, tags);
 
 			semanticObject=NewObjectA(DiskIconObserver->mcc_Class, NULL, obsTags);
 			break;
@@ -109,24 +108,25 @@
 
 		case CDO_DrawerIcon:
 		{
-			struct TagItem *obsTags, *findTag;
+			struct TagItem *obsTags, *findTag, *findTag2;
 
-			obsTags=AllocVec(sizeof(struct TagItem)*3, MEMF_ANY);
+			obsTags=AllocVec(sizeof(struct TagItem)*4, MEMF_ANY);
 			findTag=FindTagItem(IA_Label, tags);
-
-			obsTags[0].ti_Tag=IOA_Name;
-			obsTags[0].ti_Data=findTag->ti_Data;
-			kprintf("CreateDesktopObject: IOA_Name: %s\n", findTag->ti_Data);
-			obsTags[1].ti_Tag=OA_Presentation;
-			obsTags[1].ti_Data=newObject;
-			obsTags[2].ti_Tag=TAG_END;
-			obsTags[2].ti_Data=0;
+			findTag2=FindTagItem(IOA_Directory, tags);
 
 			newObject=NewObjectA(DrawerIcon->mcc_Class, NULL, tags);
 
-			semanticObject=NewObject(DrawerIconObserver->mcc_Class, NULL,
-						OA_Presentation, newObject,
-						TAG_END);
+			obsTags[0].ti_Tag=IOA_Name;
+			obsTags[0].ti_Data=findTag->ti_Data;
+			obsTags[1].ti_Tag=OA_Presentation;
+			obsTags[1].ti_Data=newObject;
+			obsTags[2].ti_Tag=IOA_Directory;
+			obsTags[2].ti_Data=findTag2->ti_Data;
+			obsTags[3].ti_Tag=TAG_END;
+			obsTags[3].ti_Data=0;
+
+
+			semanticObject=NewObjectA(DrawerIconObserver->mcc_Class, NULL, obsTags);
 			break;
 		}
 
@@ -173,10 +173,10 @@
 			else
 				windowClass=MUIC_Window;
 
-			if(DesktopBase->db_DefaultWindowArguments)
-				windowArgs=DesktopBase->db_DefaultWindowArguments;
-			else
-			{
+//			if(DesktopBase->db_DefaultWindowArguments)
+//				windowArgs=DesktopBase->db_DefaultWindowArguments;
+//			else
+//			{
 				windowArgs=AllocVec(sizeof(struct TagItem)*4, MEMF_ANY);
 
 				windowArgs[0].ti_Tag=MUIA_Window_UseBottomBorderScroller;
@@ -187,7 +187,7 @@
 				windowArgs[2].ti_Data=CreateDesktopObjectA(CDO_IconContainer, tags);
 				windowArgs[3].ti_Tag=TAG_END;
 				windowArgs[3].ti_Data=0;
-			}
+//			}
 
 			windowObject=NewObjectA(windowClass, NULL, windowArgs);
 

@@ -46,7 +46,8 @@ void scan(struct ScannerWorkerContext *swc)
 
 			fullPath=AllocVec(strlen(swc->swc_DirName)+strlen("/")+strlen(ead->ed_Name)+1, MEMF_ANY);
 			strcpy(fullPath, swc->swc_DirName);
-			strcat(fullPath, "/");
+			if(swc->swc_DirName[strlen(swc->swc_DirName)-1]!=':')
+				strcat(fullPath, "/");
 			strcat(fullPath, ead->ed_Name);
 
 			sr[i].sr_DiskObject=GetDiskObjectNew(fullPath);
@@ -59,7 +60,6 @@ void scan(struct ScannerWorkerContext *swc)
 	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_Results=i;
 	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_ResultsArray=sr;
 	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=swc->swc_More;
-
 }
 
 void startScan(struct ScannerWorkerContext *swc)
@@ -135,15 +135,20 @@ ULONG workerEntry(void)
 					swc->swc_CurrentRequest=(struct WorkerMessage*)msg;
 					swc->swc_Context.start(swc);
 					if(!swc->swc_More)
+					{
+						((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=FALSE;
 						running=FALSE;
-
+					}
 					break;
 				}
 				case WM_RESUME:
 					swc->swc_CurrentRequest=msg;
 					swc->swc_Context.resume(swc);
 					if(!swc->swc_More)
+					{
+						((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=FALSE;
 						running=FALSE;
+					}
 					break;
 
 				case WM_STOP:
@@ -158,6 +163,7 @@ ULONG workerEntry(void)
 
 			ReplyMsg((struct Message*)msg);
 			msg=NULL;
+
 		}
 	}
 
