@@ -290,7 +290,7 @@ static const char version[] = "$VER: Copy 41.1 (3.3.2001)\n";
 
 #define CTRL_C		(SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
-#define  DEBUG  1
+#define  DEBUG  0
 #include <aros/debug.h>
 #include <string.h>
 #include <stdio.h>
