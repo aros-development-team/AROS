@@ -31,10 +31,7 @@ int main()
     
     /* Step 1: Destroy the existing partitiontable, if any exists. */
     root = OpenRootPartition("ide.device", 0);
-    if (DestroyPartitionTable(root) != 0)
-    {
-        printf("*** ERROR: Could not destroy partition table. Continuing anyway...\n");
-    }
+    DestroyPartitionTable(root);
     CloseRootPartition(root);
     
     /* Step 2: Create a root RDB partition table. */
