@@ -421,9 +421,11 @@ struct IFS_RELABEL
    memory for a struct IOFileSys as the size of it will never shrink. */
 struct IOFileSys
 {
-    struct IORequest IOFS;	  /* Standard I/O request. */
-    LONG	     io_DosError; /* Dos error code. */
-    LONG             io_DirPos;   /* The result from telldir() is stored here */
+    struct IORequest  IOFS;	  /* Standard I/O request. */
+    LONG	      io_DosError; /* Dos error code. */
+    struct DosPacket *io_PacketEmulation; /* Private */
+    LONG              io_DirPos;   /* The result from telldir() is stored
+				      here */
 
     /* This union contains all the data needed for the various actions. */
     union
