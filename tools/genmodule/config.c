@@ -632,7 +632,7 @@ static void readsectionfunctionlist(struct config *cfg)
 	    /* Parse registers specifications if available */
 	    if (sopenbracket != NULL && (scolon == NULL || scolon > sopenbracket))
 	    {
-		int regcount = 0;
+		(*funclistptr)->regcount = 0;
 		
 		if (sclosebracket == NULL)
 		    exitfileerror(20, "'(' without ')'");
@@ -651,13 +651,13 @@ static void readsectionfunctionlist(struct config *cfg)
 
 			s[2] = '\0';
 			slist_append(&(*funclistptr)->regs, s);
-			regcount++;
+			(*funclistptr)->regcount++;
 			s[2] = c;
 		    }
 		    else
 			exitfileerror(20,
 				      "wrong register \"%s\" for argument %u\n",
-				      s, regcount+1
+				      s, (*funclistptr)->regcount+1
 			);
 		    
 		    s += 2;
@@ -728,6 +728,7 @@ static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo)
     conffuncinfo->next = NULL;
     conffuncinfo->name = strdup(name);
     conffuncinfo->lvo = lvo;
+    conffuncinfo->regcount = -1;
     conffuncinfo->regs = NULL;
     conffuncinfo->aliases = NULL;
 
