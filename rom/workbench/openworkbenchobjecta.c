@@ -69,122 +69,141 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
-
-    BOOL                  success = FALSE;
-    struct FileInfoBlock  fib     = { 0 };
-    BPTR                  lock    = NULL;
-    struct DiskObject    *icon    = NULL;
+  
+    BOOL                  success       = FALSE;
+    LONG                  isDefaultIcon = 42;
     
-    /* Test whether the named path exist, as-is. */
-    if ((lock = Lock(name, ACCESS_READ)))
+    struct DiskObject    *icon          = GetIconTags
+    (
+        name, 
+        ICONGETA_FailIfUnavailable,        FALSE, 
+        ICONGETA_IsDefaultIcon,     (IPTR) &isDefaultIcon,
+        TAG_DONE
+    );
+    
+    D(bug("OpenWorkbenchObject: name = %s\n", name));
+    D(bug("OpenWorkbenchObject: isDefaultIcon = %ld\n", isDefaultIcon));
+    
+    if (icon != NULL)
     {
-        /* Find out some info about the file. */
-        if (Examine(lock, &fib))
+        switch (icon->do_Type)
         {
-            if (fib.fib_DirEntryType > 0)
-            {
+            case WBDISK:
+            case WBDRAWER:
+            case WBGARBAGE:
                 /* 
-                    Since it's a directory, tell the Workbench Application
-                    to open the corresponding drawer. 
+                    Since it's a directory or volume, tell the Workbench 
+                    Application to open the corresponding drawer. 
                 */
-                // FIXME
-            }
-            else if (~fib.fib_Protection & FIBF_EXECUTE)
-            {
+                
+                D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARGABE\n"));
+                // FIXME: Implement
+                
+                break;
+                
+            case WBTOOL:
                 /*
                     It's an executable. Before I launch it, I must check
                     whether it is a Workbench program or a CLI program.
                 */
-                icon = GetIconTags(name, TAG_DONE);
-                if (icon != NULL)
+                
+                D(bug("OpenWorkbenchObject: it's a TOOL\n"));
+                
+                if (!isDefaultIcon)
                 {
                     /* It's a Workbench program */
-                    success = WB_LaunchProgram(ParentDir(lock), FilePart(name), tags);
-                    if (!success)
-                    {
-                        /*
-                            Fallback to launching it as a CLI program. Most 
-                            likely it will also fail, but we might get lucky.
-                        */
-                        success = CLI_LaunchProgram(name, tags);
-                    }
+                    D(bug("OpenWorkbenchObject: it's a WB program\n"));
                     
-                    FreeDiskObject(icon);
-                } 
-                else
-                {
-                    /* It's a CLI program */
-                    success = CLI_LaunchProgram(name, tags);
-                }
-            }
-            #if 0 /* [ach] script bit not handled properly in AROS */
-            else if (fib.fib_Protection & FIBF_SCRIPT)
-            {
-                /* 
-                    It's a script. Launch it as an CLI program as such:
-                    C:Execute <filename> <args>, building the arguments as
-                    for a normal CLI program.
-                */
-                // FIXME
-                
-            }
-            #endif
-            else
-            {
-                /*
-                    Since it's not a directory nor an executable, it must be
-                    a plain data file. Test whether it has an icon, and if
-                    so try to launch it's default tool (if it has one). 
-                */
-                
-                icon = GetIconTags
-                (
-                    name, ICONGETA_FailIfUnavailable, FALSE, TAG_DONE
-                );
-                
-                if (icon != NULL)
-                {
-                    /* Test whether it has an valid default tool. */
-                    if
-                    (
-                           icon->do_DefaultTool != NULL 
-                        && strlen(icon->do_DefaultTool) > 0
-                    )
+                    BPTR lock = Lock(name, ACCESS_READ);
+                    
+                    if (lock != NULL)
                     {
                         BPTR parent = ParentDir(lock);
                         
-                        success = OpenWorkbenchObject
-                        (
-                            icon->do_DefaultTool,
-                            WBOPENA_ArgLock, (IPTR) parent,
-                            WBOPENA_ArgName, (IPTR) FilePart(name), 
-                            TAG_DONE
-                        );
+                        if (parent != NULL)
+                        {
+                            success = WB_LaunchProgram
+                            (
+                                parent, FilePart(name), tags
+                            );
+                            
+                            if (!success)
+                            {
+                                /*
+                                    Fallback to launching it as a CLI program.
+                                    Most likely it will also fail, but we 
+                                    might get lucky.
+                                */
+                                success = CLI_LaunchProgram(name, tags);
+                            }
+                        }
+                        
+                        UnLock(lock);
                     }
-                    else
-                    {
-                        // FIXME: default to global identify hook
-                    }
-                    
-                    FreeDiskObject(icon);
-                } 
+                }
                 else
                 {
-                    // FIXME
-                    // global identify hook
+                    /* It's a CLI program */
+                    
+                    D(bug("OpenWorkbenchObject: it's a CLI program\n"));
+                    
+                    success = CLI_LaunchProgram(name, tags);
                 }
-            }
+                break;
+                
+            case WBPROJECT:
+                /* It's a project; try to launch it via it's default tool. */
+                
+                D(bug("OpenWorkbenchObject: it's a PROJECT\n"));
+                D(bug("OpenWorkbenchObject: default tool: %s\n", icon->do_DefaultTool));
+                    
+                if
+                (
+                       icon->do_DefaultTool != NULL 
+                    && strlen(icon->do_DefaultTool) > 0
+                )
+                {
+                    BPTR lock = Lock(name, ACCESS_READ);
+                    
+                    
+                    if (lock != NULL)
+                    {
+                        BPTR parent = ParentDir(lock);
+                        
+                        if (parent != NULL)
+                        {
+                            success = OpenWorkbenchObject
+                            (
+                                icon->do_DefaultTool,
+                                WBOPENA_ArgLock, (IPTR) parent,
+                                WBOPENA_ArgName, (IPTR) FilePart(name), 
+                                TAG_DONE
+                            );
+                            
+                            UnLock(parent);
+                        }
+                        
+                        UnLock(lock);
+                    }
+                }
+                    
+                if (!success)
+                {
+                    // FIXME: open execute command
+                }
+                break;
         }
         
-        UnLock(lock);
+        FreeDiskObject(icon);
     }
     else
     {
         /*
-            Locking the named path failed, and therefore we need to search the
-            default search path for an executable of that name and launch 
-            it. This only makes sense if the name is *not* an (absolute or 
-            relative) path: that is, it must not contain any ':' or '/'.
+            Getting (a possibly default) icon for the path failed, and 
+            therefore there is no such file. We need to search the default 
+            search path for an executable of that name and launch it. This 
+            only makes sense if the name is *not* an (absolute or relative) 
+            path: that is, it must not contain any ':' or '/'.
         */
         
         if (strpbrk(name, "/:") == NULL)
