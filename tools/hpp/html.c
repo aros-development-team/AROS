@@ -239,6 +239,10 @@ HTML_ENV (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	    return T_ERROR;
 	}
 
+#if 0
+    fprintf (stderr, "PUSH %s/%s\n", name->value, env->end);
+#endif
+
 	if (!ENVEndSP)
 	{
 	    Str_PushError (in, "ENVs nested too deep");
@@ -258,6 +262,9 @@ HTML_ENV (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	}
 
 	str = ENVEnd[ENVEndSP++];
+#if 0
+    fprintf (stderr, "POP %s\n", str);
+#endif
     }
 
     if (str)
@@ -614,7 +621,11 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (endtag && !IsListEmpty (&tag->args))
     {
-	Warn ("Unexpected arguments in %s\n", tag->node.name);
+	Warn ("%s:%d: Unexpected arguments in %s\n",
+	    Str_GetName (in),
+	    Str_GetLine (in),
+	    tag->node.name
+	);
     }
 
     env = (HTMLEnv *) FindNode (&EDefs, name);
@@ -623,7 +634,11 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (env && !IsListEmpty (&tag->args) && !macro && !block)
     {
-	Warn ("Unexpected arguments to ENV %s\n", name);
+	Warn ("%s:%d: Unexpected arguments to ENV %s\n",
+	    Str_GetName (in),
+	    Str_GetLine (in),
+	    name
+	);
     }
 
     if (env && !IsListEmpty (&tag->args) && (macro || block))
@@ -1114,7 +1129,7 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    if (HTML_ENV (tag, in, out, data) != T_OK)
 		    {
 			Str_SetLine (in, line);
-			Str_PushError (in, "HTML_Parse() failed in ENV");
+			Str_PushError (in, "HTML_Parse() failed in %s", tag->node.name);
 			return T_ERROR;
 		    }
 		}
