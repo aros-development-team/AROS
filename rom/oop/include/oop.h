@@ -20,6 +20,7 @@
 #   include <utility/tagitem.h>
 #endif
 
+#define AROSOOP_NAME "oop.library"
 typedef ULONG Object;
 
 typedef ULONG MethodID;
