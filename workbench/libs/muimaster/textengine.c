@@ -474,6 +474,9 @@ void zune_text_get_bounds (ZText *text, Object *obj)
 	text->height += line_node->lheight;
 	text->width = MAX(text->width,line_node->lwidth);
     }
+#ifdef _AROS
+    DeinitRastPort(&rp);
+#endif
 }
 
 /************************************************************/
@@ -727,6 +730,9 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 	SetFont(&rp,_font(obj));
 	*len_ptr = x;
 	*offset_ptr += TextLength(&rp,chunk->str,x);
+#ifdef _AROS
+	DeinitRastPort(&rp);
+#endif
     }
 
     *offset_ptr += text->xscroll;
@@ -773,6 +779,9 @@ int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel)
 	    SetFont(&rp,_font(obj));
 
 	    xpos += TextFit(&rp,chunk->str,strlen(chunk->str),&te,NULL,1,xpixel,_font(obj)->tf_YSize);
+#ifdef _AROS
+	    DeinitRastPort(&rp);
+#endif
 	    return xpos;
     	}
     	xpixel -= chunk->cwidth;
@@ -850,7 +859,9 @@ int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursor
 	top += line_node->lheight;
 	cursory--;
     }
-
+#ifdef _AROS
+    DeinitRastPort(&rp);
+#endif
     return (text->xscroll != oldxscroll || text->yscroll != oldyscroll);
 }
 
