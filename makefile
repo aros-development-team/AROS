@@ -11,7 +11,7 @@
 #
 # \item{CURDIR} is the path from $(TOP) to the current directory.
 #
-# END_DESC{makevar}
+# END_DESC{localmakevar}
 TOP=.
 CURDIR=.
 
@@ -59,16 +59,20 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/devicetest \
 	$(TESTDIR)/filetest
 
+# BEGIN_DESC{target}
+# \item{all} Compile the whole project (except the documentation).
+#
+# END_DESC{target}
 ifeq ($(FLAVOUR),native)
 all: setup subdirs
 else
 all : setup subdirs AmigaOS $(BINDIR)/arosshell
 endif
 
-# BEGIN_DESC{localtarget}
+# BEGIN_DESC{target}
 # \item{crypt} Create the file crypt to create a password for CVS access
 #
-# END_DESC{localtarget}
+# END_DESC{target}
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
@@ -81,10 +85,10 @@ crypt : crypt.c
 BINARCHIVE = AROS-$(ARCH)-$(KERNEL)-$(VERSION)
 DEVARCHIVE = AROSdev-$(VERSION)
 
-# BEGIN_DESC{localtarget}
+# BEGIN_DESC{target}
 # \item{dist} Create the distribution archives
 #
-# END_DESC{localtarget}
+# END_DESC{target}
 # BEGIN_DESC{internaltarget}
 # \item{dir-dir} Creates the directory for the distribution archives
 #
@@ -150,19 +154,19 @@ setup :
 	$(MAKE) $(MFLAGS) TOP="../../.." CURDIR="$(CURDIR)/apps/compiler/include" \
 		all
 
-# BEGIN_DESC{localtarget}
+# BEGIN_DESC{target}
 # \item{check} Run tests to check if AROS runs ok on your system.
 #
-# END_DESC{localtarget}
+# END_DESC{target}
 check : $(TESTS)
 	@for test in $(TESTS) ; do \
 	    echo "Running test `basename $$test`" ; $$test ; \
 	done
 
-# BEGIN_DESC{localtarget}
+# BEGIN_DESC{target}
 # \item{clean} Remove all generated files
 #
-# END_DESC{localtarget}
+# END_DESC{target}
 clean:
 	$(RM) $(ARCHDIR) host.cfg
 	@for dir in $(SUBDIRS) ; do \
@@ -264,9 +268,9 @@ $(GENDIR)/%.o: %.c
 #
 #include $(GENDIR)/arosshell.d
 
-# BEGIN_DESC{localtarget}
+# BEGIN_DESC{target}
 # \item{cleandep} Remove all generated dependency files.
 #
-# END_DESC{localtarget}
+# END_DESC{target}
 cleandep:
 	$(RM) $(GENDIR)/*.d $(GENDIR)/*/*.d
