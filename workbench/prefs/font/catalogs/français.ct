@@ -1,0 +1,140 @@
+## version $VER: fontprefs.catalog 1.0 (27.9.2001)
+## language français
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Impossible d'ouvrir %s V%ld !\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Impossible de verrouiller l'écran public!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Impossible d'obtenir la structure DrawInfo !
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Impossible d'obtenir la structure VisualInfo !
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossible de créer les Gadgets !
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Impossible de créer les Menus !
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Impossible de créer la fenêtre !
+; Can't create window!
+;
+MSG_CANT_CREATE_REQ
+Impossible de créer la requête de fichier !
+; Can't open create filerequester!
+;
+MSG_CANT_OPEN_STREAM
+Impossible d'ouvrir de flux IFF !
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Impossible de sauver les préférences !
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Impossible de lire les préférences !
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Impossible d'allouer un gestionnaire IFF !
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Impossible d'allouer de la mémoire pour l'application (%s) !
+; Can't allocate application memory (%s)!
+;
+MSG_WINTITLE
+Préférences des polices de caractères (Font)
+; Font Preferences
+;
+MSG_MEN_PROJECT
+Projet
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Ouvrir ...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Sauver sous ...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Quitter
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Modifier
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Configuration par défaut
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Dernière sauvegarde
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Revenir à l'initial
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Préférences
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Créer des icônes ?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Charger les préférences
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Sauver les préférences
+; Save Font Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_MX_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_MX_SYSTEM
+Système
+; System
+;
+MSG_MX_SCREEN
+Ecran
+; Screen
+;
+MSG_GAD_GET
+Charger ...
+; Get...
+;
+MSG_GAD_SAVE
+Sauver
+; Save
+;
+MSG_GAD_USE
+Utiliser
+; Use
+;
+MSG_GAD_CANCEL
+Annuler
+; Cancel
