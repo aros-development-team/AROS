@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -216,9 +216,8 @@ struct DiskfontBase_intern
     struct MinList         fontsdirentrylist;
     struct SignalSemaphore fontssemaphore;
     
-#if ALWAYS_ZERO_LIBCOUNT
-    UWORD		realopencount;
-#endif
+    /* MemHandler interrupt for flushing library */
+    struct Interrupt       memint;
 };
 
 /* The following typedefs are necessary, because the names of the global
@@ -236,9 +235,5 @@ typedef struct GfxBase GraphicsBase;
 #define GfxBase (DFB(DiskfontBase)->gfxbase)
 #undef UtilityBase
 #define UtilityBase (DFB(DiskfontBase)->utilitybase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct DiskfontBase_intern *, DiskfontBase, 3, Diskfont)
-
 
 #endif /* diskfont_intern.h */
