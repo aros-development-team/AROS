@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Join - Create a single file from several.
-    Lang: English
+    Join - Create a single file from several.
 */
 
 /******************************************************************************
@@ -45,10 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    30.11.2000  SDuvan  added pattern matching support
 
 ******************************************************************************/
 
@@ -95,7 +90,7 @@ int main( void )
 {
     struct RDArgs  *rda = NULL ;
 
-    IPTR    args[ARG_COUNT] = { NULL , NULL };
+    IPTR    args[ARG_COUNT] = { (IPTR) NULL , (IPTR) NULL };
     STRPTR *files;
     STRPTR  destination;
     BPTR    destfile = NULL;

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: MakeDir CLI command
-    Lang: English
+    MakeDir CLI command.
 */
 
 #include <exec/memory.h>
@@ -53,12 +52,6 @@ static const char version[] = "$VER: MakeDir 41.4 (12.11.2000)\n";
 
     INTERNALS
 
-    HISTORY
-
-    12 November 2000,  SDuvan  --  Implmented multiple target support,
-                                   rewrote to live up to AmigaDOS
-				   semantics 
-
 ******************************************************************************/
 
 
@@ -73,7 +66,7 @@ int __nocommandline;
 
 int main(void)
 {
-    IPTR           args[NOOFARGS] = { NULL };
+    IPTR           args[NOOFARGS] = { (IPTR) NULL };
     struct RDArgs *rda;
     
     LONG   error = RETURN_OK;

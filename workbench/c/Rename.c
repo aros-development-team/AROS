@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Rename CLI command
-    Lang: English
+    Rename CLI command.
 */
 
 /*****************************************************************************
@@ -70,11 +69,6 @@
 	not
 	    Rename("ram:a", "ram:clipboards/");
 
-    HISTORY
-
-        23.11.00  SDuvan   --  Rewrote from scratch
-	19.03.97  laguest  --  Initial inclusion to the CVS repository
-
 ******************************************************************************/
 
 #define  DEBUG  0
@@ -117,7 +111,7 @@ int main(void)
 {
     struct RDArgs     *rda;
 
-    IPTR  args[NOOFARGS] = { NULL, NULL, NULL };
+    IPTR  args[NOOFARGS] = { (IPTR) NULL, (IPTR) NULL, FALSE };
 
     int   retval = RETURN_FAIL;
 

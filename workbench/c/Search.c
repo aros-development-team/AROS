@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 /*****************************************************************************
@@ -321,7 +318,7 @@ int main(void)
 			
 			if(found)
 			{
-			    if(args[ARG_FILE] || args[ARG_QUIET] &&
+			    if((args[ARG_FILE] || args[ARG_QUIET]) &&
 			       !args[ARG_QUICK])
 			    {
 				PrintFullName(path_buffer, cut_off, anchor);

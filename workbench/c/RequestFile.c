@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: RequestFile CLI command
-    Lang: English
+    RequestFile CLI command.
 */
 
 /*****************************************************************************
@@ -39,10 +38,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-        ?         laguest  Initial version
-	29.12.99  SDuvan   Fixes to make it compile; bugfixes; cleanup
 
 ******************************************************************************/
 
@@ -82,21 +77,21 @@ extern struct Library *AslBase;
 struct TagItem FileTags[] =
 {
     /* Note: The ordering of these is _important_! */
-    { ASLFR_InitialDrawer , NULL  },
-    { ASLFR_InitialFile   , NULL  },
-    { ASLFR_InitialPattern, NULL  },
-    { ASLFR_TitleText     , NULL  },
-    { ASLFR_PositiveText  , NULL  },
-    { ASLFR_NegativeText  , NULL  },
-    { ASLFR_AcceptPattern , NULL  },
-    { ASLFR_RejectPattern , NULL  },
-    { ASLFR_DoSaveMode    , FALSE },
-    { ASLFR_DoMultiSelect , FALSE },
-    { ASLFR_DrawersOnly   , FALSE },
-    { ASLFR_RejectIcons   , FALSE },
-    { ASLFR_PubScreenName , NULL  },
-    { ASLFR_DoPatterns    , FALSE },
-    { TAG_DONE            , NULL  }
+    { ASLFR_InitialDrawer , (IPTR) NULL  },
+    { ASLFR_InitialFile   , (IPTR) NULL  },
+    { ASLFR_InitialPattern, (IPTR) NULL  },
+    { ASLFR_TitleText     , (IPTR) NULL  },
+    { ASLFR_PositiveText  , (IPTR) NULL  },
+    { ASLFR_NegativeText  , (IPTR) NULL  },
+    { ASLFR_AcceptPattern , (IPTR) NULL  },
+    { ASLFR_RejectPattern , (IPTR) NULL  },
+    { ASLFR_DoSaveMode    ,        FALSE },
+    { ASLFR_DoMultiSelect ,        FALSE },
+    { ASLFR_DrawersOnly   ,        FALSE },
+    { ASLFR_RejectIcons   ,        FALSE },
+    { ASLFR_PubScreenName , (IPTR) NULL  },
+    { ASLFR_DoPatterns    ,        FALSE },
+    { TAG_DONE            , (IPTR) NULL  }
 };
 
 int __nocommandline;
