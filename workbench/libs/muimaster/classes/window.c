@@ -143,7 +143,7 @@ struct MUI_WindowData
 #define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
 #define MUIWF_BUBBLEMODE      (1<<13) /* Quick bubble mode. Bubbles appear quick when moving around */
 
-#define BUBBLEHELP_TICKER_FIRST 20
+#define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
 
 struct __dummyXFC3__
