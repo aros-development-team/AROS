@@ -7,21 +7,22 @@
     Standard C Library: Extended multibyte and wide character utilities.
 */
 
-#include <aros/systypes.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
 
-#ifdef	_AROS_SIZE_T_
-typedef _AROS_SIZE_T_	size_t;
-#undef	_AROS_SIZE_T_
+#ifndef	__AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t        size_t;
 #endif
 
-#ifdef	_AROS_WCHAR_T_
-typedef	_AROS_WCHAR_T_	wchar_t;
-#undef	_AROS_WCHAR_T_
+#ifndef	__AROS_WCHAR_T_DECLARED
+#define __AROS_WCHAR_T_DECLARED
+typedef	__wchar_t       wchar_t;
 #endif
 
-#ifdef	_AROS_WINT_T_
-typedef	_AROS_WINT_T_	wint_t;
-#undef	_AROS_WINT_T_
+#ifndef	__AROS_WINT_T_DECLARED
+#define __AROS_WINT_T_DECLARED
+typedef	__wint          wint_t;
 #endif
 
 #ifdef  _AROS_VA_LIST_

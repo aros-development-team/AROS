@@ -18,49 +18,36 @@
 #endif
 
 /*************************************
- ***** Basic Data types 	 *****
+ ***** Basic Data types          *****
  *************************************/
 
 #ifndef __typedef_APTR
 #   define __typedef_APTR
-    typedef void *				APTR;		/* memory pointer */
+    typedef void *			        APTR;		/* memory pointer */
 #endif
 
 #ifndef __typedef_CONST_APTR
 #   define __typedef_CONST_APTR
-    typedef const void *			CONST_APTR;	/* const memory pointer */
+    typedef const void *		        CONST_APTR;	/* const memory pointer */
 #endif
 
 /* An unsigned integer which can store a pointer */
 #ifndef __typedef_IPTR
 #   define __typedef_IPTR
-#   ifdef AROS_IPTR_TYPE
-	typedef AROS_IPTR_TYPE			IPTR;
-#   else
-	typedef unsigned long			IPTR;
-#   endif
+    typedef unsigned AROS_INTPTR_TYPE	        IPTR;
 #endif
 
 /* A signed type that can store a pointer */
 #ifndef __typedef_SIPTR
 #   define __typedef_SIPTR
-#   ifdef AROS_SIPTR_TYPE
-	typedef AROS_SIPTR_TYPE			SIPTR;
-#   else
-	typedef long				SIPTR;
-#   endif
+    typedef signed AROS_INTPTR_TYPE	        SIPTR;
 #endif
 
 /* Distinguish between 64 and 32bit systems */
 #ifndef __typedef_LONG
 #   define __typedef_LONG
-#   ifdef AROS_32BIT_TYPE
-	typedef   signed AROS_32BIT_TYPE	LONG;	/* signed 32-bit value */
-	typedef unsigned AROS_32BIT_TYPE	ULONG;	/* unsigned 32-bit value */
-#   else
-	typedef   signed long			LONG;	/* signed 32-bit value */
-	typedef unsigned long			ULONG;	/* unsigned 32-bit value */
-#   endif
+    typedef   signed AROS_32BIT_TYPE	        LONG;	/* signed 32-bit value */
+    typedef unsigned AROS_32BIT_TYPE	        ULONG;	/* unsigned 32-bit value */
 #endif
 
 #ifndef __typedef_QUAD
@@ -69,53 +56,34 @@
 	typedef   signed AROS_64BIT_TYPE	QUAD;	/* signed 64-bit value */
 	typedef unsigned AROS_64BIT_TYPE	UQUAD;	/* unsigned 64-bit-value */
 #   else
-#	if defined(__GNUC__) || defined(__INTEL_COMPILER)
-	    typedef   signed long long		QUAD;	/* signed 64-bit value */
-	    typedef unsigned long long		UQUAD;	/* unsigned 64-bit-value */
-#	else
-	    typedef struct {  LONG high, low; }	QUAD;	/* signed 64-bit value */
-	    typedef struct { ULONG high, low; }	UQUAD;	/* unsigned 64-bit value */
-#	endif /* __GNUC__  || __INTEL_COMPILER */
+        typedef struct {  LONG high, low; }	QUAD;	/* signed 64-bit value */
+        typedef struct { ULONG high, low; }	UQUAD;	/* unsigned 64-bit value */
 #   endif /* AROS_64BIT_TYPE */
 #endif
 
 #ifndef __typedef_WORD
 #   define __typedef_WORD
-#   ifdef AROS_16BIT_TYPE
-	typedef   signed AROS_16BIT_TYPE	WORD;	/* signed 16-bit value */
-	typedef unsigned AROS_16BIT_TYPE	UWORD;	/* unsigned 16-bit-value */
-#   else
-	typedef   signed short			WORD;	/* signed 16-bit value */
-	typedef unsigned short			UWORD;	/* unsigned 16-bit value */
-#   endif
+    typedef   signed AROS_16BIT_TYPE	        WORD;	/* signed 16-bit value */
+    typedef unsigned AROS_16BIT_TYPE	        UWORD;	/* unsigned 16-bit-value */
 #endif
 
 #ifndef __typedef_BYTE
 #   define __typedef_BYTE
-    typedef signed char 			BYTE;	/* signed 8-bit value */
+    typedef signed char                         BYTE;	/* signed 8-bit value */
     typedef unsigned char			UBYTE;	/* unsigned 8-bit value */
 #endif
 
 /* An integer on the stack which can store a pointer */
 #ifndef __typedef_STACKIPTR
 #   define __typedef_STACKIPTR
-#   ifdef AROS_IPTR_STACKTYPE
-	typedef AROS_IPTR_STACKTYPE		STACKIPTR;
-#   else
-	typedef unsigned long			STACKIPTR;
-#   endif
+    typedef unsigned AROS_INTPTR_STACKTYPE      STACKIPTR;
 #endif
 
 /* Distinguish between 64 and 32bit systems on the stack */
 #ifndef __typedef_STACKLONG
 #   define __typedef_STACKLONG
-#   ifdef AROS_32BIT_STACKTYPE
-	typedef   signed AROS_32BIT_STACKTYPE	STACKLONG;   /* signed 32-bit value */
-	typedef unsigned AROS_32BIT_STACKTYPE	STACKULONG;  /* unsigned 32-bit value */
-#   else
-	typedef   signed long			STACKLONG;   /* signed 32-bit value */
-	typedef unsigned long			STACKULONG;  /* unsigned 32-bit value */
-#   endif
+    typedef   signed AROS_32BIT_STACKTYPE	STACKLONG;   /* signed 32-bit value */
+    typedef unsigned AROS_32BIT_STACKTYPE	STACKULONG;  /* unsigned 32-bit value */
 #endif
 
 #ifndef __typedef_STACKQUAD
@@ -124,54 +92,31 @@
 	typedef   signed AROS_64BIT_STACKTYPE	STACKQUAD;   /* signed 64-bit value */
 	typedef unsigned AROS_64BIT_STACKTYPE	STACKUQUAD;  /* unsigned 64-bit-value */
 #   else
-#	if defined(__GNUC__) || defined(__INTEL_COMPILER)
-	    typedef   signed long long		STACKQUAD;   /* signed 64-bit value */
-	    typedef unsigned long long		STACKUQUAD;  /* unsigned 64-bit-value */
-#	else
-	    typedef struct {  LONG high, low; }	STACKQUAD;   /* signed 64-bit value */
-	    typedef struct { ULONG high, low; }	STACKUQUAD;  /* unsigned 64-bit value */
-#	endif /* __GNUC__  || __INTEL_COMPILER */
+        typedef struct {  LONG high, low; }	STACKQUAD;   /* signed 64-bit value */
+        typedef struct { ULONG high, low; }	STACKUQUAD;  /* unsigned 64-bit value */
 #   endif /* AROS_64BIT_STACKTYPE */
 #endif
 
 #ifndef __typedef_STACKWORD
 #   define __typedef_STACKWORD
-#   ifdef AROS_16BIT_STACKTYPE
-	typedef   signed AROS_16BIT_STACKTYPE	STACKWORD;   /* signed 16-bit value */
-	typedef unsigned AROS_16BIT_STACKTYPE	STACKUWORD;  /* unsigned 16-bit-value */
-#   else
-	typedef   signed int			STACKWORD;   /* signed 16-bit value */
-	typedef unsigned int			STACKUWORD;  /* unsigned 16-bit value */
-#   endif
+    typedef   signed AROS_16BIT_STACKTYPE	STACKWORD;   /* signed 16-bit value */
+    typedef unsigned AROS_16BIT_STACKTYPE	STACKUWORD;  /* unsigned 16-bit-value */
 #endif
 
 #ifndef __typedef_STACKBYTE
 #   define __typedef_STACKBYTE
-#   ifdef AROS_8BIT_STACKTYPE
     typedef   signed AROS_8BIT_STACKTYPE	STACKBYTE;   /* signed 8-bit value */
     typedef unsigned AROS_8BIT_STACKTYPE	STACKUBYTE;  /* unsigned 8-bit value */
-#   else
-    typedef signed int				STACKBYTE;   /* signed 8-bit value */
-    typedef unsigned int			STACKUBYTE;  /* unsigned 8-bit value */
-#   endif
 #endif
 
 #ifndef __typedef_STACKFLOAT
 #   define __typedef_STACKFLOAT
-#   ifdef AROS_FLOAT_STACKTYPE
-	typedef AROS_FLOAT_STACKTYPE		STACKFLOAT;  /* signed 32-bit floating point value */
-#   else
-	typedef double				STACKFLOAT;  /* signed 32-bit floating point value */
-#   endif
+    typedef AROS_FLOAT_STACKTYPE		STACKFLOAT;  /* signed 32-bit floating point value */
 #endif
 
 #ifndef __typedef_STACKDOUBLE
 #   define __typedef_STACKDOUBLE
-#   ifdef AROS_DOUBLE_STACKTYPE
-	typedef AROS_DOUBLE_STACKTYPE		STACKDOUBLE;  /* signed 64-bit floating point value */
-#   else
-	typedef double				STACKDOUBLE;  /* signed 64-bit floating point value */
-#   endif
+    typedef AROS_DOUBLE_STACKTYPE		STACKDOUBLE;  /* signed 64-bit floating point value */
 #endif
 
 /*************************************
@@ -270,7 +215,7 @@
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #define RESTRICT    restrict
 #else
-#define RESTRICT    restrict
+#define RESTRICT
 #endif
 #endif
 

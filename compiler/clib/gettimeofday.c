@@ -6,8 +6,10 @@
 */
 
 #include <sys/time.h>
-#include <dos/dos.h>
-#include <proto/dos.h>
+#define timeval aros_timeval
+#include <devices/timer.h>
+#include <proto/timer.h>
+#undef timeval
 
 #include "__time.h"
 
@@ -94,16 +96,16 @@ long __gmtoffset;
 
 ******************************************************************************/
 {
-    struct DateStamp t;
-
-    DateStamp (&t); /* Get timestamp */
+    struct aros_timeval atv;
 
     if (tv)
     {
-	tv->tv_sec = (t.ds_Days * 24*60 + t.ds_Minute + __gmtoffset) * 60 +
-	             t.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
-	tv->tv_usec = (t.ds_Tick % TICKS_PER_SECOND) *
-		      (1000000 / TICKS_PER_SECOND);
+        GetSysTime(&atv);
+        tv->tv_sec  = atv.tv_secs;
+        tv->tv_usec = atv.tv_micro;
+
+        /* Adjust with the current timezone, stored in minutes west of GMT */
+        tv->tv_sec += __gmtoffset * 60;
     }
 
     if (tz)
@@ -115,4 +117,3 @@ long __gmtoffset;
 
     return 0;
 } /* gettimeofday */
-

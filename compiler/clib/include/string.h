@@ -8,13 +8,14 @@
     Desc: ANSI-C header file string.h
     Lang: english
 */
-#include <aros/systypes.h>
+#include <sys/_types.h>
 #include <sys/_posix.h>
+#include <sys/cdefs.h>
 
 /* string.h is not allowed to include <sys/types.h> */
-#ifdef _AROS_SIZE_T_
-typedef _AROS_SIZE_T_	size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t        size_t;
 #endif
 
 #ifndef NULL

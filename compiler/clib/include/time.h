@@ -8,22 +8,23 @@
     Desc: ANSI-C header file time.h
     Lang: english
 */
-#include <aros/systypes.h>
+#include <sys/_types.h>
 #include <sys/_posix.h>
+#include <sys/cdefs.h>
 
-#ifdef	_AROS_TIME_T_
-typedef _AROS_TIME_T_	    time_t;
-#undef	_AROS_TIME_T_
+#ifndef __AROS_TIME_T_DECLARED
+#define __AROS_TIME_T_DECLARED
+typedef __time_t            time_t;
 #endif
 
-#ifdef	_AROS_CLOCK_T_
-typedef _AROS_CLOCK_T_	    clock_t;
-#undef	_AROS_CLOCK_T_
+#ifndef __AROS_CLOCK_T_DECLARED
+#define __AROS_CLOCK_T_DECLARED
+typedef __clock_t           clock_t;
 #endif
 
-#ifdef	_AROS_SIZE_T_
-typedef _AROS_SIZE_T_	    size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t            size_t;
 #endif
 
 #ifndef NULL
@@ -48,14 +49,14 @@ struct tm
 
 #if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
 
-#ifdef	_AROS_TIMER_T_
-typedef	_AROS_TIMER_T_	    timer_t;
-#undef	_AROS_TIMER_T_
+#ifndef	__AROS_TIMER_T_DECLARED
+#define	__AROS_TIMER_T_DECLARED
+typedef	__timer_t           timer_t;
 #endif
 
-#ifdef	_AROS_CLOCKID_T_
-typedef _AROS_CLOCKID_T_    clockid_t;
-#undef	_AROS_CLOCKID_T_
+#ifndef	__AROS_CLOCKID_T_DECLARED
+#define	__AROS_CLOCKID_T_DECLARED
+typedef __clockid_t         clockid_t;
 #endif
 
 struct timespec

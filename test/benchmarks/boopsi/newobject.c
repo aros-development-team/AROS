@@ -17,7 +17,7 @@ int main()
     
     if (!Test_Initialize()) goto error;
     
-    gettimeofday(&tv_start, NULL);
+    GetSysTime(&tv_start);
     
     for(i = 0; i < count; i++)
     {    
@@ -25,10 +25,10 @@ int main()
         DisposeObject(object);
     }
     
-    gettimeofday(&tv_end, NULL);
+    GetSysTime(&tv_end);
     
-    elapsed = ((double)(((tv_end.tv_sec * 1000000) + tv_end.tv_usec) 
-            - ((tv_start.tv_sec * 1000000) + tv_start.tv_usec)))/1000000.;
+    elapsed = ((double)(((tv_end.tv_secs * 1000000) + tv_end.tv_micro)
+            - ((tv_start.tv_secs * 1000000) + tv_start.tv_micro)))/1000000.;
     
     printf
     (

@@ -5,17 +5,12 @@
     $Id$
 */
 
-#include <aros/systypes.h>
-
-#ifdef  _AROS_SIZE_T_
-typedef _AROS_SIZE_T_       size_t;
-#undef  _AROS_SIZE_T_
-#endif
+#include <sys/_types.h>
 
 struct iovec
 {
     void        *iov_base;
-    size_t       iov_len;
+    __size_t     iov_len;
 };
 
 #endif /* _SYS__IOVEC_H_ */

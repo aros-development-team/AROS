@@ -9,8 +9,8 @@
     Lang: english
 */
 
-#ifndef AROS_MACHINE_H
-#   include <aros/machine.h>
+#ifndef AROS_CPU_H
+#   include <aros/cpu.h>
 #endif
 
 /**************************************
@@ -43,17 +43,17 @@
  */
 
 #if defined(__cplusplus)
-#   define EXTERN extern "C"
-#   define BEGIN_EXTERN     extern "C" {
-#   define END_EXTERN	    };
+#   define __EXTERN extern "C"
 #   define __BEGIN_DECLS    extern "C" {
-#   define __END_DECLS	    };
+#   define __BEGIN_EXTERN   extern "C" {
+#   define __END_DECLS      };
+#   define __END_EXTERN	    };
 #else
-#   define EXTERN extern
-#   define BEGIN_EXTERN
-#   define END_EXTERN
+#   define __EXTERN extern
 #   define __BEGIN_DECLS
+#   define __BEGIN_EXTERN
 #   define __END_DECLS
+#   define __END_EXTERN
 #endif
 
 #if defined(__STDC__) || defined(__cplusplus)
@@ -109,29 +109,6 @@
 #endif
 
 /* 4. Makros for debugging and development */
-#if !defined(__IDSTRING)
-#   if defined(__GNUC__) && defined(__ELF__)
-#       define __IDSTRING(name,str)	    __asm__(".ident\t\"" str "\"")
-#   else
-#       define __IDSTRING(name,str)	    static const char name[] __unused = str
-#   endif
-#endif
-
-/* Need to protect __RCSID against the host system headers */
-#if !defined(__RCSID)
-#   define __RCSID(id)	__IDSTRING(rcsid,id)
-#endif
-
-/* __CONCAT is defined on Linux in cdefs.h */
-#if !defined(__CONCAT)
-#   if defined(__STDC__) || defined(__cplusplus)
-#	define	    __CONCAT1(a,b)  a ## b
-#	define	    __CONCAT(a,b)   __CONCAT1(a,b)
-#   else
-#	define	    __CONCAT(a,b)	a/**/b
-#   endif
-#endif
-
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   define AROS_64BIT_TYPE long long
 #   define AROS_HAVE_LONG_LONG
@@ -156,36 +133,11 @@
 #endif
 
 
-/* 5. Sytem-specific files */
-#ifdef _AMIGA
-#   include <aros/amiga.h>
-#endif
-#ifdef linux
-#   include <aros/linux.h>
-#endif
-#ifdef _OSF1
-#   include <aros/alpha.h>
-#endif
-#ifdef __FreeBSD__
-#   include <aros/freebsd.h>
-#endif
-#ifdef __NetBSD__
-#   include <aros/netbsd.h>
-#endif
-#ifdef __OpenBSD__
-#   include <aros/openbsd.h>
-#endif
-#ifdef __CYGWIN32__
-#   include <aros/cygwin.h>
-#endif
-
-/* 4. Calculated #defines */
+/* 5. Calculated #defines */
 #if !AROS_STACK_GROWS_DOWNWARDS
 #   define AROS_SLOWSTACKTAGS
 #   define AROS_SLOWSTACKMETHODS
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
-
-#   define AROS_64BIT_TYPE long long
 
 #ifndef AROS_ASMSYMNAME
 #   define AROS_ASMSYMNAME(n)     n

@@ -8,19 +8,15 @@
     Desc: ANSI-C header file stdio.h
     Lang: english
 */
-#include <aros/systypes.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
 
-#ifdef	_AROS_SIZE_T_
-typedef	_AROS_SIZE_T_	size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t            size_t;
 #endif
 
-/* Need to define fpos_t to something similar to off_t */
-#ifdef	_AROS_OFF_T_
-typedef _AROS_OFF_T_	fpos_t;
-#else
-typedef	off_t		fpos_t;
-#endif
+typedef __off_t             fpos_t;
 
 /*
     We are supposed to declare it, without including the file.

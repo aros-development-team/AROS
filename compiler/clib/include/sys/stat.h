@@ -14,24 +14,24 @@
 
 struct stat
 {
-	dev_t	st_dev;			/* inode's device */
-	ino_t	st_ino;			/* inode's number */
-	mode_t	st_mode;		/* inode protection mode */
-	nlink_t	st_nlink;		/* number of hard links */
-	uid_t	st_uid;			/* user ID of the file's owner */
-	gid_t	st_gid;			/* group ID of the file's group */
-	dev_t	st_rdev;		/* device type */
-	off_t	st_size;		/* file size, in bytes */
-	time_t	st_atime;		/* time of last access */
-	long	st_spare1;
-	time_t	st_mtime;		/* time of last data modification */
-	long	st_spare2;
-	time_t	st_ctime;		/* time of last file status change */
-	long	st_spare3;
-	long	st_blksize;		/* optimal blocksize for I/O */
-	long	st_blocks;		/* blocks allocated for file */
-	u_long	st_flags;		/* user defined flags for file */
-	u_long	st_gen;			/* file generation number */
+    dev_t           st_dev;	    /* inode's device */
+    ino_t           st_ino;	    /* inode's number */
+    mode_t          st_mode;	    /* inode protection mode */
+    nlink_t         st_nlink;	    /* number of hard links */
+    uid_t           st_uid;	    /* user ID of the file's owner */
+    gid_t           st_gid;	    /* group ID of the file's group */
+    dev_t           st_rdev;	    /* device type */
+    off_t           st_size;	    /* file size, in bytes */
+    time_t          st_atime;	    /* time of last access */
+    long            st_spare1;
+    time_t          st_mtime;	    /* time of last data modification */
+    long            st_spare2;
+    time_t          st_ctime;	    /* time of last file status change */
+    long            st_spare3;
+    long            st_blksize;	    /* optimal blocksize for I/O */
+    long            st_blocks;	    /* blocks allocated for file */
+    unsigned long   st_flags;	    /* user defined flags for file */
+    unsigned long   st_gen;         /* file generation number */
 };
 
 #define	S_ISUID	0004000			/* set user id on execution */
