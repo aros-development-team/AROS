@@ -1,5 +1,5 @@
-aroscheckbox_end.c
-functable.c
+aroscheckbox_functable.c
+aroscheckbox_endtag.c
 libdefs.h
 mmakefile
 *.err

@@ -1,3 +1,6 @@
+functable.c
+functions.c
+functions.h
 makefile
 diskfont_functable.c
 diskfont_endtag.c

@@ -1,3 +1,6 @@
+functable.c
+functions.c
+functions.h
 makefile
 iffparse_functable.c
 iffparse_endtag.c

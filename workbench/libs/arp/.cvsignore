@@ -1,3 +1,4 @@
+*.err
 *functable.c
 *endtag.c
 functions.[ch]
