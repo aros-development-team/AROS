@@ -382,7 +382,7 @@ static ULONG  Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Num
 /**************************************************************************
  MUIM_Numeric_ValueToScale
 **************************************************************************/
-static ULONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScale *msg)
+static LONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScale *msg)
 {
     LONG val;
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -402,6 +402,33 @@ static ULONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_
     
     val = CLAMP(val, min, max);
     return val;
+}
+
+/**************************************************************************
+ MUIM_Numeric_ValueToScaleExt
+**************************************************************************/
+static LONG  Numeric_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScaleExt *msg)
+{
+    LONG scale;
+    LONG value;
+    struct MUI_NumericData *data = INST_DATA(cl, obj);
+    LONG min, max;
+
+    value = CLAMP(msg->value,data->min,data->max);
+    min = (data->flags & NUMERIC_REVERSE) ? msg->scalemax : msg->scalemin;
+    max = (data->flags & NUMERIC_REVERSE) ? msg->scalemin : msg->scalemax;
+
+    if (data->max != data->min)
+    {
+	scale = min + ((value - data->min) * (max - min) +  (data->max - data->min)/2) / (data->max - data->min);
+    }
+    else
+    {
+	scale = min;
+    }
+    
+    scale = CLAMP(scale, min, max);
+    return scale;
 }
 
 /**************************************************************************
@@ -461,7 +488,8 @@ BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 	case MUIM_Numeric_ScaleToValue: return Numeric_ScaleToValue(cl, obj, (APTR)msg);
 	case MUIM_Numeric_SetDefault: return Numeric_SetDefault(cl, obj, (APTR)msg);
 	case MUIM_Numeric_Stringify: return Numeric_Stringify(cl, obj, (APTR)msg);
-	case MUIM_Numeric_ValueToScale: return Numeric_ValueToScale(cl, obj, (APTR)msg);
+	case MUIM_Numeric_ValueToScale: return (IPTR)Numeric_ValueToScale(cl, obj, (APTR)msg);
+	case MUIM_Numeric_ValueToScaleExt: return (IPTR)Numeric_ValueToScaleExt(cl, obj, (APTR)msg);
 	case MUIM_Export: return Numeric_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Numeric_Import(cl, obj, (APTR)msg);	
     }
