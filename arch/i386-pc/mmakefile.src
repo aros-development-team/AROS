@@ -1,0 +1,198 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OS_INCLUDES	:= -I$(GENINCDIR)
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+INCFILES	:= $(GENINCDIR)/aros/machine.h \
+		   $(INCDIR)/aros/machine.h \
+		   $(GENINCDIR)/aros/boot.h \
+		   $(INCDIR)/aros/boot.h \
+		   $(GENINCDIR)/exec/etask.h \
+		   $(INCDIR)/exec/etask.h \
+		   $(GENINCDIR)/asm/segments.h \
+		   $(INCDIR)/asm/segments.h \
+		   $(GENINCDIR)/core.h \
+		   $(INCDIR)/core.h \
+		   $(INCDIR)/sigcore.h
+	   
+#MM- AROS-native : setup setup-native includes compiler kernel boot-native \
+#MM	    Drivers-native-vga kernel-link-native binary-native-i386
+
+# Kernel
+#MM- kernel-native : kernel-exec-native \
+#MM	    kernel-aros-linklib \
+#MM	    kernel-keymap-linklib \
+#MM	    kernel-mathffp-linklib \
+#MM	    kernel-mathieeesingbas-linklib \
+#MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
+#MM	    kernel-boopsi-linklib \
+#MM	    kernel-timer-linklib \
+#MM	    kernel-oop-linklib \
+#MM	    kernel-devs \
+#MM	    kernel-layers-linklib \
+#MM	    kernel-intuition-native \
+#MM	    kernel-battclock-native \
+#MM	    kernel-hidd-linklib \
+#MM	    kernel-utility-linklib \
+#MM	    kernel-workbench-linklib \
+#MM	    kernel-graphics-linux kernel-graphics-native-i386
+
+# Setup
+#MM- setup-native : setup-exec-native-$(CPU) \
+#MM		setup-intuition-native-$(CPU) \
+#MM		setup-battclock-native-$(CPU)
+
+# Setup includes
+#MM- includes-native : includes-copy includes-native-$(CPU)
+
+# Setup bootsector and kernel startup code
+#MM- boot-native : boot-native-$(CPU)
+
+# Setup the CLIB metatargets...
+#MM- setup-clib-native : setup-clib-native-$(CPU)
+
+#MM- clib-native : clib-native-$(CPU)
+
+#MM- alib-native : alib-native-$(CPU)
+
+#MM- kernel-exec-native : exec-native-$(CPU) kernel-exec-linklib
+
+#MM- kernel-intuition-native : intuition-$(GFXSYSTEM) \
+#MM	intuition-native-$(CPU) kernel-intuition-linklib
+
+#MM- kernel-battclock-native : battclock-native-$(CPU) kernel-battclock-linklib
+
+# Setup libraries
+#MM kernel-exec-native-i386 :
+kernel-exec-native-i386 :
+	%add_objects rom/boot/libexec
+
+#MM kernel-aros-native-i386 :
+kernel-aros-native-i386 :
+	%add_objects rom/boot/libaros
+
+#MM kernel-keymap-native-i386 :
+kernel-keymap-native-i386 :
+	%add_objects rom/boot/libkeymap
+
+#MM kernel-mathffp-native-i386 :
+kernel-mathffp-native-i386 :
+	%add_objects rom/boot/libmathffp
+
+#MM kernel-mathieeesingbas-native-i386 :
+kernel-mathieeesingbas-native-i386 :
+	%add_objects rom/boot/libmathieeesingbas
+
+#MM kernel-expansion-native-i386 :
+kernel-expansion-native-i386 :
+	%add_objects rom/boot/libexpansion
+
+#MM kernel-boopsi-native-i386 :
+kernel-boopsi-native-i386 :
+	%add_objects rom/boot/libboopsi
+
+#MM kernel-oop-native-i386 :
+kernel-oop-native-i386 :
+	%add_objects rom/boot/liboop
+
+#MM kernel-layers-native-i386 :
+kernel-layers-native-i386 :
+	%add_objects rom/boot/liblayers
+
+#MM kernel-workbench-native-i386 :
+kernel-workbench-native-i386 :
+	%add_objects rom/boot/libworkbench
+
+#MM kernel-hidd-native-i386 :
+kernel-hidd-native-i386 :
+	%add_objects rom/boot/libhiddclass
+
+#MM kernel-utility-native-i386 :
+kernel-utility-native-i386 :
+	%add_objects rom/boot/libutility
+
+#MM kernel-timer-native-i386 :
+kernel-timer-native-i386 :
+	%add_objects rom/boot/libtimer
+
+#MM kernel-battclock-native-i386 :
+kernel-battclock-native-i386 :
+	%add_objects rom/boot/libbattclock
+
+#MM kernel-graphics-native-i386 :
+kernel-graphics-native-i386 :
+	%add_objects rom/boot/libgraphics
+	%add_objects rom/boot/libhiddgraphicsstubs
+
+#MM kernel-intuition-native-i386 :
+kernel-intuition-native-i386 :
+	%add_objects rom/boot/libintuition
+
+#MM kernel-devs-native-i386 :
+kernel-devs-native-i386 :
+	%add_objects rom/boot/libconsole
+	%add_objects rom/boot/libgameport
+	%add_objects rom/boot/libinput
+	%add_objects rom/boot/libkeyboard
+
+#MM
+includes-native-i386 : $(INCFILES) machine.i
+	@$(NOP)
+
+#MM
+binary-native-i386 : build
+	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
+	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
+	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
+
+#MM
+includes-copy : $(GENINCDIR)/sigcore.h
+	@$(NOP)
+
+#MM
+clean ::
+	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
+
+$(INCDIR)/aros/%.h : %.h
+	%mkdirs_q $(INCDIR)/aros
+	$(CP) $< $@
+
+$(INCDIR)/asm/%.h : %.h
+	%mkdirs_q $(INCDIR)/asm
+	$(CP) $< $@
+
+$(INCDIR)/exec/%.h : %.h
+	%mkdirs_q $(INCDIR)/exec
+	$(CP) $< $@
+
+$(INCDIR)/%.h : %.h
+	%mkdirs_q $(INCDIR)
+	$(CP) $< $@
+
+$(GENINCDIR)/aros/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/asm/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/asm
+	$(CP) $< $@
+
+$(GENINCDIR)/exec/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/exec
+	$(CP) $< $@
+
+$(GENINCDIR)/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+machine.i: geninc.c $(MACHINE_H)
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "Creating geninc..."
+	@$(HOST_CC) $(CFLAGS) -o geninc $<
+	./geninc > machine.i
+
+build: build.c $(GENINCDIR)/aros/boot.h
+	@$(HOST_CC) $(CFLAGS) -D__BFD__ -o build $<
+
+# %include_deps
+%common
