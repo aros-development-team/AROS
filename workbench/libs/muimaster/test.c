@@ -41,6 +41,8 @@ void main(void)
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "test",
+	    MUIA_Window_Activate, TRUE,
+
     	    WindowContents, VGroup,
     	    	Child, TextObject, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object",End,
     	    	Child, HGroup,

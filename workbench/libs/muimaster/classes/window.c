@@ -298,6 +298,8 @@ void _zune_focus_destroy (Object *obj)
 
 /**************/
 
+#waring REWORK: Eventhandling stuff
+
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -349,6 +351,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
         break;
 
     case IDCMP_MOUSEBUTTONS:
+    case IDCMP_MOUSEMOVE:
+    case IDCMP_RAWKEY:
         handle_event(oWin, imsg, imsg->Class);
         break;
 
@@ -358,9 +362,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
     case IDCMP_CLOSEWINDOW:
 //kprintf("CLOSEWINDOW: MUIA_Window_CloseRequest = TRUE\n");
         set(oWin, MUIA_Window_CloseRequest, TRUE);
-        break;
-
-    case IDCMP_RAWKEY:
         break;
 
     case IDCMP_ACTIVEWINDOW:
@@ -1249,13 +1250,13 @@ mRecalcDisplay(struct IClass *cl, Object *obj,
 /******************************************************************************/
 /******************************************************************************/
 
-static ULONG
-mAddEventHandler(struct IClass *cl, Object *obj,
+static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_AddEventHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-/*  g_print("add ehn\n"); */
+    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
+
     Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
     _zune_window_change_events(data);
     return TRUE;
@@ -1264,11 +1265,12 @@ mAddEventHandler(struct IClass *cl, Object *obj,
 /******************************************************************************/
 /******************************************************************************/
 
-static ULONG
-mRemEventHandler(struct IClass *cl, Object *obj,
+static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_RemEventHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
 
     Remove((struct Node *)msg->ehnode);
     _zune_window_change_events(data);
@@ -1351,9 +1353,9 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case OM_GET:
 	    return(mGet(cl, obj, (struct opGet *)msg));
 	case MUIM_Window_AddEventHandler :
-	    return(mAddEventHandler(cl, obj, (APTR)msg));
+	    return Window_AddEventHandler(cl, obj, (APTR)msg);
 	case MUIM_Window_RemEventHandler :
-	    return(mRemEventHandler(cl, obj, (APTR)msg));
+	    return Window_RemEventHandler(cl, obj, (APTR)msg);
 	case MUIM_ConnectParent :
 	    return(mConnectParent(cl, obj, (APTR)msg));
 	case MUIM_DisconnectParent :
