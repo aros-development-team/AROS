@@ -1,15 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := bmpclass libfunc
-FUNCS := obtainengine
+FILES := bmpclass
 
 #MM workbench-datatypes-bmp : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 
-%build_module_macro mmake=workbench-datatypes-bmp modname=bmp \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs=amiga
-
-%common
+%build_module mmake=workbench-datatypes-bmp \
+    modname=bmp modtype=datatype \
+    files=$(FILES)

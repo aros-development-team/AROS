@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #ifdef MYDEBUG
