@@ -30,7 +30,8 @@
         two lists for faster redrawing. This routine allows a
         faster update of the display as it will only be rendered
         in the damaged areas.
-        This routine will automatically lock the layer agains changes.   
+        This routine will automatically lock the layer to prevent 
+        changes.   
 
     INPUTS
         l - pointer to layer
@@ -44,7 +45,6 @@
     EXAMPLE
 
     BUGS
-      not tested
 
     SEE ALSO
       EndUpdate()
@@ -60,7 +60,11 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  /* Convert the list of regionrectangles to a cliprect list */
+  /* 
+  ** Convert the list of regionrectangles in the damage list 
+  ** to a cliprect list. 
+  */
+
   struct Region * R;
   struct ClipRect * CR;
   struct ClipRect * FirstCR = NULL;
@@ -68,18 +72,45 @@
 
   LockLayer(0, l);
 
-#if 0
   /*
   ** Only those parts of the damage list that are really visible right
   ** now may be refreshed. There might be parts in the damage list that
-  ** belong to hidden cliprects.
+  ** belong areas where cliprects are currently hidden. For example,
+  ** intuition adds those parts to the damage list.
   */
-#endif
-  
-  R = l->DamageList;
-
-  if (NULL != R)
+  if (NULL != (R = NewRegion()))
   {
+    BOOL success;
+
+    CR = l->ClipRect;
+
+    while (NULL != CR)
+    {
+      /*
+      ** visible cliprect ?
+      */
+      if (NULL == CR->lobs)
+      {
+        struct Rectangle Rect = CR->bounds;
+        Rect.MinX -= l->bounds.MinX;
+        Rect.MinY -= l->bounds.MinY;
+        Rect.MaxX -= l->bounds.MinX;
+        Rect.MaxY -= l->bounds.MinY;
+      
+        if (FALSE == OrRectRegion(R, &Rect))
+        {
+          DisposeRegion(R);
+          return FALSE;
+        }
+      }
+      CR = CR->Next;
+    }
+    if (FALSE == AndRegionRegion(l->DamageList, R))
+    {
+      DisposeRegion(R);
+      return FALSE;
+    }
+
     RR = R->RegionRectangle;
     /* process all region rectangles */
     while (NULL != RR)
@@ -115,13 +146,17 @@
 	
 	/* stegerg: don't unlock here, because endupdate unlocks always */
 	/* UnlockLayer(l); */
+	DisposeRegion(R);
         return FALSE;
       } /* else */
 
       /* go to next regionrectangle and build next cliprect */
       RR = RR->Next;
     } /* while (NULL != RR) */
+    DisposeRegion(R);
   }
+  else
+    return FALSE;
 
   /*
     Now exchange the two ClipRect lists. The converted damage list
