@@ -12,4 +12,5 @@
 #MM         workbench-datatypes-ppm \
 #MM         workbench-datatypes-ilbm \
 #MM	    workbench-datatypes-sound \
-#MM	    workbench-datatypes-8svx
+#MM	    workbench-datatypes-8svx \
+#MM	    workbench-datatypes-html
