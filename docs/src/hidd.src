@@ -576,7 +576,17 @@ distinct colors is |1L << depth|. Most HIDDs will support depths like 1, 8,
 
 \item{HIDDA_BitMap_Showable,BOOL,IG} - Create a bitmap which should later
 be displayed. When the bitmap has been created, you can query the
-attribute.
+attribute. On some systems, this will also display the bitmap when
+the method returns. To be safe, always call |HIDDV_Graphics_Cmd_ShowBitmap()|
+afterwards.
+
+\item{HIDDA_BitMap_Visible,ULONG,G} Check if a bitmap is visible.
+Can return |HIDDV_Bitmap_Visible_No|, |HIDDV_Bitmap_Visible_Yes|
+and |HIDDV_Bitmap_Visible_Partial| (if it's not fully visible).
+
+\item{HIDDA_BitMap_Mode,ULONG,ISG} The display mode. Every HIDD defines
+its own list and uses its own values. Use the method
+|HIDDM_ValueToString()| to get the meanings of this attribute.
 
 \item{HIDDA_BitMap_BaseAddress,APTR,ISG} This is the address of the RAM
 of the graphics memory. Note that most HIDDs don't support to set this
@@ -589,21 +599,22 @@ the format in which the data is stored here.
 
 A HIDD which doesn't support direct memory access will return |NULL|.
 
-\item{HIDDA_BitMap_Mode,ULONG,ISG} The display mode. Every HIDD defines
-its own list and uses its own values. Use the method
-|HIDDM_ValueToString()| to get the meanings of this attribute.
+\item{HIDDA_BitMap_Format,ULONG,G} Tell the format of the data
+at |HIDDA_BitMap_BaseAddress|. See this tag for details.
+
+\item{HIDDA_BitMap_BytesPerRow,ULONG,G} Query the number of bytes
+which make up one line on the display. This can be different from
+|HIDDA_BitMap_BytesPerPixel * HIDDA_BitMap_Width|.
+
+\item{HIDDA_BitMap_BytesPerPixel,ULONG,G} Query the number of bytes
+which make up one pixel on the display. This can be different from
+the number of bits divided by eight. If one byte contains informations
+of several pixels, then this will be |0|.
 
 \item{HIDDA_BitMap_BestSize,ULONG,G} Query the HIDD for the best size
 for drawing areas or drawing commands. Most graphics chips have
 a certain blocking size, ie. it doesn't matter if you copy 6 bits or
 30 but 33 is slow. The HIDD will return 32 in this case.
-
-\item{HIDDA_BitMap_Format,ULONG,G} Tell the format of the data
-at |HIDDA_BitMap_BaseAddress|. See this tag for details.
-
-\item{HIDDA_BitMap_Visible,ULONG,G} Check if a bitmap is visible.
-Can return |HIDDV_Bitmap_Visible_No|, |HIDDV_Bitmap_Visible_Yes|
-and |HIDDV_Bitmap_Visible_Partial| (if it's not fully visible).
 
 \end{taglist}
 
