@@ -1,4 +1,4 @@
-mathieeesingbas_functable.c
-mathieeesingbas_endtag.c
+functable.c
+endtag.c
 libdefs.h
 makefile
