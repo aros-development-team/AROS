@@ -92,19 +92,19 @@ struct Process
 };
 
 /* pr_Flags (all private) */
-#define	PRB_FREESEGLIST	0
-#define	PRB_FREECURRDIR	1
-#define	PRB_FREECLI	2
-#define	PRB_CLOSEINPUT	3
-#define	PRB_CLOSEOUTPUT	4
-#define	PRB_FREEARGS	5
+#define PRB_FREESEGLIST 0
+#define PRB_FREECURRDIR 1
+#define PRB_FREECLI	2
+#define PRB_CLOSEINPUT	3
+#define PRB_CLOSEOUTPUT 4
+#define PRB_FREEARGS	5
 #define PRB_CLOSEERROR	6
-#define	PRF_FREESEGLIST	0x1
-#define	PRF_FREECURRDIR	0x2
-#define	PRF_FREECLI	0x4
-#define	PRF_CLOSEINPUT	0x8
-#define	PRF_CLOSEOUTPUT	0x10
-#define	PRF_FREEARGS	0x20
+#define PRF_FREESEGLIST 0x1
+#define PRF_FREECURRDIR 0x2
+#define PRF_FREECLI	0x4
+#define PRF_CLOSEINPUT	0x8
+#define PRF_CLOSEOUTPUT 0x10
+#define PRF_FREEARGS	0x20
 #define PRF_CLOSEERROR	0x40
 
 /* Dos list scanning and locking modes */
@@ -122,7 +122,7 @@ struct Process
 #define LDF_ASSIGNS	0x10
 #define LDF_ENTRY	0x20
 #define LDF_DELETE	0x40
-#define LDF_ALL		0x1c
+#define LDF_ALL 	0x1c
 
 struct FileHandle
 {
@@ -141,7 +141,7 @@ struct FileHandle
 
 /* Private fh_Flags values */
 #define FHF_WRITE	(~0ul/2+1)
-#define FHF_BUF		1
+#define FHF_BUF 	1
 
 struct DosList
 {
@@ -153,7 +153,7 @@ struct DosList
     /*
 	This field once was named dol_Name. It is now named dol_OldName
 	to give you a hint that something has changed. Additionally to the
-	old nasty BSTR there is now a new clean	STRPTR for the same purpose.
+	old nasty BSTR there is now a new clean STRPTR for the same purpose.
 	You may want to:
 	1. Change your sources to reflect this change thus getting rid of
 	   all BCPL stuff or
@@ -161,7 +161,7 @@ struct DosList
 	   to stay downwards compatible.
     */
     BPTR dol_OldName;		/* Old field */
-    STRPTR dol_DevName;	/* New field (in fact pointing to the same string) */
+    STRPTR dol_DevName; /* New field (in fact pointing to the same string) */
     struct Device *dol_Device;
     struct Unit *dol_Unit;
 };
@@ -174,12 +174,32 @@ struct DosList
 #define DLT_NONBINDING	4	/* Nonbinding assign (not yet) */
 
 /* Directory entry types */
-#define ST_ROOT		1	/* Root directory of filesystem */
+#define ST_ROOT 	1	/* Root directory of filesystem */
 #define ST_USERDIR	2	/* Normal directory */
 #define ST_SOFTLINK	3	/* Soft link */
 #define ST_LINKDIR	4	/* Hard link to a directory */
-#define ST_FILE		-3	/* Normal file */
+#define ST_FILE 	-3	/* Normal file */
 #define ST_LINKFILE	-4	/* Hard link to a file */
 #define ST_PIPEFILE	-5	/* Special file */
+
+struct DosPacket {
+   struct Message *dp_Link;
+   struct MsgPort *dp_Port;
+   LONG dp_Type;
+   LONG dp_Res1;
+   LONG dp_Res2;
+   LONG dp_Arg1;
+   LONG dp_Arg2;
+   LONG dp_Arg3;
+   LONG dp_Arg4;
+   LONG dp_Arg5;
+   LONG dp_Arg6;
+   LONG dp_Arg7;
+}; /* DosPacket */
+
+#define dp_Action  dp_Type
+#define dp_Status  dp_Res1
+#define dp_Status2 dp_Res2
+#define dp_BufAddr dp_Arg1
 
 #endif
