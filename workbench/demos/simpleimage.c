@@ -91,7 +91,7 @@ UWORD __chip myImageData[] =
 ** chapters on "Windows" and "Input and Output Methods" for more info.
 ** Free all resources when done.
 */
-VOID main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 struct Window *win;
 struct Image myImage;
@@ -145,4 +145,5 @@ if (IntuitionBase != NULL)
 	}
     CloseLibrary((struct Library *)IntuitionBase);
     }
+    return 0;
 }

@@ -70,7 +70,7 @@ struct TagItem frtags[] =
     { TAG_DONE,       NULL }
 };
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     struct FileRequester *fr;
 
@@ -91,4 +91,5 @@ void main(int argc, char **argv)
 
 	CloseLibrary(AslBase);
     }
+    return 0;
 }

@@ -71,7 +71,7 @@ struct IntuitionBase *IntuitionBase = NULL;
 ** chapters on "Windows" and "Input and Output Methods" for more info.
 ** Free all resources when done.
 */
-VOID main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 struct Screen	 *screen;
 struct DrawInfo  *drawinfo;
@@ -159,4 +159,5 @@ if (IntuitionBase)
 	}
     CloseLibrary((struct Library *)IntuitionBase);
     }
+    return 0;
 }
