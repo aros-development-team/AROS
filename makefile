@@ -33,7 +33,14 @@ LIBAMIGAOS = $(LIBDIR)/libAmigaOS.a
 else
 LIBAMIGAOS = $(LIBDIR)/libAmigaOS.so
 endif
-ifneq ("$(SHARED_DOS)","yes")
+ifeq ("$(SHARED_EXEC)","yes")
+SHELL_DEPLIB_EXEC=$(LIBDIR)/libexec.so
+else
+SHELL_DEPLIB_EXEC=$(LIBDIR)/libexec.a
+endif
+ifeq ("$(SHARED_DOS)","yes")
+SHELL_DEPLIB_DOS=$(LIBDIR)/libdos.so
+else
 SHELL_DEPLIB_DOS=$(LIBDIR)/libdos.a
 endif
 
@@ -41,12 +48,13 @@ DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
     $(LIBDIR)/libamiga.a \
     $(LIBDIR)/libarossupport.a \
-    $(SHELL_DEPLIB_DOS)
+    $(SHELL_DEPLIB_DOS) \
+    $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
 	-lintuition -lgraphics -ldos -lexec -lutility \
-	-lmathffp \
+	-laros -lmathffp \
 	-lamiga -larossupport
 
 # BEGIN_DESC{localmakevar}
