@@ -65,22 +65,43 @@
     /* If we have a node to insert behind... */
     if (pred)
     {
-	/*
-	    Our successor is the successor of the node we add ourselves
-	    behind and our predecessor is just the node itself.
-	*/
-	node->ln_Succ = pred->ln_Succ;
-	node->ln_Pred = pred;
+	/* Is this the last node in the list ? */
+	if (pred->ln_Succ) /* Normal node ? */
+	{
+	    /*
+		Our successor is the successor of the node we add ourselves
+		behind and our predecessor is just the node itself.
+	    */
+	    node->ln_Succ = pred->ln_Succ;
+	    node->ln_Pred = pred;
 
-	/*
-	    We are the predecessor of the successor of our predecessor
-	    (What ? blblblb... ;) and of our predecessor itself.
-	    Note that here the sequence is quite important since
-	    we need ln_Succ in the first expression and change it in
-	    the second.
-	*/
-	pred->ln_Succ->ln_Pred = node;
-	pred->ln_Succ = node;
+	    /*
+		We are the predecessor of the successor of our predecessor
+		(What ? blblblb... ;) and of our predecessor itself.
+		Note that here the sequence is quite important since
+		we need ln_Succ in the first expression and change it in
+		the second.
+	    */
+	    pred->ln_Succ->ln_Pred = node;
+	    pred->ln_Succ = node;
+	}
+	else /* last node */
+	{
+	    /*
+		Add the node at the end of the list.
+		Make the node point to the head of the list. Our
+		predecessor is the previous last node of the list.
+	    */
+	    node->ln_Succ	       = (struct Node *)&list->lh_Tail;
+	    node->ln_Pred	       = list->lh_TailPred;
+
+	    /*
+		Now we are the last now. Make the old last node point to us
+		and the pointer to the last node, too.
+	    */
+	    list->lh_TailPred->ln_Succ = node;
+	    list->lh_TailPred	       = node;
+	}
     }
     else
     {
