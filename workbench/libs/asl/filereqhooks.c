@@ -149,14 +149,17 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
 		    for(i = 0; i < ASLLV_MAXCOLUMNS;i++)
 		    {
 		        WORD x;
-
+    	    	    	UWORD len;
+			
 		        if (node->text[i] == NULL) continue;
+			
+			len = strlen(node->text[i]);
 			
 			switch(udata->LVColumnAlign[i])
 			{
 			    case ASLLV_ALIGN_RIGHT:
 			        x = min_x + udata->LVColumnWidth[i] -
-				    TextLength(rp, node->text[i], strlen(node->text[i]));
+				    TextLength(rp, node->text[i], len);
 				break;
 				
 			    default:
@@ -168,13 +171,15 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
 						
     	    		numfit = TextFit(rp,
 					 node->text[i],
-					 strlen(node->text[i]),
+					 len,
     	    				 &te,
 					 NULL,
 					 1,
 					 max_x - x + 1, 
 					 max_y - min_y + 1);
 
+    	    	    	if (numfit < len) numfit++;
+			
 			if (numfit < 1) break;
 			
 	    		SetAPen(rp, dri->dri_Pens[textpen]);
