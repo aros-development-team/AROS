@@ -573,6 +573,10 @@ struct MUI_RGBcolor
 #include "classes/dirlist.h"
 #endif
 
+#ifndef _MUI_CLASSES_NUMERICBUTTON_H
+#include "classes/numericbutton.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/

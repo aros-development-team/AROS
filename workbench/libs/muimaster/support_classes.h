@@ -164,6 +164,12 @@
 #   define ZUNE_DIRLIST_DESC
 #endif
 
+#if ZUNE_BUILTIN_NUMERICBUTTON
+#   define ZUNE_NUMERICBUTTON_DESC (&_MUI_Numericbutton_desc),
+#else
+#   define ZUNE_NUMERICBUTTON_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
