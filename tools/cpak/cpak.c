@@ -134,12 +134,12 @@ char filename[50];
     if(!fdo)
 	fprintf(stderr, "Could not open functions.h out-file!\n"),
 	exit(-1);
-    fprintf(fdo,"#define AROS_ALMOST_COMPATIBLE\n");
+    fprintf(fdo,"#define AROS_ALMOST_COMPATIBLE\n\n");
     search=first.next;
     while(search!=NULL)
     {
 	current=search;
-	fprintf(fdo,"\n#include %s", current->text);
+	fprintf(fdo,"#include %s\n", current->text);
 	search=current->next;
 	free(current->text);
 	free(current);
