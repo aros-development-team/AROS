@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -42,21 +42,15 @@
 #include <proto/mathieeesingbas.h>
 #include <proto/exec.h>
 
+#include <libcore/base.h>
+
 /*
     This is the MathIEEESPBasBase structure. It is documented here because 
     it is completely private. Applications should treat it as a struct 
     Library, and use the mathieeespbas.library functions to get information.
 */
 
-struct MathIeeeSingBasBase
-{
-    struct Library   LibNode;
-    BPTR	     misb_SegList;
-    struct ExecBase  *misb_SysBase;
-};
-
-#define SysBase MathIeeeSingBasBase->misb_SysBase
-
+#define SysBase MathIeeeSingBasBase->lh_SysBase
 
 #define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse  */
 #define IEEESPExponent_Mask 0x7F800000 /*  8 bit for the exponent  */
