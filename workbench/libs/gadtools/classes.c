@@ -1555,11 +1555,11 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem *tag, *tstate, tags[] =
     {
-    	{STRINGA_TextVal,	0UL},  /* 0 */
-	{STRINGA_LongVal,	0UL},  /* 1 */
-    	{STRINGA_MaxChars,	0UL},  /* 2 */
-    	{STRINGA_EditHook,	0UL},  /* 3 */
-    	{TAG_MORE,		0UL}
+    	{TAG_IGNORE,	0UL},  /* 0 STRINGA_TextVal  */
+	{TAG_IGNORE,	0UL},  /* 1 STRINGA_LongVal  */
+    	{TAG_IGNORE,	0UL},  /* 2 STRINGA_MaxChars */
+    	{TAG_IGNORE,	0UL},  /* 3 STRINGA_EditHook */
+    	{TAG_MORE,	0UL}
     };
     
     LONG labelplace = GV_LabelPlace_Left;
@@ -1571,13 +1571,6 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 
     EnterFunc(bug("String::SetNew()\n"));
     
-    if (msg->MethodID != OM_NEW)
-    {
-	struct StringData *data = INST_DATA(cl,o);
-
-        gadgetkind = data->gadgetkind;
-    }
-       
     tstate = msg->ops_AttrList;
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
@@ -1590,10 +1583,12 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 	        break;
 	    
     	    case GTST_String:
+	    	tags[0].ti_Tag = STRINGA_TextVal;
 	    	tags[0].ti_Data = tidata;
 		break;
 		
     	    case GTIN_Number:
+	    	tags[1].ti_Tag = STRINGA_LongVal;
 	    	tags[1].ti_Data = tidata;
 		break;
     	    
@@ -1602,9 +1597,16 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    ** zero, but this is NOT true for gadtools string gadgets
     	    */
     	    case GTIN_MaxChars:
-    	    case GTST_MaxChars:	tags[2].ti_Data = ((WORD)tidata) + 1; break;
+    	    case GTST_MaxChars:
+	    	tags[2].ti_Tag = STRINGA_MaxChars;
+	    	tags[2].ti_Data = ((WORD)tidata) + 1;
+		break;
+		
 /*    	    case GTIN_EditHook:  Duplicate case value */
-    	    case GTST_EditHook:	tags[3].ti_Data = tidata; break;
+    	    case GTST_EditHook:
+	    	tags[3].ti_Tag = STRINGA_EditHook;
+	    	tags[3].ti_Data = tidata;
+		break;
     	    
     	    case GA_LabelPlace:
     	    	labelplace = tidata;
@@ -1621,13 +1623,6 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     
     tags[4].ti_Data = (IPTR)msg->ops_AttrList;
 
-    if (gadgetkind == STRING_KIND)
-    {
-        tags[1].ti_Tag = TAG_IGNORE;
-    } else {
-        tags[0].ti_Tag = TAG_IGNORE;
-    }
-    
     retval = DoSuperMethod(cl, o, msg->MethodID, tags, msg->ops_GInfo);
    
     D(bug("Returned from supermethod: %p\n", retval));
@@ -1652,7 +1647,8 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	data->labelplace = labelplace;
     	data->frame = NULL;
     	data->font  = NULL;
-
+	data->gadgetkind = gadgetkind;
+	
     	D(bug("Creating frame image"));
     	
     	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
