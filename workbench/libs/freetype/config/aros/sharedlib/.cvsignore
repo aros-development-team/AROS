@@ -1,0 +1,7 @@
+mmakefile
+*.err
+*endtag.c
+*.map
+functions.[ch]
+libdefs.*
+functable.c
