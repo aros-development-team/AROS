@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+USER_INCLUDES := -I. -I$(TOP)/workbench/hidds/graphics
 
 FILES	:=	graphics_init functable
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
