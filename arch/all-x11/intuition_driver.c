@@ -143,8 +143,8 @@ keytable[] =
 #define CAPS	IEQUALIFIER_CAPSLOCK
 
 #if defined (X11_LOCK)
-#define LX11 LockX11();
-#define UX11 UnlockX11();
+#define LX11 LockX11(GfxBase);
+#define UX11 UnlockX11(GfxBase);
 #else
 #define LX11
 #define UX11
