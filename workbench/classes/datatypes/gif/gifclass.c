@@ -71,6 +71,7 @@ static void GIF_Exit(GifHandleType *gifhandle, LONG errorcode)
     {
 	FreeVec(gifhandle->codecvars);
     }
+    FreeMem(gifhandle, sizeof(GifHandleType));
     SetIoErr(errorcode);
 }
 

@@ -1,7 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := gifclass codec libfunc
+FILES := gifclass codeclzw libfunc
+
 FUNCS := obtainengine
 
 #MM workbench-datatypes-gif : includes linklibs
