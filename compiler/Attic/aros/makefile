@@ -1,16 +1,11 @@
 TOP=..
 
-SPECIAL_CFLAGS=-I/usr/include
-
 include $(TOP)/make.cfg
 
 OBJDIR=$(GENDIR)/aros
 
-FILES = calcchecksum strcmp \
-	    strlen strcpy qsort \
-	    kprintf nastyfreemem \
-	    rt purify strdup \
-	    stricmp removeslist \
+FILES = calcchecksum kprintf nastyfreemem \
+	    rt purify removeslist \
 	    _kprintf
 
 all: setup $(LIBDIR)/libaros.a
