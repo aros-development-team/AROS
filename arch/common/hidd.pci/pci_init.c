@@ -163,13 +163,11 @@ AROS_LH0(APTR, close,
     AROS_LIBFUNC_EXIT
 }
 
-#undef SysBase
-#define SysBase sysBase
 #define OOPBase (PSD->oopbase)
 
 AROS_LH1(BPTR, expunge,
-    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
-    struct ExecBase *, sysBase, 3, pci)
+    AROS_LHA(LIBBASETYPEPTR, libbase, D0),
+    LIBBASETYPEPTR, LIBBASE, 3, pci)
 {
     AROS_LIBFUNC_INIT
     BPTR segList = NULL;
