@@ -246,6 +246,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_PopButton: /* STRPTR imagespec */
 	    return MUI_NewObject(MUIC_Text,//MUIC_Image,
+	    	ButtonFrame,
+	    	MUIA_Weight,0,
 //		MUIA_Image_Spec, params[0],
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
 		MUIA_Text_Contents, "Pop",
