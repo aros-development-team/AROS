@@ -457,7 +457,10 @@ AROS_UFH3(static VOID, sendQueuedEvents,
         D(bug("Replying msg\n"));
 	moreevents = fillrequest(ioreq, GPBase);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
-/*	Remove((struct Node *)ioreq); Should NOT be done as this is done in ReplyMsg */
+
+	/* Is NOT done in ReplyMsg, and must be done here to empty the list!
+	   The "moreevents" is unnecessary... */
+	Remove((struct Node *)ioreq);
 	gpUn->gpu_flags &= ~GBUF_PENDING;
 	
 	if (!moreevents)
