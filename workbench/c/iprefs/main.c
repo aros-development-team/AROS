@@ -301,7 +301,11 @@ static void HandleAll(void)
 /*********************************************************************************************/
 
 
-int __nocommandline;
+int __nocommandline = 1;
+
+int __detacher_must_wait_for_signal = 1;
+struct Process *__detacher_process = NULL;
+
 int main(void)
 {
     FindTask(NULL)->tc_Node.ln_Name = IPREFS_SEM_NAME;
@@ -311,6 +315,13 @@ int main(void)
     StartNotifications();
     PreparePatches();
     HandleNotify();
+
+    /* If there's a detacher, tell it to go away */
+    if (__detacher_process)
+    {
+        Signal((struct Task *)__detacher_process, SIGBREAKF_CTRL_F);
+    }
+
     HandleAll();
     Cleanup(NULL);
 
