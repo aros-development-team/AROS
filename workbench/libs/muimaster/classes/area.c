@@ -108,9 +108,16 @@ static const int __revision = 1;
 //#ifdef DEBUG
 //static STRPTR zune_area_to_string (Object *area);
 //#endif
-static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
-				   const struct MUI_FrameSpec_intern *frame,
-				   const struct ZuneFrameGfx *zframe);
+
+static const struct MUI_FrameSpec_intern *get_intframe(
+    Object *obj,
+    struct MUI_AreaData *data);
+static void set_inner_sizes (Object *obj, struct MUI_AreaData *data);
+static void set_title_sizes (Object *obj, struct MUI_AreaData *data);
+
+static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
+			       const struct MUI_FrameSpec_intern *frame,
+			       const struct ZuneFrameGfx *zframe);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
@@ -482,6 +489,8 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		/* this is not documented in MUI but it is possible,
 		   and needed to suppress frame for external images */
 		data->mad_Frame = tag->ti_Data;
+		set_inner_sizes(obj, data);
+		set_title_sizes(obj, data);
 		break;
 
 	    case MUIA_ControlChar:
@@ -747,11 +756,12 @@ static IPTR Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
-    const struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    const struct MUI_FrameSpec_intern *frame;
 
+    frame = get_intframe(obj, data);
     zframe = zune_zframe_get(frame);
 
-    area_update_innersizes(obj, data, frame, zframe);
+    area_update_msizes(obj, data, frame, zframe);
     
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
     msg->MinMaxInfo->MinHeight = _subheight(obj);
@@ -1060,7 +1070,7 @@ static IPTR Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	const struct MUI_FrameSpec_intern *frame;
 	int state;
 
-	frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+	frame = get_intframe(obj, data);
 	state = frame->state;
 	if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
 	    state ^= 1;
@@ -1068,7 +1078,7 @@ static IPTR Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	zframe = zune_zframe_get_with_state(
 	    &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
 	/* update innersizes as there are frames which have different inner spacings in selected state */
-	area_update_innersizes(obj, data, frame, zframe);
+	area_update_msizes(obj, data, frame, zframe);
     }
 
     /* Background drawing */
@@ -1201,6 +1211,57 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
     }
 }
 
+static const struct MUI_FrameSpec_intern *get_intframe(
+    Object *obj, struct MUI_AreaData *data)
+{
+    return &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+}
+
+static void set_inner_sizes (Object *obj, struct MUI_AreaData *data)
+{
+    const struct MUI_FrameSpec_intern *frame;
+
+    frame = get_intframe(obj, data);
+    // Use frame inner spacing when not hardcoded
+    if (!(data->mad_Flags & MADF_INNERLEFT))
+	data->mad_InnerLeft = frame->innerLeft;
+    if (!(data->mad_Flags & MADF_INNERTOP))
+	data->mad_InnerTop = frame->innerTop;
+    if (!(data->mad_Flags & MADF_INNERRIGHT))
+	data->mad_InnerRight = frame->innerRight;
+    if (!(data->mad_Flags & MADF_INNERBOTTOM))
+	data->mad_InnerBottom = frame->innerBottom;
+}
+
+
+static void set_title_sizes (Object *obj, struct MUI_AreaData *data)
+{
+    if (data->mad_FrameTitle)
+    {
+	const struct ZuneFrameGfx *zframe;
+	const struct MUI_FrameSpec_intern *frame;
+
+	frame = get_intframe(obj, data);
+	zframe = zune_zframe_get(frame);
+
+	_font(obj) = zune_font_get(obj, MUIV_Font_Title);
+
+	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
+	{
+	    case GROUP_TITLE_POSITION_ABOVE:
+		data->mad_TitleHeightAbove = _font(obj)->tf_Baseline;
+		break;
+	    case GROUP_TITLE_POSITION_CENTERED:
+		data->mad_TitleHeightAbove = _font(obj)->tf_YSize / 2;
+		break;
+	}
+
+	data->mad_TitleHeightAdd = _font(obj)->tf_YSize - data->mad_InnerTop - zframe->itop;
+	data->mad_TitleHeightBelow = data->mad_TitleHeightAdd - data->mad_TitleHeightAbove;
+    }
+}
+
+
 /**************************************************************************
  First method to be called after an OM_NEW, it is the place
  for all initializations depending on the environment, but not
@@ -1226,39 +1287,13 @@ static IPTR Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	}
     }
 
-    frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    set_inner_sizes(obj, data);
+    set_title_sizes(obj, data);
 
-    // Use frame inner spacing when not hardcoded
-    if (!(data->mad_Flags & MADF_INNERLEFT))
-	data->mad_InnerLeft = frame->innerLeft;
-    if (!(data->mad_Flags & MADF_INNERTOP))
-	data->mad_InnerTop = frame->innerTop;
-    if (!(data->mad_Flags & MADF_INNERRIGHT))
-	data->mad_InnerRight = frame->innerRight;
-    if (!(data->mad_Flags & MADF_INNERBOTTOM))
-	data->mad_InnerBottom = frame->innerBottom;
-
+    frame = get_intframe(obj, data);
     zframe = zune_zframe_get(frame);
 
-    if (data->mad_FrameTitle)
-    {
-	_font(obj) = zune_font_get(obj, MUIV_Font_Title);
-
-	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
-	{
-	    case GROUP_TITLE_POSITION_ABOVE:
-		data->mad_TitleHeightAbove = _font(obj)->tf_Baseline;
-		break;
-	    case GROUP_TITLE_POSITION_CENTERED:
-		data->mad_TitleHeightAbove = _font(obj)->tf_YSize / 2;
-		break;
-	}
-
-	data->mad_TitleHeightAdd = _font(obj)->tf_YSize - data->mad_InnerTop - zframe->itop;
-	data->mad_TitleHeightBelow = data->mad_TitleHeightAdd - data->mad_TitleHeightAbove;
-    }
-
-    area_update_innersizes(obj, data, frame, zframe);
+    area_update_msizes(obj, data, frame, zframe);
 
     if (data->mad_Flags & MADF_OWNBG)
     {
@@ -1480,8 +1515,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    	data->mad_Timer.ihn_Millis = 300;
 		DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
 	    }
-	    set(obj, MUIA_Selected, TRUE);
-	    set(obj, MUIA_Pressed, TRUE);
+	    SetAttrs(obj, MUIA_Selected, TRUE, MUIA_Pressed, TRUE, TAG_DONE);
 	    break;
 
 	case MUIV_InputMode_Immediate:
@@ -1500,7 +1534,9 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    break;
 	}
 	case MUIV_InputMode_Toggle:
-	    set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
+	    // although undocumented, MUI sets MUIA_Pressed too
+	    SetAttrs(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED),
+		     MUIA_Pressed, !(data->mad_Flags & MADF_PRESSED));
 	    break;
     }
 }
@@ -1509,15 +1545,16 @@ static void handle_press(struct IClass *cl, Object *obj)
 static void handle_release(struct IClass *cl, Object *obj, int cancel)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-/*  g_print("handle release\n"); */
 
     if (data->mad_InputMode == MUIV_InputMode_RelVerify)
     {
 	if (data->mad_Flags & MADF_SELECTED)
 	{
-	    if (cancel) nnset(obj, MUIA_Pressed, FALSE);
-	    else set(obj, MUIA_Pressed, FALSE);
-
+	    if (cancel)
+		nnset(obj, MUIA_Pressed, FALSE);
+	    else
+		set(obj, MUIA_Pressed, FALSE);
+	    
 	    set(obj, MUIA_Selected, FALSE);
 	}
     }
@@ -1715,6 +1752,28 @@ static IPTR Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 	    case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
 	    case IDCMP_RAWKEY:
 	    {
+		unsigned char code;
+		UWORD msg_code;
+		/* Remove the up prefix as convert key does not convert a upkey event */
+		msg_code = msg->imsg->Code;
+		msg->imsg->Code &= ~IECODE_UP_PREFIX;
+		code = ConvertKey(msg->imsg);
+		msg->imsg->Code = msg_code;
+
+		if (code != 0 && code == data->mad_ControlChar)
+		{
+		    if (msg->imsg->Code & IECODE_UP_PREFIX)
+		    {
+			msg->muikey = MUIKEY_RELEASE;
+		    }
+		    else
+		    {
+			msg->muikey = MUIKEY_PRESS;
+		    }
+		    msg->imsg = NULL;
+		    return Area_HandleEvent(cl, obj, msg);
+		}
+
 	        if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
 	        {
 		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
@@ -1910,16 +1969,16 @@ static IPTR Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFini
 /*
  * Calculates addleft, addtop, subwidth, subheight from current settings.
  * If frame phantom, ignore horizontal frame components.
- *
+ * Depends on inner sizes and frame
  */
-static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
-				   const struct MUI_FrameSpec_intern *frame,
-				   const struct ZuneFrameGfx *zframe)
+static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
+			       const struct MUI_FrameSpec_intern *frame,
+			       const struct ZuneFrameGfx *zframe)
 {
 
 /*      if (XGET(obj, MUIA_UserData) == 42) */
 /*      { */
-/*  	D(bug("area_update_innersizes(%p) : ileft=%ld itop=%ld\n", obj, zframe->ileft, zframe->itop)); */
+/*  	D(bug("area_update_msizes(%p) : ileft=%ld itop=%ld\n", obj, zframe->ileft, zframe->itop)); */
 /*      } */
 
     data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
@@ -1935,7 +1994,7 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
 
 // clamping ... maybe ?
 
-/*      D(bug("area_update_innersizes(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
+/*      D(bug("area_update_msizes(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
@@ -1952,9 +2011,9 @@ static IPTR Area_UpdateInnerSizes(struct IClass *cl, Object *obj, struct MUIP_Up
 
     if (_flags(obj) & MADF_SETUP)
     {
-	frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+	frame = get_intframe(obj, data);
 	zframe = zune_zframe_get(frame);
-        area_update_innersizes(obj, data, frame, zframe);
+        area_update_msizes(obj, data, frame, zframe);
     }
     return 1;
 }
