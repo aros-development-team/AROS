@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS
+    Copyright (C) 1995-1998 AROS - The Amiga Research OS
     $Id$
 
     Desc: Battery-backed up clock initialisation.
@@ -14,23 +14,24 @@
 
 #include <aros/asmcall.h>
 #include "battclock_intern.h"
+#include "libdefs.h"
 
 #ifdef SysBase
 #undef SysBase
 #endif
 
 static const UBYTE name[];
-static const UBYTE idstring[];
-static const void * const functable[];
-extern const char AROS_SLIB_ENTRY(end,Battclock);
+static const UBYTE version[];
+static const void * const LIBFUNCTABLE[];
+extern const char LIBEND;
 
-struct BattClockBase *AROS_SLIB_ENTRY(init, Battclock)();
+struct BattClockBase *AROS_SLIB_ENTRY(init, BASENAME)();
 
-extern void AROS_SLIB_ENTRY(ReadBattClock,Battclock)();
-extern void AROS_SLIB_ENTRY(ResetBattClock,Battclock)();
-extern void AROS_SLIB_ENTRY(WriteBattClock,Battclock)();
+extern void AROS_SLIB_ENTRY(ReadBattClock,BASENAME)();
+extern void AROS_SLIB_ENTRY(ResetBattClock,BASENAME)();
+extern void AROS_SLIB_ENTRY(WriteBattClock,BASENAME)();
 
-int battclock_entry(void)
+int Battclock_entry(void)
 {
     return -1;
 }
@@ -39,28 +40,28 @@ const struct Resident Battclock_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Battclock_resident,
-    (APTR)&AROS_SLIB_ENTRY(end,Battclock),
+    (APTR)&LIBEND,
     RTF_COLDSTART,
     41,
     NT_RESOURCE,
     45,
     (UBYTE *)name,
-    (UBYTE *)&idstring[6],
-    (ULONG *)&AROS_SLIB_ENTRY(init,Battclock)
+    (UBYTE *)&version[6],
+    (ULONG *)&AROS_SLIB_ENTRY(init,BASENAME)
 };
 
-static const UBYTE name[] = "battclock.resource";
-static const UBYTE idstring[] = "battclock 41.1 (23.1.1998)";
+static const UBYTE name[] = NAME_STRING;
+static const UBYTE version[] = VERSION_STRING;
 
-static const void * const functable[] =
+static const void * const LIBFUNCTABLE[] =
 {
-    &AROS_SLIB_ENTRY(ResetBattClock,Battclock),
-    &AROS_SLIB_ENTRY(ReadBattClock,Battclock),
-    &AROS_SLIB_ENTRY(WriteBattClock,Battclock),
+    &AROS_SLIB_ENTRY(ResetBattClock,BASENAME),
+    &AROS_SLIB_ENTRY(ReadBattClock,BASENAME),
+    &AROS_SLIB_ENTRY(WriteBattClock,BASENAME),
     (void *)-1
 };
 
-AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,Battclock),
+AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,BASENAME),
     AROS_UFHA(ULONG,	dummy,	D0),
     AROS_UFHA(ULONG,	slist,	A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
@@ -80,7 +81,7 @@ AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,Battclock),
 	BattClockBase->bb_Node.ln_Type = NT_RESOURCE;
 	BattClockBase->bb_Node.ln_Name = (STRPTR)name;
 
-	MakeFunctions(BattClockBase, (APTR)functable, NULL);
+	MakeFunctions(BattClockBase, (APTR)LIBFUNCTABLE, NULL);
 	AddResource(BattClockBase);
     }
     return BattClockBase;
