@@ -68,12 +68,12 @@ struct DiskObject
     UWORD               do_Version;
     struct Gadget       do_Gadget;
     UBYTE               do_Type;        /* see below */
-    char              * do_DefaultTool;
-    char             ** do_ToolTypes;
+    STRPTR              do_DefaultTool;
+    STRPTR            * do_ToolTypes;
     LONG                do_CurrentX;
     LONG                do_CurrentY;
     struct DrawerData * do_DrawerData;
-    char              * do_ToolWindow;
+    STRPTR              do_ToolWindow;
     LONG                do_StackSize;
 };
 
