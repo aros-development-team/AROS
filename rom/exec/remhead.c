@@ -6,7 +6,7 @@
     Lang: english
 */
 
-/* I want the macros */
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -55,7 +55,7 @@
     AROS_LIBFUNC_INIT
     struct Node * node;
 
-    assert (list);
+    ASSERT(list != NULL);
     /*
 	Unfortunately, there is no (quick) check that the node
 	is in a list

@@ -6,7 +6,7 @@
     Lang: english
 */
 #include <string.h>
-#include <assert.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -60,8 +60,8 @@
     AROS_LIBFUNC_INIT
     struct Node * node;
 
-    assert (list);
-    assert (name);
+    ASSERT(list != NULL);
+    ASSERT(list != NULL);
 
     /* Look through the list */
     for (node=GetHead(list); node; node=GetSucc(node))
