@@ -22,9 +22,9 @@
 static const UBYTE name[];
 static const UBYTE version[];
 static const APTR inittabl[4];
-static void *const FUNCTABLE[];
-struct LIBBASETYPE *AROS_SLIB_ENTRY(init,BASENAME)();
-extern const char END;
+static void *const LIBFUNCTABLE[];
+LIBBASETYPEPTR AROS_SLIB_ENTRY(init,BASENAME)();
+extern const char LIBEND;
 
 int Expansion_entry()
 {
@@ -35,29 +35,29 @@ const struct Resident Expansion_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Expansion_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_AUTOINIT|RTF_SINGLETASK,
-    LIBVERSION,
-    NT_LIBRARY,
+    VERSION_NUMBER,
+    NT_TYPE,
     110,
     (STRPTR)name,
     (STRPTR)&version[6],
     (ULONG *)inittabl
 };
 
-static const UBYTE name[]=LIBNAME;
-static const UBYTE version[]=VERSION;
+static const UBYTE name[]=NAME_STRING;
+static const UBYTE version[]=VERSION_STRING;
 
 static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntExpansionBase),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     NULL,
     &AROS_SLIB_ENTRY(init,BASENAME)
 };
 
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *,LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, init,
+    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_LHA(BPTR, segList, A0),
     struct ExecBase *, sysBase, 0, Expansion)
 {
@@ -68,11 +68,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     IntExpBase(LIBBASE)->eb_SysBase = sysBase;
 
     LIBBASE->LibNode.lib_Node.ln_Pri = 0;
-    LIBBASE->LibNode.lib_Node.ln_Type = NT_LIBRARY;
+    LIBBASE->LibNode.lib_Node.ln_Type = NT_TYPE;
     LIBBASE->LibNode.lib_Node.ln_Name = (STRPTR)name;
     LIBBASE->LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
-    LIBBASE->LibNode.lib_Version = LIBVERSION;
-    LIBBASE->LibNode.lib_Revision = LIBREVISION;
+    LIBBASE->LibNode.lib_Version = VERSION_NUMBER;
+    LIBBASE->LibNode.lib_Revision = REVISION_NUMBER;
     LIBBASE->LibNode.lib_IdString = (STRPTR)&version[6];
 
     NEWLIST(&LIBBASE->MountList);
@@ -86,9 +86,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPEPTR, open,
 	AROS_LHA(ULONG, version, D0),
-	struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+	LIBBASETYPEPTR, LIBBASE, 1, BASENAME)
 {
 	AROS_LIBFUNC_INIT
 
@@ -104,7 +104,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-	struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
+	LIBBASETYPEPTR, LIBBASE, 2, BASENAME)
 {
 	AROS_LIBFUNC_INIT
 
@@ -123,7 +123,7 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-	struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
+	LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
 {
 	AROS_LIBFUNC_INIT
 
@@ -155,7 +155,7 @@ AROS_LH0(BPTR, expunge,
 	AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
+AROS_LH0I(int, null, LIBBASETYPEPTR, LIBBASE, 4, BASENAME)
 {
 	AROS_LIBFUNC_INIT
 	return 0;

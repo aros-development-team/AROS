@@ -27,20 +27,20 @@
 #include "aroslistview_intern.h"
 #include "libdefs.h"
 
-#define INIT AROS_SLIB_ENTRY(init, AROSListview)
+#define INIT AROS_SLIB_ENTRY(init, BASENAME)
 
 struct inittable;
 extern const char name[];
 extern const char version[];
 extern const APTR inittabl[4];
-extern void *const FUNCTABLE[];
+extern void *const LIBFUNCTABLE[];
 extern const struct inittable datatable;
 extern struct LVBase_intern *INIT();
-extern struct LVBase_intern *AROS_SLIB_ENTRY(open,AROSListview)();
-extern BPTR AROS_SLIB_ENTRY(close,AROSListview)();
-extern BPTR AROS_SLIB_ENTRY(expunge,AROSListview)();
-extern int AROS_SLIB_ENTRY(null,AROSListview)();
-extern const char END;
+extern struct LVBase_intern *AROS_SLIB_ENTRY(open,BASENAME)();
+extern BPTR AROS_SLIB_ENTRY(close,BASENAME)();
+extern BPTR AROS_SLIB_ENTRY(expunge,BASENAME)();
+extern int AROS_SLIB_ENTRY(null,BASENAME)();
+extern const char LIBEND;
 
 /* FIXME: egcs 1.1b and possibly other incarnations of gcc have
  * two nasty problems with entry() that prevents using the
@@ -75,24 +75,24 @@ const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&AROSListview_end,
+    (APTR)&LIBEND,
     RTF_AUTOINIT,
-    LIBVERSION,
-    NT_LIBRARY,
+    VERSION_NUMBER,
+    NT_TYPE,
     0,	/* WARNING: residents with negative priority won't be inited on AmigaOS! */
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
 };
 
-const char name[]=GADGETNAME;
+const char name[]=NAME_STRING;
 
-const char version[]=VERSION;
+const char version[]=VERSION_STRING;
 
 const APTR inittabl[4]=
 {
     (APTR)sizeof(struct LVBase_intern),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     (APTR)&datatable,
     &INIT
 };
@@ -105,18 +105,18 @@ struct inittable
     S_CPYO(4,1,W);
     S_CPYO(5,1,W);
     S_CPYO(6,1,L);
-    S_END (END);
+    S_END (LIBEND);
 };
 
 #define O(n) offsetof(struct LVBase_intern,n)
 
 const struct inittable datatable=
 {
-    { { I_CPYO(1,B,O(library.lib_Node.ln_Type)), { NT_LIBRARY } } },
+    { { I_CPYO(1,B,O(library.lib_Node.ln_Type)), { NT_TYPE } } },
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
-    { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
-    { { I_CPYO(1,W,O(library.lib_Revision    )), { LIBREVISION } } },
+    { { I_CPYO(1,W,O(library.lib_Version     )), { VERSION_NUMBER } } },
+    { { I_CPYO(1,W,O(library.lib_Revision    )), { REVISION_NUMBER } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };

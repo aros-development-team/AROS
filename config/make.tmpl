@@ -208,12 +208,13 @@ ifeq (,$(filter clean% setup% includes% %(nodepstargets),$(TARGET)))
 endif
 %end
 
-# rule to generate libdefs.h
-%define libdefs_rule conffile=lib.conf script=$(TOP)/scripts/genlibdefs.gawk dest=libdefs.h
-%(dest) : %(conffile) %(script)
+# rule to generate libdefs.h with archtool (options may go away!)
+%define libdefs_rule conffile=lib.conf genlibdefstool=$(TOP)/tools/archtools/archtool dest=libdefs.h
+%(dest) : %(conffile) %(genlibdefstool)
 	@$(ECHO) "Generating $@..."
-	@$(AWK) -f %(script) $< > $@
+	@%(genlibdefstool) -c
 %end
+
 
 # rule to generate asm files from c files (for debugging purposes)
 %define asm_rule opt=$(GENASM)

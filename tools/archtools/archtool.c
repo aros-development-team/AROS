@@ -258,10 +258,14 @@ return 0;
 
 enum libtype
 {
-  t_device = 1,
-  t_library = 2,
-  t_resource = 3,
-  t_hidd = 4
+  t_device	= 1,
+  t_library	= 2,
+  t_resource	= 3,
+  t_hidd	= 4,
+  t_gadget	= 5,
+  t_image	= 6,
+  t_class	= 7,
+  t_datatype	= 8
 };
 
 enum liboption
@@ -429,6 +433,14 @@ char **words = NULL;
           lc->type = t_resource;
         else if( strcmp(words[1],"hidd")==0 )
           lc->type = t_hidd;
+        else if( strcmp(words[1],"gadget")==0 )
+          lc->type = t_gadget;
+        else if( strcmp(words[1],"image")==0 )
+          lc->type = t_image;
+        else if( strcmp(words[1],"class")==0 )
+          lc->type = t_class;
+        else if( strcmp(words[1],"datatype")==0 )
+          lc->type = t_datatype;
       }
       else if( strcmp(words[0],"options")==0 )
       {
@@ -565,7 +577,27 @@ time_t t;
   else if (lc->type == t_hidd)
   {
     fprintf( fd, "#define NAME_STRING      \"%s.hidd\"\n", lc->libname );
-    fprintf( fd, "#define NT_TYPE          NT_HIDD\n" );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+  }
+  else if (lc->type == t_gadget)
+  {
+    fprintf( fd, "#define NAME_STRING      \"%s.gadget\"\n", lc->libname );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+  }
+  else if (lc->type == t_image)
+  {
+    fprintf( fd, "#define NAME_STRING      \"%s.image\"\n", lc->libname );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+  }
+  else if (lc->type == t_class)
+  {
+    fprintf( fd, "#define NAME_STRING      \"%s.class\"\n", lc->libname );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+  }
+  else if (lc->type == t_datatype)
+  {
+    fprintf( fd, "#define NAME_STRING      \"%s.datatype\"\n", lc->libname );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
   }
 
   if (lc->option & o_rom)
