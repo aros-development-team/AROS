@@ -71,6 +71,11 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	}
     }
 
+    if (!volname && !cur && !DOSBase->dl_SYSLock)
+    {
+    	return ERROR_OBJECT_NOT_FOUND;
+    }
+    
     dl = LockDosList(LDF_ALL | LDF_READ);
 
     if (volname != NULL)
