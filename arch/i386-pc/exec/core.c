@@ -76,7 +76,7 @@ void        disable_8259A_irq(unsigned int);
 #define startup_8259A_irq   enable_8259A_irq
 #define shutdown_8259A_irq  disable_8259A_irq
 
-static const struct irqController i8259_controller __text =
+static const struct irqController i8259_controller  =
 {
     "XT-PIC",
     startup_8259A_irq,
