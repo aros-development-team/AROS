@@ -60,7 +60,7 @@ entrycode.o : entrycode.s
 	@$(ECHO) Compiling $^...
 	@$(CC) -c $^ -o $@ $(CFLAGS)
 
-aros_rom : entrycode.o reset.o
+aros_rom : entrycode.o
 	@$(ECHO) Linking $^...
 	$(CC) $^ $(OBJS) -o $@ -Wl,-T,linkerscript $(LIBS) -nostdlib
 
