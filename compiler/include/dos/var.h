@@ -47,8 +47,8 @@ struct LocalVar {
 #define GVF_GLOBAL_ONLY     (1L << GVB_GLOBAL_ONLY)
 #define GVB_LOCAL_ONLY      9
 #define GVF_LOCAL_ONLY      (1L << GVB_LOCAL_ONLY)
-#define GVB_BINARY_ONLY     10
-#define GVF_BINARY_ONLY     (1L << GVB_BINARY_ONLY)
+#define GVB_BINARY_VAR      10
+#define GVF_BINARY_VAR      (1L << GVB_BINARY_VAR)
 #define GVB_DONT_NULL_TERM  11
 #define GVF_DONT_NULL_TERM  (1L << GVB_DONT_NULL_TERM)
 
