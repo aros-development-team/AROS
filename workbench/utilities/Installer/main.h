@@ -6,6 +6,8 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
+#include "Installer.h"
+
 /* RDArgs */
 #ifdef DEBUG
   #define ARG_TEMPLATE    "SCRIPT/K,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,NOPRINT/S,LANGUAGE/K"

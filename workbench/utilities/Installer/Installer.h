@@ -14,8 +14,8 @@
    This flag is not only for internal verbosity, but embraces outputs
    where Intuition GUI is still missing (mostly errors), too.
 */
-//#define DEBUG 1
-#undef DEBUG
+#define DEBUG 1
+//#undef DEBUG
 
 #ifdef DEBUG
 #   include <proto/arossupport.h>
