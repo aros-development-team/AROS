@@ -1,11 +1,53 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.2  1996/08/01 17:41:26  digulla
+#    Revision 1.3  1996/08/01 17:48:52  digulla
+#    Added description
+#
+#    Revision 1.2  1996/08/01 17:41:26	digulla
 #    Added standard header for all files
 #
 #    Desc:
 #    Lang:
+
+#*****************************************************************************
+#
+#   NAME
+#
+#	__AROS_LH0(void, Switch,
+#
+#   LOCATION
+#	struct ExecBase *, SysBase, 6, Exec)
+#
+#   FUNCTION
+#	Tries to switch to the first task in the ready list. This
+#	function works almost like Dispatch() with the slight difference
+#	that it may be called at any time and as often as you want and
+#	that it doesn't lose the current task if it is of type TS_RUN.
+#
+#   INPUTS
+#
+#   RESULT
+#
+#   NOTES
+#	This function is CPU dependant.
+#
+#	This function is for internal use by exec only.
+#
+#	This function preserves all registers.
+#
+#   EXAMPLE
+#
+#   BUGS
+#
+#   SEE ALSO
+#	Dispatch()
+#
+#   INTERNALS
+#
+#   HISTORY
+#
+#******************************************************************************
 
 	Dispatch    =	-35
 	Enqueue     =	-225
