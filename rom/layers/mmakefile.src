@@ -57,6 +57,7 @@ FUNCTIONS := \
 	movelayerinfrontof		\
 	movesizelayer			\
 	newlayerinfo			\
+        sizelayer			\
 	swapbitsrastportcliprect        \
 	thinlayerinfo			\
 	unlocklayer			\
