@@ -160,12 +160,14 @@ IPTR Install__OM_NEW
 	data->IO_ROpt2       		= (APTR) GetTagData (MUIA_OBJ_IO_ROpt2, (ULONG) NULL, message->ops_AttrList);
 	data->IO_ROpt3       		= (APTR) GetTagData (MUIA_OBJ_IO_ROpt3, (ULONG) NULL, message->ops_AttrList);
 /**/
-	data->instc_lic_file		= (APTR) GetTagData (MUIA_License_File, (ULONG) NULL, message->ops_AttrList);
-	data->instc_lic_mandatory	= (APTR) GetTagData (MUIA_License_Mandatory, (ULONG) NULL, message->ops_AttrList);
+	data->instc_lic_file		= (APTR) GetTagData (MUIA_IC_License_File, (ULONG) NULL, message->ops_AttrList);
+	data->instc_lic_mandatory	= (APTR) GetTagData (MUIA_IC_License_Mandatory, (ULONG) NULL, message->ops_AttrList);
 
 /**/
 	data->instc_options_main      = (APTR) GetTagData (MUIA_List_Options, (ULONG) NULL, message->ops_AttrList);
 	data->instc_options_grub      = (APTR) GetTagData (MUIA_Grub_Options, (ULONG) NULL, message->ops_AttrList);
+
+	data->instc_undoenabled	 =  (APTR) GetTagData (MUIA_IC_EnableUndo, (ULONG) NULL, message->ops_AttrList);
 
 	data->instc_options_main->partitioned 	= FALSE;
 	data->instc_options_main->bootloaded 	= FALSE;
@@ -184,9 +186,9 @@ IPTR Install__OM_NEW
     
 	data->drive_set     		= (BOOL)DoMethod(self, MUIM_FindDrives);
 
-	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_NextStep);
-	DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_PrevStep);
-	DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_CancelInstall);
+	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
+	DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_PrevStep);
+	DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_CancelInstall);
 
 	DoMethod(self, MUIM_Notify, MUIA_InstallComplete, TRUE, (IPTR) self, 1, MUIM_Reboot);
 
@@ -504,7 +506,7 @@ UBYTE cmd=0xEC; /* identify */
 	w2strcpy(name, &data[27], 40);
 }
 
-IPTR Install__MUIM_NextStep
+IPTR Install__MUIM_IC_NextStep
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -688,7 +690,7 @@ IPTR Install__MUIM_NextStep
 		data->disable_back = TRUE;
 		set(data->page,MUIA_Group_ActivePage, EInstallStage);
 	
-		DoMethod(self, MUIM_Install);
+		DoMethod(self, MUIM_IC_Install);
 	
 		next_stage = EDoneStage;
 		set(data->back, MUIA_Disabled, TRUE);
@@ -704,7 +706,7 @@ IPTR Install__MUIM_NextStep
 	return 0;
 }
 
-IPTR Install__MUIM_PrevStep
+IPTR Install__MUIM_IC_PrevStep
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -802,7 +804,7 @@ IPTR Install__MUIM_PrevStep
 	return TRUE;
 }
 
-IPTR Install__MUIM_CancelInstall
+IPTR Install__MUIM_IC_CancelInstall
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -883,14 +885,14 @@ donecancel:
 	
 	if ( !MUI_RequestA(  data->installer, data->window, 0, "Cancel Installation..", "*Continue Install|Cancel Install", cancelmessage, NULL))
 	{
-		DoMethod(self, MUIM_QuitInstall);
+		DoMethod(self, MUIM_IC_QuitInstall);
 	}
-	else	DoMethod(self, MUIM_ContinueInstall);
+	else	DoMethod(self, MUIM_IC_ContinueInstall);
 
 	return 0;
 }
 	
-IPTR Install__MUIM_ContinueInstall
+IPTR Install__MUIM_IC_ContinueInstall
 (     
 Class *CLASS, Object *self, Msg message 
 )
@@ -954,7 +956,7 @@ Class *CLASS, Object *self, Msg message
 	return 0;
 }
 
-IPTR Install__MUIM_QuitInstall
+IPTR Install__MUIM_IC_QuitInstall
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -1043,7 +1045,7 @@ IPTR Install__MUIM_Partition
 	return tmp;
 }
 
-IPTR Install__MUIM_Install
+IPTR Install__MUIM_IC_Install
 (     
 	Class *CLASS, Object *self, Msg message 
 )
@@ -1215,7 +1217,7 @@ createdirfaild:
 		if ((lock = Lock(&localesrcPFile, ACCESS_READ))!=NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_CopyFile, &localesrcPFile, &localePFile);
+			DoMethod(self, MUIM_IC_CopyFile, &localesrcPFile, &localePFile);
 		}
 		
 		bootDirLock=NULL;
@@ -1224,7 +1226,7 @@ createdirfaild:
 		if ((lock = Lock(inputsrcPFile, ACCESS_READ))!=NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_CopyFile, &inputsrcPFile, &inputPFile);
+			DoMethod(self, MUIM_IC_CopyFile, &inputsrcPFile, &inputPFile);
 		}
 	}
 	
@@ -1360,7 +1362,7 @@ createdirfaild:
 			set(data->actioncurrent, MUIA_Text_Contents, &srcFile);
 			DoMethod(data->installer,MUIM_Application_InputBuffered);
 			
-			DoMethod(self, MUIM_CopyFile, &srcFile, &dstFile);
+			DoMethod(self, MUIM_IC_CopyFile, &srcFile, &dstFile);
 			
 			set(data->gauge2, MUIA_Gauge_Current, ((100/(numgrubfiles +1)) * (file_count/2)));
 			
@@ -1473,7 +1475,7 @@ createdirfaild:
 
 		switch (CurUndoNode->undo_method)
 		{
-		case MUIM_CopyFile:
+		case MUIM_IC_CopyFile:
 			D(bug("[INSTALLER] Deleting undo file '%s'\n",CurUndoNode->undo_src));
 			DeleteFile(CurUndoNode->undo_src);
 
@@ -1595,18 +1597,18 @@ retrycdadir:
 					skip_count += 1;
 					goto skipcdadir;
 				default: /* cancel */
-					DoMethod(self, MUIM_QuitInstall);
+					DoMethod(self, MUIM_IC_QuitInstall);
 			}
 		}
 		
-		if ((noOfFiles = DoMethod(self, MUIM_MakeDirs, &srcDirs, &dstDirs))==0)
+		if ((noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, &srcDirs, &dstDirs))==0)
 		{
 			data->inst_success = MUIV_Inst_Failed;
 			D(bug("[INSTALLER.CDA] Failed to create %s...\n",&dstDirs));
 		}
 		
 		/* OK Now copy the contents */
-		noOfFiles += DoMethod(self, MUIM_CopyFiles, &srcDirs, &dstDirs, noOfFiles, 0);
+		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, &srcDirs, &dstDirs, noOfFiles, 0);
 		
 		/* check if folder has an icon */
 		CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
@@ -1614,7 +1616,7 @@ retrycdadir:
 		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
 		{
 			UnLock(lock);
-			DoMethod(self, MUIM_CopyFile, &srcDirs, &dstDirs);
+			DoMethod(self, MUIM_IC_CopyFile, &srcDirs, &dstDirs);
 		}
 skipcdadir:
 		set(data->gauge2, MUIA_Gauge_Current, ((100/(numdirs +1)) * (dir_count/2)));
@@ -1696,7 +1698,7 @@ IPTR Install__MUIM_Format
 	return success;
 }
 
-IPTR Install__MUIM_MakeDirs
+IPTR Install__MUIM_IC_MakeDirs
 (
     Class *CLASS, Object *self, struct MUIP_Dir* message 
 )
@@ -1784,7 +1786,7 @@ IPTR Install__MUIM_MakeDirs
                             //D(bug("[INSTALLER.MD] R: %s -> %s \n", srcDir, dstDir));
                             BPTR dirLock = CreateDir(dstDir);
                             if(dirLock != NULL) UnLock(dirLock);
-                            noOfFiles += DoMethod(self, MUIM_MakeDirs, srcDir, dstDir);
+                            noOfFiles += DoMethod(self, MUIM_IC_MakeDirs, srcDir, dstDir);
                         }
                         else
                         {
@@ -1805,7 +1807,7 @@ IPTR Install__MUIM_MakeDirs
     return noOfFiles;
 }
 
-IPTR Install__MUIM_CopyFiles
+IPTR Install__MUIM_IC_CopyFiles
 (
     Class *CLASS, Object *self, struct MUIP_CopyFiles* message 
 )
@@ -1861,7 +1863,7 @@ IPTR Install__MUIM_CopyFiles
                         switch(ead->ed_Type)
                         {
                             case ST_FILE:
-                                DoMethod(self, MUIM_CopyFile, &srcFile, &dstFile);
+                                DoMethod(self, MUIM_IC_CopyFile, &srcFile, &dstFile);
                                 
                                 message->currFile++;
                                 break;
@@ -1901,7 +1903,7 @@ IPTR Install__MUIM_CopyFiles
 					
 					FreeVec(tmppath);
 				}
-                                message->currFile = DoMethod(self, MUIM_CopyFiles, &srcFile, &dstFile, message->noOfFiles, message->currFile);
+                                message->currFile = DoMethod(self, MUIM_IC_CopyFiles, &srcFile, &dstFile, message->noOfFiles, message->currFile);
                                 break;
                         }
                         ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
@@ -1923,7 +1925,7 @@ IPTR Install__MUIM_CopyFiles
     return message->currFile;
 }
 
-IPTR Install__MUIM_CopyFile
+IPTR Install__MUIM_IC_CopyFile
 (
     Class *CLASS, Object *self, struct MUIP_CopyFile* message 
 )
@@ -1974,7 +1976,7 @@ copy_backup:
 	
 	if(data->instc_undoenabled==TRUE)
 	{
-		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_QuitInstall);
+		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_IC_QuitInstall);
 
 		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+1, MEMF_CLEAR | MEMF_PUBLIC );
 		
@@ -1991,7 +1993,7 @@ copy_backup:
 
 		D(bug("[INSTALLER.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst, undorecord->undo_src));
 
-		undorecord->undo_method=MUIM_CopyFile;
+		undorecord->undo_method=MUIM_IC_CopyFile;
 
 		FreeVec(tmppath);
 		IPTR		undosrcpath = (((IPTR)FilePart(undorecord->undo_src) - (IPTR)(undorecord->undo_src)) - 1);
@@ -2069,7 +2071,7 @@ copy_retry:
 						case 1: /*Skip */
 							goto copy_skip;
 						default:
-							DoMethod(self, MUIM_QuitInstall);
+							DoMethod(self, MUIM_IC_QuitInstall);
 					}
 				}
 				
@@ -2092,7 +2094,7 @@ copy_retry:
 						case 1: /*Skip */
 							goto copy_skip;
 						default:
-							DoMethod(self, MUIM_QuitInstall);
+							DoMethod(self, MUIM_IC_QuitInstall);
 					}
 				}
 			} while ((s == kBufSize && !err)&&(data->inst_success == MUIV_Inst_InProgress));
@@ -2142,7 +2144,7 @@ copy_skip:
 	return RETURN_FAIL;
 }
 
-IPTR Install__MUIM_UndoSteps
+IPTR Install__MUIM_IC_UndoSteps
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -2162,7 +2164,7 @@ IPTR Install__MUIM_UndoSteps
 
 		switch (CurUndoNode->undo_method)
 		{
-		case MUIM_CopyFile:
+		case MUIM_IC_CopyFile:
 			D(bug("[INSTALLER.US] Reverting file '%s'\n",CurUndoNode->undo_dst));
 
 			DoMethod(self, CurUndoNode->undo_method, CurUndoNode->undo_src, CurUndoNode->undo_dst);
@@ -2248,20 +2250,20 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
         case MUIM_FindDrives:
 		return Install__MUIM_FindDrives(CLASS, self, message);
 
-        case MUIM_NextStep:   
-		return Install__MUIM_NextStep(CLASS, self, message);
+        case MUIM_IC_NextStep:   
+		return Install__MUIM_IC_NextStep(CLASS, self, message);
 
-        case MUIM_PrevStep:   
-		return Install__MUIM_PrevStep(CLASS, self, message);
+        case MUIM_IC_PrevStep:   
+		return Install__MUIM_IC_PrevStep(CLASS, self, message);
         //cancel control methods
-        case MUIM_CancelInstall:   
-		return Install__MUIM_CancelInstall(CLASS, self, message);
+        case MUIM_IC_CancelInstall:   
+		return Install__MUIM_IC_CancelInstall(CLASS, self, message);
 
-        case MUIM_ContinueInstall:   
-		return Install__MUIM_ContinueInstall(CLASS, self, message);
+        case MUIM_IC_ContinueInstall:   
+		return Install__MUIM_IC_ContinueInstall(CLASS, self, message);
 
-        case MUIM_QuitInstall:   
-		return Install__MUIM_QuitInstall(CLASS, self, message);
+        case MUIM_IC_QuitInstall:   
+		return Install__MUIM_IC_QuitInstall(CLASS, self, message);
 
         case MUIM_Reboot:
 		return Install__MUIM_Reboot(CLASS, self, message);
@@ -2270,8 +2272,8 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
         case MUIM_RefreshWindow:
 		return Install__MUIM_RefreshWindow(CLASS, self, message);
 /**/
-        case MUIM_Install:
-		return Install__MUIM_Install(CLASS, self, message);
+        case MUIM_IC_Install:
+		return Install__MUIM_IC_Install(CLASS, self, message);
 
         //These will be consumed by the io task..
         case MUIM_Partition:
@@ -2280,17 +2282,17 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
         case MUIM_Format:
 		return Install__MUIM_Format(CLASS, self, message);
             
-        case MUIM_MakeDirs:
-		return Install__MUIM_MakeDirs(CLASS, self, (struct MUIP_Dir*)message);
+        case MUIM_IC_MakeDirs:
+		return Install__MUIM_IC_MakeDirs(CLASS, self, (struct MUIP_Dir*)message);
 
-        case MUIM_CopyFiles:
-		return Install__MUIM_CopyFiles(CLASS, self, (struct MUIP_CopyFiles*)message);
+        case MUIM_IC_CopyFiles:
+		return Install__MUIM_IC_CopyFiles(CLASS, self, (struct MUIP_CopyFiles*)message);
             
-        case MUIM_CopyFile:
-		return Install__MUIM_CopyFile(CLASS, self, (struct MUIP_CopyFile*)message);
+        case MUIM_IC_CopyFile:
+		return Install__MUIM_IC_CopyFile(CLASS, self, (struct MUIP_CopyFile*)message);
 
-        case MUIM_UndoSteps:
-		return Install__MUIM_UndoSteps(CLASS, self, message);
+        case MUIM_IC_UndoSteps:
+		return Install__MUIM_IC_UndoSteps(CLASS, self, message);
 		
         default:     
 		return DoSuperMethodA(CLASS, self, message);
@@ -2722,8 +2724,8 @@ int main(int argc,char *argv[])
                 MUIA_OBJ_IO_ROpt2, (IPTR) gad_io_opt2,
                 MUIA_OBJ_IO_ROpt3, (IPTR) gad_io_opt3,
 		
-		MUIA_License_File,"HELP:English/license",
-		MUIA_License_Mandatory,TRUE,
+		MUIA_IC_License_File,"HELP:English/license",
+		MUIA_IC_License_Mandatory, TRUE,
 
 	TAG_DONE);
 
