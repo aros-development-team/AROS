@@ -64,6 +64,7 @@
     16.11.2000  SDuvan  --  converted to AROS
     23.12.2000  SDuvan  --  changed semantics and updated
                             (now fully functional)
+    17.02.2005  Joe Fenton -- fixed 64bit calculation
 
     Based on the original by:
     © 1997-1998 by Stephan Rupprecht
@@ -864,7 +865,7 @@ ULONG ComputeKBytes(ULONG a, ULONG b)
 {
     //    QUAD result = UMult64(a, b);
 
-    long long result = a*b;
+    AROS_64BIT_TYPE result = (AROS_64BIT_TYPE)a * b;
 
     return (ULONG)(result >> 10);
 }
