@@ -340,6 +340,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX	= win_mousex;
 	        im->MouseY	= win_mousey;
 
+	        /*
+	         * If the window is a GIMMEZEROZERO window then make the
+	         * coordiante of the mouse relative to the inner window.
+	         */
+	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+	        {
+//kprintf("SELECTDOWN: %d/%d\t",im->MouseX,im->MouseY);
+	          im->MouseX -= w->BorderLeft;
+	          im->MouseY -= w->BorderTop;
+//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
+	        }
+
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
 
@@ -526,6 +538,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
 
+	        /*
+	         * If the window is a GIMMEZEROZERO window then make the
+	         * coordiante of the mouse relative to the inner window.
+	         */
+	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+	        {
+//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
+	          im->MouseX -= w->BorderLeft;
+	          im->MouseY -= w->BorderTop;
+//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
+	        }
+
 		D(bug("SELECTUP\n"));
 		if (gadget)
 		{
@@ -631,13 +655,30 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case MENUDOWN:
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
-
  	        /* 
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
+
+                /*
+                 * !!! if there's a GIMEZEROZERO window the mouse coordinates
+                 * need to be adjusted! I don't know whether this is correct,
+                 * though, but Games/Mine obviously needs it.
+                 */
+
+	        /*
+	         * If the window is a GIMMEZEROZERO window then make the
+	         * coordiante of the mouse relative to the inner window.
+	         */
+	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+	        {
+//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
+	          im->MouseX -= w->BorderLeft;
+	          im->MouseY -= w->BorderTop;
+//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
+	        }
 
 		if (gadget)
 		{
@@ -712,6 +753,25 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
 
+                /*
+                 * !!! if there's a GIMEZEROZERO window the mouse coordinates
+                 * need to be adjusted! I don't know whether this is correct,
+                 * though, but Games/Mine obviously needs it when it gets
+                 * ccordinates for a right mouse button.
+                 */
+
+	        /*
+	         * If the window is a GIMMEZEROZERO window then make the
+	         * coordiante of the mouse relative to the inner window.
+	         */
+	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+	        {
+//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
+	          im->MouseX -= w->BorderLeft;
+	          im->MouseY -= w->BorderTop;
+//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
+	        }
+
 		if (gadget)
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
@@ -785,6 +845,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        */
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
+	        
+	        /*
+	         * If the window is a GIMMEZEROZERO window then make the
+	         * coordiante of the mouse relative to the inner window.
+	         */
+	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+	        {
+//kprintf("MOUSEMOVE: %d/%d\t",im->MouseX,im->MouseY);
+	          im->MouseX -= w->BorderLeft;
+	          im->MouseY -= w->BorderTop;
+//kprintf("%d/%d\n",im->MouseX,im->MouseY);
+	        }
 
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
@@ -1108,6 +1180,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	default:
 	    ptr = NULL;
+
+            kprintf("Unknown IEClass!\n");
 	    break;
 	} /* switch (im->Class) */
 
@@ -1232,24 +1306,10 @@ D(bug("Window: %p\n", w));
 		    /* I don't move backdrop layers! */
 		    if (0 == (targetlayer->Flags & LAYERBACKDROP))
 		    {
-		      /* 
-		         The layer behind the one to move will be the 
-		         first one to check for damage, different for
-		         GZZ window and regular windows, though! 
-		      */
-      		      if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-		      {
-		        /* for a regular window */
-		        L = targetlayer->back;
-		      }
-		      else
-		      {
-		        /* for a GZZ window */
-		        L = targetlayer->back->back;
-		      }
-		      
+
 		      BehindLayer(0, targetlayer);
-		      
+
+
 		      /* GZZ window or regular window? */
 		      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
 		      {
@@ -1259,8 +1319,15 @@ D(bug("Window: %p\n", w));
 		        */
 		        BehindLayer(0, targetwindow->BorderRPort->Layer);
 		      } 
-		      CheckLayersBehind = TRUE;
+
+                      /* 
+                       * Check all layers in front of the layer.
+                       */
+		      L = targetlayer->front;
+		      CheckLayersInFront = TRUE;
+
 		    }
+		    
 		    
 		    FreeMem(msg, sizeof(struct shortIntuiMessage));
 		break; }
@@ -1298,13 +1365,11 @@ D(bug("Window: %p\n", w));
 
                      CheckLayersBehind = TRUE;
                      L = targetlayer;
-                                          
+                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
 
                 case IMCODE_MOVEWINDOWINFRONTOF: { 
-                     
-
                      /* If GZZ window then also move outer window */
                      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
@@ -1316,7 +1381,7 @@ D(bug("Window: %p\n", w));
                                         msg->BehindWindow->WLayer);
                      
                      CheckLayersBehind = TRUE;
-                     CheckLayersInFront = TRUE;
+                     //CheckLayersInFront = TRUE;
                      L = targetlayer;
                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
@@ -1354,7 +1419,7 @@ D(bug("Window: %p\n", w));
                                  targetwindow->BorderRPort->Layer,
                                  msg->dx,
                                  msg->dy);
-                                 
+                       RefreshWindowFrame(targetwindow);
                      }
                      
                      SizeLayer(NULL, 
@@ -1427,7 +1492,7 @@ D(bug("Window: %p\n", w));
                                      w->ZipTopEdge  - OldTopEdge,
                                      w->ZipWidth    - OldWidth,
                                      w->ZipHeight   - OldHeight);
-
+                       RefreshWindowFrame(targetwindow);
                      }
 
                      L = targetlayer;
@@ -1474,6 +1539,11 @@ D(bug("Window: %p\n", w));
 		
 		case IMCODE_CHANGEWINDOWBOX: {
 
+                     /*
+                      * For non GZZ windows delete the right and lower part
+                      * of the frame IF the window is getting wider or
+                      * higher
+                      */
                      if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {		 
                        if (msg->height > targetwindow->Height)
@@ -1492,15 +1562,20 @@ D(bug("Window: %p\n", w));
                        }
                      }
 
+                     /* Now try to move and resize the window */
+ 		     if (FALSE == intui_ChangeWindowBox(targetwindow
+		     	                              , msg->left, msg->top
+			                              , msg->width, msg->height))
+	             {
+	               RefreshWindowFrame(targetwindow);
+		       break;
+		     }
+
                      ((struct IntWindow *)targetwindow)->ZipLeftEdge = targetwindow->LeftEdge; 
                      ((struct IntWindow *)targetwindow)->ZipTopEdge  = targetwindow->TopEdge;
                      ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
                      ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
                      
- 		     intui_ChangeWindowBox(targetwindow
-		     	, msg->left, msg->top
-			, msg->width, msg->height
-		     );
 
 		     /* Change width of dragbar gadget */
 
@@ -1537,27 +1612,24 @@ D(bug("Window: %p\n", w));
 	      
 	      while (NULL != _L)
 	      {
-	        _W = (struct Window *)_L->Window;
-		
-	        if (0 != (_L->Flags & LAYERREFRESH) && NULL != _W)
-		{
-		  if (_W->WLayer == _L)
-		  {
-	            windowneedsrefresh(_W, IntuitionBase);
-		  }
-		  else
-		  {
-		    /* gzz outer layer */
-
-		    /* BeginUpdate(_L); */
-		    RefreshWindowFrame(_W);
-		    /* EndUpdate(_L, TRUE); */
-		    
-		    _L->Flags &= ~ LAYERREFRESH;
-		  }
-		  
-	        } /* if (0 != (_L->Flags & LAYERREFRESH) && NULL != _W) */
-		
+	        /* Does this Layer need a refresh and does it belong
+	           to a Window ?? */
+	        if (0 != (_L->Flags & LAYERREFRESH) &&
+	            NULL != _L->Window)
+	        {
+	          /* Does it belong to a GZZ window and is it
+	             the outer window of that GZZ window? */
+	          if (0  != (((struct Window *)_L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
+	              _L ==  ((struct Window *)_L->Window)->BorderRPort->Layer            )
+	          {
+	            /* simply refresh that window's frame */
+	            RefreshWindowFrame((struct Window *)_L->Window);
+	            _L->Flags &= ~LAYERREFRESH;
+	          }
+	          else
+	            windowneedsrefresh((struct Window *)_L->Window,
+	                               IntuitionBase);
+	        }
 	       _L = _L->back;
 	       
 	      } /* while (NULL != _L) */
@@ -1575,28 +1647,26 @@ D(bug("Window: %p\n", w));
 	        L=L->front; /* the layer L has already been checked */
 	      
 	      while (NULL != L)
-	      {
-	        _W = (struct Window *)L->Window;
-		  
-	        if (0 != (L->Flags & LAYERREFRESH) && NULL != _W)
-		{
-		  if (_W->WLayer == L)
-		  {
-	            windowneedsrefresh(_W, IntuitionBase);
-		  }
-		  else
-		  {
-		    /* gzz outer layer */
-
-		    /* BeginUpdate(L); */
-		    RefreshWindowFrame(_W);
-		    /* EndUpdate(L, TRUE); */
-		    
-		    L->Flags &= ~ LAYERREFRESH;
-		  }
-		  
-	        } /* if (0 != (L->Flags & LAYERREFRESH) && NULL != _W) */
-		
+	      {  
+	        /* Does this Layer need a refresh and does it belong
+	           to a Window ?? */
+	        if (0 != (L->Flags & LAYERREFRESH) &&
+	            NULL != L->Window)
+	        {
+	          /* Does it belong to a GZZ window and is it
+	             the outer window of that GZZ window? */
+	          if (0  != (((struct Window *)L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
+	              L  ==  ((struct Window *)L->Window)->BorderRPort->Layer            )
+	          {
+	            /* simply refresh that window's frame */
+	            RefreshWindowFrame((struct Window *)L->Window);
+	            L->Flags &= ~LAYERREFRESH;
+	          }
+	          else
+	            windowneedsrefresh((struct Window *)L->Window,
+	                               IntuitionBase);
+	        }
+	      
 	        L = L->front;
 		
 	      } /* while (NULL != L) */
