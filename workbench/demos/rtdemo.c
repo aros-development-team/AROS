@@ -10,17 +10,20 @@
 
 #include <stdio.h>
 
-#include <aros/rt.h>
 #include <exec/memory.h>
 #include <intuition/intuition.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
+
+#include <aros/rt.h>
 
 struct IntuitionBase * IntuitionBase;
 
 int main (int argc, char ** argv)
 {
     APTR mem, illmem;
+    BPTR file;
     int size;
 
     /*
@@ -71,12 +74,35 @@ int main (int argc, char ** argv)
 
     CloseLibrary (IntuitionBase);
 
+    /* Funny things with files */
+    printf ("Bug 7: Open a file with an illegal mode\n");
+    file = Open ("test", 0xbad);
+
+    printf ("Bug 8: Open a file with an illegal name\n");
+    file = Open (NULL, MODE_NEWFILE);
+
+    printf ("Bug 9: Open a file which doesn't exist and forget to check\n");
+    file = Open ("XG&hg", MODE_OLDFILE);
+
+    Read (file, mem, size);
+
+    printf ("Bug 10: Write with an illegal buffer\n");
+    file = Open ("test.rtdemo", MODE_NEWFILE);
+
+    Write (file, NULL, size);
+
+    printf ("Bug 11: Close the wrong file\n");
+    file = (BPTR)mem;
+    Close (file);
+
+    DeleteFile ("test.rtdemo");
+
     /*
 	Terminate RT. This will also be a NOP if RT is not enabled. If
 	any resources are still allocated, then this will free and print
 	them.
     */
-    printf ("Show Bugs 1 and 2\n");
+    printf ("Show Bugs 1, 2, 6 and 11\n");
     RT_Exit ();
 
     return 0;
