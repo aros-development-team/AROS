@@ -83,7 +83,7 @@ DESTDIRS := $(DESTDIRS) $(DESTDIR)
 
 # Insert collection lib lib$(LIBNAME).a into $(LIBS) for final $(SLIB) target
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -lc -L$(LIBDIR) -l$(LIBNAME) -larossupport -lamiga 
+LIBS = -L/usr/lib -lc -L$(LIBDIR) -l$(LIBNAME) -larossupport -lamiga 
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosm.a 
 
