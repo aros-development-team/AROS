@@ -212,7 +212,7 @@ AROS_UFH3(static IPTR, dispatch_imageclass,
 			This is how Intuition knows an image is a boopsi
 			object!
 		    */
-		    memset ((void *)retval, 0, SIZEOF_INSTANCE(cl));
+		    memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
 		    IM(retval)->Depth = CUSTOMIMAGEDEPTH;
 		}
 	    }
