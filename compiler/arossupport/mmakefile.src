@@ -42,7 +42,7 @@ CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
 
 
 #MM linklibs : setup includes
-linklibs : $(LIB)
+linklibs : show-cflags $(LIB)
 
 #MM
 setup :
@@ -59,7 +59,7 @@ clean ::
 $(INCDIR)/aros/%.h: include/%.h
 	$(CP) $< $@
 
-$(LIB) : show_cflags $(OBJS)
+$(LIB) : $(OBJS)
 	%mklib_q
 
 show_cflags :
