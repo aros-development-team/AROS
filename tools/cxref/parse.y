@@ -203,7 +203,7 @@ declaration
 
 declaration_specifiers
     	: declaration_specifiers1
-                { if(!in_typedef && !in_function && !common_comment)
+                { if(!in_structunion && !in_typedef && !in_function && !common_comment)
                   {common_comment=CopyString(GetCurrentComment()); SetCurrentComment(common_comment);} }
 	;
 
@@ -249,29 +249,28 @@ initialized_declarator
                     if(in_function==3)
                        DownScope();
                    }
+                 else if(in_function==2)
+                    SeenFunctionArg(current->name,ConcatStrings(3,current->qual,current->type,$1));
                  else
-                    if(in_function==2)
-                       SeenFunctionArg(current->name,ConcatStrings(3,current->qual,current->type,$1));
+                   {
+                    char* vname=strstr($1,current->name);
+                    if(vname[strlen(current->name)]!='(' && IsATypeName(current->type)!='f')
+                      {
+                       if((in_funcbody==0 || scope&EXTERN_F) && !in_structunion && !(in_header==GLOBAL && scope&EXTERN_H))
+                          SeenVariableDefinition(current->name,ConcatStrings(3,current->qual,current->type,$1),SCOPE);
+                       else
+                          if(in_funcbody)
+                             SeenScopeVariable(current->name);
+                      }
                     else
                       {
-                       char* vname=strstr($1,current->name);
-                       if(vname[strlen(current->name)]!='(' && IsATypeName(current->type)!='f')
-                         {
-                          if((in_funcbody==0 || scope&EXTERN_F) && !in_structunion && !(in_header==GLOBAL && scope&EXTERN_H))
-                             SeenVariableDefinition(current->name,ConcatStrings(3,current->qual,current->type,$1),SCOPE);
-                          else
-                             if(in_funcbody)
-                                SeenScopeVariable(current->name);
-                         }
-                       else
-                         {
-                          SeenFunctionProto(current->name,in_funcbody);
-                          if(in_function==3)
-                             DownScope();
-                         }
+                       SeenFunctionProto(current->name,in_funcbody);
+                       if(in_function==3)
+                          DownScope();
                       }
+                   }
 
-                 if(in_function==3) in_function=0;
+                 if(in_function==3 && !in_structunion) in_function=0;
                 }
 	;
 
@@ -697,7 +696,7 @@ component_declarator
 
 simple_component
 	: declarator
-                { if(in_function==2) { DownScope(); pop(); in_function=0; } }
+                { if(in_function==2 && !in_structunion) { DownScope(); pop(); in_function=0; } }
 	;
 
 bit_field
@@ -762,7 +761,7 @@ function_specifier1
 
 function_declarator
 	: function_declarator0
-                { push(); in_function=2; }
+                { if(!in_structunion) { push(); in_function=2; } }
 	;
 
 function_declarator0
@@ -776,24 +775,26 @@ function_declarator0
 
 function_direct_declarator
 	: function_declarator1 '('
-                { push(); if(in_function==0) UpScope();
-                  if(in_function==0 && !in_funcdef) in_function=1; if(in_function!=3) in_funcdef++; }
+                { if(!in_structunion)
+                  { push(); if(in_function==0) UpScope();
+                    if(in_function==0 && !in_funcdef) in_function=1; if(in_function!=3) in_funcdef++; } }
           function_declarator2 ')'
-                { pop();  if(in_function!=3) in_funcdef--; if(in_funcdef==0) in_function=3;
+                { if(!in_structunion)
+                    { pop();  if(in_function!=3) in_funcdef--; if(in_funcdef==0) in_function=3; }
                   $$=ConcatStrings(4,$1,$2,$4,$5); }
 	;
 
 function_declarator1
 	: direct_declarator
                 {
-                  if(!in_funcdef && !in_function && !in_funcbody) SeenFunctionDeclaration(current->name,SCOPE);
+                  if(!in_funcdef && !in_function && !in_funcbody && !in_structunion) SeenFunctionDeclaration(current->name,SCOPE);
                   in_type_spec=0;
                 }
 	;
 
 function_declarator2
 	: /* Empty */
-                { if(in_function==1 && in_funcdef==1) SeenFunctionArg("void","void");
+                { if(in_function==1 && in_funcdef==1 && !in_structunion) SeenFunctionArg("void","void");
                   if(in_structunion) $$=NULL; else $$="void"; }
 	| parameter_type_list
 	| identifier_list
@@ -801,25 +802,25 @@ function_declarator2
 
 identifier_list
 	: IDENTIFIER
-                { if(in_function==1 && in_funcdef==1 && in_funcbody==0) { SeenFunctionArg($1,NULL); SeenScopeVariable($1); } }
+                { if(in_function==1 && in_funcdef==1 && in_funcbody==0 && !in_structunion) { SeenFunctionArg($1,NULL); SeenScopeVariable($1); } }
 	| identifier_list ',' IDENTIFIER
-                { if(in_function==1 && in_funcdef==1 && in_funcbody==0) { SeenFunctionArg($3,NULL); SeenScopeVariable($3); }
+                { if(in_function==1 && in_funcdef==1 && in_funcbody==0 && !in_structunion) { SeenFunctionArg($3,NULL); SeenScopeVariable($3); }
                   $$=ConcatStrings(3,$1,$2,$3); }
 	;
 
 parameter_type_list
 	: parameter_list
 	| parameter_list ',' ELLIPSES
-                { if(in_function==1 && in_funcdef==1 && in_funcbody==0) SeenFunctionArg($3,$3);
+                { if(in_function==1 && in_funcdef==1 && in_funcbody==0 && !in_structunion) SeenFunctionArg($3,$3);
                   $$=ConcatStrings(3,$1,$2,$3); }
 	;
 
 parameter_list
 	: parameter_declaration
-                { if(in_function==1 && in_funcdef==1 && in_funcbody==0) SeenFunctionArg(strcmp("void",$1)?current->name:"void",$1);
+                { if(in_function==1 && in_funcdef==1 && in_funcbody==0 && !in_structunion) SeenFunctionArg(strcmp("void",$1)?current->name:"void",$1);
                   in_type_spec=0; }
 	| parameter_list ',' parameter_declaration
-                { if(in_function==1 && in_funcdef==1 && in_funcbody==0) SeenFunctionArg(current->name,$3);
+                { if(in_function==1 && in_funcdef==1 && in_funcbody==0 && !in_structunion) SeenFunctionArg(current->name,$3);
                   in_type_spec=0; $$=ConcatStrings(3,$1,$2,$3); }
 	;
 
