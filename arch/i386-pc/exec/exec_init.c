@@ -578,6 +578,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
      */
     if (!exec_check_base())
     {
+        ULONG   negsize = 0;             /* size of vector table */
+        void  **fp      = ExecFunctions; /* pointer to a function in the table */
+        
         rkprintf("Reallocating ExecBase...");
         /*
          * If we managed to reach this point, it means that there was no ExecBase in
@@ -587,22 +590,25 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * substrating from it the offset of lowet vector used by Exec. This way the ExecBase
          * Will be placed in the lowes address possible with fitting all functions :)
          */
+        
+        /* Calculate the size of the vector table */
+        while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
 
-        ExecBase=(struct ExecBase *)0x00002000; /* Got ExecBase at the lowest possible addr */
-        (ULONG)ExecBase+= 137 * LIB_VECTSIZE;   /* Substract lowest vector so jumpable would fit */
+        ExecBase = (struct ExecBase *) 0x00002000; /* Got ExecBase at the lowest possible addr */
+        ExecBase += negsize;   /* Substract lowest vector so jumpable would fit */
 
         /* Check whether we have some FAST memory,
          * If not, then use calculated ExecBase */
         if ((extmem = exec_RamCheck_fast()))
         {
             /* We have found some FAST memory. Let's use it for ExecBase */
-            ExecBase=(struct ExecBase *)0x01000000;
-            (ULONG)ExecBase+= 137 * LIB_VECTSIZE;
-
+            ExecBase = (struct ExecBase *) 0x01000000;
+            ExecBase += negsize;
+            
             /* Now we will clear FAST memory. */
 	    /* Disabled due to taking to much time on P4 machines */
 	    rkprintf("Clearing FastMem...");
-
+            
 	    bzero((void *)0x01000000, extmem - 0x01000000);
         }
 
