@@ -15,4 +15,5 @@ LONG rxsupp_getarg(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_getpkt(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_openport(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_reply(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_showdir(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_waitpkt(struct Library *, struct RexxMsg *, UBYTE **);

@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <dos/dosextens.h>
 #include <aros/libcall.h>
 #include <aros/debug.h>
 
@@ -34,14 +35,21 @@
 #define SysBase LC_SYSBASE_FIELD(lh)
 
 struct RxsLib *RexxSysBase;
+struct DosLibrary *DOSBase;
 int errno;
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     NewList(&RSBI(lh)->openports);
+    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+    if (DOSBase == NULL)
+	return FALSE;
     RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library", 0);
     if (RexxSysBase == NULL)
+    {
+	CloseLibrary((struct Library *)DOSBase);
         return FALSE;
+    }
     else
         return TRUE;
 }
