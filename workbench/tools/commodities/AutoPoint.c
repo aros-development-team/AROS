@@ -208,6 +208,8 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	tmpLibTable++;
     }
 
+    activateFunc = autoActivate;
+
     if (Cli() != NULL)
     {
 	struct RDArgs *rda;
@@ -225,10 +227,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	    {
 		activateFunc = autoActivateLag;
 	    }
-	    else
-	    {
-		activateFunc = autoActivate;
-	    }
+
 	}
 
 	FreeArgs(rda);
@@ -242,6 +241,12 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	    UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
 	    
 	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+	    
+	    if (ArgString(array, "LAG", 0))
+	    {
+	    	activateFunc = autoActivateLag;
+	    }
+	    
 	    ArgArrayDone();
 	}
 	else
@@ -252,7 +257,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
 	CloseLibrary(IconBase);
     }
-    
+
     nb.nb_Name = getCatalog(catalogPtr, MSG_AUTOPOINT_CXNAME);
     nb.nb_Title = getCatalog(catalogPtr, MSG_AUTOPOINT_CXTITLE);
     nb.nb_Descr = getCatalog(catalogPtr, MSG_AUTOPOINT_CXDESCR);
