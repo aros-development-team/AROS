@@ -615,6 +615,21 @@ ULONG prot_u2a(mode_t protect)
 
 /*********************************************************************************************/
 
+static BOOL check_volume(struct filehandle *fh, struct emulbase *emulbase)
+{
+    if (fh->volume == emulbase->current_volume) return TRUE;
+    
+    if (chdir(fh->volume) == 0)
+    {
+    	emulbase->current_volume = fh->volume;
+	return TRUE;
+    }
+    
+    return FALSE;
+}
+
+/*********************************************************************************************/
+
 /* Free a filehandle */
 static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
@@ -660,6 +675,9 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     struct filehandle *fh;
     struct stat st;
     long flags;
+
+    if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+    
     fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(fh!=NULL)
     {
@@ -674,10 +692,15 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	    fh->type=FHD_FILE;
 	    fh->fd=(*handle)->fd;
 	    fh->name="";
+	    fh->volume=NULL;
+	    fh->volumename=NULL;
 	    *handle=fh;
 	    return 0;
 	}
 
+	fh->volume=(*handle)->volume;
+    	fh->volumename=(*handle)->volumename;
+	
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
 	if (!ret)
 	{
@@ -730,6 +753,9 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     struct filehandle *fh;
     mode_t prot;
     long flags;
+
+    if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(fh!=NULL)
     {
@@ -744,9 +770,13 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 	    fh->type=FHD_FILE;
 	    fh->fd=(*handle)->fd;
 	    fh->name="";
+	    fh->volume=0;
 	    *handle=fh;
 	    return 0;
 	}
+
+	fh->volume=(*handle)->volume;
+    	fh->volumename=(*handle)->volumename;
 
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
 	if (!ret)
@@ -782,13 +812,18 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     LONG ret = 0;
     struct filehandle *fh;
 
+    if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if (fh)
     {
-        fh->pathname = NULL; /* just to make sure... */
-	fh->name     = NULL;
-        fh->DIR      = NULL;
-	fh->fd       = 0;
+        fh->pathname   = NULL; /* just to make sure... */
+	fh->name       = NULL;
+        fh->DIR        = NULL;
+	fh->fd         = 0;
+	fh->volume     = (*handle)->volume;
+    	fh->volumename =(*handle)->volumename;
+	
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
 	if (!ret)
 	{
@@ -819,6 +854,8 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
     LONG ret = 0;
     char *filename = NULL;
     struct stat st;
+
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
     ret = makefilename(emulbase, &filename, fh->name, file);
     if (!ret)
@@ -858,21 +895,28 @@ static LONG startup(struct emulbase *emulbase)
 	fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	if(fhi!=NULL)
 	{
-            fhi->pathname = NULL; /* just to make sure... */
-            fhi->DIR      = NULL;
-	
+            fhi->pathname   = NULL; /* just to make sure... */
+            fhi->DIR        = NULL;
+	    fhi->volume     = NULL;
+	    fhi->volumename = NULL;
+	    
 	    fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	    if(fho!=NULL)
 	    {
-                fho->pathname = NULL; /* just to make sure... */
-                fho->DIR      = NULL;
-
+                fho->pathname   = NULL; /* just to make sure... */
+                fho->DIR        = NULL;
+    	    	fho->volume     = NULL;
+		fho->volumename = NULL;
+		
 		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		if(fhe!=NULL)
 		{
-                    fhe->pathname = NULL; /* just to make sure... */
-                    fhe->DIR      = NULL;
-		    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+                    fhe->pathname   = NULL; /* just to make sure... */
+                    fhe->DIR        = NULL;
+		    fhe->volume     = NULL;
+		    fhe->volumename = NULL;
+
+		    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle) + 256 + AROS_WORSTALIGN, MEMF_PUBLIC);
 		    if(fhv != NULL)
 		    {
 			struct stat st;
@@ -881,15 +925,19 @@ static LONG startup(struct emulbase *emulbase)
 			fhv->type = FHD_DIRECTORY;
                         fhv->pathname = NULL; /* just to make sure... */
                         fhv->DIR      = NULL;
-
+    	    	    	fhv->volume=(char *)(fhv + 1);
+			
 			/* Make sure that the root directory is valid */
-			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
+			if(getcwd(fhv->volume, 256) && !stat(fhv->name,&st) && S_ISDIR(st.st_mode))
 			{
 			    #define DEVNAME "EMU"
 			    #define VOLNAME "Workbench"
 			    
 			    static const char *devname = DEVNAME;
 			    static const char *volname = VOLNAME;
+
+    	    	    	    fhv->volumename = VOLNAME;
+			    emulbase->current_volume = fhv->volume;
 			    
 			    fhv->fd = (long)opendir(fhv->name);
 
@@ -1078,6 +1126,8 @@ static LONG examine(struct emulbase *emulbase,
     if(next>end) /* > is correct. Not >= */
 	return ERROR_BUFFER_OVERFLOW;
 
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     if(lstat(*fh->name?fh->name:".",&st))
       return err_u2a();
     
@@ -1160,7 +1210,7 @@ static LONG examine(struct emulbase *emulbase,
 	    
 	case ED_NAME:
 	    ead->ed_Name=next;
-	    last=name=is_root_filename(fh->name)?"Workbench":fh->name;
+	    last=name=is_root_filename(fh->name)?fh->volumename:fh->name;
 
             /* do not show the "." but "" instead */
 	    if (last[0] == '.' && last[1] == '\0')
@@ -1195,6 +1245,9 @@ static LONG examine_next(struct emulbase *emulbase,
     DIR		  *ReadDIR;
     /* first of all we have to go to the position where Examine() or
        ExNext() stopped the previous time so we can read the next entry! */
+ 
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     switch(fh->type)
     {
     case FHD_DIRECTORY:
@@ -1302,6 +1355,9 @@ static LONG examine_all(struct emulbase *emulbase,
 
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
+
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     for(;;)
     {
 	oldpos=telldir((DIR *)fh->fd);
@@ -1357,6 +1413,8 @@ static LONG create_hardlink(struct emulbase *emulbase,
     LONG error=0L;
     struct filehandle *fh;
 
+    if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if (!fh)
       return ERROR_NO_FREE_STORE;
@@ -1387,6 +1445,8 @@ static LONG create_softlink(struct emulbase * emulbase,
 {
     LONG error=0L;
     struct filehandle *fh;
+
+    if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
     fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(!fh)
@@ -1420,6 +1480,8 @@ static LONG rename_object(struct emulbase * emulbase,
 
     char *filename = NULL , *newfilename = NULL;
 
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     ret = makefilename(emulbase, &filename, fh->name, file);
     if (!ret)
     {
@@ -1442,6 +1504,8 @@ static LONG read_softlink(struct emulbase *emulbase,
                           STRPTR buffer,
                           ULONG size)
 {
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
     if (readlink(fh->name, buffer, size-1) == -1)
         return err_u2a();
 
@@ -1521,6 +1585,64 @@ AROS_UFH3(struct emulbase *, AROS_SLIB_ENTRY(init,emul_handler),
 
 /*********************************************************************************************/
 
+static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
+{
+    struct filehandle 	*fhv;
+    struct DosList  	*doslist;
+    struct stat     	 st;
+    char    	    	*unixpath;
+    
+    ObtainSemaphore(&emulbase->sem);
+
+    /* Volume name and Unix path are encoded into DEVICE entry of
+       MountList like this: <volumename>:<unixpath> */
+       
+    unixpath = iofs->io_Union.io_OpenDevice.io_DeviceName;
+    unixpath = strchr(unixpath, ':');
+    
+    if (unixpath)
+    {
+    	*unixpath++ = '\0';
+	
+	if (!stat(unixpath, &st))
+	{
+	    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+	    if (fhv != NULL)
+	    {
+		fhv->name       = ".";
+		fhv->type       = FHD_DIRECTORY;
+        	fhv->pathname   = NULL; /* just to make sure... */
+        	fhv->DIR        = NULL;
+    		fhv->volume     = unixpath;
+		fhv->volumename = iofs->io_Union.io_OpenDevice.io_DeviceName;
+
+		if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
+		{
+		    doslist->dol_Unit=(struct Unit *)fhv;
+		    doslist->dol_Device=&emulbase->device;
+		    AddDosEntry(doslist);
+
+		    iofs->IOFS.io_Unit   = (struct Unit *)fhv;
+		    iofs->IOFS.io_Device = &emulbase->device;
+
+    		    ReleaseSemaphore(&emulbase->sem);
+
+		    return TRUE;
+		}
+
+		FreeMem(fhv, sizeof(struct filehandle));
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&emulbase->sem);
+    
+    return FALSE;
+    
+}
+
+/*********************************************************************************************/
+
 AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),
  AROS_LHA(ULONG,              unitnum, D0),
@@ -1544,6 +1666,16 @@ AROS_LH3(void, open,
     }
 
    /* I have one more opener. */
+    emulbase->device.dd_Library.lib_OpenCnt++;
+    if (emulbase->device.dd_Library.lib_OpenCnt > 1)
+    {
+    	if (!new_volume(iofs, emulbase))
+	{
+		iofs->IOFS.io_Error = -1;
+    	    	emulbase->device.dd_Library.lib_OpenCnt--;
+		return;
+	}
+    }
     emulbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
     /* Set returncode */
@@ -1562,6 +1694,8 @@ AROS_LH1(BPTR, close,
 {
     AROS_LIBFUNC_INIT
 
+    emulbase->device.dd_Library.lib_OpenCnt--;
+    
     /* Let any following attemps to use the device crash hard. */
     iofs->IOFS.io_Device=(struct Device *)-1;
     return 0;
