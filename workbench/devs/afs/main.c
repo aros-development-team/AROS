@@ -185,16 +185,16 @@ LONG retval;
 			error=0;
 			switch (iofs->IOFS.io_Command)
 			{
-			case (UWORD)-1 :
+/*			case (UWORD)-1 :
 				iofs->IOFS.io_Unit = (struct Unit *)(&initVolume
 					(
 						afsbase,
 						iofs->IOFS.io_Device,
 						iofs->io_Union.io_OpenDevice.io_DeviceName,
 						iofs->io_Union.io_OpenDevice.io_Unit,
-						(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ
+						(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
+						&iofs->io_DosError
 					)->ah);
-				iofs->io_DosError = error;
 				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
 				continue;
 			case (UWORD)-2 :
@@ -210,7 +210,7 @@ LONG retval;
 				}
 				iofs->io_DosError = error;
 				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
-				continue;
+				continue;*/
 			case FSA_OPEN : //locateObject, findupdate, findinput
 				iofs->IOFS.io_Unit=(struct Unit *)openf
 					(

@@ -17,8 +17,6 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
-extern LONG error;
-
 /*******************************************
  Name  : initDeviceList
  Descr.: initializes a devicelist structure
@@ -130,6 +128,7 @@ LONG newMedium(struct afsbase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 
+#warning TODO disk in drive check
 	if ((blockbuffer=getBlock(afsbase, volume,0))==0)
 		return ERROR_UNKNOWN;
 	volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
@@ -159,11 +158,11 @@ UWORD i;
 	return 0;
 }
 
-struct Volume *initVolume(struct afsbase *afsbase, struct Device *device, STRPTR blockdevice, ULONG unit, struct DosEnvec *devicedef) {
+struct Volume *initVolume(struct afsbase *afsbase, struct Device *device, STRPTR blockdevice, ULONG unit, struct DosEnvec *devicedef, ULONG *error) {
 struct Volume *volume;
 
 	if (!(volume=AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR))) {
-		error=ERROR_NO_FREE_STORE;
+		*error=ERROR_NO_FREE_STORE;
 		return 0;
 	}
 	volume->device=device;
@@ -175,7 +174,7 @@ struct Volume *volume;
 	else
 		volume->bootblocks=devicedef->de_Reserved;
 	if (!(volume->blockcache=initCache(afsbase, volume, devicedef->de_NumBuffers))) {
-		error=ERROR_NO_FREE_STORE;
+		*error=ERROR_NO_FREE_STORE;
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -185,7 +184,7 @@ struct Volume *volume;
 		return 0;
 	}
 	if (!(volume->iorequest=(struct IOExtTD *)CreateIORequest(volume->ioport,sizeof(struct IOExtTD)))) {
-		error=ERROR_NO_FREE_STORE;
+		*error=ERROR_NO_FREE_STORE;
 		FreeMem(volume,sizeof(struct Volume));
 		return 0;
 	}
@@ -208,8 +207,8 @@ struct Volume *volume;
 			devicedef->de_LowCyl*
 			devicedef->de_Surfaces*
 			devicedef->de_BlocksPerTrack;
-	error=newMedium(afsbase, volume);
-	if (error)
+	*error=newMedium(afsbase, volume);
+	if (*error)
 	{
 		uninitVolume(afsbase, volume);
 		volume=0;
