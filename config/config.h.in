@@ -19,6 +19,8 @@
 #define AROS_DEFAULT_WBHEIGHT		@aros_default_wbheight@
 #define AROS_DEFAULT_WBDEPTH		@aros_default_wbdepth@
 
+#define AROS_VMWARE_HACK		@aros_vmware_hack@
+
 #define USE_XSHM	@HAVE_XSHM_SUPPORT@
 
 #endif /* AROS_CONFIG_H */

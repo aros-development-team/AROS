@@ -38,6 +38,7 @@
 #include <linux/config.h>
 #include <errno.h>
 #include <aros/boot.h>
+#include <aros/config.h>
 
 #define MINIX_HEADER 32
 
@@ -45,14 +46,6 @@
 #ifndef __BFD__
 static int GCC_HEADER = sizeof(struct exec);
 #endif
-
-/*
-** Ugly hack to make vmware happy
-** Define this to pad the output to exactly 1474560 bytes,
-** which means you can point vmware to the aros.bin
-** directly as a floppy image
-*/
-#undef VMWARE_HACK
 
 #define SYS_SIZE DEF_SYSSIZE << 5
 
@@ -113,11 +106,16 @@ void usage(void)
 
 int main(int argc, char ** argv)
 {
-	int i,c,id,sz,tmp_int;
-	unsigned long sys_size, tmp_long;
+	int i,c,id,sz;
+	unsigned long sys_size;
 	char buf[1024];
 #ifndef __BFD__
 	struct exec *ex = (struct exec *)buf;
+#endif
+
+#if AROS_VMWARE_HACK == 1
+	int tmp_int;
+	unsigned long tmp_long;
 #endif
 	struct stat sb;
 	unsigned char setup_sectors;
@@ -235,7 +233,7 @@ int main(int argc, char ** argv)
 	}
 	close(id);
 
-#ifdef VMWARE_HACK
+#if AROS_VMWARE_HACK == 1
 	/* Yes this is ugly, but I am tired */
 	fprintf(stderr,"Padding for VMWare\n");
 	tmp_long = lseek(1,0,SEEK_CUR);

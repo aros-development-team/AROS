@@ -246,6 +246,9 @@ aros_debug_aflags=""
 aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
 
+# Native flavour stuff
+aros_vmware_hack="0"
+
 # Check for some includes
 AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
 
@@ -404,7 +407,7 @@ fi
 
 AROS_CACHE_CHECK(for the system include path,target_incl,[
 AC_ARG_ENABLE(includes,
-[  --enable-includes=dir  Alternative system include directory],
+[  --enable-includes=dir   Alternative system include directory],
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 ])
 
@@ -435,6 +438,14 @@ AC_MSG_RESULT("$aros_default_wbwidth x $aros_default_wbheight x $aros_default_wb
 aros_cv_default_wbwidth=$aros_default_wbwidth
 aros_cv_default_wbheight=$aros_default_wbheight
 aros_cv_default_wbdepth=$aros_default_wbdepth
+
+dnl See if the user wants the VMWare hack for native flavour
+AC_MSG_CHECKING([if vmware hack is enabled])
+AC_ARG_ENABLE(vmware_hack,[  --enable-vmware-hack    Enable a hack on the kernel output in native [default=no]],vmware_hack="yes",vmware_hack="no")
+if test "$vmware_hack" = "yes" ; then
+    aros_vmware_hack="1"
+fi
+AC_MSG_RESULT("$vmware_hack")
 
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
@@ -490,6 +501,9 @@ AC_SUBST(aros_default_wbwidth)
 AC_SUBST(aros_default_wbheight)
 AC_SUBST(aros_default_wbdepth)
 AC_SUBST(HAVE_XSHM_SUPPORT)
+
+# Native version related
+AC_SUBST(aros_vmware_hack)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
