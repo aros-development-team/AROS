@@ -94,6 +94,8 @@ BUG000013
 srittau@aros.org
 Moria3D segfaults with a fp exception while "Loading Fading..." on an
 i486 with internal fpu.
+This is because you can't operate on floats anymore, maybe FPU has been
+disabled.
 
 BUG000014
 klaus21@t-online.de
