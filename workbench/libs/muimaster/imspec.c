@@ -63,29 +63,27 @@ const static UWORD gridpattern2[] = {
     0x1111,
 };
 
-typedef const UWORD (*PatternPtr)[];
-
 typedef struct {
     MPen bg;
     MPen fg;
-    PatternPtr ppattern;
+    const UWORD *pattern;
 } MPattern;
 
 const static MPattern patternPens[] = {
-    { MPEN_SHADOW,     MPEN_BACKGROUND, &gridpattern1 }, /* MUII_SHADOWBACK     */
-    { MPEN_SHADOW,     MPEN_FILL      , &gridpattern1 }, /* MUII_SHADOWFILL     */
-    { MPEN_SHADOW,     MPEN_SHINE     , &gridpattern1 }, /* MUII_SHADOWSHINE    */
-    { MPEN_FILL,       MPEN_BACKGROUND, &gridpattern1 }, /* MUII_FILLBACK       */
-    { MPEN_FILL,       MPEN_SHINE     , &gridpattern1 }, /* MUII_FILLSHINE      */
-    { MPEN_SHINE,      MPEN_BACKGROUND, &gridpattern1 }, /* MUII_SHINEBACK      */
-    { MPEN_FILL,       MPEN_BACKGROUND, &gridpattern2 }, /* MUII_FILLBACK2      */
-    { MPEN_HALFSHINE,  MPEN_BACKGROUND, &gridpattern1 }, /* MUII_HSHINEBACK     */
-    { MPEN_HALFSHADOW, MPEN_BACKGROUND, &gridpattern1 }, /* MUII_HSHADOWBACK    */
-    { MPEN_HALFSHINE,  MPEN_SHINE     , &gridpattern1 }, /* MUII_HSHINESHINE    */
-    { MPEN_HALFSHADOW, MPEN_SHADOW    , &gridpattern1 }, /* MUII_HSHADOWSHADOW  */
-    { MPEN_MARK,       MPEN_SHINE     , &gridpattern1 }, /* MUII_MARKSHINE      */
-    { MPEN_MARK,       MPEN_HALFSHINE , &gridpattern1 }, /* MUII_MARKHALFSHINE  */
-    { MPEN_MARK,       MPEN_BACKGROUND, &gridpattern1 }, /* MUII_MARKBACKGROUND */
+    { MPEN_SHADOW,     MPEN_BACKGROUND, gridpattern1 }, /* MUII_SHADOWBACK     */
+    { MPEN_SHADOW,     MPEN_FILL      , gridpattern1 }, /* MUII_SHADOWFILL     */
+    { MPEN_SHADOW,     MPEN_SHINE     , gridpattern1 }, /* MUII_SHADOWSHINE    */
+    { MPEN_FILL,       MPEN_BACKGROUND, gridpattern1 }, /* MUII_FILLBACK       */
+    { MPEN_FILL,       MPEN_SHINE     , gridpattern1 }, /* MUII_FILLSHINE      */
+    { MPEN_SHINE,      MPEN_BACKGROUND, gridpattern1 }, /* MUII_SHINEBACK      */
+    { MPEN_FILL,       MPEN_BACKGROUND, gridpattern2 }, /* MUII_FILLBACK2      */
+    { MPEN_HALFSHINE,  MPEN_BACKGROUND, gridpattern1 }, /* MUII_HSHINEBACK     */
+    { MPEN_HALFSHADOW, MPEN_BACKGROUND, gridpattern1 }, /* MUII_HSHADOWBACK    */
+    { MPEN_HALFSHINE,  MPEN_SHINE     , gridpattern1 }, /* MUII_HSHINESHINE    */
+    { MPEN_HALFSHADOW, MPEN_SHADOW    , gridpattern1 }, /* MUII_HSHADOWSHADOW  */
+    { MPEN_MARK,       MPEN_SHINE     , gridpattern1 }, /* MUII_MARKSHINE      */
+    { MPEN_MARK,       MPEN_HALFSHINE , gridpattern1 }, /* MUII_MARKHALFSHINE  */
+    { MPEN_MARK,       MPEN_BACKGROUND, gridpattern1 }, /* MUII_MARKBACKGROUND */
 };
 
 #define PATTERN_COUNT (MUII_LASTPAT - MUII_BACKGROUND + 1)
@@ -715,7 +713,7 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	    SetDrMd(rp, JAM2);
 	    SetAPen(rp, fg);
 	    SetBPen(rp, bg);
-	    SetAfPt(rp, *(patternPens[spec->u.pattern].ppattern), 1);
+	    SetAfPt(rp, patternPens[spec->u.pattern].pattern, 1);
 	    RectFill(rp, left, top, right, bottom);
 	    SetAfPt(rp, NULL, 0);
 	}
