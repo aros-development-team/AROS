@@ -60,7 +60,7 @@
     SystemTagList()
 
     INTERNALS
-    
+
     To get the right result, the function ExecCommand() (used by both Execute()
     and SystemTagList()) uses NP_Synchronous to wait for the commands to
     finish. This is not the way AmigaOS does it as NP_Synchronous is not
@@ -76,16 +76,25 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *, DOSBase)
 
-    LONG   result;
+    LONG           result;
+    struct TagItem tags[] =
+    {
+        { SYS_Asynch,     FALSE        },
+	{ SYS_Background, FALSE        },
+	{ SYS_Input,      (IPTR)input  },
+	{ SYS_Output,     (IPTR)output },
+	{ SYS_Error,      (IPTR)NULL   },
+	{ TAG_DONE,       0            }
+    };
 
-    result = ExecCommand(RUN_EXECUTE, string, "c:shell", input, output, NULL,
-			 DOSBase);
-    
+
+    result = SystemTagList(string, tags);
+
     if(result == 0)
 	return DOSTRUE;
     else
 	return DOSFALSE;
-    
+
     AROS_LIBFUNC_EXIT
 } /* Execute */
 

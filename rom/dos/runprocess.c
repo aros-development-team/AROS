@@ -152,19 +152,19 @@ int main (int argc, char ** argv)
     struct DosLibrary DosBase;
 
     sss.stk_Lower = teststack;
-    sss.stk_Upper = &teststack[sizeof(teststack) / sizeof(stackstack[0])];
+    sss.stk_Upper = &teststack[sizeof(teststack) / sizeof(teststack[0])];
     sss.stk_Pointer = sss.stk_Upper;
 
     DosBase.dl_SysBase = (struct ExecBase *)0x0bad0bad;
 
     printf ("Stack=%p\n", &ret);
-    
+
     argstr = "Hello world.";
-    
+
     len = strlen (argstr);
 
     ret = RunProcess (NULL,
-	&sss, 
+	&sss,
 	argstr,
 	len,
 	(LONG_FUNC)DemoProc,
@@ -178,7 +178,7 @@ int main (int argc, char ** argv)
 	printf("Test ok.\n");
     else
 	printf("Test failed.\n");
-    
+
     return 0;
 }
 

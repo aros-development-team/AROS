@@ -38,7 +38,7 @@ ULIBNAME := Dos
 OSMODULE  := dos.library
 IMAGE_TYPES := aos aout elf
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
-	     filesystem_support match_misc execcommand rootnode \
+	     filesystem_support match_misc newcliproc rootnode \
 	     patternmatching \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
@@ -48,7 +48,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     cliinitrun close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
 	     deletevar deviceproc displayerror dopkt dosgetstring dosgetlocalizedstring \
-	     duplock endnotify errorreport exall exallend examine execute exit exnext \
+	     duplock endnotify error errorreport exall exallend examine execute exit exnext \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
@@ -61,7 +61,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     open openfromlock output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
-	     replypkt runcommand samedevice samelock seek selectinput \
+	     replypkt runcommand samedevice samelock seek selecterror selectinput \
 	     selectoutput sendpkt setargstr setcomment setconsoletask \
 	     setcurrentdirname setfiledate setfilesize setfilesystask \
 	     setioerr setmode setowner setprogramdir setprogramname \

@@ -1,0 +1,32 @@
+
+/*
+    (C) 2000-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
+#ifndef  DOS_NEWCLIPROC_H
+#define  DOS_NEWCLIPROC_H
+
+#include <exec/execbase.h>
+#include <aros/asmcall.h>
+
+struct CliStartupMessage
+{
+    struct Message csm_Msg;
+    BPTR           csm_ShellSeg;
+    BOOL           csm_Background;
+    BOOL           csm_Asynch;
+    BPTR           csm_CurrentInput;
+    LONG           csm_ReturnCode;
+    LONG           csm_CliNumber;
+};
+
+AROS_UFP3(LONG, NewCliProc,
+AROS_UFPA(char *,argstr,A0),
+AROS_UFPA(ULONG,argsize,D0),
+AROS_UFPA(struct ExecBase *,SysBase,A6));
+
+#endif /* DOS_NEWCLIPROC_H */

@@ -30,8 +30,7 @@ void internal_ChildFree(APTR tid);
 #include <aros/debug.h>
 
 /* Temporary macro */
-#define P(x)   
-
+#define P(x) 
 /*****************************************************************************
 
     NAME */
@@ -123,20 +122,20 @@ void internal_ChildFree(APTR tid);
     if (__is_process(me))
     {
 	struct CommandLineInterface *cli = Cli();
-	
+
 	if (cli)
 	{
     	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-	
+
 	    if (parentstack > AROS_STACKSIZE)
 	    {
 	        defaults[9].ti_Data = parentstack;
 	    }
 	}
     }
-    
+
     ApplyTagChanges(defaults, tags);
-    
+
     process = (struct Process *)AllocMem(sizeof(struct Process),
 					 MEMF_PUBLIC | MEMF_CLEAR);
     ENOMEM_IF(process == NULL);
@@ -186,25 +185,30 @@ void internal_ChildFree(APTR tid);
 
 	oldpath = NULL;
 	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
-	
+
 	if (__is_process(me))
 	{
 	    struct CommandLineInterface *oldcli = Cli();
 
 	    if (oldcli != NULL)
 	    {
+		LONG oldlen = AROS_BSTR_strlen(oldcli->cli_Prompt);
+		LONG newlen = GetTagData(ADO_PromptLen, 255, tags);
+
 		oldpath = BADDR(oldcli->cli_CommandDir);
+
+		CopyMem(BADDR(oldcli->cli_Prompt), BADDR(cli->cli_Prompt), (newlen<oldlen?newlen:oldlen) + 1);
 	    }
 	}
 
 	newpath = &cli->cli_CommandDir;
-	
+
 	/* Add substitute for lock chain */
 	while (oldpath != NULL)
 	{
 	    nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
 	    ENOMEM_IF(nextpath == NULL);
-	    
+
 	    newpath[0]  = MKBADDR(nextpath);
 	    nextpath[1] = DupLock(oldpath[1]);
 	    ERROR_IF(!nextpath[1]);
@@ -215,7 +219,7 @@ void internal_ChildFree(APTR tid);
     }
 
     /* NP_Input */
-    
+
     if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if (__is_process(me))
@@ -294,7 +298,7 @@ void internal_ChildFree(APTR tid);
 
 /*  process->pr_ReturnAddr; */
     NEWLIST(&process->pr_Task.tc_MemEntry);
-    
+
     memlist->ml_NumEntries = 3;
     memlist->ml_ME[0].me_Addr = process;
     memlist->ml_ME[0].me_Length = sizeof(struct Process);
