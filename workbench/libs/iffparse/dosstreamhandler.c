@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: DOS stream handler. Used in InitIFFasDOS.
-    Lang: English.
+    DOS stream handler. Used in InitIFFasDOS.
 */
+
 #define DEBUG 0
 #include <aros/debug.h>
 #include "iffparse_intern.h"

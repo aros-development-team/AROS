@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Basic help functions needed by iffparse.
-    Lang: English.
+    Basic help functions needed by iffparse.
 */
+
 #define DEBUG 0
 #include <aros/debug.h>
 #include "iffparse_intern.h"

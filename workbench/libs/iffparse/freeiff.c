@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #define AROS_ALMOST_COMPATIBLE
 #include "iffparse_intern.h"
 
@@ -38,8 +36,6 @@
 	AllocIFF(), CloseIFF()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

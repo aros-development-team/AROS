@@ -1,12 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Handler installed by StopChunk() and StopOnExit()
-    Lang: English.
+    Handler installed by StopChunk() and StopOnExit()
 */
-#include "iffparse_intern.h"
 
+#include "iffparse_intern.h"
 
 /***************************/
 /* StopChunk entry-handler */
