@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal header file for workbench library
@@ -86,7 +86,7 @@ struct WorkbenchBase {
 
 /* Quick macros for obtaining and releasing the semaphore. */
 #define LockWorkbench()   (ObtainSemaphore( &(WorkbenchBase->wb_Semaphore) ))
-#define UnlockWorkbench() (ObtainSemaphore( &(WorkbenchBase->wb_Semaphore) ))
+#define UnlockWorkbench() (ReleaseSemaphore( &(WorkbenchBase->wb_Semaphore) ))
 
 /*
  * Defintion of internal structures.
