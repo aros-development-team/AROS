@@ -136,7 +136,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -254,7 +254,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -283,7 +283,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     if (data->mnd_NotifyList == NULL)
 	return TRUE;
     tags = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
 	     node = node->mln_Succ)
@@ -573,6 +573,21 @@ static ULONG mWriteString(struct IClass *cl, Object *obj, struct MUIP_WriteStrin
     return TRUE;
 }
 
+static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+    struct MUI_NotifyData *data = INST_DATA(cl, obj);
+    data->mnd_ParentObject = msg->parent;
+    muiGlobalInfo(obj) = muiGlobalInfo(msg->parent);
+    return TRUE;
+}
+
+static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
+{
+    struct MUI_NotifyData *data = INST_DATA(cl, obj);
+    data->mnd_ParentObject = NULL;
+    muiGlobalInfo(obj) = NULL;
+    return 0;
+}
 
 /*
  * The class dispatcher
@@ -631,9 +646,11 @@ AROS_UFH3S(IPTR, MyDispatcher,
 	    return(mWriteLong(cl, obj, (APTR)msg));
 	case MUIM_WriteString :
 	    return(mWriteString(cl, obj, (APTR)msg));
+	case MUIM_ConnectParent: return Notify_ConnectParent(cl,obj,(APTR)msg);
+	case MUIM_DisconnectParent: return Notify_ConnectParent(cl,obj,(APTR)msg);
     }
 
-    return(DoSuperMethodA(cl, obj, msg));
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 

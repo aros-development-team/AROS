@@ -259,15 +259,9 @@ struct MUI_DragImage
 
 /* Methods */
 
-#define MUIM_ConnectParent          0x80429ab9 /* ZV1  */
-#define MUIM_DisconnectParent       0x80429aba /* ZV1  */
 #define MUIM_Layout                 0x80429abb /* ZV1  */
-#define MUIM_ConnectParentWindow    0x80429abd /* ZV1  */
 
-struct  MUIP_ConnectParent          { ULONG MethodID; Object *parent; };
-struct  MUIP_DisconnectParent       { ULONG MethodID; };
 struct  MUIP_Layout                 { ULONG MethodID; };
-struct  MUIP_ConnectParentWindow    { ULONG MethodID; Object *win; struct MUI_RenderInfo *mri; };
 
 void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo); /* priv */
 

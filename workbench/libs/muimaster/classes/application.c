@@ -237,7 +237,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -340,7 +340,7 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -436,7 +436,7 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 /*
  * OM_ADDMEMBER
  */
-static ULONG mAddMember(struct IClass *cl, Object *obj, struct opMember *msg)
+static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -452,15 +452,14 @@ static ULONG mAddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 /*
  * OM_REMMEMBER
  */
-static ULONG mRemMember(struct IClass *cl, Object *obj, struct opMember *msg)
+static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-    static ULONG disconnect = MUIM_DisconnectParent;
 
     D(bug("muimaster.library/application.c: Removing 0x%lx to window member list\n",msg->opam_Object));
 
-    DoMethodA(msg->opam_Object, (Msg)&disconnect);
-    DoMethodA(data->app_WindowFamily, (APTR)msg);
+    DoMethod(msg->opam_Object, MUIM_DisconnectParent);
+    DoMethodA(data->app_WindowFamily, (Msg)msg);
     return TRUE;
 }
 
@@ -718,18 +717,14 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
 	/* Whenever an object shall be created using NewObject(), it will be
 	** sent a OM_NEW method.
 	*/
-    case OM_NEW:
-	return(Application_New(cl, obj, (struct opSet *) msg));
-    case OM_DISPOSE:
-	return(Application_Dispose(cl, obj, msg));
+    case OM_NEW: return Application_New(cl, obj, (struct opSet *) msg);
+    case OM_DISPOSE: return Application_Dispose(cl, obj, msg);
     case OM_SET:
 	return(mSet(cl, obj, (struct opSet *)msg));
     case OM_GET:
 	return(mGet(cl, obj, (struct opGet *)msg));
-    case OM_ADDMEMBER:
-	return(mAddMember(cl, obj, (APTR)msg));
-    case OM_REMMEMBER:
-	return(mRemMember(cl, obj, (APTR)msg));
+    case OM_ADDMEMBER: return Application_AddMember(cl, obj, (APTR)msg);
+    case OM_REMMEMBER: return Application_RemMember(cl, obj, (APTR)msg);
     case MUIM_Application_AddInputHandler :
 	return(mAddInputHandler(cl, obj, (APTR)msg));
     case MUIM_Application_Iconify :

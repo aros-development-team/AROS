@@ -123,7 +123,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->rows = 1;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -210,7 +210,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 ** we do know. The best way should be using NextTagItem() and simply
 ** browsing through the list.
 */
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -343,94 +343,42 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
     return TRUE;
 }
 
-
-static void
-group_connect_childs (struct MUI_GroupData *data, Object *obj)
+/**************************************************************************
+ 
+**************************************************************************/
+static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     Object                *cstate;
     Object                *child;
     struct MinList        *ChildList;
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
-    {
-#warning FIXME: mad_Background
-#if 0
-	if (muiAreaData(child)->mad_Background == NULL)
-	{
-	    muiAreaData(child)->mad_Background =
-		zune_imspec_copy(muiAreaData(obj)->mad_Background);
-	}
-#endif
 	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
-    }
+
+    return 1;
 }
 
-/*
- * called by parent object between OM_NEW and MUIM_Setup,
- * init RenderInfo and GlobalInfo
- */
-static ULONG mConnectParent(struct IClass *cl, Object *obj,
-		    struct MUIP_ConnectParent *msg)
+/**************************************************************************
+ 
+**************************************************************************/
+static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
+    Object                *cstate;
+    Object                *child;
+    struct MinList        *ChildList;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object                *parent = msg->parent;
-
-//    ASSERT(parent != NULL);
-//    ASSERT(muiAreaData(parent)->mad_RenderInfo != NULL);
-//    ASSERT(muiNotifyData(parent)->mnd_GlobalInfo != NULL);
-
-    _parent(obj) = parent;
-    muiAreaData(obj)->mad_RenderInfo = muiAreaData(parent)->mad_RenderInfo;
-    muiNotifyData(obj)->mnd_GlobalInfo = muiNotifyData(parent)->mnd_GlobalInfo;
-
-    group_connect_childs(data, obj);
-    return TRUE;
-}
-
-
-/*
- * called by parent window object between OM_NEW and MUIM_Setup,
- * init RenderInfo and GlobalInfo
- * no muiAreaData(parent) here !!!
- */
-static ULONG
-mConnectParentWindow(struct IClass *cl, Object *obj,
-		    struct MUIP_ConnectParentWindow *msg)
-{
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
-
-    muiAreaData(obj)->mad_RenderInfo = msg->mri;
-    muiNotifyData(obj)->mnd_GlobalInfo = muiNotifyData(msg->win)->mnd_GlobalInfo;
-    _parent(obj) = NULL;
-
-    group_connect_childs(data, obj);
-    return TRUE;
-}
-
-/*
- * called by parent object
- */
-static ULONG
-mDisconnectParent(struct IClass *cl, Object *obj,
-		       struct MUIP_DisconnectParent *msg)
-{
-    static ULONG          method = MUIM_DisconnectParent;
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object               *cstate;
-    Object               *child;
-    struct MinList       *ChildList;
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
-	DoMethodA(child, (Msg)&method);
+	DoMethod(child, MUIM_DisconnectParent, (IPTR)obj);
 
-    muiNotifyData(obj)->mnd_GlobalInfo = NULL;
-    muiAreaData(obj)->mad_RenderInfo = NULL;
-    _parent(obj) = NULL;
-    return TRUE;
+    return DoSuperMethodA(cl,obj,(msg));
 }
 
 
@@ -1650,12 +1598,8 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mInitChange(cl, obj, (APTR)msg);
     case MUIM_Group_Sort :
 	return mSort(cl, obj, (APTR)msg);
-    case MUIM_ConnectParent :
-	return mConnectParent(cl, obj, (APTR)msg);
-    case MUIM_DisconnectParent :
-	return mDisconnectParent(cl, obj, (APTR)msg);
-    case MUIM_ConnectParentWindow :
-	return mConnectParentWindow(cl, obj, (APTR)msg);
+    case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
+    case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
     case MUIM_Layout :
 	return mLayout(cl, obj, (APTR)msg);
     case MUIM_Setup :
