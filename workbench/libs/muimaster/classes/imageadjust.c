@@ -21,8 +21,9 @@
 
 #include <string.h>
 
-/*  #define MYDEBUG 1 */
+/*#define MYDEBUG 1*/
 #include "debug.h"
+
 #include "imspec_intern.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -287,7 +288,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     static const char *labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
     static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
     static const char *labels_color[] = {"Color", NULL};
-    static const char *gradient_type_entries[] = {"Scaled", "Tiled"};
+    static const char *gradient_type_entries[] = {"Scaled", "Tiled", NULL};
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
     Object *external_list = NULL;
@@ -345,12 +346,11 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	gradient_group = ColGroup(2),
 	    Child, (IPTR)FreeLabel("Type:"),
-	    Child, (IPTR) (gradient_type_cycle = MUI_MakeObject(MUIO_Cycle, (IPTR)"Type:", (IPTR)gradient_type_entries)),
-	   
+	    Child, (IPTR)(gradient_type_cycle = MUI_MakeObject(MUIO_Cycle, (IPTR)"Type:", (IPTR)gradient_type_entries)),
 	    Child, (IPTR)FreeLabel("Angle:"),
 	    Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 359, End),
 	    Child, (IPTR)FreeLabel("Colors:"),
-	    Child, (IPTR) HGroup,
+	    Child, (IPTR)HGroup,
 		Child, (IPTR)(gradient_start_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"rbbbbbbbb,bbbbbbbb,bbbbbbbb", End),
 		Child, (IPTR)(gradient_end_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"r55555555,55555555,55555555", End),
 		End,
