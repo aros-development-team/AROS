@@ -24,18 +24,32 @@
 #undef DEBUG
 #define SDEBUG 0
 #define DEBUG 0
-#	include <aros/debug.h>
+#include <aros/debug.h>
 
+/*****************************************************************************************/
 
 #define CURSORPEN	0
 #define STRBACKPEN	1
 #define STRTEXTPEN	4
 
 #define NUMPENS 3
-#define STRALIGNMASK (GACT_STRINGLEFT|GACT_STRINGCENTER|GACT_STRINGRIGHT)
+#define STRALIGNMASK 	(GACT_STRINGLEFT|GACT_STRINGCENTER|GACT_STRINGRIGHT)
 
+#define KEYBUFSIZE 	10
+#define SHIFT 		(IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT)
+
+#define HELPRAW		95  /* Raw     */
+#define BACKSPACE	8   /* Vanilla */
+#define TAB		9   /* Vanilla */
+#define TABRAW		66  /* Raw     */
+#define RETURN		13  /* Vanilla */
+#define DELETE		127 /* Vanilla */
+
+/*****************************************************************************************/
 
 VOID UpdateStringInfo(struct Gadget *);
+
+/*****************************************************************************************/
 
 #define CharXSize(char, rp) 			\
  ((rp->Font->tf_Flags & FPF_PROPORTIONAL) 	\
@@ -46,17 +60,15 @@ VOID UpdateStringInfo(struct Gadget *);
 #undef MIN
 #define MIN(a, b) ((a < b) ? a : b)
 
+/*****************************************************************************************/
 
-/*******************
-**  MaxDispPos()  **
-*******************/
 STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
 		struct RastPort *rp, struct IntuitionBase *IntuitionBase)
 {
 
-    WORD numfit, max_disppos, numchars;
-    struct TextExtent te;
-    BOOL cursor_at_end;
+    WORD 		numfit, max_disppos, numchars;
+    struct TextExtent 	te;
+    BOOL 		cursor_at_end;
     
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
 
@@ -102,9 +114,8 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
     ReturnInt("MaxDispPos", WORD, max_disppos);
 }
 
-/*******************
-**  UpdateDisp()  **
-*******************/
+/*****************************************************************************************/
+
 void UpdateDisp(struct Gadget 		*gad,
 		struct BBox		*bbox,
 		struct RastPort		*rp,
@@ -112,9 +123,9 @@ void UpdateDisp(struct Gadget 		*gad,
 {
    
 
-    struct TextExtent te;
-    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    STRPTR dispstr;
+    struct TextExtent 	te;
+    struct StringInfo 	*strinfo = (struct StringInfo *)gad->SpecialInfo;
+    STRPTR 		dispstr;
     
     EnterFunc(bug("UpdateDisp(gad=%p, bbox=%p, rp=%p)\n",
     	gad, bbox, rp));
@@ -200,21 +211,20 @@ void UpdateDisp(struct Gadget 		*gad,
     ReturnVoid("UpdateDisp");
 }
 
-/******************
-**  GetTextLeft  **
-******************/
+/*****************************************************************************************/
+
 STATIC UWORD GetTextLeft(struct Gadget		*gad,
-			struct BBox		*bbox,
-			struct RastPort		*rp,
-			struct IntuitionBase	*IntuitionBase)
+			 struct BBox		*bbox,
+			 struct RastPort	*rp,
+			 struct IntuitionBase	*IntuitionBase)
 {
     /* Gets left position of text in the string gadget */
     
-    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD  text_left;
-    STRPTR dispstr = &(strinfo->Buffer[strinfo->DispPos]);
-    UWORD dispstrlen;
-    BOOL cursor_at_end;
+    struct StringInfo 	*strinfo = (struct StringInfo *)gad->SpecialInfo;
+    UWORD  		text_left;
+    STRPTR 		dispstr = &(strinfo->Buffer[strinfo->DispPos]);
+    UWORD 		dispstrlen;
+    BOOL 		cursor_at_end;
     
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
     
@@ -244,21 +254,20 @@ STATIC UWORD GetTextLeft(struct Gadget		*gad,
     return (text_left);
 }
 
-/*******************
-**  GetTextRight  **
-*******************/
+/*****************************************************************************************/
+
 STATIC UWORD GetTextRight(struct Gadget		*gad,
-			struct BBox		*bbox,
-			struct RastPort		*rp,
-			struct IntuitionBase	*IntuitionBase)
+			  struct BBox		*bbox,
+			  struct RastPort	*rp,
+			  struct IntuitionBase	*IntuitionBase)
 {
     /* Gets right offset of text in the string gadget */
     
-    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD  text_right;
-    STRPTR dispstr = &(strinfo->Buffer[strinfo->DispPos]);
-    UWORD dispstrlen;
-    BOOL cursor_at_end;
+    struct StringInfo 	*strinfo = (struct StringInfo *)gad->SpecialInfo;
+    UWORD  		text_right;
+    STRPTR 		dispstr = &(strinfo->Buffer[strinfo->DispPos]);
+    UWORD 		dispstrlen;
+    BOOL 		cursor_at_end;
     
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
     
@@ -285,15 +294,13 @@ STATIC UWORD GetTextRight(struct Gadget		*gad,
     return (text_right);    
 }
 
+/*****************************************************************************************/
 
-/*********************
-**  GetPensAndFont  **
-*********************/
 STATIC VOID GetPensAndFont(struct Gadget *gad,
-			UWORD 		 *pens,
-			struct Window	*win,
-			struct RastPort *rp,
-			struct IntuitionBase *IntuitionBase)
+			   UWORD 	 *pens,
+			   struct Window *win,
+			   struct RastPort *rp,
+			   struct IntuitionBase *IntuitionBase)
 {   
 
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
@@ -350,9 +357,7 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     return;
 }
 
-/*********************
-**  HandleStrInput  **
-*********************/
+/*****************************************************************************************/
 
 ULONG HandleStrInput(	struct Gadget 		*gad,
 			struct GadgetInfo	*ginfo,
@@ -360,10 +365,10 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 		  	UWORD			*imsgcode,
 		      	struct IntuitionBase	*IntuitionBase)
 {
-    struct SGWork sgw;
-    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
+    struct SGWork 	sgw;
+    struct StringInfo 	*strinfo = (struct StringInfo *)gad->SpecialInfo;
     struct StringExtend *strext = NULL;
-    ULONG command = 0;
+    ULONG 		command = 0;
 	
     EnterFunc(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
     	gad, ginfo, ievent));
@@ -449,18 +454,21 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	strinfo->NumChars  = sgw.NumChars;
     	strinfo->LongInt   = sgw.LongInt;
 
+	#if 0
 	if (gad->Activation & GACT_LONGINT)
 	{
-	   /* kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); */
+	   kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); */
 	} else {
-	   /* kprintf("strinfo->Buffer = \"%s\"\n",strinfo->Buffer); */
+	   kprintf("strinfo->Buffer = \"%s\"\n",strinfo->Buffer); */
 	}
+	#endif
     }
 
     if (sgw.Actions & SGA_BEEP)
     {
     	D(bug("SGA_BEEP not yet implemented. (lack of DisplayBeep())\n"));
     }
+    
     if (sgw.Actions & (SGA_END | SGA_NEXTACTIVE | SGA_PREVACTIVE))
     {
     	gad->Flags &= ~GFLG_SELECTED;
@@ -494,26 +502,22 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     ReturnInt("HandleStrInput", ULONG, sgw.Actions);
 }
 
- 
-/*****************
-**  DoSGHClick  **
-*****************/
+/*****************************************************************************************/
 
 STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
-    struct Gadget *gad;
-    struct StringInfo *strinfo;
-    struct BBox bbox;
+    struct Gadget 	*gad;
+    struct StringInfo 	*strinfo;
+    struct BBox		bbox;
     
-    struct TextFont *oldfont;
-    struct RastPort *rp;
-    struct Window *window;
+    struct TextFont 	*oldfont;
+    struct RastPort 	*rp;
+    struct Window 	*window;
     
-
-    UWORD text_left, text_right;
+    UWORD 		text_left, text_right;   
+    WORD 		mousex;
     
-    WORD mousex;
     window = sgw->GadgetInfo->gi_Window;
     
     GetGadgetDomain(sgw->Gadget, window->WScreen, window, NULL, (struct IBox *)&bbox);
@@ -601,30 +605,7 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     ReturnInt ("DoSGHClick", ULONG, 1);
 }
 
-/***************
-**  DoSGHKey  **
-***************/
-
-#if 0
- #define CURSOR_RIGHT	'C'
- #define CURSOR_LEFT	'D'
- #define SHIFT_CLEFT	" @"
- #define SHIFT_CRIGHT	" A"
- #define HELP		"?~"
- #define BACKSPACE	0x08
- #define TAB		0x09
- #define ENTER		0x0A
- #define RETURN		0x0D
- #define DELETE		0x7F
- #define CSI		155
-#else
- #define HELPRAW	95 /* Raw */
- #define BACKSPACE	8 /* Vanilla */
- #define TAB		9 /* Vanilla */
- #define TABRAW		66 /* Raw */
- #define RETURN		13 /* Vanilla */
- #define DELETE		127 /* Vanilla */
-#endif
+/*****************************************************************************************/
 
 VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
 {
@@ -637,18 +618,18 @@ VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
     str[last] = 0;
 }
     
+/*****************************************************************************************/
 
 STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
-    struct Gadget *gad;
-    struct StringInfo *strinfo;
+    struct Gadget 	*gad;
+    struct StringInfo 	*strinfo;
     
-    UBYTE letter;
-    #define KEYBUFSIZE 10
-    UBYTE keybuf[KEYBUFSIZE];
-    LONG numchars;
-    ULONG qual;
+    UBYTE 		letter;
+    UBYTE 		keybuf[KEYBUFSIZE];
+    LONG 		numchars;
+    ULONG 		qual;
     
     EnterFunc(bug("DoSGHKey(sgw=%p)\n", sgw));
     
@@ -657,13 +638,10 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     numchars = MapRawKey(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
 
-    if (numchars == -1)
-    	return (FALSE);
- 
-    	   
+    if (numchars == -1) return 1;
+     	   
     qual = sgw->IEvent->ie_Qualifier;
     
-    #define SHIFT (IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT)
     D(bug("sghkey: converted %d to letter %d\n",sgw->IEvent->ie_Code,letter));
 
     sgw->EditOp = EO_NOOP;
@@ -789,8 +767,8 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 	else if (letter == TAB)
 	{
 	    D(bug("sghkey: TAB\n"));
-	    sgw->EditOp = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
-	    sgw->Code = 9;
+	    sgw->EditOp  = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
+	    sgw->Code    = 9;
 	    sgw->Actions = (SGA_USE|SGA_NEXTACTIVE);
 	}
 	else
@@ -887,42 +865,38 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     ReturnInt ("DoSGHKey", ULONG, 1);   
 }
 
+/*****************************************************************************************/
 
-/*********************
-**  GlobalEditFunc  **
-*********************/
 AROS_UFH3(ULONG, GlobalEditFunc,
     AROS_UFHA(struct Hook *,		hook,		A0),
     AROS_UFHA(struct SGWork *,		sgw,		A2),
     AROS_UFHA(ULONG *, 			command,	A1)
 )
 {
-    ULONG retcode;
+    ULONG retcode = 0;
         
     switch (*command)
     {
-    case SGH_CLICK:
-    	DoSGHClick(sgw, (struct IntuitionBase *)hook->h_Data);
-    	break;
-    
-    case SGH_KEY:
-    	DoSGHKey  (sgw, (struct IntuitionBase *)hook->h_Data);    
-    	break;
-    
+	case SGH_CLICK:
+    	    retcode = DoSGHClick(sgw, (struct IntuitionBase *)hook->h_Data);
+    	    break;
+
+	case SGH_KEY:
+    	    retcode = DoSGHKey  (sgw, (struct IntuitionBase *)hook->h_Data);    
+    	    break;    
     }
-    return (retcode);
+    
+    return retcode;
 }
 
-/***********************
-**  RefreshStrGadget  **
-***********************/
+/*****************************************************************************************/
 
 VOID RefreshStrGadget(struct Gadget	*gad,
 		struct Window		*win,
 		struct IntuitionBase	*IntuitionBase)
 {
-    struct GadgetInfo gi;
-    struct RastPort *rp;
+    struct GadgetInfo 	gi;
+    struct RastPort 	*rp;
     
     EnterFunc(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
 
@@ -946,15 +920,14 @@ VOID RefreshStrGadget(struct Gadget	*gad,
     ReturnVoid("RefreshStrGadget");
 }		
 
+/*****************************************************************************************/
 
-/*************************
-**  UpdateStringInfo()  **
-*************************/
 VOID UpdateStringInfo(struct Gadget *gad)
 {
     /* Updates the stringinfo in case user has set some fields */
     
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
+
     EnterFunc(bug("UpdateStringInfo(gad=%p)\n", gad));
 
 #if 0
@@ -982,28 +955,25 @@ VOID UpdateStringInfo(struct Gadget *gad)
     ReturnVoid("UpdateStringInfo");
 }
 
-/***********************
-**  UpdateStrGadget  **
-***********************/
+/*****************************************************************************************/
 
 VOID UpdateStrGadget(struct Gadget	*gad,
 		struct Window		*win,
 		struct IntuitionBase	*IntuitionBase)
 {
-    struct GadgetInfo gi;
-    struct BBox bbox;
+    struct GadgetInfo 	gi;
+    struct BBox 	bbox;
 
-    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD text_left;
+    struct StringInfo 	*strinfo = (struct StringInfo *)gad->SpecialInfo;
+    UWORD 		text_left;   
+    UWORD 		text_top;
     
-    UWORD text_top;
+    struct RastPort 	*rp;
     
-    struct RastPort *rp;
+    STRPTR 		dispstr;
+    UWORD 		dispstrlen;
     
-    STRPTR dispstr;
-    UWORD dispstrlen;
-    
-    UWORD pens[NUMPENS];
+    UWORD 		pens[NUMPENS];
     
     EnterFunc(bug("UpdateStrGadget(current text=%s)\n", strinfo->Buffer));
 
