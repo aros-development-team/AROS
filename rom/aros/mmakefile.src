@@ -9,9 +9,6 @@ include $(TOP)/config/make.cfg
 #MM- kernel-aros : includes linklibs
 #MM- kernel-aros-kobj : includes linklibs
 
-#MM- kernel-aros-includes : setup-clib
-#MM includes-generate : setup-clib
-
 %build_module_macro mmake=kernel-aros \
   modname=aros modtype=library \
   funcs=arosinquirea \
