@@ -44,18 +44,23 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
 	The return code of the command run will be returned.
 
+	AROS ONLY: RunCommand() automatically computes argsize
+	automatically if you pass -1.
+
 	This call will not return until the command has completed.
 
     INPUTS
 	segList		- segment of program to run.
 	stacksize	- size of the stack to use.
-	argptr		- pointer to NUL-terminated arguments.
+	argptr		- pointer to NULL-terminated arguments.
 	argsize		- size of the arguments string.
 
     RESULT
 	The return code from the program. See also IoErr().
 
     NOTES
+	Programs expect the arugment string to end with a newline ('\n')
+	character (ReadArgs() requires it to work properly).
 
     EXAMPLE
 
@@ -103,6 +108,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=argptr;
+
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
 		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
     me->pr_Arguments=oldargs;

@@ -85,6 +85,10 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
     oldSP = (APTR *)&DOSBase;
     oldReturnAddr = proc->pr_ReturnAddr;
 
+    /* Compute argsize automatically */
+    if (argsize == -1)
+	argsize = strlen(argptr);
+
     /* Copy stack + locals + regs + everything */
     while( oldSP != (APTR *)&ret )
 	*--sp = *oldSP--;
