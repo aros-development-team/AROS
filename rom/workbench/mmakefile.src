@@ -89,20 +89,8 @@ endif
 
 # Uncomment NO_FUNCTABLE line if you don't want the function table made
 # NO_FUNCTABLE := 1
+INCLUDE_PREFIX := wb
 %genromlib_finline
-
-
-# These are needed to fix a longstanding naming anomaly: wb.h for workbench.library
-#
-#MM
-includes-copy : $(INCDIR)/proto/wb.h $(INCDIR)/clib/wb_protos.h
-	@$(NOP)
-
-$(INCDIR)/proto/wb.h : $(GENINCDIR)/proto/$(LIBNAME).h $(OBJDIR)/headers.stamp
-	@$(CP) $< $@
-
-$(INCDIR)/clib/wb_protos.h : $(GENINCDIR)/clib/$(LIBNAME)_protos.h $(OBJDIR)/headers.stamp
-	@$(CP) $< $@
 
 
 #MM kernel-workbench-linklib : setup includes kernel-workbench-$(ARCH)-$(CPU)

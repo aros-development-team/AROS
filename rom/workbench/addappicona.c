@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/workbench.h>
+	#include <proto/wb.h>
 
 	AROS_LH7(struct AppIcon *, AddAppIconA,
 /*  SYNOPSIS */

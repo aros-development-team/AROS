@@ -12,7 +12,7 @@
 
     NAME */
 
-	#include <proto/workbench.h>
+	#include <proto/wb.h>
 	
 	AROS_LH1(BOOL	, RemoveAppWindow,
 

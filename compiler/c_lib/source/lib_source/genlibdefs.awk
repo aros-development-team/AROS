@@ -16,6 +16,11 @@
 # libname <string> - Set libname to <string>. This is the name of the
 #		library (ie. you can open it with <string>.library).
 #		It will show up in the version string, too.
+# incname <string> - Set includename to <string> (for type=library).
+#		This is the name of the includes prefix (ie. you have eg.
+#		include/clib/<string>_protos.h).
+#		If not given (should be the default, except workbench/wb)
+#		it defaults to <name>.
 # basename <string> - Set basename to <string>. The basename is used in
 #		the AROS-LHx macros in the location part (last parameter)
 #		and to specify defaults for libbase and libbasetype
@@ -56,6 +61,7 @@
 #
 BEGIN {
     libbase="";
+    incname="";
     libbasetype="";
     basename="";
     define="_LIBDEFS_H";
@@ -70,6 +76,7 @@ BEGIN {
     if (libbasetype=="")
 	libbasetype="struct "basename"Base";
 }
+/^incname/ { incname=$2; }
 /^libname/ { libname=$2; }
 /^basename/ {
     basename=$2;
@@ -133,6 +140,8 @@ END {
     cmd="date \"+%d.%m.%Y\"";
     cmd | getline date;
 
+    if (incname=="")
+	incname=libname;
     if (libbase=="")
 	libbase=basename"Base";
     if (libbasetype=="")
@@ -198,6 +207,7 @@ END {
     print "#define VERSION_STRING   \"$VER: "libname" "version"."revision" ("date")\\r\\n\""
     print "#define LIBEND           "basename"_end"
     print "#define LIBFUNCTABLE     "basename"_functable"
+    print "#define INCLUDE_PREFIX   "incname
     print "#define COPYRIGHT_STRING \""copyright"\""
     print "#endif /* "define" */"
 }

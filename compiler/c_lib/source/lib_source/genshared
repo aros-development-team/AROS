@@ -81,6 +81,11 @@ if [ ! -f "$confdir/lib.conf" ]; then
 fi
 
 libname=`grep '^name' "$confdir/lib.conf" | sed 's/^name[^a-zA-Z_]*//'`
+incname=`grep '^incname' "$confdir/lib.conf" | sed 's/^incname[^a-zA-Z_]*//'`
+if [ "x$incname" = "x" ]; then
+incname=$libname
+fi
+INCNAME=`awk </dev/null 'BEGIN { print toupper("'$incname'"); }'`
 LIBNAME=`awk </dev/null 'BEGIN { print toupper("'$libname'"); }'`
 
 case $mode in
@@ -107,7 +112,7 @@ case $mode in
     fd )
         echo "Regenerating fd files for $libname"
         if [ "x$output" = "x" ]; then
-            outname="$libname"_lib.fd
+            outname="$incname"_lib.fd
         else
             outname="$output"
         fi
@@ -122,7 +127,7 @@ case $mode in
     proto )
         echo "Regenerating proto files for $libname"
         if [ "x$output" = "x" ]; then
-            outname="$libname".h
+            outname="$incname".h
         else
             outname="$output"
         fi
@@ -131,8 +136,8 @@ case $mode in
         else
             out="$prefix/$outname"
         fi
-        echo "#ifndef PROTO_"$LIBNAME"_H" > $out.new
-        echo "#define PROTO_"$LIBNAME"_H" >> $out.new
+        echo "#ifndef PROTO_"$INCNAME"_H" > $out.new
+        echo "#define PROTO_"$INCNAME"_H" >> $out.new
         echo >> $out.new
         echo "/*" >> $out.new
         echo "    (C) 1995-98 AROS - The Amiga Research OS" >> $out.new
@@ -143,28 +148,28 @@ case $mode in
         echo "#   include <aros/system.h>" >> $out.new
         echo "#endif" >> $out.new
         echo >> $out.new
-        echo "#include <clib/"$libname"_protos.h>" >> $out.new
+        echo "#include <clib/"$incname"_protos.h>" >> $out.new
         echo >> $out.new
         echo "#if defined(_AMIGA) && defined(__GNUC__)" >> $out.new
-        echo "#   include <inline/"$libname".h>" >> $out.new
+        echo "#   include <inline/"$incname".h>" >> $out.new
         echo "#else" >> $out.new
-        echo "#   include <defines/"$libname".h>" >> $out.new
+        echo "#   include <defines/"$incname".h>" >> $out.new
         echo "#endif" >> $out.new
         echo >> $out.new
         if [ $hasrt -ne 0 ]; then
-            echo "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_"$LIBNAME")" >> $out.new
-            echo "#   define ENABLE_RT_"$LIBNAME" 1" >> $out.new
+            echo "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_"$INCNAME")" >> $out.new
+            echo "#   define ENABLE_RT_"$INCNAME" 1" >> $out.new
             echo "#   include <aros/rt.h>" >> $out.new
             echo "#endif" >> $out.new
             echo >> $out.new
         fi
-        echo "#endif /* PROTO_"$LIBNAME"_H */" >> $out.new
+        echo "#endif /* PROTO_"$INCNAME"_H */" >> $out.new
         $scriptdir/moveifchanged $out.new $out
     ;;
     defines )
         echo "Regenerating defines files for $libname"
         if [ "x$output" = "x" ]; then
-            outname="$libname".h
+            outname="$incname".h
         else
             outname="$output"
         fi
@@ -179,7 +184,7 @@ case $mode in
     clib )
         echo "Regenerating clib files for $libname"
         if [ "x$output" = "x" ]; then
-            outname="$libname"_protos.h
+            outname="$incname"_protos.h
         else
             outname="$output"
         fi
@@ -197,7 +202,7 @@ case $mode in
      inline )
         echo "Regenerating inline for $libname"
         if [ "x$output" = "x" ]; then
-            outname="$libname".h
+            outname="$incname".h
         else
             outname="$output"
         fi

@@ -17,7 +17,7 @@
 
     NAME */
 
-	#include <proto/workbench.h>
+	#include <proto/wb.h>
 
 	AROS_LH5(struct AppWindow *, AddAppWindowA,
 
