@@ -118,15 +118,57 @@ struct ReadData {
 	    ((((unsigned long)(l)) << 24) & 0xFF000000UL)   \
 	)
 
-struct FSysBuffer {
-	struct RootBlock rootblock;
-	struct ReadData file;
-	struct DirHeader buffer1;
-	struct FileHeader buffer2;
-	struct FileKeyExtension extension;
+struct CacheBlock {
+	int blocknum;
+	unsigned short flags;
+	unsigned short access_count;
+	unsigned int blockbuffer[128];
 };
 
+#define MAX_CACHE_BLOCKS 10
+
+struct FSysBuffer {
+	struct ReadData file;
+	struct CacheBlock blocks[MAX_CACHE_BLOCKS];
+};
+
+#define rootBlock(x) ((struct RootBlock *)(x)->blockbuffer)
+#define dirHeader(x) ((struct DirHeader *)(x)->blockbuffer)
+#define fileHeader(x) ((struct FileHeader *)(x)->blockbuffer)
+#define extensionBlock(x) ((struct FileKeyExtension *)(x)->blockbuffer)
+
 struct FSysBuffer *fsysb;
+
+void initCache() {
+int i;
+
+	for (i=0;i<MAX_CACHE_BLOCKS;i++)
+	{
+		fsysb->blocks[i].blocknum = -1;
+		fsysb->blocks[i].flags = 0;
+		fsysb->blocks[i].access_count = 0;
+	}
+}
+
+struct CacheBlock *getBlock(unsigned int block) {
+struct CacheBlock *freeblock;
+int i;
+
+	freeblock = &fsysb->blocks[0];
+	for (i=0;i<MAX_CACHE_BLOCKS;i++)
+	{
+		if (fsysb->blocks[i].blocknum == block)
+		{
+			fsysb->blocks[i].access_count++;
+			return &fsysb->blocks[i];
+		}
+		if (freeblock->access_count>fsysb->blocks[i].access_count)
+			freeblock = &fsysb->blocks[i];
+	}
+	freeblock->blocknum = block;
+	devread(block, 0, 512, (char *)freeblock->blockbuffer);
+	return freeblock;
+}
 
 unsigned int calcChkSum(unsigned short SizeBlock, unsigned int *buffer) {
 unsigned int sum=0,count=0;
@@ -137,36 +179,39 @@ unsigned int sum=0,count=0;
 }
 
 int affs_mount(void) {
+struct CacheBlock *cblock;
 
 	if ((current_drive & 0x80) && (current_slice != 0x30))
 		return 0;
 	fsysb = (struct FSysBuffer *)FSYS_BUF;
-	devread(0, 0, 512, (char *)&fsysb->buffer1);
+	initCache();
+	cblock = getBlock(0);
 	if (!(
-			((AROS_BE2LONG(fsysb->buffer1.p_type) & 0xFFFFFF00)==0x444F5300) &&
-			((AROS_BE2LONG(fsysb->buffer1.p_type) & 0xFF)>0)
+			((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFFFFFF00)==0x444F5300) &&
+			((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFF)>0)
 		))
 	{
-		devread(1, 0, 512, (char *)&fsysb->buffer1);
+		cblock = getBlock(1);
 		if (!(
-				((AROS_BE2LONG(fsysb->buffer1.p_type) & 0xFFFFFF00)==0x444F5300) &&
-				((AROS_BE2LONG(fsysb->buffer1.p_type) & 0xFF)>0)
+				((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFFFFFF00)==0x444F5300) &&
+				((AROS_BE2LONG(rootBlock(cblock)->p_type) & 0xFF)>0)
 			))
 		{
 			return 0;
 		}
 	}
-	devread((part_length-1+2)/2, 0, 512, (char *)&fsysb->rootblock);
+	cblock = getBlock((part_length-1+2)/2);
 	if (
-			(AROS_BE2LONG(fsysb->rootblock.p_type) != T_SHORT) ||
-			(AROS_BE2LONG(fsysb->rootblock.s_type) != ST_ROOT) ||
-			calcChkSum(128, (int *)&fsysb->rootblock)
+			(AROS_BE2LONG(rootBlock(cblock)->p_type) != T_SHORT) ||
+			(AROS_BE2LONG(rootBlock(cblock)->s_type) != ST_ROOT) ||
+			calcChkSum(128, cblock->blockbuffer)
 		)
 		return 0;
 	return 1;
 }
 
 int seek(unsigned long offset) {
+struct CacheBlock *cblock;
 unsigned long block;
 unsigned long togo;
 
@@ -180,9 +225,9 @@ unsigned long togo;
 	while ((togo) && (block))
 	{
 		disk_read_func = disk_read_hook;
-		devread(block, 0, 512, (char *)&fsysb->extension);
+		cblock = getBlock(block);
 		disk_read_func = 0;
-		block = AROS_BE2LONG(fsysb->extension.extension);
+		block = AROS_BE2LONG(extensionBlock(cblock)->extension);
 		togo--;
 	}
 	if (togo)
@@ -192,6 +237,7 @@ unsigned long togo;
 }
 
 int affs_read(char *buf, int len) {
+struct CacheBlock *cblock;
 unsigned short size;
 unsigned int readbytes = 0;
 
@@ -205,7 +251,8 @@ unsigned int readbytes = 0;
 	if (len>(fsysb->file.filesize-fsysb->file.current.offset))
 		len=fsysb->file.filesize-fsysb->file.current.offset;
 	disk_read_func = disk_read_hook;
-	devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
+	cblock = getBlock(fsysb->file.current.block);
+//	devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
 	disk_read_func = 0;
 	while (len)
 	{
@@ -213,10 +260,11 @@ unsigned int readbytes = 0;
 		if (fsysb->file.current.filekey<0)
 		{
 			fsysb->file.current.filekey = 71;
-			fsysb->file.current.block = AROS_BE2LONG(fsysb->extension.extension);
+			fsysb->file.current.block = AROS_BE2LONG(extensionBlock(cblock)->extension);
 			if (fsysb->file.current.block)
 			{
-				devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
+				cblock = getBlock(fsysb->file.current.block);
+//				devread(fsysb->file.current.block, 0, 512, (char *)&fsysb->extension);
 			}
 #warning "else shouldn't occour"
 		}
@@ -229,7 +277,7 @@ unsigned int readbytes = 0;
 				(
 					AROS_BE2LONG
 						(
-							fsysb->extension.filekey_table
+							extensionBlock(cblock)->filekey_table
 								[fsysb->file.current.filekey]
 						),
 					fsysb->file.current.byte, size, (char *)((int)buf+readbytes)
@@ -242,7 +290,7 @@ unsigned int readbytes = 0;
 				(
 					AROS_BE2LONG
 						(
-							fsysb->extension.filekey_table
+							extensionBlock(cblock)->filekey_table
 								[fsysb->file.current.filekey]
 						),
 					fsysb->file.current.byte, size, (char *)((int)buf+readbytes)
@@ -292,41 +340,44 @@ unsigned int result;
 	return result%tablesize;
 }
 
-grub_error_t getHeaderBlock(char *name, struct DirHeader *dirh) {
+grub_error_t getHeaderBlock(char *name, struct CacheBlock **dirh) {
 int key;
 
 	key = getHashKey(name, 72, 1);
-	if (!dirh->hashtable[key])
+	if (!dirHeader(*dirh)->hashtable[key])
 		return ERR_FILE_NOT_FOUND;
-	devread(AROS_BE2LONG(dirh->hashtable[key]), 0, 512, (char *)dirh);
-	if (calcChkSum(128, (unsigned int *)dirh))
+	*dirh = getBlock(AROS_BE2LONG(dirHeader(*dirh)->hashtable[key]));
+//	devread(AROS_BE2LONG(dirh->hashtable[key]), 0, 512, (char *)dirh);
+	if (calcChkSum(128, (*dirh)->blockbuffer))
 		return ERR_FSYS_CORRUPT;
-	if (AROS_BE2LONG(dirh->p_type) != T_SHORT)
+	if (AROS_BE2LONG(dirHeader(*dirh)->p_type) != T_SHORT)
 		return ERR_BAD_FILETYPE;
-	while (noCaseStrCmp(name,dirh->name,1) != 0)
+	while (noCaseStrCmp(name,dirHeader(*dirh)->name,1) != 0)
 	{
-		if (!dirh->hashchain)
+		if (!dirHeader(*dirh)->hashchain)
 			return ERR_FILE_NOT_FOUND;
-		devread(AROS_BE2LONG(dirh->hashchain), 0, 512, (char *)dirh);
-		if (calcChkSum(128, (unsigned int *)dirh))
+		*dirh = getBlock(AROS_BE2LONG(dirHeader(*dirh)->hashchain));
+//		devread(AROS_BE2LONG(dirh->hashchain), 0, 512, (char *)dirh);
+		if (calcChkSum(128, (*dirh)->blockbuffer))
 			return ERR_FSYS_CORRUPT;
-		if (AROS_BE2LONG(dirh->p_type) != T_SHORT)
+		if (AROS_BE2LONG(dirHeader(*dirh)->p_type) != T_SHORT)
 			return ERR_BAD_FILETYPE;
 	}
 	return 0;
 }
 
-grub_error_t findBlock(char *name, struct DirHeader *dirh) {
+grub_error_t findBlock(char *name, struct CacheBlock **dirh) {
 char dname[32];
 char *nbuf;
 
-	devread((part_length-1+2)/2, 0, 512, (char *)dirh);
+	*dirh = getBlock((part_length-1+2)/2);
+//	devread((part_length-1+2)/2, 0, 512, (char *)dirh);
 	name++;
 	while (*name)
 	{
 		if (
-				(AROS_BE2LONG(dirh->s_type) != ST_ROOT) &&
-				(AROS_BE2LONG(dirh->s_type) != ST_USERDIR)
+				(AROS_BE2LONG(dirHeader(*dirh)->s_type) != ST_ROOT) &&
+				(AROS_BE2LONG(dirHeader(*dirh)->s_type) != ST_USERDIR)
 			)
 			return ERR_BAD_FILETYPE;
 		nbuf = dname;
@@ -343,6 +394,8 @@ char *nbuf;
 }
 
 int affs_dir(char *dirname) {
+struct CacheBlock *buffer1;
+struct CacheBlock *buffer2;
 char *current = dirname;
 char filename[128];
 char cstr[32];
@@ -362,38 +415,35 @@ int i,block;
 			*current++ = 0;
 		}
 		*fname=0;
-		errnum = findBlock(dirname, &fsysb->buffer1);
+#warning "Buffers may be overwritten!!!!"
+		errnum = findBlock(dirname, &buffer1);
 		if (errnum)
 			return 0;
 		for (i=0;i<72;i++)
 		{
-			block = fsysb->buffer1.hashtable[i];
+			block = dirHeader(buffer1)->hashtable[i];
 			while (block)
 			{
-				devread
-					(
-						AROS_BE2LONG(block),
-						0,512,(char *)&fsysb->buffer2
-					);
-				if (calcChkSum(128, (unsigned int *)&fsysb->buffer2))
+				buffer2 = getBlock(AROS_BE2LONG(block));
+				if (calcChkSum(128, buffer2->blockbuffer))
 				{
 					errnum = ERR_FSYS_CORRUPT;
 					return 0;
 				}
-				if (AROS_BE2LONG(fsysb->buffer2.p_type) != T_SHORT)
+				if (AROS_BE2LONG(dirHeader(buffer2)->p_type) != T_SHORT)
 				{
 					errnum = ERR_BAD_FILETYPE;
 					return 0;
 				}
-				if (noCaseStrCmp(filename, fsysb->buffer2.name, 1)<=0)
+				if (noCaseStrCmp(filename, dirHeader(buffer2)->name, 1)<=0)
 				{
 					if (print_possibilities>0)
 						print_possibilities = -print_possibilities;
-					memcpy(cstr,fsysb->buffer2.name+1,fsysb->buffer2.name[0]);
-					cstr[fsysb->buffer2.name[0]]=0;
+					memcpy(cstr,dirHeader(buffer2)->name+1,dirHeader(buffer2)->name[0]);
+					cstr[dirHeader(buffer2)->name[0]]=0;
 					print_a_completion(cstr);
 				}
-				block = fsysb->buffer2.hashchain;
+				block = dirHeader(buffer2)->hashchain;
 			}
 		}
 		while (*current != '/')
@@ -409,20 +459,20 @@ int i,block;
 	}
 	else
 	{
-		errnum = findBlock(dirname, (struct DirHeader *)&fsysb->buffer2);
+		errnum = findBlock(dirname, &buffer2);
 		if (errnum)
 			return 0;
-		if (AROS_BE2LONG(fsysb->buffer2.s_type)!=ST_FILE)
+		if (AROS_BE2LONG(fileHeader(buffer2)->s_type)!=ST_FILE)
 		{
 			errnum = ERR_BAD_FILETYPE;
 			return 0;
 		}
-		fsysb->file.header_block = AROS_BE2LONG(fsysb->buffer2.own_key);
-		fsysb->file.current.block = AROS_BE2LONG(fsysb->buffer2.own_key);
+		fsysb->file.header_block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
+		fsysb->file.current.block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
 		fsysb->file.current.filekey = 71;
 		fsysb->file.current.byte = 0;
 		fsysb->file.current.offset = 0;
-		fsysb->file.filesize = AROS_BE2LONG(fsysb->buffer2.bytesize);
+		fsysb->file.filesize = AROS_BE2LONG(fileHeader(buffer2)->bytesize);
 		filepos = 0;
 		filemax = fsysb->file.filesize;
 		return 1;
