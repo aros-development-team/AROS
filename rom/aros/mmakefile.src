@@ -35,7 +35,7 @@ ULIBNAME := Aros
 
 OSMODULE  := aros.library
 FILES	  :=
-FUNCTIONS := arosinquirea
+FUNCTIONS := arosinquirea mutex
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of link libraries that are passed to the linker. These
