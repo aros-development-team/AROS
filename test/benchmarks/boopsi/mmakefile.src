@@ -1,0 +1,28 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES       := newobject
+EXEDIR      := $(AROSDIR)/test/benchmarks/boopsi
+EXE         := $(EXEDIR)/newobject
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+USE_MUILIB      := yes
+
+#MM test-benchmarks-boopsi : includes linklibs 
+
+%make_prog_setup mmake=test-benchmarks-boopsi
+
+test-benchmarks-boopsi : setup $(EXE)
+
+setup ::
+	%mkdir_q $(EXEDIR)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
