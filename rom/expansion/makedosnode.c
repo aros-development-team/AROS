@@ -154,13 +154,13 @@
 
 	/* Strings are done, now the FileSysStartupMsg */
 	fssm->fssm_Unit = ((ULONG *)parmPacket)[2];
-	fssm->fssm_Device = MKBADDR(s1);
+	fssm->fssm_Device = MKBADDR(s2);
 	fssm->fssm_Environ = MKBADDR(de);
 	fssm->fssm_Flags = ((ULONG *)parmPacket)[3];
 
 	/* FSSM is done, now the DeviceNode */
 	/* Most of this we cannot set up, leave it to the user */
-	dn->dn_Handler = MKBADDR(s2);
+	dn->dn_Handler = MKBADDR(s1);
 	dn->dn_Startup = MKBADDR(fssm);
 
 	return dn;
