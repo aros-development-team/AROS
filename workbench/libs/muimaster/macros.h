@@ -71,7 +71,7 @@
 #define ColGroupV(columns)  MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Columns, (columns)
 #define RowGroupV(rows)     MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Rows   , (rows)
 #define PageGroupV          MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
-#define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, (ts)
+#define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, ((IPTR) (ts))
 
 #define End                 MUIOBJMACRO_END
 #define EndBoopsi           BOOPSIOBJMACRO_END
