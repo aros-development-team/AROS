@@ -37,6 +37,7 @@ Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
+Assign ENVARC:  AROS-Boot:Prefs/Env-Archive
 ;Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
 
