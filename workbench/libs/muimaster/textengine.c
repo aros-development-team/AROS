@@ -63,8 +63,8 @@ struct zune_context
     UBYTE align;
 
     ZTextLine *line;
-    const char *text_start;
-    const char *text;
+    CONST_STRPTR text_start;
+    CONST_STRPTR text;
     CONST_STRPTR imspec;
     Object       *obj; /* Area subclass, see List_CreateImage */
 };
@@ -245,6 +245,7 @@ void zune_text_destroy (ZText *text)
 
 /**************************************************************************
  Allocated and initialize a new text chunk and add it to the list
+ The context contains the values for the chunk to be created.
 **************************************************************************/
 void zune_text_chunk_new(struct zune_context *zc)
 {
