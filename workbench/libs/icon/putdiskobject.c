@@ -16,7 +16,7 @@
 	AROS_LH2(BOOL, PutDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE             *, name, A0),
+	AROS_LHA(CONST_STRPTR,        name, A0),
 	AROS_LHA(struct DiskObject *, icon, A1),
 
 /*  LOCATION */
@@ -43,8 +43,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    BOOL  success = FALSE;
-    BPTR  file;
+    BOOL success = FALSE;
+    BPTR file;
     
     if ((file = OpenIcon(name, MODE_NEWFILE)) != NULL)
     {
