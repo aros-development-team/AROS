@@ -41,6 +41,7 @@ AROS_UFH3(void, boot,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
     	function in arosshell.c
@@ -131,4 +132,6 @@ AROS_UFH3(void, boot,
        Boot Process (having a CLI) is not removed from the rootnode.
        --> Dead stuff in there -> Crash
     */
+    return;
+    AROS_USERFUNC_EXIT
 }
