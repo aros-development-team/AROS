@@ -34,7 +34,7 @@
 */
 
 
-#    define SIZECHUNKBUF 20
+#    define SIZECHUNKBUF 10
 
 struct ChunkExt
 {
@@ -50,6 +50,35 @@ struct ChunkPool
     LONG            NumChunkFree;
 };
 
+#if DEBUG
+
+void dumplist(struct GfxBase *GfxBase)
+{
+    struct ChunkPool *Pool;
+    int n = 0;
+
+    Pool = GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
+
+    while (Pool)
+    {
+        struct ChunkExt  *ChunkE;
+	int m = 0;
+
+        kprintf("Pool N.%d - %ld Chunk Free\n", n++, Pool->NumChunkFree);
+
+        ChunkE = GetHead(&Pool->ChunkList);
+
+        while (ChunkE)
+        {
+            kprintf("    Chunk N.%d\n", m++);
+            ChunkE = GetSucc(ChunkE);
+        }
+
+        Pool = GetSucc(Pool);
+    }
+}
+#endif
+
 inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
 (
     struct GfxBase *GfxBase
@@ -61,6 +90,8 @@ inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
     ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
 
     Pool = GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
+
+tryagain:
 
     if (!Pool || !Pool->NumChunkFree)
     {
@@ -87,6 +118,22 @@ inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
     }
 
     ChunkE = GetHead(&Pool->ChunkList);
+    if (!ChunkE)
+    {
+        kprintf("\007%s (%s): Argh! ChunkE is NULL, but this should NEVER happen. NumChunkFree = %ld\n", __FILE__, __FUNCTION__, Pool->NumChunkFree);
+        /*
+            There's a bug for which NumChunkFree maybe non-null
+            (tipically 1) although Pool->ChunkList is empty.
+
+            This happens in a non predictable way, and the only explanation I can find
+            about it is that it has to have something to do with the fact that
+            Forbid()/Permit() are not atomic... One should fix that to see whether I'm right.
+            In the meantime this hack seems to work well.
+        */
+        Pool->NumChunkFree = 0;
+        goto tryagain;
+    }
+
     REMOVE(ChunkE);
 
     if (!--Pool->NumChunkFree)
@@ -124,66 +171,6 @@ void __DisposeRegionRectangleExtChunk
 
     ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
 }
-
-#if LINTEST
-#    include <stdlib.h>
-#    include <stdio.h>
-
-#    define DOTEST 1
-
-#    undef  _NewRegionRectangleExtChunk
-#    define _NewRegionRectangleExtChunk() malloc(sizeof(struct RegionRectangleExtChunk))
-
-#    undef  _DisposeRegionRectangleExtChunk
-#    define _DisposeRegionRectangleExtChunk(mem) free(mem)
-
-#    undef  NewRegion
-#    define NewRegion()                                      \
-     ({                                                      \
-         struct Region *reg = malloc(sizeof(struct Region)); \
-	 reg->RegionRectangle = NULL;                        \
-         reg;                                                \
-     })
-
-#    undef  DisposeRegion
-#    define DisposeRegion(reg) free(reg)
-
-#    undef  InitRegion
-#    define InitRegion(reg)             \
-     {                                  \
-         (reg)->RegionRectangle = NULL; \
-     }
-
-#    undef  ClearRegion
-#    define ClearRegion(region)                                                                           \
-     {                                                                                                    \
-         if (region->RegionRectangle)                                                                     \
-         {                                                                                                \
-             struct RegionRectangleExtChunk *NextChunk;                                                   \
-                                                                                                          \
-             NextChunk = Chunk(region->RegionRectangle)->FirstChunk;                                      \
-                                                                                                          \
-             while(NextChunk)                                                                             \
-             {                                                                                            \
-                 struct RegionRectangleExtChunk *OldChunk = NextChunk;                                    \
-                                                                                                          \
-                 NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next; \
-                                                                                                          \
-                 if (NextChunk)                                                                           \
-                     NextChunk = Chunk(NextChunk->Rects);                                                 \
-                                                                                                          \
-                 _DisposeRegionRectangleExtChunk(OldChunk);                                               \
-	     }                                                                                            \
-                                                                                                          \
-             InitRegion(region);                                                                          \
-         }                                                                                                \
-     }
-
-     static struct GfxBase *GfxBase;
-#    undef  kprintf
-#    define kprintf(format, x...) printf(format, ##x)
-
-#endif
 
 inline struct RegionRectangle *_NewRegionRectangle
 (
@@ -251,8 +238,6 @@ inline struct RegionRectangle *_NewRegionRectangle
 
     return *LastRectPtr = (struct RegionRectangle *)RRE;
 }
-
-
 
 void _DisposeRegionRectangleList
 (
@@ -447,7 +432,7 @@ if (curdst != lastdst)                                                     \
 #    define DEBUG 1
 #endif
 
-#if DEBUG
+#if DEBUG || 1
 void dumprect(struct Rectangle *rec)
 {
     if (!rec)
@@ -471,9 +456,16 @@ void dumpregion(struct Region *reg)
 
     kprintf("Bounds: "); dumprect(&reg->bounds);
 
-    for (rr = reg->RegionRectangle; rr; rr = rr->Next)
+    for (rr = reg->RegionRectangle; rr;)
     {
-        kprintf("    Rectangle %p: ", rr); dumprect(&rr->bounds);
+        struct RegionRectangle *rr2 = rr;
+
+	kprintf("    Band: MinY = %d - %p\n", (int)MinY(rr), rr);
+        do
+        {
+            kprintf("\t");dumprect(Bounds(rr2));
+            ADVANCE(&rr, rr2);
+        } while (rr2);
     }
 }
 
@@ -1067,75 +1059,6 @@ BOOL _ClearRectRegion
     return FALSE;
 }
 
-static inline struct RegionRectangle * ShrinkBand
-(
-    LONG OffX,
-    LONG OffY,
-    struct RegionRectangle  *Band,
-    LONG MinX,
-    LONG MinY,
-    LONG MaxX,
-    LONG MaxY,
-    struct RegionRectangle **NextBandPtr
-)
-{
-    struct RegionRectangle *NewFirst;
-    struct RegionRectangle *LastBand = Band;
-
-    while (Band && MinX > MaxX(Band))
-    {
-        ADVANCE(NextBandPtr, Band);
-    }
-
-
-    if (!Band)
-        NewFirst = *NextBandPtr;
-    else
-        NewFirst = Band;
-
-    if (Chunk(NewFirst) != Chunk(LastBand))
-        _DisposeRegionRectangleExtChunk(Chunk(LastBand));
-
-
-    if (Band)
-    {
-        if (MinX(Band) < MinX)
-            MinX(Band) = MinX + OffX;
-    }
-
-    while (Band && MaxX > MaxX(Band))
-    {
-        MinY(Band) = MinY + OffY;
-        MaxY(Band) = MaxY + OffY;
-
-        MaxX(Band) += OffX;
-
-        ADVANCE(NextBandPtr, Band);
-    }
-
-    if (Band)
-    {
-	struct RegionRectangle *LastRR;
-
-        MinY(Band) = MinY + OffY;
-        MaxY(Band) = MaxY + OffY;
-
-        MaxX(Band) = MaxX + OffX;
-
-        LastRR = Band;
-	while (Band)
-        {
-            ADVANCE(NextBandPtr, Band);
-        }
-
-        if (*NextBandPtr)
-            (*NextBandPtr)->Prev = LastRR;
-        LastRR->Next = *NextBandPtr;
-    }
-
-    return NewFirst;
-}
-
 BOOL _AndRectRegion
 (
     struct Region    *Reg,
@@ -1143,108 +1066,124 @@ BOOL _AndRectRegion
     struct GfxBase   *GfxBase
 )
 {
-    struct Region Res;
-    struct RegionRectangle rr;
+    /* Is the region non-empty? */
+    if (Reg->RegionRectangle)
+    {
+        struct Rectangle OldBounds = Reg->bounds;
 
-    InitRegion(&Res);
 
-    rr.bounds = *Rect;
-    rr.Next   = NULL;
-    rr.Prev   = NULL;
-
-    if
-    (
-        _DoOperationBandBand
+	/* Does the rectangle overlap with the region? */
+        if (!_AndRectRect(Rect, &OldBounds, &Reg->bounds))
+        {
+	    /* If not then just clear the region */
+            ClearRegion(Reg);
+        }
+	else
+	/* Else check if the rectangle contains the region */
+        if
         (
-            _AndBandBand,
-            0,
-            MinX(Reg),
-            0,
-	    MinY(Reg),
-            &rr,
-            Reg->RegionRectangle,
-            &Res.RegionRectangle,
-            &Res.bounds,
-            GfxBase
+            !(
+                MinX(Reg) == OldBounds.MinX &&
+                MinY(Reg) == OldBounds.MinY &&
+                MaxX(Reg) == OldBounds.MaxX &&
+                MaxY(Reg) == OldBounds.MaxY
+            )
         )
-    )
-    {
-	ClearRegion(Reg);
+        {
+	    /* The region is not completely contained in the rectangle */
 
-        *Reg = Res;
+            struct RegionRectangle *rr, *PtrToFirst, *LastRect;
+            struct RegionRectangleExt RRE;
+            struct Rectangle Rect2;
+            LONG OffX, OffY;
 
-        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+            PtrToFirst   = &RRE.RR;
+            RRE.Counter = 0;
 
-        return TRUE;
+            PtrToFirst->Next = Reg->RegionRectangle;
+            Reg->RegionRectangle->Prev = PtrToFirst;
+	    LastRect = PtrToFirst;
+
+            Rect2.MinX = Rect->MinX - OldBounds.MinX;
+            Rect2.MinY = Rect->MinY - OldBounds.MinY;
+            Rect2.MaxX = Rect->MaxX - OldBounds.MinX;
+            Rect2.MaxY = Rect->MaxY - OldBounds.MinY;
+
+	    OffX = OldBounds.MinX - MinX(Reg);
+	    OffY = OldBounds.MinY - MinY(Reg);
+
+            for
+            (
+                rr = Reg->RegionRectangle;
+                rr;
+            )
+            {
+		struct RegionRectangle *NextRR = rr->Next;
+
+                if (overlap(rr->bounds, Rect2))
+                {
+                    /*
+                       The rectangle overlaps with this RegionRectangle, so calculate the intersection
+                       And add the offsets to adjust the result to the new region's bounds
+                    */
+                    MinX(rr) = MAX(Rect2.MinX, MinX(rr)) + OffX;
+                    MaxX(rr) = MIN(Rect2.MaxX, MaxX(rr)) + OffX;
+                    MinY(rr) = MAX(Rect2.MinY, MinY(rr)) + OffY;
+                    MaxY(rr) = MIN(Rect2.MaxY, MaxY(rr)) + OffY;
+                }
+                else
+                {
+		    /* The rectangle doesn't overlap with this RegionRectangle, thus
+                       this Regionrectangle has to be eliminated from the region.
+                       The way we handle RegionRectangles doesn't let us just free it,
+                       we can just adjust the pointers of the previous and successive rectangles
+                       to point to each other.
+
+                       In case this RegionRectangle is the last one left in its chunk then delete the
+                       chunk. In this case a bug might arise. Read the explanation in the comment for the
+                       function _NewRegionRectangleExtChunk()
+ 		    */
+
+                    struct RegionRectangleExtChunk *NextChunk = NULL;
+
+		    /* There's always a previous rectangle. Just fix its next pointer */
+                    rr->Prev->Next = NextRR;
+
+		    /* Fix the Next rectangle's Prev pointer */
+                    if (NextRR)
+    		    {
+        		NextChunk = Chunk(NextRR);
+        		NextRR->Prev = rr->Prev;
+    		    }
+
+		    /* Is this RegionRectangle the last one in its chunk? */
+                    if (Chunk(rr->Prev) != Chunk(rr) && NextChunk != Chunk(rr))
+    		    {
+			/*
+                           If so then update the previous chunk's pointer to the next chunk
+                           to point to the correct chunk
+                        */
+                        Chunk(rr->Prev)->Rects[SIZERECTBUF-1].RR.Next = NextRR;
+
+                        /*
+                           And dispose this chunk.
+                           Have a look at the previous comment for an explanation of a
+                           bug related to this function
+                        */
+	       		_DisposeRegionRectangleExtChunk(Chunk(rr));
+    		    }
+                }
+
+                rr = NextRR;
+            }
+
+            Reg->RegionRectangle = PtrToFirst->Next;
+            if (PtrToFirst->Next)
+                PtrToFirst->Next->Prev = NULL;
+        }
     }
-
-    return FALSE;
-#if 0
-    struct RegionRectangle *rr = Reg->RegionRectangle;
-    struct Rectangle OldBounds = Reg->bounds;
-
-    if (!rr || !AndRectRect(Rect, &OldBounds, &Reg->bounds))
-    {
-        ClearRegion(Reg);
-        return TRUE;
-    }
-
-    if
-    (
-        MinX(Reg) == OldBounds.MinX &&
-        MinY(Reg) == OldBounds.MinY &&
-        MaxX(Reg) == OldBounds.MaxX &&
-        MaxY(Reg) == OldBounds.MaxY
-    )
-    {
-        return TRUE;
-    }
-
-    while
-    (
-	Rect->MinY > MaxY(rr) + OldBounds.MinY
-    )
-    {
-        rr = rr->Next;
-    }
-
-    Reg->RegionRectangle = rr;
-    rr->Prev = NULL;
-
-    while
-    (
-        rr                                      &&
-        Rect->MaxY >= MinY(rr) + OldBounds.MinY
-    )
-    {
-        /* The band overlaps with the rectangle */
-	struct RegionRectangle *LastRR   = rr->Prev;
-        struct RegionRectangle *NewFirst;
-
-        NewFirst = ShrinkBand
-        (
-            OldBounds.MinX - MinX(Reg),
-            OldBounds.MinY - MinY(Reg),
-            rr,
-            Rect->MinX - OldBounds.MinX,
-            MAX(Rect->MinY - OldBounds.MinY, MinY(rr)),
-            Rect->MaxX - OldBounds.MinX,
-            MIN(Rect->MaxY - OldBounds.MinY, MaxY(rr)),
-            &rr
-	);
-
-        if (LastRR)
-            LastRR->Next = NewFirst;
-        else
-            Reg->RegionRectangle = NewFirst;
-
-        NewFirst->Prev = LastRR;
-    }
-
-    _DisposeRegionRectangleList(rr, GfxBase);
 
     return TRUE;
-#endif
 }
 
 BOOL _AndRegionRegion
@@ -1415,19 +1354,19 @@ int main(void)
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
-    for (i = 0; i < 20; i++)
+    for (i = 0; i < 10; i++)
     {
         int l = i*20;
 
-	struct Rectangle r = {l, 0, l+11, 401};
+	struct Rectangle r = {l, 0, l+11, 201};
         _OrRectRegion(R1, &r, GfxBase);
     }
 
-    for (i = 0; i < 20; i++)
+    for (i = 0; i < 10; i++)
     {
         int u = i*20;
 
-	struct Rectangle r = {0, u, 401, u+11};
+	struct Rectangle r = {0, u, 201, u+11};
         _OrRectRegion(R2, &r, GfxBase);
     }
 
