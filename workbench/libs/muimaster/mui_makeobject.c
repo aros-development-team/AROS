@@ -344,7 +344,8 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 		MUIA_InputMode    , MUIV_InputMode_RelVerify,
 		MUIA_Background   , MUII_ButtonBack,
 		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
-		TAG_DONE);
+		MUIA_CycleChain,    1,
+                TAG_DONE);
 	}
 
         case MUIO_ImageButton: 
