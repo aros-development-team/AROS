@@ -31,9 +31,6 @@
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
-#ifndef CLIB_BOOPSISTUBS_H
-#   include <clib/boopsistubs.h>
-#endif
 
 #else
 
