@@ -84,6 +84,16 @@ __AROS_LP1(BOOL, FreeClass,
     __AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 119, Intuition)
 
+__AROS_LP2(void, FreeScreenDrawInfo,
+    __AROS_LPA(struct Screen   *, screen, A0),
+    __AROS_LPA(struct DrawInfo *, drawInfo, A1),
+    struct IntuitionBase *, IntuitionBase, 116, Intuition)
+#define FreeScreenDrawInfo(screen, drawInfo) \
+    __AROS_LC2(void, FreeScreenDrawInfo, \
+    __AROS_LCA(struct Screen   *, screen, A0), \
+    __AROS_LCA(struct DrawInfo *, drawInfo, A1), \
+    struct IntuitionBase *, IntuitionBase, 116, Intuition)
+
 __AROS_LP3(ULONG, GetAttr,
     __AROS_LPA(unsigned long, attrID, D0),
     __AROS_LPA(APTR         , object, A0),
@@ -95,6 +105,30 @@ __AROS_LP3(ULONG, GetAttr,
     __AROS_LCA(APTR         , object, A0), \
     __AROS_LCA(ULONG       *, storagePtr, A1), \
     struct IntuitionBase *, IntuitionBase, 109, Intuition)
+
+__AROS_LP1(void, GetDefaultPubScreen,
+    __AROS_LPA(UBYTE *, nameBuffer, A0),
+    struct IntuitionBase *, IntuitionBase, 97, Intuition)
+#define GetDefaultPubScreen(nameBuffer) \
+    __AROS_LC1(void, GetDefaultPubScreen, \
+    __AROS_LCA(UBYTE *, nameBuffer, A0), \
+    struct IntuitionBase *, IntuitionBase, 97, Intuition)
+
+__AROS_LP1(struct DrawInfo *, GetScreenDrawInfo,
+    __AROS_LPA(struct Screen *, screen, A0),
+    struct IntuitionBase *, IntuitionBase, 115, Intuition)
+#define GetScreenDrawInfo(screen) \
+    __AROS_LC1(struct DrawInfo *, GetScreenDrawInfo, \
+    __AROS_LCA(struct Screen *, screen, A0), \
+    struct IntuitionBase *, IntuitionBase, 115, Intuition)
+
+__AROS_LP1(struct Screen *, LockPubScreen,
+    __AROS_LPA(UBYTE *, name, A0),
+    struct IntuitionBase *, IntuitionBase, 85, Intuition)
+#define LockPubScreen(name) \
+    __AROS_LC1(struct Screen *, LockPubScreen, \
+    __AROS_LCA(UBYTE *, name, A0), \
+    struct IntuitionBase *, IntuitionBase, 85, Intuition)
 
 __AROS_LP5(struct IClass *, MakeClass,
     __AROS_LPA(UBYTE         *, classID, A0),
@@ -250,6 +284,14 @@ __AROS_LP2(ULONG, SetAttrsA,
     __AROS_LCA(struct TagItem *, tagList, A1), \
     struct IntuitionBase *, IntuitionBase, 108, Intuition)
 
+__AROS_LP1(void, SetDefaultPubScreen,
+    __AROS_LPA(UBYTE *, name, A0),
+    struct IntuitionBase *, IntuitionBase, 90, Intuition)
+#define SetDefaultPubScreen(name) \
+    __AROS_LC1(void, SetDefaultPubScreen, \
+    __AROS_LCA(UBYTE *, name, A0), \
+    struct IntuitionBase *, IntuitionBase, 90, Intuition)
+
 __AROS_LP3(void, SetWindowTitles,
     __AROS_LPA(struct Window *, window, A0),
     __AROS_LPA(UBYTE         *, windowTitle, A1),
@@ -273,6 +315,16 @@ __AROS_LP3(void, SizeWindow,
     __AROS_LCA(long           , dx, D0), \
     __AROS_LCA(long           , dy, D1), \
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
+
+__AROS_LP2(void, UnlockPubScreen,
+    __AROS_LPA(UBYTE         *, name, A0),
+    __AROS_LPA(struct Screen *, screen, A1),
+    struct IntuitionBase *, IntuitionBase, 86, Intuition)
+#define UnlockPubScreen(name, screen) \
+    __AROS_LC2(void, UnlockPubScreen, \
+    __AROS_LCA(UBYTE         *, name, A0), \
+    __AROS_LCA(struct Screen *, screen, A1), \
+    struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
 
 #endif /* CLIB_INTUITION_PROTOS_H */

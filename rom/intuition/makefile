@@ -12,7 +12,11 @@ FUNCTIONS = \
 	drawborder \
 	drawimage \
 	freeclass \
+	freescreendrawinfo \
 	getattr \
+	getdefaultpubscreen \
+	getscreendrawinfo \
+	lockpubscreen \
 	makeclass \
 	modifyidcmp \
 	modifyprop \
@@ -26,8 +30,10 @@ FUNCTIONS = \
 	refreshglist \
 	removeclass \
 	setattrsa \
+	setdefaultpubscreen \
 	setwindowtitles \
-	sizewindow
+	sizewindow \
+	unlockpubscreen
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
