@@ -248,7 +248,7 @@ GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
                 $(GENINCDIR)/proto/%(modname).h
 endif
 
-ifeq (%(modtype),mcc)
+ifneq ($(findstring %(modtype),mcc mui mcp),)
 GENFILES_TMP += %(objdir)/%(modname)_stubs.c %(objdir)/%(modname)_mcc_query.c
 endif
 
@@ -326,7 +326,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BD
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc mui mcp),)
     $(error unhandled MODTYPE X %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -340,7 +340,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 endif
 
-ifeq ($(BD_MODTYPE$(BDID)),mcc)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
   BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
   BD_SRCS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.c
   BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o
