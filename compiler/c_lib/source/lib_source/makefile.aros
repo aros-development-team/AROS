@@ -12,6 +12,8 @@ LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libarosc.a
 
+SCRIPTDIR = $(BINDIR)/scripts
+
 SRCS = LibInit.c SampleFuncs.c
 OBJS = libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
 LIB = $(SLIBDIR)/example.library
@@ -21,8 +23,17 @@ all : setup $(LIB)
 clean :
 	$(RM) *.o $(LIB)
 
-setup :
+setup : make-dirs copy-scripts
 	@echo "CFLAGS=$(CFLAGS)"
+
+make-dirs :
+	@if test ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
+
+copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk
+
+$(SCRIPTDIR)/% : %
+	$(CP) $< $@
+
 
 $(LIB) : $(OBJS) $(DEPLIBS)
 	@echo "Creating $@..."
