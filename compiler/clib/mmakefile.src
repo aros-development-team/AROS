@@ -123,6 +123,7 @@ SHARED	:= \
 	dup2 \
 	erand48 \
 	errno \
+        execvp \
 	exit \
         _exit \
 	fchmod \
