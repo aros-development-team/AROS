@@ -247,10 +247,10 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- window stuff ----------*/
 
-    data->prefs.window_inner_left = 4;
-    data->prefs.window_inner_right = 4;
-    data->prefs.window_inner_top = 4;
-    data->prefs.window_inner_bottom = 4;
+    data->prefs.window_inner_left = GetConfigULong(obj, MUICFG_Window_Spacing_Left, 4);
+    data->prefs.window_inner_right = GetConfigULong(obj, MUICFG_Window_Spacing_Right, 4);
+    data->prefs.window_inner_top = GetConfigULong(obj, MUICFG_Window_Spacing_Top, 3);
+    data->prefs.window_inner_bottom = GetConfigULong(obj, MUICFG_Window_Spacing_Bottom, 3);
     data->prefs.window_position = WINDOW_POSITION_FORGET_ON_EXIT;
 
     /*---------- group stuff ----------*/
