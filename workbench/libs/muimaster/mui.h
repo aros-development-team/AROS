@@ -477,6 +477,10 @@ struct MUI_RGBcolor
 #include "classes/settingsgroup.h"
 #endif
 
+#ifndef _MUI_CLASSES_SETTINGS_H
+#include "classes/settings.h"
+#endif
+
 #ifndef _MUI_CLASSES_ABOUTMUI_H
 #include "classes/aboutmui.h"
 #endif
