@@ -129,6 +129,7 @@ cliprects */
 #define LA_Behind	WA_Behind
 #define LA_Visible	WA_Visible
 #define LA_Shape	WA_Shape
+#define LA_ShapeHook	WA_ShapeHook
 
 
 /*
@@ -150,6 +151,35 @@ cliprects */
 
 #define IS_VISIBLE(l) (TRUE == l->visible)
 
+struct ChangeLayerShapeMsg
+{
+  struct Region   * newshape; // same as passed to ChangeLayerShape()
+  struct ClipRect * cliprect;
+  struct Region   * shape;
+};
+
+/* Msg sent through LA_ShapeHook. Hook function must look like this:
+
+    AROS_UFH3(struct Region *, MyShapeFunc,
+    	AROS_UFHA(struct Hook *, hook, A0),
+    	AROS_UFHA(struct Layer *, layer, A2),
+    	AROS_UFHA(struct ShapeHookMsg *, msg, A1))
+
+*/
+
+#define SHAPEHOOKACTION_CREATELAYER     0
+#define SHAPEHOOKACTION_MOVELAYER	    1
+#define SHAPEHOOKACTION_SIZELAYER	    2
+#define SHAPEHOOKACTION_MOVESIZELAYER   3
+
+struct ShapeHookMsg
+{
+    LONG    	     Action;
+    struct Layer    *Layer;
+    struct Region   *ActualShape;
+    struct Rectangle NewBounds;
+    struct Rectangle OldBounds;
+};
 
 #endif /* GRAPHICS_CLIP_H */
 
