@@ -44,7 +44,7 @@
 char version[]="$VER: FixFonts 40.2 (16.9.99) (c) THOR";
 
 ///main
-long __asm __saveds main(void)
+int __asm __saveds main(void)
 {
 //struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
