@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: autoinit library - automatic library opening/closing handling
+    Lang: english
+*/
+
 #include <intuition/intuition.h>
 #include <dos/dosextens.h>
 #include <proto/intuition.h>

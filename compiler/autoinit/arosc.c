@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: autoinit library - arosc.library specific code
+    Lang: english
+*/
+
 #include <aros/symbolsets.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -7,10 +15,11 @@
 int  errno;
 FILE *stdin, *stdout, *stderr;
 
-unsigned short int *const __ctype_b;
-int *const __ctype_toupper;
-int *const __ctype_tolower;
+unsigned short int * __ctype_b;
+int * __ctype_toupper;
+int * __ctype_tolower;
 
+/* in the startup code */
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
