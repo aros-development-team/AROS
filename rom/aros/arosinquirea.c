@@ -23,7 +23,7 @@
 #define LOC_MAJORV	0x0c
 #define LOC_MINORV	0x0e
 #define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
-#define ROM_END		0x1000000
+#define ROM_END 	0x1000000
 
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
@@ -80,9 +80,9 @@ IPTR kickbase(void);
     struct TagItem *tag;
     ULONG ret = 0;
 
-    D(bug("ArosInquireA(taglist=%p)\n", tags));
+    D(bug("ArosInquireA(taglist=%p)\n", taglist));
 
-    while( (tag = NextTagItem(&tags)))
+    while( (tag = NextTagItem(&taglist)))
     {
 	D(bug("  tag = $%lx\n", tag->ti_Tag));
 
