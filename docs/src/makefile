@@ -8,7 +8,10 @@ JOBDEST=$(DEST)jobserver/
 
 FILES = background faq devinfo-1 devinfo-2 devinfo-3 devinfo-4 devinfo-5 \
 	devinf_inside devinf_outside \
-	history links
+	history links \
+	jobserv-showfree \
+	jobserv-showwork \
+	jobserv-showdone \
 
 AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
 	$(TOP)/rom/dos/*.c $(TOP)/rom/intuition/*.c $(TOP)/rom/graphics/*.c \
@@ -93,13 +96,13 @@ $(DEST)background.html: background.src stathtml.gawk src2html.gawk \
 
 jobserver : jobserver-setup \
 	    $(JOBDEST).htaccess \
-	    $(JOBDEST)devlist.txt \
+	    $(JOBDEST)jobserv-add.html \
 	    $(JOBDEST)jobserv-free.html \
 	    $(JOBDEST)jobserv-work.html \
 	    $(JOBDEST)jobserv-done.html \
+	    $(JOBDEST)cgi-bin/jobserv-add.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-work.cgi \
-	    $(JOBDEST)cgi-bin/jobserv-work2.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-done.cgi \
 	    $(JOBDEST)cgi-bin/jobserv.cgi \
 	    $(JOBDEST)cgi-bin/support.lib \
@@ -122,14 +125,25 @@ $(JOBDEST)cgi-bin/%.cgi : %.cgi
 
 LITE=/usr/local/Hughes/bin/lite
 
-$(JOBDEST)cgi-bin/%.lib : %.lsrc
-	$(LITE) -l$(basename $<).lib $<
-	cp $(basename $<).lib $@
-	chmod 644 $@
+%.lib: %.lsrc
+	$(LITE) -l$@ $<
 
-$(JOBDEST)devlist.txt: devlist.gawk $(HOME)/CVSROOT/passwd.txt
-	gawk -f $< | sort > $@
+$(JOBDEST)cgi-bin/%.lib : %.lib
+	cp $< $@
 	chmod 644 $@
+	cp $< $(DEST)cgi-bin/$<
+	chmod 644 $(DEST)cgi-bin/$<
+
+$(DEST)jobserv-showfree.html : support.lib
+$(DEST)jobserv-showwork.html : support.lib
+$(DEST)jobserv-showdone.html : support.lib
+
+$(JOBDEST)jobserv-add.html: page_header.html jobserv-add.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Add jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
 
 $(JOBDEST)jobserv-free.html: page_header.html jobserv-free.body \
 	    page_footer_nolinks.html
@@ -152,31 +166,10 @@ $(JOBDEST)jobserv-done.html: page_header.html jobserv-done.body \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(DEST)jobserv-showfree.html: page_header.html jobserv-showfree.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Free jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(DEST)jobserv-showwork.html: page_header.html jobserv-showwork.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Free jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
-$(DEST)jobserv-showdone.html: page_header.html jobserv-showdone.body \
-	    page_footer_nolinks.html
-	cat $^ | \
-	    sed "s/\\\\thischapter/Finished jobs/" | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-
 $(JOBDEST)index.html : page_header.html jobserv.index \
 	    page_footer_nolinks.html
 	cat $^ | \
-	    sed "s/\\\\thischapter/Finished jobs/" | \
+	    sed "s/\\\\thischapter/WWW Jobserver Interface/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
