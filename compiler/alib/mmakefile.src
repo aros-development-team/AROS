@@ -78,6 +78,7 @@ FILES	:= \
     newloadsegtags \
     newobject \
     obtainbestpen \
+    obtaininfo \
     openamigaguide \
     openamigaguideasync \
     opencatalog \
@@ -88,6 +89,7 @@ FILES	:= \
     rangerand \
     refreshdtobject \
     refreshdtobjects \
+    releaseinfo \
     removeamigaguidehost \
     sendamigaguidecmd \
     sendamigaguidecontext \
@@ -96,6 +98,7 @@ FILES	:= \
     setattrs \
     setdtattrs \
     setgadgetattrs \
+    setinfo \
     setrpattrs \
     setsuperattrs \
     setwindowpointer \
