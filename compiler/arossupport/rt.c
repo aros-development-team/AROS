@@ -229,7 +229,7 @@ static const RTDesc RT_Resources[RTT_MAX] =
 	sizeof (MemoryResource),
 	(RT_AllocFunc) RT_AllocVec,
 	(RT_FreeFunc)  RT_FreeVec,
-	RT_Search,
+	(RT_SearchFunc)RT_SearchVec,
 	(RT_ShowError) RT_ShowErrorVec,
 	NULL, /* Check */
     },
@@ -1243,10 +1243,38 @@ static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL *
 
 static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt)
 {
-    FreeVec (rt->Memory);
+    if (rt)
+	FreeVec (rt->Memory);
 
     return TRUE;
 } /* RT_FreeVec */
+
+static IPTR RT_SearchVec (RTData * rtd, int rtt, MemoryResource ** rtptr,
+	va_list args)
+{
+    MemoryResource * rt;
+    APTR    memory;
+
+    memory = va_arg (args, APTR);
+
+    if (!memory)
+    {
+	*rtptr = NULL;
+	return RT_SEARCH_FOUND;
+    }
+
+    ForeachNode (&rtd->rtd_ResHash[rtt][CALCHASH(memory)], rt)
+    {
+	if (rt->Memory == memory)
+	{
+	    *rtptr = rt;
+
+	    return RT_SEARCH_FOUND;
+	}
+    }
+
+    return RT_SEARCH_NOT_FOUND;
+}
 
 static IPTR RT_ShowErrorVec (RTData * rtd, int rtt, MemoryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)

@@ -67,6 +67,9 @@ int main (int argc, char ** argv)
 
     FreeVec (illmem);
 
+    /* This is valid */
+    FreeVec (NULL);
+
     mem = IntuitionBase = OpenLibrary (INTUITIONNAME, 0);
 
     printf ("Bug 12: Open a window and forget about it\n");
