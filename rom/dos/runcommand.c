@@ -40,7 +40,8 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
 /*  FUNCTION
 	RunCommand() will run the command loaded in the |segList| with the
-	arguments specified with a new stack of |stacksize| bytes.
+	arguments specified with a new stack of |stacksize| bytes. Note
+	that the stacksize may be extended if this is required.
 
 	The return code of the command run will be returned.
 
@@ -89,6 +90,9 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     UBYTE *stack;
     LONG ret;
     struct StackSwapStruct sss;
+
+    if(stacksize < AROS_STACKSIZE)
+	stacksize = AROS_STACKSIZE;
 
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
     if(stack==NULL)
