@@ -2,6 +2,10 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/07/03 18:35:06  bergers
+    *** empty log message ***
+
+
     Revision 1.2  1997/06/25 21:36:44  bergers
     *** empty log message ***
 
@@ -66,24 +70,18 @@
 
 {
   char Exponent = ((char) fnum1 & FFPExponent_Mask) +
-                  ((char) fnum2 & FFPExponent_Mask) -1 - 0x40;
-  ULONG Mant1 = fnum1 & FFPMantisse_Mask;
-  ULONG Mant2 = fnum2 & FFPMantisse_Mask;
+                  ((char) fnum2 & FFPExponent_Mask) - 0x41;
+  ULONG Mant1H = (ULONG(fnum1 & FFPMantisse_Mask) >> 20);
+  ULONG Mant2H = (ULONG(fnum2 & FFPMantisse_Mask) >> 20);
+  ULONG Mant1L = (ULONG(fnum1 & FFPMantisse_Mask) >> 8) & 0x00000fff;
+  ULONG Mant2L = (ULONG(fnum2 & FFPMantisse_Mask) >> 8) & 0x00000fff;
   ULONG Testbit = 0x80000000;
-  LONG Res = 0;
-  int Count = 1;
+  LONG Res;
 
-  while (Mant1 != 0)
-  {
-    if (Testbit & Mant1)
-    {
-      Res += (Mant2 >> Count);
-      Mant1 -= Testbit;
-    }
-
-    Testbit >>= 1;
-    Count ++;
-  }
+  Res  =  (Mant1H * Mant2H) <<  8;
+  Res += ((Mant1H * Mant2L) >>  4);
+  Res += ((Mant1L * Mant2H) >>  4);
+  Res += ((Mant1L * Mant2L) >> 16);
 
   /* Bit 32 is not set */
   if ((LONG)Res > 0)
@@ -113,5 +111,6 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
+
 } /* SPMul */
 

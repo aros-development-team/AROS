@@ -59,42 +59,31 @@
 ******************************************************************************/
 
 {
-
-  ULONG Mant1, Mant2;
-  ULONG Testbit = 0x80000000;
-  LONG Res = 0;
-  int Count = 1;
+  ULONG Mant1H = ((y & 0x00fff000) >> 12 ) | 0x00000800;
+  ULONG Mant2H = ((z & 0x00fff000) >> 12 ) | 0x00000800;
+  ULONG Mant1L = y & 0x00000fff;
+  ULONG Mant2L = z & 0x00000fff;  
+  LONG Res;
   LONG Exponent =((( y & IEEESPExponent_Mask)) +
                   (( z & IEEESPExponent_Mask)) -
                   0x3f800000 );
 
-  if (y != 0)
-    Mant1 = ((y & IEEESPMantisse_Mask) | 0x00800000 )<< 8;
-  else
+  if (0 == y)
+  {
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
+  }
+  
+  if (0 == z)
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
   }
 
-  if (z != 0)
-    Mant2 = ((z & IEEESPMantisse_Mask) | 0x00800000 )<< 8;
-  else
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
-  }
-
-  while (Mant1 != 0)
-  {
-    if (Testbit & Mant1)
-    {
-      Res += (Mant2 >> Count);
-      Mant1 -= Testbit;
-    }
-
-    Testbit >>= 1;
-    Count ++;
-  }
+  Res  =  (Mant1H * Mant2H) <<  8;
+  Res += ((Mant1H * Mant2L) >>  4);
+  Res += ((Mant1L * Mant2H) >>  4);
+  Res += ((Mant1L * Mant2L) >> 16);
 
   /* Correction for precision */
   if ((char) Res < 0)
@@ -125,5 +114,5 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-} /* IEEESPMul */
 
+} /* IEEESPMul */
