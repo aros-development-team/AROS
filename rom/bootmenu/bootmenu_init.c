@@ -40,7 +40,6 @@ STATIC VOID *const LIBFUNCTABLE[] =
 
 static struct BootConfig bootcfg =
 {
-	AROS_LONG2BE(BCFG_ID),
 	&bootcfg,
 	{"vga.hidd", "hidd.gfx.vga"},
 	{"kbd.hidd", "hidd.kbd.hw"},

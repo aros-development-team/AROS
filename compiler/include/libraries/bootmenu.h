@@ -9,7 +9,6 @@ struct DefaultHidd {
 };
 
 struct BootConfig {
-	ULONG id;
 	struct BootConfig *self;
 	/* default hidds used in bootmenu and for fallback mode */
 	struct DefaultHidd defaultgfx;
@@ -27,8 +26,6 @@ struct BootMenuBase {
 	struct IntuitionBase *IntuitionBase;
 	struct BootConfig bcfg;
 };
-
-#define BCFG_ID 0x42434647
 
 #endif
 
