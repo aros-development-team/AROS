@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdiocb.h>
 #include <assert.h>
+#include <string.h>
 #include "parse_html.h"
 #include "parse.h"
 
@@ -300,6 +301,56 @@ HTML_PrintTag (HTMLTag * tag)
 	else
 	    printf ("    ARG %s\n", arg->node.name);
     }
+}
+
+String
+HTML_ReadBody (CB getc, void * stream, CBD data, const char * name, int allowNest)
+{
+    String str	 = VS_New (NULL);
+    int    start = 0;
+    int    level = 0;
+    int    c;
+
+    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+    {
+	if (c == '<')
+	    start = str->len;
+
+	if (c == '>')
+	{
+	    if (!strcasecmp (str->buffer+start+1, name))
+	    {
+		if (!allowNest)
+		{
+		    PushError ("HTML tag %s: Nested %s", name, name);
+		    VS_Delete (str);
+		    return NULL;
+		}
+		else
+		{
+		    level ++;
+		}
+	    }
+	    else if (str->buffer[start+1] == '/' &&
+		!strcasecmp (str->buffer+start+2, name))
+	    {
+		if (level == 0)
+		{
+		    if (start)
+			start --;
+		    str->len = start;
+		    str->buffer[start] = 0;
+		    break;
+		}
+		else
+		    level --;
+	    }
+	}
+
+	VS_AppendChar (str, c);
+    }
+
+    return str;
 }
 
 #ifdef TEST

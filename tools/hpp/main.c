@@ -3,13 +3,17 @@
 #include <error.h>
 #include "html.h"
 #include "parse.h"
+#include "var.h"
 
 void main (int argc, char ** argv)
 {
     StdioStream * ss;
     int t, rc;
 
+    Var_Init ();
     HTML_Init ();
+
+    Var_Set ("outputFormat", "html");
 
     for (t=1; t<argc; t++)
     {
@@ -32,6 +36,7 @@ void main (int argc, char ** argv)
     } /* for all args */
 
     HTML_Exit ();
+    Var_Exit ();
 
     ErrorExit (0);
 }

@@ -5,7 +5,7 @@ CFLAGS	 = -g -Wall -O -I../toollib
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
-OBJS	 = parse_html.o html.o main.o
+OBJS	 = parse_html.o html.o main.o var.o
 
 all : hpp
 
