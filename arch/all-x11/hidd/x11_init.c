@@ -18,9 +18,6 @@
 
 #include "x11.h"
 
-#warning FIXME: define NT_HIDD in libraries.h or something else
-#define NT_HIDD NT_LIBRARY
-
 #undef SysBase
 
 /* Customize libheader.c */
@@ -192,8 +189,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 
 		    XSetErrorHandler (MyErrorHandler);
 		    XSetIOErrorHandler (MySysErrorHandler);
-		    D(bug("error handlers set\n"));
 		    
+		    /* Turn off auto repeat */
+/*		    XAutoRepeatOff(xsd->display);
+*/		    
 		    if (initclasses(xsd))
 		    {
 			/* The X11 task should be the last one up.
