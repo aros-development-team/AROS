@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,15 +31,18 @@
 #include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
+#include <aros/symbolsets.h>
+
 #include <jinclude.h>
 #include <jpeglib.h>
 #include <jerror.h>
 #include <setjmp.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #include "methods.h"
+
+ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
@@ -240,14 +243,14 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 	(void) jpeg_read_scanlines(&cinfo, buffer, 1);
 	// D(bug("jpeg.datatype/LoadJPEG(): Copy line %ld\n", (long)cinfo.output_scanline));
 	if(!DoSuperMethod(cl, o,
-			PDTM_WRITEPIXELARRAY,		// Method_ID
-			(IPTR) buffer[0],		// PixelData
-			PBPAFMT_RGB,			// PixelFormat
-			row_stride,			// PixelArrayMod (number of bytes per row)
-			0,				// Left edge
-			cinfo.output_scanline-1,	// Top edge
-			width,				// Width
-			1))				// Height (here: one line)
+			PDTM_WRITEPIXELARRAY,		/* Method_ID */
+			(IPTR) buffer[0],		/* PixelData */
+			PBPAFMT_RGB,			/* PixelFormat */
+			row_stride,			/* PixelArrayMod (number of bytes per row) */
+			0,				/* Left edge */
+			cinfo.output_scanline-1,	/* Top edge */
+			width,				/* Width */
+			1))				/* Height (here: one line) */
 	{
 	    D(bug("jpeg.datatype/LoadJPEG(): WRITEPIXELARRAY failed\n"));
 	    JPEG_Exit(jpeghandle, ERROR_OBJECT_NOT_FOUND);
@@ -413,14 +416,14 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     {
 	// D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY line %ld\n", (long)cinfo.next_scanline));
 	if(!DoSuperMethod(cl, o,
-			PDTM_READPIXELARRAY,	// Method_ID
-			(IPTR)linebuf,		// PixelData
-			PBPAFMT_RGB,		// PixelFormat
-			width,			// PixelArrayMod (number of bytes per row)
-			0,			// Left edge
-			cinfo.next_scanline,	// Top edge
-			width,			// Width
-			1))			// Height
+			PDTM_READPIXELARRAY,	/* Method_ID */
+			(IPTR)linebuf,		/* PixelData */
+			PBPAFMT_RGB,		/* PixelFormat */
+			width,			/* PixelArrayMod (number of bytes per row) */
+			0,			/* Left edge */
+			cinfo.next_scanline,	/* Top edge */
+			width,			/* Width */
+			1))			/* Height */
 	{
 	    D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY failed!\n"));
 	    JPEG_Exit(jpeghandle, ERROR_OBJECT_WRONG_TYPE);
@@ -438,94 +441,39 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
 
 /**************************************************************************************************/
 
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-       AROS_UFHA(Class *, cl, A0),
-       AROS_UFHA(Object *, o, A2),
-       AROS_UFHA(Msg, msg, A1))
-#else
-ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-#endif
+IPTR JPEG__OM_NEW(Class *cl, Object *o, Msg msg)
 {
-#ifdef __AROS__
-    AROS_USERFUNC_INIT
-#endif
-
-    IPTR retval;
-    struct dtWrite *dtw;
-
-    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
-
-//    D(bug("jpeg.datatype/DT_Dispatcher: Entering\n"));
-
-    switch(msg->MethodID)
+    Object *newobj;
+    
+    D(bug("jpeg.datatype/DT_Dispatcher: Method OM_NEW\n"));
+    newobj = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (newobj)
     {
-	case OM_NEW:
-	    D(bug("jpeg.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    if (retval)
-	    {
-		if (!LoadJPEG(cl, (Object *)retval))
-		{
-		    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-		    retval = 0;
-		}
-	    }
-	    break;
-
-	case DTM_WRITE:
-	    D(bug("jpeg.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
-	    dtw = (struct dtWrite *)msg;
-	    if( (dtw -> dtw_Mode) == DTWM_RAW )
-	    {
-		/* Local data format requested */
-		retval = SaveJPEG(cl, o, dtw );
-	    }
-	    else
-	    {
-		/* Pass msg to superclass (which writes an IFF ILBM picture)... */
-		retval = DoSuperMethodA( cl, o, msg );
-	    }
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    
-    } /* switch(msg->MethodID) */
-
-//    D(bug("jpeg.datatype/DT_Dispatcher: Leaving\n"));
-
-    return retval;
-    
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-/**************************************************************************************************/
-
-struct IClass *DT_MakeClass(struct Library *gifbase)
-{
-    struct IClass *cl;
-    
-    cl = MakeClass("jpeg.datatype", "picture.datatype", 0, 0, 0);
-
-    D(bug("jpeg.datatype/DT_MakeClass: DT_Dispatcher 0x%lx\n", (unsigned long) DT_Dispatcher));
-
-    if (cl)
-    {
-#ifdef __AROS__
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
-    cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-    cl->cl_UserData = (IPTR)gifbase; /* Required by datatypes (see disposedtobject) */
+	if (!LoadJPEG(cl, newobj))
+	{
+	    CoerceMethod(cl, newobj, OM_DISPOSE);
+	    newobj = NULL;
+	}
     }
-
-    return cl;
+    
+    return (IPTR)newobj;
 }
 
 /**************************************************************************************************/
 
+IPTR JPEG__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
+{
+    D(bug("jpeg.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+    if( (dtw -> dtw_Mode) == DTWM_RAW )
+    {
+	/* Local data format requested */
+	return SaveJPEG(cl, o, dtw );
+    }
+    else
+    {
+	/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+	return DoSuperMethodA( cl, o, (Msg)dtw );
+    }
+}
+
+/**************************************************************************************************/
