@@ -69,8 +69,8 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     LONG retval = -1;
-    LONG index;
-
+    PalExtra_AllocList_Type index;
+    BOOL was_shared = FALSE;
     /*
        Change the calculation of the color if the entries
        in the colortable attached to the colormap structure
@@ -99,13 +99,13 @@
 
         	    pe->pe_NFree--;
 
-        	    if ((UBYTE)-1 == pe->pe_AllocList[n])
+        	    if ((PalExtra_AllocList_Type)-1 == PALEXTRA_ALLOCLIST(pe, n))
         		pe->pe_FirstFree = (UWORD)-1;
         	    else
-        		pe->pe_FirstFree = pe->pe_AllocList[n];
+        		pe->pe_FirstFree = PALEXTRA_ALLOCLIST(pe, n);
 
         	    /* mark that entry as used */
-        	    pe->pe_AllocList[n] = -1;
+        	    PALEXTRA_ALLOCLIST(pe, n) = (PalExtra_AllocList_Type)-1;
 
         	} /* if (pe->pe_FirstFree == n) */
         	else
@@ -114,21 +114,21 @@
         	       walk through the list of free entries and see whether 
         	       the requested one is still available. 
         	    */
-        	    index = pe->pe_FirstFree;
+        	    index = (PalExtra_AllocList_Type)pe->pe_FirstFree;
 
-        	    while ((UBYTE)-1 != index)
+        	    while ((PalExtra_AllocList_Type)-1 != index)
         	    {
-        		if (n == pe->pe_AllocList[index])
+        		if (n == PALEXTRA_ALLOCLIST(pe, index))
         		{
         		    /* it's still free! So I allocate it */
         		    retval = n;
-        		    pe->pe_AllocList[index] = pe->pe_AllocList[n];
-        		    pe->pe_AllocList[n] = (UBYTE)-1;
+        		    PALEXTRA_ALLOCLIST(pe, index) = PALEXTRA_ALLOCLIST(pe, n);
+        		    PALEXTRA_ALLOCLIST(pe, n) = (PalExtra_AllocList_Type)-1;
         		    pe->pe_NFree--;
         		    break;
         		}
         		else
-        		    index = pe->pe_AllocList[index];
+        		    index = PALEXTRA_ALLOCLIST(pe, index);
 
         	    } /* while */
 		  
@@ -144,7 +144,7 @@
         	   I recognize that a pen is already shared by its entry
         	   in pe_RefCnt being != 0.
         	*/
-        	if (pe->pe_RefCnt[n] != 0)
+        	if (PALEXTRA_REFCNT(pe, n) != 0)
         	{
         	    /* 
         	       this one is already in shared mode, so test
@@ -154,13 +154,14 @@
         	    if (TRUE == color_equal(cm,r,g,b,n))
         	    {
         		/* increase the RefCnt */
-        		pe->pe_RefCnt[n]++;
+        		PALEXTRA_REFCNT(pe, n)++;
+			was_shared = TRUE;
         		retval = n;
         	    }
-        	} /* if (pe->pe_RefCnt[n] != 0) */
+        	} /* if PALEXTRA_REFCNT(pe, n) != 0) */
         	else
         	{
-        	    /* 
+       	    	    /* 
         	    ** The RefCnt is 0, so the pen is probably still in the
         	    ** free list unless it is an exclusive pen.
         	    */
@@ -169,10 +170,10 @@
         		/* it is the very first one of available pens */
         		retval = n;
 
-        		if ((UBYTE)-1 == pe->pe_AllocList[n])
+        		if ((PalExtra_AllocList_Type)-1 == PALEXTRA_ALLOCLIST(pe, n))
         		    pe->pe_FirstFree = (UWORD)-1;
         		else
-        		    pe->pe_FirstFree = (UWORD)pe->pe_AllocList[n];
+        		    pe->pe_FirstFree = (UWORD)PALEXTRA_ALLOCLIST(pe, n);
         		/* mark that entry as shared */
 
         	    } /* if (pe->pe_FirstFree == n) */
@@ -182,21 +183,20 @@
         		   walk through the list of free entries and see whether 
         		   the requested one is still available 
         		*/
-        		index = pe->pe_FirstFree;
+        		index = (PalExtra_AllocList_Type)pe->pe_FirstFree;
 
-        		while ((UBYTE)-1 != index)
+        		while ((PalExtra_AllocList_Type)-1 != index)
         		{
-        		    if (n == pe->pe_AllocList[index])
+        		    if ((PalExtra_AllocList_Type)n == PALEXTRA_ALLOCLIST(pe, index))
         		    {
                 		/* it's still free! So I allocate it */
                 		retval = n;
-
-                		pe->pe_AllocList[index] = pe->pe_AllocList[n];
+                		PALEXTRA_ALLOCLIST(pe, index) = PALEXTRA_ALLOCLIST(pe, n);
 
                 		break;
         		    }
         		    else
-                	        index = pe->pe_AllocList[index];
+                	        index = PALEXTRA_ALLOCLIST(pe, index);
 			    
         		} /* while */
 			
@@ -204,14 +204,14 @@
 
         	    if (-1 != retval)
         	    {
-        		pe->pe_AllocList[n] = (UBYTE)pe->pe_FirstShared;
+        		PALEXTRA_ALLOCLIST(pe, n) = (PalExtra_AllocList_Type)pe->pe_FirstShared;
         		pe->pe_FirstShared = n;
         		pe->pe_NFree--;
         		pe->pe_NShared++;
-        		pe->pe_RefCnt[n] = 1;
+        		PALEXTRA_REFCNT(pe, n) = 1;
         	    } 
 		  
-        	} /* (pe->pe_RefCnt[n] == 0) */
+        	} /* (PALEXTRA_REFCNT(pe, n) == 0) */
 	      
 	    } /* shared access */
 	  
@@ -236,9 +236,9 @@
         	    if (0 == pe->pe_NFree)
         	        pe->pe_FirstFree = (UWORD)-1;
         	    else
-        	        pe->pe_FirstFree = pe->pe_AllocList[retval];
-        	    pe->pe_AllocList[retval] = (UBYTE)-1;
-        	    pe->pe_RefCnt[retval] = 0;
+        	        pe->pe_FirstFree = (UWORD)PALEXTRA_ALLOCLIST(pe, retval);
+        	    PALEXTRA_ALLOCLIST(pe, retval) = (PalExtra_AllocList_Type)-1;
+        	    PALEXTRA_REFCNT(pe, retval) = 0;
         	}
 		
 	    } /* if (0 != (flags & PENF_EXCLUSIVE)) */
@@ -252,17 +252,18 @@
         	** be found there then take an entry out of the
         	** free list.
         	*/
-        	index = pe->pe_FirstShared;
-        	while (-1 != (BYTE)index)
+        	index = (PalExtra_AllocList_Type)pe->pe_FirstShared;
+        	while ((PalExtra_AllocList_Type)-1 != index)
         	{
         	    if (TRUE == color_equal(cm,r,g,b,index))
         	    {
         		/* That's a good one */
         		retval = index;
-        		pe->pe_RefCnt[retval]++;
+        		PALEXTRA_REFCNT(pe, retval)++;
+			was_shared = TRUE;
         		break;
         	    }
-        	    index = pe->pe_AllocList[index];
+        	    index = PALEXTRA_ALLOCLIST(pe, index);
         	}
 
         	/* 
@@ -275,11 +276,11 @@
         	    if (0 == pe->pe_NFree)
         		pe->pe_FirstFree = (UWORD)-1;
         	    else
-        		pe->pe_FirstFree = pe->pe_AllocList[retval];
+        		pe->pe_FirstFree = (UWORD)PALEXTRA_ALLOCLIST(pe, retval);
 
-        	    pe->pe_AllocList[retval] = pe->pe_FirstShared;
+        	    PALEXTRA_ALLOCLIST(pe, retval) = (PalExtra_AllocList_Type)pe->pe_FirstShared;
         	    pe->pe_FirstShared = retval;
-        	    pe->pe_RefCnt[retval] = 1;
+        	    PALEXTRA_REFCNT(pe, retval) = 1;
 		    pe->pe_NShared++;
         	}
 	      
@@ -289,7 +290,7 @@
 	
     } /* if (NULL != pe && (n <= pe->pe_SharableColors || -1 == n )) */
 
-    if (-1 != retval && 0 == (flags & PENF_NO_SETCOLOR))
+    if (-1 != retval && 0 == (flags & PENF_NO_SETCOLOR) && FALSE == was_shared)
     {
         /* Change the rgb values for the selected pen */
 	

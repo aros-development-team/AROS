@@ -68,6 +68,14 @@ struct RegionRectangleExtChunk
 #define Counter(x) (RRE(x)->Counter)
 #define Chunk(x)   ((x) ? ((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)]) : NULL)
 
+/* PaletteExtra internals */
+
+typedef WORD PalExtra_RefCnt_Type;
+typedef WORD PalExtra_AllocList_Type;
+
+#define PALEXTRA_REFCNT(pe,n) 	    (((PalExtra_RefCnt_Type *)(pe)->pe_RefCnt)[(n)])
+#define PALEXTRA_ALLOCLIST(pe,n)    (((PalExtra_AllocList_Type *)(pe)->pe_AllocList)[(n)])
+
 /* Internal GFXBase struct */
 struct GfxBase_intern
 {

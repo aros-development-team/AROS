@@ -50,9 +50,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct PaletteExtra *pe = cm->PalExtra;
-    LONG    	    	retval = -1;
-    ULONG   	    	index;
+    struct PaletteExtra     	*pe = cm->PalExtra;
+    LONG    	    	    	retval = -1;
+    PalExtra_AllocList_Type   	index;
 
     if (NULL != pe)
     {
@@ -84,8 +84,8 @@
 	** Walk through the list of shared pens and search
 	** for the closest color.
 	*/
-	index = pe->pe_FirstShared;
-	while (-1 != (BYTE)index)
+	index = (PalExtra_AllocList_Type)pe->pe_FirstShared;
+	while ((PalExtra_AllocList_Type)-1 != index)
 	{
 	    ULONG distance = color_distance(cm,r,g,b,index);
 	    
@@ -95,9 +95,11 @@
         	retval        = index;
 	    }
 	    
-	    index = pe->pe_AllocList[index];
+	    index = PALEXTRA_ALLOCLIST(pe, index);
 	}
-    #warning The color distance calc might be different than in AmigaOS. 
+
+    	#warning The color distance calc might be different than in AmigaOS. 
+
 	/* 
 	** If the best distance to an available color is greater than
 	** the square of the tolerance, try to allocate a better
@@ -121,7 +123,7 @@
 	    ** return -1 if the user specified OBP_FailIfBad = TRUE.
 	    */
 	    LONG tmp = ObtainPen(cm,-1,r,g,b,0);
-	    
+
 	    if (-1 == tmp)
 	    {
         	/* 
@@ -138,7 +140,7 @@
 		    ** One more application is using this color
 		    */
 		    
-		    pe->pe_RefCnt[retval]++;
+		    PALEXTRA_REFCNT(pe, retval)++;
 		}
 	    }
 	    else
@@ -149,7 +151,7 @@
 	    /*
 	    ** One more application is using this color
 	    */
-	    pe->pe_RefCnt[retval]++;
+	    PALEXTRA_REFCNT(pe, retval)++;
 	}
 
 	ReleaseSemaphore(&pe->pe_Semaphore);

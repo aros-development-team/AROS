@@ -65,8 +65,8 @@
 	** if you change the number of byte allocated here then you
 	** must also make chnages to FreeColorMap()!
 	*/
-	pe->pe_RefCnt    = AllocMem(cm->Count, MEMF_CLEAR);
-	pe->pe_AllocList = AllocMem(cm->Count, MEMF_ANY);
+	pe->pe_RefCnt    = AllocMem(cm->Count * sizeof(PalExtra_RefCnt_Type), MEMF_CLEAR);
+	pe->pe_AllocList = AllocMem(cm->Count * sizeof(PalExtra_AllocList_Type), MEMF_ANY);
 
 	if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
 	{
@@ -74,7 +74,7 @@
 	    ULONG i = 0;
 	    while (i < cm->Count)
 	    {
-                pe->pe_AllocList[i] = (BYTE)i-1;
+                PALEXTRA_ALLOCLIST(pe, i) = (PalExtra_AllocList_Type)i-1;
                 i++;
 	    }
 
@@ -100,9 +100,9 @@
 	{
 	    /* some memory allocation failed */
 	    if (pe->pe_RefCnt)
-                FreeMem(pe->pe_RefCnt, cm->Count);
+                FreeMem(pe->pe_RefCnt, cm->Count * sizeof(PalExtra_RefCnt_Type));
 	    if (pe->pe_AllocList) 
-                FreeMem(pe->pe_AllocList, cm->Count);
+                FreeMem(pe->pe_AllocList, cm->Count* sizeof(PalExtra_AllocList_Type));
 	    FreeMem(pe, sizeof(struct PaletteExtra));
 	    return 1;
 	}

@@ -54,120 +54,125 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  if (NULL != cm && n < cm->Count)
-  {
-    struct PaletteExtra * pe = cm->PalExtra;
-    ULONG index;
-
-    ObtainSemaphore(&pe->pe_Semaphore);
-    /* First I check whether this pen is somewhere in the
-       free list already...
-    */
-    index = pe->pe_FirstFree;
-    while (-1 != (BYTE)index)
+    if (NULL != cm && n < cm->Count)
     {
-      if (index == n)
-        goto exit;
-      index = pe->pe_AllocList[index];
-    }
+	struct PaletteExtra * pe = cm->PalExtra;
+	PalExtra_AllocList_Type index;
+
+	ObtainSemaphore(&pe->pe_Semaphore);
+	/* First I check whether this pen is somewhere in the
+	   free list already...
+	*/
+	
+	index = pe->pe_FirstFree;
+	while ((PalExtra_AllocList_Type)-1 != index)
+	{
+	    if (index == (PalExtra_AllocList_Type)n)
+            	goto exit;
+		
+	    index = PALEXTRA_ALLOCLIST(pe, index);
+	}
+
+	/*
+	** It is not in the free list.
+	** If it is a shared pen, then I can recognize this 
+	** by its value in the RefCnt
+	*/
+
+	if (0 != PALEXTRA_REFCNT(pe,n))
+	{
+	    /* 
+	    ** A SHARED pen
+	    */
+	    PALEXTRA_REFCNT(pe, n)--;
+	    if (0 == PALEXTRA_REFCNT(pe, n))
+	    {
+        	BOOL found = FALSE;
+        	/* 
+        	** I can take this out if the list of shared pens
+        	** since this was the last application that used
+        	** this pen.
+        	*/
+        	index = pe->pe_FirstShared;
+        	if ((PalExtra_AllocList_Type)n == index)
+        	{
+        	    found = TRUE;
+        	    /*
+        	    ** it's the very first one.
+        	    */
+        	    /* 
+        	    ** Take it out of the list of entries in
+        	    ** the shared list...
+        	    */
+        	    if ((PalExtra_AllocList_Type)-1 == PALEXTRA_ALLOCLIST(pe,n))
+        		pe->pe_FirstShared = (WORD)-1;
+        	    else
+        		pe->pe_FirstShared = (WORD)PALEXTRA_ALLOCLIST(pe,n);
+
+        	    pe->pe_NShared--;
+
+        	    /*
+        	    ** ... and make it available in the list of free
+        	    ** entries.
+        	    */
+        	    PALEXTRA_ALLOCLIST(pe,n) = (PalExtra_AllocList_Type)pe->pe_FirstFree;
+        	    pe->pe_FirstFree = n;
+        	    pe->pe_NFree++;
+        	}
+        	else
+        	{
+        	    do
+        	    {
+        		if ((PalExtra_AllocList_Type)n == PALEXTRA_ALLOCLIST(pe, index))
+        		{
+        		    found = TRUE;
+
+        		    /*
+        		    ** Take it out of the list of shared entries
+        		    */
+        		    PALEXTRA_ALLOCLIST(pe, index) = PALEXTRA_ALLOCLIST(pe, n);
+        		    pe->pe_NShared--;
+
+        		    /*
+        		    ** ... and make it available in the list of free
+        		    ** entries.
+        		    */
+        		    PALEXTRA_ALLOCLIST(pe, n) = (PalExtra_AllocList_Type)pe->pe_FirstFree;
+        		    pe->pe_FirstFree = n;
+        		    pe->pe_NFree++;
+        		    break;
+        		}
+        		else
+        		    index = PALEXTRA_ALLOCLIST(pe, index);
+        	    }
+        	    while ((PalExtra_AllocList_Type)-1 != index);
+        	}
+
+	    #if DEBUG
+        	if (FALSE==found)
+        	    D(bug("Error in RealsePen() pen = %d!\n",n));
+	    #endif
+
+	    } /* if (no further app needs this pen) */
+	  
+	} /* if (0 != PALEXTRA_REFCNT(pe,n)) */
+	else
+	{
+	    /* releasing an EXCLUSIVE pen */
+	    D(bug("Releasing (exclusive) pen %d\n"));
+	    
+	    PALEXTRA_ALLOCLIST(pe, n) = pe->pe_FirstFree;
+	    pe->pe_FirstFree = n;
+	    pe->pe_NFree++;
+	}
+  exit:
+	ReleaseSemaphore(&pe->pe_Semaphore);  
+
+    } /* if (NULL != cm && n < cm->Count) */
+
+    AROS_LIBFUNC_EXIT
     
-    /*
-    ** It is not in the free list.
-    ** If it is a shared pen, then I can recognize this 
-    ** by its value in the RefCnt
-    */
-    
-    if (0 != pe->pe_RefCnt[n])
-    {
-      /* 
-      ** A SHARED pen
-      */
-      pe->pe_RefCnt[n]--;
-      if (0 == pe->pe_RefCnt[n])
-      {
-        BOOL found = FALSE;
-        /* 
-        ** I can take this out if the list of shared pens
-        ** since this was the last application that used
-        ** this pen.
-        */
-        index = pe->pe_FirstShared;
-        if (n == index)
-        {
-          found = TRUE;
-          /*
-          ** it's the very first one.
-          */
-          /* 
-          ** Take it out of the list of entries in
-          ** the shared list...
-          */
-          if ((UBYTE)-1 == pe->pe_AllocList[n])
-            pe->pe_FirstShared = (WORD)-1;
-          else
-            pe->pe_FirstShared = (WORD)pe->pe_AllocList[n];
-          
-          pe->pe_NShared--;
-          
-          /*
-          ** ... and make it available in the list of free
-          ** entries.
-          */
-          pe->pe_AllocList[n] = (UBYTE)pe->pe_FirstFree;
-          pe->pe_FirstFree = n;
-          pe->pe_NFree++;
-        }
-        else
-        {
-          do
-          {
-            if ((UBYTE)n == pe->pe_AllocList[index])
-            {
-              found = TRUE;
-              
-              /*
-              ** Take it out of the list of shared entries
-              */
-              pe->pe_AllocList[index] = pe->pe_AllocList[n];
-              pe->pe_NShared--;
-              
-              /*
-              ** ... and make it available in the list of free
-              ** entries.
-              */
-              pe->pe_AllocList[n] = (UBYTE)pe->pe_FirstFree;
-              pe->pe_FirstFree = n;
-              pe->pe_NFree++;
-              break;
-            }
-            else
-              index = pe->pe_AllocList[index];
-          }
-          while (-1 != (BYTE)index);
-        }
-        
-#if DEBUG
-        if (FALSE==found)
-          D(bug("Error in RealsePen() pen = %d!\n",n));
-#endif
-
-      } /* if (no further app needs this pen) */
-    }
-    else
-    {
-      /* releasing an EXCLUSIVE pen */
-      D(bug("Releasing (exclusive) pen %d\n"));
-      pe->pe_AllocList[n] = pe->pe_FirstFree;
-      pe->pe_FirstFree    = n;
-      pe->pe_NFree++;
-    }
-exit:
-    ReleaseSemaphore(&pe->pe_Semaphore);  
-  
-  }
-
-  AROS_LIBFUNC_EXIT
 } /* ReleasePen */
