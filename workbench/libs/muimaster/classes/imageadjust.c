@@ -417,7 +417,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    data->bitmap_string = bitmap_string;
 	    data->bitmap_image = bitmap_image;
 	    data->bitmap_hook.h_Entry = HookEntry;
-	    data->bitmap_hook.h_SubEntry = (APTR)Bitmap_Function;
+	    data->bitmap_hook.h_SubEntry = (HOOKFUNC)Bitmap_Function;
 	    DoMethod(bitmap_popasl, MUIM_Notify, MUIA_Popasl_Active, FALSE,
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->bitmap_hook, (IPTR)data);
 	    DoMethod(bitmap_string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
