@@ -41,7 +41,8 @@ FUNCTIONS = \
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
-ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
+ASMFUNCTIONS = \
+	forbid disable getcc cacheclearu cachepredma cachepostdma coldreboot
 
 # ***** Not Native ***************
 else

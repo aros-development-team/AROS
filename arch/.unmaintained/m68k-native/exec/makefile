@@ -10,7 +10,7 @@ OBJDIR=$(OSGENDIR)/exec
 MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = disable forbid getcc \
-	cacheclearu cachepredma cachepostdma
+	cacheclearu cachepredma cachepostdma coldreboot
 
 all: setup \
 	$(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
