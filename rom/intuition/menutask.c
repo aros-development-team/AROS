@@ -61,7 +61,7 @@ static void HandleCheckItem(struct Window *win, struct MenuItem *item,
 static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
 			       struct IntuitionBase *IntuitionBase);
 
-static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd);
+static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static struct MenuItem *FindItem(WORD *var, struct MenuHandlerData *mhd);
 static struct MenuItem *FindSubItem(WORD *var, struct MenuHandlerData *mhd);
 
@@ -369,7 +369,7 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 	{
 	    /* Mouse over menu box */
 	    
-	    menu = FindMenu(&new_activemenunum, mhd);
+	    menu = FindMenu(&new_activemenunum, mhd, IntuitionBase);
 	    
 	    if (new_activemenunum != mhd->activemenunum)
 	    {
@@ -620,7 +620,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 
 /**************************************************************************************************/
 
-static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd)
+static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct Menu *menu;
     WORD    	mouse_x, mouse_y, i;
