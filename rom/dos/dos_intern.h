@@ -226,4 +226,12 @@ struct debug_segnode
     BPTR           seglist;
 };
 
+struct InternalExAllControl
+{
+    struct ExAllControl   eac;
+    /* Used for ExAll emulation. If non null, it means
+       ExAll emulation is being performed.  */
+    struct FileInfoBlock *fib;
+};    
+    
 #endif /* DOS_INTERN_H */

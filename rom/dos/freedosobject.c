@@ -66,9 +66,14 @@
 	case DOS_STDPKT:
 	    FreeMem((APTR)(ptr-(APTR)(&((struct StandardPacket *)0)->sp_Pkt)),sizeof(struct StandardPacket));
 	    break;
+	    
 	case DOS_EXALLCONTROL:
-	    FreeMem(ptr,sizeof(struct ExAllControl));
+	    if (((struct InternalExAllControl *)ptr)->fib)
+	        FreeDosObject(DOS_FIB, ((struct InternalExAllControl *)ptr)->fib);
+	    
+	    FreeMem(ptr, sizeof(struct ExAllControl));
 	    break;
+	    
 	case DOS_CLI:
 	{
 	    struct CommandLineInterface *cli=(struct CommandLineInterface *)ptr;
