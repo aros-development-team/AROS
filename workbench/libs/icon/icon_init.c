@@ -44,7 +44,7 @@ const struct Resident Icon_resident=
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
-    80,
+    -120,		/* priority */
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
