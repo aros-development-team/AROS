@@ -35,16 +35,7 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 
-//#include <graphics/gfx.h>
-//#include <intuition/intuition.h>
-//#include <utility/tagitem.h>
-//#include <proto/graphics.h>
-//#include <proto/intuition.h>
 #include <devices/keyboard.h>
-
-#include <hidd/hidd.h>
-#include <hidd/serial.h>
-#include <hidd/irq.h>
 
 #include <memory.h>
 
@@ -54,11 +45,6 @@
 #include <asm/ptrace.h>
 #include "etask.h"
 #include "../speaker.h"
-
-void Handler(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-void InitKeyboard(void);
-
-void hidd_demo();
 
 extern _end;
 
@@ -115,6 +101,7 @@ extern const struct Resident
     ide_resident,
     Workbench_resident,
     Mathffp_resident,
+    boot_resident,
     Dos_resident,
     LDDemon_resident,
     con_handler_resident,
@@ -153,9 +140,7 @@ static const struct Resident *romtagList[] =
     /* BOCHS doesn't like something in there: error "unsupported CMOS read, address = 0x701" */
     &TrackDisk_resident,	    /* ColdStart,   4    */	//Trackdisk		
 #endif
-#if AROS_IDE_DRIVER == 1
     &ide_resident,                  /* ColdStart,   4    */	//IDE device
-#endif
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
 //    &Workbench_resident,		    /* ColdStart,  -120  */
@@ -166,7 +151,7 @@ static const struct Resident *romtagList[] =
 	initialized boot_resident will directly call Dos_resident and
 	anything between the two will be skipped.
     */
-//    &boot_resident,			    /* ColdStart,  -50	 */
+    &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_resident,			    /* None,	   -120  */
     &LDDemon_resident,		    /* AfterDOS,   -125  */
     &con_handler_resident,		    /* AfterDOS,   -126  */
@@ -205,15 +190,6 @@ int main()
     char text0[] = "AROS - The Amiga Research OS\n";
     char text1[60];
     char text2[] = "\nOops! Kernel under construction...\n";
-    char key;
-    static char transl[] =
-    { ' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ' ', ' ', ' ',
-      ' ', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', ' ', ' ', 10,
-      ' ', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ' ', ' ', ' ', ' ', 
-      ' ', 'Z', 'X', 'C', 'V', 'B', 'N', 'M' };
-
-    OOP_Object *o;
-
     void *ptr = (void*)((ULONG)(&_end + 15) & ~15);
 
 /* Get memory size. This code works even with 4GB of memory
@@ -293,25 +269,6 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
-    /* Debug(0); */
-
-    /* KeyCode -> ASCII conversion table */
-
-
-#if !AROS_IDE_DRIVER
-    InitKeyboard();
-    kprintf("--------------------------------------------------------------------------------");
-    kprintf("                 Insert a bootable disk in DF0: and press ENTER                 ");
-    kprintf("--------------------------------------------------------------------------------");
-    do
-    {
-       key = GetK();
-       key = transl[(key == 0x39) ? 1 : key - 1];
-       UnGetK();
-    } while(key !=10);
-#endif
-
-	InitResident(&Dos_resident,0);	// should be placed into boot_resident later
     /*
 	All done. In normal cases CPU should never reach this instructions
     */
