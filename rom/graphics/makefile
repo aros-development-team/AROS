@@ -15,6 +15,7 @@ FUNCTIONS = \
 	initrastport \
 	move \
 	openfont \
+	polydraw \
 	readpixel \
 	rectfill \
 	scrollraster \

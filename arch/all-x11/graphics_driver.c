@@ -362,11 +362,26 @@ void driver_Draw (struct RastPort * rp, long x, long y,
 	    x, y);
 }
 
+ULONG driver_ReadPixel (struct RastPort * rp, long x, long y,
+		    struct GfxBase * GfxBase)
+{
+    return 0;
+}
+
 void driver_WritePixel (struct RastPort * rp, long x, long y,
 		    struct GfxBase * GfxBase)
 {
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
+}
+
+void driver_PolyDraw (struct RastPort * rp, long count, WORD * coords,
+		    struct GfxBase * GfxBase)
+{
+    XDrawLines (sysDisplay, GetXWindow(rp), GetGC(rp),
+	    (XPoint *)coords, count,
+	    CoordModeOrigin
+    );
 }
 
 void driver_SetRast (struct RastPort * rp, unsigned long color,
