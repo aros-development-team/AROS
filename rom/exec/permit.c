@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 #include <proto/exec.h>
 
 /*****************************************************************************/
@@ -67,10 +68,11 @@
 	should allow it.
     */
 #if 1
-    --SysBase->TDNestCnt;
-
+    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
 #else
-    if(    ( --SysBase->TDNestCnt < 0 )
+    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
+    
+    if(    ( SysBase->TDNestCnt < 0 )
 	&& ( SysBase->IDNestCnt < 0 )
 	&& ( SysBase->AttnResched & 0x80 ) )
     {
@@ -79,6 +81,7 @@
 
 	    Clear the Switch() pending flag.
 	*/
+	
 	Disable();
 	SysBase->AttnResched &= ~0x80;
 	Switch();
