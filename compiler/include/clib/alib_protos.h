@@ -17,6 +17,9 @@
 #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 
 /*
     Prototypes
