@@ -112,6 +112,11 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
 #define AUX_RECONNECT           170
 #define AUX_ACK                 0xFA 
 
+#define aux_write(val)				\
+    ({	data->u.ps2.expected_mouse_acks++;	\
+        aux_write_ack(val);			\
+	})
+
 unsigned char handle_kbd_event(void);
 void kb_wait(void);
 void kbd_write_cmd(int cmd);
@@ -179,7 +184,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             else if (mousecode == AUX_RECONNECT)
             {
                 data->u.ps2.mouse_collected_bytes = 0;
-                aux_write_ack(KBD_OUTCMD_ENABLE);   /* Ping mouse */
+                aux_write(KBD_OUTCMD_ENABLE);   /* Ping mouse */
             }
             else
             {
@@ -282,18 +287,18 @@ int mouse_ps2reset(struct mouse_data *data)
 	return 0;
 
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
-    aux_write_ack(KBD_OUTCMD_SET_RATE);
-    aux_write_ack(80);
-    aux_write_ack(KBD_OUTCMD_SET_RES);
-    aux_write_ack(3);
-    aux_write_ack(KBD_OUTCMD_SET_SCALE11);
+    aux_write(KBD_OUTCMD_SET_RATE);
+    aux_write(80);
+    aux_write(KBD_OUTCMD_SET_RES);
+    aux_write(3);
+    aux_write(KBD_OUTCMD_SET_SCALE11);
     kbd_write_command(KBD_CTRLCMD_MOUSE_DISABLE);
     kbd_write_cmd(AUX_INTS_OFF);
     
     /* Enable Aux device */
     
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
-    aux_write_ack(KBD_OUTCMD_ENABLE);
+    aux_write(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
     
     data->u.ps2.expected_mouse_acks = 6; /* for each aux_write_ack */
