@@ -68,29 +68,40 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(setjmp):
+#if OLDJMP
 	move.l	env(sp),a0		/* save area pointer */
-	move.l	retaddr(sp),(a0)+	/* save old PC */
+	move.l	retaddr(sp),(a0)+	/* save old PC (return address) */
 	lea	env(sp),a1		/* adjust saved SP since we won't rts */
 	move.l	a1,(a0)+		/* save old SP */
 	movem.l	d2-d7/a2-a6,(a0)	/* save remaining non-scratch regs */
 	clr.l	d0			/* return 0 */
 	rts
+#else
+	/* New version adapted from libnix instead of ixemul.
+         * Note the slightly different register save order.
+         */
+	move.l	4(sp),a0		/* get address of jmp_buf */
+	move.l	(sp),(a0)+		/* store return address */
+	movem.l	d2-d7/a2-a6/sp,(a0)	/* store all registers except scratch */
+	moveq.l	#0,d0			/* return 0 */
+	rts
+#endif
 
 /*
 	The jmp_buf is filled as follows (d0/d1/a0/a1 are not saved):
 
 	_jmp_buf	offset	contents
 	[0]   		0	old pc
-	[1]		4	old sp
-	[2]		8	d2
-	[3]		12	d3
-	[4]		16	d4
-	[5]		20	d5
-	[6]		24	d6
-	[7]		28	d7
-	[8]		32	a2
-	[9]		36	a3
-	[10]		40	a4
-	[11]		44	a5
-	[12]		48	a6
+	[1]		4	d2
+	[2]		8	d3
+	[3]		12	d4
+	[4]		16	d5
+	[5]		20	d6
+	[6]		24	d7
+	[7]		28	a2
+	[8]		32	a3
+	[9]		36	a4
+	[10]		40	a5
+	[11]		44	a6
+	[12]		48	old sp
 */
