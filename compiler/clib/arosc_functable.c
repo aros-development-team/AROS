@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
+#include <errno.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */

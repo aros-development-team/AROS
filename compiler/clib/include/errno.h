@@ -134,10 +134,12 @@
 
 #define EDEADLOCK	EDEADLK
 
-#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
-    extern int errno;
-#else
-#include <libraries/arosc.h>
-#endif
+__BEGIN_DECLS
+
+int *__get_errno_ptr(void);
+
+__END_DECLS
+
+#define errno (*__get_errno_ptr())
 
 #endif /* _ERRNO_H_ */

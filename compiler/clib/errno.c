@@ -6,8 +6,17 @@
     Lang: english
 */
 
+
+int * __get_errno_ptr(void)
+{
 #ifndef  _CLIB_KERNEL_
+    static int __errno;
 
-int errno;
+    return &__errno;
+#else
+    GETUSER;
 
+    return clib_userdata->errnoptr;
 #endif
+}
+
