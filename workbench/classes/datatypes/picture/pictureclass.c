@@ -63,45 +63,11 @@ const IPTR SupportedMethods[] =
  (~0)
 };
 
-STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg);
+
+STATIC ULONG NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
 {
  return(DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags));
-}
-
-STATIC IPTR DT_NotifyMethod(struct IClass *cl, struct Gadget *g, struct opUpdate *msg)
-{
-#ifdef MYDEBUG
- struct TagItem *tl;
- struct TagItem *ti;
-
- register int i;
- int Known;
-
- Known=FALSE;
-
- tl=msg->opu_AttrList;
-
- while(ti=NextTagItem(&tl))
- {
-  for(i=0; i<NumAttribs; i++)
-  {
-   if(ti->ti_Tag==KnownAttribs[i])
-   {
-    Known=TRUE;
-
-    D(bug("picture.datatype/OM_NOTIFY: %s %ld\n", AttribNames[i], ti->ti_Data));
-   }
-  }
-
-  if(!Known)
-  {
-   D(bug("picture.datatype/OM_NOTIFY: 0x%lx %ld\n", ti->ti_Tag, ti->ti_Data));
-  }
- }
-
-#endif /* MYDEBUG */
-
- return(DoSuperMethodA(cl, (Object *) g, (Msg) msg));
 }
 
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
@@ -119,20 +85,20 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
  st=GetTagData(DTA_SourceType, DTST_FILE, attrs);
  
  /*
-  * DTST_RAM and DTST_HOTLINK not supported (yet??)
+  *  DTST_RAM and DTST_HOTLINK not supported (yet??)
   */
  if(!((st==DTST_CLIPBOARD) || (st==DTST_FILE)))
  {
   D(bug("picture.datatype/OM_NEW: wrong DTA_SourceType\n"));
 
   SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-  return(FALSE);
+  return(NULL);
  }
  
  g=(struct Gadget *) DoSuperMethodA(cl, o, (Msg) msg);
  if(!g)
  {
-  return(FALSE);
+  return(NULL);
  }
 
  pd=(struct Picture_Data *) INST_DATA(cl, g);
@@ -141,6 +107,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
 
  pd->Precision=PRECISION_IMAGE;
  pd->ModeID=INVALID_ID;
+ pd->Remap=TRUE;
 
  while((ti=NextTagItem(&attrs)))
  {
@@ -150,36 +117,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
    {
     D(bug("picture.datatype/OM_NEW: Tag ID: OBP_Precision\n"));
 
-#if 0
-    D(bug("picture.datatype/OM_NEW: Tag ID: \n"));
-#endif
-
     pd->Precision=ti->ti_Data;
-    break;
-   }
-
-   case PDTA_ModeID:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_ModeID\n"));
-
-    pd->ModeID=ti->ti_Data;
-    break;
-   }
-
-   case PDTA_BitMap:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_BitMap\n"));
-
-    pd->bm=(struct BitMap *) ti->ti_Data;
-    pd->DestBM=pd->bm;
-    break;
-   }
-
-   case PDTA_NumColors:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_NumColors\n"));
-
-    pd->NumColors=ti->ti_Data;
     break;
    }
 
@@ -188,38 +126,6 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
     D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_Remap\n"));
 
     pd->Remap=ti->ti_Data;
-    break;
-   }
-
-   case PDTA_Screen:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_Screen\n"));
-
-    pd->TheScreen=(struct Screen *) ti->ti_Data;
-    break;
-   }
-
-   case PDTA_FreeSourceBitMap:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_FreeSourceBitMap\n"));
-
-    pd->FreeSourceBitMap=ti->ti_Data;
-    break;
-   }
-
-   case PDTA_Grab:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_Grab\n"));
-
-    pd->Grab=(Point *) ti->ti_Data;
-    break;
-   }
-
-   case PDTA_ClassBitMap:
-   {
-    D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_ClassBitMap\n"));
-
-    pd->ClassBM=(struct BitMap *) ti->ti_Data;
     break;
    }
 
@@ -235,86 +141,64 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
    {
     D(bug("picture.datatype/OM_NEW: Tag ID: PDTA_SparseTable\n"));
 
-    pd->SparseTable=(UBYTE *) ti->ti_Data;
+    if(!(pd->NumSparse && ti->ti_Data))
+    {
+     break;
+    }
+
+    CopyMem((APTR) ti->ti_Data, (APTR) pd->SparseTable, pd->NumSparse);
+
     break;
    }
   }
  }
 
+ DT_SetMethod(cl, g, msg);
+
  return(g);
 }
 
-STATIC VOID DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
+STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 {
  struct Picture_Data *pd;
+ IPTR RetVal;
+ register int i;
+
+ RetVal=1;
 
  pd=(struct Picture_Data *) INST_DATA(cl, o);
 
  if(pd)
  {
-  if(pd->bmhd)
+  if(pd->ChunkyBuffer)
   {
-   FreeVec((void *) pd->bmhd);
+   FreeVec((void *) pd->ChunkyBuffer);
+  }
+
+  if(pd->NumAlloc)
+  {
+   for(i=0; i<pd->NumAlloc; i++)
+   {
+    ReleasePen(pd->TheScreen->ViewPort.ColorMap, pd->ColTable[i]);
+   }
+
+   pd->NumAlloc=0;
+  }
+
+  if(pd->DestBM && (pd->DestBM != pd->bm))
+  {
+   FreeBitMap(pd->DestBM);
   }
 
   if(pd->bm)
   {
    FreeBitMap((void *) pd->bm);
   }
-
-  if(pd->ColMap)
-  {
-   FreeVec((void *) pd->ColMap);
-  }
-
-  if(pd->ColRegs)
-  {
-   FreeVec((void *) pd->ColRegs);
-  }
-
-  if(pd->GRegs)
-  {
-   FreeVec((void *) pd->GRegs);
-  }
-
-  if(pd->ColTable)
-  {
-   FreeVec((void *) pd->ColTable);
-  }
-
-  if(pd->ColTable2)
-  {
-   FreeVec((void *) pd->ColTable2);
-  }
-
-  if(pd->Grab)
-  {
-   FreeVec((void *) pd->Grab);
-  }
-
-  if(pd->DestBM)
-  {
-#if 0
-   FreeBitMap(pd->DestBM);
-#endif
-  }
-
-  if(pd->ClassBM)
-  {
-#if 0
-   FreeBitMap(pd->ClassBM);
-#endif
-  }
-
-  if(pd->SparseTable)
-  {
-   FreeVec((void *) pd->SparseTable);
-  }
  }
 
- DoSuperMethodA(cl, o, msg);
+ RetVal+=DoSuperMethodA(cl, o, msg);
 
- return;
+ return(RetVal);
 }
 
 STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
@@ -323,6 +207,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
  struct TagItem *tl;
  struct TagItem *ti;
  IPTR RetVal;
+ struct RastPort *rp;
 
  pd=(struct Picture_Data *) INST_DATA(cl, g);
  tl=msg->ops_AttrList;
@@ -346,7 +231,6 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_BitMap\n"));
 
     pd->bm=(struct BitMap *) ti->ti_Data;
-    pd->DestBM=pd->bm;
 
     break;
    }
@@ -380,9 +264,18 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
    case PDTA_Grab:
    {
+    Point *ThePoint;
+
     D(bug("picture.datatype/OM_SET: Tag ID: PDTA_Grab\n"));
 
-    pd->Grab=(Point *) ti->ti_Data;
+    ThePoint=(Point *) ti->ti_Data;
+    if(!ThePoint)
+    {
+     break;
+    }
+
+    pd->Grab.x=ThePoint->x;
+    pd->Grab.y=ThePoint->y;
 
     break;
    }
@@ -421,17 +314,45 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
      D(bug("picture.datatype/OM_SET: Tag ID 0x%lx\n", ti->ti_Tag));
     }
 
-    if(ti->ti_Tag==GA_RelWidth)
-    {
-     D(bug("picture.datatype/OM_SET: GA_RelWidth=%ld\n", (long) ti->ti_Data));
-    }
-
 #endif /* MYDEBUG */
    }
   }
  }
 
- RetVal += (IPTR) DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+#if 0
+ if(msg->ops_GInfo)
+ {
+  DoMethod((Object *) g, GM_LAYOUT, msg->ops_GInfo, TRUE);
+ }
+#endif
+
+ /*
+  *  Do not call the SuperMethod if you come from OM_NEW!
+  */
+
+ if(!(msg->MethodID == OM_NEW))
+ {
+  RetVal += (IPTR) DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+ }
+
+ if(msg->ops_GInfo)
+ {
+  if(OCLASS((Object *) g) == cl)
+  {
+   rp=ObtainGIRPort(msg->ops_GInfo);
+   if(rp)
+   {
+    DoMethod((Object *) g, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+
+    ReleaseGIRPort (rp);
+   }
+  }
+
+  if(msg->MethodID == OM_UPDATE)
+  {
+    DoMethod((Object *) g, OM_NOTIFY, msg->ops_AttrList, msg->ops_GInfo, 0);
+  }
+ }
 
  return(RetVal);
 }
@@ -457,16 +378,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_BitMapHeader\n"));
 
-   if(!pd->bmhd)
-   {
-    pd->bmhd=AllocVec(sizeof(struct BitMapHeader), MEMF_ANY | MEMF_CLEAR);
-    if(!pd->bmhd)
-    {
-     return(FALSE);
-    }
-   }
-
-   *(msg->opg_Storage)=(ULONG) pd->bmhd;
+   *(msg->opg_Storage)=(ULONG) &pd->bmhd;
 
    break;
   }
@@ -484,16 +396,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ColorRegisters\n"));
 
-   if(!pd->ColMap)
-   {
-    pd->ColMap=AllocVec(pd->NumColors*sizeof(struct ColorRegister), MEMF_ANY | MEMF_CLEAR);
-    if(!pd->ColMap)
-    {
-     return(FALSE);
-    }
-   }
-
-   *(msg->opg_Storage)=(ULONG) pd->ColMap;
+   *(msg->opg_Storage)=(ULONG) &pd->ColMap;
 
    break;
   }
@@ -502,16 +405,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_CRegs\n"));
 
-   if(!pd->ColRegs)
-   {
-    pd->ColRegs=AllocVec(pd->NumColors*3*sizeof(ULONG), MEMF_ANY | MEMF_CLEAR);
-    if(!pd->ColRegs)
-    {
-     return(FALSE);
-    }
-   }
-
-   *(msg->opg_Storage)=(ULONG) pd->ColRegs;
+   *(msg->opg_Storage)=(ULONG) &pd->CRegs;
 
    break;
   }
@@ -520,11 +414,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_GRegs\n"));
 
-   /*
-    *  Alloc GRegs here!
-    */
-
-   *(msg->opg_Storage)=(ULONG) pd->GRegs;
+   *(msg->opg_Storage)=(ULONG) &pd->GRegs;
 
    break;
   }
@@ -533,11 +423,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ColorTable\n"));
 
-   /*
-    *  Alloc ColorTable here!
-    */
-
-   *(msg->opg_Storage)=(ULONG) pd->ColTable;
+   *(msg->opg_Storage)=(ULONG) &pd->ColTable;
 
    break;
   }
@@ -546,11 +432,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ColorTable2\n"));
 
-   /*
-    *  Alloc ColorTable2 here!
-    */
-
-   *(msg->opg_Storage)=(ULONG) pd->ColTable2;
+   *(msg->opg_Storage)=(ULONG) &pd->ColTable2;
 
    break;
   }
@@ -586,11 +468,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_Grab\n"));
 
-   /*
-    *  Alloc Grab here!
-    */
-
-   *(msg->opg_Storage)=(ULONG) pd->Grab;
+   *(msg->opg_Storage)=(ULONG) &pd->Grab;
 
    break;
   }
@@ -598,10 +476,6 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   case PDTA_DestBitMap:
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_DestBitMap\n"));
-
-   /*
-    *  Alloc DestBitMap here!
-    */
 
    *(msg->opg_Storage)=(ULONG) pd->DestBM;
 
@@ -611,10 +485,6 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
   case PDTA_ClassBitMap:
   {
    D(bug("picture.datatype/OM_GET: Tag ID: PDTA_ClassBitMap\n"));
-
-   /*
-    *  Alloc ClassBitMap here!
-    */
 
    *(msg->opg_Storage)=(ULONG) pd->ClassBM;
 
@@ -667,17 +537,26 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 {
  struct Picture_Data *pd;
+ struct DTSpecialInfo *si;
+
  struct IBox *domain;
  IPTR TopVert, TopHoriz, NominalWidth, NominalHeight;
 
  WORD SrcX, SrcY, DestX, DestY, SizeX, SizeY;
 
  pd=(struct Picture_Data *) INST_DATA(cl, g);
+ si=(struct DTSpecialInfo *) g->SpecialInfo;
+
+ if(si->si_Flags & DTSIF_LAYOUT)
+ {
+  D(bug("picture.datatype/GM_RENDER: In layout process\n"));
+  return(0);
+ }
 
  if(!pd->DestBM)
  {
   D(bug("picture.datatype/GM_RENDER: No DestBM set!\n"));
-  return(FALSE);
+  return(0);
  }
 
  if(!(GetDTAttrs((Object *) g, DTA_Domain, &domain,
@@ -688,14 +567,20 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 			       TAG_DONE) == 5))
  {
   D(bug("picture.datatype/GM_RENDER: Couldn't get dimensions\n"));
-  return(FALSE);
+  return(0);
  }
 
+#if 0
  D(bug("picture.datatype/GM_RENDER: Domain: %ld %ld %ld %ld\n", domain->Left, domain->Top, domain->Width, domain->Height));
  D(bug("picture.datatype/GM_RENDER: TopVert      : %lu\n", (unsigned long) TopVert));
  D(bug("picture.datatype/GM_RENDER: TopHoriz     : %lu\n", (unsigned long) TopHoriz));
  D(bug("picture.datatype/GM_RENDER: Width        : %lu\n", (unsigned long) NominalWidth));
  D(bug("picture.datatype/GM_RENDER: Height       : %lu\n", (unsigned long) NominalHeight));
+#endif
+
+#if 0
+ ObtainSemaphore(&(si->si_Lock));
+#endif
 
  SrcX=TopHoriz;
  SrcY=TopVert;
@@ -707,278 +592,406 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
  BltBitMapRastPort(pd->DestBM, SrcX, SrcY, msg->gpr_RPort, DestX, DestY, SizeX, SizeY, 0xC0);
 
- return(TRUE);
+#if 0
+ ReleaseSemaphore(&(si->si_Lock));
+#endif
+
+ return(0);
 }
 
 STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
  IPTR RetVal;
 
- notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+ NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
 				 GA_ID, g->GadgetID,
 				 DTA_Busy, TRUE,
 				 TAG_DONE);
 
  RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
- D(bug("picture.datatype/GM_LAYOUT: RetVal: 0x%lx\n", RetVal));
+ RetVal += (IPTR) DoAsyncLayout((Object *) g, msg);
 
+ return(RetVal);
+}
 
+STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+{
+ IPTR RetVal;
 
-
-
- notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+ NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
 				 GA_ID, g->GadgetID,
-				 DTA_Busy, FALSE,
+				 DTA_Busy, TRUE,
+				 TAG_DONE);
+
+ RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+
+ return(RetVal);
+}
+
+STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+{
+ IPTR RetVal;
+ struct Picture_Data *pd;
+ struct DTSpecialInfo *si;
+
+ struct IBox *domain;
+ IPTR Width, Height;
+
+ STRPTR Title;
+
+ RetVal=1;
+ pd=(struct Picture_Data *) INST_DATA(cl, g);
+ si=(struct DTSpecialInfo *) g->SpecialInfo;
+
+ /*
+  *  BitMap noch nicht gesetzt!
+  */
+ if(!(pd->bm))
+ {
+  return(0);
+ }
+
+ /*
+  *  Attribute holen
+  */
+ if(!(GetDTAttrs((Object *) g, DTA_Domain, (IPTR) &domain,
+			       DTA_ObjName, (IPTR) &Title,
+			       DTA_NominalHoriz, &Width,
+			       DTA_NominalVert, &Height,
+			       TAG_DONE) == 4))
+ {
+  return(0);
+ }
+
+ /*
+  *  Sperren
+  */
+ ObtainSemaphore(&(si->si_Lock));
+
+ /*
+  *  Wir brauchen nur einmal taetig zu werden.
+  */
+ if(msg->gpl_Initial)
+ {
+  /*
+   *  Wir muessen das Bild remappen
+   */
+  if(pd->Remap)
+  {
+   unsigned int BM_Width, BM_Height;
+   unsigned int DestDepth;
+   unsigned int DestNumColors;
+   struct RastPort SrcRP, DestRP;
+
+   register int i, j;
+
+   /*
+    *  Groessen bestimmen
+    */
+   if(!pd->TheScreen)
+   {
+    pd->TheScreen=msg->gpl_GInfo->gi_Screen;
+   }
+
+   BM_Width=pd->bmhd.bmh_Width;
+   BM_Height=pd->bmhd.bmh_Height;
+
+   DestDepth=GetBitMapAttr(pd->TheScreen->RastPort.BitMap, BMA_DEPTH);
+
+   if(DestDepth > 8)
+   {
+    DestDepth=8;
+    DestNumColors=256;
+   }
+   else
+   {
+    DestNumColors=1<<DestDepth;
+   }
+
+   pd->NumSparse=pd->NumColors;
+
+   /*
+    *  Aufraeumen was vielleicht uebriggeblieben ist
+    */
+   if(pd->DestBM && (pd->DestBM != pd->bm))
+   {
+    FreeBitMap(pd->DestBM);
+    pd->DestBM=NULL;
+   }
+
+   if(pd->NumAlloc)
+   {
+    for(i=0; i<pd->NumAlloc; i++)
+    {
+     ReleasePen(pd->TheScreen->ViewPort.ColorMap, pd->ColTable[i]);
+    }
+
+    pd->NumAlloc=0;
+   }
+
+   if(pd->ChunkyBuffer)
+   {
+    FreeVec((void *) pd->ChunkyBuffer);
+   }
+
+   /*
+    *  pd->GRegs vorbelegen
+    */
+   memset(pd->GRegs, 0xFF, 768*sizeof(ULONG));
+
+   /*
+    *  SparseTable ausfuellen
+    */
+   memset(pd->SparseTable, 0x0, 256);
+
+   /*
+    *  Neu allozieren
+    */
+   pd->DestBM=AllocBitMap(BM_Width, BM_Height, DestDepth,
+			  (BMF_CLEAR | BMF_DISPLAYABLE | BMF_INTERLEAVED | BMF_MINPLANES),
+			  pd->TheScreen->RastPort.BitMap);
+   if(!pd->DestBM)
+   {
+    ReleaseSemaphore(&si->si_Lock);
+
+    return(0);
+   }
+
+   pd->ChunkyBuffer=AllocVec(BM_Width*BM_Height, MEMF_ANY | MEMF_CLEAR);
+   if(!pd->ChunkyBuffer)
+   {
+    ReleaseSemaphore(&si->si_Lock);
+
+    return(0);
+   }
+
+   InitRastPort(&SrcRP);
+   SrcRP.BitMap=pd->bm;
+
+   /*
+    *  planare BitMap in einen chunky Buffer auslesen
+    */
+   for(i=0; i<BM_Height; i++)
+   {
+    for(j=0; j<BM_Width; j++)
+    {
+     pd->ChunkyBuffer[i*BM_Width+j]=ReadPixel(&SrcRP, j, i);
+    }
+   }
+
+   /*
+    *  ColorMap bestimmen
+    */
+   if(DestNumColors >= pd->NumColors)
+   {
+    CopyMem(pd->CRegs, pd->GRegs, pd->NumColors*3*sizeof(ULONG));
+   }
+   else
+   {
+    struct HistEntry TheHist[256];
+
+    /*
+     *  Farben im Histogramm ausfuellen
+     */
+    for(i=0; i<pd->NumColors; i++)
+    {
+     TheHist[i].Count=0;
+     TheHist[i].Red   = pd->CRegs[i*3+0];
+     TheHist[i].Green = pd->CRegs[i*3+1];
+     TheHist[i].Blue  = pd->CRegs[i*3+2];
+    }
+
+    /*
+     *  Farbanzahl im Histogramm ermitteln
+     */
+    for(i=0; i<(BM_Width*BM_Height); i++)
+    {
+     TheHist[pd->ChunkyBuffer[i]].Count++;
+    }
+
+    /*
+     *  Duplikate im Histogramm ausmerzen
+     */
+    for(i=0; i<(pd->NumColors-1); i++)
+    {
+     for(j=i+1; j<pd->NumColors; j++)
+     {
+      if((TheHist[j].Red == TheHist[i].Red) &&
+	 (TheHist[j].Green == TheHist[i].Green) &&
+	 (TheHist[j].Blue == TheHist[i].Blue))
+      {
+       TheHist[i].Count+=TheHist[j].Count;
+       TheHist[j].Count=0;
+      }
+     }
+    }
+
+    /*
+     *  Histogramm nach Haeufigkeit sortieren
+     */
+    qsort((void *) TheHist, pd->NumColors, sizeof(struct HistEntry), HistSort);
+
+    /*
+     *  Es werden die DestNumColors meistvorhandenen Farben benutzt
+     */
+    for(i=0; i<DestNumColors; i++)
+    {
+     pd->GRegs[i*3+0] = TheHist[i].Red;
+     pd->GRegs[i*3+1] = TheHist[i].Green;
+     pd->GRegs[i*3+2] = TheHist[i].Blue;
+    }
+   }
+
+   /*
+    *  Pens fuer GRegs obtainen
+    */
+   for(i=0; i<DestNumColors; i++)
+   {
+    pd->ColTable[i]=ObtainBestPen(pd->TheScreen->ViewPort.ColorMap,
+				  pd->GRegs[i*3+0], pd->GRegs[i*3+1], pd->GRegs[i*3+2],
+				  OBP_Precision, pd->Precision,
+				  OBP_FailIfBad, FALSE,
+				  TAG_DONE);
+
+    pd->NumAlloc++;
+   }
+
+   /*
+    *  Die wirklichen Farben der Pens holen
+    */
+   for(i=0; i<DestNumColors; i++)
+   {
+    GetRGB32(pd->TheScreen->ViewPort.ColorMap, pd->ColTable[i], 1, pd->GRegs+(3*i));
+   }
+
+   /*
+    *  SparseTable nach der "Geringster Abstand" Methode bestimmen
+    */
+   for(i=0; i<pd->NumColors; i++)
+   {
+    unsigned int Diff, LastDiff;
+    short CRed, GRed, CGreen, GGreen, CBlue, GBlue;
+
+    LastDiff=0xFFFFFFFF;
+
+    CRed   = pd->CRegs[i*3+0]>>17;
+    CGreen = pd->CRegs[i*3+1]>>17;
+    CBlue  = pd->CRegs[i*3+2]>>17;
+
+    for(j=0; j<DestNumColors; j++)
+    {
+     GRed   = pd->GRegs[j*3+0]>>17;
+     GGreen = pd->GRegs[j*3+1]>>17;
+     GBlue  = pd->GRegs[j*3+2]>>17;
+
+     Diff=abs(CRed - GRed) +
+	  abs(CGreen - GGreen) +
+	  abs(CBlue - GBlue);
+
+     if(Diff <= LastDiff)
+     {
+      pd->SparseTable[i]=pd->ColTable[j];
+
+      LastDiff=Diff;
+     }
+
+     if(LastDiff==0)
+     {
+      break;
+     }
+    }
+   }
+
+   /*
+    *  ChunkyBuffer remappen
+    */
+   for(i=0; i<(BM_Width*BM_Height); i++)
+   {
+    pd->ChunkyBuffer[i]=pd->SparseTable[pd->ChunkyBuffer[i]];
+   }
+
+   /*
+    *  C2P vom ChunkyBuffer auf DestBM
+    */
+   InitRastPort(&DestRP);
+   DestRP.BitMap=pd->DestBM;
+
+   WriteChunkyPixels(&DestRP, 0, 0, BM_Width-1, BM_Height-1, pd->ChunkyBuffer, BM_Width);
+
+#ifdef AROS
+   DeinitRastPort(&SrcRP);
+   DeinitRastPort(&DestRP);
+#endif
+  }
+  else
+  {
+   /*
+    *  Bild soll nicht remapped werden
+    */
+
+   pd->DestBM=pd->bm;
+  }
+ }
+
+ /*
+  *  Wieder entsperren
+  */
+ ReleaseSemaphore(&si->si_Lock);
+
+ NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
+				 GA_ID, g->GadgetID,
+
+				 DTA_VisibleVert, domain->Height,
+				 DTA_TotalVert, Height,
+				 DTA_NominalVert, Height,
+				 DTA_VertUnit, 1,
+
+				 DTA_VisibleHoriz, domain->Width,
+				 DTA_TotalHoriz, Width,
+				 DTA_NominalHoriz, Width,
+				 DTA_HorizUnit, 1,
+
+				 DTA_Title, (IPTR) Title,
+				 DTA_Busy, TRUE,
+				 DTA_Sync, TRUE,
 				 TAG_DONE);
 
  return(RetVal);
 }
 
-STATIC IPTR DT_Layout_old(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+#if 0
+STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
  struct Picture_Data *pd;
- unsigned int DestNumColors;
- register int i, j;
- ULONG *ColRegsPtr;
- struct RastPort SrcRP, DestRP;
- unsigned int BM_Width, BM_Height, BM_Depth;
- struct HistEntry Hist[256];
+ ULONG Width, Height, Depth;
+ IPTR RetVal;
 
  pd=(struct Picture_Data *) INST_DATA(cl, g);
 
- if(!(pd->bm && pd->ColRegs))
- {
-  D(bug("picture.datatype/GM_LAYOUT: No bitmap and colortable provided, returning failure\n"));
+ RetVal=0;
 
-  return(FALSE);
+ Width=pd->bmhd.bmh_Width;
+ Height=pd->bmhd.bmh_Height;
+ Depth=pd->bmhd.bmh_Depth;
+
+ D(bug("picture.datatype/DTM_FRAMEBOX: Width %ld\n", (long) Width));
+ D(bug("picture.datatype/DTM_FRAMEBOX: Height %ld\n", (long) Height));
+ D(bug("picture.datatype/DTM_FRAMEBOX: Depth %ld\n", (long) Depth));
+
+ if(msg->dtf_FrameInfo)
+ {
+  msg->dtf_FrameInfo->fri_Dimensions.Height = Height;
+  msg->dtf_FrameInfo->fri_Dimensions.Width  = Width;
+  msg->dtf_FrameInfo->fri_Dimensions.Depth  = Depth;
+  msg->dtf_FrameInfo->fri_Flags             = FIF_SCROLLABLE;
+
+  RetVal = 1;
  }
 
- if(!pd->TheScreen)
- {
-  D(bug("picture.datatype/GM_LAYOUT: No screen set\n"));
-
-  pd->TheScreen=msg->gpl_GInfo->gi_Screen;
- }
-
- if(pd->DestBM)
- {
-  D(bug("picture.datatype/GM_LAYOUT: DestBitMap already exists\n"));
-
-  FreeBitMap(pd->DestBM);
-  pd->DestBM=NULL;
- }
-
- BM_Width=GetBitMapAttr(pd->bm, BMA_WIDTH);
- BM_Height=GetBitMapAttr(pd->bm, BMA_HEIGHT);
- BM_Depth=GetBitMapAttr(pd->TheScreen->RastPort.BitMap, BMA_DEPTH);
-
- /*
-  *  Here we must take attention to PDTA_Remap
-  *  If it is FALSE we should not remap at all.
-  */
-
- pd->DestBM=AllocBitMap(BM_Width, BM_Height, BM_Depth,
-			(BMF_CLEAR | BMF_DISPLAYABLE | BMF_INTERLEAVED | BMF_MINPLANES),
-			pd->TheScreen->RastPort.BitMap);
-
- if(!pd->DestBM)
- {
-  D(bug("picture.datatype/GM_LAYOUT: Unable to allocate DestBitMap\n"));
-
-  return(FALSE);
- }
-
- DestNumColors=1<<BM_Depth;
-
- if(pd->SparseTable)
- {
-  D(bug("picture.datatype/GM_LAYOUT: SparseTable already exists\n"));
-
-  FreeVec((void *) pd->SparseTable);
-
-  pd->SparseTable=NULL;
-  pd->NumSparse=0;
- }
-
- pd->NumSparse=pd->NumColors;
-
- pd->SparseTable = AllocVec(pd->NumSparse, MEMF_ANY | MEMF_CLEAR);
- if(!pd->SparseTable)
- {
-  D(bug("picture.datatype/GM_LAYOUT: Unable to allocate SparseTable\n"));
-
-  return(FALSE);
- }
-
- if(pd->NumAlloc)
- {
-  D(bug("picture.datatype/GM_LAYOUT: Some colors allready allocated\n"));
-
-  /*
-   *  We should not have allocated colors here.
-   */
-
-  pd->NumAlloc=0;
- }
-
- if(pd->GRegs)
- {
-  D(bug("picture.datatype/GM_LAYOUT: GRegs already exists\n"));
-
-  FreeVec((void *) pd->GRegs);
-
-  pd->GRegs=NULL;
- }
-
- pd->GRegs = AllocVec(DestNumColors*3*sizeof(ULONG), MEMF_ANY | MEMF_CLEAR);
- if(!pd->GRegs)
- {
-  D(bug("picture.datatype/GM_LAYOUT: Unable to allocate GRegs\n"));
-
-  return(FALSE);
- }
-
- memset(pd->GRegs, 0, (DestNumColors*3*sizeof(ULONG)));
-
- if(pd->NumColors<=DestNumColors)
- {
-  ColRegsPtr=pd->ColRegs;
-
-  /*
-   *  OK, I know this is not very elegant.
-   *  So come with something better;
-   */
-  for(i=0; i<pd->NumColors; i++)
-  {
-   pd->SparseTable[i]=(UBYTE) ObtainBestPen(pd->TheScreen->ViewPort.ColorMap,
-					    *(ColRegsPtr++), *(ColRegsPtr++), *(ColRegsPtr++),
-					    TAG_DONE);
-
-   pd->NumAlloc++;
-  }
-
-  ColRegsPtr=pd->GRegs;
-
-  for(i=0; i<pd->NumColors; i++)
-  {
-   GetRGB32(pd->TheScreen->ViewPort.ColorMap, pd->SparseTable[i], 1, ColRegsPtr);
-
-   ColRegsPtr+=3;
-  }
- }
- else
- {
-  
-
-  ColRegsPtr=pd->ColRegs;
-
-  for(i=0; i<pd->NumColors; i++)
-  {
-   Hist[i].Count=0;
-   Hist[i].Red=*(ColRegsPtr++);
-   Hist[i].Green=*(ColRegsPtr++);
-   Hist[i].Blue=*(ColRegsPtr++);
-  }
-
-  for(i=0; i<BM_Height; i++)
-  {
-   for(j=0; j<BM_Width; j++)
-   {
-    Hist[ReadPixel(&SrcRP, j, i)].Count++;
-   }
-  }
-
-  for(i=0; i<(pd->NumColors-1); i++)
-  {
-   for(j=i+1; j<pd->NumColors; j++)
-   {
-    if((Hist[j].Red == Hist[i].Red) &&
-       (Hist[j].Green == Hist[i].Green) &&
-       (Hist[j].Blue == Hist[i].Blue))
-    {
-     Hist[i].Count+=Hist[j].Count;
-     Hist[j].Count=0;
-    }
-   }
-  }
-
-  qsort((void *) Hist, pd->NumColors, sizeof(struct HistEntry), HistSort);
-
-  for(i=0; i<DestNumColors; i++)
-  {
-
-
-  }
-
-
- }
-
- InitRastPort(&SrcRP);
- SrcRP.BitMap=pd->bm;
-
- InitRastPort(&DestRP);
- DestRP.BitMap=pd->DestBM;
-
- for(i=0; i<GetBitMapAttr(pd->bm, BMA_HEIGHT); i++)
- {
-  for(j=0; j<GetBitMapAttr(pd->bm, BMA_WIDTH); j++)
-  {
-   SetAPen(&DestRP, pd->SparseTable[ReadPixel(&SrcRP, j, i)]);
-   WritePixel(&DestRP, j, i);
-  }
- }
-
-#ifdef AROS
- DeinitRastPort(&SrcRP);
- DeinitRastPort(&DestRP);
+ return(RetVal);
+}
 #endif
- return(TRUE);
-}
-
-STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct gpInput * msg)
-{
- return(0);
-}
-
-STATIC VOID DT_Write(struct IClass *cl, struct Gadget *g, struct dtWrite *msg)
-{
- return;
-}
-
-STATIC VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
-{
- return;
-}
-
-STATIC VOID DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
-{
-#if 0
- if(msg->dtf_GInfo)
- {
-  D(bug("picture.datatype/DTM_FRAMEBOX: Before: Has GadgetInfo\n"));
- }
- else
- {
-  D(bug("picture.datatype/DTM_FRAMEBOX: Before: Doesn't has GadgetInfo\n"));
- }
-#endif
-
- DoSuperMethodA(cl, (Object *) g, (Msg) msg);
-
-#if 0
- if(msg->dtf_GInfo)
- {
-  D(bug("picture.datatype/DTM_FRAMEBOX: After: Has GadgetInfo\n"));
- }
- else
- {
-  D(bug("picture.datatype/DTM_FRAMEBOX: After: Doesn't has GadgetInfo\n"));
- }
-#endif
-
- return;
-}
 
 #ifdef _AROS
 AROS_UFH3S(IPTR, DT_Dispatcher,
@@ -1012,32 +1025,25 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
    break;
   }
 
-  case OM_DISPOSE:
+  case OM_GET:
   {
-   D(bug("picture.datatype/DT_Dispatcher: Method OM_DISPOSE\n"));
-   DT_DisposeMethod(cl, o, (Msg) msg);
+   D(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
+   RetVal=(IPTR) DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
    break;
   }
 
-  case OM_UPDATE:
   case OM_SET:
+  case OM_UPDATE:
   {
    D(bug("picture.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
    RetVal=(IPTR) DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
    break;
   }
 
-  case OM_GET:
+  case OM_DISPOSE:
   {
-   D(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
-   RetVal=(IPTR) DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);  
-   break;
-  }
-
-  case GM_RENDER:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method GM_RENDER\n"));
-   RetVal=(IPTR) DT_Render(cl, (struct Gadget *) o, (struct gpRender *) msg);
+   D(bug("picture.datatype/DT_Dispatcher: Method OM_DISPOSE\n"));
+   RetVal=(IPTR) DT_DisposeMethod(cl, o, (Msg) msg);
    break;
   }
 
@@ -1048,90 +1054,38 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
    break;
   }
 
-  case GM_GOACTIVE:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method GM_GOACTIVE\n"));
-
-   break;
-  }
-
-  case GM_HANDLEINPUT:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method GM_HANDLEINPUT\n"));
-  
-   break;
-  }
-
-  case DTM_CLEARSELECTED:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method DTM_CLEARSELECTED\n"));
-
-   break;
-  }
-
-  case DTM_COPY:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method DTM_COPY\n"));
-
-   break;
-  }
-
-  case DTM_SELECT:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method DTM_SELECT\n"));
-
-   break;
-  }
-
-  case DTM_WRITE:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
-
-   break;
-  }
-
-  case DTM_PRINT:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method DTM_PRINT\n"));
-
-   break;
-  }
-
-  case GM_HITTEST:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method GM_HITTEST\n"));
-
-   break;
-  }
-
   case DTM_PROCLAYOUT:
   {
    D(bug("picture.datatype/DT_Dispatcher: Method DTM_PROCLAYOUT\n"));
-  
-   break;
+   RetVal=(IPTR) DT_ProcLayout(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+   /*
+    *  Yes, here is no break!
+    */
   }
 
   case DTM_ASYNCLAYOUT:
   {
    D(bug("picture.datatype/DT_Dispatcher: Method DTM_ASYNCLAYOUT\n"));
-
+   RetVal=(IPTR) DT_AsyncLayout(cl, (struct Gadget *) o, (struct gpLayout *) msg);
    break;
   }
 
+  case GM_RENDER:
+  {
+   D(bug("picture.datatype/DT_Dispatcher: Method GM_RENDER\n"));
+   RetVal=(IPTR) DT_Render(cl, (struct Gadget *) o, (struct gpRender *) msg);
+   break;
+  }
+
+#if 0
   case DTM_FRAMEBOX:
   {
    D(bug("picture.datatype/DT_Dispatcher: Method DTM_FRAMEBOX\n"));
-   DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
+   RetVal=(IPTR) DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
    break;
   }
+#endif
 
-  case OM_NOTIFY:
-  {
-   D(bug("picture.datatype/DT_Dispatcher: Method OM_NOTIFY\n"));
-   RetVal = DT_NotifyMethod(cl, (struct Gadget *) o, (struct opUpdate *) msg);
-   break;
-  }
- 
   default:
   {
 #ifdef MYDEBUG
@@ -1151,9 +1105,6 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
    }
 #endif /* MYDEBUG */
 
-#if 0
-   D(bug("picture.datatype/DT_Dispatcher: Method %ld=0x%lx\n", *msg, *msg));
-#endif /* 0 */
    RetVal=DoSuperMethodA(cl, o, (Msg) msg);
    break;
   }
