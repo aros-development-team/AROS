@@ -194,7 +194,7 @@ const unsigned char *const __decimalpoint = ".";
 	    else
 	      v=va_arg(args,unsigned int);
 	    if(flags&ALTERNATEFLAG)
-	    { if(type=='o'&&(preci||v))
+	    { if(type=='o'&&(preci&&v))
 		buffer1[size1++]='0';
 	      if((type=='x'||type=='X')&&v)
 	      { buffer1[size1++]='0';
