@@ -1,5 +1,15 @@
+/*
+    (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+*/
+
+/***********************************************************************************/
+
 #ifndef AROSMUTUALEXCLUDE_INTERN_H
 #define AROSMUTUALEXCLUDE_INTERN_H
+
+/***********************************************************************************/
 
 #undef  AROS_ALMOST_COMPATIBLE 
 #define AROS_ALMOST_COMPATIBLE 
@@ -30,6 +40,8 @@
 #   include <intuition/gadgetclass.h>
 #endif
 
+/***********************************************************************************/
+
 /* Predeclaration */
 struct MXBase_intern;
 
@@ -41,52 +53,60 @@ struct MXBase_intern;
 /* Support */
 #define G(obj) ((struct Gadget *)(obj))
 
+/***********************************************************************************/
 
 /* MutualExcludeClass definitions */
-struct MXData {
+struct MXData
+{
     /* Important pointers */
-    struct DrawInfo *dri;
-    struct TextAttr *tattr;
-    struct Image *mximage;
-    struct Rectangle bbox;
+    struct DrawInfo 	*dri;
+    struct TextAttr 	*tattr;
+    struct Image    	*mximage;
+    struct TextFont 	*font;
+    struct Rectangle	bbox;
     /* Information about ticks */
-    ULONG active, newactive; /* The active tick and the tick to be activated */
+    ULONG   	    	active, newactive; /* The active tick and the tick to be activated */
 
     /* Information about labels */
-    STRPTR *labels;
-    ULONG numlabels; /* The number of labels */
-    LONG labelplace, ticklabelplace;
-    UWORD fontheight;
-    UWORD spacing;
-    UWORD maxtextwidth;
+    STRPTR  	    	*labels;
+    ULONG   	    	numlabels; /* The number of labels */
+    LONG    	    	labelplace, ticklabelplace;
+    UWORD   	    	fontheight;
+    UWORD   	    	spacing;
+    UWORD   	    	maxtextwidth;
 };
 
+/***********************************************************************************/
 
 /* Prototypes */
+
 void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
                  struct MXData *data);
 
 
+/***********************************************************************************/
 
 /* Library stuff */
 struct MXBase_intern
 {
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-    struct Library	*dosbase;
+    struct Library 	    library;
+    struct ExecBase	    *sysbase;
+    BPTR		    seglist;
+    struct Library	    *dosbase;
 
     #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
+    struct IntuitionBase    *intuitionbase;
     #endif
-    struct GfxBase	*gfxbase;
-    struct Library	*utilitybase;
+    struct GfxBase	    *gfxbase;
+    struct Library	    *utilitybase;
     
-    struct IClass	*classptr;
+    struct IClass	    *classptr;
 	
 };
+
+/***********************************************************************************/
 
 /* The following typedefs are necessary, because the names of the global
    variables storing the library base pointers	and the corresponding
@@ -117,4 +137,8 @@ typedef struct IntuitionBase IntuiBase;
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct MXBase_intern *, AROSMutualExcludeBase, 3, AROSMutualExclude)
 
+/***********************************************************************************/
+
 #endif /* AROSMUTUALEXCLUDE_INTERN_H */
+
+/***********************************************************************************/

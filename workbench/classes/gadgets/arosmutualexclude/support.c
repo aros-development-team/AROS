@@ -1,10 +1,13 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for AROSMutualExcludeClass.
     Lang: english
 */
+
+/***********************************************************************************/
+
 #include <strings.h>
 #include <exec/types.h>
 #include <proto/intuition.h>
@@ -15,8 +18,11 @@
 
 #include "arosmutualexclude_intern.h"
 
+/***********************************************************************************/
 
 UWORD disabledpattern[2] = {0x4444, 0x1111};
+
+/***********************************************************************************/
 
 /* draws a disabled pattern */
 void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase,
@@ -29,6 +35,7 @@ void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase,
     RectFill(rport, left, top, left+width-1, top+height-1);
 }
 
+/***********************************************************************************/
 
 struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 			     struct RastPort *rport, struct IntuiText *itext,
@@ -56,6 +63,7 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
     return font;
 }
 
+/***********************************************************************************/
 
 void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 	       struct RastPort *rport,
@@ -68,6 +76,7 @@ void closefont(struct MXBase_intern *AROSMutualExcludeBase,
     }
 }
 
+/***********************************************************************************/
 
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
@@ -146,3 +155,5 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 
     return TRUE;
 }
+
+/***********************************************************************************/
