@@ -174,13 +174,18 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	data->mousex = ie->ie_X - data->curleft;
 	data->mousey = ie->ie_Y - data->curtop;
 	
-	data->rp = &w->WScreen->RastPort;
+	data->rp = CloneRastPort(&w->WScreen->RastPort);
+	if (data->rp)
+	{
 	
-#warning Maybe should clone rastport. Also should lock all layers		    
 	
-	data->isrendered = FALSE;
+	    data->isrendered = FALSE;
+	    
+	    /* Lock all layers while the window is dragged */
+	    LockLayerInfo(&w->WScreen->LayerInfo);
 	
-	retval = GMR_MEACTIVE;
+	    retval = GMR_MEACTIVE;
+	}
     }
 
     return retval;
@@ -233,6 +238,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			, data->curleft - w->LeftEdge	/* dx */
 			, data->curtop  - w->TopEdge	/* dy */
 		    );
+		    
 		
 		
 		    /* Update window coordinates */
@@ -242,6 +248,13 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		}
 		    
 		
+		/* User throught with drag operation. Unlock layesr and free
+		   rastport clone
+		*/
+		UnlockLayerInfo(&w->WScreen->LayerInfo);
+		FreeRastPort(data->rp);
+
+#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?		
 		retval = GMR_NOREUSE;
 		break;
 		    
@@ -419,7 +432,6 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	    	{TAG_DONE, 0UL}
 	    };
 
-
 	    /* Create a sysimage with gadget's sizes */
 	    data->image = NewObjectA(NULL, SYSICLASS, image_tags);
 	    D(bug("tbb: image=%p\n", data->image));
@@ -427,7 +439,6 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	    {
 	   	return o;
 	    }
-	   
 	} /* if (dri) */
 	CoerceMethodA(cl, o, (Msg)&dispose_mid);
 	
@@ -439,10 +450,8 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 static VOID tbb_dispose(Class *cl, Object *o, Msg msg)
 {
     struct tbb_data *data = INST_DATA(cl, o);
-    
     if (data->image)
     	DisposeObject(data->image);
-	
     DoSuperMethodA(cl, o, msg);
     return;
 }
@@ -524,7 +533,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    
 		    /* Send an IDCMP_CLOSEWINDOW message to the application */
 		    /* Get an empty intuimessage */
-		    imsg = get_intuimessage(msg->gpi_GInfo->gi_Window, IntuitionBase);
+		    imsg = alloc_intuimessage(IntuitionBase);
 		    if (imsg)
 		    {
 			/* Fill it in */
@@ -548,7 +557,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    struct Window *w = msg->gpi_GInfo->gi_Window;
 		    
 		    
-#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?		
+#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?
 
 		    if (NULL == w->WLayer->front)
 		    {
