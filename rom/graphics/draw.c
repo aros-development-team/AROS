@@ -58,9 +58,8 @@
   LONG _x, _y;
   LONG steps, counter;
 
-  /*
-    driver_Draw (rp, x, y, GfxBase);
-  */
+
+  driver_Draw (rp, x, y, GfxBase);
 
   if (rp->cp_x != x)
     if (rp->cp_x > x)
@@ -85,7 +84,7 @@
       y_step = 1;
       dy = y - rp->cp_y;
     }
-
+  
   _x = 0;
   _y = 0;
   x = rp->cp_x;
@@ -103,25 +102,29 @@
   {
     counter++;
     WritePixel(rp, x, y);
-    _y += dx;
-    _x += dy;
 
-    if (_y == _x)
+    if (dx > dy)
     {
       x += x_step;
-      y += y_step;
+      _x += dx;
+      _y += dy;
+      if (_y >= dx)
+      {
+        _y -= dx;
+        y += y_step;
+      }
     }
     else
-      if (_y > _x)
+    {
+      y += y_step;
+      _x += dx;
+      _y += dy;
+      if (_x >= dy)
       {
-        _y -= _x;
-        x  += x_step;
+        _x -= dy;
+        x += x_step;
       }
-      if (_x > _y)
-      {
-        _x -= _y;
-        y += y_step; 
-      }
+    }
   }
 
   AROS_LIBFUNC_EXIT
