@@ -101,6 +101,20 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{ TAG_DONE, 0UL }
     };
         
+    struct TagItem tags_320_240[] = {
+    	{ aHidd_GfxMode_Width,		320	},
+	{ aHidd_GfxMode_Height,		240	},
+	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+	{ TAG_DONE, 0UL }
+    };
+
+    struct TagItem tags_512_384[] = {
+    	{ aHidd_GfxMode_Width,		512	},
+	{ aHidd_GfxMode_Height,		384	},
+	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+	{ TAG_DONE, 0UL }
+    };
+
     struct TagItem tags_640_480[] = {
     	{ aHidd_GfxMode_Width,		640	},
 	{ aHidd_GfxMode_Height,		480	},
@@ -108,16 +122,22 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{ TAG_DONE, 0UL }
     };
 
-
     struct TagItem tags_800_600[] = {
     	{ aHidd_GfxMode_Width,		800	},
 	{ aHidd_GfxMode_Height,		600	},
 	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
 	{ TAG_DONE, 0UL }
     };
+
+    struct TagItem tags_1024_768[] = {
+    	{ aHidd_GfxMode_Width,		1024	},
+	{ aHidd_GfxMode_Height,		768	},
+	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+	{ TAG_DONE, 0UL }
+    };
     
     struct TagItem *mode_tags[] = {
-	tags_640_480, tags_800_600, NULL
+	tags_320_240, tags_512_384, tags_640_480, tags_800_600, tags_1024_768, NULL
     };
 
     EnterFunc(bug("X11Gfx::New()\n"));
