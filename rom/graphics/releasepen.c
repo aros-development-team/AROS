@@ -7,6 +7,9 @@
 */
 #include "graphics_intern.h"
 #include <graphics/view.h>
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 #include <aros/debug.h>
 

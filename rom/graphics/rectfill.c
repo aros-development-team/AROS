@@ -65,7 +65,7 @@
 	    UBYTE   	    rp_drmd;
 
 	    HIDDT_Pixel     pix;
-	    HIDDT_DrawMode  drmd;
+	    HIDDT_DrawMode  drmd = 0;
 	    ULONG   	    pen;
 
 	    /* Get drawmode */

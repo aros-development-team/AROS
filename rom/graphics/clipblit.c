@@ -306,10 +306,10 @@ void internal_ClipBlit(struct RastPort * srcRP,
   struct Layer    * srcLayer =  srcRP->Layer;
   struct Layer    * destLayer= destRP->Layer;
   struct Rectangle destRect;
-  LONG bltSrcX, bltSrcY, bltDstX, bltDstY, bltWidth, bltHeight;
+  LONG bltSrcX = 0, bltSrcY = 0, bltDstX, bltDstY, bltWidth, bltHeight;
   ULONG SrcOffsetX;
   ULONG bltMask;
-  UBYTE useminterm;
+  UBYTE useminterm = 0;
   
   
 /* nlorentz: The below did not work because bitmaps may be more than 8 bit.
