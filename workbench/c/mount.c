@@ -180,7 +180,7 @@ BSTR DuplicateBSTRVolumeName(STRPTR name)
 
     AROS_BSTR_setstrlen(copy, length);
 
-    return copy;
+    return MKBADDR(copy);
 }
 
 
