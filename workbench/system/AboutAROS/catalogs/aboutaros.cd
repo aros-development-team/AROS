@@ -1,0 +1,37 @@
+;
+MSG_TITLE (//)
+About AROS
+;
+MSG_NIGHTLY_BUILD (//)
+Nightly Build
+;
+MSG_SNAPSHOT (//)
+Snapshot
+;
+MSG_RELEASE (//)
+Release
+;
+MSG_COPYRIGHT (//)
+Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1 (//)
+Released under the terms of the
+;
+MSG_LICENSE_2 (//)
+AROS Public License
+;
+MSG_LICENSE_3 (//)
+, version 1.1.
+;
+MSG_MORE_INFORMATION (//)
+Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS (//)
+Authors
+;
+MSG_PAGE_SPONSORS (//)
+Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS (//)
+Acknowledgements
+;
