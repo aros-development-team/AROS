@@ -27,7 +27,7 @@ static struct NewMenu nm[] =
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_LASTSAVED                                           },
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_RESTORE                                           	},
     {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS                                                 },
-     {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_CREATEICONS, NULL, CHECKIT                      },
+     {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_CREATEICONS, NULL, CHECKIT | MENUTOGGLE         },
     {NM_END}
 };
 

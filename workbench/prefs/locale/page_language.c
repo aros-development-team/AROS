@@ -10,7 +10,7 @@
 
 #include "global.h"
 
-LONG page_language_handler(LONG cmd, LONG param)
+LONG page_language_handler(LONG cmd, IPTR param)
 {
     LONG retval = TRUE;
     

@@ -9,6 +9,7 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include <stdio.h>
 
 #include "earthmap_small_image.c"
 #include "timezones_small_image.c"
@@ -23,11 +24,12 @@
 #define OCEAN_GREEN 	    	18
 #define OCEAN_BLUE  	    	114
 
-#define SELECTED_INTENSITY_INC	50
+#define SELECTED_INTENSITY_INC	80
 
 /*********************************************************************************************/
 
 static WORD domleft, domtop, domwidth, domheight;
+static BOOL truecolor;
 
 static UBYTE earthmap_chunky[EARTHMAP_SMALL_WIDTH * EARTHMAP_SMALL_HEIGHT];
 static UBYTE timezones_chunky[TIMEZONES_SMALL_WIDTH * TIMEZONES_SMALL_HEIGHT];
@@ -84,6 +86,11 @@ static LONG timezone_init(void)
     unpack_byterun1(timezones_small_data, timezones_chunky, TIMEZONES_SMALL_WIDTH * TIMEZONES_SMALL_HEIGHT);
 #endif
 
+    if (CyberGfxBase)
+    {
+    	if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15) truecolor = TRUE;
+    }
+    
     for(i = 0; i < EARTHMAP_SMALL_COLORS; i++)
     {
     	ULONG rgb = earthmap_small_pal[i];
@@ -115,7 +122,90 @@ static LONG timezone_init(void)
 
 /*********************************************************************************************/
 
-LONG page_timezone_handler(LONG cmd, LONG param)
+static void ClearEarthmapSelection(void)
+{
+    LONG l;
+    
+    for(l = 0; l < EARTHMAP_SMALL_WIDTH * EARTHMAP_SMALL_HEIGHT; l++)
+    {
+    	earthmap_chunky[l] &= 127;
+    }
+}
+
+/*********************************************************************************************/
+
+static void SetEarthmapSelection(UBYTE timezonespen)
+{
+    LONG l;
+    
+    for(l = 0; l < EARTHMAP_SMALL_WIDTH * EARTHMAP_SMALL_HEIGHT; l++)
+    {
+    	if (timezones_chunky[l] == timezonespen) earthmap_chunky[l] |= 128;
+    }
+}
+
+/*********************************************************************************************/
+
+static void RepaintEarthmap(void)
+{
+    if (truecolor)
+    {
+	WriteLUTPixelArray(earthmap_chunky,
+		    	   0,
+			   0,
+			   EARTHMAP_SMALL_WIDTH,
+			   win->RPort,
+			   earthmap_coltab,
+			   domleft + 1,
+			   domtop  + 1,
+			   EARTHMAP_SMALL_WIDTH,
+			   EARTHMAP_SMALL_HEIGHT,
+			   CTABFMT_XRGB8);
+    }
+}
+
+/*********************************************************************************************/
+
+static LONG timezone_input(struct IntuiMessage *msg)
+{
+    LONG retval = FALSE;
+    
+    if ((msg->Class == IDCMP_MOUSEBUTTONS) && (msg->Code == SELECTDOWN))
+    {
+    	WORD x = msg->MouseX - (domleft + 1);
+	WORD y = msg->MouseY - (domtop + 1);
+	
+    	if ((x >= 0) &&
+	    (y >= 0) &&
+	    (x <= domwidth - 2) &&
+	    (y <= domheight - 2))
+	{
+	    ULONG timezonergb;
+	    LONG timezoneid;
+	    UBYTE timezonepen;
+	    
+	    retval = TRUE;
+	    
+	    ClearEarthmapSelection();
+	    timezonepen = timezones_chunky[y * TIMEZONES_SMALL_WIDTH + x];
+	    SetEarthmapSelection(timezonepen);
+	    RepaintEarthmap();
+	    
+	    timezonergb = timezones_small_pal[timezonepen];
+	    timezoneid =  (timezonergb & 0xC00000) >> (16 + 2);
+	    timezoneid += (timezonergb & 0x00C000) >> (8 + 4);
+	    timezoneid += (timezonergb & 0x0000C0) >> (0 + 6);
+	    
+	    printf("You clicked on timezone: %d\n", timezoneid);
+	}
+    }
+    
+    return retval;
+}
+
+/*********************************************************************************************/
+
+LONG page_timezone_handler(LONG cmd, IPTR param)
 {
     LONG retval = TRUE;
     
@@ -153,9 +243,29 @@ LONG page_timezone_handler(LONG cmd, LONG param)
 	    break;
 	    
 	case PAGECMD_MAKEGADGETS:
+	    break;
+	    
 	case PAGECMD_ADDGADGETS:
+	    SetDrMd(win->RPort, JAM1);
+	    
+	    SetAPen(win->RPort, dri->dri_Pens[SHADOWPEN]);
+	    RectFill(win->RPort, domleft, domtop, domleft + domwidth - 2, domtop);
+	    RectFill(win->RPort, domleft, domtop + 1, domleft, domtop + domheight - 1);
+	    
+	    SetAPen(win->RPort, dri->dri_Pens[SHINEPEN]);
+	    RectFill(win->RPort, domleft + domwidth - 1, domtop, domleft + domwidth - 1, domtop + domheight - 1);
+	    RectFill(win->RPort, domleft + 1, domtop + domheight - 1, domleft + domwidth - 2, domtop + domheight - 1);
+	    
+	    RepaintEarthmap();
+	    break;
+	    
 	case PAGECMD_REMGADGETS:
+	    break;
+	    
 	case PAGECMD_HANDLEINPUT:
+	    retval = timezone_input((struct IntuiMessage *)param);
+	    break;
+	    
 	case PAGECMD_CLEANUP:
 	    break;
     }

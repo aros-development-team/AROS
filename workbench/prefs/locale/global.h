@@ -91,6 +91,10 @@
 #include <libraries/locale.h>
 #endif
 
+#ifndef CYBERGRAPHX_CYBERGRAPHICS_H
+#include <cybergraphx/cybergraphics.h>
+#endif
+
 #ifndef DATATYPES_DATATYPES_H
 #include <datatypes/datatypes.h>
 #endif
@@ -139,6 +143,10 @@
 
 #ifndef PROTO_IFFPARSE_H
 #include <proto/iffparse.h>
+#endif
+
+#ifndef PROTO_CYBERGRAPHICS_H
+#include <proto/cybergraphics.h>
 #endif
 
 /*********************************************************************************************/
@@ -192,15 +200,15 @@ STRPTR GetFile(void);
 
 /* page_language.c */
 
-LONG page_language_handler(LONG cmd, LONG param);
+LONG page_language_handler(LONG cmd, IPTR param);
 
 /* page_country.c */
 
-LONG page_country_handler(LONG cmd, LONG param);
+LONG page_country_handler(LONG cmd, IPTR param);
 
 /* page_timezone.c */
 
-LONG page_timezone_handler(LONG cmd, LONG param);
+LONG page_timezone_handler(LONG cmd, IPTR param);
 
 /* locale.c */
 
