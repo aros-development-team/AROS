@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.7  2001/07/16 08:04:10  falemagn
-    Some little improvements
+    Revision 1.8  2001/07/16 08:41:15  falemagn
+    Implemented FSA_EXAMINE_NEXT.
 
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
@@ -335,6 +335,7 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
         case FSA_EXAMINE:
+	case FSA_EXAMINE_NEXT:
 	case FSA_READ:
 	case FSA_WRITE:
 	case FSA_CLOSE:
@@ -349,7 +350,6 @@ AROS_LH1(void, beginio,
 	    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
 	    break;
 	case FSA_SET_FILE_SIZE:
-        case FSA_EXAMINE_NEXT:
         case FSA_EXAMINE_ALL:
         case FSA_CREATE_DIR:
         case FSA_CREATE_HARDLINK:
@@ -676,14 +676,14 @@ AROS_UFH3(LONG, pipefsproc,
 		    {
 			kprintf("User wants to read. ");
 			fn->numreaders++;
-			kprintf("There are %d readers at the moment\n", fn->numreaders);
 		    }
 		    if (un->mode & FMF_WRITE)
 		    {
 			kprintf("User wants to write. ");
 		    	fn->numwriters++;
-			kprintf("There are %d writers at the moment\n", fn->numwriters);
 		    }
+
+		    kprintf("There are %d readers and %d writers at the moment\n", fn->numreaders, fn->numwriters);
 
 		    if (!fn->numwriters || !fn->numreaders)
 		    {
@@ -809,7 +809,14 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
 		    }
 
-    		    msg->iofs->io_DirPos = (LONG)fn;
+		    if ((BYTE)fn->node.ln_Type > 0)
+		    {
+			msg->iofs->io_DirPos = (LONG)GetHead(&((struct dirnode *)fn)->files);
+                    }
+		    else
+		    {
+			msg->iofs->io_DirPos = (LONG)fn;
+    		    }
 
 		    switch(type)
 		    {
@@ -847,6 +854,34 @@ AROS_UFH3(LONG, pipefsproc,
 		    ead->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
 
 		    SendBack(msg, 0);
+		    continue;
+		}
+		case FSA_EXAMINE_NEXT:
+		{
+		    struct FileInfoBlock *fib = msg->iofs->io_Union.io_EXAMINE_NEXT.io_fib;
+                    struct filenode      *fn  = (struct filenode *)fib->fib_DiskKey;
+
+		    if (!fn)
+    		    {
+		        SendBack(msg, ERROR_NO_MORE_ENTRIES);
+			continue;
+		    }
+
+		    fib->fib_OwnerUID       = 0;
+		    fib->fib_OwnerGID       = 0;
+		    fib->fib_Date.ds_Days   = 0;
+		    fib->fib_Date.ds_Minute = 0;
+		    fib->fib_Date.ds_Tick   = 0;
+		    fib->fib_Protection	    = 0;
+		    fib->fib_Size	    = 0;
+		    fib->fib_DirEntryType   = (BYTE)fn->node.ln_Type;
+
+		    strncpy(fib->fib_FileName, fn->node.ln_Name, MAXFILENAMELENGTH - 1);
+		    fib->fib_Comment[0] = '\0';
+
+		    fib->fib_DiskKey = (LONG)GetSucc(fn);
+    		    SendBack(msg, 0);
+
 		    continue;
 		}
 		case FSA_WRITE:
