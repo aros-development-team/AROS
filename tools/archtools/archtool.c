@@ -414,8 +414,8 @@ typedef struct _Parameter
 char * readText (FILE * fh, char * delim)
 {
     char * text = NULL;
-    char * line, * ptr, * ptr2;
-    int textLen = 0, len;
+    char * line, * ptr;
+    int textLen = 0;
     int delimLen = strlen (delim);
     int n;
     
@@ -478,7 +478,7 @@ char * joinStrings (int n, char ** strings, char * sep)
 char * joinVAStrings (char * sep, char * str, ...)
 {
     va_list args;
-    int i, len, sepLen=0, resultLen=0;
+    int len, sepLen=0, resultLen=0;
     char * result = NULL, * next;
 
     va_start (args, str);
@@ -511,8 +511,7 @@ char * joinVAStrings (char * sep, char * str, ...)
 Parameter * newParameter (FILE * fh, int num, char ** header)
 {
     Parameter * par = malloc (sizeof (Parameter));
-    Node * reg;
-    char * line, * ptr;
+    char * ptr;
 
     par->node.name = strdup (header[num-2]);
     par->type = joinStrings (num-3, &header[1], " ");
@@ -3225,9 +3224,10 @@ int genarossource(int argc, char **argv)
 		exit(-1);
 	}
 	
-	lc = calloc(1,sizeof(struct libconf));
-	if (parse_libconf(NULL,lc))
-		return (-1);
+	if(!(lc = parse_libconf(NULL)) )
+	{
+	  return(-1);
+	}
 	filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
 	sprintf( filename, "%s", argv[1]);
 
@@ -3279,6 +3279,8 @@ char *upperbasename;
     fprintf( stderr, "Usage: %s <incdir>\n", argv[0] );
     exit(-1);
   }
+  if(!(lc = parse_libconf(NULL)) )
+    return(-1);
   if(!(lc = parse_libconf(NULL)) )
     return(-1);
   if( lc->libbasetypeptr == NULL )
