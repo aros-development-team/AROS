@@ -294,19 +294,22 @@ Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
     Class * classPtr;
 
     /* Lock the list */
-    ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphoreShared (GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /* Search for the class */
     ForeachNode (PublicClassList, classPtr)
     {
 	if (!strcmp (classPtr->cl_ID, classID))
-	    break;
+	    goto found;
     }
 
+    classPtr = NULL; /* Nothing found */
+
+found:
     /* Unlock list */
     ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
 
-    return classPtr; /* found node or NULL */
+    return classPtr;
 }
 
 #undef IntuitionBase
