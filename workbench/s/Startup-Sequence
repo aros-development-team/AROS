@@ -64,7 +64,7 @@ EndIf
 
 If EXISTS ENV:SYS/Packages
     CD >ENV:OLDCD
-    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="CD $SYS/Packages/%s*NExecute S/Package-Startup*N"
+    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS $SYS/Packages/%s*NCD $SYS/Packages/%s*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
     Execute T:P
     Delete T:P QUIET
     CD $OLDCD
