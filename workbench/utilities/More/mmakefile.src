@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := more req
+FILES := more req locale misc
 
 EXEDIR := $(AROSDIR)/Utilities
 EXE := $(EXEDIR)/More
@@ -15,7 +15,7 @@ USE_MLIB := yes
 
 USER_CFLAGS := -O2 -Wunused -Wall
 
-#MM workbench-utilities : includes linklibs
+#MM workbench-utilities : includes linklibs setup-more-catalogs
 
 %make_prog_setup mmake=workbench-utilities
 

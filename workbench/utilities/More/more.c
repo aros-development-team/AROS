@@ -1,8 +1,20 @@
+/*
+    (C) 1997-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
+/****************************************************************************************/
+
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
+#include <libraries/locale.h>
+#include <libraries/gadtools.h>
 
 #include <graphics/gfx.h>
 #include <utility/hooks.h>
@@ -11,16 +23,24 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/gadtools.h>
 #include <proto/alib.h>
 
+#include "global.h"
 #include "req.h"
+
+#define CATCOMP_NUMBERS
+#include "more_strings.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-/*******************************************************************************/
+#define DEBUG 0
+#include <aros/debug.h>
+
+/****************************************************************************************/
 
 /* #define USE_WRITEMASK */
 #define USE_SIMPLEREFRESH
@@ -32,38 +52,36 @@
 
 #define MAX_TEXTLINELEN 4096
 
-#define ARG_TEMPLATE "FILE/A"
+#define ARG_TEMPLATE "FILE"
 
 enum
 {
-    ARG_FILE,
+    ARG_FILE, 
     NUM_ARGS
 };
 
 enum
 {
-    GAD_UPARROW,
-    GAD_DOWNARROW,
-    GAD_LEFTARROW,
-    GAD_RIGHTARROW,
-    GAD_VERTSCROLL,
-    GAD_HORIZSCROLL,
+    GAD_UPARROW, 
+    GAD_DOWNARROW, 
+    GAD_LEFTARROW, 
+    GAD_RIGHTARROW, 
+    GAD_VERTSCROLL, 
+    GAD_HORIZSCROLL, 
     NUM_GADGETS
 };
 
 enum
 {
-    IMG_UPARROW,
-    IMG_DOWNARROW,
-    IMG_LEFTARROW,
-    IMG_RIGHTARROW,
-    IMG_SIZE,
+    IMG_UPARROW, 
+    IMG_DOWNARROW, 
+    IMG_LEFTARROW, 
+    IMG_RIGHTARROW, 
+    IMG_SIZE, 
     NUM_IMAGES
 };
 
-static char *MSG_WIN_TITLE = "More: %s (%ld Lines - %ld Bytes)";
-
-/*******************************************************************************/
+/****************************************************************************************/
 
 struct LineNode
 {
@@ -73,55 +91,82 @@ struct LineNode
     BOOL invert;
 };
 
-/*******************************************************************************/
+/****************************************************************************************/
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
+struct IntuitionBase 	*IntuitionBase;
+struct GfxBase 		*GfxBase;
+struct Library 		*GadToolsBase;
+struct Screen 		*scr;
+struct DrawInfo 	*dri;
+APTR			vi;
+struct Menu		*menus;
+struct Window		*win;
 
-struct Screen *scr;
-struct DrawInfo *dri;
+ULONG 			gotomask, findmask;
+UBYTE			filenamebuffer[300];
 
-ULONG gotomask, findmask;
+/****************************************************************************************/
 
-static struct Window *win;
-static struct RastPort *rp;
-static struct RDArgs *MyArgs;
+static struct RastPort 	*rp;
+static struct RDArgs 	*MyArgs;
 
-static struct Gadget *gad[NUM_GADGETS], *firstgadget;
-static struct Image *img[NUM_GADGETS];
+static struct Gadget 	*gad[NUM_GADGETS], *firstgadget;
+static struct Image 	*img[NUM_GADGETS];
 
-static struct LineNode *linearray;
+static struct LineNode 	*linearray;
 
-static UBYTE *filebuffer;
+static UBYTE 		*filebuffer;
 
-static char *filename, s[256], *searchtext;
+static char 		*filename, s[256], *searchtext;
 
-static BPTR fh;
+static BPTR 		fh;
 
-static UWORD tabsize = DEFAULT_TABSIZE;
+static UWORD 		tabsize = DEFAULT_TABSIZE;
 
-static WORD fontwidth, fontheight, borderleft, bordertop;
-static WORD shinepen, shadowpen, bgpen, textpen;
-static WORD borderright, borderbottom, visiblex, visibley;
-static WORD fontbaseline, textstartx, textstarty, textendx, textendy;
-static WORD textwidth, textheight, viewstartx, viewstarty;
-static WORD winwidth, winheight;
+static WORD 		fontwidth, fontheight, borderleft, bordertop;
+static WORD 		shinepen, shadowpen, bgpen, textpen;
+static WORD 		borderright, borderbottom, visiblex, visibley;
+static WORD 		fontbaseline, textstartx, textstarty, textendx, textendy;
+static WORD 		textwidth, textheight, viewstartx, viewstarty;
+static WORD 		winwidth, winheight;
 
-static ULONG winmask;
-static LONG filelen, num_lines, max_textlen;
-static LONG search_startline, found_line = -1;
+static ULONG		winmask;
+static LONG 		filelen, num_lines, max_textlen;
+static LONG 		search_startline, found_line = -1;
 
-static IPTR Args[NUM_ARGS];
+static BOOL		in_main_loop;
 
-/*******************************************************************************/
+static IPTR 		Args[NUM_ARGS];
 
-static void Cleanup(char *msg)
+/*********************************************************************************************/
+
+WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+{
+    struct EasyStruct es;
+    
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = title;
+    es.es_TextFormat   = text;
+    es.es_GadgetFormat = gadtext;
+   
+    return EasyRequestArgs(win, &es, NULL, NULL);  
+}
+
+/****************************************************************************************/
+
+void Cleanup(char *msg)
 {
     WORD rc, i;
 
     if (msg)
     {
-	printf("More: %s\n",msg);
+        if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
+	{
+	    ShowMessage("More", msg, MSG(MSG_OK));
+	} else {
+	    printf("More: %s\n", msg);
+	}
 	rc = RETURN_WARN;
     } else {
 	rc = RETURN_OK;
@@ -129,11 +174,13 @@ static void Cleanup(char *msg)
 
     CleanupRequesters();
 
+    KillMenus();
+    
     if (win)
     {
 	for(i = 0; i < NUM_GADGETS;i++)
 	{
-	    if (gad[i]) RemoveGadget(win,gad[i]);
+	    if (gad[i]) RemoveGadget(win, gad[i]);
 	}
 
 	CloseWindow(win);
@@ -148,80 +195,79 @@ static void Cleanup(char *msg)
 	if (img[i]) DisposeObject(img[i]);
     }
 
-    if (dri) FreeScreenDrawInfo(scr,dri);
-    if (scr) UnlockPubScreen(0,scr);
+    if (vi) FreeVisualInfo(vi);
+    if (dri) FreeScreenDrawInfo(scr, dri);
+    if (scr) UnlockPubScreen(0, scr);
 
     if (linearray) FreeVec(linearray);
     if (filebuffer) FreeVec(filebuffer);
 
     if (fh) Close(fh);
 
+    if (GadToolsBase) CloseLibrary(GadToolsBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
 
     if (MyArgs) FreeArgs(MyArgs);
-
+    CleanupLocale();
+    
     exit(rc);
 }
 
+/****************************************************************************************/
+
 static void DosError(void)
 {
-    Fault(IoErr(),0,s,255);
-    Cleanup(s);
+    Fault(IoErr(), 0, s, 255);
+    if (in_main_loop)
+    {
+        ShowMessage("More", s, MSG(MSG_OK));
+    } else {
+        Cleanup(s);
+    }
 }
+
+/****************************************************************************************/
 
 static void GetArguments(void)
 {
-    if (!(MyArgs = ReadArgs(ARG_TEMPLATE,Args,0)))
+    if (!(MyArgs = ReadArgs(ARG_TEMPLATE, Args, 0)))
     {
 	DosError();
     }
 
     filename = (char *)Args[ARG_FILE];
+    if (!filename) filename = GetFile();
+    if (!filename) Cleanup(NULL);
+    
+    strncpy(filenamebuffer, filename, 299);
+    
 }
+
+/****************************************************************************************/
 
 static void OpenLibs(void)
 {
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
+    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
     {
-	Cleanup("Can't open intuition.library V39!");
+        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "intuition.library", 39);	
+	Cleanup(s);
     }
 
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
+    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
     {
-	Cleanup("Can't open graphics.library V39!");
+        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "graphics.library", 39);	
+	Cleanup(s);
+    }	
+
+    if (!(GadToolsBase = OpenLibrary("gadtools.library", 39)))
+    {
+        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "gadtools.library", 39);	
+	Cleanup(s);
     }	
 }
 
-static void OpenFile(void)
-{	
-    if (!(fh = Open(filename, MODE_OLDFILE)))
-    {
-	DosError();
-    }
-
-    Seek(fh, 0, OFFSET_END);
-    filelen = Seek(fh, 0, OFFSET_BEGINNING);
-
-    if (filelen < 0)
-    {
-	DosError();
-    }
-
-    if (!(filebuffer = AllocVec(filelen + 1, MEMF_PUBLIC)))
-    {
-	Cleanup("Out of memory!");
-    }
-
-    filebuffer[filelen] = '\0';
-
-    if (Read(fh, filebuffer, filelen) != filelen)
-    {
-	DosError();
-    }
-
-    Close(fh);fh = 0;
-}
+/****************************************************************************************/
 
 static UWORD CalcTextLen(char *text)
 {
@@ -243,33 +289,92 @@ static UWORD CalcTextLen(char *text)
     return rc;
 }
 
-static void MakeLineArray(void)
-{
-    struct LineNode *linepos;
-    UBYTE *filepos = filebuffer;
-    LONG flen = filelen, act_line;
+/****************************************************************************************/
 
-    num_lines = 1;
+static BOOL OpenFile(void)
+{
+    struct LineNode 	*new_linearray;
+    UBYTE 		*new_filebuffer;
+    LONG  		new_filelen;
+    LONG		new_num_lines;
+
+    struct LineNode 	*linepos;
+    UBYTE 		*filepos;
+    LONG 		flen, act_line;
+
+    if (!(fh = Open(filename, MODE_OLDFILE)))
+    {
+	DosError();
+	return FALSE;
+    }
+
+    Seek(fh, 0, OFFSET_END);
+    new_filelen = Seek(fh, 0, OFFSET_BEGINNING);
+
+    if (new_filelen < 0)
+    {
+        Close(fh); fh = 0;
+	DosError();
+	return FALSE;
+    }
+
+    if (!(new_filebuffer = AllocVec(new_filelen + 1, MEMF_PUBLIC)))
+    {
+        Close(fh); fh = 0;
+	if (in_main_loop)
+	{
+	    ShowMessage("More", MSG(MSG_NO_MEM), MSG(MSG_OK));
+	    return FALSE;
+	}
+	Cleanup(MSG(MSG_NO_MEM));
+    }
+
+    new_filebuffer[new_filelen] = '\0';
+
+    if (Read(fh, new_filebuffer, new_filelen) != new_filelen)
+    {
+        FreeVec(new_filebuffer);
+        Close(fh); fh = 0;
+	DosError();
+	return FALSE;
+    }
+
+    Close(fh);fh = 0;
+    
+    filepos = new_filebuffer;
+    flen = new_filelen;
+
+    new_num_lines = 1;
 
     while(flen--)
     {
-	if (*filepos++ == '\n') num_lines++;
+	if (*filepos++ == '\n') new_num_lines++;
     }
 
-    linearray = AllocVec(num_lines * sizeof(struct LineNode),MEMF_PUBLIC | MEMF_CLEAR);
-    if (!linearray) Cleanup("Out of memory!");
-
-    linepos = linearray;
-    filepos = filebuffer;
+    new_linearray = AllocVec(new_num_lines * sizeof(struct LineNode), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!new_linearray)
+    {
+        FreeVec(new_filebuffer);
+	if (in_main_loop)
+	{
+	    ShowMessage("More", MSG(MSG_NO_MEM), MSG(MSG_OK));
+	    return FALSE;
+	}
+        Cleanup(MSG(MSG_NO_MEM));
+    }
+    
+    linepos = new_linearray;
+    filepos = new_filebuffer;
 
     act_line = 1;
-    while(act_line <= num_lines)
+    max_textlen = 0;
+    while(act_line <= new_num_lines)
     {
 	linepos->text = (char *)filepos;
 
 	while ((*filepos != '\n') && (*filepos != '\0'))
 	{
-	    linepos->stringlen++;filepos++;
+	    linepos->stringlen++; filepos++;
 	}
 
 	*filepos++ = '\0';
@@ -277,52 +382,71 @@ static void MakeLineArray(void)
 	linepos->textlen = CalcTextLen(linepos->text);
 	if (linepos->textlen > max_textlen) max_textlen = linepos->textlen;
 
-	linepos++;act_line++;
+	linepos++; act_line++;
     }
+
+    if (filebuffer) FreeVec(filebuffer);
+    if (linearray) FreeVec(linearray);
+    
+    filebuffer = new_filebuffer;
+    filelen    = new_filelen;
+    linearray  = new_linearray;
+    num_lines  = new_num_lines;
+
+    return TRUE;
 }
+
+/****************************************************************************************/
 
 static void GetVisual(void)
 {
     if (!(scr = LockPubScreen(0)))
     {
-	Cleanup("Can't lock pub screen!");
+	Cleanup(MSG(MSG_CANT_LOCK_SCR));
     }
 
     if (!(dri = GetScreenDrawInfo(scr)))
     {
-	Cleanup("Can't get drawinfo!");
+	Cleanup(MSG(MSG_CANT_GET_DRI));
     }
 
+    if (!(vi = GetVisualInfoA(scr, 0)))
+    {
+        Cleanup(MSG(MSG_CANT_GET_VI));
+    }
+    
     shinepen = dri->dri_Pens[SHINEPEN];
     shadowpen = dri->dri_Pens[SHADOWPEN];
     textpen = dri->dri_Pens[TEXTPEN];
     bgpen = dri->dri_Pens[BACKGROUNDPEN];
 }
 
+/****************************************************************************************/
+
 static void MakeGadgets(void)
 {
     static WORD img2which[] =
     {
-   	UPIMAGE,
-   	DOWNIMAGE,
-   	LEFTIMAGE,
-   	RIGHTIMAGE,
+   	UPIMAGE, 
+   	DOWNIMAGE, 
+   	LEFTIMAGE, 
+   	RIGHTIMAGE, 
    	SIZEIMAGE
     };
    
-    IPTR imagew[NUM_IMAGES],imageh[NUM_IMAGES];
-    WORD v_offset,h_offset, btop, i;
+    IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
+    WORD v_offset, h_offset, btop, i;
 
     for(i = 0;i < NUM_IMAGES;i++)
     {
-	img[i] = NewObject(0,SYSICLASS,SYSIA_DrawInfo,dri,
-				       SYSIA_Which,img2which[i],
-				       TAG_DONE);
+	img[i] = NewObject(0, SYSICLASS, SYSIA_DrawInfo	, dri		, 
+				         SYSIA_Which	, img2which[i]	, 
+				         TAG_DONE);
 
-	if (!img[i]) Cleanup("Can't create SYSICLASS image!");
+	if (!img[i]) Cleanup(MSG(MSG_CANT_CREATE_SYSIMAGE));
 
-	GetAttr(IA_Width,(Object *)img[i],&imagew[i]);
-	GetAttr(IA_Height,(Object *)img[i],&imageh[i]);
+	GetAttr(IA_Width, (Object *)img[i], &imagew[i]);
+	GetAttr(IA_Height, (Object *)img[i], &imageh[i]);
     }
 
     btop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
@@ -330,84 +454,81 @@ static void MakeGadgets(void)
     v_offset = imagew[IMG_DOWNARROW] / 4;
     h_offset = imageh[IMG_LEFTARROW] / 4;
 
-    firstgadget = gad[GAD_UPARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_UPARROW],
-	    GA_RelRight,-imagew[IMG_UPARROW] + 1,
-	    GA_RelBottom,-imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1,
-	    GA_ID,GAD_UPARROW,
-	    GA_RightBorder,TRUE,
-	    GA_Immediate,TRUE,
-	    TAG_DONE);
+    firstgadget = 
+    gad[GAD_UPARROW] = NewObject(0, BUTTONGCLASS, GA_Image	, img[IMG_UPARROW]							, 
+						  GA_RelRight	, -imagew[IMG_UPARROW] + 1						, 
+						  GA_RelBottom	, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	, 
+						  GA_ID		, GAD_UPARROW								, 
+						  GA_RightBorder, TRUE									, 
+						  GA_Immediate	, TRUE									, 
+						  TAG_DONE);
 
-    gad[GAD_DOWNARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_DOWNARROW],
-	    GA_RelRight,-imagew[IMG_UPARROW] + 1,
-	    GA_RelBottom,-imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1,
-	    GA_ID,GAD_DOWNARROW,
-	    GA_RightBorder,TRUE,
-	    GA_Previous,gad[GAD_UPARROW],
-	    GA_Immediate,TRUE,
-	    TAG_DONE);
+    gad[GAD_DOWNARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_DOWNARROW]				, 
+						    GA_RelRight		, -imagew[IMG_UPARROW] + 1			, 
+						    GA_RelBottom	, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	, 
+						    GA_ID		, GAD_DOWNARROW					, 
+						    GA_RightBorder	, TRUE						, 
+						    GA_Previous		, gad[GAD_UPARROW]				, 
+						    GA_Immediate	, TRUE						, 
+						    TAG_DONE);
 
-    gad[GAD_VERTSCROLL] = NewObject(0,PROPGCLASS,
-	    GA_Top,btop + 1,
-	    GA_RelRight,-imagew[IMG_DOWNARROW] + v_offset + 1,
-	    GA_Width,imagew[IMG_DOWNARROW] - v_offset * 2,
-	    GA_RelHeight,-imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2,
-	    GA_ID,GAD_VERTSCROLL,
-	    GA_Previous,gad[GAD_DOWNARROW],
-	    GA_RightBorder,TRUE,
-	    GA_RelVerify,TRUE,
-	    GA_Immediate,TRUE,
-	    PGA_NewLook,TRUE,
-	    PGA_Borderless,TRUE,
-	    PGA_Total,100,
-	    PGA_Visible,100,
-	    PGA_Freedom,FREEVERT,
-	    TAG_DONE);
+    gad[GAD_VERTSCROLL] = NewObject(0, PROPGCLASS, GA_Top		, btop + 1									, 
+						   GA_RelRight		, -imagew[IMG_DOWNARROW] + v_offset + 1						, 
+						   GA_Width		, imagew[IMG_DOWNARROW] - v_offset * 2						, 
+						   GA_RelHeight		, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2	, 
+						   GA_ID		, GAD_VERTSCROLL								, 
+						   GA_Previous		, gad[GAD_DOWNARROW]								, 
+						   GA_RightBorder	, TRUE										, 
+						   GA_RelVerify		, TRUE										, 
+						   GA_Immediate		, TRUE										, 
+						   PGA_NewLook		, TRUE										, 
+						   PGA_Borderless	, TRUE										, 
+						   PGA_Total		, 100										, 
+						   PGA_Visible		, 100										, 
+						   PGA_Freedom		, FREEVERT									, 
+						   TAG_DONE);
 
-    gad[GAD_RIGHTARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_RIGHTARROW],
-	    GA_RelRight,-imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1,
-	    GA_RelBottom,-imageh[IMG_RIGHTARROW] + 1,
-	    GA_ID,GAD_RIGHTARROW,
-	    GA_BottomBorder,TRUE,
-	    GA_Previous,gad[GAD_VERTSCROLL],
-	    GA_Immediate,TRUE,
-	    TAG_DONE);
+    gad[GAD_RIGHTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_RIGHTARROW]				, 
+						     GA_RelRight	, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1, 
+						     GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1			, 
+						     GA_ID		, GAD_RIGHTARROW				, 
+						     GA_BottomBorder	, TRUE						, 
+						     GA_Previous	, gad[GAD_VERTSCROLL]				, 
+						     GA_Immediate	, TRUE						, 
+						     TAG_DONE);
 
-    gad[GAD_LEFTARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_LEFTARROW],
-	    GA_RelRight,-imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1,
-	    GA_RelBottom,-imageh[IMG_RIGHTARROW] + 1,
-	    GA_ID,GAD_LEFTARROW,
-	    GA_BottomBorder,TRUE,
-	    GA_Previous,gad[GAD_RIGHTARROW],
-	    GA_Immediate,TRUE,
-	    TAG_DONE);
+    gad[GAD_LEFTARROW] = NewObject(0, BUTTONGCLASS, GA_Image		, img[IMG_LEFTARROW]							, 
+						    GA_RelRight		, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1, 
+						    GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1						, 
+						    GA_ID		, GAD_LEFTARROW								, 
+						    GA_BottomBorder	, TRUE									, 
+						    GA_Previous		, gad[GAD_RIGHTARROW]							, 
+						    GA_Immediate	, TRUE									, 
+						    TAG_DONE);
 
-    gad[GAD_HORIZSCROLL] = NewObject(0,PROPGCLASS,
-	    GA_Left,scr->WBorLeft,
-	    GA_RelBottom,-imageh[IMG_LEFTARROW] + h_offset + 1,
-	    GA_RelWidth,-imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2,
-	    GA_Height,imageh[IMG_LEFTARROW] - (h_offset * 2),
-	    GA_ID,GAD_HORIZSCROLL,
-	    GA_Previous,gad[GAD_LEFTARROW],
-	    GA_BottomBorder,TRUE,
-	    GA_RelVerify,TRUE,
-	    GA_Immediate,TRUE,
-	    PGA_NewLook,TRUE,
-	    PGA_Borderless,TRUE,
-	    PGA_Total,100,
-	    PGA_Visible,100,
-	    PGA_Freedom,FREEHORIZ,
-	    TAG_DONE);
+    gad[GAD_HORIZSCROLL] = NewObject(0, PROPGCLASS, GA_Left		, scr->WBorLeft, 
+						    GA_RelBottom	, -imageh[IMG_LEFTARROW] + h_offset + 1							 , 
+						    GA_RelWidth		, -imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2, 
+						    GA_Height		, imageh[IMG_LEFTARROW] - (h_offset * 2)						 , 
+						    GA_ID		, GAD_HORIZSCROLL									 , 
+						    GA_Previous		, gad[GAD_LEFTARROW]									 , 
+						    GA_BottomBorder	, TRUE											 , 
+						    GA_RelVerify	, TRUE											 , 
+						    GA_Immediate	, TRUE											 , 
+						    PGA_NewLook		, TRUE											 , 
+						    PGA_Borderless	, TRUE											 , 
+						    PGA_Total		, 100											 , 
+						    PGA_Visible		, 100											 , 
+						    PGA_Freedom		, FREEHORIZ										 , 
+						    TAG_DONE);
 
     for(i = 0;i < NUM_GADGETS;i++)
     {
-	if (!gad[i]) Cleanup("Can't create gadget!");
+	if (!gad[i]) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
     }
 }
+
+/****************************************************************************************/
 
 static void CalcVisible(void)
 {
@@ -427,6 +548,8 @@ static void CalcVisible(void)
     textheight = textendy - textstarty + 1;	
 }
 
+/****************************************************************************************/
+
 static void MySetAPen(struct RastPort *rp, LONG reg)
 {
     static LONG oldreg = -1;
@@ -438,6 +561,8 @@ static void MySetAPen(struct RastPort *rp, LONG reg)
     }
 }
 
+/****************************************************************************************/
+
 static void MySetBPen(struct RastPort *rp, LONG reg)
 {
     static LONG oldreg = -1;
@@ -448,6 +573,8 @@ static void MySetBPen(struct RastPort *rp, LONG reg)
 	SetBPen(rp, reg);
     }
 }
+
+/****************************************************************************************/
 
 static void DrawTextLine(WORD viewline, WORD columns, BOOL clearright)
 {
@@ -518,10 +645,10 @@ static void DrawTextLine(WORD viewline, WORD columns, BOOL clearright)
 		MySetAPen(rp, textpen);
 		MySetBPen(rp, inverted ? shinepen : bgpen);
 
-		Move(rp,x,
+		Move(rp, x, 
 		        textstarty + (viewline * fontheight) + fontbaseline);
 
-		Text(rp,stringpos,i); 
+		Text(rp, stringpos, i); 
 	    }
 	}
 
@@ -530,12 +657,14 @@ static void DrawTextLine(WORD viewline, WORD columns, BOOL clearright)
     if ((i < visiblex) && clearright)
     {
 	MySetAPen(rp, bgpen);
-	RectFill(rp, textstartx + (i * fontwidth),
-		     textstarty + (viewline * fontheight),
-		     textendx,
+	RectFill(rp, textstartx + (i * fontwidth), 
+		     textstarty + (viewline * fontheight), 
+		     textendx, 
 		     textstarty + (viewline * fontheight) + fontheight - 1);
     }
 }
+
+/****************************************************************************************/
 
 static void DrawAllText(void)
 {
@@ -543,57 +672,73 @@ static void DrawAllText(void)
 
     for(y = 0;y < visibley;y++)
     {
-	DrawTextLine(y,0,TRUE);
+	DrawTextLine(y, 0, TRUE);
     }
 }
 
-static void MakeWin(void)
-{	
-    static char wintitle[256];
-    BPTR lock;
+/****************************************************************************************/
+
+static void SetWinTitle(void)
+{
+    static UBYTE wintitle[256];
+    BPTR 	 lock;
 
     strcpy(s, filename);
     if ((lock = Lock(filename, SHARED_LOCK)))
     {
-	NameFromLock(lock,s,255);
+	NameFromLock(lock, s, 255);
 	UnLock(lock);
     }
-    sprintf(wintitle,MSG_WIN_TITLE,s,num_lines,filelen);
+    sprintf(wintitle, MSG(MSG_WIN_TITLE), s, num_lines, filelen);
 
-    if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
-				 WA_Left,10,
-				 WA_Top,10,
-				 WA_Width,600,
-				 WA_Height,300,
-				 WA_Title,(IPTR)wintitle,
-			       #ifdef USE_SIMPLEREFRESH
-				 WA_SimpleRefresh,TRUE,
-			       #endif
-				 WA_CloseGadget,TRUE,
-				 WA_DepthGadget,TRUE,
-				 WA_DragBar,TRUE,
-				 WA_SizeGadget,TRUE,
-				 WA_SizeBBottom,TRUE,
-				 WA_SizeBRight,TRUE,
-				 WA_Activate,TRUE,
-				 WA_Gadgets,(IPTR)firstgadget,
-				 WA_MinWidth,100,
-				 WA_MinHeight,100,
-				 WA_MaxWidth,scr->Width,
-				 WA_MaxHeight,scr->Height,
-				 WA_ReportMouse,TRUE,
-				 WA_IDCMP,IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE |
-					  IDCMP_GADGETDOWN | IDCMP_GADGETUP |
-					  IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY |
-					#ifdef USE_SIMPLEREFRESH
-					  IDCMP_REFRESHWINDOW |
-					#endif
-					  IDCMP_RAWKEY,
-				 TAG_DONE)))
+    SetWindowTitles(win, wintitle, (UBYTE *)~0L);
+}
+
+/****************************************************************************************/
+
+static void MakeWin(void)
+{	
+    if (!(win = OpenWindowTags(0, WA_PubScreen		, (IPTR)scr		, 
+				  WA_Left		, 0			, 
+				  WA_Top		, scr->BarHeight + 1	, 
+				  WA_Width		, 600			, 
+				  WA_Height		, 300			, 
+				  WA_AutoAdjust		, TRUE			,
+				#ifdef USE_SIMPLEREFRESH
+				  WA_SimpleRefresh	, TRUE			, 
+				#endif
+				  WA_CloseGadget	, TRUE			, 
+				  WA_DepthGadget	, TRUE			, 
+				  WA_DragBar		, TRUE			, 
+				  WA_SizeGadget		, TRUE			, 
+				  WA_SizeBBottom	, TRUE			, 
+				  WA_SizeBRight		, TRUE			, 
+				  WA_Activate		, TRUE			, 
+				  WA_Gadgets		, (IPTR)firstgadget	, 
+				  WA_MinWidth		, 100			, 
+				  WA_MinHeight		, 100			, 
+				  WA_MaxWidth		, scr->Width		, 
+				  WA_MaxHeight		, scr->Height		, 
+				  WA_ReportMouse	, TRUE			, 
+				  WA_NewLookMenus	, TRUE			,
+				  WA_IDCMP		, IDCMP_CLOSEWINDOW   |
+				  			  IDCMP_NEWSIZE       |
+					    		  IDCMP_GADGETDOWN    | 
+							  IDCMP_GADGETUP      |
+					    		  IDCMP_MOUSEMOVE     |
+							  IDCMP_VANILLAKEY    |
+					  		#ifdef USE_SIMPLEREFRESH
+					    		  IDCMP_REFRESHWINDOW |
+					  		#endif
+					    		  IDCMP_RAWKEY        |
+							  IDCMP_MENUPICK	, 
+				  TAG_DONE)))
     {
-	Cleanup("Can't open window!");
+	Cleanup(MSG(MSG_CANT_CREATE_WIN));
     }
-
+    
+    SetWinTitle();
+    
     winmask = 1L << win->UserPort->mp_SigBit;
 
     winwidth = win->Width;
@@ -601,7 +746,7 @@ static void MakeWin(void)
 
     rp = win->RPort;
 
-    SetDrMd(rp,JAM2);
+    SetDrMd(rp, JAM2);
 
 #ifdef USE_WRITEMASK
     SetWriteMask(rp, 0x3);
@@ -621,24 +766,22 @@ static void MakeWin(void)
 
     CalcVisible();
 
-    SetGadgetAttrs(gad[GAD_HORIZSCROLL],
-		   win,
-		   0,
-		   PGA_Top,0,
-		   PGA_Total,max_textlen,
-		   PGA_Visible,visiblex,
-		   TAG_DONE);
+    SetGadgetAttrs(gad[GAD_HORIZSCROLL], win, 0, PGA_Top	, 0		, 
+						 PGA_Total	, max_textlen	, 
+						 PGA_Visible	, visiblex	, 
+						 TAG_DONE);
 
-    SetGadgetAttrs(gad[GAD_VERTSCROLL],
-		   win,
-		   0,
-		   PGA_Top,0,
-		   PGA_Total,num_lines,
-		   PGA_Visible,visibley,
-		   TAG_DONE);
+    SetGadgetAttrs(gad[GAD_VERTSCROLL], win, 0, PGA_Top		, 0		, 
+						PGA_Total	, num_lines	, 
+						PGA_Visible	, visibley	, 
+						TAG_DONE);
 
     DrawAllText();
+    
+    SetMenuStrip(win, menus);
 }
+
+/****************************************************************************************/
 
 static void NewWinSize(void)
 {
@@ -661,36 +804,30 @@ static void NewWinSize(void)
 	if (viewstarty < 0) viewstarty = 0;
     }
 
-    SetGadgetAttrs(gad[GAD_HORIZSCROLL],
-		   win,
-		   0,
-		   PGA_Top,viewstartx,
-		   PGA_Visible,visiblex,
-		   TAG_DONE);
+    SetGadgetAttrs(gad[GAD_HORIZSCROLL], win, 0, PGA_Top	, viewstartx	, 
+						 PGA_Visible	, visiblex	, 
+						 TAG_DONE);
 
-    SetGadgetAttrs(gad[GAD_VERTSCROLL],
-		   win,
-		   0,
-		   PGA_Top,viewstarty,
-		   PGA_Visible,visibley,
-		   TAG_DONE);
+    SetGadgetAttrs(gad[GAD_VERTSCROLL], win, 0, PGA_Top		, viewstarty	, 
+						PGA_Visible	, visibley	, 
+						TAG_DONE);
 
     if (new_winwidth < winwidth)
     {
 	MySetAPen(rp, bgpen);
-	RectFill(rp,textendx + 1,
-		    bordertop + INNER_SPACING_Y,
-		    new_winwidth - borderright - 1,
-		    new_winheight - borderbottom - 1);
+	RectFill(rp, textendx + 1, 
+		     bordertop + INNER_SPACING_Y, 
+		     new_winwidth - borderright - 1, 
+		     new_winheight - borderbottom - 1);
     }
 
     if (new_winheight < winheight)
     {
 	MySetAPen(rp, bgpen);
-	RectFill(rp,borderleft + INNER_SPACING_X,
-		    textendy + 1,
-		    new_winwidth - borderright - 1,
-		    new_winheight - borderbottom - 1);
+	RectFill(rp, borderleft + INNER_SPACING_X, 
+		     textendy + 1, 
+		     new_winwidth - borderright - 1, 
+		     new_winheight - borderbottom - 1);
     }
 
     if ((new_winwidth > winwidth) ||
@@ -703,27 +840,37 @@ static void NewWinSize(void)
     winheight = new_winheight;
 }
 
+/****************************************************************************************/
+
 #ifdef USE_SIMPLEREFRESH
+
+/****************************************************************************************/
 
 static void RefreshAll(void)
 {
     DrawAllText();
 }
 
+/****************************************************************************************/
+
 static void HandleRefresh(void)
 {
     BeginRefresh(win);
     RefreshAll();
-    EndRefresh(win,TRUE);
+    EndRefresh(win, TRUE);
 }
 
-#endif
+/****************************************************************************************/
+
+#endif /* USE_SIMPLEREFRESH */
+
+/****************************************************************************************/
 
 static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 {
     LONG y, dx, dy;
 
-    MySetBPen(rp,bgpen);
+    MySetBPen(rp, bgpen);
 
     switch(gadid)
     {
@@ -741,11 +888,8 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 
 		if (refreshprop)
 		{
-		    SetGadgetAttrs(gad[gadid],
-				   win,
-				   0,
-				   PGA_Top,viewstarty,
-				   TAG_DONE);
+		    SetGadgetAttrs(gad[gadid], win, 0, PGA_Top	, viewstarty, 
+						       TAG_DONE);
 		}
 
 		if (abs(dy) >= visibley)
@@ -756,12 +900,12 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 		    {
 
 		    #ifdef USE_SIMPLEREFRESH
-			ScrollRaster(rp,
-				     0,
-				     fontheight * dy,
-				     textstartx,
-				     textstarty,
-				     textendx,
+			ScrollRaster(rp, 
+				     0, 
+				     fontheight * dy, 
+				     textstartx, 
+				     textstarty, 
+				     textendx, 
 				     textendy);
 
 			if (rp->Layer->Flags & LAYERREFRESH)
@@ -769,29 +913,29 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 			    HandleRefresh();
 			}
 		    #else
-			ClipBlit(rp,textstartx,
-				    textstarty + dy * fontheight,
-				 rp,textstartx,
-				    textstarty,
-				    textwidth,
-				    textheight - dy * fontheight,
+			ClipBlit(rp, textstartx, 
+				     textstarty + dy * fontheight, 
+				 rp, textstartx, 
+				     textstarty, 
+				     textwidth, 
+				     textheight - dy * fontheight, 
 				 192);
 		    #endif
 
 			for (y = visibley - dy;y < visibley;y++)
 			{
-			    DrawTextLine(y,0,TRUE);
+			    DrawTextLine(y, 0, TRUE);
 			}
 		    } else {
 			dy = -dy;
 
 		    #ifdef USE_SIMPLEREFRESH
-			ScrollRaster(rp,
-				     0,
-				     -fontheight * dy,
-				     textstartx,
-				     textstarty,
-				     textendx,
+			ScrollRaster(rp, 
+				     0, 
+				     -fontheight * dy, 
+				     textstartx, 
+				     textstarty, 
+				     textendx, 
 				     textendy);
 
 			if (rp->Layer->Flags & LAYERREFRESH)
@@ -800,17 +944,17 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 			}
 
 		    #else
-			ClipBlit(rp,textstartx,
-				    textstarty,
-				 rp,textstartx,
-				    textstarty + dy * fontheight,
-				    textwidth,
-				    textheight - dy * fontheight,
+			ClipBlit(rp, textstartx, 
+				     textstarty, 
+				 rp, textstartx, 
+				     textstarty + dy * fontheight, 
+				     textwidth, 
+				     textheight - dy * fontheight, 
 				 192);
 		    #endif
 			for (y = 0;y < dy;y++)
 			{
-			    DrawTextLine(y,0,TRUE);
+			    DrawTextLine(y, 0, TRUE);
 			}
 		    }
 		}
@@ -832,11 +976,8 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 
 		if (refreshprop)
 		{
-		    SetGadgetAttrs(gad[gadid],
-				   win,
-				   0,
-				   PGA_Top,viewstartx,
-				   TAG_DONE);
+		    SetGadgetAttrs(gad[gadid], win, 0, PGA_Top	, viewstartx, 
+				   		       TAG_DONE);
 		}
 
 		if (abs(dx) >= visiblex)
@@ -847,12 +988,12 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 		    {
 
 		    #ifdef USE_SIMPLEREFRESH
-			ScrollRaster(rp,
-				     fontwidth * dx,
-				     0,
-				     textstartx,
-				     textstarty,
-				     textendx,
+			ScrollRaster(rp, 
+				     fontwidth * dx, 
+				     0, 
+				     textstartx, 
+				     textstarty, 
+				     textendx, 
 				     textendy);
 
 			if (rp->Layer->Flags & LAYERREFRESH)
@@ -860,29 +1001,29 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 			    HandleRefresh();
 			}
 		    #else
-			ClipBlit(rp,textstartx + dx * fontwidth,
-				    textstarty,
-			         rp,textstartx,
-				    textstarty,
-				    textwidth - dx * fontwidth,
-				    textheight,
+			ClipBlit(rp, textstartx + dx * fontwidth, 
+				     textstarty, 
+			         rp, textstartx, 
+				     textstarty, 
+				     textwidth - dx * fontwidth, 
+				     textheight, 
 				 192);
 		    #endif
 			for (y = 0;y < visibley;y++)
 			{
-			    DrawTextLine(y,dx,TRUE);
+			    DrawTextLine(y, dx, TRUE);
 			}
 
 		    } else {
 			dx = -dx;
 
 		    #ifdef USE_SIMPLEREFRESH
-			ScrollRaster(rp,
-				     -fontwidth * dx,
-				     0,
-				     textstartx,
-				     textstarty,
-				     textendx,
+			ScrollRaster(rp, 
+				     -fontwidth * dx, 
+				     0, 
+				     textstartx, 
+				     textstarty, 
+				     textendx, 
 				     textendy);
 
 			if (rp->Layer->Flags & LAYERREFRESH)
@@ -891,17 +1032,17 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 			}
 
 		    #else
-			ClipBlit(rp,textstartx,
-				    textstarty,
-			         rp,textstartx + dx * fontwidth,
-				    textstarty,
-				    textwidth - dx * fontwidth,
-				    textheight,
+			ClipBlit(rp, textstartx, 
+				     textstarty, 
+			         rp, textstartx + dx * fontwidth, 
+				     textstarty, 
+				     textwidth - dx * fontwidth, 
+				     textheight, 
 			         192);
 		    #endif
 			for (y = 0;y < visibley;y++)
 			{
-				DrawTextLine(y,-dx,TRUE);
+			    DrawTextLine(y, -dx, TRUE);
 			}
 		    }
 		}
@@ -913,6 +1054,8 @@ static void ScrollTo(WORD gadid, LONG top, BOOL refreshprop)
 	
 }
 
+/****************************************************************************************/
+
 static void HandleScrollGadget(WORD gadid)
 {
     struct IntuiMessage *msg;
@@ -921,33 +1064,35 @@ static void HandleScrollGadget(WORD gadid)
 
     while (!ok)
     {
-	    WaitPort(win->UserPort);
-	    while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	WaitPort(win->UserPort);
+	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	{
+	    switch (msg->Class)
 	    {
-		    switch (msg->Class)
-		    {
-			    case IDCMP_GADGETUP:
-				    ok=TRUE;
-				    /* fall through */
+		case IDCMP_GADGETUP:
+		    ok=TRUE;
+		    /* fall through */
 
-			    case IDCMP_MOUSEMOVE:
-				    GetAttr(PGA_Top,(Object *)gad[gadid],&top);
-				    ScrollTo(gadid,top,FALSE);
-				    break;
+		case IDCMP_MOUSEMOVE:
+		    GetAttr(PGA_Top, (Object *)gad[gadid], &top);
+		    ScrollTo(gadid, top, FALSE);
+		    break;
 
 #ifdef USE_SIMPLEREFRESH
-			    case IDCMP_REFRESHWINDOW:
-				    HandleRefresh();
-				    break;
+		case IDCMP_REFRESHWINDOW:
+		    HandleRefresh();
+		    break;
 #endif
 
-		    } /* switch (msg->Class) */
-		    ReplyMsg((struct Message *)msg);
+	    } /* switch (msg->Class) */
+	    ReplyMsg((struct Message *)msg);
 
-	    } /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
+	} /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
 
     } /* while (!ok) */
 }
+
+/****************************************************************************************/
 
 static void HandleArrowGadget(WORD gadid)
 {
@@ -973,19 +1118,19 @@ static void HandleArrowGadget(WORD gadid)
 	    switch (gadid)
 	    {
 		case GAD_UPARROW:
-		    ScrollTo(GAD_VERTSCROLL,viewstarty - 1,TRUE);
+		    ScrollTo(GAD_VERTSCROLL, viewstarty - 1, TRUE);
 		    break;
 
 		case GAD_DOWNARROW:
-		    ScrollTo(GAD_VERTSCROLL,viewstarty + 1,TRUE);
+		    ScrollTo(GAD_VERTSCROLL, viewstarty + 1, TRUE);
 		    break;
 
 		case GAD_LEFTARROW:
-		    ScrollTo(GAD_HORIZSCROLL,viewstartx - 1,TRUE);
+		    ScrollTo(GAD_HORIZSCROLL, viewstartx - 1, TRUE);
 		    break;
 
 		case GAD_RIGHTARROW:
-		    ScrollTo(GAD_HORIZSCROLL,viewstartx + 1,TRUE);
+		    ScrollTo(GAD_HORIZSCROLL, viewstartx + 1, TRUE);
 		    break;
 
 	    } /* switch (gid) */
@@ -996,6 +1141,8 @@ static void HandleArrowGadget(WORD gadid)
 
     } /* while (!ok) */	
 }
+
+/****************************************************************************************/
 
 static BOOL FindString(struct LineNode *ln, char *search, LONG searchlen)
 {
@@ -1024,9 +1171,11 @@ static BOOL FindString(struct LineNode *ln, char *search, LONG searchlen)
     return rc;
 }
 
+/****************************************************************************************/
+
 static void DoSearch(WORD kind)
 {
-    LONG line,searchlen;
+    LONG line, searchlen;
     BOOL done = FALSE;
 
     if (!searchtext) return;
@@ -1044,20 +1193,20 @@ static void DoSearch(WORD kind)
 
     while(!done)
     {
-	if (FindString(&linearray[line],searchtext,searchlen))
+	if (FindString(&linearray[line], searchtext, searchlen))
 	{
 	    done = TRUE;
 	    if (found_line >= 0)
 	    {
 		linearray[found_line].invert = FALSE;
-		DrawTextLine(found_line - viewstarty,0,TRUE);
+		DrawTextLine(found_line - viewstarty, 0, TRUE);
 	    }
 
-	    ScrollTo(GAD_VERTSCROLL,line - visibley / 2,TRUE);
+	    ScrollTo(GAD_VERTSCROLL, line - visibley / 2, TRUE);
 
 	    found_line = line;
 	    linearray[found_line].invert = TRUE;
-	    DrawTextLine(found_line - viewstarty,0,TRUE);
+	    DrawTextLine(found_line - viewstarty, 0, TRUE);
 	}
 
 	if (kind == SEARCH_NEXT)
@@ -1083,11 +1232,16 @@ static void DoSearch(WORD kind)
 
 }
 
+/****************************************************************************************/
+
 static BOOL HandleWin(void)
 {
     struct IntuiMessage *msg;
-    WORD gadid;
-    BOOL pagescroll,maxscroll,quitme = FALSE;
+    struct MenuItem	*item;
+    WORD 		gadid;
+    UWORD		men;
+    UBYTE		key;
+    BOOL 		pagescroll, maxscroll, quitme = FALSE;
 
     while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
     {
@@ -1126,50 +1280,47 @@ static BOOL HandleWin(void)
 		break;
 
 	    case IDCMP_VANILLAKEY:
-		switch(toupper(msg->Code))
+	    	key = toupper(msg->Code);
+		if (key == 27)
 		{
-		    case 27:
-			quitme = TRUE;
-			break;
-
-		    case ' ':
-			ScrollTo(GAD_VERTSCROLL,viewstarty + visibley - 1,TRUE);
-			break;
-
-		    case 8:
-			ScrollTo(GAD_VERTSCROLL,viewstarty - (visibley - 1),TRUE);
-			break;
-
-		    case 13:
-			ScrollTo(GAD_VERTSCROLL,viewstarty + 1,TRUE);
-			break;
-
-		    case 'T':
-			ScrollTo(GAD_VERTSCROLL,0,TRUE);
-			break;
-
-		    case 'B':
-			ScrollTo(GAD_VERTSCROLL,num_lines,TRUE);
-			break;
-
-		    case 'G':
-			Make_Goto_Requester();
-			break;
-
-		    case 'F':
-		    case 'S':
-			Make_Find_Requester();
-			break;
-
-		    case 'N':
-			DoSearch(SEARCH_NEXT);
-			break;
-
-		    case 'P':
-			DoSearch(SEARCH_PREV);
-			break;
-
-		} /* switch(toupper(msg->Code)) */
+		    quitme = TRUE;
+		}
+		else if (key == ' ')
+		{
+		    ScrollTo(GAD_VERTSCROLL, viewstarty + visibley - 1, TRUE);
+		}
+		else if (key == 8)
+		{
+		    ScrollTo(GAD_VERTSCROLL, viewstarty - (visibley - 1), TRUE);
+		}
+		else if (key == 13)
+		{
+		    ScrollTo(GAD_VERTSCROLL, viewstarty + 1, TRUE);
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_TOP), key))
+		{
+		    ScrollTo(GAD_VERTSCROLL, 0, TRUE);
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_BOTTOM), key))
+		{
+		    ScrollTo(GAD_VERTSCROLL, num_lines, TRUE);
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_JUMP), key))
+		{
+		    Make_Goto_Requester();
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_FIND), key))
+		{
+		    Make_Find_Requester();
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_NEXT), key))
+		{
+		    DoSearch(SEARCH_NEXT);
+		}
+		else if (strchr(MSG(MSG_SHORTCUT_NEXT), key))
+		{
+		    DoSearch(SEARCH_PREV);
+		}
 		break;
 
 	    case IDCMP_RAWKEY:
@@ -1179,31 +1330,120 @@ static BOOL HandleWin(void)
 		switch(msg->Code)
 		{
 		    case CURSORUP:
-			ScrollTo(GAD_VERTSCROLL,
-				 maxscroll ? 0 : viewstarty - (pagescroll ? visibley - 1 : 1),
+			ScrollTo(GAD_VERTSCROLL, 
+				 maxscroll ? 0 : viewstarty - (pagescroll ? visibley - 1 : 1), 
 				 TRUE);
 			break;
 
 		    case CURSORDOWN:
-			ScrollTo(GAD_VERTSCROLL,
-				 maxscroll ? num_lines : viewstarty + (pagescroll ? visibley - 1 : 1),
+			ScrollTo(GAD_VERTSCROLL, 
+				 maxscroll ? num_lines : viewstarty + (pagescroll ? visibley - 1 : 1), 
 				 TRUE);
 			break;
 
 		    case CURSORLEFT:
-			ScrollTo(GAD_HORIZSCROLL,
-				 maxscroll ? 0 : viewstartx - (pagescroll ? visiblex - 1 : 1),
+			ScrollTo(GAD_HORIZSCROLL, 
+				 maxscroll ? 0 : viewstartx - (pagescroll ? visiblex - 1 : 1), 
 				 TRUE);
 			break;
 
 		    case CURSORRIGHT:
-			ScrollTo(GAD_HORIZSCROLL,
-				 maxscroll ? max_textlen : viewstartx + (pagescroll ? visiblex - 1 : 1),
+			ScrollTo(GAD_HORIZSCROLL, 
+				 maxscroll ? max_textlen : viewstartx + (pagescroll ? visiblex - 1 : 1), 
 				 TRUE);
 			break;
-		}
+			
+		    case 0x70: /* HOME */
+		        ScrollTo(GAD_VERTSCROLL, 0, TRUE);
+			break;
+			
+		    case 0x71: /* END */
+		        ScrollTo(GAD_VERTSCROLL, num_lines, TRUE);
+			break;
+			
+		    case 0x48: /* PAGE UP */
+		        ScrollTo(GAD_VERTSCROLL, viewstarty - (visibley - 1), TRUE);
+			break;
+			
+		    case 0x49: /* PAGE DOWN */
+		        ScrollTo(GAD_VERTSCROLL, viewstarty + (visibley - 1), TRUE);
+			break;
+			
+		} /* switch(msg->Code) */
 		break;		
+
+	    case IDCMP_MENUPICK:
+		men = msg->Code;		
+		while(men != MENUNULL)
+		{
+		    if ((item = ItemAddress(menus, men)))
+		    {
+			switch((ULONG)GTMENUITEM_USERDATA(item))
+			{
+			    case MSG_MEN_PROJECT_ABOUT:
+				break;
+
+			    case MSG_MEN_PROJECT_QUIT:
+				quitme = TRUE;
+				break;
+
+			    case MSG_MEN_PROJECT_OPEN:
+			    	if ((filename = GetFile()))
+				{
+				    if (OpenFile())
+				    {
+					strncpy(filenamebuffer, filename, 299);
+				        SetWinTitle();
+					MySetAPen(rp, bgpen);
+					RectFill(rp, textstartx, textstarty, textendx, textendy);
 					
+					CalcVisible();
+					
+					viewstartx = viewstarty = 0;
+					
+					SetGadgetAttrs(gad[GAD_HORIZSCROLL], win, 0, PGA_Top	, viewstartx	, 
+										     PGA_Visible, visiblex	,
+										     PGA_Total	, max_textlen	,
+										     TAG_DONE);
+
+					SetGadgetAttrs(gad[GAD_VERTSCROLL], win, 0, PGA_Top	, viewstarty	, 
+										    PGA_Visible	, visibley	, 
+										    PGA_Total	, num_lines	,
+										    TAG_DONE);
+					DrawAllText();   					
+					
+				    } /* if (OpenFile()) */
+				    
+				} /* if ((filename = GetFile())) */
+				
+				break;
+
+			    case MSG_MEN_NAVIGATION_FIND:
+			    	Make_Find_Requester();
+				break;
+				
+			    case MSG_MEN_NAVIGATION_FIND_NEXT:
+			        DoSearch(SEARCH_NEXT);
+				break;
+				
+			    case MSG_MEN_NAVIGATION_FIND_PREV:
+			        DoSearch(SEARCH_PREV);
+				break;
+			
+			    case MSG_MEN_NAVIGATION_JUMP:
+			        Make_Goto_Requester();
+				break;
+
+			} /* switch(GTMENUITEM_USERDATA(item)) */
+
+		        men = item->NextSelect;
+		    } else {
+		        men = MENUNULL;
+		    }
+
+		} /* while(men != MENUNULL) */
+	        break;	
+		    				
 	} /* switch(msg->Class) */
 
 	ReplyMsg((struct Message *)msg);
@@ -1213,13 +1453,17 @@ static BOOL HandleWin(void)
     return quitme;
 }
 
+/****************************************************************************************/
+
 static void HandleAll(void)
 {
     ULONG sigs;
-    LONG line;
-    WORD search_kind;
-    BOOL quitme = FALSE;
+    LONG  line;
+    WORD  search_kind;
+    BOOL  quitme = FALSE;
 
+    in_main_loop = TRUE;
+    
     ScreenToFront(win->WScreen);
 
     while(!quitme)
@@ -1232,7 +1476,7 @@ static void HandleAll(void)
 	{
 	    if (Handle_Goto_Requester(&line))
 	    {
-		ScrollTo(GAD_VERTSCROLL,line - 1,TRUE);
+		ScrollTo(GAD_VERTSCROLL, line - 1, TRUE);
 	    }
 	}
 
@@ -1247,17 +1491,22 @@ static void HandleAll(void)
     } /* while(!quitme) */
 }
 
+/****************************************************************************************/
+
 int main(void)
 {
+    InitLocale("Sys/more.catalog", 1);
+    InitMenus();
     GetArguments();
     OpenLibs();
     OpenFile();
-    MakeLineArray();
     GetVisual();
     MakeGadgets();
+    MakeMenus();
     MakeWin();
     HandleAll();
     Cleanup(0);
     return 0;
 }
 
+/****************************************************************************************/
