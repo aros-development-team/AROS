@@ -64,8 +64,8 @@ struct display_data
 
 /* Default graphics modes */
 
-struct displayModeDesc
-    displayDefMode[NUM_MODES]={
+struct DisplayModeDesc
+    DisplayDefMode[NUM_MODES]={
 		{"640x480x4 @ 60Hz",	// h: 31.5 kHz v: 60Hz
 		640,480,4,0,
 		0,
@@ -121,7 +121,7 @@ UBYTE shape[] =
     taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
     taglist[idx].ti_Data = val
 
-VOID init_sync_tags(struct TagItem *tags, struct displayModeDesc *md)
+VOID init_sync_tags(struct TagItem *tags, struct DisplayModeDesc *md)
 {
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
 	SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
@@ -202,10 +202,10 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     
     /* First init the sync tags */
-    init_sync_tags(sync_640_480, &displayDefMode[0]);
+    init_sync_tags(sync_640_480, &DisplayDefMode[0]);
 #ifndef ONLY640
-    init_sync_tags(sync_758_576, &displayDefMode[1]);
-    init_sync_tags(sync_800_600, &displayDefMode[2]);
+    init_sync_tags(sync_758_576, &DisplayDefMode[1]);
+    init_sync_tags(sync_800_600, &DisplayDefMode[2]);
 #endif
     
     /* init mytags. We use TAG_MORE to attach our own tags before we send them

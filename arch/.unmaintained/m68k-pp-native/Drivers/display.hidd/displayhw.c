@@ -14,8 +14,8 @@
 
 #include <proto/exec.h>
 #include <oop/oop.h>
-#include "vgahw.h"
-#include "vgaclass.h"
+#include "displayhw.h"
+#include "displayclass.h"
 #include "bitmap.h"
 
 /****************************************************************************************/
@@ -32,7 +32,7 @@
 
 /* Default ANSI (PC's) palette */
 
-unsigned char vgaANSIPalette[]=
+unsigned char displayANSIPalette[]=
 {
      0,  0,  0,    0,  0, 42,    0, 42,  0,    0, 42, 42,
     42,  0,  0,   42,  0, 42,   42, 21,  0,   42, 42, 42,
@@ -105,12 +105,12 @@ unsigned char vgaANSIPalette[]=
 /*
 ** Load specified palette, if NULL load default
 */
-void vgaLoadPalette(struct vgaHWRec *regs, unsigned char *pal)
+void displayLoadPalette(struct DisplayHWRec *regs, unsigned char *pal)
 {
     int i;
     
     if (!pal)
-	pal = (unsigned char *)&vgaANSIPalette;
+	pal = (unsigned char *)&displayANSIPalette;
 
     for (i=0; i<768; i++)
     {
@@ -126,10 +126,10 @@ void vgaLoadPalette(struct vgaHWRec *regs, unsigned char *pal)
 /****************************************************************************************/
 
 /*
-** vgaHWSaveScreen
+** displayHWSaveScreen
 **      perform a sequencer reset.
 */
-void vgaSaveScreen(int start)
+void displaySaveScreen(int start)
 {
     if (start == SS_START)
     {
@@ -146,7 +146,7 @@ void vgaSaveScreen(int start)
 /*
 ** Blank the screen.
 */
-int vgaBlankScreen(int on)
+int displayBlankScreen(int on)
 {
     unsigned char scrn;
 
@@ -162,30 +162,30 @@ int vgaBlankScreen(int on)
 	scrn |= 0x20;			/* blank screen */
     }
 
-    vgaSaveScreen(SS_START);
+    displaySaveScreen(SS_START);
     outw(0x3C4, (scrn << 8) | 0x01); /* change mode */
-    vgaSaveScreen(SS_FINISH);
+    displaySaveScreen(SS_FINISH);
     
     return TRUE;
 }
 
 /****************************************************************************************/
 
-#define vgaIOBase	0x3d0
+#define displayIOBase	0x3d0
 
 /****************************************************************************************/
 
 /*
-** vgaRestore --
+** displayRestore --
 **      restore a video mode
 */
-void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
+void displayRestore(struct displayHWRec *restore, BOOL onlyDac)
 {
     int i,tmp;
 
     if (!onlyDac)
     {
-    tmp = inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
+    tmp = inb(displayIOBase + 0x0A);		/* Reset flip-flop */
     outb(0x3C0, 0x00);			/* Enables pallete access */
 
     restore->MiscOutReg |= 0x01;
@@ -195,14 +195,14 @@ void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
 
     /* Ensure CRTC registers 0-7 are unlocked by clearing bit 7 or CRTC[17] */
 
-    outw(vgaIOBase + 4, ((restore->CRTC[17] & 0x7F) << 8) | 17);
+    outw(displayIOBase + 4, ((restore->CRTC[17] & 0x7F) << 8) | 17);
 
-    for (i=0; i<25; i++) outw(vgaIOBase + 4,(restore->CRTC[i] << 8) | i);
+    for (i=0; i<25; i++) outw(displayIOBase + 4,(restore->CRTC[i] << 8) | i);
 
     for (i=0; i<9;  i++) outw(0x3CE, (restore->Graphics[i] << 8) | i);
 
     for (i=0; i<21; i++) {
-	tmp = inb(vgaIOBase + 0x0A);
+	tmp = inb(displayIOBase + 0x0A);
 	outb(0x3C0,i); outb(0x3C0, restore->Attribute[i]);
     }
 
@@ -219,7 +219,7 @@ void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
     if (!onlyDac)
     {
     /* Turn on PAS bit */
-    tmp = inb(vgaIOBase + 0x0A);
+    tmp = inb(displayIOBase + 0x0A);
     outb(0x3C0, 0x20);
     }
 }
@@ -227,10 +227,10 @@ void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
 /****************************************************************************************/
 
 /*
-** vgaSave --
+** displaySave --
 **      save the current video mode
 */
-void * vgaSave(struct vgaHWRec *save)
+void * displaySave(struct displayHWRec *save)
 {
     int	i,tmp;
     int	first_time = FALSE;	/* Should be static? */
@@ -244,7 +244,7 @@ void * vgaSave(struct vgaHWRec *save)
     save->NoClock = (inb(0x3CC) >> 2) & 3;
     save->MiscOutReg = inb(0x3CC);
 
-    tmp = inb(vgaIOBase + 0x0A); /* reset flip-flop */
+    tmp = inb(displayIOBase + 0x0A); /* reset flip-flop */
     outb(0x3C0, 0x00);
 
     /*			 
@@ -259,13 +259,13 @@ void * vgaSave(struct vgaHWRec *save)
 
     for (i=0; i<25; i++)
     {
-    	outb(vgaIOBase + 4,i);
-	save->CRTC[i] = inb(vgaIOBase + 5);
+    	outb(displayIOBase + 4,i);
+	save->CRTC[i] = inb(displayIOBase + 5);
     }
 
     for (i=0; i<21; i++)
     {
-	tmp = inb(vgaIOBase + 0x0A);
+	tmp = inb(displayIOBase + 0x0A);
 	outb(0x3C0,i);
 	save->Attribute[i] = inb(0x3C1);
     }
@@ -282,7 +282,7 @@ void * vgaSave(struct vgaHWRec *save)
 	save->Sequencer[i] = inb(0x3C5);
     }
 
-    tmp = inb(vgaIOBase + 0x0A);
+    tmp = inb(displayIOBase + 0x0A);
     outb(0x3C0, 0x20);
     
     return ((void *) save);
@@ -293,7 +293,7 @@ void * vgaSave(struct vgaHWRec *save)
 /*
 ** Init VGA registers for given displaymode
 */
-int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
+int displayInitMode(struct displayModeDesc *mode, struct displayHWRec *regs)
 {
     unsigned int    i;
     int     	    hblankstart;
@@ -478,7 +478,7 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 
 /****************************************************************************************/
 
-void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
+void displayRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 {
     int     	    	    width, height, FBPitch, left, right, i, j, SRCPitch, phase;
     register unsigned long  m;
@@ -514,7 +514,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 
         while(height--)
 	{
-	    outw(0x3c4, 0x0102);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1);
+	    outw(0x3c4, 0x0102);	//pdisplayHW->writeSeq(pdisplayHW, 0x02, 1);
 	    dstPtr = dst;
 	    srcPtr = src;
 	    i = width;
@@ -550,7 +550,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 2;
 	    }
 
-	    outw(0x3c4, 0x0202);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 1);
+	    outw(0x3c4, 0x0202);	//pdisplayHW->writeSeq(pdisplayHW, 0x02, 1 << 1);
 	    dstPtr = dst;
 	    srcPtr = src;
 	    i = width;
@@ -586,7 +586,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 2;
 	    }
 
-	    outw(0x3c4, 0x0402);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 2);
+	    outw(0x3c4, 0x0402);	//pdisplayHW->writeSeq(pdisplayHW, 0x02, 1 << 2);
 	    dstPtr = dst;
 	    srcPtr = src;
 	    i = width;
@@ -621,7 +621,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 2;
 	    }
 	    
-	    outw(0x3c4, 0x0802);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 3);
+	    outw(0x3c4, 0x0802);	//pdisplayHW->writeSeq(pdisplayHW, 0x02, 1 << 3);
 	    dstPtr = dst;
 	    srcPtr = src;
 	    i = width;

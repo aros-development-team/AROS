@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Offscreen bitmap class for VGA hidd.
+    Desc: Offscreen bitmap class for Display hidd.
     Lang: English.
 */
 
@@ -21,8 +21,8 @@
 
 #include <hidd/graphics.h>
 
-#include "vga.h"
-#include "vgaclass.h"
+#include "display.h"
+#include "displayclass.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -35,8 +35,8 @@
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddVGAGfxAB;
-static OOP_AttrBase HiddVGABitMapAB;
+static OOP_AttrBase HiddDisplayGfxAB;
+static OOP_AttrBase HiddDisplayBitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
@@ -44,13 +44,13 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
     { IID_Hidd_Gfx,		&HiddGfxAttrBase },
     /* Private bases */
-    { IID_Hidd_VGAgfx,		&HiddVGAGfxAB	},
-    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB },
+    { IID_Hidd_Displaygfx,	&HiddDisplayGfxAB	},
+    { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB },
     { NULL, NULL }
 };
 
-void free_offbmclass(struct vga_staticdata *);
-void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
+void free_offbmclass(struct display_staticdata *);
+void DisplayRefreshArea(struct bitmap_data *, int , struct Box *);
 
 #define MNAME(x) offbitmap_ ## x
 
@@ -60,7 +60,7 @@ void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
 static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VGAGfx.BitMap::New()\n"));
+    EnterFunc(bug("DisplayGfx.BitMap::New()\n"));
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
@@ -130,7 +130,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 	if (data->VideoData)
 	{
-	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
+	    data->Regs = AllocVec(sizeof(struct DisplayHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 	    if (data->Regs)
 	    {
 #if 0
@@ -140,7 +140,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 		if (XSD(cl)->activecallback)
 		    XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
 
-		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+		ReturnPtr("DisplayGfx.BitMap::New()", Object *, o);
 	    }
 	} /* if got data->VideoData */
 
@@ -152,7 +152,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	o = NULL;
     } /* if created object */
 
-    ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
+    ReturnPtr("DisplayGfx.BitMap::New()", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
@@ -160,7 +160,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    EnterFunc(bug("VGAGfx.BitMap::Dispose()\n"));
+    EnterFunc(bug("DisplayGfx.BitMap::Dispose()\n"));
     
     if (data->VideoData)
 	FreeVec(data->VideoData);
@@ -169,7 +169,7 @@ static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	
     OOP_DoSuperMethod(cl, o, msg);
     
-    ReturnVoid("VGAGfx.BitMap::Dispose");
+    ReturnVoid("DisplayGfx.BitMap::Dispose");
 }
 
 
@@ -191,7 +191,7 @@ static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #define NUM_BITMAP_METHODS 10
 
 
-OOP_Class *init_offbmclass(struct vga_staticdata *xsd)
+OOP_Class *init_offbmclass(struct display_staticdata *xsd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
@@ -279,7 +279,7 @@ OOP_Class *init_offbmclass(struct vga_staticdata *xsd)
 
 /*** free_offbitmapclass *********************************************************/
 
-void free_offbmclass(struct vga_staticdata *xsd)
+void free_offbmclass(struct display_staticdata *xsd)
 {
     EnterFunc(bug("free_bmclass(xsd=%p)\n", xsd));
 

@@ -20,9 +20,9 @@
 
 #include <hidd/graphics.h>
 
-#include "vgahw.h"
-#include "vga.h"
-#include "vgaclass.h"
+#include "displayhw.h"
+#include "display.h"
+#include "displayclass.h"
 
 #include "bitmap.h"
 
@@ -32,8 +32,8 @@ static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVGAGfxAB;
-static OOP_AttrBase HiddVGABitMapAB;
+static OOP_AttrBase HiddDisplayGfxAB;
+static OOP_AttrBase HiddDisplayBitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
@@ -42,17 +42,17 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Gfx,		&HiddGfxAttrBase },
     { IID_Hidd_Sync,		&HiddSyncAttrBase },
     /* Private bases */
-    { IID_Hidd_VGAgfx,		&HiddVGAGfxAB	},
-    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB },
+    { IID_Hidd_Displaygfx,		&HiddDisplayGfxAB	},
+    { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB },
     { NULL, NULL }
 };
 
-void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
-void * vgaSave(struct vgaHWRec *);
-int vgaInitMode(struct vgaModeDesc *, struct vgaHWRec *);
-void vgaLoadPalette(struct vgaHWRec *, unsigned char *);
+void DisplayRestore(struct DisplayHWRec *, BOOL onlyDAC);
+void * DisplaySave(struct DisplayHWRec *);
+int DisplayInitMode(struct DisplayModeDesc *, struct DisplayHWRec *);
+void DisplayLoadPalette(struct DisplayHWRec *, unsigned char *);
 
-void free_onbmclass(struct vga_staticdata *);
+void free_onbmclass(struct display_staticdata *);
 
 #define MNAME(x) onbitmap_ ## x
 
@@ -83,7 +83,7 @@ char tab[127];
 
 static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VGAGfx.BitMap::New()\n"));
+    EnterFunc(bug("DisplayGfx.BitMap::New()\n"));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
@@ -115,7 +115,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		data->width = width;
 		data->height = height;
 		data->bpp = depth;
-		data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
+		data->Regs = AllocVec(sizeof(struct DisplayHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 		data->disp = -1;
 		width=(width+15) & ~15;
 
@@ -131,7 +131,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		    data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 		    if (data->VideoData)
 		    {
-				struct vgaModeDesc mode;
+				struct DisplayModeDesc mode;
 				HIDDT_ModeID modeid;
 				OOP_Object *sync;
 				OOP_Object *pf;
@@ -145,7 +145,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 					struct Box box = {0, 0, width-1, height-1};
 	
 					/* Get Sync and PixelFormat properties */
-					HIDD_Gfx_GetMode(XSD(cl)->vgahidd, modeid, &sync, &pf);
+					HIDD_Gfx_GetMode(XSD(cl)->displayhidd, modeid, &sync, &pf);
 
 					mode.Width 	= width;
 					mode.Height = height;
@@ -167,26 +167,26 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				    ObtainSemaphore(&XSD(cl)->HW_acc);
 
 				    /* Now, when the best display mode is chosen, we can build it */
-				    vgaInitMode(&mode, data->Regs);
-				    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
+				    DisplayInitMode(&mode, data->Regs);
+				    DisplayLoadPalette(data->Regs,(unsigned char *)NULL);
 
 				    /*
 				       Because of not defined BitMap_Show method show 
 				       bitmap immediately
 				    */
 		
-				    vgaRestore(data->Regs, FALSE);
-				    vgaRefreshArea(data, 1, &box);
+				    DisplayRestore(data->Regs, FALSE);
+				    DisplayRefreshArea(data, 1, &box);
 
 				    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 				    XSD(cl)->visible = data;	/* Set created object as visible */
 
-				    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+				    ReturnPtr("DisplayGfx.BitMap::New()", Object *, o);
 				}
 		
 		    } /* if got data->VideoData */
-		    FreeMem(data->Regs,sizeof(struct vgaHWRec));
+		    FreeMem(data->Regs,sizeof(struct DisplayHWRec));
 		} /* if got data->Regs */
 
 		{
@@ -197,7 +197,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		o = NULL;
     } /* if created object */
 
-    ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
+    ReturnPtr("DisplayGfx.BitMap::New()", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
@@ -205,7 +205,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 static VOID onbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    EnterFunc(bug("VGAGfx.BitMap::Dispose()\n"));
+    EnterFunc(bug("DisplayGfx.BitMap::Dispose()\n"));
     
     if (data->VideoData)
 	FreeVec(data->VideoData);
@@ -214,7 +214,7 @@ static VOID onbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     OOP_DoSuperMethod(cl, o, msg);
     
-    ReturnVoid("VGAGfx.BitMap::Dispose");
+    ReturnVoid("DisplayGfx.BitMap::Dispose");
 }
 
 /*** init_onbmclass *********************************************************/
@@ -225,7 +225,7 @@ static VOID onbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #define NUM_ROOT_METHODS   3
 #define NUM_BITMAP_METHODS 10
 
-OOP_Class *init_onbmclass(struct vga_staticdata *xsd)
+OOP_Class *init_onbmclass(struct display_staticdata *xsd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
@@ -310,7 +310,7 @@ OOP_Class *init_onbmclass(struct vga_staticdata *xsd)
 
 /*** free_bitmapclass *********************************************************/
 
-void free_onbmclass(struct vga_staticdata *xsd)
+void free_onbmclass(struct display_staticdata *xsd)
 {
     EnterFunc(bug("free_onbmclass(xsd=%p)\n", xsd));
 
