@@ -69,7 +69,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Cycle_Entries:
-		    data->entries = (char*)tag->ti_Data;
+		    data->entries = (const char**)tag->ti_Data;
 		    break;
 	}
     }
@@ -112,6 +112,24 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 	}
     }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static IPTR Cycle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_CycleData *data = INST_DATA(cl, obj);
+#define STORE *(msg->opg_Storage)
+
+    switch(msg->opg_AttrID)
+    {
+	case	MUIA_Cycle_Active:
+		STORE = data->entries_active;
+		return 1;
+    }
+
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -301,6 +319,7 @@ AROS_UFH3S(IPTR,Cycle_Dispatcher,
     {
 	case OM_NEW: return Cycle_New(cl, obj, (struct opSet *)msg);
 	case OM_SET: return Cycle_Set(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Cycle_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Cycle_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Cycle_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_AskMinMax: return Cycle_AskMinMax(cl, obj, (APTR)msg);
