@@ -95,7 +95,10 @@
             PtrToFirst->Next = Reg->RegionRectangle;
             Reg->RegionRectangle->Prev = PtrToFirst;
 
-	    _TranslateRect(&Rect2, -OldBounds.MinX, -OldBounds.MinY);
+	    Rect2.MinX = Rect->MinX - OldBounds.MinX;
+            Rect2.MinY = Rect->MinY - OldBounds.MinY;
+            Rect2.MaxX = Rect->MaxX - OldBounds.MinX;
+            Rect2.MaxY = Rect->MaxY - OldBounds.MinY;
 
 	    OffX = OldBounds.MinX - MinX(Reg);
 	    OffY = OldBounds.MinY - MinY(Reg);
