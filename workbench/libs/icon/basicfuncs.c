@@ -29,6 +29,7 @@ VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
     case WBPROJECT: extname = "Project";  break;
     case WBGARBAGE: extname = "Trashcan"; break;
     case WBKICK   : extname = "Kick";     break;
+    default: extname = "Unknown"; break; /* Avoid segmentation faults */
     }
 
     strcat (deficonname, extname);
