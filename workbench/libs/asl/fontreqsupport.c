@@ -6,6 +6,7 @@
     Lang: english
 */
 
+/*****************************************************************************************/
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -257,6 +258,7 @@ VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
     struct IntReq 	    *intreq = ld->ld_IntReq;
+    struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
     struct TextAttr 	     ta;
     struct TextFont 	    *font;
     IPTR    	    	     val;
@@ -270,14 +272,22 @@ VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase)
     GetAttr(STRINGA_TextVal, udata->NameString, (IPTR *)&name);
     if ((name = VecPooledCloneString(name, ".font", intreq->ir_MemPool, AslBase)))
     {
+    	IPTR style = FS_NORMAL;
+	
     	ta.ta_Name = name;
+	
+	if (iforeq->ifo_Flags & FOF_DOSTYLE)
+	{
+	    GetAttr(ASLFS_Style, udata->StyleGadget, &style);
+	}
 	
 	font = OpenDiskFont(&ta);
 	{
 	    struct TagItem settags[] =
 	    {
-	    	{IA_Font, (IPTR)font},
-		{TAG_DONE   	    }
+	    	{ASLFP_Font, 	(IPTR)font  },
+		{ASLFP_Style,	style	    },
+		{TAG_DONE   	    	    }
 	    };
 	    
 	    SetGadgetAttrsA((struct Gadget *)udata->Preview, ld->ld_Window, NULL, settags);
@@ -545,13 +555,19 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
     	if (stricmp(fontnode->node.ln_Name, initialfontname) == 0) break;
 	i++;
     }
-    
-    FOActivateFont(ld, i, fontsize, AslBase);
-    
+        
     if (iforeq->ifo_Flags & FOF_DODRAWMODE)
     {
     	FOSetDrawMode(ld, iforeq->ifo_DrawMode, AslBase);
     }
+    
+    if (iforeq->ifo_Flags & FOF_DOSTYLE)
+    {
+    	FOSetStyle(ld, iforeq->ifo_TextAttr.ta_Style, AslBase);
+    }
+
+    FOActivateFont(ld, i, fontsize, AslBase);
+    
 }
 
 /*****************************************************************************************/
@@ -615,13 +631,34 @@ void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBa
 
 /*****************************************************************************************/
 
+UBYTE FOGetStyle(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    IPTR		style;
+    
+    ASSERT(udata->StyleGadget);
+    
+    GetAttr(ASLFS_Style, udata->StyleGadget, &style);
+    
+    return (UBYTE)style;
+}
 
+/*****************************************************************************************/
 
+void FOSetStyle(struct LayoutData *ld, UBYTE style, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLFS_Style	, style		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->StyleGadget);
+    
+    SetGadgetAttrsA((struct Gadget *)udata->StyleGadget, ld->ld_Window, NULL, set_tags);
+    
+}
 
-
-
-
-
-
-
+/*****************************************************************************************/
 

@@ -420,6 +420,11 @@ AROS_LH1(struct AslBase_intern *, open,
         LIBBASE->aslfontpreviewclass = makeaslfontpreviewclass(LIBBASE);
     if (!LIBBASE->aslfontpreviewclass)
         return (NULL);
+
+    if (!LIBBASE->aslfontstyleclass)
+        LIBBASE->aslfontstyleclass = makeaslfontstyleclass(LIBBASE);
+    if (!LIBBASE->aslfontstyleclass)
+        return (NULL);
 	
     /* ------------------------- */
 
@@ -497,6 +502,12 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	{
 	    FreeClass(LIBBASE->aslfontpreviewclass);
 	    LIBBASE->aslfontpreviewclass = NULL;
+	}
+
+	if (LIBBASE->aslfontstyleclass)
+	{
+	    FreeClass(LIBBASE->aslfontstyleclass);
+	    LIBBASE->aslfontstyleclass = NULL;
 	}
 	
 	if (LocaleBase)

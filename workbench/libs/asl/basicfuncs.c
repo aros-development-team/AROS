@@ -85,7 +85,7 @@ VOID ParseCommonTags
 
     tstate = taglist;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
     	IPTR tidata = tag->ti_Data;
 	

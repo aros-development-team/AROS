@@ -329,7 +329,7 @@ static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
     
     retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
     
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         tidata = tag->ti_Data;
 	

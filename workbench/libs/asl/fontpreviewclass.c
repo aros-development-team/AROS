@@ -110,27 +110,27 @@ static IPTR aslfontpreview_set(Class * cl, Object * o, struct opSet * msg)
 
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
     	switch(tag->ti_Tag)
 	{
-	    case IA_FGPen:
+	    case ASLFP_APen:
 	    	data->apen = tag->ti_Data;
 		redraw = TRUE;
 		break;
 		
-	    case IA_BGPen:
+	    case ASLFP_BPen:
 	    	data->bpen = tag->ti_Data;
 		redraw = TRUE;
 		break;
 		
-	    case IA_Mode:
+	    case ASLFP_Style:
 	    	data->drawstyle = tag->ti_Data;
 		redraw = TRUE;
 		break;
 		
-	    case IA_Font:
-	    	data->font = (struct Font *)tag->ti_Data;
+	    case ASLFP_Font:
+	    	data->font = (struct TextFont *)tag->ti_Data;
 		redraw = TRUE;
 		break;
 	}

@@ -129,6 +129,14 @@ struct AslBase_intern;
 #define ASLCY_Active		(ASLCY_Dummy + 2)
 #define ASLCY_Font  	    	(ASLCY_Dummy + 3)
 
+#define ASLFP_APen  	    	IA_FGPen
+#define ASLFP_BPen  	    	IA_BGPen
+#define ASLFP_Style 	    	IA_Mode
+#define ASLFP_Font  	    	IA_Font
+
+#define ASLFS_Style 	    	SYSIA_Style
+#define ASLFS_LabelArray    	GA_Text
+
 /*****************************************************************************************/
 
 /* methods */

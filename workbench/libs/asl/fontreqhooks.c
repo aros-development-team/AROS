@@ -17,6 +17,7 @@
 #include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
+#include <intuition/imageclass.h>
 #include <graphics/gfx.h>
 #include <devices/rawkeycodes.h>
 #include <libraries/gadtools.h>
@@ -58,6 +59,7 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 #define ID_SIZESTRING	4
 #define ID_PREVIEW  	5
 #define ID_DRAWMODE 	6
+#define ID_STYLE    	7
 
 #undef NUMBUTS
 #define NUMBUTS     	2L
@@ -172,7 +174,7 @@ AROS_UFH3(VOID, FOTagHook,
     iforeq = (struct IntFontReq *)pta->pta_IntReq;
 
     tstate = pta->pta_Tags;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	IPTR tidata = tag->ti_Data;
 	
@@ -421,6 +423,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     gadrows = 2; /* button row + string gadgets under listviews */
     if (iforeq->ifo_Flags & FOF_DODRAWMODE) gadrows++;
+    if (iforeq->ifo_Flags & FOF_DOSTYLE) gadrows++;
     
     ld->ld_MinWidth =  OUTERSPACINGX * 2 +
 		       GADGETSPACINGX * 1 +
@@ -645,7 +648,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 2) -
 	(FONTPREVIEWHEIGHT + GADGETSPACINGY) + 1;
 
-    if (iforeq->ifo_Flags & (FOF_DODRAWMODE))
+    if (iforeq->ifo_Flags & (FOF_DODRAWMODE | FOF_DOSTYLE))
     {
         #define FSET(x) ((iforeq->ifo_Flags & x) ? TRUE : FALSE)
 	
@@ -656,7 +659,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    Object **objvar;
 	} li [] =
 	{
-	    {FSET(FOF_DODRAWMODE)   , (STRPTR)MSG_FONTREQ_MODE_LABEL  , &udata->DrawModeLabel  },
+	    {FSET(FOF_DOSTYLE)	    , (STRPTR)MSG_FONTREQ_STYLE_LABEL , &udata->StyleLabel     },
+	    {FSET(FOF_DODRAWMODE)   , (STRPTR)MSG_FONTREQ_MODE_LABEL  , &udata->DrawModeLabel  }
 	}; 
 
         #undef FSET
@@ -675,7 +679,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	};
     	WORD i2;
 	
-    	for(i = 0, i2 = 0; i < 1; i++)
+    	for(i = 0, i2 = 0; i < 2; i++)
 	{
 	    if (li[i].doit)
 	    {
@@ -686,7 +690,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
 	w = labelwidth = BiggestTextLength(str, i2, &(ld->ld_DummyRP), AslBase);
             
-	for(i = 0; i < 1;i++)
+	for(i = 0; i < 2;i++)
 	{
 	    if (!li[i].doit) continue;
 	    
@@ -708,10 +712,51 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	x = ld->ld_WBorLeft + OUTERSPACINGX + w + LABELSPACINGX;
 
-	w = -ld->ld_WBorLeft - ld->ld_WBorRight - OUTERSPACINGX * 2 -
-            w - LABELSPACINGX;
+    	/* Make Style gadget */
+	
+	if (iforeq->ifo_Flags & FOF_DOSTYLE)
+	{
+	    STRPTR stylestrings[3];
+	    
+	    struct TagItem style_tags[] =
+	    {
+	        {GA_Previous		, (IPTR)gad			  },
+		{GA_Left		, x				  },
+		{GA_RelBottom		, y				  },
+		{GA_Width		, 0				  },
+		{GA_Height		, udata->ButHeight		  },
+		{GA_RelVerify		, TRUE				  },
+		{GA_UserData		, (IPTR)ld			  },
+		{GA_ID			, ID_STYLE			  },
+		{ASLFS_LabelArray    	, (IPTR)stylestrings	    	  },
+		{ASLFS_Style		, iforeq->ifo_TextAttr.ta_Style	  },
+		{TAG_DONE						  }
+	    };
 
+    	    stylestrings[0] = GetString(MSG_FONTREQ_STYLE_BOLD, GetIR(iforeq)->ir_Catalog, AslBase);
+    	    stylestrings[1] = GetString(MSG_FONTREQ_STYLE_ITALIC, GetIR(iforeq)->ir_Catalog, AslBase);
+    	    stylestrings[2] = GetString(MSG_FONTREQ_STYLE_UNDERLINED, GetIR(iforeq)->ir_Catalog, AslBase);
+	    
+	    w = BiggestTextLength(stylestrings, 3, &(ld->ld_DummyRP), AslBase);
+	    w *= 2;
+	    w *= 3;
+	    
+	    style_tags[3].ti_Data = w;
+	    
+	    if (w > maxcyclewidth) maxcyclewidth = w;
+	    
+	    udata->StyleGadget = gad = NewObjectA(AslBase->aslfontstyleclass, NULL, style_tags);
+	    if (!gad) goto failure;
+	    
+	    y += udata->ButHeight + GADGETSPACINGY;
+	    
+	}
+	
     	/* Make DrawMode gadget */
+
+	w = -ld->ld_WBorLeft - ld->ld_WBorRight - OUTERSPACINGX * 2 -
+            labelwidth - LABELSPACINGX;
+
 	
 	if (iforeq->ifo_Flags & FOF_DODRAWMODE)
 	{
@@ -742,7 +787,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	    if (iforeq->ifo_ModeList)
 	    {
-	    	labels = (IPTR)iforeq->ifo_ModeList;
+	    	labels = (STRPTR *)iforeq->ifo_ModeList;
 	    }
 	    else
 	    {
@@ -767,7 +812,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	    y += udata->ButHeight + GADGETSPACINGY;
 	    
-	} /* if (ismreq->ism_Flags & ISMF_DOOVERSCAN) */
+	} /* if (iforeq->ifo_Flags & FOF_DODRAWMODE) */
 	
     }
     
@@ -1020,6 +1065,10 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    }
 		    break;
 		 
+		 case ID_STYLE:
+		    FOUpdatePreview(ld, AslBase);
+		    break;
+		    
 	    } /* switch (gadget ID) */
 
 	    break; /* case IDCMP_GADGETUP: */
@@ -1137,16 +1186,7 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *Asl
     
     GetAttr(STRINGA_LongVal, udata->SizeString, &val);
     req->fo_TAttr.tta_YSize = iforeq->ifo_TextAttr.ta_YSize = (UWORD)val;
-    
-    
-    /* Hmm ... there is also a struct TextAttr fo_Attr in
-       FontRequester structure. Just put the same values in!? */
-       
-    req->fo_Attr.ta_Name  = req->fo_TAttr.tta_Name;
-    req->fo_Attr.ta_YSize = req->fo_TAttr.tta_YSize;
-    req->fo_Attr.ta_Style = req->fo_TAttr.tta_Style;
-    req->fo_Attr.ta_Flags = req->fo_TAttr.tta_Flags;
-    
+        
     /* DrawMode */
     
     if (iforeq->ifo_Flags & FOF_DODRAWMODE)
@@ -1155,6 +1195,23 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *Asl
     }
     req->fo_DrawMode = iforeq->ifo_DrawMode;
     
+    /* Style */
+    
+    
+    if (iforeq->ifo_Flags & FOF_DOSTYLE)
+    {
+    	iforeq->ifo_TextAttr.ta_Style = FOGetStyle(ld, AslBase);
+    }
+    req->fo_TAttr.tta_Style = iforeq->ifo_TextAttr.ta_Style;
+    
+    /* Hmm ... there is also a struct TextAttr fo_Attr in
+       FontRequester structure. Just put the same values in!? */
+       
+    req->fo_Attr.ta_Name  = req->fo_TAttr.tta_Name;
+    req->fo_Attr.ta_YSize = req->fo_TAttr.tta_YSize;
+    req->fo_Attr.ta_Style = req->fo_TAttr.tta_Style;
+    req->fo_Attr.ta_Flags = req->fo_TAttr.tta_Flags;
+
     retval = GHRET_FINISHED_OK;
 
 bye:

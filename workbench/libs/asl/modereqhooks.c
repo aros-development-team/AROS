@@ -87,7 +87,7 @@ AROS_UFH3(VOID, SMTagHook,
     ismreq = (struct IntSMReq *)pta->pta_IntReq;
 
     tstate = pta->pta_Tags;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	IPTR tidata = tag->ti_Data;
 	
