@@ -35,22 +35,24 @@ extern struct Library *MUIMasterBase;
 /* Returns a given text font, if necessary it opens the font, should be after MUIM_Setup */
 static struct TextFont *zune_font_get(Object *obj, LONG preset)
 {
-    struct MUI_GlobalInfo *gi = muiGlobalInfo(obj);
-    struct MUI_RenderInfo *ri = muiRenderInfo(obj);
+    struct MUI_GlobalInfo *mgi = muiGlobalInfo(obj);
+    struct MUI_RenderInfo *mri = muiRenderInfo(obj);
 
     if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
     {
     	char *name;
 	if (preset > 0) return NULL;
-        name = gi->mgi_Prefs->fonts[-preset];
-/*  	D(bug("zune_font_get : preset=%d, name=%s\n", preset, name)); */
 
-	if (ri->mri_Fonts[-preset])
+	/* font already loaded, just return it */
+	if (mri->mri_Fonts[-preset])
 	{
 /*  	    D(bug("zune_font_get : return mri_Fonts[-preset]=%lx\n", ri->mri_Fonts[-preset])); */
-	    return ri->mri_Fonts[-preset];
+	    return mri->mri_Fonts[-preset];
 	}
 
+	/* font name given, load it */
+        name = mgi->mgi_Prefs->fonts[-preset];
+/*  	D(bug("zune_font_get : preset=%d, name=%s\n", preset, name)); */
 	if (name)
 	{
 	    struct TextAttr ta;
@@ -68,23 +70,30 @@ static struct TextFont *zune_font_get(Object *obj, LONG preset)
 		if ((p = PathPart(ta.ta_Name)))
 		    strcpy(p,".font");
 /*  		D(bug("zune_font_get : OpenDiskFont(%s)\n", ta.ta_Name)); */
-		ri->mri_Fonts[-preset] = OpenDiskFont(&ta);
+		mri->mri_Fonts[-preset] = OpenDiskFont(&ta);
 
 		FreeVec(ta.ta_Name);
 	    }
 	    
 	}
+	else /* fallback to window normal font */
+	{
+	    if (preset != MUIV_Font_Normal) /* avoid infinite recursion */
+	    {
+		return zune_font_get(obj, MUIV_Font_Normal);
+	    }
+	}
 
-	if (!ri->mri_Fonts[-preset])
+	/* no font loaded, fallback to screen font */
+	if (!mri->mri_Fonts[-preset])
 	{
 	    struct TextAttr scr_attr;
 	    scr_attr = *(_screen(obj)->Font);
 	    scr_attr.ta_Flags = 0;
 /*  	    D(bug("zune_font_get : OpenDiskFont(%s) (screen font)\n", scr_attr.ta_Name)); */
-	    ri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
-	    
+	    mri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
 	}
-	return ri->mri_Fonts[-preset];
+	return mri->mri_Fonts[-preset];
     }
     return (struct TextFont *)preset;
 }
@@ -553,10 +562,13 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case    MUIA_Selected:
-		    if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
-		    else data->mad_Flags &= ~MADF_SELECTED;
+		if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
+		else data->mad_Flags &= ~MADF_SELECTED;
+		if (data->mad_Flags & MADF_SHOWSELSTATE)
 		    MUI_Redraw(obj, MADF_DRAWOBJECT);
-		    break;
+		else
+		    MUI_Redraw(obj, MADF_DRAWUPDATE);
+		break;
 
 	    case MUIA_Timer:
 		data->mad_Timeval = tag->ti_Data;
@@ -1129,10 +1141,15 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
-	if (_parent(obj) != NULL && _parent(obj) != _win(obj)) data->mad_Font = _font(_parent(obj));
-	else data->mad_Font = zune_font_get(obj,MUIV_Font_Normal);
+	if (_parent(obj) != NULL && _parent(obj) != _win(obj))
+	    data->mad_Font = _font(_parent(obj));
+	else
+	    data->mad_Font = zune_font_get(obj,MUIV_Font_Normal);
     }
-    else data->mad_Font = zune_font_get(obj,data->mad_FontPreset);
+    else
+    {
+	data->mad_Font = zune_font_get(obj,data->mad_FontPreset);
+    }
 
     if (data->mad_FrameTitle)
     {
