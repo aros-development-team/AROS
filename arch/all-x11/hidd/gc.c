@@ -247,14 +247,27 @@ static ULONG gc_writepixel(Class *cl, Object *o, struct pHidd_GC_WritePixel *msg
 static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
 {
     Object *bitmap;
-    ULONG width, height;
+    ULONG width, height, bg;
     struct gc_data *data = INST_DATA(cl, o);
     
-    GetAttr(o, aHidd_GC_BitMap, (IPTR *)&bitmap);
-    /* Get width & height from bitmap */
+    XSetWindowAttributes winattr;
     
+    GetAttr(o, aHidd_GC_Background, &bg);
+    
+    GetAttr(o, aHidd_GC_BitMap, (IPTR *)&bitmap);
+    
+    /* Get width & height from bitmap */
+  
     GetAttr(bitmap, aHidd_BitMap_Width,  &width);
     GetAttr(bitmap, aHidd_BitMap_Height, &height);
+    
+    /* Change background color of X window to bg color of HIDD GC  */
+    winattr.background_pixel = data->hidd2x11cmap[bg];
+    
+    XChangeWindowAttributes(data->display
+    		, data->xwindow
+		, CWBackPixel
+		, &winattr);
     
     XClearArea (data->display, data->xwindow,
 	    0, 0,
