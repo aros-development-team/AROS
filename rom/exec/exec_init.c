@@ -88,9 +88,6 @@ void AROSSupportBase_SetStdOut (void * stdout)
     AROSSupportBase.StdOut = stdout;
 }
 
-#warning FIXME: This global SysBase declaration does not seem to be used any more (remove it?)
-/* struct ExecBase *SysBase; */
-
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
