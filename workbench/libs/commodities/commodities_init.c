@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#define  AROS_ALMOST_COMPATIBLE
+#define  USE_ZERO_OBJECT 0 /* stegerg: no idea why zero object is/was used at all */
 
 #ifndef  DEBUG
 #define  DEBUG 0
@@ -270,7 +270,9 @@ AROS_LH1(struct CommoditiesBase *, open,
 
 BOOL InitCx(struct CommoditiesBase *CxBase)
 {
+#if USE_ZERO_OBJECT
     CxObj *zero;
+#endif
 
     InitSemaphore(&CxBase->cx_SignalSemaphore);
     NEWLIST(&CxBase->cx_BrokerList);
@@ -281,6 +283,7 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
     CxBase->cx_MsgPort.mp_Flags = PA_IGNORE;
     NEWLIST(&CxBase->cx_MsgPort.mp_MsgList);
     
+#if USE_ZERO_OBJECT
     zero = CreateCxObj(CX_ZERO, (IPTR)NULL, (IPTR)NULL);
     
     if (zero == NULL)
@@ -290,7 +293,10 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
 
     /* Make sure this object goes LAST in the list */
     ((struct Node *)zero)->ln_Pri = -128;
+
+    zero->co_Flags |= COF_VALID;
     AddHead(&CxBase->cx_BrokerList, (struct Node *)zero);
+#endif
 
     return TRUE;
 }
@@ -318,8 +324,10 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase)
 
     CxBase->cx_IEvents = NULL;
     
+#if USE_ZERO_OBJECT    
     /* Remove the ZERO object, in case it exists. */
     DeleteCxObj((CxObj *)RemHead(&CxBase->cx_BrokerList));
+#endif
 }
 
 

@@ -188,7 +188,7 @@ BOOL SetupIHandler(struct CommoditiesBase *CxBase)
     
     //  kprintf("CxBroker: Opened input.device.\n");
     
-    CxBase->cx_Interrupt.is_Code = AROS_ASMSYMNAME(cxIHandler);
+    CxBase->cx_Interrupt.is_Code = (VOID (*)())AROS_ASMSYMNAME(cxIHandler);
     CxBase->cx_Interrupt.is_Data = CxBase;
     CxBase->cx_Interrupt.is_Node.ln_Pri = 53;
     CxBase->cx_Interrupt.is_Node.ln_Name = CxBase->cx_LibNode.lib_Node.ln_Name;
