@@ -5,8 +5,15 @@
     Desc:
     Lang: english
 */
+
 #include <aros/libcall.h>
+#include <graphics/gfx.h>
+#include <graphics/clip.h>
+#include <graphics/layers.h>
+#include <utility/hooks.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
+#include "layers_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -15,8 +22,6 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH9(struct Layer *, CreateUpfrontHookLayer,
 
@@ -59,29 +64,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    struct Layer *l;
-
     D(bug("CreateUpFrontHookLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, hook@$%lx, bm2@$lx)\n",
 	li, bm, x0, y0, x1, y1, flags, hook, bm2));
 
-    /* First create a regular layer in the back... */
-    if(!(l = CreateBehindHookLayer(li, bm, x0, y0, x1, y1, flags, hook, bm2)))
-	return NULL;
-
-    /* ...and then bring it up to the front. */
-    if(!UpfrontLayer(NULL, l))
-    {
-	DeleteLayer(NULL, l);
-	return NULL;
-    }
-
-    /* Since we're Upfront now, we don't have Damage anymore... */
-    ClearRegion(l->DamageList);
-
-    /* ...and we don't have to refresh anymore either. */
-    l->Flags &= ~(LAYERREFRESH|LAYERIREFRESH|LAYERIREFRESH2);
-
-    return l;
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* CreateUpfrontHookLayer */

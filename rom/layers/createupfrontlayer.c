@@ -5,7 +5,15 @@
     Desc:
     Lang: english
 */
+#include <exec/types.h>
 #include <aros/libcall.h>
+#include <graphics/gfx.h>
+#include <graphics/clip.h>
+#include <graphics/layers.h>
+#include <utility/hooks.h>
+#include <proto/layers.h>
+#include <proto/layers.h>
+#include "layers_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -14,8 +22,6 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH8(struct Layer *, CreateUpfrontLayer,
 
@@ -54,13 +60,16 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    D(bug("CreateUpFrontHookLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, bm2@$lx)\n",
-	li, bm, x0, y0, x1, y1, flags, bm2));
+  D(bug("CreateUpfrontLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, bm2@$lx)\n",
+     li, bm, x0, y0, x1, y1, flags, bm2));
 
-    return CreateUpfrontHookLayer(li, bm, x0, y0, x1, y1, flags, NULL, bm2);
+  CreateUpfrontHookLayer(li, bm, x0, y0, x1, y1, flags, NULL, bm2);
 
-    AROS_LIBFUNC_EXIT
+#warning Wrong value is passed back!
+  return NULL;
+  
+  AROS_LIBFUNC_EXIT
 } /* CreateUpfrontLayer */

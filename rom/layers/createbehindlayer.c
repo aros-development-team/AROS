@@ -6,6 +6,8 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <proto/layers.h>
+#include "layers_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -14,8 +16,6 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/layers.h>
-#include "layers_intern.h"
 
 	AROS_LH8(struct Layer *, CreateBehindLayer,
 

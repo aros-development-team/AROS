@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <graphics/layers.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -15,8 +16,6 @@
 
     NAME */
 #include <proto/layers.h>
-#include "layers_intern.h"
-#include "basicfuncs.h"
 
 	AROS_LH1(void, ThinLayerInfo,
 
