@@ -483,7 +483,7 @@
        Set_Low32of64 (Dest64, Get_Low32of64 (Var1_64) + Get_Low32of64 (Var2_64) ); \
        if ((LONG)Get_Low32of64(Dest64) >= 0 ) \
          Set_High32of64(Dest64, Get_High32of64(Var1_64) + Get_High32of64(Var2_64) + 1 ); \
-       else \      
+       else \
          Set_High32of64(Dest64, Get_High32of64(Var1_64) + Get_High32of64(Var2_64) ); \
      }      
 #endif
@@ -511,7 +511,7 @@
        Set_Low32of64 (Dest64, Get_Low32of64 (Dest64) + Get_Low32of64 (Var64) ); \
        if ((LONG)Get_Low32of64(Dest64) >= 0 ) \
          Set_High32of64(Dest64, Get_High32of64(Dest64) + Get_High32of64(Var64) + 1 ); \
-       else \      
+       else \
          Set_High32of64(Dest64, Get_High32of64(Dest64) + Get_High32of64(Var64) ); \
      }      
 #endif
@@ -539,7 +539,7 @@
        Set_Low32of64 (Dest64, Get_Low32of64 (Dest64) + Const64_Lo ); \
        if ((LONG)Get_Low32of64(Dest64) >= 0 ) \
          Set_High32of64(Dest64, Get_High32of64(Dest64) + Const64_Hi + 1 ); \
-       else \      
+       else \
          Set_High32of64(Dest64, Get_High32of64(Dest64) + Const64_Hi ); \
      }      
 #endif
