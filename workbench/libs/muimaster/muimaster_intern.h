@@ -84,7 +84,8 @@ struct MUIMasterBase_intern
     struct Library  	    	*iffparsebase;
     struct Library  	    	*diskfontbase;
     struct Library  	    	*iconbase;
-
+    struct Library  	    	*cybergfxbase;
+    
 /*  struct Library  	    	*datatypesbase; */
 
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
@@ -140,6 +141,9 @@ struct MUIMasterBase_intern
 #undef IconBase
 #define IconBase  	(MUIMB(MUIMasterBase)->iconbase)
 
+#undef CyberGfxBase
+#define CyberGfxBase  	(MUIMB(MUIMasterBase)->cybergfxbase)
+
 /*
 #undef DataTypesBase
 #define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
@@ -181,6 +185,10 @@ struct MUIMasterBase_intern
 
 #undef DiskfontBase
 #define DiskfontBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->diskfontbase)
+
+#undef CyberGfxBase
+#define CyberGfxBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->cybergfxbase)
+
 
 /*
 #undef DataTypesBase
