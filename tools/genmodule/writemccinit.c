@@ -142,7 +142,7 @@ void writemccinit(void)
             fprintf
             (
                 out, 
-                "        case %s: return %s__%s(", 
+                "        case %s: return (IPTR) %s__%s(", 
                 methlistit->name, modulename, methlistit->name
             );
             
@@ -166,7 +166,7 @@ void writemccinit(void)
             "        default: return DoSuperMethodA(CLASS, self, message);\n"
             "    }\n"
             "    \n"
-            "    return NULL;\n"
+            "    return (IPTR) NULL;\n"
             "}\n"
         );
     }
