@@ -294,6 +294,9 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
         {
             Close((BPTR) iffHandle->iff_Stream); // Why isn't this stored in memory as a "BPTR"? Look up!
         }
+	
+	FreeIFF(iffHandle);
+	iffHandle = NULL;
     }
     else // AllocIFF()
     {
@@ -372,5 +375,8 @@ BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
         CloseIFF(iffHandle);
     }
 
+    FreeIFF(iffHandle);
+    iffHandle = NULL;
+    
     return TRUE;
 }
