@@ -8,7 +8,6 @@
 #include <aros/arosbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <aros/system.h>
 #include <proto/dos.h>
 #include <proto/aros.h>
@@ -16,6 +15,8 @@
 #include <unistd.h>
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
+
+#define isdigit(x)      ((x) >= '0' && (x) <= '9')
 
 /*****************************************************************************
 
@@ -58,7 +59,8 @@
 {
     va_list	 args;
     int 	 ret;
-    static const char * hex = "0123456789ABCDEF";
+    static const char uhex[] = "0123456789ABCDEF";
+    static const char lhex[] = "0123456789abcdef";
     char       * fill;
     ULONG	 val;
     LONG	 lval;
@@ -138,7 +140,7 @@
 
 		while (t)
 		{
-		    puffer[--t] = hex[val & 0x0F];
+		    puffer[--t] = lhex[val & 0x0F];
 		    val >>= 4;
 		}
 
@@ -159,7 +161,7 @@
 		int t;
 		char puffer[32];
 
-		if (fmt[1] == 'u' || fmt[1] == 'd' || tolower(fmt[1]) == 'x')
+		if (fmt[1] == 'u' || fmt[1] == 'd' || fmt[1] == 'x' || fmt[1] == 'X')
 		    fmt ++;
 
 		if (*fmt == 'd')
@@ -213,16 +215,25 @@ print_int:
 
 		    while (val && t)
 		    {
-			puffer[--t] = hex[val % 10];
+			puffer[--t] = lhex[val % 10];
 
 			val /= 10;
+		    }
+		}
+		else if (*fmt == 'x')
+		{
+		    while (val && t)
+		    {
+			puffer[--t] = lhex[val & 0x0F];
+
+			val >>= 4;
 		    }
 		}
 		else
 		{
 		    while (val && t)
 		    {
-			puffer[--t] = hex[val & 0x0F];
+			puffer[--t] = uhex[val & 0x0F];
 
 			val >>= 4;
 		    }
