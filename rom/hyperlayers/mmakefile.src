@@ -91,6 +91,7 @@ FUNCTIONS := \
 	installclipregion \
 	installlayerhook \
 	installlayerinfohook \
+	isfrontmostlayer \
 	islayervisible \
 	locklayer \
 	locklayerinfo \
