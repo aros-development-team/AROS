@@ -1,9 +1,9 @@
+#   $Id$
+#
+#   Makefile for AROS Test
+
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/test
-EXEDIR := $(BINDIR)/test
-
-%define_libs
 
 FILES := amiga2date \
 	amigademo \
@@ -39,29 +39,23 @@ FILES := amiga2date \
 	rawtest \
 	camdtree
 
+EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+USER_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
 
-#MM test : setup-test
+USE_CLIB_SHARED := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
+USE_AROSLIB := yes
+USE_COOLIMAGESLIB := yes
+
+#MM test :
+
+%make_prog_setup mmake=test
+
 test : $(EXES)
-	@$(NOP)
 
-#MM
-setup-test :
-	%mkdirs_q $(OBJDIR) $(EXEDIR)
-
-#MM
-clean ::
-	-$(RM) $(EXES)
-
-$(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(APPCFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%make_prog_single dir=$(EXEDIR)
 
 %common
 %include_deps
