@@ -16,8 +16,12 @@
 #define SECTNUM long
 #define RETCODE long
 
+#ifndef TRUE
 #define TRUE    1
+#endif
+#ifndef FALSE
 #define FALSE   0
+#endif
 
 #define ULONG   unsigned long
 #define USHORT  unsigned short
