@@ -27,13 +27,15 @@ BOOT_TAR_FILES := \
 	Fonts/fixed \
 	Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
 	Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
-	Libs/locale.library Libs/reqtools.library \
-	Locale \
-	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Env-Archive \
+	Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
+	Libs/reqtools.library \
+	Locale/Countries Locale/Languages \
+	Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
+	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive \
 	S \
 	System \
 	Tools \
-	Utilities/MultiView Utilities/More \
+	Utilities/MultiView Utilities/More Utilities/Installer \
 	contrib/aminet/Format64
 
 BOOT_SRC_DIR := $(AROSDIR)
@@ -51,11 +53,9 @@ setup-native :
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
 	%mkdirs_q $(BOOT_DEST_DIR)/Devs
-	%mkdirs_q $(BOOT_DEST_DIR)/Libs
 	%mkdirs_q $(BOOT_DEST_DIR)/S
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
-	%mkdirs_q $(BOOT_DEST_DIR)/contrib/gnu
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
 #MM
