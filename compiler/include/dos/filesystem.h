@@ -329,6 +329,14 @@ struct IFS_MOUNT_MODE
 #define FSA_LOCK_RECORD     39
 #define FSA_UNLOCK_RECORD   40
 #endif
+#define FSA_PARENT_DIR      41
+#define FSA_PARENT_DIR_POST 42
+struct IFS_PARENT_DIR
+{
+    /* this will contain the return value of the parent directory or
+       NULL, if we are at the root directory already */
+    char * io_DirName;
+};
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
    and may be or'ed. Note that not all filesystems support all flags. */
@@ -410,6 +418,7 @@ struct IOFileSys
         struct IFS_MORE_CACHE      io_MORE_CACHE;     /* FSA_MORE_CACHE */
         struct IFS_FORMAT          io_FORMAT;         /* FSA_FORMAT */
         struct IFS_MOUNT_MODE      io_MOUNT_MODE;     /* FSA_MOUNT_MODE */
+        struct IFS_PARENT_DIR      io_PARENT_DIR;     /* FSA_PARENT_DIR */
     } io_Union;
 };
 #if 0
