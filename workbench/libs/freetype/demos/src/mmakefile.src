@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES		:= -I../graph -I../../include -I../../src/base -I../../config
 EXEDIR			:= $(BINDIR)/contrib/Freetype
 OBJDIR 			:= $(GENDIR)/$(CURDIR)
-FREETYPELINKLIB		:= $(LIBDIR)/libfreetype.a
+FREETYPELINKLIB		:= $(LIBDIR)/libfreetype2.a
 FREETYPEGRAPHLIB	:= $(LIBDIR)/libfreetypegraph.a
 COMMONOBJ		:= common.c
 
