@@ -417,11 +417,13 @@ static void getimage_xlib(Class *cl, Object *o
     struct bitmap_data *data;
     XImage *image;
     ULONG depth;
-    
+    Object *pf; 
  
     data = INST_DATA(cl, o);
 
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
+
 LX11
     image = XGetImage(data->display
     	, DRAWABLE(data)
@@ -829,10 +831,11 @@ static void putimage_xlib(Class *cl, Object *o, Object *gc
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
-
+    Object *pf;
 	
     data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
 
 

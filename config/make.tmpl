@@ -200,15 +200,15 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 
 #------------------------------------------------------------------------------
 # Prepare creation of a shared lib
-%define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY)
+%define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY) lib_suffix=$(HOST_LIB_SUFFIX)
 ifeq ("%(shflag)","yes")
-LIB    := $(LIBDIR)/lib%(lib).so
+LIB    := $(LIBDIR)/lib%(lib).so%(lib_suffix)
 RMLIB  := $(LIBDIR)/lib%(lib).a
 AR     := $(SHARED_AR)
 RANLIB := $(NOP)
 else
 LIB    := $(LIBDIR)/lib%(lib).a
-RMLIB  := $(LIBDIR)/lib%(lib).so
+RMLIB  := $(LIBDIR)/lib%(lib).so%(lib_suffix)
 endif
 %end
 

@@ -93,6 +93,9 @@
 #ifdef __FreeBSD__
 #   include <aros/freebsd.h>
 #endif
+#ifdef __NetBSD__
+#   include <aros/netbsd.h>
+#endif
 #ifdef __CYGWIN32__
 #   include <aros/cygwin.h>
 #endif

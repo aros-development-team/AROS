@@ -8,7 +8,7 @@ KEYMAPS := pc105_d pc105_i pc105_s
 
 KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(KEYMAPDIR)/$(f))
 
-CFLAGS := $(INCLUDES) -nostartfiles -nostdlib -Xlinker -i
+CFLAGS := $(INCLUDES) -nostartfiles -nostdlib -Xlinker -r
 
 #MM workbench-devs-keymaps : setup includes keymapobjs
 workbench-devs-keymaps : keymapobjs

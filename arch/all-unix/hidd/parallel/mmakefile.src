@@ -7,7 +7,11 @@ include $(TOP)/config/make.cfg
 
 CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
 
+ifeq ($(ARCH),netbsd)
+ILDFLAGS    := -nostartfiles -Xlinker -r
+else
 ILDFLAGS    := -nostartfiles -Xlinker -i -g
+endif
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
 USER_INCLUDES := -I.

@@ -21,7 +21,7 @@
 
 #include <devices/input.h>
 
-#if 1
+#ifndef __NetBSD__ 
 #define size_t sys_size_t
 #include <sys/types.h>
 #include <signal.h>

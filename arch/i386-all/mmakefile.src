@@ -16,6 +16,10 @@ includes-freebsd-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
+includes-netbsd-i386 : $(INCFILES) machine.i
+	@$(NOP)
+
+#MM
 includes-cygwin-i386 : $(INCFILES) machine.i
 	@$(NOP)
 

@@ -12,6 +12,7 @@ HOST_CPU	:= @aros_host_cpu@
 
 HOST_CC		:= @aros_host_cc@
 HOST_LD		:= @aros_host_ld@
+HOST_MAKE	:= @aros_host_make@
 HOST_CFLAGS	:= @aros_host_cflags@
 HOST_LDFLAGS	:= @aros_host_ldflags@
 HOST_DEBUG	:= @aros_host_debug@
@@ -21,6 +22,7 @@ MKARGS		:= @aros_host_mkargs@
 HOST_AR		:= @HOST_AR@
 HOST_RANLIB	:= @HOST_RANLIB@
 HOST_EXE_SUFFIX	:= @aros_host_exe_suffix@
+HOST_LIB_SUFFIX := @aros_host_lib_suffix@
 
 MMAKE		:= @MMAKE@
 AWK		:= @AWK@

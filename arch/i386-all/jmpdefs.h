@@ -20,7 +20,11 @@
 #   define FP(env)	((APTR)(env[0]._jb[3]))
 #   define PC(env)	((APTR)(env[0]._jb[0]))
 #endif
-
+#ifdef __NetBSD__
+#   define SP(env)      ((APTR)(env[2]))
+#   define FP(env)      ((APTR)(env[3]))
+#   define PC(env)      ((APTR)(env[0]))
+#endif
 /* The number of stack longs that have to be copied from the old stack */
 #define NUM_LONGS	4
 

@@ -81,6 +81,7 @@ AROS_PROG(MMAKE,mmake)
 
 aros_host_cc="$CC"
 aros_host_ld="$CC"
+aros_host_make="make"
 aros_host_cflags=
 aros_host_ldflags=
 aros_host_debug="-g -O0"
@@ -88,6 +89,7 @@ aros_host_mkdep="\$(TOP)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
 aros_host_exe_suffix=""
+aros_host_lib_suffix=""
 
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
@@ -117,6 +119,14 @@ case "$host_os" in
 	aros_host_arch="freebsd"
 	aros_host_cpu="i386"
 	;;
+
+    netbsd*)
+        aros_host_cc="$aros_host_cc -pipe"
+	aros_host_make="gmake"
+        aros_host_arch="netbsd"
+        aros_host_cpu="i386"
+	aros_host_lib_suffix=".0.0"
+        ;; 
 
     amiga*)
 	aros_host_arch="amiga"
@@ -305,6 +315,16 @@ case "$target_os" in
 	strip_args="-x"
 	;;
 
+    netbsd*)
+        aros_target_arch="netbsd"
+        aros_target_cpu="i386"
+	aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
+	aros_target_genmap="-Wl,-M -Xlinker >" 
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+        strip_args="-x"
+        ;;   
+
     amiga*)
 	aros_target_arch="amiga"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
@@ -462,12 +482,14 @@ AC_SUBST(aros_host_arch)
 AC_SUBST(aros_host_cpu)
 AC_SUBST(aros_host_cc)
 AC_SUBST(aros_host_ld)
+AC_SUBST(aros_host_make)
 AC_SUBST(aros_host_cflags)
 AC_SUBST(aros_host_ldflags)
 AC_SUBST(aros_host_debug)
 AC_SUBST(aros_host_mkdep)
 AC_SUBST(aros_host_mkargs)
 AC_SUBST(aros_host_exe_suffix)
+AC_SUBST(aros_host_lib_suffix)
 
 # Target Related
 AC_SUBST(aros_target_arch)

@@ -21,120 +21,120 @@ shell : $(BINDIR)/aros
 # END_DESC{localmakevar}
 
 ifeq ("$(SHARED_EXEC)","yes")
-DEPLIB_EXEC=$(LIBDIR)/libexec.so
+DEPLIB_EXEC=$(LIBDIR)/libexec.so$(HOST_LIB_SUFFIX)
 LIBEXEC=-lexec
 else
 DEPLIB_EXEC=$(LIBDIR)/libexec.a
 endif
 
 ifeq ("$(SHARED_DOS)","yes")
-DEPLIB_DOS=$(LIBDIR)/libdos.so
+DEPLIB_DOS=$(LIBDIR)/libdos.so$(HOST_LIB_SUFFIX)
 LIBDOS=-ldos
 else
 DEPLIB_DOS=$(LIBDIR)/libdos.a
 endif
 
 ifeq ("$(SHARED_INTUITION)","yes")
-DEPLIB_INTUITION=$(LIBDIR)/libintuition.so
+DEPLIB_INTUITION=$(LIBDIR)/libintuition.so$(HOST_LIB_SUFFIX)
 LIBINTUITION=-lintuition
 else
 DEPLIB_INTUITION=$(LIBDIR)/libintuition.a
 endif
 
 ifeq ("$(SHARED_GRAPHICS)","yes")
-DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so
+DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so$(HOST_LIB_SUFFIX)
 LIBGRAPHICS=-lgraphics
 else
 DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.a
 endif
 
 ifeq ("$(SHARED_UTILITY)","yes")
-DEPLIB_UTILITY=$(LIBDIR)/libutility.so
+DEPLIB_UTILITY=$(LIBDIR)/libutility.so$(HOST_LIB_SUFFIX)
 LIBUTILITY=-lutility
 else
 DEPLIB_UTILITY=$(LIBDIR)/libutility.a
 endif
 
 ifeq ("$(SHARED_LAYERS)","yes")
-DEPLIB_LAYERS=$(LIBDIR)/liblayers.so
+DEPLIB_LAYERS=$(LIBDIR)/liblayers.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_LAYERS=$(LIBDIR)/liblayers.a
 endif
 
 ifeq ("$(SHARED_MATHFFP)","yes")
-DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
+DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
 endif
 
 ifeq ("$(SHARED_MATHIEEESINGBAS)","yes")
-DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so
+DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
 endif
 
 ifeq ("$(SHARED_BOOPSI)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
+DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
 endif
 
 ifeq ("$(SHARED_WORKBENCH)","yes")
-DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so
+DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.a
 endif
 
 ifeq ("$(SHARED_HIDDCLASS)","yes")
-DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so
+DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.a
 endif
 
 ifeq ("$(SHARED_UNIXIOCLASS)","yes")
-DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so
+DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
 endif
 
 ifeq ("$(SHARED_EXPANSION)","yes")
-DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so
+DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
 endif
 
 ifeq ("$(SHARED_TIMER)","yes")
-DEPLIB_TIMER=$(LIBDIR)/libtimer.so
+DEPLIB_TIMER=$(LIBDIR)/libtimer.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_TIMER=$(LIBDIR)/libtimer.a
 endif
 
 ifeq ("$(SHARED_BATTCLOCK)","yes")
-DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so
+DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.a
 endif
 
 ifeq ("$(SHARED_BOOT)","yes")
-DEPLIB_BOOT=$(LIBDIR)/libboot.so
+DEPLIB_BOOT=$(LIBDIR)/libboot.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_BOOT=$(LIBDIR)/libboot.a
 endif
 
 ifeq ("$(SHARED_AROS)","yes")
-DEPLIB_AROS=$(LIBDIR)/libaros.so
+DEPLIB_AROS=$(LIBDIR)/libaros.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_AROS=$(LIBDIR)/libaros.a
 endif
 
 ifeq ("$(SHARED_OOP)","yes")
-DEPLIB_OOP=$(LIBDIR)/liboop.so
+DEPLIB_OOP=$(LIBDIR)/liboop.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_OOP=$(LIBDIR)/liboop.a
 endif
 
 ifeq ("$(SHARED_CGFX)","yes")
-DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so
+DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so$(HOST_LIB_SUFFIX)
 else
 DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.a
 endif
