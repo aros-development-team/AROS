@@ -1,10 +1,12 @@
 /*
-    Copyright (C) 1998-2000 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AllocMiscResource() function.
     Lang: english
 */
+#include <resources/misc.h>
+#include <proto/exec.h>
 #include "misc_intern.h"
 
 /*****************************************************************************
