@@ -2,11 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/14 11:17:26  digulla
+    Use __AROS_SLIB_ENTRY
+
     Revision 1.6  1996/10/10 13:22:49  digulla
-    New function: RawPutChar()
+    New function: RawPutChar,Exec)()
 
     Revision 1.5  1996/09/11 16:54:24  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use __AROS_SLIB_ENTRY,Exec)() to access shared external symbols, because
     	some systems name an external symbol "x" as "_x" and others as "x".
     	(The problem arises with assembler symbols which might differ)
 
@@ -19,116 +22,117 @@
     Desc:
     Lang:
 */
+#include <aros/libcall.h>
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
 
-void _Exec_Supervisor();
-void _Exec_Switch();
-void _Exec_Dispatch();
-void _Exec_Exception();
-void _Exec_PrepareContext();
-void _Exec_InitStruct();
-void _Exec_MakeLibrary();
-void _Exec_MakeFunctions();
-void _Exec_InitResident();
-void _Exec_Alert();
-void _Exec_Disable();
-void _Exec_Enable();
-void _Exec_Forbid();
-void _Exec_Permit();
-void _Exec_SetSR();
-void _Exec_SuperState();
-void _Exec_UserState();
-void _Exec_Allocate();
-void _Exec_Deallocate();
-void _Exec_AllocMem();
-void _Exec_AllocAbs();
-void _Exec_FreeMem();
-void _Exec_AvailMem();
-void _Exec_AllocEntry();
-void _Exec_FreeEntry();
-void _Exec_Insert();
-void _Exec_AddHead();
-void _Exec_AddTail();
-void _Exec_Remove();
-void _Exec_RemHead();
-void _Exec_RemTail();
-void _Exec_Enqueue();
-void _Exec_FindName();
-void _Exec_AddTask();
-void _Exec_RemTask();
-void _Exec_FindTask();
-void _Exec_SetTaskPri();
-void _Exec_SetSignal();
-void _Exec_SetExcept();
-void _Exec_Wait();
-void _Exec_Signal();
-void _Exec_AllocSignal();
-void _Exec_FreeSignal();
-void _Exec_AddPort();
-void _Exec_RemPort();
-void _Exec_PutMsg();
-void _Exec_GetMsg();
-void _Exec_ReplyMsg();
-void _Exec_WaitPort();
-void _Exec_FindPort();
-void _Exec_AddLibrary();
-void _Exec_RemLibrary();
-void _Exec_OldOpenLibrary();
-void _Exec_CloseLibrary();
-void _Exec_SetFunction();
-void _Exec_SumLibrary();
-void _Exec_AddDevice();
-void _Exec_RemDevice();
-void _Exec_OpenDevice();
-void _Exec_CloseDevice();
-void _Exec_DoIO();
-void _Exec_SendIO();
-void _Exec_CheckIO();
-void _Exec_WaitIO();
-void _Exec_AbortIO();
-void _Exec_AddResource();
-void _Exec_RemResource();
-void _Exec_OpenResource();
-void _Exec_RawPutChar();
-void _Exec_RawDoFmt();
-void _Exec_TypeOfMem();
-void _Exec_Procure();
-void _Exec_Vacate();
-void _Exec_OpenLibrary();
-void _Exec_InitSemaphore();
-void _Exec__ObtainSemaphore();
-void _Exec__ReleaseSemaphore();
-void _Exec_AttemptSemaphore();
-void _Exec_ObtainSemaphoreList();
-void _Exec_ReleaseSemaphoreList();
-void _Exec_FindSemaphore();
-void _Exec_AddSemaphore();
-void _Exec_RemSemaphore();
-void _Exec_AddMemList();
-void _Exec_CopyMem();
-void _Exec_CopyMemQuick();
-void _Exec_CacheClearU();
-void _Exec_CacheClearE();
-void _Exec_CacheControl();
-void _Exec_CreateIORequest();
-void _Exec_DeleteIORequest();
-void _Exec_CreateMsgPort();
-void _Exec_DeleteMsgPort();
-void _Exec__ObtainSemaphoreShared();
-void _Exec_AllocVec();
-void _Exec_FreeVec();
-void _Exec_CreatePool();
-void _Exec_DeletePool();
-void _Exec_AllocPooled();
-void _Exec_FreePooled();
-void _Exec_AttemptSemaphoreShared();
-void _Exec_StackSwap();
-void _Exec_CachePreDMA();
-void _Exec_CachePostDMA();
-void _Exec_AddMemHandler();
-void _Exec_RemMemHandler();
+void __AROS_SLIB_ENTRY(Supervisor,Exec)();
+void __AROS_SLIB_ENTRY(Switch,Exec)();
+void __AROS_SLIB_ENTRY(Dispatch,Exec)();
+void __AROS_SLIB_ENTRY(Exception,Exec)();
+void __AROS_SLIB_ENTRY(PrepareContext,Exec)();
+void __AROS_SLIB_ENTRY(InitStruct,Exec)();
+void __AROS_SLIB_ENTRY(MakeLibrary,Exec)();
+void __AROS_SLIB_ENTRY(MakeFunctions,Exec)();
+void __AROS_SLIB_ENTRY(InitResident,Exec)();
+void __AROS_SLIB_ENTRY(Alert,Exec)();
+void __AROS_SLIB_ENTRY(Disable,Exec)();
+void __AROS_SLIB_ENTRY(Enable,Exec)();
+void __AROS_SLIB_ENTRY(Forbid,Exec)();
+void __AROS_SLIB_ENTRY(Permit,Exec)();
+void __AROS_SLIB_ENTRY(SetSR,Exec)();
+void __AROS_SLIB_ENTRY(SuperState,Exec)();
+void __AROS_SLIB_ENTRY(UserState,Exec)();
+void __AROS_SLIB_ENTRY(Allocate,Exec)();
+void __AROS_SLIB_ENTRY(Deallocate,Exec)();
+void __AROS_SLIB_ENTRY(AllocMem,Exec)();
+void __AROS_SLIB_ENTRY(AllocAbs,Exec)();
+void __AROS_SLIB_ENTRY(FreeMem,Exec)();
+void __AROS_SLIB_ENTRY(AvailMem,Exec)();
+void __AROS_SLIB_ENTRY(AllocEntry,Exec)();
+void __AROS_SLIB_ENTRY(FreeEntry,Exec)();
+void __AROS_SLIB_ENTRY(Insert,Exec)();
+void __AROS_SLIB_ENTRY(AddHead,Exec)();
+void __AROS_SLIB_ENTRY(AddTail,Exec)();
+void __AROS_SLIB_ENTRY(Remove,Exec)();
+void __AROS_SLIB_ENTRY(RemHead,Exec)();
+void __AROS_SLIB_ENTRY(RemTail,Exec)();
+void __AROS_SLIB_ENTRY(Enqueue,Exec)();
+void __AROS_SLIB_ENTRY(FindName,Exec)();
+void __AROS_SLIB_ENTRY(AddTask,Exec)();
+void __AROS_SLIB_ENTRY(RemTask,Exec)();
+void __AROS_SLIB_ENTRY(FindTask,Exec)();
+void __AROS_SLIB_ENTRY(SetTaskPri,Exec)();
+void __AROS_SLIB_ENTRY(SetSignal,Exec)();
+void __AROS_SLIB_ENTRY(SetExcept,Exec)();
+void __AROS_SLIB_ENTRY(Wait,Exec)();
+void __AROS_SLIB_ENTRY(Signal,Exec)();
+void __AROS_SLIB_ENTRY(AllocSignal,Exec)();
+void __AROS_SLIB_ENTRY(FreeSignal,Exec)();
+void __AROS_SLIB_ENTRY(AddPort,Exec)();
+void __AROS_SLIB_ENTRY(RemPort,Exec)();
+void __AROS_SLIB_ENTRY(PutMsg,Exec)();
+void __AROS_SLIB_ENTRY(GetMsg,Exec)();
+void __AROS_SLIB_ENTRY(ReplyMsg,Exec)();
+void __AROS_SLIB_ENTRY(WaitPort,Exec)();
+void __AROS_SLIB_ENTRY(FindPort,Exec)();
+void __AROS_SLIB_ENTRY(AddLibrary,Exec)();
+void __AROS_SLIB_ENTRY(RemLibrary,Exec)();
+void __AROS_SLIB_ENTRY(OldOpenLibrary,Exec)();
+void __AROS_SLIB_ENTRY(CloseLibrary,Exec)();
+void __AROS_SLIB_ENTRY(SetFunction,Exec)();
+void __AROS_SLIB_ENTRY(SumLibrary,Exec)();
+void __AROS_SLIB_ENTRY(AddDevice,Exec)();
+void __AROS_SLIB_ENTRY(RemDevice,Exec)();
+void __AROS_SLIB_ENTRY(OpenDevice,Exec)();
+void __AROS_SLIB_ENTRY(CloseDevice,Exec)();
+void __AROS_SLIB_ENTRY(DoIO,Exec)();
+void __AROS_SLIB_ENTRY(SendIO,Exec)();
+void __AROS_SLIB_ENTRY(CheckIO,Exec)();
+void __AROS_SLIB_ENTRY(WaitIO,Exec)();
+void __AROS_SLIB_ENTRY(AbortIO,Exec)();
+void __AROS_SLIB_ENTRY(AddResource,Exec)();
+void __AROS_SLIB_ENTRY(RemResource,Exec)();
+void __AROS_SLIB_ENTRY(OpenResource,Exec)();
+void __AROS_SLIB_ENTRY(RawPutChar,Exec)();
+void __AROS_SLIB_ENTRY(RawDoFmt,Exec)();
+void __AROS_SLIB_ENTRY(TypeOfMem,Exec)();
+void __AROS_SLIB_ENTRY(Procure,Exec)();
+void __AROS_SLIB_ENTRY(Vacate,Exec)();
+void __AROS_SLIB_ENTRY(OpenLibrary,Exec)();
+void __AROS_SLIB_ENTRY(InitSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(_ObtainSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(AttemptSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec)();
+void __AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec)();
+void __AROS_SLIB_ENTRY(FindSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(AddSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(RemSemaphore,Exec)();
+void __AROS_SLIB_ENTRY(AddMemList,Exec)();
+void __AROS_SLIB_ENTRY(CopyMem,Exec)();
+void __AROS_SLIB_ENTRY(CopyMemQuick,Exec)();
+void __AROS_SLIB_ENTRY(CacheClearU,Exec)();
+void __AROS_SLIB_ENTRY(CacheClearE,Exec)();
+void __AROS_SLIB_ENTRY(CacheControl,Exec)();
+void __AROS_SLIB_ENTRY(CreateIORequest,Exec)();
+void __AROS_SLIB_ENTRY(DeleteIORequest,Exec)();
+void __AROS_SLIB_ENTRY(CreateMsgPort,Exec)();
+void __AROS_SLIB_ENTRY(DeleteMsgPort,Exec)();
+void __AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec)();
+void __AROS_SLIB_ENTRY(AllocVec,Exec)();
+void __AROS_SLIB_ENTRY(FreeVec,Exec)();
+void __AROS_SLIB_ENTRY(CreatePool,Exec)();
+void __AROS_SLIB_ENTRY(DeletePool,Exec)();
+void __AROS_SLIB_ENTRY(AllocPooled,Exec)();
+void __AROS_SLIB_ENTRY(FreePooled,Exec)();
+void __AROS_SLIB_ENTRY(AttemptSemaphoreShared,Exec)();
+void __AROS_SLIB_ENTRY(StackSwap,Exec)();
+void __AROS_SLIB_ENTRY(CachePreDMA,Exec)();
+void __AROS_SLIB_ENTRY(CachePostDMA,Exec)();
+void __AROS_SLIB_ENTRY(AddMemHandler,Exec)();
+void __AROS_SLIB_ENTRY(RemMemHandler,Exec)();
 
 void *ExecFunctions[131]=
 {
@@ -136,131 +140,131 @@ void *ExecFunctions[131]=
 	NULL,
 	NULL,
 	NULL,
-	&_Exec_Supervisor,
-	&_Exec_Switch,
-	&_Exec_Dispatch,
-	&_Exec_Exception,
-	&_Exec_PrepareContext,
+	&__AROS_SLIB_ENTRY(Supervisor,Exec),
+	&__AROS_SLIB_ENTRY(Switch,Exec),
+	&__AROS_SLIB_ENTRY(Dispatch,Exec),
+	&__AROS_SLIB_ENTRY(Exception,Exec),
+	&__AROS_SLIB_ENTRY(PrepareContext,Exec),
 /* 10 */NULL,		/* Private5 */
 	NULL,		/* Private6 */
 	NULL,		/* InitCode */
-	&_Exec_InitStruct,
-	&_Exec_MakeLibrary,
-	&_Exec_MakeFunctions,
+	&__AROS_SLIB_ENTRY(InitStruct,Exec),
+	&__AROS_SLIB_ENTRY(MakeLibrary,Exec),
+	&__AROS_SLIB_ENTRY(MakeFunctions,Exec),
 	NULL,		/* FindResident */
-	&_Exec_InitResident,
-	&_Exec_Alert,
+	&__AROS_SLIB_ENTRY(InitResident,Exec),
+	&__AROS_SLIB_ENTRY(Alert,Exec),
 	NULL,		/* Debug */
-/* 20 */&_Exec_Disable,
-	&_Exec_Enable,
-	&_Exec_Forbid,
-	&_Exec_Permit,
-	&_Exec_SetSR,
-	&_Exec_SuperState,
-	&_Exec_UserState,
+/* 20 */&__AROS_SLIB_ENTRY(Disable,Exec),
+	&__AROS_SLIB_ENTRY(Enable,Exec),
+	&__AROS_SLIB_ENTRY(Forbid,Exec),
+	&__AROS_SLIB_ENTRY(Permit,Exec),
+	&__AROS_SLIB_ENTRY(SetSR,Exec),
+	&__AROS_SLIB_ENTRY(SuperState,Exec),
+	&__AROS_SLIB_ENTRY(UserState,Exec),
 	NULL,		/* SetIntVector */
 	NULL,		/* AddIntServer */
 	NULL,		/* RemIntServer */
 /* 30 */NULL,		/* Cause */
-	&_Exec_Allocate,
-	&_Exec_Deallocate,
-	&_Exec_AllocMem,
-	&_Exec_AllocAbs,
-	&_Exec_FreeMem,
-	&_Exec_AvailMem,
-	&_Exec_AllocEntry,
-	&_Exec_FreeEntry,
-	&_Exec_Insert,
-/* 40 */&_Exec_AddHead,
-	&_Exec_AddTail,
-	&_Exec_Remove,
-	&_Exec_RemHead,
-	&_Exec_RemTail,
-	&_Exec_Enqueue,
-	&_Exec_FindName,
-	&_Exec_AddTask,
-	&_Exec_RemTask,
-	&_Exec_FindTask,
-/* 50 */&_Exec_SetTaskPri,
-	&_Exec_SetSignal,
-	&_Exec_SetExcept,
-	&_Exec_Wait,
-	&_Exec_Signal,
-	&_Exec_AllocSignal,
-	&_Exec_FreeSignal,
+	&__AROS_SLIB_ENTRY(Allocate,Exec),
+	&__AROS_SLIB_ENTRY(Deallocate,Exec),
+	&__AROS_SLIB_ENTRY(AllocMem,Exec),
+	&__AROS_SLIB_ENTRY(AllocAbs,Exec),
+	&__AROS_SLIB_ENTRY(FreeMem,Exec),
+	&__AROS_SLIB_ENTRY(AvailMem,Exec),
+	&__AROS_SLIB_ENTRY(AllocEntry,Exec),
+	&__AROS_SLIB_ENTRY(FreeEntry,Exec),
+	&__AROS_SLIB_ENTRY(Insert,Exec),
+/* 40 */&__AROS_SLIB_ENTRY(AddHead,Exec),
+	&__AROS_SLIB_ENTRY(AddTail,Exec),
+	&__AROS_SLIB_ENTRY(Remove,Exec),
+	&__AROS_SLIB_ENTRY(RemHead,Exec),
+	&__AROS_SLIB_ENTRY(RemTail,Exec),
+	&__AROS_SLIB_ENTRY(Enqueue,Exec),
+	&__AROS_SLIB_ENTRY(FindName,Exec),
+	&__AROS_SLIB_ENTRY(AddTask,Exec),
+	&__AROS_SLIB_ENTRY(RemTask,Exec),
+	&__AROS_SLIB_ENTRY(FindTask,Exec),
+/* 50 */&__AROS_SLIB_ENTRY(SetTaskPri,Exec),
+	&__AROS_SLIB_ENTRY(SetSignal,Exec),
+	&__AROS_SLIB_ENTRY(SetExcept,Exec),
+	&__AROS_SLIB_ENTRY(Wait,Exec),
+	&__AROS_SLIB_ENTRY(Signal,Exec),
+	&__AROS_SLIB_ENTRY(AllocSignal,Exec),
+	&__AROS_SLIB_ENTRY(FreeSignal,Exec),
 	NULL,		/* AllocTrap */
 	NULL,		/* FreeTrap */
-	&_Exec_AddPort,
-/* 60 */&_Exec_RemPort,
-	&_Exec_PutMsg,
-	&_Exec_GetMsg,
-	&_Exec_ReplyMsg,
-	&_Exec_WaitPort,
-	&_Exec_FindPort,
-	&_Exec_AddLibrary,
-	&_Exec_RemLibrary,
-	&_Exec_OldOpenLibrary,
-	&_Exec_CloseLibrary,
-/* 70 */&_Exec_SetFunction,
-	&_Exec_SumLibrary,
-	&_Exec_AddDevice,
-	&_Exec_RemDevice,
-	&_Exec_OpenDevice,
-	&_Exec_CloseDevice,
-	&_Exec_DoIO,
-	&_Exec_SendIO,
-	&_Exec_CheckIO,
-	&_Exec_WaitIO,
-/* 80 */&_Exec_AbortIO,
-	&_Exec_AddResource,
-	&_Exec_RemResource,
-	&_Exec_OpenResource,
+	&__AROS_SLIB_ENTRY(AddPort,Exec),
+/* 60 */&__AROS_SLIB_ENTRY(RemPort,Exec),
+	&__AROS_SLIB_ENTRY(PutMsg,Exec),
+	&__AROS_SLIB_ENTRY(GetMsg,Exec),
+	&__AROS_SLIB_ENTRY(ReplyMsg,Exec),
+	&__AROS_SLIB_ENTRY(WaitPort,Exec),
+	&__AROS_SLIB_ENTRY(FindPort,Exec),
+	&__AROS_SLIB_ENTRY(AddLibrary,Exec),
+	&__AROS_SLIB_ENTRY(RemLibrary,Exec),
+	&__AROS_SLIB_ENTRY(OldOpenLibrary,Exec),
+	&__AROS_SLIB_ENTRY(CloseLibrary,Exec),
+/* 70 */&__AROS_SLIB_ENTRY(SetFunction,Exec),
+	&__AROS_SLIB_ENTRY(SumLibrary,Exec),
+	&__AROS_SLIB_ENTRY(AddDevice,Exec),
+	&__AROS_SLIB_ENTRY(RemDevice,Exec),
+	&__AROS_SLIB_ENTRY(OpenDevice,Exec),
+	&__AROS_SLIB_ENTRY(CloseDevice,Exec),
+	&__AROS_SLIB_ENTRY(DoIO,Exec),
+	&__AROS_SLIB_ENTRY(SendIO,Exec),
+	&__AROS_SLIB_ENTRY(CheckIO,Exec),
+	&__AROS_SLIB_ENTRY(WaitIO,Exec),
+/* 80 */&__AROS_SLIB_ENTRY(AbortIO,Exec),
+	&__AROS_SLIB_ENTRY(AddResource,Exec),
+	&__AROS_SLIB_ENTRY(RemResource,Exec),
+	&__AROS_SLIB_ENTRY(OpenResource,Exec),
 	NULL,		/* Private7 */
 	NULL,		/* Private8 */
-	&_Exec_RawPutChar,
-	&_Exec_RawDoFmt,
+	&__AROS_SLIB_ENTRY(RawPutChar,Exec),
+	&__AROS_SLIB_ENTRY(RawDoFmt,Exec),
 	NULL,		/* GetCC */
-	&_Exec_TypeOfMem,
-/* 90 */&_Exec_Procure,
-	&_Exec_Vacate,
-	&_Exec_OpenLibrary,
-	&_Exec_InitSemaphore,
-	&_Exec__ObtainSemaphore,
-	&_Exec__ReleaseSemaphore,
-	&_Exec_AttemptSemaphore,
-	&_Exec_ObtainSemaphoreList,
-	&_Exec_ReleaseSemaphoreList,
-	&_Exec_FindSemaphore,
-/*100 */&_Exec_AddSemaphore,
-	&_Exec_RemSemaphore,
+	&__AROS_SLIB_ENTRY(TypeOfMem,Exec),
+/* 90 */&__AROS_SLIB_ENTRY(Procure,Exec),
+	&__AROS_SLIB_ENTRY(Vacate,Exec),
+	&__AROS_SLIB_ENTRY(OpenLibrary,Exec),
+	&__AROS_SLIB_ENTRY(InitSemaphore,Exec),
+	&__AROS_SLIB_ENTRY(_ObtainSemaphore,Exec),
+	&__AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec),
+	&__AROS_SLIB_ENTRY(AttemptSemaphore,Exec),
+	&__AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec),
+	&__AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec),
+	&__AROS_SLIB_ENTRY(FindSemaphore,Exec),
+/*100 */&__AROS_SLIB_ENTRY(AddSemaphore,Exec),
+	&__AROS_SLIB_ENTRY(RemSemaphore,Exec),
 	NULL,		/* SumKickData */
-	&_Exec_AddMemList,
-	&_Exec_CopyMem,
-	&_Exec_CopyMemQuick,
-	&_Exec_CacheClearU,
-	&_Exec_CacheClearE,
-	&_Exec_CacheControl,
-	&_Exec_CreateIORequest,
-/*110 */&_Exec_DeleteIORequest,
-	&_Exec_CreateMsgPort,
-	&_Exec_DeleteMsgPort,
-	&_Exec__ObtainSemaphoreShared,
-	&_Exec_AllocVec,
-	&_Exec_FreeVec,
-	&_Exec_CreatePool,
-	&_Exec_DeletePool,
-	&_Exec_AllocPooled,
-	&_Exec_FreePooled,
-/*120 */&_Exec_AttemptSemaphoreShared,
+	&__AROS_SLIB_ENTRY(AddMemList,Exec),
+	&__AROS_SLIB_ENTRY(CopyMem,Exec),
+	&__AROS_SLIB_ENTRY(CopyMemQuick,Exec),
+	&__AROS_SLIB_ENTRY(CacheClearU,Exec),
+	&__AROS_SLIB_ENTRY(CacheClearE,Exec),
+	&__AROS_SLIB_ENTRY(CacheControl,Exec),
+	&__AROS_SLIB_ENTRY(CreateIORequest,Exec),
+/*110 */&__AROS_SLIB_ENTRY(DeleteIORequest,Exec),
+	&__AROS_SLIB_ENTRY(CreateMsgPort,Exec),
+	&__AROS_SLIB_ENTRY(DeleteMsgPort,Exec),
+	&__AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec),
+	&__AROS_SLIB_ENTRY(AllocVec,Exec),
+	&__AROS_SLIB_ENTRY(FreeVec,Exec),
+	&__AROS_SLIB_ENTRY(CreatePool,Exec),
+	&__AROS_SLIB_ENTRY(DeletePool,Exec),
+	&__AROS_SLIB_ENTRY(AllocPooled,Exec),
+	&__AROS_SLIB_ENTRY(FreePooled,Exec),
+/*120 */&__AROS_SLIB_ENTRY(AttemptSemaphoreShared,Exec),
 	NULL,		/* ColdReboot */
-	&_Exec_StackSwap,
+	&__AROS_SLIB_ENTRY(StackSwap,Exec),
 	NULL,		/* ChildFree */
 	NULL,		/* ChildOrphan */
 	NULL,		/* ChildStatus */
 	NULL,		/* ChildWait */
-	&_Exec_CachePreDMA,
-	&_Exec_CachePostDMA,
-	&_Exec_AddMemHandler,
-/*130 */&_Exec_RemMemHandler,
+	&__AROS_SLIB_ENTRY(CachePreDMA,Exec),
+	&__AROS_SLIB_ENTRY(CachePostDMA,Exec),
+	&__AROS_SLIB_ENTRY(AddMemHandler,Exec),
+/*130 */&__AROS_SLIB_ENTRY(RemMemHandler,Exec),
 	NULL		/* ObtainQuickVector */
 };
