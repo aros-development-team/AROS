@@ -1,11 +1,18 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Convert the date from machine to human form.
     Lang: english
 */
 #include "intern.h"
+
+#if 1
+const ULONG Utility_DayTable[]=
+{
+    0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335
+};
+#endif
 
 /*****************************************************************************
 
@@ -71,8 +78,8 @@
     AROS_LIBFUNC_INIT
 
     static const ULONG dim[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    ULONG days;
-    UWORD leap, temp, year;
+    LONG days;
+    LONG leap, temp, year, month;
 
     days = seconds / 86400;
     result->wday = days % 7;
@@ -82,6 +89,98 @@
     result->min = seconds % 60;
     seconds /= 60;
     result->hour = seconds % 24;
+
+#if 1
+    /* stegerg: based on dos.library/datetostr */
+    
+    leap = 1;
+    
+    if(days<92*365+30*366)
+    {
+	/*
+	    1976 was a leap year so use it as a base to divide the days
+	    into 4-year blocks (each beginning with a leap year).
+	*/
+	days+=366+365;
+	year=4*(days/(366+3*365))+1976;
+	days%=(366+3*365);
+
+	/* Now divide the 4-year blocks into single years. */
+	if (days>=366)
+	{
+	    leap=0;
+	    days--;
+	    year+=days/365;
+	    days%=365;
+	}
+    }
+    else
+    {
+	/*
+	    The rule for calendar calculations are:
+	    1. Every year even divisible by 4 is a leap year.
+	    2. As an exception from rule 1 every year even divisible by
+	       100 is not.
+	    3. Every year even divisible by 400 is a leap year as an
+	       exception from rule 2.
+	    So 1996, 2000 and 2004 are leap years - 1900 and 1999 are not.
+
+	    Use 2000 as a base to devide the days into 400 year blocks,
+	    those into 100 year blocks and so on...
+	*/
+	days-=17*365+5*366;
+	year=400*(days/(97*366+303*365))+2000;
+	days%=(97*366+303*365);
+
+	if(days>=366)
+	{
+	    leap=0;
+	    days--;
+	    year+=100*(days/(24*366+76*365));
+	    days%=(24*366+76*365);
+
+	    if(days>=365)
+	    {
+		leap=1;
+		days++;
+		year+=4*(days/(366+3*365));
+		days%=(366+3*365);
+
+		if(days>=366)
+		{
+		    leap=0;
+		    days--;
+		    year+=days/365;
+		    days%=365;
+		}
+	    }
+	}
+    }
+    /*
+	 The starting-day table assumes a leap year - so add one day if
+	 the date is after february 28th and the year is no leap year.
+    */
+    if(!leap&&days>=31+28)
+	days++;
+
+    for(month=11;;month--)
+    {
+	if(days>=Utility_DayTable[month])
+	{
+	    days-=Utility_DayTable[month];
+	    break;
+	}
+    }
+
+    /* Remember that 0 means 1.1.1978. */
+    days++;
+    month++;
+    
+    result->month = month;
+    result->mday = days;
+    result->year = year;
+    
+#else
 
     /*	Calculate the current year.
 
@@ -153,6 +252,7 @@
     result->month = temp + 1;
     result->mday = days + 1;
     result->year += year;
+#endif
 
     AROS_LIBFUNC_EXIT
 
