@@ -57,6 +57,8 @@
     LONG            success = 1;
     struct DosList *dl;
 
+    if (dlist == NULL) return success;
+
     dl = LockDosList(LDF_ALL | LDF_WRITE);
 
     if(dlist->dol_Type != DLT_VOLUME)
