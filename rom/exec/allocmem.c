@@ -15,6 +15,7 @@
 #include <aros/arossupportbase.h>
 #include "memory.h"
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -29,6 +30,15 @@
 #endif
 #define MDEBUG 1
 #   include <aros/debug.h>
+
+struct checkMemHandlersState
+{
+    struct Node           *cmhs_CurNode;
+    struct MemHandlerData  cmhs_Data;
+};
+
+static APTR  stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requiements);
+static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 
 /*****************************************************************************
 
@@ -72,8 +82,11 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Interrupt *lmh;
+    
     APTR res = NULL;
+    ULONG cond;
+    struct checkMemHandlersState cmhs;
+
 #if ENABLE_RT || AROS_MUNGWALL_DEBUG
     ULONG origSize = byteSize;
 #endif
@@ -82,7 +95,7 @@
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	goto end;
+	return NULL;
 
 #if AROS_MUNGWALL_DEBUG
     /* Make room for safety walls around allocated block and an some more extra space
@@ -103,21 +116,21 @@
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
     byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
 
+    cmhs.cmhs_CurNode                = (struct Node *)SysBase->ex_MemHandlers.mlh_Head;
+    cmhs.cmhs_Data.memh_RequestSize  = byteSize;
+    cmhs.cmhs_Data.memh_RequestFlags = requirements;
+    cmhs.cmhs_Data.memh_Flags        = 0;
+    
     /* Protect memory list against other tasks */
     Forbid();
 
-    /* Loop over low memory handlers */
-    lmh=(struct Interrupt *)SysBase->ex_MemHandlers.mlh_Head;
-    for(;;)
+    do
     {
 	struct MemHeader *mh;
 
 	/* Loop over MemHeader structures */
-	mh=(struct MemHeader *)SysBase->MemList.lh_Head;
-	while(mh->mh_Node.ln_Succ!=NULL)
-	{
-	    struct MemChunk *p1,*p2;
-
+        ForeachNode(&SysBase->MemList, mh)
+        {
 	    /*
 		Check for the right requirements and enough free memory.
 		The requirements are OK if there's no bit in the
@@ -125,170 +138,35 @@
 		MEMF_CLEAR, MEMF_REVERSE and MEMF_NO_EXPUNGE are treated
 		as if they were always set in the memheader.
 	    */
-	    if(!(requirements&~(MEMF_CLEAR|MEMF_REVERSE|
-				MEMF_NO_EXPUNGE|mh->mh_Attributes))
-	       &&mh->mh_Free>=byteSize)
+	    if(!(requirements & ~(MEMF_CLEAR|MEMF_REVERSE|
+				  MEMF_NO_EXPUNGE|mh->mh_Attributes))
+	       && mh->mh_Free >= byteSize)
 	    {
-		struct MemChunk *mc=NULL;
+                if (mh->mh_Attributes & MEMF_MANAGED)
+                {
+		    struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+                    if (mhe->mhe_Alloc)
+                        res = mhe->mhe_Alloc(mhe, byteSize, requirements);
+                }
+                else
+                {  
+                    res = stdAlloc(mh, byteSize, requirements);
+                }
+                
+                if (res) break;
+            }
+        }
+    } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
 
-		/*
-		    The free memory list is only single linked, i.e. to remove
-		    elements from the list I need node's predessor. For the
-		    first element I can use mh->mh_First instead of a real predessor.
-		*/
-		p1=(struct MemChunk *)&mh->mh_First;
-		p2=p1->mc_Next;
 
-		/* Is there anything in the list? */
-		if(p2!=NULL)
-		{
-		    /* Then follow it */
-		    for(;;)
-		    {
-#if !defined(NO_CONSISTENCY_CHECKS)
-			/* Consistency check: Check alignment restrictions */
-			if( ((IPTR)p2|(ULONG)p2->mc_Bytes)
-			   & (MEMCHUNK_TOTAL-1) )
-			    Alert(AN_MemCorrupt|AT_DeadEnd);
-#endif
-			/* Check if the current block is large enough */
-			if(p2->mc_Bytes>=byteSize)
-			{
-			    /* It is. */
-			    mc=p1;
-			    /* Use this one if MEMF_REVERSE is not set.*/
-			    if(!(requirements&MEMF_REVERSE))
-				break;
-			    /* Else continue - there may be more to come. */
-			}
+    Permit();
 
-			/* Go to next block */
-			p1=p2;
-			p2=p1->mc_Next;
-
-			/* Check if this was the end */
-			if(p2==NULL)
-			    break;
-#if !defined(NO_CONSISTENCY_CHECKS)
-			/*
-			    Consistency check:
-			    If the end of the last block+1 is bigger or equal to
-			    the start of the current block something must be wrong.
-			*/
-			if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
-			    Alert(AN_MemCorrupt|AT_DeadEnd);
-#endif
-		    }
-		    /* Something found? */
-		    if(mc!=NULL)
-		    {
-			/*
-			    Remember: if MEMF_REVERSE is set
-			    p1 and p2 are now invalid.
-			*/
-			p1=mc;
-			p2=p1->mc_Next;
-
-			/* Remove the block from the list and return it. */
-			if(p2->mc_Bytes==byteSize)
-			{
-			    /* Fits exactly. Just relink the list. */
-			    p1->mc_Next=p2->mc_Next;
-			    mc=p2;
-			}else
-			{
-			    if(requirements&MEMF_REVERSE)
-			    {
-				/* Return the last bytes. */
-				p1->mc_Next=p2;
-				mc=(struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
-			    }else
-			    {
-				/* Return the first bytes. */
-				p1->mc_Next=(struct MemChunk *)((UBYTE *)p2+byteSize);
-				mc=p2;
-			    }
-			    p1=p1->mc_Next;
-			    p1->mc_Next=p2->mc_Next;
-			    p1->mc_Bytes=p2->mc_Bytes-byteSize;
-			}
-			mh->mh_Free-=byteSize;
-
-			/* No need to forbid dispatching any longer. */
-			Permit();
-			if(requirements&MEMF_CLEAR)
-			{
-			    /* Clear memory. */
-			    ULONG cnt,*p;
-
-			    p=(ULONG *)mc;
-			    cnt=byteSize/sizeof(ULONG);
-
-			    while(cnt--)
-				*p++=0;
-			}
-			res=mc;
-			goto end;
-		    }
-		}
-	    }
-	    /* Go to next memory header */
-	    mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
-	}
-
-	/* Is it forbidden to call low-memory handlers? */
-	if(requirements&MEMF_NO_EXPUNGE)
-	{
-	    Permit();
-	    goto end;
-	}
-
-	/* All memory headers done. Check low memory handlers. */
-	{
-	    ULONG lmhr;
-	    struct MemHandlerData lmhd={ byteSize,requirements,0 };
-
-	    do
-	    {
-		/* Is there another one? */
-		if(lmh->is_Node.ln_Succ==NULL)
-		{
-		    /* No. return 'Not enough memory'. */
-		    Permit();
-		    goto end;
-		}
-
-		/* Yes. Execute it. */
-		lmhr = AROS_UFC3 (LONG, lmh->is_Code,
-		    AROS_UFCA(struct MemHandlerData *,&lmhd,A0),
-		    AROS_UFCA(APTR,lmh->is_Data,A1),
-		    AROS_UFCA(struct ExecBase *,SysBase,A6)
-		);
-
-		/* Check returncode. */
-		if(lmhr==MEM_TRY_AGAIN)
-		{
-		    /* MemHandler said he did something. Try again. */
-		    /* Is there any program that depends on this flag??? */
-		    lmhd.memh_Flags|=MEMHF_RECYCLE;
-		    break;
-		}
-		/* Nothing more to expect from this handler. */
-		lmh=(struct Interrupt *)lmh->is_Node.ln_Succ;
-		lmhd.memh_Flags&=~MEMHF_RECYCLE;
-
-	    /* If this handler did nothing at all there's no need
-	     * to try the allocation. Try the next handler immediately.
-	     */
-	    } while(lmhr==MEM_DID_NOTHING);
-	}
-    }
-
-end:
+    if(res && (requirements & MEMF_CLEAR))
+        memset(res, 0, byteSize);        
 
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
-#endif
+#endif  
 
 #if AROS_MUNGWALL_DEBUG
     if (res)
@@ -346,3 +224,144 @@ end:
     
 } /* AllocMem */
 
+
+static APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements)
+{
+    struct MemChunk *mc=NULL, *p1, *p2;
+    
+    /*
+        The free memory list is only single linked, i.e. to remove
+        elements from the list I need node's predessor. For the
+        first element I can use mh->mh_First instead of a real predessor.
+    */
+    p1 = (struct MemChunk *)&mh->mh_First;
+    p2 = p1->mc_Next;
+
+    /* Is there anything in the list? */
+    if (p2 != NULL)
+    {
+        /* Then follow it */
+        for (;;)
+        {
+            #if !defined(NO_CONSISTENCY_CHECKS)
+            /* Consistency check: Check alignment restrictions */
+            if( ((IPTR)p2|(ULONG)p2->mc_Bytes)
+               & (MEMCHUNK_TOTAL-1) )
+                Alert(AN_MemCorrupt|AT_DeadEnd);
+            #endif
+            
+            /* Check if the current block is large enough */
+            if(p2->mc_Bytes>=byteSize)
+            {
+                /* It is. */
+                mc=p1;
+                /* Use this one if MEMF_REVERSE is not set.*/
+                if(!(requirements&MEMF_REVERSE))
+                    break;
+                /* Else continue - there may be more to come. */
+            }
+
+            /* Go to next block */
+            p1=p2;
+            p2=p1->mc_Next;
+
+            /* Check if this was the end */
+            if(p2==NULL)
+                break;
+           #if !defined(NO_CONSISTENCY_CHECKS)
+            /*
+                Consistency check:
+                If the end of the last block+1 is bigger or equal to
+                the start of the current block something must be wrong.
+            */
+            if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
+                Alert(AN_MemCorrupt|AT_DeadEnd);
+            #endif
+        }
+        
+        /* Something found? */
+        if (mc != NULL)
+        {
+            /*
+                Remember: if MEMF_REVERSE is set
+                p1 and p2 are now invalid.
+            */
+            p1=mc;
+            p2=p1->mc_Next;
+
+            /* Remove the block from the list and return it. */
+            if(p2->mc_Bytes == byteSize)
+            {
+                /* Fits exactly. Just relink the list. */
+                p1->mc_Next = p2->mc_Next;
+                mc          = p2;
+            }
+            else
+            {
+                if(requirements & MEMF_REVERSE)
+                {
+                    /* Return the last bytes. */
+                    p1->mc_Next=p2;
+                    mc=(struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
+                }
+                else
+                {
+                    /* Return the first bytes. */
+                    p1->mc_Next=(struct MemChunk *)((UBYTE *)p2+byteSize);
+                    mc=p2;
+                }
+                
+                p1           = p1->mc_Next;
+                p1->mc_Next  = p2->mc_Next;
+                p1->mc_Bytes = p2->mc_Bytes-byteSize;
+            }
+            
+            mh->mh_Free -= byteSize;
+        }
+    }
+    
+    return mc;
+}
+
+ULONG checkMemHandlers(struct checkMemHandlersState *cmhs)
+{
+    struct Node      *tmp;
+    struct Interrupt *lmh;
+    
+    if (cmhs->cmhs_Data.memh_RequestFlags & MEMF_NO_EXPUNGE)
+        return MEM_DID_NOTHING;
+   
+    /* Loop over low memory handlers. Handlers can remove
+       themselves from the list while being invoked, thus
+       we need to be careful! */
+    for
+    (
+        lmh = (struct Interrupt *)cmhs->cmhs_CurNode;
+        (tmp = lmh->is_Node.ln_Succ);
+        lmh = (struct Interrupt *)(cmhs->cmhs_CurNode = tmp)
+    )
+    {
+        ULONG ret;
+        
+        ret = AROS_UFC3 (LONG, lmh->is_Code,
+                   AROS_UFCA(struct MemHandlerData *, &cmhs->cmhs_Data, A0),
+                   AROS_UFCA(APTR,                     lmh->is_Data,    A1),
+                   AROS_UFCA(struct ExecBase *,        SysBase,         A6)
+              );
+
+        if (ret == MEM_TRY_AGAIN)
+        {
+            /* MemHandler said he did something. Try again. */
+            /* Is there any program that depends on this flag??? */
+            cmhs->cmhs_Data.memh_Flags |= MEMHF_RECYCLE;
+            return MEM_TRY_AGAIN;
+        }
+        else
+        {
+            /* Nothing more to expect from this handler. */
+            cmhs->cmhs_Data.memh_Flags &= ~MEMHF_RECYCLE;
+        }
+    }
+    
+    return MEM_DID_NOTHING;
+}

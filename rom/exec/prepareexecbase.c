@@ -10,6 +10,7 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -42,16 +43,24 @@ extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
 
 static APTR allocmem(struct MemHeader *mh, ULONG size)
 {
-    UBYTE *ret;
+    UBYTE *ret = NULL;
+    
+    if (mh->mh_Attributes & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+        if (mhe->mhe_Alloc)
+	    ret = mhe->mhe_Alloc(mhe, size, MEMF_ANY);
+    }
+    else
+    {
+        size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+        ret  = (UBYTE *)mh->mh_First;
 
-    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
-    ret = (UBYTE *)mh->mh_First;
-
-    mh->mh_First = (struct MemChunk *)(ret + size);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_Free = mh->mh_First->mc_Bytes
-	= ((struct MemChunk *)ret)->mc_Bytes - size;
-
+        mh->mh_First          = (struct MemChunk *)(ret + size);
+        mh->mh_First->mc_Next = NULL;
+        mh->mh_Free           = mh->mh_First->mc_Bytes
+	                      = ((struct MemChunk *)ret)->mc_Bytes - size;
+    }
 
     return ret;
 }
@@ -107,34 +116,43 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
     SysBase->LibNode.lib_Node.ln_Name = "exec.library";
-    SysBase->LibNode.lib_IdString = Exec_resident.rt_IdString;
-    SysBase->LibNode.lib_Version = VERSION_NUMBER;
-    SysBase->LibNode.lib_Revision = REVISION_NUMBER;
-    SysBase->LibNode.lib_OpenCnt = 1;
-    SysBase->LibNode.lib_NegSize = negsize;
-    SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
-    SysBase->LibNode.lib_Flags = 0;
+    SysBase->LibNode.lib_IdString     = Exec_resident.rt_IdString;
+    SysBase->LibNode.lib_Version      = VERSION_NUMBER;
+    SysBase->LibNode.lib_Revision     = REVISION_NUMBER;
+    SysBase->LibNode.lib_OpenCnt      = 1;
+    SysBase->LibNode.lib_NegSize      = negsize;
+    SysBase->LibNode.lib_PosSize      = sizeof(struct ExecBase);
+    SysBase->LibNode.lib_Flags        = 0;
 
     NEWLIST(&SysBase->MemList);
     SysBase->MemList.lh_Type = NT_MEMORY;
     ADDHEAD(&SysBase->MemList, &mh->mh_Node);
+    
     NEWLIST(&SysBase->ResourceList);
     SysBase->ResourceList.lh_Type = NT_RESOURCE;
+    
     NEWLIST(&SysBase->DeviceList);
     SysBase->DeviceList.lh_Type = NT_DEVICE;
+
     NEWLIST(&SysBase->IntrList);
     SysBase->IntrList.lh_Type = NT_INTERRUPT;
+
     NEWLIST(&SysBase->LibList);
     SysBase->LibList.lh_Type = NT_LIBRARY;
     ADDHEAD(&SysBase->LibList, &SysBase->LibNode.lib_Node);
+
     NEWLIST(&SysBase->PortList);
     SysBase->PortList.lh_Type = NT_MSGPORT;
+
     NEWLIST(&SysBase->TaskReady);
     SysBase->TaskReady.lh_Type = NT_TASK;
+
     NEWLIST(&SysBase->TaskWait);
     SysBase->TaskWait.lh_Type = NT_TASK;
+
     NEWLIST(&SysBase->SemaphoreList);
     SysBase->TaskWait.lh_Type = NT_SEMAPHORE;
+
     NEWLIST(&SysBase->ex_MemHandlers);
 
     for (i = 0; i < 5; i++)
@@ -143,24 +161,26 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
-    SysBase->SoftVer = VERSION_NUMBER;
-    SysBase->ColdCapture = SysBase->CoolCapture
-	= SysBase->WarmCapture = NULL;
+    SysBase->SoftVer        = VERSION_NUMBER;
 
-    SysBase->SysStkUpper = (APTR)0xFFFFFFFF;
-    SysBase->SysStkLower = (APTR)0x00000000;
+    SysBase->ColdCapture    = SysBase->CoolCapture
+	                    = SysBase->WarmCapture
+			    = NULL;
 
-    SysBase->MaxLocMem = (ULONG)mh->mh_Upper;
+    SysBase->SysStkUpper    = (APTR)0xFFFFFFFF;
+    SysBase->SysStkLower    = (APTR)0x00000000;
 
-    SysBase->Quantum = 4;
+    SysBase->MaxLocMem      = (ULONG)mh->mh_Upper;
 
-    SysBase->TaskTrapCode = AROS_SLIB_ENTRY(TrapHandler,Exec);
+    SysBase->Quantum        = 4;
+
+    SysBase->TaskTrapCode   = AROS_SLIB_ENTRY(TrapHandler,Exec);
     SysBase->TaskExceptCode = NULL;
-    SysBase->TaskExitCode = AROS_SLIB_ENTRY(TaskFinaliser,Exec);
-    SysBase->TaskSigAlloc = 0xFFFF;
-    SysBase->TaskTrapAlloc = 0;
+    SysBase->TaskExitCode   = AROS_SLIB_ENTRY(TaskFinaliser,Exec);
+    SysBase->TaskSigAlloc   = 0xFFFF;
+    SysBase->TaskTrapAlloc  = 0;
 
-    SysBase->DebugAROSBase = PrepareAROSSupportBase(SysBase);
+    SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
 
     return SysBase;
 }
