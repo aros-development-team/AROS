@@ -21,7 +21,6 @@ extern struct Library *MUIMasterBase;
 #include "support.h"
 #include "prefs.h"
 
-
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
@@ -788,7 +787,49 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 /*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
     D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj)));
+
+#if REDUCE_FLICKER_TEST
+    region = NewRegion();
+    if (region)
+    {
+    	struct Rectangle rect;
+	
+	rect.MinX = _left(obj);
+	rect.MinY = _top(obj);
+	rect.MaxX = _right(obj);
+	rect.MaxY = _bottom(obj);
+	
+	OrRectRegion(region, &rect);
+	
+	get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+	cstate = (Object *)ChildList->mlh_Head;
+	while ((child = NextObject(&cstate)))
+	{
+    	    if (muiAreaData(obj)->mad_Flags & MADF_CANDRAW)
+	    {
+	    	rect.MinX = _left(child);
+		rect.MinY = _top(child);
+		rect.MaxX = _right(child);
+		rect.MaxY = _bottom(child);
+    	    	ClearRectRegion(region, &rect);
+	    }
+	}
+
+	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+
+    }
+    
+#endif
     DoSuperMethodA(cl, obj, (Msg)msg);
+    
+#if REDUCE_FLICKER_TEST
+    if (region)
+    {
+    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+	region = NULL;
+    }
+#endif
+
     D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n",
 	  obj, msg->flags, _flags(obj)));
 
