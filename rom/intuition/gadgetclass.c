@@ -404,6 +404,9 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
  */
 static ULONG hittest_gadgetclass(Class *cl, Object *o, struct gpHitTest *gpht)
 {
+    return GMR_GADGETHIT;
+    
+#if 0
     struct IBox container;
 
     GetGadgetIBox(o, gpht->gpht_GInfo, &container);
@@ -418,6 +421,7 @@ static ULONG hittest_gadgetclass(Class *cl, Object *o, struct gpHitTest *gpht)
     }
 
     return(0UL);
+#endif
 }
 
 
