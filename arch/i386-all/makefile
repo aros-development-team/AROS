@@ -1,26 +1,48 @@
 # $Id$
-TOP=..
+TOP=../..
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
-all: setup  machine.i \
-	    $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
-	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
-	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
-	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
-	    $(OSGENDIR)/cachecleare.o $(OSGENDIR)/cacheclearu.o \
-	    $(OSGENDIR)/cachecontrol.o $(OSGENDIR)/cachepostdma.o \
-	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
-	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o \
-	    $(OSGENDIR)/runprocess.o
+FILES = \
+	supervisor \
+	switch \
+	dispatch \
+	disable \
+	enable \
+	forbid \
+	permit \
+	preparecontext \
+	special \
+	semaphoreglue \
+	exception \
+	cachecleare \
+	cacheclearu \
+	cachecontrol \
+	cachepostdma \
+	cachepredma \
+	setsr \
+	getcc \
+	superstate \
+	userstate \
+	stackswap \
+	runprocess
+
+all: setup $(TOP)/include/aros/machine.h machine.i \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
+$(TOP)/include/aros/machine.h:
+	$(TOP)/scripts/makelinks . $(TOP)/include/aros machine.h
+
 clean:
-	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
+	$(RM) $(TOP)/include/aros/machine.h
+
+config:
+	@echo "Configuring for a x86 CPU..."
 
 machine.i: geninc.c
 	$(CC) $(CFLAGS) -o geninc geninc.c
@@ -34,7 +56,7 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c
+$(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
