@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
@@ -71,11 +73,12 @@ q        IoErr() gives additional information in that case.
     FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
 
     /* Open the file */
+    D(bug("[LoadSeg] Opening '%s'...\n", name));
     file = Open (name, FMF_READ);
 
     if (file)
     {
-	D(bug("Loading \"%s\"...\n", name));
+	D(bug("[LoadSeg] Loading '%s'...\n", name));
 
 	segs = InternalLoadSeg (file, NULL, (void *)FunctionArray, NULL);
 
@@ -100,12 +103,15 @@ q        IoErr() gives additional information in that case.
             }
 #endif
 
-            SetIoErr (0);
+            SetIoErr(0);
         }
 	else
- 	    bug ("[LoadSeg] Failed to load %s\n",name);
+ 	    bug("[LoadSeg] Failed to load '%s'\n", name);
         Close(file);
     }
+  D(else
+        bug("[LoadSeg] Failed to open '%s'\n", name));
+  
 
     /* And return */
     return segs;
