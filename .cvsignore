@@ -6,6 +6,7 @@ config.log
 config.status
 crypt
 dist
+errors
 make.opts
 mmake
 mmake.cache
