@@ -2,6 +2,12 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2001/01/31 23:06:37  stegerg
+    If name = NULL also set IntuitionBase->DefaultPubScreen to NULL
+    which indicates that Workbench screen is default screen (you cannot
+    save screen pointer of Workbench, because Workbench screen might
+    be open or not)
+
     Revision 1.7  1999/10/12 17:45:44  SDuvan
     Added docs, minor updates
 
@@ -87,8 +93,7 @@
 	UnlockPubScreenList();
     }
     else
-	GetPrivIBase(IntuitionBase)->DefaultPubScreen =
-	    GetPrivIBase(IntuitionBase)->WorkBench;
+	GetPrivIBase(IntuitionBase)->DefaultPubScreen = NULL;
 
     AROS_LIBFUNC_EXIT
 } /* SetDefaultPubScreen */
