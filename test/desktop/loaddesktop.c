@@ -39,6 +39,22 @@ int main(void)
 	ULONG signals=0;
 	struct Screen *screen;
 	struct NewMenu *menuDat;
+/*
+	struct NewMenu menuDat[]=
+	{
+		{NM_TITLE, "AROS", NULL, 0, 0, 0},//0
+		{NM_ITEM, "Quit", "Q", 0, 0, 0},//1
+		{NM_TITLE, "Window", NULL, 0, 0, 0},//0
+		{NM_ITEM, "Close", "K", 0, 0, 0},// bit 0
+		{NM_ITEM, "View by", NULL, 0, 0, 0},// bit 1
+		{NM_SUB, "Large icons", NULL, CHECKED|CHECKIT, ((1<<1)|(1<<2)), 0},// bit 0
+		{NM_SUB, "Small icons", NULL, CHECKIT, ((1<<0)|(1<<2)), 0},//1
+		{NM_SUB, "Detail", NULL, CHECKIT, ((1<<0)|(1<<1)), 0},//2
+		{NM_TITLE, "Icon", NULL, 0, 0, 0},//5
+		{NM_ITEM, "Open", "O", 0, 0, 0},//6
+		{NM_END, NULL, NULL, 0, 0, 0}//7
+	};
+*/
 	struct TagItem icTags[6];
 	ULONG inputResult;
 
@@ -50,6 +66,8 @@ int main(void)
 		printf("could not open desktop.library\n");
 
 	menuDat=BuildDesktopMenus();
+	if(!menuDat)
+		kprintf("EEK! EEKK! Menu ERROR!!!\n");
 
 	screen=LockPubScreen(NULL);
 
@@ -140,14 +158,9 @@ int main(void)
 
 						DoDesktopOperation(inputResult, args);
 					}
-					else if((inputResult & DOC_ICONOP) || (inputResult & DOC_WINDOWOP))
+					else if(inputResult & DOC_ICONOP)
 					{
-						if(inputResult & DOC_ICONOP)
-							activeSubjectsTag=ICA_SelectedIcons;
-						else if(inputResult & DOC_WINDOWOP)
-							activeSubjectsTag=DA_ActiveWindows;
-
-						GetAttr(activeSubjectsTag, iconCon, &subjects);
+						GetAttr(ICA_SelectedIcons, iconCon, &subjects);
 
 						ostate=subjects->mlh_Head;
 						while(member=NextObject(&ostate))
@@ -159,6 +172,17 @@ int main(void)
 
 							DoDesktopOperation(inputResult, args);
 						}
+					}
+					else if(inputResult & DOC_WINDOWOP)
+					{
+						GetAttr(DA_ActiveWindow, iconCon, &subjects);
+
+						args[0].ti_Tag=DDO_Target;
+						args[0].ti_Data=subjects;
+						args[1].ti_Tag=TAG_END;
+						args[1].ti_Data=0;
+
+						DoDesktopOperation(inputResult, args);
 					}
 				}
 			}
