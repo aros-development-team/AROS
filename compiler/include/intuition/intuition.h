@@ -546,7 +546,13 @@ struct Window
     struct TextFont * IFont;
 
     ULONG MoreFlags;
+    
+    struct Window * firstchild;  // pointer to first child
+    struct Window * prevchild;   // if window is a child of a window
+    struct Window * nextchild;   // then they are concatenated here.
 };
+
+#define HAS_CHILDREN(w) (NULL != w->firstchild)
 
 struct NewWindow
 {
