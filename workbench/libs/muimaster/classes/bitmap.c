@@ -111,12 +111,12 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 		
 	    	if (!remappixel)
 		{
-		    struct TagItem tags[] =
-		    {
-		    	{OBP_Precision, data->precision },
-			{OBP_FailIfBad, FALSE	    	},
-			{TAG_DONE   	    	    	}
-		    };
+		    struct TagItem tags[3];
+		    tags[0].ti_Tag = OBP_Precision;
+		    tags[0].ti_Data = data->precision;
+		    tags[1].ti_Tag = OBP_FailIfBad;
+		    tags[1].ti_Data = FALSE;
+		    tags[2].ti_Tag = 0;
 		    
 		    data->remaptable[pixel] = remappixel = ObtainBestPenA(_screen(obj)->ViewPort.ColorMap,
 		    	    	    	    	      			  data->sourcecolors[pixel * 3],
