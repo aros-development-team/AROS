@@ -1,0 +1,30 @@
+\include{background.src}
+\include{faq.src}
+\include{devinfo-1.src}
+\include{devinfo-2.src}
+\include{devinfo-3.src}
+\include{devinfo-4.src}
+\include{devinfo-5.src}
+\include{devinfo_inside.src}
+\include{devinfo_outside.src}
+\appendix
+\if{html}{
+\chapter{Autodocs}
+\incverb{autodoc.inc}
+}
+\include{history.src}
+\include{links.src}
+
+\if{html}
+{
+    \chapter{Jobserver}
+
+    \section{Free jobs}
+    \incverb{jobserv-free.inc}
+
+    \section{Jobs which are finished}
+    \incverb{jobserv-done.inc}
+
+    \section{Jobs which are in work}
+    \incverb{jobserv-work.inc}
+}
