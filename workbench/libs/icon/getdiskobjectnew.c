@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/dos.h>
 #include "icon_intern.h"
@@ -44,8 +42,6 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -59,14 +55,16 @@
 			    (WBDISK, etc) */
 
     /* First try to see if name.info exists */
-    if ( (dobject = GetDiskObject (name)) )
-	return (dobject);
+    if ((dobject = GetDiskObject (name)) != NULL)
+    {
+	return dobject;
+    }
     else
     {
 	/* Try to get the default icon of the file, but first we must find
 	   out the type of file (or directory) */
 
-	if ( (lock = Lock (name, ACCESS_READ)) )
+	if ((lock = Lock (name, ACCESS_READ)) != NULL)
 	{
 		/* If the parent is NULL then we are looking at a root,
 		   OR if we are looking at a 'Disk' in the root, then
