@@ -30,18 +30,21 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
     UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
 
     GetGadgetIBox(o, msg->gpr_GInfo, &container);
-
+    
     switch (EG(o)->Flags & GFLG_LABELMASK)
     {
     case GFLG_LABELITEXT: {
-	struct TextExtent te;
+	/* struct TextExtent te; */
 
-	TextExtent(rp, EG(o)->GadgetText->IText,
-		   strlen(EG(o)->GadgetText->IText), &te);
+	/* Georg Steger: ITexts are not to be centered 
+	
+	   TextExtent(rp, EG(o)->GadgetText->IText,
+		   strlen(EG(o)->GadgetText->IText), &te); */
+ 
         PrintIText(rp,
 	    EG(o)->GadgetText,
-	    container.Left + (container.Width  - te.te_Width ) / 2,
-	    container.Top  + (container.Height - te.te_Height) / 2
+	    container.Left /* + (container.Width  - te.te_Width ) / 2 */,
+	    container.Top  /* + (container.Height - te.te_Height) / 2 */
         );
 	break; }
 
