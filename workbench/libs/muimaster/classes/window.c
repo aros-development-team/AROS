@@ -141,6 +141,7 @@ struct MUI_WindowData
 #define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
 #define MUIWF_ISAPPWINDOW     (1<<11) /* Is an app window (user can drop icons on it) */
 #define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
+#define MUIWF_BUBBLEMODE      (1<<13) /* Quick bubble mode. Bubbles appear quick when moving around */
 
 #define BUBBLEHELP_TICKER_FIRST 20
 #define BUBBLEHELP_TICKER_LATER 3
@@ -934,15 +935,26 @@ static BOOL WindowResize (struct MUI_WindowData *data)
     return (dx || dy);
 }
 
-static void KillHelpBubble(struct MUI_WindowData *data, Object *obj, WORD new_ticker_val)
+static void KillHelpBubble(struct MUI_WindowData *data, Object *obj, BOOL kill_bubblemode)
 {
     if (data->wd_HelpObject)
     {
     	DoMethod(data->wd_HelpObject, MUIM_DeleteBubble, (IPTR)data->wd_HelpBubble);
 	data->wd_HelpObject = NULL;
 	data->wd_HelpBubble = NULL;
-	if (new_ticker_val > data->wd_HelpTicker) data->wd_HelpTicker = new_ticker_val;
     }
+    
+    if (kill_bubblemode) data->wd_Flags &= ~MUIWF_BUBBLEMODE;
+
+    if (data->wd_Flags & MUIWF_BUBBLEMODE)
+    {
+    	data->wd_HelpTicker = BUBBLEHELP_TICKER_LATER;
+    }
+    else
+    {
+	data->wd_HelpTicker = BUBBLEHELP_TICKER_FIRST;
+    }
+
 }
 
 /**************/
@@ -1222,7 +1234,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
-	    KillHelpBubble(data, oWin, BUBBLEHELP_TICKER_FIRST);
+	    KillHelpBubble(data, oWin, TRUE);
 	    data->wd_Flags &= ~MUIWF_ACTIVE;
 	    set(oWin, MUIA_Window_Activate, FALSE);
 	    set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
@@ -1463,26 +1475,35 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			    if (data->wd_HelpBubble)
 			    {
 		    		data->wd_HelpObject = underobj;
+				data->wd_Flags |= MUIWF_BUBBLEMODE;
 			    }
 			}
 		    }
 		    
-		    data->wd_HelpTicker = BUBBLEHELP_TICKER_LATER;
+		    if (data->wd_Flags & MUIWF_BUBBLEMODE)
+		    {
+		    	data->wd_HelpTicker = BUBBLEHELP_TICKER_LATER;
+		    }
+		    else
+		    {
+		    	data->wd_HelpTicker = BUBBLEHELP_TICKER_FIRST;
+		    }
 		
-		}
+		} /* if (data->wd_HelpTicker == 0) */
+		
 	    } /* if (data->wd_HelpTicker) */
 	    
 	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
     	case IDCMP_MOUSEBUTTONS:
-	    KillHelpBubble(data, oWin, BUBBLEHELP_TICKER_FIRST);
+	    KillHelpBubble(data, oWin, TRUE);
     	    is_handled = FALSE;
     	    break;
 
 
 	case IDCMP_MOUSEMOVE:
-	    KillHelpBubble(data, oWin, BUBBLEHELP_TICKER_LATER);
+	    KillHelpBubble(data, oWin, FALSE);
     	    is_handled = FALSE;
     	    break;
 	    
