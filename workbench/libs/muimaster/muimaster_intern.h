@@ -81,6 +81,9 @@ struct MUIMasterBase_intern
     struct Library  	    	*cxbase;
     struct Library  	    	*keymapbase;
     struct Library		*gadtoolsbase;
+    struct Library  	    	*iffparsebase;
+    struct Library  	    	*diskfontbase;
+    
 /*  struct Library  	    	*datatypesbase; */
     
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
@@ -127,6 +130,12 @@ struct MUIMasterBase_intern
 #undef GadToolsBase
 #define GadToolsBase  	(MUIMB(MUIMasterBase)->gadtoolsbase)
 
+#undef IFFParseBase
+#define IFFParseBase  	(MUIMB(MUIMasterBase)->iffparsebase)
+
+#undef DiskfontBase
+#define DiskfontBase  	(MUIMB(MUIMasterBase)->diskfontbase)
+
 /*
 #undef DataTypesBase
 #define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
@@ -162,6 +171,12 @@ struct MUIMasterBase_intern
 
 #undef GadToolsBase
 #define GadToolsBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->gadtoolsbase)
+
+#undef IFFParseBase
+#define IFFParseBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->iffparsebase)
+
+#undef DiskfontBase
+#define DiskfontBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->diskfontbase)
 
 /*
 #undef DataTypesBase
