@@ -450,49 +450,96 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
     box->Top  -= domain.Top;
 }
 
-void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase)
+void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget *gad;
-    struct Region *old_clipregion;
-    WORD old_scroll_x, old_scroll_y;
-    struct IBox box;
+    struct Gadget 	*gad;
+    struct Region	*old_clipregion;
+    struct RastPort	*rp, *rp2;
+    struct Layer	*lay;
+    struct IBox 	box;
+    WORD 		old_scroll_x, old_scroll_y, i, num_loops;
     
-    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-
-    LockLayerRom(win->WLayer);
-
-    old_scroll_x = win->WLayer->Scroll_X;
-    old_scroll_y = win->WLayer->Scroll_Y;
-    old_clipregion = InstallClipRegion(win->WLayer, NULL);
-
-    gad = win->FirstGadget;
-    while(gad)
+    rp  = win->RPort;
+    rp2 = win->BorderRPort;
+    
+    if (rp->Layer == rp2->Layer)
     {
-	/* no eraserect for gadgets in the border area since
-	   refreshwindowframe already "erases" the whole border
-	   area */
-
-	if (!IS_BORDER_GADGET(gad))
-	{
-	    if (gad->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
-			      GFLG_RELWIDTH | GFLG_RELHEIGHT | GFLG_RELSPECIAL))
-	    {
-		GetDomGadgetBounds(gad, win->WScreen, win, NULL, &box);
-		EraseRect(win->RPort, box.Left,
-		    		      box.Top,
-				      box.Left + box.Width - 1,
-				      box.Top + box.Height -1);
-	    }
-	} 
-	gad = gad->NextGadget;
+        num_loops = 1;
+    } else {
+        num_loops = 2;
     }
+    
+    for(i = 0; i < num_loops; i++, rp = rp2)
+    {
+        lay = rp->Layer;
 
-    InstallClipRegion(win->WLayer, old_clipregion);
-    win->WLayer->Scroll_X = old_scroll_x;
-    win->WLayer->Scroll_Y = old_scroll_y;
+	LockLayerRom(lay);
 
-    UnlockLayerRom(win->WLayer);
+        if (!onlydamagelist)
+	{
+	    old_scroll_x = lay->Scroll_X;
+	    old_scroll_y = lay->Scroll_Y;
+	    old_clipregion = InstallClipRegion(lay, NULL);
+        }
+	
+	gad = win->FirstGadget;
+	while(gad)
+	{
+	    BOOL checkgad = FALSE;
+	    
+	    if (num_loops == 1)
+	    {
+	        checkgad = TRUE;
+            } else {
+	        if (i == 0)
+		{
+		    if (!IS_BORDER_GADGET(gad)) checkgad = TRUE;
+		} else {
+		    if (IS_BORDER_GADGET(gad)) checkgad = TRUE;
+		}
+	    }
 
-    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);    
+	    if (checkgad)
+	    {
+		if (gad->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
+				  GFLG_RELWIDTH | GFLG_RELHEIGHT | GFLG_RELSPECIAL))
+		{
+		    struct Rectangle rect;
+		    
+		    GetDomGadgetBounds(gad, win->WScreen, win, NULL, &box);
+
+		    rect.MinX = box.Left;
+		    rect.MinY = box.Top;
+		    rect.MaxX = box.Left + box.Width  - 1;
+		    rect.MaxY = box.Top  + box.Height - 1;
+
+		    if (!onlydamagelist) EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+		    if (!(lay->Flags & LAYERSUPER))
+		    {
+			OrRectRegion(lay->DamageList, &rect);
+			lay->Flags |= LAYERREFRESH;
+		    }
+				  
+		}
+		
+	    } /* if (checkgad) */
+	    
+	    gad = gad->NextGadget;
+	    
+	} /* while(gad) */
+
+	if (!onlydamagelist)
+	{
+	    InstallClipRegion(lay, old_clipregion);
+	    lay->Scroll_X = old_scroll_x;
+	    lay->Scroll_Y = old_scroll_y;
+	}
+	
+	UnlockLayerRom(lay);
+
+    } /* for(i = 0; i < num_loops; i++, rp = rp2) */
+    
+    /* ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock); */
 }
 
