@@ -3859,7 +3859,6 @@ static struct builtin builtin_setup =
 static int
 setvbe_func (char *arg, int flags)
 {
-    int mode_number = -1;
     int count = 1;
     int mode = 0x03;
     int width,height,depth;
@@ -3909,13 +3908,12 @@ setvbe_func (char *arg, int flags)
     {
 	if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F)
 	    continue;
-
+	
 	/* Skip this, if this is not supported or linear frame buffer
 	   mode is not support.  */
 	if ((mode_info_block.mode_attributes & 0x0081) != 0x0081)
 	    continue;
 
-	if (mode_number == -1 || mode_number == *mode_list)
 	{
 	    if ((mode_info_block.x_resolution == width) &&
 		(mode_info_block.y_resolution == height))
@@ -3936,10 +3934,7 @@ setvbe_func (char *arg, int flags)
 		    break;
 		}
 	    }
-
-	    if (mode_number != -1)
-		break;
-
+	    
 	    count++;
 	}
     }
