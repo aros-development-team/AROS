@@ -45,28 +45,28 @@ OBJS = \
 	writechunkdata.o
 
 %.o : %.c
-	$(HOST_CC) $(HOST_CFLAGS) $(GUI_CFLAGS) -I. -c $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(GUI_CFLAGS) -I. -c $< -o $@
 
 all : libc_iff.a
 doc : c_iff.txt
 
 libc_iff.a : $(OBJS)
-	$(RM) libc_iff.a
-	$(AR) $@ $(OBJS)
-	$(RANLIB) $@
+	@$(RM) libc_iff.a
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
 
 c_iff.txt :
-	perl autodoc.pl *.c >c_iff.txt
+	@perl autodoc.pl *.c >c_iff.txt
 
 example : example.o libc_iff.a hot.iff
-	$(HOST_CC) $(HOST_CFLAGS) -I. -o $@ example.o -L. -lc_iff
+	@$(HOST_CC) $(HOST_CFLAGS) -I. -o $@ example.o -L. -lc_iff
 
 $(OBJS) : c_iff.h
 
 clean :
-	$(RM) libc_iff.a
-	$(RM) *.o
-	$(RM) c_iff.txt
-	$(RM) example
-	$(RM) test1.iff
+	@$(RM) libc_iff.a
+	@$(RM) *.o
+	@$(RM) c_iff.txt
+	@$(RM) example
+	@$(RM) test1.iff
 
