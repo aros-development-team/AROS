@@ -252,6 +252,9 @@ $(END_FILE).c :
 
 $(ENDFUNC) : $(END_FILE).c libdefs.h
 %compile_q path=""
+
+$(END_FILE).d : $(END_FILE).c
+%mkdepend opt="$(MKDEPEND_CFLAGS) -I."
 %end
 
 #------------------------------------------------------------------------------
