@@ -10,16 +10,20 @@
 #include <aros/asmcall.h>
 #include "dos_intern.h"
 
+#ifdef SysBase
+#undef SysBase
+#endif
+
 LONG DosEntry (
     STRPTR argPtr,
     ULONG argSize,
     APTR initialPC,
-    struct ExecBase * sysBase)
+    struct ExecBase * SysBase)
 {
 	LONG result = AROS_UFC3 (LONG, initialPC,
  	              AROS_UFCA (STRPTR,            argPtr,  A0),
 	              AROS_UFCA (ULONG,             argSize, D0),
-	              AROS_UFCA (struct ExecBase *, sysBase, A6));
+	              AROS_UFCA (struct ExecBase *, SysBase, A6));
 
         /* Place the return code in the tc_Userdata field of the Task
 	   structure, so that it can be used by pr_ExitCode-
@@ -32,7 +36,8 @@ LONG DosEntry (
 	return result;
 }
 
-
+#undef SysBase
+#define SysBase (DOSBase->dl_SysBase)
 
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 			   ULONG argSize, APTR initialPC, APTR finalPC,
