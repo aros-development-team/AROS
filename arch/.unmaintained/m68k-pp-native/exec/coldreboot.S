@@ -15,7 +15,7 @@
  	struct ExecBase *, SysBase, 121, Exec)
  
     FUNCTION
-	Reboots the Amiga.
+	Reboots AROS.
  
     INPUTS
  
@@ -53,10 +53,12 @@ AROS_SLIB_ENTRY(ColdReboot,Exec):
 	.balign 4
 resetus:
 //warning FIXME! This code won't work!
-	lea.l	0x1000000,%a0		/* end of rom */
-	sub.l	-0x14(%a0),%a0		/* subtract size of rom */
-	move.l	4(%a0),%a0		/* get vector from rom+4 */
-	subq.w	#2,%a0			/* point to reset instruction */
+	lea.l	initial_ssp,%a0		/* pointer to initial ssp */
+	move.l	(%a0),%d0		/* the initial ssp itself */
+	move.l	4(%a0),%a0		/* get vector from initial_ssp+4 */
 	reset				/* reset stuff */
+	move.l	%d0,%ssp		/* load ssp with initial value -
+					   hopefully I am in supervisor mode after reset - 
+					   didn't read the manual... */
 	jmp	(%a0)			/* this instruction was still in prefetch */
 	/* never gets here */
