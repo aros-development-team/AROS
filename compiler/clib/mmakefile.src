@@ -175,6 +175,7 @@ SHARED	:= \
 	on_exit \
 	open \
 	opendir \
+        pclose \
 	perror \
 	pipe \
         popen \
