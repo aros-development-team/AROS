@@ -166,7 +166,8 @@ void InitCore(void)
     static const int sig2int[][2] =
     {
 	{ SIGALRM, INTB_VERTB },
-	{ SIGUSR1, INTB_SOFTINT }
+	{ SIGUSR1, INTB_SOFTINT },
+	{ SIGIO,   INTB_DSKBLK }
     };
 
 #if 0
