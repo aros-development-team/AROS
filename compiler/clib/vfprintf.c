@@ -9,6 +9,13 @@
 
 #define AROS_ALMOST_COMPATIBLE
 
+#include <proto/dos.h>
+#include <errno.h>
+#include "__errno.h"
+#include "__open.h"
+
+static int __putc(int c, BPTR fh);
+
 /*****************************************************************************
 
     NAME */
@@ -48,5 +55,29 @@
 
 ******************************************************************************/
 {
-    return __vcformat (stream, (void *)fputc, format, args);
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+        GETUSER;
+
+	errno = EBADF;
+	return 0;
+    }
+
+    return __vcformat (fdesc->fh, __putc, format, args);
 } /* vfprintf */
+
+
+static int __putc(int c, BPTR fh)
+{
+    if (FPutC(fh, c) == EOF)
+    {
+    	GETUSER;
+
+	errno = IoErr2errno(IoErr());
+	return EOF;
+    }
+
+    return c;
+}
