@@ -218,7 +218,8 @@ AROS_LH3(void, open,
 
 	    /* setup replyport to point to active task */
 	    fdskbase->port.mp_SigTask = FindTask(NULL);
-
+    	    SetSignal(0, SIGF_SINGLE);
+	    
     	    D(bug("fdsk_device: in libopen func. Sending startup msg\n"));
 	    PutMsg(&((struct Process *)unit->port.mp_SigTask)->pr_MsgPort, &unit->msg);
 
@@ -268,6 +269,7 @@ AROS_LH1(BPTR, close,
     {
 	Remove(&unit->msg.mn_Node);
 	fdskbase->port.mp_SigTask = FindTask(NULL);
+	SetSignal(0, SIGF_SINGLE);
 	PutMsg(&unit->port, &unit->msg);
 	WaitPort(&fdskbase->port);
 	(void)GetMsg(&fdskbase->port);
