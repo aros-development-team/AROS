@@ -65,7 +65,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 	    menuitem = NULL;
 	} else
 	{
-	    char *label = newmenu[i].nm_Label;
+	    char *label = (char *)newmenu[i].nm_Label;
 	    char *commkey;
 
 	    if (flags & MUIO_MenustripNM_CommandKeyCheck)
@@ -75,8 +75,8 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 	    	    label+=2;
 	    	    commkey = label;
 	    	}
-	    	else commkey = newmenu[i].nm_CommKey;
-	    } else commkey = newmenu[i].nm_CommKey;
+	    	else commkey = (char *)newmenu[i].nm_CommKey;
+	    } else commkey = (char *)newmenu[i].nm_CommKey;
 
 	    if (newmenu[i].nm_Type == NM_ITEM)
     	    {
@@ -477,6 +477,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 	    return MUI_NewObject(MUIC_Rectangle,
 		MUIA_Rectangle_HBar, TRUE,
 		MUIA_Rectangle_BarTitle, params[0],
+		MUIA_FixHeight, 1,
 		TAG_DONE);
 	    break;
 
