@@ -259,6 +259,7 @@ DEFINEDIR=$(TOP)/compiler/include/defines
 
 includes: \
 	    $(CLIBDIR)/exec_protos.h \
+	    $(CLIBDIR)/aros_protos.h \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
@@ -273,6 +274,9 @@ $(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
 	$(GENPROTOS) Exec "$(TOP)" \
 	    config/$(KERNEL)/*.s config/$(KERNEL)/*.c config/$(ARCH)/*.c \
 	    rom/exec/*.c
+
+$(CLIBDIR)/aros_protos.h: $(wildcard rom/aros/*.c) scripts/genprotos.h
+	$(GENPROTOS) Aros "$(TOP)" rom/aros/*.c
 
 $(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c) scripts/genprotos.h
 	$(GENPROTOS) Dos "$(TOP)" rom/dos/*.c
