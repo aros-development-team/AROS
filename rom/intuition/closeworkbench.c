@@ -51,16 +51,23 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #if 0
+struct IntuiMessage imsg;
+
     if( /* there are open app-windows */ )
     {
 	return FALSE;
     }
     /* Clean up special buffers */
 
-    /* Close the Workbench screen */
-    CloseScreen( wbscreen );
+    /* Send msg to WorkBench telling it to close its windows */
+    imsg.Class = WBENCHMESSAGE;
+    imsg.Code = WBENCHCLOSE;
+    PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *)(&imsg) );
+    
+    /* Close the Workbench screen, maybe this is done by the WB-app itself */
+    CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench );
 
-    /* Make Workbanech task inactive */
+    /* Make Workbench task inactive */
 
     return TRUE;
 

@@ -30,7 +30,7 @@
 	is a pointer to the screen structure, which shouldn't be used,
 	because other programs may close the WorkBench and make the
 	pointer invalid.
-	If this function fails the return value in NULL
+	If this function fails the return value is NULL.
 
     NOTES
 
@@ -52,10 +52,29 @@
 
 struct Screen *wbscreen = NULL;
 
+#if 0
+struct IntuiMessage imsg;
+
+    /* Do we have a running WorkBench app ? */
+    if ( GetPrivIBase(IntuitionBase)->WorkBenchMP == NULL )
+    {
+	return NULL;
+    }
+
+    imsg.Class = WBENCHMESSAGE;
+    imsg.Code = WBENCHOPEN;
+    PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *)(&imsg) );
+    /* Who opens the new Screen? If the WB-app does it, how do we get the
+       new (struct Screen *wbscreen)? */
+
+#else
+
 #warning TODO: Write intuition/OpenWorkBench()
     aros_print_not_implemented ("OpenWorkBench");
+
+#endif
 
     return (ULONG)wbscreen;
 
     AROS_LIBFUNC_EXIT
-} /* openWorkBench */
+} /* OpenWorkBench */
