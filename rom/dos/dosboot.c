@@ -163,6 +163,7 @@ boot:
     }
 
     FreeMem( bootName, bootNameLength );
+    
     lock = Lock("SYS:", SHARED_LOCK);
 
     if (lock != NULL)
@@ -200,6 +201,13 @@ boot:
     if (lock != NULL)
     {
 	AssignLock("DEVS", lock);
+    }
+    
+    lock = Lock("DEVS:Drivers", SHARED_LOCK);
+    
+    if (lock != NULL)
+    {
+        AssignLock("DRIVERS", lock);
     }
     
     /* Late binding ENVARC: assign, only if used */

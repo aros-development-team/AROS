@@ -1,5 +1,5 @@
 #Generic X11 Hidd.Prefs
-library SYS:Hidds/graphics.hidd
+library DRIVERS:graphics.hidd
 library x11cl.library
 gfx	hidd.gfx.x11
 mouse	hidd.mouse.x11

@@ -52,7 +52,7 @@ endif
 OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 ALL_OBJS := $(OBJS) $(ENDFUNC)
 
-$(AROS_HIDDS)/$(OSMODULE) : $(LIB) $(INITFUNC) \
+$(AROS_DRIVERS)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
@@ -70,7 +70,7 @@ hidd-graphics-amiga-intui-linklib : show-flags $(LIB)
 	@$(NOP)
 
 #MM hidd-graphics-amiga-intui-module : includes
-hidd-graphics-amiga-intui-module : show-flags $(LIB) $(AROS_HIDDS)/$(OSMODULE)
+hidd-graphics-amiga-intui-module : show-flags $(LIB) $(AROS_DRIVERS)/$(OSMODULE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -82,7 +82,7 @@ hidd-graphics-amiga-intui-module : show-flags $(LIB) $(AROS_HIDDS)/$(OSMODULE)
 #   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/graphics mmakefile hidd-graphics-quick
 
 #MM hidd-graphics-amiga-intui-module-quick : 
-hidd-graphics-amiga-intui-module-quick : show-flags $(LIB) $(AROS_HIDDS)/$(OSMODULE)
+hidd-graphics-amiga-intui-module-quick : show-flags $(LIB) $(AROS_DRIVERS)/$(OSMODULE)
 	@$(NOP)
 
 #MM hidd-graphics-amiga-intui-includes-quick 

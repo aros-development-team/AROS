@@ -152,7 +152,7 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
   /* open the parallel hidd */
   if (NULL == ParallelDevice->ParallelHidd)
   {
-    ParallelDevice->ParallelHidd = OpenLibrary("sys:Hidds/parallel.hidd",0);
+    ParallelDevice->ParallelHidd = OpenLibrary("DRIVERS:parallel.hidd",0);
     D(bug("parallel.hidd base: 0x%x\n",ParallelDevice->ParallelHidd));
     
     if (NULL == ParallelDevice->oopBase)
