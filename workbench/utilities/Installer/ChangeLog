@@ -340,3 +340,8 @@
 - Updated Copyright string to 2003
 - IconBase is now opened automatically
 
+0055
+- small fix to make it run from Workbench again
+- added sources for test.script.info
+- removed obsolte parts from gui
+

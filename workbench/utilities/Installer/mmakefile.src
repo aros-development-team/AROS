@@ -20,8 +20,15 @@ EXEDIR := $(AROSDIR)/Utilities
 
 SCRIPT := test.script
 
+ICONS     := $(SCRIPT)
+ICONDIR   := $(EXEDIR)
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+
 #MM
-workbench-utilities-installer-script : $(EXEDIR)/$(SCRIPT)
+workbench-utilities-installer-script : $(EXEDIR)/$(SCRIPT) $(ICONFILES)
+
+$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
+	%makeicon2
 
 $(EXEDIR)/$(SCRIPT) : $(SCRIPT)
 	@$(CP) $? $@
