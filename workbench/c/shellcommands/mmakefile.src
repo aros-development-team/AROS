@@ -11,6 +11,8 @@ FILES	:= \
     Unset \
     Unsetenv \
     Skip \
+    Stack \
+    Status \
     Why \
     echo
 
