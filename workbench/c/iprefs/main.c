@@ -66,13 +66,11 @@ preftable[] =
     {"pointer"	    , pointerprefsname  , NULL	    	    	},
     {"overscan"     , overscanprefsname , NULL	    	    	},
     {NULL   	    	    	    	      	    	    	}
-    
+
 };
 
 /*********************************************************************************************/
 
-static struct Task *launchertask;
-static char 	   *launchertask_name = "« IPrefs Launcher »";
 static ULONG 	    notifysig;
 
 /*********************************************************************************************/
@@ -96,80 +94,30 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 }
 
 /*********************************************************************************************/
-
 void Cleanup(STRPTR msg)
 {
     if (msg)
     {
 	if (IntuitionBase /* && !((struct Process *)FindTask(NULL))->pr_CLI */)
 	{
-	    ShowMessage("IPrefs", msg, "Ok");     
-	}
-	else if (FindTask(NULL)->tc_Node.ln_Name == launchertask_name)
-	{
-	    printf("IPrefs: %s\n", msg);
+	    ShowMessage("IPrefs", msg, "Ok");
 	}
     }
-    
+
+
     KillNotifications();
     CloseLibs();
-    
+
     exit(prog_exitcode);
 }
 
 
 /*********************************************************************************************/
 
-static void Detach(void)
-{
-    struct Task *thistask = FindTask(NULL);
-    
-    if (!(launchertask = FindTask(launchertask_name)))
-    {
-    	struct TagItem sys_tags[] =
-	{
-	    {SYS_Input , (IPTR)Open("NIL:", MODE_OLDFILE)},
-	    {SYS_Output, NULL	    	    	    	 },
-	    {SYS_Asynch, TRUE	    	    	    	 },
-	    {TAG_DONE	    	    	    	    	 }
-	};
-	
-	/* we are in the process started from Shell, which is
-	   responsible for detaching. */
-	   
-	thistask->tc_Node.ln_Name = launchertask_name;
-	
-	SystemTagList("C:IPrefs", sys_tags);
-	
-#warning check if systemtaglist succeeded
-#if 0
-	{
-	    Cleanup("Could not detach from Shell!\n");
-	}
-#endif
-	
-	/* Wait for the detached IPrefs to notify us that
-	   it is done handling the initial notifications */
-
-#warning add a timeout	   
-	Wait(SIGBREAKF_CTRL_F);
-	
-	Cleanup(NULL);
-    }
-    else
-    {
-    	/* We are in the real detached IPrefs process */
-	
-    	thistask->tc_Node.ln_Name = IPREFS_SEM_NAME;
-    }
-}
-
-/*********************************************************************************************/
-
 static void OpenLibs(void)
 {
     struct libinfo *li;
-    
+
     for(li = libtable; li->var; li++)
     {
 	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
@@ -186,7 +134,7 @@ static void OpenLibs(void)
 static void CloseLibs(void)
 {
     struct libinfo *li;
-    
+
     for(li = libtable; li->var; li++)
     {
     	if (!patches_installed || !li->nocloseafterpatch)
@@ -288,7 +236,7 @@ static void PreparePatches(void)
     InitSemaphore(&sem->sem);
     sem->sem.ss_Link.ln_Name = sem->semname;
     strcpy(sem->semname, IPREFS_SEM_NAME);
-    
+
     Forbid();
     if(!(iprefssem = (struct IPrefsSem *)FindSemaphore(IPREFS_SEM_NAME)))
     {
@@ -352,31 +300,17 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
-static void NotifyLauncherTask(void)
-{
-    if (launchertask)
-    {
-    	Forbid();
-	if ((launchertask = FindTask(launchertask_name)))
-	{
-	    Signal(launchertask, SIGBREAKF_CTRL_F);
-	}
-	Permit();
-    }
-}
-
-/*********************************************************************************************/
 
 int __nocommandline;
 int main(void)
 {
-    Detach();
+    FindTask(NULL)->tc_Node.ln_Name = IPREFS_SEM_NAME;
+
     OpenLibs();
     GetENVName();
     StartNotifications();
     PreparePatches();
     HandleNotify();
-    NotifyLauncherTask();
     HandleAll();
     Cleanup(NULL);
 
