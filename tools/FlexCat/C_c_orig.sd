@@ -17,13 +17,6 @@ struct StringCollection
   STRPTR  string;
 };
 
-struct LocaleInfo 
-{
-  struct Library * li_LocaleBase;
-  struct Catalog * li_Catalog;
-};
-
-
 static struct StringCollection _sc[] =
 {
   {%i, %s},
@@ -37,7 +30,7 @@ char * GetString(struct LocaleInfo * li,
   char *builtIn = NULL;
   char *string;
 
-  struct Library * LocaleBase = li->li_LocaleBase;
+  struct Library * LocaleBase = (struct Library *)li->li_LocaleBase;
     
   struct StringCollection * sc = _sc;
   while (NULL != sc->string)
@@ -51,7 +44,7 @@ char * GetString(struct LocaleInfo * li,
   }
 
   if (NULL != li->li_Catalog)
-    string = GetCatalogStr(li->li_Catalog,
+    string = GetCatalogStr((struct Catalog *)li->li_Catalog,
                            stringNum,
                            builtIn);
   else
