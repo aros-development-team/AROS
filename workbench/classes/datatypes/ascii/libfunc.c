@@ -18,7 +18,7 @@ struct Library 		*IFFParseBase;
 struct Library		*TextBase;
 
 /* inside asciiclass.c */
-struct IClass *DT_MakeClass(void);
+struct IClass *DT_MakeClass(struct Library *asciibase);
 
 /**************************************************************************************************/
 
@@ -46,7 +46,7 @@ int __UserLibInit(struct Library *libbase )
 			{
 			    if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
 			    {
-				if((dt_class = DT_MakeClass()))
+				if((dt_class = DT_MakeClass(libbase)))
 				{
 				    AddClass(dt_class);
 

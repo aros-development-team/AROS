@@ -462,7 +462,7 @@ IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, re
 
 /**************************************************************************************************/
 
-struct IClass *DT_MakeClass(void)
+struct IClass *DT_MakeClass(struct Library *asciibase)
 {
     struct IClass *cl = MakeClass("ascii.datatype", "text.datatype", 0, sizeof(struct AsciiData), 0);
 
@@ -473,6 +473,7 @@ struct IClass *DT_MakeClass(void)
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
+	cl->cl_UserData = asciibase; /* Required by datatypes (see disposedtobject) */
     }
 
     return cl;
