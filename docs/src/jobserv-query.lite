@@ -1,6 +1,6 @@
 #!/usr/local/Hughes/bin/lite
 
-$sock = msqlConnect("");
+$sock = msqlConnect("aros.fh-konstanz.de");
 
 if ($sock < 0)
 {
