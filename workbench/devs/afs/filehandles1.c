@@ -55,25 +55,25 @@ ULONG key;
 	if (blockbuffer->buffer[key] == 0)
 	{
 		error = ERROR_OBJECT_NOT_FOUND;
-		return 0;
+		return NULL;
 	}
 	blockbuffer=getBlock(afsbase, volume,AROS_BE2LONG(blockbuffer->buffer[key]));
-	if (blockbuffer == 0)
+	if (blockbuffer == NULL)
 	{
 		error = ERROR_UNKNOWN;
-		return 0;
+		return NULL;
 	}
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer))
 	{
 		showError(afsbase, ERR_CHECKSUM, blockbuffer->blocknum);
 		error = ERROR_UNKNOWN;
-		return 0;
+		return NULL;
 	}
 	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
 		showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
 		error = ERROR_OBJECT_WRONG_TYPE;
-		return 0;
+		return NULL;
 	}
 	while (
 				!noCaseStrCmp
@@ -92,29 +92,29 @@ ULONG key;
 		if (blockbuffer->buffer[BLK_HASHCHAIN(volume)] == 0)
 		{
 			error=ERROR_OBJECT_NOT_FOUND;
-			return 0;
+			return NULL;
 		}
 		blockbuffer=getBlock
 			(
 				afsbase,
 				volume,AROS_BE2LONG(blockbuffer->buffer[BLK_HASHCHAIN(volume)])
 			);
-		if (blockbuffer == 0)
+		if (blockbuffer == NULL)
 		{
 			error = ERROR_UNKNOWN;
-			return 0;
+			return NULL;
 		}
 		if (calcChkSum(volume->SizeBlock, blockbuffer->buffer))
 		{
 			showError(afsbase, ERR_CHECKSUM,blockbuffer->blocknum);
 			error=ERROR_UNKNOWN;
-			return 0;
+			return NULL;
 		}
 		if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 		{
 			showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
 			error = ERROR_OBJECT_WRONG_TYPE;
-			return 0;
+			return NULL;
 		}
 	}
 	return blockbuffer;
@@ -154,22 +154,22 @@ UBYTE buffer[32];
 	D(bug("afs.handler:    findBlock: startblock=%ld\n",*block));
 	/* get first entry (root or filelock refers to) */
 	blockbuffer=getBlock(afsbase, dirah->volume, *block);
-	if (blockbuffer == 0)
+	if (blockbuffer == NULL)
 	{
 		error = ERROR_UNKNOWN;
-		return 0;
+		return NULL;
 	}
 	if (calcChkSum(dirah->volume->SizeBlock, blockbuffer->buffer))
 	{
 		showError(afsbase, ERR_CHECKSUM, *block);
 		error = ERROR_UNKNOWN;
-		return 0;
+		return NULL;
 	}
 	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
 		showError(afsbase, ERR_BLOCKTYPE, *block);
 		error = ERROR_OBJECT_WRONG_TYPE;
-		return 0;
+		return NULL;
 	}
 	while (*name)
 	{
@@ -178,7 +178,7 @@ UBYTE buffer[32];
 			if (blockbuffer->buffer[BLK_PARENT(dirah->volume)] == 0)
 			{
 				error = ERROR_OBJECT_NOT_FOUND;
-				return 0;
+				return NULL;
 			}
 			blockbuffer=getBlock
 				(
@@ -186,10 +186,10 @@ UBYTE buffer[32];
 					dirah->volume,
 					AROS_BE2LONG(blockbuffer->buffer[BLK_PARENT(dirah->volume)])
 				);
-			if (blockbuffer == 0)
+			if (blockbuffer == NULL)
 			{
 				error = ERROR_UNKNOWN;
-				return 0;
+				return NULL;
 			}
 			name++;
 		}
@@ -210,7 +210,7 @@ UBYTE buffer[32];
 						) != ST_LINKDIR))
 			{
 				error = ERROR_OBJECT_WRONG_TYPE;
-				return 0;
+				return NULL;
 			}
 			pos = buffer;
 			while ((*name) && (*name!='/'))
@@ -227,12 +227,12 @@ UBYTE buffer[32];
 				));
 			blockbuffer =
 				getHeaderBlock(afsbase, dirah->volume,buffer,blockbuffer, block);
-			if (blockbuffer == 0)
+			if (blockbuffer == NULL)
 				break;		/* object not found or other error */
 		}
 	}
 	D(
-		if (blockbuffer)
+		if (blockbuffer != NULL)
 			bug("afs.handler:   findBlock: block=%ld\n",blockbuffer->blocknum);
 		else
 			bug("afs.handler:   findBlock: error\n");
@@ -459,7 +459,6 @@ ULONG block;
 				dirblock,
 				&block
 			);
-		dirblock->flags &= ~BCF_USED;
 		if (
 				(fileblock) &&
 				(AROS_BE2LONG
@@ -491,6 +490,7 @@ ULONG block;
 			}
 		}
 	}
+	dirblock->flags &= ~BCF_USED;
 	return ah;
 }
 
