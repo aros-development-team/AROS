@@ -5,25 +5,24 @@
 #   include <graphics/displayinfo.h>
 #endif
 
-
-
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
 
-#define CYBERGFXNAME	"cybergraphics.library"
-#define CYBERGFX_INCLUDE_VERSION 41UL
+
+#define CYBERGFXNAME	    	    "cybergraphics.library"
+#define CYBERGFX_INCLUDE_VERSION    41UL
 
 
-struct CyberModeNode {
-	struct	Node Node;
-	char	ModeText[DISPLAYNAMELEN];
-	ULONG	DisplayID;
-	UWORD	Width;
-	UWORD	Height;
-	UWORD	Depth;
-	struct TagItem *DisplayTagList;
-	
+struct CyberModeNode
+{
+    struct Node     Node;
+    char	    ModeText[DISPLAYNAMELEN];
+    ULONG	    DisplayID;
+    UWORD	    Width;
+    UWORD	    Height;
+    UWORD	    Depth;
+    struct TagItem *DisplayTagList;	
 };
 
 
@@ -43,7 +42,7 @@ struct CyberModeNode {
 #define CYBRIDATTR_DEPTH	0x80000004
 #define CYBRIDATTR_BPPIX	0x80000005
 
-#define CYBRMREQ_TB	(TAG_USER + 0x40000)
+#define CYBRMREQ_TB	    	(TAG_USER + 0x40000)
 
 #define CYBRMREQ_MinDepth	(CYBRMREQ_TB + 0)
 #define CYBRMREQ_MaxDepth	(CYBRMREQ_TB + 1)
@@ -57,7 +56,7 @@ struct CyberModeNode {
 #define CYBRMREQ_CancelText	(CYBRMREQ_TB + 22)
 #define CYBRMREQ_Screen		(CYBRMREQ_TB + 30)
 
-#define CYBRBIDTG_TB	(TAG_USER + 0x50000)
+#define CYBRBIDTG_TB	    	(TAG_USER + 0x50000)
 
 #define CYBRBIDTG_Depth		(CYBRBIDTG_TB + 0)
 #define CYBRBIDTG_NominalWidth	(CYBRBIDTG_TB + 1)
@@ -87,6 +86,24 @@ struct CyberModeNode {
 #define RECTFMT_GREY8	4UL
 #define RECTFMT_RAW 	5UL
 
+/* AROS extensions */
+#define PIXFMT_ABGR32	100UL
+
+#define RECTFMT_RGB15	100UL
+#define RECTFMT_BGR15	101UL
+#define RECTFMT_RGB15PC 102UL
+#define RECTFMT_BGR15PC 103UL
+#define RECTFMT_RGB16	104UL
+#define RECTFMT_BGR16	105UL
+#define RECTFMT_RGB16PC 106UL
+#define RECTFMT_BGR16PC 107UL
+#define RECTFMT_RGB24	RECTFMT_RGB
+#define RECTFMT_BGR24	109UL
+#define RECTFMT_ARGB32	RECTFMT_ARGB
+#define RECTFMT_BGRA32	111UL
+#define RECTFMT_RGBA32	RECTFMT_RGBA
+#define RECTFMT_ABGR32	113UL
+
 #define SETVC_DPMSLevel		0x88002001
 
 #define DPMS_ON		0UL
@@ -107,15 +124,16 @@ struct CyberModeNode {
 #define UBMI_UPDATERECTS	0x85001001
 #define UBMI_REALLYUNLOCK	0x85001002
 
-struct CDrawMsg {
-	APTR	cdm_MemPtr;
-	ULONG	cdm_offx;
-	ULONG	cdm_offy;
-	ULONG	cdm_xsize;
-	ULONG	cdm_ysize;
-	UWORD	cdm_BytesPerRow;
-	UWORD	cdm_BytePerPix;
-	UWORD	cdm_ColorModel;
+struct CDrawMsg
+{
+    APTR    cdm_MemPtr;
+    ULONG   cdm_offx;
+    ULONG   cdm_offy;
+    ULONG   cdm_xsize;
+    ULONG   cdm_ysize;
+    UWORD   cdm_BytesPerRow;
+    UWORD   cdm_BytePerPix;
+    UWORD   cdm_ColorModel;
 };
 
 #define CTABFMT_XRGB8	0UL
