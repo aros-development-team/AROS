@@ -1,29 +1,11 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/01 03:46:07  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.6  1996/12/10 13:51:40  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.5  1996/10/24 15:50:46  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/08/13 13:55:59  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:07  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
 #include <dos/dos.h>
@@ -69,6 +51,10 @@
 {
     AROS_LIBFUNC_INIT
 
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    struct Device *dev = iORequest->io_Device;
+#endif
+
     /* Single-thread the close routine. */
     Forbid();
 
@@ -92,6 +78,21 @@
 
     /* All done. */
     Permit();
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /*
+	Kludge to force the device base to register d0. Ramlib patches this
+	vector for seglist expunge capability and expects the device base in
+	d0 after it has called the original (this) function.
+    */
+    {
+	/* Put the library base in register d0 */
+	register struct Device *ret __asm("d0") = dev;
+
+	/* Make sure the above assignment isn't optimized away */
+	asm volatile("": : "r" (ret));
+    }
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* CloseDevice */
