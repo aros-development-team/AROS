@@ -73,17 +73,14 @@
 
     INTERNALS
 
-    HISTORY
-	17.01.97 digulla created
-
 ******************************************************************************/
 {
-    int        fd;
-    int        openmode = __smode2oflags(mode);
+    int fd;
+    int openmode = __smode2oflags(mode);
 
     fd = open(pathname, openmode, 644);
     if (fd == -1)
-    	return NULL;
+        return NULL;
 
     return fdopen(fd, NULL);
 } /* fopen */
