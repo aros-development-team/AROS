@@ -273,6 +273,8 @@ AROS_UFH3
     AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+    
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
 	static char buf[1024];
@@ -383,6 +385,8 @@ AROS_UFH3
 	    }
 	}
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -395,9 +399,12 @@ AROS_UFH3
     AROS_UFHA(void **, funcptr, A1)
 )
 {
+    AROS_USERFUNC_INIT
+    
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
-
     if (func) func((ULONG *)(funcptr + 1));
+    
+    AROS_USERFUNC_EXIT
 }
 
 /**************************************************************************
