@@ -1,0 +1,168 @@
+The _big.png images are the ones to use for editing.
+
+The _small.ilbm images are the ones to be used in Locale prefs program and
+therefore scaled down to a smaller size.
+
++--------------------------------------------------------------------------+
+|                                                                          |
+| How to correctly create the small images out of the big images with GIMP |
+|                                                                          |
++--------------------------------------------------------------------------+
+
+earthmap:
+=========
+
+ This image is black&white in indexed format. Before scaling down the image
+ convert it to RGB format:
+ 
+   GIMP: Image -> Mode -> RGB
+ 
+ The reason for this is, that then the scaled image will be sort of anti-
+ aliased (filtered down). Now to scale the image down:
+ 
+   GIMP: Image -> Scale Image: New Width = 416, Height = 240
+ 
+ Now convert the image back to indexed format:
+ 
+   GIMP: Image -> Mode -> Indexed
+   
+         In the "Indexed Color Conversion" requester activate
+	 "Generate Optimal Palette" and "No color Dithering".
+	 Set the "# of Colors" to something < 128!!! 32 should
+	 be enough.
+	 
+ For some strange reason, GIMP might have created an indexed
+ palette, which does not contain any "full black" (#000000)
+ and "full white" (#FFFFFF) colors anymore. Although most of
+ the pixels in the image were in this colors before conversion.
+ So to fix this normalize the palette:
+ 
+   GIMP: Image -> Colors -> Auto -> Normalize
+
+ Now if you have the GIMP ilbm plugin you can save the image as
+ "earthmap_small.ilbm". If not save it in some other indexed
+ format (GIF/PNG) and then use some tool to convert it to IFF
+ ILBM.
+ 
+ 
+timezones:
+==========
+
+ This image is also in indexed format. But anyway this time we
+ do *not* convert it to RGB for scaling down. Instead directly
+ scale down:
+  
+   GIMP: Image -> Scale Image: New Width = 416, Height = 240
+ 
+ Now if you have the GIMP ilbm plugin you can save the image as
+ "timezones_small.ilbm". If not save it in some other indexed
+ format (GIF/PNG) and then use some tool to convert it to IFF
+ ILBM.
+ 
++--------------------------------------------------------------------------+
+|                                                                          |
+| Editing earthmap_big.png                                                 |
+|                                                                          |
++--------------------------------------------------------------------------+
+
+Load earthmap_big.png and directly edit it. Do *not* change palette. The
+colors for the ocean and the continents can be directly adjusted in Locale
+prefs program source, because earthmap image is basically treated as 8 bit
+alpha mask = ~ intensity values of ocean. The smaller (= darker) the in-
+tensity the bigger the continent color will show through. So completely
+black (#000000) areas will be in continent color. And completely white
+(#FFFFFF) areas will be in ocean color. The color values in between (which
+are generated during scale down process -> anti aliasing) will be some mix
+between ocean color and continent color (-> alpha blending).
+
++--------------------------------------------------------------------------+
+|                                                                          |
+| Editing timezones_big.png                                                |
+|                                                                          |
++--------------------------------------------------------------------------+
+
+To edit timezones_big.png load it and convert it to RGB format:
+
+   GIMP: Image -> Mode -> RGB
+
+Remember *not* to save it back to disk in RGB format! Before saving convert
+it back to indexed format:
+
+   GIMP: Image -> Mode -> Indexed
+   
+         In the "Indexed Color Conversion" requester activate
+	 "Generate Optimal Palette" and "No color Dithering".
+	 Set the "# of Colors" to 64.
+
+Each timezone is painted in a different color. The color (RGB value) is very
+important, because the timezone number is "encoded" into the upper two bits
+(bits 6 and 7) of each color gun (red/green/blue). Each color gun has 8 bits
+so there are an overall of 24 bit (we ignore alpha):
+
+  R7 R6 R5 R4 R3 R2 R1 R0 G7 G6 G5 G4 G3 G2 G1 G0 B7 B6 B5 B4 B3 B2 B1 B0
+  
+Now taking the upper two bits of each color gun:
+
+  R7 R6 G7 G6 B7 B6
+  
+We get the "id" of the timezone.
+
+Timezones:
+==========
+
+  +----+------+----------------------+
+  | ID | NAME | Time offset from GMT |
+  +----+------+----------------------+
+  |  0 |  Z   |      0:00            |
+  |  1 |  A   |   +  1:00            |
+  |  2 |  B   |   +  2:00            |
+  |  3 |  C   |   +  3:00            |
+  |  4 |  C*  |   +  3:30            |
+  |  5 |  D   |   +  4:00            |
+  |  6 |  D*  |   +  4:30            |
+  |  7 |  E   |   +  5:00            |
+  |  8 |  E*  |   +  5:30            |
+  |  9 |  F   |   +  6:00            |
+  | 10 |  F*  |   +  6:30            |
+  | 11 |  G   |   +  7:00            |
+  | 12 |  H   |   +  8:00            |
+  | 13 |  I   |   +  9:00            |
+  | 14 |  I*  |   +  9:30            |
+  | 15 |  K   |   + 10:00            |
+  | 16 |  K*  |   + 10:30            |
+  | 17 |  L   |   + 11:00            |
+  | 18 |  L*  |   + 11:30            |
+  | 19 |  M   |   + 12:00            |
+  | 20 |  M*  |   + 13:00            |
+  | 21 |  N   |   -  1:00            |
+  | 22 |  O   |   -  2:00            |
+  | 23 |  P   |   -  3:00            |
+  | 24 |  P*  |   -  3:30            |
+  | 25 |  Q   |   -  4:00            |
+  | 26 |  R   |   -  5:00            |
+  | 27 |  S   |   -  6:00            |
+  | 28 |  T   |   -  7:00            |
+  | 29 |  U   |   -  8:00            |
+  | 30 |  U*  |   -  8:30            |
+  | 31 |  V   |   -  9:00            |
+  | 32 |  V*  |   -  9:30            |
+  | 33 |  W   |   - 10:00            |
+  | 34 |  X   |   - 11:00            |
+  | 35 |  Y   |   - 12:00            |
+  +----+------+----------------------+
+
+I want to know the RGB value in which to paint the timezone area with ID <id>:
+
+  ((<id> & 0x30) / 16) * 0x400000 +
+  ((<id> & 0x0C) / 4)  * 0x4000 +
+  ( <id> & 0x03     )  * 0x40
+
+I see this area painted in RGB <rgb> and want to know the timezone area ID of it:
+
+  ((<rgb> & 0xC00000) / 0x400000) * 16 +
+  ((<rgb> & 0x00C000) / 0x4000) * 4 +
+  ((<rgb> & 0x0000C0) / 0x40)
+  
+----------------------------------------------------------------------------
+Georg Steger <georg.steger@rolmail.net>
+
