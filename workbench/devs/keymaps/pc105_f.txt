@@ -72,7 +72,7 @@ Dead key 0x1A :
 ^ + RALT + SHIFT = ° modifier וֵ
 
 Normal keys which are dead keys after some modifier combination :
-ש + RALT = ^ modifier גךûמפֲÊÛ־װ
-* + RALT = ` modifier אטשלעְָÙּׂ
-, + RALT = ' modifier ביתםףחֱֹÚֽ׃
+(0x2A) ש + RALT = ^ modifier גךûמפֲÊÛ־װ
+(0x2B) * + RALT = ` modifier אטשלעְָÙּׂ
+(0x37) , + RALT = ' modifier ביתםףחֱֹÚֽ׃
 
