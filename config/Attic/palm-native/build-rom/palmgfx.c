@@ -138,7 +138,7 @@ void forever(void)
 {
 	int c = 0;
 	while (1) {
-//		showsuccess();
+		showsuccess();
 		clearscreen(c);
 		c += 10;
 	}
