@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new process
@@ -21,6 +21,8 @@ struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
+
+BOOL copyVars(struct Process *fromProcess, struct Process *toProcess);
 
 void internal_ChildWait(struct Task *task);
 void internal_ChildFree(APTR tid);
@@ -236,6 +238,7 @@ void internal_ChildFree(APTR tid);
 
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
     CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
+
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
@@ -276,6 +279,11 @@ void internal_ChildFree(APTR tid);
 /*  process->pr_ConsoleTask=; */
 /*  process->pr_FileSystemTask=; */
     process->pr_CLI = MKBADDR(cli);
+
+    /* Set the name of this program */
+    internal_SetProgramName(cli, name);
+    kprintf("Calling internal_SetProgramName() with name = %s\n", name);
+
     process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data; 
 /*  process->pr_HomeDir=; */
@@ -291,44 +299,9 @@ void internal_ChildFree(APTR tid);
 
     if((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
     {
-	/* We must have variables to copy... */
-	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
-	{
-	    struct LocalVar *varNode;
-	    struct LocalVar *newVar;
-
-	    /* We use the same strategy as in the ***Var() functions */
-	    ForeachNode((struct List *)&me->pr_LocalVars, 
-			(struct Node *)varNode)
-	    {
-		LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
-                                   sizeof(struct LocalVar);
-
-		newVar = (struct LocalVar *)AllocVec(copyLength,
-						     MEMF_PUBLIC | MEMF_CLEAR);
-		ENOMEM_IF(newVar == NULL);
-		
-		CopyMem(varNode, newVar, copyLength);
-		newVar->lv_Node.ln_Name = (char *)newVar +
-		                                  sizeof(struct LocalVar);
-		P(kprintf("Variable with name %s copied.\n", 
-			  newVar->lv_Node.ln_Name));
-
-		newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
-		
-		if(newVar->lv_Value == NULL)
-		{
-		    /* Free variable node before shutting down */
-		    FreeVec(newVar);
-		    ENOMEM_IF(newVar->lv_Value == NULL);
-		}
-		
-		CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
-
-		AddTail((struct List *)&process->pr_LocalVars,
-			(struct Node *)newVar);
-	    }
-	}
+	BOOL res = copyVars(me, process);
+	
+	ENOMEM_IF(res == FALSE);
     }
 
     process->pr_ShellPrivate = 0;
@@ -503,4 +476,51 @@ void internal_ChildFree(APTR tid)
 
     Reschedule(((struct Task *)(GetETask(task)->et_Parent)));
     Switch();
+}
+
+
+BOOL copyVars(struct Process *fromProcess, struct Process *toProcess)
+{
+    /* We must have variables to copy... */
+    if(fromProcess->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+	struct LocalVar *varNode;
+	struct LocalVar *newVar;
+	
+	/* We use the same strategy as in the ***Var() functions */
+	ForeachNode((struct List *)&fromProcess->pr_LocalVars, 
+		    (struct Node *)varNode)
+	{
+	    LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
+		sizeof(struct LocalVar);
+	    
+	    newVar = (struct LocalVar *)AllocVec(copyLength,
+						 MEMF_PUBLIC | MEMF_CLEAR);
+	    if(newVar == NULL)
+		return FALSE;
+	    
+	    CopyMem(varNode, newVar, copyLength);
+	    newVar->lv_Node.ln_Name = (char *)newVar +
+		sizeof(struct LocalVar);
+	    P(kprintf("Variable with name %s copied.\n", 
+		      newVar->lv_Node.ln_Name));
+	    
+	    newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
+	    
+	    if(newVar->lv_Value == NULL)
+	    {
+		/* Free variable node before shutting down */
+		FreeVec(newVar);
+		
+		return FALSE;
+	    }
+	    
+	    CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
+	    
+	    AddTail((struct List *)&toProcess->pr_LocalVars,
+		    (struct Node *)newVar);
+	}
+    }
+
+    return TRUE;
 }
