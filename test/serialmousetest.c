@@ -23,56 +23,109 @@
 
 #include <stdio.h>
 
-#define ARG_TEMPLATE "KILL/S,UNIT/N"
+#define ARG_TEMPLATE "KILL/S,UNIT/N,PROBE/S"
 
 enum 
 {
 	ARG_KILL = 0,
 	ARG_UNIT,
+	ARG_PROBE,
 	NOOFARGS
 };
 
-static char mousebuffer[3];
-static int bufptr;
+static UBYTE mousebuffer[3];
+static ULONG bufptr;
 
-static void mouse_buffer(char * buffer, ULONG len)
+
+struct protocol {
+	char * signature;
+	ULONG signature_length;
+	ULONG packet_length;
+	void (* handler)(char *, ULONG);
+	char * name;
+};
+
+const char ms_mouse[] = 
+{
+	0x4d,0x40,0x00,
+	0x00,0x08,0x01,
+	0x24,0x30,0x2e,
+	0x30,0x10,0x26,
+	0x10,0x21,0x3c,
+	0x10,0x10,0x10,
+	0x15,0x10,0x12,
+	0x10,0x10,0x3c,
+	0x2d,0x2f,0x35,
+	0x33,0x25,0x3c,
+	0x30,0x2e,0x30,
+	0x10,0x26,0x10,
+	0x21,0x3c,0x2d,
+	0x29,0x23,0x32,
+	0x2f,0x33,0x2f,
+	0x26,0x34,0x00,
+	0x33,0x25,0x32,
+	0x29,0x21,0x2c,
+	0x00,0x2d,0x2f,
+	0x35,0x33,0x25,
+	0x00,0x12,0x0e,
+	0x11,0x21,0x15,
+	0x11,0x09
+};
+
+static void ms_mouse_protocol(char * buffer, ULONG len);
+
+
+/*
+ * All known protocols and their handlers
+ */
+const struct protocol protocols[] = {
+	{ms_mouse, sizeof(ms_mouse), 3, ms_mouse_protocol, "ms-mouse"},
+	{NULL    , 0               , 0, NULL             , NULL}
+};
+
+static void ms_mouse_protocol(char * buffer, ULONG len)
 {
 	ULONG i = 0;
+
+#if 1
+	ULONG j = 0;
+	while (j < len) {
+		printf("0x%02x,",buffer[j++]);
+	}
+	printf("\n");
+#endif
 	
 	while (len > 0) {
+		BYTE dx,dy;
 		switch (bufptr) {
 			case 0:
-				mousebuffer[bufptr++] = buffer[i];
+			case 1:
+				if (0 == (buffer[i] & 0x40)) {
+					mousebuffer[bufptr++] = buffer[i];
+				}
 			break;
 		
-			case 1:
 			case 2:
 				mousebuffer[bufptr] = buffer[i];
 
-				if (2 == bufptr) {
-					BYTE dx,dy;
-					bufptr = 0;
+				bufptr = 0;
 					
-					if ((mousebuffer[2] & 0x40)) {
+				if ((mousebuffer[2] & 0x40)) {
+				
+					if ((mousebuffer[2] & 0x20))
+						printf("Left button down.\n");
+					if ((mousebuffer[2] & 0x10))
+						printf("Right button down.\n");
+					dy = (mousebuffer[1] & 0x20) 
+					           ? (mousebuffer[1]-0x40)
+					           : (mousebuffer[1]);
+					dx = (mousebuffer[0] & 0x20) 
+					           ? (mousebuffer[0]-0x40)
+					           : (mousebuffer[0]);
 					
-						if ((mousebuffer[2] & 0x20))
-							printf("Left button down.\n");
-						if ((mousebuffer[2] & 0x10))
-							printf("Right button down.\n");
-						dy = (mousebuffer[1] & 0x20) 
-						           ? (mousebuffer[1]-0x40)
-						           : (mousebuffer[1]);
-						dx = (mousebuffer[0] & 0x20) 
-						           ? (mousebuffer[0]-0x40)
-						           : (mousebuffer[0]);
-					
-						if (dx || dy)
-							printf("Movement: dx %d, dy %d\n",dx,dy);
-					} else {
-						bufptr = 0;
-					}
-				} else
-					bufptr++;
+					if (dx || dy)
+						printf("Movement: dx %d, dy %d\n",dx,dy);
+				}
 			break;
 		
 			default:
@@ -83,23 +136,33 @@ static void mouse_buffer(char * buffer, ULONG len)
 	}
 }
 
-static void read_input(struct IOExtSer * IORequest, struct MsgPort * notifport)
+static void read_input(struct IOExtSer * IORequest, 
+                       struct MsgPort * notifport,
+                       void (* handler)(char *, ULONG))
 {
 	int n = 3;
 	while (1) {
-		char buf[10];
+		BYTE buf[10];
 		struct Message * msg;
 		BOOL IODone = FALSE;
+		ULONG sigs;
+		
 		memset(buf, 0x00, 10);
 		IORequest->IOSer.io_Command = CMD_READ;
 		IORequest->IOSer.io_Flags   = IOF_QUICK;
 		IORequest->IOSer.io_Length  = n;
 		IORequest->IOSer.io_Data    = buf;
 		SendIO((struct IORequest *)IORequest);
-		Wait((1 << ((struct IORequest *)IORequest)->io_Message.mn_ReplyPort->mp_SigBit) |
-		     (1 << notifport->mp_SigBit));
+		sigs = Wait((1 << ((struct IORequest *)IORequest)->io_Message.mn_ReplyPort->mp_SigBit) |
+		            (1 << notifport->mp_SigBit) |
+		            SIGBREAKF_CTRL_C );
 		if (NULL != CheckIO((struct IORequest *)IORequest)) {
-			mouse_buffer(buf, n);
+			if (NULL == handler) {
+				printf("No handler given. Calling def. handler!\n");
+				ms_mouse_protocol(buf, n);
+			} else {
+				handler(buf, n);
+			}
 			IODone = TRUE;
 		}
 		
@@ -110,18 +173,71 @@ static void read_input(struct IOExtSer * IORequest, struct MsgPort * notifport)
 			FreeMem(msg, sizeof(struct Message));
 			break;
 		}
+		
+		if (sigs & SIGBREAKF_CTRL_C) {
+			break;
+		}
 	}
 } /* read_input */
 
-static void mouse_driver(IPTR * unit, struct MsgPort * notifport)
+
+static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struct MsgPort * notifport)
+{
+	struct protocol * p = NULL;
+	ULONG n;
+	Delay(50);
+	printf("Supposed to probe for protocol!\n");
+	IORequest->IOSer.io_Command = SDCMD_QUERY;
+	DoIO((struct IORequest *)IORequest);
+	printf("Number of bytes in buffer: %d\n",(int)IORequest->IOSer.io_Actual);
+	if (0 != (n = IORequest->IOSer.io_Actual)) {
+		UBYTE * buffer = AllocMem(n, MEMF_CLEAR);
+		if (NULL != buffer) {
+			ULONG i = 0;
+			IORequest->IOSer.io_Command = CMD_READ;
+			IORequest->IOSer.io_Flags   = IOF_QUICK;
+			IORequest->IOSer.io_Length  = n;
+			IORequest->IOSer.io_Data    = buffer;
+			DoIO((struct IORequest *)IORequest);
+			
+			while (protocols[i].signature) {
+				printf("Possible: %s, sign_length=%d\n",
+				      protocols[i].name,
+				      protocols[i].signature_length);
+				
+				if (n >= protocols[i].signature_length) {
+					ULONG d = n - protocols[i].signature_length;
+					ULONG k  = 0;
+					while (k <= d) {
+						if (0 == memcmp(&buffer[k], 
+						                protocols[i].signature,
+						                protocols[i].signature_length)) {
+							printf("Found signature for %s.\n",protocols[i].name);
+							p = &protocols[i];
+							break;
+						}
+						k++;
+					}
+				}
+				i++;
+			}
+			
+			FreeMem(buffer, n);
+		}
+	}
+	return p;
+}
+
+static void mouse_driver(IPTR * unit, BOOL probe_proto,struct MsgPort * notifport)
 {
 	struct MsgPort * SerPort;
         ULONG unitnum = 0;
         
         if (NULL != unit)
         	unitnum = *unit;
-
-printf("Unit=%ld\n",unitnum);    
+        	
+        	
+printf("unit %d\n",unitnum);
 	SerPort = CreatePort(NULL,0);
 	if (NULL != SerPort)  {
 		struct IOExtSer * IORequest;
@@ -142,13 +258,25 @@ printf("Unit=%ld\n",unitnum);
 				IORequest->IOSer.io_Flags   = 0;
 				DoIO((struct IORequest *)IORequest);
 				
+				
 				if (0 == ((struct IORequest *)IORequest)->io_Error) {
-					read_input(IORequest, notifport);
+					void (*handler) (char*,ULONG) = NULL;
+					if (TRUE == probe_proto) {
+						struct protocol * p;
+						p = probe_protocol(IORequest, notifport);
+						if (p) {
+							handler = p->handler;
+						} else {
+							printf("Could not detect mouse protocol!\n");
+							goto probe_fail;
+						}
+					}
+					read_input(IORequest, notifport, handler);
 				} else {
 					printf("Could not set parameters for serial port.\n");
 					printf("Error code: %d\n",((struct IORequest *)IORequest)->io_Error);
 				}
-				
+probe_fail:				
 				CloseDevice((struct IORequest *)IORequest);
 			}
 			DeleteExtIO((struct IORequest *)IORequest);
@@ -163,12 +291,13 @@ printf("Unit=%ld\n",unitnum);
 int main(int argc, char **argv)
 {
 	IPTR args[NOOFARGS] = {FALSE,  // ARG_KILL
-	                       0             // ARG_UNIT
+	                       0,      // ARG_UNIT
+	                       FALSE   // ARG_PROBE
 	                     };
 	struct RDArgs *rda;
-
+printf("!!\n");
 	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-	
+printf("??\n");	
 	if (NULL != rda) {
 		if (TRUE == args[ARG_KILL]) {
 			struct MsgPort * mport = FindPort(MSGPORT_NAME);
@@ -192,7 +321,9 @@ int main(int argc, char **argv)
 			} else {
 				struct MsgPort * notifport = CreatePort(MSGPORT_NAME, 0);
 				if (NULL != notifport) {
-					mouse_driver((IPTR *)args[ARG_UNIT],notifport);
+					mouse_driver(args[ARG_UNIT],
+					             args[ARG_PROBE],
+					             notifport);
 					DeletePort(notifport);
 				} else {
 					printf("Could not create notification port!\n");
