@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 FILES := amiga2date \
 	amigademo \
 	availfonts \
+	blttemplatealpha \
 	date2amiga \
 	dosvartest \
 	exceptiontest \
