@@ -82,7 +82,7 @@ static char *dct[]={"","byte","short","long","long","long","long","long","long"}
 static pushedsize,pushorder=2;
 static int fst[8];
 static int cxl,dil,sil;
-static char *idprefix="",*labprefix="";
+static char *idprefix="",*labprefix="l";
 
 static struct fpconstlist {
     struct fpconstlist *next;
