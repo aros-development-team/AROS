@@ -31,6 +31,7 @@ struct MUI_SliderData
     struct ZuneFrameGfx *knob_frame;
     LONG val_width;
     LONG knob_width;
+    LONG knob_height;
     LONG state; /* When using mouse */
     LONG knob_click,clickx,clicky;
 };
@@ -44,7 +45,7 @@ enum slider_flags {
 
 /*
 Slider.mui/MUIA_Slider_Horiz        
-Slider.mui/MUIA_Slider_Level        
+Slider.mui/MUIA_Slider_Level
 Slider.mui/MUIA_Slider_Max          
 Slider.mui/MUIA_Slider_Min          
 Slider.mui/MUIA_Slider_Quiet        
@@ -131,6 +132,8 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     get(obj,MUIA_Numeric_Min,&min);
     get(obj,MUIA_Numeric_Max,&max);
 
+#   warning this oughta be changed: if max-min is _huge_ it will take a LONG time to complete!
+
     /* Determine the with of the know */
     for (val=min;val<=max;val++)
     {
@@ -142,8 +145,9 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	if (nw > width) width = nw;
     }
 
-    data->val_width = width;
-    data->knob_width = width + 2 * data->knob_frame->xthickness + 2;
+    data->val_width   = width;
+    data->knob_width  = width + 2 * data->knob_frame->xthickness + 2;
+    data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     return TRUE;
@@ -176,19 +180,19 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
     if (data->flags & SLIDER_HORIZ)
     {
 	msg->MinMaxInfo->MinWidth  += data->knob_width + (max - min);
-	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+	msg->MinMaxInfo->MinHeight += data->knob_height;
 	msg->MinMaxInfo->DefWidth  += data->knob_width + (max - min) + 20;
-	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+	msg->MinMaxInfo->DefHeight += data->knob_height;
 	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
-	msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+	msg->MinMaxInfo->MaxHeight += data->knob_height;
     }
     else
     {
-	msg->MinMaxInfo->MinWidth  += 12;
-	msg->MinMaxInfo->MinHeight += 24;
-	msg->MinMaxInfo->DefWidth  += 12;
-	msg->MinMaxInfo->DefHeight += 42;
-	msg->MinMaxInfo->MaxWidth  += 12;
+	msg->MinMaxInfo->MinWidth  += data->knob_width;
+	msg->MinMaxInfo->MinHeight += data->knob_height + (max - min);
+	msg->MinMaxInfo->DefWidth  += data->knob_width;
+	msg->MinMaxInfo->DefHeight += data->knob_height + (max - min) + 20;
+	msg->MinMaxInfo->MaxWidth  += data->knob_width;
 	msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
     }
 
