@@ -47,6 +47,7 @@ FUNCTIONS := \
 	addclass \
 	addgadget \
 	addglist \
+	allocintuimessage \
 	allocremember \
 	allocscreenbuffer \
 	alohaworkbench \
@@ -76,6 +77,7 @@ FUNCTIONS := \
 	endrequest \
 	eraseimage \
 	freeclass \
+	freeintuimessage \
 	freeremember \
 	freescreenbuffer \
 	freescreendrawinfo \
@@ -138,6 +140,7 @@ FUNCTIONS := \
 	screentoback \
 	screentofront \
 	scrollwindowraster \
+	sendintuimessage \
 	setattrsa \
 	setdefaultpubscreen \
 	setdmrequest \
