@@ -49,7 +49,6 @@ CLASSES := \
     register \
     scale \
     semaphore \
-    settings \
     settingsgroup \
     scrollbar \
     scrollbutton \
