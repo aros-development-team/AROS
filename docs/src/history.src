@@ -21,8 +21,16 @@ The source is 6.5MB right now.
 \begin{itemize}
 \item Bugfixes (Do I really need to mention this every time ? ;-)
 \item New libs: layers, expansion
+\item The following items are complete: iffparse, mathffp, mathieeesingbas,
+    utility
+\item The following items are in work: alib_stdio, arp, asl, battclock,
+    commodities, console, datatypes, diskfont, dos, exec, expansion,
+    gadtools, graphics, icon, intuiton, layers, locale, mathffptrans,
+    mathieeedoubbas, mathieeedoubtrans, mathieeesingtrans, mathtrans
+    and timer.
 \item New CLI tools
 \item Andreas Kleinert's CLib integrated
+\item A new standard: HIDD - Hardware Independend Device Driver
 \end{itemize}
 \end{new}
 
