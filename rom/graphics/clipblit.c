@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include "graphics_intern.h"
 #include <graphics/regions.h>
+#include <graphics/layers.h>
+#include <graphics/clip.h>
 
 /*****************************************************************************
 
@@ -220,91 +222,118 @@ void internal_ClipBlit(struct RastPort * srcRP,
       /* search for the next BitMap that can serve as a source */
       while (NULL != srcCR)
       {
-        ULONG crX0, crX1, crY0, crY1;
-        /* cr?? have to be coordinates related to the rastport */
-        crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX;
-        crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX;
-        crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY;
-        crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY;
+        /* only do this if the source is not a simple layer and does
+           not have a certain bit set in this ClipRect  */
+        if (!(0 != (srcLayer->Flags & LAYERSIMPLE) &&
+              0 != (srcCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS)))
+        { 
+          ULONG crX0, crX1, crY0, crY1;
+          /* cr?? have to be coordinates related to the rastport */
+          crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX;
+          crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX;
+          crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY;
+          crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY;
 /*
 kprintf("CB: found source cliprect with rastport-rel. coords:\n");
 kprintf("X0: %d, Y0: %d, X1: %d, Y1: %d\n",crX0,crY0,crX1,crY1);
 kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
 */
-        /* the only case that must not happen is that
-           this ClipRect is outside the destination area.  */
-        if (!(crX0 > (xSrc+xSize-1) ||
-              crX1 <  xSrc          || 
-              crY0 > (ySrc+ySize-1) ||
-              crY1 <  ySrc))
-	{
-	  /*
-          kprintf("This cliprect will be used as source!\n");
-	  */
-          /* this cliprect contains bitmap data that need to be copied */
-          /* 
-             get the pointer to the bitmap structure and fill out
-             the rectangle structure that shows which part we mean to copy    
-           */
-          if (NULL != srcCR->BitMap)
-	  {
+          /* the only case that must not happen is that
+             this ClipRect is outside the destination area.  */
+          if (!(crX0 > (xSrc+xSize-1) ||
+                crX1 <  xSrc          || 
+                crY0 > (ySrc+ySize-1) ||
+                crY1 <  ySrc))
+          {
 	    /*
-            kprintf("this cliprect is hidden!\n");
+            kprintf("This cliprect will be used as source!\n");
 	    */
-            SrcOffsetX = srcCR->bounds.MinX & 0x0F;
+            /* this cliprect contains bitmap data that need to be copied */
+            /* 
+              get the pointer to the bitmap structure and fill out
+              the rectangle structure that shows which part we mean to copy    
+             */
+            if (NULL != srcCR->BitMap)
+	    {
+	      /*
+              kprintf("this cliprect is hidden!\n");
+	      */
+              if (0 == (srcLayer->Flags & LAYERSUPER))
+	      {
+                /* no superbitmap */
+                SrcOffsetX = srcCR->bounds.MinX & 0x0F;
 
-            if (xSrc >= crX0)
-              bltSrcX = xSrc - crX0 + SrcOffsetX;
-            else
-              bltSrcX = SrcOffsetX;
+                if (xSrc >= crX0)
+                  bltSrcX = xSrc - crX0 + SrcOffsetX;
+                else
+                  bltSrcX = SrcOffsetX;
             
-            if (ySrc > crY0)
-              bltSrcY   = ySrc - crY0;
+                if (ySrc > crY0)
+                  bltSrcY   = ySrc - crY0;
+                else
+                  bltSrcY   = 0;
+	        /*
+                kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
+	        */
+                srcBM     = srcCR->BitMap;
+	      }
+              else
+	      {
+                /* with superbitmap */
+                if (xSrc >= crX0)
+                  bltSrcX = xSrc - crX0 + srcLayer->Scroll_X;
+                else
+                  bltSrcX = srcLayer->Scroll_X;
+            
+                if (ySrc > crY0)
+                  bltSrcY   = ySrc - crY0 + srcLayer->Scroll_Y;
+                else
+                  bltSrcY   = srcLayer->Scroll_Y;
+	        /*
+                kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
+	        */
+                srcBM     = srcCR->BitMap;
+	      }
+
+            }
             else
-              bltSrcY   = 0;
-	    /*
-            kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
+	    {
+              /* this part of the layer is not hidden. */
+              srcBM   = srcRP->BitMap;
+              bltSrcX = xSrc + srcCR->bounds.MinX;
+              bltSrcY = ySrc + srcCR->bounds.MinY;
+	      /*
+              kprintf("this cliprect is not hidden. I use the Rastport's bitmap\n");
+              kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
+	      */
+	    }
+
+            if (crX0 > xSrc)
+              destRect.MinX = crX0 - xSrc + xDest;
+            else
+              destRect.MinX = xDest;
+
+            if (crX1 < (xSrc+xSize-1))
+              destRect.MaxX = crX1 - xSrc + xDest;
+            else
+              destRect.MaxX = xDest+xSize-1;
+
+            if (crY0 > ySrc)
+              destRect.MinY = crY0 - ySrc + yDest;
+            else
+              destRect.MinY = yDest;
+
+            if (crY1 < (ySrc+ySize-1))
+              destRect.MaxY = crY1 - ySrc + yDest;
+            else
+              destRect.MaxY = yDest+ySize-1;
+  	    /*
+            kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
+                 destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
 	    */
-            srcBM     = srcCR->BitMap;
-          }
-          else
-	  {
-            /* this part of the layer is not hidden. */
-            srcBM   = srcRP->BitMap;
-            bltSrcX = xSrc + srcCR->bounds.MinX;
-            bltSrcY = ySrc + srcCR->bounds.MinY;
-	    /*
-            kprintf("this cliprect is not hidden. I use the Rastport's bitmap\n");
-            kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
-	    */
-	  }
-
-          if (crX0 > xSrc)
-            destRect.MinX = crX0 - xSrc + xDest;
-          else
-            destRect.MinX = xDest;
-
-          if (crX1 < (xSrc+xSize-1))
-            destRect.MaxX = crX1 - xSrc + xDest;
-          else
-            destRect.MaxX = xDest+xSize-1;
-
-          if (crY0 > ySrc)
-            destRect.MinY = crY0 - ySrc + yDest;
-          else
-            destRect.MinY = yDest;
-
-          if (crY1 < (ySrc+ySize-1))
-            destRect.MaxY = crY1 - ySrc + yDest;
-          else
-            destRect.MaxY = yDest+ySize-1;
-	  /*
-          kprintf("destRect: MinX: %d, MinY: %d,MaxX: %d, MaxY: %d\n",
-               destRect.MinX,destRect.MinY,destRect.MaxX,destRect.MaxY);
-	  */
-          break;
-	} /* if () */
-        
+            break;
+	  } /* if () */
+        }
         srcCR = srcCR -> Next;
       } /* while () */
       if (NULL == srcCR)
@@ -337,72 +366,90 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
       /* destRect contains the area that we want to copy to */
       while (NULL != destCR)
       {
-        struct Rectangle destRect2;
-        LONG DestOffsetX, DestOffsetY;
-
-        destRect2.MinX = destCR->bounds.MinX - destLayer->bounds.MinX;
-        destRect2.MaxX = destCR->bounds.MaxX - destLayer->bounds.MinX;
-        destRect2.MinY = destCR->bounds.MinY - destLayer->bounds.MinY;
-        destRect2.MaxY = destCR->bounds.MaxY - destLayer->bounds.MinY;
-
-
-       /* does this ClipRect fit into the destination area? 
-           The only case that must not happen is that it lies
-           outside of destRect */
-        if (!(destRect.MinX  > destRect2.MaxX ||
-              destRect.MaxX  < destRect2.MinX ||
-              destRect.MinY  > destRect2.MaxY ||
-              destRect.MaxY  < destRect2.MinY   ))
+        /* if the layer is a simple layer and the cliprect's flag
+           has a certain bit set, then do nothing here! */ 
+        if (!(0 != (destLayer->Flags & LAYERSIMPLE) && 
+              0 != (destCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))) 
 	{
-          ULONG bltSrcX_tmp = bltSrcX;
-          ULONG bltSrcY_tmp = bltSrcY;        
-          bltWidth  = destRect.MaxX - destRect.MinX + 1;
-          bltHeight = destRect.MaxY - destRect.MinY + 1;
-          /* 
-             destCR actually contains the/a part of the rectangle that 
-             we have to blit to 
-           */
-          if (NULL != destCR->BitMap)
+          struct Rectangle destRect2;
+          LONG DestOffsetX, DestOffsetY;
+
+          destRect2.MinX = destCR->bounds.MinX - destLayer->bounds.MinX;
+          destRect2.MaxX = destCR->bounds.MaxX - destLayer->bounds.MinX;
+          destRect2.MinY = destCR->bounds.MinY - destLayer->bounds.MinY;
+          destRect2.MaxY = destCR->bounds.MaxY - destLayer->bounds.MinY;
+
+
+         /* does this ClipRect fit into the destination area? 
+             The only case that must not happen is that it lies
+             outside of destRect */
+          if (!(destRect.MinX  > destRect2.MaxX ||
+                destRect.MaxX  < destRect2.MinX ||
+                destRect.MinY  > destRect2.MaxY ||
+                destRect.MaxY  < destRect2.MinY   )) 
           {
-            destBM      = destCR->BitMap;
-            DestOffsetX = destCR->bounds.MinX & 0x0F;
-            DestOffsetY = 0;
-          }
-          else
-	  {
-            destBM      = destRP->BitMap;
+            ULONG bltSrcX_tmp = bltSrcX;
+            ULONG bltSrcY_tmp = bltSrcY;        
+            bltWidth  = destRect.MaxX - destRect.MinX + 1;
+            bltHeight = destRect.MaxY - destRect.MinY + 1;
+            /* 
+               destCR actually contains the/a part of the rectangle that 
+               we have to blit to 
+             */
+            if (NULL != destCR->BitMap)
+            {
+              if (0 == (destLayer->Flags & LAYERSUPER))
+	      {
+                /* no superbitmap */
+                destBM      = destCR->BitMap;
+                DestOffsetX = destCR->bounds.MinX & 0x0F;
+                DestOffsetY = 0;
+	      }
+              else
+	      {
+                /* with superbitmap */
+                destBM      = destLayer->SuperBitMap;
+                DestOffsetX = destCR->bounds.MinX - destLayer->bounds.MinX +
+                                                    destLayer->Scroll_X;
+                DestOffsetY = destCR->bounds.MinY - destLayer->bounds.MinY +
+                                                    destLayer->Scroll_Y;;
+	      }
+            }
+            else  
+            {
+              destBM      = destRP->BitMap;
               
-            DestOffsetX = destCR->bounds.MinX;
-            DestOffsetY = destCR->bounds.MinY ;           
-	  }
+              DestOffsetX = destCR->bounds.MinX;
+              DestOffsetY = destCR->bounds.MinY ;           
+	    }
 
-          if (destRect.MinX > destRect2.MinX)
-	  {
-            bltDstX   = destRect.MinX - destRect2.MinX + DestOffsetX; 
-          }
-          else
-          {
-            bltDstX   = DestOffsetX;
-            bltWidth -= (destRect2.MinX - destRect.MinX); 
-            bltSrcX_tmp  += (destRect2.MinX - destRect.MinX);
-          }
+            if (destRect.MinX > destRect2.MinX)
+ 	    {
+              bltDstX   = destRect.MinX - destRect2.MinX + DestOffsetX; 
+            }
+            else
+            {
+              bltDstX   = DestOffsetX;
+              bltWidth -= (destRect2.MinX - destRect.MinX); 
+              bltSrcX_tmp  += (destRect2.MinX - destRect.MinX);
+            }
 
-          if (destRect.MaxX > destRect2.MaxX)
-            bltWidth -= (destRect.MaxX - destRect2.MaxX);           
+            if (destRect.MaxX > destRect2.MaxX)
+              bltWidth -= (destRect.MaxX - destRect2.MaxX);           
 
-          if (destRect.MinY > destRect2.MinY)
-	  {
-            bltDstY    = destRect.MinY - destRect2.MinY + DestOffsetY;
-	  }
-          else
-          {
-            bltDstY    = DestOffsetY;
-            bltHeight -= (destRect2.MinY - destRect.MinY);
-            bltSrcY_tmp   += (destRect2.MinY - destRect.MinY);
-          }
+            if (destRect.MinY > destRect2.MinY) 
+            {
+              bltDstY    = destRect.MinY - destRect2.MinY + DestOffsetY;
+	    }
+            else
+            {
+              bltDstY    = DestOffsetY;
+              bltHeight -= (destRect2.MinY - destRect.MinY);
+              bltSrcY_tmp   += (destRect2.MinY - destRect.MinY);
+            }
 
-          if (destRect.MaxY > destRect2.MaxY)
-            bltHeight -= (destRect.MaxY - destRect2.MaxY);
+            if (destRect.MaxY > destRect2.MaxY)
+              bltHeight -= (destRect.MaxY - destRect2.MaxY);
 	  /*
           kprintf("bltSrcX:  %d, bltSrcY  : %d\n",bltSrcX_tmp,bltSrcY_tmp);
           kprintf("bltDstX:  %d, bltDstY  : %d\n",bltDstX,bltDstY);
@@ -410,18 +457,19 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
           kprintf("bltMask : %d\n",bltMask);
           kprintf("srcBM   : %x\n",srcBM);
 	  */
-          BltBitMap(srcBM,
-                    bltSrcX_tmp,
-                    bltSrcY_tmp,
-                    destBM,
-                    bltDstX,
-                    bltDstY,
-                    bltWidth,
-                    bltHeight,
-                    minterm,
-                    bltMask,
-                    NULL);
-	} /* if (... ) */
+            BltBitMap(srcBM,
+                      bltSrcX_tmp,
+                      bltSrcY_tmp,
+                      destBM,
+                      bltDstX,
+                      bltDstY,
+                      bltWidth,
+                      bltHeight,
+                      minterm,
+                      bltMask,
+                      NULL);
+	  } /* if (... ) */
+	}
         destCR = destCR -> Next;
       } /* while (NULL != destCR) */
     } /* if (NULL != destRP->Layer) */
