@@ -30,6 +30,16 @@
     AROS_LPA(struct TagItem *, taglist, A1), \
     struct Library *, GadtoolsBase, 8, Gadtools)
 
+#define DrawBevelBoxA(rport, left, top, width, height, taglist) \
+    AROS_LC6(void, DrawBevelBoxA, \
+    AROS_LPA(struct RastPort *, rport, A0), \
+    AROS_LPA(LONG, left, D0), \
+    AROS_LPA(LONG, top, D1), \
+    AROS_LPA(LONG, width, D2), \
+    AROS_LPA(LONG, height, D3), \
+    AROS_LPA(struct TagItem *, taglist, A1), \
+    struct Library *, GadtoolsBase, 20, Gadtools)
+
 #define FreeGadgets(gad) \
     AROS_LC1(void, FreeGadgets, \
     AROS_LPA(struct Gadget *, gad, A0), \
@@ -40,15 +50,10 @@
     AROS_LPA(struct Menu *, menu, A0), \
     struct Library *, GadtoolsBase, 9, Gadtools)
 
-#define DrawBevelBoxA(rport, left, top, width, height, taglist) \
-    AROS_LC6(void, DrawBevelBoxA, \
-    AROS_LPA(struct RastPort *, rport, A0), \
-    AROS_LPA(LONG, left, D0), \
-    AROS_LPA(LONG, top, D1), \
-    AROS_LPA(LONG, width, D2), \
-    AROS_LPA(LONG, height, D3), \
-    AROS_LPA(struct TagItem *, taglist, A1), \
-    struct Library *, GadtoolsBase, 20, Gadtools)
+#define FreeVisualInfo(vi) \
+    AROS_LC1(void, FreeVisualInfo, \
+    AROS_LPA(APTR, vi, A0), \
+    struct Library *, GadtoolsBase, 22, Gadtools)
 
 #define GetVisualInfoA(screen, taglist) \
     AROS_LC2(APTR, GetVisualInfoA, \
@@ -108,11 +113,6 @@
     AROS_LPA(struct Requester *, req, A2), \
     AROS_LPA(struct TagItem *, taglist, A3), \
     struct Library *, GadtoolsBase, 7, Gadtools)
-
-#define FreeVisualInfo(vi) \
-    AROS_LC1(void, FreeVisualInfo, \
-    AROS_LPA(APTR, vi, A0), \
-    struct Library *, GadtoolsBase, 22, Gadtools)
 
 #define LayoutMenuItemsA(firstitem, vi, taglist) \
     AROS_LC3(BOOL, LayoutMenuItemsA, \
