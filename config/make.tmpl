@@ -1096,7 +1096,11 @@ endif
 # options:
 # - conffile (default: $(MODULE).conf): The name of the config file.
 # - cflags (default: $(CFLAGS)): The C options used during compilation
-%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref linklibname=$(BD_MODNAME$(BDID)) uselibs=
+%define build_module mmake=\A modname=\A modtype=\A \
+  conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
+  cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
+  reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
+  linklibname=$(BD_MODNAME$(BDID)) uselibs=
 
 %buildid
 
@@ -1122,7 +1126,7 @@ endif
 BD_OBJS$(BDID)       := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_ENDOBJ$(BDID)     := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 BD_GENINCS$(BDID)    := proto/$(BD_MODNAME$(BDID)).h clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h
-BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
 BD_REFFILE$(BDID)    := %(reffile)
 BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs))
 BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs)))
@@ -1172,13 +1176,14 @@ BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 
 $(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
 	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
+	%mkdir_q dir=$(BD_OBJDIR$(BDID))
 	@$(CXREF) -raw -CPP 'gcc $(subst ','',$(strip $(BD_CFLAGS$(BDID)))) -E -C -dD' $(subst $(CXREF),,$^) >$@
 
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c \
 $(BD_OBJDIR$(BDID))/$(DB_MODNAME$(BDID))_libdefs.h \
 $(patsubst %.o,%.c,$(BD_ENDOBJ$(BDID))) \
 $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) \
-: $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID)) $(BD_OBJDIR$(BDID))
+: $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 ifneq ($(BD_CONFFILE$(BDID)),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
