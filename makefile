@@ -22,7 +22,7 @@ clean:
 	$(RM) tasktest signaltest exceptiontest tasktest2 messagetest \
 		semaphoretest initstructtest devicetest filetest \
 		core *.o *.a
-	for dir in $(KERNEL) exec dos utility filesys libs ; do \
+	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
 	    ( cd $$dir ; \
 	    $(MAKE) clean ) ; \
 	done
@@ -61,14 +61,14 @@ arosshell: arosshell.o $(LIBS)
 	$(CC) $(CFLAGS) arosshell.o $(LIBS) -o $@
 
 apps:
-	cd c; make \
+	@cd c; make \
 	    TOP=".." CURDIR="$(CURDIR)/c" \
 	    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
 	    all
 
 subdirs:
-	for dir in $(KERNEL) exec dos utility filesys libs ; do \
-	    ( cd $$dir ; \
+	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
+	    ( echo "Entering $$dir..." ; cd $$dir ; \
 	    $(MAKE) \
 		TOP=".." CURDIR="$(CURDIR)/$$dir" \
 		CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
