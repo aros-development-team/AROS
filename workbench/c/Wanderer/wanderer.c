@@ -695,30 +695,7 @@ void wanderer_guisettings(void)
 
 void wanderer_about(void)
 {
-    STRPTR base;
-    STRPTR params[] = { NULL, NULL };
-
-    get(app, MUIA_Application_Base, &base);
-    params[0] = base;
-
-    MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",
-	"AROS ROM version 0.7 (alpha)\n"
-	"Wanderer version 0.1 (alpha)\n\n"
-	"Copyright © 2003, The AROS Development Team.\n"
-	"All rights reserved.\n\n"
-	"ARexx Port: %s\n\n"
-	"\033cWe made it...\n\n"
-	"\033bThe AROS Development Team\033n\n"
-	"Aaron Digulla, Georg Steger, Nils Henrik Lorentzen,\n"
-	"Henning Kiel, Staf Verhaegen, Henrik Berglund,\n"
-	"Michal Schulz, Iain Templeton, Fabio Alemagna,\n"
-	"Sebastian Heutling, Johan Grip, Tobias Seiler,\n"
-	"Johan Alfredsson, Adam Chodorowski, Sebastian Bauer,\n"
-        "Matt Parsons, Stefan Berger, Bernardo Innocenti,\n"
-	"Joerg Dietrich, Kjetil Svalastog Matheussen, Peter Eriksson,\n"
-	"David Le Corfec, Paul Smith, ...\n"
-	"\nTo be continued..."
-	, params);
+    OpenWorkbenchObject("SYS:System/AboutAROS", TAG_DONE);
 }
 
 void wanderer_quit(void)
