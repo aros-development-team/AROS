@@ -58,10 +58,10 @@
 #   define SET_ERRORTAGITEM(value) STORE(errorTagItem, (value))
 
     /* The following tags need to be setup early ---------------------------*/
-    errorCode = (LONG *) GetTagData(ICONA_ErrorCode, NULL, tags);
+    errorCode = (LONG *) GetTagData(ICONA_ErrorCode, 0, tags);
     SET_ERRORCODE(0);
     
-    errorTagItem = (struct TagItem **) GetTagData(ICONA_ErrorTagItem, NULL, tags);
+    errorTagItem = (struct TagItem **) GetTagData(ICONA_ErrorTagItem, 0, tags);
     SET_ERRORTAGITEM(NULL);
 
     /* Parse taglist -------------------------------------------------------*/

@@ -874,7 +874,7 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 
 	    ttarray[t] = NULL;
 
-	    DO(data->sdd_Dest)->do_ToolTypes = (char **)ttarray;
+	    DO(data->sdd_Dest)->do_ToolTypes = (STRPTR *)ttarray;
 
 	    break;
 

@@ -307,7 +307,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	/* Get number of tool types */
 	for (num_tts = 0;icon->do_ToolTypes[num_tts];num_tts++);
 
-	if ((dobj->do_ToolTypes = (char**)AllocPooled(pool,sizeof(char*)*(num_tts+1))))
+	if ((dobj->do_ToolTypes = (STRPTR *)AllocPooled(pool,sizeof(char*)*(num_tts+1))))
 	{
 	    int i;
 	    for (i=0;i<num_tts;i++)

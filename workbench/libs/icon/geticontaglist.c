@@ -190,7 +190,7 @@
                     {
                         iim.iim_SysBase     = (struct Library *) SysBase;
                         iim.iim_DOSBase     = (struct Library *) DOSBase;
-                        iim.iim_UtilityBase =                    UtilityBase;
+                        iim.iim_UtilityBase = (struct Library *)UtilityBase;
                         iim.iim_IconBase    =                    IconBase;
                         iim.iim_Tags        = tags;
                         
