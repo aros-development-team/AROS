@@ -8,12 +8,11 @@ AROS-linux :
 apps :
 	@$(NOP)
 
-#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-exec-$(CPU) setup-x11
-#MM setup-linux : setup-clib-linux
+#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11 setup-clib-linux
 setup-linux :
 	@$(NOP)
 
-#MM setup-exec-linux : setup-exec-unix
+#MM setup-exec-linux : setup-exec-unix setup-exec-linux-$(CPU)
 setup-exec-linux :
 	@$(NOP)
 
@@ -57,6 +56,6 @@ setup-clib-linux :
 clib-linux :
 	@$(NOP)
 
-#MM includes : includes-copy includes-$(CPU)
+#MM includes : includes-copy includes-linux-$(CPU)
 includes:
 	@$(NOP)
