@@ -9,8 +9,8 @@ FILES := devicetest \
 	dosvartest \
 	exceptiontest \
 	filetest \
-	initstructtest \
 	messagetest \
+	scantest \
 	semaphoretest \
 	signaltest \
 	tasktest \

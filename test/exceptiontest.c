@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1998/04/28 18:26:33  bergers
+    Bugfixes. Should compile w/o error now. Compile w/ mmake AROS.test.
+
     Revision 1.5  1998/04/13 22:50:02  hkiel
     Include <proto/exec.h>
 
@@ -27,10 +30,13 @@
 
 ULONG s;
 
+/* Function prototype needed on Linux-M68K*/
+ULONG Test_handler();
+
 AROS_LH2(ULONG,handler,
     AROS_LHA(ULONG,signals,D0),
     AROS_LHA(APTR,exceptData,A1),
-    struct ExecBase *,SysBase,,)
+    struct ExecBase *,SysBase,0,Test)
 {
     AROS_LIBFUNC_INIT
     exceptData=0;
@@ -53,7 +59,7 @@ int main(void)
 	{
 	    printf("sig2: %d\n",s2);
 	    oldexc=SysBase->ThisTask->tc_ExceptCode;
-	    SysBase->ThisTask->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,);
+	    SysBase->ThisTask->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test);
 	    SetExcept(1<<s2,1<<s2);
 	    Signal(SysBase->ThisTask,(1<<s2)|(1<<s1));
 	    SetExcept(0,1<<s2);
