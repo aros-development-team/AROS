@@ -8,6 +8,7 @@
     Desc: ANSI-C header file stdio.h
     Lang: english
 */
+#include <stdarg.h>
 
 #ifndef NULL
 #ifdef __cplusplus
@@ -21,6 +22,17 @@
 #define EOF (-1)
 #endif
 
+typedef struct __FILE
+{
+    void * fh;
+} FILE;
+
+extern FILE * stdin, * stdout, * stderr;
+
 extern int printf (const char* format, ...);
+extern int vprintf (const char* format, va_list args);
+extern int vfprintf (FILE * fh,const char* format, va_list args);
+extern int fputc (int c, FILE * stream);
+extern int putc (int c, FILE * stream);
 
 #endif /* _STDIO_H */
