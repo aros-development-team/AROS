@@ -5,6 +5,9 @@
     Internal data structures for bootloader.resource
 */
 
+#ifndef BOOTLOADER_INTERN_H
+#define BOOTLOADER_INTERN_H
+
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
@@ -36,3 +39,5 @@ struct BootLoaderBase
 #undef UtilityBase
 #endif
 #define UtilityBase	(BootLoaderBase->bl_UtilityBase)
+
+#endif //BOOTLOADER_INTERN_H

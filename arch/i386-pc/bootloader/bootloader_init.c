@@ -12,7 +12,7 @@
 #include <proto/exec.h>
 #include <proto/bootloader.h>
 
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <aros/bootloader.h>
 #include <aros/multiboot.h>
 #include "bootloader_intern.h"
@@ -27,72 +27,15 @@
 #undef SysBase
 #endif
 
-static const UBYTE name[];
-static const UBYTE version[];
-static const void * const LIBFUNCTABLE[];
-extern const char LIBEND;
-
-struct BootLoaderBase *AROS_SLIB_ENTRY(init, BASENAME)();
-
-extern void AROS_SLIB_ENTRY(GetBootInfo,BASENAME)();
-
-int Bootloader_entry(void)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
 {
-    return -1;
-}
+    AROS_SET_LIBFUNC_INIT
 
-const struct Resident Bootloader_resident __attribute__((section(".text"))) =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Bootloader_resident,
-    (APTR)&LIBEND,
-    RTF_COLDSTART,
-    41,
-    NT_RESOURCE,
-    100,
-    (UBYTE *)name,
-    (UBYTE *)&version[6],
-    (ULONG *)&AROS_SLIB_ENTRY(init,BASENAME)
-};
-
-static const UBYTE name[] = NAME_STRING;
-static const UBYTE version[] = VERSION_STRING;
-
-static const void * const LIBFUNCTABLE[] =
-{
-    &AROS_SLIB_ENTRY(GetBootInfo,BASENAME),
-    (void *)-1
-};
-
-AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
-    AROS_UFHA(ULONG,	dummy,	D0),
-    AROS_UFHA(ULONG,	slist,	A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
-    struct BootLoaderBase * BootLoaderBase = NULL;
     struct arosmb *mb = (struct arosmb *)0x1000;
     
-    BootLoaderBase = (struct BootLoaderBase *)(((UBYTE *)
-	AllocMem( neg + sizeof(struct BootLoaderBase),
-		    MEMF_CLEAR | MEMF_PUBLIC)) + neg);
-
-    if( BootLoaderBase )
-    {
-	BootLoaderBase->bl_SysBase = SysBase;
-	BootLoaderBase->bl_UtilityBase = OpenLibrary("utility.library",0);
-	BootLoaderBase->bl_Node.ln_Pri = 0;
-	BootLoaderBase->bl_Node.ln_Type = NT_RESOURCE;
-	BootLoaderBase->bl_Node.ln_Name = (STRPTR)name;
-	NEWLIST(&(BootLoaderBase->Args));
-	NEWLIST(&(BootLoaderBase->DriveInfo));
-
-	MakeFunctions(BootLoaderBase, (APTR)LIBFUNCTABLE, NULL);
-	AddResource(BootLoaderBase);
-    }
+    BootLoaderBase->bl_UtilityBase = OpenLibrary("utility.library",0);
+    NEWLIST(&(BootLoaderBase->Args));
+    NEWLIST(&(BootLoaderBase->DriveInfo));
 
     /* Right. Now we extract the data currently placed in 0x1000 */
     if (mb->magic == MBRAM_VALID)
@@ -204,7 +147,9 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
 	}
     }
-    return BootLoaderBase;
+    return TRUE;
 
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
