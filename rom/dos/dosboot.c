@@ -41,6 +41,7 @@ AROS_UFH3(void, intBoot,
 	STRPTR bootname, s1;
 	ULONG len;
 
+
 	DOSBase = OpenLibrary("dos.library", 0);
 	if( DOSBase == NULL)
 		Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
@@ -100,7 +101,7 @@ AROS_UFH3(void, intBoot,
 	lock = Lock("SYS:Devs", SHARED_LOCK);
 	if( lock )
 		AssignLock("DEVS", lock);
-	
+
 	/* Late binding ENVARC: assign, only if used */
 	AssignLate("ENVARC", "SYS:Prefs/env-archive");
 	
@@ -108,8 +109,7 @@ AROS_UFH3(void, intBoot,
 	   initializing itself
 	*/
 	Wait(SIGBREAKF_CTRL_F);
-	   
-	
+
 	/* Initialize HIDDs */
 	init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 

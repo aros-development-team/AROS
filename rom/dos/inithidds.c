@@ -29,8 +29,8 @@
 #include <aros/asmcall.h>
 #endif /* _AROS */
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #warning This is just a temporary and hackish way to get the HIDDs up and working
@@ -77,8 +77,8 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
     UBYTE buf[BUFSIZE];
     UBYTE gfxname[BUFSIZE], kbdname[BUFSIZE], mousename[BUFSIZE];
     BOOL got_gfx = FALSE, got_kbd = FALSE, got_mouse = FALSE, got_library = TRUE;
-    
-    
+
+
     base->sysbase = sysBase;
     base->dosbase = dosBase;
 
@@ -110,17 +110,17 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    while (FGets(fh, buf, BUFSIZE))
 	    {
 	        STRPTR keyword = buf, arg, end;
-		
+
 		D(bug("Got line\n"));
 		D(bug("Line: %s\n", buf));
-		  
+
 		  /* Get keyword */
 		while ((*keyword != 0) && isspace(*keyword))
 		    keyword ++;
-		
+
 		if (*keyword == 0)
 		    continue;
-			
+
 		  /* terminate keyword */
 		arg = keyword;
 		while ((*arg != 0) && (!isblank(*arg)))
@@ -129,19 +129,19 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		}
 		if (*arg == 0)
 		    continue;
-		    
+
 		*arg = 0;
-		  
+
 		arg ++;
-		
+
 		  /* Find start of argument */
 		D(bug("Find argument at %s\n", arg));
 		while ((*arg != 0) && isblank(*arg))
 		    arg ++;
-		 
+
 		if (*arg == 0)
 		    continue;
-		    
+
 		D(bug("Terminate argument at %s\n", arg));
 		  /* terminate argument */
 		end = arg;
@@ -149,10 +149,10 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		    end ++;
 		if (*end != 0)
 		    *end = 0;
-		 
+
 		D(bug("Got keyword \"%s\"\n", keyword));
 		D(bug("Got arg \"%s\"\n", arg));
-		
+
 		if (0 == strcmp(keyword, "library"))
 		{
 		    D(bug("Opening library\n"));
@@ -164,7 +164,6 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 			got_library = FALSE;
 			break;
 		    }
-		    
 		}
 		else if (0 == strcmp(keyword, "gfx"))
 		{
@@ -181,7 +180,6 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		    strncpy(kbdname, arg, BUFSIZE - 1);
 		    got_kbd = TRUE;
 		}
-		  
 	    }
 	    
 	    Close(fh);
@@ -227,7 +225,6 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		success = FALSE;
 		goto end;
 	    }
-	    
 
 	    if (!init_device(mousename, "gameport.device", base))
 	    {
@@ -285,7 +282,6 @@ static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 	D(bug("Closing gfx\n"));
 	
 	CloseLibrary((struct Library *)GfxBase);
-	
     }
     ReturnBool ("init_gfxhidd", success);
 }	    
