@@ -9,9 +9,9 @@
     Lang: english
 */
 
-#ifdef assert
+#include <sys/cdefs.h>
+
 #undef assert
-#endif
 
 #ifdef NDEBUG
 #define assert(expr)	((void)0)
@@ -19,6 +19,10 @@
 #define assert(expr)	(((expr)) ? (void)0 : __assert(#expr,__FILE__,__LINE__))
 #endif
 
+__BEGIN_DECLS
+
 extern void __assert (const char *, const char *, unsigned int);
+
+__END_DECLS
 
 #endif /* _ASSERT_H_ */
