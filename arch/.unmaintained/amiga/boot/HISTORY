@@ -1,3 +1,7 @@
+arosboot 41.8
+    Fixed bug that could cause reset vector corruption (mementry for the
+    KickTagPtr was 4 bytes short).
+
 arosboot 41.7
 
     Do all file operations relative to PROGDIR:. This applies to the config
