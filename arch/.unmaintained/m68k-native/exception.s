@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/21 21:08:57  aros
+#    Changed __AROS_LA to __AROS_LHA
+#
 #    Revision 1.2  1996/08/01 17:41:35  digulla
 #    Added standard header for all files
 #
@@ -10,11 +13,10 @@
 #*****************************************************************************
 #
 #   NAME
+#	__AROS_LH0(void, Exception,
 #
-#	void Exception (
-#
-#   SYNOPSIS
-#	void)
+#   LOCATION
+#	struct ExecBase *, SysBase, 8, Exec)
 #
 #   FUNCTION
 #	Exception handler. This function is called by the dispatcher if a
