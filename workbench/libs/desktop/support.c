@@ -5,9 +5,6 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
@@ -28,36 +25,50 @@
 
 #include "desktop_intern_protos.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 BOOL startDesktopHandler(void)
 {
-// NOTE: the OPEN vector (the only caller of this function)
-// already has a mutex on the library base at this point
-    struct Process *process;
-    struct MsgPort *port;
-    struct Message *msg;
-    struct TagItem  procTags[] = {
-        {NP_Entry, (ULONG) desktopHandler},
-        {NP_StackSize, 8192},
-        {NP_Name, (IPTR) "Desktop Handler"},
-        {NP_UserData, NULL},
-        {TAG_DONE, 0}
-    };
-
-    port = (struct MsgPort *) CreateMsgPort();
-    procTags[3].ti_Data = (ULONG) port;
-
+    /*
+        NOTE: the OPEN vector (the only caller of this function)
+        already has a mutex on the library base at this point
+    */
+    struct Process *process = NULL;
+    struct Message *msg     = NULL;
+    struct MsgPort *port    = (struct MsgPort *) CreateMsgPort();
+    
+    if (port == NULL)
+    {
+        D(bug("[desktop handler starter] ERROR: Could not create message port!\n"));
+        return FALSE;
+    }
+    
     DesktopBase->db_Library.lib_OpenCnt++;
 
-    kprintf("*** Starting desktop handler\n");
-    process = CreateNewProc(procTags);
-    if (!process)
+    D(bug("*** Starting desktop handler\n"));
+    process = CreateNewProcTags
+    (
+        NP_Entry,     (IPTR) desktopHandler,
+        NP_Name,      (IPTR) "Desktop Handler",
+        NP_StackSize,        8192,
+        NP_UserData,  (IPTR) port,
+        
+        TAG_DONE
+    );
+    
+    if (process == NULL)
+    {
+        // FIXME: deallocate msgport??
+        D(bug("[desktop handler starter] ERROR: Could not start desktop handler process!\n")); 
         return FALSE;
-
+    }
+    
     WaitPort(port);
     msg = GetMsg(port);
     ReplyMsg(msg);
 
-    kprintf("*** Desktop Handler started OK\n");
+    D(bug("*** Desktop Handler started OK\n"));
 
     return TRUE;
 }
