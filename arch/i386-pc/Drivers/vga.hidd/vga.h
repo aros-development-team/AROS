@@ -127,6 +127,9 @@ VOID free_vgaclass  ( struct vga_staticdata * );
 VOID free_onbmclass  ( struct vga_staticdata * );
 VOID free_offbmclass  ( struct vga_staticdata * );
 
+Class *init_mouseclass (struct vga_staticdata * );
+VOID free_mouseclass ( struct vga_staticdata * );
+
 void draw_mouse (struct vga_staticdata *);
 
 #define XSD(cl) ((struct vga_staticdata *)cl->UserData)
