@@ -57,7 +57,7 @@ const struct Resident resident=
 };
 
 const UBYTE name[] = "alert.hook\r\n";
-const UBYTE version[] = "$VER: AROS alert.hook 41.6 (28.1.97)";
+const UBYTE version[] = "$VER: alert.hook 41.6 (28.1.97)";
 const UBYTE nomem[] = "\x38\x0f" "Not Enough Memory! ";
 const UBYTE sfail[] = "\x38\x0f" "Software Failure! ";
 const UBYTE recov[] = "\x38\x0f" "Recoverable Alert! ";
