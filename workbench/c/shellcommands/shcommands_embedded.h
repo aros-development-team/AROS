@@ -9,7 +9,6 @@
 #define stringify(x) _stringify(x)
 
 #define SHArg(name) __shargs[SHA_##name]
-#define SHReturn(code) return (code)
 
 #define __SHA_ENUM(abbr, name, modf, def) SHA_##name
 #define __SHA_DEF(abbr, name, modf, def) (IPTR)(def)
@@ -53,7 +52,7 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
 }
 
 
-#define AROS_SH0(name, version, date)               \
+#define AROS_SH0(name, version)                     \
 ULONG name##_main(struct DOSBase *DOSBase);         \
 struct struct shcommand __##name##_##shcommand =    \
 {                                                   \
@@ -70,19 +69,19 @@ ULONG name##_main(struct DOSBase *DOSBase)          \
 
 #define __DEF(x...) {x}
 
-#define AROS_SH1(name, version, date, a1)         \
+#define AROS_SH1(name, version, a1)               \
     __AROS_SH_ARGS(name, 1, __DEF(__SHA_DEF(a1)), \
                             __SHA_OPT(a1))        \
     {                                             \
         enum {__SHA_ENUM(a1)};
 
-#define AROS_SH2(name, version, date, a1, a2)                    \
+#define AROS_SH2(name, version, a1, a2)                          \
     __AROS_SH_ARGS(name, 2, __DEF(__SHA_DEF(a1), __SHA_DEF(a2)), \
                             __SHA_OPT(a1) "," __SHA_OPT(a2))     \
     {                                                            \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)};
 
-#define AROS_SH3(name, version, date, a1, a2, a3)               \
+#define AROS_SH3(name, version, a1, a2, a3)                     \
     __AROS_SH_ARGS(name, 3, __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                             __SHA_DEF(a3)),                     \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
@@ -91,7 +90,7 @@ ULONG name##_main(struct DOSBase *DOSBase)          \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
 	      __SHA_ENUM(a3)};
 
-#define AROS_SH4(name, version, date, a1, a2, a3, a4)           \
+#define AROS_SH4(name, version, a1, a2, a3, a4)                 \
     __AROS_SH_ARGS(name, 4, __DEF(__SHA_DEF(a1), __SHA_DEF(a2)  \
                             __SHA_DEF(a3), __SHA_DEF(a4)),      \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
@@ -100,7 +99,7 @@ ULONG name##_main(struct DOSBase *DOSBase)          \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
 	      __SHA_ENUM(a3), __SHA_ENUM(a4)};
 
-#define AROS_SH5(name, version, date, a1, a2, a3, a4, a5)       \
+#define AROS_SH5(name, version, a1, a2, a3, a4, a5)             \
     __AROS_SH_ARGS(name, 5, __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                             __SHA_DEF(a3), __SHA_DEF(a4),       \
 		            __SHA_DEF(a5)),                     \

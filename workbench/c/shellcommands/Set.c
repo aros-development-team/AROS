@@ -81,9 +81,9 @@
 
 static void GetNewString(STRPTR, STRPTR, LONG);
 
-AROS_SH2(Set, 41.0, 27.07.1997,
-AROS_SHA(,NAME,    ,NULL),
-AROS_SHA(,STRING,/F,NULL))
+AROS_SH2(Set, 41.0,
+AROS_SHA(STRPTR, ,NAME,    ,  NULL),
+AROS_SHA(STRPTR, ,STRING, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -105,13 +105,13 @@ AROS_SHA(,STRING,/F,NULL))
              */
 	    if
 	    (
-	        !SetVar((STRPTR)SHArg(NAME),
-                        (STRPTR)SHArg(STRING),
+	        !SetVar(SHArg(NAME),
+                        SHArg(STRING),
                         -1,
                         GVF_LOCAL_ONLY)
             )
 	    {
-	        SHReturn(RETURN_ERROR);
+	        return RETURN_ERROR;
             }
 	}
     }
@@ -152,7 +152,7 @@ AROS_SHA(,STRING,/F,NULL))
         }
     }
 
-    SHReturn(RETURN_OK);
+    return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 } /* main */

@@ -82,9 +82,9 @@
 
 #include "shcommands.h"
 
-AROS_SH2(Setenv, 41.1, 13.08.1997,
-AROS_SHA(,NAME,     , NULL),
-AROS_SHA(,STRING, /F, NULL))
+AROS_SH2(Setenv, 41.1,
+AROS_SHA(STRPTR, ,NAME,     , NULL),
+AROS_SHA(STRPTR, ,STRING, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -99,13 +99,13 @@ AROS_SHA(,STRING, /F, NULL))
              */
 	     if
 	     (
-	         !SetVar((STRPTR)SHArg(NAME),
-                         (STRPTR)SHArg(STRING),
+	         !SetVar(SHArg(NAME),
+                         SHArg(STRING),
                          -1,
                          GVF_GLOBAL_ONLY)
              )
 	     {
-	         SHReturn(RETURN_ERROR);
+	         return RETURN_ERROR;
 	     }
         }
     }
@@ -126,7 +126,7 @@ AROS_SHA(,STRING, /F, NULL))
 	    if (FIB) FreeDosObject(DOS_FIB, FIB);
 	    if (lock) UnLock(lock);
 
-	    SHReturn(RETURN_FAIL);
+	    return RETURN_FAIL;
 	}
 
         while (ExNext(lock, FIB))
@@ -143,7 +143,7 @@ AROS_SHA(,STRING, /F, NULL))
 	UnLock(lock);
     }
 
-    SHReturn(RETURN_OK);
+    return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 } /* main */
