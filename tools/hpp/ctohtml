@@ -1,0 +1,14 @@
+#!/bin/sh
+
+for file in "$@" ; do
+    tmp="`basename $file .c`.tmp"
+    html="`basename $file .c`.html"
+
+    echo "<include file=test.inc>" > "$tmp"
+    echo "<code type=c>" >> "$tmp"
+    cat "$file" >> "$tmp"
+    echo "</code>" >> "$tmp"
+
+    hpp "$tmp" > "$html"
+    rm "$tmp"
+done
