@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,8 +16,8 @@
 
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
-#define __NOLIBBASE__ 1
 #include <proto/utility.h>
+#define __NOLIBBASE__ 1
 #include <proto/keymap.h>
 #undef __NOLIBBASE__
 #include <devices/inputevent.h>
