@@ -1261,7 +1261,7 @@ clean ::
 %(mmake)-quick : %(mmake)
 
 # This will prevent the make_common_setup defines from taking effect
-CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
+CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) $(INCLUDES) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
 LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 
 %make_common_setup
@@ -1316,6 +1316,15 @@ ifdef USE_HIDDSTUBS
 %(deps) := $(%(deps)) $(LIBDIR)/libhiddstubs.a
 endif
 
+# USE_ROMLIB is a special one to say that this is a shared module, and it
+# should use the restricted c.lib, this currently the same as the normal
+# static c.lib - it may in the future have different functions from
+# amiga.lib, c.lib, m.lib and arossuport.lib
+ifdef USE_ROMLIB
+%(libs) := $(%(libs)) -larosc
+%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+endif
+
 ifdef USE_CLIB
 # uncomment this if you want to compile by default
 # against the shared version of the clib
@@ -1336,15 +1345,6 @@ else
 	    %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 	endif
     endif
-endif
-
-# USE_ROMLIB is a special one to say that this is a shared module, and it
-# should use the restricted c.lib, this currently the same as the normal
-# static c.lib - it may in the future have different functions from
-# amiga.lib, c.lib, m.lib and arossuport.lib
-ifdef USE_ROMLIB
-%(libs) := $(%(libs)) -larosc
-%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 endif
 
 # m.lib MUST come after c.lib in it's various incarnations.
