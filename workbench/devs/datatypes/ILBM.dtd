@@ -1,0 +1,10 @@
+# DataType Description for ILBM
+Name=ILBM
+Version=$VER: ILBM 41.0 (09-May-2002)
+BaseName=ilbm
+Pattern=#?
+Mask=FORM
+GroupID=pict
+ID=ilbm
+Flags=DTF_IFF
+Priority=0
