@@ -736,10 +736,10 @@ static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
     }
 }
 
-static struct ObjNode *FindObjNode(struct MUI_WindowData *data, Object *obj)
+static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 {
     struct ObjNode *node;
-    for (node = (struct ObjNode*)data->wd_CCList.mlh_Head; node->node.mln_Succ; node = (struct ObjNode*)node->node.mln_Succ)
+    for (node = (struct ObjNode*)list->mlh_Head; node->node.mln_Succ; node = (struct ObjNode*)node->node.mln_Succ)
     {
     	if (node->obj == obj)
 	{
@@ -753,7 +753,9 @@ static struct ObjNode *FindObjNode(struct MUI_WindowData *data, Object *obj)
 static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 			  ULONG newval)
 {
-    if (data->wd_ActiveObject && (ULONG)data->wd_ActiveObject->obj == newval)
+    struct ObjNode *active = data->wd_ActiveObject;
+
+    if (active && ((ULONG)active->obj == newval))
 	return;
 
     switch (newval)
@@ -761,16 +763,17 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 	case MUIV_Window_ActiveObject_None:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
 		data->wd_ActiveObject = NULL;
+		DoMethod(active->obj, MUIM_GoInactive);
 	    }
 	    break;
 
 	case MUIV_Window_ActiveObject_Next:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
-		data->wd_ActiveObject = (struct ObjNode*)((data->wd_ActiveObject->node.mln_Succ->mln_Succ)?(data->wd_ActiveObject->node.mln_Succ):NULL);
+		data->wd_ActiveObject = NULL;
+		DoMethod(active->obj, MUIM_GoInactive);
+		data->wd_ActiveObject = (struct ObjNode*)((active->node.mln_Succ->mln_Succ)?(active->node.mln_Succ):NULL);
 	    }
 	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
 		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_Head;
@@ -779,8 +782,9 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 	case MUIV_Window_ActiveObject_Prev:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
-		data->wd_ActiveObject = (struct ObjNode*)((data->wd_ActiveObject->node.mln_Pred->mln_Pred)?(data->wd_ActiveObject->node.mln_Pred):NULL);
+		data->wd_ActiveObject = NULL;
+		DoMethod(active->obj, MUIM_GoInactive);
+		data->wd_ActiveObject = (struct ObjNode*)((active->node.mln_Pred->mln_Pred)?(active->node.mln_Pred):NULL);
 	    }
 	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
 		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_TailPred;
@@ -789,10 +793,10 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
 	default:
 	    if (data->wd_ActiveObject)
 	    {
-		DoMethod(data->wd_ActiveObject->obj, MUIM_GoInactive);
+	    	data->wd_ActiveObject = NULL;
+		DoMethod(active->obj, MUIM_GoInactive);
 	    }
-	    else if (!newval == NULL) return;
-	    data->wd_ActiveObject = FindObjNode(data,(Object*)newval);
+	    data->wd_ActiveObject = FindObjNode(&data->wd_CycleChain,(Object*)newval);
 	    break;
     }
 
@@ -1397,7 +1401,7 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_RemControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    struct ObjNode     *node = FindObjNode(data,msg->ccnode->ehn_Object);
+    struct ObjNode     *node = FindObjNode(&data->wd_CCList,msg->ccnode->ehn_Object);
 
     Remove((struct Node *)msg->ccnode);
     if (node)
