@@ -62,12 +62,11 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Change window's title */
-    if (!windowTitle)
-	window->Title = NULL;
-    else if (windowTitle != (UBYTE *)~0L)
+    if (windowTitle != (UBYTE *)~0L)
+    {
 	window->Title = windowTitle;
-	
-    RefreshWindowFrame(window);
+	RefreshWindowFrame(window);
+    }
 
     /* Change screen's title */
     if (!screenTitle)
