@@ -93,6 +93,11 @@ struct Window *openwindow(LONG x, LONG y, LONG w, LONG h)
 {
 
   struct Window *window;
+  struct Rectangle R;
+  R.MinX = 10;
+  R.MinY = 10;
+  R.MaxX = 100;
+  R.MaxY = 100;
   
   window = OpenWindowTags(NULL,
 			  WA_IDCMP, IDCMP_RAWKEY|IDCMP_CLOSEWINDOW,
@@ -102,7 +107,7 @@ struct Window *openwindow(LONG x, LONG y, LONG w, LONG h)
                           WA_Width, 	h,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
-			  WA_Zoom,		TRUE,
+			  WA_Zoom,		&R,
 			  WA_CloseGadget,	TRUE,
 			  WA_Title,		"Windowing demo",
                           TAG_END);

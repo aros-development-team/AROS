@@ -109,7 +109,6 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
 			  WA_CustomScreen, screen,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
-			  WA_Zoom,		FALSE,
 			  WA_CloseGadget,	TRUE,
 			  WA_Title,		"X11 gfxhidd demo",
                           TAG_END);
