@@ -6,7 +6,10 @@
     Lang: english
 */
 
-#define ENABLE_RT 1
+#define ENABLE_RT		1
+#define ENABLE_RT_INTUITION	0
+
+#include <aros/rt.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +23,6 @@
 #include <dos/datetime.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-
-#include <aros/rt.h>
 
 static const char version[] = "$VER: Version 41.0 (14.6.1997)\n";
 
@@ -53,7 +54,7 @@ int power(int base, int pow)
     int num = 1;
 
     for (; pow > 0; pow--)
-        num *= base;
+	num *= base;
     return(num);
 }
 
@@ -66,20 +67,20 @@ int number2string(int number, STRPTR string)
 
     if (number == 0)
     {
-        string[0] = '0';
-        string[1] = 0x00;
-        return(1);
+	string[0] = '0';
+	string[1] = 0x00;
+	return(1);
     }
 
     while (power(10, length) <= number)
-        length++;
+	length++;
 
     for (len = length; len > 0; len--)
     {
-        pow = power(10, len - 1);
-        firstnum = number / pow;
-        string[length - len] = firstnum + 48;
-        number -= firstnum * pow;
+	pow = power(10, len - 1);
+	firstnum = number / pow;
+	string[length - len] = firstnum + 48;
+	number -= firstnum * pow;
     }
     string[length] = 0x00;
 
@@ -127,35 +128,35 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 
     while ((len = Read(file, &buffer[len], buflen - len)) > 0)
     {
-        pos = 0;
-        while ((len - pos) >= stringlen)
+	pos = 0;
+	while ((len - pos) >= stringlen)
 	{
-            if (strncmp(buffer + pos, string, stringlen) == 0)
+	    if (strncmp(buffer + pos, string, stringlen) == 0)
 	    {
-                int findstrlen; /* length of the string, after the string to
-                                   find */
-                findstrlen = len - pos - stringlen;
+		int findstrlen; /* length of the string, after the string to
+				   find */
+		findstrlen = len - pos - stringlen;
 
-                memmove(buffer, buffer + pos + stringlen, findstrlen);
-                len = Read(file, buffer + findstrlen, buflen - findstrlen);
-                if (len >= 0)
-                    *lenptr = findstrlen + len;
+		memmove(buffer, buffer + pos + stringlen, findstrlen);
+		len = Read(file, buffer + findstrlen, buflen - findstrlen);
+		if (len >= 0)
+		    *lenptr = findstrlen + len;
 		else
-                    error = RETURN_FAIL;
-                ready = TRUE;
-                break;
-            }
-            pos++;
-        }
-        if (ready == FALSE)
+		    error = RETURN_FAIL;
+		ready = TRUE;
+		break;
+	    }
+	    pos++;
+	}
+	if (ready == FALSE)
 	    memmove(buffer, &buffer[len - stringlen], stringlen);
-        else
-            break;
-        len = stringlen;
+	else
+	    break;
+	len = stringlen;
     }
 
     if (len == -1)
-        error = RETURN_FAIL;
+	error = RETURN_FAIL;
 
     return(error);
 }
@@ -170,7 +171,7 @@ int makedatefromstring(char *buffer)
 }
 
 /* Check whether the given string contains a version in the form
-   <version>.<revision> . If not return -1, else fill in parsedver. */ 
+   <version>.<revision> . If not return -1, else fill in parsedver. */
 int makeversionfromstring(char *buffer)
 {
     char numberbuffer[6];
@@ -178,35 +179,35 @@ int makeversionfromstring(char *buffer)
 
     for (pos=0;;pos++)
     {
-        if (((pos == 5) && (buffer[pos] != '.')) || (buffer[pos] == 0x00))
-            return -1;
-        if (buffer[pos] == '.')
-        {
-            if (pos == 0)
-                return -1;
-            numberbuffer[pos] = 0x00;
-            break;
-        }
-        if ((buffer[pos] < '0') || (buffer[pos] > '9'))
-            return -1;
-        numberbuffer[pos] = buffer[pos];
+	if (((pos == 5) && (buffer[pos] != '.')) || (buffer[pos] == 0x00))
+	    return -1;
+	if (buffer[pos] == '.')
+	{
+	    if (pos == 0)
+		return -1;
+	    numberbuffer[pos] = 0x00;
+	    break;
+	}
+	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
+	    return -1;
+	numberbuffer[pos] = buffer[pos];
     }
     parsedver.version = strtoul(numberbuffer, NULL, 10);
     buffer = &buffer[pos+1];
     for (pos=0;;pos++)
     {
-        if ((pos == 5) && ((buffer[pos] != ' ') || (buffer[pos] != 0x00)))
-            return -1;
-        if ((buffer[pos] == ' ') || (buffer[pos] == 0x00))
-        {
-            if (pos == 0)
-                return -1;
-            numberbuffer[pos] = 0x00;
-            break;
-        }
-        if ((buffer[pos] < '0') || (buffer[pos] > '9'))
-            return -1;
-        numberbuffer[pos] = buffer[pos];
+	if ((pos == 5) && ((buffer[pos] != ' ') || (buffer[pos] != 0x00)))
+	    return -1;
+	if ((buffer[pos] == ' ') || (buffer[pos] == 0x00))
+	{
+	    if (pos == 0)
+		return -1;
+	    numberbuffer[pos] = 0x00;
+	    break;
+	}
+	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
+	    return -1;
+	numberbuffer[pos] = buffer[pos];
     }
     parsedver.revision = strtoul(numberbuffer, NULL, 10);
 
@@ -221,48 +222,48 @@ int makedatafromstring(char *buffer)
 
     for (pos = 0; buffer[pos] != 0x00; pos++)
     {
-        if (buffer[pos] == ' ')
-        {
-            /* Version is missing in $VER: string */
-            if (buffer[pos+1] == '(')
-            {
-                parsedver.name = AllocVec(pos + 1, MEMF_ANY);
-                if (parsedver.name == NULL)
-                {
-                    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-                    return RETURN_FAIL;
-                }
-                CopyMem(buffer, parsedver.name, pos);
-                parsedver.name[pos] = 0x00;
-                makedatefromstring(&buffer[pos+1]);
-                break;
-            /* Version is there */
-            } else if ((buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
-            {
-                /* Is it really a version at the current position? */
-                if ((error = makeversionfromstring(&buffer[pos+1])) == RETURN_OK)
-                {
-                    /* It is! */
-                    parsedver.name = AllocVec(pos + 1, MEMF_ANY);
-                    if (parsedver.name == NULL)
-                    {
-                        PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-                        return RETURN_FAIL;
-                    }
-                    CopyMem(buffer, parsedver.name, pos);
-                    parsedver.name[pos] = 0x00;
-                    for (; buffer[pos] != 0x00 && buffer[pos] != ' '; pos++);
-                    pos = skipwhites(&buffer[pos]) - buffer;
-                    makedatefromstring(&buffer[pos]);
-                    break;
-                } else if (error != -1)
-                    return error;
-            }
-        }
+	if (buffer[pos] == ' ')
+	{
+	    /* Version is missing in $VER: string */
+	    if (buffer[pos+1] == '(')
+	    {
+		parsedver.name = AllocVec(pos + 1, MEMF_ANY);
+		if (parsedver.name == NULL)
+		{
+		    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+		    return RETURN_FAIL;
+		}
+		CopyMem(buffer, parsedver.name, pos);
+		parsedver.name[pos] = 0x00;
+		makedatefromstring(&buffer[pos+1]);
+		break;
+	    /* Version is there */
+	    } else if ((buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
+	    {
+		/* Is it really a version at the current position? */
+		if ((error = makeversionfromstring(&buffer[pos+1])) == RETURN_OK)
+		{
+		    /* It is! */
+		    parsedver.name = AllocVec(pos + 1, MEMF_ANY);
+		    if (parsedver.name == NULL)
+		    {
+			PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+			return RETURN_FAIL;
+		    }
+		    CopyMem(buffer, parsedver.name, pos);
+		    parsedver.name[pos] = 0x00;
+		    for (; buffer[pos] != 0x00 && buffer[pos] != ' '; pos++);
+		    pos = skipwhites(&buffer[pos]) - buffer;
+		    makedatefromstring(&buffer[pos]);
+		    break;
+		} else if (error != -1)
+		    return error;
+	    }
+	}
     }
     /* strip any whitespaces at the tail of the program-name */
     if (parsedver.name != NULL)
-        stripwhites(parsedver.name);
+	stripwhites(parsedver.name);
 
     return error;
 }
@@ -286,45 +287,45 @@ int makefilever(STRPTR name)
     file = Open(name, MODE_OLDFILE);
     if (file != NULL)
     {
-        int len = BUFFERSIZE - 1;
+	int len = BUFFERSIZE - 1;
 
-        error = findinfile(file, "$VER:", buffer, &len);
-        if (error == RETURN_OK)
-        {
-            if (len >= 0)
-            {
-                char *startbuffer;
+	error = findinfile(file, "$VER:", buffer, &len);
+	if (error == RETURN_OK)
+	{
+	    if (len >= 0)
+	    {
+		char *startbuffer;
 
-                buffer[len] = 0x00;
-                startbuffer = skipwhites(buffer);
-                len = strlen(startbuffer);
-                verbuffer = AllocVec(len + 1, MEMF_ANY);
-                if (verbuffer == NULL)
+		buffer[len] = 0x00;
+		startbuffer = skipwhites(buffer);
+		len = strlen(startbuffer);
+		verbuffer = AllocVec(len + 1, MEMF_ANY);
+		if (verbuffer == NULL)
 		{
-                    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-                    error = RETURN_FAIL;
-                } else
-                {
-                    CopyMem(startbuffer, verbuffer, len + 1);
-                    error = makedatafromstring(startbuffer);
-                }
-            } else
-            {
-                printf("No version information found\n");
-                error = RETURN_ERROR;
+		    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+		    error = RETURN_FAIL;
+		} else
+		{
+		    CopyMem(startbuffer, verbuffer, len + 1);
+		    error = makedatafromstring(startbuffer);
+		}
+	    } else
+	    {
+		printf("No version information found\n");
+		error = RETURN_ERROR;
 	    }
-        } else
-            PrintFault(IoErr(), ERROR_HEADER);
-        Close(file);
+	} else
+	    PrintFault(IoErr(), ERROR_HEADER);
+	Close(file);
     } else
     {
-        if (IoErr() == ERROR_OBJECT_NOT_FOUND)
-            error = -1;
-        else
-        {
-            PrintFault(IoErr(), ERROR_HEADER);
-            error = RETURN_FAIL;
-        }
+	if (IoErr() == ERROR_OBJECT_NOT_FOUND)
+	    error = -1;
+	else
+	{
+	    PrintFault(IoErr(), ERROR_HEADER);
+	    error = RETURN_FAIL;
+	}
     }
     return(error);
 }
@@ -343,8 +344,8 @@ int makekickver()
     parsedver.name = AllocVec(KICKSTRLEN, MEMF_ANY);
     if (parsedver.name == NULL)
     {
-        PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-        return(RETURN_FAIL);
+	PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+	return(RETURN_FAIL);
     }
     CopyMem("Kickstart", parsedver.name, KICKSTRLEN);
 
@@ -353,8 +354,8 @@ int makekickver()
     verbuffer = AllocVec(MAXKICKSTRLEN, MEMF_ANY);
     if (verbuffer == NULL)
     {
-        PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
-        return(RETURN_FAIL);
+	PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+	return(RETURN_FAIL);
     }
     CopyMem("Kickstart ", verbuffer, 10);
     len = 10;
@@ -388,19 +389,19 @@ int makeverstring()
 
     if (args.name == NULL)
     {
-        error = makekickver();
+	error = makekickver();
     } else
     {
-        error = -1;
-        if (args.file == 0L)
+	error = -1;
+	if (args.file == 0L)
 	    error = makeresidentver(args.name);
-        if (args.res == 0L && error == -1)
-            error = makefilever(args.name);
-        if (error == -1)
+	if (args.res == 0L && error == -1)
+	    error = makefilever(args.name);
+	if (error == -1)
 	{
-            PrintFault(ERROR_OBJECT_NOT_FOUND, ERROR_HEADER);
-            error = RETURN_FAIL;
-        }
+	    PrintFault(ERROR_OBJECT_NOT_FOUND, ERROR_HEADER);
+	    error = RETURN_FAIL;
+	}
     }
 
     return(error);
@@ -434,14 +435,14 @@ int verifyargs()
     int error = RETURN_OK;
 
     if (args.file != 0L && args.res != 0L)
-        error = RETURN_FAIL;
+	error = RETURN_FAIL;
     if (args.name == NULL && (args.res != 0L || args.file != 0L))
-        error = RETURN_FAIL;
+	error = RETURN_FAIL;
 
     if (error == RETURN_FAIL)
     {
-        PrintFault(ERROR_BAD_TEMPLATE, ERROR_HEADER);
-        error = RETURN_FAIL;
+	PrintFault(ERROR_BAD_TEMPLATE, ERROR_HEADER);
+	error = RETURN_FAIL;
     }
 
     return(error);
@@ -458,23 +459,23 @@ int main (int argc, char ** argv)
 
     if (rda != NULL)
     {
-        if ((error = verifyargs()) == RETURN_OK)
+	if ((error = verifyargs()) == RETURN_OK)
 	{
-            error = makeverstring();
-            if (error == RETURN_OK)
+	    error = makeverstring();
+	    if (error == RETURN_OK)
 	    {
-                if (args.full == 0L)
-                    printparsedstring();
-                else
-                    printstring();
-            }
-            freeverstring();
-        }
+		if (args.full == 0L)
+		    printparsedstring();
+		else
+		    printstring();
+	    }
+	    freeverstring();
+	}
 	FreeArgs (rda);
     }
     else
     {
-        PrintFault(IoErr(), ERROR_HEADER);
+	PrintFault(IoErr(), ERROR_HEADER);
 	error = RETURN_FAIL;
     }
 
