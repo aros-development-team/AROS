@@ -2,7 +2,7 @@
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: BSD function ldiv
+    Desc: ISO C function ldiv
 */
 
 /*****************************************************************************
@@ -49,6 +49,12 @@
 
     ret.quot = numer / denom;
     ret.rem  = numer % denom;
-  
+
+    /* See div() for why we do this */
+    if (numer >= 0 && ret.rem < 0)
+    {
+	ret.quot++;
+	ret.rem -= denom;
+    }
     return ret;
 }
