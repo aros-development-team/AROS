@@ -21,7 +21,7 @@ FUNCTIONS	:= \
 	ieeedpsub \
 	ieeedptst
 
-%define_libs prelibs=-l$(LIBNAME)
+%define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
 
 %genlib_cpak
 
