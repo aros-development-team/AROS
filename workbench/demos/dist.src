@@ -1,4 +1,3 @@
 *.c
-.cvsignore
 forkbomb
 mmakefile.src

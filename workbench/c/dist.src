@@ -1,3 +1,2 @@
 *.c
-.cvsignore
 mmakefile.src

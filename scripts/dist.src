@@ -18,7 +18,6 @@ genprotos.h
 gendef.awk
 strtoint.c
 moveifchanged
-.cvsignore
 genmf.gawk
 genreplace.gawk
 makeendtag.awk

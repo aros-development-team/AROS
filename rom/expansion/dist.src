@@ -1,4 +1,3 @@
 *.[ch]
-.cvsignore
 lib.conf
 mmakefile.src

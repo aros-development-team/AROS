@@ -1,4 +1,3 @@
-.cvsignore
 machine.c
 make.cfg
 make.tmpl
