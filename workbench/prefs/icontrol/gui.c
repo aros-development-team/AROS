@@ -635,8 +635,8 @@ void MakeGUI(void)
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
 	MUIA_Application_Base, (IPTR)"Icontrol",
-  	SubWindow, (IPTR)wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE),
-	End;
+  	SubWindow, (IPTR) (wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE),
+	End);
 	
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
