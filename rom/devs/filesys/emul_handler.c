@@ -1,13 +1,14 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Emulation filesystem.
+    Desc: Filesystem that accesses an underlying unix filesystem.
     Lang: english
 */
 #include <aros/system.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <exec/types.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
@@ -49,12 +50,12 @@ static const char end;
 
 struct filehandle
 {
-    char *name;
-    int type;
-    long fd;
+    char * name;
+    int    type;
+    long   fd;
 };
-#define FHD_FILE	0
-#define FHD_DIRECTORY	1
+#define FHD_FILE      0
+#define FHD_DIRECTORY 1
 
 int emul_handler_entry(void)
 {
@@ -101,11 +102,17 @@ static void *const functable[]=
 
 static const UBYTE datatable=0;
 
+/* Make an AROS filenumber out of an unix filenumber. */
 LONG u2a[][2]=
 {
   { ENOMEM, ERROR_NO_FREE_STORE },
   { ENOENT, ERROR_OBJECT_NOT_FOUND },
-  { 0, 0 }
+  { EEXIST, ERROR_OBJECT_EXISTS },
+  { EACCES, ERROR_WRITE_PROTECTED },
+  { ENOTDIR, ERROR_DIR_NOT_FOUND },
+  { ENOSPC, ERROR_DISK_FULL },
+  { ENOTEMPTY, ERROR_DIRECTORY_NOT_EMPTY },
+  { 0, ERROR_UNKNOWN }
 };
 
 LONG err_u2a(void)
@@ -117,133 +124,298 @@ LONG err_u2a(void)
     return u2a[i][1];
 }
 
+
+/* Make unix protection bits out of amiga protection bits. */
+mode_t prot_a2u(ULONG protect)
+{
+    mode_t uprot = 0000;
+
+    if ((protect & FIBF_SCRIPT))
+        uprot |= 0111;
+    /* The following three flags are low-active! */
+    if (!(protect & FIBF_EXECUTE))
+        uprot |= 0100;
+    if (!(protect & FIBF_WRITE))
+        uprot |= 0200;
+    if (!(protect & FIBF_READ))
+        uprot |= 0400;
+    if ((protect & FIBF_GRP_EXECUTE))
+        uprot |= 0010;
+    if ((protect & FIBF_GRP_WRITE))
+        uprot |= 0020;
+    if ((protect & FIBF_GRP_READ))
+        uprot |= 0040;
+    if ((protect & FIBF_OTR_EXECUTE))
+        uprot |= 0001;
+    if ((protect & FIBF_OTR_WRITE))
+        uprot |= 0002;
+    if ((protect & FIBF_OTR_READ))
+        uprot |= 0004;
+
+    return uprot;
+}
+
+/* Make amiga protection bits out of unix protection bits. */
+ULONG prot_u2a(mode_t protect)
+{
+    ULONG aprot = FIBF_SCRIPT;
+
+    /* The following three (amiga) flags are low-active! */
+    if (!(protect & S_IRUSR))
+        aprot |= FIBF_READ;
+    if (!(protect & S_IWUSR))
+        aprot |= FIBF_WRITE;
+    if (!(protect & S_IXUSR))
+        aprot |= FIBF_EXECUTE;
+
+    /* The following flags are high-active again. */
+    if ((protect & S_IRGRP))
+        aprot |= FIBF_GRP_READ;
+    if ((protect & S_IWGRP))
+        aprot |= FIBF_GRP_WRITE;
+    if ((protect & S_IXGRP))
+        aprot |= FIBF_GRP_EXECUTE;
+    if ((protect & S_IROTH))
+        aprot |= FIBF_OTR_READ;
+    if ((protect & S_IWOTH))
+        aprot |= FIBF_OTR_WRITE;
+    if ((protect & S_IXOTH))
+        aprot |= FIBF_OTR_EXECUTE;
+
+    return aprot;
+}
+
+
+/* Makes a direct path out of the supplied filename.
+   Eg 'path1/path2//path3/' becomes 'path1/path3'.
+*/
 static void shrink(char *filename)
 {
     char *s1,*s2;
     unsigned long len;
     for(;;)
     {
+        /* strip all leading slashes */
 	while(*filename=='/')
 	    memmove(filename,filename+1,strlen(filename));
+
+        /* remove superflous paths (ie paths that are followed by '//') */
 	s1=strstr(filename,"//");
 	if(s1==NULL)
 	    break;
 	s2=s1;
-	while(s2>filename&&*--s2!='/')
+	while((s2 > filename) && (*--s2 != '/'))
 	    ;
 	memmove(s2,s1+2,strlen(s1+1));
     }
+
+    /* strip trailing slash */
     len=strlen(filename);
     if(len&&filename[len-1]=='/')
 	filename[len-1]=0;
 }
 
-static LONG open_(struct filehandle **handle,STRPTR name,LONG mode)
+static LONG makefilename(struct emulbase *emulbase,
+                         char **dest, STRPTR dirname, STRPTR filename)
 {
-    LONG ret=ERROR_NO_FREE_STORE;
+    LONG ret = 0;
+    int len, dirlen;
+
+    dirlen = strlen(dirname) + 1;
+    len = strlen(filename) + dirlen + 1;
+    *dest=(char *)malloc(len);
+    if ((*dest))
+    {
+        CopyMem(dirname, *dest, dirlen);
+        if (AddPart(*dest, filename, len))
+            shrink(*dest);
+        else {
+            free(*dest);
+            *dest = NULL;
+            ret = ERROR_OBJECT_TOO_LARGE;
+        }
+    } else
+        ret = ERROR_NO_FREE_STORE;
+
+    return ret;
+}
+
+
+static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode)
+{
+    LONG ret = 0;
     struct filehandle *fh;
     struct stat st;
     long flags;
+
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
-	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+        /* If no filename is given and the file-descriptor is one of the
+           standard filehandles (stdin, stdout, stderr) ... */
+	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
+           (((*handle)->fd == STDIN_FILENO) || ((*handle)->fd == STDOUT_FILENO) || ((*handle)->fd == STDERR_FILENO)))
 	{
+            /* ... then just reopen that standard filehandle. */
 	    fh->type=FHD_FILE;
 	    fh->fd=(*handle)->fd;
 	    fh->name="";
 	    *handle=fh;
 	    return 0;
 	}
-	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
-	if(fh->name!=NULL)
+
+        ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
+        if (!ret)
+        {
+            if(!stat(*fh->name?fh->name:".",&st))
+            {
+                if(S_ISREG(st.st_mode))
+                {
+                    /* file is a plain file */
+                    fh->type=FHD_FILE;
+                    flags=(mode&FMF_CREATE?O_CREAT:0)|
+                          (mode&FMF_CLEAR?O_TRUNC:0);
+                    if(mode&FMF_WRITE)
+                        flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
+                    else
+                        flags|=O_RDONLY;
+                    fh->fd=open(*fh->name?fh->name:".",flags,0770);
+                    if(fh->fd>=0)
+                    {
+                        *handle=fh;
+                        return 0;
+                    }
+                }else if(S_ISDIR(st.st_mode))
+                {
+                    /* file is a directory */
+                    fh->type=FHD_DIRECTORY;
+                    fh->fd=(long)opendir(*fh->name?fh->name:".");
+                    if(fh->fd)
+                    {
+                        *handle=fh;
+                        return 0;
+                    }
+                }else
+                  ret = ERROR_OBJECT_WRONG_TYPE;
+            }
+            /* stat() failed. If ret is unset, generate it from errno. */
+            if (!ret)
+                ret = err_u2a();
+        }
+        free(fh);
+    } else
+        ret = ERROR_NO_FREE_STORE;
+    return ret;
+}
+
+static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
+{
+    LONG ret=ERROR_NO_FREE_STORE;
+    struct filehandle *fh;
+    mode_t prot;
+    long flags;
+
+    fh=(struct filehandle *)malloc(sizeof(struct filehandle));
+    if(fh!=NULL)
+    {
+        /* If no filename is given and the file-descriptor is one of the
+           standard filehandles (stdin, stdout, stderr) ... */
+	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
+            (((*handle)->fd==STDIN_FILENO) || ((*handle)->fd==STDOUT_FILENO) || ((*handle)->fd==STDERR_FILENO)))
 	{
-	    strcpy(fh->name,(*handle)->name);
-	    strcat(fh->name,"/");
-	    strcat(fh->name,name);
-	    shrink(fh->name);
-	    if(!stat(*fh->name?fh->name:".",&st))
-	    {
-		if(S_ISREG(st.st_mode))
-		{
-		    fh->type=FHD_FILE;
-		    flags=(mode&FMF_CREATE?O_CREAT:0)|
-			  (mode&FMF_CLEAR?O_TRUNC:0);
-		    if(mode&FMF_WRITE)
-			flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-		    else
-			flags|=O_RDONLY;
-		    fh->fd=open(*fh->name?fh->name:".",flags,0770);
-		    if(fh->fd>=0)
-		    {
-			*handle=fh;
-			return 0;
-		    }
-		}else if(S_ISDIR(st.st_mode))
-		{
-		    fh->type=FHD_DIRECTORY;
-		    fh->fd=(long)opendir(*fh->name?fh->name:".");
-		    if(fh->fd)
-		    {
-			*handle=fh;
-			return 0;
-		    }
-		}else
-		    errno=ENOENT;
-	    }
-	    ret=err_u2a();
-	    free(fh->name);
+            /* ... then just reopen that standard filehandle. */
+	    fh->type=FHD_FILE;
+	    fh->fd=(*handle)->fd;
+	    fh->name="";
+	    *handle=fh;
+	    return 0;
+	}
+
+        ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
+        if (!ret)
+        {
+            fh->type=FHD_FILE;
+            flags=(mode&FMF_CREATE?O_CREAT:0)|
+                  (mode&FMF_CLEAR?O_TRUNC:0);
+            if(mode&FMF_WRITE)
+                flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
+            else
+                flags|=O_RDONLY;
+            prot = prot_a2u((ULONG)protect);
+            fh->fd=open(fh->name,flags,prot);
+            if (fh->fd != -1)
+            {
+                *handle=fh;
+                return 0;
+            }
+            ret=err_u2a();
+            free(fh->name);
 	}
 	free(fh);
     }
     return ret;
 }
 
-static LONG open_file(struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
+static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
+                       STRPTR filename, IPTR protect)
 {
-    LONG ret=ERROR_NO_FREE_STORE;
+    mode_t prot;
+    LONG ret = 0;
     struct filehandle *fh;
-    long flags;
-    fh=(struct filehandle *)malloc(sizeof(struct filehandle));
-    if(fh!=NULL)
+
+    fh = (struct filehandle *)malloc(sizeof(struct filehandle));
+    if (fh)
     {
-	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
-	{
-	    fh->type=FHD_FILE;
-	    fh->fd=(*handle)->fd;
-	    fh->name="";
-	    *handle=fh;
-	    return 0;
-	}
-	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
-	if(fh->name!=NULL)
-	{
-	    strcpy(fh->name,(*handle)->name);
-	    strcat(fh->name,"/");
-	    strcat(fh->name,name);
-	    shrink(fh->name);
-	    fh->type=FHD_FILE;
-	    flags=(mode&FMF_CREATE?O_CREAT:0)|
-		  (mode&FMF_CLEAR?O_TRUNC:0);
-	    if(mode&FMF_WRITE)
-		flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-	    else
-		flags|=O_RDONLY;
-	    fh->fd=open(fh->name,flags,0770);
-	    if(fh->fd>=0)
-	    {
-		*handle=fh;
-		return 0;
-	    }
-	    ret=err_u2a();
-	    free(fh->name);
-	}
-	free(fh);
-    }
+        ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
+        if (!ret)
+        {
+            fh->type = FHD_DIRECTORY;
+            prot = prot_a2u((ULONG)protect);
+            if (!mkdir(fh->name, prot))
+            {
+                *handle = fh;
+                (*handle)->fd = (long)opendir((*handle)->name);
+                if ((*handle)->fd)
+                    return 0;
+            }
+            ret = err_u2a();
+        }
+        free(fh);
+    } else
+        ret = ERROR_NO_FREE_STORE;
+
     return ret;
 }
+
+static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
+                          STRPTR file)
+{
+    LONG ret = 0;
+    char *filename;
+    struct stat st;
+
+    ret = makefilename(emulbase, &filename, fh->name, file);
+    if (!ret)
+    {
+        if (!lstat(filename, &st))
+        {
+            if (S_ISDIR(st.st_mode))
+            {
+                if (rmdir(filename))
+                    ret = err_u2a();
+            }
+            else
+            {
+                if (unlink(filename))
+                    ret = err_u2a();
+            }
+        } else
+            ret = err_u2a();
+    }
+
+    return ret;
+}
+
 
 static LONG free_lock(struct filehandle *current)
 {
@@ -283,15 +455,15 @@ static LONG startup(struct emulbase *emulbase)
 	    if(fhe!=NULL)
 	    {
 		fhv=&sys;
-		ret=open_(&fhv,"",0);
+		ret=open_(emulbase, &fhv,"",0);
 		if(!ret)
 		{
 		    fhc=&sys;
-		    ret=open_(&fhc,"",0);
+		    ret=open_(emulbase, &fhc,"",0);
 		    if(!ret)
 		    {
 			fhs=&sys;
-			ret=open_(&fhs,"",0);
+			ret=open_(emulbase, &fhs,"",0);
 			if(!ret)
 			{
 			    ret=ERROR_NO_FREE_STORE;
@@ -357,6 +529,7 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 {
     STRPTR next, end, last, name;
     struct stat st;
+
     if(type>ED_OWNER)
 	return ERROR_BAD_NUMBER;
     next=(STRPTR)ead+sizes[type];
@@ -378,10 +551,7 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 	    ead->ed_Mins=(st.st_ctime/60)%(60*24);
 	    ead->ed_Ticks=(st.st_ctime%60)*TICKS_PER_SECOND;
 	case ED_PROTECTION:
-	    ead->ed_Prot=(st.st_mode&S_IRUSR?FIBF_READ:0)|
-			 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
-			 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
-			 FIBF_SCRIPT|FIBF_DELETE;
+            ead->ed_Prot = prot_u2a(st.st_mode);
 	case ED_SIZE:
 	    ead->ed_Size=st.st_size;
 	case ED_TYPE:
@@ -422,7 +592,10 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 	dir=readdir((DIR *)fh->fd);
 	if(dir==NULL)
 	{
-	    error=err_u2a();
+            if (errno)
+                error=err_u2a();
+            else
+                error = 0;
 	    break;
 	}
 	if(dir->d_name[0]=='.'&&(!dir->d_name[1]||(dir->d_name[1]=='.'&&!dir->d_name[2])))
@@ -459,6 +632,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
     return error;
 }
 
+
 AROS_LH2(struct emulbase *, init,
  AROS_LHA(struct emulbase *, emulbase, D0),
  AROS_LHA(BPTR,              segList,   A0),
@@ -471,7 +645,7 @@ AROS_LH2(struct emulbase *, init,
     emulbase->seglist=segList;
     emulbase->device.dd_Library.lib_OpenCnt=1;
     emulbase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
-    if(emulbase->dosbase!=NULL)
+    if((emulbase->dosbase))
     {
 	if(AttemptLockDosList(LDF_ALL|LDF_WRITE))
 	{
@@ -482,7 +656,7 @@ AROS_LH2(struct emulbase *, init,
 	    }
 	    UnLockDosList(LDF_ALL|LDF_WRITE);
 	}
-	CloseLibrary((struct Library *)emulbase->dosbase);
+        CloseLibrary((struct Library *)emulbase->dosbase);
     }
 
     return NULL;
@@ -560,14 +734,17 @@ AROS_LH1(void, beginio,
     switch(iofs->IOFS.io_Command)
     {
 	case FSA_OPEN:
-	    error=open_((struct filehandle **)&iofs->IOFS.io_Unit,
-			 (char *)iofs->io_Args[0],iofs->io_Args[1]);
+	    error=open_(emulbase,
+                        (struct filehandle **)&iofs->IOFS.io_Unit,
+                        (char *)iofs->io_Args[0],iofs->io_Args[1]);
 	    break;
 
 	case FSA_OPEN_FILE:
-	    error=open_file((struct filehandle **)&iofs->IOFS.io_Unit,
-			 (char *)iofs->io_Args[0],
-			 iofs->io_Args[1],iofs->io_Args[2]);
+	    error=open_file(emulbase,
+                            (struct filehandle **)&iofs->IOFS.io_Unit,
+                            (char *)iofs->io_Args[0],
+                            iofs->io_Args[1],
+                            iofs->io_Args[2]);
 	    break;
 
 	case FSA_CLOSE:
@@ -586,11 +763,14 @@ AROS_LH1(void, beginio,
 
 	case FSA_READ:
 	{
+            int selecterr;
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
+
 	    if(fh->type==FHD_FILE)
 	    {
 		if(fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
+                /* Wait for new characters to arrive. */
 		for(;;)
 		{
 		    fd_set rfds;
@@ -599,16 +779,21 @@ AROS_LH1(void, beginio,
 		    FD_SET(fh->fd,&rfds);
 		    tv.tv_sec=0;
 		    tv.tv_usec=100000;
-		    if(select(fh->fd+1,&rfds,NULL,NULL,&tv))
+		    if((selecterr = select(fh->fd+1,&rfds,NULL,NULL,&tv)))
 			break;
+                    /* Since we are a friendly task, we give control back to
+                       exec from time to time. */
 		    SysBase->ThisTask->tc_State=TS_READY;
 		    AddTail(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 		    Switch();
 		}
 
-		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
-		if(iofs->io_Args[1]<0)
-		    error=err_u2a();
+                if (selecterr != -1) {
+                    iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
+                    if(iofs->io_Args[1]<0)
+                        error=err_u2a();
+                } else
+                    error=err_u2a();
 	    }else
 		error=ERROR_OBJECT_WRONG_TYPE;
 	    break;
@@ -662,12 +847,36 @@ AROS_LH1(void, beginio,
 
 	case FSA_EXAMINE_ALL:
 	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
-			  (struct ExAllData *)iofs->io_Args[0],
-			  iofs->io_Args[1],iofs->io_Args[2]);
+                              (struct ExAllData *)iofs->io_Args[0],
+                              iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
 
+        case FSA_SAME_LOCK: {
+            struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
+                              *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
+
+            if (strcmp(lock1->name, lock2->name))
+                iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+            else
+                iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
+            break;
+        }
+
+        case FSA_CREATE_DIR:
+            error = create_dir(emulbase,
+                               (struct filehandle **)&iofs->IOFS.io_Unit,
+                               iofs->io_Union.io_CREATE_DIR.io_Filename,
+                               iofs->io_Union.io_CREATE_DIR.io_Protection);
+            break;
+
+        case FSA_DELETE_OBJECT:
+            error = delete_object(emulbase,
+                                  (struct filehandle *)iofs->IOFS.io_Unit,
+                                  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
+            break;
+
 	default:
-	    error=ERROR_NOT_IMPLEMENTED;
+	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
     }
 
