@@ -381,8 +381,8 @@ kprintf("datatypes.library: OM_NEW: returning %x handle = %x\n", retval, newdto-
 
     case OM_UPDATE:
 	/* Avoid update loops */
-	if(DoMethod(object, ICM_CHECKLOOP))
-	    break;
+/*	if(DoMethod(object, ICM_CHECKLOOP))
+	    break; */
 
 	/* Fall through */
     case OM_SET:
