@@ -1,0 +1,88 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
+CLIBDIR = $(GENDIR)/compiler/clib
+CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
+
+MACHINE_H = $(INCDIR)/aros/machine.h
+
+FILES = \
+	cache \
+	disable \
+	dispatch \
+	enable \
+	exception \
+	execstubs \
+	forbid \
+	getcc \
+	initcore \
+	osints \
+	permit \
+	preparecontext \
+	runprocess \
+	sdivmod32 \
+	setsr \
+	smult32 \
+	smult64 \
+	special \
+	stackswap \
+	superstate \
+	supervisor \
+	switch \
+	udivmod32 \
+	umult32 \
+	umult64 \
+	userstate
+
+CLIBFILES = \
+	longjmp \
+	setjmp
+
+CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
+DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
+
+TESTS =
+
+all: setup $(MACHINE_H) machine.i \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
+
+setup :
+	%mkdirs_q $(OSGENDIR) $(CLIBDIR)
+	@echo "CFLAGS=$(CFLAGS)"
+
+$(MACHINE_H): machine.h
+	cp $< $@
+
+clean::
+	$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
+
+machine.i: geninc.c
+	@echo "Creating geninc..."
+	@$(CC) $(CFLAGS) -o geninc $<
+	./geninc > machine.i
+
+check : test
+
+test : $(TESTS)
+
+% : %.c
+	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+
+$(CLIBDIR)/%.o: %.s machine.i
+	%assemble_q
+
+$(OSGENDIR)/%.o: %.s machine.i
+	%assemble_q
+
+$(OSGENDIR)/%.o: %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OSGENDIR)/%.d: %.c $(MACHINE_H)
+	%mkdepend_q
+
+%common
+%include_deps
