@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := Help Catalogs Flags Countries
+ICONS := Help Catalogs Flags Countries Languages
 
 #MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-locale-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-locale
