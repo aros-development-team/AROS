@@ -9,14 +9,19 @@
 
 #ifdef __linux__
 #   include <asm/sigcontext.h>
+#   include <linux/version.h> 
     /* sigcontext_t is the type of the signals' context. Linux offers no way
 	to get this context in a legal way, so I have to use tricks. */
 #   ifdef i386
-	typedef struct sigcontext_struct sigcontext_t;
-#   else
+#     if LINUX_VERSION_CODE > 131102
+        typedef struct sigcontext sigcontext_t;
+#     else     
+        typedef struct sigcontext_struct sigcontext_t;
+#     endif
+#   else  
 	typedef struct sigcontext sigcontext_t;
 #   endif
-
+ 
     /* name and type of the signal handler */
 #   define SIGHANDLER	    linux_sighandler
 #   define SIGHANDLER_T     SignalHandler
