@@ -412,6 +412,7 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
+	    ((struct Gadget *)retval)->GadgetType |= GTYP_SYSGADGET;
 	    break;
     }
     
