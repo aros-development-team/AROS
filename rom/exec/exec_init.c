@@ -27,6 +27,7 @@
 
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <clib/macros.h> /* need ABS() */
 
 #define timeval sys_timeval
 #include <sigcore.h>
@@ -98,7 +99,7 @@ void AROSSupportBase_SetStdOut (struct AROSSupportBase * AROSSupportBase, void *
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
-	    abs(*(WORD *)((&X)[-1]-2)),
+	    ABS(*(WORD *)((&X)[-1]-2)),
 	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
 #define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
