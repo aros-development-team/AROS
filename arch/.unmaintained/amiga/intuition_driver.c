@@ -76,12 +76,14 @@ void intui_CloseWindow (struct Window * iw,
     _aros_not_implemented();
 }
 
-void intui_WindowToFront (struct Window * window)
+void intui_WindowToFront (struct Window * window
+                          struct IntuitionBase * IntuitionBase)
 {
     _aros_not_implemented();
 }
 
-void intui_WindowToBack (struct Window * window)
+void intui_WindowToBack (struct Window * window,
+                         struct IntuitionBase * IntuitionBase)
 {
     _aros_not_implemented();
 }
