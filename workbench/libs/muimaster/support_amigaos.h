@@ -71,6 +71,9 @@ Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
 #define AROS_LIBFUNC_EXIT
 #define AROS_ASMSYMNAME(a) a
 
+#define LC_BUILDNAME(x) x
+#define LIBBASETYPEPTR struct Library *
+
 /*** AROS types *************************************************************/
 #ifndef __AROS_TYPES_DEFINED__
 #   define __AROS_TYPES_DEFINED__
