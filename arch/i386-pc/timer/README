@@ -1,2 +1,7 @@
-Nothing here yet, but here will be stuff which uses i586 rdtsc intruction
-(cpu internal clock)
+This part of timer.device make use of MC146818 Real Time Clock. It generates
+int (irq8) 1024 times per second. It may be used as TL_MICROHZ timer.
+
+WARNING!
+On some PC's (old 386's) this may slow down whole system but belive me, it's
+worth slowing.
+
