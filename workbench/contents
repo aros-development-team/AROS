@@ -8,5 +8,7 @@ devs/ - Disk-based devices, eg. \filename{RAM:} and
 
 libs/ - Disk-based shared libraries.
 
+locale/ - Localization information. Languages, catalogs, country data.
+
 s/ - This directory contains the Startup-Sequence.
 
