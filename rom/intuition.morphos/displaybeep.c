@@ -100,7 +100,7 @@ AROS_LH1(void, DisplayBeep,
             GetPrivScreen(screen)->BeepingCounter = BEEPTICKS;
         }
 
-        screen =  AllScreens ? screen = screen->NextScreen : NULL;
+        screen =  AllScreens ? screen->NextScreen : NULL;
     }
 
     //UnlockIBase(lock);
