@@ -114,6 +114,7 @@ id:     dc.b    'arosboot.cookie 41.1 (22.3.1997)',0
         even
 init:   moveq.l #0,d0
         rts
+endskip:
 
     Relocate this by adding a field's contents to its address.
     rt_MatchTag also contains a (negative) offset, but unsigned pointers
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
 
     if(!(SysBase->AttnFlags & AFF_68020))
     {
-	PutStr("This program requires a 68020 or better.\n\n");
+	PutStr("The current AROS for 68k Amigas requires a 68020 or higher processor.\n\n");
 	exit(RETURN_FAIL);
     }
 
@@ -222,8 +223,8 @@ int main(int argc, char **argv)
 	FreeRDArgsAll(rdargs);
 	if(reset)
 	{
-	    if(!quiet) PutStr("Resetting this machine...\n");
-	    Delay(100);
+	    if(!quiet) PutStr("Resetting this machine in about 5 seconds...\n");
+	    Delay(250);
 	    ColdReboot(); /* never returns */
 	}
 	exit(RETURN_OK);
@@ -262,7 +263,7 @@ int main(int argc, char **argv)
 	{
 	    if(!quiet)
 	    {
-		PutStr("AROS modules already loaded.");
+		PutStr("AROS modules already loaded."); /* A smart compiler merges strings */
 		PutStr(" Exiting.\n");
 	    }
 	    FreeRDArgsAll(rdargs);
@@ -391,8 +392,8 @@ int main(int argc, char **argv)
 
     if(reset)
     {
-	if(!quiet) PutStr("Resetting this machine...");
-	Delay(100);
+	if(!quiet) PutStr("Resetting this machine in about 5 seconds...\n");
+	Delay(250);
 	ColdReboot(); /* never returns */
     }
 
