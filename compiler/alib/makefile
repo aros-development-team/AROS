@@ -3,11 +3,12 @@ TOP=..
 
 SPECIAL_CFLAGS = -D__AROS
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/alib
 
-FILES=boopsi newobject setattrs openwindowtags openscreentags
+FILES=boopsi newobject setattrs openwindowtags openscreentags \
+	dogadgetmethod
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 
