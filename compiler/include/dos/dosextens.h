@@ -95,9 +95,7 @@ struct DosLibrary
 
 /* dl_Flags/rn_Flags */
 #define RNB_WILDSTAR 24 /* Activate '*' as wildcard character. */
-#define RNF_WILDSTAR (1L<<RNB_WILDSTAR)
-
-
+#define RNF_WILDSTAR (1L << RNB_WILDSTAR)
 
 
 struct RootNode
@@ -126,25 +124,25 @@ struct RootNode
     BPTR             rn_ShellSegment;
       /* Additional flags (see above). */
     LONG             rn_Flags;
+
+    /* RootNode arbitrator */
+    struct SignalSemaphore rn_RootLock;
 };
+
+
+/* Structure that is linked into the rootnode's rn_CliList. Completely
+   private, of course! ... and it's not compatible to AmigaOS. */
+struct CLIInfo
+{
+    struct Node      ci_Node;
+    struct Process  *ci_Process;
+};
+
 
 /* The following structures in this sections are not used by AROS and may
    be removed in the future. So BEWARE, if you use them. */
 
 #if 0
-
-/* This is a CLI node as pointed to by rn_CliList (see above). This structure
-   is READ-ONLY. */
-struct CliProcList
-{
-      /* Embedded node structure as defined in <exec/nodes.h>. */
-    struct MinNode    cpl_Node;
-      /* The first CLI process number in this list. */
-    LONG              cpl_First;
-      /* This works like rn_TaskArray (see above), except that the index is
-         equal to CLI process number + cpl_First. */
-    struct MsgPort ** cpl_Array;
-};
 
 struct DosInfo
 {
