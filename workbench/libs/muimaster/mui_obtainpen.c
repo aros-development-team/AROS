@@ -1,15 +1,10 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/types.h>
 #include <proto/graphics.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #include <string.h>
 #include <stdlib.h>

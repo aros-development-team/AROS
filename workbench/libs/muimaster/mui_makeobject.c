@@ -1,16 +1,12 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 #include <proto/utility.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
+
 #ifdef HAVE_COOLIMAGES
 #include <libraries/coolimages.h>
 #include <proto/coolimages.h>

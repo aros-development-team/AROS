@@ -60,6 +60,8 @@ typedef unsigned long STACKULONG;
 #endif
 #endif
 
+#include "mui.h"
+
 /****************************************************************************************/
 
 struct MUIMasterBase_intern
@@ -101,8 +103,6 @@ struct MUIMasterBase_intern
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
 #ifdef __AROS__
-
-#include <proto/muimaster.h>
 
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)

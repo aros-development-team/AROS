@@ -12,7 +12,6 @@
 
 #ifdef __AROS__
 #include <aros/asmcall.h>
-#include <proto/muimaster.h>
 #include <proto/alib.h>
 #endif
 
