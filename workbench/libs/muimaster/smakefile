@@ -1,4 +1,4 @@
-CFLAGS = NOVERS
+CFLAGS = NOVERS gst=all.gst
 LIBCODE =
 
 SUPPORTOBJS = \
@@ -48,7 +48,7 @@ CLASSESOBJS= \
   objs/classes/window.o \
   objs/classes/text.o
 
-all: dirs $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) test
+all: dirs all.gst $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) test
 
 dirs:
   execute  <<
@@ -61,6 +61,8 @@ dirs:
     endif
 <
 
+all.gst: headers.c
+  sc headers.c noobjname makegst all.gst
 
 objs/dragndrop.o: dragndrop.c
   sc $(CFLAGS) dragndrop.c objname=$@
