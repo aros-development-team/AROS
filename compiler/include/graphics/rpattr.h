@@ -18,4 +18,9 @@
 #define RPTAG_MaxPen     0x80000007
 #define RPTAG_DrawBounds 0x80000008
 
+/* Extensions taken over from MorphOS */
+#define RPTAG_PenMode	 0x80000080
+#define RPTAG_FgColor	 0x80000081
+#define RPTAG_BgColor	 0x80000082
+
 #endif /* GRAPHICS_RPATTR_H */
