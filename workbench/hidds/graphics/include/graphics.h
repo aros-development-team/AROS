@@ -86,6 +86,7 @@ enum {
     aoHidd_Gfx_IsWindowed,
     aoHidd_Gfx_ActiveBMCallBack,
     aoHidd_Gfx_ActiveBMCallBackData,
+    aoHidd_Gfx_DPMSLevel,
     
     num_Hidd_Gfx_Attrs
 };
@@ -93,9 +94,12 @@ enum {
 #define aHidd_Gfx_IsWindowed 		(HiddGfxAttrBase + aoHidd_Gfx_IsWindowed		)
 #define aHidd_Gfx_ActiveBMCallBack	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBack		)
 #define aHidd_Gfx_ActiveBMCallBackData	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBackData	)
+#define aHidd_Gfx_DPMSLevel		(HiddGfxAttrBase + aoHidd_Gfx_DPMSLevel			)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
+
+
 
 
 /* Parameter tags for the QueryGfxMode method */
@@ -106,6 +110,13 @@ enum {
 	tHidd_GfxMode_MaxHeight,
 	tHidd_GfxMode_PixFmts
 };
+
+typedef enum {
+	vHidd_Gfx_DPMSLevel_On,
+	vHidd_Gfx_DPMSLevel_Standby,
+	vHidd_Gfx_DPMSLevel_Suspend,
+	vHidd_Gfx_DPMSLevel_Off
+} HIDDT_DPMSLevel;
 
 
 
