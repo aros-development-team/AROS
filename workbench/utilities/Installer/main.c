@@ -53,7 +53,7 @@ UBYTE **tooltypes;
  */
 int main( int argc, char *argv[] )
 {
-struct RDArgs *rda;
+struct RDArgs *rda = NULL;
 char *ttemp, *tstring;
 
 ScriptArg *currentarg, *dummy;

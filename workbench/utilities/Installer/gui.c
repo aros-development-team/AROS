@@ -328,7 +328,7 @@ struct TagItem ti2[] = {
     fprintf( stderr, "CreateContext() failed\n");
 
   stringgad = gad = CreateGadget( STRING_KIND, gad, &gt_stringgad,
-			GTST_String, "Blah",
+			GTST_String, (IPTR)"Blah",
 			GTST_MaxChars, 128,
 			GTTX_Border, TRUE,
 			TAG_DONE );
@@ -839,7 +839,7 @@ char welcome[1024];
   gt_mxgad.ng_LeftEdge = 150;
 
   gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
-			GTMX_Labels, mxlabels,
+			GTMX_Labels, (IPTR)mxlabels,
 			GTMX_Scaled, TRUE,
 			GTMX_Spacing, 2,
 			GTMX_TitlePlace, PLACETEXT_ABOVE,
@@ -951,7 +951,7 @@ char welcome[1024];
 
     gt_mxgad.ng_LeftEdge = 80;
     gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
-			GTMX_Labels, mxlabels,
+			GTMX_Labels, (IPTR)mxlabels,
 			GTMX_Scaled, TRUE,
 			GTMX_TitlePlace, PLACETEXT_ABOVE,
 			GA_Immediate, TRUE,
@@ -1049,7 +1049,7 @@ char welcome[1024];
 
       gt_mxgad.ng_LeftEdge = 80;
       gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
-			  GTMX_Labels, mxlabels,
+			  GTMX_Labels, (IPTR)mxlabels,
 			  GTMX_Scaled, TRUE,
 			  GTMX_TitlePlace, PLACETEXT_ABOVE,
 			  GA_Immediate, TRUE,
@@ -1387,7 +1387,7 @@ int finish = FALSE;
 		{
 		  case ID_PROCEEDGAD:
 		    GT_GetGadgetAttrs( integergad, GuiWin, NULL,
-					GTIN_Number, &m,
+					GTIN_Number, (IPTR)&m,
 					TAG_DONE );
 		    if( m < min )
 		    {
@@ -1426,7 +1426,7 @@ int finish = FALSE;
 		    break;
 		  case ID_INTEGERGAD:
 		    GT_GetGadgetAttrs( integergad, GuiWin, NULL,
-					GTIN_Number, &m,
+					GTIN_Number, (IPTR)&m,
 					TAG_DONE );
 		    if( m < min )
 		    {
@@ -1512,7 +1512,7 @@ int finish = FALSE;
     setgadgetdisable( SKIPGAD );
 
     GT_SetGadgetAttrs( stringgad, GuiWin, NULL,
-			GTST_String, string,
+			GTST_String, (IPTR)string,
 			TAG_DONE );
 
     AddGList(GuiWin,stringglist,-1,-1,NULL);
@@ -1599,7 +1599,7 @@ int finish = FALSE;
       } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
-    GT_GetGadgetAttrs(stringgad,GuiWin,NULL,GTST_String,&string,TAG_DONE);
+    GT_GetGadgetAttrs(stringgad,GuiWin,NULL,GTST_String,(IPTR)&string,TAG_DONE);
 
     request_string_destruct();
   }
@@ -1669,7 +1669,7 @@ int max, finish = FALSE;
       fprintf( stderr, "CreateContext() failed\n");
 
     gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
-			GTMX_Labels, mxlabels,
+			GTMX_Labels, (IPTR)mxlabels,
 			GTMX_Scaled, TRUE,
 			GTMX_TitlePlace, PLACETEXT_ABOVE,
 			GTMX_Active, retval,
@@ -1759,7 +1759,7 @@ int max, finish = FALSE;
       } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
-    GT_GetGadgetAttrs( gad, GuiWin, NULL, GTMX_Active, &retval, TAG_DONE );
+    GT_GetGadgetAttrs( gad, GuiWin, NULL, GTMX_Active, (IPTR)&retval, TAG_DONE );
 
     request_choice_destruct();
 
@@ -2092,7 +2092,7 @@ void display_text( char * msg )
 
 int user_confirmation( char *message )
 {
-int retval;
+int retval = FALSE;
 int finish = FALSE;
 
   setgadgetdisable( 0 );

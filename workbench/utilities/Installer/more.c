@@ -227,7 +227,7 @@ void MakeGadgets(void)
 
     for(i = 0;i < NUM_IMAGES;i++)
     {
-	img[i] = NewObject(0,SYSICLASS,SYSIA_DrawInfo,dri,
+	img[i] = NewObject(0,SYSICLASS,SYSIA_DrawInfo,(IPTR)dri,
 				       SYSIA_Which,img2which[i],
 				       TAG_DONE);
 
@@ -243,7 +243,7 @@ void MakeGadgets(void)
     h_offset = imageh[IMG_LEFTARROW] / 4;
 
     firstgadget = scrollergad[GAD_UPARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_UPARROW],
+	    GA_Image,(IPTR)img[IMG_UPARROW],
 	    GA_RelRight,-imagew[IMG_UPARROW] + 1,
 	    GA_RelBottom,-imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1,
 	    GA_ID,GAD_UPARROW,
@@ -252,12 +252,12 @@ void MakeGadgets(void)
 	    TAG_DONE);
 
     scrollergad[GAD_DOWNARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_DOWNARROW],
+	    GA_Image,(IPTR)img[IMG_DOWNARROW],
 	    GA_RelRight,-imagew[IMG_UPARROW] + 1,
 	    GA_RelBottom,-imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1,
 	    GA_ID,GAD_DOWNARROW,
 	    GA_RightBorder,TRUE,
-	    GA_Previous,scrollergad[GAD_UPARROW],
+	    GA_Previous,(IPTR)scrollergad[GAD_UPARROW],
 	    GA_Immediate,TRUE,
 	    TAG_DONE);
 
@@ -267,7 +267,7 @@ void MakeGadgets(void)
 	    GA_Width,imagew[IMG_DOWNARROW] - v_offset * 2,
 	    GA_RelHeight,-imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2,
 	    GA_ID,GAD_VERTSCROLL,
-	    GA_Previous,scrollergad[GAD_DOWNARROW],
+	    GA_Previous,(IPTR)scrollergad[GAD_DOWNARROW],
 	    GA_RightBorder,TRUE,
 	    GA_RelVerify,TRUE,
 	    GA_Immediate,TRUE,
@@ -279,22 +279,22 @@ void MakeGadgets(void)
 	    TAG_DONE);
 
     scrollergad[GAD_RIGHTARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_RIGHTARROW],
+	    GA_Image,(IPTR)img[IMG_RIGHTARROW],
 	    GA_RelRight,-imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1,
 	    GA_RelBottom,-imageh[IMG_RIGHTARROW] + 1,
 	    GA_ID,GAD_RIGHTARROW,
 	    GA_BottomBorder,TRUE,
-	    GA_Previous,scrollergad[GAD_VERTSCROLL],
+	    GA_Previous,(IPTR)scrollergad[GAD_VERTSCROLL],
 	    GA_Immediate,TRUE,
 	    TAG_DONE);
 
     scrollergad[GAD_LEFTARROW] = NewObject(0,BUTTONGCLASS,
-	    GA_Image,img[IMG_LEFTARROW],
+	    GA_Image,(IPTR)img[IMG_LEFTARROW],
 	    GA_RelRight,-imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1,
 	    GA_RelBottom,-imageh[IMG_RIGHTARROW] + 1,
 	    GA_ID,GAD_LEFTARROW,
 	    GA_BottomBorder,TRUE,
-	    GA_Previous,scrollergad[GAD_RIGHTARROW],
+	    GA_Previous,(IPTR)scrollergad[GAD_RIGHTARROW],
 	    GA_Immediate,TRUE,
 	    TAG_DONE);
 
@@ -304,7 +304,7 @@ void MakeGadgets(void)
 	    GA_RelWidth,-imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2,
 	    GA_Height,imageh[IMG_LEFTARROW] - (h_offset * 2),
 	    GA_ID,GAD_HORIZSCROLL,
-	    GA_Previous,scrollergad[GAD_LEFTARROW],
+	    GA_Previous,(IPTR)scrollergad[GAD_LEFTARROW],
 	    GA_BottomBorder,TRUE,
 	    GA_RelVerify,TRUE,
 	    GA_Immediate,TRUE,
