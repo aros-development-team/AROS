@@ -463,11 +463,12 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     DeinitRastPort(&temprp);
 #endif
 
-    _addleft(obj)   = REGISTER_FRAMEX;
-    _subwidth(obj)  = _addleft(obj) + REGISTER_FRAMEX;
-    _addtop(obj)    = data->height + REGISTER_FRAMEY;
-    _subheight(obj) = REGISTER_FRAMEY + _addtop(obj);
-    
+    muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
+    muiAreaData(obj)->mad_HardITop   	= data->height + REGISTER_FRAMEY;
+    muiAreaData(obj)->mad_HardIRight  	= REGISTER_FRAMEX;
+    muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEY;
+    muiAreaData(obj)->mad_Flags     	|= (MADF_INNERLEFT | MADF_INNERTOP | MADF_INNERRIGHT | MADF_INNERBOTTOM);
+        
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     
     return TRUE;
