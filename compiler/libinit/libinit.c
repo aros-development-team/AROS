@@ -13,7 +13,7 @@ typedef AROS_UFP1(int, (*libfunc),
 		 );
 
 AROS_UFH3(int, set_call_libfuncs,
-	  AROS_UFHA(libfunc*, list, A0),
+	  AROS_UFHA(const libfunc*, list, A0),
 	  AROS_UFHA(int, order, D0),
 	  AROS_UFHA(void*, libbase, A6)
 	 )
