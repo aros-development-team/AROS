@@ -147,14 +147,14 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    *dosPtr = LIBBASE;
 	    AddLibrary((struct Library *)LIBBASE);
 
+	    /* This is where we start the RTC_AFTERDOS residents */
+	    InitCode(RTF_AFTERDOS, 0);
+
 	    /*
 		Here we have to get the first node of the mountlist,
 		and we try and boot from it, (assign it to SYS:).
 	    */
 	    DOSBoot(SysBase, DOSBase);
-
-	    /* This is where we start the RTC_AFTERDOS residents */
-	    InitCode(RTF_AFTERDOS, 0);
 
 	    /* We now restart the multitasking	- this is done
 	       automatically by RemTask() when it switches.
