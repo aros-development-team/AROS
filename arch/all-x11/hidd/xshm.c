@@ -51,12 +51,31 @@ void *init_shared_mem(Display *display)
 	
 	if (NULL != shminfo)
 	{
+	    key_t key;
+
+	    /*
+	     *	Try and get a key for us to use. The idea is to use a
+	     *	filename that isn't likely to change all that often. This
+	     *	is made somewhat easier since we must be run from the AROS
+	     *	root directory (atm). So, I shall choose the path "C",
+	     *	since the inode number isn't likely to change all that
+	     *	often.
+	     */
+	    key = ftok("./C", 'A');
+	    if(key == -1)
+	    {
+		kprintf("Hmm, path \"./C\" doesn't seem to exist?\n");
+		key = IPC_PRIVATE;
+	    }
+	    else
+	    {
+		kprintf("Using shared memory key %d\n", key);
+	    }
 
 	    memset(shminfo, 0, sizeof (*shminfo));
 		
 	    /* Allocate shared memory */
-	    shminfo->shmid = shmget(IPC_PRIVATE
-			, XSHM_MEMSIZE, IPC_CREAT|0777);
+	    shminfo->shmid = shmget(key,XSHM_MEMSIZE, IPC_CREAT|0777);
 			
 	    if (shminfo->shmid >= 0)
 	    {
