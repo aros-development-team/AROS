@@ -55,6 +55,7 @@ struct MUI_WindowData
 #define MUIWF_ICONIFIED (1<<1) /* window currently iconified */
 #define MUIWF_ACTIVE    (1<<2) /* window currently active */
 #define MUIWF_CLOSEREQUESTED (1<<3) /* when user hits close gadget */
+#define MUIWF_RESIZING (1<<4) /* window currently resizing, for simple refresh */
 
 struct __dummyXFC3__
 {

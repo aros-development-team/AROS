@@ -274,110 +274,57 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     switch (imsg->Class)
     {
-	case IDCMP_NEWSIZE:
-	    if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
-	    {
-		data->wd_Width  = iWin->GZZWidth;
-		data->wd_Height = iWin->GZZHeight;
-		DoMethod(data->wd_RootObject, MUIM_Hide);
-            
-		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
-		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
-		DoMethod(data->wd_RootObject, MUIM_Layout);
-		DoMethod(data->wd_RootObject, MUIM_Show);
-		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-	    }
-	    break;
+	case	IDCMP_NEWSIZE:
+		if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
+		{
+		    data->wd_Width  = iWin->GZZWidth;
+		    data->wd_Height = iWin->GZZHeight;
+		    DoMethod(data->wd_RootObject, MUIM_Hide);
 
-	case IDCMP_REFRESHWINDOW:
-	    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
-	    {
-		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-	     	MUI_EndRefresh(&data->wd_RenderInfo, 0);
-	    }
-	    break;
+		    if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
+		    {
+		        data->wd_Flags |= MUIWF_RESIZING;
+		    } else
+		    {
+			_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
+			_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
+			DoMethod(data->wd_RootObject, MUIM_Layout);
+			DoMethod(data->wd_RootObject, MUIM_Show);
+			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		    }
+		}
+	  	break;
 
-	case IDCMP_CLOSEWINDOW:
-	    set(oWin, MUIA_Window_CloseRequest, TRUE);
-	    break;
+	case	IDCMP_REFRESHWINDOW:
+		if (data->wd_Flags & MUIWF_RESIZING)
+		{
+		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+		    {
+			MUI_EndRefresh(&data->wd_RenderInfo, 0);
+		    }
 
+		    data->wd_Flags &= ~MUIWF_RESIZING;
+		    _width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
+		    _height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
+		    DoMethod(data->wd_RootObject, MUIM_Layout);
+		    DoMethod(data->wd_RootObject, MUIM_Show);
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		} else
+		{
+		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+		    {
+			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+			MUI_EndRefresh(&data->wd_RenderInfo, 0);
+		    }
+		}
+		break;
+
+	case	IDCMP_CLOSEWINDOW:
+		set(oWin, MUIA_Window_CloseRequest, TRUE);
+		break;
     }
 
     handle_event(oWin, imsg);
-
-#if 0
-    /* If there is a grab in effect...
-     */
-    grab_object = win;
-
-    /* Not all events get sent to the grabbing widget.
-     * The delete, destroy, expose, focus change and resize
-     *  events still get sent to the event widget because
-     *  1) these events have no meaning for the grabbing widget
-     *  and 2) redirecting these events to the grabbing widget
-     *  could cause the display to be messed up.
-     * 
-     * Drag events are also not redirected, since it isn't
-     *  clear what the semantics of that would be.
-     */
-    switch (event->type)
-    {
-	case GDK_BUTTON_PRESS:
-	case GDK_2BUTTON_PRESS:
-	case GDK_3BUTTON_PRESS:
-	    /* We treat button 4-5 specially, assume we have
-	     * a MS-style scrollwheel mouse, and try to find
-	     * a plausible widget to scroll. We also trap
-	     * button 4-5 double and triple clicks here, since
-	     * they will be generated if the user scrolls quickly.
-	     */
-	    break;
-
-	case GDK_KEY_PRESS:
-	    handle_key(win, (struct IntuiMessageKey *)event, GDK_KEY_PRESS_MASK);
-	    break; 
-	case GDK_KEY_RELEASE:
-	    handle_key(win, (struct IntuiMessageKey *)event, GDK_KEY_RELEASE_MASK);
-	    break;
-	    /* key snoopers here */
-
-	    /* else fall through */
-	case GDK_MOTION_NOTIFY:
-	    handle_event(win, event, GDK_POINTER_MOTION_MASK |
-			 GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK |
-			 GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK);
-	    break;
-	case GDK_BUTTON_RELEASE:
-	    handle_event(win, event, GDK_BUTTON_RELEASE_MASK);
-	    break;
-	case GDK_PROXIMITY_IN:
-	    handle_event(win, event, GDK_PROXIMITY_IN_MASK);
-	    break;
-	case GDK_PROXIMITY_OUT:
-	    handle_event(win, event, GDK_PROXIMITY_OUT_MASK);
-	    break;
-      
-
-	    /*
-	     * perhaps code to highlight active gadget here
-	     */
-	case GDK_ENTER_NOTIFY:
-	    break;      
-	case GDK_LEAVE_NOTIFY:
-	    break;
-      
-
-
-	case GDK_DRAG_STATUS:
-	case GDK_DROP_FINISHED:
-	    break;
-	case GDK_DRAG_ENTER:
-	case GDK_DRAG_LEAVE:
-	case GDK_DRAG_MOTION:
-	case GDK_DROP_START:
-	    break;
-    }
-#endif  
 }
 
 /****************************************************************************/
@@ -546,7 +493,44 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	}*/
     }
 
-    /* try defaultkey */
+    /* try DefaultObject */
+
+    /* try Control Chars */
+    if (mask == IDCMP_RAWKEY)
+    {
+    	struct IntuiMessage imsg;
+    	ULONG key;
+
+	/* Remove the up prefix as convert key does not convert a upkey event */
+    	imsg = *event;
+    	imsg.Code &= ~IECODE_UP_PREFIX;
+    	key = ConvertKey(&imsg);
+
+    	if (key)
+    	{
+            for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+            {
+		ehn = (struct MUI_EventHandlerNode *)mn;
+
+		if (ehn->ehn_Events == key)
+		{
+		    LONG muikey = ehn->ehn_Flags;
+		    if (event->Code & IECODE_UP_PREFIX)
+		    {
+			if (muikey == MUIKEY_PRESS) muikey = MUIKEY_RELEASE;
+			else muikey = MUIKEY_RELEASE;
+		    }
+
+		    if (muikey != MUIKEY_NONE)
+		    {
+			res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+			if (res & MUI_EventHandlerRC_Eat) return;
+		    }
+		}
+	    }
+	}
+    }
+    
 
     /* try eventhandler */
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -561,7 +545,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	}
     }
 
-    /* nobody has eaten the message so we can try out best */
+    /* nobody has eaten the message so we can try ourself */
     switch (muikey)
     {
     	case	MUIKEY_PRESS:break;
