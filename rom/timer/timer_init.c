@@ -86,13 +86,12 @@ static const void * const functable[] =
     &AROS_SLIB_ENTRY(null,Timer),
     &AROS_SLIB_ENTRY(null,Timer),
     &AROS_SLIB_ENTRY(BeginIO,Timer),
-    &AROS_SLIB_ENTRY(null,Timer),
-/*    &AROS_SLIB_ENTRY(AbortIO,Timer), */
+    &AROS_SLIB_ENTRY(AbortIO,Timer),
     &AROS_SLIB_ENTRY(AddTime,Timer),
     &AROS_SLIB_ENTRY(SubTime,Timer),
     &AROS_SLIB_ENTRY(CmpTime,Timer),
-    &AROS_SLIB_ENTRY(null,Timer),
-/*    &AROS_SLIB_ENTRY(ReadEClock,Timer),*/
+
+    &AROS_SLIB_ENTRY(null /* ReadEClock */,Timer),
     &AROS_SLIB_ENTRY(GetSysTime,Timer),
     (void *)-1
 };
