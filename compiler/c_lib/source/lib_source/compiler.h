@@ -1,7 +1,7 @@
 #ifndef _COMPILER_H
 #define _COMPILER_H
 /*
-**	$VER: compiler.h 37.10 (1.4.97)
+**	$VER: compiler.h 37.11 (24.6.97)
 **
 **	Compiler independent register (and SAS/C extensions) handling
 **

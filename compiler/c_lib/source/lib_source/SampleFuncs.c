@@ -1,5 +1,5 @@
 /*
-**	$VER: SampleFuncs.c 37.10 (1.4.97)
+**	$VER: SampleFuncs.c 37.11 (24.6.97)
 **
 **	Demo functions for example.library
 **

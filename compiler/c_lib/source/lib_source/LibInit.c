@@ -1,5 +1,5 @@
 /*
-**	$VER: LibInit.c 37.10 (1.4.97)
+**	$VER: LibInit.c 37.11 (24.6.97)
 **
 **	Library initializers and functions to be called by StartUp.c
 **
@@ -49,7 +49,7 @@ struct IntuitionBase *IntuitionBase = NULL;
 struct GfxBase	     *GfxBase	    = NULL;
 
 #define VERSION  37
-#define REVISION 10
+#define REVISION 11
 
 char ALIGNED ExLibName [] = "example.library";
 char ALIGNED ExLibID   [] = "example 37.10 (1.4.97)";
