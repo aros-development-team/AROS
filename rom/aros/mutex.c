@@ -5,8 +5,14 @@
     Desc: Implementation of simpler mutexes
 */
 
+#define AROS_ALMOST_COMPATIBLE
 #include <aros/system.h>
 #include <exec/types.h>
+#include <exec/lists.h>
+#include <proto/exec.h>
+#include <aros/debug.h>
+
+#include "aros_intern.h"
 
 /* I don't have CAS yet, so I need to fake it for now. */
 unsigned long __CompareAndSwap(unsigned long *ptr, unsigned long val, struct ExecBase *sysBase);
@@ -114,7 +120,7 @@ unsigned long __CompareAndSwap(unsigned long *ptr, unsigned long val, struct Exe
      *	This function uses the kernel.resource's non-existent
      *	CompareAndSwap() function.
      */
-    while((ownTask = CompareAndSwap(&mutex->m_Locker, thisTask)) != NULL)
+    while((ownTask = (struct Task *)CompareAndSwap(&mutex->m_Locker, thisTask)) != NULL)
     {
 	/*
 	 *  If ownTask == NULL, then we own this mutex. We must check to
