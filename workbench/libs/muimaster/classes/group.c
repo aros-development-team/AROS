@@ -825,6 +825,9 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  	      data->update, data->active_page)); */
 /*      D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj))); */
 
+    if (data->flags & GROUP_CHANGING)
+	return FALSE;
+
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
 	region = NewRegion();
@@ -2175,6 +2178,14 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
 	}
 
 	top += data->vert_spacing + row_height;
+    }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth = left - data->horiz_spacing;
+	data->virt_mheight = top - data->vert_spacing;
+	D(bug("group_layout_2d: virt_mwidth = %d, h = %d\n", data->virt_mwidth,
+	    data->virt_mheight));
     }
 }
 
