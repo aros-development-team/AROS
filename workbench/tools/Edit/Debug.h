@@ -2,7 +2,7 @@
 **** Written by T.Pierron  june 27, 2001
 ***/
 
-#ifdef	DEBUG				/* Do not include this code if DEBUG isn't defined */
+#if	DEBUG				/* Do not include this code if DEBUG isn't defined */
 
 #if 0
 #ifdef	DEBUG_STUFF		/* One arbitrary file must defined this macro */

@@ -178,7 +178,7 @@ void handle_kbd(Project p)
 			return;
 #endif
 
-#ifdef	DEBUG
+#if	DEBUG
 		case F1_KEY:
 			printf("mask = 0x%02x\n", RP->Mask); return;
 		case F2_KEY:

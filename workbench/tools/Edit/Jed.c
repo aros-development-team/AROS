@@ -49,14 +49,14 @@ struct IntuiMessage *msg, msgbuf;     /* Used to collect events */
 
 StartUpArgs args;
 
-#ifdef	DEBUG
+#if	DEBUG
 ULONG bmem, amem;
 #endif
 
 /*** MAIN LOOP ***/
 int main(int argc, char *argv[])
 {
-#ifdef	DEBUG
+#if	DEBUG
 	bmem = AvailMem( MEMF_PUBLIC );
 #endif
 
@@ -131,7 +131,7 @@ void cleanup(UBYTE *msg, int errcode)
 	if(IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
 	if(msg)           puts(msg);
 
-#ifdef	DEBUG
+#if	DEBUG
 	/* Here can be compared good programs with the others :-) */
 	amem = AvailMem( MEMF_PUBLIC );
 	if(amem < bmem)  printf("Possible memory lost of %d bytes\n", bmem-amem);
