@@ -768,7 +768,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (gadget)
 		{
-		    int inside = InsideGadget(w,gadget,im->MouseX, im->MouseY);
+		    int inside = InsideGadget(w,gadget,ie->ie_X,ie->ie_Y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
