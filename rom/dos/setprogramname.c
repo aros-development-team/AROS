@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Sets the name of the current program.
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -14,6 +14,7 @@
 /*****************************************************************************
 
     NAME */
+
 #include <proto/dos.h>
 
 	AROS_LH1(BOOL, SetProgramName,
@@ -31,10 +32,10 @@
 	does nothing.
 
     INPUTS
-	name - Name for the current program.
+	name  --  Name for the current program.
 
     RESULT
-	!=0 on success, 0 on failure.
+	!= 0 on success, 0 on failure.
 
     NOTES
 
@@ -57,26 +58,34 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct CommandLineInterface *cli = NULL;
-    STRPTR s;
-    ULONG namelen;
+    return internal_SetProgramName(Cli(), name) ? DOSTRUE : DOSFALSE;
 
-    if ((cli = Cli()) == NULL)
-	return DOSFALSE;
+    AROS_LIBFUNC_EXIT
+} /* SetProgramName */
 
+
+BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name)
+{
+    STRPTR  s;
+    ULONG   namelen;
+
+    if(cli == NULL)
+	return FALSE;
+    
     s = name;
+
     while(*s++)
 	;
+
     namelen = s - name - 1;
-
-    if (namelen > 255)
-	return DOSFALSE;
-
+    
+    if(namelen > 255)
+	return FALSE;
+    
     s = AROS_BSTR_ADDR(cli->cli_CommandName);
-
+    
     AROS_BSTR_setstrlen(cli->cli_CommandName, namelen);
     CopyMem((APTR)name, s, namelen);
 
-    return DOSTRUE;
-    AROS_LIBFUNC_EXIT
-} /* SetProgramName */
+    return TRUE;
+}
