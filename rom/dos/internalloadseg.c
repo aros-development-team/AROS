@@ -85,6 +85,7 @@
         bug("Loaded as ELF exe\n");
 #endif
     }
+#ifndef __mc68000__
     if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
     {
       segs = InternalLoadSeg_ELF_AROS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
@@ -93,6 +94,7 @@
         bug("Loaded as ELF exe\n");
 #endif
     }
+#endif
     if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
     {
       segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
