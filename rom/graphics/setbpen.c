@@ -51,7 +51,7 @@
 
     struct gfx_driverdata *dd;
 
-    if (CorrectDriverData (rp, GfxBase))
+    if (OBTAIN_DRIVERDATA(rp, GfxBase))
     {
     	
         struct TagItem col_tags[]=
@@ -67,6 +67,7 @@
 	{
 	    OOP_SetAttrs( dd->dd_GC, col_tags );
 	}
+	RELEASE_DRIVERDATA(rp, GfxBase);
     }
 
     /* Do it after the driver to allow it to inspect the previous value */

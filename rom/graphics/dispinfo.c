@@ -118,7 +118,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
     
     gfxhidd	= SDD(GfxBase)->gfxhidd;
     
-    for (tstate = taglist; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    for (tstate = taglist; (tag = NextTagItem(&tstate)); ) {
 	switch (tag->ti_Tag) {
 	    case CYBRMREQ_MinWidth:
 	    	minwidth = (ULONG)tag->ti_Data;
@@ -281,7 +281,7 @@ ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
     monitorid		= 0;
     boardname		= "Blah";
       
-    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
     	switch (tag->ti_Tag) {
 	    case CYBRBIDTG_Depth:
 	    	depth = tag->ti_Data;
@@ -410,7 +410,7 @@ BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
 	HIDDT_StdPixFmt stdpf;
 	    
 	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-	if (((ULONG)-1) != hidd2cyber_pixfmt(stdpf, GfxBase)) {
+	if (((UWORD)-1) != hidd2cyber_pixfmt(stdpf, GfxBase)) {
 	    	iscyber = TRUE;
 	}
     }

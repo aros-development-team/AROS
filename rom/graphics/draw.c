@@ -69,7 +69,7 @@
     struct BitMap   	*bm = rp->BitMap;
     LONG    	    	 dx, dy;
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
 	
     gc = GetDriverData(rp)->dd_GC;
@@ -120,13 +120,13 @@
 	OOP_Object *bm_obj;
 
 	bm_obj = OBTAIN_HIDD_BM(bm);
-	if (NULL == bm_obj)
-	    return;
-	    
-	/* No need for clipping */
-	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
+	if (bm_obj)
+	{
+	    /* No need for clipping */
+	    HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
 	
-	RELEASE_HIDD_BM(bm_obj, bm);
+	    RELEASE_HIDD_BM(bm_obj, bm);
+	}
 	    
     }
     else
@@ -246,6 +246,7 @@
     rp->cp_x = x;
     rp->cp_y = y;
     
+    RELEASE_DRIVERDATA(rp, GfxBase);
     
     AROS_LIBFUNC_EXIT
     

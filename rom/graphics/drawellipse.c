@@ -60,7 +60,7 @@
     struct Layer    	*L = rp->Layer;
     struct BitMap   	*bm = rp->BitMap;
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
 
     /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);	
@@ -77,16 +77,16 @@
 	OOP_Object *bm_obj;
 	
 	bm_obj = OBTAIN_HIDD_BM(bm);
-	if (NULL == bm_obj)
-	    return;
-	    
-	/* No need for clipping */
-	HIDD_BM_DrawEllipse(bm_obj, gc
-		, xCenter, yCenter
-		, a, b
-	);
-	
-	RELEASE_HIDD_BM(bm_obj, bm);
+	if (bm_obj)
+	{
+	    /* No need for clipping */
+	    HIDD_BM_DrawEllipse(bm_obj, gc
+		    , xCenter, yCenter
+		    , a, b
+	    );
+
+	    RELEASE_HIDD_BM(bm_obj, bm);
+	}
 	    
     }
     else
@@ -211,6 +211,8 @@
         UnlockLayerRom(L);
 	
     } /* if (rp->Layer) */
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
     
     AROS_LIBFUNC_EXIT
     

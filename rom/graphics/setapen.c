@@ -51,7 +51,7 @@
 
     struct gfx_driverdata *dd;
 
-    if (CorrectDriverData (rp, GfxBase))
+    if (OBTAIN_DRIVERDATA(rp, GfxBase))
     {
 	dd = GetDriverData(rp);
 	if (dd)
@@ -66,6 +66,7 @@
 	    OOP_SetAttrs( dd->dd_GC, col_tags );
 
 	}
+	RELEASE_DRIVERDATA(rp, GfxBase);
     }
 
     rp->FgPen = pen;

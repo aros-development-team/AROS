@@ -10,7 +10,7 @@
 #include <graphics/rastport.h>
 #include "gfxfuncsupport.h"
 
-void DeinitDriverData(struct RastPort *, struct GfxBase *);
+void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -60,6 +60,9 @@ void DeinitDriverData(struct RastPort *, struct GfxBase *);
 
     D(bug("DeInitRP()\n"));
 
+#if NEW_DRIVERDATA_CODE
+    KILL_DRIVERDATA(rp, GfxBase);
+#else
     if ( rp->Flags & RPF_DRIVER_INITED )
     {
     	D(bug("RP inited, rp=%p, %flags=%d=\n", rp, rp->Flags));
@@ -67,9 +70,10 @@ void DeinitDriverData(struct RastPort *, struct GfxBase *);
         if (GetDriverData(rp)->dd_RastPort == rp) 
 	{
 	    D(bug("Calling DeInitDriverData\n"));
-	    DeinitDriverData (rp, GfxBase);
+	    obsolete_DeinitDriverData (rp, GfxBase);
 	}
     }
+#endif
  
     AROS_LIBFUNC_EXIT
     

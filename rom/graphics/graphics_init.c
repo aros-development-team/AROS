@@ -104,6 +104,8 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Graphics),
 {
     AROS_USERFUNC_INIT
 
+    WORD i;
+    
     SysBase = sysBase;
     
     NEWLIST(&LIBBASE->TextFonts);
@@ -122,6 +124,19 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Graphics),
     NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
 #endif
 
+    InitSemaphore( &PrivGBase(GfxBase)->driverdatasem );
+    if (!(PrivGBase(GfxBase)->driverdatapool = CreatePool(MEMF_PUBLIC | MEMF_SEM_PROTECTED,
+    	    	    	    	    	    	          1024,
+    	    	    	    	    	    	          1024)))
+    {
+    	return NULL;
+    }
+
+    for(i = 0; i < DRIVERDATALIST_HASHSIZE; i++)
+    {
+	NEWLIST((struct List *)&PrivGBase(GfxBase)->driverdatalist[i]);
+    }
+    
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
     if (!OOPBase) return NULL;
     

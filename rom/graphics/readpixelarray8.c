@@ -72,7 +72,7 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     EnterFunc(bug("ReadPixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
 #warning "ReadPixelArray8 on hi/truecolor screens or a LUT for it does not really make sense"
@@ -91,6 +91,8 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     
     pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, GfxBase);
 	
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     ReturnInt("ReadPixelArray8", LONG, pixread);
 
     AROS_LIBFUNC_EXIT

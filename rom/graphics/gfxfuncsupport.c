@@ -379,7 +379,7 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
     };
 
 
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
     gc = GetDriverData(rp)->dd_GC;
@@ -401,6 +401,8 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
     gc_tags[1].ti_Data = (IPTR)old_fg;
     OOP_SetAttrs(gc, gc_tags);
 	
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     return pixwritten;
 }
 
@@ -644,7 +646,7 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     };
     
 
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
     gc = GetDriverData(rp)->dd_GC;
@@ -666,6 +668,8 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     /* Reset to preserved drawmode */
     gc_tags[0].ti_Data = old_drmd;
     OOP_SetAttrs(gc, gc_tags);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
     
     return pixwritten;
 
@@ -1122,11 +1126,11 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     struct Rectangle  ScrollRect;
     struct Rectangle  Rect;
 
-    if (!CorrectDriverData (rp, GfxBase))
-	return FALSE;
-
     if (0 == dx && 0 == dy)
     	return TRUE;
+
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+	return FALSE;
 
     ScrollRect.MinX = x1;
     ScrollRect.MinY = y1;
@@ -1522,6 +1526,8 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         UnlockLayerRom(L);
     }
 
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     return TRUE;
 }
 

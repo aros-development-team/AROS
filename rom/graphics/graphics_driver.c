@@ -99,13 +99,164 @@ struct ETextFont
 /* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the       */
 /* Pattern itself (and free previously used memory!)                    */
 
-struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+#if NEW_DRIVERDATA_CODE
+
+static inline LONG CalcDriverDataHash(APTR resource)
+{
+    LONG l1, l2, l3, l4, hash;
+    
+    /* FIXME: Probably sucks. I have no clue about this hash stuff */
+    
+    l1 = ((LONG)resource) & 0xFF;
+    l2 = (((LONG)resource) >> 8) & 0xFF;
+    l3 = (((LONG)resource) >> 16) & 0xFF;
+    l4 = (((LONG)resource) >> 24) & 0xFF;
+   
+    hash = (l1 + l2 + l3 + l4) % DRIVERDATALIST_HASHSIZE;
+
+    return hash;
+}
+
+static inline void AddDriverDataToList(struct gfx_driverdata *dd, struct GfxBase * GfxBase)
+{
+    LONG hash;
+    
+    hash = CalcDriverDataHash(dd);
+    
+//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);
+    AddTail((struct List *)&PrivGBase(GfxBase)->driverdatalist[hash], (struct Node *)&dd->dd_Node);    
+//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
+    
+}
+
+static inline void RemoveDriverDataFromList(struct gfx_driverdata *dd, struct GfxBase *GfxBase)
+{
+//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);
+    Remove((struct Node *)&dd->dd_Node);    
+//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
+}
+
+static inline BOOL FindDriverData(struct gfx_driverdata *dd, struct RastPort *rp, struct GfxBase *GfxBase)
+{
+    struct gfx_driverdata *hn = NULL;
+    LONG    	     	  hash;
+    BOOL    	    	  retval = FALSE;
+    
+    hash = CalcDriverDataHash(dd);
+
+//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    ForeachNode((struct List *)&PrivGBase(GfxBase)->driverdatalist[hash], hn)
+    {
+    	if ((hn == dd) && (hn->dd_RastPort == rp))
+	{
+	    retval = TRUE;
+	    break;
+	}
+    }
+//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
+    
+    return retval;
+}
+
+BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+{
+    struct gfx_driverdata *dd;
+    
+    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    dd = GetDriverData(rp);
+    if (dd)
+    {
+    	if (FindDriverData(dd, rp, GfxBase))
+	{
+	    dd->dd_LockCount++;
+	}
+	else
+	{
+	    SetDriverData(rp, NULL);
+	    dd = NULL;
+	}
+    }
+    
+    if (!dd)
+    {
+    	dd = AllocPooled(PrivGBase(GfxBase)->driverdatapool, sizeof(*dd));
+	if (dd)
+	{
+	    struct shared_driverdata *sdd;
+	    struct TagItem gc_tags[] = {{ TAG_DONE}};
+
+	    sdd = SDD(GfxBase);
+		
+	    dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
+	    if (dd->dd_GC)
+	    {
+   	    	dd->dd_RastPort = rp;
+		dd->dd_LockCount = 1;
+		dd->dd_NoAutoKill = FALSE;
+		
+    	    	SetDriverData(rp, dd);
+	    	rp->Flags |= RPF_DRIVER_INITED;
+
+    	    	AddDriverDataToList(dd, GfxBase);
+		
+		if (rp->BitMap) SetABPenDrMd(rp, (UBYTE)rp->FgPen, (UBYTE)rp->BgPen, rp->DrawMode);
+	    }
+    	    else
+	    {
+	    	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd));
+		dd = NULL;
+	    }
+	    
+	} /* if (dd) */
+	
+    } /* if (!dd) */
+    
+    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    
+    return dd ? TRUE : FALSE;
+}
+
+void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+{
+    struct gfx_driverdata *dd = GetDriverData(rp);
+    
+    dd->dd_LockCount--;
+    
+//    if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
+}
+
+void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+{
+    struct gfx_driverdata *dd;
+    
+    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    dd = GetDriverData(rp);
+    if (dd) dd = FindDriverData(dd, rp, GfxBase) ? dd : NULL;
+    if (dd)
+    {
+    	struct shared_driverdata *sdd;
+    	
+	sdd = SDD(GfxBase);
+
+    	HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
+	RemoveDriverDataFromList(dd, GfxBase);
+	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
+	SetDriverData(rp, NULL);   	
+    }
+    
+    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+        
+}
+
+#else
+
+struct gfx_driverdata * obsolete_InitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata * dd;
     EnterFunc(bug("InitDriverData(rp=%p)\n", rp));
 
     /* Does this rastport have a bitmap ? */
-    if (rp->BitMap)
+    //if (rp->BitMap)
     {
         D(bug("Got bitmap\n"));
         /* Displayable ? (== rastport of a screen) */
@@ -147,7 +298,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     ReturnPtr("InitDriverData", struct gfx_driverdata *, NULL);
 }
 
-void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+void obsolete_DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata * dd;
     struct shared_driverdata *sdd;
@@ -167,7 +318,7 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     ReturnVoid("DeinitDriverData");
 }
 
-BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+BOOL obsolete_CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     BOOL retval = TRUE;
     struct gfx_driverdata * dd, * old;
@@ -181,7 +332,7 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	old = GetDriverData(rp);
 	if (!old)
 	{
-	    old = InitDriverData(rp, GfxBase);
+	    old = obsolete_InitDriverData(rp, GfxBase);
 
 /* stegerg: ???? would have returned TRUE even if old == NULL
 	    if (old)
@@ -198,7 +349,7 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	    rp->longreserved[0] = 0;
 	    rp->Flags &= ~RPF_DRIVER_INITED;
 
-	    dd = InitDriverData(rp, GfxBase);
+	    dd = obsolete_InitDriverData(rp, GfxBase);
 
 /* stegerg: ???? would have returned TRUE even if dd = NULL
 	    if (dd)
@@ -212,6 +363,8 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     
     return retval;
 }
+
+#endif
 
 int driver_init(struct GfxBase * GfxBase)
 {
@@ -637,11 +790,13 @@ void blit_glyph_fast(struct RastPort *rp, OOP_Object *fontbm, WORD xsrc
     rr.MaxX = destx + width  - 1;
     rr.MaxY = desty + height - 1;
 	
-    if (!CorrectDriverData(rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	ReturnVoid("blit_glyph_fast");
 	
     do_render_func(rp, NULL, &rr, bgf_render, &bgfrd, FALSE, GfxBase);
 	
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     ReturnVoid("blit_glyph_fast");
 }
 
@@ -661,7 +816,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     struct tfe_hashnode *hn;
     OOP_Object *fontbm = NULL;
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	return;
 
     if ((rp->DrawMode & ~INVERSVID) == JAM2)
@@ -729,6 +884,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     if (NULL == fontbm)
     {
     	D(bug("FONT HAS NO HIDD BITMAP ! Won't render text\n"));
+	RELEASE_DRIVERDATA(rp, GfxBase);
 	return;
     }
 
@@ -797,6 +953,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     if (NULL != rp->Layer)
       UnlockLayerRom(rp->Layer);
     
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     return;
 
 }
@@ -834,7 +992,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     
     HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
   
-    if(!CorrectDriverData (rp, GfxBase))
+    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return ((ULONG)-1L);
 	
     if (IS_HIDD_BM(rp->BitMap))
@@ -845,7 +1003,11 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     prlrd.pen = -1;
 
     ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, GfxBase);
-    if (-1 == ret || -1 == prlrd.pen) {
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
+    if (-1 == ret || -1 == prlrd.pen)
+    {
         D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
     	return (ULONG)-1;
     }
@@ -858,13 +1020,17 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 {
 
     struct pix_render_data prd;
-
-    if(!CorrectDriverData (rp, GfxBase))
+    LONG    	    	   retval;
+    
+    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return  -1L;
 	
     prd.pixel = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
-
-    return do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+    retval = do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
+    return retval;
 }
 
 /******** SetRast() ************************************/
@@ -1378,20 +1544,24 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     struct Rectangle rr;
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n"));
     	return 0;
     }
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
-    if (RECTFMT_LUT8 == srcformat) {
+    if (RECTFMT_LUT8 == srcformat)
+    {
     
 	HIDDT_PixelLUT pixlut = { 256, HIDD_BM_PIXTAB(rp->BitMap) };
 	UBYTE * array = (UBYTE *)src;
 	
-	if (rp->BitMap->Flags & BMF_SPECIALFMT) {
+	if (rp->BitMap->Flags & BMF_SPECIALFMT)
+	{
+	    RELEASE_DRIVERDATA(rp, GfxBase);
 	    D(bug("!!! No CLUT in driver_WritePixelArray\n"));
 	    return 0;
 	}
@@ -1404,16 +1574,21 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 		, destx + width - 1, desty + height - 1
 		, &pixlut
 		, GfxBase);
-		
+	
+	RELEASE_DRIVERDATA(rp, GfxBase);
+	
 	return pixwritten;
     }
     
-    if (RECTFMT_GREY8 == srcformat) {
+    if (RECTFMT_GREY8 == srcformat)
+    {
+    	RELEASE_DRIVERDATA(rp, GfxBase);
     	D(bug("!!! RECTFMT_GREY8 not yet handled in driver_WritePixelArray\n"));
 	return 0;
     }
     
-    switch (srcformat) {
+    switch (srcformat)
+    {
 	case RECTFMT_RGB  : srcfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
 	case RECTFMT_RGBA : srcfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
 	case RECTFMT_ARGB : srcfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
@@ -1455,7 +1630,9 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     rr.MaxY = desty + height - 1;
     
     pixwritten = do_render_func(rp, NULL, &rr, wpa_render, &wpard, FALSE, GfxBase);
-    
+
+    RELEASE_DRIVERDATA(rp, GfxBase);  
+      
     return pixwritten;
 }
 
@@ -1469,12 +1646,13 @@ LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
     struct Rectangle 	    rr;
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArrayAlpha() !!!\n"));
     	return 0;
     }
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
     /* Compute the start of the array */
@@ -1490,6 +1668,8 @@ LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
     rr.MaxY = desty + height - 1;
     
     pixwritten = do_render_func(rp, NULL, &rr, wpaa_render, &wpaard, FALSE, GfxBase);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
     
     return pixwritten;
 }
@@ -1511,18 +1691,20 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     struct Rectangle rr;
     struct rpa_render_data rpard;
 
-    struct TagItem gc_tags[] = {
-	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE, 0}
+    struct TagItem gc_tags[] =
+    {
+	{ aHidd_GC_DrawMode , vHidd_GC_DrawMode_Copy},
+	{ TAG_DONE  	          	    	    }
     };
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadPixelArray() !!!\n"));
     	return 0;
     }
     
-    if (!CorrectDriverData (rp, GfxBase))
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
     gc = GetDriverData(rp)->dd_GC;
@@ -1532,7 +1714,8 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     OOP_SetAttrs(gc, gc_tags);
     
     
-    switch (dstformat) {
+    switch (dstformat)
+    {
 	case RECTFMT_RGB  : dstfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
 	case RECTFMT_RGBA : dstfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
 	case RECTFMT_ARGB : dstfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
@@ -1574,7 +1757,9 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     /* restore old gc values */
     gc_tags[0].ti_Data = (IPTR)old_drmd;
     OOP_SetAttrs(gc, gc_tags);
-    
+
+    RELEASE_DRIVERDATA(rp, GfxBase);
+
     return pixread;
 }
 
@@ -1584,18 +1769,19 @@ LONG driver_InvertPixelArray(struct RastPort *rp
 {
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap InvertPixelArray() !!!\n"));
     	return 0;
     }
 
-   return (LONG)fillrect_pendrmd(rp
-   	, destx, desty
-	, destx + width  - 1
-	, desty + height - 1
-	, 0	/* Source pen does not matter */
-	, vHidd_GC_DrawMode_Invert
-	, GfxBase);
+    return (LONG)fillrect_pendrmd(rp
+   	 , destx, desty
+	 , destx + width  - 1
+	 , desty + height - 1
+	 , 0	/* Source pen does not matter */
+	 , vHidd_GC_DrawMode_Invert
+	 , GfxBase);
 }
 
 LONG driver_FillPixelArray(struct RastPort *rp
@@ -1627,10 +1813,6 @@ ULONG driver_MovePixelArray(UWORD srcx, UWORD srcy, struct RastPort *rp
 	, UWORD destx, UWORD desty, UWORD width, UWORD height
 	, struct Library *CyberGfxBase)
 {
-
-    if (!CorrectDriverData(rp, GfxBase))
-    	return 0;
-
     ClipBlit(rp
 		, srcx, srcy
 		, rp
@@ -1647,17 +1829,19 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 	, ULONG pixel, struct Library *CyberGfxBase)
 {
     
-    struct pix_render_data prd;
-    
-    /* Get the HIDD pixel val */
-    HIDDT_Color col;
+    struct pix_render_data  prd;
+    HIDDT_Color     	    col;
+    LONG    	    	    retval;
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteRGBPixel() !!!\n"));
     	return 0;
     }
 
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase)) return -1;
+    
     /* HIDDT_ColComp are 16 Bit */
     
     col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
@@ -1667,7 +1851,11 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     prd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
     
-    return do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+    retval = do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+      
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
+    return retval;
    
 }
 
@@ -1683,12 +1871,18 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     LONG ret;
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadRGBPixel()!!!\n"));
     	return (ULONG)-1;
     }
     
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase)) return (ULONG)-1;
+    
     ret = do_pixel_func(rp, x, y, pix_read, &prd, GfxBase);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     if (-1 == ret)
     	return (ULONG)-1;
 
@@ -1872,14 +2066,15 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     OOP_Object *pf;
     HIDDT_ColorModel colmod;
     
-    if (!CorrectDriverData(rp, GfxBase))
-    	return FALSE;
-	
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!! CALLING ExtractColor() ON NO-HIDD BITMAP !!!\n"));
 	return FALSE;
     }
-    
+
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+    	return FALSE;
+	    
     rr.MinX = srcx;
     rr.MinY = srcy;
     rr.MaxX = srcx + width  - 1;
@@ -1889,9 +2084,12 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     
     OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
     
-    if (vHidd_ColorModel_Palette == colmod) {
+    if (vHidd_ColorModel_Palette == colmod)
+    {
         ecrd.pixel = color;
-    } else {
+    }
+    else
+    {
 	HIDDT_Color col;
 	
 	col.alpha = (color >> 16) & 0x0000FF00;
@@ -1907,6 +2105,8 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     
     pixread = do_render_func(rp, NULL, &rr, extcol_render, NULL, TRUE, GfxBase);
 	
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
     if (pixread != (width * height))
     	return FALSE;
 	
@@ -1921,15 +2121,15 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     struct Rectangle rr;
     struct Layer *L;
     
-    if (!CorrectDriverData(rp, GfxBase))
-    	return;
-	
-	
-    if (!IS_HIDD_BM(rp->BitMap)) {
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
     	D(bug("!!! NO HIDD BITMAP IN CALL TO DoCDrawMethodTagList() !!!\n"));
 	return;
     }
 
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+    	return;
+	
     /* Get the bitmap std pixfmt */    
     OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&dmrd.pf);
     OOP_GetAttr(dmrd.pf, aHidd_PixFmt_StdPixFmt, &dmrd.stdpf);
@@ -1937,7 +2137,9 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     dmrd.hook = hook;
     dmrd.rp = rp;
     
-    if (((ULONG)-1) == dmrd.msg.colormodel) {
+    if (((UWORD)-1) == dmrd.msg.colormodel)
+    {
+    	RELEASE_DRIVERDATA(rp, GfxBase);
     	D(bug("!!! UNKNOWN HIDD PIXFMT IN DoCDrawMethodTagList() !!!\n"));
 	return;
     }
@@ -1948,10 +2150,13 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     rr.MinX = 0;
     rr.MinY = 0;
     
-    if (NULL == L) {
+    if (NULL == L)
+    {
 	rr.MaxX = GetBitMapAttr(rp->BitMap, BMA_WIDTH)  - 1;
 	rr.MaxY = GetBitMapAttr(rp->BitMap, BMA_HEIGHT) - 1;
-    } else {
+    }
+    else
+    {
     	/* Lock the layer */
 	LockLayerRom(L);
     
@@ -1962,9 +2167,13 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     dmrd.gc = GetDriverData(rp)->dd_GC;
     do_render_func(rp, NULL, &rr, dm_render, &dmrd, FALSE, GfxBase);
     
-    if (NULL != L) {
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
+    if (NULL != L)
+    {
 	UnlockLayerRom(L);
     }
+    
     return;
 }
 
@@ -2082,11 +2291,11 @@ void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
     	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in BltTemplateAlpha() !!!\n"));
-    	return 0;
+    	return;
     }
     
-    if (!CorrectDriverData (rp, GfxBase))
-	return 0;
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+	return;
 	
     /* Compute the start of the array */
 
@@ -2099,6 +2308,8 @@ void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
     rr.MaxY = desty + height - 1;
     
     do_render_func(rp, NULL, &rr, bta_render, &btard, FALSE, GfxBase);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
 }
 
 /******************************************/

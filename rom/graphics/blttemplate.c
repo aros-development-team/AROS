@@ -93,7 +93,7 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
     EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
 	
-    if (!CorrectDriverData(destRP, GfxBase))
+    if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
     	ReturnVoid("driver_BltTemplate");
 	
     gc = GetDriverData(destRP)->dd_GC;
@@ -107,7 +107,10 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
     /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
     HIDD_BM_OBJ(&template_bm) = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
     if (!HIDD_BM_OBJ(&template_bm))
+    {
+    	RELEASE_DRIVERDATA(destRP, GfxBase);
     	ReturnVoid("driver_BltTemplate");
+    }
 	
     /* Copy contents from Amiga bitmap to the offscreen HIDD bitmap */
     ti.source	 = source;
@@ -145,6 +148,8 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
 
     HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(&template_bm));
 	
+    RELEASE_DRIVERDATA(destRP, GfxBase);
+    
     ReturnVoid("driver_BltTemplate");
     
     AROS_LIBFUNC_EXIT

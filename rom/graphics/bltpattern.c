@@ -104,7 +104,7 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
     	    , xMin, yMin, xMax, yMax, byteCnt));
 
-	if (!CorrectDriverData(rp, GfxBase))
+	if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	    ReturnVoid("driver_BltPattern");
 
 	pi.mask	= mask;
@@ -132,6 +132,8 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 
 	gc_tags[0].ti_Data = old_drmd;
 	OOP_SetAttrs(gc, gc_tags);
+	
+	RELEASE_DRIVERDATA(rp, GfxBase);
 
     }
     else

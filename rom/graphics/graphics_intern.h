@@ -60,6 +60,25 @@
    
 #define BMDEPTH_COMPATIBILITY	1
 
+/* New driverdata code (driverdata is gfx driver stuff connected
+   to rastports, ie. a GC object) which is prepared for garbage
+   collection. Really need this, as relying on all rastports
+   to be un-initialized with AROS specific DeinitRastPort() just
+   will not work. Best example: 68k binaries, if we should ever
+   have some kind of 68k emu */
+   
+#define NEW_DRIVERDATA_CODE 	0
+
+#if NEW_DRIVERDATA_CODE
+#define OBTAIN_DRIVERDATA(rp,libbase)   ObtainDriverData(rp, libbase)
+#define RELEASE_DRIVERDATA(rp,libbase)  ReleaseDriverData(rp, libbase)
+#define KILL_DRIVERDATA(rp,libbase) 	KillDriverData(rp, libbase)
+#else
+#define OBTAIN_DRIVERDATA(rp,libbase)   obsolete_CorrectDriverData(rp, libbase)
+#define RELEASE_DRIVERDATA(rp,libbase)  
+#define KILL_DRIVERDATA(rp,libbase) 	
+#endif
+
 extern struct GfxBase * GfxBase;
 
 
@@ -160,6 +179,8 @@ struct shared_driverdata
 #define __IHidd_FakeGfxHidd SDD(GfxBase)->hiddFakeGfxHiddAttrBase
 
 
+#define DRIVERDATALIST_HASHSIZE 256
+
 /* Internal GFXBase struct */
 struct GfxBase_intern
 {
@@ -181,6 +202,9 @@ struct GfxBase_intern
     APTR    	    	    	regionpool;
     struct MinList              ChunkPoolList;
 #endif
+    struct SignalSemaphore  	driverdatasem;
+    APTR    	    	    	driverdatapool;
+    struct MinList  	    	driverdatalist[DRIVERDATALIST_HASHSIZE];
     ULONG                      *pixel_buf;   // used in graphics_driver
     struct SignalSemaphore      pixbuf_sema;
     struct SignalSemaphore      blit_sema;
@@ -247,8 +271,12 @@ struct ViewPort;
 /* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
 extern ULONG CalcHashIndex(ULONG n);
 
-/* a function needed by Draw() */
-BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+BOOL obsolete_CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+#if NEW_DRIVERDATA_CODE
+BOOL ObtainDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+void ReleaseDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+void KillDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+#endif
 
 /* a function needed by ClipBlit */
 void internal_ClipBlit(struct RastPort * srcRP,
