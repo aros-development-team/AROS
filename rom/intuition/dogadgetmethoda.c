@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/01/21 23:06:40  stegerg
+    fixed for screengadgets, for which the window parameter
+    is supposed to point to the screen (hack).
+
     Revision 1.10  1999/09/29 16:54:38  stegerg
     ock gadget semaphore to protect against race conditions between app task and input.device task
 
@@ -144,18 +148,17 @@
 	    {
 		/* Initialize the GadgetInfo data. */
 		
-		gi->gi_Window	      = (gad->GadgetType & GTYP_SCRGADGET) ? NULL : tw;
-		gi->gi_Screen	      = tw->WScreen;
-		gi->gi_Layer	      = tw->WLayer;
-		gi->gi_Pens.DetailPen = tw->DetailPen;
-		gi->gi_Pens.BlockPen  = tw->BlockPen;
+		gi->gi_Window	      = IS_SCREEN_GADGET(gad) ? NULL : tw;
+		gi->gi_Screen	      = IS_SCREEN_GADGET(gad) ? (struct Screen *)tw : tw->WScreen;
+		gi->gi_Pens.DetailPen = IS_SCREEN_GADGET(gad) ? tw->DetailPen : 0;
+		gi->gi_Pens.BlockPen  = IS_SCREEN_GADGET(gad) ? tw->BlockPen : 0;
 		gi->gi_DrInfo	      = GetScreenDrawInfo (gi->gi_Screen);
 
 		SET_GI_RPORT(gi, tw, gad);
 		
 		gi->gi_Layer	      = gi->gi_RastPort->Layer;
 		
-		GetGadgetDomain(gad, tw, req, &gi->gi_Domain);
+		GetGadgetDomain(gad, gi->gi_Screen, gi->gi_Window, req, &gi->gi_Domain);
 		
 	    } /* if (tw) */
 	} /* if (gi) */
