@@ -101,7 +101,9 @@ extern void driver_SetFont (struct RastPort *, struct TextFont *,
 			    struct GfxBase *);
 extern void driver_SetOutlinePen (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_SetRast (struct RastPort *, ULONG, struct GfxBase *);
-extern void driver_SetRGB32 (struct ViewPort * vp, ULONG, ULONG, ULONG, ULONG,
+extern void driver_SetRGB32 (struct ViewPort *, ULONG, ULONG, ULONG, ULONG,
+			    struct GfxBase *);
+extern void driver_SetRGB4 (struct ViewPort *, ULONG, ULONG, ULONG, ULONG,
 			    struct GfxBase *);
 extern ULONG driver_SetWriteMask (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_Text (struct RastPort *, STRPTR, LONG, struct GfxBase *);
