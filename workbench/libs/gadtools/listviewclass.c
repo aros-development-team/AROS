@@ -882,10 +882,12 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 	    
 	    if ((clickpos >= 0) && (clickpos < shown))
 	    {
-    		if (clickpos + data->ld_Top != data->ld_Selected)
+    		if ((clickpos + data->ld_Top != data->ld_Selected) ||
+		    ((data->ld_ShowSelected == LV_SHOWSELECTED_NONE) && (msg->MethodID == GM_GOACTIVE)))
     		{
 		    struct RastPort *rp;
 		    WORD oldpos = data->ld_Selected;
+		    
 		    data->ld_Selected = clickpos + data->ld_Top;
 
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
@@ -900,7 +902,8 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 
 			/* Rerender old active if it was shown in the listview */
 			if (    (oldpos >= data->ld_Top) 
-			     && (oldpos < data->ld_Top + NumItemsFit(o, data)) )
+			     && (oldpos < data->ld_Top + NumItemsFit(o, data))
+			     && (oldpos != data->ld_Selected) )
 			{
 
 	    		    data->ld_FirstDamaged = oldpos - data->ld_Top;
