@@ -29,7 +29,7 @@ if [ -z "$entry" ]; then
     exit 1
 fi
 
-echo $entry
+#echo $entry
 
 offset=`echo "0x$entry" | cut "-d " -f1`
 offset=`$path/strtoint $offset`
@@ -52,19 +52,56 @@ if [ $hitoffset -lt 0 ]; then
     exit 1;
 fi
 
-nm "$module" | sort | gawk 'BEGIN { \
+objdump --source --line-numbers "$module" | gawk 'BEGIN { \
     lastoff=0; \
     hitoffset='$hitoffset'; \
     found=0; \
+    cline[0]=""; \
+    cline[1]=""; \
+    cline[2]=""; \
+    cline[3]=""; \
+    file=""; \
+    line=0; \
 } \
- { off=hex2int($1); \
+/^[-a-zA-Z0-9_./]+:[0-9]+$/ { \
+    split($0,a,":"); \
+    file=a[1]; \
+    line=int(a[2]); \
+} \
+/^[ \t]+/ { \
+    cline[0]=cline[1]; \
+    cline[1]=cline[2]; \
+    cline[2]=cline[3]; \
+    cline[3]=$0; \
+    line ++; \
+} \
+/^[0-9a-f]+ / { \
+    asmline[0]=asmline[1]; \
+    asmline[1]=asmline[2]; \
+    asmline[2]=asmline[3]; \
+    asmline[3]=$0; \
+    off=hex2int($1); \
+    #print $1"="off; \
     if (lastoff <= hitoffset && off > hitoffset) \
     { \
-	printf ("Hit is 0x%x bytes in %s\n", hitoffset-lastoff, symbol); \
+	if (file!="")
+	    printf ("Hit is at line %d in file %s\n", line, file); \
+	else
+	    printf ("Hit is 0x%x bytes in %s\n", hitoffset-lastoff, symbol); \
+	for (t=0; t<4; t++) \
+	    print cline[t]; \
+	print "        ..."; \
+	for (t=0; t<4; t++) \
+	    print asmline[t]; \
+	for (t=0; t<4; t++) \
+	{\
+	    getline; \
+	    print; \
+	} \
 	found=1; \
 	exit (0); \
     } \
-    symbol=$3; \
+    symbol=$2; \
     lastoff=off; \
 } \
 END { \
