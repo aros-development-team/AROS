@@ -23,7 +23,7 @@ DESTDIR	    := $(HIDDSDIR)
 
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
-FILES       := SerialClass SerialUnitClass
+FILES       := SerialClass SerialUnitClass unix_funcs
 	       
 EXTRA_LIBS  := -L$(LIBDIR) -lunixiocl -lamiga
 
@@ -110,6 +110,11 @@ setup :
 
 clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) $(LIB) $(SLIB)
+
+$(OBJDIR)/unix_funcs.o : unix_funcs.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
 
 $(OBJDIR)/%.o : %.c
 	@$(ECHO) "Compiling $(CURDIR)/$<..."

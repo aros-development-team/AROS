@@ -7,13 +7,11 @@
 */
 
 /* Some POSIX includes */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
 
+#include "unix_funcs.h"
 
 #define AROS_ALMOST_COMPATIBLE 1
 
@@ -23,6 +21,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/alib.h>
+#include <proto/intuition.h>
 #include <exec/libraries.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
@@ -78,6 +77,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
   ULONG unitnum = 0;
   
   EnterFunc(bug("SerialUnit::New()\n"));
+  D(bug("SerialUnit created on %s at %s.\n",__DATE__,__TIME__));
 
   tstate = msg->attrList;
   while ((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -110,20 +110,29 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-    data->filedescriptor = open(unitname[data->unitnum], O_NONBLOCK|O_RDWR);
+    data->filedescriptor = unix_open_nonblock(unitname[data->unitnum]);
 
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
     if (-1 != data->filedescriptor)
     {
+      struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
+
+      if (NULL != IntuitionBase) {
+          struct Preferences prefs;
+          GetPrefs(&prefs,sizeof(prefs));
+          data->baudrate       = prefs.BaudRate;
+          CloseLibrary((struct Library *)IntuitionBase);
+      } else {
+//          data->baudrate       = 
+      }
       /*
       ** Configure the tty driver
       */
-      data->baudrate       = SER_DEFAULT_BAUDRATE;
-      
       tcgetattr(data->filedescriptor, &data->orig_termios);
       tcgetattr(data->filedescriptor, &_termios); 
       cfmakeraw(&_termios);
+      D(bug("Setting baudrate to %d.\n",data->baudrate));
       cfsetspeed(&_termios, data->baudrate);
 
 /* !!! untested
