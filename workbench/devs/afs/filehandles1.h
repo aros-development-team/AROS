@@ -1,6 +1,11 @@
 #ifndef FILEHANDLES1_H
 #define FILEHANDLES1_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <dos/dosextens.h>
 

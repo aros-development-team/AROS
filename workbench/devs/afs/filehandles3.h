@@ -1,6 +1,11 @@
 #ifndef FILEHANDLES3_H
 #define FILEHANDLES3_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/exall.h>

@@ -1,6 +1,11 @@
 #ifndef VOLUMES_H
 #define VOLUMES_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/filehandler.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>

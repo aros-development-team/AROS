@@ -1,6 +1,11 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 
 #include "volumes.h"

@@ -1,6 +1,11 @@
 #ifndef AFSBLOCKS_H
 #define AFSBLOCKS_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define T_SHORT	2
 #define T_DATA		8
 #define T_LIST		16

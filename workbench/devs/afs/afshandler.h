@@ -1,6 +1,11 @@
 #ifndef AFS_HANDLER_H
 #define AFS_HANDLER_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/devices.h>
 #include <dos/filesystem.h>
 #include <devices/timer.h>
