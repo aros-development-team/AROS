@@ -123,7 +123,7 @@ struct MsgPort *mp=CreateMsgPort();
 		iotd=(struct IOExtTD *)CreateIORequest(mp,sizeof(struct IOExtTD));
 		if (iotd)
 		{
-			if (!OpenDevice(fssm->fssm_Device+1,fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
+			if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device),fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
 			{
 				iotd->iotd_Req.io_Command = CMD_READ;
 				iotd->iotd_Req.io_Offset = 0;
