@@ -23,8 +23,8 @@ void FreeWidthList(FT_GlyphEngine *ge,struct MinList *list)
 	return;
 
     work_node = (struct GlyphWidthEntry *)(list->mlh_Head);
-    while (next_node =
-	   (struct GlyphWidthEntry *)(work_node->gwe_Node.mln_Succ))
+    while ((next_node =
+	   (struct GlyphWidthEntry *)(work_node->gwe_Node.mln_Succ)))
     {
 	FreeMem(work_node, sizeof(struct GlyphWidthEntry));
 	work_node = next_node;

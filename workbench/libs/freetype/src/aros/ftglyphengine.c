@@ -62,7 +62,7 @@ FT_GlyphEngine *AllocGE(void)
 
 	D(bug("FT_Init_FreeType( 0x%lx ) ...\n",&ge->engine));
 
-	if (error = FT_Init_FreeType( &ge->engine ) )
+	if ((error = FT_Init_FreeType( &ge->engine ) ))
 	{
 	    D(bug("Error initializing engine, code = %ld.\n",
 		  (LONG) error ));

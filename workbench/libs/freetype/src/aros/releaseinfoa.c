@@ -25,7 +25,7 @@ ULONG ReleaseInfoA(struct GlyphEngine *ge, struct TagItem *tags)
     D(bug("ReleaseInfoA engine = 0x%lx tags = 0x%lx\n",engine,tags));
 
     tstate = tags;
-    while (tag = NextTagItem(&tstate))
+    while ((tag = NextTagItem(&tstate)))
     {
 	otagtag  = tag->ti_Tag;
 	otagdata = tag->ti_Data;

@@ -24,7 +24,7 @@ static void scantags(FT_GlyphEngine *ge, struct TagItem *tags)
     int temp, temp2;
 
     tstate = tags;
-    while (tag = NextTagItem(&tstate))
+    while ((tag = NextTagItem(&tstate)))
     {
 	otagtag  = tag->ti_Tag;
 	otagdata = tag->ti_Data;

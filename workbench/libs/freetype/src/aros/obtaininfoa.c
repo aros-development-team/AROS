@@ -207,7 +207,7 @@ ULONG ObtainInfoA(struct GlyphEngine *ge, struct TagItem *tags)
 	return OTERR_Failure;
 
     tstate = tags;
-    while (tag = NextTagItem(&tstate))
+    while ((tag = NextTagItem(&tstate)))
     {
 	otagtag  = tag->ti_Tag;
 	otagdata = tag->ti_Data;
