@@ -110,6 +110,10 @@ ParseNodeLine(Class *cl, Object *obj, struct AmigaGuideFile *agf,
       strcpy(agn->agn_Node.ln_Name, name);
 
       /* CHECK: possible Flush(fh) ? */
+#ifdef __AROS__
+      /* stegerg: definitely needed for AROS */
+      Flush(agf->agf_Handle);
+#endif      
       agn->agn_Pos = Seek(agf->agf_Handle, 0, OFFSET_CURRENT) - linelen;
       agn->agn_File = agf;
       ++agf->agf_NodeCount;
@@ -159,7 +163,9 @@ void ParseMacroLine(Class *cl, Object *obj,
 	    ptr++;
 	 *ptr = '\0';
 
+#ifndef __AROS__ /* debug output requires sysbase */
 	 DB(("Macro string wrong: \"%s\"!\n",macro));
+#endif
 	 macro = "";
 	 ptr   = macro;
       }
@@ -398,6 +404,10 @@ void ScanFile(Class *cl, Object *obj, struct AmigaGuideFile *agf)
 	       case CMD_ENDNODE:
 		  /* CHECK: possible Flush(fh); ? */
 		  /* calculate length of node */
+#ifdef __AROS__
+      	    	  /* stegerg: definitely needed for AROS */
+		  Flush(fh);
+#endif
 		  agn->agn_Length = Seek(fh, 0, OFFSET_CURRENT) - agn->agn_Pos - strlen(buf) - 1;
 		  agn = NULL;
 		  break;
