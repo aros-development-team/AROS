@@ -38,7 +38,7 @@
 #endif
 
 #ifndef __ROM__
-static LONG __no_exec()
+static LONG __unused __no_exec()
 {
     return -1;
 }
@@ -52,14 +52,14 @@ extern void *const LIBFUNCTABLE[];
 
 const struct Resident Pci_Resident = {
     RTC_MATCHWORD,
-    &Pci_Resident,
+    (struct Resident *)&Pci_Resident,
     &LIBEND,
     RTF_SINGLETASK | RTF_AUTOINIT,
     VERSION_NUMBER,
     NT_LIBRARY,
     90,
-    Pci_Name,
-    &Pci_VersionID[6],
+    (char *)Pci_Name,
+    (char *)&Pci_VersionID[6],
     (ULONG*)inittabl
 };
 
@@ -90,7 +90,7 @@ AROS_UFH3(LIBBASETYPEPTR, Pci_init,
     LIBBASE->LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     LIBBASE->LibNode.lib_Version = VERSION_NUMBER;
     LIBBASE->LibNode.lib_Revision = REVISION_NUMBER;
-    LIBBASE->LibNode.lib_IdString = &Pci_VersionID[6];
+    LIBBASE->LibNode.lib_IdString = (APTR)&Pci_VersionID[6];
 
     D(bug("[PCI] Initializing PCI system\n"));
     LIBBASE->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
@@ -234,7 +234,7 @@ AROS_LH1(BPTR, expunge,
 	segList = LIBBASE->segList;
     
 	D(bug("[PCI] Hidd removed\n"));
-	Remove((struct Library *)LIBBASE);
+	Remove((struct Node *)LIBBASE);
 
 	negsize = LIBBASE->LibNode.lib_NegSize;
 	possize = LIBBASE->LibNode.lib_PosSize;
