@@ -1,6 +1,12 @@
+/*
+ *  Copyright (C) 2001 AROS - The Amiga Research Operating System
+ *  $Id$
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/wait.h>
@@ -47,7 +53,10 @@ char *xtempnam(void)
 
 void xsystem(char *command)
 {
-    fatalerror(WEXITSTATUS(system(command)));
+    /*	For some bizarre reason, WEXITSTATUS() requires an lvalue
+	when used on FreeBSD.  */
+    int stat = system(command);
+    fatalerror(WEXITSTATUS(stat));
 }
 
 FILE *xfopen(char *name, char *mode)
