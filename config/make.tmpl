@@ -57,7 +57,7 @@
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs= postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -lamiga -larossupport -larosc $(postlibs)
+LIBS = -L$(LIBDIR) %(prelibs) -lamiga -larossupport -larosc %(postlibs)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a %(deplibs)
 %end
@@ -78,8 +78,8 @@ endif
 
 # Generate function table
 %define mkfunctable_q lib=dummy from=$^ to=$@
-	@echo "Regenerating $(to)..."
-	@gawk -f $(TOP)/scripts/makefunctable.awk \
+	@$(ECHO) "Regenerating $(to)..."
+	@$(AWK) -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib="%(lib)" %(from)
 %end
 
