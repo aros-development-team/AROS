@@ -87,6 +87,8 @@ enum
     moHidd_Gfx_Show,
     moHidd_Gfx_CopyBox,
     
+    moHidd_Gfx_ShowImminentReset,
+    
     num_Hidd_Gfx_Methods
 };
 

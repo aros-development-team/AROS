@@ -1521,6 +1521,12 @@ static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 
 /****************************************************************************************/
 
+static VOID hiddgfx_showimminentreset(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+{
+}
+
+/****************************************************************************************/
+
 static OOP_Object *hiddgfx_registerpixfmt(OOP_Class *cl, OOP_Object *o,
     	    	    	    	    	  struct pHidd_Gfx_RegisterPixFmt *msg)
 {
@@ -1706,7 +1712,7 @@ static OOP_Object *hiddgfx_getpixfmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GFXHIDD_METHODS	18
+#define NUM_GFXHIDD_METHODS	19
 
 /****************************************************************************************/
 
@@ -1742,6 +1748,7 @@ OOP_Class *init_gfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())hiddgfx_setmode	    	, moHidd_Gfx_SetMode		},
 	{(IPTR (*)())hiddgfx_show   	    	, moHidd_Gfx_Show		},
 	{(IPTR (*)())hiddgfx_copybox	    	, moHidd_Gfx_CopyBox		},
+	{(IPTR (*)())hiddgfx_showimminentreset 	, moHidd_Gfx_ShowImminentReset  },
         {NULL	    	    	    	    	, 0UL	    	    	    	}
     };
     
