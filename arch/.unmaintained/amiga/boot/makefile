@@ -23,6 +23,7 @@ LDFLAGS = -noixemul
 FILES = main ils config
 TOOLZ = printresmodules showvecs
 TOOLS = $(foreach f,$(TOOLZ),$(TOOLDIR)/$(f))
+LIBS = -L$(LIBDIR) -larosc
 
 all:	setup $(BINDIR)/boot $(BINDIR)/boot.config $(TOOLS)
 
@@ -44,7 +45,7 @@ $(TOOLGENDIR)/%.o: %.c
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
-	$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) -o $@
+	$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) $(LIBS) -o $@
 	strip $@
 
 $(BINDIR)/boot.config: boot.config

@@ -7,4 +7,4 @@
 */
 
 extern ULONG memtype;
-extern BOOL debug;
+extern BOOL debug, quiet;

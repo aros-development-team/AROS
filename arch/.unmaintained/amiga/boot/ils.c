@@ -24,7 +24,6 @@
 
 #define D(x) if (debug) x
 #define bug Printf
-LONG Printf(STRPTR format, ...);
 
 extern struct ilsMemList ils_mem;
 
@@ -89,7 +88,7 @@ AROS_UFH3(void *, ils_alloc,
 	    */
 	    ils_mem.iml_NewNum++;
 	}
-	D(bug("0x%08lx\n", result));
+	D(bug("$%08lx\n", (ULONG)result));
 	return(result);
     }
 
@@ -105,7 +104,7 @@ AROS_UFH3(void, ils_free,
     void *saveblock = block;
     struct ilsMemNode *node;
 
-    D(bug(" ils_free: block 0x%08lx  size %ld\n", block, size));
+    D(bug(" ils_free: block $%08lx  size %ld\n", (ULONG)block, size));
 
     FreeMem(block, size);
 

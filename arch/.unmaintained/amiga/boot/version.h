@@ -8,9 +8,9 @@
 
 #define BANNER "AROS system loader"
 
-#define VERSIONSTRING "41.5"
+#define VERSIONSTRING "41.6"
 
 #define VERSION 41
-#define REVISION 5
+#define REVISION 6
 
-#define DATE "(27.2.97)"
+#define DATE "(20.3.97)"

@@ -6,5 +6,5 @@
     Lang: C
 */
 
-extern struct FileList *ReadConfig(char *);
-extern void FreeConfig(struct FileList *);
+extern struct BootConfig *ReadConfig(char *);
+extern void FreeConfig(struct BootConfig *);

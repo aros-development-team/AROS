@@ -18,9 +18,10 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <dos/rdargs.h>
 
-#include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include "boot.h"
 #include "ils.h"
@@ -29,7 +30,16 @@
 
 #define D(x) if (debug) x
 #define bug Printf
-LONG Printf(STRPTR format, ...);
+
+struct SpecialResident
+{
+    struct Resident res;
+    ULONG magiccookie;
+    UBYTE *statusarray;
+    UWORD maxslot;
+};
+
+#define SR_COOKIE 0x4afb4afc
 
 struct Module *LoadModule(char *);
 void FreeModules(struct ModuleList *);
@@ -38,45 +48,68 @@ struct MemList *BuildMemList(struct ilsMemList *, ULONG *, ULONG);
 void StuffTags(struct MemList *, ULONG *, ULONG);
 void *FindResMod(struct ilsMemList *);
 void PrintTagPtrs(void);
+void FreeRDArgsAll(struct RDArgs *);
+void PatchModule(struct Module *, struct List *);
 
 char *version = "$VER: " BANNER " " VERSIONSTRING " " DATE;
-char *configfile = "boot.config";
 
 ULONG stack = 16384;
 ULONG memtype;
-BOOL debug;
+BOOL debug, quiet;
 ULONG ils_table[3];
 struct ilsMemList ils_mem;
 
+char cmlargs[] = "CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CLEARONLY/S,RESET/S,DEBUG/S,SIM=SIMULATE/S,QUIET/S";
+
 char usage[] =
-{
-    " -c -- force to chipmem\n"
-    " -f -- force to fastmem\n"
-    " -k -- force to kickmem\n"
-    " -l -- force to localmem\n"
-    " -x -- clear reset vectors before installing new modules\n"
-    " -X -- only clear reset vectors\n"
-    " -d -- output debug information\n"
-    " Options can not be concatenated!\n\n"
-};
+    "Configfile : config file to use, default is \"boot.config\"\n"
+    "Chip       : force modules to chip mem\n"
+    "Fast       : force modules to fast mem\n"
+    "Kick       : force modules to kick mem\n"
+    "Local      : force modules to local mem\n"
+    "Clear      : clear reset vectors before installing new modules\n"
+    "Clearonly  : only clear reset vectors and exit\n"
+    "Reset      : reset after installing new modules\n"
+    "Debug      : output debugging information\n"
+    "Simulate   : Simulate loading, do not actually install modules\n"
+    "Quiet      : Be quiet [debug mode will override this]\n"
+    "\n"
+    "Order of precedence of memory: kick->local->fast->chip\n"
+    "\n"
+    "Enter options";
+
+#define CML_CONFIGFILE 0
+#define CML_CHIP       1
+#define CML_FAST       2
+#define CML_KICK       3
+#define CML_LOCAL      4
+#define CML_CLEAR      5
+#define CML_CLEARONLY  6
+#define CML_RESET      7
+#define CML_DEBUG      8
+#define CML_SIMULATE   9
+#define CML_QUIET      10
+#define CML_END        11
+
+LONG cmdvec[CML_END];
 
 int main(int argc, char **argv)
 {
-    struct FileList *filelist;
-    struct Node *node;
+    struct BootConfig *config;
+    struct ModNode *modnode;
     struct Module *module;
     struct ModuleList ModuleList;
     STRPTR modname;
+    struct RDArgs *rdargs;
     int returnvalue = RETURN_OK;
+    BOOL reset = FALSE, simulate = FALSE;
 
-    debug = FALSE;
-
-    PutStr("\n" BANNER " " VERSIONSTRING "\n\n");
+    debug = quiet = FALSE;
 
     if(SysBase->LibNode.lib_Version < 37)
     {
 	PutStr("This utility is for AmigaOS 2.04 (V37) and higher\n\n");
-	exit(RETURN_WARN);
+	exit(RETURN_FAIL);
     }
 
     /*
@@ -91,58 +124,73 @@ int main(int argc, char **argv)
 	memtype = MEMF_KICK;
     }
 
-    for (argc--, argv++; argc; argc--, argv++)
+    if( (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
     {
-	if (**argv != '-')
+	/* set default config file name */
+	cmdvec[CML_CONFIGFILE] = (LONG)"boot.config";
+
+	rdargs->RDA_ExtHelp = usage; /* FIX: why doesn't this work? */
+	rdargs->RDA_Buffer = NULL;
+	rdargs->RDA_BufSiz= 0;
+
+	if(!(ReadArgs(cmlargs, cmdvec, rdargs)))
 	{
-	    Printf("Unknown option: %s\n", argv[0]);
+	    PrintFault(IoErr(), "AROS boot");
+	    FreeDosObject(DOS_RDARGS, rdargs);
 	    exit(RETURN_FAIL);
-	    break;
 	}
-	switch(argv[0][1])
-	{
-	    case 'h':
-		PutStr(usage);
-		exit(RETURN_OK);
-		break;
-	    case 'c':
-		memtype = MEMF_CHIP;
-		break;
-	    case 'f':
-		memtype = MEMF_FAST;
-		break;
-	    case 'k':
-		memtype = MEMF_KICK;
-		break;
-	    case 'l':
-		memtype = MEMF_LOCAL;
-		break;
-	    case 'x':
-		PutStr("Clearing reset vectors.\n");
-		SysBase->KickMemPtr = NULL;
-		SysBase->KickTagPtr = NULL;
-		SysBase->KickCheckSum = NULL;
-		break;
-	    case 'X':
-		PutStr("Clearing reset vectors.\n");
-		SysBase->KickMemPtr = NULL;
-		SysBase->KickTagPtr = NULL;
-		SysBase->KickCheckSum = NULL;
-		exit(RETURN_OK);
-		break;
-	    case 'd':
-		debug = TRUE;
-		break;
-	    default:
-		Printf("Unknown option: %c\n", argv[0][1]);
-		exit(RETURN_FAIL);
-		break;
-	}
+
+    }
+    else
+    {
+	PrintFault(ERROR_NO_FREE_STORE, "AROS boot");
+	exit(RETURN_FAIL);
+    }
+
+    if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    {
+	FreeRDArgsAll(rdargs);
+	PutStr("***Break\n");
+	exit(RETURN_WARN);
+    }
+
+    if(cmdvec[CML_RESET]) reset = TRUE;
+    if(cmdvec[CML_QUIET]) quiet = TRUE;
+    if(cmdvec[CML_DEBUG])
+    {
+	debug = TRUE;
+	quiet = FALSE;
+    }
+    if(cmdvec[CML_SIMULATE]) simulate = TRUE;
+
+    if(!quiet) PutStr("\n" BANNER " " VERSIONSTRING "\n\n");
+
+    /* Order of precedence: kick->local->fast->chip */
+    if     (cmdvec[CML_KICK]) memtype = MEMF_KICK;
+    else if(cmdvec[CML_LOCAL]) memtype = MEMF_LOCAL;
+    else if(cmdvec[CML_FAST]) memtype = MEMF_FAST;
+    else if(cmdvec[CML_CHIP]) memtype = MEMF_CHIP;
+
+    if(cmdvec[CML_CLEARONLY])
+    {
+	if(!quiet) PutStr("Clearing reset vectors.\n");
+	SysBase->KickMemPtr = NULL;
+	SysBase->KickTagPtr = NULL;
+	SysBase->KickCheckSum = NULL;
+	FreeRDArgsAll(rdargs);
+	exit(RETURN_OK);
+    }
+    else if(cmdvec[CML_CLEAR]) /* no need to clear again if already done */
+    {
+	if(!quiet) PutStr("Clearing reset vectors.\n");
+	SysBase->KickMemPtr = NULL;
+	SysBase->KickTagPtr = NULL;
+	SysBase->KickCheckSum = NULL;
     }
 
     D(bug("Debug mode\n"));
 
-    PrintTagPtrs();
+    if(!quiet) PrintTagPtrs();
 
     /*
 	InternalLoadSeg use.
@@ -153,16 +201,33 @@ int main(int argc, char **argv)
 
     NewList((struct List *)&ils_mem);
 
+    if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    {
+	PutStr("***Break\n");
+	exit(RETURN_WARN);
+    }
+
     /*
 	Construct a List of filenames to process.
     */
-    if(!(filelist = ReadConfig(configfile)))
+    if(!(config = ReadConfig((char *)cmdvec[CML_CONFIGFILE])))
     {
-	PutStr("Error reading config file\n");
-	exit(RETURN_ERROR);
+	/* ReadConfig() prints it's own error string, just exit */
+	FreeRDArgsAll(rdargs);
+	exit(RETURN_FAIL);
     }
 
-    PutStr("Loading modules ...\n");
+    /* We no longer need them */
+    FreeRDArgsAll(rdargs);
+
+    if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    {
+	FreeConfig(config);
+	PutStr("***Break\n");
+	exit(RETURN_WARN);
+    }
+
+    if(!quiet) PutStr("Loading modules ...\n");
 
     NewList((struct List *)&ModuleList);
     ModuleList.ml_Num = 0;
@@ -170,47 +235,67 @@ int main(int argc, char **argv)
     /*
 	Traverse this list and load the modules into memory.
     */
-    for(node = filelist->fl_List.lh_Head; node->ln_Succ; node = node->ln_Succ)
+    for(modnode = (struct ModNode *)config->bc_Modules.lh_Head;
+	modnode->mn_Node.ln_Succ;
+	modnode = (struct ModNode *)modnode->mn_Node.ln_Succ)
     {
-	modname = node->ln_Name;
-	if( (module = LoadModule(node->ln_Name)) )
+	modname = modnode->mn_Node.ln_Name;
+	if( (module = LoadModule(modnode->mn_Node.ln_Name)) )
 	{
+	    PatchModule(module, &modnode->mn_FuncList);
 	    AddTail((struct List *)&ModuleList, (struct Node *)module);
 	    ModuleList.ml_Num++;
-	    Printf("\t%s\n", (ULONG)module->m_Resident->rt_IdString);
+	    if(!quiet) Printf("\t%s\n", (ULONG)module->m_Resident->rt_IdString);
 	}
 	else
 	{
-	    node = NULL; /* on normal exit, this points to the last module processed */
+	    modnode = NULL; /* on normal exit, this points to the last module processed */
 	    break;
 	}
     }
 
-    if(node)
+    if(modnode)
     {
-	/*
-	    If we're here, all modules we're loaded normally. Build all
-	    structures needed for the KickTag/Mem fields, and put them there.
-	*/
-	if( (BuildTagPtrs(&ModuleList)) )
+	if(!simulate)
 	{
-	    PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
+	    /*
+		If we're here, all modules we're loaded normally. Build all
+		structures needed for the KickTag/Mem fields, and put them there.
+	    */
+	    if( (BuildTagPtrs(&ModuleList)) )
+	    {
+		if(!quiet || !reset) PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
+		else if(reset) PutStr("\nAll modules loaded successfully.\n\n");
+	    }
+	    else
+	    {
+		if(!quiet) PutStr("\nError building KickTagPtrs!\n");
+		FreeModules(&ModuleList);
+		returnvalue = RETURN_FAIL;
+	    }
 	}
 	else
 	{
-	    PutStr("\nError building KickTagPtrs!\n");
-	    FreeModules(&ModuleList);
-	    returnvalue = RETURN_FAIL;
+		if(!quiet) PutStr("Simulation complete, unloading modules.\n");
+		FreeModules(&ModuleList);
+		returnvalue = RETURN_OK;
 	}
     }
     else
     {
-	Printf("Error loading \"%s\"\n", modname);
+	if(!quiet) Printf("Error loading \"%s\"\n", (ULONG)modname);
 	FreeModules(&ModuleList);
 	returnvalue = RETURN_FAIL;
     }
 
-    FreeConfig(filelist);
+    FreeConfig(config);
+
+    if(reset)
+    {
+	if(!quiet) PutStr("Resetting in 2 seconds...");
+	Delay(100);
+	ColdReboot(); /* never returns */
+    }
 
     exit(returnvalue);
 }
@@ -220,29 +305,34 @@ struct Module *LoadModule(char *filename)
     BPTR fh, seglist;
     struct Module *mod;
 
-    D(bug("LoadModule(\"%s\")\n", filename));
+    D(bug("LoadModule(\"%s\")\n", (ULONG)filename));
     if(!(fh = Open(filename, MODE_OLDFILE)))
     {
-	PrintFault(IoErr(), filename);
+	if(!quiet) PrintFault(IoErr(), filename);
 	return 0;
     }
 
     if(!(mod = AllocVec(sizeof(struct Module), MEMF_CLEAR)))
     {
-	PutStr("Could not allocate memory for module.\n");
+	if(!quiet) PutStr("Could not allocate memory for module.\n");
 	Close(fh);
 	return 0;
     }
-    D(bug("  module   = 0x%08lx (size %ld)\n", mod, sizeof(struct Module)));
+    D(bug("  module   = $%08lx (size %ld)\n", (ULONG)mod, sizeof(struct Module)));
 
     if( (seglist = InternalLoadSeg(fh, NULL, &ils_table[0], &stack)) )
     {
 	mod->m_SegList = seglist;
 	mod->m_Resident = FindResMod(&ils_mem);
+	if(debug)
+	{
+	    if( ((struct SpecialResident *)mod->m_Resident)->magiccookie == SR_COOKIE)
+		Printf("  Module is of patchable type\n");
+	}
     }
     Close(fh);
-    D(bug("  SegList  = 0x%08lx\n", BADDR(mod->m_SegList)));
-    D(bug("  Resident = 0x%08lx\n", mod->m_Resident));
+    D(bug("  SegList  = $%08lx\n", BADDR(mod->m_SegList)));
+    D(bug("  Resident = $%08lx\n", (ULONG)mod->m_Resident));
 
     /*
 	If this module contains a Resident structure, return it.
@@ -259,7 +349,7 @@ void FreeModules(struct ModuleList *modlist)
 {
     struct Module *mod, *next;
 
-    D(bug("FreeModules(0x%08lx)\n", modlist));
+    D(bug("FreeModules($%08lx)\n", (ULONG)modlist));
 
     for(mod = (struct Module *)modlist->ml_List.mlh_Head; mod->m_Node.mln_Succ; mod = next)
     {
@@ -339,7 +429,7 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
 	memlist->ml_NumEntries later.
     */
     numentries = prelist->iml_Num + 1;
-    D(bug(" number of modules = %ld\n", prelist->iml_Num));
+    D(bug(" number of mem areas = %ld\n", numentries+1));
 
     size = ( sizeof(struct MemList) + (sizeof(struct MemEntry) * numentries) );
 
@@ -403,8 +493,8 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
 
 void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 {
-    D(bug("StuffTags(memlist 0x%08lx  modlist 0x%08lx  nummods %ld)\n",
-     memlist, modlist, nummods));
+    D(bug("StuffTags(memlist $%08lx  modlist $%08lx  nummods %ld)\n",
+     (ULONG)memlist, (ULONG)modlist, nummods));
 
     /* Fix 970102 ldp: protect the Kick ptrs with Forbid/Permit */
     Forbid();
@@ -489,7 +579,7 @@ void *FindResMod(struct ilsMemList *list)
 		*/
 		ils_mem.iml_NewNum = 0;
 
-		D(bug("found at 0x%08lx\n", ptr));
+		D(bug("found at $%08lx\n", (ULONG)ptr));
 		return((void *)ptr);
 	    }
 	}
@@ -511,13 +601,66 @@ void PrintTagPtrs(void)
 
 	while(*list)
 	{
-	    Printf("\t0x%08lx", *list);
+	    Printf("\t$%08lx", *list);
 	    Printf("\t%s\n", (ULONG)((struct Resident *)*list)->rt_IdString);
 
 	    list++;
 	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
 	}
     }
+}
+
+void FreeRDArgsAll(struct RDArgs *rdargs)
+{
+    FreeArgs(rdargs);
+    FreeDosObject(DOS_RDARGS, rdargs);
+}
+
+/* Turn functions on/off in module according to the function slots in funclist */
+void PatchModule(struct Module *module, struct List *funclist)
+{
+    struct FuncNode *funcnode;
+    UBYTE *array;
+    UWORD maxslot;
+
+    if( ((struct SpecialResident *)module->m_Resident)->magiccookie == SR_COOKIE)
+    {
+	/* ok, cookie found, let's patch this module */
+
+	array = ((struct SpecialResident *)module->m_Resident)->statusarray;
+	maxslot = ((struct SpecialResident *)module->m_Resident)->maxslot;
+
+	for(funcnode = (struct FuncNode *)funclist->lh_Head;
+	    funcnode->fn_Node.ln_Succ;
+	    funcnode = (struct FuncNode *)funcnode->fn_Node.ln_Succ)
+	{
+	    /* walk function list, (un)setting entries in array */
+
+	    /* Check if in range of library, do not touch first 4 vectors */
+	    if(funcnode->fn_Slot <= maxslot && funcnode->fn_Slot > 4)
+	    {
+		D(bug("Setting function %ld (slot %ld) %s\n",
+		    funcnode->fn_Slot * -6,
+		    funcnode->fn_Slot,
+		    funcnode->fn_Status ? (ULONG)"on" : (ULONG)"off"
+		));
+
+		array[funcnode->fn_Slot] = funcnode->fn_Status ? 1 : 0;
+	    }
+	    else
+	    {
+		if(!quiet)
+		    Printf("Function %ld (slot %ld) outside scope of library (max %ld, %ld). Ignored.\n",
+			funcnode->fn_Slot * -6,
+			funcnode->fn_Slot,
+			maxslot * -6,
+			maxslot
+		    );
+	    }
+	}
+    }
+
+    return;
 }
 
 /* main.c */
