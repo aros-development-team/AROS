@@ -213,7 +213,7 @@ struct CamdBase_intern{
 
 };
 
-#ifdef _AMIGA
+#if defined(AMIGA) && !defined(__AROS__)
    extern void kprintf(char *bla,...);
 #  ifdef DEBUG
 #    define bug kprintf
