@@ -136,6 +136,8 @@
 	    }
 	    else
 		break;
+
+	    str ++;
 	}
 
 	if (c == '-')
