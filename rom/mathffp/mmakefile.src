@@ -1,11 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_MATHFFP)","yes")
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS)
 else
-SPECIAL_CFLAGS	:= -I/usr/include
+SPECIAL_CFLAGS	:=
 endif
 
 LIBNAME 	:= mathffp
