@@ -882,7 +882,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Window_Title, "About Zune",
 	WindowContents, VGroup,
-#if 0
+/*
 	    Child, MUI_NewObject(MUIC_Bodychunk,
 	    	MUIA_Bodychunk_Body, body,
 	    	MUIA_Bodychunk_Compression, 1,
@@ -897,7 +897,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		TextFrame,
 		InnerSpacing(0,0),
 	    	TAG_DONE),
-#endif
+*/
 	    Child, TextObject,
 			       MUIA_Text_PreParse, MUIX_C,
 			       MUIA_Text_Contents, about_text,
