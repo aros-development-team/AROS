@@ -340,18 +340,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX	= win_mousex;
 	        im->MouseY	= win_mousey;
 
-	        /*
-	         * If the window is a GIMMEZEROZERO window then make the
-	         * coordiante of the mouse relative to the inner window.
-	         */
-	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-	        {
-//kprintf("SELECTDOWN: %d/%d\t",im->MouseX,im->MouseY);
-	          im->MouseX -= w->BorderLeft;
-	          im->MouseY -= w->BorderTop;
-//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
-	        }
-
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
 
@@ -538,18 +526,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
 
-	        /*
-	         * If the window is a GIMMEZEROZERO window then make the
-	         * coordiante of the mouse relative to the inner window.
-	         */
-	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-	        {
-//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
-	          im->MouseX -= w->BorderLeft;
-	          im->MouseY -= w->BorderTop;
-//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
-	        }
-
 		D(bug("SELECTUP\n"));
 		if (gadget)
 		{
@@ -662,24 +638,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
 
-                /*
-                 * !!! if there's a GIMEZEROZERO window the mouse coordinates
-                 * need to be adjusted! I don't know whether this is correct,
-                 * though, but Games/Mine obviously needs it.
-                 */
-
-	        /*
-	         * If the window is a GIMMEZEROZERO window then make the
-	         * coordiante of the mouse relative to the inner window.
-	         */
-	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-	        {
-//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
-	          im->MouseX -= w->BorderLeft;
-	          im->MouseY -= w->BorderTop;
-//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
-	        }
-
 		if (gadget)
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
@@ -752,25 +710,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        */
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
-
-                /*
-                 * !!! if there's a GIMEZEROZERO window the mouse coordinates
-                 * need to be adjusted! I don't know whether this is correct,
-                 * though, but Games/Mine obviously needs it when it gets
-                 * ccordinates for a right mouse button.
-                 */
-
-	        /*
-	         * If the window is a GIMMEZEROZERO window then make the
-	         * coordiante of the mouse relative to the inner window.
-	         */
-	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-	        {
-//kprintf("SELECTUP: %d/%d\t",im->MouseX,im->MouseY);
-	          im->MouseX -= w->BorderLeft;
-	          im->MouseY -= w->BorderTop;
-//kprintf(" %d/%d\n",im->MouseX,im->MouseY);
-	        }
 
 		if (gadget)
 		{
@@ -846,18 +785,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        im->MouseX = win_mousex;
 	        im->MouseY = win_mousey;
 	        
-	        /*
-	         * If the window is a GIMMEZEROZERO window then make the
-	         * coordiante of the mouse relative to the inner window.
-	         */
-	        if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-	        {
-//kprintf("MOUSEMOVE: %d/%d\t",im->MouseX,im->MouseY);
-	          im->MouseX -= w->BorderLeft;
-	          im->MouseY -= w->BorderTop;
-//kprintf("%d/%d\n",im->MouseX,im->MouseY);
-	        }
-
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
@@ -1265,9 +1192,9 @@ D(bug("Window: %p\n", w));
 		        UpfrontLayer(NULL, targetwindow->BorderRPort->Layer);
 			if (targetwindow->BorderRPort->Layer->Flags & LAYERREFRESH)
 			{
-			    /* BeginUpdate(targetwindow->BorderRPort->Layer); */
+			    BeginUpdate(targetwindow->BorderRPort->Layer);
 		            RefreshWindowFrame(targetwindow);
-			    /* EndUpdate(targetwindow->BorderRPort->Layer, TRUE); */
+			    EndUpdate(targetwindow->BorderRPort->Layer, TRUE);
 			    
 			    targetwindow->BorderRPort->Layer->Flags &= ~LAYERREFRESH;
 			}
