@@ -775,10 +775,11 @@ AROS_UFH3(void, LDDemon,
     AROS_USERFUNC_EXIT
 }
 
-AROS_LH2(ULONG, Init,
-    AROS_LHA(ULONG, dummy, D0),
-    AROS_LHA(BPTR, seglist, A0),
-    struct ExecBase *, SysBase, 0, LDDemon)
+AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
+ AROS_UFHA(ULONG,              dummy,   D0),
+ AROS_UFHA(BPTR,               segList, A0),
+ AROS_UFHA(struct ExecBase *,  sysBase, A6)
+)
 {
     AROS_LIBFUNC_INIT
 
