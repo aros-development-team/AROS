@@ -20,6 +20,7 @@ void __attribute__ ((noreturn)) abort (void);
 
 int abs (int j);
 long labs (long j);
+double atof (const char * str);
 int atoi (const char * str);
 long atol (const char * str);
 long strtol (const char * str, char ** endptr, int base);
