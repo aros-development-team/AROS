@@ -70,7 +70,7 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
     while ((child = NextObject(&cstate)))
     {
     	int entries;
-    	ULONG checkit, checked;
+    	ULONG checkit = 0, checked = 0, toggle = 0;
 
     	if (depth == 0) menu->nm_Type = NM_TITLE;
     	else if (depth == 1) menu->nm_Type = NM_ITEM;
@@ -79,8 +79,10 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
     	get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
     	get(child, MUIA_Menuitem_Checkit, &checkit);
     	get(child, MUIA_Menuitem_Checked, &checked);
+    	get(child, MUIA_Menuitem_Toggle, &toggle);
     	if (checkit) menu->nm_Flags |= CHECKIT;
     	if (checked) menu->nm_Flags |= CHECKED;
+    	if (toggle) menu->nm_Flags |= MENUTOGGLE;
     	get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
 	menu->nm_UserData = child;
 
