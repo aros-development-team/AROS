@@ -41,6 +41,7 @@ CLASSESOBJS= \
   objs/classes/aboutmui.o \
   objs/classes/application.o \
   objs/classes/area.o \
+  objs/classes/balance.o \
   objs/classes/bitmap.o \
   objs/classes/bodychunk.o \
   objs/classes/boopsi.o \
@@ -231,6 +232,9 @@ objs/classes/application.o: classes/application.c
 
 objs/classes/area.o: classes/area.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/area.c objname=$@
+
+objs/classes/balance.o: classes/balance.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/balance.c objname=$@
 
 objs/classes/bitmap.o: classes/bitmap.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/bitmap.c objname=$@
