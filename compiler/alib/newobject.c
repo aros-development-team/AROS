@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/11/25 10:53:18  aros
+    Allow stacktags on special CPUs
+
     Revision 1.2  1996/09/17 18:05:45  digulla
     Same names for same parameters
 
@@ -15,15 +18,15 @@
 */
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
-#include <stdarg.h>
+#include "alib_intern.h"
 
 extern struct IntuitionBase * IntuitionBase;
 
 /*****************************************************************************
 
     NAME */
-	#include <intuition/classusr.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/classusr.h>
+#include <clib/intuition_protos.h>
 
 	APTR NewObject (
 
@@ -73,14 +76,26 @@ extern struct IntuitionBase * IntuitionBase;
 
 *****************************************************************************/
 {
-    va_list args;
-    APTR    object;
+#ifdef AROS_SLOWSTACKTAGS
+    ULONG	     object;
+    va_list	     args;
+    struct TagItem * tags;
 
     va_start (args, tag1);
 
-    object = NewObjectA (classPtr, classID, (struct TagItem *)&tag1);
+    if ((tags = GetTagsFromStack (tag1, args)))
+    {
+	object = NewObjectA (classPtr, classID, tags);
+
+	FreeTagsFromStack (tags);
+    }
+    else
+	retval = 0L; /* fail :-/ */
 
     va_end (args);
 
-    return object;
+    return retval;
+#else
+    return NewObjectA (classPtr, classID, (struct TagItem *)&tag1);
+#endif
 } /* NewObject */

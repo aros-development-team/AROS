@@ -7,8 +7,8 @@ include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/alib
 
-FILES=boopsi newobject setattrs openwindowtags openscreentags \
-	dogadgetmethod
+FILES=alib_util newobject setattrs openwindowtags openscreentags \
+	dogadgetmethod domethod dosupermethod
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 
@@ -36,4 +36,3 @@ $(OBJDIR)/%.d: %.c
 	$(MKDEPEND) -p$(OBJDIR)/
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d) $(OBJDIR)/startup.d
-# DO NOT DELETE THIS LINE -- make depend depends on it.

@@ -9,14 +9,15 @@
 #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
-#include <clib/intuition_protos.h>
-#include <stdarg.h>
+#include "alib_intern.h"
+
+extern struct IntuitionBase * IntuitionBase;
 
 /*****************************************************************************
 
     NAME */
-	#include <intuition/intuition.h>
-	#include <clib/intuition_protos.h>
+#include <intuition/intuition.h>
+#include <clib/intuition_protos.h>
 
 	IPTR DoGadgetMethod (
 
@@ -60,5 +61,26 @@
 
 *****************************************************************************/
 {
+#ifdef AROS_SLOWSTACKMETHODS
+    ULONG   retval;
+    va_list args;
+    Msg     msg;
+
+    va_start (args, methodId);
+
+    if ((msg = GetMsgFromStack (methodId, args)))
+    {
+	retval = DoGadgetMethodA (gad, win, req, msg);
+
+	FreeMsgFromStack (msg);
+    }
+    else
+	retval = 0L; /* fail :-/ */
+
+    va_end (args);
+
+    return retval;
+#else
     return DoGadgetMethodA (gad, win, req, (Msg)&methodId);
+#endif
 } /* DoGadgetMethod */
