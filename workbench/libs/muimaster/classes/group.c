@@ -35,6 +35,35 @@ extern struct Library *MUIMasterBase;
 
 #define ROUND(x) ((int)(x + 0.5))
 
+/* Attributes filtered out in OM_SET, before OM_SET gets passed to children.
+   Tested with MUI under UAE/AOS.
+
+    notifyclass:
+    
+    MUIA_HelpLine
+    MUIA_HelpNode
+    MUIA_ObjectID
+    MUIA_UserData
+   
+    areaclass:
+     
+    MUIA_ContextMenu
+    MUIA_ContextMenuTrigger
+    MUIA_ControlChar
+    MUIA_CycleChain
+    MUIA_Draggable
+    MUIA_FillArea
+    MUIA_Frame
+    MUIA_FrameTitle
+    MUIA_HorizWeight
+    MUIA_Pressed
+    MUIA_Selected
+    MUIA_ShortHelp
+    MUIA_ShowMe
+    MUIA_VertWeight
+    MUIA_Weight
+    
+*/
 
 struct MUI_GroupData
 {
@@ -285,7 +314,11 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem       *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     BOOL forward = TRUE;
+    ULONG retval;
+    
     int virt_offx = data->virt_offx, virt_offy = data->virt_offy;
+
+    retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
 /* There are many ways to find out what tag items provided by set()
 ** we do know. The best way should be using NextTagItem() and simply
@@ -328,6 +361,32 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Virtgroup_Top:
 		virt_offy = tag->ti_Data;
 		break;
+		
+	    /* Attributes which are to be filtered out, so that they are ignored
+	       when OM_SET is passed to group's children */
+    	    case MUIA_HelpLine:
+	    case MUIA_HelpNode:
+    	    case MUIA_ObjectID:
+	    case MUIA_UserData:
+   
+    	    case MUIA_ContextMenu:
+    	    case MUIA_ContextMenuTrigger:
+    	    case MUIA_ControlChar:
+    	    case MUIA_CycleChain:
+    	    case MUIA_Draggable:
+    	    case MUIA_FillArea:
+    	    case MUIA_Frame:
+    	    case MUIA_FrameTitle:
+    	    case MUIA_HorizWeight:
+    	    case MUIA_Pressed:
+    	    case MUIA_Selected:
+    	    case MUIA_ShortHelp:
+    	    case MUIA_ShowMe:
+    	    case MUIA_VertWeight:
+    	    case MUIA_Weight:
+	    	tag->ti_Tag = TAG_IGNORE;
+		break;
+    
 	}
     }
 
@@ -347,7 +406,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
     }
 
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return retval;
 }
 
 
