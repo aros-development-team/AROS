@@ -379,7 +379,10 @@ void main(void)
     	    	    	    End,
 			End,
     	    	    End,
-    	    	Child, RegisterGroup(pages),
+    	    	Child, RegisterObject,
+								MUIA_Register_Titles, pages,
+								MUIA_Register_Columns, 3,
+								
 //		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
