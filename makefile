@@ -107,6 +107,8 @@ dist : dist-dir dist-tar dist-lha dist-src
 
 dist-dir : FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
+	@echo "Correcting access flags"
+	@chmod -R ug=rwX,o=rX .
 
 dist-tar : FORCE
 	cd $(ARCHDIR) ; \
