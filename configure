@@ -6570,7 +6570,11 @@ echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
+
+
+                if test "$aros_object_format" = "" ; then
+                    aros_object_format="elf_i386"
+                fi
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_kernel_ldflags=""

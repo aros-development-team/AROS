@@ -557,7 +557,15 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
+
+                dnl If somebody hasn't already set the target object
+                dnl format, then use this value. Mostly to support
+                dnl FreeBSD cross-compilation.
+                dnl TODO: Remove when we always use our compiler.
+
+                if test "$aros_object_format" = "" ; then
+                    aros_object_format="elf_i386"
+                fi
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_kernel_ldflags=""
