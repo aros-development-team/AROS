@@ -1,8 +1,7 @@
-#   Copyright (C) 2000 AROS - The Amiga Research OS
-#   $Id$
+# Copyright © 2000-2003, The AROS Development Team. All rights reserved. 
+# $Id$
 #
-#   Desc: Makefile to create the gensets
-#
+# Makefile to build collect-aros.
 
 USER_CFLAGS := -Wall -Wunused -O2
 -include $(TOP)/config/make.cfg
@@ -18,7 +17,7 @@ all : $(COLLECT-AROS)
 
 $(COLLECT-AROS) : collect-aros.c gensets.c ldscript.h 
 	@$(MECHO) "Compiling $(notdir $@)..."
-	$(HOST_CC) $(HOST_CFLAGS) collect-aros.c gensets.c -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
+	@$(HOST_CC) $(HOST_CFLAGS) collect-aros.c gensets.c -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
 	-DNMPATH="\"$(NM_PLAIN)\"" -DGCCPATH="\"$(TARGET_CC)\"" -DMVPATH="\"$(MV)\"" \
 	-DOBJDUMPPATH="\"$(OBJDUMP)\""
 	@$(HOST_STRIP) $(COLLECT-AROS)
