@@ -319,7 +319,18 @@ BEGIN {
 		gsub(/\$[(]TOP[)]/,TOP,yytext);
 		cmd=yytext " | gawk -f src2html.gawk --assign TOP=\""TOP"\"";
 
-		#print cmd;
+		while ((cmd | getline) > 0)
+		    print;
+
+		close (cmd);
+
+		yytext="";
+	    }
+	    else if (yytext=="execverb")
+	    {
+		getarg();
+		gsub(/\$[(]TOP[)]/,TOP,yytext);
+		cmd=yytext;
 
 		while ((cmd | getline) > 0)
 		    print;
