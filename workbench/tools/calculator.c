@@ -134,6 +134,8 @@ static char ledstring[256],visledstring[256],
 
 static char *deftapename = "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s";
 
+UBYTE version[] = "$VER: Calculator 1.1 (1.5.2001)";
+
 static LONG Args[NUM_ARGS];
 
 static void Cleanup(char *msg)
@@ -768,6 +770,7 @@ static void HandleAll(void)
 {
     struct IntuiMessage *msg;
     WORD icode,i;
+    ULONG signals;
     
     BOOL quitme = FALSE;
     
@@ -775,51 +778,56 @@ static void HandleAll(void)
 
     while(!quitme)
     {
-	WaitPort(win->UserPort);
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	signals = Wait(1L << win->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
+
+	if (signals & (1L << win->UserPort->mp_SigBit))
 	{
-	    switch(msg->Class)
+	    while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	    {
-	    case IDCMP_CLOSEWINDOW:
-		quitme = TRUE;
-		break;
-		
-	    case IDCMP_REFRESHWINDOW:
-		GT_BeginRefresh(win);
-		GT_EndRefresh(win,TRUE);
-		break;
-		
-	    case IDCMP_GADGETUP:
-		HandleButton(((struct Gadget *)msg->IAddress)->GadgetID);
-		break;
-		
-	    case IDCMP_VANILLAKEY:
-		icode = toupper(msg->Code);
-		
-		for(i = 0;i < NUM_BUTTONS;i++)
-		{
-		    if ((icode == bi[i].key1) ||
-			(icode == bi[i].key2))
-		    {
-			icode = bi[i].type;
-			break;
-		    }
-		}
-		if (i < NUM_BUTTONS)
-		{
-		    HandleButton(icode);
-		} else if (icode == 27)
-		{
+	        switch(msg->Class)
+	        {
+	        case IDCMP_CLOSEWINDOW:
 		    quitme = TRUE;
-		}
-		break;
+		    break;
 		
-	    } /* switch(msg->Class) */
+	        case IDCMP_REFRESHWINDOW:
+		    GT_BeginRefresh(win);
+		    GT_EndRefresh(win,TRUE);
+		    break;
+		
+	        case IDCMP_GADGETUP:
+		    HandleButton(((struct Gadget *)msg->IAddress)->GadgetID);
+		    break;
+		
+	        case IDCMP_VANILLAKEY:
+		    icode = toupper(msg->Code);
+		
+		    for(i = 0;i < NUM_BUTTONS;i++)
+		    {
+		        if ((icode == bi[i].key1) ||
+			    (icode == bi[i].key2))
+		        {
+			    icode = bi[i].type;
+			    break;
+		        }
+		    }
+		    if (i < NUM_BUTTONS)
+		    {
+		        HandleButton(icode);
+		    } else if (icode == 27)
+		    {
+		        quitme = TRUE;
+		    }
+		    break;
+		
+	        } /* switch(msg->Class) */
 	    
-	    ReplyMsg((struct Message *)msg);
-	    
-	} /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
-	
+	        ReplyMsg((struct Message *)msg);
+	    } /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
+	} /* if(signals & (1L << win->UserPort->mp_SigBit)) */
+	if (signals & SIGBREAKF_CTRL_C)
+	    quitme = TRUE;
+
     } /* while(!quitme) */
 }
 
@@ -836,4 +844,3 @@ int main(void)
     Cleanup(0);
     return 0;
 }
-
