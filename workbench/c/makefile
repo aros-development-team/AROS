@@ -21,6 +21,7 @@ FILES = \
 	avail \
 	cd \
 	copy \
+        date \
 	delete \
 	dir \
 	echo \
