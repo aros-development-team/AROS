@@ -38,6 +38,8 @@ AROS_UFH3
     AROS_UFHA(struct IconIdentifyMsg *, iim,      A1) 
 )
 {
+    AROS_USERFUNC_INIT
+    
     struct DiskObject *icon = NULL;
     
     /* Identify object -----------------------------------------------------*/
@@ -264,6 +266,8 @@ AROS_UFH3
     }
     
     return icon;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*** Support functions ******************************************************/
