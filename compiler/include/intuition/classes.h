@@ -2,11 +2,10 @@
 #define INTUITION_CLASSES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: BOOPSI structures
-    Lang: english
+    BOOPSI structures.
 */
 
 #ifndef INTUITION_CLASSUSR_H
@@ -15,8 +14,6 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
-
-/*#ifndef AROS_USE_OOP*/
 
 /* The following structure is READ-ONLY */
 typedef struct IClass
@@ -34,12 +31,9 @@ typedef struct IClass
                                          deleted */
     ULONG           cl_Flags;         /* see below */
 } Class;
-/*#endif*/
 
 /* cl_Flags */
 #define CLF_INLIST (1L<<0)
-
-/*#ifndef AROS_USE_OOP*/
 
 /* This structure is situated before the pointer. It may grow in future,
    but o_Class will always stay at the end, so that you can substract
@@ -50,17 +44,14 @@ struct _Object
     struct MinNode  o_Node;  /* PRIVATE */
     struct IClass * o_Class;
 };
-/*#endif*/
 
 #define _OBJ(obj) ((struct _Object *)(obj))
 #define BASEOBJECT(obj) ((Object *)(_OBJ(obj) + 1))
 #define _OBJECT(obj) (_OBJ(obj) - 1)
 
-/*#ifndef AROS_USE_OOP*/
 #define OCLASS(obj) ((_OBJECT(obj))->o_Class)
 
 #define INST_DATA(class, obj) ((VOID *)(obj) + (class)->cl_InstOffset)
-/*#endif*/
 
 #define SIZEOF_INSTANCE(class) ((class)->cl_InstOffset + (class)->cl_InstSize \
                                + sizeof(struct _Object))
