@@ -1,11 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES		:= -I. -Igraph -I./aros
-OBJDIR			:= $(GENDIR)/workbench/libs/freetype/demos/graph
-LIB			:= $(LIBDIR)/libfreetypegraph.a
-GRAPHCFLAGS		:= $(CFLAGS) -DDEVICE_AROS
-%define_libs
+#MM workbench-libs-freetype-graph : includes linklibs
 
 FILES := \
 	grblit \
@@ -14,29 +10,9 @@ FILES := \
 	grdevice \
 	grinit \
 	aros/graros
-	
-OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM workbench-libs-freetype-graph : workbench-libs-freetype-graph-setup includes linklibs
-workbench-libs-freetype-graph : $(LIB)
-	@$(NOP)
+USER_INCLUDES		:= -I. -Igraph -I./aros
+USER_CFLAGS		:= -DDEVICE_AROS
 
-#MM workbench-libs-freetype-graph-setup
-%rule_makedirs dirs="$(OBJDIR) $(OBJDIR)/aros" setuptarget=workbench-libs-freetype-graph-setup
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt=$(GRAPHCFLAGS)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q flags=$(GRAPHCFLAGS)
-
-%common
-%include_deps
+%build_linklib mmake=workbench-libs-freetype-graph \
+    libname=freetypegraph files=$(FILES)

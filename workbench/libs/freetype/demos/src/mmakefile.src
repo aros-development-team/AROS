@@ -1,48 +1,29 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- workbench-libs-freetype-demos : \
+#MM      workbench-libs-freetype-demos-ftstring \
+#MM      workbench-libs-freetype-demos-ftview
+
+#MM- workbench-libs-freetype-demos-quick : \
+#MM      workbench-libs-freetype-demos-ftstring-quick \
+#MM      workbench-libs-freetype-demos-ftview-quick
+
+#MM workbench-libs-freetype-demos-ftstring : includes linklibs \
+#MM     workbench-libs-freetype-linklib workbench-libs-freetype-graph
+#MM workbench-libs-freetype-demos-ftview : includes linklibs \
+#MM     workbench-libs-freetype-linklib workbench-libs-freetype-graph
+
 USER_INCLUDES		:= -I../graph -I../../include -I../../src/base -I../../config
-EXEDIR			:= $(BINDIR)/Demos/FreeType
-OBJDIR 			:= $(GENDIR)/$(CURDIR)
-FREETYPELINKLIB		:= $(LIBDIR)/libfreetype2.a
-FREETYPEGRAPHLIB	:= $(LIBDIR)/libfreetypegraph.a
-COMMONOBJ		:= common.c
 
-%define_libs prelibs="$(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)"
+%build_prog mmake=workbench-libs-freetype-demos-ftstring \
+    progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \
+    files="ftstring common" \
+    uselibs="freetype2 freetypegraph arossupport amiga arosc m"
 
-FILES := ftstring ftview
-
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-%make_common_setup
-
-#MM workbench-libs-freetype-demos-quick : 
-workbench-libs-freetype-demos-quick : workbench-libs-freetype-demos
-	@$(NOP)
-	
-#MM workbench-libs-freetype-demos : workbench-libs-freetype-demos-setup \
-#MM     includes linklibs workbench-libs-freetype-linklib workbench-libs-freetype-graph
-workbench-libs-freetype-demos : $(EXES)
-
-#MM workbench-libs-freetype-demos-setup
-%rule_makedirs dirs="$(EXEDIR) $(OBJDIR)" \
-    setuptarget=workbench-libs-freetype-demos-setup
-
-#MM
-clean ::
-	-$(RM) $(EXES)
-
-$(EXEDIR)/ftstring : $(OBJDIR)/ftstring.o $(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)
-	%link_q
-
-$(EXEDIR)/ftview : $(OBJDIR)/ftview.o $(COMMONOBJ) $(FREETYPELINKLIB) $(FREETYPEGRAPHLIB)
-	%link_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-	
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%build_prog mmake=workbench-libs-freetype-demos-ftview \
+    progname=ftview targetdir=$(BINDIR)/Demos/FreeType \
+    files="ftview common" \
+    uselibs="freetype2 freetypegraph arossupport amiga arosc m"
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
