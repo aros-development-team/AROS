@@ -58,7 +58,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  driver_BltClear(memBlock, bytecount, flags);
+  driver_BltClear (memBlock, bytecount, flags, GfxBase);
 
   AROS_LIBFUNC_EXIT
 } /* BltClear */
