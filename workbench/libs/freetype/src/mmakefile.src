@@ -41,6 +41,7 @@ FILESDIR := \
 
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
+#MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
