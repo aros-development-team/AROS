@@ -69,8 +69,8 @@
   ULONG item_ctr = 0;
   ULONG subitem_ctr = 0;
   struct TagItem * ti;
-  BOOL fullmenu = GetTagData(GTMN_FullMenu, FALSE, tagList);
 
+/*  BOOL fullmenu = GetTagData(GTMN_FullMenu, FALSE, tagList);*/
 #warning Variable 'fullmenu' should be used!!!
 
   ULONG err = 0;
