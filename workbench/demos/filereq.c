@@ -63,8 +63,8 @@ struct TagItem frtags[] =
     { ASL_Width,      MYWIDTH },
     { ASL_LeftEdge,   MYLEFTEDGE },
     { ASL_TopEdge,    MYTOPEDGE },
-    { ASL_OKText,     (ULONG)"O KAY" },
-    { ASL_CancelText, (ULONG)"not OK" },
+    { ASL_OKText,     (ULONG)"OKAY" },
+    { ASL_CancelText, (ULONG)"Not OK" },
     { ASL_File,	      (ULONG)"asl.library" },
     { ASL_Dir,	      (ULONG)"libs:" },
     { TAG_DONE,       NULL }
