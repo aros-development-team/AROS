@@ -581,6 +581,7 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 	data->wd_CommandPort = NULL;
         
         DisposeObject(data->wd_Prefs);
+	data->wd_Prefs = NULL;
     }
     
     return DoSuperMethodA(CLASS, self, (Msg) message);
