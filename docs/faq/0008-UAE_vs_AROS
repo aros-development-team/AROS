@@ -12,9 +12,7 @@ faster if it could replace the OS calls by native code. On the other hand,
 AROS needs hardware drivers (eg. audio.device).</p>
 
 <p>Since most code will not be available on AROS from the start, 
-Fabio Alemagna has started to port UAE to AROS so you can at least
-run the old code in an emulation box. Since we concentrated on
-writing AmigaOS functions, many functions of the c.lib are still
-missing, so this will take some time.</p>
+Fabio Alemagna has ported UAE to AROS so you can at least
+run the old code in an emulation box.</p>
 
 </section>
