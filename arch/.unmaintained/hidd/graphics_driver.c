@@ -2020,7 +2020,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     if(!CorrectDriverData (rp, GfxBase))
 	return  -1L;
 	
-    prd.pixel = BM_PIXEL(rp->BitMap, rp->FgPen);
+    prd.pixel = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
 
     return do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
 }
