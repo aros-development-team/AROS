@@ -41,7 +41,7 @@ struct CountryEntry CountryArray[] =
     { "australia",          &australiaPrefs },
     { "deutschland",        &deutschPrefs },
     { "great_britain",      &greatBritainPrefs },
-    { "nederlands", 	    &nederlandsPrefs },
+    { "nederland",  	    &nederlandPrefs },
     { NULL, NULL }
 };
 
