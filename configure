@@ -851,10 +851,11 @@ Optional Features:
   --enable-bochs-hack     Enable hacks to make BOCHS (partly) work default=no
   --enable-palm-debug-hack   Enable palm debug output hack in palm native default=no
   --enable-nesting-supervisor   Enable nesting supervisor support in unix default=no
-  --enable-mungwall-debug Enable mungwall debug default=yes
-  --enable-stack-debug    Enable stack debug default=yes
-  --enable-modules-debug  Enable modules debug default=no
-  --enable-debug          Enable general debug default=no
+  --enable-debug=list     Enable different types of debug. Commas or
+                          whitespaces can be used to separate the items in the
+                          list. Available types of modules are: all none stack
+                          mungwall modules. If no list is provided then "all"
+                          is assumed. (default=none)
   --enable-cpak           Enable cpak default=yes
   --enable-xshm-extension Enable X11 MIT-SHM extension default=yes
 
@@ -7114,65 +7115,56 @@ echo "$as_me:$LINENO: result: \"$nesting_supervisor\"" >&5
 echo "${ECHO_T}\"$nesting_supervisor\"" >&6
 
 
-echo "$as_me:$LINENO: checking if mungwall debug is enabled" >&5
-echo $ECHO_N "checking if mungwall debug is enabled... $ECHO_C" >&6
-# Check whether --enable-mungwall_debug or --disable-mungwall_debug was given.
-if test "${enable_mungwall_debug+set}" = set; then
-  enableval="$enable_mungwall_debug"
-  mungwall_debug="$enableval"
-else
-  mungwall_debug="yes"
-fi;
-if test "$mungwall_debug" = "no" ; then
-    aros_mungwall_debug="0"
-fi
-echo "$as_me:$LINENO: result: \"$mungwall_debug\"" >&5
-echo "${ECHO_T}\"$mungwall_debug\"" >&6
+all_debug_types="stack mungwall modules"
 
-echo "$as_me:$LINENO: checking if stack debug is enabled" >&5
-echo $ECHO_N "checking if stack debug is enabled... $ECHO_C" >&6
-# Check whether --enable-stack_debug or --disable-stack_debug was given.
-if test "${enable_stack_debug+set}" = set; then
-  enableval="$enable_stack_debug"
-  stack_debug="$enableval"
-else
-  stack_debug="yes"
-fi;
-if test "$stack_debug" = "no" ; then
-    aros_stack_debug="0"
-fi
-echo "$as_me:$LINENO: result: \"$stack_debug\"" >&5
-echo "${ECHO_T}\"$stack_debug\"" >&6
-
-echo "$as_me:$LINENO: checking if debug modules is enabled" >&5
-echo $ECHO_N "checking if debug modules is enabled... $ECHO_C" >&6
-# Check whether --enable-modules_debug or --disable-modules_debug was given.
-if test "${enable_modules_debug+set}" = set; then
-  enableval="$enable_modules_debug"
-  modules_debug="$enableval"
-else
-  modules_debug="no"
-fi;
-if test "$modules_debug" = "yes" ; then
-    aros_modules_debug="1"
-fi
-echo "$as_me:$LINENO: result: \"$modules_debug\"" >&5
-echo "${ECHO_T}\"$modules_debug\"" >&6
-
-echo "$as_me:$LINENO: checking if debug is enabled" >&5
-echo $ECHO_N "checking if debug is enabled... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking Which debug types to enable" >&5
+echo $ECHO_N "checking Which debug types to enable... $ECHO_C" >&6
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
-  aros_debug="$enableval"
+  debug="$enableval"
 else
-  aros_debug="no"
+  debug=""
 fi;
-if test "$modules_debug" = "yes" ; then
-        aros_debug="yes"
+
+if test "$debug" = "" -o "$debug" = "no"; then
+    debug="none"
+elif test "$debug" = "yes"; then
+    debug="all"
 fi
-echo "$as_me:$LINENO: result: \"$aros_debug\"" >&5
-echo "${ECHO_T}\"$aros_debug\"" >&6
+
+if test "$debug" = "none"; then
+    for d in $all_debug_types; do
+        export aros_${d}_debug="0"
+    done
+elif test "$debug" = "all" ; then
+    debug=$all_debug_types
+    for d in $all_debug_types; do
+        export aros_${d}_debug="1"
+    done
+    aros_debug="1"
+else
+    debug=`echo $debug | sed s/,/\ /g`
+    for d in $debug; do
+        found="0"
+        for d2 in $all_debug_types; do
+	    if test "$d2" = "$d"; then
+	        found="1"
+		break
+	    fi
+	done
+	if test "$found" = "0"; then
+	    { { echo "$as_me:$LINENO: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&5
+echo "$as_me: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&2;}
+   { (exit 1); exit 1; }; }
+	fi
+	export aros_${d}_debug="1"
+    done
+    aros_debug="1"
+fi
+
+echo "$as_me:$LINENO: result: \"$debug\"" >&5
+echo "${ECHO_T}\"$debug\"" >&6
 
 echo "$as_me:$LINENO: checking if cpak is enabled" >&5
 echo $ECHO_N "checking if cpak is enabled... $ECHO_C" >&6
