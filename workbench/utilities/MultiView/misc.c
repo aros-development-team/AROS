@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -147,6 +147,7 @@ STRPTR GetFile(void)
 						   ASLFR_DoPatterns   , TRUE                         ,
 						   ASLFR_InitialFile  , (IPTR)filebuffer             ,
 						   ASLFR_InitialDrawer, (IPTR)pathbuffer             ,
+						   ASLFR_Window       , (IPTR)win   	    	     ,
 						   TAG_DONE);
 	if (req)
 	{
