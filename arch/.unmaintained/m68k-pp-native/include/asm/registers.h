@@ -35,8 +35,26 @@
 #define TRAP_3		0x08c
 #define TRAP_4		0x090
 
+/*
+ * System Controler Registers
+ */
+
 #define SCR             0xfffff000
 #define PCR             0xfffff003
+#define IDR             0xfffff004
+#define IODCR           0xfffff008
+
+/*
+ * Some Flags for the System Control registers
+ */
+#define BETO_F          (1<<7)
+#define WPV_F           (1<<6)
+#define PRV_F           (1<<5)
+#define BETEN_F         (1<<4)
+#define SO_F            (1<<3)
+#define DMAP_F          (1<<2)
+#define WDTH_F          (1<<0)
+
 
 /*
  * Whatever is in chapter 6 in the downloadable 
@@ -93,6 +111,10 @@
 #endif
 
 #define PCTLR		0xfffff207
+
+/*
+ * Interrupt Controller Registers
+ */
 #define IVR		0xfffff300
 #define ICR             0xfffff302
 #define IMR             0xfffff304
@@ -109,6 +131,9 @@
 #define PFPUEN          0xfffff42a
 #define PFSEL           0xfffff42b
 
+/*
+ * General Purpose Timers Registers
+ */
 #define TCTL1           0xfffff600
 #define TPRER1          0xfffff602
 #define TCMP1           0xfffff604
@@ -122,6 +147,17 @@
 #define TCR2            0xfffff612
 #define TCN2            0xfffff614
 #define TSTAT2          0xfffff616
+
+
+#define FRR_F           (1<<8)
+#define CAP_M           (1<<7|1<<6)
+#define OM_F            (1<<5)
+#define IRQEN           (1<<4)
+#define CLKSOURCE_M     (1<<3|1<<2|1<<1)
+#define TEN_F           (1<<0)
+
+#define CAPT_F          (1<<1)
+#define COMP_F          (1<<0)
 
 #define USTCNT1		0xfffff900
 #define UBAUD1          0xfffff902
@@ -137,6 +173,9 @@
 #define UMISC2          0xfffff918
 #define NIPR2           0xfffff91a
 
+/*
+ * LCD Controller Registers
+ */
 #define LSSA		0xfffffa00
 #define LVPW            0xfffffa05
 #define LXMAX           0xfffffa08
@@ -159,6 +198,11 @@
 #define PWMR            0xfffffa36
 #define RMCR            0xfffffa38
 
+
+/*
+ * Real time clock registers
+ */
+
 #define RTCTIME         0xfffffb00
 #define RTCAKRM         0xfffffb04
 #define WATCHDOG        0xfffffb0a
@@ -168,6 +212,20 @@
 #define STPWCH          0xfffffb12
 #define DAYR            0xfffffb1a
 #define DAYALARM        0xfffffb1c
+
+#define HOURS_M         (1<<28|1<<27|1<<26|1<<25|1<<24)
+#define MINUTES_M       (1<<21|1<<20|1<<19|1<<18|1<<17|1<<16)
+#define SECONDS_M       (1<<5|1<<4|1<<3|1<<2|1<<1|1<<0)
+
+#define DAYSAL_M        0x01ff
+
+#define CNTR_M          (0x03 << 8)
+#define INTF_F          (0x01 << 7)
+#define ISEL_F          (0x01 << 1)
+#define EN_F            (0x01 << 0)
+
+#define RTCEN_F         (0x01 << 7)
+#define REFREQ_F        (0x01 << 5)
 
 #define DRAMMC		0xfffffc00
 #define DRAMC		0xfffffc00
