@@ -28,9 +28,6 @@ extern struct Library *MUIMasterBase;
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 /*
  * Attributes and methods, all done !
 */
@@ -278,7 +275,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    D(bug("Group_New(0x%lx)\n",obj));
+/*      D(bug("Group_New(0x%lx)\n",obj)); */
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -465,7 +462,7 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-    D(bug("Group_AddMember(0x%lx, 0x%lx)\n",obj, msg->opam_Object));
+/*      D(bug("Group_AddMember(0x%lx, 0x%lx)\n",obj, msg->opam_Object)); */
 
 
     DoMethodA(data->family, (Msg)msg);
@@ -733,7 +730,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Region *region = NULL;
     APTR clip;
 
-    D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+/*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -1177,6 +1174,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
     struct MUI_MinMax tmp = { 0, 0, MUI_MAXMAX, MUI_MAXMAX, 0, 0 };
     
     cstate = (Object *)children->mlh_Head;
+    D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth));
     while ((child = NextObject(&cstate)))
     {
 	if (! (_flags(child) & MADF_SHOWME))
@@ -1190,6 +1188,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 			    ((_defheight(child) < MUI_MAXMAX) ? _defheight(child) : tmp.DefHeight));
 	tmp.DefWidth = MAX(tmp.DefWidth,
 			   ((_defwidth(child) < MUI_MAXMAX) ? _defwidth(child) : tmp.DefWidth));
+	D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth));
     }
     END_MINMAX();
 }
