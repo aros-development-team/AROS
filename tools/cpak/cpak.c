@@ -21,7 +21,7 @@ FILE * fd, * fdo;
 int main ( int argc, char **argv )
 {
 int count;
-int i, filecount;
+int i, filecount, startarg;
 char fbuf[50];
 
 /* Starting sequence of a C comment: '\slash','\asterisk' */
@@ -34,9 +34,28 @@ struct inclist first = { NULL, ft }, *current, *search;
 
 char bracket;
 char incname[50];
-char filename[50];
-
-    fdo = fopen ( "functions.c", "w" );
+char filename[100];
+char *outputdir;
+    
+    if ( argc < 2 )
+    {
+	fprintf( stderr, "No input files given!\n" );
+	exit ( -1 );
+    }
+    
+    if ( strcmp(argv[1],"-d") == 0 )
+    {
+	outputdir = argv[2];
+	startarg = 3;
+    }
+    else
+    {
+	outputdir = ".";
+	startarg = 1;
+    }
+    
+    sprintf(filename, "%s/functions.c", outputdir);
+    fdo = fopen ( filename, "w" );
     if ( fdo == NULL )
     {
 	fprintf ( stderr, "Could not open functions.c out-file!\n" );
@@ -45,7 +64,7 @@ char filename[50];
     fprintf ( fdo, "#include \"functions.h\"\n" );
 
     printf ( "Collecting functions..." );
-    for ( filecount = 1 ; filecount < argc ; filecount++ )
+    for ( filecount = startarg ; filecount < argc ; filecount++ )
     {
 /*	printf ( "Opening %s\n", argv[filecount] ); */
 	strcpy ( filename, argv[filecount] );
@@ -187,7 +206,8 @@ char filename[50];
     }
     fclose ( fdo );
 
-    fdo = fopen ( "functions.h", "w" );
+    sprintf(filename, "%s/functions.h", outputdir);
+    fdo = fopen ( filename, "w" );
     if ( fdo == NULL )
     {
 	fprintf ( stderr, "Could not open functions.h out-file!\n" );
