@@ -4,6 +4,7 @@
 */
 
 #include <string.h>
+#include <stdio.h>
 
 #include <intuition/classes.h>
 #include <clib/alib_protos.h>
@@ -12,70 +13,13 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+
 #include "mui.h"
 #include "support.h"
 #include "support_classes.h"
 #include "muimaster_intern.h"
 
-extern struct Library *MUIMasterBase;
-
-/**************************************************************************
- ...
-**************************************************************************/
-struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb)
-{
-    struct IClass *cl;
-    int i;
-
-    for (i = 0; i < MUIMB(mb)->ClassCount; i++)
-    {
-      cl = MUIMB(mb)->Classes[i];
-      if (cl && !strcmp(cl->cl_ID, className))
-      {
-        return cl;
-      }
-    }
-    return NULL;
-}
-
-/**************************************************************************
- ...
-**************************************************************************/
-BOOL DestroyClasses(struct Library *MUIMasterBase)
-{
-    int i;
-    struct MUIMasterBase_intern *mb = MUIMB(MUIMasterBase);
-
-    /* NOTE: not the other way round, otherwise you will
-     * try to free superclasses before subclasses... */
-    /* TODO: when we'll have a hash table, we'll need to loop thru it
-     * until either we don't have any more classes or we can't free any
-     * (think of it like the last pass of a bubble sort). */
-    for (i = mb->ClassCount-1; i >= 0; i--)
-    {
-      if (mb->Classes[i])
-      {
-        if (FreeClass(mb->Classes[i])) mb->Classes[i] = NULL;
-        else
-        {
-#if 0
-          kprintf("*** destroy_classes: FreeClass() failed for %s:\n"
-                  "    SubclassCount=%ld ObjectCount=%ld\n",
-                  Classes[i]->cl_ID,
-                  Classes[i]->cl_SubclassCount,
-                  Classes[i]->cl_ObjectCount);
-#endif
-          return FALSE;
-        }
-      }
-    }
-
-    FreeVec(mb->Classes);
-    mb->Classes = NULL;
-    mb->ClassCount = 0;
-    mb->ClassSpace = 0;
-    return TRUE;
-}
+#include "debug.h"
 
 static const struct __MUIBuiltinClass * const builtins[] =
 {
@@ -137,7 +81,169 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_FRAMEADJUST_DESC
 };
 
-#define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)
+Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)
+{
+    struct Library         *mcclib = NULL;
+    struct MUI_CustomClass *mcc    = NULL ;
+    CONST_STRPTR const     *pathptr;
+    TEXT                    s[255];
+
+    static CONST_STRPTR const searchpaths[] =
+    {
+        "Zune/%s",
+        "Classes/Zune/%s",
+        "MUI/%s",
+        NULL,
+    };
+
+    for (pathptr = searchpaths; *pathptr; pathptr++)
+    {
+	snprintf(s, 255, *pathptr, classname);
+
+	D(bug("Trying opening of %s\n",s));
+
+        if ((mcclib = OpenLibrary(s, 0)))
+	{
+	    D(bug("Calling MCC Query. Librarybase at 0x%lx\n",mcclib));
+
+	    mcc = MCC_Query(0);
+	    if (mcc)
+	    {
+		if (mcc->mcc_Class)
+		{
+		    mcc->mcc_Module = mcclib;
+		    D(bug("Successfully opened %s as external class\n",classname));
+
+		    return mcc->mcc_Class;
+		}
+	    }
+
+	    CloseLibrary(mcclib);
+	}
+    }
+
+    D(bug("Failed to open external class %s\n",classname));
+    return NULL;
+}
+
+/**************************************************************************/
+Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
+{
+    Class *cl = NULL, *cl2;
+
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
+    ForeachNode(&MUIMB(mb)->BuiltinClasses, cl2)
+    {
+        if (!strcmp(cl2->cl_ID, classid))
+	{
+            cl = cl2;
+	    break;
+	}
+    }
+
+    ReleaseSemaphore(&MUIMB(mb)->ZuneSemaphore);
+
+    return cl;
+}
+
+VOID ZUNE_AddBuiltinClass(Class *cl, struct Library *mb)
+{
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
+    AddTail((struct List *)&MUIMB(mb)->BuiltinClasses, (struct Node *)cl);
+    cl->cl_Flags |= CLF_INLIST;
+
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+}
+
+VOID ZUNE_RemoveBuiltinClass(Class *cl, struct Library *mb)
+{
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
+    Remove((struct Node *)cl);
+
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+}
+
+Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
+{
+    Class *cl;
+
+    cl = ZUNE_FindBuiltinClass(classid, mb);
+
+    if (!cl)
+    {
+        cl = ZUNE_MakeBuiltinClass(classid, mb);
+
+	if (cl)
+	    ZUNE_AddBuiltinClass(cl, mb);
+    }
+
+    return cl;
+}
+
+Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
+{
+    int i;
+    Class *cl          = NULL;
+    struct Library *mb = NULL;
+
+
+    for (i = 0; i < sizeof(builtins)/sizeof(builtins[0]); i++)
+    {
+	if (!strcmp(builtins[i]->name, classid))
+	{
+            Class   *supercl;
+            ClassID  superclid;
+
+	    /* This may seem strange, but opening muimaster.library here is done for 2 reasons:
+
+	       1) increase muimaster.library's open count, so that it doesn't get expunged
+	          while some of its internal classes are still in use
+
+	       2) It makes the code in MUI_FreeClass() work correctly while being unaware of
+	          whether the class it has to free is builtin or not.
+	    */
+	    mb = OpenLibrary("muimaster.library", 0);
+
+	    /* It can't possibly fail, but well... */
+	    if (!mb) break;
+
+	    if (strcmp(builtins[i]->supername, ROOTCLASS) == 0)
+            {
+                superclid  = ROOTCLASS;
+                supercl    = NULL;
+            }
+            else
+            {
+                superclid  = NULL;
+                supercl    = MUI_GetClass(builtins[i]->supername);
+
+                if (!supercl) break;
+	    }
+
+            cl = MakeClass(builtins[i]->name, superclid, supercl, builtins[i]->datasize, 0);
+	    if (cl)
+            {
+#ifdef __MAXON__
+                cl->cl_Dispatcher.h_Entry    = builtins[i]->dispatcher;
+#else
+                cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
+                cl->cl_Dispatcher.h_SubEntry = builtins[i]->dispatcher;
+#endif
+                cl->cl_Dispatcher.h_Data     = mb;
+	    }
+
+	    break;
+	}
+    }
+
+    if (!cl && mb)
+        CloseLibrary(mb);
+
+    return cl;
+}
 
 /*
  * metaDispatcher - puts h_Data in A6 and calls real dispatcher
@@ -177,60 +283,4 @@ __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object
 #endif
 
 
-/**************************************************************************
- Given the builtin class, construct the
- class and make it public (because of the fake lib base).
-**************************************************************************/
-static struct IClass *builtin_to_public_class(const struct __MUIBuiltinClass *desc, struct Library *MUIMasterBase)
-{
-    struct IClass *cl;
-    struct IClass *superClassPtr;
-    CONST_STRPTR superClassID = NULL;
-
-    if (strcmp(desc->supername, ROOTCLASS) == 0)
-    {
-        superClassID  = desc->supername;
-        superClassPtr = NULL;
-    }
-    else
-    {
-        superClassID  = NULL;
-        superClassPtr = MUI_GetClass((char *)desc->supername);
-        if (!superClassPtr)
-            return NULL;
-    }
-
-    if (!(cl = MakeClass((STRPTR)desc->name, (STRPTR)superClassID, superClassPtr, desc->datasize, 0)))
-	return NULL;
-
-#ifdef __MAXON__
-    cl->cl_Dispatcher.h_Entry = desc->dispatcher;
-#else
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC)metaDispatcher;
-    cl->cl_Dispatcher.h_SubEntry = desc->dispatcher;
-#endif
-    cl->cl_Dispatcher.h_Data = MUIMasterBase;
-    return cl;
-}
-
-
-/**************************************************************************
- Create a builtin class and all its superclasses.
-**************************************************************************/
-struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase)
-{
-    int i;
-
-    for (i = 0 ; i < NUM_BUILTINS ; i++)
-    {
-	const struct __MUIBuiltinClass *builtin = builtins[i];
-
-	/* found the class to create */
-	if (!strcmp(builtin->name, className))
-	{
-	    return builtin_to_public_class(builtin,MUIMasterBase);
-	}
-    }
-    return NULL;
-}
 
