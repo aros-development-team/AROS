@@ -58,9 +58,6 @@
 
     INTERNALS
 
-    HISTORY
-	16-10-95    created by M. Fleischer
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

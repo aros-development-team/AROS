@@ -68,8 +68,6 @@
 	This function must be replaced in the $(KERNEL) or $(ARCH)
 	directories in order to do some work.
 
-    HISTORY
-
 ******************************************************************************/
 {
 #undef Exec

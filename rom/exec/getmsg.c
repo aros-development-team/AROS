@@ -44,8 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -66,5 +64,5 @@
     ASSERT_VALID_PTR_OR_NULL(msg);
     return msg;
     AROS_LIBFUNC_EXIT
-}
+} /* GetMsg() */
 

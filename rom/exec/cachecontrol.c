@@ -63,8 +63,6 @@
 	This function requires replacing in $(KERNEL), or possibly
 	even $(ARCH) in some cases.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -53,8 +53,6 @@
 	Although it is not necessary, but it could be more efficient if
 	this function was replaced by a function in $(KERNEL).
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

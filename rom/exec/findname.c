@@ -51,10 +51,6 @@
 
     INTERNALS
 
-    HISTORY
-	26-08-95    digulla created after EXEC-Routine
-	26-10-95    digulla adjusted to new calling scheme
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

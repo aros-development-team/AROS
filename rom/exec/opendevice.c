@@ -73,8 +73,6 @@ char *const inputname = "input.device";
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -50,10 +50,6 @@
 
     INTERNALS
 
-    HISTORY
-	18-09-95    created by m. fleischer
-	15-10-95    more consistency checks added
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

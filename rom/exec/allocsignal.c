@@ -50,8 +50,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -116,5 +114,5 @@
 
     return signalNum;
     AROS_LIBFUNC_EXIT
-}
+} /* AllocSignal() */
 

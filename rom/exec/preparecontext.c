@@ -55,8 +55,6 @@
     INTERNALS
 	This function is required to be implemented in the $(KERNEL).
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -36,10 +36,6 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    exec_lib.fd and clib/exec_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

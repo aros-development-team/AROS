@@ -46,8 +46,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -129,5 +127,5 @@
 
     Enable();
     AROS_LIBFUNC_EXIT
-}
+} /* Signal() */
 

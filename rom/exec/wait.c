@@ -48,8 +48,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -106,5 +104,5 @@
 
     return rcvd;
     AROS_LIBFUNC_EXIT
-}
+} /* Wait() */
 

@@ -60,8 +60,6 @@
     INTERNALS
 	This function should be replaced by a function in $(KERNEL).
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -44,8 +44,6 @@
     INTERNALS
 	For extra details see Supervisor().
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -56,8 +56,6 @@
 	in your $(KERNEL) directory. Otherwise this function is
 	satisfactory.
 
-    HISTORY
-
 ******************************************************************************/
 {
 #undef Exec

@@ -40,8 +40,6 @@
     INTERNALS
 	Undo SuperState()
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
