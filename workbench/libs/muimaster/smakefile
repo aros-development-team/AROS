@@ -46,6 +46,7 @@ CLASSESOBJS= \
   objs/classes/numeric.o \
   objs/classes/prop.o \
   objs/classes/rectangle.o \
+  objs/classes/scrollbar.o \
   objs/classes/string.o \
   objs/classes/slider.o \
   objs/classes/window.o \
@@ -192,6 +193,9 @@ objs/classes/window.o: classes/window.c
 
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/scrollbar.o: classes/scrollbar.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbar.c objname=$@
 
 objs/classes/string.o: classes/string.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/string.c objname=$@
