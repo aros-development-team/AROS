@@ -1625,9 +1625,9 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
 
 		    	HIDD_BM_ConvertPixels(o,
 			    	    	      &srcPixels,
-					      data->prot.pixfmt,
+					      (HIDDT_PixelFormat *)data->prot.pixfmt,
 					      0,
-			    	    	      &pixarray,
+			    	    	      (APTR *)&pixarray,
 					      (HIDDT_PixelFormat *)dstpf,
 			    	    	      msg->modulo,
 					      msg->width,
@@ -1654,9 +1654,8 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
     ULONG   	    	    old_fg;
     LONG    	    	    bpp;
-    struct HIDDBitMapData   *data;
-    
-    OOP_Object *gc = msg->gc;
+    struct HIDDBitMapData   *data;   
+    OOP_Object	    	    *gc = msg->gc;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -1730,11 +1729,11 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
 		    for(y = 0; y < msg->height; y++)
 		    {
 		    	HIDD_BM_ConvertPixels(o,
-			    	    	      &pixarray,
+			    	    	      (APTR *)&pixarray,
 					      (HIDDT_PixelFormat *)srcpf,
 			    	    	      msg->modulo,
 					      &destPixels,
-					      data->prot.pixfmt,
+					      (HIDDT_PixelFormat *)data->prot.pixfmt,
 					      0,
 					      msg->width,
 					      1,
@@ -1758,6 +1757,93 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
     } /* switch(msg->pixFmt) */
         
     ReturnVoid("BitMap::PutImage");
+}
+
+/****************************************************************************************/
+
+static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_PutImageLUT *msg)
+{
+    WORD    	    	    x, y;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    HIDDT_PixelLUT  	    *pixlut = msg->pixlut;
+    HIDDT_Pixel     	    *lut = pixlut ? pixlut->pixels : NULL;
+    HIDDT_Pixel     	    *linebuf;
+    struct HIDDBitMapData   *data;  
+    OOP_Object      	    *gc = msg->gc;
+    
+    data = OOP_INST_DATA(cl, o);
+    
+    EnterFunc(bug("BitMap::PutImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+    
+    linebuf = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
+    
+    for(y = 0; y < msg->height; y++)
+    {
+    	if (linebuf)
+	{
+    	    if (lut)
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+    	    	    linebuf[x] = lut[pixarray[x]];
+		}
+	    }
+	    else
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+    	    	    linebuf[x] = pixarray[x];
+		}
+	    }
+	    pixarray += msg->modulo;
+	    
+	    HIDD_BM_PutImage(o,
+	    	    	     msg->gc,
+			     (UBYTE *)linebuf,
+			     0,
+			     msg->x,
+			     msg->y + y,
+			     msg->width,
+			     1,
+			     vHidd_StdPixFmt_Native32);
+	    
+	} /* if (linebuf) */
+	else
+	{
+	    ULONG old_fg;
+
+	    /* Preserve old fg pen */
+	    old_fg = GC_FG(gc);
+
+    	    if (lut)
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+		    GC_FG(gc) = lut[pixarray[x]];		    
+    	    	    HIDD_BM_DrawPixel(o, gc, msg->x + x, msg->y + y);
+		}
+	    }
+	    else
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+		    GC_FG(gc) = pixarray[x];
+    	    	    HIDD_BM_DrawPixel(o, gc, msg->x + x, msg->y + y);
+		}
+	    }
+	    GC_FG(gc) = old_fg;
+	    
+	    pixarray += msg->modulo;
+	    
+	} /* if (linebuf) else ... */
+	
+    } /* for(y = 0; y < msg->height; y++) */
+    
+    if (linebuf) FreeVec(linebuf);
+    
+    ReturnVoid("BitMap::PutImageLUT");
 }
 
 /****************************************************************************************/
@@ -2037,7 +2123,6 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o,
     ULONG   	    	    dys = bsa->bsa_SrcHeight;
     LONG    	    	    accuyd = - (dys >> 1);
     LONG    	    	    accuxd = - (dxs >> 1);
-    ULONG   	    	    this_x;
     ULONG   	    	    y;
     HIDDT_Color     	    col;
     HIDDT_PixelFormat 	    *srcpf, *dstpf;
@@ -2172,7 +2257,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 #define SysBase     	    (csd->sysbase)
 
 #define NUM_ROOT_METHODS    4
-#define NUM_BITMAP_METHODS  25
+#define NUM_BITMAP_METHODS  26
 
 /****************************************************************************************/
 
@@ -2203,6 +2288,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	    },
         {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		    },
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
+	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
         {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	    },
