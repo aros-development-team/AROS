@@ -1892,9 +1892,10 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %(mmake)-%(subpackage)-make-package :
 	@$(ECHO) "Building \`$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar.bz2'" && \
 	cd $(%(mmake)-%(subpackage)-package-dir) && \
-	tar cvfj $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar.bz2 * && \
+	tar --remove-files -cvf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar * && \
         mkdir -p "%(prefix)" && \
-        cp -a * "%(prefix)"/ && \
+        tar -xvf $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar -C "%(prefix)"/ && \
+        bzip2 -9 -f $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.tar && \
         cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase)
 
 %end
