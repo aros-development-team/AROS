@@ -4,14 +4,17 @@
 #include <libraries/mui.h>
 
 /*** Name *******************************************************************/
-#define MUIC_PreferencesWindow  "PreferencesWindow.mcc"
+#define MUIC_PreferencesWindow          "PreferencesWindow.mcc"
+
+/*** Identifier base ********************************************************/
+#define MUIB_PreferencesWindow          (MUIB_AROS | 0x00000200)
 
 /*** Methods ****************************************************************/
-#define MUIM_PreferencesWindow_Test     (MUIB_MUI|0x00426801)
-#define MUIM_PreferencesWindow_Revert   (MUIB_MUI|0x00426802)
-#define MUIM_PreferencesWindow_Save     (MUIB_MUI|0x00426803)
-#define MUIM_PreferencesWindow_Use      (MUIB_MUI|0x00426804)
-#define MUIM_PreferencesWindow_Cancel   (MUIB_MUI|0x00426805)
+#define MUIM_PreferencesWindow_Test     (MUIB_PreferencesWindow | 0x00000000)
+#define MUIM_PreferencesWindow_Revert   (MUIB_PreferencesWindow | 0x00000001)
+#define MUIM_PreferencesWindow_Save     (MUIB_PreferencesWindow | 0x00000002)
+#define MUIM_PreferencesWindow_Use      (MUIB_PreferencesWindow | 0x00000003)
+#define MUIM_PreferencesWindow_Cancel   (MUIB_PreferencesWindow | 0x00000004)
 
 /*** Macros *****************************************************************/
 #define PreferencesWindowObject MUIOBJMACRO_START(MUIC_PreferencesWindow)
