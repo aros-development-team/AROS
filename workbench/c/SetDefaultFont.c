@@ -113,7 +113,7 @@ static void GetArguments(void)
     }
     
     fontname   = (char *)args[ARG_FONTNAME];
-    fontsize   = args[ARG_FONTSIZE];
+    fontsize   = *(IPTR *)args[ARG_FONTSIZE];
     screenfont = args[ARG_SCREEN] ? TRUE : FALSE;
 }
 
