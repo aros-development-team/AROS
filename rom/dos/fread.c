@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2000/11/23 19:59:37  SDuvan
+    Added SetIoErr(0) before operation
+
     Revision 1.4  1999/05/10 19:10:21  hkiel
     Always return the number of (complete) blocks read.
 
@@ -68,31 +71,36 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+
     ULONG   read;
     ULONG   len;
-    UBYTE * ptr;
+    UBYTE  *ptr;
     LONG    c;
 
     ptr = block;
     len = 0;
 
-    for (read=0; read<number; read++)
-    {
-	for (len=blocklen; len--; )
-	{
-	    c = FGetC (fh);
+    SetIoErr(0);
 
-	    if (c < 0)
+    for(read = 0; read < number; read++)
+    {
+	for(len = blocklen; len--; )
+	{
+	    c = FGetC(fh);
+
+	    if(c < 0)
 		goto finish;
 
 	    *ptr ++ = c;
 	}
     }
 finish:
-    if( read==0 && len==blocklen )
+    if(read == 0 && len == blocklen)
     {
         return EOF;
     }
+
     return read;
+
     AROS_LIBFUNC_EXIT
 } /* FRead */

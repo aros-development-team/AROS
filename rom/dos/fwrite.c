@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  2000/11/23 19:59:37  SDuvan
+    Added SetIoErr(0) before operation
+
     Revision 1.3  1998/10/20 16:44:38  hkiel
     Amiga Research OS
 
@@ -64,22 +67,26 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+
     ULONG   written;
     ULONG   len;
-    UBYTE * ptr;
+    UBYTE  *ptr;
 
     ptr = block;
     len = 0;
 
-    for (written=0; written<number; written++)
+    SetIoErr(0);
+
+    for(written = 0; written < number; written++)
     {
-	for (len=blocklen; len--; )
+	for(len = blocklen; len--; )
 	{
-	    if (FPutC (fh,*ptr++) < 0)
+	    if(FPutC(fh, *ptr++) < 0)
 		return EOF;
 	}
     }
-
+    
     return written;
+
     AROS_LIBFUNC_EXIT
 } /* FWrite */
