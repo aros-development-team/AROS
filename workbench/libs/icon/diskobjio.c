@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Read an icon from an .info file
@@ -310,9 +310,15 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 	size >>= 1;
 
 	for (t=0; t<size; t++)
-	    if (!ReadWord (streamhook, &image->ImageData[t], file))
+	{
+	    UWORD data;
+	    	    
+	    if (!ReadWord (streamhook, &data, file))
 		break;
-
+		
+	    image->ImageData[t] = AROS_WORD2BE(data);
+    	}
+	
 	if (t != size)
 	{
 	    FreeStruct (image, ImageDesc);
@@ -345,9 +351,13 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
 #endif
 
     for (t=0; t<size; t++)
-	if (!WriteWord (streamhook, image->ImageData[t], file))
+    {
+    	UWORD data = image->ImageData[t];
+	
+	if (!WriteWord (streamhook, AROS_WORD2BE(data), file))
 	    break;
-
+    }
+    
     return (t == size);
 } /* WriteImage */
 
