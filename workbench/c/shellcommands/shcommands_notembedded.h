@@ -11,10 +11,10 @@
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #    define AMIGANATIVETRICK            \
-     asm("\t.text                 \n"   \
-         "\tmove.l	4.w,a6    \n"   \
-	 "\tjra	_detach_entry(pc) \n"); 
-#else
+     asm("\t.text                  \n"  \
+         "\tmove.l	4.w,a6     \n"  \
+	 "\tjra		_entry(pc) \n");
+#endif
 #    define AMIGANATIVETRICK
 #endif
 
