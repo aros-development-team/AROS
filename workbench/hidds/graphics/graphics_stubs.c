@@ -31,7 +31,11 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
-#define STATIC_MID static OOP_MethodID mid
+#ifndef CREATE_ROM
+#  define STATIC_MID static OOP_MethodID mid
+#else
+#  define STATIC_MID OOP_MethodID mid = 0
+#endif
 
 /* A small utility function for using varargs when setting attrs */
 
