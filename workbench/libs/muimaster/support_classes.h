@@ -194,6 +194,12 @@
 #   define ZUNE_LEVELMETER_DESC
 #endif
 
+#if ZUNE_BUILTIN_KNOB
+#   define ZUNE_KNOB_DESC (&_MUI_Knob_desc),
+#else
+#   define ZUNE_KNOB_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);

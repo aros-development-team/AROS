@@ -31,6 +31,7 @@ MAKE_BUILTIN_POPLIST	   := no
 MAKE_BUILTIN_POPSCREEN	   := no
 MAKE_BUILTIN_CRAWLING	   := no
 MAKE_BUILTIN_LEVELMETER	   := no
+MAKE_BUILTIN_KNOB	   := no
 
 CLASSES := \
     application \
@@ -340,6 +341,14 @@ ifeq ($(MAKE_BUILTIN_LEVELMETER),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) levelmeter
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_LEVELMETER=0
+endif
+
+ifeq ($(MAKE_BUILTIN_KNOB),yes)
+    CLASSES     := $(CLASSES) knob
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_KNOB=1
+else
+    EXTCLASSES  := $(EXTCLASSES) knob
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_KNOB=0
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
