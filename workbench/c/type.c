@@ -266,7 +266,7 @@ int main (int argc, char ** argv)
 	    if(in->fd)
 	    {
 		in->cnt=0;
-		if(args[3])
+		if(args[3] || 0 == strcmp(args[2], "h"))
 		    hexdumpfile(in,out);
 		else
 		    dumpfile(in,out);
