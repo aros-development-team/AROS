@@ -174,7 +174,24 @@ LX11
 
 	    D(bug("Calling XMapRaised\n"));
 
-	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
+/*
+  stegerg: XMapRaised is now called inside the X11 task when getting
+           the NOTY_MAPWINDOW message, otherwise the X11 task can
+	   get a "dead" MapNotify event:
+	   
+	   XCreateWindow is called here on the app task context.
+	   If we also call XMapRaised here then the X11 task might
+	   get the MapNotify event before he got the NOTY_WINCREATE
+	   message sent from here (see below). So the X11 task
+	   would not know about our window and therefore ignore
+	   the MapNotify event from X.
+	   
+	   This caused the freezes which sometimes happened during
+	   startup when the Workbench screen was opened.
+	   
+	   //XMapRaised (GetSysDisplay(), DRAWABLE(data));
+*/
+
 UX11	    
 	    /* Now we need to get some message from the X11 task about when
 	       the window has been mapped (ie. MapWindow event).
@@ -192,6 +209,7 @@ UX11
 	    	XGCValues gcval;
 		/* Send a message to the x11 task that the window has been created */
 		msg->notify_type = NOTY_WINCREATE;
+		msg->xdisplay = GetSysDisplay();
 		msg->xwindow = DRAWABLE(data);
 		msg->bmobj = o;
 		msg->execmsg.mn_ReplyPort = port;
@@ -207,6 +225,7 @@ UX11
 		
 		/* Send a message to the X11 task to ask when the window has been mapped */
 		
+   		msg->xdisplay = GetSysDisplay();
 		msg->xwindow = DRAWABLE(data);
 		msg->notify_type = NOTY_MAPWINDOW;
 		msg->execmsg.mn_ReplyPort = port;
@@ -304,6 +323,7 @@ UX11
 	}
 	
 	msg->notify_type = NOTY_WINDISPOSE;
+   	msg->xdisplay = GetSysDisplay();
 	msg->xwindow = DRAWABLE(data);
 	msg->execmsg.mn_ReplyPort = port;
 	

@@ -411,9 +411,12 @@ D(bug("Got input from unixio\n"));
 		    break; }
 		
 		case NOTY_MAPWINDOW: {
-		    BOOL found = FALSE;
+		    /* BOOL found = FALSE; */
 		    struct xwinnode *node;
 		    
+	            XMapRaised (nmsg->xdisplay, nmsg->xwindow);
+
+		    #if 0 /* stegerg: this was, when XMapRaised was still called in onbitmap.c */
 		    
 		    /* If the window has allready been mapped, then just reply the message */
 		    ForeachNode(&xwindowlist, node) {
@@ -426,10 +429,11 @@ D(bug("Got input from unixio\n"));
 		    
 		    }
 		    
-		    if (!found) {
-			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
-			
-		    }
+		    #endif
+		    
+		    /*if (!found) {*/
+			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
+		    /*}*/
 		    
 		    /* Do not reply message yet */
 		    break; }

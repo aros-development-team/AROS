@@ -128,7 +128,7 @@ struct notify_msg {
      struct Message execmsg;
      
      ULONG notify_type; /* NOTY_xxxx */
-     
+     Display *xdisplay;     
      Window xwindow;
      Object *bmobj;
 };
