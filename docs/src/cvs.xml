@@ -55,7 +55,7 @@ password as follows:</p>
 
 <p>Get the demo for AmiTCP 4.0 (<filename>AmiTCP-demo-40.lha</filename>
 in <filename>comm/tcp</filename>) from 
-<a href="http://www.aminet.net/">AmiNET</a>
+<a href="http://www.aminet.net/~aminet/">AmiNET</a>
 (no need to install AmiTCP; just get the archive and extract the file
 <filename>AmiTCP</filename> from it).
 You also must have
@@ -64,7 +64,7 @@ You also must have
 Then you can create
 your password with <filename>crypt</filename> out of the 
 <filename>AROS-crypt.lha</filename>
-archive from AmiNET (in <filename>dev/misc</filename>) like this:</p>
+archive from AmiNET (in <filename>emu/misc</filename>) like this:</p>
 
 <example>
 <line><prompt/><user>run amitcp:amitcp</user></line>
