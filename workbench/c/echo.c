@@ -10,47 +10,48 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <string.h>
+#include "shcommands.h"
 
-static const char version[] = "$VER: echo 41.1 (14.3.1997)\n";
 
-int __nocommandline = 1;
-
-int main (void)
+AROS_SH5(Echo, 41.1, 14.3.1997,
+AROS_SHA(,STRING,/M,   NULL),
+AROS_SHA(,NOLINE,/S,   FALSE),
+AROS_SHA(,FIRST, /K/N, NULL),
+AROS_SHA(,LEN,   /K/N, NULL),
+AROS_SHA(,TO,    /K,   NULL))
 {
-    IPTR args[5]={ 0, 0, 0, 0, 0 };
-    struct RDArgs *rda;
+    AROS_SHCOMMAND_INIT
+
     STRPTR *a, b;
     ULONG l, max=~0ul;
     BPTR out=Output();
     LONG error=0;
-#define ERROR(a) { error=a; goto end; }
 
-    rda=ReadArgs("/M,NOLINE/S,FIRST/K/N,LEN/K/N,TO/K",args,NULL);
-    if(rda==NULL)
-	ERROR(RETURN_FAIL);
+    #define ERROR(a) { error=a; goto end; }
 
-    if(args[3])
-	max=*(ULONG *)args[3];
+    if(SHArg(LEN))
+	max=*(ULONG *)SHArg(LEN);
 
-    if(args[4])
+    if(SHArg(TO))
     {
-	out=Open((STRPTR)args[4],MODE_NEWFILE);
+	out=Open((STRPTR)SHArg(TO),MODE_NEWFILE);
 	if(!out)
 	    ERROR(RETURN_ERROR);
     }
 
-    a=(STRPTR *)args[0];
+    a=(STRPTR *)SHArg(STRING);
     while(*a!=NULL)
     {
 	b=*a;
-	while(*b++)
-	    ;
+	while(*b++);
+
 	l=b-*a-1;
 	b=*a;
-	if(args[2]&&*(ULONG *)args[2])
+	if(SHArg(FIRST)&&*(ULONG *)SHArg(FIRST))
 	{
-	    if(*(ULONG *)args[2]-1<l)
-		b+=*(ULONG *)args[2]-1;
+	    if(*(ULONG *)SHArg(FIRST)-1<l)
+		b+=*(ULONG *)SHArg(FIRST)-1;
 	    else
 		b+=l;
 	}else
@@ -65,19 +66,18 @@ int main (void)
 	    if(FPutC(out,' ')<0)
 		ERROR(RETURN_ERROR);
     }
-    if(!args[1])
+    if(!SHArg(NOLINE))
 	if(FPutC(out,'\n')<0)
 	    ERROR(RETURN_ERROR);
     if(!Flush(out))
 	ERROR(RETURN_ERROR);
 end:
-    if(args[4])
+    if(SHArg(TO) && out)
 	Close(out);
-    if (rda)
-        FreeArgs(rda);
-    if(error)
-	PrintFault(IoErr(),"Echo");
-    return error;
+
+    SHReturn(error);
+
+    AROS_SHCOMMAND_EXIT
 }
 
 
