@@ -121,3 +121,4 @@ BOOPSI_DISPATCHER(IPTR, desktopDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

@@ -224,3 +224,4 @@ BOOPSI_DISPATCHER(IPTR, desktopObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

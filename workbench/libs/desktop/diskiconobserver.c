@@ -174,3 +174,4 @@ BOOPSI_DISPATCHER(IPTR, diskIconObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

@@ -339,7 +339,7 @@ BOOPSI_DISPATCHER(IPTR, abstractIconContainerDispatcher, cl, obj, msg)
 
     return retval;
 }
-
+BOOPSI_DISPATCHER_END
 
 
 

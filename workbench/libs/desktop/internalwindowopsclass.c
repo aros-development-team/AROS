@@ -158,3 +158,4 @@ BOOPSI_DISPATCHER(IPTR, internalWindowOpsDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

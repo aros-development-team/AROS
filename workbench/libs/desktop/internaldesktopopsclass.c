@@ -139,3 +139,4 @@ BOOPSI_DISPATCHER(IPTR, internalDesktopOpsDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END

@@ -55,6 +55,8 @@ struct DesktopBase *DesktopBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, desktopbase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
 /*
    This function is single-threaded by exec by calling Forbid. If you break
    the Forbid() another task may enter this function at the same time. Take
@@ -85,11 +87,15 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, desktopbase)
    You would return NULL here if the init failed. 
  */
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     struct DesktopOperation *dob;
     struct List    *subList;
 
@@ -392,11 +398,15 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
    You would return NULL if the open failed. 
  */
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Close, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
        This function is single-threaded by exec by calling Forbid. If you
        break the Forbid() another task may enter this function at the same
@@ -409,10 +419,14 @@ AROS_SET_LIBFUNC(Close, LIBBASETYPE, LIBBASE)
     D(bug("*** Exiting DesktopBase::close...\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     struct DesktopOperation *dob;
 
 /*
@@ -478,6 +492,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
         CloseDevice(&DesktopBase->db_InputIO);
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

@@ -247,3 +247,4 @@ BOOPSI_DISPATCHER(IPTR, iconContainerObserverDispatcher, cl, obj, msg)
 
     return retval;
 }
+BOOPSI_DISPATCHER_END
