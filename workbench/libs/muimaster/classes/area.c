@@ -34,8 +34,9 @@ extern struct Library *MUIMasterBase;
 #include "support.h"
 #include "imspec.h"
 #include "menu.h"
+#include "prefs.h"
 
-//#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #ifdef _AROS
@@ -393,8 +394,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mad_hiehn.ehn_Object   = obj;
     data->mad_hiehn.ehn_Class    = 0;
 
-    D(bug("muimaster.library/area.c: Area Object created at 0x%lx\n",obj));
-    D(bug("muimaster.library/area.c: frame %ld\n",data->mad_Frame));
+/*      D(bug("Area_New(0x%lx) frame=%d\n",obj, data->mad_Frame)); */
 
     return (ULONG)obj;
 }
@@ -837,7 +837,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Rectangle mrect, current;
     //APTR areaclip;
 
-    D(bug("muimaster.library/area.c: Draw Area Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+/*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
     if (msg->flags & MADF_DRAWALL)
 	msg->flags |= MADF_DRAWOBJECT;
@@ -1795,6 +1795,9 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data)
     {
 	data->mad_subheight = CLAMP(data->mad_addtop + frame->innerBottom  + zframe->ythickness, 0, 127);
     }
+
+/*      D(bug("area_update_data(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
+/*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
 #ifndef _AROS
