@@ -56,6 +56,8 @@ static struct OOP_ABDescr attrbases[] =
 #define OnBitmap 1
 #include "bitmap_common.c"
 
+void nv_free_onbmclass(struct nv_staticdata *nsd);
+
 /*********** BitMap::New() *************************************/
 
 static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
