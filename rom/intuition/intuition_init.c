@@ -60,9 +60,12 @@ struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitStrGClass (struct LIBBASETYPE * LIBBASE);
 
+struct IClass *InitMenuBarLabelClass (struct LIBBASETYPE * LIBBASE);
+
 struct IClass *InitDragBarClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitSizeButtonClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitTitleBarButClass (struct LIBBASETYPE * LIBBASE);
+
 
 int Intuition_entry(void)
 {
@@ -152,6 +155,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
     InitPropGClass (LIBBASE);    /* After GADGETCLASS */
     InitStrGClass (LIBBASE);    /* After GADGETCLASS */
+    
+    InitMenuBarLabelClass (LIBBASE); /* After IMAGECLASS */
     
     GetPrivIBase(LIBBASE)->dragbarclass = InitDragBarClass (LIBBASE); /* After GADGETCLASS */
     if (!GetPrivIBase(LIBBASE)->dragbarclass)
