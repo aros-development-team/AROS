@@ -328,16 +328,9 @@ AROS_LH2(struct rootfsbase *, init,
     rootfsbase->sysbase=sysBase;
     rootfsbase->seglist=segList;
 
-    rootfsbase->replyport=CreateMsgPort();
-    if (!rootfsbase->replyport)
-    	return NULL;
-
     rootfsbase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(!rootfsbase->dosbase)
-    {
-    	DeleteMsgPort(rootfsbase->replyport);
 	return NULL;
-    }
 
     return rootfsbase;
     AROS_LIBFUNC_EXIT
@@ -421,7 +414,6 @@ AROS_LH0(BPTR, expunge, struct rootfsbase *, rootfsbase, 3, rootfs_handler)
 
     /* Free all resources */
     CloseLibrary((struct Library *)rootfsbase->dosbase);
-    DeleteMsgPort(rootfsbase->replyport);
 
     /* Get rid of the device. Remove it from the list. */
     Remove(&rootfsbase->device.dd_Library.lib_Node);
