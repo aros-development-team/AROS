@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= libexec
-USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport arosc arosm
+USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
