@@ -140,57 +140,54 @@ IPTR desktopObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
     IPTR            retval = 0;
     ULONG           i;
     Object         *newIcon;
-    struct TagItem *iconTags;
     ULONG           kind;
 
-// struct DesktopObserverClassData *data;
+    // struct DesktopObserverClassData *data;
 
     for (i = 0; i < msg->wsr_Results; i++)
     {
-        iconTags = AllocVec(5 * sizeof(struct TagItem), MEMF_ANY);
-        iconTags[0].ti_Tag = IA_DiskObject;
-        iconTags[0].ti_Data = msg->wsr_ResultsArray[i].sr_DiskObject;
-        iconTags[1].ti_Tag = IA_Label;
-        iconTags[1].ti_Data = msg->wsr_ResultsArray[i].sr_Name;
-    // iconTags[2].ti_Tag=IA_Directory;
-    // iconTags[2].ti_Data=data->directory;
-        iconTags[2].ti_Tag = MUIA_Draggable;
-        iconTags[2].ti_Data = TRUE;
-        iconTags[3].ti_Tag = IA_Desktop;
-        iconTags[3].ti_Data = _presentation(obj);
-        iconTags[4].ti_Tag = TAG_END;
-        iconTags[4].ti_Data = 0;
-
         switch (msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
         {
             case WBDISK:
                 kind = CDO_DiskIcon;
                 break;
+                
             case WBDRAWER:
                 kind = CDO_DrawerIcon;
                 break;
+            
             case WBTOOL:
                 kind = CDO_ToolIcon;
                 break;
+            
             case WBPROJECT:
                 kind = CDO_ProjectIcon;
                 break;
+            
             case WBGARBAGE:
                 kind = CDO_TrashcanIcon;
                 break;
+            
             case WBDEVICE:
-                break;
             case WBKICK:
-                break;
             case WBAPPICON:
-                break;
             default:
-            // something serious has gone wrong here
-                break;
+                continue; /* skip unknown diskobject types */
         }
 
-        newIcon = CreateDesktopObjectA(kind, iconTags);
-        FreeVec(iconTags);
+        newIcon = CreateDesktopObject
+        (
+            kind, 
+        
+            IA_DiskObject,  msg->wsr_ResultsArray[i].sr_DiskObject,
+            IA_Label,       msg->wsr_ResultsArray[i].sr_Name,
+            IA_Desktop,     _presentation(obj),            
+            // IA_Directory,   data->directory,
+            MUIA_Draggable, TRUE,
+            
+            TAG_DONE
+        );
+        
         DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
     }
 
