@@ -338,7 +338,8 @@ lparent: 403e7490, l->parent: 403e7490
     if(!(screenPtr = LockPubScreen(NULL)))
      kprintf("Warning: LockPubScreen() failed!\n");
 
-    printf("Width = %d Height = %d\n", screenPtr->Width, screenPtr->Height);
+/*    printf("Width = %d Height = %d\n", screenPtr->Width, screenPtr->Height);
+*/ commented out, because it is unnecessary an opens a shell just to print!!!
 
     win = OpenWindowTags(0, WA_Left, 0,
 			    WA_Top, 0,
@@ -363,7 +364,7 @@ lparent: 403e7490, l->parent: 403e7490
 	for(i = 0;i < num_stars;i++)
 	{
 	    star_x[i] = myrand() * scrwidth / MY_RAND_MAX;
-	    star_y[i] = myrand() * scrheight / MY_RAND_MAX;
+	    star_y[i] = 1 + (myrand() * scrheight) -2 / MY_RAND_MAX;
 	    star_speed[i] = 1 + myrand() * 3 / MY_RAND_MAX;
 	    if (star_speed[i] < 2)
 	    {
