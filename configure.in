@@ -463,7 +463,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
-		aros_flavour="ppnative"
+		aros_flavour="nativecompat"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
 		aros_kernel_ldflags=""
 		aros_default_wbwidth=160
