@@ -126,6 +126,7 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, PopaslObject,
 			       MUIA_Popasl_Type, ASL_FontRequest,
 			       MUIA_Popstring_String, d.knob_font_string = StringObject,
+			       MUIA_CycleChain, 1,
 			       StringFrame, End,
 			       MUIA_Popstring_Button, PopButton(MUII_PopUp),
 			       End,

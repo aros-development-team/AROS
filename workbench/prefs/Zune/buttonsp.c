@@ -39,11 +39,6 @@ struct MUI_ButtonsPData
     Object *imagebutton_popframe;
 };
 
-static Object*MakeSpacingSlider (void)
-{
-    return MUI_MakeObject(MUIO_Slider, "", 0, 9);
-}
-
 static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ButtonsPData *data;
@@ -80,6 +75,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
 		    MUIA_Popstring_String, d.text_font_string = StringObject,
+		                                   MUIA_CycleChain, 1,
 						   StringFrame, End,
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
@@ -116,7 +112,8 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	  	   Child, d.checkmark_look_popimage =
 		     NewObject(CL_ImageClipboard->mcc_Class, NULL,
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-		     MUIA_Draggable, TRUE, 
+		     MUIA_Draggable, TRUE,
+		     MUIA_CycleChain, 1,
 		     MUIA_MaxWidth, 28,
 		     MUIA_MaxHeight, 28,
 		     MUIA_Imagedisplay_FreeHoriz, FALSE,
@@ -136,6 +133,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			 NewObject(CL_ImageClipboard->mcc_Class, NULL,
 		         MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
 			 MUIA_Draggable, TRUE, 
+		         MUIA_CycleChain, 1,
 		         MUIA_MaxWidth, 28,
 			 MUIA_Imagedisplay_FreeHoriz, FALSE,
 			 MUIA_Imagedisplay_FreeVert, FALSE,

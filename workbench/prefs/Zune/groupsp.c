@@ -59,21 +59,16 @@ static CONST_STRPTR color_labels[] =
 };
 
 
-static Object*MakeSpacingSlider (void)
-{
-    return MUI_MakeObject(MUIO_Slider, "", 0, 9);
-}
-
-
 static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupsPData *data;
     struct MUI_GroupsPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-			       MUIA_Group_SameWidth, TRUE,
-			       MUIA_Group_Columns, 2,
+	    MUIA_Group_SameSize, TRUE,
+	    MUIA_Group_Columns, 2,
 	    Child, ColGroup(2),
+		MUIA_Group_VertSpacing, 2,
 		GroupFrameT("Title"),
 		    Child, HVSpace,
 		    Child, HVSpace,
@@ -109,6 +104,7 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	           End,
 							 End, /* Frame */
 	    Child, ColGroup(2),
+		MUIA_Group_VertSpacing, 2,
 		GroupFrameT("Spacing"),
 	        Child, HVSpace,
 	        Child, HVSpace,
@@ -144,6 +140,9 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     *data = d;
+    set(data->title_position_cycle, MUIA_CycleChain, 1);
+    set(data->title_color_cycle, MUIA_CycleChain, 1);
+    set(data->font_title_string, MUIA_CycleChain, 1);
 
     return (IPTR)obj;
 }

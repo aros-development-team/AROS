@@ -49,6 +49,15 @@ LONG xget(Object * obj, ULONG attr)
     return x;
 }
 
+Object *MakeSpacingSlider (void)
+{
+    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
+    if (obj)
+	set(obj, MUIA_CycleChain, 1);
+    return obj;
+}
+
+
 Object *MakeBackgroundPopimage(void)
 {
     return NewObject(CL_ImageClipboard->mcc_Class, NULL,

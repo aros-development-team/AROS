@@ -100,6 +100,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       End, /* Cycle Gadget Design */
 			       Child, HGroup,
 			       Child, ColGroup(2),
+			       MUIA_Group_VertSpacing, 2,
 			       GroupFrameT("Popup Menu Control"),
 			       Child, HVSpace,
 			       Child, HVSpace,
@@ -115,6 +116,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, HVSpace,
 			       End, /* Popup Menu Control */
 			       Child, VGroup,
+			       MUIA_Group_VertSpacing, 2,
 			       GroupFrameT("Popup Menu Design"),
 			       Child, HGroup,
 			       MUIA_Group_SameWidth, TRUE,
@@ -149,6 +151,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     *data = d;
+    set(data->menu_position_cycle, MUIA_CycleChain, 1);
 
     return (IPTR)obj;
 }
