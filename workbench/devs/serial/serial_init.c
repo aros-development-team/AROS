@@ -179,8 +179,6 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
     }
   }
     
-  SerialDevice->device.dd_Library.lib_OpenCnt=1;
-
   NEWLIST(&SerialDevice->UnitList);
   return (SerialDevice);
   AROS_USERFUNC_EXIT
@@ -212,8 +210,6 @@ AROS_LH3(void, open,
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
   /* I have one more opener. */
-  SerialDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-  SerialDevice->device.dd_Library.lib_OpenCnt ++;
 
   /* In the list of available units look for the one with the same 
      UnitNumber as the given one  */
@@ -266,7 +262,6 @@ AROS_LH3(void, open,
             AddHead(&SerialDevice->UnitList, (struct Node *)SU);
 
             ioreq->io_Error  = 0;
- 
             return;
           }
 
@@ -307,6 +302,12 @@ AROS_LH3(void, open,
         ioreq->io_Error = SerErr_DevBusy;
       }
     }
+  }
+  
+  if (ioreq->io_Error == 0)
+  {
+      SerialDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+      SerialDevice->device.dd_Library.lib_OpenCnt ++;    
   }
   
   return;
@@ -360,6 +361,19 @@ AROS_LH1(BPTR, close,
   /* Let any following attemps to use the device crash hard. */
   ioreq->io_Device=(struct Device *)-1;
   
+  SerialDevice->device.dd_Library.lib_OpenCnt --;    
+  
+  if (SerialDevice->device.dd_Library.lib_OpenCnt == 0)
+  {
+    if (SerialDevice->device.dd_Library.lib_Flags & LIBF_DELEXP)
+    {
+    	#define expunge() \
+    	    AROS_LC0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
+
+      return expunge();
+    }
+  }
+  
   return 0;
   AROS_LIBFUNC_EXIT
 }
@@ -371,6 +385,14 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
 {
     AROS_LIBFUNC_INIT
 
+    BPTR ret = 0;
+
+    if (SerialDevice->device.dd_Library.lib_OpenCnt)
+    {
+    	SerialDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
+	return 0;
+    }
+    
     if (NULL != SerialDevice->SerialObject)
     {
       /*
@@ -384,9 +406,16 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
       SerialDevice->SerialObject = NULL;
     }
   
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    SerialDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-    return 0;
+    Remove(&SerialDevice->device.dd_Library.lib_Node);
+    
+    ret = SerialDevice->seglist;
+    
+    FreeMem((char *)SerialDevice - SerialDevice->device.dd_Library.lib_NegSize,
+    	    SerialDevice->device.dd_Library.lib_NegSize +
+	    SerialDevice->device.dd_Library.lib_PosSize);
+    
+    return ret;
+    
     AROS_LIBFUNC_EXIT
 }
 
