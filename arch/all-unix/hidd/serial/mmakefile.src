@@ -27,16 +27,6 @@ FILES       := SerialClass SerialUnitClass
 	       
 EXTRA_LIBS  := -L$(LIBDIR) -lunixiocl -lamiga
 
-
-STUBS       := $(LIBNAME)_stubs
-STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
-STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
-
-MY_INCLS    := $(wildcard include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-
-
 ifeq ($(FLAVOUR),native)
 DEPLIBS := $(LIBDIR)/libhiddserialstubs.a
 else
@@ -163,15 +153,15 @@ endif
 
 # Allways generate module in Sys:Hidds/
 
-#MM- workbench-hidds : hidd-serial-module
+#MM- workbench-hidds-unix : hidd-serial-unix-module
 
 	
-#MM hidd-serial-linklib : setup includes hidd-serial-$(ARCH)-$(CPU)
-hidd-serial-linklib : $(LIB) $(STUB_FILE) setup
+#MM hidd-serial-unix-linklib : setup includes hidd-serial-$(ARCH)-$(CPU)
+hidd-serial-unix-linklib : $(LIB) setup
 	@$(NOP)
 
-#MM hidd-serial-module : setup includes hidd-serial-$(ARCH)-$(CPU)
-hidd-serial-module : $(SLIB) $(STUB_FILE)
+#MM hidd-serial-unix-module : setup includes hidd-serial-$(ARCH)-$(CPU)
+hidd-serial-unix-module : $(SLIB)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -184,45 +174,15 @@ hidd-serial-module : $(SLIB) $(STUB_FILE)
 
 
 
-#MM hidd-serial-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-serial-module-quick : $(LIB) $(SLIB)
+#MM hidd-serial-unix-module-quick : kernel-oop-$(ARCH)-$(CPU)
+hidd-serial-unix-module-quick : $(LIB) $(SLIB)
 	@$(NOP)
 
-#MM hidd-serial-includes-quick : hidd-oop-$(ARCH)-$(CPU)
-hidd-serial-includes-quick : setup-includes includes-copy 
+#MM hidd-serial-unix-includes-quick : hidd-oop-$(ARCH)-$(CPU)
+hidd-serial-unix-includes-quick : setup-includes includes-copy 
 	$(NOP)
 
 # --- QUICK HACKS END ---
-
-# create stubs-file
-
-$(STUB_FILE) : $(STUB_OBJS)
-	@$(ECHO) "Creating library $@..."
-	@$(AR) $@ $(STUB_OBJS)
-	@$(RANLIB) $@
-
-$(OBJDIR)/%.o : %.c	
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
-
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	@$(FOR) dir in $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd ; do \
-	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
-	done
-
-
 
 #MM
 clean ::
