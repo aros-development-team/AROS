@@ -3,9 +3,9 @@ TOP=../..
 CURDIR=rom/aros
 
 ifeq ("$(SHARED_AROS)","yes")
-SPECIAL_CFLAGS=$(SHARED_CFLAGS)
+SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 else
-SPECIAL_CFLAGS=
+SPECIAL_CFLAGS :=
 endif
 
 include $(TOP)/config/make.cfg
@@ -31,22 +31,22 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 
 # Main function for aros.library. Need this apart as an anchor for the link:
-INIT_FILE = aros_init
+INIT_FILE := aros_init
 
-FILES = aros_functable
+FILES := aros_functable
 
 # Guarantee that this will go at the end of the file:
-END_FILE = aros_endtag
+END_FILE := aros_endtag
 
 # ***** Not Native ***************
 else
 
-FILES = aros_init aros_functable aros_endtag
+FILES := aros_init aros_functable aros_endtag
 
 # ***** END ***************
 endif
 
-FUNCTIONS = \
+FUNCTIONS := \
 	arosinquirea
 
 # BEGIN_DESC{localmakevar}
@@ -79,47 +79,47 @@ ASM_FILES_EXIST := $(basename $(notdir $(ASM_FILES_EXIST)))
 # from the local directory.
 FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
 
-OBJDIR=$(OSGENDIR)/aros
+OBJDIR := $(OSGENDIR)/aros
 
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
 # The options for the linker
-LIBS = -L$(LIBDIR) -laros
+LIBS := -L$(LIBDIR) -laros
 
 # The filename of the linklib
-LIB=$(LIBDIR)/libaros.a
+LIB := $(LIBDIR)/libaros.a
 
 # The names of the linklibs this depends on
-LIBLIST = aros arosc
+LIBLIST := aros arosc
 
 # The filenames of the linklibs this depends on
-LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 
 # The object filenames
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 
 # The init and endskip object filenames
-INITFUNC = $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC = $(OBJDIR)/$(END_FILE).o
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
 
-all: setup $(END_FILE).c $(OSMODDIR)/aros.library
+all : setup $(END_FILE).c $(OSMODDIR)/aros.library
 
-.PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+.PHONY : asm
+asm : $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 
-$(OSMODDIR)/aros.library: $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
+$(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.map
 	@if test ! -s aroslib.map; then rm aroslib.map ; else true ; fi
 	@strip $@
 
-%.s: %.c
+%.s : %.c
 	@echo "Generating $@ ..."
 	@$(CC) -S $(CFLAGS) $< -c -o $@
 
 # Collect all (asm-)functions in a linklib for fast linking:
-$(LIB): $(OBJS)
+$(LIB) : $(OBJS)
 	@echo "Adding functions to $(notdir $@) ..."
 	@$(AR) $@ $?
 	@$(RANLIB) $@
@@ -129,9 +129,9 @@ else
 
 %prepare_shlib aros $(SHARED_AROS)
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
-all: setup $(LIB)
+all : setup $(LIB)
 
 $(LIB) : $(OBJS)
 	@echo "Recreating $@..."
@@ -144,24 +144,24 @@ setup :
 	%mkdirs_q $(OSGENDIR) $(OBJDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean::
+clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.o : %.c
 	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
 
-aros_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
+aros_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Aros
 
-aros_endtag.c: $(TOP)/scripts/makeendtag.awk
+aros_endtag.c : $(TOP)/scripts/makeendtag.awk
 	%mkendtag_q Aros
 
-$(OBJDIR)/aros_init.o: libdefs.h
+$(OBJDIR)/aros_init.o : libdefs.h
 
 %libdefs_rule
 
-$(OBJDIR)/%.d: %.c
+$(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common
