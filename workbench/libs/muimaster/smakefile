@@ -346,8 +346,8 @@ objs/classes/prop.o: classes/prop.c
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
 
-objs/wb.o: //test/wb.c
-  sc $(CFLAGS) $(CLASSESDIRS) //test/wb.c objname=$@
+objs/wb.o: //tests/wb.c
+  sc $(CFLAGS) $(CLASSESDIRS) //tests/wb.c objname=$@
 
 muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   -delete muimaster.lib
