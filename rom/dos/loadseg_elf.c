@@ -252,7 +252,7 @@ BPTR LoadSeg_ELF (BPTR file)
 
 	if (symtab[i].shindex < mint)
 	    mint = symtab[i].shindex;
-	else if (symtab[i].shindex > maxt)
+	if (symtab[i].shindex > maxt)
 	    maxt = symtab[i].shindex;
     }
 
@@ -312,6 +312,10 @@ BPTR LoadSeg_ELF (BPTR file)
 #if !LOAD_DEBUG_HUNKS
 	else if (sh->type == SHT_REL
 	    && !strcmp (&shstrtab[sh->name], ".rel.stab")
+	)
+		sh->size = 0;
+	else if (sh->type == SHT_RELA
+	    && !strcmp (&shstrtab[sh->name], ".rela.stab")
 	)
 		sh->size = 0;
 #endif
