@@ -22,7 +22,10 @@
 #if DEBUG_FreeMem
 #   define DEBUG 1
 #endif
+#define MDEBUG 1
+
 #include <aros/debug.h>
+
 
 /*****************************************************************************
 
@@ -68,6 +71,9 @@
     struct MemHeader *mh;
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
+#if MDEBUG
+    ULONG origsize = byteSize
+#endif
 
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
 
@@ -77,19 +83,38 @@
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
+#if 0
+    /* stegerg: what's this??? */
+    
     /* Align size to the requirements */
     byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
-    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
     /* Align the block as well */
     memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
+#endif
 
 #if MDEBUG
-	/* Add the size of mung walls around the block */
-	memoryBlock -= MUNGWALL_SIZE;
-	byteSize += MUNGWALL_SIZE * 2;
+	/* Add the size of mung walls and extra MemChunk room (for orig
+	allocsize)  around the block */
+	memoryBlock -= (MUNGWALL_SIZE + MEMCHUNK_TOTAL);
+	byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
+#endif
 
-	CHECK_WALL(memoryBlock, MUNGWALL_SIZE);
+    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
+
+#if MDEBUG
+	if (*(ULONG *)memoryBlock != origsize)
+	{
+	    struct Task *__t = FindTask(NULL);	\
+	    kprintf("\x07FreeMem size mismatches AllocMem size " __FUNCTION__ " mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
+		    memoryBlock + MUNGWALL_SIZE + MEMCHUNK_TOTAL,
+		    *(ULONG *)memoryBlock,
+		    origsize,
+		    __t,
+		    __t->tc_Node.ln_Name);\
+	}
+	
+	CHECK_WALL(memoryBlock + MEMCHUNK_TOTAL, MUNGWALL_SIZE);
 	CHECK_WALL(memoryBlock + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE);
 
 	/* Fill block with weird stuff to esploit bugs in applications
