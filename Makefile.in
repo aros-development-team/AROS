@@ -32,8 +32,8 @@ makedirs:
 # Create the tools that are used to build AROS.
 tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(FLEXCAT) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
-	$(COLLECT-AROS) $(ADFLIB) $(AFSLIB) $(COPYTOAFS) \
-	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA) $(SFDC)
+	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
+	$(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
@@ -55,10 +55,6 @@ $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools
 	@$(ECHO) Building createdtdesc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
 
-$(ADFLIB) : $(wildcard $(TOP)/tools/adflib/*.[ch])
-	@$(ECHO) Building adflib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/adflib -f Makefile.aros TOP=$(TOP)
-
 $(AFSLIB) : $(wildcard $(TOP)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs -f Makefile.afslib TOP=$(TOP)
@@ -66,10 +62,6 @@ $(AFSLIB) : $(wildcard $(TOP)/workbench/devs/afs/*.[ch])
 $(COPYTOAFS) : $(TOP)/tools/copytoafs/copytoafs.c
 	@$(ECHO) Building copytoafs...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs TOP=$(TOP)
-
-$(MKFSAFFS) : $(TOP)/tools/mkfsaffs/mkfsaffs.c
-	@$(ECHO) Building mkfsaffs...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/mkfsaffs TOP=$(TOP)
 
 $(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
 	@$(ECHO) Building ilbmtoc...
