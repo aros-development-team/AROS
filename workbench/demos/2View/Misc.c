@@ -3,8 +3,8 @@
 
 #include <exec/types.h>
 #include <dos/rdargs.h>
-#include <devices/printer.h>
-#include <devices/prtgfx.h>
+/* #include <devices/printer.h>
+#include <devices/prtgfx.h> */
 #include <intuition/screens.h>
 #include <intuition/intuition.h>
 #include <exec/memory.h>
@@ -176,10 +176,10 @@ ButtonTypes checkButton(void)
 	 /*Interpret them*/
       switch(mesg->Class)
       {
-	 case ACTIVEWINDOW:   /*Set the appropriate flag if the window*/
+	 case IDCMP_ACTIVEWINDOW:   /*Set the appropriate flag if the window*/
 	    justActivated=TRUE;  /*was just activated*/
 	    break;
-	 case VANILLAKEY:
+	 case IDCMP_VANILLAKEY:
 	    switch(mesg->Code)
 	    {
 	       case 16:       /*CTRL-P - Print (if this picture hasn't been*/
@@ -203,7 +203,7 @@ ButtonTypes checkButton(void)
 
 	    }
 	    break;
-	 case MOUSEBUTTONS:   /*Interpret a button click*/
+	 case IDCMP_MOUSEBUTTONS:   /*Interpret a button click*/
 	    if(mesg->Code==SELECTDOWN) /*If the left button was pushed,*/
 	       if(justActivated)       /*and not so as to activate the*/
 	       {		       /*window, advance to the next*/
@@ -327,6 +327,7 @@ void cleanup()
 /*Print the specified RastPort (whose ViewPort is pointed to by vp*/
 BOOL dumpRastPort(struct RastPort *rp,struct ViewPort *vp)
 {
+#if 0
    struct IODRPReq *printerMsg;
    struct MsgPort *printerPort;
    static BOOL ableToPrint=TRUE;
@@ -370,6 +371,9 @@ BOOL dumpRastPort(struct RastPort *rp,struct ViewPort *vp)
    }
 
    return(ableToPrint);
+#else
+    return 0;
+#endif
 }
 
 /*Determine which colors to cycle, for a CRNG*/

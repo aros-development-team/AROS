@@ -5,7 +5,8 @@
  *   Includes for minrexx.c; please refer to that file for
  *   further documentation.
  */
-#include <rexx/rxslib.h>
+/* #include <rexx/rxslib.h> */
+
 /*
  *   This is the list of functions we can access.  (Cheap forward
  *   declarations, too.)
