@@ -9,7 +9,9 @@
 
 #include <exec/types.h>
 #include <proto/icon.h>
+#include <proto/dos.h>
 #include <workbench/workbench.h>
+#include <workbench/startup.h>
 
 extern struct Library *IconBase;
 
@@ -64,10 +66,16 @@ struct DiskObject *__alib_dObject = NULL;	/* Used for reading tooltypes */
 
 *****************************************************************************/
 {
+    struct WBStartup *startup = (struct WBStartup *) argv;
+
     if(argc != 0)
 	return argv;		/* We were called from shell */
 
-    __alib_dObject = GetDiskObject(argv[0]);
+    CurrentDir(startup->sm_ArgList[0].wa_Lock);
+    if(startup->sm_NumArgs >= 2)
+	__alib_dObject = GetDiskObject(startup->sm_ArgList[1].wa_Name);
+    else
+	return NULL;
 
     if(__alib_dObject == NULL)
 	return NULL;
