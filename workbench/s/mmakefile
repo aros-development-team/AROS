@@ -3,9 +3,7 @@ include $(TOP)/config/make.cfg
 
 # First try to install arch/cpu specific hidd.prefs
 #MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-hiddprefs-$(ARCH)-$(CPU)
-workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs \
-              $(SDIR)/Shell-Startup $(SDIR)/InstallAROS $(SDIR)/InstallAROS.1 \
-              $(SDIR)/InstallAROS.2 $(SDIR)/InstallAROS.cfg
+workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs
 	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
@@ -15,18 +13,6 @@ $(SDIR)/Shell-Startup : Shell-Startup
 	@$(CP) $^ $@
 
 $(SDIR)/hidd.prefs : hidd.prefs
-	@$(CP) $^ $@
-
-$(SDIR)/InstallAROS : InstallAROS
-	@$(CP) $^ $@
-
-$(SDIR)/InstallAROS.1 : InstallAROS.1
-	@$(CP) $^ $@
-
-$(SDIR)/InstallAROS.2 : InstallAROS.2
-	@$(CP) $^ $@
-
-$(SDIR)/InstallAROS.cfg : InstallAROS.cfg
 	@$(CP) $^ $@
 
 #MM
