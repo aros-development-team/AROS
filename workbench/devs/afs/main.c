@@ -100,6 +100,7 @@ ULONG i,curblock;
 		blockbuffer=getBlock(afsbase, volume, curblock);
 		if (!blockbuffer)
 			return;
+		markBlock(afsbase, volume, curblock, 0);
 		for (i=0;i<volume->SizeBlock-1;i++)
 		{
 			if (!blockbuffer->buffer[i])
