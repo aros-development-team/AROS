@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2001/02/11 09:31:10  SDuvan
+    Added notification hash table and notification message port
+
     Revision 1.4  1998/10/20 16:47:27  hkiel
     Amiga Research OS
 
@@ -20,12 +23,15 @@
 */
 #ifndef RAM_HANDLER_GCC_H
 #define RAM_HANDLER_GCC_H
-#include <aros/libcall.h>
-#include <exec/execbase.h>
-#include <exec/io.h>
-#include <exec/devices.h>
-#include <dos/dos.h>
-#include <dos/filesystem.h>
+#include  <aros/libcall.h>
+#include  <exec/execbase.h>
+#include  <exec/io.h>
+#include  <exec/devices.h>
+#include  <dos/dos.h>
+#include  <dos/filesystem.h>
+#include  "HashTable.h"
+
+struct vnode;			/* Predeclaration */
 
 struct rambase
 {
@@ -37,6 +43,12 @@ struct rambase
     struct MsgPort *port;		/* Port to put IORequests to */
     struct SignalSemaphore *sigsem;	/* Semaphore for iofs */
     struct IOFileSys *iofs;		/* IORequest to be aborted or NULL */
+    struct vnode *root;		        /* Root of the filesystem */
+    HashTable *notifications;           /* Notification requests corresponding
+					   to files and directories that
+					   currently not exist */
+    struct MsgPort *notifyPort;	        /* Notification messages will be
+					   replied here */
 };
 
 #define init(rambase, segList) \
