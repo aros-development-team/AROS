@@ -1,21 +1,26 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I/usr/include
+OS_INCLUDES	:= -I$(GENINCDIR)
 SUBDIRS 	:= clib exec
-MACHINE_H	:= $(INCDIR)/aros/machine.h
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
 
 #MM
-setup: $(MACHINE_H) machine.i
+setup: $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
-includes : $(MACHINE_H) machine.i
+includes : $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
 clean::
-	$(RM) $(MACHINE_H) $(TESTS) machine.i geninc
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
 
 $(MACHINE_H) : machine.h
+	%mkdirs_q $(GENINCDIR)
+	cp $< $@
+
+$(DISTMACHINE_H) : machine.h
 	%mkdirs_q $(INCDIR)
 	cp $< $@
 

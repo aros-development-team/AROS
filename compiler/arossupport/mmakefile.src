@@ -38,6 +38,7 @@ DEPS		    := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 LIB		    := $(LIBDIR)/libarossupport.a
 INCLUDE_FILES	    := $(wildcard include/*.h)
 DEST_INCLUDE_FILES  := $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
+GEN_INCLUDE_FILES   := $(subst include,$(GENINCDIR)/aros,$(INCLUDE_FILES))
 CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
 
 
@@ -49,7 +50,7 @@ setup :
 	%mkdirs_q $(OBJDIR) $(INCDIR) $(LIBDIR)
 
 #MM
-includes : $(DEST_INCLUDE_FILES)
+includes : $(DEST_INCLUDE_FILES) $(GEN_INCLUDE_FILES)
 
 #MM
 clean ::
@@ -57,6 +58,9 @@ clean ::
 
 
 $(INCDIR)/aros/%.h: include/%.h
+	$(CP) $< $@
+
+$(GENINCDIR)/aros/%.h: include/%.h
 	$(CP) $< $@
 
 $(LIB) : $(OBJS)

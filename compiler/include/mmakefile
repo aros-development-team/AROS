@@ -5,6 +5,7 @@ AMIGADIR := $(TOP)/amiga
 
 INCLUDES      := $(wildcard *.h */*.h)
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCSUBDIRS :=	aros \
 		clib \
 		defines \
@@ -25,19 +26,27 @@ INCSUBDIRS :=	aros \
 		workbench
 
 #MM
-includes : $(DEST_INCLUDES)
+includes : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@
 
+$(GENINCDIR)/%.h : %.h
+	$(CP) $< $@
+
 #MM
 setup :
-	@for dir in $(INCDIR)         \
+	@$(FOR) dir in $(INCDIR)         \
 		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
 	; do \
-	   if [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	done ; \
+	$(FOR) dir in $(GENINCDIR) \
+		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
+	; do \
+	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
 	done
 
 #MM
 clean :
-	-$(RM) $(INCDIR)
+	-$(RM) $(INCDIR) $(GENINCDIR)

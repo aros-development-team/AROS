@@ -2,9 +2,10 @@
 include $(TOP)/config/make.cfg
 
 CONFIG_H := $(INCDIR)/aros/config.h
+GENCONFIG_H := $(GENINCDIR)/aros/config.h
 
 #MM setup : setup-$(ARCH)
-setup : make-dirs $(CONFIG_H)
+setup : make-dirs $(CONFIG_H) $(GENCONFIG_H)
 	@$(ECHO) "Creating mf.inc files..."
 	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
 	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
@@ -13,15 +14,18 @@ setup : make-dirs $(CONFIG_H)
 		$(GENDIR)/config.files
 
 make-dirs :
-	%mkdirs_q $(INCDIR)/aros $(GENDIR)
+	%mkdirs_q $(INCDIR)/aros $(GENINCDIR)/aros
 
 $(CONFIG_H): $(TOP)/configure
 	$(SHELL) $(TOP)/configure -h $@
 
+$(GENCONFIG_H): $(CONFIG_H)
+	$(CP) $< $@
+
 #MM
 clean ::
 	-$(RM) ./machine
-	$(RM) $(CONFIG_H) $(INCDIR)/aros
+	$(RM) $(CONFIG_H) $(GENCONFIG_H) $(INCDIR)/aros $(GENINCDIR)/aros
 
 #MM
 machine:

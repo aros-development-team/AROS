@@ -4,14 +4,21 @@ include $(TOP)/config/make.cfg
 INCSUBDIRS	:= libcore
 INCLUDES	:= $(wildcard $(foreach d,$(INCSUBDIRS),$(d)/*.[ch]))
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+GEN_INCLUDES	:= $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM
-includes : $(DEST_INCLUDES)
+includes : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@
 
 $(INCDIR)/%.c : %.c
+	$(CP) $< $@
+
+$(GENINCDIR)/%.h : %.h
+	$(CP) $< $@
+
+$(GENINCDIR)/%.c : %.c
 	$(CP) $< $@
 
 #MM
@@ -20,8 +27,14 @@ setup :
 		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
 	; do \
 	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	done ; \
+	$(FOR) dir in $(GENINCDIR)	\
+		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
+	; do \
+	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true; fi ;\
 	done
+
 
 #MM
 clean :
-	-$(RM) $(INCDIR)
+	-$(RM) $(INCDIR) $(GENINCDIR)
