@@ -2638,11 +2638,19 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     			if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
     		    
     			    ULONG numcolors;
-    		    
+    		    	
+			    #if 1
+			    numcolors = 1L << ((depth <= 8) ? depth : 8);
+			    #else		
+			    	    
+			    /* this fails when depth == 32, because numcolors
+			       would then need to have at least 33 bits */
+			       
     			    numcolors = 1L << depth;
     			    if (numcolors > AROS_PALETTE_SIZE)
     				numcolors = AROS_PALETTE_SIZE;
-    			    
+    			    #endif
+			    
     			    /* Set palette to all black */
     			    for (i = 0; i < numcolors; i ++) {
     				HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
