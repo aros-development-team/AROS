@@ -82,9 +82,9 @@ static const struct Resident *romtagList[] =
     &Cybergraphics_resident,		    /* ColdStart,   8	 */
     &Console_resident,                      /* ColdStart,   5    */
     &emul_handler_resident,                 /* ColdStart,   0    */
-    &boot_resident,			    /* ColdStart,  -50   */
     &Workbench_resident,		    /* AfterDOS,   -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
+    &boot_resident,                       /* ColdStart,  -50   */
     &Dos_resident,                          /* None,       -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
     &con_handler_resident,		    /* AfterDOS,   -126  */
