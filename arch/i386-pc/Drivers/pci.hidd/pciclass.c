@@ -20,7 +20,7 @@
 
 #include "pci.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */

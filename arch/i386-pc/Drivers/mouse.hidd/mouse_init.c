@@ -46,7 +46,7 @@ struct mousebase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)

@@ -16,7 +16,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "pci.h"
@@ -158,18 +158,17 @@ void addPCIDevice(UBYTE bus, UBYTE dev, UBYTE sub, struct pci_staticdata *psd, s
 
 	getPCIClassDesc(d->Class,d->SubClass,d->Interface,&cDesc,&sDesc,&pDesc);
 
-	D(bug("PCI: %02x:%1x:%1x = %04.4lx:%04.4lx (%s %s %s), 0x%08.8lx 0x%08.8lx 0x%08.8lx\n",
+	bug("[PCI] %02x:%02x:%1x = %04.4lx:%04.4lx (%s %s %s)\n",
 		    bus,dev,sub,
 		    d->VendorID,d->DeviceID,
-		    cDesc,sDesc,pDesc,
-		    d->BaseAddress[0],d->BaseAddress[1],d->BaseAddress[2]
-	     ));
+		    cDesc,sDesc,pDesc
+	     );
 	if ((d->HeaderType & PCIHT_MASK) == PCIHT_BRIDGE)
 	{
-	    D(bug("PCI: Bridge. Pri bus=%02x, Sec bus=%02x, Sub bus=%02x\n",
+	    bug("[PCI] Bridge: Pri bus=%02x, Sec bus=%02x, Sub bus=%02x\n",
 			readPCIConfigByte(bus,dev,sub,PCIBR_PRIBUS),
 			readPCIConfigByte(bus,dev,sub,PCIBR_SECBUS),
-			readPCIConfigByte(bus,dev,sub,PCIBR_SUBBUS)));
+			readPCIConfigByte(bus,dev,sub,PCIBR_SUBBUS));
 	}
 
 	Enqueue(&psd->devices, (struct Node*)ndev);
