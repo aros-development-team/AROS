@@ -62,6 +62,8 @@ char *zune_text_iso_string(ZText *text);
 void zune_text_destroy (ZText *text);
 void zune_text_get_bounds (ZText *text, Object *obj);
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top);
+
+#if 0
 void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG cursorx, LONG cursory);
 void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG xpos, LONG ypos, BOOL cursor);
 
@@ -73,5 +75,6 @@ int zune_text_get_lines(ZText *text);
 int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom);
 
 int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge);
+#endif
 
 #endif

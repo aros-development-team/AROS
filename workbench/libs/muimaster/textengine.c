@@ -653,6 +653,7 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     }
 }
 
+#if 0
 void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG cursorx, LONG cursory)
 {
     struct RastPort *rp;
@@ -740,7 +741,9 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	cursory--;
     }
 }
+#endif
 
+#if 0
 void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WORD top, LONG xpos, LONG ypos, BOOL cursor)
 {
     struct RastPort *rp;
@@ -836,7 +839,9 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 	ypos--;
     }
 }
+#endif
 
+#if 0
 int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr, int *offset_ptr, int *len_ptr)
 {
     int i;
@@ -883,7 +888,9 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 
     return 1;
 }
+#endif
 
+#if 0
 int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
 {
     int i,len=0;
@@ -901,7 +908,9 @@ int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
     }
     return len;
 }
+#endif
 
+#if 0
 int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel)
 {
     int i,xpos=0;
@@ -931,7 +940,9 @@ int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel)
     }
     return xpos;
 }
+#endif
 
+#if 0
 int zune_text_get_lines(ZText *text)
 {
     int i;
@@ -940,7 +951,9 @@ int zune_text_get_lines(ZText *text)
     for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ; line = (ZTextLine*)line->node.mln_Succ,i++);
     return i;
 }
+#endif
 
+#if 0
 int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom)
 {
     struct RastPort rp;
@@ -1006,7 +1019,9 @@ int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursor
     
     return (text->xscroll != oldxscroll || text->yscroll != oldyscroll);
 }
+#endif
 
+#if 0
 int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
 {
     int offset, len;
@@ -1066,4 +1081,4 @@ int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
 
     return 1;
 }
-
+#endif
