@@ -29,8 +29,6 @@
 #define FORMAT_DEF 4
 #endif
 
-extern struct LocaleBase *globallocalebase;
-
 AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct Locale *, locale, A2),
@@ -50,13 +48,13 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(LONG, LocStrToDate,
+	AROS_PLH1(LONG, LocStrToDate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DateTime *, datetime, D1),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 37, Locale)
+	struct DosLibrary *, DOSBase, 37, Locale)
 
 /*  FUNCTION
     	See dos.library/StrToDate
@@ -67,11 +65,11 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     RESULT
 
     NOTES
-    	This function is not called by apps directly. Instead dos.library/StrToDate
-	is patched to use this function. This means, that the LocaleBase parameter
-	above actually points to DOSBase!!! But I may not rename it, because then
-	no entry for this function is generated in the Locale functable by the
-	corresponding script!
+    	This function is not called by apps directly. Instead dos.library/DosGet-
+	LocalizedString is patched to use this function. This means, that the
+	LocaleBase parameter above actually points to DOSBase, so we make use of 
+	the global LocaleBase variable. This function is marked as private,
+	thus the headers generator won't mind the different basename in the header.
 	
     EXAMPLE
 
@@ -87,8 +85,6 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#define LocaleBase globallocalebase
 
     struct Locale   *loc;
     struct Hook     hook;
@@ -259,5 +255,3 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     AROS_LIBFUNC_EXIT
 
 } /* LocStrToDate */
-
-#undef LocaleBase

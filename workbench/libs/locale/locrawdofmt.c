@@ -16,10 +16,6 @@
 #include <aros/asmcall.h>
 
 
-extern struct LocaleBase *globallocalebase;
-
-#define LocaleBase globallocalebase
-
 #ifdef __MORPHOS__
 
 /* move.b d0,(a3)+
@@ -170,7 +166,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH4(APTR, LocRawDoFmt,
+	AROS_PLH4(APTR, LocRawDoFmt,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, FormatString, A0),
@@ -179,7 +175,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	AROS_LHA(APTR        , PutChData, A3),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 31, Locale)
+	struct ExecBase *, SysBase, 31, Locale)
 
 /*  FUNCTION
     	See exec.library/RawDoFmt
@@ -190,11 +186,11 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     RESULT
 
     NOTES
-    	This function is not called by apps directly. Instead exec.library/RawDoFmt
-	is patched to use this function. This means, that the LocaleBase parameter
-	above actually points to SysBase!!! But I may not rename it, because then
-	no entry for this function is generated in the Locale functable by the
-	corresponding script!
+    	This function is not called by apps directly. Instead dos.library/DosGet-
+	LocalizedString is patched to use this function. This means, that the
+	LocaleBase parameter above actually points to SysBase, so we make use of 
+	the global LocaleBase variable. This function is marked as private,
+	thus the headers generator won't mind the different basename in the header.
 
     EXAMPLE
 
@@ -212,8 +208,6 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#define LocaleBase globallocalebase
 
     struct Hook       hook;
     APTR    	      retval;
@@ -273,5 +267,3 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_LIBFUNC_EXIT
 
 } /* LocRawDoFmt */
-
-#undef LocaleBase

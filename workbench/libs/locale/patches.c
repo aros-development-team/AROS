@@ -13,10 +13,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-
-extern struct LocaleBase *globallocalebase;
-
-#define LocaleBase globallocalebase
+#include <proto/locale.h>
 
 /*********************************************************************************************/
 

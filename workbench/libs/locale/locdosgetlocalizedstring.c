@@ -20,13 +20,13 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(CONST_STRPTR, LocDosGetLocalizedString,
+	AROS_PLH1(CONST_STRPTR, LocDosGetLocalizedString,
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG, stringNum, D1),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 38, Locale)
+	struct DosLibrary *, DOSBase, 38, Locale)
 
 /*  FUNCTION
     	See dos.library/DosGetLocalizedString
@@ -39,9 +39,9 @@
     NOTES
     	This function is not called by apps directly. Instead dos.library/DosGet-
 	LocalizedString is patched to use this function. This means, that the
-	LocaleBase parameter above actually points to DOSBase!!! But I may not
-	rename it, because then no entry for this function is generated in the
-	Locale functable by the corresponding script!
+	LocaleBase parameter above actually points to DOSBase, so we make use of 
+	the global LocaleBase variable. This function is marked as private,
+	thus the headers generator won't mind the different basename in the header.
 	
     EXAMPLE
 
@@ -58,9 +58,6 @@
 {
     AROS_LIBFUNC_INIT
     
-extern struct LocaleBase *globallocalebase;
-#define LocaleBase globallocalebase
-
 #ifdef __MORPHOS__
 	LONG *p = DOSBase->dl_Errors->estr_Nums;
 	UBYTE *q = DOSBase->dl_Errors->estr_Strings;

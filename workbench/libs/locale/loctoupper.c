@@ -17,20 +17,18 @@
 
 #define	DEBUG_CONVTOUPPER(x)	;
 
-extern struct LocaleBase *globallocalebase;
-
  /*****************************************************************************
 
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(ULONG, LocToUpper,
+	AROS_PLH1(ULONG, LocToUpper,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, character, D0),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 35, Locale)
+	struct UtilityBase *, UtilityBase, 35, Locale)
 
 /*  FUNCTION
     	See utility.library/ToUpper
@@ -41,11 +39,11 @@ extern struct LocaleBase *globallocalebase;
     RESULT
 
     NOTES
-    	This function is not called by apps directly. Instead utility.library/ToUpper
-	is patched to use this function. This means, that the LocaleBase parameter
-	above actually points to UtilityBase!!! But I may not rename it, because then
-	no entry for this function is generated in the Locale functable by the
-	corresponding script!
+    	This function is not called by apps directly. Instead dos.library/DosGet-
+	LocalizedString is patched to use this function. This means, that the
+	LocaleBase parameter above actually points to UtilityBase, so we make use of 
+	the global LocaleBase variable. This function is marked as private,
+	thus the headers generator won't mind the different basename in the header.
 	
     EXAMPLE
 
@@ -61,8 +59,6 @@ extern struct LocaleBase *globallocalebase;
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#define LocaleBase globallocalebase
 
     ULONG retval;
     
@@ -85,5 +81,3 @@ extern struct LocaleBase *globallocalebase;
     AROS_LIBFUNC_EXIT
     
 } /* LocToUpper */
-
-#undef LocaleBase
