@@ -650,9 +650,11 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
 	if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2)
 	{
+	    LONG left,top,right,bottom;
 	    LONG diff_virt_offx = data->virt_offx - data->old_virt_offx;
 	    LONG diff_virt_offy = data->virt_offy - data->old_virt_offy;
 	    struct Rectangle rect;
+            struct Rectangle *clip_rect = &muiRenderInfo(obj)->mri_ClipRect;
 
 	    if (!diff_virt_offx && !diff_virt_offy)
 	    {
@@ -660,42 +662,63 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		return 1;
 	    }
 
-	    ScrollRasterBF(_rp(obj), diff_virt_offx, diff_virt_offy, _mleft(obj), _mtop(obj), _mright(obj),_mbottom(obj));
+	    /* sba: I don't know how MUI handle this but ScrollRasterBF() made problems when scrolling
+	    ** a (partly visible) virtual groups in a virtual group, because e.g. _mtop() is then
+	    ** smaller than the region. ScrollRasterBF() on AmigaOS then marks the complete region
+	    ** as damaged. Using ScrollWindowRaster() solved that problem but it flickers then.
+	    ** To avoid this we prevent that the scroll area is out of the region bounds.
+	    ** The region bounds are setted in MUI_Redraw() but should probably should go in the
+	    ** MUI's clip functions
+	    */
+
+	    left = MAX(_mleft(obj),clip_rect->MinX);
+	    top = MAX(_mtop(obj),clip_rect->MinY);
+	    right = MIN(_mright(obj),clip_rect->MaxX);
+	    bottom = MIN(_mbottom(obj),clip_rect->MaxY);
+
+	    /* old code was 
+	    ** ScrollRasterBF(_rp(obj), diff_virt_offx, diff_virt_offy, _mleft(obj), _mtop(obj), _mright(obj),_mbottom(obj));
+	    */
+
+	    ScrollWindowRaster(_window(obj), diff_virt_offx, diff_virt_offy, left, top, right,bottom);
 
 	    if ((region = NewRegion()))
 	    {
 	    	if (diff_virt_offx)
 	    	{
-		    rect.MinY = _mtop(obj);
-		    rect.MaxY = _mbottom(obj);
+		    rect.MinY = top;
+		    rect.MaxY = bottom;
 
 		    if (diff_virt_offx > 0)
 		    {
-		    	rect.MinX = _mright(obj) - diff_virt_offx + 1;
-		    	rect.MaxX = _mright(obj);
+		    	rect.MinX = right - diff_virt_offx + 1;
+		    	rect.MaxX = right;
 		    } else
 		    {
-		    	rect.MinX = _mleft(obj);
-		    	rect.MaxX = _mleft(obj) - diff_virt_offx - 1;
+		    	rect.MinX = left;
+		    	rect.MaxX = left - diff_virt_offx - 1;
 		    }
-		    OrRectRegion(region,&rect);
+
+		    if (rect.MinX <= rect.MaxX)
+			OrRectRegion(region,&rect);
 		}
 
 	    	if (diff_virt_offy)
 	    	{
-		    rect.MinX = _mleft(obj);
-		    rect.MaxX = _mright(obj);
+		    rect.MinX = left;
+		    rect.MaxX = right;
 
 		    if (diff_virt_offy > 0)
 		    {
-		    	rect.MinY = _mbottom(obj) - diff_virt_offy + 1;
-		    	rect.MaxY = _mbottom(obj);
+		    	rect.MinY = bottom - diff_virt_offy + 1;
+		    	rect.MaxY = bottom;
 		    } else
 		    {
-		    	rect.MinY = _mtop(obj);
-		    	rect.MaxY = _mtop(obj) - diff_virt_offy - 1;
+		    	rect.MinY = top;
+		    	rect.MaxY = top - diff_virt_offy - 1;
 		    }
-		    OrRectRegion(region,&rect);
+		    if (rect.MinY <= rect.MaxY)
+			OrRectRegion(region,&rect);
 		}
 	    }
 
