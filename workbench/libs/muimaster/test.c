@@ -121,7 +121,7 @@ void main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
 
-    static char *pages[] = {"Groups","Colorwheel",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
@@ -220,6 +220,16 @@ void main(void)
 		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        End,
+		    Child, VGroupV,
+		    	Child, TextObject,
+			    TextFrame,
+			    MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n",
+		    	    End,
+		    	Child, HGroup,
+			    Child, MUI_MakeObject(MUIO_Button,"Button9"),
+			    Child, MUI_MakeObject(MUIO_Button,"Button10"),
+			    End,
+		    	End,
 		    End,
 
 		Child, RectangleObject,

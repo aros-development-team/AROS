@@ -53,8 +53,9 @@ CLASSESOBJS= \
   objs/classes/scrollbar.o \
   objs/classes/string.o \
   objs/classes/slider.o \
-  objs/classes/window.o \
-  objs/classes/text.o
+  objs/classes/text.o \
+  objs/classes/virtgroup.o \
+  objs/classes/window.o
 
 all: dirs all.gst test
 
@@ -206,6 +207,9 @@ objs/classes/window.o: classes/window.c
 
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/virtgroup.o: classes/virtgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
 
 objs/classes/scrollbar.o: classes/scrollbar.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbar.c objname=$@
