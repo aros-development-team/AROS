@@ -22,11 +22,11 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 #include <proto/bootloader.h>
+#include <proto/intuition.h>
 #include <oop/oop.h>
 #include <string.h>
 
 #warning Fix this in a better way. It will break if things move around.
-#include "../../../rom/intuition/intuition_private.h"	/* LateIntuiInit proto	*/
 #include "../../rom/devs/devs_private.h"
 
 #include <aros/asmcall.h>
