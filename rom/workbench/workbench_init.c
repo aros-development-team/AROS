@@ -46,6 +46,7 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 
     /* Initialize our semaphore. */
     InitSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
+    InitSemaphore(&(WorkbenchBase->wb_BaseSemaphore));
     
     return TRUE;
 } /* L_InitLib */
