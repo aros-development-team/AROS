@@ -23,7 +23,7 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
-#include <proto/macros>
+#include <clib/macros.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
