@@ -1752,6 +1752,41 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_PLH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
 	AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
 
+/* NT stands for No Tags, which means that the functions which are defined with these headers
+   are not subject to tagcall generation by the script used to generate include files */
+#define AROS_NTLH0(t,n,bt,bn,o,s) \
+	AROS_LH0(t,n,bt,bn,o,s)
+#define AROS_NTLH1(t,n,a1,bt,bn,o,s) \
+	AROS_LH1(t,n,a1,bt,bn,o,s)
+#define AROS_NTLH2(t,n,a1,a2,bt,bn,o,s) \
+	AROS_LH2(t,n,a1,a2,bt,bn,o,s)
+#define AROS_NTLH3(t,n,a1,a2,a3,bt,bn,o,s) \
+	AROS_LH3(t,n,a1,a2,a3,bt,bn,o,s)
+#define AROS_NTLH4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+	AROS_LH4(t,n,a1,a2,a3,a4,bt,bn,o,s)
+#define AROS_NTLH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+	AROS_LH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
+#define AROS_NTLH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+	AROS_LH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
+#define AROS_NTLH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+	AROS_LH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
+#define AROS_NTLH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+	AROS_LH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
+#define AROS_NTLH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+	AROS_LH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+#define AROS_NTLH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+	AROS_LH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_NTLH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+	AROS_LH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#define AROS_NTLH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
+	AROS_LH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
+#define AROS_NTLH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
+	AROS_LH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
+#define AROS_NTLH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
+	AROS_LH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
+#define AROS_NTLH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
+	AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+
 /******************************************************************************
 *****  ENDE aros/libcall.h
 ******************************************************************************/
