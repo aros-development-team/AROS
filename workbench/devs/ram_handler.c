@@ -872,7 +872,11 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle, STRPT
 		if(!error)
 		{
 		    /* stegerg */
-		    if (mode & FMF_CLEAR) shrinkfile(rambase, dir, 0);		    
+		    if (mode & FMF_CLEAR)
+		    {
+		    	shrinkfile(rambase, dir, 0);
+			dir->protect=protect;
+		    }
 		    /* end stegerg */
 		    
 		    fh->node=dir;
