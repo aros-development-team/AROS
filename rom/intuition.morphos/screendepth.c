@@ -6,6 +6,8 @@
     Change order of screens.
 */
 
+#include <proto/graphics.h>
+
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 
