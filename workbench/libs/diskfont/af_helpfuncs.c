@@ -65,12 +65,12 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 /* Counts the number of tags in at taglist including TAG_DONE */
 
 {
-  
+    struct TagItem *tstate = taglist;  
     ULONG numtags = 0;
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
-    for (; NextTagItem((const struct TagItem **)&taglist); )
+    for (; NextTagItem((const struct TagItem **)&tstate); )
         numtags ++;
 
     numtags ++; /* Count TAG_DONE */
