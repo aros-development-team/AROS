@@ -667,7 +667,7 @@ AC_ARG_ENABLE(includes,
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 
 dnl find out about the target cc's include path
-if test "$host_os" = "freebsd"; then
+if test "$aros_host_arch" = "freebsd"; then
     aros_target_cc_includes='/usr/include'
 else
     AC_MSG_CHECKING([for the target compiler's include path])
