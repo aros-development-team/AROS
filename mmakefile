@@ -8,7 +8,7 @@
 include $(TOP)/config/make.cfg
 
 # MetaMake rules
-#MM AROS : clean-errors AROS-$(ARCH)
+#MM AROS : clean-errors AROS-$(ARCH)-$(CPU)
 AROS : checkerr
 	@$(NOP)
 
