@@ -3979,7 +3979,7 @@ static struct builtin builtin_setvbe =
   "setvbe",
   setvbe_func,
   BUILTIN_CMDLINE,
-  "setvbe WIDTH HEIGHT DEPTH",
+  "setvbe [WIDTH HEIGHT DEPTH] [#MODE]",
   "Manually select a VESA graphicsmode for the kernel."
   "Used after loading the kernel image, but before booting"
 };
