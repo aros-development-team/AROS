@@ -823,7 +823,11 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 	switch (token)
 	{
 	case T_TEXT:
-	    Str_Puts (out, str->buffer, data);
+	    {
+		String s = Var_Subst (str->buffer);
+		Str_Puts (out, s->buffer, data);
+		VS_Delete (s);
+	    }
 	    break;
 
 	case T_HTML_TAG:
@@ -880,6 +884,15 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			Str_SetLine (in, line);
 			Str_PushError (in, "HTML_Parse() failed in FILTER");
 			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "SET"))
+		{
+		    HTMLTagArg * arg;
+
+		    ForeachNode (&tag->args, arg)
+		    {
+			Var_Set (arg->node.name, arg->value);
 		    }
 		}
 		else if (!strcmp (tag->node.name, "INCLUDE"))

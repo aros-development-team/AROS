@@ -1,8 +1,13 @@
 <INCLUDE FILE="test.inc">
+<SET var1=val1 var2=val2>
 
 &lt;
 &gt;
 &amp;
+
+$var1
+$var2
+$querydb(filenames,test.src)
 
 <filename>This is a filename</filename>
 
