@@ -142,10 +142,17 @@
 	    	SetFrontBitMap(NULL, FALSE);
 	    }
 
+#if 0
+    	    /* Root layer now automatically freed in ThinLayerInfo() */
+	    
 #ifdef CreateLayerTagList
 	    /* Free the root layer */
 	    DeleteLayer(0UL, ((struct IntScreen *)screen)->rootLayer);
 #endif
+#endif
+    	    /* Uninit the layerinfo */
+	    
+	    ThinLayerInfo(&screen->LayerInfo);
 	    
 	    /* Free the screen's bitmap */
 
