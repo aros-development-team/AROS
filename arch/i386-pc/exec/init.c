@@ -153,7 +153,9 @@ static const struct Resident *romtagList[] =
     /* BOCHS doesn't like something in there: error "unsupported CMOS read, address = 0x701" */
     &TrackDisk_resident,	    /* ColdStart,   4    */	//Trackdisk		
 #endif
+#if AROS_IDE_DRIVER
     &ide_resident,                  /* ColdStart,   4    */	//IDE device
+#endif
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
 //    &Workbench_resident,		    /* ColdStart,  -120  */

@@ -477,6 +477,14 @@ if test "$bochs_hack" = "yes" ; then
 fi
 AC_MSG_RESULT("$bochs_hack")
 
+dnl See if the user wants the IDE driver in the native flavour
+AC_MSG_CHECKING([if the ide driver is enabled])
+AC_ARG_ENABLE(ide_driver,[  --enable-ide-driver     Enable IDE driver in native [default=no],ide_driver="yes",ide_driver="no")
+if test "$ide_driver" = "yes" ; then
+    aros_ide_driver="1"
+fi
+AC_MSG_RESULT("$ide_driver")
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -537,6 +545,7 @@ AC_SUBST(HAVE_XSHM_SUPPORT)
 # Native version related
 AC_SUBST(aros_vmware_hack)
 AC_SUBST(aros_bochs_hack)
+AC_SUBST(aros_ide_driver)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
