@@ -206,4 +206,7 @@ struct collTable
     int (*collPtrs[16])();
 };
 
+/* cxref mixes up with the function pointers in the previous definition */
+extern int __cxref_bug_gels;
+
 #endif	/* GRAPHICS_GELS_H */
