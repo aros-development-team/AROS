@@ -26,6 +26,8 @@
 
 static const char version[] = "$VER: assign 41.4 (24.7.1997)\n";
 
+/* Assign mode */
+enum {ASSIGN_REPLACE = 0, ASSIGN_ADD };
 void dolist()
 {
     struct DosList *dlist, *curlist;
@@ -68,7 +70,7 @@ void dolist()
 }
 
 
-int doassign(STRPTR name, STRPTR target)
+int doassign(STRPTR name, STRPTR target, int mode)
 {
     int error = RETURN_OK;
     BPTR dir;
@@ -86,9 +88,22 @@ int doassign(STRPTR name, STRPTR target)
 	    }
 	    s ++;
 	}
-
-	if (!AssignLock(name,dir))
-	    error = RETURN_FAIL;
+	
+	switch (mode)
+	{
+	case ASSIGN_REPLACE:
+	    if (!AssignLock(name,dir))
+	    	error = RETURN_FAIL;
+	    break;
+	    
+	case ASSIGN_ADD:
+	    if (!AssignAdd(name,dir))
+	    	error = RETURN_FAIL;
+		
+	    break;
+	}
+	
+	    
     } else
 	error = RETURN_FAIL;
     return error;
@@ -97,24 +112,36 @@ int doassign(STRPTR name, STRPTR target)
 
 int main (int argc, char ** argv)
 {
-    STRPTR args[3]={ NULL, NULL, NULL };
+    STRPTR args[4]={ NULL, NULL, NULL, NULL };
     struct RDArgs *rda;
     int error=RETURN_OK;
 
     RT_Init();
 
-    rda=ReadArgs("NAME,TARGET,LIST/S",(IPTR *)args,NULL);
+    rda=ReadArgs("NAME,TARGET,LIST/S,ADD/S",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	if (args[0] != NULL && args[1] != NULL)
-	    error = doassign(args[0], args[1]);
+	{
+	    int mode = ASSIGN_REPLACE;
+	    if (args[3] != NULL)
+	    {
+	    	mode = ASSIGN_ADD;
+	    }
+		
+	    error = doassign(args[0], args[1], mode);
+	}
 	if (args[0] == NULL || args[2] != NULL)
 	    dolist();
+	    
 	FreeArgs(rda);
     }else
 	error=RETURN_FAIL;
     if(error)
+    {
 	PrintFault(IoErr(),"Assign");
+	
+    }
     RT_Exit();
     return error;
 }
