@@ -296,6 +296,9 @@ AROS_UFH4(ULONG, TOF_VBlank,
     AROS_USERFUNC_INIT
 
     struct Node *tNode;
+#ifdef CREATE_ROM
+    struct GfxBase * GfxBase = (struct GfxBase *)data;
+#endif
 
     if(!IsListEmpty(&GfxBase->TOF_WaitQ))
     {
