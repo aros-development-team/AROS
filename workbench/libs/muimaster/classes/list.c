@@ -1324,6 +1324,9 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
     struct ListEntry *lentry;
     int pos;
 
+    if (msg->parent == MUIV_List_Active_Off)
+	return ~0; /* We return -1 for now, later we could insert this node at top level */
+
     switch (msg->rel_entry_pos)
     {
 
