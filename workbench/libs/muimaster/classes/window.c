@@ -606,6 +606,7 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     if (ehn->ehn_Flags & MUI_EHF_HANDLEINPUT)
     {
     	DoMethod(ehn->ehn_Object, MUIM_HandleInput, (IPTR)event, muikey);
+    	res = 0;
     } else
     {
 	if (ehn->ehn_Class)
