@@ -315,6 +315,8 @@
                part.
              */
             CR -> lobs = Ltmp;
+            if (0 != (L_behind->Flags & LAYERSIMPLE))
+              ClearRectRegion(L_behind->DamageList, &CR->bounds);
           }  
         } /* if */
         CR = CR->Next;
