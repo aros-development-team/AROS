@@ -145,7 +145,7 @@ static VOID gc_set(Class *cl, Object *o, struct pRoot_Set *msg)
     ULONG idx;
     
     tstate = msg->attrList;
-    while((tag = NextTagItem(&tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         if(IS_GC_ATTR(tag->ti_Tag, idx))
         {

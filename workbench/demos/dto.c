@@ -104,11 +104,11 @@ void main (int argc, char **argv)
     /* Parse the arguments.  Note that this simple example assumes
      * that it was started from the shell. */
     memset (options, 0, sizeof (options));
-    if (rdargs = ReadArgs (TEMPLATE, (LONG *)options, NULL))
+    if ((rdargs = ReadArgs (TEMPLATE, (LONG *)options, NULL)))
     {
 kprintf("dto 1\n");
 	/* Open DataTypes */
-	if (DataTypesBase = OpenLibrary ("datatypes.library", 39))
+	if ((DataTypesBase = OpenLibrary ("datatypes.library", 39)))
 	{
 kprintf("dto 2\n");
 	    /* Open the other libraries */
@@ -118,7 +118,7 @@ kprintf("dto 2\n");
 kprintf("dto 3\n");
 
 	    /* Get a DataType object */
-	    if (dto = NewDTObject ((APTR) options[OPT_NAME], TAG_DONE, TAG_DONE))
+	    if ((dto = NewDTObject ((APTR) options[OPT_NAME], TAG_DONE, TAG_DONE)))
 	    {
 kprintf("dto 4\n");
 		/* Get information about the object */
@@ -191,26 +191,26 @@ kprintf("dto 9\n");
 		    printf ("this object requires a private screen\n");
 		}
 		/* Get a lock on the default public screen */
-		else if (scr = LockPubScreen (NULL))
+		else if ((scr = LockPubScreen (NULL)))
 		{
 		    /* Make sure we have the dimensions */
 		    nomwidth  = ((nomwidth) ? nomwidth : 600);
 		    nomheight = ((nomheight) ? nomheight : 175);
 
 		    /* Open the window */
-		    if (win = OpenWindowTags (NULL,
-					      WA_InnerWidth,	nomwidth,
-					      WA_InnerHeight,	nomheight,
-					      WA_Title,		name,
-					      WA_IDCMP,		IDCMP_FLAGS,
-					      WA_DragBar,	TRUE,
-					      WA_DepthGadget,	TRUE,
-					      WA_CloseGadget,	TRUE,
-					      WA_AutoAdjust,	TRUE,
-					      WA_SimpleRefresh,	TRUE,
-					      WA_BusyPointer,	TRUE,
-					      WA_Activate,	TRUE,
-					      TAG_DONE))
+		    if ((win = OpenWindowTags ( NULL,
+						WA_InnerWidth,	nomwidth,
+						WA_InnerHeight,	nomheight,
+						WA_Title,		name,
+						WA_IDCMP,		IDCMP_FLAGS,
+						WA_DragBar,	TRUE,
+						WA_DepthGadget,	TRUE,
+						WA_CloseGadget,	TRUE,
+						WA_AutoAdjust,	TRUE,
+						WA_SimpleRefresh,	TRUE,
+						WA_BusyPointer,	TRUE,
+						WA_Activate,	TRUE,
+						TAG_DONE)))
 		    {
 kprintf("dto 10\n");
 			/* Set the dimensions of the DataType object. */
@@ -242,7 +242,7 @@ kprintf("dto 13\n");
 				going = FALSE;
 
 			    /* Pull Intuition messages */
-			    while (imsg = (struct IntuiMessage *) GetMsg (win->UserPort))
+			    while ((imsg = (struct IntuiMessage *) GetMsg (win->UserPort)))
 			    {
 				/* Handle each message */
 				switch (imsg->Class)
@@ -264,7 +264,7 @@ kprintf("dto 13\n");
 
 				    case IDCMP_IDCMPUPDATE:
 					tstate = tags = (struct TagItem *) imsg->IAddress;
-					while (tag = NextTagItem (&tstate))
+					while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
 					{
 					    tidata = tag->ti_Data;
 					    switch (tag->ti_Tag)
