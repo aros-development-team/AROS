@@ -747,8 +747,18 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
   if (0 == dx && 0 == dy)
     return TRUE;
   
-  xBlockSize = x2 - x1 + 1 - dx;  
-  yBlockSize = y2 - y1 + 1 - dy;
+  if (dx >= 0)
+    absdx = dx;
+  else
+    absdx = -dx;
+    
+  if (dy >= 0)
+    absdy = dy;
+  else
+    absdy = -dy;
+  
+  xBlockSize = x2 - x1 + 1 - absdx;  
+  yBlockSize = y2 - y1 + 1 - absdy;
   /* 
     It is assumed that (x1,y1)-(x2,y2) describe a valid rectangle
     within the rastport. So any corrections have to be done by
@@ -826,14 +836,14 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
               0,
               0,
               rp->BitMap,
-              x1+xCorr1,
-              y1+yCorr2,
+              x1-xCorr2,
+              y1-yCorr2,
               xBlockSize,
               yBlockSize,
               0x0c0,
               0x0ff,
               NULL );
-    /* no need to worry bout damage lists here */
+    /* no need to worry about damage lists here */
   }
   else
   {
@@ -856,11 +866,16 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     struct Region * R;
     struct Rectangle Rect;
      
+    LockLayerRom(L);
+     
     if (0 != (L->Flags & LAYERSIMPLE))
     {
       R = NewRegion();
       if (NULL == R)
+      {
+        UnlockLayerRom(L);
         goto failexit;
+      }
     }  
     
     /* adapt x1,x2,y1,y2 to the cliprect coordinates */
@@ -868,10 +883,10 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
 
     xleft  = x1 + L->bounds.MinX + xCorr1;
-    xright = x2 + L->bounds.MinX - xCorr2;
+    xright = x2 + L->bounds.MinX + xCorr2;
     yup    = y1 + L->bounds.MinY + yCorr1;
-    ydown  = y2 + L->bounds.MinY - yCorr2;
-    
+    ydown  = y2 + L->bounds.MinY + yCorr2;
+
     /* First read all data out of the source area */    
     while (NULL != CR)
     {
@@ -916,6 +931,7 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
           {
             /* there's still time to undo this operation */
             DisposeRegion(R);
+            UnlockLayerRom(L);
             goto failexit;
           }
           /* also clear that area in the destination bitmap */
@@ -994,18 +1010,140 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
       
       CR = CR->Next;
     } /* while */
+
+    /* (xleft,yup)(xright,ydown) defines the rectangle to copy into */
+
+    xleft  -= dx;
+    xright -= dx;
+    yup    -= dy;
+    ydown  -= dy;
     
+    /* Move the region, if it's a simple layer  */
+/*
+    if (0 != (L->Flags & LAYERSIMPLE))
+    {
+      R->bounds.MinX -= dx;
+      R->bounds.MinY -= dy;
+      R->bounds.MaxX -= dx;
+      R->bounds.MaxY -= dy;
+    }
+*/    
     /* now copy from the bitmap bm into the destination */
     CR = L->ClipRect;
     while (NULL != CR)
     {
+      /* Is this a CR to be concerned about at all??? */
+      if (!(CR->bounds.MinX > xright ||
+            CR->bounds.MaxX < xleft  ||
+            CR->bounds.MinY > ydown  ||
+            CR->bounds.MaxY < yup))
+      {
+        struct Rectangle Rect;
+        /* that is one to be at least partly concerned about */
+        /* 
+           first determine the area to copy into from the
+           temporary bitmap
+        */
+        if (CR->bounds.MinX > xleft)
+          Rect.MinX = CR->bounds.MinX;
+        else
+          Rect.MinX = xleft;
+          
+        if (CR->bounds.MaxX < xright)
+          Rect.MaxX = CR->bounds.MaxX;
+        else
+          Rect.MaxX = xright;
+          
+        if (CR->bounds.MinY > yup)
+          Rect.MinY = CR->bounds.MinY;
+        else
+          Rect.MinY = yup;
+          
+        if (CR->bounds.MaxY < ydown)
+          Rect.MaxY = CR->bounds.MaxY;
+        else
+          Rect.MaxY = ydown;
+          
+        /* 
+           If this cliprect is hidden and belongs to a simple layer then
+           I subtract the Rect from the Region, otherwise I do a blit 
+           from the temporary bitmap instead 
+        */
+        if (NULL != CR->lobs && 0 != (L->Flags & LAYERSIMPLE))
+        {
+          ClearRectRegion(R, &Rect);
+        }
+        else
+        {
+          /* Do the blit from the temporary bitmap */
+          /* several cases:
+             - non hidden area of superbitmap layer, simple layer, smart layer
+                -> can all be treated equally
+             - hidden area of a superbitmap layer
+             - hidden area of simple layer 
+          */
+          if (NULL != CR->lobs)
+          {
+            /* Hidden */
+            if (0 == (L->Flags & LAYERSUPER))
+            {
+              /* a smart layer */
+              BltBitMap(bm,
+                        Rect.MinX - xleft,
+                        Rect.MinY - yup,
+                        CR->BitMap,
+                        Rect.MinX - CR->bounds.MinX + CR->bounds.MinX & 0x0f,
+                        Rect.MinY - CR->bounds.MinY,
+                        Rect.MaxX-Rect.MinX+1,
+                        Rect.MaxY-Rect.MinY+1,
+                        0x0c0,
+                        0xff,
+                        NULL);
+                        
+            }
+            else
+            {
+              /* a superbitmap layer */
+              BltBitMap(bm,
+                        Rect.MinX - xleft,
+                        Rect.MinY - yup,
+                        CR->BitMap,
+                        Rect.MinX - L->bounds.MinX + L->Scroll_X,
+                        Rect.MinY - L->bounds.MinY + L->Scroll_Y,
+                        Rect.MaxX - Rect.MinX + 1,
+                        Rect.MaxY - Rect.MinY + 1,
+                        0x0c0,
+                        0xff,
+                        NULL);
+            }
+          }
+          else
+          {
+            /* blit it into the bitmap of the screen */
+            BltBitMap(bm,
+                      Rect.MinX - xleft,
+                      Rect.MinY - yup,
+                      rp->BitMap,
+                      Rect.MinX,
+                      Rect.MinY,
+                      Rect.MaxX - Rect.MinX + 1,
+                      Rect.MaxY - Rect.MinY + 1,
+                      0x0c0,
+                      0xff,
+                      NULL);
+          }  
+          
+        } /* if .. else .. */
+        
+      }
       CR = CR->Next;
     }
     
     
     if (0 != (L->Flags & LAYERSIMPLE))
       DisposeRegion(R);
-     
+    
+    UnlockLayerRom(L); 
   }  
 
 failexit:
