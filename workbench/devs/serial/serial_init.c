@@ -28,7 +28,7 @@
 #include <hidd/serial.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <exec/lists.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "serial_intern.h"
@@ -37,76 +37,11 @@
 # define DEBUG 1
 # include <aros/debug.h>
 
+#include LC_LIBDEFS_FILE
+
 /****************************************************************************************/
 
 #define NEWSTYLE_DEVICE 1
-
-/****************************************************************************************/
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct serialbase *AROS_SLIB_ENTRY(init,Serial)();
-void AROS_SLIB_ENTRY(open,Serial)();
-BPTR AROS_SLIB_ENTRY(close,Serial)();
-BPTR AROS_SLIB_ENTRY(expunge,Serial)();
-int AROS_SLIB_ENTRY(null,Serial)();
-void AROS_SLIB_ENTRY(beginio,Serial)();
-LONG AROS_SLIB_ENTRY(abortio,Serial)();
-
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry,Serial)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident Serial_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Serial_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    30,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]=SERIALNAME;
-
-static const char version[]="$VER: serial 41.0 (2.28.1999)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct serialbase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,Serial)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,Serial),
-    &AROS_SLIB_ENTRY(close,Serial),
-    &AROS_SLIB_ENTRY(expunge,Serial),
-    &AROS_SLIB_ENTRY(null,Serial),
-    &AROS_SLIB_ENTRY(beginio,Serial),
-    &AROS_SLIB_ENTRY(abortio,Serial),
-    (void *)-1
-};
-
-struct ExecBase * SysBase;
 
 struct serialbase * pubSerialBase;
 
@@ -132,39 +67,29 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
- AROS_UFHA(struct serialbase *, SerialDevice, D0),
- AROS_UFHA(BPTR               , segList     , A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, SerialDevice)
 {
-  AROS_USERFUNC_INIT
-
-  SysBase = sysBase;
+  AROS_SET_LIBFUNC_INIT
 
   D(bug("serial device: init\n"));
 
   pubSerialBase = SerialDevice;
 
-  /* Store arguments */
-  SerialDevice->sysBase = sysBase;
-  SerialDevice->seglist = segList;
-    
   /* open the serial hidd */
   if (NULL == SerialDevice->SerialHidd)
   {
     SerialDevice->SerialHidd = OpenLibrary("DRIVERS:serial.hidd",0);
     D(bug("serial.hidd base: 0x%x\n",SerialDevice->SerialHidd));
     if (NULL == SerialDevice->SerialHidd)
-	return NULL;
+	return FALSE;
     
     if (NULL == SerialDevice->oopBase)
       SerialDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);
     if (NULL == SerialDevice->oopBase)
     {
 	CloseLibrary(SerialDevice->SerialHidd);
-	SerialDevice->SerialHidd = NULL;
-	return NULL;
+	SerialDevice->SerialHidd = FALSE;
+	return FALSE;
     }
 
     SerialDevice->SerialObject = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
@@ -175,26 +100,26 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
 	SerialDevice->oopBase = NULL;
 	CloseLibrary(SerialDevice->SerialHidd);
 	SerialDevice->SerialHidd = NULL;
-	return NULL;
+	return FALSE;
     }
   }
     
   NEWLIST(&SerialDevice->UnitList);
-  return (SerialDevice);
-  AROS_USERFUNC_EXIT
+  return TRUE;
+  AROS_SET_LIBFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-
-AROS_LH3(void, open,
- AROS_LHA(struct IORequest *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	 struct serialbase *, SerialDevice, 1, Serial)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, SerialDevice,
+		     struct IORequest, ioreq,
+		     unitnum,
+		     flags
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_SET_DEVFUNC_INIT
 
   struct SerialUnit * SU = NULL;
 
@@ -204,7 +129,7 @@ AROS_LH3(void, open,
   {
       D(bug("serial.device/open: IORequest structure passed to OpenDevice is too small!\n"));
       ioreq->io_Error = IOERR_OPENFAIL;
-      return;
+      return FALSE;
   }
 
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
@@ -253,8 +178,6 @@ AROS_LH3(void, open,
                                               WBE_InterruptHandler, NULL);
             ioreq->io_Device = (struct Device *)SerialDevice;
             ioreq->io_Unit   = (struct Unit *)SU;  
-            SerialDevice->device.dd_Library.lib_OpenCnt ++;
-            SerialDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
             /*
             ** put it in the list of open units
@@ -262,7 +185,7 @@ AROS_LH3(void, open,
             AddHead(&SerialDevice->UnitList, (struct Node *)SU);
 
             ioreq->io_Error  = 0;
-            return;
+            return TRUE;
           }
 
           D(bug("SerialUnit could not be created!\n"));
@@ -304,26 +227,19 @@ AROS_LH3(void, open,
     }
   }
   
-  if (ioreq->io_Error == 0)
-  {
-      SerialDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-      SerialDevice->device.dd_Library.lib_OpenCnt ++;    
-  }
-  
-  return;
+  return ioreq->io_Error == 0;
      
-
-  AROS_LIBFUNC_EXIT
+  AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct serialbase *, SerialDevice, 2, Serial)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, SerialDevice,
+		      struct IORequest, ioreq
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_SET_DEVFUNC_INIT
   struct SerialUnit * SU = (struct SerialUnit *)ioreq->io_Unit;
 
   /*
@@ -358,41 +274,18 @@ AROS_LH1(BPTR, close,
     SU->su_OpenerCount--;
   }
 
-  /* Let any following attemps to use the device crash hard. */
-  ioreq->io_Device=(struct Device *)-1;
-  
-  SerialDevice->device.dd_Library.lib_OpenCnt --;    
-  
-  if (SerialDevice->device.dd_Library.lib_OpenCnt == 0)
-  {
-    if (SerialDevice->device.dd_Library.lib_Flags & LIBF_DELEXP)
-    {
-    	#define expunge() \
-    	    AROS_LC0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
+  return TRUE;
 
-      return expunge();
-    }
-  }
-  
-  return 0;
-  AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
 
-AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, SerialDevice)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
-    BPTR ret = 0;
-
-    if (SerialDevice->device.dd_Library.lib_OpenCnt)
-    {
-    	SerialDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-	return 0;
-    }
-    
     if (NULL != SerialDevice->SerialObject)
     {
       /*
@@ -406,29 +299,17 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
       SerialDevice->SerialObject = NULL;
     }
   
-    Remove(&SerialDevice->device.dd_Library.lib_Node);
+    return TRUE;
     
-    ret = SerialDevice->seglist;
-    
-    FreeMem((char *)SerialDevice - SerialDevice->device.dd_Library.lib_NegSize,
-    	    SerialDevice->device.dd_Library.lib_NegSize +
-	    SerialDevice->device.dd_Library.lib_PosSize);
-    
-    return ret;
-    
-    AROS_LIBFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-
-AROS_LH0I(int, null, 
-   struct serialbase *, SerialDevice, 4, Serial)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
@@ -1036,6 +917,3 @@ AROS_LH1(LONG, abortio,
 
 /****************************************************************************************/
 
-static const char end=0;
-
-/****************************************************************************************/

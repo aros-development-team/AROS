@@ -6,7 +6,7 @@ FILES := serial_support serial_interrupthandlers
 #MM- workbench-devs-complete : workbench-devs-serial
 #MM- workbench-devs-serial : include linklibs workbench-devs-serial-module
 
-%build_module_macro mmake=workbench-devs-serial modname=serial \
-  modtype=device funcs= files=$(FILES) uselibs="hiddstubs rom"
+%build_module mmake=workbench-devs-serial \
+    modname=serial modtype=device \
+    files="serial_init $(FILES)" uselibs="hiddstubs rom"
 
-%common
