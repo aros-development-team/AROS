@@ -1,10 +1,10 @@
+#ifndef _MUI_CLASSES_ICONLIST_H
+#define _MUI_CLASSES_ICONLIST_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#ifndef _MUI_CLASSES_ICONLIST_H
-#define _MUI_CLASSES_ICONLIST_H
 
 /****************************************************************************/
 /*** Name *******************************************************************/
@@ -79,4 +79,4 @@ extern const struct __MUIBuiltinClass _MUI_IconDrawerList_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_IconVolumeList_desc; /* PRIV */
 
 
-#endif
+#endif /* _MUI_CLASSES_ICONLIST_H */
