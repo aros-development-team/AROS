@@ -652,6 +652,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	{
 	    LONG diff_virt_offx = data->virt_offx - data->old_virt_offx;
 	    LONG diff_virt_offy = data->virt_offy - data->old_virt_offy;
+	    struct Rectangle rect;
 
 	    if (!diff_virt_offx && !diff_virt_offy)
 	    {
@@ -660,6 +661,44 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    }
 
 	    ScrollRasterBF(_rp(obj), diff_virt_offx, diff_virt_offy, _mleft(obj), _mtop(obj), _mright(obj),_mbottom(obj));
+
+	    if ((region = NewRegion()))
+	    {
+	    	if (diff_virt_offy)
+	    	{
+		    rect.MinY = _mtop(obj);
+		    rect.MaxY = _mbottom(obj);
+
+		    if (diff_virt_offx > 0)
+		    {
+		    	rect.MinX = _mright(obj) - diff_virt_offx;
+		    	rect.MaxX = _mright(obj);
+		    } else
+		    {
+		    	rect.MinX = _mleft(obj);
+		    	rect.MaxX = _mleft(obj) - diff_virt_offx;
+		    }
+		    OrRectRegion(region,&rect);
+		}
+
+	    	if (diff_virt_offy)
+	    	{
+		    rect.MinX = _mleft(obj);
+		    rect.MaxX = _mright(obj);
+
+		    if (diff_virt_offy > 0)
+		    {
+		    	rect.MinY = _mbottom(obj) - diff_virt_offy;
+		    	rect.MaxY = _mbottom(obj);
+		    } else
+		    {
+		    	rect.MinY = _mtop(obj);
+		    	rect.MaxY = _mtop(obj) - diff_virt_offy;
+		    }
+		    OrRectRegion(region,&rect);
+		}
+	    }
+
 	} else
 	{
 	    if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
@@ -667,11 +706,23 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	}
     }
 
-    if (data->flags & GROUP_VIRTUAL)
+    if (data->flags & GROUP_VIRTUAL && !region)
     {
-    	/* Not really needed if MUI Draws all the object, maybe that's where DRAWALL is for??? */
-	clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-    } else clip = 0; /* Makes compiler happy */
+    	/* Not really needed if MUI Draws all the objects, maybe that's where DRAWALL is for??? */
+	if ((region = NewRegion()))
+	{
+    	    struct Rectangle rect;
+    	    rect.MinX = _mleft(obj);
+    	    rect.MinY = _mtop(obj);
+    	    rect.MaxX = _mright(obj);
+    	    rect.MaxY = _mbottom(obj);
+    	    OrRectRegion(region,&rect);
+    	}
+    }
+
+    /* Add clipping region if we have one */
+    if (region) clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
+
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
@@ -708,9 +759,9 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  		    group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
     }
 
-    if (data->flags & GROUP_VIRTUAL)
+    if (data->flags & GROUP_VIRTUAL && region)
     {
-	MUI_RemoveClipping(muiRenderInfo(obj), clip);
+	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
 
     data->old_virt_offx = data->virt_offx;
