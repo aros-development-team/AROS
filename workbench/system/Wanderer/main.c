@@ -15,6 +15,9 @@
 /* global variables */
 Object *app;
 
+/* Don't output errors to the console, open requesters instead */
+int __forceerrorrequester = 1;
+
 int main(void)
 {
     Locale_Initialize();
