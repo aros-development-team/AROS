@@ -112,6 +112,7 @@
 	case TS_EXCEPT:
 	case TS_RUN:
 	    /* We should never be called with this state. */
+	    ASSERT(FALSE);
 	    break;
     }
 
