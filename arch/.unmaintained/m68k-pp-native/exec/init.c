@@ -109,7 +109,7 @@ static const struct Resident *romtagList[] =
 	&boot_resident,			    /* ColdStart,  -50	 */
 	&Dos_resident,			    /* None,	   -120  */
 	&LDDemon_resident,		    /* AfterDOS,   -125  */
-//	&con_handler_resident,		    /* AfterDOS,   -126  */
+	&con_handler_resident,		    /* AfterDOS,   -126  */
 	NULL
 };
 
