@@ -81,7 +81,7 @@ int snprintf(char *buf, int size, const char *fmt, ...)
 
     buf[size-1] = 0;
 
-		return (int)strlen(buf);
+    return (int)strlen(buf);
 }
 
 /************************************************************
@@ -93,11 +93,37 @@ int sprintf(char *buf, const char *fmt, ...)
 		RawDoFmt(fmt, (((ULONG *)&fmt)+1), (void(*)())&cpy_func, buf);
 		return (int)strlen(buf);
 }
+
+Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
+{
+    va_list argptr;
+    va_start(argptr,dummy);
+    obj = DoSuperNewTagList(cl,obj,dummy,(struct TagItem*)argptr);
+    va_end(argptr);
+    return obj;
+}
+
 #else
+
+
 ASM ULONG HookEntry(REG(a0, struct Hook *hook),REG(a2, APTR obj), REG(a1, APTR msg))
 {
 	return hook->h_SubEntry(hook,obj,msg);
 }
+
+Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
+{
+    va_list argptr;
+    struct TagItem *tagList;
+
+    va_startlinear(argptr, dummy);
+    tagList = va_getlinearva(argptr, struct TagItem *);
+    obj = DoSuperNewTagList(cl,obj,dummy,tagList);
+    va_end(argptr);
+    return obj;
+}
+
+
 #endif
 
 /***************************************************************************/
@@ -114,15 +140,6 @@ char *StrDup(const char *x)
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags)
 {
 	  return (Object*)DoSuperMethod(cl,obj,OM_NEW,tags,NULL);
-}
-
-Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
-{
-    va_list argptr;
-    va_start(argptr,dummy);
-    obj = DoSuperNewTagList(cl,obj,dummy,(struct TagItem*)argptr);
-    va_end(argptr);
-    return obj;
 }
 
 size_t strlcat(char *buf, const char *src, size_t len)
