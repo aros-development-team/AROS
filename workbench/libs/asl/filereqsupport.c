@@ -28,6 +28,9 @@
 #include "specialreq.h"
 #include "layout.h"
 
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
+
 #define SDEBUG 0
 #define DEBUG 1
 #define ADEBUG 1
@@ -475,7 +478,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
 			if (fib->fib_DirEntryType > 0)
 			{
-			    node->text[1] = ifreq->ifr_LVDrawerText;
+			    node->text[1] = GetString(MSG_FILEREQ_LV_DRAWER, GetIR(ifreq)->ir_Catalog, AslBase);
 			    node->dontfreetext |= (1 << 1);
 			} else {
 			    node->text[1] = PooledIntegerToString(fib->fib_Size,
@@ -616,7 +619,7 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		case DLT_DIRECTORY:
 		case DLT_LATE:
 		case DLT_NONBINDING:
-		    node->text[1] = ifreq->ifr_LVAssignText;
+		    node->text[1] = GetString(MSG_FILEREQ_LV_ASSIGN, GetIR(ifreq)->ir_Catalog, AslBase);
 		    node->dontfreetext |= (1 << 1);
 		    break;
 	    }
@@ -919,10 +922,10 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
     STRPTR 		oldpattern = udata->SelectPattern;
 
-    udata->SelectPattern = REQ_String(ifreq->ifr_Select_TitleText,
+    udata->SelectPattern = REQ_String(GetString(MSG_FILEREQ_SELECT_TITLE, GetIR(ifreq)->ir_Catalog, AslBase),
 				      oldpattern ? oldpattern : (STRPTR)"#?", 
-				      ifreq->ifr_Select_OkayText,
-				      ifreq->ifr_Select_CancelText,
+				      GetString(MSG_FILEREQ_SELECT_OK, GetIR(ifreq)->ir_Catalog, AslBase),
+				      GetString(MSG_FILEREQ_SELECT_CANCEL, GetIR(ifreq)->ir_Catalog, AslBase),
 				      ld,
 				      AslBase);
 
@@ -1010,9 +1013,9 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	es.es_StructSize   = sizeof(es);
 	es.es_Flags 	   = 0;
-	es.es_Title 	   = ifreq->ifr_Delete_TitleText;
-	es.es_TextFormat   = ifreq->ifr_Delete_Message;
-	es.es_GadgetFormat = ifreq->ifr_Delete_OkayCancelText;
+	es.es_Title 	   = GetString(MSG_FILEREQ_DELETE_TITLE   , GetIR(ifreq)->ir_Catalog, AslBase);
+	es.es_TextFormat   = GetString(MSG_FILEREQ_DELETE_MSG     , GetIR(ifreq)->ir_Catalog, AslBase);
+	es.es_GadgetFormat = GetString(MSG_FILEREQ_DELETE_OKCANCEL, GetIR(ifreq)->ir_Catalog, AslBase);
 
 	if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1)
 	{
@@ -1073,10 +1076,10 @@ void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         olddir = CurrentDir(lock);
 	
-	if ((dirname = REQ_String(ifreq->ifr_Create_TitleText,
-				  ifreq->ifr_Create_DefaultName, 
-				  ifreq->ifr_Create_OkayText,
-				  ifreq->ifr_Create_CancelText,
+	if ((dirname = REQ_String(GetString(MSG_FILEREQ_CREATEDRAWER_TITLE, GetIR(ifreq)->ir_Catalog, AslBase),
+				  GetString(MSG_FILEREQ_CREATEDRAWER_DEFNAME, GetIR(ifreq)->ir_Catalog, AslBase), 
+				  GetString(MSG_FILEREQ_CREATEDRAWER_OK, GetIR(ifreq)->ir_Catalog, AslBase),
+				  GetString(MSG_FILEREQ_CREATEDRAWER_CANCEL, GetIR(ifreq)->ir_Catalog, AslBase),
 				  ld,
 				  AslBase)))
 	{
@@ -1140,10 +1143,10 @@ void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    UnLock(lock2);
 	    
-	    if ((newname = REQ_String(ifreq->ifr_Rename_TitleText,
+	    if ((newname = REQ_String(GetString(MSG_FILEREQ_RENAME_TITLE, GetIR(ifreq)->ir_Catalog, AslBase),
 				      file, 
-				      ifreq->ifr_Rename_OkayText,
-				      ifreq->ifr_Rename_CancelText,
+				      GetString(MSG_FILEREQ_RENAME_OK, GetIR(ifreq)->ir_Catalog, AslBase),
+				      GetString(MSG_FILEREQ_RENAME_CANCEL, GetIR(ifreq)->ir_Catalog, AslBase),
 				      ld,
 				      AslBase)))
 	    {

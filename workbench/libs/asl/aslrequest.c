@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -161,7 +161,12 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 
 	    D(bug("MinWidth: %d, MinHeight: %d\n", ld->ld_MinWidth, ld->ld_MinHeight));
 			
-	    nw.Title		= intreq->ir_TitleText;
+	    nw.Title = intreq->ir_TitleText;
+	    if (!nw.Title)
+	    {
+	    	nw.Title = GetString(intreq->ir_TitleID, intreq->ir_Catalog, AslBase);
+	    }
+	    
 	    D(bug("\tWindow title: %s", nw.Title));
 	    
 /*	    nw.FirstGadget	= ld->ld_GList; 

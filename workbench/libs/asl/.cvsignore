@@ -5,3 +5,4 @@ mmakefile
 *.err
 *.map
 functable.c
+asl_strings.h

@@ -1,0 +1,187 @@
+## version $VER: asl.catalog 1.0 (12.03.2001)
+## codeset 0
+## language deutsch
+;
+MSG_FILEREQ_TITLE
+Datei auswählen
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Abbruch
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Laufw.
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Mutterv.
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Muster
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Schublade
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Datei
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Schublade
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Assign
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Datei löschen
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Achtung: Gelöschte Dateien sind\n\
+unwiederbringlich verloren!\n\
+Ok zum Löschen von\n\
+%s ?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Löschen|Abbrechen
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Umbenennen
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Umbenennen
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Schublade anlegen
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Anlegen
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Bitte_umbenennen
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Nach Muster markieren
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Markieren
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Steuerung
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+L\0Letzter Name
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+M\0Nächster Name
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Zurück auf Vorgabe
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+P\0Mutterverzeichnis
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Datenträger
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+A\0Aktualisieren
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Löschen
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+ \0Neue Schublade anlegen...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+M\0Umbenennen...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Markieren...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Abbrechen
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Dateien auflisten
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Nach Namen sortieren
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Nach Datum sortieren
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Nach Größe sortieren
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0Aufsteigende Reihenfolge
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0Absteigende Reihenfolge
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Schubladen an den Anfang stellen
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Schubladen und Dateien mischen
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Schubladen ans Ende stellen
+; 6\0Show drawers last
+;

@@ -2,7 +2,7 @@
     (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Font requester specific code.
+    Desc: 
     Lang: english
 */
 
@@ -12,7 +12,6 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
 #include <exec/memory.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>

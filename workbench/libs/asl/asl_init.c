@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Asl initialization code.
@@ -17,11 +17,14 @@
 #include <graphics/modeid.h>
 
 #include <proto/exec.h>
-#include <proto/boopsi.h>
+#include <proto/intuition.h>
 
 #include "initstruct.h"
 #include "asl_intern.h"
 #include "libdefs.h"
+
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
 
 #include <gadgets/aroslist.h>
 #include <gadgets/aroslistview.h>
@@ -142,12 +145,14 @@ const struct IntFileReq def_filereq =
 	NULL,			/* IntuiMsgFunc 	*/
 	NULL,			/* TextAttr		*/
 	NULL,			/* Locale		*/
+	NULL,			/* Catalog		*/
 	NULL,			/* MemPool		*/
 	2048,			/* MemPoolPuddle	*/
 	2048,			/* MemPoolThresh	*/
-	"Select File",		/* TitleText		*/
-	"Ok",			/* PositiveText		*/
-	"Cancel",		/* NegativeText		*/
+	MSG_FILEREQ_TITLE,   	/* TitleID  	    	*/
+	NULL,		    	/* TitleText		*/
+	NULL,			/* PositiveText		*/
+	NULL,			/* NegativeText		*/
 	-1, -1,	 		/* --> center on screen */
 	300, 300		/* Width/Height		*/
     },
@@ -167,71 +172,7 @@ const struct IntFileReq def_filereq =
     ASLFRSORTBY_Name,   	/* SortBy        	*/
     ASLFRSORTORDER_Ascend,	/* SortOrder     	*/
     ASLFRSORTDRAWERS_First,	/* SortDrawers   	*/
-    FALSE,			/* InitialShowVolumes 	*/
-    
-    "Volumes", 	 		/* VolumesText   	*/
-    "Parent",  			/* CancelText    	*/
-    "Pattern",			/* PatternText   	*/
-    "Drawer",			/* DrawerText    	*/
-    "File",			/* FileText	 	*/
-    "Drawer",			/* LVDrawerText  	*/
-    "Assign",			/* LVAssignText  	*/
-    
-    /* Delete Requester */
-    
-    "Delete File",
-    "Delete|Cancel",
-    "Warning: you cannot get back\n"
-    "what you delete! Ok to delete\n"
-    "%s?",
-    
-    /* Rename Requester */
-    
-    "Rename",
-    "Rename",
-    "Cancel",
-    
-    /* Create Drawer Requester */
-    
-    "Create Drawer",
-    "Create",
-    "Cancel",
-    "Rename_Me",
-    
-    /* Select Requester */
-    
-    "Select by pattern",
-    "Select",
-    "Cancel",
-    
-    /* Menus */
-    
-    "Control",
-
-    "L\0Last Name",
-    "N\0Next Name",
-    "R\0Restore",
-    "P\0Parent",
-    "V\0Volumes",
-    "U\0Update",
-    "D\0Delete",
-    "T\0Create new drawer...",
-    "E\0Rename...",
-    "#\0Select...",
-    "O\0Ok",
-    "C\0Cancel",
-    
-    "File list",
-    
-    "1\0Sort by name",
-    "2\0Sort by date",
-    "3\0Sort by size",
-    "+\0Ascending order",
-    "-\0Descending order",
-    "4\0Show drawers first",
-    "5\0Show drawers with files",
-    "6\0Show drawers last"
-    
+    FALSE			/* InitialShowVolumes 	*/
 };
 
 /*****************************************************************************************/
@@ -246,9 +187,11 @@ const struct IntSMReq def_smreq =
 	NULL,				/* IntuiMsgFunc 	*/
 	NULL,				/* TextAttr		*/
 	NULL,				/* Locale		*/
+	NULL,				/* Catalog		*/
 	NULL,				/* MemPool		*/
 	2048,				/* MemPoolPuddle	*/
 	2048,				/* MemPoolThresh	*/
+	MSG_FILEREQ_TITLE,   	    	/* TitleID  	    	*/
 	"Select Screen Mode",		/* TitleText		*/
 	"Ok",				/* PositiveText		*/
 	"Cancel",			/* NegativeText		*/
@@ -329,9 +272,11 @@ const struct IntFontReq def_fontreq =
 	NULL,				/* IntuiMsgFunc 	*/
 	NULL,				/* TextAttr		*/
 	NULL,				/* Locale		*/
+	NULL,				/* Catalog		*/
 	NULL,				/* MemPool		*/
 	2048,				/* MemPoolPuddle	*/
 	2048,				/* MemPoolThresh	*/
+	MSG_FILEREQ_TITLE,   	    	/* TitleID  	    	*/
 	"Open Font",			/* TitleText		*/
 	"Ok",				/* PositiveText		*/
 	"Cancel",			/* NegativeText		*/
@@ -462,16 +407,15 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!GadToolsBase)
         return (NULL);
 	
-    if (!BOOPSIBase)
-	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
-    if (!BOOPSIBase)
-	return(NULL);
-
     if (!IntuitionBase)
 	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
 	return (NULL);
 
+    if (!LocaleBase)
+    	LocaleBase = OpenLibrary("locale.library", 38);
+    /* We can live without locale.library so don't abort if opening fails */
+    
     if (!LIBBASE->aslpropclass)
         LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
     if (!LIBBASE->aslpropclass)
@@ -539,71 +483,103 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
     {
 
 	if (LIBBASE->aslpropclass)
+	{
 	    FreeClass(LIBBASE->aslpropclass);
-	LIBBASE->aslpropclass = NULL;
+	    LIBBASE->aslpropclass = NULL;
+	}
 
 	if (LIBBASE->aslarrowclass)
+	{
 	    FreeClass(LIBBASE->aslarrowclass);
-	LIBBASE->aslarrowclass = NULL;
+	    LIBBASE->aslarrowclass = NULL;
+	}
 	
 	if (LIBBASE->asllistviewclass)
+	{
 	    FreeClass(LIBBASE->asllistviewclass);
-	LIBBASE->asllistviewclass = NULL;
+	    LIBBASE->asllistviewclass = NULL;
+	}
 	
 	if (LIBBASE->aslbuttonclass)
+	{
 	    FreeClass(LIBBASE->aslbuttonclass);
-	LIBBASE->aslbuttonclass = NULL;
+	    LIBBASE->aslbuttonclass = NULL;
+	}
 
 	if (LIBBASE->aslstringclass)
+	{
 	    FreeClass(LIBBASE->aslstringclass);
-	LIBBASE->aslstringclass = NULL;
+	    LIBBASE->aslstringclass = NULL;
+	}
 
 	if (LIBBASE->aslcycleclass)
+	{
 	    FreeClass(LIBBASE->aslcycleclass);
-	LIBBASE->aslcycleclass = NULL;
+	    LIBBASE->aslcycleclass = NULL;
+	}
+	
+	if (LocaleBase)
+	{
+	    CloseLibrary(LocaleBase);
+	    LocaleBase = NULL;
+	}
 	
 	if (DiskfontBase)
+	{
 	    CloseLibrary(DiskfontBase);
-	DiskfontBase = NULL;
+	    DiskfontBase = NULL;
+	}
 	
 	if (GadToolsBase)
+	{
 	    CloseLibrary(GadToolsBase);
-	GadToolsBase = NULL;
+	    GadToolsBase = NULL;
+	}
 	
 	if (UtilityBase)
+	{
 	    CloseLibrary(UtilityBase);
-	UtilityBase = NULL;
-	
-	if (BOOPSIBase)
-	    CloseLibrary(BOOPSIBase);
-	BOOPSIBase = NULL;
-	
+	    UtilityBase = NULL;
+	}
+		
 	if (CyberGfxBase)
+	{
 	    CloseLibrary(CyberGfxBase);
-	CyberGfxBase = NULL;
+	    CyberGfxBase = NULL;
+	}
 	
 	if (LayersBase)
+	{
 	    CloseLibrary(LayersBase);
-	LayersBase = NULL;
+	    LayersBase = NULL;
+	}
 	
 	if (GfxBase)
+	{
 	    CloseLibrary((struct Library *)GfxBase);
-	GfxBase = NULL;
+	    GfxBase = NULL;
+	}
 	
 	if (DOSBase)
+	{
 	    CloseLibrary((struct Library *)DOSBase);
-	DOSBase = NULL;
+	    DOSBase = NULL;
+	}
 	
 	if (IntuitionBase)
+	{
 	    CloseLibrary((struct Library *)IntuitionBase);
-	IntuitionBase = NULL;
+	    IntuitionBase = NULL;
+	}
 	
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
 	    return expunge();
     }
+    
     return 0;
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -646,7 +622,9 @@ AROS_LH0(BPTR, expunge, struct AslBase_intern *, LIBBASE, 3, BASENAME)
 AROS_LH0I(int, null, struct AslBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
+
     return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
