@@ -6,10 +6,14 @@
     Lang: english
 */
 #include <aros/libcall.h>
+#include <proto/layers.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <exec/memory.h>
+#include <graphics/rastport.h>
+#include <graphics/clip.h>
+#include "layers_intern.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
 
 /*****************************************************************************
 
@@ -20,7 +24,7 @@
 	AROS_LH5(LONG, MoveSizeLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, layer, A0),
+	AROS_LHA(struct Layer *, l , A0),
 	AROS_LHA(LONG          , dx, D0),
 	AROS_LHA(LONG          , dy, D1),
 	AROS_LHA(LONG          , dw, D2),
@@ -32,8 +36,15 @@
 /*  FUNCTION
 
     INPUTS
+        l     - pointer to layer to be moved
+        dx    - delta to add to current x position
+        dy    - delta to add to current y position
+        dw    - delta to add to current width
+        dw    - delta to add to current height
 
     RESULT
+        result - TRUE everyting went alright
+                 FALSE an error occurred (out of memory)
 
     NOTES
 
@@ -51,11 +62,170 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-    D(bug("MoveSizeLayer(layer @ $%lx, dx %ld, dy %ld, dw %ld, dh %ld)\n", layer, dx, dy, dw, dh));
+  struct Layer * l_tmp;
+  struct ClipRect * CR;
+  struct RastPort * RP;
+  struct Layer_Info * LI = l->LayerInfo;
 
-    return NULL;
-    AROS_LIBFUNC_EXIT
+  /* Check coordinates as there's no suport for layers outside the displayed
+     bitmap. I might add this feature later. */
+  if (l->bounds.MinX+dx < 0 ||
+      l->bounds.MinY+dy < 0 ||
+      l->bounds.MaxX - l->bounds.MinX + 1 + dw <= 0 ||
+      l->bounds.MaxY - l->bounds.MinY + 1 + dy <= 0 ||
+      l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
+      l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
+    return FALSE; 
+  
+
+  /* Lock all other layers while I am moving this layer */
+  LockLayers(LI);
+
+  /* 
+     Here's how I do it:
+     I create a new layer on top of the given layer at the new position,
+     copy the bitmaps from the old layer to the new layer via ClipBlit() 
+     and delete the old layer. 
+     In order to maintain the pointer of the layer I will create a Layer
+     structure, link it into the list behind the new layer, copy important
+     data to the newly created structure and connect the cliprects to it,
+     of course.
+   */
+  
+  l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
+  CR = (struct ClipRect *)AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+  RP = (struct RastPort *)AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
+
+  if (NULL != l_tmp && NULL != CR && NULL != RP)
+  {
+    struct CR_tmp;
+    struct Layer * l_behind; 
+    LONG width, height;
+    /* link the temporary layer behind the layer to move */
+    l_tmp -> front = l;
+    l_tmp -> back  = l->back;
+    l     -> back  = l_tmp;
+
+    if (NULL != l_tmp->back)
+      l_tmp->back->front = l_tmp;
+
+    /* copy important data to the temporary layer. this list might be 
+       shrinkable
+       depending on what data deletelayer() needs later on */
+    l_tmp->ClipRect   = l->ClipRect;
+    l_tmp->rp         = RP;
+    l_tmp->bounds     = l->bounds;
+    l_tmp->Flags      = l->Flags;
+    l_tmp->LayerInfo  = LI;
+    l_tmp->DamageList = l->DamageList;
+
+    /* init the rastport structure of the temporary layer */
+    InitRastPort(RP);
+    RP -> Layer  = l_tmp;
+    RP -> BitMap = l->rp->BitMap;
+
+    /* I have to go through all the cliprects of the layers that are 
+       behind this layer and have an enty in lobs pointing to l. I
+       have to change this pointer to l_tmp, so that everything still
+       works fine later, especially the DeleteLayer() */
+
+    l_behind = l_tmp->back;
+    while (NULL != l_behind)
+    {
+      struct ClipRect * _CR = l_behind->ClipRect;
+      while (NULL != _CR)
+      {
+        if (_CR->lobs == l)
+	{
+          _CR->lobs = l_tmp;
+	}
+        _CR = _CR->Next;
+      } /* while */
+      l_behind = l_behind ->back;
+    } /* while */
+
+   
+    InitSemaphore(&l_tmp->Lock);
+    LockLayer(0, l_tmp);
+
+    /* modify the layer l's structure for the new position */
+    l->bounds.MinX += dx;
+    l->bounds.MaxX += dx+dw;
+    l->bounds.MinY += dy;
+    l->bounds.MaxY += dy+dh;
+
+    l->ClipRect = CR;
+
+    l->DamageList = NewRegion();
+
+    /* Copy the bounds */
+    CR->bounds = l->bounds;
+    /* 
+      Now create all ClipRects of all Layers correctly.   
+      Comment: CreateClipRects is the only function that does the
+               job correctly if you want to create a layer somewhere
+               behind other layers.
+    */
+
+    CreateClipRects(LI, l); 
+
+    /*
+       Ok, all other layers were visited and pixels are backed up.
+       Now we can draw the new layer by copying all parts of the
+       temporary layer's cliprects to the new layer via ClipBlit.
+    */
+    
+    /* 
+       The layer at the new position might be smaller than the other
+       one, so I have to find out about the width and height that I
+       am allowed to copy 
+     */
+    if (l    ->bounds.MaxX - l    ->bounds.MinX <
+        l_tmp->bounds.MaxX - l_tmp->bounds.MinX)
+      width = l    ->bounds.MaxX - l    ->bounds.MinX + 1;
+    else
+      width = l_tmp->bounds.MaxX - l_tmp->bounds.MinX + 1;
+    
+    if (l    ->bounds.MaxY - l    ->bounds.MinY >
+        l_tmp->bounds.MaxY - l_tmp->bounds.MinY)
+      width = l    ->bounds.MaxY - l    ->bounds.MinY + 1;
+    else
+      width = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
+
+    
+    ClipBlit(l_tmp->rp,
+             0,
+             0,
+             l->rp,
+             0,
+             0,
+             width,
+             height,
+             0x0c0);
+
+    /* 
+      The layer that was moved is totally visible now at its new position
+      and also at its old position. I delete it now from its old position.
+    */
+    DeleteLayer(0, l_tmp);
+
+    /* That's it folks! */
+
+    /* Now everybody else may play with the layers again */
+    UnlockLayers(l->LayerInfo);
+    return TRUE;
+  } 
+  else /* not enough memory */
+  {
+    if (NULL != CR   ) FreeMem(CR, sizeof(struct ClipRect));
+    if (NULL != RP   ) FreeMem(RP, sizeof(struct RastPort));
+    if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
+  }
+
+  return FALSE;
+   
+  AROS_LIBFUNC_EXIT
 } /* MoveSizeLayer */
