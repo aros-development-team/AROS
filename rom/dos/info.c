@@ -58,12 +58,15 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct IOFileSys iofs;
+    struct FileHandle *fh = (struct FileHandle *)lock;
 
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_DISK_INFO, DOSBase);
 
-    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(lock))->fh_Device;
-    iofs.IOFS.io_Unit   = (struct Unit *)parameterBlock;
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+    iofs.io_Union.io_INFO.io_Info = parameterBlock;
 
     DoIO(&iofs.IOFS);
 
