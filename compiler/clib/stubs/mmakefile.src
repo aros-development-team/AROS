@@ -14,7 +14,7 @@ clib-stubs : $(OBJS)
 clib-stubs-clean : clean
 
 #MM
-clib-stubs-gen :  stubslist
+clib-stubs-gen :  $(STUBSDIR)/stubslist
 
 #MM
 clean ::
@@ -23,20 +23,16 @@ clean ::
 $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
 	%compile_q
 
-stubsdeps :
-	(cd $(STUBSDIR); ./$(GENSTUBS) deps)
+$(STUBSDIR)/stubslist : $(STUBSDIR)/$(GENSTUBS)
+	./$(GENSTUBS) -list >$@
 
-stubslist : $(STUBSDIR)/$(GENSTUBS)
-	(cd $(STUBSDIR); ./$(GENSTUBS) list)
+$(STUBSDIR)/%.S:
+	./$(GENSTUBS) $(basename $(notdir $@)) >$@
 
+$(OBJS) : $(STUBSDIR)/$(GENSTUBS)
 
-$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def
+$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/machine.h
 	%mkdirs_q $(STUBSDIR)
 	$(HOST_CC) $(HOST_CFLAGS) -I$(AROS_INCLUDES) $< -o $@
-	(cd $(STUBSDIR); ./$(GENSTUBS) stubs)
 
 %common
-
-ifeq ($(TARGET), clib-stubs)
-include stubsdeps
-endif
