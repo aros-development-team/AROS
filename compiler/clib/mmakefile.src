@@ -22,6 +22,19 @@ MODULE	    :=	arosc.library
 STATIC_LIB  :=	$(AROS_LIB)/libarosc.a
 SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
 
+# New: Also trying to build
+#   $(AROS_LIB)/librom.a	    from $(COMMON) and $(ROMONLY)
+#   
+#   This is a library that is allowed to be used inside modules and the
+#   kernel. It must include no code which refers to global variables.
+#   
+#   Currently the main difference is that it includes a different __assert()
+#   function to handle asserts in the kernel.
+ROM_LIB	    :=	$(AROS_LIB)/librom.a
+
+# All of the above
+LIB	    := $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
+
 # Lists of files
 #   - Common always exist in the link library.
 
@@ -32,6 +45,7 @@ COMMON	:= \
 	ctype \
 	div \
 	ldiv \
+	lldiv \
 	longjmp \
 	memchr \
 	memcmp \
@@ -190,7 +204,9 @@ SHARED	:= \
 	strftime \
 	strerror \
 	strtol \
+	strtoll \
 	strtoul \
+	strtoull \
 	system \
 	telldir \
 	time	 \
@@ -212,6 +228,65 @@ SHARED	:= \
 	vsscanf \
 	write
 
+ROM_ONLY := \
+	__assert_kernel
+
+ROM_COMMON := \
+	bcmp \
+	bcopy \
+	bzero \
+	ctype \
+	div \
+	ldiv \
+	lldiv \
+	longjmp \
+	memchr \
+	memcmp \
+	memcpy \
+	memmove \
+	memset \
+	setjmp \
+	stpblk \
+	stpcpy \
+	strcasecmp \
+	strcat \
+	strchr \
+	strcmp \
+	strcpy \
+	strcspn \
+	strlen \
+	strncasecmp \
+	strncat \
+	strncmp \
+	strncpy \
+	strpbrk \
+	strrchr \
+	strrev \
+	strspn \
+	strstr \
+	strtod \
+	strtok
+
+# Objects for rom.lib, from the static build.
+ROM_STATIC := \
+	__isinf \
+	__vcformat \
+	abs \
+	atoi \
+	atol \
+	ctype \
+	isinf \
+	labs \
+	qsort \
+	snprintf \
+	sprintf \
+	strtol \
+	strtoll \
+	strtoul \
+	strtoull \
+	vsnprintf \
+	vsprintf
+
 #   - The stubs are generated, and are in the shared link library.
 STUBS   := $(wildcard $(OBJDIR)/stubs/*.o)
 
@@ -227,6 +302,10 @@ SHARED_OBJ :=	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
 		$(STUBS)
 MODULE_OBJ :=	$(foreach f,$(COMMON) $(SHARED),$(OBJDIR)/shared/$(f).o)
 
+ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
+		$(foreach f,$(ROM_COMMON),$(OBJDIR)/$(f).o) \
+		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
+
 # These are added to the link step of arosc.library
 LIBS := -L$(AROS_LIB) -larosm -lautoinit
 DEP_LIBS := arosm autoinit
@@ -234,15 +313,21 @@ DEP_LIBS := arosm autoinit
 %make_linklib_setup mmake=linklibs-clib
 
 #MM- linklibs : linklibs-clib
-#MM linklibs-clib : includes linklibs-mlib linklibs-autoinit \
+#MM linklibs-clib : setup includes linklibs-mlib linklibs-autoinit \
 #MM			clib-$(ARCH)-$(CPU) clib-stubs
 
-linklibs-clib : setup $(STATIC_LIB) $(SHARED_LIB) $(AROS_LIBS)/$(MODULE)
+#MM
+linklibs-clib-quick : linklibs-clib
+
+linklibs-clib : $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 $(STATIC_LIB) : $(STATIC_OBJ)
 	%mklib_q from=$^
 
 $(SHARED_LIB) : $(SHARED_OBJ)
+	%mklib_q from=$^
+
+$(ROM_LIB) : $(ROM_OBJ)
 	%mklib_q from=$^
 
 $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ)
@@ -253,6 +338,9 @@ $(OBJDIR)/static/%.o : %.c
 
 $(OBJDIR)/shared/%.o : %.c
 	%compile_q opt="$(CFLAGS) -D_CLIB_KERNEL_ -include $(INCDIR)/libraries/arosc.h"
+
+$(OBJDIR)/rom/%.o : %.c
+	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(CFLAGS) -include $(INCDIR)/libraries/arosc.h"
@@ -268,12 +356,16 @@ $(OBJDIR)/static/%.d : %.c
 $(OBJDIR)/shared/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
+$(OBJDIR)/rom/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
 #MM
 setup :
-	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR) $(OBJDIR)/static $(OBJDIR)/shared
+	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR) 
+	%mkdirs_q $(OBJDIR)/static $(OBJDIR)/shared $(OBJDIR)/rom
 
 #MM
 check : $(TESTDIR)/snprint
