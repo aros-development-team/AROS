@@ -1,8 +1,12 @@
 /* 
    $Id$
+
+	Descr.: bitmap block functions
 */
 
+#ifndef DEBUG
 #define DEBUG 1
+#endif
 
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -14,24 +18,46 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
-ULONG countUsedBlocksInBitmap(struct afsbase *afsbase, struct Volume *volume,ULONG block, ULONG maxcount) {
+/**********************************************
+ Name  : countUsedBlocksInBitmap
+ Descr.: count used blocks in a bitmap block
+ Input : afsbase -
+         volume  -
+         block   - bitmap block to count in
+         maxcount- max blocks marked in a bitmap block
+ Output: nr of used blocks
+***********************************************/
+ULONG countUsedBlocksInBitmap
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG block,
+		ULONG maxcount
+	)
+{
 UWORD i=1;
 ULONG count=0,lg,bits;
 struct BlockCache *blockbuffer;
 
-	if ((blockbuffer=getBlock(afsbase, volume,block))==0) {
+	if ((blockbuffer=getBlock(afsbase, volume,block))==0)
+	{
 		showText(afsbase, "Couldnt read bitmap block %d\nCount used blocks failed!",block);
 		return count;
 	}
-	if (!calcChkSum(volume->SizeBlock, blockbuffer->buffer)) {
-		while (maxcount>=32) {
+	if (!calcChkSum(volume->SizeBlock, blockbuffer->buffer))
+	{
+		while (maxcount>=32)
+		{
 			lg=AROS_BE2LONG(blockbuffer->buffer[i]);
-			if (!lg) {
+			if (!lg)
+			{
 				count += 32;
 			}
-			else if (lg!=0xFFFFFFFF) {
+			else if (lg!=0xFFFFFFFF)
+			{
 				bits=1;
-				do {
+				do
+				{
 					if (!(bits & lg))
 						count++;
 					bits=bits<<1;
@@ -40,16 +66,21 @@ struct BlockCache *blockbuffer;
 			maxcount -=32;
 			i++;
 		}
-		// are there some bits left ?
-		if (maxcount) {
+		/* are there some bits left ? */
+		if (maxcount)
+		{
 			lg=AROS_BE2LONG(blockbuffer->buffer[i]);
-			if (!lg) {
+			if (!lg)
+			{
 				count += maxcount;
 			}
-			else if (lg!=0xFFFFFFFF) {
+			else if (lg!=0xFFFFFFFF)
+			{
 				bits=1;
-				for (;maxcount;maxcount--) {
-					if (!(bits & lg)) count++;
+				for (;maxcount;maxcount--)
+				{
+					if (!(bits & lg))
+						count++;
 					bits=bits<<1;
 				}
 			}
@@ -60,6 +91,13 @@ struct BlockCache *blockbuffer;
 	return count;
 }
 
+/**************************************
+ Name  : countUsedBlocks
+ Descr.: count used blocks of a volume
+ Input : afsbase -
+         volume  -
+ Output: nr of used blocks of the volume
+***************************************/
 ULONG countUsedBlocks(struct afsbase *afsbase, struct Volume *volume) {
 UWORD i;
 ULONG blocks;
@@ -68,37 +106,71 @@ ULONG curblock;
 ULONG count=0;
 struct BlockCache *blockbuffer;
 
-	//check bitmapblocks stored in rootblock
-	blocks=volume->rootblock*2-volume->bootblocks;					//blocks to count
-	maxinbitmap=(volume->SizeBlock-1)*32;			//max blocks marked in a bitmapblock
-	for (i=0;i<=24;i++) {
-		if (maxinbitmap>blocks) maxinbitmap=blocks;
-		if (volume->bitmapblockpointers[i]) {
-			count=count+countUsedBlocksInBitmap(afsbase, volume,volume->bitmapblockpointers[i],maxinbitmap);
+	/* check bitmapblocks stored in rootblock */
+	blocks=volume->rootblock*2-volume->bootblocks; /* blocks to count */
+	maxinbitmap=(volume->SizeBlock-1)*32;          /* max blocks marked in a bitmapblock */
+	/* check bitmap blocks stored in rootblock */
+	for (i=0;i<=24;i++)
+	{
+		if (maxinbitmap>blocks)
+			maxinbitmap=blocks;
+		if (volume->bitmapblockpointers[i])
+		{
+			count +=
+				countUsedBlocksInBitmap
+					(
+						afsbase,
+						volume,
+						volume->bitmapblockpointers[i],
+						maxinbitmap
+					);
 			blocks -= maxinbitmap;
 		}
-		if (blocks==0) break;
+		if (blocks==0)
+			break;
 	}
-	//check extension blocks if neccessary
-	if (blocks) {
+	/* check extension blocks if neccessary */
+	if (blocks)
+	{
 		curblock=volume->bitmapextensionblock;
-		while (curblock) {
-			if (!(blockbuffer=getBlock(afsbase, volume,curblock))) {
-				showText(afsbase, "Couldnt read bitmap extension block %d\nCount used blocks failed!",curblock);
+		while (curblock)
+		{
+			
+			blockbuffer=getBlock(afsbase, volume, curblock);
+			if (!blockbuffer)
+			{
+				showText
+					(
+						afsbase,
+						"Couldnt read bitmap extension block %d\nCount used blocks failed!",
+						curblock
+					);
 				return count;
 			}
 			blockbuffer->flags |= BCF_USED;
-			for (i=0;i<volume->SizeBlock-1;i++) {
-				if (maxinbitmap>blocks) maxinbitmap=blocks;
-				if (blockbuffer->buffer[i]) {
-					count +=countUsedBlocksInBitmap(afsbase, volume,AROS_BE2LONG(blockbuffer->buffer[i]),maxinbitmap);
+			for (i=0;i<volume->SizeBlock-1;i++)
+			{
+				if (maxinbitmap>blocks)
+					maxinbitmap=blocks;
+				if (blockbuffer->buffer[i])
+				{
+					count +=
+						countUsedBlocksInBitmap
+							(
+								afsbase,
+								volume,
+								AROS_BE2LONG(blockbuffer->buffer[i]),
+								maxinbitmap
+							);
 					blocks -= maxinbitmap;
 				}
-				if (blocks==0) break;
+				if (blocks==0)
+					break;
 			}
-			if (blocks==0) break;
-			curblock=AROS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
 			blockbuffer->flags &= ~BCF_USED;
+			if (blocks==0)
+				break;
+			curblock=AROS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
 		}
 		if (blocks)
 			showError(afsbase, ERR_MISSING_BITMAP_BLOCKS);
@@ -110,17 +182,20 @@ ULONG createNewBitmapBlocks(struct afsbase *afsbase, struct Volume *volume) {
 struct BlockCache *bitmapblock,*extensionblock;
 ULONG i,blocks,maxinbitmap;
 
-	//initialize a block as a bitmap block
-	extensionblock=getFreeCacheBlock(afsbase, volume,-1);
+	/* initialize a block as a bitmap block */
+	extensionblock=getFreeCacheBlock(afsbase, volume, -1);
 	extensionblock->flags |= BCF_USED;
 	bitmapblock=getFreeCacheBlock(afsbase, volume,volume->rootblock+1);
+	/* all blocks are free */
 	for (i=1;i<volume->SizeBlock;i++)
-		bitmapblock->buffer[i]=0xFFFFFFFF;								//all blocks are free
+		bitmapblock->buffer[i]=0xFFFFFFFF;
 	bitmapblock->buffer[0]=0;
 	bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
-	blocks=volume->rootblock*2-volume->bootblocks;					//blocks to mark in bitmaps
-	maxinbitmap=(volume->SizeBlock-1)*32;			//max blocks marked in a bitmapblock
-	//first create bitmapblocks stored in rootblock
+	/* get nr of blocks to mark in bitmap blocks */
+	blocks=volume->rootblock*2-volume->bootblocks;
+	/* calc max blocks that can be marked in a single bitmap block */
+	maxinbitmap=(volume->SizeBlock-1)*32;
+	/* first create bitmapblocks stored in rootblock */
 	for (i=0;i<=24;i++)
 	{
 		if (maxinbitmap>blocks)
@@ -136,26 +211,33 @@ ULONG i,blocks,maxinbitmap;
 				volume->bitmapblockpointers[i++]=0;
 		}
 	}
-	//check extension blocks if neccessary
-	if (blocks) {
+	/* check extension blocks if neccessary */
+	if (blocks)
+	{
 		volume->bitmapextensionblock=bitmapblock->blocknum;
-		do {
-			// initialize extensionblock with zeros
+		do
+		{
+			/* initialize extensionblock with zeros */
 			extensionblock->blocknum=bitmapblock->blocknum;
 			for (i=0;i<volume->SizeBlock;i++)
 				extensionblock->buffer[i]=0;
-			// fill extensionblock and write bitmapblocks
-			for (i=0;i<volume->SizeBlock-1;i++) {
+			/* fill extensionblock and write bitmapblocks */
+			for (i=0;i<volume->SizeBlock-1;i++)
+			{
 				if (maxinbitmap>blocks)
 					maxinbitmap=blocks;
 				bitmapblock->blocknum += 1;
 				extensionblock->buffer[i]=AROS_LONG2BE(bitmapblock->blocknum);
 				writeBlock(afsbase, volume, bitmapblock);
 				blocks=blocks-maxinbitmap;
-				if (blocks==0) break;
+				if (blocks==0)
+					break;
 			}
-			if (blocks)	//write another extensionblock ? fill next extension
+			if (blocks)	/*write another extensionblock ? */
+			{
+				/* fill next extension */
 				extensionblock->buffer[volume->SizeBlock-1]=AROS_LONG2BE(bitmapblock->blocknum+1);
+			}
 			writeBlock(afsbase, volume, extensionblock);
 			bitmapblock->blocknum += 1;
 		} while (blocks);
@@ -174,9 +256,10 @@ struct BlockCache *blockbuffer;
 		return DOSFALSE;
 	blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]=flag;
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=
+		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
 	writeBlock(afsbase, volume, blockbuffer);
-	// in case of a concurrent access
+	/* in case of a concurrent access */
 	blockbuffer->blocknum=0;
 	blockbuffer->volume=0;
 	blockbuffer->acc_count=0;
@@ -201,9 +284,11 @@ LONG invalidBitmap(struct afsbase *afsbase, struct Volume *volume) {
 
 LONG validBitmap(struct afsbase *afsbase, struct Volume *volume) {
 
-	if (volume->bitmapblock->flags & BCF_WRITE) {
+	if (volume->bitmapblock->flags & BCF_WRITE)
+	{
 		volume->bitmapblock->buffer[0]=0;
-		volume->bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
+		volume->bitmapblock->buffer[0]=
+			AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
 		writeBlock(afsbase, volume, volume->bitmapblock);
 		volume->bitmapblock->flags &= ~BCF_WRITE;
 	}
@@ -221,7 +306,15 @@ LONG validBitmap(struct afsbase *afsbase, struct Volume *volume) {
          bitnr  - returns the bitnr block is associated to
  Note  : bitmapblock is changed (should be initialized first!)
 **************************************************/
-void gotoBitmapBlock(struct afsbase *afsbase, struct Volume *volume, ULONG block, ULONG *longnr, ULONG *bitnr) {
+void gotoBitmapBlock
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG block,
+		ULONG *longnr,
+		ULONG *bitnr
+	)
+{
 struct BlockCache *extensionblock;
 ULONG bblock,togo,maxinbitmap;
 
@@ -230,36 +323,58 @@ ULONG bblock,togo,maxinbitmap;
 	*bitnr = block % maxinbitmap;	// in the bblock-th block we have to mark the bit-th bit
 	*longnr = *bitnr/32+1;			// int the longnr-th LONG is "block" marked (+1 because [0]=BLK_CHECKSUM)
 	*bitnr = *bitnr % 32;			// in the bit-th bit of LONG "longnr" "block" is marked
-	// load new block ?
-	if ((block<volume->bstartblock) || (block>=(volume->bstartblock+maxinbitmap))) {
-		bblock = block/maxinbitmap;	// in the bblock-th bitmap block is "block" marked
-		if (volume->bitmapblock->flags & BCF_WRITE) {
+	/* load new block ? */
+	if (
+			(block<volume->bstartblock) ||
+			(block>=(volume->bstartblock+maxinbitmap))
+		)
+	{
+		bblock = block/maxinbitmap; /* in the bblock-th bitmap block is "block" marked */
+		if (volume->bitmapblock->flags & BCF_WRITE)
+		{
 			volume->bitmapblock->buffer[0]=0;
-			volume->bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
+			volume->bitmapblock->buffer[0]=
+				AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
 			writeBlock(afsbase, volume, volume->bitmapblock);
 			volume->bitmapblock->flags &= ~BCF_WRITE;
 		}
 		volume->bitmapblock->flags &= ~BCF_USED;
-		// load new block
-		if (bblock<=24) {
+		/* load new block */
+		if (bblock<=24)
+		{
 			volume->bitmapblock=getBlock(afsbase, volume,volume->bitmapblockpointers[bblock]);
 		}
-		else {
+		else
+		{
 			volume->lastextensionblock=volume->bitmapextensionblock;
-			volume->lastposition = bblock-25;				// 25 entries in rootblock already processed
-			togo = volume->lastposition / (volume->SizeBlock-1);	// do we have to go to another extensionblock ?
+			volume->lastposition = bblock-25;				/* 25 entries in rootblock already processed */
+			/* do we have to go to another extensionblock ? */
+			togo = volume->lastposition / (volume->SizeBlock-1);
 			volume->lastposition %= volume->SizeBlock-1;
 			extensionblock=getBlock(afsbase, volume, volume->lastextensionblock);
 			if (!extensionblock)
 				return;
-			while (togo) {
-				extensionblock=getBlock(afsbase, volume, AROS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1]));
+			while (togo)
+			{
+				extensionblock=
+					getBlock
+						(
+							afsbase,
+							volume,
+							AROS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1])
+						);
 				if (!extensionblock)
 					return;
 				volume->lastextensionblock=extensionblock->blocknum;
 				togo--;
 			}
-			volume->bitmapblock=getBlock(afsbase, volume, AROS_BE2LONG(extensionblock->buffer[volume->lastposition]));
+			volume->bitmapblock=
+				getBlock
+					(
+						afsbase,
+						volume,
+						AROS_BE2LONG(extensionblock->buffer[volume->lastposition])
+					);
 		}
 		volume->bstartblock=bblock*maxinbitmap;
 		if (!volume->bitmapblock)
@@ -275,8 +390,11 @@ ULONG bitnr, longnr,null=0;
 	if (block>=(volume->rootblock*2))
 		null=null/null;
 	gotoBitmapBlock(afsbase, volume, block, &longnr, &bitnr);
-	if (mode) { //free a block
-		volume->bitmapblock->buffer[longnr] = AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) | (1 << bitnr));
+	if (mode)
+	{
+		/* free a block */
+		volume->bitmapblock->buffer[longnr] =
+			AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) | (1 << bitnr));
 		volume->usedblockscount -= 1;
 		if (
 				(
@@ -294,21 +412,31 @@ ULONG bitnr, longnr,null=0;
 				volume->lastaccess=block;
 		}
 	}
-	else {
-		volume->bitmapblock->buffer[longnr] = AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) & ~(1 << bitnr));
+	else
+	{
+		volume->bitmapblock->buffer[longnr] =
+			AROS_LONG2BE(AROS_BE2LONG(volume->bitmapblock->buffer[longnr]) & ~(1 << bitnr));
 		volume->usedblockscount += 1;
-		volume->lastaccess=block;	//all blocks before "block" are used!
+		volume->lastaccess=block; /* all blocks before "block" are used! */
 	}
 	volume->bitmapblock->flags |= BCF_WRITE;
 	return DOSTRUE;
 }
 
-ULONG findFreeBlock(struct afsbase *afsbase, struct Volume *volume, ULONG togo, ULONG longnr, ULONG block) {
+ULONG findFreeBlock
+	(
+		struct afsbase *afsbase,
+		struct Volume *volume,
+		ULONG togo,
+		ULONG longnr,
+		ULONG block
+	)
+{
 ULONG maxinbitmap,maxblocks;
 ULONG bits,trash,lg;
 
-	maxinbitmap = (volume->SizeBlock-1)*32;		//max blocks marked in a bitmapblock
-	maxblocks = maxinbitmap-((longnr-1)*32);						// blocks left to check
+	maxinbitmap = (volume->SizeBlock-1)*32;  /* max blocks marked in a bitmapblock */
+	maxblocks = maxinbitmap-((longnr-1)*32); /* blocks left to check */
 	if (maxblocks>togo)
 		maxblocks=togo;
 	for (;;)
@@ -316,11 +444,13 @@ ULONG bits,trash,lg;
 		togo -= maxblocks;
 		while (maxblocks>=32)
 		{
-			// do we have a free block ? if yes search within this long which block
+			/* do we have a free block ? if yes search within this long which block */
 			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
-			if (lg) {
+			if (lg)
+			{
 				bits=1;
-				do {
+				do
+				{
 					if (bits & lg)
 						return block;
 					bits=bits<<1;
@@ -332,10 +462,12 @@ ULONG bits,trash,lg;
 			longnr++;
 			maxblocks -= 32;
 		}
-		if (maxblocks) {
+		if (maxblocks)
+		{
 			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
 			bits=1;
-			for (;maxblocks;maxblocks--) {
+			for (;maxblocks;maxblocks--)
+			{
 				if (bits & lg)
 					return block;
 				bits=bits<<1;
@@ -356,16 +488,18 @@ ULONG bits,trash,lg;
 ULONG getFreeBlock(struct afsbase *afsbase, struct Volume *volume) {
 ULONG block,longnr,bitnr,lg,maxbitcount;
 
-	// check all blocks after rootblock
+	/* check all blocks after rootblock */
 	block = volume->lastaccess;
 	gotoBitmapBlock(afsbase, volume,block,&longnr,&bitnr);
-	if (bitnr) {
+	if (bitnr)
+	{
 		maxbitcount=(volume->rootblock*2)-block;
 		if (maxbitcount)
 		{
 			maxbitcount= ((32-bitnr)<maxbitcount) ? 32 : bitnr+maxbitcount;
 			lg=AROS_BE2LONG(volume->bitmapblock->buffer[longnr]);
-			for (;bitnr<maxbitcount;bitnr++) {
+			for (;bitnr<maxbitcount;bitnr++)
+			{
 				if ((1<<bitnr) & lg)
 					return block;
 				block++;
@@ -375,8 +509,17 @@ ULONG block,longnr,bitnr,lg,maxbitcount;
 		if (block>=(volume->rootblock*2))
 			block=volume->bootblocks;
 	}
-	if (block>=volume->rootblock) {
-		block = findFreeBlock(afsbase, volume,volume->rootblock-(block-volume->rootblock)-1, longnr, block);
+	if (block>=volume->rootblock)
+	{
+		block =
+			findFreeBlock
+				(
+					afsbase,
+					volume,
+					volume->rootblock-(block-volume->rootblock)-1,
+					longnr,
+					block
+				);
 		if (block)
 			return block;
 		block=volume->bootblocks;
@@ -389,10 +532,12 @@ ULONG block,longnr,bitnr,lg,maxbitcount;
 ULONG allocBlock(struct afsbase *afsbase, struct Volume *volume) {
 ULONG block;
 
-	if ((block=getFreeBlock(afsbase, volume))) {
+	if ((block=getFreeBlock(afsbase, volume)))
+	{
 		D(bug("afs.handler:    allocBlock: found a free block on %ld\n",block));
 		if (!markBlock(afsbase, volume,block,0))
 			block=0;
 	}
 	return block;
 }
+

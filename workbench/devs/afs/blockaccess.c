@@ -2,6 +2,10 @@
    $Id$
 */
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 #include <stdio.h>
 
 #include <proto/exec.h>
