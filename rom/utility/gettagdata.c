@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: GetTagData()
-    Lang: english
+    GetTagData()
 */
 #include "intern.h"
 
@@ -16,9 +15,9 @@
 	AROS_LH3(IPTR, GetTagData,
 
 /*  SYNOPSIS */
-	AROS_LHA(Tag             , tagValue, D0),
-	AROS_LHA(IPTR            , defaultVal, D1),
-	AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(Tag                   , tagValue, D0),
+	AROS_LHA(IPTR                  , defaultVal, D1),
+	AROS_LHA(const struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 6, Utility)
@@ -58,11 +57,6 @@
 	utility/tagitem.h
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Moved into AROS source tree.
 
 *****************************************************************************/
 {
