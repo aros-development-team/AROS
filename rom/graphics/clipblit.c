@@ -121,7 +121,10 @@
     /* define the region with this rectangle */
     /* check whether operation succeeds = enough memory available*/
     if (FALSE == OrRectRegion(R,&Rect))
+    {
+      DiposeRegion(R);
       goto exit;
+    }
 
     /* define the rectangle of the source */
     Rect.MinX = xSrc;
@@ -136,39 +139,73 @@
     /* check whether they overlap */
     if (NULL != RR)
     {
-
-      /* it's overlapping, so I have to split this opertion up into
-         up to three calls to internal_ClipBlit */
-      /* first copy the overlapping part to its destination */
-      internal_ClipBlit(srcRP,
-                        xSrc+RR->bounds.MinX,
-                        ySrc+RR->bounds.MinY,
-                        destRP,
-                        xDest+RR->bounds.MinX,
-                        yDest+RR->bounds.MinY,
-                        RR->bounds.MaxX-RR->bounds.MinX+1,
-                        RR->bounds.MaxY-RR->bounds.MinY+1,
-                        minterm,
-                        GfxBase);
-
-      /* and now I invert the Region with the source rectangle */
-      XorRectRegion(R, &Rect);
-      RR = R->RegionRectangle;
-
-      while (NULL != RR)
+      int xs, ys;
+      /* 
+         It's overlapping; depending on how bad it is overlapping I
+         will have to split this up into several calls to the
+         internal ClipBlit routine
+      */
+      xs = XDest-xSrc;
+      ys = yDest-ySrc;
+      if (xs < 0) xs = -xs;
+      if (ys < 0) ys = -ys;
+      
+      /*
+        if the destination area is overlapping more than half of the
+        width or height of the source area, then it is the more
+        difficult case
+      */
+      if (xs * 2 > xSize || ys * 2 > ySize)
       {
+        /* 
+           In this case I use a special routine to copy the rectangle 
+        */
+        //!!! missing
+        
+      }
+      else
+      {
+        /* 
+           This case is not as difficult as the overlapping
+           part can be copied first and then the other parts can
+           be copied. 
+        */
+        /* first copy the overlapping part to its destination */
         internal_ClipBlit(srcRP,
                           xSrc+RR->bounds.MinX,
                           ySrc+RR->bounds.MinY,
-                          destRP,
+                          srcRP,
                           xDest+RR->bounds.MinX,
                           yDest+RR->bounds.MinY,
                           RR->bounds.MaxX-RR->bounds.MinX+1,
                           RR->bounds.MaxY-RR->bounds.MinY+1,
                           minterm,
                           GfxBase);
-        RR = RR->Next;
-      } /* while */
+
+        /* and now I invert the Region with the source rectangle */
+        if (FALSE == XorRectRegion(R, &Rect))
+        {
+          /* too bad! no more memory */
+          DisposeRegion(R);
+          goto exit;
+        }
+        RR = R->RegionRectangle;
+
+        while (NULL != RR)
+        {
+          internal_ClipBlit(srcRP,
+                            xSrc+RR->bounds.MinX,
+                            ySrc+RR->bounds.MinY,
+                            srcRP,
+                            xDest+RR->bounds.MinX,
+                            yDest+RR->bounds.MinY,
+                            RR->bounds.MaxX-RR->bounds.MinX+1,
+                            RR->bounds.MaxY-RR->bounds.MinY+1,
+                            minterm,
+                            GfxBase);
+          RR = RR->Next;
+        } /* while */
+      }
     } /* if (NULL != RR)*/
     else
     {
@@ -176,7 +213,7 @@
       internal_ClipBlit(srcRP,
                         xSrc,
                         ySrc,
-                        destRP,
+                        srcRP,
                         xDest,
                         yDest,
                         xSize,
@@ -184,13 +221,15 @@
                         minterm,
                         GfxBase);
     }
+    
     DisposeRegion(R);
 
   } /* if (destRP == srcRP) */
   else
   {
   
-    /* here: process all cases that don't overlap inside of a rastport */
+    /* here: process the case when the source and destination rastports
+             are different */
 
     internal_ClipBlit(srcRP,
                       xSrc,
