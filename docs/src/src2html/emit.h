@@ -11,6 +11,7 @@ extern int lasttoken;
 extern int pendingspace;
 extern int emitcount;
 extern int appendix;
+extern int isnewtext;
 
 extern int chapter, section, subsection;
 
@@ -26,6 +27,7 @@ enum listmode
     lm_itemize,
     lm_enumeration,
     lm_emph,
+    lm_new,
 };
 
 enum lastemittype

@@ -54,6 +54,7 @@ TEXT	    ([^\\\|{]|\n)+
     ([^\\]*|\n)*        { appendtovarstring (vs, yytext); }
     \\			{ appendtovarstring (vs, yytext); }
 }
+"\\begin"[ \t\n]*"\{new\}"  { return BEGIN_NEW; }
 "\\begin"         { return BEGIN; }
 "\\end"           { return END; }
 "\\item"          { return ITEM; }

@@ -26,6 +26,8 @@ FILE * out;
 char * outname;
 
 int chapter = 0, section = 0, subsection = 0;
+int isnewtext;
+static int actualidate;
 
 enum listmode convlistmode (const char * name);
 
@@ -38,6 +40,7 @@ static const char * listmodename[] =
     "itemize",
     "enumeration",
     "emph",
+    "new",
     NULL
 };
 
@@ -47,6 +50,8 @@ void emit_init (void)
 {
     FILE * fh;
     char key[64], data[256];
+    struct tm tm;
+    time_t tt;
 
     lrefs = createhash ();
 
@@ -85,6 +90,11 @@ void emit_init (void)
 	fprintf (stderr, "emit_init: Illegal emit-mode %d\n", emode);
 	exit (10);
     }
+
+    time (&tt);
+    tm = *localtime (&tt);
+
+    actualidate = tm.tm_mday + tm.tm_mon*31 + tm.tm_year*31*12;
 }
 
 void writelrefs (char * key, char * str, FILE * fh)
@@ -125,6 +135,23 @@ void emit_exit (void)
     traversehash (lrefs, (TraverseProc)writelrefs, fh);
 
     fclose (fh);
+}
+
+int getidate (const char * str)
+{
+    int day, month, year;
+
+    sscanf (str, "%d.%d.%d", &day, &month, &year);
+
+    if (year < 100)
+    {
+	if (year < 90)
+	    year += 2000;
+	else
+	    year += 1900;
+    }
+
+    return day + month*31 + year*31*12;
 }
 
 void emit (int token, ...)
@@ -200,6 +227,21 @@ void emit (int token, ...)
     default:
 	switch (token)
 	{
+	case BEGIN_NEW:
+	    {
+		char * date = va_arg (args, char *);
+		int idate = getidate (date);
+
+		if (idate + 30 > actualidate)
+		    isnewtext = 1;
+		else
+		    isnewtext = 0;
+
+		liststack[listsp++] = lmode;
+		lmode = lm_new;
+	    }
+	    break;
+
 	case BEGIN:
 	    if (listsp == LISTSTACKDEPTH)
 		yyerror ("Too many \\begin{}s");
@@ -254,6 +296,9 @@ void emit (int token, ...)
 
 	    va_end (args);
 	    va_start (args, token);
+
+	    if (lmode == lm_new)
+		isnewtext = 0;
 
 	    lmode = liststack[--listsp];
 	}

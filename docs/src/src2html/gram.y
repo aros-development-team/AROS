@@ -20,13 +20,14 @@
 
 %left <string> TEXT SMALLCODE BIGCODE EXAMPLE
 %left CHAPTER SECTION SUBSECTION LINK
-%left BEGIN ITEM END FILENAME FILEINFO
+%left BEGIN BEGIN_NEW ITEM END FILENAME FILEINFO
 %left LREF SHELL LABEL BOLD EMAIL ITALICS
 %left SMALLPIC LARGEPIC TOC APPENDIX
 %left DEBUG PAR NL
 %left <string> ARG
 %left IF
 %type <string> optarg
+%expect 2
 %%
 file : /* eps */ | fileparts ;
 
@@ -55,6 +56,8 @@ command : CHAPTER ARG
 	{ emit (LINK, $2, $3); xfree ($2); xfree ($3); }
 	| BEGIN ARG
 	{ emit (BEGIN, $2); xfree ($2); }
+	| BEGIN_NEW ARG
+	{ emit (BEGIN_NEW, $2); xfree ($2); }
 	| ITEM optarg
 	{ emit (ITEM, $2); if ($2) xfree ($2); }
 	| END ARG
