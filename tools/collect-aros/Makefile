@@ -26,7 +26,7 @@ getlinkername: getlinkername.c
 	@$(HOST_STRIP) $@
 
 collect-aros.h : getlinkername
-	@echo "#define LINKERPATH \"$(shell $(TARGET_CC) -print-prog-name=`$(CAT) \`$(TARGET_CC) -print-prog-name=specs\` | ./getlinkername`)\"" > collect-aros.h
+	@echo "#define LINKERPATH \"$(shell $(TARGET_CC) -print-prog-name=`$(TARGET_CC) -dumpspecs | ./getlinkername`)\"" > collect-aros.h
 	@echo "#define NMPATH \"$(NM_PLAIN)\"" >> collect-aros.h
 	@echo "#define GCCPATH \"$(TARGET_CC)\"" >> collect-aros.h
 	@echo "#define MVPATH \"$(MV)\"" >> collect-aros.h
