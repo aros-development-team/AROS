@@ -169,9 +169,9 @@ APTR AllocSegment(APTR, ULONG, ULONG, struct DiskfontBase_intern *);
 struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase_intern *);
 struct TagItem *ReadTagsNum(BPTR, ULONG *, struct DiskfontBase_intern *);
 /*BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);*/
-BOOL WriteTagsNum(BPTR, struct TagItem *, struct DiskfontBase_intern *);
-ULONG NumTags(struct TagItem *, struct DiskfontBase_intern *);
-ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_intern *);
+BOOL WriteTagsNum(BPTR, const struct TagItem *, struct DiskfontBase_intern *);
+ULONG NumTags(const struct TagItem *, struct DiskfontBase_intern *);
+ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase_intern *);
 
 
 /********************/

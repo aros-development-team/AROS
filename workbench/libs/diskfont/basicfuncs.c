@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Some support functions
-    Lang: English.
+    Some support functions
 */
 
 /****************************************************************************************/
@@ -137,7 +136,7 @@ rt_failure:
 
 /****************************************************************************************/
 
-BOOL WriteTagsNum(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
+BOOL WriteTagsNum(BPTR fh, const struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 {
     struct TagItem *tag;
     ULONG num;
@@ -174,16 +173,15 @@ wt_failure:
 
 /****************************************************************************************/
 
-ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
+ULONG NumTags(const struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 /* Counts the number of tags in at taglist including TAG_DONE */
 
 {
-    struct TagItem *tstate = taglist;  
     ULONG numtags = 0;
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
-    for (; NextTagItem(&tstate); )
+    for (; NextTagItem(&taglist); )
         numtags ++;
 
     numtags ++; /* Count TAG_DONE */
@@ -202,7 +200,7 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 ULONG CopyTagItems
 (
     struct TagItem *desttaglist, 
-    struct TagItem *sourcetaglist, 
+    const struct TagItem *sourcetaglist, 
     struct DiskfontBase_intern *DiskfontBase
 )
 /* Copies tags from a taglist to another memory location, returning

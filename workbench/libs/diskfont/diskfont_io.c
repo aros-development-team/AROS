@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Functions for reading disk font files.
-    Lang: English.
+    Functions for reading disk font files.
 */
 
 /****************************************************************************************/
@@ -62,7 +61,7 @@ SKIPPTR(ptr);
 #else
 
 #define COPYPTR(ptr,destptr) \
-((APTR)destptr) = *((APTR *)(ptr)); \
+(destptr) = *((APTR *)(ptr)); \
 SKIPPTR(ptr);
 #endif
 /****************************************************************************************/
@@ -82,6 +81,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     UBYTE *ptr;
 
     UWORD *destptr;
+    ULONG *destlptr;
     ULONG chardatasize;
     struct DiskFontHeader tmp_dfh, *dfh = 0;
     struct TextFont *tf = 0;
@@ -184,13 +184,13 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     if (!dfh) goto failure;
 
     fontsegment = (BPTR)MAKE_REAL_SEGMENT(dfh);
-    tmp_dfh.dfh_Segment = (LONG)fontsegment;
+    tmp_dfh.dfh_Segment = fontsegment;
    
     tf = &dfh->dfh_TF;
     
     D(bug("charkern in temp:  %p\n", 	tmp_dfh.dfh_TF.tf_CharKern));
 
-    /*	Copy allready converted stuff into allocated mem */
+    /*	Copy already converted stuff into allocated mem */
     CopyMem(&tmp_dfh, dfh, sizeof (struct DiskFontHeader));
 
     D(bug("tmp_tf copied, charkern=%p\n", tf->tf_CharKern));
@@ -320,11 +320,11 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
 
     /* Convert charloc data */
     ptr = charloc_ptr;
-    destptr = tf->tf_CharLoc;
+    destlptr = (ULONG *) tf->tf_CharLoc;
     for (i = 0; i < numchars; i ++ )
     {
-        CONVLONG(ptr,  *((ULONG *)destptr) ++);
-	D(bug("charloc[%d]: %x\n", i, ((ULONG *)destptr)[-1]));
+        CONVLONG(ptr,  *destlptr ++);
+        D(bug("charloc[%d]: %x\n", i, destlptr[-1]));
     }
     D(bug("Charloc OK\n"));	
 

@@ -48,8 +48,8 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LIBBASE->dsh.h_Data = DOSBase;
 
-    LIBBASE->memint.is_Data = (APTR)LIBBASE;
-    LIBBASE->memint.is_Code = CleanMem;
+    LIBBASE->memint.is_Data = (APTR) LIBBASE;
+    LIBBASE->memint.is_Code = (VOID (*)()) CleanMem;
     LIBBASE->memint.is_Node.ln_Pri = 1; /* Just above RamLib */
     AddMemHandler(&LIBBASE->memint);
     

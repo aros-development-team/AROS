@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Functions for readin .font files
-    Lang: English.
+    Functions for reading .font files
 */
 
 /****************************************************************************************/
@@ -867,7 +866,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     WORD		    lochar, hichar, baseline;
     UBYTE		    fontstyle, supportedstyle;
 
-    enginename = (STRPTR)GetTagData(OT_Engine, NULL, otag->tags);
+    enginename = (STRPTR)GetTagData(OT_Engine, (IPTR) NULL, otag->tags);
     if (!enginename) return NULL;
 
     enginenamebuf = AllocVec(strlen(enginename) + sizeof(".library") + 1, MEMF_ANY);
