@@ -29,7 +29,10 @@
 #include "intuition/iobsolete.h"
 #include "proto/exec.h"
 #include "proto/intuition.h"
+
 #include <stdio.h>
+#include <stdlib.h>
+
 #define SHORT WORD
 void Test(void);
 
@@ -237,7 +240,7 @@ int main(void)
                     OpenLibrary("intuition.library", 0L);
    if (IntuitionBase == NULL) {
       printf("Failed to open intuition\n");
-      exit();
+      exit(0);
    }
 
    Test();  /* Do the work: put up a "requester" */
