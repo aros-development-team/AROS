@@ -21,35 +21,29 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 #DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 #	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
-FILES = alib_util \
-	allocnamedobject \
-	callhook \
-	coercemethod \
-	createextio \
-	createport \
-	createstdio \
-	createtask \
-	deleteextio \
-	deleteport \
-	deletestdio \
-	deletetask \
-	dogadgetmethod \
-	domethod \
-	dosupermethod \
-	easyrequest \
-	fastrand \
-	hookentry \
-	liballocpooled \
-	libcreatepool \
-	libdeletepool \
-	libfreepooled \
-	newlist \
-	newobject \
-	openscreentags \
-	openwindowtags \
-	rangerand \
-	setattrs \
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Some files are excluded from the native build, because they are already
+# handled by the inlines.
+FILES = alib_util callhook coercemethod createextio createport createstdio  \
+	createtask deleteextio deleteport deletestdio deletetask            \
+	domethod dosupermethod fastrand hookentry liballocpooled            \
+	libcreatepool libdeletepool libfreepooled newlist rangerand         \
 	setsuperattrs
+
+# ***** Not Native ***************
+else
+
+FILES = alib_util allocnamedobject callhook coercemethod createextio        \
+	createport createstdio createtask deleteextio deleteport deletestdio\
+	deletetask dogadgetmethod domethod dosupermethod easyrequest        \
+	fastrand hookentry liballocpooled libcreatepool libdeletepool       \
+	libfreepooled newlist newobject openscreentags openwindowtags       \
+	rangerand setattrs setsuperattrs
+
+# ***** END ***************
+endif
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
