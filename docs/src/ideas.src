@@ -1,0 +1,33 @@
+\begin{new}{16.10.1997}
+\chapter{Random Ideas}
+\section{Introduction}
+
+This part of the documentation for AROS contains random and unsorted and
+possibly impossible improvements, ideas and other things which might
+go into AROS V2.x, when compatibility with AmigaOS is still important but
+where new things can be done.
+
+\begin{itemize}
+\item All lists and public structures must be protected by semaphore. A
+system like the hierarchical semaphores in pOS would be best.
+
+\item lddaemon should be able to load more than one library at a time thus
+allowing to open a library which has to be loaded from disk which opens a
+library in |libOpen()| which has also to be loaded from disk.
+
+The daemon could also search actively for a library allowing the user to
+specify one if it can't be found. Paths like \shell{PROGDIR:} should be
+searched automatically.
+
+If the lib can't be found, DOS_OpenLibrary() must create a message port and
+a message, put the port in the reply-to field of the message as well as the
+name and min-version of the lib and then send the message to the lddaemon
+and wait for the reply.
+
+Open questions: Will this interfere with the way Exec handles libraries now
+(eg. single threaded |libInit()|) ? Can this introduce deadlocks in the
+locking of the exec library list ? What happens if |libClose()| calls
+|libExpunge()| ?
+
+\end{itemize}
+\end{new}
