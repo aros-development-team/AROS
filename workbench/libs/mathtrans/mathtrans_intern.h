@@ -93,6 +93,7 @@ LONG intern_SPisodd(ULONG fnum);
 #define minusone 0x800000c1 /* -1.00000000000000000000e+00 */
 #define two      0x80000042 /*  2.0                        */
 #define onehalf  0x80000040 /*  0.5                        */
+#define three    0xc0000042 /*  3.0                        */
 
 /* some more constants: pi, pi/2, pi/4 */
 
