@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/03/17 17:07:20  digulla
+    Pass args to process
+
     Revision 1.3  1997/01/27 00:36:13  ldp
     Polish
 
@@ -20,8 +23,8 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase)
 {
     APTR *sp=process->pr_Task.tc_SPUpper;
     *--sp=SysBase;
-    argSize=0;
-    argPtr=NULL;
+    *--sp=(APTR)argSize;
+    *--sp=argPtr;
     process->pr_ReturnAddr=sp-1;
     process->pr_Task.tc_SPReg=(STRPTR)sp-SP_OFFSET;
     return (struct Process *)AddTask(&process->pr_Task,initialPC,finalPC);
