@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/28 17:55:37  digulla
+    Proportional gadgets
+    BOOPSI
+
     Revision 1.2  1996/08/23 17:24:11  digulla
     Opening intuition.library called intui_init() instead of intui_open(). Ooops.
 
@@ -12,10 +16,20 @@
     Desc:
     Lang:
 */
+#define AROS_ALMOST_COMPATIBLE
+#include <exec/lists.h>
 #include <exec/resident.h>
+#include <exec/memory.h>
 #include <exec/execbase.h>
 #include <clib/exec_protos.h>
+#include <clib/intuition_protos.h>
 #include <dos/dos.h>
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
+#ifndef UTILITY_HOOKS_H
+#   include <utility/hooks.h>
+#endif
 #include "intuition_intern.h"
 
 static const char name[];
@@ -29,6 +43,9 @@ extern int  intui_init (struct IntuitionBase *);
 extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
+
+static ULONG rootDispatcher (Class *, Object *, Msg);
+static struct IntuitionBase * IntuiBase;
 
 int Intuition_entry(void)
 {
@@ -62,6 +79,21 @@ static const APTR inittabl[4]=
     &Intuition_init
 };
 
+static Class rootclass =
+{
+    { { NULL, NULL }, rootDispatcher, NULL, NULL },
+    0,		/* reserved */
+    NULL,	/* No superclass */
+    (ClassID)ROOTCLASS,  /* ClassID */
+
+    0, 0,	/* No offset and size */
+
+    0,		/* UserData */
+    0,		/* SubClassCount */
+    0,		/* ObjectCount */
+    0,		/* Flags */
+};
+
 __AROS_LH2(struct IntuitionBase *, init,
  __AROS_LHA(struct IntuitionBase *, IntuitionBase, D0),
  __AROS_LHA(BPTR,               segList,   A0),
@@ -69,10 +101,16 @@ __AROS_LH2(struct IntuitionBase *, init,
 {
     __AROS_FUNC_INIT
 
+    IntuiBase = IntuitionBase;
     SysBase = sysBase;
+
+    NEWLIST (PublicClassList);
 
     if (!intui_init (IntuitionBase))
 	return NULL;
+
+    /* The rootclass is created statically */
+    AddClass (&rootclass);
 
     /* You would return NULL if the init failed */
     return IntuitionBase;
@@ -163,3 +201,98 @@ __AROS_LH0I(int, null,
     return 0;
     __AROS_FUNC_EXIT
 }
+
+#undef IntuitionBase
+#define IntuitionBase	IntuiBase
+
+/******************************************************************************
+
+    NAME */
+	static ULONG rootDispatcher (
+
+/*  SYNOPSIS */
+	Class  * cl,
+	Object * o,
+	Msg	 msg)
+
+/*  FUNCTION
+	internal !
+
+	Processes all messages sent to the RootClass. Unknown messages are
+	silently ignored.
+
+    INPUTS
+	cl - Pointer to the RootClass
+	o - This object was the destination for the message in the first
+		place
+	msg - This is the message.
+
+    RESULT
+	Processes the message. The meaning of the result depends on the
+	type of the message.
+
+    NOTES
+	This is a good place to debug BOOPSI objects since every message
+	should eventually show up here.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    HISTORY:
+	14.09.93    ada created
+
+******************************************************************************/
+{
+    ULONG retval = 0;
+
+    switch (msg->MethodID)
+    {
+    case OM_NEW: {
+	cl = _OBJECT(o)->o_Class;
+
+	/* Nur Speicher besorgen. Im Object steht, wieviel.
+	   (Das Object ist keines. Es ist der Class-Pointer selbst !) */
+	retval = (ULONG) AllocMem (cl->cl_InstOffset
+		+ cl->cl_InstSize
+		+ sizeof (struct _Object)
+	    , MEMF_ANY
+	    );
+
+	retval = (ULONG) BASEOBJECT(retval);
+	break; }
+
+    case OM_DISPOSE:
+	/* Speicher freigeben. Aufrufer ist verantwortlich,
+	   dass bereits alles andere freigegeben wurde ! */
+	FreeMem (_OBJECT(o)
+	    , cl->cl_InstOffset
+		+ cl->cl_InstSize
+		+ sizeof (struct _Object)
+	    );
+	break;
+
+    case OM_ADDTAIL:
+	/* Fuege <o> an Liste an. */
+	AddTail (((struct opAddTail *)msg)->opat_List,
+		    (struct Node *) _OBJECT(o));
+	break;
+
+    case OM_REMOVE:
+	/* Entferne Object aus der Liste */
+	Remove ((struct Node *) _OBJECT(o));
+	break;
+
+    default:
+	/* Ignore */
+	break;
+
+    } /* switch */
+
+    return (retval);
+} /* rootDispatcher */
+
+
+

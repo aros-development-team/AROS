@@ -12,15 +12,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <utility/tagitem.h>
 #include <clib/exec_protos.h>
-#include "intuition_intern.h"
+#include <clib/dos_protos.h>
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/aros_protos.h>
+#include "intuition_intern.h"
+
+extern struct DosBase * DOSBase;
 
 static struct IntuitionBase * IntuiBase;
-
-static struct MsgPort * intuiReplyPort;
 
 extern Display * sysDisplay;
 extern long sysCMap[];
@@ -34,6 +38,9 @@ int	  GetSysScreen (void);
 extern void SetGC (struct RastPort * rp, GC gc);
 extern GC GetGC (struct RastPort * rp);
 extern void SetXWindow (struct RastPort * rp, int win);
+
+extern int CalcKnobSize (struct Gadget * propGadget, long * knobleft,
+			long * knobtop, long * knobwidth, long * knobheight);
 
 static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
@@ -152,9 +159,22 @@ static int MySysErrorHandler (Display * display)
     exit (10);
 }
 
+static void intui_ProcessXEvents (void);
+struct Process * inputDevice;
+
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
+    struct TagItem inputTask[]=
+    {
+	{ NP_Entry,	(ULONG)intui_ProcessXEvents },
+	{ NP_Input,	0L },
+	{ NP_Output,	0L },
+	{ NP_Name,	(ULONG)"input.device" },
+	{ NP_StackSize, 20000 },
+	{ NP_Priority,	50 },
+	{ TAG_END, 0 }
+    };
 
     memset (&WB, 0, sizeof(struct Screen));
 
@@ -167,12 +187,12 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 	keytable[t].keycode = XKeysymToKeycode (sysDisplay,
 		keytable[t].keysym);
 
-    intuiReplyPort = CreateMsgPort ();
-
     XSetErrorHandler (MyErrorHandler);
     XSetIOErrorHandler (MySysErrorHandler);
 
     IntuiBase = IntuitionBase;
+
+    inputDevice = CreateNewProc (inputTask);
 
     return True;
 }
@@ -212,177 +232,6 @@ void intui_SetWindowTitles (struct Window * win, char * text, char * screen)
 	    None, NULL, 0, &hints);
 }
 
-void RenderGadget (struct Window * window, struct Gadget * gadget,
-	struct IntuitionBase * IntuitionBase)
-{
-    APTR render;
-
-    switch (gadget->Flags & GFLG_GADGHIGHBITS)
-    {
-    case GFLG_GADGHCOMP: {
-	UBYTE DrawMode;
-	ULONG apen;
-
-	DrawMode = GetDrMd (window->RPort);
-	apen = GetAPen (window->RPort);
-
-	SetDrMd (window->RPort, JAM1);
-	SetAPen (window->RPort, 0);
-
-	RectFill (window->RPort
-	    , gadget->LeftEdge
-	    , gadget->TopEdge
-	    , gadget->LeftEdge + gadget->Width - 1
-	    , gadget->TopEdge + gadget->Height - 1
-	);
-
-	render = gadget->GadgetRender;
-
-	if (render)
-	{
-	    if (gadget->Flags & GFLG_GADGIMAGE)
-	    {
-		DrawImage (window->RPort
-		    , (struct Image *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	    else
-	    {
-		DrawBorder (window->RPort
-		    , (struct Border *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	}
-
-	if (gadget->Flags & GFLG_SELECTED)
-	{
-	    SetDrMd (window->RPort, COMPLEMENT);
-
-	    RectFill (window->RPort
-		, gadget->LeftEdge
-		, gadget->TopEdge
-		, gadget->LeftEdge + gadget->Width - 1
-		, gadget->TopEdge + gadget->Height - 1
-	    );
-	}
-
-	SetDrMd (window->RPort, DrawMode);
-
-	break; }
-
-    case GFLG_GADGHIMAGE:
-	render = (gadget->Flags & GFLG_SELECTED) ?
-		    gadget->SelectRender : gadget->GadgetRender;
-
-	if (render)
-	{
-	    if (gadget->Flags & GFLG_GADGIMAGE)
-	    {
-		DrawImage (window->RPort
-		    , (struct Image *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	    else
-	    {
-		DrawBorder (window->RPort
-		    , (struct Border *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	}
-
-	break;
-
-    case GFLG_GADGHNONE:
-	render = gadget->SelectRender;
-
-	if (render)
-	{
-	    if (gadget->Flags & GFLG_GADGIMAGE)
-	    {
-		DrawImage (window->RPort
-		    , (struct Image *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	    else
-	    {
-		DrawBorder (window->RPort
-		    , (struct Border *)render
-		    , gadget->LeftEdge
-		    , gadget->TopEdge
-		);
-	    }
-	}
-
-	break;
-
-    case GFLG_GADGHBOX:
-	/* TODO */
-	break;
-
-    } /* switch GadgetHighlightMethod */
-
-    if (gadget->GadgetText)
-    {
-	switch (gadget->Flags & GFLG_LABELMASK)
-	{
-	case GFLG_LABELITEXT:
-	    PrintIText (window->RPort
-		, gadget->GadgetText
-		, gadget->LeftEdge
-		, gadget->TopEdge
-	    );
-	    break;
-
-	case GFLG_LABELSTRING: {
-	    STRPTR text = (STRPTR) gadget->GadgetText;
-	    int len, width, height;
-	    UBYTE apen;
-	    UBYTE drmd;
-
-	    len = strlen (text);
-
-	    width = TextLength (window->RPort, text, len);
-	    height = window->RPort->Font->tf_YSize;
-
-	    drmd = GetDrMd (window->RPort);
-	    apen = GetAPen (window->RPort);
-
-	    SetAPen (window->RPort, 1);
-	    SetDrMd (window->RPort, JAM1);
-
-	    Move (window->RPort
-		, gadget->LeftEdge + gadget->Width/2 - width/2
-		, gadget->TopEdge + gadget->Height/2 - height/2
-		    + window->RPort->Font->tf_Baseline
-	    );
-	    Text (window->RPort, text, len);
-
-	    SetAPen (window->RPort, apen);
-	    SetDrMd (window->RPort, drmd);
-
-	    break; }
-
-	case GFLG_LABELIMAGE:
-	    DrawImage (window->RPort
-		, (struct Image *)gadget->GadgetText
-		, gadget->LeftEdge
-		, gadget->TopEdge
-	    );
-	    break;
-	}
-    }
-}
-
 struct Window * intui_OpenWindow (struct NewWindow * nw,
 	struct IntuitionBase * IntuitionBase)
 {
@@ -391,7 +240,6 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     struct RastPort * rp;
     XGCValues gcval;
     GC gc;
-    struct Gadget * gadget;
 
     iw = AllocMem (sizeof (struct IntWindow), MEMF_CLEAR);
     rp = AllocMem (sizeof (struct RastPort), MEMF_CLEAR);
@@ -492,10 +340,11 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor);
     XMapRaised (sysDisplay, iw->iw_XWindow);
 
+    RefreshGadgets (w->FirstGadget, w, NULL);
+
     XSync (sysDisplay, FALSE);
 
-    for (gadget=w->FirstGadget; gadget; gadget=gadget->NextGadget)
-	RenderGadget (w, gadget, IntuitionBase);
+    Signal ((struct Task *)inputDevice, SIGBREAKF_CTRL_F);
 
     Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
 
@@ -539,8 +388,8 @@ void intui_CloseWindow (struct Window * win,
 	/* Delete all pending messages */
 	Forbid ();
 
-	while ((im = (struct IntuiMessage *) RemHead (&win->UserPort->mp_MsgList)))
-	    FreeMem (im, sizeof (struct IntuiMessage));
+	while ((im = (struct IntuiMessage *) GetMsg (win->UserPort)))
+	    ReplyMsg ((struct Message *)im);
 
 	Permit ();
 
@@ -812,16 +661,32 @@ long size, type;
 
 #endif
 
+#define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
+#define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
+#define GetTop(gad,w)            (ADDREL(gad,GFLG_RELBOTTOM,w,Height) + gad->TopEdge)
+#define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH,w,Width)   + gad->Width)
+#define GetHeight(gad,w)         (ADDREL(gad,GFLG_RELHEIGHT,w,Height) + gad->Height)
+
+#define InsideGadget(w,gad,x,y)   \
+	    ((x) >= GetLeft(gad,w) && (y) >= GetTop(gad,w) \
+	    && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
+	    && (y) < GetTop(gad,w) + GetHeight(gad,w))
+
+
 struct Gadget * FindGadget (struct Window * window, int x, int y)
 {
     struct Gadget * gadget;
+    int gx, gy;
 
     for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
-	if (x >= gadget->LeftEdge
-	    && y >= gadget->TopEdge
-	    && x < gadget->LeftEdge + gadget->Width
-	    && y < gadget->TopEdge + gadget->Height
+	gx = x - GetLeft(gadget,window);
+	gy = y - GetTop(gadget,window);
+
+	if (gx >= 0
+	    && gy >= 0
+	    && gx < GetWidth(gadget,window)
+	    && gy < GetHeight(gadget,window)
 	)
 	    break;
     }
@@ -829,319 +694,516 @@ struct Gadget * FindGadget (struct Window * window, int x, int y)
     return gadget;
 } /* FindGadget */
 
-#undef SysBase /* The next function needs the global SysBase */
-extern struct ExecBase * SysBase;
 /* Use local copy of IntuitionBase */
 #define IntuitionBase IntuiBase
 
 void intui_ProcessXEvents (void)
 {
     struct IntuiMessage * im;
-    struct Window * w;
-    struct IntWindow * iw;
+    struct Window	* w;
+    struct IntWindow	* iw;
+    struct Gadget	* gadget;
+    struct MsgPort	* intuiReplyPort;
     char * ptr;
-    static int mpos_x, mpos_y;
+    int    mpos_x, mpos_y;
+    int    wait;
     XEvent event;
-    static struct Gadget * gadget;
 
-    if (!intuiReplyPort || !WB.FirstWindow) /* NOP if no intuition.library */
-	return;
+    intuiReplyPort = CreateMsgPort ();
+    wait = 0;
 
-    /* Empty port */
-    while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))
-	FreeMem (im, sizeof (struct IntuiMessage));
-
-    im = NULL;
-    w = NULL;
-
-    while (XPending (sysDisplay))
+    for (;;)
     {
-	XNextEvent (sysDisplay, &event);
+	im = NULL;
+	w = NULL;
 
-	Dipxe(bug("Got Event for X=%d\n", event.xany.window));
-
-	if (event.type == MappingNotify)
+	while (XPending (sysDisplay))
 	{
-	    XRefreshKeyboardMapping ((XMappingEvent*)&event);
-	    continue;
-	}
+	    XNextEvent (sysDisplay, &event);
 
-	for (w=WB.FirstWindow; w; w=w->NextWindow)
-	{
-	    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
-		break;
-	}
+	    Dipxe(bug("Got Event for X=%d\n", event.xany.window));
 
-	if (w)
-	{
-	    Dipxe(bug("X=%d is asocciated with Window %08lx\n",
-		event.xany.window,
-		(ULONG)w));
-	}
-	else
-	    Dipxe(bug("X=%d is not asocciated with a Window\n",
-		event.xany.window));
-
-	if (!w)
-	    continue;
-
-	iw = (struct IntWindow *)w;
-
-	if (!im)
-	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
-
-	im->Class	= 0L;
-	im->IDCMPWindow = w;
-	im->MouseX	= mpos_x;
-	im->MouseY	= mpos_y;
-
-	switch (event.type)
-	{
-	case GraphicsExpose:
-	case Expose: {
-	    XRectangle rect;
-	    UWORD      count;
-	    struct Gadget * gad;
-
-	    if (event.type == Expose)
+	    if (event.type == MappingNotify)
 	    {
-		rect.x	    = event.xexpose.x;
-		rect.y	    = event.xexpose.y;
-		rect.width  = event.xexpose.width;
-		rect.height = event.xexpose.height;
-		count	    = event.xexpose.count;
+		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+		continue;
+	    }
+
+	    for (w=WB.FirstWindow; w; w=w->NextWindow)
+	    {
+		if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
+		    break;
+	    }
+
+	    if (w)
+	    {
+		Dipxe(bug("X=%d is asocciated with Window %08lx\n",
+		    event.xany.window,
+		    (ULONG)w));
 	    }
 	    else
+		Dipxe(bug("X=%d is not asocciated with a Window\n",
+		    event.xany.window));
+
+	    if (!w)
+		continue;
+
+	    iw = (struct IntWindow *)w;
+
+	    if (!im)
+		im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
+
+	    im->Class	    = 0L;
+	    im->IDCMPWindow = w;
+	    im->MouseX	    = mpos_x;
+	    im->MouseY	    = mpos_y;
+
+	    switch (event.type)
 	    {
-		rect.x	    = event.xgraphicsexpose.x;
-		rect.y	    = event.xgraphicsexpose.y;
-		rect.width  = event.xgraphicsexpose.width;
-		rect.height = event.xgraphicsexpose.height;
-		count	    = event.xgraphicsexpose.count;
-	    }
+	    case GraphicsExpose:
+	    case Expose: {
+		XRectangle rect;
+		UWORD	   count;
 
-	    XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
-
-	    if (count != 0)
-		break;
-
-	    for (gad=w->FirstGadget; gad; gad=gad->NextGadget)
-		RenderGadget (w, gad, IntuitionBase);
-
-	    im->Class = IDCMP_REFRESHWINDOW;
-	    ptr       = "REFRESHWINDOW";
-	} break;
-
-	case ConfigureNotify:
-	    if (w->Width != event.xconfigure.width ||
-		    w->Height != event.xconfigure.height)
-	    {
-		w->Width  = event.xconfigure.width;
-		w->Height = event.xconfigure.height;
-
-		im->Class = NEWSIZE;
-		ptr	  = "NEWSIZE";
-	    }
-
-	    break;
-
-	case ButtonPress: {
-	    XButtonEvent * xb = &event.xbutton;
-
-	    im->Class = MOUSEBUTTONS;
-	    im->Qualifier = StateToQualifier (xb->state);
-	    im->MouseX = xb->x;
-	    im->MouseY = xb->y;
-
-	    switch (xb->button)
-	    {
-	    case Button1:
-		im->Code = SELECTDOWN;
-
-		gadget = FindGadget (w, xb->x, xb->y);
-
-		if (gadget)
+		if (event.type == Expose)
 		{
-		    if (gadget->Activation & GACT_IMMEDIATE)
-		    {
-			im->Class = GADGETDOWN;
-			im->IAddress = gadget;
-			ptr	  = "GADGETDOWN";
-		    }
+		    rect.x	= event.xexpose.x;
+		    rect.y	= event.xexpose.y;
+		    rect.width	= event.xexpose.width;
+		    rect.height = event.xexpose.height;
+		    count	= event.xexpose.count;
+		}
+		else
+		{
+		    rect.x	= event.xgraphicsexpose.x;
+		    rect.y	= event.xgraphicsexpose.y;
+		    rect.width	= event.xgraphicsexpose.width;
+		    rect.height = event.xgraphicsexpose.height;
+		    count	= event.xgraphicsexpose.count;
+		}
 
-		    gadget->Flags |= GFLG_SELECTED;
+		XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
 
-		    RenderGadget (w, gadget, IntuitionBase);
+		if (count != 0)
+		    break;
+
+		RefreshGadgets (w->FirstGadget, w, NULL);
+
+		im->Class = IDCMP_REFRESHWINDOW;
+		ptr	  = "REFRESHWINDOW";
+	    } break;
+
+	    case ConfigureNotify:
+		if (w->Width != event.xconfigure.width ||
+			w->Height != event.xconfigure.height)
+		{
+		    w->Width  = event.xconfigure.width;
+		    w->Height = event.xconfigure.height;
+
+		    im->Class = NEWSIZE;
+		    ptr       = "NEWSIZE";
 		}
 
 		break;
 
-	    case Button2:
-		im->Code = MIDDLEDOWN;
-		break;
+	    case ButtonPress: {
+		XButtonEvent * xb = &event.xbutton;
 
-	    case Button3:
-		im->Code = MENUDOWN;
-		break;
-	    }
+		im->Class = MOUSEBUTTONS;
+		im->Qualifier = StateToQualifier (xb->state);
+		im->MouseX = xb->x;
+		im->MouseY = xb->y;
 
-	    if (im->Class == MOUSEBUTTONS)
+		switch (xb->button)
+		{
+		case Button1:
+		    im->Code = SELECTDOWN;
+
+		    gadget = FindGadget (w, xb->x, xb->y);
+
+		    if (gadget)
+		    {
+			if (gadget->Activation & GACT_IMMEDIATE)
+			{
+			    im->Class = GADGETDOWN;
+			    im->IAddress = gadget;
+			    ptr       = "GADGETDOWN";
+			}
+
+			switch (gadget->GadgetType & GTYP_GTYPEMASK)
+			{
+			case GTYP_BOOLGADGET:
+			    if (gadget->Activation & GACT_TOGGLESELECT)
+				gadget->Flags ^= GFLG_SELECTED;
+			    else
+				gadget->Flags |= GFLG_SELECTED;
+
+			    break;
+
+			case GTYP_PROPGADGET: {
+			    long knobleft, knobtop, knobwidth, knobheight;
+			    struct PropInfo * pi;
+
+			    pi = (struct PropInfo *)gadget->SpecialInfo;
+
+			    if (!pi)
+				break;
+
+			    knobleft   = GetLeft (gadget, w);
+			    knobtop    = GetTop (gadget, w);
+			    knobwidth  = GetWidth (gadget, w);
+			    knobheight = GetHeight (gadget, w);
+
+			    if (!CalcKnobSize (gadget
+				, &knobleft, &knobtop, &knobwidth, &knobheight)
+			    )
+				break;
+
+			    if (pi->Flags & FREEHORIZ)
+			    {
+				if (xb->x < knobleft)
+				{
+				    if (pi->HorizPot > pi->HorizBody)
+					pi->HorizPot -= pi->HorizBody;
+				    else
+					pi->HorizPot = 0;
+				}
+				else if (xb->x >= knobleft + knobwidth)
+				{
+				    if (pi->HorizPot + pi->HorizBody < MAXPOT)
+					pi->HorizPot += pi->HorizBody;
+				    else
+					pi->HorizPot = MAXPOT;
+				}
+			    }
+
+			    if (pi->Flags & FREEVERT)
+			    {
+				if (xb->y < knobtop)
+				{
+				    if (pi->VertPot > pi->VertBody)
+					pi->VertPot -= pi->VertBody;
+				    else
+					pi->VertPot = 0;
+				}
+				else if (xb->y >= knobtop + knobheight)
+				{
+				    if (pi->VertPot + pi->VertBody < MAXPOT)
+					pi->VertPot += pi->VertBody;
+				    else
+					pi->VertPot = MAXPOT;
+				}
+			    }
+
+			    if (xb->x >= knobleft
+				&& xb->y >= knobtop
+				&& xb->x < knobleft + knobwidth
+				&& xb->y < knobtop + knobheight
+			    )
+				pi->Flags |= KNOBHIT;
+			    else
+				pi->Flags &= ~KNOBHIT;
+
+			    gadget->Flags |= GFLG_SELECTED;
+
+			    break; }
+			}
+
+			RefreshGList (gadget, w, NULL, 1);
+		    }
+
+		    break;
+
+		case Button2:
+		    im->Code = MIDDLEDOWN;
+		    break;
+
+		case Button3:
+		    im->Code = MENUDOWN;
+		    break;
+		}
+
+		if (im->Class == MOUSEBUTTONS)
+		    ptr = "MOUSEBUTTONS";
+	    } break;
+
+	    case ButtonRelease: {
+		XButtonEvent * xb = &event.xbutton;
+
+		im->Class = MOUSEBUTTONS;
+		im->Qualifier = StateToQualifier (xb->state);
+		im->MouseX = xb->x;
+		im->MouseY = xb->y;
+
+		switch (xb->button)
+		{
+		case Button1:
+		    im->Code = SELECTUP;
+
+		    if (gadget)
+		    {
+			int inside = InsideGadget(w,gadget,xb->x,xb->y);
+			int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+
+			if (inside && (gadget->Activation & GACT_RELVERIFY))
+			{
+			    im->Class = GADGETUP;
+			    im->IAddress = gadget;
+			    ptr       = "GADGETDOWN";
+			}
+
+			switch (gadget->GadgetType & GTYP_GTYPEMASK)
+			{
+			case GTYP_BOOLGADGET:
+			    if (!(gadget->Activation & GACT_TOGGLESELECT) )
+				gadget->Flags &= ~GFLG_SELECTED;
+
+			    if (selected)
+				RefreshGList (gadget, w, NULL, 1);
+
+			    break;
+
+			case GTYP_PROPGADGET: {
+			    struct PropInfo * pi;
+
+			    pi = (struct PropInfo *)gadget->SpecialInfo;
+
+			    if (pi)
+				pi->Flags &= ~KNOBHIT;
+
+			    gadget->Flags &= ~GFLG_SELECTED;
+
+			    RefreshGList (gadget, w, NULL, 1);
+
+			    break; }
+
+			}
+
+			gadget = NULL;
+		    }
+
+		    break;
+
+		case Button2:
+		    im->Code = MIDDLEUP;
+		    break;
+
+		case Button3:
+		    im->Code = MENUUP;
+		    break;
+		}
+
 		ptr = "MOUSEBUTTONS";
-	} break;
+	    } break;
 
-	case ButtonRelease: {
-	    XButtonEvent * xb = &event.xbutton;
+	    case KeyPress: {
+		XKeyEvent * xk = &event.xkey;
+		ULONG result;
 
-	    im->Class = MOUSEBUTTONS;
-	    im->Qualifier = StateToQualifier (xb->state);
-	    im->MouseX = xb->x;
-	    im->MouseY = xb->y;
+		im->Class = RAWKEY;
+		result = XKeyToAmigaCode(xk);
+		im->Code = xk->keycode;
+		im->Qualifier = result >> 16;
 
-	    switch (xb->button)
-	    {
-	    case Button1:
-		im->Code = SELECTUP;
+		ptr = NULL;
+	    } break;
+
+	    case KeyRelease: {
+		XKeyEvent * xk = &event.xkey;
+		ULONG result;
+
+		im->Class = RAWKEY;
+		result = XKeyToAmigaCode(xk);
+		im->Code = xk->keycode | 0x8000;
+		im->Qualifier = result >> 16;
+
+		ptr = NULL;
+	    } break;
+
+	    case MotionNotify: {
+		XMotionEvent * xm = &event.xmotion;
+
+		im->Code = IECODE_NOBUTTON;
+		im->Class = MOUSEMOVE;
+		im->Qualifier = StateToQualifier (xm->state);
+		im->MouseX = xm->x;
+		im->MouseY = xm->y;
 
 		if (gadget)
 		{
-		    int inside = (xb->x >= gadget->LeftEdge
-			    && xb->y >= gadget->TopEdge
-			    && xb->x < gadget->LeftEdge + gadget->Width
-			    && xb->y < gadget->TopEdge + gadget->Height
-			);
+		    int inside = InsideGadget(w,gadget,xm->x,xm->y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 
-		    if (inside && (gadget->Activation & GACT_RELVERIFY))
+		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
-			im->Class = GADGETUP;
-			im->IAddress = gadget;
-			ptr	  = "GADGETDOWN";
-		    }
+		    case GTYP_BOOLGADGET:
+			if (inside != selected)
+			{
+			    gadget->Flags ^= GFLG_SELECTED;
 
-		    gadget->Flags &= ~GFLG_SELECTED;
+			    RefreshGList (gadget, w, NULL, 1);
+			}
 
-		    if (selected)
-			RenderGadget (w, gadget, IntuitionBase);
+			break;
 
-		    gadget = NULL;
-		}
+		    case GTYP_PROPGADGET: {
+			long knobleft, knobtop, knobwidth, knobheight;
+			long dx, dy;
+			struct PropInfo * pi;
 
-		break;
+			pi = (struct PropInfo *)gadget->SpecialInfo;
 
-	    case Button2:
-		im->Code = MIDDLEUP;
-		break;
+			/* Has propinfo and the mouse was over the
+			    knob */
+			if (pi && (pi->Flags & KNOBHIT))
+			{
+			    knobleft   = GetLeft (gadget, w);
+			    knobtop    = GetTop (gadget, w);
+			    knobwidth  = GetWidth (gadget, w);
+			    knobheight = GetHeight (gadget, w);
 
-	    case Button3:
-		im->Code = MENUUP;
-		break;
-	    }
+			    if (!CalcKnobSize (gadget
+				, &knobleft, &knobtop
+				, &knobwidth, &knobheight)
+			    )
+				break;
 
-	    ptr = "MOUSEBUTTONS";
-	} break;
+			    /* Delta movement */
+			    dx = xm->x - mpos_x;
+			    dy = xm->y - mpos_y;
 
-	case KeyPress: {
-	    XKeyEvent * xk = &event.xkey;
-	    ULONG result;
+			    /* Move the knob the same amount, ie.
+				knobleft += dx; knobtop += dy;
 
-	    im->Class = RAWKEY;
-	    result = XKeyToAmigaCode(xk);
-	    im->Code = xk->keycode;
-	    im->Qualifier = result >> 16;
+				knobleft = knobleft
+				    + (knobwidth - pi->HPotRes)
+				    * pi->HorizPot / MAXPOT;
 
-	    ptr = NULL;
-	} break;
+				ie. dx = (knobwidth - pi->HPotRes)
+				    * pi->HorizPot / MAXPOT;
 
-	case KeyRelease: {
-	    XKeyEvent * xk = &event.xkey;
-	    ULONG result;
+				or
 
-	    im->Class = RAWKEY;
-	    result = XKeyToAmigaCode(xk);
-	    im->Code = xk->keycode | 0x8000;
-	    im->Qualifier = result >> 16;
+				pi->HorizPot = (dx * MAXPOT) /
+				    (knobwidth - pi->HPotRes);
+			    */
+			    if (pi->Flags & FREEHORIZ
+				&& pi->CWidth != pi->HPotRes)
+			    {
+				dx = (dx * MAXPOT) /
+					(pi->CWidth - pi->HPotRes);
 
-	    ptr = NULL;
-	} break;
+				if (dx < 0)
+				{
+				    dx = -dx;
 
-	case MotionNotify: {
-	    XMotionEvent * xm = &event.xmotion;
+				    if (dx > pi->HorizPot)
+					pi->HorizPot = 0;
+				    else
+					pi->HorizPot -= dx;
+				}
+				else
+				{
+				    if (dx + pi->HorizPot > MAXPOT)
+					pi->HorizPot = MAXPOT;
+				    else
+					pi->HorizPot += dx;
+				}
+			    } /* FREEHORIZ */
 
-	    im->Code = IECODE_NOBUTTON;
-	    im->Class = MOUSEMOVE;
-	    im->Qualifier = StateToQualifier (xm->state);
-	    im->MouseX = xm->x;
-	    im->MouseY = xm->y;
+			    if (pi->Flags & FREEVERT
+				&& pi->CHeight != pi->VPotRes)
+			    {
+				dy = (dy * MAXPOT) /
+					(pi->CHeight - pi->VPotRes);
 
-	    if (gadget)
+				if (dy < 0)
+				{
+				    dy = -dy;
+
+				    if (dy > pi->VertPot)
+					pi->VertPot = 0;
+				    else
+					pi->VertPot -= dy;
+				}
+				else
+				{
+				    if (dy + pi->VertPot > MAXPOT)
+					pi->VertPot = MAXPOT;
+				    else
+					pi->VertPot += dy;
+				}
+			    } /* FREEVERT */
+			} /* Has PropInfo and Mouse is over knob */
+
+			RefreshGList (gadget, w, NULL, 1);
+
+			break; } /* PROPGADGET */
+
+		    } /* switch GadgetType */
+		} /* if (gadget) */
+
+		ptr = "MOUSEMOVE";
+	    } break; /* MotioNotify */
+
+	    case EnterNotify: {
+		XCrossingEvent * xc = &event.xcrossing;
+
+		im->Class = ACTIVEWINDOW;
+		im->MouseX = xc->x;
+		im->MouseY = xc->y;
+
+		ptr = "ACTIVEWINDOW";
+	    } break;
+
+	    case LeaveNotify: {
+		XCrossingEvent * xc = &event.xcrossing;
+
+		im->Class = ACTIVEWINDOW;
+		im->MouseX = xc->x;
+		im->MouseY = xc->y;
+
+		ptr = "INACTIVEWINDOW";
+	    } break;
+
+	    default:
+		ptr = NULL;
+	    break;
+	    } /* switch */
+
+	    mpos_x = im->MouseX;
+	    mpos_y = im->MouseY;
+
+	    if (ptr)
+		Dipxe(bug("Msg=%s\n", ptr));
+
+	    if (im->Class)
 	    {
-		int inside = (xm->x >= gadget->LeftEdge
-			&& xm->y >= gadget->TopEdge
-			&& xm->x < gadget->LeftEdge + gadget->Width
-			&& xm->y < gadget->TopEdge + gadget->Height
-		    );
-		int selected = (gadget->Flags & GFLG_SELECTED) != 0;
-
-		if (inside != selected)
+		if ((im->Class & w->IDCMPFlags) && w->UserPort)
 		{
-		    gadget->Flags ^= GFLG_SELECTED;
+		    im->ExecMessage.mn_ReplyPort = intuiReplyPort;
 
-		    RenderGadget (w, gadget, IntuitionBase);
+		    PutMsg (w->UserPort, (struct Message *)im);
+		    im = NULL;
+		    wait ++;
 		}
+		else
+		    im->Class = 0;
 	    }
-
-	    ptr = "MOUSEMOVE";
-	} break;
-
-	case EnterNotify: {
-	    XCrossingEvent * xc = &event.xcrossing;
-
-	    im->Class = ACTIVEWINDOW;
-	    im->MouseX = xc->x;
-	    im->MouseY = xc->y;
-
-	    ptr = "ACTIVEWINDOW";
-	} break;
-
-	case LeaveNotify: {
-	    XCrossingEvent * xc = &event.xcrossing;
-
-	    im->Class = ACTIVEWINDOW;
-	    im->MouseX = xc->x;
-	    im->MouseY = xc->y;
-
-	    ptr = "INACTIVEWINDOW";
-	} break;
-
-	default:
-	    ptr = NULL;
-	break;
-	} /* switch */
-
-	mpos_x = im->MouseX;
-	mpos_y = im->MouseY;
-
-	if (ptr)
-	    Dipxe(bug("Msg=%s\n", ptr));
-
-	if (im->Class)
-	{
-	    if ((im->Class & w->IDCMPFlags) && w->UserPort)
-	    {
-		im->ExecMessage.mn_ReplyPort = intuiReplyPort;
-
-		PutMsg (w->UserPort, (struct Message *)im);
-		im = NULL;
-	    }
-	    else
-		im->Class = 0;
 	}
-   }
 
-   if (im)
-   {
-      FreeMem (im, sizeof (struct IntuiMessage));
-   }
+	if (im)
+	    FreeMem (im, sizeof (struct IntuiMessage));
+
+	Wait (1L << intuiReplyPort->mp_SigBit | SIGBREAKF_CTRL_F);
+
+	/* Empty port */
+	while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))
+	{
+	    FreeMem (im, sizeof (struct IntuiMessage));
+	    wait --;
+	}
+    }
 }
 
 

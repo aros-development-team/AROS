@@ -4,6 +4,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/28 17:55:37  digulla
+    Proportional gadgets
+    BOOPSI
+
     Revision 1.1  1996/08/13 15:37:26  digulla
     First function for intuition.library
 
@@ -27,8 +31,9 @@ struct IntIntuitionBase
 {
     struct IntuitionBase IBase;
     /* Put local shit here, invisible for the user */
-    struct GfxBase * GfxBase;
+    struct GfxBase  * GfxBase;
     struct ExecBase * SysBase;
+    struct MinList    ClassList;
 };
 
 extern struct IntuitionBase * IntuitionBase;
@@ -44,6 +49,8 @@ extern struct IntuitionBase * IntuitionBase;
 #undef SysBase
 #endif
 #define SysBase     (GetPrivIBase(IntuitionBase)->SysBase)
+
+#define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 
 /* Needed for close() */
 #define expunge() \

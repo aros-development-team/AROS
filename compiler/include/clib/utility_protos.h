@@ -18,6 +18,18 @@ __AROS_LP2(void, ApplyTagChanges,
     __AROS_LCA(struct TagItem *, changelist, A1), \
     struct UtilityBase *, UtilityBase, 31, Utility)
 
+__AROS_LP3(ULONG, CallHookPkt,
+    __AROS_LPA(struct Hook *, hook, A0),
+    __AROS_LPA(APTR         , object, A2),
+    __AROS_LPA(APTR         , paramPacket, A1),
+    struct Library *, UtilityBase, 17, Utility)
+#define CallHookPkt(hook, object, paramPacket) \
+    __AROS_LC3(ULONG, CallHookPkt, \
+    __AROS_LCA(struct Hook *, hook, A0), \
+    __AROS_LCA(APTR         , object, A2), \
+    __AROS_LCA(APTR         , paramPacket, A1), \
+    struct Library *, UtilityBase, 17, Utility)
+
 __AROS_LP2(struct TagItem *, FindTagItem,
     __AROS_LPA(Tag,              tagValue, D0),
     __AROS_LPA(struct TagItem *, tagList,  A0),
@@ -33,6 +45,14 @@ __AROS_LP0(ULONG, GetUniqueID,
 #define GetUniqueID() \
     __AROS_LC0(ULONG, GetUniqueID, \
     struct Library *, UtilityBase, 45, Utility)
+
+__AROS_LP1(struct TagItem *, NextTagItem,
+    __AROS_LPA(struct TagItem **, tagListPtr, A0),
+    struct Library *, UtilityBase, 8, Utility)
+#define NextTagItem(tagListPtr) \
+    __AROS_LC1(struct TagItem *, NextTagItem, \
+    __AROS_LCA(struct TagItem **, tagListPtr, A0), \
+    struct Library *, UtilityBase, 8, Utility)
 
 __AROS_LP2I(LONG, Stricmp,
     __AROS_LPA(STRPTR, string1, A0),
