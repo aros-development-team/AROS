@@ -543,11 +543,13 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     {
 	if (!node->dob)
 	{
-	    struct TagItem geticon_tags[] = {
-		{ICONGETA_FailIfUnavailable, FALSE},
-		{TAG_DONE,0}
-	    };
-	    node->dob = GetIconTagList(node->entry.filename, geticon_tags);
+	    node->dob = GetIconTags
+            (
+                node->entry.filename, 
+                ICONGETA_FailIfUnavailable,        FALSE, 
+                ICONGETA_Label,             (IPTR) node->entry.label,
+                TAG_DONE
+            );
 	}
 	node = Node_Next(node);
     }
@@ -896,12 +898,16 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
-    struct TagItem geticon_tags[] = {
-	{ICONGETA_FailIfUnavailable, FALSE},
-	{TAG_DONE,0}
-    };
-
-    if (!(dob = GetIconTagList(msg->filename, geticon_tags)))
+    
+    dob = GetIconTags
+    (
+        msg->filename, 
+        ICONGETA_FailIfUnavailable,        FALSE,
+        ICONGETA_Label,             (IPTR) msg->label,
+        TAG_DONE
+    );
+    
+    if (!dob)
     {
 	return 0;
     }
