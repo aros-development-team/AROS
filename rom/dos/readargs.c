@@ -130,13 +130,13 @@
     /* Template options */
 #define REQUIRED 0x80 /* /A */
 #define KEYWORD  0x40 /* /K */
+#define MULTIPLE 0x20 /* /M */
 #define TYPEMASK 0x07
 #define NORMAL	 0x00 /* No option */
 #define SWITCH	 0x01 /* /S, implies /K */
 #define TOGGLE	 0x02 /* /T, implies /K */
 #define NUMERIC  0x03 /* /N */
-#define MULTIPLE 0x04 /* /M */
-#define REST	 0x05 /* /F */
+#define REST	 0x04 /* /F */
 
     /* Flags for each possible character. */
     static const UBYTE argflags[]=
@@ -331,7 +331,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	    {
 		/* Not quoted. Check if it's a keyword. */
 		item = FindArg(template, s1);
-		if(item >= 0 && argbuf[item] == NULL)
+		if(item >= 0 && item < numargs && argbuf[item] == NULL)
 		{
 		    /*
 			It's a keyword. Fill it and retry the current option
@@ -394,10 +394,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	    it = ITEM_NOTHING;
 	    break;
 	}
-	/* /S or /T just set a flag */
-	if((flags[arg]&TYPEMASK)==SWITCH||(flags[arg]&TYPEMASK)==TOGGLE)
-	    argbuf[arg]=(char *)1;
-	else if((flags[arg]&TYPEMASK)==MULTIPLE)
+	if(flags[arg]&MULTIPLE)
 	{
 	    /* All /M arguments are stored in a buffer. */
 	    if(multnum>=multmax)
@@ -418,6 +415,11 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 		;
 	    /* /M takes more than one argument, so retry. */
 	    nextarg=arg;
+	}
+	else if((flags[arg]&TYPEMASK)==SWITCH||(flags[arg]&TYPEMASK)==TOGGLE)
+	{
+	    /* /S or /T just set a flag */
+	    argbuf[arg]=(char *)~0;
 	}else /* NORMAL || NUMERIC */
 	{
 	    /* Put argument into argument buffer. */
@@ -430,7 +432,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
     /* Unfilled /A options steal Arguments from /M */
     for(arg=numargs;arg-->0;)
 	if(flags[arg]&REQUIRED&&argbuf[arg]==NULL&&
-	   (flags[arg]&TYPEMASK)!=MULTIPLE)
+	   !(flags[arg]&MULTIPLE))
 	{
 	    if (flags[arg]&KEYWORD)
 	    {
@@ -451,24 +453,30 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
     /* Put the rest of /M where it belongs */
     for(arg=0;arg<numargs;arg++)
-	if((flags[arg]&TYPEMASK)==MULTIPLE)
+	if(flags[arg]&MULTIPLE)
 	{
 	    if(flags[arg]&REQUIRED&&!multnum)
 		ERROR(ERROR_REQUIRED_ARG_MISSING);
 
-	    /* NULL terminate it. */
-	    if(multnum>=multmax)
+    	    if (multnum)
 	    {
-		multmax+=16;
-		newmult=(STRPTR *)AllocVec(multmax*sizeof(STRPTR),MEMF_ANY);
-		if(newmult==NULL)
-		    ERROR(ERROR_NO_FREE_STORE);
-		CopyMemQuick((ULONG *)multvec,(ULONG *)newmult,multnum*sizeof(char *));
-		FreeVec(multvec);
-		multvec=newmult;
+		/* NULL terminate it. */
+		if(multnum>=multmax)
+		{
+		    multmax+=16;
+		    newmult=(STRPTR *)AllocVec(multmax*sizeof(STRPTR),MEMF_ANY);
+		    if(newmult==NULL)
+			ERROR(ERROR_NO_FREE_STORE);
+		    CopyMemQuick((ULONG *)multvec,(ULONG *)newmult,multnum*sizeof(char *));
+		    FreeVec(multvec);
+		    multvec=newmult;
+		}
+		multvec[multnum++]=NULL;
+		argbuf[arg]=(STRPTR)multvec;
 	    }
-	    multvec[multnum++]=NULL;
-	    argbuf[arg]=(STRPTR)multvec;
+	    else
+		/* Shouldn't be necessary, but some buggy software relies on this */
+		argbuf[arg]=NULL;   	    	
 	    break;
 	}
 
@@ -485,38 +493,84 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	/* Just for the arguments given. */
 	if(argbuf[arg]!=NULL)
 	{
-	    switch(flags[arg]&TYPEMASK)
+	    if(flags[arg]&MULTIPLE)
 	    {
-		case NORMAL:
-		case MULTIPLE:
-		case REST:
-		case SWITCH:
-		    /* Simple arguments are just copied. */
-		    array[arg]=(IPTR)argbuf[arg];
-		    break;
-		case TOGGLE:
-		    /* /T logically inverts the argument. */
-		    array[arg]=!array[arg];
-		    break;
-		case NUMERIC:
-		    /* Convert /N argument. */
-		    chars=StrToLong(argbuf[arg],&value);
-		    if(chars<=0||argbuf[arg][chars])
-			/* Conversion failed. */
-			ERROR(ERROR_BAD_NUMBER);
-		    /* Put the result where it belongs. */
-		#if 0
-		    if(flags[arg]&REQUIRED)
-			/* Required argument. Return number. */
-			array[arg]=value;
-		    else
-		#endif
+		array[arg]=(IPTR)argbuf[arg];
+		if((flags[arg]&TYPEMASK)==NUMERIC)
+		{
+		    STRPTR *p;
+		    LONG *q;
+		    if(multnum*2>multmax)
 		    {
-			/* Abuse the argbuf buffer. It's not needed anymore. */
-			argbuf[arg]=(STRPTR)value;
-			array[arg]=(IPTR)&argbuf[arg];
+			multmax=multnum*2;
+			newmult=(STRPTR *)AllocVec(multmax*sizeof(STRPTR),MEMF_ANY);
+			if(newmult==NULL)
+			    ERROR(ERROR_NO_FREE_STORE);
+			CopyMemQuick((ULONG *)multvec,(ULONG *)newmult,multnum*sizeof(char *));
+			FreeVec(multvec);
+			multvec=newmult;
 		    }
-		    break;
+		    array[arg]=(IPTR)multvec;
+		    p=multvec;
+		    q=(LONG*)(multvec+multnum);
+
+		    while (*p)
+		    {
+			/* Convert /N argument. */
+			chars=StrToLong(*p,q);
+			if(chars<=0||(*p)[chars])
+			    /* Conversion failed. */
+			    ERROR(ERROR_BAD_NUMBER);
+			/* Put the result where it belongs. */
+			*p=(STRPTR)q;
+			p++;
+			q++;
+		    }
+                }
+	    } else
+	    {
+		switch(flags[arg]&TYPEMASK)
+		{
+		    case NORMAL:
+		    case REST:
+		    case SWITCH:
+			/* Simple arguments are just copied. */
+			array[arg]=(IPTR)argbuf[arg];
+			break;
+		    case TOGGLE:
+			/* /T logically inverts the argument. */
+			array[arg]=array[arg]?0:~0;
+			break;
+		    case NUMERIC:
+			/* Convert /N argument. */
+			chars=StrToLong(argbuf[arg],&value);
+			if(chars<=0||argbuf[arg][chars])
+			    /* Conversion failed. */
+			    ERROR(ERROR_BAD_NUMBER);
+			/* Put the result where it belongs. */
+		    #if 0
+			if(flags[arg]&REQUIRED)
+			    /* Required argument. Return number. */
+			    array[arg]=value;
+			else
+		    #endif
+			{
+			    /* Abuse the argbuf buffer. It's not needed anymore. */
+			    argbuf[arg]=(STRPTR)value;
+			    array[arg]=(IPTR)&argbuf[arg];
+			}
+			break;
+		}
+	    }
+	}
+	else
+	{
+	    if(flags[arg]&MULTIPLE)
+	    {
+		/* Shouldn't be necessary, but some buggy software relies on this
+		 * IBrowse's URL field isn`t set to zero.
+		 */
+		array[arg]=NULL;
 	    }
 	}
     }
