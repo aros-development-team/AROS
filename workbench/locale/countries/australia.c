@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Country data for australia.
@@ -37,18 +37,18 @@ struct CountryPrefs australiaPrefs =
     "%I:%M%p",
 
     /* Decimal point, group separator, frac group separator */
-    ".", " ", "\x00",
+    ".", " ", "",
 
     /* For grouping rules, see <libraries/locale.h> */
 
     /* Grouping, Frac Grouping */
-    "\x03\x00", "\x00",
+    { 3 }, { 0 },
 
     /* Mon dec pt, mon group sep, mon frac group sep */
-    ".", " ", "\x00",
+    ".", " ", "",
 
     /* Mon Grouping, Mon frac grouping */
-    "\x03\x00", "\x00",
+    { 3 }, { 0 },
 
     /* Mon Frac digits, Mon IntFrac digits, then number of digits in
        the fractional part of the money value. Most countries that
@@ -64,13 +64,13 @@ struct CountryPrefs australiaPrefs =
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
     */
-    "AUD\x00",
+    "AUD",
 
     /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
-    "\x00", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
+    "", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
     /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-    "\x00", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
+    "", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
     /* Calendar type */
     CT_7SUN

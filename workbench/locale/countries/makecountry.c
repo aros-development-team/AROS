@@ -31,19 +31,53 @@ struct CountryEntry
 
 extern struct CountryPrefs
     australiaPrefs,
+    belgiePrefs,
+    belgiquePrefs,
+    canadaPrefs,
+    canada_francaisPrefs,
+    danmarkPrefs,
     deutschPrefs,
+    espanaPrefs,
+    francePrefs,
     greatBritainPrefs,
+    italiaPrefs,
     nederlandPrefs,
-    polskaPrefs;
+    norgePrefs,
+    osterreichPrefs,
+    polskaPrefs,
+    portugalPrefs,
+    schweizPrefs,
+    suissePrefs,
+    sverigePrefs,
+    svizzeraPrefs,
+    united_kingdomPrefs,
+    united_statesPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
 struct CountryEntry CountryArray[] =
 {
     { "australia",          &australiaPrefs },
+    { "belgie",     	    &belgiePrefs },
+    { "belgique",   	    &belgiquePrefs },
+    { "canada",     	    &canadaPrefs },
+    { "canada_français",    &canada_francaisPrefs },
+    { "danmark",    	    &danmarkPrefs },
     { "deutschland",        &deutschPrefs },
+    { "españa",     	    &espanaPrefs },
+    { "france",     	    &francePrefs },
     { "great_britain",      &greatBritainPrefs },
+    { "italia",     	    &italiaPrefs },
     { "nederland",  	    &nederlandPrefs },
+    { "norge",	    	    &norgePrefs },
+    { "österreich", 	    &osterreichPrefs },
     { "polska",             &polskaPrefs },
+    { "portugal",   	    &portugalPrefs },
+    { "schweiz",    	    &schweizPrefs },
+    { "suisse",     	    &suissePrefs },
+    { "sverige",    	    &sverigePrefs },
+    { "svizzera",   	    &svizzeraPrefs },
+    { "united_kingdom",     &united_kingdomPrefs },
+    { "united_states",	    &united_statesPrefs },
     { NULL, NULL }
 };
 

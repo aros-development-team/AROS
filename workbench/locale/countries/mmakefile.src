@@ -10,12 +10,20 @@ DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
 LIBS=-L$(LIBDIR) -lamiga -larosc -larosm
 MAKECOUNTRY=$(OBJDIR)/makecountry
 
-COUNTRIES=australia deutschland great_britain nederland polska
+COUNTRIES := australia belgie belgique canada canada_français \
+    	     danmark deutschland españa france great_britain \
+	     italia nederland norge österreich polska portugal \
+	     schweiz suisse sverige svizzera united_kingdom \
+	     united_states
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
 
 #MM workbench-locale : setup includes
 workbench-locale: $(MAKECOUNTRY) $(COUNTIFF)
+	@$(NOP)
+
+#MM workbench-locale-quick :
+workbench-locale-quick : $(MAKECOUNTRY) $(COUNTIFF)
 	@$(NOP)
 
 #MM
