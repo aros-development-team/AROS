@@ -11,7 +11,7 @@ Ok
 ; Ok
 ;
 MSG_FILEREQ_NEGATIVE_GAD
-Abbruch
+Abbrechen
 ; Cancel
 ;
 MSG_FILEREQ_VOLUMES_GAD
@@ -86,11 +86,11 @@ Bitte_umbenennen
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Nach Muster markieren
+Nach Namensmuster auswählen
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
-Markieren
+Auswählen
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
@@ -114,7 +114,7 @@ R\0Zurück auf Vorgabe
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0Mutterverzeichnis
+P\0Übergeordnet
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
@@ -138,7 +138,7 @@ M\0Umbenennen...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Markieren...
+#\0Auswählen...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -193,7 +193,7 @@ Ok
 ; Ok
 ;
 MSG_MODEREQ_NEGATIVE_GAD
-Abbruch
+Abbrechen
 ; Cancel
 ;
 MSG_MODEREQ_OVERSCAN_LABEL
@@ -201,11 +201,11 @@ Randbereich
 ; Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Text-Abmessung
+Textabmessung
 ; Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Grafik-Abmessung
+Grafikabmessung
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
@@ -257,7 +257,7 @@ Nicht ziehbarer Schirm
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
-Hold And Modify
+Hold & Modify
 ; Hold & Modify
 ;
 MSG_MODEREQ_PROPERTIES_EHB
@@ -329,7 +329,7 @@ Ok
 ; Ok
 ;
 MSG_FONTREQ_NEGATIVE_GAD
-Abbruch
+Abbrechen
 ; Cancel
 ;
 MSG_FONTREQ_MEN_CONTROL
