@@ -308,17 +308,14 @@
                R.MaxY -= _L->bounds.MinY;
                OrRectRegion(_L->DamageList, &R);
                _L->Flags |= LAYERREFRESH;
-               BltBitMap(_L->rp->BitMap,
-                         0,
-                         0,
-                         _L->rp->BitMap,
-                         _CR->bounds.MinX,
-                         _CR->bounds.MinY,
-                         _CR->bounds.MaxX - _CR->bounds.MinX + 1,
-                         _CR->bounds.MaxY - _CR->bounds.MinY + 1,
-                         0x000,
-                         0xff,
-                         NULL);   
+
+               _CallLayerHook(_L->BackFill,
+                              _L->rp,
+                              _L,
+                              &_CR->bounds,
+                              CR->bounds.MinX,
+                              CR->bounds.MinY
+                             );
              }
 
              _CR -> lobs   = NULL;
