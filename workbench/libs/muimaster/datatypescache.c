@@ -483,6 +483,7 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
 
 	if (rp->Layer)
 	{
+	    LockLayer(0, rp->Layer);
 	    xoffset -= rp->Layer->bounds.MinX;
 	    yoffset -= rp->Layer->bounds.MinY;
 	}
@@ -491,6 +492,11 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
 	bfi->OffsetY = yoffset;
 
 	DoHookClipRects((struct Hook*)bfi,rp,&rect);
+	
+	if (rp->Layer)
+	{
+	    UnlockLayer(rp->Layer);
+	}
     }
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 }
