@@ -1,0 +1,17 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (19.02.2004)
+## codeset 0
+## language français
+;
+;
+MSG_MENU_PREFS
+Préférences
+;Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importer...
+;I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exporter...
+;E\0Export...
+;
