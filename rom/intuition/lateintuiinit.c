@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function OpenWindow()
+    Desc: Late initialization of intuition.
     Lang: english
 */
 
