@@ -44,6 +44,8 @@ static ULONG ata_Eject(struct ata_Unit *);
 static ULONG atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG atapi_Eject(struct ata_Unit *);
+static ULONG atapi_ReadDMA(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static ULONG atapi_WriteDMA(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 
 /*
     Again piece of code which shouldn't be here. Geee. After removing all this 
@@ -348,10 +350,18 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 				{
 				    if (!(unit->au_Flags & AF_ATAPI) && LIBBASE->ata_ForceDMA)
 				    {
-					unit->au_Read32 = ata_ReadDMA32;
-					unit->au_Write32 = ata_WriteDMA32;
-					unit->au_Read64 = ata_ReadDMA64;
-					unit->au_Write64 = ata_WriteDMA64;
+					if (!(unit->au_Flags & AF_ATAPI))
+					{
+					    unit->au_Read32 = ata_ReadDMA32;
+					    unit->au_Write32 = ata_WriteDMA32;
+					    unit->au_Read64 = ata_ReadDMA64;
+					    unit->au_Write64 = ata_WriteDMA64;
+					}
+					else
+					{
+					    unit->au_Read32 = atapi_ReadDMA;
+					    unit->au_Write32= atapi_WriteDMA;
+					}
 			    	    }
 				}
 			    }
@@ -1490,14 +1500,14 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
     return ErrorMap[ata_in(atapi_Error, unit->au_Bus->ab_Port) >> 4];
 }
 
-int atapi_SendPacket(struct ata_Unit *unit, APTR packet, ULONG size)
+int atapi_SendPacket(struct ata_Unit *unit, APTR packet, ULONG size, BOOL dma)
 {
     ULONG port = unit->au_Bus->ab_Port;
 
     ata_out(unit->au_DevMask, atapi_DevSel, port);
     if (ata_WaitBusy(unit))
     {
-        ata_out(0, atapi_Features, port);
+        ata_out(dma ? 1 : 0, atapi_Features, port);
         ata_out(0xfe, atapi_ByteCntL, port);
         ata_out(0xff, atapi_ByteCntH, port);
         ata_out(ATA_PACKET, atapi_Command, port);
@@ -1526,7 +1536,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     ULONG cmd[3] = {0,0,0};
     UBYTE sense;
 
-    if (atapi_SendPacket(unit, cmd, sizeof(cmd)))
+    if (atapi_SendPacket(unit, cmd, sizeof(cmd), FALSE))
     {
 	if (ata_WaitBusySlow(unit))
 	{
@@ -1558,7 +1568,7 @@ static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR bu
     
     *act = 0;
 
-    if (atapi_SendPacket(unit, &cmd, sizeof(cmd)))
+    if (atapi_SendPacket(unit, &cmd, sizeof(cmd), FALSE))
     {
 	while(1)
 	{
@@ -1604,7 +1614,7 @@ static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR b
 
     *act = 0;
 
-    if (atapi_SendPacket(unit, &cmd, sizeof(cmd)))
+    if (atapi_SendPacket(unit, &cmd, sizeof(cmd), FALSE))
     {
 	while(1)
 	{
@@ -1640,7 +1650,7 @@ static ULONG atapi_Eject(struct ata_Unit *unit)
 	flags: ATAPI_SS_EJECT,
     };
 
-    if (atapi_SendPacket(unit, &cmd, sizeof(cmd)))
+    if (atapi_SendPacket(unit, &cmd, sizeof(cmd), FALSE))
     {
 	if (ata_WaitBusySlow(unit))
         {
@@ -1650,4 +1660,71 @@ static ULONG atapi_Eject(struct ata_Unit *unit)
 
     return atapi_ErrCmd();
 }
+
+static ULONG atapi_ReadDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+{
+    UBYTE status;
+
+    struct atapi_Read10 cmd = {
+	command:    SCSI_READ10,
+    };
+
+    cmd.lba[0] = block >> 24;
+    cmd.lba[1] = block >> 16;
+    cmd.lba[2] = block >> 8;
+    cmd.lba[3] = block;
+    
+    cmd.len[0] = count >> 8;
+    cmd.len[1] = count;
+    
+    *act = 0;
+
+    dma_SetupPRD(unit, buffer, count, TRUE);
+
+    if (atapi_SendPacket(unit, &cmd, sizeof(cmd), TRUE))
+    {
+	if (ata_WaitSleepyStatus(unit, &status))
+	{
+	    *act+= count << unit->au_SectorShift;
+	    return atapi_EndCmd(unit);
+	}
+	else return atapi_ErrCmd(unit);
+    }
+
+    return atapi_ErrCmd();
+}
+
+static ULONG atapi_WriteDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+{
+    UBYTE status;
+
+    struct atapi_Write10 cmd = {
+	command:    SCSI_WRITE10,
+    };
+
+    cmd.lba[0] = block >> 24;
+    cmd.lba[1] = block >> 16;
+    cmd.lba[2] = block >> 8;
+    cmd.lba[3] = block;
+    
+    cmd.len[0] = count >> 8;
+    cmd.len[1] = count;
+
+    *act = 0;
+
+    dma_SetupPRD(unit, buffer, count, FALSE);
+
+    if (atapi_SendPacket(unit, &cmd, sizeof(cmd), TRUE))
+    {
+	if (ata_WaitSleepyStatus(unit, &status))
+	{
+	    *act+= count << unit->au_SectorShift;
+	    return atapi_EndCmd(unit);
+	}
+	else return atapi_ErrCmd(unit);
+    }
+
+    return atapi_ErrCmd();
+}
+
 
