@@ -4,10 +4,12 @@
     $Id$
 */
 
+#include <intuition/gadgetclass.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <stdlib.h>
 #include "intuition_intern.h"
+#include "inputhandler.h"
 #include "inputhandler_actions.h"
 #include "inputhandler_support.h"
 
@@ -74,8 +76,6 @@ AROS_LH7(void, ScrollWindowRaster,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
