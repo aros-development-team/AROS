@@ -284,6 +284,7 @@ includes: \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
+	    $(CLIBDIR)/layers_protos.h \
 	    $(CLIBDIR)/intuition_protos.h \
 	    $(CLIBDIR)/console_protos.h \
 	    $(CLIBDIR)/icon_protos.h \
@@ -307,6 +308,9 @@ $(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c) scripts/genprotos.h
 
 $(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c) scripts/genprotos.h
 	$(GENPROTOS) Graphics "$(TOP)" rom/graphics/*.c
+
+$(CLIBDIR)/layers_protos.h: $(wildcard rom/layers/*.c) scripts/genprotos.h
+	$(GENPROTOS) Layers "$(TOP)" rom/layers/*.c
 
 $(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c) scripts/genprotos.h
 	$(GENPROTOS) Intuition "$(TOP)" rom/intuition/*.c
