@@ -38,7 +38,6 @@
 #	define SysBase LIBBASE->lb_SysBase
 #else
 	struct ExecBase * SysBase; /* global variable */
-	struct GfxBase * GfxBase; /* unfortunatley need it for AROS to link!!*/
 #endif
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
@@ -53,7 +52,6 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 
 #ifndef CREATE_ROM
   SysBase = LIBBASE->lb_SysBase;
-  GfxBase = LIBBASE->lb_GfxBase;
 #endif
 
   if (NULL == LIBBASE->lb_UtilityBase)
