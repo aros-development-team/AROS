@@ -1,9 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-DEST	  := $(HOME)/www/www.aros.org/www/
 SIZEDIR   := $(HOME)/www/www.aros.org/tmp/
-JOBDEST   := $(ARCHDIR)jobserver/
 MIC	  := $(TOP)/scripts/moveifchanged
 LITE	  := /usr/local/Hughes/bin/lite
 GNUPLOT   := gnuplot
@@ -24,17 +22,15 @@ RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 		--keywords=keywords.db \
 	    	--files=files.db main.src
 
+#MM- all-docs : setup-docs doc-includes docs
 #MM docs : setup-docs copy-pics
-docs : $(SRC2HTML) autodocs $(DEST)srcs $(DEST)index.html \
+docs : $(SRC2HTML) autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
 	copy-files \
 	access-rights
 
-#MM all-docs : setup-docs
-all-docs : includes docs
-
 #MM
 setup-docs :
-	@for dir in $(DEST) $(DEST)autodocs $(DEST)pics $(DEST)other \
+	@for dir in $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
 		$(DOCGENDIR) ; do \
 	    if [ ! -d $$dir ]; then \
 		mkdir $$dir ; \
@@ -42,40 +38,31 @@ setup-docs :
 	done
 	cd src2html ; make
 
-copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc $(DEST)license.html \
-	$(DEST)oldnews.html
+copy-files : $(HTMLDIR)/rtdemo.log $(HTMLDIR)/pubkey.asc $(HTMLDIR)/license.html \
+	$(HTMLDIR)/oldnews.html
 
-$(DEST)% : %
+$(HTMLDIR)/% : %
 	cp $< $@
 
-# convert pics/% to DEST/pics/% without CVS dir.
-PICS := $(addprefix $(DEST)pics/, \
+# convert pics/% to HTMLDIR/pics/% without CVS dir.
+PICS := $(addprefix $(HTMLDIR)/pics/, \
 	$(filter-out CVS, $(notdir $(wildcard pics/*))))
-OTHER := $(addprefix $(DEST)other/, \
-	$(filter-out CVS, $(notdir $(wildcard ../other/*))))
 
 #MM
 copy-pics : $(PICS) $(OTHER)
 
-$(DEST)license.html : $(TOP)/license.html
+$(HTMLDIR)/license.html : $(TOP)/license.html
 	cp $< $@
 
-$(DEST)pics/% : pics/%
-	cp $< $@
-
-$(DEST)other/% : other/%
+$(HTMLDIR)/pics/% : pics/%
 	cp $< $@
 
 access-rights :
-	cd $(DEST) ; \
+	cd $(HTMLDIR) ; \
 	    chmod -R u=rwX,og=rX .
 
-##MM docs-index : setup-docs docs
-#docs-index :
-#	cd $(DEST) ; glimpseindex -H . -o .
-
-$(DEST)srcs :
-	ln -s $(TOP) $(DEST)srcs
+$(HTMLDIR)/srcs :
+	ln -s $(TOP) $(HTMLDIR)/srcs
 
 #MM
 clean ::
@@ -86,7 +73,7 @@ clean ::
 $(SRC2HTML) : src2html/src2html
 	cp $< $@
 
-$(DEST)index.html : $(FILES) doc_header.html doc_footer.html \
+$(HTMLDIR)/index.html : $(FILES) doc_header.html doc_footer.html \
 	    	$(SRC2HTML) keywords.db files.db \
 		page_header.html $(DOCGENDIR)/run-src2html
 	cp *.src *.html *.db $(DOCGENDIR)
@@ -95,7 +82,7 @@ $(DEST)index.html : $(FILES) doc_header.html doc_footer.html \
 	$(RUN_SRC2HTML) && \
 	$(RUN_SRC2HTML) && \
 	$(RUN_SRC2HTML) && \
-	mv index.html index-*.html $(DEST)
+	mv index.html index-*.html $(HTMLDIR)/
 
 # This is a trick: If any other rule touches this, src2html is run.
 $(DOCGENDIR)/run-src2html :
@@ -106,18 +93,19 @@ autodocs : $(DOCGENDIR)/htmlpages
 $(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) genadocs.py \
 		adoc_header.html adoc_footer.html page_header.html
 	@echo "Regenerating the HTML AutoDocs"
-	@$(PYTHON) genadocs.py DESTDIR="$(DEST)autodocs" \
+	@$(PYTHON) genadocs.py DESTDIR="$(HTMLDIR)/autodocs" \
 		DOCGENDIR="$(DOCGENDIR)" \
 		$(AUTODOC_SRCS)
 	@touch $(DOCGENDIR)/htmlpages $(DOCGENDIR)/run-src2html
 
-includes : $(DOCGENDIR)/devlist.inc \
+#MM
+doc-includes : $(DOCGENDIR)/devlist.inc \
 	$(DOCGENDIR)/contents.inc \
 	$(DOCGENDIR)/status.inc \
-	$(DEST)progress.png \
-	$(DEST)contrib.png
+	$(HTMLDIR)/progress.png \
+	$(HTMLDIR)/contrib.png
 
-$(DEST)progress.png : size2plot.in $(SIZEDIR)/aros.size
+$(HTMLDIR)/progress.png : size2plot.in $(SIZEDIR)/aros.size
 	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
 	    -e "s;@SIZEFILE@;$(SIZEDIR)/aros.size;" \
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
@@ -125,7 +113,7 @@ $(DEST)progress.png : size2plot.in $(SIZEDIR)/aros.size
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $(basename $@).jpg
 
-$(DEST)contrib.png : size2plot.in $(SIZEDIR)/contrib.size
+$(HTMLDIR)/contrib.png : size2plot.in $(SIZEDIR)/contrib.size
 	sed -e "s;@DOCGENDIR@;$(DOCGENDIR);" \
 	    -e "s;@SIZEFILE@;$(SIZEDIR)/contrib.size;" \
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
