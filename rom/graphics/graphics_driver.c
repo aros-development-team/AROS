@@ -745,7 +745,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	
 	charloc = ((ULONG *)tf->tf_CharLoc)[idx];
 	
-	if (tf->tf_Flags & FPF_PROPORTIONAL)
+	if (tf->tf_CharKern)
 	{
 //	    render_x = current_x + ((WORD *)tf->tf_CharKern)[idx];
     	    current_x += ((WORD *)tf->tf_CharKern)[idx];
@@ -773,7 +773,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    );
 	}
 	
-	if (tf->tf_Flags & FPF_PROPORTIONAL)
+	if (tf->tf_CharSpace)
 	    current_x += ((WORD *)tf->tf_CharSpace)[idx];
 	else
 	    current_x += tf->tf_XSize; /* Add glyph width */
