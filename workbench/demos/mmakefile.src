@@ -28,7 +28,7 @@ else
 FILES := compleximage demowin gtdemo helloworld inquire intuitext \
 	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio ooplib consoledemo
+	 strtest unixio ooplib consoledemo layerstest
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
