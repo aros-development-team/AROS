@@ -202,7 +202,7 @@ same work twice. This is accomplished by the jobserver. It has a database
 with all tasks that are still to do, tasks that are currently under
 construction and tasks which are finished.
 
-\subsection{How does it work ? *New*}
+\subsection{How does it work ?}
 
 Just send an EMail to
 
