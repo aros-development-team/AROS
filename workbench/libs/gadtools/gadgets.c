@@ -305,6 +305,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
 {
     struct Gadget *obj = NULL;
     Class *cl;
+    BOOL cliptag_found = FALSE;
     
     struct TagItem *tag, tags[] =
     {
@@ -330,7 +331,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	{
     	case GTTX_Text:			tags[0].ti_Data = tidata; break;
     	case GTTX_CopyText:		tags[1].ti_Data	= tidata; break;
-    	case GTTX_Clipped:		tags[2].ti_Data	= tidata; break;
+    	case GTTX_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
     	case GTTX_Border:		tags[3].ti_Data	= tidata; break;
     	case GTTX_FrontPen:		tags[4].ti_Data	= tidata; break;
     	case GTTX_BackPen:		tags[5].ti_Data	= tidata; break;
@@ -340,6 +341,11 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	
     } /* while (iterate taglist) */
 
+    /* if GTTX_Clipped was not specified then the default value is
+       the GTTX_Border value */
+    
+    if (!cliptag_found) tags[2].ti_Data = tags[3].ti_Data;
+    
     /* Be sure not to pass GA_TextAttr, NULL */
     if (tattr)
     	tags[8].ti_Data = (IPTR)tattr;
@@ -366,7 +372,8 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
 {
     struct Gadget *obj = NULL;
     Class *cl;
-
+    BOOL cliptag_found = FALSE;
+    
     struct TagItem *tag, tags[] =
     {
     	{GTNM_Number,		0},
@@ -392,7 +399,7 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	{
     	case GTNM_Number:		tags[0].ti_Data = tidata; break;
     	case GTNM_Format:		tags[1].ti_Data	= tidata; break;
-    	case GTNM_Clipped:		tags[2].ti_Data	= tidata; break;
+    	case GTNM_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
     	case GTNM_Border:		tags[3].ti_Data	= tidata; break;
     	case GTNM_FrontPen:		tags[4].ti_Data	= tidata; break;
     	case GTNM_BackPen:		tags[5].ti_Data	= tidata; break;
@@ -402,6 +409,11 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	}
     	
     } /* while (iterate taglist) */
+
+    /* if GTNM_Clipped was not specified then the default value is
+       the GTNM_Border value */
+    
+    if (!cliptag_found) tags[2].ti_Data = tags[3].ti_Data;
 
     /* Be sure not to pass GA_TextAttr, NULL */
     if (tattr)
