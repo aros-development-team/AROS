@@ -1352,7 +1352,7 @@ BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 
 %(dir)/%/%(subdir)/%(name).catalog : %.ct %(description).cd
 	@$(ECHO) "Creating %(name) catalog for language $*."
-	@$(IF) $(FLEXCAT) %(description).cd $*.ct CATALOG=%(dir)/$*/%(subdir)/%(name).catalog ; then $(NOP) ; else $(NOP) ; fi ;
+	@$(FLEXCAT) %(description).cd $*.ct CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
 
 ifneq (%(source),)
 %(source) : %(description).cd
