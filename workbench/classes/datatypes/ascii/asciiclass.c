@@ -293,7 +293,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                      i++)
                 {
 		    /* Check for end of line */
-		    if (buffer[i] == 10)	// && buffer[i+1]==10)
+		    if (buffer[i] == '\n')	// && buffer[i+1]==10)
 
 		    {
 			newseg = linefeed = TRUE;
@@ -306,11 +306,13 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 			newanchor = i + 1;
 		    }
 		    /* Check for tab */
-		    else if (buffer[i] == 9)
+		    else if (buffer[i] == '\t')
 		    {
 			/* See if we need to terminate a line segment */
 			if ((numtabs == 0) && num)
+			{
 			    newseg = TRUE;
+			}
 			numtabs++;
 		    }
 		    else
@@ -350,7 +352,10 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 			    line->ln_Data = NULL;
 
 			    linelength = line->ln_Width + line->ln_XOffset;
-			    if (linelength > max_linelength) max_linelength = linelength;
+			    if (linelength > max_linelength)
+			    {
+			    	max_linelength = linelength;
+			    }
 			    			    
 			    /* Add the line to the list */
 			    AddTail(linelist, (struct Node *) line);
@@ -391,6 +396,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
 		D(bug("AsciiDataType_AsyncLayout: end textloop, anchor %ld\n",anchor));
 
+#if 0
 		if (buffer[anchor])
 		{
 			linefeed=TRUE;
@@ -439,6 +445,7 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 			    abort = TRUE;
 			}
 		}
+#endif
 		
             } /* if (wrap || gpl->gpl_Initial) */
             else
@@ -479,12 +486,14 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                                DTA_TotalVert	, total					,
                                DTA_NominalVert	, nomheight				,
                                DTA_VertUnit	, font->tf_YSize			,
+                            /* DTA_TopVert   	, si->si_TopVert                        , */
 
                                DTA_VisibleHoriz	, (domain->Width / hunit)		,
                                DTA_TotalHoriz	, max_linelength / hunit		,
                                DTA_NominalHoriz	, nomwidth				,
                                DTA_HorizUnit	, hunit					,
-
+    	    	    	       DTA_TopHoriz 	, si->si_TopHoriz   	    	    	,
+			       
                                DTA_Title	, (IPTR)title				,
                                DTA_Busy		, FALSE					,
                                DTA_Sync		, TRUE					,
