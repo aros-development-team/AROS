@@ -50,7 +50,8 @@ FILES := amiga2date \
 	obtainpentest \
 	writepixelarray \
 	rawtest \
-	camdtree
+	camdtree \
+	mktime
 
 EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
