@@ -14,6 +14,9 @@
 #include <aros/machine.h>
 #include <aros/asmcall.h>
 
+#include <hidd/irq.h>
+
+#include <proto/oop.h>
 #include <proto/exec.h>
 
 #include "serial_intern.h"
@@ -47,19 +50,11 @@
 
 struct ExecBase * SysBase;
 
-AROS_UFP4(int, serial_int_13,
-    AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct class_static_data *, csd, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
+void serial_int_13(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+void serial_int_24(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
-AROS_UFP4(int, serial_int_24,
-    AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct class_static_data *, csd, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
-
-int init_interrupts(struct class_static_data *csd);
+#undef OOPBase
+#define OOPBase (csd->oopbase)
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
@@ -97,36 +92,41 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
                 if(csd->serialhiddclass)
                 {
-		    struct Interrupt *is;
-		    
                     D(bug("  Got SerialHIDDClass\n"));
 		    
-		    /* Install COM1 and COM3 interrupt */
-		    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-		    if(!is)
+		    csd->irqhidd = NewObject(NULL, CLID_Hidd_IRQ, NULL);
+		    
+		    if (csd->irqhidd)
 		    {
-			kprintf("  ERROR: Cannot install Serial\n");
-			Alert( AT_DeadEnd | AN_IntrMem );
-		    }
-		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
-		    is->is_Code = (void (*)())&serial_int_13;
-		    is->is_Data = (APTR)csd;
-//		    AddIntServer(0x80000004,is);	//<-- int_ser13
+			HIDDT_IRQ_Handler *irq;
+			
+			/* Install COM1 and COM3 interrupt */
+			irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
+			if(!irq)
+			{
+			    kprintf("  ERROR: Cannot install Serial\n");
+			    Alert( AT_DeadEnd | AN_IntrMem );
+			}
+			irq->h_Node.ln_Pri=127;		/* Set the highest pri */
+			irq->h_Code = serial_int_13;
+			irq->h_Data = (APTR)csd;
+			HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial1);
 
-		    /* Install COM2 and COM4 interrupt */
-		    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-		    if(!is)
-		    {
-			kprintf("  ERROR: Cannot install Serial\n");
-		    	Alert( AT_DeadEnd | AN_IntrMem );
-		    }
-		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
-		    is->is_Code = (void (*)())&serial_int_24;
-		    is->is_Data = (APTR)csd;
-//		    AddIntServer(0x80000003,is);	//<-- int_ser24
+			/* Install COM2 and COM4 interrupt */
+			irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
+			if(!irq)
+			{
+			    kprintf("  ERROR: Cannot install Serial\n");
+		    	    Alert( AT_DeadEnd | AN_IntrMem );
+			}
+			irq->h_Node.ln_Pri=127;		/* Set the highest pri */
+			irq->h_Code = serial_int_24;
+			irq->h_Data = (APTR)csd;
+			HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial2);
 
-		    D(bug("  Got Interrupts\n"));
-		    ReturnInt("SerialHIDD_Init", ULONG, TRUE);
+			D(bug("  Got Interrupts\n"));
+			ReturnInt("SerialHIDD_Init", ULONG, TRUE);
+		    }
                 }
 
                 CloseLibrary(csd->utilitybase);
@@ -143,7 +143,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
         
 }
 
-
 void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
     EnterFunc(bug("SerialHIDD_Expunge()\n"));
@@ -159,35 +158,4 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     }
 
     ReturnVoid("SerialHIDD_Expunge");
-}
-
-int init_interrupts(struct class_static_data *csd)
-{
-    struct Interrupt *is;
-
-    /* Install COM1 and COM3 interrupt */
-    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-    if(!is)
-    {
-	kprintf("  ERROR: Cannot install Serial\n");
-	Alert( AT_DeadEnd | AN_IntrMem );
-    }
-    is->is_Node.ln_Pri=127;		/* Set the highest pri */
-    is->is_Code = (void (*)())&serial_int_13;
-    is->is_Data = (APTR)csd;
-//    AddIntServer(0x80000004,is);	//<-- int_ser13
-
-    /* Install COM2 and COM4 interrupt */
-    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-    if(!is)
-    {
-	kprintf("  ERROR: Cannot install Serial\n");
-	Alert( AT_DeadEnd | AN_IntrMem );
-    }
-    is->is_Node.ln_Pri=127;		/* Set the highest pri */
-    is->is_Code = (void (*)())&serial_int_24;
-    is->is_Data = (APTR)csd;
-//    AddIntServer(0x80000003,is);	//<-- int_ser24
-
-    return 1;
 }

@@ -55,6 +55,8 @@ struct class_static_data
     Class		 *serialhiddclass;
     Class		 *serialunitclass;
 
+    Object               *irqhidd;
+
     struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
 };
 

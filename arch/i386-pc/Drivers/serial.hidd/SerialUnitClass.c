@@ -27,6 +27,7 @@
 #include <utility/tagitem.h>
 #include <hidd/serial.h>
 #include <hidd/unixio.h>
+#include <hidd/irq.h>
 
 #include <devices/serial.h>
 
@@ -598,12 +599,10 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 /* Serial interrupts */
 
 #undef SysBase
+#define SysBase (hw->sysBase)
+#define csd ((struct class_static_data *)(irq->h_Data))
 
-AROS_UFH4(int, serial_int_13,
-    AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct class_static_data *, csd, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE code;
 
@@ -641,14 +640,10 @@ AROS_UFH4(int, serial_int_13,
 	    break;
     }	
 
-    return 0;
+    return;
 }
 
-AROS_UFH4(int, serial_int_24,
-    AROS_UFHA(ULONG, dummy1, A0),
-    AROS_UFHA(struct class_static_data *, csd, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE code;
 
@@ -684,5 +679,5 @@ AROS_UFH4(int, serial_int_24,
 	    break;
     }	
 
-    return 0;
+    return;
 }
