@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 22:51:47  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.2  1996/10/24 15:51:39  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,8 +23,8 @@
         AROS_LH2(ULONG, UMult32,
 
 /*  SYNOPSIS */
-        AROS_LHA(unsigned long, arg1, D0),
-        AROS_LHA(unsigned long, arg2, D1),
+        AROS_LHA(ULONG        , arg1, D0),
+        AROS_LHA(ULONG        , arg2, D1),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 24, Utility)
@@ -44,9 +47,9 @@
 
     EXAMPLE
 
-        long a = 352543;
-        long b = 52464;
-        long c = UMult32(a,b);
+        LONG a = 352543;
+        LONG b = 52464;
+        LONG c = UMult32(a,b);
         c == 1315946768
 
     BUGS

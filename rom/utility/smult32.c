@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.2  1996/10/24 15:51:36  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,8 +23,8 @@
         AROS_LH2(LONG, SMult32,
 
 /*  SYNOPSIS */
-        AROS_LHA(long, arg1, D0),
-        AROS_LHA(long, arg2, D1),
+        AROS_LHA(LONG, arg1, D0),
+        AROS_LHA(LONG, arg2, D1),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 23, Utility)
@@ -43,9 +46,9 @@
 
     EXAMPLE
 
-        long a = 352543;
-        long b = -52464;
-        long c = SMult32(a,b);
+        LONG a = 352543;
+        LONG b = -52464;
+        LONG c = SMult32(a,b);
         c == -1315946768
 
     BUGS
@@ -93,15 +96,17 @@
 
     if(arg2 <= 0)
     {
-        neg ^= 1; arg2 = -arg2;
+        neg ^= 1; arg2 = -arg2; 
     }
+
+    /* The compiler should optimize these div/mults by 65536. */
 
     a1 = (arg1 >> 16) & 0xffff;
     a0 = arg1 & 0xffff;
     b1 = (arg2 >> 16) & 0xffff;
     b0 = arg2 & 0xffff;
 
-    arg1 = (((a0 * b1) + (a1 * b0)) << 16) + (b0 * a0);
+    arg1 = (((a0 * b1) + (a1 * b0)) <<16) + (b0 * a0);
     return (neg ? -arg1 : arg1);
 #endif
 

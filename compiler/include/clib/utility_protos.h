@@ -9,20 +9,20 @@
     Prototypes
 */
 AROS_LP1(struct TagItem *, AllocateTagItems,
-    AROS_LPA(unsigned long, numTags, D0),
+    AROS_LPA(ULONG, numTags, D0),
     struct UtilityBase *, UtilityBase, 11, Utility)
 #define AllocateTagItems(numTags) \
     AROS_LC1(struct TagItem *, AllocateTagItems, \
-    AROS_LCA(unsigned long, numTags, D0), \
+    AROS_LCA(ULONG, numTags, D0), \
     struct UtilityBase *, UtilityBase, 11, Utility)
 
 AROS_LP2(void, Amiga2Date,
-    AROS_LPA(unsigned long     , seconds, D0),
+    AROS_LPA(ULONG             , seconds, D0),
     AROS_LPA(struct ClockData *, result, A0),
     struct Library *, UtilityBase, 20, Utility)
 #define Amiga2Date(seconds, result) \
     AROS_LC2(void, Amiga2Date, \
-    AROS_LCA(unsigned long     , seconds, D0), \
+    AROS_LCA(ULONG             , seconds, D0), \
     AROS_LCA(struct ClockData *, result, A0), \
     struct Library *, UtilityBase, 20, Utility)
 
@@ -84,13 +84,13 @@ AROS_LP1(void, FreeTagItems,
 
 AROS_LP3(ULONG, GetTagData,
     AROS_LPA(Tag             , tagValue, D0),
-    AROS_LPA(unsigned long   , defaultVal, D1),
+    AROS_LPA(ULONG           , defaultVal, D1),
     AROS_LPA(struct TagItem *, tagList, A0),
     struct UtilityBase *, UtilityBase, 6, Utility)
 #define GetTagData(tagValue, defaultVal, tagList) \
     AROS_LC3(ULONG, GetTagData, \
     AROS_LCA(Tag             , tagValue, D0), \
-    AROS_LCA(unsigned long   , defaultVal, D1), \
+    AROS_LCA(ULONG           , defaultVal, D1), \
     AROS_LCA(struct TagItem *, tagList, A0), \
     struct UtilityBase *, UtilityBase, 6, Utility)
 
@@ -109,13 +109,13 @@ AROS_LP1(struct TagItem *, NextTagItem,
     struct Library *, UtilityBase, 8, Utility)
 
 AROS_LP3(ULONG, PackBoolTags,
-    AROS_LPA(unsigned long   , initialFlags, D0),
+    AROS_LPA(ULONG           , initialFlags, D0),
     AROS_LPA(struct TagItem *, tagList, A0),
     AROS_LPA(struct TagItem *, boolMap, A1),
     struct UtilityBase *, UtilityBase, 7, Utility)
 #define PackBoolTags(initialFlags, tagList, boolMap) \
     AROS_LC3(ULONG, PackBoolTags, \
-    AROS_LCA(unsigned long   , initialFlags, D0), \
+    AROS_LCA(ULONG           , initialFlags, D0), \
     AROS_LCA(struct TagItem *, tagList, A0), \
     AROS_LCA(struct TagItem *, boolMap, A1), \
     struct UtilityBase *, UtilityBase, 7, Utility)
@@ -131,23 +131,23 @@ AROS_LP2(void, RefreshTagItemClones,
     struct UtilityBase *, UtilityBase, 14, Utility)
 
 AROS_LP2(LONG, SMult32,
-    AROS_LPA(long, arg1, D0),
-    AROS_LPA(long, arg2, D1),
+    AROS_LPA(LONG, arg1, D0),
+    AROS_LPA(LONG, arg2, D1),
     struct UtilityBase *, UtilityBase, 23, Utility)
 #define SMult32(arg1, arg2) \
     AROS_LC2(LONG, SMult32, \
-    AROS_LCA(long, arg1, D0), \
-    AROS_LCA(long, arg2, D1), \
+    AROS_LCA(LONG, arg1, D0), \
+    AROS_LCA(LONG, arg2, D1), \
     struct UtilityBase *, UtilityBase, 23, Utility)
 
-AROS_LP2(LONG, SMult64,
-    AROS_LPA(long, arg1, D0),
-    AROS_LPA(long, arg2, D1),
+AROS_LP2(QUAD, SMult64,
+    AROS_LPA(LONG, arg1, D0),
+    AROS_LPA(LONG, arg2, D1),
     struct UtilityBase *, UtilityBase, 33, Utility)
 #define SMult64(arg1, arg2) \
-    AROS_LC2(LONG, SMult64, \
-    AROS_LCA(long, arg1, D0), \
-    AROS_LCA(long, arg2, D1), \
+    AROS_LC2(QUAD, SMult64, \
+    AROS_LCA(LONG, arg1, D0), \
+    AROS_LCA(LONG, arg2, D1), \
     struct UtilityBase *, UtilityBase, 33, Utility)
 
 AROS_LP2(LONG, Stricmp,
@@ -191,31 +191,31 @@ AROS_LP1I(UBYTE, ToLower,
     struct UtilityBase *, UtilityBase, 30, Utility)
 
 AROS_LP1I(UBYTE, ToUpper,
-    AROS_LPA(unsigned long, character, D0),
+    AROS_LPA(ULONG, character, D0),
     struct UtilityBase *, UtilityBase, 29, Utility)
 #define ToUpper(character) \
     AROS_LC1I(UBYTE, ToUpper, \
-    AROS_LCA(unsigned long, character, D0), \
+    AROS_LCA(ULONG, character, D0), \
     struct UtilityBase *, UtilityBase, 29, Utility)
 
 AROS_LP2(ULONG, UMult32,
-    AROS_LPA(unsigned long, arg1, D0),
-    AROS_LPA(unsigned long, arg2, D1),
+    AROS_LPA(ULONG        , arg1, D0),
+    AROS_LPA(ULONG        , arg2, D1),
     struct UtilityBase *, UtilityBase, 24, Utility)
 #define UMult32(arg1, arg2) \
     AROS_LC2(ULONG, UMult32, \
-    AROS_LCA(unsigned long, arg1, D0), \
-    AROS_LCA(unsigned long, arg2, D1), \
+    AROS_LCA(ULONG        , arg1, D0), \
+    AROS_LCA(ULONG        , arg2, D1), \
     struct UtilityBase *, UtilityBase, 24, Utility)
 
-AROS_LP2(ULONG, UMult64,
-    AROS_LPA(unsigned long, arg1, D0),
-    AROS_LPA(unsigned long, arg2, D1),
+AROS_LP2(UQUAD, UMult64,
+    AROS_LPA(ULONG        , arg1, D0),
+    AROS_LPA(ULONG        , arg2, D1),
     struct UtilityBase *, UtilityBase, 34, Utility)
 #define UMult64(arg1, arg2) \
-    AROS_LC2(ULONG, UMult64, \
-    AROS_LCA(unsigned long, arg1, D0), \
-    AROS_LCA(unsigned long, arg2, D1), \
+    AROS_LC2(UQUAD, UMult64, \
+    AROS_LCA(ULONG        , arg1, D0), \
+    AROS_LCA(ULONG        , arg2, D1), \
     struct UtilityBase *, UtilityBase, 34, Utility)
 
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.3  1996/10/24 15:51:39  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -27,7 +30,7 @@
 	AROS_LH1I(UBYTE, ToUpper,
 
 /*  SYNOPSIS */
-	AROS_LHA(unsigned long, character, D0),
+	AROS_LHA(ULONG, character, D0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 29, Utility)

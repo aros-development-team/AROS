@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.4  1996/10/24 15:51:34  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -27,7 +30,7 @@
 	AROS_LH1(struct TagItem *, AllocateTagItems,
 
 /*  SYNOPSIS */
-	AROS_LHA(unsigned long, numTags, D0),
+	AROS_LHA(ULONG, numTags, D0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 11, Utility)

@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.2  1996/10/24 15:51:38  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -17,11 +20,11 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        AROS_LH2(LONG, SMult64,
+        AROS_LH2(QUAD, SMult64,
 
 /*  SYNOPSIS */
-        AROS_LHA(long, arg1, D0),
-        AROS_LHA(long, arg2, D1),
+        AROS_LHA(LONG, arg1, D0),
+        AROS_LHA(LONG, arg2, D1),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 33, Utility)
@@ -66,7 +69,7 @@
     return arg1 * arg2;
 #else
 
-    long long product;
+    QUAD product;
     WORD a0, a1, b0, b1;
     BOOL neg;
 
@@ -91,7 +94,7 @@
 
     /* In case numbers are small */
     if(a1 && b1)
-        product = (long long)(a1 * b1) << 32;
+        product = (QUAD)(a1 * b1) << 32;
     else
         product = 0;
 

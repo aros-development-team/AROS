@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.2  1996/10/24 15:51:34  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -20,7 +23,7 @@
         AROS_LH2(void, Amiga2Date,
 
 /*  SYNOPSIS */
-        AROS_LHA(unsigned long     , seconds, D0),
+        AROS_LHA(ULONG             , seconds, D0),
         AROS_LHA(struct ClockData *, result, A0),
 
 /*  LOCATION */

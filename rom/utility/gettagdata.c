@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 22:51:46  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.3  1996/10/24 15:51:36  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -27,7 +30,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(Tag             , tagValue, D0),
-	AROS_LHA(unsigned long   , defaultVal, D1),
+	AROS_LHA(ULONG           , defaultVal, D1),
 	AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */

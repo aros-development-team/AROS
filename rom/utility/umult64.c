@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 22:51:47  aros
+    Use proper Amiga datatypes (eg: ULONG not unsigned long)
+
     Revision 1.2  1996/10/24 15:51:39  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -17,11 +20,11 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        AROS_LH2(ULONG, UMult64,
+        AROS_LH2(UQUAD, UMult64,
 
 /*  SYNOPSIS */
-        AROS_LHA(unsigned long, arg1, D0),
-        AROS_LHA(unsigned long, arg2, D1),
+        AROS_LHA(ULONG        , arg1, D0),
+        AROS_LHA(ULONG        , arg2, D1),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 34, Utility)
@@ -65,7 +68,7 @@
     return arg1 * arg2;
 #else
 
-    unsigned long long product;
+    UQUAD product;
     UWORD a0, a1, b0, b1;
 
     a1 = (arg1 >> 16) & 0xffff;
@@ -75,7 +78,7 @@
 
     /* In case number is quite small an optimization */
     if(a1 && b1)
-        product = (unsigned long long)(a1 * b1) << 32;
+        product = (UQUAD)(a1 * b1) << 32;
     else
         product = 0;
 
