@@ -50,38 +50,37 @@ static void SwapImageEndianess(XImage *image)
     	switch(bpp)
 	{
 	    case 2:
-    		for (x = 0; x < width; x ++)
+    		for (x = 0; x < width; x++, imdata += 2)
     		{
     		    UWORD pix = *(UWORD *)imdata;
 		    
 		    pix = SWAP16(pix);
 		    
-		    *((UWORD *)imdata)++ = pix;
+		    *(UWORD *)imdata = pix;
     		}
 	    	imdata += (image->bytes_per_line - width * 2);
 		break;
 
     	    case 3:
-    		for (x = 0; x < width; x ++)
+    		for (x = 0; x < width; x++, imdata += 3)
     		{
-    		    UBYTE pix1 = ((UBYTE *)imdata)[0];
-    		    UBYTE pix3 = ((UBYTE *)imdata)[2];
+    		    UBYTE pix1 = imdata[0];
+    		    UBYTE pix3 = imdata[2];
 		    
-		    *((UBYTE *)imdata) = pix3;
-		    ((UBYTE *)imdata) += 2;
-		    *((BYTE *)imdata)++ = pix1;
+		    imdata[0] = pix3;
+		    imdata[2] = pix1;
     		}
 	    	imdata += (image->bytes_per_line - width * 3);
 		break;
 		
 	    case 4:
-    		for (x = 0; x < width; x ++)
+    		for (x = 0; x < width; x++, imdata += 4)
     		{
     		    ULONG pix = *(ULONG *)imdata;
 		    
 		    pix = SWAP32(pix);
 		    
-		    *((ULONG *)imdata)++ = pix;
+		    *(ULONG *)imdata = pix;
     		}
 	    	imdata += (image->bytes_per_line - width * 4);
 		break;
@@ -278,8 +277,8 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 		{
 		    memcpy(buf, imdata, msg->width * image->bits_per_pixel / 8);
 
-		    ((UBYTE *)imdata) += image->bytes_per_line;
-		    ((UBYTE *)buf) += msg->modulo;
+		    imdata += image->bytes_per_line;
+		    buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		}
 	    }
 	    break;
@@ -301,8 +300,8 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 			{
 			    *p++ = *imdata++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width);
-			((UBYTE *)buf) += msg->modulo;
+		        imdata += (image->bytes_per_line - width);
+			buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -321,8 +320,8 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 			{
 			    *p++ = *imdata++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width * 2);
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line/2 - width;
+			buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -341,8 +340,8 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 			{
 			    *p++ = *imdata++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width * 4);
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line/4 - width;
+			buf     = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -361,7 +360,7 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 			{
 			    *p++ = XGetPixel(image, x, y);
 			}
-			((UBYTE *)buf) += msg->modulo;
+			buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
     		UX11
 		    break;
@@ -399,7 +398,7 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 	    //kprintf("CONVERTPIXELS DONE\n");
 
 
-	    ((UBYTE *)buf) += msg->modulo * height;
+	    buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo * height);
 	    break;
 	}
 
@@ -728,8 +727,8 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 		{
 		    memcpy(imdata, buf, msg->width * image->bits_per_pixel / 8);
 
-		    ((UBYTE *)imdata) += image->bytes_per_line;
-		    ((UBYTE *)buf) += msg->modulo;
+		    imdata += image->bytes_per_line;
+		    buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		}
 	    }
 	    break;
@@ -750,8 +749,8 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 			{
 			    *imdata ++ = (UBYTE)*p++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width); 
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line - width; 
+		        buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -769,8 +768,8 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 			{
 			    *imdata ++ = (UWORD)*p ++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width * 2); 
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line/2 - width; 
+		        buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -805,8 +804,8 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 			    *imdata ++ = pix >> 16;
     	    		#endif
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width * 3);		
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line - width * 3;		
+		        buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -815,7 +814,7 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 		{
 		    LONG x, y;
 
-		    ULONG *imdata = (UWORD *)image->data;
+		    ULONG *imdata = (ULONG *)image->data;
 
 		    for (y = 0; y < height; y ++)
 		    {
@@ -824,8 +823,8 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 			{
 			    *imdata ++ = (ULONG)*p ++;
 			}
-			((UBYTE *)imdata) += (image->bytes_per_line - width * 4); 
-			((UBYTE *)buf) += msg->modulo;
+			imdata += image->bytes_per_line/4 - width; 
+		        buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
 		    break;
 		}
@@ -844,7 +843,7 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 			{
 			     XPutPixel(image, x, y, *p ++);
 			}
-			((UBYTE *)buf) += msg->modulo;
+		        buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo);
 		    }
     		UX11
 		    break;
@@ -882,7 +881,7 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 
 	    //kprintf("CONVERTPIXELS DONE\n");
 
-	    ((UBYTE *)buf) += msg->modulo * height;
+            buf = (HIDDT_Pixel *)((UBYTE *)buf + msg->modulo * height);
 	    break;
 	}
 
