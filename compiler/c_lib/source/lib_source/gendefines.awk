@@ -67,6 +67,7 @@ BEGIN {
 
     file = "headers.tmpl"
     doprint = 0;
+    emit = 0;
 
     while ((getline < file) > 0)
     {
@@ -75,8 +76,14 @@ BEGIN {
 	else if ($1=="##end" && $2 == "defines")
 	    doprint = 0;
 	else if (doprint)
+	{
 	    print;
+	    emit ++;
+	}
     }
+
+    if (emit > 0)
+	print ""
 
     print "/* Defines */"
 }
