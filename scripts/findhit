@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# $0 <module> <offset> <sym> <hit>
+#
+# ie. $0 iffparse.library 0x080e34b0: SeekStream 0x80e5257
+#
+
+path=`dirname $0`
+module="$1"
+symoffset="$2"
+sym="$3"
+hitaddr="$4"
+
+if [ ! -e "$module" ]; then
+    echo "$0: $module: no such file"
+    exit 1
+fi
+
+entry=`nm "$module" | egrep " $sym\$"`
+
+if [ -z "$entry" ]; then
+    echo "$0: Can't find symbol $sym in $module"
+    exit 1
+fi
+
+echo $entry
+
+offset=`echo "0x$entry" | cut "-d " -f1`
+offset=`$path/strtoint $offset`
+
+symoffset=`echo $symoffset | gawk ' { if (!match($1,/^0x/)) print "0x"$1; else print $1; }'`
+hitaddr=`echo $hitaddr | gawk ' { if (!match($1,/^0x/)) print "0x"$1; else print $1; }'`
+
+symoffset=`$path/strtoint $symoffset`
+hitaddr=`$path/strtoint $hitaddr`
+
+baseaddr=`expr $symoffset - $offset`
+
+hitoffset=`expr $hitaddr - $baseaddr`
+
+echo "baseaddr=`printf "%x" $baseaddr`"
+echo "hitoffset=`printf "%x" $hitoffset`"
+
+if [ $hitoffset -lt 0 ]; then
+    echo "Hit is not in $module"
+    exit 1;
+fi
+
+nm "$module" | sort | gawk 'BEGIN { \
+    lastoff=0; \
+    hitoffset='$hitoffset'; \
+    found=0; \
+} \
+ { off=hex2int($1); \
+    if (lastoff < hitoffset && off > hitoffset) \
+    { \
+	printf ("Hit is 0x%x bytes in %s\n", hitoffset-lastoff, symbol); \
+	found=1; \
+	exit (0); \
+    } \
+    symbol=$3; \
+    lastoff=off; \
+} \
+END { \
+    if (!found) \
+    { \
+	print "Hit is not in '$module'"; \
+	exit (1); \
+    } \
+} \
+\
+function hex2int(str    ,x,n) { \
+    x=str; \
+    n=0; \
+    while(x!="") \
+    { \
+	n=n*16 + index("0123456789abcdef",tolower(substr(x,1,1)))-1; \
+	x=substr(x,2); \
+    } \
+    #print "str="str"  n="n; \
+    return n; \
+}'
