@@ -73,6 +73,27 @@ If you want to use AROS' code in your project, you have to pay for this
 code if you earn money with the result. For PD developers, the code is
 still free.
 
+\section{How legal is AROS ? *New*}
+
+Well, European law say "To gain interoperability, it is legal to apply
+reverse engineering techniques. It is illegal to distribute the knowledge
+gained by such techiques". So what does that mean ? It means basically that
+you are allowed to disassemble or resource any software to write something
+which is compatible (ie. it would be legal to disassemble Word to write a
+program which converts Word into ASCII text).
+
+Now there are of course limitations: You are not allowed to disassemble a
+software if the information you would gain by this process can be obtained
+by other means and it can be expected that one would use this is other
+means.
+
+Since we avoid disassembling techniques (hey, we want the spirit and not
+the bugs) but use common available knowledge (including programming
+manuals) which don't fall below the NDA, this doesn't apply directly to
+AROS but what counts here is the intention of the law: It's ok to write a
+software which is compatible to some other software. Therefore we believe
+that AROS is protected by the law.
+
 \section{How compatible is AROS ?}
 
 Most compatible. We expect that AROS will run existing software on the
