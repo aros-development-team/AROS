@@ -616,7 +616,7 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 			{
 			    LONG error;
 			    
-			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) != IFFERR_EOC) 
+			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
 			    {
 				CreateDatatype(sv, iff);
 #warning The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix
