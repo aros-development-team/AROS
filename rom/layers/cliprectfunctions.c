@@ -6,13 +6,6 @@
     Lang: english
 */
 
-/*
-         Change all routines for support of simple layers.
-         (no bitmaps are allocated, cliprects are
-          created!! A damagelist of all hidden parts is
-          created)
-*/
-
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <exec/types.h>
@@ -128,7 +121,8 @@ struct ClipRect * Case_0(struct Rectangle * R,
     /*
       All data are already backed up. I only need to set the lobs-pointer
       to the new layer, if this one is farther in th front than the
-      previous layer that was hiding me. 
+      previous layer that was hiding me. This is done for all types
+      of layers.
     */
     if (CR->lobs->priority < newlayer->priority)
       CR->lobs = newlayer;
@@ -140,65 +134,68 @@ struct ClipRect * Case_0(struct Rectangle * R,
     if (newlayer->priority > passivelayer->priority)
     {
       /* we have to back it up now because it will be hidden by the
-         new layer
+         new layer.
       */
-      ULONG AllocBitMapFlag = 0;
-      struct BitMap * DestBM;
-      LONG DestX, DestY;
-
-      /* if it doesn't have a superbitmap I allocate memory */ 
-      if (0 == (passivelayer->Flags & LAYERSUPER) )
+      /* only for non-simple layers */
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-          AllocBitMapFlag = BMF_CLEAR;
+        ULONG AllocBitMapFlag = 0;
+        struct BitMap * DestBM;
+        LONG DestX, DestY;
 
-        CR -> BitMap = AllocBitMap(
-           DEF_MAXX - DEF_MINX + 1 + 16,
-           DEF_MAXY - DEF_MINY + 1,
-           display_bm->Depth,
-           AllocBitMapFlag,
-           display_bm);
+        /* if it doesn't have a superbitmap I allocate memory */ 
+        if (0 == (passivelayer->Flags & LAYERSUPER) )
+          {
+          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+            AllocBitMapFlag = BMF_CLEAR;
 
-        /* out of memory */
-        if (NULL == CR -> BitMap)
-          return NULL;
+          CR -> BitMap = AllocBitMap(
+             DEF_MAXX - DEF_MINX + 1 + 16,
+             DEF_MAXY - DEF_MINY + 1,
+             display_bm->Depth,
+             AllocBitMapFlag,
+             display_bm);
 
-        DestBM = CR->BitMap; 
-        DestX  = DEF_MINX & 0x0f;
-        DestY  = 0;
-      } /* if */
-      else
-      {
-        /* it has a superbitmap */
-        DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
-        DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-        DestBM = passivelayer->SuperBitMap;
-      }
+          /* out of memory */
+          if (NULL == CR -> BitMap)
+            return NULL;
+
+          DestBM = CR->BitMap; 
+          DestX  = DEF_MINX & 0x0f;
+          DestY  = 0;
+        } /* if */
+        else
+        {
+          /* it has a superbitmap */
+          DestX  = CR->bounds.MinX - 
+                       passivelayer->bounds.MinX + passivelayer->Scroll_X;
+          DestY  = CR->bounds.MinY -
+                       passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+          DestBM = passivelayer->SuperBitMap;
+        } /* else */
       
         /* 
            and back up the information for the part with the n's
            from the info found in the display bitmap.
         */
-      if (0 == AllocBitMapFlag)
-         BltBitMap(
-          display_bm,             /* SrcBitMap = Display BitMap */ 
-          DEF_MINX,               /* SrcX - no optimization !!! */
-          DEF_MINY,               /* SrcY */
-          DestBM,                 /* DestBitMap */
-          DestX,                  /* DestX - optimized */
-          DestY,                  /* DestY */
-          DEF_MAXX - DEF_MINX + 1,/* SizeX */
-          DEF_MAXY - DEF_MINY + 1,/* SizeY */
-          0x0c0,                  /* Vanilla Copy */
-          0xff,                   /* Mask */
-          NULL
-        );
+        if (0 == AllocBitMapFlag)
+           BltBitMap(
+            display_bm,             /* SrcBitMap = Display BitMap */ 
+            DEF_MINX,               /* SrcX - no optimization !!! */
+            DEF_MINY,               /* SrcY */
+            DestBM,                 /* DestBitMap */
+            DestX,                  /* DestX - optimized */
+            DestY,                  /* DestY */
+            DEF_MAXX - DEF_MINX + 1,/* SizeX */
+            DEF_MAXY - DEF_MINY + 1,/* SizeY */
+            0x0c0,                  /* Vanilla Copy */
+            0xff,                   /* Mask */
+            NULL
+          );
+      } /* if (not a simple layer) */
       CR -> lobs = newlayer;
     }
   }
-
   return CR;
 }
 
@@ -266,92 +263,98 @@ struct ClipRect * Case_1(struct Rectangle * R,
     if (NULL != bm_old)
     { /* get two new bitmap structures */
 
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_MAXX, DEF_Y1, display_bm);
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_MAXX, DEF_Y1, display_bm);
 
-        /* the "lower" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-      }
-
+          /* the "lower" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* 
+             dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR->lobs = newlayer;
 
-      /* 
-         dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* get one new bitmap structure, if there is none. But only
          get it if the new layer is in front of the passive layer */
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;       
-        LONG DestX, DestY;
+        /* only for non-simple layers */
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;       
+          LONG DestX, DestY;
 
-        /* 
-           Are we supposed to get a blank bitmap, which is the case
-           for cliprects that are not shown yet = layers that are added  
-         */ 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          /* 
+             Are we supposed to get a blank bitmap, which is the case
+             for cliprects that are not shown yet = layers that are added  
+           */ 
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR -> BitMap = AllocBitMap(
-             DEF_MAXX - DEF_MINX + 1 + 16,
-             DEF_Y1 - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR -> BitMap = AllocBitMap(
+               DEF_MAXX - DEF_MINX + 1 + 16,
+               DEF_Y1 - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* 
-           and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
+          /* 
+             and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
 
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */ 
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_MINX + 1,/* SizeX */
-            DEF_Y1 - DEF_MINY + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL);
-
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */ 
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_MINX + 1,/* SizeX */
+              DEF_Y1 - DEF_MINY + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL);
+        } /* if (not a simple layer) */
         CR -> lobs     = newlayer;
       } /* if */
     }
@@ -434,88 +437,97 @@ struct ClipRect * Case_2(struct Rectangle * R,
     if (NULL != bm_old)
     { /* 
          get two new bitmap structures
-         they have the same height, but different width
+         they have the same height, but different width, but only if
+         it's not a simple layer
        */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "left" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "left" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
 
-        /* the "right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR-> lobs, display_bm);
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-      }
+          /* the "right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR-> lobs, display_bm);
+          /* 
+             Dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+        }
+      } /* if (not a simple layer) */
       
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
-      /* 
-         Dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* get one new bitmap structure, if there is none. But only
-         get it if the new layer is in front of the passive layer */
+         get it if the new layer is in front of the passive layer*/
       /* the "left" one (n's) */
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        /* only for non-simple layers */
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_MINX + 1 + 16,
-             DEF_MAXY - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_MINX + 1 + 16,
+               DEF_MAXY - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+          }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_MINX + 1,  /* SizeX */
-            DEF_MAXY - DEF_MINY + 1,/* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-           );
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_MINX + 1,  /* SizeX */
+              DEF_MAXY - DEF_MINY + 1,/* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+             );
+        } /* if (not a simple layer) */
+        
         CR->lobs     = newlayer;
       }
     }
@@ -601,30 +613,35 @@ struct ClipRect * Case_3(struct Rectangle * R,
          they have the same width, but different height
       */
 
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper left" one (n's) */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
-        /* the "upper right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm)
-        /* the "lower" one (O's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-        CR_New2->BitMap = passivelayer->SuperBitMap;
-      }
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper left" one (n's) */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
+          /* the "upper right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm)
+          /* the "lower" one (O's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+          CR_New2->BitMap = passivelayer->SuperBitMap;
+        }
 
+
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority) 
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* get one new bitmap structure, if there is none. But only
@@ -632,58 +649,61 @@ struct ClipRect * Case_3(struct Rectangle * R,
       /* the "upper left" one (n's) */
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        /* only for non-simple layers */
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER)) 
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR->BitMap = AllocBitMap(
-             DEF_X1 - DEF_MINX + 1 + 16,
-             DEF_Y1 - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR->BitMap = AllocBitMap(
+               DEF_X1 - DEF_MINX + 1 + 16,
+               DEF_Y1 - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+	  {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */ 
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_MINX + 1,  /* SizeX */
-            DEF_Y1 - DEF_MINY + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */ 
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_MINX + 1,  /* SizeX */
+              DEF_Y1 - DEF_MINY + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -769,28 +789,31 @@ struct ClipRect * Case_4(struct Rectangle * R,
     if (NULL != bm_old)
     { /* get two new bitmap structures */
 
-      if (0 == (passivelayer -> Flags & LAYERSUPER))
+      if (0 == (passivelayer -> Flags & LAYERSIMPLE))
       {
-        /* the "upper" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+        if (0 == (passivelayer -> Flags & LAYERSUPER))
+        {
+          /* the "upper" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
-        /* the "lower" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm );
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-      }
- 
+          /* the "lower" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm );
+         /* dispose the old bitmap structure as everything
+            that was backed up there is now in the two other
+            bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-     /* dispose the old bitmap structure as everything
-        that was backed up there is now in the two other
-        bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { 
@@ -799,59 +822,61 @@ struct ClipRect * Case_4(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0 )
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR->BitMap = AllocBitMap(
-            DEF_MAXX - DEF_MINX + 1 + 16,
-            DEF_MAXY - DEF_Y0 + 1,
-            display_bm->Depth,
-            AllocBitMapFlag,
-            display_bm);
+            CR->BitMap = AllocBitMap(
+              DEF_MAXX - DEF_MINX + 1 + 16,
+              DEF_MAXY - DEF_Y0 + 1,
+              display_bm->Depth,
+              AllocBitMapFlag,
+              display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+	  {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
      
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_MINX + 1,/* SizeX */
-            DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_MINX + 1,/* SizeX */
+              DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer)*/
         CR -> lobs = newlayer;
       }
     }
@@ -938,33 +963,35 @@ struct ClipRect * Case_5(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
-        /* the "middle" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
+          /* the "middle" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
 
-        /* the "lower" one (o's) */
-        DEF_DO_THE_BLIT(CR_New2, CR-> lobs, display_bm);
+          /* the "lower" one (o's) */
+          DEF_DO_THE_BLIT(CR_New2, CR-> lobs, display_bm);
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+          CR_New2->BitMap = passivelayer->SuperBitMap;
+        }
       }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-        CR_New2->BitMap = passivelayer->SuperBitMap;
-      }
-  
 
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { 
@@ -973,58 +1000,60 @@ struct ClipRect * Case_5(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER ))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER ))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_MAXX - DEF_MINX + 1 + 16,
-             DEF_Y1 - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_MAXX - DEF_MINX + 1 + 16,
+               DEF_Y1 - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_MINX + 1,/* SizeX */
-            DEF_Y1   - DEF_Y0   + 1,/* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_MINX + 1,/* SizeX */
+              DEF_Y1   - DEF_Y0   + 1,/* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -1112,30 +1141,33 @@ struct ClipRect * Case_6(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper " one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "lower left" one (o's), Cliprect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
-        /* the "lower right" one (O's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-        CR_New2->BitMap = passivelayer->SuperBitMap;
-      }
-
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper " one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "lower left" one (o's), Cliprect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
+          /* the "lower right" one (O's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+          CR_New2->BitMap = passivelayer->SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     {
@@ -1144,58 +1176,60 @@ struct ClipRect * Case_6(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
         
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_MINX + 1 + 16,
-             DEF_MAXY - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_MINX + 1 + 16,
+               DEF_MAXY - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
-
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
+  
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+	  {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_MINX + 1,  /* SizeX */
-            DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_MINX + 1,  /* SizeX */
+              DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -1289,33 +1323,37 @@ struct ClipRect * Case_7(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper " one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "middle left" one (o's), Cliprect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_Y1, display_bm);
-        /* the "middle right" one (O's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-        /* the "lower" one (o's) */
-        DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
-      }
-      else
-      {
-        /* no blitting is necessary for SuperBitMaps here */
-        CR_New1->BitMap = passivelayer->SuperBitMap;
-        CR_New2->BitMap = passivelayer->SuperBitMap;
-        CR_New3->BitMap = passivelayer->SuperBitMap;
-      }
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper " one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "middle left" one (o's), Cliprect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_Y1, display_bm);
+          /* the "middle right" one (O's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* the "lower" one (o's) */
+          DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures  
+           */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          /* no blitting is necessary for SuperBitMaps here */
+          CR_New1->BitMap = passivelayer->SuperBitMap;
+          CR_New2->BitMap = passivelayer->SuperBitMap;
+          CR_New3->BitMap = passivelayer->SuperBitMap;
+        }
+      }
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* the "lower left" one (n's) */
@@ -1323,58 +1361,60 @@ struct ClipRect * Case_7(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  { 
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_MINX + 1 + 16,
-             DEF_Y1 - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_MINX + 1 + 16,
+               DEF_Y1 - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_MINX & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_MINX & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_MINX,               /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_MINX + 1,  /* SizeX */
-            DEF_Y1 - DEF_Y0   + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_MINX,               /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_MINX + 1,  /* SizeX */
+              DEF_Y1 - DEF_Y0   + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -1455,27 +1495,31 @@ struct ClipRect * Case_8(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same height, but different width
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "left" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "left" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
-        /* the "right" one (n's) , ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_MAXY, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+          /* the "right" one (n's) , ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_MAXY, display_bm);
+    
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+           */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-     /* dispose the old bitmap structure as everything
-        that was backed up there is now in the two other
-        bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* the "right" one (n's) */
@@ -1483,60 +1527,63 @@ struct ClipRect * Case_8(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER ))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER ))
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_MAXX - DEF_X0 + 1 + 16,
-             DEF_MAXY - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_MAXX - DEF_X0 + 1 + 16,
+               DEF_MAXY - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else 
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+          }
 
-        /* 
-           and back up the information for the part with the n's
-           from the info found in the display bitmap, if the new layer
-           is infront of the passive layer and if the cliprect of the 
-           passive layer is already displayed.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_X0 + 1,  /* SizeX */
-            DEF_MAXY - DEF_MINY + 1,/* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
+          /* 
+             and back up the information for the part with the n's
+             from the info found in the display bitmap, if the new layer
+             is infront of the passive layer and if the cliprect of the 
+             passive layer is already displayed.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_X0 + 1,  /* SizeX */
+              DEF_MAXY - DEF_MINY + 1,/* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -1619,29 +1666,33 @@ struct ClipRect * Case_9(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper " one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "lower left" one (o's), Cliprect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_Y1, display_bm);
-        /* the "lower right" one (O's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper " one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "lower left" one (o's), Cliprect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_Y1, display_bm);
+          /* the "lower right" one (O's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+    
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+        }
       }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+       
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { /* the "lower left" one (n's) */
@@ -1649,59 +1700,61 @@ struct ClipRect * Case_9(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+ 	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_MAXX - DEF_X0 + 1 + 16,
-             DEF_Y1 - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_MAXX - DEF_X0 + 1 + 16,
+               DEF_Y1 - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+ 	  {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_X0 + 1,  /* SizeX */
-            DEF_Y1 - DEF_MINY + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_X0 + 1,  /* SizeX */
+              DEF_Y1 - DEF_MINY + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer)*/ 
         CR -> lobs = newlayer;
       }
     }
@@ -1789,29 +1842,33 @@ struct ClipRect * Case_10(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same height, but different width
       */
-      if (0 == (passivelayer -> Flags & LAYERSUPER))
+      if (0 == (passivelayer ->Flags & LAYERSIMPLE))
       {
-        /* the "left" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "middle" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
-        /* the "right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+        if (0 == (passivelayer -> Flags & LAYERSUPER))
+        {
+          /* the "left" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "middle" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
+          /* the "right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+    
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+           */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if not a simple layer */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     {
@@ -1820,59 +1877,61 @@ struct ClipRect * Case_10(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (NULL == CR->BitMap && newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+               AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_X0 + 1 + 16,
-             DEF_MAXY - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_X0 + 1 + 16,
+               DEF_MAXY - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
  
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+	  {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_X0 + 1,    /* SizeX */
-            DEF_MAXY - DEF_MINY + 1,/* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_X0 + 1,    /* SizeX */
+              DEF_MAXY - DEF_MINY + 1,/* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -1966,33 +2025,35 @@ struct ClipRect * Case_11(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer -> Flags & LAYERSUPER))
+      if (0 == (passivelayer -> Flags & LAYERSIMPLE))
       {
-        /* the "upper left" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "upper middle " one (n's), Cliprect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
-        /* the "upper right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-        /* the "lower" one (O's) */
-        DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-      }
+        if (0 == (passivelayer -> Flags & LAYERSUPER))
+        {
+          /* the "upper left" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "upper middle " one (n's), Cliprect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
+          /* the "upper right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* the "lower" one (O's) */
+          DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New3 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */
 
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
-
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     {
@@ -2001,58 +2062,60 @@ struct ClipRect * Case_11(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_X0 + 1 + 16,
-             DEF_Y1 - DEF_MINY + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_X0 + 1 + 16,
+               DEF_Y1 - DEF_MINY + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else 
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_MINY,               /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_X0   + 1,  /* SizeX */
-            DEF_Y1 - DEF_MINY + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_MINY,               /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_X0   + 1,  /* SizeX */
+              DEF_Y1 - DEF_MINY + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -2141,29 +2204,32 @@ struct ClipRect * Case_12(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same height, but different width
       */
-      if (0 == (passivelayer -> Flags & LAYERSUPER))
+      if (0 == (passivelayer -> Flags & LAYERSIMPLE))
       {
-        /* the "left" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "middle" one (n's), ClipRect CR will hold it */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm);
-        /* the "right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+        if (0 == (passivelayer -> Flags & LAYERSUPER))
+        {
+          /* the "left" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "middle" one (n's), ClipRect CR will hold it */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm);
+          /* the "right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+          */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { 
@@ -2172,58 +2238,60 @@ struct ClipRect * Case_12(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_MAXX - DEF_X0 + 1 + 16,
-             DEF_MAXY - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_MAXX - DEF_X0 + 1 + 16,
+               DEF_MAXY - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_X0 + 1,  /* SizeX */
-            DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_X0 + 1,  /* SizeX */
+              DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }
     }
@@ -2319,32 +2387,36 @@ struct ClipRect * Case_13(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer -> Flags & LAYERSUPER))
+      if (0 == (passivelayer -> Flags & LAYERSIMPLE))
       {
-        /* the "upper" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "middle left" one (O's)*/
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-        /* the "upper right" one (o's), Cliprect CR will hold it  */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
-        /* the "lower" one (o's) */
-        DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+        if (0 == (passivelayer -> Flags & LAYERSUPER))
+        {
+          /* the "upper" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "middle left" one (O's)*/
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* the "upper right" one (o's), Cliprect CR will hold it  */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
+          /* the "lower" one (o's) */
+          DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
+    
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+           */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New3 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     {
@@ -2353,59 +2425,61 @@ struct ClipRect * Case_13(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
      {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  { 
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_MAXX - DEF_X0 + 1 + 16,
-             DEF_Y1 - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_MAXX - DEF_X0 + 1 + 16,
+               DEF_Y1 - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
 
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_MAXX - DEF_X0 + 1,  /* SizeX */
-            DEF_Y1   - DEF_Y0 + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
-
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_MAXX - DEF_X0 + 1,  /* SizeX */
+              DEF_Y1   - DEF_Y0 + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer; 
       }
     }
@@ -2501,32 +2575,35 @@ struct ClipRect * Case_14(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same width, but different height
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* the "upper" one (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* the "lower left" one (O's)*/
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-        /* the "lower middle" one (n's), Cliprect CR will hold it  */
-        DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
-        /* the "lower right" one (o's) */
-        DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-      }
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* the "upper" one (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* the "lower left" one (O's)*/
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* the "lower middle" one (n's), Cliprect CR will hold it  */
+          DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
+          /* the "lower right" one (o's) */
+          DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
+          /* dispose the old bitmap structure as everything
+             that was backed up there is now in the two other
+             bitmap structures
+           */
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New3 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */ 
 
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* dispose the old bitmap structure as everything
-         that was backed up there is now in the two other
-         bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     {
@@ -2535,57 +2612,60 @@ struct ClipRect * Case_14(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+          {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_X0 + 1 + 16,
-             DEF_MAXY - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_X0 + 1 + 16,
+               DEF_MAXY - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
  
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            /* out of memory */
+            if (NULL == CR->BitMap)
+              return NULL;
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+	  }
 
 
-        /* and back up the information for the part with the n's
-           from the info found in the display bitmap.
-        */
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1   - DEF_X0 + 1,  /* SizeX */
-            DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
+          /* and back up the information for the part with the n's
+             from the info found in the display bitmap.
+          */
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1   - DEF_X0 + 1,  /* SizeX */
+              DEF_MAXY - DEF_Y0 + 1,  /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if not a simple layer */
         CR -> lobs = newlayer;
       }
     }
@@ -2696,36 +2776,40 @@ struct ClipRect * Case_15(struct Rectangle * R,
     { /* get two new bitmap structures
          they have the same height, but different width
       */
-      if (0 == (passivelayer->Flags & LAYERSUPER))
+      if (0 == (passivelayer->Flags & LAYERSIMPLE))
       {
-        /* upper part (o's) */
-        DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
-        /* middle left part (O's) */
-        DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
-        /* middle part (n's) */
-        DEF_DO_THE_BLIT_CR(DEF_X0,DEF_Y0,DEF_X1,DEF_Y1, display_bm);
-        /* middle left part (O's) */
-        DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
-        /* lower part (o's) */
-        DEF_DO_THE_BLIT(CR_New4, CR->lobs, display_bm);
-      }
-      else
-      {
-        CR_New1 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New2 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New3 -> BitMap = passivelayer -> SuperBitMap;
-        CR_New4 -> BitMap = passivelayer -> SuperBitMap;
-      }
-
+        if (0 == (passivelayer->Flags & LAYERSUPER))
+        {
+          /* upper part (o's) */
+          DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
+          /* middle left part (O's) */
+          DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
+          /* middle part (n's) */
+          DEF_DO_THE_BLIT_CR(DEF_X0,DEF_Y0,DEF_X1,DEF_Y1, display_bm);
+          /* middle left part (O's) */
+          DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
+          /* lower part (o's) */
+          DEF_DO_THE_BLIT(CR_New4, CR->lobs, display_bm);
+          /* 
+            Dispose the old bitmap structure as everything
+            that was backed up there is now in the two other
+            bitmap structures
+          */
+       
+          FreeBitMap(bm_old);
+        }
+        else
+        {
+          CR_New1 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New2 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New3 -> BitMap = passivelayer -> SuperBitMap;
+          CR_New4 -> BitMap = passivelayer -> SuperBitMap;
+        }
+      } /* if (not a simple layer) */
+      
       if (CR->lobs->priority < newlayer->priority)
         CR -> lobs = newlayer;
 
-      /* 
-        Dispose the old bitmap structure as everything
-        that was backed up there is now in the two other
-        bitmap structures
-      */
-      FreeBitMap(bm_old);
     }
     else
     { 
@@ -2733,60 +2817,63 @@ struct ClipRect * Case_15(struct Rectangle * R,
          get it if the new layer is in front of the passive layer */ 
       if (newlayer->priority > passivelayer->priority)
       {
-        ULONG AllocBitMapFlag = 0;
-        struct BitMap * DestBM;
-        LONG DestX, DestY;
+        if (0 == (passivelayer->Flags & LAYERSIMPLE))
+        {
+          ULONG AllocBitMapFlag = 0;
+          struct BitMap * DestBM;
+          LONG DestX, DestY;
 
-        if (0 == (passivelayer->Flags & LAYERSUPER))
-	{
-          if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
-            AllocBitMapFlag = BMF_CLEAR;
+          if (0 == (passivelayer->Flags & LAYERSUPER))
+	  {
+            if ((CR->Flags & CR_NEEDS_NO_LAYERBLIT_DAMAGE) != 0)
+              AllocBitMapFlag = BMF_CLEAR;
 
-          CR ->BitMap = AllocBitMap(
-             DEF_X1 - DEF_X0 + 1 + 16,
-             DEF_Y1 - DEF_Y0 + 1,
-             display_bm->Depth,
-             AllocBitMapFlag,
-             display_bm);
+            CR ->BitMap = AllocBitMap(
+               DEF_X1 - DEF_X0 + 1 + 16,
+               DEF_Y1 - DEF_Y0 + 1,
+               display_bm->Depth,
+               AllocBitMapFlag,
+               display_bm);
 
-          /* out of memory */
-          if (NULL == CR->BitMap)
-            return NULL;
-
-          DestBM = CR->BitMap;
-          DestX  = DEF_X0 & 0x0f;
-          DestY  = 0;
-        }
-        else
-	{
-          /* it has a superbitmap */
-          DestX  = CR->bounds.MinX - 
+            /* out of memory */
+            if (NULL == CR->BitMap)
+             return NULL;
+ 
+            DestBM = CR->BitMap;
+            DestX  = DEF_X0 & 0x0f;
+            DestY  = 0;
+          }
+          else
+          {
+            /* it has a superbitmap */
+            DestX  = CR->bounds.MinX - 
                          passivelayer->bounds.MinX + passivelayer->Scroll_X;
-          DestY  = CR->bounds.MinY -
+            DestY  = CR->bounds.MinY -
                          passivelayer->bounds.MinY + passivelayer->Scroll_Y;
-          DestBM = passivelayer->SuperBitMap;
-	}
+            DestBM = passivelayer->SuperBitMap;
+         }
 
-        /* 
-           Back up the information for the part with the n's
-           from the info found in the display bitmap, but only if
-           it belongs to this cliprect.
-        */
+          /* 
+             Back up the information for the part with the n's
+             from the info found in the display bitmap, but only if
+             it belongs to this cliprect.
+          */
 
-        if (0 == AllocBitMapFlag)
-          BltBitMap(
-            display_bm,             /* SrcBitMap = Display BitMap */
-            DEF_X0,                 /* SrcX - no optimization !!! */
-            DEF_Y0,                 /* SrcY */
-            DestBM,                 /* DestBitMap */
-            DestX,                  /* DestX - optimized */
-            DestY,                  /* DestY */
-            DEF_X1 - DEF_X0 + 1,    /* SizeX */
-            DEF_Y1 - DEF_Y0 + 1,    /* SizeY */
-            0x0c0,                  /* Vanilla Copy */
-            0xff,                   /* Mask */
-            NULL
-          );
+          if (0 == AllocBitMapFlag)
+            BltBitMap(
+              display_bm,             /* SrcBitMap = Display BitMap */
+              DEF_X0,                 /* SrcX - no optimization !!! */
+              DEF_Y0,                 /* SrcY */
+              DestBM,                 /* DestBitMap */
+              DestX,                  /* DestX - optimized */
+              DestY,                  /* DestY */
+              DEF_X1 - DEF_X0 + 1,    /* SizeX */
+              DEF_Y1 - DEF_Y0 + 1,    /* SizeY */
+              0x0c0,                  /* Vanilla Copy */
+              0xff,                   /* Mask */
+              NULL
+            );
+        } /* if (not a simple layer) */
         CR -> lobs = newlayer;
       }      
     }
