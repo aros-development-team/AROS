@@ -95,7 +95,6 @@ struct config *initconfig(int argc, char **argv, int command)
 	cfg->suffix = *argvit;
     argvit++;
 
-    cfg->boopsiprefix = NULL;
     switch (cfg->modtype)
     {
     case LIBRARY:
@@ -108,16 +107,6 @@ struct config *initconfig(int argc, char **argv, int command)
     case MUI:
     case MCP:
         cfg->firstlvo = 6;
-	{
-	    static const char **muiprefix =
-	    {
-		"__OM_",
-		"__MUIM_",
-		NULL
-	    };
-	    
-	    cfg->boopsiprefix = muiprefix;
-	}
 	break;
     case RESOURCE:
 	cfg->firstlvo = 1;
