@@ -1348,10 +1348,8 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 #else
 
-        for (/*OldCR = NULL,*/ SrcCR = L->ClipRect; SrcCR; /*OldCR = SrcCR,*/ SrcCR = SrcCR->Next)
+        for (SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next)
     	{
-//            SrcCR->_p1 = OldCR;
-
             if (_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect))
 	    {
 		TranslateRect(&Rect, -dx, -dy);
@@ -1388,7 +1386,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
                     area = (ULONG)(Rect.MaxX - Rect.MinX + 1) * (ULONG)(Rect.MaxY - Rect.MinY + 1);
 
-            	    for (DstCR = L->ClipRect /*SrcCR*/; area && DstCR; DstCR = DstCR->Next /*_p1*/)
+            	    for (DstCR = L->ClipRect ; area && DstCR; DstCR = DstCR->Next)
             	    {
 		  	struct Rectangle Rect2;
 
