@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.6  2001/07/16 07:26:18  falemagn
-    Cleaned up a little more
+    Revision 1.7  2001/07/16 08:04:10  falemagn
+    Some little improvements
 
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
@@ -158,7 +158,6 @@ AROS_LHA(BPTR,              segList,  A0),
 	 struct ExecBase *, sysBase, 0, pipefs_handler)
 {
     AROS_LIBFUNC_INIT
-        struct IOFileSys iofs;
 
     /* Store arguments */
     SysBase =  sysBase;
@@ -414,8 +413,9 @@ ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
 
 /* The helper process */
 
-#define SendBack(msg)                        \
+#define SendBack(msg, err)                   \
 {                                            \
+    msg->iofs->io_DosError = err;            \
     ReplyMsg(&(msg)->iofs->IOFS.io_Message); \
     FreeVec(msg);                            \
 }
@@ -461,6 +461,7 @@ static size_t LenFirstPart(STRPTR path)
 static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 {
     #define dn (*dn_ptr)
+
     size_t len;
     STRPTR nextpart;
     struct filenode *fn;
@@ -515,20 +516,14 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
     #undef dn
 }
 
-static struct filenode *GetFile(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
+static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err)
 {
-    STRPTR filename       = SkipColon(iofs->io_Union.io_NamedFile.io_Filename);
-    struct usernode *un   = (struct usernode *)iofs->IOFS.io_Unit;
-    struct filenode *fn   = un->fn;
-    struct dirnode  *dn   = (struct dirnode *)fn;
-    ULONG            mode = iofs->io_Union.io_OPEN.io_FileMode;
+    struct filenode *fn;
+
+    filename = SkipColon(filename);
 
     kprintf("User wants to open file %S.\n", filename);
-    kprintf("Current directory is %S\n", fn->node.ln_Name);
-					   /*
-    if (strcmp(filename, "//unnamed pipe//")
-    {
-					     */
+    kprintf("Current directory is %S\n", dn->node.ln_Name);
 
     fn = FindFile(&dn, filename);
     if (!fn)
@@ -563,12 +558,12 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, struct IOFileSys 
 	    }
 
 	    kprintf("AllocVec Failed. No more memory available\n");
-	    iofs->io_DosError = ERROR_NO_FREE_STORE;
+	    *err = ERROR_NO_FREE_STORE;
 	    return NULL;
 	}
 	else
 	{
-	    iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
+            *err = ERROR_OBJECT_NOT_FOUND;
 	    return NULL;
 	}
     }
@@ -576,7 +571,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, struct IOFileSys 
     if ((BYTE)fn->node.ln_Type > 0 && mode&(FMF_WRITE|FMF_READ))
     {
 	kprintf("The file is a directory, cannot be open for reading/writing\n");
-	iofs->io_DosError = ERROR_OBJECT_WRONG_TYPE;
+	*err = ERROR_OBJECT_WRONG_TYPE;
 	return NULL;
     }
 
@@ -635,13 +630,30 @@ AROS_UFH3(LONG, pipefsproc,
 		{
 		    struct usernode *un;
 		    BOOL             stillwaiting;
+		    ULONG            err;
 
 		    kprintf("Command is OPEN\n");
 
-		    fn = GetFile(pipefsbase, msg->iofs);
+		    /*
+		       I woould have liked to put this AFTER GetFile(),
+		       but then it would have been really difficult to
+		       undo what's done in GetFile() if the following AllocVec()
+		       failed...
+		    */
+		    un = AllocVec(sizeof(*un), MEMF_PUBLIC);
+		    if (!un)
+		    {
+			SendBack(msg, ERROR_NO_FREE_STORE);
+			continue;
+		    }
+
+		    un->mode = msg->iofs->io_Union.io_OPEN.io_FileMode;
+
+		    fn = GetFile(pipefsbase, msg->iofs->io_Union.io_OPEN.io_Filename, (struct dirnode *)fn, un->mode, &err);
 		    if (!fn)
 		    {
-			SendBack(msg);
+			FreeVec(un);
+			SendBack(msg, err);
 			continue;
 		    }
 
@@ -651,19 +663,9 @@ AROS_UFH3(LONG, pipefsproc,
 			    "a pipe":
 			    "a directory");
 
-		    un = AllocVec(sizeof(*un), MEMF_PUBLIC);
-		    if (!un)
-		    {
-		        msg->iofs->io_DosError = ERROR_NO_FREE_STORE;
-			SendBack(msg);
-			continue;
-		    }
-
-		    fn->numusers++;
-
-		    un->mode = msg->iofs->io_Union.io_OPEN.io_FileMode;
-		    un->fn   = fn;
 		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
+		    fn->numusers++;
+		    un->fn = fn;
 
                     stillwaiting = !fn->numwriters || !fn->numreaders;
 
@@ -698,7 +700,7 @@ AROS_UFH3(LONG, pipefsproc,
 			    AddTail(&fn->waitinglist, (struct Node *)msg);
        			}
 			else
-			    SendBack(msg);
+			    SendBack(msg, 0);
                     }
 		    else
 		    {
@@ -713,9 +715,9 @@ AROS_UFH3(LONG, pipefsproc,
 			            "Wake up all of them\n");
 
 			    while ((msg = (struct pipefsmessage *)RemHead(&fn->waitinglist)))
-			        SendBack(msg);
+			        SendBack(msg, 0);
            		}
-			SendBack(msg);
+			SendBack(msg, 0);
 		    }
 
 		    continue;
@@ -748,7 +750,7 @@ AROS_UFH3(LONG, pipefsproc,
 			{
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length =
 			    msg->iofs->io_Union.io_READ_WRITE.io_Length - msg->curlen;
-			    SendBack(msg);
+			    SendBack(msg, 0);
 			}
 		    }
 		    if (un->mode&FMF_READ && !fn->numreaders)
@@ -761,15 +763,12 @@ AROS_UFH3(LONG, pipefsproc,
 			        "Reply to all the waiting writers");
 
 			while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingwrites)))
-			{
-			    msg->iofs->io_DosError = ERROR_BROKEN_PIPE;
-			    SendBack(msg);
-			}
+			    SendBack(msg, ERROR_BROKEN_PIPE);
 		    }
 
 		    un->fn->numusers--;
 		    FreeVec(un);
-		    SendBack(msg);
+		    SendBack(msg, 0);
 
 		    continue;
 		case FSA_EXAMINE:
@@ -797,8 +796,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    if (type > ED_OWNER)
     		    {
 			kprintf("The user requested an invalid type\n");
-			msg->iofs->io_DosError = ERROR_BAD_NUMBER;
-			SendBack(msg);
+			SendBack(msg, ERROR_BAD_NUMBER);
 			continue;
 		    }
 
@@ -807,8 +805,7 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    if(next>end)  /* > is correct. Not >= */
 		    {
-			msg->iofs->io_DosError = ERROR_BUFFER_OVERFLOW;
-			SendBack(msg);
+			SendBack(msg, ERROR_BUFFER_OVERFLOW);
 			continue;
 		    }
 
@@ -849,7 +846,7 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    ead->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
 
-		    SendBack(msg);
+		    SendBack(msg, 0);
 		    continue;
 		}
 		case FSA_WRITE:
@@ -857,15 +854,13 @@ AROS_UFH3(LONG, pipefsproc,
 		    if (!un->mode & FMF_WRITE)
 		    {
 		        kprintf("User doesn't have permission to write.\n");
-			msg->iofs->io_DosError = ERROR_BAD_STREAM_NAME;
-			SendBack(msg);
+			SendBack(msg, ERROR_BAD_STREAM_NAME);
 		        continue;
 		    }
 		    if (!fn->numreaders)
 		    {
 			kprintf("There are no more readers: PIPE BROKEN.\n");
-			msg->iofs->io_DosError = ERROR_BROKEN_PIPE;
-			SendBack(msg);
+			SendBack(msg, ERROR_BROKEN_PIPE);
 		        continue;
 		    }
 		    kprintf("Enqueing the message\n");
@@ -877,15 +872,14 @@ AROS_UFH3(LONG, pipefsproc,
 		    if (!un->mode & FMF_READ)
 		    {
 		        kprintf("User doesn't have permission to read.\n");
-			msg->iofs->io_DosError = ERROR_BAD_STREAM_NAME;
-			SendBack(msg);
+			SendBack(msg, ERROR_BAD_STREAM_NAME);
 		        continue;
 		    }
 		    if (!fn->numwriters)
 		    {
 			kprintf("There's no data to read: send EOF\n");
 			msg->iofs->io_Union.io_READ_WRITE.io_Length = 0;
-			SendBack(msg);
+			SendBack(msg, 0);
 		        continue;
 		    }
 		    kprintf("Enqueing the message\n");
@@ -928,14 +922,14 @@ AROS_UFH3(LONG, pipefsproc,
 		{
 		    kprintf("Writer: finished its job. Removing it from the list.\n");
 		    Remove((struct Node *)wmsg);
-		    SendBack(wmsg);
+		    SendBack(wmsg, 0);
 		}
 
 		if (!rmsg->curlen)
 		{
 		    kprintf("Reader: finished its job. Removing it from the list.\n");
 		    Remove((struct Node *)rmsg);
-		    SendBack(rmsg);
+		    SendBack(rmsg, 0);
 		}
 
 	    }
