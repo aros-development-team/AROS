@@ -2,7 +2,7 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function HelpControl()
+    Desc: Intuition function IsWindowVisible()
     Lang: english
 */
 #include "intuition_intern.h"

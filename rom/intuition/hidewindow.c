@@ -2,7 +2,7 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function HelpControl()
+    Desc: Intuition function HideWindow()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -19,7 +19,7 @@
 	AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 140, Intuition)
+	struct IntuitionBase *, IntuitionBase, 141, Intuition)
 
 /*  FUNCTION
         Make a window invisible. 
@@ -47,11 +47,9 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct IntuiActionMessage * msg;
-
     if (TRUE == IsWindowVisible(window))
     {
       msg = AllocIntuiActionMsg(AMCODE_SHOWWINDOW, window, IntuitionBase);
-
       if (NULL != msg)
       {
         msg->iam_ShowWindow.yesno = FALSE;
