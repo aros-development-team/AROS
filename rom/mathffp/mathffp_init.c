@@ -40,7 +40,7 @@ const struct Resident Mathffp_resident=
     RTC_MATCHWORD,
     (struct Resident *)&Mathffp_resident,
     (APTR)&END,
-    RTF_AUTOINIT,
+    RTF_AUTOINIT|RTF_COLDSTART,
     41,
     NT_LIBRARY,
     0,
