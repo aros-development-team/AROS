@@ -513,10 +513,13 @@ Execute an AmigaDOS script.
   <file> parameter.
 
 
+( expandpath <path> )
+  Expands the <path>. For example "C:Mount" will become "System:C/Mount"
+
+
 /* Unimplemented commands */
 ( copyfiles )
 ( copylib )
-( expandpath )
 ( foreach )
 ( getsum )
 ( getversion )

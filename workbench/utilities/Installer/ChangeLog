@@ -374,4 +374,5 @@
 - implemented (getassign)
 - implemented (getdevice)
 - implemented (tackon)
+- implemented (expandpath)
 
