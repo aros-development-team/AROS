@@ -37,6 +37,7 @@ struct arexxfunc funcs[] = {
     { "REPLY"    , 1, 2, rxsupp_reply     },
     { "SHOWDIR"  , 1, 3, rxsupp_showdir   },
     { "SHOWLIST" , 1, 3, rxsupp_showlist  },
+    { "STATEF"   , 1, 1, rxsupp_statef    },
     { "WAITPKT"  , 1, 1, rxsupp_waitpkt   }
 };
 #define FUNCCOUNT (sizeof(funcs)/sizeof(struct arexxfunc))
