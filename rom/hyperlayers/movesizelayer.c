@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -102,7 +102,7 @@
   {
     rectw.MinX = dx+l->bounds.MaxX+1;
     rectw.MinY = dy+l->bounds.MinY;
-    rectw.MaxX = dx+rectw.MinX + dw - 1;
+    rectw.MaxX = rectw.MinX + dw - 1;
     rectw.MaxY = dy+l->bounds.MaxY+dh;
   }
 
@@ -111,7 +111,7 @@
     recth.MinX = dx+l->bounds.MinX;
     recth.MinY = dy+l->bounds.MaxY + 1;
     recth.MaxX = dx+l->bounds.MaxX+dw;
-    recth.MaxY = dy+recth.MinY + dh - 1;
+    recth.MaxY = recth.MinY + dh - 1;
   }
 
   SetRegion(newshape, &cutnewshape);
