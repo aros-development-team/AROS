@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := main executecommand
+FILES       := main locale executecommand
 EXEDIR      := $(AROS_WANDERER)/Tools
 EXE         := $(EXEDIR)/ExecuteCommand
 ICONS       := ExecuteCommand
@@ -16,7 +16,9 @@ USE_MLIB        := yes
 USE_MUILIB      := yes
 
 #MM- workbench-system-wanderer : workbench-system-wanderer-tools-executecommand
-#MM workbench-system-wanderer-tools-executecommand : includes linklibs 
+#MM workbench-system-wanderer-tools-executecommand : \
+#MM     includes linklibs \
+#MM     workbench-system-wanderer-tools-executecommand-catalogs
 
 %make_prog_setup mmake=workbench-system-wanderer-tools-executecommand
 
