@@ -43,6 +43,8 @@ extern struct Library *MUIMasterBase;
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
+#define UPDATE_SINGLEICON 1
+#define UPDATE_SCROLL	  2
 
 struct IconEntry
 {
@@ -88,9 +90,12 @@ struct MUI_IconData
     /* Render stuff */
 
     /* values for update */
-    /* 1 = draw the given single icon only */
+    /* UPDATE_SINGLEICON = draw the given single icon only */
+    /* UPDATE_SCROLL = scroll the view by update_scrolldx/update_scrolldy */
+    
     ULONG update;
-
+    WORD update_scrolldx;
+    WORD update_scrolldy;
     struct IconEntry *update_icon;
 };
 
@@ -151,6 +156,54 @@ static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struc
 }
 
 /**************************************************************************
+ 
+**************************************************************************/
+static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, struct IconEntry *singleicon)
+{
+    struct IconEntry *icon;
+    WORD    	      maxx = data->width - 1, maxy = data->height - 1;
+
+    if (!(_flags(obj)&MADF_SETUP)) return;
+    
+    icon = singleicon ? singleicon : List_First(&data->icon_list);
+    while (icon)
+    {
+	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
+	{
+	    struct Rectangle icon_rect;
+	    
+	    IconList_GetIconRectangle(obj, icon, &icon_rect);
+	    icon_rect.MinX += icon->x;
+	    icon_rect.MaxX += icon->x;
+	    icon_rect.MinY += icon->y;
+	    icon_rect.MaxY += icon->y;
+
+	    if (icon_rect.MaxX > maxx) maxx = icon_rect.MaxX;
+	    if (icon_rect.MaxY > maxy) maxy = icon_rect.MaxY;
+	    
+	}
+	
+	if (singleicon) break;
+	
+	icon = Node_Next(icon);
+    }
+    
+    /* update our view */
+    if (maxx + 1 > data->width)
+    {
+    	data->width = maxx + 1;
+	set(obj, MUIA_IconList_Width, data->width);
+    }
+    
+    if (maxy + 1 > data->height)
+    {
+    	data->height = maxy + 1;
+	set(obj, MUIA_IconList_Height, data->height);
+    }
+    
+}
+
+/**************************************************************************
  Checks weather we can place a icon with the given dimesions at the
  suggested positions.
 
@@ -162,10 +215,10 @@ static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struc
     struct Rectangle toplace_rect;
 
     IconList_GetIconRectangle(obj, toplace, &toplace_rect);
-    toplace_rect.MinX += atx + data->view_x;
-    toplace_rect.MaxX += atx + data->view_x;
-    toplace_rect.MinY += aty + data->view_y;
-    toplace_rect.MaxY += aty + data->view_y;
+    toplace_rect.MinX += atx;
+    toplace_rect.MaxX += atx;
+    toplace_rect.MinY += aty;
+    toplace_rect.MaxY += aty;
 
     icon = List_First(&data->icon_list);
     while (icon)
@@ -174,10 +227,10 @@ static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struc
 	{
 	    struct Rectangle icon_rect;
 	    IconList_GetIconRectangle(obj, icon, &icon_rect);
-	    icon_rect.MinX += icon->x + data->view_x;
-	    icon_rect.MaxX += icon->x + data->view_x;
-	    icon_rect.MinY += icon->y + data->view_y;
-	    icon_rect.MaxY += icon->y + data->view_y;
+	    icon_rect.MinX += icon->x;
+	    icon_rect.MaxX += icon->x;
+	    icon_rect.MinY += icon->y;
+	    icon_rect.MaxY += icon->y;
 
 	    if (RectAndRect(&icon_rect, &toplace_rect))
 		return FALSE; /* There is already an icon on this place */
@@ -194,16 +247,18 @@ static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struc
 **************************************************************************/
 static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
 {
+#if 0
     struct Rectangle toplace_rect;
+    
     IconList_GetIconRectangle(obj, toplace, &toplace_rect);
     toplace_rect.MinX += atx + data->view_x;
     toplace_rect.MaxX += atx + data->view_x;
     toplace_rect.MinY += aty + data->view_y;
     toplace_rect.MaxY += aty + data->view_y;
-
+#endif
     toplace->x = atx;
     toplace->y = aty;
-
+#if 0
     /* update our view */
     if (toplace_rect.MaxX - data->view_x > data->width)
     {
@@ -216,7 +271,57 @@ static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct Ic
     	data->height = toplace_rect.MaxY - data->view_y;
 	set(obj, MUIA_IconList_Height, data->height);
     }
+#endif    
+}
+
+/**************************************************************************
+ Place icons with NO_ICON_POSITION coords somewhere 
+**************************************************************************/
+
+static void IconList_FixNoPositionIcons(Object *obj, struct MUI_IconData *data)
+{
+    struct IconEntry *icon;
+    int cur_x = data->view_x + 36;
+    int cur_y = data->view_y + 4;
+
+    icon = List_First(&data->icon_list);
+    while (icon)
+    {
+	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
+	{
+	    int loops = 0;
+	    int cur_x_save = cur_x;
+	    int cur_y_save = cur_y;
+	    struct Rectangle icon_rect;
+
+	    IconList_GetIconRectangle(obj, icon, &icon_rect);
+	    icon_rect.MinX += cur_x - icon->width/2 + data->view_x;
+	    if (icon_rect.MinX < 0)
+		cur_x -= icon_rect.MinX;
+
+	    while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
+	    {
+		cur_y++;
+
+		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
+		{
+		    cur_x += 72;
+		    cur_y = data->view_y + 4;
+		}
+	    }
+
+	    IconList_PlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y);
+
+	    if (icon_rect.MinX < 0)
+	    {
+		cur_x = cur_x_save;
+		cur_y = cur_y_save;
+	    }
+	}
+	icon = Node_Next(icon);
+    }
     
+    IconList_RethinkDimensions(obj, data, NULL);
 }
 
 /**************************************************************************
@@ -299,16 +404,24 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_IconList_Left:
 		    if (data->view_x != tag->ti_Data)
 		    {
+		    	data->update = UPDATE_SCROLL;
+			data->update_scrolldx = (WORD)tag->ti_Data - data->view_x;
+			data->update_scrolldy = 0;
+			
 			data->view_x = tag->ti_Data;
-			MUI_Redraw(obj,MADF_DRAWOBJECT);
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 		    break;
 
 	    case    MUIA_IconList_Top:
 		    if (data->view_y != tag->ti_Data)
 		    {
+		    	data->update = UPDATE_SCROLL;
+			data->update_scrolldx = 0;
+			data->update_scrolldy = (WORD)tag->ti_Data - data->view_y;
+			
 			data->view_y = tag->ti_Data;
-			MUI_Redraw(obj,MADF_DRAWOBJECT);
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 		    break;
     	}
@@ -439,7 +552,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
     if (msg->flags & MADF_DRAWUPDATE)
     {
-	if (data->update == 1) /* draw only a single icon at update_icon */
+	if (data->update == UPDATE_SINGLEICON) /* draw only a single icon at update_icon */
 	{
 	    struct Rectangle rect;
 
@@ -479,6 +592,114 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    MUI_RemoveClipping(muiRenderInfo(obj),clip);
 	    return 0;
 	}
+	else if (data->update == UPDATE_SCROLL)
+	{
+	    struct Region *region;
+	    BOOL scroll_caused_damage;
+	    
+	    scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
+	    
+	    data->update = 0;
+	    
+	    if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
+	    	(abs(data->update_scrolldy) >= _mheight(obj)))
+	    {
+		MUI_Redraw(obj, MADF_DRAWOBJECT);
+		return 0;
+	    }
+	    
+	    region = NewRegion();
+	    if (!region)
+	    {
+		MUI_Redraw(obj, MADF_DRAWOBJECT);
+		return 0;
+	    }
+	    
+	    if (data->update_scrolldx > 0)
+	    {
+	    	struct Rectangle rect;
+		
+		rect.MinX = _mright(obj) - data->update_scrolldx;
+		rect.MinY = _mtop(obj);
+		rect.MaxX = _mright(obj);
+		rect.MaxY = _mbottom(obj);
+		
+		OrRectRegion(region, &rect);
+	    }
+	    else if (data->update_scrolldx < 0)
+	    {
+	    	struct Rectangle rect;
+		
+		rect.MinX = _mleft(obj);
+		rect.MinY = _mtop(obj);
+		rect.MaxX = _mleft(obj) - data->update_scrolldx;
+		rect.MaxY = _mbottom(obj);
+		
+		OrRectRegion(region, &rect);
+	    }
+
+	    if (data->update_scrolldy > 0)
+	    {
+	    	struct Rectangle rect;
+		
+		rect.MinX = _mleft(obj);
+		rect.MinY = _mbottom(obj) - data->update_scrolldy;
+		rect.MaxX = _mright(obj);
+		rect.MaxY = _mbottom(obj);
+		
+		OrRectRegion(region, &rect);
+	    }
+	    else if (data->update_scrolldy < 0)
+	    {
+	    	struct Rectangle rect;
+		
+		rect.MinX = _mleft(obj);
+		rect.MinY = _mtop(obj);
+		rect.MaxX = _mright(obj);
+		rect.MaxY = _mtop(obj) - data->update_scrolldy;
+		
+		OrRectRegion(region, &rect);
+	    }
+	    	    
+	    ScrollRasterBF(_rp(obj),
+	    	    	   data->update_scrolldx,
+			   data->update_scrolldy,
+			   _mleft(obj),
+			   _mtop(obj),
+			   _mright(obj),
+			   _mbottom(obj));
+		
+    	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+
+	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+	    
+	    MUI_Redraw(obj, MADF_DRAWOBJECT);
+	    
+	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+	    
+//	    DisposeRegion(region);
+
+	    if (scroll_caused_damage)
+	    {
+    		if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+		{
+		    /* Theoretically it might happen that more damage is caused
+		       after ScrollRaster. By something else, like window movement
+		       in front of our window. Therefore refresh root object of
+		       window, not just this object */
+
+		    Object *o;
+
+		    get(_win(obj),MUIA_Window_RootObject, (IPTR *)&o);	       
+		    MUI_Redraw(o, MADF_DRAWOBJECT);
+
+		    MUI_EndRefresh(muiRenderInfo(obj), 0);
+		}
+	    }
+
+	    return 0;
+	}
+	
     } else
     {
     	/* We don't use the predefined MUI background because workbench has own */
@@ -486,50 +707,12 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	/*  DoMethod(obj, MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)); */
     }
 
+
     /* At we see if there any Icons without proper position, this is the wrong place here,
      * it should be done after all icons have been loaded */
-    {
-	int cur_x = data->view_x + 36;
-	int cur_y = data->view_y + 4;
 
-	icon = List_First(&data->icon_list);
-	while (icon)
-	{
-	    if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
-	    {
-		int loops = 0;
-		int cur_x_save = cur_x;
-		int cur_y_save = cur_y;
-		struct Rectangle icon_rect;
-
-		IconList_GetIconRectangle(obj, icon, &icon_rect);
-		icon_rect.MinX += cur_x - icon->width/2 + data->view_x;
-		if (icon_rect.MinX < 0)
-		    cur_x -= icon_rect.MinX;
-		
-		while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
-		{
-		    cur_y++;
-
-		    if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
-		    {
-		        cur_x += 72;
-		        cur_y = data->view_y + 4;
-		    }
-	        }
-
-		IconList_PlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y);
-		
-		if (icon_rect.MinX < 0)
-		{
-		    cur_x = cur_x_save;
-		    cur_y = cur_y_save;
-		}
-	    }
-	    icon = Node_Next(icon);
-	}
-    }
-
+    IconList_FixNoPositionIcons(obj, data);
+    
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
     icon = List_First(&data->icon_list);
@@ -645,6 +828,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     entry->width = rect.MaxX - rect.MinX + 1;
     entry->height = rect.MaxY - rect.MinY + 1;
 
+#if 0
     if (entry->x != NO_ICON_POSITION)
     {
 	if (entry->x < data->view_x) data->view_x = entry->x;
@@ -656,6 +840,8 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	if (entry->y < data->view_y) data->view_y = entry->y;
 	if (entry->y + entry->height - data->view_y > data->height) data->height = entry->y + entry->height - data->view_y;
     }
+#endif
+
     strcpy(entry->entry.filename,msg->filename);
 
     {
@@ -670,8 +856,10 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	Insert((struct List*)&data->icon_list,(struct Node*)entry,(struct Node*)icon2);
     }
 
+#if 0
     set(obj, MUIA_IconList_Width, data->width);
     set(obj, MUIA_IconList_Height, data->height);
+#endif
     
     return 1;
 }
@@ -710,7 +898,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				    if (!node->selected)
 				    {
 					node->selected = 1;
-					data->update = 1;
+					data->update = UPDATE_SINGLEICON;
 					data->update_icon = node;
 					MUI_Redraw(obj,MADF_DRAWUPDATE);
 				    }
@@ -721,7 +909,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				    if (node->selected)
 				    {
 					node->selected = 0;
-					data->update = 1;
+					data->update = UPDATE_SINGLEICON;
 					data->update_icon = node;
 					MUI_Redraw(obj,MADF_DRAWUPDATE);
 				    }
@@ -860,7 +1048,7 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
     	img->width = node->width;
     	img->height = node->height;
 
-    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
+    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES | BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
     	{
     	    struct RastPort temprp;
     	    InitRastPort(&temprp);
@@ -939,6 +1127,8 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 	    data->first_selected->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
 	    data->first_selected->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
 	    	    
+	    IconList_RethinkDimensions(obj, data, data->first_selected);
+	    
 	    MUI_Redraw(obj,MADF_DRAWOBJECT);
 	}
     } else
@@ -963,7 +1153,7 @@ static ULONG IconList_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
 	if (node->selected)
 	{
 	    node->selected = 0;
-	    data->update = 1;
+	    data->update = UPDATE_SINGLEICON;
 	    data->update_icon = node;
 	    MUI_Redraw(obj,MADF_DRAWUPDATE);
 	}
