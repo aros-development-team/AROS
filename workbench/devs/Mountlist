@@ -158,3 +158,23 @@ CD0:
 	Unit = 1
 #
 
+/* Entry for host's unix home directory */
+
+HOME:
+
+	FileSystem = emul.handler
+	Device     = Home:/root
+
+/* Entry for host's unix usr directory */
+
+#
+
+USR:
+	FileSystem = emul.handler
+	Device     = USR:/usr
+
+/* Additional unix directories can be mounted the same way, ie. with */
+/* Filesytem set to "emul.handler" and Device encoding volume name   */
+/* and unix path like this: <volumename>:<pathname>                  */
+
+
