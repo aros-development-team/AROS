@@ -14,7 +14,10 @@
 void Exec_Permit_Supervisor();
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*  NAME */
 
@@ -58,9 +61,7 @@ void Exec_Permit_Supervisor();
     HISTORY
 
 ******************************************************************************/
-#else
-void _Exec_Permit(struct ExecBase * SysBase)
-#endif
+#undef Exec
 {
     AROS_LIBFUNC_INIT
 
