@@ -62,11 +62,13 @@ int main(void)
     if (app)
     {
 	ULONG sigs = 0;
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
+		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 	set(wnd, MUIA_Window_Open, TRUE);
 
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+	while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+	      != MUIV_Application_ReturnID_Quit)
 	{
 	    if (sigs)
 	    {
