@@ -612,7 +612,7 @@ static LONG examine(struct filehandle *fh,
           if (S_ISDIR(st.st_mode))
             ead->ed_Type 	= 1 /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/;
           else
-            ead->ed_Type 	= -1 /* ST_FILE */ ;
+            ead->ed_Type 	= ST_FILE;
 	case ED_NAME:
 	    ead->ed_Name=next;
 	    last=name=*fh->name?fh->name:"Workbench";
@@ -683,9 +683,9 @@ static LONG examine_next(struct filehandle *fh,
   FIB->fib_Size			= st.st_size;
 
   if (S_ISDIR(st.st_mode))
-    FIB->fib_DirEntryType 	= 1;
+    FIB->fib_DirEntryType 	= ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
   else
-    FIB->fib_DirEntryType 	= -1;
+    FIB->fib_DirEntryType 	= ST_FILE;
 
   /* fast copying of the filename */
   src  = dir->d_name;
