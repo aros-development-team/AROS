@@ -128,14 +128,24 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     struct BitMap * nbm;
     ULONG attributes;
-
-    ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
+    HIDDT_ModeID hiddmode = 0;
 
     /*
 	If the depth is too large or the bitmap should be displayable or
 	there is a friend_bitmap bitmap and that's not a normal bitmap, then
 	call the RTG driver.
     */
+
+    /* Hack: see AllocScreenBitMap */
+
+    if ((LONG)depth < 0)
+    {
+	depth = (ULONG)(-((LONG)depth));
+	hiddmode = (HIDDT_ModeID)friend_bitmap;
+	friend_bitmap = NULL;
+    }
+
+    ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
     
     if (
 	depth > 8
@@ -148,17 +158,7 @@
     {
 
 	struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
-    	HIDDT_ModeID hiddmode = 0;
-	
-	/* Hack: see AllocScreenBitMap */
-	
-	if ((LONG)depth < 0)
-	{
-	    depth = (ULONG)(-((LONG)depth));
-	    hiddmode = (HIDDT_ModeID)friend_bitmap;
-	    friend_bitmap = NULL;
-	}
-	
+		
 	/*
 	    bug("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend_bitmap=%p)\n",
     		sizex, sizey, depth, flags, friend_bitmap);
