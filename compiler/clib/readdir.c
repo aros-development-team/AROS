@@ -90,22 +90,38 @@
     	dir->ent.d_name[2]='\0';
     }
     else
-    if (!ExNext(desc->fh, dir->priv))
+    while (TRUE)
     {
-	dir->pos--;
-	if (IoErr() != ERROR_NO_MORE_ENTRIES)
-    	    errno = IoErr2errno(IoErr());
+        if (!ExNext(desc->fh, dir->priv))
+        {
+	    dir->pos--;
+	    if (IoErr() != ERROR_NO_MORE_ENTRIES)
+    	        errno = IoErr2errno(IoErr());
 
-    	return NULL;
+    	    return NULL;
+        }
+        else
+        {
+            CONST_STRPTR name = ((struct FileInfoBlock *)dir->priv)->fib_FileName;
+            
+            if (__doupath && name[0] == '.')
+            { 
+                if (name[1] == '.')
+                {      
+                    if (name[2] == '\0')
+                        continue;
+                }
+                else
+                if (name[1] == '\0')
+                    continue;
+            }
+          
+            strncpy(dir->ent.d_name, name, max);
+            
+            break;
+        }
     }
-    else
-    strncpy
-    (
-	dir->ent.d_name,
-	((struct FileInfoBlock *)dir->priv)->fib_FileName,
-	max
-    );
-
+    
     dir->pos++;
     return &(dir->ent);
 }
