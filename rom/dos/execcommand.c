@@ -96,7 +96,20 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     if(type != RUN_SYSTEM_ASYNCH)
     {
 	tags[13].ti_Data = (IPTR)me->pr_WindowPtr;
-    }    
+    }
+
+    tags[6].ti_Data = (IPTR)input;
+    tags[7].ti_Data = (IPTR)output;
+
+    if (output == NULL)
+    {
+	tags[7].ti_Data = (IPTR)Open("*", MODE_OLDFILE);
+    }
+
+    kprintf("Former input: %p, output: %p\n"
+	    "New    input: %p, output: %p\n", Input(), Output(),
+	    tags[6].ti_Data, tags[7].ti_Data);
+
 
     /* Clone tag items so we don't mess up the users memory when filtering
        It's OK if tl == NULL, as this is handled by CloneTagItems() */
@@ -117,7 +130,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	tags[9].ti_Data  = (IPTR)TRUE;     /* NP_CloseOutput */
     }
     
-    if(type == RUN_EXECUTE)
+    if(type != RUN_SYSTEM_ASYNCH)
     {
 	/* RUN_EXECUTE means we shall execute this process synchronously */
 	tags[15].ti_Data = (IPTR)TRUE;	   /* NP_Synchronous */
