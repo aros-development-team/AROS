@@ -15,6 +15,7 @@
 typedef struct
 {
     Node   node;
+    List   args; /* HTMLOptArg */
     char * begin;
     char * end;
 }
@@ -30,7 +31,7 @@ HTMLOptArg;
 typedef struct
 {
     Node   node;
-    List   args; /* <C>HTMLOptArg</C> */
+    List   args; /* HTMLOptArg */
     String body;
     int    expanding;
 }
@@ -39,7 +40,7 @@ HTMLMacro;
 typedef struct
 {
     Node   node;
-    List   args; /* <C>HTMLOptArg</C> */
+    List   args; /* HTMLOptArg */
     String body;
     int    expanding;
 }
@@ -49,7 +50,8 @@ HTMLBlock;
 static const char * ENVEnd[MAX_ENVSP];
 static int	    ENVEndSP = MAX_ENVSP;
 
-/* Definitions:
+/*HTML
+    Definitions:<P>
 
     Macros are texts which are replaced by other texts. The code between
     the <VERB TEXT="<DEF></DEF>"> is parsed and inserted.<P>
@@ -70,6 +72,97 @@ static int HTML_DEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD 
 static int HTML_BDEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_EDEF	 PARAMS ((HTMLTag * tag));
 static int HTML_OtherTag PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+
+static int
+FillOptions (const char * name, List * args, List * options)
+{
+    HTMLTagArg * arg;
+    HTMLOptArg * option = NULL;
+
+    ForeachNode (options, arg)
+    {
+	if (!strcmp (arg->node.name, "OPTION"))
+	{
+	    if (!arg->value)
+	    {
+		PushError ("HTML tag %s: Missing value for argument OPTION", name);
+		return 0;
+	    }
+
+	    option = new (HTMLOptArg);
+
+	    option->node.name = xstrdup (arg->value);
+	    option->defvalue = NULL;
+	    strupper (option->node.name);
+	    AddTail (args, option);
+	}
+	else if (!strcmp (arg->node.name, "DEFAULT"))
+	{
+	    if (!arg->value)
+	    {
+		PushError ("HTML tag %s: Missing value for argument DEFAULT", name);
+		return 0;
+	    }
+
+	    if (!option)
+	    {
+		PushError ("HTML tag %s: Missing OPTION for DEFAULT", name);
+		return 0;
+	    }
+
+	    if (option->defvalue)
+	    {
+		Warn ("HTML tag %s: Overriding DEFAULT for OPTION \"%s\"", name, option->node.name);
+
+		xfree (option->defvalue);
+	    }
+
+	    option->defvalue = xstrdup (arg->value);
+	}
+    }
+
+    return 1;
+}
+
+static int
+FillVarsFromArgs (const char * name, List * args, List * values)
+{
+    HTMLTagArg * arg;
+    HTMLOptArg * oarg;
+    String	 value;
+    char       * strvalue;
+
+    ForeachNode (args, oarg)
+    {
+	arg = (HTMLTagArg *) FindNodeNC (values, oarg->node.name);
+
+	if (!arg)
+	{
+	    if (!oarg->defvalue)
+	    {
+		Warn ("Missing value for %s argument %s\n", name, oarg->node.name);
+		strvalue = "";
+	    }
+	    else
+		strvalue = oarg->defvalue;
+	}
+	else
+	    strvalue = arg->value;
+
+	value = Var_Subst (strvalue);
+
+	if (!value)
+	{
+	    PushError ("Error expanding value %s for %s in tag %s", strvalue, oarg->node.name, name);
+	    return 0;
+	}
+
+	Var_SetLocal (oarg->node.name, value->buffer);
+	VS_Delete (value);
+    }
+
+    return 1;
+}
 
 static int
 HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
@@ -308,9 +401,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLMacro  * old,
 	       * macro;
-    HTMLTagArg * name,
-	       * arg;
-    HTMLOptArg * option;
+    HTMLTagArg * name;
 
     if (FindNode (&BDefs, tag->node.name))
     {
@@ -348,52 +439,21 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     strupper (macro->node.name);
     NewList (&macro->args);
     macro->expanding = 0;
+    macro->body = NULL;
 
-    option = NULL;
-
-    ForeachNode (&tag->args, arg)
+    if (!FillOptions ("DEF", &macro->args, &tag->args))
     {
-	if (!strcmp (arg->node.name, "OPTION"))
-	{
-	    if (!arg->value)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing value for argument OPTION");
-		return 0;
-	    }
-
-	    option = new (HTMLOptArg);
-
-	    option->node.name = xstrdup (arg->value);
-	    option->defvalue = NULL;
-	    strupper (option->node.name);
-	    AddTail (&macro->args, option);
-	}
-	else if (!strcmp (arg->node.name, "DEFAULT"))
-	{
-	    if (!arg->value)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing value for argument DEFAULT");
-		return 0;
-	    }
-
-	    if (!option)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing OPTION for DEFAULT");
-		return 0;
-	    }
-
-	    if (option->defvalue)
-	    {
-		Warn ("HTML tag DEF: Overriding DEFAULT for OPTION \"%s\"", option->node.name);
-
-		xfree (option->defvalue);
-	    }
-
-	    option->defvalue = xstrdup (arg->value);
-	}
+	HTML_FreeMacro (macro);
+	return 0;
     }
 
     macro->body = HTML_ReadBody (in, data, "DEF", 0);
+
+    if (!macro->body)
+    {
+	HTML_FreeMacro (macro);
+	return 0;
+    }
 
 /* printf ("Value=%s\n", macro->body->buffer); */
 
@@ -427,9 +487,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLBlock  * old,
 	       * block;
-    HTMLTagArg * name,
-	       * arg;
-    HTMLOptArg * option;
+    HTMLTagArg * name;
 
     /* Blocks and macros must have different names */
     if (FindNode (&Defs, tag->node.name))
@@ -452,13 +510,13 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (!name)
     {
-	Str_PushError (in, "HTML tag DEF: Missing argument NAME");
+	Str_PushError (in, "HTML tag BDEF: Missing argument NAME");
 	return 0;
     }
 
     if (!name->value)
     {
-	Str_PushError (in, "HTML tag DEF: Missing value for argument NAME");
+	Str_PushError (in, "HTML tag BDEF: Missing value for argument NAME");
 	return 0;
     }
 
@@ -468,52 +526,21 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     strupper (block->node.name);
     NewList (&block->args);
     block->expanding = 0;
+    block->body = NULL;
 
-    option = NULL;
-
-    ForeachNode (&tag->args, arg)
+    if (!FillOptions ("BDEF", &block->args, &tag->args))
     {
-	if (!strcmp (arg->node.name, "OPTION"))
-	{
-	    if (!arg->value)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing value for argument OPTION");
-		return 0;
-	    }
-
-	    option = new (HTMLOptArg);
-
-	    option->node.name = xstrdup (arg->value);
-	    option->defvalue = NULL;
-	    strupper (option->node.name);
-	    AddTail (&block->args, option);
-	}
-	else if (!strcmp (arg->node.name, "DEFAULT"))
-	{
-	    if (!arg->value)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing value for argument DEFAULT");
-		return 0;
-	    }
-
-	    if (!option)
-	    {
-		Str_PushError (in, "HTML tag DEF: Missing OPTION for DEFAULT");
-		return 0;
-	    }
-
-	    if (option->defvalue)
-	    {
-		Warn ("HTML tag DEF: Overriding DEFAULT for OPTION \"%s\"", option->node.name);
-
-		xfree (option->defvalue);
-	    }
-
-	    option->defvalue = xstrdup (arg->value);
-	}
+	HTML_FreeBlock (block);
+	return 0;
     }
 
     block->body = HTML_ReadBody (in, data, "BDEF", 0);
+
+    if (!block->body)
+    {
+	HTML_FreeBlock (block);
+	return 0;
+    }
 
 /* printf ("Value=%s\n", block->body->buffer); */
 
@@ -581,8 +608,15 @@ HTML_EDEF (HTMLTag * tag)
     env = new (HTMLEnv);
 
     env->node.name = xstrdup (name->value);
+    NewList (&env->args);
     env->begin	   = begin->value ? xstrdup (begin->value) : NULL;
     env->end	   = end->value   ? xstrdup (end->value) : NULL;
+
+    if (!FillOptions ("EDEF", &env->args, &tag->args))
+    {
+	HTML_FreeEnv (env);
+	return 0;
+    }
 
 #if 0
     printf ("New ENV %s begin={%s} end={%s}\n",
@@ -632,6 +666,7 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     macro = (HTMLMacro *) FindNode (&Defs, name);
     block = (HTMLBlock *) FindNode (&BDefs, name);
 
+#if 0
     if (env && !IsListEmpty (&tag->args) && !macro && !block)
     {
 	Warn ("%s:%d: Unexpected arguments to ENV %s\n",
@@ -643,10 +678,18 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (env && !IsListEmpty (&tag->args) && (macro || block))
 	env = NULL;
+#endif
+
+    Var_PushLevel ();
 
     if (env)
     {
 	char * str = NULL;
+
+	rc = FillVarsFromArgs (tag->node.name, &env->args, &tag->args);
+
+	if (!rc)
+	    return T_ERROR;
 
 	if (!endtag)
 	    str = env->begin;
@@ -674,27 +717,10 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    StringStream * ss;
 
-	    if (!IsListEmpty (&macro->args))
-	    {
-		HTMLOptArg * oarg;
+	    rc = FillVarsFromArgs (tag->node.name, &macro->args, &tag->args);
 
-		Var_PushLevel ();
-
-		ForeachNode (&macro->args, oarg)
-		{
-		    arg = (HTMLTagArg *) FindNodeNC (&tag->args, oarg->node.name);
-
-		    if (!arg)
-		    {
-			if (!oarg->defvalue)
-			    Warn ("Missing value for DEF argument %s\n", oarg->node.name);
-			else
-			    Var_SetLocal (oarg->node.name, oarg->defvalue);
-		    }
-		    else
-			Var_SetLocal (oarg->node.name, arg->value);
-		}
-	    }
+	    if (!rc)
+		return T_ERROR;
 
 	    ss = StrStr_New (macro->body->buffer);
 
@@ -708,11 +734,6 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	    }
 
 	    StrStr_Delete (ss);
-
-	    if (!IsListEmpty (&macro->args))
-	    {
-		Var_FreeLevel (Var_PopLevel ());
-	    }
 	}
     }
     else if (block)
@@ -727,32 +748,21 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    StringStream * ss;
 	    String body;
-	    HTMLOptArg * oarg;
-
-	    Var_PushLevel ();
 
 	    body = HTML_ReadBody (in, data, block->node.name, 1);
 
+	    if (!body)
+	    {
+		Str_PushError (in, "Can't read body");
+		return T_ERROR;
+	    }
+
 	    Var_SetLocal ("@body", body->buffer);
 
-	    ForeachNode (&block->args, oarg)
-	    {
-		arg = (HTMLTagArg *) FindNodeNC (&tag->args, oarg->node.name);
+	    rc = FillVarsFromArgs (tag->node.name, &block->args, &tag->args);
 
-		if (!arg)
-		{
-		    if (!oarg->defvalue)
-			Warn ("Missing value for BDEF argument %s\n", oarg->node.name);
-		    else
-		    {
-			Var_SetLocal (oarg->node.name, oarg->defvalue);
-		    }
-		}
-		else
-		{
-		    Var_SetLocal (oarg->node.name, arg->value);
-		}
-	    }
+	    if (!rc)
+		return T_ERROR;
 
 #if 0
 printf ("Found as BDEF.Def=%s\nBody=%s\n",
@@ -774,7 +784,6 @@ printf ("Found as BDEF.Def=%s\nBody=%s\n",
 
 	    StrStr_Delete (ss);
 
-	    Var_FreeLevel (Var_PopLevel ());
 	    VS_Delete (body);
 	}
     }
@@ -800,6 +809,8 @@ printf ("Found as BDEF.Def=%s\nBody=%s\n",
 
 	Str_Put (out, '>', data);
     }
+
+    Var_FreeLevel (Var_PopLevel ());
 
     return rc;
 }
@@ -958,8 +969,10 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		}
 		else if (!strcmp (tag->node.name, "EXPAND"))
 		{
-		    HTMLTagArg * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
-		    String	 text1, text2;
+		    StringStream * strstr;
+		    HTMLTagArg	 * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
+		    String	   text1, text2;
+		    int 	   rc;
 
 		    if (!textarg)
 		    {
@@ -986,7 +999,24 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			return T_ERROR;
 		    }
 
-		    Str_Puts (out, text2->buffer, data);
+		    strstr = StrStr_New (text2->buffer);
+
+		    if (!strstr)
+		    {
+			Str_PushError (in, "Out of memory");
+			return T_ERROR;
+		    }
+
+		    rc = HTML_Parse ((MyStream *)strstr, out, data);
+
+		    StrStr_Delete (strstr);
+
+		    if (rc != T_OK)
+		    {
+			Str_PushError (in, "Error parsing body of TEMPLATE");
+			return T_ERROR;
+		    }
+
 		    VS_Delete (text1);
 		    VS_Delete (text2);
 		}
