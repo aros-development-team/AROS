@@ -22,7 +22,7 @@
 
 #include <aros/debug.h>
 
-#define USE_TWO_WINDOWS_
+#define USE_TWO_WINDOWS
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
@@ -30,15 +30,27 @@ struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 
 struct Screen * openscreen(void);
-struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h);
+struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG y, LONG w, LONG h);
 
 VOID test_blttemplate( struct Window *w);
 VOID test_bltpattern(struct Window *w);
 VOID test_bltmask(struct Window *w);
 VOID test_flood(struct Window *w);
 VOID test_readpixel(struct Window *w);
+VOID test_linedrawing(struct Window *w1, struct Window *w2);
 
-VOID handleevents(struct Window *win);
+ULONG handleevents(struct Window *win, ULONG idcmp);
+
+#define W1_LEFT		100
+#define W1_TOP		100
+#define W1_WIDTH	200
+#define W1_HEIGHT	200
+
+#define W2_LEFT		150
+#define W2_TOP		150
+#define W2_WIDTH	250
+#define W2_HEIGHT	250
+
 
 int main(int argc, char **argv)
 {
@@ -57,24 +69,26 @@ int main(int argc, char **argv)
 	      
               if ((screen = openscreen())) 
               {
-		w1 = openwindow(screen, 100, 100, 200, 200);
+		w1 = openwindow(screen, "Window 1",  W1_LEFT, W1_TOP, W1_WIDTH, W1_HEIGHT);
 		if (w1)
 		{
 
 #ifdef USE_TWO_WINDOWS
 		    struct Window *w2;
 
-		    w2 = openwindow(screen, 150, 150, 250, 250);
+		    w2 = openwindow(screen, "Window 2", W2_LEFT, W2_TOP, W2_WIDTH, W2_HEIGHT);
 		    if (w2)
 		    {
 
 #endif	       
 			/* Wait forever */
 			// test_readpixel(w1);
-			SetAPen(w1->RPort, 3);
+/*			SetAPen(w1->RPort, 3);
 			SetBPen(w1->RPort, 4);
 			test_blttemplate(w1);
-			handleevents(w1);
+*/
+			test_linedrawing(w1, w2);
+			handleevents(w1, 0);
 
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
@@ -95,14 +109,14 @@ int main(int argc, char **argv)
 
 
 
-struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
+struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG y, LONG w, LONG h)
 {
 
   struct Window *window;
   printf("Opening window, screen=%p\n", screen);
   
   window = OpenWindowTags(NULL,
-			  WA_IDCMP, IDCMP_RAWKEY | IDCMP_CLOSEWINDOW,
+			  WA_IDCMP, IDCMP_RAWKEY | IDCMP_CLOSEWINDOW | IDCMP_CHANGEWINDOW,
 			  WA_Left,	x,
 			  WA_Top,	y,
                           WA_Width, 	w,
@@ -111,10 +125,9 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
 			  WA_CloseGadget,	TRUE,
-			  
-			  
-
-			  WA_Title,		"X11 gfxhidd demo",
+			  WA_SmartRefresh,	TRUE,
+			  WA_NotifyDepth,	TRUE,
+			  WA_Title,		title,
 
                           TAG_END);
 
@@ -300,15 +313,66 @@ VOID test_bltpattern(struct Window *w)
 
 }
 
+VOID test_linedrawing(struct Window *w1, struct Window *w2)
+{
+    struct RastPort *rp;
+    struct Window *frontwin, *backwin, *tmp;
+    LONG x;
+    ULONG innerwidth;
+     
+    rp = w1->RPort;
+    frontwin = w2;
+    backwin = w1;
+     
+    SetAPen(rp, 3);
+    SetDrMd(rp, COMPLEMENT);
+    
+    innerwidth = W1_WIDTH - w1->BorderLeft - w1->BorderRight;
+     
+    for (x = 0; x < innerwidth; x ++) {
+    	Move(rp, x + w1->BorderLeft, w1->BorderTop);
+	Draw(rp, w1->BorderLeft + innerwidth - x  - 1, W1_HEIGHT - w1->BorderBottom - 1);
+	
+	
+	Delay(25);
+	WindowToFront(backwin);
+	Delay(25);
+	/* Wait for IDCMP_CHANGEWINDOW */
+kprintf("WAITING FOR TOFRONT ON %s\n", backwin->Title);
+	handleevents(backwin, IDCMP_CHANGEWINDOW);
+	
+	tmp = backwin;
+	backwin = frontwin;
+	frontwin = tmp;
 
-VOID handleevents(struct Window *win)
+    	Move(rp, x + w1->BorderLeft, w1->BorderTop);
+	Draw(rp, w1->BorderLeft + innerwidth - x  - 1, W1_HEIGHT - w1->BorderBottom - 1);
+	
+	Delay(25);
+	
+
+	WindowToFront(backwin);
+	Delay(25);
+	/* Wait for IDCMP_CHANGEWINDOW */
+kprintf("WAITING FOR TOFRONT ON %s\n", backwin->Title);
+	handleevents(backwin, IDCMP_CHANGEWINDOW);
+	
+	tmp = backwin;
+	backwin = frontwin;
+	frontwin = tmp;
+    }
+     
+     
+}
+
+
+ULONG handleevents(struct Window *win, ULONG idcmp)
 {
     struct IntuiMessage *imsg;
     struct MsgPort *port = win->UserPort;
     BOOL terminated = FALSE;
+    ULONG retidcmp = 0;
 	
-    EnterFunc(bug("HandleEvents(win=%p)\n", win));
-    
     while (!terminated)
     {
 	if ((imsg = (struct IntuiMessage *)GetMsg(port)) != NULL)
@@ -316,8 +380,6 @@ VOID handleevents(struct Window *win)
 	    
 	    switch (imsg->Class)
 	    {
-		
-		
 	    case IDCMP_REFRESHWINDOW:
 	    	BeginRefresh(win);
 	    	EndRefresh(win, TRUE);
@@ -326,6 +388,13 @@ VOID handleevents(struct Window *win)
 	    case IDCMP_CLOSEWINDOW:
 	    	terminated = TRUE;
 	    	break;
+		
+	    default:
+	    	if ((idcmp & imsg->Class) == imsg->Class) {
+		    retidcmp = imsg->Class;
+		    terminated = TRUE;
+		}
+		break;
 		    					
 	    } /* switch (imsg->Class) */
 	    ReplyMsg((struct Message *)imsg);
@@ -337,8 +406,10 @@ VOID handleevents(struct Window *win)
 	    Wait(1L << port->mp_SigBit);
 	}
     } /* while (!terminated) */
+    
+    return retidcmp;
 	
-    ReturnVoid("HandleEvents");
 } /* HandleEvents() */
+
 
 
