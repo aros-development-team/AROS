@@ -269,7 +269,11 @@ struct IntRequestUserData
 #define IS_BORDER_GADGET(gad) \
 	(IS_GZZ_GADGET(gad) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
-	
+
+#define IS_SYS_GADGET(gad) (((gad)->GadgetType) & GTYP_SYSTYPEMASK)
+
+#define IS_BOOPSI_GADGET(gad) (((gad)->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+
 /*#define IS_BORDER_GADGET(gad) \
 	(((gad->GadgetType) & GTYP_SYSGADGET) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */

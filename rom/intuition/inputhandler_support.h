@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Support functions for Intuition's InputHandler
+    Lang: english
+*/
+
 void notify_mousemove_screensandwindows(WORD x, 
                                         WORD y, 
                                         struct IntuitionBase * IntuitionBase);
@@ -53,6 +61,9 @@ void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad);
 
 void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad);
 
+void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
+    	    	    	   struct IntuitionBase *IntuitionBase);
+
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, struct Gadget *gadget,
 					ULONG termination,
 					BOOL *reuse_event, struct IntuitionBase *IntuitionBase);
@@ -97,14 +108,4 @@ BOOL FireMenuMessage(WORD code, struct Window *win,
 LONG Gad_BeginUpdate(struct Layer *layer, struct IntuitionBase *IntuitionBase);
 void Gad_EndUpdate(struct Layer *layer, UWORD flag, struct IntuitionBase *IntuitionBase);
 
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
-/*********************************************************************/
 /*********************************************************************/
