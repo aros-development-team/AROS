@@ -13,19 +13,23 @@
 #include <exec/lists.h>
 #include <exec/alerts.h>
 #include <exec/tasks.h>
-#include <proto/exec.h>
-#include <proto/expansion.h>
 #include <libraries/expansionbase.h>
 #include <libraries/configvars.h>
 #include <dos/filehandler.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <proto/dos.h>
 #include <clib/alib_protos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
+#include <aros/bootloader.h>
 #include <oop/oop.h>
+
 #include <proto/oop.h>
+#include <proto/exec.h>
+#include <proto/expansion.h>
+#include <proto/utility.h>
+#include <proto/bootloader.h>
+#include <proto/dos.h>
 #include <hidd/irq.h>
 #include <asm/io.h>
 
@@ -211,10 +215,38 @@ AROS_LH2(struct TrackDiskBase *, init,
 {
     AROS_LIBFUNC_INIT
     struct Library *OOPBase;
+    struct BootLoaderBase *BootLoaderBase;
     ULONG i;
-    UBYTE drives,temp;
+    UBYTE drives;
 
     D(bug("TD: Init\n"));
+    
+    TDBase->td_click = TRUE;
+    
+    /* First thing, are we disabled from the bootloader? */
+    if ((BootLoaderBase = OpenResource("bootloader.resource")))
+    {
+	struct List *list;
+	struct Node *node;
+	
+	list = (struct List *)GetBootInfo(BL_Args);
+	if (list)
+	{
+	    ForeachNode(list,node)
+	    {
+		if (0 == strncmp(node->ln_Name,"nofdc",5))
+		{
+		    bug("[Floppy] Disabled with bootloader argument\n");
+		    ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
+		}
+		if (0 == strncmp(node->ln_Name,"noclick",7))
+		{
+		    bug("[Floppy] Diskchange detection disabled\n");
+		    TDBase->td_click = FALSE;
+		}
+	    }
+	}
+    }
 
     /* First we check if there are any floppy drives configured in BIOS */
     /* We do this by reading CMOS byte 0x10 */
@@ -648,7 +680,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     /* Endless task loop */
     for(;;)
     {
-	sigs = NULL;
+	sigs = 0L;
 	sigs = Wait(tasig | tisig);  /* Wait for a message */
 	/* If unit was not active process message */
 	if (sigs & tasig)
@@ -669,48 +701,29 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 	    /* We were woken up by the timer. */
 	    for(i=0;i<TD_NUMUNITS;i++)
 	    {
-		/* If there is no floppy in drive, scan for changes */
-		if (tdb->td_Units[i])
+		/* Shall we scan for diskchanges? */
+		if (tdb->td_click)
 		{
-		    tdu = tdb->td_Units[i];
-		    switch (tdu->tdu_DiskIn)
+		    /* If there is no floppy in drive, scan for changes */
+		    if (tdb->td_Units[i])
 		    {
-			case TDU_NODISK:
-			    /* We need to double step, to avoid seek errors. */
-			    /* Drives should ignore seeks to track -1, but it */
-			    /* does not seem to work always */
-			    td_rseek(tdu->tdu_UnitNum,0,1,tdb);
-			    td_rseek(tdu->tdu_UnitNum,1,1,tdb);
-			    dir = (inb(FDC_DIR)>>7);
-			    if (dir == 0)
-			    {
-				D(bug("[Floppy] Insertion detected\n"));
-				td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-				tdu->tdu_DiskIn = TDU_DISK;
-				tdu->tdu_ChangeNum++;
-				tdu->tdu_ProtStatus = td_getprotstatus(tdu->tdu_UnitNum,tdb);
-				Forbid();
-				ForeachNode(&tdu->tdu_Listeners,iotd)
-				{
-				    Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
-				}
-				Permit();
-			    }
-			    break;
-			case TDU_DISK:
-			    if (!tdu->tdu_Busy)
-			    {
-				/* We really should not do this here. */
-				td_motoron(tdu->tdu_UnitNum,tdb,FALSE);
+			tdu = tdb->td_Units[i];
+			switch (tdu->tdu_DiskIn)
+			{
+			    case TDU_NODISK:
+				/* We need to double step, to avoid seek errors. */
+				/* Drives should ignore seeks to track -1, but it */
+				/* does not seem to work always */
+				td_rseek(tdu->tdu_UnitNum,0,1,tdb);
+				td_rseek(tdu->tdu_UnitNum,1,1,tdb);
 				dir = (inb(FDC_DIR)>>7);
-				td_motoroff(tdu->tdu_UnitNum,tdb);
-				if (dir == 1)
+				if (dir == 0)
 				{
-				    D(bug("[Floppy] Removal detected\n"));
-				    /* Go to cylinder 0 */
+				    D(bug("[Floppy] Insertion detected\n"));
 				    td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-				    tdu->tdu_DiskIn = TDU_NODISK;
+				    tdu->tdu_DiskIn = TDU_DISK;
 				    tdu->tdu_ChangeNum++;
+				    tdu->tdu_ProtStatus = td_getprotstatus(tdu->tdu_UnitNum,tdb);
 				    Forbid();
 				    ForeachNode(&tdu->tdu_Listeners,iotd)
 				    {
@@ -718,8 +731,31 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 				    }
 				    Permit();
 				}
-			    }
-			    break;
+				break;
+			    case TDU_DISK:
+				if (!tdu->tdu_Busy)
+				{
+				    /* We really should not do this here. */
+				    td_motoron(tdu->tdu_UnitNum,tdb,FALSE);
+				    dir = (inb(FDC_DIR)>>7);
+				    td_motoroff(tdu->tdu_UnitNum,tdb);
+				    if (dir == 1)
+				    {
+					D(bug("[Floppy] Removal detected\n"));
+					/* Go to cylinder 0 */
+					td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
+					tdu->tdu_DiskIn = TDU_NODISK;
+					tdu->tdu_ChangeNum++;
+					Forbid();
+					ForeachNode(&tdu->tdu_Listeners,iotd)
+					{
+					    Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
+					}
+					Permit();
+				    }
+				}
+				break;
+			}
 		    }
 		}
 	    }

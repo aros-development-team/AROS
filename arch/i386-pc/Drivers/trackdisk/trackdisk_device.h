@@ -62,6 +62,7 @@ struct TrackDiskBase
     struct MsgPort      	*td_TimerMP;
     ULONG			td_IntBit;		/* Sigbit for floppyints */
     ULONG			td_TmoBit;		/* Used for timeout signaling */
+    BOOL			td_click;		/* Check for diskchanges? */
     UBYTE			td_comsize;        	/* RAW command size */
     UBYTE			td_rawcom[9];      	/* RAW command to send */
     UBYTE			td_result[7];      	/* Last set of bytes */
