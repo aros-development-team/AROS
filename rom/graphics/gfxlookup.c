@@ -27,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct GfxBase *, GfxBase, 117, Dos)
+      struct GfxBase *, GfxBase, 117, Graphics)
 
 /*  FUNCTION
       Finds a special graphics extended data structure (if an) associated

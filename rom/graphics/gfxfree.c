@@ -26,7 +26,7 @@
 
 /*  LOCATION */
 
-      struct GfxBase *, GfxBase, 111, Dos)
+      struct GfxBase *, GfxBase, 111, Graphics)
 
 /*  FUNCTION
       Free a special graphics extended data structure which was preciously
@@ -66,8 +66,6 @@
   if ( SS_GRAPHICS == node->xln_Subsystem &&
        NT_GRAPHICS == node->xln_Type)
   {
-    LONG * Hash = GfxBase -> hash_table;
-    ULONG Index = CalcHashIndex((ULONG)((struct ViewExtra *)node) -> View);
     /* take the element out of the hashlist, if it is in the
        hashlist  */
 
