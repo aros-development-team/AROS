@@ -133,7 +133,7 @@ Exec_ExitIntr:      cmpl    $KERNEL_DS,R_ds(%esp)
                     incb    (0xb8004)
                     movb    $0x1f,(0xb8005)
                     testw   $0x80,AttnResched(%eax)
-                    jne      restore_all
+                    je      restore_all
                     incb    (0xb8006)
                     movb    $0x1f,(0xb8007)
                     jmp     Exec_Schedule_x
@@ -313,9 +313,10 @@ Exec_Dispatch_x:    cli
                     movb    $TS_RUN,tc_State(%ecx)
                     movw    tc_IDNestCnt(%ecx),%ax
                     movw    %ax,IDNestCnt(%ebp)
-
+                    cmpw    $0,IDNestCnt(%ebp)
+                    jge     1f
                     sti
-
+1:
                     testb   $TF_EXCEPT | TF_LAUNCH,tc_Flags(%ecx)
                     je      1f
                     call    exec_ProcessFlags
