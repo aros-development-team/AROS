@@ -401,7 +401,7 @@ static STRPTR Strdup(struct rambase *rambase, STRPTR string)
     while(*s2++)
 	;
 
-    s3 = (STRPTR)AllocMem(s2 - string, MEMF_ANY);
+    s3 = (STRPTR)AllocVec(s2 - string, MEMF_ANY);
 
     if (s3 != NULL)
     {
@@ -414,17 +414,7 @@ static STRPTR Strdup(struct rambase *rambase, STRPTR string)
 
 static void Strfree(struct rambase *rambase, STRPTR string)
 {
-    STRPTR s2 = string;
-
-    if (string == NULL)
-    {
-	return;
-    }
-
-    while(*s2++)
-	;
-
-    FreeMem(string, s2 - string);
+    FreeVec(string);
 }
 
 
@@ -2544,8 +2534,12 @@ void Notify_removeNotification(struct rambase *rambase,
 {
     struct dnode *dn = (struct dnode *)rambase->root;
     struct Receiver *rr, *rrTemp;
-    STRPTR name = strchr(nr->nr_FullName, ':') + 1;
+    /*    STRPTR name = strchr(nr->nr_FullName, '/') + 1; */
+    STRPTR name = nr->nr_FullName;
     struct List *receivers;
+    BOOL  fromTable = FALSE;
+
+    kprintf("Removing: %s\n", name);
 
     if (findname(rambase, &name, &dn) == 0)
     {
@@ -2553,7 +2547,7 @@ void Notify_removeNotification(struct rambase *rambase,
     }
     else
     {
-	/* This was a request for an entity that doesn't yet exist */
+	/* This was a request for an entity that doesn't exist yet */
 	receivers = HashTable_find(rambase, rambase->notifications, name);
 
 	if (receivers == NULL)
@@ -2561,10 +2555,12 @@ void Notify_removeNotification(struct rambase *rambase,
 	    kprintf("This should not happen! -- buggy application...\n");
 	    return;
 	}
+
+	fromTable = TRUE;
     }
 
 
-    ForeachNodeSafe((struct List*)&dn->receivers, (struct Node *)rr,
+    ForeachNodeSafe((struct List *)&receivers, (struct Node *)rr,
 		    (struct Node *)rrTemp)
     {
 	if (rr->nr == nr)
@@ -2573,6 +2569,17 @@ void Notify_removeNotification(struct rambase *rambase,
 	    FreeVec(rr);
 	    FreeVec(nr->nr_FullName);
 	    break;
+	}
+    }
+
+    if (fromTable)
+    {
+	/* If we removed a request for a file that doesn't exist yet --
+	   if this was the only notification request for that file, remove
+	   also the hash entry. */
+	if (IsListEmpty((struct List *)receivers))
+	{
+	    HashTable_remove(rambase, rambase->notifications, name);
 	}
     }
 }
@@ -2766,7 +2773,20 @@ void HashTable_insert(struct rambase *rambase, HashTable *ht, void *key,
     {
 	/* There was no previous request for this entity */
 	hn = AllocVec(sizeof(HashNode), MEMF_ANY);
-	hn->key = key;
+
+	if (hn == NULL)
+	{
+	    return;
+	}
+
+	hn->key = Strdup(rambase, key);
+
+	if (hn->key == NULL)
+	{
+	    FreeVec(hn);
+	    return;
+	}
+
 	NewList(&hn->requests);
 	AddHead(&ht->array[pos], &hn->node);
     }
@@ -2792,7 +2812,9 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
 	if (ht->compare(key, hn->key) == 0)
 	{
 	    Remove(&hn->node);
+	    kprintf("Calling delete function\n");
 	    ht->delete(rambase, hn->key, (void *)&hn->requests);
+	    kprintf("Freeing Hashnode\n");
 	    FreeVec(hn);
 	    break;
 	}
