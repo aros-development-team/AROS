@@ -58,7 +58,7 @@ VERSION = @VERSION@
 AUTOMAKE_OPTIONS = ansi2knr
 bin_PROGRAMS = mmake
 mmake_SOURCES = mmake.c
-EXTRA_DIST = mmake.txt README.GeekGadgets Makefile.amiga config.h.amiga
+EXTRA_DIST = mmake.txt README.GeekGadgets Makefile.amiga config.h.amiga TODO
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -78,7 +78,7 @@ CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
-Makefile.in NEWS acconfig.h aclocal.m4 ansi2knr.1 ansi2knr.c \
+Makefile.in NEWS TODO acconfig.h aclocal.m4 ansi2knr.1 ansi2knr.c \
 config.h.bot config.h.in config.h.top configure configure.in install-sh \
 missing mkinstalldirs stamp-h.in
 
