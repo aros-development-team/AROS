@@ -50,6 +50,7 @@ CLASSESOBJS= \
   objs/classes/group.o \
   objs/classes/image.o \
   objs/classes/list.o \
+  objs/classes/listview.o \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
@@ -242,6 +243,9 @@ objs/classes/image.o: classes/image.c
 
 objs/classes/list.o: classes/list.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@
+
+objs/classes/listview.o: classes/listview.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/listview.c objname=$@
 
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
