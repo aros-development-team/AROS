@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/03/25 04:26:23  bergers
+    Update for deffered treatment of windows.
+
     Revision 1.7  1998/10/20 16:46:05  hkiel
     Amiga Research OS
 
@@ -79,12 +82,21 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Call the driver before changing the window */
-    intui_SizeWindow (window, dx, dy);
-
-    /* Adjust the window's attributes */
-    window->Width += dx;
-    window->Height += dy;
+    struct shortIntuiMessage * msg;
+    
+    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+ 
+    if (NULL != msg)
+    {
+      msg->Class       = IDCMP_WBENCHMESSAGE;
+      msg->Code        = IMCODE_SIZEWINDOW;
+      msg->Window      = window;
+      msg->dx          = dx;
+      msg->dy          = dy;
+      
+      PutMsg(window->WindowPort, (struct Message *)msg); 
+    }   
+    
 
     AROS_LIBFUNC_EXIT
 } /* SizeWindow */

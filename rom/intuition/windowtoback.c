@@ -49,7 +49,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    intui_WindowToBack (window, IntuitionBase);
+    struct shortIntuiMessage * msg;
+    
+    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+ 
+    if (NULL != msg)
+    {
+      msg->Class       = IDCMP_WBENCHMESSAGE;
+      msg->Code        = IMCODE_WINDOWTOBACK;
+      msg->Window      = window;
+      
+      PutMsg(window->WindowPort, (struct Message *)msg); 
+    }   
 
     AROS_LIBFUNC_EXIT
 } /* WindowToBack */

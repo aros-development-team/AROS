@@ -120,6 +120,11 @@
     w->Width	   = newWindow->Width;
     w->Height	   = newWindow->Height;
 
+    ((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
+    ((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
+    ((struct IntWindow *)w)->ZipWidth    = w->Width;
+    ((struct IntWindow *)w)->ZipHeight   = w->Height;
+
 /*    w->RPort	   = rp; */
 
     w->FirstGadget = newWindow->FirstGadget;

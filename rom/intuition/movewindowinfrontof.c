@@ -50,8 +50,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/MoveWindowInFrontOf()
-    aros_print_not_implemented ("MoveWindowInFrontOf");
+    struct shortIntuiMessage * msg;
+    
+    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+ 
+    if (NULL != msg)
+    {
+      msg->Class       = IDCMP_WBENCHMESSAGE;
+      msg->Code        = IMCODE_MOVEWINDOWINFRONTOF;
+      msg->Window      = window;
+      msg->BehindWindow= behindwindow;
+      
+      PutMsg(window->WindowPort, (struct Message *)msg); 
+    }   
 
     AROS_LIBFUNC_EXIT
 } /* MoveWindowInFrontOf */

@@ -3,9 +3,11 @@
 #include <proto/boopsi.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
+#include <proto/layers.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/interrupts.h>
+#include <exec/ports.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
@@ -170,8 +172,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct GadgetInfo stackgi, *gi = &stackgi;
     BOOL reuse_event = FALSE;
     struct Window *w;
-    
-    
     
     D(bug("Inside intuition inputhandler, active window=%p\n", w));
 
@@ -944,29 +944,174 @@ D(bug("Window: %p\n", w));
     
 
     /* Empty port */
-    
     while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
     {
     	if (IDCMP_WBENCHMESSAGE == im->Class)
 	{
+	    struct shortIntuiMessage * msg = (struct shortIntuiMessage *)im;
+            BOOL CheckLayersBehind = FALSE;
+            BOOL CheckLayersInFront = FALSE;
+            struct Layer * L;
+	    
 	    switch (im->Code)
 	    {
 		case IMCODE_CLOSEWINDOW:
+		    L = ((struct Window *)im->IAddress)->WLayer->back;
+		    if (NULL != L)
+		      CheckLayersBehind = TRUE;
 		    int_closewindow((struct Window *)im->IAddress, IntuitionBase);
 		    break;
+		 
+		case IMCODE_WINDOWTOFRONT: {
+		    L = msg->Window->WLayer;
+		    if (0 == (L->Flags & LAYERBACKDROP))
+		    {
+		      UpfrontLayer(NULL, L);
+		      
+		      /* onlt this layer needs to be updated */
+		      if (0 != (L->Flags & LAYERREFRESH))
+		      {
+		        struct IntuiMessage * IM = alloc_intuimessage(IntuitionBase);
+		        L->Flags &= ~LAYERREFRESH;
+		        if (NULL != IM)
+		        {
+		          IM->Class = IDCMP_REFRESHWINDOW;
+		          send_intuimessage(IM, msg->Window, IntuitionBase);
+		        }
+		      }
+		    } 
+		    FreeMem(msg, sizeof(struct shortIntuiMessage));
+		    break; }
+
+		case IMCODE_WINDOWTOBACK: {
+		    /* The layer behind the one to move will be the 
+		       first one to check for damage */
+		       
+		    L = msg->Window->WLayer->back;
+		    /* I don't move backdrop layers! */
+		    if (0 == (L->Flags & LAYERBACKDROP))
+		    {
+		      BehindLayer(NULL, L);
+		      CheckLayersBehind = TRUE;
+		    }
+		    
+		    FreeMem(msg, sizeof(struct shortIntuiMessage));
+		    break; }
 		    
 		case IMCODE_ACTIVATEWINDOW: {
-		    struct msgActivateWindow *msg;
-		    
-		    msg = (struct msgActivateWindow *)im;
 		    int_activatewindow(msg->Window, IntuitionBase);
 		    
-		    FreeMem(msg, sizeof (*msg));
-		    
+		    FreeMem(msg, sizeof (struct shortIntuiMessage));
 		    break; }
-			
+
+
+               case IMCODE_MOVEWINDOW: { 
+                    MoveLayer(NULL,
+                              msg->Window->WLayer,
+                              msg->dx,
+                              msg->dy);
+
+                    msg->Window->LeftEdge += msg->dx;
+                    msg->Window->TopEdge  += msg->dy;
+
+                    CheckLayersBehind = TRUE;
+                    L = msg->Window->WLayer;
+                    
+                    FreeMem(msg, sizeof(struct shortIntuiMessage));
+                    break; }
+
+               case IMCODE_MOVEWINDOWINFRONTOF: { 
+                    MoveLayerInFrontOf(msg->      Window->WLayer,
+                                       msg->BehindWindow->WLayer);
+                    CheckLayersBehind = TRUE;
+                    CheckLayersInFront = TRUE;
+                    L = msg->Window->WLayer;
+                    
+                    FreeMem(msg, sizeof(struct shortIntuiMessage));
+                    break; }
+                    
+               case IMCODE_SIZEWINDOW: {
+                    SizeLayer(NULL, 
+                              msg->Window->WLayer,
+                              msg->dx,
+                              msg->dy);
+
+                    msg->Window->Width += msg->dx;
+                    msg->Window->Height+= msg->dy;
+                    RefreshWindowFrame(w);
+
+                    CheckLayersBehind = TRUE;
+                    L = msg->Window->WLayer;
+                    /* and redraw the window frame */
+                    RefreshWindowFrame(msg->Window);
+               
+                    FreeMem(msg, sizeof(struct shortIntuiMessage));
+                    break; }
+                         
+               case IMCODE_ZIPWINDOW: {
+                    struct IntWindow * w = (struct IntWindow *)msg->Window;
+                    UWORD OldLeftEdge  = w->window.LeftEdge;
+                    UWORD OldTopEdge   = w->window.TopEdge;
+                    UWORD OldWidth     = w->window.Width;
+                    UWORD OldHeight    = w->window.Height;
+                    
+                    MoveSizeLayer(w->window.WLayer,
+                                  w->ZipLeftEdge - OldLeftEdge,
+                                  w->ZipTopEdge  - OldTopEdge,
+                                  w->ZipWidth    - OldWidth,
+                                  w->ZipHeight   - OldHeight);
+
+                    w->window.LeftEdge = w->ZipLeftEdge;
+                    w->window.TopEdge  = w->ZipTopEdge;
+                    w->window.Width    = w->ZipWidth;
+                    w->window.Height   = w->ZipHeight; 
+                    
+                    w->ZipLeftEdge = OldLeftEdge;
+                    w->ZipTopEdge  = OldTopEdge;
+                    w->ZipWidth    = OldWidth;
+                    w->ZipHeight   = OldHeight;
+                    
+                    CheckLayersBehind = TRUE;
+                    L = msg->Window->WLayer;
+                    
+                    FreeMem(msg, sizeof(struct shortIntuiMessage));
+                    break; }
 		
 		/* ActivateWindow + other stuff goes here */
+	    }
+	    
+	    if (TRUE == CheckLayersBehind)
+	    {
+	      /* Walk through all layers behind including the layer L
+	         and check whether a layer needs a refresh 
+	      */ 
+	      struct Layer * _L = L;
+	      while (NULL != _L)
+	      {
+	        if (0 != (_L->Flags & LAYERREFRESH) && NULL != _L->Window)
+	          windowneedsrefresh((struct Window *)_L->Window,
+	                             IntuitionBase);
+	       
+	       _L = _L->back;
+	      }
+	    }
+	    
+	    if (TRUE == CheckLayersInFront)
+	    {
+	      /* Walk through all layers in front of including the layer L
+	         and check whether a layer needs a refresh 
+	      */
+	      if (TRUE == CheckLayersBehind)
+	        L=L->front; /* the layer L has already been checked */
+	      
+	      while (NULL != L)
+	      {  
+	        if (0 != (L->Flags & LAYERREFRESH) && NULL != L->Window)
+	          windowneedsrefresh((struct Window *)L->Window,
+	                             IntuitionBase);
+	      
+	        L = L->front;
+	      }
 	    }
 	}
 	else
@@ -979,6 +1124,36 @@ D(bug("Window: %p\n", w));
     return (oldchain);
 }
 
+void windowneedsrefresh(struct Window * w, 
+                        struct IntuitionBase * IntuitionBase )
+{
+  /* Supposed to send a message to this window, saying that it needs a
+     refresh. I will check whether there is no such a message queued in
+     its messageport, though. It only needs one such message! 
+  */
+  struct IntuiMessage * IM;
+  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+  /* reset the flag in the layer */
+  w->WLayer->Flags &= ~LAYERREFRESH;
+
+  while (NULL != IM)
+  {
+    /* Does the window already have such a message? */
+    if (IDCMP_REFRESHWINDOW == IM->Class)
+    {
+kprintf("Window %s already has a refresh message pending!!\n",w->Title);
+      return;
+    }
+    IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
+  }
+
+kprintf("Sending a refresh message to window %s!!\n",w->Title);
+  
+  IM = alloc_intuimessage(IntuitionBase);
+  IM->Class = IDCMP_REFRESHWINDOW;
+  send_intuimessage(IM, w, IntuitionBase);
+}
 
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase)
 {

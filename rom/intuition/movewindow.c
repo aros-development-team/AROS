@@ -50,7 +50,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    intui_MoveWindow (window, dx, dy);
+    struct shortIntuiMessage * msg;
+    
+    msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+ 
+    if (NULL != msg)
+    {
+      msg->Class       = IDCMP_WBENCHMESSAGE;
+      msg->Code        = IMCODE_MOVEWINDOW;
+      msg->Window      = window;
+      msg->dx          = dx;
+      msg->dy          = dy;
+      
+      PutMsg(window->WindowPort, (struct Message *)msg); 
+    }   
 
     AROS_LIBFUNC_EXIT
 } /* MoveWindow */

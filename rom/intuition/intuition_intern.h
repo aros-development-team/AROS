@@ -197,11 +197,7 @@ extern void intui_EndRefresh (struct Window * window,
 	    struct IntuitionBase * IntuitionBase);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, struct BitMap * SuperBitMap);
-extern void intui_WindowToFront (struct Window *, struct IntuitionBase *);
-extern void intui_WindowToBack  (struct Window *, struct IntuitionBase *);
-extern void intui_MoveWindowInFrontOf (struct Window *, struct Window *, struct IntuitionBase *);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
-extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
 
@@ -209,6 +205,7 @@ extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallo
 void easyrequest_freelabels(STRPTR *gadgetlabels);
 void easyrequest_freegadgets(struct Gadget *gadgets);
 
+void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase);
 
 /* These recide in inputhandler.c */
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase);
@@ -219,6 +216,7 @@ inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBa
 /* Called by intuition to free a window */
 VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
 VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+
 struct IntWindow
 {
     struct Window window;
@@ -231,6 +229,13 @@ struct IntWindow
        
     struct IntuiMessage *closeMessage;
     
+    /* When the Zoom gadget is pressed the window will have the
+       dimensions stored here. The old dimensions are backed up here
+       again. */
+    WORD ZipLeftEdge;
+    WORD ZipTopEdge;
+    WORD ZipWidth;
+    WORD ZipHeight; 
 };
 
 
@@ -243,12 +248,15 @@ the inputhandler to handle these messages and then add
 a pointer to this one in struct IntWindow above.
 */
 
-struct msgActivateWindow
+struct shortIntuiMessage
 {
-    ULONG Class;
-    UWORD Code;
-    struct Window *Window;
-    
+    struct Message  ExecMessage;
+    ULONG           Class;
+    UWORD           Code;
+    struct Window * Window;
+    struct Window * BehindWindow; /* only used by MoveWindowInFrontOf */
+    WORD            dx;           /* used by MoveLayer, SizeLayer */
+    WORD            dy;           /* used by MoveLayer, SizeLayer */
 };
 
 /* IDCMP_WBENCHMESSAGE parameters */
@@ -258,7 +266,13 @@ enum
 {
 	/* Sent from application task to intuition inside CloseWindow() */
 	IMCODE_CLOSEWINDOW = 0,
-	IMCODE_ACTIVATEWINDOW
+	IMCODE_ACTIVATEWINDOW,
+	IMCODE_SIZEWINDOW,
+	IMCODE_WINDOWTOBACK,
+	IMCODE_WINDOWTOFRONT,
+	IMCODE_MOVEWINDOW,
+	IMCODE_MOVEWINDOWINFRONTOF,
+	IMCODE_ZIPWINDOW
 };
 
 #endif /* INTUITION_INTERN_H */

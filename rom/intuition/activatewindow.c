@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/03/25 04:26:23  bergers
+    Update for deffered treatment of windows.
+
     Revision 1.8  1999/03/24 20:05:26  nlorentz
     Handle window activation on input.devices context
 
@@ -85,9 +88,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct msgActivateWindow *msg;
+    struct shortIntuiMessage *msg;
     
-    msg = AllocMem( sizeof (*msg), MEMF_PUBLIC);
+    msg = AllocMem( sizeof (struct shortIntuiMessage), MEMF_PUBLIC);
     if (msg)
     {
         msg->Class 	= IDCMP_WBENCHMESSAGE;
