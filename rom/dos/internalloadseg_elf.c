@@ -266,6 +266,10 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
 
+        #elif defined(__x86_64__)
+            eh->ident[EI_DATA] != ELFDATA2LSB ||
+	    eh->machine        != EM_x86_64
+	    
         #elif defined(__mc68000__)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
@@ -470,6 +474,19 @@ static int relocate
             case R_386_NONE:
                 break;
 
+            #elif defined(__x86_64__)
+		/* These weren't tested */
+            case R_x86_64: /* 64bit direct/absolute */
+                *p = s + rel->addend;
+                break;
+
+            case R_x86_PC64: /* PC relative 64 bit signed */
+                *p = s + rel->addend - (ULONG)p;
+                break;
+
+            case R_x86_64_NONE: /* No reloc */
+                break;
+		
             #elif defined(__mc68000__)
 
             case R_68K_32:
@@ -621,6 +638,10 @@ BPTR InternalLoadSeg_ELF
             #if defined(__i386__)
 
             sh[i].type == SHT_REL &&
+
+            #elif defined(__x86_64__)
+
+	    sh[i].type == SHT_RELA &&
 
             #elif defined(__mc68000__)
 
