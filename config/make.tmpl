@@ -51,7 +51,7 @@
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
 %define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Compiling %(path)$(notdir %(from))..."
+	@$(ECHO) "Compiling %(path)$(patsubst %(path)/,,%(from))..."
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
