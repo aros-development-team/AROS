@@ -27,7 +27,7 @@ extern struct Library * GadToolsBase;
 	ULONG kind,
 	struct Gadget * previous,
 	struct NewGadget * ng,
-	ULONG		tag1,
+	Tag		tag1,
 	...		)
 
 /*  FUNCTION

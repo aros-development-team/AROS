@@ -30,7 +30,7 @@ extern struct Library * GadToolsBase;
         WORD              top,
         WORD              width,
         WORD              height,
-	ULONG             tag1,
+	Tag               tag1,
 	...		)
 
 /*  FUNCTION
