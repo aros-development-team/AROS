@@ -167,11 +167,10 @@ void main_init(void * memory, ULONG memSize)
  	SysBase->ChkBase=~(ULONG)SysBase;
 #warning TODO: SysBase->ChkSum=.....
 
-
 	if (NULL == (m68k_USP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
 		do {} while(1);
 	}
-	m68k_USP += AROS_STACKSIZE;
+	m68k_USP = ((ULONG)m68k_USP) + AROS_STACKSIZE;
 
 
 	SysBase->ResModules=romtagList;
@@ -182,7 +181,7 @@ void main_init(void * memory, ULONG memSize)
 	if (NULL == (m68k_SSP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
 		do {} while(1);
 	}
-	m68k_SSP += AROS_STACKSIZE;
+	m68k_SSP = ((ULONG)m68k_SSP) + AROS_STACKSIZE;
 	/*
 	 * This is the last place where I am in supervisor mode.
 	 * so let me switch into user mode and continue there.
