@@ -177,6 +177,7 @@ SHARED	:= \
 	telldir \
 	time	 \
 	truncate \
+	umask \
 	ungetc \
 	unlink \
 	unsetenv \

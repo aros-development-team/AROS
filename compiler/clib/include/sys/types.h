@@ -90,6 +90,12 @@ typedef ULONG           uid_t;          /* User ID                 */
 typedef ULONG           useconds_t;     /* Microseconds            */
 typedef LONG            suseconds_t;    /* Microseconds (signed)   */
 
+/* this is actually cpu-dependant */
+#ifndef _PTRDIFF_T
+#define _PTRDIFF_T
+typedef LONG            ptrdiff_t;
+#endif
+
 /*** Macros for endianness conversion ****************************************/
 
 #define htons(w) AROS_WORD2BE(w)

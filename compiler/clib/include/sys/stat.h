@@ -88,5 +88,7 @@ int stat(const char *path, struct stat *sb);
 #define lstat stat
 int fstat(int fd, struct stat *sb);
 
+mode_t umask(mode_t numask);
+int chmod(const char *path, mode_t mode);
 
 #endif /* _SYS_STAT_H */
