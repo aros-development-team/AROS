@@ -18,6 +18,7 @@
  */
 
 #include <exec/types.h>
+#include <exec/memory.h>
 
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>

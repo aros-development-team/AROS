@@ -22,10 +22,12 @@
 #include <string.h>
 
 #include <exec/types.h>
+#include <exec/memory.h>
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
