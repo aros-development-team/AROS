@@ -90,6 +90,8 @@ struct header
 				tags,
 				LocaleBase));
 
+    SetIoErr(0);
+    
     if (!locale)
     {
 	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no locale\n"));
@@ -134,8 +136,10 @@ struct header
     ** the language of the default locale. If it matches, then I
     ** don't need to load anything.
     */
+    
+    app_language = "english";    
     app_language = (char *)GetTagData(OC_BuiltInLanguage,
-                                      (IPTR)defLocale.loc_PrefLanguages[0],
+                                      (IPTR)app_language,
                                       tags);
 
     DEBUG_OPENCATALOG(dprintf("OpenCatalogA: app_language 0x%lx\n",
@@ -217,6 +221,14 @@ struct header
 
 	while ((pref_language < 10) && language)
 	{
+	    if (app_language && (strcmp(language, app_language) == 0))
+	    {
+		FreeIFF(iff);
+	    	if (def_locale) CloseLocale(def_locale);
+		SetIoErr(0);
+		return NULL;
+	    }
+	    
 	    if ((MyProcess->pr_HomeDir) != NULL)
 	    {
 		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: HomeDir !=NULL..try progdir\n"));
