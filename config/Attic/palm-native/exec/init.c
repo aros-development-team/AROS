@@ -28,24 +28,23 @@
 
 #include "memory.h"
 #include <memory.h>
-//#include "traps.h"
 
 #include "exec_intern.h"
 #include "etask.h"
 
-//extern _end;
-extern const char Exec_end;
+//extern const char Exec_end;
 
-//unsigned long Memory;	/* Size of whole memory */
+//extern ULONG m68k_SSP;
 
-extern ULONG m68k_SSP;
 
-struct ExecBase *SysBase=NULL;
-struct MemHeader *mh = NULL;
+//ULONG GetMemSize();
 
-ULONG GetMemSize();
+extern struct ExecBase * PrepareExecBase(struct MemHeader *);
+extern void switch_to_user_mode(void *, ULONG *);
+extern void Init_PalmHardware(void);
+extern void Init_IRQVectors(void);
+extern int main_init_cont(void);
 
-struct ExecBase * PrepareExecBase(struct MemHeader *);
 
 extern const struct Resident
 #if 0
@@ -90,7 +89,6 @@ extern const struct Resident
 #endif
 	;
 
-extern void switch_to_user_mode(void *);
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -148,15 +146,14 @@ static const struct Resident *romtagList[] =
 
 /************************************************************************************/
 
-void Init_PalmHardware(void);
-void Init_IRQVectors(void);
-
-int main_init_cont(void);
 
 void main_init(void * memory, ULONG memSize)
 {
-	Init_PalmHardware();
-	Init_IRQVectors();
+	struct ExecBase *SysBase = NULL;
+	ULONG * m68k_USP;
+	struct MemHeader *mh = NULL;
+//	Init_PalmHardware();
+//	Init_IRQVectors();
 
 
 //	Memory=GetMemSize();
@@ -204,10 +201,10 @@ void main_init(void * memory, ULONG memSize)
 #warning TODO: SysBase->ChkSum=.....
 
 
-	if (!(*(ULONG *)0x1004=(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
+	if (NULL == (m68k_USP =(ULONG)AllocMem(AROS_STACKSIZE,MEMF_PUBLIC)))  {
 		do {} while(1);
 	}
-	*(ULONG *)0x1004 += AROS_STACKSIZE;
+	m68k_USP += AROS_STACKSIZE;
 
 	SysBase->ResModules=romtagList;
 	
@@ -216,7 +213,7 @@ void main_init(void * memory, ULONG memSize)
 	 * so let me switch into user mode and continue there.
 	 * The user mode function will then call main_init_cont.
 	 */
-	switch_to_user_mode(main_init_cont);
+	switch_to_user_mode(main_init_cont, m68k_USP);
 }
 
 /*
@@ -239,21 +236,23 @@ int main_init_cont()
 		struct Task * t;
 		t = FindTask("Idle Task");
 		/*
-		 * Make the idle task to something by raising its
+		 * Make the idle task do something by raising its
 		 * priority
 		 */
-		if (NULL != t)
+		if (NULL != t) {
 			SetTaskPri(t,0);
+		}
 
 		while (1) {
 			ULONG i = 0;
 			ULONG z = 0;
-			while (i < 160) {
-				clearscreen(0);
-				drawlinehoriz(i);
+			clearscreen(0);
+			while (i < 160/2) {
 				drawlinevert(i);
+				drawlinevert(160-1-i);
 				z = 0;
-				while (z < 0x4000) {
+
+				while (z < 0x40000) {
 					z++;
 				}
 				i++;
@@ -261,3 +260,58 @@ int main_init_cont()
 		}
 	}
 }
+
+#if 1
+void _drawlinehoriz(int y)
+{	
+	LONG lssa = RREG_L(LSSA);
+	LONG height = RREG_W(LYMAX);
+	LONG width = RREG_W(LXMAX)>>3;
+	LONG x = 0;
+	
+	if (y < 0 || y >= height)
+		return;
+
+	while (x <= width) {
+		*(BYTE *)(lssa+((width+1)*y)+x) = 0xff;
+		x++;
+	}
+	
+}
+#endif
+
+void _drawlinevert(int x)
+{	
+	LONG lssa = RREG_L(LSSA);
+	LONG height = RREG_W(LYMAX);
+	LONG width  = RREG_W(LXMAX);
+	LONG y = 0;
+	
+	if (x < 0 || x >= width)
+		return;
+	width >>= 3;
+	while (y < height) {
+		*(BYTE *)(lssa+((width+1)*y)+(x>>3)) |= 1<<(7-(x&7));
+		y++;
+	}
+	
+}
+
+#if 0
+void _clearscreen(int value)
+{
+	LONG lssa = RREG_L(LSSA);
+	LONG height = RREG_W(LYMAX);
+	LONG width = RREG_W(LXMAX)>>3;
+	LONG y = 0;
+	
+	while (y < height) {
+		LONG x = 0;
+		while (x <= width) {
+			*(BYTE *)(lssa+((width+1)*y)+x) = value;
+			x++;
+		}
+		y++;
+	}
+}
+#endif

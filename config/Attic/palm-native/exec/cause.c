@@ -95,6 +95,8 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
 {
 	struct IntVector *iv;
 
+	struct ExecBase * SysBase = 0x04;
+
 	/* Hmm, interrupts are nesting, not a good idea... */
 	if(!user_mode(regs)) {
 #if NOISY
