@@ -188,8 +188,10 @@ struct x11_staticdata
     
     Atom delete_win_atom;
 
+#if 0
     VOID	(*activecallback)(APTR, Object *, BOOL);
     APTR	callbackdata;
+#endif    
 };
 
 

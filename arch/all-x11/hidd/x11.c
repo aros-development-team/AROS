@@ -245,6 +245,9 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     HIDD *unixio = NULL;
     IPTR ret;
     ULONG unixiosig;
+    BOOL domouse = FALSE;
+    LONG last_mouse_x;
+    LONG last_mouse_y;
     
     BOOL dounixio = TRUE;
     
@@ -533,21 +536,25 @@ UX11
 LX11
 		    XAutoRepeatOn(xsd->display);
 UX11		    
+#if 0
 ObtainSemaphoreShared(&xsd->sema);
 		    /* Call the user supplied callback func, if supplied */
 		    if (NULL != xsd->activecallback) {
 		    	xsd->activecallback(xsd->callbackdata, node->bmobj, FALSE);
 		    }
 ReleaseSemaphore(&xsd->sema);
+#endif
 		    break;
 		    
 		case FocusIn:
+#if 0		
 ObtainSemaphoreShared(&xsd->sema);
 		    /* Call the user supplied callback func, if supplied */
 		    if (NULL != xsd->activecallback) {
 		    	xsd->activecallback(xsd->callbackdata, node->bmobj, TRUE);
 		    }
 ReleaseSemaphore(&xsd->sema);
+#endif
 		    break;
 
 	    	case KeyPress:
