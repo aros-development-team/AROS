@@ -20,7 +20,7 @@
 #MM	    kernel-workbench-kobj \
 #MM	    kernel-cgfx-kobj
 
-#MM- includes : \
+#MM- includes-generate : \
 #MM      kernel-exec-includes \
 #MM      kernel-aros-includes \
 #MM      kernel-dos-includes \

@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel : kernel-exec-kobj
 #MM kernel-exec-linklib : includes kernel-exec-$(ARCH)-$(CPU)
 #MM kernel-exec-module : includes kernel-exec-$(ARCH)-$(CPU)
 #MM kernel-exec-kobj : includes kernel-exec-$(ARCH)-$(CPU)

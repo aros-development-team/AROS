@@ -34,7 +34,7 @@
 #MM     workbench-libs-pci \
 #MM     workbench-libs-freetype-complete
 
-#MM- includes : \
+#MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
 #MM     workbench-libs-asl-includes \
 #MM     workbench-libs-bullet-includes \

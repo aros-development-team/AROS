@@ -1,6 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- includes-linux-i386 : includes-common-i386
 #MM- kernel-linux-i386 : kernel-linux kernel-i386
 #MM- kernel-link-linux-i386 : kernel-link-emul
 

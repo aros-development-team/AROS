@@ -12,5 +12,5 @@
 #MM         workbench-gadgets-colorwheel \
 #MM	    workbench-gadgets-gradientslider 
 
-#MM- includes : \
+#MM- includes-generate : \
 #MM      workbench-gadgets-colorwheel-includes

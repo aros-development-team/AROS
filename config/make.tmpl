@@ -832,7 +832,7 @@ endif
 
 #MM %(mmake) : %(mmake)-includes
 #MM %(mmake)-kobj : %(mmake)-includes
-#MM %(mmake)-includes : %(mmake)-setup
+#MM %(mmake)-includes : %(mmake)-setup includes-generate-deps
 
 #MM
 %(mmake)-quick : %(mmake)
@@ -1694,6 +1694,7 @@ STUBS_MEM := $(foreach f,$(STUBS),$(f).o)
 STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
 HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
+#MM- linklibs : hidd-%(hidd)-stubs
 #MM- %(parenttarget): hidd-%(hidd)-stubs
 #MM hidd-%(hidd)-stubs : includes includes-copy
 hidd-%(hidd)-stubs : setup $(HIDD_LIB)($(STUBS_MEM))
