@@ -144,6 +144,10 @@
          allocated if really needed 
       */
       _CR = l->ClipRect;
+      
+      /* Throw away the damage list an rebuild it here */
+      ClearRegion(l->DamageList);
+      
       while (NULL != _CR)
       {
         struct BitMap * BM = l->rp->BitMap;
@@ -170,11 +174,9 @@
               
               /* if there's clipregion then try to get the clipregion
                  cliprects back */
-              if (NULL != l->ClipRegion)
-              {
-                l->_cliprects = l->ClipRect;
-                l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
-              }
+              if (NULL != oldclipregion)
+                InstallClipRegion(l, oldclipregion);
+
               return FALSE;
             }
           }
@@ -201,6 +203,10 @@
                     0x0c0, /* copy */
                     ~0,
                     NULL);                    
+        }
+        else
+        {
+          OrRectRegion(l->DamageList, &_CR->bounds);
         }
         _CR = _CR->Next;
       }
@@ -236,7 +242,7 @@
     l_tmp->SuperBitMap= l->SuperBitMap;
     l_tmp->Scroll_X   = l->Scroll_X;
     l_tmp->Scroll_Y   = l->Scroll_Y;
-    l_tmp->DamageList = l->DamageList;
+    l_tmp->DamageList = NewRegion();
 
     /* further init the rastport structure of the temporary layer */
     RP -> Layer  = l_tmp;
@@ -265,7 +271,6 @@
       
       l_behind = l_behind ->back;
     } /* while */
-
    
     InitSemaphore(&l_tmp->Lock);
     LockLayer(0, l_tmp);
@@ -276,10 +281,20 @@
     l->bounds.MinY += dy;
     l->bounds.MaxY += dy;
 
+    /*
+    ** Also adjust the damage list. This list carries the cliprect list of hidden
+    ** cliprects before the move.
+    */
+    if (NULL != l->DamageList)
+    {
+      l->DamageList->bounds.MinX += dx;
+      l->DamageList->bounds.MinY += dy;
+      l->DamageList->bounds.MaxX += dx;
+      l->DamageList->bounds.MaxY += dy;
+    }
+
     l->ClipRect = CR;
 
-    l->DamageList = NewRegion();
- 
     /* Copy the bounds */
     CR->bounds = l->bounds;
     /* 
@@ -336,32 +351,12 @@
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
-      /* Walk through all the old layer's cliprects and check whether they
-         were in(!)visible. If a part was not visible then add it to the 
-         new layers damagelist 
-      */
-      ClearRegion(l->DamageList);
-      _CR = l_tmp->ClipRect;
-      while (NULL != _CR)
-      {
-        if (NULL != _CR->lobs)
-        {
-          /* this part was hidden! */
-          /* build the DamageList relative to the Screen> fix later*/
-          OrRectRegion(l->DamageList, &_CR->bounds);
-        } 
-        _CR = _CR->Next;
-      }
-      /* a necessary adjustment to the Damagelist's base coordinates! */
-      /* 
-      ** At this moment it only contains the cliprects of the layer at its old
-      ** position. 
-      */
-      l->DamageList->bounds.MinX += dx;
-      l->DamageList->bounds.MinY += dy;
-      l->DamageList->bounds.MaxX += dx;
-      l->DamageList->bounds.MaxY += dy;
       
+      /*
+      ** l->DamageList contains the list of rectangles at the old position
+      ** that were not visible.
+      */
+
       /*  
       **  Comparison with layer at new position is absolutely necessary!! 
       **  Collect all visible(!) cliprects in the new layer and make
@@ -393,9 +388,6 @@
       if (NULL != l->DamageList->RegionRectangle)
         l->Flags |= LAYERREFRESH;
 
-      /* If I was certain that the damagelist in the old layer is correct
-      ** I wouldn't have to do all of the above!! This just be tried later.
-      */
     }
 
 

@@ -156,6 +156,10 @@
          allocated if really needed 
       */
       _CR = l->ClipRect;
+      
+      /* Throw away the damage list an rebuild it here */
+      ClearRegion(l->DamageList);
+      
       while (NULL != _CR)
       {
         struct BitMap * BM = l->rp->BitMap;
@@ -248,7 +252,7 @@
     l_tmp->bounds     = l->bounds;
     l_tmp->Flags      = l->Flags;
     l_tmp->LayerInfo  = LI;
-    l_tmp->DamageList = l->DamageList;
+    l_tmp->DamageList = NewRegion();
     l_tmp->SuperBitMap= l->SuperBitMap;
     l_tmp->Scroll_X   = l->Scroll_X;
     l_tmp->Scroll_Y   = l->Scroll_Y;
@@ -287,9 +291,17 @@
     l->bounds.MinY += dy;
     l->bounds.MaxY += dy+dh;
 
+    /* a necessary adjustment to the Damagelist's base coordinates! */
+    if (NULL != l->DamageList)
+    {
+      l->DamageList->bounds.MinX += dx;
+      l->DamageList->bounds.MinY += dy;
+      l->DamageList->bounds.MaxX += dx;
+      l->DamageList->bounds.MaxY += dy;
+    }
+    
     l->ClipRect = CR;
 
-    l->DamageList = NewRegion();
 
     /* Copy the bounds */
     CR->bounds = l->bounds;
@@ -436,30 +448,18 @@
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
-      /* Walk through all the old layers cliprects and check whether they
-         were visible. If a part was not visible then add it to the 
-         new layers damagelist */
-      ClearRegion(l->DamageList);
-      _CR = l_tmp->ClipRect;
-      while (NULL != _CR)
-      {
-        if (NULL != _CR->lobs)
-        {
-          /* build DamageList rel*ative to screen, fix it later */
-          OrRectRegion(l->DamageList, &_CR->bounds);
-        } 
-        _CR = _CR->Next;
-      }
-
-      /* a necessary adjustment to the Damagelist's base coordinates! */
-      l->DamageList->bounds.MinX += dx;
-      l->DamageList->bounds.MinY += dy;
-      l->DamageList->bounds.MaxX += dx;
-      l->DamageList->bounds.MaxY += dy;
-
-      l->Flags |= LAYERREFRESH;
       
-      /* Comparison with layer at new position is absolutely necessary!! */
+      /*
+      ** l->DamageList contains the list of rectangles at the old position
+      ** that were not visible.
+      */
+
+      /*  
+      **  Comparison with layer at new position is absolutely necessary!! 
+      **  Collect all visible(!) cliprects in the new layer and make
+      **  a logical AND with both areas. The result will be the areas
+      **  that need to be updated in the new layer.
+      */
       _CR = l->ClipRect;
       while (NULL != _CR)
       {
@@ -476,6 +476,14 @@
       /* both regions are relative to screen! */
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
+
+      /*
+      ** See whether there's something in the final region and then
+      ** set the REFRESH flag
+      */
+      if (NULL != l->DamageList->RegionRectangle)
+        l->Flags |= LAYERREFRESH;
+
     }
 
 
