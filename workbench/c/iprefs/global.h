@@ -204,6 +204,10 @@ void SerialPrefs_Handler(STRPTR filename);
 
 void FontPrefs_Handler(STRPTR filename);
 
+/* inputprefs.c */
+
+void InputPrefs_Handler(STRPTR filename);
+
 /*********************************************************************************************/
 
 #endif /* GLOBAL_H */

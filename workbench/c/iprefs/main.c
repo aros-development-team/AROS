@@ -54,7 +54,7 @@ static struct prefinfo
 }
 preftable[] =
 {
-    {"input"	    , inputprefsname    , NULL	    	    	},
+    {"input"	    , inputprefsname    , InputPrefs_Handler  	},
     {"font" 	    , fontprefsname     , FontPrefs_Handler   	},
     {"screenmode"   , screenprefsname	, NULL	    	    	},
     {"locale"	    , localeprefsname	, LocalePrefs_Handler	},
