@@ -9,7 +9,7 @@ INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include
 
 #CC=$(PURIFY) $(SYS_CC)
 
-OBJDIR = $(GENDIR)/exe
+OBJDIR = $(GENDIR)/workbench/c
 LIBS = -L$(LIBDIR) -larosc -lamiga -laros
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
