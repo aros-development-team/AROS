@@ -1,19 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-
-OS_INCLUDES	:= -I$(GENINCDIR)
-MACHINE_H	:= $(GENINCDIR)/aros/machine.h
-INCFILES	:= $(GENINCDIR)/aros/machine.h \
-		   $(INCDIR)/aros/machine.h \
-		   $(INCDIR)/sigcore.h \
-		   $(INCDIR)/registers.h \
-		   $(GENINCDIR)/registers.h \
-		   $(INCDIR)/gfx.h \
-		   $(GENINCDIR)/gfx.h
-
-
-	   
 ##MM- AROS-pp-native : setup setup-native includes compiler kernel boot-native \
 ##MM	    create-mf-inc-again kernel-link-native binary-pp-native-m68000 \
 ##MM	    workbench-pp-native-m68000 demos contrib-pp-native-m68000
