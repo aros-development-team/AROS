@@ -50,11 +50,11 @@ static void SetIControlPrefs(struct FileIControlPrefs *prefs)
     struct IIControlPrefs i;
     
     #define GETBYTE(x) i.ic_ ## x = prefs->ic_ ## x
-    #define GETWORD(x) i.ic_ ## x = ((prefs->ic_ ## x[1] << 8) + prefs->ic_ ## x[0])
-    #define GETLONG(x) i.ic_ ## x = ((prefs->ic_ ## x[3] << 24) + \
-    	    	    	    	     (prefs->ic_ ## x[2] << 16) + \
-				     (prefs->ic_ ## x[1] << 8) + \
-				      prefs->ic_ ## x[0])
+    #define GETWORD(x) i.ic_ ## x = ((prefs->ic_ ## x[0] << 8) + prefs->ic_ ## x[1])
+    #define GETLONG(x) i.ic_ ## x = ((prefs->ic_ ## x[0] << 24) + \
+    	    	    	    	     (prefs->ic_ ## x[1] << 16) + \
+				     (prefs->ic_ ## x[2] << 8) + \
+				      prefs->ic_ ## x[3])
     
     GETWORD(TimeOut);
     GETWORD(MetaDrag);

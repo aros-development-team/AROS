@@ -129,15 +129,15 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
 		
 	    	inputio->tr_node.io_Command = IND_SETPERIOD;
 		
-		inputio->tr_time.tv_secs = (prefs->ip_KeyRptSpeed_secs[3] << 24) |
-		    	    	    	   (prefs->ip_KeyRptSpeed_secs[2] << 16) |
-					   (prefs->ip_KeyRptSpeed_secs[1] << 8) |
-					   (prefs->ip_KeyRptSpeed_secs[0]);
+		inputio->tr_time.tv_secs = (prefs->ip_KeyRptSpeed_secs[0] << 24) |
+		    	    	    	   (prefs->ip_KeyRptSpeed_secs[1] << 16) |
+					   (prefs->ip_KeyRptSpeed_secs[2] << 8) |
+					   (prefs->ip_KeyRptSpeed_secs[3]);
 					  
-		inputio->tr_time.tv_micro = (prefs->ip_KeyRptSpeed_micro[3] << 24) |
-		    	    	    	    (prefs->ip_KeyRptSpeed_micro[2] << 16) |
-					    (prefs->ip_KeyRptSpeed_micro[1] << 8) |
-					    (prefs->ip_KeyRptSpeed_micro[0]);
+		inputio->tr_time.tv_micro = (prefs->ip_KeyRptSpeed_micro[0] << 24) |
+		    	    	    	    (prefs->ip_KeyRptSpeed_micro[1] << 16) |
+					    (prefs->ip_KeyRptSpeed_micro[2] << 8) |
+					    (prefs->ip_KeyRptSpeed_micro[3]);
 					    
 	    	DoIO((struct IORequest *)inputio);
 		
@@ -145,15 +145,15 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
 
 	    	inputio->tr_node.io_Command = IND_SETTHRESH;
 		
-		inputio->tr_time.tv_secs = (prefs->ip_KeyRptDelay_secs[3] << 24) |
-		    	    	    	   (prefs->ip_KeyRptDelay_secs[2] << 16) |
-					   (prefs->ip_KeyRptDelay_secs[1] << 8) |
-					   (prefs->ip_KeyRptDelay_secs[0]);
+		inputio->tr_time.tv_secs = (prefs->ip_KeyRptDelay_secs[0] << 24) |
+		    	    	    	   (prefs->ip_KeyRptDelay_secs[1] << 16) |
+					   (prefs->ip_KeyRptDelay_secs[2] << 8) |
+					   (prefs->ip_KeyRptDelay_secs[3]);
 
-		inputio->tr_time.tv_micro = (prefs->ip_KeyRptDelay_micro[3] << 24) |
-		    	    	    	    (prefs->ip_KeyRptDelay_micro[2] << 16) |
-					    (prefs->ip_KeyRptDelay_micro[1] << 8) |
-					    (prefs->ip_KeyRptDelay_micro[0]);
+		inputio->tr_time.tv_micro = (prefs->ip_KeyRptDelay_micro[0] << 24) |
+		    	    	    	    (prefs->ip_KeyRptDelay_micro[1] << 16) |
+					    (prefs->ip_KeyRptDelay_micro[2] << 8) |
+					    (prefs->ip_KeyRptDelay_micro[3]);
 					  
 	    	DoIO((struct IORequest *)inputio);
 
