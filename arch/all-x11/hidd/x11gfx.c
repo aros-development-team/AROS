@@ -84,7 +84,10 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	MethodID dispose_mid;
 	struct gfx_data *data = INST_DATA(cl, o);
 	
+	D(bug("Got object from super\n"));
+	
 	data->display = XSD(cl)->display;
+	D(bug("Initing misc X11 stuff\n"));
 	
 	/* Do GfxHidd initalization here */
 	if (initx11stuff(data, XSD(cl)));
@@ -92,6 +95,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 
     	    ReturnPtr("X11Gfx::New", Object *, o);
 	}
+	
+	D(bug("Disposing obj\n"));
 	
 	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
 	CoerceMethod(cl, o, (Msg)&dispose_mid);
@@ -102,11 +107,16 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 /********** GfxHidd::Dispose()  ******************************/
 static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
 {
-    struct gfx_data *data = INST_DATA(cl, o);
+    struct gfx_data *data;
+    EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
+    data = INST_DATA(cl, o);
     
     cleanupx11stuff(data);
+    D(bug("X11Gfx::Dispose: calling super\n"));
     
     DoSuperMethod(cl, o, msg);
+    
+    ReturnVoid("X11Gfx::Dispose");
 }
 
 /********** GfxHidd::NewBitMap()  ****************************/
@@ -288,7 +298,10 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
 /*    XColor fg, bg; */
 	BOOL ok = TRUE;
 	
+	
         XColor bg, fg;
+	
+	EnterFunc(bug("initx11stuff()\n"));
 	
 	
 	
@@ -301,6 +314,7 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
 /*	data->maxpen = NUM_COLORS; */
 	
 	/* Create cursor */
+	D(bug("Creating cursor\n"));
 LX11	
 	data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
 	
@@ -311,7 +325,7 @@ LX11
 	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
 	bg.flags = (DoRed | DoGreen | DoBlue);
 	
-	
+	D(bug("Recoloring cursor\n"));
 	XRecolorCursor( data->display
 		, data->cursor
 		, &fg, &bg
@@ -319,7 +333,7 @@ LX11
 
 UX11
     
-    return ok;
+    ReturnBool("initx11stuff()\n", ok);
 
 }
 

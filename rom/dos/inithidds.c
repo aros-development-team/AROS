@@ -264,6 +264,7 @@ static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 		CloseLibrary((struct Library *)IntuitionBase);
 	    }
 	}
+	D(bug("Closing gfx\n"));
 	
 	CloseLibrary((struct Library *)GfxBase);
 	
