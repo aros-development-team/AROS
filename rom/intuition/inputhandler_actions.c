@@ -42,11 +42,17 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#warning CHECKME: LOCK_REFRESH macro. Might have to be changed to instead ObtainSem(GadgetLock) + LockLayers()
-#warning CHECKME: UNLOCK_REFRESH macro. Might have to be changed to instead ReleaseSem(GadgetLock) + UnlockLayers()
+#if USE_LOCKLAYERINFO_AS_REFRESHLOCK
+    #define LOCK_REFRESH(x)	LockLayerInfo(&(x)->LayerInfo)
+    #define UNLOCK_REFRESH(x)	UnlockLayerInfo(&(x)->LayerInfo)
+#else
+    #warning CHECKME: LOCK_REFRESH macro. Might have to be changed to instead ObtainSem(GadgetLock) + LockLayers()
+    #warning CHECKME: UNLOCK_REFRESH macro. Might have to be changed to instead ReleaseSem(GadgetLock) + UnlockLayers()
 
-#define LOCK_REFRESH(x)		ObtainSemaphore(&GetPrivScreen(x)->RefreshLock)
-#define UNLOCK_REFRESH(x)	ReleaseSemaphore(&GetPrivScreen(x)->RefreshLock)
+    #define LOCK_REFRESH(x)	ObtainSemaphore(&GetPrivScreen(x)->RefreshLock)
+    #define UNLOCK_REFRESH(x)	ReleaseSemaphore(&GetPrivScreen(x)->RefreshLock)
+
+#endif
 
 #define LOCK_ACTIONS()      	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);	
 #define UNLOCK_ACTIONS()	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);

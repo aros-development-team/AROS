@@ -172,7 +172,9 @@ static const ULONG coltab[] = {
     ** state is ended too early.
     */
      
+#if !USE_LOCKLAYERINFO_AS_REFRESHLOCK
     InitSemaphore(&screen->RefreshLock);
+#endif
     
     if(tagList)
     {
