@@ -34,7 +34,8 @@ CLASSESOBJS= \
   objs/classes/family.o \
   objs/classes/group.o \
   objs/classes/notify.o \
-  objs/classes/window.o
+  objs/classes/window.o \
+  objs/classes/text.o
 
 all: dirs objs/support.o $(LIBOBJS) $(CLASSESOBJS) test
 
@@ -51,6 +52,10 @@ dirs:
 
 objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
+
+objs/textengine.o: textengine.c
+  sc $(CFLAGS) textengine.c objname=$@
+
 
 objs/mui_addclipping.o: mui_addclipping.c
   sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_addclipping.c objname=$@
@@ -146,14 +151,16 @@ objs/classes/window.o: classes/window.c
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
 
+objs/classes/text.o: classes/text.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/text.c objname=$@
 
 
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
 
-test: objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
+test: objs/test.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
-objs/test.o objs/support.o $(LIBOBJS) $(CLASSESOBJS)
+objs/test.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
 <
 
 clean:

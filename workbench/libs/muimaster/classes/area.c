@@ -38,6 +38,25 @@ extern struct Library *MUIMasterBase;
 #define g_strdup(x) strdup(x)
 #define g_free(x) free(x)
 
+
+static const struct TextAttr defaultFont =
+    { "topaz.font", 8, FS_NORMAL, 0 };
+
+
+struct TextFont *zune_font_get (LONG preset)
+{
+    return OpenFont(&defaultFont);
+
+#if 0
+    if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
+    {
+	g_return_val_if_fail(preset <= 0, NULL);
+	return __zprefs.fonts[-preset];
+    }
+    return (GdkFont *)preset;
+#endif
+}
+
 /*
 Area.mui/MUIA_Background            done
 Area.mui/MUIA_BottomEdge            done
@@ -1022,20 +1041,18 @@ mSetup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     setup_cycle_chain (data, obj);
 
 /*  g_print("font before = %p\n", data->mad_Font); */
-#warning FIXME: also this
-#if 0
+
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
-	if (_parent(obj) != NULL)
-	    data->mad_Font = _font(_parent(obj));
-	else
-	    data->mad_Font = zune_font_get(MUIV_Font_Normal);
+	if (_parent(obj) != NULL) data->mad_Font = _font(_parent(obj));
+	else data->mad_Font = zune_font_get(MUIV_Font_Normal);
     }
     else
 	data->mad_Font = zune_font_get(data->mad_FontPreset);
 
 /*  g_print("font after = %p\n", data->mad_Font); */
 
+#if 0
     if (data->mad_FrameTitle)
     {
 	data->mad_TitleText = zune_text_new(NULL, data->mad_FrameTitle,

@@ -187,7 +187,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
         ModifyIDCMP(win, data->wd_Events);
 
         data->wd_RenderInfo.mri_Window = win;
-	D(bug(" >> &data->wd_RenderInfo=%lx\n", &data->wd_RenderInfo));
+//	D(bug(" >> &data->wd_RenderInfo=%lx\n", &data->wd_RenderInfo));
 
         return TRUE;
     }
@@ -1187,12 +1187,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     window_show(data);
 
-#ifdef _AROS
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-#else
-    /* expose event will trigger a MUIM_Draw */
-#endif
-
     return TRUE;
 }
 

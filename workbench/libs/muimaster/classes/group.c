@@ -586,8 +586,10 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     int                    page = -1;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!(msg->flags & MADF_DRAWOBJECT))
+    if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
 	return TRUE;
+
+    D(bug("muimaster.library/group.c: Draw Group at 0x%lx\n",obj));
 
     /*
      * update is set when changing active page of a page group
@@ -627,7 +629,7 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 //	if (gdk_rectangle_intersect(&group_rect, &child_rect,
 //				    &muiRenderInfo(obj)->mri_ClipRect))
-//	    DoMethodA(child, (Msg)msg);
+	    DoMethodA(child, (Msg)msg);
 
 	muiRenderInfo(obj)->mri_ClipRect = group_rect;
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */

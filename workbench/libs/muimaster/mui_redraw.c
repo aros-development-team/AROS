@@ -6,9 +6,11 @@
     Lang: english
 */
 
+#include <clib/alib_protos.h>
 #include <intuition/classusr.h>
 
 #include "muimaster_intern.h"
+#include "mui.h"
 
 /*****************************************************************************
 
@@ -50,14 +52,12 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
 
-#if 0
-    muiRenderInfo(obj)->mri_ClipRect.x      = _left(obj);
-    muiRenderInfo(obj)->mri_ClipRect.y      = _top(obj);
-    muiRenderInfo(obj)->mri_ClipRect.width  = _width(obj);
-    muiRenderInfo(obj)->mri_ClipRect.height = _height(obj);
+    muiRenderInfo(obj)->mri_ClipRect.MinX = _left(obj);
+    muiRenderInfo(obj)->mri_ClipRect.MinY = _top(obj);
+    muiRenderInfo(obj)->mri_ClipRect.MaxX = _right(obj);
+    muiRenderInfo(obj)->mri_ClipRect.MaxY = _bottom(obj);
 
     DoMethod(obj, MUIM_Draw, flags);
-#endif
 
     AROS_LIBFUNC_EXIT
 
