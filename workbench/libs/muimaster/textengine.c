@@ -40,32 +40,12 @@ static struct MinNode *Node_Next(APTR node)
     return ((struct MinNode*)node)->mln_Succ;
 }
 
-#if 0
-static struct MinNode *Node_Prev(APTR node)
-{
-    if(node == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Pred == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Pred->mln_Pred == NULL)
-	return NULL;
-    return ((struct MinNode*)node)->mln_Pred;
-}
-#endif
-
 static struct MinNode *List_First(APTR list)
 {
     if( !((struct MinList*)list)->mlh_Head) return NULL;
     if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
     return ((struct MinList*)list)->mlh_Head;
 }
-
-#if 0
-static struct MinNode *List_Last(APTR list)
-{
-    if( !((struct MinList*)list)->mlh_TailPred) return NULL;
-    if(((struct MinList*)list)->mlh_TailPred->mln_Pred == NULL) return NULL;
-    return ((struct MinList*)list)->mlh_TailPred;
-}
-#endif
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -330,7 +310,7 @@ void zune_text_chunk_new(struct zune_context *zc)
 /**************************************************************************
  Calculates the length of the string exluding line feed or 0 byte
 **************************************************************************/
-static int strlenlf(char *str)
+static int strlenlf(const char *str)
 {
     char c;
     int len = 0;
