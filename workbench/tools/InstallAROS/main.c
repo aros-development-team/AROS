@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -173,7 +173,6 @@ IPTR Install__MUIM_NextStep
 )
 {
     struct Install_DATA*    data = INST_DATA(CLASS, self);
-    BOOL                    dh0;
     IPTR                    this_page,next_stage;
 
     get(data->page,MUIA_Group_ActivePage, &this_page);
@@ -247,7 +246,7 @@ IPTR Install__MUIM_NextStep
 
     set(data->page,MUIA_Group_ActivePage, next_stage);
 
-    return NULL;
+    return 0;
 }
 
 IPTR Install__MUIM_PrevStep
@@ -311,9 +310,9 @@ IPTR Install__MUIM_CancelInstall
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
-    IPTR    this_page;
-    IPTR    cancelmessage;
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    IPTR         this_page;
+    CONST_STRPTR cancelmessage;
 
     get(data->page,MUIA_Group_ActivePage, &this_page);
     
@@ -357,10 +356,23 @@ IPTR Install__MUIM_CancelInstall
         break;
     }
 
-    if (!MUI_RequestA(data->installer,data->window,0,"Cancel Installation..", "*Continue Install|Cancel Install", cancelmessage,NULL)) DoMethod(self, MUIM_QuitInstall);
-    else  DoMethod(self, MUIM_ContinueInstall);
+    if
+    (
+        !MUI_RequestA
+        (
+            data->installer, data->window, 0, "Cancel Installation..", 
+            "*Continue Install|Cancel Install", cancelmessage, NULL
+        )
+    )
+    {
+        DoMethod(self, MUIM_QuitInstall);
+    }
+    else
+    {
+        DoMethod(self, MUIM_ContinueInstall);
+    }
 
-    return NULL;
+    return 0;
 }
 
 IPTR Install__MUIM_ContinueInstall
@@ -394,7 +406,7 @@ IPTR Install__MUIM_ContinueInstall
         set(data->options->opt_reboot,MUIA_Disabled,FALSE);
     }
 
-    return NULL;
+    return 0;
 }
 
 IPTR Install__MUIM_QuitInstall
@@ -410,7 +422,8 @@ IPTR Install__MUIM_QuitInstall
 
         DoMethod(self,MUIM_Reboot);
     }
-    return NULL;
+    
+    return 0;
 }
 
 /* ****** FUNCTION IS CALLED BY THE PROCEDURE PROCESSOR
@@ -423,9 +436,9 @@ IPTR Install__MUIM_DispatchInstallProcedure
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
+    // struct Install_DATA* data = INST_DATA(CLASS, self);
 
-    return NULL;
+    return 0;
 }
 
 IPTR Install__MUIM_Partition
@@ -433,8 +446,8 @@ IPTR Install__MUIM_Partition
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
-    IPTR    tmp = NULL;
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    IPTR   tmp = 0;
 
     if ( data->inst_success ==  MUIV_Inst_InProgress)
     {
@@ -445,6 +458,7 @@ IPTR Install__MUIM_Partition
 
         set(data->proceed, MUIA_Disabled, FALSE);
     }
+    
     return tmp;
 }
 
@@ -453,10 +467,10 @@ IPTR Install__MUIM_Install
  Class *CLASS, Object *self, Msg message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
+    struct Install_DATA *data = INST_DATA(CLASS, self);
 
-    BPTR                    lock = NULL;
-    IPTR                    option = NULL;
+    BPTR lock   = NULL;
+    IPTR option = FALSE;
 
     set(data->back, MUIA_Disabled, TRUE);
     set(data->proceed, MUIA_Disabled, TRUE);
@@ -491,10 +505,10 @@ IPTR Install__MUIM_Install
         ULONG localeFileLen = srcLen + strlen(localeFile_path) + 2;
         ULONG inputFileLen = srcLen + strlen(inputFile_path) + 2;
 
-        ULONG localesrcPFileLen = envsrcLen + strlen("locale.prefs") + 2;
+        //ULONG localesrcPFileLen = envsrcLen + strlen("locale.prefs") + 2;
         ULONG localePFileLen = dstLen + envdstLen + strlen("locale.prefs") + 4;
 
-        ULONG inputsrcPFileLen = envsrcLen + strlen("input.prefs") + 2;
+        //ULONG inputsrcPFileLen = envsrcLen + strlen("input.prefs") + 2;
         ULONG inputPFileLen = dstLen + envdstLen + strlen("input.prefs") + 4;
 
         TEXT envDstDir[dstLen + envdstLen];
@@ -516,17 +530,17 @@ IPTR Install__MUIM_Install
 
         AddPart(localeFile, inputFile_path, inputFileLen);
 
-        AddPart(localesrcPFile, (IPTR)"locale.prefs", envsrcLen + sizeof("locale.prefs") + 2);
+        AddPart(localesrcPFile, "locale.prefs", envsrcLen + sizeof("locale.prefs") + 2);
 
         AddPart(localePFile, prefs_path, dstLen + envdstLen + 2);
-        AddPart(localePFile, (IPTR)"locale.prefs", dstLen + envdstLen + sizeof("locale.prefs") + 4);
+        AddPart(localePFile, "locale.prefs", dstLen + envdstLen + sizeof("locale.prefs") + 4);
 
         AddPart(inputFile, localeFile_path, localeFileLen);
 
-        AddPart(inputsrcPFile, (IPTR)"input.prefs", envsrcLen + sizeof("input.prefs") + 2);
+        AddPart(inputsrcPFile, "input.prefs", envsrcLen + sizeof("input.prefs") + 2);
 
         AddPart(inputPFile, prefs_path,  dstLen + envdstLen + 2);
-        AddPart(inputPFile, (IPTR)"input.prefs", dstLen + envdstLen + sizeof("input.prefs") + 4);
+        AddPart(inputPFile, "input.prefs", dstLen + envdstLen + sizeof("input.prefs") + 4);
 
         Execute(localeFile, NULL, NULL);
 
@@ -539,7 +553,7 @@ IPTR Install__MUIM_Install
         D(bug("[INSTALLER] Copying Locale Settings...\n"));
 
         //create the dirs "Prefs","Prefs/Env-Archive" and "Prefs/Env-Archive/SYS"
-        AddPart(envDstDir, (IPTR)"Prefs", dstLen + sizeof("Prefs") +2);
+        AddPart(envDstDir, "Prefs", dstLen + sizeof("Prefs") +2);
         BPTR bootDirLock = CreateDir(envDstDir);
         if(bootDirLock != NULL) UnLock(bootDirLock);
         else
@@ -550,12 +564,12 @@ createfaild:
             return 0;
         }
 
-        AddPart(envDstDir, (IPTR)"Env-Archive", dstLen + sizeof("Prefs") + sizeof("Env-Archive") + 4);
+        AddPart(envDstDir, "Env-Archive", dstLen + sizeof("Prefs") + sizeof("Env-Archive") + 4);
         bootDirLock = CreateDir(envDstDir);
         if(bootDirLock != NULL) UnLock(bootDirLock);
         else goto createfaild;
 
-        AddPart(envDstDir, (IPTR)"SYS", dstLen + sizeof("Prefs") + sizeof("Env-Archive") + sizeof("SYS") + 6);
+        AddPart(envDstDir, "SYS", dstLen + sizeof("Prefs") + sizeof("Env-Archive") + sizeof("SYS") + 6);
         bootDirLock = CreateDir(envDstDir);
         if(bootDirLock != NULL) UnLock(bootDirLock);
         else goto createfaild;
@@ -749,7 +763,8 @@ createfaild:
     }
   
     set(data->proceed, MUIA_Disabled, FALSE);
-    return NULL;
+    
+    return 0;
 }
 
 IPTR Install__MUIM_RefreshWindow
@@ -771,10 +786,7 @@ IPTR Install__MUIM_RefreshWindow
     }
     else MUI_Redraw(data->contents, MADF_DRAWOBJECT);
 
-    data->cur_width != cur_width;
-    data->cur_height != cur_height;
-
-    return NULL;
+    return 0;
 }
 
 int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir) 
@@ -805,8 +817,8 @@ int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir)
     }
     
     UnLock(destDirLock);
-    return TRUE;
 
+    return TRUE;
 }
 
 int CopyDirArray( Object *self, struct Install_DATA* data, TEXT *copy_files[]) 
@@ -850,8 +862,8 @@ int CopyDirArray( Object *self, struct Install_DATA* data, TEXT *copy_files[])
             noOfFiles += DoMethod(self, MUIM_CopyFiles, srcDirs, dstDirs, noOfFiles, 0);
 
             /* check if folder has an icon */
-            CopyMem((IPTR)".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
-            CopyMem((IPTR)".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
+            CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
+            CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
             if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
             {
                 UnLock(lock);
@@ -963,7 +975,7 @@ IPTR Install__MUIM_MakeDirs
             break;
         }
         
-        if(eac->eac_Entries != NULL)
+        if(eac->eac_Entries != 0)
         {
             do
             {
@@ -1048,7 +1060,7 @@ IPTR Install__MUIM_CopyFiles
             break;
         }
         
-        if(eac->eac_Entries != NULL)
+        if(eac->eac_Entries != 0)
         {
             do
             {
@@ -1154,7 +1166,7 @@ IPTR Install__MUIM_Reboot
 )
 {
     struct Install_DATA* data = INST_DATA(CLASS, self);
-    IPTR                    option = NULL;
+    IPTR                    option = FALSE;
 
     get(data->options->opt_reboot,MUIA_Selected,&option);        // Make sure the user wants to reboot
     if ((option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
@@ -1226,7 +1238,8 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
         default:     
             return DoSuperMethodA(CLASS, self, message);
     }
-    return NULL;
+    
+    return 0;
 }
 BOOPSI_DISPATCHER_END
 
