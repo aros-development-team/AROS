@@ -121,6 +121,9 @@ int main(int argc, char *argv[])
 
     collect_sets(tempoutput, &setlist);
 
+    if (setlist != NULL)
+        fprintf(ldscriptfile, "EXTERN(__this_program_requires_symbol_sets_handling)\n");
+
     fwrite(LDSCRIPT_PART1, sizeof(LDSCRIPT_PART1) - 1, 1, ldscriptfile);
     emit_sets(setlist, ldscriptfile);
     fwrite(LDSCRIPT_PART2, sizeof(LDSCRIPT_PART2) - 1, 1, ldscriptfile);
