@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-98 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: aros.library Resident and initialization.
@@ -21,9 +21,9 @@
 extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
-extern void *const FUNCTABLE[];
+extern void *const LIBFUNCTABLE[];
 struct LIBBASETYPE *INIT();
-extern const char END;
+extern const char LIBEND;
 
 int Aros_entry(void)
 {
@@ -35,9 +35,9 @@ const struct Resident Aros_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Aros_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_AUTOINIT|RTF_COLDSTART,
-    LIBVERSION,
+    VERSION_NUMBER,
     NT_LIBRARY,
     102,		/* Immediately after utility.library */
     (STRPTR)name,
@@ -45,14 +45,14 @@ const struct Resident Aros_resident=
     (ULONG *)inittabl
 };
 
-const UBYTE name[]=LIBNAME;
+const UBYTE name[]=NAME_STRING;
 
-const UBYTE version[]=VERSION;
+const UBYTE version[]=VERSION_STRING;
 
 const APTR inittabl[4]=
 {
     (APTR)sizeof(struct ArosBase),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
 };
@@ -71,11 +71,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     /* Set up ArosBase */
     LIBBASE->aros_LibNode.lib_Node.ln_Pri = 0;
     LIBBASE->aros_LibNode.lib_Node.ln_Type = NT_LIBRARY;
-    (UBYTE const *)ArosBase->aros_LibNode.lib_Node.ln_Name = name;
+    LIBBASE->aros_LibNode.lib_Node.ln_Name = (STRPTR)name;
     LIBBASE->aros_LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
-    LIBBASE->aros_LibNode.lib_Version = LIBVERSION;
-    LIBBASE->aros_LibNode.lib_Revision = LIBREVISION;
-    (UBYTE const *)LIBBASE->aros_LibNode.lib_IdString = &version[6];
+    LIBBASE->aros_LibNode.lib_Version = VERSION_NUMBER;
+    LIBBASE->aros_LibNode.lib_Revision = REVISION_NUMBER;
+    LIBBASE->aros_LibNode.lib_IdString = (STRPTR)&version[6];
 
     D(bug("aros.library starting...\n"));
 

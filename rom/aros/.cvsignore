@@ -5,3 +5,5 @@ libdefs.h
 aros_functable.c
 aros_endtag.c
 mmakefile
+functions.[ch]
+endtag.c

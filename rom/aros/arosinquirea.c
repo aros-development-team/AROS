@@ -131,7 +131,7 @@ IPTR kickbase(void);
 		aros.library version masquerades as AROS version. This means
 		that all aros modules must have the same major version number.
 	    */
-	    SetData (tag, IPTR, LIBVERSION);
+	    SetData (tag, IPTR, VERSION_NUMBER);
 	    break;
 
 	case AI_ArosReleaseMajor:

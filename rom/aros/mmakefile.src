@@ -1,133 +1,89 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-ifeq ("$(SHARED_AROS)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS)
-else
-SPECIAL_CFLAGS :=
-endif
-
-OBJDIR := $(OSGENDIR)/aros
-
 # BEGIN_DESC{makefile}
-# This is the makefile for aros.library. Use it if you want to compile
+# This is the mmakefile for aros.library. Use it if you want to compile
 # only this part of AROS.
 # END_DESC{makefile}
 
+# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+USER_INCLUDES := -I.
+
 # BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
+# \item{LIBNAME} The lowercase name of the library (without the extension).
+#	This is used to help derive some filenames.
 #
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
+# \item{ULIBNAME} This also contains the library name, but with the correct
+#	case (the same as found in the library base name).
 #
+# \item{OSMODULE} The name of the file which is created when compiling to
+#	a target with module files. In this library it is expansion.library.
+#
+# \item{FILES} This is a list of all files (without the .c) that
+#	contain internal functions of the library. You do not need to include
+#	the library init, function-table or end files.
+#
+# \item{FUNCTIONS} This is a list of all the functions that make
+#	up the library. The mmakefile will strip all the files in
+#	this list for which a special CPU dependant version exists.
+#	This list is concatenated into the file functions.c before
+#	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-# Main function for aros.library. Need this apart as an anchor for the link:
-INIT_FILE := aros_init
-# Guarantee that this will go at the end of the file:
-END_FILE := aros_endtag
+LIBNAME	 := aros
+ULIBNAME := Aros
 
-FILES := aros_functable
-
+OSMODULE  := aros.library
+FILES	  := 
 FUNCTIONS := arosinquirea
 
-# Do the magic required for function replacement.
-# Keep this value for later
+# BEGIN_DESC{localmakevar}
+# \item{DEPLIBS} List of link libraries that are passed to the linker. These
+#	should be without the path, as this will be affixed later. You do
+#	not need to include your own lib here.
+# END_DESC{localmakevar}
+
+ifeq ("$(FLAVOUR)","native")
+DEPLIBS := arosc
+else
+DEPLIBS :=
+endif
+
+# BEGIN_DESC{localmakevar}
+# This is where the machine dependant magic comes in. The directories under the
+# $(TOP)/config subtree will create lists of files which they wish to be used.
+# These lists are used to add files to the link, and to prevent the compilation
+# of other files.
+#
+# We create versions of the file lists for use with creating the function
+# table, which needs all of the files listed.
+# END_DESC{localmakevar}
+
 ALL_FILES := $(FILES)
 ALL_FUNCTIONS := $(FUNCTIONS)
-
 %prepare_replace rom/aros
-%filter_replace FUNCTIONS
 %filter_replace FILES
+%filter_replace FUNCTIONS
 
-DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+# Set up for shared library compilation.
+ifeq ("$(SHARED_AROS)","yes")
+SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
+endif
 
 %prepare_shlib aros $(SHARED_AROS)
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
+%genromlib_f
 
-# The options for the linker
-LIBS := -L$(LIBDIR) -laros
+#MM includes-generate : setup-clib
+%genlibincludes
 
-# The names of the linklibs this depends on
-LIBLIST := aros arosc
-
-# The filenames of the linklibs this depends on
-LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
-
-OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-INITFUNC := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
-
-$(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
-	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) aroslib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.err
-	@$(IF) $(TEST) ! -s aroslib.err; then rm aroslib.err ; else true ; fi
-	@$(STRIP) $@
-
-# ***** Not Native ***************
-else
-
-#MM kernel-aros-linklib :
+#MM kernel-aros-linklib : setup includes kernel-aros-$(ARCH)-$(CPU)
 kernel-aros-linklib : show-flags $(LIB)
 
-OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+#MM kernel-aros-module : setup includes kernel-aros-$(ARCH)-$(CPU)
+kernel-aros-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 
-# ***** END ***************
-endif
-
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
-
-#MM
-kernel-aros-amiga-m68k : $(OSMODDIR)/aros.library
-
-#MM
-kernel-aros-linux-$(CPU) : show-flags $(LIB)
-
-# MetaMake targets
-#MM kernel-aros : setup includes kernel-aros-$(ARCH)-$(CPU)
-kernel-aros :
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OSGENDIR) $(OBJDIR)
-
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) *.s
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
-
-%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
-
-%ctoasm_q
-
-%additional_objs_rule
-
-aros_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q Aros
-
-$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q Aros
-
-$(OBJDIR)/aros_init.o : libdefs.h
-
-%libdefs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM clean setup
 
 %common
 %include_deps
