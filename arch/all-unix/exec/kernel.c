@@ -96,7 +96,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	SysBase->AttnResched &= ~0x8000;
 
 	/* Save registers for this task (if there is one...) */
-	if (SysBase->ThisTask)
+	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
 	    SAVEREGS(SysBase->ThisTask, sc);
 
 	/* Tell exec that we have actually switched tasks... */
@@ -123,7 +123,6 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    Enable();
 	}
     }
-
 
     /* Leave the interrupt. */
     supervisor--;
