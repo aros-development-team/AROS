@@ -445,8 +445,6 @@ void UnitInfo(struct ide_Unit *unit)
             unit->au_SenseKey = 6;          /* Unit attention */
         }
 
-        unit->au_Flags |= AF_DiskPresent;
-
         /* if Atapi then get drive type */
         tmp = (id.idev_DInfo >> 8) & 0x0f;
         if (!(unit->au_Flags & AF_AtapiDev))
@@ -466,20 +464,21 @@ void UnitInfo(struct ide_Unit *unit)
 
         unit->au_SectSize = 1 << unit->au_SecShift;
 
-	switch (unit->au_DevType)
-	{
-	    case DG_DIRECT_ACCESS:
-		CalculateGeometry(unit,&id);
-		if (unit->au_DevType == DG_DIRECT_ACCESS)
-		   AddVolume(0, unit->au_Cylinders, unit);
-		break;
-	    case DG_CDROM:
-		AddVolume(0,0,unit);
-		break;
-	    default:
-		D(bug("IDE: Unknown/unhandled unit\n"));
-		break;
-	}
+        switch (unit->au_DevType)
+        {
+            case DG_DIRECT_ACCESS:
+                unit->au_Flags |= AF_DiskPresent;
+                CalculateGeometry(unit,&id);
+                if (unit->au_DevType == DG_DIRECT_ACCESS)
+                    AddVolume(0, unit->au_Cylinders, unit);
+                break;
+            case DG_CDROM:
+                AddVolume(0,0,unit);
+                break;
+            default:
+                D(bug("IDE: Unknown/unhandled unit\n"));
+                break;
+        }
         return;
     }
 }
@@ -715,10 +714,8 @@ ULONG atapi_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, U
                 
                     if ((ide_in(atapi_Reason, port) & ATAPIF_MASK) != ATAPIF_READ)
                         return atapi_ErrCmd();
-
                     size = ide_in(atapi_ByteCntH, port) << 8 |
                            ide_in(atapi_ByteCntL, port);
-
                     insw(port, buffer, size / 2);
                     
                     buffer += size;
