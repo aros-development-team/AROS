@@ -24,23 +24,6 @@
 
 extern struct Library *MUIMasterBase;
 
-
-static struct MinNode *Node_Next(APTR node)
-{
-    if(node == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
-	return NULL;
-    return ((struct MinNode*)node)->mln_Succ;
-}
-
-static struct MinNode *List_First(APTR list)
-{
-    if( !((struct MinList*)list)->mlh_Head) return NULL;
-    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
-    return ((struct MinList*)list)->mlh_Head;
-}
-
 struct Dataspace_Node
 {
     struct MinNode node;
@@ -118,9 +101,12 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
 
     node = (struct Dataspace_Node*)AllocVecPooled(data->current_pool,
 						  sizeof(struct Dataspace_Node)+msg->len);
-    if (!node) return 0;
+    if (!node)
+    {
+	return 0;
+    }
 
-    replace = (struct Dataspace_Node *)List_First(&data->list);
+    replace = List_First(&data->list);
     while (replace)
     {
 	if (replace->id == msg->id)
@@ -129,13 +115,14 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
 	    FreeVecPooled(data->current_pool, replace);
 	    break;
 	}
-	replace = (struct Dataspace_Node*)Node_Next(replace);
+	replace = Node_Next(replace);
     }
 
     AddTail((struct List*)&data->list,(struct Node*)node);
     node->id = msg->id;
     node->len = msg->len;
     CopyMem(msg->data,node+1,node->len);
+
     return 1;
 }
 
@@ -144,15 +131,15 @@ static ULONG Dataspace_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspa
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *node;
 
-    node = (struct Dataspace_Node *)List_First(&data->list);
+    node = List_First(&data->list);
     while (node)
     {
 	struct Dataspace_Node *tmp = node;
-	node = (struct Dataspace_Node*)Node_Next(node);
+	node = Node_Next(node);
 
 	FreeVecPooled(data->current_pool, tmp);
     }
-	
+
     return 1;
 }
 
@@ -161,14 +148,14 @@ static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspac
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *find;
 
-    find = (struct Dataspace_Node *)List_First(&data->list);
+    find = List_First(&data->list);
     while (find)
     {
 	if (find->id == msg->id)
 	{
 	    return (ULONG)(find + 1);
 	}
-	find = (struct Dataspace_Node*)Node_Next(find);
+	find = Node_Next(find);
     }
 	
     return NULL;
@@ -177,6 +164,26 @@ static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspac
 static ULONG Dataspace_Merge(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Merge *msg)
 {
     return 1;
+}
+
+static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
+{
+    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *node;
+
+    node = List_First(&data->list);
+    while (node)
+    {
+	if (node->id == msg->id)
+	{
+	    Remove((struct Node*)node);
+	    FreeVecPooled(data->current_pool, node);
+	    return 1;
+	}
+	node = Node_Next(node);
+    }
+
+    return 0;
 }
 
 static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_ReadIFF *msg)
@@ -189,11 +196,14 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
     ULONG id;
 
     cn = CurrentChunk(msg->handle);
-    if (!cn) return IFFERR_EOF;
-
+    if (!cn)
+    {
+	return IFFERR_EOF;
+    }
     if (!(buffer = AllocVec(cn->cn_Size,0)))
+    {
 	return IFFERR_NOMEM;
-
+    }
     read = ReadChunkBytes(msg->handle,buffer,cn->cn_Size);
     if (read < 0)
     {
@@ -205,8 +215,6 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
 
     while (p < buffer + read)
     {
-#ifndef __AROS__ /* The check should be better processor depend */
-
         /* Since data can be stored on uneven addresses we must read
         ** them byte by byte as MC68000 doesn't like this
         */
@@ -216,41 +224,12 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
         p+=4;
 
         /* p might be uneven but MUIM_Dataspace_Add use CopyMem() */
-#else
-        {
-	    /* Don't know about x86, but because of endianess it's probably better to read them by long */
-	    ULONG *pl = (ULONG*)p;
-	    id = *pl++;
-	    len = *pl++;
-	    p = (UBYTE*)pl;
-        }
-#endif
 
 	/* Now add the data */
-        DoMethod(obj,MUIM_Dataspace_Add,(IPTR)p,len,id);
+        DoMethod(obj, MUIM_Dataspace_Add, (IPTR)p, len, id);
         p += len;
     }
     FreeVec(buffer);
-    return 0;
-}
-
-static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
-{
-    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
-    struct Dataspace_Node *node;
-
-    node = (struct Dataspace_Node *)List_First(&data->list);
-    while (node)
-    {
-	if (node->id == msg->id)
-	{
-	    Remove((struct Node*)node);
-	    FreeVecPooled(data->current_pool, node);
-	    return 1;
-	}
-	node = (struct Dataspace_Node*)Node_Next(node);
-    }
-
     return 0;
 }
 
@@ -262,12 +241,27 @@ static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Datas
 
     if ((rc = PushChunk(msg->handle,msg->type,msg->id,IFFSIZE_UNKNOWN))) return rc;
 
-    iter = (struct Dataspace_Node *)List_First(&data->list);
+    iter = List_First(&data->list);
     while (iter)
     {
-    	rc = WriteChunkBytes(msg->handle,&iter->id,iter->len+8); /* ID - LEN - DATA */
-    	if (rc < 0) return rc;
-	iter = (struct Dataspace_Node*)Node_Next(iter);
+	ULONG len = iter->len+8;
+#ifdef __AROS__
+	/* Data is stored in big-endian whatever your machine.
+	 * Be sure sure to convert data to big endian.
+	 */
+	iter->id = AROS_LONG2BE(iter->id);
+	iter->len = AROS_LONG2BE(iter->len);
+#endif
+    	rc = WriteChunkBytes(msg->handle, &iter->id, len); /* ID - LEN - DATA */
+#ifdef __AROS__
+	iter->id = AROS_LONG2BE(iter->id);
+	iter->len = AROS_LONG2BE(iter->len);
+#endif
+    	if (rc < 0)
+	{
+	    return rc;
+	}
+	iter = Node_Next(iter);
     }
     if ((rc = PopChunk(msg->handle))) return rc;
     return 0;
@@ -276,6 +270,8 @@ static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Datas
 
 BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 {
+    IPTR res;
+
     switch (msg->MethodID)
     {
 	/* Whenever an object shall be created using NewObject(), it will be
@@ -283,13 +279,45 @@ BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 	*/
 	case OM_NEW: return Dataspace_New(cl, obj, (struct opSet *) msg);
 	case OM_DISPOSE: return Dataspace_Dispose(cl, obj, msg);
-	case MUIM_Dataspace_Add: return Dataspace_Add(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_Clear: return Dataspace_Clear(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_Find: return Dataspace_Find(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_Merge: return Dataspace_Merge(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_ReadIFF: return (IPTR)Dataspace_ReadIFF(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_Remove: return Dataspace_Remove(cl, obj, (APTR)msg);
-	case MUIM_Dataspace_WriteIFF: return (IPTR)Dataspace_WriteIFF(cl, obj, (APTR)msg);
+	case MUIM_Dataspace_Add:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = Dataspace_Add(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
+	case MUIM_Dataspace_Clear:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = Dataspace_Clear(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
+	case MUIM_Dataspace_Find:
+	    DoMethod(obj, MUIM_Semaphore_ObtainShared);
+	    res = Dataspace_Find(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    /* now that sem is released, imagine that the object gets freed ...
+	     * it really needs that the caller locks the object,
+	     * and release it when done with the result
+	     */
+	    return res;
+	case MUIM_Dataspace_Merge:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = Dataspace_Merge(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
+	case MUIM_Dataspace_Remove:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = Dataspace_Remove(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
+	case MUIM_Dataspace_ReadIFF:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = (IPTR)Dataspace_ReadIFF(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
+	case MUIM_Dataspace_WriteIFF:
+	    DoMethod(obj, MUIM_Semaphore_Obtain);
+	    res = (IPTR)Dataspace_WriteIFF(cl, obj, (APTR)msg);
+	    DoMethod(obj, MUIM_Semaphore_Release);
+	    return res;
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -300,7 +328,7 @@ BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
  */
 const struct __MUIBuiltinClass _MUI_Dataspace_desc = {
     MUIC_Dataspace,                        /* Class name */
-    MUIC_Semaphore,                          /* super class name */
+    MUIC_Semaphore,                        /* super class name */
     sizeof(struct MUI_DataspaceData),      /* size of class own datas */
-    (void*)Dataspace_Dispatcher                        /* class dispatcher */
+    (void*)Dataspace_Dispatcher            /* class dispatcher */
 };
