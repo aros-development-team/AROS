@@ -13,6 +13,7 @@
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <clib/graphics_protos.h>
+#include <utility/utility.h>
 #include "graphics_intern.h"
 
 static const char name[];
@@ -112,6 +113,11 @@ AROS_LH1(struct GfxBase *, open,
 	GfxBase->DefaultFont = def;
 	sysTA.ta_YSize = def->tf_YSize;
     }
+
+    UtilityBase = OpenLibrary (UTILITYNAME,0L);
+
+    if (!UtilityBase)
+	return NULL;
 
     Disable();
     if (!driver_open (GfxBase))
