@@ -65,7 +65,11 @@ struct dragbar_data
      LONG mousex;
      LONG mousey;
      
+     /* Whether the dragframe is currently drawn or erased */
      BOOL isrendered;
+     
+     /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
+     BOOL drag_canceled;
      
      /* Rastport to use during update */
      struct RastPort *rp;
@@ -167,6 +171,10 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	w = msg->gpi_GInfo->gi_Window;
     
 	data = INST_DATA(cl, o);
+	
+	
+	data->drag_canceled = FALSE;
+	
 	data->curleft = w->LeftEdge;
 	data->curtop  = w->TopEdge;
     
@@ -197,7 +205,7 @@ D(bug("locking all layers\n"));
 
 static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
-    IPTR retval = GMR_NOREUSE;
+    IPTR retval = GMR_MEACTIVE;
     struct GadgetInfo *gi = msg->gpi_GInfo;
     
     if (gi)
@@ -212,44 +220,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    switch (ie->ie_Code)
 	    {
 	    case SELECTUP:
-	    
-	        /* Clear last drawn frame */
-		
-		if (data->curleft != w->LeftEdge || data->curtop != w->TopEdge)
-		{
-		    
-		    if (data->isrendered)
-		    {
-
-			SetDrMd(data->rp, COMPLEMENT);
-			/* Erase old frame */
-			drawrect(data->rp
-				, data->curleft
-				, data->curtop
-				, data->curleft + w->Width  - 1
-				, data->curtop  + w->Height - 1
-				, IntuitionBase
-			);
-			
-		    }
-	    
-		
-		    MoveWindow(w
-			, data->curleft - w->LeftEdge	/* dx */
-			, data->curtop  - w->TopEdge	/* dy */
-		    );
-		
-		}
-		    
-		
-		/* User throught with drag operation. Unlock layesr and free
-		   rastport clone
-		*/
-		UnlockLayers(&w->WScreen->LayerInfo);
-		FreeRastPort(data->rp);
-
-#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?		
-		retval = GMR_NOREUSE;
+	    	retval = GMR_NOREUSE;
 		break;
 		    
 
@@ -331,13 +302,13 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		retval = GMR_MEACTIVE;
 		
 		break; }
-	    	
-	    
-	    
-	    
+		
 	    default:
 	    	retval = GMR_REUSE;
+		data->drag_canceled = TRUE;
 		break;
+	    	
+	    
 	    
 	    } /* switch (ie->ie_Code) */
 	    
@@ -347,6 +318,61 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
     } /* if (gi) */
     return retval;
 }
+
+static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+{
+    struct dragbar_data *data;
+    struct Window *w;
+    
+    data = INST_DATA(cl, o);
+    w = msg->gpgi_GInfo->gi_Window;
+    
+    /* Allways clear last drawn frame */
+		
+    if (data->curleft != w->LeftEdge || data->curtop != w->TopEdge)
+    {
+		    
+	if (data->isrendered)
+	{
+
+	    SetDrMd(data->rp, COMPLEMENT);
+	    
+	    /* Erase old frame */
+	    drawrect(data->rp
+		, data->curleft
+		, data->curtop
+		, data->curleft + w->Width  - 1
+		, data->curtop  + w->Height - 1
+		, IntuitionBase
+	    );
+			
+	}
+	
+    }
+    if (!data->drag_canceled)
+    {
+	    
+		
+	MoveWindow(w
+	    , data->curleft - w->LeftEdge	/* dx */
+	    , data->curtop  - w->TopEdge	/* dy */
+	);
+		
+    }
+    data->drag_canceled = FALSE;
+		    
+		
+    /* User throught with drag operation. Unlock layesr and free
+	   rastport clone
+    */
+    UnlockLayers(&w->WScreen->LayerInfo);
+    FreeRastPort(data->rp);
+    
+    return TRUE;
+	
+    
+}
+
 /***********  Window dragbar class **********************************/
 
 
@@ -374,6 +400,10 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 	    
 	case GM_GOACTIVE:
 	    retval = dragbar_goactive(cl, o, (struct gpInput *)msg);
+	    break;
+	    
+	case GM_GOINACTIVE:
+	    retval = dragbar_goinactive(cl, o, (struct gpGoInactive *)msg);
 	    break;
 	    
 	case GM_HANDLEINPUT:
