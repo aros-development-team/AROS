@@ -77,12 +77,18 @@ void closemuimaster(void)
 }
 #endif
 
+enum
+{
+    MEN_WORKBENCH = 1,
+    MEN_WORKBENCH_BACKDROP,
+    MEN_WORKBENCH_EXECUTE,
+};
 
 static struct NewMenu nm[] =
 {
   {NM_TITLE, "Workbench"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT | CHECKED},
-    {NM_ITEM,  "Execute Command...", "E"},
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE, NULL, (void*)MEN_WORKBENCH_BACKDROP},
+    {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WORKBENCH_EXECUTE},
     {NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
     {NM_ITEM,  "Last Message" },
@@ -101,13 +107,13 @@ static struct NewMenu nm[] =
       {NM_SUB, "Window"},
       {NM_SUB, "All"},
     {NM_ITEM,  "Show" },
-      {NM_SUB, "Only Icons", NULL, CHECKIT | CHECKED, 32},
-      {NM_SUB, "All Files", NULL, CHECKIT, 16 },
+      {NM_SUB, "Only Icons", NULL, CHECKIT | CHECKED, 2},
+      {NM_SUB, "All Files", NULL, CHECKIT, 1 },
     {NM_ITEM,  "View By" },
-      {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 32 + 64 + 128},
-      {NM_SUB, "Name",NULL, CHECKIT, 16 + 64 + 128},
-      {NM_SUB, "Size",NULL, CHECKIT, 16 + 32 + 128},
-      {NM_SUB, "Date", NULL, CHECKIT, 16 + 32 + 64},
+      {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 2 + 4 + 8},
+      {NM_SUB, "Name",NULL, CHECKIT, 1 + 4 + 8},
+      {NM_SUB, "Size",NULL, CHECKIT, 1 + 2 + 8},
+      {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "Open", "O"},
@@ -139,10 +145,13 @@ STATIC ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 }
 
 
+/* Our global variables */
 struct Library *MUIMasterBase;
 
 Object *app;
+Object *menustrip;
 Object *root_iconwnd;
+Object *execute_wnd;
 
 /**************************************************************************
  Easily get attributes
@@ -337,10 +346,51 @@ AROS_UFH3(void, hook_func_action,
 }
 
 /**************************************************************************
+ This function returns a Menu Object with the given id
+**************************************************************************/
+Object *FindMenuitem(Object* strip, int id)
+{
+    return (Object*)DoMethod(strip, MUIM_FindUData, id);
+}
+
+/**************************************************************************
+ This connects a notify to the given menu entry id
+**************************************************************************/
+VOID DoMenuNotify(Object* strip, int id, void *function)
+{
+    Object *entry;
+    entry = FindMenuitem(strip,id);
+    if (entry)
+    {
+	DoMethod(entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, entry, 3, MUIM_CallHook, &hook_standard, function);
+    }
+}
+
+/**************************************************************************
+ Open the execute window
+**************************************************************************/
+void execute_open(void)
+{
+    set(execute_wnd,MUIA_Window_Open,TRUE);
+}
+
+void execute_ok(void)
+{
+    set(execute_wnd,MUIA_Window_Open,FALSE);
+}
+
+void execute_cancel(void)
+{
+    set(execute_wnd,MUIA_Window_Open,FALSE);
+}
+
+/**************************************************************************
  Our main entry
 **************************************************************************/
 int main(void)
 {
+    Object *execute_execute_button, *execute_cancel_button;
+
     hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
     hook_action.h_Entry = (HOOKFUNC)hook_func_action;
 
@@ -360,22 +410,49 @@ int main(void)
     }
 
     app = ApplicationObject,
- 	MUIA_Application_Menustrip, MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+ 	MUIA_Application_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
     	SubWindow, root_iconwnd = IconWindowObject,
-	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0),
+	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
 	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
 	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    End,
+	SubWindow, execute_wnd = WindowObject,
+	    MUIA_Window_Title, "Execute a file",
+	    WindowContents, VGroup,
+		Child, Label("Enter command and its arguments:"),
+		Child, HGroup,
+		    Child, Label("Command:"),
+		    Child, PopaslObject,
+			MUIA_Popstring_Button, PopButton(MUII_PopFile),
+			MUIA_Popstring_String, StringObject, StringFrame, End,
+			End,
+		    End,
+		Child, HGroup,
+		    Child, execute_execute_button = SimpleButton("_Execute"),
+		    Child, HVSpace,
+		    Child, execute_cancel_button = SimpleButton("_Cancel"),
+		    End,
+		End,
+	    End,
 	End;
 
     if (app)
     {
 	ULONG sigs = 0;
+	Object *men;
 
 	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+	/* If "Execute Command" entry is clicked open the execute window */
+	DoMenuNotify(menustrip,MEN_WORKBENCH_EXECUTE,execute_open);
+
+        /* Execute Window Notifies */
+        DoMethod(execute_execute_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
+        DoMethod(execute_cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
+        DoMethod(execute_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
 
 	set(root_iconwnd,MUIA_Window_Open,TRUE);
 
