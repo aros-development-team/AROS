@@ -7,6 +7,8 @@
 */
 
 #include "intuition_intern.h"
+#include <proto/layers.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 

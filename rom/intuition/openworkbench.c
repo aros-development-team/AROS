@@ -10,6 +10,7 @@
 
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 

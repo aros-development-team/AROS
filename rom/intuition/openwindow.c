@@ -10,11 +10,14 @@
 #include <graphics/layers.h>
 #include <graphics/gfx.h>
 #include <intuition/intuition.h>
+#include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <proto/layers.h>
 #include "boopsigadgets.h"
 #include <exec/ports.h>
 
@@ -28,8 +31,6 @@
 #endif
 #	include <aros/debug.h>
 
-#undef IW
-#define IW(x) ((struct IntWindow *)x)
 
 /*****************************************************************************
 

@@ -8,6 +8,7 @@
 #include "intuition_intern.h"
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 
 #ifndef DEBUG_CloseScreen
 #   define DEBUG_CloseScreen 0

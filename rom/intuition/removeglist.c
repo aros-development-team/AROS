@@ -6,6 +6,8 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include "inputhandler.h"
+#include <intuition/gadgetclass.h>
 
 /*****************************************************************************
 

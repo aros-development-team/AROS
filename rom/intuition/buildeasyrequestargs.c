@@ -11,7 +11,7 @@
 #include "intuition_intern.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include <strings.h>
+#include <string.h>
 #include <clib/macros.h>
 #include <aros/asmcall.h>
 #include <proto/exec.h>

@@ -6,6 +6,9 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <proto/graphics.h>
+#include <proto/layers.h>
+#include <string.h>
 
 /*****************************************************************************
 

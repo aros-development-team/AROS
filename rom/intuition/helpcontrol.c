@@ -67,8 +67,6 @@
         clearmask |= HELPF_GADGETHELP;
     }
 
-    #undef IW
-    #define IW(x) ((struct IntWindow *)(x))
     #define CHANGEHELPFLAGS(x) ( IW(x)->helpflags = (IW(x)->helpflags | setmask) & ~clearmask )
 
     CHANGEHELPFLAGS(window);
