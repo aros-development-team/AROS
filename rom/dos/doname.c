@@ -15,6 +15,9 @@
 #include <string.h>
 #include "dos_intern.h"
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 # define  DEBUG  1
 # include <aros/debug.h>
 

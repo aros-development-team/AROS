@@ -5,7 +5,9 @@
     Desc:
     Lang: English
 */
-
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define  DEBUG 1
 #include <aros/debug.h>
 #include "dos_intern.h"
@@ -68,7 +70,7 @@
     struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
 							      NULL);
     struct MsgPort   *replyPort;
-    struct IOFileSys *iofs;
+    struct IOFileSys *iofs = NULL;
     
     BOOL i_am_process = TRUE;
     

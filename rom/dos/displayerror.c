@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IntuitionBase *IntuitionBase;
+    struct IntuitionBase *IntuitionBase = NULL;
     struct Window *window;	/* The window to put the requester in */
     char	   gadTexts[128];
     char          *gtPtr = (char *)gadTexts;
