@@ -21,10 +21,8 @@ aros_rom : entrycode.o palmgfx.o palm_reset.o
 
 aros.rom : aros_rom
 	@$(OBJCOPY) -O binary $^ $@ -v -S --pad-to=0x10d00000
+	@$(RM) $(HOME)/.xcopilot/aros.rom
 	@$(CP) $@ $(HOME)/.xcopilot/aros.rom
 
 clean :
 	$(RM) *.o aros.rom aros_rom *.s ~/.xcopilot/aros.rom
-
-
-
