@@ -13,8 +13,6 @@
 #include "icon_intern.h"
 #include "identify.h"
 
-#include <proto/datatypes.h>
-
 #include LC_LIBDEFS_FILE
 
 LONG IFFParseBase_version = -39,
@@ -27,7 +25,7 @@ LIBBASETYPE *IconBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     LONG i;
 
@@ -63,12 +61,12 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
     
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     DeletePool(LB(lh)->ib_MemoryPool);
     
@@ -76,7 +74,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
     
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
