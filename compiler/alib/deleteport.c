@@ -10,6 +10,9 @@
 /*****************************************************************************
 
     NAME */
+#include <exec/ports.h>
+#include <clib/alib_protos.h>
+
 	void DeletePort (
 
 /*  SYNOPSIS */
@@ -39,6 +42,9 @@
 
 ******************************************************************************/
 {
+    if (mp->mp_Node.ln_Name)
+	RemPort (mp);
+
     DeleteMsgPort (mp);
 } /* DeletePort */
 

@@ -10,6 +10,9 @@
 /*****************************************************************************
 
     NAME */
+#include <exec/ports.h>
+#include <clib/alib_protos.h>
+
 	struct MsgPort * CreatePort (
 
 /*  SYNOPSIS */
@@ -48,7 +51,13 @@
     mp = CreateMsgPort ();
 
     if (mp)
+    {
 	mp->mp_Node.ln_Name = name;
+	mp->mp_Node.ln_Pri  = pri;
+
+	if (name)
+	    AddPort (mp);
+    }
 
     return mp;
 } /* CreatePort */
