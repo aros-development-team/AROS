@@ -23,10 +23,6 @@ extern struct DosLibrary *DOSBase;
 /* Forward definitions */
 struct DevProc;
 
-/* Prototypes for stubs in amiga.lib */
-LONG FPrintf (BPTR fh, STRPTR fmt, ...);
-LONG Printf (STRPTR fmt, ...);
-
 /*
     Prototypes
 */

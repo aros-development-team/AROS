@@ -1,5 +1,5 @@
-#ifndef  DEFINES_AROS_H
-#define  DEFINES_AROS_H
+#ifndef  DEFINES_AROSSUPPORT_H
+#define  DEFINES_AROSSUPPORT_H
 
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
@@ -13,4 +13,4 @@
 */
 
 
-#endif /* DEFINES_AROS_H */
+#endif /* DEFINESSUPPORT_AROS_H */

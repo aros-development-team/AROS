@@ -1,5 +1,5 @@
-#ifndef AROS_AROS_H
-#define AROS_AROS_H
+#ifndef AROS_AROSBASE_H
+#define AROS_AROSBASE_H
 /*
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
@@ -20,4 +20,4 @@
 #define AROSLIBREVISION 1
 
 
-#endif /* AROS_AROSSUPPORTBASE_H */
+#endif /* AROS_AROSBASE_H */

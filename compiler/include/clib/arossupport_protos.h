@@ -1,5 +1,5 @@
-#ifndef  CLIB_AROS_PROTOS_H
-#define  CLIB_AROS_PROTOS_H
+#ifndef  CLIB_AROSSUPPORT_PROTOS_H
+#define  CLIB_AROSSUPPORT_PROTOS_H
 
 /*
     (C) 1995-97 AROS - The Amiga Replacement OS
@@ -47,7 +47,7 @@ APTR	RemoveSList  (APTR * list, APTR node);
 void	hexdump      (const void * data, IPTR offset, ULONG count);
 int	strrncasecmp (const char *, const char *, int);
 void	RawPutChars  (const UBYTE * string, int len);
-BOOL    IsDosEntryA  (char *Name, ULONG Flags);
+BOOL	IsDosEntryA  (char *Name, ULONG Flags);
 
 /* AROS enhancements */
 BOOL ReadByte	 (struct Hook *, UBYTE  * dataptr, void * stream);
@@ -69,4 +69,4 @@ void FreeStruct  (APTR s,  const IPTR * desc);
 
 #define kprintf     (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
-#endif /* CLIB_AROS_PROTOS_H */
+#endif /* CLIB_AROSSUPPORT_PROTOS_H */

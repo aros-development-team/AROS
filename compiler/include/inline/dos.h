@@ -649,11 +649,6 @@
 	LP3(0x162, LONG, VFPrintf, BPTR, fh, d1, STRPTR, format, d2, APTR, argarray, d3, \
 	, DOS_BASE_NAME)
 
-#ifndef NO_INLINE_STDARG
-#define FPrintf(a0, a1, tags...) \
-	({ULONG _tags[] = { tags }; VFPrintf((a0), (a1), (APTR)_tags);})
-#endif /* !NO_INLINE_STDARG */
-
 #define VFWritef(fh, format, argarray) \
 	LP3NR(0x15c, VFWritef, BPTR, fh, d1, STRPTR, format, d2, LONG *, argarray, d3, \
 	, DOS_BASE_NAME)
@@ -666,11 +661,6 @@
 #define VPrintf(format, argarray) \
 	LP2(0x3ba, LONG, VPrintf, STRPTR, format, d1, APTR, argarray, d2, \
 	, DOS_BASE_NAME)
-
-#ifndef NO_INLINE_STDARG
-#define Printf(a0, tags...) \
-	({ULONG _tags[] = { tags }; VPrintf((a0), (APTR)_tags);})
-#endif /* !NO_INLINE_STDARG */
 
 #define WaitForChar(file, timeout) \
 	LP2(0xcc, LONG, WaitForChar, BPTR, file, d1, long, timeout, d2, \
