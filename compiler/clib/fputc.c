@@ -6,9 +6,33 @@
     Lang: english
 */
 #include <stdio.h>
+#include <errno.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
 
 int fputc (int c, FILE * stream)
 {
-    return putc (c, stream);
-}
+    if (((IPTR)stream) < 4)
+    {
+	switch ((IPTR)stream)
+	{
+	case 1: /* Stdin */
+	    errno = EINVAL;
+	    return EOF;
+
+	case 2: /* Stdout */
+	    return FPutC (Output(), c);
+
+	case 3: {
+	    struct Process *me=(struct Process *)FindTask(NULL);
+	    BPTR stream=me->pr_CES?me->pr_CES:me->pr_COS;
+
+	    return FPutC (stream, c); }
+	}
+    }
+
+    return FPutC ((BPTR)stream->fh, c);
+} /* fputc */
 
