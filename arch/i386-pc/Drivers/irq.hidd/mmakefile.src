@@ -17,7 +17,7 @@ Drivers-native-irq : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.irq.o
 
 #MM
-includes-copy : $(DEST_INC) $(GEN_INC)
+includes-native-i386 : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h

@@ -7,8 +7,6 @@ CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
 AFLAGS2 :=
 TESTS :=
 
-INCFILES :=
-
 FILES := boot aros
 
 #MM
@@ -20,10 +18,6 @@ setup-dos-native-i386 :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/dos/$(f))
 	%exclude_files $(foreach f, $(FILES), rom/dos/$(f))
-
-#MM
-includes-native-i386 : $(INCFILES)
-	@$(NOP)
 
 #MM
 clean ::
