@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS specific listview class implementation.
-    Lang: english
+    AROS specific listview class implementation.
 */
 
 #include <exec/types.h>
@@ -57,7 +56,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = 0UL;
 
-    struct TagItem *tag, *tstate;
+    const struct TagItem *tag, *tstate;
     struct LVData *data;
 
     EnterFunc(bug("ListView::OM_SET\n"));
@@ -280,7 +279,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
     struct TagItem tags[] =
     {
 	{GA_RelSpecial, TRUE},
-	{TAG_MORE, NULL}
+	{TAG_MORE, 0}
     };
 
     ops.MethodID	= OM_NEW;
@@ -291,7 +290,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 
     o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
     if(!o)
-        return NULL;
+        return (IPTR) NULL;
 
 D(bug("lv: obj created\n"));
     data = INST_DATA(cl, o);
@@ -357,7 +356,7 @@ D(bug("disphookarray allocated\n"));
 
 failure:
     CoerceMethod(cl, o, OM_DISPOSE);
-    return (NULL);
+    return (IPTR) NULL;
 }
 
 /**********************
@@ -513,11 +512,12 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 	if (data->lvd_Flags & LVFLG_MULTISELECT)
 	{
-	    DoMethod(data->lvd_List,
-		AROSM_List_Select,
-		data->lvd_First + clickpos,
-		AROSV_List_Select_Toggle,
-		NULL);
+	    DoMethod
+        (
+            data->lvd_List,
+		    AROSM_List_Select,               data->lvd_First + clickpos,
+		    AROSV_List_Select_Toggle, (IPTR) NULL
+        );
 
 	    data->lvd_DamageOffset = clickpos;
 	    data->lvd_NumDamaged = 1;
