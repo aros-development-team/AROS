@@ -285,6 +285,11 @@ ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
   return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
+/**************************************************************************
+ Convient way to get an attribute of an object easily. If the object
+ doesn't support the attribute this call returns an undefined value. So use
+ this call only if the attribute is known to be known by the object. 
+**************************************************************************/
 IPTR xget(Object *obj, Tag attr)
 {
   IPTR storage;
