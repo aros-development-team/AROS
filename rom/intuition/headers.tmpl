@@ -57,12 +57,14 @@ ULONG SetGadgetAttrs (struct Gadget * gad, struct Window * win,
 ULONG SetAttrs (APTR obj, ULONG tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
 APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
+#ifndef USE_BOOPSI_STUBS
 IPTR DoMethodA (Object * obj, Msg message);
 IPTR DoMethod (Object * obj, ULONG MethodID, ...);
 IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
 IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
 IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+#endif /* !USE_BOOPSI_STUBS */
 #endif
 #endif
 
