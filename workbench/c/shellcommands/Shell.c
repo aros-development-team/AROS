@@ -402,19 +402,21 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
  	struct CommandLine cl = {SHArgLine(),
        			         0,
 				 strlen(SHArg(COMMAND))};
-
+        
 	if(Redirection_init(&rd))
 	{
 	    P(kprintf("Running command %s\n", SHArg(COMMAND)));
 	    error = checkLine(&rd, &cl);
 	    Redirection_release(&rd);
 	}
-
+        
 	P(kprintf("Command done\n"));
     }
-
-    error = interact();
-
+    else
+    {
+        error = interact();
+    }
+    
     P(kprintf("Exiting shell\n"));
 
     return error;
