@@ -390,7 +390,7 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		    if(IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0');
-		    year += 1900;
+		    year += (year < 78) ? 2000 : 1900;
 		    break;
 
 		case 'Y':
