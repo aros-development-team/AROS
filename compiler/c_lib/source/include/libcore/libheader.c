@@ -69,6 +69,8 @@
 #   define LC_LIBBASESIZE  sizeof (struct LibHeader)
 #endif
 
+#define	TEXT_SECTION __attribute__((section(".text")))
+
 /* -----------------------------------------------------------------------
     entry:
 
@@ -106,14 +108,14 @@ LONG ASM LC_BUILDNAME(entry) (void)
 #endif
 
 /* Predeclarations */
-extern const int LIBEND;	  /* The end of the library */
-extern const APTR LIBFUNCTABLE[]; /* The function table */
-static const struct InitTable LC_BUILDNAME(InitTab);
-static const struct DataTable LC_BUILDNAME(DataTab);
+extern const int LIBEND TEXT_SECTION;	  /* The end of the library */
+extern const APTR LIBFUNCTABLE[] TEXT_SECTION; /* The function table */
+static const struct InitTable LC_BUILDNAME(InitTab) TEXT_SECTION;
+static const struct DataTable LC_BUILDNAME(DataTab) TEXT_SECTION;
 
-extern const char ALIGNED LC_BUILDNAME(LibName)   [];
-extern const char ALIGNED LC_BUILDNAME(LibID)     [];
-extern const char ALIGNED LC_BUILDNAME(Copyright) [];
+extern const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT_SECTION;
+extern const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT_SECTION;
+extern const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT_SECTION;
 
 AROS_UFP3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
@@ -139,7 +141,7 @@ AROS_LP1 (BPTR, LC_BUILDNAME(ExpungeLib),
     EndResident can be placed somewhere else - but it must follow the
     ROMTag and it must not be placed in a different SECTION.
 ------------------------------------------------------------------------- */
-struct Resident const ALIGNED LC_RESIDENTNAME =
+struct Resident const ALIGNED LC_RESIDENTNAME TEXT_SECTION =
 {
     RTC_MATCHWORD,			    /* This is a romtag */
     (struct Resident *)&LC_RESIDENTNAME,
@@ -160,7 +162,7 @@ static struct InitTable 		      /* do not change */
     const struct DataTable *DataTable;
     APTR		    InitLibTable;
 }
-const LC_BUILDNAME(InitTab) =
+const LC_BUILDNAME(InitTab) TEXT_SECTION =
 {
     LC_LIBBASESIZE,
     &LIBFUNCTABLE[0],
@@ -178,7 +180,7 @@ static struct DataTable 		   /* do not change */
     UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;
     ULONG ENDMARK;
 }
-const LC_BUILDNAME(DataTab) =
+const LC_BUILDNAME(DataTab) TEXT_SECTION =
 {
     INITBYTE(OFFSET(Node,         ln_Type),      NT_TYPE),
     0x80, (UBYTE) OFFSET(Node,    ln_Name),      (ULONG) &LC_BUILDNAME(LibName[0]),
@@ -189,9 +191,9 @@ const LC_BUILDNAME(DataTab) =
     (ULONG) 0
 };
 
-const char ALIGNED LC_BUILDNAME(LibName)   [] = NAME_STRING;
-const char ALIGNED LC_BUILDNAME(LibID)     [] = VERSION_STRING;
-const char ALIGNED LC_BUILDNAME(Copyright) [] = COPYRIGHT_STRING;
+const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT_SECTION = NAME_STRING;
+const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT_SECTION = VERSION_STRING;
+const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT_SECTION = COPYRIGHT_STRING;
 
 /* Use supplied functions to initialize the non-standard parts of the
    library */
@@ -347,6 +349,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     LC_LIBHEADERTYPEPTR, lh, 1, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
 #ifdef __MAXON__
     GetBaseReg();
     InitModules();
@@ -366,6 +369,8 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     }
 
     return NULL;
+    
+    AROS_LIBFUNC_EXIT
 }
 
 
@@ -385,6 +390,8 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     LC_LIBHEADERTYPEPTR, lh, 2, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
+    
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
 
@@ -403,6 +410,8 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
+    
+    AROS_LIBFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -423,6 +432,8 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
     struct ExecBase *, sysBase, 3, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
+    
 #ifndef NOEXPUNGE
     BPTR seglist;
 
@@ -466,6 +477,8 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
+    
+    AROS_LIBFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -477,7 +490,9 @@ AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
     LC_LIBHEADERTYPEPTR, lh, 4, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
     return(NULL);
+    AROS_LIBFUNC_EXIT
 }
 
 #ifdef __LC_OWN_SYSBASE
