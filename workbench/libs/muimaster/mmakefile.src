@@ -11,12 +11,16 @@ CLASSES := \
     bitmap \
     bodychunk \
     boopsi \
+    cycle \
     dataspace \
     family \
+    gauge \
     group \
+    list \
     menuitem \
     notify \
     numeric \
+    popstring \
     prop \
     rectangle \
     register \
