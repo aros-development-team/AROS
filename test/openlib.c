@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2004 The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Generic ACPI Parseing functions.
+    Lang: english
+*/
 #define  DEBUG  1
 #include <aros/debug.h>
 
@@ -19,7 +26,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-static const char version[] = "$VER: openlib.c 41.0 (16.1.2004)\n";
+static const char version[] = "$VER: openlib.c 45.0 (16.1.2004)\n";
 
 #define ARG_TEMPLATE "LIBRARY/A,DIRTY/S"
 
