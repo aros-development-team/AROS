@@ -11,7 +11,7 @@ assign ENV: RAM:ENV
 assign LIBS: SYS:Classes ADD
 assign FONTS: SYS:Fonts
 
-path SYS:Utilities SYS:System SYS:Tools ADD QUIET 
+path SYS:Utilities SYS:System SYS:Tools SYS:Tools/Commodities ADD QUIET 
 Prompt "%N.%S> "
 
 ; Prompt is there to get a correct prompt for arosshell (it doesn't
