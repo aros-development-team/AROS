@@ -18,8 +18,11 @@ AROS_UFH3(void, printchar,
     AROS_UFHA(struct Locale *, locale, A2),
     AROS_UFHA(char, c, A1))
 {
-  if ('\0' != c)
-   printf("%c",c);
+    AROS_USERFUNC_INIT
+
+    if ('\0' != c) printf("%c",c);
+
+    AROS_USERFUNC_EXIT
 }
 
 struct Data
