@@ -1847,7 +1847,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #    - postinstall  = same meaning as the one for the %build_with_configure macro.
 
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
-    destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
+    srcdir= destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= postinstall= 
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
@@ -1859,6 +1859,12 @@ ifneq (%(subpackage),)
     %(mmake)-%(subpackage)-archbase  := %(package)-%(subpackage)-%(version)
 else
     %(mmake)-%(subpackage)-archbase  := %(package)-%(version)
+endif
+
+ifneq ($(srcdir),)
+    %(mmake)-%(subpackage)-srcdir  := $(PORTSDIR)/%(package)/$(%(mmake)-archbase)
+else
+    %(mmake)-%(subpackage)-srcdir  := $(PORTSDIR)/%(package)/%(srcdir)
 endif
 
 ifeq (%(patch),yes)
@@ -1887,7 +1893,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %(mmake)-%(subpackage)-package-basename := \
     $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
 
-%build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
+%build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(%(mmake)-%(subpackage)-srcdir) \
      nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix=%(aros_prefix) \
      postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" extraoptions="%(extraoptions)"
 
@@ -1903,6 +1909,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 
 %end
 
+#	mkdir -p $(%(mmake)-%(subpackage)-package-dir) && \
 
 #-----------------------------------------------------------------------------------------
 # Same job as the one of %fetch_and_build_gnu, except that this one assumes
@@ -1916,15 +1923,15 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 #     #MM- development-%(package)
 
 %define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
-    destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
+    srcdir= destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
     aros_prefix=/Development postinstall=  extraoptions= 
 
 #MM- development : development-%(package)
 
 
 %fetch_and_build_gnu mmake=development-%(package) package=%(package) subpackage="%(subpackage)" \
-   version=%(version) suffixes="%(suffixes)" destination=%(destination) package_repo="%(package_repo)" \
-   patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
+   version=%(version) suffixes="%(suffixes)" srcdir="%(srcdir)" destination=%(destination) \
+   package_repo="%(package_repo)" patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
    aros_prefix=%(aros_prefix) postinstall=%(postinstall) extraoptions="%(extraoptions)"
     
 %end
