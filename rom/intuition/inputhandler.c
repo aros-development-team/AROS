@@ -58,8 +58,8 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	    if (port)
 	    {
 	        if ((iihdata->InputEventMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
-							     sizeof(struct InputEvent) * 10,
-							     sizeof(struct InputEvent) * 10)))
+							     sizeof(struct GeneratedInputEvent) * 10,
+							     sizeof(struct GeneratedInputEvent) * 10)))
 		{
 	            ULONG lock;
 
@@ -73,6 +73,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	    	    iihdata->IntuiReplyPort = port;
 
 		    NEWLIST(&iihdata->IntuiDeferedActionQueue);
+    		    NEWLIST(&iihdata->GeneratedInputEventList);
 		    
 		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
 		    iihandler->is_Data = iihdata;
