@@ -64,7 +64,7 @@ $(OBJDIR)/%.d: %.c
 $(OBJDIR)/librarytest.d: librarytest.c
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -I $(TOP)/libs -- $^
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
