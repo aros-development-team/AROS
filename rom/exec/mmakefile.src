@@ -1,11 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# I need the private includes (for SIZEOF_ALL_REGISTERS)
-USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
-
-LIBNAME  := exec
-ULIBNAME := Exec
+#MM kernel-exec-linklib : setup includes kernel-exec-$(ARCH)-$(CPU)
+#MM kernel-exec-module : setup includes kernel-exec-$(ARCH)-$(CPU)
 
 ALL_FUNCTIONS	:= \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
@@ -32,79 +29,16 @@ ALL_FUNCTIONS	:= \
 	vacate wait waitio waitport
 
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
-# Main function for exec.strap. Need this apart as an anchor for the link:
-INIT_FILE   := execstrap_init
-OSMODULE    := exec.strap
-LIB	    := $(LIBDIR)/lib$(LIBNAME).a
-
-# Other support files:
-FILES	    :=
-FUNCTIONS   := \
-	initcode initstruct makelibrary makefunctions findresident	    \
-	initresident setintvector addintserver remintserver		    \
-	availmem allocentry freeentry typeofmem addmemlist		    \
-	addmemhandler remmemhandler insert addhead addtail remove remhead   \
-	remtail enqueue findname setsignal allocsignal freesignal addport   \
-	remport waitport findport createmsgport deletemsgport putmsg getmsg \
-	replymsg doio sendio checkio waitio abortio createiorequest	    \
-	deleteiorequest addresource remresource openresource addlibrary     \
-	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
-	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
-	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
-	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
-	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
-	allocpooled freepooled \
-	cacheclearu cachepredma cachepostdma \
-	disable forbid coldreboot getcc
-
-
-
-# ***** Not Native ***************
-else
-
-OSMODULE    := $(LIBNAME).library
-INIT_FILE   := $(LIBNAME)_init
+INIT_FILE   := exec_init
 SYS_FILES   := execfunctions prepareexecbase
 FILES	    := traphandler exec_util idletask
-
-FUNCTIONS   := $(ALL_FUNCTIONS)
-
-# ***** END ***************
-endif
-
-# ***** Palm *********************
+GENSHLIB    := $(SHARED_EXEC)
 
 ifeq ($(FLAVOUR),palmnative)
-
 #basically the same as 'not native' a few lines above except for LIB:=.
-OSMODULE    := $(LIBNAME).library
-INIT_FILE   := $(LIBNAME)_init
-LIB	    := $(LIBDIR)/libexec.a
-SYS_FILES   := execfunctions prepareexecbase
-FILES	    := traphandler exec_util idletask romtagscanner
-
-FUNCTIONS   := $(ALL_FUNCTIONS)
-
+GENSHLIB    := no
+FILES	    += romtagscanner
 endif
-
-%prepare_shlib exec $(SHARED_EXEC)
-ifeq ("$(SHARED_EXEC)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS)
-endif
-
-# Do the magic required for function replacement.
-# Keep this value for later
-ALL_FILES	:= $(FILES)
-FUNCTABLE_SRCS	:= $(foreach f,$(FUNCTIONS),$(f).c)
-
-%prepare_replace rom/exec
-%filter_replace FUNCTIONS
-%filter_replace FILES
-
-.PHONY : all clean setup
 
 ifeq ($(FLAVOUR),native)
 DEPLIBS := arossupport arosc
@@ -112,20 +46,53 @@ else
 DEPLIBS :=
 endif
 
-#MM kernel-exec-linklib : setup includes kernel-exec-$(ARCH)-$(CPU)
-kernel-exec-linklib : $(LIB)
-	@$(NOP)
+#MM- kernel-exec-module : kernel-exec
 
-#MM kernel-exec-module : setup includes kernel-exec-$(ARCH)-$(CPU)
-kernel-exec-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
-	@$(NOP)
+# I need the private includes (for SIZEOF_ALL_REGISTERS) and they
+# have to be first in the list
+USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
 
-# The all powerful ROM library generating stuff...
-NO_FUNCTABLE := 1
-%genromlib_finline hasrt=-hasrt
-
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
-%ctoasm_q
-
+# As a hack the SYS_FILES are added as the initfile.
+%build_module_macro mmake=kernel-exec \
+  modname=exec modtype=library \
+  initfile="$(SYS_FILES) $(INIT_FILE)" funcs=$(ALL_FUNCTIONS) \
+  files=$(FILES) \
+  conffile=lib.conf \
+  uselibs=$(DEPLIBS) \
+  genshlinklib=$(GENSHLIB) genfunctable=no
+  
 %common
-%include_deps
+
+# ***** Native ***************
+# Uncommented because unsupported at the moment
+#ifeq ($(FLAVOUR),native)
+#
+## Main function for exec.strap. Need this apart as an anchor for the link:
+#INIT_FILE   := execstrap_init
+#OSMODULE    := exec.strap
+#LIB	    := $(LIBDIR)/lib$(LIBNAME).a
+#
+## Other support files:
+#FILES	    :=
+#FUNCTIONS   := \
+#	initcode initstruct makelibrary makefunctions findresident	    \
+#	initresident setintvector addintserver remintserver		    \
+#	availmem allocentry freeentry typeofmem addmemlist		    \
+#	addmemhandler remmemhandler insert addhead addtail remove remhead   \
+#	remtail enqueue findname setsignal allocsignal freesignal addport   \
+#	remport waitport findport createmsgport deletemsgport putmsg getmsg \
+#	replymsg doio sendio checkio waitio abortio createiorequest	    \
+#	deleteiorequest addresource remresource openresource addlibrary     \
+#	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
+#	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
+#	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
+#	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
+#	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
+#	allocpooled freepooled \
+#	cacheclearu cachepredma cachepostdma \
+#	disable forbid coldreboot getcc
+#
+#
+#
+## ***** Not Native ***************
+#else
