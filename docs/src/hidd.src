@@ -282,7 +282,7 @@ or hide it or ask if it's visible right now. If you hide the GUI
 and dispose the HIDD CP, then the changes the user made will be
 lost.
 
-\item[HIDDA_UseScreen,struct Screen *,ISG} Tell the HIDD CP to open the
+\item{HIDDA_UseScreen,struct Screen *,ISG} Tell the HIDD CP to open the
 GUI on this screen.
 
 \item{HIDDA_AppMsgPort,struct MsgPort *,ISG} When the HIDD CP has its own
@@ -303,23 +303,34 @@ supported shared access (see below).
 Values for |HIDDA_Shared| are:
 
 \begin{description}
-\item{|HIDDV_Shared_Exclusive|} Try to get the HIDD exclusively.
+\item{HIDDV_Shared_Exclusive} Try to get the HIDD exclusively.
 If someone else has locked the HIDD exclusive or shared already,
 this will fail.
 
-\item{|HIDDV_Shared_Shared|} Try to share the HIDD with other
+\item{HIDDV_Shared_Shared} Try to share the HIDD with other
 apps. This will fail if someone else has already locked the
 HIDD exclusively.
 
-\item{|HIDDV_Shared_NonExclusive|} Use this mode if it doesn't matter if
+\item{HIDDV_Shared_NonExclusive} Use this mode if it doesn't matter if
 you can't get it. This might be used for apps which want to play sounds in
 the background when someone inserts a disk into the drive or similar. HIDDs
 accessed with this value set might loose access permissions while locked.
 Nevertheless applications without access permission may still perform
 methods on this object. These methods are discarded.
 
-\item{|HIDDV_Shared_NotAvailable|} This can only read back. If the
+\item{HIDDV_Shared_NotAvailable} This can only read back. If the
 attribute contains this value, the HIDD doesn't support sharing.
+
+\item{HIDDV_Shared_Lock} Some HIDDs can be shared but used only by one
+application at a time. An example might be the CPU. There is only one CPU
+but different applications might want to get it.
+
+If the HIDD supports this, you must set the attribute to
+|HIDDV_Shared_Shared| and when you want to get the HIDD, set the attribute
+to |HIDDV_Shared_Lock|. When this succeeds, whoever had the HIDD will loose
+control on the HIDD and you will get it. Some HIDDs will tell you when you
+lost control or will tell you when you are about to loose control and allow
+you to prevent that or clean up.
 
 \end{description}
 
@@ -364,6 +375,271 @@ between 5 and 8.
 \item{HIDDA_Serial_StopBits,ULONG,ISG} The number of stopbits between
 two data bytes multiplied by 16 (ie. one stopbit is 16, one and a half
 would be 24 and two stopbits is 32).
+
+\end{taglist}
+
+\subsection{Keyboard HIDD}
+
+\begin{taglist}
+\item{HIDDA_Keyboard_Type,ULONG,ISG} If the Keyboard HIDD can work with more
+then one type of keyboard, you can specify the type here or if the HIDD
+can figure the type of keyboard itself, it can offer the type here.
+If the HIDD doesn't support this, this value is |0| and can't be changed
+by setting it. The method |HIDDM_QueryModes()| should return a type
+|HIDDT_Limit| with min and max both 0.
+
+\item{HIDDA_Keyboard_MsgPort,struct MsgPort *,ISG} When the user presses a
+key, the HIDD should report this by sending a |HIDDT_Keyboard_Event|
+message to this port. The message looks like this:
+
+\begin{code}
+typedef struct
+{
+    struct Message ke_Message;
+    UWORD	   ke_Key[1];
+}
+HIDDT_Keyboard_Event;
+\end{code}
+
+|ke_Key[]| contains the X11 code for the key. See
+\filename{/usr/include/X11/keysymdef.h} for available keycodes.
+
+If the user pressed more then one key, the other keys are in
+|ke_Key[1]|, |ke_Key[2]|, etc. The number of keys in the message
+is calculated by the macro |HIDDQ_Keyboard_GetNumKeys(msg)|.
+
+\end{taglist}
+
+\subsection{Graphics HIDD}
+
+The graphics HIDD supports the following methods:
+
+\begin{methods}
+\item{IPTR HIDDM_Graphics_QCmd,UWORD Length,UWORD Command,...)}
+Make the HIDD execute a simple command. Simple commands execute
+very fast and don't do any checks. They were implemented to give
+you raw speed when you need it.
+
+|Command| is the command to execute and |Length| is the size
+of the command (including both |Command| and |Length|).
+
+The result of |HIDDM_Graphics_QCmd()| depends on the command
+which is to be executed.
+
+\item{IPTR HIDDM_Graphics_Cmd,UWORD Length,UWORD Command,...)}
+Make the HIDD execute a command. The commands executed this
+way are checked for validity (eg. clipping is performed) and
+they may take very long to execute.
+
+|Command| is the command to execute and |Length| is the size
+of the command (including both |Command| and |Length|).
+
+The result of |HIDDM_Graphics_Cmd()| depends on the command
+which is to be executed.
+
+\end{methods}
+
+\begin{methods}
+\item{HIDDT_BitMap HIDDV_Graphics_Cmd_CreateBitMap (UWORD width, UWORD
+height, UWORD depth)} Create a drawing area with the specified size
+and number of colors.
+
+\item{void HIDDV_Graphics_Cmd_DeleteBitMap (HIDDT_BitMap bm)}
+Return a drawing area for reuse. You can also dispose it with
+|DisposeObject()|.
+
+\item{HIDDT_GC HIDDV_Graphics_Cmd_CreateGC (HIDDT_BitMap bm)}
+Create a graphics context. The graphics context is used to store
+information which is needed for more than one command (for example
+the color or the drawmode). A GC is a BOOPSI object and can be
+changed with the normal BOOPSI API.
+
+\item{void HIDDV_Graphics_Cmd_DeleteGC (HIDDT_GC gc)} Return a gc for
+reuse. You can also dispose the GC with |DisposeObject()|.
+
+\item{BOOL HIDDV_Graphics_Cmd_CopyArea (HIDDT_BitMap src, WORD
+srcX, WORD srcY, UWORD width, UWORD height, HIDDT_GC dest, WORD destX,
+WORD destY)} Copy a rectangular area from the drawing area |src| to the
+drawing area stored in |dest| (which may be |src|). The source area is not
+changed (except both rectangles overlap). The mode of the GC |dest|
+determines how the copy takes place.
+
+In quick mode, the following restrictions are not checked: It's not checked
+whether the source or destination rectangle is completely inside the valid
+area or whether the areas overlap. If they overlap, the results are
+unpredictable.
+
+\item{BOOL HIDDV_Graphics_Cmd_SetPixel (HIDDT_GC gc, WORD x, WORD y)}
+Changes the pixel at (|x|,|y|) to the color stored in |gc|. This command is
+available in quick and normal mode.
+
+If the command is executed in normal mode, the coordinates are checked. If
+the pixel could be set, the command will return 1 else 0.
+
+In quick mode, the pixel is always set, even if the coordinates are
+illegal, and it will always return 1 (but might crash the machine if
+the coordiantes are invalid).
+
+\item{ULONG HIDDV_Graphics_Cmd_GetPixel (HIDDT_GC gc, WORD x, WORD y)}
+Queries the color of the pixel at (|x|,|y|). This command is available in
+quick and normal mode. When executed in quick mode, the color will be
+returned as the physical value for that color in the format used by the
+HIDD. If the command is executed in normal mode, the coordinates are
+checked and the color returned is a logical color (ie. a 24bit RGB value).
+If the pixel could be queried, the command will return its value
+and ~0 (ie. all bits set) otherwise.
+
+Note that in quick mode, the command always returns something
+but if the coordinates are outside the valid coordinates, this can
+crash your machine or return random values.
+
+\item{BOOL HIDDV_Graphics_Cmd_DrawLine (HIDDT_GC gc, WORD x1, WORD y1, WORD
+x2, WORD y2)} Draws a line from (|x1|,|y1|) to (|x2|,|y2|) in the specified
+gc. This command is available in quick and normal mode. In normal mode, the
+line is clipped against the drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_DrawRect (HIDDT_GC gc, WORD x1, WORD y1, WORD
+x2, WORD y2)} Draws a hollow rectangle from (|x1|,|y1|) to (|x2|,|y2|) in
+the specified gc. This command is available in quick and normal mode. In
+normal mode, the rectangle is clipped against the drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_FillRect (HIDDT_GC gc, WORD x1, WORD y1, WORD
+x2, WORD y2)} Draws a solid rectangle from (|x1|,|y1|) to (|x2|,|y2|) in
+the specified gc. This command is available in quick and normal mode. In
+normal mode, the rectangle is clipped against the drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_DrawEllipse (HIDDT_GC gc, WORD x1, WORD y1, WORD rx, WORD
+ry)} Draws a hollow ellipse from (|x1|,|y1|) with the radii
+|rx| and |ry| in the specified gc. This command is available in quick and
+normal mode. In normal mode, the ellipse is clipped against the drawing
+area.
+
+\item{BOOL HIDDV_Graphics_Cmd_FillEllipse (HIDDT_GC gc, WORD x1, WORD y1, WORD rx, WORD
+ry)} Draws a solid ellipse from (|x1|,|y1|) with the radii
+|rx| and |ry| in the specified gc. This command is available in quick
+and normal mode. In normal mode, the ellipse is clipped against the
+drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_DrawPolygon (HIDDT_GC gc, UWORD n, WORD
+coords[2*n])} Draws a hollow polygon from the list of coordinates in the
+specified gc. This command is available in quick and normal mode. In normal
+mode, the polygon is clipped against the drawing area and no point is drawn
+twice.
+
+\item{BOOL HIDDV_Graphics_Cmd_FillPolygon (HIDDT_GC gc, UWORD n,
+WORD coords[2*n])}
+Draws a solid polygon from (|x1|,|y1|) to (|x2|,|y2|)
+in the specified gc. This command is available in quick and normal mode.
+In normal mode, the polygon is clipped against the drawing area and no
+point is drawn twice.
+
+In quick mode, the polygon should be convex, otherwise the results are
+unpredictable.
+
+\item{BOOL HIDDV_Graphics_Cmd_DrawText (HIDDT_GC gc, WORD x, WORD y, STRPTR
+text, UWORD length)} Draws the first |length| characters of |text| at
+(|x|,|y|). This command is available in quick and normal mode. In normal
+mode, the text is clipped against the drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_FillText (HIDDT_GC gc, WORD x, WORD y, STRPTR
+text, UWORD length)} Fills the area of the text with the background color
+and draws the first |length| characters of |text| at (|x|,|y|). This
+command is available in quick and normal mode. In normal mode, the text is
+clipped against the drawing area.
+
+\item{BOOL HIDDV_Graphics_Cmd_FillSpan (HIDDT_GC gc, HIDDT_Span span)}
+Draws a solid from a shape description in the specified gc. This command is
+available in quick and normal mode. In normal mode, the spans are clipped
+against the drawing area.
+
+\item{void HIDDV_Graphics_Cmd_Clear (HIDDT_GC gc)} Sets all pixels of the
+drawing area to the background color stored in |gc|. This command is
+available in quick and normal mode and behaves similar in both modes.
+
+\item{IPTR HIDDV_Graphics_Cmd_Special (...)} This is for HIDD specific
+commands. You can use this for sending commands to the HIDD which are not
+covered by this doc. This command is available in quick and normal mode.
+It's behaviour is HIDD specific.
+
+\end{methods}
+
+\begin{taglist}
+\item{HIDDA_Graphics_Mode,ULONG,ISG} The display mode. Every HIDD defines
+its own list and uses its own values. Use the method
+|HIDDM_ValueToString()| to get the meanings of this attribute.
+
+\item{HIDDA_Graphics_Width,ULONG,ISG} This is the width of the available
+drawing area in units. Some graphics HIDDs support text mode; then this
+is in characters. Most of the time, this will be in screen or
+printer pixels.
+
+\item{HIDDA_Graphics_Height,ULONG,ISG} This is the height of the available
+drawing area in units. Some graphics HIDDs support text mode; then this
+is in characters. Most of the time, this will be in screen or
+printer pixels.
+
+\item{HIDDA_Graphics_Depth,UWORD,ISG} This is the number of available
+color bits. Use |1 << depth| to get the number of colors. Most HIDDs
+will support depths like 1, 8, 15, 16, 24 and 32 bit.
+
+\item{HIDDA_Graphics_BaseAddress,APTR,ISG} This is the address of the RAM
+of the graphics memory. Note that most HIDDs don't support to set this
+value. This can be used to access the video hardware directly. If you
+plan this, you must check if the HIDD supports this and if it does,
+then you must take the appropriate steps specified in the HIDDs' docs
+to tell the HIDD what you are doing (eg. disable the HIDD).
+
+\item{HIDDA_Graphics_BestSize,ULONG,G} Query the HIDD for the best size
+for drawing areas or drawing commands. Most graphics chips have
+a certain blocking size, ie. it doesn't matter if you copy 6 bits or
+30 but 33 is slow. The HIDD will return 32 in this case.
+
+\end{taglist}
+
+A HIDDs' GC has the following attributes:
+
+\begin{taglist}
+\item{HIDDA_GC_UserData,APTR,SG} The user can store arbitrary
+data in here.
+
+\item{HIDDA_GC_BitMap,HIDDT_BitMap,G} This is the bitmap which
+is connected to this GC.
+
+\item{HIDDA_GC_Foreground,ULONG,SG} This is the forground color.
+
+\item{HIDDA_GC_Background,ULONG,SG} This is the forground color.
+
+\item{HIDDA_GC_DrawMode,ULONG,SG} This is the draw mode. There are
+16 possible modes and they are defined as follows:
+
+\begin{code}
+dest = ((mode & 1) && src && dest)
+    || ((mode & 2) && src && !dest)
+    || ((mode & 4) && !src && dest)
+    || ((mode & 8) && !src && !dest)
+;
+\end{code}
+
+The most useful values are |HIDDV_GC_DrawMode_Copy| (|0x03|) which copies
+src into dest (this is the default) and |HIDDV_GC_DrawMode_XOr| (|0x06|)
+which inverts dest according to src.
+
+\item{HIDDA_GC_Font,HIDDT_Font,SG} The current font.
+
+\item{HIDDA_GC_ColorMask,ULONG,SG} Prevents some color bits from changing.
+This attribute is only considered in normal mode. This can slow rendering
+somewhat.
+
+\item{HIDDA_GC_LinePattern,UWORD,SG} Provide a simple pattern while
+drawing lines. This attribute is only considered in normal mode.
+
+\item{HIDDA_GC_PlaneMask,HIDDT_BitMap,SG} This is a shape bitmap. When
+drawing into the destination bitmap, only those bits will be changed
+where this bitmap has bits set. This bitmap can be smaller than the
+destination bitmap; bits outside this bitmap are considered to be 0.
+
+To disable this, set the attribute to |NULL| (this is also the default).
+Note that enabling this slows rendering down, sometimes very much.
 
 \end{taglist}
 
