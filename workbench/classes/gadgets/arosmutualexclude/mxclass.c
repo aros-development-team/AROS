@@ -21,6 +21,11 @@
 #include <gadgets/arosmx.h>
 #include <proto/alib.h>
 
+#ifndef DEBUG
+#   define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 #include "arosmutualexclude_intern.h"
 
 
@@ -69,11 +74,6 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 {
     struct MXData *data;
     Object *obj;
-    struct TagItem supertags[] =
-    {
-	{GA_Immediate, TRUE},
-	{TAG_MORE, (IPTR) msg->ops_AttrList}
-    };
     struct TagItem tags[] =
     {
 	{IA_Width, 0},
@@ -83,9 +83,11 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 	{TAG_DONE, 0L}
     };
 
-    obj = (Object *) DoSuperMethod(cl, (Object *) rootcl, OM_NEW, supertags, msg->ops_GInfo);
+    obj = (Object *) DoSuperMethodA(cl, (Object *) rootcl, (Msg)msg);
     if (!obj)
 	return NULL;
+
+    G(obj)->Activation = GACT_IMMEDIATE;
 
     data = INST_DATA(cl, obj);
     data->dri = NULL;
@@ -232,33 +234,32 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 
 IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
 {
-    IPTR retval = GMR_REUSE;
+    IPTR retval = GMR_NOREUSE;
     struct MXData *data = INST_DATA(cl, obj);
+    int y, blobheight = data->spacing + data->fontheight;
 
-    if ((msg->gpi_Mouse.X >= G(obj)->LeftEdge) &&
-        (msg->gpi_Mouse.X < G(obj)->LeftEdge + G(obj)->Width) &&
-        (msg->gpi_Mouse.Y >= G(obj)->TopEdge) &&
-        (msg->gpi_Mouse.Y < G(obj)->TopEdge + G(obj)->Height)) {
-        int y, blobheight = data->spacing + data->fontheight;
+    D(bug("blobheight: %d\n", blobheight));
 
-        retval = GMR_NOREUSE;
-
-        for (y = 0; y < data->numlabels; y++) {
-            if ((msg->gpi_Mouse.Y >= (blobheight * y)) &&
-                (msg->gpi_Mouse.Y <  (blobheight * (y + 1))))
+    for (y = 0; y < data->numlabels; y++)
+    {
+        D(bug("Mouse.Y: %d, y: %d\n", msg->gpi_Mouse.Y, y));
+        if (msg->gpi_Mouse.Y - G(obj)->TopEdge < blobheight * (y+1))
+        {
+            if (y != data->active)
             {
-                if (y != data->active) {
-                    struct RastPort *rport;
+                struct RastPort *rport;
 
-                    rport = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rport) {
-                        data->newactive = y;
-                        DoMethod(obj, GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE);
-                        ReleaseGIRPort(rport);
-                        data->active = y;
-                    }
+                rport = ObtainGIRPort(msg->gpi_GInfo);
+                if (rport)
+                {
+                    data->newactive = y;
+                    DoMethod(obj, GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE);
+                    ReleaseGIRPort(rport);
+                    *msg->gpi_Termination = data->active = y;
+                    retval |= GMR_VERIFY;
                 }
             }
+            y = data->numlabels;
         }
     }
 
