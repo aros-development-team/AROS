@@ -30,6 +30,7 @@ FUNCTIONS	:= \
 	animate \
 	askfont \
 	bltbitmap \
+	bltclear \
 	clearrectregion \
 	clearregion \
 	clonerastport \
