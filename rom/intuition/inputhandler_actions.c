@@ -32,6 +32,69 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define LOCK_REFRESH(x)		ObtainSemaphore(&GetPrivScreen(x)->RefreshLock)
+#define UNLOCK_REFRESH(x)	ReleaseSemaphore(&GetPrivScreen(x)->RefreshLock)
+
+#define LOCK_ACTIONS()      	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);	
+#define UNLOCK_ACTIONS()	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+
+/*******************************************************************************************************/
+
+static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen,
+			      struct IntuitionBase *IntuitionBase)
+{   
+    if (lay->Flags & LAYERREFRESH)
+    {
+        struct Window *win = (struct Window *)lay->Window;
+
+	if (lay == targetscreen->BarLayer)
+	{
+	    RenderScreenBar(targetscreen, TRUE, IntuitionBase);
+	}
+	else if (win)
+	{
+	    /* Does it belong to a GZZ window and is it
+	       the outer window of that GZZ window? */
+	    if (IS_GZZWINDOW(win) && (lay == win->BorderRPort->Layer))
+	    {
+	        /* simply refresh that window's frame */
+
+		Gad_BeginUpdate(lay, IntuitionBase);
+	        RefreshWindowFrame(win);
+	        lay->Flags &= ~LAYERREFRESH;
+		Gad_EndUpdate(lay, TRUE, IntuitionBase);
+	    }
+	    else
+	    {
+	        WindowNeedsRefresh(win, IntuitionBase);
+	    }
+	}
+	
+    } /* if (lay->Flags & LAYERREFRESH) */
+}
+
+/*******************************************************************************************************/
+
+static void CheckLayerRefreshBehind(struct Layer *lay, struct Screen *screen,
+	    			    struct IntuitionBase *IntuitionBase)
+{
+    for(; lay; lay = lay->back)
+    {
+        CheckLayerRefresh(lay, screen, IntuitionBase);
+    }
+}
+
+/*******************************************************************************************************/
+
+static void CheckLayerRefreshInFront(struct Layer *lay, struct Screen *screen,
+				     struct IntuitionBase *IntuitionBase)
+{
+    for(; lay; lay = lay->front)
+    {
+        CheckLayerRefresh(lay, screen, IntuitionBase);
+    }
+}
+
 /*******************************************************************************************************/
 
 static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy, 
@@ -47,11 +110,11 @@ static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 	 ((dy > 0) && (targetwindow->BorderBottom > 0)) )
     {
         struct RastPort 	*rp = targetwindow->BorderRPort;
-        struct Layer 	*L = rp->Layer;
+        struct Layer 		*L = rp->Layer;
         struct Rectangle 	rect;
-        struct Region 	*oldclipregion;
-        WORD 		ScrollX;
-        WORD 		ScrollY;
+        struct Region 		*oldclipregion;
+        WORD 			ScrollX;
+        WORD 			ScrollY;
 
         /* 
         ** In case a clip region is installed then I have to 
@@ -249,11 +312,10 @@ static void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 /*******************************************************************************************************/
 
 static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD NewTopEdge,
-			     WORD NewWidth, WORD NewHeight, struct Layer **L, BOOL *CheckLayersBehind,
-			     struct IntuitionBase *IntuitionBase)
+			     WORD NewWidth, WORD NewHeight, struct IntuitionBase *IntuitionBase)
 {
-    struct IntWindow 	* w 	     = (struct IntWindow *)targetwindow;
-    struct Layer	*targetlayer = targetwindow->WLayer;
+    struct IntWindow 	*w 	     = (struct IntWindow *)targetwindow;
+    struct Layer	*targetlayer = targetwindow->WLayer, *L;
     WORD		OldLeftEdge  = targetwindow->LeftEdge;
     WORD		OldTopEdge   = targetwindow->TopEdge;
     WORD 		OldWidth     = targetwindow->Width;
@@ -264,6 +326,8 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
     FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
 
+    bug("DoMoveSizeWindow to %d,%d %d x %d\n", NewLeftEdge, NewTopEdge, NewWidth, NewHeight);
+    
     pos_dx  = NewLeftEdge - OldLeftEdge;
     pos_dy  = NewTopEdge  - OldTopEdge;
     size_dx = NewWidth    - OldWidth;
@@ -271,6 +335,8 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
     if (!pos_dx && !pos_dy && !size_dx && !size_dy) return;
 
+    LOCK_REFRESH(targetwindow->WScreen);
+    
     if (size_dx || size_dy)
     {
 	WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
@@ -306,7 +372,7 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 	/* ... start checking refresh behind targetwindow */
 
-	*L = targetwindow->BorderRPort->Layer->back;
+	L = targetwindow->BorderRPort->Layer->back;
     } else {
 	/* Send IDCMP_CHANGEWINDOW to resized window */
 
@@ -318,48 +384,16 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 	/* Also check targetwindow for refresh */
 
-	*L = targetlayer;
+	L = targetlayer;
     }
 
     if ((size_dx < 0) || (size_dy < 0) || pos_dx || pos_dy)
     {
-	*CheckLayersBehind = TRUE;
+	CheckLayerRefreshBehind(L, targetwindow->WScreen, IntuitionBase);
     }
+    
+    UNLOCK_REFRESH(targetwindow->WScreen);
 
-}
-
-/*******************************************************************************************************/
-
-static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen, struct IntuitionBase *IntuitionBase)
-{   
-    if (lay->Flags & LAYERREFRESH)
-    {
-        struct Window *win = (struct Window *)lay->Window;
-
-	if (lay == targetscreen->BarLayer)
-	{
-	    RenderScreenBar(targetscreen, TRUE, IntuitionBase);
-	}
-	else if (win)
-	{
-	    /* Does it belong to a GZZ window and is it
-	       the outer window of that GZZ window? */
-	    if (IS_GZZWINDOW(win) && (lay == win->BorderRPort->Layer))
-	    {
-	        /* simply refresh that window's frame */
-
-		Gad_BeginUpdate(lay, IntuitionBase);
-	        RefreshWindowFrame(win);
-	        lay->Flags &= ~LAYERREFRESH;
-		Gad_EndUpdate(lay, TRUE, IntuitionBase);
-	    }
-	    else
-	    {
-	        WindowNeedsRefresh(win, IntuitionBase);
-	    }
-	}
-	
-    } /* if (lay->Flags & LAYERREFRESH) */
 }
 
 /*******************************************************************************************************/
@@ -371,12 +405,12 @@ void HandleDeferedActions(struct IIHData *iihdata,
     
     D(bug("Handle defered action messages\n"));
     
-    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+    LOCK_ACTIONS();
 
     am = (struct DeferedActionMessage *)iihdata->IntuiDeferedActionQueue.mlh_Head;
     next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
     
-    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+    UNLOCK_ACTIONS();
 
     /* Handle defered action messages */
 
@@ -412,22 +446,26 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    L = targetlayer->back->back;
 		}
 
-		if (NULL != L)
-		    CheckLayersBehind = TRUE;
-		
-		ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		LOCK_ACTIONS();
 		Remove(&am->ExecMessage.mn_Node);
-		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		UNLOCK_ACTIONS();
 		
 		remove_am = FALSE; /* because int_closewindow frees the message!!! */
 		free_am = FALSE;
 		
+		LOCK_REFRESH(targetscreen);
+		
 		int_closewindow(am, IntuitionBase);
+		CheckLayerRefreshBehind(L, targetscreen, IntuitionBase);
+		
+		UNLOCK_REFRESH(targetscreen);
 	    break; }
 
 	    case AMCODE_WINDOWTOFRONT: {
 		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
+		    LOCK_REFRESH(targetscreen);
+		    
 		    /* GZZ or regular window? */
 		    if (IS_GZZWINDOW(targetwindow))
 		    {
@@ -475,6 +513,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
 			
 		    } /* if (targetlayer->Flags & LAYERREFRESH) */
 		    
+		    UNLOCK_REFRESH(targetscreen);
+		    
 		} /* if (!(targetlayer->Flags & LAYERBACKDROP)) */
 		
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
@@ -485,6 +525,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
 
+		    LOCK_REFRESH(targetscreen);
+		    
 		    BehindLayer(0, targetlayer);
 
 		    /* GZZ window or regular window? */
@@ -509,16 +551,17 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 	 */
 
 			L = targetlayer; /* targetlayer->front */
-			CheckLayersInFront = TRUE;
-
 		    } else {
 
                 	/* 
                 	 * Check all layers in front of the layer.
                 	 */
 			L = targetlayer->front;
-			CheckLayersInFront = TRUE;
 		    }
+		    
+		    CheckLayerRefreshInFront(L, targetscreen, IntuitionBase);
+		    
+		    UNLOCK_REFRESH(targetscreen);
 		}
 
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
@@ -556,8 +599,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	    break; }
 
 
-            case AMCODE_MOVEWINDOW: { 
-		struct IntWindow *w = (struct IntWindow *)targetwindow;
+            case AMCODE_MOVEWINDOW: 
 		
 		/* correct dx, dy if necessary */
 		
@@ -579,29 +621,22 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		
 		if (am->dx || am->dy)
 		{   
-                    MoveLayer(0,
-                              targetlayer,
-                              am->dx,
-                              am->dy);
+		    LOCK_REFRESH(targetscreen);
+		    
+                    MoveLayer(0, targetlayer, am->dx, am->dy);
 
                     /* in case of GZZ windows also move outer window */
                     if (IS_GZZWINDOW(targetwindow))
                     {
-                	MoveLayer(NULL,
-                        	  targetwindow->BorderRPort->Layer,
-                        	  am->dx,
-                        	  am->dy);
-/*                	RefreshWindowFrame(targetwindow);*/
+                	MoveLayer(NULL, targetwindow->BorderRPort->Layer, am->dx, am->dy);
                     }
-
-                    if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = targetwindow->LeftEdge;
-                    if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = targetwindow->TopEdge;
 
                     targetwindow->LeftEdge += am->dx;
                     targetwindow->TopEdge  += am->dy;
 
-                    CheckLayersBehind = TRUE;
-                    L = targetlayer;
+		    CheckLayerRefreshBehind(targetlayer, targetscreen, IntuitionBase);
+		    
+                    UNLOCK_REFRESH(targetscreen);
 
 		    UpdateMouseCoords(targetwindow);
 		    
@@ -615,22 +650,38 @@ void HandleDeferedActions(struct IIHData *iihdata,
 					 
 		} /* if (am->dx || am->dy) */
 		
-            break; }
+            break;
 
-            case AMCODE_MOVEWINDOWINFRONTOF: { 
+            case AMCODE_MOVEWINDOWINFRONTOF: {
+	        struct Layer *lay;
+	        BOOL 	     movetoback = TRUE;
+		
+		for(lay = am->BehindWindow->WLayer; lay; lay = lay->back)
+		{
+		    if (lay == targetwindow->WLayer)
+		    {
+		        movetoback = FALSE;
+			break;
+		    }
+		}
+		
+		/* FIXXXXXXXXXXXXXXXXXXXXXXXXXXXX FIXME FIXXXXXXXXXXXXXXXXXX */
+		
                 /* If GZZ window then also move outer window */
+		
+		LOCK_REFRESH(targetscreen);
+		
                 if (IS_GZZWINDOW(targetwindow))
 		{
-                    MoveLayerInFrontOf(targetwindow->BorderRPort->Layer,
-                                       am->BehindWindow->WLayer);
-/*                    RefreshWindowFrame(targetwindow);*/
+                    MoveLayerInFrontOf(targetwindow->BorderRPort->Layer, am->BehindWindow->WLayer);
                 }
-                MoveLayerInFrontOf(targetwindow->WLayer,
-                                   am->BehindWindow->WLayer);
+                MoveLayerInFrontOf(targetwindow->WLayer, am->BehindWindow->WLayer);
 
                 CheckLayersBehind = TRUE;
                 L = targetlayer;
 
+		UNLOCK_REFRESH(targetscreen);
+		
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
             break; }
 
@@ -667,10 +718,9 @@ void HandleDeferedActions(struct IIHData *iihdata,
 
 		if (!size_dx && !size_dy) break;
 		
+		LOCK_REFRESH(targetscreen);
+		
 		WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
-
-                ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
-                ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
 
                 targetwindow->Width  += size_dx;
                 targetwindow->Height += size_dy;
@@ -690,11 +740,11 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 */
                 if ((size_dx < 0) || (size_dy < 0))
                 {
-                    CheckLayersBehind = TRUE;
-		    L = targetwindow->BorderRPort->Layer->back;
+		    CheckLayerRefreshBehind(targetwindow->BorderRPort->Layer->back, targetscreen, IntuitionBase);
                 }
 
-
+		UNLOCK_REFRESH(targetscreen);
+		
             break; }
 
             case AMCODE_ZIPWINDOW: {
@@ -702,26 +752,40 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 WORD NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
 		
 		NewLeftEdge = targetwindow->LeftEdge;
-		if (w->ZipLeftEdge != ~0) NewLeftEdge = w->ZipLeftEdge;
+		if (w->ZipLeftEdge != ~0)
+		{
+		    NewLeftEdge    = w->ZipLeftEdge;
+		    w->ZipLeftEdge = w->window.LeftEdge;
+		}
 
 		NewTopEdge = targetwindow->TopEdge;
-		if (w->ZipTopEdge != ~0) NewTopEdge = w->ZipTopEdge;
-
+		if (w->ZipTopEdge != ~0)
+		{
+		    NewTopEdge    = w->ZipTopEdge;
+		    w->ZipTopEdge = w->window.TopEdge;
+		}
+		
 		NewWidth = targetwindow->Width;
-		if (w->ZipWidth != ~0) NewWidth = w->ZipWidth;
-
+		if (w->ZipWidth != ~0)
+		{
+		    NewWidth    = w->ZipWidth;
+		    w->ZipWidth = w->window.Width;
+		}
+		
 		NewHeight = targetwindow->Height;
-		if (w->ZipHeight != ~0) NewHeight = w->ZipHeight;
+		if (w->ZipHeight != ~0)
+		{
+		    NewHeight    = w->ZipHeight;
+		    w->ZipHeight = w->window.Height;
+		}
 
-		DoMoveSizeWindow(targetwindow, NewLeftEdge, NewTopEdge, NewWidth, NewHeight,
-					       &L, &CheckLayersBehind, IntuitionBase);
+		DoMoveSizeWindow(targetwindow, NewLeftEdge, NewTopEdge, NewWidth, NewHeight, IntuitionBase);
 		
             break; }
 
 	    case AMCODE_CHANGEWINDOWBOX: {
 
-		DoMoveSizeWindow(targetwindow, am->left, am->top, am->width, am->height,
-					       &L, &CheckLayersBehind, IntuitionBase);
+		DoMoveSizeWindow(targetwindow, am->left, am->top, am->width, am->height, IntuitionBase);
 		
 	    break; }
 	
@@ -731,9 +795,9 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		   SIGF_INTUITION to the app task and placing
 		   a result code in am->Code!!! */
 
-		ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		LOCK_ACTIONS();
 		Remove(&am->ExecMessage.mn_Node);
-		ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+		UNLOCK_ACTIONS();
 		
 		remove_am = FALSE;
 		free_am = FALSE;
@@ -771,6 +835,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	    	targetscreen = (struct Screen *)am->Gadget;
 		if ((targetscreen->Flags & SHOWTITLE) && (am->dx == FALSE))
 		{
+		    LOCK_REFRESH(targetscreen);
+		    
 		    BehindLayer(0, targetscreen->BarLayer);
 		    
 		    Forbid();
@@ -778,7 +844,10 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		    Permit();
 		    
 		    L = targetscreen->BarLayer->front;
-		    CheckLayersInFront = TRUE;
+		    
+		    CheckLayerRefreshInFront(targetscreen->BarLayer->front, targetscreen, IntuitionBase);
+		    
+		    UNLOCK_REFRESH(targetscreen);
 		    
 		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->dx == TRUE))
 		{
@@ -834,7 +903,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	} /* if (TRUE == CheckLayersInFront) */
 
 next_action:
-    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);	
+    	LOCK_ACTIONS();	
 
 	if (remove_am) Remove(&am->ExecMessage.mn_Node);
 	if (free_am)   FreeMem(am, sizeof(struct DeferedActionMessage));
@@ -842,7 +911,7 @@ next_action:
 	am = next_am;
 	next_am = (struct DeferedActionMessage *)am->ExecMessage.mn_Node.ln_Succ;
 
-    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
+    	UNLOCK_ACTIONS();
 	
     } /* while (next_am) */
 
