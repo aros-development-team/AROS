@@ -16,10 +16,9 @@ FUNCTIONS := \
 #MM kernel-utility : kernel-utility-$(ARCH)-$(CPU)
 #MM kernel-utility-linklib : kernel-utility-$(ARCH)-$(CPU)
 
-%build_module_macro mmake=kernel-utility \
+#MM kernel-utility-includes : \
+#MM     kernel-exec-includes
+
+%build_module mmake=kernel-utility \
   modname=utility modtype=library \
-  funcs=$(FUNCTIONS) files=$(FILES) \
-  conffile=lib.conf \
-  uselibs=arosc
-  
-%common
+  files="utility_init $(FUNCTIONS) $(FILES)"

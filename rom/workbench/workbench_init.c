@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Initialization of workbench.library.
@@ -8,38 +8,17 @@
 #define DEBUG 1
 #include <aros/debug.h>
 #include <aros/atomic.h>
+#include <aros/symbolsets.h>
 
 #include "workbench_intern.h"
 #include LC_LIBDEFS_FILE
 #include "handler.h"
 #include "support.h"
 
-#ifdef SysBase
-#   undef SysBase
-#endif
-#ifdef ExecBase
-#   undef ExecBase
-#endif
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->wb_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->wb_SegList)
-#define LC_RESIDENTNAME         Workbench_resident
-#define LC_RESIDENTFLAGS        RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI          -120
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
-
-#define LC_NO_CLOSELIB
-#define LC_STATIC_INITLIB
-
-#include <libcore/libheader.c>
-
-#define SysBase (WorkbenchBase->wb_SysBase)
-
-ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+AROS_SET_LIBFUNC(WBInit, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     /* Make sure that the libraries are opened in L_OpenLib() --------------*/
     WorkbenchBase->wb_Initialized = FALSE;
 
@@ -64,10 +43,13 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     WorkbenchBase->wb_DefaultStackSize = 1024 * 32; /* 32kiB */ // FIXME: also read from preferences */
         
     return TRUE;
-} /* L_InitLib */
+    AROS_SET_LIBFUNC_EXIT
+}
 
-ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+AROS_SET_LIBFUNC(WBOpen, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     ObtainSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
     if (!(WorkbenchBase->wb_Initialized))
@@ -139,10 +121,12 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     ReleaseSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
     return TRUE;
+    AROS_SET_LIBFUNC_EXIT
 } /* L_OpenLib */
 
-void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
+AROS_SET_LIBFUNC(WBExpunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
     if ((WorkbenchBase->wb_IconBase))
     {
         CloseLibrary(WorkbenchBase->wb_IconBase);
@@ -163,4 +147,11 @@ void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
         CloseLibrary(WorkbenchBase->wb_UtilityBase);
     }
     // FIXME: handler not shut down 
-} /* L_ExpungeLib */
+
+    return TRUE;
+    AROS_SET_LIBFUNC_EXIT
+}
+
+ADD2INITLIB(WBInit, 0);
+ADD2OPENLIB(WBOpen, 0);
+ADD2EXPUNGELIB(WBExpunge, 0);

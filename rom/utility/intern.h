@@ -84,10 +84,6 @@ struct IntUtilityBase
     struct NameSpace     ub_NameSpace;
 };
 
-/* digulla again... Needed for close() */
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct UtilityBase *, UtilityBase, 3, Utility)
-
 #define GetIntUtilityBase(ub)   ((struct IntUtilityBase *)(ub))
 #define GetUtilityBase(ub)      (&GetIntUtilityBase(ub)->UBase)
 
