@@ -3,13 +3,14 @@
     $Id$
 */
 
-#include <exec/types.h>
-#include <workbench/icon.h>
-#include <proto/icon.h>
-
 #include "icon_intern.h"
 
-#   include <aros/debug.h>
+#define EFFECT_NONE      (0)
+#define EFFECT_LIGHTEN   (1)
+#define EFFECT_TINT_BLUE (2)
+#define EFFECT_XOR       (3)
+
+#define EFFECT EFFECT_TINT_BLUE
 
 /*****************************************************************************
 
@@ -44,8 +45,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-#   warning TODO: Implement icon/ChangeToSelectedIconColor()
-    aros_print_not_implemented("icon/ChangeToSelectedIconColor()");
+#if EFFECT == EFFECT_LIGHTEN
+    cr->red   = (cr->red   >> 1) + (0xFF >> 1);
+    cr->green = (cr->green >> 1) + (0xFF >> 1);
+    cr->blue  = (cr->blue  >> 1) + (0xFF >> 1);
+#elif EFFECT == EFFECT_TINT_BLUE
+    cr->red   = (cr->red   >> 1);
+    cr->green = (cr->green >> 1);
+    cr->blue  = (cr->blue  >> 1) + (0xFF >> 2);
+#elif EFFECT == EFFECT_XOR
+    cr->red   = cr->red   ^ 0xFF;
+    cr->green = cr->green ^ 0xFF;
+    cr->blue  = cr->blue  ^ 0xFF;
+#endif
     
     AROS_LIBFUNC_EXIT
 } /* ChangeToSelectedIconColor() */
