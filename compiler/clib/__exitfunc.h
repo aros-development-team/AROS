@@ -12,7 +12,7 @@ struct AtExitNode
     union
     {
         void (*fvoid)(void);
-        int (*fptr)(int, void *);
+        void (*fptr)(int, void *);
     } func;
     void *ptr;
 };
