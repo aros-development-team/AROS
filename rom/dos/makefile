@@ -6,6 +6,12 @@ SPECIAL_CFLAGS=-I/usr/include
 
 include $(TOP)/config/make.cfg
 
+EXEDIR=$(BINDIR)/test
+TESTOBJDIR = $(GENDIR)/rom/dos
+LIBS = -L$(LIBDIR) -lamiga -laros -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
+	$(LIBDIR)/libarosc.a
+
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout
 
@@ -48,6 +54,16 @@ setup :
 
 clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
+
+test: setup-test $(EXEDIR)/datetostr $(EXEDIR)/strtodate
+
+$(EXEDIR)/%: %.c $(DEPLIBS)
+	$(CC) $(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBDIR)/startup.o \
+	    $< -o $@ $(LIBS)
+
+setup-test :
+	@if [ ! -d $(TESTOBJDIR) ]; then $(MKDIR) $(TESTOBJDIR) ; else true ; fi
+	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
