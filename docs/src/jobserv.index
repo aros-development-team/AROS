@@ -3,8 +3,8 @@ access the following pages:<P>
 
 <A HREF="jobserv-add.html">Add jobs</A><BR>
 <A HREF="jobserv-free.html">Free jobs</A><BR>
-<A HREF="jobserv-work.html">Jobs in work</A><BR>
-<A HREF="jobserv-done.html">Finished Jobs</A><BR>
+<A HREF="jobserv-work.shtml">Jobs in work</A><BR>
+<A HREF="jobserv-done.shtml">Finished Jobs</A><BR>
 <A HREF="jobserv-msql.html">MSQL Interface</A><BR>
 
 <CENTER><HR WIDTH="100%"></CENTER><P>
