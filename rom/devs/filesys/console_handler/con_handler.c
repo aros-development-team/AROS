@@ -311,22 +311,34 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
     {
         /* DupLock */
 	fh->usecount++;
-    } else {
-
-	params.conbase = conbase;
-	params.iofs = iofs;
-	params.parentTask = FindTask(NULL);
-	params.initSignal = SIGF_DOS;
-
-	SetSignal(0, SIGF_DOS);
-
-	contask = createConTask(&params, conbase);
-	if (contask)
+    }
+    else
+    {
+    	UBYTE sig = AllocSignal(-1);
+	
+	if (sig == -1)
 	{
-	    Wait(SIGF_DOS);
-	    if (iofs->io_DosError) RemTask(contask);
+	    iofs->io_DosError = ERROR_NO_FREE_STORE; /* Any other error code better suited here? */
 	}
+	else
+	{
+	    params.conbase = conbase;
+	    params.iofs = iofs;
+	    params.parentTask = FindTask(NULL);
+	    params.initSignal = 1L << sig;
 
+	    contask = createConTask(&params, conbase);
+	    if (contask)
+	    {
+		Wait(params.initSignal);
+		if (iofs->io_DosError)
+		{
+	    	    RemTask(contask);
+		}
+	    }
+	    
+	    FreeSignal(sig);
+	}	
 	err = iofs->io_DosError;
     }
 
