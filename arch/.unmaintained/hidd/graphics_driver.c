@@ -3636,8 +3636,8 @@ struct pattern_info
     struct RastPort *rp;
     LONG mask_bpr; /* Butes per row */
     
-/*    LONG orig_xmin;
-    LONG orig_ymin; */
+    LONG orig_xmin;
+    LONG orig_ymin;
     
     UBYTE dest_depth;
     
@@ -3680,6 +3680,9 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	mask_y = y_src; /* - pi->orig_ymin; */
     }
 
+    x_src += pi->orig_xmin;
+    y_src += pi->orig_ymin;
+    
     EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %d, %d, %p)\n"
     			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
 			
@@ -3811,12 +3814,8 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     pi.mask_bpr = byteCnt;
     pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
-/*  stegerg: don't need this 
-
     pi.orig_xmin = xMin;
     pi.orig_ymin = yMin; 
-    
-*/
     
     bprd.pi = &pi;
 	
