@@ -7,3 +7,4 @@ mmakefile
 functable.c
 functions.c
 functions.h
+*.err
