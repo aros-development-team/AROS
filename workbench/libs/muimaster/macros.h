@@ -260,16 +260,20 @@
 
 /* Some macros */
 #ifdef __GNUC__
-#define get(obj,attr,store)                      \
-({                                               \
-    IPTR  _localstore = *store;                  \
-    ULONG _ret;                                  \
-    typeof (store) _store = (store);             \
-    struct __foo { int GetAttrs__IPTR_storage_size_mismatch[(sizeof(*_store) == sizeof(IPTR))?1:-1];}; \
-    _ret = GetAttr((attr), (obj), &_localstore); \
-    *_store = (typeof (*_store)) _localstore;    \
-    _ret;                                        \
-})
+#define get(obj, attr, store)                             \
+GetAttr                                                   \
+(                                                         \
+    (attr) * (sizeof                                      \
+    (                                                     \
+        struct                                            \
+        {                                                 \
+            int GetAttr_storage_size_too_little           \
+            [                                             \
+                (sizeof(*store) == sizeof(IPTR)) ? 1 : -1 \
+            ];                                            \
+        }                                                 \
+    ) != 0), (obj), (IPTR *)(store)                       \
+)
 #else  /* !__GNUC__ */
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
 #endif /* !__GNUC__ */
