@@ -1,0 +1,10 @@
+;
+MSG_MENU_PREFS (//)
+Preferences
+;
+MSG_MENU_PREFS_IMPORT (//)
+I\0Import...
+;
+MSG_MENU_PREFS_EXPORT (//)
+E\0Export...
+;

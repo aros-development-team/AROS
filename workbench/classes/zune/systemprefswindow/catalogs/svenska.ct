@@ -1,0 +1,16 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (14.02.2004)
+## codeset 0
+## language svenska
+;
+MSG_MENU_PREFS
+Inställningar
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importera...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exportera...
+; E\0Export...
+;
