@@ -29,7 +29,7 @@
 
 static UBYTE lokeymaptypes[] =
 {
-    N, 		/* 00 */
+    S, 		/* 00 */
     S|A, 	/* 01 */
     S|A,	/* 02 */
     S|A,	/* 03 */
@@ -42,7 +42,7 @@ static UBYTE lokeymaptypes[] =
     S|A,	/* 0A */
     S, 		/* 0B */
     S, 		/* 0C */
-    N, 		/* 0D */
+    S, 		/* 0D */
     N, 		/* 0E */
     S|A, 	/* 0F */
     V,	 	/* 10 q */
@@ -186,7 +186,7 @@ static UBYTE hikeymaptypes[] =
 
 static IPTR lokeymap[] =
 {
-    BYTES(0, 0, 0, 0x7C), 		/* 00 Left of 1 Key */
+    BYTES('~', '`', '~', '`'), 		/* 00 Left of 1 Key */
     BYTES(0xB9, 0xA1, '!', '1'), 	/* 01 1 */
     BYTES(0xB2, '@', '@', '2'), 	/* 02 2 */
     BYTES(0xB3, 0xA3, '#', '3'), 	/* 03 3 */
@@ -199,7 +199,7 @@ static IPTR lokeymap[] =
     BYTES('}', '}', ')', '0'),		/* 0A 0 */
     BYTES('_', '-', '_', '-'),		/* 0B Right of 0 */
     BYTES('+', '=', '+', '='),		/* 0C 2nd right of 0 */
-    BYTES('|', '|', '|', '|'),		/* 0D 3rd right of 0 */
+    BYTES('\\', '|', '\\', '|'),	/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
     BYTES('Q', 'q', 'Q', 'q'), 		/* 10 */
