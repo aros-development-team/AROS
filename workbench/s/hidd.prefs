@@ -1,5 +1,5 @@
 library SYS:Hidds/graphics.hidd
-library x11cl.hidd
+library x11cl.library
 gfx	hidd.gfx.x11
 mouse	hidd.mouse.x11
 kbd	hidd.kbd.x11
