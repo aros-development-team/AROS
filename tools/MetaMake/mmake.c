@@ -1232,7 +1232,7 @@ updatemflist (Project * prj)
         strcat(mfnsrc, ".src");
         assert(strlen(mfnsrc)<256);
       
-        if (!stat(makefile->name, &st) && !stat(mfnsrc, &st))
+        if (!stat(mfnsrc, &st))
 	    updatemakefile(prj, mfnsrc);
     }
 }
