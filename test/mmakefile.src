@@ -12,6 +12,7 @@ FILES := amigademo \
 	fileseek \
 	filetest \
 	gfx \
+	iffparsewrite \
 	localetest \
 	matchtest \
 	messagetest \
