@@ -32,7 +32,7 @@ VS_New (const char * ini)
 void
 VS_Delete (String str)
 {
-    xfree (str->buffer);
+    cfree (str->buffer);
     xfree (str);
 }
 
