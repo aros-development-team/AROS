@@ -9,6 +9,7 @@ FILES	:= \
     Blanker \
     ClickToFront \
     Exchange \
+    FKey \
     Opaque
 
 EXEDIR := $(AROSDIR)/Tools/Commodities
@@ -18,6 +19,7 @@ USER_CFLAGS := -I$(TOP)/workbench/libs/commodities
 USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
+USE_MUILIB := yes
 
 #MM- workbench : workbench-tools
 #MM workbench-tools : setup-cx includes linklibs workbench-tools-commodities-catalogs
