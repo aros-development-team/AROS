@@ -726,6 +726,8 @@ functions.c : $(TOP)/tools/cpak/cpak $(foreach f,$(FUNCTIONS),$(f).c)
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
+ALL_FUNCTIONS := $(FUNCTIONS)
+%genlibincludes
 
 $(OBJDIR)/%.o : %.c
 	@$(ECHO) "Compiling $(CURDIR)/$<..."
