@@ -56,8 +56,8 @@
 #include <utility/tagitem.h>
 #include "shcommands.h"
 
-AROS_SH1(Unsetenv, 41.0, 27.07.1997,
-AROS_SHA(,NAME, ,NULL))
+AROS_SH1(Unsetenv, 41.0,
+AROS_SHA(STRPTR, ,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -65,8 +65,8 @@ AROS_SHA(,NAME, ,NULL))
     {
             /* Delete the global variable from the list.
              */
-        if (!DeleteVar((STRPTR)SHArg(NAME), GVF_GLOBAL_ONLY))
-            SHReturn(RETURN_FAIL);
+        if (!DeleteVar(SHArg(NAME), GVF_GLOBAL_ONLY))
+            return RETURN_FAIL;
     }
     else
     {
@@ -85,7 +85,7 @@ AROS_SHA(,NAME, ,NULL))
 	    if (FIB) FreeDosObject(DOS_FIB, FIB);
 	    if (lock) UnLock(lock);
 
-	    SHReturn(RETURN_FAIL);
+	    return RETURN_FAIL;
 	}
 
         while (ExNext(lock, FIB))
@@ -102,7 +102,7 @@ AROS_SHA(,NAME, ,NULL))
 	UnLock(lock);
     }
 
-    SHReturn(RETURN_OK);
+    return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 } /* main */

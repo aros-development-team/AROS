@@ -36,7 +36,6 @@ $(AROS_C)/% : %.c
 
 $(AROS_C)/% : $(DEPLIBS)
 
-
 setup ::
 	%mkdirs_q $(OBJDIR) $(AROS_C)
 

@@ -62,8 +62,8 @@
 
 static void GetNewString(STRPTR, STRPTR, LONG);
 
-AROS_SH1(Unset, 41.0, 27.07.1997,
-AROS_SHA(,NAME, ,NULL))
+AROS_SH1(Unset, 41.0,
+AROS_SHA(STRPTR, ,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -79,8 +79,8 @@ AROS_SHA(,NAME, ,NULL))
         /* Delete the local Var from the list.
          */
 
-	 if (!DeleteVar((STRPTR)SHArg(NAME), GVF_LOCAL_ONLY))
-             SHReturn(RETURN_FAIL);
+	 if (!DeleteVar(SHArg(NAME), GVF_LOCAL_ONLY))
+             return RETURN_FAIL;
 
     }
     else
@@ -122,7 +122,7 @@ AROS_SHA(,NAME, ,NULL))
        }
     }
 
-    SHReturn(RETURN_OK);
+    return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 } /* main */

@@ -14,12 +14,12 @@
 #include "shcommands.h"
 
 
-AROS_SH5(Echo, 41.1, 14.3.1997,
-AROS_SHA(,STRING,/M,   NULL),
-AROS_SHA(,NOLINE,/S,   FALSE),
-AROS_SHA(,FIRST, /K/N, NULL),
-AROS_SHA(,LEN,   /K/N, NULL),
-AROS_SHA(,TO,    /K,   NULL))
+AROS_SH5(Echo, 41.1,
+AROS_SHA(STRPTR *, , STRING, /M,   NULL),
+AROS_SHA(BOOL,     , NOLINE, /S,   FALSE),
+AROS_SHA(ULONG *,  , FIRST,  /K/N, NULL),
+AROS_SHA(ULONG *,  , LEN,    /K/N, NULL),
+AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -31,16 +31,16 @@ AROS_SHA(,TO,    /K,   NULL))
     #define ERROR(a) { error=a; goto end; }
 
     if(SHArg(LEN))
-	max=*(ULONG *)SHArg(LEN);
+	max=*SHArg(LEN);
 
     if(SHArg(TO))
     {
-	out=Open((STRPTR)SHArg(TO),MODE_NEWFILE);
+	out=Open(SHArg(TO),MODE_NEWFILE);
 	if(!out)
 	    ERROR(RETURN_ERROR);
     }
 
-    a=(STRPTR *)SHArg(STRING);
+    a=SHArg(STRING);
     while(*a!=NULL)
     {
 	b=*a;
@@ -48,10 +48,10 @@ AROS_SHA(,TO,    /K,   NULL))
 
 	l=b-*a-1;
 	b=*a;
-	if(SHArg(FIRST)&&*(ULONG *)SHArg(FIRST))
+	if(SHArg(FIRST)&&*SHArg(FIRST))
 	{
-	    if(*(ULONG *)SHArg(FIRST)-1<l)
-		b+=*(ULONG *)SHArg(FIRST)-1;
+	    if(*SHArg(FIRST)-1<l)
+		b+=*SHArg(FIRST)-1;
 	    else
 		b+=l;
 	}else
@@ -75,7 +75,7 @@ end:
     if(SHArg(TO) && out)
 	Close(out);
 
-    SHReturn(error);
+    return error;
 
     AROS_SHCOMMAND_EXIT
 }
