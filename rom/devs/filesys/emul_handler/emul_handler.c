@@ -1066,7 +1066,8 @@ static LONG examine(struct emulbase *emulbase,
     /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
     end =(STRPTR)ead+size;
-    if(next>=end)
+    
+    if(next>end) /* > is correct. Not >= */
 	return ERROR_BUFFER_OVERFLOW;
 
     if(lstat(*fh->name?fh->name:".",&st))
