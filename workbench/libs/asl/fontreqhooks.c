@@ -60,6 +60,8 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 #define ID_PREVIEW  	5
 #define ID_DRAWMODE 	6
 #define ID_STYLE    	7
+#define ID_FRONTPEN 	8
+#define ID_BACKPEN  	9
 
 #undef NUMBUTS
 #define NUMBUTS     	2L
@@ -265,11 +267,11 @@ AROS_UFH3(VOID, FOTagHook,
 		break;
 	
 	    case ASLFO_MaxFrontPen:
-	    	iforeq->ifo_MaxFrontPen = (UBYTE)tidata;
+	    	iforeq->ifo_MaxFrontPen = (UWORD)tidata;
 		break;
 		
 	    case ASLFO_MaxBackPen:
-	    	iforeq->ifo_MaxBackPen = (UBYTE)tidata;
+	    	iforeq->ifo_MaxBackPen = (UWORD)tidata;
 		break;
 	    
 	    case ASLFO_ModeList:
@@ -371,7 +373,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     Object 		*gad;
     LONG		error;
     WORD 		gadrows, x, y, w, h, i, y2;
-    WORD		sizelvwidth, labelwidth = 0, maxcyclewidth = 0;
+    WORD		sizelvwidth, labelwidth = 0, maxgadcolwidth = 0;
     
     NEWLIST(&udata->NameListviewList);
 
@@ -427,6 +429,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     gadrows = 2; /* button row + string gadgets under listviews */
     if (iforeq->ifo_Flags & FOF_DODRAWMODE) gadrows++;
     if (iforeq->ifo_Flags & FOF_DOSTYLE) gadrows++;
+    if (iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN)) gadrows++;
     
     ld->ld_MinWidth =  OUTERSPACINGX * 2 +
 		       GADGETSPACINGX * 1 +
@@ -552,6 +555,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_Previous    	, (IPTR)gad 	    	    	    },
 	    {GA_ID  	    	, ID_PREVIEW     	    	    },
 	    {ASLFP_SampleText	, (IPTR)iforeq->ifo_SampleText	    },
+	    {ASLFP_APen     	, iforeq->ifo_FrontPen	    	    },
+	    {ASLFP_BPen     	, iforeq->ifo_BackPen	    	    },
 	    {TAG_DONE	    	    	    	    	    	    }
 	};
 
@@ -652,7 +657,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 2) -
 	(FONTPREVIEWHEIGHT + GADGETSPACINGY) + 1;
 
-    if (iforeq->ifo_Flags & (FOF_DODRAWMODE | FOF_DOSTYLE))
+    if (iforeq->ifo_Flags & (FOF_DODRAWMODE | FOF_DOSTYLE | FOF_DOFRONTPEN | FOF_DOBACKPEN))
     {
         #define FSET(x) ((iforeq->ifo_Flags & x) ? TRUE : FALSE)
 	
@@ -663,8 +668,9 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    Object **objvar;
 	} li [] =
 	{
-	    {FSET(FOF_DOSTYLE)	    , (STRPTR)MSG_FONTREQ_STYLE_LABEL , &udata->StyleLabel     },
-	    {FSET(FOF_DODRAWMODE)   , (STRPTR)MSG_FONTREQ_MODE_LABEL  , &udata->DrawModeLabel  }
+	    {FSET(FOF_DOSTYLE)	    , (STRPTR)MSG_FONTREQ_STYLE_LABEL 	, &udata->StyleLabel     },
+	    {FALSE  	    	    , (STRPTR)MSG_FONTREQ_COLOR_LABEL_FG, &udata->ColorLabel	 },
+	    {FSET(FOF_DODRAWMODE)   , (STRPTR)MSG_FONTREQ_MODE_LABEL  	, &udata->DrawModeLabel  }
 	}; 
 
         #undef FSET
@@ -683,18 +689,44 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	};
     	WORD i2;
 	
-    	for(i = 0, i2 = 0; i < 2; i++)
+	if (iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN))
+	{
+	    li[1].doit = TRUE;
+	    
+	    switch(iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN))
+	    {
+	    	case FOF_DOFRONTPEN:
+		    break;
+		    
+		case FOF_DOBACKPEN:
+		    li[1].text = (STRPTR)MSG_FONTREQ_COLOR_LABEL_BG;
+		    break;
+		    
+		case FOF_DOFRONTPEN | FOF_DOBACKPEN:
+		    li[1].text = (STRPTR)MSG_FONTREQ_COLOR_LABEL_FGBG;
+		    break;
+	    }
+	    
+	} /* if (iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN)) */
+    	for(i = 0, i2 = 0; i < 3; i++)
 	{
 	    if (li[i].doit)
 	    {
-	    	li[i].text = GetString((LONG)li[i].text, GetIR(iforeq)->ir_Catalog, AslBase);
+	    	if ((i == 2) && (iforeq->ifo_ModeList))
+		{
+		    li[i].text = iforeq->ifo_ModeList[0];
+		}
+		else
+		{
+	    	    li[i].text = GetString((LONG)li[i].text, GetIR(iforeq)->ir_Catalog, AslBase);
+		}
 		str[i2++] = li[i].text;
 	    }
 	}
-	
+		
 	w = labelwidth = BiggestTextLength(str, i2, &(ld->ld_DummyRP), AslBase);
             
-	for(i = 0; i < 2;i++)
+	for(i = 0; i < 3;i++)
 	{
 	    if (!li[i].doit) continue;
 	    
@@ -747,7 +779,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	    style_tags[3].ti_Data = w;
 	    
-	    if (w > maxcyclewidth) maxcyclewidth = w;
+	    if (w > maxgadcolwidth) maxgadcolwidth = w;
 	    
 	    udata->StyleGadget = gad = NewObjectA(AslBase->aslfontstyleclass, NULL, style_tags);
 	    if (!gad) goto failure;
@@ -756,7 +788,77 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	}
 	
+	w = udata->ButHeight * 12 / 10 + 19; /* CYCLEIMAGEWIDTH = 19 */
+	
+	/* Make FrontPen gadget */
+	
+	if (iforeq->ifo_Flags & FOF_DOFRONTPEN)
+	{
+	    struct TagItem cp_tags[] =
+	    {
+	        {GA_Previous		, (IPTR)gad			  },
+		{GA_Left		, x				  },
+		{GA_RelBottom		, y				  },
+		{GA_Width		, w				  },
+		{GA_Height		, udata->ButHeight		  },
+		{GA_RelVerify		, TRUE				  },
+		{GA_UserData		, (IPTR)ld			  },
+		{GA_ID			, ID_FRONTPEN			  },
+		{ASLCP_Color	    	, iforeq->ifo_FrontPen	    	  },
+		{ASLCP_ColorTable   	, (IPTR)iforeq->ifo_FrontPens     },
+		{ASLCP_NumColors    	, iforeq->ifo_MaxFrontPen   	  },
+		{TAG_DONE						  }
+		
+	    };
+	    
+	    udata->FGColorGadget = gad = NewObjectA(AslBase->aslcolorpickerclass, NULL, cp_tags);
+	    if (!gad) goto failure;
+	    
+	    x += w + GADGETSPACINGX;
+	}
+
+    	/* Make BackPen gadget */
+	
+	if (iforeq->ifo_Flags & FOF_DOBACKPEN)
+	{
+	    struct TagItem cp_tags[] =
+	    {
+	        {GA_Previous		, (IPTR)gad			  },
+		{GA_Left		, x				  },
+		{GA_RelBottom		, y				  },
+		{GA_Width		, w				  },
+		{GA_Height		, udata->ButHeight		  },
+		{GA_RelVerify		, TRUE				  },
+		{GA_UserData		, (IPTR)ld			  },
+		{GA_ID			, ID_BACKPEN			  },
+		{ASLCP_Color	    	, iforeq->ifo_BackPen	    	  },
+		{ASLCP_ColorTable   	, (IPTR)iforeq->ifo_BackPens      },
+		{ASLCP_NumColors    	, iforeq->ifo_MaxBackPen   	  },
+		{TAG_DONE						  }
+		
+	    };
+	    
+	    udata->BGColorGadget = gad = NewObjectA(AslBase->aslcolorpickerclass, NULL, cp_tags);
+	    if (!gad) goto failure;
+	    
+	}
+
+    	if (iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN))
+	{
+	    if ((iforeq->ifo_Flags & (FOF_DOFRONTPEN | FOF_DOBACKPEN)) == (FOF_DOFRONTPEN | FOF_DOBACKPEN))
+	    {
+	    	w += GADGETSPACINGX + w;
+	    }
+	    
+	    if (w > maxgadcolwidth) maxgadcolwidth = w;
+	    
+	    y += udata->ButHeight + GADGETSPACINGY;
+	}
+	
+	
     	/* Make DrawMode gadget */
+
+	x = ld->ld_WBorLeft + OUTERSPACINGX + labelwidth + LABELSPACINGX;
 
 	w = -ld->ld_WBorLeft - ld->ld_WBorRight - OUTERSPACINGX * 2 -
             labelwidth - LABELSPACINGX;
@@ -791,7 +893,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	    if (iforeq->ifo_ModeList)
 	    {
-	    	labels = (STRPTR *)iforeq->ifo_ModeList;
+	    	labels = &iforeq->ifo_ModeList[1];
 	    }
 	    else
 	    {
@@ -809,7 +911,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    					     0x7FFF,
 						     &(ld->ld_DummyRP),
 						     AslBase);						     
-	    if (i > maxcyclewidth) maxcyclewidth = i;
+	    if (i > maxgadcolwidth) maxgadcolwidth = i;
 	    
 	    udata->DrawModeGadget = gad = NewObjectA(AslBase->aslcycleclass, NULL, cycle_tags);
 	    if (!gad) goto failure;
@@ -817,10 +919,10 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    y += udata->ButHeight + GADGETSPACINGY;
 	    
 	} /* if (iforeq->ifo_Flags & FOF_DODRAWMODE) */
-	
-    }
+		
+    } /* if (iforeq->ifo_Flags & (FOF_DODRAWMODE | FOF_DOSTYLE | FOF_DOFRONTPEN | FOF_DOBACKPEN)) */
     
-    w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxcyclewidth + OUTERSPACINGX;
+    w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxgadcolwidth + OUTERSPACINGX;
     if (w > ld->ld_MinWidth) ld->ld_MinWidth = w;
     
     ld->ld_GList = (struct Gadget *)udata->NameListview;							 
@@ -1070,6 +1172,8 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    break;
 		 
 		 case ID_STYLE:
+		 case ID_FRONTPEN:
+		 case ID_BACKPEN:
 		    FOUpdatePreview(ld, AslBase);
 		    break;
 		    
@@ -1207,6 +1311,18 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *Asl
     	iforeq->ifo_TextAttr.ta_Style = FOGetStyle(ld, AslBase);
     }
     req->fo_TAttr.tta_Style = iforeq->ifo_TextAttr.ta_Style;
+    
+    if (iforeq->ifo_Flags & FOF_DOFRONTPEN)
+    {
+    	iforeq->ifo_FrontPen = FOGetFGColor(ld, AslBase);
+    }
+    req->fo_FrontPen = iforeq->ifo_FrontPen;
+    
+    if (iforeq->ifo_Flags & FOF_DOBACKPEN)
+    {
+    	iforeq->ifo_BackPen = FOGetBGColor(ld, AslBase);
+    }
+    req->fo_BackPen = iforeq->ifo_BackPen;
     
     /* Hmm ... there is also a struct TextAttr fo_Attr in
        FontRequester structure. Just put the same values in!? */

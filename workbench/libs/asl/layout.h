@@ -100,11 +100,13 @@ struct AslBase_intern;
 
 /* tags */
 
+/* ScrollerClass */
 #define ASLSC_Dummy 		(PGA_Top + 100)
 
 #define ASLSC_Inc 		(ASLSC_Dummy + 1)
 #define ASLSC_Dec 		(ASLSC_Dummy + 2)
 
+/* ListviewClass */
 
 #define ASLLV_Dummy 		(PGA_Top + 200)
 
@@ -121,19 +123,34 @@ struct AslBase_intern;
 #define ASLLV_ReadOnly		(ASLLV_Dummy + 11)
 #define ASLLV_Font  	    	(ASLLV_Dummy + 12)
 
+/* ButtonClass */
+
 #define ASLBT_Dummy		(PGA_Top + 300)
 #define ASLBT_CoolImage		(ASLBT_Dummy + 1)
+
+/* CycleClass */
 
 #define ASLCY_Dummy		(PGA_Top + 400)
 #define ASLCY_Labels		(ASLCY_Dummy + 1)
 #define ASLCY_Active		(ASLCY_Dummy + 2)
 #define ASLCY_Font  	    	(ASLCY_Dummy + 3)
 
+/* ColorPickerClass */
+
+#define ASLCP_Dummy 	    	(PGA_Top + 500)
+#define ASLCP_NumColors     	(ASLCP_Dummy + 1)
+#define ASLCP_ColorTable    	(ASLCP_Dummy + 2)
+#define ASLCP_Color 	    	(ASLCP_Dummy + 3)
+
+/* FontPreviewClass */
+
 #define ASLFP_APen  	    	IA_FGPen
 #define ASLFP_BPen  	    	IA_BGPen
 #define ASLFP_Style 	    	IA_Mode
 #define ASLFP_Font  	    	IA_Font
 #define ASLFP_SampleText    	GA_Text
+
+/* FontStyleClass */
 
 #define ASLFS_Style 	    	SYSIA_Style
 #define ASLFS_LabelArray    	GA_Text

@@ -137,8 +137,8 @@ struct IntFontReq
     UWORD		ifo_MaxHeight;
     struct Hook		*ifo_FilterFunc;
     ULONG		(*ifo_HookFunc)(ULONG, APTR, struct FontRequester *);
-    UBYTE		ifo_MaxFrontPen;
-    UBYTE		ifo_MaxBackPen;
+    UWORD		ifo_MaxFrontPen;
+    UWORD		ifo_MaxBackPen;
 
     STRPTR		*ifo_ModeList;
     STRPTR  	    	 ifo_SampleText;
@@ -282,6 +282,7 @@ struct AslBase_intern
     Class			*aslcycleclass;
     Class   	    	    	*aslfontpreviewclass;
     Class   	    	    	*aslfontstyleclass;
+    Class   	    	    	*aslcolorpickerclass;
 };
 
 /*****************************************************************************************/
@@ -326,6 +327,7 @@ Class *makeaslstringclass(struct AslBase_intern *AslBase);
 Class *makeaslcycleclass(struct AslBase_intern *AslBase);
 Class *makeaslfontpreviewclass(struct AslBase_intern *AslBase);
 Class *makeaslfontstyleclass(struct AslBase_intern *AslBase);
+Class *makeaslcolorpickerclass(struct AslBase_intern *AslBase);
 
 /* gadgets.c */
 
