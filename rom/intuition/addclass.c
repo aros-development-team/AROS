@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Makes a class publically available.
@@ -13,7 +13,8 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH1(void, AddClass,
 
@@ -58,14 +59,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+#if INTERNAL_BOOPSI
+    ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    AddTail (	(struct List *)&GetPrivIBase(IntuitionBase)->ClassList,
+		(struct Node *)classPtr );
+    classPtr->cl_Flags |= CLF_INLIST;
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+
+#else
+
     /* call boopsi.library function */
     AddClass(classPtr);
 
-#if 0
-    ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
-    AddTail (PublicClassList, (struct Node *)classPtr);
-    classPtr->cl_Flags |= CLF_INLIST;
-    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
 #endif
+
     AROS_LIBFUNC_EXIT
+    
 } /* AddClass */

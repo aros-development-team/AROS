@@ -11,7 +11,6 @@
 #include <exec/types.h>
 
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
@@ -29,6 +28,7 @@
 
 #include <aros/asmcall.h>
 #include "intuition_intern.h"
+#include "maybe_boopsi.h"
 
 
 #include "gadgets.h" /* Some handy rendering funtions */

@@ -1,6 +1,13 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/exec.h>
-#include <proto/boopsi.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <proto/layers.h>
@@ -19,6 +26,7 @@
 #include "inputhandler.h"
 
 #include "intuition_intern.h"
+#include "maybe_boopsi.h"
 #include "menus.h"
 
 /**************************************************************************************************/

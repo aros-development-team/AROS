@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Initialize a BOOPSI class
@@ -16,7 +16,8 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH5(struct IClass *, MakeClass,
 
@@ -88,10 +89,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Actually call boopsi.library function */
-    return MakeClass(classID, superClassID, superClassPtr, instanceSize, flags);
+#if INTERNAL_BOOPSI
 
-#if 0
     Class * iclass;
 
     /* trust the user ;-) */
@@ -99,14 +98,14 @@
 	return (NULL);
 
     /* Does this class already exist ? */
-    if (FindClass (classID, IntuitionBase))
+    if (FindClass (classID))
 	return (NULL);
 
     /* Has the user specified a classPtr ? */
     if (!superClassPtr)
     {
 	/* Search for the class ... */
-	superClassPtr = FindClass (superClassID, IntuitionBase);
+	superClassPtr = FindClass (superClassID);
 
 	if (!superClassPtr)
 	    return (NULL);  /* nothing found */
@@ -128,7 +127,14 @@
     }
 
     return (iclass);
+    
+#else
+
+    /* Actually call boopsi.library function */
+    return MakeClass(classID, superClassID, superClassPtr, instanceSize, flags);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* MakeClass */

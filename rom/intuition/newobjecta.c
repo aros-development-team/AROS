@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new BOOPSI object
@@ -17,7 +17,8 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH3(APTR, NewObjectA,
 
@@ -72,26 +73,35 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Pass call to the BOOPSI.library */
-    return NewObjectA(classPtr, classID, tagList);
-
-#if 0
+#if INTERNAL_BOOPSI
+ 
     Object * object;
+
+    EnterFunc(bug("intuition::NewObjectA()\n"));
 
     /* No classPtr ? */
     if (!classPtr)
-	classPtr = FindClass (classID, IntuitionBase);
+	classPtr = FindClass (classID);
 
     if (!classPtr)
 	return (NULL); /* Nothing found */
+
+    D(bug("classPtr: %p\n", classPtr));
 
     /* Try to create a new object */
     if ((object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW,
 	    tagList, NULL)))
 	classPtr->cl_ObjectCount ++;
 
-    return (object);
+    ReturnPtr("intuition::NewObjectA()", Object *, object);
+
+#else
+
+    /* Pass call to the BOOPSI.library */
+    return NewObjectA(classPtr, classID, tagList);
+
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* NewObjectA */

@@ -7,7 +7,9 @@ include $(TOP)/config/make.cfg
 # END_DESC{makefile}
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I. -I$(TOP)/rom/boopsi -I$(TOP)/rom/dos
+
+# USER_INCLUDES := -I. -I$(TOP)/rom/boopsi -I$(TOP)/rom/dos
+USER_INCLUDES := -I. -I$(TOP)/rom/dos
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBNAME} The lowercase name of the library (without the extension).
@@ -39,7 +41,8 @@ FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass sysiclass windowclasses \
 	     displayerror intuition_misc inputhandler_support inputhandler_actions \
-	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk
+	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk \
+	     rootclass icclass modelclass
 	     
 FUNCTIONS := \
 	activategadget \
@@ -69,6 +72,7 @@ FUNCTIONS := \
 	displaybeep \
 	disposeobject \
 	dogadgetmethoda \
+	donotify \
 	doubleclick \
 	drawborder \
 	drawimage \
@@ -77,7 +81,9 @@ FUNCTIONS := \
 	endrefresh \
 	endrequest \
 	eraseimage \
+	findclass \
 	freeclass \
+	freeicdata \
 	freeintuimessage \
 	freeremember \
 	freescreenbuffer \
@@ -220,6 +226,10 @@ endif
 
 #MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)-$(CPU)
 kernel-intuition-linklib : $(LIB)
+	@$(NOP)
+
+#MM kernel-intuition-linklib-quick : 
+kernel-intuition-linklib-quick : $(LIB)
 	@$(NOP)
 
 #MM kernel-intuition-module : setup includes kernel-intuition-$(ARCH)-$(CPU)

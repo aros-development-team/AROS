@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -13,7 +13,8 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
+
+#include "maybe_boopsi.h"
 
 	AROS_LH2(ULONG, SetAttrsA,
 
@@ -60,10 +61,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* pass call to boopsi.library */
-    return SetAttrsA(object, tagList);
+#if INTERNAL_BOOPSI
 
-#if 0
     struct opSet ops;
 
     ops.MethodID     = OM_SET;
@@ -71,7 +70,12 @@
     ops.ops_GInfo    = NULL;
 
     return (DoMethodA (object, (Msg)&ops));
+    
+#else
+    /* pass call to boopsi.library */
+    return SetAttrsA(object, tagList);
 #endif
 
     AROS_LIBFUNC_EXIT
+    
 } /* SetAttrsA */
