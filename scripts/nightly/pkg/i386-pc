@@ -4,6 +4,8 @@
 source $SP/setup
 setl   i386-pc.log
 
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
 printi "Creating AROS/i386-pc binary packages..."
 
 delete  $BUILD_BASE/AROS

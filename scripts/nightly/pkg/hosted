@@ -4,6 +4,8 @@
 source $SP/setup
 setl   hosted.log
 
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
 printi "Creating hosted binary packages..."
 
 printi "Creating AROS/"$HOST_CPU-$HOST_OS" system package..."
