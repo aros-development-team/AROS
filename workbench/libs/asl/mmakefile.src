@@ -14,13 +14,13 @@ endif
 MODNAME 	:= asl
 MODTYPE		:= library
 
-FILES := basicfuncs \
+FILES := basicfuncs specialreq \
 	 filereqhooks filereqsupport \
 	 modereqhooks modereqsupport \
          fontreqhooks fontreqsupport \
-	 specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
+	 fontpreviewclass \
 	 gadgets coolimagedata locale 
 
 FUNCS := allocfilerequest	\
