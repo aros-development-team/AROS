@@ -246,7 +246,7 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 #------------------------------------------------------------------------------
 # Generate endskip variable
 %define mkendtag_q
-$(END_FILE).c :
+$(END_FILE).c : libdefs.h
 	%mkdir_q $(OBJDIR)
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
@@ -353,16 +353,13 @@ setup :
 	done
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h endtag.c $(EXTRA_CLEAN) \
+	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) \
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
 %compile_q cmd=%(cc) opt=%(flags)
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+%libdefs_rule
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
@@ -440,16 +437,13 @@ setup :
 	done
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h endtag.c $(EXTRA_CLEAN) \
+	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) \
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
 %compile_q cmd=%(cc) opt=%(flags)
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+%libdefs_rule
 
 ifndef FUNCTABLE_SRCS
 FUNCTABLE_SRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
@@ -526,7 +520,7 @@ setup :
 %mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h endtag.c $(EXTRA_CLEAN) $(LIB) $(OSMODDIR)/$(OSMODULE)
+	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 # Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
@@ -535,10 +529,7 @@ $(LIB) : $(ALL_OBJS)
 $(OBJDIR)/%.o : %.c
 %compile_q
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 
 ifndef NO_FUNCTABLE
 %mkfunctable_arch archive=%(archive)
@@ -617,7 +608,7 @@ setup ::
 %mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h endtag.c $(EXTRA_CLEAN) \
+	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) \
 	    $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 # Collect all functions in a linklib for fast linking
@@ -630,10 +621,7 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.o : $(OBJDIR)/%.c
 %compile_q opt="$(CFLAGS) -I$(OBJDIR)"
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+%libdefs_rule
 
 ifndef NO_FUNCTABLE
 ifndef FUNCTABLE_SRCS
@@ -884,9 +872,7 @@ $(OBJDIR)/%.o : %.c
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 
 %end
 
@@ -1027,10 +1013,7 @@ clean ::
 $(OBJDIR)/%.o : %.c
 %compile_q cmd=%(cc) opt=%(flags)
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf $(ARCHTOOL)
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
@@ -1391,9 +1374,7 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=%(dflags)
 
 ifeq ($(USE_LIBDEFS),yes)
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
-	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+%libdefs_rule
 endif
 
 #MM

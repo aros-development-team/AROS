@@ -271,7 +271,7 @@ static void make_libconf(void)
     fprintf(f, "name %s\n", lowername);    
     fprintf(f, "basename %s\n", basename);
     fprintf(f, "libbase %sBase\n", basename);
-    fprintf(f, "libbasetype %s\n", basetype);
+    fprintf(f, "libbasetype struct %s\n", basetype);
     fprintf(f, "version 41.0\n");
     fprintf(f, "type %s\n", typeinfo[type].lowertypestring);
 

@@ -21,10 +21,12 @@ endif
 
 X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
 
-FILES	   := x11 support x11gfx onbitmap offbitmap endtag x11_init support x11kbd x11mouse
+FILES	   := x11 support x11gfx onbitmap offbitmap x11_init support x11kbd x11mouse
 
 OBJDIR := $(GENDIR)/$(CURDIR)
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(OBJDIR)/functable.o $(OBJDIR)/xshm.o
+END_FILE := $(OBJDIR)/endtag
+ENDFUNC := $(END_FILE).o
+OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(OBJDIR)/functable.o $(OBJDIR)/xshm.o
 LIB	:= $(LIBDIR)/libx11cl.a
 
 
@@ -42,7 +44,7 @@ $(LIB) : $(OBJS)
 
 #MM
 clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR) libdefs.h endtag.c *.err
+	$(RM) $(OBJS) $(LIB) $(OBJDIR) libdefs.h *.err
 
 #MM
 setup :
@@ -100,18 +102,14 @@ $(OBJDIR)/%.d : %.c
 $(OBJDIR)/xshm.o	: xshm.c
 	$(CC) $(COMMON_CFLAGS)  -c -I$(GENDIR)/include $(XSHM_INCLUDES) xshm.c -o $(OBJDIR)/xshm.o
 	
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 	
 %mkfunctable_arch
 
-endtag.c : libdefs.h
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 	
 x11gfx_init.o : libdefs.h
 
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d) $(END_FILE).d

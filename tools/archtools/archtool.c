@@ -748,23 +748,6 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
         strlower(words[1]);
         len = strlen(words[1]);
         lc->libname = strdup(words[1]);
-        if( lc->basename == NULL )
-        {
-          lc->basename = strdup(words[1]);
-          lc->basename[0] = toupper(lc->basename[0]);
-        }
-        if( lc->libbase == NULL )
-        {
-          lc->libbase = malloc( (len+5) * sizeof(char) );
-          sprintf( lc->libbase, "%sBase",words[1]);
-          lc->libbase[0] = toupper(lc->libbase[0]);
-        }
-        if( lc->libbasetype == NULL )
-        {
-          lc->libbasetype = malloc( (len+5) * sizeof(char) );
-          sprintf( lc->libbasetype, "%sBase",words[1]);
-          lc->libbasetype[0] = toupper(lc->libbasetype[0]);
-        }
       }
       else if( strcmp(words[0],"libname")==0 )
       {
@@ -776,27 +759,12 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
         len = strlen(words[1]);
         free(lc->basename);
         lc->basename = strdup(words[1]);
-        if( lc->libbase == NULL )
-        {
-          lc->libbase = malloc( (len+5) * sizeof(char) );
-          sprintf( lc->libbase, "%sBase",words[1]);
-        }
-        if( lc->libbasetype == NULL )
-        {
-          lc->libbasetype = malloc( (len+5) * sizeof(char) );
-          sprintf( lc->libbasetype, "%sBase",words[1]);
-        }
       }
       else if( strcmp(words[0],"libbase")==0 )
       {
         len = strlen(words[1]);
         free(lc->libbase);
         lc->libbase = strdup(words[1]);
-        if( lc->libbasetype == NULL )
-        {
-          lc->libbasetype = malloc( (len+8) * sizeof(char) );
-          sprintf( lc->libbasetype, "struct %s",words[1]);
-        }
       }
       else if( strcmp(words[0],"libbasetype")==0 )
       {
@@ -876,7 +844,7 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
         else if( strcmp(words[1],"datatype")==0 )
           lc->type = t_datatype;
       }
-      else if( strcmp(words[0],"options")==0 )
+      else if( strcmp(words[0],"options")==0 || strcmp(words[0],"option")==0 )
       {
         for( i=1 ; i<num ; i++ )
         {
@@ -895,6 +863,35 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
     }
     free(line);
   }
+
+  if( lc->libname == NULL )
+  {
+    fprintf( stderr, "Missing field \"name\" in lib.conf!\n" );
+    return NULL;
+  }
+  if( lc->basename == NULL )
+  {
+    lc->basename = strdup(lc->libname);
+    lc->basename[0] = toupper(lc->basename[0]);
+  }
+  if( lc->libbase == NULL )
+  {
+    lc->libbase = malloc( (strlen(lc->basename)+5) * sizeof(char) );
+    sprintf( lc->libbase, "%sBase", lc->basename );
+    lc->libbase[0] = toupper(lc->libbase[0]);
+  }
+  if( lc->libbasetype == NULL )
+  {
+    lc->libbasetype = malloc( (strlen(lc->libbase)+8) * sizeof(char) );
+    sprintf( lc->libbasetype, "struct %s", lc->libbase );
+    lc->libbasetype[7] = toupper(lc->libbasetype[7]);
+  }
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+
   if( lc->define == NULL )
     lc->define = strdup( "_LIBDEFS_H" );
   if( lc->type == 0 )
@@ -985,11 +982,6 @@ time_t t;
   {
     lc->copyright = strdup("");
   }
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   fprintf( fd, "#ifndef %s\n#define %s\n", lc->define, lc->define );
 
   if (lc->type == t_library)
@@ -1054,8 +1046,8 @@ time_t t;
   }
 
   fprintf( fd, "#define LIBBASE          %s\n", lc->libbase );
-  fprintf( fd, "#define LIBBASETYPE      struct %s\n", lc->libbasetype );
-  fprintf( fd, "#define LIBBASETYPEPTR   struct %s\n", lc->libbasetypeptr );
+  fprintf( fd, "#define LIBBASETYPE      %s\n", lc->libbasetype );
+  fprintf( fd, "#define LIBBASETYPEPTR   %s\n", lc->libbasetypeptr );
   fprintf( fd, "#define VERSION_NUMBER   %d\n", lc->version );
   fprintf( fd, "#define REVISION_NUMBER  %d\n", lc->revision );
   fprintf( fd, "#define BASENAME         %s\n", lc->basename );
@@ -1868,11 +1860,6 @@ int firstlvo;
   }
   if(!(lc=parse_libconf(NULL)))
     return(-1);
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   fd = fopen(argv[2],"rb");
   if(!fd)
   {
@@ -2022,7 +2009,7 @@ int firstlvo;
           fprintf( fdo, ") \\\n\tAROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
           for( i = 1 ; i <= numparams ; i++ )
             fprintf( fdo, "\tAROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
-          fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
         for( i=0 ; i < numparams ; i++ )
         {
@@ -2132,11 +2119,6 @@ int firstlvo;
   }
   if(!(lc=parse_libconf(NULL)) )
     return(-1);
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   fd = fopen(argv[2],"rb");
   if(!fd)
   {
@@ -2278,7 +2260,7 @@ int firstlvo;
           {
             fprintf( fdo, "\tAROS_%s(%s, %s, %s),\n", macro[1], type[i], name[i], reg[i] );
           }
-          fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
         for( i=0 ; i < numparams ; i++ )
         {
@@ -3040,8 +3022,8 @@ int rewrite_function(FILE * fdo,
 
 		if (0 != pd->offset) {	
 			fprintf(fdo,
-			        "    struct %s *, %s, %d, %s)\n{\n",
-			        lc->libbasetype,
+			        "    %s, %s, %d, %s)\n{\n",
+			        lc->libbasetypeptr,
 			        lc->libbase,
 			        pd->offset,
 			        lc->basename);
@@ -3097,8 +3079,8 @@ int rewrite_function(FILE * fdo,
 			}	
 
 			fprintf(fdefines,
-			        "\tstruct %s *, %s, %d, %s)\n#endif\n\n",
-			        lc->libbasetype,
+			        "\t%s, %s, %d, %s)\n#endif\n\n",
+			        lc->libbasetypeptr,
 			        lc->libbase,
 			        pd->offset,
 			        lc->basename);
@@ -3325,11 +3307,6 @@ char *upperbasename;
     return(-1);
   if(!(lc = parse_libconf(NULL)) )
     return(-1);
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   filename = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
   sprintf( filename, "%s/proto/%s.h", argv[1], lc->libname );
   newname = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
@@ -3398,11 +3375,6 @@ int firstlvo;
   }
   if(!(lc = parse_libconf(NULL)) )
     return(-1);
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   fd = fopen(argv[2],"rb");
   if(!fd)
   {
@@ -3688,11 +3660,6 @@ int firstlvo;
   }
   if(!(lc = parse_libconf(NULL)) )
     return(-1);
-  if( lc->libbasetypeptr == NULL )
-  {
-    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
-    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
-  }
   fd = fopen(argv[2],"rb");
   if(!fd)
   {
@@ -3959,8 +3926,8 @@ int firstlvo;
             strlower(reg[i]);
             fprintf( fdo[3], "%s, %s, %s, ", type[i], name[i], reg[i] );
           }
-          fprintf( fdo[0], "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
-          fprintf( fdo[1], "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo[0], "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo[1], "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
           fprintf( fdo[3], "\\\n\t, %s_BASE_NAME)\n", upperbasename );
 
           if( numparams!=0 )

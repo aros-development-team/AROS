@@ -35,13 +35,13 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const LIBFUNCTABLE[];
-struct LIBBASETYPE * INIT();
+LIBBASETYPEPTR INIT();
 extern const char LIBEND;
 
-extern int  driver_init (struct LIBBASETYPE *);
-extern int  driver_open (struct LIBBASETYPE *);
-extern void driver_close (struct LIBBASETYPE *);
-extern void driver_expunge (struct LIBBASETYPE *);
+extern int  driver_init (LIBBASETYPEPTR);
+extern int  driver_open (LIBBASETYPEPTR);
+extern void driver_close (LIBBASETYPEPTR);
+extern void driver_expunge (LIBBASETYPEPTR);
 
 AROS_UFP4(ULONG, TOF_VBlank,
     AROS_UFHA(ULONG, dummy, A0),
@@ -77,7 +77,7 @@ static const char version[]=VERSION_STRING;
 static const APTR inittabl[4]=
 {
 
-    /* !!!!! Hack warning: The below was sizeof (struct LIBBASETYPE),
+    /* !!!!! Hack warning: The below was sizeof (LIBBASETYPE),
        but if I set libbasetype to GfxBase_intern in lib.conf
        much gets broken. Should maybe be 'publibbasetype'
        and 'privlibbasetype' in lib.conf
@@ -94,8 +94,8 @@ static const APTR inittabl[4]=
 
 static struct TextAttr sysTA;
 
-AROS_LH2(struct LIBBASETYPE *, init,
- AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, init,
+ AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
            struct ExecBase *, sysBase, 0, Graphics)
 {
@@ -131,9 +131,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
 }
 
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPEPTR, open,
  AROS_LHA(ULONG, version, D0),
-           struct LIBBASETYPE *, LIBBASE, 1, Graphics)
+           LIBBASETYPEPTR, LIBBASE, 1, Graphics)
 {
     AROS_LIBFUNC_INIT
     struct TextFont * def;
@@ -205,7 +205,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 
 
 AROS_LH0(BPTR, close,
-           struct LIBBASETYPE *, LIBBASE, 2, Graphics)
+           LIBBASETYPEPTR, LIBBASE, 2, Graphics)
 {
     AROS_LIBFUNC_INIT
 
@@ -224,7 +224,7 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-           struct LIBBASETYPE *, LIBBASE, 3, Graphics)
+           LIBBASETYPEPTR, LIBBASE, 3, Graphics)
 {
     AROS_LIBFUNC_INIT
 #ifndef DISK_BASED
@@ -271,7 +271,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-            struct LIBBASETYPE *, LIBBASE, 4, Graphics)
+            LIBBASETYPEPTR, LIBBASE, 4, Graphics)
 {
     AROS_LIBFUNC_INIT
     return 0;

@@ -116,10 +116,7 @@ $(OBJDIR)/%.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf $(ARCHTOOL)
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 

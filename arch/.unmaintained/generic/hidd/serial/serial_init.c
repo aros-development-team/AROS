@@ -17,8 +17,8 @@
 #undef SysBase
 
 /* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SegList)
+#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->hdg_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->hdg_SegList)
 #define LC_RESIDENTNAME         hiddserial_resident
 #define LC_RESIDENTFLAGS        RTF_AUTOINIT
 #define LC_RESIDENTPRI          0
