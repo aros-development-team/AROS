@@ -269,7 +269,7 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     tags[9].ti_Data = (IPTR)stdgadtags;
 
     if (!GadToolsBase->arospabase)
-        GadToolsBase->arospabase = OpenLibrary(AROSPALETTECLASSPATH, 0);
+        GadToolsBase->arospabase = OpenLibrary(AROSPALETTENAME, 0);
     if (!GadToolsBase->arospabase)
         return NULL;
 

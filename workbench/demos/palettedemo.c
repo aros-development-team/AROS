@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     {
     	D(bug("Intuiton opened\n"));
  	
-    	AROSPaletteBase = OpenLibrary(AROSPALETTECLASSPATH, 0);  
+    	AROSPaletteBase = OpenLibrary(AROSPALETTENAME, 0);  
     	if (AROSPaletteBase)
     	{
     	    struct Screen *scr;
