@@ -39,7 +39,7 @@ typedef struct ZTextLine {
 } ZTextLine;
 
 struct ZText {
-	  LONG xscroll; /* number of pixel which are not visible */
+    LONG xscroll; /* number of pixel which are not visible */
     LONG yscroll;
 
     WORD width; /* store calculated bounds - read only ! */
