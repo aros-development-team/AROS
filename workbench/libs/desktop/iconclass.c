@@ -1,4 +1,4 @@
-/*
+a/*
    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
    $Id$ 
  */
@@ -792,22 +792,29 @@ IPTR iconConnectParent(Class * cl, Object * obj,
     {
         struct DetailColumn *dc;
 
-        dc = (struct DetailColumn *) DoMethod(_parent(obj), ICM_GetColumn,
-                                              IA_Size);
+        dc = (struct DetailColumn *) DoMethod
+        (
+            _parent(obj), ICM_GetColumn, IA_Size
+        );
         if (dc)
         {
-            UBYTE          *buffer;
-
-            buffer = AllocVec(sizeof(UBYTE) * 18, MEMF_ANY);
-
+            STRPTR buffer;
+            
+            buffer = AllocVec(18, MEMF_ANY);
+            
             __sprintf(buffer, "%u", data->size);
-
-            data->sizePart = TextObject, MUIA_Text_Contents, buffer, End;
-
+            
+            data->sizePart = TextObject, 
+                MUIA_Text_Contents, buffer, 
+            End;
+            
+            FreeVec(buffer);
         }
 
-        dc = (struct DetailColumn *) DoMethod(_parent(obj), ICM_GetColumn,
-                                              IA_Type);
+        dc = (struct DetailColumn *) DoMethod
+        (
+            _parent(obj), ICM_GetColumn, IA_Type
+        );
         if (dc)
         {
             STRPTR description = NULL;
@@ -831,7 +838,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             UBYTE           date[LEN_DATSTRING];
             UBYTE           time[LEN_DATSTRING];
             ULONG           bufferLength = LEN_DATSTRING * 3; /* FIXME: ??? */
-            UBYTE          *buffer = AllocVec(bufferLength, MEMF_ANY);
+            UBYTE          *buffer = (bufferLength, MEMF_ANY);
             /* FIXME: error checking */
             
             dt.dat_Stamp   = data->lastChanged;
