@@ -106,7 +106,9 @@ web pages are not exactly ... "sexy" :-), fixing the many typos and writing
 documentation about how to write documentation.
 
 Kars de Jong is working on the Linux/m68k port of AROS which allows to run
-binary Amiga software. Some simple programs already work.
+binary Amiga software. Some simple programs already work. When not working
+on Layers, Stefan Berger tries to compile programs from Fish disks and
+AmiNET work on AROS.
 
 Bernhard Fastenrath and Aaron Digulla work on merging AROS with UAE which
 should allow to make UAE faster and run native Amiga programs in an
