@@ -32,9 +32,6 @@
 #define _istype(c,type) \
     (__ctype_b[(int) (c)] & (unsigned short int) (type))
 
-#define isascii(c)      (((c) & ~0x7F) == 0)
-#define toascii(c)      ((c) & 0x7F)
-
 #define __ctype_make_func(__name__, __body__)    \
 __BEGIN_DECLS                          \
 static __inline__ int __name__(int c); \
@@ -54,8 +51,10 @@ __ctype_make_func(isblank,  _istype(c,_ISblank))
 __ctype_make_func(iscntrl,  _istype(c,_IScntrl))
 __ctype_make_func(ispunct,  _istype(c,_ISpunct))
 __ctype_make_func(isalnum,  _istype(c,_ISalnum))
-__ctype_make_func(iscsym,   isalnum(c) || (c & 127) == 0x5F)
-__ctype_make_func(iscsymf,  isalpha(c) || (c & 127) == 0x5F)
+__ctype_make_func(isascii,  (c & ~0x7F) == 0)
+__ctype_make_func(toascii,  c & 0x7F)
+__ctype_make_func(iscsym,   isalnum(c) || toascii(c) == 0x5F)
+__ctype_make_func(iscsymf,  isalpha(c) || toascii(c) == 0x5F)
 __ctype_make_func(toupper,  __ctype_toupper[c])
 __ctype_make_func(tolower,  __ctype_tolower[c])
 
