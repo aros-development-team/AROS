@@ -96,7 +96,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- workbench-linux : workbench-complete
 
-#MM- apps-linux : games Moria3D fish utilities
+#MM- apps-linux : games Moria3D fish utilities contrib
 
 #MM
 clean ::
