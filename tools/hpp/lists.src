@@ -1,6 +1,8 @@
 <REM>
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
+
+    Convert this with: hpp test.inc lists.src > lists.html
 </REM>
 
 <TEMPLATE NAME="$functiontmpl">
