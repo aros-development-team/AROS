@@ -43,7 +43,7 @@
         , PARTITION_BASE_NAME)
 
 #define AddPartition(root, taglist) \
-        LP2(0x42, struct PartitionHandle *, AddPartition, struct PartitionHandle *, root, a1, struct TagItem *, taglist, a1, \
+        LP2(0x42, struct PartitionHandle *, AddPartition, struct PartitionHandle *, root, a1, struct TagItem *, taglist, a2, \
         , PARTITION_BASE_NAME)
 
 #ifndef NO_INLINE_STDARG
