@@ -58,7 +58,7 @@
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
 
-
+//#define kprintf(...)
 
 /* Storage for bitmap object */
 
@@ -70,9 +70,9 @@
 #define RELEASE_HIDD_BM(bm_obj, bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
 		? 0				\
-		: release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase) ) 
-	
-					
+		: release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase) )
+
+
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
 
 
@@ -87,7 +87,13 @@
 	| ((minterm & 0x20) << 1)	\
 	| ((minterm & 0x10) << 3) )  >> 4 )
 
-
+#define TranslateRect(_rect, _dx, _dy) \
+{                                      \
+    (_rect)->MinX += (_dx);            \
+    (_rect)->MinY += (_dy);            \
+    (_rect)->MaxX += (_dx);            \
+    (_rect)->MaxY += (_dy);            \
+}
 
 /* Rastport flag that tells whether or not the driver has been inited */
 
@@ -151,7 +157,7 @@ static LONG pix_write(APTR pr_data
 OOP_AttrBase HiddBitMapAttrBase	= 0;
 OOP_AttrBase HiddGCAttrBase		= 0;
 OOP_AttrBase HiddSyncAttrBase	= 0;
-OOP_AttrBase HiddPixFmtAttrBase	= 0; 
+OOP_AttrBase HiddPixFmtAttrBase	= 0;
 OOP_AttrBase HiddPlanarBMAttrBase	= 0; 
 OOP_AttrBase HiddGfxAttrBase	= 0; 
 OOP_AttrBase HiddFakeGfxHiddAttrBase	= 0;
@@ -227,7 +233,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     	    {
 	        struct shared_driverdata *sdd;
 		struct TagItem gc_tags[] = {
-		    { TAG_DONE, 	0UL} 
+		    { TAG_DONE, 	0UL}
 		};
 		
 		
@@ -266,7 +272,7 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 
     dd = (struct gfx_driverdata *) rp->longreserved[0];
     rp->longreserved[0] = 0;
-    
+
     HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
 
     FreeMem (dd, sizeof(struct gfx_driverdata));
@@ -325,7 +331,7 @@ BOOL init_romfonts(struct GfxBase *GfxBase)
 {
     struct TextFont *tf;
     
-    
+
     tf = AllocMem( sizeof (struct TextFont), MEMF_ANY);
     if (tf)
     {
@@ -1067,20 +1073,18 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     ReturnVoid("driver_BltBitMapRastPort");
 }
 
-
-#define USE_TMP_BM 1
+#define dumprect(rect) \
+        kprintf(#rect " : (%d,%d) - (%d,%d)\n",(rect)->MinX,(rect)->MinY,(rect)->MaxX,(rect)->MaxY)
 
 BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, BOOL UpdateDamageList,
 	BOOL hasClipRegion,
 	struct GfxBase * GfxBase)
 {
-    LONG xCorr1, xCorr2, yCorr1, yCorr2, absdx, absdy, xBlockSize, yBlockSize;
-#if USE_TMP_BM
-    struct BitMap * bm;
-#endif
-    struct Layer * L = rp->Layer;
-    ULONG AllocFlag;
+    struct Layer     *L       = rp->Layer;
+    struct Rectangle  ScrollRect;
+    struct Rectangle  Rect;
+    struct Region     R;
 
     if (!CorrectDriverData (rp, GfxBase))
 	return FALSE;
@@ -1088,388 +1092,236 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     if (0 == dx && 0 == dy)
     	return TRUE;
 
-    if (dx >= 0)
-    	absdx = dx;
-    else
-    	absdx = -dx;
+    ScrollRect.MinX = x1;
+    ScrollRect.MinY = y1;
+    ScrollRect.MaxX = x2;
+    ScrollRect.MaxY = y2;
 
-    if (dy >= 0)
-    	absdy = dy;
-    else
-    	absdy = -dy;
-
-    xBlockSize = x2 - x1 + 1 - absdx;
-    yBlockSize = y2 - y1 + 1 - absdy;
-    /*
-       It is assumed that (x1,y1)-(x2,y2) describe a valid rectangle
-       within the rastport. So any corrections have to be done by
-       ScrollRaster() and ScrollRasterBF()
-    */
-    /*
-       There are four different cases to consider:
-       1) rastport without layer (a screen's rastport)
-       2) rastport with simple-refresh layer
-       3) rastport with smart -refresh layer
-       4) rastport with superbitmap layer
-
-       All cases need a TmpRas. If it's not there it will be allocated by
-       this function.
-    */
-
-    /* Only if the rastport has an incomplete list of rectangles
-       (because of a clipregion) then it is necessary to
-       clear the bitmap when allocating it
-    */
-
-#if USE_TMP_BM
-    if (TRUE == hasClipRegion)
-	AllocFlag = BMF_CLEAR;
-    else
-       AllocFlag = 0;
-
-    bm = AllocBitMap(xBlockSize,
-                     yBlockSize,
-                     GetBitMapAttr(rp->BitMap,BMA_DEPTH),
-                     AllocFlag,
-                     rp->BitMap);
-
-    if (NULL == bm)
-       return FALSE;
-#endif
-
-    if (dx < 0)
+    if (!L)
     {
-	/* move it to the right */
-    	xCorr1 = 0;
-    	xCorr2 = dx;
+        Rect = ScrollRect;
+	TranslateRect(&Rect, -dx, -dy);
+        if (AndRectRect(&ScrollRect, &Rect, &Rect))
+        {
+            BltBitMap(rp->BitMap,
+                      Rect.MinX + dx,
+                      Rect.MinY + dy,
+	              rp->BitMap,
+                      Rect.MinX,
+                      Rect.MinY,
+                      Rect.MaxX - Rect.MinX + 1,
+                      Rect.MaxY - Rect.MinY + 1,
+		      0xc0, /* copy */
+                      0xff,
+                      NULL );
+	}
     }
     else
     {
-    	/* move it to the left */
-    	xCorr1 = dx;
-    	xCorr2 = 0;
-    }
-
-    if (dy < 0)
-    {
-      /* move it down */
-	yCorr1 = 0;
-      	yCorr2 = dy;
-    }
-    else
-    {
-    	/* move it up */
-    	yCorr1 = dy;
-    	yCorr2 = 0;
-    }
-
-    /* must not change x2,x1,y2,y1 here!!! */
-    /* scroll the stuff */
-
-    if (NULL == L)
-    {
-    	/* no layer, so this is a screen */
-
-    	BltBitMap(rp->BitMap,
-                  x1+xCorr1,
-           	  y1+yCorr1,
-	          rp->BitMap,
-                  x1-xCorr2,
-                  y1-yCorr2,
-                  xBlockSize,
-                  yBlockSize,
-                  0xc0, /* copy */
-                  0xff,
-                  NULL );
-
-        /* no need to worry about damage lists here */
-   }
-   else
-   {
-   	LONG xleft, xright, yup, ydown;
-    	/* rastport with layer - yuk! */
-    	/*
-           I will walk through all the layer's cliprects and copy the
-     	   necessary parts to the temporary bitmap and if it's a simple
-           layer I will also collect those parts that come out of a
-           hidden cliprect and add them to a region. Then I will manipulate
-           the region and move it by (dx,dy) towards (0,0) and then
-           subtract all areas within the rectangle that are in hidden
-           cliprects when copying the data back into the layer's cliprects.
-           The result of this will be a region corresponding to the damage
-           created by scrolling areas that were hidden into visible areas.
-           I will add this region to the damage list and set the
-           LAYERREFRESH flag.
-        */
-    	struct ClipRect  *CR;
-    	struct Region    *R;
-    	struct Rectangle  Rect;
-    	struct Rectangle  ScrollRect;
-	struct Rectangle  bounds;
+    	struct ClipRect  *CR, *LastHiddenCR = NULL;
 
 	LockLayerRom(L);
 
-	CR = L->ClipRect;
+	TranslateRect(&ScrollRect, L->bounds.MinX, L->bounds.MinY);
 
-	if((L->Flags & LAYERSIMPLE) && UpdateDamageList)
-        {
-            /*
-             This region should also contain the current damage list in that
-             area.
-             Region R = damagelist AND scrollarea
-            */
-	    if (NULL == (R = CopyRegion(L->DamageList)))
-      	    {
-        	/* not enough memory */
-        	DisposeRegion(R);
-        	UnlockLayerRom(L);
-        	goto failexit;
-            }
+	InitRegion(&R);
 
-	    ScrollRect.MinX = x1;
-	    ScrollRect.MinY = y1;
-	    ScrollRect.MaxX = x2;
-      	    ScrollRect.MaxY = y2;
-
-      	    /* this cannot fail */
-      	    AndRectRegion(R, &ScrollRect);
-	    /* Now Region R contains the damage that is already there before
-               the area has been scrolled at all.
-       	    */
-
-            /* This area must also be cleared from the current damage list. But
-              I do this later as I might run out of memory here somewhere in
-              between...
-            */
+	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	{
+	    if (!SetRegion(L->DamageList, &R))
+	        goto failexit;
 	}
 
-        /* adapt x1,x2,y1,y2 to the cliprect coordinates */
+        #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
+	SortLayerCR(L, dx, dy);
+	#undef LayersBase
 
-        /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
-
-	bounds.MinX = xleft  = x1 + L->bounds.MinX + xCorr1;
-        bounds.MaxX = xright = x2 + L->bounds.MinX + xCorr2;
-        bounds.MinY = yup    = y1 + L->bounds.MinY + yCorr1;
-        bounds.MaxY = ydown  = y2 + L->bounds.MinY + yCorr2;
-
-        /* First read all data out of the source area */
-    	while (NULL != CR)
+	for (CR = L->ClipRect; CR; CR = CR->Next)
     	{
-	    /* Is this a CR to be concerned about at all??? */
-	    if (AndRectRect(&CR->bounds, &bounds, &Rect))
+	    CR->_p1 = LastHiddenCR;
+
+	    if (CR->lobs)
 	    {
-        	/* If this cliprect is hidden and belongs to a simple layer then
-           	   I add the Rect to the Region, otherwise I do a blit into the
-           	   temporary bitmap instead
-        	*/
-        	if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
-        	{
-	  	    /* stegerg: damage Region coords are relative to layer!! */
-	  	    struct Rectangle Rect2;
+		if (LastHiddenCR)
+		    LastHiddenCR->_p2 = CR;
 
-	  	    Rect2.MinX = Rect.MinX - L->bounds.MinX;
-	  	    Rect2.MinY = Rect.MinY - L->bounds.MinY;
-	  	    Rect2.MaxX = Rect.MaxX - L->bounds.MinX;
-	  	    Rect2.MaxY = Rect.MaxY - L->bounds.MinY;
+		LastHiddenCR = CR;
 
-	  	    D(bug("adding (%d,%d) - (%d,%d)\n",Rect2.MinX,Rect2.MinY,Rect2.MaxX,Rect2.MaxY));
+		if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+		{
+		    if (!OrRectRegion(&R, &CR->bounds))
+		        goto failexit;
+		}
+	    }
 
-          	    if (FALSE == OrRectRegion(R, &Rect2))
-          	    {
-            		/* there's still time to undo this operation */
-            		DisposeRegion(R);
-            		UnlockLayerRom(L);
-            		goto failexit;
+	    CR->_p2 = NULL;
+ 	}
+
+
+	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	{
+	    TranslateRect(&R.bounds, -dx, -dy);
+
+	    AndRectRegion(&R, &ScrollRect);
+	}
+
+	for (CR = L->ClipRect; CR; CR = CR->Next)
+    	{
+ 	    int cando = 0;
+
+	    if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	    {
+	        ClearRectRegion(&R, &CR->lobs);
+	    }
+	    else
+	    if (AndRectRect(&ScrollRect, &CR->bounds, &Rect))
+	    {
+		TranslateRect(&Rect, -dx, -dy);
+
+		if (AndRectRect(&ScrollRect, &Rect, &Rect))
+		    cando = 1;
+	    }
+
+	    if (cando)
+	    {
+		/* Rect.Min(X|Y) are the coordinates to wich the rectangle has to be moved
+		   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
+		if (!CR->_p1 && !CR->lobs)
+		{
+		    /* there are no hidden/obscured rectangles in this layer, so everything is very simple */
+		    BltBitMap(rp->BitMap,
+                              Rect.MinX + dx,
+        		      Rect.MinY + dy,
+	          	      rp->BitMap,
+                    	      Rect.MinX,
+                   	      Rect.MinY,
+                  	      Rect.MaxX - Rect.MinX + 1,
+                  	      Rect.MaxY - Rect.MinY + 1,
+			      0xc0, /* copy */
+         		      0xff,
+                 	      NULL );
+		}
+		else
+		{
+		    struct BitMap          *srcbm;
+		    struct RegionRectangle *rr;
+                    struct Region          *RectRegion;
+		    struct Rectangle        Tmp;
+		    struct ClipRect        *HiddCR;
+		    WORD                    corrsrcx, corrsrcy;
+		    BOOL   dosrcsrc;
+
+		    RectRegion = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
+		    if (!RectRegion)
+		        goto failexit;
+
+ 		    if (CR->lobs)
+		    {
+			if (L->Flags & LAYERSUPER)
+		        {
+   		            corrsrcx = - L->bounds.MinX - L->Scroll_X;
+          	            corrsrcy = - L->bounds.MinY - L->Scroll_Y;
+		        }
+			else
+			{
+		            corrsrcx = - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
+		            corrsrcy = - CR->bounds.MinY;
+		        }
+			srcbm = CR->BitMap;
+		    }
+		    else
+		    {
+		        corrsrcx  = 0;
+		        corrsrcy  = 0;
+		        srcbm     = rp->BitMap;
 		    }
 
-		    /* also clear that area in the destination bitmap */
-        	     BltBitMap(bm,
-                               0,
-                               0,
-                               bm,
-                    	       Rect.MinX - xleft,
-                               Rect.MinY - yup,
-                               Rect.MaxX - Rect.MinX + 1,
-                               Rect.MaxY - Rect.MinY + 1,
-                               0x000, /* clear */
-                               0xff,
-                    	       NULL);
+		    for (HiddCR = CR->_p1; HiddCR; HiddCR = HiddCR->_p1)
+		    {
+			if (AndRectRect(&RectRegion->bounds, &HiddCR->bounds, &Tmp))
+			{
+			    if (!(L->Flags & LAYERSIMPLE))
+			    {
+    			        WORD corrdstx, corrdsty;
+
+				if (L->Flags & LAYERSUPER)
+				{
+	                            corrdstx =  - L->bounds.MinX - L->Scroll_X;
+                        	    corrdsty =  - L->bounds.MinY - L->Scroll_Y;
+				}
+				else
+				{
+				    /* Smart layer */
+				    corrdstx =  - HiddCR->bounds.MinX + ALIGN_OFFSET(HiddCR->bounds.MinX);
+				    corrdsty =  - HiddCR->bounds.MinY;
+				}
+
+
+				BltBitMap(srcbm,
+				          Tmp.MinX + corrsrcx + dx,
+					  Tmp.MinY + corrsrcy + dy,
+					  HiddCR->BitMap,
+					  Tmp.MinX + corrdstx,
+					  Tmp.MinY + corrdsty,
+					  Tmp.MaxX - Tmp.MinX + 1,
+                	      	          Tmp.MaxY - Tmp.MinY + 1,
+			      	          0xc0, /* copy */
+         		      	          0xff,
+                 	   	          NULL );
+			    }
+
+			    if (!ClearRectRegion(RectRegion, &Tmp))
+			    {
+			        DisposeRegion(RectRegion);
+				goto failexit;
+			    }
+			}
+		    }
+
+		    if (dosrcsrc = AndRectRect(&CR->bounds, &Rect, &Tmp))
+		    {
+			if (!ClearRectRegion(RectRegion, &Tmp))
+			{
+			    DisposeRegion(RectRegion);
+			    goto failexit;
+			}
+		    }
+
+		    for (rr = RectRegion->RegionRectangle; rr; rr = rr->Next)
+		    {
+
+			BltBitMap(srcbm,
+			          rr->bounds.MinX + RectRegion->bounds.MinX + corrsrcx + dx,
+                	          rr->bounds.MinY + RectRegion->bounds.MinY + corrsrcy + dy,
+	          	          rp->BitMap,
+                	  	  rr->bounds.MinX + RectRegion->bounds.MinX,
+          			  rr->bounds.MinY + RectRegion->bounds.MinY,
+                		  rr->bounds.MaxX - rr->bounds.MinX + 1,
+                	  	  rr->bounds.MaxY - rr->bounds.MinY + 1,
+			      	  0xc0, /* copy */
+         		      	  0xff,
+                 	   	  NULL );
+		    }
+
+		    if (dosrcsrc)
+		    {
+			BltBitMap(srcbm,
+			          Tmp.MinX + corrsrcx + dx,
+                	          Tmp.MinY + corrsrcy + dy,
+	          		  srcbm,
+			          Tmp.MinX + corrsrcx,
+                	          Tmp.MinY + corrsrcy,
+                		  Tmp.MaxX - Tmp.MinX + 1,
+                	  	  Tmp.MaxY - Tmp.MinY + 1,
+			      	  0xc0, /* copy */
+         		      	  0xff,
+                 	   	  NULL );
+
+		    }
+
+		    DisposeRegion(RectRegion);
 		}
-        	else
-        	{
-          	    /* Do the blit into the temporary bitmap */
-          	    /* several cases:
- 		       on hidden area of superbitmap layer, simple layer, smart layer -> can all be treated equally
-             	       - hidden area of a superbitmap layer
-                       - hidden area of simple layer
-                    */
-
-		    if (NULL != CR->lobs)
-          	    {
-            		/* Hidden */
-            	 	if (0 == (L->Flags & LAYERSUPER))
-            		{
-              		    /* a smart layer */
-               		    BltBitMap(CR->BitMap,
-                                      Rect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
-                        	      Rect.MinY - CR->bounds.MinY,
-                                      bm,
-                                      Rect.MinX - xleft,
-                                      Rect.MinY - yup,
-                                      Rect.MaxX-Rect.MinX+1,
-                                      Rect.MaxY-Rect.MinY+1,
-                                      0xc0,
-                                      0xFF,
-                                      NULL);
- 			}
-            		else
-            	        {
-              		    /* a superbitmap layer */
-              		    BltBitMap(CR->BitMap,
-                        	      Rect.MinX - CR->bounds.MinX - L->Scroll_X,
-                        	      Rect.MinY - CR->bounds.MinY - L->Scroll_Y,
-                                      bm,
-                        	      Rect.MinX - xleft,
-                                      Rect.MinY - yup,
-                                      Rect.MaxX-Rect.MinX+1,
-                                      Rect.MaxY-Rect.MinY+1,
-                                      0xc0,
-                                      0xFF,
-                                      NULL);
-            		} /* if .. else .. */
-          	    }
-            	    else
-    		    {
-            		/* copy it out of the rastport's bitmap */
-            		BltBitMap(rp->BitMap,
-                      	          Rect.MinX,
-                      	          Rect.MinY,
-                      	          bm,
-                      	          Rect.MinX - xleft,
-                      	          Rect.MinY - yup,
-                      	          Rect.MaxX - Rect.MinX + 1,
-                      	          Rect.MaxY - Rect.MinY + 1,
-                      	          0x0c0,
-                      	          0xff,
-                      	          NULL);
-           	     } /* if .. else  .. */
-        	} /* if .. else .. */
-    	    } /* if (ClipRect is to be considered at all) */
-
-      	    CR = CR->Next;
-    	} /* while */
-
-        /* (xleft,yup)(xright,ydown) defines the rectangle to copy into */
-
-        /* Move the region, if it's a simple layer  */
-        if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
-    	{
-      	    /* the following could possibly lead to problems when the region
-               R is moved to negative coordinates. Maybe and maybe not.
-             */
-     	    R->bounds.MinX -= dx;
-      	    R->bounds.MinY -= dy;
-      	    R->bounds.MaxX -= dx;
-      	    R->bounds.MaxY -= dy;
-
-	    /* make this region valid again */
-      	    AndRectRegion(R, &ScrollRect);
-
-        }
-
-        bounds.MinX = xleft  -= dx;
-        bounds.MaxX = xright -= dx;
-        bounds.MinY = yup    -= dy;
-        bounds.MaxY = ydown  -= dy;
-
-        /* now copy from the bitmap bm into the destination */
-        CR = L->ClipRect;
-        while (NULL != CR)
-    	{
-            /* Is this a CR to be concerned about at all??? */
-	    if (AndRectRect(&CR->bounds, &bounds, &Rect))
-	    {
-                /*
-           	    If this cliprect is hidden and belongs to a simple layer then
-           	    I subtract the Rect from the Region, otherwise I do a blit
-           	    from the temporary bitmap instead
-        	*/
-        	if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
-        	{
-	  	    /* stegerg: damage Region coords are relative to layer!! */
-	  	    struct Rectangle Rect2;
-
-	  	    Rect2.MinX = Rect.MinX - L->bounds.MinX;
-	  	    Rect2.MinY = Rect.MinY - L->bounds.MinY;
-	  	    Rect2.MaxX = Rect.MaxX - L->bounds.MinX;
-	  	    Rect2.MaxY = Rect.MaxY - L->bounds.MinY;
-
-	  	    D(bug("clearing (%d,%d) - (%d,%d)\n",Rect2.MinX,Rect2.MinY,Rect2.MaxX,Rect2.MaxY));
-          	    ClearRectRegion(R, &Rect2);
-        	}
-        	else
-        	{
-          	    /* Do the blit from the temporary bitmap */
-          	    /* several cases:
-             	       - non hidden area of superbitmap layer, simple layer, smart layer
-                	-> can all be treated equally
-         	       - hidden area of a superbitmap layer
-             	       - hidden area of simple layer
-          	    */
-          	    if (NULL != CR->lobs)
-          	    {
-            		/* Hidden */
-            		if (0 == (L->Flags & LAYERSUPER))
-            	  	{
-              		    /* a smart layer */
-              		    BltBitMap(bm,
-                        	      Rect.MinX - xleft,
-                        	      Rect.MinY - yup,
-                        	      CR->BitMap,
-                        	      Rect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
-                        	      Rect.MinY - CR->bounds.MinY,
-                        	      Rect.MaxX-Rect.MinX+1,
-                        	      Rect.MaxY-Rect.MinY+1,
-                        	      0x0c0,
-                        	      0xff,
-                        	      NULL);
-
-            	        }
-            	        else
-            	        {
-              		    /* a superbitmap layer */
-              		    BltBitMap(bm,
-                                      Rect.MinX - xleft,
-                        	      Rect.MinY - yup,
-                        	      CR->BitMap,
-                        	      Rect.MinX - L->bounds.MinX - L->Scroll_X,
-                        	      Rect.MinY - L->bounds.MinY - L->Scroll_Y,
-                        	      Rect.MaxX - Rect.MinX + 1,
-                        	      Rect.MaxY - Rect.MinY + 1,
-                        	      0xc0,
-                        	      0xff,
-                                      NULL);
-          	    	}
-         	    }
-          	    else
-          	    {
-            	    	/* blit it into the bitmap of the screen */
-            	    	BltBitMap(bm,
-                                  Rect.MinX - xleft,
-                                  Rect.MinY - yup,
-                                  rp->BitMap,
-                                  Rect.MinX,
-                                  Rect.MinY,
-                                  Rect.MaxX - Rect.MinX + 1,
-                                  Rect.MaxY - Rect.MinY + 1,
-                                  0xc0,
-                                  0xff,
-                                  NULL);
-         	    }
-
-                } /* if .. else .. */
 	    }
-	    CR = CR->Next;
         }
 
         if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
@@ -1480,19 +1332,17 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
             /* first clear the damage lists of the scrolled area */
             ClearRectRegion(L->DamageList, &ScrollRect);
 
-            if (R->RegionRectangle)
+            if (R.RegionRectangle)
             {
-                OrRegionRegion(R, L->DamageList);
+                OrRegionRegion(&R, L->DamageList);
                 L->Flags |= LAYERREFRESH;
             }
-            DisposeRegion(R);
         }
 
+failexit:
+        DisposeRegionRectangleList(R.RegionRectangle);
         UnlockLayerRom(L);
     }
-
-failexit:
-    FreeBitMap(bm);
 
     return TRUE;
 
@@ -1502,7 +1352,7 @@ failexit:
 
 void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 {
-    
+
     struct Rectangle rr;
     OOP_Object *gc;
     struct Layer *L = rp->Layer;
@@ -1533,7 +1383,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
     {
         /* No layer, probably a screen, but may be a user inited bitmap */
 	OOP_Object *bm_obj;
-	
+
 
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
@@ -4876,7 +4726,7 @@ ULOCK_PIXBUF
 
 
 
-LONG driver_WriteLUTPixelArray(APTR srcrect, 
+LONG driver_WriteLUTPixelArray(APTR srcrect,
 	UWORD srcx, UWORD srcy,
 	UWORD srcmod, struct RastPort *rp, APTR ctable,
 	UWORD destx, UWORD desty,
