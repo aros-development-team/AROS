@@ -1,3 +1,14 @@
+/*
+    (C) 1997-98 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Code to dynamically load ELF executables and relocate it.
+          Take from dos/internalloadseg_elf.c
+    Lang: english
+
+    1997/12/13: Changed filename to internalloadseg_elf.c
+                Original file was created by digulla.
+*/
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dosasl.h>
@@ -5,7 +16,6 @@
 #include <proto/arossupport.h>
 #include <aros/asmcall.h>
 #include <aros/machine.h>
-#include "dos_intern.h"
 #include <aros/debug.h>
 #include <string.h>
 
