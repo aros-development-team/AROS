@@ -573,7 +573,7 @@ endif
 	fi
 
 $(TOP)/$(CURDIR)/.files-touched:
-	@find . | xargs $(TOUCH) -r configure; \
+	@find . -print0 | xargs -0 $(TOUCH) -r configure; \
 	$(ECHO) YES > $@
 
 ifeq (%(nix),yes)
