@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "mui.h"
 #include "imspec_intern.h"
@@ -428,46 +429,84 @@ VOID zune_gradient_draw
     } /* switch(angle) */
 }
 
+/*************************************************************************
+ Converts a gradient string to a internal image spec
+
+ The format of the string is:
+  (h|H|v|V|<angle>),<start_r>,<start_g>,<start_b>-<end_r>,<end_g>,<end_b>
+ where <angle> is given decimal. The rest represents hexadecimal 32 bit
+ numbers.
+**************************************************************************/
 BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
                                      struct MUI_ImageSpec_intern *spec)
 {
+    LONG converted;
     ULONG angle;
     ULONG start_r, start_g, start_b;
     ULONG end_r, end_g, end_b;
 
     if (!str || !spec) return FALSE;
 
-    if (str[0] == 'h' || str[0] == 'H' || str[0] == 'v' || str[0] == 'V')
+    /* Find out about the gradient angle */
+    switch (str[0])
     {
-	UBYTE orientation;
-        if (sscanf(str, "%c,%8lx,%8lx,%8lx-%8lx,%8lx,%8lx",
-                         &orientation, &start_r, &start_g, &start_b,
-                         &end_r, &end_g, &end_b) < 7)
-	    return FALSE;
-
- 	switch (orientation)
-	{
-            case 'H':
-            case 'h':
-		angle = 90;
+	case    'H':
+	case    'h':
+	        angle = 90;
+	        converted = 1;
 		break;
 
-	    case 'V':
-            case 'v':
+	case 'V':
+	case 'v':
 		angle = 0;
+		converted = 1;
 		break;
 
-	    default:
-	    	return FALSE;
-	}
-    } else
-    {
-        if (sscanf(str, "%ld,%8lx,%8lx,%8lx-%8lx,%8lx,%8lx",
-                         &angle, &start_r, &start_g, &start_b,
-                         &end_r, &end_g, &end_b) < 7)
-	    return FALSE;
+	default:
+		converted = StrToLong((STRPTR)str,(LONG*)&angle);
+		if (converted == -1) return FALSE;
+		break;
     }
 
+    str += converted;
+
+    /* convert the color information */
+    if (*str != ',') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&start_r);
+    if (converted == -1) return FALSE;
+    str += converted;
+
+    if (*str != ',') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&start_g);
+    if (converted == -1) return FALSE;
+    str += converted;
+
+    if (*str != ',') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&start_b);
+    if (converted == -1) return FALSE;
+    str += converted;
+
+    if (*str != '-') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&end_r);
+    if (converted == -1) return FALSE;
+    str += converted;
+
+    if (*str != ',') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&end_g);
+    if (converted == -1) return FALSE;
+    str += converted;
+
+    if (*str != ',') return FALSE;
+    str++;
+    converted = HexToLong((STRPTR)str,&end_b);
+    if (converted == -1) return FALSE;
+
+    /* Fill in the spec */
     spec->u.gradient.angle = angle;
 
     spec->u.gradient.start_rgb[0] = start_r>>24;
@@ -479,15 +518,13 @@ BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
     spec->u.gradient.end_rgb[2] = end_b>>24;
 
     return TRUE;
-
-
 }
 
 VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "7:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
-                 spec->u.gradient.angle,
+    sprintf(buf, "7:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+                 (LONG)spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
                  spec->u.gradient.start_rgb[2]*0x01010101,
@@ -499,7 +536,7 @@ VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
 VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "8:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+    sprintf(buf, "8:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
                  spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
