@@ -37,13 +37,10 @@
 #endif
 
 #else
+
 #define AROS_LIBFUNC_INIT
 #define AROS_LIBBASE_EXT_DECL(a,b) extern a b;
 #define AROS_LIBFUNC_EXIT
-
-typedef unsigned long IPTR;
-typedef long STACKLONG;
-typedef unsigned long STACKULONG;
 
 #endif
 
@@ -55,6 +52,17 @@ typedef unsigned long STACKULONG;
 #endif
 #ifndef EXEC_SEMAPHORES_H
 #include <exec/semaphores.h>
+#endif
+
+
+/* Sometype defs in AROS */
+#ifndef _AROS
+#ifndef _AROS_TYPES_DEFINED
+typedef unsigned long IPTR;
+typedef long STACKLONG;
+typedef unsigned long STACKULONG;
+#define _AROS_TYPES_DEFINED
+#endif
 #endif
 
 /****************************************************************************************/
@@ -152,36 +160,5 @@ struct MUIMasterBase_intern
 #endif
 
 /****************************************************************************************/
-
-#ifndef _AROS
-struct __MUIBuiltinClass {
-    CONST_STRPTR name;
-    CONST_STRPTR supername;
-    ULONG        datasize;
-    ULONG	   (*dispatcher)();
-};
-
-#else
-struct __MUIBuiltinClass {
-    CONST_STRPTR name;
-    CONST_STRPTR supername;
-    ULONG        datasize;
-
-    AROS_UFP3(IPTR, (*dispatcher),
-        AROS_UFPA(Class  *,  cl, A0),
-        AROS_UFPA(Object *, obj, A2),
-        AROS_UFPA(Msg     , msg, A1));
-};
-#endif
-
-#define _between(a,x,b) ((x)>=(a) && (x)<=(b))
-#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
-                          && _between(_mtop(obj) ,(y),_mbottom(obj)))
-
-/* add mask in flags if tag is true, else sub mask */
-#define _handle_bool_tag(flags, tag, mask) \
-((tag) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
-
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 #endif /* MUIMASTER_INTERN_H */

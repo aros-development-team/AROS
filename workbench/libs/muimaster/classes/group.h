@@ -1,8 +1,6 @@
 #ifndef _MUI_CLASSES_GROUP_H
 #define _MUI_CLASSES_GROUP_H
 
-#include "muimaster_intern.h" /* Remove this line!! */
-
 /* Hook message for custom layout */
 
 struct MUI_LayoutMsg
@@ -67,13 +65,13 @@ struct  MUIP_Group_Sort                     { ULONG MethodID; Object *obj[1]; };
 
 /* Methods */
 
-#define MUIM_Group_FindObject               0x80424242 /* Zune */
-struct  MUIP_Group_FindObject               { ULONG MethodID; STACKLONG x, y; };
+//#define MUIM_Group_FindObject               0x80424242 /* Zune */
+//struct  MUIP_Group_FindObject               { ULONG MethodID; STACKLONG x, y; };
 
 /* Attributes */
 
 #define MUIA_Group_Forward    0x80421422 /* V11 .s. BOOL */
 
-extern const struct __MUIBuiltinClass _MUI_Group_desc;
+extern const struct __MUIBuiltinClass _MUI_Group_desc; /* PRIV */
 
 #endif

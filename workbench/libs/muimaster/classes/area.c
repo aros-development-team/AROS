@@ -35,9 +35,10 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
 extern struct Library *MUIMasterBase;
+#include "muimaster_intern.h"
 
-#include "support.h"
 #include "mui.h"
+#include "support.h"
 #include "imspec.h"
 #include "menu.h"
 
