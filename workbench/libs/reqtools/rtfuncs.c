@@ -351,7 +351,7 @@ SAVEDS ASM ULONG RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, hand
 SAVEDS ASM void RTFuncs_rtSetWaitPointer(REGPARAM(a0, struct Window *, window))
 {
     struct TagItem tags[] = { { WA_BusyPointer, TRUE },
-			      { TAG_DONE, NULL } };
+			      { TAG_DONE, 0 } };
 
     SetWindowPointerA(window, (struct TagItem *)&tags);
 }
@@ -431,7 +431,7 @@ SAVEDS ASM VOID RTFuncs_rtUnlockWindow(REGPARAM(a0, struct Window *, window),
     else
     {
 	struct TagItem tags[] = { { WA_Pointer, (IPTR)wLock->rtwl_Pointer },
-				  { TAG_DONE  , NULL } };
+				  { TAG_DONE  , 0 } };
 
 	SetWindowPointerA(window, tags);
 

@@ -49,7 +49,8 @@ APTR ASM SAVEDS FileRequestA (
 {
     GlobData 				*glob;
     struct ReqEntry 			*entry;
-    struct TagItem			*tag, *tstate;
+    struct TagItem			*tag;
+    const struct TagItem *tstate = taglist;
     struct RealFontRequester 		*fontreq;
     struct RealScreenModeRequester 	*scrmodereq = NULL;
     struct DiskfontBase 		*DiskfontBase;
@@ -136,7 +137,6 @@ APTR ASM SAVEDS FileRequestA (
 
 
     /* parse tags */
-    tstate = taglist;
     while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
@@ -834,7 +834,7 @@ ULONG REGARGS LeaveReq (GlobData *glob, char *filename)
 	    /* can't use glob here anymore because it is freed! */
 	    if (flags & FREQF_NOFILES) return ((ULONG)!nodir);
 	    if (!nodir && (filename[0] || allowempty)) return (TRUE);
-	    return (NULL);
+	    return 0;
 	}
 	
 	if (!nodir)

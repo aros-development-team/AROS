@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ReqTools initialization code.
-    Lang: English.
+    ReqTools initialization code.
 */
 
 /****************************************************************************************/
@@ -56,7 +55,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, RTBase)
         
     D(bug("reqtools.library: Inside libinit func\n"));
     
-    return (struct ReqToolsBase *)RTFuncs_Init(RTBase, NULL) != NULL;
+    return RTFuncs_Init((struct ReqToolsBase *) RTBase, NULL) != NULL;
     
     AROS_SET_LIBFUNC_EXIT;
 }
@@ -77,7 +76,7 @@ AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, RTBase)
     
     D(bug("reqtools.library: Inside libopen func\n"));
     
-    return RTFuncs_Open(RTBase, 0) != NULL;
+    return RTFuncs_Open((struct ReqToolsBase *) RTBase, 0) != NULL;
     
     AROS_SET_LIBFUNC_EXIT;
 }
@@ -96,7 +95,7 @@ AROS_SET_LIBFUNC(CloseLib, LIBBASETYPE, RTBase)
 
     D(bug("reqtools.library: Inside libclose func.\n"));
 
-    RTFuncs_Close(RTBase);
+    RTFuncs_Close((struct ReqToolsBase *) RTBase);
     
     return TRUE;
     
@@ -118,7 +117,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, RTBase)
  
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
-    RTFuncs_Expunge(RTBase);
+    RTFuncs_Expunge((struct ReqToolsBase *) RTBase);
     
     return TRUE;
     
