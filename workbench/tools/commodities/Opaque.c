@@ -196,7 +196,12 @@ static void OpenLibs(void)
 
     if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+	catalogPtr = OpenCatalog
+        (
+            NULL, "System/Tools/Commodities.catalog",
+            OC_BuiltInLanguage, (IPTR) "english",
+            TAG_DONE
+        );
     }
     else
 	kprintf("Warning: Can't open locale.library V40!\n");
