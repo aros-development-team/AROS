@@ -29,10 +29,8 @@
 #include <proto/iffparse.h>
 #include <proto/layers.h>
 
-#ifndef _AROS
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
-#endif
 
 #ifdef COMPILE_DATATYPE
 #include <proto/datatypes.h>
@@ -1631,8 +1629,6 @@ STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
     return DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags);
 }
 
-#ifndef _AROS
-
 struct AsyncMethodMsg
 {
     struct Message amm_ExecMessage;
@@ -1643,7 +1639,9 @@ struct AsyncMethodMsg
 /* SAVEDS or simliar not needed */
 ULONG asyncmethodfunc(void)
 {
+#ifndef _AROS
     struct Library *SysBase = *((struct Library **) 4L);
+#endif
     struct Process *proc = (struct Process *) FindTask(NULL);
     Object *obj;
     Msg msg;
@@ -1694,8 +1692,6 @@ STATIC struct Process *DoAsyncMethod(Class *cl,Object *obj,Msg msg,ULONG tag1,..
 {
     return DoAsyncMethodA(cl,obj,msg,(struct TagItem *) &tag1);
 }
-
-#endif
 
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *msg)
 {
@@ -2305,8 +2301,6 @@ STATIC VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
     PrintText(td, msg->dtp_PIO);
 }
 
-#ifndef _AROS
-
 STATIC LONG strseg(struct Line *line, STRPTR str, LONG slen)
 {
     STRPTR text = line->ln_Text;
@@ -2450,14 +2444,19 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
     if ((ReqToolsBase = OpenLibrary("reqtools.library",38)))
     {
 	struct GadgetInfo *ginfo = &msg->dttgs_GInfo;
-	ULONG retval = rtGetString(td->search_buffer,sizeof(td->search_buffer),
-				   "Text Datatype Search String", NULL,
-				   RT_Window     ,ginfo->gi_Window,
-				   RT_ReqPos     ,REQPOS_CENTERWIN,
-				   RT_LockWindow ,TRUE,
-				   RT_Underscore, '_',
-				   RTGS_GadFmt, "_Ok|_From Top|_From Bottom|_Cancel",
-				   TAG_DONE);
+	struct TagItem tags[] =
+	{
+  	    {RT_Window     	, ginfo->gi_Window			},
+	    {RT_ReqPos     	, REQPOS_CENTERWIN			},
+	    {RT_LockWindow 	, TRUE					},
+	    {RT_Underscore	, '_'					},
+	    {RTGS_GadFmt	, "_Ok|_From Top|_From Bottom|_Cancel"	},
+	    {TAG_DONE							}
+	};
+	
+	ULONG retval = rtGetStringA(td->search_buffer,sizeof(td->search_buffer),
+				   "Text Datatype Search String", NULL, tags);
+				 
 	CloseLibrary(ReqToolsBase);
 
 	if (retval)
@@ -2486,8 +2485,6 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
     if (FindTask(NULL) == (struct Task*)td->search_proc)
     	td->search_proc = NULL;
 }
-
-#endif
 
 #ifdef _AROS
 AROS_UFH3S(IPTR, DT_Dispatcher,
@@ -2597,8 +2594,6 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	}
 	break;
 
-#ifndef _AROS
-
     case DTM_TRIGGER:
 	{
    	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
@@ -2650,7 +2645,6 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 		D(bug("Dispatcher called (MethodID: DTTM_SEARCH_PREV)!\n"));
 		DT_SearchString(cl,o,-1,(struct dttSearchText *) msg);
 		break;
-#endif
 
     default:
 	D(bug("Dispatcher called (MethodID: %ld=0x%lx)!\n", *msg, *msg));

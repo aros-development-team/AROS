@@ -22,6 +22,10 @@ FUNCTIONS := \
 workbench-classes-datatypes-text : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-datatypes-text-quick :
+workbench-classes-datatypes-text-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)

@@ -66,12 +66,10 @@ struct Text_Data
     LONG 		lastsecs;		/* For Doubleclick check			*/
     LONG 		lastmics;
 
-#ifndef _AROS
     char		search_buffer[128];
     struct Process	*search_proc;
     struct dttGetString msg;
     int		search_line;
-#endif
 };
 
 
