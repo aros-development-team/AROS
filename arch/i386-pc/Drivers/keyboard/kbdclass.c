@@ -1,10 +1,12 @@
 /*
-    (C) 1999-2001 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The main keyboard class.
     Lang: English.
 */
+
+/****************************************************************************************/
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -25,21 +27,23 @@
 #include <hardware/custom.h>
 
 #include <devices/inputevent.h>
+#include <devices/rawkeycodes.h>
 
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 1 
+#define DEBUG 0 
 #include <aros/debug.h>
+
+/****************************************************************************************/
 
 /* Predefinitions */
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 void kbd_updateleds();
-int kbd_reset(void);
+int  kbd_reset(void);
 
-unsigned char handle_kbd_event(void);
 void kb_wait(void);
 void kbd_write_cmd(int cmd);
 void aux_write_ack(int val);
@@ -50,150 +54,41 @@ void kbd_clear_input(void);
 int  kbd_wait_for_input(void);
 int  kbd_read_data(void);
 
-/* End of predefinitions */
+/****************************************************************************************/
 
-/* !!!!!!!!!! Remove all .data from file
- */
+#undef HiddKbdAB
 #define HiddKbdAB   (XSD(cl)->hiddKbdAB)
-/*
-static OOP_AttrBase HiddKbdAB;
-
-static struct abdescr attrbases[] =
-{
-    { IID_Hidd_Kbd, &HiddKbdAB },
-    { NULL, NULL }
-};
-*/
 
 struct kbd_data
 {
-    VOID (*kbd_callback)(APTR, UWORD);
-    APTR callbackdata;
+    VOID    (*kbd_callback)(APTR, UWORD);
+    APTR    callbackdata;
 
-    ULONG kbd_keystate;     /* State of special keys */
-    UWORD le;               /* Last event */
+    ULONG   kbd_keystate;
+    WORD    prev_amigacode;
+    UWORD   prev_keycode;
 };
 
-static const __attribute__((section(".text"))) struct _keytable
-{
-    ULONG  keysym;
-    ULONG  hiddcode;
-}
-keytable[] =
-{
-    {K_Enter,       0x44 },
-    {K_Right,       0x4e },
-    {K_Up,          0x4c },
-    {K_Left,        0x4f },
-    {K_Down,        0x4d },
-    {K_KP_Enter,    0x43 },
-    {K_KP_Decimal,  0x3c },
-    {K_KP_Sub,      0x4a },
-    {K_KP_Add,      0x5e },
-    {K_KP_Multiply, 0x5d },
-    {K_KP_Divide,   0x5c },
-    {K_KP_0,        0x0f },
-    {K_KP_1,        0x1d },
-    {K_KP_2,        0x1e },
-    {K_KP_3,        0x1f },
-    {K_KP_4,        0x2d },
-    {K_KP_5,        0x2e },
-    {K_KP_6,        0x2f },
-    {K_KP_7,        0x3d },
-    {K_KP_8,        0x3e },
-    {K_KP_9,        0x3f },
-    
-    {K_F1,          0x50 },
-    {K_F2,          0x51 },
-    {K_F3,          0x52 },
-    {K_F4,          0x53 },
-    {K_F5,          0x54 },
-    {K_F6,          0x55 },
-    {K_F7,          0x56 },
-    {K_F8,          0x57 },
-    {K_F9,          0x58 },
-    {K_F10,         0x59 },
-    {K_F11,         0x66 },     /* LAMIGA */
-    {K_F12,         0x67 },     /* RAMIGA */
-    {K_Home,        0x5f },     /* HELP */
-    
-    {K_A,           0x20 },
-    {K_B,           0x35 },
-    {K_C,           0x33 },
-    {K_D,           0x22 },
-    {K_E,           0x12 },
-    {K_F,           0x23 },
-    {K_G,           0x24 },
-    {K_H,           0x25 },
-    {K_I,           0x17 },
-    {K_J,           0x26 },
-    {K_K,           0x27 },
-    {K_L,           0x28 },
-    {K_M,           0x37 },
-    {K_N,           0x36 },
-    {K_O,           0x18 },
-    {K_P,           0x19 },
-    {K_Q,           0x10 },
-    {K_R,           0x13 },
-    {K_S,           0x21 },
-    {K_T,           0x14 },
-    {K_U,           0x16 },
-    {K_V,           0x34 },
-    {K_W,           0x11 },
-    {K_X,           0x32 },
-    {K_Y,           0x15 },
-    {K_Z,           0x31 },
-    
-    {K_1,           0x01 },
-    {K_2,           0x02 },
-    {K_3,           0x03 },
-    {K_4,           0x04 },    
-    {K_5,           0x05 },
-    {K_6,           0x06 },
-    {K_7,           0x07 },
-    {K_8,           0x08 },
-    {K_9,           0x09 },
-    {K_0,           0x0A },
-    
-    {K_Period,      0x39 },
-    {K_Comma,       0x38 },
-                        
-    {K_Backspace,   0x41 },
-    {K_Del,         0x46 },
-    {K_Space,       0x40 },
-    {K_LShift,      0x60 },
-    {K_RShift,      0x61 },
-    {K_LAlt,        0x64 },
-    {K_RAlt,        0x65 },
-    {K_LCtrl,       0x63 },
-    {K_RCtrl,       0x63 },
-    {K_LMeta,       0x66 },	/* Left Win key = LAmi */
-    {K_RMeta,       0x67 },	/* Right Win key = RAmi */
-    {K_Escape,      0x45 },
-    {K_Tab,         0x42 },
-    /* New stuff */
-    {K_CapsLock,    0x62 },
-    {K_LBracket,    0x1a },
-    {K_RBracket,    0x1b },
-    {K_Semicolon,   0x29 },
-    {K_Slash,       0x3a },
-    {K_BackSlash,   0x0d },
-    {K_Quote,       0x2a },
-    {K_BackQuote,   0x00 },
-    {K_Minus,       0x0b },
-    {K_Equal,       0x0c },
+/****************************************************************************************/
 
-    {K_ResetRequest,0x78 },
-    {0, -1 }
-};
+#define NOKEY -1
 
-/***** Kbd::New()  ***************************************/
+/****************************************************************************************/
+
+#include "stdkeytable.h"
+
+/****************************************************************************************/
+
+#include "e0keytable.h"
+
+/****************************************************************************************/
+
 static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
-    APTR callback = NULL;
-    APTR callbackdata = NULL;
+    APTR    	    callback = NULL;
+    APTR    	    callbackdata = NULL;
+    BOOL    	    has_kbd_hidd = FALSE;
     
     EnterFunc(bug("Kbd::New()\n"));
  
@@ -208,8 +103,9 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
-    D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
-    while ((tag = NextTagItem(&tstate)))
+    D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
+    
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         ULONG idx;
 	
@@ -233,6 +129,7 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         }
 	    
     } /* while (tags to process) */
+    
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
@@ -241,9 +138,11 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
-        data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
-        data->callbackdata = callbackdata;
-
+        data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
+        data->callbackdata   = callbackdata;
+    	data->prev_amigacode = -2;
+	data->prev_keycode   = 0;
+	
         /* Get irq.hidd */
 
         if ((XSD(cl)->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
@@ -265,28 +164,25 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
 
-//kprintf("kbdclass: calling disable/kbd_clear_input/kbd_reset/enable()\n");
             Disable();
 	    kbd_clear_input();
 	    kbd_reset();		/* Reset the keyboard */
-//kprintf("kbdclass: updateleds \n");
             kbd_updateleds(0);
             Enable();
 
-//kprintf("kbdclass:adding irqhandler \n");
-            
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
             ObtainSemaphore(&XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
             ReleaseSemaphore(&XSD(cl)->sema);
 
-        }
-    }
-//kprintf("kbdclass: exit\n");
+        } /* if ((XSD(cl)->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL))) */
+	
+    } /* if (o) */
+    
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
-/***** X11Kbd::HandleEvent()  ***************************************/
+/****************************************************************************************/
 
 static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
@@ -299,13 +195,16 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_Handl
     ReturnVoid("Kbd::HandleEvent");
 }
 
+
+/****************************************************************************************/
+
 #undef XSD
 #define XSD(cl) xsd
 
-/********************  init_kbdclass()  *********************************/
-
 #define NUM_ROOT_METHODS 1
 #define NUM_KBD_METHODS 1
+
+/****************************************************************************************/
 
 OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
 {
@@ -313,38 +212,38 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
     
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd,  &xsd->hiddKbdAB},
-        {NULL, NULL }
+        {IID_Hidd_Kbd	, &xsd->hiddKbdAB   },
+        {NULL	    	, NULL      	    }
     };
     
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-        {OOP_METHODDEF(kbd_new),            moRoot_New},
-        {NULL, 0UL}
+        {OOP_METHODDEF(kbd_new) , moRoot_New},
+        {NULL	    	    	, 0UL	    }
     };
     
     struct OOP_MethodDescr kbdhidd_descr[NUM_KBD_METHODS + 1] = 
     {
-        {OOP_METHODDEF(kbd_handleevent),    moHidd_Kbd_HandleEvent},
-        {NULL, 0UL}
+        {OOP_METHODDEF(kbd_handleevent) , moHidd_Kbd_HandleEvent},
+        {NULL	    	    	    	, 0UL	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr,    IID_Root,           NUM_ROOT_METHODS},
-        {kbdhidd_descr, IID_Hidd_HwKbd,     NUM_KBD_METHODS},
-        {NULL, NULL, 0}
+        {root_descr 	, IID_Root  	, NUM_ROOT_METHODS  },
+        {kbdhidd_descr	, IID_Hidd_HwKbd, NUM_KBD_METHODS   },
+        {NULL	    	, NULL	    	, 0 	    	    }
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        { aMeta_SuperID,                (IPTR)CLID_Hidd },
-        { aMeta_InterfaceDescr,         (IPTR)ifdescr},
-        { aMeta_InstSize,               (IPTR)sizeof (struct kbd_data) },
-        { aMeta_ID,                     (IPTR)CLID_Hidd_HwKbd },
-        {TAG_DONE, 0UL}
+        { aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	},
+        { aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	},
+        { aMeta_InstSize    	, (IPTR)sizeof (struct kbd_data)},
+        { aMeta_ID  	    	, (IPTR)CLID_Hidd_HwKbd     	},
+        { TAG_DONE  	    	    	    	    	    	}
     };
 
     EnterFunc(bug("KbdHiddClass init\n"));
@@ -369,19 +268,22 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
                 cl = NULL;
             }
         }
+	
         /* Don't need this anymore */
         OOP_ReleaseAttrBase(IID_Meta);
     }
+    
     ReturnPtr("init_kbdclass", OOP_Class *, cl);
 }
 
-/*************** free_kbdclass()  **********************************/
+/****************************************************************************************/
+
 VOID free_kbdclass(struct kbd_staticdata *xsd)
 {
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd,  &xsd->hiddKbdAB},
-        {NULL, NULL }
+        {IID_Hidd_Kbd	, &xsd->hiddKbdAB   },
+        {NULL	    	, NULL      	    }
     };
     
     EnterFunc(bug("free_kbdclass(xsd=%p)\n", xsd));
@@ -395,10 +297,11 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 
         OOP_ReleaseAttrBases(attrbases);
     }
+    
     ReturnVoid("free_kbdclass");
 }
 
-/************************* Keyboard Interrupt ****************************/
+/****************************************************************************************/
 
 #define WaitForInput        		\
     ({ int i = 0,dummy;     		\
@@ -412,6 +315,8 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
          i++;           \
        }})
 
+/****************************************************************************************/
+
 #define LCTRL	0x00000008
 #define RCTRL	0x00000010
 #define LALT	0x00000020
@@ -422,6 +327,8 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 #define RMETA	0x00000400
 
 #warning Old place of kbd_reset
+
+/****************************************************************************************/
 
 void kbd_updateleds(ULONG kbd_keystate)
 {
@@ -434,211 +341,283 @@ void kbd_updateleds(ULONG kbd_keystate)
     key=kbd_read_input();
 }
 
+/****************************************************************************************/
+
 #undef SysBase
 #define SysBase (hw->sysBase)
 
+/****************************************************************************************/
+
 void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
-    UBYTE   keycode;        /* Recent Keycode get */
-    UBYTE   info;           /* Data from info reg */
-    UWORD   event;          /* Event sent to handleevent method */
-
     struct kbd_data *data = (struct kbd_data *)irq->h_Data;
-    ULONG kbd_keystate = data->kbd_keystate;
-    UWORD le = data->le;
-    
-    unsigned int work = 10000;
+    ULONG   	    kbd_keystate = data->kbd_keystate;
+    UBYTE   	    keycode;        /* Recent Keycode get */
+    UBYTE   	    downkeycode;
+    UBYTE   	    releaseflag;
+    UBYTE   	    info = 0;       /* Data from info reg */
+    UWORD   	    event;          /* Event sent to handleevent method */
+    WORD    	    amigacode;
+    WORD    	    work = 10000;
 
-//kprintf("ki: {\n");    
-    info = kbd_read_status();
-
-    while ((info & KBD_STATUS_OBF))     	/* data from information port */
+    D(bug("ki: {\n")); 
+   
+    for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
     {
-        /* Ignore errors and messages for mouse */
-        if (!(info & (KBD_STATUS_GTO | KBD_STATUS_PERR | KBD_STATUS_MOUSE_OBF)))
-        {
-            keycode = kbd_read_input();
+    	/* data from information port */
 	
-          if (keycode==0xe0)              /* Special key */
-          {
-	    keycode = kbd_wait_for_input();
-            if (keycode==0x2a)          /* Shift modifier - we can skip it */
-            {
-		keycode = kbd_wait_for_input();
-		keycode = kbd_wait_for_input();
-            }
-            event=0x4000|keycode;   /* set event to send */
-            if (event==0x40aa)      /* If you get something like this... */
-            {                       /* Special Shift up.... */
-                //return -1;        /* Treat it as NoKey and don't let */
-                info = kbd_read_status();
-                continue;
-            }                       /* Other interrupts see it */
-        }
-        else if (keycode==0xe1)     /* Pause key */
-        {
-	    keycode = kbd_wait_for_input();
-	    keycode = kbd_wait_for_input();
-	    keycode = kbd_wait_for_input();
-	    keycode = kbd_wait_for_input();
-	    keycode = kbd_wait_for_input();
+    	if (info & KBD_STATUS_MOUSE_OBF)
+	{
+	    /*
+	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
+	    ** if we break out of while loop here :-\
+	    */	    
 	    
-            event=K_Pause;
-        }
-        else if (keycode==KBD_REPLY_ACK)
-        {
-            //return -1;		/* Treat it as NoKey */
-            D(bug("Kbd: Gottt Keyboard ACK!!!\n"));
-            info = kbd_read_status();
-            continue;
-        }
-        else if (keycode==KBD_REPLY_RESEND)
-        {
-            /* supposed to resend the command */
-            D(bug("Kbd: Got Resend command from Keyboard!\n"));
-            info = kbd_read_status();
-            continue;
-        }	
-        else event=keycode;
-        if ((event==le) && (
-            le==K_KP_Numl || le==K_Scroll_Lock || le==K_CapsLock ||
-    	    le==K_LShift || le==K_RShift || le==K_LCtrl || le==K_RCtrl ||
-            le==K_LAlt || le==K_RAlt || le==K_LMeta || le==K_RMeta))
-        {
-            //return -1;	/* Do not repeat shift pressed or something like this */
-            continue;
-        }		/* Just forgot about interrupt */
+	    break;
+	}
+	
+        keycode = kbd_read_input();
+
+    	D(bug("ki: keycode %d (%x)\n", keycode, keycode));
+	
+	if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
+	{
+            /* Ignore errors and messages for mouse -> eat status/error byte */
+	    continue;
+	}
+
+    	if ((keycode == KBD_REPLY_ACK) || (keycode == KBD_REPLY_RESEND))
+	{
+	    /* Ignore these */
+	    continue;
+	}
+		
+	if ((keycode == 0xE0) || (keycode == 0xE1))
+	{
+	    /* Extended keycodes: E0 gets followed by one code, E1 by two */
+	    data->prev_keycode = keycode;
+	    continue;
+	}
+	
+	if ((keycode == 0x00) || (keycode == 0xFF))
+	{
+	    /* 00 is error. FF is sent by some keyboards -> ignore it. */
+	    data->prev_keycode = 0;
+	    continue;
+	}
+		
+	amigacode = NOKEY;
+    	event = 0;
+	
+    	downkeycode = keycode & 0x7F;
+	releaseflag = keycode & 0x80;
+	
+	if (data->prev_keycode)
+	{
+	    if (data->prev_keycode == 0xE0)
+	    {
+	    	data->prev_keycode = 0;
+    	    	event = 0x4000 | keycode;	    
+
+		if (downkeycode < NUM_E0KEYS)
+		{
+		    amigacode = e0_keytable[downkeycode];
+		    if (amigacode != NOKEY) amigacode |= releaseflag;
+		}
+				
+	    } /* if (data->prev_keycode == 0xE0) */
+	    else
+	    {
+	    	/* Check Pause key: 0xE1 0x1D 0x45   0xE1 0x9D 0xC5 */
+		
+	    	if ((data->prev_keycode == 0xE1) && (downkeycode == 0x1D))
+		{
+		    /* lets remember, that we still need third key */
+		    data->prev_keycode = 0x1234;
+		    continue;
+		}
+		else if ((data->prev_keycode == 0x1234) && (downkeycode == 0x45))
+		{
+		    /* Got third key and yes, it is Pause */
+		    
+		    amigacode = 0x6E | releaseflag;
+		    data->prev_keycode = 0;
+		}
+		else
+		{
+		    /* Unknown */
+		    data->prev_keycode = 0;
+		    continue;
+		}
+		
+	    } /* if (data->prev_keycode == 0xE0) else ... */
+	    
+	} /* if (data->prev_keycode) */
+	else
+	{
+	    /* Normal single byte keycode */
+	    
+	    event = keycode;
+	    
+	    if (downkeycode < NUM_STDKEYS)
+	    {
+		amigacode = std_keytable[downkeycode];
+		if (amigacode != NOKEY) amigacode |= releaseflag;
+	    }	    
+	}
+	
         switch(event)
         {
             case K_KP_Numl:
                 kbd_keystate^=0x02;	/* Turn Numlock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+		
             case K_Scroll_Lock:
                 kbd_keystate^=0x01;	/* Turn Scrolllock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+		
             case K_CapsLock:
                 kbd_keystate^=0x04;	/* Turn Capslock bit on */
                 kbd_updateleds(kbd_keystate);
                 break;
+		
             case K_LShift:
                 kbd_keystate|=LSHIFT;
                 break;
+		
             case (K_LShift|0x80):
                 kbd_keystate&=~LSHIFT;
                 break;
+		
             case K_RShift:
                 kbd_keystate|=RSHIFT;
                 break;
+		
             case (K_RShift|0x80):
                 kbd_keystate&=~RSHIFT;
                 break;
+		
             case K_LCtrl:
                 kbd_keystate|=LCTRL;
                 break;
+		
             case (K_LCtrl|0x80):
                 kbd_keystate&=~LCTRL;
                 break;
+		
             case K_RCtrl:
                 kbd_keystate|=RCTRL;
                 break;
+		
             case (K_RCtrl|0x80):
                 kbd_keystate&=~RCTRL;
                 break;
+		
             case K_LMeta:
                 kbd_keystate|=LMETA;
                 break;
+		
             case (K_LMeta|0x80):
                 kbd_keystate&=~LMETA;
                 break;
+		
             case K_RMeta:
                 kbd_keystate|=RMETA;
                 break;
+		
             case (K_RMeta|0x80):
                 kbd_keystate&=~RMETA;
                 break;
+		
             case K_LAlt:
                 kbd_keystate|=LALT;
                 break;
+		
             case (K_LAlt|0x80):
                 kbd_keystate&=~LALT;
                 break;
+		
             case K_RAlt:
                 kbd_keystate|=RALT;
                 break;
+		
             case (K_RAlt|0x80):
                 kbd_keystate&=~RALT;
                 break;
-        }
-        data->le=event;
-        if ((kbd_keystate & (LCTRL|LMETA|RMETA))==(LCTRL|LMETA|RMETA))
-            event=K_ResetRequest;
-        if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
+
+        } /* switch(event) */
+
+        if ((kbd_keystate & (LCTRL|LMETA|RMETA)) == (LCTRL|LMETA|RMETA))
+	{
+	    amigacode = 0x78;
+	}
+
+    	D(bug("ki: amigacode %d (%x) last %d (%x)\n", amigacode, amigacode, data->prev_amigacode, data->prev_amigacode));
 
         /* Update keystate */
         data->kbd_keystate = kbd_keystate;
-        
-        /* Translate code into Amiga-like code */
-        {
-            long result = -1;
-            short t;
-            UBYTE KeyUpFlag;
 
-            KeyUpFlag=(UBYTE)event & 0x80;
-            event &= ~(0x80);
+        if (amigacode == 0x78)    // Reset request
+            ColdReboot();
 
-            for (t=0; keytable[t].hiddcode != -1; t++)
-            {
-                if (event == keytable[t].keysym)
-                {
-                    result = keytable[t].hiddcode;
-                    result|= KeyUpFlag;
-                    break;
-                }
-            }
-            if (result == -1)
-            {
-                result = event & 0xffff;
-                result |= KeyUpFlag;
-            }
+    	if (amigacode == NOKEY) continue;
+	
+    	if (amigacode == data->prev_amigacode)
+	{
+	    /*
+	    ** Must be a repeated key. Ignore it, because we have our
+	    ** own kbd repeating in input.device
+	    */	    
+	    continue;
+	}
+	
+	data->prev_amigacode = amigacode;
+	
+	D(bug("ki: ********************* c %d (%x)\n", amigacode, amigacode));
 
-            if (result == 0x78)    // Reset request
-                ColdReboot();
-                      
-	    //kprintf("ki: c %d (%x)\n", result, result);
-	                         
-            /* Pass the code to handler */
-            data->kbd_callback(data->callbackdata, result);
-        }
-      } else break;
+        /* Pass the code to handler */
+        data->kbd_callback(data->callbackdata, amigacode);
+			  	
+	/* Protect as from forever loop */
+	if (!--work)
+	{
+            D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+            break;
+	}
+      
+    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
-      info = kbd_read_status();
-
-      /* Protect as from forever loop */
-      if (!--work)
-      {
+    if (!work)
+    {
         D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
-        break;
-      }
-    } /* while data can be read */
-
+    }
+    
     //return 0;	/* Enable processing other intServers */
-//kprintf("ki: }\n");
+
+    D(bug("ki: }\n"));
+
     return;
 }
 
-#ifdef SysBase
+
+/****************************************************************************************/
+
 #undef SysBase
-#endif /* SysBase */
 #define SysBase (*(struct ExecBase **)4UL)
 
 #warning This should go somewhere higher but D(bug()) is not possible there
+
+/****************************************************************************************/
 
 /*
  * Please leave this routine as is for now.
  * It works and that is all that matters right now.
  */
+
+/****************************************************************************************/
+
 int kbd_reset(void)
 {
     UBYTE status;
@@ -647,7 +626,7 @@ int kbd_reset(void)
 
     if (kbd_wait_for_input() != 0x55)
     {
-      return FALSE;
+        return FALSE;
     }
 
     kbd_write_command_w(KBD_CTRLCMD_KBD_TEST);
@@ -708,3 +687,6 @@ int kbd_reset(void)
 
     return TRUE;
 }
+
+/****************************************************************************************/
+
