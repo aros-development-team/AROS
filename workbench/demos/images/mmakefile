@@ -5,7 +5,7 @@ IMAGES	    := ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES  := $(foreach f,$(IMAGES),$(f)0.h $(f)1.h)
 
 #MM
-demo-setup : $(IMAGEFILES)
+demos-images-setup : $(IMAGEFILES)
 	@$(NOP)
 
 %.h : %.dat datfilt.awk
