@@ -32,177 +32,177 @@ struct Library *MUIMasterBase;
 
 int main(void)
 {
-	Object *app, *win, *iconCon, *vert, *horiz;
-	Object *strip;
-	struct MUI_CustomClass *iconContainerClass;
-	BOOL running=TRUE;
-	ULONG signals=0;
-	struct Screen *screen;
-	struct NewMenu *menuDat;
+    Object *app, *win, *iconCon, *vert, *horiz;
+    Object *strip;
+    struct MUI_CustomClass *iconContainerClass;
+    BOOL running=TRUE;
+    ULONG signals=0;
+    struct Screen *screen;
+    struct NewMenu *menuDat;
 /*
-	struct NewMenu menuDat[]=
-	{
-		{NM_TITLE, "AROS", NULL, 0, 0, 0},//0
-		{NM_ITEM, "Quit", "Q", 0, 0, 0},//1
-		{NM_TITLE, "Window", NULL, 0, 0, 0},//0
-		{NM_ITEM, "Close", "K", 0, 0, 0},// bit 0
-		{NM_ITEM, "View by", NULL, 0, 0, 0},// bit 1
-		{NM_SUB, "Large icons", NULL, CHECKED|CHECKIT, ((1<<1)|(1<<2)), 0},// bit 0
-		{NM_SUB, "Small icons", NULL, CHECKIT, ((1<<0)|(1<<2)), 0},//1
-		{NM_SUB, "Detail", NULL, CHECKIT, ((1<<0)|(1<<1)), 0},//2
-		{NM_TITLE, "Icon", NULL, 0, 0, 0},//5
-		{NM_ITEM, "Open", "O", 0, 0, 0},//6
-		{NM_END, NULL, NULL, 0, 0, 0}//7
-	};
+    struct NewMenu menuDat[]=
+    {
+        {NM_TITLE, "AROS", NULL, 0, 0, 0},//0
+        {NM_ITEM, "Quit", "Q", 0, 0, 0},//1
+        {NM_TITLE, "Window", NULL, 0, 0, 0},//0
+        {NM_ITEM, "Close", "K", 0, 0, 0},// bit 0
+        {NM_ITEM, "View by", NULL, 0, 0, 0},// bit 1
+        {NM_SUB, "Large icons", NULL, CHECKED|CHECKIT, ((1<<1)|(1<<2)), 0},// bit 0
+        {NM_SUB, "Small icons", NULL, CHECKIT, ((1<<0)|(1<<2)), 0},//1
+        {NM_SUB, "Detail", NULL, CHECKIT, ((1<<0)|(1<<1)), 0},//2
+        {NM_TITLE, "Icon", NULL, 0, 0, 0},//5
+        {NM_ITEM, "Open", "O", 0, 0, 0},//6
+        {NM_END, NULL, NULL, 0, 0, 0}//7
+    };
 */
-	struct TagItem icTags[6];
-	ULONG inputResult;
+    struct TagItem icTags[6];
+    ULONG inputResult;
 
-	MUIMasterBase=OpenLibrary("muimaster.library", 0);
-	if(!MUIMasterBase)
-		printf("could not open muimaster.library\n");
-	DesktopBase=OpenLibrary("desktop.library", 0);
-	if(!DesktopBase)
-		printf("could not open desktop.library\n");
+    MUIMasterBase=OpenLibrary("muimaster.library", 0);
+    if(!MUIMasterBase)
+        printf("could not open muimaster.library\n");
+    DesktopBase=OpenLibrary("desktop.library", 0);
+    if(!DesktopBase)
+        printf("could not open desktop.library\n");
 
-	menuDat=BuildDesktopMenus();
-	if(!menuDat)
-		kprintf("EEK! EEKK! Menu ERROR!!!\n");
+    menuDat=BuildDesktopMenus();
+    if(!menuDat)
+        kprintf("EEK! EEKK! Menu ERROR!!!\n");
 
-	screen=LockPubScreen(NULL);
+    screen=LockPubScreen(NULL);
 
-	horiz=PropObject,
-		MUIA_Prop_Horiz, TRUE,
-		MUIA_Prop_Entries, 0,
-		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Bottom,
-		End;
-	vert=PropObject,
-		MUIA_Prop_Horiz, FALSE,
-		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
-		End;
+    horiz=PropObject,
+        MUIA_Prop_Horiz, TRUE,
+        MUIA_Prop_Entries, 0,
+        MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Bottom,
+        End;
+    vert=PropObject,
+        MUIA_Prop_Horiz, FALSE,
+        MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
+        End;
 
-	icTags[0].ti_Tag=MUIA_InnerLeft;
-	icTags[0].ti_Data=0;
-	icTags[1].ti_Tag=MUIA_InnerTop;
-	icTags[1].ti_Data=0;
-	icTags[2].ti_Tag=MUIA_InnerBottom;
-	icTags[2].ti_Data=0;
-	icTags[3].ti_Tag=MUIA_InnerRight;
-	icTags[3].ti_Data=0;
-	icTags[4].ti_Tag=MUIA_FillArea;
-	icTags[4].ti_Data=FALSE;
-//	icTags[1].ti_Tag=ICOA_Directory;
-//	icTags[1].ti_Data="C:";
-//	icTags[2].ti_Tag=ICA_VertScroller;
-//	icTags[2].ti_Data=vert;
-//	icTags[3].ti_Tag=ICA_HorizScroller;
-//	icTags[3].ti_Data=horiz;
-	icTags[5].ti_Tag=TAG_END;
-	icTags[5].ti_Data=0;
+    icTags[0].ti_Tag=MUIA_InnerLeft;
+    icTags[0].ti_Data=0;
+    icTags[1].ti_Tag=MUIA_InnerTop;
+    icTags[1].ti_Data=0;
+    icTags[2].ti_Tag=MUIA_InnerBottom;
+    icTags[2].ti_Data=0;
+    icTags[3].ti_Tag=MUIA_InnerRight;
+    icTags[3].ti_Data=0;
+    icTags[4].ti_Tag=MUIA_FillArea;
+    icTags[4].ti_Data=FALSE;
+//  icTags[1].ti_Tag=ICOA_Directory;
+//  icTags[1].ti_Data="C:";
+//  icTags[2].ti_Tag=ICA_VertScroller;
+//  icTags[2].ti_Data=vert;
+//  icTags[3].ti_Tag=ICA_HorizScroller;
+//  icTags[3].ti_Data=horiz;
+    icTags[5].ti_Tag=TAG_END;
+    icTags[5].ti_Data=0;
 
-	app=ApplicationObject,
-		SubWindow, win=WindowObject,
-			MUIA_Window_Backdrop, TRUE,
-			MUIA_Window_Borderless, TRUE,
-			MUIA_Window_CloseGadget, FALSE,
-			MUIA_Window_DepthGadget, FALSE,
-			MUIA_Window_SizeGadget, FALSE,
-			MUIA_Window_DragBar, FALSE,
-			MUIA_Window_LeftEdge, 0,
-			MUIA_Window_TopEdge, screen->BarHeight+1,
-			MUIA_Window_Width, screen->Width,
-			MUIA_Window_Height, screen->Height-screen->BarHeight-1,
-			MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
-//			MUIA_Window_UseBottomBorderScroller, TRUE,
-//			MUIA_Window_UseRightBorderScroller, TRUE,
-			MUIA_Window_EraseArea, FALSE,
-			WindowContents, iconCon=CreateDesktopObjectA(CDO_Desktop, icTags),
-		End,
-	End;
+    app=ApplicationObject,
+        SubWindow, win=WindowObject,
+            MUIA_Window_Backdrop, TRUE,
+            MUIA_Window_Borderless, TRUE,
+            MUIA_Window_CloseGadget, FALSE,
+            MUIA_Window_DepthGadget, FALSE,
+            MUIA_Window_SizeGadget, FALSE,
+            MUIA_Window_DragBar, FALSE,
+            MUIA_Window_LeftEdge, 0,
+            MUIA_Window_TopEdge, screen->BarHeight+1,
+            MUIA_Window_Width, screen->Width,
+            MUIA_Window_Height, screen->Height-screen->BarHeight-1,
+            MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+//          MUIA_Window_UseBottomBorderScroller, TRUE,
+//          MUIA_Window_UseRightBorderScroller, TRUE,
+            MUIA_Window_EraseArea, FALSE,
+            WindowContents, iconCon=CreateDesktopObjectA(CDO_Desktop, icTags),
+        End,
+    End;
 
-	if(app)
-	{
-		DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    if(app)
+    {
+        DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-		// these are here temporarily..
-		DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconCon, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
-		DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconCon, 3, MUIM_Set, ICA_ScrollToHoriz, MUIV_TriggerValue);
+        // these are here temporarily..
+        DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconCon, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
+        DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconCon, 3, MUIM_Set, ICA_ScrollToHoriz, MUIV_TriggerValue);
 
-		SetAttrs(win, MUIA_Window_Open, TRUE, TAG_DONE);
+        SetAttrs(win, MUIA_Window_Open, TRUE, TAG_DONE);
 
-		while(running)
-		{
-			inputResult=DoMethod(app, MUIM_Application_Input, &signals);
-			switch(inputResult)
-			{
-				case MUIV_Application_ReturnID_Quit:
-					running=FALSE;
-					break;
-				case 2:
-					running=FALSE;
-					break;
-				default:
-				{
-					// a menuitem was selected...
-					struct MinList *subjects=NULL;
-					Object *member, *ostate;
-					Tag activeSubjectsTag;
-					struct TagItem args[2];
+        while(running)
+        {
+            inputResult=DoMethod(app, MUIM_Application_Input, &signals);
+            switch(inputResult)
+            {
+                case MUIV_Application_ReturnID_Quit:
+                    running=FALSE;
+                    break;
+                case 2:
+                    running=FALSE;
+                    break;
+                default:
+                {
+                    // a menuitem was selected...
+                    struct MinList *subjects=NULL;
+                    Object *member, *ostate;
+                    Tag activeSubjectsTag;
+                    struct TagItem args[2];
 
-					if(inputResult & DOC_DESKTOPOP)
-					{
-						args[0].ti_Tag=DDO_Target;
-						args[0].ti_Data=iconCon;
-						args[1].ti_Tag=TAG_END;
-						args[1].ti_Data=0;
+                    if(inputResult & DOC_DESKTOPOP)
+                    {
+                        args[0].ti_Tag=DDO_Target;
+                        args[0].ti_Data=iconCon;
+                        args[1].ti_Tag=TAG_END;
+                        args[1].ti_Data=0;
 
-						DoDesktopOperation(inputResult, args);
-					}
-					else if(inputResult & DOC_ICONOP)
-					{
-						GetAttr(ICA_SelectedIcons, iconCon, &subjects);
+                        DoDesktopOperation(inputResult, args);
+                    }
+                    else if(inputResult & DOC_ICONOP)
+                    {
+                        GetAttr(ICA_SelectedIcons, iconCon, &subjects);
 
-						ostate=subjects->mlh_Head;
-						while(member=NextObject(&ostate))
-						{
-							args[0].ti_Tag=DDO_Target;
-							args[0].ti_Data=member;
-							args[1].ti_Tag=TAG_END;
-							args[1].ti_Data=0;
+                        ostate=subjects->mlh_Head;
+                        while(member=NextObject(&ostate))
+                        {
+                            args[0].ti_Tag=DDO_Target;
+                            args[0].ti_Data=member;
+                            args[1].ti_Tag=TAG_END;
+                            args[1].ti_Data=0;
 
-							DoDesktopOperation(inputResult, args);
-						}
-					}
-					else if(inputResult & DOC_WINDOWOP)
-					{
-						GetAttr(DA_ActiveWindow, iconCon, &subjects);
+                            DoDesktopOperation(inputResult, args);
+                        }
+                    }
+                    else if(inputResult & DOC_WINDOWOP)
+                    {
+                        GetAttr(DA_ActiveWindow, iconCon, &subjects);
 
-						args[0].ti_Tag=DDO_Target;
-						args[0].ti_Data=subjects;
-						args[1].ti_Tag=TAG_END;
-						args[1].ti_Data=0;
+                        args[0].ti_Tag=DDO_Target;
+                        args[0].ti_Data=subjects;
+                        args[1].ti_Tag=TAG_END;
+                        args[1].ti_Data=0;
 
-						DoDesktopOperation(inputResult, args);
-					}
-				}
-			}
+                        DoDesktopOperation(inputResult, args);
+                    }
+                }
+            }
 
-			if(running && signals)
-				Wait(signals);
-		}
+            if(running && signals)
+                Wait(signals);
+        }
 
-		SetAttrs(win, MUIA_Window_Open, FALSE, TAG_DONE);
+        SetAttrs(win, MUIA_Window_Open, FALSE, TAG_DONE);
 
-		DisposeObject(app);
-	}
-	else
-		kprintf("could not create app\n");
+        DisposeObject(app);
+    }
+    else
+        kprintf("could not create app\n");
 
 
-	CloseLibrary(DesktopBase);
-	CloseLibrary(MUIMasterBase);
+    CloseLibrary(DesktopBase);
+    CloseLibrary(MUIMasterBase);
 
-	return 0;
+    return 0;
 }
 
 
