@@ -13,13 +13,18 @@ layerstng-touch :
 	@$(RM) $(AROS_INCLUDES)/clib/layers_protos.h
 	@$(RM) $(AROS_INCLUDES)/defines/layers.h
 	
-ifneq ($(LAYERSTNG), "yes")
+ifneq ($(WHICHLAYERS), "TNG")
 
 #MM
 includes-generate :
 	@$(NOP)
+
 #MM
 kernel-layers-linklib :
+	@$(NOP)
+
+#MM
+kernel-layers-linklib-quick :
 	@$(NOP)
 
 #MM
@@ -152,6 +157,10 @@ endif
 
 #MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
 kernel-layers-linklib : $(LIB)
+	@$(NOP)
+
+#MM kernel-layers-linklib-quick : kernel-layers-$(ARCH)-$(CPU)
+kernel-layers-linklib-quick : $(LIB)
 	@$(NOP)
 
 #MM kernel-layers-module : setup includes kernel-layers-$(ARCH)-$(CPU)

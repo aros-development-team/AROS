@@ -4,10 +4,10 @@ include $(TOP)/config/make.cfg
 include $(TOP)/config/layers.cfg
 
 #MM
-layersall-touch : layers-touch layerstng-gouch
+layersall-touch : layersold-touch layerstng-touch layershyper-touch
 	@$(NOP)
 #MM
-layers-touch :
+layersold-touch :
 	@$(RM) $(GENDIR)/$(CURDIR)/*.[odc]
 	@$(TOUCH) $(GENDIR)/$(CURDIR)/headers.stamp
 	@$(RM) $(GENINCDIR)/clib/layers_protos.h
@@ -15,21 +15,25 @@ layers-touch :
 	@$(RM) $(AROS_INCLUDES)/clib/layers_protos.h
 	@$(RM) $(AROS_INCLUDES)/defines/layers.h
 
-ifeq ($(LAYERSTNG), "yes")
+ifneq ($(WHICHLAYERS), "OLD")
 
 #MM
 includes-generate :
 	@$(NOP)
 #MM
-kernel-oldlayers-linklib :
+kernel-layers-linklib :
 	@$(NOP)
 
 #MM
-kernel-oldlayers-module :
+kernel-layers-linklib-quick :
 	@$(NOP)
 
 #MM
-kernel-oldlayers-module-quick :
+kernel-layers-module :
+	@$(NOP)
+
+#MM
+kernel-layers-module-quick :
 	@$(NOP)	
 	
 else
@@ -153,16 +157,20 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_finline
 
-#MM kernel-oldlayers-linklib : setup includes kernel-oldlayers-$(ARCH)-$(CPU)
-kernel-oldlayers-linklib : $(LIB)
+#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
+kernel-layers-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-oldlayers-module : setup includes kernel-oldlayers-$(ARCH)-$(CPU)
-kernel-oldlayers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-layers-linklib-quick : kernel-layers-$(ARCH)-$(CPU)
+kernel-layers-linklib-quick : $(LIB)
 	@$(NOP)
 
-#MM kernel-oldlayers-module-quick : kernel-oldlayers-$(ARCH)-$(CPU)
-kernel-oldlayers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-layers-module : setup includes kernel-layers-$(ARCH)-$(CPU)
+kernel-layers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
+	@$(NOP)
+
+#MM kernel-layers-module-quick : kernel-layers-$(ARCH)-$(CPU)
+kernel-layers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup
