@@ -57,7 +57,7 @@ struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *Dis
     	numtags * sizeof(struct TagItem),
         MEMF_ANY);
        
-   if (!taglist)
+    if (!taglist)
         goto rt_failure;
 
     tagptr = taglist;
@@ -66,13 +66,16 @@ struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *Dis
                 
     for (; numtags --; )
     {
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &(tagptr->ti_Tag), fh))
+    	ULONG val;
+	
+        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, fh))
             goto readfail;
-            
-                        
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &(tagptr->ti_Data), fh ))
+	tagptr->ti_Tag = val;
+                                   
+        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, fh ))
             goto readfail;
-                        
+    	tagptr->ti_Data = val;          
+	           
         tagptr ++;
     }
 
@@ -108,7 +111,9 @@ BOOL WriteTags(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *Dis
         if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Data, fh))
             goto wt_failure;
     }
-
+    WriteLong(&DFB(DiskfontBase)->dsh, TAG_DONE, fh);
+    WriteLong(&DFB(DiskfontBase)->dsh, 0, fh);
+    
     ReturnBool ("WriteTags", TRUE);
     
 wt_failure:
@@ -142,7 +147,7 @@ STATIC BOOL WriteFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_i
     if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Style, fh))
         goto wf_failure;
         
-    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Flags, fh ))
+    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Flags & ~FPF_REMOVED, fh ))
         goto wf_failure;
 
     if (!WriteByte(&DFB(DiskfontBase)->dsh, finode->Flags, fh ))
