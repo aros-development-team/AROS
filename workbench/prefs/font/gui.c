@@ -216,8 +216,8 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
     printf("FPWindow: Save\n");
     
     Gadgets2FontPrefs(fontPrefs, data);
-    SavePrefs("ENV:sys/font.prefs", fontPrefs);
-    SavePrefs("ENVARC:sys/font.prefs", fontPrefs);
+    WritePrefs("ENV:sys/font.prefs", fontPrefs);
+    WritePrefs("ENVARC:sys/font.prefs", fontPrefs);
         
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -234,7 +234,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
     printf("FPWindow: Use\n");
     
     Gadgets2FontPrefs(fontPrefs, data);
-    SavePrefs("ENV:sys/font.prefs", fontPrefs);
+    WritePrefs("ENV:sys/font.prefs", fontPrefs);
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);

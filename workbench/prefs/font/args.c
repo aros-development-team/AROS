@@ -78,7 +78,7 @@ UBYTE processArguments(void)
 
     if(argArray[ARG_FROM])
     {
-	if(!(LoadPrefs((CONST_STRPTR) argArray[ARG_FROM], fontPrefs)))
+	if(!(ReadPrefs((CONST_STRPTR) argArray[ARG_FROM], fontPrefs)))
 	    return(APP_FAIL);
 
      /* If USE or SAVE is set, write the FROM file to ENV: and/or ENVARC: and then quit. Is this
@@ -89,11 +89,11 @@ UBYTE processArguments(void)
 
 	if(argArray[ARG_USE] || argArray[ARG_SAVE])
 	{
-	    if(!(SavePrefs("ENV:sys/font.prefs", fontPrefs)))
+	    if(!(WritePrefs("ENV:sys/font.prefs", fontPrefs)))
 		return(APP_FAIL);
 
 	    if(argArray[ARG_SAVE])
-		if(!(SavePrefs("ENVARC:sys/font.prefs", fontPrefs)))
+		if(!(WritePrefs("ENVARC:sys/font.prefs", fontPrefs)))
 		    return(APP_FAIL);
 
 	    // Don't launch the rest of the program, just exit
@@ -101,7 +101,7 @@ UBYTE processArguments(void)
 	}
     }
     else
-	if(!(LoadPrefs("ENV:sys/font.prefs", fontPrefs)))
+	if(!(ReadPrefs("ENV:sys/font.prefs", fontPrefs)))
 	    return(APP_FAIL);
 
     // What is "EDIT" supposed to do? Look it up!
