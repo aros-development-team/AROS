@@ -1,0 +1,4 @@
+gram.*
+*.o
+src2html
+exec.?
