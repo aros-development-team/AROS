@@ -54,6 +54,7 @@ struct MUI_StringData {
     ULONG  BufferSize;  /* memory allocated                 */
     ULONG  NumChars;    /* string length                    */
     ULONG  BufferPos;   /* cursor (insert/delete) position  */
+    ULONG  MarkPos; 	/* cursor text marking start pos    */
     LONG   DispPos;     /* leftmost visible char            */
     ULONG  DispCount;   /* number of visible chars          */
 
@@ -67,6 +68,7 @@ struct MUI_StringData {
 
 #define MSDF_ADVANCEONCR    (1<<0)
 #define MSDF_LONELYEDITHOOK (1<<1)
+#define MSDF_MARKING	    (1<<2)
 
 enum {
     NO_REASON = 0,
@@ -147,6 +149,46 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     return TRUE;
 }
 
+static BOOL Buffer_KillMarked(struct MUI_StringData *data)
+{
+    WORD markstart = data->MarkPos;
+    WORD markstop  = data->BufferPos;
+    WORD marklen;
+    
+    //kprintf("\nBuffer_KillMarked 1  markpos %d  bufferpos %d  numchars %d\n", markstart, markstop, data->NumChars);    
+    if (!(data->msd_Flags & MSDF_MARKING)) return FALSE;
+    
+    data->msd_Flags &= ~MSDF_MARKING;
+    
+    markstart = MIN(markstart, data->NumChars);
+    markstart = MAX(markstart, 0);
+    
+    markstop  = MIN(markstop, data->NumChars);
+    markstop  = MAX(markstop, 0);
+
+    //kprintf("Buffer_KillMarked 2  markstart %d  markstop %d\n", markstart, markstop);    
+    
+    if (markstart == markstop) return FALSE;
+    
+    if (markstart > markstop)
+    {
+    	markstart ^= markstop;
+    	markstop  ^= markstart;
+    	markstart ^= markstop;	
+    }
+    
+    marklen = markstop - markstart;
+
+    //kprintf("Buffer_KillMarked: markstart %d  markstop %d\n", markstart, markstop);
+       
+    memmove(&data->Buffer[markstart],
+    	    &data->Buffer[markstart + marklen], data->NumChars - markstart - marklen + 1);
+    
+    data->NumChars -= marklen;
+    data->BufferPos = markstart;
+    
+    return TRUE;
+}
 
 /**************************************************************************
  OM_NEW
@@ -253,6 +295,7 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_String_Contents:
 		Buffer_SetNewContents(data, (STRPTR)tag->ti_Data);
 		data->msd_RedrawReason = NEW_CONTENTS;
+		data->msd_Flags &= ~MSDF_MARKING;
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		break;
 
@@ -615,6 +658,66 @@ static VOID UpdateStringData(struct IClass *cl, Object *obj)
     }
 }
 
+static VOID TextM(Object *obj, struct MUI_StringData *data,
+    	    	  STRPTR text, WORD textlen, WORD markstart, WORD markend)
+{
+    struct RastPort *rp = _rp(obj);
+    ULONG textpen;
+    WORD len;
+    
+    if (data->is_active)
+	textpen = data->active_text.p_pen;
+    else
+	textpen = data->inactive_text.p_pen;
+
+    if (markstart > markend)
+    {
+    	markstart ^= markend;
+    	markend   ^= markstart;
+    	markstart ^= markend;
+    }
+    
+    //kprintf("TextM: textlen %d  markstart %d  markend %d ... \n", textlen, markstart, markend);
+    
+    /* <unmarked><marked><unmarked> */
+    
+    /* <unmarked> */
+    
+    len = MIN(markstart, textlen);
+    len = MAX(len, 0);
+    
+    if (len)
+    {
+    	//kprintf("A: %d   ", len);
+
+    	SetABPenDrMd(rp, textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
+    	Text(rp, text, len);
+	
+	text += len; textlen -= len;
+
+    }
+    
+    len = MIN(markend - len, textlen);
+    len = MAX(len, 0);
+    
+    if (len)
+    {
+    	//kprintf("B: %d   ", len);
+	SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_FILL], JAM2);
+    	Text(rp, text, len);
+	
+	text += len; textlen -= len;
+    }
+    
+    if (textlen)
+    {
+    	//kprintf("C: %d   ", textlen);
+
+    	SetABPenDrMd(rp, textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
+    	Text(rp, text, textlen);
+    }
+    //kprintf("\n");        
+}
 
 /**************************************************************************
  MUIM_Draw
@@ -680,26 +783,36 @@ static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetABPenDrMd(_rp(obj), textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
     Move(_rp(obj), text_left, text_top);
-    Text(_rp(obj), dispstr, dispstrlen);
 
-    if (data->is_active) // active, draw cursor
+    if ((data->msd_Flags & MSDF_MARKING) && (data->MarkPos != data->BufferPos))
     {
-	UWORD cursoroffset = data->BufferPos - data->DispPos;
-	
-	dispstr = data->Buffer + data->DispPos;
-	text_left = textleft_save;
-
-	SetABPenDrMd(_rp(obj), data->active_text.p_pen, data->cursor.p_pen, JAM2);
-	text_left += TextLength(_rp(obj), dispstr, cursoroffset);
-
-	Move(_rp(obj), text_left, text_top);
-	Text(_rp(obj), 
-	     ((data->BufferPos < data->NumChars)
-	      ? dispstr + cursoroffset
-	      : (STRPTR)" "),
-	     1 );
+    	TextM(obj, data, dispstr, dispstrlen, data->MarkPos - data->DispPos,
+	    	    	    	    	     data->BufferPos - data->DispPos);
     }
+    else
+    {
+    	Text(_rp(obj), dispstr, dispstrlen);
 
+	if (data->is_active) // active, draw cursor
+	{
+	    UWORD cursoroffset = data->BufferPos - data->DispPos;
+
+	    dispstr = data->Buffer + data->DispPos;
+	    text_left = textleft_save;
+
+	    SetABPenDrMd(_rp(obj), data->active_text.p_pen, data->cursor.p_pen, JAM2);
+	    text_left += TextLength(_rp(obj), dispstr, cursoroffset);
+
+
+	    Move(_rp(obj), text_left, text_top);
+	    Text(_rp(obj), 
+		 ((data->BufferPos < data->NumChars)
+		  ? dispstr + cursoroffset
+		  : (STRPTR)" "),
+		 1 );
+	}
+    }
+    
     data->msd_RedrawReason = NO_REASON;
     return TRUE;
 }
@@ -719,10 +832,15 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 
     if (code == '\b') /* backspace */
     {
+	if (Buffer_KillMarked(data))
+	{
+	    return 1;
+	}
+	
 	if (data->BufferPos > 0)
 	{
 	    LONG shift;
-
+    
 	    if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
 	    {
 		shift = data->BufferPos;
@@ -745,6 +863,11 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 
     if (code == 21) // ctrl-u == NAK (like shift-bs)
     {
+	if (Buffer_KillMarked(data))
+	{
+	    return 1;
+	}
+	
 	if (data->BufferPos > 0)
 	{
 	    strcpy(&data->Buffer[0],
@@ -759,52 +882,63 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 
     if (code == 127) /* del */
     {
-	if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
+    	if (!Buffer_KillMarked(data))
 	{
-	    data->Buffer[data->BufferPos] = 0;
-	    data->NumChars = data->BufferPos;
-	    data->msd_RedrawReason = NEW_CONTENTS;
-	}
-	else
-	{
-	    if (data->BufferPos < data->NumChars)
+	    if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
 	    {
-		strcpy(&data->Buffer[data->BufferPos],
-		       &data->Buffer[data->BufferPos+1]);
-		data->NumChars--;
+		data->Buffer[data->BufferPos] = 0;
+		data->NumChars = data->BufferPos;
+		data->msd_RedrawReason = NEW_CONTENTS;
 	    }
+	    else
+	    {
+		if (data->BufferPos < data->NumChars)
+		{
+		    strcpy(&data->Buffer[data->BufferPos],
+			   &data->Buffer[data->BufferPos+1]);
+		    data->NumChars--;
+		}
 
-	    data->msd_RedrawReason = DO_DELETE;
+		data->msd_RedrawReason = DO_DELETE;
+	    }
 	}
 	return 1;
     }
 
     if (code == 11) // ctrl-k == VT == \v (like shift-del)
     {
-	data->Buffer[data->BufferPos] = 0;
-	data->NumChars = data->BufferPos;
-	data->msd_RedrawReason = NEW_CONTENTS;
+    	if (!Buffer_KillMarked(data))
+	{
+	    data->Buffer[data->BufferPos] = 0;
+	    data->NumChars = data->BufferPos;
+	    data->msd_RedrawReason = NEW_CONTENTS;
+	}
 	return 1;
     }
 
     if (code == 24) /* ctrl x == ascii cancel */
     {
-	data->Buffer[0] = 0;
-	data->BufferPos = 0;
-	data->NumChars = 0;
-	data->msd_RedrawReason = NEW_CONTENTS;
+    	if (!Buffer_KillMarked(data))
+	{
+	    data->Buffer[0] = 0;
+	    data->BufferPos = 0;
+	    data->NumChars = 0;
+	    data->msd_RedrawReason = NEW_CONTENTS;
+	}
 	return 1;
     }
 
     if (code == 1) // ctrl-a, linestart
     {
 	data->BufferPos = 0;
+	data->msd_Flags &= ~MSDF_MARKING;
 	return 1;
     }
 
     if (code == 26) // ctrl-z, lineend
     {
 	data->BufferPos = data->NumChars;
+	data->msd_Flags &= ~MSDF_MARKING;
 	return 1;
     }
 
@@ -817,6 +951,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 
     if (isprint(code))
     {
+    	Buffer_KillMarked(data);
 	Buffer_AddChar(data, code);
 	data->msd_RedrawReason = DO_ADDCHAR;
 	return 2;
@@ -836,7 +971,13 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     ULONG retval = 0;
     int update = 0;
-
+    BOOL cursor_kills_marking = FALSE;
+    
+    if (data->msd_Flags & MSDF_MARKING)
+    {
+    	cursor_kills_marking = TRUE;
+    }
+    
 /*      D(bug("got muikey %d, imsg %p\n", msg->muikey, msg->imsg)); */
     if (msg->muikey != MUIKEY_NONE && data->is_active)
     {
@@ -845,15 +986,30 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 	switch (msg->muikey)
 	{
 	    case MUIKEY_LEFT:
-		if (data->BufferPos > 0)
+	    	if (cursor_kills_marking)
 		{
 		    update = 1;
+		    data->BufferPos = MIN(data->BufferPos, data->MarkPos);
+		    if (data->BufferPos > 0) data->BufferPos--;
+		    
+		    data->msd_Flags &= ~MSDF_MARKING;
+		}
+		else if (data->BufferPos > 0)
+		{
+		    update = 1;
+		    
 		    data->BufferPos--;
 		    data->msd_RedrawReason = DO_CURSOR_LEFT;
 		}
 		break;
 	    case MUIKEY_RIGHT:
-		if (data->BufferPos < data->NumChars)
+	    	if (cursor_kills_marking)
+		{
+		    update = 1;
+		    data->BufferPos = MAX(data->BufferPos, data->MarkPos);
+		    data->msd_Flags &= ~MSDF_MARKING;
+		}
+		else if (data->BufferPos < data->NumChars)
 		{
 		    update = 1;
 		    data->BufferPos++;
@@ -871,6 +1027,11 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			 0x20 != data->Buffer[data->BufferPos]))
 			break;
 		}
+		if (cursor_kills_marking)
+		{
+		    data->msd_Flags &= ~MSDF_MARKING;
+		    update = 1;
+		}
 		break;
 	    case MUIKEY_WORDRIGHT:
 		while (data->BufferPos < data->NumChars)
@@ -883,15 +1044,28 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			 0x20 != data->Buffer[data->BufferPos]))
 			break;
 		}
+		if (cursor_kills_marking)
+		{
+		    data->msd_Flags &= ~MSDF_MARKING;
+		    update = 1;
+		}
 		break;
 	    case MUIKEY_LINESTART:
 		data->BufferPos = 0;
 		update = 1;
+		if (cursor_kills_marking)
+		{
+		    data->msd_Flags &= ~MSDF_MARKING;
+		}
 		break;
 
 	    case MUIKEY_LINEEND:
 		data->BufferPos = data->NumChars;
 		update = 1;
+		if (cursor_kills_marking)
+		{
+		    data->msd_Flags &= ~MSDF_MARKING;
+		}
 		break;
 
 	    case MUIKEY_UP:
@@ -978,6 +1152,14 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			    // useful only when obj is not already window active obj
 			    set(_win(obj), MUIA_Window_ActiveObject, obj);
 			}
+			
+			if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+			{
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+    	    	    	    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+    	    	    	    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+    	    	    	}
+			
 			text_left  = GetTextLeft (cl, obj);
 			text_right = GetTextRight(cl, obj);
 
@@ -1018,6 +1200,15 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 				update = 1;
 			    }
 			} /* if (click is on text or not) */
+
+			data->MarkPos = data->BufferPos;
+			
+			if (data->msd_Flags & MSDF_MARKING)
+			{
+			    data->msd_Flags &= ~MSDF_MARKING;
+			    update = 1;
+			}
+			
 		    } /* is in object */
 		    else if (data->is_active) /* and click not on object */
 		    {
@@ -1025,9 +1216,66 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			set(obj, MUIA_Background,
 			    (IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
 		    }
+		} /* if (code == SELECTDOWN) */
+		else if (code == SELECTUP)
+		{
+		    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+		    {
+    	    	    	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+    	    	    	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);	    	
+		    }
 		}
 		break;
 
+    	    case IDCMP_MOUSEMOVE:
+	    	if (data->is_active)
+		{
+		    UWORD text_left, text_right;
+		    
+		    if (!(data->msd_Flags & MSDF_MARKING))
+		    {
+		    	data->msd_Flags |= MSDF_MARKING;
+		    }
+		    
+		    text_left  = GetTextLeft (cl, obj);
+		    text_right = GetTextRight(cl, obj);
+
+		    /* Check if mouseclick is inside displayed text */
+		    if ((x >= text_left) && (x <= text_right))
+		    {
+			/* Find new cursor pos. */
+			struct TextExtent te;
+			ULONG newpos;
+			STRPTR dispstr = data->Buffer + data->DispPos;
+
+			newpos = data->DispPos 
+			    + TextFit(_rp(obj), dispstr, data->NumChars - data->DispPos,
+				      &te, NULL, 1,
+				      x - text_left, _rp(obj)->Font->tf_YSize);
+
+			if (data->BufferPos != newpos)
+			{
+			    data->BufferPos = newpos;
+			    update = 1;
+			}
+		    }
+		    else if ((x < text_left) && (data->BufferPos > 0))
+		    {
+		    	data->BufferPos--;
+			update = 1;
+		    	data->msd_RedrawReason = DO_CURSOR_LEFT;			
+		    }
+		    else if ((x > text_right) && (data->BufferPos < data->NumChars))
+		    {
+		    	data->BufferPos++;
+			update = 1;
+		    	data->msd_RedrawReason = DO_CURSOR_RIGHT;			
+		    }
+		    //kprintf("  ---- bp: %d\n", data->BufferPos);
+		}
+		break;
+		
 	    case IDCMP_RAWKEY:
 	    {
 		unsigned char code;
