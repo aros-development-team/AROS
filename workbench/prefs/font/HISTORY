@@ -10,3 +10,10 @@
 0.5 (5.4.2001)		Two more menu options have been added ("Open" and "Save As"). IFF parsing
 			slightly altered. Project file "getfile.c" removed - code moved to new file
 			"asl.c" (Developer's release 2)
+0.6 (9.4.2001)		The "Edit" menu has been added with its three items. The items have been
+			assigned the proper code. "init.c" has been cleaned up resulting in a new
+			function - "initDefaultPrefs()". (Internal release)
+0.7 (19.4.2001)		The "code flow" of "Font" Preferences has been dramatically changed in order
+			to pave way for a more polished source code. The internal API has changed;
+			we are not backwards compatible with earlier versions! Gadtools GUI has been
+			totally reworked - most parts rewritten. (Developer's release 3)
