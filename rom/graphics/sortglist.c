@@ -48,71 +48,73 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct VSprite * CorrectVSprite = rp -> GelsInfo -> gelHead;
-  struct VSprite * CurVSprite = CorrectVSprite -> NextVSprite;
+    struct VSprite * CorrectVSprite = rp -> GelsInfo -> gelHead;
+    struct VSprite * CurVSprite = CorrectVSprite -> NextVSprite;
 
-  ULONG Coord = (CorrectVSprite -> Y << 16) + CorrectVSprite -> X;
+    LONG Coord = ( ((UWORD)CorrectVSprite -> Y) << 16UL) + (UWORD)CorrectVSprite -> X;
 
-  while ( NULL != CurVSprite )
-  {
-    ULONG NewCoord =  (CurVSprite -> Y << 16) + CurVSprite -> X;
-
-    if (Coord <= NewCoord)
+    while ( NULL != CurVSprite )
     {
-      /* sorting is not necessary for this VSprite */
-      CorrectVSprite = CurVSprite;
-      CurVSprite     = CurVSprite -> NextVSprite;
+	LONG NewCoord =  ( ((UWORD)CurVSprite -> Y) << 16UL) + (UWORD)CurVSprite -> X;
 
-      Coord    = NewCoord;
-    }
-    else
-    {
-      struct VSprite * tmpVSprite = CorrectVSprite->PrevVSprite;
-      /* 
-         The CurVSprite is at the wrong position. It has to appear
-         somewhere earlier in the list.
-       */
+	if (Coord <= NewCoord)
+	{
+	    /* sorting is not necessary for this VSprite */
+	    CorrectVSprite = CurVSprite;
+	    CurVSprite     = CurVSprite -> NextVSprite;
 
-      /* unlink it from it's current position */
-      CorrectVSprite -> NextVSprite = CurVSprite -> NextVSprite;
-      if (NULL != CurVSprite -> NextVSprite)
-        CurVSprite -> NextVSprite -> PrevVSprite = CorrectVSprite;
+	    Coord    = NewCoord;
+	}
+	else
+	{
+	    struct VSprite * tmpVSprite = CorrectVSprite->PrevVSprite;
+	    /* 
+               The CurVSprite is at the wrong position. It has to appear
+               somewhere earlier in the list.
+	     */
 
-      /* insert CurVSprite at some previous place */
-      
-      while ( NULL != tmpVSprite &&
-             (ULONG)((tmpVSprite -> Y << 16) + tmpVSprite -> X) > NewCoord)
-        tmpVSprite = tmpVSprite -> PrevVSprite;
+	    /* unlink it from it's current position */
+	    CorrectVSprite -> NextVSprite = CurVSprite -> NextVSprite;
+	    if (NULL != CurVSprite -> NextVSprite)
+        	CurVSprite -> NextVSprite -> PrevVSprite = CorrectVSprite;
 
-      if (NULL == tmpVSprite)
-      {
-        /* our CurVSprite becomes the fist one in the list */
-        rp->GelsInfo->gelHead->PrevVSprite = CurVSprite;
-        CurVSprite->NextVSprite = rp->GelsInfo->gelHead;
-        CurVSprite->PrevVSprite = NULL;         
-        rp->GelsInfo->gelHead   = CurVSprite;
-      }      
-      else
-      {
-        /* link it into the list *after* the tmpVSprite */
-        CurVSprite->PrevVSprite = tmpVSprite;
-        CurVSprite->NextVSprite = tmpVSprite->NextVSprite;
-        
-        if (NULL != tmpVSprite->NextVSprite)
-          tmpVSprite->NextVSprite->PrevVSprite = CurVSprite;
-        
-        tmpVSprite->NextVSprite = CurVSprite;
-      }
+	    /* insert CurVSprite at some previous place */
 
-      /* set the new CurVSprite */
-      CurVSprite = CorrectVSprite -> NextVSprite;
-    }
-  }
+	    while ( NULL != tmpVSprite &&
+        	     ( ( ((UWORD)tmpVSprite -> Y) << 16UL) + (UWORD)tmpVSprite -> X) > NewCoord)
+        	tmpVSprite = tmpVSprite -> PrevVSprite;
 
-  rp->GelsInfo->gelTail = CorrectVSprite;
+	    if (NULL == tmpVSprite)
+	    {
+        	/* our CurVSprite becomes the fist one in the list */
+        	rp->GelsInfo->gelHead->PrevVSprite = CurVSprite;
+        	CurVSprite->NextVSprite = rp->GelsInfo->gelHead;
+        	CurVSprite->PrevVSprite = NULL;         
+        	rp->GelsInfo->gelHead   = CurVSprite;
+	    }      
+	    else
+	    {
+        	/* link it into the list *after* the tmpVSprite */
+        	CurVSprite->PrevVSprite = tmpVSprite;
+        	CurVSprite->NextVSprite = tmpVSprite->NextVSprite;
 
-  AROS_LIBFUNC_EXIT
+        	if (NULL != tmpVSprite->NextVSprite)
+        	  tmpVSprite->NextVSprite->PrevVSprite = CurVSprite;
+
+        	tmpVSprite->NextVSprite = CurVSprite;
+	    }
+
+	    /* set the new CurVSprite */
+	    CurVSprite = CorrectVSprite -> NextVSprite;
+	}
+
+    } /* while ( NULL != CurVSprite ) */
+
+    rp->GelsInfo->gelTail = CorrectVSprite;
+
+    AROS_LIBFUNC_EXIT
+  
 } /* SortGList */
