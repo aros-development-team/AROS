@@ -2,7 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = intuition_init intuition_functable intui_x11
+FILES = intuition_init intuition_functable intui_x11 gadgets \
+	boolgadgets propgadgets
 FUNCTIONS = \
 	addclass \
 	activatewindow \
@@ -20,6 +21,7 @@ FUNCTIONS = \
 	makeclass \
 	modifyidcmp \
 	modifyprop \
+	newmodifyprop \
 	newobjecta \
 	openscreen \
 	openscreentaglist \
