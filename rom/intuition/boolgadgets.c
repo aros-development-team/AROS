@@ -22,6 +22,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
     APTR  render;
 
+
 #define RENDERGADGET(win,gad,rend)              \
 	if (rend)                               \
 	{					\
