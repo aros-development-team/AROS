@@ -308,7 +308,7 @@ int main (void)
   locale = OpenLocale(NULL);
   if (!locale)
   {
-    printf("Could not open locale!\n");
+    PutStr("Could not open locale!\n");
     return -1;
   }
 
