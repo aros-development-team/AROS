@@ -9,13 +9,8 @@ MACHINE_H       := $(GENINCDIR)/aros/machine.h
 DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
 SPECIAL_CFLAGS  := -I $(TOP)/exec
 
-#all: machine.i subdirs
-
 #MM
-setup: $(MACHINE_H) $(DISTMACHINE_H) machine.i
-
-#MM
-includes-m68k : $(MACHINE_H) $(DISTMACHINE_H) machine.i
+includes-amiga-m68k : $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
 clean::
@@ -27,7 +22,7 @@ $(MACHINE_H): machine.h
 
 $(DISTMACHINE_H) : machine.h
 	%mkdirs_q $(INCDIR)
-	cp $< $@
+	$(CP) $< $@
 
 machine.i: geninc.c $(MACHINE_H)
 	@echo "CFLAGS=$(CFLAGS)"
