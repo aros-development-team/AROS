@@ -1,0 +1,23 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+INCDIR		:= $(BINDIR)/include
+INCLUDES	:= $(wildcard *.h */*.h)
+DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+
+#MM includes-copy : setup-includes
+includes-copy : $(DEST_INCLUDES)
+	@$(NOP)
+
+#MM
+setup-includes :
+	@$(FOR) dir in $(INCDIR) ; do \
+	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else $(NOP) ; fi ; \
+	done
+
+$(INCDIR)/%.h : %.h
+	$(CP) $< $@
+
+#MM
+clean :
+	$(RM) $(INCDIR)
