@@ -163,7 +163,6 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             irq->h_Node.ln_Name = "Keyboard class irq";
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
-
             Disable();
 	    kbd_clear_input();
 	    kbd_reset();		/* Reset the keyboard */
@@ -316,10 +315,12 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 /****************************************************************************************/
 
 #define WaitForInput        		\
-    ({ int i = 0,dummy;     		\
+    ({ int i = 0,dummy,timeout=1000;	\
        do                   		\
        {                    		\
         info = kbd_read_status();     	\
+        if (!--timeout)			\
+          break;			\
        } while((info & KBD_STATUS_OBF));\
        while (i < 1000000)     		\
        {                \
@@ -586,6 +587,10 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 #define SysBase (*(struct ExecBase **)4UL)
 
 #warning This should go somewhere higher but D(bug()) is not possible there
+#undef D
+#undef BUG
+#define D(x)
+#define BUG
 
 /****************************************************************************************/
 
