@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PROGNAME "rtscreen"
+#define PROGNAME "rtezrequest"
 
-struct Library *ReqToolsBase;
+struct ReqToolsBase *ReqToolsBase;
 
 static char s[300];
 
@@ -28,19 +28,25 @@ static void openlibs(void)
 
 static void action(void)
 {
-    struct rtScreenModeRequester *req;
-    
     struct TagItem tags[] =
     {
-        {RTSC_Flags, SCREQF_OVERSCANGAD|SCREQF_AUTOSCROLLGAD|SCREQF_SIZEGADS|SCREQF_DEPTHGAD},
-    	{TAG_DONE									    }
+        {RT_Underscore		, (IPTR)'_'					},
+	{RTEZ_ReqTitle		, (IPTR)"I'm a ReqTools Requester"		},
+    	{TAG_DONE								}
     };
+    IPTR args[] = {(IPTR)"ABCDEF12345678", 12345678};
     
-    if ((req = rtAllocRequestA(RT_SCREENMODEREQ, tags)))
-    {
-        rtScreenModeRequestA(req, "Title", tags);
-	rtFreeRequest(req);
-    }
+    LONG val = 0;
+       
+    rtEZRequestA("This is a requester\n"
+    		 "which was created\n"
+		 "with rtEZRequestA\n"
+		 "\n"
+		 "String arg: \"%s\"  Integer arg: %ld",
+    		 "_Ok|Coo_l|So _what",
+		 NULL,
+		 args,
+		 tags);
 }
 
 int main(void)

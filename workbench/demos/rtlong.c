@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PROGNAME "rtscreen"
+#define PROGNAME "rtlong"
 
-struct Library *ReqToolsBase;
+struct ReqToolsBase *ReqToolsBase;
 
 static char s[300];
 
@@ -28,19 +28,19 @@ static void openlibs(void)
 
 static void action(void)
 {
-    struct rtScreenModeRequester *req;
-    
     struct TagItem tags[] =
     {
-        {RTSC_Flags, SCREQF_OVERSCANGAD|SCREQF_AUTOSCROLLGAD|SCREQF_SIZEGADS|SCREQF_DEPTHGAD},
-    	{TAG_DONE									    }
+        {RT_Underscore		, (IPTR)'_'					},
+	{RTGL_Min		, -100						},
+	{RTGL_Max		, 100						},
+	{RTGL_Flags		, GLREQF_CENTERTEXT				},
+	{RTGS_TextFmt		, "Enter something\n12345678\nABCDEF"		},
+    	{RTGS_GadFmt		, (IPTR)"O_k|Hel_lo|_Something"			},
+    	{TAG_DONE								}
     };
-    
-    if ((req = rtAllocRequestA(RT_SCREENMODEREQ, tags)))
-    {
-        rtScreenModeRequestA(req, "Title", tags);
-	rtFreeRequest(req);
-    }
+    LONG val = 0;
+       
+    rtGetLongA((ULONG *)&val, "Title", NULL, tags);
 }
 
 int main(void)

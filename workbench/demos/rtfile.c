@@ -7,7 +7,7 @@
 
 #define PROGNAME "rtfile"
 
-struct Library *RTBase;
+struct Library *ReqToolsBase;
 
 static char s[300];
 
@@ -15,15 +15,15 @@ static void cleanup(char *msg)
 {
     if (msg) printf(PROGNAME ": %s\n", msg);
     
-    if (RTBase) CloseLibrary(RTBase);
+    if (ReqToolsBase) CloseLibrary((struct Library *)ReqToolsBase);
     
     exit(0);
 }
 
 static void openlibs(void)
 {
-    RTBase = OpenLibrary("reqtools.library", 0);
-    if (!RTBase) cleanup("Can't open reqtools.library");
+    ReqToolsBase = (struct ReqToolsBase *)OpenLibrary("reqtools.library", 0);
+    if (!ReqToolsBase) cleanup("Can't open reqtools.library");
 }
 
 static void action(void)
@@ -32,7 +32,8 @@ static void action(void)
     
     struct TagItem tags[] =
     {
-    	{TAG_DONE									    }
+        {RTFI_Flags	, FREQF_PATGAD	},
+    	{TAG_DONE	    		}
     };
     
     if ((req = rtAllocRequestA(RT_FILEREQ, tags)))
