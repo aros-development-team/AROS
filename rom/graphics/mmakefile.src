@@ -220,6 +220,7 @@ FUNCTIONS := \
 	setwritemask \
 	sortglist \
 	stripfont \
+        swapregions \
 	syncsbitmap \
 	text \
 	textextent \
