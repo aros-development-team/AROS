@@ -44,7 +44,7 @@ struct Window *win;
 struct Gadget *glist = NULL;
 
 struct Gadget *button;
-
+WORD topoffset;
 
 #define ID_BUTTON 1
 #define ID_CHECKBOX 2
@@ -206,11 +206,33 @@ D(bug("Closelibs: libs closed\n"));
 struct Gadget *gt_init()
 {
     struct Gadget *gad = NULL;
-
+    struct DrawInfo *dri;
+    
     scr = LockPubScreen(NULL);
     vi = GetVisualInfoA(scr, NULL);
     if (vi != NULL)
 	gad = CreateContext(&glist);
+	
+    if ((dri = GetScreenDrawInfo(scr)))
+    {
+    	topoffset = dri->dri_Font->tf_YSize + scr->WBorTop - 10 + 5;
+	
+	buttongad.ng_TopEdge   += topoffset;
+	checkbox.ng_TopEdge    += topoffset;
+	cyclegad.ng_TopEdge    += topoffset;
+	mxgad.ng_TopEdge       += topoffset;
+	palettegad.ng_TopEdge  += topoffset;
+	textgad.ng_TopEdge     += topoffset;
+	numbergad.ng_TopEdge   += topoffset;
+	slidergad.ng_TopEdge   += topoffset;
+	scrollergad.ng_TopEdge += topoffset;
+	stringgad.ng_TopEdge   += topoffset;
+	integergad.ng_TopEdge  += topoffset;
+	listviewgad.ng_TopEdge += topoffset;
+	
+	FreeScreenDrawInfo(scr,dri);
+    }
+    
     return gad;
 }
 
@@ -232,7 +254,7 @@ BOOL openwin()
 			 WA_Left, 0,
 			 WA_Top, 0,
 			 WA_Width, 700,
-			 WA_Height, 300,
+			 WA_Height, 300 + topoffset,
 			 WA_Title, "GTDemo",
 			 WA_IDCMP,
 			     BUTTONIDCMP |
@@ -251,6 +273,8 @@ BOOL openwin()
 			 WA_Gadgets, glist,
 			 WA_DragBar, TRUE,
 			 WA_CloseGadget, TRUE,
+			 WA_DepthGadget, TRUE,
+			 WA_Zoom, TRUE,
 			 TAG_DONE);
     if (!win) {
 	printf("GTDemo: Error opening window\n");
@@ -377,21 +401,21 @@ D(bug("Created listview gadget: %p\n", gad));
 
 void draw_bevels(struct Window *win, APTR vi)
 {
-    DrawBevelBox(win->RPort, 10, 10, 80, 80,
+    DrawBevelBox(win->RPort, 10, 10 + topoffset, 80, 80,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
-    DrawBevelBox(win->RPort, 110, 10, 80, 80,
+    DrawBevelBox(win->RPort, 110, 10 + topoffset, 80, 80,
                  GTBB_Recessed, TRUE,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
-    DrawBevelBox(win->RPort, 10, 110, 80, 80,
+    DrawBevelBox(win->RPort, 10, 110 + topoffset, 80, 80,
                  GTBB_FrameType, BBFT_RIDGE,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
-    DrawBevelBox(win->RPort, 110, 110, 80, 80,
+    DrawBevelBox(win->RPort, 110, 110 + topoffset, 80, 80,
                  GTBB_FrameType, BBFT_RIDGE, GTBB_Recessed, TRUE,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
-    DrawBevelBox(win->RPort, 10, 210, 80, 80,
+    DrawBevelBox(win->RPort, 10, 210 + topoffset, 80, 80,
                  GTBB_FrameType, BBFT_ICONDROPBOX,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
-    DrawBevelBox(win->RPort, 110, 210, 80, 80,
+    DrawBevelBox(win->RPort, 110, 210 + topoffset, 80, 80,
                  GTBB_FrameType, BBFT_ICONDROPBOX, GTBB_Recessed, TRUE,
                  GT_VisualInfo, (IPTR) vi, TAG_DONE);
 }
