@@ -6,6 +6,17 @@
     Lang: english
 */
 
+/*
+** Problem: When the tty device driver is closed a message is
+**          probably still in the UNIXIO task that asks for notification
+**          when data arrive on the serial device. The UNIXIO task
+**          will probably end up testing the filedescriptor that has
+**          already been closed down and hang everything.
+** Solution: There must be a way to get rid of that message to the UNIXIO
+**           task. 
+**
+*/
+
 /* Some POSIX includes */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -74,7 +85,11 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
+Disable();
+
     data->filedescriptor = open(unitname[data->unitnum], O_RDWR);
+
+Enable();
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
     if (-1 != data->filedescriptor)
@@ -183,6 +198,11 @@ static Object *serialunit_dispose(Class *cl, Object *obj, struct pRoot_New *msg)
   tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
   if (-1 != data->filedescriptor)
   { 
+//    HIDD_UnixIO_AbortAsyncIONotification(data->unixio_read,
+//                                         data->filedescriptor);
+//    HIDD_UnixIO_AbortAsyncIONotification(data->unixio_write,
+//                                         data->filedescriptor);
+
     close(data->filedescriptor);
   
     FreeMem(data->replyport_read,  sizeof(struct MsgPort));

@@ -19,8 +19,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 
@@ -97,6 +97,7 @@ static VOID hiddserial_disposeunit(Class *cl, Object *obj, struct pHidd_Serial_D
         DisposeObject(su);
         data->SerialUnits[unitnum] = NULL;
         data->usedunits &= ~(1 << unitnum);
+        break;
       }
       unitnum++;
     }
