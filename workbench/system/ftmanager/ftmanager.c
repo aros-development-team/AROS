@@ -20,6 +20,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/freetype2.h>
+#include <aros/debug.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -28,11 +29,15 @@
 //#include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
-#define DEBUG_MAIN(x)		;
-#define DEBUG_FONTBITMAP(x)	;
-#define DEBUG_FONTINFO(x)	;
-#define DEBUG_FONTWINDOW(x)	;
-#define DEBUG_ADDDIR(x)		;
+#define DEBUG_MAIN(x)		x;
+#define DEBUG_FONTBITMAP(x)	x;
+#define DEBUG_FONTINFO(x)	x;
+#define DEBUG_FONTWINDOW(x)	x;
+#define DEBUG_ADDDIR(x)		x;
+
+#ifdef __AROS__
+#define dprintf kprintf
+#endif
 
 #ifndef MAKE_ID
 #	define MAKE_ID(a,b,c,d)	(((a)<<24)|((b)<<16)|((c)<<8)|(d))
@@ -61,6 +66,8 @@
 
 #define UFHN(func)	((IPTR (*)())&func)
 
+#ifndef __AROS__
+
 #define UFH2(rt, func, p1, p2) \
 	rt func(void); \
 	struct EmulLibEntry func##Gate = { TRAP_LIB, 0, (void (*)(void)) func }; \
@@ -77,6 +84,8 @@
 		p1; \
 		p2; \
 		p3;
+
+#endif
 
 /***********************************************************************/
 
@@ -497,6 +506,8 @@ AROS_UFH3(ULONG, FontBitmapDispatch,
 		AROS_UFHA(Object *, o, A2),
 		AROS_UFHA(Msg, msg, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG ret;
 
 	switch (msg->MethodID)
@@ -515,6 +526,8 @@ AROS_UFH3(ULONG, FontBitmapDispatch,
 	}
 
 	return ret;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -595,6 +608,8 @@ AROS_UFH3(void, CycleToString,
 		AROS_UFHA(Object *, cycle, A2),
 		AROS_UFHA(struct CycleToStringP *, p, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG entry;
 	Object *str = p->String;
 	get(cycle, MUIA_Cycle_Active, &entry);
@@ -609,6 +624,8 @@ AROS_UFH3(void, CycleToString,
 				MUIA_String_Integer, p->Values[entry],
 				TAG_END);
 	}
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -626,6 +643,8 @@ AROS_UFH3(void, IntegerBounds,
 		AROS_UFHA(Object *, obj, A2),
 		AROS_UFHA(struct IntegerBoundsP *, p, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	LONG t;
 	get(obj, MUIA_String_Integer, &t);
 	if (t < p->Min)
@@ -636,6 +655,8 @@ AROS_UFH3(void, IntegerBounds,
 	{
 		set(obj, MUIA_String_Integer, p->Max);
 	}
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -647,6 +668,8 @@ AROS_UFH3(void, Metric,
 		AROS_UFHA(Object *, obj, A2),
 		AROS_UFHA(Object **, p, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG t;
 	ULONG state;
 	int k;
@@ -657,6 +680,8 @@ AROS_UFH3(void, Metric,
 	{
 		set(p[k], MUIA_Disabled, state);
 	}
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -1375,6 +1400,8 @@ AROS_UFH3(ULONG, FontInfoDispatch,
 		AROS_UFHA(Object *, o, A2),
 		AROS_UFHA(Msg, msg, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG ret;
 
 	switch (msg->MethodID)
@@ -1403,6 +1430,8 @@ AROS_UFH3(ULONG, FontInfoDispatch,
 	}
 
 	return ret;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -1524,6 +1553,8 @@ AROS_UFH3(ULONG, FontWindowDispatch,
 		AROS_UFHA(Object *, o, A2),
 		AROS_UFHA(Msg, msg, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG ret;
 
 	switch (msg->MethodID)
@@ -1542,6 +1573,8 @@ AROS_UFH3(ULONG, FontWindowDispatch,
 	}
 
 	return ret;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -1597,10 +1630,13 @@ struct MUIS_FontList_Entry
 	STRPTR StyleName;
 };
 
-AROS_UFH2(APTR, flConstructFunc,
+AROS_UFH3(APTR, flConstructFunc,
+    	    	AROS_UFHA(struct Hook *, hook, A0),
 		AROS_UFHA(APTR, pool, A2),
 		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	struct MUIS_FontList_Entry *new_entry;
 	size_t len1 = strlen(entry->FileName) + 1;
 	size_t len2 = strlen(entry->FamilyName) + 1;
@@ -1621,45 +1657,62 @@ AROS_UFH2(APTR, flConstructFunc,
 	}
 
 	return new_entry;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
 struct Hook flConstructHook = {{NULL, NULL}, UFHN(flConstructFunc) };
 
-AROS_UFH2(void, flDestructFunc,
+AROS_UFH3(void, flDestructFunc,
+    	    	AROS_UFHA(struct Hook *, hook, A0),
 		AROS_UFHA(APTR, pool, A2),
 		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	size_t len1 = strlen(entry->FileName) + 1;
 	size_t len2 = strlen(entry->FamilyName) + 1;
 	size_t len3 = strlen(entry->StyleName) + 1;
 
 	FreePooled(pool, entry, sizeof(*entry) + len1 + len2 + len3);
+	
+	AROS_USERFUNC_EXIT
 }
 
 
 struct Hook flDestructHook = {{NULL, NULL}, UFHN(flDestructFunc) };
 
-AROS_UFH2(ULONG, flDisplayFunc,
+AROS_UFH3(ULONG, flDisplayFunc,
+    	    	AROS_UFHA(struct Hook *, hook, A0),
 		AROS_UFHA(STRPTR *, array, A2),
 		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	array[0] = entry->FamilyName;
 	array[1] = entry->StyleName;
 	return 0;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
 struct Hook flDisplayHook = {{NULL, NULL}, UFHN(flDisplayFunc) };
 
-AROS_UFH2(LONG, flCompareFunc,
-		AROS_UFHA(struct MUIS_FontList_Entry *, entry1, A1),
-		AROS_UFHA(struct MUIS_FontList_Entry *, entry2, A2))
+AROS_UFH3(LONG, flCompareFunc,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry2, A2),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry1, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	LONG ret = strcmp(entry1->FamilyName, entry2->FamilyName);
 	if (ret == 0)
 		ret = strcmp(entry1->StyleName, entry2->StyleName);
 	return ret;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -1911,7 +1964,12 @@ struct MUIP_FontList_AddEntry
 
 ULONG flAddEntry(Class *cl, Object *o, struct MUIP_FontList_AddEntry *msg)
 {
+#ifdef __AROS__
+#warning "MUIV_List_Insert_Sorted not yet working in AROS"
+	DoMethod(o, MUIM_List_InsertSingle, msg->Entry, MUIV_List_Insert_Bottom);
+#else
 	DoMethod(o, MUIM_List_InsertSingle, msg->Entry, MUIV_List_Insert_Sorted);
+#endif
 	FreeVec(msg->Entry);
 	return TRUE;
 }
@@ -1922,6 +1980,8 @@ AROS_UFH3(ULONG, FontListDispatch,
 		AROS_UFHA(Object *, o, A2),
 		AROS_UFHA(Msg, msg, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	ULONG ret;
 
 	switch (msg->MethodID)
@@ -1948,6 +2008,8 @@ AROS_UFH3(ULONG, FontListDispatch,
 	}
 
 	return ret;
+	
+	AROS_USERFUNC_EXIT
 }
 
 
@@ -2015,9 +2077,13 @@ AROS_UFH3(void, CloseWinFunc,
 		AROS_UFHA(Object *, app, A2),
 		AROS_UFHA(Object **, winp, A1))
 {
+	AROS_USERFUNC_INIT
+	
 	set(*winp, MUIA_Window_Open, FALSE);
 	DoMethod(app, OM_REMMEMBER, *winp);
 	MUI_DisposeObject(*winp);
+	
+	AROS_USERFUNC_EXIT
 }
 
 
