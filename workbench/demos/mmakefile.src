@@ -18,14 +18,15 @@ ifeq ($(FLAVOUR),native)
 #
 
 FILES := gtdemo helloworld inquire intuitext librarytest listfonts \
-	 palettedemo readicon regiontest shadowborder sift strtest
+	 palettedemo readicon regiontest shadowborder sift strtest \
+	 mxgads
 
 else
 
 FILES := compleximage demowin gtdemo helloworld inquire intuitext \
 	 librarytest listfonts palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio
+	 strtest unixio mxgads
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
