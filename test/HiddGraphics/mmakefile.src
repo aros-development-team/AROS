@@ -1,0 +1,45 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+EXEDIR      := .
+OBJDIR	    := $(GENDIR)/test/GfxHidd
+
+%define_libs
+
+FILES := BitMapNewDispose 
+
+EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+#MM test-hidd-graphics : setup includes
+test-hidd-graphics : show-flags $(EXES)
+	@$(NOP)
+
+#MM test-hidd-graphics-quick : 
+test-hidd-graphics-quick : show-flags $(EXES)
+	@$(NOP)
+
+show-flags :
+	@echo "OBJDIR=$(OBJDIR)"
+	@echo "EXEDIR=$(EXEDIR)"
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(EXEDIR) $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(EXES)
+
+$(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps

@@ -1,0 +1,5 @@
+*.err
+*.bak
+*.o
+mmakefile
+BitMapNewDispose
