@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a window to Workbench's list of AppWindows.
-    Lang: english
+    Lang: English
 */
 
 #define AROS_ALMOST_COMPATIBLE 
@@ -11,6 +11,7 @@
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
+#include <proto/alib.h>
 
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
@@ -24,28 +25,53 @@
         AROS_LH5(struct AppWindow *, AddAppWindowA,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG           , id       , D0),
-        AROS_LHA(ULONG           , userdata , D1),
-        AROS_LHA(struct Window * , window   , A0),
-        AROS_LHA(struct MsgPort *, msgport  , A1),
-        AROS_LHA(struct TagItem *, taglist  , A2),
+        AROS_LHA(ULONG           , id      , D0),
+        AROS_LHA(ULONG           , userdata, D1),
+        AROS_LHA(struct Window * , window  , A0),
+        AROS_LHA(struct MsgPort *, msgport , A1),
+        AROS_LHA(struct TagItem *, taglist , A2),
 
 /*  LOCATION */
         struct WorkbenchBase *, WorkbenchBase, 8, Workbench)
 
 /*  FUNCTION
 
+    Try to add an AppWindow to workbench.library's list of AppWindow:s.
+    The supplied message port will be used to send notification messages
+    whenever an icon is dropped on the window. The message will be of
+    type 'MTYPE_APPWINDOW' and am_ArgList will point to the list of icons
+    that were dropped in the window.
+
     INPUTS
+
+    id        --  window identifier; for your convenience (ignored by
+                  workbench.library)
+    userdata  --  user specific data (ignored by workbench.library)
+    window    --  pointer to the window to add AppWindow functionality to
+    msgport   --  port to which notification messages regarding the window
+                  will be sent
+    taglist   --  tags (must be NULL)
 
     RESULT
 
+    A pointer to an AppWindow structure to use with RemoveAppWindow() when
+    you want to remove the window from the list of AppWindow:s, or NULL
+    if it was not possible to add the 'window' to the AppWindow list.
+
     NOTES
+
+    Applications generally want to call GetDiskObjectNew() -- rather than
+    GetDiskObject() -- to get disk objects for icons dropped in the window.
+        Contrary to AmigaOS, this function will succeed even when there
+    is no running workbench application.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    AddAppWindowDropZoneA(), RemoveAppWindow()
 
     INTERNALS
 
@@ -58,7 +84,15 @@
 
     struct AppWindow *appWindow;
 
-    if( !(appWindow = AllocVec( sizeof( struct AppWindow ), MEMF_ANY | MEMF_CLEAR )) ) {
+    if (window == NULL || msgport == NULL)
+    {
+	return NULL;
+    }
+
+    appWindow = AllocVec(sizeof(struct AppWindow), MEMF_ANY | MEMF_CLEAR);
+
+    if (appWindow == NULL)
+    {
         return NULL;
     }
 
@@ -67,12 +101,14 @@
     appWindow->aw_Window   = window;
     appWindow->aw_MsgPort  = msgport;
 
-    NEWLIST( &(appWindow->aw_DropZones) );
+    NewList(&appWindow->aw_DropZones);
 
-    AddTail( &(WorkbenchBase->wb_AppWindows), (struct Node *) appWindow );
+    LockWorkbench();
+    AddTail(&WorkbenchBase->wb_AppWindows, (struct Node *)appWindow);
+    UnlockWorkbench();
 
-    /* TODO: Notify Workbench Apps about this. */
-
+    /* NotifyWorkbench(WBNOTIFY_Create, WBNOTIFY_AppWindow, WorkbenchBase); */
+    
     return appWindow;
 
     AROS_LIBFUNC_EXIT

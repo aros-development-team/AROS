@@ -1,10 +1,12 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Remove a window from Workbench's list of AppWindows.
-    Lang: english
+    Lang: English
 */
+
+#include <exec/lists.h>
 
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
@@ -15,7 +17,7 @@
 
         #include <proto/workbench.h>
 
-        AROS_LH1(BOOL	, RemoveAppWindow,
+        AROS_LH1(BOOL, RemoveAppWindow,
 
 /*  SYNOPSIS */
 
@@ -26,17 +28,32 @@
 
 /*  FUNCTION
 
+    Try to remove an AppWindow from workbench.library's list of AppWindow:s.
+
     INPUTS
+
+    appWindow  --  pointer to AppWindow structure got from AddAppWindow().
 
     RESULT
 
+    TRUE if the window could be removed, FALSE otherwise.
+
     NOTES
+
+    You have to do another check for messages on the AppWindow message port
+    you specified at the AppWindow creation time (AddAppWindow()) after the
+    window is removed as it may have arrived messages between the last time
+    you checked and the call of this function.
+        Before the AppWindow is removed, all its drop zones will be removed.
+    Thus there is no need to call RemoveAppWindowDropZone() explicitly.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    AddAppWindow(), RemoveAppWindowDropZone()
 
     INTERNALS
 
@@ -47,23 +64,27 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    if( appWindow ) {
-        struct Node *current;
+    if (appWindow == NULL)
+    {
+	return FALSE;
+    }
+    
+    LockWorkbench();
 
-        while( (current = RemHead( &(appWindow->aw_DropZones) )) ) {
-            FreeVec( current );
-        }
-
-        Remove( (struct Node *) appWindow );
-        FreeVec( appWindow );
-
-        /* TODO: Notify the Workbench Apps about this. */
-
-        return TRUE;
+    while (!IsListEmpty(&appWindow->aw_DropZones))
+    {
+	RemoveAppWindowDropZone(appWindow, GetHead(&appWindow->aw_DropZones));
     }
 
-    return FALSE;
+    Remove((struct Node *)appWindow);
+
+    UnlockWorkbench();
+
+    FreeVec(appWindow);
+
+    /* NotifyWorkbench(WBNOTIFY_Create, WBNOTIFY_AppWindow, WorkbenchBase); */
+    
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
-
 } /* RemoveAppWindow */
