@@ -1,5 +1,5 @@
 
-import string, sys
+import string, sys, os.path, time
 
 class Token:
     def __init__ (self, text):
@@ -225,6 +225,7 @@ class XmlFile:
 
 	self.reader = Reader (data)
 	self.reader.filename = filename
+	self.mtime = os.path.getmtime (filename)
 
 	self.tree = self.parseRecursive (0)
 
@@ -232,6 +233,8 @@ class XmlFile:
 	self.reader = Reader (s)
 	self.reader.filename = '<string>'
 	self.tree = self.parseRecursive (0)
+	# Strings are always most current
+	self.mtime = time.time ()
 
     def parseRecursive (self, level):
 	tree = []
