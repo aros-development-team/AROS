@@ -255,7 +255,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 	    case    MUIKEY_RELEASE:
 		    return MUI_EventHandlerRC_Eat;
 
-	    case    MUIKEY_TOP:
+	    case    MUIKEY_BOTTOM:
 	    case    MUIKEY_LINEEND:
 		    if (data->flags & NUMERIC_REVUPDOWN)
 		        set(obj, MUIA_Numeric_Value, data->min);
@@ -263,7 +263,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 			set(obj, MUIA_Numeric_Value, data->max);
 		    return MUI_EventHandlerRC_Eat;
 
-	    case    MUIKEY_BOTTOM:
+	    case    MUIKEY_TOP:
 	    case    MUIKEY_LINESTART:
 		    if (data->flags & NUMERIC_REVUPDOWN)
 			set(obj, MUIA_Numeric_Value, data->max);
@@ -285,21 +285,21 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 			DoMethod(obj, MUIM_Numeric_Increase, 1);
 		    return MUI_EventHandlerRC_Eat;
 
-	    case    MUIKEY_DOWN:
-		    if (data->flags & NUMERIC_REVUPDOWN)
-			DoMethod(obj, MUIM_Numeric_Increase, 1);
-		    else
-			DoMethod(obj, MUIM_Numeric_Decrease, 1);
-		    return MUI_EventHandlerRC_Eat;
-
 	    case    MUIKEY_UP:
 		    if (data->flags & NUMERIC_REVUPDOWN)
+			DoMethod(obj, MUIM_Numeric_Increase, 1);
+		    else
+			DoMethod(obj, MUIM_Numeric_Decrease, 1);
+		    return MUI_EventHandlerRC_Eat;
+
+	    case    MUIKEY_DOWN:
+		    if (data->flags & NUMERIC_REVUPDOWN)
 			DoMethod(obj, MUIM_Numeric_Decrease, 1);
 		    else
 			DoMethod(obj, MUIM_Numeric_Increase, 1);
 		    return MUI_EventHandlerRC_Eat;
 
-	    case MUIKEY_PAGEUP:
+	    case MUIKEY_PAGEDOWN:
 	    case MUIKEY_WORDRIGHT:
 		if (data->flags & NUMERIC_REVUPDOWN)
 		    DoMethod(obj, MUIM_Numeric_Decrease, step);
@@ -307,7 +307,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 		    DoMethod(obj, MUIM_Numeric_Increase, step);
 		return MUI_EventHandlerRC_Eat;
 
-	    case MUIKEY_PAGEDOWN:
+	    case MUIKEY_PAGEUP:
 	    case MUIKEY_WORDLEFT:
 		if (data->flags & NUMERIC_REVUPDOWN)
 		    DoMethod(obj, MUIM_Numeric_Increase, step);
