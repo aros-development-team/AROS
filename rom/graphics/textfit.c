@@ -81,7 +81,7 @@
     }
 
     /* Font too high ? */
-    if (rp->Font->tf_YSize < constrainingBitHeight)
+    if (rp->Font->tf_YSize > constrainingBitHeight)
 	return 0;
 
     textExtent->te_Extent.MinX = 0;
@@ -100,6 +100,8 @@
 
 	textExtent->te_Extent.MaxX = width;
 	string += strDirection;
+	
+	fit ++;
     }
 
     if (fit)
