@@ -1,6 +1,5 @@
 # $Id$
 TOP=../..
-COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 include $(TOP)/config/make.cfg
 

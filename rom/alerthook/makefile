@@ -1,6 +1,5 @@
 # $Id$
 TOP=../..
-COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 # Use OS's own includes over the ones from AROS
 SPECIAL_CFLAGS=-I/usr/include
