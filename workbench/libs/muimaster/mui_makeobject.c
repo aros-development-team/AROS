@@ -19,6 +19,29 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 
+STATIC int get_control_char(const char *label)
+{
+    /* find the control char */
+    int control_char = 0;
+
+    if (label)
+    {
+	const unsigned char *p = (const unsigned char *)label;
+	unsigned char c;
+
+	while ((c = *p++))
+	{
+	    if (c == '_')
+	    {
+		control_char = ToLower(*p);
+		break;
+	    }
+	}
+
+    }
+    return control_char;
+}
+
 STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Library *MUIMasterBase)
 {
     int i = 0;
@@ -204,23 +227,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	    
 	    if (img)
 	    {
-            	/* find the control char */
-
-		if (label)
-		{
-		    unsigned char *p = label;
-		    unsigned char c;
-
-		    while ((c = *p++))
-		    {
-			if (c == '_')
-			{
-			    control_char = ToLower(*p);
-			    break;
-			}
-		    }
-
-		} /* if (label) */
+		control_char = get_control_char(label);
 		
 		return HGroup,
 		    MUIA_VertWeight, 0,
@@ -272,31 +279,13 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	
 	case MUIO_Button: /* STRPTR label */
 	{
-            /* find the control char */
-            int control_char = 0;
-            char *label = (char*)params[0];
-
-	    if (label)
-	    {
-		unsigned char *p = label;
-		unsigned char c;
-
-		while ((c = *p++))
-		{
-		    if (c == '_')
-		    {
-			control_char = ToLower(*p);
-			break;
-		    }
-		}
-
-	    }
+            int control_char = get_control_char((const char *)params[0]);
 
 	    return MUI_NewObject(MUIC_Text,
 		ButtonFrame,
 		MUIA_Font, MUIV_Font_Button,
 		MUIA_Text_HiCharIdx, '_',
-		MUIA_Text_Contents, label,
+		MUIA_Text_Contents, params[0],
 		MUIA_Text_PreParse, "\33c",
 		MUIA_InputMode    , MUIV_InputMode_RelVerify,
 		MUIA_Background   , MUII_ButtonBack,
@@ -306,6 +295,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_Checkmark: /* STRPTR label */
 	{
+            int control_char = get_control_char((const char *)params[0]);
+            
 	    return MUI_NewObject(MUIC_Image,
 		    ButtonFrame,
 		    MUIA_Weight,0,
@@ -313,37 +304,57 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
 	            MUIA_Image_FreeVert, TRUE,
 	            MUIA_ShowSelState, FALSE,
+		    control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 		    TAG_DONE);
 	    break;
 	}
 
 	case MUIO_Cycle: /* STRPTR label, STRPTR *entries */
-		return MUI_NewObject(MUIC_Cycle,
+	{
+            int control_char = get_control_char((const char *)params[0]);
+
+	    return MUI_NewObject(MUIC_Cycle,
 		    ButtonFrame,
+		    MUIA_Font, MUIV_Font_Button,
 		    MUIA_Cycle_Entries, params[1],
+		    control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 		    TAG_DONE);
 	    break;
-
+	}
 	case MUIO_Radio: /* STRPTR label, STRPTR *entries */
-	    break;
+	{
+            int control_char = get_control_char((const char *)params[0]);
 
+	    return MUI_NewObject(MUIC_Radio,
+		     MUIA_Radio_Entries, params[1],
+		     control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
+		     TAG_DONE);
+	    break;
+	}
 
 
 	case MUIO_Slider: /* STRPTR label, LONG min, LONG max */
-	    return SliderObject, /* control char is missing */
+	{
+            int control_char = get_control_char((const char *)params[0]);
+
+	    return SliderObject,
 	        MUIA_Numeric_Min, params[1],
 	        MUIA_Numeric_Max, params[2],
+		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 	        End;
 	    break;
-
+	}
 	case MUIO_String: /* STRPTR label, LONG maxlen */
+	{
+            int control_char = get_control_char((const char *)params[0]);
+
 	    return MUI_NewObject(MUIC_String,
 	        StringFrame,
 	    	MUIA_String_MaxLen,params[1],
+		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 	    	TAG_DONE);
 	    break;
-
-
+	}
 	case MUIO_PopButton: /* STRPTR imagespec */
 	    return MUI_NewObject(MUIC_Image,
 	    	ButtonFrame,
