@@ -102,8 +102,7 @@
       DList = NextDosEntry(DList, Flags);
       while (DList != NULL && ReturnValue == FALSE)
       {
-        DLName = (char *)BADDR(DList->dol_OldName);
-        DLName++;
+        DLName = AROS_BSTR_ADDR(DList->dol_OldName);
 
         Success = Strnicmp(DLName, &Buffer[0], Position - 1);
         if (Success == 0)
