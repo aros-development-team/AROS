@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -99,7 +99,7 @@ AROS_LH1(struct Window *, OpenWindow,
     struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
     struct TagItem  	    	*tag, *tagList;
     struct RastPort 	    	*rp;
-    struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;;
+    struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
     struct Region   	    	*shape = NULL;
     struct IBox     	    	*zoombox = NULL;
     struct Image    	    	*AmigaKey = NULL;
@@ -1500,7 +1500,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             */
 
 #if 1
-
+	    {
             struct Window *parent, *descendant_of_parent;
 
             parent = IntuitionBase->ActiveWindow;
@@ -1518,7 +1518,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
             w->Descendant = descendant_of_parent;
             w->Parent = parent;
-
+	    }
 #endif
 
             w->NextWindow = w->WScreen->FirstWindow;
