@@ -1,0 +1,135 @@
+## version $VER: hdtoolbox.catalog 1.0 (19.02.2004)
+## codeset 0
+## language français
+;
+WORD_Active
+Active
+;
+WORD_AddEntry
+Ajouter une entrée
+;
+WORD_All
+Tout
+;
+WORD_Automount
+Montage automatique
+;
+WORD_Bootable
+Démarrable
+;
+WORD_BootPri
+Priorité au démarrage
+;
+WORD_Cancel
+Annuler
+;
+WORD_Changed
+Modifié
+;
+WORD_Change_Type
+Modifier le type
+;
+WORD_Create_Table
+Créer une table
+;
+WORD_Devices
+Périphériques
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Quitter
+;
+WORD_Geometry
+Géométrie
+;
+WORD_Name
+Nom
+;
+WORD_Switches
+Échanger
+;
+WORD_Parent
+Répertoire parent
+;
+WORD_Ok
+Ok
+;
+WORD_Partitions
+Partitions
+;
+WORD_Partition_Table
+Table de partition
+;
+WORD_Partition_Table_Type
+Type de table de partition
+;
+WORD_Partition_Type
+Type de partition
+;
+WORD_RemoveEntry
+Retirer l'entrée
+;
+WORD_Rename
+Renommer
+;
+WORD_Resize_Move
+Retailler/Déplacer
+;
+WORD_Save_Changes
+Sauver les modifications
+;
+WORD_Size
+Taille
+;
+WORD_Unit
+Unité
+;
+WORD_Units
+Unités
+;
+WORD_Unknown
+Inconnu
+;
+WORD_MENU_Project
+Projet
+;
+WORD_MENU_About
+À propos
+;
+WORD_MENU_Quit
+Quitter
+;
+MSG_ASK_SAVE
+Toutes les données des partitions modifiées seront perdues\n Etes-vous sûr de vouloir sauvegarder la table de partition '%s' ?
+;Alle Daten auf modifizierten Partitionen werden zerstört!\nBist du dir sicher die Änderungen der Partitionstabelle '%s' zu speichern?
+;
+MSG_NO_MEMORY
+Pas assez de mémoire disponible
+;Nicht genug Speicher vorhanden
+;
+MSG_PARTITION_TABLE_FULL
+Table de partition complète
+;Partitionstabelle voll
+;
+MSG_Select_Empty_Area
+Choisir une région vide
+;Wähle eine freien Bereich
+;
+MSG_Select_Partition_Resize_Move
+Choisir une partition à retailler ou déplacer
+;Wähle eine Partition und ändere die Größe bzw. bewege sie
+;
+MSG_Welcome
+Bienvenue à l'outil de partitionnement
+;Willkommen zum Partitionierungswerkzeug
+;
+MSG_WriteTableError
+Erreur d'écriture sur la table de partition
+;Fehler beim Schreiben der Partitionstabelle
+;
+MSG_CreateTableError
+Erreur lors de la création d'une table de partition
+;Fehler beim Erstellen der Partitionstabelle
+;
