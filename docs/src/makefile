@@ -15,7 +15,15 @@ INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(DEST)index.html $(foreach f,$(FILES),$(DEST)$(f).html)
 
-all : autodocs $(HTML) $(DEST)filesystems.doc
+all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
+	$(DEST)cgi-bin/search.cgi
+
+$(DEST)srcs:
+	ln -s $(TOP) $(DEST)srcs
+
+$(DEST)cgi-bin/search.cgi : search.cgi
+	cp search.cgi $@
+	chmod 755 $@
 
 $(DEST)filesystems.doc: filesystems.doc
 	cp filesystems.doc $(DEST)
