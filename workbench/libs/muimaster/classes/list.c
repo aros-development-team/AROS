@@ -378,7 +378,7 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 
     for (j = 0; j < data->columns; j++)
     {
-	ZText *text = zune_text_new(data->strings[j], data->preparses[j], ZTEXT_ARG_NONE, NULL);
+	ZText *text = zune_text_new(data->preparses[j], data->strings[j], ZTEXT_ARG_NONE, NULL);
 	if (text != NULL)
 	{
 	    zune_text_get_bounds(text, obj);
@@ -1010,7 +1010,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 
 	if (col == data->treecolumn) x1 += data->entries[entry_pos]->parents * data->parent_space;
 
-	if ((text = zune_text_new(data->strings[col],data->preparses[col], ZTEXT_ARG_NONE, NULL)))
+	if ((text = zune_text_new(data->preparses[col], data->strings[col], ZTEXT_ARG_NONE, NULL)))
 	{
 	    /* Could be made simpler, as we don't need really the bounds */
 	    zune_text_get_bounds(text, obj);
