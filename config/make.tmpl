@@ -1849,8 +1849,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
     destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= postinstall= 
 
-#MM- %(mmake)-quick : %(mmake)-
--quick
+#MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
  
 %(mmake)-archbase  := %(package)-%(version)
