@@ -29,6 +29,7 @@ enum
     M_Console_Down,
     M_Console_GetDefaultParams,
     M_Console_RenderCursor,
+    M_Console_UnRenderCursor,
     M_Console_ClearCell,
     M_Console_NewWindowSize
     
@@ -79,6 +80,11 @@ struct P_Console_Down
 };
 
 struct P_Console_RenderCursor
+{
+    ULONG MethodID;
+};
+
+struct P_Console_UnRenderCursor
 {
     ULONG MethodID;
 };
@@ -160,6 +166,13 @@ struct P_Console_GetDefaultParams
 ({						\
     struct P_Console_RenderCursor p;		\
     p.MethodID	= M_Console_RenderCursor;	\
+    DoMethodA((o), (Msg)&p);			\
+})
+
+#define Console_UnRenderCursor(o)		\
+({						\
+    struct P_Console_UnRenderCursor p;		\
+    p.MethodID	= M_Console_UnRenderCursor;	\
     DoMethodA((o), (Msg)&p);			\
 })
 

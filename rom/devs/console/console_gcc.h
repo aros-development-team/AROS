@@ -51,6 +51,9 @@ struct ConsoleBase;
 #define XCCP (CU(o)->cu_XCCP) /* Cursor X pos */
 #define YCCP (CU(o)->cu_YCCP) /* Cusror Y pos */
 
+#define XRSIZE (CU(o)->cu_XRSize)
+#define YRSIZE (CU(o)->cu_YRSize)
+
 #define CP_X(o) (GFX_X(o, CU(o)->cu_XCCP))
 #define CP_Y(o) (GFX_Y(o, CU(o)->cu_YCCP))
 
@@ -70,6 +73,10 @@ struct ConsoleBase;
 #define SET_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] |= (1 << ((which) & 7)))
 #define RESET_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] &= ~(1 << ((which) & 7)))
 #define CHECK_RAWEVENT(o, which) (CU(o)->cu_RawEvents[(which) / 8] & (1 << ((which) & 7)))
+
+#define SET_MODE(o, which) (CU(o)->cu_Modes[(which) / 8] |= (1 << ((which) & 7)))
+#define CLEAR_MODE(o, which) (CU(o)->cu_Modes[(which) / 8] &= ~(1 << ((which) & 7)))
+#define CHECK_MODE(o, which) (CU(o)->cu_Modes[(which) / 8] & (1 << ((which) & 7)))
 
 #define CONSOLECLASSPTR		(ConsoleDevice->consoleClass)
 #define STDCONCLASSPTR		(ConsoleDevice->stdConClass)
@@ -108,7 +115,7 @@ enum
     C_REVERSE_IDX,
     
     C_SET_LF_MODE,
-    C_RESET_NEWLINE_MODE,
+    C_RESET_LF_MODE,
     C_DEVICE_STATUS_REPORT,
     
     C_INSERT_CHAR,
@@ -137,6 +144,15 @@ enum
     
     C_SET_RAWEVENTS,
     C_RESET_RAWEVENTS,
+    
+    C_SET_AUTOWRAP_MODE,
+    C_RESET_AUTOWRAP_MODE,
+    C_SET_AUTOSCROLL_MODE,
+    C_RESET_AUTOSCROLL_MODE,
+    C_SET_PAGE_LENGTH,
+    C_SET_LINE_LENGTH,
+    C_SET_LEFT_OFFSET,
+    C_SET_TOP_OFFSET,
     
     NUM_CONSOLE_COMMANDS
 };
@@ -171,8 +187,10 @@ struct intConUnit
 #define CF_DELAYEDDISPOSE	(1L << 0)
 #define CF_DISPOSE		(1L << 1)
 
+#if 0
 /* Determining whether linefeed (LF==LF+CR) mode is on */
 #define CF_LF_MODE_ON		(1L << 2)
+#endif
 
 struct cdihMessage
 {
