@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <exec/types.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "muimaster_intern.h"
 
@@ -32,7 +33,7 @@ struct Library *MUIMasterBase; /* this library */
 
 struct Interface *IGraphics;
 struct Interface *IIntuition;
-struct Interface *IUtility;
+struct UtilityIFace *IUtility;
 struct Interface *ILayers;
 struct Interface *IGadTools;
 struct Interface *ICyberGfx;
@@ -48,18 +49,15 @@ struct Interface *IDataTypes;
 struct Interface *IIcon;
 struct ZuneMasterIFace *IZuneMaster;
 
-
 static struct SignalSemaphore OpenSemaphore;
 
 /*************************************************************************
  The start function
 *************************************************************************/
-#ifndef COMPILE_STATIC
 LONG _start(void)
 {
     return 20;
 }
-#endif
 
 /*************************************************************************
  Open a library and its interface easily
@@ -89,95 +87,32 @@ void CloseLibraryInterface(struct Library *lib, void *interface)
 	IExec->CloseLibrary(lib);
 }
 
-/****************************************************************************/
 
-struct Library *libOpen(struct LibraryManagerInterface *Self, ULONG version)
+/*************************************************************************
+ Deinitialize the custom library base
+*************************************************************************/
+static void DeinitCustomLibraryBase(struct MUIMasterBase_intern *libBase)
 {
-	struct Library *libBase = (struct Library *)Self->Data.LibBase;
-
-	/* Add any specific open code here
-	 * Return 0 before incrementing OpenCnt to fail opening */
-	IExec->ObtainSemaphore(&OpenSemaphore);
- 	/* Add up the open count */
-	((struct Library *)libBase)->lib_OpenCnt++;
-	IExec->ReleaseSemaphore(&OpenSemaphore);
-
-	return libBase;
+    CloseLibraryInterface((struct Library*)libBase->utilitybase,IUtility);
+    CloseLibraryInterface((struct Library*)libBase->dosbase,IDOS);
+    CloseLibraryInterface((struct Library*)libBase->gfxbase,IGraphics);
+    CloseLibraryInterface(libBase->aslbase,IAsl);
+    CloseLibraryInterface(libBase->layersbase,ILayers);
+    CloseLibraryInterface((struct Library*)libBase->intuibase,IIntuition);
+    CloseLibraryInterface((struct Library*)libBase->cxbase,ICommodities);
+    CloseLibraryInterface(libBase->gadtoolsbase,IGadTools);
+    CloseLibraryInterface(libBase->keymapbase,IKeymap);
+    CloseLibraryInterface(DataTypesBase,IDataTypes);
+    CloseLibraryInterface(libBase->iffparsebase,IIFFParse);
+    CloseLibraryInterface(libBase->diskfontbase,IDiskfont);
+    CloseLibraryInterface(libBase->iconbase,IIcon);
 }
 
-/* Close the library */
-APTR libClose(struct LibraryManagerInterface *Self)
+/*************************************************************************
+ Initialize the custom library base
+*************************************************************************/
+static int InitCustomLibraryBase(struct MUIMasterBase_intern *libBase)
 {
-    struct Library *libBase = (struct Library *)Self->Data.LibBase;
-    /* Make sure to undo what open did */
-    IExec->ObtainSemaphore(&OpenSemaphore);
-	/* Make the close count */
-	libBase->lib_OpenCnt--;
-	IExec->ReleaseSemaphore(&OpenSemaphore);
-	return 0;
-}
-
-
-/* Expunge the library */
-APTR libExpunge(struct LibraryManagerInterface *Self)
-{
-    /* If your library cannot be expunged, return 0 */
-    struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
-    APTR result = (APTR)0;
-    struct Library *libBase = (struct Library *)Self->Data.LibBase;
-
-    if (libBase->lib_OpenCnt == 0)
-    {
-    	result = (APTR)MUIMB(libBase)->seglist;
-
-	CloseLibraryInterface((struct Library*)MUIMB(libBase)->utilitybase,IUtility);
-	CloseLibraryInterface((struct Library*)MUIMB(libBase)->dosbase,IDOS);
-	CloseLibraryInterface((struct Library*)MUIMB(libBase)->gfxbase,IGraphics);
-	CloseLibraryInterface(MUIMB(libBase)->aslbase,IAsl);
-	CloseLibraryInterface(MUIMB(libBase)->layersbase,ILayers);
-	CloseLibraryInterface((struct Library*)MUIMB(libBase)->intuibase,IIntuition);
-	CloseLibraryInterface((struct Library*)MUIMB(libBase)->cxbase,ICommodities);
-	CloseLibraryInterface(MUIMB(libBase)->gadtoolsbase,IGadTools);
-	CloseLibraryInterface(MUIMB(libBase)->keymapbase,IKeymap);
-	CloseLibraryInterface(DataTypesBase,IDataTypes);
-	CloseLibraryInterface(MUIMB(libBase)->iffparsebase,IIFFParse);
-	CloseLibraryInterface(MUIMB(libBase)->diskfontbase,IDiskfont);
-	CloseLibraryInterface(MUIMB(libBase)->iconbase,IIcon);
-
-        IExec->Remove((struct Node *)libBase);
-        IExec->DeleteLibrary(libBase);
-    }
-    else
-    {
-        result = (APTR)0;
-        libBase->lib_Flags |= LIBF_DELEXP;
-    }
-    return result;
-}
-
-/* The ROMTAG Init Function */
-struct Library *libInit(struct Library *libBase, APTR seglist, struct Interface *exec)
-{
-    IExec = (struct ExecIFace *)exec;
-    SysBase = exec->Data.LibBase;
-
-    if ((SysBase->lib_Version < 51) || (SysBase->lib_Version == 51 && SysBase->lib_Revision < 19))
-	return NULL;
-
-    libBase->lib_Node.ln_Type = NT_LIBRARY;
-    libBase->lib_Node.ln_Pri  = 0;
-    libBase->lib_Node.ln_Name = "zunemaster.library";
-    libBase->lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
-    libBase->lib_Version      = VERSION;
-    libBase->lib_Revision     = REVISION;
-    libBase->lib_IdString     = VSTRING;
-
-    /* Store seg list */
-    MUIMB(libBase)->seglist = (BPTR)seglist;
-
-    IExec->InitSemaphore(&OpenSemaphore);
-
-    /* Fill in rest of the library data */
     MUIMB(libBase)->sysbase = (struct ExecBase*)SysBase;
     if (!(MUIMB(libBase)->utilitybase = (void*)OpenLibraryInterface("utility.library",50,&IUtility)))
 	goto out;
@@ -217,25 +152,108 @@ struct Library *libInit(struct Library *libBase, APTR seglist, struct Interface 
     
     IExec->NewMinList(&MUIMB(libBase)->BuiltinClasses);
     IExec->NewMinList(&MUIMB(libBase)->Applications);
+    return 1;
+out:
+    DeinitCustomLibraryBase(libBase);
+    return 0;
+}
+
+/****************************************************************************/
+
+struct Library *libOpen(struct LibraryManagerInterface *Self, ULONG version)
+{
+    struct Library *libBase = (struct Library *)Self->Data.LibBase;
+
+    /* Add any specific open code here
+     * Return 0 before incrementing OpenCnt to fail opening */
+    IExec->ObtainSemaphore(&OpenSemaphore);
+
+    if (libBase->lib_OpenCnt == 0)
+	IZuneMaster = (struct ZuneMasterIFace*)IExec->GetInterface(libBase,"main",1,NULL);
+
+    /* Add up the open count */
+    if (IZuneMaster)
+	libBase->lib_OpenCnt++;
+    else libBase = NULL;
+
+    IExec->ReleaseSemaphore(&OpenSemaphore);
+
+    return libBase;
+}
+
+/* Close the library */
+APTR libClose(struct LibraryManagerInterface *Self)
+{
+    struct Library *libBase = (struct Library *)Self->Data.LibBase;
+    /* Make sure to undo what open did */
+    IExec->ObtainSemaphore(&OpenSemaphore);
+    /* Make the close count */
+    libBase->lib_OpenCnt--;
+    if (libBase->lib_OpenCnt == 0)
+    {
+    	IExec->DropInterface((struct Interface*)IZuneMaster);
+    	IZuneMaster = NULL;
+    }
+    IExec->ReleaseSemaphore(&OpenSemaphore);
+    return 0;
+}
+
+/* Expunge the library */
+APTR libExpunge(struct LibraryManagerInterface *Self)
+{
+    /* If your library cannot be expunged, return 0 */
+    struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
+    APTR result = (APTR)0;
+    struct Library *libBase = (struct Library *)Self->Data.LibBase;
+
+    if (libBase->lib_OpenCnt == 0)
+    {
+    	result = (APTR)MUIMB(libBase)->seglist;
+
+	DeinitCustomLibraryBase(MUIMB(libBase));
+
+        IExec->Remove((struct Node *)libBase);
+        IExec->DeleteLibrary(libBase);
+    }
+    else
+    {
+        result = (APTR)0;
+        libBase->lib_Flags |= LIBF_DELEXP;
+    }
+    return result;
+}
+
+/* The ROMTAG Init Function */
+struct Library *libInit(struct Library *libBase, APTR seglist, struct Interface *exec)
+{
+    IExec = (struct ExecIFace *)exec;
+    SysBase = exec->Data.LibBase;
+
+    if ((SysBase->lib_Version < 51) || (SysBase->lib_Version == 51 && SysBase->lib_Revision < 19))
+	return NULL;
+
+    libBase->lib_Node.ln_Type = NT_LIBRARY;
+    libBase->lib_Node.ln_Pri  = 0;
+    libBase->lib_Node.ln_Name = "zunemaster.library";
+    libBase->lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+    libBase->lib_Version      = VERSION;
+    libBase->lib_Revision     = REVISION;
+    libBase->lib_IdString     = VSTRING;
+
+    /* Store seg list */
+    MUIMB(libBase)->seglist = (BPTR)seglist;
+
+    IExec->InitSemaphore(&OpenSemaphore);
+
+    if (!InitCustomLibraryBase(MUIMB(libBase)))
+    	goto out;
 
     /* Store the libraries base */
     MUIMasterBase = libBase;
 
     return libBase;
 out:
-    CloseLibraryInterface((struct Library*)MUIMB(libBase)->utilitybase,IUtility);
-    CloseLibraryInterface((struct Library*)MUIMB(libBase)->dosbase,IDOS);
-    CloseLibraryInterface((struct Library*)MUIMB(libBase)->gfxbase,IGraphics);
-    CloseLibraryInterface(MUIMB(libBase)->aslbase,IAsl);
-    CloseLibraryInterface(MUIMB(libBase)->layersbase,ILayers);
-    CloseLibraryInterface((struct Library*)MUIMB(libBase)->intuibase,IIntuition);
-    CloseLibraryInterface((struct Library*)MUIMB(libBase)->cxbase,ICommodities);
-    CloseLibraryInterface(MUIMB(libBase)->gadtoolsbase,IGadTools);
-    CloseLibraryInterface(MUIMB(libBase)->keymapbase,IKeymap);
-    CloseLibraryInterface(DataTypesBase,IDataTypes);
-    CloseLibraryInterface(MUIMB(libBase)->iffparsebase,IIFFParse);
-    CloseLibraryInterface(MUIMB(libBase)->diskfontbase,IDiskfont);
-    CloseLibraryInterface(MUIMB(libBase)->iconbase,IIcon);
+    DeinitCustomLibraryBase(MUIMB(libBase));
     return NULL;
 }
 
