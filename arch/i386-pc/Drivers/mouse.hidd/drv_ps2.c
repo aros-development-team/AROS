@@ -6,6 +6,10 @@
     Lang: English.
 */
 
+#include "../../speaker.h"
+#undef inb
+#undef outb
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -175,7 +179,10 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 data->u.ps2.expected_mouse_acks = 0;
                 mouse_data[data->u.ps2.mouse_collected_bytes] = mousecode;
                 if (0 == (mouse_data[0] & 8))
+		{
                     data->u.ps2.mouse_collected_bytes = 0;
+		    //Sound(400,100000);
+		}
                 else
                 {
                     data->u.ps2.mouse_collected_bytes++;
@@ -199,11 +206,14 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                          *
                          * http://www.hut.fi/~then/mytexts/mouse.htm
                          */
+#if 0
                         if ( (( (mouse_data[0] & 0x10) && (char)mouse_data[1] <  0) ||
                               (!(mouse_data[0] & 0x10) && (char)mouse_data[1] >= 0)   ) &&
                              (( (mouse_data[0] & 0x20) && (char)mouse_data[2] <  0) ||
                               (!(mouse_data[0] & 0x20) && (char)mouse_data[2] >= 0    )))
+#endif
                         {
+
                             UWORD buttonstate;
                             
 			#if 0
@@ -212,9 +222,15 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                                   mouse_data[1],
                                   mouse_data[2]));
                         #endif    
-                            e->x = (char)mouse_data[1];
-                            e->y = -(char)mouse_data[2];	/* dy is reversed! */
-
+                            e->x = mouse_data[1];
+                            e->y = mouse_data[2];
+			    
+			    if (mouse_data[0] & 0x10) e->x -= 256;
+			    if (mouse_data[0] & 0x20) e->y -= 256;
+			    			    
+			    /* dy is reversed! */
+    	    	    	    e->y = -(e->y);
+			    
                             if (e->x || e->y)
                             {
                                 e->button   = vHidd_Mouse_NoButton;
@@ -301,7 +317,7 @@ int mouse_ps2reset(struct mouse_data *data)
      * Now the commands themselves.
      */
     aux_write(KBD_OUTCMD_SET_RATE);
-    aux_write(200);
+    aux_write(100);
     aux_write(KBD_OUTCMD_SET_RES);
     aux_write(3);
     aux_write(KBD_OUTCMD_SET_SCALE21);
