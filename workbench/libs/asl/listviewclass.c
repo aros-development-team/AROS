@@ -236,7 +236,7 @@ static void renderitem(Class *cl, Object *o, struct Node *node, WORD liney, stru
     	    	    	    (data->toppixel % data->lineheight);
     msg.lvdm_Bounds.MaxY  = msg.lvdm_Bounds.MinY + data->lineheight - 1;    
     msg.lvdm_State = node ? (IS_SELECTED(node) ? ASLLVR_SELECTED : ASLLVR_NORMAL) : ASLLVR_NORMAL;
-    
+
     if (data->renderrect)
     {
     	if (!AndRectRect(data->renderrect, &msg.lvdm_Bounds, NULL)) return;
@@ -1050,7 +1050,7 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	{
 	    WORD abs_scroll = (data->scroll >= 0) ? data->scroll : -data->scroll;
 	    
-	    if ((abs_scroll == 0) || (abs_scroll > data->visible / 2))
+	    if ((abs_scroll == 0) || (abs_scroll > data->visiblepixels / 2))
 	    {
                 renderallitems(cl, o, msg->gpr_RPort);
 	    }
