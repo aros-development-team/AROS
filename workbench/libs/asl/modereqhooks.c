@@ -17,6 +17,7 @@
 #include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
 #include <graphics/displayinfo.h>
 #include <graphics/modeid.h>
 #include <graphics/monitor.h>
@@ -766,14 +767,15 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GTMN_TextAttr	, (IPTR)GetIR(ismreq)->ir_TextAttr  },
 	    {TAG_DONE   	    	    	    	    	    }
 	};
-	    
-	
+	    	
+	if (menu_tags[1].ti_Data == NULL) menu_tags[1].ti_Tag = TAG_IGNORE;
+
 	LocalizeMenus(nm, GetIR(ismreq)->ir_Catalog, AslBase);
 
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   
-	if ((ld->ld_Menu = CreateMenusA(nm, menu_tags)))
+	if ((ld->ld_Menu = CreateMenusA(nm, NULL)))
 	{
 	    if (!LayoutMenusA(ld->ld_Menu, ld->ld_VisualInfo, menu_tags))
 	    {

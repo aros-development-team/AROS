@@ -30,7 +30,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase);
 void FOSetFontString(STRPTR name, struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetSizeString(LONG size, struct LayoutData *ld, struct AslBase_intern *AslBase);
-VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase);
 LONG FOGetDrawMode(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase);
 UBYTE FOGetStyle(struct LayoutData *ld, struct AslBase_intern *AslBase);
@@ -39,7 +39,6 @@ void FOSetFGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *Asl
 void FOSetBGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *AslBase);
 UBYTE FOGetFGColor(struct LayoutData *ld, struct AslBase_intern *AslBase);
 UBYTE FOGetBGColor(struct LayoutData *ld, struct AslBase_intern *AslBase);
-
 
 
 

@@ -17,6 +17,7 @@
 #include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
 #include <graphics/gfx.h>
 #include <devices/rawkeycodes.h>
 #include <libraries/gadtools.h>
@@ -792,8 +793,8 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	} si [] =
 	{
 	    {ID_STRPATTERN, ifreq->ifr_Pattern, MAX_PATTERN_LEN, &udata->PatternGad },
-	    {ID_STRDRAWER , ifreq->ifr_Drawer , 257            , &udata->PathGad    },
-	    {ID_STRFILE   , ifreq->ifr_File   , 257            , &udata->FileGad    },
+	    {ID_STRDRAWER , ifreq->ifr_Drawer , MAX_PATH_LEN   , &udata->PathGad    },
+	    {ID_STRFILE   , ifreq->ifr_File   , MAX_FILE_LEN   , &udata->FileGad    },
 	}; 
 	
         struct TagItem string_tags[] =
@@ -888,6 +889,8 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {TAG_DONE   	    	    	    	    	    }
 	};
 	
+	if (menu_tags[1].ti_Data == NULL) menu_tags[1].ti_Tag = TAG_IGNORE;
+
 	LocalizeMenus(nm, GetIR(ifreq)->ir_Catalog, AslBase);
 	
 	nm[18 + ifreq->ifr_SortBy     ].nm_Flags |= CHECKED;
@@ -914,7 +917,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   
-	if ((ld->ld_Menu = CreateMenusA(nm, menu_tags)))
+	if ((ld->ld_Menu = CreateMenusA(nm, NULL)))
 	{	    
 	    if (!LayoutMenusA(ld->ld_Menu, ld->ld_VisualInfo, menu_tags))
 	    {
@@ -1070,7 +1073,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    }
 		    else if ((imsg->Code == 0) || (imsg->Code == 9))
 		    {
-	        	char filestring[257], checkstring[257], *file;
+	        	char filestring[MAX_FILE_LEN], checkstring[MAX_FILE_LEN], *file;
 	        	BOOL fall_through = (imsg->Code == 9) ? FALSE : TRUE;
 			BOOL has_colon = FALSE;
 			BOOL has_slash = FALSE;
@@ -1106,7 +1109,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		        	    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
 
 				    strcpy(checkstring, dir);
-				    AddPart(checkstring, filestring, 256);
+				    AddPart(checkstring, filestring, MAX_FILE_LEN);
 				}
 
 				if ((lock = Lock(checkstring, ACCESS_READ)))
@@ -1444,12 +1447,27 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
     /* Kill possible old output variables from a previous AslRequest call
        on the same requester */
     
+    #undef GetFR
+    #define GetFR(r) ((struct FileRequester *)r)
+    /*
+     * must be done here and NOT in StripRequester
+     */
+    MyFreeVecPooled(GetFR(req)->fr_Drawer, AslBase);
+    GetFR(req)->fr_Drawer = NULL;
+
+    MyFreeVecPooled(GetFR(req)->fr_File, AslBase);
+    GetFR(req)->fr_File = NULL;
+
+    MyFreeVecPooled(GetFR(req)->fr_Pattern, AslBase);
+    GetFR(req)->fr_Pattern = NULL;
+
     StripRequester(req, ASL_FileRequest, AslBase);
 
     /* Save drawer string gadget text in fr_Drawer */
     
     GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&name);    
     if (!(req->fr_Drawer = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
+    D(bug("FRGetSelectedFiles: fr_Drawer 0x%lx <%s>\n",req->fr_Drawer,req->fr_Drawer));
     ifreq->ifr_Drawer = req->fr_Drawer;
     
     /* Save file string gadget text in fr_File */
@@ -1459,6 +1477,7 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
         GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name);
 	
 	if (!(req->fr_File = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
+	D(bug("FRGetSelectedFiles: fr_File 0x%lx <%s>\n",req->fr_File,req->fr_File));
 	ifreq->ifr_File = req->fr_File;
     }
 
@@ -1491,7 +1510,7 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
 	    }
 	    numargs = numselected > 0 ? numselected : 1;
 	    
-	    if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase)))
+	    if ((wbarg = MyAllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase)))
 	    {
 	        struct ASLLVFileReqNode *node;
 		WORD 			i = 0;
@@ -1527,14 +1546,14 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
 		
 		if (i == 0)
 		{
-		    FreeVecPooled(req->fr_ArgList, AslBase);
+		    MyFreeVecPooled(req->fr_ArgList, AslBase);
 		    req->fr_ArgList = NULL;
 		} else {
 		    req->fr_NumArgs = i;		
 		    lock = 0; /* clear lock to avoid that it is unlocked below */
 		}
 		
-	    } /* if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase))) */
+	    } /* if ((wbarg = MyAllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase))) */
 	    
 	    if (lock) UnLock(lock);
 	    

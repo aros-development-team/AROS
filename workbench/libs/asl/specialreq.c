@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <intuition/screens.h>
+#include <intuition/gadgetclass.h>
 #include <graphics/gfx.h>
 #include <string.h>
 
@@ -141,7 +142,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
         struct TagItem button_tags[] =
 	{
 	    {GA_Text		, (IPTR)oktext		},
-	    {GA_Previous	, 0			},
+	    {TAG_IGNORE	    	, 0			},
 	    {GA_ID		, OK_ID			},
 	    {TAG_IGNORE		, 0			},
 	    {GA_UserData 	, (IPTR)ld		},
@@ -168,6 +169,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 	okbutton = NewObjectA(AslBase->aslbuttonclass, NULL, button_tags);
 	
 	button_tags[0].ti_Data = (IPTR)canceltext;
+	if (okbutton) button_tags[1].ti_Tag = GA_Previous;
 	button_tags[1].ti_Data = (IPTR)okbutton;
 	button_tags[2].ti_Data = CANCEL_ID;
 	

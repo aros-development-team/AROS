@@ -22,7 +22,12 @@
 
 #define FOREQ_MIN_VISIBLELINES 	 	3
 #define FOREQ_VISIBILE_SIZE_CHARS   	4
+
+#ifdef __MORPHOS
+#define FOREQ_COOL_BUTTONS 		0
+#else
 #define FOREQ_COOL_BUTTONS 		1
+#endif
 
 #define FOREQ_FIRST_OBJECT(x) 	    	((x)->NameListview)
 #define FOREQ_LAST_OBJECT(x) 	    	((x)->BGColorGadget)

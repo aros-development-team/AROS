@@ -25,7 +25,11 @@
 
 /* Options */
 
+#ifdef __MORPHOS__
+#define SPECIALREQ_COOL_BUTTONS 	0
+#else
 #define SPECIALREQ_COOL_BUTTONS 	1
+#endif
 
 /*****************************************************************************************/
 

@@ -26,10 +26,17 @@
 
 #define FREQ_MIN_VISIBLELINES 	 	5
 #define FREQ_MIN_FILECOLUMNWIDTH 	150
+
+#ifdef __MORPHOS
+#define FREQ_COOL_BUTTONS 		0
+#else
 #define FREQ_COOL_BUTTONS 		1
+#endif
 
 #define DEF_PROPWIDTH 20
-#define MAX_PATTERN_LEN 64
+#define MAX_PATTERN_LEN 257
+#define MAX_PATH_LEN 1025
+#define MAX_FILE_LEN 257
 
 #define FREQ_FIRST_OBJECT(x) ((x)->Listview)
 #define FREQ_LAST_OBJECT(x) ((x)->PathGad)

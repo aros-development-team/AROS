@@ -386,10 +386,12 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 
     if (data->coolimage)
     {
-        ULONG bg = (G(o)->Flags & GFLG_SELECTED) ? 0x6688BB : 0xB3B3B3;
-	
-	data->coolimagepal[0] = bg;
-	
+        struct ColorMap *cm = msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap;
+        ULONG bg[3];
+
+	GetRGB32(cm, data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN], 1, bg);
+	data->coolimagepal[0] = ((bg[0] & 0xFF000000) >> 8) + ((bg[1] & 0xFF000000) >> 16) + ((bg[2] & 0xFF000000) >> 24);
+		
 	WriteLUTPixelArray((APTR)data->coolimage->data,
 			    0,
 			    0,

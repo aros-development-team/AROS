@@ -19,6 +19,10 @@
 #    include <exec/libraries.h>
 #endif
 
+#ifndef INTUITION_INTUITIONBASE_H
+#   include <intuition/intuitionbase.h>
+#endif
+
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
@@ -50,7 +54,11 @@
 
 /*****************************************************************************************/
 
+#ifdef __MORPHOS__
+#define USE_SHARED_COOLIMAGES 0
+#else
 #define USE_SHARED_COOLIMAGES 1
+#endif
 
 /*****************************************************************************************/
 
@@ -88,6 +96,7 @@ struct IntReq
     WORD		ir_Height;
     UBYTE		ir_Flags;
 
+    APTR		ir_BasePtr;	/* Compatability: Saved copy of REG_A4 */
 };
 
 /* Nodes in the ReqList */
@@ -115,8 +124,14 @@ struct IntFileReq
     UBYTE		ifr_Flags1;
     UBYTE		ifr_Flags2;
     struct Hook 	*ifr_FilterFunc;
+
+#ifdef __MORPHOS__
+    APTR 		ifr_HookFunc;
+#else
     ULONG 		(*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
+#endif
     			/* ASLFR_HookFunc = Combined callback function */
+
     ULONG		*ifr_GetSortBy;
     ULONG		*ifr_GetSortOrder;
     ULONG		*ifr_GetSortDrawers;
@@ -140,7 +155,13 @@ struct IntFontReq
     UWORD		ifo_MinHeight;
     UWORD		ifo_MaxHeight;
     struct Hook		*ifo_FilterFunc;
+
+#ifdef __MORPHOS__
+    APTR 		ifo_HookFunc;
+#else
     ULONG		(*ifo_HookFunc)(ULONG, APTR, struct FontRequester *);
+#endif
+
     UWORD		ifo_MaxFrontPen;
     UWORD		ifo_MaxBackPen;
 
@@ -152,8 +173,7 @@ struct IntFontReq
     STRPTR		ifo_DrawModeJAM1Text;
     STRPTR		ifo_DrawModeJAM2Text;
     STRPTR  	    	ifo_DrawModeCOMPText;
-    STRPTR		ifo_DrawMode0Text;
-    
+    STRPTR		ifo_DrawMode0Text; 
 };
 
 /*****************************************************************************************/
@@ -309,14 +329,16 @@ void SortInNode(APTR req, struct List *list, struct Node *node,
 		WORD (*compare)(APTR, APTR, APTR, struct AslBase_intern *),
 		struct AslBase_intern *AslBase);
 
-APTR AllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase);
-void FreeVecPooled(APTR mem, struct AslBase_intern *AslBase);
+APTR MyAllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase);
+void MyFreeVecPooled(APTR mem, struct AslBase_intern *AslBase);
 char *PooledCloneString(const char *name1, const char *name2, APTR pool,
 			struct AslBase_intern *AslBase);
+char *PooledCloneStringLen(const char *name1, ULONG len1, const char *name2, ULONG len2, APTR pool,
+			   struct AslBase_intern *AslBase);
 char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase);
 char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
 			   struct AslBase_intern *AslBase);
-char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
+char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
 void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase);
 
 AROS_UFP3(ULONG, StringEditFunc,

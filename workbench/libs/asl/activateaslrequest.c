@@ -8,6 +8,7 @@
 
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 #include "asl_intern.h"
 
 /*****************************************************************************
@@ -49,6 +50,8 @@
 
     struct ReqNode *reqnode;
     
+    if (!requester) return;
+    
     ObtainSemaphore( &(ASLB(AslBase)->ReqListSem));
     
     reqnode = FindReqNode(requester, ASLB(AslBase));
@@ -58,6 +61,8 @@
 	{
     	    ActivateWindow(reqnode->rn_ReqWindow);
 	    
+	    /* Not sure if we need to wait for it to actually become active here before returning or not?! */
+
 	} /* if (reqnode->rn_ReqWindow) */
 	
     } /* if (reqnode) */

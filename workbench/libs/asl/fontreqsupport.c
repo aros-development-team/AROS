@@ -30,8 +30,8 @@
 #include "layout.h"
 
 #define SDEBUG 0
-#define DEBUG 1
-#define ADEBUG 1
+#define DEBUG 0
+#define ADEBUG 0
 
 #include <aros/debug.h>
 
@@ -137,17 +137,58 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
     	if (iforeq->ifo_FilterFunc)
 	{
+#ifdef __MORPHOS__
+	    {
+		ULONG ret;
+
+		REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;	/* Compatability */
+		REG_A0 = (ULONG)iforeq->ifo_FilterFunc;
+		REG_A2 = (ULONG)ld->ld_Req;
+		REG_A1 = (ULONG)&avf_start->af_Attr;
+		ret = (*MyEmulHandle->EmulCallDirect68k)(iforeq->ifo_FilterFunc->h_Entry);
+
+		if (!ret) continue;
+	    }
+#else
 	    if (!(CallHookPkt(iforeq->ifo_FilterFunc, ld->ld_Req, &avf_start->af_Attr))) continue;
+#endif
 	}
 	
 	if (iforeq->ifo_HookFunc && (iforeq->ifo_Flags & FOF_FILTERFUNC))
 	{
+#ifdef __MORPHOS__
+	    {
+		ULONG ret;
+		UWORD *funcptr = iforeq->ifo_HookFunc;
+		ULONG *p = (ULONG *)REG_A7 - 3;
+
+		p[0] = (ULONG)FOF_FILTERFUNC;
+		p[1] = (ULONG)&avf_start->af_Attr;
+		p[2] = (ULONG)ld->ld_Req;
+		REG_A7 = (ULONG)p;
+
+		if (*funcptr >= (UWORD)0xFF00)
+		    REG_A7 -= 4;
+
+		REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;	/* Compatability */
+
+		ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
+
+		if (*funcptr >= (UWORD)0xFF00)
+		    REG_A7 += 4;
+
+		REG_A7 += (3*4);
+
+		if (!ret) continue;
+	    }
+#else
 	    if (!(iforeq->ifo_HookFunc(FOF_FILTERFUNC,
 		    	    	       &avf_start->af_Attr,
 				       (struct FontRequester *)ld->ld_Req))) continue;
+#endif
 	}
 	
-	fontnode = AllocVecPooled(ld->ld_IntReq->ir_MemPool,
+	fontnode = MyAllocVecPooled(ld->ld_IntReq->ir_MemPool,
 	    	    	    	  sizeof(*fontnode) + sizeof(struct Node) * num_sizes,
 				  AslBase);
 	
@@ -240,7 +281,7 @@ void FOFreeFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
    
     ForeachNodeSafe(&udata->NameListviewList, node, succ)
     {
-    	FreeVecPooled(node, AslBase);
+    	MyFreeVecPooled(node, AslBase);
     }
     
     NEWLIST(&udata->NameListviewList);
@@ -310,7 +351,7 @@ VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	if (udata->PreviewFont) CloseFont(udata->PreviewFont);
 	udata->PreviewFont = font;
 	
-    	FreeVecPooled(name, AslBase);
+    	MyFreeVecPooled(name, AslBase);
     }
 }
 
@@ -538,7 +579,6 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     if (node) FOSetSizeString((LONG)node->ln_Name, ld, AslBase);    
 
     FOUpdatePreview(ld, AslBase);
-
 }
 
 /*****************************************************************************************/
@@ -590,8 +630,7 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
     	FOSetBGColor(ld, iforeq->ifo_BackPen, AslBase);
     }
     
-    FOActivateFont(ld, i, fontsize, AslBase);
-    
+    FOActivateFont(ld, i, fontsize, AslBase);    
 }
 
 /*****************************************************************************************/
