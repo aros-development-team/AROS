@@ -321,6 +321,8 @@ ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
 	struct TagItem modetags[] = {
 	    { BIDTAG_NominalWidth,	nominal_width	},
 	    { BIDTAG_NominalHeight,	nominal_height	},
+	    { BIDTAG_DesiredWidth,	nominal_width	},
+	    { BIDTAG_DesiredHeight,	nominal_height	},
 	    { BIDTAG_Depth,		depth		},
 	    { BIDTAG_MonitorID,		monitorid	},
 	    { TAG_DONE, 0UL }
