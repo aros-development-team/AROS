@@ -9,6 +9,7 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include "registertab.h"
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -34,7 +35,8 @@ static struct libinfo
     APTR        var;
     STRPTR      name;
     WORD        version;
-} libtable[] =
+}
+libtable[] =
 {
     {&IntuitionBase     , "intuition.library"           , 39    },
     {&GfxBase           , "graphics.library"            , 39    },
@@ -44,14 +46,37 @@ static struct libinfo
     {NULL                                                       }
 };
 
-static struct RDArgs    *myargs;
-static IPTR             args[NUM_ARGS];
+#define NUM_PAGES 3
+
+static struct page
+{
+    LONG nameid;
+    LONG (*handler)(LONG, LONG);
+    LONG minw;
+    LONG minh;
+}
+pagetable[NUM_PAGES] =
+{
+    {MSG_GAD_TAB_LANGUAGE, page_language_handler},
+    {MSG_GAD_TAB_COUNTRY , page_country_handler },
+    {MSG_GAD_TAB_TIMEZONE, page_timezone_handler}
+};
+
+/*********************************************************************************************/
+
+static struct RegisterTabItem 	regitems[NUM_PAGES + 1];
+static struct RegisterTab   	reg;
+static struct RDArgs        	*myargs;
+static WORD 	    	    	activetab;
+static IPTR                 	args[NUM_ARGS];
 
 /*********************************************************************************************/
 
 static void CloseLibs(void);
 static void FreeArguments(void);
 static void FreeVisual(void);
+static void KillPages(void);
+static void KillWin(void);
 
 /*********************************************************************************************/
 
@@ -82,6 +107,9 @@ void Cleanup(STRPTR msg)
 	}
     }
     
+    KillWin();
+    KillPages();
+    KillMenus();
     FreeVisual();
     FreeArguments();
     CloseLibs();
@@ -162,6 +190,115 @@ static void FreeVisual(void)
 
 /*********************************************************************************************/
 
+static void MakePages(void)
+{
+    WORD i;
+    
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+    	regitems[i].text = MSG(pagetable[i].nameid);
+	
+	if (!(pagetable[i].handler(PAGECMD_INIT, 0)))
+	{
+	    Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+	}
+    }
+    
+    InitRegisterTab(&reg, regitems);
+    
+}
+
+/*********************************************************************************************/
+
+static void KillPages(void)
+{
+    WORD i;
+    
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+ 	pagetable[i].handler(PAGECMD_CLEANUP, 0);
+    }
+}
+
+/*********************************************************************************************/
+
+static void LayoutGUI(void)
+{
+    WORD x, w, max_pagewidth = 0;
+    WORD y, h, max_pageheight = 0;
+    WORD i;
+    
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+    	if (!(pagetable[i].handler(PAGECMD_LAYOUT, 0)))
+	    Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+	    
+	w = pagetable[i].handler(PAGECMD_GETMINWIDTH, 0);
+	h = pagetable[i].handler(PAGECMD_GETMINHEIGHT, 0);
+	
+	if (w > max_pagewidth)  max_pagewidth  = w;
+	if (h > max_pageheight) max_pageheight = h;
+    }
+    
+    LayoutRegisterTab(&reg, scr, dri, TRUE);
+    if (reg.width > max_pagewidth) max_pagewidth = reg.width;
+    
+    SetRegisterTabPos(&reg, scr->WBorLeft + BORDER_X, scr->WBorTop + scr->Font->ta_YSize + 1 + BORDER_Y);
+    
+    pages_left   = scr->WBorLeft + BORDER_X + TABBORDER_X ;
+    pages_top    = scr->WBorTop + scr->Font->ta_YSize + 1 + BORDER_Y + reg.height + TABBORDER_Y;
+    pages_width  = max_pagewidth;
+    pages_height = max_pageheight;
+    
+    SetRegisterTabFrameSize(&reg, pages_width  + TABBORDER_X * 2,
+    	    	    	    	  pages_height + TABBORDER_Y * 2);
+    
+    for(i = 0; i < NUM_PAGES; i++)
+    {
+    	pagetable[i].handler(PAGECMD_SETDOMLEFT  , pages_left    );
+	pagetable[i].handler(PAGECMD_SETDOMTOP 	 , pages_top     );
+    	pagetable[i].handler(PAGECMD_SETDOMWIDTH , max_pagewidth );
+	pagetable[i].handler(PAGECMD_SETDOMHEIGHT, max_pageheight);
+    }
+    
+    winwidth  = pages_width + TABBORDER_X * 2 + BORDER_X * 2;
+    winheight = pages_height + reg.height + TABBORDER_Y * 2 + BORDER_Y * 2;
+}
+
+/*********************************************************************************************/
+
+static void MakeWin(void)
+{
+    win = OpenWindowTags(0, WA_PubScreen, (IPTR)scr,
+    	    	    	    WA_Left, 0,
+			    WA_Top, scr->WBorTop + scr->Font->ta_YSize + 2,
+			    WA_InnerWidth, winwidth,
+			    WA_InnerHeight, winheight,
+			    WA_Title, (IPTR)MSG(MSG_WINTITLE),
+			    WA_CloseGadget, TRUE,
+			    WA_DragBar, TRUE,
+			    WA_DepthGadget, TRUE,
+			    WA_Activate, TRUE,
+			    WA_IDCMP, REGISTERTAB_IDCMP |
+			    	      BUTTONIDCMP |
+				      LISTVIEWIDCMP |
+				      IDCMP_CLOSEWINDOW,
+			    TAG_DONE);
+
+    RenderRegisterTab(win->RPort, &reg, TRUE);
+}
+
+/*********************************************************************************************/
+
+static void KillWin(void)
+{
+    pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
+    
+    if (win) CloseWindow(win);
+}
+
+/*********************************************************************************************/
+
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
@@ -172,9 +309,18 @@ static void HandleAll(void)
     while (!quitme)
     {
 	WaitPort(win->UserPort);
-	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	while((msg = GT_GetIMsg(win->UserPort)))
 	{
-	    switch (msg->Class)
+	    if (HandleRegisterTabInput(&reg, msg))
+	    {
+	    	if (reg.active != activetab)
+		{
+		    pagetable[activetab].handler(PAGECMD_REMGADGETS, 0);
+		    activetab = reg.active;
+		    pagetable[activetab].handler(PAGECMD_ADDGADGETS, 0);
+		}
+	    }
+	    else switch (msg->Class)
 	    {
 		case IDCMP_CLOSEWINDOW:
 		    quitme = TRUE;
@@ -211,11 +357,11 @@ static void HandleAll(void)
 		    } /* while(men != MENUNULL) */
 		    break;
 		    		
-	    } /* switch (msg->Class) */
+	    } /* else switch (msg->Class) */
 	    
-	    ReplyMsg((struct Message *)msg);
+	    GT_ReplyIMsg(msg);
 	    
-	} /* while((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
+	} /* while((msg = GT_GetIMsg(win->UserPort))) */
 	
     } /* while (!quitme) */
 }
@@ -230,7 +376,10 @@ int main(void)
     GetArguments();
     GetVisual();
     MakeMenus();
-    //HandleAll();
+    MakePages();
+    LayoutGUI();
+    MakeWin();
+    HandleAll();
     Cleanup(NULL);
     
     return 0;
