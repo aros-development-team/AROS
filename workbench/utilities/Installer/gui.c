@@ -83,6 +83,7 @@ APTR vi;
 struct Screen *scr;
 struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
 
+#define INTUIGUI 0
 
 #define ID_BOOLGAD 1
 struct NewGadget gt_boolgad = {
@@ -695,45 +696,51 @@ printf("Finished...\n");
     }
     do
     {
+      printf("******* Waiting\n");
       WaitPort( GuiWin->UserPort );
-      imsg = (struct IntuiMessage *)GT_GetIMsg( GuiWin->UserPort );
-      class = imsg->Class;
-      code = imsg->Code;
-      switch( class )
+      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
-        case IDCMP_GADGETUP:
-              switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
-              {
-                case 1:
-                  retval = 0;
-                  finish = TRUE;
-                  break;
-                case 4:
-                  retval = 1;
-                  finish = TRUE;
-                  break;
-                case 0:
-                  abort_install();
-                  break;
-                case 2:
-                  for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
-                  {
-                    printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
-                  }
-                  if( i == 0 )
-                  {
-#warning FIXME: What default help text is used?
-                    printf( "%s\n", get_var_arg( "@asknumber-help" ) );
-                  }
-                  break;
-                default:
-                  break;
-              }
-              break;
-        default:
-              break;
-      }
-      GT_ReplyIMsg(imsg);
+        printf("*** recevied\n");
+	class = imsg->Class;
+	code = imsg->Code;
+	switch( class )
+	{
+          case IDCMP_GADGETUP:
+        	switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+        	{
+                  case 1:
+                    retval = 0;
+                    finish = TRUE;
+                    break;
+                  case 4:
+                    retval = 1;
+                    finish = TRUE;
+                    break;
+                  case 0:
+                    abort_install();
+                    break;
+                  case 2:
+                    for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
+                    {
+                      printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
+                    }
+                    if( i == 0 )
+                    {
+  #warning FIXME: What default help text is used?
+                      printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+                    }
+                    break;
+                  default:
+                    break;
+        	}
+        	break;
+          default:
+        	break;
+	}
+	GT_ReplyIMsg(imsg);
+	
+      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      
     } while( !finish );
 #else
     Delay( 100 );
