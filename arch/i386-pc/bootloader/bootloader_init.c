@@ -96,7 +96,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
     if (mb->magic == MBRAM_VALID)
     {
 	/* Yay. There is data here */
-	if (mb->flags && MB_FLAGS_LDRNAME)
+	if (mb->flags & MB_FLAGS_LDRNAME)
 	{
 	    STRPTR temp;
 
@@ -111,7 +111,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    else
 		bug("[BootLdr] Init: Failed to alloc memory for string\n");
 	}
-	if (mb->flags && MB_FLAGS_CMDLINE)
+	if (mb->flags & MB_FLAGS_CMDLINE)
 	{
 	    STRPTR cmd,buff;
 	    ULONG temp;
@@ -139,7 +139,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    }
 	}
 
-	if (mb->flags && MB_FLAGS_GFX)
+	if (mb->flags & MB_FLAGS_GFX)
 	{
 	    ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
 
@@ -165,7 +165,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 			BootLoaderBase->Vesa.BitsPerPixel));
 	}
 
-	if (mb->flags && MB_FLAGS_DRIVES)
+	if (mb->flags & MB_FLAGS_DRIVES)
 	{
 	    struct mb_drive *curr;                                                                                                  
 
