@@ -58,6 +58,7 @@
 
     case 2: /* Stdout */
 	fh = Output();
+	break;
 
     case 3: {
 	struct Process * me = (struct Process *)FindTask (NULL);
