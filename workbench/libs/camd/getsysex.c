@@ -71,18 +71,18 @@
 				mymidinode->sysex_read=mymidinode->sysex_start;
 			}
 			Buf[numread]=data;
+			numread++;
+
 			if(data==0xf7){
 				mymidinode->sysex_nextis0=TRUE;
 				break;
-			}else{
-				numread++;
 			}
 		}
 
 	ReleaseSemaphore(&mymidinode->sysexsemaphore2);
 
 
-	return numread+1;
+	return numread;
 
 
    AROS_LIBFUNC_EXIT
