@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP LITE PYTHON CAT BISON PNGTOPNM PPMTOILBM STRIP FOR IF TEST EGREP LIBOBJS TARGET_CC TARGET_AS STATIC_LD SHARED_LD KERNEL_LD AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY SDL_CONFIG aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_ld aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_target_arch aros_target_cpu aros_target_incl aros_target_cc aros_target_cc_includes aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_target_cflags aros_target_aflags aros_target_ld aros_target_ldflags aros_static_cflags aros_static_aflags aros_static_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_use_cpak aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP PYTHON CAT BISON PNGTOPNM PPMTOILBM STRIP FOR IF TEST EGREP LIBOBJS TARGET_CC TARGET_AS STATIC_LD SHARED_LD KERNEL_LD AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY SDL_CONFIG aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_ld aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_target_arch aros_target_cpu aros_target_incl aros_target_cc aros_target_cc_includes aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_target_cflags aros_target_aflags aros_target_ld aros_target_ldflags aros_static_cflags aros_static_aflags aros_static_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_use_cpak aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -3171,43 +3171,6 @@ NOP=$ac_cv_prog_NOP
 if test -n "$NOP"; then
   echo "$as_me:$LINENO: result: $NOP" >&5
 echo "${ECHO_T}$NOP" >&6
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
-
-
-
-# Extract the first word of "lite", so it can be a program name with args.
-set dummy lite; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_prog_LITE+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test -n "$LITE"; then
-  ac_cv_prog_LITE="$LITE" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_LITE="lite"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-
-fi
-fi
-LITE=$ac_cv_prog_LITE
-if test -n "$LITE"; then
-  echo "$as_me:$LINENO: result: $LITE" >&5
-echo "${ECHO_T}$LITE" >&6
 else
   echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
@@ -7964,7 +7927,6 @@ s,@TOUCH@,$TOUCH,;t t
 s,@SORT@,$SORT,;t t
 s,@UNIQ@,$UNIQ,;t t
 s,@NOP@,$NOP,;t t
-s,@LITE@,$LITE,;t t
 s,@PYTHON@,$PYTHON,;t t
 s,@CAT@,$CAT,;t t
 s,@BISON@,$BISON,;t t
