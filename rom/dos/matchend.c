@@ -60,14 +60,14 @@
   /* Unlock everything */
   if (NULL == AC)
     return;
-       
-  while (AC != AP->ap_Base)
+
+  while (NULL != AC->an_Parent)
   {
     UnLock(AC->an_Lock);
     AC = AC->an_Parent;
   }
-  
-  UnLock(AC->an_Lock);
+ 
+  CurrentDir(AC->an_Lock);
   
   /* AC points to the very first AChain obj. in the list */
   /* Free the AChain List */
@@ -77,6 +77,7 @@
     FreeVec(AC);
     AC = AC_tmp;
   }
+
   /* Cleanup AP */
   AP->ap_Base = NULL;
   AP->ap_Current = NULL;

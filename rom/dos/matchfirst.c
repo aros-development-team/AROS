@@ -76,192 +76,311 @@
   STRPTR ParsedPattern;
   BPTR firstlock; 
   
-  if (!pat)
-    return FALSE;
+  if (0 == (AP->ap_Flags & APF_DOWILD))
+  {  
+    if (!pat)
+      return FALSE;
   
-  PatLength = 2*strlen(pat)+2;
+    PatLength = 2*strlen(pat)+2;
   
-  ParsedPattern = AllocMem(PatLength, MEMF_ANY);
+    ParsedPattern = AllocMem(PatLength, MEMF_ANY);
   
-  AP->ap_Base = NULL;
+    AP->ap_Base = NULL;
+    AP->ap_Current = NULL;
   
-  if (NULL != ParsedPattern)
-  {
-    LONG PatStart = 0;
-    LONG PatEnd   = 0;
-    BOOL AllDone  = FALSE;
-    LONG index;
-    BOOL success = FALSE;
-    /* put the preparsed string to some memory */
-    /* If there are any wildcards then leave info */
-    if (1 == ParsePatternNoCase(pat, ParsedPattern, PatLength))
-      AP->ap_Flags = (BYTE)APF_ITSWILD;
-
-    /* First I search for the very first ':'. If a '/' comes along
-       before that I quit. The string before and including the ':' 
-       is assumed to be an assigned director, for example 'libs:'.
-       So I will start looking for the pattern in that directory.
-     */
-    while (TRUE)
+    if (NULL != ParsedPattern)
     {
-      if (ParsedPattern[PatEnd] == ':')
+      LONG PatStart = 0;
+      LONG PatEnd   = 0;
+      BOOL AllDone  = FALSE;
+      LONG index;
+      LONG success = FALSE;
+      BPTR origdir;
+      /* 
+      ** Put the preparsed string to some memory 
+      ** If there are any wildcards then leave info 
+      */
+      if (1 == ParsePatternNoCase(pat, ParsedPattern, PatLength))
+        AP->ap_Flags = (BYTE)APF_ITSWILD;
+
+      /*
+      ** First I search for the very first ':'. If a '/' comes along
+      ** before that I quit. The string before and including the ':' 
+      ** is assumed to be an assigned directory, for example 'libs:'.
+      ** So I will start looking for the pattern in that directory.
+      */
+      while (TRUE)
       {
-        success = TRUE;
-        break;
+        if (ParsedPattern[PatEnd] == ':')
+        {
+          success = TRUE;
+          break;
+        }
+        else
+        {
+          if ( ParsedPattern[PatEnd]         == '/'  ||
+               ParsedPattern[PatEnd]         == '\0' ||
+              (ParsedPattern[PatEnd] & 0x80) != 0 
+                           /* a token or nonprintable letter */)
+          {
+            PatEnd = 0;
+            break;
+          }
+        } 
+        PatEnd++;
+      }
+
+      /* 
+      ** Only if success == TRUE an assigned dir was found. 
+      */
+      if (TRUE == success)
+      {
+        /* 
+        ** try to create a lock to that assigned dir. 
+        */
+        char Remember = ParsedPattern[PatEnd+1];
+        PatEnd++;
+        ParsedPattern[PatEnd] = '\0';
+        firstlock = Lock(ParsedPattern, ACCESS_READ);
+        origdir = CurrentDir(firstlock);
+
+        /* 
+        ** check whether an error occurred 
+        */
+        if (NULL == firstlock)
+        {
+          FreeMem(ParsedPattern, PatLength);
+          return ERROR_DIR_NOT_FOUND; /* !!! hope that's the right error code... */
+        }
+      
+        /* 
+        ** I have the correct lock. 
+        */
+        ParsedPattern[PatEnd] = Remember;
+        PatStart=PatEnd;
       }
       else
       {
-        if ( ParsedPattern[PatEnd]         == '/'  ||
-             ParsedPattern[PatEnd]         == '\0' ||
-            (ParsedPattern[PatEnd] & 0x80) != 0 
-                           /* a token or nonprintable letter */)
-        {
-          PatEnd = 0;
-          break;
-        }
-      } 
-      PatEnd++;
-    }
-
-    /* Only if success == TRUE an assigned dir was found. */
-    if (TRUE == success)
-    {
-      /* try to create a lock to that assigned dir. */
-      char Remember = ParsedPattern[PatEnd+1];
-      PatEnd++;
-      ParsedPattern[PatEnd] = '\0';
-      firstlock = Lock(ParsedPattern, ACCESS_READ);
-      /* check whether an error occurred */
-      if (NULL == firstlock)
-      {
-kprintf("Coudln't lock dir!\n");
-        FreeMem(ParsedPattern, PatLength);
-        return ERROR_DIR_NOT_FOUND; /* hope that's the right one... */
+        /* 
+        ** Create a lock to the current dir. 
+        */
+        origdir   = CurrentDir(NULL);
+        firstlock = DupLock(origdir);
+        (void)CurrentDir(firstlock);
       }
       
-      /* I have the correct lock. */
-      ParsedPattern[PatEnd] = Remember;
-      PatStart=PatEnd;
+      /*
+      ** Allocate an AChain structure for the original directory.
+      */
+      AC = (struct AChain *)AllocVec(sizeof(struct AChain), MEMF_CLEAR);
+      if (NULL == AC)
+      {
+        /*
+        ** No more memory
+        */
+        FreeMem(ParsedPattern, PatLength);
+        UnLock(firstlock);
+        CurrentDir(origdir);
+        return ERROR_NO_FREE_STORE;
+      }
+    
+      AC->an_Lock = origdir;
+      AC_Prev     = AC;
+      
+      AP->ap_Base = AC;
+    
+      /* 
+      ** Build the Anchor Chain. For every subdirectory I allocate
+      ** an AChain structure and link them all together 
+      */   
+      while (FALSE == AllDone)
+      {
+        /* 
+        ** Search for the next '/' in the pattern and everything behind
+        ** the previous '/' and before this '/' will go to an_String 
+        */
+        while (TRUE)
+        {
+          if (ParsedPattern[PatEnd] == '\0')
+          {
+            AllDone = TRUE;
+            PatEnd--;
+            break;
+          }
+          if (ParsedPattern[PatEnd] == '/')
+          {
+            PatEnd--;
+            break;
+          }
+          PatEnd++;
+        }
+      
+        AC = AllocVec(sizeof(struct AChain)+(PatEnd-PatStart+2), MEMF_CLEAR);
+        if (NULL == AC)
+        {
+          /* not so bad if this was not the very first AC. */
+          if (NULL == AP->ap_Base)
+          {
+            /*
+            ** oops, it was the very first one. I really cannot do anything for 
+            ** you. - sorry 
+            */
+            FreeMem(ParsedPattern, PatLength);
+            
+            UnLock(AP->ap_Base->an_Lock);
+            FreeMem(AP->ap_Base, sizeof(struct AChain));
+            
+            return ERROR_NO_FREE_STORE;
+          }
+        
+          /* 
+          ** let me out of here. I will at least try to do something for you.
+          ** I can check the first few subdirs but that's gonna be it. 
+          */
+          AP->ap_Flags |= APF_NOMEMERR;
+          break;
+        }
+      
+        if (NULL == AP->ap_Base)
+          AP->ap_Base = AC;
+        
+        if (NULL == AP->ap_Current)
+          AP->ap_Current = AC;
+      
+
+        if (NULL != AC_Prev)
+          AC_Prev->an_Child = AC;
+ 
+        AC->an_Parent = AC_Prev;
+        AC_Prev       = AC;
+      
+        /* 
+        ** copy the part of the pattern to the end of the AChain. 
+        */
+        index = 0;
+        while (PatStart <= PatEnd)
+        {
+          AC->an_String[index] = ParsedPattern[PatStart];
+          index++;
+          PatStart++;
+        }
+        
+        /* 
+        ** Put PatStart and PetEnd behind the '/' that was found. 
+        */
+        PatStart   = PatEnd + 2;
+        PatEnd    += 2;
+
+        /* 
+        ** the trailing '\0' is there automatically as I allocated enough store
+        ** with MEMF_CLEAR
+        */
+
+      } /* while (FALSE == AllDone) */
+
+      /*
+      ** Free the pattern
+      */
+      FreeMem(ParsedPattern, PatLength);
+
+      /* 
+      ** The AnchorChain to work with is the second one. 
+      */
+      AP->ap_Base = AP->ap_Base->an_Child;
+      AC          = AP->ap_Base;
+      
+      AC->an_Lock = firstlock;
+    
+      /* 
+      ** look for the first file that matches the given pattern 
+      */
+      (void)    Examine(AC->an_Lock, &AC->an_Info);
+      success = ExNext (AC->an_Lock, &AC->an_Info);
+      while (DOSTRUE == success &&
+             DOSFALSE == MatchPatternNoCase(AC->an_String,
+                                            AC->an_Info.fib_FileName))
+      {
+        /* 
+        ** I still haven't found what I've been looking for ... 
+        */
+        
+        /*
+        ** Probably I should enter a directory if I find one here and
+        ** an anchor chain is available. Not sure about this, though...
+        ** If for example the pattern is a/b/#?/#? then I might have to
+        ** first go into a/b/ and then start searching for files there...
+        */
+        
+        success = ExNext(AC->an_Lock, &AC->an_Info); 
+      }
+    
+      if (DOSFALSE == success)
+        return ERROR_NO_MORE_ENTRIES;
+    
+      /* 
+      ** Hooray! A matching file was found. Also show the data in AP 
+      */
+      
+      CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
+      if (0 != AP->ap_Strlen)
+      {
+         if (FALSE == writeFullPath(AP))
+            return ERROR_BUFFER_OVERFLOW;
+      }
+      return 0;
+     
     }
     else
     {
-      /* Create a lock to the current dir. */
-      firstlock = CurrentDir(NULL);
-      firstlock = DupLock(firstlock);
-      (void)CurrentDir(firstlock);
-    }
-    
-    /* Build the Anchor Chain. For every subdirector I allocate
-       a AChain structure and link them all together */   
-    while (FALSE == AllDone)
-    {
-
-
-      /* 
-         Search for the next '/' in the pattern and everything behind
-         the previous '/' and before this '/' will go to an_String 
-       */
-      while (TRUE)
-      {
-        if (ParsedPattern[PatEnd] == '\0')
-        {
-          AllDone = TRUE;
-          PatEnd--;
-          break;
-        }
-        if (ParsedPattern[PatEnd] == '/')
-        {
-          PatEnd--;
-          break;
-        }
-        PatEnd++;
-      }
-      
-      AC = AllocMem(sizeof(struct AChain)+(PatEnd-PatStart+2), MEMF_CLEAR);
-      if (NULL == AC)
-      {
-        /* not so bad if this was not the very first AC. */
-        if (NULL == AP->ap_Base)
-        {
-          /* oops, it was the very first one. I really cannot do anything for 
-             you. - sorry */
-          FreeMem(ParsedPattern, PatLength);
-          return ERROR_NO_FREE_STORE;
-        }
-        
-        /* let me out of here. I will at least try to do something for you.
-           I can check the first few subdirs but that's gonna be it. 
-         */
-        AP->ap_Flags |= APF_NOMEMERR;
-        break;
-      }
-      
-      if (NULL == AP->ap_Base)
-      {
-        AP->ap_Base = AC;
-        AP->ap_Current = AC;
-      }
-      
-      if (NULL != AC_Prev)
-      {
-        AC_Prev->an_Child = AC;
-      }
-      AC->an_Parent = AC_Prev;
-      AC_Prev       = AC;
-      
-      /* copy the part of the pattern to the end of the AChain. */
-      index = 0;
-      while (PatStart <= PatEnd)
-      {
-        AC->an_String[index] = ParsedPattern[PatStart];
-        index++;
-        PatStart++;
-      }
-      /* Put PatStart and PetEnd behind the '/' that was found. */
-      PatStart   = PatEnd + 2;
-      PatEnd    += 2;
-      /* 
-         the trailing '\0' is there automatically as I allocated enough store
-         with MEMF_CLEAR
-      */
-
-    } /* while () */
-
-    /* The AnchorChain to work with is the very first one. */
-    AC = AP->ap_Base;
-    AC->an_Lock = firstlock;
-    
-    /* look for the first file that matches the given pattern */
-    success = Examine(AC->an_Lock, &AC->an_Info);
-    success = ExNext (AC->an_Lock, &AC->an_Info);
-    while (DOSTRUE == success &&
-           DOSFALSE == MatchPatternNoCase(AC->an_String,
-                                          AC->an_Info.fib_FileName))
-    {
-      /* I still haven't found what I've been looking for ... */
-      success = ExNext(AC->an_Lock, &AC->an_Info); 
+      return ERROR_NO_FREE_STORE;
     }  
-    
-    if (DOSFALSE == success)
-    {
-      return ERROR_NO_MORE_ENTRIES;
-    }
-    
-    /* Hooray! A matching file was found. Also show the data in AP */
-    CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
-    if (0 != AP->ap_Strlen)
-    {
-       if (FALSE == writeFullPath(AP))
-          return ERROR_BUFFER_OVERFLOW;
-    }
-    return 0;
-     
+  
   }
   else
   {
-    return ERROR_NO_FREE_STORE;
-  }
+    /*
+    ** Do a pure wildcard search. In this case I will search for
+    ** the very first entry and return it. It can be a directory
+    ** or a file entry. In this case I will also have to create
+    ** the AnchorChain structures while walking through the 
+    ** directory.
+    */
+    
+    AC = (struct AChain *)AllocVec(sizeof(struct AChain), MEMF_CLEAR);
+    if (NULL != AC)
+    {
+      LONG success;
+      AP->ap_Base = AC;
+      AP->ap_Current = AC;
+      
+      AC->an_Lock = CurrentDir(NULL);
+      AC->an_Lock = DupLock(AC->an_Lock);
+      (void)CurrentDir(AC->an_Lock);
 
+      (void)    Examine(AC->an_Lock, &AC->an_Info);
+      success = ExNext (AC->an_Lock, &AC->an_Info);
+
+      if (DOSFALSE == success)
+        return ERROR_NO_MORE_ENTRIES;
+    
+      /* 
+      ** Hooray! A matching file/directory was found. Also show the data in AP 
+      */
+      CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
+      if (0 != AP->ap_Strlen)
+      {
+        if (FALSE == writeFullPath(AP))
+           return ERROR_BUFFER_OVERFLOW;
+      }
+      return 0;
+      
+    }
+    else
+    {
+      return ERROR_NO_FREE_STORE;
+    }
+    
+  }
   return 0;
 
   AROS_LIBFUNC_EXIT
