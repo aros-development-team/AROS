@@ -29,26 +29,32 @@ Impossible de créer les Menus !
 MSG_CANT_CREATE_WIN
 Impossible de créer une fenêtre !
 ;
+MSG_SAVE_FAILED
+La sauvegarde a échoué !
+;
 MSG_MEN_PROJECT
 Projet
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Ouvrir ...
+O\0Ouvrir...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Sauver sous ...
+S\0Sauver sous...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Sauver en tant que IFF...
 ;
 MSG_MEN_PROJECT_PRINT
 P\0Imprimer
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0À propos ...
+?\0À propos...
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Quitter
 ;
 MSG_MEN_EDIT
-Edition
+Édition
 ;
 MSG_MEN_EDIT_MARK
 B\0Marquer
@@ -57,7 +63,7 @@ MSG_MEN_EDIT_COPY
 C\0Copier
 ;
 MSG_MEN_EDIT_SELECTALL
-L\0Tout sélectionner
+A\0Tout sélectionner
 ;
 MSG_MEN_EDIT_CLEARSELECTED
 H\0Annuler la sélection
@@ -66,22 +72,61 @@ MSG_MEN_WINDOW
 Fenêtre
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0Plein écran
+F\0Plein écran
 ;
 MSG_MEN_WINDOW_MINIMIZE
- \0Diminuer
+I\0Diminuer
 ;
 MSG_MEN_WINDOW_NORMAL
- \0Normale
+N\0Normale
 ;
 MSG_MEN_WINDOW_MAXIMIZE
- \0Agrandir
+U\0Agrandir
 ;
 MSG_MEN_SETTINGS
 Configuration
 ;
 MSG_MEN_SETTINGS_SAVEDEF
 D\0Sauver par défaut
+;
+MSG_MEN_PICT
+Image
+;
+MSG_MEN_PICT_ZOOM_IN
++\0Zoom +
+;
+MSG_MEN_PICT_ZOOM_OUT
+-\0Zoom -
+;
+MSG_MEN_PICT_RESET
+Z\0Taille par défaut
+;
+MSG_MEN_PICT_FIT_WIN
+T\0Correspondre à la fenêtre
+;
+MSG_MEN_PICT_KEEP_ASPECT
+E\0Conserver l'aspect
+;
+MSG_MEN_PICT_FORCE_MAP
+G\0Forcer la palette
+;
+MSG_MEN_PICT_DITHER
+L\0Lissage
+;
+MSG_MEN_TEXT
+Texte
+;
+MSG_MEN_TEXT_WORDWRAP
+W\0Réarranger
+;
+MSG_MEN_TEXT_SEARCH
+S\0Chercher...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+H\0Chercher précédent
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+J\0Chercher suivant
 ;
 MSG_ASL_OPEN_TITLE
 Ouvrir le fichier
