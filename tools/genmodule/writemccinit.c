@@ -69,7 +69,7 @@ void writemccinit(void)
         "#else\n"
         "#   define %s_DATA_SIZE (0)\n"
         "#endif\n",
-        modulename, modulename, modulename
+        basename, basename, basename
     );
     
     fprintf
@@ -92,7 +92,7 @@ void writemccinit(void)
     {
         int first = 1;
         
-        fprintf(out, "%s %s__%s(", methlistit->type, modulename, methlistit->name);
+        fprintf(out, "%s %s__%s(", methlistit->type, basename, methlistit->name);
         
         for 
         (
@@ -123,7 +123,7 @@ void writemccinit(void)
             "{\n"
             "    switch (message->MethodID)\n"
             "    {\n",
-            modulename
+            basename
         );
         
         for 
@@ -136,7 +136,7 @@ void writemccinit(void)
             (
                 out, 
                 "        case %s: return (IPTR) %s__%s(", 
-                methlistit->name, modulename, methlistit->name
+                methlistit->name, basename, methlistit->name
             );
             
             if (methlistit->argcount != 3)
@@ -173,7 +173,7 @@ void writemccinit(void)
             "\n"
             "/*** Custom dispatcher prototype ********************************************/\n"
             "BOOPSI_DISPATCHER_PROTO(IPTR, %s_Dispatcher, CLASS, object, message);\n",
-            modulename
+            basename
         );
     }
     
@@ -206,7 +206,7 @@ void writemccinit(void)
         "\n"
         "ADD2INITLIB(MCC_Startup, 0);\n"
         "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n",
-        superclass, modulename, modulename
+        superclass, basename, basename
     );
     
     fclose(out);
