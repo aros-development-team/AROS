@@ -56,6 +56,9 @@ $(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
 $(GENSETS) : $(TOP)/tools/gensets/gensets.c
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/gensets/ TOP=$(TOP)
 
+$(GENSETS) : $(wildcard $(TOP)/tools/collect-aros/*.[hc])
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
+
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
