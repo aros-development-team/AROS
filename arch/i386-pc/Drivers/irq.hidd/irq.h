@@ -48,6 +48,7 @@ struct irq_staticdata
 
 OOP_Class *init_irqclass  ( struct irq_staticdata * );
 VOID free_irqclass  ( struct irq_staticdata * );
+void init_Servers  ( struct irq_staticdata * );
 
 #define ISD(cl) ((struct irq_staticdata *)cl->UserData)
 
