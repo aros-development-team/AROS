@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 #MM contrib-freetype-ftmanager : contrib-freetype-module
 
-EXEDIR := $(CONTRIBDIR)/Freetype
-
-EXE := $(EXEDIR)/ftmanager
+FILES  := ftmanager
+EXEDIR := $(AROS_SYSTEM)
+EXE    := $(EXEDIR)/FTManager
 
 USE_AMIGALIB    := yes
 USE_CLIB_SHARED := yes
@@ -19,7 +19,6 @@ contrib-freetype-ftmanager : setup $(EXE)
 
 LIBS := -lfreetype2shared $(LIBS)
 
-FILES := ftmanager
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
 %common
