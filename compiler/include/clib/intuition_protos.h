@@ -4,6 +4,11 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#ifndef INTUITION_INTUITIONBASE_H
+#   include <intuition/intuitionbase.h>
+#endif
+
+extern struct IntuitionBase * IntuitionBase;
 
 /*
     Prototypes
@@ -85,6 +90,20 @@ AROS_LP1(void, DisposeObject,
     AROS_LC1(void, DisposeObject, \
     AROS_LCA(APTR, object, A0), \
     struct IntuitionBase *, IntuitionBase, 107, Intuition)
+
+AROS_LP4(IPTR, DoGadgetMethodA,
+    AROS_LPA(struct Gadget    *, gad, A0),
+    AROS_LPA(struct Window    *, win, A1),
+    AROS_LPA(struct Requester *, req, A2),
+    AROS_LPA(Msg               , msg, A3),
+    struct IntuitionBase *, IntuitionBase, 135, Intuition)
+#define DoGadgetMethodA(gad, win, req, msg) \
+    AROS_LC4(IPTR, DoGadgetMethodA, \
+    AROS_LCA(struct Gadget    *, gad, A0), \
+    AROS_LCA(struct Window    *, win, A1), \
+    AROS_LCA(struct Requester *, req, A2), \
+    AROS_LCA(Msg               , msg, A3), \
+    struct IntuitionBase *, IntuitionBase, 135, Intuition)
 
 AROS_LP4(void, DrawBorder,
     AROS_LPA(struct RastPort *, rp, A0),
@@ -324,6 +343,14 @@ AROS_LP3(APTR, NewObjectA,
     AROS_LCA(struct TagItem *, tagList, A2), \
     struct IntuitionBase *, IntuitionBase, 106, Intuition)
 
+AROS_LP1(struct RastPort *, ObtainGIRPort,
+    AROS_LPA(struct GadgetInfo *, gInfo, A0),
+    struct IntuitionBase *, IntuitionBase, 93, Intuition)
+#define ObtainGIRPort(gInfo) \
+    AROS_LC1(struct RastPort *, ObtainGIRPort, \
+    AROS_LCA(struct GadgetInfo *, gInfo, A0), \
+    struct IntuitionBase *, IntuitionBase, 93, Intuition)
+
 AROS_LP1(struct Screen *, OpenScreen,
     AROS_LPA(struct NewScreen *, newScreen, A0),
     struct IntuitionBase *, IntuitionBase, 33, Intuition)
@@ -417,6 +444,14 @@ AROS_LP1(void, RefreshWindowFrame,
     AROS_LC1(void, RefreshWindowFrame, \
     AROS_LCA(struct Window *, window, A0), \
     struct IntuitionBase *, IntuitionBase, 76, Intuition)
+
+AROS_LP1(void, ReleaseGIRPort,
+    AROS_LPA(struct RastPort *, rp, A0),
+    struct IntuitionBase *, IntuitionBase, 94, Intuition)
+#define ReleaseGIRPort(rp) \
+    AROS_LC1(void, ReleaseGIRPort, \
+    AROS_LCA(struct RastPort *, rp, A0), \
+    struct IntuitionBase *, IntuitionBase, 94, Intuition)
 
 AROS_LP1(void, RemoveClass,
     AROS_LPA(struct IClass *, classPtr, A0),
