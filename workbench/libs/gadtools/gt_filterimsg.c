@@ -1,19 +1,21 @@
 /*
-    (C) 1997 - 2000 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <exec/memory.h>
+#include <intuition/intuition.h>
+#include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
 
     NAME */
-#include <proto/exec.h>
 #include <proto/gadtools.h>
-#include <intuition/intuition.h>
-#include <intuition/gadgetclass.h>
 
 	AROS_LH1(struct IntuiMessage *, GT_FilterIMsg,
 
