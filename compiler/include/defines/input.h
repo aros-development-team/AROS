@@ -12,6 +12,9 @@
     Defines
 */
 
+#define PeekQualifier() \
+	AROS_LC0(UWORD, PeekQualifier, \
+	struct Device *, InputBase, 7, Input)
 
 
 #endif /* DEFINES_INPUT_H */
