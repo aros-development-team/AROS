@@ -43,9 +43,14 @@ Object *PrefsEditor__OM_NEW
     if (self != NULL)
     {
         SETUP_INST_DATA;
-        
+	struct TagItem noforward_attrs[] =
+	{
+	    { MUIA_Group_Forward, FALSE                       },
+	    { TAG_MORE,           (IPTR)message->ops_AttrList }
+	};
+	
         /*-- Handle initial attribute values -------------------------------*/
-        SetAttrsA(self, message->ops_AttrList);
+        SetAttrsA(self, noforward_attrs);
         
         /*-- Set defaults --------------------------------------------------*/
         data->ped_CanSave = TRUE;
