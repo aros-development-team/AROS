@@ -64,7 +64,7 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 	    break;
         case AROSMX_TickLabelPlace:
             data->ticklabelplace = (LONG) tag->ti_Data;
-            break;
+	    break;
 	}
     }
 }
@@ -199,6 +199,18 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
         }
 
         /* Draw main label */
+
+        /* bug: this will not be rendered at the correct
+	        position if ticklabel place and labelplace
+		are the same. I don't think any app will
+		ever do this:
+		
+		   x Item 1
+		   x Item 2 Label
+		   x Item 3
+	
+	*/
+	
         renderlabel(AROSMutualExcludeBase,
                     G(obj), msg->gpr_RPort,
                     data->labelplace, data->ticklabelplace);
@@ -209,9 +221,44 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
                      data->dri->dri_Pens[BACKGROUNDPEN],
                      JAM1);
         ypos = G(obj)->TopEdge + msg->gpr_RPort->Font->tf_Baseline;
+
         for (labels=data->labels; *labels; labels++) {
-            Move(msg->gpr_RPort, G(obj)->LeftEdge + G(obj)->Width + 5, ypos);
-            Text(msg->gpr_RPort, *labels, strlen(*labels));
+	    struct TextExtent te;
+	    WORD x, y, width, height, len;
+	    
+	    x = G(obj)->LeftEdge;
+	    y = ypos;
+
+            len = strlen(*labels);
+            TextExtent(msg->gpr_RPort, *labels, len, &te);
+            width  = te.te_Width;
+            height = te.te_Height;
+ 	    
+            if (data->ticklabelplace == GV_LabelPlace_Right)
+            {
+        	x += data->mximage->Width + 5;
+        	y += (data->mximage->Height - height) / 2 + 1;
+            } else if (data->ticklabelplace == GV_LabelPlace_Above)
+            {
+        	x += (data->mximage->Width - width) / 2;
+        	y -= (height + 2);
+            } else if (data->ticklabelplace == GV_LabelPlace_Below)
+            {
+        	x += (data->mximage->Width - width) / 2;
+        	y += (data->mximage->Height + 3);
+            } else if (data->ticklabelplace == GV_LabelPlace_In)
+            {
+        	x += (data->mximage->Width - width) / 2;
+        	y += (data->mximage->Height - height) / 2;
+            } else /* GV_LabelPlace_Left */
+            {
+        	x -= (width + 4);
+        	y += (data->mximage->Height - height) / 2 + 1;
+            }
+
+	    
+            Move(msg->gpr_RPort, x, y);
+            Text(msg->gpr_RPort, *labels, len);
             ypos += data->fontheight + data->spacing;
         }
     }
