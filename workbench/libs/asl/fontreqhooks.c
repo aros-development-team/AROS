@@ -349,10 +349,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     LONG		error;
     WORD 		gadrows, x, y, w, h, i, y2;
     WORD		sizelvwidth, labelwidth = 0, maxcyclewidth = 0;
-    UBYTE   	    	initialfontname[MAXFONTNAME + 2];
     
     NEWLIST(&udata->NameListviewList);
-    NEWLIST(&udata->SizeListviewList);
 
     udata->SizeListviewRenderHook.h_Entry      = (APTR)AROS_ASMSYMNAME(SizeListviewRenderFunc);
     udata->SizeListviewRenderHook.h_SubEntry   = NULL;
@@ -457,7 +455,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	lv_tags[2].ti_Tag  = GA_Width;
 	lv_tags[2].ti_Data = sizelvwidth - PROPSIZE;
 	lv_tags[5].ti_Data = ID_SIZELISTVIEW;
-	lv_tags[7].ti_Data = (IPTR)&udata->SizeListviewList;
+	lv_tags[7].ti_Data = 0;
 	lv_tags[8].ti_Data = (IPTR)gad;
 	lv_tags[9].ti_Tag  = ASLLV_CallBack;
 	
@@ -527,8 +525,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_RelWidth    	, w 	    	    	    	    },
 	    {GA_Height	    	, udata->ButHeight  	    	    },
 	    {GA_Previous    	, (IPTR)gad 	    	    	    },
-	    {STRINGA_TextVal	, (IPTR)initialfontname     	    },
-	    {STRINGA_MaxChars	, 200	    	    	    	    },
+	    {STRINGA_TextVal	, (IPTR)""     	    	    	    },
+	    {STRINGA_MaxChars	, MAXFONTNAME 	    	    	    },
 	    {STRINGA_EditHook	, (IPTR)&udata->StringEditHook	    },
 	    {GA_ID  	    	, ID_NAMESTRING     	    	    },
 	    {GA_RelVerify   	, TRUE	    	    	    	    },
@@ -536,11 +534,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_TabCycle    	, TRUE	    	    	    	    },
 	    {TAG_DONE	    	    	    	    	    	    }
 	};
-	char *sp;
-	
-	strncpy(initialfontname, iforeq->ifo_TextAttr.ta_Name, MAXFONTNAME + 1);
-	if ((sp = strchr(initialfontname, '.'))) *sp = '\0';
-	
+
 	udata->NameString = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
 	if (!gad) goto failure;
 	
@@ -704,7 +698,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
     }
     
-//    SMRestore(ld, AslBase);
+    FORestore(ld, iforeq->ifo_TextAttr.ta_Name, iforeq->ifo_TextAttr.ta_YSize,  AslBase);
     
     SetIoErr(0);
     ReturnBool ("FOGadInit", TRUE);
@@ -724,7 +718,7 @@ failure:
 
 STATIC VOID FOWindowOpened(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct IntFontReq 		*iforeq = (struct IntFontReq *)ld->ld_IntReq;
+//    struct IntFontReq 		*iforeq = (struct IntFontReq *)ld->ld_IntReq;
 }
 
 /*****************************************************************************************/
@@ -740,6 +734,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 {
     struct IntuiMessage 	*imsg = ld->ld_Event;
     struct FOUserData 		*udata = (struct FOUserData *)ld->ld_UserData;
+    struct IntFontReq 		*iforeq = (struct IntFontReq *)ld->ld_IntReq;
     WORD 			gadid;
     ULONG 			retval = GHRET_OK;
 
@@ -755,11 +750,11 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    switch (imsg->Code)
 	    {
 	        case CURSORUP:
-   		    FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
+   		    FOChangeActiveFont(ld, -1, imsg->Qualifier, FALSE, AslBase);
 		    break;
 		    
 		case CURSORDOWN:
-		    FOChangeActiveFont(ld, 1, imsg->Qualifier, AslBase);
+		    FOChangeActiveFont(ld, 1, imsg->Qualifier, FALSE, AslBase);
 		    break;
 	    }
 	    break;
@@ -792,12 +787,14 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    {
 	        	struct ASLLVFontReqNode	*fontnode;
 			IPTR 			active;
-
+    	    	    	IPTR	    	    	size;
+			
 			GetAttr(ASLLV_Active, udata->NameListview, &active);
-
+    	    	    	GetAttr(STRINGA_LongVal, udata->SizeString, &size);
+			
 			if ((fontnode = (struct ASLLVFontReqNode *)FindListNode(&udata->NameListviewList, (WORD)active)))
 			{
-			    FOActivateFont(ld, active, 0, AslBase);
+			    FOActivateFont(ld, active, (LONG)size, AslBase);
 			
 			    if (imsg->Code) /* TRUE if double clicked */
 			    {
@@ -832,13 +829,13 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		case ID_NAMESTRING:
 		    if (imsg->Code == STRINGCODE_CURSORUP)
 		    {
-		    	FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
+		    	FOChangeActiveFont(ld, -1, imsg->Qualifier, TRUE, AslBase);
 			ActivateGadget((struct Gadget *)udata->NameString, ld->ld_Window, NULL);
 			break;
 		    }
 		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
 		    {
-		    	FOChangeActiveFont(ld, 1, imsg->Qualifier, AslBase);
+		    	FOChangeActiveFont(ld, 1, imsg->Qualifier, TRUE, AslBase);
 			ActivateGadget((struct Gadget *)udata->NameString, ld->ld_Window, NULL);
 			break;
 		    }
@@ -863,6 +860,21 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    }
 		    else if ((imsg->Code == 0) || (imsg->Code == 9))
 		    {
+		    	IPTR val;
+			LONG size;
+			
+		    	GetAttr(STRINGA_LongVal, udata->SizeString, (IPTR *)&val);
+    	    	    	size = (LONG)val;
+			
+			if ((size < iforeq->ifo_MinHeight) || (size > iforeq->ifo_MaxHeight))
+			{
+			    if (size < iforeq->ifo_MinHeight) size = iforeq->ifo_MinHeight;
+			    if (size > iforeq->ifo_MaxHeight) size = iforeq->ifo_MaxHeight;			    
+			    FOSetSizeString(size, ld, AslBase);
+			}
+			
+			FOActivateSize(ld, -size, AslBase);
+			
 		    	break;
 		    }
 		    break;
@@ -887,18 +899,19 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			    /* Control menu */
 			    
 			    case FOMEN_LASTFONT:
-			    	FOChangeActiveFont(ld, -1, 0, AslBase);
+			    	FOChangeActiveFont(ld, -1, 0, FALSE, AslBase);
 			        break;
 				
 			    case FOMEN_NEXTFONT:
-		    		FOChangeActiveFont(ld, 1, 0, AslBase);
+		    		FOChangeActiveFont(ld, 1, 0, FALSE, AslBase);
 			        break;
 			
 			    case FOMEN_RESTORE:
-//			        SMRestore(ld, AslBase);
+			        FORestore(ld, iforeq->ifo_TextAttr.ta_Name, iforeq->ifo_TextAttr.ta_YSize, AslBase);
 			        break;
 
 			    case FOMEN_RESCAN:
+			    	FOGetFonts(ld, AslBase);
 			        break;
 				
 			    case FOMEN_OK:
@@ -936,7 +949,7 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct FOUserData 		*udata = (struct FOUserData *)ld->ld_UserData;
     struct FontRequester 	*req = (struct FontRequester *)ld->ld_Req;
     struct IntReq 		*intreq = ld->ld_IntReq;
-    struct IntFontReq 		*iforeq = (struct IntFontReq *)intreq;
+//  struct IntFontReq 		*iforeq = (struct IntFontReq *)intreq;
     
     EnterFunc(bug("FOGadCleanup(ld=%p)\n", ld));
 

@@ -40,7 +40,6 @@ struct FOUserData
     struct ScrollerGadget   	SizeScrollGad;
     
     struct List			NameListviewList;
-    struct List     	    	SizeListviewList;
     struct Hook     	    	SizeListviewRenderHook;
     struct Hook     	    	StringEditHook;
     struct ASLLVFontReqNode 	*ActiveFont;
@@ -55,6 +54,7 @@ struct ASLLVFontReqNode
 {
     struct Node 	node;
     struct List     	SizeList;
+    struct TextAttr 	TAttr;
     UWORD   	    	NumSizes;
     UBYTE   	    	Name[MAXFONTNAME + 2];
     struct Node	    	SizeNode[0];
