@@ -148,6 +148,7 @@
             gad = makecycle(GTB(GadToolsBase),
                             stdgadtags,
                             VI(ng->ng_VisualInfo),
+			    ng->ng_TextAttr,
                             taglist);
             break;
 
@@ -155,6 +156,7 @@
             gad = makemx(GTB(GadToolsBase),
                 	 stdgadtags,
                 	 VI(ng->ng_VisualInfo),
+			 ng->ng_TextAttr,
                 	 taglist);
             break;
 

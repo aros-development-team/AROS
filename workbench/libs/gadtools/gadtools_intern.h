@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -91,17 +91,22 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
 			  struct TagItem *taglist);
+
 struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 			    struct TagItem stdgadtags[],
 			    struct VisualInfo *vi,
 			    struct TagItem *taglist);
+
 struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
+		      	 struct TextAttr *tattr,
                          struct TagItem *taglist);
+
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
+		      struct TextAttr *tattr,
 		      struct TagItem *taglist);
 
 struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
