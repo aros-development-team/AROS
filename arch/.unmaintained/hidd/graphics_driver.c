@@ -362,8 +362,11 @@ int driver_init(struct GfxBase * GfxBase)
 	if ( SDD(GfxBase)->oopbase )
 	{
 	    /* Init the needed attrbases */
-#warning Activate me again!
+#ifndef CREATE_ROM
 	    if (OOP_ObtainAttrBases(attrbases))
+#else
+#warning Activate me again!
+#endif
 	    {
 		/* Init the driver's defaultfont */
 		if (init_romfonts(GfxBase))
