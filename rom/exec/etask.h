@@ -15,8 +15,9 @@
 struct IntETask
 {
     struct ETask iet_ETask;
-    APTR	 iet_RT;	/* Structure for resource tracking */
-    APTR	 iet_Context;	/* Structure to store CPU registers */
+    APTR	 iet_RT;	   /* Structure for resource tracking */
+    APTR	 iet_Context;	   /* Structure to store CPU registers */
+    APTR         iet_AroscUserData; /* Structure to store shared clib's data */
 };
 
 #define GetIntETask(task) ((struct IntETask *)(((struct Task *) \
