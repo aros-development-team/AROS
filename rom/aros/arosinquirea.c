@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -27,6 +27,7 @@
 
 #define AROS_VERSION_MAJOR 1
 #define AROS_VERSION_MINOR 12
+#define AROS_RELEASE_DATE  7560         /* in days since 1978-01-01 */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
@@ -143,6 +144,19 @@ IPTR kickbase(void);
 	    /* Update this whenever a new AROS is released */
 	    SetData (tag, IPTR, AROS_VERSION_MINOR);
 	    break;
+
+        case AI_ArosReleaseDate:
+            /* Update this whenever a new AROS is released */
+            SetData (tag, IPTR, AROS_RELEASE_DATE);
+            break;
+
+        case AI_ArosBuildDate:
+            SetData (tag, IPTR, (IPTR)__DATE__);
+            break;
+
+        default:
+            SetData (tag, IPTR, 0);
+            break;
 
 	}
     }
