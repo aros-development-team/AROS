@@ -480,8 +480,7 @@ UX11
 void intui_WindowLimits (struct Window * win,
     WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight)
 {
-/*
-    struct XSizeHints * hints;
+    XSizeHints * hints;
 LX11
     hints = XAllocSizeHints();
     hints->flags += PMinSize|PMaxSize;
@@ -495,7 +494,6 @@ LX11
 	, hints
     );
 UX11
-*/
 }
 
 void intui_ActivateWindow (struct Window * win)
