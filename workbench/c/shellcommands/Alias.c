@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Alias CLI command
-    Lang: English
+    Alias CLI command.
 */
 
 /*****************************************************************************
@@ -60,10 +59,6 @@
         Unalias
 
     INTERNALS
-
-    HISTORY
-
-        30-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
 
@@ -142,8 +137,7 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
         /* Display a list of aliases. */
         AliasProc = (struct Process *)FindTask(NULL);
 
-	ForeachNode((struct List *)&(AliasProc->pr_LocalVars),
-	 	    (struct Node *)AliasNode)
+	ForeachNode(&(AliasProc->pr_LocalVars), AliasNode)
         {
 	    if (AliasNode->lv_Node.ln_Type == LV_ALIAS)
 	    {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Unalias CLI command
-    Lang: English
+    Unalias CLI command.
 */
 
 /*****************************************************************************
@@ -48,10 +47,6 @@
         Alias
 
     INTERNALS
-
-    HISTORY
-
-        30-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
 
@@ -107,8 +102,7 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
 
         if (UnaliasProc != NULL)
         {
-            ForeachNode((struct List *)&(UnaliasProc->pr_LocalVars),
-                        (struct Node *)UnaliasNode)
+            ForeachNode(&(UnaliasProc->pr_LocalVars), UnaliasNode)
             {
                 if (UnaliasNode->lv_Node.ln_Type == LV_ALIAS)
                 {

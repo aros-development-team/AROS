@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Unset CLI command
-    Lang: English
+    Unset CLI command.
 */
 
 /*****************************************************************************
@@ -39,8 +38,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 
@@ -91,8 +88,7 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
         */
         UnsetProc = (struct Process *)FindTask(NULL);
 
-        ForeachNode((struct List *)&(UnsetProc->pr_LocalVars),
-                    (struct Node *)UnsetNode)
+        ForeachNode(&(UnsetProc->pr_LocalVars), UnsetNode)
         {
             if (UnsetNode->lv_Node.ln_Type == LV_VAR)
             {
