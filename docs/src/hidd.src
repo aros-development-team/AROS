@@ -216,6 +216,16 @@ Dispose the list of attributes which you got by |HIDDM_QueryModeList()|.
 \item{ULONG HIDDM_Apply (void)} Apply the current config to the HIDD.
 If you dispose the HIDD CP, then all changes will be lost.
 
+\item{ULONG HIDDM_SaveConfig (STRPTR filename)} Save the current config in
+the specified file. If |filename| is |NULL| then save the current config as
+default. This might not result in writing a file to the harddisk if the
+hardware has a FlashROM or EEPROM.
+
+\item{ULONG HIDDM_LoadConfig (STRPTR filename)} Load the config from the
+specified file or the last saved defaults if |filename| is |NULL|. Some
+devices will read the defaults from an EEPROM so this will not always
+generate disc access.
+
 \item{STRPTR HIDDM_ValueToString (Tag tag, IPTR value)} Convert the
 value |value| for the tag |tag| into a human readable string.
 The string returned must not be written to or be freed.
@@ -242,6 +252,14 @@ string must have the same address).
 with the name for a tag. For example a serial HIDD with the
 tag |HIDDV_Serial_BPSRate| might return |"BPS rate"|. The
 application will use this to generate its GUI.
+
+\item{ULONG HIDDM_GetTagType (Tag tag)} Return the type of an attribute.
+Examples are |HIDDV_TagType_ULONG|, |HIDDV_TagType_STRPTR|,
+|HIDDV_TagType_Other| (ie. something special). This can be used to generate
+a general GUI for a HIDD or to load and save attributess of a HIDD. Always
+remember that a HIDD can have many more attributes than this document
+describes. A HIDD can store private data in a taglist which it needs to
+configure itself but which should be invisible to the user.
 
 \end{methods}
 
