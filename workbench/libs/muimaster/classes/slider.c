@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -9,6 +9,8 @@
 #include <string.h>
 
 #include <clib/alib_protos.h>
+#include <clib/macros.h>
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -29,11 +31,11 @@ struct MUI_SliderData
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
     struct ZuneFrameGfx *knob_frame;
-    LONG val_width;
     LONG knob_width;
     LONG knob_height;
+    LONG knob_pos;
+    LONG knob_click;
     LONG state; /* When using mouse */
-    LONG knob_click,clickx,clicky;
 };
 
 
@@ -44,11 +46,11 @@ enum slider_flags {
 
 
 /*
-Slider.mui/MUIA_Slider_Horiz        
+Slider.mui/MUIA_Slider_Horiz
 Slider.mui/MUIA_Slider_Level
-Slider.mui/MUIA_Slider_Max          
-Slider.mui/MUIA_Slider_Min          
-Slider.mui/MUIA_Slider_Quiet        
+Slider.mui/MUIA_Slider_Max
+Slider.mui/MUIA_Slider_Min
+Slider.mui/MUIA_Slider_Quiet
 Slider.mui/MUIA_Slider_Reverse      d
 */
 
@@ -97,16 +99,6 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/*  static ULONG */
-/*  mDispose(struct IClass *cl, Object *obj, Msg msg) */
-/*  { */
-/*      struct MUI_SliderData *data = INST_DATA(cl, obj); */
-/*      Object *cont; */
-
-/*  g_print("slider dispose\n"); */
-/*      return DoSuperMethodA(cl, obj, msg); */
-/*  } */
-
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
@@ -144,10 +136,10 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	nw = TextLength(&rp,buf,strlen(buf));
 	if (nw > width) width = nw;
     }
-
-    data->val_width   = width;
     data->knob_width  = width + 2 * data->knob_frame->xthickness + 2;
     data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+
+    data->knob_pos    = 0;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     return TRUE;
@@ -205,19 +197,19 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    
+
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     if (data->flags & SLIDER_HORIZ)
     {
     	LONG val;
-	LONG pos = DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width) + _mleft(obj);
-
 	char *buf;
 	int width;
 
+	data->knob_pos = DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width) + _mleft(obj);
+
 	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
-	data->knob_frame->draw[data->state](muiRenderInfo(obj), pos, _mtop(obj), data->knob_width, _mheight(obj));
+	data->knob_frame->draw[data->state](muiRenderInfo(obj), data->knob_pos, _mtop(obj), data->knob_width, _mheight(obj));
 
 	get(obj,MUIA_Numeric_Value,&val);
 
@@ -226,8 +218,29 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
 	width = TextLength(_rp(obj),buf,strlen(buf));
 
-	Move(_rp(obj),pos + (data->knob_width - width)/2, _mtop(obj) + _font(obj)->tf_Baseline + data->knob_frame->ythickness);
+	Move(_rp(obj), data->knob_pos + (data->knob_width - width)/2, _mtop(obj) + _font(obj)->tf_Baseline + data->knob_frame->ythickness);
 	Text(_rp(obj),buf,strlen(buf));
+    }
+    else
+    {
+    	LONG val;
+	char *buf;
+	int width;
+
+	data->knob_pos = DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mheight(obj) - data->knob_height) + _mtop(obj);
+
+	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+	data->knob_frame->draw[data->state](muiRenderInfo(obj), _mleft(obj), data->knob_pos, data->knob_width, data->knob_height);
+
+	get(obj,MUIA_Numeric_Value,&val);
+
+	SetFont(_rp(obj),_font(obj));
+	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
+	buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
+	width = TextLength(_rp(obj),buf,strlen(buf));
+
+	Move(_rp(obj), _mleft(obj) + (data->knob_width - width)/2, data->knob_pos + _font(obj)->tf_Baseline + data->knob_frame->ythickness);
+	Text(_rp(obj), buf, strlen(buf));
     }
 
 
@@ -245,51 +258,67 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
     {
 	switch (msg->imsg->Class)
 	{
-	    case    IDCMP_MOUSEBUTTONS:
-	            if (msg->imsg->Code == SELECTDOWN)
+	    case IDCMP_MOUSEBUTTONS:
+	        if (msg->imsg->Code == SELECTDOWN)
+	        {
+	            if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
 	            {
-	            	if (_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj)))
-	            	{
-			    data->clickx = msg->imsg->MouseX;
-			    data->clicky = msg->imsg->MouseY;
-			    
-			    data->knob_click = data->clickx - DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width);
+		        data->knob_click = (data->flags & SLIDER_HORIZ) ? msg->imsg->MouseX : msg->imsg->MouseY;
 
-			    if (_between(data->clickx - data->knob_click + _mleft(obj), msg->imsg->MouseX, data->clickx - data->knob_click + data->knob_width - 1 + _mleft(obj)))
-			    {
-				DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
-				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
-				data->state = 1;
-				MUI_Redraw(obj,MADF_DRAWUPDATE);
-			    }   else
-			    {
-				if (msg->imsg->MouseX < data->clickx - data->knob_click + _mleft(obj))
-				    DoMethod(obj, MUIM_Numeric_Decrease, 1);
-				else
-				    DoMethod(obj, MUIM_Numeric_Increase, 1);
-			    }
-			}
-		    } else
-		    {
-			if (data->state)
+		        if
+			(
+			     ((data->flags & SLIDER_HORIZ) && _between(data->knob_pos, msg->imsg->MouseX, data->knob_pos + data->knob_width  - 1)) ||
+			    (!(data->flags & SLIDER_HORIZ) && _between(data->knob_pos, msg->imsg->MouseY, data->knob_pos + data->knob_height - 1))
+			)
 			{
 			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
-			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
 			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
-			    data->state = 0;
+			    data->state = 1;
 			    MUI_Redraw(obj,MADF_DRAWUPDATE);
 			}
+			else
+			{
+			    if
+			    (
+			         ((data->flags & SLIDER_HORIZ) && msg->imsg->MouseX < data->knob_pos) ||
+                                (!(data->flags & SLIDER_HORIZ) && msg->imsg->MouseY < data->knob_pos)
+			    )
+			    {
+			        DoMethod(obj, MUIM_Numeric_Decrease, 1);
+			    }
+			    else
+			    {
+				DoMethod(obj, MUIM_Numeric_Increase, 1);
+			    }
+			}
 		    }
-		    break;
-
-	    case    IDCMP_MOUSEMOVE:
+	        }
+		else
+   	        {
+		    if (data->state)
 		    {
-			LONG newval;
-			newval =  DoMethod(obj,MUIM_Numeric_ScaleToValue, 0, _mwidth(obj) - data->knob_width, msg->imsg->MouseX - data->knob_click);
-			set(obj,MUIA_Numeric_Value,newval);
-		    }
-		    break;
+			DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			data->state = 0;
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
+	  	    }
+		}
+		break;
+
+	    case IDCMP_MOUSEMOVE:
+	    {
+		LONG newval;
+		
+		if (data->flags & SLIDER_HORIZ)
+		    newval =  DoMethod(obj,MUIM_Numeric_ScaleToValue, 0, _mwidth(obj) - data->knob_width, msg->imsg->MouseX - data->knob_click);
+		else
+		    newval =  DoMethod(obj,MUIM_Numeric_ScaleToValue, 0, _mheight(obj) - data->knob_height, msg->imsg->MouseY - data->knob_click);
+
+		set(obj, MUIA_Numeric_Value, newval);
+	    }
+	    break;
 	}
     }
 
