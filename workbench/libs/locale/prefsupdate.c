@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Tell locale that the preferences have been changed.
@@ -14,7 +14,7 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(struct Locale *, PrefsUpdate,
+	AROS_LH1(struct Locale *, LocalePrefsUpdate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Locale  *, locale, A0),
