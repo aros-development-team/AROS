@@ -27,7 +27,6 @@ struct MUI_PopimageData
 {
     struct Hook press_hook;
     struct Hook close_hook;
-
     Object *wnd;
     Object *imageadjust;
 };
@@ -49,10 +48,15 @@ AROS_UFH3(VOID,Close_Function,
 
     if (ok)
     {
-    	char *spec;
-    	get(data->imageadjust,MUIA_Imageadjust_Spec,&spec);
+	char *spec;
+	get(data->imageadjust,MUIA_Imageadjust_Spec,&spec);
 	set(obj,MUIA_Image_Spec,spec);
     }
+
+    DoMethod(_app(obj),OM_REMMEMBER,data->wnd);
+    MUI_DisposeObject(data->wnd);
+    data->wnd = NULL;
+    data->imageadjust = NULL;
 }
 
 #ifndef _AROS
@@ -68,10 +72,14 @@ AROS_UFH3(VOID,Press_Function,
     if (!data->wnd)
     {
     	Object *ok_button, *cancel_button;
+    	char *img_spec;
+
+	get(obj,MUIA_Image_Spec, &img_spec);
 
     	data->wnd = WindowObject,
+          MUIA_Window_Activate, TRUE,
     	    WindowContents, VGroup,
-		Child, data->imageadjust = MUI_NewObject(MUIC_Imageadjust, TAG_DONE),
+		Child, data->imageadjust = MUI_NewObject(MUIC_Imageadjust, MUIA_Imageadjust_Spec, img_spec, TAG_DONE),
 		Child, HGroup,
 		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
 		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
@@ -83,9 +91,9 @@ AROS_UFH3(VOID,Press_Function,
 	{
 	    DoMethod(_app(obj),OM_ADDMEMBER,data->wnd);
 
-	    DoMethod(ok_button,MUIM_Notify,MUIA_Pressed,FALSE,obj,3,MUIM_CallHook,&data->close_hook,1);
-	    DoMethod(cancel_button,MUIM_Notify,MUIA_Pressed,FALSE,obj,3,MUIM_CallHook,&data->close_hook,0);
-	    DoMethod(data->wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,obj,3,MUIM_CallHook,&data->close_hook,0);
+	    DoMethod(ok_button,MUIM_Notify,MUIA_Pressed,FALSE,_app(obj),6, MUIM_Application_PushMethod, obj, 3, MUIM_CallHook, &data->close_hook, 1);
+	    DoMethod(cancel_button,MUIM_Notify,MUIA_Pressed,FALSE,_app(obj),6, MUIM_Application_PushMethod, obj, 3 ,MUIM_CallHook,&data->close_hook,0);
+	    DoMethod(data->wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,_app(obj),6, MUIM_Application_PushMethod, obj, 3, MUIM_CallHook,&data->close_hook,0);
 	}
     }
     if (data->wnd)
