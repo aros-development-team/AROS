@@ -105,17 +105,6 @@ AROS_LH2(struct IntuitionBase *, init,
 	   struct ExecBase *, sysBase, 0, Intuition)
 {
     AROS_LIBFUNC_INIT
-    struct TagItem inputTask[]=
-    {
-	{ NP_UserData,	0L },
-	{ NP_Entry,	(IPTR)intui_ProcessEvents },
-	{ NP_Input,	0L },
-	{ NP_Output,	0L },
-	{ NP_Name,	(IPTR)"input.device" },
-	{ NP_Priority,	50 },
-	{ TAG_END, 0 }
-    };
-
     SysBase = sysBase;
 
     NEWLIST (PublicClassList);
@@ -144,11 +133,6 @@ AROS_LH2(struct IntuitionBase *, init,
     InitGadgetClass (IntuitionBase); /* After ROOTCLASS */
     InitButtonGClass (IntuitionBase); /* After GADGETCLASS */
 
-    /* TODO Create input.device. This is a bad hack. */
-    inputTask[0].ti_Data = (IPTR)IntuitionBase;
-
-    inputDevice = CreateNewProc (inputTask);
-
     /* You would return NULL if the init failed */
     return IntuitionBase;
     AROS_LIBFUNC_EXIT
@@ -166,9 +150,30 @@ AROS_LH1(struct IntuitionBase *, open,
 	{ SA_Title, (IPTR)"Workbench"   },
 	{ TAG_END, 0 }
     };
+    struct TagItem inputTask[]=
+    {
+	{ NP_UserData,	0L },
+	{ NP_Entry,	(IPTR)intui_ProcessEvents },
+	{ NP_Input,	0L },
+	{ NP_Output,	0L },
+	{ NP_Name,	(IPTR)"input.device" },
+	{ NP_Priority,	50 },
+	{ TAG_END, 0 }
+    };
 
     /* Keep compiler happy */
     version=0;
+
+    /* TODO Create input.device. This is a bad hack. */
+    if (!inputDevice)
+    {
+	inputTask[0].ti_Data = (IPTR)IntuitionBase;
+
+	inputDevice = CreateNewProc (inputTask);
+
+	if (!inputDevice)
+	    return NULL;
+    }
 
     if (!GfxBase)
     {
