@@ -51,20 +51,20 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 ifeq ($(TARGET_CPU),m68k)
-$(INCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
+$(AROS_INCLUDES)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
 	@$(CP) $< $@
 endif
 
-$(INCDIR)/%.h : %.h
+$(AROS_INCLUDES)/%.h : %.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
 	@$(CP) $< $@
 
-$(INCDIR)/%.hpp : %.hpp
+$(AROS_INCLUDES)/%.hpp : %.hpp
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.hpp : %.hpp
@@ -77,4 +77,4 @@ $(INCL_DIRS) :
 
 #MM
 clean :
-	-$(RM) $(INCDIR) $(GENINCDIR)
+	-$(RM) $(AROS_INCLUDES) $(GENINCDIR)

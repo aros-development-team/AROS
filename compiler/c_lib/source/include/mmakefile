@@ -3,17 +3,17 @@ include $(TOP)/config/make.cfg
 
 INCSUBDIRS	:= libcore
 INCLUDES	:= $(wildcard $(foreach d,$(INCSUBDIRS),$(d)/*.[ch]))
-DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES	:= $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM includes-copy : setup-includes
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 	@$(NOP)
 
-$(INCDIR)/%.h : %.h
+$(AROS_INCLUDES)/%.h : %.h
 	$(CP) $< $@
 
-$(INCDIR)/%.c : %.c
+$(AROS_INCLUDES)/%.c : %.c
 	$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
@@ -24,8 +24,8 @@ $(GENINCDIR)/%.c : %.c
 
 #MM
 setup-includes :
-	@$(FOR) dir in $(INCDIR)         \
-		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
+	@$(FOR) dir in $(AROS_INCLUDES)         \
+		$(foreach f,$(INCSUBDIRS),$(AROS_INCLUDES)/$(f)) \
 		$(GENINCDIR) \
 		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
 	; do \
@@ -34,4 +34,4 @@ setup-includes :
 
 #MM
 clean :
-	-$(RM) $(INCDIR) $(GENINCDIR)
+	-$(RM) $(AROS_INCLUDES) $(GENINCDIR)

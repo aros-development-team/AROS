@@ -2,10 +2,9 @@
 
 include $(TOP)/config/make.cfg
 
-INCDIR		:= $(AROS_INCLUDES)
 INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def)
-DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
-DIRS            := $(INCDIR) $(INCDIR)/sys
+DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
+DIRS            := $(AROS_INCLUDES) $(AROS_INCLUDES)/sys
 
 #MM compiler-clib-includes : compiler-clib-includes-setup
 compiler-clib-includes : includes-copy
@@ -20,12 +19,12 @@ compiler-clib-includes-setup : $(DIRS)
 $(DIRS):
 	$(IF) $(TEST) ! -d "$@" ; then $(MKDIR) "$@" ; else $(NOP) ; fi
 
-$(INCDIR)/%.h : %.h
+$(AROS_INCLUDES)/%.h : %.h
 	@$(CP) $< $@
 
-$(INCDIR)/%.def : %.def
+$(AROS_INCLUDES)/%.def : %.def
 	@$(CP) $< $@
 
 #MM
 clean :
-	$(RM) $(INCDIR)
+	$(RM) $(AROS_INCLUDES)
