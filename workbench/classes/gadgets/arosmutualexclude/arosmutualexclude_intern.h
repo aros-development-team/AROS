@@ -50,6 +50,7 @@ struct MXData {
     STRPTR *labels;
     ULONG numlabels;
     UWORD spacing;
+    LONG labelplace;
 };
 
 

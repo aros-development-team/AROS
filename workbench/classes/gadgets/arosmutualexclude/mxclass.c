@@ -39,6 +39,9 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 	case GA_DrawInfo:
 	    data->dri = (struct DrawInfo *) tag->ti_Data;
 	    break;
+        case GA_LabelPlace:
+            data->labelplace = (LONG) tag->ti_Data;
+            break;
 	case AROSMX_Active:
 	    data->active = tag->ti_Data;
 	    break;
@@ -103,23 +106,29 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval = FALSE;
     struct MXData *data = INST_DATA(cl, obj);
-    struct TagItem *tag;
-    struct RastPort *rport;
+    struct TagItem *tag, *taglist = msg->ops_AttrList;
 
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
+    if (msg->MethodID != OM_NEW)
+        retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    tag = FindTagItem(GTMX_Active, msg->ops_AttrList);
-    if (tag) {
-        if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels)) {
-            data->active = tag->ti_Data;
+    while ((tag = NextTagItem(&taglist))) {
+	switch (tag->ti_Tag) {
+        case GA_Disabled:
             retval = TRUE;
-        }
+            break;
+	case AROSMX_Active:
+            if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels)) {
+                data->active = tag->ti_Data;
+                retval = TRUE;
+            }
+            break;
+	}
     }
 
-    if (FindTagItem(GA_Disabled, msg->ops_AttrList))
-        retval = TRUE;
+    if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl))
+    {
+        struct RastPort *rport;
 
-    if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
 	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_REDRAW);
@@ -127,6 +136,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 	    retval = FALSE;
 	}
     }
+
     return retval;
 }
 
@@ -147,9 +157,11 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
         DrawImageState(msg->gpr_RPort, data->mximage,
                        G(obj)->LeftEdge, ypos + data->newactive * blobheight,
                        IDS_SELECTED, data->dri);
-        /* disabled !!! */
     } else {
-        for (y = 0; y < data->numlabels; y++) {
+        STRPTR *labels;
+
+        for (y=0; y<data->numlabels; y++)
+        {
             ULONG state;
 
             if (y == data->active)
@@ -160,10 +172,30 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
                            G(obj)->LeftEdge, ypos,
                            state, data->dri);
             ypos += data->spacing + blobheight;
+
         }
-        /* !!! labels */
-        /* !!! disabled */
+
+        /* Draw main label */
+        renderlabel(AROSMutualExcludeBase,
+                    G(obj), msg->gpr_RPort, data->labelplace);
+
+        /* Draw labels */
+        SetABPenDrMd(msg->gpr_RPort,
+                     data->dri->dri_Pens[TEXTPEN],
+                     data->dri->dri_Pens[BACKGROUNDPEN],
+                     JAM1);
+        ypos = G(obj)->TopEdge + (blobheight - msg->gpr_RPort->Font->tf_YSize) / 2 + msg->gpr_RPort->Font->tf_Baseline;
+        for (labels=data->labels; *labels; labels++) {
+            Move(msg->gpr_RPort, G(obj)->LeftEdge + G(obj)->Width + 5, ypos);
+            Text(msg->gpr_RPort, *labels, strlen(*labels));
+            ypos += data->spacing + blobheight;
+        }
     }
+
+    drawdisabledpattern(AROSMutualExcludeBase, msg->gpr_RPort,
+                        data->dri->dri_Pens[SHADOWPEN],
+                        G(obj)->LeftEdge, G(obj)->TopEdge,
+                        G(obj)->Width, G(obj)->Height);
 
     return TRUE;
 }
@@ -183,7 +215,9 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
         retval = GMR_NOREUSE;
 
         for (y = 0; y < data->numlabels; y++) {
-            if (msg->gpi_Mouse.Y < (G(obj)->TopEdge + blobheight * (y + 1))) {
+            if ((msg->gpi_Mouse.Y >= (blobheight * y)) &&
+                (msg->gpi_Mouse.Y <  (blobheight * (y + 1))))
+            {
                 if (y != data->active) {
                     struct RastPort *rport;
 

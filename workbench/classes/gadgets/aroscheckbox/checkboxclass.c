@@ -102,14 +102,16 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
             retval = TRUE;
             break;
 	case GA_DrawInfo:
-	    data->dri = (struct DrawInfo *) tag->ti_Data;
+            if (msg->MethodID == OM_NEW)
+                data->dri = (struct DrawInfo *) tag->ti_Data;
 	    break;
         case GA_Image:
         case GA_SelectRender:
             retval = TRUE;
             break;
         case GA_LabelPlace:
-            data->labelplace = (LONG)tag->ti_Data;
+            if (msg->MethodID == OM_NEW)
+                data->labelplace = (LONG)tag->ti_Data;
             break;
 	case AROSCB_Checked:
 	    if (tag->ti_Data)
