@@ -68,13 +68,28 @@
 
 
     /* Fault() will do all the formatting of the string */
-    Fault(code, header, buffer, 80);
-
-    if(!FPuts(stream, buffer) && !FPuts(stream, "\n"))
-	ret = TRUE;
+    Fault(code, NULL, buffer, 80);
+    
+    if(header != NULL)
+    {
+	if( !FPuts(stream, header) &&
+	    !FPuts(stream, ":")    && 
+	    !FPuts(stream, buffer) &&
+	    !FPuts(stream, "\n")
+          )
+	    ret = TRUE;
+	else
+	    ret = FALSE;
+    }
     else
-	ret = FALSE;
-
+    {
+	if( !FPuts(stream,buffer) &&
+	    !FPuts(stream,"\n")
+	  )
+	    ret = TRUE;
+	else
+	    ret = FALSE;
+    }	          
     /* All done. */
     me->pr_Result2=code;
     return ret;
