@@ -460,12 +460,13 @@ void scroll_ydelta(Project p, LONG y)
 {
 	LONG pos=p->top_line+y;
 	/* Clamp values to the boundary */
+
+	if(pos<0) pos=0;
 #if 0
 	if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
 #else
 	if(pos>p->max_lines-1) pos=p->max_lines-1;
 #endif
-	if(pos<0) pos=0;
 
 	if(pos!=p->top_line)
 	{

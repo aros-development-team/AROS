@@ -32,7 +32,7 @@ void handle_kbd(Project p)
 	static UBYTE buffer[8], shift;
 
 	/* Look is rawkey can be processed, thus doesn't translate it */
-	if(msgbuf.Code > END_KEY) { record |= 0x80; return; }
+	if(msgbuf.Code > 0x7E) { record |= 0x80; return; }
 
 	/* Look if keypad should be processed as a PC one */
 	if( (*buffer = (msgbuf.Qualifier & IEQUALIFIER_NUMERICPAD && msgbuf.Code >= N0_KEY &&
@@ -167,6 +167,14 @@ void handle_kbd(Project p)
 		case END_KEY:
 			if( msgbuf.Qualifier & CTRLKEYS ) move_to_line(p,p->max_lines-1,LINE_AS_IS);
 			else                              horiz_pos(p,MAXPOS);
+			return;
+			
+		case RAWKEY_NM_WHEEL_UP:
+			scroll_ydelta(p, -3);
+			return;
+			
+		case RAWKEY_NM_WHEEL_DOWN:
+			scroll_ydelta(p, 3);
 			return;
 #endif
 
