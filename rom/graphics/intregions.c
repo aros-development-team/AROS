@@ -129,10 +129,6 @@ BOOL _CopyRegionRectangleList
     struct RegionRectangle *first = NULL;
     struct RegionRectangle *prev  = NULL;
 
-    kprintf("---- DUMP ----\n");
-    dumpregionrectangles(src);
-    kprintf("-- DUMP END --\n\n");
-
     for (; src; src = src->Next)
     {
         struct RegionRectangle *new = NewRegionRectangle();
