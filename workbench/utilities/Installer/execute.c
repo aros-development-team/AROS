@@ -1656,13 +1656,48 @@ void *params;
 			    }
 			    FreeDosObject( DOS_FIB, fib2 );
 			    FreeDosObject( DOS_FIB, fib1 );
-			    UnLock(lock2);
-			    UnLock(lock1);
+			    UnLock( lock2 );
+			    UnLock( lock1 );
 			  }
 			  else
 			  {
 			    error = SCRIPTERROR;
 			    traperr( "<%s> requires two string arguments!\n", current->arg );
+			  }
+			  break;
+
+      case _GETDISKSPACE: /* Return the number of free bytes on a device, or -1 on bad pathname or when info could not be obtained */
+			  if ( current->next != NULL )
+			  {
+			    BPTR lock;
+			    struct InfoData infodata;
+
+			    current = current->next;
+			    ExecuteCommand();
+			    if ( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+			        string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				if( ( clip = get_var_arg( current->arg ) ) == NULL)
+				  string = strdup( current->arg );
+				else
+				  string = strip_quotes( clip );
+			      }
+			      current->parent->intval = -1;
+			      if ((lock = Lock(string, SHARED_LOCK)) != NULL )
+			      {
+				if (Info(lock, &infodata) != FALSE)
+				{
+				  current->parent->intval = (infodata.id_NumBlocks - infodata.id_NumBlocksUsed) * infodata.id_BytesPerBlock;
+				}
+				UnLock( lock );
+			      }
+			      free( string );
+			    }
 			  }
 			  break;
 
@@ -1673,7 +1708,6 @@ void *params;
       case _FOREACH	:
       case _GETASSIGN	:
       case _GETDEVICE	:
-      case _GETDISKSPACE:
       case _GETENV	:
       case _GETSIZE	:
       case _GETSUM	:
