@@ -1,19 +1,25 @@
 BEGIN {
     indent="";
+    stderr="/dev/stderr";
 
 #    for (t=0; t<ARGC; t++)
 #	 print t":"ARGV[t];
 
-    if (ARGC > 1)
-	proccontents(ARGV[1],TOP);
+    proccontents(ARGV[1],TOP);
 }
 
 function proccontents(file,top  ,t,dir,tmp_dir,text,desc) {
     desc=0;
-#   print "Working on " top
+    print "Working on",file >> stderr;
+    #relpath=file;
+    #sub (TOP, "", relpath);
+    #sub (/\/contents$/, relpath);
+
+    # Read the file
     while ((getline < file) > 0)
     {
-	if (match ($0,/^[-a-zA-Z0-9_./]+[ \t]+-[ \t]*/))
+	# Is this an item (work blank - blank) ?
+	if (match ($0,/^[-a-zA-Z0-9_./, ]+[ \t]+-[ \t]*/))
 	{
 	    if (!desc)
 	    {
@@ -21,26 +27,25 @@ function proccontents(file,top  ,t,dir,tmp_dir,text,desc) {
 		desc=1;
 	    }
 
+	    # Find rest of the line
 	    text=substr($0,RSTART+RLENGTH);
+	    item=substr($0,RSTART,RLENGTH);
 	    tmp_dir=$1;
-	    if (dir != "")
+
+	    if (match (dir, /\//))
 	    {
 		gsub("/$","",dir);
-		#print "Looking for "top"/"dir"/contents"
-		for (t=1; t<ARGC; t++)
-		{
-		    if (ARGV[t] == top"/"dir"/contents")
-		    {
-			indent=indent"    "
-			proccontents(ARGV[t],top"/"dir);
-			indent=substr(indent,5);
-		    }
-		}
+		print "Looking for "top"/"dir"/contents" >> stderr;
+		indent=indent"    "
+		proccontents(top"/"dir"/contents",top"/"dir);
+		indent=substr(indent,5);
 	    }
 
 	    dir=tmp_dir;
 
-	    print indent"\\item{"dir"} "text
+	    # Remove blank-blank in item and print it.
+	    sub(/[ \t]+-[ \t]+$/, "", item);
+	    print indent"\\item{"item"} "text
 	}
 	else if (match ($0,/^[ \t]*\\filtermakefile{.*}/))
 	{
@@ -66,19 +71,19 @@ function proccontents(file,top  ,t,dir,tmp_dir,text,desc) {
 	    print
     }
 
-    if (dir!="")
+    if (match (dir, /\//))
     {
 	gsub("/$","",dir);
-	for (t=1; t<ARGC; t++)
-	{
-	    if (ARGV[t] == top"/"dir"/contents")
-	    {
-		indent=indent"    "
-		proccontents(ARGV[t],top"/"dir);
-		indent=substr(indent,5);
-	    }
-	}
+	indent=indent"    "
+	proccontents(top"/"dir"/contents",top"/"dir);
+	indent=substr(indent,5);
     }
 
-    print indent"\\end{description}\n"
+    if (desc)
+    {
+	print indent"\\end{description}\n"
+	desc=0;
+    }
 }
+
+# vim:syn=awk:
