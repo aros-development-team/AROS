@@ -509,11 +509,16 @@ int _CopyClipRectsToClipRects(struct Layer * l,
     int area = RECTAREA(&oldcr->bounds);
     while ((NULL != _cr) &&  (0 != area) )
     {
+      struct Rectangle intersect;
+      
       /*
        * Do the two rectangles overlap?
        */
-      if (DO_OVERLAP(&_cr->bounds,&oldcr->bounds))
+      if (AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
       {
+        LONG xSize = intersect.MaxX - intersect.MinX + 1;
+	LONG ySize = intersect.MaxY - intersect.MinY + 1;
+	
         /*
          * Is this new one supposed to be invisible?
          */
@@ -531,19 +536,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
           {
             if (FALSE == addtodamagelist)
             {
-              struct Rectangle rect;
-              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                          oldcr->bounds.MinX :
-                            _cr->bounds.MinX;
-              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                          oldcr->bounds.MinY :
-                            _cr->bounds.MinY;
-              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                          oldcr->bounds.MaxX :
-                            _cr->bounds.MaxX;
-              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                          oldcr->bounds.MaxY :
-                            _cr->bounds.MaxY;
+              struct Rectangle rect = intersect;
             
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             
@@ -585,19 +578,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
           {
             if (TRUE == addtodamagelist)
             {
-              struct Rectangle rect;
-              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                          oldcr->bounds.MinX :
-                            _cr->bounds.MinX;
-              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                          oldcr->bounds.MinY :
-                            _cr->bounds.MinY;
-              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                          oldcr->bounds.MaxX :
-                            _cr->bounds.MaxX;
-              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                          oldcr->bounds.MaxY :
-                            _cr->bounds.MaxY;
+              struct Rectangle rect = intersect;
             
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             
@@ -639,7 +620,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
           {
             LONG xSrc, xDest;
             LONG ySrc, yDest;
-            LONG xSize, ySize;
             struct BitMap * destbm;
             
             if (IS_SUPERREFRESH(l)) 
@@ -647,9 +627,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             else
               destbm = _cr->BitMap;
             
-            xSize = oldcr->bounds.MaxX - oldcr->bounds.MinX + 1;
-            ySize = oldcr->bounds.MaxY - oldcr->bounds.MinY + 1;
-
             /*
              * Does the source rect have a bitmap (off screen)
              * or is it on the screen.
@@ -665,23 +642,24 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                 /*
                  * oldcr is further to the left
                  */
-                xSize += xSrc;
-                xSrc = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-                xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
+                xSrc = -xSrc;
+                xDest = 0;
               }
               else
               {
                 /*
                  * oldcr is further to the right
                  */
-                xDest = xSrc + ALIGN_OFFSET((_cr->bounds.MinX + destdx));
-                xSrc = ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
+                xDest = xSrc;
+                xSrc = 0;
               }
               
+	      xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
+	      xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
+	      
               ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
               if (ySrc < 0)
               {
-                ySize += ySrc;
                 ySrc   = -ySrc;
                 yDest  = 0;
               }
@@ -709,7 +687,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
               else
               {
                 xSrc = _cr->bounds.MinX;
-                xSize -= (_cr->bounds.MinX - oldcr->bounds.MinX);
                 if (IS_SUPERREFRESH(l))
                   xDest = SCROLLSIGN l->Scroll_X;
                 else 
@@ -726,7 +703,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
               else
               {
                 ySrc = _cr->bounds.MinY;
-                ySize -= (_cr->bounds.MinY - oldcr->bounds.MinY);
                 yDest = 0;
                 if (IS_SUPERREFRESH(l))
                   yDest = yDest SCROLLSIGN l->Scroll_Y;
@@ -735,12 +711,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
               srcbm = l->rp->BitMap;
 //kprintf("Using bitmap of screen!\n");
             }
-
-            if (oldcr->bounds.MaxX > _cr->bounds.MaxX)
-              xSize -= (oldcr->bounds.MaxX - _cr->bounds.MaxX);
-
-            if (oldcr->bounds.MaxY > _cr->bounds.MaxY)
-              ySize -= (oldcr->bounds.MaxY - _cr->bounds.MaxY);
 
             if (IS_SIMPLEREFRESH(l) &&
                 NULL == _cr->BitMap &&
@@ -800,20 +770,8 @@ kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
           {
             if (NULL != oldcr->lobs && NULL == oldcr->BitMap)
             {
-              struct Rectangle rect;
-              rect.MinX = oldcr->bounds.MinX > _cr->bounds.MinX ?
-                          oldcr->bounds.MinX :
-                            _cr->bounds.MinX;
-              rect.MinY = oldcr->bounds.MinY > _cr->bounds.MinY ?
-                          oldcr->bounds.MinY :
-                            _cr->bounds.MinY;
-              rect.MaxX = oldcr->bounds.MaxX < _cr->bounds.MaxX ?
-                          oldcr->bounds.MaxX :
-                            _cr->bounds.MaxX;
-              rect.MaxY = oldcr->bounds.MaxY < _cr->bounds.MaxY ?
-                          oldcr->bounds.MaxY :
-                            _cr->bounds.MaxY;
-            
+              struct Rectangle rect = intersect;
+           
               _CallLayerHook(l->BackFill,
                              l->rp,
                              l,
@@ -865,7 +823,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                */
               LONG xSrc, xDest;
               LONG ySrc, yDest;
-              LONG xSize, ySize;
               struct BitMap * srcbm;
               
               if (IS_SUPERREFRESH(l))
@@ -873,8 +830,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
               else
                 srcbm = oldcr->BitMap;
            
-              xSize = oldcr->bounds.MaxX - oldcr->bounds.MinX + 1;
-              ySize = oldcr->bounds.MaxY - oldcr->bounds.MinY + 1;
               /*
                * I have to make the old one visible
                * two cases left: SMART REFRESH and SUPERBITMAP
@@ -893,7 +848,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                   /*
                    * old cr is further to the left
                    */
-                  xSize += xSrc;
                   xSrc   = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
                   xDest  = _cr->bounds.MinX;
                 }
@@ -909,7 +863,6 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                 ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
                 if (ySrc < 0)
                 {
-                  ySize += ySrc;
                   ySrc   = -ySrc;
                   yDest = _cr->bounds.MinY;
                 }
@@ -934,19 +887,8 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
                         _cr->bounds.MinY - oldcr->bounds.MinY SCROLLSIGN l->Scroll_Y;
                 yDest = _cr->bounds.MinY;
                 
-                if (_cr->bounds.MinX > oldcr->bounds.MinX)
-                  xSize += (_cr->bounds.MinX - oldcr->bounds.MinX);
-
-                if (_cr->bounds.MinY > oldcr->bounds.MinY)
-                  ySize += (_cr->bounds.MinY - oldcr->bounds.MinY);
-                  
               }
               
-              if (oldcr->bounds.MaxX > _cr->bounds.MaxX)
-                xSize -= (oldcr->bounds.MaxX - _cr->bounds.MaxX);
-
-              if (oldcr->bounds.MaxY > _cr->bounds.MaxY)
-                ySize -= (oldcr->bounds.MaxY - _cr->bounds.MaxY);
 #if 0
 kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
         __FUNCTION__,
@@ -1474,10 +1416,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       /* backup the old cliprects */
       l->_cliprects = l->ClipRect;
 
-      region->bounds.MinX += l->bounds.MinX;
-      region->bounds.MinY += l->bounds.MinY;
-      region->bounds.MaxX += l->bounds.MinX;
-      region->bounds.MaxY += l->bounds.MinY;
+      _TranslateRect(&region->bounds, l->bounds.MinX, l->bounds.MinY);
 
       _SetRegion(region, &r);
       AndRegionRegion(l->VisibleRegion, &r);
@@ -1496,10 +1435,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                 FALSE,
 				TRUE); /* stegerg: should be FALSE. but that does not work??? */
 
-      region->bounds.MinX -= l->bounds.MinX;
-      region->bounds.MinY -= l->bounds.MinY;
-      region->bounds.MaxX -= l->bounds.MinX;
-      region->bounds.MaxY -= l->bounds.MinY;
+      _TranslateRect(&region->bounds, -l->bounds.MinX, -l->bounds.MinY);
 
       /* right now I am assuming that everything went alright */
     }
