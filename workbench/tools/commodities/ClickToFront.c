@@ -248,8 +248,6 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 
     if (cs->cs_broker == NULL)
     {
-	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
-
 	return FALSE;
     }
     
