@@ -48,7 +48,7 @@ AROS_UFH3(void, intBoot,
     AROS_USERFUNC_INIT
 
     struct ExpansionBase *ExpansionBase = NULL;
-    struct Library       *DOSBase       = NULL;
+    struct DosLibrary    *DOSBase       = NULL;
     struct BootNode      *bootNode      = NULL;
     STRPTR                bootName;
     LONG                  bootNameLength;        
@@ -58,7 +58,7 @@ AROS_UFH3(void, intBoot,
 #   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_DevName)
     
     /**** Open all required libraries **********************************************/
-    DOSBase       =                          OpenLibrary( "dos.library", 0 );
+    DOSBase       = (struct DosLibrary *)    OpenLibrary( "dos.library", 0 );
     ExpansionBase = (struct ExpansionBase *) OpenLibrary( "expansion.library", 0 );
 
     if( DOSBase == NULL )
@@ -149,7 +149,7 @@ boot:
     /* Lock the boot device and add some default assigns */
     D(bug("Locking primary boot device %s\n", bootName));
     
-    lock = Lock(bootName, SHARED_LOCK);
+    lock = DOSBase->dl_SYSLock = Lock(bootName, SHARED_LOCK);
     
     if (lock != NULL)
     {
