@@ -127,7 +127,7 @@ struct ExchangeState
     struct Gadget  *ec_textGad2;
 
     struct Menu    *ec_menus;
-
+    UBYTE   	    ec_lvitemname[CBD_NAMELEN + 1];
 
     /* Values settable via tooltypes/command arguments */
     BOOL       ec_cxPopup;
@@ -1000,6 +1000,8 @@ void updateInfo(struct ExchangeState *ec)
 	struct BrokerCopy *brokerCopy = getNth(&ec->ec_brokerList, whichGad);
 	BOOL   showHide = (brokerCopy->bc_Flags & COF_SHOW_HIDE) == 0;
 
+    	strncpy(ec->ec_lvitemname, brokerCopy->bc_Name, sizeof(ec->ec_lvitemname));
+	
 	P(kprintf("Broker: %s Flags: %i\n", brokerCopy->bc_Name,
 		  brokerCopy->bc_Flags));
 
@@ -1046,7 +1048,8 @@ void appearExchange(struct ExchangeState *ec)
 
 void redrawList(struct ExchangeState *ec)
 {
-    LONG n;
+    struct BrokerCopy *node;
+    LONG n, i = 0;
 
     n = GetBrokerList(&ec->ec_brokerList);
 
@@ -1059,9 +1062,24 @@ void redrawList(struct ExchangeState *ec)
 		      GTLV_Labels, (IPTR)&ec->ec_brokerList,
 		      TAG_DONE);
 
-    /* When an item is removed from the list, make the first item ("0") the selected one (petah) */
+    n = -1;
+    ForeachNode(&ec->ec_brokerList, node)
+    {
+    	if (strcmp(node->bc_Name, ec->ec_lvitemname) == 0)
+	{
+	    n = i;
+	    break;
+	}
+	i++;
+    }
+    
+    if (n == -1)
+    {
+    	ec->ec_lvitemname[0] = 0;
+    }
+    
     GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, 0, TAG_DONE);
+		      GTLV_Selected, n, TAG_DONE);
 
     /* Update the text gadgets */
     updateInfo(ec);
