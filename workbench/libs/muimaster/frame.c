@@ -527,13 +527,13 @@ BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
 
     /* Must cast to LONG because on AmigaOS SNPrintf() is used which is like
      * RawDoFmt() 16 bit */
-    snprintf(&spec[0], 1, "%lx", (LONG)intern->type);
-    snprintf(&spec[1], 1, "%lx", (LONG)intern->state);
-    snprintf(&spec[2], 1, "%lx", (LONG)intern->innerLeft);
-    snprintf(&spec[3], 1, "%lx", (LONG)intern->innerRight);
-    snprintf(&spec[4], 1, "%lx", (LONG)intern->innerTop);
-    snprintf(&spec[5], 1, "%lx", (LONG)intern->innerBottom);
-    spec[6] = 0;
+    snprintf(&spec[0], 2, "%lx", (LONG)intern->type);
+    snprintf(&spec[1], 2, "%lx", (LONG)intern->state);
+    snprintf(&spec[2], 2, "%lx", (LONG)intern->innerLeft);
+    snprintf(&spec[3], 2, "%lx", (LONG)intern->innerRight);
+    snprintf(&spec[4], 2, "%lx", (LONG)intern->innerTop);
+    snprintf(&spec[5], 2, "%lx", (LONG)intern->innerBottom);
+    /* 0 byte is ensured through snprintf */
     return TRUE;
 }
 
