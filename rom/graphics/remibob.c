@@ -45,9 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-
-#warning TODO: Write graphics/RemIBob()
-    aros_print_not_implemented ("RemIBob");
+    RemVSprite(bob->BobVSprite);
 
     AROS_LIBFUNC_EXIT
 } /* RemIBob */
