@@ -27,4 +27,5 @@ $(LIBDIR)/libkernel.a: $(OSGENDIR)/init.o $(OSGENDIR)/supervisor.o $(OSGENDIR)/s
 	    $(OSGENDIR)/cachepredma.o $(OSGENDIR)/setsr.o $(OSGENDIR)/getcc.o \
 	    $(OSGENDIR)/superstate.o $(OSGENDIR)/userstate.o $(OSGENDIR)/stackswap.o \
 	    $(OSGENDIR)/runprocess.o
-	$(AR) $@ $^
+
+#	 $(AR) $@ $^

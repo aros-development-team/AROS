@@ -18,4 +18,5 @@ $(LIBDIR)/libutility.a: $(OSGENDIR)/utility_init.o \
 	    $(OSGENDIR)/stricmp.o $(OSGENDIR)/strnicmp.o $(OSGENDIR)/applytagchanges.o \
 	    $(OSGENDIR)/findtagitem.o $(OSGENDIR)/tolower.o \
 	    $(OSGENDIR)/utility_functable.o
-	$(AR) $@ $^
+
+#	 $(AR) $@ $^

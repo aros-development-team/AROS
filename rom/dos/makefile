@@ -36,4 +36,5 @@ $(LIBDIR)/libdos.a: $(OSGENDIR)/dos_init.o \
 	    $(OSGENDIR)/getargstr.o $(OSGENDIR)/maxcli.o $(OSGENDIR)/cli.o \
 	    $(OSGENDIR)/duplock.o $(OSGENDIR)/openfromlock.o \
 	    $(OSGENDIR)/dos_functable.o
-	$(AR) $@ $^
+
+#	 $(AR) $@ $^

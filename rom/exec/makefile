@@ -51,5 +51,6 @@ $(LIBDIR)/libexec.a: $(OSGENDIR)/execfunctions.o \
 	    $(OSGENDIR)/closedevice.o $(OSGENDIR)/doio.o $(OSGENDIR)/sendio.o \
 	    $(OSGENDIR)/checkio.o $(OSGENDIR)/abortio.o $(OSGENDIR)/waitio.o \
 	    $(OSGENDIR)/initresident.o
-	$(AR) $@ $^
+
+#	 $(AR) $@ $^
 
