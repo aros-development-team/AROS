@@ -101,8 +101,10 @@ static const ULONG coltab[] = {
     struct IntScreen *screen;
     int               success;
     struct Hook      *layer_info_hook = NULL;
+    struct ColorSpec *colors = NULL;
     ULONG            *errorPtr;	  /* Store error at user specified location */
     UWORD	     *customdripens = NULL;
+    ULONG	     *colors32 = NULL;
     BOOL	      ok = TRUE, rp_inited = FALSE;
     
     ASSERT_VALID_PTR(newScreen);
@@ -168,7 +170,14 @@ static const ULONG coltab[] = {
 		ns.Font = (struct TextAttr *)tag->ti_Data;
 		break;
 
+	    case SA_Colors32:
+	        colors32 = (ULONG *)tag->ti_Data;
+		break;
+		
 	    case SA_Colors:
+	        colors = (struct ColorSpec *)tag->ti_Data;
+		break;
+		
 	    case SA_SysFont:
 	    case SA_BitMap:
 		break;
@@ -280,7 +289,6 @@ static const ULONG coltab[] = {
 	    case SA_Exclusive:
 	    case SA_SharePens:
 	    case SA_Interleaved:
-	    case SA_Colors32:
 	    case SA_VideoControl:
 	    case SA_FrontChild:
 	    case SA_BackChild:
@@ -349,8 +357,29 @@ static const ULONG coltab[] = {
     if (ok)
     {
         D(bug("Loading colors\n"));
-        /* Load some default colors for the screen */
-	LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+	
+	if (colors32)
+	{
+	    LoadRGB32(&screen->Screen.ViewPort, (const ULONG *)colors32);
+	}
+	else if (colors)
+	{
+	    for(; colors->ColorIndex != (WORD)~0; colors++)
+	    {
+	        SetRGB4(&screen->Screen.ViewPort,
+			colors->ColorIndex,
+			colors->Red,
+			colors->Green,
+			colors->Blue);
+			
+	    }
+	}
+	else
+	{
+            /* Load some default colors for the screen */
+
+	    LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+	}
         D(bug("Loaded colors\n"));
 	
 	COPY(LeftEdge);
