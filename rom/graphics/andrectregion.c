@@ -105,7 +105,7 @@
 		    /* cut to intersection */
 		    rr->bounds = intersection;
 		    /* adjust new 'region' bounds */
-		    xoffset = MIN(xoffset, intersection.MinY);
+		    xoffset = MIN(xoffset, intersection.MinX);
 		    yoffset = MIN(yoffset, intersection.MinY);
 		    xmax = MAX(xmax, intersection.MaxX);
 		    ymax = MAX(ymax, intersection.MaxY);
