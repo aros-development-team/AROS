@@ -342,9 +342,9 @@ I assume that this error is the same one as BUG000046.
 The error was that the old window frame was not erased when the window
 became larger. 
 
-BUG000049
+BUG000049 fixed
 bergers@aros.org
-Running multiple "window"s at the same time leads to flickering on the
+Running multiple "Demos/window"s at the same time leads to flickering on the
 whole screen.
 
 BUG000050 fixed
@@ -406,3 +406,8 @@ BUG000058
 bergers@aros.org
 The areafill algorithms are not very much in sync with the line drawing and
 ellipse drawing alogorithms.
+
+BUG000059
+bergers@aros.org
+Once the window of fish/watchman is clicked on with the left mouse button
+nothing can be done with other windows. (Locking error?)
