@@ -38,11 +38,21 @@
 #undef 	EG
 #define EG(o) ((struct ExtGadget *)o)
 
+#define FRAMESLIDERSPACINGX 3
+#define FRAMESLIDERSPACINGY 3
+
 /***************************************************************************************************/
 
 struct GradientSliderData
 {
-    WORD 			dummy;
+    Object			*frame;
+    ULONG			maxval;		/* ISGU 	*/
+    ULONG			curval;		/* ISGNU 	*/
+    ULONG			skipval;	/* ISGU		*/
+    UWORD			knobpixels;	/* I		*/
+    UWORD			*penarray;	/* ISU		*/
+    WORD			freedom;	/* I		*/
+    WORD			numpens;
 };
 
 
@@ -63,6 +73,8 @@ struct GradientSliderBase_intern
 /***************************************************************************************************/
 
 struct IClass * InitGradientSliderClass (struct GradientSliderBase_intern *GradientSliderBase);
+VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD *penarray,
+		  WORD numpens, WORD orientation, struct GradientSliderBase_intern *GradientSliderBase);
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct GradientSliderBase_intern *GradientSliderBase);
@@ -79,20 +91,20 @@ typedef struct IntuitionBase IntuiBase;
 
 /***************************************************************************************************/
 
-#undef PB
-#define PB(b) ((struct GradientSliderBase_intern *)b)
+#undef GSB
+#define GSB(b) ((struct GradientSliderBase_intern *)b)
 #undef UtilityBase
-#define UtilityBase 	PB(GradientSliderBase)->utilitybase
+#define UtilityBase 	GSB(GradientSliderBase)->utilitybase
 
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
-#define IntuitionBase	PB(GradientSliderBase)->intuibase
+#define IntuitionBase	GSB(GradientSliderBase)->intuibase
 #endif
 
 #undef GfxBase
-#define GfxBase		PB(GradientSliderBase)->gfxbase
+#define GfxBase		GSB(GradientSliderBase)->gfxbase
 #undef SysBase
-#define SysBase		PB(GradientSliderBase)->sysbase
+#define SysBase		GSB(GradientSliderBase)->sysbase
 
 #endif /* GRADIENTSLIDER_INTERN_H */

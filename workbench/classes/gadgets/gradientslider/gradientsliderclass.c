@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define USE_BOOPSI_STUBS
+//#define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -14,6 +14,7 @@
 #include <intuition/classusr.h>
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
 #include <utility/tagitem.h>
 #include <gadgets/gradientslider.h>
 #include <aros/asmcall.h>
@@ -21,7 +22,7 @@
 #include "gradientslider_intern.h"
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define GradientSliderBase ((struct GradientSliderBase_intern *)(cl->cl_UserData))
@@ -31,13 +32,35 @@
 
 /***************************************************************************************************/
 
+STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim)
+{
+    struct GradientSliderData 	*data = INST_DATA(cl, o);
+    struct opUpdate		opu;
+    struct TagItem		tags[] =
+    {
+        {GRAD_CurVal	, data->curval	},
+	{TAG_DONE			}
+    };
+    
+    opu.MethodID     = OM_NOTIFY;
+    opu.opu_AttrList = tags;
+    opu.opu_GInfo    = gi; 
+    opu.opu_Flags    = interim ? OPUF_INTERIM : 0;
+    
+    DoMethodA(o, &opu);
+}
+
+/***************************************************************************************************/
+
 STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem 		*tag, *tstate;
-    IPTR 			retval = 0UL;
+    IPTR 			retval;
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     
     EnterFunc(bug("GradientSlider::Set()\n"));
+
+    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
     
     for (tstate = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
     {
@@ -45,12 +68,49 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
     	   	
     	switch (tag->ti_Tag)
     	{
+	    case GRAD_MaxVal:
+	        data->maxval = (ULONG)tidata;
+		break;
+		
+	    case GRAD_CurVal:
+	        data->curval = (ULONG)tidata;
+		notify_curval(cl, o, msg->ops_GInfo, FALSE);
+		retval += 1UL;
+		break;
+		
+	    case GRAD_SkipVal:
+	        data->skipval = (ULONG)tidata;
+		break;
+	
+	    case GRAD_PenArray:
+	        data->penarray = (UWORD *)tidata;
+		data->numpens = 0;
+		if (data->penarray)
+		{
+		    UWORD *pen = data->penarray;
+		    
+		    while(*pen++ != (UWORD)~0) data->numpens++;
+		}		
+		retval += 1UL;
+		break;
+		
 	    default:
 	        break;
 		
     	} /* switch (tag->ti_Tag) */
     	
     } /* for (each attr in attrlist) */
+    
+    if (retval)
+    {
+        struct RastPort *rp;
+	
+	if ((rp = ObtainGIRPort(msg->ops_GInfo)))
+	{
+	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+	    ReleaseGIRPort(rp);
+	}
+    }
     
     ReturnPtr ("GradientSlider::Set", IPTR, retval);
 }
@@ -64,9 +124,28 @@ STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	struct GradientSliderData *data = INST_DATA(cl, o);
-    	
-    	gradientslider_set(cl, o, msg);
+    	struct GradientSliderData	*data = INST_DATA(cl, o);
+	struct TagItem 			fitags[]=
+	{
+           {IA_EdgesOnly	, FALSE		},
+	   {IA_FrameType	, FRAME_BUTTON	},
+           {TAG_DONE				}
+	};
+	
+	if ((data->frame = NewObjectA(NULL, FRAMEICLASS, fitags)))
+	{
+	    data->maxval     = 0xFFFF;
+	    data->curval     = 0;
+	    data->skipval    = 0x1111;
+	    data->knobpixels = GetTagData(GRAD_KnobPixels, 5, msg->ops_AttrList);
+	    data->freedom    = GetTagData(PGA_Freedom, LORIENT_HORIZ, msg->ops_AttrList);
+
+    	    gradientslider_set(cl, o, msg);
+	    
+	} else {
+	    CoerceMethod(cl, o, OM_DISPOSE);
+	    o = NULL;
+	}
     	   
     }
     ReturnPtr ("GradientSlider::New", Object *, o);
@@ -81,6 +160,18 @@ STATIC IPTR gradientslider_get(Class *cl, Object *o, struct opGet *msg)
    
     switch(msg->opg_AttrID)
     {
+        case GRAD_MaxVal:
+	    *msg->opg_Storage = data->maxval;
+	    break;
+	    
+	case GRAD_CurVal:
+	    *msg->opg_Storage = data->curval;
+	    break;
+	    
+	case GRAD_SkipVal:
+	    *msg->opg_Storage = data->skipval;
+	    break;
+	    
 	default:
 	    retval = DoSuperMethodA(cl, o, (Msg)msg);
 	    break;
@@ -96,14 +187,68 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
     struct GradientSliderData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
     struct RastPort 		*rp = msg->gpr_RPort;
+    struct IBox			gbox, sbox;
     
     EnterFunc(bug("GradientSlider::Render()\n"));    
+
+    GetGadgetIBox(o, msg->gpr_GInfo, &gbox);
 
     switch (msg->gpr_Redraw)
     {
     	case GREDRAW_REDRAW:
-    	     
-    	case GREDRAW_UPDATE:    	 
+    	    {
+	        struct TagItem fitags[] =
+		{
+		    {IA_Width	, gbox.Width	},
+		    {IA_Height	, gbox.Height	},
+		    {TAG_DONE			}
+		};
+		
+		SetAttrsA(data->frame, fitags);
+		
+		DrawImageState(rp, (struct Image *)data->frame, gbox.Left, gbox.Top, IDS_NORMAL, dri);
+	    }
+	    /* fall through */
+		
+    	case GREDRAW_UPDATE:
+	    sbox = gbox;
+	    sbox.Left   += FRAMESLIDERSPACINGX;
+	    sbox.Top    += FRAMESLIDERSPACINGY;
+	    sbox.Width  -= FRAMESLIDERSPACINGX * 2;
+	    sbox.Height -= FRAMESLIDERSPACINGY * 2;
+	    
+	    if ((sbox.Width >= 2) && (sbox.Height >= 2))
+	    {
+	        if (data->numpens < 2)
+		{
+		    WORD pen = dri->dri_Pens[BACKGROUNDPEN];
+		    
+		    if (data->penarray && (data->numpens == 1))
+		    {
+		        pen = data->penarray[0];
+		    }
+		    
+		    SetDrMd(rp, JAM1);
+		    SetAPen(rp, pen);
+		    RectFill(rp, sbox.Left, sbox.Top, sbox.Left + sbox.Width - 1, sbox.Top + sbox.Height - 1);
+
+		} /* ff (data->numpens < 2) */
+		else
+		{
+		    DrawGradient(rp,
+		    		 sbox.Left,
+				 sbox.Top,
+				 sbox.Left + sbox.Width - 1,
+				 sbox.Top + sbox.Height - 1,
+				 data->penarray,
+				 data->numpens,
+				 data->freedom,
+				 GradientSliderBase);
+		    
+		} /* data->numpens >= 2 */
+		
+	    } /* if ((sbox.Width >= 2) && (sbox.Height >= 2)) */
+	    
     	    break;
     	    
     	    
@@ -111,7 +256,7 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
     
     if (EG(o)->Flags & GFLG_DISABLED)
     {
-    	//DrawDisabledPattern(rp, gbox, dri->dri_Pens[SHADOWPEN], GradientSliderBase);
+    	DrawDisabledPattern(rp, &gbox, dri->dri_Pens[SHADOWPEN], GradientSliderBase);
     }
         	
     ReturnVoid("GradientSlider::Render");
@@ -122,6 +267,8 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 STATIC VOID gradientslider_dispose(Class *cl, Object *o, Msg msg)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);
+    
+    if (data->frame) DisposeObject(data->frame);
     
     DoSuperMethodA(cl, o, msg);
 }
@@ -135,6 +282,7 @@ STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
 
     EnterFunc(bug("GradientSlider::GoActive()\n"));
 
+    return GMR_NOREUSE;
     
     ReturnInt("GradientSlider::GoActive", IPTR, retval);
 }
