@@ -144,6 +144,7 @@
 	    , depth
 	    , flags
 	    , friend_bitmap
+	    , 0
 	    , GfxBase
 	);
 	ASSERT_VALID_PTR(nbm);
