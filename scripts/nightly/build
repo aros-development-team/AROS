@@ -58,18 +58,18 @@ fi
 
 mail_start $RESULT
 
-ATTACH=""
+ATTACH=()
 if [ ! -z $failed ]; then
     mail_write ""
     mail_write "The following packages FAILED to build completely:"
     for package in $failed; do
         mail_write $package
 	tail -100 $LOG_BASE/$package.log >/tmp/_aros_build_log_$package
-	ATTACH="$ATTACH -a/tmp/_aros_build_log_$package"
+	ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
     done
     mail_write ""
     mail_write "Please see the attached shortened logs or the full logs at"
-    mail_write "http://aros.sf.net/download/nightly/logs/ for details."
+    mail_write "http://aros.sf.net/downloads/nightly/$VERSION/logs/ for details."
 fi
 if [ ! -z $succeeded ]; then
     mail_write ""
