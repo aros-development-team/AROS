@@ -297,6 +297,12 @@ Arguments in [...] are optional.
   status display.
 
 
+( execute <file>
+      [(safe)]
+)
+Execute an AmigaDOS script.
+
+
 ( run <string>...
       [(prompt <string>... )]
       [(help <string>... )]
@@ -439,7 +445,6 @@ This function returns 1 on success and 0 on failure.
 ( copyfiles )
 ( copylib )
 ( earlier )
-( execute )
 ( exists )
 ( expandpath )
 ( fileonly )
