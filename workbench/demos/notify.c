@@ -1,9 +1,8 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright © 2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Test program for ram.handler notification
-    Lang: English
+    Test program for ram.handler notification.
 */
 
 #include <proto/exec.h>
