@@ -38,7 +38,7 @@ void strupper(char *string);
    1 for different files,
    -1 if file1 is not present,
    -2 if file2 is not present					*/
-int fdiffer( char *file1, char *file2 );
+int filesdiffer( char *file1, char *file2 );
 
 /* Compares old and new file,
    if old file is not found or different from new
@@ -169,7 +169,7 @@ void strupper(char *string)
   }
 }
 
-int fdiffer( char *file1, char *file2 )
+int filesdiffer( char *file1, char *file2 )
 {
 FILE *fd1, *fd2;
 int cnt1,cnt2;
@@ -222,7 +222,7 @@ char *bakname;
     rename(old,bakname);
     rename(new,old);
   }
-  else if( fdiffer(old,new) )
+  else if( filesdiffer(old,new) )
   {
     rename(old,bakname);
     rename(new,old);
@@ -2427,31 +2427,26 @@ int firstlvo;
   sprintf( filename[0], "%s/clib/%s_protos.h", argv[1], lc->libname );
   newname[0] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
   sprintf( newname[0], "%s/clib/%s_protos.h.new", argv[1], lc->libname );
-  fdo[0] = fopen(newname[0],"w");
+
   filename[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+12) * sizeof(char) );
   sprintf( filename[1], "%s/defines/%s.h", argv[1], lc->libname );
   newname[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
   sprintf( newname[1], "%s/defines/%s.h.new", argv[1], lc->libname );
-  fdo[1] = fopen(newname[1],"w");
+
   filename[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
   sprintf( filename[2], "%s/proto/%s.h", argv[1], lc->libname );
   newname[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
   sprintf( newname[2], "%s/proto/%s.h.new", argv[1], lc->libname );
-  fdo[2] = fopen(newname[2],"w");
+
   filename[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+11) * sizeof(char) );
   sprintf( filename[3], "%s/inline/%s.h", argv[1], lc->libname );
   newname[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
   sprintf( newname[3], "%s/inline/%s.h.new", argv[1], lc->libname );
+
   filename[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
   sprintf( filename[4], "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
   newname[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+24) * sizeof(char) );
   sprintf( newname[4], "%s/pragmas/%s_pragmas.h.new", argv[1], lc->libname );
-  fdo[4] = fopen(newname[4],"w");
-  if(!fdo[4])
-  {
-    fprintf( stderr, "Couldn't open file %s!\n", newname[4] );
-    return(-1);
-  }
 
   for( i=0 ; i<NUM_INCLUDES ; i++ )
   {
