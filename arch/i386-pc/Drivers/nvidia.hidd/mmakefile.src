@@ -1,47 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+FILES	:=	riva_hw nvclass onbitmap offbitmap accel
 
-FILES	:=	nv_init functable riva_hw nvclass onbitmap offbitmap accel
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM Drivers-pc-i386-disabled : 
-Drivers-pc-i386-disabled : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd.gfx.nvidia
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd.gfx.nvidia.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.gfx.nvidia.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-onbitmap.s: onbitmap.c
-	%ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+%build_module_macro mmake=kernel-pc-i386-nvidia \
+  modname=nvidia modtype=hidd \
+  initfile=nv_init files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

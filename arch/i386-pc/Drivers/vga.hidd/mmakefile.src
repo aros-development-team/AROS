@@ -1,46 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+FILES	:=	vgaclass vgahw offbitmap onbitmap
 
-FILES	:=	vga_init functable vgaclass vgahw offbitmap onbitmap
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM
-kernel-pc-i386-vga-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(KOBJSDIR)/vgah_driver.o
-	@objcopy -R .note -R .comment $(KOBJSDIR)/vgah_driver.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-onbitmap.s: onbitmap.c
-	%ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+%build_module_macro mmake=kernel-pc-i386-vga \
+  modname=vgah modtype=hidd \
+  initfile=vga_init files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

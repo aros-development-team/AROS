@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= libexec
-USELIBS	:= graphics hiddgraphicsstubs amiga arossupport arosc arosm
+USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport arosc arosm
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
@@ -11,10 +11,9 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
 	   bootmenu partition
 KDEVS   := timer input keyboard console gameport ide trackdisk
 KHNDLRS := con nil ram cdrom afs
-KHIDDS  := hiddclass pci irq mouse graphics
+KHIDDS  := hiddclass pci serial mouse irq graphics kbd vesagfx vgah vmwaregfx
 KRSRCS  := battclock bootloader misc
-KDRVRS  := kbd serial vesagfx vgah vmwaregfx
-#Disabled DRVR usbuhci
+#Disabled HIDD usbuhci
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \

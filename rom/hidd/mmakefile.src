@@ -1,132 +1,16 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-# a make.tmpl for a hiddclass would be useful
-
-CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
-
-OBJDIR	    := $(GENDIR)/$(CURDIR)
-#OS_INCLUDES := -I$(GENINCDIR)
-
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
-
-# will be expand to LIBNAME.LIBPOST i.e. hiddclass.hidd
-LIBNAME     := hiddclass
-ULIBNAME    := Hiddclass
-LIBPOST     := hidd
-
-FILES       := hiddclass
-
-INIT_FILE   := $(LIBNAME)_init
-END_FILE    := $(OBJDIR)/endtag
-
-INCLUDE_FILES   :=  $(wildcard include/*.h)
-
-ifeq ($(FLAVOUR),native)
-DEPLIBS := arossupport arosc
-else
-DEPLIBS :=
-endif
-
-# Replacement is probably of limited use in this directory, but I'll
-# support it nonetheless.
-ALL_FILES := $(FILES)
-%prepare_replace rom/hidd
-%filter_replace FILES
-
-%prepare_shlib hiddclass $(SHARED_HIDDCLASS)
+USER_CFLAGS := -DAROS_USE_OOP
+%build_module_macro mmake=kernel-hidd \
+  modname=hiddclass modtype=hidd \
+  files="functable hiddclass" initfile=hiddclass_init \
+  conffile=lib.conf
 
 %mkfunctable_arch
 
-ifndef INITFUNC
-INITFUNC := $(OBJDIR)/$(INIT_FILE).o
-endif
-ifndef ENDFUNC
-ENDFUNC := $(END_FILE).o
-endif
-ifndef OSMODULE
-OSMODULE := $(LIBNAME).$(LIBPOST)
-endif
-
-OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS) functable,$(OBJDIR)/$(f).o)
-ALL_OBJS := $(INITFUNC) $(OBJS) $(ENDFUNC)
-
-$(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
-	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a) $(ENDFUNC)
-	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
-	  $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(ENDFUNC) \
-		-o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
-ifeq ($(FLAVOUR),native)
-	@strip $@
-else
-	@strip -x $@
-endif
-
-#MM kernel-hidd-linklib : includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-linklib : $(LIB)
-	@$(NOP)
-
-#MM kernel-hidd-module : includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-module : $(HIDDSDIR)/$(OSMODULE)
-
-#MM kernel-hidd-kobj : includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-kobj : $(KOBJSDIR)/hiddclass_hidd.o
-
-# --- QUICK HACKS BEGIN --- 
-# These are hacks for faster execution of "mmake" and "make". Use them
-# only if you know set the setup is correct and do not add them as targets
-# in other makefiles.
-#
-# Usage: 
-#   mmake AROS.kernel-hidd-module-quick
-#   make -f mmakefile TOP=/dh1/AROS CURDIR=rom/hidd kernel-hidd-module-quick
-
-#MM kernel-hidd-module-quick : kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-module-quick : $(LIB) $(HIDDSDIR)/$(OSMODULE)
-	@$(NOP)
-
-#MM kernel-hidd-includes-quick : kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd-includes-quick : setup-includes includes-copy 
-	$(NOP)
-
-# --- QUICK HACKS END ---
-
-DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(notdir $(END_FILE)), $(OBJDIR)/$(f).d)
-
-$(LIB): libdefs.h $(ALL_OBJS)
-	%mklib_q from=$(ALL_OBJS)
-	@$(RM) $(RMLIB)
-
-$(KOBJSDIR)/hiddclass_hidd.o : libdefs.h $(ALL_OBJS)
-	@$(LD) -r -o $@ $(ALL_OBJS)
-
+INCLUDE_FILES   :=  $(wildcard include/*.h)
 %copy_includes path=hidd
 
-# Rule to create a .library in the local dir
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
-
-%mkendtag_q
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) *.s
-
-$(OBJDIR)/%.o : %.c
-	%compile_q 
-
-%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
-
-%ctoasm_q
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
 %common
-%include_deps
+

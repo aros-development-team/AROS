@@ -10,8 +10,8 @@ $Id$
 #MM    kernel-pc-i386-serial-kobj \
 #MM    kernel-pc-i386-vesa-kobj \
 #MM    kernel-pc-i386-vga-kobj \
-#MM    kernel-pc-i386-vmwaregfx-kobj \
-#MM    kernel-pc-i386-gfx-kobj
+#MM    kernel-pc-i386-vmwaregfx-kobj
 
 # Disabled kernel-pc-i386-driver
 ##MM    kernel-pc-i386-usb-kobj \
+##MM    kernel-pc-i386-gfx-kobj

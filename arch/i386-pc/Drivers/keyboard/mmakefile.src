@@ -1,49 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC	:=	$(END_FILE).o
-FILES	:=	kbd_init functable kbdclass kbd_common
-
-#MM
-kernel-pc-i386-kbd-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s $(ENDFUNC)
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(KOBJSDIR)/kbd_driver.o
-	@objcopy -R .note -R .comment $(KOBJSDIR)/kbd_driver.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-kbdclass.s : kbdclass.c
-	%ctoasm_q	
-
-kbd_common.s : kbd_common.c
-        %ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+%build_module_macro mmake=kernel-pc-i386-kbd \
+  modname=kbd modtype=hidd \
+  files="kbdclass kbd_common" \
+  conffile=lib.conf \
+  genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

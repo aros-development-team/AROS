@@ -1,53 +1,17 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-
 FILES	:=	\
-	vesagfx_init \
-	functable \
 	vesagfxclass \
 	hardware \
 	offbitmap \
 	onbitmap
 
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM
-kernel-pc-i386-vesa-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(KOBJSDIR)/vesagfx_driver.o
-	@objcopy -R .note -R .comment $(KOBJSDIR)/vesagfx_driver.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-onbitmap.s: onbitmap.c
-	%ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+%build_module_macro mmake=kernel-pc-i386-vesa \
+  modname=vesagfx modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
+
