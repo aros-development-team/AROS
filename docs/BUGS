@@ -397,7 +397,7 @@ few problems. The slider bar is incorrectly drawn, no reaction on pushed
 buttons etc.
 
 The button problem is fixed. The problem was that the listview
-was to large thus overlapping the buttons. Since the listview
+was too large thus overlapping the buttons. Since the listview
 came before the buttons in the gadgetlist, the listview
 was selected, not the buttons.
 
@@ -405,7 +405,7 @@ was selected, not the buttons.
 BUG000058
 bergers@aros.org
 The areafill algorithms are not very much in sync with the line drawing and
-ellipse drawing alogorithms.
+ellipse drawing algorithms.
 
 BUG000059
 bergers@aros.org
@@ -419,4 +419,10 @@ BUG000060
 bergers@aros.org
 Newshell creates two (?) simple refresh windows. When moving these windows
 the result is garbage on the screen.
+
+BUG000061
+sduvan@aros.org
+When having multiple windows and one of them includes an active string gadget,
+activating another window will make the string gadget clone itself to the
+activated window.
 
