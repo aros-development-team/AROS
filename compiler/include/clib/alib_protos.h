@@ -80,6 +80,8 @@ void __sprintf(UBYTE *buffer, UBYTE *format, ...);
 STRPTR StrDup(CONST_STRPTR str);
 APTR ReAllocVec(APTR oldmem, ULONG size, ULONG requirements);
 
+void MergeSortList(struct MinList *l, int (*compare)(struct MinNode *n1, struct MinNode *n2, void *data), void *data);
+
 /* Commodities */
 CxObj  *HotKey (STRPTR description, struct MsgPort *port, LONG id);
 VOID    FreeIEvents (volatile struct InputEvent *events);
