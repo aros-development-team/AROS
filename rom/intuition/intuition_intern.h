@@ -28,6 +28,9 @@
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
+#ifndef GRAPHICS_RASTPORT_H
+#   include <graphics/rastport.h>
+#endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
@@ -192,7 +195,7 @@ extern void intui_EndRefresh (struct Window * window,
 	    BOOL complete,
 	    struct IntuitionBase * IntuitionBase);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
-extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *);
+extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, struct BitMap * SuperBitMap);
 extern void intui_WindowToFront (struct Window *, struct IntuitionBase *);
 extern void intui_WindowToBack  (struct Window *, struct IntuitionBase *);
 extern void intui_MoveWindowInFrontOf (struct Window *, struct Window *, struct IntuitionBase *);
