@@ -48,6 +48,16 @@ typedef quad_t *        qaddr_t;
     files, and need protection from this.
 */
 
+/*
+   stddef.h is part of the freestanding implementation of the C language,
+   GCC provides one such header already, by including it we include the 
+   definitions of wchar_t, wint_t, size_t, ptrdiff_t and NULL.
+   
+   POSIX, however, needs us to define some other types, which we do later.
+*/
+#include <stddef.h>
+
+/* Define the rest of the POSIX types */
 #ifndef __AROS_CLOCKID_T_DECLARED
 #define __AROS_CLOCKID_T_DECLARED
 typedef __clockid_t                 clockid_t;  /* ID for clock_ function   */
@@ -109,11 +119,6 @@ typedef __off_t                     off_t;      /* Offset (in files)        */
 typedef __pid_t                     pid_t;      /* Process ID               */
 #endif
 
-#ifndef __AROS_PTRDIFF_T_DECLARED
-#define __AROS_PTRDIFF_T_DECLARED
-typedef __ptrdiff_t                 ptrdiff_t;  /* Diff btw two pointers    */
-#endif
-
 #ifndef __AROS_SIZE_T_DECLARED
 #define __AROS_SIZE_T_DECLARED
 typedef __size_t                    size_t;     /* Size of objects          */
@@ -147,12 +152,6 @@ typedef __uid_t                     uid_t;      /* User ID                  */
 #ifndef __AROS_USECONDS_T_DECLARED
 #define __AROS_USECONDS_T_DECLARED
 typedef __useconds_t                useconds_t; /* Unsigned no usecs        */
-#endif
-
-#ifndef __AROS_WCHAR_T_DECLARED
-#define __AROS_WCHAR_T_DECLARED
-typedef __wchar_t                   wchar_t;    /* Wide character           */
-typedef __wint_t                    wint_t;     /* Wide character or WEOF   */
 #endif
 
 /* These require this header to be included first */
