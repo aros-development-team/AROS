@@ -51,6 +51,7 @@ Object *wheel;
 Object *r_slider;
 Object *g_slider;
 Object *b_slider;
+Object *hue_gauge;
 Object *group;
 
 ULONG xget(Object *obj, Tag attr)
@@ -70,6 +71,7 @@ __saveds void wheel_function(void)
     nnset(r_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Red) >> 24) & 0xff);
     nnset(g_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Green) >> 24) & 0xff);
     nnset(b_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Blue) >> 24) & 0xff);
+    set(hue_gauge, MUIA_Gauge_Current, xget(wheel,WHEEL_Hue));
 }
 
 __saveds void slider_function(void)
@@ -84,6 +86,7 @@ __saveds void slider_function(void)
     cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
 
     nnset(wheel, WHEEL_RGB, &cw);
+    set(hue_gauge, MUIA_Gauge_Current, xget(wheel,WHEEL_Hue));
 }
 
 __saveds void objects_function(void)
@@ -304,6 +307,8 @@ void main(void)
 		        Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+
+			Child, hue_gauge = GaugeObject, GaugeFrame, MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Max, 255, MUIA_Gauge_Divide, 1<<24, MUIA_Gauge_InfoText, "Hue: %ld",End,
 		        End,
 
 #if 0
