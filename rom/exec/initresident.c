@@ -9,6 +9,7 @@
 #include <aros/asmcall.h>
 #include "exec_intern.h"
 #include <exec/resident.h>
+#include <exec/devices.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -84,7 +85,7 @@
 	    library->lib_Node.ln_Name = resident->rt_Name;
 	    library->lib_Version      = resident->rt_Version;
 	    library->lib_IdString     = resident->rt_IdString;
-	    library->lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+	    library->lib_Flags	      = LIBF_SUMUSED|LIBF_CHANGED;
 
 	    /*
 		Call the library init vector, if set.
