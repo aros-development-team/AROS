@@ -12,6 +12,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
+
 /*****************************************************************************
 
     NAME */
@@ -66,8 +67,16 @@
 	/* Remove it from the list */
 	Remove((struct Node *)&bl->Node);
 
+	if (bl->Size != memSize + BLOCK_TOTAL)
+	{
+	    kprintf("\nFreePooled: free size does not match alloc size: allocsize = %d freesize = %d!!!\n\n",
+	    	       bl->Size - BLOCK_TOTAL,
+		       memSize);
+	}
+	
 	/* And Free the memory */
 	FreeMem(bl,bl->Size);
+
     }else
     {
 	/* Look for the right MemHeader */
@@ -88,7 +97,7 @@
 		    Remove(&mh->mh_Node);
 
 		    /* And free it. */
-		    FreeMem(mh,pool->PuddleSize+sizeof(struct MemHeader));
+		    FreeMem(mh, pool->PuddleSize + MEMHEADER_TOTAL);
 		}
 		/* All done. */
 		break;
