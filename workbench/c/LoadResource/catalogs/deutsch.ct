@@ -1,0 +1,10 @@
+## version $VER: loadresource.catalog 1.0 (27.01.2005)
+## language deutsch
+## codeset 0
+;
+;
+MSG_ERROR_OPEN_LIBRARY
+Kann library %s nicht öffnen.
+; Couldn't open library %s.
+;
+
