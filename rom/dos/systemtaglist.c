@@ -21,7 +21,7 @@
 #include <aros/asmcall.h>
 #include <exec/ports.h>
 
-static BPTR DupFH(BPTR fh, LONG mode);
+static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 
 /*****************************************************************************
 
@@ -177,7 +177,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
     else
     if (cis == (BPTR)SYS_DupStream)
     {
-        cis = DupFH(Input(), FMF_READ);
+        cis = DupFH(Input(), FMF_READ, DOSBase);
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
@@ -186,7 +186,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
     if (!cos)
     {
         if (IsInteractive(cis))
-	    cos = DupFH(cis, FMF_WRITE);
+	    cos = DupFH(cis, FMF_WRITE, DOSBase);
 	else
 	    cos = Open("*", FMF_WRITE);
 ;
@@ -197,7 +197,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
     else
     if (cos == (BPTR)SYS_DupStream)
     {
-        cos = DupFH(Output(), FMF_WRITE);
+        cos = DupFH(Output(), FMF_WRITE, DOSBase);
 	if (!cos) goto end;
 
 	cos_opened = TRUE;
@@ -206,7 +206,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
     if (!ces)
     {
         if (IsInteractive(cis))
-	    ces = DupFH(cos, FMF_WRITE);
+	    ces = DupFH(cos, FMF_WRITE, DOSBase);
 	else
 	    ces = Open("*", FMF_WRITE);
 
@@ -217,7 +217,7 @@ static BPTR DupFH(BPTR fh, LONG mode);
     else
     if (ces == (BPTR)SYS_DupStream)
     {
-        ces = DupFH(Output(), FMF_WRITE);
+        ces = DupFH(Output(), FMF_WRITE, DOSBase);
 	if (!ces) goto end;
 
 	ces_opened = TRUE;
@@ -327,7 +327,7 @@ end:
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
 
-static BPTR DupFH(BPTR fh, LONG mode)
+static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 {
     BPTR ret = NULL;
 
