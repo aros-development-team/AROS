@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for AROSMutualExcludeClass.
@@ -25,9 +25,9 @@ UWORD disabledpattern[2] = {0x4444, 0x1111};
 /***********************************************************************************/
 
 /* draws a disabled pattern */
-void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase,
-			 struct RastPort *rport, UWORD pen,
-			 WORD left, WORD top, UWORD width, UWORD height)
+void drawdisabledpattern(struct RastPort *rport, UWORD pen,
+			 WORD left, WORD top, UWORD width, UWORD height
+)
 {
     SetABPenDrMd(rport, pen, 0, JAM1);
     rport->AreaPtrn = disabledpattern;
@@ -37,9 +37,9 @@ void drawdisabledpattern(struct MXBase_intern *AROSMutualExcludeBase,
 
 /***********************************************************************************/
 
-struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
-			     struct RastPort *rport, struct IntuiText *itext,
-			     struct TextFont **oldfont)
+struct TextFont *preparefont(struct RastPort *rport, struct IntuiText *itext,
+			     struct TextFont **oldfont
+)
 {
     struct TextFont *font;
 
@@ -65,9 +65,9 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 
 /***********************************************************************************/
 
-void closefont(struct MXBase_intern *AROSMutualExcludeBase,
-	       struct RastPort *rport,
-	       struct TextFont *font, struct TextFont *oldfont)
+void closefont(struct RastPort *rport,
+	       struct TextFont *font, struct TextFont *oldfont
+)
 {
     if (oldfont)
     {
@@ -78,9 +78,7 @@ void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 
 /***********************************************************************************/
 
-BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
-		 struct Gadget *gad, struct RastPort *rport,
-                 struct MXData *data)
+BOOL renderlabel(struct Gadget *gad, struct RastPort *rport, struct MXData *data)
 {
     struct TextFont *font = NULL, *oldfont;
     struct TextExtent te;
@@ -99,8 +97,7 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
         {
             /* GFLG_LABELITEXT */
             text = gad->GadgetText->IText;
-            font = preparefont(AROSMutualExcludeBase,
-                               rport, gad->GadgetText, &oldfont);
+            font = preparefont(rport, gad->GadgetText, &oldfont);
             if (!font)
                 return FALSE;
         }
@@ -149,7 +146,7 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
         else
         {
             PrintIText(rport, gad->GadgetText, x, y);
-            closefont(AROSMutualExcludeBase, rport, font, oldfont);
+            closefont(rport, font, oldfont);
         }
     }
 

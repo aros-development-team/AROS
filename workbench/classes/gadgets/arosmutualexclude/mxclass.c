@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS specific mutualexclude class implementation.
@@ -34,15 +34,11 @@
 
 #include "arosmutualexclude_intern.h"
 
-
-#undef AROSMutualExcludeBase
-#define AROSMutualExcludeBase ((struct MXBase_intern *)(cl->cl_UserData))
-
 #include <clib/boopsistubs.h>
 
 /***********************************************************************************/
 
-void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
+static void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 {
     struct MXData  *data = INST_DATA(cl, obj);
     const struct TagItem *tag, *taglist = msg->ops_AttrList;
@@ -87,7 +83,7 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 
 /***********************************************************************************/
 
-Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
+Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
 {
     struct MXData   *data;
     struct TagItem  tags[] =
@@ -147,7 +143,7 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 
 /***********************************************************************************/
 
-IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
+IPTR AROSMX__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct MXData         *data = INST_DATA(cl, obj);
     const struct TagItem  *tag, *taglist = msg->ops_AttrList;
@@ -192,7 +188,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 
 /***********************************************************************************/
 
-IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
+IPTR AROSMX__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct MXData   *data = INST_DATA(cl, obj);
     WORD    	    ypos = G(obj)->TopEdge;
@@ -326,15 +322,13 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 	
 	*/
 	
-        renderlabel(AROSMutualExcludeBase,
-                    G(obj), msg->gpr_RPort,
-                    data);
+        renderlabel(G(obj), msg->gpr_RPort, data);
 
     }
 
     /* Draw disabled pattern */
     if (G(obj)->Flags & GFLG_DISABLED)
-        drawdisabledpattern(AROSMutualExcludeBase, msg->gpr_RPort,
+        drawdisabledpattern(msg->gpr_RPort,
                             data->dri->dri_Pens[SHADOWPEN],
                             G(obj)->LeftEdge, G(obj)->TopEdge,
                             G(obj)->Width-1, G(obj)->Height-1);
@@ -344,7 +338,7 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 
 /***********************************************************************************/
 
-IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
+IPTR AROSMX__GM_GOACTIVE(Class * cl, Object * obj, struct gpInput * msg)
 {
     struct MXData   *data = INST_DATA(cl, obj);
     int     	    y, blobheight = data->spacing + data->fontheight;
@@ -380,81 +374,25 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
 
 /***********************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_mxclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
+VOID AROSMX__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
-    AROS_USERFUNC_INIT
-
-    struct MXData   *data;
-    IPTR    	    retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-	    retval = (IPTR) mx_new(cl, (Class *) obj, (struct opSet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-            data = INST_DATA(cl, obj);
-    	    if (data->font) CloseFont(data->font);
-	    DoSuperMethodA(cl, obj, msg);
-	    break;
-
-	case OM_SET:
-            retval = mx_set(cl, obj, (struct opSet *)msg);
-            break;
-
-#define OPG(x) ((struct opGet *)(x))
-	case OM_GET:
-            data = INST_DATA(cl, obj);
-            if (OPG(msg)->opg_AttrID == GTMX_Active) {
-        	*OPG(msg)->opg_Storage = data->active;
-        	retval = 1UL;
-            } else
-        	retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-	case GM_RENDER:
-	    retval = mx_render(cl, obj, (struct gpRender *) msg);
-	    break;
-
-	case GM_GOACTIVE:
-            retval = mx_goactive(cl, obj, (struct gpInput *) msg);
-            break;
-
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
+    struct MXData *data = INST_DATA(cl, o);
+    if (data->font) CloseFont(data->font);
+    DoSuperMethodA(cl, o, msg);
 }
 
 /***********************************************************************************/
 
-#undef AROSMutualExcludeBase
-
-/***********************************************************************************/
-
-struct IClass *InitMutualExcludeClass (struct MXBase_intern * AROSMutualExcludeBase)
+IPTR AROSMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
-    Class *cl = NULL;
-
-    cl = MakeClass(AROSMXCLASS, GADGETCLASS, NULL, sizeof(struct MXData), 0);
-    if (cl) {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_mxclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSMutualExcludeBase;
-
-	AddClass (cl);
+    struct MXData *data = INST_DATA(cl, o);
+    if (msg->opg_AttrID == GTMX_Active)
+    {
+	msg->opg_Storage = (IPTR)data->active;
+	return (IPTR)1;
     }
-
-    return (cl);
+    else
+	return DoSuperMethodA(cl, o, msg);
 }
 
 /***********************************************************************************/
