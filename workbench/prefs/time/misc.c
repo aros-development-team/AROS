@@ -53,3 +53,30 @@ void InitMenus(void)
 }
 
 /*********************************************************************************************/
+
+LONG NumMonthDays(struct ClockData *cd)
+{
+    struct ClockData 	cd2;
+    ULONG   	    	secs;
+    LONG    	    	monthday = 28;
+    
+    cd2 = *cd;
+    
+    while(monthday < 32)
+    {
+    	cd2.mday = monthday;
+    
+    	secs = Date2Amiga(&cd2);
+	secs += 24 * 60 * 60; /* day++ */
+	
+	Amiga2Date(secs, &cd2);
+	
+	if (cd2.month != cd->month) break;
+	
+	monthday++;
+    }
+    
+    return monthday;
+}
+
+/*********************************************************************************************/

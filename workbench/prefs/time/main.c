@@ -10,6 +10,7 @@
 
 #include "global.h"
 #include "version.h"
+#include "calendarclass.h"
 
 #include <libraries/coolimages.h>
 
@@ -162,8 +163,17 @@ static void OpenTimerDev(void)
     {
     	if ((TimerIO = (struct timerequest *)CreateIORequest(TimerMP, sizeof(struct timerequest))))
 	{
-	    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)TimerIO, 0);
+	    if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)TimerIO, 0))
+	    {
+	    	TimerBase = (struct Device *)TimerIO->tr_node.io_Device;
+	    }
 	}
+    }
+    
+    if (!TimerBase)
+    {
+    	sprintf(s, MSG(MSG_CANT_OPEN_LIB), "timer.device", 0);
+	Cleanup(s);
     }
 }
 
@@ -220,7 +230,11 @@ static void FreeVisual(void)
 static void MakeGUI(void)
 {
     extern struct NewMenu nm;
+    
     Object *menu;
+    
+    if (!MakeCalendarClass()) Cleanup(MSG(MSG_CANT_CREATE_APP));
+    
     
     if (LocaleBase)
     {
@@ -234,12 +248,18 @@ static void MakeGUI(void)
 	    {
 	    	monthlabels[i] = GetLocaleStr(locale, MON_1 + i);
 	    }
+	    
+	    firstweekday = locale->loc_CalendarType;
+	    CloseLocale(locale);
 	}
 	
     }
     
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
         
+    cal = NewObject(calendarmcc->mcc_Class, NULL,
+    	TAG_DONE);
+	
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"Time",
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
@@ -257,12 +277,13 @@ static void MakeGUI(void)
 		    Child, VGroup,
 		    	GroupFrame,
 			Child, HGroup,
-		    	    Child, MUI_MakeObject(MUIO_Cycle, NULL, monthlabels),
+		    	    Child, monthobj = MUI_MakeObject(MUIO_Cycle, NULL, monthlabels),
 			    Child, HVSpace,
 			    Child, StringObject,
 				StringFrame,
 				End,
 			    End,
+			Child, (IPTR)cal,
 			End,
 		    Child, VGroup,
 		    	GroupFrame,
@@ -284,6 +305,12 @@ static void MakeGUI(void)
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+    DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, cal, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
+
+    set(cal, MUIA_Calendar_Date, &clockdata);
+    set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
+    
 }
 
 /*********************************************************************************************/
@@ -291,6 +318,7 @@ static void MakeGUI(void)
 static void KillGUI(void)
 {
     DisposeObject(app);
+    KillCalendarClass();
 }
 
 /*********************************************************************************************/
@@ -321,6 +349,7 @@ int main(void)
     OpenLibs();
     OpenTimerDev();
     GetArguments();
+    InitPrefs((args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
     GetVisual();
     MakeGUI();
     HandleAll();
