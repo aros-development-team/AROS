@@ -37,6 +37,7 @@
 
 #define EM_386          3
 #define EM_68K          4
+#define EM_PPC         20
 #define EM_ARM         40
 
 #define R_386_NONE      0
@@ -266,7 +267,11 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
-        
+
+        #elif defined(__ppc__) || defined(__powerpc__)
+            eh->ident[EI_DATA] != ELFDATA2MSB ||
+            eh->machine        != EM_PPC
+
         #elif defined(__arm__)
             
             eh->ident[EI_DATA] != ELFDATA2LSB ||
@@ -286,6 +291,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2LSB));
 #elif defined(__mc68000__)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2MSB));
+#elif defined(__ppc__) || defined(__powerpc__)
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
 #elif defined(__arm__)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2MSB));
 #endif
@@ -294,6 +301,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_386));
 #elif defined(__mc68000__)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_68K));
+#elif defined(__ppc__) || defined(__powerpc__)
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_PPC));
 #elif defined(__arm__)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_ARM));
 #endif
