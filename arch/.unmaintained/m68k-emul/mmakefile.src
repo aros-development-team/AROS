@@ -2,6 +2,8 @@
 TOP=../..
 CURDIR=config/m68k-emul
 
+USER_INCLUDES=-I$(TOP)/rom/exec
+
 include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
