@@ -70,9 +70,11 @@
     iofs.IOFS.io_Device = GetDevice(devicename, &iofs.IOFS.io_Unit,
 				    DOSBase);
     
-    if(iofs.IOFS.io_Device == NULL)
+    if (iofs.IOFS.io_Device == NULL)
+    {
 	return 0;
-    
+    }
+
     iofs.io_Union.io_FORMAT.io_VolumeName = volumename;
     iofs.io_Union.io_FORMAT.io_DosType = dostype;
     
@@ -80,10 +82,14 @@
     DoIO(&iofs.IOFS);
     
     /* Set error code */
-    if(iofs.io_DosError == 0)
+    if (iofs.io_DosError == 0)
+    {
 	success = 1;
+    }
     else
+    {
 	SetIoErr(iofs.io_DosError);
+    }
 
     return success;
 
