@@ -144,7 +144,7 @@ c00055;1;srittau;Write C:Version
 c00056;2;hkiel;Write C:Wait
 c00057;2;SDuvan;Write C:Which
 c00058;2;srittau;Write C:Why
-c00059;0;chodorowski;Write C:LoadWB
+c00059;1;chodorowski;Write C:LoadWB
 colorwheel00000;2;lbischoff;Write ConvertHSBToRGB
 colorwheel00001;2;lbischoff;Write ConvertRGBToHSB
 colorwheel00002;2;stegerg;Write colorwheel.gadget class
