@@ -1255,23 +1255,10 @@ LX11
     XSetForeground(data->display, data->gc, GC_FG(gc));
     XSetFunction(data->display, data->gc, GC_DRMD(gc));
     
-    /*
-     * MUST draw from lower y to higher y coordinates such that
-     * an areafill algorithm can look good!
-     * It seems as if slightly different lines are drawn depending
-     * on where the line drawing is started.
-     */
-    if (msg->y1 < msg->y2) {
-    	XDrawLine(data->display, DRAWABLE(data), data->gc
- 	          , msg->x1, msg->y1
-	          , msg->x2, msg->y2 
+    XDrawLine(data->display, DRAWABLE(data), data->gc
+            , msg->x1, msg->y1
+            , msg->x2, msg->y2 
         );
-    } else {
-    	XDrawLine(data->display, DRAWABLE(data), data->gc
-	          , msg->x2, msg->y2 
- 	          , msg->x1, msg->y1
-        );
-    }
 	
     if (GC_DOCLIP(gc)) {
     	XSetClipMask(data->display, data->gc, None);
