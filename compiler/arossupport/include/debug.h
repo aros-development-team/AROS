@@ -151,7 +151,7 @@
 	THIS_FILE, __LINE__, #x, (APTR)(x)) ) );
 
 #define ASSERT_VALID_TASK(t) ( ASSERT_VALID_PTR(t) &&		\
-	(((t)->tc_Node.ln_Type == NT_TASK) ||
+	(((t)->tc_Node.ln_Type == NT_TASK) ||			\
 	(t)->tc_Node.ln_Type == NT_PROCESS) )
 
 #define ASSERT_VALID_PROCESS(p) ( ASSERT_VALID_PTR(p) &&	\
