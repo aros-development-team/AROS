@@ -508,7 +508,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 						    dtsi->si_Flags &= ~DTSIF_HIGHLIGHT;
 						    
 						    DoMethod(object, DTM_CLEARSELECTED, 
-							     ((struct gpInput *)msg)->gpi_GInfo);
+							     (IPTR)((struct gpInput *)msg)->gpi_GInfo);
 						}
 					    }
 					    
@@ -648,7 +648,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 				    dtsi->si_TopHoriz = NewTopHoriz;
 				    dtsi->si_TopVert  = NewTopVert;
 				    
-				    DoMethod(object, GM_RENDER, ((struct gpInput *)msg)->gpi_GInfo, rp, GREDRAW_UPDATE);
+				    DoMethod(object, GM_RENDER, (IPTR)((struct gpInput *)msg)->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
 				    
 				    if (dtsi->si_Flags & DTSIF_DRAGSELECT)
 				    {
