@@ -1,1 +1,16 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := wanderer iconwindow
+
 #MM- workbench-system : workbench-system-wanderer
+##MM workbench-system-wanderer : includes linklibs
+
+%build_prog mmake=workbench-system-wanderer \
+    progname=Wanderer targetdir=$(AROS_WANDERER) \
+    files=$(FILES) uselibs="mui arossupport amiga rom m" \
+    detach=yes
+
+%common
