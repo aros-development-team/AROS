@@ -172,9 +172,9 @@ struct IFFHandle *PrepareClipboard(void)
 	    InitIFFasClip(iff);
 	    if(!OpenIFF(iff,IFFF_WRITE))
 	    {
-		if(!PushChunk(iff, 'FTXT', 'FORM', IFFSIZE_UNKNOWN))
+		if(!PushChunk(iff, MAKE_ID('F','T','X','T'), MAKE_ID('F','O','R','M'), IFFSIZE_UNKNOWN))
 		{
-		    if(!PushChunk(iff, 0, 'CHRS', IFFSIZE_UNKNOWN))
+		    if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN))
 		    {
 			return iff;
 		    }
