@@ -636,6 +636,89 @@ static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd
 #endif
 }
 
+/*** BitMap::PutTemplate() **********************************************/
+
+static VOID MNAME(puttemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpix)
+    {
+	case 1:
+	    HIDD_BM_PutMemTemplate8(o,
+	    	    	    	    msg->gc,
+				    msg->template,
+				    msg->modulo,
+				    msg->srcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->inverttemplate);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemTemplate16(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemTemplate24(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemTemplate32(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpix) */
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
+    UNLOCK_FRAMEBUFFER(XSD(cl));
+#endif
+	    
+}
+
+
 /*** BitMap::Get() *******************************************/
 
 static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
