@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Copyright © 2004, The AROS Development Team. All rights reserved.
 # $Id$
