@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Makedir CLI command
-    Lang: english
+    Lang: English
 */
 
 #include <exec/memory.h>
@@ -13,34 +13,71 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: makedir 41.2 (11.10.1997)\n";
+static const char version[] = "$VER: makedir 41.4 (12.11.2000)\n";
 
-int main (int argc, char ** argv)
+/* TODO:  INSERT documentation here */
+
+/* HISTORY:  12 November 2000,  SDuvan  --  Implmented multiple target support,
+                                            rewrote to live up to AmigaDOS
+					    semantics */
+
+enum
 {
-    STRPTR args[1]={ 0 };
+    ARG_NAME = 0,
+    NOOFARGS
+};
+
+
+int main(int argc, char **argv)
+{
+    IPTR           args[NOOFARGS] = { NULL };
     struct RDArgs *rda;
-    LONG error=0;
-    BPTR lock;
+    
+    LONG   error = RETURN_OK;
+    BPTR   lock;
+    
+    rda = ReadArgs("NAME/M", args, NULL);
 
-    rda=ReadArgs("DIR/A",(IPTR *)args,NULL);
-    if(rda!=NULL)
+    if(rda != NULL)
     {
-	lock = CreateDir(args[0]);
+	int      i = 0;
+	STRPTR  *name = (STRPTR *)args[ARG_NAME];
 
-	if (lock)
-	    UnLock(lock);
-	else
+	if(*name == NULL)
 	{
-	    VPrintf ("Cannot create %s: ", (ULONG *)args);
+	    printf("No name given\n");
 	    error = RETURN_FAIL;
 	}
+	else
+	{
+	    for(i = 0; name[i] != NULL; i++)
+	    {
+		lock = CreateDir(name[i]);
+		
+		/* The AmigaDOS semantics are quite strange here. When it is
+		   impossible to create a certain directory, MakeDir goes on
+		   to try to create the rest of the specified directories and
+		   returns the LAST return value for the operation. */ 
+		if(lock != NULL)
+		{
+		    UnLock(lock);
+		    error = RETURN_OK;
+		}
+		else
+		{
+		    printf("Cannot create directory %s\n", name[i]);
+		    error = RETURN_ERROR;
+		}
+	    }
+	}	
 
 	FreeArgs(rda);
     }
     else
-	error=RETURN_FAIL;
+	error = RETURN_FAIL;
 
-    if(error)
+    if(error != RETURN_OK)
 	PrintFault(IoErr(), NULL);
+
     return error;
 }
