@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/21 17:12:35  aros
+    Use the ANSI C function
+
     Revision 1.8  1996/09/21 15:46:46  digulla
     "%d", 0 gave " " instead of "0"
 
@@ -148,7 +151,7 @@
 		    ret ++;
 		}
 
-		len = StrLen (str);
+		len = strlen (str);
 
 		write (2, str, len);
 		ret += len;
