@@ -98,6 +98,8 @@
 	    /* ignore */
 	    break;
 	}
+
+	mode ++;
     }
 
     if ((fd = open (pathname, openmode, 644)) == -1)
