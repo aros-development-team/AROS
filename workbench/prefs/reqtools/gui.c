@@ -140,7 +140,7 @@ RenderPrefsWindow( VOID )
     PrintIText( rp, &DefSizeText,     0, 0 );
     PrintIText( rp, &NrOfEntriesText, 0, 0 );
 
-    DrawBevelBox( rp, BevelLeft, BevelTop, BevelWidth, BevelHeight, GT_VisualInfo, VisualInfo	,
+    DrawBevelBox( rp, BevelLeft, BevelTop, BevelWidth, BevelHeight, GT_VisualInfo, (IPTR) VisualInfo	,
 	    							    GTBB_Recessed, TRUE		,
     								    TAG_DONE );
 }
@@ -363,7 +363,7 @@ retryopenwin:
     NewGadget.ng_Height = fontht + 6;
     NewGadget.ng_GadgetText = NULL;
     NewGadget.ng_GadgetID = DOWHEEL_GADID;
-    dowheelgad = gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels,	WheelLabels,
+    dowheelgad = gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels,	(IPTR) WheelLabels,
 	    							  GTCY_Active,	WheelType,
     								  TAG_END);
 
@@ -431,7 +431,7 @@ retryopenwin:
     len = IntuiTextLength (&IntuiText);
     InitNewGadget (left + len + 8, top, ArrayWidth (TypeLabels) + 36, fontht + 6, str, REQTYPE_GADID);
     NewGadget.ng_Flags = PLACETEXT_LEFT|NG_HIGHLABEL;
-    gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels, TypeLabels, TAG_DONE);
+    gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels, (IPTR) TypeLabels, TAG_DONE);
     top += fontht + 6 + spacing;
     winwidth = NewGadget.ng_LeftEdge + NewGadget.ng_Width;
 
@@ -493,7 +493,7 @@ retryopenwin:
 
     InitNewGadget (left + len, top, ArrayWidth (DefaultPosLabels) + 36,
 					    fontht + 6, GetString (MSG_POSITION), POSITION_GADID);
-    defposgad = gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels, DefaultPosLabels,
+    defposgad = gad = CreateGadget (CYCLE_KIND, gad, &NewGadget, GTCY_Labels, (IPTR) DefaultPosLabels,
 				      				 GTCY_Active, filereqdefs->ReqPos,
 				      				 TAG_END);
     top += fontht + 6 + spacing;
@@ -552,7 +552,7 @@ len2 = 0;
 					    fontht + 6, NULL, DEFSIZE_GADID);
     sizegad = gad = CreateGadget (SLIDER_KIND, gad, &NewGadget, GTSL_Min, 25, GTSL_Max, 100,
 				    				GTSL_Level, filereqdefs->Size,
-			       					GTSL_MaxLevelLen, 6, GTSL_LevelFormat, "%3ld%%",
+			       					GTSL_MaxLevelLen, 6, GTSL_LevelFormat, (IPTR) "%3ld%%",
 				    				PGA_Freedom, LORIENT_HORIZ, GA_RelVerify, TRUE,
 				    				TAG_DONE);
 #if 0
@@ -607,13 +607,13 @@ len2 = 0;
 		    WA_Width, winwidth,
 		    WA_Height, top + Screen->WBorBottom,
 		    WA_DepthGadget, FALSE,
-		    WA_Zoom, Zoom,
+		    WA_Zoom, (IPTR) Zoom,
 		    WA_IDCMP, CHECKBOXIDCMP|BUTTONIDCMP|SLIDERIDCMP|INTEGERIDCMP|CYCLEIDCMP|IDCMP_CLOSEWINDOW
 					    |IDCMP_VANILLAKEY|IDCMP_MOUSEMOVE|IDCMP_REFRESHWINDOW|IDCMP_MENUPICK,
 		    WA_Flags, WFLG_DRAGBAR|WFLG_DEPTHGADGET|WFLG_ACTIVATE|WFLG_SIMPLE_REFRESH|WFLG_CLOSEGADGET,
-		    WA_Gadgets, glist,
-		    WA_Title, GetString (MSG_WINDOW_TITLE),
-		    WA_PubScreen, Screen,
+		    WA_Gadgets, (IPTR) glist,
+		    WA_Title, (IPTR) GetString (MSG_WINDOW_TITLE),
+		    WA_PubScreen, (IPTR) Screen,
 		    WA_NewLookMenus, TRUE, TAG_DONE)))
     {
 	ClosePrefsWindow();
