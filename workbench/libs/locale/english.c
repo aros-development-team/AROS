@@ -14,8 +14,8 @@
 
 
 /*
-    This is the language implementation for the default, English, language,
-    based on the ISO-8859-1 (ECMA Latin 1) code table.
+    This is the language implementation for the default .language, the
+    English language based on the ISO-8859-1 (ECMA Latin 1) code table.
 
     This code can also be used to create other .languages.
 
@@ -42,13 +42,13 @@
     (There's no need to actually change anything in the functions in any of
      these cases; it's just necessary to reuse them as access-functions for
      the tables since locale.library currently has no mechanism for just
-     passing code or language tables. Therefore, it's also not necessary to
-     include the code table arrays if none of the code-table functions are
-     reused. Likewise, for a language using the same character order the
+     passing code tables or language tables. That's why you also don't have
+     to include the code table arrays if none of the code-table functions
+     are reused. Likewise, for a language using the same character order the
      only required table is the one including the language strings.)
 
-    Most function should be adaptable to multi-byte characters with very few
-    alterations.
+    Most functions should be adaptable to multi-byte characters with very
+    few alterations.
 */
 
 
@@ -353,10 +353,11 @@ AROS_LH1(BOOL, isxdigit,
 /* ULONG strconvert(STRPTR s1, STRPTR s2, ULONG len, ULONG typ): LF 15
     This function will convert a string to automatically use the
     character order table. This is a bit dodgy in the opinion of some
-    developers, however the ANSI people didn't think so...
+    developers. However, the ANSI people saw this differently ...
 
-    Since comparing the string is not faster for pre-converted strings,
-    however, there should be very little reason to ever do this.
+    Since comparing pre-converted strings is not faster than comparing
+    the strings themselves there should be very little reason to ever
+    do this.
 */
 AROS_LD4(ULONG, strconvert,
     AROS_LDA(STRPTR,    string1, A1),
@@ -417,11 +418,10 @@ AROS_LH4(LONG, strcompare,
     struct LocaleBase *, LocaleBase, 22, english)
 {
     AROS_LIBFUNC_INIT
-    ULONG a, b;
 
-    const ULONG *collTab;
-
-    if (length && string1 && string2) {
+    if (string1 && string2)
+    {   const ULONG *collTab;
+        ULONG a= 0;
 
         /* Determine which collation table to use... */
         if      (type == SC_ASCII)
@@ -433,22 +433,19 @@ AROS_LH4(LONG, strcompare,
         else /* Wrong argument: */
             return 0;
 
-        do
-        {
-            a = collTab[(UBYTE)*string1];
-            b = collTab[(UBYTE)*string2];
-            string1++;
-            string2++;
-        } while( (a == b) && --length);
+        while ( length--
+        &&      ! (a= ( collTab[(UBYTE)*(string1++)]
+                      - collTab[(UBYTE)*(string2++)]))
+        &&      *s );
+        return a; }
 
-        return a - b;}
-
-    if (length) {
-        if (string1 && *string1)
-            return 1; /* String1 exists therefore is bigger. */
-        if (string2 && *string2)
-            return -1; /* String2 exists therefore is bigger. */
-    }
+    else
+        if (length) {
+            if (string1 && *string1)
+                return  1; /* String1 exists therefore is bigger. */
+           if (string2 && *string2)
+                return -1; /* String2 exists therefore is bigger. */
+        }
 
     return 0; /* Equal for the 0 characters we compared. */
 
@@ -1103,18 +1100,22 @@ const ULONG __code_table_to_upper[ __CODE_TABLE_SIZE] =
     This defines a sorting order for the regular characters of the language
     only. Sorting using this order will place others characters together
     with the regular characters they are related to.
-    This is done by giving for each character the regular character to be
-    used for sorting instead. Eg. the entry for 'a' is 'A', so while sorting
-    'a' will be considered the same as 'A'. Thus sorting will place "amiga"
-    and "Amiga" immediately together under "A", rather on different sides of
-    "Z-80", as would happen by sorting just by character values. This simple
-    example could also be done using ToUpper, however the short character
-    order also groups all accented characters with their base character.
 
-    (Though for regular English characters the ordinals used here are indeed
-     equal to the character values, this will not, and need not, always be
-     true. Eg. The value of '~' is 126, but it's ordered here as the 100-th
-     character.)
+    This is done by giving for each character the regular character to be
+    used for sorting instead.
+
+    Eg. the entry for 'a' is 'A', so while sorting 'a' will be considered
+    the same as 'A'. Thus sorting will place "amiga" and "Amiga" immediately
+    together under "A" (in no particular order), rather on different sides
+    of "Z-80", as would happen by sorting just by character values. Though
+    this simple example could also be done using ToUpper, the short
+    character order also groups all accented characters with their base
+    character.
+
+    (Though for regular English characters the ordinals have here been
+     chosen equal to the character values, there's no need to do so. It's
+     also not true for other characters. Eg. the value of '~' is 126, but
+     it's ordered here as the 100-th character.)
 */
 
 const ULONG __language_short_order_tab[ __CODE_TABLE_SIZE] =
@@ -1264,13 +1265,15 @@ const ULONG __language_short_order_tab[ __CODE_TABLE_SIZE] =
     This defines a sorting order for all the characters of the code set.
     Sorting using this order will group related characters together, but
     will nevertheless sort out the different characters.
+
     This is done by giving for each character a different ordinal, where the
     ordinals for related characters are "adjacent".
+
     Eg. the ordinal for 'A' is 74, and ordinal for 'a' is 75. Thus sorting
-    will place "amiga" shortly after "Amiga", but "Amy" will sorted closer
-    since it too starts with ordinal 74. Though this is a simple example,
-    for all accented characters the long character order also defines
-    ordinals adjacent to that of their base characters.
+    will place "amiga" shortly after "Amiga", but "Amy" will be sorted
+    closer since it too starts with ordinal 74. Though this is a simple
+    example, for all accented characters the long character order also
+    defines ordinals adjacent to that of their base characters.
 
     (Characters will usually have an ordinal different from their value.)
 */
@@ -1424,9 +1427,9 @@ const STRPTR __language_strings[] =
     /* A blank string: */
     "",
 
-    /*  The days of the week. Starts with the first day of the week.
-        In English this would be Sunday, this depends upon the settings
-        of Locale->CalendarType.
+    /*  The days of the week. Starts with the day which is called "Sunday"
+        in English. Always used this order: What day the calender actually
+        starts a week with is set using Locale->CalendarType.
     */
     "Sunday"   ,
     "Monday"   ,
@@ -1446,18 +1449,18 @@ const STRPTR __language_strings[] =
     "Sat",
 
     /* Months of the year: */
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
+    "January"  ,
+    "February" ,
+    "March"    ,
+    "April"    ,
+    "May"      ,
+    "June"     ,
+    "July"     ,
+    "August"   ,
     "September",
-    "October",
-    "November",
-    "December",
+    "October"  ,
+    "November" ,
+    "December" ,
 
     /* Abbreviated months of the year: */
     "Jan",
@@ -1496,6 +1499,7 @@ const STRPTR __language_strings[] =
     "Future"      /* Future    - all days beyond the current. */
 };
 
-/* This is the end of ROMtag marker. */
+
+/* This is the end-of-ROMtag marker. */
 const char end=0;
 
