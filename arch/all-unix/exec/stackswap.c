@@ -162,7 +162,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 	newSP -= t; /* Make room for t elements */
 
-    #if AROS_STACK_DEBUG && 0
+    #if AROS_STACK_DEBUG
         
 	{
 	    UBYTE *startfill = sss->stk_Lower;
