@@ -518,6 +518,10 @@ struct MUI_PenSpec {
 #include "classes/poppen.h"
 #endif
 
+#ifndef _MUI_CLASSES_COLORFIELD_H
+#include "classes/colorfield.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/
