@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-/*#define MYDEBUG 1*/
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #include "imspec_intern.h"
@@ -64,6 +64,19 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
                  end_rgb->red,end_rgb->green,end_rgb->blue);
 
     set(data->gradient_imagedisplay, MUIA_Imagedisplay_Spec, data->gradient_imagespec);
+}
+
+static void GradientSwap_Function(struct Hook *hook, Object *obj, APTR msg)
+{
+    struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
+    struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
+    struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
+    struct MUI_RGBcolor tmp;
+    
+    tmp = *start_rgb;
+    set(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor, (IPTR)end_rgb);
+    set(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor, (IPTR)&tmp);
+    Gradient_Function(NULL,obj,&data);
 }
 
 
@@ -300,6 +313,9 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *gradient_end_poppen = NULL;
     Object *gradient_angle_slider = NULL;
     Object *gradient_type_cycle = NULL;
+    Object *gradient_horiz_button = NULL;
+    Object *gradient_vert_button = NULL;
+    Object *gradient_swap_button = NULL;
     char *spec = NULL;
     LONG i;
     LONG adjust_type;
@@ -348,10 +364,38 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    Child, (IPTR)FreeLabel("Type:"),
 	    Child, (IPTR)(gradient_type_cycle = MUI_MakeObject(MUIO_Cycle, (IPTR)"Type:", (IPTR)gradient_type_entries)),
 	    Child, (IPTR)FreeLabel("Angle:"),
-	    Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 359, End),
+	    Child, (IPTR)VGroup,
+	        Child, (IPTR)HGroup,
+	            MUIA_Group_SameWidth, TRUE,
+	            Child, (IPTR)(gradient_horiz_button = TextObject,
+			  ButtonFrame,
+			  MUIA_Background,               MUII_ButtonBack,
+			  MUIA_InputMode, MUIV_InputMode_RelVerify,
+			  MUIA_Text_PreParse, (IPTR)"\33c",
+			  MUIA_Text_Contents, (IPTR)"Vertical",
+			  MUIA_Weight, 0,
+			  End),
+	            Child, (IPTR)(gradient_vert_button = TextObject,
+			  ButtonFrame,
+			  MUIA_Background,               MUII_ButtonBack,
+			  MUIA_InputMode, MUIV_InputMode_RelVerify,
+			  MUIA_Text_PreParse, (IPTR)"\33c",
+			  MUIA_Text_Contents, (IPTR)"Horizontal",
+			  MUIA_Weight, 0,
+			  End),
+	            End,
+	        Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 179, End),
+	        End,
 	    Child, (IPTR)FreeLabel("Colors:"),
 	    Child, (IPTR)HGroup,
 		Child, (IPTR)(gradient_start_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"rbbbbbbbb,bbbbbbbb,bbbbbbbb", End),
+	        Child, (IPTR)VCenter((gradient_swap_button = TextObject,
+			      ButtonFrame,
+			      MUIA_Background,               MUII_ButtonBack,
+			      MUIA_InputMode, MUIV_InputMode_RelVerify,
+			      MUIA_Text_Contents, (IPTR)"<->",
+			      MUIA_Weight, 0,
+			      End)),
 		Child, (IPTR)(gradient_end_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"r55555555,55555555,55555555", End),
 		End,
 	    Child, (IPTR)FreeLabel("Preview:"),
@@ -486,7 +530,20 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->gradient_end_poppen = gradient_end_poppen;
 	data->gradient_angle_slider = gradient_angle_slider;
 	data->gradient_type_cycle = gradient_type_cycle;
+	data->gradient_vert_button = gradient_vert_button;
+	data->gradient_horiz_button = gradient_horiz_button;
+	data->gradient_swap_button = gradient_swap_button;
 
+	DoMethod(gradient_vert_button, MUIM_Notify, MUIA_Pressed, FALSE,
+		 (IPTR)gradient_angle_slider, 3, MUIM_Set, MUIA_Numeric_Value, 90);
+	DoMethod(gradient_horiz_button, MUIM_Notify, MUIA_Pressed, FALSE,
+		 (IPTR)gradient_angle_slider, 3, MUIM_Set, MUIA_Numeric_Value, 0);
+
+	data->gradient_swap_hook.h_Entry = HookEntry;
+	data->gradient_swap_hook.h_SubEntry = (HOOKFUNC)GradientSwap_Function;
+	DoMethod(gradient_swap_button, MUIM_Notify, MUIA_Pressed, FALSE,
+		 (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_swap_hook, (IPTR)data);
+	
 	data->gradient_hook.h_Entry = HookEntry;
 	data->gradient_hook.h_SubEntry = (HOOKFUNC)Gradient_Function;
 	DoMethod(gradient_start_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,

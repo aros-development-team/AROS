@@ -9,10 +9,14 @@ struct Imageadjust_DATA
     struct Hook bitmap_hook;
 
     struct Hook gradient_hook;
+    struct Hook gradient_swap_hook;
     Object *gradient_imagedisplay;
     Object *gradient_type_cycle;
+    Object *gradient_horiz_button;
+    Object *gradient_vert_button;
     Object *gradient_angle_slider;
     Object *gradient_start_poppen;
+    Object *gradient_swap_button;
     Object *gradient_end_poppen;
     char gradient_imagespec[128];
 
