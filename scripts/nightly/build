@@ -13,11 +13,13 @@ zsh $SP/update
 if [ $? != 0 ]; then
     printe "Updating sources FAILED! ABORTING SCRIPT!"
     
+    STOP_TIME=$(date -u +"%H:%M")
+    
     mail_start "FAILED COMPLETELY"
     mail_write ""
     mail_write "Updating sources FAILED! Please see attached log."
     
-    mail_send "-a $LOG_BASE/update.log"
+    mail_send "-a$LOG_BASE/update.log"
     
     mail_stop
     
@@ -63,7 +65,7 @@ if [ ! -z $failed ]; then
     for package in $failed; do
         mail_write $package
 	tail -100 $LOG_BASE/$package.log >/tmp/_aros_build_log_$package
-	ATTACH=$ATTACH '-a /tmp/_aros_build_log_'$package
+	ATTACH="$ATTACH -a/tmp/_aros_build_log_$package"
     done
     mail_write ""
     mail_write "Please see the attached shortened logs or the full logs at"
@@ -75,10 +77,10 @@ if [ ! -z $succeeded ]; then
     for package in $succeeded; do
         mail_write "$package"
     done
+    mail_write ""
+    mail_write "The following archives were created:"
+    mail_write "$(ls -1 -I logs $ARCHIVE_BASE)"
 fi
-mail_write ""
-mail_write "The following archives were created:"
-mail_write "$(ls -1 -I logs $ARCHIVE_BASE)"
 
 mail_send $ATTACH
 
