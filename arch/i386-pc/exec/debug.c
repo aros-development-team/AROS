@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Replacement OS
+    (C) 1999-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Start the internal debugger.
