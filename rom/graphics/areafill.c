@@ -1,3 +1,11 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Area support functions
+    Lang: english
+*/
+
 #include <memory.h>
 #include <proto/alib.h>
 #include <exec/types.h>
@@ -88,8 +96,6 @@ void FillScan(UWORD StartIndex,
         if (i > EndIndex) return;
       }
       x1=AreaBound[i].RightX+1;
-
-      SetAPen(rp,8);
 
       while (FALSE == AreaBound[i+1].Valid)
       {
