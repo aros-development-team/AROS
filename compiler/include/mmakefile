@@ -30,7 +30,7 @@ INCSUBDIRS :=	aros \
 includes :
 	@$(NOP)
 
-#MM
+#MM includes-copy : includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
