@@ -74,7 +74,7 @@ DECLARE_main(name);                                            \
 DECLARE_SysBase_global                                         \
 DECLARE_DOSBase_global                                         \
                                                                \
-AROS_UFH3(static LONG, _entry,                                 \
+AROS_UFH3(__unused static LONG, _entry,                        \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
     AROS_UFHA(struct ExecBase *,sysBase,A6)                    \
