@@ -3,7 +3,7 @@
 #include "error.h"
 #include "hash.h"
 #include "posinfo.h"
-#include "malloc.h"
+#include "memory.h"
 
 int Purify_Error;
 
@@ -20,7 +20,7 @@ void Purify_PrePrintError (void)
 
     Purify_RememberCallers (&rd);
 
-    fprintf (stderr, "*** Purify: %s ***\n", purify_ErrorMsgs[Purify_Error]);
+    fprintf (stderr, "*** Purify %s ***\n", purify_ErrorMsgs[Purify_Error]);
     Purify_PrintCallers (&rd);
 }
 
@@ -41,7 +41,7 @@ void Purify_PrintError (const char * fmt, ...)
     Purify_PostPrintError ();
 }
 
-void Purify_PrintAccessError (const char * access, void * addr, int size)
+void Purify_PrintAccessError (const char * access, const void * addr, int size)
 {
     if (Purify_LastNode)
     {
@@ -83,9 +83,41 @@ void Purify_PrintAccessError (const char * access, void * addr, int size)
     }
     else
     {
-	Purify_PrintError ("%s of %d bytes at %p",
-	    access, size, addr
-	);
+	int offset;
+	MemHash * next = Purify_FindNextMemory (addr, &offset);
+
+	if (next->type != PURIFY_MemType_Heap)
+	{
+	    Purify_PrintError (
+		"%s of %d bytes at %p. This is %d bytes %s the block\n"
+		"%s%s%sat %p with the size of %d bytes (type=%d)",
+		access, size, addr, offset, (offset < 0 ? "before" : "after"),
+		next->data ? "\"" : "",
+		next->data ? (char *)next->data : "",
+		next->data ? "\" " : "",
+		next->mem, next->size, next->type
+	    );
+	}
+	else
+	{
+	    PMemoryNode * node = (PMemoryNode *)next->data;
+
+	    Purify_PrePrintError ();
+	    fprintf (stderr,
+		"%s of %d bytes at %p. This is %d bytes %s the block\n"
+		"allocated at %p with the size of %d bytes (type=%d)\n"
+		"The block was allocated ",
+		access, size, addr, offset, (offset < 0 ? "before" : "after"),
+		next->mem, next->size, next->type
+	    );
+	    Purify_PrintCallers (&node->alloc);
+	    if (node->free.nstack != -1)
+	    {
+		fprintf (stderr, "It was freed ");
+		Purify_PrintCallers (&node->free);
+	    }
+	    Purify_PostPrintError ();
+	}
     }
 }
 
