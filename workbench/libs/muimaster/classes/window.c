@@ -199,7 +199,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
         WA_Left,         (IPTR)data->wd_X,
         WA_Top,          (IPTR)data->wd_Y,
         WA_Flags,        (IPTR)flags,
-        WA_Title,        (IPTR)data->wd_Title,
+        data->wd_Title?WA_Title:TAG_IGNORE,(IPTR)data->wd_Title,
         WA_CustomScreen, (IPTR)data->wd_RenderInfo.mri_Screen,
         WA_InnerWidth,   (IPTR)data->wd_Width,
         WA_InnerHeight,  (IPTR)data->wd_Height,
@@ -648,10 +648,8 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     }
 
     /* try ActiveObject */
-    if (data->wd_ActiveObject)
+    if ((active_object = data->wd_ActiveObject))
     {
-	struct ObjNode *act;
-
 	/* sba: 
 	** Which method should be used for muikeys? MUIM_HandleInput or
 	** MUIM_HandleEvent. Also note that there is a flag MUI_EHF_ALWAYSKEYS
@@ -661,13 +659,10 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	** was earlier
 	*/
 
-	act = data->wd_ActiveObject;
-	active_object = act->obj;
-
 #if 0
 	if (muikey != MUIKEY_NONE)
 	{
-	    res = DoMethod(data->wd_ActiveObject->obj, MUIM_HandleEvent, (IPTR)event, muikey);
+	    res = DoMethod(data->wd_ActiveObject, MUIM_HandleEvent, (IPTR)event, muikey);
 	    if (res & MUI_EventHandlerRC_Eat) return;
 	}
 #endif
@@ -676,14 +671,14 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if ((ehn->ehn_Object == act->obj) && (ehn->ehn_Events & mask))
+	    if ((ehn->ehn_Object == active_object) && (ehn->ehn_Events & mask))
 	    {
 		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 
 		/* Leave the loop if a differnt object has been activated */
-		if (act != data->wd_ActiveObject) break;
+		if (active_object != data->wd_ActiveObject) break;
 	    }
 	}
     }
@@ -806,7 +801,7 @@ static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
     {
 	if (oldRoot)
 	{
-	    if (data->wd_ActiveObject && data->wd_ActiveObject->obj == oldRoot)
+	    if (data->wd_ActiveObject == oldRoot)
 		set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 	    DoMethod(oldRoot, MUIM_DisconnectParent);
 	}
@@ -834,60 +829,80 @@ static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
     return NULL;
 }
 
-/* code for setting MUIA_Window_ActiveObject */
-static void window_set_active_object (struct MUI_WindowData *data, Object *obj,
-			  ULONG newval)
+/**************************************************************************
+ Code for setting MUIA_Window_ActiveObject
+ If the current active object is not in a cycle chain it handles 
+ MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
+ cureently as there is no active object
+**************************************************************************/
+static void window_set_active_object (struct MUI_WindowData *data, Object *obj, ULONG newval)
 {
-    struct ObjNode *active = data->wd_ActiveObject;
+    struct ObjNode *old_activenode;
+    Object *old_active;
 
-    if (active && ((ULONG)active->obj == newval))
-	return;
+    if ((ULONG)data->wd_ActiveObject == newval) return;
+
+    old_active = data->wd_ActiveObject;
+    old_activenode = FindObjNode(&data->wd_CycleChain,old_active);
 
     switch (newval)
     {
-	case MUIV_Window_ActiveObject_None:
-	    if (data->wd_ActiveObject)
-	    {
-		data->wd_ActiveObject = NULL;
-		DoMethod(active->obj, MUIM_GoInactive);
-	    }
-	    break;
+	case	MUIV_Window_ActiveObject_None:
+		break;
 
-	case MUIV_Window_ActiveObject_Next:
-	    if (data->wd_ActiveObject)
-	    {
-		data->wd_ActiveObject = NULL;
-		DoMethod(active->obj, MUIM_GoInactive);
-		data->wd_ActiveObject = (struct ObjNode*)((active->node.mln_Succ->mln_Succ)?(active->node.mln_Succ):NULL);
-	    }
-	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_Head;
-	    break;
+	case	MUIV_Window_ActiveObject_Next:
+		if (data->wd_ActiveObject)
+		{
+		    data->wd_ActiveObject = NULL;
+		    DoMethod(old_active, MUIM_GoInactive);
+		    if (old_activenode)
+		    {
+			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ)?((struct ObjNode*)old_activenode->node.mln_Succ)->obj:NULL;
+		    }   else
+		    {
+			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+			    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+		    }
+		}   else
+		{
+		    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+			data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+		}
+		break;
 
-	case MUIV_Window_ActiveObject_Prev:
-	    if (data->wd_ActiveObject)
-	    {
-		data->wd_ActiveObject = NULL;
-		DoMethod(active->obj, MUIM_GoInactive);
-		data->wd_ActiveObject = (struct ObjNode*)((active->node.mln_Pred->mln_Pred)?(active->node.mln_Pred):NULL);
-	    }
-	    else if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		data->wd_ActiveObject = (struct ObjNode*)data->wd_CycleChain.mlh_TailPred;
-	    break;
+	case    MUIV_Window_ActiveObject_Prev:
+		if (data->wd_ActiveObject)
+		{
+		    data->wd_ActiveObject = NULL;
+		    DoMethod(old_active, MUIM_GoInactive);
+		    if (old_activenode)
+		    {
+			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred)?((struct ObjNode*)old_activenode->node.mln_Pred)->obj:NULL;
+		    } else
+		    {
+			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+			    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		    }
+		}   else
+		{
+		   if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+		       data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		}
+		break;
 
 	default:
-	    if (data->wd_ActiveObject)
-	    {
-	    	data->wd_ActiveObject = NULL;
-		DoMethod(active->obj, MUIM_GoInactive);
-	    }
-	    data->wd_ActiveObject = FindObjNode(&data->wd_CycleChain,(Object*)newval);
-	    break;
+		if (data->wd_ActiveObject)
+		{
+		    data->wd_ActiveObject = NULL;
+		    DoMethod(old_active, MUIM_GoInactive);
+		}
+		data->wd_ActiveObject = (Object*)newval;
+		break;
     }
 
     if (data->wd_ActiveObject)
     {
-	DoMethod(data->wd_ActiveObject->obj, MUIM_GoActive);
+	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
     }
 }
 
@@ -999,7 +1014,6 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_Events = _zune_window_get_default_events();
     data->wd_ActiveObject = NULL;
     data->wd_ID = 0;
-    data->wd_Title = "";
     data->wd_ReqHeight = MUIV_Window_Height_Default;
     data->wd_ReqWidth = MUIV_Window_Width_Default;
     data->wd_RootObject = NULL;
@@ -1104,6 +1118,14 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case    MUIA_Window_AppWindow:
 		    break;
+
+	    case    MUIA_Window_LeftEdge:
+		    data->wd_X = tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_TopEdge:
+		    data->wd_Y = tag->ti_Data;
+		    break;
 	}
     }
 
@@ -1141,6 +1163,22 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Window_Width:
+		    data->wd_ReqWidth = (LONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_Height:
+		    data->wd_ReqHeight = (LONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_LeftEdge:
+		    data->wd_X = (LONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_TopEdge:
+		    data->wd_Y = (LONG)tag->ti_Data;
+		    break;
+
 	    case MUIA_Window_Activate:
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ACTIVE);
 		break;
@@ -1194,9 +1232,8 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
             STORE = (data->wd_Flags & MUIWF_OPENED) ? ((ULONG)data->wd_RenderInfo.mri_Window) : FALSE;
             return 1;
 	case MUIA_Window_ActiveObject:
-	    if (data->wd_ActiveObject)
-		STORE = (ULONG)data->wd_ActiveObject->obj;
-	    return(TRUE);
+	    STORE = (ULONG)data->wd_ActiveObject;
+	    return 1;
 	case MUIA_Window_CloseRequest:
 	    STORE = (data->wd_Flags & MUIWF_CLOSEREQUESTED) ? TRUE : FALSE;
 	    return(TRUE);
@@ -1284,10 +1321,19 @@ static void window_minmax (struct MUI_WindowData *data)
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (ULONG)&data->wd_MinMax);
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
 
-    data->wd_innerLeft   = __zprefs.window_inner_left;
-    data->wd_innerRight  = __zprefs.window_inner_right;
-    data->wd_innerTop    = __zprefs.window_inner_top;
-    data->wd_innerBottom = __zprefs.window_inner_bottom;
+    if (data->wd_CrtFlags & WFLG_BORDERLESS)
+    {
+	data->wd_innerLeft   = 0;
+	data->wd_innerRight  = 0;
+	data->wd_innerTop    = 0;
+	data->wd_innerBottom = 0;
+    }   else
+    {
+	data->wd_innerLeft   = __zprefs.window_inner_left;
+	data->wd_innerRight  = __zprefs.window_inner_right;
+	data->wd_innerTop    = __zprefs.window_inner_top;
+	data->wd_innerBottom = __zprefs.window_inner_bottom;
+    }
 
     data->wd_MinMax.MinWidth += data->wd_innerLeft + data->wd_innerRight;
     data->wd_MinMax.MaxWidth += data->wd_innerLeft + data->wd_innerRight;
