@@ -16,25 +16,20 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
 
 #define Bounds(x) (&(x)->bounds)
-#define MinX(rr)   (Bounds(rr)->MinX)
-#define MaxX(rr)   (Bounds(rr)->MaxX)
-#define MinY(rr)   (Bounds(rr)->MinY)
-#define MaxY(rr)   (Bounds(rr)->MaxY)
+#define MinX(rr)  (Bounds(rr)->MinX)
+#define MaxX(rr)  (Bounds(rr)->MaxX)
+#define MinY(rr)  (Bounds(rr)->MinY)
+#define MaxY(rr)  (Bounds(rr)->MaxY)
 
-#define overlapX(a,b)         \
-(                             \
-    ((a).MinX <= (b).MaxX) && \
-    ((a).MaxX >= (b).MinX)    \
+#define _DoRectsOverlap(Rect, x1, y1, x2, y2) \
+(                                             \
+    y1 <= (Rect)->MaxY &&                     \
+    y2 >= (Rect)->MinY &&                     \
+    x1 <= (Rect)->MaxX &&                     \
+    x2 >= (Rect)->MinX                        \
 )
 
-#define overlapY(a,b)         \
-(                             \
-    ((a).MinY <= (b).MaxY) && \
-    ((a).MaxY >= (b).MinY)    \
-)
-
-#define overlap(a,b) (overlapY(a,b) && overlapX(a,b))
-
+#define overlap(a,b) _DoRectsOverlap(&(a), (b).MinX, (b).MinY, (b).MaxX, (b).MaxY)
 
 #define _AndRectRect(rect1, rect2, intersect)                  \
 ({                                                             \
@@ -63,13 +58,17 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     (Rect1)->MaxY == (Rect2)->MaxY    \
 )
 
-#define _IsPointInRect(Rect, x, y) \
-(                                  \
-    y >= (Rect)->MinY &&           \
-    y <= (Rect)->MaxY &&           \
-    x >= (Rect)->MinX &&           \
-    x <= (Rect)->MaxX              \
+/* Checks whether the rectangle (x1, y1)-(x2, y2) is completely contained in Rect */
+#define _IsRectInRect(Rect, x1, y1, x2, y2) \
+(                                           \
+    y1 >= (Rect)->MinY &&                   \
+    y2 <= (Rect)->MaxY &&                   \
+    x1 >= (Rect)->MinX &&                   \
+    x2 >= (Rect)->MaxX                      \
 )
+
+#define _IsPointInRect(Rect, x, y) _IsRectInRect(Rect, (x), (y), (x), (y))
+
 
 #define _TranslateRect(rect, dx, dy) \
 {                                    \

@@ -64,8 +64,12 @@
         rr = rr->Next
     )
     {
-        if (_IsPointInRect(Bounds(rr), x, y))
-            return TRUE;
+        if (y > MaxY(rr)) return FALSE;
+	if (y < MinY(rr)) continue;
+        if (x < MinX(rr)) continue;
+        if (x > MaxX(rr)) continue;
+
+        return TRUE;
     }
 
     return FALSE;
