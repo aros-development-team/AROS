@@ -24,6 +24,9 @@ struct HWData
 BOOL initVesaGfxHW(struct HWData *);
 
 #if BUFFERED_VRAM
+
+struct BitmapData;
+
 void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
 #endif
 

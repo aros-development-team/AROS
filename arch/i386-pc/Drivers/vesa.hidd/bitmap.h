@@ -46,6 +46,8 @@ struct HWRegs
     UBYTE clt[768];
 };
 
+struct HWData;
+
 struct BitmapData
 {
     struct HWRegs   	regs;

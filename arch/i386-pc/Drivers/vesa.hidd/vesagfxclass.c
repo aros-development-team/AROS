@@ -317,43 +317,50 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
 }
 
+static VOID gfxhidd_showimminentreset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    memset(XSD(cl)->data.framebuffer,
+    	   0,
+	   XSD(cl)->data.height * XSD(cl)->data.bytesperline);
+}
 
 #undef XSD
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VESAGFX_METHODS 2
+#define NUM_VESAGFX_METHODS 3
 
 OOP_Class *init_vesagfxclass(struct VesaGfx_staticdata *xsd)
 {
     OOP_Class *cl = NULL;
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-	{(IPTR (*)())gfx_new,		moRoot_New},
-	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
-	{(IPTR (*)())gfx_get,		moRoot_Get},
-	{NULL, 0UL}
+	{(IPTR (*)())gfx_new	, moRoot_New	},
+	{(IPTR (*)())gfx_dispose, moRoot_Dispose},
+	{(IPTR (*)())gfx_get	, moRoot_Get	},
+	{NULL	    	    	, 0UL	    	}
     };
     struct OOP_MethodDescr vesagfxhidd_descr[NUM_VESAGFX_METHODS + 1] = 
     {
-	{(IPTR (*)())gfxhidd_newbitmap,        moHidd_Gfx_NewBitMap},
-	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
-	{NULL, 0UL}
+	{(IPTR (*)())gfxhidd_newbitmap	    	, moHidd_Gfx_NewBitMap	    	},
+	{(IPTR (*)())gfxhidd_copybox	    	, moHidd_Gfx_CopyBox	    	},
+	{(IPTR (*)())gfxhidd_showimminentreset	, moHidd_Gfx_ShowImminentReset	},
+	{NULL	    	    	    	    	, 0UL	    	    	    	}
     };
     struct OOP_InterfaceDescr ifdescr[] =
     {
-	{root_descr,          IID_Root,     NUM_ROOT_METHODS},
-	{vesagfxhidd_descr,   IID_Hidd_Gfx, NUM_VESAGFX_METHODS},
-	{NULL, NULL, 0}
+	{root_descr 	    , IID_Root	    , NUM_ROOT_METHODS	    },
+	{vesagfxhidd_descr  , IID_Hidd_Gfx  , NUM_VESAGFX_METHODS   },
+	{NULL	    	    , NULL  	    , 0     	    	    }
     };
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
     struct TagItem tags[] =
     {
-	{aMeta_SuperID,        (IPTR)CLID_Hidd_Gfx},
-	{aMeta_InterfaceDescr, (IPTR)ifdescr},
-	{aMeta_InstSize,       (IPTR)sizeof(struct VesaGfxData)},
-	{aMeta_ID,             (IPTR)CLID_Hidd_VesaGfx},
-	{TAG_DONE, 0UL}
+	{aMeta_SuperID	    	, (IPTR)CLID_Hidd_Gfx	    	    },
+	{aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
+	{aMeta_InstSize     	, (IPTR)sizeof(struct VesaGfxData)  },
+	{aMeta_ID   	    	, (IPTR)CLID_Hidd_VesaGfx   	    },
+	{TAG_DONE   	    	, 0UL	    	    	    	    }
     };
 
     EnterFunc(bug("VesaGfxHiddClass init\n"));
