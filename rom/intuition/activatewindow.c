@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2000/01/19 19:04:28  stegerg
+    don't call intui_activatewindow
+
     Revision 1.12  1999/10/13 21:08:13  stegerg
     action message goes to deferedactionport now
 
@@ -122,18 +125,9 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
     ULONG lock;
     struct Window *oldactive;
     
-
-    if (window) intui_ActivateWindow (window);
-
-
     lock = LockIBase(0UL);
+    
     oldactive = IntuitionBase->ActiveWindow;
-    
-    
-    /* This comes _after_ intui_ActivateWindow() because the driver
-	might want to deactivate the old window first */
-
-	
     IntuitionBase->ActiveWindow = window;
 
     if (window)
