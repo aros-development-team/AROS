@@ -31,11 +31,7 @@
 #define TR_GETSYSTIME (CMD_NONSTD+1)
 #define TR_SETSYSTIME (CMD_NONSTD+2)
 
-struct timeval
-{
-    ULONG tv_secs;
-    ULONG tv_micro;
-};
+#include <aros/_timeval.h> /* get struct timeval */
 
 struct EClockVal
 {

@@ -10,13 +10,9 @@
 */
 
 #include <sys/types.h>
-#include <time.h>		/* XXX Probably not allowed */
+#include <time.h>	  /* XXX Probably not allowed */
 
-struct timeval
-{
-    time_t	tv_sec;	    /* Seconds passed. */
-    suseconds_t	tv_usec;    /* Microseconds passed in the current second. */
-};
+#include <aros/_timeval.h> /* get struct timeval */
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
 struct itimerval
