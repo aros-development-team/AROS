@@ -66,7 +66,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
     {
 	return NULL;
     }
-    
+
     ObtainSemaphore(&CxBase->cx_SignalSemaphore);
 
     if (IsListEmpty(&CxBase->cx_BrokerList))
@@ -144,13 +144,13 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	while (co == NULL && msg->cxm_Level != 0)
 	{
 	    // kprintf("Next level %i\n", msg->cxm_Level - 1);
-	    
+
 	    msg->cxm_Level--;
 	    co = msg->cxm_retObj[msg->cxm_Level];
 	    co = (CxObj *)GetSucc(&co->co_Node);
-	    
+
 	    // kprintf("Found return object %p\n", co);
-	    
+
 	    // if (CXOBJType(co) == CX_BROKER)
 	    // {
 	    //     kprintf("Returnobj (broker) = %s\n",
@@ -170,7 +170,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	/* Route the message to the next object */
 
 	ROUTECxMsg(msg, (CxObj *)GetSucc(&co->co_Node));
-	
+
 	if (!(co->co_Flags & COF_ACTIVE))
 	{
 	    continue;
@@ -182,7 +182,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	{
 	case CX_INVALID:
 	    break;
-	    
+
 	case CX_FILTER:
 	    if (msg->cxm_Type == CXM_IEVENT)
 	    {
@@ -195,37 +195,37 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    }
 
 	    break;
-	    
+
 	case CX_TYPEFILTER:
 	    if ((msg->cxm_Type & co->co_Ext.co_TypeFilter) != 0)
 	    {
 		DivertCxMsg(msg, co, co);
 	    }
-	    
+
 	    break;
-	    
+
 	case CX_SEND:
 	    SendFunc(msg, co, CxBase);
 	    break;
-	    
+
 	case CX_SIGNAL:
 	    Signal(co->co_Ext.co_SignalExt->sixt_Task,
 		   1 << co->co_Ext.co_SignalExt->sixt_SigBit);
 	    break;
-	
+
 	case CX_TRANSLATE:
 	    TransFunc(msg, co, CxBase);
 	    break;
-	    
+
 	case CX_BROKER:
 	    D(bug("Broker diverting message...\n"));
 	    DivertCxMsg(msg, co, co);
 	    break;
-	    
+
 	case CX_DEBUG:
 	    DebugFunc(msg, co, CxBase);
 	    break;
-	    
+
 	case CX_CUSTOM:
 	    msg->cxm_ID = co->co_Ext.co_CustomExt->cext_ID;
 
@@ -251,13 +251,13 @@ AROS_UFH2(struct InputEvent *, CxTree,
 #endif
 	    }
 	    break;
-	    
+
 	case CX_ZERO:
 	    ProduceEvent(msg, CxBase);
 	    break;
 	}
     }
-    
+
     ReleaseSemaphore(&CxBase->cx_SignalSemaphore);
 
     return CxBase->cx_IEvents;
@@ -280,7 +280,7 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 
 	*(CxBase->cx_EventExtra) = &temp->ie;
 	CxBase->cx_EventExtra = &temp->ie.ie_NextEvent;
-	
+
 	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents,
 		(struct Node *)&temp->node);
     }
@@ -292,26 +292,26 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 static void SendFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
     CxMsg  *tempMsg;
-    
+
     if (co->co_Ext.co_SendExt->sext_MsgPort == NULL)
     {
 	return;
     }
-    
+
     tempMsg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 					(struct Library *)CxBase);
-    
-    if (tempMsg == NULL) 
+
+    if (tempMsg == NULL)
     {
 	return;
     }
-    
+
     CopyMem(msg, tempMsg, sizeof(CxMsg));
-    
+
     CopyInputEvent(msg->cxm_Data, tempMsg->cxm_Data, CxBase);
-    
+
     tempMsg->cxm_ID = co->co_Ext.co_SendExt->sext_ID;
-    
+
     PutMsg(co->co_Ext.co_SendExt->sext_MsgPort, (struct Message *)tempMsg);
 }
 
@@ -320,34 +320,34 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
     struct  InputEvent *event;
     CxMsg              *msg2;
-    
+
     if (co->co_Ext.co_IE != NULL)
     {
         event = co->co_Ext.co_IE;
-	
+
 	do
 	{
 	    struct InputEvent *saveIE;  /* To save the InputEvent pointer
 					   from being destroyed by CopyMem() */
-	    
+
 	    if ((msg2 = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE,
 			        (struct Library *)CxBase)) == NULL)
 	    {
 		break;
 	    }
-	    
+
 	    saveIE = msg2->cxm_Data;
 	    CopyMem(msg, msg2, sizeof(CxMsg));
 	    msg2->cxm_Data = saveIE;
-	    
+
 	    /* Don't care about errors for now */
 	    CopyInputEvent(event, msg2->cxm_Data, CxBase);
-	    
+
 	    AddHead(&CxBase->cx_MessageList, (struct Node *)msg2);
-	    
+
 	} while ((event = event->ie_NextEvent) != NULL);
     }
-    
+
     DisposeCxMsg(msg);
 }
 
@@ -358,12 +358,12 @@ static void DebugFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 	    "\tCxMsg: %lx, type: %x, data %lx destination %lx\n",
 	    co, co->co_Ext.co_DebugID, msg->cxm_Routing, msg->cxm_Data,
 	    msg->cxm_Type);
-    
+
     if (msg->cxm_Type != CXM_IEVENT)
     {
 	return;
     }
-    
+
     kprintf("dump IE: %lx\n"
 	    "\tClass %lx"
 	    "\tCode %lx"
@@ -378,7 +378,7 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 			   struct CommoditiesBase *CxBase)
 {
     *to = *from;
-    
+
     if (from->ie_Class == IECLASS_NEWPOINTERPOS)
     {
 	switch (from->ie_SubClass)
@@ -389,38 +389,38 @@ static BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 	    {
 		return FALSE;
 	    }
-	    
+
 	    *((struct IEPointerPixel *)to->ie_EventAddress) =
 		*((struct IEPointerPixel *)from->ie_EventAddress);
 	    break;
-	    
+
 	case IESUBCLASS_TABLET :
 	    if ((to->ie_EventAddress = AllocVec(sizeof(struct IEPointerTablet),
 						MEMF_ANY)) == NULL)
 	    {
 		return FALSE;
 	    }
-	    
+
 	    *((struct IEPointerTablet *)to->ie_EventAddress) =
 		*((struct IEPointerTablet *)from->ie_EventAddress);
 	    break;
-	    
+
 	case IESUBCLASS_NEWTABLET :
 	    if ((to->ie_EventAddress = AllocVec(sizeof(struct IENewTablet),
 						MEMF_ANY)) == NULL)
 	    {
 		return FALSE;
 	    }
-	    
+
 	    *((struct IENewTablet *)to->ie_EventAddress) =
 		*((struct IENewTablet *)from->ie_EventAddress);
 	    break;
-	    
+
 	default :
 	    break;
 	}
     }
-    
+
     return TRUE;
 }
 
@@ -431,7 +431,7 @@ AROS_UFH2(struct InputEvent *, cxIHandler,
 {
     AROS_USERFUNC_INIT
 
-    AROS_UFC2(struct InputEvent *, AROS_ASMSYMNAME(CxTree),
+    return AROS_UFC2(struct InputEvent *, AROS_ASMSYMNAME(CxTree),
 	      AROS_UFCA(struct InputEvent *     , events , A0),
 	      AROS_UFCA(struct CommoditiesBase *, CxBase , A6));
 
