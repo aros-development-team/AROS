@@ -19,7 +19,6 @@ FILES = \
 	forbid \
 	getcc \
 	initcore \
-	osints \
 	permit \
 	preparecontext \
 	runprocess \
