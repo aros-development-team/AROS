@@ -182,7 +182,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct GadgetInfo *gi = &iihdata->GadgetInfo;
     BOOL reuse_event = FALSE;
     struct Window *w;
-    
+ 
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
 
     if (!iihdata->InputDeviceTask) iihdata->InputDeviceTask = FindTask(NULL);
@@ -954,7 +954,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    ptr = NULL;
 
-            kprintf("Unknown IEClass!\n");
+            kprintf("\n======== Unknown IEClass: %d (orig = %d)! =============\n\n",ie->ie_Class,orig_ie->ie_Class);
 	    break;
 	} /* switch (im->Class) */
 
