@@ -28,6 +28,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
 #include "compilerspecific.h"
@@ -37,219 +38,551 @@
 
 /**************************************************************************************************/
 
-typedef struct
-{
-	WORD		bfType;				// ASCII "BM"
-	ULONG		bfSize;				// Size in bytes of the file
-	WORD		bfReserved1;		// Zero
-	WORD		bfReserved2;		// Zero
-	ULONG		bfOffBits;			// Byte offset in files where image begins
-} FileBitMapHeader __attribute__((packed));
+#define FILEBUFSIZE 65536
+#define MAXCOLORS   256
+
+typedef struct {
+    struct IFFHandle    *filehandle;
+
+    UBYTE               *filebuf;
+    UBYTE               *filebufpos;
+    long                filebufbytes;
+    long                filebufsize;
+    UBYTE               *linebuf;
+    UBYTE               *linebufpos;
+    long                linebufbytes;
+    long                linebufsize;
+    
+    APTR                codecvars;
+} BmpHandleType;
+
 
 typedef struct
 {
-	ULONG		biSize;				// Size of this header, 40 bytes
-	LONG		biWidth;			// Image width in pixels
-	LONG		biHeight;			// Image height in pixels
-	WORD		biPlanes;			// Number of image planes, must be 1
-	WORD		biBitCount;			// Bits per pixel, 1, 4, 8, 24, or 32
-	ULONG		biCompression;		// Compression type, below
-	ULONG		biSizeImage;		// Size in bytes of compressed image, or zero
-	LONG		biXPelsPerMeter;	// Horizontal resolution, in pixels/meter
-	LONG		biYPelsPerMeter;	// Vertical resolution, in pixels/meter
-	ULONG		biClrUsed;			// Number of colors used, below
-	ULONG		biClrImportant;		// Number of "important" colors
-} BitmapInfoHeader __attribute__((packed));
+    WORD        bfType;             //  0 ASCII "BM"
+    ULONG       bfSize;             //  2 Size in bytes of the file
+    WORD        bfReserved1;        //  6 Zero
+    WORD        bfReserved2;        //  8 Zero
+    ULONG       bfOffBits;          // 10 Byte offset in files where image begins
+} FileBitMapHeader __attribute__((packed));    // 14
+
+typedef struct
+{
+    ULONG       biSize;             //  0 Size of this header, 40 bytes
+    LONG        biWidth;            //  4 Image width in pixels
+    LONG        biHeight;           //  8 Image height in pixels
+    WORD        biPlanes;           // 12 Number of image planes, must be 1
+    WORD        biBitCount;         // 14 Bits per pixel, 1, 4, 8, 24, or 32
+    ULONG       biCompression;      // 16 Compression type, below
+    ULONG       biSizeImage;        // 20 Size in bytes of compressed image, or zero
+    LONG        biXPelsPerMeter;    // 24 Horizontal resolution, in pixels/meter
+    LONG        biYPelsPerMeter;    // 28 Vertical resolution, in pixels/meter
+    ULONG       biClrUsed;          // 32 Number of colors used, below
+    ULONG       biClrImportant;     // 36 Number of "important" colors
+} BitmapInfoHeader __attribute__((packed));    // 40
 
 /* "BM" backwards, due to LE byte order */
 #define BITMAP_ID "MB"
 
 /**************************************************************************************************/
 
-static BOOL ReadBMP(Object *o)
+static void BMP_Exit(BmpHandleType *bmphandle, LONG errorcode)
 {
-    FileBitMapHeader 		*file_bmhd;
-    BitmapInfoHeader		*file_bihd;
+    D(if (errorcode) bug("bmp.datatype/BMP_Exit() --- IoErr %ld\n", errorcode));
+    if (bmphandle->filebuf)
+    {
+	FreeMem(bmphandle->filebuf, bmphandle->filebufsize);
+    }
+    if (bmphandle->linebuf)
+    {
+	FreeMem(bmphandle->linebuf, bmphandle->linebufsize);
+    }
+    if (bmphandle->codecvars)
+    {
+	FreeVec(bmphandle->codecvars);
+    }
+    SetIoErr(errorcode);
+}
+
+/**************************************************************************************************/
+
+/* buffered file access, useful for RLE */
+BOOL SaveBMP_EmptyBuf(BmpHandleType *bmphandle, long minbytes)
+{
+    long                bytes, bytestowrite;
+    
+    bytestowrite = bmphandle->filebufsize - (bmphandle->filebufbytes + minbytes);
+    D(bug("bmp.datatype/SaveBMP_EmptyBuf() --- minimum %ld bytes, %ld bytes to write\n", (long)minbytes, (long)bytestowrite));
+    bytes = Write(bmphandle->filehandle, bmphandle->filebuf, bytestowrite);
+    if ( bytes < bytestowrite )
+    {
+	D(bug("bmp.datatype/SaveBMP_EmptyBuf() --- writing failed, wrote %ld bytes\n", (long)bytes));
+	return FALSE;
+    }
+    bmphandle->filebufpos = bmphandle->filebuf;
+    bmphandle->filebufbytes = bmphandle->filebufsize - minbytes;
+    D(bug("bmp.datatype/SaveBMP_EmptyBuf() --- wrote %ld bytes\n", (long)bytes));
+    return TRUE;
+}
+
+/* buffered file access, useful for RLE */
+BOOL LoadBMP_FillBuf(BmpHandleType *bmphandle, long minbytes)
+{
+    long                i, bytes;
+    
+    //D(bug("bmp.datatype/LoadBMP_FillBuf() --- minimum %ld bytes of %ld (%ld) bytes\n", (long)minbytes, (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
+    if ( bmphandle->filebufbytes >= 0 )
+	return TRUE;
+    bytes = bmphandle->filebufbytes + minbytes;
+    D(bug("bmp.datatype/LoadBMP_FillBuf() --- %ld bytes requested, %ld bytes left\n", (long)minbytes, (long)bytes));
+    if (bytes > 0)
+    {       /* practically, this copying isn't needed, because decompression does single byte accesses */
+	D(bug("bmp.datatype/LoadBMP_FillBuf() --- existing %ld old bytes\n", (long)bytes));
+	for (i=0; i<bytes; i++)     /* copy existing bytes to start of buffer */
+	    bmphandle->filebuf[i] = bmphandle->filebufpos[i];
+    }
+    bmphandle->filebufpos = bmphandle->filebuf;
+    bytes = Read(bmphandle->filehandle, bmphandle->filebuf + bytes, bmphandle->filebufsize - bytes);
+    if (bytes < 0 ) bytes = 0;
+    bmphandle->filebufbytes += bytes;
+    D(bug("bmp.datatype/LoadBMP_FillBuf() --- read %ld bytes, remaining new %ld bytes\n", (long)bytes, (long)bmphandle->filebufbytes));
+    //D(bug("bmp.datatype/LoadBMP_FillBuf() --- >minimum %ld bytes of %ld (%ld) bytes\n", (long)minbytes, (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
+    if (bmphandle->filebufbytes >= 0)
+	return TRUE;
+    return FALSE;
+}
+
+static BOOL LoadBMP_Colormap(BmpHandleType *bmphandle, int numcolors,
+			    struct ColorRegister *colormap, ULONG *colregs)
+{
+    unsigned int        i, j;
+
+    if (numcolors && numcolors <= MAXCOLORS)
+    {
+	j = 0;
+	for (i = 0; i < numcolors; i++)
+	{
+	    if ( (bmphandle->filebufbytes -= 4) < 0 && !LoadBMP_FillBuf(bmphandle, 4) )
+	    {
+		D(bug("bmp.datatype/LoadBMP_Colormap() --- colormap loading failed\n"));
+		return FALSE;
+	    }
+	    /* BGR0 format for MS Win files, BGR format for OS/2 files */
+	    colormap[i].blue = *(bmphandle->filebufpos)++;
+	    colormap[i].green = *(bmphandle->filebufpos)++;
+	    colormap[i].red = *(bmphandle->filebufpos)++;
+	    *(bmphandle->filebufpos)++;
+	    colregs[j++] = ((ULONG)colormap[i].red)<<24;
+	    colregs[j++] = ((ULONG)colormap[i].green)<<24;
+	    colregs[j++] = ((ULONG)colormap[i].blue)<<24;
+	    // D(if (i<5) bug("gif r %02lx g %02lx b %02lx\n", colormap[i].red, colormap[i].green, colormap[i].blue));
+	}
+	D(bug("bmp.datatype/LoadBMP_Colormap() --- %d colors loaded\n", numcolors));
+    }
+    return TRUE;
+}
+
+/**************************************************************************************************/
+static BOOL LoadBMP(Object *o)
+{
+    BmpHandleType           *bmphandle;
+    UBYTE                   *filebuf;
+    IPTR                    sourcetype;
+    ULONG                   bfSize, bfOffBits;
+    ULONG                   biSize, biWidth, biHeight, biCompression;
+    ULONG                   biClrUsed, biClrImportant;
+    UWORD                   biPlanes, biBitCount;
+    ULONG                   alignwidth, alignbytes;
+    long                    x, y, b;
+    int                     cont, byte;
     struct BitMapHeader     *bmhd;
-    struct FileHandle	    *handle;
-    ULONG   	    	    numcolors;
-    IPTR    	    	    sourcetype;
-    LONG    	    	    error;
-    struct BitMap			*bm;
+    struct BitMap           *bm;
+    struct RastPort         rp;
+    struct ColorRegister    *colormap;
+    ULONG                   *colorregs;
+    STRPTR                  name;
 
-    D(bug("bmp.datatype/ReadBMP()\n"));
-       
-    if (GetDTAttrs(o, DTA_SourceType	, (IPTR)&sourcetype ,
-    	    	      DTA_Handle    	, (IPTR)&handle     , 
-		      	/*	  PDTA_BitMapHeader , (IPTR)&bmhd	    ,*/
-		      		  TAG_DONE	    	    	    	     ) != 2)
+    D(bug("bmp.datatype/LoadBMP()\n"));
+
+    if( !(bmphandle = AllocMem(sizeof(BmpHandleType), MEMF_ANY)) )
     {
-    	SetIoErr(ERROR_OBJECT_NOT_FOUND);
-		return FALSE;
+	SetIoErr(ERROR_NO_FREE_STORE);
+	return FALSE;
     }
- 
-    if ((sourcetype != DTST_FILE) && (sourcetype != DTST_CLIPBOARD))
+    bmphandle->filebuf = NULL;
+    bmphandle->linebuf = NULL;
+    bmphandle->codecvars = NULL;
+    
+    
+    if( GetDTAttrs(o,   DTA_SourceType    , (IPTR)&sourcetype ,
+			DTA_Handle        , (IPTR)&(bmphandle->filehandle),
+			PDTA_BitMapHeader , (IPTR)&bmhd,
+			TAG_DONE) != 3 )
     {
-    	SetIoErr(ERROR_OBJECT_NOT_FOUND);
-		return FALSE;
+	BMP_Exit(bmphandle, ERROR_OBJECT_NOT_FOUND);
+	return FALSE;
     }
     
-    if (!handle || !bmhd)
+    if ( sourcetype == DTST_RAM && bmphandle->filehandle == NULL && bmhd )
     {
-    	SetIoErr(ERROR_OBJECT_NOT_FOUND);
-		return FALSE;
+	D(bug("bmp.datatype/LoadBMP() --- Creating an empty object\n"));
+	BMP_Exit(bmphandle, 0);
+	return TRUE;
+    }
+    if ( sourcetype != DTST_FILE || !bmphandle->filehandle || !bmhd )
+    {
+	D(bug("bmp.datatype/LoadBMP() --- unsupported mode\n"));
+	BMP_Exit(bmphandle, ERROR_NOT_IMPLEMENTED);
+	return FALSE;
     }
     
-    D(bug("bmp.datatype/ReadBMP() --- reading headers\n"));
-    
-    /* Allocate memory for header structs */
-    if (! (file_bmhd = AllocMem(sizeof(FileBitMapHeader), MEMF_ANY | MEMF_CLEAR)))
+    /* initialize buffered file reads */
+    bmphandle->filebufbytes = 0;
+    bmphandle->filebufsize = FILEBUFSIZE;
+    if( !(bmphandle->filebuf = bmphandle->filebufpos = AllocMem(bmphandle->filebufsize, MEMF_ANY)) )
     {
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	return FALSE;
-    }
-    if (! (file_bihd = AllocMem(sizeof(BitmapInfoHeader), MEMF_ANY | MEMF_CLEAR)))
-    {
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	return FALSE;
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
     }
 
-	/* Read FileBitMapHeader struct entry by entry */
-	FRead(handle, &file_bmhd->bfType,			2, 1);
-	FRead(handle, &file_bmhd->bfSize,			4, 1);
-	FRead(handle, &file_bmhd->bfReserved1,		2, 1);
-	FRead(handle, &file_bmhd->bfReserved2,		2, 1);
-	FRead(handle, &file_bmhd->bfOffBits,		4, 1);
-	
-	/* Read BitmapInfoHeader struct entry by entry */
-	FRead(handle, &file_bihd->biSize,			4, 1);
-	FRead(handle, &file_bihd->biWidth,			4, 1);
-	FRead(handle, &file_bihd->biHeight,			4, 1);
-	FRead(handle, &file_bihd->biPlanes,			2, 1);
-	FRead(handle, &file_bihd->biBitCount,		2, 1);
-	FRead(handle, &file_bihd->biCompression,	4, 1);
-	FRead(handle, &file_bihd->biSizeImage,		4, 1);
-	FRead(handle, &file_bihd->biXPelsPerMeter,	4, 1);
-	FRead(handle, &file_bihd->biYPelsPerMeter,	4, 1);
-	FRead(handle, &file_bihd->biClrUsed,		4, 1);
-	FRead(handle, &file_bihd->biClrImportant,	4, 1);
-D(bug("bmp.datatype/ReadBMP() --- done reading headers...\n"));
-/*
-D(bug("bmp.datatype/ReadBMP() --- before reading bmhd\n")); 
-	FRead(handle, file_bmhd, sizeof(FileBitMapHeader), 1);
-D(bug("bmp.datatype/ReadBMP() --- after reading bmhd\n"));
-*/
-/*    if (file_bmhd->bfType != BITMAP_ID)
+    /* load FileBitmapHeader from file, make sure, there are at least 14 bytes in buffer */
+    if ( (bmphandle->filebufbytes -= 14) < 0 && !LoadBMP_FillBuf(bmphandle, 14) )
     {
-    	D(bug("bmp.datatype/ReadBMP() --- error reading bmhd\n"));
-    	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-    	return FALSE;
+	D(bug("bmp.datatype/LoadBMP() --- filling buffer with header failed\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
     }
-*/
-/*
-D(bug("bmp.datatype/ReadBMP() --- before reading bihd\n"));
-   	FRead(handle, file_bihd, sizeof(BitmapInfoHeader), 1);
-D(bug("bmp.datatype/ReadBMP() --- after reading bihd\n"));
-*/
-    if (file_bihd == NULL)
+    filebuf = bmphandle->filebufpos;    /* this makes things easier */
+    bmphandle->filebufpos += 14;
+    if( filebuf[0] != 'B' && filebuf[1] != 'M' )
     {
-    	D(bug("bmp.datatype/ReadBMP() --- error reading bihd\n"));
-    	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-    	return NULL;
+	D(bug("bmp.datatype/LoadBMP() --- header type mismatch\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
     }
-    
-    D(bug("bfType:           %x\n", file_bmhd->bfType));
-    D(bug("bfSize:           %d\n", file_bmhd->bfSize));
-    D(bug("bfReserved1:      %d\n", file_bmhd->bfReserved1));
-    D(bug("bfReserved2:      %d\n", file_bmhd->bfReserved2));
-    D(bug("bfOffBits:        %d\n", file_bmhd->bfOffBits));
-    D(bug("biSize:           %d\n", file_bihd->biSize));
-    D(bug("biWidth:          %d\n", file_bihd->biWidth));
-    D(bug("biHeight:         %d\n", file_bihd->biHeight));
-    D(bug("biPlanes:         %d\n", file_bihd->biPlanes));
-    D(bug("biBitCount:       %d\n", file_bihd->biBitCount));
-    D(bug("biCompression:    %d\n", file_bihd->biCompression));
-    D(bug("biSizeImage:      %d\n", file_bihd->biSizeImage));
-    D(bug("biXPelsPerMeter:  %d\n", file_bihd->biXPelsPerMeter));
-    D(bug("biYPelsPerMeter:  %d\n", file_bihd->biYPelsPerMeter));
-    D(bug("biClrUsed:        %d\n", file_bihd->biClrUsed));
-    D(bug("biClrImportant:   %d\n", file_bihd->biClrImportant));
-    
-    D(bug("bmp.datatype/ReadBMP() --- before seeking to bitmap: %d\n", file_bmhd->bfOffBits));
-	Seek(handle, file_bmhd->bfOffBits - 40, OFFSET_CURRENT);
-	D(bug("bmp.datatype/ReadBMP() --- after seeking to bitmap\n"));
-    
-    D(bug("bmp.datatype/ReadBMP() --- before allocating bitmap\n"));
-	bm = AllocBitMap(file_bihd->biWidth, file_bihd->biHeight, file_bihd->biBitCount, BMF_CLEAR | BMF_SPECIALFMT | (PIXFMT_BGRA32 << 24), NULL);    
-	D(bug("bmp.datatype/ReadBMP() --- after allocating bitmap\n"));
-    if (!bm)
-    {
-	    D(bug("bmp.datatype/ReadBMP() --- error allocating bitmap\n"));
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	return FALSE;
-    }
-    
-    D(bug("bmp.datatype/ReadBMP() --- before reading bitmap\n"));
-    if (FRead(handle, bm, file_bihd->biSizeImage, 1) == 0)
-    {
-	    D(bug("bmp.datatype/ReadBMP() --- error reading bitmap\n"));	
-    	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-    	return FALSE;
-    }
-    D(bug("bmp.datatype/ReadBMP() --- after reading bitmap\n"));
-    
-    numcolors = 2^file_bihd->biBitCount;
-    
-    bmhd->bmh_Width  = bmhd->bmh_PageWidth  = file_bihd->biWidth;
-    bmhd->bmh_Height = bmhd->bmh_PageHeight = file_bihd->biHeight;
-    bmhd->bmh_Depth  = file_bihd->biBitCount;
+    /* byte-wise access isn't elegant, but it is endianess-safe */
+    bfSize = (filebuf[5]<<24) | (filebuf[4]<<16) | (filebuf[3]<<8) | filebuf[2];
+    bfOffBits = (filebuf[13]<<24) | (filebuf[12]<<16) | (filebuf[11]<<8) | filebuf[10];
+    D(bug("bmp.datatype/LoadBMP() --- bfSize %ld bfOffBits %ld\n", bfSize, bfOffBits));
 
-    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
-    
-//   	IPTR name = NULL;
-	
-//	GetDTAttrs(o, DTA_Name, (IPTR)&name, TAG_DONE);
-	
-//   	SetDTAttrs(o, NULL, NULL, DTA_ObjName, name, TAG_DONE);
-    
-	SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz, bmhd->bmh_Width ,
-    	    	    	      DTA_NominalVert , bmhd->bmh_Height,
-			      			  PDTA_BitMap     , (IPTR)bm      ,
-			      			  TAG_DONE);
+    /* load BitmapInfoHeader from file, make sure, there are at least 40 bytes in buffer */
+    if ( (bmphandle->filebufbytes -= 40) < 0 && !LoadBMP_FillBuf(bmphandle, 40) )
+    {
+	D(bug("bmp.datatype/LoadBMP() --- filling buffer with header 2 failed\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+    filebuf = bmphandle->filebufpos;    /* this makes things easier */
+    bmphandle->filebufpos += 40;
 
-	/* Free mem */
+    /* get image size attributes */
+    biSize = (filebuf[3]<<24) | (filebuf[2]<<16) | (filebuf[1]<<8) | filebuf[0];
+    biWidth = (filebuf[7]<<24) | (filebuf[6]<<16) | (filebuf[5]<<8) | filebuf[4];
+    biHeight = (filebuf[11]<<24) | (filebuf[10]<<16) | (filebuf[9]<<8) | filebuf[8];
+    biPlanes = (filebuf[13]<<8) | filebuf[12];
+    biBitCount = (filebuf[15]<<8) | filebuf[14];
+    biCompression = (filebuf[19]<<24) | (filebuf[18]<<16) | (filebuf[17]<<8) | filebuf[16];
+    biClrUsed = (filebuf[35]<<24) | (filebuf[34]<<16) | (filebuf[33]<<8) | filebuf[32];
+    biClrImportant = (filebuf[39]<<24) | (filebuf[38]<<16) | (filebuf[37]<<8) | filebuf[36];
+    D(bug("bmp.datatype/LoadBMP() --- BMP-Screen %ld x %ld x %ld, %ld (%ld) colors, compression %ld, type %ld\n",
+	  biWidth, biHeight, (long)biBitCount, biClrUsed, biClrImportant, biCompression, biSize));
+    if (biSize != 40 || biPlanes != 1 || biCompression != 0)
+    {
+	D(bug("bmp.datatype/LoadBMP() --- Image format not supported\n"));
+	BMP_Exit(bmphandle, ERROR_NOT_IMPLEMENTED);
+	return FALSE;
+    }
 
-    SetIoErr(0);
-    
+    /* check color mode */
+    switch (biBitCount)
+    {
+	case 1:
+	    alignwidth = (biWidth + 31) & ~31UL;
+	    alignbytes = alignwidth / 8;
+	    break;
+	case 4:
+	    alignwidth = (biWidth + 7) & ~7UL;
+	    alignbytes = alignwidth / 2;
+	    break;
+	case 8:
+	    alignwidth = (biWidth + 3) & ~3UL;
+	    alignbytes = alignwidth;
+	    break;
+	default:
+	    D(bug("bmp.datatype/LoadBMP() --- unsupported color depth\n"));
+	    BMP_Exit(bmphandle, ERROR_NOT_IMPLEMENTED);
+	    return FALSE;
+    }
+    D(bug("bmp.datatype/LoadBMP() --- align: pixels %ld bytes %ld\n", alignwidth, alignbytes));
+
+    /* set BitMapHeader with image size */
+    bmhd->bmh_Width  = bmhd->bmh_PageWidth  = biWidth;
+    bmhd->bmh_Height = bmhd->bmh_PageHeight = biHeight;
+    bmhd->bmh_Depth  = biClrUsed;
+
+    /* get empty colormap, then fill in colormap to use*/
+    if( !(GetDTAttrs(o, PDTA_ColorRegisters, &colormap,
+			PDTA_CRegs, &colorregs,
+			TAG_DONE ) == 2) ||
+	!(colormap && colorregs) )
+    {
+	D(bug("bmp.datatype/LoadBMP() --- got no colormap\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+    if( !LoadBMP_Colormap(bmphandle, biClrUsed, colormap, colorregs) )
+    {
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+
+    /* skip offset */
+    bfOffBits = bfOffBits - 14 - 40 - biClrUsed*4;
+    D(bug("bmp.datatype/LoadBMP() --- remaining offset %ld\n", bfOffBits));
+    if ( bfOffBits < 0 ||
+	( (bmphandle->filebufbytes -= bfOffBits ) < 0 && !LoadBMP_FillBuf(bmphandle, bfOffBits) ) )
+    {
+	D(bug("bmp.datatype/LoadBMP() --- cannot skip offset\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+    bmphandle->filebufpos += bfOffBits;
+
+    /* Get BitMap to draw into */
+    D(bug("bmp.datatype/LoadBMP() --- allocating bitmap\n"));
+    if( !(bm = AllocBitMap(biWidth, biHeight, biBitCount, BMF_CLEAR, NULL)) )
+    {
+	D(bug("bmp.datatype/LoadBMP() --- error allocating bitmap\n"));
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    InitRastPort(&rp);
+    rp.BitMap=bm;
+
+    /* Pass new bitmap to picture.datatype */
+    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
+    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, biClrUsed,
+			      DTA_NominalHoriz, biWidth,
+			      DTA_NominalVert , biHeight,
+			      PDTA_BitMap     , (IPTR)bm,
+			      DTA_ObjName     , name,
+			      TAG_DONE);
+
+    /* Now decode the picture data into a chunky buffer; and pass it to Bitmap line-by-line */
+    bmphandle->linebufsize = bmphandle->linebufbytes = alignwidth;
+    if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
+    {
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+
+    D(bug("bmp.datatype/LoadBMP() --- bytes of %ld (%ld) bytes\n", (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
+    cont = 1;
+    for (y=biHeight-1; y>=0 && cont; y--)
+    {
+	bmphandle->linebufpos = bmphandle->linebuf;
+	for (x=0; x<alignbytes; x++)
+	{
+	    if ( (bmphandle->filebufbytes -= 1) < 0 && !LoadBMP_FillBuf(bmphandle, 1) )
+	    {
+		D(bug("bmp.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
+		//BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+		//return FALSE;
+		cont = 0;
+		break;              
+	    }
+	    byte = *(bmphandle->filebufpos)++;
+	    switch (biBitCount)
+	    {
+		case 1:
+		    for (b=0; b<8; b++)
+		    {
+			*(bmphandle->linebufpos)++ = (byte & 0x80) ? 1 : 0;
+			byte <<= 1;
+		    }
+		    break;
+		case 4:
+		    *(bmphandle->linebufpos)++ = (byte & 0xf0) >> 4;
+		    *(bmphandle->linebufpos)++ = (byte & 0x0f);
+		    break;
+		case 8:
+		    *(bmphandle->linebufpos)++ = byte;
+		    break;
+	    }
+	}
+	WriteChunkyPixels(&rp, 0, y, biWidth-1, y, bmphandle->linebuf, biWidth);
+    }
+    D(bug("bmp.datatype/LoadBMP() --- bytes of %ld (%ld) bytes\n", (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
+
+    D(bug("bmp.datatype/LoadBMP() --- Normal Exit\n"));
+    BMP_Exit(bmphandle, 0);
     return TRUE;
 }
 
 /**************************************************************************************************/
 
-static IPTR BMP_New(Class *cl, Object *o, struct opSet *msg)
+static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
-    IPTR retval;
-    
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
-    if (retval)
+    BmpHandleType           *bmphandle;
+    UBYTE                   *filebuf;
+    unsigned int            width, height, widthxheight, numplanes, numcolors;
+    struct BitMapHeader     *bmhd;
+    struct BitMap           *bm;
+    struct RastPort         rp;
+    long                    *colorregs;
+    int                     i, j, ret;
+
+    D(bug("bmp.datatype/SaveBMP()\n"));
+
+    if( !(bmphandle = AllocMem(sizeof(BmpHandleType), MEMF_ANY)) )
     {
-    	if (!ReadBMP((Object *)retval))
+	SetIoErr(ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    bmphandle->filebuf = NULL;
+    bmphandle->linebuf = NULL;
+    bmphandle->codecvars = NULL;
+
+    /* A NULL file handle is a NOP */
+    if( !dtw->dtw_FileHandle )
+    {
+	D(bug("bmp.datatype/SaveBMP() --- empty Filehandle - just testing\n"));
+	BMP_Exit(bmphandle, 0);
+	return TRUE;
+    }
+    bmphandle->filehandle = dtw->dtw_FileHandle;
+
+    /* Get BitMap and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, (&bmhd),
+			PDTA_BitMap,       (&bm),
+			PDTA_CRegs,        (&colorregs),
+			PDTA_NumColors,    (&numcolors),
+			TAG_DONE ) != 4UL ||
+	!bmhd || !bm || !colorregs || !numcolors)
+    {
+	D(bug("bmp.datatype/SaveBMP() --- missing attributes\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_NOT_FOUND);
+	return FALSE;
+    }
+#if 0
+    /* Check if this is a standard BitMap */
+    if( !( GetBitMapAttr(bm, BMA_FLAGS) & BMF_STANDARD ) )
+    {
+	D(bug("bmp.datatype/SaveBMP() --- wrong BitMap type\n"));
+	BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+#endif
+    /* initialize buffered file reads */
+    bmphandle->filebufsize = FILEBUFSIZE;
+    bmphandle->filebufbytes = bmphandle->filebufsize;
+    if( !(bmphandle->filebuf = bmphandle->filebufpos = AllocMem(bmphandle->filebufsize, MEMF_ANY)) )
+    {
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+
+    /* write BMP 87a header to file, make sure, there are at least 13 bytes in buffer */
+    if ( (bmphandle->filebufbytes -= 13) < 0 && !SaveBMP_EmptyBuf(bmphandle, 13) )
+    {
+	D(bug("bmp.datatype/SaveBMP() --- filling buffer with header failed\n"));
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    filebuf = bmphandle->filebufpos;    /* this makes things easier */
+    bmphandle->filebufpos += 13;
+
+    /* set screen descriptor attributes (from BitMapHeader) */
+    width = bmhd->bmh_PageWidth;
+    height = bmhd->bmh_PageHeight;
+    numplanes = bmhd->bmh_Depth - 1;
+    numcolors = 1 << (numplanes + 1);
+    D(bug("bmp.datatype/SaveBMP() --- BMP-Image %d x %d x %d, cols %d\n", width, height, numplanes+1, numcolors));
+    filebuf[6] = width & 0xff;
+    filebuf[7] = width >> 8;
+    filebuf[8] = height & 0xff;
+    filebuf[9] = height >> 8;
+    filebuf[10] = 0x80 | ((numplanes & 0x07) << 4) | (numplanes & 0x07) ; /* set numplanes, havecolmap=1 */
+    filebuf[11] = 0;    /* this is fillcolor */
+    filebuf[12] = 0;    /* this is pixel aspect ratio, 0 means unused */
+
+    /* write screen colormap, we don't use an image colormap */
+    for (i = 0; i < numcolors*3; i += 3)
+    {
+	if ( (bmphandle->filebufbytes -= 3) < 0 && !SaveBMP_EmptyBuf(bmphandle, 3) )
 	{
-	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-	    retval = 0;
+	    BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	    return FALSE;
+	}
+	*(bmphandle->filebufpos)++ = colorregs[i] >> 24;
+	*(bmphandle->filebufpos)++ = colorregs[i+1] >> 24;
+	*(bmphandle->filebufpos)++ = colorregs[i+2] >> 24;
+    }
+
+    /* write image header, image has same size as screen */
+    if ( (bmphandle->filebufbytes -= 10) < 0 && !SaveBMP_EmptyBuf(bmphandle, 10) )
+    {
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    filebuf = bmphandle->filebufpos;    /* this makes things easier */
+    bmphandle->filebufpos += 10;
+    filebuf[0] = ',';       /* header ID */
+    filebuf[1] = filebuf[2] = 0;    /* no left edge */
+    filebuf[3] = filebuf[4] = 0;    /* no top edge */
+    filebuf[5] = width & 0xff;
+    filebuf[6] = width >> 8;
+    filebuf[7] = height & 0xff;
+    filebuf[8] = height >> 8;
+    filebuf[9] = numplanes & 0x07; /* set numplanes, havecolmap=0, interlaced=0 */
+
+    /* Now read the picture data from the bitplanes and write it to a chunky buffer */
+    /* For now, we use a full picture pixel buffer, not a single line */
+    widthxheight = width*height;
+    bmphandle->linebufsize = bmphandle->linebufbytes = widthxheight;
+    if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
+    {
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    InitRastPort(&rp);
+    rp.BitMap=bm;
+    for (j=0; j<height; j++)
+    {
+	for (i=0; i<width; i++)
+	{
+	    ret = (UBYTE)ReadPixel(&rp, i, j);  /* very slow, to be changed */
+	    *(bmphandle->linebufpos)++ = ret;
 	}
     }
+    bmphandle->linebufpos = bmphandle->linebuf;
+
+    /* write the chunky buffer to file, after encoding */
     
-    return retval;
+    /* write end-of-BMP marker */
+    if ( !bmphandle->filebufbytes-- && !SaveBMP_EmptyBuf(bmphandle, 1) )
+    {
+	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	return FALSE;
+    }
+    *(bmphandle->filebufpos)++ = ';';
+
+    /* flush write buffer to file and exit */
+    SaveBMP_EmptyBuf(bmphandle, 0);
+    D(bug("bmp.datatype/SaveBMP() --- Normal Exit\n"));
+    BMP_Exit(bmphandle, 0);
+    return TRUE;
 }
+
+
 
 /**************************************************************************************************/
 
 #ifdef _AROS
 AROS_UFH3S(IPTR, DT_Dispatcher,
-	   AROS_UFHA(Class *, cl, A0),
-	   AROS_UFHA(Object *, o, A2),
-	   AROS_UFHA(Msg, msg, A1))
+       AROS_UFHA(Class *, cl, A0),
+       AROS_UFHA(Object *, o, A2),
+       AROS_UFHA(Msg, msg, A1))
 #else
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
 #endif
@@ -259,25 +592,49 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 #endif
 
     IPTR retval;
+    struct dtWrite *dtw;
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
 
-    D(bug("bmp.datatype/DT_Dispatcher: Entering\n"));
+//    D(bug("bmp.datatype/DT_Dispatcher: Entering\n"));
 
     switch(msg->MethodID)
     {
 	case OM_NEW:
 	    D(bug("bmp.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = BMP_New(cl, o, (struct opSet *)msg);
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    if (retval)
+	    {
+		if (!LoadBMP((Object *)retval))
+		{
+		    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+		    retval = 0;
+		}
+	    }
 	    break;
-
+    
+	case DTM_WRITE:
+	    D(bug("bmp.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+	    dtw = (struct dtWrite *)msg;
+	    if( (dtw -> dtw_Mode) == DTWM_RAW )
+	    {
+		/* Local data format requested */
+		retval = SaveBMP(cl, o, dtw );
+	    }
+	    else
+	    {
+		/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+		retval = DoSuperMethodA( cl, o, msg );
+	    }
+	    break;
+    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
-
+    
     } /* switch(msg->MethodID) */
 
-    D(bug("bmp.datatype/DT_Dispatcher: Leaving\n"));
+//    D(bug("bmp.datatype/DT_Dispatcher: Leaving\n"));
 
     return retval;
     
@@ -288,7 +645,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 
 /**************************************************************************************************/
 
-struct IClass *DT_MakeClass(struct Library *bmpbase)
+struct IClass *DT_MakeClass(struct Library *gifbase)
 {
     struct IClass *cl;
     
@@ -299,12 +656,12 @@ struct IClass *DT_MakeClass(struct Library *bmpbase)
     if (cl)
     {
 #ifdef _AROS
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
+    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
+    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
-	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-	cl->cl_UserData = (IPTR)bmpbase; /* Required by datatypes (see disposedtobject) */
+    cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
+    cl->cl_UserData = (IPTR)gifbase; /* Required by datatypes (see disposedtobject) */
     }
 
     return cl;
