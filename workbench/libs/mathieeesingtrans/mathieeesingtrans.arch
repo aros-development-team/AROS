@@ -53,9 +53,6 @@
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -148,8 +145,6 @@ AROS_LIBFUNC_INIT
   r = IEEESPDiv(p, q);
   w = IEEESPAdd(c, IEEESPMul(r,s));
   return IEEESPMul(two, IEEESPAdd(df,w));
-AROS_LIBFUNC_EXIT
-} /* IEEESPAcos */
 #/Code
 #/Function
 
@@ -190,8 +185,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -271,8 +264,6 @@ AROS_LIBFUNC_INIT
 
    }
    return (t | (y & IEEESPSign_Mask )) ;
-AROS_LIBFUNC_EXIT
-} /* IEEESPAsin  */
 #/Code
 #/Function
 
@@ -429,8 +420,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG z,Res,ysquared,yabs,tmp;
   yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 
@@ -481,8 +470,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPCos */
 #/Code
 #/Function
 
@@ -526,8 +513,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
 LONG Res;
   /* cosh(-x) = cosh(x) */
   y &= ( IEEESPMantisse_Mask + IEEESPExponent_Mask );
@@ -558,8 +543,6 @@ LONG Res;
     return 0;
   }
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPCosh */
 #/Code
 #/Function
 
@@ -603,9 +586,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
 const LONG ExpTable[] =
     { 0x6da12cc2,  /* e^64  */
       0x568fa1fe,  /* e^32  */
@@ -684,8 +664,6 @@ char Exponent;
   if ( y < 0)
     return IEEESPDiv(one, Res);
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPExp */
 #/Code
 #/Function
 
@@ -718,11 +696,7 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   return y;
-AROS_LIBFUNC_EXIT
-} /* IEEESPFieee */
 #/Code
 #/Function
 
@@ -789,9 +763,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
   LONG ld_M, Exponent, Mask = 0x40, i, Sign;
   /* check for negative sign */
   if ( y < 0)
@@ -841,8 +812,6 @@ AROS_LIBFUNC_INIT
   */
 
   return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLde);
-AROS_LIBFUNC_EXIT
-} /* SPLog */
 #/Code
 #/Function
 
@@ -909,8 +878,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG ld_M, Exponent, Mask = 0x40, i, Sign;
   /* check for negative sign */
   if ( y < 0)
@@ -960,8 +927,6 @@ AROS_LIBFUNC_INIT
   */
 
   return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLd10);
-AROS_LIBFUNC_EXIT
-} /* IEEESPLog */
 #/Code
 #/Function
 
@@ -1004,9 +969,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
   /* a ^ b  = e^(b * ln a )
   ** y ^ x  = e^(x * ln y )
   */
@@ -1042,8 +1004,6 @@ AROS_LIBFUNC_INIT
     SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPPow */
 #/Code
 #/Function
 
@@ -1100,8 +1060,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
 LONG z,Res,ysquared,yabs,tmp;
   yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 
@@ -1149,8 +1107,6 @@ LONG z,Res,ysquared,yabs,tmp;
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPSin */
 #/Code
 #/Function
 
@@ -1193,12 +1149,8 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   *z = IEEESPCos(y);
   return IEEESPSin(y);
-AROS_LIBFUNC_EXIT
-} /* SPSincos */
 #/Code
 #/Function
 
@@ -1241,8 +1193,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
 LONG Res;
 LONG y2 = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 LONG tmp;
@@ -1286,8 +1236,6 @@ LONG tmp;
     return (Res | IEEESPSign_Mask);
   }
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPSinh */
 #/Code
 #/Function
 
@@ -1365,8 +1313,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   ULONG Res, ResSquared, Delta, X, TargetMantisse;
   int z;
   ULONG Exponent;
@@ -1428,8 +1374,6 @@ AROS_LIBFUNC_INIT
   Res |= Exponent;
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPSqrt */
 #/Code
 #/Function
 
@@ -1470,8 +1414,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG z,SIN,Res,ysquared,yabs,tmp;
   yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
 
@@ -1536,8 +1478,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPTan */
 #/Code
 #/Function
 
@@ -1584,8 +1524,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
 LONG Res;
 LONG y2 = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask );
 LONG tmp;
@@ -1620,8 +1558,6 @@ LONG tmp;
   }
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPTanh */
 #/Code
 #/Function
 
@@ -1654,11 +1590,7 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   return y;
-AROS_LIBFUNC_EXIT
-} /* IEEESPTieee */
 #/Code
 #/Function
 

@@ -643,21 +643,21 @@ int numparams=0;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && ! in_function && !in_header )
+      else if( strcmp(word,"/Archive")==0 && in_archive && ! in_function && !in_header )
         break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
         in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_code )
+      else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
       char *filename;
 
@@ -701,7 +701,7 @@ int numparams=0;
         in_function = 1;
         fprintf( fdo, "#include \"libdefs.h\"\n\n" );
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         fprintf( fdo, "%s\n", header);
         fprintf( fdo, "AROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
@@ -710,7 +710,9 @@ int numparams=0;
           fprintf( fdo, "%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
         }
         fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
+        fprintf( fdo, "{\n    AROS_LIBFUNC_INIT\n\n" );
         fprintf( fdo, "%s\n", code );
+        fprintf( fdo, "\n    AROS_LIBFUNC_EXIT\n} /* %s */\n", name[0] );
         in_function = 0;
         for( i=0 ; i < numparams ; i++ )
         {
@@ -729,7 +731,7 @@ int numparams=0;
         reg = NULL;
         code = NULL;
       }
-      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words( line, &words );
@@ -749,7 +751,7 @@ int numparams=0;
         reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[numparams] = strdup( words[num-1] );
       }
-      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
         reg = realloc( reg, (numparams+1)*sizeof(char *) );
@@ -1008,10 +1010,14 @@ int numparams=0;
           fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
         }
         fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
+        fprintf( fdo, "{\n    AROS_LIBFUNC_INIT\n\n" );
         in_code = 1;
       }
       else if( strcmp(word,"/Code")==0 && in_code )
+      {
+        fprintf( fdo, "\n    AROS_LIBFUNC_EXIT\n} /* %s */\n", name[0] );
         in_code = 0;
+      }
       else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);

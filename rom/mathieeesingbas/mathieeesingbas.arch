@@ -48,8 +48,6 @@
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res;
   LONG Shift;
 
@@ -91,8 +89,6 @@ AROS_LIBFUNC_INIT
   }
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPFix */
 #/Code
 #/Function
 
@@ -130,8 +126,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Exponent = 0;
   LONG TestMask = 0xFFFFFFFF;
   LONG Res = 0;
@@ -182,8 +176,6 @@ AROS_LIBFUNC_INIT
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPFlt */
 #/Code
 #/Function
 
@@ -226,8 +218,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   if (y == z)
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -258,8 +248,6 @@ AROS_LIBFUNC_INIT
     SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
     return 1;
   }
-AROS_LIBFUNC_EXIT
-} /* IEEESPCmp */
 #/Code
 #/Function
 
@@ -305,8 +293,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   /* y is negative */
   if (y < 0)
   {
@@ -324,8 +310,6 @@ AROS_LIBFUNC_INIT
   /* fnum1 is positive */
   SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
   return 1;
-AROS_LIBFUNC_EXIT
-} /* IEEESPTst */
 #/Code
 #/Function
 
@@ -364,8 +348,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
     if (0 == y)
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
@@ -376,8 +358,6 @@ AROS_LIBFUNC_INIT
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return y;
-AROS_LIBFUNC_EXIT
-} /* IEEESPAbs */
 #/Code
 #/Function
 
@@ -418,8 +398,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   if (0 == y || 0x80000000 == y)
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -437,8 +415,6 @@ AROS_LIBFUNC_INIT
     SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
   return y;
-AROS_LIBFUNC_EXIT
-} /* IEEESPNeg */
 #/Code
 #/Function
 
@@ -478,8 +454,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res;
   LONG Mant1, Mant2;
   LONG Shift;
@@ -572,8 +546,6 @@ AROS_LIBFUNC_INIT
 
   Res |= Mant1 | Exponent;
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPAdd */
 #/Code
 #/Function
 
@@ -615,11 +587,7 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   return IEEESPAdd(y, z ^ IEEESPSign_Mask);
-AROS_LIBFUNC_EXIT
-} /* IEEESPSub */
 #/Code
 #/Function
 
@@ -658,8 +626,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   ULONG Mant1H = ((y & 0x00fff000) >> 12 ) | 0x00000800;
   ULONG Mant2H = ((z & 0x00fff000) >> 12 ) | 0x00000800;
   ULONG Mant1L = y & 0x00000fff;
@@ -707,8 +673,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPMul */
 #/Code
 #/Function
 
@@ -751,8 +715,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res = 0;
   LONG Exponent = (y & IEEESPExponent_Mask) -
                   (z & IEEESPExponent_Mask) + 0x3f800000;
@@ -827,8 +789,6 @@ AROS_LIBFUNC_INIT
     SetSR(Overflow_Bit, Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* IEEESPDiv */
 #/Code
 #/Function
 
@@ -872,8 +832,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Mask = 0x80000000;
 
   if (0x7f880000 == y)
@@ -909,8 +867,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return y & Mask;
-AROS_LIBFUNC_EXIT
-} /* IEEESPFloor */
 #/Code
 #/Function
 
@@ -952,8 +908,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   if (y == 0x7f880000)
     return y;
 
@@ -963,8 +917,6 @@ AROS_LIBFUNC_INIT
     return 0;
   else
     return (y ^ IEEESPSign_Mask);
-AROS_LIBFUNC_EXIT
-} /* IEEESPCeil */
 #/Code
 #/Function
 

@@ -48,8 +48,6 @@
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
     if (0 == fnum1)
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
@@ -60,8 +58,6 @@ AROS_LIBFUNC_INIT
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return fnum1;
-AROS_LIBFUNC_EXIT
-} /* SPAbs */
 #/Code
 #/Function
 
@@ -127,8 +123,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res;
   ULONG Mant1, Mant2;
   char Shift;
@@ -225,8 +219,6 @@ AROS_LIBFUNC_INIT
 
   Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPAdd */
 #/Code
 #/Function
 
@@ -268,14 +260,9 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
   /* Ceil(y) = -Floor(-y) */
   y = SPFloor(y ^ FFPSign_Mask);
   return (y ^ FFPSign_Mask);
-AROS_LIBFUNC_EXIT
-} /* SPCeil */
 #/Code
 #/Function
 
@@ -341,9 +328,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
-
   /* fnum1 is negative and fnum2 is positive
   **  or
   ** exponent of fnum1 is less than the exponent of fnum2
@@ -385,8 +369,6 @@ AROS_LIBFUNC_INIT
   /* Mantisse(fnum1) > mantisse(fnum2) */
   SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
   return 1;
-AROS_LIBFUNC_EXIT
-} /* SPCmp */
 #/Code
 #/Function
 
@@ -431,8 +413,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res = 0;
   char Exponent = ((char) fnum2 & FFPExponent_Mask) -
                   ((char) fnum1 & FFPExponent_Mask) + 0x41;
@@ -504,8 +484,6 @@ AROS_LIBFUNC_INIT
     return(Res | (FFPMantisse_Mask | FFPExponent_Mask));
   }
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPDiv */
 #/Code
 #/Function
 
@@ -543,8 +521,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Res;
   BYTE Shift;
 
@@ -584,8 +560,6 @@ AROS_LIBFUNC_INIT
   }
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPFix */
 #/Code
 #/Function
 
@@ -641,8 +615,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   LONG Mask = 0x80000000;
 
   if (((char)y & FFPExponent_Mask)  <= 0x40)
@@ -678,8 +650,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return y & Mask;
-AROS_LIBFUNC_EXIT
-} /* SPFloor */
 #/Code
 #/Function
 
@@ -731,8 +701,6 @@ AROS_LIBFUNC_EXIT
 */
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   BYTE Exponent = 0;
   LONG TestMask = 0xFFFFFFFF;
   LONG Res = 0;
@@ -775,8 +743,6 @@ AROS_LIBFUNC_INIT
   }
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPFlt */
 #/Code
 #/Function
 
@@ -815,8 +781,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   char Exponent = ((char) fnum1 & FFPExponent_Mask) +
                   ((char) fnum2 & FFPExponent_Mask) - 0x41;
   ULONG Mant1H = ( (ULONG) (fnum1 & FFPMantisse_Mask)) >> 20;
@@ -858,8 +822,6 @@ AROS_LIBFUNC_INIT
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-AROS_LIBFUNC_EXIT
-} /* SPMul */
 #/Code
 #/Function
 
@@ -900,8 +862,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   if (0 == fnum1)
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -919,8 +879,6 @@ AROS_LIBFUNC_INIT
     SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
   return fnum1;
-AROS_LIBFUNC_EXIT
-} /* SPNeg */
 #/Code
 #/Function
 
@@ -962,11 +920,7 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   return SPAdd(fnum2, fnum1 ^ FFPSign_Mask);
-AROS_LIBFUNC_EXIT
-} /* SPSub */
 #/Code
 #/Function
 
@@ -1012,8 +966,6 @@ AROS_LIBFUNC_EXIT
 
 #/AutoDoc
 #Code
-{
-AROS_LIBFUNC_INIT
   /* fnum1 is negative */
   if ((char) fnum < 0)
   {
@@ -1031,8 +983,6 @@ AROS_LIBFUNC_INIT
   /* fnum1 is positive */
   SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
   return 1;
-AROS_LIBFUNC_EXIT
-} /* SPTst */
 #/Code
 #/Function
 
