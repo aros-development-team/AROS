@@ -954,7 +954,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    ptr = NULL;
 
-            kprintf("\n======== Unknown IEClass: %d (orig = %d)! =============\n\n",ie->ie_Class,orig_ie->ie_Class);
+            kprintf("\x07" "\n\n======== Unknown IEClass: addr = %x  class = %d (origclass = %d)! =============\n\n",orig_ie, ie->ie_Class,orig_ie->ie_Class);
 	    break;
 	} /* switch (im->Class) */
 
