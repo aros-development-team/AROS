@@ -16,8 +16,6 @@
 
 int fstat(int fd, struct stat *sb)
 {
-    GETUSER;
-
     fdesc *desc = __getfdesc(fd);
 
     if (!desc)

@@ -16,8 +16,6 @@
 
 int stat(const char *path, struct stat *sb)
 {
-    GETUSER;
-
     int res = 0;
     BPTR lock;
 
@@ -27,7 +25,7 @@ int stat(const char *path, struct stat *sb)
 	if  (IoErr() == ERROR_OBJECT_IN_USE)
 	{
 	    /* the file is already locked exclusively, so the only way to get
-	       infos about it is to find it in the parent directoy with the ExNext() function
+	       info about it is to find it in the parent directoy with the ExNext() function
             */
 
 	    /* return an error for now */

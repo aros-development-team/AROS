@@ -27,8 +27,6 @@ int pipe(int *pipedes)
 {
     if (!pipedes)
     {
-	GETUSER;
-
 	errno = EFAULT;
 
 	return -1;

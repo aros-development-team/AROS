@@ -54,16 +54,12 @@
 
     if (!fdesc)
     {
-        GETUSER;
-
     	errno = EBADF;
 	return EOF;
     }
 
     if (FPutC((BPTR)fdesc->fh, c) == EOF)
     {
-        GETUSER;
-
 	errno = IoErr2errno(IoErr());
 	c = EOF;
     }

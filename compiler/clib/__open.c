@@ -114,8 +114,6 @@ LONG __oflags2amode(int flags)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
-    GETUSER;
-
     BPTR fh = NULL, lock = NULL;
     fdesc *currdesc = NULL;
     struct FileInfoBlock *fib = NULL;

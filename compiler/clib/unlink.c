@@ -45,8 +45,6 @@
 
 ******************************************************************************/
 {
-    GETUSER;
-
     if (!DeleteFile ((STRPTR)pathname))
     {
 	errno = IoErr2errno (IoErr());

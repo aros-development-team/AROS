@@ -8,8 +8,6 @@
 
 int on_exit(void (*func)(int, void *), void *arg)
 {
-    GETUSER;
-
     struct AtExitNode *aen = malloc(sizeof(*aen));
 
     if (!aen) return -1;
