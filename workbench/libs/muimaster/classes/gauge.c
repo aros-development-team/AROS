@@ -158,9 +158,6 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    info_changed = 1;
 		    need_redraw = 1;
 		    break;
-	    case    MUIA_Gauge_Horiz:
-		    data->horiz = tag->ti_Data;
-		    break;
 	    case    MUIA_Gauge_InfoText:
 	    	    if (data->dupinfo)
 	    	    {
