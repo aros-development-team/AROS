@@ -18,6 +18,7 @@
 #include <proto/muimaster.h>
 #endif
 
+#include "windowp.h"
 #include "zunestuff.h"
 
 struct Library *MUIMasterBase;
@@ -108,50 +109,22 @@ static Object *main_page_space; /* a space object */
 struct page_entry
 {
     char *name;
+    struct MUI_CustomClass *cl; /* The class pointer,  maybe NULL */
     Object *group;  /* The group which should be is displayed, maybe NULL */
-
-    int (*init)(struct page_entry *); /* this function initializes the group, maybe NULL */
+    const struct __MUIBuiltinClass *desc;
 };
-
-int init_window_page(struct page_entry *page)
-{
-    page->group = HGroup,
-    	Child, ColGroup(2),
-	    GroupFrameT("Fonts"),
-	    Child, MakeLabel("Normal"),
-	    Child, PopaslObject,
-		MUIA_Popasl_Type, ASL_FontRequest,
-		MUIA_Popstring_String, StringObject, StringFrame, End,
-		MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		End,
-
-	    Child, MakeLabel("Small"),
-	    Child, PopaslObject,
-		MUIA_Popasl_Type, ASL_FontRequest,
-		MUIA_Popstring_String, StringObject, StringFrame, End,
-		MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		End,
-
-	    Child, MakeLabel("Big"),
-	    Child, PopaslObject,
-		MUIA_Popasl_Type, ASL_FontRequest,
-		MUIA_Popstring_String, StringObject, StringFrame, End,
-		MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		End,
-
-	    End,
-	End;
-
-
-    return !!page->group;
-}
 
 struct page_entry main_page_entries[] =
 {
-    {"Info",NULL,NULL},
-    {"System",NULL,NULL},
-    {"Windows",NULL,init_window_page},
+    {"Info",NULL,NULL,NULL},
+    {"System",NULL,NULL,NULL},
+    {"Windows",NULL,NULL,&_MUIP_Windows_desc},
 };
+
+struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
+{
+    return MUI_CreateCustomClass(NULL,MUIC_Settingsgroup,NULL,desc->datasize,desc->dispatcher);
+}
 
 /****************************************************************
  Our standard hook function, for easy call backs
@@ -277,7 +250,13 @@ int init_gui(void)
 	for (i=0;i<(sizeof(main_page_entries)/sizeof(main_page_entries[0]));i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
-	    if (p->init) p->init(p);
+	    if (p->desc)
+	    {
+		if ((p->cl = create_class(p->desc)))
+		{
+		    p->group = NewObject(p->cl->mcc_Class,NULL,TAG_DONE);
+		}
+	    }
 	    DoMethod(main_page_list,MUIM_List_InsertSingle,p,MUIV_List_Insert_Bottom);
 	}
 
