@@ -23,6 +23,7 @@
 #include "support.h"
 #include "mui.h"
 #include "muimaster_intern.h"
+#include "prefs.h"
 
 extern struct Library *MUIMasterBase;
 
