@@ -87,6 +87,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	   Child, VGroup,
 	       Child, ColGroup(2),
                    GroupFrameT("Control"),
+			       MUIA_Disabled, TRUE,
                    Child, HVSpace,
                    Child, HVSpace,
 		   Child, MakeLabel("Positions:"),
