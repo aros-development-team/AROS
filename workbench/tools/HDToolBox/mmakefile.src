@@ -23,7 +23,7 @@ USE_MLIB := yes
 USE_MUILIB := yes
 USE_AMIGALIB := yes
 
-USER_CFLAGS := -Wunused -Wall #-Werror
+USER_CFLAGS := -Wunused -Wall -DHAVE_COOLIMAGES #-Werror
 
 #MM workbench-tools: setup-hdtoolbox-catalogs
 #MM workbench-tools-quick: setup-hdtoolbox-catalogs
