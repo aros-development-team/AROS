@@ -1,4 +1,5 @@
 #include <dos/dos.h>
+#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -20,6 +21,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     me  = (struct Process *)FindTask(NULL);
     WaitPort(&me->pr_MsgPort);
     csm = (struct CliStartupMessage *)GetMsg(&me->pr_MsgPort);
+
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
 
@@ -48,7 +50,26 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     	cli->cli_Interactive    = cli->cli_CurrentInput == cli->cli_StandardInput ? DOSTRUE : DOSFALSE;
     	cli->cli_Background     = Background;
 
-        rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
+	if (!Background)
+	{
+	    struct IOFileSys iofs;
+	    struct FileHandle *fh = BADDR(Input());
+
+            iofs.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+            iofs.IOFS.io_Message.mn_ReplyPort    = &me->pr_MsgPort;
+            iofs.IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
+            iofs.IOFS.io_Command                 = FSA_CHANGE_SIGNAL;
+            iofs.IOFS.io_Flags                   = 0;
+
+	    iofs.IOFS.io_Device  = fh->fh_Device;
+    	    iofs.IOFS.io_Unit    = fh->fh_Unit;
+
+	    iofs.io_Union.io_CHANGE_SIGNAL.io_Task = (struct Task *)me;
+
+	    DoIO(&iofs.IOFS);
+        }
+
+	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
 
         CloseLibrary(DOSBase);
     }
