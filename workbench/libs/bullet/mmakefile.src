@@ -11,9 +11,8 @@ FUNCS := openengine \
 #MM- workbench-libs-bullet : workbench-libs-bullet-intern-includes
 #MM- workbench-libs-bullet-includes : workbench-libs-bullet-intern-includes
 
-%build_module_macro mmake=workbench-libs-bullet-intern \
+%build_module mmake=workbench-libs-bullet-intern \
   modname=bullet modtype=library \
-  funcs=$(FUNCS) \
-  conffile=lib.conf
+  files=$(FUNCS)
 
 %common
