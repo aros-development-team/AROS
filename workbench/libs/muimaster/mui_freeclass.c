@@ -12,7 +12,7 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(BOOL, MUI_FreeClass,
+	AROS_LH1(VOID, MUI_FreeClass,
 
 /*  SYNOPSIS */
 	AROS_LHA(Class *, cl, A0),
@@ -27,10 +27,7 @@
         cl - The pointer to the class.
 
     RESULT
-        BOOL - Unlike MUI's version of MUI_FreeClass(), Zune's MUI_FreeClass() returns
-	       a BOOL value indicating success or failure. This is mostly used for internal
-	       purposes and shouldn't be relied upon, rather, you should foget MUI_FreeClass()
-	       even exists and use MUI_DeleteCustomClass() & friends instead.
+        VOID - The function always succeed: if the class can't be
 
     NOTES
         This function is obsolete, DO NOT use it.
@@ -54,22 +51,20 @@
     /* CLF_INLIST tells us that this class is a builtin class */
     if (cl->cl_Flags & CLF_INLIST)
     {
-        ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
+        ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
-        if (!FreeClass(cl))
-        {
-            /* If it was a builtin class, readd it to the list since freeing it failed */
+	ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
+
+        if (FreeClass(cl))
+            CloseLibrary(MUIMasterBase);
+        else
+	    /* Re-add the class to the list since freeing it failed */
             ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
-	    return FALSE;
-	}
-	/* If the class could be freed then also close muimaster.library to decrease the
-	   reference count.  */
-	else CloseLibrary(MUIMasterBase);
+        ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     }
-    else CloseLibrary((struct Library *)cl->cl_Dispatcher.h_Data);
-
-    return TRUE;
+    else
+        CloseLibrary((struct Library *)cl->cl_Dispatcher.h_Data);
 
     AROS_LIBFUNC_EXIT
 
