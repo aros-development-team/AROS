@@ -728,7 +728,7 @@ char *destination;
 		/* read next extension block ?*/
 		if (ah->current.filekey<BLK_TABLE_START)
 		{
-			if (extensionbuffer->buffer[BLK_EXTENSION(ah->volume)] != NULL)
+			if (extensionbuffer->buffer[BLK_EXTENSION(ah->volume)] != 0)
 			{
 				extensionbuffer->flags &= ~BCF_USED;
 				extensionbuffer=getBlock
