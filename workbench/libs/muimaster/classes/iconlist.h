@@ -6,17 +6,19 @@
 #ifndef _MUI_CLASSES_ICONLIST_H
 #define _MUI_CLASSES_ICONLIST_H
 
-/************/
-/* IconList */
-/************/
+/****************************************************************************/
+/*** Name *******************************************************************/
 #define MUIC_IconList "IconList.zune"
 
-/* IconList methods */
-#define MUIM_IconList_Clear             (MUIB_MUI|0x1042ad89) /* Zune: V1 */
-#define MUIM_IconList_Update            (MUIB_MUI|0x1042ad8a) /* Zune: V1 */
-#define MUIM_IconList_Add               (MUIB_MUI|0x1042ad8b) /* Zune: V1 returns BOOL */
-#define MUIM_IconList_NextSelected      (MUIB_MUI|0x1042ad8c) /* Zune: V1 */
-#define MUIM_IconList_UnselectAll		  (MUIB_MUI|0x1042ad8d) /* Zune: V1 */
+/*** Identifier base ********************************************************/
+#define MUIB_IconList                   (MUIB_ZUNE | 0x00003200)
+
+/*** Methods ****************************************************************/
+#define MUIM_IconList_Clear             (MUIB_IconList | 0x00000000) /* Zune: V1 */
+#define MUIM_IconList_Update            (MUIB_IconList | 0x00000001) /* Zune: V1 */
+#define MUIM_IconList_Add               (MUIB_IconList | 0x00000002) /* Zune: V1 returns BOOL */
+#define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
+#define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
 struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; LONG type; void *udata; /* More file attrs to add */};
@@ -25,14 +27,14 @@ struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry *
 #define MUIV_IconList_NextSelected_Start 0
 #define MUIV_IconList_NextSelected_End   0
 
-/* IconList attrs */
-#define MUIA_IconList_DoubleClick         (MUIB_MUI|0x10427878) /* Zune: V1 ..G BOOL */
-#define MUIA_IconList_Left                (MUIB_MUI|0x10427879) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Top                 (MUIB_MUI|0x1042787a) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Width               (MUIB_MUI|0x1042787b) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Height              (MUIB_MUI|0x1042787c) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_IconsDropped				(MUIB_MUI|0x1042787d) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_Clicked						(MUIB_MUI|0x1042787e) /* Zune: V1 ..G struct IconList_Click * */
+/*** Attributes *************************************************************/
+#define MUIA_IconList_DoubleClick       (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL */
+#define MUIA_IconList_Left              (MUIB_IconList | 0x00000001) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Top               (MUIB_IconList | 0x00000002) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Width             (MUIB_IconList | 0x00000003) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Height            (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_IconsDropped      (MUIB_IconList | 0x00000005) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_Clicked           (MUIB_IconList | 0x00000006) /* Zune: V1 ..G struct IconList_Click * */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry
@@ -49,18 +51,28 @@ struct IconList_Click
     struct IconList_Entry *entry; /* might be NULL */
 };
 
-/******************/
-/* IconDrawerList */
-/******************/
-#define MUIC_IconDrawerList "IconDrawerList.zune"
 
-/* IconDrawerList attributes */
-#define MUIA_IconDrawerList_Drawer        (MUIB_MUI|0x1042391c) /* Zune: V1  isg LONG     */
 
-/*******************/
-/* IconVolumneList */
-/*******************/
+/****************************************************************************/
+/*** Name *******************************************************************/
+#define MUIC_IconDrawerList         "IconDrawerList.zune"
+
+/*** Identifier base ********************************************************/
+#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00003300)  
+
+/*** Attributes *************************************************************/
+#define MUIA_IconDrawerList_Drawer  (MUIB_IconDrawerList | 0x00000000) /* Zune: V1  isg LONG     */
+
+
+
+/****************************************************************************/
+/*** Name *******************************************************************/
 #define MUIC_IconVolumeList "IconVolumneList.zune"
+
+/*** Identifier base ********************************************************/
+#define MUIB_IconVolumeList (MUIB_ZUNE | 0x00003400)  
+
+
 
 extern const struct __MUIBuiltinClass _MUI_IconList_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_IconDrawerList_desc; /* PRIV */
