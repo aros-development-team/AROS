@@ -122,6 +122,10 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
 		    break;
 
+	    case    MUIA_Text_Multiline:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_MULTILINE);
+		    break;
+
             case    MUIA_String_AdvanceOnCR:
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
 		    break;
@@ -349,13 +353,29 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     height = data->ztext->height;
     if (_font(obj)->tf_YSize > height) height = _font(obj)->tf_YSize;
 
-    msg->MinMaxInfo->MinWidth += data->ztext->width;
-    msg->MinMaxInfo->DefWidth += data->ztext->width;
-    msg->MinMaxInfo->MaxWidth += data->ztext->width;
+    if (!(data->mtd_Flags & MTDF_EDITABLE))
+    { 
+	msg->MinMaxInfo->MinWidth += data->ztext->width;
+	msg->MinMaxInfo->DefWidth += data->ztext->width;
+	msg->MinMaxInfo->MaxWidth += data->ztext->width;
+    } else
+    {
+	msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize*4;
+	msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize*12;
+	msg->MinMaxInfo->MaxWidth += MUI_MAXMAX;
+    }
 
-    msg->MinMaxInfo->MinHeight += height;
-    msg->MinMaxInfo->DefHeight += height;
-    msg->MinMaxInfo->MaxHeight += height;
+    if (!(data->mtd_Flags & MTDF_MULTILINE))
+    {
+	msg->MinMaxInfo->MinHeight += height;
+	msg->MinMaxInfo->DefHeight += height;
+	msg->MinMaxInfo->MaxHeight += height;
+    } else
+    {
+	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
+	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize*10;
+	msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
+    }
 
     if (!(data->mtd_Flags & MTDF_SETVMAX))
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
@@ -419,15 +439,33 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
         if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
         {
+            int y;
+            if (data->mtd_Flags & MTDF_MULTILINE)
+            {
+		y = 0;
+            } else
+            {
+		y = (_mheight(obj) - data->ztext->height) / 2;
+            }
+
 	    zune_text_draw_cursor(data->ztext, obj,
 		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
+		   _mtop(obj) + y,
 		   data->xpos,data->ypos);
         } else
         {
+            int y;
+            if (data->mtd_Flags & MTDF_MULTILINE)
+            {
+		y = 0;
+            } else
+            {
+		y = (_mheight(obj) - data->ztext->height) / 2;
+            }
+
 	    zune_text_draw(data->ztext, obj,
 		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2);
+		   _mtop(obj) + y);
 	}
     }
 
@@ -520,6 +558,11 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     struct ZTextChunk *chunk;
     int offx,len;
 
+    struct RastPort rp;
+
+    InitRastPort(&rp);
+    SetFont(&rp,_font(obj));
+
     if (!code) return 0;
 
     if (code == '\r')
@@ -530,6 +573,17 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
 	    return 0;
+	} else
+	{
+	    ZText *new_text = zune_text_new(NULL, "\n", ZTEXT_ARG_NONE, 0);
+	    if (new_text)
+	    {
+		zune_text_merge(data->ztext, obj, data->xpos, data->ypos, new_text);
+	    }
+
+	    data->xpos = 0;
+	    data->ypos++;
+	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 	}
 	return 1;
     }
@@ -540,6 +594,8 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     	{
 	    if (len)
 	    {
+	    	chunk->cwidth -= TextLength(&rp,&chunk->str[len-1],1);
+		line->lwidth -= TextLength(&rp,&chunk->str[len-1],1);
 		strcpy(&chunk->str[len-1],&chunk->str[len]);
 	    	data->xpos--;
 	    } else
@@ -557,6 +613,8 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     	{
 	    if (chunk->str && chunk->str[len])
 	    {
+	    	chunk->cwidth -= TextLength(&rp,&chunk->str[len],1);
+		line->lwidth -= TextLength(&rp,&chunk->str[len],1);
 		strcpy(&chunk->str[len],&chunk->str[len+1]);
 	    }
     	}
@@ -613,9 +671,12 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 
 	    if (!zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)))
 	    {
-	    	data->update_arg1 = offx;
-	    	data->update_arg2 = char_width;
-		return 2;
+		if (!(data->mtd_Flags & MTDF_MULTILINE))
+		{
+		    data->update_arg1 = offx;
+		    data->update_arg2 = char_width;
+		    return 2;
+		}
 	    }
         }
     }

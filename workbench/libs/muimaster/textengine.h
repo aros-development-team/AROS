@@ -74,4 +74,6 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 int zune_text_get_line_len(ZText *text, Object *obj, LONG y);
 int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom);
 
+int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge);
+
 #endif

@@ -174,7 +174,7 @@ void main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -372,6 +372,13 @@ End,
 				Child, MUI_MakeObject(MUIO_Button,"Button9"),
 				Child, MUI_MakeObject(MUIO_Button,"Button10"),
 				End,
+			    End,
+		    	End,
+		    Child, VGroup,
+			Child, TextObject,
+			    StringFrame,
+			    MUIA_Text_Editable, TRUE,
+			    MUIA_Text_Multiline, TRUE,
 			    End,
 		    	End,
 		    End,
