@@ -203,7 +203,8 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
     InitSemaphore(&CxBase->cx_SignalSemaphore);
     NEWLIST(&CxBase->cx_BrokerList);
     NEWLIST(&CxBase->cx_MessageList);
-
+    NEWLIST(&CxBase->cx_GeneratedInputEvents);
+    
     CxBase->cx_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
     CxBase->cx_MsgPort.mp_Flags = PA_IGNORE;
     NEWLIST(&CxBase->cx_MsgPort.mp_MsgList);
