@@ -713,10 +713,10 @@ LONG PartitionRDBGetPartitionAttrs
 			CopyMem(ph->ln.ln_Name, (UBYTE *)taglist[0].ti_Data, 32);
 			break;
 		case PT_BOOTABLE:
-			taglist[0].ti_Data = (AROS_BE2LONG(data->pb_Flags) & PBFF_BOOTABLE) ? TRUE : FALSE;
+			*((LONG *)taglist[0].ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_BOOTABLE) ? TRUE : FALSE;
 			break;
 		case PT_AUTOMOUNT:
-			taglist[0].ti_Data = (AROS_BE2LONG(data->pb_Flags) & PBFF_NOMOUNT) ? FALSE : TRUE;
+			*((LONG *)taglist[0].ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_NOMOUNT) ? FALSE : TRUE;
 			break;
 		}
 		taglist++;
