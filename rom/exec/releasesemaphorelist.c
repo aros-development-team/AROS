@@ -45,25 +45,18 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Node *n;
 
-#warning !!!!!!!!!! ReleaseSemaphoreList must be rewritten !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    struct SignalSemaphore *ss;
 
     /*
-	There's no arbitration needed - the first semaphore in the list
-	arbitrates for the full list.
-	Get first element in the list.
-    */
-    n=sigSem->lh_Head;
+     *	We own all the semaphores, so just go over the list and release
+     *	them one at a time.
+     */
 
-    /* And follow it. */
-    while(n->ln_Succ!=NULL)
+    ForeachNode(sigSem,(struct Node *)ss)
     {
-	/* Free the semaphore */
-	ObtainSemaphore((struct SignalSemaphore *)n);
-
-	/* Get next element */
-	n=n->ln_Succ;
+	ReleaseSemaphore(ss);
     }
+
     AROS_LIBFUNC_EXIT
 } /* ReleaseSemaphoreList */
