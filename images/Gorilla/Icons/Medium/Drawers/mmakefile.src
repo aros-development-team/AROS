@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS := Amiga Downloads-2 Downloads Linux Windows
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-drawers-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-drawers
+%build_icons mmake=themes-gorilla-icons-drawers icons=$(ICONS) \
+             dir=$(CONTRIBDIR)/Icons/Gorilla/Drawers
