@@ -143,7 +143,6 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
     int arg;
 
     if (!(text = mui_alloc_struct(ZText))) return NULL;
-    text->style = ZTC_STYLE_NORMAL;
     NewList((struct List*)&text->lines);
 
     if (!content) content = "";
@@ -159,7 +158,7 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
 
     buf = dup_content;
 
-    zc.pen = TEXTPEN;
+    zc.pen = -1;
     zc.style = ZTC_STYLE_NORMAL;
     zc.align = ZTL_LEFT;
     zc.imspec = NULL;
@@ -515,10 +514,6 @@ void zune_text_get_bounds (ZText *text, Object *obj)
     text->width = 0;
     text->height = 0;
 
-    text->align = DEFAULT_TEXT_ALIGN;
-    text->style = ZTC_STYLE_NORMAL;
-    text->dripen = 0;
-
     font = _font(obj);
     InitRastPort(&rp);
     SetFont(&rp, font);
@@ -636,8 +631,14 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 		}
 /*  _font(obj)->tf_Baseline +  */
 	    	Move(rp,x,_font(obj)->tf_Baseline + (line_node->lheight - chunk_node->cheight) / 2 + top);
-	    	SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
-
+		if (chunk_node->dripen != -1)
+		{
+		    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+		}
+		else
+		{
+		    SetDrMd(rp, JAM1);
+		}
 	    	Text(rp,chunk_node->str,strlen(chunk_node->str));
 	    }
 	    x += chunk_node->cwidth;
