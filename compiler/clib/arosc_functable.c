@@ -25,6 +25,7 @@
 #include <process.h>
 #include <pwd.h>
 #include <grp.h>
+#include <ctype.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */
