@@ -20,6 +20,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <devices/inputevent.h>
+#include <libraries/gadtools.h>
 #include <proto/alib.h>
 
 #include "aroscheckbox_intern.h"
@@ -29,29 +30,120 @@
 #define AROSCheckboxBase ((struct CBBase_intern *)(cl->cl_UserData))
 
 
-
-void check_setnew(Class * cl, Object * obj, struct opSet *msg)
+void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
+               BOOL checked, BOOL disabled)
 {
+    struct CheckData *data = INST_DATA(cl, (Object *)gad);
+    struct Image *img;
+    ULONG state = IDS_NORMAL;
+    IPTR supportsdisable = FALSE;
+
+    if (checked)
+    {
+        if (gad->SelectRender)
+        {
+            img = gad->SelectRender;
+            state = IDS_NORMAL;
+        } else
+        {
+            img = gad->GadgetRender;
+            state = IDS_SELECTED;
+        }
+    } else
+    {
+        img = gad->GadgetRender;
+        state = IDS_NORMAL;
+    }
+
+    if (disabled)
+    {
+        GetAttr(IA_SupportsDisable, (Object *) img, &supportsdisable);
+        if ((supportsdisable) && (state == IDS_NORMAL))
+            state = IDS_DISABLED;
+        else if (supportsdisable)
+            state = IDS_SELECTEDDISABLED;
+    }
+
+    DrawImageState(rport, img, gad->LeftEdge, gad->TopEdge, state, data->dri);
+
+    /* Draw disabled pattern, if not supported by imageclass. */
+    if ((disabled) && (!supportsdisable))
+	drawdisabledpattern(AROSCheckboxBase,
+                            rport, data->dri->dri_Pens[SHADOWPEN],
+			    gad->LeftEdge, gad->TopEdge,
+			    gad->Width, gad->Height);
+}
+
+
+IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
+{
+    IPTR retval = FALSE;
     struct CheckData *data = INST_DATA(cl, obj);
     struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct RastPort *rport;
+
+    if (data->flags & CF_CustomImage)
+    {
+        tag = FindTagItem(GA_Image, taglist);
+        if (tag)
+        {
+            DisposeObject(G(obj)->GadgetRender);
+            G(obj)->GadgetRender = NULL;
+            data->flags &= ~CF_CustomImage;
+        }
+    }
+
+    if (msg->MethodID != OM_NEW)
+        retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     while ((tag = NextTagItem(&taglist))) {
 	switch (tag->ti_Tag) {
+        case GA_Disabled:
+            retval = TRUE;
+            break;
 	case GA_DrawInfo:
 	    data->dri = (struct DrawInfo *) tag->ti_Data;
 	    break;
+        case GA_Image:
+        case GA_SelectRender:
+            retval = TRUE;
+            break;
+        case GA_LabelPlace:
+            data->labelplace = (LONG)tag->ti_Data;
+            break;
 	case AROSCB_Checked:
 	    if (tag->ti_Data)
 		data->flags |= CF_Checked;
 	    else
 		data->flags &= ~CF_Checked;
+            retval = TRUE;
 	    break;
 	}
     }
+
+    if (G(obj)->Width == 0)
+        G(obj)->Width = CHECKBOX_WIDTH;
+    if (G(obj)->Height == 0)
+        G(obj)->Height = CHECKBOX_HEIGHT;
+
+    /* Redraw ourself? */
+    if ((retval) && (msg->MethodID != OM_NEW) &&
+        (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
+	rport = ObtainGIRPort(msg->ops_GInfo);
+	if (rport) {
+	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+	    ReleaseGIRPort(rport);
+	    retval = FALSE;
+	}
+    }
+
+    return retval;
 }
 
-Object *check_new(Class * cl, Object * obj, struct opSet *msg)
+
+Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
+    Object *obj;
     struct CheckData *data;
     struct TagItem supertags[] =
     {
@@ -67,21 +159,26 @@ Object *check_new(Class * cl, Object * obj, struct opSet *msg)
 	{TAG_DONE, 0L}
     };
 
-    obj = (Object *) DoSuperMethod(cl, obj, OM_NEW, &supertags, msg->ops_GInfo);
+    obj = (Object *)DoSuperMethod(cl, (Object *)rootcl,
+                                  OM_NEW, supertags, msg->ops_GInfo);
     if (!obj)
 	return NULL;
 
     data = INST_DATA(cl, obj);
-    data->image = NULL;
     data->dri = NULL;
     data->flags = 0;
-    check_setnew(cl, obj, (struct opSet *) msg);
+    check_set(cl, obj, msg);
 
-    tags[0].ti_Data = G(obj)->Width;
-    tags[1].ti_Data = G(obj)->Height;
-    tags[2].ti_Data = (IPTR) data->dri;
-    data->image = (struct Image *) NewObjectA(NULL, SYSICLASS, tags);
-    if ((!data->dri) || (!data->image)) {
+    if (!G(obj)->GadgetRender)
+    {
+        tags[0].ti_Data = G(obj)->Width;
+        tags[1].ti_Data = G(obj)->Height;
+        tags[2].ti_Data = (IPTR) data->dri;
+        G(obj)->GadgetRender = (struct Image *) NewObjectA(NULL, SYSICLASS,
+                                                           tags);
+        data->flags |= CF_CustomImage;
+    }
+    if ((!data->dri) || (!G(obj)->GadgetRender)) {
 	CoerceMethod(cl, obj, OM_DISPOSE);
 	return NULL;
     }
@@ -89,70 +186,21 @@ Object *check_new(Class * cl, Object * obj, struct opSet *msg)
 }
 
 
-IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
-{
-    IPTR retval = FALSE;
-    struct CheckData *data = INST_DATA(cl, obj);
-    struct TagItem *tag;
-    struct RastPort *rport;
-
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-
-    tag = FindTagItem(AROSCB_Checked, msg->ops_AttrList);
-    if (tag) {
-	if (tag->ti_Data)
-	    data->flags |= CF_Checked;
-	else
-	    data->flags &= ~CF_Checked;
-	retval = TRUE;
-    }
-
-    if (FindTagItem(GA_Disabled, msg->ops_AttrList))
-        retval = TRUE;
-
-    if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
-	rport = ObtainGIRPort(msg->ops_GInfo);
-	if (rport) {
-	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
-	    ReleaseGIRPort(rport);
-	    retval = FALSE;
-	}
-    }
-    return retval;
-}
-
 IPTR check_render(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct CheckData *data = INST_DATA(cl, obj);
-    IPTR supportdisable = FALSE;
-    ULONG state;
+    IPTR result = TRUE;
 
-    /* Draw the checkbox image (possibly disabled and/or selected) */
-    GetAttr(IA_SupportsDisable, (Object *) data->image, &supportdisable);
-    if (data->flags & CF_Checked) {
-	if ((G(obj)->Flags & GFLG_DISABLED) && (supportdisable)) {
-	    state = IDS_SELECTEDDISABLED;
-	} else
-	    state = IDS_SELECTED;
-    } else if ((G(obj)->Flags & GFLG_DISABLED) && (supportdisable))
-	state = IDS_DISABLED;
-    else
-	state = IDS_NORMAL;
-    DrawImageState(msg->gpr_RPort, data->image,
-		   G(obj)->LeftEdge, G(obj)->TopEdge,
-		   state, data->dri);
-
-    /* Draw disabled pattern, if not supported by imageclass */
-    if ((!supportdisable) && (G(obj)->Flags & GFLG_DISABLED))
-	drawdisabledpattern(AROSCheckboxBase,
-                            msg->gpr_RPort, data->dri->dri_Pens[SHADOWPEN],
-			    G(obj)->LeftEdge, G(obj)->TopEdge,
-			    G(obj)->Width, G(obj)->Height);
+    /* Render image */
+    drawimage(cl, G(obj), msg->gpr_RPort,
+              data->flags&CF_Checked, G(obj)->Flags&GFLG_DISABLED);
 
     /* Render gadget label */
-    renderlabel(AROSCheckboxBase, G(obj), msg->gpr_RPort, msg->gpr_Redraw);
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+        result = renderlabel(AROSCheckboxBase,
+                             G(obj), msg->gpr_RPort, data->labelplace);
 
-    return TRUE;
+    return result;
 }
 
 IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
@@ -185,15 +233,8 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 		if (G(obj)->Flags & GFLG_SELECTED) {
 		    rport = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rport) {
-			int state;
-
-			if (data->flags & CF_Checked)
-			    state = IDS_SELECTED;
-			else
-			    state = IDS_NORMAL;
-			DrawImageState(rport, data->image,
-				       G(obj)->LeftEdge, G(obj)->TopEdge,
-				       state, data->dri);
+                        drawimage(cl, G(obj), rport,
+                                  data->flags&CF_Checked, FALSE);
 			ReleaseGIRPort(rport);
 		    }
 		    G(obj)->Flags &= ~GFLG_SELECTED;
@@ -202,15 +243,8 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 		if (!(G(obj)->Flags & GFLG_SELECTED)) {
 		    rport = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rport) {
-			int state;
-
-			if (data->flags & CF_Checked)
-			    state = IDS_NORMAL;
-			else
-			    state = IDS_SELECTED;
-			DrawImageState(rport, data->image,
-				       G(obj)->LeftEdge, G(obj)->TopEdge,
-				       state, data->dri);
+                        drawimage(cl, G(obj), rport,
+                                  (data->flags&CF_Checked)?FALSE:TRUE, FALSE);
 			ReleaseGIRPort(rport);
 		    }
 		    G(obj)->Flags |= GFLG_SELECTED;
@@ -232,19 +266,23 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
     IPTR retval = 0UL;
     struct CheckData *data;
     struct RastPort *rport;
-    int x;
 
     switch (msg->MethodID) {
     case OM_NEW:
-	retval = (IPTR) check_new(cl, obj, (struct opSet *) msg);
+	retval = (IPTR) check_new(cl, (Class *)obj, (struct opSet *) msg);
 	break;
 
     case OM_DISPOSE:
 	data = INST_DATA(cl, obj);
-	DisposeObject(data->image);
+        if (data->flags & CF_CustomImage)
+        {
+            DisposeObject(G(obj)->GadgetRender);
+            G(obj)->GadgetRender = NULL;
+        }
 	retval = DoSuperMethodA(cl, obj, msg);
 	break;
 
+    case OM_UPDATE:
     case OM_SET:
 	retval = check_set(cl, obj, (struct opSet *) msg);
 	break;
@@ -265,13 +303,8 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
         G(obj)->Flags |= GFLG_SELECTED;
         rport = ObtainGIRPort(GPI(msg)->gpi_GInfo);
         if (rport) {
-            if (data->flags & CF_Checked)
-                x = IDS_NORMAL;
-            else
-                x = IDS_SELECTED;
-            DrawImageState(rport, data->image,
-                           G(obj)->LeftEdge, G(obj)->TopEdge,
-                           x, data->dri);
+            drawimage(cl, G(obj), rport,
+                      (data->flags&CF_Checked)?FALSE:TRUE, FALSE);
             ReleaseGIRPort(rport);
             retval = GMR_MEACTIVE;
 	} else
@@ -284,13 +317,8 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
 	G(obj)->Flags &= ~GFLG_SELECTED;
 	rport = ObtainGIRPort(GPGI(msg)->gpgi_GInfo);
 	if (rport) {
-	    if (data->flags & CF_Checked)
-		x = IDS_SELECTED;
-	    else
-		x = IDS_NORMAL;
-	    DrawImageState(rport, data->image,
-			   G(obj)->LeftEdge, G(obj)->TopEdge,
-			   x, data->dri);
+            drawimage(cl, G(obj), rport,
+                      data->flags & CF_Checked, FALSE);
 	    ReleaseGIRPort(rport);
 	}
 	break;

@@ -5,7 +5,7 @@
     Desc: Support functions for AROSCheckboxClass.
     Lang: english
 */
-
+#include <strings.h>
 #include <exec/types.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -90,47 +90,59 @@ void closefont(struct CBBase_intern *AROSCheckboxBase,
 }
 
 BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG redraw)
+		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
 {
     struct TextFont *font, *oldfont;
     struct TextExtent te;
-    int len, position, x, y;
+    int len, x, y;
 
-    if (gad->GadgetText->IText)
+    if ((gad->GadgetText) && (gad->GadgetText->IText))
     {
-	if ((redraw != GREDRAW_TOGGLE) && (redraw != GREDRAW_UPDATE))
-	{
-	    font = preparefont(AROSCheckboxBase, rport, gad->GadgetText, &oldfont);
-	    if (!font)
-		return FALSE;
-	    len = strlen(gad->GadgetText->IText);
-	    TextExtent(rport, gad->GadgetText->IText, len, &te);
-	    position = gad->GadgetText->LeftEdge;
-	    if (position & PLACETEXT_RIGHT)
-	    {
-		x = gad->LeftEdge + gad->Width + 7;
-		y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
-	    } else if (position & PLACETEXT_ABOVE)
-	    {
-		x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
-		y = gad->TopEdge - te.te_Height - 4;
-	    } else if (position & PLACETEXT_BELOW)
-	    {
-		x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
-		y = gad->TopEdge + gad->Height + 3;
-	    } else if (position & PLACETEXT_IN)
-	    {
-		x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
-		y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
-	    } else /* PLACETEXT_LEFT */
-	    {
-		x = gad->LeftEdge - te.te_Width - 8;
-		y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
-	    }
-	    gad->GadgetText->LeftEdge = 0;
-	    PrintIText(rport, gad->GadgetText, x, y);
-	    gad->GadgetText->LeftEdge = position;
-	    closefont(AROSCheckboxBase, rport, font, oldfont);
+        /* Calculate offsets. */
+        if ((gad->Flags & GFLG_LABELSTRING))
+            len = strlen((char *)gad->GadgetText);
+        else if (!(gad->Flags & GFLG_LABELIMAGE))
+        {
+            len = strlen(gad->GadgetText->IText);
+            font = preparefont(AROSCheckboxBase,
+                               rport, gad->GadgetText, &oldfont);
+            if (!font)
+                return FALSE;
+        } else
+            return TRUE;
+        TextExtent(rport, gad->GadgetText->IText, len, &te);
+        if ((labelplace & GV_LabelPlace_Right))
+        {
+            x = gad->LeftEdge + gad->Width + 5;
+            y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
+        } else if ((labelplace & GV_LabelPlace_Above))
+        {
+            x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
+            y = gad->TopEdge - te.te_Height - 2;
+        } else if ((labelplace & GV_LabelPlace_Below))
+        {
+            x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
+            y = gad->TopEdge + gad->Height + 3;
+        } else if ((labelplace & GV_LabelPlace_In))
+        {
+            x = gad->LeftEdge - ((te.te_Width - gad->Width) / 2);
+            y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
+        } else /* PLACETEXT_LEFT */
+        {
+            x = gad->LeftEdge - te.te_Width - 4;
+            y = gad->TopEdge + ((gad->Height - te.te_Height) / 2) + 1;
+        }
+
+        y += rport->Font->tf_Baseline;
+        if ((gad->Flags & GFLG_LABELSTRING))
+        {
+            SetABPenDrMd(rport, 1, 0, JAM1);
+            Move(rport, x, y);
+            Text(rport, (char *)gad->GadgetText, len);
+        } else
+        {
+            PrintIText(rport, gad->GadgetText, x, y);
+            closefont(AROSCheckboxBase, rport, font, oldfont);
         }
     }
     return TRUE;

@@ -44,18 +44,19 @@ struct CBBase_intern;
 
 /* CheckboxClass definitions */
 struct CheckData {
-    struct Image *image;
     struct DrawInfo *dri;
     UWORD flags;
+    LONG labelplace;
 };
 
-#define CF_Checked 0x0001
+#define CF_Checked     0x0001
+#define CF_CustomImage 0x0002
 
 
 /* Prototypes */
 void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG redraw);
+		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
 
 
 
