@@ -61,7 +61,7 @@
 	.text
 	_ALIGNMENT
 	.globl	AROS_CDEFNAME(setjmp)
-	_FUNCTION(AROS_CDEFNAME(ssetjmp))
+	_FUNCTION(AROS_CDEFNAME(setjmp))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
