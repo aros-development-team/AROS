@@ -38,7 +38,7 @@
     NOTES
 	All relevant data is copied, you may throw away the
 	given rectangle after calling this function
-	
+
     EXAMPLE
 
     BUGS
@@ -58,27 +58,35 @@
     AROS_LIBFUNC_INIT
 
     struct Region* intersection, *copy2;
-    BOOL result = FALSE;
 
-    if ((intersection = CopyRegion(region))) {
-        if ((copy2 = CopyRegion(region))) {
+    if ((intersection = CopyRegion(region)))
+    {
+        if ((copy2 = CopyRegion(region)))
+	{
 	    AndRectRegion(intersection, rectangle);
-	    if (OrRectRegion(region, rectangle)) {
-		if (intersection->RegionRectangle) {
-		    if (!(result = ClearRegionRegion(intersection, region))) {
-		        /* reinstall old RegionRectangles */
-			struct RegionRectangle* tmp = region->RegionRectangle;
-			region->RegionRectangle = copy2->RegionRectangle;
-			copy2->RegionRectangle = tmp;
+
+	    if (OrRectRegion(region, rectangle))
+	    {
+		if (intersection->RegionRectangle)
+		{
+		    BOOL result;
+		    
+		    if (!(result = ClearRegionRegion(intersection, region)))
+		    {
+		        /* reinstall old RegionRectangles and bounds*/
+			struct Region tmp;
+			tmp     = *region;
+			*region = *copy2;
+			*copy2  = tmp;
 		    }
 		    DisposeRegion(intersection);
 		    DisposeRegion(copy2);
 		    return result;
-		} else {
-		    DisposeRegion(intersection);
-		    DisposeRegion(copy2);
-		    return TRUE;
 		}
+
+		DisposeRegion(intersection);
+		DisposeRegion(copy2);
+		return TRUE;
 	    }
 	    DisposeRegion(copy2);
 	}
@@ -87,9 +95,5 @@
     return FALSE;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* XorRectRegion */
-
-
-
-
