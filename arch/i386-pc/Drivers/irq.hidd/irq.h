@@ -10,7 +10,31 @@
 */
 
 #include <asm/linkage.h>
+
+#if 0
+
+/* does not work anymore with Linux 2.4 kernel */
+
 #include <asm/init.h>
+
+#else
+
+/* based on Linux 2.2.16 kernel */
+
+#define __init __attribute__ ((__section__ (".text.init")))
+#define __initdata __attribute__ ((__section__ (".data.init")))
+#define __initfunc(__arginit) \
+	__arginit __init; \
+	__arginit
+/* For assembly routines */
+#define __INIT		.section	".text.init",#alloc,#execinstr
+#define __FINIT	.previous
+#define __INITDATA	.section	".data.init",#alloc,#write
+
+#define __cacheline_aligned __attribute__ \
+			 ((__section__ (".data.cacheline_aligned")))
+
+#endif
 
 #include <asm/segments.h>
 #include <hidd/irq.h>
