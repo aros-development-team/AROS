@@ -1,20 +1,21 @@
+#ifndef _MACHINE_H_
+#define _MACHINE_H_
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/20 02:51:49  aros
+    More parallelisation with i386-emul
+
     Revision 1.2  1996/08/01 17:41:27  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
-#ifndef _MACHINE_H_
-#define _MACHINE_H_
 
 #include <exec/types.h>
 #include <stddef.h>
-
-#ifdef mc68000
 
 /*
     How much do I have to add to sp to get the address of the first
@@ -30,7 +31,19 @@
 #define STACK_GROWS_DOWNWARDS 1
 
 /* Define this to 0 for big endian and 1 for little endian (2 for others?) */
+#ifndef BIG_ENDIAN
 #define BIG_ENDIAN 1
+#endif
+
+/* Number of bytes in a ULONG (i.e. result of sizeof(ULONG)) */
+#define SIZEOFULONG 4
+
+/*
+ * Replace BPTRs by simple APTRs for this machine.
+ */
+typedef APTR BPTR;
+#define MKBADDR(a) ((APTR)(a))
+#define BADDR(a) (a)
 
 /* A jumptable entry */
 struct JumpVec
@@ -77,23 +90,6 @@ struct JumpVec
 }
 
 #endif
-#endif
-
-#ifdef i386
-#define SP_OFFSET 0
-#define STACK_GROWS_DOWNWARDS 1
-#define BIG_ENDIAN 0
-struct JumpVec
-{
-    UBYTE jmp;
-    UBYTE vec[4];
-};
-#define SET_JMP(v)   ((v)->jmp=0xe9)
-#define SET_VEC(v,a) (*(ULONG*)(v)->vec=(ULONG)(a)-(ULONG)(v)-5)
-#define GET_VEC(v)   ((APTR)(*(ULONG*)(v)->vec+(ULONG)(v)+5))
-#define RDFCALL(hook,data,dptr) ((void(*)(UBYTE,APTR))(hook))(data,dptr);
-#endif
-
 
 #ifndef UDIVMOD10
 #define UDIVMOD10(v,q,r) { ULONG a=v; q=a/10ul; r=a%10ul; }
@@ -146,4 +142,4 @@ __AROS_LH0(LONG,__entry,struct ExecBase *,sysbase,,)	\
     __AROS_FUNC_EXIT					\
 }
 
-#endif
+#endif /* _MACHINE_H_ */
