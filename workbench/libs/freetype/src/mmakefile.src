@@ -40,13 +40,14 @@ FILES := $(notdir $(FILESDIR))
 USER_INCLUDES := -I. -I../include $(foreach f,$(SUBDIRS),-I$(f))
 
 #MM contrib-freetype-linklib : contrib-freetype-includes
+#MM contrib-freetype-module : contrib-freetype-includes
 
 %make_linklib_setup mmake=contrib-freetype-linklib
 %make_linklib mmake=contrib-freetype-linklib
 
 LIBS = -larosc_shared
 
-%build_module mmake=contrib-freetype-module modname=freetype2 modtype=library files="$(FILES) freetype2_init"
+%build_module mmake=contrib-freetype-module modname=freetype2 modtype=library files="$(FILES) freetype2_init" linklibname=freetype2shared
 
 %common
 %include_deps
