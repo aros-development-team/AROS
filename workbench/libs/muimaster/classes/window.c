@@ -1035,18 +1035,48 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		tag = FindTagItem(GA_ID,(struct TagItem*)imsg->IAddress);
 		if (tag)
 		{
+		    /* If there's a propclass object connected to the prop
+		       gadget, the prop gadget's userdata will point to
+		       that propclass object. See classes/prop.c */
+		       
 		    if (data->wd_VertProp)
 		    {
 			if (tag->ti_Data == GADGETID(data->wd_VertProp));
-			if (tag->ti_Data == GADGETID(data->wd_UpButton));
-			if (tag->ti_Data == GADGETID(data->wd_DownButton));
+			
+			if (tag->ti_Data == GADGETID(data->wd_UpButton))
+			{
+			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
+			    
+			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
+			}			
+			
+			if (tag->ti_Data == GADGETID(data->wd_DownButton))
+			{
+			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
+			    
+			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
+			}
+			
 		    }
 
 		    if (data->wd_HorizProp)
 		    {
 			if (tag->ti_Data == GADGETID(data->wd_HorizProp));
-			if (tag->ti_Data == GADGETID(data->wd_LeftButton));
-			if (tag->ti_Data == GADGETID(data->wd_RightButton));
+			
+			if (tag->ti_Data == GADGETID(data->wd_LeftButton))
+			{
+			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
+			    
+			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
+			}
+			
+			if (tag->ti_Data == GADGETID(data->wd_RightButton))
+			{
+			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
+			    
+			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
+			}
+			
 		    }
 		}
 	    }
