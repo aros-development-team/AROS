@@ -131,6 +131,7 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_BATTCLOCK) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libinput.a \
+    $(LIBDIR)/libkeymap.a \
     $(DEPLIB_AROS)
 
 LIBS=-L$(LIBDIR) \
@@ -138,7 +139,7 @@ LIBS=-L$(LIBDIR) \
 	-lboot -lintuition -lgraphics -ldos -lconsole \
 	-lhiddcl -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lexpansion -lbattclock \
-	-lamiga -larossupport -linput
+	-lamiga -larossupport -linput -lkeymap
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
