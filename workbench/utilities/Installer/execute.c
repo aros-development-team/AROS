@@ -38,6 +38,7 @@ extern void traperr( char *, char * );
 extern void outofmem( void * );
 extern void link_function( char *, long int );
 extern char *addquotes( char * );
+extern void display_text( char * );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -52,7 +53,9 @@ void collect_stringargs( ScriptArg *, int, struct ParameterList * );
 void modify_userstartup( char *, struct ParameterList * );
 void free_parameterlist( struct ParameterList * );
 void free_parameter( struct ParameterList );
+void traperr( char *, char * );
 
+int doing_abort = FALSE;
 char * callbackstring = NULL, * globalstring = NULL;
 
 
@@ -1040,9 +1043,11 @@ void *params;
 				break;
 
 			      case _GRAPHICS_MEM:
+				current->parent->intval = AvailMem(MEMF_CHIP);
 				break;
 
 			      case _TOTAL_MEM:
+				current->parent->intval = AvailMem(MEMF_TOTAL);
 				break;
 
 			      case _FPU:
@@ -1199,7 +1204,7 @@ void *params;
 				  /* Couldn't load file -- set @ioerr and handle trap/onerror */
 				  i = IoErr();
 #ifdef DEBUG
-				  PrintFault( i, "Installer" );
+				  PrintFault( i, INSTALLER_NAME );
 #endif /* DEBUG */
 				  set_variable( "@ioerr", NULL, i );
 				  error = DOSERROR;
@@ -1279,7 +1284,7 @@ void *params;
       case _TACKON	:
       case _TEXTFILE	:
       case _TOOLTYPE	:
-			  printf( "Unimplemented command <%s>\n", current->arg );
+			  fprintf( stderr, "Unimplemented command <%s>\n", current->arg );
 			  break;
 
       case _USERDEF	: /* User defined routine */
@@ -1339,7 +1344,7 @@ void *params;
 			    for( i = 0 ; i < parameter->intval ; i++ )
 			    {
 			      /* These are mutually exclusive */
-		    #warning FIXME: How are (fail-)strings interpreted in "delopts" ?
+#warning FIXME: How are (fail-)strings interpreted in "delopts" ?
 			      if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
 			      {
 			      }
@@ -1447,7 +1452,7 @@ void *params;
       default		:
 #ifdef DEBUG
 			  /* Hey! Where did you get this number from??? It's invalid -- must be a bug. */
-			  printf( "Unknown command ID %d called <%s>!\n", cmd_type, current->arg );
+			  fprintf( stderr, "Unknown command ID %d called <%s>!\n", cmd_type, current->arg );
 			  cleanup();
 			  exit(-1);
 #else /* DEBUG */
@@ -2188,3 +2193,52 @@ int i, changed = 0, cont = 0;
 }
 
 
+
+
+/*
+ * Execute "(traperr)" from preferences
+ */
+void traperr( char * msg, char * name )
+{
+char *outmsg;
+int i, j;
+
+  if( !doing_abort )
+  {
+    doing_abort = TRUE;
+
+    i = ( msg != NULL ) ? strlen( msg ) : 0 ;
+    j = ( name != NULL ) ? strlen( name ) : 0 ;
+    outmsg = malloc( i + j + 1 );
+    sprintf( outmsg, msg, name );
+    display_text( outmsg );
+
+    if( preferences.trap[ error - 1 ].cmd != NULL )
+    {
+      /* execute trap */
+      execute_script( preferences.trap[ error - 1 ].cmd, -99 );
+    }
+    else
+    {
+      /* execute onerrors */
+      if( preferences.onerror.cmd != NULL )
+      {
+	execute_script( preferences.onerror.cmd, -99 );
+      }
+    }
+  }
+
+#ifdef DEBUG
+  dump_varlist();
+#endif /* DEBUG */
+
+  cleanup();
+  if( grace_exit == TRUE )
+  {
+    exit(0);
+  }
+  else
+  {
+    exit(-1);
+  }
+}

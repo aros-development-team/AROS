@@ -41,8 +41,8 @@ int i;
   /* Check if variable is in list */
   for( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
   return ( i == numvariables ) ?
-         NULL:
-         &(variables[i]);
+	 NULL:
+	 &(variables[i]);
 }
 
 
@@ -61,8 +61,8 @@ struct VariableList *entry;
   if( entry != NULL )
   {
     return ( entry->vartext == NULL ) ?
-           (void *)(entry->varinteger) :
-           (void *)entry->vartext;
+	   (void *)(entry->varinteger) :
+	   (void *)entry->vartext;
   }
   else
   {

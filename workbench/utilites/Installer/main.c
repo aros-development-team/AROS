@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 43.3 (21.02.1999)\n";
+static const char version[] = "$VER: Installer 43.3 (01.04.2000)\n";
 
 
 /* External variables */
@@ -66,7 +66,7 @@ int nextarg, endoffile, count;
     rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
     if( rda == NULL )
     {
-      PrintFault( IoErr(), "Installer" );
+      PrintFault( IoErr(), INSTALLER_NAME );
       exit(-1);
     }
   }
@@ -119,7 +119,7 @@ int nextarg, endoffile, count;
   if( inputfile == NULL )
   {
 #ifdef DEBUG
-    PrintFault( IoErr(), "Installer" );
+    PrintFault( IoErr(), INSTALLER_NAME );
     exit(-1);
 #endif /* DEBUG */
   }
@@ -145,15 +145,15 @@ int nextarg, endoffile, count;
       preferences.minusrlevel = _NOVICE;
       if( strcasecmp( "average", (char *)args[ARG_MINUSER] ) == 0 )
       {
-        preferences.minusrlevel = _AVERAGE;
+	preferences.minusrlevel = _AVERAGE;
       }
       else if( strcasecmp( "expert", (char *)args[ARG_MINUSER] ) == 0 )
       {
-        preferences.minusrlevel = _EXPERT;
+	preferences.minusrlevel = _EXPERT;
       }
       else
       {
-        preferences.minusrlevel = _NOVICE;
+	preferences.minusrlevel = _NOVICE;
       }
     }
     else
@@ -165,15 +165,15 @@ int nextarg, endoffile, count;
       preferences.defusrlevel = preferences.minusrlevel;
       if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
       {
-        preferences.defusrlevel = _AVERAGE;
+	preferences.defusrlevel = _AVERAGE;
       }
       else if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
       {
-        preferences.defusrlevel = _EXPERT;
+	preferences.defusrlevel = _EXPERT;
       }
       else
       {
-        preferences.defusrlevel = _NOVICE;
+	preferences.defusrlevel = _NOVICE;
       }
     }
     else
@@ -284,7 +284,7 @@ int nextarg, endoffile, count;
       script.cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
       if( script.cmd == NULL )
       {
-        end_malloc();
+	end_malloc();
       }
       currentarg = script.cmd;
       currentarg->parent = &script;
@@ -294,7 +294,7 @@ int nextarg, endoffile, count;
       currentarg->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
       if( currentarg->next == NULL )
       {
-        end_malloc();
+	end_malloc();
       }
       currentarg->next->parent = currentarg->parent;
       currentarg = currentarg->next;
@@ -311,54 +311,54 @@ int nextarg, endoffile, count;
     {
       count = Read( inputfile, &buffer[0], 1 );
       if( count == 0 )
-        endoffile = TRUE;
+	endoffile = TRUE;
 
       if( !isspace( buffer[0] ) && !endoffile )
       {
-        /* This is text, is it valid ? */
-        switch( buffer[0] )
-        {
-          case SEMICOLON  : /* A comment, ok - Go on with next line */
-                            do
-                            {
-                              count = Read( inputfile, &buffer[0], 1 );
-                            } while( buffer[0] != LINEFEED && count != 0 );
-                            line++;
-                            if( count == 0 )
-                              endoffile = TRUE;
-                            break;
+	/* This is text, is it valid ? */
+	switch( buffer[0] )
+	{
+	  case SEMICOLON  : /* A comment, ok - Go on with next line */
+			    do
+			    {
+			      count = Read( inputfile, &buffer[0], 1 );
+			    } while( buffer[0] != LINEFEED && count != 0 );
+			    line++;
+			    if( count == 0 )
+			      endoffile = TRUE;
+			    break;
 
-          case LBRACK	  : /* A command (...) , parse the content of braces */
-                            currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
-                            if( currentarg->cmd == NULL )
-                            {
-                              end_malloc();
-                            }
-                            dummy = currentarg->cmd;
-                            dummy->parent = currentarg;
-                            dummy->arg = NULL;
-                            dummy->ignore = 0;
-                            dummy->intval = 0;
-                            dummy->cmd = NULL;
-                            dummy->next = NULL;
-                            parse_file( currentarg->cmd );
-                            nextarg = TRUE;
-                            break;
+	  case LBRACK	  : /* A command (...) , parse the content of braces */
+			    currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
+			    if( currentarg->cmd == NULL )
+			    {
+			      end_malloc();
+			    }
+			    dummy = currentarg->cmd;
+			    dummy->parent = currentarg;
+			    dummy->arg = NULL;
+			    dummy->ignore = 0;
+			    dummy->intval = 0;
+			    dummy->cmd = NULL;
+			    dummy->next = NULL;
+			    parse_file( currentarg->cmd );
+			    nextarg = TRUE;
+			    break;
 
-          default	  : /* Plain text or closing bracket is not allowed */
-                            Close( inputfile );
-                            show_parseerror( "Too many closing brackets!", line );
-                            cleanup();
-                            exit(-1);
-                            break;
-        }
+	  default	  : /* Plain text or closing bracket is not allowed */
+			    Close( inputfile );
+			    show_parseerror( "Too many closing brackets!", line );
+			    cleanup();
+			    exit(-1);
+			    break;
+	}
       }
       else
       {
-        if( buffer[0] == LINEFEED )
-        {
-          line++;
-        }
+	if( buffer[0] == LINEFEED )
+	{
+	  line++;
+	}
       }
     } while( nextarg != TRUE && !endoffile );
   } while( !endoffile );
@@ -384,7 +384,7 @@ int nextarg, endoffile, count;
     preferences.transcriptstream = Open( preferences.transcriptfile, MODE_NEWFILE );
     if( preferences.transcriptstream == NULL )
     {
-      PrintFault( IoErr(), "Installer" );
+      PrintFault( IoErr(), INSTALLER_NAME );
       cleanup();
       exit(-1);
     }
@@ -394,7 +394,7 @@ int nextarg, endoffile, count;
   set_preset_variables( argc );
 
   /* NOTE: Now everything from commandline(ReadArgs)/ToolTypes(Workbench)
-           will become invalid!
+	   will become invalid!
   */
   if( argc!=0 )
   { /* Finally free ReadArgs struct (set_preset_variables() needed them) */

@@ -1,6 +1,7 @@
 #ifndef _INSTALLER_H
 #define _INSTALLER_H
 
+#define INSTALLER_NAME "Installer"
 #define INSTALLER_VERSION 43
 #define INSTALLER_REVISION 3
 

@@ -47,7 +47,7 @@ void cleanup( )
 void end_malloc( )
 {
 #ifdef DEBUG
-  printf("Couldn't malloc memory!\n");
+  fprintf( stderr, "Couldn't malloc memory!\n");
 #endif /* DEBUG */
   cleanup();
   exit(-1);

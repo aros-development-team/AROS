@@ -65,7 +65,7 @@ int i;
   if( i == numactiveusrprocs )
   {
     /* Not in list */
-    printf( "<%s> - Procedure not found!\n", name );
+    fprintf( stderr, "<%s> - Procedure not found!\n", name );
     return NULL;
   }
 
@@ -87,7 +87,7 @@ long int incarnation = 0;
   for( i = 0 ; i < _MAXCOMMAND && strcmp( name, internal_commands[i].cmdsymbol ) != 0 ; i++ );
   if( i < _MAXCOMMAND )
   {
-    printf( "Procedure name <%s> already defined for internal function!\n", name );
+    fprintf( stderr, "Procedure name <%s> already defined for internal function!\n", name );
     cleanup();
     exit(-1);
   }

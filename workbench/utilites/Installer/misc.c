@@ -14,41 +14,34 @@ void freestrlist( STRPTR * );
 
 /*
  * Break string into array of strings at LINEFEEDs
+ * **outarr must be obtained via malloc!
  */
 int strtostrs ( char * in, char ***outarr )
 {
-int i = 0, j = 0;
+int i = 0, j = 0, k = 0;
 char **out = *outarr;
 
-  if( *in )
-  {
-    i++;
-  }
   while( *in )
   {
-    out[i-1] = realloc( out[i-1], ( j + 1 ) * sizeof( char ) );
+    i++;
+    /* malloc space for next string */
+    out = realloc( out, ( i + 1 ) * sizeof( char *) );
+    for( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
+    out[i-1] = malloc( ( j + 1 ) * sizeof( char ) );
     outofmem( out[i-1] );
-    if( *in == LINEFEED )
-    {
-      /* NULL-terminate string and malloc space for next string */
-      out[i-1][j] = 0;
-      out = realloc( out, ( i + 1 ) * sizeof( char *) );
-      out[i] = NULL;
-      j = 0;
-      i++;
-    }
-    else
+    for( k = 0 ; k < j ; k++ )
     {
       /* save char to string */
-      out[i-1][j] = *in;
-      j++;
+      out[i-1][k] = *in;
+      in++;
     }
-    in++;
+    /* NULL-terminate string */
+    out[i-1][j] = 0;
+    if( *in )
+      in++;
   }
-  /* NULL-terminate last string */
-  out[i-1] = realloc( out[i-1], ( j + 1 ) * sizeof( char ) );
-  outofmem( out[i-1] );
-  out[i-1][j] = 0;
+  /* NULL-terminate array */
+  out[i] = NULL;
   *outarr = out;
 
 return i;
@@ -76,7 +69,7 @@ return retval;
 }
 
 /*
- * free() array of strings
+ * free() array of strings ( eg. allocated by strtostrs() )
  */
 void freestrlist( STRPTR *array )
 {

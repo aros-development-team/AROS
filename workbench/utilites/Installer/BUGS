@@ -6,3 +6,8 @@ BUG00002
 Strings are limited to MAXARGSIZE which is 1024 ATM or if concatenated
 (with <MAXARGSIZE strings) up to 256k.
 
+BUG00003
+abort in abort causes some problems. Is this allowed, btw?
+Anyway: an aborted askbool with trap->askbool hangs the system
+(circular dependancy in gadgets)
+

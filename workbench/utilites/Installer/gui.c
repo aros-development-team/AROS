@@ -4,7 +4,6 @@
   Comment out the next line if do not you want to use the
   experimental Intuition based GUI
 */
-#define INTUIGUI 1
 
 #include "Installer.h"
 #include "execute.h"
@@ -16,6 +15,7 @@ extern char buffer[MAXARGSIZE];
 extern char *filename;
 extern InstallerPrefs preferences;
 extern int error, grace_exit;
+extern int doing_abort;
 
 /* External function prototypes */
 extern void cleanup();
@@ -31,6 +31,7 @@ extern void outofmem( void * );
 extern int strtostrs ( char *, char *** );
 extern char *addquotes( char * );
 extern void freestrlist( STRPTR * );
+extern void traperr( char *, char * );
 
 /* Internal function prototypes */
 void init_gui();
@@ -58,8 +59,8 @@ long int request_options( struct ParameterList * );
 int request_confirm( struct ParameterList *, long int );
 void abort_install();
 void final_report();
-void traperr( char *, char * );
-
+void setgadgetdisable( int );
+void display_text( char * );
 
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
@@ -151,6 +152,11 @@ struct NewGadget gt_mxgad = {
 };
 STRPTR *mxlabels;
 
+
+#define PROCEEDGAD	1
+#define ABORTGAD	2
+#define SKIPGAD		4
+#define HELPGAD		8
 
 #define ID_PROCEEDGAD 100
 struct NewGadget gt_proceedgad = {
@@ -301,7 +307,7 @@ struct TagItem ti2[] = {
 
   gad = CreateContext( &glist );
   if(gad==NULL)
-    printf("CreateContext() failed\n");
+    fprintf( stderr, "CreateContext() failed\n");
 
   gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadtrue, ti1 );
   gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadfalse, ti1 );
@@ -309,13 +315,13 @@ struct TagItem ti2[] = {
 
   gad = CreateContext( &stringglist );
   if(gad==NULL)
-    printf("CreateContext() failed\n");
+    fprintf( stderr, "CreateContext() failed\n");
 
   gad = CreateGadgetA( STRING_KIND, gad, &gt_stringgad, stringti );
 
   gad = CreateContext( &stdglist );
   if(gad==NULL)
-    printf("CreateContext() failed\n");
+    fprintf( stderr, "CreateContext() failed\n");
 
   proceedgad = gad = CreateGadgetA( BUTTON_KIND, gad, &gt_proceedgad, ti1 );
   abortgad   = gad = CreateGadgetA( BUTTON_KIND, gad, &gt_abortgad, ti1 );
@@ -350,9 +356,9 @@ void deinit_gui( )
  */
 void clear_gui()
 {
-  GT_BeginRefresh( GuiWin );
+//  GT_BeginRefresh( GuiWin );
   EraseRect( rp, 0, 0, GuiWin->Width, GuiWin->Height-25 );
-  GT_EndRefresh( GuiWin, TRUE );
+//  GT_EndRefresh( GuiWin, TRUE );
 }
 
 
@@ -364,10 +370,14 @@ void show_abort( char *msg )
 {
 char **out, *text;
 int n, m;
+int finish = FALSE;
 
   if( get_var_int( "@user-level" ) > _NOVICE )
   {
+
     clear_gui();
+
+    setgadgetdisable( ABORTGAD|SKIPGAD|HELPGAD );
 
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
@@ -383,14 +393,41 @@ int n, m;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
-#ifdef DEBUG
-      printf( "%s\n", out[n] );
-#endif /* DEBUG */
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+2) );
+      free( out[n] );
     }
-    printf( " Press Return to Proceed\n" );
-    scanf("x");
+    free( out );
+#ifdef DEBUG
+      printf( "%s\n", msg );
+#endif /* DEBUG */
+    while( !finish )
+    {
+      WaitPort( GuiWin->UserPort );
+      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      {
+	class = imsg->Class;
+	code = imsg->Code;
+	switch( class )
+	{
+	  case IDCMP_GADGETUP:
+	      switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+	      {
+		case ID_PROCEEDGAD:
+		    finish = TRUE;
+		    break;
+		default:
+		    break;
+	      }
+	      break;
+	  default:
+	      break;
+	}
+	GT_ReplyIMsg( imsg );
+
+      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+    }
+
   }
 }
 
@@ -422,6 +459,7 @@ int n, m;
 
   clear_gui();
 
+  setgadgetdisable( ABORTGAD|SKIPGAD );
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 
@@ -436,12 +474,14 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
-#ifdef DEBUG
-    printf( "%s\n", out[n] );
-#endif /* DEBUG */
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
+    free( out[n] );
   }
+  free( out );
+#ifdef DEBUG
+  printf( "%s\n", msg );
+#endif /* DEBUG */
   text = strdup( "Done with Installation." );
   outofmem( text );
   itext.IText = text;
@@ -463,16 +503,16 @@ void show_parseerror( char * msg, int errline )
 int count = 1, i = -1;
 
 #ifdef DEBUG
-  printf( "Syntax error in line %d:\n", errline );
+  fprintf( stderr, "Syntax error in line %d:\n", errline );
   if( msg != NULL )
   {
-    printf( "%s\n",msg );
+    fprintf( stderr, "%s\n",msg );
   }
 #endif /* DEBUG */
   inputfile = Open( filename, MODE_OLDFILE );
   if( inputfile == NULL )
   {
-    PrintFault( IoErr(), "Installer" );
+    PrintFault( IoErr(), INSTALLER_NAME );
     cleanup();
     exit(-1);
   }
@@ -492,7 +532,7 @@ int count = 1, i = -1;
   } while( buffer[i] != LINEFEED && count != 0 && i < MAXARGSIZE );
   buffer[i] = 0;
 #ifdef DEBUG
-  printf( "%s\n", buffer );
+  fprintf( stderr, "%s\n", buffer );
 #endif /* DEBUG */
 
 }
@@ -509,6 +549,7 @@ int n, m;
 
   clear_gui();
 
+  setgadgetdisable( 0 );
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 
@@ -526,12 +567,14 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
-#ifdef DEBUG
-    printf( "%s\n", out[n] );
-#endif /* DEBUG */
     itext.IText = out[n];
     PrintIText( rp, &itext, 10, 15*(n+2) );
+    free( out[n] );
   }
+  free( out );
+#ifdef DEBUG
+  printf( "%s\n", msg );
+#endif /* DEBUG */
 }
 
 
@@ -548,8 +591,10 @@ int finish = FALSE;
 
   if( GetPL( pl, _ALL ).used == 1 || get_var_int( "@user-level" ) > _NOVICE )
   {
+
     clear_gui();
 
+    setgadgetdisable( SKIPGAD );
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
@@ -559,12 +604,14 @@ int finish = FALSE;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
-#ifdef DEBUG
-      printf( "%s\n", out[n] );
-#endif /* DEBUG */
       itext.IText = out[n];
       PrintIText( rp, &itext, 10, 15*(n+1) );
+      free( out[n] );
     }
+    free( out );
+#ifdef DEBUG
+    printf( "%s\n", msg );
+#endif /* DEBUG */
     do
     {
       printf( " P - Proceed\n A - Abort\n H - Help\n" );
@@ -593,6 +640,7 @@ int finish = FALSE;
 	    break;
       }
     } while( !finish );
+
   }
 }
 
@@ -651,15 +699,26 @@ void show_help_installer( )
 void request_userlevel( char *msg )
 {
 int usrlevel, finish = FALSE;
-char c;
 char welcome[1024];
 
   usrlevel = preferences.defusrlevel;
 
   if( msg != NULL )
   {
-    itext.IText = msg;
-    PrintIText( rp, &itext, 15, 15 );
+  int n,m;
+  char **out;
+
+    out = malloc( sizeof( char * ) );
+    outofmem( out );
+    out[0] = NULL;
+    m = strtostrs( msg, &out );
+    for( n = 0 ; n < m ; n++ )
+    {
+      itext.IText = out[n];
+      PrintIText( rp, &itext, 10, 15*(n+1) );
+      free( out[n] );
+    }
+    free( out );
 #ifdef DEBUG
     printf( "%s\n", msg );
 #endif
@@ -682,7 +741,7 @@ char welcome[1024];
 
   gad = CreateContext( &mxglist );
   if(gad==NULL)
-    printf("CreateContext() failed\n");
+    fprintf( stderr, "CreateContext() failed\n");
 
   gt_mxgad.ng_GadgetText = strdup( USERLEVEL_REQUEST );
   gt_mxgad.ng_LeftEdge = 150;
@@ -706,9 +765,7 @@ char welcome[1024];
    Does this really work? Can you switch the selected item via keyboard?
 */
 
-  GT_SetGadgetAttrs( skipgad, GuiWin, NULL,
-		      GA_Disabled, TRUE,
-		      TAG_DONE );
+  setgadgetdisable( SKIPGAD );
   AddGList( GuiWin, mxglist, -1, -1, NULL );
   RefreshGList( mxglist, GuiWin, NULL ,-1 );
   GT_RefreshWindow( GuiWin, NULL );
@@ -759,10 +816,11 @@ char welcome[1024];
     } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
   }
 
-  clear_gui();
-
   RemoveGList( GuiWin, mxglist, -1 );
   RefreshGList( stdglist, GuiWin, NULL, -1 );
+
+  clear_gui();
+
   GT_RefreshWindow( GuiWin, NULL );
   FreeGadgets( mxglist );
   freestrlist( mxlabels );
@@ -775,7 +833,7 @@ char welcome[1024];
   if( usrlevel > 0 )
   {
     /* Ask for logfile-creation */
-    itext.IText = "Installer can log all actions. What do you want?";
+    itext.IText = LOG_QUESTION;
     PrintIText( rp, &itext, 15, 35 );
 
     mxlabels = malloc( 4*sizeof(STRPTR) );
@@ -786,7 +844,7 @@ char welcome[1024];
 
     gad = CreateContext( &mxglist );
     if(gad==NULL)
-      printf("CreateContext() failed\n");
+      fprintf( stderr, "CreateContext() failed\n");
 
     gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
 			GTMX_Labels, mxlabels,
@@ -853,51 +911,104 @@ char welcome[1024];
 	GT_ReplyIMsg(imsg);
 	
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
-    }
-
-    clear_gui();
-
-    RefreshGList(stdglist,GuiWin,NULL,-1);
-    GT_RefreshWindow(GuiWin,NULL);
-
+    } /* !finish */
 
     if(!preferences.nopretend)
     {
+      RemoveGList( GuiWin, mxglist, -1 );
+      RefreshGList( stdglist, GuiWin, NULL, -1 );
+      clear_gui();
+      GT_RefreshWindow( GuiWin, NULL );
+      FreeGadgets( mxglist );
+      freestrlist( mxlabels );
+      free( gt_mxgad.ng_GadgetText );
+      gt_mxgad.ng_GadgetText = NULL;
+      itext.IText = PRETEND_QUESTION;
+      PrintIText( rp, &itext, 15, 35 );
+
+      mxlabels = malloc( 3*sizeof(STRPTR) );
+      mxlabels[0] = strdup( NOPRETEND_TEXT );
+      mxlabels[1] = strdup( PRETEND_TEXT );
+      mxlabels[2] = NULL;
+
+      gad = CreateContext( &mxglist );
+      if(gad==NULL)
+	fprintf( stderr, "CreateContext() failed\n");
+
+      gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
+			  GTMX_Labels, mxlabels,
+			  GTMX_Scaled, TRUE,
+			  GTMX_TitlePlace, PLACETEXT_ABOVE,
+			  TAG_DONE );
+
+      AddGList( GuiWin, mxglist ,-1 ,-1 ,NULL );
+      RefreshGList( stdglist ,GuiWin ,NULL ,-1 );
+      GT_RefreshWindow( GuiWin ,NULL );
+
       finish = FALSE;
-      do
+      while( !finish )
       {
-	printf( "Installer can pretend to install\n I - really Install\n P - Pretend to install\n H - Help\n A - Abort installation ?\n" );
-	scanf( "%c", &c );
-	switch( tolower( c ) )
+	WaitPort( GuiWin->UserPort );
+	while((imsg = GT_GetIMsg( GuiWin->UserPort )))
 	{
-	  case 'a': /* abort */
-		    abort_install();
-		    break;
-	  case 'h': /* help */
-		    show_help_pretend();
-		    break;
-	  case 'i': /* Really Install */
-		    preferences.pretend = FALSE;
-		    finish = TRUE;
-		    break;
-	  case 'p': /* Only pretend to install */
-		    preferences.pretend = TRUE;
-		    finish = TRUE;
-		    break;
-	  default : break;
-	}
-      } while( finish == FALSE );
-    }
-  RemoveGList(GuiWin,mxglist,-1);
-  FreeGadgets( mxglist );
-  freestrlist( mxlabels );
+	  class = imsg->Class;
+	  code = imsg->Code;
+	  switch( class )
+	  {
+	    case IDCMP_GADGETDOWN:
+		  switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+		  {
+		    case ID_MXGAD:
+		      switch(code)
+		      {
+			case 0: /* Really Install */
+			  preferences.pretend = FALSE;
+			  break;
+			case 1: /* Only pretend to install */
+			  preferences.pretend = TRUE;
+			  break;
+			default:
+			  break;
+		      }
+		      break;
+		    default:
+		      break;
+		  }
+		  break;
+	    case IDCMP_GADGETUP:
+		  switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+		  {
+		    case ID_PROCEEDGAD:
+		      finish = TRUE;
+		      break;
+		    case ID_ABORTGAD:
+		      abort_install();
+		      break;
+		    case ID_HELPGAD:
+		      show_help_pretend();
+		      break;
+		    default:
+		      break;
+		  }
+		  break;
+	    default:
+		  break;
+	  }
+	  GT_ReplyIMsg(imsg);
+	
+	} /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* !finish */
+    } /* nopretend */
+
+    RemoveGList(GuiWin,mxglist,-1);
+    FreeGadgets( mxglist );
+    freestrlist( mxlabels );
+
   } /* if usrlevel > 0 */ 
 
   clear_gui();
 
-  GT_SetGadgetAttrs( skipgad, GuiWin, NULL,
-		      GA_Disabled, FALSE,
-		      TAG_DONE );
+  setgadgetdisable( 0 );
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 }
@@ -906,15 +1017,15 @@ char welcome[1024];
 /*
  * Ask user for a boolean
  */
+void request_bool_destruct()
+{
+}
 long int request_bool( struct ParameterList *pl)
 {
 int i;
 long int retval;
 char yes[] = "Yes", no[] = "No", *yesstring, *nostring;
 int finish = FALSE;
-#ifndef INTUIGUI
-char c;
-#endif
 
   retval = ( GetPL( pl, _DEFAULT ).intval != 0 );
   yesstring = yes;
@@ -937,21 +1048,19 @@ char c;
     }
   }
   if( get_var_int( "@user-level" ) > _NOVICE )
-#ifdef INTUIGUI
   {
     char **out;
     int j, n, m;
 
     clear_gui();
 
+    setgadgetdisable( PROCEEDGAD );
     AddGList(GuiWin,glist,-1,-1,NULL);
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
     DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
     DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
 	
-#if 1
-
     itext.IText = nostring;
     PrintIText( rp, &itext, 40, 92 );
     itext.IText = yesstring;
@@ -1006,7 +1115,7 @@ char c;
 		    }
 		    if( i == 0 )
 		    {
-  #warning FIXME: What default help text is used?
+#warning FIXME: What default help text is used?
 		      printf( "%s\n", get_var_arg( "@asknumber-help" ) );
 		    }
 		    break;
@@ -1022,52 +1131,7 @@ char c;
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
 
     } while( !finish );
-    RemoveGList(GuiWin,glist,-1);
-    GT_RefreshWindow(GuiWin,NULL);
-#else
-    Delay( 100 );
-#endif
   }
-#else /* INTUIGUI */
-  {
-    do
-    {
-      for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
-      {
-	printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
-      }
-      printf( "Default is %ld.\n", retval );
-      printf( " 1 - %s\n 0 - %s\n A - Abort\n H - Help\n", yesstring, nostring );
-      scanf( "%c", &c );
-      switch( tolower( c ) )
-      {
-	case '1' : /* return TRUE */
-		   retval = 1;
-		   finish = TRUE;
-		   break;
-	case '0' : /* return FALSE */
-		   retval = 0;
-		   finish = TRUE;
-		   break;
-	case 'a' : /* abort */
-		   abort_install();
-		   break;
-	case 'h' : /* help */
-		   for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
-		   {
-		     printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
-		   }
-		   if( i == 0 )
-		   {
-#warning FIXME: What default help text is used?
-		     printf( "%s\n", get_var_arg( "@asknumber-help" ) );
-		   }
-		   break;
-	default  : break;
-      }
-    } while( !finish );
-  }
-#endif /* INTUIGUI */
 
   if( preferences.transcriptstream != NULL )
   {
@@ -1083,6 +1147,9 @@ return retval;
 /*
  * Ask user for a number
  */
+void request_number_destruct()
+{
+}
 long int request_number( struct ParameterList *pl)
 {
 int i;
@@ -1319,7 +1386,7 @@ char c;
 
   gad = CreateContext( &mxglist );
   if(gad==NULL)
-    printf("CreateContext() failed\n");
+    fprintf( stderr, "CreateContext() failed\n");
 
   gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
 			GTMX_Labels, mxlabels,
@@ -1507,14 +1574,15 @@ return retval;
  */
 int request_confirm( struct ParameterList * pl, long int minuser )
 {
-int n, m, finish = FALSE;
+int m, n, i, j, finish = FALSE;
 int retval = 1;
-char c;
+char **out;
 
   if( ( get_var_int( "@user-level" ) >= minuser ) || ( get_var_int( "@user-level" ) >= GetPL( pl, _CONFIRM).intval ) )
   {
-    clear_gui();
 
+    setgadgetdisable( 0 );
+    clear_gui();
     RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
 
@@ -1530,42 +1598,69 @@ char c;
       traperr( "Missing help!\n", NULL );
     }
 
-    do
+    j = 0;
+    for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
     {
+#ifdef DEBUG
+      printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+#endif /* DEBUG */
+      out = malloc( sizeof( char * ) );
+      outofmem( out );
+      out[0] = NULL;
+      m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef DEBUG
-	printf( "%s\n", GetPL( pl, _PROMPT ).arg[n] );
-#endif /* DEBUG */
-	itext.IText = GetPL( pl, _PROMPT ).arg[n];
-	PrintIText( rp, &itext, 10, 15*(n+2) );
+	itext.IText = out[n];
+	PrintIText( rp, &itext, 15, 15*j+7 );
+	free( out[n] );
+	j++;
       }
-#ifdef DEBUG 
-      printf( " P - Proceed\n S - Skip this\n A - Abort Installation\n H - Help\n" );
-#endif /* DEBUG */
-      scanf( "%c", &c );
-      switch( tolower( c ) )
-      {
-	case 'p': /* proceed */
-		  finish = TRUE;
-		  break;
-	case 's': /* skip this */
-		  finish = TRUE;
-		  retval = 0;
-		  break;
-	case 'h': /* help */
-		  m = GetPL( pl, _HELP ).intval;
-		  for( n = 0 ; n < m ; n++ )
+      free( out );
+    }
+
+    finish = FALSE;
+    while( !finish )
+    {
+	WaitPort( GuiWin->UserPort );
+	while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+	{
+	  class = imsg->Class;
+	  code = imsg->Code;
+	  switch( class )
+	  {
+	    case IDCMP_GADGETUP:
+		  switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
 		  {
-		    printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		    case ID_PROCEEDGAD:
+		      finish = TRUE;
+		      break;
+		    case ID_SKIPGAD:
+		      retval = 0;
+		      finish = TRUE;
+		      break;
+		    case ID_ABORTGAD:
+		      abort_install();
+		      break;
+		    case ID_HELPGAD:
+#warning FIXME: What is this help like?
+		      m = GetPL( pl, _HELP ).intval;
+		      for( n = 0 ; n < m ; n++ )
+		      {
+			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		      }
+		      break;
+		    default:
+		      break;
 		  }
 		  break;
-	case 'a': /* abort */
-		  abort_install();
+	    default:
 		  break;
-	default : break;
-      }
-    } while( finish == FALSE );
+	  }
+	  GT_ReplyIMsg(imsg);
+	
+	} /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* !finish */
+
   }
   else
   {
@@ -1582,6 +1677,7 @@ return retval;
 struct IntuiText p = {1,0,JAM1,10,30,NULL,(UBYTE *)"OK",NULL };
 struct IntuiText n = {1,0,JAM1,70,30,NULL,(UBYTE *)"Cancel",NULL };
 struct IntuiText abortq_body = {1,0,JAM1,0,0,NULL,(UBYTE *)"Do you really want to quit Installer?",NULL };
+struct IntuiText displaytext = {1,0,JAM1,0,0,NULL,NULL,NULL };
 
 void abort_install( )
 {
@@ -1607,48 +1703,32 @@ void final_report( )
 
 
 /*
- * Execute "(traperr)" from preferences
+ * Enable/Disable Gadgets in stdglist
  */
-void traperr( char * msg, char * name )
+void setgadgetdisable( int list )
 {
-char *outmsg;
-int i, j;
+    GT_SetGadgetAttrs( proceedgad, GuiWin, NULL,
+			GA_Disabled, (list & PROCEEDGAD) ? TRUE : FALSE,
+			TAG_DONE );
+    GT_SetGadgetAttrs( abortgad, GuiWin, NULL,
+			GA_Disabled, (list & ABORTGAD) ? TRUE : FALSE,
+			TAG_DONE );
+    GT_SetGadgetAttrs( skipgad, GuiWin, NULL,
+			GA_Disabled, (list & SKIPGAD) ? TRUE : FALSE,
+			TAG_DONE );
+    GT_SetGadgetAttrs( helpgad, GuiWin, NULL,
+			GA_Disabled, (list & HELPGAD) ? TRUE : FALSE,
+			TAG_DONE );
+}
 
+
+void display_text( char * msg )
+{
+  displaytext.IText = msg;
 #ifdef DEBUG
-  i = ( msg != NULL ) ? strlen( msg ) : 0 ;
-  j = ( name != NULL ) ? strlen( name ) : 0 ;
-  outmsg = malloc( i + j + 1 );
-  sprintf( outmsg, msg, name );
-  printf( "ERROR:\n %s\n", outmsg );
-#endif /* DEBUG */
-
-  if( preferences.trap[ error - 1 ].cmd != NULL )
-  {
-    /* execute trap */
-    execute_script( preferences.trap[ error - 1 ].cmd, -99 );
-  }
-  else
-  {
-    /* execute onerrors */
-    if( preferences.onerror.cmd != NULL )
-    {
-      execute_script( preferences.onerror.cmd, -99 );
-    }
-  }
-
-#ifdef DEBUG
-  dump_varlist();
-#endif /* DEBUG */
-
-  cleanup();
-  if( grace_exit == TRUE )
-  {
-    exit(0);
-  }
-  else
-  {
-    exit(-1);
-  }
+  printf( "ERROR: %s\n", msg );
+#endif
+  AutoRequest(GuiWin,&displaytext,&p,NULL,0L,0L,200,75);
 }
 
 

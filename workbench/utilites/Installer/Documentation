@@ -337,12 +337,20 @@ Arguments in [...] are optional.
  /* Return information on the hardware Installer is running on */
  <feature> is one of:
  "vblank"
- "cpu" -> "68000" "68010" "68020" "68030" "68040" "68060" "80386" "80486"
+ "cpu"
+   -> "68000" "68010" "68020" "68030" "68040" "68060"
+      "80386" "80486"
+      "Pentium" "PentiumPro" "Celeron" "PentiumII" "PentiumIII"
+      "K6" "K6-II" "K6-III" "Athlon"
  "graphics-mem"
+   -> Size of free CHIP RAM (via AvailMem(MEMF_CHIP))
  "total-mem"
- "fpu" -> "68881" "68882" "FPU40" "80387" "80486" "NOFPU"
- "chiprev" -> "AA" "ECS" "AGNUS" "VGA"
- Return-type is always a string.
+   -> Total size of free RAM (via AvailMem(MEMF_TOTAL))
+ "fpu"
+   -> "68881" "68882" "FPU40" "80387" "80486" "NOFPU"
+ "chiprev"
+   -> "AA" "ECS" "AGNUS" "VGA"
+ Return-type is always a string except for free RAM size.
 
 ( onerror (...) )
  Use this function to define code to be executed after an error occurred.
