@@ -250,6 +250,7 @@ AROS_PROG(CAT,[cat])
 AROS_PROG(BISON,[bison])
 AROS_PROG(PNGTOPNM,[pngtopnm])
 AROS_PROG(PPMTOILBM,[ppmtoilbm])
+AROS_PROG(STRIP,[strip])
 
 FOR=for
 IF=if
@@ -296,7 +297,7 @@ aros_target_nm_flags="-ul"
 aros_target_objcopy="objcopy"
 aros_target_objdump="objdump"
 aros_target_ranlib="ranlib"
-aros_target_strip="true"
+aros_target_strip="strip"
 
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
@@ -394,7 +395,6 @@ case "$target_os" in
 	aros_object_format="elf_i386"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	strip_args="-x"
 	;;
 
     netbsd*)
@@ -420,7 +420,6 @@ case "$target_os" in
 	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-        strip_args="-x"
         ;;   
 
     openbsd*)
@@ -440,7 +439,6 @@ case "$target_os" in
 	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_target_nm_flags="-u"
 	aros_flavour="emulation"
-        strip_args="-x"
         ;;
 
     solaris*)
@@ -487,7 +485,6 @@ case "$target_os" in
 	    *ppc*)
 		aros_cpu="ppc"
 		aros_flavour="native"
-		aros_target_strip="strip"
 		aros_target_cflags="$aros_target_cflags -mpowerpc -mcpu=603e"
 		aros_target_aflags="$aros_target_aflags -m603e"
 		;;
