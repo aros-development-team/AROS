@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Filesystem that uses console device for input/output.
-    Lang: english
+    Filesystem that uses console device for input/output.
 */
 
 
@@ -342,6 +341,8 @@ AROS_UFH3(VOID, conTaskEntry,
     AROS_UFHA(struct ExecBase *, sysbase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+    
     struct conTaskParams *param = (struct conTaskParams *)FindTask(NULL)->tc_UserData;
 
 #undef SysBase
@@ -925,9 +926,7 @@ AROS_UFH3(VOID, conTaskEntry,
     if (fh->wintitle) FreeVec(fh->wintitle);
 
     FreeMem(fh, sizeof (struct filehandle));
+    
+    AROS_USERFUNC_EXIT
 }
 
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/

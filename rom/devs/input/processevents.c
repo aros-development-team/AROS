@@ -58,10 +58,14 @@ AROS_UFH3S(void, ResetHandler,
     AROS_UFHA(APTR, code, A5),
     AROS_UFHA(struct ExecBase *, sysBase, A6))
 {
+    AROS_USERFUNC_INIT
+    
     if (InputDevice->ResetSig)
     {
     	Signal(InputDevice->InputTask, InputDevice->ResetSig);
     }
+
+    AROS_USERFUNC_EXIT
 }
  
 /**********************

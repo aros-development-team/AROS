@@ -69,6 +69,8 @@ AROS_UFH3
     AROS_UFHA(struct ExecBase *, SysBase,    A6)
 )
 {
+    AROS_USERFUNC_INIT
+    
     struct WorkbenchBase  *WorkbenchBase = FindTask(NULL)->tc_UserData;
     struct HandlerContext  context       = { 0 };
     struct HandlerContext *hc            = &context;
@@ -189,6 +191,8 @@ AROS_UFH3
     Deinitialize();
     
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 #define SysBase (WorkbenchBase->wb_SysBase)
 
