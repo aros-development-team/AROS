@@ -566,8 +566,6 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
 int main(int argc,char *argv[])
 {
-    struct Library *MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
-
     Object* wnd;
     Object* page;
 
