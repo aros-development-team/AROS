@@ -20,6 +20,9 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     int ExpandInput;
     int InputFile;
     int ProcessOutput;
+    int NoInput;
+    int DeleteIn = 0;
+    int DeleteOut = 0;
 
     cmdarg = (HTMLTagArg *) FindNodeNC (&tag->args, "CMD");
 
@@ -41,107 +44,118 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     ExpandInput   = (FindNodeNC (&tag->args, "EXPANDINPUT")   != NULL);
     InputFile	  = (FindNodeNC (&tag->args, "INPUTFILE")     != NULL);
     ProcessOutput = (FindNodeNC (&tag->args, "PROCESSOUTPUT") != NULL);
+    NoInput	= (FindNodeNC (&tag->args, "NOINPUT")       != NULL);
 
-    fn = xstrdup (tmpnam (NULL));
-
-    if (!ProcessInput)
+    if (!NoInput)
     {
-	fh = fopen (fn, "w");
+	fn = xstrdup (tmpnam (NULL));
 
-	if (!fh)
+	if (!ProcessInput)
 	{
-	    PushStdError ("Can open %s for writing", fn);
-	    xfree (fn);
-	    Var_FreeLevel (Var_PopLevel ());
-	    return T_ERROR;
-	}
+	    fh = fopen (fn, "w");
 
-	body = Var_Get ("@body");
-
-	if (body)
-	{
-	    if (ExpandInput)
+	    if (!fh)
 	    {
-		String ebody = Var_Subst (body);
+		PushStdError ("Can open %s for writing", fn);
+		xfree (fn);
+		Var_FreeLevel (Var_PopLevel ());
+		return T_ERROR;
+	    }
 
-		if (!ebody)
+	    body = Var_Get ("body");
+
+	    if (body)
+	    {
+		if (ExpandInput)
 		{
-		    Str_PushError (in, "Can't expand body");
-		    return T_ERROR;
-		}
+		    String ebody = Var_Subst (body);
 
-		fputs (ebody->buffer, fh);
-		VS_Delete (ebody);
+		    if (!ebody)
+		    {
+			Str_PushError (in, "Can't expand body");
+			return T_ERROR;
+		    }
+
+		    fputs (ebody->buffer, fh);
+		    VS_Delete (ebody);
+		}
+		else
+		    fputs (body, fh);
+	    }
+
+	    fclose (fh);
+	    DeleteIn = 1;
+	}
+	else
+	{
+	    StdioStream  * ppout = StdStr_New (fn, "w");
+	    StringStream * ppin;
+	    int rc;
+
+	    if (!ppout)
+	    {
+		PushStdError ("Can open %s for writing", fn);
+		xfree (fn);
+		Var_FreeLevel (Var_PopLevel ());
+		return T_ERROR;
+	    }
+
+	    body = Var_Get ("body");
+
+	    if (body)
+	    {
+		String ebody = NULL;
+
+		if (ExpandInput)
+		{
+		    ebody = Var_Subst (body);
+
+		    if (!ebody)
+		    {
+			Str_PushError (in, "Can't expand body");
+			return T_ERROR;
+		    }
+
+		    ppin = StrStr_New (ebody->buffer);
+		}
+		else
+		    ppin = StrStr_New (body);
+
+		rc = HTML_Parse ((MyStream *)ppin, (MyStream *)ppout, data);
+
+		StrStr_Delete (ppin);
+		if (ebody)
+		    VS_Delete (ebody);
 	    }
 	    else
-		fputs (body, fh);
+		rc = T_OK;
+
+	    StdStr_Delete (ppout);
+
+	    if (rc != T_OK)
+	    {
+		PushStdError ("Failed to prepare the input for the filter", cmdarg->value);
+		xfree (fn);
+		Var_FreeLevel (Var_PopLevel ());
+		return T_ERROR;
+	    }
 	}
 
-	fclose (fh);
+	if (InputFile)
+	{
+	    Var_Set ("infilename", fn);
+	}
     }
     else
     {
-	StdioStream  * ppout = StdStr_New (fn, "w");
-	StringStream * ppin;
-	int rc;
-
-	if (!ppout)
-	{
-	    PushStdError ("Can open %s for writing", fn);
-	    xfree (fn);
-	    Var_FreeLevel (Var_PopLevel ());
-	    return T_ERROR;
-	}
-
-	body = Var_Get ("@body");
-
-	if (body)
-	{
-	    String ebody = NULL;
-
-	    if (ExpandInput)
-	    {
-		ebody = Var_Subst (body);
-
-		if (!ebody)
-		{
-		    Str_PushError (in, "Can't expand body");
-		    return T_ERROR;
-		}
-
-		ppin = StrStr_New (ebody->buffer);
-	    }
-	    else
-		ppin = StrStr_New (body);
-
-	    rc = HTML_Parse ((MyStream *)ppin, (MyStream *)ppout, data);
-
-	    StrStr_Delete (ppin);
-	    if (ebody)
-		VS_Delete (ebody);
-	}
-	else
-	    rc = T_OK;
-
-	StdStr_Delete (ppout);
-
-	if (rc != T_OK)
-	{
-	    PushStdError ("Failed to prepare the input for the filter", cmdarg->value);
-	    xfree (fn);
-	    Var_FreeLevel (Var_PopLevel ());
-	    return T_ERROR;
-	}
-    }
-
-    if (InputFile)
-    {
-	Var_Set ("infilename", fn);
+	InputFile = 0;
+	fn = xstrdup ("-");
     }
 
     cmdoutputname = xstrdup (tmpnam (NULL));
 
     cmdstr = Var_Subst (cmdarg->value);
+    DeleteOut = 1;
 
     Var_FreeLevel (Var_PopLevel ());
 
@@ -156,15 +170,18 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     if (!execute (cmdstr->buffer, "", InputFile ? "-" : fn, cmdoutputname))
     {
 	Str_PushError (in, "Error running filter %s", cmdarg->value);
-	unlink (fn);
-	unlink (cmdoutputname);
+	if (DeleteIn)
+	    unlink (fn);
+	if (DeleteOut)
+	    unlink (cmdoutputname);
 	xfree (fn);
 	xfree (cmdoutputname);
 	VS_Delete (cmdstr);
 	return T_ERROR;
     }
 
-    unlink (fn);
+    if (DeleteIn)
+	unlink (fn);
     xfree (fn);
     VS_Delete (cmdstr);
 
@@ -176,7 +193,8 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	if (!ss)
 	{
 	    PushStdError ("Can't open file %s", cmdoutputname);
-	    unlink (cmdoutputname);
+	    if (DeleteOut)
+		unlink (cmdoutputname);
 	    xfree (cmdoutputname);
 	    return T_ERROR;
 	}
@@ -188,7 +206,8 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	if (rc != T_OK)
 	{
 	    PushStdError ("Failed to process the output of the filter", cmdarg->value);
-	    unlink (cmdoutputname);
+	    if (DeleteOut)
+		unlink (cmdoutputname);
 	    xfree (cmdoutputname);
 	    return T_ERROR;
 	}
@@ -202,7 +221,8 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	if (!cmdoutput)
 	{
 	    PushStdError ("Can open %s for reading", cmdoutputname);
-	    unlink (cmdoutputname);
+	    if (DeleteOut)
+		unlink (cmdoutputname);
 	    xfree (cmdoutputname);
 	    return T_ERROR;
 	}
@@ -211,7 +231,8 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	    Str_Put (out, c, data);
     }
 
-    unlink (cmdoutputname);
+    if (DeleteOut)
+	unlink (cmdoutputname);
     xfree (cmdoutputname);
 
     return T_OK;
