@@ -8,6 +8,7 @@
 
 #define AROS_ALMOST_COMPATIBLE 1
 
+#define size_t aros_size_t
 #include <hidd/unixio.h>
 #include <hidd/hidd.h>
 
@@ -29,6 +30,7 @@
 #include <utility/utility.h>
 
 #include <aros/asmcall.h>
+#undef size_t
 
 #include <sys/types.h>
 #include <signal.h>
@@ -63,7 +65,7 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 #define XTASK_PRIORITY 50
 
-#define XTASK_STACKSIZE (32768)
+#define XTASK_STACKSIZE (AROS_STACKSIZE)
 
 
 struct x11_data
@@ -430,13 +432,16 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
 	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
 	    *(APTR *)task->tc_SPLower = params;
 #endif
-
 	    
+	    /* You have to clear signals first. */
+	    SetSignal(0, params->ok_signal | params->fail_signal);
+
 	    if(AddTask(task, x11task_entry, NULL) != NULL)
 	    {
 	    	/* Everything went OK. Wait for task to initialize */
 		ULONG sigset;
 		
+
 		sigset = Wait( params->ok_signal | params->fail_signal );
 		if (sigset & params->ok_signal)
 		{
@@ -447,8 +452,5 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
     	}
         FreeMem(task,sizeof(struct Task));
     }
-    
     return NULL;
-
 }
-
