@@ -1,0 +1,15 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+
+include $(TOP)/config/make.cfg
+
+FILES	:= main
+
+#MM- workbench-c : workbench-c-identify
+#MM workbench-c-identify : includes linklibs
+
+%build_prog mmake=workbench-c-identify \
+    progname=Identify targetdir=$(AROS_C) \
+    files=$(FILES) uselibs="amiga" 
+
+%common
+
