@@ -5,3 +5,6 @@ asl_endtag.c
 *.map
 mmakefile
 *.err
+functable
+functions.c
+functions.h
