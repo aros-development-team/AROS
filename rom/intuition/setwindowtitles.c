@@ -16,8 +16,8 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Window *, window, A0),
-	AROS_LHA(UBYTE         *, windowTitle, A1),
-	AROS_LHA(UBYTE         *, screenTitle, A2),
+	AROS_LHA(CONST_STRPTR   , windowTitle, A1),
+	AROS_LHA(CONST_STRPTR   , screenTitle, A2),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 46, Intuition)
@@ -28,10 +28,10 @@
     INPUTS
 	window - Change the title for this window or the screen which the
 		window contains.
-	windowTitle - New title for the window or ((UBYTE *)~0L) to keep the
+	windowTitle - New title for the window or ((CONST_STRPTR)~0L) to keep the
 		old title or NULL for no title. If you specify a string,
 		this string is *NOT* copied.
-	screenTitle - New title for the screen of the window or ((UBYTE *)~0L)
+	screenTitle - New title for the screen of the window or ((CONST_STRPTR)~0L)
 		to keep the old title or NULL for no title. If you specify
 		a title for the screen, this title will be shown when the
 		window becomes active. If you specify a string, this string
@@ -62,7 +62,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Change window's title */
-    if (windowTitle != (UBYTE *)~0L)
+    if (windowTitle != (CONST_STRPTR)~0L)
     {
 	window->Title = windowTitle;
 	RefreshWindowFrame(window);
@@ -71,7 +71,7 @@
     /* Change screen's title */
     if (!screenTitle)
 	window->ScreenTitle = NULL;
-    else if (screenTitle != (UBYTE *)~0L)
+    else if (screenTitle != (CONST_STRPTR)~0L)
 	window->ScreenTitle = screenTitle;
 
     AROS_LIBFUNC_EXIT
