@@ -17,6 +17,8 @@
 #include <proto/asl.h>
 #include <proto/dos.h>
 
+#include <string.h>
+
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
