@@ -18,25 +18,25 @@
 
 /****************************************************************************************/
 
-APTR AllocSegment(APTR prevsegment, ULONG segmentsize, ULONG memflags,
-    	    	  struct DiskfontBase_intern *DiskfontBase)
+APTR AllocSegment
+(
+    BPTR *prevsegment, ULONG segmentsize, ULONG memflags,
+    struct DiskfontBase_intern *DiskfontBase
+)
 {
-    UBYTE *mem;
+    ULONG *mem;
     
     if ((mem = AllocMem(segmentsize + sizeof(ULONG) + sizeof(BPTR), memflags)))
     {
-    	*((ULONG *)mem)++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
-	
-	if (prevsegment)
-	{
-	    ((BPTR *)prevsegment)[-1] = MKBADDR(mem);
-	}
+        BPTR *membptr;
 
-	*((BPTR *)mem)++ = NULL;
-		
+    	*mem++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
+        if (prevsegment) prevsegment[-1] = MKBADDR(mem);
+        membptr = (BPTR *) mem;
+        *membptr = NULL;
     }
     
-    return (APTR)mem;
+    return mem;
 }
 
 /****************************************************************************************/
