@@ -33,6 +33,11 @@ struct MenuHandlerData
     struct Rectangle	submenubox;
     struct Image	*checkmark;
     struct Image	*amigakey;
+    WORD		menubarwidth;
+    WORD		menubarheight;
+    WORD		menubaritemwidth;
+    WORD		menubaritemheight;
+    WORD		nummenubaritems;
     WORD		activemenunum;
     WORD		activeitemnum;
     WORD		activesubitemnum;
