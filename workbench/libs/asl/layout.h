@@ -105,6 +105,7 @@ struct AslBase_intern;
 
 #define ASLSC_Inc 		(ASLSC_Dummy + 1)
 #define ASLSC_Dec 		(ASLSC_Dummy + 2)
+#define ASLSC_DeltaFactor   	(ASLSC_Dummy + 3)
 
 /* ListviewClass */
 
@@ -122,6 +123,10 @@ struct AslBase_intern;
 #define ASLLV_MakeVisible	(ASLLV_Dummy + 10)
 #define ASLLV_ReadOnly		(ASLLV_Dummy + 11)
 #define ASLLV_Font  	    	(ASLLV_Dummy + 12)
+#define ASLLV_TopPixel	    	(ASLLV_Dummy + 13)
+#define ASLLV_TotalPixels   	(ASLLV_Dummy + 14)
+#define ASLLV_VisiblePixels 	(ASLLV_Dummy + 15)
+#define ASLLV_DeltaFactor   	(ASLLV_Dummy + 16)
 
 /* ButtonClass */
 

@@ -41,6 +41,7 @@
 struct AslPropData
 {
     Object *frame;
+    LONG    deltafactor;
 };
 
 /***********************************************************************************/
@@ -70,6 +71,7 @@ static IPTR aslprop_new(Class * cl, Object * o, struct opSet * msg)
 	G(o)->Width    -= BORDERPROPSPACINGX * 2;
 	G(o)->Height   -= BORDERPROPSPACINGY * 2;
 		
+    	data->deltafactor = 1;
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
 	if (!data->frame)
 	{
@@ -111,42 +113,63 @@ static IPTR aslprop_set(Class * cl, Object * o, struct opSet * msg)
     {
         switch(ti->ti_Tag)
 	{
+	    case ASLSC_DeltaFactor:
+	    	data->deltafactor = (LONG)ti->ti_Data;
+		break;
+		
 	    case ASLSC_Inc:
 	    case ASLSC_Dec:
 	        if (((LONG)ti->ti_Data > 0) &&
 		    (((struct opUpdate *)msg)->opu_Flags & OPUF_INTERIM))
 		{
-		     IPTR top, total, visible, newtop;
-		     
-		     GetAttr(PGA_Top,     o, &top);
-		     GetAttr(PGA_Total,   o, &total);
-		     GetAttr(PGA_Visible, o, &visible);
-		     
-		     newtop = top;
-		     if (ti->ti_Data == ID_ARROWDEC)
-		     {
-		         if (top > 0) newtop--;
-		     } else {
-		         if (top < total - visible) newtop++;
-		     }
-		     		     
-		     if (newtop != top)
-		     {
-		         struct TagItem set_tags [] =
-			 {
-			     {PGA_Top, newtop 	},
-			     {TAG_DONE		}
-			 };
-			 struct opSet ops;
-			 
-			 ops.MethodID  	  = OM_SET;
-			 ops.ops_AttrList = set_tags;
-			 ops.ops_GInfo 	  = msg->ops_GInfo;
-			 
-			 DoMethodA(o, (Msg)&ops);
-			 
-			 /* rerender = TRUE; */
-		     }
+		    IPTR top, total, visible, newtop;
+
+		    GetAttr(PGA_Top,     o, &top);
+		    GetAttr(PGA_Total,   o, &total);
+		    GetAttr(PGA_Visible, o, &visible);
+
+		    newtop = top;
+		    if (ti->ti_Data == ID_ARROWDEC)
+		    {
+		        if (newtop < data->deltafactor)
+			{
+			   newtop = 0;
+		        }
+    	    	    	else
+			{
+			    newtop -= data->deltafactor;
+			}
+			
+		    }
+		    else
+		    {
+		        if (top <= total - visible - data->deltafactor)
+			{
+			    newtop += data->deltafactor;
+			}
+			else
+			{
+			    newtop = total - visible;
+			}
+		    }
+
+		    if (newtop != top)
+		    {
+		        struct TagItem set_tags [] =
+			{
+			    {PGA_Top, newtop 	},
+			    {TAG_DONE		}
+			};
+			struct opSet ops;
+
+			ops.MethodID  	  = OM_SET;
+			ops.ops_AttrList = set_tags;
+			ops.ops_GInfo 	  = msg->ops_GInfo;
+
+			DoMethodA(o, (Msg)&ops);
+
+			/* rerender = TRUE; */
+		    }
 		     
 		} /* if ((ti->ti_Data > 0) && (((struct opUpdate *)msg)->opu_Flags & OPUF_INTERIM)) */
 				
