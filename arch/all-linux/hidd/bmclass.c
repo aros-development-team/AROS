@@ -106,15 +106,34 @@ static VOID bitmap_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     /* Set pixel according to pixelformat */
     pix = msg->pixel;
     
-#if 0
-    *addr ++ = (pix >> 16) & 0x000000FF;
-    *addr ++ = (pix >> 8 ) & 0x000000FF;
-    *addr ++ = pix & 0x000000FF;
-#else
-    *addr ++ = pix & 0x000000FF;
-    *addr ++ = (pix >> 8 ) & 0x000000FF;
-    *addr ++ = (pix >> 16) & 0x000000FF;
-#endif
+    switch(LSD(cl)->pf.bytes_per_pixel)
+    {
+    	case 1:
+	    *addr = pix;
+	    break;
+	    
+	case 2:
+	    *(UWORD *)addr = pix;
+	    break;
+	    
+	case 3:
+	#if AROS_BIG_ENDIAN
+    	    *addr ++ = (pix >> 16) & 0x000000FF;
+    	    *addr ++ = (pix >> 8 ) & 0x000000FF;
+    	    *addr ++ = pix & 0x000000FF;
+	#else
+    	    *addr ++ = pix & 0x000000FF;
+    	    *addr ++ = (pix >> 8 ) & 0x000000FF;
+    	    *addr ++ = (pix >> 16) & 0x000000FF;
+	#endif
+	    break;
+	    
+	case 4:
+	    *(ULONG *)addr = pix;
+	    break;
+	    
+    }
+
     return;
 }
 
@@ -131,15 +150,30 @@ static HIDDT_Pixel  bitmap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     
     /* Set pixel according to pixelformat */
 
-#if 0    
-    pix = (addr[0] << 16) | (addr[1] << 8) | (addr[2]);
-#else
-    pix = (addr[2] | (addr[1] << 8) | (addr[0] << 16));
-#endif
-/*    *addr ++ = (pix >> 16) & 0x000000FF;
-    *addr ++ = (pix >> 8 ) & 0x000000FF;
-    *addr ++ = pix & 0x000000FF;
-*/    
+    switch(LSD(cl)->pf.bytes_per_pixel)
+    {
+    	case 1:
+	    pix = *addr;
+	    break;
+	    
+	case 2:
+	    pix = *(UWORD *)addr;
+	    break;
+	    
+	case 3:
+	#if AROS_BIG_ENDIAN
+    	    pix = (addr[0] << 16) | (addr[1] << 8) | (addr[2]);
+	#else
+    	    pix = (addr[2] | (addr[1] << 8) | (addr[0] << 16));
+	#endif
+	    break;
+	    
+	case 4:
+	    pix = *(ULONG *)addr;
+	    break;
+	    
+    }
+
     return pix;
 }
 
