@@ -1564,7 +1564,7 @@ readvars (Project * prj)
 
 	if (!fh && prj->genglobalvarfile)
 	{
-	    printf ("Generating %s...\n", prj->globalvarfile);
+	    printf ("Generating %s...\n", substvars (prj, prj->globalvarfile));
 
 	    if (!execute (prj, prj->genglobalvarfile, "-", "-", ""))
 	    {
