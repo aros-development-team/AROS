@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros \
 		clib \
+		datatypes \
 		defines \
 		devices \
 		diskfont \
