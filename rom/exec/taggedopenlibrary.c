@@ -31,7 +31,7 @@ char *copyrights[] =
     "Other parts © by respective owners.",
     "ALPHA ",
     "exec.library",
-    "exec 40.101 (2.2.96)\013\010"
+    "exec 41.1 (15.3.97)\r\n"
 };
 
 /*****i* exec.library/TaggedOpenLibrary **************************************
