@@ -56,6 +56,23 @@
     struct Region Res;
     struct RegionRectangle rr;
 
+    /* If the rectangle and the region don't overlap just return */
+    if (!overlap(*Rect, Reg->bounds))
+        return TRUE;
+
+    /* if the rectangle completely covers the region just clear the region and return */
+    if
+    (
+        Rect->MinX <= MinX(Reg) &&
+        Rect->MinY <= MinY(Reg) &&
+        Rect->MaxX >= MaxX(Reg) &&
+        Rect->MaxY >= MaxY(Reg)
+    )
+    {
+        ClearRegion(Reg);
+        return TRUE;
+    }
+
     InitRegion(&Res);
 
     rr.bounds = *Rect;

@@ -55,6 +55,10 @@
 
     struct Region R3;
 
+    /* If the regions don't overlap just return */
+    if (!overlap(R1->bounds, R2->bounds))
+        return TRUE;
+
     InitRegion(&R3);
 
     if
