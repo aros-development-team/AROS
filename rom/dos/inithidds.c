@@ -73,7 +73,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
     BOOL success = TRUE;
     UBYTE buf[BUFSIZE];
     UBYTE gfxname[BUFSIZE], kbdname[BUFSIZE], mousename[BUFSIZE];
-    BOOL got_gfx = FALSE, got_kbd = FALSE, got_mouse = FALSE;
+    BOOL got_gfx = FALSE, got_kbd = FALSE, got_mouse = FALSE, got_library = TRUE;
     
     
     base->sysbase = sysBase;
@@ -101,6 +101,8 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	}
 	else
 	{
+	    STRPTR libname;
+	    
 	    D(bug("hiddprefs file opened\n"));
 	    while (FGets(fh, buf, BUFSIZE))
 	    {
@@ -152,9 +154,11 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		{
 		    D(bug("Opening library\n"));
 		      /* Open a specified library */
-		    if (NULL == OpenLibrary(arg, 0))
+		    libname = arg;
+		    if (NULL == OpenLibrary(libname, 0))
 		    {
 		        success = FALSE;
+			got_library = FALSE;
 			break;
 		    }
 		    
@@ -178,6 +182,13 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    }
 	    
 	    Close(fh);
+	    
+	    if (!got_library)
+	    {
+	    	success = FALSE;
+		kprintf("Could not open library %s\n", libname);
+		goto end;
+	    }
 	    
 	    if (!got_gfx)
 	    {
