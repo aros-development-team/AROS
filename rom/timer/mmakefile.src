@@ -30,8 +30,8 @@ USER_INCLUDES := -I.
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-OBJDIR   := $(GENDIR)/$(CURDIR)
-LIBNAME	 := timer
+OBJDIR	 := $(GENDIR)/$(CURDIR)
+LIBNAME  := timer
 ULIBNAME := Timer
 
 OSMODULE  := timer.device
@@ -50,7 +50,7 @@ FUNCTIONS := addtime beginio cmptime getsystime subtime
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS	:=
+DEPLIBS :=
 else
 DEPLIBS :=
 endif
@@ -82,9 +82,6 @@ endif
 
 NO_FUNCTABLE := 1
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 #MM kernel-timer-linklib : setup includes kernel-timer-$(ARCH)-$(CPU)
 kernel-timer-linklib : show-flags $(LIB)

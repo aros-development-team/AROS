@@ -30,11 +30,11 @@ USER_INCLUDES := -I.
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-LIBNAME	 := aros
+LIBNAME  := aros
 ULIBNAME := Aros
 
 OSMODULE  := aros.library
-FILES	  := 
+FILES	  :=
 FUNCTIONS := arosinquirea
 
 # BEGIN_DESC{localmakevar}
@@ -73,9 +73,6 @@ endif
 %prepare_shlib aros $(SHARED_AROS)
 
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 #MM kernel-aros-linklib : setup includes kernel-aros-$(ARCH)-$(CPU)
 kernel-aros-linklib : show-flags $(LIB)

@@ -30,8 +30,8 @@ USER_INCLUDES := -I.
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-OBJDIR   := $(GENDIR)/$(CURDIR)
-LIBNAME	 := boopsi
+OBJDIR	 := $(GENDIR)/$(CURDIR)
+LIBNAME  := boopsi
 ULIBNAME := BOOPSI
 
 OSMODULE  := boopsi.library
@@ -47,7 +47,7 @@ FUNCTIONS := addclass disposeobject donotify findclass freeclass freeicdata \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS	:= arosc amiga
+DEPLIBS := arosc amiga
 else
 DEPLIBS :=
 endif
@@ -78,9 +78,6 @@ endif
 %prepare_shlib boopsi $(SHARED_BOOPSI)
 
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 #MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
 kernel-boopsi-linklib : show-flags $(LIB)

@@ -30,8 +30,8 @@ USER_INCLUDES := -I. -I$(TOP)/rom/boopsi
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-OBJDIR   := $(GENDIR)/$(CURDIR)
-LIBNAME	 := intuition
+OBJDIR	 := $(GENDIR)/$(CURDIR)
+LIBNAME  := intuition
 ULIBNAME := Intuition
 
 OSMODULE  := intuition.library
@@ -125,7 +125,7 @@ FUNCTIONS := \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS	:=
+DEPLIBS :=
 else
 DEPLIBS :=
 endif
@@ -154,9 +154,6 @@ endif
 %prepare_shlib intuition $(SHARED_INTUITION)
 
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 #MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)-$(CPU)
 kernel-intuition-linklib : show-flags $(LIB)

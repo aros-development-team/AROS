@@ -30,9 +30,9 @@ OS_INCLUDES := -I$(INCDIR)
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-OBJDIR   := $(GENDIR)/$(CURDIR)
+OBJDIR	 := $(GENDIR)/$(CURDIR)
 TESTOBJDIR := $(GENDIR)/$(CURDIR)
-LIBNAME	 := dos
+LIBNAME  := dos
 ULIBNAME := Dos
 
 OSMODULE  := dos.library
@@ -66,7 +66,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     setprompt setprotection setvar setvbuf splitname startnotify \
 	     strtodate strtolong systemtaglist ungetc unloadseg \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
-	     vprintf waitforchar waitpkt write writechars 
+	     vprintf waitforchar waitpkt write writechars
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
@@ -76,7 +76,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS	:=
+DEPLIBS :=
 else
 DEPLIBS :=
 endif
@@ -108,9 +108,6 @@ endif
 
 %genromlib_f
 
-#MM includes-generate : setup-clib
-%genlibincludes
-
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga
 TEST_DEPS := $(foreach f,$(TEST_DEPLIBS),$(LIBDIR)/lib$(f).a)
@@ -129,7 +126,7 @@ $(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
 	    -o $(TESTOBJDIR)/ss.o
 	$(CC) -DTEST $(CFLAGS) $< $(TESTOBJDIR)/ss.o -o $@
 	$(RM) $(TESTOBJDIR)/ss.o
-	
+
 #MM kernel-dos-linklib : setup includes kernel-dos-$(ARCH)-$(CPU)
 kernel-dos-linklib : show-flags $(LIB)
 

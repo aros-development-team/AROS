@@ -30,8 +30,8 @@ USER_INCLUDES := -I.
 #	compilation for a speed boost.
 # END_DESC{localmakevar}
 
-OBJDIR   := $(GENDIR)/$(CURDIR)
-LIBNAME	 := graphics
+OBJDIR	 := $(GENDIR)/$(CURDIR)
+LIBNAME  := graphics
 ULIBNAME := Graphics
 
 OSMODULE  := graphics.library
@@ -149,7 +149,7 @@ FUNCTIONS := \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS	:=
+DEPLIBS :=
 else
 DEPLIBS :=
 endif
@@ -183,9 +183,6 @@ endif
 # Uncomment NO_FUNCTABLE line if you don't want the function table made
 # NO_FUNCTABLE := 1
 %genromlib_f
-
-#MM includes-generate : setup-clib
-%genlibincludes
 
 #MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)-$(CPU)
 kernel-graphics-linklib : show-flags $(LIB)
