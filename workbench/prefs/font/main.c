@@ -11,6 +11,9 @@
 
 #include <libraries/gadtools.h> /* Not included automatically by other includes? */
 #include <libraries/iffparse.h> /* IFFHandle structure */
+#include <libraries/locale.h>	/* Tagitems */
+
+#include <proto/locale.h>
 
 #include <dos/dos.h> /* Return codes */
 
@@ -23,16 +26,49 @@
 
 #include "global.h"
 
-UBYTE version[] = "$VER: Font 0.6 (19.4.2001)";
+#define CATCOMP_NUMBERS	// Enable numbers (use CATCOMP_ARRAY instead?)
+#define CATCOMP_STRINGS	// Enable default strings (necessary?)
+#define CATCOMP_ARRAY
+#include "fontprefs_strings.h"
 
-struct IntuitionBase *IntuitionBase;
-struct Library *GadToolsBase;
-struct GfxBase *GfxBase;
-struct Library *IFFParseBase;
+UBYTE version[] = "$VER: Font 0.10 (27.09.2001)";
+
+/* Our local library bases. They don't need to be set to NULL. David Gerber has pointed out that
+   ANSI-C requires automated NULL initialization when nothing else is specified. However, if the
+   library pointers are declared as "extern" it seems that some AROS link module will initialize
+   them automatically which is a bad thing as our Open/CloseLibrary() pair will override whatever
+   data already present in the library pointers.
+*/
+
+struct IntuitionBase *IntuitionBase = NULL;
+struct GfxBase *GfxBase = NULL;
+struct Library *GadToolsBase = NULL;
+struct LocaleBase *LocaleBase = NULL;
+struct Library *IFFParseBase = NULL;
+struct Library *AslBase = NULL;
+
+/* For now, library version 37 are required. It should be sufficient, but it hasn't been
+   more thoroughly checked!
+*/
+struct libInfo
+{
+ APTR		lT_Library;
+ STRPTR		lT_Name;
+ ULONG		lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,	"intuition.library",	37L},
+ { &GadToolsBase,	"gadtools.library",	37L},
+ { &GfxBase,		"graphics.library",	37L},
+ { &IFFParseBase,	"iffparse.library",	37L},
+ { &AslBase,		"asl.library",		37L},
+ { NULL }
+};
 
 struct Window *prefsWindow;
 struct Screen *publicScreen;
-
+struct Catalog *catalogPtr;
 struct RDArgs *readArgs;
 
 extern struct FontPrefs *fontPrefs[3];	/* init.c */
@@ -41,8 +77,8 @@ extern struct IFFHandle *iffHandle;	/* handleiff.c */
 IPTR argArray[NUM_ARGS];		/* args.c */
 
 extern void inputLoop(struct AppGUIData *);
-extern struct AppGUIData * createGadgets(struct Screen *, APTR);
-extern struct Window * openAppWindow(struct Screen *, struct AppGUIData *, APTR);
+extern struct AppGUIData * createGadgets(struct Screen *, APTR, struct Catalog *);
+extern struct Window * openAppWindow(struct Screen *, struct AppGUIData *, APTR, struct Catalog *);
 extern void initDefaultPrefs(struct FontPrefs **);
 extern struct Menu * setupMenus(APTR);
 extern struct RDArgs * getArguments(void);
@@ -50,9 +86,22 @@ extern void readIFF(UBYTE *, struct FontPrefs **);
 extern void writeIFF(UBYTE *, struct FontPrefs **);
 extern BOOL initPrefMem(void);
 
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+ STRPTR string;
+    
+ if(catalogPtr)
+  string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+ else
+  string = CatCompArray[id].cca_Str;
+
+ return(string);
+}
+
 void quitApp(UBYTE *errorMsg, UBYTE errorCode)
 {
  UBYTE a;
+ struct libInfo *tmpLibInfo = libTable;
 
  if(errorMsg)
   printf("%s\n", errorMsg);
@@ -69,17 +118,27 @@ void quitApp(UBYTE *errorMsg, UBYTE errorCode)
   if(fontPrefs[a])
    FreeMem(fontPrefs[a], sizeof(struct FontPrefs));
 
- if(IFFParseBase)
-  CloseLibrary(IFFParseBase);
+ if(LocaleBase)
+ {
+  CloseCatalog(catalogPtr); // Passing NULL should be valid, look it up!
+  CloseLibrary((struct Library *)LocaleBase);
+ }
 
- if(GfxBase)
-  CloseLibrary((struct Library *)GfxBase);
+ printf("Closing libraries...\n");
 
- if(GadToolsBase)
-  CloseLibrary((struct Library *)GadToolsBase);
 
- if(IntuitionBase)
-  CloseLibrary((struct Library *)IntuitionBase);
+ while(tmpLibInfo->lT_Name)
+ {
+  if((*(struct Library **)tmpLibInfo->lT_Library))
+  {
+   printf("Closing >%s<... ", tmpLibInfo->lT_Name);
+   CloseLibrary((*(struct Library **)tmpLibInfo->lT_Library));
+   printf("%s is closed!\n", tmpLibInfo->lT_Name);
+  }
+  tmpLibInfo++;
+ }
+
+ printf("Good bye!\n");
 
  exit(errorCode);
 }
@@ -88,20 +147,34 @@ int main(void)
 {
  struct Screen *screenPtr;
  APTR drawInfo;
- struct AppGUIData *appGUIData;
+ struct AppGUIData *appGUIData; // Not an ideal solution. This should be extern to save some stack memory!
  UBYTE returnCode = RETURN_FAIL;
+ struct libInfo *tmpLibInfo = libTable;
+ UBYTE tmpString[128]; // What if library name plus error message exceeds 128 bytes?
 
- if(!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0L)))
-  quitApp("Can't open intuition.library!", RETURN_FAIL);
+ if(!(LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0L)))
+  printf("Warning: Can't open locale.library!"); // Non runtime critical error
 
- if(!(GadToolsBase = OpenLibrary("gadtools.library", 0L)))
-  quitApp("Can't open gadtools.library!", RETURN_FAIL);
+ // We should check for the proper catalog version here using the OC_Version tag!
+ // NULL is not runtime critical but should be dealt with in a smarter fashion!
+ catalogPtr = OpenCatalog(NULL, "Sys/fontprefs.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
 
- if(!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0L)))
-  quitApp("Can't open graphics.library!", RETURN_FAIL);
+ while(tmpLibInfo->lT_Library)
+ {
+  printf("Opening %s V%ld - ", tmpLibInfo->lT_Name, tmpLibInfo->lT_Version);
 
- if(!(IFFParseBase = OpenLibrary("iffparse.library", 0L)))
-  quitApp("Can't open iffparse.library!", RETURN_FAIL);
+  if(!((*(struct Library **)tmpLibInfo->lT_Library = OpenLibrary(tmpLibInfo->lT_Name, tmpLibInfo->lT_Version))))
+  {
+   sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibInfo->lT_Name,tmpLibInfo->lT_Version);
+   quitApp(tmpString, RETURN_FAIL);
+  }
+  else
+   printf("%s opened!\n", tmpLibInfo->lT_Name);
+
+  tmpLibInfo++;
+ }
+
+ printf("All libraries are opened!\n");
 
  /* Get arguments. If failure, should we quit or not? If started from
     shell, do we assume the user wants to run Font Preferences on a "non
@@ -137,7 +210,6 @@ int main(void)
    /* Don't launch the rest of the program, just exit */
    quitApp(NULL, RETURN_OK);
   }
-
  }
  else
   readIFF("ENV:sys/font.prefs", fontPrefs);
@@ -156,12 +228,12 @@ int main(void)
  {
   if((drawInfo = GetVisualInfo(screenPtr, NULL)))
   {
-   if((appGUIData = createGadgets(screenPtr, drawInfo)))
+   if((appGUIData = createGadgets(screenPtr, drawInfo, catalogPtr)))
    {
-    if((appGUIData = openAppWindow(screenPtr, appGUIData, drawInfo)))
-     inputLoop(appGUIData);
+    if((appGUIData = openAppWindow(screenPtr, appGUIData, drawInfo, catalogPtr)))
+     inputLoop(appGUIData); // This is our main I/O event loop!
     else
-     printf("Can't open window!");
+     quitApp(getCatalog(catalogPtr, MSG_CANT_CREATE_WIN), RETURN_FAIL);
 
     if(appGUIData->agd_GadgetList)
      FreeGadgets(appGUIData->agd_GadgetList);
@@ -176,19 +248,21 @@ int main(void)
      CloseWindow(appGUIData->agd_Window);
    }
    else
-    printf("Can't setup gadgets!");
+    quitApp(getCatalog(catalogPtr, MSG_CANT_CREATE_GADGET), RETURN_FAIL);
 
    FreeVisualInfo(drawInfo);
    returnCode = RETURN_OK;
+
+   if(appGUIData) // This should always be TRUE by now!
+    FreeMem(appGUIData, sizeof(struct AppGUIData));
   }
   else
-   printf("GetVisualInfo() failed!");
+   quitApp(getCatalog(catalogPtr, MSG_CANT_GET_VI), RETURN_FAIL);
 
   UnlockPubScreen(NULL, screenPtr); // Is this safe to call twice? (First call in openAppWindow())
-
  }
  else
-  printf("Can't lock %s screen!", (UBYTE *)argArray[ARG_PUBSCREEN]);
+  quitApp(getCatalog(catalogPtr, MSG_CANT_LOCK_SCR), RETURN_FAIL);
 
  quitApp(NULL, returnCode);
 
