@@ -25,6 +25,7 @@
 #include "gadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
 #include "inputhandler_support.h"
+#include "menus.h"
 
 #undef DEBUG
 #define DEBUG 0
@@ -807,9 +808,10 @@ kprintf("Window %s already has a refresh message pending!!\n",w->Title);
   
   Permit();
 
-kprintf("Sending a refresh message to window %s!!\n",w->Title);
   if (!found)
   {
+kprintf("Sending a refresh message to window %s!!\n",w->Title);
+
     IM = alloc_intuimessage(w, IntuitionBase);
     if (NULL != IM)
     {
@@ -907,6 +909,26 @@ void FreeGeneratedInputEvents(struct IIHData *iihdata)
 }
 
 /*********************************************************************/
+
+BOOL FireMenuMessage(WORD code, struct Window *win,
+		     struct InputEvent *ie, struct IntuitionBase *IntuitionBase)
+{
+    struct MenuMessage *msg;
+    BOOL result = FALSE;
+    
+    if ((msg = AllocMenuMessage(IntuitionBase)))
+    {
+    	msg->code = code;
+	msg->win  = win;
+	msg->ie   = *ie;
+	SendMenuMessage(msg, IntuitionBase);
+	
+	result = TRUE;
+    }
+    
+    return result;
+}
+    
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
