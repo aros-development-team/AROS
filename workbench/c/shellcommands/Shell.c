@@ -461,7 +461,6 @@ LONG interact(void)
 		VPrintf("New Shell process %ld\n", data);
 
 	    }
-	    Flush(Output());
 	    messageprinted = TRUE;
 	}
 
@@ -1223,10 +1222,6 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	    PrintFault(IoErr(), cli->cli_CommandName);
         }
     }
-
-    //    Flush(Output());
-
-    // P(Delay(1*8));
 
     P(kprintf("Done with the command...\n"));
 
