@@ -3,18 +3,22 @@
 
 #include "global.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include "compilerspecific.h"
+#include "debug.h"
 
 /*********************************************************************************************/
 
 void InitLocale(STRPTR catname, ULONG version)
 {
+#ifdef _AROS
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
+#else
+    LocaleBase = (struct Library    *)OpenLibrary("locale.library", 39);
+#endif
     if (LocaleBase)
     {
 	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-    					     TAG_DONE);
+					     TAG_DONE);
     }
 }
 
@@ -34,9 +38,9 @@ STRPTR MSG(ULONG id)
     
     if (catalog)
     {
-        retval = GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+	retval = GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } else {
-        retval = CatCompArray[id].cca_Str;
+	retval = CatCompArray[id].cca_Str;
     }
     
     return retval;
