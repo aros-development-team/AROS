@@ -63,7 +63,11 @@ PushMsg (const char * pre, const char * fmt, va_list args, const char * post)
 
     rest = sizeof (buffer) - len;
 
+#ifdef HAVE_VSNPRINTF
     len = vsnprintf (buffer+len, rest, fmt, args);
+#else
+    len = vsprintf (buffer+len, fmt, args);
+#endif
 
     rest -= len;
 

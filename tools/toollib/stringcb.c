@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <toollib/error.h>
 #include <toollib/stringcb.h>
 
