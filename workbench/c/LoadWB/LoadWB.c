@@ -69,12 +69,12 @@ APTR vi;
 
 static struct NewMenu nm[] =
 {
-  {NM_TITLE, "Workbench"},
-      {NM_ITEM, "Backdrop","B"},
-      {NM_ITEM, "Execute Command...", "E"},
-      {NM_ITEM, "Shell", "Z"},
-      {NM_ITEM, "About...", "?"},
-      {NM_ITEM, "Quit...", "Q"}
+    {NM_TITLE, "Workbench"              },
+    {NM_ITEM,  "Backdrop",           "B"},
+    {NM_ITEM,  "Execute Command...", "E"},
+    {NM_ITEM,  "Shell",              "Z"},
+    {NM_ITEM,  "About...",           "?"},
+    {NM_ITEM,  "Quit...",            "Q"}
 };
 
 
@@ -83,32 +83,32 @@ void Cleanup();
 void ExecuteCommand();
 /*********************************************************************************************/
 
-LONG __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
-struct Process *__detacher_process = NULL;
+LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
+struct Process *__detacher_process              = NULL;
+STRPTR          __detached_name                 = "Workbench";
 
 void DoDetach(void)
 {
-kprintf("LoadWB.DoDetach\n");
+    kprintf("LoadWB.DoDetach\n");
 
     /* If there's a detacher, tell it to go away */
     if (__detacher_process)
     {
 	Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
     }
-    __detacher_process = NULL;
 }
 
 /*********************************************************************************************/
 
 int InitWB()
 {
-kprintf("LoadWB.InitWB\n");
+    kprintf("LoadWB.InitWB\n");
 
     notifyport = CreateMsgPort();
 
     if (!notifyport)
 	Cleanup("Can't create notification msg port!\n");
-	    
+
     notifysig = 1L << notifyport->mp_SigBit;
 
 #warning RegisterWorkbench() crashes the system!
