@@ -9,8 +9,6 @@
 
 struct ReqToolsBase *ReqToolsBase;
 
-static char s[300];
-
 static void cleanup(char *msg)
 {
     if (msg) printf(PROGNAME ": %s\n", msg);
@@ -34,7 +32,7 @@ static void action(void)
 	{RTGL_Min		, -100						},
 	{RTGL_Max		, 100						},
 	{RTGL_Flags		, GLREQF_CENTERTEXT				},
-	{RTGS_TextFmt		, "Enter something\n12345678\nABCDEF"		},
+	{RTGS_TextFmt		, (IPTR)"Enter something\n12345678\nABCDEF"	},
     	{RTGS_GadFmt		, (IPTR)"O_k|Hel_lo|_Something"			},
     	{TAG_DONE								}
     };
@@ -48,4 +46,5 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+    return 0;
 }

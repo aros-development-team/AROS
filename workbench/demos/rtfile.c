@@ -7,7 +7,7 @@
 
 #define PROGNAME "rtfile"
 
-struct Library *ReqToolsBase;
+struct ReqToolsBase *ReqToolsBase;
 
 static char s[300];
 
@@ -38,7 +38,6 @@ static void action(void)
     
     if ((req = rtAllocRequestA(RT_FILEREQ, tags)))
     {
-    kprintf("--\n");
         rtFileRequestA(req, s, "Title", tags);
 	rtFreeRequest(req);
     }
@@ -49,4 +48,5 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+    return 0;
 }

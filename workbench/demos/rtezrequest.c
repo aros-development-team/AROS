@@ -9,8 +9,6 @@
 
 struct ReqToolsBase *ReqToolsBase;
 
-static char s[300];
-
 static void cleanup(char *msg)
 {
     if (msg) printf(PROGNAME ": %s\n", msg);
@@ -35,8 +33,6 @@ static void action(void)
     	{TAG_DONE								}
     };
     IPTR args[] = {(IPTR)"ABCDEF12345678", 12345678};
-    
-    LONG val = 0;
        
     rtEZRequestA("This is a requester\n"
     		 "which was created\n"
@@ -54,4 +50,5 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+    return 0;
 }

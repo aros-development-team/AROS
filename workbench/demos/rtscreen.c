@@ -7,9 +7,7 @@
 
 #define PROGNAME "rtscreen"
 
-struct Library *ReqToolsBase;
-
-static char s[300];
+struct ReqToolsBase *ReqToolsBase;
 
 static void cleanup(char *msg)
 {
@@ -48,4 +46,5 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+    return 0;
 }
