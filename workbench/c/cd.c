@@ -66,7 +66,7 @@ int main (int argc, char ** argv)
 			}
 			else
 			{
-			    SetIoErr(ERROR_DIR_NOT_FOUND);
+			    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 			    error=RETURN_ERROR;
 			}
 		    }else
