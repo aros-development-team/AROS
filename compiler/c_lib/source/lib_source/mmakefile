@@ -8,7 +8,6 @@ USER_INCLUDES	:= -D_AROS -I. -I../include
 LIBS		:= -L$(LIBDIR) -lamiga -larossupport -larosc
 DEPLIBS 	:= $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 		    $(LIBDIR)/libarosc.a
-SCRIPTDIR	:= $(BINDIR)/scripts
 SRCS		:= LibInit.c SampleFuncs.c
 OBJS		:= libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
 LIB		:= $(SLIBDIR)/example.library
@@ -17,14 +16,20 @@ LIB		:= $(SLIBDIR)/example.library
 clean :
 	$(RM) *.o $(LIB)
 
+#MM setup : setup-clib
+setup :
+	@$(NOP)
+
 #MM
-setup : make-dirs copy-scripts
+setup-clib : make-dirs copy-scripts
 
 make-dirs :
 	@if $(TEST) ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
 
 copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk \
-	$(SCRIPTDIR)/moveifchanged
+	$(SCRIPTDIR)/moveifchanged $(SCRIPTDIR)/genshared \
+	$(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk \
+	$(SCRIPTDIR)/genfd.awk
 
 $(SCRIPTDIR)/% : %
 	$(CP) $< $@
