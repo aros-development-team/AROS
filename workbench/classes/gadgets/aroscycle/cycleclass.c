@@ -173,7 +173,10 @@ IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval = GMR_MEACTIVE;
     struct RastPort *rport;
+    struct CycleData *data;
 
+    data = INST_DATA(cl, o);
+    
     if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
     {
         if (msg->gpi_IEvent->ie_Code == SELECTUP)
@@ -181,11 +184,29 @@ IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
             if (G(o)->Flags & GFLG_SELECTED)
             {
                 /* mouse is over gadget */
-                *msg->gpi_Termination = TRUE;
+		
+        	data->active++;
+        	if (data->active == data->numlabels)
+                    data->active = 0;
+
+		
+                *msg->gpi_Termination = data->active;
                 retval = GMR_NOREUSE | GMR_VERIFY;
             } else
                 /* mouse is not over gadget */
                 retval = GMR_NOREUSE;
+		
+            G(o)->Flags &= ~GFLG_SELECTED;
+	    
+            rport = ObtainGIRPort(msg->gpi_GInfo);
+            if (rport)
+            {
+        	struct gpRender rmsg =
+                    { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE };
+        	DoMethodA(o, (Msg)&rmsg);
+        	ReleaseGIRPort(rport);
+            }
+
         } else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
         {
             struct gpHitTest htmsg =
@@ -273,6 +294,9 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
             retval = GMR_NOREUSE;
         break;}
 
+#if 0
+/* stegerg: now done in GM_HANDLEINPUT */
+
 #define GPGI(x) ((struct gpGoInactive *)(x))
     case GM_GOINACTIVE:{
         struct RastPort *rport;
@@ -294,6 +318,7 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
             ReleaseGIRPort(rport);
         }
         break;}
+#endif
 
     case GM_HANDLEINPUT:
         retval = cycle_handleinput(cl, o, (struct gpInput *)msg);
