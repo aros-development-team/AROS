@@ -76,10 +76,11 @@ IPTR presentationSet(Class * cl, Object * obj, struct opSet * msg)
                 data->observer = tag->ti_Data;
                 break;
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }

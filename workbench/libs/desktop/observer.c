@@ -113,10 +113,11 @@ IPTR observerSet(Class * cl, Object * obj, struct opSet * msg)
                              MUIV_EveryTime, data->parent, 2, OM_Delete, obj);
                 break;
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }

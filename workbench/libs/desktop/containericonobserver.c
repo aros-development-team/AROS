@@ -171,12 +171,11 @@ IPTR containerIconObserverSet(Class * cl, Object * obj, struct opSet * msg)
     while ((tag = NextTagItem(&tstate)))
     {
         switch (tag->ti_Tag)
-        {
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
-        }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }

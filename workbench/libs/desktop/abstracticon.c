@@ -25,8 +25,6 @@ IPTR abstractIconNew(Class *cl, Object *obj, struct opSet *msg)
     BOOL script=FALSE, pure=FALSE, archived=FALSE, readable=FALSE, writeable=FALSE, executable=FALSE, deleteable=FALSE;
     UBYTE *comment=NULL;
 
-kprintf("abstracticon/new\n");
-
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -59,8 +57,6 @@ kprintf("abstracticon/new\n");
     }
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
-
-    kprintf("retval is %d\n", retval);
 
     if (retval)
     {
