@@ -66,13 +66,6 @@ void closemuimaster(void)
 
 #endif
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 int main (int argc, char **argv)
 {
     Object *app;
@@ -153,7 +146,7 @@ int main (int argc, char **argv)
     printf("created Application object %p\n", app);
 
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	     (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     /*
      * Open window and ALWAYS check.
@@ -176,7 +169,7 @@ int main (int argc, char **argv)
     {
 	ULONG sigs = 0;
 
-	while (DoMethod(app, MUIM_Application_NewInput, &sigs)
+	while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	       != MUIV_Application_ReturnID_Quit)
 	{
 	    if (sigs)

@@ -67,13 +67,6 @@ void closemuimaster(void)
 
 #endif
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 int main (int argc, char **argv)
 {
     Object *app;
@@ -171,21 +164,21 @@ int main (int argc, char **argv)
     }
 
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     app, 2,
+	     (IPTR)app, 2,
 	     MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(stepb[0], MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
-	     pages, 3, MUIM_Set,
+	     (IPTR)pages, 3, MUIM_Set,
 	     MUIA_Group_ActivePage, MUIV_Group_ActivePage_Prev);
 
     DoMethod(stepb[1], MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
-	     pages, 3, MUIM_Set,
+	     (IPTR)pages, 3, MUIM_Set,
 	     MUIA_Group_ActivePage, MUIV_Group_ActivePage_Next);
 
     for (i = 0; i < 3; i++)
     {
 	DoMethod(b[i], MUIM_Notify, MUIA_Pressed, FALSE,
-		 pages, 3, MUIM_Set, MUIA_Group_ActivePage, i);
+		 (IPTR)pages, 3, MUIM_Set, MUIA_Group_ActivePage, i);
     }
     /*
      * Open window and ALWAYS check.
@@ -201,7 +194,7 @@ int main (int argc, char **argv)
     {
 	ULONG sigs = 0;
 
-	while (DoMethod(app, MUIM_Application_NewInput, &sigs)
+	while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	       != MUIV_Application_ReturnID_Quit)
 	{
 	    if (sigs)

@@ -67,13 +67,6 @@ void closemuimaster(void)
 
 #endif
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 int main (int argc, char **argv)
 {
     Object *app;
@@ -99,7 +92,7 @@ int main (int argc, char **argv)
     }
 
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	     (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     set(mainWin, MUIA_Window_Open, TRUE);
     if (!xget(mainWin, MUIA_Window_Open))
@@ -112,7 +105,7 @@ int main (int argc, char **argv)
     {
 	ULONG sigs = 0;
 
-	while (DoMethod(app, MUIM_Application_NewInput, &sigs)
+	while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	       != MUIV_Application_ReturnID_Quit)
 	{
 	    if (sigs)

@@ -330,14 +330,14 @@ ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(obj, MUIM_Notify,
 	     MUIA_Test_A,                /* attribute to watch */
 	     MUIV_EveryTime,             /* notify when setting to everything */
-	     obj,                        /* object to call on notification */
+	     (IPTR)obj,                  /* object to call on notification */
              1,                          /* number of parameters following */
              MUIM_ExtendedTest_Update);  /* method to invoke */
 
     DoMethod(obj, MUIM_Notify,
 	     MUIA_Test_B,
 	     MUIV_EveryTime,
-	     obj,
+	     (IPTR)obj,
 	     1,
 	     MUIM_ExtendedTest_Update);
     /*
@@ -358,7 +358,7 @@ ExtendedTest_Update(struct IClass *cl, Object *obj,
     int a;
     int b;
 
-    DoMethod(obj, MUIM_Test_GetBoth, &a, &b);
+    DoMethod(obj, MUIM_Test_GetBoth, (IPTR)&a, (IPTR)&b);
     data->sum = a + b;
     data->average = (a + b) / 2;
     data->usecount++;
@@ -475,7 +475,7 @@ int main (void)
 	DoMethod(obj, MUIM_ExtendedTest_Print);
 
 	printf("\n- Get the A and B attributes using MUIP structure:\n");
-	DoMethod(obj, MUIM_Test_GetBoth, &x, &y);
+	DoMethod(obj, MUIM_Test_GetBoth, (IPTR)&x, (IPTR)&y);
 	printf("Values returned: %d %d.\n", x, y);
 	DisposeObject(obj);
     }

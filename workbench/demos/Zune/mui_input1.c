@@ -25,7 +25,7 @@
 
 struct Library       *MUIMasterBase;
 
-#define _U(s) (s)
+#define _U(s) ((IPTR)(s))
 
 #ifndef __AROS__
 
@@ -73,13 +73,6 @@ void closemuimaster(void)
 
 #endif
 
-ULONG xget(Object *obj, Tag attr)
-{
-  ULONG storage;
-  GetAttr(attr, obj, &storage);
-  return storage;
-}
-
 Object *SimpleChainedButton (STRPTR label)
 {
     Object *obj;
@@ -120,16 +113,13 @@ int main (int argc, char **argv)
 					   "\33cI \33ilove MUI\n"
 					   "HelloH \33b\33ihello\33nH"),
 	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Toggle")),
-/*                  Child, VSpace(0), */
-#warning FIXME: uncomment this when I have images
-/*
+                Child, VSpace(0),
 	        Child, HGroup,
                     MUIA_Frame, MUIV_Frame_Group,
                     MUIA_FrameTitle, (IPTR)"The quick brown fox jumps over the lazy dog",
 	            MUIA_Background, MUII_GroupBack,
 	            Child, ChainedCheckmark("My first checkmark"),
                 End,
-*/
 	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Immediate")),
 	        Child, HGroup,
 	            MUIA_Frame, MUIV_Frame_Group,
