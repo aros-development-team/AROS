@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function OpenWindow()
@@ -591,12 +591,12 @@
     /* child support */
     if (NULL != parentwin)
     {
-      if (parentwin->firstchild)
-        parentwin->firstchild->prevchild = w;
-    
-      w->nextchild = parentwin->firstchild;
-      parentwin->firstchild = w;
-      w->parent = parentwin;
+	if (parentwin->firstchild)
+            parentwin->firstchild->prevchild = w;
+
+	w->nextchild = parentwin->firstchild;
+	parentwin->firstchild = w;
+	w->parent = parentwin;
     }
     
     /* Help stuff */
@@ -627,15 +627,24 @@
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
    which now is ready for us to use. */
+   
     driver_init_done = TRUE;
     rp = w->RPort;
 
     D(bug("called driver, rp=%p\n", rp));
-    if (w->WScreen->Font)
-	SetFont (rp, ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font);
-    else
-	SetFont (rp, GfxBase->DefaultFont);
 
+    /* The window RastPort always gets the font from GfxBase->DefaultFont, which
+       is the system's default font. Usually topaz 8, but it can be changed with
+       the Fonts prefs program to another fixed-sized font. */
+    
+#warning: Really hacky way of re-opening GfxBase->DefaultFont
+
+    Forbid();
+    IW(w)->initialfont = GfxBase->DefaultFont;
+    IW(w)->initialfont->tf_Accessors++;
+    Permit();
+    SetFont (rp, IW(w)->initialfont);
+        
     D(bug("set fonts\n"));
 
 #warning Remove workaround!
@@ -751,6 +760,8 @@ failexit:
 	
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);
+	
+	if (IW(w)->initialfont) CloseFont(IW(w)->initialfont);
 	
 	if (w->UserPort)
 	    DeleteMsgPort(w->UserPort);
