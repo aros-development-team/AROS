@@ -41,7 +41,10 @@ struct PartitionTypeNode *ptypenode;
 		{
 			dettypelvtags[3].ti_Data = ~0;
 		}
-		typestrncpy(str, pn->type.id, pn->type.id_len);
+		if (pn->type.id_len)
+			typestrncpy(str, pn->type.id, pn->type.id_len);
+		else
+			*str = 0;
 		dettypestringtags[1].ti_Data = (STACKIPTR)str;
 	}
 	else
