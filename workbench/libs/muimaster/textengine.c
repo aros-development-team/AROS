@@ -905,7 +905,8 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 
     rp = _rp(obj);
     SetFont(rp,_font(obj));
-
+    SetSoftStyle(rp, style, AskSoftStyle(rp));
+    
     top += _font(obj)->tf_Baseline + text->yscroll;
 
     for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
@@ -955,6 +956,7 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 
     rp = _rp(obj);
     SetFont(rp,_font(obj));
+    SetSoftStyle(rp, style, AskSoftStyle(rp));
 
     top += _font(obj)->tf_Baseline + text->yscroll;
 
@@ -1030,6 +1032,7 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 
     rp = _rp(obj);
     SetFont(rp,_font(obj));
+    SetSoftStyle(rp, style, AskSoftStyle(rp));
 
     top += _font(obj)->tf_Baseline + text->yscroll;
 
