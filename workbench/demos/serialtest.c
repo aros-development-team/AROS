@@ -51,11 +51,11 @@ void closedevices(void)
 
 void open_device(void)
 {
-  int unitnum;
+  ULONG unitnum;
   char sevenwire, shared;
   int index = getFreeIORequest();
-  int flags;
-  int err;
+  ULONG flags = 0;
+  BYTE err;
   
   if (-1 == index)
   {
