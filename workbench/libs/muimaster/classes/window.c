@@ -394,11 +394,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    }
 	    DeleteDragNDrop(data->wd_dnd);
 	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, data->wd_DragImage);
+	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
 	    data->wd_DragImage = NULL;
 	    data->wd_DragObject = NULL;
 	    data->wd_DropWindow = NULL;
 	    data->wd_dnd = NULL;
-	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
     	}
     	return;
     }
