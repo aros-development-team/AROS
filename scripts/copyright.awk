@@ -1,9 +1,12 @@
 BEGIN {
     for (arg=1; arg<ARGC; arg++)
     {
-	copyright="    (C) 1995-96 AROS - The Amiga Research OS";
+	copyright="        Copyright © 1995-2001, The AROS Development Team. All rights reserved.";
 	id="    $Id$";
 	logtxt="    $Log$
+	logtxt="    Revision 1.3  2001/10/30 20:28:20  chodorowski
+	logtxt="    Fixed copyright notice.
+	logtxt="
 	logtxt="    Revision 1.2  1998/10/20 16:46:36  hkiel
 	logtxt="    Amiga Research OS
 	logtxt="

@@ -1,4 +1,4 @@
-#   Copyright (C) 1995-1998 AROS
+#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Create mf.inc files from the %add_objects,%exclude_files stuff
