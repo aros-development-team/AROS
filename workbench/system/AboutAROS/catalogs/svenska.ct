@@ -1,0 +1,49 @@
+## version $VER: AboutAROS.catalog 1.0 (25.7.2003)
+## language svenska
+## codeset 0
+;
+MSG_TITLE
+Om AROS
+; About AROS
+;
+MSG_NIGHTLY_BUILD
+Nightly Build
+;
+MSG_SNAPSHOT
+Snapshot
+;
+MSG_RELEASE
+Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2003, The AROS Development Team. Alla rättigheter förbehållna.
+; Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Publicerat enligt villkoren i
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, version 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Besök http://www.aros.org/ för mer information.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Upphovsmän
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsorer
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Erkännanden
+; Acknowledgements
+;
