@@ -108,6 +108,10 @@
 
 	    E.g. CrossDos' PCx wants to allocate 7 memory regions, but the
 	    last two fields are empty.
+
+	    Should this be turned into a feature and be noted in the autodoc?
+	    The original behaves this way, but it is, AFAIK, not documented to do
+	    so. Comments?
 	*/
 	if(entry->ml_ME[i].me_Length)
 	{
