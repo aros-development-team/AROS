@@ -43,11 +43,11 @@ static ULONG xbutton2hidd(XButtonEvent *xb)
 	case Button1:
 	    button = vHidd_Mouse_Button1;
 	    break;
-/*	
+	
 	case Button2:
-	    button = vHidd_Mouse_Button2;
+	    button = vHidd_Mouse_Button3;
 	    break;
-*/	    
+	    
 	case Button3:
 	    button = vHidd_Mouse_Button2;
 	    break;
