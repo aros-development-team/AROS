@@ -6,7 +6,7 @@
     Lang: english
 */
 
-/*****************************************************************************
+/*****i***********************************************************************
 
     NAME */
 #include <proto/exec.h>
@@ -14,7 +14,7 @@
 	AROS_LH0(LONG, RawMayGetChar,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 84, Exec)
+	struct ExecBase *, SysBase, 85, Exec)
 
 /*  FUNCTION
 	Check if there is a character on the raw console.
