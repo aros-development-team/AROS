@@ -148,3 +148,19 @@ A good example about how to use RT and what it can do can be
 found in \filename{AROS/workbench/demos/rtdemo.c}
 (\link{Output of rtdemo}{rtdemo.log}).
 
+The following resources are tracked:
+
+\begin{itemize}
+\item Memory in |AllocMem()|, |FreeMem()|, |AllocVec()| and |FreeVec()|
+
+\item Files in |Open()|, |Close()|, |Read()| and |Write()|
+
+\item Windows in |OpenWindow()|, |CloseWindow()|, |WindowToFront()|,
+    |WindowToBack()|
+
+\item Screens in |OpenScreen()|, |CloseScreen()|, |ScreenToFront()|,
+    |ScreenToBack()|. |CloseScreen()| also checks for open windows
+    on the screen before closing.
+
+\end{itemize}
+

@@ -31,20 +31,41 @@ BEGIN {
     special_items["ti_Data"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">ti_Data</A>";
     special_items["USER_TAG"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">USER_TAG</A>";
 
-    special_items["CreateRastPort()"] = "<A HREF=\"srcs/rom/graphics/createrastport.c\">CreateRastPort()</A>";
-    special_items["FreeRastPort()"] = "<A HREF=\"srcs/rom/graphics/freerastport.c\">FreeRastPort()</A>";
-    special_items["InitRastPort()"] = "<A HREF=\"srcs/rom/graphics/initrastport.c\">InitRastPort()</A>";
-    special_items["DeinitRastPort()"] = "<A HREF=\"srcs/rom/graphics/deinitrastport.c\">DeinitRastPort()</A>";
-    special_items["CloneRastPort()"] = "<A HREF=\"srcs/rom/graphics/clonerastport.c\">CloneRastPort()</A>";
+    special_items["CreateRastPort()"] = "<A HREF=\"autodocs/createrastport.html\">CreateRastPort()</A>";
+    special_items["FreeRastPort()"] = "<A HREF=\"autodocs/freerastport.html\">FreeRastPort()</A>";
+    special_items["InitRastPort()"] = "<A HREF=\"autodocs/initrastport.html\">InitRastPort()</A>";
+    special_items["DeinitRastPort()"] = "<A HREF=\"autodocs/deinitrastport.html\">DeinitRastPort()</A>";
+    special_items["CloneRastPort()"] = "<A HREF=\"autodocs/clonerastport.html\">CloneRastPort()</A>";
 
-    special_items["DoMethod()"] = "<A HREF=\"srcs/compiler/alib/boopsi.c\">DoMethod()</A>";
-    special_items["DoMethodA()"] = "<A HREF=\"srcs/compiler/alib/boopsi.c\">DoMethodA()</A>";
+    special_items["AllocMem()"] = "<A HREF=\"autodocs/allocmem.html\">AllocMem()</A>";
+    special_items["AllocVec()"] = "<A HREF=\"autodocs/allocvec.html\">AllocVec()</A>";
+    special_items["FreeMem()"] = "<A HREF=\"autodocs/freemem.html\">FreeMem()</A>";
+    special_items["FreeVec()"] = "<A HREF=\"autodocs/freevec.html\">FreeVec()</A>";
 
-    special_items["ReadArgs()"] = "<A HREF=\"srcs/rom/dos/readargs.c\">ReadArgs()</A>";
-    special_items["VPrintf()"] = "<A HREF=\"srcs/rom/dos/vprintf.c\">VPrintf()</A>";
-    special_items["VFPrintf()"] = "<A HREF=\"srcs/rom/dos/vfprintf.c\">VFPrintf()</A>";
+    special_items["DoMethod()"] = "<A HREF=\"autodocs/domethod.html\">DoMethod()</A>";
+    special_items["DoMethodA()"] = "<A HREF=\"autodocs/domethod.html\">DoMethodA()</A>";
 
-    special_items["SMult64()"] = "<A HREF=\"srcs/rom/utility/smult64.c\">SMult64()</A>";
+    special_items["OpenWindow()"] = "<A HREF=\"autodocs/openwindow.html\">OpenWindow()</A>";
+    special_items["CloseWindow()"] = "<A HREF=\"autodocs/closewindow.html\">CloseWindow()</A>";
+    special_items["WindowToFront()"] = "<A HREF=\"autodocs/windowtofront.html\">WindowToFront()</A>";
+    special_items["WindowToBack()"] = "<A HREF=\"autodocs/windowtoback.html\">WindowToBack()</A>";
+    special_items["OpenScreen()"] = "<A HREF=\"autodocs/openscreen.html\">OpenScreen()</A>";
+    special_items["CloseScreen()"] = "<A HREF=\"autodocs/closescreen.html\">CloseScreen()</A>";
+    special_items["ScreenToFront()"] = "<A HREF=\"autodocs/screentofront.html\">ScreenToFront()</A>";
+    special_items["ScreenToBack()"] = "<A HREF=\"autodocs/screentoback.html\">ScreenToBack()</A>";
+
+    special_items["ReadArgs()"] = "<A HREF=\"autodocs/readargs.html\">ReadArgs()</A>";
+    special_items["VPrintf()"] = "<A HREF=\"autodocs/vprintf.html\">VPrintf()</A>";
+    special_items["VFPrintf()"] = "<A HREF=\"autodocs/vfprintf.html\">VFPrintf()</A>";
+    special_items["Open()"] = "<A HREF=\"autodocs/open.html\">Open()</A>";
+    special_items["Close()"] = "<A HREF=\"autodocs/close.html\">Close()</A>";
+    special_items["Read()"] = "<A HREF=\"autodocs/read.html\">Read()</A>";
+    special_items["Write()"] = "<A HREF=\"autodocs/write.html\">Write()</A>";
+
+    special_items["SMult64()"] = "<A HREF=\"autodocs/smult64.html\">SMult64()</A>";
+
+    special_files["exec/lists.h"] = "<A HREF=\"srcs/compiler/include/exec/lists.h\">exec/lists.h</A>";
+    special_files["intuition/intuition.h"] = "<A HREF=\"srcs/compiler/include/intuition/intuition.h\">intuition/intuition.h</A>";
 
     cmd="date \"+%d %b %Y\""
     cmd | getline today;
@@ -445,6 +466,8 @@ BEGIN {
 			{
 			    file="<A HREF=\"srcs/"substr(file,6)"\">"file"</A>"
 			}
+			else if (file in special_files)
+			    file = special_files[file];
 		    }
 		}
 
