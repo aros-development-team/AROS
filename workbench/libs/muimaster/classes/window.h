@@ -156,6 +156,9 @@ struct MUI_RenderInfo
     int              mri_rCount;
 
     struct Rectangle mri_ClipRect;
+
+    UWORD            mri_BorderTop;     /* The height of the windows top border (the title) */
+    UWORD            mri_BorderBottom;  /* The height of the windows bottom bodder */
 };
 
 #define MUIMRI_RECTFILL (1<<0)
