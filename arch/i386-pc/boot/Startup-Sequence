@@ -10,15 +10,13 @@
 
 Mount RAM:
 Mount NIL:
-;Mount PIPEFS:
+Mount PIPEFS:
 
 ;-----------------------------------------------
 ; Copy System to RAM:
-Copy SYS:AROS.tgz RAM:
 CD RAM:
-;SYS:contrib/aminet/untgz RAM:AROS.tgz 
-SYS:contrib/gnu/gzip -d RAM:AROS.tgz
-SYS:contrib/aminet/untar RAM:AROS.tar 
+SYS:contrib/gnu/gzip -dc SYS:AROS.tgz | SYS:contrib/aminet/untar IN: >NIL:
+
 Assign SYS: RAM:
 Assign C: SYS:C
 Assign DEVS: SYS:Devs
