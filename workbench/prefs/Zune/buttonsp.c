@@ -31,6 +31,10 @@ struct MUI_ButtonsPData
     Object *text_font_string;
     Object *text_background_popimage;
     Object *text_selbackground_popimage;
+    Object *spacing_vert_slider;
+    Object *spacing_horiz_slider;
+    Object *radio_look_popimage;
+    Object *checkmark_look_popimage;
 };
 
 static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
@@ -39,9 +43,11 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 }
 
 #define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-#define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
-#define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
-#define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
+
+static Object*MakeSpacingSlider (void)
+{
+    return MUI_MakeObject(MUIO_Slider, "", 0, 9);
+}
 
 static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -49,9 +55,16 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ButtonsPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-	Child, VGroup,
+	Child, HGroup,
+	  Child, VGroup, /* Text Buttons */
 	    Child, ColGroup(2),
 		GroupFrameT("Text Buttons"),
+		Child, VGroup,
+			       Child, HVSpace,
+			       Child, MakeLabel("Frame:"),
+			       Child, HVSpace,
+			       End,
+		Child, PopimageObject, End,
 		Child, VGroup,
 			       Child, HVSpace,
 			       Child, MakeLabel("Background:"),
@@ -72,7 +85,67 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    End,
 
 		End,
-	    End,
+	    End, /* VGroup */
+	  Child, VGroup, /* other buttons */
+	      Child, HGroup, /* ImageButtons */
+	          GroupFrameT("Image Buttons"),
+		  Child, VGroup,
+		      Child, HVSpace,
+		      Child, MakeLabel("Frame:"),
+		      Child, HVSpace,
+		      End,
+	          Child, HGroup,
+		      Child, PopimageObject,
+		           MUIA_FixWidth, 20,
+		           End,
+	              Child, HVSpace,
+	 	      End,
+	          End, /* ImageButtons */
+	      Child, HGroup, /* Checkmarks */
+	          GroupFrameT("Checkmarks"),
+		  Child, VGroup,
+		      Child, HVSpace,
+		      Child, MakeLabel("Look:"),
+		      Child, HVSpace,
+		      End,
+	          Child, HGroup,
+	  	   Child, d.checkmark_look_popimage = PopimageObject,
+		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
+		     MUIA_FixWidth, 20,
+		     MUIA_FixHeight, 20,
+		     MUIA_Imagedisplay_FreeHoriz, FALSE,
+		     MUIA_Imagedisplay_FreeVert, FALSE,
+		     End,
+	           Child, HVSpace,
+	           End, /* HGroup */
+	          End, /* Checkmarks */
+	      Child, HGroup, /* Radio Buttons */
+		  GroupFrameT("Radio Buttons"),
+		  Child, HVSpace,
+		  Child, VGroup,
+		      Child, d.radio_look_popimage = PopimageObject,
+		         MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
+		         MUIA_FixWidth, 20,
+		         MUIA_FixHeight, 20,
+			 MUIA_Imagedisplay_FreeHoriz, FALSE,
+			 MUIA_Imagedisplay_FreeVert, FALSE,
+		         End,
+		      Child, MUI_MakeObject(MUIO_Label, "Look", MUIO_Label_Centered),
+               	      End,
+		  Child, VGroup,
+		      Child, ColGroup(2),
+			  MUIA_Group_HorizSpacing, 2,
+		          Child, MakeLabel("H"),
+		          Child, d.spacing_horiz_slider = MakeSpacingSlider(),
+		          Child, MakeLabel("V"),
+		          Child, d.spacing_vert_slider = MakeSpacingSlider(),
+		          End,
+		      Child, MUI_MakeObject(MUIO_Label, "Spacing", MUIO_Label_Centered),
+		      End,
+	          Child, HVSpace,
+	          End, /* Radio Buttons */
+	      End, /* other buttons */
+	    End, /* obj */
     	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
@@ -88,16 +161,35 @@ static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
     char *spec;
 
+/* Font */
     setstring(data->text_font_string, FindConfig(MUICFG_Font_Button));
 
+/* Backgrounds */
     spec = FindConfig(MUICFG_Background_Button);
-    set(data->text_background_popimage,MUIA_Imagedisplay_Spec,
+    set(data->text_background_popimage, MUIA_Imagedisplay_Spec,
 	spec ? spec : MUII_ButtonBack);
 
     spec = FindConfig(MUICFG_Background_Selected);
-    set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,
+    set(data->text_selbackground_popimage, MUIA_Imagedisplay_Spec,
 	spec ? spec : MUII_SelectedBack);
-    return 1;    
+
+/* Looks */
+    spec = FindConfig(MUICFG_Image_RadioButton);
+    set(data->radio_look_popimage, MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_RadioButton);
+
+    spec = FindConfig(MUICFG_Image_CheckMark);
+    set(data->checkmark_look_popimage, MUIA_Imagedisplay_Spec,
+	spec ? spec : MUII_CheckMark);
+
+/* Spacing */
+    setslider(data->spacing_horiz_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Radio_HSpacing));
+    setslider(data->spacing_vert_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Radio_VSpacing));
+    return 1;
 }
 
 static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
@@ -106,14 +198,33 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
     char *buf;
     char *str;
 
+/* Font */
     str = getstring(data->text_font_string);
-    AddConfigStr(str,MUICFG_Font_Button);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Button, (IPTR)str);
 
-    str = (char*)xget(data->text_background_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigImgStr(str,MUICFG_Background_Button);
+/* Backgrounds */
+    str = (char*)xget(data->text_background_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Button,
+	     (IPTR)str);
 
-    str = (char*)xget(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigImgStr(str,MUICFG_Background_Selected);
+    str = (char*)xget(data->text_selbackground_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Selected,
+	     (IPTR)str);
+
+/* Looks */
+    str = (char*)xget(data->radio_look_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_RadioButton,
+	     (IPTR)str);
+
+    str = (char*)xget(data->checkmark_look_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_CheckMark,
+	     (IPTR)str);
+
+/* Spacing */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Radio_HSpacing,
+	     xget(data->spacing_horiz_slider, MUIA_Numeric_Value));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Radio_VSpacing,
+	     xget(data->spacing_vert_slider, MUIA_Numeric_Value));
 
     return TRUE;
 }
