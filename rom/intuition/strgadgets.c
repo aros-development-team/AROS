@@ -1044,18 +1044,11 @@ VOID UpdateStrGadget(struct Gadget	*gad,
 
     if (gad->Flags & GFLG_DISABLED )
     {
-	UWORD pattern[] = { 0x8888, 0x2222 };
-
-	SetDrMd( rp, JAM1 );
-	SetAPen( rp, 1 );
-	SetAfPt( rp, pattern, 1);
-
-	/* render disable pattern */
-	RectFill(rp,
-	    bbox.Left,
-	    bbox.Top,
-	    bbox.Left + bbox.Width - 1,
-	    bbox.Top + bbox.Height - 1 );
+        RenderDisabledPattern(rp, bbox.Left,
+				  bbox.Top,
+				  bbox.Left + bbox.Width - 1,
+				  bbox.Top + bbox.Height - 1,
+				  IntuitionBase );
     }
     
     ReleaseGIRPort(rp);
