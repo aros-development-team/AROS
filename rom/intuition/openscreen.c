@@ -102,6 +102,7 @@ static const ULONG coltab[] = {
     int               success;
     struct Hook      *layer_info_hook = NULL;
     ULONG            *errorPtr;	  /* Store error at user specified location */
+    UWORD	     *customdripens = NULL;
     BOOL	      ok = TRUE, rp_inited = FALSE;
     
     ASSERT_VALID_PTR(newScreen);
@@ -143,7 +144,7 @@ static const ULONG coltab[] = {
 
     if(tagList)
     {
-	while((tag = NextTagItem (&tagList)))
+	while((tag = NextTagItem ((const struct TagItem **)&tagList)))
 	{
 	    switch(tag->ti_Tag)
 	    {
@@ -262,13 +263,16 @@ static const ULONG coltab[] = {
 		    ns.Type &= ~SHOWTITLE;
 		}
 	        break;
+
+	    case SA_Pens:
+		customdripens = (UWORD *)tag->ti_Data;
+		break;
 		
 	    case SA_DisplayID:
 	    case SA_DClip:
 	    case SA_Overscan:
 	    case SA_Behind:
 	    case SA_AutoScroll:
-	    case SA_Pens:
 	    case SA_FullPalette:
 	    case SA_ColorMapEntries:
 	    case SA_Parent:
@@ -471,12 +475,7 @@ static const ULONG coltab[] = {
 		screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
 	    }
 	}
-
-	if (!(screen->Screen.Flags & SCREENQUIET))
-	{
-	    CreateScreenBar(&screen->Screen, IntuitionBase);
-	}
-
+	
 	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
 	screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
 	screen->Pens[TEXTPEN] = 1;
@@ -490,6 +489,24 @@ static const ULONG coltab[] = {
 	screen->Pens[BARBLOCKPEN] = 2;
 	screen->Pens[BARTRIMPEN] = 1;
 
+	if (customdripens)
+	{
+	    WORD i;
+	    
+	    for(i = 0; i < NUMDRIPENS; i++)
+	    {
+	        UWORD pen = customdripens[i];
+		
+		if (pen == (UWORD)~0) break;
+		
+	        screen->Pens[i] = pen;
+	    }
+	}
+	
+	if (!(screen->Screen.Flags & SCREENQUIET))
+	{
+	    CreateScreenBar(&screen->Screen, IntuitionBase);
+	}
 
         D(bug("callling SetRast()\n"));	    
 	/* Set screen to background color */
@@ -503,7 +520,7 @@ static const ULONG coltab[] = {
 	if(screen->pubScrNode != NULL)
 	{
 	    /* Set the pointer to ourselves */
-	    GetPrivScreen(screen)->pubScrNode->psn_Screen = screen;
+	    GetPrivScreen(screen)->pubScrNode->psn_Screen = &screen->Screen;
 	    
 	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
 		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
