@@ -347,7 +347,7 @@ LX11
     XMapRaised (sysDisplay, IW(w)->iw_XWindow);
 UX11
     /* Show window *now* */
-    /* XFlush (sysDisplay); */
+    XFlush (sysDisplay);
     SIGID ();
 
     Diow(bug("Opening Window %p (X=%ld)\n", iw, IW(w)->iw_XWindow));
