@@ -874,7 +874,7 @@ VOID UndrawBitMapNode(struct BitMapNode *bmn )
 //-------------------------------------
 struct DragNDrop *CreateDragNDropA( struct TagItem *tlist )
 {
-	struct DragNDrop *dnd = (struct DragNDrop*)AllocMem( sizeof(struct DragNDrop), 0 );
+	struct DragNDrop *dnd = (struct DragNDrop*)AllocMem( sizeof(struct DragNDrop), MEMF_CLEAR );
 	if( dnd )
 	{
 		NewList( (struct List*)&dnd->dnd_List);
