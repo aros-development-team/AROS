@@ -9,16 +9,18 @@ This will create the required Makefile and config.h files. You can then
 build and install mmake with the following commands:
 
   make
+  strip mmake
   make install
 
 mmake will be installed in GeekGadget's bin directory as /gg/bin/mmake.
 
-You may also want to strip debug information with
-
-  strip mmake
-
-before you run `make install'.
-
 You don't need the *.amiga files, but they are more lightweight than the
 generated files. I haven't tested them. At first sight, they work, but
 they don't install mmake anywhere.
+
+NOTE: If during the configure you get messages saying `ACLOCAL not found' or
+something to that effect, you need to install a newer `automake' package.
+The version that is in GeekGadgets snapshot 970724 is too old. You can
+download this package from ftp://aros.fh-konstanz.de/aros/ , or find it in
+the AROSfA webpage at http://www.xs4all.nl/~ldp/aros/ . If a new snapshot
+of GeekGadgets is released, you no longer need our automake distribution.
