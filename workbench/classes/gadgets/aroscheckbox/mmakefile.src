@@ -5,8 +5,7 @@ FILES := checkboxclass support
 
 #MM workbench-gadgets-aroscheckbox : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-aroscheckbox \
-  modname=aroscheckbox modtype=gadget files=$(FILES) \
-  conffile=lib.conf uselibs="amiga rom"
+%build_module mmake=workbench-gadgets-aroscheckbox \
+  modname=aroscheckbox modtype=gadget \
+  files=$(FILES) uselibs="amiga rom"
 
-%common

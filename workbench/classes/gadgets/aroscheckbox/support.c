@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for AROSCheckboxClass.
@@ -19,9 +19,9 @@
 UWORD disabledpattern[2] = {0x4444, 0x1111};
 
 /* draws a disabled pattern */
-void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
-			 struct RastPort *rport, UWORD pen,
-			 WORD left, WORD top, UWORD width, UWORD height)
+void drawdisabledpattern(struct RastPort *rport, UWORD pen,
+			 WORD left, WORD top, UWORD width, UWORD height
+)
 {
     SetABPenDrMd(rport, pen, 0, JAM1);
     rport->AreaPtrn = disabledpattern;
@@ -53,9 +53,9 @@ void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase,
 }
 
 
-struct TextFont *preparefont(struct CBBase_intern *AROSCheckboxBase,
-			     struct RastPort *rport, struct IntuiText *itext,
-			     struct TextFont **oldfont)
+struct TextFont *preparefont(struct RastPort *rport, struct IntuiText *itext,
+			     struct TextFont **oldfont
+)
 {
     struct TextFont *font;
 
@@ -83,9 +83,9 @@ struct TextFont *preparefont(struct CBBase_intern *AROSCheckboxBase,
 }
 
 
-void closefont(struct CBBase_intern *AROSCheckboxBase,
-	       struct RastPort *rport,
-	       struct TextFont *font, struct TextFont *oldfont)
+void closefont(struct RastPort *rport,
+	       struct TextFont *font, struct TextFont *oldfont
+)
 {
     if(oldfont)
     {
@@ -95,8 +95,7 @@ void closefont(struct CBBase_intern *AROSCheckboxBase,
 }
 
 
-BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
+BOOL renderlabel(struct Gadget *gad, struct RastPort *rport, LONG labelplace)
 {
     struct TextFont *font = NULL, *oldfont;
     struct TextExtent te;
@@ -115,8 +114,7 @@ BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
         {
             /* GFLG_LABELITEXT */
             text = gad->GadgetText->IText;
-            font = preparefont(AROSCheckboxBase,
-                               rport, gad->GadgetText, &oldfont);
+            font = preparefont(rport, gad->GadgetText, &oldfont);
             if (!font)
                 return FALSE;
         }
@@ -165,7 +163,7 @@ BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
         else
         {
             PrintIText(rport, gad->GadgetText, x, y);
-            closefont(AROSCheckboxBase, rport, font, oldfont);
+            closefont(rport, font, oldfont);
         }
     }
     return TRUE;

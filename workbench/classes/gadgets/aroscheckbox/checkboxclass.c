@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS specific checkbox class implementation.
@@ -38,9 +38,6 @@
 #include "aroscheckbox_intern.h"
 
 /****************************************************************************************/
-
-#undef AROSCheckboxBase
-#define AROSCheckboxBase ((struct CBBase_intern *)(cl->cl_UserData))
 
 #include <clib/boopsistubs.h>
 
@@ -89,17 +86,17 @@ void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
     /* Draw disabled pattern, if not supported by imageclass. */
     if ((disabled) && !(gad->Flags & GFLG_IMAGEDISABLE))
     {
-	drawdisabledpattern(AROSCheckboxBase,
-                            rport, data->dri->dri_Pens[SHADOWPEN],
+	drawdisabledpattern(rport, data->dri->dri_Pens[SHADOWPEN],
 			    gad->LeftEdge, gad->TopEdge,
-			    gad->Width, gad->Height);
+			    gad->Width, gad->Height
+        );
     }
     
 }
 
 /****************************************************************************************/
 
-IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
+IPTR AROSCheckbox__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 {
     struct CheckData     *data = INST_DATA(cl, obj);
     const struct TagItem *tag, *taglist = msg->ops_AttrList;
@@ -176,10 +173,29 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 
     return retval;
 }
+IPTR AROSCheckbox__OM_UPDATE(Class * cl, Object * obj, struct opSet * msg)
+{
+    return AROSCheckbox__OM_SET(cl, obj, msg);
+}
 
 /****************************************************************************************/
 
-Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
+IPTR AROSCheckbox__OM_GET(Class * cl, Object * obj, struct opGet * msg)
+{
+    struct CheckData *data = INST_DATA(cl, obj);
+
+    if (msg->opg_AttrID == AROSCB_Checked)
+    {
+	*(msg->opg_Storage) = data->flags & CF_Checked;
+	return (IPTR)1UL;
+    }
+    else
+	return DoSuperMethodA(cl, obj, msg);
+}
+
+/****************************************************************************************/
+
+Object *AROSCheckbox__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct CheckData 	*data;
     struct TagItem  	tags[] =
@@ -203,7 +219,7 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->dri = NULL;
     data->flags = 0;
-    check_set(cl, obj, msg);
+    AROSCheckbox__OM_SET(cl, obj, msg);
 
     if (!G(obj)->GadgetRender)
     {
@@ -226,7 +242,20 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 
 /****************************************************************************************/
 
-IPTR check_render(Class * cl, Object * obj, struct gpRender * msg)
+IPTR AROSCheckbox__OM_DISPOSE(Class *cl, Class *obj, struct opSet *msg)
+{
+    struct CheckData *data = INST_DATA(cl, obj);
+    if (data->flags & CF_CustomImage)
+    {
+	DisposeObject(G(obj)->GadgetRender);
+	G(obj)->GadgetRender = NULL;
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/****************************************************************************************/
+
+IPTR AROSCheckbox__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct CheckData *data = INST_DATA(cl, obj);
     IPTR    	     result = TRUE;
@@ -238,8 +267,7 @@ IPTR check_render(Class * cl, Object * obj, struct gpRender * msg)
     /* Render gadget label */
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
-        result = renderlabel(AROSCheckboxBase,
-                             G(obj), msg->gpr_RPort, data->labelplace);
+        result = renderlabel(G(obj), msg->gpr_RPort, data->labelplace);
     }
     
     return result;
@@ -247,7 +275,7 @@ IPTR check_render(Class * cl, Object * obj, struct gpRender * msg)
 
 /****************************************************************************************/
 
-IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
+IPTR AROSCheckbox__GM_HANDLEINPUT(Class * cl, Object * obj, struct gpInput * msg)
 {
     struct CheckData 	*data = INST_DATA(cl, obj);
     struct RastPort 	*rport;
@@ -324,123 +352,40 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 
 /****************************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_checkclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
+IPTR AROSCheckbox__GM_GOACTIVE(Class *cl, Object *obj, struct gpInput *msg)
 {
-    AROS_USERFUNC_INIT
-
-    struct CheckData *data;
+    struct CheckData *data = INST_DATA(cl, obj);
     struct RastPort  *rport;
-    IPTR    	     retval = 0UL;
-
-    EnterFunc(bug("CheckBox::_dispatcher()\n"));
-
-    switch (msg->MethodID)
+    
+    G(obj)->Flags |= GFLG_SELECTED;
+    rport = ObtainGIRPort(msg->gpi_GInfo);
+    if (rport)
     {
-	case OM_NEW:
-	    retval = (IPTR) check_new(cl, (Class *)obj, (struct opSet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-	    data = INST_DATA(cl, obj);
-            if (data->flags & CF_CustomImage)
-            {
-        	DisposeObject(G(obj)->GadgetRender);
-        	G(obj)->GadgetRender = NULL;
-            }
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-	case OM_UPDATE:
-	case OM_SET:
-	    retval = check_set(cl, obj, (struct opSet *) msg);
-	    break;
-
-    #define OPG(x) ((struct opGet *)(x))
-	case OM_GET:
-	    data = INST_DATA(cl, obj);
-	    if (OPG(msg)->opg_AttrID == AROSCB_Checked)
-	    {
-		*(OPG(msg)->opg_Storage) = data->flags & CF_Checked;
-		retval = 1UL;
-	    } else
-		retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    #define GPI(x) ((struct gpInput *)(x))
-	case GM_GOACTIVE:
-	    data = INST_DATA(cl, obj);
-            G(obj)->Flags |= GFLG_SELECTED;
-            rport = ObtainGIRPort(GPI(msg)->gpi_GInfo);
-            if (rport)
-	    {
-        	drawimage(cl, G(obj), rport,
-                	  (data->flags&CF_Checked)?FALSE:TRUE, FALSE);
-        	ReleaseGIRPort(rport);
-        	retval = GMR_MEACTIVE;
-	    }
-	    else
-            {
-	    	retval = GMR_NOREUSE;
-	    }
-	    break;
-
-    #define GPGI(x) ((struct gpGoInactive *)(x))
-	case GM_GOINACTIVE:
-	    data = INST_DATA(cl, obj);
-	    G(obj)->Flags &= ~GFLG_SELECTED;
-	    rport = ObtainGIRPort(GPGI(msg)->gpgi_GInfo);
-	    if (rport)
-	    {
-        	drawimage(cl, G(obj), rport,
-                	  data->flags & CF_Checked, FALSE);
-		ReleaseGIRPort(rport);
-	    }
-	    break;
-
-	case GM_RENDER:
-	    retval = check_render(cl, obj, (struct gpRender *) msg);
-	    break;
-
-	case GM_HANDLEINPUT:
-	    retval = check_handleinput(cl, obj, (struct gpInput *) msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
+	drawimage(cl, G(obj), rport,
+		  (data->flags&CF_Checked)?FALSE:TRUE, FALSE);
+	ReleaseGIRPort(rport);
+	return (IPTR)GMR_MEACTIVE;
     }
-
-    ReturnPtr("CheckBox::_dispatcher()", IPTR, retval);
-
-    AROS_USERFUNC_EXIT
-
+    else
+	return (IPTR)GMR_NOREUSE;
 }
 
 /****************************************************************************************/
 
-#undef AROSCheckboxBase
-
-/****************************************************************************************/
-
-struct IClass *InitCheckboxClass (struct CBBase_intern * AROSCheckboxBase)
+void AROSCheckbox__GM_GOINACTIVE(Class *cl, Object *obj, struct gpGoInactive *msg)
 {
-    Class *cl = NULL;
-
-    cl = MakeClass(AROSCHECKBOXCLASS, GADGETCLASS, NULL, sizeof(struct CheckData), 0);
-    if (cl)
+    struct CheckData *data = INST_DATA(cl, obj);
+    struct RastPort  *rport;
+    
+    G(obj)->Flags &= ~GFLG_SELECTED;
+    rport = ObtainGIRPort(msg->gpgi_GInfo);
+    if (rport)
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_checkclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSCheckboxBase;
-
-	AddClass (cl);
+	drawimage(cl, G(obj), rport,
+		  data->flags & CF_Checked, FALSE
+	);
+	ReleaseGIRPort(rport);
     }
-
-    return (cl);
 }
 
 /****************************************************************************************/
