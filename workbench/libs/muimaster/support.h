@@ -27,6 +27,7 @@
 #   endif
 #   include <aros/macros.h>
 #   define IMSPEC_EXTERNAL_PREFIX "IMAGES:Zune/"
+#   include "support_aros.h"
 #else
 #   include "support_amigaos.h"
 #endif 
