@@ -180,14 +180,16 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 
               error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                                           data->filedescriptor,
+                                          vHidd_UnixIO_Terminal,
                                           data->replyport_read,
-                                          vHidd_UnixIO_Read|vHidd_UnixIO_Keep,
+                                          vHidd_UnixIO_Read | vHidd_UnixIO_Keep,
                                           SysBase);
 
               error = Hidd_UnixIO_AsyncIO(data->unixio_write,
                                           data->filedescriptor,
+                                          vHidd_UnixIO_Terminal,
                                           data->replyport_write,
-                                          vHidd_UnixIO_Write|vHidd_UnixIO_Keep,
+                                          vHidd_UnixIO_Write | vHidd_UnixIO_Keep,
                                           SysBase);
               goto exit;
 
@@ -241,8 +243,6 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
     Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
                              data->filedescriptor,
                              SysBase);
-//    Hidd_UnixIO_AbortAsyncIONotification(data->unixio_write,
-//                                         data->filedescriptor);
 
     close(data->filedescriptor);
   
@@ -300,21 +300,6 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
               msg->Outbuffer,
               msg->Length);
 
-
-#if 0
-  if (len < msg->Length)
-  {
-
-    // !!!!!! FROM WHAT I CAN TELL THE FOLLOWING LINE
-    //        CAUSES PROBLEMS. IT IS NECESSARY TO HAVE IT, THOUGH.
-    error = Hidd_UnixIO_AsyncIO(data->unixio_write,
-                                data->filedescriptor,
-                                data->replyport_write,
-                                vHidd_UnixIO_Write,
-                                SysBase);
-
-  }
-#endif
 
   ReturnInt("SerialUnit::Write()",ULONG, len);
 }
@@ -611,17 +596,6 @@ AROS_UFH3(void, serialunit_receive_data,
 
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
-
-#if 0
-  /*
-  ** I want to be notified when the next data are coming in.
-  */
-  error = Hidd_UnixIO_AsyncIO(data->unixio_read,
-                              data->filedescriptor,
-                              data->replyport_read,
-                              vHidd_UnixIO_RW,
-                              SysBase);
-#endif
 
   AROS_USERFUNC_EXIT
 }
