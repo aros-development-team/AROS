@@ -73,6 +73,9 @@ $(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 # ***** Not Native ***************
 else
 
+#MM kernel-aros-linklib :
+kernel-aros-linklib : show-flags $(LIB)
+
 OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
 # ***** END ***************
