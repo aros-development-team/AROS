@@ -5,7 +5,9 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/aros/machine.h \
-		   $(GENINCDIR)/jmpdefs.h
+		   $(GENINCDIR)/jmpdefs.h \
+		   $(GENINCDIR)/stubs.h
+
 
 #MM
 includes-linux-i386 : $(INCFILES) machine.i
