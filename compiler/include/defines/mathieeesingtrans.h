@@ -11,6 +11,17 @@
 /*
     Defines
 */
+
+#define IEEESPAcos(y) \
+    AROS_LC1(LONG, IEEESPAcos, \
+    AROS_LCA(LONG, y, D0), \
+    struct Library *, MathIeeeSingTransBase, 20, Mathieeesingtrans)
+
+#define IEEESPAsin(y) \
+    AROS_LC1(LONG, IEEESPAsin, \
+    AROS_LCA(LONG, y, D0), \
+    struct Library *, MathIeeeSingTransBase, 19, Mathieeesingtrans)
+
 #define IEEESPCos(y) \
     AROS_LC1(LONG, IEEESPCos, \
     AROS_LCA(LONG, y, D0), \
@@ -56,6 +67,11 @@
     AROS_LC1(LONG, IEEESPSinh, \
     AROS_LCA(LONG, y , D0), \
     struct Library *, MathIeeeSingTransBase, 10, Mathieeesingtrans)
+
+#define IEEESPSqrt(y) \
+    AROS_LC1(LONG, IEEESPSqrt, \
+    AROS_LCA(LONG, y, D0), \
+    struct Library *, MathIeeeSingTransBase, 16, Mathieeesingtrans)
 
 #define IEEESPTan(y) \
     AROS_LC1(LONG, IEEESPTan, \

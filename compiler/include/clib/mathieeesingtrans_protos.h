@@ -19,6 +19,14 @@
 /*
     Prototypes
 */
+AROS_LP1(LONG, IEEESPAcos,
+    AROS_LPA(LONG, y, D0),
+    struct Library *, MathIeeeSingTransBase, 20, Mathieeesingtrans)
+
+AROS_LP1(LONG, IEEESPAsin,
+    AROS_LPA(LONG, y, D0),
+    struct Library *, MathIeeeSingTransBase, 19, Mathieeesingtrans)
+
 AROS_LP1(LONG, IEEESPCos,
     AROS_LPA(LONG, y, D0),
     struct Library *, MathIeeeSingTransBase, 7, Mathieeesingtrans)
@@ -55,6 +63,10 @@ AROS_LP1(LONG, IEEESPSin,
 AROS_LP1(LONG, IEEESPSinh,
     AROS_LPA(LONG, y , D0),
     struct Library *, MathIeeeSingTransBase, 10, Mathieeesingtrans)
+
+AROS_LP1(LONG, IEEESPSqrt,
+    AROS_LPA(LONG, y, D0),
+    struct Library *, MathIeeeSingTransBase, 16, Mathieeesingtrans)
 
 AROS_LP1(LONG, IEEESPTan,
     AROS_LPA(LONG, y, D0),
