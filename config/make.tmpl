@@ -1933,8 +1933,8 @@ PACKAGES_DIR := $(AROSDIR)/../Packages
 #to rebuild $@ again, which would fail because the directory where
 #the package got installed would not exist anymore. 
 #We work this around by using an if statement to manually check the mtimes.
-$(%(mmake)-%(subpackage)-package-basename).tar.bz2 : $(GENDIR)/$(CURDIR)/.installed
-	@if test $^ -nt $@; then \
+$(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
+	@if test $(GENDIR)/$(CURDIR)/.installed -nt $@; then \
             $(RM) $@ && \
 	    $(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" && \
 	    cd $(%(mmake)-%(subpackage)-package-dir) && \
