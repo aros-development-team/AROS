@@ -64,7 +64,7 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     if (!LB(lh)->utilitybase)
 	return NULL;
 
-    LB(lh)->intuitionbase = OpenLibrary ("intuition.library", 39);
+    LB(lh)->intuitionbase = (IntuitionBase_T *)OpenLibrary("intuition.library", 39);
     if (!LB(lh)->intuitionbase)
 	return NULL;
 
@@ -73,8 +73,9 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
        3.5 icons */
        
     LB(lh)->iffparsebase = OpenLibrary("iffparse.library", 39);
+    LB(lh)->gfxbase      = (GfxBase_T *)OpenLibrary("graphics.library", 39);
     LB(lh)->cybergfxbase = OpenLibrary("cybergraphics.library", 39);
-    
+
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = lh;
 
@@ -94,6 +95,9 @@ void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
     if (DOSBase)
 	CloseLibrary ((struct Library *)DOSBase);
 
+    if (LB(lh)->gfxbase)
+    	CloseLibrary ((struct Library *)LB(lh)->gfxbase);
+	
     if (LB(lh)->iffparsebase)
     	CloseLibrary (LB(lh)->iffparsebase);
 	
@@ -101,7 +105,7 @@ void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
     	CloseLibrary (LB(lh)->cybergfxbase);
 	
     if (LB(lh)->intuitionbase)
-	CloseLibrary (LB(lh)->intuitionbase);
+	CloseLibrary ((struct Library *)LB(lh)->intuitionbase);
 
     if (LB(lh)->utilitybase)
 	CloseLibrary (LB(lh)->utilitybase);

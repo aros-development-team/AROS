@@ -342,6 +342,8 @@ AROS_UFH3S(ULONG, ProcessClearMem,
     if (data->sdd_Mode == SDV_SPECIALMODE_READ)
     {
     	memset(data->sdd_Dest, 0, sizeof(struct NativeIcon));
+	
+	NATIVEICON(DO(data->sdd_Dest))->iconbase = (struct IconBase *)streamhook->h_Data;
     }
     
     return TRUE;
@@ -974,6 +976,11 @@ kprintf ("ProcessIcon35\n");
     	case SDV_SPECIALMODE_READ:
 	    ReadIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
     	    break;	    
+
+    	case SDV_SPECIALMODE_FREE:
+	    FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), (IconBase_T *)NATIVEICON(DO(data->sdd_Dest))->iconbase);
+	    break;
+
     }
     
     return retval;

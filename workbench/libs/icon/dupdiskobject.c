@@ -153,6 +153,8 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
  
     	mem->icon35 = srcnativeicon->icon35;
 	
+	/* Clone image data */
+	
 	if (srcnativeicon->icon35.img1.imagedata)
 	{
 	    mem->icon35.img1.imagedata = MemDupPooled(pool,
@@ -170,20 +172,38 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 						      
     	    if (!mem->icon35.img2.imagedata) goto fail;
 	}
+
+    	/* Clone Image Mask */
 	
+	if (srcnativeicon->icon35.img1.mask)
+	{
+	    mem->icon35.img1.mask = MemDupPooled(pool,
+	    	    	    	    	    	 srcnativeicon->icon35.img1.mask,
+						 RASSIZE(srcnativeicon->icon35.width, srcnativeicon->icon35.height));
+	}
+
+	if (srcnativeicon->icon35.img2.mask)
+	{
+	    mem->icon35.img2.mask = MemDupPooled(pool,
+	    	    	    	    	    	 srcnativeicon->icon35.img2.mask,
+						 RASSIZE(srcnativeicon->icon35.width, srcnativeicon->icon35.height));
+	}
+
+    	/* Clone Palette */
+		
 	if (srcnativeicon->icon35.img1.palette)
 	{
 	    mem->icon35.img1.palette = MemDupPooled(pool,
 	    	    	    	    	    	    srcnativeicon->icon35.img1.palette,
-						    srcnativeicon->icon35.img1.numcolors * 3);
+						    srcnativeicon->icon35.img1.numcolors * sizeof(ULONG));
 	    if (!mem->icon35.img1.palette) goto fail;
 	}
-	
+		
 	if (srcnativeicon->icon35.img2.palette && srcnativeicon->icon35.img2.flags & IMAGE35F_HASPALETTE)
 	{
 	    mem->icon35.img2.palette = MemDupPooled(pool,
 	    	    	    	    	    	    srcnativeicon->icon35.img2.palette,
-						    srcnativeicon->icon35.img2.numcolors * 3);
+						    srcnativeicon->icon35.img2.numcolors * sizeof(ULONG));
 	    if (!mem->icon35.img2.palette) goto fail;
 	}
 	else if (srcnativeicon->icon35.img1.palette)

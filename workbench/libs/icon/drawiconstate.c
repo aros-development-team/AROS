@@ -51,6 +51,45 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
     
+    struct NativeIcon *nativeicon;
+    
+    nativeicon = GetNativeIcon(icon, IconBase);
+    if (nativeicon && nativeicon->icon35.img1.imagedata)
+    {
+    	if (GfxBase && CyberGfxBase)
+	{
+	    ULONG bmdepth;
+	    
+	    bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+	    if (bmdepth >= 15)
+	    {
+	    	struct Image35 *img;
+		
+		if (state == IDS_SELECTED && nativeicon->icon35.img2.imagedata)
+		{
+		    img = &nativeicon->icon35.img2;
+		}
+		else
+		{
+		    img = &nativeicon->icon35.img1;
+		}
+		
+		WriteLUTPixelArray(img->imagedata,
+		    	    	   0,
+				   0,
+				   nativeicon->icon35.width,
+				   rp,
+				   img->palette,
+				   leftEdge,
+				   topEdge,
+				   nativeicon->icon35.width,
+				   nativeicon->icon35.height,
+				   CTABFMT_XRGB8);
+		return;		   
+	    }
+	}
+    }
+    
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
 	DrawImage(rp,(struct Image*)icon->do_Gadget.SelectRender,leftEdge,topEdge);
