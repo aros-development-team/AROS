@@ -271,8 +271,8 @@ static const STRPTR __spanish_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Lunes", "Martes", "Miercoles", "Jueves", "Viernes",
-    "Sabado", "Domingo",
+    "Lunes", "Martes", "Miércoles", "Jueves", "Viernes",
+    "Sábado", "Domingo",
 
     /* Abbreviated days of the week */
     "lun", "mar", "mie", "jue", "vie", "sab", "dom",
@@ -305,7 +305,7 @@ static const STRPTR __spanish_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ayer", "Hoy", "Manana", "Futuro"
+    "Ayer", "Hoy", "Mañana", "Futuro"
 };
 
 /* This is the end of ROMtag marker. */

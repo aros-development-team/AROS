@@ -278,14 +278,14 @@ static const STRPTR __french_strings[] =
     "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim",
 
     /* Months of the year */
-    "Janvier", "Fevrier", "Mars",
+    "Janvier", "Février", "Mars",
     "Avril", "Mai", "Juin",
-    "Juillet", "Aout", "Septembre",
-    "Octobre", "Novembre", "Decembre",
+    "Juillet", "Août", "Septembre",
+    "Octobre", "Novembre", "Décembre",
 
     /* Abbreviated months of the year */
-    "Jan", "Fev", "Mars", "Avr", "Mai", "Juin",
-    "Juil", "Aout", "Sep", "Oct", "Nov", "Dec",
+    "Jan", "Fév", "Mars", "Avr", "Mai", "Juin",
+    "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
 
     "Oui", /* Yes, affirmative response */
     "Non", /* No/negative response */
