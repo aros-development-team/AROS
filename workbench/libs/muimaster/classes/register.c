@@ -15,6 +15,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#include <proto/muimaster.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"

@@ -7,6 +7,7 @@
 #include <utility/date.h>
 #include <libraries/mui.h>
 
+#include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>

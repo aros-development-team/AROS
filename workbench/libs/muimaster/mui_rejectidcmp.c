@@ -5,6 +5,7 @@
 
 #include <intuition/classusr.h>
 #include <clib/alib_protos.h>
+#include <proto/muimaster.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"

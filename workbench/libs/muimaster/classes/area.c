@@ -17,6 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 extern struct Library *MUIMasterBase;
 #include "muimaster_intern.h"

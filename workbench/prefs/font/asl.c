@@ -10,6 +10,7 @@
 #include <prefs/font.h>
 
 #include <proto/dos.h>
+#include <proto/muimaster.h>
 
 #include <string.h>
 

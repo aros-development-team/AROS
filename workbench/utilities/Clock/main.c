@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
+#include <proto/muimaster.h>
 #include <libraries/mui.h>
 #include <zune/clock.h>
 

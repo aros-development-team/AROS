@@ -22,6 +22,7 @@
 #include <proto/commodities.h>
 #include <proto/layers.h>
 #include <proto/gadtools.h>
+#include <proto/muimaster.h>
 
 #define MUI_OBSOLETE /* for the obsolete menu stuff */
 

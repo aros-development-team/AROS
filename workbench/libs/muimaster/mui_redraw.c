@@ -8,6 +8,7 @@
 #include <graphics/gfxmacros.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"

@@ -24,6 +24,7 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 #ifdef __AROS__
 #include <libraries/mui.h>

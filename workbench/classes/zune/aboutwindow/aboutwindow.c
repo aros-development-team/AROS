@@ -9,6 +9,7 @@
 #include <libraries/mui.h>
 #include <dos/dos.h>
 
+#include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/locale.h>

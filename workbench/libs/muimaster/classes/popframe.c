@@ -10,6 +10,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

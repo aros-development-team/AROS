@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 extern struct Library *MUIMasterBase;
 

@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <proto/muimaster.h>
 #include <proto/intuition.h>
 
 #include "muimaster_intern.h"

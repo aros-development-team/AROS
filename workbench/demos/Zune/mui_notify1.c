@@ -12,6 +12,7 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
 #ifdef __AROS__
 #include <libraries/mui.h>
 #endif

@@ -22,6 +22,7 @@
 #include <proto/intuition.h>
 #include <proto/icon.h>
 #include <proto/layers.h>
+#include <proto/muimaster.h>
 
 #define MYDEBUG
 #include "debug.h"

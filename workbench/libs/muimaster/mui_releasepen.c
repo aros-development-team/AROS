@@ -4,6 +4,7 @@
 */
 
 #include <proto/graphics.h>
+#include <proto/muimaster.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
