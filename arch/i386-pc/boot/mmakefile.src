@@ -56,8 +56,8 @@ BOOT_TAR_FILES := \
     Classes/Zune/Scrollgroup.mui Classes/Zune/Settingsgroup.mui \
     Classes/Zune/Virtgroup.mui \
     Devs.info \
-    Devs/DataTypes Devs/Keymaps Devs/clipboard.device \
-    Devs/serial.device Devs/Mountlist \
+    Devs/DataTypes/ELF Devs/DataTypes/ILBM Devs/DataTypes/FTXT \
+    Devs/Keymaps Devs/clipboard.device Devs/serial.device Devs/Mountlist \
     Devs/pipefs.handler \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
     Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
@@ -65,8 +65,7 @@ BOOT_TAR_FILES := \
     Libs/locale.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale.info \
-    Locale/Countries Locale/Languages Locale/Help \
-    Locale/Catalogs/deutsch/System Locale/Catalogs/italiano/System Locale/Catalogs/svenska/System \
+    Locale/Countries Locale/Help \
     Prefs/Font Prefs/Font.info Prefs/Locale Prefs/Serial \
     Prefs/Input Prefs/Input.info Prefs/Time Prefs/Time.info \
     Prefs/Zune Prefs/Zune.info Prefs.info \
