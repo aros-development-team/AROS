@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Remove a task
@@ -8,6 +8,7 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
+#include <aros/machine.h>
 #include <proto/exec.h>
 
 #include "exec_debug.h"
@@ -20,7 +21,7 @@
 #endif
 #include <aros/debug.h>
 
-extern void Exec_Switch();
+extern void Exec_Dispatch();
 
 /*****************************************************************************
 
@@ -101,8 +102,14 @@ extern void Exec_Switch();
 //        task->tc_Node.ln_Pred->ln_Succ = task->tc_Node.ln_Succ;
 //	task->tc_Node.ln_Succ->ln_Pred = task->tc_Node.ln_Pred;
 
-	/* And force a task switch */
-	Supervisor(Exec_Switch);	//Reschedule(task);
+	/* And force a task switch. Note: Dispatch, not Switch,
+	   because the state of thistask must not be saved ->
+	   after all the mem for the task + intetask + context
+	   could already have been freed by the FreeEntry() call
+	   above!!! */
+	   
+	   
+	Supervisor(__AROS_GETVECADDR(SysBase, 10));
 	/* Does not return. */
     }
     else
