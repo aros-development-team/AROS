@@ -1,34 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= longjmp setjmp
-CLIBDIR 	:= $(GENDIR)/compiler/clib
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
-CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
-AFLAGS2 	:= $(AFLAGS) -I..
-TESTS		:=
-
-#MM
-clib-native-ppc : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-clib-native-ppc :
-	%mkdirs_q $(CLIBDIR)
-	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(CLIBDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(CLIBDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS2)
-
-$(CLIBDIR)/%.d : %.c
-	%mkdepend_q
+USER_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
+SPECIAL_AFLAGS 	:= -I..
+%build_archspecific \
+  mainmmake=linklibs-clib maindir=compiler/clib \
+  arch=ppc \
+  asmfiles="longjmp setjmp"
 
 %common
 
