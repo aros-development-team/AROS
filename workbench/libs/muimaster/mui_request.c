@@ -50,13 +50,13 @@ AROS_UFH2S(void, len_func,
 	AROS_LH7(LONG, MUI_RequestA,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, app, D0),
-	AROS_LHA(APTR, win, D1),
-	AROS_LHA(LONGBITS, flags, D2),
-	AROS_LHA(CONST_STRPTR, title, A0),
+	AROS_LHA(APTR,         app,     D0),
+	AROS_LHA(APTR,         win,     D1),
+	AROS_LHA(LONGBITS,     flags,   D2),
+	AROS_LHA(CONST_STRPTR, title,   A0),
 	AROS_LHA(CONST_STRPTR, gadgets, A1),
-	AROS_LHA(CONST_STRPTR, format, A2),
-	AROS_LHA(APTR, params, A3),
+	AROS_LHA(CONST_STRPTR, format,  A2),
+	AROS_LHA(APTR,         params,  A3),
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 7, MUIMaster)
@@ -76,8 +76,6 @@ AROS_UFH2S(void, len_func,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -126,6 +124,11 @@ AROS_UFH2S(void, len_func,
 #else
     RawDoFmt(format,params,(void(*)())&cpy_func,reqtxt);
 #endif
+    
+    if (title == NULL && app != NULL)
+    {
+        title = (CONST_STRPTR) XGET(app, MUIA_Application_Title);
+    }
 
     req_wnd = WindowObject,
 	MUIA_Window_Title,        title,
