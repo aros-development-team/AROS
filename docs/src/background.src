@@ -83,7 +83,6 @@ This status was generated\ \today.
 \link{(2K PNG, doesn't work with Netscape 4.7)}{contrib.png}
 }
 
-\begin{new}{9.10.1997}
 \subsection{AROS on m68k Status}
 
 Here is a list of programs which have been tried on Amiga-Linux/m68k:
@@ -120,7 +119,6 @@ of them work, others don't, yet.
 \filename{tstat},
 \filename{memlist},
 \end{itemize}
-\end{new}
 
 \section{Snapshots}
 
@@ -156,8 +154,6 @@ These are things which are still to do:
 
 \section{Licensing AROS}
 
-\begin{new}{7.1.1998}
 Since the new situation (we must have a license from Amiga Int/Inc), this
 has to be overworked.  Right now, it is not possible to license AROS.
 Watch this space for further updates.
-\end{new}

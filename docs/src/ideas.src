@@ -28,7 +28,6 @@ Open questions: Will this interfere with the way Exec handles libraries now
 locking of the exec library list ? What happens if |libClose()| calls
 |libExpunge()| ?
 \item
-\begin{new}{27.10.1997}
 By Nils Henrik Lorentzen: Extend on the
 datatypes concept. Some datatypes-alike system where dataprocessing methods
 can be added to datatype classes. (Eg. for pictures one could add methods
@@ -84,25 +83,19 @@ of taking some market share from M$ it	a) has to be free.
 b) must be available on as many platforms as possible. c) must consist
 of tiny components that can be added at run-time.=>This way it'll be
 easier for developers to support it.
-\end{new}
 
 \item
-\begin{new}{27.10.1997}
 By Aaron Digulla:
 When a new HIDD is installed, it should appear in the list of
 available HIDDs automatically (eg. by file notification on the directory).
-\end{new}
 
 \item
-\begin{new}{27.10.1997}
 By Aaron Digulla:
 We need an automatic converter for the incompatible features of AROS
 to convert the old AmigaOS code to AROS (which can then be compiled on
 AmigaOS by our compatibility lib).
-\end{new}
 
 \item
-\begin{new}{3.11.1997}
 By Bernhard Fastenrath:
 I wanted to have a select() for AmigaOS filedescriptors some time ago, that's
 why I wrote the AbortPkt() patch which sends an ACTION_ABORT.
@@ -124,10 +117,8 @@ packets through several layers of device abstractions. UnixIO could be one
 layer below the select handler and would translate it to a real select()
 because the buffer mechanism of the select handler is part of the Unix kernel
 anyway; so a write would block when the kernel buffers are full, as usual.
-\end{new}
 
 \item
-\begin{new}{18.11.1997}
 By Aaron Digulla:
 I'm thinking about something called "cache memory". It should use all free
 memory to store "nice to have" data like for read ahead or write through
@@ -144,10 +135,8 @@ application needs memory, parts of the cache have to be freed *or* they
 have to be copied in unused chunks (eg. it's still faster to copy 512 bytes
 than to read them back from HD or a printer spooler should not throw the
 spooled data away).
-\end{new}
 
 \item
-\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 The Amiga
 has the Smart refreshed windows that uses an own bitmap and the Simple, that
@@ -157,10 +146,8 @@ rastport for it, and this will be send to window on Refresh (or in window's
 BackFill Hook) and when the Draw of All Buttons are finished, so you don't
 get "flickering" (I don't know the correct word) on the graphic, and uses
 almost the same memory of a Smart one.
-\end{new}
 
 \item
-\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 The amiga needs a function for opening windows into other windows like on
 windows. The "Requester" does this, but stops the functionality of the
@@ -175,24 +162,18 @@ IDCMP event loops and the same effect can be achieved when using
 clip regions; all we have to do is to make the gadgets public, which render a
 window, plus maybe a BOOPSI subwindow class which installs a clip region
 in another window.]
-\end{new}
 
 \item
-\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 exec.library can have an EnqueueTail, and this
 is easy to do, so the Enqueue already exists.
-\end{new}
 
 \item
-\begin{new}{19.1.1998}
 By Paulo F. Zemek:
 Intuition should not send more than one REFRESH message to a window (ie.
 if there is already one in the queue, then it should be removed first).
-\end{new}
 
 \item
-\begin{new}{5.3.1998}
 By Denis Bucher:
 |OpenLibrary()|, etc. should check for libraries in various places.
 It should be possible to add paths for these and similar functions
@@ -203,9 +184,7 @@ should tell which one
 is opened and why (ie. \shell{loading libs:x.library over libs/x.library
 because: libs:x.library has version 41.0 and libs/x.library has
 39.20}).
-\end{new}
 
-\begin{new}{5.3.1998}
 By Aaron Digulla:
 It should be possible to protect some files (like libraries) so
 that you need to call a specific OS/FS function to replace them.
@@ -214,10 +193,8 @@ with old versions. Maybe even a patch to |Open()| would be enough
 which checks if someone tries to write in a specific directory
 and calls a tool which checks if the write is ok. This is of course
 a bit dangerous.
-\end{new}
 
 \item
-\begin{new}{05.03.1998}
 By Henning Kiel:
 The original Amiga Includes used to have an intuition/iobsolete.h
 AROS wants to get rid of obsolete stuff, and therefore we are not going
@@ -230,10 +207,8 @@ This conversion-tool should do: (open, unordered list)
 \item convert old defines to new ones
 \item convert old storage types (e.g. SHORT to WORD)
 \end{itemize}
-\end{new}
 
 \item
-\begin{new}{2.7.1998}
 By Dave Haynie:
 Stuff we spoke about over lunch, dating back to our days consulting for
 Amiga Technologies. Andy mentioned the model they use for the 3DO
@@ -259,10 +234,8 @@ in UNIX. Obviously this is for new code, and Exec would need to add/enhance
 functions for sending messages, copying, etc. between memory spaces. But
 since you're not expecting any old code to run in a fully separate space,
 some of today's bad habits wouldn't really be an issue.
-\end{new}
-\item
 
-\begin{new}{1.9.1998}
+\item
 By Sebastian Rittau: Maybe we could rewrite Installer as library, which
 provides functions that are currently contained in Installers language.
 This would allow programmers to easily write Installer scripts in their
@@ -271,9 +244,8 @@ language.
 
 While doing this, we could also add methods to uninstall an installed
 package.
-\end{new}
 
-\begin{new}{8.2.1999}
+\item
 By Aaron Digulla: There should be a tool to create a kernel which can be
 put into a Flash ROM or EEPROM or a boot file. The tool should be able to
 fix all absolute addresses in the kernel, it should be able to create the
@@ -291,14 +263,6 @@ driver in the ROM is not loaded/inited during booting. Then the OS will
 use its normal ways to search for the driver and at this time, the
 driver must be visible by some file system-like means or the searching
 for it will fail.
-
-\end{new}
-
-\item
-\begin{new}{24.1.2000}
-Here are a few things that I saved as emails that could be done later.
-Some of them are quite old, and some well, aren't... iaint.
-\end{new}
 
 \item
 \begin{new}{24.1.2000}

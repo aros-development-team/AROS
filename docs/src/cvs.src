@@ -27,10 +27,8 @@ If it's not already on your system (type \shell{cvs} to find out), fetch
 CVS from one of the many GNU mirrors and install it in your
 \filename{$HOME}.
 
-\begin{new}{12.10.99}
 If you want to get the sources only, you can use the anonymous access (see
 below).
-\end{new}
 If you want to have full access to the database, then get the
 AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
 say \shell{make crypt}
@@ -106,10 +104,8 @@ encoded mail with your password and I'll encrypt and add it.
 Wait until I confirm this. While you wait, look for CVS 1.8 or better if
 you haven't already done so.
 
-\begin{new}{12.10.1999}
 If you want read-only access, then your username is \shell{anon} and
 your password is \shell{anon}, too.
-\end{new}
 
 \subsection{Logging into the server}
 

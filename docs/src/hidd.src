@@ -1,4 +1,3 @@
-\begin{new}{6.8.1997}
 \chapter{Hardware Independent Device Driver - HIDD}
 
 \section{Introduction}
@@ -989,6 +988,4 @@ HIDD to block. If no locking is possible (eg. NetBSD), then there must
 be a way to query this, too.
 
 There must be a set of functions to install IRQ handlers.
-
-\end{new}
 
