@@ -136,6 +136,27 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     ApplyTagChanges(defaults, tags);
 
+    /* If both the seglist and the entry are specified, make sure that the entry resides in the seglist */
+    if (defaults[0].ti_Data && defaults[1].ti_Data)
+    {
+        BPTR seg;
+
+        for (seg = defaults[0].ti_Data; seg; seg = *(BPTR *)BADDR(seg))
+        {
+            if
+            (
+                (UBYTE *)defaults[1].ti_Data >= (UBYTE *)BADDR(seg) &&
+                (UBYTE *)defaults[1].ti_Data <= ((UBYTE *)BADDR(seg) + *((ULONG *)BADDR(seg) - 1) - sizeof(BPTR))
+            )
+            {
+                break;
+            }
+        }
+
+        if (!seg)
+            return NULL;
+    }
+
     process = (struct Process *)AllocMem(sizeof(struct Process),
 					 MEMF_PUBLIC | MEMF_CLEAR);
     ENOMEM_IF(process == NULL);
@@ -305,7 +326,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    }
 	}
     }
-    
+
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
     CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
     
@@ -355,7 +376,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     D(bug("Calling internal_SetProgramName() with name = %s\n", name));
 
     process->pr_PktWait = NULL;
-    process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data; 
+    process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data;
     process->pr_HomeDir = (BPTR)defaults[21].ti_Data;
     process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT  : 0) |
 		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT : 0) |
@@ -364,24 +385,31 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS : 0) |
 			(defaults[20].ti_Data ? PRF_FREESEGLIST : 0) |
 		        PRF_FREEARGS | PRF_FREECURRDIR;
-    process->pr_ExitCode = (APTR)defaults[15].ti_Data; 
-    process->pr_ExitData = defaults[16].ti_Data; 
+    process->pr_ExitCode = (APTR)defaults[15].ti_Data;
+    process->pr_ExitData = defaults[16].ti_Data;
     process->pr_Arguments = argptr;
 
     if ((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
     {
 	BOOL res = copyVars(me, process, DOSBase);
-	
+
 	ENOMEM_IF(res == FALSE);
     }
 
     process->pr_ShellPrivate = 0;
 
-    if (AddProcess(process, argptr, argsize, 
-		   defaults[0].ti_Data ?
-		   (BPTR *)BADDR(defaults[0].ti_Data) + 1 :
-		   (BPTR *)defaults[1].ti_Data,
-		   KillCurrentProcess, DOSBase) != NULL)
+
+    if
+    (
+        AddProcess
+        (
+            process, argptr, argsize,
+	    defaults[1].ti_Data ?
+	    (APTR)defaults[1].ti_Data:
+	    (APTR)BADDR(defaults[0].ti_Data) + 1,
+	    KillCurrentProcess, DOSBase
+        )
+    )
     {
 	/* NP_Synchronous */
 	if (defaults[19].ti_Data)
