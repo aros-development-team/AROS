@@ -29,11 +29,16 @@ FILES = \
 	switch \
 	userstate
 
+CLIBFILES = \
+	longjmp \
+	setjmp
+
 CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
 DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
 all: setup $(MACHINE_H) machine.i \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
