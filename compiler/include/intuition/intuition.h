@@ -683,6 +683,7 @@ struct ExtNewWindow
 #define WA_Behind   	     (WA_Dummy + 103)
 #define WA_Visible  	     (WA_Dummy + 104)
 #define WA_Shape    	     (WA_Dummy + 105)
+#define WA_ShapeHook	     (WA_Dummy + 106)
 
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)
