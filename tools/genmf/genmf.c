@@ -133,7 +133,11 @@ _xstrdup (const char * str, const char * file, int line)
 {
     char * nstr;
 
-    assert (str);
+    if (!str)
+    {
+	fprintf (stderr, "NULL string passed to strdup from %s:%d", file, line);
+	cleanup (20);
+    }
 
     nstr = strdup (str);
 
