@@ -1,9 +1,14 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
+#include <libraries/desktop.h>
 #include <libraries/mui.h>
 
 #include <proto/exec.h>
@@ -31,6 +36,9 @@
 #include "projecticonobserver.h"
 #include "trashcaniconobserver.h"
 #include "desktopobserver.h"
+#include "operationclass.h"
+#include "internaliconopsclass.h"
+#include "desktopclass.h"
 
 #include "desktop_intern_protos.h"
 
@@ -143,6 +151,10 @@ AROS_LH2(struct DesktopBase *, init,
 	DesktopBase->db_DefaultWindow=NULL;
 	DesktopBase->db_DefaultWindowArguments=NULL;
 
+	// TEMPORARY!  see note in DesktopOperation struct, in desktop_intern.h
+	NewList(&DesktopBase->db_OperationList);
+	// END TEMPORARY!
+
 	D(bug("*** Exitiing DesktopBase::init...\n"));
 
     /* You would return NULL here if the init failed. */
@@ -161,7 +173,9 @@ AROS_LH1(struct DesktopBase *, open,
 	   struct DesktopBase *, desktopbase, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    /*
+
+	struct DesktopOperation *dob;
+	/*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
@@ -283,6 +297,22 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_ProjectIcon)
 			return NULL;
 
+		DesktopBase->db_Desktop=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconContainer, sizeof(struct DesktopClassData), desktopDispatcher);
+		if(!DesktopBase->db_Desktop)
+			return NULL;
+
+		// TEMPORARY!  see note in DesktopOperation struct, in desktop_intern.h
+		DesktopBase->db_Operation=MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct OperationClassData), operationDispatcher);
+		if(!DesktopBase->db_Operation)
+			return NULL;
+
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_ICONOP | 1);
+		dob->do_Name="Open...";
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalIconOpsClassData), internalIconOpsDispatcher);
+		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
+		// END TEMPORARY!
+
 		DesktopBase->db_libsOpen=TRUE;
 	}
 
@@ -335,7 +365,8 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
     AROS_LIBFUNC_INIT
 
     BPTR ret;
-    /*
+	struct DesktopOperation *dob;
+	/*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
     */
@@ -349,12 +380,28 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
 		return 0;
     }
 
+	// TEMPORARY!
+	dob=(struct DesktopOperation*)DesktopBase->db_OperationList.lh_Head;
+	while(dob->do_Node.ln_Succ)
+	{
+		if(dob->do_Impl)
+			MUI_DeleteCustomClass(dob->do_Impl);
+		dob=(struct DesktopOperation*)dob->do_Node.ln_Succ;
+	}
+	FreeVec(dob);
+
+	if(DesktopBase->db_Operation)
+		MUI_DeleteCustomClass(DesktopBase->db_Operation);
+	// END TEMPORARY
+
 	if(DesktopBase->db_DiskIconObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_DiskIconObserver);
 	if(DesktopBase->db_DrawerIconObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_DrawerIconObserver);
 	if(DesktopBase->db_ToolIconObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_ToolIconObserver);
+	if(DesktopBase->db_Desktop)
+		MUI_DeleteCustomClass(DesktopBase->db_Desktop);
 	if(DesktopBase->db_ProjectIconObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_ProjectIconObserver);
 	if(DesktopBase->db_TrashcanIconObserver)

@@ -99,6 +99,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		data->vertProp=vert;
 		data->iconSelected=FALSE;
 		data->justSelected=FALSE;
+		NewList((struct List*)&data->selectedList);
 	}
 
 	return retval;
@@ -254,7 +255,7 @@ ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *new
 		}
 		else
 		{
-			last=data->memberList.mlh_TailPred;
+			last=(struct MemberNode*)data->memberList.mlh_TailPred;
 			newX=_left(last->m_Object)-_mleft(obj);
 			newY=_bottom(last->m_Object)+ICONSPACINGY-_mtop(obj);
 			if(newY+_defheight(newObject) > _mheight(obj))
@@ -360,11 +361,7 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	struct MemberNode *mn;
 	ULONG retval=1;
 	struct MUI_MinMax minMax;
-	Object *container, *win, *rect, *par;
-	struct Region *clippingRegion;
-	struct ConnectParentData *connectParent;
 	APTR clip;
-	ULONG blah;
 
 	minMax.MinWidth=0;
 	minMax.DefWidth=0;
@@ -381,8 +378,9 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
 
-	DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
 	DoMethod(msg->opam_Object, MUIM_Notify, IA_Executed, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
+
+	DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, MUIV_EveryTime, obj, 3, ICM_UpdateSelectList, msg->opam_Object, MUIV_TriggerValue);
 
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
 
@@ -556,7 +554,6 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			if(scroll_caused_damage)
 			{
 				struct Region *damageList;
-				struct RegionRectangle *rr;
 				WORD x1, y1, x2, y2;
 
 				// get the damage area bounds in x1,x2,y1,y2
@@ -629,7 +626,6 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			if(scroll_caused_damage)
 			{
 				struct Region *damageList;
-				struct RegionRectangle *rr;
 				WORD x1, y1, x2, y2;
 
 				// get the damage area bounds in x1,x2,y1,y2
@@ -693,6 +689,26 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 	}
 
 	return 0;
+}
+
+IPTR iconConGet(Class *cl, Object *obj, struct opGet *msg)
+{
+	IPTR retval=1;
+	struct IconContainerClassData *data;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	switch(msg->opg_AttrID)
+	{
+		case ICA_SelectedIcons:
+			*msg->opg_Storage=(ULONG)&data->selectedList;
+			break;
+		default:
+			retval=DoSuperMethodA(cl, obj, (Msg)msg);
+			break;
+	}
+
+	return retval;
 }
 
 IPTR iconConConnectParent(Class *cl, Object *obj, struct MUIP_ConnectParent *msg)
@@ -765,8 +781,31 @@ IPTR iconConUnselectAll(Class *cl, Object *obj, Msg msg)
 	while(mn->m_Node.mln_Succ)
 	{
 		if(_selected(mn->m_Object))
+
 			SetAttrs(mn->m_Object, IA_Selected, FALSE, TAG_END);
 		mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+	}
+
+	return retval;
+}
+
+IPTR iconConUpdateSelectList(Class *cl, Object *obj, struct opUpdateSelectList *msg)
+{
+	IPTR retval=0;
+	struct IconContainerClassData *data;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	if(msg->selectState==TRUE)
+	{
+		kprintf("adding to list..\n");
+		data->justSelected=TRUE;
+		AddTail((struct List*)&(data->selectedList), (struct Node *)_OBJECT(msg->target));
+	}
+	else if(msg->selectState==FALSE)
+	{
+		kprintf("removing from list..\n");
+		Remove((struct Node *)_OBJECT(msg->target));
 	}
 
 	return retval;
@@ -808,7 +847,7 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			retval=iconConSet(cl, obj, (struct opSet*)msg);
 			break;
 		case OM_GET:
-			retval=DoSuperMethodA(cl, obj, msg);
+			retval=iconConGet(cl, obj, (struct opSet*)msg);
 			break;
 		case MUIM_ConnectParent:
 			retval=iconConConnectParent(cl, obj, (struct MUIP_ConnectParent*)msg);
@@ -818,6 +857,9 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			break;
 		case ICM_UnselectAll:
 			retval=iconConUnselectAll(cl, obj, msg);
+			break;
+		case ICM_UpdateSelectList:
+			retval=iconConUpdateSelectList(cl, obj, (struct opUpdateSelectList*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

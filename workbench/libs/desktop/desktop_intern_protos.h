@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef DESKTOP_INTERN_PROTOS_H
 #define DESKTOP_INTERN_PROTOS_H
 
@@ -98,6 +103,21 @@ AROS_UFP3(IPTR, trashcanIconDispatcher,
 	AROS_UFHA(Msg     , msg, A1));
 
 AROS_UFH3(IPTR, desktopObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFH3(IPTR, operationDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFH3(IPTR, internalIconOpsDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFH3(IPTR, desktopDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1));
