@@ -373,26 +373,39 @@ struct IntuiActionMessage
 	    WORD		dx;
 	    WORD		dy;
 	}			iam_sizewindow;
+	struct
+	{
+	    struct Screen	* Screen;
+	    ULONG		Flags;
+	}			iam_screendepth;
 	
     } 				iam;    
 };
 
+#define iam_ActivateGadget 	iam.iam_activategadget
+#define iam_ChangeWindowBox	iam.iam_changewindowbox
+#define iam_MoveWindow		iam.iam_movewindow
+#define iam_MoveWindowInFrontOf iam.iam_movewindowinfrontof
+#define iam_ShowTitle		iam.iam_showtitle
+#define	iam_SizeWindow		iam.iam_sizewindow
+#define iam_ScreenDepth		iam.iam_screendepth
 
 enum
 {
-	/* Sent from application task to intuition inside CloseWindow() */
-	AMCODE_CLOSEWINDOW = 0,
-	AMCODE_ACTIVATEWINDOW,
-	AMCODE_SIZEWINDOW,
-	AMCODE_WINDOWTOBACK,
-	AMCODE_WINDOWTOFRONT,
-	AMCODE_MOVEWINDOW,
-	AMCODE_MOVEWINDOWINFRONTOF,
-	AMCODE_ZIPWINDOW,
-	AMCODE_CHANGEWINDOWBOX,
-	AMCODE_NEWPREFS,
-	AMCODE_ACTIVATEGADGET,
-	AMCODE_SCREENSHOWTITLE,
+    /* Sent from application task to intuition inside CloseWindow() */
+    AMCODE_CLOSEWINDOW = 0,
+    AMCODE_ACTIVATEWINDOW,
+    AMCODE_SIZEWINDOW,
+    AMCODE_WINDOWTOBACK,
+    AMCODE_WINDOWTOFRONT,
+    AMCODE_MOVEWINDOW,
+    AMCODE_MOVEWINDOWINFRONTOF,
+    AMCODE_ZIPWINDOW,
+    AMCODE_CHANGEWINDOWBOX,
+    AMCODE_NEWPREFS,
+    AMCODE_ACTIVATEGADGET,
+    AMCODE_SCREENSHOWTITLE,
+    AMCODE_SCREENDEPTH
 };
 
 /* Flag definitions for MoreFlags */
@@ -408,6 +421,7 @@ enum
 /* Called by intuition to free a window */
 extern VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *IntuitionBase);
 extern VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+extern VOID int_screendepth(struct Screen *screen, ULONG flags, struct IntuitionBase *IntuitionBase);
 
 /* Driver prototypes */
 
@@ -438,8 +452,8 @@ extern void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase 
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase); 
-extern BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
-extern VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase);
+extern VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase);
 extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);

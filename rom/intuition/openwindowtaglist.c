@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2000/08/03 20:36:32  stegerg
+    screen depth gadget should be usable now + src cleanup + small fixes
+
     Revision 1.12  2000/02/22 20:46:20  stegerg
     maxwidth and maxheight must default to 0 = --> take
     window->width/height as maxwidth/maxheight.
@@ -89,22 +92,22 @@
 
     struct ExtNewWindow nw =
     {
-	0,0, /* Left, Top */
-	640,200, /* Width, Height */
-	0xFF, 0xFF, /* DetailPen, BlockPen */
-	0L, /* IDCMPFlags */
-	0L, /* Flags */
-	NULL, /* FirstGadget */
-	NULL, /* CheckMark */
-	NULL, /* Title */
-	NULL, /* Screen */
-	NULL, /* BitMap */
-	0,0, /* MinWidth, MinHeight */
-	0,0, /* MaxWidth, MaxHeight */
-	WBENCHSCREEN, /* Type */
-	NULL /* Extension (taglist) */
+	0, 0, 		/* Left, Top */
+	640, 200, 	/* Width, Height */
+	0xFF, 0xFF, 	/* DetailPen, BlockPen */
+	0L, 		/* IDCMPFlags */
+	0L, 		/* Flags */
+	NULL, 		/* FirstGadget */
+	NULL, 		/* CheckMark */
+	NULL, 		/* Title */
+	NULL, 		/* Screen */
+	NULL, 		/* BitMap */
+	0, 0, 		/* MinWidth, MinHeight */
+	0, 0, 		/* MaxWidth, MaxHeight */
+	WBENCHSCREEN, 	/* Type */
+	NULL 		/* Extension (taglist) */
     };
-    struct Window * window;
+    struct Window       *window;
 
     if (newWindow)
     {
@@ -120,10 +123,10 @@
     	nw.Flags |= WFLG_NW_EXTENDED;
     }
     
-    /* stegerg: taglist is now handled in openwindow! */
-    
     window = OpenWindow ((struct NewWindow *)&nw);
 
     return window;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* OpenWindowTagList */

@@ -607,8 +607,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
 
             case AMCODE_MOVEWINDOW: {
-	    	WORD dx = am->iam.iam_movewindow.dx;
-		WORD dy = am->iam.iam_movewindow.dy;
+	    	WORD dx = am->iam_MoveWindow.dx;
+		WORD dy = am->iam_MoveWindow.dy;
 		
 		/* correct dx, dy if necessary */
 		
@@ -662,7 +662,7 @@ void HandleIntuiActions(struct IIHData *iihdata,
             break; }
 
             case AMCODE_MOVEWINDOWINFRONTOF: {
-	        struct Window *BehindWindow = am->iam.iam_movewindowinfrontof.BehindWindow;
+	        struct Window *BehindWindow = am->iam_MoveWindowInFrontOf.BehindWindow;
 	        struct Layer  *lay;
 	        BOOL 	      movetoback = TRUE;
 		
@@ -702,8 +702,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
                 WORD OldHeight    = targetwindow->Height;
                 WORD NewLeftEdge  = OldLeftEdge;
 		WORD NewTopEdge   = OldTopEdge;
-		WORD NewWidth	  = OldWidth  + am->iam.iam_sizewindow.dx;
-		WORD NewHeight	  = OldHeight + am->iam.iam_sizewindow.dy;
+		WORD NewWidth	  = OldWidth  + am->iam_SizeWindow.dx;
+		WORD NewHeight	  = OldHeight + am->iam_SizeWindow.dy;
 		WORD size_dx, size_dy;
 
                 /* correct new window coords if necessary */
@@ -796,10 +796,10 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	    case AMCODE_CHANGEWINDOWBOX: {
 
 		DoMoveSizeWindow(targetwindow,
-				 am->iam.iam_changewindowbox.Left,
-				 am->iam.iam_changewindowbox.Top,
-				 am->iam.iam_changewindowbox.Width,
-				 am->iam.iam_changewindowbox.Height,
+				 am->iam_ChangeWindowBox.Left,
+				 am->iam_ChangeWindowBox.Top,
+				 am->iam_ChangeWindowBox.Width,
+				 am->iam_ChangeWindowBox.Height,
 				 IntuitionBase);
 		
 	    break; }
@@ -826,10 +826,10 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		   
 		if ((iihdata->ActiveGadget == NULL) &&
 		    (IntuitionBase->ActiveWindow == targetwindow) &&
-		    ((am->iam.iam_activategadget.Gadget->Flags & GFLG_DISABLED) == 0))
+		    ((am->iam_ActivateGadget.Gadget->Flags & GFLG_DISABLED) == 0))
 		{
 
-		    if (DoActivateGadget(targetwindow, am->iam.iam_activategadget.Gadget, IntuitionBase))
+		    if (DoActivateGadget(targetwindow, am->iam_ActivateGadget.Gadget, IntuitionBase))
 		    {
 		    	am->Code = TRUE;
 		    }		
@@ -847,8 +847,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	        break;
 	
 	    case AMCODE_SCREENSHOWTITLE:
-	    	targetscreen = am->iam.iam_showtitle.Screen;
-		if ((targetscreen->Flags & SHOWTITLE) && (am->iam.iam_showtitle.ShowIt == FALSE))
+	    	targetscreen = am->iam_ShowTitle.Screen;
+		if ((targetscreen->Flags & SHOWTITLE) && (am->iam_ShowTitle.ShowIt == FALSE))
 		{
 		    LOCK_REFRESH(targetscreen);
 		    
@@ -864,7 +864,7 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		    
 		    UNLOCK_REFRESH(targetscreen);
 		    
-		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->iam.iam_showtitle.ShowIt == TRUE))
+		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->iam_ShowTitle.ShowIt == TRUE))
 		{
 		    UpfrontLayer(0, targetscreen->BarLayer);
 		    
@@ -877,6 +877,10 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		    targetscreen->Flags |= SHOWTITLE;
 		    Permit();
 		}
+		break;
+		
+	    case AMCODE_SCREENDEPTH:
+	        int_screendepth(am->iam_ScreenDepth.Screen, am->iam_ScreenDepth.Flags, IntuitionBase);
 		break;
 		
 	}

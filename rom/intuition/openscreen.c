@@ -136,7 +136,8 @@ static const ULONG coltab[] = {
 	, newScreen->Depth
     ));
     
-    old_front_bm = IntuitionBase->FirstScreen;
+    if (IntuitionBase->FirstScreen)
+        old_front_bm = IntuitionBase->FirstScreen->RastPort.BitMap;
 
     ns = *newScreen;
 
@@ -724,4 +725,5 @@ static const ULONG coltab[] = {
     ReturnPtr ("OpenScreen", struct Screen *, (struct Screen *)screen);
     
     AROS_LIBFUNC_EXIT
+    
 } /* OpenScreen */

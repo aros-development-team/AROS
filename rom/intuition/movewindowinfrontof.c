@@ -56,7 +56,7 @@
  
     if (NULL != msg)
     {
-	msg->iam.iam_movewindowinfrontof.BehindWindow = behindwindow;
+	msg->iam_MoveWindowInFrontOf.BehindWindow = behindwindow;
 
 	SendIntuiActionMsg(msg, IntuitionBase); 
     }   

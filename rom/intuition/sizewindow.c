@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2000/08/03 20:36:32  stegerg
+    screen depth gadget should be usable now + src cleanup + small fixes
+
     Revision 1.12  2000/08/03 18:30:50  stegerg
     renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
     structure (formerly called DeferedActionMessage) now contains an
@@ -104,8 +107,8 @@
 
 	if (NULL != msg)
 	{
-	    msg->iam.iam_sizewindow.dx = dx;
-	    msg->iam.iam_sizewindow.dy = dy;
+	    msg->iam_SizeWindow.dx = dx;
+	    msg->iam_SizeWindow.dy = dy;
 
 	    SendIntuiActionMsg(msg, IntuitionBase); 
 	}   

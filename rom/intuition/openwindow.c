@@ -645,7 +645,7 @@
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
     if (NULL != w->FirstGadget)
-      RefreshGadgets (w->FirstGadget, w, NULL);
+        RefreshGadgets (w->FirstGadget, w, NULL);
     
     /* !!! This does double refreshing as the system gadgets also are refreshed
        in the above RfreshGadgets() call */
@@ -871,7 +871,7 @@ int intui_OpenWindow (struct Window * w,
 	
 	/* installation of the correct BorderRPort already happened above !! */
 	 
-	if (createsysgads(w, IntuitionBase))
+	if (CreateWinSysGadgets(w, IntuitionBase))
 	{
     	    ReturnBool("intui_OpenWindow", TRUE);
 	}

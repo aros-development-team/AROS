@@ -159,12 +159,12 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
     /* We will let the AROS gadgetclass test if it is safe to render */
     if ( DoSuperMethodA(cl, o, (Msg)msg) != 0)
     {
-	struct DrawInfo *dri = msg->gpr_GInfo->gi_DrInfo;
-        UWORD *pens = dri->dri_Pens;
-	struct RastPort *rp = msg->gpr_RPort;
-	struct IBox container;
-	struct Window *win = msg->gpr_GInfo->gi_Window;
-	struct TextExtent te;
+	struct DrawInfo 	*dri = msg->gpr_GInfo->gi_DrInfo;
+        UWORD 			*pens = dri->dri_Pens;
+	struct RastPort 	*rp = msg->gpr_RPort;
+	struct IBox 		container;
+	struct Window 		*win = msg->gpr_GInfo->gi_Window;
+	struct TextExtent 	te;
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	
@@ -253,8 +253,8 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
     if (ie)
     {
     	/* The gadget was activated via mouse input */
-	struct dragbar_data *data;
-	struct Window *w;
+	struct dragbar_data 	*data;
+	struct Window 		*w;
 
 	/* There is no point in rerendering ourseleves her, as this
 	   is done by a call to RefreshWindowFrame() in the intuition inputhandler
@@ -310,112 +310,113 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
     
     if (gi)
     {
-	struct InputEvent *ie = msg->gpi_IEvent;
-	struct dragbar_data *data = INST_DATA(cl, o);
-	struct Window *w = msg->gpi_GInfo->gi_Window;
+	struct InputEvent 	*ie = msg->gpi_IEvent;
+	struct dragbar_data 	*data = INST_DATA(cl, o);
+	struct Window 		*w = msg->gpi_GInfo->gi_Window;
 	
 	switch (ie->ie_Class)
 	{
-	case IECLASS_RAWMOUSE:
-	    switch (ie->ie_Code)
-	    {
-	    case SELECTUP:
-	    	retval = GMR_NOREUSE;
-		break;
-		    
-
-	    case IECODE_NOBUTTON: {
-	    	struct Screen *scr = w->WScreen;
-		LONG new_left;
-		LONG new_top;
-		
-	    
-	    	/* Can we move to the new position, or is window at edge of display ? */
-		new_left = scr->MouseX - data->mousex;
-		new_top  = scr->MouseY - data->mousey;
-		
-		if (new_left < 0)
+	    case IECLASS_RAWMOUSE:
+		switch (ie->ie_Code)
 		{
-		    data->mousex += new_left;
-		    new_left = 0;
-		}
-		
-		if (new_top < 0)
-		{
-		    data->mousey += new_top;
-		    new_top = 0;
-		}
-		
-		if (new_left + w->Width > scr->Width)
-		{
-		    LONG correct_left;
-		    correct_left = scr->Width - w->Width; /* align to screen border */
-		    data->mousex += new_left - correct_left;
-		    new_left = correct_left;
-		}
-		if (new_top + w->Height > scr->Height)
-		{
-		    LONG correct_top;
-		    correct_top = scr->Height - w->Height; /* align to screen border */
-		    data->mousey += new_top - correct_top;
-		    new_top = correct_top;
-		}
-		
-	    
-		if (data->curleft != new_left || data->curtop != new_top)
-		{
-		    SetDrMd(data->rp, COMPLEMENT);
+		    case SELECTUP:
+	    		retval = GMR_NOREUSE;
+			break;
 
 
+		    case IECODE_NOBUTTON: {
+	    		struct Screen 	*scr = w->WScreen;
+			LONG 		new_left;
+			LONG 		new_top;
 
-	    	    if (data->isrendered)
-		    {
-			/* Erase old frame */
-			drawwindowframe(data->rp
-					, data->curleft
-					, data->curtop
-					, data->curleft + w->Width  - 1
-					, data->curtop  + w->Height - 1
-					, IntuitionBase
-			);
-			
-		    }
-		
-		    data->curleft = new_left;
-		    data->curtop  = new_top;
-		     
-		    /* Rerender the window frame */
-		    
-		    drawwindowframe(data->rp
-				   , data->curleft
-				   , data->curtop
-				   , data->curleft + w->Width  - 1
-				   , data->curtop  + w->Height - 1
-				   , IntuitionBase
-		    );
-		    
-		    data->isrendered = TRUE;
-		
-		     
-		}
-		
-		retval = GMR_MEACTIVE;
-		
-		break; }
-		
-	    default:
-	    	retval = GMR_REUSE;
-		data->drag_canceled = TRUE;
-		break;
-	    	
-	    
-	    
-	    } /* switch (ie->ie_Code) */
-	    
+
+	    		/* Can we move to the new position, or is window at edge of display ? */
+			new_left = scr->MouseX - data->mousex;
+			new_top  = scr->MouseY - data->mousey;
+
+			if (new_left < 0)
+			{
+			    data->mousex += new_left;
+			    new_left = 0;
+			}
+
+			if (new_top < 0)
+			{
+			    data->mousey += new_top;
+			    new_top = 0;
+			}
+
+			if (new_left + w->Width > scr->Width)
+			{
+			    LONG correct_left;
+			    correct_left = scr->Width - w->Width; /* align to screen border */
+			    data->mousex += new_left - correct_left;
+			    new_left = correct_left;
+			}
+			if (new_top + w->Height > scr->Height)
+			{
+			    LONG correct_top;
+			    correct_top = scr->Height - w->Height; /* align to screen border */
+			    data->mousey += new_top - correct_top;
+			    new_top = correct_top;
+			}
+
+
+			if (data->curleft != new_left || data->curtop != new_top)
+			{
+			    SetDrMd(data->rp, COMPLEMENT);
+
+
+
+	    		    if (data->isrendered)
+			    {
+				/* Erase old frame */
+				drawwindowframe(data->rp
+						, data->curleft
+						, data->curtop
+						, data->curleft + w->Width  - 1
+						, data->curtop  + w->Height - 1
+						, IntuitionBase
+				);
+
+			    }
+
+			    data->curleft = new_left;
+			    data->curtop  = new_top;
+
+			    /* Rerender the window frame */
+
+			    drawwindowframe(data->rp
+					   , data->curleft
+					   , data->curtop
+					   , data->curleft + w->Width  - 1
+					   , data->curtop  + w->Height - 1
+					   , IntuitionBase
+			    );
+
+			    data->isrendered = TRUE;
+
+
+			}
+
+			retval = GMR_MEACTIVE;
+
+			break; }
+
+		    default:
+	    		retval = GMR_REUSE;
+			data->drag_canceled = TRUE;
+			break;
+
+
+
+		} /* switch (ie->ie_Code) */
+	        break;
 	    
 	} /* switch (ie->ie_Class) */
 	
     } /* if (gi) */
+    
     return retval;
 }
 
@@ -424,7 +425,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct dragbar_data *data;
-    struct Window *w;
+    struct Window 	*w;
     
     data = INST_DATA(cl, o);
     w = msg->gpgi_GInfo->gi_Window;
@@ -558,14 +559,14 @@ struct sizebutton_data
 
 static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
 {
-	struct sizebutton_data *data = INST_DATA(cl, o);
-	struct IBox container;
-	struct RastPort *rp = msg->gpr_RPort;
+	struct sizebutton_data 	*data = INST_DATA(cl, o);
+	struct IBox 		container;
+	struct RastPort 	*rp = msg->gpr_RPort;
 	
 	/* center image position, we assume image top and left is 0 */
-	ULONG x, y;
-        ULONG state;
-	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+	ULONG 			x, y;
+        ULONG 			state;
+	UWORD 			*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	D(bug("Gadget IBOX\n"));
@@ -624,15 +625,15 @@ static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
 static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
     
-    IPTR retval = GMR_NOREUSE;
+    IPTR 		retval = GMR_NOREUSE;
     
-    struct InputEvent *ie = msg->gpi_IEvent;
+    struct InputEvent 	*ie = msg->gpi_IEvent;
     
     if (ie)
     {
     	/* The gadget was activated via mouse input */
-	struct sizebutton_data *data;
-	struct Window *w;
+	struct sizebutton_data 	*data;
+	struct Window 		*w;
 
 	/* There is no point in rerendering ourseleves her, as this
 	   is done by a call to RefreshWindowFrame() in the intuition inputhandler
@@ -683,109 +684,110 @@ D(bug("locking all layers\n"));
 
 static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
-    IPTR retval = GMR_MEACTIVE;
-    struct GadgetInfo *gi = msg->gpi_GInfo;
+    IPTR 		retval = GMR_MEACTIVE;
+    struct GadgetInfo 	*gi = msg->gpi_GInfo;
     
     if (gi)
     {
-	struct InputEvent *ie = msg->gpi_IEvent;
-	struct sizebutton_data *data = INST_DATA(cl, o);
-	struct Window *w = msg->gpi_GInfo->gi_Window;
+	struct InputEvent 	*ie = msg->gpi_IEvent;
+	struct sizebutton_data 	*data = INST_DATA(cl, o);
+	struct Window 		*w = msg->gpi_GInfo->gi_Window;
 	
 	switch (ie->ie_Class)
 	{
-	case IECLASS_RAWMOUSE:
-	    switch (ie->ie_Code)
-	    {
-	    case SELECTUP:
-	    	retval = GMR_NOREUSE;
-		break;
-		    
-
-	    case IECODE_NOBUTTON: {
-	    	struct Screen *scr = w->WScreen;
-		LONG new_width;
-		LONG new_height;
-		
-	    
-	    	/* Can we move to the new position, or is window at edge of display ? */
-		new_width   = scr->MouseX - w->LeftEdge + data->mouseoffsetx;
-		new_height  = scr->MouseY - w->TopEdge  + data->mouseoffsety;
-		
-		if (new_width < 0)
-		  new_width = 1;
-		
-		if (w->MinWidth != 0 && new_width < (ULONG)w->MinWidth)
-		  new_width = w->MinWidth;
-		  
-		if (w->MaxWidth != 0 && new_width > (ULONG)w->MaxWidth)
-		  new_width = w->MaxWidth;
-		
-		if (new_height < 0)
-		  new_height = 1;
-		
-		if (w->MinHeight != 0 && new_height < (ULONG)w->MinHeight)
-		  new_height = w->MinHeight;
-		  
-		if (w->MaxHeight != 0 && new_height > (ULONG)w->MaxHeight)
-		  new_height = w->MaxHeight;
-
-
-                /* limit dimensions so window fits on the screen */		
-		if (new_width + w->LeftEdge > scr->Width)
-		  new_width = scr->Width - w->LeftEdge;
-		
-		if (new_height + w->TopEdge > scr->Height)
-		  new_height = scr->Height - w->TopEdge;
-		
-
-		if (data->height != new_height || data->width != new_width)
+	    case IECLASS_RAWMOUSE:
+		switch (ie->ie_Code)
 		{
-		    SetDrMd(data->rp, COMPLEMENT);
+		    case SELECTUP:
+	    		retval = GMR_NOREUSE;
+			break;
 
-	    	    if (data->isrendered)
-		    {
-			/* Erase old frame */
-			drawwindowframe(data->rp
-					, w->LeftEdge
-					, w->TopEdge
-					, w->LeftEdge + data->width  - 1
-					, w->TopEdge  + data->height - 1
-					, IntuitionBase
-			);
-			
-		    }
-		
-		    data->width   = new_width;
-		    data->height  = new_height;
-		     
-		    /* Rerender the window frame */
-		    
-  		    drawwindowframe(data->rp
-				   , w->LeftEdge
-				   , w->TopEdge
-				   , w->LeftEdge + data->width  - 1
-				   , w->TopEdge  + data->height - 1
-				   , IntuitionBase
-			);
-		    
-		    data->isrendered = TRUE;
-		
-		     
-		}
-		
-		retval = GMR_MEACTIVE;
-		
-		break; }
-		
-	    default:
-	    	retval = GMR_REUSE;
-		data->drag_canceled = TRUE;
+
+		    case IECODE_NOBUTTON: {
+	    		struct Screen 	*scr = w->WScreen;
+			LONG 		new_width;
+			LONG 		new_height;
+
+
+	    		/* Can we move to the new position, or is window at edge of display ? */
+			new_width   = scr->MouseX - w->LeftEdge + data->mouseoffsetx;
+			new_height  = scr->MouseY - w->TopEdge  + data->mouseoffsety;
+
+			if (new_width < 0)
+			  new_width = 1;
+
+			if (w->MinWidth != 0 && new_width < (ULONG)w->MinWidth)
+			  new_width = w->MinWidth;
+
+			if (w->MaxWidth != 0 && new_width > (ULONG)w->MaxWidth)
+			  new_width = w->MaxWidth;
+
+			if (new_height < 0)
+			  new_height = 1;
+
+			if (w->MinHeight != 0 && new_height < (ULONG)w->MinHeight)
+			  new_height = w->MinHeight;
+
+			if (w->MaxHeight != 0 && new_height > (ULONG)w->MaxHeight)
+			  new_height = w->MaxHeight;
+
+
+                	/* limit dimensions so window fits on the screen */		
+			if (new_width + w->LeftEdge > scr->Width)
+			  new_width = scr->Width - w->LeftEdge;
+
+			if (new_height + w->TopEdge > scr->Height)
+			  new_height = scr->Height - w->TopEdge;
+
+
+			if (data->height != new_height || data->width != new_width)
+			{
+			    SetDrMd(data->rp, COMPLEMENT);
+
+	    		    if (data->isrendered)
+			    {
+				/* Erase old frame */
+				drawwindowframe(data->rp
+						, w->LeftEdge
+						, w->TopEdge
+						, w->LeftEdge + data->width  - 1
+						, w->TopEdge  + data->height - 1
+						, IntuitionBase
+				);
+
+			    }
+
+			    data->width   = new_width;
+			    data->height  = new_height;
+
+			    /* Rerender the window frame */
+
+  			    drawwindowframe(data->rp
+					   , w->LeftEdge
+					   , w->TopEdge
+					   , w->LeftEdge + data->width  - 1
+					   , w->TopEdge  + data->height - 1
+					   , IntuitionBase
+				);
+
+			    data->isrendered = TRUE;
+
+
+			}
+
+			retval = GMR_MEACTIVE;
+
+			break; }
+
+		    default:
+	    		retval = GMR_REUSE;
+			data->drag_canceled = TRUE;
+			break;
+
+
+
+		} /* switch (ie->ie_Code) */
 		break;
-	    	
-	    
-	    
-	    } /* switch (ie->ie_Code) */
 	    
 	    
 	} /* switch (ie->ie_Class) */
@@ -798,8 +800,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
-    struct sizebutton_data *data;
-    struct Window *w;
+    struct sizebutton_data 	*data;
+    struct Window 		*w;
     
     data = INST_DATA(cl, o);
     w = msg->gpgi_GInfo->gi_Window;
@@ -853,9 +855,9 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	struct sizebutton_data *data = INST_DATA(cl, o);
-	ULONG dispose_mid = OM_DISPOSE;
-	struct DrawInfo *dri;
+    	struct sizebutton_data 	*data = INST_DATA(cl, o);
+	ULONG 			dispose_mid = OM_DISPOSE;
+	struct DrawInfo 	*dri;
 	
 	/*
 	  The instance object is cleared memory!
@@ -896,6 +898,7 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
 static VOID sizebutton_dispose(Class *cl, Object *o, Msg msg)
 {
     struct sizebutton_data *data = INST_DATA(cl, o);
+    
     if (data->image)
     	DisposeObject(data->image);
     DoSuperMethodA(cl, o, msg);
@@ -982,7 +985,7 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
     if (o)
     {
     	struct tbb_data *data = INST_DATA(cl, o);
-	ULONG dispose_mid = OM_DISPOSE;
+	ULONG 		dispose_mid = OM_DISPOSE;
 	struct DrawInfo *dri;
 	
 	/*
@@ -1024,9 +1027,11 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 static VOID tbb_dispose(Class *cl, Object *o, Msg msg)
 {
     struct tbb_data *data = INST_DATA(cl, o);
+    
     if (data->image)
     	DisposeObject(data->image);
     DoSuperMethodA(cl, o, msg);
+    
     return;
 }
 
@@ -1048,9 +1053,9 @@ static IPTR tbb_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 {
-    struct tbb_data *data = INST_DATA(cl, o);
-    struct IBox container;
-    struct RastPort *rp = msg->gpr_RPort;
+    struct tbb_data 	*data = INST_DATA(cl, o);
+    struct IBox 	container;
+    struct RastPort 	*rp = msg->gpr_RPort;
 
     /* center image position, we assume image top and left is 0 */
     ULONG x, y;
@@ -1177,7 +1182,17 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		case GTYP_WZOOM:
 		    ZipWindow(msg->gpi_GInfo->gi_Window);
 		    break;
-	    }
+		    
+		case GTYP_SDEPTH:
+		    if (msg->gpi_GInfo->gi_Screen == IntuitionBase->FirstScreen)
+		    {
+		        ScreenToBack(msg->gpi_GInfo->gi_Screen);
+		    } else {
+		        ScreenToFront(msg->gpi_GInfo->gi_Screen);
+		    }
+		    break;
+		    
+	    } /* switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK) */
 	    
 	    retval &= ~GMR_VERIFY;
 	    

@@ -61,13 +61,37 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-struct Screen *family = NULL,
-	      *current = IntuitionBase->FirstScreen,
-	      *previous = NULL,
-	      *prefamily = NULL;
+    struct IntuiActionMessage *msg;
+    
+    if (reserved != NULL) return;
+    
+    msg = AllocIntuiActionMsg(AMCODE_SCREENDEPTH, NULL, IntuitionBase);
+    
+    if (msg != NULL)
+    {
+        msg->iam_ScreenDepth.Screen = screen;
+	msg->iam_ScreenDepth.Flags  = flags;
+	
+	SendIntuiActionMsg(msg, IntuitionBase);
+    }
+    
+    AROS_LIBFUNC_EXIT
+    
+} /* ScreenDepth */
 
-    if ( reserved != NULL )
-	return;
+/*****************************************************************************************/
+
+VOID int_screendepth(struct Screen *screen, ULONG flags, struct IntuitionBase *IntuitionBase)
+{
+    struct Screen *family = NULL,
+		  *current = IntuitionBase->FirstScreen,
+		  *oldfront = current,
+		  *previous = NULL,
+		  *prefamily = NULL;
+
+    ULONG	  ilock;
+    
+    ilock = LockIBase(0);
 
     /* Find the screen in the list and check for family */
     while ( current && current!=screen )
@@ -93,7 +117,7 @@ struct Screen *family = NULL,
 
     if ( current )
     {
-	if ( flags & SDEPTH_TOFRONT )
+	if ( ! (flags & SDEPTH_TOBACK) ) /* SDEPTH_TOFRONT is #defined as 0 */
 	{
 	    if ( previous ) /* I'm not the very first screen */
 	    {
@@ -130,8 +154,9 @@ struct Screen *family = NULL,
 			current->NextScreen = IntuitionBase->FirstScreen;
 			IntuitionBase->FirstScreen = current;
 		    }
-		}
-		else /* ! SDEPTH_INFAMILY */
+		    
+		} /* SDEPTH_INFAMILY */
+		else 
 		{
 		    if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) )
 		    { /* Move my whole family */
@@ -157,9 +182,12 @@ struct Screen *family = NULL,
 			current->NextScreen = IntuitionBase->FirstScreen;
 			IntuitionBase->FirstScreen = current;
 		    }
-		}
-	    }
-	}
+		    
+		} /* ! SDEPTH_INFAMILY */
+		
+	    } /* if (previous) */
+	    
+	} /* if SDEPTH_TO_FRONT */
 
 	else if ( flags & SDEPTH_TOBACK )
 	{
@@ -233,10 +261,12 @@ struct Screen *family = NULL,
 			screen->NextScreen = NULL;
 		    }
 		}
-	    }
-	    else /* ! SDEPTH_INFAMILY */
+		
+	    } /* SDEPTH_INFAMILY */
+	    else 
 	    {
-struct Screen *last;
+		struct Screen *last;
+		
 		if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) )
 		{
 		    if ( !family )
@@ -267,7 +297,8 @@ struct Screen *last;
 			last->NextScreen = family;
 			current->NextScreen = NULL;
 		    }
-		}
+		    
+		} /* if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) ) */
 		else
 		{
 		    if ( current->NextScreen ) /* I'm not the last screen */
@@ -287,12 +318,20 @@ struct Screen *last;
 			current->NextScreen = screen;
 			screen->NextScreen = NULL;
 		    }
-		}
-	    }
-	}
+		    
+		} /* current not SF_isChild | SF_IsParent */
+		
+	    } /* ! SDEPTH_INFAMILY */
+	    
+	} /* if SDEPTH_TO_BACK */
+	
+    } /* if (current) */
+    
+    if (IntuitionBase->FirstScreen != oldfront)
+    {
+        SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, TRUE);
+	IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
     }
     
-    SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, TRUE);
-
-    AROS_LIBFUNC_EXIT
-} /* ScreenDepth */
+    UnlockIBase(ilock);
+}

@@ -99,13 +99,13 @@ void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 #define TITLEBAR_HEIGHT (w->BorderTop)
 
-BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
+BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
 
     struct DrawInfo *dri;
     BOOL is_gzz;
     
-    EnterFunc(bug("createsysgads(w=%p)\n", w));
+    EnterFunc(bug("CreateWinSysGadgets(w=%p)\n", w));
 
     is_gzz = (w->Flags & WFLG_GIMMEZEROZERO) ? TRUE : FALSE;
 
@@ -149,18 +149,19 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	    WORD width  = ((struct IntWindow *)w)->sizeimage_width;
 	    WORD height = ((struct IntWindow *)w)->sizeimage_height;
 	    
-	    struct TagItem size_tags[] = {
-	            {GA_RelRight,	-width + 1	},
-		    {GA_RelBottom,	-height + 1 	},
-		    {GA_Width,		width		},
-		    {GA_Height,		height		},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_SIZING 	},
-		    {GA_BottomBorder,	TRUE		},
-		    {GA_RightBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
+	    struct TagItem size_tags[] =
+	    {
+	        {GA_RelRight	, -width + 1	},
+		{GA_RelBottom	, -height + 1 	},
+		{GA_Width	, width		},
+		{GA_Height	, height	},
+		{GA_DrawInfo	, (IPTR)dri 	},	/* required	*/
+		{GA_SysGadget	, TRUE		},
+		{GA_SysGType	, GTYP_SIZING 	},
+		{GA_BottomBorder, TRUE		},
+		{GA_RightBorder	, TRUE		},
+		{GA_GZZGadget	, is_gzz	},
+		{TAG_DONE			}
 	    };
 	    SYSGAD(w, SIZEGAD) = NewObjectA(
 			GetPrivIBase(IntuitionBase)->sizebuttonclass
@@ -175,17 +176,18 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	
 	if (w->Flags & WFLG_DEPTHGADGET)
 	{
-	    struct TagItem depth_tags[] = {
-	            {GA_RelRight,	relright	},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_WDEPTH 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
+	    struct TagItem depth_tags[] =
+	    {
+	        {GA_RelRight	, relright		},
+		{GA_Top		, 0  			},
+		{GA_Width	, TITLEBAR_HEIGHT	},
+		{GA_Height	, TITLEBAR_HEIGHT	},
+		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
+		{GA_SysGadget	, TRUE			},
+		{GA_SysGType	, GTYP_WDEPTH 		},
+		{GA_TopBorder	, TRUE			},
+		{GA_GZZGadget	, is_gzz		},
+		{TAG_DONE	 			}
 	    };
 		
 	    relright -= TITLEBAR_HEIGHT;
@@ -205,17 +207,18 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 
 	if (w->Flags & WFLG_HASZOOM)
 	{
-	    struct TagItem zoom_tags[] = {
-	            {GA_RelRight,	relright	},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_WZOOM 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
+	    struct TagItem zoom_tags[] = 
+	    {
+	        {GA_RelRight	, relright		},
+		{GA_Top		, 0  			},
+		{GA_Width	, TITLEBAR_HEIGHT	},
+		{GA_Height	, TITLEBAR_HEIGHT	},
+		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
+		{GA_SysGadget	, TRUE			},
+		{GA_SysGType	, GTYP_WZOOM 		},
+		{GA_TopBorder	, TRUE			},
+		{GA_GZZGadget	, is_gzz		},
+		{TAG_DONE	 			}
 	    };
 		
 	    relright -= TITLEBAR_HEIGHT;
@@ -232,17 +235,18 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 
 	if (w->Flags & WFLG_CLOSEGADGET)
 	{
-	    struct TagItem close_tags[] = {
-	            {GA_Left,		0		},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_CLOSE 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
+	    struct TagItem close_tags[] =
+	    {
+	        {GA_Left	, 0			},
+		{GA_Top		, 0  			},
+		{GA_Width	, TITLEBAR_HEIGHT	},
+		{GA_Height	, TITLEBAR_HEIGHT	},
+		{GA_DrawInfo	, (IPTR)dri 		},	/* required	*/
+		{GA_SysGadget	, TRUE			},
+		{GA_SysGType	, GTYP_CLOSE 		},
+		{GA_TopBorder	, TRUE			},
+		{GA_GZZGadget	, is_gzz		},
+		{TAG_DONE				}
 	    };
 		
 	    db_left  += TITLEBAR_HEIGHT;
@@ -261,15 +265,16 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	if (w->Flags & WFLG_DRAGBAR)
 	{
 
-	    struct TagItem dragbar_tags[] = {
-			{GA_Left,	db_left		},
-			{GA_Top,	0		},
-			{GA_RelWidth,	db_width 	},
-			{GA_Height,	TITLEBAR_HEIGHT },
-			{GA_SysGType,	GTYP_WDRAGGING	},
-			{GA_TopBorder,	TRUE		},
-		    	{GA_GZZGadget, 	is_gzz		},
-			{TAG_DONE,	0UL		}
+	    struct TagItem dragbar_tags[] =
+	    {
+		{GA_Left	, db_left		},
+		{GA_Top		, 0			},
+		{GA_RelWidth	, db_width 		},
+		{GA_Height	, TITLEBAR_HEIGHT 	},
+		{GA_SysGType	, GTYP_WDRAGGING	},
+		{GA_TopBorder	, TRUE			},
+		{GA_GZZGadget	, is_gzz		},
+		{TAG_DONE				}
 	    };
 	    SYSGAD(w, DRAGBAR) = NewObjectA(
 			GetPrivIBase(IntuitionBase)->dragbarclass
@@ -303,20 +308,20 @@ BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    AddGList(w, (struct Gadget *)SYSGAD(w, i), 0, 1, NULL);
 	    }
 	    
-	    ReturnBool("createsysgads", TRUE);
+	    ReturnBool("CreateWinSysGadgets", TRUE);
 	    
 	} /* if (sysgads created) */
 	
-	disposesysgads(w, IntuitionBase);
+	KillWinSysGadgets(w, IntuitionBase);
 	
     } /* if (got DrawInfo) */
-    ReturnBool("createsysgads", FALSE);
+    ReturnBool("CreateWinSysGadgets", FALSE);
 
 }
 
 /**********************************************************************************/
 
-VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
+VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
     /* Free system gadgets */
     UWORD i;

@@ -58,10 +58,10 @@
     msg = AllocIntuiActionMsg(AMCODE_CHANGEWINDOWBOX, window, IntuitionBase);
     if (NULL != msg)
     {
-	msg->iam.iam_changewindowbox.Left   = left;
-	msg->iam.iam_changewindowbox.Top    = top;
-	msg->iam.iam_changewindowbox.Width  = width;
-	msg->iam.iam_changewindowbox.Height = height;
+	msg->iam_ChangeWindowBox.Left   = left;
+	msg->iam_ChangeWindowBox.Top    = top;
+	msg->iam_ChangeWindowBox.Width  = width;
+	msg->iam_ChangeWindowBox.Height = height;
 	
 	SendIntuiActionMsg(msg, IntuitionBase);
     }

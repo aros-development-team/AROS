@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/08/03 20:36:32  stegerg
+    screen depth gadget should be usable now + src cleanup + small fixes
+
     Revision 1.8  2000/01/21 23:04:52  stegerg
     SHOWTITLE (SA_ShowTitle) defaults to TRUE:
 
@@ -75,15 +78,15 @@
 
     struct ExtNewScreen ns =
     {
-	0, 0, 640, 200, 1, /* left, top, width, height, depth */
-	0, 1, /* DetailPen, BlockPen */
-	HIRES | LACE, /* ViewModes */
-	CUSTOMSCREEN | SHOWTITLE, /* Type */
-	NULL, /* Font */
-	NULL, /* DefaultTitle */
-	NULL, /* Gadgets */
-	NULL, /* CustomBitMap */
-	NULL /* Extension (taglist) */
+	0, 0, 640, 200, 1, 		/* left, top, width, height, depth */
+	0, 1, 				/* DetailPen, BlockPen */
+	HIRES | LACE, 			/* ViewModes */
+	CUSTOMSCREEN | SHOWTITLE, 	/* Type */
+	NULL, 				/* Font */
+	NULL, 				/* DefaultTitle */
+	NULL, 				/* Gadgets */
+	NULL, 				/* CustomBitMap */
+	NULL 				/* Extension (taglist) */
     };
 
     if (newScreen)
@@ -96,8 +99,8 @@
     	ns.Type |= NS_EXTENDED;
     }
     
-    /* stegerg: taglist is now handled in openscreen! */
- 
     return OpenScreen ((struct NewScreen *)&ns);
+    
     AROS_LIBFUNC_EXIT
+    
 } /* OpenScreenTagList */

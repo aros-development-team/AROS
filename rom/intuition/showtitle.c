@@ -59,8 +59,8 @@
 
 	if (NULL != msg)
 	{
-	    msg->iam.iam_showtitle.Screen = screen;
-	    msg->iam.iam_showtitle.ShowIt = ShowIt;
+	    msg->iam_ShowTitle.Screen = screen;
+	    msg->iam_ShowTitle.ShowIt = ShowIt;
 
 	    SendIntuiActionMsg(msg, IntuitionBase); 
 	}   

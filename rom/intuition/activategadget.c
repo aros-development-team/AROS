@@ -64,7 +64,7 @@
 
 	if (NULL != msg)
 	{
-	    msg->iam.iam_activategadget.Gadget 	= gadget;
+	    msg->iam_ActivateGadget.Gadget = gadget;
 	    
 	    SetSignal(0,SIGF_INTUITION);
 	    SendIntuiActionMsg(msg, IntuitionBase);

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.28  2000/08/03 20:36:31  stegerg
+    screen depth gadget should be usable now + src cleanup + small fixes
+
     Revision 1.27  2000/08/03 18:30:50  stegerg
     renamed DeferedAction??? to IntuiAction???. The IntuiActionMessage
     structure (formerly called DeferedActionMessage) now contains an
@@ -373,7 +376,8 @@ VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *Intui
 void intui_CloseWindow (struct Window * w,
 	                struct IntuitionBase * IntuitionBase)
 {
-    disposesysgads(w, IntuitionBase);
+    KillWinSysGadgets(w, IntuitionBase);
+    
     if (0 == (w->Flags & WFLG_GIMMEZEROZERO))
     {
 	/* not a GZZ window */

@@ -58,8 +58,8 @@
 
 	if (NULL != msg)
 	{
-	    msg->iam.iam_movewindow.dx = dx;
-	    msg->iam.iam_movewindow.dy = dy;
+	    msg->iam_MoveWindow.dx = dx;
+	    msg->iam_MoveWindow.dy = dy;
 
 	    SendIntuiActionMsg(msg, IntuitionBase);
 	}   
