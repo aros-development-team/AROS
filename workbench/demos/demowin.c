@@ -1,73 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
-    $Id$
-    $Log$
-    Revision 1.16  1996/10/02 18:10:17  digulla
-    Fixed a bug in DrawBorder()
+    $VER: demowin.c 1.16 (2.10.96)
 
-    Revision 1.15  1996/10/02 16:39:16	digulla
-    Added demo for DrawEllipse
-    Show off all 16 colors
-    Created Image Gadget and Image structs
-
-    Revision 1.14  1996/10/01 15:48:33	digulla
-    Use OpenWindowTags()
-    Print error if a library couldn't be opened
-
-    Revision 1.13  1996/09/21 15:49:08	digulla
-    No need for stdlib.h
-
-    Revision 1.12  1996/09/18 14:42:07	digulla
-    Our window is simplerefresh
-
-    Revision 1.11  1996/09/17 16:42:59	digulla
-    Use general startup code
-
-    Revision 1.10  1996/09/17 16:08:53	digulla
-    Better formatting
-
-    Revision 1.9  1996/09/11 16:50:25  digulla
-    Use correct way to access "entry"
-
-    Revision 1.8  1996/08/30 17:03:11  digulla
-    Uses kprintf() now. Makes life a lot easier.
-
-    Revision 1.7  1996/08/29 15:14:36  digulla
-    Changed name
-    Tests PrintIText(), too
-
-    Revision 1.6  1996/08/28 17:58:05  digulla
-    Show off all types of BOOLGADGETs and PROPGADGETs
-
-    Revision 1.5  1996/08/23 17:05:41  digulla
-    The demo crashes if kprintf() is called, so don't do it.
-    New feature: Open console and use RawKeyConvert() to wait for ESC to quit the
-		demo.
-    New feature: Added two gadgets: One with GFLG_GADGHCOMP, the other with
-		GFLG_GADGHIMAGE
-    New feature: The user can select the gadgets and gets messages for them.
-    New feature: More verbose and better error codes.
-
-    Revision 1.4  1996/08/16 14:03:41  digulla
-    More demos
-
-    Revision 1.3  1996/08/15 13:17:32  digulla
-    More types of IntuiMessages are checked
-    Problem with empty window was due to unhandled REFRESH
-    Commented some annoying debug output out
-
-    Revision 1.2  1996/08/13 15:35:44  digulla
-    Removed some comments
-    Replied IntuiMessage
-
-    Revision 1.1  1996/08/13 13:48:27  digulla
-    Small Demo: Open a window, render some gfx and wait for a keypress
-
-    Revision 1.5  1996/08/01 17:40:44  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: A short demo for the features of Intuition and Graphics
+    Lang: english
 */
 #define ENABLE_RT	1
 #define ENABLE_PURIFY	1
@@ -434,11 +370,93 @@ DemoIImage =
     NULL /* NextImage */
 };
 
+#include "images/ArrowUp0.h"
+#include "images/ArrowUp1.h"
+#include "images/ArrowDown0.h"
+#include "images/ArrowDown1.h"
+#include "images/ArrowLeft0.h"
+#include "images/ArrowLeft1.h"
+#include "images/ArrowRight0.h"
+#include "images/ArrowRight1.h"
+
 struct Gadget
+DemoGadget12 =
+{
+    NULL, /* &DemoGadget, / * NextGadget */
+    -(BORDER+2*ARROWLEFT1_WIDTH), -((GAD_HEI+BORDER)*3),
+    ARROWLEFT1_WIDTH, ARROWLEFT1_HEIGHT, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELBOTTOM
+	| GFLG_GADGIMAGE
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &ArrowLeft0Image, &ArrowLeft1Image, /* Render */
+    NULL, /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    13, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget11 =
+{
+    &DemoGadget12, /* NextGadget */
+    -(BORDER+1*ARROWLEFT1_WIDTH), -((GAD_HEI+BORDER)*3),
+    ARROWLEFT1_WIDTH, ARROWLEFT1_HEIGHT, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELBOTTOM
+	| GFLG_GADGIMAGE
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &ArrowRight0Image, &ArrowRight1Image, /* Render */
+    NULL, /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    12, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget10 =
+{
+    &DemoGadget11, /* NextGadget */
+    -(BORDER+ARROWDOWN1_WIDTH), -(BORDER+GAD_HEI*3+BORDER*4-2*ARROWDOWN1_HEIGHT+2),
+    ARROWDOWN1_WIDTH, ARROWDOWN1_HEIGHT, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELBOTTOM
+	| GFLG_GADGIMAGE
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &ArrowDown0Image, &ArrowDown1Image, /* Render */
+    NULL, /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    11, /* GadgetID */
+    NULL /* UserData */
+},
+DemoGadget9 =
+{
+    &DemoGadget10, /* NextGadget */
+    -(BORDER+ARROWDOWN1_WIDTH), -(BORDER+GAD_HEI*3+BORDER*4-1*ARROWDOWN1_HEIGHT+2),
+    ARROWDOWN1_WIDTH, ARROWDOWN1_HEIGHT, /* hit box */
+    GFLG_GADGHIMAGE
+	| GFLG_RELRIGHT
+	| GFLG_RELBOTTOM
+	| GFLG_GADGIMAGE
+	, /* Flags */
+    GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
+    GTYP_BOOLGADGET, /* Type */
+    &ArrowUp0Image, &ArrowUp1Image, /* Render */
+    NULL, /* Text */
+    0L, NULL, /* MutualExcl, SpecialInfo */
+    10, /* GadgetID */
+    NULL /* UserData */
+},
 DemoGadget8 =
 {
-    NULL, /* NextGadget */
-    -(BORDER+GAD_HEI+GAD_WID), -((GAD_HEI+BORDER)*3+GAD_WID), GAD_WID, GAD_WID, /* hit box */
+    &DemoGadget9, /* NextGadget */
+    -(BORDER+ARROWDOWN1_WIDTH+GAD_WID), -((GAD_HEI+BORDER)*3+GAD_WID),
+    GAD_WID, GAD_WID, /* hit box */
     GFLG_GADGHIMAGE
 	| GFLG_RELRIGHT
 	| GFLG_RELBOTTOM
@@ -457,7 +475,8 @@ DemoGadget8 =
 DemoGadget7 =
 {
     &DemoGadget8, /* NextGadget */
-    -(BORDER+GAD_HEI), BORDER, GAD_HEI, -(GAD_HEI*3+BORDER*4), /* hit box */
+    -(BORDER+ARROWDOWN1_WIDTH), BORDER,
+    ARROWDOWN1_WIDTH, -(GAD_HEI*3+BORDER*4+2*ARROWDOWN1_HEIGHT), /* hit box */
     GFLG_GADGHIMAGE
 	| GFLG_RELRIGHT
 	| GFLG_RELHEIGHT
@@ -476,7 +495,8 @@ DemoGadget7 =
 DemoGadget6 =
 {
     &DemoGadget7, /* NextGadget */
-    BORDER, -((GAD_HEI+BORDER)*3), -(2*BORDER), GAD_HEI, /* hit box */
+    BORDER, -((GAD_HEI+BORDER)*3),
+    -(2*BORDER+2*ARROWLEFT0_WIDTH), ARROWLEFT0_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
 	| GFLG_RELBOTTOM
 	| GFLG_RELWIDTH
@@ -795,10 +815,123 @@ int main (int argc, char ** argv)
 
 	    case IDCMP_GADGETDOWN: {
 		struct Gadget * gadget;
+		LONG pot;
 
 		gadget = (struct Gadget *)im->IAddress;
 
 		bug ("User pressed gadget %ld\n", gadget->GadgetID);
+
+		switch (gadget->GadgetID)
+		{
+		case 10: /* Up */
+		    pot = DemoPropInfo3.HorizPot - DemoPropInfo3.HorizBody;
+
+		    if (pot < 0)
+			pot = 0;
+
+		    ModifyProp (&DemoGadget7
+			, win
+			, NULL
+			, DemoPropInfo2.Flags
+			, DemoPropInfo2.HorizPot
+			, pot
+			, DemoPropInfo2.HorizBody
+			, DemoPropInfo2.VertBody
+		    );
+		    ModifyProp (&DemoGadget8
+			, win
+			, NULL
+			, DemoPropInfo3.Flags
+			, DemoPropInfo3.HorizPot
+			, pot
+			, DemoPropInfo3.HorizBody
+			, DemoPropInfo3.VertBody
+		    );
+
+		    break;
+
+		case 11: /* Down */
+		    pot = DemoPropInfo3.HorizPot + DemoPropInfo3.HorizBody;
+
+		    if (pot > MAXPOT)
+			pot = MAXPOT;
+
+		    ModifyProp (&DemoGadget7
+			, win
+			, NULL
+			, DemoPropInfo2.Flags
+			, DemoPropInfo2.HorizPot
+			, pot
+			, DemoPropInfo2.HorizBody
+			, DemoPropInfo2.VertBody
+		    );
+		    ModifyProp (&DemoGadget8
+			, win
+			, NULL
+			, DemoPropInfo3.Flags
+			, DemoPropInfo3.HorizPot
+			, pot
+			, DemoPropInfo3.HorizBody
+			, DemoPropInfo3.VertBody
+		    );
+
+		    break;
+
+		case 12: /* Right */
+		    pot = DemoPropInfo1.HorizPot + DemoPropInfo1.HorizBody;
+
+		    if (pot > MAXPOT)
+			pot = MAXPOT;
+
+		    ModifyProp (&DemoGadget6
+			, win
+			, NULL
+			, DemoPropInfo1.Flags
+			, pot
+			, DemoPropInfo1.VertPot
+			, DemoPropInfo1.HorizBody
+			, DemoPropInfo1.VertBody
+		    );
+		    ModifyProp (&DemoGadget8
+			, win
+			, NULL
+			, DemoPropInfo3.Flags
+			, pot
+			, DemoPropInfo3.VertPot
+			, DemoPropInfo3.HorizBody
+			, DemoPropInfo3.VertBody
+		    );
+
+		    break;
+
+		case 13: /* Left */
+		    pot = DemoPropInfo1.HorizPot - DemoPropInfo1.HorizBody;
+
+		    if (pot < 0)
+			pot = 0;
+
+		    ModifyProp (&DemoGadget6
+			, win
+			, NULL
+			, DemoPropInfo1.Flags
+			, pot
+			, DemoPropInfo1.VertPot
+			, DemoPropInfo1.HorizBody
+			, DemoPropInfo1.VertBody
+		    );
+		    ModifyProp (&DemoGadget8
+			, win
+			, NULL
+			, DemoPropInfo3.Flags
+			, pot
+			, DemoPropInfo3.VertPot
+			, DemoPropInfo3.HorizBody
+			, DemoPropInfo3.VertBody
+		    );
+
+		    break;
+
+		}
 
 		break; }
 
