@@ -31,6 +31,12 @@ Also available is the latest beta as binary for linux as
 \link{Germany (Mirror site)}{http://www.vmc.de/aros/}
 and
 \link{Sweden (Mirror site)}{http://www.lysator.liu.se/amiga/aros/}
+\item
+\begin{new}{15.9.1998}
+\link{Source for crypt tool}{ftp://aros.fh-konstanz.de/pub/aros/crypt.c}
+and a
+\link{binary for Amiga}{ftp://aros.fh-konstanz.de/pub/aros/AROS-crypt.lha}
+\end{new}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
 (Local copy of the
 \link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}

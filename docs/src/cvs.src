@@ -5,22 +5,28 @@ sources of a project one works on. The software offers a list of commands
 to merge the most recent version of the project with the local sources and
 to publish changes one has made over the Internet.
 
-\begin{new}{7.10.1997}
+\begin{new}{15.9.1998}
 \subsection{CVS on Un*x}
 \end{new}
 
 If you have Linux or any other Un*x, then all you need is
-\begin{new}{7.10.1997}
-CVS 1.9
+CVS 1.9 or better.
+\begin{new}{15.9.1998}
+Note that versions of CVS between 1.9.16 and 1.10 don't work because the login protocal
+has changed. Versions after (and including) 1.10 work again.
 \end{new}
-or better.
 If it's not already on your system (type \shell{cvs} to find out), fetch
 if from one of the many GNU mirrors and install it in your \filename{$HOME}.
 
 If you want to have access to the database,
 then get the
 AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
-say \shell{make crypt}. Think of a good password and use \filename{crypt}
+say \shell{make crypt}
+\begin{new}{15.9.1998}
+or download \link{crypt.c}{ftp://aros.fh-konstanz.de/pub/aros/crypt.c}
+and follow the instructions in the file.
+\end{new}
+Think of a good password and use \filename{crypt}
 to encode it, like this:
 
 \begin{example}
