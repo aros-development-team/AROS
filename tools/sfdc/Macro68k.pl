@@ -94,7 +94,7 @@ BEGIN {
 
 	if ($$prototype{'type'} eq 'function') {
 	    if (!$prototype->{nb}) {
-		print ",\\\n	, $self->{BASE}";
+		print ",\\\n	, (___base)";
 	    }
 
 	    if ($self->{FUNCARGTYPE} ne '') {

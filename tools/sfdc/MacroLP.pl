@@ -83,7 +83,7 @@ BEGIN {
 	if ($$prototype{'type'} eq 'function') {
 
 	    if (!$prototype->{nb}) {
-		print ",\\\n	, $self->{BASE})\n";
+		print ",\\\n	, (___base))\n";
 	    }
 	    else {
 		print ")\n";
