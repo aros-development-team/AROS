@@ -2,7 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.13  1996/09/21 15:49:08  digulla
+    Revision 1.14  1996/10/01 15:48:33  digulla
+    Use OpenWindowTags()
+    Print error if a library couldn't be opened
+
+    Revision 1.13  1996/09/21 15:49:08	digulla
     No need for stdlib.h
 
     Revision 1.12  1996/09/18 14:42:07	digulla
@@ -67,6 +71,7 @@
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 #include <clib/aros_protos.h>
+#include <clib/alib_protos.h>
 #include <clib/utility_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/intuition_protos.h>
@@ -392,7 +397,6 @@ ExitGadget =
 
 int main (int argc, char ** argv)
 {
-    struct NewWindow nw;
     struct Window * win;
     struct RastPort * rp;
     struct IntuiMessage * im;
@@ -411,31 +415,22 @@ int main (int argc, char ** argv)
     GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
 
-    if (!GfxBase || !IntuitionBase)
+    if (!GfxBase)
+    {
+	bug ("Couldn't open %s\n", GRAPHICSNAME);
 	goto end;
+    }
+
+    if (!IntuitionBase)
+    {
+	bug ("Couldn't open intuition.library\n");
+	goto end;
+    }
 
     D(bug("main=%p Refresh=%p\n"
 	, main
 	, Refresh
     ));
-
-    nw.LeftEdge = 100;
-    nw.TopEdge = 100;
-    nw.Width = 640;
-    nw.Height = 512;
-    nw.DetailPen = nw.BlockPen = (UBYTE)-1;
-    nw.IDCMPFlags = IDCMP_RAWKEY
-		  | IDCMP_REFRESHWINDOW
-		  | IDCMP_MOUSEBUTTONS
-		  | IDCMP_MOUSEMOVE
-		  | IDCMP_GADGETDOWN
-		  | IDCMP_GADGETUP
-		  ;
-    nw.Flags = WFLG_SIMPLE_REFRESH;
-    nw.FirstGadget = &ExitGadget;
-    nw.CheckMark = NULL;
-    nw.Title = "Open a window demo";
-    nw.Type = WBENCHSCREEN;
 
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = (struct Library *)cioreq.io_Device;
@@ -447,7 +442,22 @@ int main (int argc, char ** argv)
 	return 10;
     }
 
-    win = OpenWindow (&nw);
+    win = OpenWindowTags (NULL
+	, WA_Title,	    "Open a window demo"
+	, WA_Left,	    100
+	, WA_Top,	    100
+	, WA_Width,	    640
+	, WA_Height,	    512
+	, WA_IDCMP,	    IDCMP_RAWKEY
+			    | IDCMP_REFRESHWINDOW
+			    | IDCMP_MOUSEBUTTONS
+			    | IDCMP_MOUSEMOVE
+			    | IDCMP_GADGETDOWN
+			    | IDCMP_GADGETUP
+	, WA_SimpleRefresh, TRUE
+	, WA_Gadgets,	    &ExitGadget
+	, TAG_END
+    );
     D(bug("OpenWindow win=%p\n", win));
 
     if (!win)
