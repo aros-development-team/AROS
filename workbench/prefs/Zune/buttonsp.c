@@ -215,36 +215,36 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Button, (IPTR)str);
 
 /* Backgrounds */
-    str = (STRPTR)xget(data->text_background_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->text_background_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Button,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->text_selbackground_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->text_selbackground_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Selected,
 	     (IPTR)str);
 
 /* Frames */
-    str = (STRPTR)xget(data->button_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->button_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Button,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->imagebutton_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->imagebutton_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_ImageButton,
 	     (IPTR)str);
 
 /* Looks */
-    str = (STRPTR)xget(data->radio_look_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->radio_look_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_RadioButton,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->checkmark_look_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->checkmark_look_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_CheckMark,
 	     (IPTR)str);
 
 /* Spacing */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Radio_HSpacing,
-	     xget(data->spacing_horiz_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_horiz_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Radio_VSpacing,
-	     xget(data->spacing_vert_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_vert_slider, MUIA_Numeric_Value));
 
     return TRUE;
 }

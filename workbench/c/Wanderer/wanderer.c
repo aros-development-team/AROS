@@ -32,7 +32,7 @@
 #include <aros/debug.h>
 #else
 #include "mui.h"
-ULONG xget(Object *obj, Tag attr);
+ULONG XGET(Object *obj, Tag attr);
 #endif
 
 
@@ -323,7 +323,7 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_IconWindow_IsBackdrop:
 		    if ((!!tag->ti_Data) != data->is_backdrop)
 		    {
-		    	int is_open = xget(obj, MUIA_Window_Open);
+		    	int is_open = XGET(obj, MUIA_Window_Open);
 		    	if (is_open) set(obj, MUIA_Window_Open, FALSE);
 		        if (tag->ti_Data)
 		        {
@@ -338,7 +338,7 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        {
 			    char *title;
 			    if (data->is_root) title = "Wanderer";
-			    else title = (char*)xget(data->iconlist, MUIA_IconDrawerList_Drawer);
+			    else title = (char*)XGET(data->iconlist, MUIA_IconDrawerList_Drawer);
 
 			    SetAttrs(obj,
 				MUIA_Window_Title,title,
@@ -365,7 +365,7 @@ STATIC IPTR IconWindow_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	case	MUIA_IconWindow_Drawer:
 		if (!data->is_root)
-		    *msg->opg_Storage = xget(data->iconlist,MUIA_IconDrawerList_Drawer);
+		    *msg->opg_Storage = XGET(data->iconlist,MUIA_IconDrawerList_Drawer);
 		else *msg->opg_Storage = NULL;
 		return 1;
 
@@ -400,7 +400,7 @@ STATIC IPTR IconWindow_Clicked(struct IClass *cl, Object *obj, Msg msg)
 	msg.type = ICONWINDOW_ACTION_CLICK;
 	msg.iconlist = data->iconlist;
 	msg.isroot = data->is_root;
-	msg.click = (struct IconList_Click*)xget(data->iconlist, MUIA_IconList_Clicked);
+	msg.click = (struct IconList_Click*)XGET(data->iconlist, MUIA_IconList_Clicked);
 	CallHookPkt(data->action_hook,obj,&msg);
     }
     return NULL; /* irrelevant */
@@ -415,7 +415,7 @@ STATIC IPTR IconWindow_IconsDropped(struct IClass *cl, Object *obj, Msg msg)
 	msg.type = ICONWINDOW_ACTION_ICONDROP;
 	msg.iconlist = data->iconlist;
 	msg.isroot = data->is_root;
-	msg.click = (struct IconList_Click*)xget(data->iconlist, MUIA_IconList_Clicked);
+	msg.click = (struct IconList_Click*)XGET(data->iconlist, MUIA_IconList_Clicked);
 	CallHookPkt(data->action_hook,obj,&msg);
     }
     return NULL;
@@ -538,7 +538,7 @@ STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
 STATIC IPTR Wanderer_HandleTimer(struct IClass *cl, Object *obj, Msg msg)
 {
-    Object *cstate = (Object*)(((struct List*)xget(obj, MUIA_Application_WindowList))->lh_Head);
+    Object *cstate = (Object*)(((struct List*)XGET(obj, MUIA_Application_WindowList))->lh_Head);
     Object *child;
     char *scr_title = GetScreenTitle();
 
@@ -621,7 +621,7 @@ void execute_ok(void)
 
     set(execute_wnd,MUIA_Window_Open,FALSE);
     if (execute_command) FreeVec(execute_command);
-    execute_command = StrDup((char*)xget(execute_command_string,MUIA_String_Contents));
+    execute_command = StrDup((char*)XGET(execute_command_string,MUIA_String_Contents));
     if (!execute_command) return;
 
     if (!execute_current_directory) cd = "RAM:";
@@ -683,7 +683,7 @@ void wanderer_backdrop(Object **pstrip)
     if (item)
     {
     	set(root_iconwnd,MUIA_Window_Open,FALSE);
-	set(root_iconwnd,MUIA_IconWindow_IsBackdrop, xget(item, MUIA_Menuitem_Checked));
+	set(root_iconwnd,MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
     	set(root_iconwnd,MUIA_Window_Open,TRUE);
     }
 }
@@ -784,17 +784,17 @@ AROS_UFH3(void, hook_func_action,
 
 	if (ent->type == ST_ROOT || ent->type == ST_USERDIR)
 	{
-	    Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	    Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	    Object *child;
 
 	    while ((child = NextObject(&cstate)))
 	    {
-	    	if (xget(child, MUIA_UserData))
+	    	if (XGET(child, MUIA_UserData))
 	    	{
-		    char *child_drawer = (char*)xget(child, MUIA_IconWindow_Drawer);
+		    char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
 		    if (child_drawer && !Stricmp(buf,child_drawer))
 		    {
-		    	int is_open = xget(child, MUIA_Window_Open);
+		    	int is_open = XGET(child, MUIA_Window_Open);
 		    	if (!is_open)
 			    DoMethod(child, MUIM_IconWindow_Open);
 			else
@@ -823,7 +823,7 @@ AROS_UFH3(void, hook_func_action,
 		if (drawerwnd)
 		{
 	    	    /* Get the drawer path back so we can use it also outside this function */
-		    char *drw = (char*)xget(drawerwnd,MUIA_IconWindow_Drawer);
+		    char *drw = (char*)XGET(drawerwnd,MUIA_IconWindow_Drawer);
 
 		    /* We simply close the window here in case somebody like to to this...
 		     * the memory is not freed until wb is closed however */
@@ -853,12 +853,12 @@ AROS_UFH3(void, hook_func_action,
     {
 	if (!msg->click->shift)
 	{
-	    Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	    Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	    Object *child;
 
 	    while ((child = NextObject(&cstate)))
 	    {
-	    	if (xget(child, MUIA_UserData))
+	    	if (XGET(child, MUIA_UserData))
 	    	{
 		    if (child != obj)
 		    {
@@ -870,15 +870,15 @@ AROS_UFH3(void, hook_func_action,
     } else
     if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
-	Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	Object *child;
 
 	while ((child = NextObject(&cstate)))
 	{
-	    if (xget(child, MUIA_UserData))
+	    if (XGET(child, MUIA_UserData))
 	    {
 		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-		Object *iconlist = (Object*)xget(child, MUIA_IconWindow_IconList);
+		Object *iconlist = (Object*)XGET(child, MUIA_IconWindow_IconList);
 
 		do
 		{

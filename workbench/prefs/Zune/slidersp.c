@@ -205,19 +205,19 @@ static IPTR SlidersP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Knob, (IPTR)str);
 
 /* Backgrounds */
-    str = (STRPTR)xget(data->container_background_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->container_background_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Slider,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->knob_background_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->knob_background_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_SliderKnob,
 	     (IPTR)str);
 
 /* Frame */
-    str = (STRPTR)xget(data->container_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->container_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Slider,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->knob_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->knob_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Knob,
 	     (IPTR)str);
     return TRUE;

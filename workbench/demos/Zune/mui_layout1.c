@@ -223,7 +223,7 @@ foo ()
 	 */
 /*
   set(dynWin, MUIA_Window_Open, TRUE);
-  if (!xget(dynWin, MUIA_Window_Open))
+  if (!XGET(dynWin, MUIA_Window_Open))
   {
   MUI_DisposeObject(appli);
   set(mainWin, MUIA_Window_Open, FALSE);
