@@ -190,7 +190,7 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Group_Horiz, FALSE,
-    	Child, group = GroupObject,
+    	Child, (IPTR) group = GroupObject,
 	    usewinborder?TAG_IGNORE:MUIA_Group_LayoutHook, layout_hook,
 	    Child, iconlist,
 	    Child, vert = ScrollbarObject,

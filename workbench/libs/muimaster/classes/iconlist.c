@@ -376,7 +376,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Dropable, TRUE,
 	MUIA_Font, MUIV_Font_Tiny,
-    	TAG_MORE, msg->ops_AttrList);
+    	TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -1005,7 +1005,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 
 			    data->icon_click.shift = !!(msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
 			    data->icon_click.entry = new_selected?&new_selected->entry:NULL;
-			    set(obj,MUIA_IconList_Clicked,&data->icon_click);
+			    set(obj,MUIA_IconList_Clicked,(IPTR)&data->icon_click);
 
 			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == new_selected)
 			    {
@@ -1315,7 +1315,7 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
     } else
     {
     	data->drop_entry = NULL;
-    	set(obj, MUIA_IconList_IconsDropped, data->drop_entry); /* Now notify */
+    	set(obj, MUIA_IconList_IconsDropped, (IPTR)data->drop_entry); /* Now notify */
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -1499,7 +1499,7 @@ static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg
     struct TagItem  	    *tag, *tags;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	TAG_MORE, msg->ops_AttrList);
+    	TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -1729,7 +1729,7 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	TAG_MORE, msg->ops_AttrList);
+    	TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
