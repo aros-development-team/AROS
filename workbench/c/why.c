@@ -17,7 +17,7 @@ static const char version[] = "$VER: why 41.3 (26.8.98)\n";
 int main()
 {
     struct RDArgs *rda;
-    IPTR args[0];
+    IPTR args[1]; /* we actually need 0 arguments */
     struct CommandLineInterface *cli;
     LONG lasterror;
     int error = RETURN_OK;
