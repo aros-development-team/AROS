@@ -28,8 +28,9 @@
 #define bug Printf
 
 /* Maximum config file length. Is actually 100, but we add 2 for the newline
-   character and the \0 character. */
-#define MAX_LINE_LEN 102
+   character and the \0 character. Add another character for the V36/V37 FGets
+   bug. All of this still implies a maximum line length of 100 to the user. */
+#define MAX_LINE_LEN 103
 
 char txt_module[] = "MODULE";
 char args_module[] = "MODULE/K/A";
@@ -77,6 +78,7 @@ struct BootConfig *ReadConfig(char *file)
 	    if( (linebuffer = AllocMem(MAX_LINE_LEN, MEMF_CLEAR)))
 	    {
 		D(bug(" ok\n"));
+
 		D(bug("Opening config file \"%s\"", (ULONG)file));
 		if( (fh = Open(file, MODE_OLDFILE)))
 		{
