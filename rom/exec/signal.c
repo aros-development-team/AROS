@@ -109,7 +109,7 @@
 	    if(SysBase->ThisTask->tc_State==TS_RUN)
 	    {
 		/* Are taskswitches allowed? */
-		if(SysBase->TDNestCnt>0||SysBase->IDNestCnt>0)
+		if(SysBase->TDNestCnt>=0||SysBase->IDNestCnt>0)
 		{
 		    /* No. Store it for later. */
 		    SysBase->AttnResched|=0x80;
