@@ -56,7 +56,11 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Make sure segment is freeable */
+#if AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT
     if (seg->seg_UC == 0 || seg->seg_UC == 1)
+#else
+    if (seg->seg_UC == 0)
+#endif
     {
 	struct Segment *next, *prev;
 	prev = NULL;
