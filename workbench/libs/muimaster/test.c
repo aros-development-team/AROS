@@ -317,6 +317,7 @@ void main(void)
     MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
     MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
     MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
+		MUIMasterBase_instance.cybergfxbase = OpenLibrary("cybergraphics.library", 0);
     InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
 
 #ifdef __MAXON__
@@ -389,7 +390,7 @@ void main(void)
 			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, objects_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Add Objects", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_Disabled, 1, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, MUI_MakeObject(MUIO_Label,"_Checkmark",0),
 			    Child, MUI_MakeObject(MUIO_Checkmark,"_Checkmark"),
 			    End,
