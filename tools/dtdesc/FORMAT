@@ -94,10 +94,9 @@ BaseName=ilbm
 Pattern=#?
 
 # Mask - the recognition-mask
-# 'ÿ' is ASCII255 and means fit everything.
 # Used in DataTypeHeader->dth_Mask .
 # DataTypeHeader->dth_MaskLen is counted from this string.
-Mask=FORMÿÿÿÿILBM
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M'
 
 # GroupID - GroupID as descriped in <datatypes/datatypes.h>
 # Used in DataTypeHeader->dth_GroupID .
