@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Get the filesystem handler for a process.
     Lang: english
 */
 #include "dos_intern.h"
@@ -10,6 +10,7 @@
 /*****************************************************************************
 
     NAME */
+#include <dos/dosextens.h>
 #include <proto/dos.h>
 
 	AROS_LH0(struct MsgPort *, GetFileSysTask,
@@ -21,10 +22,13 @@
 	struct DosLibrary *, DOSBase, 87, Dos)
 
 /*  FUNCTION
+	Return the default filesystem handler for this process.
 
     INPUTS
+	None.
 
     RESULT
+	The default filesystem handler for this process.
 
     NOTES
 
@@ -33,6 +37,7 @@
     BUGS
 
     SEE ALSO
+	SetFileSysTask()
 
     INTERNALS
 
@@ -44,10 +49,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("GetFileSysTask");
+    return BADDR(((struct Process *)FindTask(NULL))->pr_FileSystemTask);
 
-    return NULL;
     AROS_LIBFUNC_EXIT
 } /* GetFileSysTask */
