@@ -44,12 +44,5 @@ AR		:= @AR@
 RANLIB		:= @RANLIB@
 NM		:= @NM@
 NM_PLAIN	:= @NM_PLAIN@
-
-ifeq "$(DEBUG)" "yes"
-    STRIP		:= $(NOP)
-else
-    STRIP		:= @STRIP@ --strip-unneeded -R.comment
-endif
-
 OBJCOPY		:= @OBJCOPY@
 OBJDUMP		:= @OBJDUMP@
