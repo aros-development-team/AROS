@@ -4,12 +4,16 @@
 ;
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-*** Can't create application object.
+Impossible de créer l'application !
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
 Impossible de créer la requête de fichier !
 ; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+Impossible de créer le contexte pour Gadtools !
+;Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Impossible d'ouvrir de flux IFF !
@@ -36,15 +40,15 @@ Préférences des polices de caractères (Font)
 ; Font Preferences
 ;
 MSG_MENU_PREFERENCES
-*** Preferences
+Préférences
 ; Preferences
 ;
 MSG_MENU_PREFERENCES_IMPORT
-I\0*** Import...
+I\0Importer...
 ; I\0Import...
 ;
 MSG_MENU_PREFERENCES_EXPORT
-E\0*** Export...
+E\0Exporter...
 ; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
@@ -60,7 +64,7 @@ Ok
 ; Ok
 ;
 MSG_ICONS
-*** Icons:
+Icônes :
 ; Icons:
 ;
 MSG_SYSTEM
@@ -68,6 +72,6 @@ Système:
 ; System:
 ;
 MSG_SCREEN
-Ecran:
+Écran:
 ; Screen:
 ;
