@@ -2,3 +2,4 @@ functable.c
 endtag.c
 libdefs.h
 makefile
+mmakefile
