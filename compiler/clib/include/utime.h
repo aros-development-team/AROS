@@ -17,6 +17,6 @@ struct utimbuf {
 };
 
 
-int utime (const char *, const struct utimbuf *);
+int utime(const char *filename, struct utimbuf *buf);
 
 #endif /* !_UTIME_H_ */
