@@ -18,12 +18,12 @@
 
 int bz_internal_error;
 
-void *bzAlloc( void *nothing, int m, int n )
+void *malloc( ULONG size )
 {
-    return AllocVec( m * n, MEMF_ANY );
+    return AllocVec( size, MEMF_ANY );
 }
 
-void bzFree( void *nothing, void *p )
+void free( void *p )
 {
     FreeVec( p );
 }
@@ -44,10 +44,6 @@ APTR BZ2_Open( CONST_STRPTR path, LONG mode )
     
     bzf->bzf_File = FILE_Open( path, MODE_READ );
     if( bzf->bzf_File == NULL ) goto error;    
-
-    bzf->bzf_Stream.bzalloc = bzAlloc;
-    bzf->bzf_Stream.bzfree  = bzFree;
-    bzf->bzf_Stream.opaque  = NULL;
 
     rc = BZ2_bzDecompressInit( &(bzf->bzf_Stream), 0, 0 );
     if( rc != BZ_OK ) goto error;
