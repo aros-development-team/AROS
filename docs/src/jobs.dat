@@ -565,9 +565,9 @@ disk00002;0;digulla;Write GetUnit
 disk00003;0;digulla;Write GiveUnit
 disk00004;0;digulla;Write GetUnitID
 disk00005;0;digulla;Write ReadUnitID
-diskfont00000;1;nlorentz;Write OpenDiskFont
-diskfont00001;1;nlorentz;Write AvailFonts
-diskfont00002;1;SDuvan;Write NewFontContents
+diskfont00000;1;nlorentz,verhaegs;Write OpenDiskFont
+diskfont00001;1;nlorentz,verhaegs;Write AvailFonts
+diskfont00002;1;SDuvan,verhaegs;Write NewFontContents
 diskfont00003;2;SDuvan;Write DisposeFontContents
 diskfont00004;0;digulla;Write NewScaledDiskFont
 dos00000;2;matthias;Write Open
