@@ -47,7 +47,7 @@ struct TimerBase
     /* Required by the system */
     struct Device	 tb_Device;
     struct ExecBase	*tb_SysBase;
-    struct Library	*tb_BOOPSIBase;
+//    struct Library	*tb_BOOPSIBase;
     BPTR		 tb_SegList;
 
     struct IClass	*tb_TimerHIDD;
@@ -68,7 +68,7 @@ struct TimerBase
 #define GetDevice(tb)		((struct Device *)(tb))
 
 #define SysBase			(GetTimerBase(TimerBase)->tb_SysBase)
-#define BOOPSIBase		(GetTimerBase(TimerBase)->tb_BOOPSIBase)
+//#define BOOPSIBase		(GetTimerBase(TimerBase)->tb_BOOPSIBase)
 
 #define TF_GO		(1L<<0)
 #define TF_GotVBlank	(1L<<1)	/* HIDD used for VBlank units */
