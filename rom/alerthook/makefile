@@ -20,8 +20,8 @@ $(OSMODDIR)/alert.hook: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 	$(CC) $(ILDFLAGS) \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	-o $@ 2>&1|tee alerthook.err
-	@if test ! -s alerthook.err; then rm alerthook.err ; else true ; fi
+	-o $@ 2>&1|tee alert.hook.err
+	@if test ! -s alert.hook.err; then rm alert.hook.err ; else true ; fi
 	@strip $@
 else
 all: setup \
