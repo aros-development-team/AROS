@@ -34,7 +34,7 @@ clean:
 $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
-#$(EXEDIR)/dir: dir.o strlen.o qsort.o strcpy.o
+#$(EXEDIR)/dir: $(ODIR)/dir.o $(ODIR)/strlen.o $(ODIR)/qsort.o $(ODIR)/strcpy.o
 #	 $(CC) -Xlinker -i $(CFLAGS) $^ -o $@ -nostartfiles -nostdlib
 
 $(EXEDIR)/dir: dir.c strlen.c qsort.c strcpy.c
