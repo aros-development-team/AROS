@@ -8,9 +8,9 @@
 include $(TOP)/config/make.cfg
 
 # MetaMake rules
-#MM AROS : setup includes compiler kernel workbench apps
-#MM clean
+#MM AROS : AROS-$(ARCH)
 
+#MM
 AROS : $(BINDIR)/arosshell checkerr
 
 #MM
@@ -140,6 +140,7 @@ DEVARCHIVE = AROSdev-current
 # \item{dist-src} Create the source archive as .tar.gz and LhA files.
 #
 # END_DESC{internaltarget}
+#MM
 dist : dist-dir dist-tar dist-lha dist-src
 	cp README dist/$(BINARCHIVE).readme
 	cp README dist/$(DEVARCHIVE).readme
