@@ -23,7 +23,8 @@
 #define CLID_Hidd_BitMap	"bitmap.hidd"
 
 #define IID_Hidd_GC	"I_HiddGC"
-#define IID_
+#define IID_Hidd_BitMap	"I_HiddBitMap"
+
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
 
