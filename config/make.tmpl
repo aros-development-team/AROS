@@ -1416,6 +1416,12 @@ endif
 ifeq ($(MODTYPE),module)
 MOD_DIR := $(AROS_MODULES)
 endif
+ifeq ($(MODTYPE),mcc)
+MOD_DIR := $(CONTRIBDIR)/Zune/Libs/mui
+endif
+ifeq ($(MODTYPE),mcp)
+MOD_DIR := $(CONTRIBDIR)/Zune/Libs/mui
+endif
 ifeq ($(MOD_DIR),bollocks)
 $(error You have to set MODTYPE to something other than $(MODTYPE))
 endif
