@@ -11,6 +11,11 @@ DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d \
 GFX_CFLAGS	:= $(SHARED_CFLAGS) $(GFX_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
 INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
 
+# graphics.library needs to be linked to the libgraphicsstubs
+# provided by gfx.hidd, so we must make sure gfx.hidd is built
+# before graphics.library
+
+#MM- kernel-graphics-linklib : hidd-graphics-linklib
 
 #MM
 graphics-gfxhidd : $(OSGENDIR)/graphics/graphics_driver.o

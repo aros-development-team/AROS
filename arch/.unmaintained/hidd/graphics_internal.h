@@ -12,6 +12,7 @@ struct gfx_driverdata {
     UWORD	* dd_AreaPtrn;		/* Amiga current AreaPtrn	*/
     BYTE	  dd_AreaPtSz;		/* Amiga AreaPtSz		*/
     UWORD	  dd_LinePtrn;		/* Amiga current LinePtrn	*/
+    Object	* dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
 };
 

@@ -5,6 +5,9 @@
     Desc: Driver for using gfxhidd for gfx output
     Lang: english
 */
+
+#define AROS_USE_OOP
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
