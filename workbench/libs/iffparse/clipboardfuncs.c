@@ -6,6 +6,7 @@
     Lang: English.
 */
 #include "iffparse_intern.h"
+#include <exec/io.h>
 
 
 /***********************/
