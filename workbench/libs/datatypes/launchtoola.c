@@ -157,8 +157,8 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
                     success = OpenWorkbenchObject
                     (
                         tool->tn_Program, 
-                        WBOPENA_ArgLock, parent,
-                        WBOPENA_ArgName, FilePart(project),
+                        WBOPENA_ArgLock, (IPTR) parent,
+                        WBOPENA_ArgName, (IPTR) FilePart(project),
                         TAG_DONE
                     );
                     
