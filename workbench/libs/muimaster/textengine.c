@@ -570,6 +570,7 @@ void zune_text_get_bounds (ZText *text, Object *obj)
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 {
     struct RastPort *rp;
+    ULONG pensave;
     ULONG style = FS_NORMAL;
 
     ZTextLine *line_node;
@@ -603,9 +604,11 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 		WORD top_im = top;
 		top_im += (line_node->lheight - chunk_node->cheight) / 2;
 		zune_imspec_show(chunk_node->image, obj);
+		pensave = GetAPen(rp);
 		zune_imspec_draw(chunk_node->image, muiRenderInfo(obj), x,
 				top_im, chunk_node->cwidth,
 				chunk_node->cheight, 0, 0, 0);
+		SetAPen(rp, pensave);
 		zune_imspec_hide(chunk_node->image);
 	    }
 	    else if (chunk_node->obj)
@@ -615,7 +618,9 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 		_width(chunk_node->obj) = chunk_node->cwidth;
 		_height(chunk_node->obj) = chunk_node->cheight;
 		DoMethod(chunk_node->obj, MUIM_Show);
+		pensave = GetAPen(rp);
 		MUI_Redraw(chunk_node->obj, MADF_DRAWOBJECT);
+		SetAPen(rp, pensave);
 		DoMethod(chunk_node->obj, MUIM_Hide);
 	    }
 	    else if (chunk_node->str)
