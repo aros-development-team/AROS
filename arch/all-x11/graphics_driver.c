@@ -29,8 +29,8 @@ struct FontTable
 }
 AROSFontTable[] =
 {
-    { { "topaz.font", 8, FS_NORMAL, FPF_ROMFONT }, "8x13bold" },
-    { { "topaz.font", 13, FS_NORMAL, FPF_ROMFONT }, "8x13bold" },
+    { { "topaz.font",      8, FS_NORMAL, FPF_ROMFONT  }, "8x13bold" },
+    { { "topaz.font",     13, FS_NORMAL, FPF_ROMFONT  }, "8x13bold" },
     { { "helvetica.font", 11, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--11-*-100-100-*-*-iso8859-1" },
     { { "helvetica.font", 12, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--12-*-100-100-*-*-iso8859-1" },
     { { "helvetica.font", 14, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--14-*-100-100-*-*-iso8859-1" },
@@ -71,6 +71,8 @@ struct ETextFont
     struct TextFont etf_Font;
     XFontStruct     etf_XFS;
 };
+
+#define ETF(tf)         ((struct ETextFont *)tf)
 
 
 int driver_init (struct GfxBase * GfxBase)
@@ -341,7 +343,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
 	    0, 360*64);
 }
 
-void driver_Text (struct RastPort * rp, char * string, LONG len,
+void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		struct GfxBase * GfxBase)
 {
     if (rp->DrawMode & JAM2)
@@ -354,7 +356,7 @@ void driver_Text (struct RastPort * rp, char * string, LONG len,
     rp->cp_x += TextLength (rp, string, len);
 }
 
-WORD driver_TextLength (struct RastPort * rp, STRPTR string, LONG len,
+WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
 		    struct GfxBase * GfxBase)
 {
     struct ETextFont * etf;
@@ -384,11 +386,13 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     return 0;
 }
 
-void driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
+LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
+
+    return 0;
 }
 
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
@@ -409,16 +413,16 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	    FALSE);
 }
 
-void driver_SetFont (struct RastPort * rp, struct ETextFont * font,
+void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 		    struct GfxBase * GfxBase)
 {
     if (GetGC(rp))
-	XSetFont (sysDisplay, GetGC(rp), font->etf_XFS.fid);
+	XSetFont (sysDisplay, GetGC(rp), ETF(font)->etf_XFS.fid);
 
-    rp->Font	   = (struct TextFont *)font;
-    rp->TxWidth    = font->etf_Font.tf_XSize;
-    rp->TxHeight   = font->etf_Font.tf_YSize;
-    rp->TxBaseline = font->etf_Font.tf_Baseline;
+    rp->Font	   = font;
+    rp->TxWidth    = ETF(font)->etf_Font.tf_XSize;
+    rp->TxHeight   = ETF(font)->etf_Font.tf_YSize;
+    rp->TxBaseline = ETF(font)->etf_Font.tf_Baseline;
 }
 
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
@@ -489,19 +493,90 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
     return (struct TextFont *)tf;
 }
 
-void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
+void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 {
-    if (!tf->etf_Font.tf_Accessors)
+    if (!ETF(tf)->etf_Font.tf_Accessors)
     {
-	XUnloadFont (sysDisplay, tf->etf_XFS.fid);
-	FreeVec (tf->etf_Font.tf_Message.mn_Node.ln_Name);
+	XUnloadFont (sysDisplay, ETF(tf)->etf_XFS.fid);
+	FreeVec (ETF(tf)->etf_Font.tf_Message.mn_Node.ln_Name);
 	FreeMem (tf, sizeof (struct ETextFont));
     }
     else
-	tf->etf_Font.tf_Accessors --;
+	ETF(tf)->etf_Font.tf_Accessors --;
 }
 
-void driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
+int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 {
+    XGCValues gcval;
+    GC gc;
+
+    gcval.plane_mask = sysPlaneMask;
+    gcval.graphics_exposures = True;
+
+    gc = XCreateGC (sysDisplay
+	, DefaultRootWindow (sysDisplay)
+	, GCPlaneMask
+	    | GCGraphicsExposures
+	, &gcval
+    );
+
+    if (!gc)
+	return FALSE;
+
+    SetGC (rp, gc);
+
+    return TRUE;
+}
+
+int driver_CreateRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    XGCValues gcval;
+    GC gc;
+
+    gcval.plane_mask = sysPlaneMask;
+    gcval.graphics_exposures = True;
+
+    gc = XCreateGC (sysDisplay
+	, DefaultRootWindow (sysDisplay)
+	, GCPlaneMask
+	    | GCGraphicsExposures
+	, &gcval
+    );
+
+    if (!gc)
+	return FALSE;
+
+    SetGC (rp, gc);
+
+    return TRUE;
+}
+
+int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
+			struct GfxBase * GfxBase)
+{
+    GC gc;
+
+    gc = XCreateGC (sysDisplay
+	, GetXWindow (oldRP)
+	, 0L
+	, NULL
+    );
+
+    if (!gc)
+	return FALSE;
+
+    XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
+    SetGC (newRP, gc);
+
+    return TRUE;
+}
+
+void driver_FreeRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    GC gc;
+
+    gc = GetGC (rp);
+
+    XFreeGC (sysDisplay, gc);
 }
 
