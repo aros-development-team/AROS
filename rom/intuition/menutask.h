@@ -1,4 +1,12 @@
-#define MENUTASK_NAME "Menu Handler"
+/*
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
+#define MENUTASK_NAME "« Menu Handler »"
 #define MENUTASK_STACKSIZE AROS_STACKSIZE
 #define MENUTASK_PRIORITY 0
 
