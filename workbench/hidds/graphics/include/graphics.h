@@ -504,6 +504,10 @@ enum
     moHidd_BitMap_PutMemTemplate16,
     moHidd_BitMap_PutMemTemplate24,
     moHidd_BitMap_PutMemTemplate32,
+    moHidd_BitMap_PutMemPattern8,
+    moHidd_BitMap_PutMemPattern16,
+    moHidd_BitMap_PutMemPattern24,
+    moHidd_BitMap_PutMemPattern32,
     
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
@@ -1143,6 +1147,86 @@ struct pHidd_BitMap_PutMemTemplate32
     BOOL    	    inverttemplate;  
 };
 
+struct pHidd_BitMap_PutMemPattern8
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *pattern;
+    WORD    	    patternsrcx;
+    WORD    	    patternsrcy;
+    WORD    	    patternheight;
+    WORD    	    patterndepth;
+    HIDDT_PixelLUT *patternlut;
+    BOOL    	    invertpattern;
+    UBYTE   	    *mask;    
+    ULONG	    maskmodulo;
+    WORD    	    masksrcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD	    x, y;
+    WORD	    width, height;
+};
+
+struct pHidd_BitMap_PutMemPattern16
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *pattern;
+    WORD    	    patternsrcx;
+    WORD    	    patternsrcy;
+    WORD    	    patternheight;
+    WORD    	    patterndepth;
+    HIDDT_PixelLUT *patternlut;
+    BOOL    	    invertpattern;
+    UBYTE   	    *mask;    
+    ULONG	    maskmodulo;
+    WORD    	    masksrcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD	    x, y;
+    WORD	    width, height;
+};
+
+struct pHidd_BitMap_PutMemPattern24
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *pattern;
+    WORD    	    patternsrcx;
+    WORD    	    patternsrcy;
+    WORD    	    patternheight;
+    WORD    	    patterndepth;
+    HIDDT_PixelLUT *patternlut;
+    BOOL    	    invertpattern;
+    UBYTE   	    *mask;    
+    ULONG	    maskmodulo;
+    WORD    	    masksrcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD	    x, y;
+    WORD	    width, height;
+};
+
+struct pHidd_BitMap_PutMemPattern32
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *pattern;
+    WORD    	    patternsrcx;
+    WORD    	    patternsrcy;
+    WORD    	    patternheight;
+    WORD    	    patterndepth;
+    HIDDT_PixelLUT *patternlut;
+    BOOL    	    invertpattern;
+    UBYTE   	    *mask;    
+    ULONG	    maskmodulo;
+    WORD    	    masksrcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD	    x, y;
+    WORD	    width, height;
+};
+
 struct pHidd_BitMap_SetColorMap
 {
     OOP_MethodID    mID;
@@ -1570,6 +1654,82 @@ VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
 				 WORD width,
 				 WORD height,
 				 BOOL inverttemplate);
+
+VOID	HIDD_BM_PutMemPattern8	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height);
+				 
+VOID	HIDD_BM_PutMemPattern16	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height);
+				 
+VOID	HIDD_BM_PutMemPattern24	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height);
+
+VOID	HIDD_BM_PutMemPattern32	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height);
 
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
