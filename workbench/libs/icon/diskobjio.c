@@ -149,6 +149,47 @@ const IPTR IconDesc[] =
     SDM_END
 };
 
+#undef O
+#define O(x)    (offsetof (struct NewWindow,x))
+
+const IPTR NewWindowDesc[] =
+{
+    sizeof (struct NewWindow),
+    SDM_WORD(O(LeftEdge)),
+    SDM_WORD(O(TopEdge)),
+    SDM_WORD(O(Width)),
+    SDM_WORD(O(Height)),
+    SDM_UBYTE(O(DetailPen)),
+    SDM_UBYTE(O(BlockPen)),
+    SDM_ULONG(O(IDCMPFlags)),
+    SDM_ULONG(O(Flags)),
+    SDM_IGNORE(4+4+4+4+4), /* FirstGadget
+	    +CheckMark
+	    +Title
+	    +Screen
+	    +BitMap
+	    */
+    SDM_WORD(O(MinWidth)),
+    SDM_WORD(O(MinHeight)),
+    SDM_UWORD(O(MaxWidth)),
+    SDM_UWORD(O(MaxHeight)),
+    SDM_UWORD(O(Type)),
+    SDM_END
+};
+
+#undef O
+#define O(x)    (offsetof (struct DrawerData,x))
+const IPTR DrawerDataDesc[] =
+{
+    sizeof (struct DrawerData),
+    SDM_STRUCT(O(dd_NewWindow),NewWindowDesc),
+    SDM_LONG(O(dd_CurrentX)),
+    SDM_LONG(O(dd_CurrentY)),
+    /* SDM_ULONG(O(dd_Flags)),
+    SDM_UWORD(O(dd_ViewModes)), */
+    SDM_END
+};
+
 #undef DOSBase
 #define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
 
@@ -213,17 +254,23 @@ kprintf ("ProcessDrawerData\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    Flush (data->sdd_Stream);
-
-	    return Seek (data->sdd_Stream, 48 /* DRAWERDATAFILESIZE */, OFFSET_CURRENT) != EOF;
+	    return ReadStruct (streamhook
+		, (APTR *)&(DO(data->sdd_Dest)->do_DrawerData)
+		, data->sdd_Stream
+		, DrawerDataDesc
+	    );
 
 	case SDV_SPECIALMODE_WRITE:
-	    return Write (data->sdd_Stream
+	    return WriteStruct (streamhook
 		, DO(data->sdd_Dest)->do_DrawerData
-		, 48 /* DRAWERDATAFILESIZE */
-	    ) != EOF;
+		, data->sdd_Stream
+		, DrawerDataDesc
+	    );
 
 	case SDV_SPECIALMODE_FREE:
+	    FreeStruct (DO(data->sdd_Dest)->do_DrawerData
+		, DrawerDataDesc
+	    );
 	    break;
 	}
     }
@@ -241,7 +288,7 @@ static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
 	return NULL;
 
     /* Size of imagedata in bytes */
-    size = ((image->Width + 15) >> 3) * image->Height * image->Depth;
+    size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
 
 #if 0
 kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
@@ -260,7 +307,7 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 	    return NULL;
 	}
 
-	size >>= 1; /* Get size in words */
+	size >>= 1;
 
 	for (t=0; t<size; t++)
 	    if (!ReadWord (streamhook, &image->ImageData[t], file))
@@ -282,20 +329,20 @@ static int WriteImage (struct Hook * streamhook, BPTR file,
     ULONG size;
     ULONG t;
 
-#if 1
-kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
-    , image->Width
-    , image->Height
-    , image->Depth
-    , size
-);
-#endif
-
     if (!WriteStruct (streamhook, image, file, ImageDesc) )
 	return FALSE;
 
     /* Get size in words */
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth;
+
+#if 0
+kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
+    , image->Width
+    , image->Height
+    , image->Depth
+    , size*2
+);
+#endif
 
     for (t=0; t<size; t++)
 	if (!WriteWord (streamhook, image->ImageData[t], file))
@@ -309,7 +356,7 @@ static void FreeImage (struct Image * image)
     ULONG size;
 
     /* Get size in bytes */
-    size = ((image->Width + 15) >> 3) * image->Height * image->Depth;
+    size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
 
     if (size)
 	FreeMem (image->ImageData, size);
@@ -530,7 +577,7 @@ static AROS_UFH3(ULONG, ProcessToolTypes,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
-#if 1
+#if 0
 kprintf ("ProcessToolTypes\n");
 #endif
 
@@ -552,12 +599,16 @@ kprintf ("ProcessToolTypes\n");
 
 	    ttarray = AllocMem ((count+1)*sizeof(STRPTR), MEMF_ANY);
 
+#if 0
 kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
+#endif
 
 	    for (t=0; t<count; t++)
 	    {
 		ttarray[t] = ReadIconString (streamhook, data->sdd_Stream);
+#if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
+#endif
 
 		if (!ttarray[t])
 		{
@@ -585,7 +636,9 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 
 	    for (count=0; ttarray[count]; count++);
 
+#if 0
 kprintf ("Write %d tooltypes (%p)\n", count, ttarray);
+#endif
 
 	    size = (count+1)*4;
 
@@ -594,7 +647,9 @@ kprintf ("Write %d tooltypes (%p)\n", count, ttarray);
 
 	    for (t=0; t<count; t++)
 	    {
+#if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
+#endif
 		if (!WriteIconString (streamhook, data->sdd_Stream, ttarray[t]))
 		    return FALSE;
 	    }
@@ -604,11 +659,15 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 	case SDV_SPECIALMODE_FREE:
 	    ttarray = (STRPTR *)DO(data->sdd_Dest)->do_ToolTypes;
 
+#if 0
 kprintf ("Free tooltypes (%p)\n", count, ttarray);
+#endif
 
 	    for (t=0; ttarray[t]; t++)
 	    {
+#if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
+#endif
 		FreeMem (ttarray[t], strlen (ttarray[t])+1);
 	    }
 
