@@ -42,8 +42,7 @@
     SEE ALSO
 
     INTERNALS
-      ALGORITHM:
-        set the sign-bit to zero
+       Set the sign-bit to zero
 
     HISTORY
 
@@ -72,16 +71,20 @@
         Calculate the sum of two ffp numbers
 
     INPUTS
-        fnum1  - ffp number to add
-        fnum2  - ffp number to add
+	<DL>
+	<DT>fnum1</DT><DD>ffp number to add</DD>
+        <DT>fnum2</DT><DD>ffp number to add</DD>
+	</DL>
 
     RESULT
-        sum of fnum1 and fnu2
+        sum of fnum1 and fnum2.
 
         Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : result is too large or too small for ffp format
+	<TABLE>
+	<TR><TD>zero</TD><TD>result is zero</TD></TR>
+        <TR><TD>negative</TD><TD>result is negative</TD></TR>
+        <TR><TD>overflow</TD><TD>result is too large or too small for ffp format</TD></TR>
+	</TABLE>
 
     NOTES
 
@@ -93,22 +96,25 @@
 
 
     INTERNALS
-      ALGORITHM:
         Adapt the exponent of the ffp-number with the smaller
         exponent to the ffp-number with the larger exponent.
         Therefore rotate the mantisse of the ffp-number with the
         smaller exponents by n bits, where n is the absolute value
         of the difference of the exponents.
+
         The exponent of the target ffp-number is set to the larger
         exponent plus 1.
+
         Additionally rotate both numbers by one bit to the right so
-        you can catch a result >1 in the MSB.
+        you can catch a result &gt; 1 in the MSB.
+
         If the signs of the two numbers are equal then simply add
         the two mantisses. The result of the mantisses will be
-        [0.5 .. 2[. Check the MSB. If zero, then the result is < 1
+        [0.5 .. 2[. Check the MSB. If zero, then the result is &lt; 1
         and therefore subtract 1 from the exponent. Normalize the
         mantisse of the result by rotating it one bit to the left.
         Check the mantisse for 0.
+
         If the signs of the two numbers are different then subtract
         the ffp-number with the neagtive sign from the other one.
         The result of the mantisse will be [-1..1[. If the MSB of
@@ -117,6 +123,7 @@
         Check the mantisse for zero. Normalize the mantisse by
         rotating it to the left and decreasing the exponent for every
         rotation.
+
         Test the exponent of the result for an overflow.
         That`s it!
 
