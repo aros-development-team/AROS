@@ -132,12 +132,8 @@ UX11
     *bppix = (*sz + 7) >> 3;
 }
 
-
 #undef OOPBase
-
-#undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(o))->UserData)
-
+#define OOPBase (OOP_OOPBASE(o))
 
 VOID Hidd_X11Mouse_HandleEvent(OOP_Object *o, XEvent *event)
 {
