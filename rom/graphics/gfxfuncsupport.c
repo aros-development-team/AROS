@@ -379,7 +379,7 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	{ TAG_DONE  	    	    	}
     };
 
-    
+
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
 	
@@ -1085,16 +1085,18 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 	LockLayerRom(L);
 
-        /*
-           The scrolling area is relative to the layer's coords, thus make it relative to the screen,
-           as the cliprect's coords are
-        */
-	TranslateRect(&ScrollRect, MinX(L), MinY(L));
+        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
+        {
+ 	    /* Scroll the old damagelist within the scroll area */
+	    ScrollRegion(L->DamageList, &ScrollRect, -dx, -dy);
+	}
+
+        /* The scrolling area is relative to the Layer, so make it relative to the screen */
+        TranslateRect(&ScrollRect, MinX(L), MinY(L));
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
-//            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
-	    struct Rectangle Rect = ScrollRect;
+	    Rect = ScrollRect;
             TranslateRect(&Rect, -dx, -dy);
 
 	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
@@ -1314,14 +1316,9 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
             /* Add the damagelist to the layer's damage list and set the
                LAYERREFRESH flag, but of course only if it's necessary */
 
-            if (Damage->RegionRectangle)
+	    if (Damage->RegionRectangle)
             {
-            {
-		/* Scroll the current damage list */
-                TranslateRect(Bounds(L->DamageList), -dx, -dy);
-                AndRectRegion(L->DamageList, Bounds(L));
-
-		/* Join the new one with the old one */
+		/* Join the new damage list with the old one */
                 TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
                 OrRegionRegion(Damage, L->DamageList);
 
@@ -1395,13 +1392,18 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
         AROS_END_PROFILING
 
-	/* The scrolling area is relative to the window, so make it relative to the screen */
+        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
+        {
+ 	    /* Scroll the old damagelist within the scroll area */
+	    ScrollRegion(L->DamageList, &ScrollRect, -dx, -dy);
+	}
+
+        /* The scrolling area is relative to the Layer, so make it relative to the screen */
         TranslateRect(&ScrollRect, MinX(L), MinY(L));
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
-//            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
-	    struct Rectangle Rect = ScrollRect;
+	    Rect = ScrollRect;
             TranslateRect(&Rect, -dx, -dy);
 
 	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
@@ -1516,11 +1518,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         {
 	    if (Damage->RegionRectangle)
             {
-		/* Scroll the current damage list */
-                TranslateRect(Bounds(L->DamageList), -dx, -dy);
-                AndRectRegion(L->DamageList, Bounds(L));
-
-		/* Join the new one with the old one */
+		/* Join the new damage list with the old one */
                 TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
                 OrRegionRegion(Damage, L->DamageList);
 
