@@ -30,7 +30,7 @@ BOOT_TAR_FILES := \
     Libs/reqtools.library Libs/muimaster.library \
     Locale/Countries Locale/Languages \
     Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
-    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive/Sys \
+    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive \
     S/Shell-Startup \
     System \
     Tools/Commodities \
