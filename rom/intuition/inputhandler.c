@@ -1597,6 +1597,9 @@ D(bug("Window: %p\n", w));
 			send_intuimessage(imsg, targetwindow, IntuitionBase);
                      }
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
+
+                    CheckLayersBehind = TRUE;
+                    L = targetlayer;
 		    
 		    break; }
 		
