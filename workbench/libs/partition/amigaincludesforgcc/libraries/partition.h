@@ -7,16 +7,6 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 #include <exec/ports.h>
-#ifdef __AMIGAOS__
-struct LibHeader
-{
-    struct Library      lh_LibNode;
-    BPTR       lh_SegList;
-    struct ExecBase    *lh_SysBase;
-};
-#else
-#include <libcore/base.h>
-#endif
 
 struct PartitionTableInfo {
 	ULONG pti_Type;
@@ -101,7 +91,7 @@ struct PartitionType {
 #define PTA_AUTOMOUNT 105
 
 struct PartitionBase {
-	struct LibHeader lh;
+	struct Library lib;
 	struct PartitionTableInfo **tables;
 };
 

@@ -17,9 +17,6 @@
 #ifndef EXEC_LIBRARIES_H
 #  include <exec/libraries.h>
 #endif
-#ifndef LIBCORE_BASE_H
-#  include <libcore/base.h>
-#endif
 #ifndef PARTITION_H
 #   include <libraries/partition.h>
 #endif
@@ -30,13 +27,15 @@
 /* Predeclaration */
 LIBBASETYPE;
 
-#define SysBase (((struct LibHeader *)PartitionBase)->lh_SysBase)
+#define SysBase GM_SYSBASE_FIELD(PartitionBase)
 
 LIBBASETYPE
 {
-   struct LibHeader lh;
-    struct PartitionTableInfo **tables;
+    struct PartitionBase partbase;
+    struct ExecBase *sysbase;
+    APTR seglist;
 };
+
 #endif
 #endif /* PARTITION_INTERN_H */
 

@@ -177,7 +177,7 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
     
     D(bug("Inside InitBase of asl.library\n"));
 
-    D(bug("SysBase: %p lh_SysBase %p\n", SysBase, LIBBASE->lh.lh_SysBase));
+    D(bug("SysBase: %p aslSysBase %p\n", SysBase, LIBBASE->aslSysBase));
     
     NEWLIST(&LIBBASE->ReqList);
 

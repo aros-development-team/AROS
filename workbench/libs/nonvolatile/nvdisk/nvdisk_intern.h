@@ -14,18 +14,17 @@
 #include  <exec/execbase.h>
 #include  <dos/dos.h>
 
-#include <libcore/base.h>
-
 // Private structure of nvdisk.library library base
 struct NVDBase
 {
-    struct LibHeader  nvd_LibHeader;
+    struct Library    nvd_Lib;
+    struct ExecBase  *nvd_SysBase;
+    BPTR              nvd_SegList;
     
     struct Library   *nvd_DOSBase;
 
     BPTR              nvd_location;
 };
-
 
 /* Locate library bases */
 
@@ -38,7 +37,7 @@ struct NVDBase
 
 #define GPB(x) ((struct NVDBase *)x)
 
-#define SysBase    ((struct LibHeader *)nvdBase)->lh_SysBase
+#define SysBase    GPB(nvdBase)->nvd_SysBase
 #define DOSBase    GPB(nvdBase)->nvd_DOSBase
 
 #endif  /* NVDISK_INTERN_H */

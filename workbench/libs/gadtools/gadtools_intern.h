@@ -51,8 +51,6 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
-#include <libcore/base.h>
-
 /****************************************************************************************/
 
 struct VisualInfo;
@@ -269,7 +267,9 @@ BOOL is_menubarlabelclass_image(struct Image *im,
 
 struct GadToolsBase_intern
 {
-    struct LibHeader              libheader;
+    struct Library                lib;
+    struct ExecBase             * sysbase;
+    APTR                          seglist;
 
     Class 			* buttonclass;
     Class 			* textclass;

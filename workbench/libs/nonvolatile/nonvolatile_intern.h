@@ -14,17 +14,19 @@
 #include  <libraries/nonvolatile.h>
 #include  <dos/dos.h>
 
-#include <libcore/base.h>
-
 // Private structure of nonvolatile.library library base
 struct NVBase
 {
-    struct LibHeader  nv_LibHeader;
+    struct Library    nv_Lib;
+    struct ExecBase  *nv_SysBase;
+    APTR              nv_SegList;
 
     // Library talking to the hardware
     struct Library   *nv_ImplementationLib;
 };
 
+#define GM_SYSBASE_FIELD(lh) (((struct LibHeader *)lh)->lh_SysBase)
+#define GM_SEGLIST_FIELD(lh) (((struct LibHeader *)lh)->lh_SegList)
 
 /* Locate library bases */
 

@@ -35,9 +35,6 @@
 #ifndef REXX_RXSLIB_H
 #   include <rexx/rxslib.h>
 #endif
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
-#endif
 #include <stdlib.h>
 
 

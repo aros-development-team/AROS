@@ -195,7 +195,7 @@ BOOL SetupIHandler(struct CommoditiesBase *CxBase)
     CxBase->cx_Interrupt.is_Code = (VOID (*)())AROS_ASMSYMNAME(cxIHandler);
     CxBase->cx_Interrupt.is_Data = CxBase;
     CxBase->cx_Interrupt.is_Node.ln_Pri = 53;
-    CxBase->cx_Interrupt.is_Node.ln_Name = CxBase->cx_lh.lh_LibNode.lib_Node.ln_Name;
+    CxBase->cx_Interrupt.is_Node.ln_Name = CxBase->cx_Lib.lib_Node.ln_Name;
     CxBase->cx_IORequest.io_Command = IND_ADDHANDLER;
     CxBase->cx_IORequest.io_Data = &CxBase->cx_Interrupt;
     
