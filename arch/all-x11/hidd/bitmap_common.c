@@ -1411,6 +1411,7 @@ VOID MNAME(drawellipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEl
     }
     
     XSetForeground(data->display, data->gc, GC_FG(gc));
+    XSetFunction(data->display, data->gc, GC_DRMD(gc));
     
     /* kprintf("X11::Drawllipse: coord %d %d %d %d\n"
 	    	, msg->x, msg->y, msg->rx, msg->ry);
