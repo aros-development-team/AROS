@@ -1,20 +1,13 @@
-#ifndef OS_LINUX_SUPPORT_H
-#define OS_LINUX_SUPPORT_H
+#ifndef OS_UNIX_SUPPORT_H
+#define OS_UNIX_SUPPORT_H
 
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <linux/types.h>
-#include <linux/byteorder/generic.h>
-#include "config.h"
-#ifdef LITT_ENDIAN
-#include <linux/byteorder/little_endian.h>
-#else
-#include <linux/byteorder/big_endian.h>
-#endif
 #include <stdio.h>
+#include <arpa/inet.h>
 
 /* exec/types.h */
 typedef signed char    BYTE;
