@@ -2,7 +2,7 @@
 # Simple script to create host.cfg
 #
 
-if [ -z "$1" -o -z "$2" ]; then
+if [ "x" = "x$1" -o "x" = "x$2" ]; then
     echo "Usage: $0 (-h|-m) <configfile>"
     echo "Writes the system specific things to <configfile>"
     echo "Either -h or -m must be specified. -h means to write"
