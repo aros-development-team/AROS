@@ -543,6 +543,7 @@ static void MakeGUI(void)
 		    MUIA_Group_SameWidth, TRUE,
 		    Child, VGroup, /* Calendar box */
 		    	GroupFrame,
+			MUIA_Background, MUII_GroupBack,
 			Child, HGroup, /* Month/year row */
 		    	    Child, monthobj = MUI_MakeObject(MUIO_Cycle, NULL, monthlabels),
 			    Child, HVSpace,
@@ -572,6 +573,7 @@ static void MakeGUI(void)
 			End,
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
+			MUIA_Background, MUII_GroupBack,
 			Child, clockobj = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
 			Child, HGroup,
 			    Child, HVSpace,
