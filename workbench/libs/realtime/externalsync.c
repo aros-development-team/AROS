@@ -6,11 +6,12 @@
     Lang: English
 */
 
+#include <proto/exec.h>
+
 /*****************************************************************************
 
     NAME */
 
-#include <proto/exec.h>
 #include <libraries/realtime.h>
 
     AROS_LH3(BOOL, ExternalSync,
