@@ -5,6 +5,13 @@
 ##end defines
 
 ##begin clib
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+#ifndef EXEC_TASKS_H
+#   include <exec/tasks.h>
+#endif
+
 #ifndef SysBase
 extern struct ExecBase * SysBase;
 #endif
