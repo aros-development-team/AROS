@@ -1,4 +1,5 @@
 /* execute.c -- Here are all functions used to execute the script */
+
 #include "Installer.h"
 #include "execute.h"
 
@@ -16,7 +17,12 @@ extern void set_variable( char *, char *, int );
 extern void dump_varlist();
 #endif /* DEBUG */
 extern ScriptArg *find_proc( char * );
+extern void show_abort( char * );
 extern void show_complete( int );
+extern void show_exit( char * );
+extern void show_welcome( char * );
+extern void show_working( char * );
+extern void final_report();
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -27,19 +33,21 @@ static void callback( char, char ** );
 #endif /* !LINUX */
 int getint( ScriptArg * );
 int database_keyword( char * );
-
+char *collect_strings( ScriptArg *, char, int );
+struct ParameterList *get_parameters( ScriptArg *, int );
+void collect_stringargs( ScriptArg *, int, struct ParameterList * );
 
 #ifndef LINUX
 char * callbackstring = NULL, * globalstring = NULL;
 #endif /* !LINUX */
 
+
 void execute_script( ScriptArg *commands, int level )
 {
 ScriptArg *current, *dummy = NULL;
-
+struct ParameterList *parameter;
 int cmd_type;
 int slen, i, j;
-int quiet;
 char *clip, **mclip, *string;
 void *params;
 
@@ -83,11 +91,13 @@ void *params;
   }
   else
   {
-    quiet = FALSE;
     cmd_type = eval_cmd( current->arg );
 #ifdef DEBUG
     printf( "%d - <%s>\n", level, current->arg );
 #endif /* DEBUG */
+    free( current->parent->arg );
+    current->parent->arg = NULL;
+    current->parent->intval = 0;
     switch( cmd_type )
     {
       case _UNKNOWN	: /* Unknown command */
@@ -97,20 +107,13 @@ void *params;
                           break;
 
       case _ABORT	: /* Output all strings, execute onerrors and exit abnormally */
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-#ifdef DEBUG
-                            if( current->arg != NULL )
-                              printf( "%s\n", current->arg );
-#endif /* DEBUG */
-                          }
+                          string = collect_strings( current->next, LINEFEED, level );
+                          show_abort( string );
+                          free( string );
                           /* Execute onerrors		*/
-#define DOTHIS
-#ifdef DOTHIS
-#undef DOTHIS
+#ifdef DEBUG
                           dump_varlist();
-#endif /* DOTHIS */
+#endif /* DEBUG */
 
                           cleanup();
                           exit(-1);
@@ -211,109 +214,25 @@ void *params;
                             printf( "ERROR!\n" );
                             exit(-1);
                           }
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           break;
 
       case _CAT		: /* Return concatenated strings */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
-                          while( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              /* There is a command instead of a value -- execute command */
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                              }
-                              else
-                              {
-                                string = get_var_arg( current->arg );
-                                if( string != NULL )
-                                {
-                                  clip = malloc( strlen( string ) + 1 );
-                                  if( clip == NULL )
-                                  {
-                                    end_malloc();
-                                  }
-                                  strcpy( clip, string );
-                                }
-                                else
-                                {
-                                  clip = malloc( MAXARGSIZE );
-                                  if( clip == NULL )
-                                  {
-                                    end_malloc();
-                                  }
-#ifndef LINUX
-                                  callbackstring = clip;
-                                  globalstring = callbackstring;
-                                  i = get_var_int( current->arg );
-                                  RawDoFmt( "%d", &i, (VOID_FUNC)&callback, &(globalstring));
-                                  clip = callbackstring;
-#else /* !LINUX */
-                                  sprintf( clip, "%d", get_var_int( current->arg ) );
-#endif /* !LINUX */
-                                }
-                              }
-                            }
-                            else
-                            {
-                              clip = malloc( MAXARGSIZE );
-                              if( clip == NULL )
-                              {
-                                end_malloc();
-                              }
-#ifndef LINUX
-                              callbackstring = clip;
-                              globalstring = callbackstring;
-                              RawDoFmt( "%d", &(current->intval), (VOID_FUNC)&callback, &(globalstring) );
-                              clip = callbackstring;
-#else /* !LINUX */
-                                  sprintf( clip, "%d", current->intval );
-#endif /* !LINUX */
-                            }
-                            slen = current->parent->arg == NULL ?
-                                   0 :
-                                   strlen( current->parent->arg );
-                            current->parent->arg = realloc( current->parent->arg, slen + strlen( clip ) + 1 );
-                            if( current->parent->arg == NULL )
-                            {
-                              end_malloc();
-                            }
-                            sprintf( &(current->parent->arg[slen]), "%s", clip );
-                            free( clip );
-                          }
+                          string = collect_strings( current->next, 0, level );
                           /* Add surrounding quotes to string */
-                          slen = strlen( current->parent->arg );
-                          clip = malloc( slen + 1 );
-                          if( clip == NULL )
-                          {
-                            end_malloc();
-                          }
-                          strcpy( clip, current->parent->arg );
-                          current->parent->arg = realloc( current->parent->arg, slen + 3 );
-                          if( current->parent->arg == NULL)
+                          slen = strlen( string );
+                          current->parent->arg = malloc( slen + 3 );
+                          if( current->parent->arg == NULL )
                           {
                             end_malloc();
                           }
                           (current->parent->arg)[0] = DQUOTE;
-                          strcpy( (current->parent->arg) + 1, clip );
+                          strcpy( (current->parent->arg) + 1, string );
                           (current->parent->arg)[slen+1] = DQUOTE;
                           (current->parent->arg)[slen+2] = 0;
+                          free( string );
                           break;
 
       case _COMPLETE	: /* Display how much we have done in percent */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           if( current->next != NULL )
                           {
                             current = current->next;
@@ -355,37 +274,46 @@ void *params;
                           show_complete( current->parent->intval );
                           break;
 
-      case _EXIT	: /* Output all strings and exit, print "Done with installation" unless (quiet) is given */
-                          while( current->next != NULL )
+      case _DEBUG	:
+                          string = collect_strings( current->next, SPACE, level );
+                          if( preferences.debug == TRUE )
                           {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-#ifdef DEBUG
-                            if( current->arg != NULL )
-                              printf( "%s\n", current->arg );
-#endif /* DEBUG */
-                            if( current->cmd != NULL )
-                              if( eval_cmd( current->cmd->arg ) == _QUIET )
-                                quiet = TRUE;
+                            printf( "%s\n", string );
                           }
-                          if( !quiet )
-                            printf("Done with installation!\n");
-#define DOTHIS
-#ifdef DOTHIS
-#undef DOTHIS
+                          /* Set return value */
+                          /* Add surrounding quotes to string */
+                          slen = ( string == NULL ) ? 0 : strlen( string );
+                          clip = malloc( slen + 3 );
+                          if( clip == NULL )
+                          {
+                            end_malloc();
+                          }
+                          clip[0] = DQUOTE;
+                          strcpy( clip + 1, string );
+                          clip[slen+1] = DQUOTE;
+                          clip[slen+2] = 0;
+                          current->parent->arg = clip;
+                          free( string );
+                          break;
+
+      case _EXIT	: /* Output all strings and exit */
+                          /* print summary where app has been installed unless (quiet) is given */
+                          parameter = get_parameters( current->next, level );
+                          string = collect_strings( current->next, LINEFEED, level );
+                          show_exit( string );
+                          if( parameter[ _QUIET - _PARAMETER -1 ].intval == 0 )
+                          {
+                            final_report();
+                          }
+                          free( string );
+#ifdef DEBUG
                           dump_varlist();
-#endif /* DOTHIS */
+#endif /* DEBUG */
                           cleanup();
                           exit(0);
                           break;
 
       case _IF		: /* if 1st arg != 0 execute 2nd cmd else execute optional 3rd cmd */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL && current->next->next != NULL )
                           {
                             current = current->next;
@@ -427,9 +355,6 @@ void *params;
                           break;
 
       case _IN		: /* Sum up all arguments and return that value */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           /* Get base integer into i */
                           if( current->next != NULL )
                           {
@@ -472,12 +397,9 @@ void *params;
                             printf( "No argument given!\n" );
                             exit(-1);
                           }
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           break;
 
       case _PLUS	: /* Sum up all arguments and return that value */
-                          current->parent->intval = 0;
                           while( current->next != NULL )
                           {
                             current = current->next;
@@ -488,17 +410,12 @@ void *params;
                             i = getint( current );
                             current->parent->intval += i;
                           }
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           break;
 
       case _PROCEDURE	: /* Ignore this keyword, it was parsed in parse.c */
                           break;
 
       case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL )
                           {
                             current = current->next;
@@ -545,9 +462,6 @@ void *params;
                           break;
 
       case _SET		: /* assign values to variables */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           /* take odd args as names and even as values */
                           if( current->next != NULL )
                           {
@@ -642,9 +556,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           break;
 
       case _STRLEN	: /* Return the length of the string */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL )
                           {
                             current = current->next;
@@ -717,27 +628,26 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           }
                           /* Call RawDoFmt() with parameter list */
                           /* Store that produced string as return value */
-                          free( current->parent->arg );
 #ifndef LINUX
-                          current->parent->arg = malloc( MAXARGSIZE );
-                          if( current->parent->arg == NULL )
+                          string = malloc( MAXARGSIZE );
+                          if( string == NULL )
                           {
                             end_malloc();
                           }
-                          callbackstring = current->parent->arg;
+                          callbackstring = string;
                           globalstring = callbackstring;
                           RawDoFmt( clip, params, (VOID_FUNC)&callback, &(globalstring) );
-                          current->parent->arg = callbackstring;
+                          string = callbackstring;
 #ifdef DEBUG
-                          printf( "String = <%s>\n", current->parent->arg );
+                          printf( "String = <%s>\n", string );
 #endif /* DEBUG */
 #else /* !LINUX */
-                          current->parent->arg = malloc( strlen( clip ) + 1 );
-                          if( current->parent->arg == NULL )
+                          string = malloc( strlen( clip ) + 1 );
+                          if( string == NULL )
                           {
                             end_malloc();
                           }
-                          strcpy( current->parent->arg, clip );
+                          strcpy( string, clip );
 #endif /* !LINUX */
                           /* Free temporary space */
                           free( clip );
@@ -750,20 +660,113 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             free( mclip );
                           }
                           /* Add surrounding quotes to string */
-                          slen = strlen( current->parent->arg );
+                          slen = strlen( string );
                           clip = malloc( slen + 3 );
                           if( clip == NULL)
                           {
                             end_malloc();
                           }
                           clip[0] = DQUOTE;
-                          strcpy( (clip) + 1, (current->parent->arg) );
+                          strcpy( (clip) + 1, string );
                           clip[slen+1] = DQUOTE;
                           clip[slen+2] = 0;
-                          free( current->parent->arg );
+                          free( string );
                           current->parent->arg = clip;
-                          current->parent->intval = 0;
+                          break;
 
+      case _SUBSTR	: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
+                          if( current->next != NULL && current->next->next != NULL )
+                          {
+                            current = current->next;
+                            /* Get string */
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                /* Strip off quotes */
+                                string = strip_quotes( current->arg );
+                              }
+                              else
+                              {
+                                clip = get_var_arg( current->arg );
+                                if( clip != NULL )
+                                {
+                                  string = malloc( strlen( clip ) + 1 );
+                                  if( string == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( string, clip );
+                                }
+                                else
+                                {
+                                  string = malloc( MAXARGSIZE );
+                                  if( string == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  sprintf( string, "%d", get_var_int( current->arg ) );
+                                }
+                              }
+                            }
+                            else
+                            {
+                              string = malloc( MAXARGSIZE );
+                              if( string == NULL )
+                              {
+                                end_malloc();
+                              }
+                              sprintf( string, "%d", current->intval );
+                            }
+                            current = current->next;
+                            /* Get offset */
+                            i = getint( current );
+                            if( i > 0 )
+                            {
+                              slen = strlen( string ) - i;
+                            }
+                            else
+                            {
+                              free( string );
+                              cleanup();
+                              printf( "Negative argument to %s!\n", "substr" );
+                              exit(-1);
+                            }
+                            /* Get number of chars to copy */
+                            if( current->next != NULL )
+                            {
+                              current = current->next;
+                              if( current->cmd != NULL )
+                              {
+                                execute_script( current->cmd, level + 1 );
+                              }
+                              j = getint( current );
+                              if( j < 0 )
+                              {
+                                j = 0;
+                              }
+                              slen = j;
+                            }
+                            else
+                            {
+                              j = slen;
+                            }
+                            clip = malloc( slen + 1 );
+                            strncpy( clip, ( string + i ), j );
+                            clip[j] = 0;
+                            free( string );
+                            current->parent->arg = clip;
+                          }
+                          else
+                          {
+                            cleanup();
+                            printf( "Wrong number of arguments to %s!\n", "substr" );
+                            exit(-1);
+                          }
                           break;
 
       case _TIMES	: /* Multiply all arguments and return that value */
@@ -784,58 +787,30 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             i = getint( current );
                             current->parent->intval *= i;
                           }
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           break;
 
       case _TRANSCRIPT	: /* concatenate strings into logfile */
+                          string = collect_strings( current->next, SPACE, level );
                           if( preferences.transcriptfile != NULL )
                           {
-                            while( current->next != NULL )
-                            {
-                              current = current->next;
-                              if( current->cmd != NULL )
-                              {
-                                /* There is a command instead of a value -- execute command */
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              if( current->arg != NULL )
-                              {
-                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                {
-                                  /* Strip off quotes */
-                                  clip = strip_quotes( current->arg );
-                                  fprintf( preferences.transcriptstream, "%s ", clip );
-                                  free( clip );
-                                }
-                                else
-                                {
-                                  clip = get_var_arg( current->arg );
-                                  if( clip != NULL )
-                                  {
-                                    fprintf( preferences.transcriptstream, "%s ", clip );
-                                  }
-                                  else
-                                  {
-                                    fprintf( preferences.transcriptstream, "%d ", get_var_int( current->arg ) );
-                                  }
-                                }
-                              }
-                              else
-                              {
-                                fprintf( preferences.transcriptstream, "%d ", current->intval );
-                              }
-                            }
-                            fprintf( preferences.transcriptstream, "\n" );
+                            fprintf( preferences.transcriptstream, "%s\n", string );
                           }
-                          /* Return last string or all ? */
-#warning FIXME: Decide what to do
+                          /* Add surrounding quotes to string */
+                          slen = ( string == NULL ) ? 0 : strlen( string );
+                          clip = malloc( slen + 3 );
+                          if( clip == NULL )
+                          {
+                            end_malloc();
+                          }
+                          clip[0] = DQUOTE;
+                          strcpy( clip + 1, string );
+                          clip[slen+1] = DQUOTE;
+                          clip[slen+2] = 0;
+                          current->parent->arg = clip;
+                          free( string );
                           break;
 
       case _UNTIL	: /* execute 2nd cmd until 1st arg != 0 */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL && current->next->next != NULL )
                           {
                             current = current->next;
@@ -875,58 +850,63 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           {
 #warning FIXME: add error message
                             cleanup();
-                            printf( "No arguments given!\n" );
+                            printf( "Wrong number of arguments to %s!\n", "until" );
+                            exit(-1);
+                          }
+                          break;
+
+      case _USER	: /* Change the current user-level -- Use only do debug scripts */
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            i = getint( current );
+                            if( i < _NOVICE || i > _EXPERT )
+                            {
+#warning FIXME: add error message
+                              cleanup();
+                              printf( "New user-level not in [Novice|Average|Expert] !\n" );
+                              exit(-1);
+                            }
+                            else
+                            {
+                              set_variable( "@user-level", NULL, i );
+                              current->parent->intval = i;
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No argument given!\n" );
                             exit(-1);
                           }
                           break;
 
       case _WELCOME	: /* Display strings instead of "Welcome to the <APPNAME> App installation utility" */
-#ifdef DEBUG
-                          while( current->next != NULL )
+                          string = collect_strings( current->next, SPACE, level );
+                          show_welcome( string );
+
+                          /* Set return value */
+                          /* Add surrounding quotes to string */
+                          slen = ( string == NULL ) ? 0 : strlen( string );
+                          clip = malloc( slen + 3 );
+                          if( clip == NULL )
                           {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              /* There is a command instead of a value -- execute command */
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                printf( "%s ", clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  printf( "%s ", clip );
-                                }
-                                else
-                                {
-                                  printf( "%d ", get_var_int( current->arg ) );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              printf( "%d ", current->intval );
-                            }
+                            end_malloc();
                           }
-                          printf( "\n" );
-                          /* Return last string or all ? */
-#warning FIXME: Decide what to do
-#endif /* DEBUG */
+                          clip[0] = DQUOTE;
+                          strcpy( clip + 1, string );
+                          clip[slen+1] = DQUOTE;
+                          clip[slen+2] = 0;
+                          current->parent->arg = clip;
+                          free( string );
                           break;
 
       case _WHILE	: /* while 1st arg != 0 execute 2nd cmd */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL && current->next->next != NULL )
                           {
                             current = current->next;
@@ -972,52 +952,26 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           break;
 
       case _WORKING	: /* Display strings below "Working on Installation" */
-#ifdef DEBUG
-                          printf( "Working on Installation\n" );
-                          while( current->next != NULL )
+                          string = collect_strings( current->next, LINEFEED, level );
+                          show_working( string );
+
+                          /* Set return value */
+                          /* Add surrounding quotes to string */
+                          slen = ( string == NULL ) ? 0 : strlen( string );
+                          clip = malloc( slen + 3 );
+                          if( clip == NULL )
                           {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              /* There is a command instead of a value -- execute command */
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                printf( "%s\n", clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  printf( "%s\n", clip );
-                                }
-                                else
-                                {
-                                  printf( "%d\n", get_var_int( current->arg ) );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              printf( "%d\n", current->intval );
-                            }
+                            end_malloc();
                           }
-                          /* Return last string or all ? */
-#warning FIXME: Decide what to do
-#endif /* DEBUG */
+                          clip[0] = DQUOTE;
+                          strcpy( clip + 1, string );
+                          clip[slen+1] = DQUOTE;
+                          clip[slen+2] = 0;
+                          current->parent->arg = clip;
+                          free( string );
                           break;
 
       case _DATABASE	: /* Return information on the hardware Installer is running on */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
                           if( current->next != NULL )
                           {
                             current = current->next;
@@ -1078,9 +1032,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           }
                           break;
 
-      /* Here are all unimplemented commands/tags */
-      case _ALL		:
-      case _APPEND	:
+      /* Here are all unimplemented commands */
       case _ASKBOOL	:
       case _ASKCHOICE	:
       case _ASKDIR	:
@@ -1089,25 +1041,14 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
       case _ASKNUMBER	:
       case _ASKOPTIONS	:
       case _ASKSTRING	:
-      case _ASSIGNS	:
-      case _CHOICES	:
-      case _COMMAND	:
-      case _CONFIRM	:
       case _COPYFILES	:
       case _COPYLIB	:
-      case _DEBUG	:
-      case _DEFAULT	:
       case _DELETE	:
-      case _DELOPTS	:
-      case _DEST	:
-      case _DISK	:
       case _EARLIER	:
       case _EXECUTE	:
       case _EXISTS	:
       case _EXPANDPATH	:
       case _FILEONLY	:
-      case _FILES	:
-      case _FONTS	:
       case _FOREACH	:
       case _GETASSIGN	:
       case _GETDEVICE	:
@@ -1116,49 +1057,27 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
       case _GETSIZE	:
       case _GETSUM	:
       case _GETVERSION	:
-      case _HELP	:
-      case _INCLUDE	:
-      case _INFOS	:
       case _MAKEASSIGN	:
       case _MAKEDIR	:
       case _MESSAGE	:
-      case _NEWNAME	:
-      case _NEWPATH	:
-      case _NOGAUGE	:
-      case _NOPOSITION	:
       case _ONERROR	:
-      case _OPTIONAL	:
       case _PATHONLY	:
       case _PATMATCH	:
-      case _PATTERN	:
-      case _PROMPT	:
       case _PROTECT	:
-      case _RANGE	:
       case _RENAME	:
       case _REXX	:
       case _RUN		:
-      case _SAFE	:
-      case _SETDEFAULTTOOL	:
-      case _SETSTACK	:
-      case _SETTOOLTYPE	:
-      case _SOURCE	:
       case _STARTUP	:
-      case _SUBSTR	:
-      case _SWAPCOLORS	:
       case _TACKON	:
       case _TEXTFILE	:
       case _TOOLTYPE	:
       case _TRAP	:
-      case _USER	:
-      case _QUIET	:
                           printf( "Unimplemented command <%s>\n", current->arg );
                           break;
 
       case _USERDEF	: /* User defined routine */
                           dummy = find_proc( current->arg );
                           execute_script( dummy->cmd, level + 1 );
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
                           current->parent->intval = dummy->intval;
                           if( dummy->arg != NULL )
                           {
@@ -1171,8 +1090,64 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           }
                           break;
 
-      default		: /* Unknown/unimplemented command */
-                          /* Hey! Where did you get this number from??? It's invalid. */
+      /* Here are all tags, first the ones which have to be executed */
+      case _DELOPTS	: /* unset copying/deleting options if we are called global */
+                          /* as parameter to a function we have got an ignore=1 before */
+                          if( current->parent->ignore == 0)
+                          {
+                          }
+                          break;
+
+      case _OPTIONAL	: /* set copying/deleting options if we are called global */
+                          /* as parameter to a function we have got an ignore=1 before */
+                          if( current->parent->ignore == 0)
+                          {
+                          }
+                          break;
+
+#ifdef DEBUG
+      case _ALL		:
+      case _APPEND	:
+      case _ASSIGNS	:
+      case _CHOICES	:
+      case _COMMAND	:
+      case _CONFIRM	:
+      case _DEFAULT	:
+      case _DEST	:
+      case _DISK	:
+      case _FILES	:
+      case _FONTS	:
+      case _HELP	:
+      case _INCLUDE	:
+      case _INFOS	:
+      case _NEWNAME	:
+      case _NEWPATH	:
+      case _NOGAUGE	:
+      case _NOPOSITION	:
+      case _PATTERN	:
+      case _PROMPT	:
+      case _RANGE	:
+      case _SAFE	:
+      case _SETDEFAULTTOOL	:
+      case _SETSTACK	:
+      case _SETTOOLTYPE	:
+      case _SOURCE	:
+      case _SWAPCOLORS	:
+      case _QUIET	:
+                          /* We are tags -- we don't want to be executed */
+                          current->parent->ignore = 1;
+                          break;
+#endif /* DEBUG */
+
+      default		:
+#ifdef DEBUG
+                          /* Hey! Where did you get this number from??? It's invalid -- must be a bug. */
+                          printf( "Unknown command ID %d called <%s>!\n", cmd_type, current->arg );
+                          exit(-1);
+#else /* DEBUG */
+                          /* We are tags -- we don't want to be executed */
+                          current->parent->ignore = 1;
+#endif /* DEBUG */
                           break;
     }
   }
@@ -1308,5 +1283,453 @@ int database_keyword( char *name )
     return _CHIPREV;
 
 return _UNKNOWN;
+}
+
+char *collect_strings( ScriptArg *current, char separator, int level )
+{
+char *string = NULL, *clip, *dummy;
+int i;
+
+  while( current != NULL )
+  {
+    if( current->cmd != NULL )
+    {
+      /* There is a command instead of a value -- execute command */
+      execute_script( current->cmd, level + 1 );
+    }
+    /* Concatenate string unless it was a parameter which will be ignored */
+    if( current->ignore == 0 )
+    {
+      if( current->arg != NULL )
+      {
+        if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+        {
+          /* Strip off quotes */
+          clip = strip_quotes( current->arg );
+        }
+        else
+        {
+          dummy = get_var_arg( current->arg );
+          if( dummy != NULL )
+          {
+            clip = malloc( strlen( dummy ) );
+            strcpy( clip, dummy );
+          }
+          else
+          {
+            clip = malloc( MAXARGSIZE );
+            if( clip == NULL )
+            {
+              end_malloc();
+            }
+            sprintf( clip, "%d", get_var_int( current->arg ) );
+          }
+        }
+      }
+      else
+      {
+        clip = malloc( MAXARGSIZE );
+        if( clip == NULL )
+        {
+          end_malloc();
+        }
+        sprintf( clip, "%d", current->intval );
+      }
+      i = ( string == NULL ) ? 0 : strlen( string );
+      string = realloc( string, i + strlen( clip ) + 2 );
+      if( string == NULL )
+      {
+        end_malloc();
+      }
+      if( i == 0 )
+      {
+        string[0] = 0;
+      }
+      else
+      {
+        string[i] = separator;
+        string[i+1] = 0;
+      }
+      strcat( string, clip );
+      free( clip );
+    }
+    current = current->next;
+  }
+
+return string;
+}
+
+struct ParameterList *get_parameters( ScriptArg *script, int level )
+{
+struct ParameterList *pl;
+ScriptArg *current;
+int cmd, i;
+char *string, *clip;
+
+  pl = calloc( NUMPARAMS, sizeof( struct ParameterList ) );
+  if( pl == NULL )
+  {
+    end_malloc();
+  }
+  while( script != NULL )
+  {
+    current = script->cmd->next;
+    /* Check if we have a command as argument */
+    if( script != NULL )
+    {
+      /* Check if we don't have a block as argument */
+      if( script->cmd->arg != NULL )
+      {
+        /* Check if we have a parameter as command */
+        cmd = eval_cmd( script->cmd->arg );
+        if( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
+        {
+          /* This is a parameter */
+          pl[ cmd - _PARAMETER - 1 ].used = 1;
+          if( cmd > ( _PARAMETER + NUMARGPARAMS ) )
+          {
+            /* This is a boolean parameter */
+            pl[ cmd - _PARAMETER - 1 ].intval = 1;
+          }
+          else
+          {
+            /* This parameter may have arguments */
+            switch( cmd )
+            {
+              /* Parameters with args */
+              case _APPEND	: /* $ */
+              case _CHOICES	: /* $... */
+              case _COMMAND	: /* $... */
+              case _DELOPTS	: /* $... */
+              case _DEST	: /* $ */
+              case _HELP	: /* $... */
+              case _INCLUDE	: /* $ */
+              case _NEWNAME	: /* $ */
+              case _OPTIONAL	: /* $... */
+              case _PATTERN	: /* $ */
+              case _PROMPT	: /* $... */
+              case _SETDEFAULTTOOL: /* $ */
+              case _SETTOOLTYPE	: /* $ [$] */
+              case _SOURCE	: /* $ */
+                                  collect_stringargs( current, level, &pl[ cmd - _PARAMETER - 1 ] );
+                                  break;
+
+              case _CONFIRM	: /* ($->)# */
+                                  i = _EXPERT;
+                                  if( current != NULL )
+                                  {
+                                    if( current->cmd != NULL )
+                                    {
+                                      /* There is a command instead of a value -- execute command */
+                                      execute_script( current->cmd, level + 1 );
+                                    }
+                                    if( current->arg != NULL )
+                                    {
+                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                      {
+                                        /* Strip off quotes */
+                                        string = strip_quotes( current->arg );
+                                        i = atoi( string );
+                                        free( string );
+                                      }
+                                      else
+                                      {
+                                        clip = get_var_arg( current->arg );
+                                        if( clip != NULL )
+                                        {
+                                          i = atoi( clip );
+                                          if( strcasecmp( clip, "novice" ) == 0 )
+                                            i = _NOVICE;
+                                          if( strcasecmp( clip, "average" ) == 0 )
+                                            i = _AVERAGE;
+                                          if( strcasecmp( clip, "expert" ) == 0 )
+                                            i = _EXPERT;
+                                        }
+                                        else
+                                        {
+                                          i = get_var_int( current->arg );
+                                        }
+                                      }
+                                    }
+                                    else
+                                    {
+                                      i = current->intval;
+                                    }
+                                  }
+                                  if( i < _NOVICE || i > _EXPERT )
+                                  {
+                                    printf( "Userlevel %d out of range!\n", i );
+                                    exit(-1);
+                                  }
+                                  pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                  break;
+
+              case _DEFAULT	: /* * */
+                                  i = 0;
+                                  string = NULL;
+                                  if( current != NULL )
+                                  {
+                                    if( current->cmd != NULL )
+                                    {
+                                      /* There is a command instead of a value -- execute command */
+                                      execute_script( current->cmd, level + 1 );
+                                    }
+                                    if( current->arg != NULL )
+                                    {
+                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                      {
+                                        /* Strip off quotes */
+                                        string = strip_quotes( current->arg );
+                                      }
+                                      else
+                                      {
+                                        clip = get_var_arg( current->arg );
+                                        if( clip != NULL )
+                                        {
+                                          string = malloc( strlen( clip ) + 1 );
+                                          if( string == NULL )
+                                          {
+                                            end_malloc();
+                                          }
+                                          strcpy( string, clip );
+                                        }
+                                        else
+                                        {
+                                          i = get_var_int( current->arg );
+                                        }
+                                      }
+                                    }
+                                    else
+                                    {
+                                      i = current->intval;
+                                    }
+                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                    if( string != NULL )
+                                    {
+                                      pl[ cmd - _PARAMETER - 1 ].arg = malloc( sizeof( char * ) );
+                                      if( pl[ cmd - _PARAMETER - 1 ].arg == NULL )
+                                      {
+                                        end_malloc();
+                                      }
+                                      pl[ cmd - _PARAMETER - 1 ].arg[0] = string;
+                                    }
+                                  }
+                                  else
+                                  {
+                                    printf( "No argument to %s!\n", script->cmd->arg );
+                                    exit(-1);
+                                  }
+                                  break;
+
+              case _RANGE	: /* # # */
+                                  i = 0;
+                                  if( current != NULL && current->next != NULL )
+                                  {
+                                    if( current->cmd != NULL )
+                                    {
+                                      /* There is a command instead of a value -- execute command */
+                                      execute_script( current->cmd, level + 1 );
+                                    }
+                                    if( current->arg != NULL )
+                                    {
+                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                      {
+                                        /* Strip off quotes */
+                                        string = strip_quotes( current->arg );
+                                        i = atoi( string );
+                                        free( string );
+                                      }
+                                      else
+                                      {
+                                        clip = get_var_arg( current->arg );
+                                        if( clip != NULL )
+                                        {
+                                          i = atoi( clip );
+                                        }
+                                        else
+                                        {
+                                          i = get_var_int( current->arg );
+                                        }
+                                      }
+                                    }
+                                    else
+                                    {
+                                      i = current->intval;
+                                    }
+                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                    current = current->next;
+                                    if( current->cmd != NULL )
+                                    {
+                                      /* There is a command instead of a value -- execute command */
+                                      execute_script( current->cmd, level + 1 );
+                                    }
+                                    if( current->arg != NULL )
+                                    {
+                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                      {
+                                        /* Strip off quotes */
+                                        string = strip_quotes( current->arg );
+                                        i = atoi( string );
+                                        free( string );
+                                      }
+                                      else
+                                      {
+                                        clip = get_var_arg( current->arg );
+                                        if( clip != NULL )
+                                        {
+                                          i = atoi( clip );
+                                        }
+                                        else
+                                        {
+                                          i = get_var_int( current->arg );
+                                        }
+                                      }
+                                    }
+                                    else
+                                    {
+                                      i = current->intval;
+                                    }
+                                    pl[ cmd - _PARAMETER - 1 ].intval2 = i;
+                                  }
+                                  else
+                                  {
+                                    printf( "Not enough arguments to %s!\n", script->cmd->arg );
+                                    exit(-1);
+                                  }
+                                  break;
+
+              case _SETSTACK	: /* # */
+                                  i = 0;
+                                  if( current != NULL )
+                                  {
+                                    if( current->cmd != NULL )
+                                    {
+                                      /* There is a command instead of a value -- execute command */
+                                      execute_script( current->cmd, level + 1 );
+                                    }
+                                    if( current->arg != NULL )
+                                    {
+                                      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                      {
+                                        /* Strip off quotes */
+                                        string = strip_quotes( current->arg );
+                                        i = atoi( string );
+                                        free( string );
+                                      }
+                                      else
+                                      {
+                                        clip = get_var_arg( current->arg );
+                                        if( clip != NULL )
+                                        {
+                                          i = atoi( clip );
+                                        }
+                                        else
+                                        {
+                                          i = get_var_int( current->arg );
+                                        }
+                                      }
+                                    }
+                                    else
+                                    {
+                                      i = current->intval;
+                                    }
+                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                  }
+                                  else
+                                  {
+                                    printf( "No argument to %s!\n", script->cmd->arg );
+                                    exit(-1);
+                                  }
+                                  break;
+
+
+              default	: /* We do only collect tags -- this is a command */
+                          break;
+            }
+          }
+        }
+      }
+    }
+    script = script->next;
+  }
+
+return pl;
+}
+
+void collect_stringargs( ScriptArg *current, int level, struct ParameterList *pl )
+{
+char *string, *clip, **mclip = NULL;
+int j = 0;
+
+  while( current != NULL )
+  {
+    if( current->cmd != NULL )
+    {
+      /* There is a command instead of a value -- execute command */
+      execute_script( current->cmd, level + 1 );
+    }
+    mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
+    if( mclip == NULL)
+    {
+      end_malloc();
+    }
+    if( current->arg != NULL )
+    {
+      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+      {
+        /* Strip off quotes */
+        string = strip_quotes( current->arg );
+      }
+      else
+      {
+        clip = get_var_arg( current->arg );
+        if( clip != NULL )
+        {
+          string = malloc( strlen( clip ) + 1 );
+          if( string == NULL )
+          {
+            end_malloc();
+          }
+          strcpy( string, clip );
+        }
+        else
+        {
+          clip = malloc( MAXARGSIZE );
+          if( clip == NULL )
+          {
+            end_malloc();
+          }
+          sprintf( clip, "%d", get_var_int( current->arg ) );
+          string = (char *)malloc( strlen( clip ) + 1 );
+          if( string == NULL)
+          {
+            end_malloc();
+          }
+          strcpy( string, clip );
+          free( clip );
+        }
+      }
+    }
+    else
+    {
+      clip = malloc( MAXARGSIZE );
+      if( clip == NULL )
+      {
+        end_malloc();
+      }
+      sprintf( clip, "%d", current->intval );
+      string = (char *)malloc( strlen( clip ) + 1 );
+      if( string == NULL)
+      {
+        end_malloc();
+      }
+      strcpy( string, clip );
+      free( clip );
+    }
+    j++;
+    current = current->next;
+  }
+  pl->arg = mclip;
+  pl->intval = j;
 }
 

@@ -60,6 +60,7 @@ char *name;
                          current->cmd->cmd = NULL;
                          current->cmd->next = NULL;
                          current->cmd->intval = 0;
+                         current->cmd->ignore = 0;
                          parse_file( current->cmd );
                          current->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
                          if( current->next == NULL )
@@ -73,6 +74,7 @@ char *name;
                          current->cmd = NULL;
                          current->next = NULL;
                          current->intval = 0;
+                         current->ignore = 0;
                          break;
 
         case RBRACK    : /* All args collected return to lower level */
@@ -188,6 +190,7 @@ char *name;
                                               proc->next = NULL;
                                               proc->arg = NULL;
                                               proc->intval = 0;
+                                              proc->ignore = 0;
                                               proc->cmd = malloc( sizeof( ScriptArg ) );
                                               if( proc->cmd == NULL )
                                               {
@@ -197,6 +200,7 @@ char *name;
                                               proc->cmd->next = NULL;
                                               proc->cmd->arg = NULL;
                                               proc->cmd->intval = 0;
+                                              proc->cmd->ignore = 0;
                                               /* Procedure name */
                                               i = 0;
                                               /* goto 1st argument after keyword "procedure" */
@@ -288,6 +292,8 @@ char *name;
                          current->arg = NULL;
                          current->cmd = NULL;
                          current->next = NULL;
+                         current->intval = 0;
+                         current->ignore = 0;
                          break;
       }
     }

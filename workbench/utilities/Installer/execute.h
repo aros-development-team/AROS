@@ -11,117 +11,129 @@ struct CommandList
 #define _USERDEF	-1
 #define _UNKNOWN	0
 
+/* Commands */
 #define _ABORT		1
-#define _ALL		2
-#define _APPEND		3
-#define _ASKBOOL	4
-#define _ASKCHOICE	5
-#define _ASKDIR		6
-#define _ASKDISK	7
-#define _ASKFILE	8
-#define _ASKNUMBER	9
-#define _ASKOPTIONS	10
-#define _ASKSTRING	11
-#define _ASSIGNS	12
-#define _CAT		13
-#define _CHOICES	14
-#define _COMMAND	15
+#define _AND		2
+#define _ASKBOOL	3
+#define _ASKCHOICE	4
+#define _ASKDIR		5
+#define _ASKDISK	6
+#define _ASKFILE	7
+#define _ASKNUMBER	8
+#define _ASKOPTIONS	9
+#define _ASKSTRING	10
+#define _BITAND		11
+#define _BITNOT		12
+#define _BITOR		13
+#define _BITXOR		14
+#define _CAT		15
 #define _COMPLETE	16
-#define _CONFIRM	17
-#define _COPYFILES	18
-#define _COPYLIB	19
-#define _DATABASE	20
-#define _DEBUG		21
-#define _DEFAULT	22
-#define _DELETE		23
-#define _DELOPTS	24
-#define _DEST		25
-#define _DISK		26
-#define _EARLIER	27
-#define _EXECUTE	28
-#define _EXISTS		29
-#define _EXIT		30
-#define _EXPANDPATH	31
-#define _FILEONLY	32
-#define _FILES		33
-#define _FONTS		34
-#define _FOREACH	35
-#define _GETASSIGN	36
-#define _GETDEVICE	37
-#define _GETDISKSPACE	38
-#define _GETENV		39
-#define _GETSIZE	40
-#define _GETSUM		41
-#define _GETVERSION	42
-#define _HELP		43
-#define _IF		44
-#define _INCLUDE	45
-#define _INFOS		46
-#define _MAKEASSIGN	47
-#define _MAKEDIR	48
-#define _MESSAGE	49
-#define _NEWNAME	50
-#define _NEWPATH	51
-#define _NOGAUGE	52
-#define _NOPOSITION	53
-#define _ONERROR	54
-#define _OPTIONAL	55
-#define _PATHONLY	56
-#define _PATMATCH	57
-#define _PATTERN	58
-#define _PROCEDURE	59
-#define _PROMPT		60
-#define _PROTECT	61
-#define _RANGE		62
-#define _RENAME		63
-#define _REXX		64
-#define _RUN		65
-#define _SAFE		66
-#define _SELECT		67
-#define _SET		68
-#define _SETDEFAULTTOOL	69
-#define _SETSTACK	70
-#define _SETTOOLTYPE	71
-#define _SHIFTLEFT	72
-#define _SHIFTRGHT	73
-#define _SOURCE		74
-#define _STARTUP	75
-#define _STRLEN		76
-#define _SUBSTR		77
-#define _SWAPCOLORS	78
-#define _TACKON		79
-#define _TEXTFILE	80
-#define _TOOLTYPE	81
-#define _TRANSCRIPT	82
-#define _TRAP		83
-#define _UNTIL		84
-#define _USER		85
-#define _WELCOME	86
-#define _WHILE		87
-#define _WORKING	88
-#define _TIMES		89
-#define _PLUS		90
-#define _MINUS		91
-#define _DIV		92
-#define _LESS		93
-#define _LESSEQ		94
-#define _DIFF		95
-#define _EQUAL		96
-#define _MORE		97
-#define _MOREEQ		98
-#define _AND		99
-#define _BITAND		100
-#define _BITNOT		101
-#define _BITOR		102
-#define _BITXOR		103
-#define _IN		104
-#define _NOT		105
-#define _OR		106
-#define _XOR		107
-#define _STRING		108
-#define _QUIET		109
+#define _COPYFILES	17
+#define _COPYLIB	18
+#define _DATABASE	19
+#define _DEBUG		20
+#define _DELETE		21
+#define _DIFF		22
+#define _DIV		23
+#define _EARLIER	24
+#define _EQUAL		25
+#define _EXECUTE	26
+#define _EXISTS		27
+#define _EXIT		28
+#define _EXPANDPATH	29
+#define _FILEONLY	30
+#define _FOREACH	31
+#define _GETASSIGN	32
+#define _GETDEVICE	33
+#define _GETDISKSPACE	34
+#define _GETENV		35
+#define _GETSIZE	36
+#define _GETSUM		37
+#define _GETVERSION	38
+#define _IF		39
+#define _IN		40
+#define _LESS		41
+#define _LESSEQ		42
+#define _MAKEASSIGN	43
+#define _MAKEDIR	44
+#define _MESSAGE	45
+#define _MINUS		46
+#define _MORE		47
+#define _MOREEQ		48
+#define _NOT		49
+#define _ONERROR	50
+#define _OR		51
+#define _PATHONLY	52
+#define _PATMATCH	53
+#define _PLUS		54
+#define _PROCEDURE	55
+#define _PROTECT	56
+#define _RENAME		57
+#define _REXX		58
+#define _RUN		59
+#define _SELECT		60
+#define _SET		61
+#define _SHIFTLEFT	62
+#define _SHIFTRGHT	63
+#define _STARTUP	64
+#define _STRING		65
+#define _STRLEN		66
+#define _SUBSTR		67
+#define _TACKON		68
+#define _TEXTFILE	69
+#define _TIMES		70
+#define _TOOLTYPE	71
+#define _TRANSCRIPT	72
+#define _TRAP		73
+#define _UNTIL		74
+#define _USER		75
+#define _WELCOME	76
+#define _WHILE		77
+#define _WORKING	78
+#define _XOR		79
 
-#define _MAXCOMMAND	109
+#define NUMCMDS		79
+/* Parameters */
+#define _PARAMETER	128 /* Base number for parameters */
+
+/* Parameters with args */
+#define _APPEND		(_PARAMETER + 1)
+#define _CHOICES	(_PARAMETER + 2)
+#define _COMMAND	(_PARAMETER + 3)
+#define _CONFIRM	(_PARAMETER + 4)
+#define _DEFAULT	(_PARAMETER + 5)
+#define _DELOPTS	(_PARAMETER + 6)
+#define _DEST		(_PARAMETER + 7)
+#define _HELP		(_PARAMETER + 8)
+#define _INCLUDE	(_PARAMETER + 9)
+#define _NEWNAME	(_PARAMETER + 10)
+#define _OPTIONAL	(_PARAMETER + 11)
+#define _PATTERN	(_PARAMETER + 12)
+#define _PROMPT		(_PARAMETER + 13)
+#define _RANGE		(_PARAMETER + 14)
+#define _SETDEFAULTTOOL	(_PARAMETER + 15)
+#define _SETSTACK	(_PARAMETER + 16)
+#define _SETTOOLTYPE	(_PARAMETER + 17)
+#define _SOURCE		(_PARAMETER + 18)
+
+/* Boolean parameters */
+#define _ALL		(_PARAMETER + 19)
+#define _ASSIGNS	(_PARAMETER + 20)
+#define _DISK		(_PARAMETER + 21)
+#define _FILES		(_PARAMETER + 22)
+#define _FONTS		(_PARAMETER + 23)
+#define _INFOS		(_PARAMETER + 24)
+#define _NEWPATH	(_PARAMETER + 25)
+#define _NOGAUGE	(_PARAMETER + 26)
+#define _NOPOSITION	(_PARAMETER + 27)
+#define _QUIET		(_PARAMETER + 28)
+#define _SAFE		(_PARAMETER + 29)
+#define _SWAPCOLORS	(_PARAMETER + 30)
+
+#define NUMPARAMS	30	/* Number of keywords used as parameters */
+#define NUMARGPARAMS	18	/* Number of keywords used as parameters which may have arguments */
+
+#define _MAXCOMMAND	(NUMPARAMS+NUMCMDS)	/* Total number of keywords */
 
 struct CommandList internal_commands[] =
 {

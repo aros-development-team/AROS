@@ -129,4 +129,21 @@
 - undefined variables now return (NULL|0) as value
 - added "database" command -- needs computation of return values
 
+0024
+- added text-gui for user-level and abort requester
+- added text-gui for "working" "complete" "abort"
+- added function which collects all following arguments after executing
+  cmd and converts intval to strings if arg is NULL ( you can specify a
+  separating character )
+  "abort" "cat" "exit" "welcome" "working" make use of this function
+- reinitialized (freed/set to Null) return values collectively
+
+0025
+- added "substr" "user" "debug"
+- started work on parameters
+  . get_parameters() supports boolean parameters
+  . "exit" understands (quiet)
+  . string-only parameters get their strings read in
+  . all other parameters get their values read in
+
 

@@ -1,4 +1,5 @@
 /* cleanup.c -- here are all functions used before exiting program */
+
 #include "Installer.h"
 
 /* External variables */

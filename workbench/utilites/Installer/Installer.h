@@ -35,6 +35,7 @@ typedef struct ScriptArg
   struct  ScriptArg *cmd;	/* ptr to list of arguments			*/
 				/* set one of them to NULL			*/
   int     intval;		/* If argument is an integer *arg will get NULL	*/
+  int     ignore;		/* Parameters set this to 1 to disappear	*/
 
 } ScriptArg;
 
@@ -42,8 +43,16 @@ typedef struct InstallerPrefs
 {
   char * transcriptfile;
   FILE * transcriptstream;
+  int debug;
   int welcome;
+  int copyfail, copyflags;
 } InstallerPrefs;
+
+#define COPY_FAIL	1
+#define COPY_NOFAIL	2
+#define COPY_OKNODELETE	4
+#define COPY_FORCE	1
+#define COPY_ASKUSER	2
 
 struct VariableList
 {
@@ -58,6 +67,13 @@ struct ProcedureList
   ScriptArg * procbody;
 };
 
+struct ParameterList
+{
+  char ** arg;
+  int intval, intval2;
+  int used;
+};
+
 #define SEMICOLON	0x3B
 #define LINEFEED	0x0A
 #define BACKSLASH	0x5C
@@ -69,8 +85,14 @@ struct ProcedureList
 #define PERCENT		0x25
 #define PLUS		0x2B
 #define MINUS		0x2D
+#define SPACE		0x20
 
 #define MAXARGSIZE	1024
+
+/* User levels */
+#define _NOVICE		0
+#define _AVERAGE	1
+#define _EXPERT		2
 
 
 #endif /* _INSTALLER_H */

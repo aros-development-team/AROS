@@ -7,6 +7,7 @@
 
 /* External function prototypes */
 extern void end_malloc();
+extern int request_userlevel();
 
 /* Internal function prototypes */
 void *get_variable( char * );
@@ -16,9 +17,10 @@ void set_variable( char *, char *, int );
 void set_preset_variables();
 #ifdef DEBUG
 void dump_varlist();
-#endif
+#endif /* DEBUG */
 void free_varlist();
 struct VariableList *find_var( char * );
+
 
 int numlocalvars = 0;
 struct VariableList *localvars = NULL;
@@ -164,7 +166,9 @@ void set_preset_variables( )
 {
 #warning FIXME: Use real APPNAME, LANGUAGE from RDArgs()
   set_variable( "@app-name", "DemoApp", 0 );
+  set_variable( "@abort-button", "Abort Install", 0 );
   set_variable( "@language", "english", 0 );
+  set_variable( "@user-level", NULL, request_userlevel() );
 }
 
 #ifdef DEBUG
@@ -185,7 +189,7 @@ int i;
     printf( "%s = %s | %d\n", localvars[i].varsymbol, localvars[i].vartext, localvars[i].varinteger );
 
 }
-#endif
+#endif /* DEBUG */
 
 void free_varlist( )
 {

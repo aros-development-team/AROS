@@ -2,7 +2,7 @@
     (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Installer
+    Desc: Installer V43.3
     Lang: english
 */
 
@@ -21,12 +21,14 @@ extern void execute_script( ScriptArg * , int );
 extern void cleanup();
 extern void set_preset_variables();
 extern void *get_variable( char *name );
+extern int  get_var_int( char *name );
 extern void set_variable( char *name, char *text, int intval );
 extern void end_malloc();
 #ifdef DEBUG
 extern void dump_varlist();
-#endif
-extern show_parseerror( int );
+#endif /* DEBUG */
+extern void show_parseerror( int );
+extern void final_report();
 
 /* Internal function prototypes */
 int main( int, char ** );
@@ -65,9 +67,13 @@ int nextarg, endoffile, count;
   preferences.transcriptstream = NULL;
 #ifdef DEBUG
   preferences.transcriptfile = "test.transcript";
-#else
+  preferences.debug = TRUE;
+#else /* DEBUG */
   preferences.transcriptfile = NULL;
-#endif
+  preferences.debug = FALSE;
+#endif /* DEBUG */
+  preferences.copyfail = COPY_FAIL;
+    preferences.copyflags = 0;
 
 #warning FIXME: distinguish between cli/workbench invocation
 
@@ -77,6 +83,15 @@ int nextarg, endoffile, count;
 
   /* Set variables which are not constant */
   set_preset_variables();
+
+  if( get_var_int( "@user-level" ) == _NOVICE )
+  {
+    preferences.copyflags &= ~(COPY_ASKUSER & preferences.copyflags);
+  }
+  else
+  {
+    preferences.copyflags |= COPY_ASKUSER;
+  }
 
   /* open script file */
   inputfile = fopen( filename, "r" );
@@ -92,6 +107,8 @@ int nextarg, endoffile, count;
   script.cmd = NULL;
   script.next = NULL;
   script.parent = NULL;
+  script.intval = 0;
+  script.ignore = 0;
   currentarg = script.cmd;
   /* parse script file */
   do
@@ -121,6 +138,8 @@ int nextarg, endoffile, count;
     currentarg->arg = NULL;
     currentarg->cmd = NULL;
     currentarg->next = NULL;
+    currentarg->intval = 0;
+    currentarg->ignore = 0;
 
     nextarg = FALSE;
     do
@@ -153,6 +172,7 @@ int nextarg, endoffile, count;
                             dummy = currentarg->cmd;
                             dummy->parent = currentarg;
                             dummy->arg = NULL;
+                            dummy->ignore = 0;
                             dummy->intval = 0;
                             dummy->cmd = NULL;
                             dummy->next = NULL;
@@ -197,7 +217,7 @@ int nextarg, endoffile, count;
   {
 #ifdef DEBUG
     printf( "Welcome to %s App installation utility.\n", (char *)get_variable( "@app-name" ) );
-#endif
+#endif /* DEBUG */
   }
   execute_script( script.cmd, 0 );
 
@@ -206,13 +226,12 @@ int nextarg, endoffile, count;
     fclose( preferences.transcriptstream );
   }
 
-#define DOTHIS
-#ifdef DOTHIS
-#undef DOTHIS
+#ifdef DEBUG
   dump_varlist();
-#endif
+#endif /* DEBUG */
 
- cleanup();
+  final_report();
+  cleanup();
 
 return error;
 }

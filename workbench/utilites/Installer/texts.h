@@ -5,7 +5,7 @@
 
 struct VariableList variables[] =
 {
-  {"@abort-button",	"Abort",	0},
+  {"@abort-button",	NULL,	0},
   {"@app-name",		NULL,	0},
   {"@askchoice-help",	NULL,	0},
   {"@askdir-help",	NULL,	0},
