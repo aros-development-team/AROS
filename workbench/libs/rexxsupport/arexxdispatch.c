@@ -69,3 +69,4 @@ AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
         ReturnRexxQuery(rc, argstring);
     }
 }
+AROS_AREXXLIBQUERYFUNC_END
