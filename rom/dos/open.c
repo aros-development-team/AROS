@@ -11,6 +11,7 @@
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
@@ -176,6 +177,9 @@
 		     ret->fh_Flags |= FHF_APPEND;
 		 }
 	    }
+	    if (IsInteractive(MKBADDR(ret)))
+	        SetVBuf(MKBADDR(ret), NULL, BUF_LINE, -1);
+
 	    return MKBADDR(ret);
 	}
 
