@@ -986,6 +986,8 @@ int err;		// Error
 			unit->lasthd=(UBYTE)hd;
 		}
 		CopyMem(iotd->iotd_Req.io_Data+length, unit->dma_buffer+(sec*size), size);
+		unit->flags |= TDUF_WRITE;
+		length += size;
 		sec = 0;
 		if (hd)
 		{
