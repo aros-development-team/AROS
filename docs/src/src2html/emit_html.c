@@ -573,7 +573,8 @@ void emit_html (int token, va_list args)
 	break;
 
     case BEGIN_NEW:
-	emit_special ("<FONT COLOR=\"#108010\">");
+	if (isnewtext)
+	    emit_special ("<FONT COLOR=\"#108010\">");
 	break;
 
     case BEGIN:
@@ -643,7 +644,10 @@ void emit_html (int token, va_list args)
 	switch (lmode)
 	{
 	case lm_none: break;
-	case lm_new:	     emit_special ("</FONT>"); break;
+	case lm_new:
+	    if (isnewtext)
+		emit_special ("</FONT>");
+	    break;
 	case lm_methods:
 	case lm_tags:
 	case lm_description: emit_nl (); emit_special ("</DL>"); break;

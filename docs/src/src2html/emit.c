@@ -96,7 +96,7 @@ void emit_init (void)
     time (&tt);
     tm = *localtime (&tt);
 
-    actualidate = tm.tm_mday + tm.tm_mon*31 + tm.tm_year*31*12;
+    actualidate = tm.tm_mday + tm.tm_mon*31 + (tm.tm_year+1900)*31*12;
 }
 
 void writelrefs (char * key, char * str, FILE * fh)
@@ -141,9 +141,14 @@ void emit_exit (void)
 
 int getidate (const char * str)
 {
-    int day, month, year;
+    int day, month, year, n;
 
-    sscanf (str, "%d.%d.%d", &day, &month, &year);
+    n = sscanf (str, "%d.%d.%d", &day, &month, &year);
+    if (n != 3)
+    {
+	printf ("illegal date '%s'\n", str);
+	exit (10);
+    }
 
     if (year < 100)
     {
@@ -252,6 +257,8 @@ void emit (int token, ...)
 		    isnewtext = 1;
 		else
 		    isnewtext = 0;
+
+		/* printf ("NEW %d %d %d\n", idate, actualidate, isnewtext); */
 
 		liststack[listsp++] = lmode;
 		lmode = lm_new;
