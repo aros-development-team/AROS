@@ -101,10 +101,8 @@ q        IoErr() gives additional information in that case.
 
             SetIoErr (0);
         }
-#if DEBUG > 1
 	else
- 	    bug ("Loading failed\n");
-#endif
+ 	    bug ("[LoadSeg] Failed to load %s\n",name);
         Close(file);
     }
 
