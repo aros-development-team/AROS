@@ -95,7 +95,7 @@ install: install.c
 	@$(HOST_CC) install.c -o install
 
 $(BOOT_DEST_DIR)/AROS.tgz :
-	@tar -czf $(BOOT_DEST_DIR)/AROS.tgz -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES)
+	@tar -czf $(BOOT_DEST_DIR)/AROS.tgz -C $(BOOT_SRC_DIR) $(BOOT_TAR_FILES) -C $(TOP) LICENSE
 
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
