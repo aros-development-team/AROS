@@ -315,7 +315,7 @@ static ULONG Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Incr
     struct MUI_PropData *data = INST_DATA(cl, obj);
     LONG newfirst = data->first + msg->amount;
     if (newfirst + data->visible > data->entries) newfirst = data->entries - data->visible;
-    if (newfirst != data->first) set(obj,MUIA_Prop_First,data->first + msg->amount);
+    if (newfirst != data->first) set(obj,MUIA_Prop_First,newfirst);
     return 1;
 }
 

@@ -64,6 +64,7 @@ struct MUI_GroupData
     LONG virt_offx, virt_offy; /* diplay offsets */
     LONG virt_mwidth,virt_mheight; /* The complete width */
     LONG saved_minwidth,saved_minheight;
+    LONG dont_forward_get; /* Setted temporary to 1 so that the get method is not forwarded */
 };
 
 #define GROUP_HORIZ       (1<<1)
@@ -356,8 +357,8 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
 
     /* seems to be the documented behaviour, however it should be slow! */
+    if (!data->dont_forward_get)
     {
-	struct MUI_GroupData *data = INST_DATA(cl, obj);
 	Object               *cstate;
 	Object               *child;
 	struct MinList       *ChildList;
@@ -1931,6 +1932,40 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
     return 0;
 }
 
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    /* Try at first if understand the message our self
+    ** We disable the forwarding of the OM_GET message
+    ** as the MUIM_Notify otherwise would "think" that
+    ** the group class actually understands the attribute
+    ** although a child does this only
+    */
+    data->dont_forward_get = 1;
+    if (DoSuperMethodA(cl,obj,(Msg)msg))
+    {
+    	data->dont_forward_get = 0;
+	return 1;
+    }
+
+    /* We ourself didn't understand the notify tag so we try the children now */
+    data->dont_forward_get = 0;
+
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	if (DoMethodA(child, (Msg)msg)) return 1;
+    }
+    return 0;
+}
 
 #ifndef _AROS
 __asm IPTR Group_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -1980,6 +2015,7 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
+    case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
