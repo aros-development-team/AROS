@@ -2,8 +2,7 @@
 
 .SUFFIXES: .c.o
 
-CC = \
-	vc
+CC = vc
 
 CFLAGS = +ppc
 

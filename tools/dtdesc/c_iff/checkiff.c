@@ -1,21 +1,12 @@
 /*
  *  c_iff - a portable IFF-parser
  *
- *  Copyright (C) 2000 Joerg Dietrich
+ *  Copyright (C) 2000, 2001 Joerg Dietrich
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  This is the AROS-version of c_iff.
+ *  It is distributed under the AROS Public License.
+ *  But I reserve the right to distribute
+ *  my own version under other licenses.
  */
 
 /*
@@ -66,14 +57,14 @@
 
 int CheckIFF(struct IFFHandle *TheHandle)
 {
- long Buffer[3];
+ CARD32 Buffer[3];
 
  if(!TheHandle)
  {
   return(FALSE);
  }
 
- if(!(fread((void *) Buffer, 4, 3, TheHandle->TheFile)==3))
+ if(!(fread((void *) Buffer, sizeof(CARD32), 3, TheHandle->TheFile)==3))
  {
   return(FALSE);
  }
@@ -87,7 +78,7 @@ int CheckIFF(struct IFFHandle *TheHandle)
   return(FALSE);
  }
 
- if(!((Buffer[1]+8)==FileSize(TheHandle->TheFile)))
+ if(!((Buffer[1] + 2*sizeof(CARD32))==FileSize(TheHandle->TheFile)))
  {
   return(FALSE);
  }

@@ -6,406 +6,200 @@
     Lang: English.
 */
 
-/*
- *  includes
- */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <c_iff.h>
-
-/*
- *  structs
- */
-
-struct DataTypeHeader
-{
- char *dth_Name;
- char *dth_BaseName;
- char *dth_Pattern;
- short *dth_Mask;
- unsigned long dth_GroupID;
- unsigned long dth_ID;
- short dth_MaskLen;
- short dth_Pad;
- unsigned short dth_Flags;
- unsigned short dth_Priority;
-};
-
-struct DTDesc
-{
- struct DataTypeHeader DTH;
- char *Name;
- char *Version;
-};
-
-/*
- *  prototypes
- */
-
-struct DTDesc *Parse(char *FileName);
-void FreeDTD(struct DTDesc *DTD);
-int SkipLine(unsigned char **Buffer, size_t *BufferSize);
-int KeywordPart(unsigned char **Buffer, size_t *BufferSize);
-unsigned char *DataPart(unsigned char **Buffer, size_t *BufferSize);
-unsigned short ParseFlags(unsigned char **Buffer, size_t *BufferSize);
-int WriteDescriptor(struct DTDesc *DTD);
-
-/*
- *  functions
- */
+#include "createdtdesc.h"
+#include "parser.h"
 
 int main(int argc, char **argv)
 {
- struct DTDesc *DTD;
+ struct DTDesc *TheDTDesc;
 
- if(!(argc==2))
+ if(Init(argc, argv, &TheDTDesc))
  {
-  fprintf(stderr, "usage: %s description\n", argv[0]);
-  return(0);
+  Work(TheDTDesc);
  }
 
- DTD=Parse(argv[1]);
- if(!DTD)
- {
-  fprintf(stderr, "Could not read description\n");
-  return(0);
- }
+ Cleanup(TheDTDesc);
 
- if(!WriteDescriptor(DTD))
- {
-  fprintf(stderr, "Error writing DataType-Descriptor\n");
- }
-
- FreeDTD(DTD);
  return(0);
 }
 
-struct DTDesc *Parse(char *FileName)
+int HandleName(struct DTDesc *TheDTDesc)
 {
- struct DTDesc *DTD;
- FILE *TheFile;
- size_t TheFileSize;
- unsigned char *FileBuffer, *BufPtr;
+ CARD8 *DataPtr;
 
- DTD=NULL;
-
- if(!FileName)
+ if(!TheDTDesc)
  {
-  return(NULL);
+  return(FALSE);
  }
 
- TheFile=fopen(FileName, "rb");
- if(!TheFile)
- {
-  return(0);
- }
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
 
- TheFileSize=FileSize(TheFile);
- if(!TheFileSize)
- {
-  fclose(TheFile);
-  return(NULL);
- }
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Name];
 
- FileBuffer=malloc(TheFileSize+1);
- if(!FileBuffer)
- {
-  fclose(TheFile);
-  return(NULL);
- }
+ /*
+  *  What, who yells buffer-overflow here?
+  */
 
- if(!(fread(FileBuffer, 1, TheFileSize, TheFile)==TheFileSize))
- {
-  free((void *) FileBuffer);
-  fclose(TheFile);
-  return(NULL);
- }
+ strcpy(TheDTDesc->Name, DataPtr);
 
- fclose(TheFile);
+ TheDTDesc->DTH.dth_Name=TheDTDesc->Name;
 
- FileBuffer[TheFileSize]='\0';
-
- DTD=malloc(sizeof(struct DTDesc));
- if(!DTD)
- {
-  free((void *) FileBuffer);
-  return(NULL);
- }
-
- DTD->Name=NULL;
- DTD->Version=NULL;
- DTD->DTH.dth_Name=NULL;
- DTD->DTH.dth_BaseName=NULL;
- DTD->DTH.dth_Pattern=NULL;
- DTD->DTH.dth_Mask=NULL;
- DTD->DTH.dth_GroupID=0;
- DTD->DTH.dth_ID=0;
- DTD->DTH.dth_MaskLen=0;
- DTD->DTH.dth_Pad=0;
- DTD->DTH.dth_Flags=0;
- DTD->DTH.dth_Priority=0;
-
- BufPtr=FileBuffer;
-
- while(TRUE)
- {
-  int RetVal;
-
-  RetVal=KeywordPart(&BufPtr, &TheFileSize);
-
-  switch(RetVal)
-  {
-   case 0: /* Name */
-   {
-    DTD->Name=DataPart(&BufPtr, &TheFileSize);
-    DTD->DTH.dth_Name=DTD->Name;
-
-    break;
-   }
-
-   case 1: /* Version */
-   {
-    DTD->Version=DataPart(&BufPtr, &TheFileSize);
-
-    break;
-   }
-
-   case 2: /* BaseName */
-   {
-    DTD->DTH.dth_BaseName=DataPart(&BufPtr, &TheFileSize);
-
-    break;
-   }
-
-   case 3: /* Pattern */
-   {
-    DTD->DTH.dth_Pattern=DataPart(&BufPtr, &TheFileSize);
-
-    break;
-   }
-
-   case 4: /* Mask */
-   {
-    unsigned char *CharMask;
-    short *ShortMask;
-    short MaskLen;
-    short i;
-
-    CharMask=(unsigned char *) DataPart(&BufPtr, &TheFileSize);
-    if(!CharMask)
-    {
-     goto BREAK;
-    }
-
-    MaskLen=(short) strlen(CharMask);
-    if(!MaskLen)
-    {
-     goto BREAK;
-    }
-
-    ShortMask=malloc(MaskLen*sizeof(short));
-    if(!ShortMask)
-    {
-     goto BREAK;
-    }
-
-    for(i=0; i<MaskLen; i++)
-    {
-     if(CharMask[i]==0xFF)
-     {
-      ShortMask[i]=0xFFFF;
-     }
-     else
-     {
-      ShortMask[i]=(short) CharMask[i];
-     }
-    }
-
-    DTD->DTH.dth_Mask=ShortMask;
-    DTD->DTH.dth_MaskLen=MaskLen;
-    free((void *) CharMask);
-    break;
-   }
-
-   case 5: /* GroupID */
-   {
-    unsigned char IDString[4];
-
-    if(TheFileSize<4)
-    {
-     goto BREAK;
-    }
-
-    IDString[0]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[1]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[2]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[3]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    if(!SkipLine(&BufPtr, &TheFileSize))
-    {
-     goto BREAK;
-    }
-
-    DTD->DTH.dth_GroupID=MAKE_ID(IDString[0], IDString[1], IDString[2], IDString[3]);
-
-    break;
-   }
-
-   case 6: /* ID */
-   {
-    unsigned char IDString[4];
-
-    if(TheFileSize<4)
-    {
-     goto BREAK;
-    }
-
-    IDString[0]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[1]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[2]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    IDString[3]=*BufPtr;
-    BufPtr++;
-    TheFileSize--;
-
-    if(!SkipLine(&BufPtr, &TheFileSize))
-    {
-     goto BREAK;
-    }
-
-    DTD->DTH.dth_ID=MAKE_ID(IDString[0], IDString[1], IDString[2], IDString[3]);
-
-    break;
-   }
-
-   case 7: /* Flags */
-   {
-    DTD->DTH.dth_Flags=ParseFlags(&BufPtr, &TheFileSize);
-
-    break;
-   }
-
-   case 8: /* Priority */
-   {
-    unsigned long Pri;
-
-    Pri=0;
-
-    Pri=strtoul(BufPtr, NULL, 10);
-
-    if(!SkipLine(&BufPtr, &TheFileSize))
-    {
-     goto BREAK;
-    }
-
-    DTD->DTH.dth_Priority=(unsigned short) Pri;
-
-    break;
-   }
-
-   default:
-   {
-    if(!SkipLine(&BufPtr, &TheFileSize))
-    {
-     goto BREAK;
-    }
-   }
-  }
- }
-
-BREAK:
-
- if(!(DTD->Name && DTD->DTH.dth_BaseName && DTD->DTH.dth_Mask && DTD->DTH.dth_MaskLen))
- {
-  FreeDTD(DTD);
-  return(NULL);
- }
-
- if(!DTD->DTH.dth_Pattern)
- {
-  char *Pat;
-
-  Pat=malloc(3);
-  if(!Pat)
-  {
-   FreeDTD(DTD);
-   return(NULL);
-  }
-
-  Pat[0]='#';
-  Pat[1]='?';
-  Pat[2]='\0';
-
-  DTD->DTH.dth_Pattern=Pat;
- }
-
- free((void *) FileBuffer);
- return(DTD);
+ return(TRUE);
 }
 
-void FreeDTD(struct DTDesc *DTD)
+int HandleVersion(struct DTDesc *TheDTDesc)
 {
- if(DTD)
+ CARD8 *DataPtr;
+
+ if(!TheDTDesc)
  {
-  if(DTD->Name)
-  {
-   free((void *) DTD->Name);
-  }
-
-  if(DTD->Version)
-  {
-   free((void *) DTD->Version);
-  }
-
-  if(DTD->DTH.dth_BaseName)
-  {
-   free((void *) DTD->DTH.dth_BaseName);
-  }
-
-  if(DTD->DTH.dth_Pattern)
-  {
-   free((void *) DTD->DTH.dth_Pattern);
-  }
-
-  if(DTD->DTH.dth_Mask)
-  {
-   free((void *) DTD->DTH.dth_Mask);
-  }
-
-  free((void *) DTD);
+  return(FALSE);
  }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Version];
+
+ /*
+  *  What, who yells buffer-overflow here?
+  */
+
+ strcpy(TheDTDesc->Version, DataPtr);
+
+ return(TRUE);
 }
 
-unsigned short ParseFlags(unsigned char **Buffer, size_t *BufferSize)
+int HandleBaseName(struct DTDesc *TheDTDesc)
 {
- unsigned short Ret;
- unsigned char *TheFlags, *FlagsPtr;
- size_t Len, BytesLeft;
- unsigned int i, j;
+ CARD8 *DataPtr;
 
- const char *Flags[] =
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[BaseName];
+
+ /*
+  *  What, who yells buffer-overflow here?
+  */
+
+ strcpy(TheDTDesc->BaseName, DataPtr);
+
+ TheDTDesc->DTH.dth_BaseName=TheDTDesc->BaseName;
+
+ return(TRUE);
+}
+
+int HandlePattern(struct DTDesc *TheDTDesc)
+{
+ CARD8 *DataPtr;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Pattern];
+
+ /*
+  *  What, who yells buffer-overflow here?
+  */
+
+ strcpy(TheDTDesc->Pattern, DataPtr);
+
+ TheDTDesc->DTH.dth_Pattern=TheDTDesc->Pattern;
+
+ return(TRUE);
+}
+
+int HandleMask(struct DTDesc *TheDTDesc)
+{
+ CARD8 *DataPtr;
+ int i;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Mask];
+
+ TheDTDesc->DTH.dth_MaskLen=(CARD16) strlen(DataPtr);
+ if(!TheDTDesc->DTH.dth_MaskLen)
+ {
+  return(TRUE);
+ }
+
+ for(i=0; i<TheDTDesc->DTH.dth_MaskLen; i++)
+ {
+  TheDTDesc->Mask[i] = (DataPtr[i]==0xFF) ? 0xFFFF : (CARD16) DataPtr[i];
+ }
+
+ TheDTDesc->DTH.dth_Mask=TheDTDesc->Mask;
+
+ return(TRUE);
+}
+
+int HandleGroupID(struct DTDesc *TheDTDesc)
+{
+ CARD8 *DataPtr;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[GroupID];
+
+ if(strlen(DataPtr)<4)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->DTH.dth_GroupID=MAKE_ID(DataPtr[0], DataPtr[1], DataPtr[2], DataPtr[3]);
+
+ return(TRUE);
+}
+
+int HandleID(struct DTDesc *TheDTDesc)
+{
+ CARD8 *DataPtr;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[ID];
+
+ if(strlen(DataPtr)<4)
+ {
+  return(FALSE);
+ }
+
+ TheDTDesc->DTH.dth_ID=MAKE_ID(DataPtr[0], DataPtr[1], DataPtr[2], DataPtr[3]);
+
+ return(TRUE);
+}
+
+int HandleFlags(struct DTDesc *TheDTDesc)
+{
+ CARD8 *DataPtr;
+ long Len;
+ int i;
+
+ const char *TheFlags[] =
  {
   "DTF_BINARY",
   "DTF_ASCII",
@@ -413,16 +207,6 @@ unsigned short ParseFlags(unsigned char **Buffer, size_t *BufferSize)
   "DTF_MISC",
   "DTF_CASE",
   "DTF_SYSTEM1"
- };
-
- const unsigned short FlagValues[] =
- {
-  0x0000,
-  0x0001,
-  0x0002,
-  0x0003,
-  0x0010,
-  0x1000
  };
 
  const int FlagLength[] =
@@ -437,207 +221,184 @@ unsigned short ParseFlags(unsigned char **Buffer, size_t *BufferSize)
 
  const int NumFlags=6;
 
- Ret=0;
-
- TheFlags=(unsigned char *) DataPart(Buffer, BufferSize);
- if(!TheFlags)
+ const CARD16 FlagValues[] =
  {
-  return(0);
+  0x0000,
+  0x0001,
+  0x0002,
+  0x0003,
+  0x0010,
+  0x1000
+ };
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
  }
 
- Len=strlen(TheFlags);
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
+
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Flags];
+
+ TheDTDesc->DTH.dth_Flags=0;
+
+ Len=strlen(DataPtr);
  if(!Len)
  {
-  return(0);
+  return(TRUE);
  }
 
- BytesLeft=Len;
- FlagsPtr=TheFlags;
-
- for(i=0; i<Len; i++)
+ while(Len>0)
  {
-  for(j=0; j<NumFlags; j++)
+  for(i=0; i<NumFlags; i++)
   {
-   if(BytesLeft<FlagLength[j])
+   if(Len<FlagLength[i])
    {
     continue;
    }
 
-   if(!(strncmp(Flags[j], FlagsPtr, FlagLength[j])))
+   if(strncmp(TheFlags[i], DataPtr, FlagLength[i])==0)
    {
-    Ret|=FlagValues[j];
+    TheDTDesc->DTH.dth_Flags |= FlagValues[i];
 
-    BytesLeft-=(FlagLength[j]-1);
-    FlagsPtr+=(FlagLength[j]-1);
+    Len-=(FlagLength[i]-1);
+    DataPtr+=(FlagLength[i]-1);
+
     break;
    }
   }
 
-  BytesLeft--;
-  FlagsPtr++;
+  Len--;
+  DataPtr++;
  }
-
- free((void *) TheFlags);
-
- return(Ret);
-}
-
-int SkipLine(unsigned char **Buffer, size_t *BufferSize)
-{
- unsigned char *LB;
- size_t LBS;
- int i;
-
- if(!(Buffer && BufferSize))
- {
-  return(FALSE);
- }
-
- LB=*Buffer;
- LBS=*BufferSize;
-
- if(!(LB && LBS))
- {
-  return(FALSE);
- }
-
- for(i=0; i<LBS; i++)
- {
-  if(LB[i]=='\n')
-  {
-   break;
-  }
- }
-
- LB+=i;
- LB++;
- LBS-=i;
- LBS--;
-
- *Buffer=LB;
- *BufferSize=LBS;
 
  return(TRUE);
 }
 
-int KeywordPart(unsigned char **Buffer, size_t *BufferSize)
+int HandlePriority(struct DTDesc *TheDTDesc)
 {
- int Ret;
- unsigned char *LB;
- size_t LBS;
- int i;
+ CARD8 *DataPtr;
+ unsigned long Pri;
 
-#include "parser.h"
-
- Ret=-1;
-
- if(!(Buffer && BufferSize))
- {
-  return(-1);
- }
-
- LB=*Buffer;
- LBS=*BufferSize;
-
- if(!(LB && LBS))
- {
-  return(-1);
- }
-
- for(i=0; i<NumKeywords; i++)
- {
-  if(LBS<KeywordLength[i])
-  {
-   continue;
-  }
-
-  if(!(strncmp(Keywords[i], LB, KeywordLength[i])))
-  {
-   Ret=i;
-   LB+=KeywordLength[i];
-   LBS-=KeywordLength[i];
-   break;
-  }
- }
-
- *Buffer=LB;
- *BufferSize=LBS;
-
- return(Ret);
-}
-
-unsigned char *DataPart(unsigned char **Buffer, size_t *BufferSize)
-{
- unsigned char *Ret;
- unsigned char *LB;
- size_t LBS;
- int i;
-
- Ret=NULL;
-
- if(!(Buffer && BufferSize))
- {
-  return(NULL);
- }
-
- LB=*Buffer;
- LBS=*BufferSize;
-
- if(!(LB && LBS))
- {
-  return(NULL);
- }
-
- for(i=0; i<LBS; i++)
- {
-  if(LB[i]=='\n')
-  {
-   break;
-  }
- }
-
- if(!i)
- {
-  return(NULL);
- }
-
- Ret=malloc(i+1);
- if(!Ret)
- {
-  return(NULL);
- }
-
- memcpy(Ret, LB, i);
- Ret[i]='\0';
-
- LB+=i;
- LB++;
- LBS-=i;
- LBS--;
-
- *Buffer=LB;
- *BufferSize=LBS;
-
- return(Ret);
-}
-
-int WriteDescriptor(struct DTDesc *DTD)
-{
- struct IFFHandle *IH;
- struct DataTypeHeader DTH;
- short i;
-
- if(!DTD)
+ if(!TheDTDesc)
  {
   return(FALSE);
  }
 
- /*
-  *  At this moment all pointers in DTD must be valid!
-  *  We don't check this.
-  */
+ TheDTDesc->ReadBuffer[READBUFFERSIZE-1]='\0';
 
- IH=NewIFF(DTD->Name, MAKE_ID('D','T','Y','P'));
+ DataPtr=TheDTDesc->ReadBuffer+KeywordLength[Priority];
+
+ Pri=strtoul(DataPtr, NULL, 10);
+
+ TheDTDesc->DTH.dth_Priority=(CARD16) Pri;
+
+ return(TRUE);
+}
+
+int HandleLine(struct DTDesc *TheDTDesc)
+{
+ int RetVal;
+ int i;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ RetVal=TRUE;
+
+ for(i=0; i<NumKeywords; i++)
+ {
+  if(strncmp(TheDTDesc->ReadBuffer, Keywords[i], KeywordLength[i])==0)
+  {
+   RetVal=KeywordHandler[i](TheDTDesc);
+
+   break;
+  }
+ }
+
+ return(RetVal);
+}
+
+int RemoveNewLine(struct DTDesc *TheDTDesc)
+{
+ int Len;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ Len=strlen(TheDTDesc->ReadBuffer);
+
+ if(TheDTDesc->ReadBuffer[Len-1]=='\n')
+ {
+  TheDTDesc->ReadBuffer[Len-1]='\0';
+ }
+
+ return(TRUE);
+}
+
+void Work(struct DTDesc *TheDTDesc)
+{
+
+ if(!TheDTDesc)
+ {
+  return;
+ }
+
+ memset(TheDTDesc->ReadBuffer, '\0', READBUFFERSIZE);
+
+ while(fgets(TheDTDesc->ReadBuffer, READBUFFERSIZE, TheDTDesc->Input))
+ {
+  RemoveNewLine(TheDTDesc);
+
+  if(!HandleLine(TheDTDesc))
+  {
+   break;
+  }
+
+  memset(TheDTDesc->ReadBuffer, '\0', READBUFFERSIZE);
+ }
+
+ WriteOutDTD(TheDTDesc);
+}
+
+int WriteOutDTD(struct DTDesc *TheDTDesc)
+{
+ struct IFFHandle *IH;
+ struct DataTypeHeader FileDTH;
+ int i;
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ if(strlen(TheDTDesc->Name)==0)
+ {
+  return(FALSE);
+ }
+
+ if(strlen(TheDTDesc->BaseName)==0)
+ {
+  return(FALSE);
+ }
+
+ if(TheDTDesc->DTH.dth_MaskLen==0)
+ {
+  return(FALSE);
+ }
+
+ if(strlen(TheDTDesc->Pattern)==0)
+ {
+  TheDTDesc->Pattern[0]='#';
+  TheDTDesc->Pattern[1]='?';
+  TheDTDesc->Pattern[2]='\0';
+ }
+
+ IH=NewIFF(TheDTDesc->OutputName, MAKE_ID('D','T','Y','P'));
  if(!IH)
  {
   return(FALSE);
@@ -646,37 +407,34 @@ int WriteDescriptor(struct DTDesc *DTD)
  if(!NewChunk(IH, MAKE_ID('N','A','M','E')))
  {
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- if(WriteChunkData(IH, DTD->Name, (strlen(DTD->Name)+1))<=0)
+ if(WriteChunkData(IH, TheDTDesc->Name, (strlen(TheDTDesc->Name)+1))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
  EndChunk(IH);
 
- /*
-  *  The Version-chunk is optional.
-  */
- if(DTD->Version)
+ if(strlen(TheDTDesc->Version) > 0)
  {
   if(!NewChunk(IH, MAKE_ID('F','V','E','R')))
   {
    CloseIFF(IH);
-   remove(DTD->Name);
+   remove(TheDTDesc->Name);
    return(FALSE);
   }
 
-  if(WriteChunkData(IH, DTD->Version, (strlen(DTD->Version)+1))<=0)
+  if(WriteChunkData(IH, TheDTDesc->Version, (strlen(TheDTDesc->Version)+1))<=0)
   {
    EndChunk(IH);
    CloseIFF(IH);
-   remove(DTD->Name);
+   remove(TheDTDesc->Name);
    return(FALSE);
   }
 
@@ -686,80 +444,208 @@ int WriteDescriptor(struct DTDesc *DTD)
  if(!NewChunk(IH, MAKE_ID('D','T','H','D')))
  {
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- DTH.dth_Name     = (char *) ((unsigned long) sizeof(struct DataTypeHeader));
- DTH.dth_BaseName = (char *) (((unsigned long) DTH.dth_Name) + strlen(DTD->DTH.dth_Name) + 1);
- DTH.dth_Pattern  = (char *) (((unsigned long) DTH.dth_BaseName) + strlen(DTD->DTH.dth_BaseName) + 1);
- DTH.dth_Mask     = (short *) (((unsigned long) DTH.dth_Pattern) + strlen(DTD->DTH.dth_Pattern) + 1);
- DTH.dth_GroupID  = DTD->DTH.dth_GroupID;
- DTH.dth_ID       = DTD->DTH.dth_ID;
- DTH.dth_MaskLen  = DTD->DTH.dth_MaskLen;
- DTH.dth_Pad      = DTD->DTH.dth_Pad;
- DTH.dth_Flags    = DTD->DTH.dth_Flags;
- DTH.dth_Priority = DTD->DTH.dth_Priority;
+ FileDTH.dth_Name     = (CARD8 *)  (((unsigned int) sizeof(struct DataTypeHeader)));
+ FileDTH.dth_BaseName = (CARD8 *)  (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
+ FileDTH.dth_Pattern  = (CARD8 *)  (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
+ FileDTH.dth_Mask     = (CARD16 *) (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
+ FileDTH.dth_GroupID  = TheDTDesc->DTH.dth_GroupID;
+ FileDTH.dth_ID       = TheDTDesc->DTH.dth_ID;
+ FileDTH.dth_MaskLen  = TheDTDesc->DTH.dth_MaskLen;
+ FileDTH.dth_Pad      = TheDTDesc->DTH.dth_Pad;
+ FileDTH.dth_Flags    = TheDTDesc->DTH.dth_Flags;
+ FileDTH.dth_Priority = TheDTDesc->DTH.dth_Priority;
 
- DTH.dth_Name     = Swap32IfLE(DTH.dth_Name);
- DTH.dth_BaseName = Swap32IfLE(DTH.dth_BaseName);
- DTH.dth_Pattern  = Swap32IfLE(DTH.dth_Pattern);
- DTH.dth_Mask     = Swap32IfLE(DTH.dth_Mask);
- DTH.dth_GroupID  = Swap32IfLE(DTH.dth_GroupID);
- DTH.dth_ID       = Swap32IfLE(DTH.dth_ID);
- DTH.dth_MaskLen  = Swap16IfLE(DTH.dth_MaskLen);
- DTH.dth_Pad      = Swap16IfLE(DTH.dth_Pad);
- DTH.dth_Flags    = Swap16IfLE(DTH.dth_Flags);
- DTH.dth_Priority = Swap16IfLE(DTH.dth_Priority);
+ FileDTH.dth_Name     = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_Name));
+ FileDTH.dth_BaseName = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_BaseName));
+ FileDTH.dth_Pattern  = (CARD8 *)  Swap32IfLE(((CARD32) FileDTH.dth_Pattern));
+ FileDTH.dth_Mask     = (CARD16 *) Swap32IfLE(((CARD32) FileDTH.dth_Mask));
+ FileDTH.dth_GroupID  = Swap32IfLE(FileDTH.dth_GroupID);
+ FileDTH.dth_ID       = Swap32IfLE(FileDTH.dth_ID);
+ FileDTH.dth_MaskLen  = Swap16IfLE(FileDTH.dth_MaskLen);
+ FileDTH.dth_Pad      = Swap16IfLE(FileDTH.dth_Pad);
+ FileDTH.dth_Flags    = Swap16IfLE(FileDTH.dth_Flags);
+ FileDTH.dth_Priority = Swap16IfLE(FileDTH.dth_Priority);
 
- if(WriteChunkData(IH, (char *) &DTH, sizeof(struct DataTypeHeader))<=0)
+ if(WriteChunkData(IH, (char *) &FileDTH, sizeof(struct DataTypeHeader))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- if(WriteChunkData(IH, DTD->DTH.dth_Name, (strlen(DTD->DTH.dth_Name)+1))<=0)
+ if(WriteChunkData(IH, TheDTDesc->DTH.dth_Name, (strlen(TheDTDesc->DTH.dth_Name)+1))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- if(WriteChunkData(IH, DTD->DTH.dth_BaseName, (strlen(DTD->DTH.dth_BaseName)+1))<=0)
+ if(WriteChunkData(IH, TheDTDesc->DTH.dth_BaseName, (strlen(TheDTDesc->DTH.dth_BaseName)+1))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- if(WriteChunkData(IH, DTD->DTH.dth_Pattern, (strlen(DTD->DTH.dth_Pattern)+1))<=0)
+ if(WriteChunkData(IH, TheDTDesc->DTH.dth_Pattern, (strlen(TheDTDesc->DTH.dth_Pattern)+1))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
- for(i=0; i<DTD->DTH.dth_MaskLen; i++)
+ for(i=0; i<TheDTDesc->DTH.dth_MaskLen; i++)
  {
-  DTD->DTH.dth_Mask[i]=Swap16IfLE(DTD->DTH.dth_Mask[i]);
+  TheDTDesc->DTH.dth_Mask[i]=Swap16IfLE(TheDTDesc->DTH.dth_Mask[i]);
  }
 
- if(WriteChunkData(IH, (char *) DTD->DTH.dth_Mask, DTD->DTH.dth_MaskLen*sizeof(short))<=0)
+ if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen*sizeof(CARD16))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
-  remove(DTD->Name);
+  remove(TheDTDesc->Name);
   return(FALSE);
  }
 
  EndChunk(IH);
 
  CloseIFF(IH);
+
  return(TRUE);
 }
+
+int Init(int argc, char **argv, struct DTDesc **TheDTDesc)
+{
+ struct DTDesc *NewDTDesc;
+
+ if(!(argv && TheDTDesc))
+ {
+  return(FALSE);
+ }
+
+ *TheDTDesc=NULL;
+
+ NewDTDesc=(struct DTDesc *) malloc(sizeof(struct DTDesc));
+ if(!NewDTDesc)
+ {
+  return(FALSE);
+ }
+
+ *TheDTDesc=NewDTDesc;
+
+ memset(NewDTDesc, '\0', sizeof(struct DTDesc));
+
+ NewDTDesc->ProgName=argv[0];
+ NewDTDesc->Input=stdin;
+ NewDTDesc->OutputName=NewDTDesc->Name;
+
+ if(!ParseArgs(argc, argv, NewDTDesc))
+ {
+  return(FALSE);
+ }
+
+ if(!OpenInput(NewDTDesc))
+ {
+  return(FALSE);
+ }
+
+ return(TRUE);
+}
+
+int OpenInput(struct DTDesc *TheDTDesc)
+{
+
+ if(!TheDTDesc)
+ {
+  return(FALSE);
+ }
+
+ if(TheDTDesc->InputName)
+ {
+  TheDTDesc->Input=fopen(TheDTDesc->InputName, "r");
+  if(!TheDTDesc->Input)
+  {
+   TheDTDesc->Input=stdin;
+
+   return(FALSE);
+  }
+ }
+
+ return(TRUE);
+}
+
+int ParseArgs(int argc, char **argv, struct DTDesc *TheDTDesc)
+{
+ int i;
+
+ if(!(argv && TheDTDesc))
+ {
+  return(FALSE);
+ }
+
+ for(i=1; i<argc; i++)
+ {
+  if(strcmp(argv[i], "-o") == 0)
+  {
+   if(++i >= argc)
+   {
+    Usage(TheDTDesc->ProgName);
+
+    return(FALSE);
+   }
+
+   TheDTDesc->OutputName=argv[i];
+  }
+  else
+  {
+   if(strcmp(argv[i], "-h") == 0)
+   {
+    Usage(TheDTDesc->ProgName);
+
+    return(FALSE);
+   }
+   else
+   {
+    TheDTDesc->InputName=argv[i];
+   }
+  }
+ }
+
+ return(TRUE);
+}
+
+void Usage(char *ProgName)
+{
+ char DefaultName[]="createdtdesc";
+ char *NamePtr;
+
+ NamePtr = ProgName ? ProgName : DefaultName;
+
+ fprintf(stderr, "\n"
+		 "usage: %s [-o <Output-Name>] <Input-Name>\n"
+		 "\n",
+	NamePtr);
+}
+
+void Cleanup(struct DTDesc *TheDTDesc)
+{
+ if(TheDTDesc)
+ {
+  if((TheDTDesc->Input!=NULL) && (TheDTDesc->Input!=stdin))
+  {
+   fclose(TheDTDesc->Input);
+  }
+
+  free((void *) TheDTDesc);
+ }
+}
+
 

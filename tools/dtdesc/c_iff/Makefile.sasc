@@ -2,9 +2,33 @@
 
 .SUFFIXES: .c.o
 
-CC = vc
+CC = sc
 
-CFLAGS =
+CFLAGS = \
+	 IDIR="" \
+	 DEFINE=amiga \
+	 DATA=FAR \
+	 SMALLCODE \
+	 STRIPDEBUG \
+	 CPU=68020 \
+	 OPTIMIZE \
+	 OPTSCHED \
+	 OPTINLINE \
+	 OPTALIAS \
+	 OPTTIME \
+	 OPTINLOCAL \
+	 NOICONS \
+	 NOSTACKCHECK
+
+LD = $(CC)
+
+LDFLAGS = $(CFLAGS) LINK
+
+C_FLAG =
+
+O_FLAG = TO
+
+AR = oml
 
 RM = delete FORCE
 
@@ -24,26 +48,27 @@ OBJS = \
 	writechunkdata.o
 
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c -o $@
+	$(CC) $(CFLAGS) $(C_FLAG) $*.c
 
 all: c_iff.lib
 doc: c_iff.txt
 
 c_iff.lib: $(OBJS)
-	delete FORCE c_iff.lib
-	join $(OBJS) as $@
+	$(RM) c_iff.lib
+	$(AR) $@ $(OBJS)
 
 c_iff.txt:
 	perl autodoc.pl *.c >c_iff.txt
 
-example: example.o c_iff.lib hot.iff
-	phxlnk from vlib:startup.o example.o c_iff.lib vlib:mieee.lib vlib:vc.lib vlib:amiga.lib to example
+example: example.o c_iff.lib
+	$(LD) $(LDFLAGS) $< $(O_FLAG) $@ LIB c_iff.lib
 
 $(OBJS): c_iff.h
 
 clean:
 	$(RM) c_iff.lib
 	$(RM) #?.o
+	$(RM) #?.lnk
 	$(RM) c_iff.txt
 	$(RM) example
 	$(RM) test1.iff

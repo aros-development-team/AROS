@@ -1,21 +1,12 @@
 /*
  *  c_iff - a portable IFF-parser
  *
- *  Copyright (C) 2000 Joerg Dietrich
+ *  Copyright (C) 2000, 2001 Joerg Dietrich
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  This is the AROS-version of c_iff.
+ *  It is distributed under the AROS Public License.
+ *  But I reserve the right to distribute
+ *  my own version under other licenses.
  */
 
 /*
@@ -32,7 +23,7 @@
 *   SYNOPSIS
 *       TheHandle = NewIFF( Name,IFFType )
 *
-*       struct IFFHandle *NewIFF( char *,long )
+*       struct IFFHandle *NewIFF( char *,CARD32 )
 *
 *   FUNCTION
 *       This is your function, if you want to write an IFF-file.
@@ -61,12 +52,10 @@
 *       Private notes:
 */
 
-struct IFFHandle *NewIFF(char *Name, long IFFType)
+struct IFFHandle *NewIFF(char *Name, CARD32 IFFType)
 {
  struct IFFHandle *Ret;
- long Buffer[3];
-
- Ret=NULL;
+ CARD32 Buffer[3];
 
  if(!Name)
  {
@@ -79,7 +68,6 @@ struct IFFHandle *NewIFF(char *Name, long IFFType)
   return(NULL);
  }
 
- Ret->TheFile=NULL;
  Ret->TheFile=fopen(Name, "wb");
  if(!Ret->TheFile)
  {
@@ -91,7 +79,7 @@ struct IFFHandle *NewIFF(char *Name, long IFFType)
  Ret->ChunkID=INVALID_ID;
  Ret->BytesLeftInChunk=0;
  Ret->NewIFF=TRUE;
- Ret->IFFSize=4;
+ Ret->IFFSize=sizeof(CARD32);
  Ret->LastNode=NULL;
 
  Buffer[0]=ID_FORM;
@@ -102,7 +90,7 @@ struct IFFHandle *NewIFF(char *Name, long IFFType)
  Buffer[1]=Swap32IfLE(Buffer[1]);
  Buffer[2]=Swap32IfLE(Buffer[2]);
 
- if(!(fwrite((void *) Buffer, 4, 3, Ret->TheFile)==3))
+ if(!(fwrite((void *) Buffer, sizeof(CARD32), 3, Ret->TheFile)==3))
  {
   fclose(Ret->TheFile);
   free((void *) Ret);

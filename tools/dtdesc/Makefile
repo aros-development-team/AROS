@@ -2,8 +2,7 @@
 
 # .SUFFIXES: .c.o
 
-CC = \
-	cc
+CC = cc
 
 CFLAGS = -I . -I c_iff/
 
