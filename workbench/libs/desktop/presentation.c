@@ -73,7 +73,7 @@ IPTR presentationSet(Class * cl, Object * obj, struct opSet * msg)
         switch (tag->ti_Tag)
         {
             case PA_Observer:
-                data->observer = tag->ti_Data;
+                data->observer = (Object *) tag->ti_Data;
                 break;
             default:
                 break;

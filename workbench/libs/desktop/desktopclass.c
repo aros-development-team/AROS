@@ -29,7 +29,7 @@ IPTR desktopNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
     struct DesktopClassData *data;
-    struct TagItem *tag;
+    //struct TagItem *tag;
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)
@@ -55,7 +55,7 @@ IPTR desktopSet(Class * cl, Object * obj, struct opSet * msg)
         switch (tag->ti_Tag)
         {
             case DA_ActiveWindow:
-                data->activeWindow = tag->ti_Data;
+                data->activeWindow = (Object *) tag->ti_Data;
                 break;
             default:
                 break;
@@ -77,7 +77,7 @@ IPTR desktopGet(Class * cl, Object * obj, struct opGet * msg)
     switch (msg->opg_AttrID)
     {
         case DA_ActiveWindow:
-            *msg->opg_Storage = data->activeWindow;
+            *msg->opg_Storage = (IPTR) data->activeWindow;
             break;
         default:
             retval = DoSuperMethodA(cl, obj, (Msg) msg);

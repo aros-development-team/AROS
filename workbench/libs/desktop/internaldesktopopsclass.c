@@ -30,7 +30,7 @@ IPTR internalDesktopOpsNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
     struct InternalDesktopOpsClassData *data;
-    struct TagItem *tag;
+    //struct TagItem *tag;
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)

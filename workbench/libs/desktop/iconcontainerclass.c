@@ -38,7 +38,7 @@ static ULONG DoSetupMethod(Object * obj, struct MUI_RenderInfo *info)
  */
     muiRenderInfo(obj) = info;
 
-    return DoMethod(obj, MUIM_Setup, info);
+    return DoMethod(obj, MUIM_Setup, (IPTR) info);
 }
 
 IPTR iconConNew(Class * cl, Object * obj, struct opSet *ops)
@@ -64,7 +64,7 @@ IPTR iconConNew(Class * cl, Object * obj, struct opSet *ops)
                 break;
 
             case ICA_ViewMode:
-                viewMode = (Object *) tag->ti_Data;
+                viewMode = tag->ti_Data;
                 break;
 
             default:
@@ -127,7 +127,7 @@ IPTR iconConNew(Class * cl, Object * obj, struct opSet *ops)
 IPTR iconConSetup(Class * cl, Object * obj, struct MUIP_Setup * msg)
 {
     IPTR            retval;
-    struct MemberNode *mn;
+    //struct MemberNode *mn;
     struct IconContainerClassData *data;
 
     data = (struct IconContainerClassData *) INST_DATA(cl, obj);
@@ -141,7 +141,7 @@ IPTR iconConSetup(Class * cl, Object * obj, struct MUIP_Setup * msg)
     if (data->vertProp)
         DoSetupMethod(data->vertProp, msg->RenderInfo);
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
 
     return retval;
 }
@@ -153,7 +153,7 @@ IPTR iconConCleanup(Class * cl, Object * obj, struct MUIP_Cleanup * msg)
 
     data = (struct IconContainerClassData *) INST_DATA(cl, obj);
 
-    DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(obj, MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
 
     // the superclass will send this method to the memberlist
     retval = DoSuperMethodA(cl, obj, msg);
@@ -164,7 +164,7 @@ IPTR iconConCleanup(Class * cl, Object * obj, struct MUIP_Cleanup * msg)
 IPTR iconConShow(Class * cl, Object * obj, Msg msg)
 {
     IPTR            retval;
-    struct MemberNode *mn;
+    //struct MemberNode *mn;
     struct IconContainerClassData *data;
 
     data = (struct IconContainerClassData *) INST_DATA(cl, obj);
@@ -207,7 +207,7 @@ IPTR iconConAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
         minMax.MinHeight = 0;
         minMax.DefHeight = 0;
         minMax.MaxHeight = 0;
-        DoMethod(data->vertProp, MUIM_AskMinMax, &minMax);
+        DoMethod(data->vertProp, MUIM_AskMinMax, (IPTR) &minMax);
     }
 
     if (data->horizProp)
@@ -218,7 +218,7 @@ IPTR iconConAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
         minMax.MinHeight = 0;
         minMax.DefHeight = 0;
         minMax.MaxHeight = 0;
-        DoMethod(data->horizProp, MUIM_AskMinMax, &minMax);
+        DoMethod(data->horizProp, MUIM_AskMinMax, (IPTR) &minMax);
     }
 
     return retval;
@@ -231,7 +231,7 @@ BOOL canLay(Object * parent, Object * newObject, ULONG newX, ULONG newY,
 
     if (_memberCount(parent) != 1)
     {
-        mn = _memberList(parent).mlh_Head;
+        mn = (struct MemberNode *) _memberList(parent).mlh_Head;
         while (mn->m_Node.mln_Succ)
         {
             if (!
@@ -332,7 +332,7 @@ ULONG layoutObject(struct IconContainerClassData * data, Object * obj,
             laid =
                 canLay(obj, newObject, newX, newY, &(_memberList(obj)), data);
 
-            mn = _memberList(obj).mlh_Head;
+            mn = (struct MemberNode *) _memberList(obj).mlh_Head;
             while (mn->m_Node.mln_Succ && !laid)
             {
                 newX = _left(mn->m_Object) - _mleft(obj);
@@ -413,7 +413,7 @@ ULONG iconConLayout(Class * cl, Object * obj, Msg msg)
 IPTR iconConAdd(Class * cl, Object * obj, struct opMember * msg)
 {
     struct IconContainerClassData *data;
-    struct MemberNode *mn;
+    //struct MemberNode *mn;
     ULONG           retval = 1;
     struct MUI_MinMax minMax;
     APTR            clip;
@@ -431,7 +431,7 @@ IPTR iconConAdd(Class * cl, Object * obj, struct opMember * msg)
 
     DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
 
-    DoMethod(msg->opam_Object, MUIM_AskMinMax, &minMax);
+    DoMethod(msg->opam_Object, MUIM_AskMinMax, (IPTR) &minMax);
 
     _minwidth(msg->opam_Object) = minMax.MinWidth;
     _minheight(msg->opam_Object) = minMax.MinHeight;
@@ -462,7 +462,7 @@ void redrawRectangle(LONG x1, LONG y1, LONG x2, LONG y2, Object * obj,
 {
     struct MemberNode *mn;
 
-    mn=_memberList(obj).mlh_Head;
+    mn = (struct MemberNode *) _memberList(obj).mlh_Head;
     while (mn->m_Node.mln_Succ)
     {
     // check to see if the left or right edge is in the damaged
@@ -524,9 +524,7 @@ IPTR drawAll(Class * cl, Object * obj, struct MUIP_Draw *msg,
         EraseRect(_rp(obj), _mleft(obj), _mtop(obj), _mright(obj),
                   _mbottom(obj));
 
-//        mn = (struct MemberNode *) data->memberList.mlh_Head;
-
-        mn=_memberList(obj).mlh_Head;
+        mn = (struct MemberNode *) _memberList(obj).mlh_Head;
         while (mn->m_Node.mln_Succ)
         {
             MUI_Redraw(mn->m_Object, MADF_DRAWOBJECT);
@@ -567,10 +565,10 @@ IPTR iconConDraw(Class * cl, Object * obj, struct MUIP_Draw * msg)
     {
         LONG            scrollAmountX = 0,
             scrollAmountY = 0;
-        LONG            redrawX1,
-                        redrawY1,
-                        redrawX2,
-                        redrawY2;
+        LONG            redrawX1 = 0,
+                        redrawY1 = 0,
+                        redrawX2 = 0,
+                        redrawY2 = 0;
 
         if (data->vertScroll)
         {
@@ -594,7 +592,7 @@ IPTR iconConDraw(Class * cl, Object * obj, struct MUIP_Draw * msg)
             redrawX2 = _mright(obj);
 
         // shift the positions of the member objects
-            mn=_memberList(obj).mlh_Head;
+            mn = (struct MemberNode *) _memberList(obj).mlh_Head;
             while (mn->m_Node.mln_Succ)
             {
                 MUI_Layout(mn->m_Object,
@@ -677,7 +675,7 @@ IPTR iconConDraw(Class * cl, Object * obj, struct MUIP_Draw * msg)
             redrawY2 = _mbottom(obj);
 
         // shift the positions of the member objects
-            mn=_memberList(obj).mlh_Head;
+            mn = (struct MemberNode *) _memberList(obj).mlh_Head;
             while (mn->m_Node.mln_Succ)
             {
                 MUI_Layout(mn->m_Object,
@@ -775,7 +773,7 @@ IPTR iconConSet(Class * cl, Object * obj, struct opSet * msg)
                 break;
             case ICA_ViewMode:
 {
-                    ULONG           iconViewMode;
+                    ULONG           iconViewMode = IAVM_LARGEICON;
                     struct MemberNode *mn;
                     struct MUI_MinMax minMax;
 
@@ -800,15 +798,15 @@ IPTR iconConSet(Class * cl, Object * obj, struct opSet * msg)
                     data->virtualHeight = 0;
 
 //                    mn = (struct MemberNode *) data->memberList.mlh_Head;
-                    mn=_memberList(obj).mlh_Head;
+                    mn = (struct MemberNode *) _memberList(obj).mlh_Head;
                     while (mn->m_Node.mln_Succ)
                     {
                         DoMethod(mn->m_Object, MUIM_Hide);
                         SetAttrs(mn->m_Object, IA_ViewMode, iconViewMode,
                                  TAG_END);
                         muiNotifyData(mn->m_Object)->mnd_ParentObject = obj;
-                        DoMethod(mn->m_Object, MUIM_ConnectParent, obj);
-                        DoMethod(mn->m_Object, MUIM_AskMinMax, &minMax);
+                        DoMethod(mn->m_Object, MUIM_ConnectParent, (IPTR) obj);
+                        DoMethod(mn->m_Object, MUIM_AskMinMax, (IPTR) &minMax);
 
                         _minwidth(mn->m_Object) = minMax.MinWidth;
                         _minheight(mn->m_Object) = minMax.MinHeight;
@@ -876,12 +874,12 @@ IPTR iconConConnectParent(Class * cl, Object * obj,
     if (data->horizProp)
     {
         muiNotifyData(data->horizProp)->mnd_ParentObject = obj;
-        DoMethod(data->horizProp, MUIM_ConnectParent, obj);
+        DoMethod(data->horizProp, MUIM_ConnectParent, (IPTR) obj);
     }
     if (data->vertProp)
     {
         muiNotifyData(data->vertProp)->mnd_ParentObject = obj;
-        DoMethod(data->vertProp, MUIM_ConnectParent, obj);
+        DoMethod(data->vertProp, MUIM_ConnectParent, (IPTR) obj);
     }
 
     return retval;
@@ -963,7 +961,7 @@ IPTR iconConGetColumn(Class * cl, Object * obj, struct opGetColumn * msg)
         i++;
     }
 
-    return dc;
+    return (IPTR) dc;
 }
 
 BOOPSI_DISPATCHER(IPTR, iconContainerDispatcher, cl, obj, msg)
@@ -982,7 +980,7 @@ BOOPSI_DISPATCHER(IPTR, iconContainerDispatcher, cl, obj, msg)
             retval = iconConCleanup(cl, obj, (struct MUIP_Cleanup *) msg);
             break;
         case MUIM_Show:
-            retval = iconConShow(cl, obj, (struct MUIP_Show *) msg);
+            retval = iconConShow(cl, obj, msg);
             break;
         case MUIM_Draw:
             retval = iconConDraw(cl, obj, (struct MUIP_Draw *) msg);
@@ -1002,7 +1000,7 @@ BOOPSI_DISPATCHER(IPTR, iconContainerDispatcher, cl, obj, msg)
             retval = iconConSet(cl, obj, (struct opSet *) msg);
             break;
         case OM_GET:
-            retval = iconConGet(cl, obj, (struct opSet *) msg);
+            retval = iconConGet(cl, obj, (struct opGet *) msg);
             break;
         case MUIM_ConnectParent:
             retval =
