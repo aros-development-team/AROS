@@ -16,7 +16,7 @@
 #include <exec_intern.h>
 
 
-#include <asm/ptrace.h>
+#include <exec/ptrace.h>
 
 static char softblock;
 

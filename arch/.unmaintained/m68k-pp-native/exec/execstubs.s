@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include "../machine.i"
+#include "../include/aros/machine.i"
 
 /*
     The following functions are guaranteed to preserve

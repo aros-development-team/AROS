@@ -4,7 +4,7 @@
 */
 
 #include <exec/types.h>
-#include <registers.h>
+#include <asm/registers.h>
 
 extern void _sys_dispatch(void);
 /*

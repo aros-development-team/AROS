@@ -213,10 +213,6 @@ binary-pp-native-m68000 : build
 #MM- workbench-pp-native-m68000 : workbench-complete workbench
 
 #MM
-includes-copy : $(GENINCDIR)/sigcore.h
-	@$(NOP)
-
-#MM
 clean ::
 	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS)
 

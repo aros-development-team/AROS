@@ -11,7 +11,7 @@
 #include <exec/interrupts.h>
 #include <proto/exec.h>
 #include <exec_intern.h>
-#include <asm/ptrace.h>
+#include <exec/ptrace.h>
 #include "etask.h"
 
 
