@@ -177,7 +177,6 @@ static VOID planarbm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
     UBYTE pixel, notpixel;
     UBYTE i;
     
-    
     data = OOP_INST_DATA(cl, o);
 
     /* bitmap in plane-mode */
@@ -197,9 +196,6 @@ static VOID planarbm_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 		*(*plane + offset) = *(*plane + offset) & notpixel;
 	    }
         }
-	
-	mask = mask << 1;
-	plane++;
     }
 }
 
@@ -213,9 +209,7 @@ static ULONG planarbm_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     ULONG retval;
     
     struct planarbm_data *data;
-    
-// kprintf("PlanarBM::GetPixel()\n");
-    
+        
     data = OOP_INST_DATA(cl, o);
 
     plane     = data->planes;
