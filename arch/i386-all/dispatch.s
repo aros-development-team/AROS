@@ -1,6 +1,10 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/08/23 16:49:20  digulla
+#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
+#    	I replaced it with .balign which does what we want.
+#
 #    Revision 1.3  1996/08/13 14:03:18  digulla
 #    Added standard headers
 #
@@ -54,7 +58,7 @@
 	TS_RUN	    =	2
 
 	.text
-	.align	16
+	.balign	16
 	.globl	Exec_Dispatch
 	.type	Exec_Dispatch,@function
 Exec_Dispatch:

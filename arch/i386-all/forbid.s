@@ -1,6 +1,10 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/08/23 16:49:21  digulla
+#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
+#    	I replaced it with .balign which does what we want.
+#
 #    Revision 1.3  1996/08/13 14:03:19  digulla
 #    Added standard headers
 #
@@ -40,7 +44,7 @@
 #
 #******************************************************************************
 	.text
-	.align	16
+	.balign	16
 	.globl	Exec_Forbid
 	.type	Exec_Forbid,@function
 Exec_Forbid:
