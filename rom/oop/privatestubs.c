@@ -16,7 +16,11 @@
 
 #define OOPBase (OOP_OOPBASE(o))
 
-#define STATIC_MID static OOP_MethodID mid
+#ifndef CREATE_ROM
+#  define STATIC_MID static OOP_MethodID mid
+#else
+#  define STATIC_MID OOP_MethodID mid = 0
+#endif
 
 BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr)
 {
