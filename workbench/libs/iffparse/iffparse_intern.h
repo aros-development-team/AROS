@@ -36,6 +36,9 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+#ifndef UTILITY_HOOKS_H
+#   include <utility/hooks.h>
+#endif
 #include <stdlib.h>
 
 
