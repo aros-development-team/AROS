@@ -11,6 +11,7 @@
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <clib/graphics_protos.h>
+#include <clib/aros_protos.h>
 #include "graphics_intern.h"
 
 #define static	/* nothing */
@@ -21,8 +22,23 @@ static Cursor	       sysCursor;
 static struct TextAttr sysTA;
 
 #ifndef SYSFONTNAME
-#   define SYSFONTNAME	"8x13bold"
+#   define SYSFONTNAME	"topaz.font"
 #endif
+
+/* Table which links TextAttr with X11 font names */
+struct FontTable
+{
+    struct TextAttr ta;
+    char	  * name;
+}
+AROSFontTable[] =
+{
+    { { "topaz.font", 8, FS_NORMAL, FPF_ROMFONT }, "8x13bold" },
+    { { "topaz.font", 13, FS_NORMAL, FPF_ROMFONT }, "8x13bold" },
+    { { "helvetica.font", 11, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--11-*-100-100-*-*-iso8859-1" },
+    { { "helvetica.font", 12, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--12-*-100-100-*-*-iso8859-1" },
+    { { "helvetica.font", 14, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--14-*-100-100-*-*-iso8859-1" },
+};
 
 static const char * sysColName[] = {
     "grey70",
@@ -116,7 +132,10 @@ int driver_open (struct GfxBase * GfxBase)
 
     if (!GfxBase->DefaultFont)
     {
-	sysTA.ta_Name = (STRPTR)SYSFONTNAME;
+	sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
+	sysTA.ta_YSize = 8;
+	sysTA.ta_Style = FS_NORMAL;
+	sysTA.ta_Flags = 0;
 
 	def = OpenFont (&sysTA);
 
@@ -368,11 +387,23 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 {
     struct ETextFont * tf;
     XFontStruct      * xfs;
+    int t;
 
     if (!(tf = AllocMem (sizeof (struct ETextFont), MEMF_ANY)) )
 	return (NULL);
 
-    xfs = XLoadQueryFont (sysDisplay, ta->ta_Name);
+    xfs = NULL;
+
+    for (t=0; t<sizeof(AROSFontTable)/sizeof(AROSFontTable[0]); t++)
+    {
+	if (AROSFontTable[t].ta.ta_YSize == ta->ta_YSize
+	    && !STRICMP (AROSFontTable[t].ta.ta_Name, ta->ta_Name)
+	)
+	{
+	    xfs = XLoadQueryFont (sysDisplay, AROSFontTable[t].name);
+	    break;
+	}
+    }
 
     if (!xfs)
     {
