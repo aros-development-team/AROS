@@ -469,8 +469,21 @@ Execute an AmigaDOS script.
   Returns the number free bytes on the device.  If the pathname is bad or
   no info could not be obtained, -1 is returned.
 
+
 ( getenv <name> )
   Returns the value of an ENV: variable (through DOS/GetVar(name,...))
+
+
+( getsize <name> )
+  Returns the size of file <name> in bytes or 0 if file does not exist.
+
+
+( makeassign <assign> [<path>]
+      [(safe)]
+)
+  Assigns assign to path. If path is not specified, the assign is removed.
+  If (safe) is passed then the assign will be done even when in PRETEND mode.
+  Returns 1 on success and 0 on failure.
 
 
 /* Unimplemented commands */
@@ -480,10 +493,8 @@ Execute an AmigaDOS script.
 ( foreach )
 ( getassign )
 ( getdevice )
-( getsize )
 ( getsum )
 ( getversion )
-( makeassign )
 ( patmatch )
 ( protect )
 ( rexx )

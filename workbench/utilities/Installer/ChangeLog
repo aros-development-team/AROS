@@ -368,6 +368,7 @@
 - removed user_confirm() as it is not used
 
 0060
-- implemented getsize via POSIX stat()
+- implemented (getsize) via POSIX stat()
 - updated path of test.script
+- implemented (makeassign)
 
