@@ -22,31 +22,34 @@
    in here if you want to stay compatible with AmigaOS! */
 
 
-/* Filesystem actions. Not all filesystems support all actions. Filesystems
-   have to return ERROR_ACTION_NOT_KNOWN (<dos/dos.h>) in
-   IOFileSys->io_DosError if they do not support an action, with which they
-   were called. If they know an action but ignore it by purpose, they might
-   return ERROR_NOT_IMPLEMENTED. One of these purposes is that the hardware
-   or software the filesystem relies on does not support this kind of action.
-   (eg a net-filesystems may not support renaming of files, so its filesystem
-   should return ERROR_NOT_IMPLEMENTED for FSA_RENAME. Another example is the
-   nil-device, which does not implement FSA_CREATE_DIR or any of this fancy
-   stuff.) What does that mean for an application? If an application receives
-   ERROR_NOT_IMPLEMENTED, it knows that the action, it wanted to perform,
-   makes no sense for that filesystem. If it receives ERROR_ACTION_NOT_KNOWN,
-   it knows that the filesystem does not know about this action for whatever
-   reason (including that it makes no sense to perform that action on that
-   specific filesystem).
+/* Filesystem handlers are called with so-called actions, whenever they are
+   supposed to do something. See below for a list of currently defined actions
+   and how to use them.
 
-   All actions work relative to the relative directory (where it makes sense).
-   Its filehandle is to be set in the IOFileSys->IOFS.io_Unit field. This
-   field also serves as a container for filehandles for actions that either
-   need a filehandle as argument or return one. When not stated otherwise this
-   field has to be set to the filehandle to affect or is set to the filehandle
-   that is returned from the action. Note that the filehandle mentioned above
-   is not a pointer to a struct FileHandle as defined in <dos/dosextens.h>, but
-   an APTR to a device specific blackbox structure. This APTR is normally set
-   as FileHandle->fh_Unit, if you are using a struct FileHandle.
+   Not all filesystems have to support all actions. Filesystems have to return
+   ERROR_ACTION_NOT_KNOWN (<dos/dos.h>) in IOFileSys->io_DosError, if they do
+   not support the specified action. If they know an action but ignore it on
+   purpose, they may return ERROR_NOT_IMPLEMENTED. A purpose may be that the
+   hardware or software the filesystem relies on does not support this kind of
+   action (eg: a net-filesystem protocol may not support renaming of files, so
+   a filesystem handler for this protocol should return ERROR_NOT_IMPLEMENTED
+   for FSA_RENAME). Another example is the nil-device, which does not implement
+   FSA_CREATE_DIR or anything concerning specific files. What does that mean
+   for an application? If an application receives ERROR_NOT_IMPLEMENTED, it
+   knows that the action, it wanted to perform, makes no sense for that
+   filesystem. If it receives ERROR_ACTION_NOT_KNOWN, it knows that the
+   filesystem does not know about this action for whatever reason (including
+   that it makes no sense to perform that action on that specific filesystem).
+
+   All actions work relative to the current directory (where it makes sense),
+   set in the IOFileSys->IOFS.io_Unit field. This field also serves as a
+   pointer to filehandles for actions that either need a filehandle as argument
+   or return one. When not explicitly stated otherwise this field has to be set
+   to the filehandle to affect or is set to the filehandle that is returned by
+   the action. Note that the filehandle mentioned above is not a pointer to a
+   struct FileHandle as defined in <dos/dosextens.h>, but is an APTR to a
+   device specific blackbox structure. In a struct FileHandle this private
+   pointer is normally to be found in FileHandle->fh_Unit.
 
    Whenever a filename is required as argument, this filename has to be
    stripped from the devicename, ie it has to be relative to the current
@@ -97,8 +100,18 @@ struct IFS_SEEK
 /* Sets the size of filehandle. Uses IFS_SEEK (see above) as argument array. */
 #define FSA_SET_FILE_SIZE 6
 
-/* Currently undocumented. */
+/* Waits for a character to arrive at the filehandle. This is not used for
+   plain files, but for queues only. Optionally a maximum time to wait may be
+   specified. */
 #define FSA_WAIT_CHAR 7
+struct IFS_WAIT_CHAR
+{
+      /* Maximum time (in microseconds) to wait for a character. */
+    LONG io_Timeout;
+      /* This is set to 0, if no character arrived in time. Otherwise it is set
+         to a different value. */
+    IPTR io_Success;
+};
 
 /* Applies a new mode to a file. If you supply io_Mask with a value of 0,
    no changes are made and you can just read the resulting io_FileMode. */
@@ -113,7 +126,7 @@ struct IFS_FILE_MODE
 };
 
 /* This action can be used to query if a filehandle is interactive, ie if it
-     is a terminal or not. */
+   is a terminal or not. */
 #define FSA_IS_INTERACTIVE 9
 struct IFS_IS_INTERACTIVE
 {
@@ -197,8 +210,16 @@ struct IFS_RENAME
     STRPTR io_NewName;  /* The new filename. */
 };
 
-/* Currently undocumented. */
+/* Resolves the full path name of the file a softlink filehandle points to. */
 #define FSA_READ_SOFTLINK 19
+struct IFS_READ_SOFTLINK
+{
+      /* The buffer to fill with the pathname. If this buffer is too small, the
+         filesystem handler is supposed to return ERROR_LINE_TOO_LONG. */
+    char * io_Buffer;
+      /* The size of the buffer pointed to by io_Buffer. */
+    IPTR   io_Size;
+};
 
 /* Deletes an object on the volume. */
 #define FSA_DELETE_OBJECT 20
@@ -233,9 +254,9 @@ struct IFS_SET_OWNER
     IPTR   io_GID;      /* The new group owner. */
 };
 
-  /* Sets the last modification date of the filename given as first argument.
-     The date is given as standard TimeStamp structure (see <dos/dos.h>) as
-     second to fourth argument (ie as days, minutes and ticks). */
+/* Sets the last modification date of the filename given as first argument.
+   The date is given as standard TimeStamp structure (see <dos/dos.h>) as
+   second to fourth argument (ie as days, minutes and ticks). */
 #define FSA_SET_DATE 24
 struct IFS_SET_DATE
 {
@@ -249,25 +270,44 @@ struct IFS_SET_DATE
     IPTR   io_Ticks;
 };
 
-/* Currently undocumented. */
+/* Check if a filesystem is in fact a FILEsystem, ie can contain different
+   files. */
 #define FSA_IS_FILESYSTEM 25
+struct IFS_IS_FILESYSTEM
+{
+      /* This is set to TRUE by the filesystem handler, if it is a filesystem
+         and set to FALSE if it is not. */
+    IPTR io_IsFilesystem;
+};
 
-/* Currently undocumented. */
+/* Changes the number of buffers for the filesystem. The current number of
+   buffers is returned. The size of the buffers is filesystem-dependend. */
 #define FSA_MORE_CACHE 26
+struct IFS_MORE_CACHE
+{
+      /* Number of buffers to add. May be negative to reduce number of buffers.
+         This is to be set to the current number of buffers on success. */
+    IPTR io_NumBuffers;
+};
 
-/* Currently undocumented. */
+/* Formats a volume, ie erases all data on it. */
 #define FSA_FORMAT 27
+struct IFS_FORMAT
+{
+    STRPTR io_VolumeName; /* New name for the volume. */
+    IPTR   io_DosType;    /* New type for the volume. Filesystem specific. */
+};
 
-  /* Resets/Reads the mount-mode of the volume passed in as io_Unit. The first
-     and second argument work exactly like FSA_FILE_MODE, but the third
-     argument can contain a password, if MMF_LOCKED is set. */
+/* Resets/Reads the mount-mode of the volume passed in as io_Unit. The first
+   and second argument work exactly like FSA_FILE_MODE, but the third
+   argument can contain a password, if MMF_LOCKED is set. */
 #define FSA_MOUNT_MODE 28
 struct IFS_MOUNT_MODE
 {
       /* The new mode to apply to the volume. See below for definitions. The
          filehandler fills this with the old mode bits. */
     IPTR   io_MountMode;
-    /* This mask defines, which flags are to be changed. */
+      /* This mask defines, which flags are to be changed. */
     IPTR   io_Mask;
       /* A passwort, which is needed, if MMF_LOCKED is set. */
     STRPTR io_Password;
@@ -329,6 +369,7 @@ struct IOFileSys
         struct IFS_READ            io_READ;           /* FSA_READ */
         struct IFS_WRITE           io_WRITE;          /* FSA_WRITE */
         struct IFS_SEEK            io_SEEK;           /* FSA_SEEK */
+        struct IFS_WAIT_CHAR       io_WAIT_CHAR;      /* FSA_WAIT_CHAR */
         struct IFS_FILE_MODE       io_FILE_MODE;      /* FSA_FILE_MODE */
         struct IFS_IS_INTERACTIVE  io_IS_INTERACTIVE; /* FSA_IS_INTERACTIVE */
         struct IFS_SAME_LOCK       io_SAME_LOCK;      /* FSA_SAME_LOCK */
@@ -338,11 +379,15 @@ struct IOFileSys
         struct IFS_CREATE_HARDLINK io_CREATE_HARDLINK;/* FSA_CREATE_HARDLINK */
         struct IFS_CREATE_SOFTLINK io_CREATE_SOFTLINK;/* FSA_CREATE_SOFTLINK */
         struct IFS_RENAME          io_RENAME;         /* FSA_RENAME */
+        struct IFS_READ_SOFTLINK   io_READ_SOFTLINK;  /* FSA_READ_SOFTLINK */
         struct IFS_DELETE_OBJECT   io_DELETE_OBJECT;  /* FSA_DELETE_OBJECT */
         struct IFS_SET_COMMENT     io_SET_COMMENT;    /* FSA_SET_COMMENT */
         struct IFS_SET_PROTECT     io_SET_PROTECT;    /* FSA_SET_PROTECT */
         struct IFS_SET_OWNER       io_SET_OWNER;      /* FSA_SET_OWNER */
         struct IFS_SET_DATE        io_SET_DATE;       /* FSA_SET_DATE */
+        struct IFS_IS_FILESYSTEM   io_IS_FILESYSTEM;  /* FSA_IS_FILESYSTEM */
+        struct IFS_MORE_CACHE      io_MORE_CACHE;     /* FSA_MORE_CACHE */
+        struct IFS_FORMAT          io_FORMAT;         /* FSA_FORMAT */
         struct IFS_MOUNT_MODE      io_MOUNT_MODE;     /* FSA_MOUNT_MODE */
     } io_Union;
 };
