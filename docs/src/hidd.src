@@ -60,6 +60,16 @@ the hardware.
 HIDD permits that.
 \end{enumeration}
 
+\section{The HIDD Support API}
+
+\begin{code}
+/* Get a list with pointers to HIDD devices */
+ULONG HIDD_Query (ULONG type, HIDDT ** hiddArray);
+void HIDD_DisposeQueryList (HIDDT * hiddArray);
+\end{code}
+
+You can then use the HIDD API to query the devices for their infos.
+
 \section{The HIDD API}
 
 HIDDs are plain exec devices with an extended API which looks like this:
