@@ -34,6 +34,12 @@ extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
     Expand, improve and generally make the world a better place. :)
 */
 
+/*
+    Make the colored stripes optional. There is a report that on the
+    A4000/40, it never exits the stripes part of the code.
+*/
+#define FANCY_STRIPES 0
+
 int entry(void)
 {
     return 0;
@@ -62,23 +68,16 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: AROS exec.strap 41.3 (9.2.97)";
+const char version[] = "$VER: AROS exec.strap 41.4 (11.2.97)";
 
 int start(void)
 {
     struct ExecBase *SysBase;
-    register ULONG x, y;
+#if (FANCY_STRIPES == 1)
+    ULONG x, y;
     UWORD *color00 = (void *)0xdff180;
-    UBYTE *ciapra = (void *)0xbfe001;
+#endif
     UWORD cpuflags;
-
-    if (!(*ciapra & CIAF_GAMEPORT0))
-    {
-	/* If left mouse button pressed: don't start this time */
-	/* DEBUGGING FEATURE: will probably be removed, because it won't
-	   stop other AROS modules from being loaded. */
-	return 0;
-    }
 
     if (SysBase->LibNode.lib_Version < 37)
     {
@@ -86,12 +85,14 @@ int start(void)
 	return 0;
     }
 
+#if (FANCY_STRIPES == 1)
     /* High-tech display tricks (blue effects) :-) */
     for (x=0; x<1000; x++)
     {
 	for (y = 200; y; y--) *color00 = 0x00f;
 	for (y = 200; y; y--) *color00 = 0x000;
     }
+#endif
 
     SysBase = *(void **)4;
     cpuflags = SysBase->AttnFlags;
@@ -122,19 +123,11 @@ int start(void)
 
 #if 0
     /* "Some trouble prevented CycleToMenu to initialize itself properly"
-       Related to the microkernel */
+       Related to the microkernel. I know what it is. Cannot be fixed right now. */
     SetFunc( 23, Permit);
 #endif
 
-#if 0
-    /*
-	Any ixemul program that uses wildcards on the command line will crash the Amiga.
-	Ixemul is responsible for this; there is a code-fragment in
-	ixemul/library/__cli_parse.c to check out why our Insert() fails.
-    */
     SetFunc( 39, Insert);
-#endif
-
     SetFunc( 40, AddHead);
     SetFunc( 41, AddTail);
     SetFunc( 42, Remove);
@@ -290,6 +283,7 @@ int start(void)
     }
     /* We don't have to clear any caches, SetFunction takes care of them. */
 
+#if (FANCY_STRIPES == 1)
     /*
 	High-tech display tricks (green effects) :-)
     */
@@ -298,6 +292,7 @@ int start(void)
 	for (y = 200; y; y--) *color00 = 0x0f0;
 	for (y = 200; y; y--) *color00 = 0x000;
     }
+#endif
 
     return 0;
 }
