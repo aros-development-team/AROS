@@ -18,6 +18,7 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
+#include <clib/alib_protos.h>
 #include <string.h>
 
 #define DEBUG 0
@@ -45,8 +46,11 @@ static struct OOP_ABDescr attrbases[] =
     {NULL, NULL}
 };
 
-struct VesaGfxData {
-	int i;
+static UBYTE syncdescription[100];
+
+struct VesaGfxData
+{
+    int i;
 };
 
 STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -76,6 +80,7 @@ STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{aHidd_Sync_PixelClock, 0},
 	{aHidd_Sync_HDisp,      0},
 	{aHidd_Sync_VDisp,      0},
+	{aHidd_Sync_Description,0},
 	{aHidd_Sync_HSyncStart, 0},
 	{aHidd_Sync_HSyncEnd,   0},
 	{aHidd_Sync_HTotal,     0},
@@ -111,8 +116,12 @@ STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
+
     sync_mode[1].ti_Data = XSD(cl)->data.width;
     sync_mode[2].ti_Data = XSD(cl)->data.height;
+    __sprintf(syncdescription, "VESA:%ldx%ld", XSD(cl)->data.width, XSD(cl)->data.height);
+    sync_mode[3].ti_Data = (IPTR)syncdescription;
+
     yourtags[1].ti_Data = (IPTR)msg->attrList;
     yourmsg.mID = msg->mID;
     yourmsg.attrList = yourtags;
