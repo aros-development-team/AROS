@@ -2025,6 +2025,12 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
+    /* check this, otherwise a superclass who has IDCMP_MOUSEBUTTONS
+       eventhandler might call DoSuperMethod, and this function gets
+       called even when he have not added any eventhandler */
+       
+    if (!(data->flags & GROUP_VIRTUAL)) return 0;
+    	
     if (msg->imsg)
     {
 	switch (msg->imsg->Class)
