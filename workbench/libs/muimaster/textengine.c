@@ -40,6 +40,7 @@ static struct MinNode *Node_Next(APTR node)
     return ((struct MinNode*)node)->mln_Succ;
 }
 
+#if 0
 static struct MinNode *Node_Prev(APTR node)
 {
     if(node == NULL) return NULL;
@@ -48,6 +49,7 @@ static struct MinNode *Node_Prev(APTR node)
 	return NULL;
     return ((struct MinNode*)node)->mln_Pred;
 }
+#endif
 
 static struct MinNode *List_First(APTR list)
 {
@@ -56,12 +58,14 @@ static struct MinNode *List_First(APTR list)
     return ((struct MinList*)list)->mlh_Head;
 }
 
+#if 0
 static struct MinNode *List_Last(APTR list)
 {
     if( !((struct MinList*)list)->mlh_TailPred) return NULL;
     if(((struct MinList*)list)->mlh_TailPred->mln_Pred == NULL) return NULL;
     return ((struct MinList*)list)->mlh_TailPred;
 }
+#endif
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -773,7 +777,7 @@ int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
 
 int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel)
 {
-    int i,len=0,xpos=0;
+    int i,xpos=0;
     struct ZTextLine *line;
     struct ZTextChunk *chunk;
 
@@ -875,7 +879,7 @@ int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursor
 
 int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
 {
-    int i, offset, len;
+    int offset, len;
     ZTextLine *line, *line_tomerge;
     ZTextChunk *chunk, *chunk_tomerge;
     ZTextChunk *chunk_new;
