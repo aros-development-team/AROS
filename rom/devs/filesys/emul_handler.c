@@ -94,7 +94,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.3 (07.07.1998)\r\n";
+static const char version[]="$VER: emul_handler 41.4 (27.08.1998)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -300,7 +300,8 @@ static LONG free_lock(struct filehandle *current)
 	      closedir((DIR *)current->fd);
 	    }
 	    
-	    free(current->name);
+	    if (current->name)
+	        free(current->name);
 	    break;
     }
     free(current);
@@ -436,12 +437,15 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     if (fh)
     {
         fh->pathname = NULL; /* just to make sure... */
+	fh->name     = NULL;
         fh->DIR      = NULL;
+	fh->fd       = 0;
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
 	if (!ret)
 	{
 	    fh->type = FHD_DIRECTORY;
 	    prot = prot_a2u((ULONG)protect);
+
 	    if (!mkdir(fh->name, prot))
 	    {
 		*handle = fh;
