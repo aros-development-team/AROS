@@ -29,10 +29,11 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 
+#include <sigcore.h>
+
 #include "exec_private.h"
 #include "exec_util.h"
 #include "etask.h"
-#include "sigcore.h"
 #include "libdefs.h"
 
 static const UBYTE name[];
