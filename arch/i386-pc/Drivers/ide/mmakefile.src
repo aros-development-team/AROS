@@ -1,0 +1,45 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(TOP)/rom/devs
+
+DEVS    := $(DEVSDIR)/ide.device
+FILES	:= ide ide_asm
+OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+LIB	:= $(LIBDIR)/libide.a
+AFLAGS2 := $(AFLAGS) -I.. -I$(GENINCDIR)
+
+%define_libs
+
+#MM
+kernel-devs-native-i386 : $(LIB) ide.s
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR)
+
+$(DEVSDIR)/ide.device : $(OSGENDIR)/ide.o
+	%link_q startup=
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(OSGENDIR)/%.o : %.S
+	%assemble_q opt=$(AFLAGS2)
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q
+
+ide.s: ide.c
+	%ctoasm_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
