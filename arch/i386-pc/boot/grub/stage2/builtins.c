@@ -3967,8 +3967,8 @@ setvbe_func (char *arg, int flags)
     	    linear_bpl = mode_info_block.linear_bytes_per_scanline;
 	}
 
-	mbi.vbe_mode = mode;
-	grub_printf("Kernel will start in Vesa mode 0x%x (attr %x  bpl %d  linear_bpl %d)\n",mode, attributes,
+	mbi.vbe_mode = mode | 0x4000;
+	grub_printf("Kernel will start in Vesa mode 0x%x (attr %x  bpl %d  linear_bpl %d)\n", mbi.vbe_mode, attributes,
 	bpl, linear_bpl);
     }
     return 0;
