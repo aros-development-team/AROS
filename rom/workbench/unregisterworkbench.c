@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Unregister a program as the Workbench Application.
-    Lang: english
 */
 
 #include "workbench_intern.h"
@@ -15,28 +12,27 @@
 
         #include <proto/workbench.h>
 
-        AROS_LH1(BOOL   , UnregisterWorkbench,
+        AROS_LH1(BOOL, UnregisterWorkbench,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct MsgPort *, msgport, A0),
+        AROS_LHA(struct MsgPort *, messageport, A0),
 
 /*  LOCATION */
 
         struct WorkbenchBase *, WorkbenchBase, 24, Workbench)
 
 /*  FUNCTION
-        The Workbench Application uses this functions to unregister itself
-        with the library and intuition. When it is done, notification
-        messages will no longer be sent.
+        The workbench application uses this functions to unregister itself
+        with the library. When it is done, messages will no longer be sent.
 
     INPUTS
-        msgport - The MsgPort of the Workbench Application that earlier was
-                  passed in with RegisterWorkbench().
+        msgport - The message port of that was earlier passed in to 
+                  RegisterWorkbench().
 
     RESULT
         TRUE if the message port was successfully unregistered, FALSE otherwise.
-        The unregistration will fail if the passed in MsgPort isn't the same
-        that was passed in with RegisterWorkbench() earlier or if the passed
+        The unregistration will fail if the message port isn't the same that 
+        was passed in with RegisterWorkbench() earlier or if the passed
         in pointer is NULL.
 
     NOTES
@@ -57,15 +53,23 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
-
-    if( (msgport != NULL) && (WorkbenchBase->wb_AppPort == msgport) ) {
-        AlohaWorkbench( NULL );
-        WorkbenchBase->wb_AppPort = NULL;
-
-        return TRUE;
+    
+    BOOL success = FALSE;
+    
+    if (messageport != NULL)
+    {
+        ObtainSemaphore(&(WorkbenchBase->wb_WorkbenchPortSemaphore));
+        
+        if (WorkbenchBase->wb_WorkbenchPort == messageport)
+        {
+            WorkbenchBase->wb_WorkbenchPort = NULL;
+            success = TRUE;
+        }
+        
+        ReleaseSemaphore(&(WorkbenchBase->wb_WorkbenchPortSemaphore));
     }
 
-    return FALSE;
+    return success;
 
     AROS_LIBFUNC_EXIT
-} /* UnregisterWorkbench */
+} /* UnregisterWorkbench() */
