@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := Prefs Storage System T Tools Utilities Devs Fonts Help Locale Demos
+ICONS := Prefs Storage System T Tools Utilities Devs Fonts Locale Demos
 ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/$(f).info)
 
 #MM- masonicons : masonworkbenchicons
