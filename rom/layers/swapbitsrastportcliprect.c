@@ -62,7 +62,7 @@
             cr->bounds.MinX,
             cr->bounds.MinY,
             NewBM,
-            cr->bounds.MinX & 0x0f,
+            ALIGN_OFFSET(cr->bounds.MinX),
             0,
             cr->bounds.MaxX - cr->bounds.MinX + 1,
             cr->bounds.MaxY - cr->bounds.MinY + 1,
@@ -76,7 +76,7 @@
    */  
 
   BltBitMap(cr->BitMap,
-            cr->bounds.MinX & 0x0f,
+            ALIGN_OFFSET(cr->bounds.MinX),
             0,
             rp->BitMap,
             cr->bounds.MinX,

@@ -59,22 +59,33 @@ void BltRPtoCR(struct RastPort *    rp,
                struct ClipRect *    cr,
                ULONG                Mode)
 {
-    BltBitMap(rp->BitMap, cr->bounds.MinX, cr->bounds.MinY,
-	      cr->BitMap, cr->bounds.MinX & 0xf, 0,
+    BltBitMap(rp->BitMap, 
+              cr->bounds.MinX, 
+              cr->bounds.MinY,
+	      cr->BitMap, 
+	      ALIGN_OFFSET(cr->bounds.MinX), 0,
 	      cr->bounds.MaxX - cr->bounds.MinX + 1,
 	      cr->bounds.MaxY - cr->bounds.MinY + 1,
-	      Mode, ~0, NULL);
+	      Mode, 
+	      ~0, 
+	      NULL);
 }
 
 void BltCRtoRP(struct RastPort *   rp,
                struct ClipRect *   cr,
                ULONG               Mode)
 {
-    BltBitMap(cr->BitMap, cr->bounds.MinX & 0xf, 0,
-	      rp->BitMap, cr->bounds.MinX, cr->bounds.MinY,
+    BltBitMap(cr->BitMap, 
+              ALIGN_OFFSET(cr->bounds.MinX), 
+              0,
+	      rp->BitMap, 
+	      cr->bounds.MinX, 
+	      cr->bounds.MinY,
 	      cr->bounds.MaxX - cr->bounds.MinX + 1,
 	      cr->bounds.MaxY - cr->bounds.MinY + 1,
-	      Mode, ~0, NULL);
+	      Mode, 
+	      ~0, 
+	      NULL);
 }
 
 #endif /* if !native */
@@ -735,13 +746,13 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
                 
                 if (CR->bounds.MinX > _CR->bounds.MinX)
                 {
-                  srcX  = CR->bounds.MinX & 0x0f;
-                  destX = CR->bounds.MinX - _CR->bounds.MinX + (_CR->bounds.MinX & 0x0f);
+                  srcX  = ALIGN_OFFSET(CR->bounds.MinX);
+                  destX = CR->bounds.MinX - _CR->bounds.MinX + ALIGN_OFFSET(_CR->bounds.MinX);
                 }
                 else
                 {
-                  srcX   = _CR->bounds.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
-                  destX  = _CR->bounds.MinX & 0x0f;
+                  srcX   = _CR->bounds.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
+                  destX  = ALIGN_OFFSET(_CR->bounds.MinX);
                   width -= (_CR->bounds.MinX - CR->bounds.MinX);
                 }
                   
@@ -856,13 +867,13 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
           
           if (sCR->bounds.MinX > dCR->bounds.MinX)
           {
-            srcX  = sCR->bounds.MinX & 0x0f;
-            destX = sCR->bounds.MinX - dCR->bounds.MinX + (dCR->bounds.MinX & 0x0f);
+            srcX  = ALIGN_OFFSET(sCR->bounds.MinX);
+            destX = sCR->bounds.MinX - dCR->bounds.MinX + ALIGN_OFFSET(dCR->bounds.MinX);
           }
           else
           {
-            srcX   = dCR->bounds.MinX - sCR->bounds.MinX + (sCR->bounds.MinX & 0x0F);
-            destX  = dCR->bounds.MinX & 0x0f;
+            srcX   = dCR->bounds.MinX - sCR->bounds.MinX + ALIGN_OFFSET(sCR->bounds.MinX);
+            destX  = ALIGN_OFFSET(dCR->bounds.MinX);
             width -= (dCR->bounds.MinX - sCR->bounds.MinX);
           }
           

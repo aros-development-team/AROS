@@ -256,7 +256,7 @@
                         CR->bounds.MinX,
                         CR->bounds.MinY,
                         CR->BitMap,
-                        CR->bounds.MinX & 0x0f,
+                        ALIGN_OFFSET(CR->bounds.MinX),
                         0,
                         CR->bounds.MaxX - CR->bounds.MinX + 1,
                         CR->bounds.MaxY - CR->bounds.MinY + 1,
@@ -308,7 +308,7 @@
                 if (0 == (_L->Flags & LAYERSUPER))
                 {
                   BltBitMap(_CR->BitMap,
-                            _CR->bounds.MinX & 0x0f,
+                            ALIGN_OFFSET(_CR->bounds.MinX),
                             0,
                             _L->rp->BitMap,
                             _CR->bounds.MinX,
@@ -469,7 +469,7 @@
                             CR2->bounds.MinX,
                             CR2->bounds.MinY,
                             CR2->BitMap,
-                            CR2->bounds.MinX & 0x0f,
+                            ALIGN_OFFSET(CR2->bounds.MinX),
                             0,
                             CR2->bounds.MaxX - CR2->bounds.MinX + 1,
                             CR2->bounds.MaxY - CR2->bounds.MinY + 1,
@@ -525,7 +525,7 @@
             if (0 == (_L->Flags & LAYERSUPER))
             {
               BltBitMap(_CR->BitMap,
-                        _CR->bounds.MinX & 0x0f,
+                        ALIGN_OFFSET(_CR->bounds.MinX),
                         0,
                         _L->rp->BitMap,
                         _CR->bounds.MinX,

@@ -208,7 +208,7 @@
                              CR_tmp->bounds.MinX,
                              CR_tmp->bounds.MinY,
                              CR_tmp->BitMap,
-                             CR_tmp->bounds.MinX & 0x0f,
+                             ALIGN_OFFSET(CR_tmp->bounds.MinX),
                              0,
                              CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
                              CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
@@ -264,7 +264,7 @@
              {
                /* it's a smart layer */
                BltBitMap(CR->BitMap,
-                         CR->bounds.MinX & 0x0f,
+                         ALIGN_OFFSET(CR->bounds.MinX),
                          0,
                          layer_to_move->rp->BitMap,
                          CR->bounds.MinX,
@@ -449,7 +449,7 @@ if (NULL == CR_tmp)
                         CR->bounds.MinX,
                         CR->bounds.MinY,
                         CR->BitMap,
-                        CR->bounds.MinX & 0x0f,
+                        ALIGN_OFFSET(CR->bounds.MinX),
                         0,
                         CR->bounds.MaxX - CR->bounds.MinX + 1,
                         CR->bounds.MaxY - CR->bounds.MinY + 1,
@@ -493,7 +493,7 @@ if (NULL == CR_tmp)
 	        */
 
                BltBitMap(CR_tmp->BitMap,
-                         CR_tmp->bounds.MinX & 0x0f,
+                         ALIGN_OFFSET(CR_tmp->bounds.MinX),
                          0,
                          layer_to_move->rp->BitMap,
                          CR_tmp->bounds.MinX,
@@ -582,7 +582,7 @@ if (NULL == CR_tmp)
                    if (0 == (L_tmp->Flags & LAYERSUPER))
 		   {
                      BltBitMap(CR_del->BitMap,
-                               CR_del->bounds.MinX & 0x0f,
+                               ALIGN_OFFSET(CR_del->bounds.MinX),
                                0,
                                layer_to_move->rp->BitMap,
                                CR_del->bounds.MinX,

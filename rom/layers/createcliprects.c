@@ -366,10 +366,10 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
               goto failexit;
 
             BltBitMap(CR->BitMap,
-                      _CR->bounds.MinX - CR->bounds.MinX + ( CR->bounds.MinX & 0x0F),
+                      _CR->bounds.MinX - CR->bounds.MinX + ALIGN_OFFSET( CR->bounds.MinX),
                       _CR->bounds.MinY - CR->bounds.MinY,
                       _CR->BitMap,
-                      _CR->bounds.MinX & 0x0F,
+                      ALIGN_OFFSET(_CR->bounds.MinX),
                       0,
                       _CR->bounds.MaxX - _CR->bounds.MinX + 1,
                       _CR->bounds.MaxY - _CR->bounds.MinY + 1,

@@ -38,10 +38,10 @@
   {                                                          \
     BltBitMap(                                               \
       bm_old,                                                \
-      (CR_New)->bounds.MinX - DEF_MINX + (DEF_MINX & 0x0F),  \
+      (CR_New)->bounds.MinX - DEF_MINX + ALIGN_OFFSET(DEF_MINX),  \
       (CR_New)->bounds.MinY - DEF_MINY,                      \
       (CR_New)->BitMap,                                      \
-      (CR_New)->bounds.MinX & 0x0F,                          \
+      ALIGN_OFFSET((CR_New)->bounds.MinX),                   \
       0,                                                     \
       (CR_New)->bounds.MaxX - (CR_New)->bounds.MinX + 1,     \
       (CR_New)->BitMap->Rows,                                \

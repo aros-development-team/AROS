@@ -296,9 +296,9 @@
           */
           struct Rectangle bounds;
           struct BitMap * bm = L->rp->BitMap;
-          bounds.MinX = CR->bounds.MinX & 0x0f;
+          bounds.MinX = ALIGN_OFFSET(CR->bounds.MinX);
           bounds.MinY = 0;
-          bounds.MaxX = CR->bounds.MaxX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+          bounds.MaxX = CR->bounds.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
           bounds.MaxY = CR->bounds.MaxY;
           
           /* filling the hidden cliprect's bitmap with the pattern */

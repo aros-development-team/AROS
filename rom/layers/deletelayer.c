@@ -252,7 +252,7 @@
                 /* no SuperBitMap */
                 BltBitMap(
                   CR->BitMap,
-                  CR->bounds.MinX & 0x0f,
+                  ALIGN_OFFSET(CR->bounds.MinX),
                   0,
                   LD->rp->BitMap,
                   CR->bounds.MinX,

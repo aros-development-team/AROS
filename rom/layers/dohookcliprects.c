@@ -163,9 +163,9 @@
                 /* it's a smart layer but not superbitmap */
                 /* it's hidden, the hook has to blit into the hidden cliprect's bitmap now */
                 /* adjust the bounds */
-                bounds.MinX = bounds.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+                bounds.MinX = bounds.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
                 bounds.MinY = bounds.MinY - CR->bounds.MinY;
-                bounds.MaxX = bounds.MaxX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+                bounds.MaxX = bounds.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
                 bounds.MaxY = bounds.MaxY - CR->bounds.MinY;
                 rport->BitMap = CR->BitMap;
 	      }
