@@ -138,6 +138,7 @@ AROS_LH5(struct IClass *, MakeClass,
                 iclass->cl_Flags      = flags;
 
                 /* SuperClass is used one more time now */
+                #warning use atomic macros when we have some
                 Forbid();
                 superClassPtr->cl_SubclassCount ++;
                 Permit();
