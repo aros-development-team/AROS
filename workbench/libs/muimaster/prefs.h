@@ -27,14 +27,13 @@ typedef enum CycleMenuPosition {
 } CycleMenuPosition;
 
 typedef enum GroupTitlePosition {
+    GROUP_TITLE_POSITION_ABOVE,
     GROUP_TITLE_POSITION_CENTERED,
-    GROUP_TITLE_POSITION_LEFT,
-    GROUP_TITLE_POSITION_RIGHT,
 } GroupTitlePosition;
 
 typedef enum GroupTitleColor {
-    GROUP_TITLE_COLOR_WHITE,
-    GROUP_TITLE_COLOR_BLACK,
+    GROUP_TITLE_COLOR_STANDARD,
+    GROUP_TITLE_COLOR_HILITE,
     GROUP_TITLE_COLOR_3D,
 } GroupTitleColor;
 
