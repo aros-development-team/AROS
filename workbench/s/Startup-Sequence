@@ -4,6 +4,8 @@ mount RAM:
 mount NIL:
 makedir RAM:T
 assign T: RAM:T
+makedir RAM:Clipboards
+assign CLIPS: RAM:Clipboards
 assign LOCALE: SYS:Locale
 
 makedir RAM:ENV
