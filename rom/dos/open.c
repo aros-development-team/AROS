@@ -87,7 +87,7 @@
 	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_WRITE | FMF_READ;
 	    ast = con = me->pr_CIS;
 	    break;
-	    
+
 	case MODE_NEWFILE:
 	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_LOCK | FMF_CREATE | FMF_CLEAR | FMF_WRITE | FMF_READ;
 	    con = me->pr_COS;
@@ -99,7 +99,7 @@
 	    con = me->pr_COS;
 	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
 	    break;
-	    
+
 	default:
 	    iofs.io_Union.io_OPEN_FILE.io_FileMode = accessMode;
 	    ast = con = me->pr_CIS;
@@ -108,6 +108,33 @@
 
 	iofs.io_Union.io_OPEN_FILE.io_Protection = 0;
 
+	if(!Stricmp(name, "IN:") || !Stricmp(name, "STDIN:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "OUT:") || !Stricmp(name, "STDOUT:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
+	if(!Stricmp(name, "ERR:") || !Stricmp(name, "STDERR:"))
+	{
+	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Device;
+	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Unit;
+	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+	    DoIO(&iofs.IOFS);
+	    error = me->pr_Result2 = iofs.io_DosError;
+	}
+	else
 	if(!Stricmp(name, "CONSOLE:"))
 	{
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(con))->fh_Device;
@@ -116,7 +143,8 @@
 	    DoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
-	else if(!Stricmp(name, "*"))
+	else
+	if(!Stricmp(name, "*"))
 	{
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(ast))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(ast))->fh_Unit;
