@@ -79,7 +79,7 @@
 	{
 	    if (!(screen->Flags & BEEPING))
 	    {
-		if (screen->RastPort.BitMap->Depth <= 8)
+		if (GetBitMapAttr(screen->RastPort.BitMap, BMA_DEPTH) <= 8)
 		// visual beep on CLUT-screen
 		{
 		    /*
@@ -151,7 +151,7 @@
 	{
             if (screen->Flags & BEEPING)
 	    {
-		if (screen->RastPort.BitMap->Depth <= 8)
+		if (GetBitMapAttr(screen->RastPort.BitMap, BMA_DEPTH) <= 8)
 		// visual beep on CLUT-screen
 		{
 		    Forbid();
