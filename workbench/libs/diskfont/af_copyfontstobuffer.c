@@ -148,7 +148,10 @@ BOOL CopyDescrToBuffer
         tattr = &(node->TAF.taf_Attr);
         
         if (node->Flags & FDF_REUSENAME)
-        	TAVF(bufptr)->taf_Attr.tta_Name = lastnameinbuf;
+        {
+        	D(bug("\tReused name\n"));
+        	node->NameInBuf = lastnameinbuf;
+        }
         else
         {
         	UB(nextptr) += node->NameLength;
