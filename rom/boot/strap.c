@@ -121,7 +121,8 @@ void putstring(char *string) {
 
 
 int checkBoot(struct DeviceNode *dn) {
-struct FileSysStartupMsg *fssm= BADDR(dn->dn_Startup);
+struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
+struct DosEnvec *de = BADDR(fssm->fssm_Environ);
 struct IOExtTD *iotd;
 ULONG buf[128];
 int retval=0;
@@ -135,14 +136,23 @@ struct MsgPort *mp=CreateMsgPort();
 			if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device),fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
 			{
 				iotd->iotd_Req.io_Command = CMD_READ;
-				iotd->iotd_Req.io_Offset = 0;
+				iotd->iotd_Req.io_Offset =
+					de->de_LowCyl*de->de_Surfaces*
+					de->de_BlocksPerTrack*(de->de_SizeBlock*4);
 				iotd->iotd_Req.io_Length = 512;
 				iotd->iotd_Req.io_Data = buf;
+
 				if (!DoIO((struct IORequest *)&iotd->iotd_Req))
 				{
-#warning TODO: check bootblock for bootable code
+#warning "TODO: check bootblock for bootable code"
 					if ((AROS_BE2LONG(buf[0]) & 0xFFFFFF00)==0x444F5300)
 						retval=1;
+				}
+				if (strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),"trackdisk.device")==0)
+				{
+					iotd->iotd_Req.io_Command = TD_MOTOR;
+					iotd->iotd_Req.io_Length = 0;
+					DoIO((struct IORequest *)&iotd->iotd_Req);
 				}
 				CloseDevice((struct IORequest *)&iotd->iotd_Req);
 			}
