@@ -32,7 +32,7 @@ USER_CFLAGS	:= -DAROS
 
 #MM
 arosz-setup-link :
-	@$(RM) $(AROSDIR)/lib/libz.a
-	@ln -s libarosz.a $(AROSDIR)/lib/libz.a
+	@$(RM) $(AROS_LIB)/libz.a
+	@ln -s libarosz.a $(AROS_LIB)/libz.a
     
 %common
