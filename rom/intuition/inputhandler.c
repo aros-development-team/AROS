@@ -1161,6 +1161,9 @@ void windowneedsrefresh(struct Window * w,
   */
   struct IntuiMessage * IM;
   BOOL found = FALSE;
+
+  if (NULL == w->UserPort)
+    return;
   
   /* Can use Forbid() for this */
   
