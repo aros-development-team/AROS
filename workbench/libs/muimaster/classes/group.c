@@ -1099,8 +1099,8 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
-	tmp.MaxHeight = MAX(tmp.MaxHeight, _maxheight(child));
-	tmp.MaxWidth = MAX(tmp.MaxWidth, _maxwidth(child));
+	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
+	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
     }
     END_MINMAX();
 }
