@@ -113,6 +113,12 @@
 #    define __unused
 #endif
 
+#if __GNUC_PREREQ(3,3)
+#    define __used   __attribute__((__used__))
+#else
+#    define __used __unused
+#endif
+
 #if __GNUC_PREREQ(2,96)
 #    define __pure     __attribute__((__pure__))
 #else
