@@ -49,6 +49,7 @@ multiview;MultiView
 nonvolatile;NonVolatile.library
 other;Other Jobs
 potgo;Potgo.resource
+prefs;Preferences
 ramdrive;Ramdrive.device
 realtime;RealTime.library
 reqtools;ReqTools.library
