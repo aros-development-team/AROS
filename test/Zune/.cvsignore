@@ -1,1 +1,4 @@
 mmakefile
+*.bak
+*.info
+*.o
