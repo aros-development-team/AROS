@@ -4,14 +4,21 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Blanker
-ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/Tools/Commodities/$(f).info)
+ICONS     := AutoPoint Blanker ClickToFront Exchange
+ICONDIR   := $(AROSDIR)/Tools/Commodities
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchicons
+#MM- masonicons : masonworkbenchcxicons
 
 #MM
-masonworkbenchicons : $(ICONFILES)
+masonworkbenchcxicons : setup $(ICONFILES)
 	@$(NOP)
 	
-$(AROSDIR)/Tools/Commodities/%.info : %.info.src %_N.png %_S.png
+$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
 	%makeicon2
+
+setup :
+	%mkdirs_q $(ICONDIR)
+	
+
+
