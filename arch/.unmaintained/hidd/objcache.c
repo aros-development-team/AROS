@@ -137,20 +137,23 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 {
     struct objcache *oc;
     ULONG i;
-    Object *obj;
+    Object *obj = NULL;
     
     oc = (struct objcache *)objectCache;
-    
-    
+
+    kprintf("obtain_cache_object(classID=%s, classPtr=%p)\n"
+    	, oc->class_id, oc->class_ptr);
     
     ObtainSemaphore(&oc->lock);
+    
     
     /* Look to see if we can find a free object */
     for (i = 0; i < oc->cachesize; i ++) {
     	struct cacheitem *ci;
 	
 	ci = &oc->cache[i];
-    	if (ci->obj == NULL) {
+kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
+    	if (ci->obj != NULL) {
 	    break;
 	} else {
 	    if (FALSE == ci->used) {
@@ -161,7 +164,7 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 	}
     }
     
-    
+kprintf("obj found in cache: %p\n", obj);    
     if (NULL == obj) {
     	struct cacheitem *ci;
     	/* No object free, so we try to create a new one.
@@ -188,6 +191,7 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 	}
 	
 	/* Try to create a new object */
+kprintf("Trying to create new object\n");
 	ci = &oc->cache[oc->num_objects];
 	
 	if (oc->class_id)
