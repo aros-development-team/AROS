@@ -52,8 +52,10 @@ struct MUI_TextData {
 #define MTDF_SETVMAX   (1<<2)
 #define MTDF_HICHAR    (1<<3)
 #define MTDF_HICHARIDX (1<<4)
+#if 0
 #define MTDF_EDITABLE  (1<<5)
 #define MTDF_MULTILINE (1<<6)
+#endif
 #define MTDF_ADVANCEONCR (1<<7)
 
 static const int __version = 1;
@@ -113,6 +115,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
 		    break;
 
+#if 0
 	    case    MUIA_Text_Editable:
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
 		    break;
@@ -132,6 +135,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_String_Integer:
 		    set(obj,MUIA_String_Integer,tag->ti_Data);
 		    break;
+#endif
 	}
     }
 
@@ -252,7 +256,9 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case	MUIA_Text_Contents:
+#if 0
 	case	MUIA_String_Contents:
+
 		if (data->mtd_Flags & MTDF_EDITABLE && data->ztext)
 		{
 		    /* Convert the ztext to plain chars */
@@ -263,9 +269,11 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    	data->contents = new_cont;
 		    }
 		}
+#endif
 		STORE = (ULONG)data->contents;
 		return 1;
 
+#if 0
 	case    MUIA_String_Integer:
 		{
 		    /* This actually is slower then necessary, a integer gadget should contain no
@@ -286,6 +294,7 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case	MUIA_String_Accept:
 		STORE = (ULONG)data->accept;
 		return 1;
+#endif
 
 	case	MUIA_Text_PreParse:
 		STORE = (ULONG)data->preparse;
@@ -395,19 +404,26 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     if (_font(obj)->tf_YSize > height) height = _font(obj)->tf_YSize;
 /*      D(bug("YSize=%ld\n", _font(obj)->tf_YSize)); */
 
+#if 0
     if (!(data->mtd_Flags & MTDF_EDITABLE))
+#endif
     { 
 	msg->MinMaxInfo->MinWidth += data->ztext->width;
 	msg->MinMaxInfo->DefWidth += data->ztext->width;
 	msg->MinMaxInfo->MaxWidth += data->ztext->width;
-    } else
+    }
+#if 0
+    else
     {
 	msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize*4;
 	msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize*12;
 	msg->MinMaxInfo->MaxWidth += MUI_MAXMAX;
     }
+#endif
 
+#if 0
     if (!(data->mtd_Flags & MTDF_MULTILINE))
+#endif
     {
 	msg->MinMaxInfo->MinHeight += height;
 	msg->MinMaxInfo->DefHeight += height;
@@ -416,12 +432,14 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	else
 	    msg->MinMaxInfo->MaxHeight += height;
     }
+#if 0
     else
     {
 	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
 	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize*10;
 	msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
     }
+#endif
 
     if (!(data->mtd_Flags & MTDF_SETMAX))
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
@@ -478,6 +496,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
         get(_win(obj),MUIA_Window_ActiveObject,&act);
 
+#if 0
         if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
         {
             int y;
@@ -494,12 +513,15 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		   _mtop(obj) + y,
 		   data->xpos,data->ypos);
         } else
+#endif
         {
             int y;
+#if 0
             if (data->mtd_Flags & MTDF_MULTILINE)
             {
 		y = 0;
             } else
+#endif
             {
 		y = (_mheight(obj) - data->ztext->height) / 2;
             }
@@ -555,6 +577,7 @@ static ULONG Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
     return 0;
 }
 
+#if 0
 /**************************************************************************
  MUIM_GoActive
 **************************************************************************/
@@ -592,7 +615,9 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
   MUI_Redraw(o, MADF_DRAWUPDATE);
   return 0;
 }
+#endif
 
+#if 0
 /**************************************************************************
  Returns wheater object needs redrawing
 **************************************************************************/
@@ -906,7 +931,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
     }
     return retval;
 }
-
+#endif
 
 BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 {
@@ -924,9 +949,11 @@ BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 	case MUIM_Hide: return Text_Hide(cl, obj, (APTR)msg);
 	case MUIM_Export: return Text_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Text_Import(cl, obj, (APTR)msg);
+#if 0
 	case MUIM_GoActive: return Text_GoActive(cl, obj, (APTR)msg);
 	case MUIM_GoInactive: return Text_GoInactive(cl,obj,(APTR)msg);
 	case MUIM_HandleEvent: return Text_HandleEvent(cl,obj,(APTR)msg);
+#endif
     }
 
     return DoSuperMethodA(cl, obj, msg);
