@@ -16,6 +16,8 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "support.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -174,7 +176,7 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 
     if (data->flags & SLIDER_HORIZ)
     {
-	msg->MinMaxInfo->MinWidth  += data->knob_width + (max - min);
+	msg->MinMaxInfo->MinWidth  += data->knob_width + 1;
 	msg->MinMaxInfo->MinHeight += data->knob_height;
 	msg->MinMaxInfo->DefWidth  += data->knob_width + (max - min) + 20;
 	msg->MinMaxInfo->DefHeight += data->knob_height;
@@ -184,7 +186,7 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
     else
     {
 	msg->MinMaxInfo->MinWidth  += data->knob_width;
-	msg->MinMaxInfo->MinHeight += data->knob_height + (max - min);
+	msg->MinMaxInfo->MinHeight += data->knob_height + 1;
 	msg->MinMaxInfo->DefWidth  += data->knob_width;
 	msg->MinMaxInfo->DefHeight += data->knob_height + (max - min) + 20;
 	msg->MinMaxInfo->MaxWidth  += data->knob_width;
@@ -217,7 +219,7 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
     else
     {
-        data->knob_top  = DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mheight(obj) - data->knob_height) + _mtop(obj);
+        data->knob_top  = (_mheight(obj) - data->knob_height - DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mheight(obj) - data->knob_height)) + _mtop(obj);
 	data->knob_left = _mleft(obj);
     }
 
@@ -244,72 +246,83 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
-    if (msg->imsg)
+    if (!msg->imsg)
+	return 0;
+    switch (msg->imsg->Class)
     {
-	switch (msg->imsg->Class)
-	{
-	    case IDCMP_MOUSEBUTTONS:
-	        if (msg->imsg->Code == SELECTDOWN)
-	        {
-	            if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
-	            {
-		        data->knob_click = (data->flags & SLIDER_HORIZ) ? msg->imsg->MouseX - data->knob_left + _mleft(obj) : msg->imsg->MouseY - data->knob_top + _mtop(obj);
-
-		        if
-			(
-			    _between(data->knob_left, msg->imsg->MouseX, data->knob_left + data->knob_width  - 1) &&
-			    _between(data->knob_top,  msg->imsg->MouseY, data->knob_top  + data->knob_height - 1)
-			)
-			{
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			    data->state = 1;
-			    MUI_Redraw(obj,MADF_DRAWUPDATE);
-			}
-			else
-			{
-			    if
-			    (
-			         ((data->flags & SLIDER_HORIZ) && msg->imsg->MouseX < data->knob_left) ||
-                                (!(data->flags & SLIDER_HORIZ) && msg->imsg->MouseY < data->knob_top)
-			    )
-			    {
-			        DoSuperMethod(cl, obj, MUIM_Numeric_Decrease, 1);
-			    }
-			    else
-			    {
-				DoSuperMethod(cl, obj, MUIM_Numeric_Increase, 1);
-			    }
-			}
+	case IDCMP_MOUSEBUTTONS:
+	    if (msg->imsg->Code == SELECTDOWN)
+	    {
+		if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
+		{
+		    if (data->flags & SLIDER_HORIZ)
+		    {
+			data->knob_click = msg->imsg->MouseX - data->knob_left + _mleft(obj);
 		    }
-	        }
-		else
-   	        {
-		    if (data->state)
+		    else
+		    {
+			data->knob_click = msg->imsg->MouseY - data->knob_top + _mtop(obj) ;
+			D(bug("%p: Y=%ld, mtop=%ld mheight=%ld ktop=%ld kheight=%ld knob_click=%ld\n",
+			      obj, msg->imsg->MouseY, _mtop(obj), _mheight(obj),
+			      data->knob_top, data->knob_height, data->knob_click));
+		    }
+		        
+		    if (_between(data->knob_left, msg->imsg->MouseX, data->knob_left + data->knob_width)
+			&& _between(data->knob_top,  msg->imsg->MouseY, data->knob_top  + data->knob_height))
 		    {
 			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
 			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			data->state = 0;
+			data->state = 1;
 			MUI_Redraw(obj,MADF_DRAWUPDATE);
-	  	    }
+		    }
+		    else if (((data->flags & SLIDER_HORIZ)
+			      && msg->imsg->MouseX < data->knob_left)
+			     || (!(data->flags & SLIDER_HORIZ)
+				 && msg->imsg->MouseY > data->knob_top + data->knob_height))
+		    {
+			DoSuperMethod(cl, obj, MUIM_Numeric_Decrease, 1);
+		    }
+		    else
+		    {
+			DoSuperMethod(cl, obj, MUIM_Numeric_Increase, 1);
+		    }
 		}
-		break;
-
-	    case IDCMP_MOUSEMOVE:
-	    {
-		LONG newval;
-
-		if (data->flags & SLIDER_HORIZ)
-		    newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue, 0, _mwidth(obj)  - data->knob_width, msg->imsg->MouseX  - data->knob_click);
-		else
-		    newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue, 0, _mheight(obj) - data->knob_height, msg->imsg->MouseY - data->knob_click);
-
-		set(obj, MUIA_Numeric_Value, newval);
 	    }
+	    else /* msg->imsg->Code != SELECTDOWN */
+	    {
+		if (data->state)
+		{
+		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+		    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+		    data->state = 0;
+		    MUI_Redraw(obj,MADF_DRAWUPDATE);
+		}
+	    } /* if (msg->imsg->Code == SELECTDOWN) */
 	    break;
+
+	case IDCMP_MOUSEMOVE:
+	{
+	    LONG newval;
+
+	    if (data->flags & SLIDER_HORIZ)
+		newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue,
+					0, _mwidth(obj) - data->knob_width,
+					msg->imsg->MouseX - data->knob_click);
+	    else
+	    {
+		LONG scale;
+
+		scale = _mheight(obj) - data->knob_height + data->knob_click - msg->imsg->MouseY;
+		newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue,
+					0, _mheight(obj) - data->knob_height,
+					scale);
+		D(bug("%p: Y=%ld scale=%ld val=%ld\n", obj, msg->imsg->MouseY, scale, newval));
+	    }
+	    set(obj, MUIA_Numeric_Value, newval);
 	}
+	break;
     }
 
     return 0;
