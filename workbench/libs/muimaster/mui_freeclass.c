@@ -3,9 +3,12 @@
     $Id$
 */
 
+#include <string.h>
+
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/exec.h>
+
 #include "muimaster_intern.h"
 #include "support_classes.h"
 #include "debug.h"
