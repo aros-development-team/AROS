@@ -185,7 +185,8 @@ clean:
 #
 # END_DESC{internaltarget}
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ \
+	    -Xlinker -rpath -Xlinker ./lib
 
 # BEGIN_DESC{internaltarget}
 # \item{subdirs} Pass global targets to all subdirectories.
