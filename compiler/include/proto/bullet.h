@@ -1,7 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #ifndef PROTO_BULLET_H
 #define PROTO_BULLET_H
 

@@ -2,7 +2,7 @@
 #define DEVICES_RAWKEYCODES_H
 
 /*
-    Copyright (C) 2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Standard Amiga (in case of AROS: virtual) rawkey codes

@@ -2,7 +2,7 @@
 #define DEVICES_KEYBOARD_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for keyboard.device

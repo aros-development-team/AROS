@@ -2,12 +2,13 @@
 #define DOS_NOTIFY_H
 
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Notification handling.
     Lang: English
 */
+
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif

@@ -2,7 +2,7 @@
 #define LIBRARIES_MATHIEEESP_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for mathieeespbas.library and

@@ -2,12 +2,13 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
     Lang: english
 */
+
 #if defined(RT_ENABLE) && RT_ENABLE
 #   include <aros/rt.h>
 #endif

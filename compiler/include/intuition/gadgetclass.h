@@ -2,12 +2,13 @@
 #define INTUITION_GADGETCLASS_H
 
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headerfile for Intuitions' gadget classes.
     Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

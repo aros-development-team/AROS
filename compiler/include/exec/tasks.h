@@ -2,12 +2,13 @@
 #define EXEC_TASKS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task structure and constants
     Lang: english
 */
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif

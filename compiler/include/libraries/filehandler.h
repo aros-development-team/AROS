@@ -1,7 +1,8 @@
 #ifndef LIBRARIES_FILEHANDLER_H
 #define LIBRARIES_FILEHANDLER_H
+
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Device and filehandler specific code

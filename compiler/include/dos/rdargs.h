@@ -2,12 +2,13 @@
 #define DOS_RDARGS_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the dos function ReadArgs().
     Lang: english
 */
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif

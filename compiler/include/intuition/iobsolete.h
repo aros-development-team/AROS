@@ -2,13 +2,12 @@
 #define INTUITION_IOBSOLETE_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Structure of intuition.library
     Lang: english
 */
-
 
 #ifndef INTUITION_INTUITION_H
 #include <intuition/intuition.h>

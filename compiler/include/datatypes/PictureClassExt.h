@@ -2,7 +2,7 @@
 #define DATATYPES_PICTURECLASSEXT_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header for picture.datatype V43 compatibility .

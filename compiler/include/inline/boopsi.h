@@ -1,4 +1,7 @@
-/* Automatically generated header! Do not edit! */
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef _INLINE_BOOPSI_H
 #define _INLINE_BOOPSI_H

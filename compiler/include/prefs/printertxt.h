@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef PREFS_PRINTERTXT_H
 #define PREFS_PRINTERTXT_H
 

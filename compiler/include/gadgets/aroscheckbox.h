@@ -2,12 +2,13 @@
 #define GADGETS_AROSCHECKBOX_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS checkbox class.
     Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

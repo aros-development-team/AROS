@@ -2,12 +2,13 @@
 #define DOS_DOSTAGS_H
 
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tags for DOS routines
     Lang: english
 */
+
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif

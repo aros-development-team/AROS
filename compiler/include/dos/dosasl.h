@@ -2,12 +2,13 @@
 #define DOS_DOSASL_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pattern matching
     Lang: english
 */
+
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif

@@ -2,7 +2,7 @@
 #define EXEC_TYPES_H
 
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Data typing - must be included before any other file.
@@ -12,6 +12,7 @@
     of obsolete types (eg SHORT, CPTR, ...). If your code contains any
     of these they should have been changed a long time ago.
 */
+
 #ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
 #endif

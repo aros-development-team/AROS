@@ -1,7 +1,8 @@
 #ifndef LIBRARIES_MATHFFP_H
 #define LIBRARIES_MATHFFP_H 1
+
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for mathffp.library

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef GADGETS_AROSPALETTE_H
 #   define GADGETS_AROSPALETTE_H
 

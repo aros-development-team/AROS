@@ -2,16 +2,13 @@
 #define DOS_FILESYSTEM_H
 
 /*
-    (C) Copyright 1995-2001 AROS - The Amiga Research OS
-<<<<<<< filesystem.h
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-=======
-    $Id$
->>>>>>> 1.31
 
     Desc: AROS specific structures and definitions for filesystems.
     Lang: english
 */
+
 #ifndef EXEC_IO_H
 #   include <exec/io.h>
 #endif
