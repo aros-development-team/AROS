@@ -62,8 +62,7 @@
                                tagList,
                                GTB(GadToolsBase)))
       return FALSE;
-    
-    
+
   while (NULL != menuitem)
   {
     if (NULL != menuitem->SubItem)

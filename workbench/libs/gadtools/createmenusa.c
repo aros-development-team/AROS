@@ -109,7 +109,7 @@
       case IM_ITEM:
         is_image = TRUE;
         /* Fall through */
-      case NM_ITEM:
+      case NM_ITEM: /* also the BARLABEL */
 
         /*
         ** There has to be a menu structure available
@@ -122,8 +122,7 @@
           goto failexit;
         }
 
-#warning What is the maximum possible number of MenuItems in a menu?
-        if (item_ctr > 16)
+        if (item_ctr > 64)
         {
           err = GTMENU_TRIMMED;
           goto failexit;
@@ -163,8 +162,7 @@
           goto failexit;
         }
 
-#warning What is the maximum possible number of SubItems of a MenuItem??
-        if (subitem_ctr > 16) /* ??? */
+        if (subitem_ctr > 32)
         {
           err = GTMENU_TRIMMED;
           goto failexit;

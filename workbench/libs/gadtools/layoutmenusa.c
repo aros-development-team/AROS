@@ -120,7 +120,6 @@
     ** Set the coordinates of this menu title
     ** !!! This might still look ugly...
     */
-      
     menu->LeftEdge = curX;
     menu->TopEdge  = curY;
 

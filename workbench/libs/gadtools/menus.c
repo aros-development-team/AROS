@@ -120,7 +120,11 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
       
       it->FrontPen = GetTagData(GTMN_FrontPen, 0, taglist);
       it->DrawMode = JAM2;
-      it->IText    = newmenu->nm_Label;
+      
+      if (NM_BARLABEL != newmenu->nm_Label)
+        it->IText    = newmenu->nm_Label;
+      else
+        it->IText    = "-------------";
 
       menuitem->Flags |= ITEMTEXT;
     }
@@ -218,7 +222,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
       }
 
     }
-    
+
     if (0 != (menuitem->Flags & (CHECKIT | MENUTOGGLE)))
     {
       /*
@@ -301,7 +305,6 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
     if (maxX < (menuitem->Width + menuitem->LeftEdge + addwidth))
       maxX = menuitem->Width + menuitem->LeftEdge + addwidth;
 
-    
     /*
     ** In case this menu becomes too high it will have more columns.
     */
