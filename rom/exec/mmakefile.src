@@ -40,6 +40,7 @@ INIT_FILE   := exec_init
 SYS_FILES   := execfunctions prepareexecbase
 FILES	    := traphandler exec_util 
 END_FILE    := exec_endtag
+LIBNAME	    := exec
 
 FUNCTIONS   := \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
