@@ -55,11 +55,14 @@ IntServer:		pushl	%edi
 			pushl	%edi		/* Store %edi register (int list) */
 			movl	4,%eax		/* ExecBase */
 			pushl	%eax
+			movl	is_Code(%edi),%eax
+			pushl	%eax
 			movl	is_Data(%edi),%eax
 			pushl	%eax
+			pushl	$0
 			movl	is_Code(%edi),%eax
 			call	*%eax
-			lea	8(%esp),%esp
+			lea	16(%esp),%esp
 			popl	%edi
 			cmpl	$0,%eax		/* Continue? */
 			jne	.is_exit

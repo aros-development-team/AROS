@@ -76,8 +76,10 @@ void _aros_not_implemented(char *X)
 }
 #define kprintf (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
-AROS_UFH2(int, Dispatcher,
+AROS_UFH4(int, Dispatcher,
+    AROS_UFHA(struct Custom *, custom, A0),
     AROS_UFHA(APTR, is_Data, A1),
+    AROS_UFHA(APTR, is_Code, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     /* Check if a task switch is necessary */

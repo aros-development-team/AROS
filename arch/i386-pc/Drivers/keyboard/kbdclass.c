@@ -31,8 +31,10 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-AROS_UFP2(int, kbd_keyint,
+AROS_UFP4(int, kbd_keyint,
+    AROS_UFHA(ULONG, dummy1, A0),
     AROS_UFHA(Object *, o, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
 void kbd_updateleds();
@@ -256,7 +258,7 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
     
     EnterFunc(bug("kbd_handleevent()\n"));
     data = INST_DATA(cl, o);
-    kprintf("%lx ",pckey2hidd(msg->event));
+    D(bug("%lx ",pckey2hidd(msg->event)));
     data->kbd_callback(data->callbackdata,pckey2hidd(msg->event));
     ReturnVoid("Kbd::HandleEvent");
 }
@@ -419,8 +421,10 @@ void kbd_updateleds()
 
 #undef SysBase
 
-AROS_UFH2(int, kbd_keyint,
+AROS_UFH4(int, kbd_keyint,
+    AROS_UFHA(ULONG, dummy1, A0),
     AROS_UFHA(Object *, o, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     UBYTE	keycode,	/* Recent Keycode get */
