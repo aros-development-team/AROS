@@ -15,8 +15,5 @@ extern struct MUI_CustomClass *AboutAROS_CLASS;
 /*** Macros *****************************************************************/
 #define AboutAROSObject BOOPSIOBJMACRO_START(AboutAROS_CLASS->mcc_Class)
 
-/*** Prototypes *************************************************************/
-BOOL AboutAROS_Initialize();
-void AboutAROS_Deinitialize();
 
 #endif /* _ABOUTAROS_H_ */
