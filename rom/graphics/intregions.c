@@ -93,8 +93,6 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     return TRUE;
 }  /* clearrectrect() */
 
-
-
 /* return a copy of all RegionRectangles linked with the given
  * RegionRectangle or NULL if out of memory
  */
@@ -126,10 +124,4 @@ struct RegionRectangle* copyrrects(struct RegionRectangle* src)
 
     return nrects;
 }  /* copyrrects() */
-
-
-
-
-
-
 
