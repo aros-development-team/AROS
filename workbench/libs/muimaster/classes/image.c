@@ -115,21 +115,21 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->spec = StrDup((char*)tag->ti_Data);
 
 		    if (_flags(obj)&MADF_CANDRAW)
-		    {
 			zune_imspec_hide(data->img);
 
-		    	if (_flags(obj)&MADF_SETUP)
-		    	{
-			    zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
-			    zune_imspec_free(data->img);
+		    if (_flags(obj)&MADF_SETUP)
+		    {
+			zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
+			zune_imspec_free(data->img);
 			    
-			    data->img = zune_image_spec_to_structure((IPTR)data->spec);
-			    zune_imspec_setup(&data->img, muiRenderInfo(obj));
-			}
-
-			zune_imspec_show(data->img,obj);
-			MUI_Redraw(obj,MADF_DRAWUPDATE);
+			data->img = zune_image_spec_to_structure((IPTR)data->spec);
+			zune_imspec_setup(&data->img, muiRenderInfo(obj));
 		    }
+
+		    if (_flags(obj)&MADF_CANDRAW)
+			zune_imspec_show(data->img,obj);
+
+		    MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    break;
     	}
     }
@@ -240,7 +240,7 @@ static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 
     zune_draw_image(muiRenderInfo(obj), data->img,
 		    _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-		    0, 0, 0);
+		    _mleft(obj),_mtop(obj), 0);
     return 1;
 }
 
