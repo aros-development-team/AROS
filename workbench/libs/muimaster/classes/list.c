@@ -1194,7 +1194,7 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 
     SetAttrs(obj,
 	MUIA_List_Entries, data->confirm_entries_num,
-	new_act == data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
+	new_act != data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
 	TAG_DONE);
 
     data->update = 1;
