@@ -47,6 +47,9 @@
 
 /**************************************************************************************************/
 
+/* if 1: use legacy picture.datatype interface using Bitmaps (for debugging) */
+#define LEGACY 0
+
 #define FILEBUFSIZE 65536
 #define MAXCOLORS   256
 const char GIFheader[] = "GIF87a";
@@ -154,7 +157,7 @@ static BOOL LoadGIF_Colormap(GifHandleType *gifhandle, int havecolmap, int *numc
 }
 
 /**************************************************************************************************/
-static BOOL LoadGIF(Object *o)
+static BOOL LoadGIF(struct IClass *cl, Object *o)
 {
     GifHandleType           *gifhandle;
     UBYTE                   *filebuf;
@@ -370,7 +373,16 @@ static BOOL LoadGIF(Object *o)
     }
     D(bug("gif.datatype/LoadGIF() --- numcolors %d\n", numcolors));
 
-    /* Get BitMap to draw into */
+    /* Pass attributes to picture.datatype */
+    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
+    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors,
+			      DTA_NominalHoriz, scrwidth,
+			      DTA_NominalVert , scrheight,
+			      DTA_ObjName     , name,
+			      TAG_DONE);
+
+#if LEGACY
+    /* Get BitMap to draw into and pass it to picture.datatype (legacy interface) */
     D(bug("gif.datatype/LoadGIF() --- allocating bitmap\n"));
     if( !(bm = AllocBitMap(scrwidth, scrheight, numplanes, BMF_CLEAR, NULL)) )
     {
@@ -380,18 +392,11 @@ static BOOL LoadGIF(Object *o)
     }
     InitRastPort(&rp);
     rp.BitMap=bm;
-
-    /* Pass new bitmap to picture.datatype */
-    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
-    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors,
-			      DTA_NominalHoriz, scrwidth,
-			      DTA_NominalVert , scrheight,
-			      PDTA_BitMap     , (IPTR)bm,
-			      DTA_ObjName     , name,
-			      TAG_DONE);
+    SetDTAttrs(o, NULL, NULL, PDTA_BitMap, (IPTR)bm, TAG_DONE);
+#endif /* LEGACY */
 
     /* Now decode the picture data into a chunky buffer */
-    /* For now, we use a full picture pixel buffer, not a single line */
+    /* For now, we use a full picture pixel buffer, not a single line, because GIF decoding is easier this way */
     widthxheight = width*height;
     gifhandle->linebufsize = gifhandle->linebufbytes = widthxheight;
     if (! (gifhandle->linebuf = gifhandle->linebufpos = AllocMem(gifhandle->linebufsize, MEMF_ANY)) )
@@ -416,7 +421,7 @@ static BOOL LoadGIF(Object *o)
     else
     {
 	D(bug("gif.datatype/LoadGIF() --- not at end of file, next char 0x%02lx, %ld bytes remaining\n", (long)(gifhandle->filebufpos[0]), (long)(gifhandle->filebufbytes)));
-#if 1
+#if 0
 	D(bug("gif remaining bytes %ld = %ld, read %ld\n", (long)gifhandle->filebufbytes, (long)(gifhandle->filebufsize - (gifhandle->filebufpos - gifhandle->filebuf)), (long)(gifhandle->filebufpos - gifhandle->filebuf));
 	for (j=-8; j<12; j+=4)
 	{
@@ -430,7 +435,24 @@ static BOOL LoadGIF(Object *o)
     /* Copy the chunky buffer to the bitmap */
     if (!interlaced)
     {
+#if LEGACY
 	WriteChunkyPixels(&rp, leftedge, topedge, leftedge+width-1, topedge+height-1, gifhandle->linebuf, width);
+#else
+	if(!DoSuperMethod(cl, o,
+			PDTM_WRITEPIXELARRAY,		// Method_ID
+			(IPTR)gifhandle->linebuf,	// PixelData
+			PBPAFMT_LUT8,			// PixelFormat
+			width,				// PixelArrayMod (number of bytes per row)
+			leftedge,			// Left edge
+			topedge,			// Top edge
+			width,				// Width
+			height))			// Height
+	{
+	    D(bug("gif.datatype/LoadGIF() --- WRITEPIXELARRAY failed !\n"));
+	    GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+	    return FALSE;
+	}
+#endif /* LEGACY */
     }
     else
     {
@@ -440,7 +462,24 @@ static BOOL LoadGIF(Object *o)
 	j = 0;
 	for (i=0; i<widthxheight; i+=width)
 	{
+#if LEGACY
 	    WriteChunkyPixels(&rp, leftedge, topedge+line, leftedge+width-1, topedge+line, gifhandle->linebuf+i, width);
+#else
+	    if(!DoSuperMethod(cl, o,
+			    PDTM_WRITEPIXELARRAY,	// Method_ID
+			    (IPTR)gifhandle->linebuf+i,	// PixelData
+			    PBPAFMT_LUT8,		// PixelFormat
+			    width,			// PixelArrayMod (number of bytes per row)
+			    leftedge,			// Left edge
+			    topedge+line,		// Top edge
+			    width,			// Width
+			    1))				// Height (here: one line)
+	    {
+		D(bug("gif.datatype/LoadGIF() --- WRITEPIXELARRAY failed !\n"));
+		GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	    }
+#endif /* LEGACY */
 	    line += inc;
 	    if (line >= height)
 	    {
@@ -656,7 +695,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	    retval = DoSuperMethodA(cl, o, (Msg)msg);
 	    if (retval)
 	    {
-		if (!LoadGIF((Object *)retval))
+		if (!LoadGIF(cl, (Object *)retval))
 		{
 		    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
 		    retval = 0;
