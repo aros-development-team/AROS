@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2000/02/22 20:46:20  stegerg
+    maxwidth and maxheight must default to 0 = --> take
+    window->width/height as maxwidth/maxheight.
+
     Revision 1.11  2000/01/14 22:23:32  bernie
     debug assertions on parameters
 
@@ -96,7 +100,7 @@
 	NULL, /* Screen */
 	NULL, /* BitMap */
 	0,0, /* MinWidth, MinHeight */
-	-1,-1, /* MaxWidth, MaxHeight */
+	0,0, /* MaxWidth, MaxHeight */
 	WBENCHSCREEN, /* Type */
 	NULL /* Extension (taglist) */
     };
