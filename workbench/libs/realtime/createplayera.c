@@ -68,7 +68,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 				     creates a private conductor.
 
     PLAYER_Ready (BOOL)          --  Set / clear the ready flag; default is
-                                     FALSE.
+                                     TRUE.
 
     PLAYER_AlarmTime (LONG)      --  Set player's alarm time; implies setting
                                      the PLAYERF_ALARMSET flag.
@@ -156,6 +156,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     /* Set default values */
     player->pl_Reserved0 = -1;	          /* AlarmSigBit */
+    player->pl_Flags |= PLAYERF_READY;
 
     while((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
     {
