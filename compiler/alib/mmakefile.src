@@ -4,8 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB	:= amiga
-
 FILES	:= \
     addamigaguidehost \
     addappicon \
@@ -120,13 +118,11 @@ FILES	:= \
 #MM linklibs-amiga : includes
 #MM linklibs-startup : includes
 
-%make_linklib_setup mmake=linklibs-amiga
+%build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
 
 # The rules to build the startup code.
 
 linklibs-startup : $(LIBDIR)/startup.o $(LIBDIR)/detach.o
-
-%make_linklib
 
 $(LIBDIR)/startup.o : startup.c
 	%compile_q
@@ -135,4 +131,3 @@ $(LIBDIR)/detach.o : detach.c
 	%compile_q
 	
 %common
-%include_deps

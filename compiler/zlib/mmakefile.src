@@ -2,8 +2,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB :=	arosz
-
 INCLUDE_FILES	:= zconf.h zlib.h zutil.h
 FILES := \
     adler32 \
@@ -26,17 +24,16 @@ USER_CFLAGS	:= -DAROS -DNO_ERRNO_H
 
 #MM- linklibs : linklibs-arosz
 #MM linklibs-zlib : linklibs-arosz
-#MM linklibs-arosz : includes
+#MM linklibs-arosz : arosz-setup-link includes
 #MM includes-copy
 
 %copy_includes_cwd path=.
 
-%make_linklib_setup mmake=linklibs-arosz
-%make_linklib
+%build_linklib mmake=linklibs-arosz libname=arosz files=$(FILES)
 
-setup ::
+#MM
+arosz-setup-link :
 	@$(RM) $(AROSDIR)/lib/libz.a
 	@ln -s $(AROSDIR)/lib/libarosz.a $(AROSDIR)/lib/libz.a
     
 %common
-%include_deps

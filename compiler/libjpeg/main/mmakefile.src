@@ -2,8 +2,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB :=	jpeg
-
 FILES := jcapimin \
 	 jcapistd \
 	 jccoefct \
@@ -76,8 +74,6 @@ USER_CFLAGS	:= -O2
 
 %copy_includes_cwd path=jpeg
 
-%make_linklib_setup mmake=linklibs-jpeg
-%make_linklib
+%build_linklib mmake=linklibs-jpeg libname=jpeg files=$(FILES)
 
 %common
-%include_deps
