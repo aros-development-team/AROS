@@ -108,7 +108,7 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
 #define ADD2CLOSELIB(symbol, pri)   ADD2SET(symbol, closelib, pri)
 
 /* this macro generates the necessary symbols to open and close automatically
-   a library. An error message will be shown if the library cannot be open.  */
+   a library. An error message will be shown if the library cannot be opened.  */
 #define ADD2LIBS(name, ver, btype, bname)                    \
 btype bname;                                                 \
                                                              \
