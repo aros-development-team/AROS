@@ -162,11 +162,11 @@ c/assign;1;;Write C:Assign
 c/avail;2;matthias;Write C:Avail
 c/break;2;iaint;Write C:Break
 c/cd;2;matthias;Write C:Cd
-c/copy;0;digulla;Write Copy
+c/copy;2;hkiel;Write Copy
 c/cpu;1;laguest;Write C:CPU
 c/date;2;srittau;Write C:Date
 c/delete;1;laguest;Write C:Delete
-c/dir;0;digulla;Write C:Dir
+c/dir;2;digulla;Write C:Dir
 c/echo;2;matthias;Write C:Echo
 c/else;2;SDuvan;Write C:Else
 c/endif;2;SDuvan;Write C:Endif
