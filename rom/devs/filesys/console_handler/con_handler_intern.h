@@ -38,6 +38,7 @@ struct conbase
     struct Device	device;
     struct ExecBase   * sysbase;
     struct DosLibrary * dosbase;
+    struct Device     * inputbase;
     struct IntuitionBase *intuibase;
 
     BPTR seglist;
@@ -95,6 +96,10 @@ typedef struct IntuitionBase IntuiBase;
 #   undef IntuitionBase
 #endif
 #define IntuitionBase conbase->intuibase
+#ifdef InputBase
+#   undef InputBase
+#endif
+#define InputBase conbase->inputbase
 
 VOID conTaskEntry(struct conTaskParams *param);
 
