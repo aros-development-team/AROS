@@ -1,4 +1,4 @@
-/*
+/*f
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
@@ -138,7 +138,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.7 (16.12.2000)\r\n";
+static const char version[]="$VER: emul_handler 41.8 (16.03.2003)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -933,7 +933,7 @@ static LONG startup(struct emulbase *emulbase)
 			if(getcwd(fhv->volume, 256) && !stat(fhv->name,&st) && S_ISDIR(st.st_mode))
 			{
 			    #define DEVNAME "EMU"
-			    #define VOLNAME "Workbench"
+			    #define VOLNAME "System"
 			    
 			    static const char *devname = DEVNAME;
 			    static const char *volname = VOLNAME;
@@ -1001,7 +1001,7 @@ static LONG startup(struct emulbase *emulbase)
 
 				/* Unfortunately, we cannot do the stuff below
 				   as dos is not yet initialized... */
-				// AddDosEntry(MakeDosEntry("Workbench", 
+				// AddDosEntry(MakeDosEntry("System", 
 				//			    DLT_VOLUME));
 
    	    	    	    	for(i = 0; i < sizeof(VOLNAME) - 1; i++)
