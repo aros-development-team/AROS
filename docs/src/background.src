@@ -123,8 +123,8 @@ of them work, others don't, yet.
 \section{Snapshots}
 
 A snapshot of the workbench screen, taken 12th Feb 200.
-(\largepic{45K GIF}{other/workbench.gif} or 
-\largepic{30K PNG}{other/workbench.png}).
+(\largepic{45K GIF}{screenshots/workbench.gif} or 
+\largepic{30K PNG}{screenshots/workbench.png}).
 
 It shows the boot shell and two programs using \shell{gadtools.library}.
 

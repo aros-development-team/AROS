@@ -24,9 +24,9 @@ RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 		--keywords=keywords.db \
 	    	--files=files.db main.src
 
-#MM docs : setup-docs
-docs : setup $(SRC2HTML) autodocs $(DEST)srcs $(DEST)index.html \
-	copy-files copy-pics \
+#MM docs : setup-docs copy-pics
+docs : $(SRC2HTML) autodocs $(DEST)srcs $(DEST)index.html \
+	copy-files \
 	access-rights
 
 #MM all-docs : setup-docs
@@ -49,22 +49,23 @@ $(DEST)% : %
 	cp $< $@
 
 # convert pics/% to DEST/pics/% without CVS dir.
-PICS := $(addprefix $(DEST)/pics/, \
+PICS := $(addprefix $(DEST)pics/, \
 	$(filter-out CVS, $(notdir $(wildcard pics/*))))
-OTHER := $(addprefix $(DEST)/other/, \
+OTHER := $(addprefix $(DEST)other/, \
 	$(filter-out CVS, $(notdir $(wildcard ../other/*))))
 
+#MM
 copy-pics : $(PICS) $(OTHER)
 
 $(DEST)license.html : $(TOP)/license.html
 	cp $< $@
 
-$(DEST)/pics/% : pics/%
+$(DEST)pics/% : pics/%
 	cp $< $@
-	
-$(DEST)/other/% : ../other/%
+
+$(DEST)other/% : other/%
 	cp $< $@
-	
+
 access-rights :
 	cd $(DEST) ; \
 	    chmod -R u=rwX,og=rX .
@@ -105,7 +106,7 @@ autodocs : $(DOCGENDIR)/htmlpages
 $(DOCGENDIR)/htmlpages : $(AUTODOC_SRCS) genadocs.py \
 		adoc_header.html adoc_footer.html page_header.html
 	@echo "Regenerating the HTML AutoDocs"
-	@$(PYTHON) genadocs.py DESTDIR="$(DEST)/autodocs" \
+	@$(PYTHON) genadocs.py DESTDIR="$(DEST)autodocs" \
 		DOCGENDIR="$(DOCGENDIR)" \
 		$(AUTODOC_SRCS)
 	@touch $(DOCGENDIR)/htmlpages $(DOCGENDIR)/run-src2html
