@@ -19,18 +19,31 @@ include $(TOP)/config/make.cfg
 #	version for this CPU does exist.
 #
 # END_DESC{localmakevar}
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Main function for exec.strap. Need this apart as an anchor for the link:
+INIT_FILE = utility_init
+
+FILES = utility_functable getnamespace intfindnamedobj
+
+# ***** Not Native ***************
+else
+
 FILES = utility_init utility_functable getnamespace intfindnamedobj
+
+# ***** END ***************
+endif
+
 FUNCTIONS := \
-	applytagchanges callhookpkt findtagitem nexttagitem \
-	stricmp strnicmp tolower toupper getuniqueid \
-	date2amiga amiga2date allocatetagitems \
-	freetagitems clonetagitems gettagdata packbooltags \
-	refreshtagitemclones taginarray maptags \
-	addnamedobject allocnamedobjecta attemptremnamedobject \
-	findnamedobject namedobjectname releasenamedobject \
-	remnamedobject freenamedobject \
-	packstructuretags unpackstructuretags checkdate \
-	filtertagitems filtertagchanges \
+	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
+	tolower toupper getuniqueid date2amiga amiga2date allocatetagitems  \
+	freetagitems clonetagitems gettagdata packbooltags taginarray       \
+	refreshtagitemclones maptags addnamedobject allocnamedobjecta       \
+	attemptremnamedobject findnamedobject namedobjectname               \
+	releasenamedobject remnamedobject freenamedobject packstructuretags \
+	unpackstructuretags checkdate filtertagitems filtertagchanges       \
 	smult32 umult32 smult64 umult64 sdivmod32 udivmod32
 
 # BEGIN_DESC{localmakevar}
@@ -63,29 +76,40 @@ ASM_FILES_EXIST := $(basename $(notdir $(ASM_FILES_EXIST)))
 # from the local directory.
 FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
 
+OBJDIR=$(OSGENDIR)/utility
+
+# ***** Native ***************
 ifeq ($(FLAVOUR),native)
-LIBS = -L$(LIBDIR) -larosc
-OBJDIR=$(OSGENDIR)
+
+LIBS = -L$(LIBDIR) -lutility -larosc
+LIB=$(LIBDIR)/libutility.a
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
 
 all: setup $(OSMODDIR)/utility.library
 
-asm: $(foreach f,$(FUNCTIONS),$(f).s) all
+.PHONY: asm
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE),$(f).s) all
 
-$(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-			     $(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
-			     $(foreach f,$(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) -Xlinker -M \
-	$(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
-	$(foreach f,$(ASM_FILES_EXIST),$(OBJDIR)/$(f).o) \
-	$(LIBS) -o $@ 2>&1|tee utilitylib.err
-	@if test ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
+$(OSMODDIR)/utility.library: $(LIB) $(INITFUNC) $(OBJS) $(LIBDIR)/libarosc.a
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee utilitylib.map
+	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
 	@strip $@
 
 %.s: %.c
-	$(CC) -S $(CFLAGS) $< -c -o $@
+	@echo "Generating $@ ..."
+	@$(CC) -S $(CFLAGS) $< -c -o $@
+
+# Collect all (asm-)functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+# ***** Not Native ***************
 else
-OBJDIR=$(OSGENDIR)/utility
+
 LIB=$(LIBDIR)/libutility.so
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
@@ -95,9 +119,12 @@ all: setup $(LIB)
 $(LIB) : $(OBJS)
 	@echo "Recreating $@..."
 	@$(SHARED_AR) $@ $(OBJS)
+
+# ***** END ***************
 endif
 
 setup :
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@echo "CFLAGS=$(CFLAGS)"
 
@@ -126,5 +153,5 @@ $(OBJDIR)/%.d: %.c
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif
