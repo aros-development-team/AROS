@@ -33,6 +33,11 @@ char * strstr (const char * buf, const char * str);
 char * strtok (char * s1, const char * s2);
 char * stpcpy (char * dest, const char * src);
 
+/* Supplemental (not ANSI C) */
+size_t stccpy(char *str1_ptr, const char *str2_ptr, size_t max);
+char *stpsym(char *str_ptr, char *dest_ptr, int dest_size);
+
+
 #define index(s, c)  strchr(s, c)
 #define rindex(s, c) strrchr(s, c)
 

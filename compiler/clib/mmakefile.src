@@ -194,6 +194,7 @@ SHARED	:= \
 	system \
 	telldir \
 	time	 \
+	tmpnam \
 	truncate \
 	umask \
 	ungetc \
