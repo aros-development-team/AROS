@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2001/07/16 18:20:44  falemagn
+    Supports directory creation now
+
     Revision 1.10  2001/07/16 15:21:32  falemagn
     File types weren't reported correctly
 
@@ -65,9 +68,6 @@ AROS_UFP3(LONG, pipefsproc,
     AROS_UFPA(ULONG,argsize,D0),
     AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs);
-
-
 struct pipefsmessage
 {
     struct Message    msg;
@@ -77,26 +77,27 @@ struct pipefsmessage
 
 struct dirnode
 {
-    struct MinNode          node;
-    struct dirnode         *parent;     /* Parent directory */
-    STRPTR                  name;
-    LONG                    type;
-    ULONG                   numusers;
-    struct SignalSemaphore  filesSem;
-    struct List files;
+    struct MinNode   node;
+    struct dirnode  *parent;     /* Parent directory */
+    STRPTR           name;
+    LONG             type;
+    struct DateStamp datestamp;
+    ULONG            numusers;
+    struct List      files;
 };
 
 struct filenode
 {
-    struct MinNode  node;
-    struct dirnode *parent;
-    STRPTR          name;
-    LONG            type;
-    ULONG           numusers;           /* Number of actual users of this pipe */
-    ULONG           numwriters;         /* Num of actual writers */
-    ULONG           numreaders;         /* Num of actual readers */
-    struct List     pendingwrites;      /* List of pending write requestes */
-    struct List     pendingreads;       /* List of pending read requestes */
+    struct MinNode   node;
+    struct dirnode  *parent;
+    STRPTR           name;
+    LONG             type;
+    struct DateStamp datestamp;
+    ULONG            numusers;           /* Number of actual users of this pipe */
+    ULONG            numwriters;         /* Num of actual writers */
+    ULONG            numreaders;         /* Num of actual readers */
+    struct List      pendingwrites;      /* List of pending write requestes */
+    struct List      pendingreads;       /* List of pending read requestes */
 };
 /*
    Abuse of pendingreads so that it's used as waiting list either for
@@ -111,6 +112,13 @@ struct usernode
     struct filenode *fn;
     ULONG            mode;
 };
+
+static STRPTR           SkipColon    (STRPTR str);
+static size_t           LenFirstPart (STRPTR path);
+static struct filenode *FindFile     (struct dirnode   **dn_ptr,      STRPTR path);
+static struct filenode *GetFile      (struct pipefsbase  *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
+static ULONG            SendRequest  (struct pipefsbase  *pipefsbase, struct IOFileSys *iofs);
+static STRPTR           StrDup       (struct pipefsbase  *pipefsbase, STRPTR str);
 
 
 int entry(void)
@@ -218,10 +226,9 @@ AROS_LH3(void, open,
 	    dn->parent = NULL;
 
 	    NEWLIST(&dn->files);
-	    InitSemaphore(&dn->filesSem);
+	    DateStamp(&dn->datestamp);
 
 	    un->fn = (struct filenode *)dn;
-
 	    iofs->IOFS.io_Unit=(struct Unit *)un;
             iofs->IOFS.io_Device=&pipefsbase->device;
 
@@ -343,6 +350,7 @@ AROS_LH1(void, beginio,
 	case FSA_READ:
 	case FSA_WRITE:
 	case FSA_CLOSE:
+	case FSA_CREATE_DIR:
 	    error = SendRequest(pipefsbase, iofs);
 	    enqueued = !error;
 	    break;
@@ -355,7 +363,6 @@ AROS_LH1(void, beginio,
 	    break;
 	case FSA_SET_FILE_SIZE:
         case FSA_EXAMINE_ALL:
-        case FSA_CREATE_DIR:
         case FSA_CREATE_HARDLINK:
         case FSA_CREATE_SOFTLINK:
         case FSA_RENAME:
@@ -390,7 +397,7 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
-ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
+static ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs)
 {
     struct pipefsmessage *msg = AllocVec(sizeof(*msg), MEMF_PUBLIC);
 
@@ -498,7 +505,7 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 	kprintf("Comparing %S with %.*S.\n", fn->name, len, path);
 	if
 	(
-	    strlen(fn->name) == len                    &&
+	    strlen(fn->name) == len               &&
 	    strncasecmp(fn->name, path, len) == 0
 	)
 	{
@@ -547,6 +554,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 		{
 		    fn->type = ST_PIPEFILE;
 
+		    DateStamp(&fn->datestamp);
 		    NEWLIST(&fn->pendingwrites);
 		    NEWLIST(&fn->pendingreads);
 
@@ -670,6 +678,12 @@ AROS_UFH3(LONG, pipefsproc,
 		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
 		    fn->numusers++;
 		    un->fn = fn;
+
+		    if (fn->type > 0)
+		    {
+		        SendBack(msg, 0);
+			continue;
+		    }
 
                     stillwaiting = !fn->numwriters || !fn->numreaders;
 
@@ -834,9 +848,9 @@ AROS_UFH3(LONG, pipefsproc,
 
 			/* Fall through */
         		case ED_DATE:
-	    		    ead->ed_Days  = 0;
-			    ead->ed_Mins  = 0;
-	    		    ead->ed_Ticks = 0;
+	    		    ead->ed_Days  = fn->datestamp.ds_Days;
+			    ead->ed_Mins  = fn->datestamp.ds_Minute;
+	    		    ead->ed_Ticks = fn->datestamp.ds_Tick;
 
 			/* Fall through */
         		case ED_PROTECTION:
@@ -895,9 +909,9 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    fib->fib_OwnerUID       = 0;
 		    fib->fib_OwnerGID       = 0;
-		    fib->fib_Date.ds_Days   = 0;
-		    fib->fib_Date.ds_Minute = 0;
-		    fib->fib_Date.ds_Tick   = 0;
+		    fib->fib_Date.ds_Days   = fn->datestamp.ds_Days;
+		    fib->fib_Date.ds_Minute = fn->datestamp.ds_Minute;
+		    fib->fib_Date.ds_Tick   = fn->datestamp.ds_Tick;
 		    fib->fib_Protection	    = 0;
 		    fib->fib_Size	    = 0;
 		    fib->fib_DirEntryType   = fn->type;
@@ -908,6 +922,52 @@ AROS_UFH3(LONG, pipefsproc,
 		    fib->fib_DiskKey = (LONG)GetSucc(fn);
     		    SendBack(msg, 0);
 
+		    continue;
+		}
+		case FSA_CREATE_DIR:
+		{
+		    STRPTR filename        = SkipColon(msg->iofs->io_Union.io_CREATE_DIR.io_Filename);
+		    struct dirnode *parent = (struct dirnode *)fn;
+		    struct dirnode *dn;
+
+		    kprintf("Command is FSA_CREATE_DIR\n");
+		    kprintf("Current directory is %S\n", parent->name);
+		    kprintf("User wants to create directory %S\n", filename);
+
+		    dn = (struct dirnode *)FindFile(&parent, filename);
+		    if (dn)
+		    {
+			kprintf("The object %S already exists\n", filename);
+			SendBack(msg, ERROR_OBJECT_EXISTS);
+			continue;
+		    }
+		    else
+		    if (!parent)
+		    {
+			kprintf("The path is not valid.\n");
+			SendBack(msg, ERROR_OBJECT_NOT_FOUND);
+			continue;
+		    }
+
+		    if
+		    (
+                        !(dn       = AllocVec(sizeof(*dn), MEMF_PUBLIC)) ||
+			!(dn->name = StrDup(pipefsbase, filename))
+		    )
+		    {
+		        SendBack(msg, ERROR_NO_FREE_STORE);
+			continue;
+   		    }
+
+		    kprintf("Ok, there's room for this directory.\n");
+		    AddTail(&parent->files, (struct Node *)dn);
+		    dn->parent   = parent;
+		    dn->numusers = 0;
+		    dn->type     = ST_USERDIR;
+		    NEWLIST(&dn->files);
+		    DateStamp(&dn->datestamp);
+
+		    SendBack(msg, 0);
 		    continue;
 		}
 		case FSA_WRITE:
