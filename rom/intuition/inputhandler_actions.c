@@ -51,6 +51,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
     while(next_am)
     {
         struct Window * targetwindow = am->Window;
+	struct Screen * targetscreen = targetwindow->WScreen;
         struct Layer  * targetlayer = targetwindow->WLayer, *L;
         BOOL CheckLayersBehind = FALSE;
         BOOL CheckLayersInFront = FALSE;
@@ -801,6 +802,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	    break;
 	}
 
+ 	/* targetwindow might be invalid here (AM_CLOSEWINDOW) !!!!!!!!! */
+	
 	if (TRUE == CheckLayersBehind)
 	{
 	  /* Walk through all layers behind including the layer L
@@ -814,9 +817,9 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	       to a Window ?? */
 	    if (0 != (_L->Flags & LAYERREFRESH))
 	    {
-	      if (_L == targetwindow->WScreen->BarLayer)
+	      if (_L == targetscreen->BarLayer)
 	      {
-	        RenderScreenBar(targetwindow->WScreen, TRUE, IntuitionBase);
+	        RenderScreenBar(targetscreen, TRUE, IntuitionBase);
 	      } else if (_L->Window != NULL)
 	      {
 		/* Does it belong to a GZZ window and is it
@@ -829,7 +832,6 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		  BeginUpdate(_L);
 	          RefreshWindowFrame((struct Window *)_L->Window);
 		  EndUpdate(_L, TRUE);
-
 	          _L->Flags &= ~LAYERREFRESH;
 		}
 		else
@@ -858,9 +860,9 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	       to a Window ?? */
 	    if (0 != (L->Flags & LAYERREFRESH))
 	    {
-	      if (L == targetwindow->WScreen->BarLayer)
+	      if (L == targetscreen->BarLayer)
 	      {
-	        RenderScreenBar(targetwindow->WScreen, TRUE, IntuitionBase);
+	        RenderScreenBar(targetscreen, TRUE, IntuitionBase);
 	      } else if (L->Window != NULL) {
 		/* Does it belong to a GZZ window and is it
 	           the outer window of that GZZ window? */
