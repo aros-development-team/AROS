@@ -20,6 +20,7 @@ FILES = \
 	__vcscan \
 	abort \
 	abs \
+	asctime \
 	atoi \
 	atol \
 	bcopy \
@@ -27,6 +28,7 @@ FILES = \
 	bzero \
 	calloc \
 	clearerr \
+	ctime \
 	ctype \
 	close \
 	creat \
@@ -46,7 +48,9 @@ FILES = \
 	fread \
 	free \
 	fwrite \
+	gmtime \
 	labs \
+	localtime \
 	malloc \
 	memchr \
 	memcmp \
@@ -72,6 +76,7 @@ FILES = \
 	strcspn \
 	strdup \
 	strerror \
+	strftime \
 	strlen \
 	strncasecmp \
 	strncat \
@@ -84,6 +89,7 @@ FILES = \
 	strtok \
 	strtol \
 	strtoul \
+	time \
 	ungetc \
 	vfprintf \
 	vfscanf \
