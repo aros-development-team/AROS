@@ -57,7 +57,7 @@ static AttrBase HiddGCAttrBase = 0;
    frmom the GC themselves.
    Alt 2.: Like the above, but make the GC a white-box object, and let
          subclasses get the data directly. Possible caveat:
-	 GC may theoretically be in differen addresspace, or
+	 GC may theoretically be in different addresspace, or
 	 even on differen machine */
 	 
 static VOID update_from_gc(Class *cl, Object *me, Object *gc)
@@ -100,14 +100,6 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
     struct HIDDBitMapData *data;
     struct TagItem *tag, *tstate;
 
-    BOOL   ok = FALSE;
-    BOOL   allocBuffer = TRUE;
-    UBYTE  alignOffset = 15; /* 7 = Byte-, 15 = Word-, 31 = Longword align etc. */
-    UBYTE  alignDiv    =  2; /* 1 = Byte-,  2 = Word-,  4 = Longword align etc. */
-    ULONG  i;
-    UBYTE  **plane;
-
-
     EnterFunc(bug("BitMap::New()\n"));
 
     obj  = (Object *) DoSuperMethod(cl, obj, (Msg) msg);
@@ -145,7 +137,6 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                     case aoHidd_BitMap_Depth       : data->depth       = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
-                    case aoHidd_BitMap_AllocBuffer : allocBuffer       = (BOOL) tag->ti_Data; break;
 		    
 		    case aoHidd_BitMap_GC	   : update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
 		    
@@ -162,82 +153,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                 } /* switch tag */
             } /* if (is BM attr) */
         }
-
-
-        if(data->displayable)
-        {
-            /* no support for a displayable bitmap, 
-	    we don't allocate anything, but still exit cleanly */
-            ok = TRUE;
-        }
-        else
-        {
-            /* bitmap is not displayable */
-
-            if(data->format & vHidd_BitMap_Format_Chunky)
-            {
-
-                data->bytesPerPixel = (data->depth + 7) / 8;
-                data->bytesPerRow   = data->bytesPerPixel * ((data->width + alignOffset) / alignDiv);
-                if(allocBuffer)
-                {
-D(bug("Allocating chunky\n"));
-                    data->buffer = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
-                    if(data->buffer) ok = TRUE;
-                }
-                else
-                {
-                    ok = TRUE;
-                }
-            }
-            else
-            {
-                /* Planar format: buffer is a pointer to an array of planepointers */
-
-                data->bytesPerRow = (data->width + alignOffset) / alignDiv;
-
-                if(allocBuffer)
-                {
-		    ULONG bufsize;
-		    
-		    bufsize = data->depth * sizeof(UBYTE *);
-D(bug("Allocating  bitmap, depth=%d\n", data->depth));
-                    data->buffer = AllocVec(bufsize, MEMF_CLEAR | MEMF_PUBLIC);
-                    if(data->buffer)
-                    {
-		        memset(data->buffer, 0, bufsize);
-
-D(bug("Buffer: %p\n", data->buffer));
-			
-                        plane = (UBYTE **) data->buffer;
-                        ok    = TRUE;
-    
-                        for(i = 0; (i < data->depth) && (ok == TRUE); i++)
-                        {
-                            *plane = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
-                            if(*plane == NULL) ok = FALSE;
-			    D(bug("Allocated plane %p\n", *plane));
-                            plane++;
-                        }
-                    }
-                }
-                else
-                {
-                    ok = TRUE;
-                }
-
-            }
-        }
     } /* if(obj) */
-
-
-    /* free all on error */
-    if(ok == FALSE)
-    {
-        MethodID dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-        if(obj) CoerceMethod(cl, obj, (Msg)&dispose_mid);
-        obj = NULL;
-    }
 
 
     ReturnPtr("BitMap::New", Object *, obj);
@@ -250,40 +166,7 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
 {
     struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
-    ULONG i;
-    UBYTE **plane;
-
     EnterFunc(bug("BitMap::Dispose()\n"));
-    
-    if (data->buffer)
-    {
-        D(bug("Has buffer %p\n", data->buffer));
-	if(data->format & vHidd_BitMap_Format_Planar)
-	{
-	    D(bug("Planar, depth=%d\n", data->depth));
-            /* buffer is a pointer to an array of planepointer */
-            plane = (UBYTE **) data->buffer;
-
-            for(i = 0; (i < data->depth) && (*plane != NULL); i++)
-            {
-	        D(bug("Freeing plane %p\n", *plane));
-                FreeVec(*plane);
-		D(bug("Plane freed\n"));
-                plane++;
-            }
-	    D(bug("Done freeing planes\n"));
-	}
-	else
-	{
-	    D(bug("Chunky\n"));
-	}
-	
-    }
-    
-    if (data->buffer)
-    {
-    	FreeVec(data->buffer);
-    }
     
     if (data->coltab)
     {
@@ -316,7 +199,6 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_BitMap_Depth       : *msg->storage = data->depth; break;
             case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
-            case aoHidd_BitMap_BitMap      : *msg->storage = (IPTR) data->buffer; break;
 	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
 	    case aoHidd_BitMap_Foreground  : *msg->storage = data->fg; break;
 	    case aoHidd_BitMap_Background  : *msg->storage = data->bg; break;
@@ -1536,7 +1418,6 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
                 case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;
                 case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
-                case aoHidd_BitMap_BaseAddress   : data->buffer        = (APTR) tag->ti_Data; break;
 		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 
 		case aoHidd_BitMap_GC  		: update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
