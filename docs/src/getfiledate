@@ -1,0 +1,17 @@
+#!/bin/sh
+
+( /bin/ls -l $1 ; date ) | \
+gawk ' \
+    {				       \
+	if (length($8)==4)             \
+	{			       \
+	    print $7". "$6" "$8;       \
+	    getline;		       \
+	}			       \
+	else			       \
+	{			       \
+	    date=$7". "$6;             \
+	    getline;		       \
+	    print date" "$6;           \
+	}			       \
+}'
