@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:48  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:54  digulla
     Added standard header for all files
 
@@ -10,6 +14,7 @@
 */
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
+#include "dos/dosextens.h"
 
 BPTR LoadSeg_AOS(BPTR file);
 BPTR LoadSeg_ELF(BPTR file);
@@ -22,7 +27,7 @@ BPTR LoadSeg_ELF(BPTR file);
 	__AROS_LH1(BPTR, LoadSeg,
 
 /*  SYNOPSIS */
-	__AROS_LA(STRPTR, name, D1),
+	__AROS_LHA(STRPTR, name, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 25, Dos)
@@ -58,20 +63,20 @@ BPTR LoadSeg_ELF(BPTR file);
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
+
     BPTR file, segs=0;
 
-    /* Open the file */    
+    /* Open the file */
     file=Open(name,MODE_OLDFILE);
     if(file)
     {
-        /* Then try to load the different file formats */
-/*        segs=LoadSeg_AOS(file); Not yet */
-        if(!segs)
-            segs=LoadSeg_ELF(file);
-            
-        /* Clean up */
-        Close(file);
+	/* Then try to load the different file formats */
+/*	  segs=LoadSeg_AOS(file); Not yet */
+	if(!segs)
+	    segs=LoadSeg_ELF(file);
+
+	/* Clean up */
+	Close(file);
     }
     /* And return */
     return segs;

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:52:51  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.3  1996/08/01 17:40:57  digulla
     Added standard header for all files
 
@@ -11,9 +15,9 @@
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
 #include <utility/tagitem.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <clib/dos_protos.h>
+#include "dos_intern.h"
 
 LONG RunProcess(struct Process *proc, struct StackSwapStruct *sss,
 STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
@@ -26,10 +30,10 @@ STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
 	__AROS_LH4(LONG, RunCommand,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR,   segList,   D1),
-	__AROS_LA(ULONG,  stacksize, D2),
-	__AROS_LA(STRPTR, argptr,    D3),
-	__AROS_LA(ULONG,  argsize,   D4),
+	__AROS_LHA(BPTR,   segList,   D1),
+	__AROS_LHA(ULONG,  stacksize, D2),
+	__AROS_LHA(STRPTR, argptr,    D3),
+	__AROS_LHA(ULONG,  argsize,   D4),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 84, Dos)

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:51  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:57  digulla
     Added standard header for all files
 
@@ -9,8 +13,8 @@
     Lang: english
 */
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -20,9 +24,9 @@
 	__AROS_LH3(LONG, Seek,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR, file,     D1),
-	__AROS_LA(LONG, position, D2),
-	__AROS_LA(LONG, mode,     D3),
+	__AROS_LHA(BPTR, file,     D1),
+	__AROS_LHA(LONG, position, D2),
+	__AROS_LHA(LONG, mode,     D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 11, Dos)
@@ -36,9 +40,9 @@
 	as pipes or console handlers.
 
     INPUTS
-	file     - filehandle
+	file	 - filehandle
 	position - relative offset in bytes (positive, negative or 0).
-	mode     - Where to count from. Either OFFSET_BEGINNING,
+	mode	 - Where to count from. Either OFFSET_BEGINNING,
 		   OFFSET_CURRENT or OFFSET_END.
 
     RESULT
@@ -75,10 +79,10 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_SEEK;
     iofs->IOFS.io_Flags  =0;
     iofs->io_Args[0]=position<0?-1:0;
@@ -88,7 +92,7 @@
     /* Send the request. */
     DoIO(&iofs->IOFS);
 
-    /* return */    
+    /* return */
     if((me->pr_Result2=iofs->io_DosError))
 	return -1;
     else

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:49  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:55  digulla
     Added standard header for all files
 
@@ -16,11 +20,11 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH2I(BOOL, PrintFault,
+	__AROS_LH2(BOOL, PrintFault,
 
 /*  SYNOPSIS */
-	__AROS_LA(LONG,   code,   D1),
-	__AROS_LA(STRPTR, header, D2),
+	__AROS_LHA(LONG,   code,   D1),
+	__AROS_LHA(STRPTR, header, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 79, Dos)
@@ -60,16 +64,16 @@
     BPTR stream=me->pr_CES?me->pr_CES:me->pr_COS;
     struct EString *es=EString;
     BOOL ret=0;
-    
+
     /* First find error string */
     while(es->Number)
     {
-        if(es->Number==code)
-            break;
-        es++;
+	if(es->Number==code)
+	    break;
+	es++;
     }
 
-    /* Print everything */    
+    /* Print everything */
     if(!FPuts(stream,header)&&
        !FPuts(stream,": ")&&
        !FPuts(stream,es->String)&&

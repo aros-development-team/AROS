@@ -2,14 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:48  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:54  digulla
     Added standard header for all files
 
     Desc:
     Lang: english
 */
-#include <dos/dosextens.h>
 #include <clib/exec_protos.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -19,7 +23,7 @@
 	__AROS_LH1(struct DosList *, LockDosList,
 
 /*  SYNOPSIS */
-	__AROS_LA(ULONG, flags, D1),
+	__AROS_LHA(ULONG, flags, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 109, Dos)
@@ -59,7 +63,7 @@
     if(flags&LDF_WRITE)
 	ObtainSemaphore(&DOSBase->dl_DosListLock);
     else
-    	ObtainSemaphoreShared(&DOSBase->dl_DosListLock);
+	ObtainSemaphoreShared(&DOSBase->dl_DosListLock);
     return (struct DosList *)&DOSBase->dl_DevInfo;
     __AROS_FUNC_EXIT
 } /* LockDosList */

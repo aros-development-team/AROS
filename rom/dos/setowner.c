@@ -2,6 +2,10 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/13 13:52:52  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.1  1996/08/12 14:29:29  digulla
     Change owner of a file
 
@@ -18,8 +22,8 @@
 	__AROS_LH2(BOOL, SetOwner,
 
 /*  SYNOPSIS */
-	__AROS_LA(STRPTR, name, D1),
-	__AROS_LA(long  , owner_info, D2),
+	__AROS_LHA(STRPTR, name, D1),
+	__AROS_LHA(long  , owner_info, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 166, Dos)

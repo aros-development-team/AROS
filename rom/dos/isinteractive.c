@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:48  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:53  digulla
     Added standard header for all files
 
@@ -9,8 +13,8 @@
     Lang: english
 */
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -20,7 +24,7 @@
 	__AROS_LH1(BOOL, IsInteractive,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR, file, D1),
+	__AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 36, Dos)
@@ -65,21 +69,21 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_IS_INTERACTIVE;
     iofs->IOFS.io_Flags  =0;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     /* Return */
     if(iofs->io_DosError)
 	return 0;
     else
 	return iofs->io_Args[0];
-    
+
     __AROS_FUNC_EXIT
 } /* IsInteractive */

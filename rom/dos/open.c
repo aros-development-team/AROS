@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:52:49  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.3  1996/08/12 14:20:38  digulla
     Added aliases
 
@@ -33,8 +37,8 @@
 	__AROS_LH2(BPTR, Open,
 
 /*  SYNOPSIS */
-	__AROS_LA(STRPTR, name,       D1),
-	__AROS_LA(LONG,   accessMode, D2),
+	__AROS_LHA(STRPTR, name,       D1),
+	__AROS_LHA(LONG,   accessMode, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 5, Dos)
@@ -78,8 +82,8 @@
 	__AROS_LH2(BPTR, Lock,
 
     SYNOPSIS
-	__AROS_LA(STRPTR, name,       D1),
-	__AROS_LA(LONG,   accessMode, D2),
+	__AROS_LHA(STRPTR, name,       D1),
+	__AROS_LHA(LONG,   accessMode, D2),
 
     LOCATION
 	struct DosLibrary *, DOSBase, 14, Dos)

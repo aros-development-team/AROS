@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:53  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:59  digulla
     Added standard header for all files
 
@@ -9,8 +13,8 @@
     Lang: english
 */
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -20,9 +24,9 @@
 	__AROS_LH3(LONG, Write,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR, file,   D1),
-	__AROS_LA(APTR, buffer, D2),
-	__AROS_LA(LONG, length, D3),
+	__AROS_LHA(BPTR, file,   D1),
+	__AROS_LHA(APTR, buffer, D2),
+	__AROS_LHA(LONG, length, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 8, Dos)
@@ -74,10 +78,10 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_WRITE;
     iofs->IOFS.io_Flags  =0;
     iofs->io_Args[0]=(LONG)buffer;
@@ -85,9 +89,9 @@
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     /* Set error code and return */
-    
+
     if((me->pr_Result2=iofs->io_DosError))
 	return -1;
     else

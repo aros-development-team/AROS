@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:47  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:52  digulla
     Added standard header for all files
 
@@ -9,7 +13,7 @@
     Lang: english
 */
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -19,7 +23,7 @@
 	__AROS_LH1(void, FreeDosEntry,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct DosList *, dlist, D1),
+	__AROS_LHA(struct DosList *, dlist, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 117, Dos)
@@ -28,7 +32,7 @@
 	Frees a dos list entry created with MakeDosEntry().
 
     INPUTS
-    	dlist - pointer to dos list entry. May be NULL.
+	dlist - pointer to dos list entry. May be NULL.
 
     RESULT
 
@@ -53,12 +57,12 @@
 
     if(dlist!=NULL)
     {
-        STRPTR s2;
-    	s2=dlist->dol_Name;
-    	while(*s2++)
-    	   ;
-    	FreeMem(dlist->dol_Name-1,s2-dlist->dol_Name+2);
-    	FreeMem(dlist,sizeof(struct DosList));
+	STRPTR s2;
+	s2=dlist->dol_Name;
+	while(*s2++)
+	   ;
+	FreeMem(dlist->dol_Name-1,s2-dlist->dol_Name+2);
+	FreeMem(dlist,sizeof(struct DosList));
     }
 
     __AROS_FUNC_EXIT

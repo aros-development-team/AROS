@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/13 13:52:48  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.4  1996/08/03 18:21:10  digulla
     Added support for linked files !
 
@@ -13,9 +17,11 @@
 */
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/dosasl.h>
 #include <clib/dos_protos.h>
+#include "dos_intern.h"
+
+extern struct DosLibrary * DOSBase;
 
 #define SHT_PROGBITS	1
 #define SHT_SYMTAB	2
@@ -186,6 +192,7 @@ BPTR LoadSeg_ELF(BPTR file)
 		if(read_block(file,sh->offset,hunks[t].memory,sh->size))
 		    goto end;
 		loaded=hunks[t].memory;
+		/* VPrintf ("Loaded PROGBITS at %08lx\n", (ULONG*)&loaded); */
 		break;
 	    case SHT_REL:
 		if(loaded==NULL)

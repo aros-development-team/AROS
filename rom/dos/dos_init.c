@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:53  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:49  digulla
     Added standard header for all files
 
@@ -32,7 +36,7 @@ int Dos_entry(void)
     return -1;
 }
 
-/* CreateNewProc needs a global DosBase variable */
+/* CreateNewProc needs a global DOSBase variable */
 struct DosLibrary *DOSBase;
 
 const struct Resident Dos_resident=
@@ -70,8 +74,8 @@ void Dos_RemLibrary();
 void LDFlush();
 
 __AROS_LH2(struct DosLibrary *, init,
- __AROS_LA(struct DosLibrary *, dosBase, D0),
- __AROS_LA(BPTR,               segList,   A0),
+ __AROS_LHA(struct DosLibrary *, dosBase, D0),
+ __AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Dos)
 {
     __AROS_FUNC_INIT
@@ -81,31 +85,31 @@ __AROS_LH2(struct DosLibrary *, init,
     DOSBase=dosBase;
     dosBase->dl_SysBase=sysBase;
     dosBase->dl_SegList=segList;
-    
+
     InitSemaphore(&dosBase->dl_DosListLock);
     InitSemaphore(&dosBase->dl_LDSigSem);
-    
+
     dosBase->dl_UtilityBase=OpenLibrary("utility.library",39);
     if(dosBase->dl_UtilityBase!=NULL)
     {
-        static const struct TagItem tags[]=
-        {
-            { NP_Entry, (LONG)LDDemon }, { NP_Input, 0 }, { NP_Output, 0 },
-            { NP_Name, (LONG)"lib & dev loader demon" }, { TAG_END, 0 }
-        };
-        dosBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
-        if(dosBase->dl_LDDemon!=NULL)
-        {
-            (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),Dos_OpenLibrary);
-            (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),Dos_OpenDevice);
-            (void)SetFunction(&SysBase->LibNode,-69*sizeof(struct JumpVec),Dos_CloseLibrary);
-            (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),Dos_CloseDevice);
-            (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),Dos_RemLibrary);
-            (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),Dos_RemLibrary);
-            dosBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
-            dosBase->dl_LDHandler.is_Node.ln_Pri=0;
-            dosBase->dl_LDHandler.is_Code=LDFlush;
-            AddMemHandler(&dosBase->dl_LDHandler);
+	static const struct TagItem tags[]=
+	{
+	    { NP_Entry, (LONG)LDDemon }, { NP_Input, 0 }, { NP_Output, 0 },
+	    { NP_Name, (LONG)"lib & dev loader demon" }, { TAG_END, 0 }
+	};
+	dosBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
+	if(dosBase->dl_LDDemon!=NULL)
+	{
+	    (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),Dos_OpenLibrary);
+	    (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),Dos_OpenDevice);
+	    (void)SetFunction(&SysBase->LibNode,-69*sizeof(struct JumpVec),Dos_CloseLibrary);
+	    (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),Dos_CloseDevice);
+	    (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),Dos_RemLibrary);
+	    (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),Dos_RemLibrary);
+	    dosBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
+	    dosBase->dl_LDHandler.is_Node.ln_Pri=0;
+	    dosBase->dl_LDHandler.is_Code=LDFlush;
+	    AddMemHandler(&dosBase->dl_LDHandler);
 	    return dosBase;
 	}
 	CloseLibrary(dosBase->dl_UtilityBase);
@@ -116,7 +120,7 @@ __AROS_LH2(struct DosLibrary *, init,
 }
 
 __AROS_LH1(struct DosLibrary *, open,
- __AROS_LA(ULONG, version, D0),
+ __AROS_LHA(ULONG, version, D0),
 	   struct DosLibrary *, DOSBase, 1, Dos)
 {
     __AROS_FUNC_INIT
@@ -139,7 +143,7 @@ __AROS_LH1(struct DosLibrary *, open,
 }
 
 __AROS_LH0(BPTR, close,
-           struct DosLibrary *, DOSBase, 2, Dos)
+	   struct DosLibrary *, DOSBase, 2, Dos)
 {
     __AROS_FUNC_INIT
     /*
@@ -161,7 +165,7 @@ __AROS_LH0(BPTR, close,
 }
 
 __AROS_LH0(BPTR, expunge,
-           struct DosLibrary *, DOSBase, 3, Dos)
+	   struct DosLibrary *, DOSBase, 3, Dos)
 {
     __AROS_FUNC_INIT
 
@@ -194,7 +198,7 @@ __AROS_LH0(BPTR, expunge,
 }
 
 __AROS_LH0I(int, null,
-            struct DosLibrary *, DOSBase, 4, Dos)
+	    struct DosLibrary *, DOSBase, 4, Dos)
 {
     __AROS_FUNC_INIT
     return 0;

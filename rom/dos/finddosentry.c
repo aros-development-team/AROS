@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:46  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:51  digulla
     Added standard header for all files
 
@@ -20,9 +24,9 @@
 	__AROS_LH3(struct DosList *, FindDosEntry,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct DosList *, dlist, D1),
-	__AROS_LA(STRPTR,           name,  D2),
-	__AROS_LA(ULONG,            flags, D3),
+	__AROS_LHA(struct DosList *, dlist, D1),
+	__AROS_LHA(STRPTR,           name,  D2),
+	__AROS_LHA(ULONG,            flags, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 114, Dos)

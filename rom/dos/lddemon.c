@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:48  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:53  digulla
     Added standard header for all files
 
@@ -23,7 +27,7 @@ static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
     struct Process *me=(struct Process *)FindTask(NULL);
     struct DosList *dl1, *dl2;
     struct Process *caller=DOSBase->dl_LDCaller;
-    
+
     if(caller->pr_Task.tc_Node.ln_Type==NT_PROCESS)
     {
 	/* Try the caller's current dir */
@@ -36,14 +40,14 @@ static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
     dl1=LockDosList(LDF_ALL|LDF_READ);
     dl2=FindDosEntry(dl1,basedir,LDF_VOLUMES);
     if(dl2==NULL)
-        dl2=FindDosEntry(dl1,basedir,LDF_DEVICES|LDF_ASSIGNS);
+	dl2=FindDosEntry(dl1,basedir,LDF_DEVICES|LDF_ASSIGNS);
     if(dl2!=NULL)
     {
-        struct FileHandle fh;
-        fh.fh_Unit  =dl2->dol_Unit;
-        fh.fh_Device=dl2->dol_Device;
-        me->pr_CurrentDir=MKBADDR(&fh);
-        seglist=LoadSeg(name);
+	struct FileHandle fh;
+	fh.fh_Unit  =dl2->dol_Unit;
+	fh.fh_Device=dl2->dol_Device;
+	me->pr_CurrentDir=MKBADDR(&fh);
+	seglist=LoadSeg(name);
     }
     UnLockDosList(LDF_ALL|LDF_READ);
     return seglist;
@@ -54,20 +58,20 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     BPTR seg=seglist;
     while(seg)
     {
-        ULONG size=((ULONG *)BADDR(seg))[0];
-        STRPTR addr=(STRPTR)&((ULONG *)BADDR(seg))[1];
-        for(;size>=sizeof(struct Resident);size-=PTRALIGN,addr+=PTRALIGN)
-        {
-            struct Resident *res=(struct Resident *)addr;
-            if(res->rt_MatchWord==RTC_MATCHWORD&&res->rt_MatchTag==res)
-            {
-                struct Library *lib=InitResident(res,seglist);
-                if(lib==NULL)
-                    UnLoadSeg(seglist);
-                return lib;
-            }
-        }
-        seglist=*(BPTR *)BADDR(seglist-1);
+	ULONG size=((ULONG *)BADDR(seg))[0];
+	STRPTR addr=(STRPTR)&((ULONG *)BADDR(seg))[1];
+	for(;size>=sizeof(struct Resident);size-=PTRALIGN,addr+=PTRALIGN)
+	{
+	    struct Resident *res=(struct Resident *)addr;
+	    if(res->rt_MatchWord==RTC_MATCHWORD&&res->rt_MatchTag==res)
+	    {
+		struct Library *lib=InitResident(res,seglist);
+		if(lib==NULL)
+		    UnLoadSeg(seglist);
+		return lib;
+	    }
+	}
+	seglist=*(BPTR *)BADDR(seglist-1);
     }
     UnLoadSeg(seglist);
     return NULL;
@@ -87,7 +91,7 @@ void LDDemon(void)
 }
 
 __AROS_LH2(struct Library *,OpenLibrary,
-__AROS_LA(STRPTR,libName,A1),__AROS_LA(ULONG,version,D0),
+__AROS_LHA(STRPTR,libName,A1),__AROS_LHA(ULONG,version,D0),
 struct ExecBase *,sysbase,0,Dos)
 {
     __AROS_FUNC_INIT
@@ -97,23 +101,23 @@ struct ExecBase *,sysbase,0,Dos)
     library=(struct Library *)FindName(&SysBase->LibList,libName);
     if(library==NULL)
     {
-        ObtainSemaphore(&DOSBase->dl_LDSigSem);
-        DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
-        DOSBase->dl_LDName  =libName;
-        DOSBase->dl_LDPtr   ="Libs";
-        Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
-        Wait(SIGF_DOS);
-        library=(struct Library *)DOSBase->dl_LDPtr;
-        ReleaseSemaphore(&DOSBase->dl_LDSigSem);
-        if(library!=NULL)
-            AddLibrary(library);
+	ObtainSemaphore(&DOSBase->dl_LDSigSem);
+	DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
+	DOSBase->dl_LDName  =libName;
+	DOSBase->dl_LDPtr   ="Libs";
+	Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
+	Wait(SIGF_DOS);
+	library=(struct Library *)DOSBase->dl_LDPtr;
+	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
+	if(library!=NULL)
+	    AddLibrary(library);
     }
     if(library!=NULL)
     {
-        if(library->lib_Version>=version)
-            library=__AROS_LVO_CALL1(struct Library *,1,library,version,d0);
-        else
-            library=NULL;
+	if(library->lib_Version>=version)
+	    library=__AROS_LVO_CALL1(struct Library *,1,library,version,d0);
+	else
+	    library=NULL;
     }
     Permit();
     return library;
@@ -121,8 +125,8 @@ struct ExecBase *,sysbase,0,Dos)
 }
 
 __AROS_LH4(BYTE,OpenDevice,
-__AROS_LA(STRPTR,devName,A0),__AROS_LA(ULONG,unitNumber,D0),
-__AROS_LA(struct IORequest *,iORequest,A1),__AROS_LA(ULONG,flags,D1),
+__AROS_LHA(STRPTR,devName,A0),__AROS_LHA(ULONG,unitNumber,D0),
+__AROS_LHA(struct IORequest *,iORequest,A1),__AROS_LHA(ULONG,flags,D1),
 struct ExecBase *,sysbase,0,Dos)
 {
     __AROS_FUNC_INIT
@@ -133,27 +137,27 @@ struct ExecBase *,sysbase,0,Dos)
     device=(struct Device *)FindName(&SysBase->DeviceList,devName);
     if(device==NULL)
     {
-        ObtainSemaphore(&DOSBase->dl_LDSigSem);
-        DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
-        DOSBase->dl_LDName  =devName;
-        DOSBase->dl_LDPtr   ="Devs";
-        Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
-        Wait(SIGF_DOS);
-        device=(struct Device *)DOSBase->dl_LDPtr;
-        ReleaseSemaphore(&DOSBase->dl_LDSigSem);
-        if(device!=NULL)
-            AddDevice(device);
+	ObtainSemaphore(&DOSBase->dl_LDSigSem);
+	DOSBase->dl_LDCaller=(struct Process *)FindTask(NULL);
+	DOSBase->dl_LDName  =devName;
+	DOSBase->dl_LDPtr   ="Devs";
+	Signal((struct Task *)DOSBase->dl_LDDemon,SIGF_DOS);
+	Wait(SIGF_DOS);
+	device=(struct Device *)DOSBase->dl_LDPtr;
+	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
+	if(device!=NULL)
+	    AddDevice(device);
     }
     if(device!=NULL)
     {
-        iORequest->io_Error=0;
-        iORequest->io_Device=device;
-        iORequest->io_Flags=flags;
-        iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-        __AROS_LVO_CALL3(void,1,device,iORequest,A1,unitNumber,D0,flags,D1);
-        ret=iORequest->io_Error;
-        if(ret)
-            iORequest->io_Device=NULL;
+	iORequest->io_Error=0;
+	iORequest->io_Device=device;
+	iORequest->io_Flags=flags;
+	iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	__AROS_LVO_CALL3(void,1,device,iORequest,A1,unitNumber,D0,flags,D1);
+	ret=iORequest->io_Error;
+	if(ret)
+	    iORequest->io_Device=NULL;
     }
     Permit();
     return ret;
@@ -161,7 +165,7 @@ struct ExecBase *,sysbase,0,Dos)
 }
 
 __AROS_LH1(void,CloseLibrary,
-__AROS_LA(struct Library *,library,A1),
+__AROS_LHA(struct Library *,library,A1),
 struct ExecBase *,sysbase,0,Dos)
 {
     __AROS_FUNC_INIT
@@ -169,20 +173,20 @@ struct ExecBase *,sysbase,0,Dos)
     BPTR seglist;
     if(library!=NULL)
     {
-        Forbid();
-        seglist=__AROS_LVO_CALL0(BPTR,2,library);
-        if(seglist)
-        {
-            DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
-            UnLoadSeg(seglist);
-        }
-        Permit();
+	Forbid();
+	seglist=__AROS_LVO_CALL0(BPTR,2,library);
+	if(seglist)
+	{
+	    DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
+	    UnLoadSeg(seglist);
+	}
+	Permit();
     }
     __AROS_FUNC_EXIT
 }
 
 __AROS_LH1(void,CloseDevice,
-__AROS_LA(struct IORequest *,iORequest,A1),
+__AROS_LHA(struct IORequest *,iORequest,A1),
 struct ExecBase *,sysbase,0,Dos)
 {
     __AROS_FUNC_INIT
@@ -191,20 +195,20 @@ struct ExecBase *,sysbase,0,Dos)
     Forbid();
     if(iORequest->io_Device!=NULL)
     {
-        seglist=__AROS_LVO_CALL1(BPTR,2,iORequest->io_Device,iORequest,A1);
-        iORequest->io_Device=(struct Device *)-1;
-        if(seglist)
-        {
-            DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
-            UnLoadSeg(seglist);
-        }
+	seglist=__AROS_LVO_CALL1(BPTR,2,iORequest->io_Device,iORequest,A1);
+	iORequest->io_Device=(struct Device *)-1;
+	if(seglist)
+	{
+	    DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
+	    UnLoadSeg(seglist);
+	}
     }
     Permit();
     __AROS_FUNC_EXIT
 }
 
 __AROS_LH1(void,RemLibrary,
-__AROS_LA(struct Library *,library,A1),
+__AROS_LHA(struct Library *,library,A1),
 struct ExecBase *,sysbase,0,Dos)
 {
     __AROS_FUNC_INIT
@@ -225,7 +229,7 @@ LONG LDFlush(void)
 {
     extern struct DosLibrary *DOSBase;
     struct Library *library;
-    
+
     DOSBase->dl_LDReturn=MEM_DID_NOTHING;
 
     /* Forbid() is already done, but I don't want to rely on it. */
@@ -242,9 +246,9 @@ LONG LDFlush(void)
 	    /* Did it really go away? */
 	    if(DOSBase->dl_LDReturn!=MEM_DID_NOTHING)
 	    {
-	        /* Yes. Return it. */
-	        Permit();
-	        return DOSBase->dl_LDReturn;
+		/* Yes. Return it. */
+		Permit();
+		return DOSBase->dl_LDReturn;
 	    }
 	}
 	/* Go to next. */
@@ -259,8 +263,8 @@ LONG LDFlush(void)
 	    RemLibrary(library);
 	    if(DOSBase->dl_LDReturn!=MEM_DID_NOTHING)
 	    {
-	        Permit();
-	        return DOSBase->dl_LDReturn;
+		Permit();
+		return DOSBase->dl_LDReturn;
 	    }
 	}
 	library=(struct Library *)library->lib_Node.ln_Succ;

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:52:45  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.3  1996/08/12 14:17:34  digulla
     Added alias UnLock Close
 
@@ -25,7 +29,7 @@
 	__AROS_LH1(BOOL, Close,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR, file, D1),
+	__AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 6, Dos)
@@ -66,7 +70,7 @@
 	__AROS_LH1(BOOL, UnLock,
 
     SYNOPSIS
-	__AROS_LA(BPTR, lock, D1),
+	__AROS_LHA(BPTR, lock, D1),
 
     LOCATION
 	struct DosLibrary *, DOSBase, 15, Dos)

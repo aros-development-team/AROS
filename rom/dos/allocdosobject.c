@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:44  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:47  digulla
     Added standard header for all files
 
@@ -10,9 +14,9 @@
 */
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/exall.h>
 #include <utility/tagitem.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -22,8 +26,8 @@
 	__AROS_LH2(APTR, AllocDosObject,
 
 /*  SYNOPSIS */
-	__AROS_LA(ULONG,            type, D1),
-	__AROS_LA(struct TagItem *, tags, D2),
+	__AROS_LHA(ULONG,            type, D1),
+	__AROS_LHA(struct TagItem *, tags, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 38, Dos)
@@ -36,7 +40,7 @@
 	tags - Pointer to taglist array with additional information.
 
     RESULT
-    	Pointer to new object or NULL.
+	Pointer to new object or NULL.
 
     NOTES
 

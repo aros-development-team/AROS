@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:44  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:47  digulla
     Added standard header for all files
 
@@ -10,8 +14,8 @@
 */
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -21,8 +25,8 @@
 	__AROS_LH2(BOOL, AssignLock,
 
 /*  SYNOPSIS */
-	__AROS_LA(STRPTR, name, D1),
-	__AROS_LA(BPTR,   lock, D2),
+	__AROS_LHA(STRPTR, name, D1),
+	__AROS_LHA(BPTR,   lock, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 102, Dos)
@@ -61,7 +65,7 @@
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    BOOL success=1;    
+    BOOL success=1;
     struct DosList *dl, *newdl=NULL;
     struct Process *me=(struct Process *)FindTask(NULL);
     struct IOFileSys io,*iofs=&io;
@@ -69,22 +73,22 @@
 
     if(lock)
     {
-        newdl=MakeDosEntry(name,DLT_DIRECTORY);
-        if(newdl==NULL)
-        {
+	newdl=MakeDosEntry(name,DLT_DIRECTORY);
+	if(newdl==NULL)
+	{
 	    UnLock(lock);
 	    me->pr_Result2=ERROR_NO_FREE_STORE;
-    	    return 0;
+	    return 0;
 	}else
 	{
 	    newdl->dol_Unit  =fh->fh_Unit;
 	    newdl->dol_Device=fh->fh_Device;
-    	    FreeDosObject(DOS_FILEHANDLE,fh);
-    	}
+	    FreeDosObject(DOS_FILEHANDLE,fh);
+	}
     }
 
     dl=LockDosList(LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
-    
+
     dl=FindDosEntry(dl,name,LDF_DEVICES|LDF_ASSIGNS);
     if(dl==NULL)
     {
@@ -92,9 +96,9 @@
 	    AddDosEntry(newdl);
     }else if(dl->dol_Type==DLT_DEVICE)
     {
-        dl=newdl;
-        me->pr_Result2=ERROR_OBJECT_EXISTS;
-        success=0;
+	dl=newdl;
+	me->pr_Result2=ERROR_OBJECT_EXISTS;
+	success=0;
     }else
     {
 	RemDosEntry(dl);
@@ -105,22 +109,22 @@
     if(dl!=NULL)
     {
 	/* Prepare I/O request. */
-        iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-        iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-        iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-        iofs->IOFS.io_Device =dl->dol_Device;
-        iofs->IOFS.io_Unit   =dl->dol_Unit;
-        iofs->IOFS.io_Command=FSA_CLOSE;
-        iofs->IOFS.io_Flags  =0;
-                                
-        /* Send the request. No errors possible. */
-        (void)DoIO(&iofs->IOFS);
-                                        
+	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+	iofs->IOFS.io_Device =dl->dol_Device;
+	iofs->IOFS.io_Unit   =dl->dol_Unit;
+	iofs->IOFS.io_Command=FSA_CLOSE;
+	iofs->IOFS.io_Flags  =0;
+
+	/* Send the request. No errors possible. */
+	(void)DoIO(&iofs->IOFS);
+
 	FreeDosEntry(dl);
     }
-    
+
     UnLockDosList(LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
 
-    return success;    
+    return success;
     __AROS_FUNC_EXIT
 } /* AssignLock */

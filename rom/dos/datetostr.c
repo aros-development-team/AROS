@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:53  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:48  digulla
     Added standard header for all files
 
@@ -9,6 +13,7 @@
     Lang: english
 */
 #include <dos/datetime.h>
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -18,7 +23,7 @@
 	__AROS_LH1(BOOL, DateToStr,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct DateTime *, datetime, D1),
+	__AROS_LHA(struct DateTime *, datetime, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 124, Dos)
@@ -120,7 +125,7 @@
 		3. Every year even divisible by 400 is a leap year as an
 		   exception from rule 2.
 		So 1996, 2000 and 2004 are leap years - 1900 and 1999 are not.
-		
+
 		Use 2000 as a base to devide the days into 400 year blocks,
 		those into 100 year blocks and so on...
 	    */
@@ -192,7 +197,7 @@
 
     if(datetime->dat_StrTime!=NULL)
     {
-        /* Build time string */
+	/* Build time string */
 	datetime->dat_StrTime[0]=mins/(10*60)+'0';
 	datetime->dat_StrTime[1]=mins/60%10+'0';
 	datetime->dat_StrTime[2]=':';
@@ -203,7 +208,7 @@
 	datetime->dat_StrTime[7]=tick/TICKS_PER_SECOND%10+'0';
 	datetime->dat_StrTime[8]=0;
     }
-    
+
     /* All done. Return OK. */
     return 1;
 

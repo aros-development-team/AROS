@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 13:52:52  digulla
+    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:40:58  digulla
     Added standard header for all files
 
@@ -9,7 +13,7 @@
     Lang: english
 */
 #include <clib/exec_protos.h>
-#include <dos/dosextens.h>
+#include "dos_intern.h"
 
 #ifndef EOF
 #define EOF -1
@@ -23,8 +27,8 @@
 	__AROS_LH2(LONG, UnGetC,
 
 /*  SYNOPSIS */
-	__AROS_LA(BPTR, file,      D1),
-	__AROS_LA(LONG, character, D2),
+	__AROS_LHA(BPTR, file,      D1),
+	__AROS_LHA(LONG, character, D2),
 
 /*  LOCATION */
 
@@ -37,7 +41,7 @@
 	works for EOF.
 
     INPUTS
-	file      - Filehandle you've read from.
+	file	  - Filehandle you've read from.
 	character - Character to push back or EOF.
 
     RESULT
@@ -63,31 +67,31 @@
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
+
     LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
 
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);
 
-    /* If the file is in write mode there was nothing read recently */    
+    /* If the file is in write mode there was nothing read recently */
     if(fh->fh_Flags&FHF_WRITE)
     {
-        *result=ERROR_SEEK_ERROR;
-        return 0;
+	*result=ERROR_SEEK_ERROR;
+	return 0;
     }
 
     /* Unget EOF character if the last character read was an EOF */
     if(character==EOF&&fh->fh_End==fh->fh_Buf)
     {
-        fh->fh_Pos++;
-        return EOF;
+	fh->fh_Pos++;
+	return EOF;
     }
 
     /* Test if I may unget a character on this file */
     if(fh->fh_Pos==fh->fh_Buf)
     {
-        *result=ERROR_SEEK_ERROR;
-        return 0;
+	*result=ERROR_SEEK_ERROR;
+	return 0;
     }
 
     /* OK. Unget character and return. */
