@@ -1,7 +1,7 @@
 Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
-BUG000077 BUG000078 BUG000079
+BUG000077 BUG000078 BUG000079 BUG000081
 
 
 
@@ -570,6 +570,10 @@ iain@ugh.net.au
 When you try and CD into a plain file, you get directory not found rather
 than object is of wrong type. See also BUG000065.
 
+BUG000081
+stefan.berger@att.net
+'Which' does almost never return the path to the program even if that
+program is in the path list. Try "Which Which".
 
 
 !! Keep the list of outstanding bugs at the top up-to-date
