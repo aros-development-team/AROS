@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.15  1999/03/24 20:06:38  nlorentz
-    Minor fix
+    Revision 1.16  1999/03/26 10:39:29  nlorentz
+    Call int_activatewindow() instead of ActivateWindow()
 
     Revision 1.14  1999/03/19 20:21:35  nlorentz
     Fixed race condition bug between CloseWindow()/inputhandler by doing most of window closing on inputhandlers context. Also Closewindow() was called direcly from inputhandler, that would cause FreeSignal() in DeleteMsgPort() to be called on the wrong task context
@@ -180,7 +180,7 @@ VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
     if (window->Descendant)
     {
 	window->Descendant->Parent = window->Parent;
-	ActivateWindow (window->Descendant);
+	int_activatewindow (window->Descendant, IntuitionBase);
     }
     if (window->Parent)
     {
@@ -189,7 +189,7 @@ VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
 	    window->Descendant;
 
 	if (!IntuitionBase->ActiveWindow)
-	    ActivateWindow (window->Parent);
+	    int_activatewindow (window->Parent, IntuitionBase);
     }
 
     /* Make sure the Screen is still valid */
