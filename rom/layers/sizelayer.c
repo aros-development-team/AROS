@@ -77,6 +77,7 @@
   struct BitMap * SimpleBackupBM = NULL;
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
+  struct Rectangle tmpRect;
   BOOL retval;  
   struct Region * oldclipregion;
   
@@ -229,10 +230,11 @@
     l_tmp->bounds     = l->bounds;
     l_tmp->Flags      = l->Flags;
     l_tmp->LayerInfo  = LI;
-    l_tmp->DamageList = l->DamageList;
     l_tmp->SuperBitMap= l->SuperBitMap;
     l_tmp->Scroll_X   = l->Scroll_X;
     l_tmp->Scroll_Y   = l->Scroll_Y;
+
+    l_tmp->DamageList = NewRegion();
 
     /* further init the rastport structure of the temporary layer */
     RP -> Layer  = l_tmp;
@@ -274,14 +276,61 @@
     l->ClipRect = CR;
 
     /*
-    ** Keep the damage list, but change it in such a way that
-    ** rectangles with screen coordinates can be or'ed to it.
+    ** If the window is not as wide/high as before then cut down
+    ** the damage list if there is a damage list.
+    ** If it's a simple refresh layer then just clear the damage list.
     */
-    l->DamageList->bounds.MinX += l->bounds.MinX;
-    l->DamageList->bounds.MinY += l->bounds.MinY;
-    l->DamageList->bounds.MaxX += l->bounds.MinX;
-    l->DamageList->bounds.MaxY += l->bounds.MinY;
+#if 0
+    if (IS_SIMPLEREFRESH(l))
+    {
+kprintf("Clearing region!\n");
+//      ClearRegion(l->DamageList);
+    } 
+    else
+#endif
+    if (NULL != l->DamageList->RegionRectangle)
+    {
+      if (dx <= 0 || dy <= 0)
+      {
+        tmpRect.MinX = 0;
+        tmpRect.MinY = 0;
+        tmpRect.MaxX = l->bounds.MaxX - l->bounds.MinX;
+        tmpRect.MaxY = l->bounds.MaxY - l->bounds.MinY;
+        AndRectRegion(l->DamageList, &tmpRect);
+      }
+    
+      /*
+      ** Keep the damage list, but change it in such a way that
+      ** rectangles with screen coordinates can be or'ed to it.
+      */
+      l->DamageList->bounds.MinX += l->bounds.MinX;
+      l->DamageList->bounds.MinY += l->bounds.MinY;
+      l->DamageList->bounds.MaxX += l->bounds.MinX;
+      l->DamageList->bounds.MaxY += l->bounds.MinY;
+    }
+     
+    /*
+    ** For a smart refresh layer add that area to the damage list
+    ** where the layer increased its size
+    */
+    if (IS_SMARTREFRESH(l) && ((dx > 0) || (dy > 0)))
+    {
+        tmpRect = l->bounds;
+        if (dx > 0)
+        {
+          tmpRect.MinX = l->bounds.MaxX - dx;
+          /* Rect.MinY = l->bounds.MinY; is's still correct! */
+          OrRectRegion(l->DamageList, &tmpRect);
+        }
 
+        if (dy > 0)
+        {
+          tmpRect.MinX = l->bounds.MinX;
+          tmpRect.MinY = l->bounds.MaxY - dy;
+          OrRectRegion(l->DamageList, &tmpRect);
+        }
+    }
+    
     /* Copy the bounds */
     CR->bounds = l->bounds;
     /* 
@@ -428,6 +477,8 @@
                         0x0c0 /* copy */
                         );
       FreeBitMap(SimpleBackupBM);
+      
+      ClearRegion(l->DamageList);
     }
 
     /* One more thing to do: Walk through all layers behind the layer and
@@ -505,11 +556,14 @@
 	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
-/***************
-	      if (0 != (l->Flags & LAYERSIMPLE))
-***************/
-              OrRectRegion(l->DamageList, &CR->bounds);
-
+	      if (IS_SIMPLEREFRESH(l))
+                OrRectRegion(l->DamageList, &bounds);
+#if 0
+kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
+                                         bounds.MinY,
+                                         bounds.MaxX,
+                                         bounds.MaxY);
+#endif
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -559,10 +613,14 @@
 	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
-/******************
-              if (0 != (l->Flags & LAYERSIMPLE))
-******************/
-              OrRectRegion(l->DamageList, &CR->bounds);
+              if (IS_SIMPLEREFRESH(l))
+                OrRectRegion(l->DamageList, &bounds);
+#if 0
+kprintf("Added rectangle: %d/%d-%d/%d\n",bounds.MinX,
+                                         bounds.MinY,
+                                         bounds.MaxX,
+                                         bounds.MaxY);
+#endif
               l->Flags |= LAYERREFRESH;
 	    }
             else
@@ -620,12 +678,11 @@
     }
    
     /* The DamageList was built relative to the screen -> fix that! */
-    /* DamageLIst exists in any case!!!! */
+    /* DamageList exists in any case!!!! */
     l->DamageList->bounds.MinX -= l->bounds.MinX;
     l->DamageList->bounds.MinY -= l->bounds.MinY;
     l->DamageList->bounds.MaxX -= l->bounds.MinX;
     l->DamageList->bounds.MaxY -= l->bounds.MinY;
-    
     /* That's it */
     CleanupLayers(LI);
 
