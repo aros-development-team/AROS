@@ -227,44 +227,54 @@
           */
           if (Ltmp == L_behind)
           {  
-            /* ... restore the bitmap stuff found there */
-            if (0 == (L_behind->Flags & LAYERSUPER))
-	    { 
-              /* no SuperBitMap */
-              BltBitMap(
-                CR->BitMap,
-                CR->bounds.MinX & 0x0f,
-                0,
-                LD->rp->BitMap,
-                CR->bounds.MinX,
-                CR->bounds.MinY,
-                CR->bounds.MaxX - CR->bounds.MinX + 1,
-                CR->bounds.MaxY - CR->bounds.MinY + 1,
-                0x0c0, /* copy */
-                0xff,
-                NULL
-              );
-              /*
-                Also free the bitmap as it's useless now.
-	       */
-              FreeBitMap(CR->BitMap);
+            /* treat simple layers separately */
+            if (0 == (L_behind->Flags & LAYERSIMPLE))
+            {
+              /* ... restore the bitmap stuff found there */
+              if (0 == (L_behind->Flags & LAYERSUPER))
+	      { 
+                /* no SuperBitMap */
+                BltBitMap(
+                  CR->BitMap,
+                  CR->bounds.MinX & 0x0f,
+                  0,
+                  LD->rp->BitMap,
+                  CR->bounds.MinX,
+                  CR->bounds.MinY,
+                  CR->bounds.MaxX - CR->bounds.MinX + 1,
+                  CR->bounds.MaxY - CR->bounds.MinY + 1,
+                  0x0c0, /* copy */
+                  0xff,
+                  NULL
+                );
+                /*
+                  Also free the bitmap as it's useless now.
+   	        */
+                FreeBitMap(CR->BitMap);
+	      }
+              else
+	      {
+                /* with SuperBitMap */
+                BltBitMap(
+                  L_behind->SuperBitMap,
+                  CR->bounds.MinX - L_behind->bounds.MinX + L_behind->Scroll_X,
+                  CR->bounds.MinY - L_behind->bounds.MinY + L_behind->Scroll_Y,
+                  LD->rp->BitMap,
+                  CR->bounds.MinX,
+                  CR->bounds.MinY,
+                  CR->bounds.MaxX - CR->bounds.MinX + 1,
+                  CR->bounds.MaxY - CR->bounds.MinY + 1,
+                  0x0c0, /* copy */
+                  0xff,
+                  NULL
+                 );              
+	      }
 	    }
-            else
+	    else
 	    {
-              /* with SuperBitMap */
-              BltBitMap(
-                L_behind->SuperBitMap,
-                CR->bounds.MinX - L_behind->bounds.MinX + L_behind->Scroll_X,
-                CR->bounds.MinY - L_behind->bounds.MinY + L_behind->Scroll_Y,
-                LD->rp->BitMap,
-                CR->bounds.MinX,
-                CR->bounds.MinY,
-                CR->bounds.MaxX - CR->bounds.MinX + 1,
-                CR->bounds.MaxY - CR->bounds.MinY + 1,
-                0x0c0, /* copy */
-                0xff,
-                NULL
-               );              
+	      OrRectRegion(L_behind->DamageList, &CR->bounds);
+	      /* this layer needs a refresh in that area */
+	      L_behind->Flags |= LAYERREFRESH;
 	    }
             /* 
                clear the lobs entry and BitMap entry 

@@ -68,6 +68,8 @@
   if (0 == dx && 0 == dy)
     return;
 
+  LockLayer(0, l);
+
   /* if it's a superbitmapped layer */
   if ((l->Flags & LAYERSUPER) != 0)
   {
@@ -86,6 +88,8 @@
     l->Scroll_X += dx;
     l->Scroll_Y += dy;
   }
+  
+  UnlockLayer(l);
 
   return;  
 

@@ -124,7 +124,6 @@
           (0 == (flags & LAYERBACKDROP) ) 
         ))
     {
-//kprintf("CreateBehindLayer: New layer is first one.\n");
       /* the new one is the very first one in the list */
       if (NULL != li->top_layer)
       {

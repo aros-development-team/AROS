@@ -143,15 +143,9 @@
 
   while (NULL != CR)
   {
-/*
-kprintf("This Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
-          CR->bounds.MinX,CR->bounds.MaxX,
-          CR->bounds.MinY,CR->bounds.MaxY);
-*/
     /* Was this ClipRect visible before ??? */
     if (NULL == CR->lobs)
     {
-//kprintf("Is visible!!!\n");
       /* 
          Check which layer is now visible at this point. If its not
          the layer L then I will have to hide that part of the ClipRect.
@@ -166,29 +160,23 @@ kprintf("This Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
            to the Display BitMap and backup the Display BitMap into 
            that ClipRect.
 	 */
-//kprintf("Priority: %d\n",L_tmp->priority);
-//        CreateClipRectsSelf(L_tmp, FALSE);
         _CR = internal_WhichClipRect(_L, CR->bounds.MinX, CR->bounds.MinY);
 
         /*
             _CR [_L] is now visible and 
              CR [ L] is now hidden
 	 */
-/*
-if (CR->bounds.MinX != _CR->bounds.MinX ||
-    CR->bounds.MaxX != _CR->bounds.MaxX ||
-    CR->bounds.MinY != _CR->bounds.MinY ||
-    CR->bounds.MaxY != _CR->bounds.MaxY)
-  kprintf("!!!!!!!!!!!!! ERROR !!!!!!!!!\n");
 
-
-kprintf("     Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d  (Pri: %d)\n",
-          _CR->bounds.MinX,_CR->bounds.MaxX,
-          _CR->bounds.MinY,_CR->bounds.MaxY,
-          _L->priority);
-kprintf("bl: A L->rp: %x, _CR: %x\n",L->rp,_CR);
-*/
-        SwapBitsRastPortClipRect(L->rp, _CR);
+        if (0 == (_L->Flags & LAYERSIMPLE))
+          SwapBitsRastPortClipRect(L->rp, _CR);
+        else
+        {
+          /* the layer (_L) that is supposed to become visible 
+            in this area is a simple layer. So I have to update
+            the damage list  */
+          OrRectRegion(_L->DamageList, &_CR->bounds);
+          _L->Flags |= LAYERREFRESH;
+        }
 
          CR -> lobs   = _L;
         _CR -> lobs   = NULL;
@@ -202,32 +190,12 @@ kprintf("bl: A L->rp: %x, _CR: %x\n",L->rp,_CR);
          */
         while (NULL != L_tmp -> back)
         {
-/*
-if (CR->bounds.MinX != _CR->bounds.MinX ||
-    CR->bounds.MaxX != _CR->bounds.MaxX ||
-    CR->bounds.MinY != _CR->bounds.MinY ||
-    CR->bounds.MaxY != _CR->bounds.MaxY)
-  kprintf("!!!!!!!!!!!!! ERROR !!!!!!!!!\n");
-if (CR->bounds.MinX >= _CR->bounds.MinX ||
-    CR->bounds.MaxX <= _CR->bounds.MaxX ||
-    CR->bounds.MinY >= _CR->bounds.MinY ||
-    CR->bounds.MaxY <= _CR->bounds.MaxY)
-  kprintf("Mine is smaller than the one to become visible!!\n");
-else
-  kprintf("Something is very wrong!!!!!!\n");
-
-kprintf("     Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
-          _CR->bounds.MinX,_CR->bounds.MaxX,
-          _CR->bounds.MinY,_CR->bounds.MaxY);
-*/
 
           L_tmp = internal_WhichLayer(L_tmp->back, 
                                       CR->bounds.MinX, 
                                       CR->bounds.MinY);
           if (NULL == L_tmp)
             break;
-
-//          CreateClipRectsSelf(L_tmp, FALSE);
 
           _CR = internal_WhichClipRect(L_tmp, 
                                        CR->bounds.MinX, 
