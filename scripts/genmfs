@@ -1,0 +1,31 @@
+#!/usr/local/bin/perl
+# AROS mmakefile.src generator version 0.01a
+# Jack Patton 2/24/2004 
+# Script to generate a mmakefile.src based upon the .c files in the current directory.
+# Please don't flame me for my lack of knowledge of mmake (too badly anyway ;) )!
+
+$tg = $ARGV[0];
+if (!$ARGV[0]) {
+print "Usage: genmfs <project name>\n";
+exit;
+}
+open(OUT,">mmakefile.src");
+print OUT "#   $Id$\n#\n#   Makefile to make $tg.\n";
+print OUT "include \$(TOP)/config/make.cfg\n\n";
+print OUT "FILES := \\\n";
+foreach $ln (`ls`) {
+next if $ln =~ m/mmakefile/;
+if ($ln =~ m/.c$/) {
+$ln =~ s/.c$//;
+$f = $ln;
+chomp($ln);
+print OUT "\t$ln \\\n";
+}
+}
+print OUT "\n\n#MM $tg : includes linklibs\n";
+print OUT "     %build_prog mmake=$tg \\\n";
+print OUT "     progname=$tg targetdir=\$(EXEDIR) nix=yes \\\n";
+print OUT "     files=\$(FILES) uselibs=\"arossupport amiga arosc m\"\n\n";
+print OUT "%common\n";
+close(OUT);
+
