@@ -339,11 +339,11 @@ void GetArguments(int argc, char **argv)
     {
     	wbstartup = (struct WBStartup *)argv;
     	wbargs = ArgArrayInit(argc, (UBYTE **)argv);
-	
+
 	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
 	cx_popkey = ArgString(wbargs, "CX_POPKEY", "ctrl alt f");
 	
-	if (strnicmp(ArgString(wbargs, "CX_POPUP", "YES"), "Y", 1) == 0)
+	if (strnicmp(ArgString(wbargs, "CX_POPUP", "NO"), "Y", 1) == 0)
 	{
 	    cx_popup = TRUE;
 	}
@@ -501,7 +501,14 @@ static void MakeGUI(void)
 	    End,
 	End;
 	
-    if (!app) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+    if (!app)
+    {
+    #if 1
+    	Cleanup(NULL); /* Make no noise. Is ugly if FKey is double-started. */
+    #else
+    	Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+    #endif
+    }
     
     get(app, MUIA_Application_Broker, &broker);  
     get(app, MUIA_Application_BrokerPort, &brokermp);  
@@ -1209,8 +1216,13 @@ void HandleAll(void)
 {
     ULONG sigs = 0;
     LONG  returnid;
+    IPTR  num_list_entries = 0;
     
-    set (wnd, MUIA_Window_Open, TRUE);
+    get(list, MUIA_List_Entries, &num_list_entries);
+    if ((num_list_entries == 0) || cx_popup)
+    {
+    	set (wnd, MUIA_Window_Open, TRUE);
+    }
     
     for(;;)
     {
