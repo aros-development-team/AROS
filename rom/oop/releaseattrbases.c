@@ -5,17 +5,18 @@
     Desc: OOP function OOP_ReleaseAttrBases
     Lang: english
 */
+#include <proto/exec.h>
+#include <exec/memory.h>
+#include <aros/libcall.h>
+#include <aros/debug.h>
 
 #include "intern.h"
 #include "hash.h"
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
-#include <exec/memory.h>
-#include <aros/libcall.h>
-
-#include <aros/debug.h>
+#include <oop/oop.h>
+#include <proto/oop.h>
 
 	AROS_LH1(VOID, OOP_ReleaseAttrBases,
 

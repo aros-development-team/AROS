@@ -9,6 +9,7 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"
+#include <aros/debug.h>
 
 /*****************************************************************************
 

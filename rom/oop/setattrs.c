@@ -8,6 +8,7 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 #include "intern.h"
 
 /*****************************************************************************
