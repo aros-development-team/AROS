@@ -896,7 +896,7 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 {
      UWORD cpf = (UWORD)-1;
 
-kprintf("hidd2cyber stdpf = %d [%d]\n", stdpf, vHidd_StdPixFmt_BGR032);
+     bug("hidd2cyber stdpf = %d [%d]\n", stdpf, vHidd_StdPixFmt_BGR032);
 
      switch (stdpf)
      {

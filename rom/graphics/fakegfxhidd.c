@@ -211,7 +211,7 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 		sigSem->ss_Owner = NULL;
 
 		/* Go through all the nodes to find the shared ones */
-		ForeachNodeSafe( &sigSem->ss_WaitQueue, sr, srn)
+		ForeachNodeSafe(&sigSem->ss_WaitQueue, sr, srn)
 		{
 		    srn = (struct SemaphoreRequest *)sr->sr_Link.mln_Succ;
 
@@ -220,7 +220,7 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 			Remove((struct Node *)sr);
 
 			/* Clear the bit, and update the owner count */
-			(IPTR)sr->sr_Waiter &= ~1;
+			sr->sr_Waiter = (APTR)((IPTR)sr->sr_Waiter & ~1);
 			sigSem->ss_NestCount++;
 
 			/* This is a task, signal it */

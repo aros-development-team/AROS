@@ -242,7 +242,7 @@ struct GfxBase_intern
 #define BMT_DRIVER		0x8000	/* Special RTG bitmap.
 				   	   Use this as an offset. */
 
-#define TFE(tfe) 		((struct TextFontExtension*)tfe)
+#define TFE(tfe) 		(*(struct TextFontExtension**)&tfe)
 
 #define TFE_MATCHWORD	    	0xDFE7 /* randomly invented */
 

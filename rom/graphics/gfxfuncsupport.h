@@ -24,11 +24,11 @@
    if it is a HIDD bitmap
 */
 
-#define HIDD_BM_OBJ(bitmap)		((OOP_Object *)(bitmap)->Planes[0]) 
-#define HIDD_BM_COLMAP(bitmap)		((OOP_Object *)(bitmap)->Planes[2])
-#define HIDD_BM_COLMOD(bitmap)		((HIDDT_ColorModel)(bitmap)->Planes[3])
-#define HIDD_BM_PIXTAB(bitmap)		((HIDDT_Pixel *)(bitmap)->Planes[4])
-#define HIDD_BM_REALDEPTH(bitmap)   	((LONG)(bitmap)->Planes[5])
+#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0])) 
+#define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[2]))
+#define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[3]))
+#define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
+#define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[5]))
 
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
