@@ -234,7 +234,8 @@ int arosc_internalexit(void)
     struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
     kprintf("DEALLOC\n");
-    if (--privdata->acpd_usercount == 0)
+    #warning FIXME: privdata should NEVER be NULL here
+    if (privdata && --privdata->acpd_usercount == 0)
     {
         set_call_funcs(SETNAME(EXIT), -1);
 
