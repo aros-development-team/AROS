@@ -1,21 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := aroscycle
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := cycleclass support
-FUNCS := 
-
-USE_ROMLIB := yes
 
 #MM workbench-gadgets-aroscycle : includes linklibs
-workbench-gadgets-aroscycle : workbench-gadgets-aroscycle-module
 
-%make_module_setup mmake=workbench-gadgets-aroscycle
-%make_module mmake=workbench-gadgets-aroscycle
+%build_module_macro mmake=workbench-gadgets-aroscycle \
+  modname=aroscycle modtype=gadget files=$(FILES) \
+  conffile=lib.conf uselibs=rom
 
 %common
-%include_deps

@@ -1,23 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-USER_CFLAGS   := -DMYDEBUG
-
-MODNAME := ppm
-MODTYPE := datatype
-
 FILES := ppmclass libfunc
 FUNCS := obtainengine
 
-USE_AMIGALIB := yes
-USE_CLIB_STATIC := yes
-
 #MM workbench-datatypes-ppm : setup includes linklibs
-workbench-datatypes-ppm : workbench-datatypes-ppm-module
 
-%make_module_setup mmake=workbench-datatypes-ppm
-%make_module mmake=workbench-datatypes-ppm
+USER_CFLAGS   := -DMYDEBUG
+
+%build_module_macro mmake=workbench-datatypes-ppm modname=ppm \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="amiga arosc"
 
 %common
-%include_deps

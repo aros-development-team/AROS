@@ -1,32 +1,19 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
 USER_CFLAGS   := -DMYDEBUG
-
-MODNAME := jpeg
-MODTYPE := datatype
 
 FILES := jpegclass libfunc
 FUNCS := obtainengine
 
-USE_AMIGALIB := yes
-USE_CLIB_STATIC := yes
-# USE_ALIB := yes
-USE_MLIB := yes
-
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
-#MM workbench-datatypes-jpeg : setup includes linklibs linklibs-jpeg
-workbench-datatypes-jpeg : workbench-datatypes-jpeg-module
+#MM workbench-datatypes-jpg : setup includes linklibs linklibs-jpg
 
-%make_module_setup mmake=workbench-datatypes-jpeg
+%build_module_macro mmake=workbench-datatypes-jpeg modname=jpeg \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="jpeg amiga arosc m"
 
 $(MOD_DIR)/jpeg.readme : jpeg.readme
 	@$(CP) $< $@
 
-LIBS := -ljpeg $(LIBS)
-
-%make_module mmake=workbench-datatypes-jpeg
-
 %common
-%include_deps

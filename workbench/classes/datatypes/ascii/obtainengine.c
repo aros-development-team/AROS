@@ -7,7 +7,7 @@
 #include <intuition/classes.h>
 #include <proto/alib.h>
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 extern struct IClass *ObtainEngine(void);
 

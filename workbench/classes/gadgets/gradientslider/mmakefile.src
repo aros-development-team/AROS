@@ -1,22 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := gradientslider
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := gradientsliderclass support
 
-FUNCS :=
-#USE_AMIGALIB := yes
-#USE_MLIB := yes
-
 #MM workbench-gadgets-gradientslider : includes linklibs
-workbench-gadgets-gradientslider : workbench-gadgets-gradientslider-module
 
-%make_module_setup mmake=workbench-gadgets-gradientslider
-%make_module mmake=workbench-gadgets-gradientslider
+%build_module_macro mmake=workbench-gadgets-gradientslider \
+  modname=gradientslider modtype=gadget files=$(FILES) \
+  conffile=lib.conf
 
 %common
-%include_deps

@@ -1,22 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := aroslist
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := listclass helpfuncs
-FUNCS := 
-
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
 
 #MM workbench-gadgets-aroslist : includes linklibs
-workbench-gadgets-aroslist : workbench-gadgets-aroslist-module
 
-%make_module_setup mmake=workbench-gadgets-aroslist
-%make_module mmake=workbench-gadgets-aroslist
+%build_module_macro mmake=workbench-gadgets-aroslist \
+  modname=aroslist modtype=gadget files=$(FILES) \
+  conffile=lib.conf uselibs="amiga rom"
 
 %common
-%include_deps

@@ -1,22 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := arospalette
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := paletteclass support
-FUNCS := 
-
-USE_ROMLIB := yes
-#USE_AMIGALIB := yes
 
 #MM workbench-gadgets-arospalette : includes linklibs
-workbench-gadgets-arospalette : workbench-gadgets-arospalette-module
 
-%make_module_setup mmake=workbench-gadgets-arospalette
-%make_module mmake=workbench-gadgets-arospalette
+%build_module_macro mmake=workbench-gadgets-arospalette \
+  modname=arospalette modtype=gadget files=$(FILES) \
+  conffile=lib.conf uselibs=rom
 
 %common
-%include_deps

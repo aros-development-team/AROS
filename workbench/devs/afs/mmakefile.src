@@ -1,10 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := afs
-MODTYPE := handler
-
-INIT_FILE := arosdevice
 ifneq ($(FLAVOUR),palmnative)
 FILES := main \
 	volumes \
@@ -18,16 +14,16 @@ FILES := main \
 	error \
 	checksums \
 	misc
+else
+FILES :=
 endif
-FUNCS :=
-
-USE_LIBDEFS := no
-USER_CFLAGS := -DDEBUG=0
 
 #MM- workbench-fs-complete : workbench-fs-afs
-#MM- workbench-fs-afs : setup includes linklibs workbench-fs-afs-module
-%make_module_setup mmake=workbench-fs-afs
-%make_module mmake=workbench-fs-afs
+#MM- workbench-fs-afs : setup includes linklibs
+
+USER_CFLAGS := -DDEBUG=0
+
+%build_module_macro mmake=workbench-fs-afs modname=afs \
+  modtype=handler initfile=arosdevice funcs= files=$(FILES) \
 
 %common
-%include_deps

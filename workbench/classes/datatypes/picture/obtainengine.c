@@ -8,7 +8,7 @@
 #include <proto/alib.h>
 #include "compilerspecific.h"
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 extern SAVEDS STDARGS struct IClass *ObtainEngine(void);
 

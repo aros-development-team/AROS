@@ -1,12 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I../.. -I.
-
-MODNAME := nvdisk
-MODTYPE := library
-
-FILES := 
 FUNCS := meminfo \
 	 readdata \
 	 setprotection \
@@ -14,13 +8,9 @@ FUNCS := meminfo \
 	 deletedata \
 	 getitemlist
 
-USE_ROMLIB := yes
+#MM- workbench-libs-nvdisk : setup includes linklibs
 
-#MM- workbench-libs-nvdisk : setup includes linklibs workbench-libs-nvdisk-module
-%make_module_setup mmake=workbench-libs-nvdisk
-%make_module_cpak
-%make_module mmake=workbench-libs-nvdisk
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-nvdisk modname=nvdisk \
+  modtype=library funcs=$(FUNCS) uselibs=rom conffile=lib.conf
 
 %common
-%include_deps

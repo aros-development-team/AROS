@@ -1,23 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-USER_CFLAGS   := -DCOMPILE_DATATYPE
-
-MODNAME := text
-MODTYPE := datatype
-
 FILES := textclass libfunc support
 FUNCS := obtainengine
 
-USE_AMIGALIB := yes
-USE_ROMLIB := yes
-
 #MM workbench-datatypes-text : setup includes linklibs
-workbench-datatypes-text : workbench-datatypes-text-module
 
-%make_module_setup mmake=workbench-datatypes-text
-%make_module mmake=workbench-datatypes-text
+USER_CFLAGS   := -DCOMPILE_DATATYPE
+
+%build_module_macro mmake=workbench-datatypes-text modname=text \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="amiga rom"
 
 %common
-%include_deps
