@@ -42,10 +42,25 @@ struct MUI_CycleData
     Object *pageobj;
 
     struct MUI_EventHandlerNode ehn;
+    struct Hook     	    	pressedhook;
 
 };
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
+
+void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
+{
+    struct MUI_CycleData    *data;
+    Class   	    	    *cl = (Class *)hook->h_Data;
+    LONG    	    	    act;
+
+    data = INST_DATA(cl, obj);
+    
+    act = ++data->entries_active;
+    if (act >= data->entries_num) act = 0;
+    
+    set(obj, MUIA_Cycle_Active, act);
+}
 
 /**************************************************************************
  OM_NEW
@@ -72,6 +87,9 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
 
     data->pageobj = pageobj;
+    data->pressedhook.h_Entry = HookEntry;
+    data->pressedhook.h_SubEntry = (HOOKFUNC)PressedHookFunc;
+    data->pressedhook.h_Data = cl;
     
     /* parse initial taglist */
 
@@ -126,9 +144,14 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	data->entries_active = 0;
     }
     
+#if 1
+    DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
+    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->pressedhook);
+#else
     DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
     	     (IPTR)obj, 3, MUIM_Set, MUIA_Cycle_Active, MUIV_Cycle_Active_Next);
-	     
+#endif
+         
     return (IPTR)obj;
 }
 
@@ -140,6 +163,7 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_CycleData    *data;
     struct TagItem  	    *tag, *tags;
     LONG    	    	    l;
+    BOOL    	    	    noforward = TRUE;
     
     data = INST_DATA(cl, obj);
     
@@ -148,28 +172,49 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Cycle_Active:
-	    	    l = (LONG)tag->ti_Data;
+	    	l = (LONG)tag->ti_Data;
+
+	    	if (l == MUIV_Cycle_Active_Next)
+		{
+		    l = data->entries_active + 1;
+		    if (l >= data->entries_num) l = 0;
+		}
+		else if (l == MUIV_Cycle_Active_Prev)
+		{
+		    l = data->entries_active - 1;
+		    if (l < 0) l = data->entries_num - 1;
+		}
+
+		if (l >= 0 && l < data->entries_num)
+		{
+		    data->entries_active = l;
+		    set(data->pageobj, MUIA_Group_ActivePage, data->entries_active);
+		}
+		break;
 		    
-	    	    if (l == MUIV_Cycle_Active_Next)
-		    {
-		    	l = data->entries_active + 1;
-			if (l >= data->entries_num) l = 0;
-		    }
-		    else if (l == MUIV_Cycle_Active_Prev)
-		    {
-		    	l = data->entries_active - 1;
-			if (l < 0) l = data->entries_num - 1;
-		    }
-		    
-		    if (l >= 0 && l < data->entries_num)
-		    {
-			data->entries_active = l;
-			set(data->pageobj, MUIA_Group_ActivePage, data->entries_active);
-		    }
-		    break;
+	    default:
+	    	noforward = FALSE;
+	    	break;
 	}
     }
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    
+    if (noforward)
+    {
+    	struct opSet ops = *msg;
+	struct TagItem tags[] =
+	{
+	    {MUIA_Group_Forward , FALSE     	    	    },
+	    {TAG_MORE	    	, (IPTR)msg->ops_AttrList   }	    
+	};
+	
+	ops.ops_AttrList =  tags;
+	
+	return DoSuperMethodA(cl,obj,(Msg)&ops);
+    }
+    else
+    {
+    	return DoSuperMethodA(cl,obj,(Msg)msg);
+    }
 }
 
 /**************************************************************************
