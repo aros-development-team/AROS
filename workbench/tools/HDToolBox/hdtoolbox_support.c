@@ -24,12 +24,12 @@ struct Node *getNumNode(struct List *list, int num) {
 struct Node *node;
 
 	node = list->lh_Head;
-	while (num)
+	while ((num) && (node->ln_Succ))
 	{
 		node = node->ln_Succ;
 		num--;
 	}
-	return num ? 0 : node;
+	return node->ln_Succ ? node : 0;
 }
 
 ULONG getNodeNum(struct Node *node) {
