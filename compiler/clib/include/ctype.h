@@ -40,6 +40,7 @@ extern const int *const __ctype_tolower;
 #define isspace(c)      _istype(c,_ISspace)
 #define isprint(c)      _istype(c,_ISprint)
 #define isgraph(c)      _istype(c,_ISgraph)
+#define isblank(c)	_istype(c,_ISblank)
 #define iscntrl(c)      _istype(c,_IScntrl)
 #define ispunct(c)      _istype(c,_ISpunct)
 #define isalnum(c)      _istype(c,_ISalnum)
@@ -48,4 +49,3 @@ extern const int *const __ctype_tolower;
 #define tolower(c)      (__ctype_tolower[(int)(c)])
 
 #endif /* CTYPE_H */
-
