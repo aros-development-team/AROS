@@ -986,6 +986,7 @@ time_t t;
   {
     lc->copyright = strdup("");
   }
+  fprintf( fd, "/* *** Automatic generated file. Do not edit *** */\n\n");
   fprintf( fd, "#ifndef %s\n#define %s\n", lc->define, lc->define );
 
   if (lc->type == t_library)
