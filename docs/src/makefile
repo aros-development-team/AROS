@@ -3,7 +3,8 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 DEST=../html/
-FILES = background faq devinfo devinf_inside devinf_outside \
+FILES = background faq devinfo-1 devinfo-2 devinfo-3 devinfo-4 devinfo-5 \
+	devinf_inside devinf_outside \
 	history links
 
 AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
@@ -50,9 +51,13 @@ $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
 $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@echo "Generating TOC"
 	@gawk -f tochtml.gawk $(SRCS) > $@
+	@echo "<OL TYPE=A>" >> $@
+	@echo "<H1><A HREF="adoc_index.html">Appendix A. AutoDocs</A> (`getfiledate ../html/adoc_index.html`)</H1>" >> $@
+	@echo "</OL>" >> $@
+	@echo "" >> $@
 	chmod a+r $@
 
-$(DEST)devinfo.html : devinfo.src src2html.gawk page_header.html \
+$(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	    page_footer.html collectcontents.sh contents2html.gawk \
 	    makefile2html.gawk
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
@@ -63,6 +68,8 @@ $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	chmod a+r $@
 
 autodocs: $(DEST)adoc_index.html
+	@echo "Regenerating the HTML AutoDocs"
+	@makeadocs $(AUTODOC_SRCS)
 
 $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 	    adoc_footer.html
@@ -78,7 +85,7 @@ $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 
 $(DEST)adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
 	@echo "Generating HTML AutoDoc Index"
-	@gawk -f adoc2html.gawk $(AUTODOC_SRCS) > $@
+	@gawk -f adochtmlindex.gawk $(AUTODOC_SRCS) > $@
 	chmod -R a+r $(DEST)autodocs
 
 $(DEST)inc_index.html: $(INCLUDE_SRCS)
