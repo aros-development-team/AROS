@@ -14,7 +14,7 @@ USE_ROMLIB := yes
 USE_MLIB := yes
 
 #MM- kernel-filesys : kernel-fs-con
-#MM- kernel-fs-con : setup includes linklibs kernel-fs-con-linklib
+#MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 %make_module_setup mmake=kernel-fs-con
 %make_module mmake=kernel-fs-con
 

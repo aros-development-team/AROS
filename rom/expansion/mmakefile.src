@@ -19,7 +19,7 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 USE_CLIB := yes
 MAKE_SHLIB := $(SHARED_EXPANSION)
 
-#MM- kernel-expansion : setup includes linklibs
+#MM- kernel-expansion : includes linklibs
 
 %make_module_setup mmake=kernel-expansion
 %make_module_cpak

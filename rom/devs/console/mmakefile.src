@@ -23,7 +23,7 @@ USE_AMIGALIB := yes
 
 MAKE_SHLIB := $(SHARED_CONSOLE)
 
-#MM- kernel-console : setup includes linklibs
+#MM- kernel-console : includes linklibs
 %make_module_setup mmake=kernel-console
 %make_module_cpak
 %make_module mmake=kernel-console

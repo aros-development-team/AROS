@@ -12,7 +12,7 @@ FILES := strap
 MODNAME :=
 MODTYPE := module
 
-#MM- kernel-boot : setup includes linklibs
+#MM- kernel-boot : includes linklibs
 
 %make_module_setup mmake=kernel-boot
 

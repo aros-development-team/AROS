@@ -17,7 +17,7 @@ USE_ENDTAG := no
 MAKE_SHLIB := $(SHARED_KEYBOARD)
 
 #MM- kernel-devs : kernel-keyboard-linklib
-#MM- kernel-keyboard : setup includes linklibs
+#MM- kernel-keyboard : includes linklibs
 %make_module_setup mmake=kernel-keyboard
 %make_module mmake=kernel-keyboard
 

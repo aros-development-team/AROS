@@ -11,7 +11,7 @@ ARCHIVE	:= mathffp.arch
 
 MAKE_SHLIB := $(SHARED_MATHFFP)
 
-#MM- kernel-mathffp : setup includes linklibs
+#MM- kernel-mathffp : includes linklibs
 %make_module_setup mmake=kernel-mathffp
 %make_module_archtool
 %make_module mmake=kernel-mathffp

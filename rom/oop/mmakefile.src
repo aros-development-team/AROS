@@ -30,7 +30,7 @@ FUNCS :=    addclass		\
 USE_CLIB_STATIC := yes
 MAKE_SHLIB := $(SHARED_OOP)
 
-#MM- kernel-oop : setup includes linklibs
+#MM- kernel-oop : includes linklibs
 %make_module_setup mmake=kernel-oop
 %make_module_cpak
 %make_module mmake=kernel-oop

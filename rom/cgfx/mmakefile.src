@@ -34,7 +34,7 @@ FUNCS := \
 
 MAKE_SHLIB := $(SHARED_CGFX)
 
-#MM- kernel-cgfx : setup includes linklibs
+#MM- kernel-cgfx : includes linklibs
 
 %make_module_setup mmake=kernel-cgfx
 %make_module_cpak

@@ -14,7 +14,7 @@ FUNCS :=    peekqualifier
 MAKE_SHLIB := $(SHARED_INPUT)
 
 #MM- kernel-devs : kernel-input-linklib
-#MM- kernel-input : setup includes linklibs
+#MM- kernel-input : includes linklibs
 %make_module_setup mmake=kernel-input
 %make_module mmake=kernel-input
 
