@@ -64,11 +64,12 @@ HIDD permits that.
 
 \begin{code}
 /* Get a list with pointers to HIDD devices */
-ULONG HIDD_Query (ULONG type, HIDDT ** hiddArray);
-void HIDD_DisposeQueryList (HIDDT * hiddArray);
+ULONG HIDD_QueryHIDDList (ULONG type, HIDDT ** hiddArray);
 \end{code}
 
-You can then use the HIDD API to query the devices for their infos.
+You can then use the HIDD API to query the devices for their infos. Use
+|FreeVec()| to dispose the array. |HIDDC_QueryHIDDList_All| as type gives
+the complete list of all known HIDDs.
 
 \section{The HIDD API}
 
