@@ -29,6 +29,17 @@ double strtod(const char * str, char ** endptr);
 
 int rand (void);
 void srand (unsigned int seed);
+
+double drand48(void);
+double erand48(unsigned short int xsubi[3]);
+long int lrand48(void);
+long int nrand48(unsigned short int xsubi[3]);
+long int mrand48(void);
+long int jrand48(unsigned short int xsubi[3]);
+void srand48(long int seedval);
+unsigned short int *seed48(unsigned short int seed16v[3]);
+void lcong48(unsigned short int param[7]);
+
 /* Max. number returned by rand() */
 #ifndef RAND_MAX
 #   define RAND_MAX	   2147483647
@@ -43,5 +54,8 @@ void * malloc (size_t size);
 void * calloc (size_t count, size_t size);
 void * realloc (void * oldmem, size_t newsize);
 void free (void * memory);
+
+
+
 
 #endif /* _STDLIB_H */

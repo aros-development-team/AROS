@@ -1,3 +1,8 @@
+####################################################################
+####################################################################
+############# THIS IS A GENERATED FILE ! DO NOT EDIT ###############
+####################################################################
+####################################################################
 # $Id$
 include $(TOP)/config/make.cfg
 
@@ -6,7 +11,10 @@ OBJDIR		:= $(GENDIR)/compiler/clib
 INCDIR		:= $(BINDIR)/include
 LIB		:= $(LIBDIR)/libarosc.a
 
-%define_libs
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L$(LIBDIR)  -larossupport -lamiga -larosc -larosm 
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a 
 
 FILES := \
 	__assert \
@@ -130,7 +138,9 @@ show-flags :
 
 #MM
 setup :
-	%mkdirs_q $(INCDIR)/sys $(OBJDIR)
+	@$(FOR) dir in $(INCDIR)/sys $(OBJDIR) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
 
 #MM
 check : $(TESTDIR)/snprint
@@ -143,13 +153,26 @@ clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC) opt=$(APPCFLAGS)
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(SYS_CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
 
 $(LIB) : $(OBJS)
-	%mklib_q
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q flags=$(APPCFLAGS)
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) $(APPCFLAGS) $< -o $@
 
-%common
-%include_deps
+# Delete generated makefiles
+clean ::
+	$(RM) mmakefile mmakefile.bak
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifeq (,$(filter clean% setup% includes% ,$(TARGET)))
+-include $(DEPS)
+endif
