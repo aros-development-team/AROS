@@ -13,11 +13,10 @@ FILES = background faq devinfo-1 devinfo-2 devinfo-3 devinfo-4 devinfo-5 \
 	jobserv-showwork \
 	jobserv-showdone \
 
-AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
-	$(TOP)/rom/dos/*.c $(TOP)/rom/intuition/*.c $(TOP)/rom/graphics/*.c \
-	$(TOP)/rom/utility/*.c $(TOP)/apps/compiler/alib/*.c \
-	$(TOP)/apps/compiler/aros/*.c \
-	$(TOP)/rom/devs/*.c $(TOP)/apps/compiler/clib/*.c \
+AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
+	$(TOP)/compiler/alib/*.c \
+	$(TOP)/compiler/arossupport/*.c \
+	$(TOP)/rom/devs/*.c $(TOP)/compiler/clib/*.c \
 	$(TOP)/workbench/libs/*/*.c)
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
