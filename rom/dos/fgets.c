@@ -55,12 +55,13 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    ULONG len;
+ 
+    ULONG len = 0;
     LONG  c;
 
-    buflen --;
+    buflen--;
 
-    for (len=0; len<buflen; len++)
+    do
     {
 	c = FGetC (fh);
 
@@ -72,14 +73,13 @@
 		break;
 	}
 
-	buf[len] = c;
-
-	if (c == '\n')
-	    break;
+	buf[len++] = c;
     }
+    while ((len<buflen) && (c != '\n'));
 
     buf[len] = 0;
 
     return buf;
+    
     AROS_LIBFUNC_EXIT
 } /* FGets */
