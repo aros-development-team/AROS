@@ -48,7 +48,11 @@
 
 ******************************************************************************/
 {
-    int diff;
+    /* 
+	If n == 0, then this will never be initialized, but is used 
+	later on, so we have to initialize it.
+    */
+    int diff = 0;
 
     /* No need to check *str2 since: a) str1 is equal str2 (both are 0),
 	then *str1 will terminate the loop b) str1 and str2 are not equal

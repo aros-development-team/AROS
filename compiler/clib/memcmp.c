@@ -52,7 +52,8 @@
 {
     const UBYTE * str1,
 		* str2;
-    int 	  diff;
+    int 	  diff = 0; /* In case we are comparing n == 0 */
+
 
     str1 = s1;
     str2 = s2;
