@@ -7464,22 +7464,17 @@ if test ! -d ${aros_target_scripts_dir} ; then
     ${MKDIR} ${aros_target_scripts_dir}
 fi
 
-cp config/config.h.in ${aros_inc_dir}
-cp config/config.h.in ${aros_geninc_dir}
-cp config/host-conf.h.in ${aros_geninc_dir}
-cp config/host.cfg.in ${aros_hostcfg_dir}
-cp config/target.cfg.in ${aros_targetcfg_dir}
-cp config/make.defaults.in ${aros_targetcfg_dir}
-cp config/specs.in ${aros_targetcfg_dir}
-cp scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
-cp compiler/c_lib/source/lib_source/genshared.in ${aros_target_scripts_dir}
-
-# HACK: You will need to uncomment this line to run autoheader
-#AC_CONFIG_HEADERS(config/host-conf.h)
-          ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h"
+          ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in"
 
 
-                                                                                                    ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h ${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc ${aros_target_scripts_dir}/genshared"
+          ac_config_commands="$ac_config_commands compiler_executable"
+
+          ac_config_commands="$ac_config_commands genshared_executable"
+
+
+                                                                                                              ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py"
+
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -7895,6 +7890,9 @@ $config_files
 Configuration headers:
 $config_headers
 
+Configuration commands:
+$config_commands
+
 Report bugs to <bug-autoconf@gnu.org>."
 _ACEOF
 
@@ -7994,7 +7992,19 @@ fi
 
 _ACEOF
 
+cat >>$CONFIG_STATUS <<_ACEOF
+#
+# INIT-COMMANDS section.
+#
 
+aros_tools_dir=${aros_tools_dir}
+     aros_target_cpu=${aros_target_cpu}
+     aros_target_arch=${aros_target_arch}
+
+aros_target_scripts_dir=${aros_target_scripts_dir}
+
+
+_ACEOF
 
 
 
@@ -8004,16 +8014,19 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-  "${aros_inc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h" ;;
-  "${aros_geninc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h" ;;
-  "${aros_hostcfg_dir}/host.cfg" ) CONFIG_FILES="$CONFIG_FILES ${aros_hostcfg_dir}/host.cfg" ;;
-  "${aros_targetcfg_dir}/target.cfg" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/target.cfg" ;;
+  "${aros_inc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h:config/config.h.in" ;;
+  "${aros_geninc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h:config/config.h.in" ;;
+  "${aros_hostcfg_dir}/host.cfg" ) CONFIG_FILES="$CONFIG_FILES ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in" ;;
+  "${aros_targetcfg_dir}/target.cfg" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in" ;;
   "mmake.config" ) CONFIG_FILES="$CONFIG_FILES mmake.config" ;;
-  "${aros_targetcfg_dir}/make.defaults" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults" ;;
-  "${aros_targetcfg_dir}/specs" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs" ;;
-  "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ;;
-  "${aros_target_scripts_dir}/genshared" ) CONFIG_FILES="$CONFIG_FILES ${aros_target_scripts_dir}/genshared" ;;
-  "${aros_geninc_dir}/host-conf.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h" ;;
+  "${aros_targetcfg_dir}/make.defaults" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
+  "${aros_targetcfg_dir}/specs" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
+  "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in" ;;
+  "${aros_target_scripts_dir}/genshared" ) CONFIG_FILES="$CONFIG_FILES ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in" ;;
+  "${aros_tools_dir}/genmf.py" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
+  "compiler_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS compiler_executable" ;;
+  "genshared_executable" ) CONFIG_COMMANDS="$CONFIG_COMMANDS genshared_executable" ;;
+  "${aros_geninc_dir}/host-conf.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -8027,6 +8040,7 @@ done
 if $ac_need_defaults; then
   test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
   test "${CONFIG_HEADERS+set}" = set || CONFIG_HEADERS=$config_headers
+  test "${CONFIG_COMMANDS+set}" = set || CONFIG_COMMANDS=$config_commands
 fi
 
 # Have a temporary directory for convenience.  Make it in the build tree
@@ -8644,6 +8658,67 @@ echo "$as_me: error: cannot create directory \"$ac_dir\"" >&2;}
   fi
 done
 _ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF
+
+#
+# CONFIG_COMMANDS section.
+#
+for ac_file in : $CONFIG_COMMANDS; do test "x$ac_file" = x: && continue
+  ac_dest=`echo "$ac_file" | sed 's,:.*,,'`
+  ac_source=`echo "$ac_file" | sed 's,[^:]*:,,'`
+  ac_dir=`(dirname "$ac_dest") 2>/dev/null ||
+$as_expr X"$ac_dest" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+         X"$ac_dest" : 'X\(//\)[^/]' \| \
+         X"$ac_dest" : 'X\(//\)$' \| \
+         X"$ac_dest" : 'X\(/\)' \| \
+         .     : '\(.\)' 2>/dev/null ||
+echo X"$ac_dest" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+  ac_builddir=.
+
+if test "$ac_dir" != .; then
+  ac_dir_suffix=/`echo "$ac_dir" | sed 's,^\.[\\/],,'`
+  # A "../" for each directory in $ac_dir_suffix.
+  ac_top_builddir=`echo "$ac_dir_suffix" | sed 's,/[^\\/]*,../,g'`
+else
+  ac_dir_suffix= ac_top_builddir=
+fi
+
+case $srcdir in
+  .)  # No --srcdir option.  We are building in place.
+    ac_srcdir=.
+    if test -z "$ac_top_builddir"; then
+       ac_top_srcdir=.
+    else
+       ac_top_srcdir=`echo $ac_top_builddir | sed 's,/$,,'`
+    fi ;;
+  [\\/]* | ?:[\\/]* )  # Absolute path.
+    ac_srcdir=$srcdir$ac_dir_suffix;
+    ac_top_srcdir=$srcdir ;;
+  *) # Relative path.
+    ac_srcdir=$ac_top_builddir$srcdir$ac_dir_suffix
+    ac_top_srcdir=$ac_top_builddir$srcdir ;;
+esac
+# Don't blindly perform a `cd "$ac_dir"/$ac_foo && pwd` since $ac_foo can be
+# absolute.
+ac_abs_builddir=`cd "$ac_dir" && cd $ac_builddir && pwd`
+ac_abs_top_builddir=`cd "$ac_dir" && cd ${ac_top_builddir}. && pwd`
+ac_abs_srcdir=`cd "$ac_dir" && cd $ac_srcdir && pwd`
+ac_abs_top_srcdir=`cd "$ac_dir" && cd $ac_top_srcdir && pwd`
+
+
+  { echo "$as_me:$LINENO: executing $ac_dest commands" >&5
+echo "$as_me: executing $ac_dest commands" >&6;}
+  case $ac_dest in
+    compiler_executable ) chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc ;;
+    genshared_executable ) chmod a+x ${aros_target_scripts_dir}/genshared ;;
+  esac
+done
+_ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF
 
@@ -8674,9 +8749,6 @@ if test "$no_create" != yes; then
   $ac_cs_success || { (exit 1); exit 1; }
 fi
 
-
-chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
-chmod a+x ${aros_target_scripts_dir}/genshared
 
 
 #XXX compatability...

@@ -1107,29 +1107,35 @@ if test ! -d ${aros_target_scripts_dir} ; then
     ${MKDIR} ${aros_target_scripts_dir}
 fi
 
-cp config/config.h.in ${aros_inc_dir}
-cp config/config.h.in ${aros_geninc_dir}
-cp config/host-conf.h.in ${aros_geninc_dir}
-cp config/host.cfg.in ${aros_hostcfg_dir}
-cp config/target.cfg.in ${aros_targetcfg_dir}
-cp config/make.defaults.in ${aros_targetcfg_dir}
-cp config/specs.in ${aros_targetcfg_dir}
-cp scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
-cp compiler/c_lib/source/lib_source/genshared.in ${aros_target_scripts_dir}
+AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 
-# HACK: You will need to uncomment this line to run autoheader
-#AC_CONFIG_HEADERS(config/host-conf.h)
-AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h)
+AC_CONFIG_COMMANDS([compiler_executable],
+    [chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc],
+    [aros_tools_dir=${aros_tools_dir}
+     aros_target_cpu=${aros_target_cpu}
+     aros_target_arch=${aros_target_arch}]
+)
+AC_CONFIG_COMMANDS([genshared_executable],
+    [chmod a+x ${aros_target_scripts_dir}/genshared],
+    [aros_target_scripts_dir=${aros_target_scripts_dir}]
+)
 
-AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
-	${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg
-	mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs
-        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
-        ${aros_target_scripts_dir}/genshared)
+AC_CONFIG_FILES(
+    Makefile
+    ${aros_inc_dir}/config.h:config/config.h.in
+    ${aros_geninc_dir}/config.h:config/config.h.in
+    ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in
+    ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in
+    mmake.config
+    ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
+    ${aros_targetcfg_dir}/specs:config/specs.in
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in
+    ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
+    ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
+)
 
-chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
-chmod a+x ${aros_target_scripts_dir}/genshared
-
+AC_OUTPUT
+	 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
 
