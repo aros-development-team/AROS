@@ -23,13 +23,13 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include "detach.h"
 #include "iconwindow.h"
 #include "wandererprefs.h"
 #include "wanderer.h"
 
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
-VOID DoDetach(VOID);
 
 extern Object *app;
 struct Hook hook_standard;

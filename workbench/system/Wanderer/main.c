@@ -5,10 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <exec/types.h>
-#include <dos/dos.h>
 #include <libraries/mui.h>
-#include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -16,23 +13,6 @@
 
 /* global variables */
 Object *app;
-
-LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
-struct Process *__detacher_process              = NULL;
-STRPTR          __detached_name                 = "Wanderer";
-
-VOID DoDetach(VOID)
-{
-    /* If there's a detacher, tell it to go away */
-    if (__detacher_process)
-    {
-	Signal
-        (
-            (struct Task *) __detacher_process, 
-            __detacher_must_wait_for_signal
-        );
-    }
-}
 
 int main(void)
 {
