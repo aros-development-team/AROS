@@ -6,16 +6,22 @@
     Lang: english
 */
 #include <proto/alib.h>
+#include <proto/exec.h>
+#include <exec/memory.h>
 #include <intuition/cghooks.h>
+#include <intuition/classusr.h>
+#include <intuition/classes.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
 
     NAME */
+#include <exec/types.h>
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
+#include <utility/tagitem.h>
 
-	AROS_LH4(ULONG, SetGadgetAttrsA,
+	AROS_LH4(IPTR, SetGadgetAttrsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Gadget *,    gadget,    A0),
@@ -42,18 +48,20 @@
 	will define other return values.
 
     NOTES
-	This function sends OM_SET to the object.
+	This function sends OM_SET to the gadget object.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	NewObject(), DisposeObject(), SetAttrsA(), GetAttr(), MakeClass(),
+	NewObject(), SetAttrsA(), GetAttr(), DoGadgetMethodA(),
 	"Basic Object-Oriented Programming System for Intuition" and
 	"boopsi Class Reference" Dokument.
 
     INTERNALS
+	SetGadgetAttrsA(gad, win, req, tags) ist just a replacement for
+	DoGadgetMethod(gad, win, req, OM_SET, tags, NULL).
 
     HISTORY
 
@@ -61,49 +69,15 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
     IPTR result;
-    struct opSet ops;
-    struct GadgetInfo gi;
+    struct opSet *ops;
 
-    gi.gi_Screen = window->WScreen;
-    gi.gi_Window = window;
-    gi.gi_Requester = requester;
-    gi.gi_RastPort = window->RPort;
-    if (requester != NULL)
-    {
-	gi.gi_Layer = requester->ReqLayer;
-	gi.gi_Domain.Left = requester->RelLeft;
-	gi.gi_Domain.Top = requester->RelTop;
-	gi.gi_Domain.Width = requester->Width;
-	gi.gi_Domain.Height = requester->Height;
-    }
-    else
-    {
-	gi.gi_Layer = window->WLayer;
-	if ((gadget->GadgetType & GTYP_GZZGADGET) == GTYP_GZZGADGET)
-	{
-	    gi.gi_Domain.Left = window->BorderLeft;
-	    gi.gi_Domain.Top = window->BorderTop;
-	}
-	else
-	{
-	    gi.gi_Domain.Left = 0;
-	    gi.gi_Domain.Top = 0;
-	}
-	gi.gi_Domain.Width = window->Width;
-	gi.gi_Domain.Height = window->Height;
-    }
-    gi.gi_Pens.DetailPen = window->DetailPen;
-    gi.gi_Pens.BlockPen = window->BlockPen;
-    gi.gi_DrInfo = GetScreenDrawInfo(window->WScreen);
-
-    ops.MethodID     = OM_SET;
-    ops.ops_AttrList = tagList;
-    ops.ops_GInfo    = &gi;
-
-    result = DoMethodA ((Object *)gadget, (Msg)&ops);
-    FreeScreenDrawInfo(window->WScreen, gi.gi_DrInfo);
+    if ((ops = AllocVec(sizeof(struct opSet), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
+	return(0L);
+    ops->MethodID = OM_SET;
+    ops->ops_AttrList = tagList;
+    result = DoGadgetMethodA(gadget, window, requester, (Msg)ops);
+    FreeVec(ops);
 
     return(result);
     AROS_LIBFUNC_EXIT
