@@ -163,7 +163,7 @@ void RenderRegisterTabItem(struct RastPort *rp, struct RegisterTab *reg, WORD it
     
     if (ri->image)
     {
-    	DrawImageState(rp, ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, dri);
+    	DrawImageState(rp, (struct Image *) ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, dri);
     }
     
     /* upper / at left side */

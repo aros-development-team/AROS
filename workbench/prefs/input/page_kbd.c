@@ -39,14 +39,13 @@
 
 static struct Gadget 	*gadlist, *gad, *lvgad, *rategad, *delaygad, *showrategad, *showdelaygad;
 static struct Gadget	*testgad;
-static struct KeyMap	*testkeymap;
 static BPTR 	    	testkeymap_seg;
 static WORD 	    	minwidth, minheight;
 static WORD 	    	domleft, domtop, domwidth, domheight;
 static WORD 	    	lvwidth, lvheight, lvgroupwidth, lvgroupheight, lvgroupx1, lvgroupy1;
 static WORD 	    	ratewidth, rateheight, rategroupwidth, rategroupheight, rategroupx1, rategroupy1;
 static WORD 	    	delaywidth, delayheight, delaygroupwidth, delaygroupheight, delaygroupx1, delaygroupy1;
-static WORD 	     	testwidth, testheight, testgroupwidth, testgroupheight, testgroupx1, testgroupy1;
+static WORD 	     	testheight, testgroupwidth, testgroupheight, testgroupx1, testgroupy1;
 static WORD 	    	showtimewidth;
 
 static BOOL 	    	init_done;
@@ -496,7 +495,6 @@ static LONG kbd_input(struct IntuiMessage *msg)
 {
     struct ListviewEntry    *keymapnode;
     LONG    	    	    retval = FALSE;
-    LONG    	    	    top;
     
     if (msg->Class == IDCMP_GADGETUP)
     {
