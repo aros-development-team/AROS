@@ -41,7 +41,7 @@ typedef unsigned long STACKULONG;
 __saveds __asm rettype name(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
-AROS_UFH3S(rettype, name,\
+AROS_UFH3(rettype, name,\
 	AROS_UFHA(Class  *, cl,  A0),\
 	AROS_UFHA(Object *, obj, A2),\
 	AROS_UFHA(Msg     , msg, A1))
