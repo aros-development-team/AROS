@@ -8,6 +8,7 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -21,6 +22,7 @@
 #include "imspec.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "prefs.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -197,6 +199,16 @@ static IPTR Radio_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+static IPTR Radio_Setup(struct IClass *cl, Object *obj, Msg msg)
+{
+    if (!DoSuperMethodA(cl, obj, msg))
+	return FALSE;
+
+    set(obj, MUIA_Group_HorizSpacing, muiGlobalInfo(obj)->mgi_Prefs->radiobutton_hspacing);
+    set(obj, MUIA_Group_VertSpacing, muiGlobalInfo(obj)->mgi_Prefs->radiobutton_vspacing);
+    return TRUE;
+}
+
 #ifndef _AROS
 __asm IPTR Radio_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -212,6 +224,7 @@ AROS_UFH3S(IPTR,Radio_Dispatcher,
 	case OM_DISPOSE: return Radio_Dispose(cl, obj, (Msg)msg);
 	case OM_SET: return Radio_Set(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Radio_Get(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup: return Radio_Setup(cl, obj, msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
