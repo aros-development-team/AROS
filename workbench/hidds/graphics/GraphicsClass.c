@@ -1032,7 +1032,17 @@ static Object *hiddgfx_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 static BOOL hiddgfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     /* We have no clue how to render the cursor */
-    return FALSE;
+    return TRUE;
+}
+
+static BOOL hiddgfx_setcursorvisible(Class *cl, Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+{
+    return TRUE;
+}
+
+static BOOL hiddgfx_setcursorpos(Class *cl, Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+{
+    return TRUE;
 }
 
 /*** HIDDGfx::CopyBox() *****************************************************
@@ -1441,7 +1451,7 @@ static Object *hiddgfx_getpixfmt(Class *cl, Object *o, struct pHidd_Gfx_GetPixFm
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GFXHIDD_METHODS	16
+#define NUM_GFXHIDD_METHODS	18
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -1469,6 +1479,8 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())hiddgfx_releasepixfmt, 	moHidd_Gfx_ReleasePixFmt	},
 	{(IPTR (*)())hiddgfx_getpixfmt, 	moHidd_Gfx_GetPixFmt		},
 	{(IPTR (*)())hiddgfx_setcursorshape, 	moHidd_Gfx_SetCursorShape	},
+	{(IPTR (*)())hiddgfx_setcursorpos, 	moHidd_Gfx_SetCursorPos		},
+	{(IPTR (*)())hiddgfx_setcursorvisible, 	moHidd_Gfx_SetCursorVisible	},
 	{(IPTR (*)())hiddgfx_setmode,		moHidd_Gfx_SetMode		},
 	{(IPTR (*)())hiddgfx_show, 		moHidd_Gfx_Show			},
 	{(IPTR (*)())hiddgfx_copybox, 		moHidd_Gfx_CopyBox		},
