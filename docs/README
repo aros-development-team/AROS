@@ -1,0 +1,36 @@
+Short: AROS - Amiga Replacement OS
+Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
+Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
+Version:  1.5
+Type:	  misc/emu
+
+New this time:
+
+- Everything changed :) Throw away the 1.4 and below.
+- Most of Exec and much of DOS
+- A shell is available and some 10 commands to test it (like Dir, List,
+    Echo, etc).
+- CVS is used to allow multiple people to work on this at the same
+    time. Look into README.CVS for how to participate.
+
+This project's goal is to provide a public available AmigaOS which
+is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
+other hardware than the Amiga (but on the Amiga also). The current
+memberlist:
+
+	Aaron "Optimizer" Digulla (coordination)
+	Matthias Fleischer (coding, ie. he's the one who works ;-) )
+
+and some 300 others (which are not mentioned here since they have not
+written a line of code yet).
+
+There are two archives which contain different things:
+
+    AROSdev##.lha
+    AROSbin##.lha
+
+where ## is the version-number. The dev archive contains all files
+neccessary to create bin and dev archives and to build/port the
+complete tree. The bin Archive right now contains everything to test
+AROS on Linux. Sorry, no Amiga port at this time.
+
