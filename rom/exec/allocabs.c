@@ -2,6 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/11/21 10:49:48  aros
+    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
+    problems.
+
+    The #includes in the header *must* begin in the first column. Otherwise
+    makedepend will ignore them (GCC works, though).
+
+    Removed a couple of Logs
+
     Revision 1.7  1996/10/24 15:50:43  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -26,11 +35,13 @@
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/machine.h>
+#include <clib/exec_protos.h>
 #include "memory.h"
 
 /*****************************************************************************
 
     NAME */
+	#include <exec/memory.h>
 	#include <clib/exec_protos.h>
 
 	AROS_LH2(APTR, AllocAbs,

@@ -6,16 +6,20 @@
     Lang:
 */
 
-	/*    The following functions are guaranteed to preserve	*/
-	/*    all registers. But I don't want to write them completely  */
-	/*    in assembly - C is generally more readable.		*/
-	/*    So I use those stubs to preserve the registers.		*/
+#include "machine.i"
+
+/*
+    The following functions are guaranteed to preserve
+    all registers. But I don't want to write them completely
+    in assembly - C is generally more readable.
+    So I use those stubs to preserve the registers.
+*/
 
 	.text
 	.balign 16
-	.globl	_Exec__ObtainSemaphore
-	.type	_Exec__ObtainSemaphore,@function
-_Exec__ObtainSemaphore:
+	.globl	AROS_SLIB_ENTRY(_ObtainSemaphore,Exec)
+	.type	AROS_SLIB_ENTRY(_ObtainSemaphore,Exec),@function
+AROS_SLIB_ENTRY(_ObtainSemaphore,Exec):
 	pushl	%eax
 	pushl	%ecx
 	pushl	%edx
@@ -23,16 +27,16 @@ _Exec__ObtainSemaphore:
 	pushl	%eax
 	movl	20(%esp),%eax
 	pushl	%eax
-	call	_Exec_ObtainSemaphore
+	call	AROS_SLIB_ENTRY(ObtainSemaphore,Exec)
 	addl	$8,%esp
 	popl	%edx
 	popl	%ecx
 	popl	%eax
 	ret
 
-	.globl	_Exec__ReleaseSemaphore
-	.type	_Exec__ReleaseSemaphore,@function
-_Exec__ReleaseSemaphore:
+	.globl	AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec)
+	.type	AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec),@function
+AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec):
 	pushl	%eax
 	pushl	%ecx
 	pushl	%edx
@@ -40,16 +44,16 @@ _Exec__ReleaseSemaphore:
 	pushl	%eax
 	movl	20(%esp),%eax
 	pushl	%eax
-	call	_Exec_ReleaseSemaphore
+	call	AROS_SLIB_ENTRY(ReleaseSemaphore,Exec)
 	addl	$8,%esp
 	popl	%edx
 	popl	%ecx
 	popl	%eax
 	ret
 
-	.globl	_Exec__ObtainSemaphoreShared
-	.type	_Exec__ObtainSemaphoreShared,@function
-_Exec__ObtainSemaphoreShared:
+	.globl	AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec)
+	.type	AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec),@function
+AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec):
 	pushl	%eax
 	pushl	%ecx
 	pushl	%edx
@@ -57,7 +61,7 @@ _Exec__ObtainSemaphoreShared:
 	pushl	%eax
 	movl	20(%esp),%eax
 	pushl	%eax
-	call	_Exec_ObtainSemaphoreShared
+	call	AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec)
 	addl	$8,%esp
 	popl	%edx
 	popl	%ecx

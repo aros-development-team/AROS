@@ -89,30 +89,36 @@ static void boot(void)
     RemTask(NULL);
 }
 
-AROS_LH1(void,IntServer,AROS_LHA(struct Interrupt *,first,A1),struct ExecBase *,SysBase,,)
+AROS_UFH2(void, IntServer,
+    AROS_LHA(struct Interrupt *,first,A1),
+    AROS_LHA(struct ExecBase *,SysBase,A6)
+)
 {
     AROS_LIBFUNC_INIT
     while(first!=NULL)
     {
-        if(AROS_UFC2(int,first->is_Code,AROS_UFCA(APTR,first->is_Data,A1),
-        				AROS_UFCA(struct ExecBase *,SysBase,A6)))
-            break;
+	if(AROS_UFC2(int,first->is_Code,AROS_UFCA(APTR,first->is_Data,A1),
+					AROS_UFCA(struct ExecBase *,SysBase,A6)))
+	    break;
 	first=(struct Interrupt *)first->is_Node.ln_Succ;
     }
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(int,Dispatcher,AROS_LHA(APTR,is_Data,A1),struct ExecBase *,SysBase,,)
+AROS_UFH2(int, Dispatcher,
+    AROS_LHA(APTR,is_Data,A1),
+    AROS_LHA(struct ExecBase *,SysBase,A6)
+)
 {
     AROS_LIBFUNC_INIT
     Disable();
     /* Check if a task switch is necessary */
     if(SysBase->TaskReady.lh_Head->ln_Succ!=NULL&&
        SysBase->ThisTask->tc_Node.ln_Pri<=
-    	((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+	((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
     {
-        /* Check if it is possible */
-    	if(SysBase->TDNestCnt<0)
+	/* Check if it is possible */
+	if(SysBase->TDNestCnt<0)
 	{
 	    if(SysBase->ThisTask->tc_State==TS_RUN)
 	    {
@@ -292,9 +298,9 @@ int main(int argc,char *argv[])
 	for(i=0;i<16;i++)
 	    if((1<<i)&(INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
 	    {
-	        struct Interrupt *is;
+		struct Interrupt *is;
 		is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
-		is->is_Code=&__IntServer;
+		is->is_Code=&IntServer;
 		is->is_Data=NULL;
 		SetIntVector(i,is);
 	    }
@@ -302,10 +308,10 @@ int main(int argc,char *argv[])
     InitCore();
     /* Install the Dispatcher */
     {
-        struct Interrupt *is;
-        is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
-        is->is_Code=(void (*)())&__Dispatcher;
-        AddIntServer(INTB_VERTB,is);
+	struct Interrupt *is;
+	is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+	is->is_Code=(void (*)())&Dispatcher;
+	AddIntServer(INTB_VERTB,is);
     }
     Enable();
     Permit();

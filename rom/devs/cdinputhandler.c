@@ -1,15 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1996/10/24 15:50:21  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.1  1996/08/23 17:32:23  digulla
-    Implementation of the console.device
-
-
-    Desc:
+    Desc: console.device function CDInputHandler()
     Lang: english
 */
 

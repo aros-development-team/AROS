@@ -11,7 +11,12 @@
 int main (void)
 {
     printf ("# Macros\n"
-	"#define AROS_CSYMNAME(n)   n\n"
+	"#define AROS_CSYMNAME(n)       n\n"
+#ifdef __FreeBSD__
+	"#define AROS_SLIB_ENTRY(n,s)   _ ## s ## _ ## n\n"
+#else
+	"#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n\n"
+#endif
 	"\n");
 
     printf ("# ExecBase\n");

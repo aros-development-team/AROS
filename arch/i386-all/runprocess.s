@@ -1,17 +1,19 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#
-#    Desc: DOS utility function RunProcess
-#    Lang: english
-#
-# LONG RunProcess ( struct Process         * proc,
-#		    struct StackSwapStruct * sss,
-#		    STRPTR		     argptr,
-#		    ULONG		     argsize,
-#		    LONG_FUNC		     entry,
-#		    struct DosLibrary	   * DOSBase
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-	.include "machine.i"
+    Desc: DOS utility function RunProcess
+    Lang: english
+
+ LONG RunProcess ( struct Process         * proc,
+		   struct StackSwapStruct * sss,
+		   STRPTR		    argptr,
+		   ULONG		    argsize,
+		   LONG_FUNC		    entry,
+		   struct DosLibrary	  * DOSBase )
+*/
+
+	#include "machine.i"
 
 	FirstArg = 4+(4*4)   /* Return-Adress + 4 Registers */
 	proc	 = FirstArg
@@ -23,10 +25,10 @@
 
 	.text
 	.balign 16
-	.globl	_Dos_RunProcess
-	.type	_Dos_RunProcess,@function
+	.globl	AROS_SLIB_ENTRY(RunProcess,Dos)
+	.type	AROS_SLIB_ENTRY(RunProcess,Dos),@function
 
-_Dos_RunProcess:
+AROS_SLIB_ENTRY(RunProcess,Dos):
 	/* Save some registers */
 	pushl %edi
 	pushl %esi

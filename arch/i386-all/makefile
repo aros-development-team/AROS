@@ -64,3 +64,5 @@ $(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
 	$(MKDEPEND) -p$(OSGENDIR)/
 
 include $(OSGENDIR)/geninc.d
+include $(OSGENDIR)/preparecontext.d
+

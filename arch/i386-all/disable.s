@@ -1,49 +1,47 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#
-#    Desc: Exec function Disable
-#    Lang: english
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-#*****************************************************************************
-#
-#   NAME
-#	AROS_LH0(void, Disable,
-#
-#   LOCATION
-#	struct ExecBase *, SysBase, 20, Exec)
-#
-#   FUNCTION
-#
-#   INPUTS
-#
-#   RESULT
-#
-#   NOTES
-#
-#   EXAMPLE
-#
-#   BUGS
-#
-#   SEE ALSO
-#
-#   INTERNALS
-#
-#   HISTORY
-#
-#******************************************************************************
+    Desc: Exec function Disable
+    Lang: english
+*/
 
-#if defined(__FreeBSD__)
-#define sigprocmask _sigprocmask
-#endif
+/******************************************************************************
 
-	.include "machine.i"
+    NAME
+	AROS_LH0(void, Disable,
+
+    LOCATION
+	struct ExecBase *, SysBase, 20, Exec)
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
 
 	.text
 	.balign 16
-	.globl	_Exec_Disable
-	.type	_Exec_Disable,@function
+	.globl	AROS_SLIB_ENTRY(Disable,Exec)
+	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
 
-_Exec_Disable:
+AROS_SLIB_ENTRY(Disable,Exec):
 	call  disable
 	pushl %eax
 	movl  8(%esp),%eax
@@ -63,7 +61,7 @@ disable:
 	leal  4(%esp),%eax
 	pushl %eax
 	pushl $0
-	call  sigprocmask
+	call  AROS_CSYMNAME(sigprocmask)
 	addl  $16,%esp
 
 	popl  %edx

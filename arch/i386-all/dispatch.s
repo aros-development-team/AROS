@@ -38,10 +38,10 @@
 
 	.text
 	.balign 16
-	.globl	_Exec_Dispatch
-	.type	_Exec_Dispatch,@function
+	.globl	AROS_SLIB_ENTRY(Dispatch,Exec)
+	.type	AROS_SLIB_ENTRY(Dispatch,Exec),@function
 
-_Exec_Dispatch:
+AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* Push all registers */
 	pushl	%eax
 	pushl	%ebx
