@@ -127,7 +127,13 @@ do                                          \
 		       minwidth  - minimum width of field. Defaults to 0.
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
-		       size	 - 'l' means longword. Defaults to word.
+
+		       size	 - 'w' means WORD.
+		                   'l' means LONG.
+				   'i' means IPTR.
+
+				   defaults to WORD, if nothing is specified.
+
 		       type	 - 'b' BCPL string. A BPTR to a one byte
 				       byte count followed by the characters.
 				   'c' single character.
@@ -159,10 +165,15 @@ do                                          \
 				  to use this option.
 
 	DataStream   - Pointer to a zone of memory containing the data. Data has to be
-	               placed in that memory buffer as if it was put on the stack.
+	               WORD aligned.
 
 	PutChProc    - Callback function. In caseCalled for each character, including
-		       the NULL terminator.
+		       the NULL terminator. The fuction is called as follow:
+
+                       AROS_UFC2(void, PutChProc,
+                                 AROS_UFCA(UBYTE, char,      D0),
+                                 AROS_UFCA(APTR , PutChData, A3));
+
 	PutChData    - Data propagated to each call of the callback hook.
 
     RESULT
