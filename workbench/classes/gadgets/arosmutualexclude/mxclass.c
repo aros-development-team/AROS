@@ -179,7 +179,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport)
 	{
-	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_REDRAW);
+	    DoMethod(obj, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
 	}
@@ -363,7 +363,7 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
                 if (rport)
                 {
                     data->newactive = y;
-                    DoMethod(obj, GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE);
+                    DoMethod(obj, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rport, GREDRAW_UPDATE);
                     ReleaseGIRPort(rport);
                     *msg->gpi_Termination = data->active = y;
                     retval |= GMR_VERIFY;
