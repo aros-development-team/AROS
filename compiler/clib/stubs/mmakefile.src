@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 STUBSDIR	:= $(GENDIR)/compiler/clib/stubs
-FILES		:= $(shell ($(ECHO) '\#define SYSTEM_CALL(x) x'; $(CAT) $(AROS_INCLUDES)/sys/syscall.def) | $(CPP) -P -)
+FILES		:= $(shell ($(ECHO) '\#define SYSTEM_CALL(x, y...) x'; $(CAT) $(AROS_INCLUDES)/sys/syscall.def) | $(CPP) -P -)
 FILES		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f))
 OBJS		:= $(foreach f,$(FILES), $(f).o)
 GENSTUBS	:= genstubs
