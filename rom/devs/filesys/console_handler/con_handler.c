@@ -570,10 +570,12 @@ VOID conTaskEntry(struct conTaskParams *param)
     D(bug("conTaskEntry: taskparams = %x  conbase = %x  iofs = %x  filename = \"%s\"\n",
     			param, conbase, iofs, filename));
     
-        fh = AllocMem(sizeof (struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
+    fh = AllocMem(sizeof (struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
     if (fh)
     {
     	D(bug("contask: fh allocated\n"));
+
+	fh->usecount = 1;
 
         fh->contask = FindTask(NULL);	
 	fh->breaktask = param->parentTask;
