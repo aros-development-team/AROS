@@ -1,31 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1996/11/08 11:27:54  aros
-    All OS function use now Amiga types
 
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.7  1996/10/24 15:50:43  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.6  1996/10/23 14:24:23  aros
-    Make sure the Alert is shown to the user
-
-    Revision 1.5  1996/08/16 14:04:40  digulla
-    Show more infos about the task
-
-    Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:04  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Exec function Alert()
+    Lang: english
 */
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -76,18 +54,244 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    static const char * CPUStrings[] =
+    {
+	"Hardware bus fault/access error",
+	"Illegal address access (ie: odd)",
+	"Illegal instruction",
+	"Divide by zero",
+	"Check instruction error",
+	"TrapV instruction error",
+	"Privilege violation error",
+	"Trace error",
+	"Line 1010 Emulator error",
+	"Line 1111 Emulator error",
+	"Stack frame format error",
+	"Spurious interrupt error",
+	"AutoVector Level 1 interrupt error",
+	"AutoVector Level 2 interrupt error",
+	"AutoVector Level 3 interrupt error",
+	"AutoVector Level 4 interrupt error",
+	"AutoVector Level 5 interrupt error",
+	"AutoVector Level 6 interrupt error",
+	"AutoVector Level 7 interrupt error",
+    },
+    * GenPurposeStrings[] =
+    {
+	"No memory",
+	"Make library",
+	"Open library",
+	"Open device",
+	"Open resource",
+	"I/O error",
+	"No signal",
+	"Bad parameter",
+	"Close library",
+	"Close device",
+	"Create process",
+    },
+    * AlertObjects[] =
+    {
+	"Exec",
+	"Graphics",
+	"Layers",
+	"Intuition",
+
+	"Math",
+	"DOS",
+	"RAM",
+	"Icon",
+
+	"Expansion",
+	"Diskfont",
+	"Utility",
+	"Keymap",
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+    /* 0x10 */
+	"Audio",
+	"Console",
+	"Gameport",
+	"Keyboard",
+
+	"Trackdisk",
+	"Timer",
+	NULL,
+	NULL,
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+    /* 0x20 */
+	"CIA",
+	"Disk",
+	"Misc",
+	NULL,
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+    /* 0x30 */
+	"Bootstrap",
+	"Workbench",
+	"Diskcopy",
+	"Gadtools",
+
+	"Unknown",
+    },
+    * ExecStrings[] =
+    {
+	"68000 exception vector checksum",
+	"Execbase checksum",
+	"Library checksum failure",
+	NULL,
+
+	"Corrupt memory list detected in FreeMem",
+	"No memory for interrupt servers",
+	"InitStruct() of an APTR source",
+	"A semaphore is in an illegal state at ReleaseSemaphore",
+
+	"Freeing memory already freed",
+	"Illegal 68k exception taken",
+	"Attempt to reuse active IORequest",
+	"Sanity check on memory list failed",
+
+	"IO attempted on closed IORequest",
+	"Stack appears to extend out of range",
+	"Memory header not located. (Usually an invalid address passed to FreeMem())",
+	"An attempt was made to use the old message semaphores",
+
+    };
+
     struct Task * task;
+
+#   define GetSubSysId(a)       (((a) >> 24) & 0x7F)
+#   define GetGenError(a)       (((a) >> 16) & 0xFF)
+#   define GetSpecError(a)      ((a) & 0xFFFF)
 
     task = FindTask (NULL);
 
     /* since this is an emulation, we just show the bug in the console */
     fprintf (stderr
-	, "GURU Meditation %04lx %04lx %s\nTask: %p (%s)\n"
+	, "GURU Meditation %04lx %04lx "
 	, alertNum >> 16
 	, alertNum & 0xFFFF
-	, (alertNum & 0x80000000) ? "(DEADEND)" : ""
-	, task, task->tc_Node.ln_Name
+    );
+
+    if (alertNum & 0x80000000)
+	fprintf (stderr
+	    , "Deadend/"
 	);
+    else
+	fprintf (stderr
+	    , "Recoverable/"
+	);
+
+    switch (GetSubSysId (alertNum))
+    {
+    case 0: /* CPU/OS/App */
+	if (GetGenError (alertNum) == 0)
+	{
+	    fprintf (stderr
+		, "CPU/"
+	    );
+
+	    if (GetSpecError (alertNum) >= 2 && GetSpecError (alertNum) <= 0x1F)
+		fprintf (stderr
+		    , "%s"
+		    , CPUStrings[GetSpecError (alertNum) - 2]
+		);
+	    else
+		fprintf (stderr
+		    , "*unknown*"
+		);
+	}
+	else if (GetGenError (alertNum) <= 0x0B)
+	{
+	    fprintf (stderr
+		, "%s/"
+		, GenPurposeStrings[GetGenError (alertNum) - 1]
+	    );
+
+	    if (GetSpecError (alertNum) >= 0x8001
+		&& GetSpecError (alertNum) <= 0x8035)
+	    {
+		fprintf (stderr
+		    , "%s"
+		    , AlertObjects[GetSpecError (alertNum) - 0x8001]
+		);
+	    }
+	    else
+		fprintf (stderr
+		    , "*unknown*"
+		);
+	}
+
+	break;
+
+    case 1: /* Exec */
+	fprintf (stderr
+	    , "Exec/"
+	);
+
+	if (!GetGenError (alertNum)
+	    && GetSpecError (alertNum) >= 0x0001
+	    && GetSpecError (alertNum) <= 0x0010)
+	{
+	    fprintf (stderr
+		, "%s"
+		, ExecStrings[GetSpecError (alertNum) - 0x0001]
+	    );
+	}
+	else
+	{
+	    fprintf (stderr
+		, "*unknown*"
+	    );
+	}
+
+	break;
+
+    case 2: /* Graphics */
+	fprintf (stderr
+	    , "Graphics/*unknown*"
+	);
+
+	break;
+
+    default:
+	fprintf (stderr
+	    , "*unknown*/*unknown*"
+	);
+    }
+
+    fprintf (stderr
+	, "\nTask: %p (%s)"
+	, task
+	, (task && task->tc_Node.ln_Name) ?
+	    task->tc_Node.ln_Name
+	    : "-- unknown task --"
+    );
     fflush (stderr);
 
     if (alertNum & AT_DeadEnd)
