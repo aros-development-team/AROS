@@ -61,7 +61,7 @@ AROS_LH5(BOOL, WindowLimits,
 
     BOOL retval = TRUE;
 
-    DEBUG_WINDOWLIMITS(dprintf("WindowLimits(Window 0x%lx MinWidth %ld MinHeight %ld MaxWidth %ld MaxHeight)\n",window,MinWidth,MinHeight,MaxWidth,MaxHeight));
+    DEBUG_WINDOWLIMITS(dprintf("WindowLimits(Window 0x%lx MinWidth %ld MinHeight %ld MaxWidth %ld MaxHeight %ld)\n",window,MinWidth,MinHeight,MaxWidth,MaxHeight));
 
     IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
