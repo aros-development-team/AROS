@@ -362,7 +362,7 @@ int i;
 			char *str;
 			struct HDTBPartition *partition;
 			partition = (struct HDTBPartition *)partitiontypegadgets.iln;
-			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 			get(object, MUIA_String_Contents, &str);
 			partitiontypegadgets.type.id_len=strcpyESC(partitiontypegadgets.type.id, str);
 		}
@@ -373,7 +373,7 @@ int i;
 			{
 				struct TypeNode *tn;
 				STRPTR name;
-				DoMethod(partitiontypegadgets.lv, MUIM_List_GetEntry, active, &name);
+				DoMethod(partitiontypegadgets.lv, MUIM_List_GetEntry, active, (IPTR)&name);
 				tn = (struct TypeNode *)FindName(&partitiontypegadgets.ttn->typelist, name);
 				setTypeString(&tn->type, partitiontypegadgets.hexid);
 				CopyMem(&tn->type, &partitiontypegadgets.type, sizeof(struct PartitionType));
@@ -396,7 +396,7 @@ int i;
 				struct TableTypeNode *ttn;
 				struct HDTBPartition *table;
 				STRPTR name;
-				DoMethod(partitiontabletypegadgets.lv, MUIM_List_GetEntry, active, &name);
+				DoMethod(partitiontabletypegadgets.lv, MUIM_List_GetEntry, active, (IPTR)&name);
 				ttn = findTableTypeNodeName(name);
 				table = (struct HDTBPartition *)partitiontabletypegadgets.iln;
 				if (
@@ -897,7 +897,7 @@ int i;
 		switch (i)
 		{
 		case GB_ADD_ENTRY:
-			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, 0, &iln);
+			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, 0, (IPTR)&iln);
 			if (
 					(iln == NULL) ||
 					((iln) && (iln->parent->parent == NULL))
@@ -920,8 +920,8 @@ int i;
 					DoMethod
 					(
 						addpartitiongadgets.win,
-						MUIM_Notify, MUIA_Window_Open, TRUE, addpartitiongadgets.pt, 3,
-						MUIM_Set, PTCT_PartitionTable, table
+						MUIM_Notify, MUIA_Window_Open, TRUE, (IPTR)addpartitiongadgets.pt, 3,
+						MUIM_Set, PTCT_PartitionTable, (IPTR)table
 					);
 					set(addpartitiongadgets.win, MUIA_Window_Open, TRUE);
 				}
@@ -933,7 +933,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				switch (iln->ln.ln_Type)
 				{
 			 	case LNT_Device:
@@ -960,7 +960,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				if (
 						(iln->ln.ln_Type == LNT_Harddisk) ||
 						((i==2) && (iln->ln.ln_Type == LNT_Partition))
@@ -978,7 +978,7 @@ int i;
 						DoMethod
 						(
 							partitiontabletypegadgets.lv,
-							MUIM_List_InsertSingle, PartitionBase->tables[i]->pti_Name, MUIV_List_Insert_Bottom
+							MUIM_List_InsertSingle, (IPTR)PartitionBase->tables[i]->pti_Name, MUIV_List_Insert_Bottom
 						);
 						if (type == PartitionBase->tables[i]->pti_Type)
 							set(partitiontabletypegadgets.lv, MUIA_List_Active, i);
@@ -1002,7 +1002,7 @@ int i;
 							DoMethod
 							(
 								partitiontypegadgets.lv,
-								MUIM_List_InsertSingle, tn->ln.ln_Name, MUIV_List_Insert_Bottom
+								MUIM_List_InsertSingle, (IPTR)tn->ln.ln_Name, MUIV_List_Insert_Bottom
 							);
 							if (tn->type.id_len == partition->type.id_len)
 								if (memcmp(tn->type.id, partition->type.id, tn->type.id_len) == 0)
@@ -1019,7 +1019,7 @@ int i;
 		case GB_RESIZE_MOVE:
 			break;
 		case GB_PARENT:
-			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, 0, &iln);
+			DoMethod(gadgets.leftlv, MUIM_List_GetEntry, 0, (IPTR)&iln);
 			if (iln->ln.ln_Type == LNT_Parent)
 			{
 				set(gadgets.leftlv, MUIA_List_Active, 0);
@@ -1030,7 +1030,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				if (iln->ln.ln_Type == LNT_Partition)
 				{
 					struct HDTBPartition *partition;
@@ -1048,7 +1048,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				if (iln->ln.ln_Type == LNT_Partition)
 				{
 					struct HDTBPartition *partition;
@@ -1080,7 +1080,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				if (iln->ln.ln_Type == LNT_Partition)
 				{
 					struct HDTBPartition *partition;
@@ -1116,7 +1116,7 @@ int i;
 			get(gadgets.leftlv, MUIA_List_Active, &active);
 			if (active != MUIV_List_Active_Off)
 			{
-				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &iln);
+				DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
 				saveChanges(iln, TRUE);
 			}
 			break;
@@ -1162,7 +1162,7 @@ struct ListNode *parent;
 }
 
 void InsertList(Object *list, struct ListNode *node) {
-	DoMethod(list, MUIM_List_InsertSingle, node, MUIV_List_Insert_Bottom);
+	DoMethod(list, MUIM_List_InsertSingle, (IPTR)node, MUIV_List_Insert_Bottom);
 }
 
 void ShowList(Object *list, struct List *lh) {
@@ -1180,7 +1180,7 @@ struct ListNode *lnode;
 				(!(lnode->flags & LNF_Invalid))
 			)
 		{
-			DoMethod(list, MUIM_List_InsertSingle, lnode, MUIV_List_Insert_Bottom);
+			DoMethod(list, MUIM_List_InsertSingle, (IPTR)lnode, MUIV_List_Insert_Bottom);
 		}
 		lnode = (struct ListNode *)lnode->ln.ln_Succ;
 	}
@@ -1221,7 +1221,7 @@ struct ListNode *iln;
 	get(object, MUIA_List_Active, &active);
 	if (active != MUIV_List_Active_Off)
 	{
-		DoMethod(object,MUIM_List_GetEntry,active, &iln);
+		DoMethod(object,MUIM_List_GetEntry,active, (IPTR)&iln);
 		if (iln->flags & LNF_Listable)
 		{
 			ShowList(object, &iln->list);
@@ -1278,14 +1278,14 @@ struct ListNode *iln;
 			DoMethod
 			(
 				gadgets.buttons[GB_RESIZE_MOVE],
-				MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.win, 3,
+				MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)resizemovegadgets.win, 3,
 				MUIM_Set, MUIA_Window_Open, TRUE
 			);
 			DoMethod
 			(
 				resizemovegadgets.win,
-				MUIM_Notify, MUIA_Window_Open, TRUE, resizemovegadgets.pt, 3,
-				MUIM_Set, PTCT_PartitionTable, iln
+				MUIM_Notify, MUIA_Window_Open, TRUE, (IPTR)resizemovegadgets.pt, 3,
+				MUIM_Set, PTCT_PartitionTable, (IPTR)iln
 			);
 			break;
 		}
@@ -1305,13 +1305,13 @@ char sizestr[16];
 	get(object, MUIA_List_Active, &active);
 	if (active != MUIV_List_Active_Off)
 	{
-		DoMethod(object,MUIM_List_GetEntry,active, &iln);
+		DoMethod(object,MUIM_List_GetEntry,active, (IPTR)&iln);
 		DoMethod(gadgets.rightlv, MUIM_List_Clear);
 		switch (iln->ln.ln_Type)
 		{
 		case LNT_Device:
 			sprintf(str, "%s: %ld", MSG(WORD_Units),countNodes(&iln->list, LNT_Harddisk));
-			DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+			DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 			enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
 			if (iln->change_count > 0)
 				enableObject(gadgets.buttons[GB_SAVE_CHANGES]);
@@ -1334,21 +1334,21 @@ char sizestr[16];
 					)/2
 				);
 				sprintf(str, "%s: %s", MSG(WORD_Size), sizestr);
-				DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+				DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 				sprintf(str, "%s: ", MSG(WORD_Partition_Table));
 				if (partition->table)
 				{
 					struct TableTypeNode *ttn;
 					ttn = findTableTypeNode(partition->table->type);
 					strcat(str, ttn->pti->pti_Name);
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 					sprintf(str, "%s: %ld", MSG(WORD_Partitions), countNodes(&iln->list, LNT_Partition));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 				}
 				else
 				{
 					strcat(str, MSG(WORD_Unknown));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 				}
 				if (iln->ln.ln_Type == LNT_Partition)
 				{
@@ -1359,25 +1359,25 @@ char sizestr[16];
 						strcat(str, type->ln.ln_Name);
 					else
 						strcat(str, MSG(WORD_Unknown));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 					sprintf(str, "%s: ", MSG(WORD_Active));
 					if (partition->flags & PNF_ACTIVE)
 						strcat(str, MSG_STD(YESSTR));
 					else
 						strcat(str, MSG_STD(NOSTR));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 					sprintf(str, "%s: ", MSG(WORD_Bootable));
 					if (partition->flags & PNF_BOOTABLE)
 						strcat(str, MSG_STD(YESSTR));
 					else
 						strcat(str, MSG_STD(NOSTR));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 					sprintf(str, "%s: ", MSG(WORD_Automount));
 					if (partition->flags & PNF_AUTOMOUNT)
 						strcat(str, MSG_STD(YESSTR));
 					else
 						strcat(str, MSG_STD(NOSTR));
-					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
 					enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
 					enableObject(gadgets.buttons[GB_RENAME]);
 					enableObject(gadgets.buttons[GB_DOSENVEC]);
@@ -1831,33 +1831,33 @@ int i;
 	/* Main Window */
 	DoMethod
 	(
-		mainwin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2,
+		mainwin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
 		MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
 	);
 	DoMethod
 	(
-		gadgets.buttons[GB_EXIT], MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
+		gadgets.buttons[GB_EXIT], MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
 		MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
 	);
 	DoMethod
 	(
 		gadgets.leftlv,
-			MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, gadgets.leftlv, 2,
-			MUIM_CallHook, &hook_lv_doubleclick
+			MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, (IPTR)gadgets.leftlv, 2,
+			MUIM_CallHook, (IPTR)&hook_lv_doubleclick
 	);
 	DoMethod
 	(
 		gadgets.leftlv,
-			MUIM_Notify, MUIA_Listview_SelectChange, TRUE, gadgets.leftlv, 2,
-			MUIM_CallHook, &hook_lv_click
+			MUIM_Notify, MUIA_Listview_SelectChange, TRUE, (IPTR)gadgets.leftlv, 2,
+			MUIM_CallHook, (IPTR)&hook_lv_click
 	);
 	for (i=GB_FIRST;i<GB_EXIT;i++)
 	{
 		DoMethod
 		(
 			gadgets.buttons[i],
-				MUIM_Notify, MUIA_Pressed, FALSE, gadgets.buttons[i], 2,
-				MUIM_CallHook, &hook_buttons
+				MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)gadgets.buttons[i], 2,
+				MUIM_CallHook, (IPTR)&hook_buttons
 		);
 		/* MUIM_CallHook, hook */
 	}
@@ -1873,282 +1873,282 @@ int i;
 	DoMethod
 	(
 		quit_item,
-		MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2,
+		MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, (IPTR)app, 2,
 		MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
 	);
 	/* add device window */
 	DoMethod
 	(
 		adddevicegadgets.win,
-		MUIM_Notify, MUIA_Window_Open, TRUE, mainwin, 3,
+		MUIM_Notify, MUIA_Window_Open, TRUE, (IPTR)mainwin, 3,
 		MUIM_Set, MUIA_Window_Sleep, TRUE
 	);
 	DoMethod
 	(
 		adddevicegadgets.win,
-		MUIM_Notify, MUIA_Window_Open, FALSE, mainwin, 3,
+		MUIM_Notify, MUIA_Window_Open, FALSE, (IPTR)mainwin, 3,
 		MUIM_Set, MUIA_Window_Sleep, FALSE
 	);
 	DoMethod
 	(
 		adddevicegadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, adddevicegadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)adddevicegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		adddevicegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, adddevicegadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)adddevicegadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		adddevicegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, adddevicegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)adddevicegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		adddevicegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, adddevicegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)adddevicegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	/* add partition window */
 	DoMethod
 	(
 		addpartitiongadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, addpartitiongadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)addpartitiongadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		addpartitiongadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, addpartitiongadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)addpartitiongadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		addpartitiongadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, addpartitiongadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)addpartitiongadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		addpartitiongadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, addpartitiongadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)addpartitiongadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		addpartitiongadgets.pt,
-		MUIM_Notify, PTCT_Selected, TRUE, addpartitiongadgets.pt, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, PTCT_Selected, TRUE, (IPTR)addpartitiongadgets.pt, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	/* partition type window */
 	DoMethod
 	(
 		partitiontypegadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, partitiontypegadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)partitiontypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		partitiontypegadgets.hexid,
 		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-		partitiontypegadgets.hexid, 2,
-		MUIM_CallHook, &hook_buttons
+		(IPTR)partitiontypegadgets.hexid, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 #warning "FIXME: notify doesn't work"
 	DoMethod
 	(
 		partitiontypegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontypegadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontypegadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		partitiontypegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontypegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		partitiontypegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontypegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		partitiontypegadgets.lv,
-		MUIM_Notify, MUIA_Listview_SelectChange, TRUE, partitiontypegadgets.lv, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Listview_SelectChange, TRUE, (IPTR)partitiontypegadgets.lv, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	/* partition table type window */
 	DoMethod
 	(
 		partitiontabletypegadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, partitiontabletypegadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)partitiontabletypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		partitiontabletypegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontabletypegadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontabletypegadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		partitiontabletypegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontabletypegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontabletypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		partitiontabletypegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, partitiontabletypegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)partitiontabletypegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	/* resize/move window */
 	DoMethod
 	(
 		resizemovegadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, resizemovegadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)resizemovegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		resizemovegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)resizemovegadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		resizemovegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)resizemovegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		resizemovegadgets.size,
 		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-		resizemovegadgets.size, 2,
-		MUIM_CallHook, &hook_buttons
+		(IPTR)resizemovegadgets.size, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		resizemovegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.cancel, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)resizemovegadgets.cancel, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		resizemovegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)resizemovegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		resizemovegadgets.pt,
-		MUIM_Notify, PTCT_Selected, TRUE, resizemovegadgets.pt, 3,
-		MUIM_CallHook, &hook_buttons, PTCT_Selected
+		MUIM_Notify, PTCT_Selected, TRUE, (IPTR)resizemovegadgets.pt, 3,
+		MUIM_CallHook, (IPTR)&hook_buttons, PTCT_Selected
 	);
 	DoMethod
 	(
 		resizemovegadgets.pt,
-		MUIM_Notify, PTCT_PartitionMove, TRUE, resizemovegadgets.pt, 3,
-		MUIM_CallHook, &hook_buttons, PTCT_PartitionMove
+		MUIM_Notify, PTCT_PartitionMove, TRUE, (IPTR)resizemovegadgets.pt, 3,
+		MUIM_CallHook, (IPTR)&hook_buttons, PTCT_PartitionMove
 	);
 	DoMethod
 	(
 		resizemovegadgets.highcyl,
-		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, resizemovegadgets.highcyl, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)resizemovegadgets.highcyl, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		resizemovegadgets.lowcyl,
-		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, resizemovegadgets.lowcyl, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)resizemovegadgets.lowcyl, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		resizemovegadgets.totalcyl,
-		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, resizemovegadgets.totalcyl, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)resizemovegadgets.totalcyl, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	/* rename window */
 	DoMethod
 	(
 		renamegadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, renamegadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)renamegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		renamegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, renamegadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)renamegadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		renamegadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, renamegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)renamegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		renamegadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, renamegadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)renamegadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	/* dosenvec window */
 	DoMethod
 	(
 		dosenvecgadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, dosenvecgadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)dosenvecgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		dosenvecgadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, dosenvecgadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)dosenvecgadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		dosenvecgadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, dosenvecgadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)dosenvecgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		dosenvecgadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, dosenvecgadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)dosenvecgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	/* automount/boot window */
 	DoMethod
 	(
 		mountbootgadgets.win,
-		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, mountbootgadgets.win, 3,
+		MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)mountbootgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		mountbootgadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, mountbootgadgets.ok, 2,
-		MUIM_CallHook, &hook_buttons
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)mountbootgadgets.ok, 2,
+		MUIM_CallHook, (IPTR)&hook_buttons
 	);
 	DoMethod
 	(
 		mountbootgadgets.ok,
-		MUIM_Notify, MUIA_Pressed, FALSE, mountbootgadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)mountbootgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	DoMethod
 	(
 		mountbootgadgets.cancel,
-		MUIM_Notify, MUIA_Pressed, FALSE, mountbootgadgets.win, 3,
+		MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)mountbootgadgets.win, 3,
 		MUIM_Set, MUIA_Window_Open, FALSE
 	);
 	set(mainwin, MUIA_Window_Open, TRUE);
@@ -2165,7 +2165,7 @@ void deinitGUI() {
 }
 
 BOOL QuitGUI(ULONG *sigs) {
-	if ((LONG)DoMethod(app, MUIM_Application_NewInput, sigs) == MUIV_Application_ReturnID_Quit)
+	if ((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)sigs) == MUIV_Application_ReturnID_Quit)
 		return TRUE;
 	return FALSE;
 }
