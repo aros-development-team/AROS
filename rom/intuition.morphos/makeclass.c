@@ -83,7 +83,7 @@ AROS_LH5(struct IClass *, MakeClass,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    Class * iclass = NULL;
+    Class *iclass = NULL;
 
     EXTENDUWORD(instanceSize);
 
@@ -101,25 +101,25 @@ AROS_LH5(struct IClass *, MakeClass,
         /* Workaround for buggy callers: set z flag - Piru */
         REG_SR |= 4;
 #endif
-        return (NULL);
+        return NULL;
     }
 
-    ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /* Does this class already exist ? */
-    if (!FindClass (classID))
+    if (!FindClass(classID))
     {
         /* Has the user specified a classPtr ? */
         if (!superClassPtr)
         {
             /* Search for the class ... */
-            superClassPtr = FindClass (superClassID);
+            superClassPtr = FindClass(superClassID);
         }
 
         if (superClassPtr)
         {
             /* Get some memory */
-            if ((iclass = (Class *) AllocMem (sizeof (Class), MEMF_PUBLIC|MEMF_CLEAR)))
+            if ((iclass = (Class *) AllocMem(sizeof (Class), MEMF_PUBLIC|MEMF_CLEAR)))
             {
                 /* Felder init */
                 iclass->cl_Super      = superClassPtr;
@@ -143,18 +143,17 @@ AROS_LH5(struct IClass *, MakeClass,
         DEBUG_MAKECLASS(dprintf("MakeClass: already there\n"));
     }
 
-    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     DEBUG_MAKECLASS(dprintf("MakeClass: return 0x%lx\n", iclass));
 
 #ifdef __MORPHOS__
     /* Workaround for buggy callers: clear/set z flag - Piru */
-    if (iclass)
-        REG_SR &= (ULONG) ~4;
-    else
-        REG_SR |= 4;
+    if (iclass) REG_SR &= (ULONG) ~4;
+    else        REG_SR |= 4;
 #endif
-    return (iclass);
+
+    return iclass;
 
     AROS_LIBFUNC_EXIT
 } /* MakeClass() */
