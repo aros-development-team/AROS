@@ -29,7 +29,7 @@ struct MUI_PopimageData
     struct Hook close_hook;
 
     Object *wnd;
-    Object *bitmap_string;
+    Object *imageadjust;
 };
 
 
@@ -46,6 +46,13 @@ AROS_UFH3(VOID,Close_Function,
     int ok = (int)msg[0];
 
     set(data->wnd,MUIA_Window_Open,FALSE);
+
+    if (ok)
+    {
+    	char *spec;
+    	get(data->imageadjust,MUIA_Imageadjust_Spec,&spec);
+	set(obj,MUIA_Image_Spec,spec);
+    }
 }
 
 #ifndef _AROS
@@ -64,7 +71,7 @@ AROS_UFH3(VOID,Press_Function,
 
     	data->wnd = WindowObject,
     	    WindowContents, VGroup,
-		Child, MUI_NewObject(MUIC_Imageadjust, TAG_DONE),
+		Child, data->imageadjust = MUI_NewObject(MUIC_Imageadjust, TAG_DONE),
 		Child, HGroup,
 		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
 		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
@@ -100,6 +107,8 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 			ButtonFrame,
 			MUIA_InputMode, MUIV_InputMode_RelVerify,
+			MUIA_Image_FreeHoriz, TRUE,
+			MUIA_Image_FreeVert, TRUE,
 			TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
