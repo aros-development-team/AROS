@@ -1,9 +1,10 @@
+#ifndef PROTO_IFFPARSE_H
+#define PROTO_IFFPARSE_H
+
 /*
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 */
-#ifndef PROTO_IFFPARSE_H
-#define PROTO_IFFPARSE_H
 
 #ifndef AROS_SYSTEM_H
 #include <aros/system.h>
