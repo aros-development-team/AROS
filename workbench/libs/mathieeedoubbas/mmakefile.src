@@ -6,7 +6,7 @@ USER_INCLUDES := -I.
 LIBNAME 	:= mathieeedoubbas
 ULIBNAME	:= MathIeeeDoubBas
 
-FILES		:= 
+FILES		:= ieeedpbas_fpu
 FUNCTIONS	:= \
 	ieeedpabs \
 	ieeedpadd \
