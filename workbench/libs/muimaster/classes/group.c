@@ -1117,10 +1117,14 @@ group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
 	left = (_mwidth(obj) - width) / 2;
 	height = (_flags(child) & MADF_MAXSIZE) ?
 	    _maxheight(child) : _minheight(child);
-	if (has_variable_height)
+
+	if (has_variable_height && data->vert_weight_sum) /* Added this check, because data->vert_weight_sum might be 0 */
 	{
-	    bonus = ROUND(totalBonus * _vweight(child)
-			  / (double)data->vert_weight_sum);
+/*	    bonus = ROUND(totalBonus * _vweight(child)
+			  / (double)data->vert_weight_sum);*/ /* Using integer numbers is nicer */
+
+	    bonus = (totalBonus * _vweight(child) + data->vert_weight_sum  / 2) / data->vert_weight_sum;
+
 	    bonus = MIN(bonus, _maxheight(child) - height);
 	    height += bonus;
 	}
