@@ -35,7 +35,7 @@ LIBNAME  := graphics
 ULIBNAME := Graphics
 
 OSMODULE  := graphics.library
-FILES	  := intregions graphics_misc areafill fontsupport color_support
+FILES	  := intregions bandfunctions graphics_misc areafill fontsupport color_support
 FUNCTIONS := \
 	addanimob \
 	addbob \
@@ -89,8 +89,6 @@ FUNCTIONS := \
 	deinitrastport \
 	disownblitter \
 	disposeregion \
-	disposeregionrectangle \
-	disposeregionrectanglelist \
 	docollision \
 	draw \
 	drawellipse \
@@ -153,7 +151,6 @@ FUNCTIONS := \
 	mrgcop \
 	newrectregion \
 	newregion \
-	newregionrectangle \
 	nextdisplayinfo \
 	obtainbestpena \
 	obtainpen \

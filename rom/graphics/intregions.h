@@ -5,17 +5,29 @@
     Desc: Header file for intregions.c
     Lang: english
 */
+#ifndef INTREGIONS_H
+#define INTREGIONS_H
+
 #include <graphics/gfxbase.h>
+#include <graphics/regions.h>
+
 
 BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
 
-struct RegionRectangle* copyrrects(struct RegionRectangle* src);
+#define overlapX(a,b)         \
+(                             \
+    ((a).MinX <= (b).MaxX) && \
+    ((a).MaxX >= (b).MinX)    \
+)
 
-#define overlap(a,b) (((a).MinY <= (b).MaxY) && \
-                      ((a).MinX <= (b).MaxX) && \
-                      ((a).MaxX >= (b).MinX) && \
-                      ((a).MaxY >= (b).MinY))
+#define overlapY(a,b)         \
+(                             \
+    ((a).MinY <= (b).MaxY) && \
+    ((a).MaxY >= (b).MinY)    \
+)
+
+#define overlap(a,b) (overlapY(a,b) && overlapX(a,b))
 
 
 #define _AndRectRect(rect1, rect2, intersect)                  \
@@ -36,3 +48,100 @@ struct RegionRectangle* copyrrects(struct RegionRectangle* src);
                                                                \
     res;                                                       \
 })
+
+#define _TranslateRect(rect, dx, dy) \
+{                                    \
+    struct Rectangle *_rect = rect;  \
+    WORD _dx = dx;                   \
+    WORD _dy = dy;                   \
+    (_rect)->MinX += _dx;            \
+    (_rect)->MinY += _dy;            \
+    (_rect)->MaxX += _dx;            \
+    (_rect)->MaxY += _dy;            \
+}
+
+#define _TranslateRegionRectangles(rr, dx, dy) \
+{                                              \
+    struct RegionRectangle *_rr;               \
+                                               \
+    for (_rr = rr; _rr; _rr = _rr->Next)       \
+        _TranslateRect(&_rr->bounds, dx, dy);  \
+}
+
+#define USE_BANDED_FUNCTIONS 1
+
+/* ugly hack, I know... */
+#ifndef GfxBase
+
+BOOL _OrRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+);
+
+BOOL _XorRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+);
+
+BOOL _ClearRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+);
+
+BOOL _AndRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+);
+
+BOOL _OrRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+);
+
+BOOL _AndRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+);
+
+BOOL _ClearRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+);
+
+BOOL _XorRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+);
+
+BOOL _AreRegionsEqual
+(
+    struct Region *R1,
+    struct Region *R2
+);
+
+void _NormalizeRegion
+(
+    struct Region  *R,
+    struct GfxBase *GfxBase
+);
+
+
+#endif
+
+#endif /* !INTREGIONS_H */

@@ -51,24 +51,30 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
+#if USE_BANDED_FUNCTIONS
+
+    return _OrRegionRegion(region1, region2, GfxBase);
+
+#else
+
     struct Rectangle CurRectangle;
     struct RegionRectangle * CurRR = region1 -> RegionRectangle;
-    
+
     while (NULL != CurRR)
     {
       CurRectangle.MinX = region1->bounds.MinX + CurRR->bounds.MinX;
       CurRectangle.MaxX = region1->bounds.MinX + CurRR->bounds.MaxX;
       CurRectangle.MinY = region1->bounds.MinY + CurRR->bounds.MinY;
       CurRectangle.MaxY = region1->bounds.MinY + CurRR->bounds.MaxY;
-      
+
       if (FALSE == OrRectRegion(region2, &CurRectangle))
         return FALSE;
-      
+
       CurRR = CurRR -> Next;
     }
- 
-    return TRUE;
 
+    return TRUE;
+#endif
     AROS_LIBFUNC_EXIT
 }

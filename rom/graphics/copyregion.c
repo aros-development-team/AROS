@@ -55,13 +55,11 @@
     if ((nreg = NewRegion()))
     {
 	nreg->bounds = region->bounds;
-	if (region->RegionRectangle)
+
+	if (!CopyRegionRectangleList(region->RegionRectangle, &nreg->RegionRectangle))
 	{
-	    if (!(nreg->RegionRectangle = copyrrects(region->RegionRectangle)))
-	    {
-		DisposeRegion(nreg);
-		nreg = NULL;
-	    }
+            DisposeRegion(nreg);
+	    nreg = NULL;
 	}
     }
     

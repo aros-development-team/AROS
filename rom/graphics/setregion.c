@@ -55,78 +55,38 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct RegionRectangle * rrs =  src->RegionRectangle;
-  struct RegionRectangle * rrd = dest->RegionRectangle;
-  struct RegionRectangle * rrd_prev = NULL;
-  
-  dest->bounds = src->bounds;
+    struct RegionRectangle * rrs, *rrd, *rrd_prev, **addr;
 
-  while (NULL != rrs)
-  {
-    /*
-     * Is there a destination region rectangle available?
-     */
-    if (NULL == rrd)
+    dest->bounds = src->bounds;
+
+    for
+    (
+        rrs = src->RegionRectangle, rrd = dest->RegionRectangle, rrd_prev = NULL;
+        rrs && rrd;
+        rrd_prev = rrd, rrs = rrs->Next, rrd = rrd->Next
+    )
     {
-      rrd = NewRegionRectangle();
-    
-      if (NULL == rrd)
-        return FALSE;
-        
-      if (NULL == rrd_prev)
-        dest->RegionRectangle = rrd;
-      else
-        rrd_prev->Next = rrd;
-      
-      rrd->Next = NULL;
+        rrd->bounds = rrs->bounds;
     }
-    
-    /*
-     * Copy the bounds.
-     */
-    rrd->bounds = rrs->bounds;
-    rrd->Prev   = rrd_prev;
 
-    /*
-     * On to the next one in both lists.
-     */
-    rrs = rrs->Next;
-    rrd_prev = rrd;
-    rrd = rrd->Next;
-  }
-  
-  /*
-   * Deallocate any excessive RegionRectangles that might be in
-   * the destination Region.
-   */
-  if (NULL == rrd_prev)
-  {
-    /*
-     * Did never enter above loop...
-     */
-    rrd = dest->RegionRectangle;
-    dest->RegionRectangle = NULL;
-  }
-  else
-  {
-    /*
-     * Was in the loop.
-     */
-    rrd_prev->Next = NULL;
-  }
-  
-  while (NULL != rrd)
-  {
-    struct RegionRectangle * _rr = rrd->Next;
-    DisposeRegionRectangle(rrd);
-    rrd = _rr;
-  }
-  
-  return TRUE;
-    
-  AROS_LIBFUNC_EXIT
-    
+    DisposeRegionRectangleList(rrd);
+
+    if (rrd_prev)
+        addr = &rrd_prev->Next;
+    else
+        addr = &dest->RegionRectangle;
+
+    if (!CopyRegionRectangleList(rrs, addr))
+        return FALSE;
+
+    if (*addr)
+        (*addr)->Prev = rrd_prev;
+
+    return TRUE;
+
+    AROS_LIBFUNC_EXIT
+
 } /* SetRegion */
