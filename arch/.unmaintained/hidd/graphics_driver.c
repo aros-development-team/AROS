@@ -133,6 +133,9 @@ static BOOL int_bltbitmap(struct BitMap *srcBitMap, Object *srcbm_obj
 	, LONG xDest, LONG yDest, LONG xSize, LONG ySize
 	, ULONG minterm, Object *gc, struct GfxBase *GfxBase);
 
+static BOOL init_cursor(struct GfxBase *GfxBase);
+static VOID cleanup_cursor(struct GfxBase *GfxBase);
+
 struct pix_render_data {
     HIDDT_Pixel pixel;
 };
@@ -142,31 +145,13 @@ static LONG pix_write(APTR pr_data
 	, LONG x, LONG y
 	, struct GfxBase *GfxBase);
 
-#if 0
-static AttrBase HiddBitMapAttrBase	= 0;
-static AttrBase HiddGCAttrBase		= 0;
-static AttrBase HiddGfxModeAttrBase	= 0;
-static AttrBase HiddPixFmtAttrBase	= 0; 
-static AttrBase HiddPlanarBMAttrBase	= 0; 
-static AttrBase HiddGfxAttrBase		= 0; 
-
-static struct ABDescr attrbases[] = {
-    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
-    { IID_Hidd_GC,		&HiddGCAttrBase		},
-    { IID_Hidd_GfxMode,		&HiddGfxModeAttrBase	},
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
-    { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
-    { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
-    { NULL, 0UL }
-};
-
-#else
 AttrBase HiddBitMapAttrBase	= 0;
 AttrBase HiddGCAttrBase		= 0;
 AttrBase HiddSyncAttrBase	= 0;
 AttrBase HiddPixFmtAttrBase	= 0; 
 AttrBase HiddPlanarBMAttrBase	= 0; 
 AttrBase HiddGfxAttrBase	= 0; 
+AttrBase HiddFakeGfxHiddAttrBase	= 0;
 
 struct ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
@@ -175,10 +160,9 @@ struct ABDescr attrbases[] = {
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
     { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
     { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
+    { IID_Hidd_FakeGfxHidd,	&HiddFakeGfxHiddAttrBase	},
     { NULL, 0UL }
 };
-
-#endif
 
 #define NUMPIX 50000
 #define PIXELBUF_SIZE (NUMPIX * 4)
@@ -416,7 +400,8 @@ void driver_expunge (struct GfxBase * GfxBase)
     {
 	    
 	/* Try to free some other stuff */
-	
+	cleanup_cursor(GfxBase);
+
 	if (SDD(GfxBase)->framebuffer)
 	    DisposeObject(SDD(GfxBase)->framebuffer);
 
@@ -432,9 +417,12 @@ void driver_expunge (struct GfxBase * GfxBase)
 	    
 	if ( SDD(GfxBase)->gc_cache )
 	    delete_object_cache( SDD(GfxBase)->gc_cache, GfxBase );
+
+	if ( SDD(GfxBase)->fakegfx_inited )
+	    cleanup_fakegfxhidd( &SDD(GfxBase)->fakegfx_staticdata, GfxBase);
 	    
-	if ( SDD(GfxBase)->gfxhidd )
-	    DisposeObject( SDD(GfxBase)->gfxhidd );
+	if ( SDD(GfxBase)->gfxhidd_orig )
+	    DisposeObject( SDD(GfxBase)->gfxhidd_orig );
 	    
         if ( SDD(GfxBase)->oopbase )
 	     CloseLibrary( SDD(GfxBase)->oopbase );
@@ -469,6 +457,119 @@ static Object *create_framebuffer(struct GfxBase *GfxBase)
     
     return fb;
 }
+const UBYTE def_pointer_shape[] = 
+{
+    06,02,00,00,00,00,00,00,00,00,00,
+    01,06,02,02,00,00,00,00,00,00,00,
+    00,01,06,06,02,02,00,00,00,00,00,
+    00,01,06,06,06,06,02,02,00,00,00,
+    00,00,01,06,06,06,06,06,02,02,00,
+    00,00,01,06,06,06,06,06,06,06,00,
+    00,00,00,01,06,06,06,02,00,00,00,
+    00,00,00,01,06,06,01,06,02,00,00,
+    00,00,00,00,01,06,00,01,06,02,00,
+    00,00,00,00,01,06,00,00,01,06,02,
+    00,00,00,00,00,00,00,00,00,01,06
+};
+
+#define DEF_POINTER_WIDTH	11
+#define DEF_POINTER_HEIGHT	11
+#define DEF_POINTER_DEPTH	7
+
+
+static BOOL init_cursor(struct GfxBase *GfxBase)
+{
+    /* Create the pointer bitmap */
+    struct TagItem pbmtags[] = {
+    	{ aHidd_BitMap_Width,		DEF_POINTER_WIDTH		},
+	{ aHidd_BitMap_Height,		DEF_POINTER_HEIGHT		},
+	{ aHidd_BitMap_StdPixFmt,	vHidd_StdPixFmt_LUT8		},
+	{ TAG_DONE, 0UL }
+    };
+    SDD(GfxBase)->pointerbm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, pbmtags);
+    if (NULL != SDD(GfxBase)->pointerbm) {
+	Object *gc;
+	    
+	gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+	if (NULL != gc) {
+	    /* Copy the default pointer image into the created pointer bitmap */
+	    ULONG i;
+	    struct TagItem gc_tags[] = {
+		{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
+		{ TAG_DONE, 0UL }
+	    };
+	    
+	    HIDDT_Color col[DEF_POINTER_DEPTH];
+	    
+	    col[0].red		= 0xFFFF;
+	    col[0].green	= 0xFFFF;
+	    col[0].blue		= 0xFFFF;
+	    col[0].alpha	= 0x0000;
+	    
+	    for (i = 1; i < DEF_POINTER_DEPTH; i ++) {
+	    	col[i].red	= 0x0000;
+		col[i].green	= 0x0000;
+	    	col[i].blue	= 0x0000;
+	    	col[i].alpha	= 0x0000;
+	    }
+	    
+	    HIDD_BM_SetColors(SDD(GfxBase)->pointerbm, col, 0, DEF_POINTER_DEPTH);
+		
+	    SetAttrs(gc, gc_tags);
+#if 0
+	    /* PutImageLUT not yet implemented in gfx baseclass */	    
+	    HIDD_BM_PutImageLUT(SDD(GfxBase)->pointerbm, gc
+			, (UBYTE *)def_pointer_shape
+			, DEF_POINTER_WIDTH
+			, 0, 0
+			, DEF_POINTER_WIDTH, DEF_POINTER_HEIGHT
+			, &plut
+	    );
+#else
+	    HIDD_BM_PutImage(SDD(GfxBase)->pointerbm, gc
+			, (UBYTE *)def_pointer_shape
+			, DEF_POINTER_WIDTH
+			, 0, 0
+			, DEF_POINTER_WIDTH, DEF_POINTER_HEIGHT
+			, vHidd_StdPixFmt_LUT8
+	    );
+
+#endif		
+	    release_cache_object(SDD(GfxBase)->gc_cache, gc, GfxBase);
+	    
+	    if (HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->pointerbm)) {
+kprintf("CURSOR SHAPE SET\n");
+		/* Make it visible */
+		HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
+		
+	    	return TRUE;
+	    }
+	}
+    }
+    
+    cleanup_cursor(GfxBase);
+    
+    return FALSE;
+}
+
+static VOID cleanup_cursor(struct GfxBase *GfxBase)
+{
+    if (NULL != SDD(GfxBase)->pointerbm) {
+   	DisposeObject(SDD(GfxBase)->pointerbm);
+	SDD(GfxBase)->pointerbm = NULL;
+    }
+}
+
+VOID driver_SetPointerPos(UWORD x, UWORD y, struct GfxBase *GfxBase)
+{
+    HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, x, y);
+}
+
+VOID driver_SetPointerShape(UWORD *shape, UWORD width, UWORD height
+		, UWORD xoffset, UWORD yoffset, struct GfxBase *GfxBase)
+{
+    kprintf("!!! driver_SetPointerShape YET NOT IMPLEMENTED !!!\n");
+}
 
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 {
@@ -476,64 +577,86 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     /* Supplied data is really the librarybase of a HIDD */
     STRPTR gfxhiddname = (STRPTR)data;
     struct TagItem tags[] = {
-#if 0    
-    	{ aHidd_Gfx_ActiveBMCallBack,		(IPTR)activatebm_callback	},
-    	{ aHidd_Gfx_ActiveBMCallBackData,	(IPTR)GfxBase			},
-#endif    
     	{ TAG_DONE, 0UL },
     };    
     EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
     
     /* Create a new GfxHidd object */
 	
-    SDD(GfxBase)->gfxhidd = NewObject(NULL, gfxhiddname, tags);
+    SDD(GfxBase)->gfxhidd = SDD(GfxBase)->gfxhidd_orig = NewObject(NULL, gfxhiddname, tags);
     D(bug("driver_LateGfxInit: gfxhidd=%p\n", SDD(GfxBase)->gfxhidd));
 	
     if (NULL != SDD(GfxBase)->gfxhidd) {
-    
-    	struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
+	IPTR hwcursor;
+	BOOL ok = TRUE;
+    	
+	GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
+	SDD(GfxBase)->has_hw_cursor = (BOOL)hwcursor;
+	if (!hwcursor) {
+	    Object *fgh;
+	    fgh = init_fakegfxhidd(SDD(GfxBase)->gfxhidd
+	    	, &SDD(GfxBase)->fakegfx_staticdata
+		, GfxBase);
 	
-	/* Create a GC object cache */
-	SDD(GfxBase)->gc_cache = create_object_cache(NULL, IID_Hidd_GC, gc_create_tags, GfxBase);
-	if (NULL != SDD(GfxBase)->gc_cache) {
-
-	    struct TagItem bm_create_tags[] = {
-#warning Maybe make this attr private and create the object through the graphicshidd	    
-	    	{ aHidd_BitMap_GfxHidd,		(IPTR)SDD(GfxBase)->gfxhidd },
-		{ aHidd_BitMap_Displayable,	FALSE	},
-	    	{ aHidd_PlanarBM_AllocPlanes,	FALSE },
-	    	{ TAG_DONE, 0UL }
-	    };
-	    
-	    SDD(GfxBase)->planarbm_cache
-	    	= create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
-		
-		
-	    if (NULL != SDD(GfxBase)->planarbm_cache) {
-	    	
-		/* Move the modes into the displayinfo DB */
-		SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
-		if (NULL != SDD(GfxBase)->dispinfo_db) {
-		     SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
-		     if (NULL != SDD(GfxBase)->framebuffer) {
-		        ReturnBool("driver_LateGfxInit", TRUE);
-		    }
-			
-		    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
-		    SDD(GfxBase)->dispinfo_db = NULL;
-		}
-		delete_object_cache(SDD(GfxBase)->planarbm_cache, GfxBase);
-	        SDD(GfxBase)->planarbm_cache = NULL;
+	    if (NULL != fgh) {
+	    	SDD(GfxBase)->gfxhidd = fgh;
+		SDD(GfxBase)->fakegfx_inited = TRUE;
+	    } else {
+	    	ok = FALSE;
 	    }
-	    delete_object_cache(SDD(GfxBase)->gc_cache, GfxBase);
-	    SDD(GfxBase)->gc_cache = NULL;
 	}
+	
+	if (ok) {
+	    struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
+	    SDD(GfxBase)->gc_cache = create_object_cache(NULL, IID_Hidd_GC, gc_create_tags, GfxBase);
+	    if (NULL != SDD(GfxBase)->gc_cache) {
 
-	DisposeObject(SDD(GfxBase)->gfxhidd);
-	SDD(GfxBase)->gfxhidd = NULL;
+		struct TagItem bm_create_tags[] = {
+#warning Maybe make this class private and create the object through the graphicshidd	    
+			{ aHidd_BitMap_GfxHidd,		(IPTR)SDD(GfxBase)->gfxhidd_orig },
+			{ aHidd_BitMap_Displayable,	FALSE	},
+			{ aHidd_PlanarBM_AllocPlanes,	FALSE },
+			{ TAG_DONE, 0UL }
+		};
+	    
+		SDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
+		
+		if (NULL != SDD(GfxBase)->planarbm_cache) {
+	    	
+		    /* Move the modes into the displayinfo DB */
+		    SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
+		    if (NULL != SDD(GfxBase)->dispinfo_db) {
+		    
+			SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
+			if (NULL != SDD(GfxBase)->framebuffer) {
+kprintf("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer);			
+			    if (init_cursor(GfxBase)) {
+
+kprintf("MOUSE INITED\n");			    
+		            	ReturnBool("driver_LateGfxInit", TRUE);
+			    }
+			    DisposeObject(SDD(GfxBase)->framebuffer);
+		    	} /* if (framebuffer inited) */
+		    	destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
+		    	SDD(GfxBase)->dispinfo_db = NULL;
+		    } /* if (displayinfo db inited) */
+		    delete_object_cache(SDD(GfxBase)->planarbm_cache, GfxBase);
+	            SDD(GfxBase)->planarbm_cache = NULL;
+	    	} /* if (planarbm cache created) */
+	    	delete_object_cache(SDD(GfxBase)->gc_cache, GfxBase);
+		SDD(GfxBase)->gc_cache = NULL;
+	    } /* if (gc object cache ok) */
+	    
+	} /* if (fake gfx stuff ok) */
+
+	if (SDD(GfxBase)->fakegfx_inited) {
+	    cleanup_fakegfxhidd(&SDD(GfxBase)->fakegfx_staticdata, GfxBase);
+	    SDD(GfxBase)->fakegfx_inited = FALSE;
+	}
+	DisposeObject(SDD(GfxBase)->gfxhidd_orig);
+	SDD(GfxBase)->gfxhidd_orig = NULL;
 	    
     }
-	
     
     ReturnBool("driver_LateGfxInit", FALSE);
 
@@ -732,6 +855,7 @@ static ULONG fillrect_render(APTR funcdata
 	, LONG x1, LONG y1, LONG x2, LONG y2
 	, struct GfxBase *GfxBase)
 {
+
     HIDD_BM_FillRect(dstbm_obj, dst_gc, x1, y1, x2, y2);
     
     return (x2 - x1 + 1) * (y2 - y1 + 1);
@@ -873,15 +997,6 @@ kprintf("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
     ))
     	return 0;
 
-#if 0    
-    
-    HIDD_BM_CopyBox(brd->srcBM, dst_gc
-    	, srcx, srcy
-	, dstbm_obj
-	, x1, y1
-	, width, height
-   );
-#endif   
    return width * height;
 }
 
@@ -3043,11 +3158,13 @@ for (idx = 0; idx < 256; idx ++)
 	    cbtags[0].ti_Data = drmd;
 	    
 	    SetAttrs(gc, cbtags);
-    	    HIDD_BM_CopyBox(srcbm_obj, gc
+    	    HIDD_Gfx_CopyBox(SDD(GfxBase)->gfxhidd
+	    	, srcbm_obj
     		, xSrc, ySrc
     		, dstbm_obj
     		, xDest, yDest
     		, xSize, ySize
+		, gc
     	    );
 	    
 	    cbtags[0].ti_Data = drmd;
@@ -4527,6 +4644,10 @@ BOOL driver_MouseCoordsRelative(struct GfxBase *GfxBase)
     return TRUE;
 }
 
+#warning THIS IS NOT THREADSAFE
+/* To make this threadsafe we have to lock
+  all gfx access in all the rendering calls
+*/
 BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *GfxBase)
 {
 
@@ -4535,12 +4656,22 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
     Object *fb;
     BOOL ok = FALSE;
     ULONG showflags = 0;
+    if (NULL == bm) {
+    	/* we display no screen */
+	Forbid();
+	SDD(GfxBase)->frontbm		= NULL;
+	SDD(GfxBase)->bm_bak		= NULL;
+	SDD(GfxBase)->colmod_bak	= 0;
+	SDD(GfxBase)->colmap_bak	= NULL;
+	Permit();
+	
+	return TRUE;
+    }
     
     if ( BMF_DISPLAYABLE != (bm->Flags & BMF_DISPLAYABLE)) {
     	kprintf("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n");
 	return FALSE;
     }
-    
     if ( SDD(GfxBase)->frontbm == bm) {
     	kprintf("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bm);
 	return TRUE;
@@ -4549,14 +4680,13 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
     if (copyback) {
     	showflags |= fHidd_Gfx_Show_CopyBack;
     }
-    
     fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(bm), showflags);
     if (NULL == fb) {
     	kprintf("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n");
     } else {
-
+	Forbid();
 	 /* Set this as the active screen */
-    	if (NULL != SDD(GfxBase)->frontbm && copyback) {
+    	if (NULL != SDD(GfxBase)->frontbm) {
     	    struct BitMap *oldbm;
     	    /* Put back the old values into the old bitmap */
 	    oldbm = SDD(GfxBase)->frontbm;
@@ -4564,6 +4694,7 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
 	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
 	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
 	}
+	
     
 	SDD(GfxBase)->frontbm		= bm;
 	SDD(GfxBase)->bm_bak		= HIDD_BM_OBJ(bm);
@@ -4575,10 +4706,11 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
 	GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
 	GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 	GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-	    
+	
 	HIDD_BM_OBJ(bm)		= fb;
 	HIDD_BM_COLMOD(bm)	= colmod;
 	HIDD_BM_COLMAP(bm)	= cmap;
+	Permit();
 	
 	ok = TRUE;
     }

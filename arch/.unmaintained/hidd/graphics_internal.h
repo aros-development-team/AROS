@@ -17,6 +17,7 @@
 #   include <hidd/graphics.h>
 #endif
 
+#include "fakegfxhidd.h"
 
 HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
 UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
@@ -61,10 +62,11 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase);
 VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBase *GfxBase);
 
 
-
 struct shared_driverdata
 {
     Object *gfxhidd;
+    Object *gfxhidd_orig;
+    Object *gfxhidd_fake;
     
     struct Library *oopbase;
     ObjectCache *gc_cache;
@@ -79,9 +81,20 @@ struct shared_driverdata
     
     /* The frontmost screen's bitmap */
     struct BitMap *frontbm;
+
+    /* Does the gfx hidd support hardware pointers ? */    
+    BOOL has_hw_cursor;
+
+    /* This is used if the gfx hidd does not support hardware mouse pointers */
+    Object  *pointerbm;
+    LONG pointer_x;
+    LONG pointer_y;
     
-    /* Has the code to handle active screens been activated ? */
+    struct class_static_data fakegfx_staticdata;
+    BOOL fakegfx_inited;
+    
 #if 0    
+    /* Has the code to handle active screens been activated ? */
     BOOL activescreen_inited;
 #endif    
     APTR dispinfo_db; /* Display info database */
