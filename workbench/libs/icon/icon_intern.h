@@ -124,6 +124,8 @@ struct IconBase
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
 
+    struct Hook             ib_DefaultIdentifyHook;
+    
     /* Global settings -----------------------------------------------------*/
     struct Screen          *ib_Screen;
     LONG                    ib_Precision;

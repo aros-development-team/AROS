@@ -8,6 +8,8 @@
 #include <utility/utility.h> /* this must be before icon_intern.h */
 
 #include "icon_intern.h"
+#include "identify.h"
+
 #include LC_LIBDEFS_FILE
 
 #define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->ib_SysBase)
@@ -89,8 +91,12 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     {
     	NewList((struct List *)&LB(lh)->iconlists[i]);
     }
+
+    /* Setup default identify hook -----------------------------------------*/
+    LB(lh)->ib_DefaultIdentifyHook.h_Entry = (HOOKFUNC) FindDefaultIcon;
+    LB(lh)->ib_DefaultIdentifyHook.h_Data  = LB(lh)->ib_DataTypesBase;
     
-    /* Global settings -----------------------------------------------------*/
+    /* Setup default global settings ---------------------------------------*/
     LB(lh)->ib_Screen               = NULL; // FIXME: better default
     LB(lh)->ib_Precision            = PRECISION_ICON;
     LB(lh)->ib_EmbossRectangle.MinX = 0; // FIXME: better default

@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define DEBUG 1
+
 #include <workbench/icon.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,7 +13,6 @@
 #include "support.h"
 #include "support_builtin.h"
 
-#   define DEBUG 1
 #   include <aros/debug.h>
 
 /*****************************************************************************
@@ -170,64 +171,75 @@
         }
         else if (!failIfUnavailable)
         {
-            LONG type = -1;
-            BPTR lock = Lock(name, ACCESS_READ);
+            struct IconIdentifyMsg  iim;
             
-            if (lock != NULL)
+            iim.iim_FileLock = Lock(name, ACCESS_READ);
+            if
+            (
+                   iim.iim_FileLock == NULL 
+                && strcasecmp(name + strlen(name) - 5, ":Disk") == 0
+            )
             {
-                BPTR parent = ParentDir(lock);
+                // FIXME: perhaps allocate buffer from heap?
+                TEXT  buffer[256];                     /* Path buffer */
+                ULONG length       = strlen(name) - 3; /* Amount to copy + NULL */
                 
-                if (parent != NULL)
+                if (sizeof(buffer) >= length)
                 {
-                    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, TAG_DONE);
+                    strlcpy(buffer, name, length);
                     
-                    if (fib != NULL)
+                    iim.iim_FileLock = Lock(buffer, ACCESS_READ);
+                }
+            }
+            
+            if (iim.iim_FileLock != NULL)
+            {
+                if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
+                {
+                    if (Examine(iim.iim_FileLock, iim.iim_FIB))
                     {
-                        if (Examine(lock, fib))
+                        iim.iim_SysBase     = (struct Library *) SysBase;
+                        iim.iim_DOSBase     = (struct Library *) DOSBase;
+                        iim.iim_UtilityBase =                    UtilityBase;
+                        iim.iim_IconBase    = (struct Library *) IconBase;
+                        iim.iim_Tags        = tags;
+                        
+                        iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
+                        iim.iim_FileHandle  = Open(name, MODE_OLDFILE);
+                        
+                        if (IconBase->ib_IdentifyHook != NULL)
                         {
-                            if (fib->fib_DirEntryType > 0)
-                            {
-                                type = WBDRAWER;
-                            }
-                            else if (~fib->fib_Protection & FIBF_EXECUTE)
-                            {
-                                type = WBTOOL;
-			    }
-                            else
-                            {
-				type = WBPROJECT;
-                            }
+                            /* Use user-provided identify hook */
+                            icon = (struct DiskObject *) CALLHOOKPKT
+                            (
+                                IconBase->ib_IdentifyHook, NULL, &iim
+                            );
+                            // FIXME: do sanity checks here (we don't trust
+                            // FIXME: the user-provided hook ;-))
+                        }
+                        else
+                        {
+                            /* Use default identify hook */
+                            icon = (struct DiskObject *) CALLHOOKPKT
+                            (
+                                &IconBase->ib_DefaultIdentifyHook, NULL, &iim
+                            );
                         }
                         
-                        FreeDosObject(DOS_FIB, fib);
-                    }
-                    else
-                    {
-                        SetIoErr(ERROR_NO_FREE_STORE);
+                        // FIXME: fallback if identification failed here?
+                        
+                        if (iim.iim_ParentLock != NULL) UnLock(iim.iim_ParentLock);
+                        if (iim.iim_FileHandle != NULL) Close(iim.iim_FileHandle);
                     }
                     
-                    UnLock(parent); /* not needed anymore */
+                    FreeDosObject(DOS_FIB, iim.iim_FIB);
                 }
                 else
                 {
-                    type = WBDISK;
+                    SetIoErr(ERROR_NO_FREE_STORE);
                 }
                 
-                UnLock(lock);
-            }
-            else if (strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
-            {
-                type = WBDISK;
-            }
-            
-            if (type != -1)
-            {
-                icon = GetIconTags
-                (
-                    NULL,
-                    ICONGETA_GetDefaultType,        type,
-                    TAG_MORE,                (IPTR) tags
-                );
+                UnLock(iim.iim_FileLock);
             }
         }
     }
