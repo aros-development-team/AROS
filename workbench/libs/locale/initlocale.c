@@ -97,7 +97,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	    if (lang)
 	    {
 	    	strncpy(il->LanguageName, FilePart(fileBuf), 30);
-		il->il_Locale.loc_LanguageName = &il->LanguageName[0];
 	    }
 	    
     	    /* If it is still no good, then we have no hope */
@@ -105,6 +104,13 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	i++;
     }
 
+    if (lang == NULL)
+    {
+    	strcpy(il->LanguageName, "english.language");
+    }
+
+    il->il_Locale.loc_LanguageName = &il->LanguageName[0];
+    
     /*
 	Ok so we now should have a language, or nothing. Either way
 	we now fill in the locale functions in the structure.
@@ -179,6 +185,16 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     	}
     }
 
+    if (i2 == 0)
+    {
+    	/* The user did not set any preferred Language. So we automatically
+	   poke "english" into the array (Tested on the Amiga where this
+	   does seem to happen, too!) */
+	
+	strcpy(locale->PreferredLanguages[0], "english");
+	locale->il_Locale.loc_PrefLanguages[0] = locale->PreferredLanguages[0];
+    }
+    
     /*
 	If we cannot open ANY of the languages, then all the language
 	function vectors would have the default language data.
