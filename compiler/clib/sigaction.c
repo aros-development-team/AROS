@@ -9,6 +9,7 @@
 /*****************************************************************************
 
     NAME */
+#ifndef AROS_NO_SIGNAL_H
 #include <signal.h>
 
 	int sigaction (
@@ -44,3 +45,4 @@
 
 } /* sigaction */
 
+#endif /* #ifndef AROS_NO_SIGNAL_H */

@@ -9,6 +9,7 @@
 /*****************************************************************************
 
     NAME */
+#ifndef AROS_NO_SIGNAL_H
 #include <signal.h>
 
 	int sigfillset (
@@ -42,3 +43,4 @@
 
 } /* sigfillset */
 
+#endif
