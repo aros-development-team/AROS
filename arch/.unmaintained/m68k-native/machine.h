@@ -74,12 +74,6 @@ struct JumpVec
     to that address. Some libraries may be putting something else (e.g. rts)
     in the vector, instead of a 'jsr address'. Fetching the address from such
     a vector would crash the AROS_LVO_CALLs in <aros/libcall.h>
-
-    Furthermore, this (and the shorter code) is exactly the reason
-    AROS/include/clib/ *.h and AROS/include/proto/ *.h containing the
-    non-registerized versions have to be removed from the directory tree.
-    If they are removed, gcc will fetch the compiler-specific protos, with
-    the inlines (in case of gcc).
 */
 
 #define LVO_ARGT(t,v,r) t
@@ -319,7 +313,6 @@ extern void _aros_not_implemented (void);
 #define A5 "a5"
 #define A6 "a6"
 
-/* SAS/C compatible declarations for register variables */
 #ifndef __SASC
 #define __d0 __asm("d0")
 #define __d1 __asm("d1")
