@@ -294,7 +294,7 @@ static int LoadText(struct Text_Data *td, STRPTR filename, BPTR file)
 	td->title = NULL;
     }
 
-    return NULL;
+    return 0;
 }
 
 /**************************************************************************
@@ -2152,7 +2152,7 @@ STATIC ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg
 STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
-    struct TagItem *tl = msg->ops_AttrList;
+    const struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
 
     LONG top_vert = td->vert_top;
@@ -2525,13 +2525,13 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		if (newx < 0) newx = 0;
 
 		if (newx != top)
-		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 				      GA_ID, g->GadgetID,
 				      DTA_TopHoriz, newx,
 				      TAG_DONE);
 #else
  		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
- 		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+ 		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, 0,
  				  GA_ID, g->GadgetID,
  				  DTA_TopHoriz, newx,
   				  TAG_DONE);
@@ -2554,14 +2554,14 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		if (newy < 0) newy = 0;
 
 		if (newy != top)
-		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 				      GA_ID, g->GadgetID,
 				      DTA_TopVert, newy,
 				      TAG_DONE);
 
 #else
 		newy = td->vert_top + ((diff_y < 0) ? -1 : 1);
-		notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		notifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 				  GA_ID, g->GadgetID,
 				  DTA_TopVert, newy,
 				  TAG_DONE);
@@ -2587,7 +2587,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 	    {
 	        HandleMouse(td, rp, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, SELECTDOWN, ievent->ie_TimeStamp.tv_secs, ievent->ie_TimeStamp.tv_micro);
 	    }
-	    else HandleMouse(td, rp, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, NULL, ievent->ie_TimeStamp.tv_secs, ievent->ie_TimeStamp.tv_micro);
+	    else HandleMouse(td, rp, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, 0, ievent->ie_TimeStamp.tv_secs, ievent->ie_TimeStamp.tv_micro);
 	}
 
 	if (rp)
@@ -2599,7 +2599,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 	{
 	    struct RastPort *rp = ObtainGIRPort(msg->gpi_GInfo);
 
-	    HandleMouse(td, rp, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, NULL, ievent->ie_TimeStamp.tv_secs, ievent->ie_TimeStamp.tv_micro);
+	    HandleMouse(td, rp, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, 0, ievent->ie_TimeStamp.tv_secs, ievent->ie_TimeStamp.tv_micro);
 	    if (rp)
 	        ReleaseGIRPort(rp);
 	} else
@@ -2608,7 +2608,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 	    {
 		if (ievent->ie_Code == CURSORDOWN)
 		{
-		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 				  GA_ID, g->GadgetID,
 				  DTA_TopVert, td->vert_top + 1,
 				  TAG_DONE);
@@ -2617,7 +2617,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		{
 		    if (ievent->ie_Code == CURSORUP)
 		    {
-		        notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		        notifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 				  GA_ID, g->GadgetID,
 				  DTA_TopVert, td->vert_top - 1,
 				  TAG_DONE);
@@ -3040,7 +3040,7 @@ STATIC ULONG DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg
     	td->filltextpen = gi->gi_DrInfo->dri_Pens[FILLTEXTPEN];
     }
 
-    notifyAttrChanges((Object*)g, gi, NULL,
+    notifyAttrChanges((Object*)g, gi, 0,
 		      GA_ID, g->GadgetID,
 		      DTA_Busy, TRUE,
 		      TAG_DONE);
@@ -3247,7 +3247,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 
 struct IClass *DT_MakeClass(struct Library *textbase)
 {
-    struct IClass *cl = MakeClass("text.datatype", DATATYPESCLASS, NULL, sizeof(struct Text_Data), NULL);
+    struct IClass *cl = MakeClass("text.datatype", DATATYPESCLASS, NULL, sizeof(struct Text_Data), 0);
 
     if (cl)
     {
