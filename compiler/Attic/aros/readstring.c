@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Read one C string from a file
-    Lang: german
+    Lang: english
 */
 #include <clib/dos_protos.h>
 #include <exec/memory.h>
@@ -43,9 +43,9 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadWord(), ReadLong(), ReadDouble(),
-	ReadString(), WriteByte(), WriteWord(), WriteLong(), WriteDouble(),
-	WriteString()
+	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadFloat(),
+	ReadDouble(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString()
 
     HISTORY:
 	14.09.93    ada created
@@ -99,5 +99,5 @@
     *dataptr = buffer;
 
     return TRUE;
-} /* ReadByte */
+} /* ReadString */
 

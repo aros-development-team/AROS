@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Read a big endian word (16bit) from a file
+    Desc: Read a big endian floating point (32bit) from a file
     Lang: english
 */
 #include <clib/dos_protos.h>
@@ -13,14 +13,14 @@
 #include <stdio.h>
 #include <exec/types.h>
 
-	BOOL ReadWord (
+	BOOL ReadFloat (
 
 /*  SYNOPSIS */
 	BPTR	fh,
-	UWORD * dataptr)
+	FLOAT * dataptr)
 
 /*  FUNCTION
-	Reads one big endian 16bit value from a file.
+	Reads one big endian 32bit floating point value from a file.
 
     INPUTS
 	fh - Read from this file
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadLong(), ReadFloat(),
+	Open(), Close(), ReadByte(), ReadWord(), ReadLong(),
 	ReadDouble(), ReadString(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString()
 
@@ -49,24 +49,55 @@
 
 ******************************************************************************/
 {
-    LONG value, c;
+    ULONG value;
+    LONG  c;
 
     c = FGetC (fh);
 
     if (c == EOF)
 	return FALSE;
 
-    value = FGetC (fh);
+#if AROS_BIG_ENDIAN
+    value = c << 24;
+#else /* Little endian */
+    value = c;
+#endif
 
-    if (value == EOF)
+    c = FGetC (fh);
+
+    if (c == EOF)
 	return FALSE;
 
 #if AROS_BIG_ENDIAN
-    *dataptr = (c << 8) + value;
+    value |= c << 16;
 #else /* Little endian */
-    *dataptr = (value << 8) + c;
+    value |= c << 8;
 #endif
 
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value |= c << 8;
+#else /* Little endian */
+    value |= c << 16;
+#endif
+
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value |= c;
+#else /* Little endian */
+    value |= c << 24;
+#endif
+
+    *dataptr = *(FLOAT *)&value;
+
     return TRUE;
-} /* ReadWord */
+} /* ReadFloat */
 

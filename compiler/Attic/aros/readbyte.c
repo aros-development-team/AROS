@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Read a big endian byte from a file
-    Lang: german
+    Lang: english
 */
 #include <clib/dos_protos.h>
 
@@ -40,9 +40,9 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadWord(), ReadLong(), ReadDouble(),
-	ReadString(), WriteByte(), WriteWord(), WriteLong(), WriteDouble(),
-	WriteString()
+	Open(), Close(), ReadWord(), ReadLong(), ReadFloat(),
+	ReadDouble(), ReadString(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString()
 
     HISTORY:
 	14.09.93    ada created

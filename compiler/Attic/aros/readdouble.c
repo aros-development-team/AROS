@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Read a big endian long (32bit) from a file
+    Desc: Read a big endian double floating point (64bit) from a file
     Lang: english
 */
 #include <clib/dos_protos.h>
@@ -13,14 +13,15 @@
 #include <stdio.h>
 #include <exec/types.h>
 
-	BOOL ReadLong (
+	BOOL ReadFloat (
 
 /*  SYNOPSIS */
-	BPTR	fh,
-	ULONG * dataptr)
+	BPTR	 fh,
+	DOUBLE * dataptr)
 
 /*  FUNCTION
-	Reads one big endian 32bit value from a file.
+	Reads one big endian 64bit double precision floating point value
+	from a file.
 
     INPUTS
 	fh - Read from this file
@@ -40,8 +41,8 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadFloat(),
-	ReadDouble(), ReadString(), WriteByte(), WriteWord(), WriteLong(),
+	Open(), Close(), ReadByte(), ReadWord(), ReadLong(),
+	ReadFloat(), ReadString(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString()
 
     HISTORY:
@@ -49,7 +50,8 @@
 
 ******************************************************************************/
 {
-    ULONG value;
+    ULONG   value[2];
+    ULONG * lptr;
     LONG  c;
 
     c = FGetC (fh);
@@ -58,9 +60,9 @@
 	return FALSE;
 
 #if AROS_BIG_ENDIAN
-    value = c << 24;
+    value[0] = c << 24;
 #else /* Little endian */
-    value = c;
+    value[1] = c;
 #endif
 
     c = FGetC (fh);
@@ -69,9 +71,9 @@
 	return FALSE;
 
 #if AROS_BIG_ENDIAN
-    value |= c << 16;
+    value[0] |= c << 16;
 #else /* Little endian */
-    value |= c << 8;
+    value[1] |= c << 8;
 #endif
 
     c = FGetC (fh);
@@ -80,9 +82,9 @@
 	return FALSE;
 
 #if AROS_BIG_ENDIAN
-    value |= c << 8;
+    value[0] |= c << 8;
 #else /* Little endian */
-    value |= c << 16;
+    value[1] |= c << 16;
 #endif
 
     c = FGetC (fh);
@@ -91,13 +93,59 @@
 	return FALSE;
 
 #if AROS_BIG_ENDIAN
-    value |= c;
+    value[0] |= c;
 #else /* Little endian */
-    value |= c << 24;
+    value[1] |= c << 24;
 #endif
 
-    *dataptr = value;
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value[1] = c << 24;
+#else /* Little endian */
+    value[0] = c;
+#endif
+
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value[1] |= c << 16;
+#else /* Little endian */
+    value[0] |= c << 8;
+#endif
+
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value[1] |= c << 8;
+#else /* Little endian */
+    value[0] |= c << 16;
+#endif
+
+    c = FGetC (fh);
+
+    if (c == EOF)
+	return FALSE;
+
+#if AROS_BIG_ENDIAN
+    value[1] |= c;
+#else /* Little endian */
+    value[0] |= c << 24;
+#endif
+
+    lptr = (ULONG *)dataptr;
+    lptr[0] = value[0];
+    lptr[1] = value[1];
 
     return TRUE;
-} /* ReadLong */
+} /* ReadDouble */
 
