@@ -111,10 +111,18 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 	/* This corresponds to ACTION_FINDINPUT, ACTION_FINDOUTPUT,
 	   ACTION_FINDUPDATE which fortunately have the same return values */
     case FSA_OPEN:
-	packet->dp_Res1 = iofs->io_DosError == 0;
- 	packet->dp_Res2 = iofs->io_DosError;
-	break;
+    case FSA_OPEN_FILE:
+	{
+	    struct FileHandle *fh = (struct FileHandle *)BADDR(packet->dp_Arg1);
 
+	    fh->fh_Device = iofs->IOFS.io_Device;
+	    fh->fh_Unit   = iofs->IOFS.io_Unit;
+
+	    packet->dp_Res1 = iofs->io_DosError == 0;
+	    packet->dp_Res2 = iofs->io_DosError;
+	    break;
+	}
+	
     case FSA_READ:
     case FSA_WRITE:
 	packet->dp_Res1 = (IPTR)iofs->io_Union.io_READ_WRITE.io_Length;
@@ -124,6 +132,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
     case FSA_CLOSE:
 	packet->dp_Res1 = iofs->io_DosError == 0;
+	FreeDosObject(DOS_FILEHANDLE, packet->dp_Arg1);
 	break;
 
 
@@ -231,6 +240,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_UNLOCK_RECORD:
     case FSA_READ_SOFTLINK:
     case FSA_FILE_MODE:
+    default:
 	kprintf("Filesystem action %i not handled yet in WaitPkt()\n",
 		iofs->IOFS.io_Command);
 	break;
