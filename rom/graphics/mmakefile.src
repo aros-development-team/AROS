@@ -195,7 +195,8 @@ FUNCTIONS := \
 	scalerdiv \
 	scrollraster \
 	scrollrasterbf \
-	scrollvport \
+	scrollregion \
+        scrollvport \
 	setabpendrmd \
 	setapen \
 	setbpen \
