@@ -20,7 +20,7 @@ VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
 VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale);
 VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale);
 
-ULONG dayspermonth[13] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
+ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,304,334};
 
 /*****************************************************************************
 
@@ -313,6 +313,10 @@ ULONG dayspermonth[13] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 	    case 'Y':
 		PrintDigits(cData.year, '0', 4, hook, locale);
 		break;
+
+            case 'z':
+                /* cuurent time zone Unimplemented in 3.1 */
+                break;
 		
 	    case 0:
 		break;
