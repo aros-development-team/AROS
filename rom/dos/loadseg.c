@@ -12,8 +12,6 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-#define AROS_MODULES_DEBUG 1
-
 #if AROS_MODULES_DEBUG
 #include <exec/nodes.h>
 #include <exec/lists.h>
