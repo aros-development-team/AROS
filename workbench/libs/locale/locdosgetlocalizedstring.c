@@ -22,7 +22,7 @@
 	AROS_LH1(STRPTR, LocDosGetLocalizedString,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, stringNum, D0),
+	AROS_LHA(LONG, stringNum, D0),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 38, Locale)
@@ -61,7 +61,7 @@
 
     struct Catalog *catalog = (struct Catalog *)DOSBase->dl_Errors;
     
-    return GetCatalogStr(catalog, stringNum, NULL);
+    return GetCatalogStr(catalog, ((stringNum >= 0) ? stringNum : -stringNum), NULL);
     
     AROS_LIBFUNC_EXIT
     
