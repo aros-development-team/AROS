@@ -6,7 +6,7 @@ include $(TOP)/make.cfg
 OBJDIR=$(GENDIR)/aros
 
 FILES = calcchecksum kprintf nastyfreemem \
-	    rt purify removeslist \
+	    purify removeslist \
 	    _kprintf
 
 all: setup $(LIBDIR)/libaros.a
@@ -21,12 +21,7 @@ $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; else true ; fi
 
-$(OBJDIR)/rt_stubs.o: rt_stubs.s
-	$(SYS_AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; else true ; fi
-
-$(LIBDIR)/libaros.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-	    $(OBJDIR)/rt_stubs.o
+$(LIBDIR)/libaros.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	$(AR) $@ $?
 	$(RANLIB) $@
 
@@ -34,7 +29,7 @@ $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OBJDIR)/
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

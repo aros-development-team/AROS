@@ -8,7 +8,7 @@ include $(TOP)/make.cfg
 OBJDIR=$(GENDIR)/clib
 
 FILES = ctype printf strcmp stricmp strlen strcpy qsort \
-	strdup malloc free calloc realloc memcpy
+	strdup malloc free calloc realloc memcpy bcopy
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
@@ -34,7 +34,7 @@ $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OBJDIR)/
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

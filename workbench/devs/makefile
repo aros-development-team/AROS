@@ -37,13 +37,13 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OSGENDIR)/
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OBJDIR)/
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 include $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d

@@ -38,6 +38,6 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OSGENDIR)/
 
 include $(OSGENDIR)/geninc.d

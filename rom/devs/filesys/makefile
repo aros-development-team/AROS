@@ -21,7 +21,7 @@ $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OBJDIR)/
 
 include $(OBJDIR)/emul_handler.d
 

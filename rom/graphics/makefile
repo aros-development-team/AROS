@@ -60,7 +60,7 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -p$(OSGENDIR)/
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
