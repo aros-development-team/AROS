@@ -115,9 +115,9 @@
 		reqnode = AllocMem(sizeof (struct ReqNode), MEMF_ANY);
 		if (reqnode)
 		{
-		    reqnode->rn_Req	= req;
-		    reqnode->rn_IntReq	= intreq;
-
+		    reqnode->rn_Req	  = req;
+		    reqnode->rn_IntReq	  = intreq;
+    	    	    reqnode->rn_ReqWindow = NULL;
 		    ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
 		    AddTail( (struct List*)&(ASLB(AslBase)->ReqList), (struct Node*)reqnode);
 		    ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
