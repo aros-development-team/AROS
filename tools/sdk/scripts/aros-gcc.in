@@ -1,5 +1,2 @@
 #!/bin/sh
-
-AROS_TARGET_LINKERPATH='@ld@' AROS_TARGET_NMPATH='@nm@' \
-AROS_TARGET_OBJDUMPPATH='@objdump@' AROS_TARGET_STRIPPATH='@strip@' \
-@cc@ -specs=@aros_sdk_path@/@cc_cpu@-aros/lib/gcc-lib/specs "$@"
+exec @cc@ -specs=@aros_sdk_path@/@cc_cpu@-aros/lib/gcc-lib/specs "$@"

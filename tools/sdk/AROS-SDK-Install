@@ -76,6 +76,9 @@ else
 fi
 echo -e "${B}$cc_include${N}"
 
+#find out where is the compiler going to search for the verious tools
+cc_programs_path=`gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+
 tools_list="ld nm as ar objcopy objdump objcopy ranlib strip"
 
 for tool in $tools_list; do
@@ -170,7 +173,7 @@ sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld_emu@,$ld_emu,g; s,@cc_include@,$c
 sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g; s,@strip@,$strip,g" scripts/aros-gcc.in >  $aros_sdk_path/${cc_cpu}-aros/bin/gcc
 chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/gcc
 
-sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g" scripts/aros-ld.in >  $aros_sdk_path/${cc_cpu}-aros/bin/ld
+sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g; s,@cc_programs_path@,$cc_programs_path,g" scripts/aros-ld.in > $aros_sdk_path/${cc_cpu}-aros/bin/ld
 chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/ld
 
 sed "s,@strip@,$strip,g" scripts/aros-strip.in > $aros_sdk_path/${cc_cpu}-aros/bin/strip

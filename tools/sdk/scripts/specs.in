@@ -14,7 +14,7 @@
 %{detach:@aros_sdk_path@/@cc_cpu@-aros/lib/detach.o} @aros_sdk_path@/@cc_cpu@-aros/lib/startup.o %{nix:@aros_sdk_path@/@cc_cpu@-aros/lib/nixmain.o}
 
 *predefines:
--D__ELF__ -D__@cc_cpu@__ -A-system -Asystem(posix) -D__AROS__
++ -D__AROS__
 
 *cross_compile:
 1

@@ -1,2 +1,2 @@
 #!/bin/sh
-@strip@ --strip-unneeded "$@"
+exec @strip@ --strip-unneeded "$@"
