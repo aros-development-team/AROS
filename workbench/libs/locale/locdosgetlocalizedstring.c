@@ -19,7 +19,7 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(STRPTR, LocDosGetLocalizedString,
+	AROS_LH1(CONST_STRPTR, LocDosGetLocalizedString,
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG, stringNum, D1),
