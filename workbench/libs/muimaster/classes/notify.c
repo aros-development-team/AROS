@@ -26,6 +26,31 @@
 
 extern struct Library *MUIMasterBase;
 
+#ifdef __AROS__
+AROS_UFH2S(void, cpy_func,
+    AROS_UFHA(UBYTE, chr, D0),
+    AROS_UFHA(STRPTR *, strPtrPtr, A3))
+{
+    AROS_USERFUNC_INIT
+    
+    *(*strPtrPtr)++ = chr;
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH2S(void, len_func,
+    AROS_UFHA(UBYTE, chr, D0),
+    AROS_UFHA(LONG *, lenPtr, A3))
+{
+    AROS_USERFUNC_INIT
+    
+    (*lenPtr)++;
+    
+    AROS_USERFUNC_EXIT
+}
+#endif
+
+
 /*
  * Notify class is superclass of all other MUI classes.
  */
@@ -482,9 +507,8 @@ static ULONG Notify_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_Ki
  */
 static ULONG Notify_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
 {
-    /* TODO: Fix types, they shouldn't be ULONG */
-    ULONG *destobj_p;
-    for (destobj_p = (ULONG*)&msg->obj; (*destobj_p) != NULL; destobj_p++)
+    IPTR *destobj_p;
+    for (destobj_p = (IPTR*)&msg->obj; (*destobj_p) != NULL; destobj_p++)
     {
 	set((APTR)*destobj_p, msg->attr, msg->val);
     }
@@ -538,18 +562,37 @@ static ULONG Notify_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
  */
 static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
 {
+    STRPTR txt;
+    LONG txt_len;
+
 #ifndef __AROS__
-    /* This is not very nice but can be changed later */
-    char buf[2048];
-    static const ULONG tricky=0x16c04e75; /* move.b d0,(a3)+ ; rts */
-    RawDoFmt(msg->format,(ULONG *)&msg->val,(void (*)())&tricky,buf);
-    set(obj, msg->attr, buf);
-#else
-#warning MUIM_SetAsString not implemented for AROS!
+    static const ULONG len_func = 0x52934e75; /* addq.l  #1,(A3) ; rts */
+    static const ULONG cpy_func = 0x16c04e75; /* move.b d0,(a3)+ ; rts */
 #endif
 
-/*      g_vsnprintf(buf, 2048, msg->format, (va_list)&msg->val); */
-/*      set(obj, msg->attr, (ULONG)buf); */
+    txt_len = 0;
+    RawDoFmt(msg->format, (ULONG *)&msg->val,
+	     (VOID_FUNC)AROS_ASMSYMNAME(len_func), &txt_len);
+
+/*      D(bug("Notify_SetAsString: fmt=%s, txtlen=%d\n", msg->format, txt_len)); */
+    txt = AllocVec(txt_len + 1, 0);
+    if (NULL == txt)
+	return FALSE;
+
+#ifdef __AROS__
+    {
+    	STRPTR txtptr = txt;
+	RawDoFmt(msg->format, (ULONG *)&msg->val,
+		 (VOID_FUNC)AROS_ASMSYMNAME(cpy_func), &txtptr);
+    }  
+#else
+    RawDoFmt(msg->format, (ULONG *)&msg->val,
+	     (VOID_FUNC)AROS_ASMSYMNAME(cpy_func), txt);
+#endif
+
+    set(obj, msg->attr, (IPTR)txt);
+    FreeVec(txt);
+
     return TRUE;
 }
 
