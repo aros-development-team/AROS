@@ -117,42 +117,38 @@ static void DrawFrame(
     Draw(rport, left + width, top + height);
     Draw(rport, left + 1, top + height);
 
-#if FRAME_SIZE == 1
     if (thicken != FALSE)
     {
-        /* Thicken Right Side */
-        Move(rport, left + width - 1, top + height - 1);
-        Draw(rport, left + width - 1, top + 1);
-
-        /* Thicken Left Side */
-        SetAPen(rport, shine);
-        Move(rport, left + 1, top + height - 1);
-        Draw(rport, left + 1, top + 1);
-
+        if (FRAME_SIZE == 1)
+        {
+            /* Thicken Right Side */
+            Move(rport, left + width - 1, top + height - 1);
+            Draw(rport, left + width - 1, top + 1);
+    
+            /* Thicken Left Side */
+            SetAPen(rport, shine);
+            Move(rport, left + 1, top + height - 1);
+            Draw(rport, left + 1, top + 1);
+        }
+        else if (FRAME_SIZE == 2)
+        {
+            /* Thicken Right Side */
+            Move(rport, left + width - 1, top + 1);
+            Draw(rport, left + width - 1, top + height - 1);
+    
+            /* Thicken Bottom Side */
+            Draw(rport, left + 2, top + height - 1);
+    
+            /* Thicken Left Side */
+            SetAPen(rport, shine);
+    
+            Move(rport, left + 1, top + height - 1);
+            Draw(rport, left + 1, top + 1);
+    
+            /* Thicken Top Side */
+            Draw(rport, left + width - 2, top + 1);
+        }
     } /* if */
-
-#elif FRAME_SIZE == 2
-if (thicken != FALSE)
-    {
-        /* Thicken Right Side */
-        Move(rport, left + width - 1, top + 1);
-        Draw(rport, left + width - 1, top + height - 1);
-
-        /* Thicken Bottom Side */
-        Draw(rport, left + 2, top + height - 1);
-
-        /* Thicken Left Side */
-        SetAPen(rport, shine);
-
-        Move(rport, left + 1, top + height - 1);
-        Draw(rport, left + 1, top + 1);
-
-        /* Thicken Top Side */
-        Draw(rport, left + width - 2, top + 1);
-
-    } /* if */
-#endif
-
 } /* DrawFrame */
 
 /****************************************************************************/
@@ -449,12 +445,14 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 
             } /* switch(fid->fid_FrameType) */
 
-#if FRAME_SIZE > 0
-            fid->fid_HOffset *= 2;
-#endif
-#if FRAME_SIZE == 2
-            fid->fid_VOffset *= 2;
-#endif
+            if (FRAME_SIZE > 0)
+            {
+                fid->fid_HOffset *= 2;
+            }
+            if (FRAME_SIZE == 2)
+            {
+                fid->fid_VOffset *= 2;
+            }
             break;
 
         default:
