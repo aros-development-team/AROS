@@ -23,7 +23,7 @@ struct Library *DiskfontBase;
 int main(int argc, char ** argv)
 {
     ULONG afshortage = 0;
-    IPTR  pargs[2];
+    IPTR  pargs[5];
 
     struct AvailFontsHeader *afh;
     struct AvailFonts *afptr;
@@ -65,10 +65,13 @@ int main(int argc, char ** argv)
 
 	for (count = afh->afh_NumEntries; count; count --)
 	{
-	    pargs[0] = (IPTR)afptr->af_Attr.ta_Name;
-	    pargs[1] = afptr->af_Attr.ta_YSize;
-
-	    VPrintf ("Font name: %-30.s Font YSize: %d\n", pargs);
+	    pargs[0] = afptr->af_Type;
+	    pargs[1] = (IPTR)afptr->af_Attr.ta_Name;
+	    pargs[2] = afptr->af_Attr.ta_YSize;
+    	    pargs[3] = afptr->af_Attr.ta_Style;
+	    pargs[4] = afptr->af_Attr.ta_Flags;
+	    
+	    VPrintf ("[%ld] Font name: %-30.s Font YSize: %ld  Style: 0x%lx  Flags 0x%lx\n", pargs);
 
 	    afptr ++;
 	}
