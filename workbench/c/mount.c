@@ -207,9 +207,9 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
 	    vec[DE_BAUD]	=args[16]?*args[16]:9600;
 	    vec[DE_CONTROL]	=args[17]?*args[17]:(IPTR)"";
 	    vec[DE_BOOTBLOCKS]	=0;
-	    iofs->io_Args[0]=args[1]?(IPTR)args[1]:(IPTR)"trackdisk.device";
-	    iofs->io_Args[1]=args[2]?*args[2]:0;
-	    iofs->io_Args[2]=(IPTR)vec;
+	    iofs->io_Union.io_OpenDevice.io_DeviceName=args[1]?(STRPTR)args[1]:(STRPTR)"trackdisk.device";
+	    iofs->io_Union.io_OpenDevice.io_Unit      =(ULONG)args[2]?*args[2]:0;
+	    iofs->io_Union.io_OpenDevice.io_Environ   =vec;
 	    error=mountdevice(iofs,(STRPTR)args[0],buffer);
 	    FreeArgs(rd);
 	    return error;

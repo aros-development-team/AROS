@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Read a couple of bytes from a file.
@@ -79,8 +79,8 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_READ;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=(IPTR)buffer;
-    iofs->io_Args[1]=length;
+    iofs->io_Union.io_READ.io_Buffer=buffer;
+    iofs->io_Union.io_READ.io_Length=length;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
@@ -89,7 +89,7 @@
     if((me->pr_Result2=iofs->io_DosError))
 	return -1;
     else
-	return iofs->io_Args[1];
+	return iofs->io_Union.io_READ.io_Length;
 
     AROS_LIBFUNC_EXIT
 } /* Read */

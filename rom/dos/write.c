@@ -1,29 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:36:35  ldp
-    Polish
 
-    Revision 1.6  1996/12/09 13:53:50  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.5  1996/10/24 15:50:38  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/09/13 17:40:35  digulla
-    Use IPTR
-
-    Revision 1.3  1996/08/13 13:52:53  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:59  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Write data to a file.
     Lang: english
 */
 #include <proto/exec.h>
@@ -98,8 +77,8 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_WRITE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=(IPTR)buffer;
-    iofs->io_Args[1]=length;
+    iofs->io_Union.io_WRITE.io_Buffer=buffer;
+    iofs->io_Union.io_WRITE.io_Length=length;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
@@ -109,6 +88,6 @@
     if((me->pr_Result2=iofs->io_DosError))
 	return -1;
     else
-	return iofs->io_Args[1];
+	return iofs->io_Union.io_WRITE.io_Length;
     AROS_LIBFUNC_EXIT
 } /* Write */

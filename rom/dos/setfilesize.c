@@ -1,22 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:31  ldp
-    Polish
 
-    Revision 1.3  1996/12/09 13:53:43  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:37  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:47  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Change the size of a file.
     Lang: english
 */
 #include <proto/exec.h>
@@ -85,11 +71,11 @@
     iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
     iofs->IOFS.io_Unit   =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_READ;
+    iofs->IOFS.io_Command=FSA_SET_FILE_SIZE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=offset<0?-1:0;
-    iofs->io_Args[1]=offset;
-    iofs->io_Args[2]=mode;
+    iofs->io_Union.io_SET_FILE_SIZE.io_Negative=offset<0?-1:0;
+    iofs->io_Union.io_SET_FILE_SIZE.io_Offset  =offset;
+    iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode=mode;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
@@ -98,7 +84,7 @@
     if((me->pr_Result2=iofs->io_DosError))
         return -1;    
     else
-        return iofs->io_Args[1];
+        return iofs->io_Union.io_SET_FILE_SIZE.io_Offset;
     
     AROS_LIBFUNC_EXIT
 } /* SetFileSize */

@@ -1,26 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:36:30  ldp
-    Polish
 
-    Revision 1.5  1996/12/09 13:53:42  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.4  1996/10/24 15:50:36  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 13:52:51  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:57  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Change the current read/write position in a file.
     Lang: english
 */
 #include <proto/exec.h>
@@ -43,8 +25,8 @@
 	struct DosLibrary *, DOSBase, 11, Dos)
 
 /*  FUNCTION
-	Changes the actual read/write position in a file and/or
-	reads the actual position, e.g to get the actual position
+	Changes the current read/write position in a file and/or
+	reads the current position, e.g to get the current position
 	do a Seek(file,0,OFFSET_CURRENT).
 
 	This function may fail (obviously) on certain devices such
@@ -96,17 +78,18 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_SEEK;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=position<0?-1:0;
-    iofs->io_Args[1]=position;
-    iofs->io_Args[2]=mode;
+    iofs->io_Union.io_SEEK.io_Negative=position<0?-1:0;
+    iofs->io_Union.io_SEEK.io_Offset  =position;
+    iofs->io_Union.io_SEEK.io_SeekMode=mode;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
 
     /* return */
-    if((me->pr_Result2=iofs->io_DosError))
+    SetIoErr(iofs->io_DosError);
+    if(iofs->io_DosError)
 	return -1;
     else
-	return iofs->io_Args[1];
+	return iofs->io_Union.io_SEEK.io_Offset;
     AROS_LIBFUNC_EXIT
 } /* Seek */

@@ -1370,8 +1370,9 @@ void deventry(struct ffsbase *ffsbase)
     	    {
     	        case (UWORD)-1:
     	            error=mount(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-		    	        (STRPTR)iofs->io_Args[0], iofs->io_Args[1],
-		    	        (IPTR *)iofs->io_Args[2]);
+		    	        iofs->io_Union.io_OpenDevice.io_DeviceName,
+                                iofs->io_Union.io_OpenDevice.io_Unit,
+		    	        iofs->io_Union.io_OpenDevice.io_Environ);
 		    iofs->io_DosError=error;
 		    if(!error)
 			(void)disk_change(ffsbase,(struct dev *)((struct fh *)iofs->IOFS.io_Unit)->vol);
@@ -1379,33 +1380,39 @@ void deventry(struct ffsbase *ffsbase)
 		    continue;
 		case FSA_OPEN:
 		    error=open(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-		    		      (STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
+                               iofs->io_Union.io_OPEN.io_Filename,
+                               iofs->io_Union.io_OPEN.io_FileMode);
 		    break;
 		case FSA_OPEN_FILE:
 		    error=open_file(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-		    		      (STRPTR)iofs->io_Args[0], iofs->io_Args[1],
-		    		      iofs->io_Args[2]);
+                                    iofs->io_Union.io_OPEN_FILE.io_Filename,
+                                    iofs->io_Union.io_OPEN_FILE.io_FileMode,
+                                    iofs->io_Union.io_OPEN_FILE.io_Protection);
 		    break;
 		case FSA_READ:
 		    error=read(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-		    	     (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
+                               iofs->io_Union.io_READ.io_Buffer,
+                               &iofs->io_Union.io_READ.io_Length);
 		    break;
 		case FSA_CLOSE:
 		    error=free_lock(ffsbase,(struct fh *)iofs->IOFS.io_Unit);
 		    break;
 		case FSA_CREATE_DIR:
 		    error=create_dir(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-		    		(STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
+                                     iofs->io_Union.io_CREATE_DIR.io_Filename,
+                                     iofs->io_Union.io_CREATE_DIR.io_Protection);
 		    break;
 		case FSA_EXAMINE:
 		    error=examine(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-		                  (struct ExAllData *)iofs->io_Args[0],
-		                  iofs->io_Args[1], iofs->io_Args[2]);
+		                  iofs->io_Union.io_EXAMINE.io_ead,
+		                  iofs->io_Union.io_EXAMINE.io_Size,
+                                  iofs->io_Union.io_EXAMINE.io_Mode);
 		    break;
 		case FSA_EXAMINE_ALL:
 		    error=examine_all(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-		                      (struct ExAllData *)iofs->io_Args[0],
-		                      iofs->io_Args[1], iofs->io_Args[2]);
+		                      iofs->io_Union.io_EXAMINE_ALL.io_ead,
+		                      iofs->io_Union.io_EXAMINE_ALL.io_Size,
+                                      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 		    break;
 		default:
 		    error=ERROR_ACTION_NOT_KNOWN;

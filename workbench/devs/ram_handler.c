@@ -1170,8 +1170,10 @@ void deventry(struct rambase *rambase)
 			STRPTR name;   file- or directoryname
 			LONG mode;     open mode
 		    */
-		    error=open_(rambase,(struct filehandle **)&iofs->IOFS.io_Unit,
-				      (STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
+		    error=open_(rambase,
+                                (struct filehandle **)&iofs->IOFS.io_Unit,
+                                iofs->io_Union.io_OPEN.io_Filename,
+                                iofs->io_Union.io_OPEN.io_FileMode);
 		    break;
 
 		case FSA_OPEN_FILE:
@@ -1182,9 +1184,11 @@ void deventry(struct rambase *rambase)
 			LONG mode;     open mode
 			LONG protect;  protection flags if a new file is created
 		    */
-		    error=open_file(rambase,(struct filehandle **)&iofs->IOFS.io_Unit,
-				      (STRPTR)iofs->io_Args[0], iofs->io_Args[1],
-				      iofs->io_Args[2]);
+		    error=open_file(rambase,
+                                    (struct filehandle **)&iofs->IOFS.io_Unit,
+                                    iofs->io_Union.io_OPEN_FILE.io_Filename,
+                                    iofs->io_Union.io_OPEN_FILE.io_FileMode,
+                                    iofs->io_Union.io_OPEN_FILE.io_Protection);
 		    break;
 
 		case FSA_READ:
@@ -1196,8 +1200,10 @@ void deventry(struct rambase *rambase)
 				       number of bytes read on return,
 				       0 if there are no more bytes in the file
 		    */
-		    error=read(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-			     (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
+		    error=read(rambase,
+                               (struct filehandle *)iofs->IOFS.io_Unit,
+                               iofs->io_Union.io_READ.io_Buffer,
+                               &iofs->io_Union.io_READ.io_Length);
 		    break;
 
 		case FSA_WRITE:
@@ -1208,8 +1214,10 @@ void deventry(struct rambase *rambase)
 			LONG numbytes; number of bytes to write /
 				       number of bytes written on return
 		    */
-		    error=write(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-			      (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
+		    error=write(rambase,
+                                (struct filehandle *)iofs->IOFS.io_Unit,
+                                iofs->io_Union.io_WRITE.io_Buffer,
+                                &iofs->io_Union.io_WRITE.io_Length);
 		    break;
 
 		case FSA_SEEK:
@@ -1222,8 +1230,11 @@ void deventry(struct rambase *rambase)
 			LONG mode;     one of OFFSET_BEGINNING, OFFSET_CURRENT,
 				       OFFSET_END
 		    */
-		    error=seek(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-			     &iofs->io_Args[0], &iofs->io_Args[1], iofs->io_Args[2]);
+		    error=seek(rambase,
+                               (struct filehandle *)iofs->IOFS.io_Unit,
+                               &iofs->io_Union.io_SEEK.io_Negative,
+                               &iofs->io_Union.io_SEEK.io_Offset,
+                               iofs->io_Union.io_SEEK.io_SeekMode);
 		    break;
 
 		case FSA_CLOSE:
@@ -1243,8 +1254,9 @@ void deventry(struct rambase *rambase)
 			ULONG type;    type of information to get
 		    */
 		    error=examine((struct fnode *)((struct filehandle *)iofs->IOFS.io_Unit)->node,
-				  (struct ExAllData*)iofs->io_Args[0],
-				  iofs->io_Args[1], iofs->io_Args[2]);
+				  iofs->io_Union.io_EXAMINE.io_ead,
+				  iofs->io_Union.io_EXAMINE.io_Size,
+                                  iofs->io_Union.io_EXAMINE.io_Mode);
 		    break;
 
 		case FSA_EXAMINE_ALL:
@@ -1256,8 +1268,9 @@ void deventry(struct rambase *rambase)
 			ULONG type;    type of information to get
 		    */
 		    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
-				      (struct ExAllData*)iofs->io_Args[0],
-				      iofs->io_Args[1], iofs->io_Args[2]);
+				      iofs->io_Union.io_EXAMINE_ALL.io_ead,
+				      iofs->io_Union.io_EXAMINE_ALL.io_Size,
+                                      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 		    break;
 
 		case FSA_CREATE_DIR:
@@ -1267,8 +1280,10 @@ void deventry(struct rambase *rambase)
 			STRPTR name;   name of the dir to create
 			LONG protect;  Protection flags for the new dir
 		    */
-		    error=create_dir(rambase,(struct filehandle **)&iofs->IOFS.io_Unit,
-				     (STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
+		    error=create_dir(rambase,
+                                     (struct filehandle **)&iofs->IOFS.io_Unit,
+				     iofs->io_Union.io_CREATE_DIR.io_Filename,
+                                     iofs->io_Union.io_CREATE_DIR.io_Protection);
 		    break;
 
 		case FSA_DELETE_OBJECT:
@@ -1277,8 +1292,9 @@ void deventry(struct rambase *rambase)
 			Unit *current; current directory
 			STRPTR name;   filename
 		    */
-		    error=delete_object(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-					(STRPTR)iofs->io_Args[0]);
+		    error=delete_object(rambase,
+                                        (struct filehandle *)iofs->IOFS.io_Unit,
+					iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 		    break;
 
 		case FSA_SET_PROTECT:
@@ -1289,9 +1305,11 @@ void deventry(struct rambase *rambase)
 			ULONG protect; new protection bits
 		    */
 		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,(STRPTR *)&iofs->io_Args[0],&dir);
+		    error=findname(rambase,
+                                   &iofs->io_Union.io_SET_PROTECT.io_Filename,
+                                   &dir);
 		    if(!error)
-			dir->protect=iofs->io_Args[1];
+			dir->protect=iofs->io_Union.io_SET_PROTECT.io_Protection;
 		    break;
 
 		case FSA_SET_OWNER:
@@ -1303,7 +1321,9 @@ void deventry(struct rambase *rambase)
 			ULONG GID;
 		    */
 		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,(STRPTR *)&iofs->io_Args[0],&dir);
+		    error=findname(rambase,
+                                   &iofs->io_Union.io_SET_OWNER.io_Filename,
+                                   &dir);
 		    if(!error)
 		    {
 		    }
@@ -1319,7 +1339,9 @@ void deventry(struct rambase *rambase)
 			ULONG ticks;   timestamp
 		    */
 		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,(STRPTR *)&iofs->io_Args[0],&dir);
+		    error=findname(rambase,
+                                   &iofs->io_Union.io_SET_DATE.io_Filename,
+                                   &dir);
 		    if(!error)
 		    {
 		    }
@@ -1333,12 +1355,14 @@ void deventry(struct rambase *rambase)
 			STRPTR comment; NUL terminated C string or NULL.
 		    */
 		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,(STRPTR *)&iofs->io_Args[0],&dir);
+		    error=findname(rambase,
+                                   &iofs->io_Union.io_SET_COMMENT.io_Filename,
+                                   &dir);
 		    if(!error)
 		    {
-			if(iofs->io_Args[1])
+			if(iofs->io_Union.io_SET_COMMENT.io_Comment)
 			{
-			    STRPTR s=Strdup(rambase,(STRPTR)iofs->io_Args[0]);
+			    STRPTR s=Strdup(rambase,iofs->io_Union.io_SET_COMMENT.io_Comment);
 			    if(s!=NULL)
 			    {
 				Strfree(rambase,dir->comment);
@@ -1362,8 +1386,11 @@ void deventry(struct rambase *rambase)
 				       new size on return
 			LONG mode;     relative to what (see Seek)
 		    */
-		    error=set_file_size(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-					&iofs->io_Args[0],&iofs->io_Args[1],iofs->io_Args[2]);
+		    error=set_file_size(rambase,
+                                        (struct filehandle *)iofs->IOFS.io_Unit,
+					&iofs->io_Union.io_SET_FILE_SIZE.io_Negative,
+                                        &iofs->io_Union.io_SET_FILE_SIZE.io_Offset,
+                                        iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode);
 		    break;
 
 		default:

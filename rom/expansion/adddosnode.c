@@ -33,7 +33,7 @@
 	This is the old function for adding devices to the system. It
 	is recommended that you use the AddBootNode() function.
 
-	Unline AddBootNode() you will have to add a BootNode to the
+	Unlike AddBootNode() you will have to add a BootNode to the
 	system yourself.
 
     INPUTS
@@ -102,9 +102,9 @@
 		}
 
 		fssm = BADDR(deviceNode->dn_Startup);
-		iofs->io_Args[0] = (IPTR)&(BADDR(fssm->fssm_Device))[1];
-		iofs->io_Args[1] = fssm->fssm_Unit;
-		iofs->io_Args[2] = (IPTR)BADDR(fssm->fssm_Environ);
+		iofs->io_Union.io_OpenDevice.io_DeviceName = &(BADDR(fssm->fssm_Device))[1];
+		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
+		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
 
 		if(!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
 		{

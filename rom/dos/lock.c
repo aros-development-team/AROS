@@ -85,13 +85,13 @@
 	switch(accessMode)
 	{
 	    case EXCLUSIVE_LOCK:
-		iofs->io_Args[1]=FMF_LOCK|FMF_READ;
+		iofs->io_Union.io_OPEN.io_FileMode=FMF_LOCK|FMF_READ;
 		break;
 	    case SHARED_LOCK:
-		iofs->io_Args[1]=FMF_READ;
+		iofs->io_Union.io_OPEN.io_FileMode=FMF_READ;
 		break;
 	    default:
-		iofs->io_Args[1]=accessMode;
+		iofs->io_Union.io_OPEN.io_FileMode=accessMode;
 		break;
 	}
 	if(!DoName(iofs,name,DOSBase))

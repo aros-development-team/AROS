@@ -70,9 +70,9 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_EXAMINE_ALL;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_EXAMINE.io_ead = buffer;
-    iofs->io_Union.io_EXAMINE.io_Size = size;
-    iofs->io_Union.io_EXAMINE.io_Mode = data;
+    iofs->io_Union.io_EXAMINE_ALL.io_ead = buffer;
+    iofs->io_Union.io_EXAMINE_ALL.io_Size = size;
+    iofs->io_Union.io_EXAMINE_ALL.io_Mode = data;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);

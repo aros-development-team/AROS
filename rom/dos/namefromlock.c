@@ -1,37 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.9  1997/01/27 00:36:26  ldp
-    Polish
 
-    Revision 1.8  1996/12/09 13:53:35  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.7  1996/11/08 11:27:54  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.6  1996/10/24 15:50:33  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.5  1996/09/13 17:50:07  digulla
-    Use IPTR
-
-    Revision 1.4  1996/08/13 13:52:49  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.3  1996/08/12 14:20:38  digulla
-    Added aliases
-
-    Revision 1.2  1996/08/01 17:40:55  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Retrieve thew full pathname from a lock.
     Lang: english
 */
 #include <proto/exec.h>
@@ -163,9 +134,9 @@
 	/* Read name of current lock (into the user supplied buffer) */
 	iofs->IOFS.io_Unit=curlock;
 	iofs->IOFS.io_Command=FSA_EXAMINE;
-	iofs->io_Args[0]=(IPTR)buffer;
-	iofs->io_Args[1]=name-buffer;
-	iofs->io_Args[2]=ED_TYPE;
+	iofs->io_Union.io_EXAMINE.io_ead =ead;
+	iofs->io_Union.io_EXAMINE.io_Size=name-buffer;
+	iofs->io_Union.io_EXAMINE.io_Mode=ED_TYPE;
 	DoIO(&iofs->IOFS);
 	error=iofs->io_DosError;
 
@@ -188,8 +159,8 @@
 	if(!error&&ead->ed_Type!=ST_ROOT)
 	{
 	    iofs->IOFS.io_Command=FSA_OPEN;
-	    iofs->io_Args[0]=(IPTR)"/";
-	    iofs->io_Args[1]=0;
+	    iofs->io_Union.io_OPEN.io_Filename="/";
+	    iofs->io_Union.io_OPEN.io_FileMode=0;
 	    DoIO(&iofs->IOFS);
 	    curlock=iofs->IOFS.io_Unit;
 	    error=iofs->io_DosError;

@@ -105,7 +105,7 @@
 		ast=me->pr_CES?me->pr_CES:me->pr_COS;
 		break;
 	    default:
-		iofs->io_Args[1]=accessMode;
+		iofs->io_Union.io_OPEN_FILE.io_FileMode=accessMode;
 		ast=con=me->pr_CIS;
 		break;
 	}
@@ -114,14 +114,14 @@
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(con))->fh_Device;
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(con))->fh_Unit;
-	    iofs->io_Args[0]=(IPTR)"";
+	    iofs->io_Union.io_OPEN_FILE.io_Filename="";
 	    (void)DoIO(&iofs->IOFS);
 	    error=me->pr_Result2=iofs->io_DosError;
 	}else if(!Stricmp(name,"*"))
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(ast))->fh_Device;
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(ast))->fh_Unit;
-	    iofs->io_Args[0]=(IPTR)"";
+	    iofs->io_Union.io_OPEN_FILE.io_Filename="";
 	    (void)DoIO(&iofs->IOFS);
 	    error=me->pr_Result2=iofs->io_DosError;
 	}else

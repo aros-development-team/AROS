@@ -216,7 +216,7 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
-	    if(((STRPTR)iofs->io_Args[0])[0])
+	    if(((STRPTR)iofs->io_Union.io_NamedFile.io_Filename)[0])
 	    {
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;
@@ -227,15 +227,15 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_READ:
-	    iofs->io_Args[1]=0;
+	    iofs->io_Union.io_READ.io_Length=0;
 	    break;
 
 	case FSA_WRITE:
 	    break;
 
 	case FSA_SEEK:
-	    iofs->io_Args[0]=0;
-	    iofs->io_Args[1]=0;
+	    iofs->io_Union.io_SEEK.io_Negative=0;
+	    iofs->io_Union.io_SEEK.io_Offset  =0;
 	    break;
 
 	case FSA_CLOSE:
