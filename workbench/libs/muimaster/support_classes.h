@@ -64,6 +64,12 @@
 #   define ZUNE_GAUGE_DESC
 #endif
 
+#if ZUNE_BUILTIN_ICONLISTVIEW
+#   define ZUNE_ICONLISTVIEW_DESC (&_MUI_IconListview_desc),
+#else
+#   define ZUNE_ICONLISTVIEW_DESC
+#endif
+
 #if ZUNE_BUILTIN_IMAGEADJUST
 #   define ZUNE_IMAGEADJUST_DESC (&_MUI_Imageadjust_desc),
 #else

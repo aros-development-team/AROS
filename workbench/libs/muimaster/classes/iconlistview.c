@@ -17,20 +17,14 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "iconlistview_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_IconListviewData
-{
-    Object *iconlist;
-    Object *vert, *horiz, *button;
-    struct Hook hook;
-    struct Hook *layout_hook;
-};
 
 ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
 {
-    struct MUI_IconListviewData *data = (struct MUI_IconListviewData *)hook->h_Data;
+    struct IconListview_DATA *data = (struct IconListview_DATA *)hook->h_Data;
     switch (lm->lm_Type)
     {
 	case    MUILM_MINMAX:
@@ -141,7 +135,7 @@ ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_La
 
 ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
-    struct MUI_IconListviewData *data = (struct MUI_IconListviewData *)hook->h_Data;
+    struct IconListview_DATA *data = (struct IconListview_DATA *)hook->h_Data;
     int type = (int)msg[0];
     LONG val = (LONG)msg[1];
 
@@ -166,12 +160,10 @@ ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
     return 0;
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_IconListviewData *data;
+    struct IconListview_DATA *data;
     //struct TagItem *tags,*tag;
     Object *iconlist = (Object*)GetTagData(MUIA_IconListview_IconList, NULL, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
@@ -235,22 +227,17 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG IconListview_Dispose(struct IClass *cl, Object *obj, Msg msg)
+
+IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_IconListviewData *data = INST_DATA(cl, obj);
+    struct IconListview_DATA *data = INST_DATA(cl, obj);
     mui_free(data->layout_hook);
     return DoSuperMethodA(cl,obj,msg);
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static ULONG IconListview_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_IconListviewData *data = INST_DATA(cl, obj);
+    struct IconListview_DATA *data = INST_DATA(cl, obj);
     LONG top,left,width,height;
 
     get(data->iconlist, MUIA_IconList_Left, &left);
@@ -272,24 +259,23 @@ static ULONG IconListview_Show(struct IClass *cl, Object *obj, struct MUIP_Show 
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+#if ZUNE_BUILTIN_ICONLISTVIEW
 BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return IconListview_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return IconListview_Dispose(cl, obj, msg);
-	case MUIM_Show: return IconListview_Show(cl, obj, (struct MUIP_Show*)msg);
+	case OM_NEW: return IconListview__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return IconListview__OM_DISPOSE(cl, obj, msg);
+	case MUIM_Show: return IconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }
 
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_IconListview_desc = { 
+const struct __MUIBuiltinClass _MUI_IconListview_desc =
+{
     MUIC_IconListview, 
     MUIC_Group, 
-    sizeof(struct MUI_IconListviewData), 
+    sizeof(struct IconListview_DATA), 
     (void*)IconListview_Dispatcher 
 };
+#endif /* ZUNE_BUILTIN_ICONLISTVIEW */

@@ -9,6 +9,7 @@ MAKE_BUILTIN_COLORFIELD    := no
 MAKE_BUILTIN_FRAMEADJUST   := yes
 MAKE_BUILTIN_FRAMEDISPLAY  := yes
 MAKE_BUILTIN_GAUGE         := yes
+MAKE_BUILTIN_ICONLISTVIEW  := no
 MAKE_BUILTIN_IMAGEADJUST   := yes
 MAKE_BUILTIN_IMAGEDISPLAY  := yes
 MAKE_BUILTIN_PENADJUST     := yes
@@ -35,7 +36,6 @@ CLASSES := \
     family \
     group \
     iconlist \
-    iconlistview \
     image \
     list \
     listview \
@@ -155,6 +155,14 @@ ifeq ($(MAKE_BUILTIN_GAUGE),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) gauge
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_ICONLISTVIEW),yes)
+    CLASSES     := $(CLASSES) iconlistview
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ICONLISTVIEW=1
+else
+    EXTCLASSES  := $(EXTCLASSES) iconlistview
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ICONLISTVIEW=0
 endif
 
 ifeq ($(MAKE_BUILTIN_IMAGEADJUST),yes)

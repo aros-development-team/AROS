@@ -123,7 +123,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_IconList_desc,
     &_MUI_IconDrawerList_desc,
     &_MUI_IconVolumeList_desc,
-    &_MUI_IconListview_desc,
+    ZUNE_ICONLISTVIEW_DESC
     &_MUI_Balance_desc,
     ZUNE_COLORFIELD_DESC
     ZUNE_COLORADJUST_DESC
