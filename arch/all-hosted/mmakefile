@@ -29,11 +29,11 @@ DEP_LIBS := \
 	$(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libhiddgraphicsstubs.a \
 	$(LIBDIR)/libhiddstubs.a \
-
-
+	$(LIBDIR)/libautoinit.a \
+	$(LIBDIR)/liblibinit.a
 
 LIBS :=	-L$(LIBDIR) \
-	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga
+	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit
 
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
