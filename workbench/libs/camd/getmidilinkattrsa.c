@@ -19,7 +19,7 @@
 	AROS_LH2(ULONG, GetMidiLinkAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MidiNode *, midinode, A0),
+	AROS_LHA(struct MidiLink *, midilink, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
@@ -64,43 +64,43 @@
 
 	while((tag=NextTagItem(&tstate))){
 		ret++;
-		where=(ULONG *)tag->ti_Tag;
+		where=(ULONG *)tag->ti_Data;
 		switch(tag->ti_Tag){
-			case MIDI_Name:
-				*where=(ULONG)midinode->mi_Node.ln_Name;
+			case MLINK_Name:
+				*where=(ULONG)midilink->ml_Node.ln_Name;
 				break;
-			case MIDI_SignalTask:
-				*where=(ULONG)midinode->mi_SigTask;
+			case MLINK_Location:
+				*where=(ULONG)midilink->ml_Location->mcl_Node.ln_Name;
 				break;
-			case MIDI_RecvHook:
-				*where=(ULONG)midinode->mi_ReceiveHook;
+			case MLINK_ChannelMask:
+				*where=(ULONG)midilink->ml_ChannelMask;
 				break;
-			case MIDI_PartHook:
-				*where=(ULONG)midinode->mi_ParticipantHook;
+			case MLINK_EventMask:
+				*where=(ULONG)midilink->ml_EventTypeMask;
 				break;
-			case MIDI_RecvSignal:
-				*where=(ULONG)midinode->mi_ReceiveSigBit;
+			case MLINK_UserData:
+				*where=(ULONG)midilink->ml_UserData;
 				break;
-			case MIDI_PartSignal:
-				*where=(ULONG)midinode->mi_ParticipantSigBit;
+			case MLINK_Comment:
+				ret--;
 				break;
-			case MIDI_MsgQueue:
-				*where=(ULONG)midinode->mi_MsgQueueSize;
+			case MLINK_PortID:
+				*where=(ULONG)midilink->ml_PortID;
 				break;
-			case MIDI_SysExSize:
-				*where=(ULONG)midinode->mi_SysExQueueSize;
+			case MLINK_Private:
+				*where=(ULONG)midilink->ml_Flags&MLF_PrivateLink;
 				break;
-			case MIDI_TimeStamp:
-				*where=(ULONG)midinode->mi_TimeStamp;
+			case MLINK_Priority:
+				*where=(ULONG)midilink->ml_Node.ln_Pri;
 				break;
-			case MIDI_ErrFilter:
-				*where=(ULONG)midinode->mi_ErrFilter;
+			case MLINK_SysExFilter:
+				*where=(ULONG)midilink->ml_SysExFilter.sxf_Packed;
 				break;
-			case MIDI_ClientType:
-				*where=(ULONG)midinode->mi_ClientType;
+			case MLINK_SysExFilterX:
+				*where=(ULONG)midilink->ml_SysExFilter.sxf_Packed;
 				break;
-			case MIDI_Image:
-				*where=(ULONG)midinode->mi_Image;
+			case MLINK_Parse:
+				*where=(ULONG)midilink->ml_ParserData==NULL?FALSE:TRUE;
 				break;
 			default:
 				ret--;
