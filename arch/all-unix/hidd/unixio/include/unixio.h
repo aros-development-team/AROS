@@ -38,6 +38,10 @@ enum {
     moHidd_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
     moHidd_UnixIO_AsyncIO,	/* 	*/
     moHidd_UnixIO_AbortAsyncIO,
+    moHidd_UnixIO_OpenFile,
+    moHidd_UnixIO_CloseFile,
+    moHidd_UnixIO_WriteFile,
+    moHidd_UnixIO_IOControlFile,    
     num_Hidd_UnixIO_Attrs
     
 };
@@ -67,6 +71,40 @@ struct uioMsgAbortAsyncIO
     STACKULONG um_Filedesc;
 };
 
+struct uioMsgOpenFile
+{
+    STACKULONG  um_MethodID;
+    STRPTR      um_FileName;
+    STACKULONG  um_Flags;
+    STACKULONG  um_Mode;
+    int        *um_ErrNoPtr;
+};
+
+struct uioMsgCloseFile
+{
+    STACKULONG  um_MethodID;
+    APTR        um_FD;
+    int        *um_ErrNoPtr;
+};
+
+struct uioMsgWriteFile
+{
+    STACKULONG  um_MethodID;
+    APTR        um_FD;
+    APTR        um_Buffer;
+    STACKULONG  um_Count;
+    int        *um_ErrNoPtr;
+};
+
+struct uioMsgIOControlFile
+{
+    STACKULONG  um_MethodID;
+    APTR        um_FD;
+    STACKULONG  um_Request;
+    APTR    	um_Param;
+    int        *um_ErrNoPtr;
+};
+
 /* UnixIO HIDD Values */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
@@ -83,6 +121,13 @@ IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callba
 HIDD *New_UnixIO(struct Library * /* OOPBase */, struct ExecBase *);
 IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
 VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd, struct ExecBase *);
+
+int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int *errno_ptr);
+VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr);
+int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr);
+int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *errno_ptr);
+
+
 
 #endif /* HIDD_UNIXIO_H */
 
