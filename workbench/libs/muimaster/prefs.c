@@ -165,9 +165,9 @@ static void prefs_init_images (struct ZunePrefs *prefs)
     prefs->images[MUII_PropBack] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_PopupBack] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_SelectedBack] = zune_image_spec_to_structure((IPTR)"0:131");
-    prefs->images[MUII_ListCursor] = zune_image_spec_to_structure((IPTR)"0:128");
-    prefs->images[MUII_ListSelect] = zune_image_spec_to_structure((IPTR)"0:128");
-    prefs->images[MUII_ListSelCur] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ListCursor] = zune_image_spec_to_structure((IPTR)"0:131");
+    prefs->images[MUII_ListSelect] = zune_image_spec_to_structure((IPTR)"0:135");
+    prefs->images[MUII_ListSelCur] = zune_image_spec_to_structure((IPTR)"0:138");
     prefs->images[MUII_ArrowUp] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_ArrowDown] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_ArrowLeft] = zune_image_spec_to_structure((IPTR)"0:128");
