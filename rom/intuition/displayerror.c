@@ -13,6 +13,9 @@
 #include <proto/exec.h>
 #include <string.h>
 
+#undef   DOSBase
+#define  IntuitionBase  DOSBase->dl_IntuitionBase
+
 /*****************************************************************************
 
     NAME */
@@ -84,23 +87,27 @@
 
     /* Supress requesters? */
     if((IPTR)window == (IPTR)-1L)
+    {
 	return 0;
+    }
 
     /* Create localized "Retry|Cancel" gadget texts. */
     strcpy(gtPtr, DosGetString(STRING_RETRY));
-
-    while(*gtPtr++);
-
-    gtPtr--;
-    *gtPtr++ = '|';
-    strcpy(gtPtr, DosGetString(STRING_CANCEL));
+    strcat(gtPtr, "|");
+    strcat(gtPtr, DosGetString(STRING_CANCEL));
 
     res = EasyRequestArgs(window, &es, &idcmp, args);
 
     if(res == 0)
+    {
 	return 1;
+    }
     else
+    {
 	return 0;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* DisplayError */
+
+#undef IntuitionBase
