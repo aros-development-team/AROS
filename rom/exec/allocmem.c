@@ -24,6 +24,7 @@
 #if DEBUG_AllocMem
 #   define DEBUG 1
 #endif
+#define MDEBUG 1
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -75,23 +76,35 @@
     struct Interrupt *lmh;
     struct MemHandlerData lmhd={ byteSize,requirements,0 };
     APTR res = NULL;
-#if ENABLE_RT
+#if ENABLE_RT || MDEBUG
     ULONG origSize = byteSize;
 #endif
 
     D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
-
+	 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	goto end;
 
+#if MDEBUG
+    /* Make room for safety walls around allocated block and an some more extra space
+       for other interesting things, actually --> the size.
+       
+       This all will look like this:
+       
+       [MEMCHUNK_FOR_EXTRA_STUFF][BEFORE-MUNGWALL][<alloced-memory-for-user>][AFTER_MUNGWALL]
+       
+       The first ULONG in MEMCHUNK_FOR_EXTRA_STUFF is used to save the original alloc
+       size (byteSize) param. So it is possible in FreeMem to check, if freemem size
+       matches allocmem size or not.
+       
+    */
+    
+    byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
+#endif /* MDEBUG */
+
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
     byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
-
-#if MDEBUG
-    /* Make room for safety walls around allocated block */
-    byteSize += MUNGWALL_SIZE * 2;
-#endif /* MDEBUG */
 
     /* Protect memory list against other tasks */
     Forbid();
@@ -278,15 +291,23 @@ end:
 #if MDEBUG
     if (res)
     {
+        /* Safe orig byteSize before wall (there is one MemChunk room before wall for such
+	   stuff. See above) */
+	
+	*(ULONG *)res = origSize;
+        res += MEMCHUNK_TOTAL;
+
 	/* Initialize walls */
 	MUNGE_BLOCK(res, MUNGWALL_SIZE, MEMFILL_WALL)
-	MUNGE_BLOCK(res + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE, MEMFILL_WALL)
+	MUNGE_BLOCK(res - MEMCHUNK_TOTAL + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE, MEMFILL_WALL)
 
 	/* move over the block between the walls */
 	res += MUNGWALL_SIZE;
-	byteSize -= MUNGWALL_SIZE * 2;
+
 	if (!(requirements & MEMF_CLEAR))
 	{
+	    byteSize -= (MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL);
+	    
 	    /* Fill the block with weird stuff to exploit bugs in applications */
 	    MUNGE_BLOCK(res, byteSize, MEMFILL_ALLOC)
 	}
