@@ -19,6 +19,9 @@ pure :
 clean :
 	-rm *.o lib*.a
 
+depend :
+	makedepend -- $(CFLAGS) -- *.c
+
 # DO NOT DELETE
 
 error.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
