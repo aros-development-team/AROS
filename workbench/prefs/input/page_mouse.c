@@ -56,7 +56,7 @@ static BOOL init_done;
 static UBYTE computermouse_chunky[COMPUTERMOUSE_WIDTH * COMPUTERMOUSE_HEIGHT];
 static UBYTE *computermouse_chunky_remapped;
 
-static STRPTR maplabels[4];
+static CONST_STRPTR maplabels[4];
 static ULONG computermouse_coltab[256];
 static WORD  remaptable[256];
 static UBYTE showdoubleclickbuf[30];

@@ -241,7 +241,7 @@ struct KeymapEntry
 
 /* main.c */
 
-void Cleanup(STRPTR msg);
+void Cleanup(CONST_STRPTR msg);
 void TellGUI(LONG cmd);
 
 /* misc.c */
@@ -252,8 +252,8 @@ void KillMenus(void);
 void SetMenuFlags(void);
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(struct List *list, struct Node *node);
-STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode);
-void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, STRPTR title);
+STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode);
+void DrawFrameWithTitle(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, CONST_STRPTR title);
 
 /* page_mouse.c */
 
@@ -267,7 +267,7 @@ LONG page_kbd_handler(LONG cmd, IPTR param);
 
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
-STRPTR MSG(ULONG id);
+CONST_STRPTR MSG(ULONG id);
 
 /* prefs.c */
 

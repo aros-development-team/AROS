@@ -35,8 +35,8 @@
 
 struct RegisterTabItem
 {
-    STRPTR  	    	    text;
-    Object  	    	    *image;
+    CONST_STRPTR  	        text;
+    Object  	    	   *image;
     WORD    	    	    textlen;
     WORD    	    	    x1, y1, x2, y2, w, h;
     WORD    	    	    tx, ty, ix, iy;
