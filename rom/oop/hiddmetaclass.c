@@ -42,6 +42,7 @@ static VOID get_info_on_ifs(Class *super
 static IPTR HIDD_DoMethod(Object *o, Msg msg);
 static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg);
 static IPTR HIDD_DoSuperMethod(Class *cl, Object *o, Msg msg);
+static inline ULONG get_max_midx(struct MethodDescr *md);
 
 /*
    The metaclass is used to create class. That means,
@@ -186,6 +187,8 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 	    while ((ifm = meta_iterateifs((Object *)msg->superclass, &iterval, &interface_id, &num_methods)))
 	    {
 	        ULONG copy_size;
+		struct InterfaceDescr *ifd;
+		
 	    	/* Copy interface into dispatch tables */
     		copy_size = UB(&mtab[num_methods]) - UB(&mtab[0]);
 		
@@ -198,6 +201,19 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 		/* allready copied by superclass, no need to recopy it */
 		ifinfo->interface_id	= interface_id;
 		D(bug("interfaceID for ifinfo %p set to %s\n", ifinfo, ifinfo->interface_id));
+		
+		/* See if this class supplies more methods for the interace */
+		for (ifd = msg->ifdescr; ifd->MethodTable != 0; ifd ++)
+		{
+		    if (0 == strcmp(ifd->InterfaceID, interface_id))
+		    {
+		    	ULONG max_midx;
+			
+			max_midx = get_max_midx(ifd->MethodTable);
+			if (max_midx >= num_methods)
+				num_methods = max_midx + 1;
+		    }
+		}
 		ifinfo->num_methods	= num_methods;
 		D(bug("numemthods set to %ld\n", num_methods));
 		ifinfo->mtab_offset	= mtab_offset;
@@ -252,12 +268,14 @@ static BOOL hiddmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisp
 		if (!ifm)
 		{
 		    ULONG mbase = 0UL;
+		    
 	    	    D(bug("Found new interface %s\n", ifdescr->InterfaceID));
 		    /* Interface is new to this class */
+
 		    
 		    /* Do NOT copy interfaceID */
 		    ifinfo->interface_id = ifdescr->InterfaceID;
-		    ifinfo->num_methods	 = ifdescr->NumMethods;
+		    ifinfo->num_methods	 = get_max_midx(ifdescr->MethodTable) + 1;
 		    ifinfo->mtab_offset	 = mtab_offset;
 		    
 		    /* Install methodbase for this interface */
@@ -473,6 +491,22 @@ Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 
 }
 
+static inline ULONG get_max_midx(struct MethodDescr *md)
+{
+
+    ULONG max_midx = 0;
+
+	    
+    for (; md->MethodFunc != NULL; md ++)
+    {
+    	if (md->MethodIdx > max_midx)
+	{
+	    max_midx = md->MethodIdx;
+	}
+    }
+    return max_midx;
+}
+
 /************************
 **  get_info_on_ifs()  **
 ************************/
@@ -494,7 +528,23 @@ static VOID get_info_on_ifs(Class *super
     /* Iterate all parent interfaces, counting methods and interfaces */
     while (meta_iterateifs((Object *)super, &iterval, &interface_id, &num_methods))
     {
-    	D(bug("if %s has &ld methods\n", interface_id, num_methods));
+	struct InterfaceDescr *ifd;
+    	D(bug("if %s has %ld methods\n", interface_id, num_methods));
+	/* Check whether current class also supplies methods for this interface */
+	
+	for (ifd = ifdescr; ifd->MethodTable != NULL; ifd ++)
+	{
+	    if (0 == strcmp(ifd->InterfaceID, interface_id))
+	    {
+	    	/* Interface also supplied here */
+		ULONG max_midx;
+		
+		max_midx = get_max_midx(ifd->MethodTable);
+		if (max_midx >= num_methods)
+			num_methods = max_midx + 1;
+		
+	    }
+	}
     	*total_num_methods_ptr += num_methods;
 	(*total_num_ifs_ptr) ++;
     }
@@ -508,8 +558,12 @@ static VOID get_info_on_ifs(Class *super
 	    /* The interface is new for this class.
 	       For HIDDMeta class max. one interface can be new for a class
 	    */
-	    /* Interface existed in superclass */
-	    (*total_num_methods_ptr) += ifdescr->NumMethods;
+	    ULONG max_midx = 0;
+	    max_midx = get_max_midx(ifdescr->MethodTable);
+	    
+	    /* Get the largest method idx */
+	    
+	    (*total_num_methods_ptr) += (max_midx + 1);
 	    (*total_num_ifs_ptr) ++;
 	}
     }
