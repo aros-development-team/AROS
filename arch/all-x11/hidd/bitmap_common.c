@@ -4,18 +4,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static VOID set_pixelformat(Object *bm, struct x11_staticdata *xsd)
-{
-    HIDDT_PixelFormat *pf = BM_PIXFMT(bm);
-    
-    pf->red_mask	= xsd->vi.red_mask;
-    pf->green_mask	= xsd->vi.green_mask;
-    pf->blue_mask	= xsd->vi.blue_mask;
-    
-    pf->red_shift	= xsd->red_shift;
-    pf->green_shift	= xsd->green_shift;
-    pf->blue_shift	= xsd->blue_shift;
-}
 
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
@@ -273,7 +261,7 @@ UX11
 
 /*********  BitMap::GetImage()  *************************************/
 
-static ULONG *ximage_to_buf(Object *bm
+static ULONG *ximage_to_buf(Class *cl, Object *bm
 	, HIDDT_Pixel *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, APTR dummy)
@@ -282,7 +270,6 @@ static ULONG *ximage_to_buf(Object *bm
     if (image->bits_per_pixel == 16)
     {
 
-#if 1
 	/* sg */
 	
     	LONG x, y;
@@ -298,18 +285,6 @@ static ULONG *ximage_to_buf(Object *bm
 	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
 	}
 
-	
-	
-#else	
-    	int i;
-	UWORD *imdata = (UWORD *)image->data;
-	
-	i = width * height;
-	while (i --)
-	{
-	    *buf ++ = (ULONG)*imdata ++;
-	}
-#endif
 	
     }
     else
@@ -343,7 +318,6 @@ static inline UBYTE pix_to_lut(HIDDT_Pixel pixel, HIDDT_PixelLUT *plut, HIDDT_Pi
     red   = RED_COMP(pixel, pf);
     green = GREEN_COMP(pixel, pf);
     blue  = BLUE_COMP(pixel, pf);
-   
     
     for (i = 0; i < plut->entries; i ++) {
     	register HIDDT_Pixel cur_lut = plut->pixels[i];
@@ -366,7 +340,7 @@ static inline UBYTE pix_to_lut(HIDDT_Pixel pixel, HIDDT_PixelLUT *plut, HIDDT_Pi
 }
 
 
-static UBYTE *ximage_to_buf_lut(Object *bm
+static UBYTE *ximage_to_buf_lut(Class *cl, Object *bm
 	, UBYTE *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_GetImageLUT *msg)
@@ -498,7 +472,7 @@ LX11
 	);
 	current_y += lines_to_copy;
 UX11
-	pixarray = fromimage_func(o, pixarray, image, image->width, lines_to_copy, depth, fromimage_data);
+	pixarray = fromimage_func(cl, o, pixarray, image, image->width, lines_to_copy, depth, fromimage_data);
 	
     } /* while (pixels left to copy) */
     
@@ -541,7 +515,7 @@ UX11
     	return;
 	
 	
-    fromimage_func(o, pixarray, image
+    fromimage_func(cl, o, pixarray, image
     	, width, height
 	, depth, fromimage_data);
 	
@@ -622,63 +596,151 @@ static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImag
 /*********  BitMap::PutImage()  *************************************/
 
 
-static ULONG *buf_to_ximage(Object *bm
+static ULONG *buf_to_ximage(Class *cl, Object *bm
 	, HIDDT_Pixel *buf, XImage *image
 	, ULONG width, ULONG height, ULONG depth
-	, APTR dummy
+	, struct pHidd_BitMap_PutImage *msg
 )
 {
-    if (image->bits_per_pixel == 16)
-    {
-#if 1
-	/* sg */
+
+    /* Test if modulo == width */
+    BOOL use_modulo = TRUE;
+    kprintf("buf_to_ximage(cl=%p, o=%p, buf=%p, image=%p, width=%d, height=%d, depth=%d, msg=%p)\n"
+    	, cl, bm, buf, image, width, height, depth, msg);
+    
+    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, msg->width)) {
+    	use_modulo = FALSE;
 	
-    	LONG x, y;
-	UWORD *imdata = (UWORD *)image->data;
-	
-	for (y = 0; y < height; y ++)
-	{
-	    for (x = 0; x < width; x ++)
-	    {
-		*imdata ++ = (UWORD)*buf ++;
-		
-	    }
-	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
-	}
+    }
+    
+    
+    switch (msg->pixFmt) {
+    case vHidd_PixFmt_Native:
+    	if (!use_modulo) {
+	    memcpy(image->data, buf, msg->modulo * msg->height);
+	} else {
+	    LONG y;
+            UBYTE *imdata = image->data;
 
 	
-	
-#else	
-    	int i;
-	UWORD *imdata = (UWORD *)image->data;
-	i = width * height;
-	while (i --)
-	{
-	    *imdata ++ = (UWORD)*buf ++;
-	}
-#endif
-    }
-    else
-    {
-    	LONG x, y;
-	
-	for (y = 0; y < height; y ++)
-	{
-	    for (x = 0; x < width; x ++)
-	    {
-		XPutPixel(image, x, y, *buf ++);
+	    for (y = 0; y < msg->height; y ++) {
+		memcpy(imdata, buf, msg->modulo);
+			
+		((UBYTE *)imdata) += msg->modulo;
+		((UBYTE *)buf) += msg->modulo;
 	    }
-	    
 	}
-    
-    }
+	break;
+	
+    case vHidd_PixFmt_Native32:
+kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
+    	switch (image->bits_per_pixel) {
+	
+	case 16: {
+	    LONG x, y;
+	    
+	    UWORD *imdata = (UWORD *)image->data;
+	    kprintf("16 bit Native32, modulo=%d, imdat=%x\n"
+	    	, msg->modulo, imdata);
+
+
+	    for (y = 0; y < height; y ++) {
+		HIDDT_Pixel *p = buf;
+		for (x = 0; x < width; x ++) {
+		    *imdata ++ = (UWORD)*p ++;
+		}
+		((UBYTE *)imdata) += ((image->bytes_per_line / 2) - width); /*sg*/
+		((UBYTE *)buf) += msg->modulo;
+	    }
+	    break; }
+		
+		
+	case 24: {
+	    LONG x, y;
+	    
+	    UBYTE *imdata = image->data;
+	    HIDDT_PixelFormat *pf;
+	    
+	    pf = BM_PIXFMT(bm);
+	    
+	    for (y = 0; y < msg->height; y ++) {
+	    
+	    	HIDDT_Pixel *p = buf;
+		
+	    	for (x = 0; x < msg->width; x ++) {
+		     register HIDDT_Pixel pix;
+		     
+		     pix = *p ++;
+#if (AROS_BIG_ENDIAN == 1)
+	    	    *imdata ++ = pix >> 16;
+		    *imdata ++ = (pix & pf->green_mask) >> 8;
+		    *imdata ++ = (pix & pf->blue_mask);
+#else
+		    *imdata ++ = (pix & pf->blue_mask);
+		    *imdata ++ = (pix & pf->green_mask) >> 8;
+		    *imdata ++ = pix >> 16;
+#endif
+		}
+		
+		((UBYTE *)buf) += msg->modulo;
+	    }
+	    break; }
+	    
+	default: {
+	    LONG x, y;
+	    
+	    for (y = 0; y < msg->height; y ++) {
+	    	HIDDT_Pixel *p;
+	    
+	    	p = buf;
+	    	for (x = 0; x < msg->width; x ++) {
+		     XPutPixel(image, x, y, *p ++);
+		}
+		((UBYTE *)buf) += msg->modulo;
+	    }
+	    break; }
+	
+	} /* switch (image->bits_per_pixel) */
+	
+	break;
+	     
+	
+	
+     default: {
+     
+	Object *srcpf, *dstpf;
+	
+	kprintf("DEFAULT PIXEL CONVERSION\n");
+	
+	srcpf = HIDD_BM_GetPixelFormat(bm, msg->pixFmt);
+	dstpf = HIDD_BM_GetPixelFormat(bm, vHidd_PixFmt_Native);
+	
+	kprintf("CALLING ConvertPixels()\n");
+	
+     	HIDD_BM_ConvertPixels(bm, (APTR *)buf
+		, (HIDDT_PixelFormat *)srcpf
+		, msg->modulo
+		, (APTR *)image->data
+		, (HIDDT_PixelFormat *)dstpf
+		, image->bytes_per_line
+		, msg->width, msg->height
+		, NULL /* We have no CLUT */
+	);
+	
+	kprintf("CONVERTPIXELS DONE\n");
+	
+	
+	((UBYTE *)buf) += msg->modulo * msg->height;
+	break; }
+
+    } /* switch (msg->pixFmt) */
     
     return buf;
 }
 
 
 
-static UBYTE *buf_to_ximage_lut(Object *bm
+static UBYTE *buf_to_ximage_lut(Class *cl, Object *bm
 	, UBYTE *pixarray, XImage *image
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_PutImageLUT *msg
@@ -794,7 +856,7 @@ UX11
 	ysize -= lines_to_copy;
 	image->height = lines_to_copy;
 	
-	pixarray = toimage_func(o, pixarray, image, image->width, lines_to_copy, depth, toimage_data);
+	pixarray = toimage_func(cl, o, pixarray, image, image->width, lines_to_copy, depth, toimage_data);
 	
 LX11	
 
@@ -873,7 +935,7 @@ UX11
     	ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
     }
     
-    toimage_func(o, pixarray, image, width, height, depth, toimage_data);
+    toimage_func(cl, o, pixarray, image, width, height, depth, toimage_data);
 	
 LX11
    XSetFunction(data->display, data->gc, mode);
@@ -910,7 +972,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 	, msg->width, msg->height
 	, msg->pixels
 	, (APTR (*)()) buf_to_ximage
-	, NULL
+	, msg
     );
 
 #else
@@ -920,7 +982,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 	, msg->width, msg->height
 	, msg->pixels
 	, (APTR (*)()) buf_to_ximage
-	, NULL
+	, msg
     );
 
 #endif

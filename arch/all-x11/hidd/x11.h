@@ -99,15 +99,13 @@ struct abdescr
 };
 
 
-BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
-VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
-
 
 struct x11task_params
 {
     struct Task *parent;
     ULONG ok_signal;
     ULONG fail_signal;
+    ULONG kill_signal;
     struct x11_staticdata *xsd;
 };
 
@@ -115,6 +113,27 @@ struct xwinnode
 {
     struct MinNode node;
     Window	xwindow;
+    
+    BOOL window_mapped;
+};
+
+
+/* Message used for getting info on when a window has been mapped */
+
+enum {
+	NOTY_MAPWINDOW,
+	NOTY_WINCREATE,
+	NOTY_WINDISPOSE
+
+};
+
+
+struct notify_msg {
+     struct Message execmsg;
+     
+     ULONG notify_type; /* NOTY_xxxx */
+     
+     Window xwindow;
 };
 
 
@@ -122,6 +141,11 @@ struct x11_staticdata
 {
     struct SignalSemaphore sema; /* Protecting this whole struct */
     struct SignalSemaphore x11sema;
+    
+    /* This port is used for asking the x11 task for notifications
+       on when some event occurs, for example MapNotify
+    */
+    struct MsgPort *x11task_notify_port;
     
     struct Library *oopbase;
     struct Library *utilitybase;
@@ -142,9 +166,6 @@ struct x11_staticdata
     Object *gfxhidd;
     Object *mousehidd;
     Object *kbdhidd;
-    
-    struct MinList xwindowlist;
-    struct SignalSemaphore winlistsema;
 
 #if USE_XSHM
     struct SignalSemaphore shm_sema;	/* singlethread access to shared mem */
@@ -161,9 +182,27 @@ struct x11_staticdata
     ULONG red_shift;
     ULONG green_shift;
     ULONG blue_shift;
+
+    ULONG size; /* Size of pixel in bits */
+    ULONG bytes_per_pixel;
     
     
 };
+
+
+BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
+VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
+VOID get_bitmap_info(struct x11_staticdata *xsd
+	, Drawable d
+	, ULONG *sz
+	, ULONG *bpl
+);
+
+BOOL set_pixelformat(Object *bm
+	, struct x11_staticdata *xsd
+	, Drawable d
+);
+
 
 Class *init_gfxclass	( struct x11_staticdata * );
 Class *init_onbmclass	( struct x11_staticdata * );

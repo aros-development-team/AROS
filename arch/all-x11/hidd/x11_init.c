@@ -15,6 +15,8 @@
 #include <proto/exec.h>
 
 #include <utility/utility.h>
+#include <oop/oop.h>
+#include <hidd/graphics.h>
 
 #include "x11.h"
 
@@ -55,15 +57,32 @@ struct x11clbase
 
 #undef XSD(cl) xsd
 #undef SysBase
+#undef OOPBase
 
+
+#define OOPBase xsd->oopbase
 
 static BOOL initclasses( struct x11_staticdata *xsd );
 static VOID freeclasses( struct x11_staticdata *xsd );
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase);
 VOID x11task_entry(struct x11task_params *xtp);
 
+AttrBase HiddPixFmtAttrBase = 0;
+AttrBase HiddGfxModeAttrBase = 0;
+
+struct abdescr abd[] = {
+	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+	{ IID_Hidd_GfxMode,	&HiddGfxModeAttrBase	},
+	{ NULL, NULL }
+};
+
 static BOOL initclasses(struct x11_staticdata *xsd)
 {
+
+    /* Get some attrbases */
+    
+    if (!obtainattrbases(abd, OOPBase))
+    	goto failure;
 
     xsd->x11class = init_x11class(xsd);
     if (NULL == xsd->x11class)
@@ -107,7 +126,6 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     if (xsd->kbdclass)
     	free_kbdclass(xsd);
 
-
     if (xsd->mouseclass)
     	free_mouseclass(xsd);
 
@@ -122,6 +140,8 @@ static VOID freeclasses(struct x11_staticdata *xsd)
 
     if (xsd->x11class)
     	free_x11class(xsd);
+	
+    releaseattrbases(abd, OOPBase);
 	
     return;
 }
@@ -160,8 +180,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     {
         xsd->sysbase = SysBase;
 	
-	NEWLIST( &xsd->xwindowlist );
-	InitSemaphore( &xsd->winlistsema );
 	InitSemaphore( &xsd->sema );
 	InitSemaphore( &xsd->x11sema );
 	
@@ -188,7 +206,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     		    xsd->display = XOpenDisplay(displayname);
 		    if (xsd->display)
 		    {
-		       D(bug("x11_init: got display\n"));
+    			struct x11task_params xtp;
+		        struct  Task *x11task;
 
 			XSetErrorHandler (MyErrorHandler);
 			XSetIOErrorHandler (MySysErrorHandler);
@@ -196,27 +215,23 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			/* Turn off auto repeat */
     /*		    XAutoRepeatOff(xsd->display);
     */		    
-			if (initclasses(xsd))
-			{
-			    /* The X11 task should be the last one up.
-			       (It is difficult to clean up after it
-			       otherwise, if something should fail) */
+    
 
-			    struct x11task_params xtp;
+    			xtp.parent = FindTask(NULL);
+    			xtp.ok_signal	= SIGBREAKF_CTRL_E;
+    			xtp.fail_signal = SIGBREAKF_CTRL_F;
+			xtp.kill_signal = SIGBREAKF_CTRL_C;
+    			xtp.xsd 	= xsd;
 
-		   	    D(bug("x11_init: got classes\n"));
-
-			    xtp.parent = FindTask(NULL);
-			    xtp.ok_signal   = SIGBREAKF_CTRL_E;
-			    xtp.fail_signal = SIGBREAKF_CTRL_F;
-			    xtp.xsd	    = xsd;
-
-			    if (create_x11task(&xtp, SysBase))
+    			if ((x11task = create_x11task(&xtp, SysBase)))
+    			{
+			
+    		    	    if (initclasses(xsd))
 			    {
-				D(bug("x11_init: Task up& running\n"));
 				return TRUE;
-			    }
-			    freeclasses(xsd);
+    			    }
+			    
+			    Signal(x11task, xtp.kill_signal);
 
 			}
 

@@ -32,12 +32,7 @@
 #include "x11gfx_intern.h"
 #include "x11.h"
 
-
-
-
-
 #include "bitmap.h"
-
 
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddX11GfxAB = 0;
@@ -161,67 +156,98 @@ UX11
 	D(bug("Xwindow : %p\n", DRAWABLE(data)));
 	if (DRAWABLE(data))
 	{
-	    XGCValues gcval;
-    	    XSizeHints hint;
+	    struct MsgPort *port;
+	    
+	    struct notify_msg *msg;
 		    
 	    D(bug("Calling XMapRaised\n"));
 LX11	    
 	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
-
-	    hint.flags  = PMinSize | PMaxSize;
-	    hint.min_width = width;
-	    hint.min_height = height;
-	    hint.max_width = width;
-	    hint.max_height = height;
-	    XSetWMNormalHints (GetSysDisplay(), DRAWABLE(data), &hint);
-
-	    XStoreName (GetSysDisplay(), DRAWABLE(data), "AROS");
-	    XSetIconName (GetSysDisplay(), DRAWABLE(data), "AROS Screen");
+UX11	    
+	    /* Now we need to get some message from the X11 task about when
+	       the window has been mapped (ie. MapWindow event).
+	       This is because we cannot render into the window until the
+	       it has been mapped.
+	    */
 
 	    /* Create X11 GC */
+	    
+	    port = CreateMsgPort();
+	    msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
+	    
+	    if (NULL != port && NULL != msg) {
 	 
-	    gcval.plane_mask = AllPlanes;
-	    gcval.graphics_exposures = False;
-	 
-	    data->gc = XCreateGC( data->display
+	    	XGCValues gcval;
+		
+		/* Send a message to the x11 task that the window has been created */
+		msg->notify_type = NOTY_WINCREATE;
+		msg->xwindow = DRAWABLE(data);
+		msg->execmsg.mn_ReplyPort = port;
+		
+		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
+		
+		
+		/* Wait for the reply, so we are sure that the x11 task
+		   has got it */
+
+kprintf("WAITING FOR CREATION REPLY\n");		   
+		WaitPort(port);
+kprintf("DONE WAITING FOR CREATION REPLY\n");
+		GetMsg(port);
+		
+		/* Send a message to the X11 task to ask when the window has been mapped */
+		
+		msg->xwindow = DRAWABLE(data);
+		msg->notify_type = NOTY_MAPWINDOW;
+		msg->execmsg.mn_ReplyPort = port;
+		
+		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
+
+		/* Wait for result */
+kprintf("WAITING FOR MAPWINDOW REPLY\n");
+		WaitPort(port);
+		
+kprintf("DONE WAITING FOR MAPWINDOW REPLY\n");
+		GetMsg(port);
+
+kprintf("CREATING GC\n");
+		
+	    	gcval.plane_mask = AllPlanes;
+	    	gcval.graphics_exposures = False;
+LX11	 
+	    	data->gc = XCreateGC( data->display
 	 		, DRAWABLE(data)
 			, GCPlaneMask | GCGraphicsExposures
 			, &gcval
 		    );
 
 UX11		
-	    if (data->gc)
-	    {
-	
-
-	        /* Maintain a list of open windows for the X11 event handler in x11.c */
-	        struct xwinnode * node = AllocMem(sizeof (struct xwinnode), MEMF_PUBLIC);
-
-		if (node)
-		{
-		    ObtainSemaphore( &XSD(cl)->winlistsema);
+	    	if (data->gc)
+	    	{
+		    	/* Set the bitmap pixel format in the superclass */
 		    
-		    node->xwindow = DRAWABLE(data);
-		    AddTail( (struct List *)&XSD(cl)->xwindowlist, (struct Node *)node );
+		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data)))
+			    ok = FALSE;
 		    
-		    ReleaseSemaphore( &XSD(cl)->winlistsema);
-		    
-		    /* Set the bitmap pixel format in the superclass */
-		    set_pixelformat(o, XSD(cl));
-		}
-		else
-		{
+	    	} else {
 		    ok = FALSE;
-		}
-	    }
-	    else
-	    {
-		ok = FALSE;
-	    }
+		} /* if (gc created) */
+		
+		
+		
+	    } else {
+	    	ok = FALSE;
+	    } /* if (msgport created && msg allocated) */
+	    
+	    if (NULL != msg)
+	    	FreeMem(msg, sizeof (*msg));
+		
+	    if (NULL != port)
+	    	DeleteMsgPort(port);
+		
 	
-	}
-	else
-	{
+	    
+	} else {
 	    ok = FALSE;
 	} /* if (Xwindow created) */
 		
@@ -248,6 +274,7 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
     
+    
     if (data->gc)
     {
 LX11
@@ -256,27 +283,43 @@ UX11
     }
     if (DRAWABLE(data))
     {
-        struct xwinnode *node, *safe;
-	ObtainSemaphore( &XSD(cl)->winlistsema );
+
+	struct MsgPort *port;
+	struct notify_msg *msg;
 	
-        ForeachNodeSafe( &XSD(cl)->xwindowlist, node, safe)
-	{
-	    if (node->xwindow == DRAWABLE(data))
-	    {
-	        Remove((struct Node *)node);
-		FreeMem(node, sizeof (struct xwinnode));
-	    }
-	    
+	
+	port = CreateMsgPort();
+	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
+	if (NULL == port || NULL == msg) {
+	    kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n");
+	    kill(getpid(), 19);
 	}
-	ReleaseSemaphore( &XSD(cl)->winlistsema );
+	
+	msg->notify_type = NOTY_WINDISPOSE;
+	msg->xwindow = DRAWABLE(data);
+	msg->execmsg.mn_ReplyPort = port;
+	
+	PutMsg(port, (struct Message *)msg);
+	WaitPort(port);
+	
+	GetMsg(port);
+	
+	FreeMem(msg, sizeof (*msg));
+	DeleteMsgPort(port);
+	
 LX11	
+	
     	XDestroyWindow( GetSysDisplay(), DRAWABLE(data));
 	XFlush( GetSysDisplay() );
 UX11
 	
     }
     
-    
+    if (BM_PIXFMT(o)) {
+    	DisposeObject((Object *)BM_PIXFMT(o));
+	BM_PIXFMT(o) = NULL;
+    }
+    	
     
     DoSuperMethod(cl, o, msg);
     

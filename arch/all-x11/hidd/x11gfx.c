@@ -79,8 +79,26 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
 static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
 
-    EnterFunc(bug("X11Gfx::New()\n"));
+    
+    struct TagItem tags_640_480[] = {
+    	{ aHidd_GfxMode_Width,		640	},
+	{ aHidd_GfxMode_Height,		480	},
+	{ TAG_DONE, 0UL }
+    };
 
+
+    struct TagItem tags_800_600[] = {
+    	{ aHidd_GfxMode_Width,		800	},
+	{ aHidd_GfxMode_Height,		600	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    struct TagItem *mode_tags[] = {
+	tags_640_480, tags_800_600, NULL
+    };
+
+    EnterFunc(bug("X11Gfx::New()\n"));
+    
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (o)
     {
@@ -96,8 +114,12 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Do GfxHidd initalization here */
 	if (initx11stuff(data, XSD(cl)));
 	{
+	
+	    /* Register gfxmodes */
+	    if (HIDD_Gfx_RegisterGfxModes(o, mode_tags)) {
 
-    	    ReturnPtr("X11Gfx::New", Object *, o);
+		ReturnPtr("X11Gfx::New", Object *, o);
+	    }
 	}
 	
 	D(bug("Disposing obj\n"));
@@ -326,6 +348,9 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
 
 
     XColor bg, fg;
+    
+    XImage *testimage;
+
 
     EnterFunc(bug("initx11stuff()\n"));
 
@@ -389,6 +414,28 @@ LX11
 	xsd->red_shift	 = mask_to_shift(xsd->vi.red_mask);
 	xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
 	xsd->blue_shift	 = mask_to_shift(xsd->vi.blue_mask);
+
+	xsd->size = 0;
+
+	/* Create a dummy X image to get bits per pixel */
+	testimage = XGetImage(xsd->display
+		, RootWindow(xsd->display, data->screen)
+		, 0, 0, 1, 1
+		, AllPlanes, ZPixmap
+	);
+	
+	if (NULL != testimage)
+	{
+	    xsd->size = testimage->bits_per_pixel;
+	    XDestroyImage(testimage);
+	}
+	else
+	{
+	    kprintf("!!! X11gfx could not get bits per pixel\n");
+	    kill(getpid(), SIGSTOP);
+	}
+	
+	xsd->bytes_per_pixel = (xsd->size + 7) >> 3;
 
 #if 0	
 kprintf("Red:   mask: %p, shift: %d\n", xsd->vi.red_mask,   xsd->red_shift);

@@ -185,11 +185,14 @@ UX11
 	    if (data->gc)
 	    {
 		/* Set the bitmap pixel format in the superclass */
-		set_pixelformat(o, XSD(cl));
+		kprintf("SETTING PIXEL FORMAT FOR PIXMAP\n");
+		if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
+		    ok = FALSE;
+		} else {
 	    
 LX11	    
-	    	XFlush(data->display);
-UX11		
+		    XFlush(data->display);
+UX11		}
 	    }
 	    else
 	    {
@@ -239,6 +242,11 @@ LX11
 	XFlush( GetSysDisplay() );
 UX11
 	
+    }
+    
+    if (BM_PIXFMT(o)) {
+    	DisposeObject((Object *)BM_PIXFMT(o));
+	BM_PIXFMT(o) = NULL;
     }
     
     DoSuperMethod(cl, o, msg);

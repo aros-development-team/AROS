@@ -74,10 +74,6 @@ struct x11_data
     
 };
 
-
-
-
-
 static struct abdescr attrbases[] =
 {
     { NULL, NULL }
@@ -231,12 +227,44 @@ UX11
 }
 #endif
 
-VOID x11task_entry(struct x11task_params *xtp)
+VOID x11task_entry(struct x11task_params *xtpparam)
 {
-    struct x11_staticdata *xsd = xtp->xsd;
-  
+    struct x11_staticdata *xsd;
+    struct MinList nmsg_list;
+    struct MinList xwindowlist;
+    
+    struct x11task_params xtp;
+    
+    
+    /* We must copy the parameter struct because they are allocated
+     on the parent's stack */
+     
+
+
 #if NOUNIXIO
     struct Interrupt myint;
+#else
+    struct MsgPort *unixio_port = NULL;
+    HIDD *unixio = NULL;
+    IPTR ret;
+    ULONG unixiosig;
+    
+    BOOL dounixio = TRUE;
+    
+#endif
+
+    xtp = *xtpparam;
+    xsd = xtp.xsd;
+
+
+    xsd->x11task_notify_port = CreateMsgPort();
+    if (NULL == xsd->x11task_notify_port)
+    	goto failexit;
+	
+    NEWLIST(&nmsg_list);
+    NEWLIST(&xwindowlist);
+  
+#if NOUNIXIO
     
     myint.is_Code         = (APTR)&x11VBlank;
     myint.is_Data         = FindTask(NULL);
@@ -246,48 +274,188 @@ VOID x11task_entry(struct x11task_params *xtp)
 	
     AddIntServer(INTB_VERTB, &myint);
 
-    Signal(xtp->parent, xtp->ok_signal);
+
+    Signal(xtp.parent, xtp.ok_signal);
 
 #else
 
-    HIDD *unixio;
     
     unixio = (HIDD)New_UnixIO(OOPBase);
-    if (unixio)
-    {
-	Signal(xtp->parent, xtp->ok_signal);
-    }
-    else
-    {
-    	Signal(xtp->parent, xtp->fail_signal);
-    }
+    if (unixio) {
+    	unixio_port = CreateMsgPort();
+	if (unixio_port) {
+	    unixiosig = 1L << unixio_port->mp_SigBit;
+	    Signal(xtp.parent, xtp.ok_signal);
+	     
+	} else
+	    goto failexit;
+    } else
+    	goto failexit;
 #endif    
 
     for (;;)
     {
 	XEvent event;
 	
+	struct notify_msg *nmsg;
+	
+	
+	ULONG notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
+	ULONG sigs;
+	
 #if NOUNIXIO
 
-	Wait(SIGBREAKF_CTRL_D);
+	sigs = Wait(SIGBREAKF_CTRL_D | notifysig  |  xtp.kill_signal );
+	
 
 #else	
-        int ret;
+
+
+#if 0
+
 
     	ret = (int)Hidd_UnixIO_Wait( unixio
 			, ConnectionNumber( xsd->display )
 			, vHidd_UnixIO_Read
 			, unixio_callback
-			, (APTR)xsd );
+			, (APTR)xsd
+			, xtp.kill_signal | notifysig );
 			
 			
+#else
+
+	if (dounixio) {
+	     ret = Hidd_UnixIO_AsyncIO(unixio
+		, ConnectionNumber(xsd->display)
+		, unixio_port
+		, vHidd_UnixIO_Read
+	     );
+	
+	    if (0 != ret) {
+	    
+	    	kprintf("ERROR WHEN CALLING UNIXIO: %d\n", ret);
+		dounixio = TRUE;
+		
+	        continue;
+	    } else {
+	    	dounixio = FALSE;
+	    }
+	}
+	
+// kprintf("WAITING FOR SIGS\n");
+	sigs = Wait(notifysig | unixiosig | xtp.kill_signal);			
+// kprintf("GOT SIG\n");
 D(bug("Got input from unixio\n"));
-			
+/*			
 	if (ret != 0)
 	{
 	    continue;
 	}
+	
+	
+*/
+	if (sigs & unixiosig) {
+	     struct uioMessage *uiomsg;
+	     int result;
+	     
+	     uiomsg = (struct uioMessage *)GetMsg(unixio_port);
+	     result = uiomsg->result;
+// kprintf("GOT MSG FROM UNIXIO, result = %d\n", result);
+	     
+	     FreeMem(uiomsg, sizeof (struct uioMessage));
+	     
+	     dounixio = TRUE;
+	     
+	     if (0 != result)
+	     	continue;
+	}
+	
 #endif
+
+
+#endif
+
+	if (sigs & xtp.kill_signal)
+	    goto failexit;
+	
+	
+	if (sigs & notifysig) {
+	    while ((nmsg = (struct notify_msg *)GetMsg(xsd->x11task_notify_port))) {
+		/* Add the messages to an internal list */
+//		kprintf("MEASSAGE RECEIVED\n");
+		
+		switch (nmsg->notify_type) {
+		
+		case NOTY_WINCREATE: {
+		    struct xwinnode * node;
+// kprintf("RECEIVED CREATENOTIFY\n");		    
+		    /* Maintain a list of open windows for the X11 event handler in x11.c */
+		    
+		    node = AllocMem(sizeof (struct xwinnode), MEMF_CLEAR);
+
+		    if (NULL != node) {
+		    
+		    	node->xwindow = nmsg->xwindow;
+		    	AddTail( (struct List *)&xwindowlist, (struct Node *)node );
+			
+		    } else {
+		    	kprintf("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
+		    	kill(getpid(), 19);
+		    }
+		    
+		    ReplyMsg((struct Message *)nmsg);
+		    break; }
+		
+		case NOTY_MAPWINDOW: {
+		    BOOL found = FALSE;
+		    struct xwinnode *node;
+		    
+		    
+		    /* If the window has allready been mapped, then just reply the message */
+		    ForeachNode(&xwindowlist, node) {
+		    	if (nmsg->xwindow == node->xwindow) {
+			    if (node->window_mapped) {
+			    	ReplyMsg((struct Message *)nmsg);
+				found = TRUE;
+			    }
+			}
+		    
+		    }
+		    
+		    if (!found) {
+			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
+			
+		    }
+		    
+		    /* Do not reply message yet */
+		    break; }
+		
+		case NOTY_WINDISPOSE: {
+		    struct xwinnode *node, *safe;
+		    
+		    
+		    ForeachNodeSafe(&xwindowlist, node, safe) {
+		    	if (node->xwindow == nmsg->xwindow) {
+			     Remove((struct Node *)node);
+				
+			     FreeMem(node, sizeof (struct xwinnode));
+			     
+			}
+		    }
+		    
+		    ReplyMsg((struct Message *)nmsg);
+		
+		    break; }
+		    
+		 } /* switch() */
+	    } /* while () */
+	    
+	    continue;
+	    
+	} /* if (message from notify port) */
+
+
+
  	for (;;)	    
 	{
 	    BOOL window_found = FALSE;
@@ -295,33 +463,33 @@ D(bug("Got input from unixio\n"));
 	    int pending;
 
 
+
 LX11	
 D(bug("Calling XPending\n"));
 	    pending = XPending (xsd->display);
 UX11	    
+
+// kprintf("pending: %d\n");
 	    if (pending == 0)
 	    	break;
 
 	
 LX11
-D(bug("Doing XNextEvent\n"));
 	    XNextEvent (xsd->display, &event);
-D(bug("Done XNextEvent()\n"));	    
 UX11
 
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
-	    if (event.type == MappingNotify)
-	    {
+// kprintf("GOT EVENT FROM X: %d\n", event.type);		    
+	    if (event.type == MappingNotify) {
 LX11
-		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
 UX11
-		continue;
+		    continue;
 	    }
 	    
-	    ObtainSemaphoreShared( &xsd->winlistsema );
 	    
-	    ForeachNode( &xsd->xwindowlist, node)
+	    ForeachNode( &xwindowlist, node)
 	    {
 	        if (node->xwindow == event.xany.window)
 		{
@@ -329,9 +497,6 @@ UX11
 		    break;
 		}
 	    }
-	    
-	    ReleaseSemaphore( &xsd->winlistsema );
-	    
 	    
 	    
 	    if (window_found)
@@ -394,6 +559,41 @@ UX11
 
 	    	case LeaveNotify:
 		    break;
+		    
+		case MapNotify: {
+		
+		    XMapEvent *me;
+		    struct notify_msg *nmsg, *safe;
+		    struct xwinnode *node;
+		    
+		    BOOL found = FALSE;
+		    
+		    me = (XMapEvent *)&event;
+		    
+		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
+		    	if (me->window == nmsg->xwindow) {
+			     /*  The window has now been mapped.
+			         Send reply to app */
+				 
+		 	     found = TRUE;
+			     Remove((struct Node *)nmsg);
+			     ReplyMsg((struct Message *)nmsg);
+
+			}
+		    }
+		    
+		    /* Find it in thw window list and mark it as mapped */
+		    
+		    ForeachNode(&xwindowlist, node) {
+		    	if (node->xwindow == me->window) {
+			
+			    node->window_mapped = TRUE;
+			
+			}
+		    }
+		    
+		     
+		    break; }
 
 	        } /* switch (X11 event type) */
 		
@@ -403,6 +603,22 @@ UX11
     	} /* while (events from X)  */
     	
     } /* Forever */
+    
+failexit:
+#warning Also try to free window node list ?
+
+    if (NULL != xsd->x11task_notify_port)
+	DeleteMsgPort(xsd->x11task_notify_port);
+		
+
+#if (!NOUNIXIO)
+    if (NULL != unixio_port)
+    	DeleteMsgPort(unixio_port);
+	
+    if (NULL != unixio)
+    	DisposeObject(unixio);
+#endif
+     Signal(xtp.parent, xtp.fail_signal);
     
 }
 
