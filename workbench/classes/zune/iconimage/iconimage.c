@@ -84,7 +84,7 @@ IPTR IconImage__OM_NEW
     data = INST_DATA(CLASS, self);
     data->iid_DiskObject = diskObject;
 
-    return self;
+    return (IPTR) self;
     
 error:
     return NULL;
