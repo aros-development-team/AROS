@@ -18,9 +18,6 @@
 #include <unistd.h>
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugAROSBase))
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#   define SysBase 	*(void **)4
-#endif
 
 /* Can't use ctypt.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
@@ -89,7 +86,7 @@
 {
     va_list	 ap;
     int 	 ret;
-    AROS_GET_SYSBASE_OK
+    //AROS_GET_SYSBASE_OK
 
 #warning FIXME check the systems and the debug level
     // Check SysBase->DebugAROSBase->DebugConfig
