@@ -29,7 +29,7 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 0
+#define DEBUG 1 
 #include <aros/debug.h>
 
 /* Predefinitions */
@@ -38,7 +38,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 void kbd_updateleds();
 int kbd_reset(void);
-int poll_data(void);
 
 unsigned char handle_kbd_event(void);
 void kb_wait(void);
@@ -209,12 +208,12 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
-    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
+    D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
 	
-        D(bug("Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("Kbd: Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
 	    
         if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
         {
@@ -453,19 +452,15 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         /* Ignore errors and messages for mouse */
         if (!(info & (KBD_STATUS_GTO | KBD_STATUS_PERR | KBD_STATUS_MOUSE_OBF)))
         {
-//          keycode=poll_data();
             keycode = kbd_read_input();
 	
           if (keycode==0xe0)              /* Special key */
           {
 	    keycode = kbd_wait_for_input();
-//            keycode=poll_data();
             if (keycode==0x2a)          /* Shift modifier - we can skip it */
             {
 		keycode = kbd_wait_for_input();
 		keycode = kbd_wait_for_input();
-//                keycode=poll_data();
-//                keycode=poll_data();
             }
             event=0x4000|keycode;   /* set event to send */
             if (event==0x40aa)      /* If you get something like this... */
@@ -483,24 +478,19 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    keycode = kbd_wait_for_input();
 	    keycode = kbd_wait_for_input();
 	    
-//            keycode=poll_data();    /* Read next 5 bytes from keyboard */
-//            keycode=poll_data();    /* This is hack, but I know there is */
-//            keycode=poll_data();    /* Only one key which starts with */
-//            keycode=poll_data();    /* 0xe1 code */
-//            keycode=poll_data();
             event=K_Pause;
         }
         else if (keycode==KBD_REPLY_ACK)
         {
             //return -1;		/* Treat it as NoKey */
-            D(bug("!!! Got Keyboard ACK!!!\n"));
+            D(bug("Kbd: Got Keyboard ACK!!!\n"));
             info = kbd_read_status();
             continue;
         }
         else if (keycode==KBD_REPLY_RESEND)
         {
             /* supposed to resend the command */
-            D(bug("!!! Got Resend command from Keyboard!\n"));
+            D(bug("Kbd: Got Resend command from Keyboard!\n"));
             info = kbd_read_status();
             continue;
         }	
@@ -637,27 +627,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
 #warning This should go somewhere higher but D(bug()) is not possible there
 
-int poll_data(void)
-{
-    int i;
-    unsigned char stat;
-
-    for(i = 100000; i; i--)
-    {
-        stat = kbd_read_status();
-        if(stat & KBD_STATUS_OBF)
-        {
-            unsigned char c;
-
-            mouse_usleep(8);
-            //            TimeDelay(0,0,8);   /* !!! I don't really know if this alib function has any effect on native-i386 yet */
-            c = kbd_read_input();
-            return(c);
-        }
-    }
-    return(-1);
-}
-
 /*
  * Please leave this routine as is for now.
  * It works and that is all that matters right now.
@@ -670,7 +639,6 @@ int kbd_reset(void)
 
     if (kbd_wait_for_input() != 0x55)
     {
-      D(bug("Error! Got reset return value %x.\n",retval));
       return FALSE;
     }
 
@@ -682,7 +650,7 @@ int kbd_reset(void)
     
     kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
 
-    D(bug("Keyboard enabled!\n"));
+    D(bug("Kbd: Keyboard enabled!\n"));
 
     do
     {
@@ -696,7 +664,7 @@ int kbd_reset(void)
 
     if (kbd_wait_for_input() != KBD_REPLY_POR)
         return FALSE;
-    
+   
     do
     {
         kbd_write_output_w(KBD_OUTCMD_DISABLE);
@@ -708,17 +676,27 @@ int kbd_reset(void)
     } while (1);
 
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
+
+#if 0
     kbd_write_output_w( KBD_MODE_KCC 	| // set paramters: scan code to pc conversion, 
     		            KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
 		     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
 		     KBD_MODE_SYS);
+#else
+    kbd_write_output_w( KBD_MODE_KCC | KBD_MODE_KBD_INT);
+#endif
 
     kbd_write_output_w(KBD_OUTCMD_ENABLE);
+
+    D(bug("Kbd: enabled ints\n"));
     
     if (kbd_wait_for_input() != KBD_REPLY_ACK)
+    {
+        D(bug("Kbd: No REPLY_ACK !!!\nReturning FALSE !!!!\n"));
         return FALSE;
+    }
     
-    D(bug("Successfully reset keyboard!\n"));
+    D(bug("Kbd: Successfully reset keyboard!\n"));
 
     return TRUE;
 }
