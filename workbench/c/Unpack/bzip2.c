@@ -121,10 +121,3 @@ error:
 
     return -1;
 }
-
-LONG BZ2_Position( APTR file )
-{
-    struct bzFile *bzf = (struct bzFile *) file;
-    
-    return FILE_Position( bzf->bzf_File );
-}

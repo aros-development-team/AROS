@@ -70,9 +70,3 @@ LONG FILE_Write( BPTR file, CONST_APTR buffer, LONG length )
     
     return written;
 }
-
-LONG FILE_Position( BPTR file )
-{
-    return Seek( file, 0, OFFSET_CURRENT );
-}
-
