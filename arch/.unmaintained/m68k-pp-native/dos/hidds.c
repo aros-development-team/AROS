@@ -8,8 +8,8 @@
 
 #define AROS_USE_OOP
 
-# define  DEBUG  1
-# include <aros/debug.h>
+#define  DEBUG 1
+#include <aros/debug.h>
 
 #include <intuition/intuition.h>
 
@@ -116,8 +116,10 @@ void hidd_demo(struct ExecBase * SysBase)
         struct IntuitionBase *IntuitionBase;
         struct GfxBase *GfxBase;
         struct Window * win = NULL;
-        int x = 0;
-        int y = 0;
+#define XSTART 50
+#define YSTART 50
+        int x = XSTART;
+        int y = YSTART;
 
 
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
@@ -128,8 +130,8 @@ void hidd_demo(struct ExecBase * SysBase)
 	    struct TagItem tags[] = {
 		{WA_Width,			100},
 		{WA_Height,			100},
-		{WA_Left,			50},
-		{WA_Top,			50},
+		{WA_Left,			x},
+		{WA_Top,			y},
 		{WA_MinWidth,                   100},
 		{WA_MinHeight,                  100},
 		{WA_MaxWidth,                   120},
@@ -139,12 +141,8 @@ void hidd_demo(struct ExecBase * SysBase)
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
 		{TAG_DONE,			  0}};
-D(bug("Opening window\n"));
 	    win = OpenWindowTagList(0, tags);
-D(bug("Opened window\n"));
 	}
-
-D(bug("Window okay: win = %x\n", win));
 
         DrawEllipse(win->RPort,160/2-35,120/2-4,80/2,80/2);
         DrawEllipse(win->RPort,185/2-35,90/2-4,15/2,15/2);
@@ -157,33 +155,27 @@ D(bug("Window okay: win = %x\n", win));
 
 	if (win)
 	{
-	  while (x < 50)
+	  while (x < 100)
 	  {
-D(bug("Moving dx=1\n"));
 	    MoveWindow(win,1,0);
 	    x++;
 	  }
-	  
-	  while (y < 50)
+	  while (y < 100)
 	  {
 	    MoveWindow(win,0,1);
 	    y++;
 	  }
-#if 0	  
-	  while (x >= 50)
+	  while (x > XSTART)
 	  {
 	    MoveWindow(win,-1,0);
 	    x--;
 	  }
-	  
-	  while (y >= 50)
+	  while (y > YSTART)
 	  {
 	    MoveWindow(win,0,-1);
 	    y--;
 	  }
-#endif
-	  while(1) {
-	  }
+	  while (1) {}
 	}
 
 #if 0
