@@ -50,7 +50,7 @@ static const char THIS_FILE[] = __FILE__;
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    ASSERT_VALID_PTR(table);
+    ASSERT_VALID_PTR(vp);
     ASSERT_VALID_PTR(table);
 
     driver_LoadRGB32 (vp, table, GfxBase);
