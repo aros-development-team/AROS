@@ -328,6 +328,8 @@ void intui_RefreshWindowFrame(struct Window *w)
     struct RastPort *rp = w->BorderRPort;
     struct DrawInfo *dri;
     struct Gadget *gad;
+    struct Region *old_clipregion;
+    WORD  old_scroll_x, old_scroll_y;
     ULONG ilock;
     UWORD i;
     
@@ -342,11 +344,13 @@ void intui_RefreshWindowFrame(struct Window *w)
 	{
 	    LockLayerRom(rp->Layer);
 
-#if 0
-	    SetAPen(rp, 1);
-	    D(bug("Pen set\n"));
-	    drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
-#endif
+	    old_scroll_x = rp->Layer->Scroll_X;
+	    old_scroll_x = rp->Layer->Scroll_Y;
+	    
+	    rp->Layer->Scroll_X = 0;
+	    rp->Layer->Scroll_Y = 0;
+	    
+	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
 	    
 	    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
 	    if (w->BorderLeft > 0) RectFill(rp, 0, 0, 0, w->Height - 1);
@@ -400,6 +404,11 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    }
 #endif
 
+	    InstallClipRegion(rp->Layer,old_clipregion);
+	    
+	    rp->Layer->Scroll_X = old_scroll_x;
+	    rp->Layer->Scroll_Y = old_scroll_y;
+	    
 	    UnlockLayerRom(rp->Layer);
 
 	    FreeScreenDrawInfo(w->WScreen, dri);
