@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Dos function FindCliProc
+    Desc: Find a CLI process by number
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -26,18 +26,25 @@
 	struct DosLibrary *, DOSBase, 91, Dos)
 
 /*  FUNCTION
+	Find a CLI process by its task number. The number must be greater
+	than 0. 
 
     INPUTS
+	num - The task number of the CLI to find.
 
     RESULT
+	Pointer to the process if found, NULL otherwise.
 
     NOTES
+	Please don't use this function. If you use it, be sure to call
+	Forbid() first.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	Cli(), Forbid(), MaxCli()
 
     INTERNALS
 

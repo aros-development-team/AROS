@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Add a directory to an assign.
     Lang: english
 */
 #include <exec/memory.h>
@@ -26,18 +26,29 @@
 	struct DosLibrary *, DOSBase, 105, Dos)
 
 /*  FUNCTION
+	Create a multi-directory assign, or adds to it if it already was one.
+	Do not use or free the lock after calling this function - it becomes
+	the assign and will be freed by the system when the assign is removed.
 
     INPUTS
+	name - NULL terminated name of the assign.
+	lock - Lock on the assigned directory.
 
     RESULT
+	!=0 success, 0 on failure. IoErr() gives additional information
+	in that case. The lock is not freed on failure.
 
     NOTES
+	This will only work with an assign created with AssignLock() or
+	a resolved AssignLate() assign.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	Lock(), AssignLock(), AssignPath(), AssignLate(), DupLock(),
+	RemAssignList()
 
     INTERNALS
 

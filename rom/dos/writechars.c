@@ -1,23 +1,12 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 00:36:35  ldp
-    Polish
 
-    Revision 1.2  1996/12/09 13:53:51  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.1  1996/12/06 15:19:40  aros
-    Initial revision
-
-
-    Desc:
+    Desc: Writes a buffer to the current output.
     Lang: english
 */
 #include <proto/exec.h>
+#include <dos/dosextens.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -35,10 +24,16 @@
 	struct DosLibrary *, DOSBase, 157, Dos)
 
 /*  FUNCTION
+	Writes the contents of the buffer to the current output stream.
+	The number of bytes written is returned.
 
     INPUTS
+	buf - Buffer to be written.
+	buflen - Size of the buffer in bytes.
 
     RESULT
+	The number of bytes written or EOF on failure. IoErr() gives
+	additional information in that case.
 
     NOTES
 
@@ -47,6 +42,7 @@
     BUGS
 
     SEE ALSO
+	FPuts(), FPutC(), FWrite(), PutStr()
 
     INTERNALS
 
@@ -58,15 +54,13 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-
     ULONG i;
-    BPTR file=((struct Process *)FindTask(NULL))->pr_COS;
+    BPTR file = Output();
 
-    for(i=0;i<buflen;i++)
-	if(FPutC(file,buf[i])<0)
+    for (i = 0; i < buflen; i++)
+	if (FPutC(file, buf[i]) < 0)
 	    return EOF;
 
     return (LONG)i;
-
     AROS_LIBFUNC_EXIT
 } /* WriteChars */

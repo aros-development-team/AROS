@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Sets the prompt for the current CLI.
     Lang: english
 */
 #include <proto/exec.h>
@@ -25,18 +25,25 @@
 	struct DosLibrary *, DOSBase, 97, Dos)
 
 /*  FUNCTION
+	Sets the prompt in the current CLI structure. If the name doesn't
+	fit the old name is kept and a failure is returned. If the current
+	process doesn't have a CLI structure this function does nothing.
 
     INPUTS
+	name - The prompt to be set.
 
     RESULT
+	!=0 on success, 0 on failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	Never copies more than 255 bytes.
 
     SEE ALSO
+	GetPrompt()
 
     INTERNALS
 

@@ -1,22 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 00:36:15  ldp
-    Polish
 
-    Revision 1.2  1996/12/09 13:53:22  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.1  1996/12/05 15:52:23  aros
-    Initial revision
-
-
-    Desc:
+    Desc: Checks for signals in a mask.
     Lang: english
 */
+#include <exec/tasks.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -34,10 +23,15 @@
 	struct DosLibrary *, DOSBase, 132, Dos)
 
 /*  FUNCTION
+	Checks the current task to see if any of the signals specified in
+	the mask have been set. The mask of all signals which were set is
+	returned. The signals specified in the mask will be cleared.
 
     INPUTS
+	mask - The signal mask to check.
 
     RESULT
+	The mask of all signals which were set.
 
     NOTES
 
@@ -63,7 +57,7 @@
     /* Get pointer to current task structure */
     struct Task *me = FindTask(NULL);
 
-    /* Protect the task lists against access by other tasks. */
+    /* Protect the signal mask against access by other tasks. */
     Disable();
 
     /* Get active signals specified in mask */

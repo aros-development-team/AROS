@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Create a late-binding (deferred) assign.
     Lang: english
 */
 #include <exec/memory.h>
@@ -26,10 +26,19 @@
 	struct DosLibrary *, DOSBase, 103, Dos)
 
 /*  FUNCTION
+	Create an assign for the given name, which will be resolved upon the
+	first reference to it. If this succeeds (i.e. the path exists and
+	can be locked) it will be turned into an AssignLock() type assign.
+	This way you can create assigns to unmounted volumes which will only
+	be requested when accessed.
 
     INPUTS
+	name - NULL terminated name of the assign.
+	path - NULL terminated path to be resolved on the first reference.
 
     RESULT
+	!=0 success, 0 on failure. IoErr() gives additional information
+	in that case.
 
     NOTES
 
@@ -38,6 +47,7 @@
     BUGS
 
     SEE ALSO
+	Lock(), AssignAdd(), AssignPath(), AssignLock()
 
     INTERNALS
 

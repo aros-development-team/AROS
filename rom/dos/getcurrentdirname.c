@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Get the name of the current directory.
     Lang: english
 */
 #include <proto/exec.h>
@@ -24,10 +24,19 @@
 	struct DosLibrary *, DOSBase, 94, Dos)
 
 /*  FUNCTION
+	Copies the name of the current directory from the CLI structure
+	into the buffer. If the buffer is too small the name is truncated,
+	and a failure is returned. If the current process doesn't have
+	a CLI structure, a 0 length string is put into the buffer and a
+	failure is returned.
 
     INPUTS
+	buf - Buffer for the name.
+	len - Size of the buffer in bytes.
 
     RESULT
+	!=0 on success, 0 on failure. IoErr() gives additional information
+	in that case.
 
     NOTES
 
@@ -36,6 +45,7 @@
     BUGS
 
     SEE ALSO
+	SetCurrentDirName()
 
     INTERNALS
 

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Sets the name of the current program.
     Lang: english
 */
 #include <proto/exec.h>
@@ -25,18 +25,26 @@
 	struct DosLibrary *, DOSBase, 95, Dos)
 
 /*  FUNCTION
+	Sets the name for the current program in the CLI structure. If the
+	name doesn't fit the old name is kept and a failure is returned.
+	If the current process doesn't have a CLI structure this function
+	does nothing.
 
     INPUTS
+	name - Name for the current program.
 
     RESULT
+	!=0 on success, 0 on failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	Never copies more than 255 bytes.
 
     SEE ALSO
+	GetProgramName()
 
     INTERNALS
 

@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Create a non-binding (path) assign.
     Lang: english
 */
 #include <exec/memory.h>
@@ -26,10 +26,20 @@
 	struct DosLibrary *, DOSBase, 104, Dos)
 
 /*  FUNCTION
+	Create an assign for the given name, which will be resolved upon
+	each reference to it. There will be no permanent lock kept on the
+	specified path. This way you can create assigns to unmounted volumes
+	which will only be requested when accessed. Also, using AssignPath()
+	to assign C: to df0:c would make references go to to df0:c even if
+	you change the disk.
 
     INPUTS
+	name - NULL terminated name of the assign.
+	path - NULL terminated path to be resolved on each reference.
 
     RESULT
+	!=0 success, 0 on failure. IoErr() gives additional information
+	in that case.
 
     NOTES
 
@@ -38,6 +48,7 @@
     BUGS
 
     SEE ALSO
+	AssignAdd(), AssignLock(), AssignLate(), Open()
 
     INTERNALS
 

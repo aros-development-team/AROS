@@ -36,8 +36,7 @@
 
     RESULT
 	!=0 success, 0 on failure. IoErr() gives additional information
-	in that case. The lock is freed on failure and must not be used
-	in that case too.
+	in that case. The lock is not freed on failure.
 
     NOTES
 
