@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 #include "mui.h"
+#include "penspec.h"
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -58,68 +59,23 @@ __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
     LONG retval = -1;
+    struct MUI_PenSpec_intern intern;
     
     if (!spec || !mri || !mri->mri_Colormap) return -1;
 
-    switch(spec->ps_buf[0])
+    if (!zune_pen_spec_to_intern(spec, &intern))
+	return -1;
+    if (!zune_penspec_setup(&intern, mri))
+	return -1;
+    retval = intern.p_pen;
+    if ((retval != -1) && (intern.p_is_allocated))
     {
-    	case PST_MUI:
-	    {
-	    	LONG pen;
-		
-		StrToLong(spec->ps_buf + 1, &pen);
-		
-		if ((pen >= 0) && (pen < MPEN_COUNT))
-		{
-		    retval = mri->mri_Pens[pen];
-		}
-    	    }
-	    break;
-	    
-	case PST_CMAP:
-	    {
-	    	LONG pen;
-		
-		StrToLong(spec->ps_buf + 1, &pen);
-		
-		if (pen < 0) pen = mri->mri_Colormap->Count + pen;
-		if ((pen >= 0) && (pen < mri->mri_Colormap->Count))
-		{
-		    retval = pen;
-		}
-	    }
-	    break;
-	    
-    	case PST_RGB:
-	    {
-	    	struct TagItem obp_tags[] =
-		{
-		    { OBP_FailIfBad, FALSE  },
-		    { TAG_DONE	    	    }
-		};
-		STRPTR s = spec->ps_buf + 1;
-	    	ULONG r, g, b;
-		
-		r = strtoul(s, (char **)&s, 16);
-		s++;
-		g = strtoul(s, (char **)&s, 16);
-		s++;
-		b = strtoul(s, (char **)&s, 16);
-		
-		retval = ObtainBestPenA(mri->mri_Colormap, r, g, b, obp_tags);
-			
-		if (retval != -1)
-		{
-		    /* flag to indicate that ReleasePen() needs to be called
-		       in MUI_ReleasePen() */
+	/* flag to indicate that ReleasePen() needs to be called
+	   in MUI_ReleasePen() */
 		       
-		    retval |= 0x10000;
-		}
-	    }
-	    break;
-	    	    
-    } /* switch(spec->ps_buf[0]) */
-    
+	retval |= 0x10000;
+    }
+
     return retval;
 
     AROS_LIBFUNC_EXIT
