@@ -168,7 +168,10 @@ BEGIN {
 				    lfile="../html/autodocs/" tolower(link) ".html";
 
 				    if (!exists(lfile))
-					line=line "("lfile") " entry;
+				    {
+					#line=line "("lfile") " entry;
+					line=line " " entry;
+				    }
 				    else
 				    {
 					if (match(entry,/,/))
