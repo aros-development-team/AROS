@@ -8,6 +8,7 @@
 #include <sys/time.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /* 
    Yes, I know. This is the ugliest hack you have ever seen.
@@ -31,17 +32,29 @@ void verify( void )
 	{
 	    if (buffer[(foo*512)+bar] != buff2[(foo*512)+bar])
 	    {
-		printf("Mismatch in sector %d\n",bar);
+		printf("Mismatch in sector %d\n",(int)bar);
 	    }
 	}
     }
 }
 
-int main ( void )
+int main ( int argc, char *argv[] )
 {
     ULONG x,y;
     struct timeval tv1,tv2;
     double elapsed;
+    ULONG base;
+
+    if (argc != 2)
+    {
+	printf("Usage: testide <startblock>\n\n");
+	printf("Be warned, this tool WILL irrevocably destroy data on\n");
+	printf("data on the primary master IDE harddisk. Do not run this\n");
+	printf("on a computer holding any important data whatsoever.\n");
+	return 0;
+    }
+
+    base = atoi(argv[1])*512;	
     
     printf("ide.device test tool\n");
     printf("Allocating two 128 KiB buffers\n");
@@ -82,7 +95,7 @@ int main ( void )
     {
 	io->iotd_Req.io_Length = 512;
 	io->iotd_Req.io_Data = (buffer+(x*512));
-	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Offset = (x*512)+base;
 	io->iotd_Req.io_Command = CMD_WRITE;
 	DoIO((struct IORequest *)io);
     }
@@ -92,7 +105,7 @@ int main ( void )
     {
 	io->iotd_Req.io_Length = 512;
 	io->iotd_Req.io_Data = (buff2+(x*512));
-	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Offset = (x*512)+base;
 	io->iotd_Req.io_Command = CMD_READ;
 	DoIO((struct IORequest *)io);
     }
@@ -102,7 +115,7 @@ int main ( void )
     printf("Writing entire buffer\n");
     io->iotd_Req.io_Length = 131072;
     io->iotd_Req.io_Data = buffer;
-    io->iotd_Req.io_Offset = 0;
+    io->iotd_Req.io_Offset = base;
     io->iotd_Req.io_Command = CMD_WRITE;
     DoIO((struct IORequest *)io);
 
@@ -113,7 +126,7 @@ int main ( void )
     {
 	io->iotd_Req.io_Length = 512;
 	io->iotd_Req.io_Data = (buffer+(x*512));
-	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Offset = (x*512)+base;
 	io->iotd_Req.io_Command = CMD_WRITE;
 	DoIO((struct IORequest *)io);
     }
@@ -121,7 +134,7 @@ int main ( void )
     printf("Reading entire buffer\n");
     io->iotd_Req.io_Length = 131072;
     io->iotd_Req.io_Data = buff2;
-    io->iotd_Req.io_Offset = 0;
+    io->iotd_Req.io_Offset = base;
     io->iotd_Req.io_Command = CMD_READ;
     DoIO((struct IORequest *)io);
 
@@ -134,7 +147,7 @@ int main ( void )
     {
 	io->iotd_Req.io_Length = 131072;
 	io->iotd_Req.io_Data = (buffer+(x*512));
-	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Offset = (x*512)+base;
 	io->iotd_Req.io_Command = CMD_READ;
 	DoIO((struct IORequest *)io);
     }
@@ -148,7 +161,7 @@ int main ( void )
     {
 	io->iotd_Req.io_Length = 131072;
 	io->iotd_Req.io_Data = (buffer+(x*512));
-	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Offset = (x*512)+base;
 	io->iotd_Req.io_Command = CMD_WRITE;
 	DoIO((struct IORequest *)io);
     }
@@ -156,5 +169,6 @@ int main ( void )
     elapsed = ((double)(((tv2.tv_sec * 1000000) + tv2.tv_usec) - ((tv1.tv_sec * 1000000) + tv1.tv_usec)))/1000000.;
 
     printf("Wrote 10 MiB in %f seconds (%f MiB/s\n",elapsed,(10/elapsed));
+    return 0;
 }
 
