@@ -1242,7 +1242,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->mad_Flags & MADF_ACTIVE)
     {
-	set(_win(obj), MUIA_Window_ActiveObject, obj);
+	set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
     }
     _flags(obj) |= MADF_SETUP;
 
