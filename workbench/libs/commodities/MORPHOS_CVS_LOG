@@ -1,0 +1,1818 @@
+? MORPHOS_CVS_LOG
+? diffs
+
+RCS file: /home/cvs/morphos/commodities/.cvsignore,v
+Working file: .cvsignore
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/22 00:32:34;  author: nadir;  state: Exp;  lines: +1 -5
+added missing files
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/activatecxobj.c,v
+Working file: activatecxobj.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +19 -7
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/addievents.c,v
+Working file: addievents.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.4
+date: 2002/09/07 21:52:01;  author: cisc;  state: Exp;  lines: +2 -2
+warning fix
+----------------------------
+revision 1.3
+date: 2002/08/21 02:54:25;  author: cisc;  state: Exp;  lines: +7 -33
+Use CopyInputEvent instead of internal crap.
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +12 -8
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/attachcxobj.c,v
+Working file: attachcxobj.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +7 -5
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/clearcxobjerror.c,v
+Working file: clearcxobjerror.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +5 -3
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/Attic/commodities.library.elf,v
+Working file: commodities.library.elf
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/22 13:55:16;  author: emm;  state: dead;  lines: +0 -0
+Removed the binary.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/commodities_endtag.c,v
+Working file: commodities_endtag.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2001/07/22 00:32:34;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/commodities_init.c,v
+Working file: commodities_init.c
+head: 1.11
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 12;	selected revisions: 12
+description:
+----------------------------
+revision 1.11
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +11 -8
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.10
+date: 2002/08/04 12:16:44;  author: zapek;  state: Exp;  lines: +2 -1
+fix, didn't build
+----------------------------
+revision 1.9
+date: 2002/05/09 17:40:52;  author: laire;  state: Exp;  lines: +2 -2
+revision fix
+----------------------------
+revision 1.8
+date: 2002/05/07 16:37:27;  author: laire;  state: Exp;  lines: +9 -5
+extended resident support
+----------------------------
+revision 1.7
+date: 2002/05/07 16:18:55;  author: laire;  state: Exp;  lines: +5 -1
+added __abox__ symbol
+----------------------------
+revision 1.6
+date: 2002/05/07 05:30:15;  author: cisc;  state: Exp;  lines: +2 -2
+compile fixes (and bump date)
+----------------------------
+revision 1.5
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +89 -40
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.4
+date: 2002/05/06 00:13:01;  author: laire;  state: Exp;  lines: +6 -2
+make the old src compiling..no clue if it works yet
+----------------------------
+revision 1.3
+date: 2001/09/23 20:08:46;  author: emm;  state: Exp;  lines: +2 -2
+Ignore CxCustom with NULL function pointer.
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:02;  author: emm;  state: Exp;  lines: +2 -1
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/commodities_inputhandler.c,v
+Working file: commodities_inputhandler.c
+head: 1.13
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 14;	selected revisions: 14
+description:
+----------------------------
+revision 1.13
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.12
+date: 2002/09/07 21:28:39;  author: cisc;  state: Exp;  lines: +7 -1
+Ignore bad filters
+----------------------------
+revision 1.11
+date: 2002/08/29 23:33:33;  author: cisc;  state: Exp;  lines: +7 -6
+fixed SendFunc() debug
+----------------------------
+revision 1.10
+date: 2002/08/21 02:53:35;  author: cisc;  state: Exp;  lines: +20 -14
+Made CopyInputEvent safer and external, and added some debug in the unlikely event of failure.
+----------------------------
+revision 1.9
+date: 2002/08/19 13:33:50;  author: emm;  state: Exp;  lines: +20 -3
+Fixed GoldED's context menu.
+----------------------------
+revision 1.8
+date: 2002/05/07 09:12:40;  author: laire;  state: Exp;  lines: +3 -3
+removed debug..clicktofront works nice now
+----------------------------
+revision 1.7
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +113 -88
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.6
+date: 2002/05/07 00:53:05;  author: laire;  state: Exp;  lines: +41 -5
+a lot debug..for cisc:-)
+----------------------------
+revision 1.5
+date: 2001/09/23 20:08:46;  author: emm;  state: Exp;  lines: +21 -8
+Ignore CxCustom with NULL function pointer.
+----------------------------
+revision 1.4
+date: 2001/09/20 18:58:44;  author: emm;  state: Exp;  lines: +3 -2
+Pass CxBase to CxCustom functions in a6. Seems to help with weird crashes.
+----------------------------
+revision 1.3
+date: 2001/07/27 18:31:17;  author: emm;  state: Exp;  lines: +43 -88
+Fixed some routing problems.
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:03;  author: emm;  state: Exp;  lines: +15 -2
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/createcxobj.c,v
+Working file: createcxobj.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.6
+date: 2002/11/16 12:37:17;  author: steger;  state: Exp;  lines: +4 -4
+in BrokerFunc() subtract 1 from CBD_NAMELEN/CBD_TITLELEN/CBD_DESCRLEN
+when calling strncpy, to make sure dest string is always 0-terminated.
+----------------------------
+revision 1.5
+date: 2002/06/13 19:46:39;  author: cisc;  state: Exp;  lines: +2 -2
+Removed totally wrong behaviour of obsolete, undocumented (and unused?) CX_TYPEFILTER...
+----------------------------
+revision 1.4
+date: 2002/05/07 05:52:31;  author: cisc;  state: Exp;  lines: +3 -6
+Copy the InputXpression struct instead of just assigning the pointer (is this correct?)...
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +7 -5
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:03;  author: emm;  state: Exp;  lines: +7 -1
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxbroker.c,v
+Working file: cxbroker.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +37 -22
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:35;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:35;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxintern.h,v
+Working file: cxintern.h
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +5 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.4
+date: 2002/05/07 05:30:15;  author: cisc;  state: Exp;  lines: +26 -31
+compile fixes (and bump date)
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +22 -8
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:04;  author: emm;  state: Exp;  lines: +15 -1
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxmsgdata.c,v
+Working file: cxmsgdata.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxmsgid.c,v
+Working file: cxmsgid.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxmsgtype.c,v
+Working file: cxmsgtype.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxnotify.c,v
+Working file: cxnotify.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +17 -8
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/09/23 20:08:46;  author: emm;  state: Exp;  lines: +2 -2
+Ignore CxCustom with NULL function pointer.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxobjerror.c,v
+Working file: cxobjerror.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxobjtype.c,v
+Working file: cxobjtype.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +3 -3
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/cxparse.doc,v
+Working file: cxparse.doc
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/deletecxobj.c,v
+Working file: deletecxobj.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +5 -3
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/deletecxobjall.c,v
+Working file: deletecxobjall.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +6 -4
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/disposecxmsg.c,v
+Working file: disposecxmsg.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/divertcxmsg.c,v
+Working file: divertcxmsg.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +5 -3
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/enqueuecxobj.c,v
+Working file: enqueuecxobj.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +6 -4
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/eventfuncs.c,v
+Working file: eventfuncs.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/05/07 04:07:27;  author: cisc;  state: Exp;  lines: +5 -20
+Reworked CX_OBJECT allocation, and fixed SetFilterIX().
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +28 -18
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:33;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/findbroker.c,v
+Working file: findbroker.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2001/07/24 16:17:04;  author: emm;  state: Exp;
+Added missing function (sort of).
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/freebrokerlist.c,v
+Working file: freebrokerlist.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 13:59:43;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +11 -6
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:04;  author: emm;  state: Exp;  lines: +4 -4
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/functable.c,v
+Working file: functable.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.3
+date: 2002/05/07 01:52:25;  author: cisc;  state: Exp;  lines: +5 -8
+Added missing private dummy-offsets...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:05;  author: emm;  state: Exp;  lines: +2 -1
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/22 00:32:34;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/getbrokerlist.c,v
+Working file: getbrokerlist.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +22 -14
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:05;  author: emm;  state: Exp;  lines: +11 -11
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/headers.tmpl,v
+Working file: headers.tmpl
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/insertcxobj.c,v
+Working file: insertcxobj.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +9 -9
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/invertkeymap.c,v
+Working file: invertkeymap.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +27 -23
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/lib.conf,v
+Working file: lib.conf
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:06;  author: emm;  state: Exp;  lines: +1 -1
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/libdefs.h,v
+Working file: libdefs.h
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.5
+date: 2002/09/07 21:29:15;  author: cisc;  state: Exp;  lines: +1 -1
+bump date
+----------------------------
+revision 1.4
+date: 2002/08/21 02:54:53;  author: cisc;  state: Exp;  lines: +1 -1
+Bump date.
+----------------------------
+revision 1.3
+date: 2002/05/07 05:30:15;  author: cisc;  state: Exp;  lines: +1 -1
+compile fixes (and bump date)
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:06;  author: emm;  state: Exp;  lines: +3 -3
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/22 00:32:35;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/makefile,v
+Working file: makefile
+head: 1.10
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 11;	selected revisions: 11
+description:
+----------------------------
+revision 1.10
+date: 2002/12/15 15:39:42;  author: piru;  state: Exp;  lines: +5 -2
+fixed install target, added .PHONY:.
+----------------------------
+revision 1.9
+date: 2002/11/16 19:17:35;  author: piru;  state: Exp;  lines: +1 -1
+Added -Wall, helps findind those stupid bugs.
+----------------------------
+revision 1.8
+date: 2002/09/23 18:53:07;  author: emm;  state: Exp;  lines: +6 -5
+Optimized dependencies.
+----------------------------
+revision 1.7
+date: 2002/09/23 17:09:19;  author: laire;  state: Exp;  lines: +1 -0
+added another dependency:-)
+----------------------------
+revision 1.6
+date: 2002/09/23 17:08:50;  author: laire;  state: Exp;  lines: +101 -67
+added dependencies
+----------------------------
+revision 1.5
+date: 2002/08/21 02:54:42;  author: cisc;  state: Exp;  lines: +1 -1
+Use better linklibs.
+----------------------------
+revision 1.4
+date: 2002/05/07 16:18:55;  author: laire;  state: Exp;  lines: +2 -1
+added __abox__ symbol
+----------------------------
+revision 1.3
+date: 2002/05/06 00:13:01;  author: laire;  state: Exp;  lines: +4 -4
+make the old src compiling..no clue if it works yet
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:07;  author: emm;  state: Exp;  lines: +26 -24
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:34;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/matchix.c,v
+Working file: matchix.c
+head: 1.8
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 9;	selected revisions: 9
+description:
+----------------------------
+revision 1.8
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.7
+date: 2002/09/08 00:09:57;  author: cisc;  state: Exp;  lines: +2 -2
+Bah, IECLASS_NULL will always match.
+----------------------------
+revision 1.6
+date: 2002/09/07 23:37:29;  author: cisc;  state: Exp;  lines: +3 -3
+Don't match IECLASS_NULL
+----------------------------
+revision 1.5
+date: 2002/05/07 09:12:40;  author: laire;  state: Exp;  lines: +2 -2
+removed debug..clicktofront works nice now
+----------------------------
+revision 1.4
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +23 -16
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.3
+date: 2002/05/07 00:53:05;  author: laire;  state: Exp;  lines: +6 -4
+a lot debug..for cisc:-)
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:07;  author: emm;  state: Exp;  lines: +33 -9
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/mmakefile.src,v
+Working file: mmakefile.src
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/parse.h,v
+Working file: parse.h
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +2 -3
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/09/23 15:30:29;  author: emm;  state: Exp;  lines: +10 -1
+Added new key codes for pc105 keyboards.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/parseix.c,v
+Working file: parseix.c
+head: 1.8
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 9;	selected revisions: 9
+description:
+----------------------------
+revision 1.8
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +27 -27
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.7
+date: 2002/09/08 00:22:39;  author: cisc;  state: Exp;  lines: +3 -0
+It's caller's responsibility to set ix_Version
+----------------------------
+revision 1.6
+date: 2002/09/08 00:09:57;  author: cisc;  state: Exp;  lines: +1 -2
+Bah, IECLASS_NULL will always match.
+----------------------------
+revision 1.5
+date: 2002/09/07 23:36:27;  author: cisc;  state: Exp;  lines: +2 -1
+Set ix_Class to IECLASS_NULL if desc is NULL
+----------------------------
+revision 1.4
+date: 2002/09/07 09:00:45;  author: emm;  state: Exp;  lines: +26 -25
+ParseIX() didn't set the ix_Version field.
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +71 -38
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/07/24 16:16:08;  author: emm;  state: Exp;  lines: +26 -4
+Fixed some bugs.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:28;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/removecxobj.c,v
+Working file: removecxobj.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.3
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +17 -8
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.2
+date: 2001/08/21 00:20:04;  author: emm;  state: Exp;  lines: +3 -2
+Improved RemoveCxObj's safety.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/routecxmsg.c,v
+Working file: routecxmsg.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +2 -2
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/setcxobjpri.c,v
+Working file: setcxobjpri.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +6 -3
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/setfilter.c,v
+Working file: setfilter.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.4
+date: 2002/09/07 23:35:40;  author: cisc;  state: Exp;  lines: +6 -2
+Don't set COERR_BADFILTER if ParseIX() returns -2
+----------------------------
+revision 1.3
+date: 2002/09/07 22:42:56;  author: cisc;  state: Exp;  lines: +4 -1
+More bad filter debug.
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +14 -6
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:31;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/setfilterix.c,v
+Working file: setfilterix.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +1 -1
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.4
+date: 2002/09/07 21:05:54;  author: cisc;  state: Exp;  lines: +4 -1
+Add debug for wrong ix_Version (should never happen).
+----------------------------
+revision 1.3
+date: 2002/05/07 04:07:27;  author: cisc;  state: Exp;  lines: +3 -2
+Reworked CX_OBJECT allocation, and fixed SetFilterIX().
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +12 -6
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/settranslate.c,v
+Working file: settranslate.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 13:59:44;  author: steger;  state: Exp;  lines: +0 -0
+sync with AROS code. No change to your code, except in
+commodities_init.c
+----------------------------
+revision 1.2
+date: 2002/05/07 02:39:34;  author: cisc;  state: Exp;  lines: +10 -4
+Merged with AROS January archive srcs...
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:30;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/amiga.h,v
+Working file: aros/amiga.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:50;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:50;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/asmcall.h,v
+Working file: aros/asmcall.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:41;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:41;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/config.h,v
+Working file: aros/config.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:50;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:50;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/debug.h,v
+Working file: aros/debug.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:44;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:44;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/libcall.h,v
+Working file: aros/libcall.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/05/07 05:30:16;  author: cisc;  state: Exp;  lines: +6 -4
+compile fixes (and bump date)
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/machine.h,v
+Working file: aros/machine.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:49;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:49;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/options.h,v
+Working file: aros/options.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/aros/system.h,v
+Working file: aros/system.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:47;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/clib/commodities_protos.h,v
+Working file: clib/commodities_protos.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/05/07 05:30:16;  author: cisc;  state: Exp;  lines: +0 -7
+compile fixes (and bump date)
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:39;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:39;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/fd/commodities.fd,v
+Working file: fd/commodities.fd
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/libraries/commodities.h,v
+Working file: libraries/commodities.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:39;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:39;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/commodities/ppcinline/commodities.h,v
+Working file: ppcinline/commodities.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:30:38;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
