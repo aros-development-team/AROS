@@ -30,9 +30,9 @@
 #include <proto/layers.h>
 #include "text_intern.h"
 
+#ifndef __AROS__
 #include "libdefs.h"
 
-#ifndef __AROS__
 #ifndef __MORPHOS__
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
