@@ -142,7 +142,13 @@ void execute_open_with_command(BPTR cd, char *contents)
 **************************************************************************/
 VOID execute_open(STRPTR *cdptr)
 {
-    execute_open_with_command(cdptr != NULL ? Lock(*cdptr, SHARED_LOCK) : NULL, NULL);
+    BPTR lock = NULL;
+    
+    if (cdptr != NULL) lock = Lock(*cdptr, SHARED_LOCK);
+    
+    execute_open_with_command(lock, NULL);
+    
+    if (lock) UnLock(lock);
 }
 
 /*******************************/
