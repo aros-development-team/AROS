@@ -1,12 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Init of icon.library
-    Lang: english
 */
-
-/****************************************************************************************/
 
 #define SAVEDS
 #include <utility/utility.h> /* this must be before icon_intern.h */
@@ -34,7 +30,6 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
-#undef kprintf
 
 #undef DOSBase
 #undef SysBase
@@ -55,26 +50,36 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     LONG i;
     
     SysBase = lh->ib_SysBase;
-
-    DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39);
-    if (!DOSBase)
+    // FIXME: doesn't free resources if init fails...
+    
+    if (!(DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39)))
+    {
 	return FALSE;
-
-    LB(lh)->utilitybase = OpenLibrary (UTILITYNAME, 39);
-    if (!LB(lh)->utilitybase)
-	return NULL;
-
-    LB(lh)->intuitionbase = (IntuitionBase_T *)OpenLibrary("intuition.library", 39);
-    if (!LB(lh)->intuitionbase)
-	return NULL;
-
-    /* Following libraries needed only for 3.5 style icons. If
-       the libraries cannot be opened, we simply don't support
-       3.5 icons */
+    }
+    
+    if (!(LB(lh)->ib_UtilityBase = OpenLibrary (UTILITYNAME, 39)))
+    {
+        return FALSE;
+    }
+    
+    if (!(LB(lh)->ib_IntuitionBase = OpenLibrary("intuition.library", 39)))
+    {
+        return FALSE;
+    }
+    
+    if (!(LB(lh)->ib_DataTypesBase = OpenLibrary("datatypes.library", 41)))
+    {
+        return FALSE;
+    }
+    
+    /* 
+        Following libraries needed only for 3.5 style icons. If the libraries
+        cannot be opened, we simply don't support 3.5 icons.
+    */
        
-    LB(lh)->iffparsebase = OpenLibrary("iffparse.library", 39);
-    LB(lh)->gfxbase      = (GfxBase_T *)OpenLibrary("graphics.library", 39);
-    LB(lh)->cybergfxbase = OpenLibrary("cybergraphics.library", 39);
+    LB(lh)->ib_IFFParseBase = OpenLibrary("iffparse.library", 39);
+    LB(lh)->ib_GfxBase      = OpenLibrary("graphics.library", 39);
+    LB(lh)->ib_CyberGfxBase = OpenLibrary("cybergraphics.library", 39);
 
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = lh;
@@ -88,29 +93,14 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     return TRUE;
 }
 
-/****************************************************************************************/
-
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (DOSBase)
-	CloseLibrary ((struct Library *)DOSBase);
+	CloseLibrary((struct Library *) DOSBase);
 
-    if (LB(lh)->gfxbase)
-    	CloseLibrary ((struct Library *)LB(lh)->gfxbase);
-	
-    if (LB(lh)->iffparsebase)
-    	CloseLibrary (LB(lh)->iffparsebase);
-	
-    if (LB(lh)->cybergfxbase)
-    	CloseLibrary (LB(lh)->cybergfxbase);
-	
-    if (LB(lh)->intuitionbase)
-	CloseLibrary ((struct Library *)LB(lh)->intuitionbase);
-
-    if (LB(lh)->utilitybase)
-	CloseLibrary (LB(lh)->utilitybase);
-
+    if (LB(lh)->ib_GfxBase)       CloseLibrary(LB(lh)->ib_GfxBase);
+    if (LB(lh)->ib_IFFParseBase)  CloseLibrary(LB(lh)->ib_IFFParseBase);
+    if (LB(lh)->ib_CyberGfxBase)  CloseLibrary(LB(lh)->ib_CyberGfxBase);
+    if (LB(lh)->ib_IntuitionBase) CloseLibrary(LB(lh)->ib_IntuitionBase);
+    if (LB(lh)->ib_UtilityBase)   CloseLibrary(LB(lh)->ib_UtilityBase);
 }
-
-/****************************************************************************************/
-

@@ -1,10 +1,10 @@
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
-*/
-
 #ifndef ICON_INTERN_H
 #define ICON_INTERN_H
+
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 /* Include files */
 #ifndef CLIB_ALIB_PROTOS_H
@@ -79,8 +79,10 @@
 
 /****************************************************************************************/
 
-/* To get right alignment we make our very own memlist structur
-Look at the original struct MemList in exec/memory.h to see why */
+/* 
+    To get right alignment we make our very own memlist structure.
+    Look at the original struct MemList in <exec/memory.h> to see why. 
+*/
 
 struct IconInternalMemList
 {
@@ -137,19 +139,19 @@ struct NativeIcon
 
 struct IconBase
 {
-    struct Library   	     LibNode;
-    BPTR	     	     ib_SegList;
-    struct ExecBase  	    *ib_SysBase;
-
-    struct Library  	    *utilitybase;
-    struct Hook       	     dsh;
-    struct IntuitionBase    *intuitionbase;
-    struct Library  	    *iffparsebase;
-    struct GfxBase  	    *gfxbase;
-    struct Library  	    *cybergfxbase;
+    struct Library          LibNode;
+    BPTR                    ib_SegList;
+    struct ExecBase        *ib_SysBase;
+    struct Library         *ib_UtilityBase;
+    struct Library         *ib_IntuitionBase;
+    struct Library         *ib_IFFParseBase;
+    struct Library         *ib_GfxBase;
+    struct Library         *ib_CyberGfxBase;
+    struct Library         *ib_DataTypesBase;
     
-    struct SignalSemaphore   iconlistlock;
-    struct MinList  	     iconlists[ICONLIST_HASHSIZE];
+    struct Hook             dsh;
+    struct SignalSemaphore  iconlistlock;
+    struct MinList          iconlists[ICONLIST_HASHSIZE];
 };
 
 typedef struct IconBase IconBase_T;
@@ -175,27 +177,15 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, 
 BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 
-/****************************************************************************************/
 
-typedef struct IntuitionBase IntuitionBase_T;
-typedef struct GfxBase GfxBase_T;
+#define LB(ib)          ((struct IconBase *) (ib))
 
-#define LB(icon)        ((IconBase_T *)icon)
-#undef UtilityBase
-#define UtilityBase	(((IconBase_T *)IconBase)->utilitybase)
+#define UtilityBase     (((struct IconBase *) IconBase)->ib_UtilityBase)
+#define IFFParseBase    (((struct IconBase *) IconBase)->ib_IFFParseBase)
+#define CyberGfxBase    (((struct IconBase *) IconBase)->ib_CyberGfxBase)
+#define DataTypesBase   (((struct IconBase *) IconBase)->ib_DataTypesBase)
+#define IntuitionBase   ((struct IntuitionBase *) ((struct IconBase *) IconBase)->ib_IntuitionBase)
+#define GfxBase	        ((struct GfxBase *)       ((struct IconBase *) IconBase)->ib_GfxBase)
 
-#undef IntuitionBase
-#define IntuitionBase	(((IconBase_T *)IconBase)->intuitionbase)
-
-#undef IFFParseBase
-#define IFFParseBase	(((IconBase_T *)IconBase)->iffparsebase)
-
-#undef CyberGfxBase
-#define CyberGfxBase	(((IconBase_T *)IconBase)->cybergfxbase)
-
-#undef GfxBase
-#define GfxBase	    	(((IconBase_T *)IconBase)->gfxbase)
-
-/****************************************************************************************/
 
 #endif /* ICON_INTERN_H */
