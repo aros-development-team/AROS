@@ -13,6 +13,10 @@
 #   include <exec/interrupts.h>
 #endif
 
+#ifndef EXEC_EXECBASE_H
+#   include <exec/execbase.h>
+#endif
+
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
@@ -112,8 +116,8 @@ struct GfxBase
     struct SignalSemaphore * ActiViewCprSemaphore;
 
 /* Library Bases */
-    ULONG * UtilBase;
-    ULONG * ExecBase;
+    struct Library *UtilBase;
+    struct SysBase *ExecBase;
 
     BYTE  * bwshifts;
     UWORD * StrtFetchMasks;
