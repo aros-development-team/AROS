@@ -274,9 +274,9 @@ $(GENMODULE) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
 $(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
 	cd $(TOP)/tools/cxref ; aclocal ; autoconf
 
-$(TOP)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure \
-		$(TOP)/tools/cxref/Makefile.in
-	cd $(TOP)/tools/cxref ; ./configure --prefix=$(TOOLDIR)
+$(TOP)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure $(TOP)/tools/cxref/Makefile.in
+	cd $(TOP)/tools/cxref ; \
+	CFLAGS='' ./configure --prefix=$(TOOLDIR)
 
 $(CXREF): $(TOP)/tools/cxref/*.[ch] $(TOP)/tools/cxref/cpp/*.[ch] $(TOP)/tools/cxref/query/*.[ch] \
 		$(TOP)/tools/cxref/Makefile
