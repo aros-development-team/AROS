@@ -194,8 +194,15 @@ BEGIN {
     if(arg[narg - 3] ~ /struct[ \t]+TagItem[ \t]*\*/)
     {
         tagsName = fname;
-        sub(/TagList$/, "Tags", tagsName);
-        sub(/A$/, "", tagsName);
+        if(tagsName ~ /TagList$|A$/)
+        {
+            sub(/TagList$/, "Tags", tagsName);
+            sub(/A$/, "", tagsName);
+        }
+        else
+        {
+            tagsName = tagsName "Tags"
+        }
 
         print "#ifndef NO_INLINE_STDARG";
         printf "#define " tagsName "(";
