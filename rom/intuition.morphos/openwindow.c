@@ -848,8 +848,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
     w->MaxHeight = (nw.MaxHeight != 0) ? nw.MaxHeight : w->Height;
 
     //jDc: tested behavior of intuition68k
-    if (w->MaxWidth < w->Width) w->MaxWidth = w->Width;
-    if (w->MaxHeight < w->Height) w->MaxHeight = w->Height;
+    if ((UWORD)w->MaxWidth < w->Width) w->MaxWidth = w->Width;
+    if ((UWORD)w->MaxHeight < w->Height) w->MaxHeight = w->Height;
 
     /* check if maxwidth/height is not bigger than screen */
     if (w->MaxWidth > w->WScreen->Width) w->MaxWidth = w->WScreen->Width;
