@@ -27,7 +27,7 @@ BOOT_TAR_FILES := \
     Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
     Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
     Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
-    Libs/reqtools.library Libs/muimaster.library \
+    Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale/Countries Locale/Languages \
     Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
     Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive \
