@@ -21,6 +21,7 @@
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
+#include <graphics/regions.h>
 #include <proto/graphics.h>
 #include <utility/utility.h>
 #include "graphics_intern.h"
@@ -103,7 +104,17 @@ AROS_LH2(struct LIBBASETYPE *, init,
     SysBase = sysBase;
     
     NEWLIST(&LIBBASE->TextFonts);
-    InitSemaphore( &((struct GfxBase_intern *)GfxBase)->tfe_hashtab_sema );
+    InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
+
+#if REGIONS_USE_MEMPOOL
+    InitSemaphore( &PrivGBase(GfxBase)->regionsem );
+    if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
+    	    	    	    	    	    	      sizeof(struct RegionRectangle) * 20,
+    	    	    	    	    	    	      sizeof(struct RegionRectangle) * 20)))
+    {
+    	return NULL;
+    }
+#endif
 
     Disable();
     if (!driver_init (LIBBASE))

@@ -54,7 +54,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *new = AllocMem(sizeof(struct Region), MEMF_ANY);
+    struct Region *new;
+
+#if REGIONS_USE_MEMPOOL
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+    new = AllocPooled(PrivGBase(GfxBase)->regionpool, sizeof(struct Region));
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+#else    
+    new = AllocMem(sizeof(struct Region), MEMF_ANY);
+#endif
  
     if (new) InitRegion(new);
 
