@@ -11,6 +11,77 @@
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 
+#include <stdarg.h>
+
+#define align_arg(ptr, type) \
+    ((APTR)(((IPTR)ptr + __alignof__(type) - 1) & ~(__alignof__(type) - 1)))
+
+#define stack_arg(DataStream, type)           \
+({                                            \
+    DataStream = align_arg(DataStream, type); \
+                                              \
+    *(((type *)DataStream)++);                \
+})
+
+/* Macro to fetch the data from the stream. The stream can either be a
+   va_list or stack memory. Variables are put on the stack following
+   the default argument promotion rule of the C standard, which states that:
+
+       "types char and short int are promoted to int, and float is promoted
+        to double" (http://www.eskimo.com/~scs/C-faq/q15.2.html)
+
+   That rule directly translates into relations on types sizes, rather
+   than the types themselves, since sizeof(char) and sizeof(short) is always
+   less than or equal to sizeof(int), and sizeof(float) is always less than
+   or equal to sizeof(double). In addition, we also handle the case of
+   sizeof(long), whilst the sizeof(double) case is not handled for two reasons:
+
+       1) RawDoFmt() doesn't handle floating point values.
+       2) Given (1), sizeof(type) > sizeof(long) would hold true if
+          and only if type were a 64 bit pointer and long's and pointers
+	  had different sizes (quite unusual).
+
+   This code assumes that alignment requirements are decided only on
+   the basis of the type sizes, without considering the types themselves:
+   whether this is a safe assumption, I really don't know, I just know
+   that for now it works :-).  */
+
+#define fetch_arg(DataStream, type)                                     \
+({                                                                      \
+    type res;                                                           \
+                                                                        \
+    if (sizeof(type) <= sizeof(int))                                    \
+    {                                                                   \
+        if (in_va_list)                                                 \
+	    res = (type)va_arg((*(va_list *)DataStream), int);          \
+	else                                                            \
+	    res = (type)stack_arg((DataStream), int);                   \
+    }                                                                   \
+    else                                                                \
+    if (sizeof(type) == sizeof(long))                                   \
+    {                                                                   \
+        if (in_va_list)                                                 \
+	    res = (type)va_arg((*(va_list *)DataStream), long);         \
+	else                                                            \
+	    res = (type)stack_arg((DataStream), long);                  \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        if (in_va_list)                                                 \
+	    res = (type)(IPTR)va_arg((*(va_list *)DataStream), void *); \
+	else                                                            \
+	    res = (type)(IPTR)stack_arg((DataStream), void *);          \
+    }                                                                   \
+                                                                        \
+    res;                                                                \
+})
+
+#define PutCh(ch, data)           \
+    AROS_UFC2(void, PutChProc,    \
+    AROS_UFCA(UBYTE, (ch),   D0), \
+    AROS_UFCA(APTR , (data), A3)) \
+
+#define FIX_EXEC_BUGS 0
 /*****************************************************************************
 
     NAME */
@@ -31,7 +102,7 @@
 
     INPUTS
 	FormatString - Pointer to the format string with any of the following
-		       stream formatting options allowed:
+		       DataStream formatting options allowed:
 
 		       %[leftalign][minwidth.][maxwidth][size][type]
 
@@ -44,9 +115,25 @@
 				       byte count followed by the characters.
 				   'c' single character.
 				   'd' signed decimal number.
-				   's' C string. NUL terminated.
+				   's' C string. NULL terminated.
 				   'u' unsigned decimal number.
 				   'x' unsigned sedecimal number.
+
+		       As an AROS extension, the following special options
+		       are allowed:
+
+		       %[type]
+
+		       type - 'v' means that the current data in the DataStream is a pointer
+		                  to a va_list type, as defined in <stdarg.h>.
+
+			          From this point on the data is fetched from the va_list
+			          and not from the original DataStream array anymore.
+
+			          If the pointer is NULL, however, then nothing changes
+				  and data fetching proceeds as if no %v had been specified
+				  at all.
+
 
 	DataStream   - Array of the data items.
 	PutChProc    - Callback function. Called for each character, including
@@ -80,17 +167,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    /* Cast for easier access */
-    ULONG stream=(IPTR)DataStream;
-#ifdef __mc68000__
-# ifdef __DONT_UNDERSTAND__ASM__
-    register APTR pdata = PutChData;
-# else
-    register APTR pdata __asm(A3) = PutChData;
-# endif
-#else
-#   define pdata PutChData
-#endif
+
+    int in_va_list = 0;
 
     /* As long as there is something to format left */
     while(*FormatString)
@@ -151,7 +229,7 @@
 		    minwidth=minwidth*10+(*FormatString++-'0');
 		} while(*FormatString>='0'&&*FormatString<='9');
 	    }
-	    
+
 	    /* Dot following width modifier? */
 	    if(*FormatString=='.')
 	    {
@@ -165,7 +243,7 @@
 		    while(*FormatString>='0'&&*FormatString<='9');
 		}
 	    }
-	
+
 	    /* 'l' modifier? (long argument) */
 	    if(*FormatString=='l')
 		larg=*FormatString++;
@@ -175,14 +253,12 @@
 	    {
 		/* BCPL string */
 		case 'b':
-		    /* Get address, but align datastream first */
-		    if(AROS_LONGALIGN>AROS_WORDALIGN)
-			stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
-		    buf=(UBYTE *)BADDR(*(BPTR *)stream);
-		    stream+=sizeof(BPTR);
+    __asm__ __volatile__ ("nop\n");
+		    buf = BADDR(fetch_arg(DataStream, BPTR));
+    __asm__ __volatile__ ("nop\n"); 
 
 		    /* Set width */
-		    width=*buf++;
+		    width = *buf++;
 
 		    /* Strings may be modified with the maxwidth modifier */
 		    if(width>maxwidth)
@@ -199,15 +275,11 @@
 			/* Get value */
 			if(larg)
 			{
-			    /* Align datastream */
-			    if(AROS_LONGALIGN>AROS_WORDALIGN)
-				stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
 			    /*
 				For longs reading signed and unsigned
 				doesn't make a difference.
 			    */
-			    n=*(ULONG *)stream;
-			    stream+=sizeof(ULONG);
+			    n = fetch_arg(DataStream, ULONG);
 
 			    /* But for words it may do. */
 			}else
@@ -215,19 +287,10 @@
 				Sorry - it may not: Stupid exec always treats
 				UWORD as WORD even when 'u' is used.
 			    */
-#ifdef FIX_EXEC_BUGS
-			    if(*FormatString=='d')
-#else
-			    if(1)
-#endif
-			    {
-				n=*(WORD *)stream;
-				stream+=sizeof(WORD);
-			    }else
-			    {
-				n=*(UWORD *)stream;
-				stream+=sizeof(UWORD);
-			    }
+			    if((FIX_EXEC_BUGS && *FormatString=='d') || !FIX_EXEC_BUGS)
+			        n = fetch_arg(DataStream, WORD);
+			    else
+			        n = fetch_arg(DataStream, WORD);
 
 			/* Negative number? */
 			if(*FormatString=='d'&&(LONG)n<0)
@@ -252,7 +315,7 @@
 			}
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-		    /* 
+		    /*
 			If maxwidth is set (illegal for numbers), assume they
 			forgot the '.' (Example: C:Avail)
 		    */
@@ -270,17 +333,9 @@
 
 			/* Get value */
 			if(larg)
-			{
-			    /* Align datastream */
-			    if(AROS_LONGALIGN>AROS_WORDALIGN)
-				stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
-			    n=*(ULONG *)stream;
-			    stream+=sizeof(ULONG);
-			}else
-			{
-			    n=*(UWORD *)stream;
-			    stream+=sizeof(UWORD);
-			}
+			    n = fetch_arg(DataStream, ULONG);
+			else
+			    n = fetch_arg(DataStream, UWORD);
 
 			/* Convert to ASCII */
 			{
@@ -310,12 +365,7 @@
 		    {
 			UBYTE *buffer;
 
-			/* Get address, but align datastream first */
-			if(AROS_PTRALIGN>AROS_WORDALIGN)
-			    stream = (stream+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1);
-		
-                  	buf     = *(UBYTE **)stream;
-			stream +=  sizeof(UBYTE *);
+			buf = fetch_arg(DataStream, UBYTE *);
 
                         if (!buf)
                         {
@@ -346,16 +396,10 @@
 		    /* Get value */
 		    if(larg)
 		    {
-			/* Align datastream */
-			if(AROS_LONGALIGN>AROS_WORDALIGN)
-			    stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
-			*buf=*(ULONG *)stream;
-			stream+=sizeof(ULONG);
-			
+			*buf = fetch_arg(DataStream, ULONG);
 		    }else
 		    {
-			*buf=*(UWORD *)stream;
-			stream+=sizeof(UWORD);
+			*buf = fetch_arg(DataStream, UWORD);
 		    }
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    if (maxwidth != ~0)
@@ -402,72 +446,42 @@
 		Stupid exec always prints the '-' sign directly before
 		the decimals. Even if the pad character is a '0'.
 	    */
-#ifdef FIX_EXEC_BUGS
+
 	    /* Print '-' (if there is one and the pad character is no space) */
-	    if(minus&&fill!=' ')
-		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(UBYTE, '-'      , D0),
-		   AROS_UFCA(APTR , pdata, A3)
-		);
-#endif
+	    if(FIX_EXEC_BUGS && minus&&fill!=' ')
+	        PutCh('-', PutChData);
+
 	    /* Pad left if not left aligned */
 	    if(!left)
 		for(i=width+minus;i<minwidth;i++)
-		    AROS_UFC2(void, PutChProc,
-		       AROS_UFCA(UBYTE, fill     , D0),
-		       AROS_UFCA(APTR , pdata, A3)
-		    );
+		    PutCh(fill, PutChData);
 
 	    /* Print '-' (if there is one and the pad character is a space) */
-#ifdef FIX_EXEC_BUGS
-	    if(minus&&fill==' ')
-#else
-	    if(minus)
-#endif
-		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(UBYTE, '-'      , D0),
-		   AROS_UFCA(APTR , pdata, A3)
-		);
+	    if(FIX_EXEC_BUGS && (minus&&fill == ' ') || (!FIX_EXEC_BUGS && minus))
+                PutCh('-', PutChData);
 
 	    /* Print body upto width */
-	    for(i=0;i<width;i++)
-	    {
-		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(UBYTE, *buf  , D0),
-		   AROS_UFCA(APTR , pdata , A3)
-		);
-
-		buf++;
-	    }
+	    for(i=0; i<width; i++)
+	        PutCh(*(buf++), PutChData);
 
 	    /* Pad right if left aligned */
 	    if(left)
 		for(i=width+minus;i<minwidth;i++)
 		    /* Pad right with '0'? Sigh - if the user wants to! */
-		    AROS_UFC2(void, PutChProc,
-		       AROS_UFCA(UBYTE, fill      , D0),
-		       AROS_UFCA(APTR , pdata , A3)
-		    );
-
-	}else
+		    PutCh(fill, PutChData);
+	}
+	else
 	{
 	    /* No '%' sign? Put the formatstring out */
-	    AROS_UFC2(void, PutChProc,
-		AROS_UFCA(UBYTE, *FormatString, D0),
-		AROS_UFCA(APTR ,  pdata   , A3)
-	    );
-	    FormatString++;
+	    PutCh(*(FormatString++), PutChData);
 	}
     }
     /* All done. Put the terminator out. */
-    AROS_UFC2(void, PutChProc,
-	AROS_UFCA(UBYTE, '\0'     , D0),
-	AROS_UFCA(APTR , pdata, A3)
-    );
+    PutCh('\0', PutChData);
 
+    /* Return the rest of the DataStream. */
+    return DataStream;
 
-    /* Return the rest of the datastream. */
-    return (APTR)stream;
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
 
