@@ -1,0 +1,111 @@
+## version $VER: serialprefs.catalog 1.0 (23.02.2001)
+## codeset 0
+## language français
+;
+MSG_CANT_OPEN_LIB
+Impossible d'ouvrir %s V%ld !\n
+;
+MSG_CANT_LOCK_SCR
+Impossible de verrouiller l'écran public !
+;
+MSG_CANT_GET_DRI
+Impossible d'obtenir la structure DrawInfo !
+;
+MSG_CANT_GET_VI
+Impossible d'obtenir la structure VisualInfo !
+;
+MSG_CANT_CREATE_GADGET
+Impossible de créer les Gadgets !
+;
+MSG_CANT_CREATE_MENUS
+Impossible de créer les Menus !
+;
+MSG_CANT_CREATE_WIN
+Impossible de créer la fenêtre !
+;
+MSG_WINTITLE
+Préférences des périphériques série (Serial)
+;
+MSG_MEN_PROJECT
+Projet
+;
+MSG_MEN_PROJECT_OPEN
+O\0Ouvrir ...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Sauver sous ...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Quitter
+;
+MSG_MEN_EDIT
+Modifier
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Configuration par défaut
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Dernière sauvegarde
+;
+MSG_MEN_EDIT_RESTORE
+R\0Revenir à l'initial
+;
+MSG_MEN_SETTINGS
+Préférences
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Créer des icônes ?
+;
+MSG_ASL_OPEN_TITLE
+Charger les préférences
+;
+MSG_ASL_SAVE_TITLE
+Sauver les préférences
+;
+MSG_OK
+Ok
+;
+MSG_GAD_SAVE
+Sauver
+;
+MSG_GAD_USE
+Utiliser
+;
+MSG_GAD_CANCEL
+Annuler
+;
+;
+MSG_GAD_BAUDRATE
+Vitesse
+;
+MSG_GAD_PARITY
+Parité
+;
+MSG_GAD_STOPBITS
+Bits de stop
+;
+MSG_GAD_DATABITS
+Bits de données
+;
+;
+MSG_GAD_INPUTBUFFERSIZE
+Taille du tampon d'entrée
+;
+MSG_GAD_OUTPUTBUFFERSIZE
+Taille du tampon de sortie
+;
+MSG_PARITY_NONE
+Sans
+;
+MSG_PARITY_EVEN
+Paire
+;
+MSG_PARITY_ODD
+Impaire
+;
+MSG_PARITY_MARK
+Marquée
+;
+MSG_PARITY_SPACE
+Espacée
+;
