@@ -9,8 +9,7 @@
 #define	_ALLOCA_H
 
 #include <sys/cdefs.h>
-#include <sys/types.h>
-
+#include <stddef.h>
 
 /* Discard any previous definition.  */
 #undef alloca
