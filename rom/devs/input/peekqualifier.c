@@ -18,7 +18,7 @@
 	/* void */
 
 /*  LOCATION */
-	struct Library *, InputBase, 7, Input)
+	struct Device *, InputBase, 7, Input)
 
 /*  FUNCTION
 
@@ -43,9 +43,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,InputBase)
+    AROS_LIBBASE_EXT_DECL(struct Device *,InputBase)
     
-    return 0;
+    return ((struct inputbase *)InputBase)->ActQualifier;
 
     AROS_LIBFUNC_EXIT
 } /* PeekQualifier */
