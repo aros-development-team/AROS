@@ -82,12 +82,12 @@ extern const char ALIGNED LC_BUILDNAME(LibID)     [];
 extern const char ALIGNED LC_BUILDNAME(Copyright) [];
 
 AROS_LD2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
-    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
-    AROS_LHA(BPTR,                segList, A0),
+    AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
+    AROS_LDA(BPTR,                segList, A0),
     struct ExecBase *, sysBase, 0, LibHeader
 );
 AROS_LD1 (BPTR, LC_BUILDNAME(ExpungeLib),
-    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
+    AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
     struct ExecBase *, sysBase, 0, LibHeader
 );
 
