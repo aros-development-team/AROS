@@ -280,8 +280,6 @@
 		break;
 
             case WA_Parent:
-                parentwin = ((struct Window *)tag->ti_Data);
-                parentl   = parentwin->WLayer;
                 break;
 
             case WA_Visible:
