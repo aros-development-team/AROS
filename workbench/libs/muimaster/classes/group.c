@@ -818,7 +818,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Rectangle        group_rect; /* child_rect;*/
     int                    page;
     struct Region *region = NULL;
-    APTR clip = NULL;
+    APTR clip = (APTR)-1;
 
 /*  	D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld upd=%d page=%d\n", */
 /*  	      obj,_left(obj),_top(obj),_right(obj),_bottom(obj), */
@@ -1027,7 +1027,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
 /*      D(bug("Group_Draw(%p) end\n", obj)); */
 
-    if (data->flags & GROUP_VIRTUAL && region && clip != NULL)
+    if (data->flags & GROUP_VIRTUAL && region && clip != (APTR)-1)
     {
 	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
