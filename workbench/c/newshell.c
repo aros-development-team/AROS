@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:32:25  aros
+    Fixed some warnings about int/ptr conversions
+
     Revision 1.4  1996/09/17 16:43:01  digulla
     Use general startup code
 
@@ -84,9 +87,9 @@ int main (int argc, char ** argv)
 			    { TAG_END, 0 }
 			};
 			tags[0].ti_Data=(IPTR)buf;
-			tags[1].ti_Data=in;
-			tags[2].ti_Data=out;
-			tags[4].ti_Data=shell;
+			tags[1].ti_Data=(IPTR)in;
+			tags[2].ti_Data=(IPTR)out;
+			tags[4].ti_Data=(IPTR)shell;
 			process=CreateNewProc(tags);
 			if(process!=NULL)
 			{
