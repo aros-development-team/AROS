@@ -222,6 +222,16 @@ void SetMenuFlags(void)
 	}
     }
 
+    {
+	struct TagItem menu_tags[] =
+	{
+	    {GTMN_NewLookMenus, TRUE},
+	    {TAG_DONE               }
+	};
+    	
+	LayoutMenusA(menus, vi, menu_tags);
+    }
+    
     if (win) SetMenuStrip(win, menus);
 }
 
@@ -345,7 +355,6 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
     struct dtWrite msg;
     BPTR fh;
     ULONG retval;
-    Object newdto;
     
     fh = NULL;
     if (name)
