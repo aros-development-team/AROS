@@ -7,8 +7,9 @@ ICONS     := Drivers Midi Keymaps
 ICONDIR   := $(AROSDIR)/Devs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
+#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-devs
 #MM
-gorilla-icons : setup $(ICONFILES)
+themes-gorilla-icons-aros-devs : setup $(ICONFILES)
 	@$(NOP)
 
 $(ICONDIR)/%.info : %.info.src %.png

@@ -7,8 +7,9 @@ ICONS     := Include Lib
 ICONDIR   := $(AROSDIR)/Development
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM
-gorilla-icons : setup $(ICONFILES)
+#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-development
+#MM 
+themes-gorilla-icons-aros-development : setup $(ICONFILES)
 	@$(NOP)
 
 $(ICONDIR)/%.info : %.info.src %.png
