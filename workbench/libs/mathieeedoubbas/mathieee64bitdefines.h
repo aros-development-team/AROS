@@ -310,9 +310,9 @@
   (Var1_64 > Const64)
 #else
 #define is_greaterC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ( (Get_High32of64(Var1_64) >  Const64_Hi || \
+  ( (Get_High32of64(Var1_64) >  Const64_Hi) || \
     (Get_High32of64(Var1_64) == Const64_Hi &&  \
-     Get_Low32of64(Var1_64)  >  Const64_Hi) )
+     Get_Low32of64 (Var1_64) >  Const64_Hi) )
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
