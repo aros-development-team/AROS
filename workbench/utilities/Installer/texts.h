@@ -33,10 +33,10 @@
 "     user will have to interact sometimes.\n"	\
 "     This usually includes important\n"	\
 "     decisions, but not unportant ones like\n"	\
-"     copying files or creating directories."	\
+"     copying files or creating directories.\n"	\
 "\n"						\
 "   EXPERT\n"					\
-"     user must confirm all actions."
+"     user must confirm all actions.\n"
 
 #define MESSAGE		"Message"
 #define PROMPT		"Prompt"
