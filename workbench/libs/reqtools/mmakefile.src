@@ -23,21 +23,30 @@ ULIBNAME	:= ReqTools
 #
 # END_DESC{localmakevar}
 
-FILES := functable
+FILES := functable filereqalloc mem filereqextra req misc rtlocale \
+	 general filereq boopsigads filereqsetup filereqmain
 
-FUNCTIONS :=	rtclosewindowsafely \
+FUNCTIONS :=	rtallocrequesta \
+		rtchangereqattra \
+		rtclosewindowsafely \
+		rtezrequesta \
+		rtfilerequesta \
 		rtfreefilelist \
+		rtfreerequest \
+		rtfreereqbuffer \
+		rtgetlonga \
+		rtgetstringa \
+		rtgetvscreensize \
 		rtlockwindow \
 		rtlockprefs \
+		rtreqhandlera \
 		rtscreentofrontsafely \
+		rtsetreqposition \
 		rtsetwaitpointer \
 		rtspread \
 		rtunlockprefs \
 		rtunlockwindow 
 
-#		rtsetreqposition \
-#		rtgetvscreensize \   Missing VideoControl and QueryOverscan
-#		rtchangereqattra \
 
 %define_libs prelibs=-l$(LIBNAME)
 
@@ -45,6 +54,10 @@ FUNCTIONS :=	rtclosewindowsafely \
 
 #MM workbench-libs-reqtools : setup includes linklibs
 workbench-libs-reqtools : $(SLIB)
+	@$(NOP)
+
+#MM workbench-libs-reqtools-quick :
+workbench-libs-reqtools-quick : $(SLIB)
 	@$(NOP)
 
 #MM

@@ -11,6 +11,8 @@
 #include "reqtools_intern.h"
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <devices/conunit.h>
+#include <utility/utility.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
 
@@ -94,6 +96,19 @@ const struct inittable datatable=
 
 #undef O
 
+struct ReqToolsBase 	*ReqToolsBase, *RTBase;
+struct ReqToolsBase	**RTBasePtr = &RTBase;
+
+struct ExecBase 	*SysBase;
+struct DosLibrary 	*DOSBase;
+struct UtilityBase 	*UtilityBase;
+struct IntuitionBase	*IntuitionBase;
+struct GfxBase 		*GfxBase;
+struct LocaleBase 	*LocaleBase;
+struct Library 		*LayersBase;
+struct Library 		*GadToolsBase;
+struct Device 		*ConsoleDevice;
+struct IOStdReq		iorequest;
 
 AROS_LH2(struct IntReqToolsBase *, init,
  AROS_LHA(struct IntReqToolsBase *, RTBase, D0),
@@ -101,10 +116,13 @@ AROS_LH2(struct IntReqToolsBase *, init,
 	   struct ExecBase *, sysBase, 0, ReqTools)
 {
     AROS_LIBFUNC_INIT
+    
+    *RTBasePtr = ReqToolsBase = (struct ReqToolsBase *)RTBase;
+        
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    RTBase->rt_SysBase = (struct Library *)sysBase;
+    RTBase->rt_SysBase = SysBase = sysBase;
     RTBase->rt.SegList = segList;
 
     InitSemaphore(&RTBase->rt.ReqToolsPrefs.PrefsSemaphore);
@@ -174,36 +192,49 @@ AROS_LH1(struct IntReqToolsBase *, open,
     /* Keep compiler happy */
     version = 0;
     
+    if (DOSBase == NULL)
+        DOSBase = RTBase->rt.rt_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+    if (DOSBase == NULL)
+        return NULL;
+	
+    if(IntuitionBase == NULL)
+	IntuitionBase = RTBase->rt.rt_IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+    if(IntuitionBase == NULL)
+	return NULL;
+
+    if(GfxBase == NULL)
+	GfxBase = RTBase->rt.rt_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+    if(GfxBase == NULL)
+	return NULL;
     
-    if(RTBase->rt.rt_IntuitionBase == NULL)
-	RTBase->rt.rt_IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    if(RTBase->rt.rt_IntuitionBase == NULL)
+    if(UtilityBase == NULL)
+	UtilityBase = RTBase->rt.rt_UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
+    if(UtilityBase == NULL)
 	return NULL;
 
-    if(RTBase->rt.rt_GfxBase == NULL)
-	RTBase->rt.rt_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-    if(RTBase->rt.rt_GfxBase == NULL)
-	return NULL;
-    
-    if(RTBase->rt.rt_UtilityBase == NULL)
-	RTBase->rt.rt_UtilityBase = OpenLibrary("utility.library", 37);
-    if(RTBase->rt.rt_UtilityBase == NULL)
+    if(GadToolsBase == NULL)
+	GadToolsBase = RTBase->rt.rt_GadToolsBase = OpenLibrary("gadtools.library", 37);
+    if(GadToolsBase == NULL)
 	return NULL;
 
-    if(RTBase->rt_LayersBase == NULL)
-	RTBase->rt_LayersBase = OpenLibrary("layers.library", 37);
-    if(RTBase->rt_LayersBase == NULL)
+    if(LayersBase == NULL)
+	LayersBase = OpenLibrary("layers.library", 37);
+    if(LayersBase == NULL)
 	return NULL;
 
-    if(RTBase->rt_LocaleBase == NULL)
-	RTBase->rt_LocaleBase = OpenLibrary("locale.library", 37);
-    if(RTBase->rt_LocaleBase == NULL)
+    if(LocaleBase == NULL)
+	LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 37);
+    if(LocaleBase == NULL)
 	return NULL;
 
-    if(RTBase->rt.rt_GadToolsBase == NULL)
-	RTBase->rt.rt_GadToolsBase = OpenLibrary("gadtools.library", 37);
-    if(RTBase->rt.rt_GadToolsBase == NULL)
-	return NULL;
+    if (ConsoleDevice == NULL)
+    {
+        if (OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&iorequest, 0))
+	{
+	    return NULL;
+	}
+	ConsoleDevice = iorequest.io_Device;
+    }
 
 
     /* I have one more opener. */
@@ -266,13 +297,15 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
     /* Get returncode here - FreeMem() will destroy the field. */
     ret = RTBase->rt.SegList;
 
-    CloseLibrary((struct Library *)RTBase->rt.rt_IntuitionBase);
-    CloseLibrary(RTBase->rt.rt_UtilityBase);
-    CloseLibrary((struct Library *)RTBase->rt.rt_GfxBase);
-    CloseLibrary(RTBase->rt_LocaleBase);
-    CloseLibrary(RTBase->rt.rt_GadToolsBase);
-    CloseLibrary(RTBase->rt_LayersBase);
-
+    if (ConsoleDevice) CloseDevice((struct IORequest *)&iorequest);
+    
+    CloseLibrary((struct Library *)DOSBase);
+    CloseLibrary((struct Library *)IntuitionBase);
+    CloseLibrary((struct LIbrary *)UtilityBase);
+    CloseLibrary((struct Library *)GfxBase);
+    CloseLibrary((struct Library *)LocaleBase);
+    CloseLibrary(GadToolsBase);
+    CloseLibrary(LayersBase);
 
     /* Free the memory. */
     FreeMem((char *)RTBase-RTBase->rt.LibNode.lib_NegSize,

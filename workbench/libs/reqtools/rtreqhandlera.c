@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -14,32 +14,28 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
+
 #include "reqtools_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-    AROS_LH1(VOID, rtFreeFileList,
+    AROS_LH3(APTR, rtReqHandlerA,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct rtFileList *, selfile, A0),
+	AROS_LHA(struct rtHandlerInfo *, handlerinfo, A1),
+	AROS_LHA(ULONG, sigs, D0),
+	AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 10, ReqTools)
+	struct Library *, RTBase, 18, ReqTools)
 
 /*  FUNCTION
-
-    Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
-    flag was set.  Call this after you have scanned the filelist and you no
-    longer need it.
-
+   
     INPUTS
-
-    filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
-                  may be NULL.
 
     RESULT
 
@@ -51,8 +47,6 @@
 
     SEE ALSO
 
-    rtFileRequest()
-
     INTERNALS
 
     HISTORY
@@ -61,14 +55,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct rtFileList *last;
-
-    while(selfile != NULL)
-    {
-	last    = selfile;
-	selfile = selfile->Next;
-	FreeVec(last);
-    }
-
+    return  ((APTR (*)(struct rtHandlerInfo *, ULONG, struct TagItem *))handlerinfo->private1)(handlerinfo, sigs, taglist);
+    
     AROS_LIBFUNC_EXIT
-} /* rtFreeFileList */
+    
+} /* rtReqHandlerA */

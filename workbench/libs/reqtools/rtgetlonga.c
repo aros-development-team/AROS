@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -13,33 +13,32 @@
 #include <proto/intuition.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
+#include <libraries/reqtools.h>
 #include <aros/libcall.h>
+
 #include "reqtools_intern.h"
+#include "general.h"
 
 /*****************************************************************************
 
     NAME */
 
-    AROS_LH1(VOID, rtFreeFileList,
+    AROS_LH4(ULONG, rtGetLongA,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct rtFileList *, selfile, A0),
+	AROS_LHA(ULONG *, longptr, A1),
+	AROS_LHA(char *, title, A2),
+	AROS_LHA(struct rtReqInfo *, reqinfo, A3),
+	AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 10, ReqTools)
+	struct Library *, RTBase, 13, ReqTools)
 
 /*  FUNCTION
-
-    Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
-    flag was set.  Call this after you have scanned the filelist and you no
-    longer need it.
-
+   
     INPUTS
-
-    filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
-                  may be NULL.
 
     RESULT
 
@@ -51,8 +50,6 @@
 
     SEE ALSO
 
-    rtFileRequest()
-
     INTERNALS
 
     HISTORY
@@ -60,15 +57,16 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    struct rtFileList *last;
-
-    while(selfile != NULL)
-    {
-	last    = selfile;
-	selfile = selfile->Next;
-	FreeVec(last);
-    }
-
+   
+    return GetString(NULL,
+    		     0,
+		     title,
+		     0,
+		     longptr,
+		     ENTER_NUMBER,
+		     reqinfo,
+		     taglist);
+		     
     AROS_LIBFUNC_EXIT
-} /* rtFreeFileList */
+  
+} /* rtGetLongA */
