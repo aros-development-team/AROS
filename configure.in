@@ -46,6 +46,12 @@ target_cpu=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\2/'`
 changequote([,])
 
 dnl --------------------------------------------------------------------
+dnl Set the default Workbench resolution
+dnl --------------------------------------------------------------------
+aros_default_wbwidth=800
+aros_default_wbheight=600
+
+dnl --------------------------------------------------------------------
 dnl Host Configuration Section
 dnl --------------------------------------------------------------------
 dnl
@@ -277,6 +283,8 @@ case "$target_os" in
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_kernel_ldflags=""
+		aros_default_wbwidth=640
+		aros_default_wbheight=480
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
@@ -361,6 +369,8 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
+AC_SUBST(aros_default_wbwidth)
+AC_SUBST(aros_default_wbheight)
 AC_SUBST(HAVE_XSHM_SUPPORT)
 
 # Host related

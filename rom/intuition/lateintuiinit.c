@@ -13,6 +13,9 @@
 
 #include <exec/alerts.h>
 
+#include <aros/config.h>
+
+
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
@@ -68,8 +71,8 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	{ SA_Depth, 	4			},
 	{ SA_Type,  	WBENCHSCREEN		},
 	{ SA_Title, 	(IPTR)"Workbench"   	},
-	{ SA_Width, 	800			},
-	{ SA_Height,	600			},	
+	{ SA_Width, 	AROS_DEFAULT_WBWIDTH	},
+	{ SA_Height,	AROS_DEFAULT_WBHEIGHT	},	
 	{ SA_PubName,   (IPTR)"Workbench"       },
 	{ SA_Pens,      (IPTR) pens             },
 	{ TAG_END, 0 }
