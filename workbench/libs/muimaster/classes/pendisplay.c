@@ -247,8 +247,8 @@ static IPTR Pendisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 {
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    msg->MinMaxInfo->MinWidth  += 1;
-    msg->MinMaxInfo->MinHeight += 1;
+    msg->MinMaxInfo->MinWidth  += 3;
+    msg->MinMaxInfo->MinHeight += 3;
     msg->MinMaxInfo->DefWidth  += 16;
     msg->MinMaxInfo->DefHeight += 16;
     msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX;
