@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.30  2000/12/15 01:11:49  bergers
+    Needed to do some more linking around with parent window (if exists).
+
     Revision 1.29  2000/12/15 00:52:50  bergers
     Added child support for windows.
 
@@ -216,6 +219,18 @@ void LateCloseWindow(struct MsgPort *userport,
         window->firstchild = _cw;
         CloseWindow(cw);
         cw = _cw;
+      }
+      
+       /*
+        * Does this window have a parent?
+        */
+      if (window->parent)
+      {
+        if (window->parent->firstchild == window)
+        {
+          window->parent->firstchild = window->nextchild;
+          window->nextchild->prevchild = NULL;
+        }
       }
     }
 
