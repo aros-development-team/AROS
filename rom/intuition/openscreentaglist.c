@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/08/16 21:07:33  stegerg
+    taglist is now handled in openscreen
+
     Revision 1.6  1998/10/20 16:46:01  hkiel
     Amiga Research OS
 
@@ -25,7 +28,6 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <proto/utility.h>
 
 /*****************************************************************************
 
@@ -67,8 +69,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct TagItem * tag;
-    struct NewScreen ns =
+
+    struct ExtNewScreen ns =
     {
 	0, 0, 640, 200, 1, /* left, top, width, height, depth */
 	0, 1, /* DetailPen, BlockPen */
@@ -78,63 +80,21 @@
 	NULL, /* DefaultTitle */
 	NULL, /* Gadgets */
 	NULL, /* CustomBitMap */
+	NULL /* Extension (taglist) */
     };
 
-    while ((tag = NextTagItem (&tagList)))
+    if (newScreen)
+	CopyMem (newScreen, &ns, (newScreen->Type & NS_EXTENDED) ? sizeof (struct ExtNewScreen) :
+								   sizeof (struct NewScreen));
+
+    if (tagList)
     {
-	switch (tag->ti_Tag)
-	{
-	case SA_Left:	    ns.LeftEdge  = tag->ti_Data; break;
-	case SA_Top:	    ns.TopEdge	 = tag->ti_Data; break;
-	case SA_Width:	    ns.Width	 = tag->ti_Data; break;
-	case SA_Height:     ns.Height	 = tag->ti_Data; break;
-	case SA_Depth:	    ns.Depth	 = tag->ti_Data; break;
-	case SA_DetailPen:  ns.DetailPen = tag->ti_Data; break;
-	case SA_BlockPen:   ns.BlockPen  = tag->ti_Data; break;
-	case SA_Type:	    ns.Type	 = tag->ti_Data; break;
-
-	case SA_Title:
-	    ns.DefaultTitle = (UBYTE *)tag->ti_Data;
-	    break;
-
-	case SA_Font:
-	    ns.Font = (struct TextAttr *)tag->ti_Data;
-	    break;
-
-	case SA_Colors:
-	case SA_ErrorCode:
-	case SA_SysFont:
-	case SA_BitMap:
-	case SA_PubName:
-	case SA_PubSig:
-	case SA_PubTask:
-	case SA_DisplayID:
-	case SA_DClip:
-	case SA_Overscan:
-	case SA_ShowTitle:
-	case SA_Behind:
-	case SA_Quiet:
-	case SA_AutoScroll:
-	case SA_Pens:
-	case SA_FullPalette:
-	case SA_ColorMapEntries:
-	case SA_Parent:
-	case SA_Draggable:
-	case SA_Exclusive:
-	case SA_SharePens:
-	case SA_BackFill:
-	case SA_Interleaved:
-	case SA_Colors32:
-	case SA_VideoControl:
-	case SA_FrontChild:
-	case SA_BackChild:
-	case SA_LikeWorkbench:
-	case SA_MinimizeISG:
-#warning TODO: Missing SA_ Tags
-	    break;
-	}
+    	ns.Extension = tagList;
+    	ns.Type |= NS_EXTENDED;
     }
-
-    return OpenScreen (&ns);
+    
+    /* stegerg: taglist is now handled in openscreen! */
+ 
+    return OpenScreen ((struct NewScreen *)&ns);
     AROS_LIBFUNC_EXIT
 } /* OpenScreenTagList */
