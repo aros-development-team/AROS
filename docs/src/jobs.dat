@@ -196,7 +196,7 @@ c/rename;1;laguest;Write C:Rename
 c/requestchoice;2;laguest;Write C:RequestChoice
 c/requestfile;2;laguest;Write C:RequestFile
 c/run;1;matthias;Write C:Run
-c/search;0;digulla;Write C:Search
+c/search;1;drieling;Write C:Search
 c/set;2;laguest;Write C:Set
 c/setclock;2;srittau;Write C:SetClock
 c/setdate;2;SDuvan;Write C:SetDate
