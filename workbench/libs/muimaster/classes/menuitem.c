@@ -63,13 +63,17 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
     while ((child = NextObject(&cstate)))
     {
     	int entries;
+    	ULONG checkit, checked;
 
     	if (depth == 0) menu->nm_Type = NM_TITLE;
     	else if (depth == 1) menu->nm_Type = NM_ITEM;
     	else if (depth == 2) menu->nm_Type = NM_SUB;
     	get(child, MUIA_Menuitem_Title, &menu->nm_Label);
     	get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
-    	menu->nm_Flags = 0;
+    	get(child, MUIA_Menuitem_Checkit, &checkit);
+    	get(child, MUIA_Menuitem_Checked, &checked);
+    	if (checkit) menu->nm_Flags |= CHECKIT;
+    	if (checked) menu->nm_Flags |= CHECKED;
     	get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
 	menu->nm_UserData = child;
 
