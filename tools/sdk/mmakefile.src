@@ -8,7 +8,7 @@ SDKINCDIR  := $(AROSDIR)/../AROS-SDK/$(AROS_TARGET_CPU)/include
 SDKLIBDIR  := $(AROSDIR)/../AROS-SDK/$(AROS_TARGET_CPU)/lib
 SDKTOOLDIR := $(AROSDIR)/../AROS-SDK/tools
 
-#MM sdk : sdk-setup includes-copy linklibs
+#MM sdk : sdk-setup includes linklibs
 sdk:
 	$(CP) -a $(INCDIR)/* $(SDKINCDIR)
 	$(CP) -a $(LIBDIR)/* $(SDKLIBDIR)
