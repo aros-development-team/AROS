@@ -429,10 +429,10 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 					     &cool_loadimage);
     struct ButtonInfo 		bi[NUMBUTS] =
     {
-        { ID_BUTOK	, NULL , okimage           , &udata->OKBut	 },
-	{ ID_BUTVOLUMES , NULL , &cool_dotimage    , &udata->VolumesBut },
-	{ ID_BUTPARENT  , NULL , &cool_dotimage    , &udata->ParentBut  },
-	{ ID_BUTCANCEL  , NULL , &cool_cancelimage , &udata->CancelBut  }
+        { ID_BUTOK	, GetIR(ifreq)->ir_PositiveText , okimage           , &udata->OKBut	 },
+	{ ID_BUTVOLUMES , NULL      	    	    	, &cool_dotimage    , &udata->VolumesBut },
+	{ ID_BUTPARENT  , NULL      	    	    	, &cool_dotimage    , &udata->ParentBut  },
+	{ ID_BUTCANCEL  , GetIR(ifreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
     };
     Object 			*gad;
     STRPTR 			butstr[NUMBUTS];
@@ -451,13 +451,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     /* calc. min. size */
     
-    bi[0].text = GetIR(ifreq)->ir_PositiveText;
-    if (!bi[0].text) bi[0].text = GetString(MSG_FILEREQ_POSITIVE_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
-    
+    if (!bi[0].text) bi[0].text = GetString(MSG_FILEREQ_POSITIVE_GAD, GetIR(ifreq)->ir_Catalog, AslBase);    
     bi[1].text = GetString(MSG_FILEREQ_VOLUMES_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
     bi[2].text = GetString(MSG_FILEREQ_PARENT_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
-    
-    bi[3].text = GetIR(ifreq)->ir_NegativeText;
     if (!bi[3].text) bi[3].text = GetString(MSG_FILEREQ_NEGATIVE_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
     
     

@@ -28,6 +28,9 @@
 #include "modereqhooks.h"
 #include "layout.h"
 
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
+
 #define SDEBUG 0
 #define DEBUG 1
 #define ADEBUG 1
@@ -585,19 +588,43 @@ void SMSetAutoScroll(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *A
 
 void SMOpenPropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
+    static WORD propertyids[] =
+    {
+    	MSG_MODEREQ_PROPERTIES_NOTWB,
+    	MSG_MODEREQ_PROPERTIES_NOTGENLOCK,
+    	MSG_MODEREQ_PROPERTIES_NOTDRAG,
+    	MSG_MODEREQ_PROPERTIES_HAM,
+    	MSG_MODEREQ_PROPERTIES_EHB,
+    	MSG_MODEREQ_PROPERTIES_LACE,
+    	MSG_MODEREQ_PROPERTIES_ECS,
+    	MSG_MODEREQ_PROPERTIES_WB,
+    	MSG_MODEREQ_PROPERTIES_GENLOCK,
+    	MSG_MODEREQ_PROPERTIES_DRAG,
+    	MSG_MODEREQ_PROPERTIES_DPFPRI2,
+    	MSG_MODEREQ_PROPERTIES_REFRESHRATE,
+	-1
+    };
+    
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
     struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
     struct DisplayMode	*dispmode;
+    STRPTR  	    	*properties = (STRPTR *)&ismreq->ism_PropertyList_NotWB;
     WORD		i, x, y, w, h;
       
     if (ld->ld_Window2) return;
+    
+    for(i = 0; propertyids[i] != -1; i++)
+    {
+    	properties[i] = GetString(propertyids[i], GetIR(ismreq)->ir_Catalog, AslBase);
+    }
     
     x = ld->ld_Window->LeftEdge + ismreq->ism_InfoLeftEdge;
     y = ld->ld_Window->TopEdge  + ismreq->ism_InfoTopEdge;
     
     i = (&SREQ_LAST_PROPERTY_ITEM(ismreq) - &SREQ_FIRST_PROPERTY_ITEM(ismreq)) /
         sizeof(STRPTR) + 1;
-	
+
+    
     w = BiggestTextLength(&SREQ_FIRST_PROPERTY_ITEM(ismreq),
 			  i,
 			  &(ld->ld_DummyRP),
@@ -630,24 +657,25 @@ void SMOpenPropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
     	struct TagItem	win_tags[] =
 	{
-	    {WA_CustomScreen	, (IPTR)ld->ld_Screen			},
-	    {WA_Left		, x					},
-	    {WA_Top		, y					},
-	    {WA_InnerWidth	, w					},
-	    {WA_InnerHeight	, h					},
-	    {WA_AutoAdjust	, TRUE					},
-	    {WA_Title		, (IPTR)ismreq->ism_PropertyList_Title	},
-	    {WA_CloseGadget	, TRUE					},
-	    {WA_DepthGadget	, TRUE					},
-	    {WA_DragBar		, TRUE					},
-	    {WA_SimpleRefresh	, TRUE					},
-	    {WA_NoCareRefresh	, TRUE					},
-	    {WA_IDCMP		, 0					},
-	    {WA_Gadgets		, (IPTR)udata->PropertyGadget		},
-	    {TAG_DONE							}
+	    {WA_CustomScreen	, (IPTR)ld->ld_Screen	    	},
+	    {WA_Title		, 0 	    		    	},
+	    {WA_Left		, x			    	},
+	    {WA_Top		, y			    	},
+	    {WA_InnerWidth	, w			    	},
+	    {WA_InnerHeight	, h			    	},
+	    {WA_AutoAdjust	, TRUE			    	},
+	    {WA_CloseGadget	, TRUE			    	},
+	    {WA_DepthGadget	, TRUE			    	},
+	    {WA_DragBar		, TRUE			    	},
+	    {WA_SimpleRefresh	, TRUE			    	},
+	    {WA_NoCareRefresh	, TRUE			    	},
+	    {WA_IDCMP		, 0			    	},
+	    {WA_Gadgets		, (IPTR)udata->PropertyGadget	},
+	    {TAG_DONE						}
 	};
 	
-	
+	win_tags[1].ti_Data = (IPTR)GetString(MSG_MODEREQ_PROPERTIES_TITLE, GetIR(ismreq)->ir_Catalog, AslBase);
+
 	ld->ld_Window2 = OpenWindowTagList(0, win_tags);
 	if (!ld->ld_Window2)
 	{

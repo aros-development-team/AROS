@@ -191,10 +191,10 @@ const struct IntSMReq def_smreq =
 	NULL,				/* MemPool		*/
 	2048,				/* MemPoolPuddle	*/
 	2048,				/* MemPoolThresh	*/
-	MSG_FILEREQ_TITLE,   	    	/* TitleID  	    	*/
-	"Select Screen Mode",		/* TitleText		*/
-	"Ok",				/* PositiveText		*/
-	"Cancel",			/* NegativeText		*/
+	MSG_MODEREQ_TITLE,   	    	/* TitleID  	    	*/
+	NULL,		    	    	/* TitleText		*/
+	NULL,				/* PositiveText		*/
+	NULL,			    	/* NegativeText		*/
 	-1, -1,	 			/* --> center on screen */
 	300, 300			/* Width/Height		*/
     },
@@ -220,44 +220,7 @@ const struct IntSMReq def_smreq =
     16384,				/* MaxHeight 		*/
     20,					/* InfoLeftEdge 	*/
     20,					/* InfoTopEdge 		*/
-    FALSE,				/* InfoOpened 		*/
-    
-    "Overscan",
-    "Text Size",
-    "Graphics Size",
-    "Extreme Size",
-    "Maximum Size",
-    NULL,
-    "Width",
-    "Height",
-    "Colors",
-    "AutoScroll",
-    "OFF",
-    "ON",
-    NULL,
-    
-    "Control",
-    "L\0Last Mode",
-    "N\0Next Mode",
-    "?\0Property List",
-    "R\0Restore",
-    "O\0Ok",
-    "C\0Cancel",
-    
-    "Mode Properties",			/* PropertyList_Title 		*/
-    "Does not support Workbench",	/* PropertyList_NotWB 		*/
-    "Does not support genlock",		/* PropertyList_NotGenlock 	*/
-    "Not draggable",			/* PropertyList_NotDraggable 	*/
-    "Hold & Modify",			/* PropertyList_HAM 		*/
-    "Extra-HalfBright",			/* PropertyList_EHB 		*/
-    "Interlaced",			/* PropertyList_Interlaced 	*/
-    "Requires ECS",			/* PropertyList_ECS 		*/
-    "Supports Workbench",		/* PropertyList_WB 		*/
-    "Supports genlock",			/* PropertyList_Genlock 	*/
-    "Draggable",			/* PropertyList_Draggable 	*/
-    "DualPlayfield Priority 2",		/* PropertyList_DPFPri2 	*/
-    "%ldHz, %ld,%ldkHz"			/* PropertyList_RefreshRate 	*/
-        
+    FALSE				/* InfoOpened 		*/        
 };
 
 /*****************************************************************************************/

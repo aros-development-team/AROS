@@ -190,29 +190,14 @@ struct IntSMReq
     LONG		ism_InfoTopEdge;
     BOOL		ism_InfoOpened;
     
-    /* Some GUI strings specific for the screenmode requester */
-    
-    STRPTR		ism_OverscanText;
-    STRPTR		ism_Overscan1Text;
+     STRPTR		ism_Overscan1Text;
     STRPTR		ism_Overscan2Text;
     STRPTR		ism_Overscan3Text;
     STRPTR		ism_Overscan4Text;
     STRPTR		ism_OverscanNullText;
-    STRPTR		ism_WidthText;
-    STRPTR		ism_HeightText;
-    STRPTR		ism_ColorsText;
-    STRPTR		ism_AutoScrollText;
     STRPTR		ism_AutoScrollOFFText;
     STRPTR		ism_AutoScrollONText;
     STRPTR		ism_AutoScroll0Text;
-    
-    STRPTR		ism_Menu_Control;
-    STRPTR		ism_Item_Control_LastMode;
-    STRPTR		ism_Item_Control_NextMode;
-    STRPTR		ism_Item_Control_PropertyList;
-    STRPTR		ism_Item_Control_Restore;
-    STRPTR		ism_Item_Control_OK;
-    STRPTR		ism_Item_Control_Cancel;
     
     STRPTR		ism_PropertyList_Title;
     STRPTR		ism_PropertyList_NotWB;
