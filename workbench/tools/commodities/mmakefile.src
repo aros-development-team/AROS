@@ -9,7 +9,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs
 
-FILES := Exchange
+FILES := Exchange Blanker
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
