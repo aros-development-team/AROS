@@ -46,7 +46,7 @@ AROS_UFH2S(void, len_func,
 {
     AROS_USERFUNC_INIT
     
-    *lenPtr++;
+    (*lenPtr)++;
     
     AROS_USERFUNC_EXIT
 }
