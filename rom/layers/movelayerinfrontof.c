@@ -16,6 +16,7 @@
 /*****************************************************************************
 
     NAME */
+#include <proto/layers.h>
 
 	AROS_LH2(LONG, MoveLayerInFrontOf,
 
@@ -28,7 +29,10 @@
 
 /*  FUNCTION
         Moves layer directly in front of another layer. Other layers
-        might become visible.  
+        might become visible. You cannot move a backdrop layer in front
+        of a non-backdrop layer.
+        If parts of a simple layer become visible these areas are added
+        to the damage list.
 
     INPUTS
         layer_to_move - pointer to layer that is to be moved
@@ -36,6 +40,8 @@
                         layer_to_move.
 
     RESULT
+        TRUE  - layer was moved
+        FALSE - layer could not be moved. (probably out of memory)
 
     NOTES
 
@@ -163,20 +169,11 @@ kprintf("This ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
          if (CR->lobs->priority <= other_layer->priority)
 	 {
            /* 
-              I have to make this ClipRect CR visible now. To do so 
-              I first must copy the bits from the display bitmap
-              to the ClipRect CR and vice versa for the layer that is 
-              being shown in that region.
+              I have to make this ClipRect CR visible now.
            */
            struct Layer * L_tmp;
            struct ClipRect * CR_tmp;
-           SwapBitsRastPortClipRect(layer_to_move->rp, CR);
-           /* 
-              Now it should be visible and CR->BitMap contains the
-              backed up stuff. This backed up bitmap needs to go
-              into the structure of the layer that was visible
-              before.
-           */
+
            L_tmp = CR->lobs;
            /* 
               L_tmp is a pointer to the layer that was visible before
@@ -189,10 +186,118 @@ kprintf("This ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
            CR_tmp = internal_WhichClipRect(L_tmp,
                                            CR->bounds.MinX,
                                            CR->bounds.MinY);
+           /* 
+              CR_tmp needs to get the content of what's visible in
+              the area now. It will be hidden. 
+            */
+           if (0 == (L_tmp->Flags & LAYERSIMPLE))
+           {
+             if (0 == (L_tmp->Flags & LAYERSUPER))
+             {
+               /* it's a smart layer */
+               /* I need to allocate a bitmap to backup the data */
+               CR_tmp->BitMap = 
+                    AllocBitMap(CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                                CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                                GetBitMapAttr(L_tmp->rp->BitMap, BMA_DEPTH),
+                                0,
+                                L_tmp->rp->BitMap);
+               
+               BltBitMap(L_tmp->rp->BitMap,
+                         CR_tmp->bounds.MinX,
+                         CR_tmp->bounds.MinY,
+                         CR_tmp->BitMap,
+                         CR_tmp->bounds.MinX & 0x0f,
+                         0,
+                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+             }
+             else
+             {
+               /* it's a superbitmap layer */
+               CR_tmp->BitMap = L_tmp->SuperBitMap;
+               BltBitMap(L_tmp->rp->BitMap,
+                         CR_tmp->bounds.MinX,
+                         CR_tmp->bounds.MinY,
+                         CR_tmp->BitMap,
+                         CR_tmp->bounds.MinX - L_tmp->bounds.MinX + L_tmp->Scroll_X,
+                         CR_tmp->bounds.MinY - L_tmp->bounds.MinY + L_tmp->Scroll_Y,
+                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+             }
+           }
+           else
+           {
+             /* It's a simple layer. I don't do anything here */
+           }
+
+           /* Whatever can be found in CR will be shown now. */
+
+           if (0 == (layer_to_move->Flags & LAYERSIMPLE))
+           {
+             if (0 == (layer_to_move->Flags & LAYERSUPER))
+             {
+               /* it's a smart layer */
+               BltBitMap(CR->BitMap,
+                         CR->bounds.MinX & 0x0f,
+                         0,
+                         layer_to_move->rp->BitMap,
+                         CR->bounds.MinX,
+                         CR->bounds.MinY,
+                         CR->bounds.MaxX - CR->bounds.MinX + 1,
+                         CR->bounds.MaxY - CR->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+               FreeBitMap(CR->BitMap);
+             }
+             else
+             {
+               /* it's a superbitmap layer */
+               BltBitMap(CR->BitMap,
+                         CR->bounds.MinX - layer_to_move->bounds.MinX +
+                                           layer_to_move->Scroll_X,
+                         CR->bounds.MinY - layer_to_move->bounds.MinY +
+                                           layer_to_move->Scroll_Y,
+                         layer_to_move->rp->BitMap,
+                         CR->bounds.MinX,
+                         CR->bounds.MinY,
+                         CR->bounds.MaxX - CR->bounds.MinX + 1,
+                         CR->bounds.MaxY - CR->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+             }
+           }
+           else
+           {
+             /* it's a simple layer*/
+             OrRectRegion(layer_to_move->DamageList, &CR->bounds);
+             layer_to_move->Flags |= LAYERREFRESH;
+             BltBitMap(layer_to_move->rp->BitMap,
+                       0,
+                       0,
+                       layer_to_move->rp->BitMap,
+                       CR->bounds.MinX,
+                       CR->bounds.MinY,
+                       CR->bounds.MaxX - CR->bounds.MinX + 1,
+                       CR->bounds.MaxY - CR->bounds.MinY + 1,
+                       0x0,
+                       0xff,
+                       NULL);
+           }
+
 if (NULL == CR_tmp)
   kprintf("Error!\n");
-           CR_tmp->BitMap = CR->BitMap;
+
            CR    ->BitMap = NULL; 
+
            CR_tmp->lobs   = layer_to_move;
            CR    ->lobs   = NULL;
            /* 
@@ -260,6 +365,7 @@ kprintf("     ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
                    CR_tmp->bounds.MaxY <= CR->bounds.MaxY))
           {
             CR_tmp = CR_tmp->Next;
+            
 if (NULL == CR_tmp)
   kprintf("mlio: Fatal error!\n");
 /*
@@ -298,86 +404,118 @@ if (NULL == CR_tmp)
            /*
              Get a bitmap of the size of the still visible bitmap area
             */
-           CR->BitMap = AllocBitMap(CR->bounds.MaxX - CR->bounds.MinX + 1 + 16,
-                                    CR->bounds.MaxY - CR->bounds.MinY + 1,
-                                    GetBitMapAttr(CR_tmp->BitMap, BMA_DEPTH),
-                                    0,
-                                    NULL /* !!! */ );
-           CR -> lobs = L_tmp;
            /*
-             And backup the data from the displayed bitmap to this bitmap
+             And backup the data from the displayed bitmap to a bitmap,
+             if its a smart or superbitmap layer
 	    */
 
-           if (0 == (layer_to_move-> Flags & LAYERSUPER))
-	   {
-             /* no SuperBitMap */
-             BltBitMap(layer_to_move->rp->BitMap,
-                       CR->bounds.MinX,
-                       CR->bounds.MinY,
-                       CR->BitMap,
-                       CR->bounds.MinX & 0x0f,
-                       0,
-                       CR->bounds.MaxX - CR->bounds.MinX + 1,
-                       CR->bounds.MaxY - CR->bounds.MinY + 1,
-                       0x0c0,
-                       0xff,
-                       NULL);
+          if (0 == (layer_to_move->Flags & LAYERSIMPLE))
+          { 
+            if (0 == (layer_to_move-> Flags & LAYERSUPER))
+	    {
+              /* no SuperBitMap */
+              CR->BitMap = 
+                    AllocBitMap(CR->bounds.MaxX - CR->bounds.MinX + 1 + 16,
+                                CR->bounds.MaxY - CR->bounds.MinY + 1,
+                                GetBitMapAttr(CR_tmp->BitMap, BMA_DEPTH),
+                                0,
+                                NULL /* !!! */ );
 
- 	   }
-           else
-	   {
-             /* with SuperBitMap */
-             BltBitMap(layer_to_move->rp->BitMap,
-                       CR->bounds.MinX,
-                       CR->bounds.MinY,
-                       layer_to_move->SuperBitMap,
-                       CR->bounds.MinX - layer_to_move->bounds.MinX +
-                                         layer_to_move->Scroll_X,
-                       CR->bounds.MinY - layer_to_move->bounds.MinY +
-                                         layer_to_move->Scroll_Y,
-                       CR->bounds.MaxX - CR->bounds.MinX + 1,
-                       CR->bounds.MaxY - CR->bounds.MinY + 1,
-                       0x0c0,
-                       0xff,
-                       NULL);
-	   }
+              BltBitMap(layer_to_move->rp->BitMap,
+                        CR->bounds.MinX,
+                        CR->bounds.MinY,
+                        CR->BitMap,
+                        CR->bounds.MinX & 0x0f,
+                        0,
+                        CR->bounds.MaxX - CR->bounds.MinX + 1,
+                        CR->bounds.MaxY - CR->bounds.MinY + 1,
+                        0x0c0,
+                        0xff,
+                        NULL);
  
-           if (0 == (L_tmp->Flags & LAYERSUPER))
-	   {
-             /*
-                Now display all the previously hidden parts that fit into 
-                the ClipRect that was shown before.
-	      */
+            }
+            else
+	    {
+              /* with SuperBitMap */
+              CR->BitMap = layer_to_move->SuperBitMap;
+              BltBitMap(layer_to_move->rp->BitMap,
+                        CR->bounds.MinX,
+                        CR->bounds.MinY,
+                        layer_to_move->SuperBitMap,
+                        CR->bounds.MinX - layer_to_move->bounds.MinX +
+                                          layer_to_move->Scroll_X,
+                        CR->bounds.MinY - layer_to_move->bounds.MinY +
+                                          layer_to_move->Scroll_Y,
+                        CR->bounds.MaxX - CR->bounds.MinX + 1,
+                        CR->bounds.MaxY - CR->bounds.MinY + 1,
+                        0x0c0,
+                        0xff,
+                        NULL);
+	    }
+          }
+          else
+          {
+            /* nothing to do for simple layers.*/
+          }
+          
+           if (0 == (L_tmp->Flags & LAYERSIMPLE))
+           {
+             if (0 == (L_tmp->Flags & LAYERSUPER))
+             {
+               /*
+                  Now display all the previously hidden parts that fit into 
+                  the ClipRect that was shown before. I start out with the
+                  first one, which might also be the last one.
+	        */
 
-             BltBitMap(CR_tmp->BitMap,
-                       CR_tmp->bounds.MinX & 0x0f,
+               BltBitMap(CR_tmp->BitMap,
+                         CR_tmp->bounds.MinX & 0x0f,
+                         0,
+                         layer_to_move->rp->BitMap,
+                         CR_tmp->bounds.MinX,
+                         CR_tmp->bounds.MinY,
+                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+               FreeBitMap(CR_tmp->BitMap);
+	     }
+             else
+             {
+               BltBitMap(L_tmp->SuperBitMap,
+                         CR_tmp->bounds.MinX - L_tmp->bounds.MinX +
+                                               L_tmp->Scroll_X,
+                         CR_tmp->bounds.MinY - L_tmp->bounds.MinY +
+                                               L_tmp->Scroll_Y,
+                         layer_to_move->rp->BitMap,
+                         CR_tmp->bounds.MinX,
+                         CR_tmp->bounds.MinY,
+                         CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                         CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                         0x0c0,
+                         0xff,
+                         NULL);
+	     }
+           }
+           else
+           {
+             /* it's a simple layer. */
+             OrRectRegion(layer_to_move->DamageList, &CR->bounds);
+             layer_to_move->Flags |= LAYERREFRESH;
+             /* clear the whole area */
+             BltBitMap(layer_to_move->rp->BitMap,
+                       0,
                        0,
                        layer_to_move->rp->BitMap,
-                       CR_tmp->bounds.MinX,
-                       CR_tmp->bounds.MinY,
-                       CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                       CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                       CR->bounds.MinX,
+                       CR->bounds.MinY,
+                       CR->bounds.MaxX - CR->bounds.MinX + 1,
+                       CR->bounds.MaxY - CR->bounds.MinY + 1,
                        0x0c0,
                        0xff,
                        NULL);
-	   }
-           else
-	   {
-             BltBitMap(L_tmp->SuperBitMap,
-                       CR_tmp->bounds.MinX - L_tmp->bounds.MinX +
-                                             L_tmp->Scroll_X,
-                       CR_tmp->bounds.MinY - L_tmp->bounds.MinY +
-                                             L_tmp->Scroll_Y,
-                       layer_to_move->rp->BitMap,
-                       CR_tmp->bounds.MinX,
-                       CR_tmp->bounds.MinY,
-                       CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                       CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
-                       0x0c0,
-                       0xff,
-                       NULL);
-	   }
-
+           }
            /* 
               If the hidden ClipRect had the same size as the
               visible one I don't have to make other Cliprects
@@ -389,10 +527,14 @@ if (NULL == CR_tmp)
            CR_tmp->lobs   = NULL;
            CR_tmp->BitMap = NULL;
 
+           CR -> lobs = L_tmp;
 
            if (FALSE == equal_rects)
 	   {
-
+             /* I am not going to free the first one that fitted. It
+                will stay in the list. The other ones I will display
+                and then free.
+              */
              CR_tmp->bounds = CR->bounds;
 
              while (NULL != CR_tmp -> Next)
@@ -406,38 +548,45 @@ if (NULL == CR_tmp)
                  /* Take this ClipRect out of the list */
                  CR_tmp -> Next = CR_del -> Next;
 
-                 if (0 == (L_tmp->Flags & LAYERSUPER))
-		 {
-                   BltBitMap(CR_del->BitMap,
-                             CR_del->bounds.MinX & 0x0f,
-                             0,
-                             layer_to_move->rp->BitMap,
-                             CR_del->bounds.MinX,
-                             CR_del->bounds.MinY,
-                             CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
-                             CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
-                             0x0c0,
-                             0xff,
-                             NULL);
+                 if (0 == (L_tmp->Flags & LAYERSIMPLE))
+                 {
+                   if (0 == (L_tmp->Flags & LAYERSUPER))
+		   {
+                     BltBitMap(CR_del->BitMap,
+                               CR_del->bounds.MinX & 0x0f,
+                               0,
+                               layer_to_move->rp->BitMap,
+                               CR_del->bounds.MinX,
+                               CR_del->bounds.MinY,
+                               CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
+                               CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
+                               0x0c0,
+                               0xff,
+                               NULL);
+                     FreeBitMap(CR_del -> BitMap);
+                   }
+                   else
+		   {
+                     BltBitMap(CR_del->BitMap,
+                               CR_del->bounds.MinX - L_tmp->bounds.MinX +
+                                                     L_tmp->Scroll_X,
+                               CR_del->bounds.MinY - L_tmp->bounds.MinY +
+                                                     L_tmp->Scroll_Y,
+                               layer_to_move->rp->BitMap,
+                               CR_del->bounds.MinX,
+                               CR_del->bounds.MinY,
+                               CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
+                               CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
+                               0x0c0,
+                               0xff,
+                               NULL);
+		   }
 		 }
-                 else
+		 else
 		 {
-                   BltBitMap(L_tmp->SuperBitMap,
-                             CR_del->bounds.MinX - L_tmp->bounds.MinX +
-                                                   L_tmp->Scroll_X,
-                             CR_del->bounds.MinY - L_tmp->bounds.MinY +
-                                                   L_tmp->Scroll_Y,
-                             layer_to_move->rp->BitMap,
-                             CR_del->bounds.MinX,
-                             CR_del->bounds.MinY,
-                             CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
-                             CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
-                             0x0c0,
-                             0xff,
-                             NULL);
+		   /* a simple bitmap. It's already take care of above... */
 		 }
 
-                 FreeBitMap(CR_del -> BitMap);
                  FreeMem(CR_del, sizeof(struct ClipRect));
                  /* 
                     Do not procede to the Next ClipRect as we
