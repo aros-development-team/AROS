@@ -1,0 +1,56 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+*/
+
+/*****************************************************************************
+
+    NAME */
+   AROS_LH1(void, CloseRootPartition,
+
+/*  SYNOPSIS */
+   AROS_LHA(struct PartitionHandle *, ph,       A1),
+
+/*  LOCATION */
+   struct Library *, PartitionBase, 6, Partition)
+
+/*  FUNCTION
+	close root handle allocated by OpenRootPartition()
+
+    INPUTS
+	ph - root handle created by OpenRootPartition()
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	21-02-02    first version
+
+*****************************************************************************/
+{
+	AROS_LIBFUNC_INIT
+
+	if (ph->table)
+	{
+	struct PTFunctionTable *handler = ph->table->handler;
+
+		if (handler->ClosePartitionTable)
+			handler->ClosePartitionTable(PartitionBase, ph);
+	}
+	DeleteIORequest((struct IORequest *)ph->bd->ioreq);
+	DeleteMsgPort(ph->bd->port);
+	FreeMem(ph->bd, sizeof(struct PartitionBlockDevice));
+	FreeMem(ph, sizeof(struct PartitionHandle));
+
+	AROS_LIBFUNC_EXIT
+}

@@ -1,0 +1,37 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+MODNAME := partition
+MODTYPE := library
+
+USER_INCLUDES := -I.
+
+FILES := \
+	partition_support \
+	partitionmbr
+
+FUNCS := \
+	openrootpartition \
+	closerootpartition \
+	openpartitiontable \
+	closepartitiontable \
+	writepartitiontable \
+	createpartitiontable \
+	addpartition \
+	deletepartition \
+	getpartitiontableattrs \
+	setpartitiontableattrs \
+	getpartitionattrs \
+	setpartitionattrs \
+	querypartitiontableattrs \
+	querypartitionattrs
+
+#MM- workbench-libs-partition : setup includes linklibs workbench-libs-partition-module
+%make_module_setup mmake=workbench-libs-partition
+%make_module_cpak
+%make_module mmake=workbench-libs-partition
+%make_lib_includes
+
+%common
+%include_deps
+
