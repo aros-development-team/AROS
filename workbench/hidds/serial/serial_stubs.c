@@ -33,13 +33,17 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
-#define STATIC_MID static OOP_MethodID mid
+#ifdef AROS_CREATE_ROM
+# define STATIC_MID OOP_MethodID mid = 0;
+#else
+# define STATIC_MID static OOP_MethodID mid;
+#endif
 
 /***************************************************************/
 
 OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
-    STATIC_MID;
+    STATIC_MID
     struct pHidd_Serial_NewUnit p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_NewUnit);
