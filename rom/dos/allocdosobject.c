@@ -29,14 +29,16 @@
 	struct DosLibrary *, DOSBase, 38, Dos)
 
 /*  FUNCTION
-	Creates a new dos object of a given type.
+	Creates a new dos object of a given type. This memory has to be
+	freed with FreeDosObject().
 
     INPUTS
-	type - object type.
-	tags - Pointer to taglist array with additional information.
+	type - Object type.
+	tags - Pointer to taglist array with additional information. See
+	       <dos/dostags.h> for a list of all supported tags.
 
     RESULT
-	Pointer to new object or NULL.
+	Pointer to new object or NULL, to indicate an error.
 
     NOTES
 
@@ -56,15 +58,25 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    APTR mem;
 
     switch(type)
     {
     case DOS_FILEHANDLE:
-	return AllocMem(sizeof(struct FileHandle),MEMF_CLEAR);
+	mem = AllocMem(sizeof(struct FileHandle),MEMF_CLEAR);
+	if (!mem)
+	    SetIoErr(ERROR_NO_FREE_STORE);
+	return mem;
     case DOS_FIB:
-	return AllocMem(sizeof(struct FileInfoBlock),MEMF_CLEAR);
+	mem = AllocMem(sizeof(struct FileInfoBlock),MEMF_CLEAR);
+	if (!mem)
+	    SetIoErr(ERROR_NO_FREE_STORE);
+	return mem;
     case DOS_EXALLCONTROL:
-	return AllocMem(sizeof(struct ExAllControl),MEMF_CLEAR);
+	mem = AllocMem(sizeof(struct ExAllControl),MEMF_CLEAR);
+	if (!mem)
+	    SetIoErr(ERROR_NO_FREE_STORE);
+	return mem;
     case DOS_CLI:
     {
 	struct CommandLineInterface *cli = NULL;
@@ -108,24 +120,18 @@
 enomem:
 	if (cli)
 	    FreeMem(cli,sizeof(struct CommandLineInterface));
+	FreeVec(dir);
+	FreeVec(command);
+	FreeVec(file);
+	FreeVec(prompt);
 
-	if (dir)
-	    FreeVec(dir);
-
-	if (command)
-	    FreeVec(command);
-
-	if (file)
-	    FreeVec(file);
-
-	if (prompt)
-	    FreeVec(prompt);
-
+	SetIoErr(ERROR_NO_FREE_STORE);
 	return NULL;
     }
     case DOS_RDARGS:
 	return AllocVec(sizeof(struct RDArgs),MEMF_CLEAR);
     }
+    SetIoErr(ERROR_BAD_NUMBER);
     return NULL;
     AROS_LIBFUNC_EXIT
 } /* AllocDosObject */

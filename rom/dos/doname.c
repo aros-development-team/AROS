@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/10/08 00:44:07  srittau
+    Set secondary error
+
     Revision 1.5  1997/01/27 00:36:17  ldp
     Polish
 
@@ -57,7 +60,10 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
 	    {
 		volname=(STRPTR)AllocMem(s1-name,MEMF_ANY);
 		if(volname==NULL)
-		    return me->pr_Result2=ERROR_NO_FREE_STORE;
+		{
+		    SetIoErr(ERROR_NO_FREE_STORE);
+		    return ERROR_NO_FREE_STORE;
+		}
 		CopyMem(name,volname,s1-name-1);
 		volname[s1-name-1]=0;
 		pathname=s1;
@@ -74,7 +80,8 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
 	{
 	    UnLockDosList(LDF_ALL|LDF_READ);
 	    FreeMem(volname,s1-name);
-	    return me->pr_Result2=ERROR_DEVICE_NOT_MOUNTED;
+	    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+	    return ERROR_DEVICE_NOT_MOUNTED;
 	}
 	device=dl->dol_Device;
 	unit  =dl->dol_Unit;
@@ -102,5 +109,6 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
     if(volname!=NULL)
 	FreeMem(volname,s1-name);
 
-    return me->pr_Result2=iofs->io_DosError;
+    SetIoErr(iofs->io_DosError);
+    return iofs->io_DosError;
 }
