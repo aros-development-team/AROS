@@ -56,6 +56,8 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #define IM(x) ((struct Image*)(x))
 #define G(x) ((struct Gadget*)(x))
 #define GADGETID(x) (((struct Gadget*)(x))->GadgetID)
+#define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
+#define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
 
 static char *StrDup(char *x)
 {
@@ -201,8 +203,6 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN], 1, rgbtable+3);
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1, rgbtable+6);
 
-#define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
-#define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
     mri->mri_PensStorage[MPEN_HALFSHINE] = 
 	ObtainBestPenA(mri->mri_Colormap,
 		       DO_HALFSHINE_GUN(rgbtable[0], rgbtable[3]),
@@ -214,8 +214,6 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 		       DO_HALFSHADOW_GUN(rgbtable[6], rgbtable[3]),
 		       DO_HALFSHADOW_GUN(rgbtable[7], rgbtable[4]),
 		       DO_HALFSHADOW_GUN(rgbtable[8], rgbtable[5]), NULL);
-#undef DO_HALFSHINE_GUN
-#undef DO_HALFSHADOW_GUN
 
 /* I'm really not sure that MUI does this for MPEN_MARK, but it seems mostly acceptable -dlc */
     mri->mri_PensStorage[MPEN_MARK] =
@@ -258,21 +256,20 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 
 void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 {
+    if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
+    if (mri->mri_RightImage){DisposeObject(mri->mri_RightImage);mri->mri_RightImage=NULL;};
+    if (mri->mri_UpImage) {DisposeObject(mri->mri_UpImage);mri->mri_UpImage=NULL;};
+    if (mri->mri_DownImage) {DisposeObject(mri->mri_DownImage);mri->mri_DownImage=NULL;};
+    if (mri->mri_SizeImage) {DisposeObject(mri->mri_SizeImage);mri->mri_SizeImage=NULL;};
+
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
-
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
     UnlockPubScreen(NULL, mri->mri_Screen);
     mri->mri_Screen = NULL;
-
-    if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
-    if (mri->mri_RightImage){DisposeObject(mri->mri_LeftImage);mri->mri_RightImage=NULL;};
-    if (mri->mri_UpImage) {DisposeObject(mri->mri_LeftImage);mri->mri_UpImage=NULL;};
-    if (mri->mri_DownImage) {DisposeObject(mri->mri_LeftImage);mri->mri_DownImage=NULL;};
-    if (mri->mri_SizeImage) {DisposeObject(mri->mri_LeftImage);mri->mri_SizeImage=NULL;};
 }
 
 void ShowRenderInfo(struct MUI_RenderInfo *mri)
