@@ -88,11 +88,17 @@ VOID __DestroyWBHM_WB
         switch (message->wbhm_Type)
         {
             case WBHM_TYPE_OPEN:
-                FreeVec(message->wbhm_Data.Open.Name);
+                if (message->wbhm_Data.Open.Name != NULL) 
+                {
+                    FreeVec(message->wbhm_Data.Open.Name);
+                }
                 break;
                 
             case WBHM_TYPE_UPDATE:
-                // FIXME
+                if (message->wbhm_Data.Update.Name != NULL)
+                {
+                    FreeVec(message->wbhm_Data.Update.Name);
+                }
                 break;
                 
             case WBHM_TYPE_SHOW:
