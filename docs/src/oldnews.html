@@ -15,6 +15,69 @@ Old News
 <HR WIDTH="100%">
 <TABLE>
 
+<TR><TD VALIGN=TOP>20.12.2000</TD><TD>
+A lot of bug in the new layers library, child window handling, etc.
+have been fixed by Georg Steger and Stefan Berger. Since OpenOffice
+uses child windows, we hope that
+we won't get sued for using the same technology :-)<P>
+
+Henning Kiel has extended the WiMP tool to support child windows.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>17.12.2000</TD><TD>
+Thanks to another enhancement by Stefan Berger, layers and windows can now be
+set invisible (hidden). Also, layers can now be grouped by priority which
+allows to create a layer behind all other layers (for example,
+for a background logo and menus which should be before everything
+else). We're currently trying to find out how many and which
+patents we infringe with this :-(<P>
+
+Johan Alfredsson has ported <TT>SortCopy</TT> from AmiNET.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>14.12.2000</TD><TD>
+AROS has now support for
+non-rectangular windows and child windows (a window with a dragbar,
+etc. inside another window). Kudos go to Stefan Berger for the
+code and Georg Steger for input and bugfixes.<P>
+
+Johan Alfredsson improved DOpus a bit and Adam Chodorowski
+improved AROS' workbench.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>12.12.2000</TD><TD>
+Henning Kiel WiMP, a Window Manipulation Program which allows to
+rescure those windows which got lost yesterday :-) It will become
+kind of a system monitor in the future.
+Stefan Berger and Georg Steger fixed a couple of bugs in the
+new layers.library<P>
+
+Georg Steger added a lot of functions to handle regions which
+are missing in the original AmigaOS but which should have been
+there. These make handling of clip rects <STRONG>much</STRONG>
+more simple.<P>
+
+Fabio Alemagna committed a Dhrystone benchmark. According to
+it, AROS is about 5% slower than native Linux when run as an
+emulation. As soon as we have a native AROS which can load
+apps, we'll check how fast a PC really can be ;-)<P>
+</TD></TR>
+
+<TR><TD VALIGN=TOP>11.12.2000</TD><TD>
+Stefan Berger has commited a completely rewritten layers.library which
+is much faster and much more simple then the one we had. It's now
+based on OO techniques, much easier to extend (we're currently thinking
+about child layers and layer groups which will keep their stacking
+order). Also, the new layers.library allows to move windows outside
+the screen (the first windows have already been lost out there ;-)<P>
+
+Georg Steger committed additional files for ReqTools which should
+make it compile on Amiga.<P>
+
+Adam Chodorowski began the work on workbench.library and the
+workbench process.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>9.12.2000</TD><TD>
 Johan Alfredsson improved the ReqTools file requester. The Volume requester
 works now.
