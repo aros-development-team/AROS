@@ -303,7 +303,7 @@ struct ReadLevel
 	    Remove ((struct Node *)last);
 
 	    /* Get the last level */
-	    if ((curr = GetTail (list)))
+	    if ((curr = (struct ReadLevel *)GetTail (list)))
 	    {
 		switch (IDESC)
 		{
@@ -343,7 +343,7 @@ struct ReadLevel
     return TRUE;
 
 error:
-    curr = GetHead (list);
+    curr = (struct ReadLevel *)GetHead (list);
 
 #warning FIXME:
     /* if (curr && curr->s)

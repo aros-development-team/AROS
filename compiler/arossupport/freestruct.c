@@ -178,7 +178,7 @@ struct FreeLevel
 	    Remove ((struct Node *)last);
 
 	    /* Get the last level */
-	    if ((curr = GetTail (list)))
+	    if ((curr = (struct FreeLevel *)GetTail (list)))
 	    {
 		FreeMem (last->s, last->size);
 		FreeMem (last, sizeof (struct FreeLevel));
