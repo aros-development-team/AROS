@@ -34,14 +34,22 @@ IPTR iconConObsNew(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval=0;
     struct IconContainerObserverClassData *data;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
     UBYTE *directory;
 
-    tag=FindTagItem(ICOA_Directory, msg->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        tag->ti_Tag=TAG_IGNORE;
-        directory=(UBYTE*)tag->ti_Data;
+        switch (tag->ti_Tag)
+        {
+            case ICOA_Directory:
+                directory = (UBYTE *) tag->ti_Data;
+                break;
+                
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)msg);
