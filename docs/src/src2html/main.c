@@ -151,6 +151,9 @@ int main (int argc, char ** argv)
 			if (!fgets (data, sizeof(data), fh))
 			    break;
 
+			key[strlen(key)-1] = 0;
+			data[strlen(data)-1] = 0;
+
 			storedata (files, xstrdup (key), xstrdup (data));
 		    }
 
@@ -238,7 +241,7 @@ const char * getkeyword (const char * keyword)
 
 const char * getfile (const char * file)
 {
-    if (!files)
+    if (files)
 	return retrievedata (files, file);
 
     return NULL;
