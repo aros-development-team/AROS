@@ -104,7 +104,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 	EnterFunc(bug("SerialUnit::New()\n"));
 
 	tstate = msg->attrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate))) {
+	while ((tag = NextTagItem((struct TagItem **)&tstate))) {
 		ULONG idx;
 
 #define csd CSD(cl->UserData)
@@ -138,14 +138,14 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 		//D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
 
 		/* Init UART - See 14-10 of dragonball documentation */
-		serial_out_w(data, O_USTCNT, UEN_F | RXEN_F | TXEN_F);
+		serial_out_w(data, O_USTCNT, UEN_F | RXEN_F | TXEN_F | RXRE_F);
 		dummy = RREG_W(URX1);
 		//D(bug("Setting baudrate now!"));
 		/* Now set the baudrate */
 		set_baudrate(data, data->baudrate);
 
 		/* Set the interrupts and the levels according to the baudrate */
-		serial_out_w(data, O_USTCNT, (get_ustcnt(data) | UEN_F | RXEN_F | TXEN_F));
+		serial_out_w(data, O_USTCNT, (get_ustcnt(data) | UEN_F | RXEN_F | TXEN_F | RXRE_F));
 
 	} /* if (obj) */
 
@@ -422,9 +422,9 @@ AROS_UFH3(void, serialunit_receive_data,
 			break;
 		}
 	}
-  
+
 	/*
-	** ... and deliver them to whoever is interested. 
+	** ... and deliver them to whoever is interested.
 	*/
 
 	if (NULL != data->DataReceivedCallBack)
@@ -444,7 +444,7 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
 	 */
 	if (TRUE == data->stopped)
 		return -1;
-    
+
 	/*
 	** Ask for more data be written to the unit
 	*/
@@ -571,7 +571,7 @@ UWORD get_ustcnt(struct HIDDSerialUnitData * data)
 	}
   
 	if (TRUE == data->parity) {
-		ustcnt |= PEN_F;
+		ustcnt |= PARITY_EN_F;
 
 		switch (data->paritytype) {
 			case PARITY_ODD:
@@ -692,7 +692,9 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 	UWORD code = 0;
 	if (csd->units[unitnum])
 		code = serial_in_w(csd->units[unitnum], O_URX);
-	
+
+D(bug("---------- IN COMMON HANDLER!\n"));
+D(bug("URX: code=0x%x\n",code));
 	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|DATA_READY_F)) {
 		D(bug("In %s 1\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
@@ -706,10 +708,13 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
 	if (csd->units[unitnum])
 		code = serial_in_w(csd->units[unitnum], O_UTX);
 
+D(bug("UTX: code=0x%x\n",code));
 	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|TX_AVAIL_F)) {
 		D(bug("In %s 2\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
-			if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase)) {
+			if (0 == serialunit_write_more_data(csd->units[unitnum], 
+			                                    NULL, 
+			                                    SysBase)) {
 				
 			}
 		}
