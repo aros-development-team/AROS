@@ -7,35 +7,27 @@
 #include <aros/debug.h>
 
 #include <exec/types.h>
-#include <exec/memory.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
-#include <libraries/gadtools.h>
 #include <libraries/mui.h>
 #include <libraries/desktop.h>
 
 #include "support.h"
-#include "worker.h"
 #include "desktop_intern.h"
 
-#include <proto/desktop.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-#include "presentation.h"
-#include "observer.h"
-#include "iconobserver.h"
-#include "drawericonobserver.h"
+#include "internalwindowopsclass.h"
+#include "iconcontainerclass.h"
 
 #include "desktop_intern_protos.h"
 
-#include <string.h>
-
-IPTR drawerIconObserverNew(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalWindowOpsNew(Class *cl, Object *obj, struct opSet *msg)
 {
 	IPTR retval=0;
-	struct DrawerIconObserverClassData *data;
+	struct InternalWindowOpsClassData *data;
 	struct TagItem *tag;
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
@@ -48,13 +40,13 @@ IPTR drawerIconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	return retval;
 }
 
-IPTR drawerIconObserverSet(Class *cl, Object *obj, struct opSet *msg)
+IPTR internalWindowOpsSet(Class *cl, Object *obj, struct opSet *msg)
 {
-	struct DrawerIconObserverClassData *data;
+	struct InternalIconOpsClassData *data;
 	IPTR retval=1;
 	struct TagItem *tag, *tstate=msg->ops_AttrList;
 
-	data=(struct DrawerIconObserverClassData*)INST_DATA(cl, obj);
+	data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
 
 	while((tag=NextTagItem(&tstate)))
 	{
@@ -69,12 +61,12 @@ IPTR drawerIconObserverSet(Class *cl, Object *obj, struct opSet *msg)
 	return retval;
 }
 
-IPTR drawerIconObserverGet(Class *cl, Object *obj, struct opGet *msg)
+IPTR internalWindowOpsGet(Class *cl, Object *obj, struct opGet *msg)
 {
 	IPTR retval=1;
-	struct DrawerIconObserverClassData *data;
+	struct InternalWindowOpsClassData *data;
 
-	data=(struct DrawerIconObserverClassData*)INST_DATA(cl, obj);
+	data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
 
 	switch(msg->opg_AttrID)
 	{
@@ -86,7 +78,7 @@ IPTR drawerIconObserverGet(Class *cl, Object *obj, struct opGet *msg)
 	return retval;
 }
 
-IPTR drawerIconObserverDispose(Class *cl, Object *obj, Msg msg)
+IPTR internalWindowOpsDispose(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
 
@@ -95,7 +87,26 @@ IPTR drawerIconObserverDispose(Class *cl, Object *obj, Msg msg)
 	return retval;
 }
 
-AROS_UFH3(IPTR, drawerIconObserverDispatcher,
+IPTR internalWindowOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
+{
+	IPTR retval=0;
+	struct InternalIconOpsClassData *data;
+
+	data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
+
+	switch(msg->operationCode)
+	{
+		// close
+		case (DOC_WINDOWOP | 1):
+			SetAttrs(msg->target, ICA_Open, FALSE, TAG_END);
+			// dispose of some objects and do some cleanup here
+			break;
+	}
+
+	return retval;
+}
+
+AROS_UFH3(IPTR, internalWindowOpsDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
@@ -105,16 +116,19 @@ AROS_UFH3(IPTR, drawerIconObserverDispatcher,
 	switch(msg->MethodID)
 	{
 		case OM_NEW:
-			retval=drawerIconObserverNew(cl, obj, (struct opSet*)msg);
+			retval=internalWindowOpsNew(cl, obj, (struct opSet*)msg);
 			break;
 		case OM_SET:
-			retval=drawerIconObserverSet(cl, obj, (struct opSet*)msg);
+			retval=internalWindowOpsSet(cl, obj, (struct opSet*)msg);
 			break;
 		case OM_GET:
-			retval=drawerIconObserverGet(cl, obj, (struct opGet*)msg);
+			retval=internalWindowOpsGet(cl, obj, (struct opGet*)msg);
 			break;
 		case OM_DISPOSE:
-			retval=drawerIconObserverDispose(cl, obj, msg);
+			retval=internalWindowOpsDispose(cl, obj, msg);
+			break;
+		case OPM_Execute:
+			retval=internalWindowOpsExecute(cl, obj, (struct opExecute*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

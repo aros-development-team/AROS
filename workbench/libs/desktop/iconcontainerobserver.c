@@ -78,6 +78,7 @@ IPTR iconConObsSet(Class *cl, Object *obj, struct opSet *msg)
 
 				hsr=createScanMessage(DIMC_SCANDIRECTORY, NULL, data->dirLock, obj, _app(_presentation(obj)));
 				PutMsg(DesktopBase->db_HandlerPort, (struct Message*)hsr);
+
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				DoMethod(_presentation(obj), MUIM_KillNotify, PA_InTree);
 
@@ -137,7 +138,7 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(5*sizeof(struct TagItem), MEMF_ANY);
+		iconTags=AllocVec(13*sizeof(struct TagItem), MEMF_ANY);
 
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
@@ -147,8 +148,24 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		iconTags[2].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
 		iconTags[3].ti_Tag=IOA_Directory;
 		iconTags[3].ti_Data=data->directory;
-		iconTags[4].ti_Tag=TAG_END;
-		iconTags[4].ti_Data=0;
+		iconTags[4].ti_Tag=IOA_Comment;
+		iconTags[4].ti_Data=msg->wsr_ResultsArray[i].sr_Comment;
+		iconTags[5].ti_Tag=IOA_Script;
+		iconTags[5].ti_Data=msg->wsr_ResultsArray[i].sr_Script;
+		iconTags[6].ti_Tag=IOA_Pure;
+		iconTags[6].ti_Data=msg->wsr_ResultsArray[i].sr_Pure;
+		iconTags[7].ti_Tag=IOA_Readable;
+		iconTags[7].ti_Data=msg->wsr_ResultsArray[i].sr_Read;
+		iconTags[8].ti_Tag=IOA_Writeable;
+		iconTags[8].ti_Data=msg->wsr_ResultsArray[i].sr_Write;
+		iconTags[9].ti_Tag=IOA_Archived;
+		iconTags[9].ti_Data=msg->wsr_ResultsArray[i].sr_Archive;
+		iconTags[10].ti_Tag=IOA_Executable;
+		iconTags[10].ti_Data=msg->wsr_ResultsArray[i].sr_Execute;
+		iconTags[11].ti_Tag=IOA_Deleteable;
+		iconTags[11].ti_Data=msg->wsr_ResultsArray[i].sr_Delete;
+		iconTags[12].ti_Tag=TAG_END;
+		iconTags[12].ti_Data=0;
 
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{

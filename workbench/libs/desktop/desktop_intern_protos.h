@@ -117,11 +117,25 @@ AROS_UFH3(IPTR, internalIconOpsDispatcher,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1));
 
+AROS_UFH3(IPTR, internalWindowOpsDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
+AROS_UFH3(IPTR, internalDesktopOpsDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
+
 AROS_UFH3(IPTR, desktopDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1));
 
+AROS_UFH3(IPTR, containerIconObserverDispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1));
 
 #endif
 

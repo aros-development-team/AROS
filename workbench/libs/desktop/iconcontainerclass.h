@@ -8,12 +8,15 @@
 
 #define ICA_BASE TAG_USER+1000
 
-#define ICA_VertScroller  ICA_BASE+1
-#define ICA_HorizScroller ICA_BASE+2
-#define ICA_ScrollToHoriz ICA_BASE+3
-#define ICA_ScrollToVert  ICA_BASE+4
-#define ICA_JustSelected  ICA_BASE+5
-#define ICA_SelectedIcons ICA_BASE+6
+#define ICA_VertScroller   ICA_BASE+1
+#define ICA_HorizScroller  ICA_BASE+2
+#define ICA_ScrollToHoriz  ICA_BASE+3
+#define ICA_ScrollToVert   ICA_BASE+4
+#define ICA_JustSelected   ICA_BASE+5
+#define ICA_SelectedIcons  ICA_BASE+6
+#define ICA_Open           ICA_BASE+7 /* (-SG) */
+#define ICA_Desktop        ICA_BASE+8 /* (ISG) */
+#define ICA_DeleteMe       ICA_BASE+9
 
 #define ICM_UnselectAll      ICA_BASE+10
 #define ICM_UpdateSelectList ICA_BASE+11
@@ -67,6 +70,7 @@ struct IconContainerClassData
 	LONG heightAdjusted, widthAdjusted;
 	BOOL iconSelected;
 	BOOL justSelected;
+	BOOL open;
 };
 
 #define ICONSPACINGX 10

@@ -13,6 +13,23 @@
 #define IA_Selected   IA_BASE+3
 #define IA_Executed   IA_BASE+4
 #define IA_Directory  IA_BASE+5
+#define IA_Comment    IA_BASE+6 /* (-SG) */
+#define IA_Script       IA_BASE+7
+#define IA_Pure         IA_BASE+8
+#define IA_Archived     IA_BASE+9
+#define IA_Readable     IA_BASE+10
+#define IA_Writeable    IA_BASE+11
+#define IA_Executable   IA_BASE+12
+#define IA_Deleteable   IA_BASE+13
+
+#define _comment(obj)  (iconData(obj)->comment)
+#define _script(obj)  (iconData(obj)->script)
+#define _pure(obj)  (iconData(obj)->pure)
+#define _archived(obj)  (iconData(obj)->archived)
+#define _readable(obj)  (iconData(obj)->readable)
+#define _writeable(obj)  (iconData(obj)->writeable)
+#define _executable(obj)  (iconData(obj)->executable)
+#define _deleteable(obj)  (iconData(obj)->deleteable)
 
 struct IconClassData
 {
@@ -22,6 +39,8 @@ struct IconClassData
 	Object *labelPart;
 	BOOL selected;
 	ULONG lastClickSecs, lastClickMicros;
+	UBYTE *comment;
+	BOOL script, pure, archived, readable, writeable, executable, deleteable;
 };
 
 // err.. what can i say?  this is temporary

@@ -37,6 +37,10 @@ void scan(struct ScannerWorkerContext *swc)
 	struct SingleResult *sr=NULL;
 	int i=0;
 	UBYTE *fullPath;
+	BPTR fileLock;
+	struct FileInfoBlock *fib;
+	ULONG commentSize;
+	struct TagItem adoTags[]={{TAG_END, 0}};
 
 	swc->swc_More=ExAll(swc->swc_DirLock, (struct ExAllData*)swc->swc_Buffer, SCAN_BUFFER, ED_OWNER, swc->swc_EAC);
 
@@ -55,6 +59,31 @@ void scan(struct ScannerWorkerContext *swc)
 			strcat(fullPath, ead->ed_Name);
 
 			sr[i].sr_DiskObject=GetDiskObjectNew(fullPath);
+
+			fileLock=Lock(fullPath, ACCESS_READ);
+			if(fileLock)
+			{
+				fib=AllocDosObject(DOS_FIB, adoTags);
+				if(fib)
+				{
+					if(Examine(fileLock, fib))
+					{
+						commentSize=strlen(fib->fib_Comment)+1;
+						sr[i].sr_Comment=AllocVec(commentSize, MEMF_ANY);
+						CopyMem(fib->fib_Comment, sr[i].sr_Comment, commentSize);
+						sr[i].sr_Script=fib->fib_Protection & FIBF_SCRIPT;
+						sr[i].sr_Pure=fib->fib_Protection & FIBF_PURE;
+						sr[i].sr_Archive=fib->fib_Protection & FIBF_ARCHIVE;
+						sr[i].sr_Read=fib->fib_Protection & FIBF_READ;
+						sr[i].sr_Write=fib->fib_Protection & FIBF_WRITE;
+						sr[i].sr_Execute=fib->fib_Protection & FIBF_EXECUTE;
+						sr[i].sr_Delete=fib->fib_Protection & FIBF_DELETE;
+					}
+					FreeDosObject(DOS_FIB, fib);
+				}
+				UnLock(fileLock);
+			}
+
 			ead=ead->ed_Next;
 
 			FreeVec(fullPath);

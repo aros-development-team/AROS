@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/classusr.h>
@@ -18,6 +23,7 @@
 #include "iconcontainerclass.h"
 #include "iconcontainerobserver.h"
 #include "observer.h"
+#include "presentation.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -62,6 +68,7 @@
 
 	Object *newObject=NULL;
 	Object *semanticObject;
+	struct TagItem *obsTags;
 
 	switch(kind)
 	{
@@ -82,6 +89,8 @@
 			semanticObject=NewObject(IconContainerObserver->mcc_Class, NULL,
 						OA_Presentation, newObject,
 						ICOA_Directory, dir, TAG_END);
+
+			SetAttrs(newObject, PA_Observer, semanticObject, TAG_END);
 
 			break;
 		}

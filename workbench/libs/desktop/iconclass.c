@@ -37,6 +37,9 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 	struct DiskObject *diskobject=NULL;
 	UBYTE *label=NULL;
 	BOOL selected=FALSE;
+	BOOL script=FALSE, pure=FALSE, archived=FALSE, readable=FALSE, writeable=FALSE, executable=FALSE, deleteable=FALSE;
+	UBYTE *comment=NULL;
+	Object *desktop=NULL;
 
 	tag=FindTagItem(IA_DiskObject, msg->ops_AttrList);
 	if(tag)
@@ -56,6 +59,62 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 	if(tag)
 	{
 		selected=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Comment, msg->ops_AttrList);
+	if(tag)
+	{
+		comment=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Script, msg->ops_AttrList);
+	if(tag)
+	{
+		script=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Pure, msg->ops_AttrList);
+	if(tag)
+	{
+		pure=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Archived, msg->ops_AttrList);
+	if(tag)
+	{
+		archived=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Readable, msg->ops_AttrList);
+	if(tag)
+	{
+		readable=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Writeable, msg->ops_AttrList);
+	if(tag)
+	{
+		writeable=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Executable, msg->ops_AttrList);
+	if(tag)
+	{
+		executable=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IA_Deleteable, msg->ops_AttrList);
+	if(tag)
+	{
+		deleteable=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
 	}
 
@@ -113,6 +172,38 @@ IPTR iconSet(Class *cl, Object *obj, struct opSet *msg)
 				data->directory=tag->ti_Data;
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
+			case IA_Comment:
+				data->comment=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Script:
+				data->script=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Pure:
+				data->pure=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Archived:
+				data->archived=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Readable:
+				data->readable=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Writeable:
+				data->writeable=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Executable:
+				data->executable=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
+			case IA_Deleteable:
+				data->deleteable=tag->ti_Data;
+				retval=DoSuperMethodA(cl, obj, (Msg)msg);
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -142,6 +233,30 @@ IPTR iconGet(Class *cl, Object *obj, struct opGet *msg)
 			break;
 		case IA_Directory:
 			*msg->opg_Storage=data->directory;
+			break;
+		case IA_Comment:
+			*msg->opg_Storage=data->comment;
+			break;
+		case IA_Script:
+			*msg->opg_Storage=data->script;
+			break;
+		case IA_Pure:
+			*msg->opg_Storage=data->pure;
+			break;
+		case IA_Archived:
+			*msg->opg_Storage=data->archived;
+			break;
+		case IA_Readable:
+			*msg->opg_Storage=data->readable;
+			break;
+		case IA_Writeable:
+			*msg->opg_Storage=data->writeable;
+			break;
+		case IA_Executable:
+			*msg->opg_Storage=data->executable;
+			break;
+		case IA_Deleteable:
+			*msg->opg_Storage=data->deleteable;
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);

@@ -17,6 +17,12 @@ struct DesktopObserverClassData
 	struct TagItem *defaultWindowArgs;
 };
 
+struct doDeleteWindow
+{
+	Msg MethodID;
+	Object *icObs;
+};
+
 //struct icoAddIcon
 //{
 //	Msg methodID;
