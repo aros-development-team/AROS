@@ -105,7 +105,7 @@ int main (int argc, char ** argv)
     struct Process *process;
     
     BPTR    in, out, shell, lock;
-    STRPTR  s1, s2, s3, buf;
+    STRPTR  s1, s3, buf;
     LONG    error = RETURN_ERROR;
     
     rda = ReadArgs("WINDOW,FROM", args, NULL);
@@ -157,7 +157,7 @@ int main (int argc, char ** argv)
 	    
 	    if(shell != NULL)
 	    {
-		out = Open(args[0], MODE_READWRITE);
+		out = Open((STRPTR)args[0], MODE_READWRITE);
 
 		if(out != NULL)
 		{
