@@ -11,6 +11,7 @@
     NAME */
 
 #include "cxintern.h"
+#include <aros/debug.h>
 #include <libraries/commodities.h>
 #include <proto/exec.h>
 

@@ -10,10 +10,11 @@
 
     NAME */
 
-#include "cxintern.h"
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <devices/inputevent.h>
 #include <exec/memory.h>
+#include "cxintern.h"
 
 #define DEBUG_COPYIEVENT(x)	x;
 

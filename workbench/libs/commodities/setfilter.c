@@ -10,6 +10,7 @@
 
     NAME */
 
+#include <aros/debug.h>
 #include "cxintern.h"
 #include <libraries/commodities.h>
 #include <proto/exec.h>
