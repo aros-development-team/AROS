@@ -124,7 +124,7 @@ LX11
     );
     
     XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-/*    XFlush(data->display); */
+    XFlush(data->display); /* stegerg: uncommented */
 UX11    
     return 0;
 
@@ -811,7 +811,8 @@ UX11
     ReleaseSemaphore(&XSD(cl)->shm_sema);
 
 LX11
-	destroy_xshm_ximage(image);    
+    XFlush(data->display); /* stegerg: added */
+    destroy_xshm_ximage(image);    
 UX11    
 
     return;
@@ -1180,7 +1181,7 @@ LX11
     	XSetClipMask(data->display, data->gc, None);
     }	
     
-    
+    XFlush(data->display); /* stegerg: added */
 UX11
 }
 
@@ -1229,6 +1230,6 @@ LX11
     	XSetClipMask(data->display, data->gc, None);
     }	
     
-    
+    XFlush(data->display); /* stegerg: added */
 UX11
 }
