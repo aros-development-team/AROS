@@ -494,6 +494,8 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     	    	gbox->Left, gbox->Top, gbox->Left + gbox->Width, gbox->Top + gbox->Height));
     	    RectFill(rp, gbox->Left, gbox->Top, 
     	    	gbox->Left + gbox->Width - 1, gbox->Top + gbox->Height - 1);
+
+	    ReleaseGIRPort(rp);
     	}
     }
 
