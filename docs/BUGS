@@ -395,3 +395,8 @@ bergers@aros.org
 Demos/filereq is a simple refreshed (is this the reason ??) window and has a 
 few problems. The slider bar is incorrectly drawn, no reaction on pushed
 buttons etc.
+
+BUG000058
+bergers@aros.org
+The areafill algorithms are not very much in sync with the line drawing and
+ellipse drawing alogorithms.
