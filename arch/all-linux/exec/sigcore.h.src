@@ -69,7 +69,10 @@ typedef @sighandler@ SignalHandler;
    small */
 struct AROS_cpu_context
 {
-    ULONG regs[6]; /* eax, ebx, ecx, edx, edi, esi */
+    ULONG regs[7]; /* eax, ebx, ecx, edx, edi, esi */
+/*    
+    unsigned short regsS[7]; 
+*/
     struct _fpstate fpu; /* FPU registers */
 };
 
@@ -108,6 +111,15 @@ struct AROS_cpu_context
 #define R3(sc)           (sc->edx)
 #define R4(sc)           (sc->edi)
 #define R5(sc)           (sc->esi)
+#define R6(sc)           (sc->eflags)
+
+#   define RS0(sc)           (sc->gs)
+#   define RS1(sc)           (sc->fs)
+#   define RS2(sc)           (sc->es)
+#   define RS3(sc)           (sc->ds)
+#   define RS4(sc)           (sc->cs)
+#   define RS5(sc)           (sc->ss)  
+
 
 /*
     Save and restore the CPU GPRs in the CPU context
@@ -118,7 +130,17 @@ struct AROS_cpu_context
 	(GetCpuContext(task)->regs[2] = R2(sc)), \
 	(GetCpuContext(task)->regs[3] = R3(sc)), \
 	(GetCpuContext(task)->regs[4] = R4(sc)), \
-	(GetCpuContext(task)->regs[5] = R5(sc))
+	(GetCpuContext(task)->regs[5] = R5(sc)), \
+        (GetCpuContext(task)->regs[6] = R6(sc))
+
+/*
+	(GetCpuContext(task)->regsS[0] = RS0(sc)), \
+	(GetCpuContext(task)->regsS[1] = RS1(sc)), \
+	(GetCpuContext(task)->regsS[2] = RS2(sc)), \
+	(GetCpuContext(task)->regsS[3] = RS3(sc)), \
+	(GetCpuContext(task)->regsS[4] = RS4(sc)), \
+	(GetCpuContext(task)->regsS[5] = RS5(sc))
+*/
 
 #define RESTORE_CPU(task,sc) \
 	(R0(sc) = GetCpuContext(task)->regs[0]), \
@@ -126,8 +148,16 @@ struct AROS_cpu_context
 	(R2(sc) = GetCpuContext(task)->regs[2]), \
 	(R3(sc) = GetCpuContext(task)->regs[3]), \
 	(R4(sc) = GetCpuContext(task)->regs[4]), \
-	(R5(sc) = GetCpuContext(task)->regs[5])
-
+	(R5(sc) = GetCpuContext(task)->regs[5]), \
+        (R6(sc) = GetCpuContext(task)->regs[6])
+/*
+	(RS0(sc) = GetCpuContext(task)->regsS[0]), \
+	(RS1(sc) = GetCpuContext(task)->regsS[1]), \
+	(RS2(sc) = GetCpuContext(task)->regsS[2]), \
+	(RS3(sc) = GetCpuContext(task)->regsS[3]), \
+	(RS4(sc) = GetCpuContext(task)->regsS[4]), \
+	(RS5(sc) = GetCpuContext(task)->regsS[5])
+*/
 /*
     It's not possible to do save the FPU under linux because linux
     uses the tasks stack to save the signal context. The signal
