@@ -30,5 +30,5 @@ prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
 ; Ordinary users can use fdsk.device both on their amiga and their
 ; linux box to mount disc images.
 ;
-;assign FDSK: SYS:fdsk
+assign FDSK: SYS:DiskImages
 ;mount FDSK0:
