@@ -17,6 +17,7 @@
 #include <aros/machine.h>
 #include "dos_intern.h"
 #include "internalloadseg.h"
+#define DEBUG 0
 #include <aros/debug.h>
 #include <string.h>
 #include <stddef.h>
@@ -194,8 +195,8 @@ static int read_block
         {
             if (subsize == 0)
             {
-                kprintf("[ELF Loader] Error while reading from file.\n");
-                kprintf("[ELF Loader] Offset = %ld - Size = %ld\n", offset, size);
+                D(bug("[ELF Loader] Error while reading from file.\n"));
+                D(bug("[ELF Loader] Offset = %ld - Size = %ld\n", offset, size));
                 SetIoErr(ERROR_BAD_HUNK);
             }
 
@@ -242,7 +243,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         eh->ident[3] != 'F'
     )
     {
-        kprintf("[ELF Loader] Not an elf object\n");
+        D(bug("[ELF Loader] Not an elf object\n"));
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
@@ -275,28 +276,26 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         #endif
     )
     {
-        kprintf("[ELF Loader] Object is of wrong type\n");
-        kprintf("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32);
-        kprintf("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT);
-        kprintf("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL);
+        D(bug("[ELF Loader] Object is of wrong type\n"));
+        D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32));
+        D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT));
+        D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL));
 
-        kprintf("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],
-        #if defined (__i386__)
-            ELFDATA2LSB);
-        #elif defined(__mc68000__)
-            ELFDATA2MSB);
-        #elif defined(__arm__)
-            ELFDATA2MSB);
-        #endif
+#if defined (__i386__)
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2LSB));
+#elif defined(__mc68000__)
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2MSB));
+#elif defined(__arm__)
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA], ELFDATA2MSB));
+#endif
 
-        kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
-        #if defined (__i386__)
-            EM_386);
-        #elif defined(__mc68000__)
-            EM_68K);
-        #elif defined(__arm__)
-            EM_ARM);
-        #endif
+#if defined (__i386__)
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_386));
+#elif defined(__mc68000__)
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_68K));
+#elif defined(__arm__)
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_ARM));
+#endif
 
         SetIoErr(ERROR_OBJECT_WRONG_TYPE);
         return 0;
