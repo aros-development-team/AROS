@@ -270,13 +270,22 @@
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
 #endif /* !__GNUC__ */
 
+#ifdef __GNUC__
+#define xget(object, attribute)                 \
+({                                              \
+    IPTR __storage = 0;                         \
+    GetAttr((attribute), (object), &__storage); \
+    __storage;                                  \
+})
+#endif /* __GNUC__ */
+
 #define set(obj,attr,value) SetAttrs(obj,attr,(IPTR)value,TAG_DONE)
 #define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
 
 /* Zune */
 #define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,(IPTR)value,TAG_DONE)
-/* Zune */
 #define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
+
 
 #define setmutex(obj,n)     set(obj,MUIA_Radio_Active,n)
 #define setcycle(obj,n)     set(obj,MUIA_Cycle_Active,n)
