@@ -1,0 +1,65 @@
+#   Copyright (C) 2001 AROS - The Amiga Research OS
+#   $Id$
+#
+#   Desc: Make the ADF library.
+#
+
+
+NATIV_DIR = ./Generic
+
+SRC	= adf_hd adf_disk adf_raw adf_bitm adf_dump adf_util adf_env \
+	  adf_nativ adf_dir adf_file adf_cache adf_link adf_salv
+
+# Include the AROS build information. This will fail if $(TOP) is not
+# set, and build in the current directory.
+-include $(TOP)/config/make.cfg
+
+
+# If the include above doesn't work, we need some defaults.
+HOST_CC	?= $(CC)
+HOST_AR ?= $(AR) cru 
+TOOLDIR ?= .
+MKDIR ?= mkdir
+MECHO ?= echo
+ADFLIB ?= $(TOOLDIR)/libadf.a
+
+OBJDIR	= $(TOOLDIR)/obj
+DEPFILE = $(TOOLDIR)/depend
+
+HOST_CFLAGS := $(HOST_CFLAGS) -Wall -I. -O2 -I${NATIV_DIR} -I$(OBJDIR)
+
+all : depend $(OBJDIR) $(ADFLIB)
+
+# to define LITT_ENDIAN on little endian machines (intel)
+# checks for sizeof(long)=4, sizeof(short)=2, sizeof(int)=4
+$(OBJDIR)/defendian.h: myconf.aros
+	myconf.aros >> $@
+
+$(ADFLIB) : $(foreach f,$(SRC),$(OBJDIR)/$(f).o)
+	@$(MECHO) "Creating adflib/$(notdir $@)..."
+	@$(HOST_AR) $@ $?
+
+$(OBJDIR)/%.o : %.c $(OBJDIR)/defendian.h
+	@$(MECHO) "Compiling adflib/$(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
+
+$(OBJDIR)/adf_nativ.o: ${NATIV_DIR}/adf_nativ.c ${NATIV_DIR}/adf_nativ.h
+	$(HOST_CC) ${HOST_CFLAGS} -c ${NATIV_DIR}/adf_nativ.c -o $@
+
+$(OBJDIR) : 
+	@$(MKDIR) $(OBJDIR)
+
+clean :
+	-@$(RM) -r $(OBJDIR) $(ADFLIB)
+	@sed '/^# DO NOT DELETE$$/,$$d' Makefile > Makefile.tmp
+	@echo "# DO NOT DELETE" >> Makefile.tmp
+	@mv -f Makefile.tmp Makefile
+	-@$(RM) Makefile.bak
+
+depend : $(DEPFILE)
+	@$(NOP)
+
+$(DEPFILE) : 
+	@makedepend -f- -- $(HOST_CFLAGS) -- *.c > $(DEPFILE)
+
+-include $(DEPFILE)
