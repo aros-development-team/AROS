@@ -1,0 +1,17 @@
+#!/bin/sh
+echo "1. Hashed IFs. 2. Hashed methods 3. Hashed strings"
+read ans </dev/tty
+case "$ans" in
+  "1")
+	echo "SYSTEM=HASHED_IFS" >Make.Cfg
+	echo "SYSFILE=hashed_ifs" >>Make.Cfg
+  	;;
+  "2")
+	echo "SYSTEM=HASHED_METHODS" >Make.Cfg
+	echo "SYSFILE=hashed_methods" >>Make.Cfg
+  	;;
+  "3")
+	echo "SYSTEM=HASHED_STRINGS" >Make.Cfg
+	echo "SYSFILE=hashed_strings" >>Make.Cfg
+  	;;
+esac
