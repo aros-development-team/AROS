@@ -17,6 +17,7 @@ void writeinclibdefs(void)
     switch(modtype)
     {
         case LIBRARY: suffix = "library"; break;
+        case DEVICE:  suffix = "device"; break; 
         case MCC:     suffix = "mcc"; break;
         case MUI:     suffix = "mui"; break;
         case MCP:     suffix = "mcp"; break;

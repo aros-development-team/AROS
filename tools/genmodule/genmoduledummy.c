@@ -26,6 +26,11 @@ int main(int argc, char **argv)
 	modtype = LIBRARY;
 	firstlvo = 5;
     }
+    else if (strcmp(argv[2], "device")==0)
+    {
+	modtype = DEVICE;
+	firstlvo = 7;
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);

@@ -311,7 +311,12 @@ static void readsectionconfig(void)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
     if (libbasetypeextern==NULL)
-	libbasetypeextern = "struct Library";
+    {
+	if (modtype == DEVICE)
+	    libbasetypeextern = "struct Device";
+	else
+	    libbasetypeextern = "struct Library";
+    }
 }
 
 static void readsectionproto(void)
