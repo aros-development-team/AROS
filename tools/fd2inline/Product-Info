@@ -1,0 +1,34 @@
+.name
+fd2inline
+.type
+Programmer tool
+.short
+Convert FD files to gcc 'inlines'
+.description
+FD2InLine is useful if you want to use GCC for Amiga-specific
+development and would like to call the functions in the Amiga shared
+libraries efficiently.  The format of calls to the Amiga shared
+library functions differs substantially from the default function call
+format of C compilers.  Therefore, some tricks are necessary if you
+want to use these functions.
+
+FD2InLine is a parser that converts FD files and clib files to GCC
+inlines.  FD and clib files contain information about functions in
+shared libraries.  FD2InLine reads these two files and merges the
+information contained therein, producing an output file suitable for
+use with the GCC compiler.  This output file contains so-called
+inlines, one for each function entry.  Using them, GCC can produce
+very efficient code for making function calls to Amiga shared
+libraries.
+.version
+1.11
+.author
+Kamil Iskra
+.distribution
+GNU Public License
+.source
+Includes source in C.
+.described-by
+Fred Fish (fnf@ninemoons.com)
+.submittal
+Received via ftp directly from the author.

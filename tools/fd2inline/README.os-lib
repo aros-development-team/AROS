@@ -1,0 +1,12 @@
+Place your FD files here.
+
+The directories are processed in alphabetical order.
+
+The AmigaOS FDs goes to the "amigaos" directory. You can add your own in
+the "3rd" directory and the content of
+"morphosdev/emulinclude/includenew/fd" from the MorhpOS SDK in
+"morphos". Since existing files are overwritten, the MorphOS files will
+replace files also found in "amigaos".
+
+Don't forget to add the include files in ".../os-include/XXX" as
+well.

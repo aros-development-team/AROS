@@ -1,0 +1,279 @@
+srcdir =		@srcdir@
+VPATH =			@srcdir@
+
+prefix =		@prefix@
+exec_prefix =		@exec_prefix@
+
+bindir =		@bindir@
+libdir =		@libdir@
+includedir =		@includedir@
+guidedir =		@guidedir@
+
+INSTALL =		@INSTALL@
+INSTALL_PROGRAM =	@INSTALL_PROGRAM@ -s
+INSTALL_DATA =		@INSTALL_DATA@
+
+SHELL =			/bin/sh
+CC =			@CC@
+AR =			ar
+RM =			rm -rf
+CP =			cp -a
+MAKEINFO =		makeinfo
+LHA =			lha -mraxe
+MV =			mv
+STRIP =			strip
+TAR =			tar -vz
+RANLIB =		@RANLIB@
+AWK =			@AWK@
+DEFS =			@DEFS@
+LIBS =			@LIBS@
+CFLAGS =		$(DEFS) -Wall -Wstrict-prototypes \
+			'-DVERSION="$(VERSION)"' @CFLAGS@
+LDFLAGS =		@LDFLAGS@
+
+# Used when building fd2inline, fd2inline.guide and the archives.
+VERSION =		1.37
+
+AMIGAOS_FD_PATH =	@amigaos_fd_path@
+AMIGAOS_HEADER_PATH =	@amigaos_header_path@
+POS_FD_PATH =		@pos_fd_path@
+POS_HEADER_PATH =	@pos_header_path@
+
+# Pseudo-targets.
+AMIGAOS_INLINES =	@amigaos_inlines@
+BUILD_AMIGAOS_INLINES =	stmp-built-amigaos-inlines
+BUILD_AMIGAOS_PRAGMAS =	stmp-built-amigaos-pragmas
+BUILD_AMIGAOS_PROTOS =	stmp-built-amigaos-protos
+BUILD_AMIGAOS_LIBS =	stmp-built-amigaos-libs
+POS_INLINES =		@pos_inlines@
+BUILD_POS_INLINES =	stmp-built-pos-inlines
+
+# List of linker libraries to build. Each entry is INCBASE!LIBBASE (see below).
+NONSTD_LIBS =		muimaster!mui ums!ums dospath!dospath \
+			screennotify!screennotify wbstart!wbstart
+
+# Archive names.
+SRC_ARCHIVE_LHA =	fd2inline-$(VERSION)-src.lha
+SRC_ARCHIVE_TGZ =	fd2inline-$(VERSION)-src.tgz
+BIN_ARCHIVE =		fd2inline-$(VERSION)-bin.lha
+
+# Used when building archives
+TMP_DIR =		/tmp
+TMP_SUBDIR =		fd2inline-$(VERSION)
+
+# Flags to pass to submake.
+FLAGS_TO_PASS =		"CC=$(CC)" \
+			"AWK=$(AWK)" \
+			"RM=$(RM)" \
+			"AR=$(AR)" \
+			"RANLIB=$(RANLIB)" \
+			"AMIGAOS_HEADER_PATH=$(AMIGAOS_HEADER_PATH)" \
+			"AMIGAOS_FD_PATH=$(AMIGAOS_FD_PATH)"
+
+.PHONY:			all guide amigaos_inlines pos_inlines nop install
+.PHONY:			dist alllib clean clobber
+
+all:			fd2inline guide $(AMIGAOS_INLINES) $(POS_INLINES)
+
+fd2inline:		fd2inline.c
+			$(CC) $(CFLAGS) $(LDFLAGS) -o fd2inline $(srcdir)/fd2inline.c $(LIBS)
+
+install:		all
+			$(INSTALL_PROGRAM) fd2inline $(bindir)/fd2inline
+			if [ -d include/inline ]; then \
+			  if [ -d $(includedir)/inline ]; then true; else mkdir $(includedir)/inline; fi; \
+			  $(INSTALL_DATA) $(srcdir)/include-src/inline/*.h $(includedir)/inline; \
+			  $(INSTALL_DATA) include/inline/*.h $(includedir)/inline; \
+			else true; fi
+			if [ -d include/pragmas ]; then \
+			  if [ -d $(includedir)/pragmas ]; then true; else mkdir $(includedir)/pragmas; fi; \
+			  $(INSTALL_DATA) include/pragmas/*.h $(includedir)/pragmas; \
+			else true; fi
+			if [ -d include/proto ]; then \
+			  if [ -d $(includedir)/proto ]; then true; else mkdir $(includedir)/proto; fi; \
+			  $(INSTALL_DATA) $(srcdir)/include-src/proto/*.h $(includedir)/proto; \
+			  $(INSTALL_DATA) include/proto/*.h $(includedir)/proto; \
+			else true; fi
+			if [ -d include/pInline ]; then \
+			  if [ -d $(includedir)/pInline ]; then true; else mkdir $(includedir)/pInline; fi; \
+			  $(INSTALL_DATA) include/pInline/*.h $(includedir)/pInline; \
+			else true; fi
+			libs=`echo lib/lib*.a` ; if [ "lib/lib*.a" != "$${libs}" ]; then \
+			  $(INSTALL_DATA) lib/lib*.a $(libdir); \
+			else true; fi
+			libs=`echo lib/libb/lib*.a` ; if [ "lib/libb/lib*.a" != "$${libs}" ]; then \
+			  $(INSTALL_DATA) lib/libb/lib*.a $(libdir)/libb; \
+			else true; fi
+			libs=`echo lib/libb32/libm020/lib*.a` ; if [ "lib/libb32/libm020/lib*.a" != "$${libs}" ]; then \
+			  $(INSTALL_DATA) lib/libb32/libm020/lib*.a $(libdir)/libb32/libm020; \
+			else true; fi
+			$(INSTALL_DATA) fd2inline.guide $(guidedir)
+
+# "make dist" is only guaranteed to work when all the components (AmigaOS
+# headers, AmigaOS libraries and p.OS headers) have been built.
+dist:			all
+			# Create a temporary location.
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR) ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR); fi
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/include-src ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/include-src; fi
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/include-src/inline ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/include-src/inline; fi
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/include-src/proto ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/include-src/proto; fi
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/lib ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/lib; fi
+			# Copy the source directory to it.
+			( \
+			  cd $(srcdir); \
+			  $(CP) include-src/inline/*.h $(TMP_DIR)/$(TMP_SUBDIR)/include-src/inline; \
+			  $(CP) include-src/proto/*.h $(TMP_DIR)/$(TMP_SUBDIR)/include-src/proto; \
+			  $(CP) lib/Makefile.in lib/splitasm.awk $(TMP_DIR)/$(TMP_SUBDIR)/lib; \
+			  $(CP) manifests patches configure* COPYING fd2inline.c \
+			    fd2inline.texi install.sh Makefile.in \
+			    makemacros.awk makepragmas.awk Product-Info \
+			    $(TMP_DIR)/$(TMP_SUBDIR) \
+			)
+			# Create the source archives.
+			( \
+			  cd $(TMP_DIR); \
+			  $(LHA) a $(SRC_ARCHIVE_LHA) $(TMP_SUBDIR) \
+			)
+			$(RM) $(SRC_ARCHIVE_LHA)
+			$(CP) $(TMP_DIR)/$(SRC_ARCHIVE_LHA) .
+			$(RM) $(TMP_DIR)/$(SRC_ARCHIVE_LHA)
+			$(TAR) -cf $(SRC_ARCHIVE_TGZ) -C $(TMP_DIR) $(TMP_SUBDIR)
+			# Reorganize the temporary location.
+			( \
+			  cd $(TMP_DIR)/$(TMP_SUBDIR); \
+			  $(MV) include-src include; \
+			  $(RM) lib/* \
+			)
+			# Copy the build directory to the temporary location.
+			$(CP) include/inline include/pragmas include/proto include/pInline $(TMP_DIR)/$(TMP_SUBDIR)/include
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/bin ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/bin; fi
+			$(CP) fd2inline $(TMP_DIR)/$(TMP_SUBDIR)/bin
+			$(STRIP) $(TMP_DIR)/$(TMP_SUBDIR)/bin/fd2inline
+			$(CP) lib/lib*.a $(TMP_DIR)/$(TMP_SUBDIR)/lib
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb; fi
+			$(CP) lib/libb/lib*.a $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb32 ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb32; fi
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb32/libm020 ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb32/libm020; fi
+			$(CP) lib/libb32/libm020/lib*.a $(TMP_DIR)/$(TMP_SUBDIR)/lib/libb32/libm020
+			if [ -d $(TMP_DIR)/$(TMP_SUBDIR)/guide ]; then true; else mkdir $(TMP_DIR)/$(TMP_SUBDIR)/guide; fi
+			$(CP) fd2inline.guide $(TMP_DIR)/$(TMP_SUBDIR)/guide
+			# Create the binary archive.
+			( \
+			  cd $(TMP_DIR); \
+			  $(LHA) a $(BIN_ARCHIVE) $(TMP_SUBDIR)/ bin guide include lib COPYING \
+			)
+			$(RM) $(BIN_ARCHIVE)
+			$(CP) $(TMP_DIR)/$(BIN_ARCHIVE) .
+			$(RM) $(TMP_DIR)/$(BIN_ARCHIVE)
+			$(RM) $(TMP_DIR)/$(TMP_SUBDIR)
+
+amigaos_inlines:	$(BUILD_AMIGAOS_INLINES) $(BUILD_AMIGAOS_PRAGMAS) \
+			$(BUILD_AMIGAOS_PROTOS) $(BUILD_AMIGAOS_LIBS)
+
+pos_inlines:		$(BUILD_POS_INLINES) include/pInline/macros.h
+
+nop:
+
+$(BUILD_AMIGAOS_INLINES): fd2inline
+			if [ -d include ]; then true; else mkdir include; fi
+			if [ -d include/inline ]; then true; else mkdir include/inline; fi
+			for fd in $(AMIGAOS_FD_PATH)/*.fd; do \
+			  rootname=`basename $$fd .fd | sed "s/_lib$$//"`; \
+			  if [ "$${rootname}" = "mathffp" -o "$${rootname}" = "mathtrans" ]; then \
+			    continue; \
+			  else true; fi; \
+			  echo "making include/inline/$$rootname.h..."; \
+			  ./fd2inline $$fd $(AMIGAOS_HEADER_PATH)/clib/$${rootname}_protos.h -o include/inline/$$rootname.h; \
+			done
+			touch $(BUILD_AMIGAOS_INLINES)
+
+$(BUILD_AMIGAOS_PRAGMAS): $(srcdir)/makepragmas.awk
+			if [ -d include ]; then true; else mkdir include; fi
+			if [ -d include/pragmas ]; then true; else mkdir include/pragmas; fi
+			for fd in $(AMIGAOS_FD_PATH)/*.fd; do \
+			  rootname=`basename $$fd .fd | sed "s/_lib$$//"`; \
+			  if [ "$${rootname}" = "mathffp" -o "$${rootname}" = "mathtrans" ]; then \
+			    continue; \
+			  else true; fi; \
+			  echo "making include/pragmas/$${rootname}_pragmas.h..."; \
+			  $(AWK) -f $(srcdir)/makepragmas.awk -v PRAGMAS=$$rootname >include/pragmas/$${rootname}_pragmas.h; \
+			done
+			touch $(BUILD_AMIGAOS_PRAGMAS)
+
+$(BUILD_AMIGAOS_PROTOS): fd2inline
+			if [ -d include ]; then true; else mkdir include; fi
+			if [ -d include/proto ]; then true; else mkdir include/proto; fi
+			for fd in $(AMIGAOS_FD_PATH)/*.fd; do \
+			  rootname=`basename $$fd .fd | sed "s/_lib$$//"`; \
+			  if [ -f $(srcdir)/include-src/proto/$$rootname.h ]; then \
+			    continue; \
+			  else true; fi; \
+			  echo "making include/proto/$$rootname.h..."; \
+			  ./fd2inline --proto $$fd -o include/proto/$$rootname.h; \
+			done
+			touch $(BUILD_AMIGAOS_PROTOS)
+
+$(BUILD_AMIGAOS_LIBS):	fd2inline
+			for bases in $(NONSTD_LIBS); do \
+			  incbase=`echo $$bases | sed "s/!.*$$//"`; \
+			  libbase=`echo $$bases | sed "s/^.*!//"`; \
+			  if [ -f include/inline/$$incbase.h ]; then \
+			    echo "making lib$$libbase.a..."; \
+			    (cd lib; $(MAKE) $(FLAGS_TO_PASS) INCBASE=$$incbase LIBBASE=$$libbase); \
+			  else true; fi; \
+			done
+			touch $(BUILD_AMIGAOS_LIBS)
+
+$(BUILD_POS_INLINES):	fd2inline
+			if [ -d include ]; then true; else mkdir include; fi
+			if [ -d include/pInline ]; then true; else mkdir include/pInline; fi
+			for fd in $(POS_FD_PATH)/*.fd; do \
+			  rootname=`basename $$fd .fd`; \
+			  if [ "$${rootname}" = "pMathFFP2" -o "$${rootname}" = "pMathTrs2" ]; then \
+			    continue; \
+			  else true; fi; \
+			  echo "making include/pInline/$$rootname.h..."; \
+			  ./fd2inline --pos $$fd $(POS_HEADER_PATH)/pProto/$${rootname}.h -o include/pInline/$$rootname.h; \
+			done
+			touch $(BUILD_POS_INLINES)
+
+include/pInline/macros.h: $(srcdir)/makemacros.awk
+			if [ -d include ]; then true; else mkdir include; fi
+			if [ -d include/pInline ]; then true; else mkdir include/pInline; fi
+			$(AWK) -f $(srcdir)/makemacros.awk >include/pInline/macros.h
+
+guide:			fd2inline.guide
+
+fd2inline.guide:	$(srcdir)/fd2inline.texi
+			if [ -f version.texi ]; then true; else echo "@set version $(VERSION)" >version.texi; fi
+			$(MAKEINFO) --amiga $(srcdir)/fd2inline.texi -o fd2inline.guide
+
+info:			fd2inline.info
+
+fd2inline.info:		$(srcdir)/fd2inline.texi
+			if [ -f version.texi ]; then true; else echo "@set version $(VERSION)" >version.texi; fi
+			$(MAKEINFO) $(srcdir)/fd2inline.texi -o fd2inline.info
+
+# Make a linker library with stubs, if for some reason one can't use
+# inline headers. This requires two arguments on "make" commandline:
+#
+# INCBASE: base name of the includes (muimaster for MUI etc).
+# LIBBASE: base name of the library (mui for MUI etc).
+
+alllib:			fd2inline
+			if [ "$(INCBASE)" = "" -o "$(LIBBASE)" = "" ]; then \
+			  echo "Require two arguments: INCBASE and LIBBASE"; \
+			else \
+			  (cd lib; $(MAKE) $(FLAGS_TO_PASS) INCBASE=$(INCBASE) LIBBASE=$(LIBBASE)); \
+			fi
+
+clean:
+			$(RM) version.texi *.o *~ *!
+			(cd lib; $(MAKE) $(FLAGS_TO_PASS) clean)
+
+clobber:		clean
+			$(RM) fd2inline fd2inline.guide include \
+			  $(BUILD_AMIGAOS_INLINES) $(BUILD_AMIGAOS_PRAGMAS) $(BUILD_AMIGAOS_PROTOS) \
+			  $(BUILD_AMIGAOS_LIBS) $(BUILD_POS_INLINES) \
+			  $(SRC_ARCHIVE_LHA) $(SRC_ARCHIVE_TGZ) $(BIN_ARCHIVE)
+			(cd lib; $(MAKE) $(FLAGS_TO_PASS) clobber)
