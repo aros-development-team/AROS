@@ -65,6 +65,8 @@ AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
+
+/**********************************************************************
         .globl	AROS_SLIB_ENTRY(Disable,Exec)
         .type	AROS_SLIB_ENTRY(Disable,Exec),@function
 AROS_SLIB_ENTRY(Disable,Exec):
@@ -136,3 +138,4 @@ AROS_CDEFNAME(os_enable):
 	jbsr	AROS_CSYMNAME(_os_enable)
 	movem.l (%sp)+,%d0-%d1/%a0-%a1
 	rts
+*****************************************************************/
