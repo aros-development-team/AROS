@@ -65,7 +65,8 @@ while [ $# -ne 0 ] ; do
         -confdir )
             confdir="$2"
             shift
-        -hasrt
+	;;
+        -hasrt )
             hasrt=1
         ;;
         *.c )
@@ -143,6 +144,13 @@ case $mode in
         echo "#   include <aros/system.h>" >> $out.new
         echo "#endif" >> $out.new
         echo >> $out.new
+	if [ -f headers.tmpl ]; then
+	    gawk '
+	    $1 == "##begin" && $2 == "proto" { doprint=1; next; }
+	    $1 == "##end" && $2 == "proto" { doprint=0; next; }
+	     { if (doprint) print; }
+	    ' headers.tmpl >> $out.new
+	fi
         echo "#include <clib/"$libname"_protos.h>" >> $out.new
         echo >> $out.new
         echo "#if defined(_AMIGA) && defined(__GNUC__)" >> $out.new
