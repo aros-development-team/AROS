@@ -15,11 +15,6 @@ FUNCS := \
     ieeespsub \
     ieeesptst
 
-#MM- kernel-mathieeesing : includes linklibs
-
-%build_module_macro mmake=kernel-mathieeesingbas \
+%build_module mmake=kernel-mathieeesingbas \
   modname=mathieeesingbas modtype=library \
-  funcs=$(FUNCS) \
-  conffile=lib.conf
-
-%common
+  files=$(FUNCS)

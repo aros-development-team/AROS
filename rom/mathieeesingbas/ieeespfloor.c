@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,7 +38,7 @@
 
 AROS_LH1(float, IEEESPFloor,
     AROS_LHA(float, y, D0),
-    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 15, Mathieeesingbas
+    struct LibHeader *, MathIeeeSingBasBase, 15, Mathieeesingbas
 )
 {
     AROS_LIBFUNC_INIT
