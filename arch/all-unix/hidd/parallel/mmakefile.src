@@ -17,7 +17,7 @@ ILDFLAGS    := -nostartfiles -Xlinker -r
 endif
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I. -I$(SYS_INCLUDES)
+USER_INCLUDES := -I.
 
 # will be expand to LIBNAME.LIBPOST i.e. parallel.hidd
 LIBNAME     := parallel
@@ -112,14 +112,10 @@ clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) $(LIB) $(SLIB)
 
 $(OBJDIR)/unix_funcs.o : unix_funcs.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+	%compile_q
 
 $(OBJDIR)/%.o : %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+	%compile_q
 
 %libdefs_rule
 
