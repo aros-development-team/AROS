@@ -8,6 +8,7 @@ ARCH	:= @aros_arch@
 CPU	:= @aros_cpu@
 FLAVOUR := @aros_flavour@
 SHELL	:= @aros_shell@
+GFXSYSTEM := @aros_gfxsystem@
 
 SYS_CC	:= @aros_cc@
 SYS_AS	:= @aros_as@
