@@ -31,8 +31,6 @@ struct IntuitionBase *IntuitionBase;
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 
-/* to avoid removing the gfxhiddclass from memory add #define NOEXPUNGE */
-
 #include <libcore/libheader.c>
 
 #undef  SDEBUG
@@ -56,17 +54,15 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!GfxBase)
 	return(NULL);
 
-kprintf("apal: gfx inited\n");
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
 	return(NULL);
-kprintf("apal: utility inited\n");
+
     if (!IntuitionBase)
     	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
 	return (NULL);
-kprintf("apal: intui inited\n");
 
     /* ------------------------- */
     /* Create the class itself */
@@ -75,7 +71,6 @@ kprintf("apal: intui inited\n");
     	lh->classptr = InitPaletteClass(lh);
     if (!lh->classptr)
     	return (NULL);
-kprintf("apal: class inited\n");
     /* ------------------------- */
 
     /* You would return NULL if the init failed. */
@@ -92,22 +87,17 @@ VOID SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 	FreeClass(lh->classptr);
 	lh->classptr = NULL;
     }
-    kprintf("apal: class removed\n");
 
     /* CloseLibrary() checks for NULL-pointers */
     CloseLibrary(UtilityBase);
     UtilityBase = NULL;
     
-    kprintf("apal: utility closed\n");
 
     CloseLibrary((struct Library *)GfxBase);
     GfxBase = NULL;
     
-    kprintf("apal: gfx closed\n");
-    
     CloseLibrary((struct Library *)IntuitionBase);
     IntuitionBase = NULL;
-    kprintf("apal: intui closed\n");
     
     return;
 
