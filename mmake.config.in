@@ -14,3 +14,4 @@ ignoredir CVS
 ignoredir bin
 ignoredir intuition.morphos
 ignoredir .svn
+ignoredir .unmaintained
