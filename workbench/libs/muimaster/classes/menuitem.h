@@ -63,6 +63,8 @@ extern char MUIC_Menuitem[];
 #define MUIA_Menuitem_Toggle                0x80424d5c /* V8  isg BOOL              */
 #define MUIA_Menuitem_Trigger               0x80426f32 /* V8  ..g struct MenuItem * */
 
+#define MUIA_Menuitem_NewMenu               0x80426f33 /* ZV1 ..g struct NewMenu *  */
+
 #define MUIV_Menuitem_Shortcut_Check -1
 
 extern const struct __MUIBuiltinClass _MUI_Menuitem_desc;

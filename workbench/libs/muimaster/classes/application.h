@@ -106,6 +106,7 @@ struct MUI_ApplicationData
     struct MsgPort *app_TimerPort;
     struct timerequest *app_TimerReq;
     ULONG	   app_TimerOutstanding;
+    Object        *app_Menustrip;
 };
 
 /*****************************/

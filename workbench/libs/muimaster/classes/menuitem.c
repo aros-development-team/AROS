@@ -1,6 +1,7 @@
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
+#include <libraries/gadtools.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -25,7 +26,79 @@ struct MUI_MenuitemData
 
     char *shortcut;
     char *title;
+
+    struct NewMenu *newmenu;
+
+    struct MenuItem *trigger;
 };
+
+static int Menuitem_GetTotalChildren(Object *obj)
+{
+    Object                *cstate;
+    Object                *child;
+    struct MinList        *ChildList;
+    int num = 0;
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	num++;
+	num += Menuitem_GetTotalChildren(child);
+    }
+    return num;
+}
+
+static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
+{
+    Object                *cstate;
+    Object                *child;
+    struct MinList        *ChildList;
+    int num = 0;
+
+    if (depth > 2) return 0;
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+    	int entries;
+
+    	if (depth == 0) menu->nm_Type = NM_TITLE;
+    	else if (depth == 1) menu->nm_Type = NM_ITEM;
+    	else if (depth == 2) menu->nm_Type = NM_SUB;
+    	get(child, MUIA_Menuitem_Title, &menu->nm_Label);
+    	get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
+    	menu->nm_Flags = 0;
+    	get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
+	menu->nm_UserData = child;
+
+	menu++;
+	num++;
+	entries = Menuitem_FillNewMenu(child,menu,depth+1);
+
+	menu += entries;
+	num += entries;
+    }
+    return num;
+}
+
+/**************************************************************************
+ ...
+**************************************************************************/
+static struct NewMenu *Menuitem_BuildNewMenu(struct MUI_MenuitemData *data, Object *obj)
+{
+    int entries = Menuitem_GetTotalChildren(obj);
+    if (data->newmenu) FreeVec(data->newmenu);
+    data->newmenu = NULL;
+    if (!entries) return NULL;
+
+    if ((data->newmenu = (struct NewMenu*)AllocVec((entries+1)*sizeof(struct NewMenu),MEMF_CLEAR)))
+    {
+	Menuitem_FillNewMenu(obj,data->newmenu,0);
+    }
+    return data->newmenu;
+}
 
 /**************************************************************************
  OM_NEW
@@ -126,8 +199,13 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case  MUIA_Menuitem_Title:
 		  data->title = (char*)tag->ti_Data;
 		  break;
+
+	    case  MUIA_Menuitem_Trigger:
+	    	  data->trigger = (struct MenuItem*)tag->ti_Data;
+		  break;
 	}
     }
+
     return (ULONG)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -171,6 +249,15 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
 	case MUIA_Menuitem_Title:
 	     STORE = (ULONG)data->title;
+	     return 1;
+
+	case MUIA_Menuitem_NewMenu:
+	     if (!data->newmenu) data->newmenu = Menuitem_BuildNewMenu(data,obj);
+	     STORE = (ULONG)data->newmenu;
+	     return 1;
+
+	case MUIA_Menuitem_Trigger:
+	     STORE = (ULONG)data->trigger;
 	     return 1;
     }
 

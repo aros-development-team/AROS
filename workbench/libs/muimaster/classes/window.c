@@ -27,6 +27,7 @@
 #include <proto/graphics.h>
 #include <proto/commodities.h>
 #include <proto/layers.h>
+#include <proto/gadtools.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -144,6 +145,10 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     struct Window *win;
     ULONG flags = data->wd_CrtFlags;
 
+    struct Menu *menu = NULL;
+    struct NewMenu *newmenu = NULL;
+    APTR visinfo = NULL;
+
 /*    ASSERT(data->wd_RenderInfo.mri_Window == NULL);
     ASSERT(data->wd_RenderInfo.mri_WindowObject != NULL);
 */
@@ -163,6 +168,22 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     if (data->wd_Y == MUIV_Window_TopEdge_Centered)
     {
     	data->wd_Y = (data->wd_RenderInfo.mri_Screen->Height - data->wd_Height)/2;
+    }
+
+    if ((visinfo = GetVisualInfoA(data->wd_RenderInfo.mri_Screen,NULL)))
+    {
+	if (data->wd_Menustrip)
+	{
+	    get(data->wd_Menustrip,MUIA_Menuitem_NewMenu,&newmenu);
+	    if (newmenu)
+	    {
+		if ((menu = CreateMenusA(newmenu,NULL)))
+		{
+		    LayoutMenus(menu,visinfo,GTMN_NewLookMenus,TRUE,TAG_DONE);
+		}
+	    }
+	}
+	FreeVisualInfo(visinfo);
     }
 
     win = OpenWindowTags(NULL,
@@ -197,10 +218,17 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
         ModifyIDCMP(win, data->wd_Events);
 
         data->wd_RenderInfo.mri_Window = win;
+	if (menu)
+	{
+	    data->wd_Menu = menu;
+	    SetMenuStrip(win,menu);
+	}
 //	D(bug(" >> &data->wd_RenderInfo=%lx\n", &data->wd_RenderInfo));
 
         return TRUE;
     }
+
+    if (menu) FreeMenus(menu);
 
     return FALSE;
 }
@@ -220,6 +248,11 @@ void UndisplayWindow(struct MUI_WindowData *data)
         data->wd_Height = win->GZZHeight;
 
         ClearMenuStrip(win);
+        if (data->wd_Menu)
+        {
+            FreeMenus(data->wd_Menu);
+	    data->wd_Menu = NULL;
+        }
 
         if (win->UserPort)
         {
@@ -453,6 +486,24 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	case	IDCMP_CLOSEWINDOW:
 		set(oWin, MUIA_Window_CloseRequest, TRUE);
 		nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
+		break;
+
+	case    IDCMP_MENUPICK:
+		if (data->wd_Menu)
+		{
+		    if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
+		    {
+		    	struct MenuItem *item = ItemAddress(data->wd_Menu,imsg->Code);
+		    	if (item)
+		    	{
+			    Object *item_obj = (Object*)GTMENUITEM_USERDATA(item);
+			    if (item_obj)
+			    {
+				set(item_obj, MUIA_Menuitem_Trigger, item);
+			    }
+		    	}
+		    }
+		}
 		break;
     }
 
@@ -1249,14 +1300,17 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     window_minmax(data);
     window_select_dimensions(data);
 
-    
-
     data->wd_UserPort = muiGlobalInfo(obj)->mgi_UserPort;
+
+    /* Decide which menustrip should be used */
+    if (!data->wd_ChildMenustrip) get(_app(obj), MUIA_Application_Menustrip, &data->wd_Menustrip);
+    else data->wd_Menustrip = data->wd_ChildMenustrip;
 
     /* open window here ... */
     if (!DisplayWindow(data))
     {
 	/* free display dependant data */
+	data->wd_Menustrip = NULL;
 	DoMethod(data->wd_RootObject, MUIM_Cleanup);
 	DoMethod(obj, MUIM_Window_Cleanup);
 	return FALSE;
@@ -1287,10 +1341,11 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     UndisplayWindow(data);
     data->wd_Flags &= ~MUIWF_OPENED;
 
+    data->wd_Menustrip = NULL;
+
     /* free display dependant data */
     DoMethod(data->wd_RootObject, MUIM_Cleanup);
     DoMethod(obj, MUIM_Window_Cleanup);
-
     return TRUE;
 }
 

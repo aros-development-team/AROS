@@ -53,6 +53,10 @@ struct MUI_WindowData
     Object *       wd_DropObject; /* the destination object */
     struct DragNDrop *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
+
+		Object *      wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
+		Object *      wd_ChildMenustrip; /* If window has an own Menustrip */
+		struct Menu  *wd_Menu; /* the intuition menustrip */
 };
 
 #ifndef WFLG_SIZEGADGET
