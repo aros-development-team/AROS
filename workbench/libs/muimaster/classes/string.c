@@ -50,7 +50,7 @@ struct MUI_StringData {
     Object      *msd_AttachedList;
     LONG         msd_RedrawReason;
 
-    BOOL         msd_useSecret;
+    ULONG        msd_useSecret;
     /* Fields mostly ripped from rom/intuition/strgadgets.c */
     STRPTR Buffer;      /* char container                   */
     ULONG  BufferSize;  /* memory allocated                 */
