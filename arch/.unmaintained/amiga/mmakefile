@@ -8,12 +8,11 @@ AROS-amiga :
 apps :
 	@$(NOP)
 
-#MM setup-amiga : setup-exec-amiga setup-dos-amiga setup-exec-$(CPU)
-#MM setup-amiga : setup-clib-amiga
+#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga setup-layers-amiga
 setup-amiga :
 	@$(NOP)
 
-#MM setup-exec-amiga : setup-exec-unix
+#MM setup-exec-amiga : setup-exec-amiga-$(CPU)
 setup-exec-amiga :
 	@$(NOP)
 
@@ -21,8 +20,12 @@ setup-exec-amiga :
 exec-amiga :
 	@$(NOP)
 
-#MM setup-dos-amiga : setup-dos-unix
-setup-dos-amiga :
+#MM setup-utility-amiga : setup-utility-amiga-$(CPU)
+setup-utility-amiga :
+	@$(NOP)
+
+#MM setup-layers-amiga : setup-layers-amiga-$(CPU)
+setup-layers-amiga :
 	@$(NOP)
 
 #MM check : check-exec-unix
@@ -37,6 +40,6 @@ setup-clib-amiga :
 clib-amiga :
 	@$(NOP)
 
-#MM includes : includes-copy includes-$(CPU)
+#MM includes : includes-copy includes-amiga-$(CPU)
 includes:
 	@$(NOP)
