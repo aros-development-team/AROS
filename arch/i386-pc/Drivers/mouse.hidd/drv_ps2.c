@@ -319,8 +319,8 @@ int mouse_ps2reset(struct mouse_data *data)
     aux_write(KBD_OUTCMD_SET_RATE);
     aux_write(100);
     aux_write(KBD_OUTCMD_SET_RES);
-    aux_write(3);
-    aux_write(KBD_OUTCMD_SET_SCALE21);
+    aux_write(2);
+    aux_write(KBD_OUTCMD_SET_SCALE11);
     
     /* Enable Aux device */
     
