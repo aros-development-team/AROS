@@ -14,12 +14,15 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
+TOOLDIR = $(BINDIR)/tools
+TOOLGENDIR = $(GENDIR)/tools
+
 # Flags to use for the module loader
 LDFLAGS = -noixemul
 
 FILES = main ils config
 
-all:	setup $(BINDIR)/boot $(BINDIR)/boot.config
+all:	setup $(BINDIR)/boot $(BINDIR)/boot.config $(TOOLDIR)/printresmodules
 
 clean:
 	-rm -f $(BINDIR)/boot
@@ -27,8 +30,14 @@ clean:
 setup :
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
 	@if [ ! -d $(BOOTGENDIR) ]; then $(MKDIR) $(BOOTGENDIR) ; else true ; fi
+	@if [ ! -d $(TOOLDIR) ]; then $(MKDIR) $(TOOLDIR) ; else true ; fi
+	@if [ ! -d $(TOOLGENDIR) ]; then $(MKDIR) $(TOOLGENDIR) ; else true ; fi
 
 $(BOOTGENDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+
+$(TOOLGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
@@ -38,6 +47,10 @@ $(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 
 $(BINDIR)/boot.config: boot.config
 	$(CP) $< $@
+
+$(TOOLDIR)/printresmodules: $(TOOLGENDIR)/printresmodules.o
+	$(CC) $(LDFLAGS) $< -o $@
+	strip $@
 
 $(BOOTGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
