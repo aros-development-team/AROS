@@ -16,6 +16,9 @@
 #define NO_INLINE_STDARG
 #endif
 #include <inline/exec.h>
+#ifdef EXEC_PRIVATE_INLINES
+#include <inline/exec_private.h>
+#endif /* EXEC_PRIVATE_INLINES */
 #else
 #include <defines/exec.h>
 #endif
