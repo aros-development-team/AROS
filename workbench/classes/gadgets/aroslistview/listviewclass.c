@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: AROS specific listview class implementation.
@@ -29,8 +29,9 @@
 #include "aroslistview_intern.h"
 
 
-
+#undef TURN_OFF_DEBUG
 #ifndef TURN_OFF_DEBUG
+#define SDEBUG 1
 #define DEBUG 1
 #endif
 
@@ -61,6 +62,8 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
     struct TagItem *tag, *tstate;
     struct LVData *data;
+
+    EnterFunc(bug("ListView::OM_SET\n"));
 
     data = INST_DATA(cl, o);
     tstate = msg->ops_AttrList;
@@ -156,13 +159,16 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
 		LONG old = data->lvd_First;
 
-		#if (DEBUG == 1)
+#if DEBUG
 		if (msg->MethodID == OM_SET)
+                {
 			D(bug("_First OM_SET\n"));
-		else
+		} else
+                {
 			D(bug("_First OM_UPDATEd, lvd_NC=%d\n",
 				data->lvd_NotifyCount));
-		#endif
+                }
+#endif
 
 		retval = 1UL;
 		data->lvd_First = (LONG)tag->ti_Data;
@@ -258,7 +264,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
     } /* while (more tags to iterate) */
 
-    return (retval);
+    ReturnPtr("ListView::OM_SET", IPTR, retval);
 }
 
 /**********************
@@ -268,6 +274,11 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
 STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 {
+    struct LVData *data;
+    struct ColumnAttrs *colattrs;
+    STRPTR *dharray;
+    ULONG colattrsz;
+
     struct opSet ops;
     struct TagItem tags[] =
     {
@@ -282,79 +293,73 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
     tags[1].ti_Data = (IPTR)msg->ops_AttrList;
 
     o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
+    if(!o)
+        return NULL;
 
-    if (o)
-    {
-	struct LVData *data;
-	struct ColumnAttrs *colattrs;
-	STRPTR *dharray;
-	ULONG colattrsz;
+D(bug("lv: obj created\n"));
+    data = INST_DATA(cl, o);
+    memset(data, 0, sizeof (struct LVData));
 
-	D(bug("lv: obj created\n"));
-	data = INST_DATA(cl, o);
-	memset(data, 0, sizeof (struct LVData));
-
-	data->lvd_MaxColumns = GetTagData(AROSA_Listview_MaxColumns, 0, msg->ops_AttrList);
-	if (!data->lvd_MaxColumns)
-	    goto failure;
+    data->lvd_MaxColumns = GetTagData(AROSA_Listview_MaxColumns, 0, msg->ops_AttrList);
+    if (!data->lvd_MaxColumns)
+        goto failure;
 D(bug("Maxcolumns found: %d\n", data->lvd_MaxColumns));
 
-	/* Allocate mem for storing info parsed from Listview_Format. Do this
-	 * before listview_set() call, because it needs this for parsing the
-	 * format string.
-	 */
-	colattrsz = data->lvd_MaxColumns * sizeof (struct ColumnAttrs);
-	colattrs = AllocVec(colattrsz, MEMF_ANY|MEMF_CLEAR);
-	if (!colattrs)
-	    goto failure;
-	data->lvd_ColAttrs = colattrs;
+    /* Allocate mem for storing info parsed from Listview_Format. Do this
+     * before listview_set() call, because it needs this for parsing the
+     * format string.
+     */
+    colattrsz = data->lvd_MaxColumns * sizeof (struct ColumnAttrs);
+    colattrs = AllocVec(colattrsz, MEMF_ANY|MEMF_CLEAR);
+    if (!colattrs)
+        goto failure;
+    data->lvd_ColAttrs = colattrs;
 D(bug("Colattrs allocated\n"));
 
-	/* Only view first column */
-	data->lvd_ViewedColumns = 1;
-	colattrs[0].ca_DHIndex = 0;
+    /* Only view first column */
+    data->lvd_ViewedColumns = 1;
+    colattrs[0].ca_DHIndex = 0;
 
-	/* Alloc mem for array to pass to _Listview_DisplayHook */
-	dharray = AllocVec(data->lvd_MaxColumns * sizeof (STRPTR), MEMF_ANY);
-	if (!dharray)
-	    goto failure;
-	data->lvd_DHArray = dharray;
+    /* Alloc mem for array to pass to _Listview_DisplayHook */
+    dharray = AllocVec(data->lvd_MaxColumns * sizeof (STRPTR), MEMF_ANY);
+    if (!dharray)
+        goto failure;
+    data->lvd_DHArray = dharray;
 D(bug("disphookarray allocated\n"));
 
-	/* Set some defaults */
-	data->lvd_HorSpacing  = LV_DEFAULTHORSPACING;
-	data->lvd_VertSpacing = LV_DEFAULTVERTSPACING;
+    /* Set some defaults */
+    data->lvd_HorSpacing  = LV_DEFAULTHORSPACING;
+    data->lvd_VertSpacing = LV_DEFAULTVERTSPACING;
 
-	data->lvd_FrontPen = TEXTPEN;
-	data->lvd_BackPen  = BACKGROUNDPEN;
+    data->lvd_FrontPen = TEXTPEN;
+    data->lvd_BackPen  = BACKGROUNDPEN;
 
-	/* Handle our special tags - overrides defaults */
-	listview_set(cl, o, msg);
+    /* Handle our special tags - overrides defaults */
+    listview_set(cl, o, msg);
 
-	/* If not font has been set, use our own. */
-	if (!data->lvd_Font)
-	{
-	    struct TextAttr tattr;
-	    struct TextFont *tf = ((GraphicsBase *)GfxBase)->DefaultFont;
+    /* If not font has been set, use our own. */
+    if (!data->lvd_Font)
+    {
+        struct TextAttr tattr;
+        struct TextFont *tf = ((GraphicsBase *)GfxBase)->DefaultFont;
 
-	    memset(&tattr, 0, sizeof (struct TextAttr));
-	    tattr.ta_Name  = tf->tf_Message.mn_Node.ln_Name;
-	    tattr.ta_YSize = tf->tf_YSize;
-	    tattr.ta_Style = tf->tf_Style;
-	    tattr.ta_Flags = tf->tf_Flags;
+        memset(&tattr, 0, sizeof (struct TextAttr));
+        tattr.ta_Name  = tf->tf_Message.mn_Node.ln_Name;
+        tattr.ta_YSize = tf->tf_YSize;
+        tattr.ta_Style = tf->tf_Style;
+        tattr.ta_Flags = tf->tf_Flags;
 
-	    if ((data->lvd_Font = OpenFont(&tattr)) == NULL)
-		goto failure;
+        if ((data->lvd_Font = OpenFont(&tattr)) == NULL)
+            goto failure;
 
-	    ReCalcEntryHeight(data);
-	}
+        ReCalcEntryHeight(data);
+    }
 
-	return ((IPTR)o);
-    } /* if (object created) */
+    return ((IPTR)o);
 
 
 failure:
-    DisposeObject(o);
+    CoerceMethod(cl, o, OM_DISPOSE);
     return (NULL);
 }
 

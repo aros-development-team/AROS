@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: AROS specific list class implementation.
@@ -169,7 +169,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 		
 	if (!data->ld_PointerArray || !data->ld_Pool)
 	{
-	    DisposeObject(o);
+	    CoerceMethod(cl, o, OM_DISPOSE);
 	    return (NULL);
 	}
 	
