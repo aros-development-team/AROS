@@ -1,35 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.10  1996/11/14 08:54:17  aros
-    Some more changes
 
-    Revision 1.9  1996/10/24 15:50:32  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/23 14:23:54  aros
-    Added some more debug code
-
-    Revision 1.7  1996/09/13 17:50:07  digulla
-    Use IPTR
-
-    Revision 1.6  1996/08/15 13:18:21  digulla
-    First attempt to allow debugging in shared code but the strings are not
-    loaded correctly yet
-
-    Revision 1.5  1996/08/13 13:52:48  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.4  1996/08/03 18:21:10  digulla
-    Added support for linked files !
-
-    Revision 1.3  1996/08/01 17:40:54  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Code to dynamically load ELF executables
+    Lang: english
 */
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
