@@ -2,6 +2,21 @@ BEGIN {
     maxlvo = 0;
     stderr="/dev/stderr";
 
+    file = "libdefs.h";
+
+    while ((getline < file) > 0)
+    {
+	if ($2 == "BASENAME")
+	{
+	    lib = $3;
+	    basename = $3;
+	}
+	else if ($2 == "LIBBASE")
+	{
+	    libbase = $3;
+	}
+    }
+
     print "/*";
     print "    (C) 1995-96 AROS - The Amiga Replacement OS";
     print "    *** Automatic generated file. Do not edit ***";
@@ -17,6 +32,10 @@ BEGIN {
     f[3] = "expunge";
     f[4] = "null";
 
+    verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
+
+#print verbose_pattern;
+
     if (maxlvo < 4)
 	maxlvo = 4;
 }
@@ -26,13 +45,19 @@ BEGIN {
     if (match(line,/[a-zA-Z0-9_]+,$/))
     {
 	name=substr(line,RSTART,RLENGTH-1);
+#print "/* FOUND " name " */";
     }
 }
-/LIBBASE[ \t]*,[ \t]*[0-9]+/ {
-    match ($0, /LIBBASE[ \t]*,[ \t]*[0-9]+/);
+/LIBBASE[ \t]*,[ \t]*[0-9]+/ || $0 ~ verbose_pattern {
+#print "/* LOC " $0 " */"
+    match ($0, /,[ \t]*[0-9]+/);
     line=substr($0,RSTART,RLENGTH);
-    sub (/LIBBASE[ \t]*,[ \t]*/,"",line);
+#print "line2="line
+    sub (/,[ \t]*/,"",line);
+#print "line3="line
     lvo=int(line);
+
+#print "lvo="lvo;
 
     if (f[lvo] != "")
 	printf "Error: lvo "lvo" is used by "f[lvo]" and "name >> stderr;
@@ -48,10 +73,10 @@ BEGIN {
     }
 }
 END {
-    print "extern void AROS_SLIB_ENTRY(OpenLib,LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(CloseLib,LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(ExpungeLib,LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(ExtFuncLib,LibHeader) (void);";
+    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);";
+    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);";
+    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);";
+    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);";
 
     for (t=5; t<=maxlvo; t++)
     {
@@ -63,10 +88,10 @@ END {
 
     show=0;
 
-    print "    AROS_SLIB_ENTRY(OpenLib,LibHeader),";
-    print "    AROS_SLIB_ENTRY(CloseLib,LibHeader),";
-    print "    AROS_SLIB_ENTRY(ExpungeLib,LibHeader),";
-    print "    AROS_SLIB_ENTRY(ExtFuncLib,LibHeader),";
+    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),";
+    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),";
+    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),";
+    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),";
 
     for (t=5; t<=maxlvo; t++)
     {
