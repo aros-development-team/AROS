@@ -6,5 +6,5 @@
 int main(void)
 {
   SystemTags("dir", SYS_Asynch, TRUE, SYS_Input, Open("NIL:", MODE_OLDFILE),
-	     SYS_Output, Open("RAW:////Dir/CLOSE/WAIT", MODE_NEWFILE));
+	     SYS_Output, Open("RAW:////Dir/CLOSE/WAIT", MODE_NEWFILE), TAG_DONE);
 }
