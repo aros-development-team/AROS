@@ -18,13 +18,16 @@ struct Resident resident =
     &resident,
     (APTR)&end,
     RTF_COLDSTART,
-    1,
+    1,			/* version */
     NT_KICKMEM,
-    106,	/* just above exec.library */
+    106,		/* Just above exec.library.
+			   Because exec is RTF_SINGLETASK, and this is
+			   RTF_COLDSTART, we'll still be started after
+			   exec */
     (char *)name,
     (char *)&version[6],
     &start
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 1.0 (30.12.96)";
+const char version[] = "$VER: exec.strap 1.1 (08.01.97)";
