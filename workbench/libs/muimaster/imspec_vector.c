@@ -187,7 +187,9 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
     struct RastPort *rport = mri->mri_RastPort;
     int bottom = top + height - 1;
     int right = left + width - 1;
+#if BIGGER_ARROW
     int arrow_top;
+#endif
 
     SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
 
@@ -200,15 +202,25 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
     Draw(rport,right-6,bottom-1);
     Move(rport,left+2,top);
     Draw(rport,right-7,top);
+    Move(rport,right-7,top+1);
+    Draw(rport,right-6,top+1);
 
+#if BIGGER_ARROW
     arrow_top = top + (3 * height / 4) - 3;
     /* prevent arrow touching bottom */
     if (arrow_top + 4 >= bottom-1)
 	arrow_top = bottom - 5;
 
     RectFill(rport,right-7,top+1,right-6,arrow_top-1);
-
+#endif
     /* The small arrow */
+    Move(rport,right - 6 - 3, top+2);
+    Draw(rport,right - 7 + 3, top+2);
+    Move(rport,right - 6 - 2, top+3);
+    Draw(rport,right - 7 + 2, top+3);
+    Move(rport,right - 6 - 1, top+4);
+    Draw(rport,right - 7 + 1, top+4);
+#if BIGGER_ARROW
     /* makes arrow bigger */
     if (arrow_top - top - 2 >= 4)
     {
@@ -230,6 +242,7 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
 	Move(rport,right - 6 - 1, arrow_top+2);
 	Draw(rport,right - 7 + 1, arrow_top+2);
     }
+#endif
 
     /* The right bar */
     SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
