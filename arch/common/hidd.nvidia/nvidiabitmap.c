@@ -764,16 +764,6 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	
 	if (cemd & vHidd_GC_ColExp_Opaque)
 	{
-	    NVDmaStart(&sd->Card, RECT_EXPAND_ONE_COLOR_CLIP, 5);
-	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
-	    NVDmaNext(&sd->Card, ((y + h) << 16) | ((x + w) & 0xffff));
-	    NVDmaNext(&sd->Card, fg);
-	    NVDmaNext(&sd->Card, (h << 16) | bw);
-	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
-	    expand = RECT_EXPAND_ONE_COLOR_DATA(0);
-	}
-	else
-	{
 	    NVDmaStart(&sd->Card, RECT_EXPAND_TWO_COLOR_CLIP, 7);
 	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
 	    NVDmaNext(&sd->Card, ((y + h) << 16) | ((x + w) & 0xffff));
@@ -783,6 +773,16 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	    NVDmaNext(&sd->Card, (h << 16) | bw);
 	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
 	    expand = RECT_EXPAND_TWO_COLOR_DATA(0);
+	}
+	else
+	{
+	    NVDmaStart(&sd->Card, RECT_EXPAND_ONE_COLOR_CLIP, 5);
+	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
+	    NVDmaNext(&sd->Card, ((y + h) << 16) | ((x + w) & 0xffff));
+	    NVDmaNext(&sd->Card, fg);
+	    NVDmaNext(&sd->Card, (h << 16) | bw);
+	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
+	    expand = RECT_EXPAND_ONE_COLOR_DATA(0);
 	}
 
 	ULONG i,j;
