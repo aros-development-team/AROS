@@ -6,13 +6,11 @@
     Lang: English
 */
 
+#include <proto/utility.h>
 #include "locale_intern.h"
 #include <exec/types.h>
 #include <utility/hooks.h>
 #include <utility/date.h>
-#define __NOLIBBASE__
-#include <proto/utility.h>
-#undef __NOLIBBASE__
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
