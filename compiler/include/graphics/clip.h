@@ -158,6 +158,19 @@ struct ChangeLayerShapeMsg
   struct Region   * shape;
 };
 
+struct CollectPixelsLayerMsg
+{
+  LONG   xSrc;
+  LONG   ySrc;
+  LONG   width;
+  LONG   height;
+  LONG   xDest;
+  LONG   yDest;
+  struct BitMap * bm;
+  struct Layer *  layer;
+  ULONG  minterm;
+};
+
 /* Msg sent through LA_ShapeHook. Hook function must look like this:
 
     AROS_UFH3(struct Region *, MyShapeFunc,
