@@ -165,6 +165,8 @@ static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
     }
 }
 
+/*--------------------*/
+
 struct def_ulval {
     ULONG id;
     ULONG val;
@@ -198,6 +200,8 @@ static struct def_ulval DefULValues[] =
     { 0, 0 },
 };
 
+/*---------------------*/
+
 struct def_strval {
     ULONG id;
     CONST_STRPTR val;
@@ -213,6 +217,10 @@ static struct def_strval DefStrValues[] =
     { MUICFG_Font_Big,      NULL },
     { MUICFG_Font_Button,   NULL },
     { MUICFG_Font_Knob,     NULL },
+    { MUICFG_String_Background,         "m2" },
+    { MUICFG_String_Text,               "m5" },
+    { MUICFG_String_ActiveBackground,   "m2" },
+    { MUICFG_String_ActiveText,         "m5" },
     { 0, 0 },
 };
 
@@ -545,6 +553,32 @@ static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
 }
 
 /**************************************************************************
+ MUIM_Configdata_SetPenspec
+**************************************************************************/
+static IPTR Configdata_SetPenspec(struct IClass *cl, Object * obj,
+				  struct MUIP_Configdata_SetPenspec *msg)
+{
+    int i;
+
+    if (!msg->penspec || !*msg->penspec)
+	return 0;
+
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+	if (DefStrValues[i].id == msg->id)
+	    if (!strcmp(DefStrValues[i].val, msg->penspec))
+	    {
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
+	    }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->penspec,
+	     strlen(msg->penspec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
  MUIM_Configdata_SetFont
 **************************************************************************/
 static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
@@ -757,6 +791,7 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case MUIM_Configdata_SetULong: return Configdata_SetULong(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetImspec: return Configdata_SetImspec(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetFramespec: return Configdata_SetFramespec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetPenspec: return Configdata_SetPenspec(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetFont: return Configdata_SetFont(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);

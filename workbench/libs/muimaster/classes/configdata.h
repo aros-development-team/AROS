@@ -117,6 +117,7 @@
 #define MUIM_Configdata_SetFont        (MUIB_Configdata | 0x00000005) /* Zune 20030323 */
 #define MUIM_Configdata_Save           (MUIB_Configdata | 0x00000006) /* Zune 20030320 */
 #define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007) /* Zune 20030320 */
+#define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008) /* Zune 20030714 */
 struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
@@ -125,6 +126,7 @@ struct MUIP_Configdata_SetFramespec    {ULONG MethodID; ULONG id; CONST_STRPTR f
 struct MUIP_Configdata_SetFont         {ULONG MethodID; ULONG id; CONST_STRPTR font; };
 struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
 struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
+struct MUIP_Configdata_SetPenspec      {ULONG MethodID; ULONG id; CONST_STRPTR penspec; };
 
 /*** Attributes *************************************************************/
 #define MUIA_Configdata_Application     (MUIB_Configdata | 0x00000000) /* ZV1: i..  Object * */
