@@ -85,7 +85,8 @@ program which converts Word into ASCII text).
 Now there are of course limitations: You are not allowed to disassemble a
 software if the information you would gain by this process can be obtained
 by other means and it can be expected that one would use this is other
-means.
+means. And you must not tell others what you learned. A book like
+"Windows inside" is therefore illegal or at least dubious.
 
 Since we avoid disassembling techniques (hey, we want the spirit and not
 the bugs) but use common available knowledge (including programming
