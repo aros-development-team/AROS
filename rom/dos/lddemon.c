@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/21 20:44:51  aros
+    Changed d0 to D0
+
     Revision 1.5  1996/09/12 14:53:20  digulla
     The loader code should use symbolic names
 
@@ -124,7 +127,7 @@ struct ExecBase *,sysbase,0,Dos)
     if(library!=NULL)
     {
 	if(library->lib_Version>=version)
-	    library=__AROS_LVO_CALL1(struct Library *,1,library,version,d0);
+	    library=__AROS_LVO_CALL1(struct Library *,1,library,version,D0);
 	else
 	    library=NULL;
     }
