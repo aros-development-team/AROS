@@ -57,8 +57,8 @@
 	    typedef   signed long long		QUAD;	/* signed 64-bit value */
 	    typedef unsigned long long		UQUAD;	/* unsigned 64-bit-value */
 #	else
-	    typedef struct {  LONG high, low }	QUAD;	/* signed 64-bit value */
-	    typedef struct { ULONG high, low }	UQUAD;	/* unsigned 64-bit value */
+	    typedef struct {  LONG high, low; }	QUAD;	/* signed 64-bit value */
+	    typedef struct { ULONG high, low; }	UQUAD;	/* unsigned 64-bit value */
 #	endif /* __GNUC__ */
 #   endif /* AROS_64BIT_TYPE */
 #endif
@@ -112,8 +112,8 @@
 	    typedef   signed long long		STACKQUAD;   /* signed 64-bit value */
 	    typedef unsigned long long		STACKUQUAD;  /* unsigned 64-bit-value */
 #	else
-	    typedef struct {  LONG high, low }	STACKQUAD;   /* signed 64-bit value */
-	    typedef struct { ULONG high, low }	STACKUQUAD;  /* unsigned 64-bit value */
+	    typedef struct {  LONG high, low; }	STACKQUAD;   /* signed 64-bit value */
+	    typedef struct { ULONG high, low; }	STACKUQUAD;  /* unsigned 64-bit value */
 #	endif /* __GNUC__ */
 #   endif /* AROS_64BIT_STACKTYPE */
 #endif
@@ -196,7 +196,7 @@
 #define REGISTER register
 
 /*
-    Minimum support library version. AROS doesn´t have system libraries
+    Minimum support library version. AROS doesn't have system libraries
     below V40
 */
 #define LIBRARY_MINIMUM 40
