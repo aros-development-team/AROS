@@ -1,7 +1,7 @@
 #ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuitions internal structure
@@ -126,6 +126,7 @@ struct IntIntuitionBase
     struct SignalSemaphore   	GadgetLock;
     struct SignalSemaphore   	MenuLock;
     struct SignalSemaphore   	IntuiActionLock;
+    struct SignalSemaphore  	InputHandlerLock;
     struct LayerContext      	BackupLayerContext;
     
     struct IClass 		* dragbarclass;

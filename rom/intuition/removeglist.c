@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -45,33 +45,79 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct Gadget * pred;
-    struct Gadget * last;
-    UWORD count;
+    
+    struct Gadget   *pred;
+    struct Gadget   *last;
+    struct IIHData  *iihdata;
+    LONG    	    numGad2;
+    UWORD   	    count;
 
-    pred = (struct Gadget *)&remPtr->FirstGadget;
-    count = 0;
-
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+    
+    iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    pred    = (struct Gadget *)&remPtr->FirstGadget;
+    count   = 0;
+    numGad2 = numGad;
+    
     while (pred->NextGadget && pred->NextGadget != gadget)
     {
 	pred = pred->NextGadget;
 	count ++;
     }
 
-    if (!pred->NextGadget)
-	return ~0;
+    if (pred->NextGadget)
+    {
+	/* Check if one of the gadgets to be removed is the active gadget.
+	   If it is, then make it inactive! */
 
-    for (last=gadget; last->NextGadget && --numGad; last=last->NextGadget);
+	for (last = gadget; last->NextGadget && numGad2--; last = last->NextGadget)
+	{
+    	    if (iihdata->ActiveGadget == last)
+	    {
+		#warning: According to autodocs should also wait for the (left?) mouse button to be released
+		switch(last->GadgetType & GTYP_GTYPEMASK)
+		{
+	    	    case GTYP_CUSTOMGADGET:
+		    {		    
+			 struct gpGoInactive gpgi;
 
-    pred->NextGadget = last->NextGadget;
+			 gpgi.MethodID = GM_GOINACTIVE;
+			 gpgi.gpgi_GInfo = NULL;
+			 gpgi.gpgi_Abort = 1; 
 
-    /* stegerg: don't do this. DOpus for example relies on gadget->NextGadget
-                not being touched 
+			 DoGadgetMethodA(last, remPtr, NULL, (Msg)&gpgi);
+			 break;
+		    }
+		}
 
-    last->NextGadget = NULL;
+		last->Activation &= ~GACT_ACTIVEGADGET;
+		iihdata->ActiveGadget = NULL;
+	    }
+
+	} /* for (last = gadget; last->NextGadget && numGad2--; last = last->NextGadget) */
+
+	for (last = gadget; last->NextGadget && --numGad; last = last->NextGadget) ; 
+
+	pred->NextGadget = last->NextGadget;
+
+	/* stegerg: don't do this. DOpus for example relies on gadget->NextGadget
+                    not being touched */
+
+    #if 0
+	last->NextGadget = NULL;
+    #endif
+	
+
+    } /* if (pred->NextGadget) */
+    else
+    {
+    	count = ~0;
+    }
     
-    */
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
 
     return count;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* RemoveGList */

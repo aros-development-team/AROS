@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Library header for intuition
@@ -164,7 +164,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->IntuiActionLock);
-        
+    InitSemaphore(&GetPrivIBase(LIBBASE)->InputHandlerLock);
+    
 #if INTERNAL_BOOPSI
     InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
     NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);

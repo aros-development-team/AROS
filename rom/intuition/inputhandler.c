@@ -1,10 +1,12 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition's InputHandler
     Lang: english
 */
+
+/****************************************************************************************/
 
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/exec.h>
@@ -41,17 +43,16 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 #define IW(x) ((struct IntWindow *)(x))
 
-
-/***************
-**  InitIIH   **
-***************/
+/****************************************************************************************/
 
 struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 {
     struct Interrupt *iihandler;
-    struct IIHData *iihdata;
+    struct IIHData   *iihdata;
 
     D(bug("InitIIH(IntuitionBase=%p)\n", IntuitionBase));
 
@@ -84,6 +85,10 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 		    NEWLIST(&iihdata->IntuiActionQueue);
     		    NEWLIST(&iihdata->GeneratedInputEventList);
 		    
+		    /* Note: there are several routines like CloseWindow, which
+		       expect is_Data to point to the IIHData structure, so don't
+		       change this! */
+		       
 		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
 		    iihandler->is_Data = iihdata;
 		    iihandler->is_Node.ln_Pri	= 50;
@@ -114,9 +119,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
     ReturnPtr ("InitIIH", struct Interrupt *, NULL);
 }
 
-/****************
-** CleanupIIH  **
-****************/
+/****************************************************************************************/
 
 VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase)
 {
@@ -137,11 +140,8 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
     return;
 }
 
+/****************************************************************************************/
 
-
-/***************************
-**  HandleIntuiReplyPort  **
-***************************/
 static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *IntuitionBase)
 {
     struct IntuiMessage *im;
@@ -185,24 +185,25 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
     } /* while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort))) */
 }
 
-/************************
-**  IntuiInputHandler  **
-************************/
+/****************************************************************************************/
+
 AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     AROS_UFHA(struct InputEvent *,      oldchain,       A0),
     AROS_UFHA(struct IIHData *,         iihdata,        A1)
 )
 {
-    struct InputEvent *ie, *orig_ie, stackie;
-    struct Gadget *gadget = iihdata->ActiveGadget;
-    struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
-    ULONG  lock;
-    struct GadgetInfo *gi = &iihdata->GadgetInfo;
-    BOOL reuse_event = FALSE;
-    struct Window *w;
+    struct InputEvent 	    *ie, *orig_ie, stackie;
+    struct Gadget   	    *gadget = iihdata->ActiveGadget;
+    struct IntuitionBase    *IntuitionBase = iihdata->IntuitionBase;
+    ULONG   	    	    lock;
+    struct GadgetInfo 	    *gi = &iihdata->GadgetInfo;
+    BOOL    	    	    reuse_event = FALSE;
+    struct Window   	    *w;
  
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
 
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+    
     if (!iihdata->InputDeviceTask) iihdata->InputDeviceTask = FindTask(NULL);
     
     /* First handle IntuiMessages which were replied back to the IntuiReplyPort
@@ -1110,9 +1111,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	}
     }
         
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+
     return iihdata->ReturnInputEvent;
 }
 
-
-
+/****************************************************************************************/
 
