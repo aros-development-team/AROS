@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Add a menuitem to Workbench's list of AppMenuItems.
-    Lang: English
+    Add a menuitem to Workbench's list of AppMenuItems.
 */
 
 
@@ -103,7 +102,7 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
     appMenuItem->ami_Text     = text;
     appMenuItem->ami_MsgPort  = msgport;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tagState)))
+    while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
 	{

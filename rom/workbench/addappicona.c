@@ -235,7 +235,7 @@ struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
     appIcon->ai_MsgPort    = msgport;
     appIcon->ai_Flags      = WBAPPICONF_SupportsOpen;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tagState)))
+    while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
 	{
