@@ -2192,7 +2192,7 @@ int main(void)
 		MUIA_Application_Base, "FTMANAGER",
 		SubWindow, win = WindowObject,
 			MUIA_Window_ID, MAKE_ID('F','T','2','M'),
-			MUIA_Window_Title, "Freetype font manager",
+			MUIA_Window_Title, "FreeType Font Manager",
                         MUIA_Window_Width, 400,
 			MUIA_Window_RootObject,VGroup,
 				Child, fontlv = ListviewObject,
