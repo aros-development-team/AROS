@@ -17,29 +17,29 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPAdd,
+	AROS_LH2(LONG, IEEESPAdd,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+	AROS_LHA(LONG, y, D0),
+	AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 11, Mathieeespbas)
+	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 11, Mathieeesingbas)
 
 /*  FUNCTION
-        Calculate the sum of two ffp numbers
+	Calculate the sum of two ffp numbers
 
     INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
+	y  - IEEE single precision floating point
+	z  - IEEE single precision floating point
 
     RESULT
-        sum of y and z
+	sum of y and z
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : result is too large or too small for ffp format
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : result is too large or too small for ffp format
 
     NOTES
 
@@ -65,7 +65,7 @@
   SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
   Shift = ((y & IEEESPExponent_Mask) -
-           (z & IEEESPExponent_Mask)) >> 23;
+	   (z & IEEESPExponent_Mask)) >> 23;
 
   if (y != 0 && y != IEEESPSign_Mask )
     Mant1 = (y & IEEESPMantisse_Mask) | 0x00800000;
@@ -104,7 +104,7 @@
     Mant1 &= IEEESPMantisse_Mask;
   }
    /* second case: sign(fnum1) != sign(fnum2)
-   **   -1 <= res < 1
+   **	-1 <= res < 1
    */
   else
   {
@@ -132,8 +132,8 @@
       /* normalize the mantisse */
       while ( (Mant1 & 0x00800000) == 0)
       {
-        Mant1 += Mant1;  /*one bit to the left. */
-        Exponent -= 0x00800000;
+	Mant1 += Mant1;  /*one bit to the left. */
+	Exponent -= 0x00800000;
       }
       Mant1 &= IEEESPMantisse_Mask;
     } /* else */

@@ -17,29 +17,29 @@
 
     NAME */
 
-        AROS_LH1(LONG, IEEESPCeil,
+	AROS_LH1(LONG, IEEESPCeil,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
+	AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 16, Mathieeespbas)
+	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 16, Mathieeesingbas)
 
 /*  FUNCTION
-        Calculate the least integer ieeesp-number greater than or equal to
-        y
+	Calculate the least integer ieeesp-number greater than or equal to
+	y
 
 
     INPUTS
-        y  - IEEE single precision
+	y  - IEEE single precision
 
     RESULT
 
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : 0
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : 0
 
     NOTES
 
@@ -48,11 +48,11 @@
     BUGS
 
     SEE ALSO
-        IEEESPFloor()
+	IEEESPFloor()
 
     INTERNALS
       ALGORITHM:
-         Ceil(y) = - Floor(-y)
+	 Ceil(y) = - Floor(-y)
 
     HISTORY
 

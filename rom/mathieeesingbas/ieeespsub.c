@@ -17,29 +17,29 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPSub,
+	AROS_LH2(LONG, IEEESPSub,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+	AROS_LHA(LONG, y, D0),
+	AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 12, Mathieeespbas)
+	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 12, Mathieeesingbas)
 
 /*  FUNCTION
-        Subtract two ieeesp numbers
-        x = y-z;
+	Subtract two ieeesp numbers
+	x = y-z;
 
     INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
+	y  - IEEE single precision floating point
+	z  - IEEE single precision floating point
 
     RESULT
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : result is out of range
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : result is out of range
 
     NOTES
 
@@ -52,7 +52,7 @@
 
     INTERNALS
       ALGORITHM:
-        x = y - z = y + (-z).
+	x = y - z = y + (-z).
 
     HISTORY
 

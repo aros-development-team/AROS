@@ -17,27 +17,27 @@
 
     NAME */
 
-        AROS_LH1(LONG, IEEESPFix,
+	AROS_LH1(LONG, IEEESPFix,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
+	AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 5, Mathieeespbas)
+	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 5, Mathieeesingbas)
 
 /*  FUNCTION
-        Convert ieeesp-number to integer
+	Convert ieeesp-number to integer
 
     INPUTS
-        y - IEEEE single precision floating point
+	y - IEEEE single precision floating point
 
     RESULT
-        absolute value of y
+	absolute value of y
 
-        Flags:
-          zero     : result is zero
-          negative : result is negative
-          overflow : ieeesp out of integer-range
+	Flags:
+	  zero	   : result is zero
+	  negative : result is negative
+	  overflow : ieeesp out of integer-range
 
     NOTES
 

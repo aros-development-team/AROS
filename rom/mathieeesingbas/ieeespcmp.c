@@ -17,32 +17,32 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPCmp,
+	AROS_LH2(LONG, IEEESPCmp,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+	AROS_LHA(LONG, y, D0),
+	AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 7, Mathieeespbas)
+	struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 7, Mathieeesingbas)
 
 /*  FUNCTION
-        Compares two ieeesp numbers
+	Compares two ieeesp numbers
 
     INPUTS
-        y  - IEEE single precision floating point
-        z  - IEEE single precision floating point
+	y  - IEEE single precision floating point
+	z  - IEEE single precision floating point
 
     RESULT
        +1 : y > z
-        0 : y = z
+	0 : y = z
        -1 : y < z
 
 
-        Flags:
-          zero     : y = z
-          negative : y < z
-          overflow : 0
+	Flags:
+	  zero	   : y = z
+	  negative : y < z
+	  overflow : 0
 
     NOTES
 
