@@ -81,6 +81,11 @@ UBYTE Colors2Depth(UWORD numcolors)
 
 BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
 {
+    /* Georg Steger */
+    
+    return TRUE;
+    
+#if 0
     BOOL inside = FALSE;
     struct IBox *pbox = &(data->pd_PaletteBox);
 
@@ -102,6 +107,8 @@ BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
    	}
     }
     return (inside);
+#endif
+
 }
     	
 
@@ -120,6 +127,16 @@ UWORD ComputeColor(struct PaletteData *data, WORD x, WORD y)
      row = (y - data->pd_PaletteBox.Top)	/ data->pd_RowHeight;
      
      color = data->pd_NumCols * row + col;
+     
+     /* Georg Steger */
+     if (color < 0)
+     {
+     	 color = 0;
+     }
+     else if (color >= data->pd_NumColors)
+     {
+    	 color = data->pd_NumColors - 1;
+     }
      
      return (color);
 }

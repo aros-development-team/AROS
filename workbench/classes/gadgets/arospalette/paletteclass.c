@@ -244,7 +244,8 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 *************************/
 STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 {
-
+    WORD x, y;
+    
     IPTR retval = 0UL;
     struct PaletteData *data = INST_DATA(cl, o);
     
@@ -257,9 +258,19 @@ STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
     ** of "nowhere". To prevent anything from happening when this area is
     ** clicked, we rule it out here.
     */
-    if (InsidePalette(data, msg->gpht_Mouse.X, msg->gpht_Mouse.Y))
+    
+    x = msg->gpht_Mouse.X;
+    y = msg->gpht_Mouse.Y;
+
+    if (    (x > data->pd_PaletteBox.Left)
+	 && (x < data->pd_PaletteBox.Left + data->pd_PaletteBox.Width - 1)
+	 && (y > data->pd_PaletteBox.Top)
+    	 && (y < data->pd_PaletteBox.Top + data->pd_PaletteBox.Height - 1)
+    	 )
+    {
     	retval = GMR_GADGETHIT;
-    	
+    }
+    
     ReturnInt ("Palette::HitTest", IPTR, retval);
 }
 
@@ -328,17 +339,30 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-    	
+    	/* Georg Steger: did not behave like on real Amiga when
+	   mouse is outside palettebox. */
+	   
+    	WORD x = msg->gpi_Mouse.X;
+	WORD y = msg->gpi_Mouse.Y;
+	
+	if (x <= data->pd_PaletteBox.Left) x = data->pd_PaletteBox.Left + 1;
+	if (y <= data->pd_PaletteBox.Top)  y = data->pd_PaletteBox.Top + 1;
+	if (x >= data->pd_PaletteBox.Left + data->pd_PaletteBox.Width - 1)
+		x = data->pd_PaletteBox.Left + data->pd_PaletteBox.Width - 2;
+	if (y >= data->pd_PaletteBox.Top + data->pd_PaletteBox.Height - 1)
+		y = data->pd_PaletteBox.Top + data->pd_PaletteBox.Height - 2;
+		 
     	switch (ie->ie_Code)
     	{
     	    case SELECTUP: {
 		/* If the button was released outside the gadget, then
-		** go back to old state
+		** go back to old state --> no longer: Georg Steger
 		*/
 
 		D(bug("IECLASS_RAWMOUSE: SELECTUP\n"));
-		     
-		if (!InsidePalette(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
+
+		#if 0		     
+		if (!InsidePalette(data, x, y))
     	    	{
     	    	    struct RastPort *rp;
     	    	     	
@@ -357,11 +381,16 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    	}
     	    	else
     	    	{
-    	    	    D(bug("Left released inside gadget, color=%d\n", data->pd_Color));
+		#endif
+    	    	
+		    D(bug("Left released inside gadget, color=%d\n", data->pd_Color));
     	    	    *(msg->gpi_Termination) = data->pd_Color;
     	    	    retval = GMR_VERIFY;
-    	    	}
     	    	
+		#if 0
+		}
+    	    	#endif
+		
     	    	retval |= GMR_NOREUSE;
     	    } break;
     	    	
@@ -371,10 +400,10 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    
     	    	D(bug("IECLASS_POINTERPOS\n"));
     	    	
-    	    	if (InsidePalette(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
+    	    	if (InsidePalette(data, x, y))
     	    	{
     	    	
-    	    	    over_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
+    	    	    over_color = ComputeColor(data, x, y);
     	    
     	   	    if (over_color != data->pd_Color)
     	    	    {
@@ -396,9 +425,9 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    } break;
     	
 
-    	    case MENUDOWN: {
+    	    case MENUUP: {
 
-    	    	/* Right pushed on gadget, go back to old state */
+    	    	/* Right released on gadget, go back to old state */
     	    	
     	    	struct RastPort *rp;
     	    	
@@ -412,7 +441,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    	    ReleaseGIRPort(rp);
     	    	}
 
-    	    	retval = GMR_REUSE;
+    	    	retval = GMR_NOREUSE;
     	    } break;
     	    	
     	} /* switch (ie->ie_Code) */
