@@ -55,5 +55,6 @@ struct IControlPrefs {
 /* AROS extension */
 #define ICF_3DMENUS     	(1<<16)
 #define ICF_POPUPMENUS	    	(1<<15)
+#define ICF_AVOIDWINBORDERERASE (1<<14)
 
 #endif /* PREFS_ICONTROL_H */
