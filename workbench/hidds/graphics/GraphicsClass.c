@@ -234,7 +234,7 @@ static OOP_Object * hiddgfx_newbitmap(OOP_Class *cl, OOP_Object *o,
     BOOL    	    	    displayable = FALSE; /* Default attr value */
     BOOL    	    	    framebuffer = FALSE;
     OOP_Object      	    *pf = NULL, *sync;
-    HIDDT_ModeID    	    modeid;
+    HIDDT_ModeID    	    modeid = 0;
     OOP_Object      	    *bm;
     struct HIDDGraphicsData *data;
     

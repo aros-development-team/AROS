@@ -1294,7 +1294,6 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
     WORD    	    xMem = msg->x;   /* position in bitmap                       */
     WORD    	    yMem = msg->y - font->tf_Baseline;
     WORD    	    x, y, i;
-    ULONG           gp;
 
 
     EnterFunc(bug("BitMap::DrawText()"));
@@ -1673,7 +1672,7 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
 	    {
     		for (x = 0; x < msg->width; x ++)
     		{
-		    register HIDDT_Pixel pix;
+		    register HIDDT_Pixel pix = 0;
 
 		    switch (bpp)
 		    {

@@ -152,7 +152,7 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
     	for (x = 0; x < msg->width; x ++)
 	{
 	    /* Get the source pixel */
-	    HIDDT_Pixel srcpix, dstpix;
+	    HIDDT_Pixel srcpix = 0, dstpix;
 	    
 	    GET_TRUE_PIX(s, srcpix, srcfmt);
 	    
@@ -212,7 +212,7 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
 	
 	for (x = 0; x < msg->width; x ++)
 	{
-	    ULONG srcpix;
+	    ULONG srcpix = 0;
 	    
 	    GET_PAL_PIX(s, srcpix, srcfmt, lut);
 	    
