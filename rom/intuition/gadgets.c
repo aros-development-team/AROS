@@ -1,10 +1,13 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Common routines for Gadgets
     Lang: english
 */
+
+/**********************************************************************************************/
+
 #include "intuition_intern.h"
 #include "gadgets.h"
 #include <exec/types.h>
@@ -28,36 +31,30 @@
 /**********************************************************************************************/
 
 /* print the label of a gadget object */
-#warning FIXME: printgadgetlabel() has to be reworked!
+
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 {
     struct RastPort 	*rp = msg->gpr_RPort;
     struct IBox 	container;
     UWORD 		*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-
+    ULONG   	    	len, x, y;
+    
+    if (!(EG(o)->GadgetText)) return;
+    
     GetGadgetIBox(o, msg->gpr_GInfo, &container);
+    
+    SetFont(rp, msg->gpr_GInfo->gi_DrInfo->dri_Font);
     
     switch (EG(o)->Flags & GFLG_LABELMASK)
     {
-    case GFLG_LABELITEXT: {
-	/* struct TextExtent te; */
+	case GFLG_LABELITEXT: 
+	    /* ITexts must not to be centered! */
 
-	/* Georg Steger: ITexts are not to be centered 
-	
-	   TextExtent(rp, EG(o)->GadgetText->IText,
-		   strlen(EG(o)->GadgetText->IText), &te); */
- 
-        PrintIText(rp,
-	    EG(o)->GadgetText,
-	    container.Left /* + (container.Width  - te.te_Width ) / 2 */,
-	    container.Top  /* + (container.Height - te.te_Height) / 2 */
-        );
-	break; }
+            PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top);
+	    break;
 
-    case GFLG_LABELSTRING:
-        if(EG(o)->GadgetText != NULL)
-	{
-	    ULONG len = strlen ((STRPTR) EG(o)->GadgetText);
+	case GFLG_LABELSTRING:
+    	    len = strlen ((STRPTR) EG(o)->GadgetText);
 
 	    if (len > 0UL)
 	    {
@@ -76,25 +73,25 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 		    (STRPTR) EG(o)->GadgetText, len,
 		    IntuitionBase);
 	    }
-	}
-	break;
+	    break;
 
-    case GFLG_LABELIMAGE:
-        {
+	case GFLG_LABELIMAGE:
             /* center image position, we assume image top and left is 0 */
-            ULONG x = container.Left + ((container.Width / 2) -
+            
+	    x = container.Left + ((container.Width / 2) -
 		(IM(EG(o)->GadgetText)->Width / 2));
-            ULONG y = container.Top + ((container.Height / 2) -
+		
+            y = container.Top + ((container.Height / 2) -
 	        (IM(EG(o)->GadgetText)->Height / 2));
 
-            DrawImageState(rp,
-	        IM(EG(o)->GadgetText),
-		x, y,
-		((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-		msg->gpr_GInfo->gi_DrInfo);
-        }
-        break;
-    }
+            DrawImageState(rp, IM(EG(o)->GadgetText),
+		    	       x, y,
+		    	       ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		    	       msg->gpr_GInfo->gi_DrInfo);
+            break;
+	    
+    } /* switch (EG(o)->Flags & GFLG_LABELMASK) */
+    
 }
 
 /**********************************************************************************************/
@@ -198,10 +195,8 @@ void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
 
 /**********************************************************************************************/
 
-VOID drawrect(struct RastPort *rp
-	, WORD x1, WORD y1
-	, WORD x2, WORD y2
-	, struct IntuitionBase *IntuitionBase)
+VOID drawrect(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+    	      struct IntuitionBase *IntuitionBase)
 {
     Move(rp, x1, y1);
     
@@ -642,8 +637,4 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
     return state;
 }
 
-/**********************************************************************************************/
-/**********************************************************************************************/
-/**********************************************************************************************/
-/**********************************************************************************************/
 /**********************************************************************************************/
