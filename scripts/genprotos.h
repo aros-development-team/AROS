@@ -30,12 +30,9 @@ BEGIN {
     indir="include/clib/"
     outdir=indir;
 
-    infile=indir tolower(lib) "_protos."
-
-    system ("mv " infile "h " infile "bak");
-
-    infile=indir tolower(lib) "_protos.bak"
-    out=outdir tolower(lib) "_protos.h"
+    basename=indir tolower(lib) "_protos."
+    infile=basename "h"
+    out=basename "new"
 
     todo=2;
 
@@ -131,4 +128,10 @@ BEGIN {
 }
 END {
     print "\n#endif /* " define " */" >> out
+
+    close (infile);
+    close (out);
+
+    system ("mv " basename "h " basename "bak");
+    system ("mv " basename "new " basename "h");
 }
