@@ -18,13 +18,17 @@ LIBPOST     := hidd
 
 FILES       := GraphicsClass BM_Class GC_Class functable \
                GC_WritePixelDirect GC_ReadPixel
+STUBS       := $(LIBNAME)_stubs
 
 INIT_FILE   := $(LIBNAME)_init
 END_FILE    := $(LIBNAME)_end
+STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
 
 MY_INCLS    := $(wildcard include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
 ifeq ($(FLAVOUR),native)
 DEPLIBS := arossupport arosc
@@ -35,7 +39,7 @@ endif
 # Replacement is probably of limited use in this directory, but I'll
 # support it nonetheless.
 ALL_FILES := $(FILES)
-%prepare_replace rom/hidd
+%prepare_replace workbench/hidds/graphics
 %filter_replace FILES
 
 %prepare_shlib hiddgraphicscl $(SHARED_HIDDCLASS)
@@ -51,13 +55,13 @@ OSMODULE := $(LIBNAME).$(LIBPOST)
 endif
 
 OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-ALL_OBJS := $(OBJS) $(ENDFUNC)
+ALL_OBJS := $(OBJS) 
 
 $(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
-	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
+	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a) $(ENDFUNC)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
-	  $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	  $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(ENDFUNC) \
 		-o $@ 2>&1 | tee $(OSMODULE).err
 	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
 ifeq ($(FLAVOUR),native)
@@ -65,11 +69,6 @@ ifeq ($(FLAVOUR),native)
 else
 	@strip -x $@
 endif
-
-
-#MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd:
-	@$(NOP)
 
 #MM hidd-graphics-linklib : setup includes hidd-graphics-$(ARCH)-$(CPU)
 hidd-graphics-linklib : show-flags $(LIB)
@@ -97,9 +96,14 @@ hidd-graphics-includes-quick : setup-includes includes-copy
 
 # --- QUICK HACKS END ---
 
+# create stubs-file
+
+$(STUB_FILE) : $(STUB_OBJS)
+	%mklib_q from=$(STUB_OBJS)
+
 DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
 
-$(LIB): libdefs.h $(ALL_OBJS)
+$(LIB): libdefs.h $(STUB_FILE) $(ALL_OBJS)
 	%mklib_q from=$(ALL_OBJS)
 	@$(RM) $(RMLIB)
 
@@ -125,6 +129,11 @@ libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
 $(END_FILE).c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+#$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
+#	@$(ECHO) "Regenerating $@..."
+#	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
+#	  -v lib=$(ULIBNAME)
 
 # scripts/genfunctable.awk needs at least one function because a hidd
 # does not have functions the table is currently gerated with $(EDHO)

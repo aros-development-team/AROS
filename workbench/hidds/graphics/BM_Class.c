@@ -37,6 +37,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
     struct TagItem *tag, *tstate;
 
     BOOL   ok = FALSE;
+    BOOL   allocBuffer = TRUE;
     UBYTE  alignOffset = 15; /* 7 = Byte-, 15 = Word-, 31 = Longword align etc. */
     UBYTE  alignDiv    =  2; /* 1 = Byte-,  2 = Word-,  4 = Longword align etc. */
     ULONG  i;
@@ -73,6 +74,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                     case aoHidd_BitMap_Depth       : data->depth       = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
+                    case aoHidd_BitMap_AllocBuffer : allocBuffer       = (BOOL) tag->ti_Data; break;
 
                     default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
                 } /* switch tag */
@@ -93,28 +95,43 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
             {
                 data->bytesPerPixel = (data->depth + 7) / 8;
                 data->bytesPerRow   = data->bytesPerPixel * ((data->width + alignOffset) / alignDiv);
-                data->buffer = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
-                if(data->buffer) ok = TRUE;
+                if(allocBuffer)
+                {
+                    data->buffer = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
+                    if(data->buffer) ok = TRUE;
+                }
+                else
+                {
+                    ok = TRUE;
+                }
             }
             else
             {
                 /* Planar format: buffer is a pointer to an array of planepointers */
 
-                data->buffer = AllocVec(data->depth * sizeof(UBYTE *), MEMF_CLEAR | MEMF_PUBLIC);
-                if(data->buffer)
+                data->bytesPerRow = (data->width + alignOffset) / alignDiv;
+
+                if(allocBuffer)
                 {
-                    plane = (UBYTE **) data->buffer;
-                    ok    = TRUE;
-
-                    data->bytesPerRow = (data->width + alignOffset) / alignDiv;
-
-                    for(i = 0; (i < data->depth) && (ok == TRUE); i++)
+                    data->buffer = AllocVec(data->depth * sizeof(UBYTE *), MEMF_CLEAR | MEMF_PUBLIC);
+                    if(data->buffer)
                     {
-                        *plane = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
-                        if(*plane == NULL) ok = FALSE;
-                        plane++;
+                        plane = (UBYTE **) data->buffer;
+                        ok    = TRUE;
+    
+                        for(i = 0; (i < data->depth) && (ok == TRUE); i++)
+                        {
+                            *plane = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
+                            if(*plane == NULL) ok = FALSE;
+                            plane++;
+                        }
                     }
                 }
+                else
+                {
+                    ok = TRUE;
+                }
+
             }
         }
     } /* if(obj) */
@@ -210,7 +227,7 @@ static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_Priva
     struct TagItem *tag, *tstate;
     ULONG  idx;
 
-    EnterFunc(bug("BitMap::PrivateSet()"));
+    EnterFunc(bug("BitMap::PrivateSet()\n"));
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -321,10 +338,10 @@ void free_bitmapclass(struct class_static_data *csd)
     if(csd)
     {
         RemoveClass(csd->bitmapclass);
-        DisposeObject((Object *) csd->bitmapclass);
+        if(csd->bitmapclass) DisposeObject((Object *) csd->bitmapclass);
         csd->bitmapclass = NULL;
         if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
     }
 
-    ReturnVoid("free_gcclass");
+    ReturnVoid("free_bitmapclass");
 }

@@ -43,6 +43,8 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
     EnterFunc(bug("GC::New()\n"));
 
+    set_msg.mID = GetMethodID(IID_Root, moRoot_Set);
+
     /* User MUST supply bitmap */
 
     bitMap = (APTR) GetTagData(aHidd_GC_BitMap, NULL, msg->attrList);
@@ -69,7 +71,7 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
         /* Override defaults with user suplied attrs */
 
         set_msg.attrList = msg->attrList;
-        gc_set(cl, obj, &set_msg);
+/*        gc_set(cl, obj, &set_msg);*/
 
     } /* if(obj) */
 
@@ -157,9 +159,11 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 
 #undef OOPBase
 #undef SysBase
+#undef UtilityBase
 
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
+#define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS   4
 #define NUM_GC_METHODS     2
@@ -239,10 +243,19 @@ void free_gcclass(struct class_static_data *csd)
 
     if(csd)
     {
+        D(bug("1\n"));
         RemoveClass(csd->gcclass);
-        DisposeObject((Object *) csd->gcclass);
+        D(bug("2\n"));
+
+        if(csd->gcclass) DisposeObject((Object *) csd->gcclass);
+        D(bug("3\n"));
+
         csd->gcclass = NULL;
+        D(bug("4\n"));
+
         if(HiddGCAttrBase) ReleaseAttrBase(IID_Hidd_GCQuick);
+        D(bug("5\n"));
+
     }
 
     ReturnVoid("free_gcclass");

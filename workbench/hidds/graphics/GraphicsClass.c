@@ -23,7 +23,7 @@
 #include <aros/debug.h>
 
 
-static AttrBase HiddGCAttrBase;
+/*static AttrBase HiddGCAttrBase;*/
 
 /*** HIDDGfx::NewGC() *********************************************************/
 
@@ -58,7 +58,7 @@ static VOID hiddgfx_disposegc(Class *cl, Object *o, struct pHidd_Gfx_DisposeGC *
 {
     EnterFunc(bug("HIDDGfx::DisposeGC()\n"));
 
-    DisposeObject(msg->gc);
+    if(msg->gc) DisposeObject(msg->gc);
 
     ReturnVoid("HIDDGfx::DisposeGC");
 }
@@ -84,7 +84,7 @@ static VOID hiddgfx_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_Dispose
 {
     EnterFunc(bug("HIDDGfx::DisposeBitMap()\n"));
 
-    DisposeObject(msg->bitMap);
+    if(msg->bitMap) DisposeObject(msg->bitMap);
 
     ReturnVoid("HIDDGfx::DisposeBitMap");
 }
@@ -93,11 +93,13 @@ static VOID hiddgfx_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_Dispose
 
 #undef OOPBase
 #undef SysBase
+#undef UtilityBase
 
+#define SysBase     (csd->sysbase)
+#define OOPBase     (csd->oopbase)
+#define UtilityBase (csd->utilitybase)
 
 #define NUM_GFXHIDD_METHODS 4
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -142,7 +144,7 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     {
         D(bug("GfxHiddClass ok\n"));
         cl->UserData = (APTR)csd;
-        
+
         csd->bitmapclass = init_bitmapclass(csd);
         D(bug("bitmapclass: %p\n", csd->bitmapclass));
 
@@ -184,10 +186,11 @@ void free_gfxhiddclass(struct class_static_data *csd)
         RemoveClass(csd->gfxhiddclass);
         free_gcclass(csd);
         free_bitmapclass(csd);
-
-        DisposeObject((Object *) csd->gfxhiddclass);
+        if(csd->gfxhiddclass) DisposeObject((Object *) csd->gfxhiddclass);
+        csd->gfxhiddclass = NULL;
     }
 
     ReturnVoid("free_gfxhiddclass");
 }
+
 

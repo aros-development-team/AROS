@@ -56,7 +56,7 @@ struct HIDDGCData
 
 struct class_static_data
 {
-    struct ExecBase * sysbase;
+    struct ExecBase      * sysbase;
     struct Library       * utilitybase;
     struct Library       * oopbase;
 
@@ -71,9 +71,9 @@ struct class_static_data
 struct IntHIDDGraphicsBase
 {
     struct Library            hdg_LibNode;
+    BPTR                      hdg_SegList;
     struct ExecBase          *hdg_SysBase;
     struct Library           *hdg_UtilityBase;
-    BPTR                      hdg_SegList;
 
     struct class_static_data *hdg_csd;
 };
