@@ -6,7 +6,7 @@ INCLUDES	:= $(wildcard $(foreach d,$(INCSUBDIRS),$(d)/*.[ch]))
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 GEN_INCLUDES	:= $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
-#MM
+#MM includes-copy : setup-includes
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
@@ -22,18 +22,14 @@ $(GENINCDIR)/%.c : %.c
 	$(CP) $< $@
 
 #MM
-setup :
+setup-includes :
 	@$(FOR) dir in $(INCDIR)         \
 		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
-	; do \
-	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
-	done ; \
-	$(FOR) dir in $(GENINCDIR)	\
+		$(GENINCDIR) \
 		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
 	; do \
-	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true; fi ;\
+	   $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ;\
 	done
-
 
 #MM
 clean :

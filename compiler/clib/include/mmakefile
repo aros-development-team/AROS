@@ -5,15 +5,14 @@ INCDIR		:= $(BINDIR)/include
 INCLUDES	:= $(wildcard *.h */*.h)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
-all: setup includes
-
-#MM
+#MM includes-copy : setup-includes
 includes-copy : $(DEST_INCLUDES)
 
 #MM
-setup :
-	@$(IF) [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
-	@$(IF) [ ! -d $(INCDIR)/sys ]; then $(MKDIR) $(INCDIR)/sys ; else true ; fi
+setup-includes :
+	@$(FOR) dir in $(INCDIR) $(INCDIR)/sys ; do \
+	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else $(NOP) ; fi \
+	done
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@

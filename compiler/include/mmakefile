@@ -26,7 +26,7 @@ INCSUBDIRS :=	aros \
 		workbench
 
 # The includes target points back to config/$(ARCH)/mmakefile:
-#MM includes : includes-$(ARCH)
+#MM includes : setup-includes includes-$(ARCH)
 includes :
 	@$(NOP)
 
@@ -40,16 +40,13 @@ $(GENINCDIR)/%.h : %.h
 	$(CP) $< $@
 
 #MM
-setup :
+setup-includes :
 	@$(FOR) dir in $(INCDIR)         \
 		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
-	; do \
-	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
-	done ; \
-	$(FOR) dir in $(GENINCDIR) \
+		$(GENINCDIR) \
 		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
 	; do \
-	   $(IF) [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	   $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ;\
 	done
 
 #MM
