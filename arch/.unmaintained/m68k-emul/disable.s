@@ -42,7 +42,7 @@
 	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
 
 AROS_SLIB_ENTRY(Disable,Exec):
-	bsr.w	AROS_CDEFNAME(disable)
+	bsr.w	AROS_CSYMNAME(disable)
 	move.l	%a6,-(%sp)
 	
 	/* Get SysBase */
