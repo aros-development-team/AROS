@@ -341,8 +341,12 @@ struct IFS_NOTIFY
 #define FSA_REMOVE_NOTIFY   36
 
 #define FSA_DISK_INFO	    37
-
+struct IFS_INFO
+{
+    struct InfoData *io_Info;
+};
 #if 0
+
 #define FSA_CHANGE_SIGNAL   38
 #define FSA_LOCK_RECORD     39
 #define FSA_UNLOCK_RECORD   40
@@ -457,6 +461,7 @@ struct IOFileSys
 	struct IFS_CONSOLE_MODE	   io_CONSOLE_MODE;   /* FSA_CONSOLE_MODE */
 	struct IFS_RELABEL         io_RELABEL;        /* FSA_RELABEL */
 	struct IFS_NOTIFY          io_NOTIFY;         /* FSA_ADD_NOTIFY */
+	struct IFS_INFO            io_INFO;           /* FSA_INFO */
     } io_Union;
 };
 
