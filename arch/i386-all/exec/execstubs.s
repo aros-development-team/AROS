@@ -104,6 +104,7 @@ cname:				    ; \
 	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_ReleaseSemaphore))
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_ObtainSemaphoreShared))
 
+#if 1
 	.globl	AROS_SLIB_ENTRY(Switch,Exec)
 	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
 AROS_SLIB_ENTRY(Switch,Exec):
@@ -124,7 +125,7 @@ AROS_SLIB_ENTRY(Switch,Exec):
 	movw	tc_Flags(%ecx),%eax
 	andb	$TF_EXCEPT,%al
 	cmpw	$TS_RUN*256,%ax
-	jne	.disp  /* %ax != TS_RUN*256 */
+	jne	1f  /* %ax != TS_RUN*256 */
 
 	/* ...move task to the ready list */
 	movb	$TS_READY,tc_State(%ecx)
@@ -136,7 +137,7 @@ AROS_SLIB_ENTRY(Switch,Exec):
 	call	*%edx
 	addl	$12,%esp
 
-.disp:
+1:
 #else
 /* ??? This code doesn't work. Eventually the TaskReady list will be
    overwritten with NULL and crash. */
@@ -148,9 +149,10 @@ AROS_SLIB_ENTRY(Switch,Exec):
 #endif
 
 	/* Prepare dispatch */
-	leal	Dispatch(%ebx),%ecx
+	leal	AROS_SLIB_ENTRY(Dispatch,Exec),%ecx
 	movl	%ecx,(NUM_REGS*4)(%esp)
 
 	/* restore registers and dispatch */
 	POP
 	ret
+#endif
