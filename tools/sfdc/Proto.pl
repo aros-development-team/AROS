@@ -33,7 +33,11 @@ BEGIN {
 	print "\n";
 	print "#ifndef _NO_INLINE\n";
 	print "# if defined(__GNUC__)\n";
-	print "#  include <inline/${basename}.h>\n";
+	print "#  ifdef __AROS__\n";
+	print "#   include <defines/${basename}.h>\n";
+	print "#  else\n";
+	print "#   include <inline/${basename}.h>\n";
+	print "#  endif\n";
 	print "# else\n";
 	print "#  include <pragmas/${basename}_pragmas.h>\n";
 	print "# endif\n";

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w                                      -- # -*- perl -*-
 #
 #     sfdc - Compile SFD files into someting useful
-#     Copyright (C) 2003 Martin Blom <martin@blom.org>
+#     Copyright (C) 2003-2004 Martin Blom <martin@blom.org>
 #     
 #     This program is free software; you can redistribute it and/or
 #     modify it under the terms of the GNU General Public License
@@ -193,7 +193,7 @@ GetOptions ('addvectors=s' => \$addvectors,
 
 if ($version) {
     print STDERR "sfdc SFDC_VERSION (SFDC_DATE)\n";
-    print STDERR "Copyright (C) 2003 Martin Blom <martin\@blom.org>\n";
+    print STDERR "Copyright (C) 2003-2004 Martin Blom <martin\@blom.org>\n";
     print STDERR "This is free software; " .
 	"see the source for copying conditions.\n";
     exit 0;
@@ -219,7 +219,7 @@ if ($#ARGV < 0) {
 
 $mode = lc $mode;
 
-if (!($mode =~ /^(clib|dump|fd|libproto|lvo|macros|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
+if (!($mode =~ /^(clib|dump|fd|libproto|lvo|functable|macros|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
     pod2usage (-message => "Unknown mode specified. Use --help for a list.",
 	       -verbose => 0,
 	       -exitval => 10);
@@ -285,6 +285,11 @@ for my $i ( 0 .. $#ARGV ) {
 
 	/^lvo$/ && do {
 	    $obj = LVO->new( sfd => $sfd );
+	    last;
+	};
+
+	/^functable$/ && do {
+	    $obj = FuncTable->new( sfd => $sfd );
 	    last;
 	};
 
@@ -573,13 +578,16 @@ sub parse_sfd ( $ ) {
 	};
 	
 	if ( $proto_line =~
-	     /.*[A-Za-z0-9_]+\(.*\).*\(((base|sysv|[\saAdD][0-7]-?),?)*\)\s*$/
+	     /.*[A-Za-z0-9_]+\s*\(.*\).*\(((base|sysv|autoreg|[\saAdD][0-7]-?),?)*\)\s*$/
 	     ) {
 
 	    if ($proto_line =~ /.*\(.*[0-7]-.*\)\s*$/) {
-		print STDERR "Warning: Multiregister function ignored.\n";
+		if ($$classes{'target'} ne 'amigaos') {
+		    print STDERR "Warning: Multiregister functions are m68k only.\n";
+		}
+		$proto_line =~ s/([da][0-7])-[da][0-7]/$1/g;
 	    }
-	    else {
+#	    else {
 		push @{$$result{'prototypes'}}, {
 		    type    => $type,
 		    subtype => '',
@@ -592,7 +600,7 @@ sub parse_sfd ( $ ) {
 		    };
 
 		$comment    = '';
-	    }
+#	    }
 
 	    $last_type  = $type;
 	    $type       = 'function';
@@ -662,6 +670,7 @@ sub parse_sfd ( $ ) {
 	$$result{'basename'} = "wb";
     }
 
+    $$result{'basename'} =~ s/-/_/g;
     $$result{'basename'} = lc $$result{'basename'};
     $$result{'BASENAME'} = uc $$result{'basename'};
     $$result{'Basename'} = ucfirst $$result{'basename'};
@@ -706,6 +715,10 @@ sub parse_proto ( $$$ ) {
     @{$$prototype{'___argnames'}} = ();
     @{$$prototype{'argtypes'}}    = ();
 
+    if ($arguments =~ /^(void|VOID)$/) {
+	$arguments = "";
+    }
+
     my @args = split(/,/,$arguments);
 
     # Fix function pointer arguments and build $$prototype{'args'} 
@@ -735,6 +748,23 @@ sub parse_proto ( $$$ ) {
     if ($registers =~ /sysv/) {
 	$prototype->{type} = 'cfunction';
 	$prototype->{nb}   = 1;
+    }
+    elsif ($registers =~ /autoreg/) {
+	my $a_cnt = 0;
+	my $d_cnt = 0;
+	foreach my $arg (@{$$prototype{'args'}}) {
+	    if ($arg =~ /\*/) {
+		push @{$$prototype{'regs'}}, "a$a_cnt";
+		$a_cnt++;
+	    }
+	    else {
+		push @{$$prototype{'regs'}}, "d$d_cnt";
+		$d_cnt++;
+	    }
+	}
+	
+	$prototype->{numregs} = $#{$$prototype{'regs'}} + 1;
+	$prototype->{nb}      = $sfd->{base} eq '';
     }
     else {
 	# Split regs and make them lower case
@@ -847,7 +877,7 @@ sub parse_proto ( $$$ ) {
 	    $___arg = "$type1(*___$name) $type2";
 	}
 	elsif ($arg !~ /^\.\.\.$/) {
-	    ($type, $name) = ( $arg =~ /^\s*(.*?)\s+(\w+)\s*$/ );
+	    ($type, $name) = ( $arg =~ /^\s*(.*?[\s*]*?)\s*(\w+)\s*$/ );
 	    $___name = "___$name";
 	    $___arg = "$type ___$name";
 	}
@@ -857,7 +887,8 @@ sub parse_proto ( $$$ ) {
 	    }
 	    else {
 		# Unknown type
-		$type = "void*";
+#		$type = "void*";
+		$type = "...";
 	    }
 	    $name = '...';
 	    $___name = '...';

@@ -16,6 +16,7 @@ BEGIN {
 
     sub header {
 	my $self = shift;
+	my $sfd  = $self->{SFD};
 	
 	$self->SUPER::header (@_);
 
@@ -23,6 +24,21 @@ BEGIN {
 	print "\n";
     }
 
+    sub function {
+	my $self     = shift;
+	my %params    = @_;
+	my $prototype = $params{'prototype'};
+	my $sfd       = $self->{SFD};
+
+	if ($prototype->{type} eq 'cfunction') {
+	    print "#define $gateprefix$prototype->{funcname} " .
+		"AROS_SLIB_ENTRY(" .
+		"$gateprefix$prototype->{funcname},$sfd->{Basename})\n\n";
+	}
+
+	$self->SUPER::function (@_);
+    }
+	
     sub function_start {
 	my $self      = shift;
 	my %params    = @_;
