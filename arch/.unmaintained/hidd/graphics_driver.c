@@ -1114,17 +1114,13 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   /* does this rastport have a layer? */
   if (NULL != L)
   {
-  
-   
-   
     /* more difficult part here as the layer might be partially 
        hidden.
        The coordinate x,y is relative to the layer.
     */
     struct ClipRect * CR = L -> ClipRect;
-    WORD YRel = L->bounds.MinY;
-    WORD XRel = L->bounds.MinX;
-    
+    WORD YRel = L->bounds.MinY + L->Scroll_Y;
+    WORD XRel = L->bounds.MinX + L->Scroll_Y;
 
     /* Is this pixel inside the layer ?? */
     if (x > (L->bounds.MaxX - XRel + 1) ||
@@ -1177,7 +1173,11 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
-          bm = CR -> BitMap;
+          if ((L->Flags & LAYERSUPER) == 0)
+            bm = CR -> BitMap;
+          else
+            bm = L -> SuperBitMap;
+           
           Width = GetBitMapAttr(bm, BMA_WIDTH);
           /* Calculate the Width of the bitplane in bytes */
           if (Width & 0x07)
@@ -1185,13 +1185,24 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
           else
             Width = (Width >> 3);
            
-          Offset = CR->bounds.MinX & 0x0f;
+          if (0 == (L->Flags & LAYERSUPER))
+          { 
+            /* no superbitmap */
+            Offset = CR->bounds.MinX & 0x0f;
           
-          i = (y - (CR->bounds.MinY - YRel)) * Width + 
-             ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
+            i = (y - (CR->bounds.MinY - YRel)) * Width + 
+               ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
                 /* Offset: optimization for blitting!! */
-          Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
-          /* no pixel into the X window */
+            Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+          }
+          else
+kprintf("!!!\n");
+            /* with superbitmap */
+            i =  (y - L->Scroll_Y) * Width +
+                ((x - L->Scroll_X) >> 3);
+            Mask = 1 << (7 - (x - L->Scroll_X));                 
+          }
+          
         }       
         break;
         
@@ -1229,32 +1240,32 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   if ((bm->Flags & BMF_AROS_DISPLAYED) == 0)
   {
 
-  /* get the pen for this rastport */
-  pen = GetAPen(rp);
+    /* get the pen for this rastport */
+    pen = GetAPen(rp);
 
-  pen_Mask = 1;
-  CLR_Mask = ~Mask;
+    pen_Mask = 1;
+    CLR_Mask = ~Mask;
   
-  /* we use brute force and write the pixel to
-     all bitplane, setting the bitplanes where the pen is
-     '1' and clearing the other ones */
-  for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
-  {
-    Plane = bm->Planes[count];
+    /* we use brute force and write the pixel to
+       all bitplane, setting the bitplanes where the pen is
+       '1' and clearing the other ones */
+    for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
+    {
+      Plane = bm->Planes[count];
 
-    /* are we supposed to clear this pixel or set it in this bitplane */
-    if (0 != (pen_Mask & pen))
-    {
-      /* in this bitplane we're setting it */
-      Plane[i] |= Mask;          
-    }
-    else
-    {
-      /* and here we clear it */
-      Plane[i] &= CLR_Mask;
-    }
-    pen_Mask = pen_Mask << 1;
-  } /* for */
+      /* are we supposed to clear this pixel or set it in this bitplane */
+      if (0 != (pen_Mask & pen))
+      {
+        /* in this bitplane we're setting it */
+        Plane[i] |= Mask;          
+      } 
+      else
+      {
+        /* and here we clear it */
+        Plane[i] &= CLR_Mask;
+      }
+      pen_Mask = pen_Mask << 1;
+    } /* for */
   
   } /* if (not a hidd bitmap) */
 
