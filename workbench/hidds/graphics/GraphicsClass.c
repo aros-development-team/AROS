@@ -7,6 +7,7 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE 1
+#include <aros/config.h>
 #include <exec/lists.h>
 
 #include "graphics_intern.h"
@@ -1788,6 +1789,8 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
     if (GOT_SYNC_ATTR(PixelTime)) {
 	data->pixtime = attrs[SYAO(PixelTime)];
     } else if (GOT_SYNC_ATTR(PixelClock)) {
+#if !AROS_BOCHS_HACK
+	/* Something in there makes Bochs freeze */
 	DOUBLE pixclock, pixtime;
 		    
 	/* Compute the pixtime */
@@ -1795,7 +1798,9 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	pixtime = 1 / pixclock;
 	pixtime *= 1000000000000;
 	data->pixtime = (ULONG)pixtime;
-	
+#else
+	data->pixtime = 0x12345678;
+#endif	
     } else {
 	kprintf("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n");
 	return FALSE;
