@@ -277,7 +277,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     ULONG add = data->width - msg->width;
     ULONG cnt = msg->height;
 
-    unsigned long *s_start = msg->pixels;
+    unsigned long *s_start = (unsigned long *)msg->pixels;
 
     EnterFunc(bug("VGAGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -325,7 +325,7 @@ static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
     ULONG add = data->width - msg->width;
     ULONG cnt = msg->height;
 
-    unsigned long *s_start = msg->pixels;
+    unsigned long *s_start = (unsigned long *)msg->pixels;
 
     while (cnt > 0)
     {
