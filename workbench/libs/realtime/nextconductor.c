@@ -55,6 +55,8 @@
 
     INTERNALS
 
+    Should private conductors be filtered out?
+
     HISTORY
 
     26.7.99  SDuvan  implemented
