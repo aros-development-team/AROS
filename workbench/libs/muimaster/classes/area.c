@@ -936,7 +936,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 	zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
 	return;
     }
-
+      
     /* set clipping so that frame is not drawn behind title */
     tw = data->mad_TitleText->width;
     tx = _mleft(obj) + (_mwidth(obj) - tw) / 2;
@@ -950,10 +950,21 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 	struct Rectangle rect;
 	int maxx;
 
-	maxx = tx + tw + 1;
-	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color
-	    != GROUP_TITLE_COLOR_3D)
-	    maxx--;
+	maxx = tx + tw + 2;
+        
+        switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_color)
+        {
+            case GROUP_TITLE_COLOR_OUTLINE:
+                break;
+                
+            case GROUP_TITLE_COLOR_3D:
+                maxx -= 1;
+                break;
+                
+            default:
+                maxx -= 2;
+        }
+                
 	rect.MinX = tx - 2;
 	rect.MinY = _top(obj);
 	rect.MaxX = MIN(_mright(obj), maxx);
@@ -989,6 +1000,23 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 	zune_text_draw(data->mad_TitleText, obj, tx + 1, tx + tw, _top(obj) + 1);
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	zune_text_draw(data->mad_TitleText, obj, tx, tx + tw - 1, _top(obj));
+    }
+    else if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_OUTLINE)
+    {
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	zune_text_draw(data->mad_TitleText, obj, tx + 1, tx + tw, _top(obj)    );
+	zune_text_draw(data->mad_TitleText, obj, tx - 1, tx + tw, _top(obj)    );
+        zune_text_draw(data->mad_TitleText, obj, tx,     tx + tw, _top(obj) + 1);
+	zune_text_draw(data->mad_TitleText, obj, tx,     tx + tw, _top(obj) - 1);
+        /*
+        zune_text_draw(data->mad_TitleText, obj, tx + 1, tx + tw, _top(obj) + 1);
+	zune_text_draw(data->mad_TitleText, obj, tx + 1, tx + tw, _top(obj) - 1);
+        zune_text_draw(data->mad_TitleText, obj, tx - 1, tx + tw, _top(obj) + 1);
+	zune_text_draw(data->mad_TitleText, obj, tx - 1, tx + tw, _top(obj) - 1);
+        */
+        
+        SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+        zune_text_draw(data->mad_TitleText, obj, tx, tx + tw - 1, _top(obj));        
     }
     else
     {
