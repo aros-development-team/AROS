@@ -23,30 +23,11 @@ COMPILING:
 
 Change the current directory to /usr/src/AROS and run "autoconf" to
 generate the "configure" script from "configure.in".
-If you do not have autoconf (it wasn't installed on my version of CygWin)
-you'll have to do it on some other machine and copy the "configure" script
-over to /usr/src/AROS.
 
 Then you can run this script with "sh configure".
 
-
-For compiling up to the point where I stopped (now) you still have to
-modify some things:
-
-- AROS/tools/toollib/Makefile:
-    comment out the "makedepend" lines, or fix the "can't rename depend
-    as depend.bak" problem you'll encounter if you did not change anything
-    and just typed "make":
-"makedepend: error:  cannot rename /usr/src/AROS/bin/cygwin-i386/tools/depend to /usr/src/AROS/bin/cygwin-i386/tools/depend.bak"
-
-- AROS/tools/FlexCat/flexcat.c:
-    lines 389/418 -> change to #if 0
-    or find out how to figure out if stricmp/strcasecmp and
-    strnicmp/strncasecmp are implemented on the host system.
-    (iaint@aros.org has applied for this task ;-)
-
-
-Do "make".
+For compiling up to the point where I stopped (now) you have to
+do "make".
 
 Now everything should work until config/unix/exec/kernel.c is to
 be compiled.  Here compilation should stop with lots of errors and
@@ -54,6 +35,37 @@ warnings.
 
 
 WHAT NEEDS TO BE DONE?
+
+Apparently CygWin doesn't use ELF fileformat so this port won't be
+compatible with all the other i386 ports, unless you do some sort of
+"cross-compiling"!
+[
+From: Michal Schulz <michalsc@info.com.pl>
+To: aros-dev@lists.hepe.com
+Subject: Re: [AROS-Dev] How do I compile a program for AROS
+Date: Tue, 8 Jan 2002 17:09:02 +0100 (MET)
+
+On Tue, 8 Jan 2002, Adam Chodorowski wrote:
+
+> > What utilities do I use (I'm on Windows and have Visual Studio 6), and 
+> > what header files do I use? A pointer to a tutorial webpage would be cool.
+> > Also, is there any way to run an AROS program under Windows (for test
+> > development)? If not, I can use the Linux version (I have Linux installed).
+> 
+> Not really. It is *almost* possible to compile AROS/i386-native under Windows
+> using the CygWin environment (which is basically an POSIX compatability
+> layer),
+
+IMHO this is not possible unless you use cross-compiling as i386-native
+needs elf fileformat
+
+--
+Michal Schulz
+
+_______________________________________________
+AROS-Dev mailing list  -  AROS-Dev@lists.hepe.com
+http://www.aros.org/mailman/listinfo/aros-dev
+]
 
 CygWin specific stuff is in config/cygwin:
 
@@ -80,5 +92,5 @@ Have fun...
 
 Henning Kiel <hkiel@aros.org>
 
-August 2000
+December 2001
 
