@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/19 17:17:44  aros
+    Use the ANSI C function
+
     Revision 1.6  1996/09/12 13:23:23  digulla
     Fixed a severe bug in the code. If nothing was found, the function returned
-    	the list-header instead of NULL
+	the list-header instead of NULL
 
     Revision 1.5  1996/08/13 13:56:01  digulla
     Replaced __AROS_LA by __AROS_LHA
@@ -20,7 +23,7 @@
 #define AROS_ALMOST_COMPATIBLE
 #include "exec_intern.h"
 #include <aros/libcall.h>
-#include <clib/aros_protos.h>
+#include <string.h>
 
 /*****************************************************************************
 
@@ -81,7 +84,7 @@
     for (node=GetHead(list); node; node=GetSucc(node))
     {
 	/* check the node. If we found it, stop */
-	if (!STRCMP (node->ln_Name, name))
+	if (!strcmp (node->ln_Name, name))
 	    break;
     }
 
