@@ -166,6 +166,14 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
         renderlabel(AROSCycleBase, EG(o),
                     data->labels[data->active],
                     msg->gpr_RPort, msg->gpr_GInfo);
+		    
+    /* Draw disabled pattern */
+    if (G(o)->Flags & GFLG_DISABLED)
+        drawdisabledpattern(AROSCycleBase, msg->gpr_RPort,
+                            msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
+                            G(o)->LeftEdge, G(o)->TopEdge,
+                            G(o)->Width, G(o)->Height);
+
 }
 
 
