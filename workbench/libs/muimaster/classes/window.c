@@ -375,7 +375,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    {
 			struct Window *wnd;
 			get(child, MUIA_Window_Window,(ULONG*)&wnd);
-			if (!wnd) continue:
+			if (!wnd) continue;
 
 			if (wnd->WLayer == l)
 			{

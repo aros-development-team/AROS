@@ -96,12 +96,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     if (!CxBase)
     	return FALSE;
 
-#ifdef _AROS
     if (!GadToolsBase)
     	GadToolsBase = OpenLibrary("gadtools.library", 37);
     if (!GadToolsBase)
     	return FALSE;
-#endif
 
     KeymapBase = OpenLibrary("keymap.library", 37);
     if (!KeymapBase)
