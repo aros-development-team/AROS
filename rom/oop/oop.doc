@@ -33,14 +33,7 @@ locally, it can move itself to the remote host.
 - Exceptions.
 
 
-Not-that-important goals.
-- Meta-classes
-FIXME what are meta classes ?
-
-
-- Dynamic methods. (Ability to add methods to a
-class at runtime).
-
+- Thread safe method invocation.
 
 Possible solutions to design goals w/pros & cons
 
@@ -246,4 +239,27 @@ to the place. We can use macros to throw and catch exceptions.
 
 On Amiga, we might be able to use similar techniques. The globals
 must be stored in the ETask info.
+
+Thread safe method invocation.
+-----------------------------
+
+This can be done through the use of proxy objects
+and IPC, where the server runs inside one task,
+an the clients (other tasks) get proxies to the object
+residing inside the server.
+The server will the Wait() for incoming
+methods and execute them on the proxied
+object. Currently the system is using Exec messages,
+and since AROS has no MP (yet), I only have to pass a
+pointer.
+
+
+A problem that has to be addressed here is
+deadlocks. Say task A has object a, and task B
+has object b.
+
+Now, A calls a method on b, but the method calls another
+method on a. Since A will be Wait()ing for a response from
+B, then it can't execute the method, and both
+tasks will be waiting forever.
 
