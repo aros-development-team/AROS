@@ -42,14 +42,17 @@ FUNCTIONS = \
 	installlayerinfohook		\
 	locklayer			\
 	locklayerinfo			\
+	locklayers			\
 	movelayer			\
 	newlayerinfo			\
+	scrolllayer			\
 	sizelayer			\
 	sortlayercr			\
 	swapbitsrastportcliprect	\
 	thinlayerinfo			\
 	unlocklayer			\
 	unlocklayerinfo 		\
+	unlocklayers			\
 	whichlayer
 
 # Do the magic required for function replacement.
@@ -93,8 +96,8 @@ $(OSMODDIR)/layers.strap : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 endif
 
 # Collect all (asm-)functions in a linklib for fast linking:
-$(LIB) : functions.h
-	%mklib_f
+$(LIB) : $(INITFUNC) $(ENDFUNC) $(OBJS)
+	%mklib_q
 	@$(RM) $(RMLIB)
 
 #MM
