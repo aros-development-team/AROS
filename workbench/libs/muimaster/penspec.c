@@ -174,13 +174,10 @@ BOOL zune_penspec_setup(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *m
 
 	case PST_CMAP:
 	{
-	    ULONG triplet[3];
-
-	    GetRGB32(mri->mri_Screen->ViewPort.ColorMap,
-		     psi->p_cmap, 1, triplet);
-
-	    set_pen_from_rgb(psi, mri->mri_Screen->ViewPort.ColorMap,
-			     triplet[0], triplet[1], triplet[2]);
+	    psi->p_pen = (psi->p_cmap >= 0) ?
+		psi->p_cmap :
+		mri->mri_Screen->ViewPort.ColorMap->Count + psi->p_cmap;
+	    psi->p_is_allocated = FALSE;
 	    break;
 	}
 	case PST_RGB:
