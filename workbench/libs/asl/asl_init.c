@@ -34,7 +34,7 @@
 /*****************************************************************************************/
 
 #ifdef __MORPHOS__
-    unsigned long __amigappc__ = 1;
+    unsigned long __abox__ = 1;
 #endif
 
 struct inittable;
@@ -49,6 +49,10 @@ extern BPTR AROS_SLIB_ENTRY(close,Asl)();
 extern BPTR AROS_SLIB_ENTRY(expunge,Asl)();
 extern int AROS_SLIB_ENTRY(null,Asl)();
 extern const char LIBEND;
+
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
 
 /* FIXME: egcs 1.1b and possibly other incarnations of gcc have
  * two nasty problems with entry() that prevents using the
@@ -85,7 +89,7 @@ static const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&LIBEND,
 #ifdef __MORPHOS__
-    RTF_PPC |RTF_AUTOINIT,
+    RTF_PPC | RTF_EXTENDED | RTF_AUTOINIT,
 #else
     RTF_AUTOINIT,
 #endif
@@ -94,7 +98,11 @@ static const struct Resident resident=
     0,	/* priority */
     (char *)name,
     (char *)&version[6],
-    (ULONG *)inittabl
+    (ULONG *)inittabl,
+#ifdef __MORPHOS__
+    REVISION_NUMBER,	/* Revision */
+    NULL /* Tags */
+#endif
 };
 
 const char name[]=NAME_STRING;
@@ -319,11 +327,11 @@ AROS_UFH3(struct AslBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
     LIBBASE->seglist=segList;
 
     /* Asl specific initialization stuff */
-    NEWLIST( &(ASLB(AslBase)->ReqList));
+    NEWLIST(&LIBBASE->ReqList);
 
-    InitSemaphore( &(ASLB(AslBase)->ReqListSem));
+    InitSemaphore(&LIBBASE->ReqListSem);
 
-    InitReqInfo(ASLB(AslBase));
+    InitReqInfo(LIBBASE);
 
     /* You would return NULL here if the init failed. */
     return LIBBASE;
@@ -665,8 +673,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     reqinfo->DefaultReq 	= (struct IntFileReq *)&def_filereq;
     reqinfo->UserDataSize	= sizeof (struct FRUserData);
 
-    memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
-    memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
+    bzero(&(reqinfo->ParseTagsHook), sizeof (struct Hook));
+    bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(FRTagHook);
     reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(FRGadgetryHook);
 
@@ -678,8 +686,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     reqinfo->DefaultReq 	= (struct IntFontReq *)&def_fontreq;
     reqinfo->UserDataSize	= sizeof (struct FOUserData);
 
-    memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
-    memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
+    bzero(&(reqinfo->ParseTagsHook), sizeof (struct Hook));
+    bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(FOTagHook);
     reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(FOGadgetryHook);
 
@@ -691,8 +699,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     reqinfo->DefaultReq 	= (struct IntSMReq *)&def_smreq;
     reqinfo->UserDataSize	= sizeof(struct SMUserData);
 
-    memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
-    memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
+    bzero(&(reqinfo->ParseTagsHook), sizeof (struct Hook));
+    bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(SMTagHook);
     reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(SMGadgetryHook);
 

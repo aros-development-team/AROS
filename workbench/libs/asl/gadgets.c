@@ -29,6 +29,29 @@
 
 /*******************************************************************************************/
 
+#ifdef __MORPHOS__
+/*
+ * temporarily..until included in our includes
+ */
+
+/********************************************************************************/
+/* imageclass.h AROS extensions */
+
+#ifndef SYSIA_WithBorder
+#define SYSIA_WithBorder  IA_FGPen	/* default: TRUE */
+#endif
+
+#ifndef SYSIA_Style
+#define SYSIA_Style       IA_BGPen	/* default: SYSISTYLE_NORMAL */
+
+#define SYSISTYLE_NORMAL   0
+#define SYSISTYLE_GADTOOLS 1		/* to get arrow images in gadtools look */
+#endif
+
+#endif
+
+/*******************************************************************************************/
+
 #define G(x) ((struct Gadget *)(x))
 #define EG(x) ((struct ExtGadget *)(x))
 

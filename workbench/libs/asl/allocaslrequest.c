@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/locale.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include "asl_intern.h"

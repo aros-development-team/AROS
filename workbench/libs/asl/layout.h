@@ -188,7 +188,7 @@ struct ASLLVFileReqNode
     char		*text[ASLLV_MAXCOLUMNS];
     struct DateStamp	date;
     APTR		userdata;
-    IPTR		filesize;
+    ULONG		filesize;
     LONG		type;
     LONG		subtype;
     UWORD		dontfreetext;

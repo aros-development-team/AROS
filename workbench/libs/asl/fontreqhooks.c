@@ -269,7 +269,7 @@ AROS_UFH3(VOID, FOTagHook,
 		break;
 	
 	    case ASLFO_HookFunc:
-	    	iforeq->ifo_HookFunc = (ULONG (*)(ULONG, APTR, struct FontRequester *))tidata;
+	    	iforeq->ifo_HookFunc = (APTR)tidata;
 		break;
 	
 	    case ASLFO_MaxFrontPen:
@@ -510,14 +510,14 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_ID		, ID_NAMELISTVIEW				},
 	    {GA_RelVerify	, TRUE						},
 	    {ASLLV_Labels	, (IPTR)&udata->NameListviewList		},
-	    {GA_Previous    	, 0 	    	    	    	    	    	},
+	    {TAG_IGNORE    	, 0 	    	    	    	    	    	},
 	    {TAG_IGNORE     	, (IPTR)&udata->SizeListviewRenderHook	    	},
 	    {ASLLV_Font     	, (IPTR)ld->ld_Font 	    	    	    	},
 	    {TAG_DONE								}
 	};
 	
 	udata->NameListview = gad = NewObjectA(AslBase->asllistviewclass, NULL, lv_tags);
-	if (!udata->NameListview) goto failure;
+	if (!gad) goto failure;
 
     	lv_tags[0].ti_Tag  = GA_RelRight;
 	lv_tags[0].ti_Data = -ld->ld_WBorRight - OUTERSPACINGX - sizelvwidth + 1;
@@ -525,11 +525,12 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	lv_tags[2].ti_Data = sizelvwidth - PROPSIZE;
 	lv_tags[5].ti_Data = ID_SIZELISTVIEW;
 	lv_tags[7].ti_Data = 0;
+	lv_tags[8].ti_Tag  = GA_Previous;
 	lv_tags[8].ti_Data = (IPTR)gad;
 	lv_tags[9].ti_Tag  = ASLLV_CallBack;
 	
 	udata->SizeListview = gad = NewObjectA(AslBase->asllistviewclass, NULL, lv_tags);
-	if (!udata->SizeListview) goto failure;
+	if (!gad) goto failure;
 	
     }
     
@@ -994,12 +995,14 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {TAG_DONE   	    	    	    	    	    }
 	};
 	
+	if (menu_tags[1].ti_Data == NULL) menu_tags[1].ti_Tag = TAG_IGNORE;
+
 	LocalizeMenus(nm, GetIR(iforeq)->ir_Catalog, AslBase);
 
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   
-	if ((ld->ld_Menu = CreateMenusA(nm, menu_tags)))
+	if ((ld->ld_Menu = CreateMenusA(nm, NULL)))
 	{
 	    if (!LayoutMenusA(ld->ld_Menu, ld->ld_VisualInfo, menu_tags))
 	    {

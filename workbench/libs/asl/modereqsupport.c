@@ -18,6 +18,7 @@
 #include <graphics/modeid.h>
 #include <graphics/displayinfo.h>
 #include <graphics/monitor.h>
+#include <intuition/gadgetclass.h>
 #include <stdio.h>
 #include <string.h>
 #include <clib/macros.h>
@@ -31,8 +32,8 @@
 #include "asl_strings.h"
 
 #define SDEBUG 0
-#define DEBUG 1
-#define ADEBUG 1
+#define DEBUG 0
+#define ADEBUG 0
 
 #include <aros/debug.h>
 
@@ -59,14 +60,14 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     while(INVALID_ID != (displayid = NextDisplayInfo(displayid)))
     {
-        (bug("SMGetModes: DisplayID 0x%8x\n"));
+        D(bug("SMGetModes: DisplayID 0x%8x\n", displayid));
 	
 	if ((GetDisplayInfoData(NULL, (APTR)&diminfo , sizeof(diminfo) , DTAG_DIMS, displayid) > 0) &&
 	    (GetDisplayInfoData(NULL, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, displayid) > 0))
 	{
 	    D(bug("SMGetModes: Got DimensionInfo and DisplayInfo\n"));
 	    
-	    bug("SMGetModes: diminfo.displayid = 0x%8x\n", diminfo.Header.DisplayID);
+	    D(bug("SMGetModes: diminfo.displayid = 0x%8x\n", diminfo.Header.DisplayID));
 	    
 	    if (GetDisplayInfoData(NULL, (APTR)&nameinfo, sizeof(nameinfo), DTAG_NAME, displayid) > 0)
 	    {
@@ -104,8 +105,23 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 			
 	    if (ismreq->ism_FilterFunc)
 	    {
+#ifdef __MORPHOS__
+		{
+		    ULONG ret;
+
+		    REG_A4 = (ULONG)ismreq->ism_IntReq.ir_BasePtr;	/* Compatability */
+		    REG_A0 = (ULONG)ismreq->ism_FilterFunc;
+		    REG_A2 = (ULONG)ld->ld_Req;
+		    REG_A1 = (ULONG)displayid;
+		    ret = (*MyEmulHandle->EmulCallDirect68k)(ismreq->ism_FilterFunc->h_Entry);
+
+		    if (ret == 0)
+			continue;
+		}
+#else
 		if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
 		    continue;     
+#endif
 	    }
 	    
 	    dispmode = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct DisplayMode));

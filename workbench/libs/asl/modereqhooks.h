@@ -25,7 +25,12 @@
 /* Options */
 
 #define SREQ_MIN_VISIBLELINES 	 	3
+
+#ifdef __MORPHOS__
+#define SREQ_COOL_BUTTONS 		0
+#else
 #define SREQ_COOL_BUTTONS 		1
+#endif
 
 #define SREQ_FIRST_OBJECT(x) ((x)->Listview)
 #define SREQ_LAST_OBJECT(x) ((x)->AutoScrollGadget)

@@ -29,6 +29,25 @@
 
 #include <aros/debug.h>
 
+
+#ifdef __MORPHOS__
+#ifndef NewRectRegion
+#define NewRectRegion(_MinX,_MinY,_MaxX,_MaxY) \
+({ struct Region *_region; \
+	if ((_region = NewRegion())) \
+	{ struct Rectangle _rect; \
+		_rect.MinX = _MinX; \
+		_rect.MinY = _MinY; \
+		_rect.MaxX = _MaxX; \
+		_rect.MaxY = _MaxY; \
+		if (!OrRectRegion(_region, &_rect)) { DisposeRegion(_region); _region = NULL; } \
+	} \
+	_region; \
+})
+#endif
+#endif
+
+
 #define G(x) ((struct Gadget *)(x))
 #define EG(x) ((struct ExtGadget *)(x))
 
@@ -252,6 +271,7 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 	    BeginUpdate(lay);
 	}
 	
+	InstallClipRegion(lay, oldclip);
     	DisposeRegion(clip);
     }
     return 0;

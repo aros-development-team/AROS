@@ -17,6 +17,8 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/datetime.h>
+#include <dos/filehandler.h>
+#include <intuition/gadgetclass.h>
 #include <stdio.h>
 #include <string.h>
 #include <clib/macros.h>
@@ -31,8 +33,8 @@
 #include "asl_strings.h"
 
 #define SDEBUG 0
-#define DEBUG 1
-#define ADEBUG 1
+#define DEBUG 0
+#define ADEBUG 0
 
 #include <aros/debug.h>
 
@@ -151,6 +153,11 @@ void FRFreeListviewNode(struct ASLLVFileReqNode *node, struct LayoutData *ld, st
 	    FreePooled(ld->ld_IntReq->ir_MemPool, node->text[i], strlen(node->text[i]) + 1);
 	}
     }
+
+#ifdef __MORPHOS__
+    if (node->type == ASLLV_FRNTYPE_VOLUMES)
+	FreePooled(ld->ld_IntReq->ir_MemPool, node->node.ln_Name, strlen(node->node.ln_Name) + 1);
+#endif
 
     FreePooled(ld->ld_IntReq->ir_MemPool, node, sizeof(struct ASLLVFileReqNode));
 } 
@@ -375,7 +382,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 	    	{
 		    if (IoErr() == ERROR_NO_MORE_ENTRIES) break;
 		    success = FALSE;
-		    break;
+		    continue;
 	   	}
 
 		/* add to list checks which affect only files */
@@ -427,10 +434,40 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 		    old_frdrawer = freq->fr_Drawer;
 		    freq->fr_Drawer = path;
 		    
+		    D(bug("FRGetDirectory: 1 fr_Drawer 0x%lx <%s>\n",path,path));
+
 		    /* return code 0 means, add to list */
-		    
+
+#ifdef __MORPHOS__
+		    {
+			ULONG ret;
+			UWORD *funcptr = ifreq->ifr_HookFunc;
+			ULONG *p = (ULONG *)REG_A7 - 3;
+
+			p[0] = (ULONG)FRF_FILTERFUNC;
+			p[1] = (ULONG)&ap;
+			p[2] = (ULONG)freq;
+			REG_A7 = (ULONG)p;
+
+			if (*funcptr >= (UWORD)0xFF00)
+			    REG_A7 -= 4;
+
+			REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;	/* Compatability */
+
+			ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
+
+			if (*funcptr >= (UWORD)0xFF00)
+			    REG_A7 += 4;
+
+			REG_A7 += (3*4);
+
+			if (ret != 0)
+			    addentry = FALSE;
+		    }
+#else
 		    if (ifreq->ifr_HookFunc(FRF_FILTERFUNC, &ap, freq) != 0)
-		        addentry = FALSE;
+			addentry = FALSE;
+#endif
 			
 		    freq->fr_Drawer = old_frdrawer;
 		}
@@ -450,12 +487,31 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 		    old_frdrawer = freq->fr_Drawer;
 		    freq->fr_Drawer = path;
 
+		    D(bug("FRGetDirectory: 2 fr_Drawer 0x%lx <%s>\n",path,path));
+
 		    /* return code TRUE (!= 0) means, add to list */
 		    
+#ifdef __MORPHOS__
+		    {
+			ULONG ret;
+
+			REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;	/* Compatability */
+			REG_A0 = (ULONG)ifreq->ifr_FilterFunc;
+			REG_A2 = (ULONG)freq;
+			REG_A1 = (ULONG)&ap;
+			ret = (*MyEmulHandle->EmulCallDirect68k)(ifreq->ifr_FilterFunc->h_Entry);
+
+			if (ret == 0)
+			    addentry = FALSE;
+		    }
+#else
 		    if (CallHookPkt(ifreq->ifr_FilterFunc, freq, &ap) == 0)
-		        addentry = FALSE;
+			addentry = FALSE;
+#endif
 
 		    freq->fr_Drawer = old_frdrawer;
+
+		    D(bug("FRGetDirectory: 3 fr_Drawer 0x%lx <%s>\n",old_frdrawer,old_frdrawer));
 
 		}
 				
@@ -480,7 +536,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 			    node->text[1] = GetString(MSG_FILEREQ_LV_DRAWER, GetIR(ifreq)->ir_Catalog, AslBase);
 			    node->dontfreetext |= (1 << 1);
 			} else {
-			    node->text[1] = PooledIntegerToString(fib->fib_Size,
+			    node->text[1] = PooledUIntegerToString(fib->fib_Size,
 			    					  ld->ld_IntReq->ir_MemPool,
 								  AslBase);
 			    
@@ -606,12 +662,20 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	if ((node = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct ASLLVFileReqNode))))
 	{
-	    char *name = dlist->dol_DevName;
-	    
+#ifdef __MORPHOS__
+	    char *name = BADDR(dlist->dol_Name);
 	    if (name)
 	    {
-	    	node->text[0] = node->node.ln_Name = PooledCloneString(name, ":", ld->ld_IntReq->ir_MemPool, AslBase);
+		node->text[0] = PooledCloneStringLen(&name[1], name[0], ":", sizeof(":"), ld->ld_IntReq->ir_MemPool, AslBase);
+		node->node.ln_Name = PooledCloneStringLen(&name[1], name[0], NULL, 0, ld->ld_IntReq->ir_MemPool, AslBase);
 	    }
+#else
+	    char *name = dlist->dol_DevName;
+	    if (name)
+	    {
+		node->text[0] = node->node.ln_Name = PooledCloneString(name, ":", ld->ld_IntReq->ir_MemPool, AslBase);
+	    }
+#endif
 	    
 	    switch(dlist->dol_Type)
 	    {
@@ -621,6 +685,36 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    node->text[1] = GetString(MSG_FILEREQ_LV_ASSIGN, GetIR(ifreq)->ir_Catalog, AslBase);
 		    node->dontfreetext |= (1 << 1);
 		    break;
+
+#ifdef __MORPHOS__
+		case DLT_VOLUME:
+		    {
+			struct DosList *dl = LockDosList(LDF_DEVICES | LDF_READ);
+
+			while ((dl = NextDosEntry(dl, LDF_DEVICES)))
+			{
+			    /* This works for most filesystems */
+			    if (dl->dol_Task == dlist->dol_Task)
+			    {
+				STRPTR devname = (STRPTR)BADDR(dl->dol_Name);
+				ULONG devlen = *devname++;
+
+				if (devname[devlen-1] == 0) devlen--;
+
+				node->text[1] = AllocPooled(ld->ld_IntReq->ir_MemPool, devlen + 3);
+				node->text[1][0] = '(';
+				strncpy(&node->text[1][1], devname, devlen);
+				node->text[1][devlen+1] = ')';
+				node->text[1][devlen+2] = 0;
+
+				break;
+			    }
+			}
+
+			UnLockDosList(LDF_DEVICES | LDF_READ);
+		    }
+		    break;
+#endif
 	    }
 	    	    
 	    node->userdata = ld;
@@ -668,7 +762,7 @@ void FRSetPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
 BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    char 		pathstring[257];
+    char 		pathstring[MAX_PATH_LEN];
     BOOL 		result = FALSE;
 	
     strcpy(pathstring, path);
@@ -686,13 +780,13 @@ BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;
-    char 		pathstring[257], *gadpath;
+    char 		pathstring[MAX_PATH_LEN], *gadpath;
     BOOL 		result;
     
     GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
     
     strcpy(pathstring, gadpath);
-    AddPart(pathstring, path, 257);
+    AddPart(pathstring, path, MAX_PATH_LEN);
     
     result = FRNewPath(pathstring, ld, AslBase);
     
@@ -705,7 +799,7 @@ BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;
-    char 		pathstring[257], *gadpath;
+    char 		pathstring[MAX_PATH_LEN], *gadpath;
     WORD 		len;
     BOOL 		result;
     
@@ -719,7 +813,7 @@ BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         strcpy(pathstring, "/");
     }
-    else if (len < 254)
+    else if (len < MAX_PATH_LEN - 3)
     {
         switch(pathstring[len - 1])
 	{
@@ -793,7 +887,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 	   but only if text in string gadget mismatches actual active
 	   item's text (in this case move normally = one step)) */
 	   
-	char buffer[257];
+	char buffer[MAX_FILE_LEN];
 	char *val;
 	WORD i, len;
 	BOOL dojump = TRUE;
@@ -850,7 +944,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 	{
             FRSetPath(node->node.ln_Name, ld, AslBase);
 	} else {
-	    char pathstring[257];
+	    char pathstring[MAX_FILE_LEN];
 	    
 	    strcpy(pathstring, node->node.ln_Name);
 	    if ((node->subtype > 0) && (!(udata->Flags & FRFLG_SHOWING_VOLUMES)))
@@ -928,7 +1022,7 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 				      ld,
 				      AslBase);
 
-    if (oldpattern) FreeVecPooled(oldpattern, AslBase);
+    if (oldpattern) MyFreeVecPooled(oldpattern, AslBase);
 
     if (udata->SelectPattern)
     {
@@ -938,7 +1032,7 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    STRPTR parsedpattern;
 
-	    parsedpattern = AllocVecPooled(ld->ld_IntReq->ir_MemPool, patternlen * 2 + 3, AslBase);
+	    parsedpattern = MyAllocVecPooled(ld->ld_IntReq->ir_MemPool, patternlen * 2 + 3, AslBase);
 	    if (parsedpattern)
 	    {
 		if (ParsePatternNoCase(udata->SelectPattern, parsedpattern, patternlen * 2 + 3) != -1)
@@ -972,7 +1066,7 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    RefreshGList((struct Gadget *)udata->Listview, ld->ld_Window, NULL, 1);
 
 		}
-		FreeVecPooled(parsedpattern, AslBase);
+		MyFreeVecPooled(parsedpattern, AslBase);
 
 	    } /* if (parsedpattern) */
 
@@ -998,7 +1092,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
     } else {
         GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name2);
 	
-	if ((s = AllocVecPooled(ld->ld_IntReq->ir_MemPool, strlen(name) + strlen(name2) + 4, AslBase)))
+	if ((s = MyAllocVecPooled(ld->ld_IntReq->ir_MemPool, strlen(name) + strlen(name2) + 4, AslBase)))
 	{
 	    strcpy(s, name);
 	    AddPart(s, name2, 10000);
@@ -1056,7 +1150,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     } /* if (name) if (name[0]) */
 
-    if (name) FreeVecPooled(name, AslBase);
+    if (name) MyFreeVecPooled(name, AslBase);
 }		
 
 /*****************************************************************************************/
@@ -1105,7 +1199,7 @@ void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		
 	    } /* if ((lock2 = CreateDir(dirname))) */
 
-            FreeVecPooled(dirname, AslBase);
+            MyFreeVecPooled(dirname, AslBase);
 
 	}; /* if ((dirname = REQ_String(... */
 	    
@@ -1172,7 +1266,7 @@ void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    
 		} /* if (Rename(file, newname)) */
 		
-        	FreeVecPooled(newname, AslBase);
+        	MyFreeVecPooled(newname, AslBase);
 		
 	    }; /* if ((newname = REQ_String(... */
 	    

@@ -711,7 +711,15 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 	    } /* if (imsg->IDCMPWindow is ld->ld_Window or ld->ld_Window2) */
 	    else if (intreq->ir_IntuiMsgFunc)
 	    {
+#ifdef __MORPHOS__
+		REG_A4 = (ULONG)intreq->ir_BasePtr;	/* Compatability */
+		REG_A0 = (ULONG)intreq->ir_IntuiMsgFunc;
+		REG_A2 = (ULONG)req;
+		REG_A1 = (ULONG)imsg;
+		(*MyEmulHandle->EmulCallDirect68k)(intreq->ir_IntuiMsgFunc->h_Entry);
+#else
 		CallHookPkt(intreq->ir_IntuiMsgFunc, req, imsg);
+#endif
 	    }
 	    ReplyMsg((struct Message *)imsg);
 
@@ -761,30 +769,47 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 	    #undef GetFR
 	    #define GetFR(r) ((struct FileRequester *)r)
 
-	    FreeVecPooled(GetFR(req)->fr_Drawer, AslBase);
+/*
+ * We can`t free it here, because it`s called by FreeAslRequest
+ * and AslRequest may have been overtaken by some other patch.
+ * Original FreeAslRequest doesn't free them.
+ * With MFR+mungwall it crashed here.
+ * It's freeed anyway when the Pool is deleted.
+ */
+//	    dprintf("StripRequester: drawer 0x%lx\n",GetFR(req)->fr_Drawer);
+//	    MyFreeVecPooled(GetFR(req)->fr_Drawer, AslBase);
 	    GetFR(req)->fr_Drawer = NULL;
 
-	    FreeVecPooled(GetFR(req)->fr_File, AslBase);
+//	    dprintf("StripRequester: file 0x%lx\n",GetFR(req)->fr_File);
+//	    MyFreeVecPooled(GetFR(req)->fr_File, AslBase);
 	    GetFR(req)->fr_File = NULL;
 
-	    FreeVecPooled(GetFR(req)->fr_Pattern, AslBase);
+//	    dprintf("StripRequester: pattern 0x%lx\n",GetFR(req)->fr_Pattern);
+//	    MyFreeVecPooled(GetFR(req)->fr_Pattern, AslBase);
 	    GetFR(req)->fr_Pattern = NULL;
-	    
+
+//	    dprintf("StripRequester: arglist 0x%lx\n",GetFR(req)->fr_ArgList);
 	    if (GetFR(req)->fr_ArgList)
 	    {
 		struct WBArg *wbarg;
 		BPTR lock = GetFR(req)->fr_ArgList->wa_Lock;
-		
+
+//		dprintf("StripRequester: lock 0x%lx\n",lock);
 		if (lock) UnLock(lock);
-		
+
+//		dprintf("StripRequester: numargs 0x%lx\n",GetFR(req)->fr_NumArgs);
+
 		for (wbarg = GetFR(req)->fr_ArgList; GetFR(req)->fr_NumArgs --; wbarg ++)
 		{
-		    FreeVecPooled(wbarg->wa_Name, AslBase);
+//		    dprintf("StripRequester: wbarg 0x%lx\n",wbarg);
+		    MyFreeVecPooled(wbarg->wa_Name, AslBase);
 		}
-		
-		FreeVecPooled(GetFR(req)->fr_ArgList, AslBase);
+
+//		dprintf("StripRequester: free arglist\n");
+		MyFreeVecPooled(GetFR(req)->fr_ArgList, AslBase);
 		GetFR(req)->fr_ArgList = NULL;
 	    }
+
 
 	    break;
 
@@ -793,7 +818,7 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 	    #undef GetFO
 	    #define GetFO(r) ((struct FontRequester *)r)
 
-	    FreeVecPooled(GetFO(req)->fo_TAttr.tta_Name, AslBase);
+	    MyFreeVecPooled(GetFO(req)->fo_TAttr.tta_Name, AslBase);
 	    GetFO(req)->fo_TAttr.tta_Name = NULL;
 	    
 	    break;
@@ -858,16 +883,20 @@ void SortInNode(APTR req, struct List *list, struct Node *node,
 
 /*****************************************************************************************/
 
-APTR AllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase)
+APTR MyAllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase)
 {
     IPTR *mem;
     
+    //dprintf("MyAllocVecPooled: pool 0x%lx size %ld\n",pool,size);
+
     size += sizeof(APTR) * 2;
 
     if ((mem = AllocPooled(pool, size)))
     {
+	//dprintf("MyAllocVecPooled: pool 0x%lx mem 0x%lx size %ld\n",pool,mem,size);
         *mem++ = (IPTR)pool;
 	*mem++ = size;
+	//dprintf("MyAllocVecPooled: mem 0x%lx\n");
     }
     
     return mem;
@@ -875,7 +904,7 @@ APTR AllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
-void FreeVecPooled(APTR mem, struct AslBase_intern *AslBase)
+void MyFreeVecPooled(APTR mem, struct AslBase_intern *AslBase)
 {
     IPTR *imem = (IPTR *)mem;
     
@@ -884,6 +913,8 @@ void FreeVecPooled(APTR mem, struct AslBase_intern *AslBase)
         IPTR size = *--imem;
         APTR pool = (APTR)*--imem;
 	
+	//dprintf("MyFreeVecPooled: pool 0x%lx imem 0x%lx size %ld\n",pool,imem,size);
+
 	FreePooled(pool, imem, size);
     }
 }
@@ -900,9 +931,28 @@ char *PooledCloneString(const char *name1, const char *name2, APTR pool,
     if ((clone = AllocPooled(pool, len1 + len2)))
     {
         CopyMem(name1, clone, len1);
-	if (name2) strcat(clone, name2);
+	if (name2) CopyMem(name2, clone + len1 - 1, len2 + 1);
     }
     
+    return clone;
+}
+
+/*****************************************************************************************/
+
+char *PooledCloneStringLen(const char *name1, ULONG len1, const char *name2, ULONG len2, APTR pool,
+			   struct AslBase_intern *AslBase)
+{
+    char *clone;
+    if ((clone = AllocPooled(pool, len1 + len2 + 1)))
+    {
+        CopyMem(name1, clone, len1);
+	clone[len1] = '\0';
+	if (name2)
+	{
+	    CopyMem(name2, clone + len1, len2);
+	}
+	clone[len1+len2] = '\0';
+    }
     return clone;
 }
 
@@ -917,7 +967,7 @@ char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern
     if ((clone = AllocVec(len1 + len2, MEMF_PUBLIC)))
     {
         CopyMem(name1, clone, len1);
-	if (name2) strcat(clone, name2);
+	if (name2) CopyMem(name2, clone + len1 - 1, len2 + 1);
     }
     
     return clone;
@@ -931,10 +981,10 @@ char *VecPooledCloneString(const char *name1, const char *name2, APTR pool, stru
     WORD len1 = strlen(name1) + 1;
     WORD len2 = name2 ? strlen(name2) : 0;
 
-    if ((clone = AllocVecPooled(pool, len1 + len2, AslBase)))
+    if ((clone = MyAllocVecPooled(pool, len1 + len2, AslBase)))
     {
         CopyMem(name1, clone, len1);
-	if (name2) strcat(clone, name2);
+	if (name2) CopyMem(name2, clone + len1 - 1, len2 + 1);
     }
     
     return clone;
@@ -955,7 +1005,7 @@ AROS_UFH2 (void, puttostr,
 
 /*****************************************************************************************/
 
-char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
+char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
 {
     char buffer[30];
     char *str = buffer;
@@ -964,7 +1014,7 @@ char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBas
     
     /* Create the text */
 
-    RawDoFmt("%ld", &value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+    RawDoFmt("%lu", &value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 
     len = strlen(buffer) + 1;
     

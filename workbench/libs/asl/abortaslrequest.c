@@ -48,7 +48,9 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,AslBase)
 
     struct ReqNode *reqnode;
-    
+
+    if (!requester) return;
+        
     ObtainSemaphore( &(ASLB(AslBase)->ReqListSem));
     
     reqnode = FindReqNode(requester, ASLB(AslBase));

@@ -7,6 +7,7 @@
 */
 
 #include <proto/exec.h>
+#include <proto/locale.h>
 #include "asl_intern.h"
 
 /*****************************************************************************
@@ -51,6 +52,8 @@
 
     /* Here We should also free WBArg when multiselection etc. etc. */
     struct ReqNode *reqnode;
+
+    if (!requester) return;
 
     if ((reqnode = FindReqNode(requester, ASLB(AslBase))) != NULL)
     {
