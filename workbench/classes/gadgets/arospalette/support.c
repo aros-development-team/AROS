@@ -10,6 +10,7 @@
 #include <intuition/classes.h>
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
 #include <intuition/screens.h>
 #include <intuition/intuition.h>
 
@@ -284,7 +285,7 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     framebox.Width  = data->pd_ColWidth  + VBORDER;
     framebox.Height = data->pd_RowHeight + HBORDER;
 
-    RenderFrame(rp, &framebox, dri->dri_Pens, TRUE, AROSPaletteBase);
+    RenderFrame(data, rp, &framebox, dri, TRUE, AROSPaletteBase);
 
     /* The newly update color becomes the new OldColor */
     data->pd_OldColor = data->pd_Color;
@@ -479,45 +480,51 @@ BOOL RenderLabel( struct Gadget *gad, struct IBox *gadbox,
 /********************
 **  RenderFrame()  **
 ********************/
-VOID RenderFrame(struct RastPort *rp, struct IBox *gadbox, UWORD *pens,
-	BOOL recessed, struct PaletteBase_intern *AROSPaletteBase)
+VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IBox *gadbox,
+        struct DrawInfo *dri, BOOL recessed, struct PaletteBase_intern *AROSPaletteBase)
 {
     WORD left, top, right, bottom;
-    UBYTE left_top_pen, right_bottom_pen;
 
-    EnterFunc(bug("RenderFrame(rp=%p, gadbox=%p, pens=%p)\n",
-    		rp, gadbox, pens));
+    EnterFunc(bug("RenderFrame(rp=%p, gadbox=%p, dri=%p)\n",
+    		rp, gadbox, dri));
 
     left = gadbox->Left; top = gadbox->Top;
     right = left + gadbox->Width - 1; bottom = top + gadbox->Height - 1;
- 
-    if (recessed)
+
+    if (!data->pd_Frame)
     {
-    	left_top_pen	 = SHADOWPEN;
-    	right_bottom_pen = SHINEPEN;
+	struct TagItem frame_tags[] =
+	{
+	    {IA_Resolution	, (dri->dri_Resolution.X << 16) +  dri->dri_Resolution.Y	},
+	    {IA_FrameType	, FRAME_BUTTON							},
+	    {IA_EdgesOnly	, TRUE								},
+	    {TAG_DONE										}
+	};
+
+	data->pd_Frame = NewObjectA(NULL, FRAMEICLASS, frame_tags);
     }
-    else
+     
+    if (data->pd_Frame)
     {
-    	left_top_pen	 = SHINEPEN;
-    	right_bottom_pen = SHADOWPEN;
+        struct TagItem frameset_tags[] =
+	{
+	    {IA_Width		, gadbox->Width		},
+	    {IA_Height		, gadbox->Height	},
+	    {IA_Recessed	, recessed		},
+	    {TAG_DONE					}
+	};
+	
+	SetAttrsA(data->pd_Frame, frameset_tags);
+
+	DrawImageState(rp,
+		       (struct Image *)data->pd_Frame,
+		       left,
+		       top,
+		       IDS_NORMAL,
+		       dri);
+	
     }
-
-    /* Left */
-    SetAPen(rp, pens[left_top_pen]);
-    RectFill(rp, left, top, left + HBORDER - 1, bottom);
-
-    /* Right */
-    SetAPen(rp, pens[right_bottom_pen]);
-    RectFill(rp, right - HBORDER + 1, top, right, bottom);
-
-    /* Top */
-    SetAPen(rp, pens[left_top_pen]);    		
-    RectFill(rp, left + HBORDER, top, right - 1, top + HBORDER - 1);
- 
-    /* Bottom */
-    SetAPen(rp, pens[right_bottom_pen]);
-    RectFill(rp, left + 1, bottom - HBORDER + 1, right, bottom);
-
+    
     ReturnVoid("RenderFrame");
 }
 
