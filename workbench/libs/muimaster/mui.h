@@ -17,6 +17,9 @@
 #   ifndef PROTO_MUIMASTER_H
 #       include <proto/muimaster.h>
 #   endif
+#   ifndef AROS_ASMCALL_H
+#       include <aros/asmcall.h>
+#   endif
 #endif /* __AROS__ */
 
 #include "mui_identifiers.h"
@@ -57,29 +60,21 @@ AROS_UFH3(rettype, name,\
 
 /* This structure is used for the internal classes */
 
+struct __MUIBuiltinClass {
+    CONST_STRPTR name;
+    CONST_STRPTR supername;
+    ULONG        datasize;
+
 #ifndef __AROS__
-struct __MUIBuiltinClass {
-    CONST_STRPTR name;
-    CONST_STRPTR supername;
-    ULONG        datasize;
     ULONG	   (*dispatcher)();
-};
-
 #else
-
-#include <aros/asmcall.h>
-
-struct __MUIBuiltinClass {
-    CONST_STRPTR name;
-    CONST_STRPTR supername;
-    ULONG        datasize;
-
     AROS_UFP3(IPTR, (*dispatcher),
         AROS_UFPA(Class  *,  cl, A0),
         AROS_UFPA(Object *, obj, A2),
         AROS_UFPA(Msg     , msg, A1));
-};
 #endif
+};
+
 /* END PRIV */
 
 #if defined(MUIMASTER_YES_INLINE_STDARG) && \
