@@ -33,10 +33,12 @@
                     variable names follow the same syntax and semantics
                     as filesystem names.
         type    -   The type of variable to be found (see <dos/var.h>).
+		    Actually, only the lower 8 bits of "type" are used
+		    by FindVar().
 
     RESULT
         A pointer to the LocalVar structure for that variable if it was
-        found. If the variable wasn't found, or was of the wrong type
+        found. If the variable wasn't found, or was of the wrong type,
         NULL will be returned.
 
     NOTES
@@ -49,6 +51,31 @@
         DeleteVar(), GetVar(), SetVar()
 
     INTERNALS
+    	For every local variable, a structure of type LocalVar exists:
+	struct LocalVar {
+		struct Node lv_Node;
+		UWORD       lv_Flags;
+		UBYTE	   *lv_Value;
+		ULONG	    lv_Len;
+	};
+
+	lv_Node.ln_Type
+	holds the variable type, either LV_VAR for regular local environment
+	variables or LV_ALIAS for shell aliases. dos/var.h also defines
+	LVF_IGNORE (for private usage by the shell)
+
+  	lv_Node.ln_Name
+	holds the variable name (NUL terminated string)
+
+  	lv_Flags
+	stores GVF_BINARY_VAR and GVF_DONT_NULL_TERM if given as flags to
+	SetVar(). It is only used by GetVar().
+
+	lv_Value
+	holds the variable's value
+
+	lv_Len
+	is the length of lv_Value
 
     HISTORY
         27-11-96    digulla automatically created from
