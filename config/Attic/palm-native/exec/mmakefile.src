@@ -15,8 +15,10 @@ INCFILES	:= \
 
 FILES := coldreboot \
 	addintserver \
+	addtask \
 	rawputchar \
 	preparecontext \
+	prepareexecbase \
 	disable \
 	cause \
 	enable \

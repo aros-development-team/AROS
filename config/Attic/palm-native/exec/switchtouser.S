@@ -11,7 +11,7 @@
 	.globl	switch_to_user_mode
 
 switch_to_user_mode:
-	move.l	0x1004,%a0
+	move.l	0x8(%sp),%a0
 	move.l	%a0,%usp
 	move.l	%ssp,%a1
 	lea.l	10(%pc),%a0 /* cannot use another addressing mode here due
