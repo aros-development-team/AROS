@@ -61,10 +61,15 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetRGB32 (vp, n, r, g, b, GfxBase);
+  driver_SetRGB32 (vp, n, r, g, b, GfxBase);
 
-    AROS_LIBFUNC_EXIT
+  /* alternative solution
+  if (NULL != vp)
+    SetRGB4(vp,n,r >> 28,g >> 28,b >> 28);
+  */
+
+  AROS_LIBFUNC_EXIT
 } /* SetRGB32 */

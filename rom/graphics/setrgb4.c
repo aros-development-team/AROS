@@ -22,7 +22,7 @@
 	AROS_LHA(ULONG            , g, D2),
 	AROS_LHA(ULONG            , b, D3),
 
-/*  LOCATION */ /* CHANGE No. *********************************************/
+/*  LOCATION */
 	struct GfxBase *, GfxBase, 48, Graphics)
 
 /*  FUNCTION
@@ -61,10 +61,33 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetRGB4 (vp, n, r, g, b, GfxBase);
+  driver_SetRGB4 (vp, n, r, g, b, GfxBase);
 
-    AROS_LIBFUNC_EXIT
+  /************************************************************
+  / This is the code that works correctly on the real thing
+  struct ColorMap * CM = vp->ColorMap;
+
+  / is there a ColorMap connected to the ViewPort??  /
+  if (NULL != CM)
+  {
+    struct View * MyView = ViewAddress();
+    if(CM->Count > n)
+    {
+      WORD * RGBValues = CM->ColorTable;
+      RGBValues[n] = ((r & 0x000f) << 8) +
+                     ((g & 0x000f) << 4) + 
+                      (b & 0x000f);
+    }
+
+    / Make the changes visible /
+    MakeVPort(MyView, MyView->ViewPort);
+    MrgCop(MyView);
+    LoadView(MyView);
+  }
+  ************************************************************/
+
+  AROS_LIBFUNC_EXIT
 } /* SetRGB32 */
