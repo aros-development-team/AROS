@@ -50,9 +50,11 @@ struct MUI_StringData {
     Object      *msd_AttachedList;
     LONG         msd_RedrawReason;
 
+    BOOL         msd_useSecret;
     /* Fields mostly ripped from rom/intuition/strgadgets.c */
     STRPTR Buffer;      /* char container                   */
     ULONG  BufferSize;  /* memory allocated                 */
+    STRPTR SecBuffer;   /* Buffer for secret string         */
     ULONG  NumChars;    /* string length                    */
     ULONG  BufferPos;   /* cursor (insert/delete) position  */
     ULONG  MarkPos; 	/* cursor text marking start pos    */
@@ -104,9 +106,21 @@ static BOOL Buffer_Alloc (struct MUI_StringData *data)
     data->Buffer = (STRPTR)AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
     if (NULL == data->Buffer)
     {
-	bug("MUIC_String: Can't allocate %ld bytes\n",
+	bug("MUIC_String: Can't allocate %ld bytes for buffer1\n",
 	    data->BufferSize * sizeof(char));
 	return FALSE;
+    }
+    if (data->msd_useSecret)
+    {
+        data->SecBuffer = (STRPTR)AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
+        if (NULL == data->SecBuffer)
+        {
+	    bug("MUIC_String: Can't allocate %ld bytes for buffer2\n",
+	        data->BufferSize * sizeof(char));
+	    FreeVec(data->Buffer);
+            data->Buffer = NULL;
+            return FALSE;
+        }
     }
     return TRUE;
 }
@@ -123,6 +137,7 @@ static BOOL Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
     if (NULL == str)
     {
 	data->Buffer[0] = 0;
+        if (data->msd_useSecret) data->SecBuffer[0] = 0;
 	data->NumChars = 0;
     }
     else
@@ -131,8 +146,19 @@ static BOOL Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
 	if (data->NumChars >= data->BufferSize)
 	    data->NumChars = data->BufferSize - 1;
 
-	strncpy(data->Buffer, str, data->BufferSize);
-	data->Buffer[data->BufferSize - 1] = 0;
+        if (data->msd_useSecret) 
+        {
+            strncpy(data->SecBuffer, str, data->BufferSize);
+            int i;
+            for (i=0;i<data->BufferSize;i++) data->Buffer[i]=0x78;
+            data->SecBuffer[data->BufferSize - 1] = 0;
+        }
+        else 
+        {
+            strncpy(data->Buffer, str, data->BufferSize);
+        }
+        data->Buffer[data->BufferSize - 1] = 0;
+
     }
     data->BufferPos = data->NumChars;
     data->DispPos = 0;
@@ -153,13 +179,28 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     if (data->NumChars + 1 >= data->BufferSize)
 	return FALSE;
 
-    dst = &data->Buffer[data->BufferPos + 1];
+    if (data->msd_useSecret)
+    {
+        dst = &data->SecBuffer[data->BufferPos + 1];
 
-    memmove(dst, &data->Buffer[data->BufferPos],
-	    data->NumChars - data->BufferPos);
+        memmove(dst, &data->SecBuffer[data->BufferPos],
+	        data->NumChars - data->BufferPos);
 
+        data->Buffer[data->NumChars]=0x78;
+        data->Buffer[data->NumChars + 1]=0;
+    }
+    else
+    {
+        dst = &data->Buffer[data->BufferPos + 1];
+
+        memmove(dst, &data->Buffer[data->BufferPos],
+	        data->NumChars - data->BufferPos);
+
+    }
+    
     dst[data->NumChars - data->BufferPos] = 0;
     dst[-1] = code;
+
     data->BufferPos++;
     data->NumChars++;
     return TRUE;
@@ -343,10 +384,10 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return FALSE;
 
     data = INST_DATA(cl, obj);
-
+    data->msd_useSecret = FALSE;
     data->msd_Align = MUIV_String_Format_Left;
     data->BufferSize = 80;
-    Buffer_SetNewContents(data, "");
+    Buffer_SetNewContents(data, ""); /* <-- isnt this pointless? */
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
@@ -365,7 +406,11 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->msd_AttachedList = (Object *)tag->ti_Data;
 		break;
 
-	    case MUIA_String_Contents:
+            case MUIA_String_Secret:
+		data->msd_useSecret = (BOOL *)tag->ti_Data;
+		break;
+
+            case MUIA_String_Contents:
 		str = (CONST_STRPTR)tag->ti_Data;
 		break;
 
@@ -394,7 +439,9 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     if (Buffer_Alloc(data))
-	Buffer_SetNewContents(data, str);
+    {
+        Buffer_SetNewContents(data, str);
+    }
 
     if (NULL == data->Buffer)
     {
@@ -424,6 +471,9 @@ static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->Buffer)
 	FreeVec(data->Buffer);
+
+    if (data->SecBuffer)
+	FreeVec(data->SecBuffer);
 
     D(bug("String_Dispose %p\n", obj));
 
@@ -503,7 +553,8 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case MUIA_String_Contents:
-	    STORE = (IPTR) data->Buffer;
+            if (data->msd_useSecret) STORE = (IPTR) data->SecBuffer;
+            else STORE = (IPTR) data->Buffer;
 	    return 1;
         
 	case MUIA_String_Accept:
