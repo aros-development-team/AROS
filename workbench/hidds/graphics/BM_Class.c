@@ -590,8 +590,7 @@ static VOID bitmap_drawline
 {
     WORD    	dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
     LONG 	x1, y1, x2, y2;
-    UWORD   	maskLine = 1 << 15;  /* for line pattern */
-    BYTE    	maskCnt  = 16;
+    UWORD   	maskLine;  /* for line pattern */
     ULONG   	fg;   /* foreground pen   */
     BOOL    	doclip;
 
@@ -605,6 +604,8 @@ static VOID bitmap_drawline
     doclip = GC_DOCLIP(gc);
     fg = GC_FG(gc);
 
+    maskLine = 1 << GC_LINEPATCNT(gc);
+    
     if (doclip)
     {
         /* If line is not inside cliprect, then just return */
@@ -639,74 +640,93 @@ static VOID bitmap_drawline
         }
     }
 
-    if (msg->y1 == msg->y2)
+    x1 = msg->x1;
+    y1 = msg->y1;
+    x2 = msg->x2;
+    y2 = msg->y2;
+    
+    if (y1 == y2)
     {
         /*
             Horizontal line drawing code.
         */
-        y = msg->y1;
-        x2++;
-        for(i = x1; i < x2; i++)
-        {
-            maskLine = maskLine >> 1;
-            if(--maskCnt == 0)
+        y = y1; 
+	
+	/* Don't swap coordinates if x2 < x1! Because of linepattern! */
+	
+	if (x1 < x2)
+	{
+	    x2++;
+	    dx = 1;
+	}
+	else
+	{
+	    x2--;
+	    dx = -1;
+	}
+	
+        for(i = x1; i != x2; i += dx)
+        {    
+            /* Pixel inside ? */
+
+            if (!doclip || !POINT_OUTSIDE_CLIP(gc, i, y ))
             {
-                maskLine = 1 << 15;  /* for line pattern */
-                maskCnt  = 16;
-            }
-    
-            if (doclip)
-            {
-                /* Pixel inside ? */
-                if (!POINT_OUTSIDE_CLIP(gc, i, y ))
+                if(GC_LINEPAT(gc) & maskLine)
                 {
-                    if(GC_LINEPAT(gc) & maskLine)
-                    {
-                        HIDD_BM_DrawPixel(obj, gc, i, y);
-                    }
-                    else
-                    {
-                        GC_FG(gc) = GC_BG(gc);
-                        HIDD_BM_DrawPixel(obj, gc, i, y);
-                        GC_FG(gc) = fg;
-                    }
+                    HIDD_BM_DrawPixel(obj, gc, i, y);
+                }
+                else
+                {
+                    GC_FG(gc) = GC_BG(gc);
+                    HIDD_BM_DrawPixel(obj, gc, i, y);
+                    GC_FG(gc) = fg;
                 }
             }
+	    
+	    maskLine = maskLine >> 1;
+	    if (!maskLine) maskLine = 1L << 15;	    
         }
     }
-    else if (msg->x1 == msg->x2)
+    else if (x1 == x2)
     {
         /*
             Vertical line drawing code.
         */
-        x = msg->x1;
-        y2++;
-        for(i = y1; i < y2; i++)
-        {
-            maskLine = maskLine >> 1;
-            if(--maskCnt == 0)
+        x = x1;
+
+	/* Don't swap coordinates if y2 < y1! Because of linepattern! */
+	
+	if (y1 < y2)
+	{
+	    y2++;
+	    dy = 1;
+	}
+	else
+	{
+	    y2--;
+	    dy = -1;
+	}
+	
+        for(i = y1; i != y2; i += dy)
+        {    
+            /* Pixel inside ? */
+            if (!doclip || !POINT_OUTSIDE_CLIP(gc, x, i ))
             {
-                maskLine = 1 << 15;  /* for line pattern */
-                maskCnt  = 16;
-            }
-    
-            if (doclip)
-            {
-                /* Pixel inside ? */
-                if (!POINT_OUTSIDE_CLIP(gc, x, i ))
+                if(GC_LINEPAT(gc) & maskLine)
                 {
-                    if(GC_LINEPAT(gc) & maskLine)
-                    {
-                        HIDD_BM_DrawPixel(obj, gc, x, i);
-                    }
-                    else
-                    {
-                        GC_FG(gc) = GC_BG(gc);
-                        HIDD_BM_DrawPixel(obj, gc, x, i);
-                        GC_FG(gc) = fg;
-                    }
+                    HIDD_BM_DrawPixel(obj, gc, x, i);
+                }
+                else
+                {
+                    GC_FG(gc) = GC_BG(gc);
+                    HIDD_BM_DrawPixel(obj, gc, x, i);
+                    GC_FG(gc) = fg;
                 }
             }
+	    
+	    maskLine = maskLine >> 1;
+	    if (!maskLine) maskLine = 1L << 15;	    
+	    
         }
     }
     else
@@ -715,12 +735,12 @@ static VOID bitmap_drawline
             Generic line drawing code.
         */
         /* Calculate slope */
-        dx = abs(msg->x2 - msg->x1);
-        dy = abs(msg->y2 - msg->y1);
+        dx = abs(x2 - x1);
+        dy = abs(y2 - y1);
     
         /* which direction? */
-        if((msg->x2 - msg->x1) > 0) s1 = 1; else s1 = - 1;
-        if((msg->y2 - msg->y1) > 0) s2 = 1; else s2 = - 1;
+        if((x2 - x1) > 0) s1 = 1; else s1 = - 1;
+        if((y2 - y1) > 0) s2 = 1; else s2 = - 1;
     
         /* change axes if dx < dy */
         if(dx < dy)
@@ -740,33 +760,23 @@ static VOID bitmap_drawline
         incrE  = 2 * dy;         /* Increment use for move to E  */
         incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
     
-        x = msg->x1; y = msg->y1;
-    
-        if (doclip)
-        {
+        x = x1; y = y1;
+        
+        for(i = 0; i <= dx; i++)
+        {    
             /* Pixel inside ? */
-            if (!POINT_OUTSIDE_CLIP(gc, x, y ))
+            if (!doclip || !POINT_OUTSIDE_CLIP(gc, x, y ))
             {
                 if(GC_LINEPAT(gc) & maskLine)
                 {
-                    HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+                    HIDD_BM_DrawPixel(obj, gc, x, y);
                 }
                 else
                 {
                     GC_FG(gc) = GC_BG(gc);
-                    HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+                    HIDD_BM_DrawPixel(obj, gc, x, y);
                     GC_FG(gc) = fg;
                 }
-            }
-        }
-    
-        for(i = 0; i < dx; i++)
-        {
-            maskLine = maskLine >> 1;
-            if(--maskCnt == 0)
-            {
-                maskLine = 1 << 15;  /* for line pattern */
-                maskCnt  = 16;
             }
     
             if(d <= 0)
@@ -788,25 +798,10 @@ static VOID bitmap_drawline
                 y = y + s2;
                 d = d + incrNE;
             }
-    
-    
-            if (doclip)
-            {
-                /* Pixel inside ? */
-                if (!POINT_OUTSIDE_CLIP(gc, x, y ))
-                {
-                    if(GC_LINEPAT(gc) & maskLine)
-                    {
-                        HIDD_BM_DrawPixel(obj, gc, x, y);
-                    }
-                    else
-                    {
-                        GC_FG(gc) = GC_BG(gc);
-                        HIDD_BM_DrawPixel(obj, gc, x, y);
-                        GC_FG(gc) = fg;
-                    }
-                }
-            }
+
+            maskLine = maskLine >> 1;
+	    if (!maskLine) maskLine = 1L << 15;	    
+
         }
     }
 
@@ -918,14 +913,20 @@ static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj,
 {
     OOP_Object *gc = msg->gc;
     WORD    	y = msg->minY;
-
+    UWORD   	linepat;
+    
     EnterFunc(bug("BitMap::FillRect()"));
 
+    linepat = GC_LINEPAT(gc);
+    GC_LINEPAT(gc) = ~0;
+    
     for(; y <= msg->maxY; y++)
     {
         HIDD_BM_DrawLine(obj, gc, msg->minX, y, msg->maxX, y);
     }
 
+    GC_LINEPAT(gc) = linepat;
+    
     ReturnVoid("BitMap::FillRect");
 }
 
