@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -64,7 +64,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (struct Conductor *)GetTail((struct Node *)previousConductor);
+    if (previousConductor == NULL)
+    {
+	return (struct Conductor *)GetHead((struct List *)&GPB(RTBase)->rtb_ConductorList);
+    }
+
+    return (struct Conductor *)GetSucc((struct Node *)previousConductor);
 
     AROS_LIBFUNC_EXIT
 } /* NextConductor */
