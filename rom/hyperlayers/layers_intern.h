@@ -35,6 +35,7 @@ struct LIBBASETYPE
     
     struct Library  	    *lb_GfxBase;
     struct ExecBase 	    *lb_SysBase;
+    struct UtilityBase      *lb_UtilityBase;
     struct SignalSemaphore  lb_MemLock;
     APTR    	    	    lb_ClipRectPool;
 };
@@ -85,6 +86,7 @@ struct ResourceNode
 #define GfxBase		LIBBASE->lb_GfxBase
 */
 
+#define UtilityBase	LIBBASE->lb_UtilityBase
 
 /* Function prototypes from all files... */
 struct ClipRect * Case_0(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer, struct Layer * oldlayer);
