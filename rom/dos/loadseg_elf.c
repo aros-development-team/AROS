@@ -21,8 +21,17 @@ extern struct DosLibrary * DOSBase;
 #define SHT_NOBITS	8
 #define SHT_REL 	9
 
+#define ET_REL		1
+
+#define EM_386		3
+
 #define RELO_32 	1
 #define RELO_PC32	2
+
+#define STT_OBJECT	1
+#define STT_FUNC	2
+
+#define ELF32_ST_TYPE(i)    ((i) & 0x0F)
 
 struct elfheader
 {
@@ -30,7 +39,7 @@ struct elfheader
     UWORD type;
     UWORD machine;
     ULONG version;
-    APTR entry;
+    APTR  entry;
     ULONG phoff;
     ULONG shoff;
     ULONG flags;
@@ -47,7 +56,7 @@ struct sheader
     ULONG name;
     ULONG type;
     ULONG flags;
-    APTR addr;
+    APTR  addr;
     ULONG offset;
     ULONG size;
     ULONG link;
@@ -58,234 +67,403 @@ struct sheader
 
 struct symbol
 {
-    ULONG name;
-    ULONG value;
-    ULONG size;
-    UBYTE info;
-    UBYTE other;
-    WORD shindex;
+    ULONG name;     /* Offset of the name string in the string table */
+    ULONG value;    /* Varies; eg. the offset of the symbol in its hunk */
+    ULONG size;     /* How much memory does the symbol occupy */
+    UBYTE info;     /* What kind of symbol is this ? (global, variable, etc) */
+    UBYTE other;    /* undefined */
+    WORD  shindex;  /* In which section is the symbol defined ? */
 };
 
 struct relo
 {
-    ULONG addr;
-    ULONG info;
+    ULONG addr;     /* Address of the relocation (relative to the last loaded hunk) */
+    ULONG info;     /* Type of the relocation */
 };
 
 struct hunk
 {
-    ULONG size;
-    UBYTE *memory;
+    ULONG   size;   /* Size of the hunk */
+    UBYTE * memory; /* First byte */
 };
 
-int read_block(BPTR file, ULONG offset, APTR buffer, ULONG size)
+int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size)
 {
-    LONG subsize;
-    UBYTE *buf=(UBYTE *)buffer;
-    if(Seek(file,offset,OFFSET_BEGINNING)<0)
+    LONG    subsize;
+    UBYTE * buf     = (UBYTE *)buffer;
+
+    if (Seek (file, offset, OFFSET_BEGINNING) < 0)
 	return 1;
-    while(size)
+
+    while (size)
     {
-	subsize=Read(file,buf,size);
-	if(subsize==0)
+	subsize = Read (file, buf, size);
+
+	if (subsize == 0)
 	{
-	    ((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
+	    ((struct Process *)FindTask (NULL))->pr_Result2 = ERROR_BAD_HUNK;
 	    return 1;
 	}
-	if(subsize<0)
+
+	if (subsize < 0)
 	    return 1;
-	buf+=subsize;
-	size-=subsize;
+
+	buf  += subsize;
+	size -= subsize;
     }
+
     return 0;
-}
+} /* read_block */
 
-BPTR LoadSeg_ELF(BPTR file)
+BPTR LoadSeg_ELF (BPTR file)
 {
-    UBYTE *shtab=NULL;
-    UBYTE *strtab=NULL;
-    struct symbol *symtab=NULL;
-    struct hunk *hunks=NULL;
-    struct relo *reltab=NULL;
-
-    ULONG numsym, numrel, i;
-    WORD t, mint=0, maxt=0;
     struct elfheader eh;
-    struct sheader *sh;
-    UBYTE *loaded;
-    struct symbol *symbol;
-    BPTR last=0;
+    UBYTE	   * shtab    = NULL;
+    UBYTE	   * shstrtab = NULL;
+    UBYTE	   * strtab   = NULL;
+    struct symbol  * symtab   = NULL;
+    struct hunk    * hunks    = NULL;
+    struct relo    * reltab   = NULL;
+    struct symbol  * symbol;
+    struct sheader * sh;
 
-#define ERROR(a)    { *error=a; goto end; }
-    LONG *error=&((struct Process *)FindTask(NULL))->pr_Result2;
+    ULONG   numsym,
+	    numrel,
+	    i;
+    WORD    t,
+	    mint   = 0,
+	    maxt   = 0;
+    UBYTE * loaded;
+    BPTR    last   = 0;
+    LONG  * error  = &((struct Process *)FindTask (NULL))->pr_Result2;
 
-    if(read_block(file,0,&eh,sizeof(eh)))
+#define ERROR(a)    { *error = a; goto end; }
+
+    /* Load the header */
+    if (read_block (file, 0, &eh, sizeof (eh)))
 	goto end;
 
-    if(eh.ident[0]!=0x7f||eh.ident[1]!='E'||eh.ident[2]!='L'||eh.ident[3]!='F')
-	ERROR(ERROR_NOT_EXECUTABLE);
+    /* Check the header of the file */
+    if
+    (
+	eh.ident[0] != 0x7f
+	|| eh.ident[1] != 'E'
+	|| eh.ident[2] != 'L'
+	|| eh.ident[3] != 'F'
+    )
+	ERROR (ERROR_NOT_EXECUTABLE);
 
-    if(eh.type!=1||eh.machine!=3)
-	ERROR(ERROR_OBJECT_WRONG_TYPE);
+    /* Check file type and the CPU the file is for */
+    if (eh.type != ET_REL || eh.machine != EM_386)
+	ERROR (ERROR_OBJECT_WRONG_TYPE);
 
-    shtab=(UBYTE *)AllocVec(eh.shentsize*eh.shnum,MEMF_ANY);
+    /* Get memory for section headers */
+    shtab = AllocVec (eh.shentsize * eh.shnum, MEMF_ANY);
 
-    if(shtab==NULL)
-	ERROR(ERROR_NO_FREE_STORE);
+    if (shtab == NULL)
+	ERROR (ERROR_NO_FREE_STORE);
 
-    if(read_block(file,eh.shoff,shtab,eh.shentsize*eh.shnum))
+    /* Read section table */
+    if (read_block(file, eh.shoff, shtab, eh.shentsize * eh.shnum))
 	goto end;
 
-    for(t=0;;t++)
+    /* Look up the symbol table */
+    for (t=1; t<eh.shnum; t++)
     {
-	if(t==eh.shnum)
-	    ERROR(ERROR_OBJECT_WRONG_TYPE);
+	sh = (struct sheader *)(shtab + t*eh.shentsize);
 
-	sh=(struct sheader *)(shtab+t*eh.shentsize);
-
-	if(sh->type==SHT_SYMTAB)
+	if (sh->type == SHT_SYMTAB)
 	    break;
     }
 
-    symtab=(struct symbol *)AllocVec(sh->size,MEMF_ANY);
+    if (t == eh.shnum)
+	ERROR (ERROR_OBJECT_WRONG_TYPE);
 
-    if(symtab==NULL)
-	ERROR(ERROR_NO_FREE_STORE);
+    /* Allocate memory for the symbol table */
+    symtab = AllocVec (sh->size, MEMF_ANY);
 
-    if(read_block(file,sh->offset,symtab,sh->size))
+    if (symtab == NULL)
+	ERROR (ERROR_NO_FREE_STORE);
+
+    /* Read the symbol table */
+    if (read_block (file, sh->offset, symtab, sh->size))
 	goto end;
 
-    numsym=sh->size/sizeof(struct symbol);
-    mint=maxt=symtab[0].shindex;
-    for(i=1;i<numsym;i++)
+    numsym = sh->size / sizeof (struct symbol);
+
+    mint = maxt = symtab[0].shindex;
+
+/* kprintf ("Symbol %d: index=%d\n", 0, symtab[0].shindex); */
+
+    /* Find the minimal number of hunks which are neccessary to satisfy
+       all symbol references (ie. all hunks in which a symbol resides) */
+    for (i=1; i<numsym; i++)
     {
-	if(symtab[i].shindex<mint)
-	    mint=symtab[i].shindex;
-	if(symtab[i].shindex>maxt)
-	    maxt=symtab[i].shindex;
-    }
-    hunks=(struct hunk *)AllocVec(sizeof(struct hunk)*((LONG)maxt-mint+1),MEMF_CLEAR);
-    if(hunks==NULL)
-	ERROR(ERROR_NO_FREE_STORE);
-    hunks-=mint;
-    for(t=0;t<eh.shnum;t++)
-    {
-	sh=(struct sheader *)(shtab+t*eh.shentsize);
-	if(sh->type==SHT_PROGBITS||sh->type==SHT_NOBITS)
-	    hunks[t].size=sh->size;
+/* kprintf ("Symbol %d: index=%d\n", i, symtab[i].shindex); */
+
+	if (symtab[i].shindex < mint)
+	    mint = symtab[i].shindex;
+
+	if (symtab[i].shindex > maxt)
+	    maxt = symtab[i].shindex;
     }
 
-#if 0 /* doesn't work :( */
+    /* Allocate memory for information about every hunk */
+    hunks = AllocVec (sizeof (struct hunk) * (maxt - mint + 1), MEMF_CLEAR);
+
+    if (hunks == NULL)
+	ERROR (ERROR_NO_FREE_STORE);
+
+    /* Offset the base. Now I can simply access the first hunk as
+	hunks[t] instead of hunks[t-mint] */
+    hunks -= mint;
+
+    /* Find the basic size for each hunk */
+    for (t=1; t<eh.shnum; t++)
+    {
+	sh = (struct sheader *)(shtab + t*eh.shentsize);
+
+	if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
+	    hunks[t].size = sh->size;
+    }
+
+    /* Load names of sections */
     if (eh.shstrndx)
     {
 	sh = (struct sheader *)(shtab + eh.shstrndx*eh.shentsize);
 
-kprintf ("StrTab-Section: name=%d type=%d flags=%d\n",
-    sh->name, sh->type,sh->flags);
+	shstrtab = AllocVec (sh->size, MEMF_ANY);
 
-	strtab=AllocVec(sh->size,MEMF_ANY);
-	if(symtab==NULL)
-	    ERROR(ERROR_NO_FREE_STORE);
-	kprintf ("Reading StrTab at %d (offset=%ld, size=%ld)\n", eh.shstrndx, sh->offset, sh->size);
-	if(read_block(file,sh->offset,strtab,sh->size))
+	if (shstrtab == NULL)
+	    ERROR (ERROR_NO_FREE_STORE);
+
+	if (read_block (file, sh->offset, shstrtab, sh->size))
 	    goto end;
+
+	/* {
+	    int n, t;
+
+	    for (n=t=0; t<sh->size; n++)
+	    {
+		kprintf ("String %d@%d: \"%s\"\n", n, t, &shstrtab[t]);
+		t += strlen (&shstrtab[t]) + 1;
+	    }
+	} */
     }
-#endif
 
-    for(i=0;i<numsym;i++)
-	if(symtab[i].shindex<0)
+    /* Look for names of symbols */
+    for (t=eh.shnum; t>0; t--)
+    {
+	sh = (struct sheader *)(shtab + t*eh.shentsize);
+
+	if (sh->type == SHT_STRTAB)
+	    break;
+    }
+
+    /* Found the section with the names ? Load the symbols' names */
+    if (t)
+    {
+	strtab = AllocVec (sh->size, MEMF_ANY);
+
+	if (strtab == NULL)
+	    ERROR (ERROR_NO_FREE_STORE);
+
+	/* kprintf ("Reading StrTab at %d (offset=%ld, size=%ld)\n", eh.shstrndx, sh->offset, sh->size); */
+
+	if (read_block (file, sh->offset, strtab, sh->size))
+	    goto end;
+
+	/*{
+	    int n, t;
+
+	    for (n=t=0; t<sh->size; n++)
+	    {
+		kprintf ("String %d@%d: \"%s\"\n", n, t, &strtab[t]);
+		t += strlen (&strtab[t]) + 1;
+	    }
+	} */
+    }
+
+    /* kprintf ("    File has %d sections.\n", eh.shnum); */
+
+    /* Reserve memory for each global symbol in its hunk */
+    for (i=0; i<numsym; i++)
+    {
+	if (symtab[i].shindex < 0)
 	{
-	    symtab[i].value=hunks[symtab[i].shindex].size;
-	    hunks[symtab[i].shindex].size+=symtab[i].size;
+	    symtab[i].value = hunks[symtab[i].shindex].size;
 
-	    if (strtab && symtab[i].name)
-		kprintf ("sym %s: %ld\n", &strtab[symtab[i].name], symtab[i].value);
+	    hunks[symtab[i].shindex].size += symtab[i].size;
 	}
-    for(t=mint;t<=maxt;t++)
-	if(hunks[t].size)
+    }
+
+    /* Allocate memory for each segment */
+    for (t=mint; t<=maxt; t++)
+    {
+	/* Don't allocate memory for hunks which don't need any */
+	if (hunks[t].size)
 	{
-	    hunks[t].memory=(UBYTE *)AllocVec(hunks[t].size+sizeof(BPTR),MEMF_CLEAR);
-	    if(hunks[t].memory==NULL)
-		ERROR(ERROR_NO_FREE_STORE);
-	    hunks[t].memory+=sizeof(BPTR);
+	    hunks[t].memory = AllocVec (hunks[t].size + sizeof (BPTR), MEMF_CLEAR);
+
+	    if (hunks[t].memory == NULL)
+		ERROR (ERROR_NO_FREE_STORE);
+
+	    hunks[t].memory += sizeof(BPTR);
+
 D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t].size));
 	}
-    loaded=NULL;
-    for(t=0;t<eh.shnum;t++)
+    }
+
+    /* Show the final addresses of global symbols */
+    if (strtab)
     {
-	sh=(struct sheader *)(shtab+t*eh.shentsize);
+	for (i=0; i<numsym; i++)
+	{
+	    /* Print the symbol if it has a name and if it's a variable
+		or function */
+	    if (strtab[symtab[i].name]
+		&& (
+		    ELF32_ST_TYPE(symtab[i].info) == STT_OBJECT
+		    || ELF32_ST_TYPE(symtab[i].info) == STT_FUNC
+		)
+	    )
+	    {
+		kprintf ("    Symbol %s loaded at %p\n"
+		    , &strtab[symtab[i].name]
+		    , hunks[symtab[i].shindex].memory + symtab[i].value
+		);
+	    }
+	}
+    }
+
+    loaded = NULL;
+
+    /* Now load the pieces into memory */
+    for (t=1; t<eh.shnum; t++)
+    {
+	sh = (struct sheader *)(shtab + t*eh.shentsize);
+
 	switch(sh->type)
 	{
-	case SHT_PROGBITS:
-	    if(read_block(file,sh->offset,hunks[t].memory,sh->size))
+	case SHT_PROGBITS: /* Code */
+	    if (read_block (file, sh->offset, hunks[t].memory, sh->size))
 		goto end;
-	    loaded=hunks[t].memory;
-	    /* VPrintf ("Loaded PROGBITS at %08lx\n", (ULONG*)&loaded); */
-	    break;
-	case SHT_REL:
-	    if(loaded==NULL)
-		ERROR(ERROR_OBJECT_WRONG_TYPE);
-	    reltab=AllocVec(sh->size,MEMF_ANY);
-	    if(reltab==NULL)
-		ERROR(ERROR_NO_FREE_STORE);
-	    if(read_block(file,sh->offset,reltab,sh->size))
-		goto end;
-	    numrel=sh->size/sizeof(struct relo);
-	    for(i=0;i<numrel;i++)
+
+	    loaded = hunks[t].memory;
+
+	    if (strtab)
 	    {
-		symbol=&symtab[reltab[i].info>>8];
-#if 0
-		if(!symbol->size)
-		    ERROR(ERROR_OBJECT_WRONG_TYPE);
-#endif
-		switch(reltab[i].info&0xff)
-		{
-		case RELO_32:
-		    *(ULONG *)&loaded[reltab[i].addr]+=
-			(IPTR)hunks[symbol->shindex].memory+symbol->value;
-		    break;
-		case RELO_PC32:
-		    *(ULONG *)&loaded[reltab[i].addr]+=
-			(IPTR)hunks[symbol->shindex].memory +
-			symbol->value - (IPTR)&loaded[reltab[i].addr];
-		    break;
-		default:
-		    ERROR(ERROR_BAD_HUNK);
-		}
+		kprintf ("    Loading section %s at %p\n",
+		    &shstrtab[sh->name],
+		    loaded
+		);
 	    }
-	    FreeVec(reltab);
-	    reltab=NULL;
-	    loaded=NULL;
+
 	    break;
+
+	case SHT_REL: /* Relocation table */
+	    if (loaded == NULL)
+		ERROR (ERROR_OBJECT_WRONG_TYPE);
+
+	    /* Get memory for the relocation table */
+	    reltab = AllocVec (sh->size, MEMF_ANY);
+
+	    if (reltab == NULL)
+		ERROR (ERROR_NO_FREE_STORE);
+
+	    /* Load it */
+	    if (read_block (file, sh->offset, reltab, sh->size))
+		goto end;
+
+	    numrel = sh->size / sizeof (struct relo);
+
+	    /* For each relocation ... */
+	    for (i=0; i<numrel; i++)
+	    {
+		symbol = &symtab[reltab[i].info >> 8];
+
+		switch (reltab[i].info & 0xFF)
+		{
+		case RELO_32: /* 32bit absolute */
+		    /* The address of a symbol is the base address of the
+			hunk in which the symbol is plus the offset of the
+			symbol to the beginning of this hunk. */
+		    *(ULONG *)&loaded[reltab[i].addr] +=
+			(ULONG)hunks[symbol->shindex].memory + symbol->value;
+		    break;
+
+		case RELO_PC32: /* 32bit PC relative */
+		    /* Similar to RELO_PC32 but relative to the address where
+			the relocation is in memory. */
+		    *(ULONG *)&loaded[reltab[i].addr] +=
+			(ULONG)hunks[symbol->shindex].memory +
+			symbol->value - (ULONG)&loaded[reltab[i].addr];
+		    break;
+
+		default:
+		    ERROR (ERROR_BAD_HUNK);
+		} /* switch */
+	    } /* for */
+
+	    /* Release memory */
+	    FreeVec (reltab);
+	    reltab = NULL;
+	    loaded = NULL;
+
+	    break;
+	} /* switch */
+    }
+
+    /* Link hunks */
+    for (t=mint; t<0; t++)
+    {
+	if (hunks[t].size)
+	{
+	    ((BPTR *)hunks[t].memory)[-1] = last;
+	    last = MKBADDR((BPTR *)hunks[t].memory - 1);
 	}
     }
-    for(t=mint;t<0;t++)
-	if(hunks[t].size)
+
+    for (t=maxt; t>=0; t--)
+    {
+	if (hunks[t].size)
 	{
-	    ((BPTR *)hunks[t].memory)[-1]=last;
-	    last=MKBADDR((BPTR *)hunks[t].memory-1);
+	    ((BPTR *)hunks[t].memory)[-1] = last;
+	    last = MKBADDR((BPTR *)hunks[t].memory-1);
 	}
-    for(t=maxt;t>=0;t--)
-	if(hunks[t].size)
-	{
-	    ((BPTR *)hunks[t].memory)[-1]=last;
-	    last=MKBADDR((BPTR *)hunks[t].memory-1);
-	}
-    FreeVec(hunks+mint);
-    hunks=NULL;
+    }
+
+    /* Free hunk information table */
+    FreeVec (hunks+mint);
+
+    hunks = NULL;
 
 end:
-    FreeVec(reltab);
-    if(hunks!=NULL)
+    FreeVec (reltab);
+
+    /* Free all hunks, too ? */
+    if (hunks != NULL)
     {
-	for(t=mint;t<=maxt;t++)
-	    if(hunks[t].memory!=NULL)
-		FreeVec(hunks[t].memory-sizeof(BPTR));
-	FreeVec(hunks+mint);
+	for (t=mint; t<=maxt; t++)
+	{
+	    if (hunks[t].memory != NULL)
+		FreeVec (hunks[t].memory - sizeof(BPTR));
+	}
+
+	FreeVec (hunks + mint);
+
+	/* Fail */
+	last = NULL;
     }
+
+    if (shstrtab)
+	FreeVec (shstrtab);
+
     if (strtab)
 	FreeVec (strtab);
-    FreeVec(symtab);
-    FreeVec(shtab);
+
+    FreeVec (symtab);
+    FreeVec (shtab);
+
     return last;
-}
+} /* LoadSeg_ELF */
