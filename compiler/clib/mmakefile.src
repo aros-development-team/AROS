@@ -78,10 +78,11 @@ COMMON	:= \
 	strstr \
 	strtod \
 	strtok
-	
+
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
+	__alloca \
 	__assert \
 	__env \
 	__exitfunc \
