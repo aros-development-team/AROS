@@ -18,6 +18,6 @@ BUG00005
 FileRequester crashes AROS when in expert mode.  Does not happen if any
 program has successfully opened a FileRequester before.
 
-BUG00006
+BUG00006 fixed
 GUI of askchoice crashes.
 
