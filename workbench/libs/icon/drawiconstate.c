@@ -53,13 +53,27 @@
     struct NativeIcon *nativeicon;
     
     nativeicon = GetNativeIcon(icon, LB(IconBase));
-    if (nativeicon && nativeicon->icon35.img1.imagedata)
+    if (nativeicon && GfxBase && CyberGfxBase)
     {
-    	if (GfxBase && CyberGfxBase)
+	ULONG bmdepth;
+
+	bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+
+    	if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 15))
 	{
-	    ULONG bmdepth;
-	    
-	    bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+	    WritePixelArrayAlpha(nativeicon->iconPNG.img1,
+	    	    	    	 0,
+				 0,
+				 nativeicon->iconPNG.width * sizeof(ULONG),
+				 rp,
+				 leftEdge,
+				 topEdge,
+				 nativeicon->iconPNG.width,
+				 nativeicon->iconPNG.height,
+				 0);
+	}
+    	else if (nativeicon->icon35.img1.imagedata)
+	{
 	    if (bmdepth >= 15)
 	    {
 	    	struct Image35 *img;
@@ -152,13 +166,14 @@
 		    FreeVecPooled(POOL, cgfxcoltab);
 		    
                     return;
+		    
 		} /* if (cgfxcoltab != NULL) */
 		
 	    } /* if (bmdepth >= 15) */
 	    
-	} /* if (GfxBase && CyberGfxBase) */
+	} /* if (nativeicon->icon35.img1.imagedata) */
 	
-    } /* if (nativeicon && nativeicon->icon35.img1.imagedata) */
+    } /* if (nativeicon && GfxBase && CyberGfxBase) */
     
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
@@ -168,7 +183,7 @@
             leftEdge, topEdge
         );
     }
-    else
+    else if (icon->do_Gadget.GadgetRender)
     {
 	if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
 	{

@@ -90,12 +90,22 @@ struct Icon35
 
 #define ICON35F_FRAMELESS   	    1
 
+struct IconPNG
+{
+    APTR   handle;
+    UBYTE *img1;
+    UBYTE *img2;
+    WORD   width;
+    WORD   height;    
+};
+
 struct NativeIcon
 {
     struct MinNode    node;
     APTR    	      pool;
     struct DiskObject dobj;
     struct Icon35     icon35;
+    struct IconPNG    iconPNG;
     APTR    	      iconbase;
     struct BitMap    *iconbm1;
     struct BitMap    *iconbm2;
@@ -112,7 +122,7 @@ struct NativeIcon
 struct IconBase
 {
     struct LibHeader        LibHeader;
-    
+    struct Library  	    *pngbase;
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
@@ -135,6 +145,8 @@ struct IconBase
 
 typedef struct IconBase IconBase_T;
 
+#define PNGBase IconBase->pngbase
+
 /****************************************************************************************/
 
 extern struct ExecBase * SysBase;
@@ -152,9 +164,13 @@ AROS_UFP3(LONG, dosstreamhook,
 #include "support.h"
 
 UBYTE * WriteValue     (LONG, UBYTE *);
+
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
+
+BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase);
+VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase);
 
 
 #define LB(ib)          ((struct IconBase *) (ib))
