@@ -136,7 +136,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
     InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
+    
+    NewList((struct List *)MUIMB(MUIMasterBase)->Applications);
     return TRUE;
 }
 

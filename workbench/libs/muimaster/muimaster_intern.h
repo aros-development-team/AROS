@@ -95,6 +95,7 @@ struct MUIMasterBase_intern
     struct IClass **Classes;
     int     ClassCount;
     int     ClassSpace;
+    struct MinList Applications;
 };
 
 /****************************************************************************************/
