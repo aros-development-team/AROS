@@ -87,7 +87,7 @@
     /* process the list of vectors */
     while (Count > 0)
     {
-      switch((LONG)(char)CurFlag[0])
+      switch((unsigned char)CurFlag[0])
       {
         case 0x00:
           /* fill the previous shape if there was one to fill */
