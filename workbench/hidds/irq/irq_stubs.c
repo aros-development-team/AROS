@@ -21,7 +21,7 @@
 #include <oop/oop.h>
 #include <hidd/irq.h>
 
-#include "irq.h"
+//#include "irq.h"
 
 #undef  SDEBUG
 #undef  DEBUG
