@@ -1,10 +1,13 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for the palette class
     Lang: English
 */
+
+#include <string.h>
+
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <graphics/gfxmacros.h>
