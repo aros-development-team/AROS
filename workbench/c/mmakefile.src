@@ -20,6 +20,7 @@ FILES	:= \
     Get \
     Getenv \
     If \
+    Info \
     Join \
     Lab \
     List \
