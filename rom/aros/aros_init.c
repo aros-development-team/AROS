@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: aros.library Resident and initialization.
@@ -18,11 +18,11 @@
 
 #define INIT AROS_SLIB_ENTRY(init,Aros)
 
-extern const UBYTE name[];
-extern const UBYTE version[];
-extern const APTR inittabl[4];
+static const UBYTE name[];
+static const UBYTE version[];
+static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
-struct LIBBASETYPE *INIT();
+struct LIBBASETYPE *AROS_SLIB_ENTRY(init,Aros)();
 extern const char LIBEND;
 
 int Aros_entry(void)
@@ -31,7 +31,7 @@ int Aros_entry(void)
     return -1;
 }
 
-const struct Resident Aros_resident=
+const struct Resident Aros_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Aros_resident,
@@ -45,11 +45,11 @@ const struct Resident Aros_resident=
     (ULONG *)inittabl
 };
 
-const UBYTE name[]=NAME_STRING;
+static const UBYTE name[]=NAME_STRING;
 
-const UBYTE version[]=VERSION_STRING;
+static const UBYTE version[]=VERSION_STRING;
 
-const APTR inittabl[4]=
+static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct ArosBase),
     (APTR)LIBFUNCTABLE,
