@@ -96,19 +96,24 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
+#include <aros/debug.h>
 
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
+static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     struct TagItem *tags, *tag;
-    LONG oldval;
+    LONG oldval, oldmin, oldmax;
     STRPTR oldfmt;
-
+    IPTR ret;
+    BOOL values_changed = FALSE;
+    
     oldval = data->value;
     oldfmt = data->format;
+    oldmin = data->min;
+    oldmax = data->max;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
@@ -146,10 +151,29 @@ static ULONG Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
     }
 
     data->value = CLAMP(data->value, data->min, data->max);
-    if (data->value != oldval || data->format != oldfmt)
-	MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    /* If the max, min or format values changed, then the minimum and maximum sizes
+       of the string output by MUIM_Numeric_Strigify maye have changed, so
+       give the subclass a chance to recalculate them and relayout the group
+       accordingly. Basically, the subclass will have to react on changes to
+       these values as well (by setting a notification on them, or by overriding
+       OM_SET) and then recalculate the minimum and maximum sizes for the object.  */      
+    if (data->format != oldfmt || data->min != oldmin || data->max != oldmax)
+    {
+        values_changed = TRUE;
+        DoMethod(_parent(obj), MUIM_Group_InitChange);
+        DoMethod(_parent(obj), MUIM_Group_ExitChange);
+    }
+	
+
+    ret = DoSuperMethodA(cl, obj, (Msg)msg);
+
+    if (data->value != oldval || values_changed)
+    {
+	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+    
+    return ret;
 }
 
 /**************************************************************************
