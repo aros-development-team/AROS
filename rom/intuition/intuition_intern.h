@@ -202,9 +202,23 @@ extern void intui_MoveWindowInFrontOf (struct Window *, struct Window *, struct 
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 extern void intui_RefreshWindowFrame(struct Window *win);
-extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
+extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
+
 /* Miscellaneous prototypes */
 void easyrequest_freelabels(STRPTR *gadgetlabels);
 void easyrequest_freegadgets(struct Gadget *gadgets);
+
+/* !!!!!!! VERY IMPORTANT NOTE !!!!!!!!!!!!
+Because of possible race conditions the functions below MUST ONLY be used
+on the input.device's context. That generally means:
+- From within the intuition inpthandler.
+- Inside boopsi gadget dispatcher GM_GOACTIVE and GM_HANDLEINPUT methods.
+(Window closegadgets use these to send IDCMP_CLOSEWINDOW messages)
+
+*/
+
+inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase);
+struct IntuiMessage *get_intuimessage(struct Window *w,  struct IntuitionBase *IntuitionBase);
+
 
 #endif /* INTUITION_INTERN_H */
