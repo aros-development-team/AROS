@@ -22,6 +22,63 @@ since 12. October 1999.
 <H2>NEWS</H2>
 <TABLE>
 
+<TR><TD VALIGN=TOP>22.12.2000</TD><TD>
+Since I'll go to holidays now, I'd like to thank everyone for
+their open and also not-so-open support which makes all this
+possible. :-) Thanks a lot, Merry Christmas and a Happy New
+Year !<P>
+
+Aaron "Optimizer" Digulla
+</TD></TR>
+
+<TR><TD VALIGN=TOP>20.12.2000</TD><TD>
+A lot of bug in the new layers library, child window handling, etc.
+have been fixed by Georg Steger and Stefan Berger. Since OpenOffice
+uses child windows, we hope that
+we won't get sued for using the same technology :-)<P>
+
+Henning Kiel has extended the WiMP tool to support child windows.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>17.12.2000</TD><TD>
+Thanks to another enhancement by Stefan Berger, layers and windows can now be
+set invisible (hidden). Also, layers can now be grouped by priority which
+allows to create a layer behind all other layers (for example,
+for a background logo and menus which should be before everything
+else). We're currently trying to find out how many and which
+patents we infringe with this :-(<P>
+
+Johan Alfredsson has ported <TT>SortCopy</TT> from AmiNET.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>14.12.2000</TD><TD>
+AROS has now support for
+non-rectangular windows and child windows (a window with a dragbar,
+etc. inside another window). Kudos go to Stefan Berger for the
+code and Georg Steger for input and bugfixes.<P>
+
+Johan Alfredsson improved DOpus a bit and Adam Chodorowski
+improved AROS' workbench.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>12.12.2000</TD><TD>
+Henning Kiel WiMP, a Window Manipulation Program which allows to
+rescure those windows which got lost yesterday :-) It will become
+kind of a system monitor in the future.
+Stefan Berger and Georg Steger fixed a couple of bugs in the
+new layers.library<P>
+
+Georg Steger added a lot of functions to handle regions which
+are missing in the original AmigaOS but which should have been
+there. These make handling of clip rects <STRONG>much</STRONG>
+more simple.<P>
+
+Fabio Alemagna committed a Dhrystone benchmark. According to
+it, AROS is about 5% slower than native Linux when run as an
+emulation. As soon as we have a native AROS which can load
+apps, we'll check how fast a PC really can be ;-)<P>
+</TD></TR>
+
 <TR><TD VALIGN=TOP>11.12.2000</TD><TD>
 Stefan Berger has commited a completely rewritten layers.library which
 is much faster and much more simple then the one we had. It's now
@@ -35,39 +92,6 @@ make it compile on Amiga.<P>
 
 Adam Chodorowski began the work on workbench.library and the
 workbench process.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>9.12.2000</TD><TD>
-Johan Alfredsson improved the ReqTools file requester. The Volume requester
-works now.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>6.12.2000</TD><TD>
-Michael Schulz committed a PS/2 Mouse.HIDD and removed the respective
-code in the keyboard handler.<P>
-
-Adam Chodorowski implemented the Intuition-Functions OpenWorkbench()
-and CloseWorkbench(). LockPubScreen() will now open the workbench
-if it isn't already open.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>3.12.2000</TD><TD>
-Johan Alfredsson added a couple of function to dos.library.
-Georg Steger fixed a couple of bugs in the ASL ScreenMode
-requester and made the close button in the X11 Window
-kill AROS. He also committed a 3D Space Invaders clone.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>30.11.2000</TD><TD>
-Michael Schulz is back and has begun to work on an abstract Mouse.HIDD for AROS
-x86/Native. Georg Steger finished porting of reqtools.library and ports now all
-the reqtools utilities (prefs program) and updated all AROS programs which use
-reqtools (for example, MultiView and the text.datatype). He also fixed a few
-bugs in diskfont.library and FixFonts, in Intuition and Gadtools.  Adam
-Chodorowski is working on LoadWB.  Johan Alfredsson and Stefan Berger have
-finished more and more CLI commands. Henning Kiel is working together
-with the author of plex86 to make AROS work with plex86. AROS boots
-but it crashes soon after.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
