@@ -1,0 +1,18 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS := Zune SYS
+FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(wildcard $(dir)/*)))
+
+#MM- workbench-prefs : workbench-prefs-envarc
+#MM workbench-prefs-envarc
+
+workbench-prefs-envarc : $(FILES:%=$(AROS_ENVARC)/%)
+
+$(AROS_ENVARC)/% : %
+	@if [ -f $< ]; then           \
+            $(MKDIR) $(dir $@) ; \
+            $(CP) $< $@ ;        \
+        fi
