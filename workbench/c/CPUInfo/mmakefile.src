@@ -14,7 +14,6 @@ x86FILES := x86/main \
 
 EXEDIR  := $(AROS_C)
 
-#MM- workbench-c : workbench-c-cpuinfo
 #MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
 
 %build_prog mmake=workbench-c-cpuinfo \
