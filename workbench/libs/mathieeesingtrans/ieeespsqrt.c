@@ -76,67 +76,68 @@ AROS_LH1(float, IEEESPSqrt,
 {
     AROS_LIBFUNC_INIT
     
-  ULONG Res, ResSquared, Delta, X, TargetMantisse;
-  int z;
-  ULONG Exponent;
-
-  if (0 == y)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-  /* is fnum negative? */
-  if (y < 0)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return y;
-  }
-
-  /* we can calculate the square-root now! */
-
-  TargetMantisse = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
-
-  if (y & 0x00800000)
-  {
-    /* TargetMantisse = TargetMantisse / 2; */
-    TargetMantisse >>= 1;
-    Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x20000000;
-  }
-  else
-    Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x1f800000;
-
-
-  Res = 0;
-  ResSquared = 0;
-  z = 0;
-
-  /* this calculates the sqrt of the mantisse. It`s short, isn`t it?
-  ** Delta starts out with 0.5, then 0.25, 0.125 etc.
-  */
-  while (ResSquared != TargetMantisse && z < 25)
-  {
-    Delta = (0x80000000 >> z);
-    /* X = (Res+Delta)^2 =
-    **= Res^2      + 2*Res*Delta + Delta^2
-    */
-    X = ResSquared + (Res >> z)  + (Delta >> ++z);
-    if (X <= TargetMantisse)
+    ULONG Res, ResSquared, Delta, X, TargetMantisse;
+    int z;
+    ULONG Exponent;
+    
+    if (0 == y)
     {
-      Res += Delta;
-      ResSquared = X;
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
     }
-  }
-
-  /* an adjustment for precision
-  */
-  if ((char) Res < 0)
-    Res += 0x100;
-
-  Res >>=8;
-  Res &= IEEESPMantisse_Mask;
-  Res |= Exponent;
-
-  return Res;
+    /* is fnum negative? */
+    if (y < 0)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return y;
+    }
+    
+    /* we can calculate the square-root now! */
+    
+    TargetMantisse = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
+    
+    if (y & 0x00800000)
+    {
+        /* TargetMantisse = TargetMantisse / 2; */
+        TargetMantisse >>= 1;
+        Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x20000000;
+    }
+    else
+    {
+        Exponent = ((y >> 1) & IEEESPExponent_Mask) + 0x1f800000;
+    }
+    
+    Res = 0;
+    ResSquared = 0;
+    z = 0;
+    
+    /* 
+        this calculates the sqrt of the mantisse. It`s short, isn`t it?
+        Delta starts out with 0.5, then 0.25, 0.125 etc.
+    */
+    while (ResSquared != TargetMantisse && z < 25)
+    {
+        Delta = (0x80000000 >> z);
+        /* 
+            X = (Res+Delta)^2 = Res^2 + 2*Res*Delta + Delta^2
+        */
+        X = ResSquared + (Res >> z)  + (Delta >> ++z);
+        if (X <= TargetMantisse)
+        {
+            Res += Delta;
+            ResSquared = X;
+        }
+    }
+    
+    /* an adjustment for precision
+    */
+    if ((char) Res < 0) Res += 0x100;
+    
+    Res >>=8;
+    Res &= IEEESPMantisse_Mask;
+    Res |= Exponent;
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }

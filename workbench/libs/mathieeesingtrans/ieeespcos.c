@@ -56,56 +56,54 @@ AROS_LH1(float, IEEESPCos,
 {
     AROS_LIBFUNC_INIT
     
-  LONG z,Res,ysquared,yabs,tmp;
-  yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
-
-  if (IEEESP_Pinfty == yabs)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return IEEESP_NAN;
-  }
-
-  z = IEEESPFloor(IEEESPDiv(yabs, pi));
-  tmp  = IEEESPMul(z,pi);
-  tmp |= IEEESPSign_Mask; /* tmp = -tmp; */
-  yabs = IEEESPAdd(yabs, tmp);
-  if (yabs > pio2)
-  {
-    yabs |= IEEESPSign_Mask;
-    yabs  =IEEESPAdd(pi, yabs);
-    tmp = TRUE;
-  }
-  else
-    tmp = FALSE;
-
-  ysquared = IEEESPMul(yabs,yabs);
-  Res = IEEESPAdd(cosf1,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf2,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf3,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf4,
-        IEEESPMul(ysquared,
-        IEEESPAdd(cosf5,
-        IEEESPMul(ysquared, cosf6))))))))));
-
-  if (0 == Res)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if (TRUE == intern_IEEESPisodd(z))
-    Res ^= IEEESPSign_Mask;
-
-  if (TRUE == tmp)
-    Res ^= IEEESPSign_Mask;
-
-  if (Res < 0)
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-
-  return Res;
+    LONG z,Res,ysquared,yabs,tmp;
+    yabs = y & (IEEESPMantisse_Mask + IEEESPExponent_Mask);
+    
+    if (IEEESP_Pinfty == yabs)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return IEEESP_NAN;
+    }
+    
+    z = IEEESPFloor(IEEESPDiv(yabs, pi));
+    tmp  = IEEESPMul(z,pi);
+    tmp |= IEEESPSign_Mask; /* tmp = -tmp; */
+    yabs = IEEESPAdd(yabs, tmp);
+    if (yabs > pio2)
+    {
+        yabs |= IEEESPSign_Mask;
+        yabs  =IEEESPAdd(pi, yabs);
+        tmp = TRUE;
+    }
+    else
+    {
+        tmp = FALSE;
+    }
+    
+    ysquared = IEEESPMul(yabs,yabs);
+    Res = IEEESPAdd(cosf1,
+          IEEESPMul(ysquared,
+          IEEESPAdd(cosf2,
+          IEEESPMul(ysquared,
+          IEEESPAdd(cosf3,
+          IEEESPMul(ysquared,
+          IEEESPAdd(cosf4,
+          IEEESPMul(ysquared,
+          IEEESPAdd(cosf5,
+          IEEESPMul(ysquared, cosf6))))))))));
+    
+    if (0 == Res)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    if (TRUE == intern_IEEESPisodd(z)) Res ^= IEEESPSign_Mask;
+    if (TRUE == tmp)                   Res ^= IEEESPSign_Mask;
+    
+    if (Res < 0) SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }
