@@ -482,10 +482,10 @@ endif
 
 #------------------------------------------------------------------------------
 # Build a program
-%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) \
+%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
-    uselibs= usehostlibs= usestartup=yes detach=no
+    aflags=$(AFLAFS) uselibs= usehostlibs= usestartup=yes detach=no
 
 .PHONY : %(mmake) %(mmake)-setup
 
@@ -496,10 +496,12 @@ BD_OBJDIR$(BDID)    := %(objdir)
 BD_TARGETDIR$(BDID) := %(targetdir)
 
 BD_FILES$(BDID)     := %(files)
-BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+BD_ASMFILES$(BDID)  := %(asmfiles)
+BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID))))
 BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
 
 BD_CFLAGS$(BDID)    := %(cflags)
+BD_AFLAGS$(BDID)    := %(aflags)
 BD_DFLAGS$(BDID)    := %(dflags)
 BD_LDFLAGS$(BDID)   := %(ldflags)
 
@@ -517,6 +519,8 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
     cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	       flags=$(BD_AFLAGS$(BDID))
 
 %rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
     objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
