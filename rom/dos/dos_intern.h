@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -71,6 +71,9 @@ LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
 
 BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 		 BPTR output, struct TagItem *tl, struct DosLibrary *DOSBase);
+
+struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
+				   struct DosLibrary *DOSBase);
 
 BOOL writeFullPath(struct AnchorPath * AP);
 LONG followpattern(struct AnchorPath * AP, 
@@ -156,5 +159,7 @@ struct markerarray
 #define  STRING_RETRY           -5000
 #define  STRING_CANCEL          -5001
 #define  STRING_REQUESTTITLE    -5002
+
+#include <dos_commanderrors.h>
 
 #endif /* DOS_INTERN_H */
