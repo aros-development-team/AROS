@@ -92,7 +92,7 @@ $(DEST)filesystems.doc : filesystems.doc
 	cp filesystems.doc $(DEST)
 
 #MM
-clean :
+clean ::
 	rm -f $(HTML)
 
 src2html : conv/src2html
