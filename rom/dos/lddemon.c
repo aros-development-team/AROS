@@ -43,6 +43,8 @@ static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
 	me->pr_CurrentDir=MKBADDR(&fh);
 	seglist=LoadSeg(name);
     }
+    else
+	seglist=NULL;
     UnLockDosList(LDF_ALL|LDF_READ);
     return seglist;
 }
