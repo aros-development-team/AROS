@@ -15,6 +15,9 @@
 #include <string.h>
 #include "dos_intern.h"
 
+# define  DEBUG  0
+# include <aros/debug.h>
+
 
 LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	    struct DosLibrary *DOSBase)
@@ -68,7 +71,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	}
     }
 
-    dl = LockDosList(LDF_ALL|LDF_READ);
+    dl = LockDosList(LDF_ALL | LDF_READ);
 
     if (volname != NULL)
     {
@@ -78,15 +81,18 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	if (dl == NULL)
 	{
 	    UnLockDosList(LDF_ALL|LDF_READ);
-	    FreeMem(volname, s1-name);
+	    FreeMem(volname, s1 - name);
 	    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
 
 	    return ERROR_DEVICE_NOT_MOUNTED;
 	} 
-	else if(dl->dol_Type == DLT_LATE)
+	else if (dl->dol_Type == DLT_LATE)
 	{
+	    D(bug("Locking late assign %s\n",
+		  dl->dol_misc.dol_assign.dol_AssignName));
+
 	    lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-	    UnLockDosList(LDF_ALL|LDF_READ);
+	    UnLockDosList(LDF_ALL | LDF_READ);
 
 	    if (lock != NULL)
 	    {
@@ -137,7 +143,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	    unit   = dl->dol_Unit;
 	}
     }
-    else if(cur)
+    else if (cur)
     {
 	fh = (struct FileHandle *)BADDR(cur);
 	device = fh->fh_Device;
@@ -175,8 +181,11 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     if (dl != NULL)
     {
 	if (dl->dol_Type == DLT_NONBINDING)
+	{
 	    UnLock(lock);
-	UnLockDosList(LDF_ALL|LDF_READ);
+	}
+
+	UnLockDosList(LDF_ALL | LDF_READ);
     }
 
     if (volname != NULL)
