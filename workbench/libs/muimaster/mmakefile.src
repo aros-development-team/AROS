@@ -78,8 +78,6 @@ FUNCS := \
     mui_requestidcmp \
     mui_seterror
 
-INCLUDE_FILES := include/libraries/mui.h
-
 USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_CLIB_STATIC := yes
@@ -98,8 +96,21 @@ MOD_DIR := $(ZUNEDIR)/Libs
 %make_module mmake=contrib-zune-libs-muimaster
 %make_lib_includes
 
-##MM includes-copy
-#%copy_includes path=libraries dir=include/libraries
+BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
+INCLUDES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
+
+#MM includes-generate
+includes-generate : $(INCLUDES)
+	@$(NOP)
+	
+$(AROS_INCLUDES)/libraries/%.h : $(BUILDINCTOOL)
+	@$(BUILDINCTOOL) > $@
+
+$(GENINCDIR)/libraries/%.h : $(BUILDINCTOOL)
+	@$(BUILDINCTOOL) > $@
+
+$(BUILDINCTOOL) : buildincludes.c
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
 
 #MM setup
 setup ::
