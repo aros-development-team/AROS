@@ -12,6 +12,8 @@
 
 #define CONST const
 
+extern CONST char  keymapname[];
+
 extern CONST UBYTE lokeymaptypes[];
 extern CONST IPTR  lokeymap[];
 extern CONST UBYTE locapsable[];
@@ -26,11 +28,11 @@ CONST struct KeyMapNode km =
 {
  #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
-    	NULL, NULL, 0, 0, KMNAME
+    	NULL, NULL, 0, 0, keymapname
     },
  #else
     {
-    	NULL, NULL, KMNAME, 0, 0
+    	NULL, NULL, keymapname, 0, 0
     },
  #endif
     {
@@ -44,6 +46,8 @@ CONST struct KeyMapNode km =
     	(UBYTE *)hirepeatable
     }
 };
+
+CONST char keymapname[] = KMNAME;
 
 #undef N
 #undef S
