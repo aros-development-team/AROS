@@ -59,7 +59,7 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 
     IPTR retval = 0;
 
-    while((tag = NextTagItem((struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         switch(tag->ti_Tag)
         {
