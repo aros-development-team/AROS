@@ -160,7 +160,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -259,7 +259,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
     	char *frame_title = mui_alloc(strlen(data->mad_FrameTitle)+1);
     	if (frame_title) strcpy(frame_title,data->mad_FrameTitle);
-    	data->mad_FrameTitle = NULL;
+    	data->mad_FrameTitle = frame_title;
     }
 
     if (data->mad_InputMode != MUIV_InputMode_None)
@@ -307,7 +307,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem             *tags  = msg->ops_AttrList;
     struct TagItem             *tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -534,25 +534,23 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
     if (data->mad_TitleText)
     {
-#warning FIXME: mAskMinMax
-#if 0
-	GdkFont *obj_font = _font(obj);
+	/* Save the orginal font */
+	struct TextFont *obj_font = _font(obj);
 
 	_font(obj) = zune_font_get(MUIV_Font_Title);
-kprintf("*** Area->AskMinMax calling zune_text_get_bounds()\n");
 	zune_text_get_bounds(data->mad_TitleText, obj);
-	_font(obj) = obj_font;
-/*  	g_print("title %dx%d\n", data->mad_TitleText->width, data->mad_TitleText->height); */
 
-	_subheight(obj) = _subheight(obj) - _addtop(obj)
-	    + data->mad_TitleText->height;
+        /* restore the font */
+	_font(obj) = obj_font;
+
+	_subheight(obj) = _subheight(obj) - _addtop(obj) + data->mad_TitleText->height;
 	_addtop(obj) = data->mad_TitleText->height + 1;
+
 	if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
 	{
 	    _subheight(obj) += 1;
 	    _addtop(obj) += 1;
 	}
-#endif
     }
 
     msg->MinMaxInfo->MinHeight = _subheight(obj);
@@ -636,7 +634,6 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct ZuneFrameGfx *zframe;
     struct Rectangle mrect, current;
     APTR areaclip;
-    int xtext = _mleft(obj);
 
     D(bug("muimaster.library/area.c: Draw Area Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
@@ -668,7 +665,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
 
-    /* Backgrounddrawing */
+    /* Background drawing */
     if (data->mad_Flags & MADF_FILLAREA)
     {
 	struct MUI_ImageSpec *background;
@@ -676,34 +673,36 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!(data->mad_Flags & MADF_SELECTED)) background = data->mad_Background;
 	else background = data->mad_SelBack;
 
+	/* RECHECK: sba: Orginally there was muiRenderInfo(obj)->mri_ClipRect.XXX used
+        ** but this didn't worked, if there are some background problems recheck this
+	*/
+
 	if (data->mad_TitleText)
 	{
-	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.MinY,
+	    zune_draw_image(data->mad_RenderInfo, background,
+			    _left(obj), _top(obj), _width(obj), _height(obj),
+			    _left(obj), _top(obj), 0);
+
+/*	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.MinY,
 			_top(obj) + zframe->ythickness
 			+ data->mad_TitleText->height / 2);
+
+
 	    zune_draw_image(data->mad_RenderInfo, background,
-			    muiRenderInfo(obj)->mri_ClipRect.MinY, y,
-			    muiRenderInfo(obj)->mri_ClipRect.MaxX - muiRenderInfo(obj)->mri_ClipRect.MinX + 1,
-			    MIN(muiRenderInfo(obj)->mri_ClipRect.MaxY - muiRenderInfo(obj)->mri_ClipRect.MinY + 1,
-				_bottom(obj) - y),
+			    _left(obj), y, _width(obj), _height(obj) -  y),
 			    _left(obj), _top(obj) + data->mad_TitleText->height / 2, 0);
+*/
 	}
 	else
 	{
 	    zune_draw_image(data->mad_RenderInfo, background,
                            _left(obj),_top(obj),_width(obj),_height(obj),
-/*			    muiRenderInfo(obj)->mri_ClipRect.MinX, // RECHECK: This won't work
-			    muiRenderInfo(obj)->mri_ClipRect.MinY,
-			    muiRenderInfo(obj)->mri_ClipRect.MaxX - muiRenderInfo(obj)->mri_ClipRect.MinX + 1,
-			    muiRenderInfo(obj)->mri_ClipRect.MaxY - muiRenderInfo(obj)->mri_ClipRect.MinY + 1,*/
 			    _left(obj), _top(obj), 0);
 	}
     }
 
-/*
- * Frame drawing
- */
 
+    /* Frame drawing */
     if (!(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
 	int state = __zprefs.frames[data->mad_Frame].state;
@@ -714,17 +713,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (data->mad_TitleText)
 	{
-#if 0
-//	    GdkRegion *empty;
-//	    GdkRegion *clip2;
-//	    GdkRegion *full2;
-//	    GdkRegion *clipreg;
-//	    GdkBitmap *oldclip = NULL;
-//	    GdkRectangle rect;
-//	    int clipx, clipy;
 	    APTR textdrawclip;
-	    GdkFont *obj_font = _font(obj);
-//	    GdkGCValues values;
+
+	    struct TextFont *obj_font = _font(obj);
+	    struct Region *region;
+
+	    int x;
 	    int width;
 
 	    width = data->mad_TitleText->width;
@@ -733,89 +727,68 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
             switch (__zprefs.group_title_position)
             {
-            case GROUP_TITLE_POSITION_RIGHT:
-                xtext = _mright(obj) - width - 3;
-                break;
-            case GROUP_TITLE_POSITION_CENTERED:
-                xtext = _mleft(obj) +
-                    (_mwidth(obj) - width) / 2;
-                break;
-            default:
-            }
+		case GROUP_TITLE_POSITION_RIGHT: x = _mright(obj) - width - 3;  break;
+		case GROUP_TITLE_POSITION_CENTERED: x = _mleft(obj) + (_mwidth(obj) - width) / 2; break;
+		default: x = _mleft(obj) + 2; /* additional space */
+	    }
 
-            if (xtext < _mleft(obj))
-                xtext = _mleft(obj);
+            if (x < _mleft(obj) + 2) x = _mleft(obj) + 2;
 
-#if 0
-	    /* text rectangle, with spacing (2 pixels left & right) */
-	    rect.x = xtext;
-	    rect.y = _top(obj);
-	    rect.width = MIN(_mwidth(obj), width + 4);
-	    rect.height = data->mad_TitleText->height;
-	    empty = gdk_region_new();
-	    clip2 = gdk_region_union_with_rect(empty, &rect);
-	    /* maximum area rectangle */
-	    rect.x = _left(obj);
-	    rect.y = _top(obj);
-	    rect.width = _width(obj);
-	    rect.height = _height(obj);
-	    full2 = gdk_region_union_with_rect(empty, &rect);
-	    clipreg = gdk_regions_subtract(full2, clip2);
-	    gdk_region_destroy(full2);
-	    gdk_region_destroy(clip2);
-	    gdk_region_destroy(empty);
+	    if ((region = NewRegion()))
+	    {
+	    	struct Rectangle rect;
+	    	rect.MinX = x - 2;
+	    	rect.MinY = _top(obj);
+	    	rect.MaxX = MIN(_mright(obj),x + width + 3);
+	    	rect.MaxY = rect.MinY + data->mad_TitleText->height - 1; // frame is not thick enough anywhy
+		OrRectRegion(region,&rect);
 
-	    gdk_gc_get_values(_rp(obj), &values);
+	    	rect.MinX = _left(obj);
+	    	rect.MinY = _top(obj);
+	    	rect.MaxX = _right(obj);
+	    	rect.MaxY = _bottom(obj);
+		XorRectRegion(region,&rect);
 
-	    if (values.clip_mask)
-		oldclip = gdk_bitmap_ref(values.clip_mask);
-	    clipx = values.clip_x_origin;
-	    clipy = values.clip_y_origin;
-	    gdk_gc_set_clip_region(_rp(obj), clipreg);
-	    gdk_region_destroy(clipreg);
-
+		textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
+	    }
+	    
 	    zframe->draw[state](muiRenderInfo(obj), _left(obj),
 				_top(obj) + data->mad_TitleText->height / 2,
 				_width(obj),
 				_height(obj) - data->mad_TitleText->height / 2);
-	    gdk_gc_set_clip_mask(_rp(obj), oldclip);
-	    gdk_gc_set_clip_origin(_rp(obj), clipx, clipy);
-	    if (oldclip)
-		gdk_bitmap_unref(oldclip);
-#endif
 
-	    /*
-	     * Title text drawing
-	     */
+	    if (region)
+	    {
+	    	MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
+/*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
+	    }
+
+
+	    /* Title text drawing */
 	    _font(obj) = zune_font_get(MUIV_Font_Title);
 
-	    xtext += 1;
-/*	    textdrawclip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj) + 2, _top(obj),
+            /* TODO: sba if a TextFit() for zune text is available one could disable the clipping */
+	    textdrawclip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj) + 2, _top(obj),
 					   _mwidth(obj) - 4, data->mad_TitleText->height);
-*/
+
 	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
 	    if (__zprefs.group_title_color == GROUP_TITLE_COLOR_3D)
 	    {
-		zune_text_draw(data->mad_TitleText, obj,
-			       xtext + 1, xtext + width,
-			       _top(obj) + 1);
+		zune_text_draw(data->mad_TitleText, obj, x + 1, x + width, _top(obj) + 1);
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-		zune_text_draw(data->mad_TitleText, obj,
-			       xtext, xtext + width - 1, _top(obj));
+		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
 	    }
 	    else if (__zprefs.group_title_color == GROUP_TITLE_COLOR_WHITE)
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 
 	    if (__zprefs.group_title_color != GROUP_TITLE_COLOR_3D)
 	    {
-		xtext += 1;
-		zune_text_draw(data->mad_TitleText, obj,
-			       xtext, xtext + width - 1, _top(obj));
+		x++;
+		zune_text_draw(data->mad_TitleText, obj, x, x + width - 1, _top(obj));
 	    }
-/*	    MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);*/
+	    MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);
 
 	    _font(obj) = obj_font;
-#endif
 	}
 	else
 	{
@@ -960,8 +933,6 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     setup_control_char (data, obj, cl);
     setup_cycle_chain (data, obj);
 
-/*  g_print("font before = %p\n", data->mad_Font); */
-
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
 	if (_parent(obj) != NULL) data->mad_Font = _font(_parent(obj));
@@ -969,15 +940,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     }
     else data->mad_Font = zune_font_get(data->mad_FontPreset);
 
-/*  g_print("font after = %p\n", data->mad_Font); */
-
-#if 0
     if (data->mad_FrameTitle)
     {
 	data->mad_TitleText = zune_text_new(NULL, data->mad_FrameTitle,
 				    ZTEXT_ARG_NONE, 0);
     }
-#endif
 
     if (data->mad_Flags & MADF_ACTIVE)
     {
@@ -1007,13 +974,11 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 	data->mad_Flags |= MADF_ACTIVE;
     }
 
-#if 0
     if (data->mad_TitleText)
     {
 	zune_text_destroy(data->mad_TitleText);
 	data->mad_TitleText = NULL;
     }
-#endif
 
     cleanup_cycle_chain (data, obj);
     cleanup_control_char (data, obj);
