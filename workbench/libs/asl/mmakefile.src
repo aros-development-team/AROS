@@ -21,6 +21,7 @@ FILES := basicfuncs specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
 	 fontpreviewclass fontstyleclass \
+	 colorpickerclass \
 	 gadgets coolimagedata locale 
 
 FUNCS := allocfilerequest	\

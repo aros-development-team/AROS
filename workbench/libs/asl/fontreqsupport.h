@@ -35,6 +35,11 @@ LONG FOGetDrawMode(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase);
 UBYTE FOGetStyle(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetStyle(struct LayoutData *ld, UBYTE style, struct AslBase_intern *AslBase);
+void FOSetFGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *AslBase);
+void FOSetBGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *AslBase);
+UBYTE FOGetFGColor(struct LayoutData *ld, struct AslBase_intern *AslBase);
+UBYTE FOGetBGColor(struct LayoutData *ld, struct AslBase_intern *AslBase);
+
 
 
 

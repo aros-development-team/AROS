@@ -272,21 +272,35 @@ VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase)
     GetAttr(STRINGA_TextVal, udata->NameString, (IPTR *)&name);
     if ((name = VecPooledCloneString(name, ".font", intreq->ir_MemPool, AslBase)))
     {
-    	IPTR style = FS_NORMAL;
+    	UBYTE style = FS_NORMAL;
+	UBYTE apen = iforeq->ifo_FrontPen;
+	UBYTE bpen = iforeq->ifo_BackPen;
 	
     	ta.ta_Name = name;
 	
 	if (iforeq->ifo_Flags & FOF_DOSTYLE)
 	{
-	    GetAttr(ASLFS_Style, udata->StyleGadget, &style);
+	    style = FOGetStyle(ld, AslBase);
+	}
+	
+	if (iforeq->ifo_Flags & FOF_DOFRONTPEN)
+	{
+	    apen = FOGetFGColor(ld, AslBase);
+	}
+	
+	if (iforeq->ifo_Flags & FOF_DOBACKPEN)
+	{
+	    bpen = FOGetBGColor(ld, AslBase);
 	}
 	
 	font = OpenDiskFont(&ta);
 	{
 	    struct TagItem settags[] =
 	    {
-	    	{ASLFP_Font, 	(IPTR)font  },
-		{ASLFP_Style,	style	    },
+	    	{ASLFP_Font , (IPTR)font    },
+		{ASLFP_Style, style	    },
+		{ASLFP_APen , apen	    },
+		{ASLFP_BPen , bpen  	    },
 		{TAG_DONE   	    	    }
 	    };
 	    
@@ -566,6 +580,16 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
     	FOSetStyle(ld, iforeq->ifo_TextAttr.ta_Style, AslBase);
     }
 
+    if (iforeq->ifo_Flags & FOF_DOFRONTPEN)
+    {
+    	FOSetFGColor(ld, iforeq->ifo_FrontPen, AslBase);
+    }
+    
+    if (iforeq->ifo_Flags & FOF_DOBACKPEN)
+    {
+    	FOSetBGColor(ld, iforeq->ifo_BackPen, AslBase);
+    }
+    
     FOActivateFont(ld, i, fontsize, AslBase);
     
 }
@@ -657,6 +681,68 @@ void FOSetStyle(struct LayoutData *ld, UBYTE style, struct AslBase_intern *AslBa
     ASSERT(udata->StyleGadget);
     
     SetGadgetAttrsA((struct Gadget *)udata->StyleGadget, ld->ld_Window, NULL, set_tags);
+    
+}
+
+/*****************************************************************************************/
+
+UBYTE FOGetFGColor(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    IPTR		color;
+    
+    ASSERT(udata->FGColorGadget);
+    
+    GetAttr(ASLCP_Color, udata->FGColorGadget, &color);
+    
+    return (UBYTE)color;
+}
+
+/*****************************************************************************************/
+
+void FOSetFGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCP_Color	, color		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->FGColorGadget);
+    
+    SetGadgetAttrsA((struct Gadget *)udata->FGColorGadget, ld->ld_Window, NULL, set_tags);
+    
+}
+
+/*****************************************************************************************/
+
+UBYTE FOGetBGColor(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    IPTR		color;
+    
+    ASSERT(udata->BGColorGadget);
+    
+    GetAttr(ASLCP_Color, udata->BGColorGadget, &color);
+    
+    return (UBYTE)color;
+}
+
+/*****************************************************************************************/
+
+void FOSetBGColor(struct LayoutData *ld, UBYTE color, struct AslBase_intern *AslBase)
+{
+    struct FOUserData   *udata = (struct FOUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCP_Color	, color		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->BGColorGadget);
+    
+    SetGadgetAttrsA((struct Gadget *)udata->BGColorGadget, ld->ld_Window, NULL, set_tags);
     
 }
 
