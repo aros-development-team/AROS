@@ -57,6 +57,15 @@
 #include <proto/alib.h>
 #endif
 
+/* Definition of a utility namespace, needed here for the library base. */
+
+struct NameSpace
+{
+    struct MinList          ns_List;
+    struct SignalSemaphore  ns_Lock;
+    ULONG                   ns_Flags;
+};
+
 /*
     This is the internal version of the UtilityBase structure
 */
@@ -65,16 +74,11 @@ struct IntUtilityBase
 {
     struct UtilityBase UBase;
 
-    /*
-	This is where the private data starts.
-	These are in the same order as the Commodore UtilityBase data,
-	this is allow for me to SetFunction() during testing.
-    */
+    /* This is where the private data starts. */
     struct ExecBase     *ub_SysBase;
     BPTR                 ub_SegList;
-    struct NamedObject  *ub_GlobalNameSpace;
     ULONG                ub_LastID;
-
+    struct NameSpace     ub_NameSpace;
 };
 
 /* digulla again... Needed for close() */
@@ -97,13 +101,6 @@ struct IntUtilityBase
 
     However, the autodocs are right, so you can nest like that.
 */
-
-struct NameSpace
-{
-    struct MinList          ns_List;
-    struct SignalSemaphore  ns_Lock;
-    ULONG                   ns_Flags;
-};
 
 struct IntNamedObject
 {

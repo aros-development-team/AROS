@@ -65,13 +65,6 @@ const APTR inittabl[4]=
     &INIT
 };
 
-static const struct TagItem nstags[] =
-{
-    { ANO_NameSpace, TRUE },
-    { ANO_Flags, NSF_NODUPS },
-    { TAG_DONE, 0 }
-};
-
 #ifdef SysBase
 #undef SysBase
 #endif
@@ -114,13 +107,15 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
-    GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace =
-        AllocNamedObjectA("utility global name space", (struct TagItem *)nstags);
+    /*
+	I no longer allocate memory here for the global namespace, since
+	that is not quite legal. (AllocMem is not Forbid() protected).
 
-    if(GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace == NULL)
-    {
-        Alert(AG_NoMemory | AO_UtilityLib);
-    }
+	Also makes this a little bit shorter. (In time and length).
+    */
+    InitSemaphore(&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_Lock);
+    NewList((struct List *)&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_List);
+    GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_Flags = NSF_NODUPS;
 
 #if defined(__mc68000__)
     /* Are we running on a m68020 or higher?
@@ -129,18 +124,18 @@ AROS_LH2(struct LIBBASETYPE *, init,
     */
     if(SysBase->AttnFlags & AFF_68020)
     {
-        SetFunc(23, SMult32_020);
-        SetFunc(24, UMult32_020);
-        SetFunc(25, SDivMod32_020);
-        SetFunc(26, UDivMod32_020);
+	SetFunc(23, SMult32_020);
+	SetFunc(24, UMult32_020);
+	SetFunc(25, SDivMod32_020);
+	SetFunc(26, UDivMod32_020);
 
 #if 0
-        /* The 060 doesn't have some of the instructions I use... */
-        if((SysBase->AttnFlags & AFF_68060) == 0)
-        {
-            SetFunc(33, SMult64_020);
-            SetFunc(34, UMult64_020);
-        }
+	/* The 060 doesn't have some of the instructions I use... */
+	if((SysBase->AttnFlags & AFF_68060) == 0)
+	{
+	    SetFunc(33, SMult64_020);
+	    SetFunc(34, UMult64_020);
+	}
 #endif
     }
 #endif
@@ -152,7 +147,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-           struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+	   struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -169,7 +164,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-           struct LIBBASETYPE *, LIBBASE, 2, Utility)
+	   struct LIBBASETYPE *, LIBBASE, 2, Utility)
 {
     AROS_LIBFUNC_INIT
 
@@ -177,10 +172,10 @@ AROS_LH0(BPTR, close,
     if(!--LIBBASE->ub_LibNode.lib_OpenCnt)
     {
 #ifdef DISK_BASED
-        /* Delayed expunge pending? */
-        if(LIBBASE->ub_LibNode.lib_Flags&LIBF_DELEXP)
-            /* Then expunge the library */
-            return expunge();
+	/* Delayed expunge pending? */
+	if(LIBBASE->ub_LibNode.lib_Flags&LIBF_DELEXP)
+	    /* Then expunge the library */
+	    return expunge();
 #endif
     }
     return 0;
@@ -188,7 +183,7 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-           struct LIBBASETYPE *, LIBBASE, 3, Utility)
+	   struct LIBBASETYPE *, LIBBASE, 3, Utility)
 {
     AROS_LIBFUNC_INIT
 
@@ -197,13 +192,11 @@ AROS_LH0(BPTR, expunge,
     /* Test for openers. */
     if(LIBBASE->ub_LibNode.lib_OpenCnt)
     {
-        /* Set the delayed expunge flag and return. */
-        LIBBASE->ub_LibNode.lib_Flags|=LIBF_DELEXP;
-        return 0;
+	/* Set the delayed expunge flag and return. */
+	LIBBASE->ub_LibNode.lib_Flags|=LIBF_DELEXP;
+	return 0;
     }
 #ifdef DISK_BASED
-    FreeNamedObject(GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace);
-
     /* Get rid of the library. Remove it from the list. */
     Remove(&LIBBASE->ub_LibNode.lib_Node);
 
@@ -212,7 +205,7 @@ AROS_LH0(BPTR, expunge,
 
     /* Free the memory. */
     FreeMem((char *)LIBBASE-LIBBASE->ub_LibNode.lib_NegSize,
-            LIBBASE->ub_LibNode.lib_NegSize+LIBBASE->ub_LibNode.lib_PosSize);
+	    LIBBASE->ub_LibNode.lib_NegSize+LIBBASE->ub_LibNode.lib_PosSize);
 #else
     ret = 0;
 #endif
@@ -222,7 +215,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-            struct LIBBASETYPE *, LIBBASE, 4, Utility)
+	    struct LIBBASETYPE *, LIBBASE, 4, Utility)
 {
     AROS_LIBFUNC_INIT
     return 0;
