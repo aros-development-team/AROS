@@ -31,7 +31,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
-#define ADEBUG 0
+//#define ADEBUG 0
 
 #include <aros/debug.h>
 
@@ -270,7 +270,7 @@ void FOFreeFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct ASLVFontReqNode  *node, *succ;    
     struct TagItem  	    set_tags[] =
     {
-    	{ASLLV_Labels,	NULL},
+    	{ASLLV_Labels,	0   },
 	{TAG_DONE   	    }
     };
     

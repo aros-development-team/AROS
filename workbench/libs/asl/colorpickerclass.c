@@ -192,7 +192,7 @@ static IPTR aslcolorpicker_new(Class * cl, Object * o, struct opSet *msg)
 	{IA_EdgesOnly, FALSE	   },
 	{TAG_DONE    , 0UL	   }
     };
-    IPTR 		        rc = NULL;
+    IPTR 		        rc = 0;
     
     if ((o = (Object *)DoSuperMethodA(cl, o, (Msg)msg)))
     {

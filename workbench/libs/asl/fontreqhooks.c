@@ -1007,7 +1007,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {TAG_DONE   	    	    	    	    	    }
 	};
 	
-	if (menu_tags[1].ti_Data == NULL) menu_tags[1].ti_Tag = TAG_IGNORE;
+	if (menu_tags[1].ti_Data == 0) menu_tags[1].ti_Tag = TAG_IGNORE;
 
 	LocalizeMenus(nm, GetIR(iforeq)->ir_Catalog, AslBase);
 

@@ -31,7 +31,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
-#define ADEBUG 0
+//#define ADEBUG 0
 
 #include <aros/debug.h>
 
@@ -167,7 +167,7 @@ void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct ASLLVFileReqNode 	*node, *succ;
     struct TagItem 		set_tags [] =
     {
-        {ASLLV_Labels	, NULL	},
+        {ASLLV_Labels	, 0	},
 	{TAG_DONE		}
     };
     
@@ -195,7 +195,7 @@ void FRReSortListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct List			templist;
     struct TagItem 		set_tags [] =
     {
-        {ASLLV_Labels	, NULL	},
+        {ASLLV_Labels	, 0	},
 	{ASLLV_Top	, 0	},
 	{TAG_DONE		}
     };
@@ -1114,7 +1114,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		struct ASLLVFileReqNode *node;
 	        struct TagItem 		set_tags[] =
 		{
-		    {ASLLV_Labels	, NULL	},
+		    {ASLLV_Labels	, 0	},
 		    {ASLLV_Top		, 0	},
 		    {TAG_DONE			}
 		};
