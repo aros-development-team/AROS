@@ -30,7 +30,8 @@
 	have to free it yourself with FreeDosObject().
 
     INPUTS
-	args		- The data used by ReadArgs().
+	args		- The data used by ReadArgs(). May be NULL,
+			  in which case, FreeArgs() does nothing.
 
     RESULT
 	Some memory will have been returned to the system.
@@ -54,6 +55,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+
+    if(!args)
+	return;
 
     /* ReadArgs() failed. Clean everything up. */
     if (args->RDA_DAList)
