@@ -30,7 +30,7 @@
 
 #include <aros/debug.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 
 #define IID_Hidd_LinuxKbd	"hidd.kbd.linux"
 #define CLID_Hidd_LinuxKbd	"hidd.kbd.linux"
