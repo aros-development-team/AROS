@@ -61,11 +61,8 @@
   rtmp.RegionRectangle = NULL;
   r.RegionRectangle = NULL;
 
-kprintf("%s called!\n",__FUNCTION__);
   if (l->visible == visible)
     return TRUE;
-
-kprintf("%s called 2nd!\n",__FUNCTION__);
 
   LockLayers(l->LayerInfo);
 
