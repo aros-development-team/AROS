@@ -493,7 +493,7 @@ endif
 # in the standard include directory, and so on. You can however override this behaviour.
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix=$(CONTRIBDIR) \
-    bindir=$(CONTRIBDIR) libdir=$(LIBDIR) includedir=$(INCDIR) extraoptions=
+    bindir=$(CONTRIBDIR) libdir=$(LIBDIR) includedir=$(INCDIR) extraoptions= nix=no
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
@@ -514,8 +514,9 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(RM) config.cache; \
 	    for AR2 in $(AR); do break; done; \
 	    for RANLIB2 in $(RANLIB); do break; done; \
+	    if [ "%(nix)" = "yes" ]; then nix=-nix; else nix=; fi; \
 	    AR=$$AR2 RANLIB=$$RANLIB2 \
-	    CC=$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc \
+	    CC="$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $$nix" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
 	    %(configure) --prefix=%(prefix) --bindir=%(bindir) --libdir=%(libdir) \
 	    --includedir=%(includedir)  %(extraoptions) \
