@@ -23,7 +23,7 @@
    struct Library *, PartitionBase, 10, Partition)
 
 /*  FUNCTION
-	create a new partition table
+	Create a new partition table. 
 
     INPUTS
 	root - partition to create table in
@@ -33,7 +33,9 @@
 	0 on success; an error code otherwise
 
     NOTES
-
+	After calling this function the state of the PartitionHandle will be the
+	same as when calling OpenPartitionTable(). Therefore before closing the
+	PartitionHandle you should call ClosePartitionTable().
     EXAMPLE
 
     BUGS
