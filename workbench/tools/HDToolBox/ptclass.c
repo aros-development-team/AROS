@@ -31,6 +31,10 @@
 #define DPTYPE_USED 	      2
 #define DPTYPE_USED_SELECTED  3
 
+#define PARTITIONBLOCK_FRAMEWIDTH 2
+
+#define END_FIX 1
+
 struct PTableData {
 	struct DrawInfo *dri;
 	struct Image *frame;
@@ -242,13 +246,14 @@ struct HDTBPartition *pn;
 	return (struct HDTBPartition *)findSpace(data->table,&data->gap,data->block);
 }
 
-void DrawBox(struct RastPort *rport, UWORD sx, UWORD sy, UWORD ex, UWORD ey) {
+void DrawBox(struct RastPort *rport, struct DrawInfo *dri,
+    	     UWORD sx, UWORD sy, UWORD ex, UWORD ey, BOOL recessed) {
 
-	SetAPen(rport, 1);
+	SetAPen(rport, dri->dri_Pens[recessed ? SHINEPEN : SHADOWPEN]);
 	Move(rport, ex, sy);
 	Draw(rport, ex, ey);
 	Draw(rport, sx, ey);
-	SetAPen(rport, 2);
+	SetAPen(rport, dri->dri_Pens[recessed ? SHADOWPEN : SHINEPEN]);
 	Draw(rport, sx, sy);
 	Draw(rport, ex, sy);
 }
@@ -256,16 +261,18 @@ void DrawBox(struct RastPort *rport, UWORD sx, UWORD sy, UWORD ex, UWORD ey) {
 void DrawFilledBox
 	(
 		struct RastPort *rport,
+		struct DrawInfo *dri,
 		UWORD sx, UWORD sy, UWORD ex, UWORD ey
 	)
 {
 	RectFill(rport, sx+1, sy+1, ex-1, ey-1);
-	DrawBox(rport, sx, sy, ex, ey);
+	DrawBox(rport, dri, sx, sy, ex, ey, FALSE);
 }
 
 void DrawPartition
 	(
 		struct RastPort *rport,
+		struct DrawInfo *dri,
 		struct Gadget *gadget,
 		struct HDTBPartition *table,
 		struct DosEnvec *pn,
@@ -310,8 +317,12 @@ ULONG skipcyl;
 		start -= skipcyl;
 	if (end !=0)
 		end   -= skipcyl;
-	start = (start*(gadget->Width)/cyls)+1;
-	end  = (end*(gadget->Width)/cyls);
+	start = (start*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls)+1;
+#if END_FIX
+	end  = ((end + 1) *(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls) + 1 - 1;
+#else
+	end  = (end*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls);
+#endif
 	start += gadget->LeftEdge;
 	end   += gadget->LeftEdge;
 #endif
@@ -340,7 +351,7 @@ ULONG skipcyl;
 	if (drawtype == DPTYPE_EMPTY)
 	{
 	    RectFill(rport, start, gadget->TopEdge+1+(gadget->Height/2),
-		    	    end, gadget->TopEdge+(gadget->Height)-1);
+		    	    end, gadget->TopEdge+(gadget->Height)-2);
 	}
 	else
 	{
@@ -348,8 +359,9 @@ ULONG skipcyl;
 	    DrawFilledBox
 	    (
 		    rport,
+		    dri,
 		    start, gadget->TopEdge+1+(gadget->Height/2),
-		    end, gadget->TopEdge+(gadget->Height)-1
+		    end, gadget->TopEdge+(gadget->Height)-2
 	    );
 	    SetPattern(rport, NULL, 0);
 	}
@@ -399,8 +411,12 @@ ULONG skipcyl;
 		start -= skipcyl;
 	if (end !=0)
 		end   -= skipcyl;
-	start = (start*(gadget->Width)/cyls)+1;
-	end  = (end*(gadget->Width)/cyls);
+	start = (start*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls)+1;
+#if END_FIX
+	end  = ((end + 1) *(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls) + 1 - 1;
+#else
+	end  = (end*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls);
+#endif
 	start += gadget->LeftEdge;
 	end   += gadget->LeftEdge;
 #endif
@@ -408,7 +424,7 @@ ULONG skipcyl;
 	(
 		rport,
 		start, gadget->TopEdge+1+(gadget->Height/2),
-		end, gadget->TopEdge+(gadget->Height)-1
+		end, gadget->TopEdge+(gadget->Height)-2
 	);
 }
 ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table) {
@@ -453,7 +469,7 @@ struct RastPort *rport;
 WORD	    	 drawtype;
 
 	data = INST_DATA(cl, obj);
-	data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width,data->table);
+	data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH,data->table);
 	rport = ObtainGIRPort(msg->gpi_GInfo);
 	if (data->active != NULL)
 	{
@@ -468,7 +484,7 @@ WORD	    	 drawtype;
 		    	drawtype = DPTYPE_USED;
 			de = &data->active->de;
 		}
-		DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
+		DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
 	if ((struct DosEnvec *)data->active == &data->gap)
@@ -488,7 +504,7 @@ WORD	    	 drawtype;
 	data->selected = FALSE;
 	if (data->active && rport)
 	{
-		DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
+		DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	
 	if (rport) ReleaseGIRPort(rport);
@@ -506,7 +522,7 @@ WORD drawtype;
 	data = INST_DATA(cl, obj);
 	if (data->active)
 	{
-//		data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width, data->table);
+//		data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
 		if (getActive(data) == data->active)
 		{
 			if ((rport = ObtainGIRPort(msg->gpi_GInfo)))
@@ -521,7 +537,7 @@ WORD drawtype;
 			    	    drawtype = DPTYPE_USED_SELECTED;
 				    de = &data->active->de;
 			    }
-			    DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
+			    DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
 			    
 			    ReleaseGIRPort(rport);
 			}
@@ -664,7 +680,7 @@ struct RastPort *rport;
 			ULONG spc;
 			ULONG tocheck;
 
-				block = getBlock(msg->gpi_Mouse.X, G(obj)->Width, data->table);
+				block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
 				diff = block-data->block;
 				if (diff)
 				{
@@ -699,6 +715,7 @@ struct RastPort *rport;
 							DrawPartition
 							(
 								rport,
+								data->dri,
 								(struct Gadget *)obj,
 								data->table,
 								&data->active->de,
@@ -732,9 +749,9 @@ struct RastPort *rport;
 	return retval;
 }
 
-void DrawLegend(struct RastPort *rport, LONG sx, LONG sy, LONG ex, LONG ey, char *text) {
+void DrawLegend(struct RastPort *rport, struct DrawInfo *dri, LONG sx, LONG sy, LONG ex, LONG ey, char *text) {
 	RectFill(rport, sx+1, sy+1, ex-1, ey-1);
-	DrawBox(rport, sx, sy, ex, ey);
+	DrawBox(rport, dri, sx, sy, ex, ey, FALSE);
 
 	SetAPen(rport, 1);
 	SetDrMd(rport, JAM1);
@@ -754,22 +771,25 @@ IPTR retval = 0;
 		msg->gpr_RPort,
 		G(obj)->LeftEdge,
 		G(obj)->TopEdge,
-		G(obj)->LeftEdge+G(obj)->Width,
-		G(obj)->TopEdge+(G(obj)->Height)
+		G(obj)->LeftEdge+G(obj)->Width - 1,
+		G(obj)->TopEdge+(G(obj)->Height - 1)
 	);
 	DrawBox
 	(
 		msg->gpr_RPort,
+		data->dri,
 		G(obj)->LeftEdge,
 		G(obj)->TopEdge+(G(obj)->Height/2),
-		G(obj)->LeftEdge+G(obj)->Width,
-		G(obj)->TopEdge+(G(obj)->Height)
+		G(obj)->LeftEdge+G(obj)->Width - 1,
+		G(obj)->TopEdge+(G(obj)->Height - 1),
+		TRUE
 	);
 	SetPattern(msg->gpr_RPort, &pattern, 2);
 	SetAPen(msg->gpr_RPort, 0);
 	DrawLegend
 	(
 		msg->gpr_RPort,
+		data->dri,
 		G(obj)->LeftEdge,
 		G(obj)->TopEdge,
 		G(obj)->LeftEdge+(G(obj)->Width/5),
@@ -780,6 +800,7 @@ IPTR retval = 0;
 	DrawLegend
 	(
 		msg->gpr_RPort,
+		data->dri,
 		G(obj)->LeftEdge+(G(obj)->Width/5)+(G(obj)->Width/15),
 		G(obj)->TopEdge,
 		G(obj)->LeftEdge+(G(obj)->Width/5*2)+(G(obj)->Width/15),
@@ -790,6 +811,7 @@ IPTR retval = 0;
 	DrawLegend
 	(
 		msg->gpr_RPort,
+		data->dri,
 		G(obj)->LeftEdge+(G(obj)->Width/5*2)+(G(obj)->Width/15*2),
 		G(obj)->TopEdge,
 		G(obj)->LeftEdge+(G(obj)->Width/5*3)+(G(obj)->Width/15*2),
@@ -800,6 +822,7 @@ IPTR retval = 0;
 	DrawLegend
 	(
 		msg->gpr_RPort,
+		data->dri,
 		G(obj)->LeftEdge+(G(obj)->Width/5*3)+(G(obj)->Width/15*3),
 		G(obj)->TopEdge,
 		G(obj)->LeftEdge+(G(obj)->Width/5*4)+(G(obj)->Width/15*3),
@@ -827,6 +850,7 @@ IPTR retval = 0;
 				DrawPartition
 				(
 					msg->gpr_RPort,
+					data->dri,
 					(struct Gadget *)obj,
 					data->table,
 					&pn->de,
@@ -840,6 +864,7 @@ IPTR retval = 0;
 			DrawPartition
 			(
 				msg->gpr_RPort,
+				data->dri,
 				(struct Gadget *)obj,
 				data->table,
 				&data->gap,
