@@ -557,7 +557,11 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
             else STORE = (IPTR) data->Buffer;
 	    return 1;
         
-	case MUIA_String_Accept:
+	case MUIA_String_Secret:
+	    STORE = (IPTR) data->msd_useSecret;
+	    return 1;
+        
+        case MUIA_String_Accept:
 	    STORE = (IPTR) data->msd_Accept;
 	    return 1;
         
