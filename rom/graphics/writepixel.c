@@ -63,17 +63,15 @@
   struct BitMap * bm = rp->BitMap;
   ULONG Width, Height;
   ULONG i;
-  BYTE * Plane;
-  
+  BYTE * Plane; 
+
   Width = GetBitMapAttr(bm, BMA_WIDTH);  
   Height = GetBitMapAttr(bm, BMA_HEIGHT);
-
-
+  /* 
+     Is there a layer. If not then it cannot be a regular window!!
+  */
   if (NULL == L)
   {  
-    /* !!! hack-attack !!! Just to make it work for now...*/
-    return driver_WritePixel(rp, x, y, GfxBase);
-
     /* is this pixel inside the rastport? */
     if (x < 0 || x  > Width || 
         y < 0 || y  > Height)
@@ -96,8 +94,8 @@
        The coordinate x,y is relative to the layer.
     */
     struct ClipRect * CR = L -> ClipRect;
-    WORD XRel = L->bounds.MinX;
     WORD YRel = L->bounds.MinY;
+    WORD XRel = L->bounds.MinX;
 
     /* Is this pixel inside the layer ?? */
     if (x > (L->bounds.MaxX - XRel + 1) ||
@@ -139,7 +137,8 @@
 
           /* and let the driver set the pixel to the X-Window also,
              but this Pixel has a relative position!! */
-          //driver_WritePixel (rp, x+XRel, y+YRel, GfxBase);
+          if (bm->Flags & BMF_AROS_DISPLAYED)
+            driver_WritePixel (rp, x+XRel, y+YRel, GfxBase);
         } 
         else
         {
@@ -172,11 +171,17 @@
   } /* if */
   else
   { /* this is probably something like a screen */
+
+    /* if it is an old window... */
+    if (bm->Flags & BMF_AROS_OLDWINDOW)
+      return driver_WritePixel (rp, x, y, GfxBase);
+
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
 
-    /* and let the driver ste the pixel to the X-Window also */
-    //driver_WritePixel (rp, x, y, GfxBase);
+    /* and let the driver set the pixel to the X-Window also */
+    if (bm->Flags & BMF_AROS_DISPLAYED)
+      driver_WritePixel (rp, x, y, GfxBase);
   }
 
   /* get the pen for this rastport */
@@ -191,6 +196,7 @@
   for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
   {
     Plane = bm->Planes[count];
+
     /* are we supposed to clear this pixel or set it in this bitplane */
     if (0 != (pen_Mask & pen))
     {
@@ -210,6 +216,7 @@
   if (NULL != L) 
     UnlockLayer(L);
 */
+
   return 0;
   AROS_LIBFUNC_EXIT
 } /* WritePixel */

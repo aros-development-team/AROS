@@ -57,7 +57,6 @@
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
   struct Layer * L = rp -> Layer;
-  ULONG pen;
   BYTE Mask, pen_Mask;
   LONG count;
   struct BitMap * bm = rp->BitMap;
@@ -73,7 +72,7 @@
   if (NULL == L)
   {  
     /* !!! hack-attack !!! Just to make it work for now...*/
-    return driver_ReadPixel(rp, x, y, GfxBase);
+    // return driver_ReadPixel(rp, x, y, GfxBase);
     
     /* is this pixel inside the rastport? 
        all pixels with coordinate less than zero are useless */
@@ -93,7 +92,8 @@
   /* does this rastport have a layer? */
   if (NULL != L)
   {
-    /* more difficult part here as the layer might be partially 
+    /* 
+       more difficult part here as the layer might be partially 
        hidden.
        The coordinate (x,y) is relative to the layer.
     */
@@ -165,16 +165,19 @@
   } /* if */
   else
   { /* this is probably a screen */
+
+    /* if it is an old window... */
+    if (bm->Flags & BMF_AROS_OLDWINDOW)
+      return driver_WritePixel (rp, x, y, GfxBase);
+
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
   }
 
  /* get the pen for this rastport */
-  pen = GetAPen(rp);
 
   pen_Mask = 1;
   penno = 0;
-
 
   /* read the pixel from all bitplanes */
   for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
