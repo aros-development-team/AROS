@@ -737,15 +737,12 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	
 	if (tf->tf_CharKern)
 	{
-//	    render_x = current_x + ((WORD *)tf->tf_CharKern)[idx];
     	    current_x += ((WORD *)tf->tf_CharKern)[idx];
 	}
-//	else
-//	    render_x = current_x;	/* Monospace */
 	    
 	if (tf->tf_Style & FSF_COLORFONT)
 	{
-#warning Handle color fonts	
+    	    #warning Handle color fonts	
 	}
 	else
 	{
@@ -767,6 +764,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    current_x += ((WORD *)tf->tf_CharSpace)[idx];
 	else
 	    current_x += tf->tf_XSize; /* Add glyph width */
+	
+	current_x += rp->TxSpacing;
 	
 	string ++;
     } /* for (each character to render) */
