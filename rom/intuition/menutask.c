@@ -28,6 +28,19 @@
 
 /**************************************************************************************************/
 
+/* this #defines are taken from workbench/libs/gadtools/menus.c!! */
+
+#define TEXT_AMIGAKEY_SPACING  6
+
+#define ITEXT_EXTRA_LEFT   2
+#define ITEXT_EXTRA_RIGHT  2
+#define ITEXT_EXTRA_TOP    1
+#define ITEXT_EXTRA_BOTTOM 1
+
+static const char *subitemindicator = "»";
+
+/**************************************************************************************************/
+
 static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 			     struct IntuitionBase *IntuitionBase);
@@ -48,6 +61,8 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void KillMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void RenderMenu(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
+static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
+			    struct IntuitionBase *IntuitionBase);
 
 static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void KillSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
@@ -55,13 +70,17 @@ static void RenderSubMenu(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 
 static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *box,
 		       struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
+
+static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
+			 struct IntuitionBase *IntuitionBase);
 static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
 			    struct IntuitionBase *IntuitionBase);
 static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
 			   struct IntuitionBase *IntuitionBase);
 static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 				  struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
-
+static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD state,
+			struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
 	      		  struct IntuitionBase *IntuitionBase);
 static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
@@ -267,7 +286,7 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
 static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct Layer *lay;
-    struct Window *win;
+    struct Window *win = NULL;
     struct Menu *menu;
     struct MenuItem *item;
     
@@ -364,23 +383,28 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 	    
 	} /* if (win && (win == mhd->menubarwin)) */
 	else
-	{
-	    /* mouse outside any menu window */
-	    
-	    if ((mhd->activeitemnum != -1) && (!mhd->submenuwin))
-	    {
-	        HighlightItem(mhd->activeitem, ITEM_ITEM, mhd, IntuitionBase);
-		mhd->activeitemnum = -1;
-		mhd->activeitem = NULL;
-	    } else if (mhd->activesubitemnum != -1)
-	    {
-	        HighlightItem(mhd->activesubitem, ITEM_SUBITEM, mhd, IntuitionBase);
-		mhd->activesubitemnum = -1;
-		mhd->activesubitem = NULL;
-	    }
+	{	
+	    win = NULL;
 	}
-	
     } /* if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey))) */
+    
+    if (!win)
+    {
+	/* mouse outside any menu window */
+
+	if ((mhd->activeitemnum != -1) && (!mhd->submenuwin))
+	{
+	    HighlightItem(mhd->activeitem, ITEM_ITEM, mhd, IntuitionBase);
+	    mhd->activeitemnum = -1;
+	    mhd->activeitem = NULL;
+	} else if (mhd->activesubitemnum != -1)
+	{
+	    HighlightItem(mhd->activesubitem, ITEM_SUBITEM, mhd, IntuitionBase);
+	    mhd->activesubitemnum = -1;
+	    mhd->activesubitem = NULL;
+	}
+    }
+ 
 }
 
 /**************************************************************************************************/
@@ -498,10 +522,56 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 {
     if (menu->Flags & MENUENABLED)
     {
-        WORD x = menu->LeftEdge + mhd->scr->BarHBorder - mhd->scr->MenuHBorder;
+        struct RastPort *rp = mhd->menubarwin->RPort;
+
+#if MENUS_UNDERMOUSE
+	struct Menu *m = mhd->menu;
+	WORD x1 = mhd->scr->MenuHBorder;
+	WORD x2 = x1 + mhd->menubaritemwidth - 1;
+	WORD y1, y2, i;
 	
-	SetDrMd(mhd->menubarwin->RPort, COMPLEMENT);
-	RectFill(mhd->menubarwin->RPort, x, 0, x + menu->Width - 1,mhd->scr->BarHeight - 2);
+	for(i = 0; m != menu; m = m->NextMenu) i++;
+	
+	y1 = mhd->scr->MenuVBorder + i * mhd->menubaritemheight;
+	y2 = y1 + mhd->menubaritemheight - 1;
+	
+#else
+        WORD x1 = menu->LeftEdge + mhd->scr->BarHBorder - mhd->scr->MenuHBorder;
+	WORD y1 = 0;
+	WORD x2 = x1 + menu->Width - 1;
+	WORD y2 = mhd->scr->BarHeight - 1;
+#endif
+	
+#if MENUS_AMIGALOOK	
+	SetDrMd(rp, COMPLEMENT);
+	RectFill(rp, x1, y1, x2, y2);
+#else
+	menu->Flags ^= HIGHITEM;
+
+#if !MENUS_UNDERMOUSE
+	y1++;
+#endif
+	
+	SetDrMd(rp, JAM1);
+	SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLPEN : BACKGROUNDPEN]);
+	RectFill(rp, x1, y1, x2, y2);
+
+	RenderMenuTitle(menu, mhd, IntuitionBase); 
+	
+	if (menu->Flags & HIGHITEM)
+	{
+#if MENUS_UNDERMOUSE
+	    RenderFrame(rp, x1, y1, x2, y2, IDS_SELECTED, mhd, IntuitionBase);
+#else
+	    SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
+	    RectFill(rp, x1, y1, x1, y2);
+	    SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
+	    RectFill(rp, x2, y1, x2, y2);
+#endif
+	}
+	
+	
+#endif/* MENUS_AMIGALOOK */
     }
 }
 
@@ -515,6 +585,33 @@ static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd)
     mouse_x = mhd->scrmousex - mhd->menubarwin->LeftEdge;
     mouse_y = mhd->scrmousey - mhd->menubarwin->TopEdge;
 
+#if MENUS_UNDERMOUSE
+    menu = NULL;
+    
+    mouse_x -= mhd->scr->MenuHBorder;
+    mouse_y -= mhd->scr->MenuVBorder;
+    
+    if ((mouse_x >= 0) && (mouse_x < mhd->menubaritemwidth) && (mouse_y >= 0))
+    {
+        i = mouse_y / mhd->menubaritemheight;
+
+	if ((i >= 0) && (i < mhd->nummenubaritems))
+	{
+            WORD i2 = i;
+	
+	    menu = mhd->menu;
+	    while(i && menu)
+	    {
+		i--; menu = menu->NextMenu;
+	    }
+
+	    if (menu && (i == 0))
+	    {
+		*var = i2;
+	    }
+	}
+    }
+#else
     for(menu = mhd->menu, i = 0; menu; menu = menu->NextMenu, i++)
     {
 	if ((mouse_x >= menu->LeftEdge) &&
@@ -526,6 +623,7 @@ static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd)
 	    break;
 	}		
     }
+#endif
 
     return menu;
 }
@@ -555,7 +653,7 @@ static struct MenuItem *FindItem(WORD *var, struct MenuHandlerData *mhd)
 	}
     } /* if (mhd->menuwin) */
     
-    if ((item == NULL) && (mhd->activesubitemnum == -1)) *var = -1;
+    if ((item == NULL) && !mhd->submenuwin) *var = -1;
     
     return item;
 }
@@ -607,9 +705,44 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 	{WA_BackFill, 	(IPTR)LAYERS_NOBACKFILL	},
 	{TAG_DONE				}
     };
+    struct Menu *menu;
+
+#if MENUS_UNDERMOUSE
+    struct RastPort *temprp;
+    WORD w, maxw = 0;
     
+    if (!(temprp = CloneRastPort(&mhd->scr->RastPort))) return;
+    
+    mhd->nummenubaritems = 0;
+    for(menu = mhd->menu; menu; menu = menu->NextMenu)
+    {
+        w = TextLength(temprp, menu->MenuName, strlen(menu->MenuName));
+	if (w > maxw) maxw = w;
+        mhd->nummenubaritems++;
+    }
+    
+    mhd->menubaritemwidth  = maxw + TextLength(temprp, (char *)subitemindicator, 1) + 
+    			     TEXT_AMIGAKEY_SPACING +
+    			     ITEXT_EXTRA_LEFT +
+			     ITEXT_EXTRA_RIGHT;
+			     
+    mhd->menubaritemheight = temprp->TxHeight + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
+        
+    win_tags[2].ti_Data = mhd->menubaritemwidth + mhd->scr->MenuHBorder * 2;
+    win_tags[3].ti_Data = mhd->menubaritemheight * mhd->nummenubaritems + mhd->scr->MenuVBorder * 2;
+    win_tags[0].ti_Data = mhd->scr->MouseX - win_tags[2].ti_Data / 2;
+    win_tags[1].ti_Data = mhd->scr->MouseY;
+    
+    FreeRastPort(temprp);
+#endif   
+ 
     mhd->menubarwin = OpenWindowTagList(0, win_tags);
 
+    for(menu = mhd->menu; menu; menu = menu->NextMenu)
+    {
+        menu->Flags &= ~HIGHITEM;
+    }
+    
     RenderMenuBar(mhd, IntuitionBase);
 }
 
@@ -634,32 +767,91 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 	struct RastPort *rp = mhd->menubarwin->RPort;
 	
 	SetFont(rp, mhd->dri->dri_Font);
+
+#if MENUS_UNDERMOUSE
+
+	RenderMenuBG(mhd->menubarwin, mhd, IntuitionBase);
 	
+#else
+
+    #if MENUS_AMIGALOOK	
         SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
+    #else
+        SetABPenDrMd(rp, mhd->dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
+    #endif
 	RectFill(rp, 0, 0, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 2);
 	SetAPen(rp, mhd->dri->dri_Pens[BARTRIMPEN]);
 	RectFill(rp, 0, mhd->menubarwin->Height - 1, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 1);	
 
-	SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+    #if !MENUS_AMIGALOOK
+	SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
+	RectFill(rp, 0, 0, 0, mhd->menubarwin->Height - 2);
+	RectFill(rp, 1, 0, mhd->menubarwin->Width - 1, 0);
+	SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
+	RectFill(rp, mhd->menubarwin->Width - 1, 1, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 2);
+	
+    #endif
+
+#endif
+
 	for(; menu; menu = menu->NextMenu)
 	{
-	    WORD x   = mhd->scr->BarHBorder + menu->LeftEdge;
-	    WORD y   = mhd->scr->BarVBorder;
-	    WORD len = strlen(menu->MenuName);
-	    
-	    Move(rp, x, y + rp->TxBaseline);
-	    Text(rp, menu->MenuName, len);
-	    
-	    if (!(menu->Flags & MENUENABLED))
-	    {
-	        RenderDisabledPattern(rp, x,
-					  y,
-					  x + TextLength(rp, menu->MenuName, len) - 1, 
-					  y + rp->TxHeight - 1,
-				      mhd,
-				      IntuitionBase);
-	    }
+	    RenderMenuTitle(menu, mhd, IntuitionBase);
 	}
+    }
+}
+
+/**************************************************************************************************/
+
+static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
+			    struct IntuitionBase *IntuitionBase)
+{
+    struct RastPort *rp = mhd->menubarwin->RPort;
+    WORD len = strlen(menu->MenuName);
+
+#if MENUS_UNDERMOUSE
+    struct Menu *m;
+    WORD x, y, yoff;
+    
+    yoff = 0;
+    for(m = mhd->menu; m && (m != menu);m = m ->NextMenu)
+    {
+        yoff++;
+    }
+    
+    x = mhd->scr->MenuHBorder + ITEXT_EXTRA_LEFT;
+    y = mhd->scr->MenuVBorder + ITEXT_EXTRA_TOP + yoff * mhd->menubaritemheight;
+#else
+    WORD x   = mhd->scr->BarHBorder + menu->LeftEdge;
+    WORD y   = mhd->scr->BarVBorder;
+#endif
+
+    SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+
+    Move(rp, x, y + rp->TxBaseline);
+    Text(rp, menu->MenuName, len);
+
+#if MENUS_UNDERMOUSE
+    if (menu->FirstItem)
+    {
+        WORD silen = TextLength(rp, (char *)subitemindicator, 1);
+	WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - ITEXT_EXTRA_RIGHT - silen;
+	
+	Move(rp, x2, y + rp->TxBaseline);
+	Text(rp, (char *)subitemindicator, 1);
+    }
+#endif
+
+    if (!(menu->Flags & MENUENABLED))
+    {
+#if MENUS_UNDERMOUSE
+	WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - 1;
+#else
+        WORD x2 = x + TextLength(rp, menu->MenuName, len) - 1;
+#endif
+	WORD y2 = y + rp->TxHeight - 1;
+	
+	RenderDisabledPattern(rp, x, y, x2, y2, mhd, IntuitionBase);
     }
 }
 
@@ -669,11 +861,22 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 {
     struct MenuItem *item;
     
-    WORD xpos   = mhd->activemenu->LeftEdge + mhd->scr->BarHBorder + mhd->activemenu->JazzX;
-    WORD ypos   = mhd->scr->BarHeight + 1 + mhd->activemenu->JazzY;
     WORD width  = mhd->activemenu->BeatX - mhd->activemenu->JazzX + 1;
     WORD height = mhd->activemenu->BeatY - mhd->activemenu->JazzY + 1;
-    
+#if MENUS_UNDERMOUSE
+    WORD xpos   = mhd->menubarwin->LeftEdge + mhd->menubarwin->Width - 16;
+    WORD ypos   = mhd->menubarwin->TopEdge;
+#else
+    WORD xpos   = mhd->activemenu->LeftEdge + mhd->scr->BarHBorder + mhd->activemenu->JazzX;
+
+  #if MENUS_AMIGALOOK
+    WORD ypos   = mhd->scr->BarHeight + 1 + mhd->activemenu->JazzY;
+  #else
+    WORD ypos   = mhd->scr->BarHeight + 1;
+  #endif
+  
+#endif
+      
     struct TagItem win_tags[] =
     {
         {WA_Left,	xpos			},
@@ -686,7 +889,15 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 	{WA_BackFill, 	(IPTR)LAYERS_NOBACKFILL	},
 	{TAG_DONE				}
     };
-    
+#if MENUS_UNDERMOUSE    
+    win_tags[1].ti_Data += (mhd->menubaritemheight * mhd->activemenunum + mhd->scr->MenuVBorder) -
+    			   height / 2;
+    if (xpos + width > mhd->scr->Width)
+    {
+        win_tags[0].ti_Data = mhd->menubarwin->LeftEdge - width + 16;
+    }
+#endif
+
     if ((item = mhd->activemenu->FirstItem))
     {
         while(item)
@@ -734,29 +945,12 @@ static void RenderMenu(struct MenuHandlerData *mhd, struct IntuitionBase *Intuit
 
     if (mhd->menuwin)
     {
-        struct RastPort *rp = mhd->menuwin->RPort;
 	struct MenuItem *item;
 
-	WORD borderx = mhd->scr->MenuHBorder / 2;
-	WORD bordery = mhd->scr->MenuVBorder / 2;
-		
-	SetFont(rp, mhd->dri->dri_Font);
+	RenderMenuBG(mhd->menuwin, mhd, IntuitionBase);
+	
+	SetFont(mhd->menuwin->RPort, mhd->dri->dri_Font);
 
-	/* White background */
-	
-        SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
-	RectFill(rp, borderx,
-		     bordery,
-		     mhd->menuwin->Width - 1 - borderx,
-		     mhd->menuwin->Height - 1 - bordery);
-	
-	/* Black border frame */
-	SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
-	RectFill(rp, 0, 0, mhd->menuwin->Width - 1, bordery - 1);
-	RectFill(rp, mhd->menuwin->Width - borderx, bordery, mhd->menuwin->Width - 1, mhd->menuwin->Height - 1);
-	RectFill(rp, 0, mhd->menuwin->Height - bordery, mhd->menuwin->Width - 1 - borderx, mhd->menuwin->Height - 1);
-	RectFill(rp, 0, bordery, borderx - 1, mhd->menuwin->Height - 1 - bordery);
-					
 	for(item = mhd->activemenu->FirstItem; item; item = item->NextItem)
 	{
 	    RenderItem(item, ITEM_ITEM, (struct Rectangle *)(&mhd->activemenu->JazzX), mhd, IntuitionBase); 
@@ -834,29 +1028,12 @@ static void RenderSubMenu(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 
     if (mhd->submenuwin)
     {
-        struct RastPort *rp = mhd->submenuwin->RPort;
 	struct MenuItem *item;
 
-	WORD borderx = mhd->scr->MenuHBorder / 2;
-	WORD bordery = mhd->scr->MenuVBorder / 2;
-		
-	SetFont(rp, mhd->dri->dri_Font);
-
-	/* White background */
+	RenderMenuBG(mhd->submenuwin, mhd, IntuitionBase);
 	
-        SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
-	RectFill(rp, borderx,
-		     bordery,
-		     mhd->submenuwin->Width - 1 - borderx,
-		     mhd->submenuwin->Height - 1 - bordery);
+	SetFont(mhd->submenuwin->RPort, mhd->dri->dri_Font);
 	
-	/* Black border frame */
-	SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
-	RectFill(rp, 0, 0, mhd->submenuwin->Width - 1, bordery - 1);
-	RectFill(rp, mhd->submenuwin->Width - borderx, bordery, mhd->submenuwin->Width - 1, mhd->submenuwin->Height - 1);
-	RectFill(rp, 0, mhd->submenuwin->Height - bordery, mhd->submenuwin->Width - 1 - borderx, mhd->submenuwin->Height - 1);
-	RectFill(rp, 0, bordery, borderx - 1, mhd->submenuwin->Height - 1 - bordery);
-					
 	for(item = mhd->activeitem->SubItem; item; item = item->NextItem)
 	{
 	    RenderItem(item, ITEM_SUBITEM, (struct Rectangle *)(&mhd->submenubox), mhd, IntuitionBase); 
@@ -878,7 +1055,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
     		   (mhd->activemenu->Flags & MENUENABLED) &&
     		   ((itemtype == ITEM_ITEM) || (mhd->activeitem->Flags & ITEMENABLED))); 
 		   
-    SetDrMd(rp, JAM2);
+    SetDrMd(rp, JAM1);
     if (item->Flags & ITEMTEXT)
     {
         struct IntuiText *it = (struct IntuiText *)item->ItemFill;
@@ -906,6 +1083,46 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 
 /**************************************************************************************************/
 
+static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
+			 struct IntuitionBase *IntuitionBase)
+{
+    struct RastPort *rp = win->RPort;
+    
+#if MENUS_AMIGALOOK
+    WORD borderx = mhd->scr->MenuHBorder / 2;
+    WORD bordery = mhd->scr->MenuVBorder / 2;
+#else
+    WORD borderx = 1;
+    WORD bordery = 1;
+#endif
+
+    /* White background */
+
+#if MENUS_AMIGALOOK
+    SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
+#else
+    SetABPenDrMd(rp, mhd->dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
+#endif
+    RectFill(rp, borderx,
+		 bordery,
+		 win->Width - 1 - borderx,
+		 win->Height - 1 - bordery);
+
+    /* Black border frame */
+    
+#if MENUS_AMIGALOOK
+    SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+    RectFill(rp, 0, 0, win->Width - 1, bordery - 1);
+    RectFill(rp, 0, bordery, borderx - 1, win->Height - 1 - bordery);
+    RectFill(rp, win->Width - borderx, bordery, win->Width - 1, win->Height - 1);
+    RectFill(rp, 0, win->Height - bordery, win->Width - 1 - borderx, win->Height - 1);
+#else
+    RenderFrame(rp, 0, 0, win->Width - 1, win->Height - 1, IDS_NORMAL, mhd, IntuitionBase);
+#endif
+}
+
+/**************************************************************************************************/
+
 static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
 			    struct IntuitionBase *IntuitionBase)
 {
@@ -914,7 +1131,9 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
     struct Rectangle *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
     WORD offx = -box->MinX;
     WORD offy = -box->MinY;
-
+    WORD state = ((item->Flags & HIGHITEM) &&
+    		  ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
+    
     if (item->Flags & CHECKIT)
     {
 	WORD x1, y1, x2, y2;
@@ -928,9 +1147,13 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
 	
         if (item->Flags & CHECKED)
 	{
-	    DrawImageState(rp, mhd->checkmark, x1, y1, IDS_NORMAL, mhd->dri);
+	    DrawImageState(rp, mhd->checkmark, x1, y1, state, mhd->dri);
 	} else {
+#if MENUS_AMIGALOOK
 	    SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
+#else
+	    SetAPen(rp, mhd->dri->dri_Pens[(state == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+#endif
 	    RectFill(rp, x1, y1, x2, y2);
 	}
     }
@@ -945,10 +1168,11 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
     struct Window *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort *rp = win->RPort;
     struct Rectangle *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
-    WORD commkeywidth = ((itemtype == ITEM_ITEM) ? mhd->maxcommkeywidth_menu : mhd->maxcommkeywidth_submenu);
-    
+    WORD commkeywidth = ((itemtype == ITEM_ITEM) ? mhd->maxcommkeywidth_menu : mhd->maxcommkeywidth_submenu);    
     WORD offx = -box->MinX;
     WORD offy = -box->MinY;
+    WORD state = ((item->Flags & HIGHITEM) &&
+    		  ((item->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
 
     if (item->Flags & COMMSEQ)
     {
@@ -978,7 +1202,7 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
     
         SetDrMd(rp, JAM1);
 	
-	DrawImageState(rp, mhd->amigakey, x1, y1, IDS_NORMAL, mhd->dri);
+	DrawImageState(rp, mhd->amigakey, x1, y1, state, mhd->dri);
 	
 	x1 += mhd->amigakey->Width + AMIGAKEY_KEY_SPACING;
 	
@@ -1004,7 +1228,12 @@ static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2
     static UWORD pattern [] = {0x8888, 0x2222};
     
     SetDrMd(rp, JAM1);
+#if MENUS_AMIGALOOK
     SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
+#else
+    SetAPen(rp, mhd->dri->dri_Pens[BACKGROUNDPEN]);
+#endif
+
     SetAfPt(rp, pattern, 1);
     
     RectFill(rp, x1, y1, x2, y2);
@@ -1012,6 +1241,20 @@ static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2
     SetAfPt(rp, NULL, 0);
 }
 
+/**************************************************************************************************/
+
+static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD state,
+			struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
+{
+    SetAPen(rp, mhd->dri->dri_Pens[(state == IDS_SELECTED) ? SHADOWPEN : SHINEPEN]);
+    
+    RectFill(rp, x1, y1, x2, y1);
+    RectFill(rp, x1, y1 + 1, x1, y2);
+    
+    SetAPen(rp, mhd->dri->dri_Pens[(state == IDS_SELECTED) ? SHINEPEN : SHADOWPEN]);
+    RectFill(rp, x2, y1 + 1, x2, y2);
+    RectFill(rp, x1 + 1, y2, x2 - 1, y2);
+}
 /**************************************************************************************************/
 
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
@@ -1032,8 +1275,10 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
     
     if (enabled)
     {
+	item->Flags ^= HIGHITEM;
+
 	fill = item->ItemFill;
-	if (!(item->Flags & HIGHITEM) && (item->SelectFill)) fill = item->SelectFill;
+	if ((item->Flags & HIGHITEM) && (item->SelectFill)) fill = item->SelectFill;
 
 	x1 = offx + item->LeftEdge;
 	y1 = offy + item->TopEdge;
@@ -1055,8 +1300,25 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 		break;
 
 	    case HIGHCOMP:
+#if MENUS_AMIGALOOK
 		SetDrMd(rp, COMPLEMENT);
 		RectFill(rp, x1, y1, x2, y2);
+#else
+		{
+		    WORD state = (item->Flags & HIGHITEM) ? IDS_SELECTED : IDS_NORMAL;
+		    
+		    SetDrMd(rp, JAM1);
+		    SetAPen(rp, mhd->dri->dri_Pens[(state == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+		    RectFill(rp, x1, y1, x2, y2);
+		    
+		    RenderItem(item, itemtype, box, mhd, IntuitionBase);
+
+		    if (state == IDS_SELECTED)
+		    {
+		        RenderFrame(rp, x1, y1, x2, y2, state, mhd, IntuitionBase);
+		    }
+		}
+#endif
 		break;
 
 	    case HIGHBOX:
@@ -1081,7 +1343,6 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
     
     } /* if (enabled) */
     
-    item->Flags ^= HIGHITEM;
 }
 
 
