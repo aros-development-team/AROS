@@ -3,7 +3,6 @@
 */
 
 #define DEBUG 1
-#define DEBUG 1
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -118,9 +117,12 @@ UBYTE i;
 			return DOSFALSE;
 		doslist->dol_Unit=(struct Unit *)&volume->ah;
 		doslist->dol_Device=volume->device;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days=volume->devicelist.dl_VolumeDate.ds_Days;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute=volume->devicelist.dl_VolumeDate.ds_Minute;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick=volume->devicelist.dl_VolumeDate.ds_Tick;
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days=
+			volume->devicelist.dl_VolumeDate.ds_Days;
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute=
+			volume->devicelist.dl_VolumeDate.ds_Minute;
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick=
+			volume->devicelist.dl_VolumeDate.ds_Tick;
 		AddDosEntry(doslist);
 	}
 	return DOSTRUE;
@@ -187,8 +189,13 @@ LONG retval;
 #warning TODO disk in drive check
 	if ((blockbuffer=getBlock(afsbase, volume,0)))
 	{
-		volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 		volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		if (volume->dostype!=0x444F5300)
+		{
+			blockbuffer=getBlock(afsbase, volume, 1);
+			volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		}
+		volume->flags=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 		if (volume->dostype==0x444F5300)
 		{
 			if ((blockbuffer=getBlock(afsbase, volume,volume->rootblock)))
@@ -246,6 +253,65 @@ LONG retval;
 	else
 		retval=ERROR_UNKNOWN;
 	return retval;
+}
+
+void nsdCheck(struct afsbase *afsbase, struct Volume *volume) {
+struct NSDeviceQueryResult nsdq;
+UWORD *cmdcheck;
+
+	if (
+			(
+				(volume->startblock+(volume->rootblock*2))*  /* last block */
+				(volume->SizeBlock*4/512)	/* 1 portion (block) equals 512 (bytes) */
+			)>8388608)
+	{
+		nsdq.SizeAvailable=0;
+		nsdq.DevQueryFormat=0;
+		volume->iorequest->iotd_Req.io_Command=NSCMD_DEVICEQUERY;
+		volume->iorequest->iotd_Req.io_Data=&nsdq;
+		volume->iorequest->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
+		if (DoIO(&volume->iorequest->iotd_Req)==IOERR_NOCMD)
+		{
+			D(bug("afs.handler: initVolume-NSD: device doesn't understand NSD-Query\n"));
+		}
+		else
+		{
+			if (
+					(volume->iorequest->iotd_Req.io_Actual>sizeof(struct NSDeviceQueryResult)) ||
+					(volume->iorequest->iotd_Req.io_Actual==0) ||
+					(volume->iorequest->iotd_Req.io_Actual!=nsdq.SizeAvailable)
+				)
+			{
+				D(bug("afs.handler: initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
+			}
+			else
+			{
+				D(bug("afs.handler: initVolume-NSD: using NSD commands\n"));
+				if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
+					D(bug("afs.handler: initVolume-NSD: WARNING no trackdisk type\n"));
+				for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
+				{
+					if (*cmdcheck == NSCMD_TD_READ64)
+						volume->cmdread = NSCMD_TD_READ64;
+					if (*cmdcheck == NSCMD_TD_WRITE64);
+						volume->cmdwrite = NSCMD_TD_WRITE64;
+					if (*cmdcheck == NSCMD_TD_SEEK64)
+						volume->cmdseek = NSCMD_TD_SEEK64;
+					if (*cmdcheck == NSCMD_TD_FORMAT64)
+						volume->cmdformat = NSCMD_TD_FORMAT64;
+				}
+				if (
+						(volume->cmdread!=NSCMD_TD_READ64) ||
+						(volume->cmdwrite!=NSCMD_TD_WRITE64)
+					)
+					D(bug("afs.handler: initVolume-NSD: WARNING no READ64/WRITE64\n")); 
+			}
+		}
+	}
+	else
+	{
+			D(bug("afs.handler: initVolume-NSD: no need for NSD\n"));
+	}
 }
 
 /*******************************************
@@ -323,58 +389,7 @@ struct Volume *volume;
 						volume->cmdwrite=CMD_WRITE;
 						volume->cmdseek=TD_SEEK;
 						volume->cmdformat=TD_FORMAT;
-						if (
-								(
-									(volume->startblock+(volume->rootblock*2))*  /* last block */
-									(volume->SizeBlock*4/512)	/* 1 portion (block) equals 512 (bytes) */
-								)>8388608)
-						{
-						struct NSDeviceQueryResult nsdq;
-						UWORD *cmdcheck;
-							nsdq.SizeAvailable=0;
-							nsdq.DevQueryFormat=0;
-							volume->iorequest->iotd_Req.io_Command=NSCMD_DEVICEQUERY;
-							volume->iorequest->iotd_Req.io_Data=&nsdq;
-							volume->iorequest->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
-							if (DoIO(&volume->iorequest->iotd_Req)==IOERR_NOCMD)
-							{
-								D(bug("afs.handler: initVolume-NSD: device doesn't understand NSD-Query\n"));
-							}
-							if (
-									(volume->iorequest->iotd_Req.io_Actual>sizeof(struct NSDeviceQueryResult)) ||
-									(volume->iorequest->iotd_Req.io_Actual==0) ||
-									(volume->iorequest->iotd_Req.io_Actual!=nsdq.SizeAvailable)
-								)
-							{
-								D(bug("afs.handler: initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
-							}
-							else
-							{
-								D(bug("afs.handler: initVolume-NSD: using NSD commands\n"));
-								if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-									D(bug("afs.handler: initVolume-NSD: WARNING no trackdisk type\n"));
-								for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
-								{
-									if (*cmdcheck == NSCMD_TD_READ64)
-										volume->cmdread = NSCMD_TD_READ64;
-									if (*cmdcheck == NSCMD_TD_WRITE64);
-										volume->cmdwrite = NSCMD_TD_WRITE64;
-									if (*cmdcheck == NSCMD_TD_SEEK64)
-										volume->cmdseek = NSCMD_TD_SEEK64;
-									if (*cmdcheck == NSCMD_TD_FORMAT64)
-										volume->cmdformat = NSCMD_TD_FORMAT64;
-								}
-								if (
-										(volume->cmdread!=NSCMD_TD_READ64) ||
-										(volume->cmdwrite!=NSCMD_TD_WRITE64)
-									)
-									D(bug("afs.handler: initVolume-NSD: WARNING no READ64/WRITE64\n")); 
-							}
-						}
-						else
-						{
-								D(bug("afs.handler: initVolume-NSD: no need for NSD\n"));
-						}
+						nsdCheck(afsbase, volume);
 						*error=newMedium(afsbase, volume);
 						if ((!*error) || (*error=ERROR_NOT_A_DOS_DISK))
 						{
