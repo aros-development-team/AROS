@@ -130,7 +130,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
 		/* Create a GC for it */
 		gc_tags[0].ti_Data = (IPTR)BM_OBJ(rp->BitMap);
 		
-		dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, vHIDD_Gfx_GCType_Quick, gc_tags);
+		dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
 		if (dd->dd_GC)
 		{
 	
@@ -345,13 +345,22 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
     		{ aHidd_GC_Foreground,	apen & PEN_MASK},
     		{ aHidd_GC_Background,	bpen & PEN_MASK},
 		{ aHidd_GC_ColorExpansionMode, 0UL},
+		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
 		{ TAG_DONE,	0}
     	};
 
-	if (drmd & JAM1)
-    	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Transparent;
 	if (drmd & JAM2)
-    	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Opaque;
+	{
+	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Opaque;
+	}	
+	else if (drmd & COMPLEMENT)
+	{
+	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_XOR;
+	}
+	else if ((drmd & (~INVERSVID)) == JAM1)
+	{
+	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Transparent;
+	}
 	
     	SetAttrs(dd->dd_GC, gc_tags);
 	
@@ -412,16 +421,28 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     struct TagItem drmd_tags[] =
     {
 	{ aHidd_GC_ColorExpansionMode, 0UL },
+	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy },
 	{ TAG_DONE, 0UL }
     };
     
     if (!CorrectDriverData (rp, GfxBase))
     	return;
 	
-    if (mode & JAM1)
-    	drmd_tags[0].ti_Data = vHidd_GC_ColExp_Transparent;
+	
     if (mode & JAM2)
+    {
     	drmd_tags[0].ti_Data = vHidd_GC_ColExp_Opaque;
+    }	
+    else if (mode & COMPLEMENT)
+    {
+	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_XOR;
+    }
+    else if ((mode & (~INVERSVID)) == JAM1)
+    {
+    	drmd_tags[0].ti_Data = vHidd_GC_ColExp_Transparent;
+    }
+
+#warning Handle INVERSVID by swapping apen and bpen ?
 	
     SetAttrs( GetDriverData(rp)->dd_GC, drmd_tags);
 	
@@ -453,6 +474,7 @@ static BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectang
     return FALSE;
 } /* andrectrect() */
 
+
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
@@ -460,11 +482,17 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     
+    
     struct TagItem bm_tags[] = 
     {
     	{aHidd_BitMap_GC,	0UL},
 	{TAG_DONE,	0UL}
     };
+    
+    /* !!! NOTE: !!!
+       The case where RectFill should fill using pattern is taken care of
+       in graphics/RectFill() by calling BltPattern().
+    */
     
     EnterFunc(bug("driver_RectFill(%d, %d, %d, %d)\n", x1, y1, x2, y2));
     if (!CorrectDriverData(rp, GfxBase))
@@ -482,8 +510,8 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	
 	clipagainstbitmap(bm, &x1, &y1, &x2, &y2, GfxBase);
 	SetAttrs(BM_OBJ(bm), bm_tags);	/* Set GC */
-	HIDD_BM_FillRect(BM_OBJ(bm) , x1, y1, x2, y2 );
 	
+	HIDD_BM_FillRect(BM_OBJ(bm) , x1, y1, x2, y2 );
 	
     }
     else
@@ -510,7 +538,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    {
 	        if (NULL == CR->lobs)
 		{
-		    D(bug("non-obscure cliprect, intersect= (%d,%d,%d,%d)\n"
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
 		    	, intersect.MinX
 			, intersect.MinY
 			, intersect.MaxX
@@ -1400,7 +1428,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		{
 		    struct TagItem bm_tags[] =
 		    {
-			{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+			{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
 			{ aHidd_BitMap_Foreground, color },
 			{ TAG_DONE, 0}
 		    };
@@ -1447,7 +1475,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	
 	struct TagItem tags[] = {
     	    	{ aHidd_BitMap_Background, color },
-		{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy },
+		{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy },
 	    	{ TAG_DONE, 0UL }
 	};
 	
@@ -2448,7 +2476,7 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
  		    struct TagItem tags[] =
 		    {
 		    	{aHidd_BitMap_Foreground,	0UL},
-			{aHidd_BitMap_DrawMode,	vHIDD_GC_DrawMode_Copy},
+			{aHidd_BitMap_DrawMode,	vHidd_GC_DrawMode_Copy},
 			{TAG_DONE, 0UL}
 		    };
 
@@ -2536,7 +2564,7 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
  		    struct TagItem tags[] =
 		    {
 		    	{aHidd_BitMap_Foreground,	0UL},
-			{aHidd_BitMap_DrawMode,	vHIDD_GC_DrawMode_Copy},
+			{aHidd_BitMap_DrawMode,	vHidd_GC_DrawMode_Copy},
 			{TAG_DONE, 0UL}
 		    };
 
@@ -2737,7 +2765,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
     {
     	struct TagItem bm_tags[] =
 	{
-	    { aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+	    { aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
 	    { TAG_DONE, 0}
 	};
         /* No layer, probably a screen */
@@ -2788,7 +2816,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 		{
 		    struct TagItem bm_tags[] =
 		    {
-			{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+			{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
 			{ TAG_DONE, 0}
 		    };
 		    
@@ -3678,7 +3706,7 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	     struct TagItem bm_tags[] =
 	     {
 	     	{aHidd_BitMap_Foreground, 0UL},
-		{aHidd_BitMap_DrawMode,	  vHIDD_GC_DrawMode_Copy},
+		{aHidd_BitMap_DrawMode,	  vHidd_GC_DrawMode_Copy},
 		{TAG_DONE, 0UL}
 	     };
 
@@ -3779,7 +3807,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
 		CR->lobs));
 		
-	    /* Does this cliprect intersect with area to rectfill ? */
+	    /* Does this cliprect intersect with area to erase ? */
 	    if (andrectrect(&CR->bounds, &toerase, &intersect))
 	    {
 	    
