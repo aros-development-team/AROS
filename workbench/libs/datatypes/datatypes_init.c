@@ -20,6 +20,8 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     int i;
 
     for (i = 0; i < SEM_MAX; i++)
@@ -59,11 +61,15 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("datatypes.library correctly initialized\n"));
 
     return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("Inside open of datatypes.library\n"));
 
     /* Try opening the catalog again. */
@@ -84,11 +90,15 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
     D(bug("Return from open of datatypes.library\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
 #if 0
     /* stegerg: if later someone else re-opens datatypes.library, then
                 the datatypes.class would have to be re-added with
@@ -100,6 +110,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 #endif
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

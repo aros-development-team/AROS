@@ -38,6 +38,8 @@ extern void Pulse();
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /* This function is single-threaded by exec by calling Forbid. */
 
     WORD   i;			/* Loop variable */
@@ -78,11 +80,15 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     kprintf("Realtime pulse timer created\n");
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -95,6 +101,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     Signal(RealTimeBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 

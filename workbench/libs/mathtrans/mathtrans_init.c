@@ -20,17 +20,25 @@ struct MathBase * MathBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     MathBase = (struct MathBase *)OpenLibrary ("mathffp.library", 0);
     if (!MathBase)
 	return FALSE;
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     if (MathBase)
 	CloseLibrary ((struct Library *)MathBase);
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

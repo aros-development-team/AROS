@@ -20,20 +20,28 @@ struct MathIeeeSingBasBase * MathIeeeSingBasBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     MathIeeeSingBasBase = (struct MathIeeeSingBasBase *) OpenLibrary ("mathieeesingbas.library", 39);
     if (!MathIeeeSingBasBase)
 	return FALSE;
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     if (MathIeeeSingBasBase)
 	CloseLibrary ((struct Library *)MathIeeeSingBasBase);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

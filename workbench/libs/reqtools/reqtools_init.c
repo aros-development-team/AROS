@@ -50,17 +50,23 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, RTBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     ReqToolsBase = (struct ReqToolsBase *)RTBase;
         
     D(bug("reqtools.library: Inside libinit func\n"));
     
     return (struct ReqToolsBase *)RTFuncs_Init(RTBase, NULL) != NULL;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, RTBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("reqtools.library: Inside libopen func\n"));
  
     /*
@@ -72,12 +78,16 @@ AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, RTBase)
     D(bug("reqtools.library: Inside libopen func\n"));
     
     return RTFuncs_Open(RTBase, 0) != NULL;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(CloseLib, LIBBASETYPE, RTBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -89,12 +99,16 @@ AROS_SET_LIBFUNC(CloseLib, LIBBASETYPE, RTBase)
     RTFuncs_Close(RTBase);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, RTBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -107,6 +121,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, RTBase)
     RTFuncs_Expunge(RTBase);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/

@@ -18,6 +18,8 @@
 
 AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
    LIBBASE->rexxmsgid = "RexxMsgId";
    InitSemaphore(&LIBBASE->semaphore);
    NewList(&LIBBASE->library.rl_LibList);
@@ -26,6 +28,8 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
    LIBBASE->library.rl_NumClip = 0;
    
    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(InitData, 0);
