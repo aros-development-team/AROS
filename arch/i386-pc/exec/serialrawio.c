@@ -48,9 +48,9 @@
 
 #define SER_MAXBAUD 115200L
 
-int ser_UARTType (int);
-void ser_FIFOLevel(int, BYTE);
-int ser_Init(int, LONG, BYTE);
+int ser_UARTType (short);
+void ser_FIFOLevel(short, BYTE);
+int ser_Init(short, LONG, BYTE);
 
 /*****i***********************************************************************
 
@@ -95,7 +95,7 @@ int ser_Init(int, LONG, BYTE);
    AROS_LIBFUNC_EXIT
 } /* RawIOInit */
 
-int ser_UARTType (int port) {
+int ser_UARTType (short port) {
 
 	outb_p(0xAA, port+SER_LINE_CONTROL); /* set Divisor-Latch */
 	if (inb_p(port+SER_LINE_CONTROL) != 0xAA)
@@ -147,7 +147,7 @@ int ser_UARTType (int port) {
 	return 5;	//NS16C552;
 }
 
-void ser_FIFOLevel(int port, BYTE level) {
+void ser_FIFOLevel(short port, BYTE level) {
 
 	if (level)
 		outb_p(level | SER_FIFO_ENABLE, port+SER_FIFO);
@@ -155,14 +155,14 @@ void ser_FIFOLevel(int port, BYTE level) {
 		outb_p(SER_FIFO_RESETRECEIVE | SER_FIFO_RESETTRANSMIT, port+SER_FIFO);
 }
 
-int ser_Init(int port, LONG baudRate, BYTE params) {
+int ser_Init(short port, LONG baudRate, BYTE params) {
 WORD uDivisor;
 
 	if (ser_UARTType(port)!=1)
 	{
-		uDivisor=(WORD)SER_MAXBAUD / baudRate;
+		uDivisor=(WORD)(SER_MAXBAUD / baudRate);
 		outb_p(inb_p(port+SER_LINE_CONTROL) | SER_LCR_SETDIVISOR, port+SER_LINE_CONTROL);
-		outb_p(0xFF & uDivisor, port+SER_DIVISOR_LSB);
+		outb_p(uDivisor & 0xFF, port+SER_DIVISOR_LSB);
 		outb_p(uDivisor>>8, port+SER_DIVISOR_MSB);
 		outb_p(inb_p(port+SER_LINE_CONTROL) & ~SER_LCR_SETDIVISOR, port+SER_LINE_CONTROL);
 
@@ -173,8 +173,8 @@ WORD uDivisor;
 	return 0;
 }
 
-int ser_WriteByte(int, BYTE , ULONG , BYTE , BYTE );
-int ser_IsWritingPossible(int);
+int ser_WriteByte(short, UBYTE , ULONG , BYTE , BYTE );
+int ser_IsWritingPossible(short);
 
 
 	AROS_LH1(void, SerialRawPutChar,
@@ -220,7 +220,7 @@ int ser_IsWritingPossible(int);
 	{
 //		if (chr==0x0A)
 //			ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
-		ser_WriteByte(0x2F8, chr, 1, 0, 0);
+		ser_WriteByte(0x2F8, chr, 0, 0, 0);
 	}
 
 	Enable();
@@ -228,12 +228,12 @@ int ser_IsWritingPossible(int);
 	AROS_LIBFUNC_EXIT
 } /* RawPutChar */
 
-int ser_IsWritingPossible(int port) {
+int ser_IsWritingPossible(short port) {
 
 	return inb_p(port+SER_LINE_STATUS) & SER_LSR_TSREMPTY;
 }
 
-int ser_WriteByte(int port, BYTE data, ULONG timeout, BYTE sigmask, BYTE sigvals) {
+int ser_WriteByte(short port, UBYTE data, ULONG timeout, BYTE sigmask, BYTE sigvals) {
 
 	if (timeout)
 	{
