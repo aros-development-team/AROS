@@ -5,6 +5,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <exec/types.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -252,7 +254,7 @@ AROS_UFH3S(IPTR, dispatcher,
 
 struct MUI_CustomClass *CL_DropText;
 
-#define DropTextObject (Object*)NewObject(CL_DropText->mcc_Class, NULL
+#define DropTextObject BOOPSIOBJMACRO_START(CL_DropText->mcc_Class)
 
 /* Main prog */
 
@@ -549,7 +551,9 @@ Child, BalanceObject, End,
 	    MUIA_Window_Title, "Second window",
 
 	    WindowContents, VGroup,
-		Child, DropTextObject, MUIA_Text_Contents, "Drop here", MUIA_Dropable, TRUE, End,
+		Child, DropTextObject,
+                    MUIA_Text_Contents, "Drop here", 
+                    MUIA_Dropable, TRUE,  End,
 		End,
 	    End,
 	End;
