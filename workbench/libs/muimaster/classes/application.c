@@ -1039,7 +1039,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
     while (application_do_pushed_method(data))
 	/* nothing */ ;
 
-    *msg->signal = signalmask | SIGBREAKF_CTRL_C;
+    *msg->signal = signalmask;
 
     /* set return code */
     if ((rid = (struct RIDNode *)RemHead((struct List *)&data->app_ReturnIDQueue)))
