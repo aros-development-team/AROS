@@ -805,6 +805,9 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	cstate = (Object *)ChildList->mlh_Head;
 	while ((child = NextObject(&cstate)))
 	{
+	    if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
+		continue;
+
     	    if (muiAreaData(obj)->mad_Flags & MADF_CANDRAW)
 	    {
 	    	rect.MinX = _left(child);
@@ -942,7 +945,6 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     /* Add clipping region if we have one */
     if (region) clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
-
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
