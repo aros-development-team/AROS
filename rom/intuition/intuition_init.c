@@ -39,7 +39,13 @@ extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 
-static ULONG rootDispatcher (Class *, Object *, Msg);
+__RA3(static ULONG, rootDispatcher,
+    Class *, cl, A0,
+    Object *, obj, A2,
+    Msg, msg, A1);
+
+/* There has to be a better way... */
+struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase);
 
 int Intuition_entry(void)
 {
@@ -127,6 +133,9 @@ __AROS_LH2(struct IntuitionBase *, init,
     /* The rootclass is created statically */
     rootclass.cl_UserData = (IPTR) IntuitionBase;
     AddClass (&rootclass);
+
+    /* Add all other classes */
+    InitImageClass (IntuitionBase);
 
     /* TODO Create input.device. This is a bad hack. */
     inputTask[0].ti_Data = (IPTR)IntuitionBase;
@@ -238,6 +247,8 @@ __AROS_LH0(BPTR, expunge,
     intui_expunge (IntuitionBase);
 
 #ifdef DISK_BASED /* Don't remove a ROM library */
+    FreeImageClass ();
+
     /* Get rid of the library. Remove it from the list. */
     Remove(&IntuitionBase->LibNode.lib_Node);
 
@@ -264,12 +275,12 @@ __AROS_LH0I(int, null,
 /******************************************************************************
 
     NAME */
-	static IPTR rootDispatcher (
+	__RA3(static IPTR, rootDispatcher,
 
 /*  SYNOPSIS */
-	Class  * cl,
-	Object * o,
-	Msg	 msg)
+	Class  *, cl,  A0,
+	Object *, o,   A2,
+	Msg,	  msg, A1)
 
 /*  FUNCTION
 	internal !
