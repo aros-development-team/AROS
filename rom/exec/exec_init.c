@@ -80,7 +80,7 @@ struct Library * PrepareAROSSupportBase (void)
 
 #warning FIXME Add code to read in the debug options
 	
-    return &AROSSupportBase;
+    return (struct Library *)&AROSSupportBase;
 }
 
 void AROSSupportBase_SetStdOut (void * stdout)
