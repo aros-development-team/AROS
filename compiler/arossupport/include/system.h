@@ -60,9 +60,11 @@
 #endif
 
 #if defined(__STDC__) || defined(__cplusplus)
-#   define	    __const__	    const
-#   define	    __inline__	    inline
-#   define	    __volatile__    volatile
+#   if !defined(__GNUC__)
+#       define	    __const__	    const
+#       define	    __inline__	    inline
+#       define	    __volatile__    volatile
+#   endif
 
 /*
  * C99 defines a new keyword restrict that can help do optimisation where
