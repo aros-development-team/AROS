@@ -120,7 +120,7 @@ void InitMenus(struct NewMenu *newm)
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
 	    ULONG  id = (ULONG)actnm->nm_Label;
-	    STRPTR str = MSG(id);
+	    CONST_STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
 	    {
