@@ -1,0 +1,28 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+MODNAME := coolimages
+MODTYPE := library
+
+FILES := 
+    	    
+FUNCS := cool_obtainimagea
+
+USE_AMIGALIB        := yes
+USE_CLIB_STATIC     := yes
+USE_COOLIMAGESLIB   := yes
+
+USER_INCLUDES := -I.
+
+#MM- workbench-libs-coolimages : setup includes linklibs \
+#MM	workbench-libs-coolimages-module
+
+%make_module_setup mmake=workbench-libs-coolimages
+
+%make_module_cpak
+%make_module mmake=workbench-libs-coolimages
+%make_lib_includes
+
+%common
+%include_deps
