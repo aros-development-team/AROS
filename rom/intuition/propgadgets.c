@@ -278,8 +278,10 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
     pi->CWidth	   = knobbox->Width;
     pi->CHeight    = knobbox->Height;
 
-    if (knobbox->Width < KNOBHMIN || knobbox->Height < KNOBVMIN)
-	return FALSE;
+    /*
+      if (knobbox->Width < KNOBHMIN || knobbox->Height < KNOBVMIN)
+      return FALSE;
+      */
 
     if (pi->Flags & FREEHORIZ)
     {
