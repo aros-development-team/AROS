@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1800,13 +1800,216 @@ void *params;
 		}
 		break;
 
+	    case _GETASSIGN	:
+		if (current->next != NULL)
+		{
+		    ULONG lockBits = LDF_ASSIGNS;
+		    struct DosList *dl, *tdl;
+		    char *assign, *ret = NULL;
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires an assign name as argument!\n", current->parent->cmd->arg);
+		    }
+		    assign = string;
+
+		    if (current->next != NULL)
+		    {
+			current = current->next;
+			ExecuteCommand();
+
+			if (current->arg != NULL)
+			{
+			    GetString(current->arg);
+			    if (string[0]=='v' || string[0]=='V')
+			    {
+				lockBits = LDF_VOLUMES;
+			    }
+			    else if (string[0]=='a' || string[0]=='A')
+			    {
+				lockBits = LDF_ASSIGNS;
+			    }
+			    else if (string[0]=='d' || string[0]=='D')
+			    {
+				lockBits = LDF_DEVICES;
+			    }
+			    else
+			    {
+				error = SCRIPTERROR;
+				traperr("Invalid option <%s> to getassign!\n", string);
+			    }
+			}
+			FreeVec(string);
+		    }
+		    /* get the assign */
+
+		    dl = LockDosList(LDF_READ | LDF_VOLUMES | LDF_ASSIGNS | LDF_DEVICES);
+		    tdl = FindDosEntry(dl, assign, lockBits);
+		    if (tdl != NULL)
+		    {
+			switch (lockBits)
+			{
+			    case LDF_VOLUMES:
+DMSG("VOLUME(%s:)\n",(char *)tdl->dol_DevName);
+				ret = AllocVec(strlen((char *)tdl->dol_DevName) + 2, MEMF_ANY);
+				outofmem(ret);
+				sprintf(ret,"%s:",(char *)tdl->dol_DevName);
+				break;
+
+			    case LDF_ASSIGNS:
+DMSG("ASSIGN(%s:):\n",(char *)tdl->dol_DevName);
+				switch (tdl->dol_Type)
+				{
+				    case DLT_LATE:
+				    case DLT_NONBINDING:
+DMSG("   %s\n",tdl->dol_misc.dol_assign.dol_AssignName);
+					ret = StrDup(tdl->dol_misc.dol_assign.dol_AssignName);
+					break;
+
+				    default:
+					{
+					    struct AssignList *nextAssign; /* For multiassigns */
+
+					    ret = DynNameFromLock(tdl->dol_Lock);
+DMSG("   %s\n", ret);
+
+					    nextAssign = tdl->dol_misc.dol_assign.dol_List;
+					    while (nextAssign != NULL)
+					    {
+						char *dirName;
+						dirName = DynNameFromLock(nextAssign->al_Lock);
+						if (dirName != NULL)
+						{
+DMSG("  +%s\n", dirName);
+						    if (ret)
+						    {
+							char *sum;
+							sum = AllocVec(strlen(ret) + strlen(dirName) + 2, MEMF_ANY);
+							sprintf(sum, "%s %s", ret, dirName);
+							FreeVec(ret);
+							ret = sum;
+						    }
+						    else
+						    {
+							ret = StrDup(dirName);
+						    }
+						    FreeVec(dirName);
+						}
+						nextAssign = nextAssign->al_Next;
+					    }
+					}
+					break;
+				}
+				break;
+
+			    case LDF_DEVICES:
+				{
+				    BPTR lockdev;
+				    char *lname;
+
+DMSG("DEV(%s:):\n",(char *)tdl->dol_DevName);
+				    lname = AllocVec(strlen(tdl->dol_DevName) + 2, MEMF_ANY);
+				    sprintf(lname,"%s:",tdl->dol_DevName);
+				    lockdev = Lock(lname, SHARED_LOCK);
+				    FreeVec(lname);
+				    if (lockdev)
+				    {
+				        ret = DynNameFromLock(lockdev);
+DMSG("   %s\n",ret);
+				        UnLock(lockdev);
+				    }
+				    else
+				    {
+					ret = AllocVec(strlen((char *)tdl->dol_DevName) + 2, MEMF_ANY);
+					outofmem(ret);
+					sprintf(ret,"%s:",(char *)tdl->dol_DevName);
+				    }
+				}
+				break;
+			}
+		    }
+		    UnLockDosList(lockBits);
+		    if (ret)
+		    {
+			current->parent->arg = addquotes(ret);
+			FreeVec(ret);
+		    }
+		    else
+		    {
+			current->parent->arg = addquotes("");
+		    }
+
+		    FreeVec(assign);
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires at least one argument!\n", current->arg);
+		}
+		break;
+
+	    case _GETDEVICE:
+		if (current->next != NULL)
+		{
+		    char *ret = NULL;
+		    BPTR lockdev;
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = SCRIPTERROR;
+			traperr("<%s> requires a device name as argument!\n", current->parent->cmd->arg);
+		    }
+
+		    lockdev = Lock(string, SHARED_LOCK);
+		    FreeVec(string);
+		    if (lockdev)
+		    {
+		        char *send;
+		        ret = DynNameFromLock(lockdev);
+			send = ret;
+			while (*send && *send != ':') send++;
+			if(*send) send[1] = 0;
+			
+		        UnLock(lockdev);
+		    }
+		    if (ret)
+		    {
+			current->parent->arg = addquotes(ret);
+			FreeVec(ret);
+		    }
+		    else
+		    {
+			current->parent->arg = addquotes("");
+		    }
+
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires at one argument!\n", current->arg);
+		}
+		break;
+
       /* Here are all unimplemented commands */
 	    case _COPYFILES	:
 	    case _COPYLIB	:
 	    case _EXPANDPATH	:
 	    case _FOREACH	:
-	    case _GETASSIGN	:
-	    case _GETDEVICE	:
 	    case _GETSUM	:
 	    case _GETVERSION	:
 	    case _ICONINFO	:
@@ -2757,4 +2960,30 @@ int i, j;
     }
 }
 
+
+char *DynNameFromLock(BPTR lock)
+{
+    char *dirName = NULL;
+    ULONG size;
+
+    for (size = 512 ; ; size += 512)
+    {
+	dirName = AllocVec(size, MEMF_ANY);
+	if (dirName == NULL)
+	{
+	    break;
+	}
+	if (NameFromLock(lock, dirName, size))
+	{
+	    break;
+	}
+	FreeVec(dirName);
+	dirName = NULL;
+	if (IoErr() != ERROR_LINE_TOO_LONG)
+	{
+	    break;
+	}
+    }
+    return dirName;
+}
 

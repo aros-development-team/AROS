@@ -371,4 +371,6 @@
 - implemented (getsize) via POSIX stat()
 - updated path of test.script
 - implemented (makeassign)
+- implemented (getassign)
+- implemented (getdevice)
 
