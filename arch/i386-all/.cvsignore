@@ -3,3 +3,5 @@ machine.i
 makefile
 stackswap
 runprocess
+coretest
+ss.o
