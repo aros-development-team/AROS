@@ -213,7 +213,8 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
     	mui_free(text);
 	return NULL;
     }
-    if (preparse_len) strcpy(dup_content,preparse);
+
+   if (preparse_len) strcpy(dup_content,preparse);
     strcpy(&dup_content[preparse_len],content);
 
     buf = dup_content;
@@ -231,7 +232,7 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
 	if (*buf == '\n') buf++;
     }
 
-    free(dup_content);
+    mui_free(dup_content);
     return text;
 }
 
