@@ -1224,7 +1224,7 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	case	SELECTDOWN:
 		if (in)
 		{
-		    set(_win(obj), MUIA_Window_ActiveObject, obj);
+//		    set(_win(obj), MUIA_Window_ActiveObject, obj);
 		    data->mad_ClickX = imsg->MouseX;
 		    data->mad_ClickY = imsg->MouseY;
 		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
@@ -1255,7 +1255,7 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	case    MENUDOWN:
 		if (in)
 		{
-	            set(_win(obj), MUIA_Window_ActiveObject, obj);
+//	            set(_win(obj), MUIA_Window_ActiveObject, obj);
         	    handle_popupmenu(cl, obj);
 	            return MUI_EventHandlerRC_Eat;
         	}
