@@ -57,6 +57,7 @@ extern struct SignalSemaphore * X11lock;
 struct Task * inputDevice;
 #define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
 
+#define WIN(x) ((struct Window *)x)
 
 static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
@@ -386,18 +387,18 @@ int intui_OpenWindow (struct Window * w,
     */
     w->LeftEdge = 0;
     w->TopEdge = 0;
-    if (!(XIW(w)->iw_Window.RPort = CreateRastPort()))
+    if (!(WIN(w)->RPort = CreateRastPort()))
     	return FALSE;
 
-    if (!GetGC (XIW(w)->iw_Window.RPort, GfxBase))
+    if (!GetGC (WIN(w)->RPort, GfxBase))
     {
-        FreeRastPort(XIW(w)->iw_Window.RPort);
+        FreeRastPort(WIN(w)->RPort);
 	return FALSE;
     }
 
     winattr.event_mask = 0;
 
-    if ((XIW(w)->iw_Window.Flags & WFLG_REFRESHBITS) == WFLG_SMART_REFRESH)
+    if ((WIN(w)->Flags & WFLG_REFRESHBITS) == WFLG_SMART_REFRESH)
     {
 	winattr.backing_store = Always;
     }
@@ -407,32 +408,32 @@ int intui_OpenWindow (struct Window * w,
 	winattr.event_mask |= ExposureMask;
     }
 
-    if ((XIW(w)->iw_Window.Flags & WFLG_RMBTRAP)
-	|| XIW(w)->iw_Window.IDCMPFlags
+    if ((WIN(w)->Flags & WFLG_RMBTRAP)
+	|| WIN(w)->IDCMPFlags
 	    & (IDCMP_MOUSEBUTTONS
 		| IDCMP_GADGETDOWN
 		| IDCMP_GADGETUP
 		| IDCMP_MENUPICK
 	    )
-	|| XIW(w)->iw_Window.FirstGadget
+	|| WIN(w)->FirstGadget
     )
 	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
 	
-    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_REFRESHWINDOW)
+    if (WIN(w)->IDCMPFlags & IDCMP_REFRESHWINDOW)
 	winattr.event_mask |= ExposureMask;
 
-    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE
-	|| XIW(w)->iw_Window.FirstGadget
+    if (WIN(w)->IDCMPFlags & IDCMP_MOUSEMOVE
+	|| WIN(w)->FirstGadget
     )
 	winattr.event_mask |= PointerMotionMask;
 
-    if (XIW(w)->iw_Window.IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
+    if (WIN(w)->IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
 	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
 
-    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_ACTIVEWINDOW)
+    if (WIN(w)->IDCMPFlags & IDCMP_ACTIVEWINDOW)
 	winattr.event_mask |= EnterWindowMask;
 
-    if (XIW(w)->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
+    if (WIN(w)->IDCMPFlags & IDCMP_INACTIVEWINDOW)
 	winattr.event_mask |= LeaveWindowMask;
 
     /* Always show me if the window has changed */
@@ -446,10 +447,10 @@ int intui_OpenWindow (struct Window * w,
 LX11
     XIW(w)->iw_XWindow = XCreateWindow (GetSysDisplay ()
 	, DefaultRootWindow (GetSysDisplay ())
-	, XIW(w)->iw_Window.LeftEdge
-	, XIW(w)->iw_Window.TopEdge
-	, XIW(w)->iw_Window.Width
-	, XIW(w)->iw_Window.Height
+	, WIN(w)->LeftEdge
+	, WIN(w)->TopEdge
+	, WIN(w)->Width
+	, WIN(w)->Height
 	, 0 /* BorderWidth */
 	, DefaultDepth (GetSysDisplay (), GetSysScreen ())
 	, InputOutput
@@ -462,7 +463,7 @@ LX11
 	, &winattr
     );
 
-    SetXWindow (XIW(w)->iw_Window.RPort, XIW(w)->iw_XWindow, GfxBase);
+    SetXWindow (WIN(w)->RPort, XIW(w)->iw_XWindow, GfxBase);
 
     XIW(w)->iw_Region = XCreateRegion ();
 UX11
@@ -476,7 +477,7 @@ UX11
 /* nlorentz: It is now driver's responsibility to create window
        rastport. See rom/intuition/openwindow.c for more info.
     */
-        FreeRastPort(XIW(w)->iw_Window.RPort);
+        FreeRastPort(WIN(w)->RPort);
 	return FALSE;
     }
 LX11
@@ -508,7 +509,7 @@ UX11
        rastport. See rom/intuition/openwindow.c for more info.
     */
     
-   FreeRastPort(XIW(w)->iw_Window.RPort);
+   FreeRastPort(WIN(w)->RPort);
     SIGID ();
 }
 
@@ -751,7 +752,7 @@ void intui_BeginRefresh (struct Window * win,
 {
     /* Restrict rendering to a region */
 LX11
-    XSetRegion (sysDisplay, GetGC(XIW(win)->iw_Window.RPort, GfxBase), XIW(win)->iw_Region);
+    XSetRegion (sysDisplay, GetGC(WIN(win)->RPort, GfxBase), XIW(win)->iw_Region);
 UX11
     SIGID ();
 } /* intui_BeginRefresh */
@@ -776,13 +777,13 @@ LX11
 
     rect.x	= 0;
     rect.y	= 0;
-    rect.width	= XIW(win)->iw_Window.Width;
-    rect.height = XIW(win)->iw_Window.Height;
+    rect.width	= WIN(win)->Width;
+    rect.height = WIN(win)->Height;
 
     XUnionRectWithRegion (&rect, region, region);
 
     /* und setzen */
-    XSetRegion (sysDisplay, GetGC(XIW(win)->iw_Window.RPort, GfxBase), region);
+    XSetRegion (sysDisplay, GetGC(WIN(win)->RPort, GfxBase), region);
 UX11
     SIGID ();
 } /* intui_EndRefresh */
@@ -829,6 +830,8 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     inputio->io_Command = IND_WRITEEVENT;
     inputio->io_Data    = (APTR)ie;
     inputio->io_Length  = sizeof (struct InputEvent);
+    
+    ie->ie_NextEvent = NULL;
 
     
     for (;;)
@@ -892,8 +895,8 @@ UX11
 	    	if (w)
 	    	{
 		    /* Make sure that no one closes the window while we work on it */
-		    w->MoreFlags |= EWFLG_DELAYCLOSE;
-
+/*		    w->MoreFlags |= EWFLG_DELAYCLOSE;
+*/
 		    Dipxe(bug("X=%d is asocciated with Window %p\n",
 		    event.xany.window, w ));
 	    	}
