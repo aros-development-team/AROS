@@ -66,7 +66,7 @@ BOOL _ValidateIntVSprite(struct IntVSprite * ivs,
 	    TRUE == force_change) {
 		struct BitMap bm;
 
-#if 1
+#if 0
 kprintf("%s: Imagedata has changed (old:%p-new:%p)!\n",
         __FUNCTION__,
         vs->ImageData,
@@ -80,7 +80,6 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		if ((ivs->Width  != vs->Width )  ||
 		    (ivs->Height != vs->Height)  ||
 		    (ivs->Depth  != vs->Depth )    ) {
-
 			if (NULL != ivs->ImageData)
 				FreeBitMap(ivs->ImageData);
 
@@ -93,14 +92,14 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 			ivs->ImageData = AllocBitMap(vs->Width<<4,
 			                             vs->Height,
 			                             vs->Depth,
-			                             0,
-			                             rp->BitMap); //!!!
+			                             BMF_CLEAR,
+			                             rp->BitMap);
 
 			ivs->SaveBuffer = AllocBitMap(vs->Width<<4,
 			                              vs->Height,
 			                              vs->Depth,
 			                              0,
-			                              rp->BitMap); //!!!
+			                              rp->BitMap);
 			ivs->Width  = vs->Width;
 			ivs->Height = vs->Height;
 			ivs->Depth  = vs->Depth;
@@ -142,7 +141,7 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		          ivs->ImageData,
 		          0,
 		          0,
-		          ivs->Width*16,
+		          ivs->Width << 4,
 		          ivs->Height,
 		          0x0c0,
 		          vs->PlanePick,
@@ -193,7 +192,6 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 	
 	if (0 == (CurVSprite->Flags & SAVEBOB)) {
 		if (0 != (CurVSprite->Flags & BACKSAVED)) {
-
 			BltBitMapRastPort(CurVSprite->IntVSprite->SaveBuffer,
 			                  0,
 			                  0,
@@ -215,7 +213,7 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 			          CurVSprite->OldX,
 			          CurVSprite->OldY,
 			          CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
-			          CurVSprite->OldY +   CurVSprite->Height	   - 1);
+			          CurVSprite->OldY +   CurVSprite->Height	- 1);
 		}
 
 	} /* if (0 == (CurVSprite->Flags & SAVEBOB)) */

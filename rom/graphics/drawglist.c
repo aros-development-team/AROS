@@ -51,6 +51,7 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 	struct VSprite * CurVSprite = rp->GelsInfo->gelHead;
 	struct VSprite * AfterPathVSprite = NULL;
 	int              followdrawpath;
+	struct VSprite * PrevVSprite = NULL;
 
 #ifndef BLTBITMAPRASTPORT_EXISTS
 	struct RastPort  rp_bm;
@@ -98,6 +99,9 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 			/*
 			 * If I am supposed to back up the background then
 			 * I have to do it now!!
+			 * This unfortunatley has also to be done if the
+			 * VSprite/Bob did not move since it could have
+			 * changed its appearance.
 			 */
 			if (0 != (CurVSprite->Flags & SAVEBACK) &&
 			    NULL != CurVSprite->VSBob) {
@@ -120,7 +124,6 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 				                    FALSE);
 				rp_bm.BitMap = CurVSprite->IntVSprite->SaveBuffer;
 
-kprintf("Saving background at %d/%d\n",CurVSprite->X,CurVSprite->Y);
 				ClipBlit(rp,
 				       	 CurVSprite->X,
 				         CurVSprite->Y,
@@ -187,12 +190,20 @@ kprintf("Saving background at %d/%d\n",CurVSprite->X,CurVSprite->Y);
 		 */
 	 
 		if (TRUE == followdrawpath) {
+			if (NULL != PrevVSprite)
+				PrevVSprite->ClearPath = CurVSprite;
+			PrevVSprite = CurVSprite;
+
 			CurVSprite = CurVSprite->IntVSprite->DrawPath;
 			if (NULL == CurVSprite) {
 				followdrawpath = FALSE;
+				PrevVSprite = NULL;
 				CurVSprite = AfterPathVSprite;
 			}
 		} else {	
+			if (NULL != PrevVSprite)
+				PrevVSprite->ClearPath = CurVSprite;
+			PrevVSprite = CurVSprite;
 			CurVSprite = CurVSprite->NextVSprite;
 			/*
 			 * Does a DrawPath start here?
