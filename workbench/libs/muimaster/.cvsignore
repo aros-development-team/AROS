@@ -14,3 +14,5 @@ buildincludes
 muimaster.lib
 test2
 include
+wb
+*.map
