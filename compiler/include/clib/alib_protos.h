@@ -53,6 +53,9 @@ struct Task * CreateTask (STRPTR name, LONG pri, APTR initpc, ULONG stacksize);
 void DeleteTask (struct Task * task);
 void NewList (struct List *);
 
+/* Aros support */
+ULONG ArosInquire(ULONG tag1, ...);
+
 /* Extra */
 ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
