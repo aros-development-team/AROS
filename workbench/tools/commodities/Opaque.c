@@ -141,11 +141,16 @@ struct FileIControlPrefs
     UBYTE   ic_ReqFalse;
 };
 
+#define MINWINDOWWIDTH (5)
+#define MINWINDOWHEIGHT (5)
+
 void SetMouseBounds()
 {
     struct Screen *scr;
     struct Layer *lay;
     struct Window *win;
+
+    WORD minheight, minwidth, maxheight, maxwidth;
 
     if (IntuitionBase->ActiveWindow)
         scr = IntuitionBase->ActiveWindow->WScreen;
@@ -175,10 +180,30 @@ void SetMouseBounds()
             }
         }
         else {  /* actiontype == ACTIONTYPE_RESIZING) */
-            mouseLeft = win->LeftEdge + win->MinWidth - (win->Width - winoffx);
-            mouseTop = win->TopEdge + win->MinHeight - (win->Height - winoffy);
-            mouseRight = (win->LeftEdge + win->MaxWidth) - (win->Width - winoffx);
-            mouseBottom = (win->TopEdge + win->MaxHeight) - (win->Height - winoffy);
+	    /* force legal min/max values */
+            minwidth = win->MinWidth;
+            maxwidth = win->MaxWidth; 
+            minheight = win->MinHeight;
+            maxheight = win->MaxHeight; 
+
+	    if (maxwidth <= 0) maxwidth = win->WScreen->Width;
+	    if (maxheight <= 0) maxheight = win->WScreen->Height;
+
+	    if ((minwidth < MINWINDOWWIDTH) || (minheight < MINWINDOWHEIGHT) || /* if any dimention too small, or */
+	     (minwidth > maxwidth) || (minheight > maxheight) || /* either min/max value pairs are inverted, or */
+	     (minwidth > win->Width) || (minheight > win->Height) || /* the window is already smaller than minwidth/height, or */
+	     (maxwidth < win->Width) || (maxheight < win->Height)) { /* the window is already bigger than maxwidth/height */
+	        minwidth = MINWINDOWWIDTH; /* then put sane values in */
+	        minheight = MINWINDOWHEIGHT;
+                maxwidth = win->WScreen->Width;
+                maxheight = win->WScreen->Height;
+	    }
+            
+	    /* set new mouse bounds */
+            mouseLeft = win->LeftEdge + minwidth - (win->Width - winoffx);
+            mouseTop = win->TopEdge + minheight - (win->Height - winoffy);
+            mouseRight = (win->LeftEdge + maxwidth) - (win->Width - winoffx);
+            mouseBottom = (win->TopEdge + maxheight) - (win->Height - winoffy);
             if ((win->WScreen->Width - (win->Width - winoffx)) < mouseRight)
                 mouseRight = (win->WScreen->Width - (win->Width - winoffx));
             if ((win->WScreen->Height - (win->Height - winoffy)) < mouseBottom) 
