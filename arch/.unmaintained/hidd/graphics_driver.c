@@ -532,6 +532,254 @@ static BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectang
 } /* andrectrect() */
 
 
+
+
+static VOID setbitmappixel(struct BitMap *bm
+	, LONG x, LONG y
+	, ULONG pen
+	, UBYTE depth
+	, UBYTE plane_mask)
+{
+    UBYTE i;
+    ULONG idx;
+    UBYTE mask, clr_mask;
+    ULONG penmask;
+
+    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
+
+    mask = XCOORD_TO_MASK( x );
+    clr_mask = ~mask;
+    
+    penmask = 1;
+    for (i = 0; i < depth; i ++)
+    {
+
+	if ((1L << i) & plane_mask)
+	{
+            UBYTE *plane = bm->Planes[i];
+	
+	    if ((penmask & pen) != 0)
+		plane[idx] |=  mask;
+	    else
+		plane[idx] &=  clr_mask;
+
+	}
+	penmask <<= 1;
+	
+    }
+    return;
+}
+
+static ULONG getbitmappixel(struct BitMap *bm
+	, LONG x
+	, LONG y
+	, UBYTE depth
+	, UBYTE plane_mask)
+{
+    UBYTE i;
+    ULONG idx;
+
+    ULONG mask;
+    ULONG pen = 0L;
+    
+    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
+    mask = XCOORD_TO_MASK( x );
+    
+    for (i = depth - 1; depth ; i -- , depth -- )
+    {
+        if ((1L << i) & plane_mask)
+	{
+	    UBYTE *plane = bm->Planes[i];
+	    pen <<= 1;
+	
+	    if ((plane[idx] & mask) != 0)
+		pen |= 1;
+	}
+    }
+    return pen;
+}
+
+
+enum { SB_SINGLEMASK, SB_PREPOSTMASK, SB_FULL };
+static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
+{
+    LONG num_whole;
+    UBYTE sb_type;
+    
+    UBYTE plane;
+    UBYTE pre_pixels_to_set,
+    	  post_pixels_to_set,
+	  pre_and_post; /* number pixels to clear in pre and post byte */
+ 
+    UBYTE prebyte_mask, postbyte_mask;
+    
+/*    kprintf("x_start: %d, y_start: %d, xsize: %d, ysize: %d, pen: %d\n",
+    	x_start, y_start, xsize, ysize, pen);
+*/	
+
+    pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
+    post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
+    
+
+    pre_and_post = pre_pixels_to_set + post_pixels_to_set;
+    
+    if (pre_and_post > xsize)
+    {
+	UBYTE start_bit, stop_bit;
+	/* Check whether the pixels are kept within a byte */
+	sb_type = SB_SINGLEMASK;
+    	pre_pixels_to_set  = MIN(pre_pixels_to_set,  xsize);
+	
+	/* Mask out the needed bits */
+	start_bit =  7 - (x_start & 0x07) + 1;
+	stop_bit = 7 - ((x_start + xsize - 1) & 0x07);
+
+/* kprintf("start_bit: %d, stop_bit: %d\n", start_bit, stop_bit);
+*/	
+	prebyte_mask = ((1L << start_bit) - 1) - ((1L << stop_bit) - 1) ;
+/* kprintf("prebyte_mask: %d\n", prebyte_mask);
+
+kprintf("SB_SINGLE\n");
+*/
+    }
+    else if (pre_and_post == xsize)
+    {
+    	/* We have bytes within to neighbour pixels */
+	sb_type = SB_PREPOSTMASK;
+	prebyte_mask  = 0xFF >> (8 - pre_pixels_to_set);
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+    
+/* kprintf("SB_PREPOSTMASK\n");
+*/
+    }
+    else
+    {
+
+	/* Say we want to clear two pixels in last byte. We want the mask
+	MSB 00000011 LSB
+	*/
+	sb_type = SB_FULL;
+	prebyte_mask = 0xFF >> (8 - pre_pixels_to_set);
+    
+	/* Say we want to set two pixels in last byte. We want the mask
+	MSB 11000000 LSB
+	*/
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+	
+        	/* We have at least one whole byte of pixels */
+	num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
+	num_whole >>= 3; /* number of bytes */
+	
+/* kprintf("SB_FULL\n");
+*/
+    }
+	
+/*
+kprintf("pre_pixels_to_set: %d, post_pixels_to_set: %d, numwhole: %d\n"
+	, pre_pixels_to_set, post_pixels_to_set, num_whole);
+    
+kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, postbyte_mask, num_whole);
+*/    
+    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
+    {
+    
+        LONG y;
+	UBYTE pixvals;
+	UBYTE prepixels_set, prepixels_clr;
+	UBYTE postpixels_set, postpixels_clr;
+    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + COORD_TO_BYTEIDX(x_start, y_start, bm->BytesPerRow);
+	
+	
+	/* Set or clear current bit of pixval ? */
+	if (pen & (1L << plane))
+	    pixvals = 0xFF;
+	else
+	    pixvals = 0x00;
+	
+	/* Set the pre and postpixels */
+	switch (sb_type)
+	{
+	    case SB_FULL:
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
+	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    LONG x;
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    for (x = 0; x < num_whole; x ++)
+		    {
+			*ptr ++ = pixvals;
+		    }
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_PREPOSTMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
+	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_SINGLEMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		prepixels_clr  = (pixvals & prebyte_mask) | (~prebyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	} /* switch() */
+    }
+    return;
+    
+}
+
+
+
+
+
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
@@ -632,14 +880,17 @@ ULOCK_HIDD(bm);
 		    	kprintf("driver_RectFill(): Superbitmap not handled yet\n");
 		    else
 		    {
-#warning setbitmapfast should handle drawmodes (JAM1, JAM2,..)
-			setbitmapfast(CR->BitMap
+LOCK_HIDD(CR->BitMap);		    	
+			SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
+		    
+		    	/* Cliprect not obscured, so we may render directly into the display */
+		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
-				, GetAPen(rp)
 		    	);
+ULOCK_HIDD(CR->BitMap);			
 		    }
 		    
 		}
@@ -1738,15 +1989,29 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
            
           if (0 == (L->Flags & LAYERSUPER))
           { 
-            /* no superbitmap */
+	    ULONG val;
+            /* Smart refresh */
+
             Offset = CR->bounds.MinX & 0x0f;
-          
+
+
+LOCK_HIDD(bm);
+            val = HIDD_BM_GetPixel(BM_OBJ(bm)
+	    	, x - (CR->bounds.MinX - XRel) + Offset
+		, y - (CR->bounds.MinY - YRel)
+	    );
+ULOCK_HIDD(bm);
+	    return val;
+
+#if 0          
+            Offset = CR->bounds.MinX & 0x0f;
             i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
 	    			, y - (CR->bounds.MinY - YRel)
 				, Width
 	    );   
                 /* Offset: optimization for blitting!! */
             Mask = XCOORD_TO_MASK(Offset + x - (CR->bounds.MinX - XRel));
+#endif	    
           }
           else
           {
@@ -1768,8 +2033,12 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 
     if (bm->Flags & BMF_AROS_HIDD)
     {
+    	ULONG val;
         /* no need to unlock the layer!!!! */
-        return HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
+LOCK_HIDD(bm);	
+        val = HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
+ULOCK_HIDD(bm);
+	return val;	
     }
     i = COORD_TO_BYTEIDX(x, y, Width);
     Mask = XCOORD_TO_MASK(x);
@@ -1780,23 +2049,26 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
  
  if (found_offscreen)
  {
+ 
+   
 
-  pen_Mask = 1;
-  penno = 0;
+     pen_Mask = 1;
+     penno = 0;
 
-  /* read the pixel from all bitplanes */
-  for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
-  {
-    Plane = bm->Planes[count];
-    /* are we supposed to clear this pixel or set it in this bitplane */
-    if (0 != (Plane[i] & Mask))
-    {
-      /* in this bitplane the pixel is  set */
-      penno |= pen_Mask;                
-    } /* if */
+     /* read the pixel from all bitplanes */
+     for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
+     {
+       Plane = bm->Planes[count];
+       /* are we supposed to clear this pixel or set it in this bitplane */
+       if (0 != (Plane[i] & Mask))
+       {
+         /* in this bitplane the pixel is  set */
+         penno |= pen_Mask;                
+       } /* if */
 
-    pen_Mask = pen_Mask << 1;
-  } /* for */
+       pen_Mask = pen_Mask << 1;
+     } /* for */
+    
   
  } /* if (found inside offsecreen cliprect) */
   /* if there was a layer I have to unlock it now */
@@ -1934,7 +2206,6 @@ ULOCK_HIDD(bm);
              will be shown once the layer moves... 
            */
 	   
-	  found_offscreen = TRUE;
 	  
           bm = CR -> BitMap;
            
@@ -1945,7 +2216,19 @@ ULOCK_HIDD(bm);
            
           if (0 == (L->Flags & LAYERSUPER))
           { 
-            /* no superbitmap */
+            /* Smart refresh */
+
+            Offset = CR->bounds.MinX & 0x0f;
+	    
+LOCK_HIDD(bm);	  
+	    SetAttrs( BM_OBJ(bm), bm_tags);
+	    HIDD_BM_DrawPixel ( BM_OBJ(bm)
+	    	, x - (CR->bounds.MinX - XRel) + Offset
+		, y - (CR->bounds.MinY - YRel)
+	    );
+ULOCK_HIDD(bm);
+
+#if 0	    
             Offset = CR->bounds.MinX & 0x0f;
           
             i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
@@ -1954,9 +2237,12 @@ ULOCK_HIDD(bm);
 	    );   
                 /* Offset: optimization for blitting!! */
             Mask = XCOORD_TO_MASK(Offset + x - (CR->bounds.MinX - XRel) );
+
+#endif
           }
           else
           {
+ 	    found_offscreen = TRUE;
             /* with superbitmap */
             i = COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
             Mask = XCOORD_TO_MASK(x + L->Scroll_X);
@@ -1992,32 +2278,34 @@ ULOCK_HIDD(bm);
   if (found_offscreen)
   {
 
-    /* get the pen for this rastport */
-    pen = GetAPen(rp);
 
-    pen_Mask = 1;
-    CLR_Mask = ~Mask;
+	/* get the pen for this rastport */
+	pen = GetAPen(rp);
+
+	pen_Mask = 1;
+	CLR_Mask = ~Mask;
   
     /* we use brute force and write the pixel to
        all bitplanes, setting the bitplanes where the pen is
        '1' and clearing the other ones */
-    for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
-    {
-      Plane = bm->Planes[count];
+	for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
+	{
+	  Plane = bm->Planes[count];
 
-      /* are we supposed to clear this pixel or set it in this bitplane */
-      if (0 != (pen_Mask & pen))
-      {
-        /* in this bitplane we're setting it */
-        Plane[i] |= Mask;          
-      } 
-      else
-      {
-        /* and here we clear it */
-        Plane[i] &= CLR_Mask;
-      }
-      pen_Mask = pen_Mask << 1;
-    } /* for */
+	  /* are we supposed to clear this pixel or set it in this bitplane */
+	  if (0 != (pen_Mask & pen))
+	  {
+	    /* in this bitplane we're setting it */
+	    Plane[i] |= Mask;          
+	  } 
+	  else
+	  {
+	    /* and here we clear it */
+            Plane[i] &= CLR_Mask;
+          }
+	  pen_Mask = pen_Mask << 1;
+	} /* for */
+	
   
   } /* if (bitmap found as offscreen bitmap) */
 
@@ -2056,6 +2344,11 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
     /* We have to use layers to perform clipping */
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
+    struct TagItem bm_tags[] = {
+	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ aHidd_BitMap_Foreground, color },
+	{ TAG_DONE, 0}
+    };
 
     EnterFunc(bug("driver_SetRast(rp=%p, color=%u)\n", rp, color));
     
@@ -2087,12 +2380,6 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		
 	        if (NULL == CR->lobs)
 		{
-		    struct TagItem bm_tags[] =
-		    {
-			{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-			{ aHidd_BitMap_Foreground, color },
-			{ TAG_DONE, 0}
-		    };
 		    
 		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
 		    	, intersect.MinX
@@ -2121,13 +2408,15 @@ ULOCK_HIDD(bm);
 		    	kprintf("driver_SetRast(): Superbitmap not handled yet\n");
 		    else
 		    {
-		    	setbitmapfast(CR->BitMap
+LOCK_HIDD(CR->BitMap);	
+		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
+		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
-				, color
 		    	);
+ULOCK_HIDD(CR->BitMap);	
 		    }
 		    
 		} /* if (intersecton inside hidden cliprect) */
@@ -2143,11 +2432,10 @@ ULOCK_HIDD(bm);
     }
     else
     {
-        /* Nonlayered (screen) */
-	struct TagItem tags[] = {
-    	    	{ aHidd_BitMap_Background, color },
-		{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy },
-	    	{ TAG_DONE, 0UL }
+    	struct TagItem tags[] = {
+	    { aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
+	    { aHidd_BitMap_Background, color },
+	    { TAG_DONE, 0}
 	};
 	
 LOCK_HIDD(bm);	
@@ -2460,7 +2748,12 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    bm_tags[1].ti_Data = sizey;
 	    bm_tags[2].ti_Data = depth;
 	    bm_tags[3].ti_Data = ((flags & BMF_DISPLAYABLE) ? TRUE : FALSE);
-	    bm_tags[4].ti_Data = friend;
+	    
+	    if (NULL != friend)
+	    {
+		if (friend->Flags & BMF_AROS_HIDD)
+		    bm_tags[4].ti_Data = (IPTR)BM_OBJ(friend);
+	    }
 
 	
 	    gfxhidd  = SDD(GfxBase)->gfxhidd;
@@ -2499,183 +2792,6 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
 }
 
-enum { SB_SINGLEMASK, SB_PREPOSTMASK, SB_FULL };
-static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
-{
-    LONG num_whole;
-    UBYTE sb_type;
-    
-    UBYTE plane;
-    UBYTE pre_pixels_to_set,
-    	  post_pixels_to_set,
-	  pre_and_post; /* number pixels to clear in pre and post byte */
- 
-    UBYTE prebyte_mask, postbyte_mask;
-    
-/*    kprintf("x_start: %d, y_start: %d, xsize: %d, ysize: %d, pen: %d\n",
-    	x_start, y_start, xsize, ysize, pen);
-*/	
-
-    pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
-    post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
-    
-
-    pre_and_post = pre_pixels_to_set + post_pixels_to_set;
-    
-    if (pre_and_post > xsize)
-    {
-	UBYTE start_bit, stop_bit;
-	/* Check whether the pixels are kept within a byte */
-	sb_type = SB_SINGLEMASK;
-    	pre_pixels_to_set  = MIN(pre_pixels_to_set,  xsize);
-	
-	/* Mask out the needed bits */
-	start_bit =  7 - (x_start & 0x07) + 1;
-	stop_bit = 7 - ((x_start + xsize - 1) & 0x07);
-
-/* kprintf("start_bit: %d, stop_bit: %d\n", start_bit, stop_bit);
-*/	
-	prebyte_mask = ((1L << start_bit) - 1) - ((1L << stop_bit) - 1) ;
-/* kprintf("prebyte_mask: %d\n", prebyte_mask);
-
-kprintf("SB_SINGLE\n");
-*/
-    }
-    else if (pre_and_post == xsize)
-    {
-    	/* We have bytes within to neighbour pixels */
-	sb_type = SB_PREPOSTMASK;
-	prebyte_mask  = 0xFF >> (8 - pre_pixels_to_set);
-	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
-    
-/* kprintf("SB_PREPOSTMASK\n");
-*/
-    }
-    else
-    {
-
-	/* Say we want to clear two pixels in last byte. We want the mask
-	MSB 00000011 LSB
-	*/
-	sb_type = SB_FULL;
-	prebyte_mask = 0xFF >> (8 - pre_pixels_to_set);
-    
-	/* Say we want to set two pixels in last byte. We want the mask
-	MSB 11000000 LSB
-	*/
-	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
-	
-        	/* We have at least one whole byte of pixels */
-	num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
-	num_whole >>= 3; /* number of bytes */
-	
-/* kprintf("SB_FULL\n");
-*/
-    }
-	
-/*
-kprintf("pre_pixels_to_set: %d, post_pixels_to_set: %d, numwhole: %d\n"
-	, pre_pixels_to_set, post_pixels_to_set, num_whole);
-    
-kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, postbyte_mask, num_whole);
-*/    
-    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
-    {
-    
-        LONG y;
-	UBYTE pixvals;
-	UBYTE prepixels_set, prepixels_clr;
-	UBYTE postpixels_set, postpixels_clr;
-    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + COORD_TO_BYTEIDX(x_start, y_start, bm->BytesPerRow);
-	
-	
-	/* Set or clear current bit of pixval ? */
-	if (pen & (1L << plane))
-	    pixvals = 0xFF;
-	else
-	    pixvals = 0x00;
-	
-	/* Set the pre and postpixels */
-	switch (sb_type)
-	{
-	    case SB_FULL:
-		prepixels_set  = (pixvals & prebyte_mask);
-		postpixels_set = (pixvals & postbyte_mask);
-	
-
-		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
-		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    LONG x;
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    for (x = 0; x < num_whole; x ++)
-		    {
-			*ptr ++ = pixvals;
-		    }
-		    /* Clear the last nonwhole byte */
-		    *ptr |= postpixels_set;
-		    *ptr ++ &= postpixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	    case SB_PREPOSTMASK:
-	
-		prepixels_set  = (pixvals & prebyte_mask);
-		postpixels_set = (pixvals & postbyte_mask);
-	
-
-		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
-		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    /* Clear the last nonwhole byte */
-		    *ptr |= postpixels_set;
-		    *ptr ++ &= postpixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	    case SB_SINGLEMASK:
-	
-		prepixels_set  = (pixvals & prebyte_mask);
-		prepixels_clr  = (pixvals & prebyte_mask) | (~prebyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	} /* switch() */
-    }
-    return;
-    
-}
-
-
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\
@@ -2684,71 +2800,6 @@ kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, pos
 	| ((minterm & 0x20) << 1)	\
 	| ((minterm & 0x10) << 3) )  >> 4 )
 
-
-static VOID setbitmappixel(struct BitMap *bm
-	, LONG x, LONG y
-	, ULONG pen
-	, UBYTE depth
-	, UBYTE plane_mask)
-{
-    UBYTE i;
-    ULONG idx;
-    UBYTE mask, clr_mask;
-    ULONG penmask;
-
-    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
-
-    mask = XCOORD_TO_MASK( x );
-    clr_mask = ~mask;
-    
-    penmask = 1;
-    for (i = 0; i < depth; i ++)
-    {
-
-	if ((1L << i) & plane_mask)
-	{
-            UBYTE *plane = bm->Planes[i];
-	
-	    if ((penmask & pen) != 0)
-		plane[idx] |=  mask;
-	    else
-		plane[idx] &=  clr_mask;
-
-	}
-	penmask <<= 1;
-	
-    }
-    return;
-}
-
-static ULONG getbitmappixel(struct BitMap *bm
-	, LONG x
-	, LONG y
-	, UBYTE depth
-	, UBYTE plane_mask)
-{
-    UBYTE i;
-    ULONG idx;
-
-    ULONG mask;
-    ULONG pen = 0L;
-    
-    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
-    mask = XCOORD_TO_MASK( x );
-    
-    for (i = depth - 1; depth ; i -- , depth -- )
-    {
-        if ((1L << i) & plane_mask)
-	{
-	    UBYTE *plane = bm->Planes[i];
-	    pen <<= 1;
-	
-	    if ((plane[idx] & mask) != 0)
-		pen |= 1;
-	}
-    }
-    return pen;
-}
 
 
 struct blit_info
@@ -3066,9 +3117,10 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     EnterFunc(bug("driver_BltBitMap()\n"));
 	
 /*
-kprintf("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d)\n"
-		,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize);
-		
+kprintf("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
+		,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm);
+*/
+/*		
 kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		wSrc, wDest);
 */	
@@ -3179,7 +3231,11 @@ ULOCK_HIDD(destBitMap);
 			{ TAG_DONE, 0UL}
 		    };
 		    
+		    
 		    drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+
+/* kprintf("drawmode %d for minterm %x\n", drmd_tags[0].ti_Data, minterm);
+*/
 LOCK_HIDD(destBitMap);	
 		    SetAttrs(dst_bm, drmd_tags);
 
@@ -3435,6 +3491,12 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
     ULONG array_width, array_height;
     
     LONG pixwritten = 0;
+
+    struct TagItem bm_tags[] =
+    {
+	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ TAG_DONE, 0}
+    };
     
     EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
@@ -3450,11 +3512,6 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
     
     if (NULL == L)
     {
-    	struct TagItem bm_tags[] =
-	{
-	    { aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-	    { TAG_DONE, 0}
-	};
         /* No layer, probably a screen */
 	
 	/* Just put the pixelarray directly onto the HIDD */
@@ -3510,21 +3567,8 @@ ULOCK_HIDD(bm);
 		
 	        if (NULL == CR->lobs)
 		{
-		    struct TagItem bm_tags[] =
-		    {
-			{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-			{ TAG_DONE, 0}
-		    };
-		    
-		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-		    ));
 		    
 		    /* Write to the HIDD */
-	
 LOCK_HIDD(bm);	
 		    SetAttrs(BM_OBJ(bm), bm_tags);
 	
@@ -3547,10 +3591,26 @@ ULOCK_HIDD(bm);
 		    	kprintf("driver_WritePixelArray8(): Superbitmap not handled yet\n");
 		    else
 		    {
-			UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
-		    
+
 		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
+		    
+LOCK_HIDD(CR->BitMap);		    
+
+		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
+	
+		    	amiga2hidd_fast((APTR)array
+				, array_rel_x
+				, array_rel_y
+				, BM_OBJ(CR->BitMap)
+				, cr_rel_x, cr_rel_y
+				, inter_width, inter_height
+				, pixarray_to_buf
+		        );
+ULOCK_HIDD(CR->BitMap);		    
+
+/*			UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
+		    
 		    
 		    	UBYTE *array_ptr	= array + (array_rel_y * array_width) + array_rel_x;
 		    
@@ -3568,16 +3628,17 @@ ULOCK_HIDD(bm);
 					, cr_rel_y + y
 					, *array_ptr ++
 					, depth
-					, 0xFF /* All planes */
+					, 0xFF
 			   	);
 			    
 			     }
 			     array_ptr += modulo;
 			 }
-			 
-		    }
+*/			 
+		    } /* If (SMARTREFRESH cliprect) */
 		    
-		} /* if (intersecton inside hidden cliprect) */
+		    
+		}   /* if (intersecton inside hidden cliprect) */
 		
 	        pixwritten += inter_width * inter_height;
 
@@ -3671,13 +3732,6 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 	        if (NULL == CR->lobs)
 		{
 		    
-		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-		    ));
-		    
 		    /* Read from the HIDD */
 	
 		    hidd2amiga_fast(BM_OBJ(bm)
@@ -3698,10 +3752,23 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		    	kprintf("driver_ReadPixelArray8(): Superbitmap not handled yet\n");
 		    else
 		    {
-		    	UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
 		    	LONG cr_rel_x = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
-		    
+
+LOCK_HIDD(CR->BitMap);		    
+		    	hidd2amiga_fast(BM_OBJ(CR->BitMap)
+				, cr_rel_x, cr_rel_y
+				, (APTR)array
+				, array_rel_x
+				, array_rel_y
+				, inter_width, inter_height
+				, buf_to_pixarray
+		    	);
+
+ULOCK_HIDD(CR->BitMap);
+
+/*
+		    	UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
 		    	LONG y;
 		    	UBYTE *array_ptr = array + (array_rel_y * array_width) + array_rel_x;
 		    	ULONG modulo = array_width - inter_width;
@@ -3715,13 +3782,14 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 			    		, cr_rel_x + x
 					, cr_rel_y + y
 					, depth
-					, 0xFF /* All planes */
+					, 0xFF
 			    	);
 			    }
 			    array_ptr += modulo;
 			}
 			
-		    }
+*/
+		    } /* if (SMARTREFRESH cliprect) */
 		    
 		} /* if (intersecton inside hidden cliprect) */
 		
@@ -3741,113 +3809,12 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 } /* driver_WritePixelArray8 */
 
 
-static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct BitMap *dest
-	, LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    UBYTE *srcptr;
-    UBYTE dest_depth = GetBitMapAttr(dest, BMA_DEPTH);
-    UWORD drmd = GetDrMd(rp);
-    UBYTE apen = GetAPen(rp);
-    UBYTE bpen = GetBPen(rp);
-    LONG x, y;
-
-    /* Find the exact startbyte. x_src is max 15 */
-    srcptr = ((UBYTE *)source) + XCOORD_TO_BYTEIDX(x_src);
-    
-    /* Find the exact startbit */
-    x_src &= 0x07;
-/*    
-kprintf("DRMD: %d, APEN: %d, BPEN: %d\n", drmd, apen, bpen);
-*/
-    for (y = 0; y < ysize; y ++)
-    {
-	UBYTE *byteptr = srcptr;
-    	for (x = 0; x < xsize; x ++)
-	{
-	    UBYTE pen;
-	    UBYTE mask = XCOORD_TO_MASK( x + x_src );
-	    
-	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
-	    BOOL set_pixel = FALSE;
-
-/*if (is_set)
-kprintf("X");		    
-else	    
-kprintf("0");
-*/
-	    if (drmd & INVERSVID)
-	    {
-	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
-	    }
-	    
-	    if (drmd & JAM2)
-	    {
-	    	/* Use apen if pixel is et, bpen otherwise */
-		if (is_set)
-		    pen = apen;
-		else
-		    pen = bpen;
-		    
-		set_pixel = TRUE;
-		
-	    }
-	    else if (drmd & COMPLEMENT)
-	    {
-		
-	    	pen = getbitmappixel(dest
-			, x + x_dest
-			, y + y_dest
-			, dest_depth
-			, 0xFF
-		);
-		
-		pen = ~pen;
-
-		
-	    }
-	    else /* JAM 1 */
-	    {
-	    	/* Only use apen if pixel is set */
-		if (is_set)
-		{
-		    pen = apen;
-		    set_pixel = TRUE;
-		}
-		    
-	    }
-	    if (set_pixel)
-	    {
-/* kprintf("X");		    
-*/		setbitmappixel(dest
-			, x + x_dest
-			, y + y_dest
-			, pen
-			, dest_depth, 0xFF
-		);
-	    }
-/* else
-kprintf("0");
-*/	
-	    /* Last pixel in this byte ? */
-	    if (((x + x_src) & 0x07) == 0x07)
-	    	byteptr ++;
-		
-	}
-/* kprintf("\n");	
-*/	srcptr += modulo;
-    }
-    return;
-}	
-
-
 struct template_info
 {
     PLANEPTR source;
     LONG x_src;
     LONG modulo;
     BOOL invertsrc;
-    
-    
 };
 
 VOID template_to_buf(struct template_info *ti
@@ -3971,8 +3938,6 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 LOCK_HIDD(bm);    
     SetAttrs( BM_OBJ(bm), setgc_tags );
 
-D(bug("Done Copying template to HIDD offscreen bitmap\n"));    
-
     if (NULL == L)
     {
         /* No layer, probably a screen */
@@ -4021,12 +3986,7 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 		    LONG  clipped_xsrc, clipped_ysrc;
 		    clipped_xsrc = /* xsrc = 0 + */ intersect.MinX - toblit.MinX;
 		    clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
-		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-		    ));
+		    
 		    
 		    HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
 			, template_bm
@@ -4047,10 +4007,29 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 		    	kprintf("driver_BltTemplate(): Superbitmap not handled yet\n");
 		    else
 		    {
+
+		    	LONG clipped_xsrc, clipped_ysrc;
+
+			clipped_xsrc = /* xsrc = 0 + */ intersect.MinX - toblit.MinX;
+			clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
+			
+LOCK_HIDD(CR->BitMap);			
+			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
+			
+		    	HIDD_BM_BlitColorExpansion( BM_OBJ(CR->BitMap)
+				, template_bm
+				, clipped_xsrc, clipped_ysrc
+				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+		    	);
+ULOCK_HIDD(CR->BitMap);			
+
+/*			
 		    	UBYTE *clipped_source;
 		    	LONG clipped_xsrc;
 		    
-		    	/* This is the tricky one: render into offscreen cliprect bitmap */
 		    	clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
 		    	clipped_source = source + XCOORD_TO_BYTEIDX(clipped_xsrc);
 		    	clipped_xsrc &= 0x07;
@@ -4065,7 +4044,7 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 				, intersect.MaxY - intersect.MinY + 1
 				, destRP, GfxBase
 		    	);
-		    
+*/		    
 		    }
 
 		}
@@ -4195,74 +4174,6 @@ static VOID pattern_to_buf(struct pattern_info *pi
 
 #undef GfxBase
 
-static VOID bltpattern_amiga(struct pattern_info *pi
-		, struct BitMap *dest_bm
-		, LONG x_src, LONG y_src	/* offset into layer */
-		, LONG x_dest, LONG y_dest	/* offset into bitmap */
-		, ULONG xsize, LONG ysize
-		, struct GfxBase *GfxBase
-)
-{
-
-    /* x_src, y_src is the coordinates int the layer. */
-    LONG y;
-    struct RastPort *rp = pi->rp;
-    ULONG apen = GetAPen(rp);
-    ULONG bpen = GetBPen(rp);
-    
-    UBYTE *apt = (UBYTE *)rp->AreaPtrn;
-    
-    UBYTE dest_depth = GetBitMapAttr(dest_bm, BMA_DEPTH);
-    
-    for (y = 0; y < ysize; y ++)
-    {
-        LONG x;
-	
-	for (x = 0; x < xsize; x ++)
-	{
-	    ULONG set_pixel;
-	    ULONG pixval;
-	    
-	    
-	    /* Mask supplied ? */
-	    if (pi->mask)
-	    {
-		ULONG idx, mask;
-		idx = COORD_TO_BYTEIDX(x + pi->mask_xmin, y + pi->mask_ymin, pi->mask_bpr);
-		mask = XCOORD_TO_MASK(x + pi->mask_xmin);
-		 
-		set_pixel = pi->mask[idx] & mask;
-		 
-	    }
-	    else
-	        set_pixel = 1UL;
-		
-		
-	    if (set_pixel)
-	    {
-	   
-	
-		if (apt)
-		{
-
-		   set_pixel = pattern_pen(rp, x + x_src, y + y_src, apen, bpen, &pixval, GfxBase);
-		   if (set_pixel)
-		   {
-		    	setbitmappixel(dest_bm, x + x_dest, y + y_dest, pixval, dest_depth, 0xFF);
-		   }
-		   
-		}
-	    
-	    } /* if (pixel should be set */
-	    
-	    
-	} /* for (each column) */
-	
-    } /* for (each row) */
-    
-    return;
-
-}    
 
 VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase)
@@ -4370,12 +4281,6 @@ LOCK_HIDD(bm);
 		    pi.orig_xmin = xMin;
 		    pi.orig_ymin = yMin;
 		    
-D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
-			, xMin, yMin 
-			, intersect.MinX, intersect.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-		    ));
 		    amiga2hidd_fast( (APTR) &pi
 			, intersect.MinX, intersect.MinY
 			, BM_OBJ(bm)
@@ -4384,7 +4289,6 @@ D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
 			, intersect.MaxY - intersect.MinY + 1
 			, pattern_to_buf
 		    );
-D(bug("Done putting to hidd\n"));		    
 		}
 		else
 		{
@@ -4394,7 +4298,24 @@ D(bug("Done putting to hidd\n"));
 		    	kprintf("driver_BltPattern(): Superbitmap not handled yet\n");
 		    else
 		    {
-		    	bltpattern_amiga( &pi
+
+LOCK_HIDD(CR->BitMap);			
+
+			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
+			
+		    	amiga2hidd_fast( (APTR) &pi
+				, intersect.MinX, intersect.MinY
+				, BM_OBJ(CR->BitMap)
+				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY
+				  /* intersect.MinX, intersect.MinY */ 
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, pattern_to_buf
+			);
+ULOCK_HIDD(CR->BitMap);			
+			
+/*		    	bltpattern_amiga( &pi
 		    		, CR->BitMap
 				, intersect.MinX, intersect.MinY
 				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
@@ -4403,6 +4324,7 @@ D(bug("Done putting to hidd\n"));
 				, intersect.MaxY - intersect.MinY + 1
 				, GfxBase
 		        );
+*/			
 		    }
 
 		}
@@ -4604,9 +4526,6 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     
 	for (;NULL != CR; CR = CR->Next)
 	{
-	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
-	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
-		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to erase ? */
 	    if (andrectrect(&CR->bounds, &toerase, &intersect))
@@ -4614,12 +4533,6 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    
 	        if (NULL == CR->lobs)
 		{
-		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-		    ));
 		    
 		    msg.MinX = intersect.MinX;
 		    msg.MinY = intersect.MinY;
@@ -4650,9 +4563,11 @@ ULOCK_HIDD(bm);
 		    	msg.MinY = intersect.MinY - CR->bounds.MinY;
 		    	msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
 		    	msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
-		    
+
+LOCK_HIDD(CR->BitMap);		    
 		    	calllayerhook(L->BackFill, fakeRP /* rp */, &msg);
-			
+
+ULOCK_HIDD(CR->BitMap);			
 		    }
 
 		}
@@ -4748,78 +4663,6 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 	if ((minterm) & 0x0040)	pen = ( (src) & ~(dest));	\
 	if ((minterm) & 0x0080)	pen = ( (src) &  (dest));
 	
-static VOID bltmask_amiga(struct bltmask_info *bmi
-	, LONG x_src, LONG y_src
-	, struct BitMap *destbm
-	, LONG x_dest, LONG y_dest
-	, ULONG xsize, ULONG ysize
-	, ULONG minterm )
-{
-    /* x_src, y_src is the coordinates int the layer. */
-    LONG y;
-    UBYTE src_depth, dest_depth;
-    
-
-    EnterFunc(bug("bltmask_amiga(%p, %d, %d, %d, %d, %d, %d, %p)\n"
-    			, bmi, x_src, y_src, x_dest, y_dest, xsize, ysize));
-
-    src_depth  = GetBitMapAttr(bmi->srcbm, BMA_DEPTH);
-    dest_depth = GetBitMapAttr(destbm,     BMA_DEPTH);
-    
-    
-    for (y = 0; y < ysize; y ++)
-    {
-        LONG x;
-	
-	for (x = 0; x < xsize; x ++)
-	{
-	    ULONG set_pixel;
-	    
-	    ULONG idx, mask;
-	    idx = COORD_TO_BYTEIDX(x + bmi->mask_xmin, y + bmi->mask_ymin, bmi->mask_bpr);
-	    mask = XCOORD_TO_MASK(x + bmi->mask_xmin);
-		 
-	    set_pixel = bmi->mask[idx] & mask;
-		
-	    if (set_pixel)
-	    {
-	        ULONG srcpen, destpen, pixval;
-		srcpen = getbitmappixel(bmi->srcbm
-		  	, x + x_src
-			, y + y_src
-			, src_depth
-			, 0xFF
-		);
-		
-/* Could optimize plain copy (0x00C0) here. (does not nead to get dest)
- and clear (0x0000) (needs neither src or dest)*/
-		
-		destpen = getbitmappixel(destbm
-		  	, x + x_dest
-			, y + y_dest
-			, dest_depth
-			, 0xFF
-		);
-		
-		APPLY_MINTERM(pixval, srcpen, destpen, minterm);
-		setbitmappixel(destbm
-		  	, x + x_dest
-			, y + y_dest
-			, pixval
-			, dest_depth
-			, 0xFF
-		);
-		
-	    }
-	    
-	    
-	} /* for (each column) */
-	
-    } /* for (each row) */
-    
-    ReturnVoid("bltmask_amiga");
-    
-}
 
 VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     		, LONG xSrc, LONG ySrc
@@ -4934,7 +4777,23 @@ LOCK_HIDD(bm);
 		    	kprintf("driver_BltMaskBitMapRastPort(): Superbitmap not handled yet\n");
 		    else
 		    {
-		    	bltmask_amiga( &bmi
+		    
+LOCK_HIDD(CR->BitMap);			
+		    
+		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
+		    
+		    	amiga2hidd_fast( (APTR) &bmi
+				, xSrc + xoffset, ySrc + yoffset
+				, BM_OBJ(CR->BitMap)
+		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY
+				, width
+				, height
+				, bltmask_to_buf
+		     	);
+
+ULOCK_HIDD(CR->BitMap);			
+/*		    	bltmask_amiga( &bmi
 		    		, xSrc + xoffset, ySrc + yoffset
 				, CR->BitMap
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
@@ -4942,7 +4801,9 @@ LOCK_HIDD(bm);
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, minterm
+
 		    	);
+*/			
 		    }
 		}
 	    }
