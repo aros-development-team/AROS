@@ -108,7 +108,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
 STATIC ULONG NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
 {
-    return(DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags));
+    return(DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags));
 }
 
 /**************************************************************************************************/
@@ -374,7 +374,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             rp=ObtainGIRPort(msg->ops_GInfo);
             if(rp)
             {
-                DoMethod((Object *) g, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+                DoMethod((Object *) g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
                 ReleaseGIRPort (rp);
             }
         }
