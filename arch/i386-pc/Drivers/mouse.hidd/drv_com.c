@@ -535,6 +535,12 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
             return 0;
         if(buf[0] == 79)
             return 1;
+	   
+	/* stegerg: checkme! Added this return -1, because if this is
+	   not there, then below the "return (t->val)" is used to leave
+	   the function, with t pointing to random address */
+	    
+	return -1;
     }
     else if(len > 1)
     {
