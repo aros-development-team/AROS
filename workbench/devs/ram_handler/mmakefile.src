@@ -6,8 +6,6 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DDEBUG=0
 
-%build_module_macro mmake=workbench-fs-ram modname=ram \
-  modtype=handler initfile=ram_handler funcs= files= \
-  uselibs="amiga rom"
-
-%common
+%build_module mmake=workbench-fs-ram \
+    modname=ram modtype=device modsuffix=handler \
+    files=ram_handler uselibs="amiga rom"
