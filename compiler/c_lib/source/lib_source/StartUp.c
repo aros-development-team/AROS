@@ -1,5 +1,5 @@
 /*
-**	$VER: StartUp.c 37.10 (1.4.97)
+**	$VER: StartUp.c 37.11 (24.6.97)
 **
 **	Library startup-code and function table definition
 **
@@ -125,11 +125,14 @@ AROS_LH2(struct LIBBASETYPE *, InitLib,
     ExampleBase->exb_SysBase = sysBase;
     ExampleBase->exb_SegList = segList;
 
-    if(L_OpenLibs(ExampleBase)) return(ExampleBase);
+    if (L_OpenLibs (ExampleBase))
+	return (ExampleBase);
 
     L_CloseLibs (ExampleBase);
 
-    return(NULL);
+    FreeMem (exb, sizeof (struct ExampleBase));
+
+    return (NULL);
 }
 
 AROS_LH1 (struct ExampleBase *, OpenLib,
