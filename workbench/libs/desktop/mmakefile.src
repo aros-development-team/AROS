@@ -30,7 +30,8 @@ FILES := \
     desktopclass \
     internalwindowopsclass \
     internaldesktopopsclass \
-    containericonobserver
+    containericonobserver \
+    abstracticon
 
 FUNCS := \
     createdesktopobjecta \
