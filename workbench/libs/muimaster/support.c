@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/keymap.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -189,3 +190,20 @@ struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMas
     return NULL;
 }
 
+
+/**************************************************************************
+ Converts a Rawkey to a vanillakey
+**************************************************************************/
+ULONG ConvertKey(struct IntuiMessage *imsg)
+{
+   struct InputEvent event;
+   UBYTE code = 0;
+   event.ie_NextEvent    = NULL;
+   event.ie_Class        = IECLASS_RAWKEY;
+   event.ie_SubClass     = 0;
+   event.ie_Code         = imsg->Code;
+   event.ie_Qualifier    = imsg->Qualifier;
+   event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+   MapRawKey(&event, &code, 1, NULL);
+   return code;
+}
