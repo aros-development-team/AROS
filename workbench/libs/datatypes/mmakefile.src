@@ -63,6 +63,9 @@ FUNCTIONS := 	 adddtobject \
 workbench-libs-datatypes : $(SLIB)
 	@$(NOP)
 
+#MM workbench-libs-datatypes-quick :
+workbench-libs-datatypes-quick : $(SLIB)
+	@$(NOP)
 
 #MM
 setup-includes :
