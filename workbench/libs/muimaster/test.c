@@ -151,10 +151,9 @@ void main(void)
 
     context_menu = MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
-		MUIA_Menuitem_Title, "Project",
-		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
- 		MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
+		MUIA_Menuitem_Title, "Menutest",
+		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "First Test Entry", End,
+		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Second Test Entry", End,
 		End,
 	    End;
 
