@@ -36,12 +36,13 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #undef timeval
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
+#include <X11/Xatom.h>
 
 #include "x11.h"
 #include "x11gfx_intern.h"
@@ -81,7 +82,7 @@ static struct OOP_ABDescr attrbases[] =
     { NULL, NULL }
 };
 
-#define XSD(cl) ((struct x11_staticdata *)cl->UserData)
+#define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
 #define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 
@@ -123,10 +124,10 @@ OOP_Class *init_x11class (struct x11_staticdata *xsd)
 
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{OOP_METHODDEF(x11_new),		moRoot_New},
-    	{OOP_METHODDEF(x11_dispose),	moRoot_Dispose},
-    	{OOP_METHODDEF(x11_get),		moRoot_Get},
-	{NULL, 0UL}
+    	{OOP_METHODDEF(x11_new)     , moRoot_New    },
+    	{OOP_METHODDEF(x11_dispose) , moRoot_Dispose},
+    	{OOP_METHODDEF(x11_get)     , moRoot_Get    },
+	{NULL	    	    	    , 0UL   	    }
     };
     
     struct OOP_MethodDescr x11hidd_descr[NUM_X11_METHODS + 1] = 
@@ -136,19 +137,19 @@ OOP_Class *init_x11class (struct x11_staticdata *xsd)
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{root_descr, 	IID_Root, 	NUM_ROOT_METHODS},
-    	{x11hidd_descr, IID_Hidd_X11, 	NUM_X11_METHODS},
-	{NULL, NULL, 0}
+    	{root_descr 	, IID_Root  	, NUM_ROOT_METHODS  },
+    	{x11hidd_descr	, IID_Hidd_X11	, NUM_X11_METHODS   },
+	{NULL	    	, NULL	    	, 0 	    	    }
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct x11_data) },
-	{TAG_DONE, 0UL}
+	{ aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	},
+	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	},
+	{ aMeta_InstSize    	, (IPTR)sizeof (struct x11_data)},
+	{ TAG_DONE  	    	, 0UL	    	    	    	}
     };
 
     EnterFunc(bug("X11HiddClass init\n"));
@@ -189,14 +190,12 @@ VOID free_x11class(struct x11_staticdata *xsd)
 
     if(xsd)
     {
-
         OOP_RemoveClass(xsd->x11class);
 
         if(xsd->x11class) OOP_DisposeObject((OOP_Object *) xsd->x11class);
         xsd->x11class = NULL;
 
 	OOP_ReleaseAttrBases(attrbases);
-
     }
 
     ReturnVoid("free_x11class");
@@ -213,6 +212,7 @@ AROS_UFH4(ULONG, x11VBlank,
     AROS_USERFUNC_INIT
 
     Signal((struct Task *)data, SIGBREAKF_CTRL_D);
+    
     return 0;
 
     AROS_USERFUNC_EXIT
@@ -224,10 +224,9 @@ static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
 {
     int pending;
     
-LX11    
+    LX11    
     pending = XPending(xsd->display);
-UX11
-
+    UX11
 
     return pending;
 }
@@ -235,25 +234,23 @@ UX11
 
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
-    struct x11_staticdata *xsd;
-    struct MinList nmsg_list;
-    struct MinList xwindowlist;
+    struct x11_staticdata   *xsd;
+    struct MinList  	     nmsg_list;
+    struct MinList  	     xwindowlist;    
+    struct x11task_params    xtp;
+    ULONG   	    	     hostclipboardmask;
     
-    struct x11task_params xtp;
-
 #if NOUNIXIO
-    struct Interrupt myint;
+    struct Interrupt 	     myint;
 #else
-    struct MsgPort *unixio_port = NULL;
-    HIDD *unixio = NULL;
-    IPTR ret;
-    ULONG unixiosig;
-    BOOL domouse = FALSE;
-    LONG last_mouse_x;
-    LONG last_mouse_y;
-    
-    BOOL dounixio = TRUE;
-    
+    struct MsgPort  	    *unixio_port = NULL;
+    HIDD    	    	    *unixio = NULL;
+    IPTR    	    	     ret;
+    ULONG   	    	     unixiosig;
+    BOOL    	    	     domouse = FALSE;
+    LONG    	    	     last_mouse_x;
+    LONG    	    	     last_mouse_y;    
+    BOOL    	    	     dounixio = TRUE;    
 #endif
 
     /* We must copy the parameter struct because they are allocated
@@ -283,64 +280,67 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     Signal(xtp.parent, xtp.ok_signal);
 
 #else
-
     
     unixio = (HIDD)New_UnixIO(OOPBase);
-    if (unixio) {
+    if (unixio)
+    {
     	unixio_port = CreateMsgPort();
-	if (unixio_port) {
+	if (unixio_port)
+	{
 	    unixiosig = 1L << unixio_port->mp_SigBit;
 	    Signal(xtp.parent, xtp.ok_signal);
 	     
-	} else
-	    goto failexit;
-    } else
-    	goto failexit;
+	}
+	else goto failexit;
+    }
+    else goto failexit;
 #endif    
 
+    hostclipboardmask = x11clipboard_init(xsd);
+    
     for (;;)
     {
-	XEvent event;
-	
-	struct notify_msg *nmsg;
-	
-	ULONG notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
-	ULONG sigs;
+	XEvent      	     event;	
+	struct notify_msg   *nmsg;	
+	ULONG 	    	     notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
+	ULONG 	    	     sigs;
 
 #if NOUNIXIO
 
-	sigs = Wait(SIGBREAKF_CTRL_D | notifysig  |  xtp.kill_signal );
+	sigs = Wait(SIGBREAKF_CTRL_D | notifysig | xtp.kill_signal | hostclipboardmask);
 	
 #else	
 
 
-#if 0
+    #if 0
 
 
-    	ret = (int)Hidd_UnixIO_Wait( unixio
-			, ConnectionNumber( xsd->display )
-			, vHidd_UnixIO_Read
-			, unixio_callback
-			, (APTR)xsd
-			, xtp.kill_signal | notifysig );
+    	ret = (int)Hidd_UnixIO_Wait(unixio,
+	    	    	    	    ConnectionNumber( xsd->display ),
+				    vHidd_UnixIO_Read,
+				    unixio_callback,
+				    (APTR)xsd,
+				    xtp.kill_signal | notifysig | hostclipboardmask);
 			
 			
-#else
+    #else
 
-	if (dounixio) {
-	     ret = Hidd_UnixIO_AsyncIO(unixio
-		, ConnectionNumber(xsd->display)
-		, unixio_port
-		, vHidd_UnixIO_Read
-	     );
+	if (dounixio)
+	{
+	    ret = Hidd_UnixIO_AsyncIO(unixio,
+	     	    	    	       ConnectionNumber(xsd->display),
+				       unixio_port, vHidd_UnixIO_Read);
 	
-	    if (0 != ret) {
+	    if (ret)
+	    {
 	    
 	    	kprintf("ERROR WHEN CALLING UNIXIO: %d\n", ret);
 		dounixio = TRUE;
 		
 	        continue;
-	    } else {
+	    }
+	    else
+	    {
 	    	dounixio = FALSE;
 	    }
 	}
@@ -355,9 +355,10 @@ D(bug("Got input from unixio\n"));
 	
 	
 */
-	if (sigs & unixiosig) {
+	if (sigs & unixiosig)
+	{
 	     struct uioMessage *uiomsg;
-	     int result;
+	     int    	    	result;
 	     
 	     uiomsg = (struct uioMessage *)GetMsg(unixio_port);
 	     result = uiomsg->result;
@@ -366,11 +367,11 @@ D(bug("Got input from unixio\n"));
 	     
 	     dounixio = TRUE;
 	     
-	     if (0 != result)
+	     if (result)
 	     	continue;
 	}
 	
-#endif
+    #endif
 
 
 #endif
@@ -378,137 +379,141 @@ D(bug("Got input from unixio\n"));
 	if (sigs & xtp.kill_signal)
 	    goto failexit;
 	
-	if (sigs & notifysig) {
+	if (sigs & notifysig)
+	{
 
-	    while ((nmsg = (struct notify_msg *)GetMsg(xsd->x11task_notify_port))) {
+	    while ((nmsg = (struct notify_msg *)GetMsg(xsd->x11task_notify_port)))
+	    {
 		/* Add the messages to an internal list */
 		
-		switch (nmsg->notify_type) {
-		
-		case NOTY_WINCREATE: {
-		    struct xwinnode * node;
-		    /* Maintain a list of open windows for the X11 event handler in x11.c */
-		    
-		    node = AllocMem(sizeof (struct xwinnode), MEMF_CLEAR);
+		switch (nmsg->notify_type)
+		{		
+		    case NOTY_WINCREATE:
+		    {
+			struct xwinnode * node;
+			/* Maintain a list of open windows for the X11 event handler in x11.c */
 
-		    if (NULL != node) {
-		    
-		    	node->xwindow = nmsg->xwindow;
-			node->bmobj   = nmsg->bmobj; 
-		    	AddTail( (struct List *)&xwindowlist, (struct Node *)node );
-			
-		    } else {
-		    	kprintf("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
-		    	kill(getpid(), 19);
-		    }
-		    
-		    ReplyMsg((struct Message *)nmsg);
-		    break; }
-		
-		case NOTY_MAPWINDOW:
-LX11		
-	            XMapWindow (nmsg->xdisplay, nmsg->xwindow);
-#if ADJUST_XWIN_SIZE
-		    XMapRaised (nmsg->xdisplay, nmsg->masterxwindow);
-#endif
-UX11		    
-		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
-		    
-		    /* Do not reply message yet */
-		    break;
-		    
-		case NOTY_RESIZEWINDOW: {
-		    XWindowChanges xwc;
-		    
-		    xwc.width  = nmsg->width;
-		    xwc.height = nmsg->height;
-		    
-		    
-LX11	
-		    XConfigureWindow(nmsg->xdisplay
-		    	, nmsg->masterxwindow
-		    	, CWWidth | CWHeight
-			, &xwc
-		    );
+			node = AllocMem(sizeof (struct xwinnode), MEMF_CLEAR);
 
-		    XFlush(nmsg->xdisplay);
-UX11	
-		    ReplyMsg((struct Message *)nmsg);
-#if 0
-		    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
-		    /* Do not reply message yet */
-#endif
-		    break; }
-		
-		case NOTY_WINDISPOSE: {
-		    struct xwinnode *node, *safe;
-		    
-		    
-		    ForeachNodeSafe(&xwindowlist, node, safe) {
-		    	if (node->xwindow == nmsg->xwindow) {
-			     Remove((struct Node *)node);
-				
-			     FreeMem(node, sizeof (struct xwinnode));
-			     
+			if (NULL != node)
+			{
+
+		    	    node->xwindow = nmsg->xwindow;
+			    node->bmobj   = nmsg->bmobj; 
+		    	    AddTail( (struct List *)&xwindowlist, (struct Node *)node );			
 			}
+			else
+			{
+		    	    kprintf("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
+		    	    kill(getpid(), 19);
+			}
+
+			ReplyMsg((struct Message *)nmsg);
+			break;
+		    }
+		
+		    case NOTY_MAPWINDOW:
+    	    		LX11		
+	        	XMapWindow (nmsg->xdisplay, nmsg->xwindow);
+    	    	    #if ADJUST_XWIN_SIZE
+			XMapRaised (nmsg->xdisplay, nmsg->masterxwindow);
+    	    	    #endif
+    	    		UX11
+
+			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
+
+			/* Do not reply message yet */
+			break;
+		    
+		    case NOTY_RESIZEWINDOW:
+		    {
+			XWindowChanges xwc;
+
+			xwc.width  = nmsg->width;
+			xwc.height = nmsg->height;
+
+
+    	    		LX11	
+			XConfigureWindow(nmsg->xdisplay
+		    	    , nmsg->masterxwindow
+		    	    , CWWidth | CWHeight
+			    , &xwc
+			);
+
+			XFlush(nmsg->xdisplay);
+    	    		UX11
+
+			ReplyMsg((struct Message *)nmsg);
+    	    	    #if 0
+			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
+			/* Do not reply message yet */
+    	    	    #endif
+			break;
+		    }
+		
+		    case NOTY_WINDISPOSE:
+		    {
+			struct xwinnode *node, *safe;
+
+
+			ForeachNodeSafe(&xwindowlist, node, safe)
+			{
+		    	    if (node->xwindow == nmsg->xwindow)
+			    {
+				 Remove((struct Node *)node);				
+				 FreeMem(node, sizeof (struct xwinnode));			     
+			    }
+			}
+
+			ReplyMsg((struct Message *)nmsg);
+
+			break;
 		    }
 		    
-		    ReplyMsg((struct Message *)nmsg);
+		} /* switch() */
 		
-		    break; }
-		    
-		 } /* switch() */
 	    } /* while () */
 	    
 	    //continue;
 	    
 	} /* if (message from notify port) */
 
-
+    	if (sigs & hostclipboardmask)
+	{
+	    x11clipboard_handle_commands(xsd);
+	}
+	
  	for (;;)	    
 	{
-	    BOOL window_found = FALSE;
 	    struct xwinnode *node;
-	    int pending;
+	    int     	     pending;
+	    BOOL    	     window_found = FALSE;
 
-
-
-#if 0
-LX11	
-D(bug("Calling XPending\n"));
-	    pending = XPending (xsd->display);
-UX11	    
-
-	    if (pending == 0)
-	    	break;
-
-	
-LX11
-	    XNextEvent (xsd->display, &event);
-UX11
-#else
-LX11
+    	    LX11
 	    XFlush(xsd->display);
 	    XSync(xsd->display, FALSE);
 	    pending = XEventsQueued(xsd->display, QueuedAlready);
-UX11
+    	    UX11
+	    
 	    if (pending == 0)
 		break;
-LX11
-	    XNextEvent(xsd->display, &event);
-UX11
 
-#endif
+    	    LX11
+	    XNextEvent(xsd->display, &event);
+    	    UX11
+
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
-	    if (event.type == MappingNotify) {
-LX11
+	    if (event.type == MappingNotify)
+	    {
+    	    	    LX11
 		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
-UX11
+    	    	    UX11
+		    
 		    continue;
 	    }
 	    
-#if ADJUST_XWIN_SIZE
+    	#if ADJUST_XWIN_SIZE
 	    /* Must check this here, because below only the inner
 	       window events are recognized */
 	       
@@ -517,7 +522,7 @@ UX11
 	    {
 		kill(getpid(), SIGINT);
 	    }
-#endif	    
+    	#endif	    
 
 	    ForeachNode( &xwindowlist, node)
 	    {
@@ -528,171 +533,185 @@ UX11
 		}
 	    }
 	    
-	    
+	    if (x11clipboard_want_event(&event))
+	    {
+	    	x11clipboard_handle_event(xsd, &event);
+	    }
+	    	    
 	    if (window_found)
 	    {
 	        D(bug("Got event for window %x\n", event.xany.window));
 	    	switch (event.type)
 	    	{
-	    	case GraphicsExpose:
-	    	case Expose:
-		    break;
-		    
-		case ConfigureRequest:
-		    kprintf("!!! CONFIGURE REQUEST !!\n");
-		    break;
+	    	    case GraphicsExpose:
+	    	    case Expose:
+			break;
 
-#if 0
-/* stegerg: not needed */
-	        case ConfigureNotify: {
-		    /* The window has been resized */
-		
-		    XConfigureEvent *me;
-		    struct notify_msg *nmsg, *safe;
-		    
-		    me = (XConfigureEvent *)&event;
-		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
-		    	if (    me->window == nmsg->xwindow
-			     && nmsg->notify_type == NOTY_RESIZEWINDOW) {
-			     /*  The window has now been mapped.
-			         Send reply to app */
-				 
-			     Remove((struct Node *)nmsg);
-			     ReplyMsg((struct Message *)nmsg);
-			}
-		    }
-		    
-		    
-		     
-		    break; }
-#endif
+		    case ConfigureRequest:
+			kprintf("!!! CONFIGURE REQUEST !!\n");
+			break;
 
-	    	case ButtonPress:
-	        case ButtonRelease:
-	    	case MotionNotify:
-		    D(bug("Motionnotify event\n"));
-
-		
-	    	    ObtainSemaphoreShared( &xsd->sema );
-		    if (xsd->mousehidd)
-			Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
-		    ReleaseSemaphore( &xsd->sema );
-		    break;
-		    
-		case FocusOut:
-LX11
-		    XAutoRepeatOn(xsd->display);
-UX11		    
-#if 0
-ObtainSemaphoreShared(&xsd->sema);
-		    /* Call the user supplied callback func, if supplied */
-		    if (NULL != xsd->activecallback) {
-		    	xsd->activecallback(xsd->callbackdata, node->bmobj, FALSE);
-		    }
-ReleaseSemaphore(&xsd->sema);
-#endif
-		    break;
-		    
-		case FocusIn:
-#if 0		
-ObtainSemaphoreShared(&xsd->sema);
-		    /* Call the user supplied callback func, if supplied */
-		    if (NULL != xsd->activecallback) {
-		    	xsd->activecallback(xsd->callbackdata, node->bmobj, TRUE);
-		    }
-ReleaseSemaphore(&xsd->sema);
-#endif
-		    break;
-
-	    	case KeyPress:
-LX11
-    		    XAutoRepeatOff(XSD(cl)->display);
-UX11		    
-	    	    ObtainSemaphoreShared( &xsd->sema );
-		    if (xsd->kbdhidd)
+    		#if 0
+    	    	    /* stegerg: not needed */
+	            case ConfigureNotify:
 		    {
-			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
-		    }
-	    	
-		    ReleaseSemaphore( &xsd->sema );
-		    break;
-		
-		 
-	    	case KeyRelease:
-LX11
-		    XAutoRepeatOn(XSD(cl)->display);
-UX11		    
-	    	    ObtainSemaphoreShared( &xsd->sema );
-		    if (xsd->kbdhidd)
-		    {
-			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
-		    }
-	    	
-		    ReleaseSemaphore( &xsd->sema );
-		    break;
+			/* The window has been resized */
 
+			XConfigureEvent     *me;
+			struct notify_msg   *nmsg, *safe;
 
-	   	case EnterNotify:
-		    break;
+			me = (XConfigureEvent *)&event;
+			ForeachNodeSafe(&nmsg_list, nmsg, safe)
+			{
+		    	    if (    me->window == nmsg->xwindow
+				 && nmsg->notify_type == NOTY_RESIZEWINDOW)
+			    {
+				 /*  The window has now been mapped.
+			             Send reply to app */
 
-	    	case LeaveNotify:
-		    break;
-		    
-		case MapNotify: {
-		
-		    XMapEvent *me;
-		    struct notify_msg *nmsg, *safe;
-		    struct xwinnode *node;
-		    
-		    BOOL found = FALSE;
-		    
-		    me = (XMapEvent *)&event;
-
-		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
-		    	if (me->window == nmsg->xwindow
-			    && nmsg->notify_type == NOTY_MAPWINDOW) {
-			     /*  The window has now been mapped.
-			         Send reply to app */
-				 
-		 	     found = TRUE;
-			     Remove((struct Node *)nmsg);
-			     ReplyMsg((struct Message *)nmsg);
+				 Remove((struct Node *)nmsg);
+				 ReplyMsg((struct Message *)nmsg);
+			    }
 			}
+
+
+
+			break;
 		    }
-		    
-		    /* Find it in thw window list and mark it as mapped */
-		    
-		    ForeachNode(&xwindowlist, node) {
-		    	if (node->xwindow == me->window) {
+    		#endif
+
+	    	    case ButtonPress:
+	            case ButtonRelease:
+	    	    case MotionNotify:
+			D(bug("Motionnotify event\n"));
+
+	    		ObtainSemaphoreShared( &xsd->sema );
+			if (xsd->mousehidd)
+			    Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+			ReleaseSemaphore( &xsd->sema );
+			break;
+
+		    case FocusOut:
+    	    	    	LX11
+			XAutoRepeatOn(xsd->display);
+    	    	    	UX11
+					    
+    	    	    #if 0
+    	    	    	ObtainSemaphoreShared(&xsd->sema);
+			/* Call the user supplied callback func, if supplied */
+			if (NULL != xsd->activecallback)
+			{
+		    	    xsd->activecallback(xsd->callbackdata, node->bmobj, FALSE);
+			}
+    	    	    	ReleaseSemaphore(&xsd->sema);
+    	    	    #endif
+			break;
+
+		    case FocusIn:
+    	    	    #if 0		
+    	    	    	ObtainSemaphoreShared(&xsd->sema);
+			/* Call the user supplied callback func, if supplied */
+			if (NULL != xsd->activecallback)
+			{
+		    	    xsd->activecallback(xsd->callbackdata, node->bmobj, TRUE);
+			}
+    	    	    	ReleaseSemaphore(&xsd->sema);
+    	    	    #endif
+			break;
+
+	    	    case KeyPress:
+    	    	    	LX11
+    			XAutoRepeatOff(XSD(cl)->display);
+    	    	    	UX11	
+				    
+	    		ObtainSemaphoreShared( &xsd->sema );
+			if (xsd->kbdhidd)
+			{
+			    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+			}
+
+			ReleaseSemaphore( &xsd->sema );
+			break;
+
+
+	    	    case KeyRelease:
+    	    	    	LX11
+			XAutoRepeatOn(XSD(cl)->display);
+    	    	    	UX11
+					    
+	    		ObtainSemaphoreShared( &xsd->sema );
+			if (xsd->kbdhidd)
+			{
+			    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+			}
+
+			ReleaseSemaphore( &xsd->sema );
+			break;
+
+
+	   	    case EnterNotify:
+			break;
+
+	    	    case LeaveNotify:
+			break;
+
+		    case MapNotify:
+		    {
+
+			XMapEvent   	    *me;
+			struct notify_msg   *nmsg, *safe;
+			struct xwinnode     *node;
+			BOOL 	    	     found = FALSE;
+
+			me = (XMapEvent *)&event;
+
+			ForeachNodeSafe(&nmsg_list, nmsg, safe)
+			{
+		    	    if (me->window == nmsg->xwindow
+				&& nmsg->notify_type == NOTY_MAPWINDOW)
+			    {
+				 /*  The window has now been mapped.
+			             Send reply to app */
+
+		 		 found = TRUE;
+				 Remove((struct Node *)nmsg);
+				 ReplyMsg((struct Message *)nmsg);
+			    }
+			}
+
+			/* Find it in thw window list and mark it as mapped */
+
+			ForeachNode(&xwindowlist, node)
+			{
+		    	    if (node->xwindow == me->window)
+			    {			
+				node->window_mapped = TRUE;			
+			    }
+			}
+
+
+			break;
+		    }
+
+    	    	#if !ADJUST_XWIN_SIZE
+         	    case ClientMessage:
+            		if (event.xclient.data.l[0] == xsd->delete_win_atom)
+			{
+		            kill(getpid(), SIGINT);
+			}
+			break;
+    	    	#endif
 			
-			    node->window_mapped = TRUE;
-			
-			}
-		    }
-		    
-		     
-		    break; }
-
-#if !ADJUST_XWIN_SIZE
-         	case ClientMessage:
-            	    if (event.xclient.data.l[0] == xsd->delete_win_atom)
-		    {
-		        kill(getpid(), SIGINT);
-		    }
-		    break;
-#endif
-
 	        } /* switch (X11 event type) */
 		
 	    } /* if (is event for HIDD window) */
-
 
     	} /* while (events from X)  */
     	
     } /* Forever */
     
 failexit:
-#warning Also try to free window node list ?
+    #warning "Also try to free window node list ?"
 
     if (NULL != xsd->x11task_notify_port)
 	DeleteMsgPort(xsd->x11task_notify_port);
@@ -712,17 +731,17 @@ failexit:
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase)
 {
     struct Task *task;
-    APTR stack;
+    APTR    	 stack;
     
     task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
     if (task)
     {
     	NEWLIST(&task->tc_MemEntry);
-    	task->tc_Node.ln_Type=NT_TASK;
-    	task->tc_Node.ln_Name= XTASK_NAME;
-    	task->tc_Node.ln_Pri = XTASK_PRIORITY;
+    	task->tc_Node.ln_Type =NT_TASK;
+    	task->tc_Node.ln_Name = XTASK_NAME;
+    	task->tc_Node.ln_Pri  = XTASK_PRIORITY;
 
-    	stack=AllocMem(XTASK_STACKSIZE, MEMF_PUBLIC);
+    	stack = AllocMem(XTASK_STACKSIZE, MEMF_PUBLIC);
     	if(stack != NULL)
     	{
 	    struct TagItem tags[] =
@@ -731,8 +750,8 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
 		 {TAG_DONE  	    	    }
 	    };
 	    
-	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(UBYTE *)stack + XTASK_STACKSIZE;
+	    task->tc_SPLower = stack;
+	    task->tc_SPUpper = (UBYTE *)stack + XTASK_STACKSIZE;
 
     	#if AROS_STACK_GROWS_DOWNWARDS
 	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
@@ -754,10 +773,13 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
 		{
 		    return task;
 		}
+		
 	    }	
 	    FreeMem(stack, XTASK_STACKSIZE);
+	    
     	}
         FreeMem(task,sizeof(struct Task));
+	
     }
     return NULL;
 }

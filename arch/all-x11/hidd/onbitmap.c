@@ -71,10 +71,13 @@ static struct OOP_ABDescr attrbases[] =
 
 #include "bitmap_common.c"
 
+#if X11SOFTMOUSE
  
-/* static void init_empty_cursor(Window w
+static void init_empty_cursor(Window w
 	, GC c
-	, struct x11_staticdata *xsd); */
+	, struct x11_staticdata *xsd);
+
+#endif
 
 static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x11_staticdata *xsd);
 
@@ -642,7 +645,7 @@ void free_onbmclass(struct x11_staticdata *xsd)
     ReturnVoid("free_onbmclass");
 }
 
-#if 0
+#if X11SOFTMOUSE
 static void init_empty_cursor(Window w
 	, GC gc
 	, struct x11_staticdata *xsd)
