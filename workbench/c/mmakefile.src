@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 FILES	:= \
     AddDatatypes \
     Alias \
+    Beep \
     Break \
     ChangeTaskPri \
     ConClip \
