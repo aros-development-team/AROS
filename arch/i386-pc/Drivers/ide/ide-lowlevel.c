@@ -317,6 +317,9 @@ struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
             unit->au_NumLoop <<= 1;
         }
 
+	/* We need to set some bits to 1 to keep bochs happy */
+	dev |= 0xa0;
+
         unit->au_DevMask    = dev & 0xf0;
         unit->au_OldDevMask = dev & 0x70;
         unit->au_CtrlNumber = dev & 0x0f;
