@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 #ifdef _AROS
 #include <proto/alib.h>
@@ -26,22 +27,24 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_WindowPData
 {
-    int dummy;
+    Object *font_normal_string;
+    Object *font_tiny_string;
+    Object *font_big_string;
 };
 
 static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 {
-  return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
+    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
-
+#define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
+#define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
+#define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_WindowPData   *data;
-    struct TagItem  	    *tag, *tags;
-    Object *app = NULL;
-    Object *ok_button;
+    struct MUI_WindowPData *data;
+    struct MUI_WindowPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
 	Child, VGroup,
@@ -50,21 +53,21 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		Child, MakeLabel("Normal"),
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, StringObject, StringFrame, End,
+		    MUIA_Popstring_String, d.font_normal_string = StringObject, StringFrame, End,
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
 
-		Child, MakeLabel("Small"),
+		Child, MakeLabel("Tiny"),
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, StringObject, StringFrame, End,
+		    MUIA_Popstring_String, d.font_tiny_string = StringObject, StringFrame, End,
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
 
 		Child, MakeLabel("Big"),
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, StringObject, StringFrame, End,
+		    MUIA_Popstring_String, d.font_big_string = StringObject, StringFrame, End,
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
 		End,
@@ -74,13 +77,33 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
-
-    /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
-    {
-    }
+    *data = d;
 
     return (IPTR)obj;
+}
+
+static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+{
+    struct MUI_WindowPData *data = INST_DATA(cl, obj);
+    setstring(data->font_normal_string,FindConfig(MUICFG_Font_Normal));
+    setstring(data->font_tiny_string,FindConfig(MUICFG_Font_Tiny));
+    setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
+    return 1;    
+}
+
+static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+{
+    struct MUI_WindowPData *data = INST_DATA(cl, obj);
+    char *str = getstring(data->font_normal_string);
+    AddConfigStr(str,MUICFG_Font_Normal);
+
+    str = getstring(data->font_tiny_string);
+    AddConfigStr(str,MUICFG_Font_Tiny);
+
+    str = getstring(data->font_big_string);
+    AddConfigStr(str,MUICFG_Font_Big);
+
+    return TRUE;
 }
 
 #ifndef _AROS
@@ -95,6 +118,8 @@ AROS_UFH3S(IPTR,WindowP_Dispatcher,
     switch (msg->MethodID)
     {
 	case OM_NEW: return WindowP_New(cl, obj, (struct opSet *)msg);
+	case MUIM_Settingsgroup_ConfigToGadgets: return WindowP_ConfigToGadgets(cl,obj,(APTR)msg);break;
+	case MUIM_Settingsgroup_GadgetsToConfig: return WindowP_GadgetsToConfig(cl,obj,(APTR)msg);break;
     }
     
     return DoSuperMethodA(cl, obj, msg);

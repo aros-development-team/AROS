@@ -7,12 +7,14 @@
 
 #include <libraries/asl.h>
 #include <libraries/mui.h>
+#include <prefs/prefhdr.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/iffparse.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -22,6 +24,10 @@
 #include "zunestuff.h"
 
 struct Library *MUIMasterBase;
+
+void load_prefs(char *filename);
+void save_prefs(char *filename);
+
 
 #ifndef _AROS
 
@@ -67,6 +73,79 @@ void close_muimaster(void)
 
 #endif
 
+
+/* The following two functions should be a method of config data */
+static void LoadPrefs(STRPTR filename, Object *obj)
+{
+    struct IFFHandle *iff;
+    if ((iff = AllocIFF()))
+    {
+	if ((iff->iff_Stream = Open(filename,MODE_OLDFILE)))
+	{
+	    InitIFFasDOS(iff);
+
+	    if (!OpenIFF(iff, IFFF_READ))
+	    {
+		StopChunk( iff, 'PREF', 'MUIC');
+
+		while (!ParseIFF(iff, IFFPARSE_SCAN))
+		{
+		    struct ContextNode *cn;
+		    if (!(cn = CurrentChunk(iff))) continue;
+		    if (cn->cn_ID == 'MUIC') DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
+		}
+
+		CloseIFF(iff);
+	    }
+	    Close(iff->iff_Stream);
+	}
+	FreeIFF(iff);
+    }
+}
+
+static int SavePrefsHeader(struct IFFHandle *iff)
+{
+    if (!PushChunk( iff, 0, 'PRHD', IFFSIZE_UNKNOWN))
+    {
+	struct PrefHeader ph;
+	ph.ph_Version = 0;
+	ph.ph_Type = 0;
+	ph.ph_Flags = 0;
+
+	if (WriteChunkBytes(iff, &ph, sizeof(struct PrefHeader)))
+	    if (!PopChunk(iff)) return 1;
+	PopChunk(iff);
+    }
+    return 0;
+}
+
+static void SavePrefs(STRPTR filename, Object *obj)
+{
+    struct IFFHandle *iff;
+    if ((iff = AllocIFF()))
+    {
+	if ((iff->iff_Stream = Open(filename,MODE_NEWFILE)))
+	{
+	    InitIFFasDOS(iff);
+
+	    if (!OpenIFF(iff, IFFF_WRITE))
+	    {
+		if (!PushChunk(iff, 'PREF', ID_FORM, IFFSIZE_UNKNOWN))
+		{
+		    if (SavePrefsHeader(iff))
+		    {
+		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, iff, 0, 'MUIC');
+		    }
+		    PopChunk(iff);
+		}
+
+		CloseIFF(iff);
+	    }
+	    Close(iff->iff_Stream);
+	}
+	FreeIFF(iff);
+    }
+}
 
 
 /****************************************************************
@@ -120,6 +199,8 @@ struct page_entry main_page_entries[] =
     {"System",NULL,NULL,NULL},
     {"Windows",NULL,NULL,&_MUIP_Windows_desc},
 };
+
+#define MAIN_PAGE_ENTRIES_LEN sizeof(main_page_entries)/sizeof(main_page_entries[0])
 
 struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
 {
@@ -186,6 +267,25 @@ void main_page_active(void)
 }
 
 /****************************************************************
+ Save pressed
+*****************************************************************/
+void main_save_pressed(void)
+{
+    save_prefs("env:zune/global.prefs");
+    save_prefs("envarc:zune/global.prefs");
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+/****************************************************************
+ Use pressed
+*****************************************************************/
+void main_use_pressed(void)
+{
+    save_prefs("env:zune/global.prefs");
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+/****************************************************************
  Allocalte resources for gui
 *****************************************************************/
 int init_gui(void)
@@ -245,9 +345,12 @@ int init_gui(void)
 
 	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_save_pressed);
+	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_use_pressed);
+//	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
 	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	for (i=0;i<(sizeof(main_page_entries)/sizeof(main_page_entries[0]));i++)
+	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->desc)
@@ -279,6 +382,55 @@ void deinit_gui(void)
 }
 
 /****************************************************************
+ Load the given prefs
+*****************************************************************/
+void load_prefs(char *filename)
+{
+    Object *configdata = MUI_NewObjectA(MUIC_Dataspace,NULL);
+    if (configdata)
+    {
+	int i;
+
+	LoadPrefs(filename,configdata);
+
+        /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
+	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
+	{
+	    struct page_entry *p = &main_page_entries[i];
+	    if (p->group)
+		DoMethod(p->group,MUIM_Settingsgroup_ConfigToGadgets,configdata);
+	}
+
+    	MUI_DisposeObject(configdata);
+    }
+}
+
+/****************************************************************
+ Saves the done prefs
+*****************************************************************/
+void save_prefs(char *filename)
+{
+    Object *configdata = MUI_NewObjectA(MUIC_Dataspace,NULL);
+    if (configdata)
+    {
+	int i;
+
+        /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
+	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
+	{
+	    struct page_entry *p = &main_page_entries[i];
+	    if (p->group)
+		DoMethod(p->group,MUIM_Settingsgroup_GadgetsToConfig,configdata);
+	}
+
+	SavePrefs(filename,configdata);
+
+    	MUI_DisposeObject(configdata);
+    }
+}
+
+
+/****************************************************************
  The message loop
 *****************************************************************/
 void loop(void)
@@ -305,11 +457,13 @@ void main(void)
     {
     	if (init_gui())
     	{
+    	    load_prefs("env:zune/global.prefs");
     	    set(main_wnd, MUIA_Window_Open, TRUE);
     	    if (xget(main_wnd,MUIA_Window_Open))
 	    {
 		loop();
 	    }
+
 	    deinit_gui();
     	}
 	close_libs();
