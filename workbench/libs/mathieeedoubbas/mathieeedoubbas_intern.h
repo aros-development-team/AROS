@@ -90,6 +90,10 @@ struct MathIeeeDoubBasBase
 #define IEEESPExponent_Mask    0x7F800000 /*  8 bit for the exponent */
 #define IEEESPSign_Mask        0x80000000 /*  1 bit for the sign     */
 
+#define one_Hi 0x3ff00000
+#define one_Lo 0x00000000
+#define one_64 0x3ff0000000000000ULL
+
 
 #endif /* __MATHIEEEDOUBBAS_INTERN_H__  */
 
