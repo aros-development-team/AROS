@@ -644,16 +644,8 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj,
     dy = abs(msg->y2 - msg->y1);
 
     /* which direction? */
-    /* always drawing from top to bottom to easier sync with areafill algo. */
-    if(msg->y1 < msg->y2) {
-      y = msg->y1;
-      x = msg->x1;
-      if (msg->x2 > x) s1 = 1; else s1 = -1;
-    } else {
-      y = msg->y2;
-      x = msg->x2;
-      if (msg->x1 > x) s1 = 1; else s1 = -1;
-    }
+    if((msg->x2 - msg->x1) > 0) s1 = 1; else s1 = - 1;
+    if((msg->y2 - msg->y1) > 0) s2 = 1; else s2 = - 1;
 
     /* change axes if dx < dy */
     if(dx < dy)
@@ -670,6 +662,8 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj,
     incrE  = 2 * dy;         /* Increment use for move to E  */
     incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
 
+    x = msg->x1; y = msg->y1;
+    
     if (doclip)
     {
 	/* Pixel inside ? */
@@ -712,15 +706,23 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj,
             }
             else
             {
-                y = y + 1;
+                y = y + s2;
             }
 
             d = d + incrE;
         }
         else
         {
-            x = x + s1;
-            y = y + 1;
+            if(t == 1)
+            {
+                x = x + s1;
+                y = y + s2;
+            }
+            else
+            {
+                x = x + s1;
+                y = y + s2;
+            }
 
             d = d + incrNE;
         }
