@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/05/01 14:14:30  aros
+    Added workaround for GCC braindamage. Needed at least for Linux/m68k.
+
     Revision 1.6  1997/01/27 00:36:19  ldp
     Polish
 
@@ -75,6 +78,8 @@
 	key=keyword;
 	for(;;)
 	{
+	    UBYTE lkey;
+
 	    /* If the keyword has ended check the template */
 	    if(!*key)
 	    {
@@ -85,7 +90,8 @@
 		break;
 	    }
 	    /* If the two differ stop comparison. */
-	    if(ToLower(*key)!=ToLower(*template))
+	    lkey=ToLower(*key);
+	    if(lkey!=ToLower(*template))
 		break;
 	    /* Go to next character */
 	    key++;
