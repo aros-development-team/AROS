@@ -48,6 +48,8 @@ void AROS_SLIB_ENTRY(beginio,Input)();
 LONG AROS_SLIB_ENTRY(abortio,Input)();
 
 extern UWORD AROS_SLIB_ENTRY(PeekQualifier,Input) ();
+extern void AROS_SLIB_ENTRY(AddNullEvent,Input) ();
+
 static const char end;
 
 /****************************************************************************************/
@@ -95,6 +97,19 @@ static void *const functable[]=
     &AROS_SLIB_ENTRY(beginio,Input),
     &AROS_SLIB_ENTRY(abortio,Input),
     &AROS_SLIB_ENTRY(PeekQualifier,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(null,Input),
+    &AROS_SLIB_ENTRY(AddNullEvent,Input),    
     (void *)-1
 };
 
