@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.15  2001/08/21 19:02:59  falemagn
-    The nonblocking mode was broken, now should work, although I haven't tested it
+    Revision 1.16  2001/08/21 19:17:18  falemagn
+    Fixed the sheduling policy: before a reader/writer would have never let any other reader/writer read/write from/to the pipe until it had finished its job. Fixed now.
 
     Revision 1.14  2001/08/16 16:18:24  falemagn
     Implemented FSA_FILE_MODE. At the moment only handles FMF_NONBLOCK, in future it'll have to handle also FMF_RAW and the whole handler will have to be modified to be able to dispatch more requestes simultaneously. Implemented also a way to request unnamed pipes. They're not really unnamed, since you can see them, but they do the trick pretty well. Just open PIPEFS://unnamedpipe// with the mode you want, then CD to it and open "" with the mode you want as many times you want. Every opening of PIPEFS://unnamedpipe// will result in a NEW file opened (this is the only difference between this kind of pipe and the other ones). To be able to implement the ipe() funxtion it's been enough to open  PIPEFS://unnamedpipe// for reading, cd'ing to it, and then opening "" for writing
@@ -1111,8 +1111,8 @@ AROS_UFH3(LONG, pipefsproc,
 
 	    while (!IsListEmpty(&fn->pendingwrites) && !IsListEmpty(&fn->pendingreads))
 	    {
-		struct pipefsmessage *rmsg = (struct pipefsmessage *)GetHead(&fn->pendingreads);
-		struct pipefsmessage *wmsg = (struct pipefsmessage *)GetHead(&fn->pendingwrites);
+		struct pipefsmessage *rmsg = (struct pipefsmessage *)RemHead(&fn->pendingreads);
+		struct pipefsmessage *wmsg = (struct pipefsmessage *)RemHead(&fn->pendingwrites);
 
 		ULONG len = (rmsg->curlen > wmsg->curlen) ?
 		             wmsg->curlen : rmsg->curlen;
@@ -1141,15 +1141,18 @@ AROS_UFH3(LONG, pipefsproc,
 
 		if (!wmsg->curlen)
 		{
-		    kprintf("Writer: finished its job. Removing it from the list.\n");
-		    Remove((struct Node *)wmsg);
+		    kprintf("Writer: finished its job.\n");
 		    SendBack(wmsg, 0);
+		}
+		else
+		{
+		    kprintf("Writer: not finished yet. Enqueueing the request again.\n");
+		    AddTail(&fn->pendingwrites, (struct Node *)wmsg);
 		}
 
 		if (!rmsg->curlen)
 		{
-		    kprintf("Reader: finished its job. Removing it from the list.\n");
-		    Remove((struct Node *)rmsg);
+		    kprintf("Reader: finished its job.\n");
 		    SendBack(rmsg, 0);
 		}
 		else
@@ -1159,10 +1162,14 @@ AROS_UFH3(LONG, pipefsproc,
 		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length > wmsg->iofs->io_Union.io_READ_WRITE.io_Length
 		)
 		{
-		    kprintf("The reader wants to read more data than it's actually available, but since it's in nonblocking mode return anyway\n");
+		    kprintf("Reader: wants to read more data than it's actually available, but since it's in nonblocking mode return anyway\n");
  		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length = len;
-		    Remove((struct Node *)rmsg);
 		    SendBack(rmsg, 0);
+		}
+		else
+		{
+		    kprintf("Reader: not finished yet. Enqueueing the request again.\n");
+		    AddTail(&fn->pendingreads, (struct Node *)rmsg);
 		}
 	    }
 	}
