@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define DEBUG 0
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/memory.h>
@@ -118,20 +120,20 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
 
-    kprintf("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode);
+    D(bug("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode));
 
     if (openmode == -1)
     {
         errno = EINVAL;
-        kprintf( "__open: exiting with error EINVAL\n");
+        D(bug( "__open: exiting with error EINVAL\n"));
 	return -1;
     }
 
     currdesc = malloc(sizeof(fdesc));
-    if (!currdesc) { kprintf("__open: no memory [1]\n"); goto err; }
+    if (!currdesc) { D(bug("__open: no memory [1]\n")); goto err; }
 
     wanted_fd = __getfdslot(wanted_fd);
-    if (wanted_fd == -1) { kprintf("__open: no free fd\n"); goto err; }
+    if (wanted_fd == -1) { D(bug("__open: no free fd\n")); goto err; }
 
     lock = Lock((char *)pathname, SHARED_LOCK);
     if (!lock)
@@ -211,7 +213,7 @@ success:
 
     __setfdesc(wanted_fd, currdesc);
 
-    kprintf("__open: exiting\n");
+    D(bug("__open: exiting\n"));
 
     return wanted_fd;
 
@@ -221,7 +223,7 @@ err:
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
 
-    kprintf("__open: exiting with error %d\n", errno );
+    D(bug("__open: exiting with error %d\n", errno ));
 
     return -1;
 }
