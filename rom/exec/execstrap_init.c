@@ -6,8 +6,8 @@
     Lang: english
 */
 
-#define DEBUG 1
-#define LMBSUPPORT 1
+#define DEBUG 0
+#define LMBSUPPORT 0
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -91,7 +91,7 @@ const struct SpecialResident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.10 (29.3.1997)";
+const char version[] = "$VER: exec.strap 41.10 (2.4.1997)";
 
 /*
     Array of function slots to enable/disable. They are all set to 1 (enabled)
