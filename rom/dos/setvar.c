@@ -38,12 +38,17 @@
         it is recommended that you only use ASCII strings within variables,
         this is not actually required.
 
+	Variable names are not case sensitive.
+
+	SetVar() for an already existing variable changes the variable's
+	value to "buffer".
+
     INPUTS
         name        -   The name of the variable to set.
         buffer      -   The actual data of the variable.
         size        -   The size of the data in the buffer.
         flags       -   Combination of the type of variable to set (lower
-                        8 bits of the value, and various flags which control
+                        8 bits of the value), and various flags which control
                         this function. Flags defined are:
 
                         GVF_LOCAL_ONLY  -   set a local variable only,
@@ -53,14 +58,28 @@
                                             this flag will cause SetVar() to
                                             save the variable to ENVARC: as well
                                             as to ENV:.
+			GVF_BINARY_VAR and GVF_DONT_NULL_TERM are stored in
+			the lv_Flags field for local variables, but not
+			used otherwise by SetVar().
 
                         Note the default is to set a local environmental
                         variable.
+
+			The following variable types are defined:
+			LV_VAR		- local environment variable
+			LV_ALIAS	- shell alias
+			LVF_IGNORE	- internal shell use
+
+			LV_VAR and LV_ALIAS should be treated as
+			"exclusive or".
+
 
     RESULT
         Zero if this function failed, non-zero otherwise.
 
     NOTES
+    	It is possible to have two variables with the same name as
+	long as they have different types.
 
     EXAMPLE
 
@@ -74,6 +93,8 @@
         DeleteVar(), FindVar(), GetVar(),
 
     INTERNALS
+    	See FindVar() for a description of the inner workings of local
+	variables.
 
     HISTORY
         27-11-96    digulla automatically created from
@@ -94,7 +115,7 @@
       struct LocalVar *lv;
       
       /* does a Variable with that name already exist? */
-      if (NULL != (lv = FindVar(name, GVF_LOCAL_ONLY)))
+      if (NULL != (lv = FindVar(name, flags)))
       {
         /* delete old value of that existing variable */
         FreeMem(lv->lv_Value,lv->lv_Len);
@@ -111,7 +132,8 @@
           struct LocalVar * n = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 
           /* init the newly created structure */
-          lv->lv_Node.ln_Type = flags;
+
+          lv->lv_Node.ln_Type = flags;  /* ln_Type is UBYTE! */
           lv->lv_Node.ln_Name = (UBYTE *)lv + sizeof(struct LocalVar);
           CopyMem(name, lv->lv_Node.ln_Name, nameLen);
           lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
