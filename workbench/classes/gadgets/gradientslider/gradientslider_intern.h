@@ -45,6 +45,7 @@
 
 struct GradientSliderData
 {
+    struct BitMap		*savebm;
     Object			*frame;
     ULONG			maxval;		/* ISGU 	*/
     ULONG			curval;		/* ISGNU 	*/
@@ -53,6 +54,12 @@ struct GradientSliderData
     UWORD			*penarray;	/* ISU		*/
     WORD			freedom;	/* I		*/
     WORD			numpens;
+    WORD			clickoffsetx;
+    WORD			clickoffsety;
+    WORD			savefromx;
+    WORD			savefromy;
+    WORD			savebmwidth;
+    WORD			savebmheight;
 };
 
 
@@ -67,6 +74,7 @@ struct GradientSliderBase_intern
 #endif
     struct GfxBase		*gfxbase;
     struct Library		*utilitybase;
+    struct Library		*cybergfxbase;
     
 };
 
@@ -74,8 +82,13 @@ struct GradientSliderBase_intern
 
 struct IClass * InitGradientSliderClass (struct GradientSliderBase_intern *GradientSliderBase);
 VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD *penarray,
-		  WORD numpens, WORD orientation, struct GradientSliderBase_intern *GradientSliderBase);
+		  WORD numpens, WORD orientation, struct ColorMap *cm, 
+		  struct GradientSliderBase_intern *GradientSliderBase);
+VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawInfo *dri, 
+	      struct IBox *box, WORD state, struct GradientSliderBase_intern *GradientSliderBase);
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
+VOID GetSliderBox(struct IBox *gadgetbox, struct IBox *sliderbox);
+VOID GetKnobBox(struct GradientSliderData *data, struct IBox *sliderbox, struct IBox * knobbox);
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct GradientSliderBase_intern *GradientSliderBase);
 
@@ -101,6 +114,8 @@ typedef struct IntuitionBase IntuiBase;
 #undef IntuitionBase
 #define IntuitionBase	GSB(GradientSliderBase)->intuibase
 #endif
+
+#define CyberGfxBase	GSB(GradientSliderBase)->cybergfxbase
 
 #undef GfxBase
 #define GfxBase		GSB(GradientSliderBase)->gfxbase

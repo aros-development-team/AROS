@@ -71,17 +71,15 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!IntuitionBase)
 	return NULL;
 
-    /* ------------------------- */
-    /* Create the class itself */
-
+    if (!CyberGfxBase)
+        CyberGfxBase = OpenLibrary ("cybergraphics.library", 0);
+    /* we can live even without CyberGfxBase */
+    
     if (!GradientSliderBase->classptr)
     	GradientSliderBase->classptr = InitGradientSliderClass (GradientSliderBase);
     if (!GradientSliderBase->classptr)
     	return NULL;
 
-    /* ------------------------- */
-
-    /* You would return NULL if the init failed. */
     return TRUE;
 }
 
@@ -105,6 +103,9 @@ void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     
     CloseLibrary ((struct Library *) IntuitionBase);
     IntuitionBase = NULL;
+    
+    CloseLibrary(CyberGfxBase);
+    CyberGfxBase = NULL;
 }
 
 /***************************************************************************************************/

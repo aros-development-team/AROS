@@ -5,8 +5,7 @@
     Desc: Support functions for the gradientslider class
     Lang: English
 */
-#include <proto/graphics.h>
-#include <proto/intuition.h>
+
 #include <graphics/gfxmacros.h>
 #include <intuition/classes.h>
 #include <intuition/cghooks.h>
@@ -14,6 +13,11 @@
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
 #include <intuition/intuition.h>
+#include <cybergraphx/cybergraphics.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/cybergraphics.h>
 
 #include "gradientslider_intern.h"
 
@@ -134,7 +138,7 @@ STATIC VOID DitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
     if (height <= 2)
     {
     	SetAPen(rp, pen1);
-    	RectFill(rp, x1,y1,x2,y2);
+    	RectFill(rp, x1, y1, x2, y1);
     }
     
     if (height == 2)
@@ -183,7 +187,7 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
     if (width <= 2)
     {
     	SetAPen(rp, pen1);
-    	RectFill(rp, x1,y1,x2,y2);
+    	RectFill(rp, x1, y1, x1, y2);
     }
     
     if (width == 2)
@@ -221,14 +225,116 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
 
 /***************************************************************************************************/
 
+STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, LONG *pen1_rgb, LONG *pen2_rgb, 
+		    LONG *delta_r, LONG *delta_g, LONG *delta_b,
+		    struct GradientSliderBase_intern *GradientSliderBase)
+{
+    GetRGB32(cm, pen1, 1, (ULONG *)pen1_rgb);
+    GetRGB32(cm, pen2, 1, (ULONG *)pen2_rgb);
+    
+    ((ULONG)pen1_rgb[0]) >>= 24;
+    ((ULONG)pen1_rgb[1]) >>= 24;
+    ((ULONG)pen1_rgb[2]) >>= 24;
+
+    ((ULONG)pen2_rgb[0]) >>= 24;
+    ((ULONG)pen2_rgb[1]) >>= 24;
+    ((ULONG)pen2_rgb[2]) >>= 24;
+    
+    *delta_r = pen2_rgb[0] - pen1_rgb[0];
+    *delta_g = pen2_rgb[1] - pen1_rgb[1];
+    *delta_b = pen2_rgb[2] - pen1_rgb[2];
+}
+
+/***************************************************************************************************/
+
+STATIC VOID TrueDitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+		        struct ColorMap *cm, struct GradientSliderBase_intern *GradientSliderBase)
+{
+    LONG width = x2 - x1 + 1;
+    LONG height = y2 - y1 + 1;
+    LONG y;
+    LONG pen1_rgb[3], pen2_rgb[3];
+    LONG delta_r, delta_g, delta_b;
+
+    if (height <= 2)
+    {
+    	SetAPen(rp, pen1);
+    	RectFill(rp, x1, y1, x2, y1);
+    }
+    
+    if (height == 2)
+    {
+    	SetAPen(rp, pen2);
+    	RectFill(rp, x1, y1 + 1, x2, y2);
+    }
+    
+    if (height <= 2) return;
+    
+    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b, GradientSliderBase);
+       
+    for(y = 0; y < height; y++)
+    {
+        LONG red   = pen1_rgb[0] + (delta_r * y + (height - 1) / 2) / (height - 1);
+	LONG green = pen1_rgb[1] + (delta_g * y + (height - 1) / 2) / (height - 1);
+	LONG blue  = pen1_rgb[2] + (delta_b * y + (height - 1) / 2) / (height - 1);
+	
+        FillPixelArray(rp, x1, y1 + y, width, 1, (red << 16) + (green << 8) + blue);
+    }
+}
+
+/***************************************************************************************************/
+
+STATIC VOID TrueDitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+		        struct ColorMap *cm, struct GradientSliderBase_intern *GradientSliderBase)
+{
+    LONG width = x2 - x1 + 1;
+    LONG height = y2 - y1 + 1;
+    LONG x;
+    LONG pen1_rgb[3], pen2_rgb[3];
+    LONG delta_r, delta_g, delta_b;
+
+    if (width <= 2)
+    {
+    	SetAPen(rp, pen1);
+    	RectFill(rp, x1, y1, x1, y2);
+    }
+    
+    if (width == 2)
+    {
+    	SetAPen(rp, pen2);
+    	RectFill(rp, x1 + 1, y1, x2, y2);
+    }
+    
+    if (width <= 2) return;
+     
+    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b, GradientSliderBase);
+   
+    for(x = 0; x < width; x++)
+    {
+        LONG red   = pen1_rgb[0] + (delta_r * x + (width - 1) / 2) / (width - 1);
+	LONG green = pen1_rgb[1] + (delta_g * x + (width - 1) / 2) / (width - 1);
+	LONG blue  = pen1_rgb[2] + (delta_b * x + (width - 1) / 2) / (width - 1);
+	
+        FillPixelArray(rp, x1 + x, y1, 1, height, (red << 16) + (green << 8) + blue);
+    }    
+}
+
+/***************************************************************************************************/
+
 VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD *penarray,
-		  WORD numpens, WORD orientation, struct GradientSliderBase_intern *GradientSliderBase)
+		  WORD numpens, WORD orientation, struct ColorMap *cm,
+		  struct GradientSliderBase_intern *GradientSliderBase)
 {
     UWORD *pen = penarray;
     ULONG step, pos = 0;
     WORD  x, y, width, height, oldx, oldy, endx, endy;
     WORD  pen1, pen2, i;
-
+    BOOL  truecolor = FALSE;
+    
+    if (CyberGfxBase && (GetBitMapAttr(rp->BitMap, BMA_DEPTH) >= 15))
+    {
+        truecolor = TRUE;
+    }
     pen1 = *pen++;
 
     switch(orientation)
@@ -245,7 +351,12 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		endy = y - 1;
 		if (endy >= oldy)
 		{
-		    DitherV(rp, x1, oldy, x2, endy, pen1, pen2, GradientSliderBase);
+		    if (truecolor)
+		    {
+		        TrueDitherV(rp, x1, oldy, x2, endy, pen1, pen2, cm, GradientSliderBase);		        
+		    } else {
+		        DitherV(rp, x1, oldy, x2, endy, pen1, pen2, GradientSliderBase);
+		    }
 		    pen1 = pen2;
 		    oldy = y;
 	        }
@@ -264,8 +375,12 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		endx = x - 1;
 		if (endx >= oldx)
 		{
-
-		    DitherH(rp, oldx, y1, endx, y2, pen1, pen2, GradientSliderBase);
+		    if (truecolor)
+		    {
+		        TrueDitherH(rp, oldx, y1, endx, y2, pen1, pen2, cm, GradientSliderBase);
+		    } else {
+		        DitherH(rp, oldx, y1, endx, y2, pen1, pen2, GradientSliderBase);
+		    }
 		    pen1 = pen2;
 		    oldx = x;
 	        }
@@ -301,6 +416,60 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
     }
 }
 
+
+/***************************************************************************************************/
+
+VOID GetSliderBox(struct IBox *gadgetbox, struct IBox *sliderbox)
+{
+    sliderbox->Left   = gadgetbox->Left   + FRAMESLIDERSPACINGX;
+    sliderbox->Top    = gadgetbox->Top    + FRAMESLIDERSPACINGY;
+    sliderbox->Width  = gadgetbox->Width  - FRAMESLIDERSPACINGX * 2;
+    sliderbox->Height = gadgetbox->Height - FRAMESLIDERSPACINGY * 2;    
+}
+
+/***************************************************************************************************/
+
+VOID GetKnobBox(struct GradientSliderData *data, struct IBox *sliderbox, struct IBox * knobbox)
+{
+    if (data->freedom == LORIENT_HORIZ)
+    {
+        knobbox->Left   = sliderbox->Left + (sliderbox->Width - data->knobpixels) * data->curval / data->maxval;
+        knobbox->Top    = sliderbox->Top;
+	knobbox->Width  = data->knobpixels;
+	knobbox->Height = sliderbox->Height;
+    } else {
+        knobbox->Left   = sliderbox->Left;
+	knobbox->Top    = sliderbox->Top + (sliderbox->Height - data->knobpixels) * data->curval / data->maxval;
+	knobbox->Width  = sliderbox->Width;
+	knobbox->Height = data->knobpixels;
+    }
+}
+
+/***************************************************************************************************/
+
+VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawInfo *dri, 
+	      struct IBox *box, WORD state, struct GradientSliderBase_intern *GradientSliderBase)
+{
+    if ((box->Width > 2) && (box->Height > 2))
+    {
+	SetDrMd(rp, JAM1);
+
+	/* black frame around box */
+
+        SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+		
+	RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top);
+	RectFill(rp, box->Left + box->Width - 1, box->Top + 1, box->Left + box->Width - 1, box->Top + box->Height - 1);
+	RectFill(rp, box->Left, box->Top + box->Height - 1, box->Left + box->Width - 2, box->Top + box->Height - 1);
+	RectFill(rp, box->Left, box->Top + 1, box->Left, box->Top + box->Height - 2);
+	
+	/* white box inside */
+	
+	SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+	
+	RectFill(rp, box->Left + 1, box->Top + 1, box->Left + box->Width - 2, box->Top + box->Height - 2);
+    }
+}
 
 /***************************************************************************************************/
 
