@@ -1,12 +1,10 @@
 #ifndef ___AROSC_PRIVDATA_H
 #define ___AROSC_PRIVDATA_H
 
-#define timeval aros_timeval
 #include <exec/semaphores.h>
 #include <devices/timer.h>
 #include <proto/timer.h>
 #include <dos/dos.h>
-#undef timeval
 
 #include <sys/types.h>
 #include <sys/arosc.h>
@@ -32,7 +30,7 @@ struct arosc_privdata
        however CLI programs are invoked as sort of subroutines of the CLI
        process, although they must behave as if they were the only ones
        having possession of their Process structure. Hence, this field
-       is used to save/restore the data of the previous CLI proess.  */
+       is used to save/restore the data of the previous CLI process.  */
     struct arosc_privdata *acpd_oldprivdata;
 
     /* malloc.c */

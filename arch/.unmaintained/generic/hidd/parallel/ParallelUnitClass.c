@@ -27,7 +27,6 @@
 
 
 /* the rest are Amiga includes */
-#define timeval aros_timeval
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -43,7 +42,6 @@
 #include <hidd/unixio.h>
 
 #include "parallel_intern.h"
-#undef timeval
 
 #undef  SDEBUG
 #undef  DEBUG
