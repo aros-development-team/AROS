@@ -29,18 +29,18 @@ extern void set_close_libraries(void);
 #define SETNAME(set) __##set##_SET__
 
 #define DECLARESET(set) \
-extern void * SETNAME(set)[]
+extern void * SETNAME(set)[];
 
 #define DEFINESET(set) \
-void * SETNAME(set)[] __attribute__((weak))={0,0}
+void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, set, pri)\
 	const int __aros_set_##pri##_##set##_element_##symbol;
 
-#define ADD2INIT(symbol, pri)\
+#define ADD2INIT(symbol, pri)                                              \
 	ADD2SET(symbol, __INIT_SET__, pri)
 
-#define ADD2EXIT(symbol, pri)\
+#define ADD2EXIT(symbol, pri)                                              \
 	ADD2SET(symbol, __EXIT_SET__, pri)
 
 
@@ -51,8 +51,8 @@ void * SETNAME(set)[] __attribute__((weak))={0,0}
 */
 #define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc)   \
 btype bname;                                                                 \
-extern int __includeshowerror;                                               \
-const int __libincludeshowerror __attribute__((weak)) = &__includeshowerror; \
+extern int __includelibrarieshandling;                                               \
+const int __setincludelibrarieshandling __attribute__((weak)) = &__includelibrarieshandling; \
 const ULONG bname##_version __attribute__((weak)) = ver;                     \
 struct libraryset libraryset_##bname =                                       \
 {                                                                            \
