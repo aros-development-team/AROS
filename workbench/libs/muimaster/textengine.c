@@ -223,7 +223,7 @@ struct zune_context
 /**************************************************************************
  ...
 **************************************************************************/
-ZText *zune_text_new (const STRPTR preparse, const STRPTR content, int argtype, TEXT argbyte)
+ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, TEXT argbyte)
 {
     ZText *text;
     /* STRPTR *lines; */
