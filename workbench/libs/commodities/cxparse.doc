@@ -40,7 +40,7 @@ IECLASS_RAWKEY.
 "qualifier" may be any of those defined below; each qualifier string has a
 correspondance in an input event qualifier:
 
-   Qualifier string         Input event class
+   Qualifier string         Input event qualifier
    --------------------     ---------------------
    "lshift"                 IEQUALIFIER_LSHIFT
    "rshift"                 IEQUALIFIER_RSHIFT
