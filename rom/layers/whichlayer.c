@@ -30,8 +30,13 @@
 	struct LayersBase *, LayersBase, 22, Layers)
 
 /*  FUNCTION
+        Determines in which layer the point (x,y) is to be found.
+        Starts with the frontmost layer. 
 
     INPUTS
+        li - pointer to Layers_Info structure
+        x  - x-coordinate
+        y  - y-coordinate
 
     RESULT
 
