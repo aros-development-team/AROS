@@ -31,6 +31,7 @@ struct emulbase
     struct Library   		* oopbase;
     struct SignalSemaphore 	  sem;
     struct SignalSemaphore	  memsem;
+    char    	    	    	* current_volume;
     APTR			  mempool;
     HIDD			  unixio;
     BPTR 			  seglist;
@@ -57,6 +58,8 @@ struct filehandle
     char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
     long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
     DIR  * DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
+    char * volume;
+    char * volumename;
     long   fd;
 };
 #define FHD_FILE      0
