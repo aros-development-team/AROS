@@ -6,24 +6,29 @@ include $(TOP)/config/make.cfg
 
 FILES	:= \
     Ask \
+    Assign \
     CD \
     Echo \
     Else \
     EndIf \
     EndSkip \
+    Execute \
     FailAt \
     Fault \
+    Get \
+    Getenv \
     If \
     Lab \
     Prompt \
     Quit \
+    Run \
     Set \
     Setenv \
-    Unset \
-    Unsetenv \
     Skip \
     Stack \
     Status \
+    Unset \
+    Unsetenv \
     Why
 
 # I'd like to move this into a rule, but it would be far too hard.
