@@ -317,7 +317,7 @@ static struct ColorMap	*cm;
 static struct BitMap 	*patternbm;
 static struct Hook  	*oldhook, backfillhook;
 static UBYTE 	    	*chunkydata;
-static UBYTE	    	remaptable[1 << PATTERN_DEPTH];
+static WORD	    	remaptable[1 << PATTERN_DEPTH];
 static UBYTE	    	pens_alloced;
 
 extern ULONG 	    	HookEntry();
@@ -334,7 +334,7 @@ static void cleanup(char *msg)
 	
 	for(i = 0; i < (1 << PATTERN_DEPTH); i++)
 	{
-	    ReleasePen(cm, i);
+	    if (remaptable[i] != -1) ReleasePen(cm, remaptable[i]);
 	}
     }
 
