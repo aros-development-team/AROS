@@ -162,7 +162,7 @@ void remChangeInt(struct afsbase *afsbase, struct Volume *volume) {
 			(volume->iochangeint->iotd_Req.io_Error == 0)
 		)
 	{
-		volume->iochangeint->iotd_Req.io_Command = TD_ADDCHANGEINT;
+		volume->iochangeint->iotd_Req.io_Command = TD_REMCHANGEINT;
 		SendIO((struct IORequest *)&volume->iochangeint->iotd_Req);
 	}
 }
