@@ -72,10 +72,10 @@ struct DiskObject *__alib_dObject = NULL;	/* Used for reading tooltypes */
     if(argc != 0)
 	return argv;		/* We were called from shell */
 
-    if(startup->sm_NumArgs >= 2)
+    if(startup->sm_NumArgs >= 1) /* Paranoia? */
     {
-	olddir = CurrentDir(startup->sm_ArgList[1].wa_Lock);
-	__alib_dObject = GetDiskObject(startup->sm_ArgList[1].wa_Name);
+	olddir = CurrentDir(startup->sm_ArgList[0].wa_Lock);
+	__alib_dObject = GetDiskObject(startup->sm_ArgList[0].wa_Name);
 	CurrentDir(olddir);
     }
     else
