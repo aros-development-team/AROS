@@ -114,7 +114,7 @@ it doesn't change.
 
 BUG000017
 bergers@cip.e-technik.uni-erlangen.de
-Local DOS-variables a not deallocated yet when the task is ending.
+Local DOS-variables are not deallocated yet when the task is ending.
 
 BUG000018
 bergers@cip.e-technik.uni-erlangen.de
@@ -146,8 +146,8 @@ berger@cip.e-technik.uni-erlangen.de
 Demos/sift crashes with a GURU-Meditation saying that memory was
 freed twice.
 
-BUG000024
-hkiel@aros.org fixed
+BUG000024 fixed
+hkiel@aros.org 
 The prompt of the shell does not show the complete path anymore, it just
 shows the last subdirectory of the path (ie. "Workbench:Locale/Countries"
 becomes "Countries"). This however is only on ffs_device, ram_device is okay.
