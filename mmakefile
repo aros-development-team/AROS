@@ -230,7 +230,7 @@ dist-src :
 # END_DESC{target}
 #MM
 clean :
-	-$(RM) $(ARCHDIR) mmake.cache config.cache config.status config.log
+	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log
 
 # BEGIN_DESC{internaltarget}
 # \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
