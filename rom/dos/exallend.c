@@ -63,21 +63,29 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
-    /* Get pointer to filehandle */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    if (((struct InternalExAllControl *)control)->fib == NULL)
+    {
+        /* Get pointer to filehandle */
+        struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_EXAMINE_ALL_END, DOSBase);
+        /* Get pointer to I/O request. Use stackspace for now. */
+        struct IOFileSys iofs;
 
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
+        /* Prepare I/O request. */
+        InitIOFS(&iofs, FSA_EXAMINE_ALL_END, DOSBase);
 
-    /* Send the request. May not fail. */
-    DosDoIO(&iofs.IOFS);
+        iofs.IOFS.io_Device = fh->fh_Device;
+        iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+        /* Send the request. May not fail. */
+        DosDoIO(&iofs.IOFS);
+    }
+    else
+    {
+        control->eac_LastKey = 0;
+    }
+        
 
     AROS_LIBFUNC_EXIT
 } /* ExAllEnd */
