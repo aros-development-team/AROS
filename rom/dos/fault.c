@@ -89,7 +89,7 @@
     else
     {
 	/* String buffer/index for long 2 string */
-	UBYTE l2str[12], l2idx = 9;
+	UBYTE l2str[12], l2idx = 11;
 
 	theString = "Unknown error ";
 	while((index < len) && *theString)
@@ -108,10 +108,11 @@
 	l2str[l2idx--] = '\0';
 	while(code != 0)
 	{
-	    l2idx--;
-	    l2str[l2idx--] = (code % 10) + 0x30;
+	    l2str[l2idx--] = (code % 10) + '0';
 	    code /= 10;
 	}
+
+	l2str[l2idx] = ' ';
 
 	/* Copy the number onto the fault string */
 	while((index < len) && l2str[l2idx])
