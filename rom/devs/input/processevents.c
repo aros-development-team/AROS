@@ -370,15 +370,16 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 			  IEQUALIFIER_MIDBUTTON)
 		    
 	    InputDevice->ActQualifier &= ~MOUSE_QUALIFIERS;
-	    InputDevice->ActQualifier |= (((struct InputEvent *)gpdio->io_Data)->ie_Qualifier & MOUSE_QUALIFIERS);
+	    InputDevice->ActQualifier |= (gpdie->ie_Qualifier & MOUSE_QUALIFIERS);
 	    
 	    /* Gameport just returns the frame count since the last
 	       report in ie_TimeStamp.tv_secs; we therefore must add
 	       a real timestamp ourselves */
 	    GetSysTime(&gpdie->ie_TimeStamp);	    
 	    
+	    //kprintf("** adding gameport event (addr = %x) class = %d \n",gpdie,gpdie->ie_Class);
 	    /* Add event to queue */
-	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
+	    AddEQTail(gpdie, InputDevice);
 
 	    /* New event from gameport device */
     	    D(bug("id: Gameport event\n"));
