@@ -43,8 +43,10 @@ struct IconEntry
 
     /* the following could be removed because they are inside IconList_Entry */
     char *filename;
-    struct DiskObject *dob;
+    char *label;
     void *udata;
+
+    struct DiskObject *dob; /* The icons disk objects */
 
     int x,y;
     int width,height;
@@ -291,7 +293,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	if (node->dob && node->x != NO_ICON_POSITION && node->y != NO_ICON_POSITION)
 	{
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
-	    DrawIconState(_rp(obj),node->dob,node->filename,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+	    DrawIconState(_rp(obj),node->dob,node->label,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
 	}
 	node = Node_Next(node);
     }
@@ -321,6 +323,7 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
     while ((node = (struct IconEntry*)RemTail((struct List*)&data->icon_list)))
     {
 	if (node->dob) FreeDiskObject(node->dob);
+	if (node->label) FreePooled(data->pool,node->label,strlen(node->label)+1);
 	if (node->filename) FreePooled(data->pool,node->filename,strlen(node->filename)+1);
         FreePooled(data->pool,node,sizeof(struct IconEntry));
     }
@@ -339,35 +342,54 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
 static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
-    struct IconEntry *entry = AllocPooled(data->pool,sizeof(struct IconEntry));
+    struct IconEntry *entry;
+    struct DiskObject *dob;
+    struct Rectangle rect;
 
-    if (entry)
+    if (!(dob = GetIconTagList(msg->filename,TAG_DONE)))
+	return 0;
+
+    if (!(entry = AllocPooled(data->pool,sizeof(struct IconEntry))))
     {
-	memset(entry,0,sizeof(struct IconEntry));
-	entry->filename = AllocPooled(data->pool,strlen(msg->filename)+1);
-	if (entry->filename)
-	{
-	    struct Rectangle rect;
-	    GetIconRectangleA(NULL,msg->dob,NULL,&rect,NULL);
-
-	    entry->dob = msg->dob;
-	    entry->udata = msg->udata;
-
-	    entry->x = msg->dob->do_CurrentX;
-	    entry->y = msg->dob->do_CurrentY;
-	    entry->width = rect.MaxX - rect.MinX;
-	    entry->height = rect.MaxY - rect.MinY;
-	    if (entry->x < data->view_x && entry->x != NO_ICON_POSITION) data->view_x = entry->x;
-	    if (entry->y < data->view_y && entry->y != NO_ICON_POSITION) data->view_y = entry->y;
-	    strcpy(entry->filename,msg->filename);
-	    AddTail((struct List*)&data->icon_list,(struct Node*)entry);
-	    return 1;
-	} else
-	{
-	    FreePooled(data->pool,entry,sizeof(struct IconEntry));
-	}
+	FreeDiskObject(dob);
+	return 0;
     }
-    return 0;
+
+    memset(entry,0,sizeof(struct IconEntry));
+
+    if (!(entry->filename = AllocPooled(data->pool,strlen(msg->filename)+1)))
+    {
+	FreePooled(data->pool,entry,sizeof(struct IconEntry));
+	FreeDiskObject(dob);
+	return 0;
+    }
+
+    strcpy(entry->filename,msg->filename);
+
+    if (!(entry->label = AllocPooled(data->pool,strlen(msg->label)+1)))
+    {
+    	FreePooled(data->pool,entry->filename,strlen(entry->filename)+1);
+	FreePooled(data->pool,entry,sizeof(struct IconEntry));
+	FreeDiskObject(dob);
+	return 0;
+    }
+
+    strcpy(entry->label,msg->label);
+
+    GetIconRectangleA(NULL,dob,NULL,&rect,NULL);
+
+    entry->dob = dob;
+    entry->udata = msg->udata;
+
+    entry->x = dob->do_CurrentX;
+    entry->y = dob->do_CurrentY;
+    entry->width = rect.MaxX - rect.MinX;
+    entry->height = rect.MaxY - rect.MinY;
+    if (entry->x < data->view_x && entry->x != NO_ICON_POSITION) data->view_x = entry->x;
+    if (entry->y < data->view_y && entry->y != NO_ICON_POSITION) data->view_y = entry->y;
+    strcpy(entry->filename,msg->filename);
+    AddTail((struct List*)&data->icon_list,(struct Node*)entry);
+    return 1;
 }
 
 /**************************************************************************
@@ -490,8 +512,8 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 	    *msg->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
 	} else
 	{
-	    node->entry.dob = node->dob;
-	    node->entry.name = node->filename;
+	    node->entry.filename = node->filename;
+	    node->entry.label = node->label;
 	    node->entry.udata = node->udata;
 	    *msg->entry = &node->entry;
 	}
@@ -508,8 +530,8 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
     {
 	if (node->selected)
 	{
-	    node->entry.dob = node->dob;
-	    node->entry.name = node->filename;
+	    node->entry.filename = node->filename;
+	    node->entry.label = node->label;
 	    node->entry.udata = node->udata;
 	    *msg->entry = &node->entry;
 	    return 0;
@@ -692,12 +714,20 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 	entry = ead;
 	do
 	{
-	    struct DiskObject *dob;
-
 	    strcpy(filename,ead->ed_Name);
 	    filename[strlen(filename)-5]=0;
+
 	    if (Stricmp(filename,"Disk")) /* skip disk.info */
 	    {
+		char buf[512];
+		strcpy(buf,data->drawer);
+		AddPart(buf,filename,sizeof(buf));
+
+		if (!(DoMethod(obj,MUIM_IconList_Add,buf,filename,NULL /* udata */)))
+		{
+		}
+
+#if 0
 		dob = GetIconTagList(filename,TAG_DONE);
 		if (dob)
 		{
@@ -707,6 +737,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 	    	        FreeDiskObject(dob);
 	    	    }
 	    	}
+#endif
 	    }
 
 	    ead = ead->ed_Next;
@@ -850,10 +881,10 @@ struct NewDosList
 
 struct NewDosNode
 {
-	struct MinNode node;
-	STRPTR name;
-	STRPTR device;
-	struct MsgPort *port;
+    struct MinNode node;
+    STRPTR name;
+    STRPTR device;
+    struct MsgPort *port;
 };
 
 static struct NewDosList *DosList_Create(void)
@@ -990,19 +1021,12 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDraw
 	    char buf[300];
 	    if (nd->name)
 	    {
-	    	struct DiskObject *dob;
 		strcpy(buf,nd->name);
 		strcat(buf,":Disk");
 
-		dob = GetIconTagList(buf,TAG_DONE);
-		if (dob)
+		if (!(DoMethod(obj,MUIM_IconList_Add,buf,nd->name,NULL/* udata */)))
 		{
-		    if (!(DoMethod(obj,MUIM_IconList_Add,dob,nd->name,NULL/* udata */))) /* control of dob is given to super class */
-		    {
-			FreeDiskObject(dob);
-		    }
 		}
-
 	    }
 	    nd = Node_Next(nd);
 	}

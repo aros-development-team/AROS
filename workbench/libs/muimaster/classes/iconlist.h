@@ -24,7 +24,7 @@
 #define MUIM_IconList_NextSelected      (METHOD_USER|0x1042ad8c) /* Zune: V1 */
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
-struct MUIP_IconList_Add                {ULONG MethodID; struct DiskObject *dob; char *filename; void *udata; /* More to add */};
+struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; void *udata; /* More file attrs to add */};
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 
 #define MUIV_IconList_NextSelected_Start 0
@@ -36,9 +36,9 @@ struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry *
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry
 {
-    struct DiskObject *dob;
-    char *name;
-    void *udata;
+    char *filename;  /* The absolute filename of the file which the icons represents (means without the */
+    char *label;     /* The label which is displayed (often FilePart(filename)) */
+    void *udata;     /* userdate given at MUIM_IconList_Add */
 };
 
 /******************/
