@@ -113,11 +113,6 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
     G(obj)->Height = (data->fontheight + data->spacing) * data->numlabels -
                      data->spacing;
 
-    if (data->tattr)
-        G(obj)->Height = data->numlabels * (data->tattr->ta_YSize + data->spacing);
-    else if ((G(obj)->Flags & GFLG_LABELITEXT) && (G(obj)->GadgetText))
-        G(obj)->Height = data->numlabels * (G(obj)->GadgetText->ITextFont->ta_YSize + data->spacing);
-
     tags[0].ti_Data = G(obj)->Width;
     tags[1].ti_Data = GetTagData(AROSMX_TickHeight, MX_HEIGHT, msg->ops_AttrList);
     tags[2].ti_Data = (IPTR) data->dri;
