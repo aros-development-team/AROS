@@ -17,7 +17,7 @@
 	AROS_LH1(LONG, PutStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string, D1),
+	AROS_LHA(CONST_STRPTR, string, D1),
 
 /*  LOCATION */
 
