@@ -38,6 +38,8 @@ setup-exec-freebsd : $(GENINCDIR)/sigcore.h
 %rule_archalias mainmmake=kernel-dos arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=freebsd alias=unix
 
+#MM- workbench-freebsd : workbench-unix
+
 #MM
 exec-freebsd : $(OSGENDIR)/exec/init.o
 
