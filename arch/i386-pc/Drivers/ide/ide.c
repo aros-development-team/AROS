@@ -922,27 +922,19 @@ UWORD Support[] =
     0
 };
 
-struct nsdqr
-{
-    ULONG   DevQueryFormat;
-    ULONG   SizeAvailable;
-    UWORD   DeviceType;
-    UWORD   DeviceSubType;
-    APTR    Data;
-};
-
 void cmd_DevQuery(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
-    struct nsdqr    *d;
+    struct NSDeviceQueryResult *d;
 
-    d = (struct nsdqr *)ioStd(iorq)->io_Data;
-    d->DevQueryFormat = 0;
-    d->SizeAvailable = sizeof(struct nsdqr);
-    d->DeviceType = 1;  // NSDEVTYPE_TRACKDISK
-    d->DeviceSubType = 0;
-    d->Data = &Support;
+    d = (struct NSDeviceQueryResult *)ioStd(iorq)->io_Data;
+    
+    d->DevQueryFormat 	 = 0;
+    d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+    d->DeviceType 	 = NSDEVTYPE_TRACKDISK;
+    d->DeviceSubType 	 = 0;
+    d->SupportedCommands = Support;
 
-    ioStd(iorq)->io_Actual = sizeof(struct nsdqr);
+    ioStd(iorq)->io_Actual = sizeof(struct NSDeviceQueryResult);
 }
 
 void (*map64[])() =
