@@ -26,6 +26,9 @@
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
+#ifndef LIBCORE_BASE_H
+#   include <libcore/base.h>
+#endif
 #include <string.h>
 
 /* Internal prototypes */
@@ -57,16 +60,23 @@ extern struct ExecBase * SysBase;
 
 struct IconBase
 {
-    struct Library    library;
-    BPTR	      seglist;
+    struct LibHeader  libheader;
+
+    /* Private parts */
+#if 0
     struct Library  * dosbase;
+#endif
     struct Library  * utilitybase;
     struct Hook       dsh;
 };
 
 #define LB(icon)        ((struct IconBase *)icon)
+#if 0
 #undef DOSBase
 #define DOSBase     (((struct IconBase *)IconBase)->dosbase)
+#else
+extern struct DosLibrary * DOSBase;
+#endif
 #undef UtilityBase
 #define UtilityBase	(((struct IconBase *)IconBase)->utilitybase)
 
