@@ -29,7 +29,7 @@ kernel :
 	@$(NOP)
 
 #MM setup-freebsd : setup-exec-freebsd setup-dos-unix \
-#MM	setup-battclock-unix setup-x11
+#MM	setup-battclock-unix setup-$(GFXSYSTEM)
 setup-freebsd : 
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
 	%add_objects rom/boot/strap_emul
