@@ -88,6 +88,18 @@ extern OOP_AttrBase HiddPCIDeviceAttrBase;
 
 enum
 {
+    moHidd_PCIDevice_ReadConfigByte,
+    moHidd_PCIDevice_ReadConfigWord,
+    moHidd_PCIDevice_ReadConfigLong,
+    moHidd_PCIDevice_WriteConfigByte,
+    moHidd_PCIDevice_WriteConfigWord,
+    moHidd_PCIDevice_WriteConfigLong,
+
+    NUM_PCIDEVICE_METHODS
+};
+
+enum
+{
     aoHidd_PCIDevice_Driver,	/* [I.G] Hardware PCI driver that handles this device */
     aoHidd_PCIDevice_Bus,	/* [I.G] Bus the device is on */
     aoHidd_PCIDevice_Dev,	/* [I.G] Device number */
@@ -222,6 +234,47 @@ enum
 
 #define ADDRF_IO	(1 << ADDRB_IO)
 #define ADDRF_PREFETCH	(1 << ADDRB_PREFETCH)
+
+struct pHidd_PCIDevice_ReadConfigByte
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+};
+
+struct pHidd_PCIDevice_ReadConfigWord
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+};
+
+struct pHidd_PCIDevice_ReadConfigLong
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+};
+
+struct pHidd_PCIDevice_WriteConfigByte
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+    UBYTE	    val;    /* Value to be written */
+};
+
+struct pHidd_PCIDevice_WriteConfigWord
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+    UWORD	    val;    /* Value to be written */
+};
+
+
+struct pHidd_PCIDevice_WriteConfigLong
+{
+    OOP_MethodID    mID;
+    UBYTE	    reg;    /* Register number */
+    ULONG	    val;    /* Value to be written */
+};
+
 
 /* PCI driver class */
 
