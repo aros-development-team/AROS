@@ -820,10 +820,9 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    }
     	    else /* Integer gadget ? */
     	    {
-    		/* Is key a standard ASCII letter number or '-' ? */
-    		if (    (letter < 32) 
-    	             || (letter > 128)
-    	            )
+		/* Is key a printable character ? */
+#warning Locale should be used here...
+		if ((letter & 0x60) == 0)
     		{
     	    	    sgw->EditOp = EO_BADFORMAT;
     		}
