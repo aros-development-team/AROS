@@ -59,13 +59,21 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
     
     SetDrMd (rp, JAM1);
 
+/* nlorentz: Why do we have EraseRect here ?
+	This erases DOpus' gadget text when a
+	gadget is pressed and released. (DOpus does not
+	put anything in gadget->GadgetText, but instead only
+	renders the button text once and assumes that the
+	text is never deleted.
+
+	
     EraseRect (rp
 	, bbox.Left
 	, bbox.Top
 	, bbox.Left + bbox.Width - 1
 	, bbox.Top + bbox.Height - 1
     );
-
+*/
     switch (gadget->Flags & GFLG_GADGHIGHBITS)
     {
     case GFLG_GADGHIMAGE:
