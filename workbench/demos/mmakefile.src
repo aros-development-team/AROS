@@ -21,6 +21,7 @@ else
 FILES	:= \
     cctest \
     clippingtest \
+    colorwheel \
     compleximage \
     consoledemo \
     cxtest \
