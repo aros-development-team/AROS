@@ -30,7 +30,6 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	    kernel-oop-linklib \
 #MM	    kernel-devs \
 #MM	    kernel-layers-linklib \
-#MM	    kernel-intuition-native \
 #MM	    kernel-battclock-native \
 #MM	    kernel-hidd-linklib \
 #MM	    kernel-utility-linklib \
@@ -130,7 +129,6 @@ kernel-intuition-native-i386 :
 
 #MM kernel-devs-native-i386 :
 kernel-devs-native-i386 :
-	%add_objects rom/boot/libconsole
 	%add_objects rom/boot/libgameport
 	%add_objects rom/boot/libinput
 	%add_objects rom/boot/libkeyboard
