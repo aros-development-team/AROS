@@ -27,7 +27,7 @@ extern int  driver_open (struct LIBBASETYPE *);
 extern void driver_close (struct LIBBASETYPE *);
 extern void driver_expunge (struct LIBBASETYPE *);
 
-int Graphics_entry(void)
+int MathFFP_entry(void)
 {
     /* If the library was executed by accident return error code. */
     return -1;
@@ -62,7 +62,7 @@ static const APTR inittabl[4]=
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, Graphics)
+	   struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
