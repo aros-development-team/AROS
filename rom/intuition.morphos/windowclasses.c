@@ -117,8 +117,6 @@ struct dragbar_data
 
 };
 
-#define IW(x) ((struct IntWindow *)(x))
-
 /***********************************************************************************/
 
 #define WSIG_MOVE SIGF_INTUITION
@@ -1096,8 +1094,6 @@ struct sizebutton_data
 #define SIZETYPE_TOP         7
 #define SIZETYPE_RIGHTTOP    8
 #endif
-
-#define IW(x) ((struct IntWindow *)(x))
 
 /***********************************************************************************/
 

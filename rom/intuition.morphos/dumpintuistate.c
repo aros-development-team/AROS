@@ -6,8 +6,6 @@
 
 #include "intuition_intern.h"
 
-#define IW(x) ((struct IntWindow *)x)
-
 static void ShowSemaphore(const char *, struct SignalSemaphore *);
 static void ShowLayer(struct Layer *);
 
@@ -40,8 +38,6 @@ AROS_LH0(void, DumpIntuiState,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

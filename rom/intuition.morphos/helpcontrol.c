@@ -44,8 +44,6 @@ AROS_LH2(void, HelpControl,
  
     INTERNALS
  
-    HISTORY
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -70,8 +68,6 @@ AROS_LH2(void, HelpControl,
         clearmask |= HELPF_GADGETHELP;
     }
 
-#undef IW
-#define IW(x) ((struct IntWindow *)(x))
 #define CHANGEHELPFLAGS(x) ( IW(x)->helpflags = (IW(x)->helpflags | setmask) & ~clearmask )
 
     CHANGEHELPFLAGS(window);

@@ -56,10 +56,6 @@
 
 /****************************************************************************************/
 
-#define IW(x) ((struct IntWindow *)(x))
-
-/****************************************************************************************/
-
 struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 {
     struct Interrupt *iihandler;
@@ -692,8 +688,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     if (!gadget && w)
                     {
                         struct Gadget * draggadget = 0;
-
-#define IW(x) ((struct IntWindow *)(x))
 
                         if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
                         {

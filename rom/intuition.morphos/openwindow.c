@@ -37,9 +37,6 @@
 #endif
 #   include <aros/debug.h>
 
-#undef IW
-#define IW(x) ((struct IntWindow *)x)
-
 struct OpenWindowActionMsg
 {
     struct IntuiActionMsg msg;
@@ -90,10 +87,6 @@ AROS_LH1(struct Window *, OpenWindow,
     CloseWindow(), ModifyIDCMP()
 
     INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
