@@ -25,7 +25,6 @@
 #endif
 #include <libcore/compiler.h>
 #include <libcore/base.h>
-#include <libcore/compiler.h>
 
 LONG ASM LibStart(void)
 {

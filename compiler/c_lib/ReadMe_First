@@ -1,4 +1,4 @@
-  example.library V37.10 (6.4.97)
+  example.library V37.15 (16.8.97)
 
   An Amiga shared library in 100 % C language - coming with sources.
 
@@ -10,17 +10,18 @@
                              DICE 3.x           (not tested)
                              GCC 2.7.2.1        yes
                              AztecC             (not tested)
-                             vbcc               (not tested)
+                             vbcc               (in work)
 
   OS Checklist:              Operating Sustem   Support
                              -------------------------------
                              Amiga OS 37-40     yes
-                             AROS 1.x           (not tested)
+                             AROS 1.x           yes
 
 
   Original SAS/C and StormC version (C) 1996-97 by Andreas R. Kleinert,
   MaxonC version changes done 1996 by Helmut Hummel.
-  GCC version changes done 1997 by Stefan Fuchs.
+  GCC version changes done 1997 by Stefan Fuchs and Gunter Nikl.
+  AROS source tree done 1997 by Aaron Digulla.
   All rights reserved.
   ----------------------------------------------------------------------
   This sample library intends to make Amiga shared library sources
@@ -116,7 +117,7 @@
 
   eMail:
 
-        Please send binaries via ARK@COB.wwbnet.de, and keep
+        Please send binaries via ARK@News.wwbnet.de, and keep
         them smaller than 16 KB. Please think twice before
         sending them - my postbox is not unlimited in size.
 
@@ -124,7 +125,7 @@
            - Usenet
                      Andreas_Kleinert@superview.ftn.neckar-alb.de (Fido-Gate)
                      Andreas_Kleinert@t-online.de                 (T-Online)
-                     ARK@COB.wwbnet.de                            (Z-Netz)
+                     ARK@News.wwbnet.de                           (Z-Netz)
                      ARK@amigaworld.com                           (AmigaWorld)
 
            - If nothing else works, try one of these public
@@ -136,11 +137,46 @@
                From USA or elsewhere:
                  Andreas_Kleinert@p18.f350.n2457.z2.fidonet.org
 
-        Please note, that the "superview.ftn.sub.org"
-        domain will perhaps be renamed soon
+
+ Known Bugs:        - some versions of DOpus and all Installer versions
+                      can't fetch the version information from the
+                      library binary due to some bugs in their code.
+                      Newer DOpus versions have this fixed and C:Version
+                      for example did that task always.
 
 
  History:
+
+ V37.15 (16.8.97) : - merged AmigaOS and AROS version
+                      (-> Aaron Digulla, Andreas R. Kleinert)
+                    - updated email addresses
+                    - etc.
+
+ V37.14 (13.8.97) : - AROS: - the LH1_ to LH2_ macro replacements in
+                              "compiler.h" had been wrongly defined
+                            - "BPTR" type only was available under AROS,
+                              now using "struct SegList *"
+                            - AROS version now does compile under AmigaOS
+                              with SAS/C 6.58, too
+                    - "APTR seglist" now "struct SegList *"
+
+ V37.13 (19.7.97) : - GNU makefile had lost its TABs
+                      (-> Gunter Nikl)
+
+ V37.12 (29.6.97) : - fixed memory bug-fix (argh)
+                      (-> Gunter Nikl)
+                    - changed/applied GCC adjustments
+                      (-> diffs by Gunter Nikl)
+
+ V37.11 (24.6.97) : - added "known bugs" section
+                    - LibInit now delocates library base on error
+                      (NULL return)
+                      (-> Gunter Nikl)
+                    - added AROS version, and created an additional
+                      source tree for it, since I did not get it compiled
+                      with SAS/C 6.57 and there's perhaps additional
+                      #ifdef stuf to be done. Anyone likes to merge these ?
+                      (-> Aaron Digulla)
 
  V37.10 (6.4.97) :  - added GCC version by Stefan Fuchs, snfuchs@sokrates.franken.de.
                       Thanks !
@@ -218,4 +254,4 @@
 
 
  ---
- All mentioned trademarks are subjects to their owners.
+ All mentioned trademarks are subject to their owners.
