@@ -170,8 +170,6 @@ int main(int argc, char *argv[])
     int thereare  = 0, incremental            = 0,
         strip_all = 0, ignore_missing_symbols = 0;
 
-    extern char **environ;
-
     char *compiler_path = getenv("COMPILER_PATH");
     char *path          = getenv("PATH");
     char *new_path;
@@ -191,9 +189,6 @@ int main(int argc, char *argv[])
 
 	putenv(new_path);
     }
-
-    for (cnt = 0; environ[cnt] != NULL; cnt++)
-        printf("[%03d] %s\n", cnt, environ[cnt]);
 
     /* Do some stuff with the arguments */
     output = "a.out";
