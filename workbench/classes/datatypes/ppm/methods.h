@@ -13,7 +13,9 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
 
+#ifndef __AROS__
 #include "compilerspecific.h"
+#endif
 #include "debug.h"
 
 #ifdef MYDEBUG
