@@ -4379,6 +4379,8 @@ ULONG do_render_func(struct RastPort *rp
 		, GfxBase
 	);
 
+	RELEASE_HIDD_BM(bm_obj, bm);
+
     }
     else
     {
