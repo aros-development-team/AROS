@@ -13,7 +13,7 @@ all:
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
-config:
+config: config.h
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Configuring in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
@@ -21,6 +21,10 @@ config:
 		config ) ; \
 	    then echo -n ; else exit 1 ; fi ; \
 	done
+
+config.h: $(TOP)/configure
+	sh $(TOP)/configure -h config.h
+	ln -sf ../../config/config.h $(TOP)/include/aros/config.h
 
 clean:
 	$(RM) ./machine
