@@ -59,6 +59,10 @@ keytable[] =
     {XK_KP_Separator,	0x3c },
     {XK_KP_Subtract,	0x4a },
     {XK_KP_Decimal,	0x3c },
+    {XK_KP_Add,		0x5e },
+    {XK_KP_Subtract,	0x4a },
+    {XK_KP_Multiply,	0x5d },
+    {XK_KP_Divide,	0x5c },
     {XK_KP_0,		0x0f },
     {XK_KP_1,		0x1d },
     {XK_KP_2,		0x1e },
@@ -80,7 +84,9 @@ keytable[] =
     {XK_F8,		0x57 },
     {XK_F9,		0x58 },
     {XK_F10,		0x59 },
-
+    {XK_F11,		0x5f },		/* HELP */
+    {XK_F12,		0x5f },		/* HELP */
+    {XK_Home,		0x5f },		/* HELP */
     
     {XK_A,		0x20 },
     {XK_B,		0x35 },
@@ -135,7 +141,37 @@ keytable[] =
     {XK_x,		0x32 },
     {XK_y,		0x15 },
     {XK_z,		0x31 },
+
+    {XK_1,		0x01 },
+    {XK_2,		0x02 },
+    {XK_3,		0x03 },
+    {XK_4,		0x04 },    
+    {XK_5,		0x05 },
+    {XK_6,		0x06 },
+    {XK_7,		0x07 },
+    {XK_8,		0x08 },
+    {XK_9,		0x09 },
+    {XK_0,		0x0A },
     
+    {XK_period,		0x39 },
+    {XK_comma,		0x38 },
+                        
+    {XK_BackSpace,	0x41 },
+    {XK_Delete,		0x46 },
+    {XK_space,		0x40 },
+    {XK_Shift_L,	0x60 },
+    {XK_Shift_R,	0x61 },
+    {XK_Alt_L,		0x64 }, /* doesn´t work?? */
+    {XK_Alt_R,		0x65 }, /* doesn´t work?? */
+    {XK_Meta_L,		0x64 }, /* LALT */
+    {XK_Meta_R,		0x65 }, /* RALT */
+    {XK_Control_L,	0x63 },
+    {XK_Control_R,	0x63 }, /* doesn´t work?? */
+    {XK_Multi_key,	0x63 }, /* right control */
+    {XK_Super_L,	0x66 },	/* Left Win key = LCOMMAND */
+    {XK_Super_R,	0x67 },	/* Right Win key = RCOMMAND */
+    {XK_Escape,		0x45 },
+    {XK_Tab,		0x42 },
     {0, -1 }
 };
 
@@ -283,18 +319,18 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
  
     D(bug("xkey2hidd\n"));
-
-    
+   
 LX11
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
 UX11
-    D(bug("xk2h: Event was decoded into %d chars\n", count));
+    D(bug("xk2h: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n",xk->keycode, xk->keycode, count,ks,ks));
+    
     for (t=0; keytable[t].hiddcode != -1; t++)
     {
 	if (ks == keytable[t].keysym)
 	{
-	    D(bug("xktac: found in table\n"));
+	    D(bug("xktac: found in key table\n"));
 	    result = keytable[t].hiddcode;
 	    
 	    ReturnInt ("xk2h", long, result);
