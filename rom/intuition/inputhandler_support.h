@@ -41,7 +41,7 @@ void PrepareGadgetInfo(struct GadgetInfo *gi, struct Window *win);
 void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad);
 
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, struct Gadget *gadget,
-					ULONG *termination,
+					ULONG termination,
 					BOOL *reuse_event,struct IntuitionBase *IntuitionBase);
 
 struct Gadget * FindGadget (struct Window * window, int x, int y,
@@ -49,6 +49,10 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 
 BOOL InsideGadget(struct Window *win, struct Gadget *gad,
 		  WORD x, WORD y);
+
+struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct IntuitionBase *IntuitionBase);
+
+struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD direction);
 
 /*********************************************************************/
 
