@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
-    calculator
+    calculator calculator_gt
 
 EXEDIR := $(AROSDIR)/Tools
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))

@@ -112,8 +112,8 @@ static struct ButtonInfo bi[ NUM_GADGETS - 1 ] =
     { "9"  , ID_9     , "9" ,  0  } ,
     { "."  , ID_COMMA , "." , "," } ,
 #ifdef _AROS
-    { "«"  , ID_BS    , "\010",  0  } ,
-    { "CA" , ID_CA    , "A" , "\0177" } ,
+    { "«"  , ID_BS    , "\x8",  0  } ,
+    { "CA" , ID_CA    , "A" , "\x7F" } ,
 #else
     { "«"  , ID_BS    , "\8",  0  } ,
     { "CA" , ID_CA    , "A" , "\127" } ,
@@ -125,7 +125,7 @@ static struct ButtonInfo bi[ NUM_GADGETS - 1 ] =
     { "÷"  , ID_DIV   , "/" , ":" } ,
     { "±"  , ID_SIGN  , "S" , "±" } ,
 #ifdef _AROS
-    { "="  , ID_EQU   , "=" ,  "\015" }
+    { "="  , ID_EQU   , "=" ,  "\xD" }
 #else
     { "="  , ID_EQU   , "=" ,  "\13" }
 #endif
