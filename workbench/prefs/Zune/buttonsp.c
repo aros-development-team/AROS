@@ -105,7 +105,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             MUIA_CycleChain, 1,
                             MUIA_MaxWidth, 28,
                             MUIA_Window_Title, "Adjust Frame",
-                        End,
+                            TAG_DONE),
                         Child, HVSpace,
                     End,
                 End, /* Image Buttons */
@@ -127,7 +127,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
                             MUIA_Window_Title, "Checkmark",
-                        End,
+                            TAG_DONE),
                         Child, HVSpace,
                     End, /* HGroup */
                 End, /* Checkmarks */
@@ -147,10 +147,10 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
                             MUIA_Window_Title, "Radiobutton",
-                        End,
+                            TAG_DONE),
                         Child, /*  HGroup, */
                             /* Child, HVSpace, */
-                            /* Child, */ MUI_MakeObject(MUIO_Label, "Look",MUIO_Label_Centered),
+                            /* Child, */ MUI_MakeObject(MUIO_Label, (IPTR)"Look",MUIO_Label_Centered),
                             /* Child, HVSpace, */
                         /* End, */
                     End,
@@ -169,7 +169,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             Child, HVSpace,
                             Child, MUI_MakeObject
                             (
-                                MUIO_Label, "Spacing",
+                                MUIO_Label, (IPTR)"Spacing",
                                 MUIO_Label_Centered
                             ),
                             Child, HVSpace,
