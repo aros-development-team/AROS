@@ -697,10 +697,10 @@ expansion00020;2;iaint;Write AddDosNode
 gadtools00000;1;srittau;Write CreateGadgetA
 gadtools00001;2;srittau;Write FreeGadgets
 gadtools00002;2;srittau;Write GT_SetGadgetAttrsA
-gadtools00003;1;srittau;Write CreateMenusA
-gadtools00004;1;srittau;Write FreeMenus
-gadtools00005;1;srittau;Write LayoutMenuItemsA
-gadtools00006;1;srittau;Write LayoutMenusA
+gadtools00003;1;bergers;Write CreateMenusA
+gadtools00004;1;bergers;Write FreeMenus
+gadtools00005;1;bergers;Write LayoutMenuItemsA
+gadtools00006;1;bergers;Write LayoutMenusA
 gadtools00007;1;srittau;Write GT_GetIMsg
 gadtools00008;2;srittau;Write GT_ReplyIMsg
 gadtools00009;1;srittau;Write GT_RefreshWindow
