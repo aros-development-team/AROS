@@ -1,7 +1,7 @@
 #ifndef CAMD_INTERN_H
 #define CAMD_INTERN_H
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -376,6 +376,7 @@ BOOL InitCamdTimer(void);
 void UninitCamdTimer(void);
 void CamdWait(void);
 
+#if 0
 	AROS_LP2(BOOL, SetMidiAttrsA,
 	AROS_LPA(struct MidiNode *, midinode, A0),
 	AROS_LPA(struct TagItem *, tags, A1),
@@ -398,6 +399,7 @@ void CamdWait(void);
 	AROS_LP1(struct MidiDeviceData *, OpenMidiDevice,
 	AROS_LPA(UBYTE *, name, A0),
 	struct CamdBase *, CamdBase, 34, Camd);
+#endif
 
 #endif /* CAMD_INTERN_H */
 

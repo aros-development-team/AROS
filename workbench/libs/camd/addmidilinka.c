@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -7,11 +7,14 @@
 */
 
 #include <proto/exec.h>
+#include <proto/camd.h>
 
 #include "camd_intern.h"
 #  undef DEBUG
 #  define DEBUG 1
 #  include AROS_DEBUG_H_FILE
+
+#undef AddMidiLinkA
 
 /*****************************************************************************
 
@@ -78,15 +81,8 @@
 		}
 	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 
-#ifdef _AROS
-	AROS_LC2(BOOL, SetMidiLinkAttrsA,
-	         AROS_LCA(struct MidiLink *, midilink, A0),
-	         AROS_LCA(struct TagItem *, tags, A1),
-	         struct CamdBase *, CamdBase, 16, Camd);
-#else
-	if(SetMidiLinkAttrsA(midilink,tags,CamdBase)==FALSE)
-#endif
-	  {
+	if(SetMidiLinkAttrsA(midilink,tags)==FALSE)
+	{
 
 		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 			Remove((struct Node *)&midilink->ml_OwnerNode);

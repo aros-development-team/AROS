@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -7,9 +7,11 @@
 */
 
 #include <proto/exec.h>
+#include <proto/camd.h>
 
 #include "camd_intern.h"
 
+#undef WaitMidi
 
 /*****************************************************************************
 
@@ -60,14 +62,8 @@
 
 	Wait(1L<<midinode->mi_ReceiveSigBit);
 
-#ifdef _AROS
-        AROS_LC2(BOOL, GetMidi,
-	         AROS_LCA(struct MidiNode *, midinode, A0),
-	         AROS_LCA(MidiMsg *, msg, A1),
-	         struct CamdBase *, CamdBase, 24, Camd);
-#else
-	GetMidi(midinode,msg,CamdBase);
-#endif
+	GetMidi(midinode,msg);
+
 	return TRUE;
 
    AROS_LIBFUNC_EXIT

@@ -55,6 +55,10 @@ endclusternotify \
 workbench-libs-camd : $(SLIB)
 	@$(NOP)
 
+#MM workbench-libs-camd-quick :
+workbench-libs-camd-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR)

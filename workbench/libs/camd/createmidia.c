@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -8,9 +8,11 @@
 
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/camd.h>
 
 #include "camd_intern.h"
 
+#undef CreateMidiA
 
 /*****************************************************************************
 
@@ -73,14 +75,7 @@
 	InitSemaphore(&midinode->sysexsemaphore);
 	InitSemaphore(&midinode->sysexsemaphore2);
 
-#ifdef _AROS
-	AROS_LC2(BOOL, SetMidiAttrsA,
-	         AROS_LCA(struct MidiNode *, &midinode->midinode, A0),
-	         AROS_LCA(struct TagItem *, tags, A1),
-	 	 struct CamdBase *, CamdBase, 9, Camd);
-#else
-	if(SetMidiAttrsA(&midinode->midinode,tags,CamdBase)==NULL)
-#endif
+	if(SetMidiAttrsA(&midinode->midinode,tags)==NULL)
 	  {
 		FreeMem(midinode,sizeof(struct MyMidiNode));
 		return NULL;
