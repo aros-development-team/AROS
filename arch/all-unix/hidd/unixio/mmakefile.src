@@ -21,7 +21,7 @@ kernel-unixio : $(LIB)
 
 STUBS := unixio_stubs
 
-%make_hidd_stubs hidd=unixio parenttarget=kernel-unixio-hidd-setup
+%make_hidd_stubs hidd=unixio parenttarget=kernel-unixio-hidd
 
 MY_INCLS := $(wildcard include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
