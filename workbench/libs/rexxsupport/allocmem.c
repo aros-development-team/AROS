@@ -25,7 +25,23 @@ LONG rxsupp_allocmem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     char *end;
     ULONG size;
     void *mem;
-      
+    ULONG attributes = MEMF_PUBLIC;
+  
+    if ((msg->rm_Action & RXARGMASK) == 2)
+    {
+        if (LengthArgstring(ARG2(msg)) != 4)
+        {
+	    *argstring = NULL;
+	    return ERR10_018;
+	}
+        else
+        {
+	    /* This value has always has to be given in little endian to keep arexx
+	     * scripts portable */
+	    UBYTE *bytes = ARG2(msg);
+	    attributes = (ULONG)bytes[0]<<24 | (ULONG)bytes[1]<<16 | (ULONG)bytes[2]<<8 | (ULONG)bytes[3];
+	}
+    }
     size = strtoul(ARG1(msg), &end, 10);
     while (isspace(*end)) end++;
     if (*end != 0)
@@ -33,7 +49,7 @@ LONG rxsupp_allocmem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
         *argstring = NULL;
         return ERR10_018;
     }
-    mem = AllocMem(size, MEMF_PUBLIC);
+    mem = AllocMem(size, attributes);
     if (mem==NULL)
     {
         *argstring = NULL;
