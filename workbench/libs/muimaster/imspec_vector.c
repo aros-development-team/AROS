@@ -8,6 +8,7 @@
 #include <intuition/imageclass.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 #include "mui.h"
 #include "imspec_intern.h"
@@ -263,7 +264,7 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
 	Move(rport,right - 6 - 2, arrow_top+1);
 	Draw(rport,right - 7 + 2, arrow_top+1);
 	Move(rport,right - 6 - 1, arrow_top+2);
-	Draw(rport,right - 7 + 1, arrow_top+2);
+	Draw(rport,right -7 7 + 1, arrow_top+2);
     }
     else
     {
@@ -385,74 +386,250 @@ void popdrawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
     Draw(rport, right, halfy);
 }
 
+static void stddrawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+    int right = left + width - 1;
+    int bottom = top + height - 1;
+    int x, y;
+    
+    #define XX(x)   x * (width - 1) / 100
+    #define YY(y)   y * (height - 1) / 100
+    #define YOFF    45
+    #define XOFF    24
+    
+    for(y = 0; y < YY(YOFF); y++)
+    {
+    	x = XX(XOFF) * y / (YY(YOFF) - 1);
+        SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+	RectFill(rport, left + XX(XOFF) - x, top + y, right - XX(XOFF) + x, top + y);
+    	SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    	WritePixel(rport, left + XX(XOFF) - x, top + y);
+	WritePixel(rport, right - XX(XOFF) + x, top + y);
+    }    
+
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+    RectFill(rport, left, top + YY(YOFF), right, bottom);
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport, left + XX(XOFF), top);
+    Draw(rport, right - XX(XOFF), top);
+    
+    Move(rport, left, top + YY(YOFF));
+    Draw(rport, left, bottom);
+    Draw(rport, right, bottom);
+    Draw(rport, right, top + YY(YOFF));
+    Draw(rport, left, top + YY(YOFF));
+    
+    #undef XX
+    #undef YY
+    #undef YOFF
+    #undef XOFF
+}
+
+
 void drawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right = left + width - 1;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    stddrawer_draw(mri, left, top, width, height);
+    
+    #define XX(x) x * (width - 1) / 100
+    #define YY(y) y * (height - 1) / 100
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport, left + XX(40), top + YY(75));
+    Draw(rport, right - XX(40), top + YY(75));
+    
+    #undef XX
+    #undef YY
+
 }
 
 void harddisk_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    stddrawer_draw(mri, left, top, width, height);
+    
+    #define XX(x) x * (width - 1) / 100
+    #define YY(y) y * (height - 1) / 100
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport, left + XX(20), top + YY(75));
+    Draw(rport, left + XX(30), top + YY(75));
+    
+    #undef XX
+    #undef YY
 }
 
 void disk_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right = left + width - 1;
+    int bottom = top + height - 1;
+    int x, y;
+    
+    #define XX(x)   x * (width - 1) / 100
+    #define YY(y)   y * (height - 1) / 100
+    #define YOFF    29
+    #define XOFF    25
+    
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    for(y = 0; y < YY(YOFF); y++)
+    {
+    	x = XX(XOFF) * y / (YY(YOFF) - 1);
+	RectFill(rport, left, top + y, right - XX(XOFF) + x, top + y);
+    }    
+    RectFill(rport, left, top + YY(YOFF), right, bottom);
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+    RectFill(rport, left + XX(33), top, right - XX(33), top + YY(YOFF));
+    RectFill(rport, left + XX(25), top + YY(60), right - XX(25), bottom);
+       
+    #undef XX
+    #undef YY
+    #undef YOFF
+    #undef XOFF
 }
 
 void ram_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right, bottom;
+    
+    #define XX(x) left + x * (width - 1) / 100
+    #define YY(y) top  + y * (height - 1) / 100
+     
+    right = left + width - 1;
+    bottom = top + height - 1;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    RectFill(rport, left, top, right, bottom);
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+    Move(rport, XX(33), YY(20));
+    Draw(rport, XX(33), YY(80));
+    
+    Move(rport, XX(71), YY(20));
+    Draw(rport, XX(61), YY(20));
+    Draw(rport, XX(61), YY(80));
+    Draw(rport, XX(71), YY(80));
+            
+    #undef XX
+    #undef YY
 }
 
 void volume_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right, bottom;
+    
+    #define XX(x) left + x * (width - 1) / 100
+    #define YY(y) top  + y * (height - 1) / 100
+     
+    right = left + width - 1;
+    bottom = top + height - 1;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    RectFill(rport, left, top, right, bottom);
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+    Move(rport, XX(8), YY(20));
+    Draw(rport, XX(8), YY(60));
+    Draw(rport, XX(16), YY(80));
+    Draw(rport, XX(24), YY(60));
+    Draw(rport, XX(24), YY(20));
+    
+    Move(rport, XX(40), YY(20));
+    Draw(rport, XX(60), YY(20));
+    Draw(rport, XX(60), YY(80));
+    Draw(rport, XX(40), YY(80));
+    Draw(rport, XX(40), YY(20));
+    
+    Move(rport, XX(80), YY(20));
+    Draw(rport, XX(80), YY(80));
+    Draw(rport, XX(92), YY(80));
+            
+    #undef XX
+    #undef YY
 }
 
 void network_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right = left + width - 1;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    stddrawer_draw(mri, left, top, width, height);
+    
+    #define XX(x) x * (width - 1) / 100
+    #define YY(y) y * (height - 1) / 100
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport, left + XX(40), top + YY(75));
+    Draw(rport, right - XX(40), top + YY(75));
+    
+    #undef XX
+    #undef YY
 }
 
 void assign_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int right = left + width - 1;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    stddrawer_draw(mri, left, top, width, height);
+    
+    #define XX(x) x * (width - 1) / 100
+    #define YY(y) y * (height - 1) / 100
+
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport, left + XX(40), top + YY(75));
+    Draw(rport, right - XX(40), top + YY(75));
+    
+    #undef XX
+    #undef YY
 }
 
 void tape_play_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int x, half = height / 2;
+    
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    for(x = 0; x < width; x++)
+    {
+    	int y = half * x / (width - 1);
+	
+	RectFill(rport, left + width - 1 - x, top + half - y, left + width - 1 - x, top + half + y);
+    }
 }
 
 void tape_playback_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int x, half = height / 2;
+    
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    for(x = 0; x < width; x++)
+    {
+    	int y = half * x / (width - 1);
+	
+	RectFill(rport, left + x, top + half - y, left + x, top + half + y);
+    }
 }
 
 void tape_pause_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);   
+    RectFill(rport, left, top, left + width / 4, top + height - 1);
+    RectFill(rport, left + width - 1 - width / 4, top, left + width - 1, top + height - 1);
 }
 
 void tape_stop_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -460,39 +637,99 @@ void tape_stop_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
     struct RastPort *rport = mri->mri_RastPort;
 
     SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-    RectFill(rport, left + width / 4, top + height / 4, left + 3 * width / 4, top + 3 * height / 4);
+    RectFill(rport, left, top, left + width - 1, top + height - 1);
 }
 
 void tape_record_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int rx = (width - 1) / 2;
+    int ry = (height - 1) / 2;    
+    int x = rx, y = 0;     /* ellipse points */
 
-/* buggy, doesnt draw anything */
-#if 0
-    struct AreaInfo areaInfo = {0};
-    WORD buf[5];
+    /* intermediate terms to speed up loop */
+    int    	t1 = rx * rx, t2 = t1 << 1, t3 = t2 << 1;
+    int    	t4 = ry * ry, t5 = t4 << 1, t6 = t5 << 1;
+    int    	t7 = rx * t5, t8 = t7 << 1, t9 = 0L;
+    int    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    int    	d2 = (t1 >> 1) - t8 + t5;
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
-    InitArea(&areaInfo, buf, 2);
-    rport->AreaInfo = &areaInfo;
-    AreaEllipse(rport, left + width / 2, top + height / 2,
-		MIN(width, height) / 3, MIN(width, height) / 3);
-    AreaEnd(rport);
-#endif
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+
+    while (d2 < 0)                  /* til slope = -1 */
+    {
+    	
+        /* draw 4 points using symmetry */
+	RectFill(rport, left + rx - x, top + ry + y, left + rx + x, top + ry + y);
+	RectFill(rport, left + rx - x, top + ry - y, left + rx + x, top + ry - y);
+	
+        y++;            /* always move up here */
+        t9 = t9 + t3;
+        if (d1 < 0)     /* move straight up */
+        {
+            d1 = d1 + t9 + t2;
+            d2 = d2 + t9;
+        }
+        else            /* move up and left */
+        {
+            x--;
+            t8 = t8 - t6;
+            d1 = d1 + t9 + t2 - t8;
+            d2 = d2 + t9 + t5 - t8;
+        }
+    }
+
+    do                              /* rest of top right quadrant */
+    {
+        /* draw 4 points using symmetry */
+	RectFill(rport, left + rx - x, top + ry + y, left + rx + x, top + ry + y);
+	RectFill(rport, left + rx - x, top + ry - y, left + rx + x, top + ry - y);
+
+        x--;            /* always move left here */
+        t8 = t8 - t6;
+        if (d2 < 0)     /* move up and left */
+        {
+            y++;
+            t9 = t9 + t3;
+            d2 = d2 + t9 + t5 - t8;
+        }
+        else            /* move straight left */
+        {
+            d2 = d2 + t5 - t8;
+        }
+
+    } while (x >= 0);
+
 }
 
 void tape_up_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int y, half = width / 2;
+    
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    for(y = 0; y < height; y++)
+    {
+    	int x = half * y / (height - 1);
+	
+	RectFill(rport, left + half - x, top + y, left + half + x, top + y);
+    }
 }
 
 void tape_down_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     struct RastPort *rport = mri->mri_RastPort;
+    int y, half = width / 2;
+    
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
 
-    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    for(y = 0; y < height; y++)
+    {
+    	int x = half * y / (height - 1);
+	
+	RectFill(rport, left + half - x, top + height - 1 - y, left + half + x, top + height - 1 - y);
+    }
 }
 
 struct vector_image
@@ -515,21 +752,21 @@ static const struct vector_image vector_table[] =
     { 10, 11, popfile_draw },
     { 10, 11, popdrawer_draw },
 
-    { 10, 11, drawer_draw },
-    { 10, 11, harddisk_draw },
-    { 10, 11, disk_draw },
-    { 10, 11, ram_draw },
-    { 10, 11, volume_draw },
-    { 10, 11, network_draw },
-    { 10, 11, assign_draw },
+    { 13, 8, drawer_draw },
+    { 13, 8, harddisk_draw },
+    { 12, 8, disk_draw },
+    { 14, 6, ram_draw },
+    { 14, 6, volume_draw },
+    { 13, 8, network_draw },
+    { 13, 8, assign_draw },
 
-    { 10, 11, tape_play_draw },
-    { 10, 11, tape_playback_draw },
-    { 10, 11, tape_pause_draw },
-    { 10, 11, tape_stop_draw },
-    { 10, 11, tape_record_draw },
-    { 10, 11, tape_up_draw },
-    { 10, 11, tape_down_draw },
+    { 4, 7, tape_play_draw },
+    { 4, 7, tape_playback_draw },
+    { 6, 7, tape_pause_draw },
+    { 6, 7, tape_stop_draw },
+    { 7, 7, tape_record_draw },
+    { 7, 4, tape_up_draw },
+    { 7, 4, tape_down_draw },
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
