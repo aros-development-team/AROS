@@ -17,9 +17,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -145,7 +142,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
-    D(bug("muimaster.library/text.c: Text Object created at 0x%lx\n",obj));
+    D(bug("Text_New(0x%lx)\n", obj));
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
@@ -320,7 +317,7 @@ static void setup_text (struct MUI_TextData *data, Object *obj)
 
     zune_text_get_bounds(data->ztext, obj);
 
-    D(bug("muimaster.library/text.c: ZText of 0x%lx at 0x%lx\n",obj,data->ztext));
+/*      D(bug("muimaster.library/text.c: ZText of 0x%lx at 0x%lx\n",obj,data->ztext)); */
 }
 
 /**************************************************************************
@@ -391,6 +388,7 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
     height = data->ztext->height;
     if (_font(obj)->tf_YSize > height) height = _font(obj)->tf_YSize;
+    D(bug("YSize=%ld\n", _font(obj)->tf_YSize));
 
     if (!(data->mtd_Flags & MTDF_EDITABLE))
     { 
@@ -425,10 +423,10 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     if (!(data->mtd_Flags & MTDF_SETMIN))
 	msg->MinMaxInfo->MinWidth = 0;
 
-    D(bug("muimaster.library/text.c: Text_AskMinMax 0x%lx: Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj,
-	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
-	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
-	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
+/*      D(bug("muimaster.library/text.c: Text_AskMinMax 0x%lx: Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, */
+/*  	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
+/*  	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
+/*  	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
 
     return TRUE;
 }
@@ -442,7 +440,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     Object *act;
     APTR clip;
 
-    D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+ /*     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 

@@ -26,10 +26,6 @@
 #include <proto/icon.h>
 #include <proto/layers.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #define MYDEBUG
 #include "debug.h"
 #include "mui.h"

@@ -18,10 +18,6 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #include <string.h>
 
 /*  #define MYDEBUG 1 */

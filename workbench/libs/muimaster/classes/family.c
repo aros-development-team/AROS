@@ -12,9 +12,6 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"

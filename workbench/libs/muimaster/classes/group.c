@@ -13,9 +13,6 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 extern struct Library *MUIMasterBase;
 

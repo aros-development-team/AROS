@@ -15,9 +15,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"

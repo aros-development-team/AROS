@@ -18,9 +18,6 @@
 #include <proto/utility.h>
 #include <proto/diskfont.h>
 #include <proto/dos.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 extern struct Library *MUIMasterBase;
 #include "muimaster_intern.h"
