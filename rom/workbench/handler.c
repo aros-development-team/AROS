@@ -35,6 +35,7 @@ struct HandlerContext
     ULONG           hc_StartupSignal;
 };
 
+
 /*** Prototypes *************************************************************/
 static BOOL __initialize(struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
 static VOID __deinitialize(struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
@@ -48,8 +49,6 @@ static VOID __handleDrawer(struct DrawerMessage *message, struct HandlerContext 
 
 #define handleLaunch(message) (__handleLaunch((message), hc, WorkbenchBase))
 #define handleDrawer(message) (__handleDrawer((message), hc, WorkbenchBase))
-
-#define SET_ERROR(error) (WorkbenchBase->wb_HandlerError = (error))
 
 /*** Entry point ************************************************************/
 #undef SysBase
@@ -68,12 +67,6 @@ AROS_UFH3
     /*-- Initialization ----------------------------------------------------*/
     if (initialize())
     {
-        /* Prevent the library to be expunged while the handler is running */
-        OpenLibrary("workbench.library", 0L);
-        
-        /* We're now ready to accept messages */
-        WorkbenchBase->wb_HandlerPort = hc->hc_CommandPort;
-        
         D(bug("Workbench Handler: entering message loop\n"));
         
         while (TRUE)
@@ -157,20 +150,25 @@ static BOOL __initialize
     struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
 )
 {
-    if
-    (
-           (hc->hc_CommandPort = CreateMsgPort()) == NULL
-        || (hc->hc_StartupPort = CreateMsgPort()) == NULL
-    )
+    if ((hc->hc_StartupPort = CreateMsgPort()) != NULL)
     {
-        SET_ERROR(HE_MSGPORT);
-        return FALSE;
+        hc->hc_CommandPort   = &(WorkbenchBase->wb_HandlerPort);
+        
+        /* We're now ready to accept messages */
+        WorkbenchBase->wb_HandlerPort.mp_SigTask = FindTask(NULL);
+        WorkbenchBase->wb_HandlerPort.mp_Flags   = PA_SIGNAL;  
+        
+        /* Make sure to process messages that arrived before we were ready */
+        Signal(FindTask(NULL), SIGBREAKF_CTRL_F);
+        
+        /* Calculate and store signal flags */
+        hc->hc_CommandSignal = 1 << hc->hc_CommandPort->mp_SigBit;
+        hc->hc_StartupSignal = 1 << hc->hc_StartupPort->mp_SigBit;
+    
+        return TRUE;
     }
     
-    hc->hc_CommandSignal = 1 << hc->hc_CommandPort->mp_SigBit;
-    hc->hc_StartupSignal = 1 << hc->hc_StartupPort->mp_SigBit;
-
-    return TRUE;
+    return FALSE;
 }
 
 static VOID __deinitialize
@@ -178,8 +176,8 @@ static VOID __deinitialize
     struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
 )
 {
-    if (hc->hc_CommandPort != NULL) DeleteMsgPort(hc->hc_CommandPort);
     if (hc->hc_StartupPort != NULL) DeleteMsgPort(hc->hc_StartupPort);
+    // FIXME: CommandPort ?
 }
 
 static VOID __handleLaunch
@@ -208,9 +206,9 @@ static VOID __handleLaunch
         /* Launch the program */
         process = CreateNewProcTags
         (
-            NP_Seglist,     startup->sm_Segment,
-            NP_Name,        name,
-            NP_StackSize,   WorkbenchBase->wb_DefaultStackSize // FIXME: should be read from icon
+            NP_Seglist,     (IPTR) startup->sm_Segment,
+            NP_Name,        (IPTR) name,
+            NP_StackSize,          WorkbenchBase->wb_DefaultStackSize // FIXME: should be read from icon
         );
                 
         if (process != NULL)
