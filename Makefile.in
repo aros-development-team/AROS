@@ -1,5 +1,5 @@
 # Main makefile for AROS
-# Copyright (C) 1998 AROS - The Amiga Research OS
+# Copyright (C) 2000 AROS - The Amiga Research OS
 #
 # $Id$
 default: all
@@ -9,12 +9,6 @@ include $(TOP)/config/make.cfg
 
 all: makedirs tools mmake
 	@$(MMAKE) AROS.AROS
-
-docs: mmake
-	@$(MMAKE) AROS.docs
-
-all-docs: mmake
-	@$(MMAKE) AROS.all-docs
 
 makedirs:
 	@$(RM) $(TOP)/errors
@@ -28,8 +22,12 @@ makedirs:
 	    $(CP) $(TOP)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
 
-# Create the tools that are used to build AROS.
+# This file contains user's options.
+# Make shouldn't try to generate it if it doesn't exist.
+$(TOP)/make.opts:
+	@$(NOP)
 
+# Create the tools that are used to build AROS.
 tools : $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
@@ -53,7 +51,7 @@ $(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
-mmake : tools/MetaMake/Makefile $(MMAKE)
+mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
 	cd $(TOP)/tools/MetaMake ; autoconf
@@ -69,11 +67,12 @@ $(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
 	$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake
 	cp $(TOP)/tools/MetaMake/mmake $(MMAKE)
 
-install:
-	$(MMAKE) AROS.install
-
+# Clean the sources
 clean:
 	@$(MMAKE) AROS.clean
+
+# Clean the sources and tools
+arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
@@ -81,5 +80,17 @@ clean:
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
 
-.PHONY: default all makedirs tools docs clean install
+# Really clean all - like a clean checkout
+dist-clean: arch-clean
+	@$(RM) Makefile configure config.* make.defaults make.opts \
+		mmake.cache mmake.config
+
+# Map MetaTargets to make targets : Call mmake with AROS.target
+# Standard targets: install docs all-docs
+.DEFAULT : mmake
+	@$(MMAKE) AROS.$@
+
+# targets which do not generate files or for which a file/directory exists
+.PHONY: default all makedirs tools docs clean arch-clean dist-clean \
+	install $(TOP)/make.opts
 
