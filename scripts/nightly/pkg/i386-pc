@@ -36,7 +36,7 @@ cd      $BUILD_BASE
 archive $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
-if [[ $CFG_I386_PC_MAKE_CONTRIB == "yes" ]]; then
+if [[ $CFG_CONTRIB_TYPE == "i386-pc" ]]; then
     printi "Creating AROS/i386-all contrib package..."
     
     PACKAGE=$BASENAME-i386-all-contrib

@@ -1,9 +1,10 @@
 #!/bin/zsh
 
 export SP=$(dirname $0)
+export CFG_NAME=$1
 source $SP/setup initial
 
-printi "Starting "$CFG_NAME" nightly build..."
+printi "Starting nightly build on "$CFG_NAME"..."
 
 source $SP/update
 if [ $? != 0 ]; then
