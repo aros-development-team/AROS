@@ -28,6 +28,9 @@ FUNCTIONS	:= \
 	allocraster \
 	andrectregion \
 	animate \
+	areadraw \
+	areaellipse \
+	areamove \
 	askfont \
 	bitmapscale \
 	bltbitmap \
@@ -52,6 +55,7 @@ FUNCTIONS	:= \
 	freegbuffers \
 	freeraster \
 	freerastport \
+	freesprite \
 	freevportcoplists \
 	getapen \
 	getbitmapattr \
@@ -59,10 +63,12 @@ FUNCTIONS	:= \
 	getdrmd \
 	getgbuffers \
 	getoutlinepen \
+	getsprite \
 	gfxassociate \
 	gfxfree \
 	gfxlookup \
 	gfxnew \
+	initarea \
 	initgels \
 	initgmasks \
 	initmasks \
