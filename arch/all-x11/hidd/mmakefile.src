@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I. -I$(GUI_INCDIR)
 XSHM_INCLUDES := -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
-ifneq("$(HOST_ARCH)","x"linux")
+ifneq ("$(HOST_ARCH)","linux")
 USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
 endif
 
