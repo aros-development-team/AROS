@@ -25,7 +25,7 @@ ULONG setHeaderDate(struct Volume *volume, struct BlockCache *blockbuffer, struc
 	blockbuffer->buffer[BLK_MINS(volume)]=AROS_LONG2BE(ds->ds_Minute);
 	blockbuffer->buffer[BLK_TICKS(volume)]=AROS_LONG2BE(ds->ds_Tick);
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume, blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
 	writeBlock(volume,blockbuffer);
 	blockbuffer=getBlock(volume, AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
 	if (!blockbuffer)
@@ -98,7 +98,7 @@ ULONG key;
 				break;
 	lastentry->buffer[key]=entry->buffer[BLK_HASHCHAIN(volume)];	//unlink block
 	lastentry->buffer[BLK_CHECKSUM]=0;
-	lastentry->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume, lastentry->buffer));
+	lastentry->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, lastentry->buffer));
 }
 
 ULONG deleteObject(struct AfsHandle *ah, STRPTR name) {
@@ -128,7 +128,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 		blockbuffer->flags &= ~BCF_USED;
 		return ERROR_UNKNOWN;
 	}
-	if (calcChkSum(ah->volume, priorbuffer->buffer)) {
+	if (calcChkSum(ah->volume->SizeBlock, priorbuffer->buffer)) {
 		blockbuffer->flags &= ~BCF_USED;
 		showError(ERR_CHECKSUM,priorbuffer->blocknum);
 		return ERROR_UNKNOWN;
@@ -150,7 +150,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 				priorbuffer->flags &= ~BCF_USED;
 				return ERROR_UNKNOWN;
 			}
-			if (calcChkSum(ah->volume, blockbuffer->buffer)) {
+			if (calcChkSum(ah->volume->SizeBlock, blockbuffer->buffer)) {
 				priorbuffer->flags &= ~BCF_USED;
 				showError(ERR_CHECKSUM);
 				return ERROR_UNKNOWN;
@@ -201,9 +201,9 @@ char *name;
 	dir->buffer[key]=AROS_LONG2BE(file->blocknum);
 	file->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dir->blocknum);
 	file->buffer[BLK_CHECKSUM]=0;
-	file->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,file->buffer));
+	file->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
 	dir->buffer[BLK_CHECKSUM]=0;
-	dir->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,dir->buffer));
+	dir->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
 	return dir;
 }
 
