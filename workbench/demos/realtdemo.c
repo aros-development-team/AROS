@@ -30,7 +30,7 @@ AROS_UFP3(ULONG, myFunc,
 
 int main(int argc, char* argv[])
 {
-    struct Library *RTBase = OpenLibrary("realtime.library", 40);
+    struct Library *RealTimeBase = OpenLibrary("realtime.library", 40);
     struct Hook myHook;
 
     struct TagItem tags[] = { { PLAYER_Name     , (IPTR)"Test player" },
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     myHook.h_SubEntry = NULL;
     myHook.h_Data  = NULL;
 
-    if (RTBase == NULL)
+    if (RealTimeBase == NULL)
     {
 	printf("Couldn't open realtime.library\n");
 	exit(1);
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     if (player == NULL)
     {
 	printf("Couldn't create player\n");
-	CloseLibrary(RTBase);
+	CloseLibrary(RealTimeBase);
 	exit(1);
     }
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 
     Wait(SIGBREAKF_CTRL_C);
 
-    CloseLibrary(RTBase);
+    CloseLibrary(RealTimeBase);
 
     return 0;
 }
