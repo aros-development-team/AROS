@@ -16,9 +16,9 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-extern Dos_Read();
-extern Exec_AllocMem();
-extern Exec_FreeMem();
+extern LONG Dos_Read();
+extern APTR Exec_AllocMem();
+extern void Exec_FreeMem();
 
 
 /*****************************************************************************

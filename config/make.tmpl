@@ -73,10 +73,11 @@
 	@%(ranlib) %(to)
 %end
 
-%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJDIR)/functions.o cmd=$(CC) opt=$(CFLAGS) err=$*.err
+%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJDIR)/functions.o $(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
+	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : functions.c
 	@$(ECHO) "Compiling $(CURDIR)/$@..."

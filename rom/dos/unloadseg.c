@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/12/14 20:21:18  hkiel
+    Changed to use cpak.
+
     Revision 1.7  1997/12/11 14:32:09  bergers
     UnLoadSeg() built on top of InternalUnLoadSeg().
 
@@ -34,7 +37,7 @@
 #include <dos/dos.h>
 #include "dos_intern.h"
 
-extern Exec_FreeMem();
+extern void Exec_FreeMem();
 
 /*****************************************************************************
 

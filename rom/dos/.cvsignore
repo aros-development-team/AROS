@@ -1,5 +1,6 @@
 dos_functable.c
 dos_endtag.c
+functions.*
 libdefs.h
 makefile
 mmakefile

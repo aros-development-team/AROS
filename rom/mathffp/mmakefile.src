@@ -29,7 +29,7 @@ FUNCTIONS	:= \
 		    spneg \
 		    spsub \
 		    sptst
-ALL_FILES	:= $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+ALL_FILES	:= $(INIT_FILE) $(FILES) $(END_FILE)
 
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
@@ -37,9 +37,8 @@ OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 kernel-mathffp-$(ARCH)-$(CPU) : show-flags $(LIB)
 	@$(NOP)
 
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
+$(LIB) : $(OBJDIR)/functions.o $(OBJS)
+	%mklib_f
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
@@ -54,7 +53,7 @@ setup :
 
 #MM
 clean ::
-	$(RM) $(OBJDIR) *.err $(LIB)
+	$(RM) $(OBJDIR) *.err $(LIB) functions.*
 
 $(OBJDIR)/%.o : %.c
 	%compile_q
