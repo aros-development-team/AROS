@@ -1862,13 +1862,13 @@ else
 endif
 
 ifneq ($(srcdir),)
-    %(mmake)-%(subpackage)-srcdir  := $(PORTSDIR)/%(package)/$(%(mmake)-archbase)
+    %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase))
 else
-    %(mmake)-%(subpackage)-srcdir  := $(PORTSDIR)/%(package)/%(srcdir)
+    %(mmake)-%(subpackage)-srcdir  := %(srcdir)
 endif
 
 ifeq (%(patch),yes)
-    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:%(package)-%(version):-p1    
+    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:(%(mmake)-%(subpackage)-srcdir):-p1    
 else
     %(mmake)-%(subpackage)-patches_specs := ::
 endif
@@ -1893,7 +1893,8 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %(mmake)-%(subpackage)-package-basename := \
     $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
 
-%build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(%(mmake)-%(subpackage)-srcdir) \
+%build_with_configure mmake=%(mmake)-%(subpackage) \
+     srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix=%(aros_prefix) \
      postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" extraoptions="%(extraoptions)"
 
