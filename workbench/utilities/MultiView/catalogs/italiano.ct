@@ -44,7 +44,6 @@ A\0Salva come...
 MSG_MEN_PROJECT_SAVEAS_IFF
 I\0Speichern als IFF...
 ;
-
 MSG_MEN_PROJECT_PRINT
 P\0Stampa
 ;
@@ -89,9 +88,6 @@ Impostazioni
 ;
 MSG_MEN_SETTINGS_SAVEDEF
 D\0Salva come predefinite
-;
-MSG_ASL_OPEN_TITLE
-Scegli file da caricare
 ;
 MSG_MEN_PICT
 Immagine

@@ -5,23 +5,23 @@
 MSG_TITLE
 Informazioni su AROS
 ;
-;MSG_PERSONAL_BUILD
+MSG_PERSONAL_BUILD
 Build Personale
 ; Personal Build
 ;
-;MSG_NIGHTLY_BUILD
+MSG_NIGHTLY_BUILD
 Build Notturna
 ; Nightly Build
 ;
-;MSG_SNAPSHOT
+MSG_SNAPSHOT
 Snapshot
 ; Snapshot
 ;
-;MSG_MILESTONE
+MSG_MILESTONE
 Milestone
 ; Milestone
 ;
-;MSG_RELEASE
+MSG_RELEASE
 Edizione
 ; Release
 ;
