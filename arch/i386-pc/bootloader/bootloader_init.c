@@ -135,6 +135,8 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 		    /* Skip to next part */
 		    cmd = stpblk(cmd+temp);
 		}
+		
+		BootLoaderBase->Flags |= MB_FLAGS_CMDLINE;
 	    }
 	}
 
@@ -178,6 +180,9 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 			curr->cyls,curr->heads,curr->secs,                                                                          
 			curr->mode?"CHS":"LBA");                                                                                    
 	    }                                                                                                                       
+
+	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
+
 	}
     }
     return BootLoaderBase;
