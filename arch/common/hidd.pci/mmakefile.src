@@ -12,10 +12,18 @@ FILES	:= pcidriverclass pcideviceclass pciclass pciutil
 FUNCS := pci_libfunc
 
 #MM
-includes-copy :
+includes-copy : $(INCDIR)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(INCDIR)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
+
+$(INCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) include/pci_hidd.h $(INCDIR)/hidd/pci.h
+
+$(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) include/pci_hidd.h $(GENINCDIR)/hidd/pci.h
+
+$(INCDIR)/libraries/pci.h: include/pci_lib.h
 	$(CP) include/pci_lib.h  $(INCDIR)/libraries/pci.h
+
+$(GENINCDIR)/libraries/pci.h: include/pci_lib.h
 	$(CP) include/pci_lib.h  $(GENINCDIR)/libraries/pci.h
 
 %build_module_macro mmake=workbench-libs-pci \
