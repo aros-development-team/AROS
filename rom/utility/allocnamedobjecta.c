@@ -89,6 +89,8 @@
 			    in AROS-DEV today.
 	18-10-96    iaint   Completely rewrote.
 	04-02-97    iaint   Updated documentation.
+	16-04-01    iaint   Combined the memory for the IntNamedObject and
+			    the name as an optimisation.
 
 *****************************************************************************/
 {
@@ -102,24 +104,18 @@
 
     if(name)
     {
-	/* Allocate the actual object, by def'n these are public */
-	no = AllocMem(sizeof(struct IntNamedObject), MEMF_CLEAR|MEMF_PUBLIC);
+	no = AllocVec
+	(
+	    sizeof(struct IntNamedObject) + strlen(name) + 1,
+	    MEMF_CLEAR|MEMF_PUBLIC
+	);
 
-	if(no == NULL)
-	{
+	if (no == NULL)
 	    return NULL;
-	}
 
-	no->no_Node.ln_Name = AllocVec(strlen(name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
-	if(no->no_Node.ln_Name != NULL)
-	{
-	    strcpy(no->no_Node.ln_Name, name);
-	}
-	else
-	{
-	    FreeVec(no);
-	    return NULL;
-	}
+	/* The name is at the first byte after the IntNamedObject struct */
+	no->no_Node.ln_Name = (STRPTR)(no + 1);
+	strcpy(no->no_Node.ln_Name, name);
 
 	no->no_Node.ln_Pri = GetTagData( ANO_Priority, 0, tagList );
 	no->no_UseCount = 0;

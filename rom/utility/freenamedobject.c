@@ -42,9 +42,9 @@
 
     INTERNALS
 	AllocMem:
-	    IntNamedObject, NameSpace;
+	    NameSpace;
 	AllocVec:
-	    Name, Object.
+	    IntNamedObject, Object.
 
 	FreeNamedObject() may have to deal with only a partially allocated
 	object from AllocNamedObject() which has come across an error.
@@ -55,6 +55,8 @@
 	11-08-96    iaint   Adapted for AROS code.
 	08-10-96    iaint   Modified after discussion in AROS-DEV.
 	19-10-96    iaint   Finished above.
+	16-04-01    iaint   Combined the memory for the name and
+			    IntNamedObject as an optimisation.
 
 *****************************************************************************/
 {
@@ -67,13 +69,10 @@
 	if(object->no_Object && no->no_FreeObject)
 	    FreeVec(object->no_Object);
 
-	if(no->no_Node.ln_Name)
-	    FreeVec(no->no_Node.ln_Name);
-
 	if(no->no_NameSpace)
 	    FreeMem(no->no_NameSpace, sizeof(struct NameSpace));
 
-	FreeMem(object, sizeof(struct IntNamedObject));
+	FreeVec(object);
     }
     AROS_LIBFUNC_EXIT
 
