@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS := Mouse Pointer
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-other-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-other
+%build_icons mmake=themes-gorilla-icons-other icons=$(ICONS) \
+             dir=$(CONTRIBDIR)/Icons/Gorilla/Other

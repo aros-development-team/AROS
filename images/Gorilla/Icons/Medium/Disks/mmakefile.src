@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS := CDROM_Amiga Harddisk_Amiga Harddisk_Linux Harddisk_MacOS Harddisk_Windows
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-disks-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-disks
+%build_icons mmake=themes-gorilla-icons-disks icons=$(ICONS) \
+             dir=$(CONTRIBDIR)/Icons/Gorilla/Disks
