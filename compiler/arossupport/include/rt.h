@@ -20,16 +20,20 @@
 #   define RTT_ALLOCVEC     1
 #   define RTT_LIBRARY	    2
 #   define RTT_FILE	    3
-#   define RTT_WINDOW	    4
-#   define RTT_MAX	    5
+#   define RTT_SCREEN	    4	/* Screen before Window, so the windows are
+				    closed before the screen */
+#   define RTT_WINDOW	    5
+#   define RTT_MAX	    6
 
 #   define RTTB_DOS	    1		    /* Base: DOS operations */
 #   define RTTO_Read	    (RTTB_DOS+0)    /* DOS-Op: Read() */
 #   define RTTO_Write	    (RTTB_DOS+1)    /* DOS-Op: Write() */
 
 #   define RTTB_INTUITION	1	    /* Base: Intuition ops */
-#   define RTTO_WindowToFront	(RTTB_INTUITION+0)
-#   define RTTO_WindowToBack	(RTTB_INTUITION+1)
+#   define RTTO_ScreenToFront	(RTTB_INTUITION+0)
+#   define RTTO_ScreenToBack	(RTTB_INTUITION+1)
+#   define RTTO_WindowToFront	(RTTB_INTUITION+2)
+#   define RTTO_WindowToBack	(RTTB_INTUITION+3)
 
 void RT_Init (void);
 void RT_Exit (void);
@@ -70,6 +74,23 @@ void RT_Leave (void);
 #	undef Write
 #	define Write(fh,buffer,length)  (LONG)RT_Check(RTT_FILE,RTTO_Write,(BPTR)(fh),(APTR)(buffer),(LONG)(length))
 
+#	undef OpenScreen
+#	define OpenScreen(ns)           (struct Screen *)RT_Add(RTT_WINDOW,(struct NewScreen *)(ns))
+#	undef CloseScreen
+#	define CloseScreen(s)           (void)RT_Free(RTT_WINDOW,(struct Screen *)(s))
+#	undef ScreenToFront
+#	define ScreenToFront(s)         (void)RT_Check(RTT_WINDOW,RTTO_ScreenToFront,(struct Screen *)(s))
+#	undef ScreenToBack
+#	define ScreenToBack(s)          (void)RT_Check(RTT_WINDOW,RTTO_ScreenToBack,(struct Screen *)(s))
+
+#	undef OpenWindow
+#	define OpenWindow(nw)           (struct Window *)RT_Add(RTT_WINDOW,(struct NewWindow *)(nw))
+#	undef CloseWindow
+#	define CloseWindow(w)           (void)RT_Free(RTT_WINDOW,(struct Window *)(w))
+#	undef WindowToFront
+#	define WindowToFront(w)         (void)RT_Check(RTT_WINDOW,RTTO_WindowToFront,(struct Window *)(w))
+#	undef WindowToBack
+#	define WindowToBack(w)          (void)RT_Check(RTT_WINDOW,RTTO_WindowToBack,(struct Window *)(w))
 #   endif
 #else
 #   define RT_Init()                /* eps */

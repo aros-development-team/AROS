@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/intuition.h>
 #include <proto/arossupport.h>
-
 
 static BOOL InitWasCalled;
 
@@ -67,13 +67,27 @@ typedef struct
 }
 FileResource;
 
+typedef struct
+{
+    RTNode	    Node;
+    struct Screen * Screen;
+}
+ScreenResource;
+
+typedef struct
+{
+    RTNode	    Node;
+    struct Window * Window;
+}
+WindowResource;
+
 typedef struct __RTDesc RTDesc;
 
-typedef IPTR (* RT_AllocFunc) (RTNode *, va_list, BOOL * success);
-typedef IPTR (* RT_FreeFunc) (RTNode *);
+typedef IPTR (* RT_AllocFunc)  (RTNode *, va_list, BOOL * success);
+typedef IPTR (* RT_FreeFunc)   (RTNode *);
 typedef IPTR (* RT_SearchFunc) (RTDesc *, RTNode **, va_list);
-typedef IPTR (* RT_ShowError) (RTDesc *, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
-typedef IPTR (* RT_CheckFunc) (RTDesc *, const char * file, ULONG line, ULONG op, va_list);
+typedef IPTR (* RT_ShowError)  (RTDesc *, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
+typedef IPTR (* RT_CheckFunc)  (RTDesc *, const char * file, ULONG line, ULONG op, va_list);
 
 struct __RTDesc
 {
@@ -105,6 +119,16 @@ static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success);
 static IPTR RT_Close (FileResource * rt);
 static IPTR RT_ShowErrorFile (RTDesc *, FileResource *, IPTR, int, const char * file, ULONG line, va_list);
 static IPTR RT_CheckFile (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+
+static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseScreen (ScreenResource * rt);
+static IPTR RT_ShowErrorScreen (RTDesc *, ScreenResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckScreen (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+
+static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseWindow (WindowResource * rt);
+static IPTR RT_ShowErrorWindow (RTDesc *, WindowResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckWindow (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
 
 /* Return values of SearchFunc */
 #define RT_SEARCH_FOUND 	    0
@@ -148,6 +172,22 @@ RTDesc RT_Resources[RTT_MAX] =
 	RT_Search,
 	(RT_ShowError) RT_ShowErrorFile,
 	(RT_CheckFunc) RT_CheckFile,
+    },
+    { /* RTT_SCREEN */
+	sizeof (ScreenResource),
+	(RT_AllocFunc) RT_OpenScreen,
+	(RT_FreeFunc)  RT_CloseScreen,
+	RT_Search,
+	(RT_ShowError) RT_ShowErrorScreen,
+	(RT_CheckFunc) RT_CheckScreen,
+    },
+    { /* RTT_WINDOW */
+	sizeof (WindowResource),
+	(RT_AllocFunc) RT_OpenWindow,
+	(RT_FreeFunc)  RT_CloseWindow,
+	RT_Search,
+	(RT_ShowError) RT_ShowErrorWindow,
+	(RT_CheckFunc) RT_CheckWindow,
     },
 };
 
@@ -810,6 +850,76 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 } /* RT_FreeResource */
 
+
+/**************************************
+	Utility functions
+**************************************/
+
+static char * StrDup (const char * str)
+{
+    char * copy;
+
+    if ((copy = AllocVec (strlen (str)+1, MEMF_ANY)))
+	strcpy (copy, str);
+
+    return copy;
+}
+
+#define ALIGNED_PTR	0x00000001	/* Must be aligned */
+#define NULL_PTR	0x00000002	/* May be NULL */
+
+static BOOL CheckPtr (APTR ptr, ULONG flags)
+{
+    if
+    (
+	(!ptr && !(flags & NULL_PTR))
+	|| (((IPTR)ptr & 3) && (flags & ALIGNED_PTR))
+    )
+    {
+	return FALSE;
+    }
+
+
+    return TRUE;
+} /* CheckPtr */
+
+static BOOL CheckArea (APTR ptr, ULONG size, ULONG flags)
+{
+    if
+    (
+	(size & 0x8000000)
+	|| !CheckPtr (ptr+size-1, flags)
+    )
+	return FALSE;
+
+    return TRUE;
+} /* CheckArea */
+
+static IPTR RT_Search (RTDesc * desc, RTNode ** rtptr, va_list args)
+{
+    Resource * rt;
+    APTR     * res;
+
+    res = va_arg (args, APTR);
+
+    ForeachNode (&desc->ResList, rt)
+    {
+	if (rt->Resource == res)
+	{
+	    *rtptr = (RTNode *)rt;
+
+	    return RT_SEARCH_FOUND;
+	}
+    }
+
+    return RT_SEARCH_NOT_FOUND;
+} /* RT_Search */
+
+
+/**************************************
+	   RT Memory
+**************************************/
+
 static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
 {
     rt->Size = va_arg (args, ULONG);
@@ -976,6 +1086,11 @@ static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
     return ret;
 } /* RT_ShowErrorVec */
 
+
+/**************************************
+	    RT Libraries
+**************************************/
+
 static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success)
 {
     rt->Name	= va_arg (args, STRPTR);
@@ -1038,45 +1153,10 @@ static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
     return ret;
 } /* RT_ShowErrorLib */
 
-static char * StrDup (const char * str)
-{
-    char * copy;
 
-    if ((copy = AllocVec (strlen (str)+1, MEMF_ANY)))
-	strcpy (copy, str);
-
-    return copy;
-}
-
-#define ALIGNED_PTR	0x00000001	/* Must be aligned */
-#define NULL_PTR	0x00000002	/* May be NULL */
-
-static BOOL CheckPtr (APTR ptr, ULONG flags)
-{
-    if
-    (
-	(!ptr && !(flags & NULL_PTR))
-	|| (((IPTR)ptr & 3) && (flags & ALIGNED_PTR))
-    )
-    {
-	return FALSE;
-    }
-
-
-    return TRUE;
-}
-
-static BOOL CheckArea (APTR ptr, ULONG size, ULONG flags)
-{
-    if
-    (
-	(size & 0x8000000)
-	|| !CheckPtr (ptr+size-1, flags)
-    )
-	return FALSE;
-
-    return TRUE;
-}
+/**************************************
+	      RT Files
+**************************************/
 
 static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success)
 {
@@ -1318,23 +1398,298 @@ static IPTR RT_CheckFile (RTDesc * desc,
     return 0L;
 } /* RT_CheckFile */
 
-static IPTR RT_Search (RTDesc * desc, RTNode ** rtptr, va_list args)
+
+/**************************************
+	    RT Screens
+**************************************/
+
+static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success)
 {
-    Resource * rt;
-    APTR     * res;
+    struct NewScreen * ns;
 
-    res = va_arg (args, APTR);
+    ns = va_arg (args, struct NewScreen *);
 
-    ForeachNode (&desc->ResList, rt)
+    if (!CheckPtr (ns, 0))
     {
-	if (rt->Resource == res)
-	{
-	    *rtptr = (RTNode *)rt;
-
-	    return RT_SEARCH_FOUND;
-	}
+	kprintf ("OpenScreen(): Illegal NewScreen pointer\n"
+		"    NewScreen=%p at %s:%d\n"
+	    , ns
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
     }
 
-    return RT_SEARCH_NOT_FOUND;
-}
+    rt->Screen = OpenScreen (ns);
+
+    if (rt->Screen)
+	*success = TRUE;
+
+    return (IPTR)(rt->Screen);
+} /* RT_OpenScreen */
+
+static IPTR RT_CloseScreen (ScreenResource * rt)
+{
+    if (rt->Screen->FirstWindow)
+    {
+	struct Window  * win;
+	WindowResource * rtwin;
+
+	kprintf ("CloseScreen(): There are still windows open on this screen\n"
+		"    Screen=%p opened at %s:%d\n"
+		, rt->Screen
+		, rt->Node.File, rt->Node.Line
+	);
+
+	while ((win = rt->Screen->FirstWindow))
+	{
+	    if (RT_Search (&RT_Resources[RTT_WINDOW], (RTNode **)&rtwin, NULL) == RT_SEARCH_FOUND)
+	    {
+		RT_FreeResource (RTT_WINDOW, (RTNode *)rtwin);
+	    }
+	    else
+	    {
+		kprintf ("  Window=%p not tracked by the RT system\n"
+		    , win
+		);
+		CloseWindow (win);
+	    }
+	}
+    } /* Check for windows */
+
+    /* Close the screen */
+    CloseScreen (rt->Screen);
+
+    return TRUE;
+} /* RT_CloseScreen */
+
+static IPTR RT_ShowErrorScreen (RTDesc * desc, ScreenResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    if (mode != RT_EXIT)
+    {
+	const char    * modestr = (mode == RT_FREE) ? "Close" : "Check";
+	struct Screen * scr;
+
+	scr = va_arg (args, struct Screen *);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Screen not found\n"
+		    "    %s at %s:%d\n"
+		    "    Screen=%p\n"
+		, modestr
+		, modestr
+		, file, line
+		, scr
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Screen was not closed\n"
+		"    Opened at %s:%d\n"
+		"    Screen=%p\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Screen
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorScreen */
+
+static IPTR RT_CheckScreen (RTDesc * desc,
+			const char * file, ULONG line,
+			ULONG op, va_list args)
+{
+    ScreenResource * rt;
+
+    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+	rt = NULL;
+
+    switch (op)
+    {
+    case RTTO_ScreenToFront:
+	{
+	    struct Screen * scr = va_arg (args, struct Screen *);
+
+	    if (!rt)
+	    {
+		kprintf ("ScreenToFont(): Illegal window pointer\n"
+			"    Screen=%p at %s:%d\n"
+		    , scr
+		    , file, line
+		);
+
+		return -1;
+	    }
+
+	    ScreenToFront (scr);
+
+	    return 0;
+	}
+
+    case RTTO_ScreenToBack:
+	{
+	    struct Screen * scr = va_arg (args, struct Screen *);
+
+	    if (!rt)
+	    {
+		kprintf ("ScreenToBack(): Illegal window pointer\n"
+			"    Screen=%p at %s:%d\n"
+		    , scr
+		    , file, line
+		);
+
+		return -1;
+	    }
+
+	    ScreenToBack (scr);
+
+	    return 0;
+	}
+
+    }
+
+    return 0L;
+} /* RT_CheckScreen */
+
+
+/**************************************
+	    RT Windows
+**************************************/
+
+static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success)
+{
+    struct NewWindow * nw;
+
+    nw = va_arg (args, struct NewWindow *);
+
+    if (!CheckPtr (nw, 0))
+    {
+	kprintf ("OpenWindow(): Illegal NewWindow pointer\n"
+		"    NewWindow=%p at %s:%d\n"
+	    , nw
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
+    }
+
+    rt->Window = OpenWindow (nw);
+
+    if (rt->Window)
+	*success = TRUE;
+
+    return (IPTR)(rt->Window);
+} /* RT_OpenWindow */
+
+static IPTR RT_CloseWindow (WindowResource * rt)
+{
+    CloseWindow (rt->Window);
+
+    return TRUE;
+} /* RT_CloseWindow */
+
+static IPTR RT_ShowErrorWindow (RTDesc * desc, WindowResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    if (mode != RT_EXIT)
+    {
+	const char    * modestr = (mode == RT_FREE) ? "Close" : "Check";
+	struct Window * win;
+
+	win = va_arg (args, struct Window *);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Window not found\n"
+		    "    %s at %s:%d\n"
+		    "    Window=%p\n"
+		, modestr
+		, modestr
+		, file, line
+		, win
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Window was not closed\n"
+		"    Opened at %s:%d\n"
+		"    Window=%p\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Window
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorWindow */
+
+static IPTR RT_CheckWindow (RTDesc * desc,
+			const char * file, ULONG line,
+			ULONG op, va_list args)
+{
+    WindowResource * rt;
+
+    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+	rt = NULL;
+
+    switch (op)
+    {
+    case RTTO_WindowToFront:
+	{
+	    struct Window * win = va_arg (args, struct Window *);
+
+	    if (!rt)
+	    {
+		kprintf ("WindowToFont(): Illegal window pointer\n"
+			"    Window=%p at %s:%d\n"
+		    , win
+		    , file, line
+		);
+
+		return -1;
+	    }
+
+	    WindowToFront (win);
+
+	    return 0;
+	}
+
+    case RTTO_WindowToBack:
+	{
+	    struct Window * win = va_arg (args, struct Window *);
+
+	    if (!rt)
+	    {
+		kprintf ("WindowToBack(): Illegal window pointer\n"
+			"    Window=%p at %s:%d\n"
+		    , win
+		    , file, line
+		);
+
+		return -1;
+	    }
+
+	    WindowToBack (win);
+
+	    return 0;
+	}
+
+    }
+
+    return 0L;
+} /* RT_CheckWindow */
+
 
