@@ -6,7 +6,7 @@
     Lang: English
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -37,11 +37,11 @@ VOID dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 {
     struct PRDEntry *prd = unit->au_Bus->ab_PRD;
     IPTR ptr = (IPTR)buffer;
-    ULONG size = sectors << 9;
+    ULONG size = sectors << unit->au_SectorShift;
     int i;
 
-//    D(bug("[DMA] Setup PRD for %d bytes at %x\n",
-//	size, ptr));
+    D(bug("[DMA] Setup PRD for %d bytes at %x\n",
+	size, ptr));
 
     /* 
 	The first PRD address is the buffer pointer self, doesn't have to be 
@@ -91,38 +91,35 @@ VOID dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 
     prd[i-1].prde_Length |= 0x80000000;
 
-//    for (i=0; i < PRD_MAX; i++)
-//    {
-//	D(bug("[PRD] entry = %x, size=%x, stop=%d\n",
-//	    prd[i].prde_Address, prd[i].prde_Length & 0xffff,
-//	    prd[i].prde_Length >> 30));
-//	if (prd[i].prde_Length & 0x80000000) break;
-//    }
-    outl((ULONG)prd, unit->au_DMAPort + 4);
-    outb(inb(unit->au_DMAPort + 2) | 0x06, unit->au_DMAPort + 2);
+    outl((ULONG)prd, unit->au_DMAPort + dma_PRD);
+    outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
     
     /*
 	If io set to TRUE, then sectors are readed, when set to FALSE, they are written
     */
     if (io)
-	outb(0x08, unit->au_DMAPort);
+	outb(DMA_WRITE, unit->au_DMAPort + dma_Command);
     else
-	outb(0x00, unit->au_DMAPort);
+	outb(DMA_READ, unit->au_DMAPort + dma_Command);
 }
 
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
-    outb(inb(unit->au_DMAPort + 2) | 0x06, unit->au_DMAPort + 2);
-    inb(unit->au_DMAPort);
-    inb(unit->au_DMAPort + 2);
-    outb(inb(unit->au_DMAPort) | 0x01, unit->au_DMAPort);
-    inb(unit->au_DMAPort);
-    inb(unit->au_DMAPort + 2);
+    inb(unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Status);
+    outb(inb(unit->au_DMAPort + dma_Command) | DMA_START, unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Status);
 }
 
 VOID dma_StopDMA(struct ata_Unit *unit)
 {
-    outb(inb(unit->au_DMAPort) & 0xfe, unit->au_DMAPort);
+    inb(unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Status);
+    outb(inb(unit->au_DMAPort) & ~DMA_START, unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Command);
+    inb(unit->au_DMAPort + dma_Status);
+    outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
 }
 
 #undef LIBBASE
@@ -176,7 +173,7 @@ AROS_UFH3(void, Enumerator,
     }
 
     D(bug("[ATA] Bus0 status says %02x, Bus1 status says %02x\n",
-	inb(IOBase + 2), inb(IOBase + 6)));
+	inb(IOBase + 2), inb(IOBase + 10)));
 
     OOP_SetAttrs(Device, attrs);
 

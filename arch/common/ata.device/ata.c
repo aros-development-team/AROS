@@ -18,10 +18,12 @@
 #include <dos/bptr.h>
 
 #include <proto/exec.h>
+#include <proto/oop.h>
 
 #include "ata.h"
 
 #define SysBase (LIBBASE->ata_SysBase)
+#define OOPBase (LIBBASE->ata_OOPBase)
 //---------------------------IO Commands---------------------------------------
 
 /* Invalid comand does nothing, complains only. */
@@ -82,7 +84,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
-    if ((block & mask) | (count & mask) | (count == 0))
+    if ((block & (UQUAD)mask) | (count & mask) | (count == 0))
     {
 	D(bug("[ATA] offset or length not sector-aligned.\n"));
 	cmd_Invalid(io, LIBBASE);
@@ -98,8 +100,8 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 	    the 28-bit LBA address, use 32-bit access for speed and simplicity.
 	    Otherwise do the 48-bit LBA addressing.
 	*/
-	if ((block + count) >= 0x0fffffff)
-	    io->io_Error = unit->au_Read32(unit, (block & 0x0fffffff), count,
+	if ((block + count) < 0x0fffffff)
+	    io->io_Error = unit->au_Read32(unit, (ULONG)(block & 0x0fffffff), count,
 		IOStdReq(io)->io_Data, &cnt);
 	else
 	    io->io_Error = unit->au_Read64(unit, block, count,
@@ -147,11 +149,12 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
-    UQUAD block = IOStdReq(io)->io_Offset | (((UQUAD)(IOStdReq(io)->io_Actual)) << 32);
+
+    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
-    if ((block & mask) | (count & mask))
+    if ((block & mask) | (count & mask) | (count==0))
     {
 	D(bug("[ATA] offset or length not sector-aligned.\n"));
 	cmd_Invalid(io, LIBBASE);
@@ -167,8 +170,8 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 	    the 28-bit LBA address, use 32-bit access for speed and simplicity.
 	    Otherwise do the 48-bit LBA addressing.
 	*/
-	if ((block + count) >= 0x0fffffff)
-	    io->io_Error = unit->au_Write32(unit, (block & 0x0fffffff), count,
+	if ((block + count) < 0x0fffffff)
+	    io->io_Error = unit->au_Write32(unit, (ULONG)(block & 0x0fffffff), count,
 		IOStdReq(io)->io_Data, &cnt);
 	else
 	    io->io_Error = unit->au_Write64(unit, block, count,
@@ -814,6 +817,8 @@ static char *TaskNames[] = {
 };
 
 static void TaskCode(struct ata_Bus *);
+static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+static void ata_Timeout(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 /*
     Make a task for given bus alive.
@@ -873,6 +878,50 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
     return (t != NULL);
 }
 
+static int CreateInterrupt(struct ata_Bus *bus)
+{
+    struct OOP_Object *o;
+    int retval = 0;
+
+    HIDDT_IRQ_Handler *timeout_irq = AllocPooled(LIBBASE->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
+    
+    if (bus->ab_IntHandler && timeout_irq)
+    {
+	/*
+	    Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
+	    it should work quite well
+	*/
+	bus->ab_IntHandler->h_Node.ln_Pri = 10;
+	bus->ab_IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+	bus->ab_IntHandler->h_Code = ata_Interrupt;
+	bus->ab_IntHandler->h_Data = bus;
+
+	timeout_irq->h_Node.ln_Pri = 0;
+	timeout_irq->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+	timeout_irq->h_Code = ata_Timeout;
+	timeout_irq->h_Data = bus;
+
+	o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+	if (o)
+	{
+	    struct pHidd_IRQ_AddHandler __msg__ = {
+		mID:		OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler),
+		handlerinfo:	bus->ab_IntHandler,
+		id:		bus->ab_Irq,
+	    }, *msg = &__msg__;
+	    
+	    if (OOP_DoMethod(o, (OOP_Msg)msg))
+	    {
+		retval = 1;
+	    }
+
+	    OOP_DisposeObject(o);
+	}
+    }
+
+    return retval;
+}
+
 /*
     Bus task body. It doesn't really do much. It recives simply all IORequests 
     in endless lopp and calls proper handling function. The IO is Semaphore-
@@ -893,6 +942,18 @@ static void TaskCode(struct ata_Bus *bus)
     bus->ab_TimerMP = CreateMsgPort();
     bus->ab_TimerIO = (struct timerequest *)
 	CreateIORequest(bus->ab_TimerMP, sizeof(struct timerequest));
+
+    /* Get the signal used for sleeping */
+    bus->ab_SleepySignal = AllocSignal(-1);
+    /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
+    if (bus->ab_SleepySignal < 0)
+	bus->ab_SleepySignal = SIGBREAKB_CTRL_E;
+
+    if (!CreateInterrupt(bus))
+    {
+	D(bug("[%s] Something wrong with creating interrupt?\n",
+	    bus->ab_Task->tc_Node.ln_Name));
+    }
 
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)bus->ab_TimerIO, 0);
 
@@ -927,4 +988,27 @@ static void TaskCode(struct ata_Bus *bus)
     }
 }
 
+static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+    struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
+    
+    bus->ab_IntCnt++;
+    Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
+}
+
+static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+    struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
+    
+    if (bus->ab_Timeout > 0)
+    {
+	bus->ab_Timeout--;
+
+	if (!bus->ab_Timeout)
+	{
+	    D(bug("[ATA] They killed Kenny... Again... :(\n"));
+	    Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
+	}
+    }
+}
 

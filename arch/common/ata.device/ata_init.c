@@ -55,7 +55,7 @@ static const struct Resident ata_resident = {
     RTF_AUTOINIT|RTF_COLDSTART,
     VERSION_NUMBER,
     NT_DEVICE,
-    5,				    // Is the priority not too low here?
+    4,				    // Is the priority not too low here?
     (UBYTE*)ata_Name,
     (UBYTE*)&ata_VersionID[6],
     (ULONG*)inittabl
@@ -125,7 +125,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
             pp[DE_HIGHCYL + 4] = EndCyl;
             pp[DE_NUMBUFFERS + 4] = 10;
             pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
-            pp[DE_MAXTRANSFER + 4] = 0x00200000;
+	    pp[DE_MAXTRANSFER + 4] = 0x00200000;
             pp[DE_MASK + 4] = 0x7FFFFFFE;
             pp[DE_BOOTPRI + 4] = ((!unit->au_DevType) ? 0 : 10);
             pp[DE_DOSTYPE + 4] = 0x444F5301;
@@ -263,6 +263,8 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 			bus->ab_Irq  = ab.ab_Irq;
 			bus->ab_Dev[0] = ab.ab_Dev[0];
 			bus->ab_Dev[1] = ab.ab_Dev[1];
+			bus->ab_IntHandler = (HIDDT_IRQ_Handler *)AllocPooled(LIBBASE->ata_MemPool,
+			    sizeof(HIDDT_IRQ_Handler));
 
 			/* PRD will be used later on by DMA. It's the table of all memory transfer requests */
 			bus->ab_PRD = AllocPooled(LIBBASE->ata_MemPool, 8192 + 160);
@@ -354,13 +356,14 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 
 		    ULONG *buf = (ULONG*)buffer;
 
+#if 0		    
 		    D(bug("[ATA.test] Store first 1MB of data in RAM\n"));
 		    ios->io_Command = CMD_READ;
 		    ios->io_Data = buf;
 		    ios->io_Offset = 0;
 		    ios->io_Length = 1024*1024;
 		    DoIO(ios);
-
+#endif
 #if 0
 		    for (i=0; i < 1024*1024/4; i++)
 			buf[i] = i*2 + 0xf0000000;
@@ -377,8 +380,8 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 			ULONG time;
 			struct timeval start, end;
 
-			D(bug("[ATA.test] Write linear 1MB in packets of %d bytes: ", packet));
-			ios->io_Command = CMD_WRITE;
+			D(bug("[ATA.test] Read linear 1MB in packets of %d bytes: ", packet));
+			ios->io_Command = CMD_READ;
 			ios->io_Data = buffer;
 			
 			GetSysTime(&start);
@@ -401,15 +404,15 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 
 			packet *= 2;
 		    }
-		    
+#if 0
 		    D(bug("[ATA.test] Store first 1MB of data on drive again\n"));
 		    ios->io_Command = CMD_WRITE;
 		    ios->io_Data = buf;
 		    ios->io_Offset = 0;
 		    ios->io_Length = 1024*1024;
 		    DoIO(ios);
-
-/*		    D(bug("[ATA.test] Read 1MB of data at once\n"));
+#endif
+		    D(bug("[ATA.test] Read 1MB of data at once\n"));
 		    
 		    ios->io_Command = CMD_READ;
 		    ios->io_Data = buffer;
@@ -447,7 +450,8 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 //			    while(1);
 			}
 		    }
-*/
+
+		    D(bug("[ATA] sector 0x1: %s\n",buffer + 512));
 
 		    D(bug("[ATA.test] all tests done\n"));
 		    

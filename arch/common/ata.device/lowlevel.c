@@ -167,7 +167,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 	if (LIBBASE->ata_Buses[b])
 	{
 	    bus = LIBBASE->ata_Buses[b];
-//	    dma_Init(bus);
+	    dma_Init(bus);
 
 	    for (u=0; u < MAX_UNIT; u++)
 	    {
@@ -307,6 +307,8 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 			while (ata_in(ata_Status, bus->ab_Port) & ATAF_BUSY);
 			unit->au_Read32 = ata_ReadMultiple32;
 			unit->au_Read64 = ata_ReadMultiple64;
+			unit->au_Write32 = ata_WriteMultiple32;
+			unit->au_Write64 = ata_WriteMultiple64;
 		    }
 
 		    {
@@ -330,11 +332,20 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 				    unit->au_Drive->id_UDMASupport));
 				if (unit->au_Drive->id_UDMASupport & 0xff00)
 				{
-//				    unit->au_Read32 = ata_ReadDMA32;
+				    if (!(unit->au_Flags & AF_ATAPI) && LIBBASE->ata_ForceDMA)
+				    {
+					unit->au_Read32 = ata_ReadDMA32;
+					unit->au_Write32 = ata_WriteDMA32;
+					unit->au_Read64 = ata_ReadDMA64;
+					unit->au_Write64 = ata_WriteDMA64;
+			    	    }
 				}
 			    }
 			}
 		    }
+
+		    /* Enable interrupts now */
+		    ata_out(0x00, ata_Control, bus->ab_Port);
 
 		    D(bug("\n"));
 		}
@@ -510,6 +521,37 @@ void ata_ScanBus(struct ata_Bus *bus)
 
 #define bus (unit->au_Bus)
 
+/*
+    This function does interrupt waiting. It waits for a signal fired up from
+    ATA interrupt handler. In order to avoid deadlock, it waits for CTRL_C
+    signal too. The CTRL_C is sent by timer interrupt.
+*/
+int ata_WaitSleepyStatus(struct ata_Unit *unit, UBYTE *stat)
+{
+    ULONG port = unit->au_Bus->ab_Port;
+    UBYTE status;
+
+    /* Check whether we have to wait at all. Return immediatelly, if drive is not busy */
+    while ((status = ata_in(ata_Status, port)) & ATAF_BUSY)
+    {
+	/* Increase timeout in disabled state */
+	Disable();
+	unit->au_Bus->ab_Timeout=1000;	/* Uncalibrated value!!!!!! */
+	Enable();
+	/* And wait. If CTRL_C received, return 0 (error) */
+	if (Wait((1L << bus->ab_SleepySignal) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+	    return 0;
+    };
+    
+    /* Clear timeout counter to avoid sending CTRL_C signal */
+    Disable();
+    unit->au_Bus->ab_Timeout=0;
+    Enable();
+
+    *stat = status;
+    return 1;
+}
+
 int ata_WaitBusy(struct ata_Unit *unit)
 {
     ULONG cnt = unit->au_NumLoop;
@@ -667,43 +709,57 @@ static int ata_SetLBA48(struct ata_Unit *unit, UQUAD block)
     return ret;
 }
 
+/* 
+    Generic ReadSector32 command. Reads specified amount of sectors into specified block,
+    whereas it's trying to minimize amount of used ATA READ SECTOR(S) commands
+*/
 static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
     ULONG port = unit->au_Bus->ab_Port;
     UBYTE status;
     ULONG cnt,i;
 
-    if ((block + count) < unit->au_Drive->id_LBASectors)
+    /* Work only if the highes requested sector is still within addressable space */
+    if ((block + count) < unit->au_Capacity)
     {
 	do
 	{
 	    /* Select ATA device */
 	    if (ata_SetLBA28(unit, block))
 	    {
+		/* the maximal cout is 256 sectors. */
 		cnt = (count > 256) ? 256 : count;
 
 		ata_out(cnt & 0xff, ata_Count, port);
 		
+		/* 
+		    Issue READ SECTOR(S) command and wait 400ns to let the drive change
+		    BSY signal
+		*/
 		ata_out(ATA_READ, ata_Command, port);
 		ata_400ns();
 
-		if (!ata_WaitBusyStatus(unit, &status))
+		/* Sleep and wait :) */
+		if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 
+		/* 
+		    The interrupt is issued "cnt" times, everytime you get here, receive data
+		    from ATA buffer and store it in ram
+		*/
 		for (i=0; i < cnt; i++)
 		{
-		    
+		    /* No data? Can't be! */
 		    if (!(status & ATAF_DATAREQ))
 			return TDERR_NotSpecified;
 
-		    insw(buffer, port, 1 << unit->au_SectorShift);
-//		    unit->au_ins(buffer, port, 1 << unit->au_SectorShift);
+		    unit->au_ins(buffer, port, 1 << unit->au_SectorShift);
 		    ata_400ns();
 
 		    if (status & ATAF_ERROR)
 			return TDERR_NotSpecified;
 		    
-		    ata_WaitBusyStatus(unit, &status);
+		    ata_WaitSleepyStatus(unit, &status);
 
 		    buffer += 1 << unit->au_SectorShift;
 		    *act += 1 << unit->au_SectorShift;
@@ -729,7 +785,7 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
     ULONG cnt,i;
     ULONG multicount = unit->au_Drive->id_RWMultipleSize & 0xff;
 
-    if ((block + count) < unit->au_Drive->id_LBASectors)
+    if ((block + count) < unit->au_Capacity)
     {
 	do
 	{
@@ -743,8 +799,8 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
 		ata_out(ATA_READ_MULTIPLE, ata_Command, port);
 		ata_400ns();
 		
-		if (!ata_WaitBusyStatus(unit, &status))
-			return TDERR_NotSpecified;
+		if (!ata_WaitSleepyStatus(unit, &status))
+		    return TDERR_NotSpecified;
 
 		for (i=0; i < cnt; i+=multicount)
 		{		    
@@ -759,7 +815,7 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
 		    if (status & ATAF_ERROR)
 			return TDERR_NotSpecified;
 		
-		    if (!ata_WaitBusyStatus(unit, &status))
+		    if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 
 		    buffer += multicount << unit->au_SectorShift;
@@ -778,54 +834,91 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
     }
     return TDERR_NotSpecified;
 }
-#if 0
+
 static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
     ULONG port = unit->au_Bus->ab_Port;
     UBYTE status;
     ULONG cnt;
 
-    if ((block + count) < unit->au_Drive->id_LBASectors)
+//    D(bug("[ATA] ReadDMA32(block=%d, count=%d, buff=%x) ",
+//	block, count, buffer));
+
+    /* In case of DMA transfers, the memory buffer has to be at even address */
+    if ((IPTR)buffer & 0x1)
     {
-	do
+	/* Redirect command to generic read sector (PIO mode). */
+	ata_ReadSector32(unit, block, count, buffer, act);
+    }
+    else
+    {
+	if ((block + count) < unit->au_Capacity)
 	{
-	    /* Select ATA device */
-	    if (ata_SetLBA28(unit, block))
+	    do
 	    {
-		cnt = (count > 256) ? 256 : count;
+		/* Select ATA device */
+		if (ata_SetLBA28(unit, block))
+		{
+		    cnt = (count > 256) ? 256 : count;
 
-		ata_out(cnt & 0xff, ata_Count, port);
+		    ata_out(cnt & 0xff, ata_Count, port);
 		
-		dma_SetupPRD(unit, buffer, cnt, TRUE);
+		    dma_SetupPRD(unit, buffer, cnt, TRUE);
 
-		ata_out(ATA_READ_DMA, ata_Command, port);
-		ata_400ns();
-		dma_StartDMA(unit);
-	
-		if (!ata_WaitBusyLongStatus(unit, &status))
-		    return TDERR_NotSpecified;
+		    ata_out(ATA_READ_DMA, ata_Command, port);
+		    dma_StartDMA(unit);
+		
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 1000;
+		    Enable();
+		
+		    /*
+			Be smart here!
 
-		if (status & ATAF_ERROR)
-		    return TDERR_NotSpecified;
+			However, it is granted, that at the end of DMA transfer the interrupt
+			is raised, don't belive here, that it will be the only interrupt within
+			the DMA command. The drive may generate even more interrupts, so be
+			prepared and wait untill the DMAF_Interrupt flag is set.
+		    */
+		    do
+		    {
+			if (Wait(1L << unit->au_Bus->ab_SleepySignal | SIGBREAKF_CTRL_C)
+			    & SIGBREAKF_CTRL_C)
+			{
+			    D(bug("DMA timeout error\n"));
+			    return TDERR_NotSpecified;
+			}
+		    } while(!(inb(unit->au_DMAPort + dma_Status) & DMAF_Interrupt));
+
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 0;
+		    Enable();
+		
+		    if (!ata_WaitBusyStatus(unit, &status))
+			return TDERR_NotSpecified;
+
+		    if (status & ATAF_ERROR)
+			return TDERR_NotSpecified;
 		    
-		buffer += cnt << unit->au_SectorShift;
-		*act += cnt << unit->au_SectorShift;
+		    buffer += cnt << unit->au_SectorShift;
+		    *act += cnt << unit->au_SectorShift;
 
-		dma_StopDMA(unit);
+		    dma_StopDMA(unit);
 
-		count -= cnt;
-		block += cnt;
-	    }
-	    else
-	    {
-		return TDERR_NotSpecified;
-	    }
-	} while(count);
-	return 0;
+		    count -= cnt;
+		    block += cnt;
+		}
+		else
+		{
+		    return TDERR_NotSpecified;
+		}
+	    } while(count);
+	    return 0;
+	}
     }
     return TDERR_NotSpecified;
 }
-#endif
+
 
 static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
 {
@@ -850,7 +943,7 @@ static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, A
 		
 		for (i=0; i < cnt; i++)
 		{
-		    if (!ata_WaitBusyStatus(unit, &status))
+		    if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 		    
 		    if (!(status & ATAF_DATAREQ))
@@ -903,7 +996,7 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
 		
 		for (i=0; i < cnt; i+=multicount)
 		{
-		    if (!ata_WaitBusyStatus(unit, &status))
+		    if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 		    
 		    if (!(status & ATAF_DATAREQ))
@@ -936,6 +1029,76 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
 
 static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
 {
+    ULONG port = unit->au_Bus->ab_Port;
+    UBYTE status;
+    ULONG cnt;
+
+    /* In case of DMA transfers, the memory buffer has to be at even address */
+    if ((IPTR)buffer & 0x1)
+    {
+	/* Redirect command to generic read sector (PIO mode). */
+	ata_ReadSector32(unit, block, count, buffer, act);
+    }
+    else
+    {
+        if ((block + (UQUAD)count) < unit->au_Capacity48)
+	{
+	    do
+	    {
+		/* Select ATA device */
+		if (ata_SetLBA48(unit, block))
+		{
+		    cnt = (count > 65536) ? 65536 : count;
+
+		    ata_out((cnt >> 8) & 0xff, ata_Count, port);
+		    ata_out(cnt & 0xff, ata_Count, port);
+		
+		    dma_SetupPRD(unit, buffer, cnt, TRUE);
+
+		    ata_out(ATA_READ_DMA64, ata_Command, port);
+		    dma_StartDMA(unit);
+		
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 1000;
+		    Enable();
+		
+		    do
+		    {
+			if (Wait(1L << unit->au_Bus->ab_SleepySignal | SIGBREAKF_CTRL_C)
+			    & SIGBREAKF_CTRL_C)
+			{
+			    D(bug("DMA timeout error\n"));
+			    return TDERR_NotSpecified;
+			}
+		    } while(!(inb(unit->au_DMAPort + dma_Status) & DMAF_Interrupt));
+
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 0;
+		    Enable();
+		
+		    if (!ata_WaitBusyStatus(unit, &status))
+			return TDERR_NotSpecified;
+
+		    if (status & ATAF_ERROR)
+			return TDERR_NotSpecified;
+		    
+		    buffer += cnt << unit->au_SectorShift;
+		    *act += cnt << unit->au_SectorShift;
+
+		    dma_StopDMA(unit);
+
+		    count -= cnt;
+		    block += cnt;
+		}
+		else
+		{
+		    return TDERR_NotSpecified;
+		}
+	    } while(count);
+	    return 0;
+	}
+    }
+
     return TDERR_NotSpecified;
 }
 
@@ -947,7 +1110,7 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
 
 //    D(bug("SectorShift %d %d\n", unit->au_SectorShift, 1 << unit->au_SectorShift));
 
-    if ((block + count) < unit->au_Drive->id_LBASectors)
+    if ((block + count) < unit->au_Capacity)
     {
 	do
 	{
@@ -972,7 +1135,7 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
 		    unit->au_outs(buffer, port, 1 << unit->au_SectorShift);
 		    ata_400ns();
 
-		    if (!ata_WaitBusyStatus(unit, &status))
+		    if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 	    
 		    if (status & ATAF_ERROR)
@@ -1027,7 +1190,7 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
 		    unit->au_outs(buffer, port, 1 << unit->au_SectorShift);
 		    ata_400ns();
 
-		    if (!ata_WaitBusyStatus(unit, &status))
+		    if (!ata_WaitSleepyStatus(unit, &status))
 			return TDERR_NotSpecified;
 	    
 		    if (status & ATAF_ERROR)
@@ -1052,21 +1215,160 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
 
 static ULONG ata_WriteMultiple32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
-    return TDERR_NotSpecified;
+    return ata_WriteSector32(unit, block, count, buffer, act);
 }
 
 static ULONG ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
 {
-    return TDERR_NotSpecified;
+    return ata_WriteSector64(unit, block, count, buffer, act);
 }
 
 static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
+    ULONG port = unit->au_Bus->ab_Port;
+    UBYTE status;
+    ULONG cnt;
+
+    if ((IPTR)buffer & 0x1)
+    {
+	/* Redirect command to generic read sector (PIO mode). */
+	ata_ReadSector32(unit, block, count, buffer, act);
+    }
+    else
+    {
+        if ((block + count) < unit->au_Capacity)
+	{
+	    do
+	    {
+		/* Select ATA device */
+		if (ata_SetLBA28(unit, block))
+		{
+		    cnt = (count > 256) ? 256 : count;
+
+		    ata_out(cnt & 0xff, ata_Count, port);
+		
+		    dma_SetupPRD(unit, buffer, cnt, FALSE);
+
+		    ata_out(ATA_WRITE_DMA, ata_Command, port);
+		    dma_StartDMA(unit);
+
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 1000;
+		    Enable();
+
+		    do
+		    {
+			if (Wait(1L << unit->au_Bus->ab_SleepySignal | SIGBREAKF_CTRL_C)
+			    & SIGBREAKF_CTRL_C)
+			{
+			    D(bug("DMA timeout error\n"));
+			    return TDERR_NotSpecified;
+			}
+		    } while(!(inb(unit->au_DMAPort + dma_Status) & DMAF_Interrupt));
+		
+//		D(bug("[ATA] Write got Command=%02x Status=%02x\n",
+//		    inb(unit->au_DMAPort), inb(unit->au_DMAPort + 2)));
+		
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 0;
+		    Enable();
+	
+		    if (!ata_WaitBusyStatus(unit, &status))
+			return TDERR_NotSpecified;
+
+		    if (status & ATAF_ERROR)
+			return TDERR_NotSpecified;
+		    
+		    buffer += cnt << unit->au_SectorShift;
+		    *act += cnt << unit->au_SectorShift;
+
+		    dma_StopDMA(unit);
+
+		    count -= cnt;
+		    block += cnt;
+		}
+		else
+		{
+		    return TDERR_NotSpecified;
+		}
+	    } while(count);
+	    return 0;
+	}
+    }
     return TDERR_NotSpecified;
 }
 
 static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
 {
+    ULONG port = unit->au_Bus->ab_Port;
+    UBYTE status;
+    ULONG cnt;
+
+    if ((IPTR)buffer & 0x1)
+    {
+	/* Redirect command to generic read sector (PIO mode). */
+	ata_ReadSector32(unit, block, count, buffer, act);
+    }
+    else
+    {
+	if ((block + (UQUAD)count) < unit->au_Capacity48)
+	{
+	    do
+	    {
+		/* Select ATA device */
+		if (ata_SetLBA48(unit, block))
+		{
+		    cnt = (count > 65536) ? 65536 : count;
+
+		    ata_out((cnt >> 8) & 0xff, ata_Count, port);
+		    ata_out(cnt & 0xff, ata_Count, port);
+		
+		    dma_SetupPRD(unit, buffer, cnt, FALSE);
+
+		    ata_out(ATA_WRITE_DMA64, ata_Command, port);
+		    dma_StartDMA(unit);
+
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 1000;
+		    Enable();
+
+		    do
+		    {
+			if (Wait(1L << unit->au_Bus->ab_SleepySignal | SIGBREAKF_CTRL_C)
+			    & SIGBREAKF_CTRL_C)
+			{
+			    D(bug("DMA timeout error\n"));
+			    return TDERR_NotSpecified;
+			}
+		    } while(!(inb(unit->au_DMAPort + dma_Status) & DMAF_Interrupt));
+		
+		    Disable();
+		    unit->au_Bus->ab_Timeout = 0;
+		    Enable();
+		
+		    if (!ata_WaitBusyStatus(unit, &status))
+			return TDERR_NotSpecified;
+
+		    if (status & ATAF_ERROR)
+			return TDERR_NotSpecified;
+		    
+		    buffer += cnt << unit->au_SectorShift;
+		    *act += cnt << unit->au_SectorShift;
+
+		    dma_StopDMA(unit);
+
+		    count -= cnt;
+		    block += cnt;
+		}
+		else
+		{
+		    return TDERR_NotSpecified;
+		}
+	    } while(count);
+	    return 0;
+	}
+    }
+
     return TDERR_NotSpecified;
 }
 
@@ -1118,6 +1420,21 @@ int ata_DirectScsi(struct SCSICmd *cmd, struct ata_Unit *unit)
 //    ata_WaitBusyLong(unit);
     return HFERR_BadStatus;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
