@@ -2,10 +2,18 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Main fileof diskfont function AvailFonts()
     Lang: english
 */
+
+
 #include "diskfont_intern.h"
+
+#ifndef TURN_OFF_DEBUG
+#define DEBUG 1
+#endif
+
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -67,19 +75,17 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
 
-	#include  "diskfont_intern.h"
 
     LONG retval = 0;  
-    struct AF_Lists   lists;
+    struct MinList 		filist;
+    struct CopyState	cs;
     BOOL  rebuild_cache = FALSE;
     
+ 	D(bug("AvailFonts(buffer=%p, bufbytes=%d,flags=%d)\n", buffer, bufBytes, flags));
   
+    /* Initialize the list */
   
-    /* Initialize the lists */
-  
-    NEWLIST( &(lists.FontInfoList) );
-    NEWLIST( &(lists.FontNameList) );
-    NEWLIST( &(lists.FontTagsList) );
+    NEWLIST( &filist );
     
     /* Shall we read fonts from disk ? If so, read from cache */
     
@@ -88,14 +94,14 @@
         /* OK to read cahce ? */
         if (OKToReadCache( DFB(DiskfontBase) ))
         {
-            if (!ReadCache(flags, &lists,  DFB(DiskfontBase) ))
+            if (!ReadCache(flags, &filist,  DFB(DiskfontBase) ))
             {
                 
                 /* If reading the cache failed we must free everything that was read
                     and try scanning manually. Also the cache should be rebuilt 
                 */
                     
-                 FreeAFLists(&lists, DFB(DiskfontBase) );
+                 FreeFontList(&filist, DFB(DiskfontBase) );
                  rebuild_cache = TRUE;
             }
             else
@@ -119,9 +125,7 @@
         (
         	/* If the cache is going to be rebuilt we should scan for tags too */
             rebuild_cache ? flags | AFF_TAGGED : flags,
-            &(lists.FontInfoList),
-            &(lists.FontNameList),
-            &(lists.FontTagsList),
+            &filist,
             DFB(DiskfontBase)
         )
     )
@@ -133,7 +137,7 @@
     {
         /* If necessary, write the cache */
         if (rebuild_cache)
-            WriteCache( &lists, DFB(DiskfontBase) );
+            WriteCache( &filist, DFB(DiskfontBase) );
     
         /* Copy the fontdescriptions into the font buffer */
         if 
@@ -143,18 +147,19 @@
                 UB(buffer),
                 bufBytes,
                 flags,
-                &lists,
+                &filist,
+                &cs,
                 DFB(DiskfontBase) 
             )
         )
         {
-            /* To little buffer. Count how many more bytes are needed */
+            /* To small buffer. Count how many more bytes are needed */
         
             retval = CountBytesNeeded
             (
                 UB(buffer) + bufBytes,
                 flags,
-                &lists,
+                &cs,
                 DFB(DiskfontBase) 
             );
         
@@ -163,16 +168,16 @@
         else
         {
             /* Update the pointers to fontnames and tags inside the buffer */
-            UpdatePointers( UB(buffer), flags, &lists, DFB(DiskfontBase) );
+            UpdatePointers( UB(buffer), flags, &filist, DFB(DiskfontBase) );
             retval = 0L;
         }
             
     }
     
     /* Free the fontinfo lists */
-    FreeAFLists( &lists, DFB(DiskfontBase) );
+    FreeFontList( &filist, DFB(DiskfontBase) );
     
-    return (retval);
+    ReturnInt ("AvailFonts", ULONG, retval);
 
     AROS_LIBFUNC_EXIT
 } /* AvailFonts */
