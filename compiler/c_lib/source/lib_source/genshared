@@ -81,7 +81,7 @@ if [ ! -f "$confdir/lib.conf" ]; then
 fi
 
 libname=`grep '^name' "$confdir/lib.conf" | sed 's/^name[^a-zA-Z_]*//'`
-LIBNAME=`awk 'BEGIN { print toupper("'$libname'"); }'`
+LIBNAME=`awk </dev/null 'BEGIN { print toupper("'$libname'"); }'`
 
 case $mode in
     libdefs )
