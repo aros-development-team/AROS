@@ -68,11 +68,11 @@ struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *Dis
     {
     	ULONG val;
 	
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, fh))
+        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, (void *)fh))
             goto readfail;
 	tagptr->ti_Tag = val;
                                    
-        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, fh ))
+        if (!ReadLong( &DFB(DiskfontBase)->dsh, &val, (void *)fh ))
             goto readfail;
     	tagptr->ti_Data = val;          
 	           
@@ -103,16 +103,20 @@ BOOL WriteTags(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *Dis
 
     D(bug("WriteTags(fh=%p, taglists=%p)\n", fh, taglist));
 
+#ifdef AROSAMIGA
+    for (; (tag = NextTagItem((struct TagItem **)&taglist)); )
+#else
     for (; (tag = NextTagItem((const struct TagItem **)&taglist)); )
+#endif
     {
-        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Tag, fh ))
+        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Tag, (void *)fh ))
             goto wt_failure;
             
-        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Data, fh))
+        if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Data, (void *)fh))
             goto wt_failure;
     }
-    WriteLong(&DFB(DiskfontBase)->dsh, TAG_DONE, fh);
-    WriteLong(&DFB(DiskfontBase)->dsh, 0, fh);
+    WriteLong(&DFB(DiskfontBase)->dsh, TAG_DONE, (void *)fh);
+    WriteLong(&DFB(DiskfontBase)->dsh, 0, (void *)fh);
     
     ReturnBool ("WriteTags", TRUE);
     
@@ -138,19 +142,19 @@ STATIC BOOL WriteFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_i
 
     taf = &(finode->TAF);
     
-    if (!WriteWord( &DFB(DiskfontBase)->dsh, taf->taf_Type, fh))
+    if (!WriteWord( &DFB(DiskfontBase)->dsh, taf->taf_Type, (void *)fh))
         goto wf_failure;
 
-    if (!WriteWord(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_YSize, fh ))
+    if (!WriteWord(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_YSize, (void *)fh ))
         goto wf_failure;
 
-    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Style, fh))
+    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Style, (void *)fh))
         goto wf_failure;
         
-    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Flags & ~FPF_REMOVED, fh ))
+    if (!WriteByte(&DFB(DiskfontBase)->dsh, taf->taf_Attr.tta_Flags & ~FPF_REMOVED, (void *)fh ))
         goto wf_failure;
 
-    if (!WriteByte(&DFB(DiskfontBase)->dsh, finode->Flags, fh ))
+    if (!WriteByte(&DFB(DiskfontBase)->dsh, finode->Flags, (void *)fh ))
         goto wf_failure;
     
     ReturnBool ("WriteFIN", TRUE);
@@ -178,19 +182,19 @@ STATIC BOOL ReadFIN(BPTR fh, struct FontInfoNode *finode, struct DiskfontBase_in
 
     taf = &(finode->TAF);
     
-    if (!ReadWord(&DFB(DiskfontBase)->dsh, &(taf->taf_Type), fh ))
+    if (!ReadWord(&DFB(DiskfontBase)->dsh, &(taf->taf_Type), (void *)fh ))
         goto rf_failure;
 
-    if (!ReadWord(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_YSize), fh ))
+    if (!ReadWord(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_YSize), (void *)fh ))
         goto rf_failure;
 
-    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_Style), fh ))
+    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_Style), (void *)fh ))
         goto rf_failure;
         
-    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_Flags), fh ))
+    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(taf->taf_Attr.tta_Flags), (void *)fh ))
         goto rf_failure;
 
-    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(finode->Flags), fh))
+    if (!ReadByte(&DFB(DiskfontBase)->dsh, &(finode->Flags), (void *)fh))
         goto rf_failure;
     
     ReturnBool ("ReadFIN", TRUE);
@@ -211,13 +215,13 @@ BOOL ReadDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *Diskfon
 {
     D(bug("ReadDate(fh=%p, datestamp=%p)\n", fh, ds));
 
-    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Days), fh))
+    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Days), (void *)fh))
         goto rd_failure;
 
-    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Minute), fh))
+    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Minute), (void *)fh))
         goto rd_failure;
 
-    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Tick), fh))
+    if (!ReadLong(&DFB(DiskfontBase)->dsh, ((ULONG*)&ds->ds_Tick), (void *)fh))
         goto rd_failure;
 
     ReturnBool ("ReadDate", TRUE);
@@ -238,13 +242,13 @@ BOOL WriteDate(BPTR fh, struct DateStamp *ds, struct DiskfontBase_intern *Diskfo
 {
     D(bug("WriteDate(fh=%p, datestamp=%p)\n", fh, ds));
 
-    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Days, fh))
+    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Days, (void *)fh))
         goto wd_failure;
 
-    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Minute, fh))
+    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Minute, (void *)fh))
         goto wd_failure;
 
-    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Tick, fh))
+    if (!WriteLong(&DFB(DiskfontBase)->dsh, ds->ds_Tick, (void *)fh))
         goto wd_failure;
 
     ReturnBool ("WriteDate", TRUE);
@@ -284,7 +288,7 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
     Seek(fh, NUMENTRIES_OFFSET, OFFSET_BEGINNING);
 
     /* Read the number of elements in the cache */
-    if (!ReadWord(&DFB(DiskfontBase)->dsh, &numentries, fh))
+    if (!ReadWord(&DFB(DiskfontBase)->dsh, &numentries, (void *)fh))
         goto rc_failure;
         
     D(bug("\tRC: Numentries: %d\n", numentries));
@@ -303,7 +307,7 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
         
         if (!(finode->Flags & FDF_REUSENAME))        
         {
-            if (!ReadString(&DFB(DiskfontBase)->dsh, &(finode->TAF.taf_Attr.tta_Name), fh))
+            if (!ReadString(&DFB(DiskfontBase)->dsh, &(finode->TAF.taf_Attr.tta_Name), (void *)fh))
                 goto rc_failure;
             finode->NameLength = strlen(finode->TAF.taf_Attr.tta_Name) + 1;
         }          
@@ -318,7 +322,7 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
         {                   
  
             /* Read the number of tags */
-            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, fh))
+            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, (void *)fh))
         	goto rc_failure;
 
             if (numtags)
@@ -389,7 +393,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
         goto wc_failure;
 
     /* Write the cache ID */
-    if (!WriteString(&DFB(DiskfontBase)->dsh,CACHE_IDSTR, fh))
+    if (!WriteString(&DFB(DiskfontBase)->dsh,CACHE_IDSTR, (void *)fh))
         goto wc_failure;
             
     /* Get the current time */
@@ -400,7 +404,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
     
     /* Leave "empty" space for numentries.numentries is inserted later, 
       when number of entries have bee counted. */
-    if (!WriteWord( &DFB(DiskfontBase)->dsh, numentries, fh))
+    if (!WriteWord( &DFB(DiskfontBase)->dsh, numentries, (void *)fh))
     	goto wc_failure;
     
     ForeachNode(filist, node)
@@ -421,7 +425,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
             /* Write fontname if not reused */
             if ( !(flags & FDF_REUSENAME) )
             {
-                if (!WriteString(&DFB(DiskfontBase)->dsh, node->TAF.taf_Attr.tta_Name, fh))
+                if (!WriteString(&DFB(DiskfontBase)->dsh, node->TAF.taf_Attr.tta_Name, (void *)fh))
                     goto wc_failure;
             }
             
@@ -434,7 +438,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
 		else
 	            numtags = 0;
 
-    		if (!WriteWord( &DFB(DiskfontBase)->dsh, numtags, fh))
+    		if (!WriteWord( &DFB(DiskfontBase)->dsh, numtags, (void *)fh))
 		    goto wc_failure;
 
 		if (numtags)
@@ -452,7 +456,7 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
     Flush(fh);
     Seek(fh, NUMENTRIES_OFFSET, OFFSET_BEGINNING);
 
-    if (!WriteWord(&DFB(DiskfontBase)->dsh, numentries, fh))
+    if (!WriteWord(&DFB(DiskfontBase)->dsh, numentries, (void *)fh))
         goto wc_failure;
         
     Close(fh);
@@ -508,7 +512,7 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
 
     if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0)
     {
-        if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, fh))
+        if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, (void *)fh))
         {
             if (strcmp(idstr, CACHE_IDSTR) == 0)
             {
@@ -541,7 +545,7 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
             } /* if (strcmp(idstr, CACHE_IDSTR) == 0) */
             FreeVec(idstr);
 	    
-        } /* if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, fh)) */
+        } /* if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, (void *)fh)) */
         Close(fh);
 	
     } /* if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0) */

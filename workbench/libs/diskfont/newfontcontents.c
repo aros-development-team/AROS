@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include <aros/debug.h>
+#include <aros/macros.h>
 #include "diskfont_intern.h"
 
 /****************************************************************************************/

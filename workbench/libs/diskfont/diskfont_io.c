@@ -212,7 +212,7 @@ D(bug("Textfont struct converted\n"));
 	COPYPTR(ptr,  cfc_ptr);
 	for (i = 0; i < 8; i ++ )
 	{
-	    COPYPTR(ptr,  ctf_chardata_ptrs[count]);
+	    COPYPTR(ptr,  ctf_chardata_ptrs[i]);
 	}
 
 	/* ------------------------------- */
@@ -449,6 +449,21 @@ failure:
 
 /****************************************************************************************/
 
+#ifdef AROSAMIGA
+
+AROS_UFH2 (void, puttostr,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(STRPTR *,strPtrPtr,A3)
+)
+{
+    AROS_USERFUNC_INIT
+    *(*strPtrPtr)= chr;
+    (*strPtrPtr) ++;
+    AROS_USERFUNC_EXIT
+}
+
+#endif
+
 struct TextFont *ReadDiskFont(
 	struct TTextAttr *reqattr, 
 	struct DiskfontBase_intern *DiskfontBase)
@@ -464,10 +479,19 @@ struct TextFont *ReadDiskFont(
     /* Construct the font's path + filename */
     len = strcspn(reqattr->tta_Name, ".");
     
+#ifdef AROSAMIGA
+    {
+    	STRPTR buf = ysizebuf;
+    	IPTR val = reqattr->tta_YSize;
+    
+    	RawDoFmt("%ld", &val, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &buf);
+    }
+#else
     snprintf( ysizebuf
     	    , sizeof (ysizebuf)
 	    , "%d"
 	    , reqattr->tta_YSize );
+#endif
 			
     /* Allocate mem for constructed filename */
     filename = AllocVec(   sizeof (FONTSDIR) + len  + sizeof("/") 

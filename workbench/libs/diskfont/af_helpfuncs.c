@@ -70,8 +70,13 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
+#ifdef AROSAMIGA
+    for (; NextTagItem((struct TagItem **)&tstate); )
+        numtags ++;
+#else
     for (; NextTagItem((const struct TagItem **)&tstate); )
         numtags ++;
+#endif
 
     numtags ++; /* Count TAG_DONE */
   
@@ -102,7 +107,11 @@ ULONG CopyTagItems
 
     D(bug("CopyTagItems(desttaglist=%p, sourcetaglist=%p)\n", desttaglist, sourcetaglist));
 
+#ifdef AROSAMIGA
+    for (; (tag = NextTagItem((struct TagItem **)&sourcetaglist)); )
+#else
     for (; (tag = NextTagItem((const struct TagItem **)&sourcetaglist)); )
+#endif
     {
         desttaglist->ti_Tag   = tag->ti_Tag;
         desttaglist->ti_Data  = tag->ti_Data;
